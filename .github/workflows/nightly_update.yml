@@ -1,0 +1,35 @@
+name: Nightly Data Update
+
+on:
+  schedule:
+    # Mo–Fr 20:00 UTC (22:00 MEZ / 21:00 MESZ)
+    - cron: '0 20 * * 1-5'
+  workflow_dispatch:  # Manueller Trigger über GitHub UI
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run batch download
+        run: python -m shared.download_manager --batch-all
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: Report status
+        if: failure()
+        run: echo "::error::Nightly data update failed!"

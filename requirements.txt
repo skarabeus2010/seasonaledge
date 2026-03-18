@@ -1,0 +1,28 @@
+# ── SeasonalEdge — Requirements ──────────────────────────────
+# Version: 8.4 | Stand: 2026-03-18
+
+# ── Core ─────────────────────────────────────────────────────
+streamlit>=1.30.0
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.18.0
+
+# ── Daten-Download (KEIN yfinance!) ─────────────────────────
+requests>=2.31.0
+
+# ── Datenbank ────────────────────────────────────────────────
+supabase>=2.0.0
+
+# ── KI-Modelle (Phase 1) ────────────────────────────────────
+fastdtw>=0.3.4
+scipy>=1.11.0
+scikit-learn>=1.3.0
+prophet>=1.1.5
+anthropic>=0.40.0
+
+# ── E-Mail (Brevo) ──────────────────────────────────────────
+# requests (bereits oben)
+
+# ── Utilities ────────────────────────────────────────────────
+python-dateutil>=2.8.0
+pytz>=2023.3
