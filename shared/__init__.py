@@ -1,0 +1,1 @@
+# SeasonalEdge - Shared Modules
