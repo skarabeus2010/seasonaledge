@@ -742,31 +742,60 @@ Anthropic Key:  in .streamlit/secrets.toml  → os.environ["ANTHROPIC_API_KEY"]
 ## 23. Offene Roadmap
 
 ### Kurzfristig (nächste Sessions)
-- [ ] `shared/logger.py` anlegen + in alle Module einbinden
-- [ ] `shared/supabase_client.py` anlegen + Tabellen-Schema deployen
+- [x] `shared/logger.py` anlegen + in alle Module einbinden (2026-03-18)
+- [x] `shared/supabase_client.py` anlegen + Tabellen-Schema deployen (2026-03-18)
 - [ ] `shared/download_manager.py` anlegen
-- [ ] `shared/charts.py` → `apply_se_theme()` Drop-in ergänzen
-- [ ] `shared/ai_models.py` anlegen (DTW + Prophet + Claude API)
-- [ ] `shared/email_brevo.py` anlegen
-- [ ] `logs/` Verzeichnis + `.gitignore` anlegen
+- [x] `shared/charts.py` → `apply_se_theme()` Drop-in ergänzen (2026-03-18)
+- [x] `shared/ai_models.py` anlegen (DTW + Prophet + Claude API) (2026-03-18)
+- [x] `shared/email_brevo.py` anlegen (2026-03-18)
+- [x] `logs/` Verzeichnis + `.gitignore` anlegen (2026-03-18)
 - [ ] `use_container_width` → `width='stretch'` (Deadline Ende 2025)
 - [ ] `seasonal_app.py` Zeile 243+: `df.index[...]` → `df['Date'].iloc[...]`
 - [ ] Split-Slider: Ticker-Auswahl (aktuell nur ^DJI)
 - [ ] TDOM Backtesting Page
 - [ ] Outlier Management (Winsorize 3σ, Exclude Years Widget)
+- [x] `shared/shock_analysis.py` — Shock Analyzer (2026-03-18)
+- [x] `shared/sector_rotation.py` — Sektor-Rotation (2026-03-18)
 
 ### Phase 1: Deployment
-- [ ] GitHub-Repo anlegen
+- [x] GitHub-Repo anlegen → `skarabeus2010/seasonaledge` (privat) (2026-03-18)
 - [ ] Streamlit Cloud Deployment
-- [ ] Supabase PostgreSQL + User-Auth
-- [ ] Nightly GitHub Action (Download-Manager Batch)
+- [x] Supabase PostgreSQL — Tabellen `prices`, `seasonality`, `app_logs` (2026-03-18)
+- [x] Nightly GitHub Action (Download-Manager Batch) (2026-03-18)
+- [ ] Supabase User-Auth (Freemium/Premium)
 - [ ] Stripe Freemium/Abo-Integration
 - [ ] Brevo-Newsletter-Anbindung
 - [ ] Domain: seasonaledge.app (INWX.de, ~15 EUR/Jahr)
 
+### Neue Pages (geplant)
+- [ ] Shock Analyzer Page (`pages/13_Shock_Analyzer.py`)
+- [ ] Sektor-Rotation Page (`pages/14_Sector_Rotation.py`)
+- [ ] Vola-Saisonalität Page (VIX-basiert)
+
 ---
 
-## 24. Code Style
+## 24. Supabase Datenbestand (Stand: 2026-03-18)
+
+| Ticker | Name | Rows | Zeitraum | Quelle |
+|--------|------|------|----------|--------|
+| ^DJI | Dow Jones | 33.597 | 1896 → 2026 | Stooq |
+| ^GSPC | S&P 500 | 39.657 | 1789 → 2026 | Stooq |
+| ^GDAXI | DAX 40 | 14.726 | 1959 → 2026 | Stooq |
+| ^FTSE | FTSE 100 | 23.055 | 1935 → 2026 | Stooq |
+| ^N225 | Nikkei 225 | 19.072 | 1914 → 2026 | Stooq |
+| ^FCHI | CAC 40 | 10.610 | 1965 → 2026 | Stooq |
+| ^SSMI | SMI | 9.471 | 1988 → 2026 | Stooq |
+| EURUSD=X | EUR/USD | 13.134 | 1971 → 2026 | Stooq |
+| GBPUSD=X | GBP/USD | 14.400 | 1900 → 2026 | Stooq |
+| USDJPY=X | USD/JPY | 14.136 | 1971 → 2026 | Stooq |
+| USDCHF=X | USD/CHF | 12.094 | 1971 → 2026 | Stooq |
+| **Gesamt** | | **203.952** | | |
+
+**Fehlend (42 Ticker):** ETFs, US-Aktien, Krypto, Rohstoff-Futures — Yahoo blockiert von Arbeitsrechner. Nachladung mit `yahoo_downloader.py` von zuhause nötig. Script `bulk_load_supabase.py` hat Smart-Skip: bereits geladene Ticker werden automatisch übersprungen.
+
+---
+
+## 25. Code Style
 
 ```python
 # Variables:    snake_case         → start_day, avg_cumulative
@@ -779,5 +808,5 @@ Anthropic Key:  in .streamlit/secrets.toml  → os.environ["ANTHROPIC_API_KEY"]
 ---
 
 **Maintainer:** Claude + Heiko
-**Version:** 8.4
-**Stand:** 2026-03-17
+**Version:** 8.5
+**Stand:** 2026-03-18
