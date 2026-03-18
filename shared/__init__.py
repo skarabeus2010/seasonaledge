@@ -1,1 +1,1 @@
-# SeasonalEdge shared module
+# shared/ — SeasonalEdge gemeinsame Module

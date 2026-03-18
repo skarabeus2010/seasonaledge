@@ -1,143 +1,130 @@
 """
-SeasonalEdge — KI-Modelle für saisonale Analyse
+shared/ai_models.py — KI-Modelle für SeasonalEdge
 
-Phase 1:
-  - DTW Pattern Matching: Ähnliche historische Jahre finden
-  - Prophet: Saisonale Prognose 60 Tage
-  - Isolation Forest: Ausreißer-Jahre erkennen
-  - Claude API: Natural Language Kommentar
-
-Verwendung:
-  from shared.ai_models import find_similar_years, forecast_seasonal
-  from shared.ai_models import detect_outlier_years, generate_seasonal_commentary
+Phase 1: DTW Pattern Matching, Prophet, Isolation Forest, Claude API
+Phase 2: LSTM, XGBoost (TODO)
+Phase 3: Transformer (TODO)
 """
-
-import os
-
 import numpy as np
 import pandas as pd
+from typing import Optional
 
-from shared.logger import app_logger, error_logger
 
-
-# ══════════════════════════════════════════════════════════════
-# 1. DTW Pattern Matching — Ähnliche historische Jahre
-# ══════════════════════════════════════════════════════════════
+# ── DTW Pattern Matching ────────────────────────────
 
 def find_similar_years(
-    current_pattern: list[float] | np.ndarray,
-    all_years_data: dict[int, list[float] | np.ndarray],
+    current_pattern: list[float],
+    all_years_data: dict[int, list[float]],
     top_n: int = 3,
 ) -> list[tuple[int, float]]:
     """
-    Findet die ähnlichsten historischen Jahre zum aktuellen Kursverlauf
-    mittels Dynamic Time Warping (DTW).
+    Findet historische Jahre mit ähnlichstem Kursverlauf.
 
     Args:
-        current_pattern: Kumulierte Renditen des aktuellen Jahres (bis heute)
-        all_years_data: Dict {Jahr: kumul. Renditen} aller historischen Jahre
-        top_n: Anzahl der ähnlichsten Jahre
+        current_pattern: Normalisierte Kursreihe des aktuellen Jahres
+        all_years_data: {year: normalisierte Kursreihe}
+        top_n: Anzahl ähnlichster Jahre
 
     Returns:
-        Liste von (Jahr, DTW-Distanz) — kleinere Distanz = ähnlicher
+        [(year, distance), ...] sortiert nach Ähnlichkeit (niedrig = ähnlich)
     """
     try:
         from fastdtw import fastdtw
         from scipy.spatial.distance import euclidean
     except ImportError:
-        error_logger.error("fastdtw/scipy nicht installiert: pip install fastdtw scipy")
-        return []
+        # Fallback: einfache Korrelation
+        return _find_similar_correlation(current_pattern, all_years_data, top_n)
 
-    current = np.array(current_pattern, dtype=float)
-    scores: dict[int, float] = {}
-
+    scores = {}
     for year, pattern in all_years_data.items():
-        try:
-            # Pattern auf gleiche Länge wie current trimmen
-            hist = np.array(pattern, dtype=float)[:len(current)]
-            if len(hist) < 5:
-                continue
-            dist, _ = fastdtw(current, hist, dist=euclidean)
-            scores[year] = dist
-        except Exception as e:
-            app_logger.warning(f"DTW fehlgeschlagen für {year}: {e}")
+        # Auf gleiche Länge trimmen
+        min_len = min(len(current_pattern), len(pattern))
+        if min_len < 10:
             continue
+        dist, _ = fastdtw(
+            current_pattern[:min_len],
+            pattern[:min_len],
+            dist=euclidean,
+        )
+        scores[year] = dist
 
-    ranked = sorted(scores.items(), key=lambda x: x[1])[:top_n]
-    app_logger.info(
-        f"DTW Top-{top_n}: {[(y, round(d, 1)) for y, d in ranked]}"
-    )
-    return ranked
+    return sorted(scores.items(), key=lambda x: x[1])[:top_n]
 
 
-# ══════════════════════════════════════════════════════════════
-# 2. Prophet — Saisonale Prognose
-# ══════════════════════════════════════════════════════════════
+def _find_similar_correlation(
+    current_pattern: list[float],
+    all_years_data: dict[int, list[float]],
+    top_n: int = 3,
+) -> list[tuple[int, float]]:
+    """Fallback: Korrelationsbasierte Ähnlichkeit (ohne fastdtw)."""
+    scores = {}
+    for year, pattern in all_years_data.items():
+        min_len = min(len(current_pattern), len(pattern))
+        if min_len < 10:
+            continue
+        corr = np.corrcoef(current_pattern[:min_len], pattern[:min_len])[0, 1]
+        # Negieren, damit niedrigerer Wert = ähnlicher (wie bei DTW)
+        scores[year] = -corr if not np.isnan(corr) else 999
+
+    return sorted(scores.items(), key=lambda x: x[1])[:top_n]
+
+
+# ── Prophet Forecast ────────────────────────────────
 
 def forecast_seasonal(
     df_prices: pd.DataFrame,
     periods: int = 60,
-    yearly_seasonality: bool = True,
-) -> pd.DataFrame | None:
+    yearly: bool = True,
+    weekly: bool = False,
+) -> Optional[pd.DataFrame]:
     """
     Saisonale Prognose mit Facebook Prophet.
 
     Args:
-        df_prices: DataFrame mit Spalten 'Date' und 'Close'
-        periods: Vorhersage-Horizont in Tagen
-        yearly_seasonality: Jährliche Saisonalität aktivieren
+        df_prices: DataFrame mit Date und Close
+        periods: Anzahl Tage in die Zukunft
+        yearly/weekly: Saisonalitätskomponenten
 
     Returns:
-        DataFrame mit Spalten: ds, yhat, yhat_lower, yhat_upper
+        DataFrame mit ds, yhat, yhat_lower, yhat_upper (oder None bei Fehler)
     """
     try:
         from prophet import Prophet
     except ImportError:
-        error_logger.error("prophet nicht installiert: pip install prophet")
         return None
 
-    try:
-        # Prophet erwartet Spalten 'ds' und 'y'
-        prophet_df = df_prices.rename(
-            columns={"Date": "ds", "Close": "y"}
-        )[["ds", "y"]].copy()
-        prophet_df["ds"] = pd.to_datetime(prophet_df["ds"])
-        prophet_df = prophet_df.dropna()
+    df = df_prices.copy()
+    if "Date" in df.columns:
+        df = df.rename(columns={"Date": "ds", "Close": "y"})
+    elif df.index.name == "Date":
+        df = df.reset_index().rename(columns={"Date": "ds", "Close": "y"})
 
-        model = Prophet(
-            yearly_seasonality=yearly_seasonality,
-            weekly_seasonality=False,
-            daily_seasonality=False,
-            changepoint_prior_scale=0.05,
-        )
-        model.fit(prophet_df)
+    df = df[["ds", "y"]].dropna()
 
-        future = model.make_future_dataframe(periods=periods)
-        forecast = model.predict(future)
+    m = Prophet(
+        yearly_seasonality=yearly,
+        weekly_seasonality=weekly,
+        daily_seasonality=False,
+    )
+    m.fit(df)
+    future = m.make_future_dataframe(periods=periods)
+    forecast = m.predict(future)
 
-        result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(periods)
-        app_logger.info(f"Prophet-Prognose: {periods} Tage berechnet")
-        return result
-
-    except Exception as e:
-        error_logger.error(f"Prophet-Prognose fehlgeschlagen: {e}", exc_info=True)
-        return None
+    return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(periods)
 
 
-# ══════════════════════════════════════════════════════════════
-# 3. Isolation Forest — Ausreißer-Jahre erkennen
-# ══════════════════════════════════════════════════════════════
+# ── Isolation Forest (Ausreißer-Jahre) ──────────────
 
 def detect_outlier_years(
-    year_returns: dict[int, list[float] | np.ndarray],
+    year_returns: dict[int, list[float]],
     contamination: float = 0.1,
 ) -> list[int]:
     """
-    Erkennt Ausreißer-Jahre (z.B. 2008, 2020) mittels Isolation Forest.
+    Erkennt Jahre die nicht ins typische saisonale Muster passen.
 
     Args:
-        year_returns: Dict {Jahr: tägliche Renditen}
-        contamination: Erwarteter Anteil Ausreißer (0.0–0.5)
+        year_returns: {year: [daily_returns]}
+        contamination: Anteil erwarteter Ausreißer (0.05-0.2)
 
     Returns:
         Liste der Ausreißer-Jahre
@@ -145,102 +132,74 @@ def detect_outlier_years(
     try:
         from sklearn.ensemble import IsolationForest
     except ImportError:
-        error_logger.error("scikit-learn nicht installiert: pip install scikit-learn")
         return []
 
-    try:
-        # Alle Jahre auf gleiche Länge bringen (min. Länge)
-        years = sorted(year_returns.keys())
-        min_len = min(len(year_returns[y]) for y in years)
+    # Alle auf gleiche Länge bringen
+    min_len = min(len(v) for v in year_returns.values())
+    years = list(year_returns.keys())
+    matrix = np.array([year_returns[y][:min_len] for y in years])
 
-        if min_len < 10:
-            app_logger.warning("Zu wenige Datenpunkte für Isolation Forest")
-            return []
+    clf = IsolationForest(contamination=contamination, random_state=42)
+    labels = clf.fit_predict(matrix)
 
-        matrix = np.array([
-            np.array(year_returns[y], dtype=float)[:min_len]
-            for y in years
-        ])
-
-        clf = IsolationForest(
-            contamination=contamination,
-            random_state=42,
-            n_estimators=100,
-        )
-        labels = clf.fit_predict(matrix)
-
-        outliers = [y for y, label in zip(years, labels) if label == -1]
-        app_logger.info(f"Ausreißer-Jahre erkannt: {outliers}")
-        return outliers
-
-    except Exception as e:
-        error_logger.error(f"Isolation Forest fehlgeschlagen: {e}", exc_info=True)
-        return []
+    return [y for y, label in zip(years, labels) if label == -1]
 
 
-# ══════════════════════════════════════════════════════════════
-# 4. Claude API — Natural Language Kommentar
-# ══════════════════════════════════════════════════════════════
+# ── Claude API (Natural Language Kommentar) ─────────
 
 def generate_seasonal_commentary(
     ticker: str,
     month: str,
     avg_return: float,
     win_rate: float,
-    similar_years: list[tuple[int, float]] | None = None,
+    similar_years: list[tuple[int, float]] = None,
     model: str = "claude-sonnet-4-20250514",
-    max_tokens: int = 200,
-) -> str:
+) -> Optional[str]:
     """
-    Generiert einen kurzen KI-Kommentar zur Saisonalität.
+    Generiert einen KI-Kommentar zur Saisonalität.
 
     Args:
         ticker: z.B. "SPY"
         month: z.B. "März"
-        avg_return: Durchschnittliche Monatsrendite in %
+        avg_return: Durchschnittliche Rendite in %
         win_rate: Win-Rate in %
-        similar_years: Optionale DTW-Ergebnisse
+        similar_years: Output von find_similar_years()
         model: Claude-Modell
-        max_tokens: Max. Antwortlänge
 
     Returns:
-        Kommentar-Text (2-3 Sätze, Deutsch)
+        Kommentar als String (oder None bei Fehler)
     """
     try:
         import anthropic
     except ImportError:
-        error_logger.error("anthropic nicht installiert: pip install anthropic")
-        return ""
+        return None
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        app_logger.warning("ANTHROPIC_API_KEY nicht gesetzt — Kommentar übersprungen")
-        return ""
-
-    similar_info = ""
+    similar_str = ""
     if similar_years:
-        years_str = ", ".join(str(y) for y, _ in similar_years)
-        similar_info = f"\n- Ähnlichste historische Jahre (DTW): {years_str}"
+        similar_str = f"- Ähnlichste historische Jahre: {', '.join(str(y) for y, _ in similar_years)}"
 
-    prompt = (
-        f"Analysiere kurz das saisonale Muster für {ticker} im Monat {month}:\n"
-        f"- Durchschnittliche Rendite: {avg_return:.1f}%\n"
-        f"- Win-Rate: {win_rate:.0f}%"
-        f"{similar_info}\n"
-        f"Antworte in 2-3 Sätzen auf Deutsch. Keine Anlageempfehlung."
-    )
+    prompt = f"""Analysiere kurz das saisonale Muster für {ticker} im Monat {month}:
+- Durchschnittliche Rendite: {avg_return:.1f}%
+- Win-Rate: {win_rate:.0f}%
+{similar_str}
+Antworte in 2-3 Sätzen auf Deutsch. Keine Anlageempfehlung."""
 
     try:
+        import os
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            try:
+                import streamlit as st
+                api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+            except Exception:
+                pass
+
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
             model=model,
-            max_tokens=max_tokens,
+            max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
         )
-        commentary = msg.content[0].text
-        app_logger.info(f"Claude-Kommentar generiert: {ticker}/{month}")
-        return commentary
-
-    except Exception as e:
-        error_logger.error(f"Claude API fehlgeschlagen: {e}", exc_info=True)
-        return ""
+        return msg.content[0].text
+    except Exception:
+        return None

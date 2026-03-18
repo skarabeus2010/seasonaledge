@@ -1,123 +1,91 @@
 """
-SeasonalEdge — Supabase DB-Connector
-
-Tabellen:
-  prices       — Kursdaten (ticker, date, OHLCV)
-  seasonality  — Vorberechnete Saisonalität (ticker, day_of_year, avg_return, ...)
-  app_logs     — Logging auf Streamlit Cloud (kein persistentes Filesystem)
-
-Verwendung:
-  from shared.supabase_client import fetch_seasonality, upsert_prices, log_to_db
+shared/supabase_client.py — Supabase DB-Connector für SeasonalEdge
 """
-
 import os
-from shared.logger import app_logger, error_logger
+from supabase import create_client
 
-try:
-    from supabase import create_client, Client
-except ImportError:
-    create_client = None
-    Client = None
-    app_logger.warning("supabase-py nicht installiert — DB-Funktionen deaktiviert")
-
-# ── Credentials aus Environment ──────────────────────────────
+# Keys aus Streamlit Secrets oder Environment
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
-_client: "Client | None" = None
+_client = None
 
 
-def get_client() -> "Client":
+def get_client():
     """Lazy-Init des Supabase-Clients."""
     global _client
     if _client is None:
-        if not SUPABASE_URL or not SUPABASE_KEY:
-            raise RuntimeError(
-                "SUPABASE_URL und SUPABASE_KEY müssen als Environment-Variablen gesetzt sein. "
-                "Lokal: .streamlit/secrets.toml | Cloud: Streamlit Secrets"
-            )
-        if create_client is None:
-            raise RuntimeError("supabase-py nicht installiert: pip install supabase")
-        _client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        app_logger.info("Supabase-Client initialisiert")
+        url = SUPABASE_URL
+        key = SUPABASE_KEY
+        # Streamlit Secrets Fallback
+        if not url or not key:
+            try:
+                import streamlit as st
+                url = url or st.secrets.get("SUPABASE_URL", "")
+                key = key or st.secrets.get("SUPABASE_KEY", "")
+            except Exception:
+                pass
+        if not url or not key:
+            raise ValueError("SUPABASE_URL und SUPABASE_KEY müssen gesetzt sein!")
+        _client = create_client(url, key)
     return _client
 
 
-# ── Prices ───────────────────────────────────────────────────
+# ── Prices ──────────────────────────────────────────
 
-def upsert_prices(records: list[dict]) -> None:
-    """Kursdaten upserten (ON CONFLICT ticker+date)."""
+def fetch_prices(ticker: str, start_date: str = None) -> list[dict]:
+    """Kursdaten aus Supabase laden."""
+    q = get_client().table("prices").select("*").eq("ticker", ticker)
+    if start_date:
+        q = q.gte("date", start_date)
+    return q.order("date").execute().data
+
+
+def upsert_prices(records: list[dict]):
+    """Kursdaten in Supabase upserten (insert or update)."""
     if not records:
         return
-    try:
-        get_client().table("prices").upsert(
-            records, on_conflict="ticker,date"
-        ).execute()
-        app_logger.info(f"Prices upserted: {len(records)} Zeilen")
-    except Exception as e:
-        error_logger.error(f"Prices upsert fehlgeschlagen: {e}", exc_info=True)
-        raise
+    get_client().table("prices").upsert(
+        records, on_conflict="ticker,date"
+    ).execute()
 
 
-def fetch_prices(ticker: str, start: str = None, end: str = None) -> list[dict]:
-    """Kursdaten für einen Ticker laden. Optional mit Datumsfilter."""
-    try:
-        query = get_client().table("prices").select("*").eq("ticker", ticker)
-        if start:
-            query = query.gte("date", start)
-        if end:
-            query = query.lte("date", end)
-        result = query.order("date").execute()
-        return result.data
-    except Exception as e:
-        error_logger.error(f"Prices fetch fehlgeschlagen: {ticker} — {e}", exc_info=True)
-        return []
+def delete_prices(ticker: str):
+    """Alle Kursdaten für einen Ticker löschen."""
+    get_client().table("prices").delete().eq("ticker", ticker).execute()
 
 
-# ── Seasonality ──────────────────────────────────────────────
+# ── Seasonality ─────────────────────────────────────
 
 def fetch_seasonality(ticker: str) -> list[dict]:
-    """Vorberechnete Saisonalität für einen Ticker."""
-    try:
-        result = (
-            get_client()
-            .table("seasonality")
-            .select("*")
-            .eq("ticker", ticker)
-            .order("day_of_year")
-            .execute()
-        )
-        return result.data
-    except Exception as e:
-        error_logger.error(f"Seasonality fetch fehlgeschlagen: {ticker} — {e}", exc_info=True)
-        return []
+    """Vorberechnete Saisonalität laden."""
+    return (
+        get_client()
+        .table("seasonality")
+        .select("*")
+        .eq("ticker", ticker)
+        .order("day_of_year")
+        .execute()
+        .data
+    )
 
 
-def upsert_seasonality(records: list[dict]) -> None:
+def upsert_seasonality(records: list[dict]):
     """Saisonalitätsdaten upserten."""
     if not records:
         return
-    try:
-        get_client().table("seasonality").upsert(
-            records, on_conflict="ticker,day_of_year"
-        ).execute()
-        app_logger.info(f"Seasonality upserted: {len(records)} Zeilen")
-    except Exception as e:
-        error_logger.error(f"Seasonality upsert fehlgeschlagen: {e}", exc_info=True)
-        raise
+    get_client().table("seasonality").upsert(
+        records, on_conflict="ticker,day_of_year"
+    ).execute()
 
 
-# ── App Logs (für Streamlit Cloud) ───────────────────────────
+# ── App Logs ────────────────────────────────────────
 
-def log_to_db(level: str, channel: str, message: str, user_email: str = "") -> None:
-    """Log-Eintrag in Supabase app_logs Tabelle schreiben."""
-    try:
-        get_client().table("app_logs").insert({
-            "level": level,
-            "channel": channel,
-            "message": message,
-            "user_email": user_email,
-        }).execute()
-    except Exception:
-        # Stilles Fallback — DB-Logging darf App nicht crashen
-        pass
+def insert_log(level: str, channel: str, message: str, user_email: str = None):
+    """Log-Eintrag in Supabase schreiben (für Streamlit Cloud)."""
+    get_client().table("app_logs").insert({
+        "level": level,
+        "channel": channel,
+        "message": message,
+        "user_email": user_email,
+    }).execute()

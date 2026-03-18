@@ -1,16 +1,15 @@
 """
-SeasonalEdge — Plotly Custom Theme
+shared/charts.py — Plotly Custom Theme für SeasonalEdge
 
 Verwendung:
-  from shared.charts import apply_se_theme, SE_COLORS
-  fig = go.Figure(...)
-  fig = apply_se_theme(fig, title="SPY · Saisonal 1993–2025")
-  st.plotly_chart(fig, use_container_width=True)
+    fig = go.Figure(...)
+    fig = apply_se_theme(fig, title="SPY · Saisonal 1993-2025")
+    st.plotly_chart(fig, use_container_width=True)
 """
-
 import plotly.graph_objects as go
 
-# ── Farb-Palette ─────────────────────────────────────────────
+# ── SeasonalEdge Farb-Palette ───────────────────────
+
 SE_COLORS = {
     "bg":         "#080c12",
     "surface":    "#0e1520",
@@ -24,6 +23,13 @@ SE_COLORS = {
     "current_yr": "rgba(232,164,37,0.90)",
     "other_yr":   "rgba(200,220,255,0.40)",
 }
+
+
+def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
+    """Hex-Farbe in rgba() umwandeln."""
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
 
 
 def apply_se_theme(fig: go.Figure, title: str = "", height: int = 420) -> go.Figure:
@@ -73,10 +79,16 @@ def apply_se_theme(fig: go.Figure, title: str = "", height: int = 420) -> go.Fig
     return fig
 
 
-def hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
-    """Konvertiert Hex-Farbe zu rgba() String für Plotly."""
-    hex_color = hex_color.lstrip("#")
-    r = int(hex_color[0:2], 16)
-    g = int(hex_color[2:4], 16)
-    b = int(hex_color[4:6], 16)
-    return f"rgba({r},{g},{b},{alpha})"
+def apply_dual_axis(fig: go.Figure) -> go.Figure:
+    """Dual-Axis Layout hinzufügen (rechte Y-Achse)."""
+    fig.update_layout(
+        yaxis2=dict(
+            side="right",
+            overlaying="y",
+            gridcolor=SE_COLORS["grid"],
+            linecolor=SE_COLORS["grid"],
+            tickcolor=SE_COLORS["grid"],
+            zeroline=False,
+        )
+    )
+    return fig

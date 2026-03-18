@@ -1,297 +1,194 @@
 """
-SeasonalEdge — Shock Analyzer (Event Study / Cross-Asset Impact)
+shared/shock_analysis.py — Shock Analyzer für SeasonalEdge
 
-Fragestellung:
-  "Wenn Asset A an einem Tag um ±X% fällt/steigt,
-   wie performt Asset B nach N Tagen?"
+Analyse: Wenn Asset A um X% steigt/fällt, wie performt Asset B
+nach konfigurierbaren Zeiträumen?
 
 Verwendung:
-  from shared.shock_analysis import find_shock_events, analyze_shock_impact
-  from shared.shock_analysis import build_shock_heatmap_data, shock_summary_stats
+    from shared.shock_analysis import find_shocks, analyze_impact
 
-  # 1. Shock-Events im Trigger-Asset finden
-  events = find_shock_events(df_trigger, threshold=-5.0, direction="down")
-
-  # 2. Impact auf Ziel-Asset analysieren
-  impact = analyze_shock_impact(
-      df_trigger, df_target,
-      threshold=-5.0, direction="down",
-      forward_days=[1, 5, 10, 20, 60],
-  )
-
-  # 3. Heatmap-Daten: Schwellenwert × Zeitraum
-  heatmap = build_shock_heatmap_data(df_trigger, df_target, direction="down")
+    shocks = find_shocks(df_trigger, threshold=-5.0, direction="down")
+    impact = analyze_impact(shocks, df_target, horizons=[1, 5, 10, 20, 60])
 """
-
-import numpy as np
 import pandas as pd
+import numpy as np
+from typing import Literal
 
-from shared.logger import app_logger, error_logger
 
-
-# ── Shock-Events finden ──────────────────────────────────────
-
-def find_shock_events(
+def find_shocks(
     df: pd.DataFrame,
-    threshold: float = -5.0,
-    direction: str = "down",
-    date_col: str = "Date",
-    close_col: str = "Close",
+    threshold: float = 5.0,
+    direction: Literal["up", "down", "both"] = "down",
+    column: str = "Close",
 ) -> pd.DataFrame:
     """
-    Findet Tage, an denen das Asset um ≥ threshold% gestiegen/gefallen ist.
+    Findet Tage an denen der Trigger-Asset einen Shock hatte.
 
     Args:
-        df: DataFrame mit Date und Close
-        threshold: Schwellenwert in % (z.B. -5.0 für -5%)
-        direction: "down" (Einbruch) oder "up" (Anstieg)
-        date_col: Spaltenname für Datum
-        close_col: Spaltenname für Schlusskurs
+        df: DataFrame mit Date und Close (oder column)
+        threshold: Schwellenwert in % (immer positiv angeben)
+        direction: "up" (>= +threshold), "down" (<= -threshold), "both"
+        column: Spaltenname für den Kurs
 
     Returns:
-        DataFrame mit Spalten: Date, Close, daily_return_pct, shock_magnitude
+        DataFrame mit Spalten: date, daily_return_pct, close
     """
-    work = df.copy()
+    df = df.copy()
+    if "Date" in df.columns:
+        df = df.set_index("Date")
+    df = df.sort_index()
 
-    # Datum sicherstellen
-    if date_col in work.columns:
-        work[date_col] = pd.to_datetime(work[date_col])
-        work = work.sort_values(date_col).reset_index(drop=True)
-    elif work.index.name == date_col or isinstance(work.index, pd.DatetimeIndex):
-        work = work.reset_index()
-        work[date_col] = pd.to_datetime(work[date_col])
-        work = work.sort_values(date_col).reset_index(drop=True)
+    # Tagesrendite berechnen
+    df["daily_return_pct"] = df[column].pct_change() * 100
 
-    # Tägliche Rendite berechnen
-    work["daily_return_pct"] = work[close_col].pct_change() * 100
+    threshold = abs(threshold)
 
-    # Filtern nach Richtung und Schwellenwert
-    abs_threshold = abs(threshold)
     if direction == "down":
-        mask = work["daily_return_pct"] <= -abs_threshold
+        mask = df["daily_return_pct"] <= -threshold
     elif direction == "up":
-        mask = work["daily_return_pct"] >= abs_threshold
-    else:
-        raise ValueError(f"direction muss 'up' oder 'down' sein, nicht '{direction}'")
+        mask = df["daily_return_pct"] >= threshold
+    else:  # both
+        mask = df["daily_return_pct"].abs() >= threshold
 
-    events = work[mask].copy()
-    events["shock_magnitude"] = events["daily_return_pct"].abs()
-
-    app_logger.info(
-        f"Shock-Events gefunden: {len(events)} "
-        f"(threshold={threshold}%, direction={direction})"
-    )
-    return events[[date_col, close_col, "daily_return_pct", "shock_magnitude"]]
+    shocks = df[mask][["daily_return_pct", column]].copy()
+    shocks = shocks.rename(columns={column: "close"})
+    shocks.index.name = "date"
+    return shocks.reset_index()
 
 
-# ── Forward Returns berechnen ────────────────────────────────
-
-def _calc_forward_returns(
-    df: pd.DataFrame,
-    event_dates: list[pd.Timestamp],
-    forward_days: list[int],
-    date_col: str = "Date",
-    close_col: str = "Close",
-) -> pd.DataFrame:
-    """
-    Berechnet Forward-Returns für jedes Event-Datum.
-
-    Returns:
-        DataFrame: event_date, fwd_1d, fwd_5d, ... (in %)
-    """
-    work = df.copy()
-    if date_col in work.columns:
-        work[date_col] = pd.to_datetime(work[date_col])
-        work = work.set_index(date_col)
-    work = work.sort_index()
-
-    results = []
-    for event_date in event_dates:
-        if event_date not in work.index:
-            # Nächsten verfügbaren Handelstag finden
-            idx = work.index.searchsorted(event_date)
-            if idx >= len(work.index):
-                continue
-            event_date = work.index[idx]
-
-        event_price = work.loc[event_date, close_col]
-        if pd.isna(event_price) or event_price == 0:
-            continue
-
-        row = {"event_date": event_date}
-        event_pos = work.index.get_loc(event_date)
-
-        for days in forward_days:
-            fwd_pos = event_pos + days
-            if fwd_pos < len(work):
-                fwd_price = work.iloc[fwd_pos][close_col]
-                row[f"fwd_{days}d"] = ((fwd_price / event_price) - 1) * 100
-            else:
-                row[f"fwd_{days}d"] = np.nan
-
-        results.append(row)
-
-    return pd.DataFrame(results)
-
-
-# ── Haupt-Analyse ────────────────────────────────────────────
-
-def analyze_shock_impact(
-    df_trigger: pd.DataFrame,
+def analyze_impact(
+    shocks: pd.DataFrame,
     df_target: pd.DataFrame,
-    threshold: float = -5.0,
-    direction: str = "down",
-    forward_days: list[int] | None = None,
-    date_col: str = "Date",
-    close_col: str = "Close",
+    horizons: list[int] = None,
+    column: str = "Close",
 ) -> dict:
     """
-    Vollständige Shock-Impact-Analyse.
+    Analysiert die Performance des Target-Assets nach Shock-Events.
 
     Args:
-        df_trigger: Kursdaten des Trigger-Assets (z.B. Öl)
-        df_target: Kursdaten des Ziel-Assets (z.B. DAX)
-        threshold: Schwellenwert in %
-        direction: "down" oder "up"
-        forward_days: Liste der Vorschau-Zeiträume [1, 5, 10, 20, 60]
+        shocks: Output von find_shocks() (muss 'date' Spalte haben)
+        df_target: DataFrame des Ziel-Assets mit Date und Close
+        horizons: Liste der Zeiträume in Tagen (Default: [1, 5, 10, 20, 60])
+        column: Spaltenname für den Kurs
 
     Returns:
-        Dict mit:
-          - events: DataFrame der Shock-Events
-          - forward_returns: DataFrame der Forward-Returns
-          - summary: Dict mit Statistiken pro Zeitraum
-          - n_events: Anzahl Events
+        dict mit:
+          - summary: DataFrame (horizon, avg_return, median_return, win_rate, n_events, std_dev)
+          - events: DataFrame (alle Einzelereignisse mit Renditen pro Horizont)
     """
-    if forward_days is None:
-        forward_days = [1, 5, 10, 20, 60]
+    if horizons is None:
+        horizons = [1, 5, 10, 20, 60]
 
-    # Sortieren
-    forward_days = sorted(forward_days)
+    df_t = df_target.copy()
+    if "Date" in df_t.columns:
+        df_t = df_t.set_index("Date")
+    df_t = df_t.sort_index()
 
-    # 1. Events finden
-    events = find_shock_events(df_trigger, threshold, direction, date_col, close_col)
+    # Trading-Day-Index für schnellen Zugriff
+    trading_dates = df_t.index.tolist()
+    date_to_idx = {d: i for i, d in enumerate(trading_dates)}
 
-    if events.empty:
-        app_logger.warning(f"Keine Shock-Events gefunden (threshold={threshold}%)")
+    events = []
+
+    for _, shock in shocks.iterrows():
+        shock_date = pd.Timestamp(shock["date"])
+
+        # Nächsten verfügbaren Handelstag im Target finden
+        idx = date_to_idx.get(shock_date)
+        if idx is None:
+            # Suche nächsten Handelstag nach Shock-Datum
+            future_dates = [d for d in trading_dates if d >= shock_date]
+            if not future_dates:
+                continue
+            shock_date = future_dates[0]
+            idx = date_to_idx[shock_date]
+
+        base_price = df_t.iloc[idx][column]
+        event = {
+            "shock_date": shock["date"],
+            "trigger_return_pct": shock["daily_return_pct"],
+            "target_base_price": base_price,
+        }
+
+        for h in horizons:
+            future_idx = idx + h
+            if future_idx < len(trading_dates):
+                future_price = df_t.iloc[future_idx][column]
+                ret = (future_price / base_price - 1) * 100
+                event[f"return_{h}d"] = ret
+            else:
+                event[f"return_{h}d"] = np.nan
+
+        events.append(event)
+
+    if not events:
         return {
-            "events": events,
-            "forward_returns": pd.DataFrame(),
-            "summary": {},
+            "summary": pd.DataFrame(),
+            "events": pd.DataFrame(),
             "n_events": 0,
         }
 
-    # 2. Forward Returns im Ziel-Asset
-    event_dates = pd.to_datetime(events[date_col]).tolist()
-    fwd_returns = _calc_forward_returns(
-        df_target, event_dates, forward_days, date_col, close_col
-    )
+    events_df = pd.DataFrame(events)
 
-    # 3. Zusammenfassung pro Zeitraum
-    summary = {}
-    for days in forward_days:
-        col = f"fwd_{days}d"
-        if col in fwd_returns.columns:
-            values = fwd_returns[col].dropna()
-            if len(values) > 0:
-                summary[days] = {
-                    "avg_return": round(values.mean(), 2),
-                    "median_return": round(values.median(), 2),
-                    "std_dev": round(values.std(), 2),
-                    "win_rate": round((values > 0).sum() / len(values) * 100, 1),
-                    "max_gain": round(values.max(), 2),
-                    "max_loss": round(values.min(), 2),
-                    "n_observations": len(values),
-                }
+    # Summary pro Horizont
+    summary_rows = []
+    for h in horizons:
+        col = f"return_{h}d"
+        valid = events_df[col].dropna()
+        if len(valid) == 0:
+            continue
+        summary_rows.append({
+            "horizon_days": h,
+            "avg_return_pct": valid.mean(),
+            "median_return_pct": valid.median(),
+            "std_dev": valid.std(),
+            "win_rate_pct": (valid > 0).mean() * 100,
+            "max_return_pct": valid.max(),
+            "min_return_pct": valid.min(),
+            "n_events": len(valid),
+        })
 
-    app_logger.info(
-        f"Shock-Analyse abgeschlossen: {len(events)} Events, "
-        f"Zeiträume: {forward_days}"
-    )
+    summary_df = pd.DataFrame(summary_rows)
 
     return {
-        "events": events,
-        "forward_returns": fwd_returns,
-        "summary": summary,
-        "n_events": len(events),
+        "summary": summary_df,
+        "events": events_df,
+        "n_events": len(events_df),
     }
 
 
-# ── Heatmap-Daten ────────────────────────────────────────────
-
-def build_shock_heatmap_data(
+def shock_heatmap_data(
     df_trigger: pd.DataFrame,
     df_target: pd.DataFrame,
-    direction: str = "down",
-    thresholds: list[float] | None = None,
-    forward_days: list[int] | None = None,
-    date_col: str = "Date",
-    close_col: str = "Close",
+    thresholds: list[float] = None,
+    horizons: list[int] = None,
+    direction: Literal["up", "down", "both"] = "down",
 ) -> pd.DataFrame:
     """
-    Baut Heatmap-Daten: Schwellenwert × Zeitraum → Avg. Return.
+    Erstellt Heatmap-Daten: Trigger-Stärke × Zeitraum → Ø Rendite.
 
     Args:
-        thresholds: z.B. [2, 3, 5, 7, 10] (werden je nach direction pos/neg)
-        forward_days: z.B. [1, 5, 10, 20, 60]
+        thresholds: z.B. [2, 3, 5, 7, 10] (%)
+        horizons: z.B. [1, 5, 10, 20, 60] (Tage)
 
     Returns:
-        DataFrame (Index=Threshold, Columns=Forward Days, Values=Avg Return %)
+        DataFrame mit Index=threshold, Columns=horizon, Values=avg_return
     """
     if thresholds is None:
         thresholds = [2, 3, 5, 7, 10]
-    if forward_days is None:
-        forward_days = [1, 5, 10, 20, 60]
+    if horizons is None:
+        horizons = [1, 5, 10, 20, 60]
 
-    rows = []
-    for thresh in thresholds:
-        actual_thresh = -thresh if direction == "down" else thresh
-        result = analyze_shock_impact(
-            df_trigger, df_target,
-            threshold=actual_thresh,
-            direction=direction,
-            forward_days=forward_days,
-            date_col=date_col,
-            close_col=close_col,
-        )
-        row = {"threshold": f"{'≤' if direction == 'down' else '≥'}{thresh}%"}
-        row["n_events"] = result["n_events"]
-        for days in forward_days:
-            if days in result["summary"]:
-                row[f"{days}d"] = result["summary"][days]["avg_return"]
-            else:
-                row[f"{days}d"] = np.nan
-        rows.append(row)
+    results = {}
+    for t in thresholds:
+        shocks = find_shocks(df_trigger, threshold=t, direction=direction)
+        impact = analyze_impact(shocks, df_target, horizons=horizons)
+        if not impact["summary"].empty:
+            row = {}
+            for _, r in impact["summary"].iterrows():
+                row[f"{int(r['horizon_days'])}d"] = r["avg_return_pct"]
+            results[f"{t}%"] = row
+        else:
+            results[f"{t}%"] = {f"{h}d": np.nan for h in horizons}
 
-    heatmap_df = pd.DataFrame(rows).set_index("threshold")
-    return heatmap_df
-
-
-# ── Zusammenfassungs-Statistiken ─────────────────────────────
-
-def shock_summary_stats(impact_result: dict) -> pd.DataFrame:
-    """
-    Formatiert die Summary-Statistiken als übersichtliche Tabelle.
-
-    Args:
-        impact_result: Ergebnis von analyze_shock_impact()
-
-    Returns:
-        DataFrame mit Zeilen pro Zeitraum und Spalten für alle Metriken
-    """
-    if not impact_result["summary"]:
-        return pd.DataFrame()
-
-    rows = []
-    for days, stats in sorted(impact_result["summary"].items()):
-        rows.append({
-            "Zeitraum": f"{days}d",
-            "Ø Rendite %": stats["avg_return"],
-            "Median %": stats["median_return"],
-            "Std. Dev.": stats["std_dev"],
-            "Win-Rate %": stats["win_rate"],
-            "Max Gewinn %": stats["max_gain"],
-            "Max Verlust %": stats["max_loss"],
-            "N": stats["n_observations"],
-        })
-
-    return pd.DataFrame(rows)
+    return pd.DataFrame(results).T
