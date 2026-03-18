@@ -1,0 +1,1 @@
+# SeasonalEdge shared module
