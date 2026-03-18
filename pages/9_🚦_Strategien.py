@@ -58,46 +58,16 @@ with st.sidebar:
         step=4,
     )
     st.divider()
-    st.caption("Daten via yfinance · NYSE-Kalendar")
+    st.caption("Daten via Yahoo Finance · NYSE-Kalendar")
 
 # ── Daten laden ────────────────────────────────────────────────────────────────
 
-def _yfinance_download(ticker: str) -> pd.DataFrame:
-    """Lädt Daten via yfinance — robust gegen MultiIndex (neuere yfinance-Versionen)."""
-    import yfinance as yf
-    raw = yf.download(ticker, period="max", auto_adjust=True, progress=False)
-    if raw is None or len(raw) == 0:
-        raise ValueError(f"Keine Daten für '{ticker}' gefunden.")
-    # MultiIndex flach machen: ("Close", "AAPL") → "Close"
-    if isinstance(raw.columns, pd.MultiIndex):
-        raw.columns = raw.columns.get_level_values(0)
-    # Doppelte Spalten entfernen (kann bei squeeze entstehen)
-    raw = raw.loc[:, ~raw.columns.duplicated()]
-    raw = raw.dropna(subset=["Close"])
-    return raw
-
-def _preprocess_fallback(df: pd.DataFrame) -> pd.DataFrame:
-    """Minimales Preprocessing — funktioniert auch ohne shared/data.py."""
-    df = df.copy()
-    df["return"]      = df["Close"].pct_change()
-    df["log_return"]  = df["return"].apply(lambda x: x if pd.isna(x) else __import__("math").log(1 + x))
-    df["day_of_year"] = df.index.dayofyear
-    df["year"]        = df.index.year
-    df["month"]       = df.index.month
-    return df
-
 @st.cache_data(show_spinner="Kursdaten werden geladen …")
 def load_data(ticker: str) -> pd.DataFrame:
-    # Versuch 1: shared/data.py
-    try:
-        raw = download_data(ticker)
-        if raw is not None and len(raw) > 0:
-            return preprocess(raw)
-    except Exception:
-        pass
-    # Versuch 2: direkter yfinance-Download mit eigenem Preprocessing
-    raw = _yfinance_download(ticker)
-    return _preprocess_fallback(raw)
+    raw = download_data(ticker)
+    if raw is None or len(raw) == 0:
+        raise ValueError(f"Keine Daten für '{ticker}' gefunden.")
+    return preprocess(raw)
 
 try:
     df = load_data(ticker)

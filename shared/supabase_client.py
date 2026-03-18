@@ -2,7 +2,11 @@
 shared/supabase_client.py — Supabase DB-Connector für SeasonalEdge
 """
 import os
-from supabase import create_client
+
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
 
 # Keys aus Streamlit Secrets oder Environment
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -14,6 +18,11 @@ _client = None
 def get_client():
     """Lazy-Init des Supabase-Clients."""
     global _client
+    if create_client is None:
+        raise ImportError(
+            "supabase-Paket nicht installiert. "
+            "Installiere es mit: pip install supabase"
+        )
     if _client is None:
         url = SUPABASE_URL
         key = SUPABASE_KEY

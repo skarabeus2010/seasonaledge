@@ -7,7 +7,7 @@ Starten mit: streamlit run seasonal_app.py
 """
 
 import streamlit as st
-import yfinance as yf
+from shared.yahoo_downloader import download_data as _yd_download, preprocess
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -63,18 +63,13 @@ DECADE_LABELS = {
 @st.cache_data(ttl=3600, show_spinner=False)
 def download_data(ticker, period="max"):
     """
-    Lade OHLC-Daten von Yahoo Finance.
+    Lade OHLC-Daten via shared/yahoo_downloader.
     Cached für 1 Stunde.
     """
     try:
-        df = yf.download(ticker, period=period, auto_adjust=True, progress=False)
-        
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        
-        if df.empty:
+        df = _yd_download(ticker)
+        if df is None or df.empty:
             return None
-        
         return df
     except Exception as e:
         st.error(f"Fehler beim Laden von {ticker}: {e}")

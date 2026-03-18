@@ -12,6 +12,8 @@ import os
 import sys
 import time
 import datetime
+
+import numpy as np
 import requests
 
 # Fix Windows Console Encoding
@@ -132,35 +134,72 @@ PRIORITY_TICKERS = ["^DJI", "^GSPC", "^GDAXI", "^FTSE", "^N225", "GC=F", "CL=F",
 
 # ── Download-Funktionen ──────────────────────────────────────────────────────
 
+_YAHOO_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
 def download_yahoo(ticker: str) -> pd.DataFrame | None:
-    """Lädt maximale Historie von Yahoo Finance (HTTP, kein yfinance!)."""
-    try:
-        # period1=0 → ab 1.1.1970, period2=now
-        now = int(time.time())
-        url = (
-            f"https://query1.finance.yahoo.com/v7/finance/download/{ticker}"
-            f"?period1=0&period2={now}&interval=1d&events=history"
-        )
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/120.0.0.0 Safari/537.36"
-        }
-        resp = requests.get(url, headers=headers, timeout=30)
-        if resp.status_code != 200:
-            return None
-        df = pd.read_csv(io.StringIO(resp.text), parse_dates=["Date"])
-        df = df.dropna(subset=["Close"])
-        df = df[df["Close"] > 0]
-        # Null-Strings bereinigen
-        for col in ["Open", "High", "Low", "Close", "Volume"]:
-            if col in df.columns:
+    """Lädt maximale Historie von Yahoo Finance JSON-API (v8/chart)."""
+    params = {
+        "interval": "1d",
+        "period1":  0,
+        "period2":  int(time.time()),
+    }
+    for base in [
+        "https://query1.finance.yahoo.com/v8/finance/chart/",
+        "https://query2.finance.yahoo.com/v8/finance/chart/",
+    ]:
+        try:
+            resp = requests.get(
+                base + ticker.upper(),
+                headers=_YAHOO_HEADERS,
+                params=params,
+                timeout=30,
+                allow_redirects=True,
+            )
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            chart = data.get("chart", {})
+            if chart.get("error") is not None or not chart.get("result"):
+                continue
+
+            result     = chart["result"][0]
+            timestamps = result.get("timestamp", [])
+            if not timestamps:
+                continue
+
+            quotes   = result["indicators"]["quote"][0]
+            adj_list = result["indicators"].get("adjclose", [{}])
+            adjclose = adj_list[0].get("adjclose") if adj_list else None
+            close_data = adjclose if adjclose is not None else quotes.get("close")
+
+            dates = pd.to_datetime(timestamps, unit="s", utc=True).tz_localize(None)
+            df = pd.DataFrame({
+                "Date":   dates,
+                "Open":   quotes.get("open",   [np.nan] * len(timestamps)),
+                "High":   quotes.get("high",   [np.nan] * len(timestamps)),
+                "Low":    quotes.get("low",    [np.nan] * len(timestamps)),
+                "Close":  close_data,
+                "Volume": quotes.get("volume", [np.nan] * len(timestamps)),
+            })
+            for col in ["Open", "High", "Low", "Close"]:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
-        df = df.dropna(subset=["Close"])
-        return df
-    except Exception as e:
-        print(f"    ⚠️  Yahoo Fehler für {ticker}: {e}")
-        return None
+            df["Volume"] = pd.to_numeric(df["Volume"], errors="coerce").fillna(0).astype(int)
+            df = df.dropna(subset=["Close"])
+            df = df[df["Close"] > 0]
+            if len(df) > 0:
+                return df
+        except Exception as e:
+            print(f"    ⚠️  Yahoo Fehler für {ticker}: {e}")
+            continue
+    return None
 
 
 def download_stooq(stooq_ticker: str) -> pd.DataFrame | None:
