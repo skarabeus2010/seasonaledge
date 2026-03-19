@@ -32,6 +32,7 @@ SeasonalEdge ist eine interaktive Web-App auf Basis von Streamlit, die saisonale
 | Sector Rotation | US/EU Sektor-Heatmap, Rotation-Signale, Top/Flop Rankings |
 | KI Seasonal Score | Composite Score 1-10 (DTW + Prophet + Win-Rate + Tracking) |
 | Market Scanner | Multi-Ticker Scanner mit Rankings, Heatmap, CSV-Export |
+| TDoM Analyse | Trading Day of the Month — 3 Strategien, Ranges, Heatmap |
 
 ### Premium Dashboard
 Seasonax-Style Einzeltitel-Übersicht mit 7 Sektionen: KPIs, Saisonalkurve + KI-Score, Jahresrenditen, Monatsrenditen, Heatmap + Box-Plot, Jahres-Tabelle, Premium-Platzhalter.
@@ -71,19 +72,21 @@ py -m streamlit run seasonal_app.py
 ```
 seasonaledge/
 ├── seasonal_app.py              ← Startseite
-├── pages/                       ← 18 Streamlit-Pages
+├── pages/                       ← 19 Streamlit-Pages
 │   ├── 0–12                     ← Basis-Analysen
 │   ├── 13_Shock_Analyzer.py
 │   ├── 14_Sector_Rotation.py
 │   ├── 15_KI_Score.py
 │   ├── 16_Market_Scanner.py
 │   ├── 17_Premium_Dashboard.py
+│   ├── 18_TDOM_Analyse.py
 │   └── unsubscribe.py
 ├── shared/                      ← Wiederverwendbare Module
 │   ├── yahoo_downloader.py      ← Datenabruf (Yahoo + Stooq)
 │   ├── calculations.py          ← Saisonale Berechnungen
 │   ├── charts.py                ← Plotly Theme (apply_se_theme)
 │   ├── ki_score.py              ← KI Score Engine
+│   ├── tdom_analysis.py         ← TDoM Berechnungen
 │   ├── ai_models.py             ← DTW, Prophet, Isolation Forest, Claude
 │   ├── supabase_client.py       ← DB + Subscriber-Management
 │   ├── distribution_charts.py   ← Box-Plots, Heatmaps

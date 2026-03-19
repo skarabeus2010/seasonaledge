@@ -119,6 +119,20 @@ cycle_position = (year - 2024) % 4  # 0=Election, 1=Post, 2=Midterm, 3=Pre
 ### TDoM (Trading Day of Month)
 Forward: TDoM 1 = erster Handelstag. Backward: TDoM -1 = letzter Handelstag.
 
+## TDoM Analyse (shared/tdom_analysis.py)
+
+3 Strategien: Intraday (Open→Close), Overnight (Open→NextOpen), Close-to-Close.
+
+```python
+from shared.tdom_analysis import build_tdom_stats, calc_tdom_range_return
+
+# Statistiken pro TDoM
+stats = build_tdom_stats(df, "open_to_close", "forward", selected_months=[1,2,3])
+
+# Multi-Day Range: Kaufe TDoM 1, verkaufe TDoM -1
+range_df = calc_tdom_range_return(df, entry_tdom=1, exit_tdom=-1, entry_price="Open", exit_price="Close")
+```
+
 ## dj_data.py
 
 ```python

@@ -24,6 +24,7 @@ shared/                  ← Berechnungen, Daten, Utilities
   calculations.py        ← Kern-Berechnungen
   charts.py              ← Plotly Theme (apply_se_theme)
   ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
+  tdom_analysis.py       ← TDoM Berechnungen (3 Strategien, Ranges, Heatmap)
   ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API
   split_slider.py        ← 3-Layer Split-Slider
   supabase_client.py     ← DB-Connector + Subscriber-Management
@@ -31,13 +32,14 @@ shared/                  ← Berechnungen, Daten, Utilities
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
   strategies/            ← 65+ Strategien
-pages/                   ← 18 Streamlit-Pages (0–17)
+pages/                   ← 19 Streamlit-Pages (0–18)
   0–12                   ← Basis-Analysen (Yearly, Monthly, Weekday, ToM, etc.)
   13_Shock_Analyzer      ← Öl→DAX, VIX→S&P etc.
   14_Sector_Rotation     ← US/EU Sektor-Heatmap + Rotation
   15_KI_Score            ← Einzelticker KI Score (Radar + Details)
   16_Market_Scanner      ← Multi-Ticker Scanner mit Rankings
   17_Premium_Dashboard   ← Seasonax-Style Einzeltitel-Übersicht
+  18_TDOM_Analyse        ← Trading Day of the Month (3 Strategien)
   unsubscribe.py         ← Newsletter-Abmeldung
 docs/                    ← Ausgelagerte Dokumentation
 ```
@@ -101,7 +103,8 @@ UPPER_CASE        → Konstanten
 ## Offene TODOs
 
 - [ ] `shared/download_manager.py` fertigstellen
-- [ ] Premium Dashboard: TDOM + TDOY Sektionen freischalten
+- [x] Premium Dashboard: TDOM freigeschaltet (2026-03-19)
+- [ ] Premium Dashboard: TDOY Sektion freischalten
 - [ ] AI Chat Page (Kunde fragt: "Was geht morgen bei TSLA?")
 - [ ] Split-Slider: Ticker-Auswahl (aktuell nur ^DJI)
 - [ ] Outlier Management (Winsorize 3σ)
