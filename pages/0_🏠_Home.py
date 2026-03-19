@@ -157,10 +157,13 @@ html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif !impor
 # BREVO
 # ══════════════════════════════════════════════════════════════
 def _subscribe_email(email: str) -> tuple[bool, str]:
+    brevo_ok = False
     try:
         api_key = st.secrets["brevo_api_key"]
         list_id = int(st.secrets["brevo_list_id"])
     except (KeyError, FileNotFoundError):
+        brevo_ok = True  # Dev-Modus — kein Brevo
+        _save_to_supabase(email, brevo_synced=False)
         return True, "dev_mode"
     try:
         resp = requests.post(
@@ -169,11 +172,39 @@ def _subscribe_email(email: str) -> tuple[bool, str]:
             headers={"accept":"application/json","content-type":"application/json","api-key":api_key},
             timeout=5,
         )
-        if resp.status_code in (200,201,204): return True, ""
-        if resp.status_code == 400: return False, "Ungültige E-Mail-Adresse."
-        return False, f"Brevo-Fehler {resp.status_code}"
-    except requests.exceptions.Timeout: return False, "Timeout — bitte nochmal versuchen."
-    except Exception as e: return False, str(e)
+        if resp.status_code in (200, 201, 204):
+            brevo_ok = True
+        elif resp.status_code == 400:
+            return False, "Ungültige E-Mail-Adresse."
+        else:
+            return False, f"Brevo-Fehler {resp.status_code}"
+    except requests.exceptions.Timeout:
+        return False, "Timeout — bitte nochmal versuchen."
+    except Exception as e:
+        return False, str(e)
+
+    # Immer auch in Supabase speichern
+    _save_to_supabase(email, brevo_synced=brevo_ok)
+    return True, ""
+
+
+def _save_to_supabase(email: str, brevo_synced: bool = False):
+    """Subscriber parallel in Supabase speichern."""
+    try:
+        from shared.supabase_client import subscribe_email
+        subscribe_email(
+            email=email,
+            source="website",
+            brevo_synced=brevo_synced,
+        )
+    except Exception as e:
+        # Supabase-Fehler soll Anmeldung nicht blockieren
+        try:
+            from shared.logger import error_logger
+            error_logger.error(f"Supabase subscriber save failed: {email} — {e}")
+        except Exception:
+            pass
+
 
 def _handle_submit(email: str):
     val = email.strip()
