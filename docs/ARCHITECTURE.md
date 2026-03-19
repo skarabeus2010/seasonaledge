@@ -50,9 +50,27 @@ CREATE TABLE app_logs (
     id BIGSERIAL PRIMARY KEY, level TEXT, channel TEXT,
     message TEXT, user_email TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE subscribers (
+    id BIGSERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active','unsubscribed','bounced','complained')),
+    source TEXT DEFAULT 'website', subscribed_at TIMESTAMPTZ DEFAULT NOW(),
+    unsubscribed_at TIMESTAMPTZ, no_emails BOOLEAN DEFAULT FALSE,
+    brevo_synced BOOLEAN DEFAULT FALSE, ip_address TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 Secrets in `.streamlit/secrets.toml` → `os.environ["SUPABASE_URL"]` / `os.environ["SUPABASE_KEY"]`
+
+### Subscriber-Management (supabase_client.py)
+```python
+subscribe_email(email, source, ip_address)  # Neu anlegen / reaktivieren
+unsubscribe_email(email)                     # no_emails=True, status='unsubscribed'
+get_subscriber(email)                        # Einzelnen Subscriber holen
+get_active_subscribers()                     # Alle aktiven (für Newsletter)
+count_subscribers()                          # {"active": N, "total": N, "unsubscribed": N}
+```
 
 ## Logger (shared/logger.py)
 

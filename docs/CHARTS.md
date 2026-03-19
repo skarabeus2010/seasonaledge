@@ -2,21 +2,27 @@
 
 ## Plotly Custom Theme (shared/charts.py)
 
-### Farb-Palette
+### Farb-Palette (Highcharts dark-unica inspiriert)
 ```python
 SE_COLORS = {
-    "bg": "#080c12", "surface": "#0e1520", "grid": "#1c2636",
-    "accent": "#00e5c3", "accent2": "#ff6b35",
-    "text": "#e8edf5", "muted": "#4a5568",
-    "positive": "#00e5c3", "negative": "#ff4757",
-    "current_yr": "rgba(232,164,37,0.90)",
-    "other_yr": "rgba(200,220,255,0.40)",
+    "bg": "#080c12", "surface": "#0f1923", "surface_alt": "#131d2a",
+    "panel_border": "#1c2a3e",
+    "grid": "rgba(255,255,255,0.04)", "grid_major": "rgba(255,255,255,0.07)",
+    "axis_line": "rgba(255,255,255,0.12)", "zero_line": "rgba(77,159,255,0.25)",
+    "text_primary": "#c8d6e5", "text_muted": "#5a6e85", "text_dim": "#3a4a5e",
+    "accent": "#00d4aa", "accent_warm": "#e8a425", "accent_blue": "#4d9fff",
+    "positive": "#00d4aa", "negative": "#ff4757",
+    "current_year": "rgba(232,164,37,0.92)",
+    "individual": "rgba(160,180,210,0.18)",
 }
 ```
 
-### apply_se_theme()
+### apply_se_theme() + Varianten
 ```python
-fig = apply_se_theme(fig, title="SPY · Saisonal 1993–2025", height=420)
+fig = apply_se_theme(fig, title="SPY · Saisonal", height=480, show_watermark=True)
+fig = apply_se_heatmap_theme(fig, title="Heatmap", height=420)
+fig = apply_se_box_theme(fig, title="Box-Plot", height=420)
+line = se_line_style("#00d4aa", width=2, dash="solid", spline=True)
 st.plotly_chart(fig, use_container_width=True)
 ```
 

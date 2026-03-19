@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 9.0 | 2026-03-19 | Details → `docs/`
+> Version 9.1 | 2026-03-19 | Details → `docs/`
 
 ## Projekt
 
@@ -10,7 +10,7 @@ Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe.
 ## Entwicklung
 
 ```
-Pfad:   C:\Dev\Claude\Seasonaledge\
+Pfad:   C:\Dev\Seasonaledge\
 Start:  py -m streamlit run seasonal_app.py
 Python: PowerShell → immer `py -m` (nicht `python`)
 ```
@@ -23,11 +23,22 @@ shared/                  ← Berechnungen, Daten, Utilities
   yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback (einziger Cache!)
   calculations.py        ← Kern-Berechnungen
   charts.py              ← Plotly Theme (apply_se_theme)
+  ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
+  ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API
   split_slider.py        ← 3-Layer Split-Slider
-  supabase_client.py     ← DB-Connector
+  supabase_client.py     ← DB-Connector + Subscriber-Management
   logger.py              ← 3 Log-Kanäle (app/error/access)
+  shock_analysis.py      ← Shock Analyzer (Trigger→Target)
+  sector_rotation.py     ← Sektor-Rotation Analyse
   strategies/            ← 65+ Strategien
-pages/                   ← 13 Streamlit-Pages (0–12)
+pages/                   ← 18 Streamlit-Pages (0–17)
+  0–12                   ← Basis-Analysen (Yearly, Monthly, Weekday, ToM, etc.)
+  13_Shock_Analyzer      ← Öl→DAX, VIX→S&P etc.
+  14_Sector_Rotation     ← US/EU Sektor-Heatmap + Rotation
+  15_KI_Score            ← Einzelticker KI Score (Radar + Details)
+  16_Market_Scanner      ← Multi-Ticker Scanner mit Rankings
+  17_Premium_Dashboard   ← Seasonax-Style Einzeltitel-Übersicht
+  unsubscribe.py         ← Newsletter-Abmeldung
 docs/                    ← Ausgelagerte Dokumentation
 ```
 
@@ -90,17 +101,19 @@ UPPER_CASE        → Konstanten
 ## Offene TODOs
 
 - [ ] `shared/download_manager.py` fertigstellen
-- [ ] `use_container_width` → `width='stretch'`
+- [ ] Premium Dashboard: TDOM + TDOY Sektionen freischalten
+- [ ] AI Chat Page (Kunde fragt: "Was geht morgen bei TSLA?")
 - [ ] Split-Slider: Ticker-Auswahl (aktuell nur ^DJI)
-- [ ] TDOM Backtesting Page
 - [ ] Outlier Management (Winsorize 3σ)
+- [ ] Fehlende 42 Ticker nachladen (ETFs, Aktien, Krypto)
 - [ ] Streamlit Cloud Deployment
 - [ ] Stripe Freemium/Abo-Integration
+- [ ] Supabase User-Auth
 - [ ] Domain: seasonaledge.app
 
 ## Docs (bei Bedarf lesen)
 
 - `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Download-Manager, Logger
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
-- `docs/AI_MODELS.md` — DTW, Prophet, Isolation Forest, Claude API
+- `docs/AI_MODELS.md` — DTW, Prophet, Isolation Forest, Claude API, KI-Score Engine
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad

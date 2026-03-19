@@ -8,6 +8,7 @@
 | Prophet | Saisonale Prognose 60 Tage | Phase 1 |
 | Isolation Forest | Ausreißer-Jahre erkennen | Phase 1 |
 | Claude API | Natural Language Kommentar | Phase 1 |
+| **KI Seasonal Score** | **Composite 0-10 aus 4 Sub-Scores** | **Phase 1 ✅** |
 | LSTM | Komplexe Mustererkennung | Phase 2 |
 | XGBoost | Multi-Feature Renditeprognose | Phase 2 |
 | Transformer | Attention-basierte Analyse | Phase 3 |
@@ -62,3 +63,33 @@ def generate_seasonal_commentary(ticker, month, avg_return, win_rate, similar_ye
     )
     return msg.content[0].text
 ```
+
+## KI Seasonal Score (shared/ki_score.py)
+
+Composite Score 0-10 aus 4 Sub-Scores (je 0-2.5 Punkte):
+
+| Sub-Score | Logik | Gewicht |
+|-----------|-------|---------|
+| DTW Ähnlichkeit | Top-5 ähnliche Jahre → Anteil positiver | 2.5 |
+| Prophet Prognose | 30-Tage Forecast Richtung | 2.5 |
+| Win-Rate | Historische Win-Rate aktueller Monat | 2.5 |
+| Tracking-Qualität | Korrelation aktuelles Jahr vs. Ø | 2.5 |
+
+**Signal:** ≥6.5 Bullish · 3.5–6.5 Neutral · ≤3.5 Bearish
+
+```python
+from shared.ki_score import calculate_ki_score, scan_tickers
+
+# Einzelticker (mit Prophet)
+result = calculate_ki_score(ticker, df, year_data, avg, std, quick_mode=False)
+# → {"score": 7.2, "signal": "Bullish", "sub_scores": {...}}
+
+# Multi-Ticker Scanner (ohne Prophet, ~1-2s/Ticker)
+results = scan_tickers(tickers, years_back=20, quick_mode=True)
+# → [{"ticker": "SPY", "score": 7.2, ...}, ...]
+```
+
+### Pages
+- `pages/15_🧠_KI_Score.py` — Einzelticker: Gauge + Radar + 4 Detail-Expander
+- `pages/16_🔍_Market_Scanner.py` — Multi-Scanner: Top/Flop + Tabelle + Heatmap
+- `pages/17_⭐_Premium_Dashboard.py` — Seasonax-Style Komplettansicht
