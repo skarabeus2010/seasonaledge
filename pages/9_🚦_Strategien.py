@@ -27,6 +27,8 @@ from shared.yahoo_downloader import download_data, preprocess
 from shared.constants import DEFAULT_TICKER
 from shared.strategies import januar_trifecta, kaeppel, STRATEGIES
 from shared.strategies.definitions import (
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
     KATEGORIEN, STAERKEN,
     get_strategies_by_category,
     get_strategies_by_strength,
@@ -253,21 +255,7 @@ with tab1:
                 ),
             ))
 
-        fig.update_layout(
-            title=dict(
-                text=f"{ticker} — Jahresrendite (Feb–Dez) nach Trifecta-Signal",
-                font=dict(size=15),
-            ),
-            xaxis_title="Jahr",
-            yaxis_title="Rendite Feb–Dez (%)",
-            barmode="overlay",
-            legend=dict(orientation="h", y=1.08, x=0),
-            height=420,
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            yaxis=dict(gridcolor="rgba(128,128,128,0.15)", zeroline=True,
-                       zerolinecolor="rgba(128,128,128,0.4)"),
-        )
+        fig = apply_se_theme(fig, title=f"{ticker} — Jahresrendite (Feb–Dez) nach Trifecta-Signal", height=420)
         fig.add_hline(y=0, line_color="rgba(128,128,128,0.4)")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -504,21 +492,7 @@ with tab2:
                     xanchor="left",
                 )
 
-        fig2.update_layout(
-            title=dict(
-                text=f"{ticker} — Jahresrendite nach Präsidentschaftszyklus-Jahr",
-                font=dict(size=15),
-            ),
-            xaxis_title="Jahr",
-            yaxis_title="Jahresrendite (%)",
-            barmode="overlay",
-            legend=dict(orientation="h", y=1.08),
-            height=420,
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            yaxis=dict(gridcolor="rgba(128,128,128,0.15)", zeroline=True,
-                       zerolinecolor="rgba(128,128,128,0.4)"),
-        )
+        fig2 = apply_se_theme(fig2, title=f"{ticker} — Jahresrendite nach Präsidentschaftszyklus-Jahr", height=420)
         fig2.add_hline(y=0, line_color="rgba(128,128,128,0.4)")
         st.plotly_chart(fig2, use_container_width=True)
 
@@ -650,13 +624,5 @@ with tab3:
         textposition="outside",
         hovertemplate="<b>%{x}</b><br>%{y} Strategien<extra></extra>",
     ))
-    fig3.update_layout(
-        title=dict(text="Anzahl Strategien pro Kategorie", font=dict(size=14)),
-        xaxis_tickangle=-30,
-        yaxis=dict(gridcolor="rgba(128,128,128,0.15)"),
-        height=350,
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        margin=dict(t=50, b=80),
-    )
+    fig3 = apply_se_theme(fig3, title="Anzahl Strategien pro Kategorie", height=350)
     st.plotly_chart(fig3, use_container_width=True)

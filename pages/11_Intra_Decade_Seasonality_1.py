@@ -26,6 +26,8 @@ from shared.calculations_decade import (
     get_decade_digit, DECADE_COLORS, DECADE_LABELS,
 )
 from shared.distribution_charts import (
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
     build_box_plot, build_decade_monthly_heatmap, build_context_panel_data,
 )
 
@@ -199,32 +201,7 @@ for digit in range(10):
 fig.add_hline(y=0, line_dash="dash",
               line_color="rgba(255,255,255,0.25)", line_width=1)
 
-fig.update_layout(
-    template=TEMPLATE,
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    height=500,
-    hovermode="x unified",
-    legend=dict(
-        orientation="h", y=-0.18, x=0,
-        font=dict(size=11),
-    ),
-    margin=dict(t=30, b=80, l=60, r=30),
-    xaxis=dict(
-        title="Monat",
-        tickvals=MONTH_TICKS,
-        ticktext=MONTH_LABELS,
-        gridcolor="rgba(255,255,255,0.07)",
-    ),
-    yaxis=dict(
-        title="Kum. Log-Rendite (%)",
-        tickformat="+.1f",
-        ticksuffix="%",
-        gridcolor="rgba(255,255,255,0.07)",
-        zeroline=True,
-        zerolinecolor="rgba(255,255,255,0.2)",
-    ),
-)
+fig = apply_se_theme(fig, title="", height=500)
 
 st.plotly_chart(fig, use_container_width=True)
 
@@ -284,25 +261,7 @@ fig2 = go.Figure(go.Bar(
 fig2.add_hline(y=0, line_dash="dash",
                line_color="rgba(255,255,255,0.25)", line_width=1)
 
-fig2.update_layout(
-    template=TEMPLATE,
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    height=380,
-    margin=dict(t=20, b=40, l=60, r=30),
-    xaxis=dict(
-        title="Dekaden-Endziffer",
-        gridcolor="rgba(255,255,255,0.07)",
-    ),
-    yaxis=dict(
-        title="Ø Jahresrendite (%)",
-        tickformat="+.1f",
-        ticksuffix="%",
-        gridcolor="rgba(255,255,255,0.07)",
-        zeroline=True,
-        zerolinecolor="rgba(255,255,255,0.2)",
-    ),
-)
+fig2 = apply_se_theme(fig2, title="", height=380)
 
 st.plotly_chart(fig2, use_container_width=True)
 

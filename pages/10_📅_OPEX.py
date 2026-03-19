@@ -18,6 +18,8 @@ import calendar
 from shared.yahoo_downloader import download_data, preprocess
 from shared.symbols import SYMBOLS, get_dropdown_label, KATEGORIEN
 from shared.nyse_holidays import get_all_opex_dates as _get_opex, get_upcoming_opex, is_nyse_holiday
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
 
 # ── Seiten-Konfiguration ────────────────────────────────────────────────────────
 st.set_page_config(
@@ -239,7 +241,6 @@ FARBE_POS     = "#26a69a"   # Grün
 FARBE_NEG     = "#ef5350"   # Rot
 FARBE_TRIPLE  = "#ffa726"   # Orange
 FARBE_OPEX    = "#42a5f5"   # Blau
-TEMPLATE      = "plotly_dark"
 
 def bar_color(values):
     return [FARBE_POS if v >= 0 else FARBE_NEG for v in values]
@@ -362,12 +363,7 @@ if show_rendite:
         )
         fig.add_hline(y=50, line_dash="dot", line_color="gray", row=2, col=1)
 
-        fig.update_layout(
-            template=TEMPLATE,
-            height=550,
-            showlegend=False,
-            hovermode="x unified",
-        )
+        fig = apply_se_theme(fig, title="", height=550, show_legend=False)
         fig.add_annotation(
             x=days_before, y=max(means) * 1.3 if max(means) > 0 else min(means) * 1.3,
             text="OPEX", showarrow=False, font=dict(color="white", size=11),
@@ -458,14 +454,9 @@ if show_triple:
                       line_width=1, opacity=0.4)
         fig.add_annotation(x=days_before, y=0, text="OPEX",
                            showarrow=False, font=dict(color="white", size=10))
-        fig.update_layout(
-            template=TEMPLATE,
-            height=450,
-            barmode="group",
-            hovermode="x unified",
-            yaxis_title="Ø Rendite (%)",
-            title=f"Standard OPEX vs. Triple Witching · {ticker} · {start_year}–{end_year}",
-        )
+        fig = apply_se_theme(fig, title="Ø Rendite (%)", height=450)
+
+        fig.update_yaxes(title="Ø Rendite (%)")
         st.plotly_chart(fig, use_container_width=True)
 
         # Nach Monat aufschlüsseln (nur Triple Witching Monate)
@@ -572,14 +563,7 @@ if show_kalender:
         fig.add_vline(x=today.strftime("%Y-%m-%d"), line_dash="dash", line_color="white",
                       line_width=1, opacity=0.6)
 
-        fig.update_layout(
-            template=TEMPLATE,
-            height=250,
-            yaxis=dict(visible=False, range=[0.5, 2]),
-            xaxis_title="",
-            showlegend=True,
-            legend=dict(orientation="h", y=-0.3),
-        )
+        fig = apply_se_theme(fig, title="", height=250)
         st.plotly_chart(fig, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════════
@@ -680,12 +664,7 @@ if show_backtest:
                     hovertemplate="<b>%{x|%d.%m.%Y}</b><br>Rendite: %{y:+.3f}%<extra></extra>",
                 ), row=2, col=1)
 
-                fig.update_layout(
-                    template=TEMPLATE,
-                    height=550,
-                    showlegend=False,
-                    hovermode="x unified",
-                )
+                fig = apply_se_theme(fig, title="", height=550, show_legend=False)
                 fig.update_yaxes(title_text="Kum. Rendite (%)", row=1, col=1)
                 fig.update_yaxes(title_text="Rendite (%)", row=2, col=1)
                 st.plotly_chart(fig, use_container_width=True)
@@ -705,13 +684,11 @@ if show_backtest:
                                line_color=FARBE_POS, line_width=2,
                                annotation_text=f"Ø {avg_return:+.3f}%",
                                annotation_position="top right")
-                fig2.update_layout(
-                    template=TEMPLATE,
-                    height=300,
-                    xaxis_title="Rendite (%)",
-                    yaxis_title="Häufigkeit",
-                    showlegend=False,
-                )
+                fig2 = apply_se_theme(fig2, title="Rendite (%)", height=300, show_legend=False)
+
+                fig2.update_yaxes(title="Häufigkeit")
+
+                fig2.update_xaxes(title="Rendite (%)")
                 st.plotly_chart(fig2, use_container_width=True)
 
                 # Detailtabelle

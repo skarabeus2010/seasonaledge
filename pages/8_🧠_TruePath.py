@@ -28,6 +28,8 @@ from scipy.spatial.distance import euclidean
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, COLOR_SEASONAL_AVG, COLOR_CURRENT_YEAR
 from shared.data import download_data, preprocess
 from shared.calculations import (
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
     build_year_data, calculate_seasonal_average, 
     interpolate_to_365, normalize_year,
     get_presidential_cycle_year
@@ -278,20 +280,7 @@ def build_truepath_chart(year_data, avg, truepath, matches, ticker, current_year
     fig.add_vline(x=today_doy, line_dash="solid",
         line_color="rgba(255,255,255,0.5)", line_width=1)
     
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=550, margin=dict(t=50, b=50, l=60, r=30),
-        title=dict(text=f"{ticker} — TruePath (KI-basierte Saisonalität)",
-                   font=dict(size=18, color="#e0e0e0")),
-        xaxis=dict(tickmode="array", tickvals=month_starts, ticktext=month_names,
-                   gridcolor="rgba(255,255,255,0.06)", range=[1, 365]),
-        yaxis=dict(title="Normalisiert (Start = 100)", gridcolor="rgba(255,255,255,0.06)",
-                   tickformat=".1f"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    font=dict(size=10)),
-        hovermode="x unified"
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — TruePath (KI-basierte Saisonalität)", height=550)
     
     return fig
 

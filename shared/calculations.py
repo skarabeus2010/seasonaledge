@@ -466,29 +466,13 @@ def build_tom_chart(tom_result, ticker, days_before, days_after, selected_months
     else:
         month_str = f"{len(selected_months)} Monate"
     
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    from shared.charts import apply_se_theme
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Turn of the Month (t-{days_before} bis t+{days_after}) · {month_str}",
         height=420,
-        margin=dict(t=50, r=20, b=50, l=60),
-        title=dict(
-            text=f"{ticker} — Turn of the Month (t-{days_before} bis t+{days_after}) · {month_str}",
-            font=dict(size=16, color="#e0e0e0")
-        ),
-        xaxis=dict(
-            tickmode="array", tickvals=x_indices, ticktext=labels,
-            gridcolor="rgba(255,255,255,0.06)",
-            title="Handelstage relativ zum Monatswechsel"
-        ),
-        yaxis=dict(
-            title="Rendite relativ zu t0 (%)",
-            gridcolor="rgba(255,255,255,0.06)",
-            tickformat="+.2f", ticksuffix="%",
-            zeroline=True, zerolinecolor="rgba(255,255,255,0.3)"
-        ),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
-        hovermode="x unified"
     )
+    fig.update_xaxes(tickmode="array", tickvals=x_indices, ticktext=labels, title="Handelstage relativ zum Monatswechsel")
+    fig.update_yaxes(title="Rendite relativ zu t0 (%)", tickformat="+.2f", ticksuffix="%")
     
     return fig

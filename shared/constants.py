@@ -8,25 +8,64 @@ Farben, Labels, Presets und statische Daten.
 DEFAULT_TICKER = "AAPL"
 DEFAULT_YEARS = 20
 
-# ── Farben ───────────────────────────────────────────────────
-COLOR_SEASONAL_AVG = "#00CED1"
-COLOR_INDIVIDUAL = "rgba(150,150,150,0.25)"
-COLOR_CONFIDENCE = "rgba(0,206,209,0.15)"
-COLOR_CURRENT_YEAR = "#FFD700"
-COLOR_PRESSURE = "#FF69B4"
-COLOR_WAR = "#FF4500"
+# ── SeasonalEdge Theme Palette (Highcharts dark-unica inspired) ──
+SE_COLORS = {
+    # Backgrounds
+    "bg":            "#080c12",
+    "surface":       "#0f1923",
+    "surface_alt":   "#131d2a",
+    "panel_border":  "#1c2a3e",
+
+    # Grid & Axes
+    "grid":          "rgba(255,255,255,0.04)",
+    "grid_major":    "rgba(255,255,255,0.07)",
+    "axis_line":     "rgba(255,255,255,0.12)",
+    "zero_line":     "rgba(77,159,255,0.25)",
+
+    # Text
+    "text_primary":  "#c8d6e5",
+    "text_muted":    "#5a6e85",
+    "text_dim":      "#3a4a5e",
+
+    # Accents
+    "accent":        "#00d4aa",
+    "accent_warm":   "#e8a425",
+    "accent_blue":   "#4d9fff",
+
+    # Semantic
+    "positive":      "#00d4aa",
+    "negative":      "#ff4757",
+    "neutral":       "rgba(160,180,210,0.35)",
+
+    # Traces
+    "current_year":  "rgba(232,164,37,0.92)",
+    "individual":    "rgba(160,180,210,0.18)",
+    "confidence":    "rgba(0,212,170,0.08)",
+    "avg_line":      "#00d4aa",
+
+    # Watermark
+    "watermark":     "rgba(255,255,255,0.03)",
+}
+
+# ── Farben (Backward-Kompatibilität) ────────────────────────
+COLOR_SEASONAL_AVG = SE_COLORS["avg_line"]
+COLOR_INDIVIDUAL = SE_COLORS["individual"]
+COLOR_CONFIDENCE = SE_COLORS["confidence"]
+COLOR_CURRENT_YEAR = SE_COLORS["current_year"]
+COLOR_PRESSURE = "#e056a0"
+COLOR_WAR = "#e8553a"
 
 CYCLE_COLORS = {
-    "Year 1 (Post-Election)": "#FF6B6B",
-    "Year 2 (Midterm Election)": "#FFA07A",
-    "Year 3 (Pre-Election)": "#4ECDC4",
-    "Year 4 (Election Year)": "#45B7D1"
+    "Year 1 (Post-Election)": "#e8553a",
+    "Year 2 (Midterm Election)": "#e8a425",
+    "Year 3 (Pre-Election)": "#00d4aa",
+    "Year 4 (Election Year)": "#4d9fff"
 }
 
 DECADE_COLORS = {
-    0: "#FF6B6B", 1: "#FF8E72", 2: "#FFA07A", 3: "#FFD93D",
-    4: "#6BCB77", 5: "#4ECDC4", 6: "#45B7D1", 7: "#4682C8",
-    8: "#9664B4", 9: "#C875C4"
+    0: "#e8553a", 1: "#e87d3a", 2: "#e8a425", 3: "#d4c44a",
+    4: "#6bcb77", 5: "#00d4aa", 6: "#4d9fff", 7: "#5b7fc7",
+    8: "#8b6bb5", 9: "#c06bb5"
 }
 
 DECADE_LABELS = {

@@ -7,6 +7,8 @@ Box-Plots, Heatmaps, Kontext-Panels für Rendite-Verteilungen.
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from shared.constants import SE_COLORS
+from shared.charts import apply_se_theme, apply_se_heatmap_theme, apply_se_box_theme
 
 
 def _hex_to_rgba(hex_color: str, alpha: float = 1.0) -> str:
@@ -71,26 +73,11 @@ def build_box_plot(
         ))
 
     fig.add_hline(y=0, line_dash="dash",
-                  line_color="rgba(255,255,255,0.25)", line_width=1)
+                  line_color=SE_COLORS["zero_line"], line_width=1)
 
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=420,
-        title=dict(text=title, font=dict(size=14)),
-        xaxis=dict(title=x_title, gridcolor="rgba(255,255,255,0.07)"),
-        yaxis=dict(
-            title=y_title,
-            tickformat="+.1f",
-            ticksuffix="%",
-            gridcolor="rgba(255,255,255,0.07)",
-            zeroline=True,
-            zerolinecolor="rgba(255,255,255,0.2)",
-        ),
-        margin=dict(t=40, b=40, l=60, r=30),
-        showlegend=False,
-    )
+    fig = apply_se_box_theme(fig, title=title, height=420)
+    fig.update_xaxes(title=x_title)
+    fig.update_yaxes(title=y_title, tickformat="+.1f", ticksuffix="%")
 
     return fig
 
@@ -140,34 +127,29 @@ def build_decade_monthly_heatmap(
         x=MONTH_LABELS,
         y=y_labels,
         colorscale=[
-            [0.0, "#E74C3C"],
-            [0.5, "#1a1a2e"],
-            [1.0, "#2ECC71"],
+            [0.0, SE_COLORS["negative"]],
+            [0.5, SE_COLORS["surface"]],
+            [1.0, SE_COLORS["positive"]],
         ],
         zmid=0,
         text=np.round(z, 2),
         texttemplate="%{text:+.1f}%",
-        textfont=dict(size=10),
+        textfont=dict(size=10, color=SE_COLORS["text_muted"]),
         hovertemplate=(
             "<b>%{y} · %{x}</b><br>"
             "Ø Rendite: %{z:+.2f}%<extra></extra>"
         ),
-        colorbar=dict(title="Ø %", ticksuffix="%"),
+        colorbar=dict(
+            title="Ø %", ticksuffix="%",
+            tickfont=dict(color=SE_COLORS["text_muted"]),
+            titlefont=dict(color=SE_COLORS["text_muted"]),
+        ),
     ))
 
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=420,
-        title=dict(
-            text=f"{ticker} — Ø Monatsrendite nach Dekaden-Endziffer" if ticker else "Ø Monatsrendite nach Dekade",
-            font=dict(size=14),
-        ),
-        xaxis=dict(title="Monat", side="bottom"),
-        yaxis=dict(title="Dekaden-Endziffer", autorange="reversed"),
-        margin=dict(t=50, b=40, l=60, r=30),
-    )
+    heatmap_title = f"{ticker} — Ø Monatsrendite nach Dekaden-Endziffer" if ticker else "Ø Monatsrendite nach Dekade"
+    fig = apply_se_heatmap_theme(fig, title=heatmap_title, height=420)
+    fig.update_xaxes(title="Monat", side="bottom")
+    fig.update_yaxes(title="Dekaden-Endziffer", autorange="reversed")
 
     return fig
 

@@ -23,6 +23,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from shared.yahoo_downloader import download_data
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
 
 # ── Farben ────────────────────────────────────────────────────────────────────
 COL_OVERNIGHT = "#60a5fa"   # Blau  — Nacht / Gap
@@ -148,16 +150,7 @@ def build_monthly_chart(df: pd.DataFrame, ticker: str) -> go.Figure:
             hovertemplate=f"<b>{label}</b><br>Win-Rate: %{{y:.1f}}%<extra></extra>",
         ), row=2, col=1)
 
-    fig.update_layout(
-        template="plotly_dark",
-        height=560,
-        title=dict(text=f"{ticker} — Overnight vs. Intraday nach Monat", font=dict(size=16, color="white")),
-        barmode="overlay",
-        legend=dict(orientation="h", y=1.07, x=0.5, xanchor="center"),
-        hovermode="x unified",
-        plot_bgcolor="#0e1117",
-        paper_bgcolor="#0e1117",
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — Overnight vs. Intraday nach Monat", height=560)
     fig.update_xaxes(
         tickvals=list(range(12)),
         ticktext=MONTH_LABELS,
@@ -226,16 +219,7 @@ def build_weekday_chart(df: pd.DataFrame, ticker: str) -> go.Figure:
             hovertemplate=f"<b>{label}</b><br>Win-Rate: %{{y:.1f}}%<extra></extra>",
         ), row=2, col=1)
 
-    fig.update_layout(
-        template="plotly_dark",
-        height=520,
-        title=dict(text=f"{ticker} — Overnight vs. Intraday nach Wochentag", font=dict(size=16, color="white")),
-        barmode="overlay",
-        legend=dict(orientation="h", y=1.07, x=0.5, xanchor="center"),
-        hovermode="x unified",
-        plot_bgcolor="#0e1117",
-        paper_bgcolor="#0e1117",
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — Overnight vs. Intraday nach Wochentag", height=520)
     fig.update_xaxes(tickvals=list(range(5)), ticktext=WEEKDAY_LABELS, row=1, col=1)
     fig.update_xaxes(tickvals=list(range(5)), ticktext=WEEKDAY_LABELS, row=2, col=1)
     fig.add_hline(y=0,  line_dash="dash", line_color="gray", row=1, col=1)
@@ -273,17 +257,7 @@ def build_cumulative_chart(df: pd.DataFrame, ticker: str) -> go.Figure:
         ))
 
     fig.add_hline(y=0, line_dash="dash", line_color="gray")
-    fig.update_layout(
-        template="plotly_dark",
-        height=420,
-        title=dict(text=f"{ticker} — Kumulierter Jahresverlauf: Overnight vs. Intraday", font=dict(size=16, color="white")),
-        legend=dict(orientation="h", y=1.07, x=0.5, xanchor="center"),
-        hovermode="x unified",
-        plot_bgcolor="#0e1117",
-        paper_bgcolor="#0e1117",
-        xaxis_title="Handelstag des Jahres (DOY)",
-        yaxis_title="Kumulierter Return (%)",
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — Kumulierter Jahresverlauf: Overnight vs. Intraday", height=420)
     return fig
 
 
@@ -334,13 +308,7 @@ def build_heatmap(df: pd.DataFrame, col: str, title: str) -> go.Figure:
         hovertemplate="<b>%{y} / %{x}</b><br>Ø: %{z:.3f}%<extra></extra>",
         colorbar=dict(title="Ø %"),
     ))
-    fig.update_layout(
-        template="plotly_dark",
-        height=280,
-        title=dict(text=title, font=dict(size=14, color="white")),
-        plot_bgcolor="#0e1117",
-        paper_bgcolor="#0e1117",
-    )
+    fig = apply_se_theme(fig, title="", height=280)
     return fig
 
 

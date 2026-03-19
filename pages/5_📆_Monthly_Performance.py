@@ -26,6 +26,8 @@ from datetime import datetime
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS
 from shared.data import download_data, preprocess
 from shared.calculations import get_presidential_cycle_year
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
 
 st.set_page_config(page_title="SeasonalEdge - Monthly", page_icon="📆", layout="wide")
 
@@ -159,16 +161,7 @@ def build_detrend_chart(tdom_stats, ticker, month_name):
     
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
     
-    fig.update_layout(
-        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=300, margin=dict(t=50, b=40, l=60, r=30),
-        title=dict(text=f"{ticker} — {month_name} Detrend-Indikator (saisonaler Druck)",
-                   font=dict(size=14, color="#e0e0e0")),
-        xaxis=dict(title="TDOM", gridcolor="rgba(255,255,255,0.06)", dtick=1),
-        yaxis=dict(title="Abweichung vom Trend (%)", gridcolor="rgba(255,255,255,0.06)",
-                   tickformat="+.2f", ticksuffix="%"),
-        showlegend=False, hovermode="x unified"
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Detrend-Indikator (saisonaler Druck)", height=300, show_legend=False)
     return fig
 
 def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
@@ -197,14 +190,7 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             bgcolor="rgba(30,30,30,0.85)", bordercolor="rgba(255,255,255,0.3)", borderwidth=1,
             font=dict(size=9, color="#e0e0e0"), yshift=-15)
     n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
-    fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=400, margin=dict(t=50, b=40, l=60, r=30),
-        title=dict(text=f"{ticker} — {month_name} Intra-Monat Verlauf ({n_years} Jahre)", font=dict(size=16, color="#e0e0e0")),
-        xaxis=dict(title="Trading Day of Month (TDOM)", gridcolor="rgba(255,255,255,0.06)", dtick=1),
-        yaxis=dict(title="Kumulative Rendite (%)", gridcolor="rgba(255,255,255,0.06)",
-            tickformat="+.2f", ticksuffix="%", zeroline=True, zerolinecolor="rgba(255,255,255,0.3)"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
-        hovermode="x unified")
+    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Intra-Monat Verlauf ({n_years} Jahre)", height=400)
     return fig
 
 def build_weekly_bars(weekly_stats, ticker, month_name):
@@ -219,11 +205,7 @@ def build_weekly_bars(weekly_stats, ticker, month_name):
         textposition="outside", textfont=dict(size=10),
         hovertemplate="<b>%{x}</b><br>Ø %{y:+.3f}%<extra></extra>"))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
-    fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=340, margin=dict(t=50, b=40, l=60, r=30),
-        title=dict(text=f"{ticker} — {month_name} Wochen-Performance", font=dict(size=16, color="#e0e0e0")),
-        yaxis=dict(tickformat="+.2f", ticksuffix="%", gridcolor="rgba(255,255,255,0.06)"
-), showlegend=False)
+    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Wochen-Performance", height=340, show_legend=False)
     return fig
 
 def build_monthly_bars(monthly_stats, ticker):
@@ -244,10 +226,7 @@ def build_monthly_bars(monthly_stats, ticker):
     fig.add_annotation(x=MONTH_NAMES_DE[current_month - 1], y=bar_val,
         text="▼ aktuell", showarrow=False, font=dict(size=10, color="#FFD700"),
         yshift=45 if bar_val >= 0 else -45)
-    fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=400, margin=dict(t=50, b=40, l=60, r=30),
-        title=dict(text=f"{ticker} — Monats-Performance (Jahresübersicht)", font=dict(size=16, color="#e0e0e0")),
-        yaxis=dict(tickformat="+.2f", ticksuffix="%", gridcolor="rgba(255,255,255,0.06)"), showlegend=False)
+    fig = apply_se_theme(fig, title=f"{ticker} — Monats-Performance (Jahresübersicht)", height=400, show_legend=False)
     return fig
 
 def build_two_week_bars(tw_stats, ticker, split_day):
@@ -275,12 +254,7 @@ def build_two_week_bars(tw_stats, ticker, split_day):
         idx = labels.index(current_label)
         fig.add_annotation(x=current_label, y=avgs[idx], text="▼ aktuell", showarrow=False,
             font=dict(size=10, color="#FFD700"), yshift=30 if avgs[idx] >= 0 else -30)
-    fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=450, margin=dict(t=60, b=80, l=60, r=30),
-        title=dict(text=f"{ticker} — Two-Week Performance (TDOM 1–{split_day} vs. {split_day+1}+), sortiert",
-                   font=dict(size=16, color="#e0e0e0")),
-        xaxis=dict(tickangle=-60, tickfont=dict(size=11), gridcolor="rgba(255,255,255,0.06)"),
-        yaxis=dict(tickformat="+.3f", ticksuffix="%", gridcolor="rgba(255,255,255,0.06)"), showlegend=False)
+    fig = apply_se_theme(fig, title=f"{ticker} — Two-Week Performance (TDOM 1–{split_day} vs. {split_day+1}+), sortiert", height=450, show_legend=False)
     return fig
 
 # ── MAIN ──────────────────────────────────────────────────

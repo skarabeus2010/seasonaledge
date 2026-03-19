@@ -24,6 +24,8 @@ from shared.yahoo_downloader import download_data, preprocess
 from shared.symbols import SYMBOLS, get_dropdown_label
 from shared.exchange_holidays import get_exchange_for_ticker
 from shared.nyse_holidays import (
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
     _good_friday,
     _nth_weekday,
     _easter_monday,
@@ -123,7 +125,6 @@ FARBE_POS   = "#26a69a"
 FARBE_NEG   = "#ef5350"
 FARBE_HAUPT = "#42a5f5"
 FARBE_GOLD  = "#ffa726"
-TEMPLATE    = "plotly_dark"
 FARBEN      = ["#42a5f5","#26a69a","#ffa726","#ef5350",
                "#ab47bc","#66bb6a","#26c6da","#ff7043","#ec407a","#8d6e63"]
 
@@ -357,14 +358,10 @@ with tab1:
         font=dict(color="rgba(255,255,255,0.5)", size=11),
         yshift=8,
     )
-    fig.update_layout(
-        template=TEMPLATE, height=460,
-        hovermode="x unified",
-        yaxis_title="Kum. Rendite (%)",
-        xaxis_title="Handelstag relativ zum Feiertag",
-        legend=dict(orientation="h", yanchor="bottom", y=-0.35, x=0),
-        margin=dict(b=100),
-    )
+    fig = apply_se_theme(fig, height=460)
+    fig.update_yaxes(title="Kum. Rendite (%)")
+    fig.update_xaxes(title="Handelstag relativ zum Feiertag")
+    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.35, x=0), margin=dict(b=100))
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
@@ -416,10 +413,8 @@ with tab2:
             hovertemplate="<b>%{x}</b><br>Rendite: %{y:.3f}%<extra></extra>",
         ))
         fig2.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
-        fig2.update_layout(
-            template=TEMPLATE, height=400,
-            yaxis_title="Rendite (%)", showlegend=False,
-        )
+        fig2 = apply_se_theme(fig2, height=400, show_legend=False)
+        fig2.update_yaxes(title="Rendite (%)")
         st.plotly_chart(fig2, use_container_width=True)
         st.dataframe(sdf.drop(columns=["_mean"]).reset_index(drop=True),
                      use_container_width=True, hide_index=True)
@@ -508,12 +503,9 @@ with tab3:
             fill="tozeroy", fillcolor="rgba(66,165,245,0.1)",
         ))
         fig3.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
-        fig3.update_layout(
-            template=TEMPLATE, height=280,
-            title="Equity-Kurve (Start = 100)",
-            yaxis_title="Equity", xaxis_title="Trade Nr.",
-            showlegend=False,
-        )
+        fig3 = apply_se_theme(fig3, title="Equity-Kurve (Start = 100)", height=280, show_legend=False)
+        fig3.update_yaxes(title="Equity")
+        fig3.update_xaxes(title="Trade Nr.")
         st.plotly_chart(fig3, use_container_width=True)
 
         # Jahres-Balken
@@ -524,11 +516,8 @@ with tab3:
             textposition="outside",
         ))
         fig4.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
-        fig4.update_layout(
-            template=TEMPLATE, height=300,
-            title="Jahres-Rendite (alle Feiertage kombiniert)",
-            yaxis_title="Summe Renditen (%)", showlegend=False,
-        )
+        fig4 = apply_se_theme(fig4, title="Jahres-Rendite (alle Feiertage kombiniert)", height=300, show_legend=False)
+        fig4.update_yaxes(title="Summe Renditen (%)")
         st.plotly_chart(fig4, use_container_width=True)
 
         with st.expander("Alle Trades anzeigen"):
@@ -590,8 +579,8 @@ with tab4:
                                annotation_text=f"Ø {t0_vals.mean():+.3f}%",
                                annotation_position="top right",
                                annotation_font_color=FARBE_GOLD)
+                fig5 = apply_se_theme(fig5, height=280, show_legend=False)
                 fig5.update_layout(
-                    template=TEMPLATE, height=280,
                     title=f"Verteilung t=0 | {selected_detail}",
                     xaxis_title="Rendite (%)", yaxis_title="Haeufigkeit",
                     showlegend=False,
@@ -611,8 +600,8 @@ with tab4:
                                annotation_text=f"Ø {end_vals.mean():+.3f}%",
                                annotation_position="top right",
                                annotation_font_color=FARBE_HAUPT)
+                fig6 = apply_se_theme(fig6, height=280, show_legend=False)
                 fig6.update_layout(
-                    template=TEMPLATE, height=280,
                     title=f"Gesamtfenster t{-days_before:+d} bis t{days_after:+d} | {selected_detail}",
                     xaxis_title="Rendite (%)", yaxis_title="Haeufigkeit",
                     showlegend=False,

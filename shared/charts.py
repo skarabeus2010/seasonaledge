@@ -1,7 +1,7 @@
 """
 SeasonalEdge - Chart Builder
 ==============================
-Erstellt den interaktiven Plotly Saisonalchart.
+Erstellt den interaktiven Plotly Saisonalchart + zentrales Theme.
 """
 
 import pandas as pd
@@ -22,12 +22,155 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 from shared.constants import (
+    SE_COLORS,
     COLOR_SEASONAL_AVG, COLOR_INDIVIDUAL, COLOR_CONFIDENCE,
     COLOR_CURRENT_YEAR, COLOR_PRESSURE, COLOR_WAR,
     CYCLE_COLORS, DECADE_COLORS, OVERLAY_CONFIGS
 )
 from shared.calculations import get_presidential_cycle_year, get_decade_digit
 from shared.holidays import get_nyse_holidays
+
+
+# ── Font-Stack ────────────────────────────────────────────────
+SE_FONT = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+
+
+def apply_se_theme(
+    fig: go.Figure,
+    title: str = "",
+    height: int = 480,
+    show_watermark: bool = True,
+    show_legend: bool = True,
+    hovermode: str = "x unified",
+) -> go.Figure:
+    """Zentrales Highcharts-inspiriertes Theme fuer alle SeasonalEdge Charts."""
+
+    fig.update_layout(
+        template=None,
+        paper_bgcolor=SE_COLORS["bg"],
+        plot_bgcolor=SE_COLORS["surface"],
+        height=height,
+        margin=dict(t=48, r=24, b=52, l=56),
+
+        # Font
+        font=dict(family=SE_FONT, color=SE_COLORS["text_muted"], size=11),
+
+        # Title (left-aligned like Highcharts)
+        title=dict(
+            text=title,
+            font=dict(color=SE_COLORS["text_primary"], size=15),
+            x=0.01, xanchor="left",
+            y=0.98, yanchor="top",
+        ) if title else None,
+
+        # X-Axis
+        xaxis=dict(
+            gridcolor=SE_COLORS["grid"],
+            gridwidth=1,
+            griddash="dot",
+            linecolor=SE_COLORS["axis_line"],
+            linewidth=1,
+            tickcolor=SE_COLORS["axis_line"],
+            ticklen=4,
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            zeroline=False,
+            showgrid=True,
+        ),
+
+        # Y-Axis
+        yaxis=dict(
+            gridcolor=SE_COLORS["grid_major"],
+            gridwidth=1,
+            griddash="dot",
+            linecolor=SE_COLORS["axis_line"],
+            linewidth=1,
+            tickcolor=SE_COLORS["axis_line"],
+            ticklen=4,
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            zeroline=True,
+            zerolinecolor=SE_COLORS["zero_line"],
+            zerolinewidth=1,
+            showgrid=True,
+        ),
+
+        # Hover (rounded feel, clean)
+        hovermode=hovermode,
+        hoverlabel=dict(
+            bgcolor=SE_COLORS["surface_alt"],
+            bordercolor=SE_COLORS["panel_border"],
+            font=dict(color=SE_COLORS["text_primary"], size=12, family=SE_FONT),
+            namelength=-1,
+        ),
+
+        # Legend
+        legend=dict(
+            bgcolor="rgba(0,0,0,0)",
+            bordercolor="rgba(0,0,0,0)",
+            borderwidth=0,
+            font=dict(color=SE_COLORS["text_muted"], size=10),
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="right", x=1,
+            itemsizing="constant",
+            itemwidth=30,
+        ) if show_legend else dict(visible=False),
+
+        # Modebar
+        modebar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            color=SE_COLORS["text_dim"],
+            activecolor=SE_COLORS["accent"],
+            orientation="v",
+        ),
+    )
+
+    # Style secondary Y-axis if present
+    if fig.layout.yaxis2 is not None:
+        fig.update_layout(yaxis2=dict(
+            gridcolor="rgba(0,0,0,0)",
+            linecolor=SE_COLORS["axis_line"],
+            tickcolor=SE_COLORS["axis_line"],
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            griddash="dot",
+        ))
+
+    # Watermark (like Highcharts credits)
+    if show_watermark:
+        fig.add_annotation(
+            text="SeasonalEdge",
+            xref="paper", yref="paper",
+            x=0.99, y=0.01,
+            xanchor="right", yanchor="bottom",
+            font=dict(color=SE_COLORS["text_dim"], size=10, family=SE_FONT),
+            showarrow=False,
+            opacity=0.5,
+        )
+
+    return fig
+
+
+def apply_se_heatmap_theme(fig: go.Figure, title: str = "", height: int = 420) -> go.Figure:
+    """Theme-Variante fuer Heatmaps."""
+    fig = apply_se_theme(fig, title=title, height=height, show_legend=False, hovermode="closest")
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False, zeroline=False)
+    return fig
+
+
+def apply_se_box_theme(fig: go.Figure, title: str = "", height: int = 420) -> go.Figure:
+    """Theme-Variante fuer Box-Plots."""
+    fig = apply_se_theme(fig, title=title, height=height, show_legend=False)
+    fig.update_xaxes(showgrid=False)
+    return fig
+
+
+def se_line_style(color: str, width: float = 2.0, dash: str = "solid", spline: bool = False) -> dict:
+    """Konsistenter Line-Style Helper."""
+    style = dict(color=color, width=width, dash=dash)
+    if spline:
+        style["shape"] = "spline"
+        style["smoothing"] = 1.0
+    return style
 
 
 def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
@@ -279,7 +422,7 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
         fig.add_trace(go.Scatter(
             x=x_days, y=avg_display,
             mode="lines",
-            line=dict(color=COLOR_SEASONAL_AVG, width=3.5),
+            line=se_line_style(COLOR_SEASONAL_AVG, width=3, spline=True),
             name=f"Saisonaler Ø ({len(year_data)} Jahre)",
             text=hover_texts,
             hovertemplate="%{text}<br>Wert: %{y:.2f}<extra></extra>"
@@ -406,9 +549,9 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
     # Vertikale Linie für heute
     fig.add_vline(
         x=today_doy, line_dash="solid",
-        line_color="rgba(255,255,255,0.6)", line_width=1.5
+        line_color=SE_COLORS["accent_warm"], line_width=1.5
     )
-    
+
     # Info-Box als Annotation
     info_text = (
         f"<b>Heute: {today.strftime('%d.%m.%Y')}</b><br>"
@@ -419,48 +562,25 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
     fig.add_annotation(
         x=today_doy, y=1.0, yref="paper",
         text=info_text,
-        showarrow=True, arrowhead=0, arrowcolor="rgba(255,255,255,0.4)",
+        showarrow=True, arrowhead=0, arrowcolor=SE_COLORS["axis_line"],
         ax=40, ay=-10,
-        bgcolor="rgba(30,30,30,0.85)",
-        bordercolor="rgba(255,255,255,0.3)",
+        bgcolor=SE_COLORS["surface_alt"],
+        bordercolor=SE_COLORS["panel_border"],
         borderwidth=1,
-        font=dict(size=10, color="#e0e0e0"),
+        font=dict(size=10, color=SE_COLORS["text_primary"]),
         align="left"
     )
     
-    # ── Layout ────────────────────────────────────────
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    # ── Layout (via zentrales Theme) ────────────────
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Saisonalität ({len(year_data)} Jahre)",
         height=550,
-        margin=dict(t=40, r=20, b=50, l=60),
-        title=dict(
-            text=f"{ticker} — Saisonalität ({len(year_data)} Jahre)",
-            font=dict(size=18, color="#e0e0e0")
-        ),
-        xaxis=dict(
-            tickmode="array",
-            tickvals=month_starts,
-            ticktext=month_names,
-            gridcolor="rgba(255,255,255,0.06)",
-            range=[1, 365]
-        ),
-        yaxis=dict(
-            title="Normalisierte Rendite (Start = 100)",
-            gridcolor="rgba(255,255,255,0.06)",
-            tickformat=".1f"
-        ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-            font=dict(size=11)
-        ),
-        hovermode="x unified"
     )
+    fig.update_xaxes(
+        tickmode="array", tickvals=month_starts, ticktext=month_names, range=[1, 365]
+    )
+    fig.update_yaxes(title="Normalisierte Rendite (Start = 100)", tickformat=".1f")
     
     # Y-Achse dynamisch anpassen — berücksichtigt ALLE sichtbaren Traces
     all_y_values = []

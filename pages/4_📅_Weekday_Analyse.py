@@ -26,6 +26,8 @@ from datetime import datetime
 
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE
 from shared.data import download_data
+from shared.charts import apply_se_theme
+from shared.constants import SE_COLORS
 
 st.set_page_config(page_title="SeasonalEdge - Weekday", page_icon="📅", layout="wide")
 
@@ -225,17 +227,7 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=2)
     
     mode_short = return_mode.split("(")[0].strip()
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=380,
-        margin=dict(t=50, b=40, l=50, r=30),
-        title=dict(
-            text=f"{ticker} — Weekday Performance · {mode_short}",
-            font=dict(size=16, color="#e0e0e0")
-        )
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — Weekday Performance · {mode_short}", height=380)
     
     fig.update_yaxes(tickformat="+.3f", ticksuffix="%", row=1, col=1,
                      gridcolor="rgba(255,255,255,0.06)")
@@ -297,19 +289,7 @@ def build_heatmap(stats, ticker):
         )
     ))
     
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=480,
-        margin=dict(t=50, b=30, l=60, r=30),
-        title=dict(
-            text=f"{ticker} — Monat × Wochentag Heatmap",
-            font=dict(size=16, color="#e0e0e0")
-        ),
-        xaxis=dict(side="top"),
-        yaxis=dict(autorange="reversed")  # Jan oben
-    )
+    fig = apply_se_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
     
     return fig
 

@@ -8,6 +8,8 @@ Starten mit: streamlit run seasonal_app.py
 
 import streamlit as st
 from shared.yahoo_downloader import download_data as _yd_download, preprocess
+from shared.charts import apply_se_theme, se_line_style
+from shared.constants import SE_COLORS
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -24,29 +26,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ── Inject global dark CSS ────────────────────────────────────
+st.markdown("""
+<style>
+.stApp { background-color: #080c12; }
+[data-testid="stSidebar"] { background-color: #0a0f17; }
+[data-testid="stPlotlyChart"] { border-radius: 8px; overflow: hidden; }
+</style>
+""", unsafe_allow_html=True)
+
 DEFAULT_TICKER = "AAPL"
 DEFAULT_YEARS = 20
 
-# Farben (aus dem Skill)
-COLOR_SEASONAL_AVG = "#00CED1"
-COLOR_INDIVIDUAL = "rgba(150,150,150,0.25)"
-COLOR_CONFIDENCE = "rgba(0,206,209,0.15)"
-COLOR_CURRENT_YEAR = "#FFD700"
-COLOR_PRESSURE = "#FF69B4"  # Pink für Pressure
-COLOR_WAR = "#FF4500"       # Orange-Rot für Kriegszeiten
+# Farben aus zentraler Palette
+from shared.constants import (
+    COLOR_SEASONAL_AVG, COLOR_INDIVIDUAL, COLOR_CONFIDENCE,
+    COLOR_CURRENT_YEAR, COLOR_PRESSURE, COLOR_WAR,
+    CYCLE_COLORS, DECADE_COLORS
+)
 
-CYCLE_COLORS = {
-    "Year 1 (Post-Election)": "#FF6B6B",
-    "Year 2 (Midterm Election)": "#FFA07A",
-    "Year 3 (Pre-Election)": "#4ECDC4",
-    "Year 4 (Election Year)": "#45B7D1"
-}
-
-DECADE_COLORS = {
-    0: "#FF6B6B", 1: "#FF8E72", 2: "#FFA07A", 3: "#FFD93D",
-    4: "#6BCB77", 5: "#4ECDC4", 6: "#45B7D1", 7: "#4682C8",
-    8: "#9664B4", 9: "#C875C4"
-}
 DECADE_LABELS = {
     0: "X0er (1900, 1910, ...2020)", 1: "X1er (1901, 1911, ...2021)",
     2: "X2er (1902, 1912, ...2022)", 3: "X3er (1903, 1913, ...2023)",
@@ -374,41 +372,15 @@ def build_pressure_chart(pressure_curve, ticker, available_periods, max_years):
     ))
     
     # Nulllinie
-    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
-    
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    fig.add_hline(y=0, line_dash="dash", line_color=SE_COLORS["zero_line"], line_width=1)
+
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Pressure Chart ({len(available_periods)} Perioden addiert)",
         height=400,
-        margin=dict(t=40, r=20, b=50, l=60),
-        title=dict(
-            text=f"{ticker} — Pressure Chart ({len(available_periods)} Perioden addiert)",
-            font=dict(size=16, color="#e0e0e0")
-        ),
-        xaxis=dict(
-            tickmode="array",
-            tickvals=month_starts,
-            ticktext=month_names,
-            gridcolor="rgba(255,255,255,0.06)",
-            range=[1, 365]
-        ),
-        yaxis=dict(
-            title="Kumulierter saisonaler Druck",
-            gridcolor="rgba(255,255,255,0.06)",
-            tickformat="+.1f",
-            zeroline=True,
-            zerolinecolor="rgba(255,255,255,0.2)"
-        ),
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom", y=1.02,
-            xanchor="right", x=1,
-            font=dict(size=11)
-        ),
-        hovermode="x unified"
     )
+    fig.update_xaxes(tickmode="array", tickvals=month_starts, ticktext=month_names, range=[1, 365])
+    fig.update_yaxes(title="Kumulierter saisonaler Druck", tickformat="+.1f")
     
     # Y-Achse dynamisch
     y_pad = max(abs(min(pressure_curve)), abs(max(pressure_curve))) * 0.15
@@ -718,39 +690,14 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
                     hovertemplate=f"{current_year}<br>Tag %{{x}}<br>Wert: %{{y:.2f}}<extra></extra>"
                 ))
     
-    # ── Layout ────────────────────────────────────────
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    # ── Layout (via zentrales Theme) ────────────────
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Saisonalität ({len(year_data)} Jahre)",
         height=550,
-        margin=dict(t=40, r=20, b=50, l=60),
-        title=dict(
-            text=f"{ticker} — Saisonalität ({len(year_data)} Jahre)",
-            font=dict(size=18, color="#e0e0e0")
-        ),
-        xaxis=dict(
-            tickmode="array",
-            tickvals=month_starts,
-            ticktext=month_names,
-            gridcolor="rgba(255,255,255,0.06)",
-            range=[1, 365]
-        ),
-        yaxis=dict(
-            title="Normalisierte Rendite (Start = 100)",
-            gridcolor="rgba(255,255,255,0.06)",
-            tickformat=".1f"
-        ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-            font=dict(size=11)
-        ),
-        hovermode="x unified"
     )
+    fig.update_xaxes(tickmode="array", tickvals=month_starts, ticktext=month_names, range=[1, 365])
+    fig.update_yaxes(title="Normalisierte Rendite (Start = 100)", tickformat=".1f")
     
     # Y-Achse dynamisch anpassen — berücksichtigt ALLE sichtbaren Traces
     all_y_values = []

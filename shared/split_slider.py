@@ -14,6 +14,7 @@ import json
 import numpy as np
 import pandas as pd
 import streamlit.components.v1 as components
+from shared.constants import SE_COLORS
 
 
 def _traces_spaghetti(df: pd.DataFrame) -> tuple[str, list]:
@@ -96,30 +97,32 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
     # Dieses Layout wird von ALLEN 3 Divs geteilt → identische Achsenpositionen
     base_layout = {
         "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor":  "rgba(0,0,0,0)",
+        "plot_bgcolor":  SE_COLORS["surface"],
         "margin": MARGIN,
+        "font": {"family": "Inter, -apple-system, 'Segoe UI', sans-serif"},
         "xaxis": {
             "range": [1, 252],
             "showgrid": False,
             "zeroline": False,
-            "tickfont": {"color": "#ffffff", "size": 10},
-            "linecolor": "rgba(255,255,255,0.2)",
+            "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
+            "linecolor": SE_COLORS["axis_line"],
             "title": {"text": "Handelstag im Jahr",
-                      "font": {"color": "#ffffff", "size": 11}},
+                      "font": {"color": SE_COLORS["text_muted"], "size": 11}},
         },
         "yaxis": {
             "range": y1_range,
             "side": "left",
             "showgrid": True,
-            "gridcolor": "rgba(255,255,255,0.06)",
+            "gridcolor": SE_COLORS["grid"],
+            "griddash": "dot",
             "zeroline": True,
-            "zerolinecolor": "rgba(255,255,255,0.18)",
+            "zerolinecolor": SE_COLORS["zero_line"],
             "zerolinewidth": 1,
-            "tickfont": {"color": "rgba(200,220,255,0.80)", "size": 10},
+            "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
             "ticksuffix": "%",
-            "linecolor": "rgba(200,220,255,0.3)",
+            "linecolor": SE_COLORS["axis_line"],
             "title": {"text": "Einzeljahre %",
-                      "font": {"color": "rgba(200,220,255,0.80)", "size": 10}},
+                      "font": {"color": SE_COLORS["text_muted"], "size": 10}},
         },
         "yaxis2": {
             "range": y2_range,
@@ -127,11 +130,11 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
             "side": "right",
             "showgrid": False,
             "zeroline": False,
-            "tickfont": {"color": "#4d9fff", "size": 10},
+            "tickfont": {"color": SE_COLORS["accent_blue"], "size": 10},
             "ticksuffix": "%",
-            "linecolor": "#4d9fff",
+            "linecolor": SE_COLORS["accent_blue"],
             "title": {"text": "Saisonal %",
-                      "font": {"color": "#4d9fff", "size": 10}},
+                      "font": {"color": SE_COLORS["accent_blue"], "size": 10}},
         },
         "showlegend": False,
         "dragmode": False,
@@ -158,23 +161,28 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-html, body {{ width:100%; height:100%; background:#080b10; overflow:hidden; }}
+html, body {{ width:100%; height:100%; background:{SE_COLORS["bg"]}; overflow:hidden; }}
 
 .se-labels {{
   display:flex; justify-content:space-between; align-items:center;
   padding:0 4px 6px;
-  font-family:system-ui,sans-serif;
+  font-family:Inter,-apple-system,'Segoe UI',sans-serif;
   font-size:11px; font-weight:600; letter-spacing:.8px; text-transform:uppercase;
 }}
-.lbl-b {{ color:#4d9fff; }}
-.lbl-i {{ color:rgba(255,255,255,0.25); font-size:10px; letter-spacing:.2px;
+.lbl-b {{ color:{SE_COLORS["accent_blue"]}; }}
+.lbl-i {{ color:{SE_COLORS["text_dim"]}; font-size:10px; letter-spacing:.2px;
           text-transform:none; font-weight:400; }}
-.lbl-a {{ color:rgba(200,220,255,0.65); }}
+.lbl-a {{ color:{SE_COLORS["text_muted"]}; }}
 
 .split-wrap {{
   position:relative; width:100%; height:{ch}px;
-  border:1px solid #1a2538; border-radius:10px; overflow:hidden;
-  background:#080b10;
+  border:1px solid {SE_COLORS["panel_border"]}; border-radius:10px; overflow:hidden;
+  background:{SE_COLORS["bg"]};
+}}
+.se-watermark {{
+  position:absolute; bottom:6px; right:10px; z-index:7;
+  font-family:Inter,-apple-system,sans-serif; font-size:10px;
+  color:{SE_COLORS["text_dim"]}; opacity:0.5; pointer-events:none;
 }}
 
 /* ── 3 Layer übereinander ── */
@@ -200,16 +208,16 @@ html, body {{ width:100%; height:100%; background:#080b10; overflow:hidden; }}
 .divider {{
   position:absolute; top:0; left:50%; width:2px; height:100%;
   background:linear-gradient(180deg,
-    transparent 0%, #4d9fff 15%, #4d9fff 85%, transparent 100%);
+    transparent 0%, {SE_COLORS["accent_blue"]} 15%, {SE_COLORS["accent_blue"]} 85%, transparent 100%);
   z-index:8; pointer-events:none; transform:translateX(-50%);
 }}
 .div-handle {{
   position:absolute; top:50%; left:50%;
   transform:translate(-50%,-50%);
-  width:30px; height:30px; background:#4d9fff; border-radius:50%;
+  width:30px; height:30px; background:{SE_COLORS["accent_blue"]}; border-radius:50%;
   z-index:9; pointer-events:none;
   display:flex; align-items:center; justify-content:center;
-  color:#080b10; font-size:12px; font-weight:800;
+  color:{SE_COLORS["bg"]}; font-size:12px; font-weight:800;
   box-shadow:0 0 14px rgba(77,159,255,0.7);
 }}
 input.sl-ov {{
@@ -230,13 +238,13 @@ input.sl-ov {{
 .bar-wrap input[type=range]::-webkit-slider-thumb {{
   -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
   background:#fff; box-shadow:0 0 8px rgba(255,255,255,0.4);
-  border:2px solid #4d9fff; cursor:ew-resize;
+  border:2px solid {SE_COLORS["accent_blue"]}; cursor:ew-resize;
 }}
 .bar-wrap input[type=range]::-moz-range-thumb {{
   width:18px; height:18px; border-radius:50%;
-  background:#fff; border:2px solid #4d9fff; cursor:ew-resize;
+  background:#fff; border:2px solid {SE_COLORS["accent_blue"]}; cursor:ew-resize;
 }}
-.bar-icon {{ font-size:11px; color:rgba(255,255,255,0.55);
+.bar-icon {{ font-size:11px; color:{SE_COLORS["text_muted"]};
              white-space:nowrap; font-weight:600; }}
 </style>
 </head>
@@ -256,6 +264,7 @@ input.sl-ov {{
   <!-- Layer 3: Einzeljahre (clip RECHTS) -->
   <div class="clayer" id="layer-a"><div id="div-a"></div></div>
 
+  <span class="se-watermark">SeasonalEdge</span>
   <div class="divider"    id="divider"></div>
   <div class="div-handle" id="handle">↔</div>
   <input type="range" min="0" max="100" value="50"
