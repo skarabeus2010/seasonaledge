@@ -517,22 +517,55 @@ def main():
         )
 
     # ══════════════════════════════════════════════════
-    # SEKTION 7: Premium-Platzhalter
+    # SEKTION 7: TDoM Kompakt-Ansicht
     # ══════════════════════════════════════════════════
     st.markdown("---")
-    st.markdown("### 🔒 Premium-Extras (Coming Soon)")
+    st.markdown("### 📅 TDoM — Trading Day of the Month")
 
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        render_premium_placeholder(
-            "TDOM-Analyse",
-            "Turn of the Month — Renditemuster um Monatswechsel · Premium"
-        )
-    with col_p2:
-        render_premium_placeholder(
-            "TDOY-Analyse",
-            "Trading Day of Year — Rendite nach Handelstag · Premium"
-        )
+    try:
+        from shared.tdom_analysis import build_tdom_stats, build_tdom_month_matrix
+
+        tdom_stats = build_tdom_stats(df, "open_to_close", "forward")
+        if not tdom_stats.empty:
+            # Kompakt-Balkendiagramm
+            tdom_colors = [
+                SE_COLORS["positive"] if r > 0 else SE_COLORS["negative"]
+                for r in tdom_stats["avg_return"]
+            ]
+            fig_tdom = go.Figure()
+            fig_tdom.add_trace(go.Bar(
+                x=[str(t) for t in tdom_stats.index],
+                y=tdom_stats["avg_return"],
+                marker_color=tdom_colors,
+                hovertemplate="TDoM %{x}: %{y:+.4f}%<br>Win-Rate: %{customdata:.1f}%<extra></extra>",
+                customdata=tdom_stats["win_rate"],
+            ))
+            fig_tdom.add_hline(y=0, line_color=SE_COLORS["zero_line"], line_width=1)
+            fig_tdom = apply_se_theme(
+                fig_tdom, title=f"{ticker} — TDoM Ø Rendite (Intraday)", height=300,
+            )
+            fig_tdom.update_xaxes(title="TDoM", dtick=1)
+            fig_tdom.update_yaxes(tickformat="+.3f", ticksuffix="%")
+            st.plotly_chart(fig_tdom, use_container_width=True)
+
+            best = tdom_stats["avg_return"].idxmax()
+            worst = tdom_stats["avg_return"].idxmin()
+            st.caption(
+                f"📊 Bester TDoM: **{best}** ({tdom_stats.loc[best, 'avg_return']:+.4f}%) · "
+                f"Schlechtester: **{worst}** ({tdom_stats.loc[worst, 'avg_return']:+.4f}%) · "
+                f"[→ Vollständige TDoM-Analyse](18_📅_TDOM_Analyse)"
+            )
+        else:
+            st.caption("TDoM-Daten nicht verfügbar.")
+    except Exception:
+        st.caption("TDoM-Modul nicht geladen.")
+
+    # ── TDOY Platzhalter ──
+    st.markdown("")
+    render_premium_placeholder(
+        "TDOY-Analyse",
+        "Trading Day of Year — Rendite nach Handelstag · Coming Soon · Premium"
+    )
 
     # ── Disclaimer ───────────────────────────────────
     st.markdown("---")
