@@ -1,10 +1,9 @@
 # pages/0_🏠_Home.py
 # ============================================================
-# STARTSEITE — SeasonalEdge v8.3
+# STARTSEITE — SeasonalEdge Light Live v1.0
 # ============================================================
 
-import sys, os, pathlib, requests, base64
-import pandas as pd
+import sys, os, pathlib, requests  # base64 entfernt (Iframe deaktiviert)
 
 try:
     _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -20,7 +19,7 @@ if _project_dir not in sys.path:
 import streamlit as st
 
 st.set_page_config(
-    page_title="SeasonalEdge | Saisonale Trading-Analysen",
+    page_title="SeasonalEdge – Saisonale Börsenanalyse & Trading-Signale",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -237,17 +236,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-h1, h2, h3 = st.columns([2,1,2])
-with h2:
-    if st.button("🚀 Beta beitreten", use_container_width=True, type="primary"):
-        st.session_state["show_email"] = True
-if st.session_state.get("show_email"):
-    e1, e2 = st.columns([3,1])
-    with e1:
-        hero_mail = st.text_input("Email", placeholder="name@beispiel.de",
-                                   label_visibility="collapsed", key="hero_mail")
-    with e2:
-        if st.button("OK", use_container_width=True, key="hero_ok"):
+_hero_spacer1, _hero_form_col, _hero_spacer2 = st.columns([1, 2, 1])
+with _hero_form_col:
+    with st.form("hero_form"):
+        hero_mail = st.text_input(
+            "Email", placeholder="name@beispiel.de",
+            label_visibility="collapsed", key="hero_mail",
+        )
+        if st.form_submit_button("🚀 Kostenlos starten", use_container_width=True, type="primary"):
             _handle_submit(hero_mail)
     st.caption("🇩🇪 DSGVO-konform · Kein Spam · Jederzeit abmeldbar")
 
@@ -260,38 +256,39 @@ if st.session_state.get("show_email"):
 # ══════════════════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="se-section-label">Analyse-Module</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Alle 12 Module auf einen Blick</div>', unsafe_allow_html=True)
+st.markdown('<div class="se-section-title">Unsere Analyse-Module</div>', unsafe_allow_html=True)
 st.markdown('<div class="se-section-sub">Klicke auf einen Titel — du landest direkt im Modul.</div>', unsafe_allow_html=True)
 
-_PAGES = [
-    ("pages/1_📊_Erweiterte_Analyse.py",          "📊", "Erweiterte Analyse",     "Jahres-Saisonalität, Dekaden- & Präsidentenzyklus"),
-    ("pages/2_🔄_Turn_of_the_Month.py",           "🔄", "Turn of the Month",      "Monatswechsel-Effekt, t0=0%-Normalisierung"),
-    ("pages/3_📅_Feiertags_Effekt.py",            "🎉", "Feiertags-Effekt",       "12 NYSE-Feiertage, Pre/Post-Holiday-Bias"),
-    ("pages/4_📅_Weekday_Analyse.py",             "📅", "Weekday Analyse",        "Wochentag-Renditen, SMA/RSI-Filter"),
-    ("pages/5_📆_Monthly_Performance.py",         "📆", "Monthly Performance",    "Monats-Performance, Heatmap, Boxplots"),
-    ("pages/6_🏛️_Zentralbanken.py",               "🏛️", "Zentralbanken",          "Fed, ECB, BOE, BOJ — Zinsentscheide & Minutes"),
-    ("pages/7_🌕_Mondphasen.py",                  "🌕", "Mondphasen",             "Voll-/Neumond-Effekt, Meeus-Algorithmus"),
-    ("pages/8_🧠_TruePath.py",                    "🧠", "TruePath KI",            "KI-Score 0–100, Pattern-Matching"),
-    ("pages/9_🚦_Strategien.py",                  "🚦", "Strategien",             "Käppel-Strategien, Saisonale Regelwerke"),
-    ("pages/10_📅_OPEX.py",                       "📉", "OPEX / Verfallstag",     "Triple/Quad Witching, Expiry-Bias"),
-    ("pages/11_Intra_Decade_Seasonality_1.py",    "🔟", "Intra-Decade",           "X0–X9 Jahres-Zyklen im Vergleich"),
-    ("pages/12_🌙_Overnight_vs_Intraday.py",      "🌙", "Overnight vs. Intraday", "Overnight-Gap vs. Intraday-Rendite"),
+# ── Light Pages (aktiv, klickbar) ──
+_LIGHT_PAGES = [
+    ("pages/2_🔄_Turn_of_the_Month.py", "🔄", "Turn of the Month",      "Monatswechsel-Effekt, t0=0%-Normalisierung"),
+    ("pages/4_📅_Weekday_Analyse.py",   "📅", "Weekday Analyse",        "Wochentag-Renditen, SMA/RSI-Filter"),
+    ("pages/5_📆_Monthly_Performance.py","📆", "Monthly Performance",    "Monats-Performance, Heatmap, Boxplots"),
+    ("pages/7_🌕_Mondphasen.py",        "🌕", "Mondphasen",             "Voll-/Neumond-Effekt, Meeus-Algorithmus"),
+    ("pages/12_🌙_Overnight_vs_Intraday.py", "🌙", "Overnight vs. Intraday", "Overnight-Gap vs. Intraday-Rendite"),
 ]
 
-# Zeile 1: Module 0-2
+# ── Coming Soon (ausgegraut, kein Link) ──
+_COMING_SOON = [
+    ("🧠", "TruePath KI",    "KI-Score 0–100, Pattern-Matching"),
+    ("🚦", "65+ Strategien",  "Käppel-Strategien, Saisonale Regelwerke"),
+    ("📊", "Erweiterte Analyse", "Dekaden- & Präsidentenzyklus, Druckcharts"),
+]
+
+# Zeile 1: Light Pages 0-2
 r1c1, r1c2, r1c3 = st.columns(3, gap="medium")
-# Zeile 2: Module 3-5
+# Zeile 2: Light Pages 3-4 + Coming Soon 0
 r2c1, r2c2, r2c3 = st.columns(3, gap="medium")
-# Zeile 3: Module 6-8
+# Zeile 3: Coming Soon 1-2
 r3c1, r3c2, r3c3 = st.columns(3, gap="medium")
-# Zeile 4: Module 9-11
-r4c1, r4c2, r4c3 = st.columns(3, gap="medium")
 
-_col_map = [r1c1,r1c2,r1c3, r2c1,r2c2,r2c3, r3c1,r3c2,r3c3, r4c1,r4c2,r4c3]
+_col_row1 = [r1c1, r1c2, r1c3]
+_col_row2 = [r2c1, r2c2, r2c3]
+_col_row3 = [r3c1, r3c2, r3c3]
 
-for col, (path, emoji, title, cap) in zip(_col_map, _PAGES):
+# ── Aktive Light Pages rendern ──
+for col, (path, emoji, title, cap) in zip(_col_row1 + _col_row2[:2], _LIGHT_PAGES):
     with col:
-        # Card-Rahmen
         st.markdown(
             f"""<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
             padding:1.2rem 1.2rem 0.8rem;margin-bottom:2px;">
@@ -300,15 +297,27 @@ for col, (path, emoji, title, cap) in zip(_col_map, _PAGES):
             </div>""",
             unsafe_allow_html=True,
         )
-        # Klickbarer page_link — direkt unter dem Emoji/Titel-Block
-        st.page_link(
-            page=path,
-            label=f"📂 {title} öffnen →",
-            use_container_width=True,
-        )
-        # Gold-Caption
+        st.page_link(page=path, label=f"📂 {title} öffnen →", use_container_width=True)
         st.markdown(
             f'<div style="font-size:.8rem;font-weight:500;color:#e8a425;'
+            f'padding:.3rem .2rem .8rem;line-height:1.45;">{cap}</div>',
+            unsafe_allow_html=True,
+        )
+
+# ── Coming Soon Karten rendern (ausgegraut) ──
+for col, (emoji, title, cap) in zip([r2c3] + [r3c1, r3c2], _COMING_SOON):
+    with col:
+        st.markdown(
+            f"""<div style="background:#0a0f18;border:1px solid #151e2c;border-radius:14px;
+            padding:1.2rem 1.2rem 0.8rem;margin-bottom:2px;opacity:0.5;">
+              <div style="font-size:2rem;line-height:1;margin-bottom:.5rem;">{emoji}</div>
+              <div style="font-size:1rem;font-weight:700;color:#6a7a8a;margin-bottom:.2rem;">{title}</div>
+              <div style="font-size:.75rem;font-weight:600;color:#4d9fff;margin-top:.4rem;">🔒 Coming Soon</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div style="font-size:.8rem;font-weight:500;color:#5a6a7a;'
             f'padding:.3rem .2rem .8rem;line-height:1.45;">{cap}</div>',
             unsafe_allow_html=True,
         )
@@ -379,61 +388,12 @@ except Exception as _e:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Dow Jones Wars Chart (bestehendes HTML, optional)
-_html_path = os.path.join(_project_dir, "dow_jones_wars.html")
-if os.path.exists(_html_path):
-    st.markdown('<div class="se-section-label">Markthistorie</div>', unsafe_allow_html=True)
-    st.markdown('<div class="se-section-title">Der Dow Jones seit 1886</div>', unsafe_allow_html=True)
-    with open(_html_path, "r", encoding="utf-8") as _f:
-        _html_content = _f.read()
-    _b64 = base64.b64encode(_html_content.encode()).decode()
-    st.markdown(
-        f'<div class="se-chart-wrap">'
-        f'<iframe src="data:text/html;base64,{_b64}" '
-        f'width="100%" height="900" frameborder="0" scrolling="no" '
-        f'style="border:none;display:block;"></iframe>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown("<br>", unsafe_allow_html=True)
+# Dow Jones Wars Chart — deaktiviert für Light Live (Performance)
+# Wird in der Vollversion wieder aktiviert.
 
 
-# ══════════════════════════════════════════════════════════════
-# CRASH-FRUEHWARNUNG (Ampel)
-# ══════════════════════════════════════════════════════════════
-try:
-    from shared.data import download_data as _dl, preprocess as _pp
-    from shared.anomaly_engine import compute_market_regime, TRAFFIC_LIGHT_LABELS
-
-    _spy_raw = _dl("SPY")
-    if _spy_raw is not None and not _spy_raw.empty:
-        _spy_df = _pp(_spy_raw)
-        _regime = compute_market_regime(_spy_df)
-        _tl = TRAFFIC_LIGHT_LABELS.get(_regime["traffic_light"], TRAFFIC_LIGHT_LABELS["grey"])
-
-        st.markdown("---")
-        st.markdown('<div class="se-section-label">Markt-Regime</div>', unsafe_allow_html=True)
-        st.markdown('<div class="se-section-title">Crash-Fruehwarnung (KI)</div>', unsafe_allow_html=True)
-
-        _rc1, _rc2, _rc3, _rc4 = st.columns(4, gap="small")
-        with _rc1:
-            st.markdown(
-                f'<div style="background:#0c1420;border:2px solid {_tl["color"]};border-radius:14px;'
-                f'padding:1.2rem;text-align:center;">'
-                f'<div style="font-size:2.5rem;">{_tl["emoji"]}</div>'
-                f'<div style="color:{_tl["color"]};font-weight:700;font-size:1rem;">{_tl["label"]}</div>'
-                f'</div>', unsafe_allow_html=True)
-        with _rc2:
-            st.metric("Risk-Score", f'{_regime["risk_score"]:.0f}/100')
-        with _rc3:
-            st.metric("Vola (5d)", f'{_regime.get("volatility_5d", 0):.2f}%')
-        with _rc4:
-            st.metric("Drawdown", f'{_regime.get("drawdown", 0):.1f}%')
-
-        st.caption(f'{_tl["desc"]} Basis: SPY, Isolation Forest auf Rendite/Volatilitaet/Drawdown.')
-
-except Exception:
-    pass
+# Crash-Frühwarnung (Ampel) — deaktiviert für Light Live
+# Benötigt anomaly_engine + SPY-Daten. Wird in Vollversion aktiviert.
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -493,13 +453,13 @@ def _stat(num, label):
 
 s1, s2, s3, s4 = st.columns(4, gap="small")
 with s1:
-    st.markdown(_stat("500+", "Instrumente (Beta)"), unsafe_allow_html=True)
+    st.markdown(_stat("500+", "Instrumente"), unsafe_allow_html=True)
 with s2:
     st.markdown(_stat("100 J.", "Datenhistorie"), unsafe_allow_html=True)
 with s3:
-    st.markdown(_stat("12", "Analyse-Module"), unsafe_allow_html=True)
+    st.markdown(_stat("5", "Analyse-Module"), unsafe_allow_html=True)
 with s4:
-    st.markdown(_stat("KI", "TruePath Score"), unsafe_allow_html=True)
+    st.markdown(_stat("Gratis", "Early Access"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
