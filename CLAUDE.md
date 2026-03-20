@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 10.0 | 2026-03-19 | Details → `docs/`
+> Version 11.0 | 2026-03-20 | Details → `docs/`
 
 ## Projekt
 
@@ -20,7 +20,7 @@ Python: PowerShell → immer `py -m` (nicht `python`)
 ```
 seasonal_app.py          ← Startseite
 shared/                  ← Berechnungen, Daten, Utilities
-  yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback (einziger Cache!)
+  yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback + OHLC Split-Adjustierung (einziger Cache!)
   calculations.py        ← Kern-Berechnungen
   charts.py              ← Plotly Theme (apply_se_theme)
   ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
@@ -43,7 +43,7 @@ shared/                  ← Berechnungen, Daten, Utilities
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
-pages/                   ← 19 Streamlit-Pages (0–18)
+pages/                   ← 20 Streamlit-Pages (0–19)
   0–12                   ← Basis-Analysen (Yearly, Monthly, Weekday, ToM, etc.)
   13_Shock_Analyzer      ← Öl→DAX, VIX→S&P etc.
   14_Sector_Rotation     ← US/EU Sektor-Heatmap + Rotation
@@ -127,7 +127,10 @@ UPPER_CASE        → Konstanten
 - [x] MSTL Saisonalitaets-Zerlegung (statsmodels) (2026-03-20)
 - [x] Chronos-Bolt-Tiny Forecast (Amazon) (2026-03-20)
 - [x] NeuralProphet Saisonalitaet (2026-03-20)
-- [x] Spot-Vol Beta Page + DB-Tabelle (2026-03-20)
+- [x] Spot-Vol Beta Page + DB-Tabelle + Regime-Wendepunkte (2026-03-20)
+- [x] Stooq-Fallback in yahoo_downloader (DJI 131 Jahre) (2026-03-20)
+- [x] OHLC Split-Adjustierung (Open/High/Low) (2026-03-20)
+- [x] Trifecta numpy.bool Fix + Ampelverlauf-Charts (2026-03-20)
 - [x] Nightly Refresh Job (GitHub Actions) (2026-03-19)
 - [ ] Outlier Manager in alle Pages integrieren (aktuell: Erweiterte Analyse)
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
@@ -143,5 +146,5 @@ UPPER_CASE        → Konstanten
 - `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Download-Manager, Logger, Cache
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
 - `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
-- `docs/KI_FEATURES.md` — Alle 11 KI-Features mit Beschreibung (fuer Home Page)
+- `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad

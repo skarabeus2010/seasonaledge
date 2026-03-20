@@ -25,14 +25,19 @@ download_manager.py  ←→  yahoo_downloader.py  ←→  Stooq-Fallback
 yfinance ist entfernt. Immer: `from shared.yahoo_downloader import download_data`
 
 Yahoo `period="max"` liefert nur monatliche Daten → `period1=0&period2=now` verwenden.
-Yahoo `Open` nicht split-adjustiert → IMMER `Close.iloc[0]` als Basis.
+Yahoo `Open` wird jetzt in `yahoo_downloader.py` automatisch split-adjustiert (adj_factor = adjclose/close auf Open/High/Low angewendet).
 
 ### Stooq-Fallback (Langzeitdaten)
+
+Direkt in `yahoo_downloader.py` integriert. Automatisch aktiv wenn Yahoo < 40 Jahre liefert.
+
 | Yahoo Ticker | Stooq Ticker | Daten ab |
 |---|---|---|
-| `^DJI` | `^dji` | ~1928 |
+| `^DJI` | `^dji` | ~1896 (131 Jahre) |
 | `^GSPC` | `^spx` | ~1928 |
 | `^GDAXI` | `^dax` | ~1959 |
+| `^FTSE` | `^ukx` | ~1984 |
+| `^N225` | `^nkx` | ~1965 |
 
 ## Supabase Tabellen-Schema
 

@@ -171,6 +171,10 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | `shared/ai_models.py` | DTW, Prophet, IF, Claude, Heatmap, Summary | fastdtw, prophet, sklearn, anthropic |
 | `shared/outlier_manager.py` | Outlier Filter (4 Methoden) | sklearn (optional) |
 | `shared/anomaly_engine.py` | Radar, Crash-Ampel, TDoM, Muster-Brueche | sklearn |
+| `shared/mstl_decomposition.py` | MSTL Zerlegung | statsmodels |
+| `shared/chronos_forecast.py` | Chronos Forecast | chronos-forecasting, torch |
+| `shared/neural_prophet_forecast.py` | NeuralProphet | neuralprophet (Python <= 3.12) |
+| `shared/spot_vol_beta.py` | Spot-Vol Beta, Regime-Wendepunkte | statsmodels |
 
 ## Pakete
 
@@ -180,11 +184,14 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | `fastdtw` + `scipy` | DTW Pattern Matching (1, 2) |
 | `prophet` | Prophet Forecast (1, 3) |
 | `anthropic` | KI-Zusammenfassung (6) |
+| `statsmodels` | MSTL Zerlegung (12), Spot-Vol Beta OLS (15) |
+| `chronos-forecasting` + `torch` | Chronos Forecast (13) |
+| `neuralprophet` | NeuralProphet (14) — benoetigt Python <= 3.12 |
 
 ## TODO: Home Page Integration
 
 Alle KI-Features muessen auf der Home Page sichtbar/verlinkt sein:
-- [ ] Feature-Cards fuer alle 11 KI-Features
-- [ ] Crash-Fruehwarnung prominent oben (bereits integriert)
+- [ ] Feature-Cards fuer alle 15 KI-Features
+- [x] Crash-Fruehwarnung prominent oben (bereits integriert)
 - [ ] Quick-Links zu den Pages mit den jeweiligen Features
 - [ ] "KI-Status" Sektion: Welche Features aktiv, welche API-Keys gesetzt

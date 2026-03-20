@@ -16,6 +16,10 @@
 | **Crash-Fruehwarnung** | **Markt-Regime Ampel (Vola/Drawdown/Rendite)** | **Phase 1.5** |
 | **TDoM-Anomalien** | **Ungewoehnliche Trading Days (Z-Score)** | **Phase 1.5** |
 | **Muster-Brueche** | **Jahre mit gebrochenen Saisonalmustern + Kontext** | **Phase 1.5** |
+| **MSTL Zerlegung** | **Multi-Saisonalitaets-Zerlegung (Trend/Woche/Jahr)** | **Phase 1.5** |
+| **Chronos-Bolt-Tiny** | **Probabilistische 30d-Prognose (Amazon, 9M Params)** | **Phase 1.5** |
+| **NeuralProphet** | **Explizite Saisonalitaets-Komponenten (Fourier)** | **Phase 1.5** |
+| **Spot-Vol Beta** | **Daily/Rolling Beta SPX vs VIX + Regime-Wendepunkte** | **Phase 1.5** |
 | LSTM | Komplexe Mustererkennung | Phase 2 |
 | XGBoost | Multi-Feature Renditeprognose | Phase 2 |
 | Transformer | Attention-basierte Analyse | Phase 3 |
@@ -204,4 +208,42 @@ breaks = detect_pattern_breaks(year_data, avg, top_n=7)
 # → [{"year": 2020, "break_strength": 85, "event": "COVID-19 Pandemie", ...}, ...]
 ```
 
-Integriert in: Erweiterte Analyse (Expander)
+Integriert in: Erweiterte Analyse, KI Score (Expander)
+
+## MSTL Zerlegung (shared/mstl_decomposition.py)
+
+Zerlegt Kursreihe in Trend + Wochensaisonalitaet + Jahressaisonalitaet + Residual.
+Nutzt statsmodels MSTL. Millisekunden pro Ticker, keine GPU noetig.
+
+```python
+from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
+result = decompose_mstl(df, periods=[5, 252])
+fig = build_decomposition_figure(result, ticker="SPY")
+```
+
+## Chronos-Bolt-Tiny (shared/chronos_forecast.py)
+
+Amazon Chronos Foundation Model (9M Parameter). Probabilistische Prognose mit Konfidenzbaendern.
+Laeuft auf CPU in < 1 Sekunde.
+
+```python
+from shared.chronos_forecast import forecast_chronos, build_chronos_chart
+forecast = forecast_chronos(df, periods=30)
+# forecast.attrs["expected_return"], forecast.attrs["p_positive"]
+```
+
+## NeuralProphet (shared/neural_prophet_forecast.py)
+
+PyTorch mit expliziten Fourier-Saisonalitaetskomponenten. Benoetigt Python <= 3.12.
+
+## Spot-Vol Beta (shared/spot_vol_beta.py)
+
+SPX vs VIX: Daily Beta, Rolling Beta, OLS-Regression, Regime-Wendepunkte.
+DB-Tabelle `spot_vol_beta` (9120 Rows).
+
+```python
+from shared.spot_vol_beta import load_spot_vol_data, compute_spot_vol_beta, analyze_vix_extremes
+df = load_spot_vol_data("^GSPC", "^VIX")
+df_calc, metrics = compute_spot_vol_beta(df, rolling_window=60)
+extremes = analyze_vix_extremes(df_calc, vix_spike_threshold=30)
+```
