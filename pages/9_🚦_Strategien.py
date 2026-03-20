@@ -233,14 +233,94 @@ with tab1:
                       f"{len(rot_df)}x ({len(rot_df)/total*100:.0f}%)",
                       f"Ø {_avg_rendite(rot_df):.1f}% (Feb–Dez)")
 
-        # Chart: Jahresrendite nach Signal
-        fig = go.Figure()
+        # ── Durchschnittsverlauf je Ampelfarbe ──────────────────────────
+        st.subheader("📈 Durchschnittsverlauf nach Ampelfarbe")
+
+        import numpy as np
+
+        MONTH_TICKS_252 = [int(i * 21) for i in range(12)]
+        MONTH_LABELS_252 = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
 
         farb_map = {
             "Grün": "#2ECC71", "Gelb": "#F1C40F",
             "Orange": "#E67E22", "Rot": "#E74C3C",
         }
 
+        fig_curves = go.Figure()
+        drawdown_data = {}
+
+        for signal, color in farb_map.items():
+            signal_years = history_df[history_df["Signal"] == signal]["Jahr"].tolist()
+            curves = []
+            for year in signal_years:
+                ydf = df[df.index.year == year]
+                if len(ydf) < 20:
+                    continue
+                closes = ydf["Close"].values.astype(float)
+                if closes[0] <= 0:
+                    continue
+                norm = (closes / closes[0] - 1) * 100
+                x_orig = np.linspace(0, 251, len(norm))
+                interp = np.interp(np.arange(252), x_orig, norm)
+                curves.append(interp)
+
+            if len(curves) < 1:
+                continue
+
+            avg_curve = np.mean(curves, axis=0)
+
+            fig_curves.add_trace(go.Scatter(
+                x=list(range(252)), y=avg_curve.tolist(),
+                mode="lines", name=f"{signal} (n={len(curves)})",
+                line=dict(color=color, width=2.5),
+                hovertemplate=f"<b>{signal}</b><br>HT %{{x}}<br>%{{y:+.2f}}%<extra></extra>",
+            ))
+
+            # Max Drawdown berechnen
+            dd_list = []
+            for c in curves:
+                cum = c + 100  # Normiert auf 100
+                peak = np.maximum.accumulate(cum)
+                dd = ((cum - peak) / peak * 100)
+                dd_list.append(float(dd.min()))
+            drawdown_data[signal] = {
+                "avg_dd": round(float(np.mean(dd_list)), 1),
+                "worst_dd": round(float(min(dd_list)), 1),
+                "n": len(curves),
+                "avg_return": round(float(avg_curve[-1]), 1),
+            }
+
+        fig_curves.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.25)", line_width=1)
+        fig_curves = apply_se_theme(
+            fig_curves,
+            title=f"{ticker} — Ø Jahresverlauf nach Trifecta-Signal",
+            height=450,
+        )
+        fig_curves.update_xaxes(
+            tickmode="array", tickvals=MONTH_TICKS_252, ticktext=MONTH_LABELS_252,
+        )
+        fig_curves.update_yaxes(title="Rendite (%)", tickformat="+.1f", ticksuffix="%")
+        st.plotly_chart(fig_curves, use_container_width=True)
+
+        # ── Max Drawdown Übersicht ────────────────────────────────────
+        st.subheader("📉 Max. Drawdown nach Ampelfarbe")
+        dd_cols = st.columns(len(drawdown_data))
+        for i, (signal, dd) in enumerate(drawdown_data.items()):
+            with dd_cols[i]:
+                emoji = {"Grün": "🟢", "Gelb": "🟡", "Orange": "🟠", "Rot": "🔴"}[signal]
+                st.metric(
+                    f"{emoji} {signal} (n={dd['n']})",
+                    f"Ø DD: {dd['avg_dd']:.1f}%",
+                    f"Worst: {dd['worst_dd']:.1f}% | Ø Rendite: {dd['avg_return']:+.1f}%",
+                    delta_color="inverse",
+                )
+
+        st.divider()
+
+        # ── Chart: Jahresrendite nach Signal ──────────────────────────
+        st.subheader("📊 Jahresrendite (Feb-Dez) nach Trifecta-Signal")
+
+        fig = go.Figure()
         for signal, color in farb_map.items():
             sub = history_df[history_df["Signal"] == signal]
             if len(sub) == 0:

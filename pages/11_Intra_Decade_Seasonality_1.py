@@ -72,6 +72,8 @@ with st.sidebar:
                              help="Zeigt Standardabweichung pro Kohorte")
     show_individual = st.checkbox("Einzeljahre anzeigen", value=False,
                                   help="Alle Einzeljahre dünn im Hintergrund")
+    show_current_year = st.checkbox("Aktuelles Jahr hervorheben", value=True,
+                                    help="Zeigt das aktuelle Jahr als eigene Linie")
 
     st.markdown("---")
     st.markdown("### Rendite-Analyse")
@@ -201,6 +203,33 @@ for digit in range(10):
         ),
     ))
 
+# ── Aktuelles Jahr hervorheben ──
+if show_current_year:
+    current_year_df = df[df.index.year == CURRENT_YEAR]
+    if len(current_year_df) >= 20:
+        closes = current_year_df["Close"].values.astype(float)
+        if closes[0] > 0:
+            log_curve = (np.log(closes) - np.log(closes[0])) * 100
+            # Auf 252 interpolieren (gleiche Laenge wie Kohorten)
+            n_orig = len(log_curve)
+            x_orig = np.linspace(0, 251, n_orig)
+            x_new = np.arange(n_orig)  # Nur bis zum aktuellen Tag
+            # Mapping: aktueller Handelstag -> Position auf 252-Skala
+            current_x = np.linspace(0, 251 * n_orig / 252, n_orig).tolist()
+            current_y = log_curve.tolist()
+
+            fig.add_trace(go.Scatter(
+                x=current_x, y=current_y,
+                mode="lines",
+                name=f"{CURRENT_YEAR} (aktuell)",
+                line=dict(color="#F1C40F", width=3, dash="solid"),
+                hovertemplate=(
+                    f"<b>{CURRENT_YEAR}</b><br>"
+                    "Handelstag %{x:.0f}<br>"
+                    "%{y:+.2f}%<extra></extra>"
+                ),
+            ))
+
 fig.add_hline(y=0, line_dash="dash",
               line_color="rgba(255,255,255,0.25)", line_width=1)
 
@@ -269,9 +298,43 @@ fig2 = apply_se_theme(fig2, title="", height=380)
 st.plotly_chart(fig2, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
+# 2b. ANOMALIE-RADAR (KI)
+# ══════════════════════════════════════════════════════════════════════════════
+
+st.markdown("---")
+st.markdown("### Anomalie-Radar (KI)")
+try:
+    from shared.anomaly_engine import compute_ticker_anomaly_score
+    with st.spinner("Anomalie-Radar berechnet..."):
+        radar = compute_ticker_anomaly_score(df, lookback_days=10)
+    if "error" not in radar:
+        r_score = radar["anomaly_score"]
+        if r_score >= 70:
+            r_icon, r_label = "🔴", "Stark anomal"
+        elif r_score >= 40:
+            r_icon, r_label = "🟡", "Leicht anomal"
+        else:
+            r_icon, r_label = "🟢", "Normal"
+
+        rc1, rc2, rc3, rc4 = st.columns(4)
+        rc1.metric("Anomalie-Score", f"{r_score:.0f}/100")
+        rc2.metric("Status", f"{r_icon} {r_label}")
+        rc3.metric("Aktuelle 10d-Rendite", f'{radar["current_return"]:+.2f}%')
+        rc4.metric("Historischer Ø", f'{radar["historical_avg"]:+.2f}%')
+        st.caption(
+            f'Isolation Forest vergleicht die letzten 10 Handelstage mit '
+            f'{radar["n_comparisons"]} historischen Fenstern am gleichen Kalenderzeitpunkt.'
+        )
+    else:
+        st.caption(radar["error"])
+except Exception as _e:
+    st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+
+# ══════════════════════════════════════════════════════════════════════════════
 # 3. DATENTABELLE
 # ══════════════════════════════════════════════════════════════════════════════
 
+st.markdown("---")
 st.markdown("### Übersicht nach Kohorte")
 
 def _color_val(v):

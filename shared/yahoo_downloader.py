@@ -23,6 +23,49 @@ _BASE_URL2 = "https://query2.finance.yahoo.com/v8/finance/chart/{ticker}"
 _VALID_PERIODS   = ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"]
 _VALID_INTERVALS = ["1d","1wk","1mo"]
 
+# Ticker die lange Historie von Stooq beziehen koennen
+_STOOQ_TICKERS = {
+    "^DJI":   "^dji",
+    "^GSPC":  "^spx",
+    "^GDAXI": "^dax",
+    "^FTSE":  "^ukx",
+    "^N225":  "^nkx",
+}
+
+
+def _fetch_stooq(stooq_ticker: str, timeout: int = 15) -> pd.DataFrame:
+    """Laedt historische Daten von Stooq.com (Langzeit-Fallback)."""
+    url = f"https://stooq.com/q/d/l/?s={stooq_ticker}&i=d"
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=timeout)
+        if resp.status_code != 200:
+            return pd.DataFrame()
+
+        from io import StringIO
+        df = pd.read_csv(StringIO(resp.text))
+
+        if "Date" not in df.columns or "Close" not in df.columns:
+            return pd.DataFrame()
+
+        df["Date"] = pd.to_datetime(df["Date"])
+        df = df.set_index("Date").sort_index()
+        df.index.name = "Date"
+
+        # Spalten normalisieren
+        for col in ["Open", "High", "Low", "Close"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        if "Volume" in df.columns:
+            df["Volume"] = pd.to_numeric(df["Volume"], errors="coerce").fillna(0).astype(int)
+        else:
+            df["Volume"] = 0
+
+        df = df[["Open", "High", "Low", "Close", "Volume"]].dropna(subset=["Close"])
+        return df
+
+    except Exception:
+        return pd.DataFrame()
+
 
 def _fetch_yahoo(ticker: str, params: dict, timeout: int) -> dict | None:
     """HTTP-Request gegen Yahoo Finance API. Versucht query1, dann query2."""
@@ -141,6 +184,24 @@ def download_data(
         df = _parse_yahoo_response(data)
         if len(df) == 0:
             print(f"[yahoo_downloader] Leerer DataFrame für '{ticker}'.")
+            return pd.DataFrame()
+
+        # Stooq-Fallback: Wenn Yahoo < 40 Jahre liefert und Ticker lange Historie hat
+        if ticker.upper() in _STOOQ_TICKERS and period == "max":
+            yahoo_years = df.index[-1].year - df.index[0].year
+            if yahoo_years < 40:
+                stooq_ticker = _STOOQ_TICKERS[ticker.upper()]
+                stooq_df = _fetch_stooq(stooq_ticker, timeout)
+                if len(stooq_df) > len(df):
+                    # Stooq-Daten vor Yahoo-Start anhaengen
+                    yahoo_start = df.index[0]
+                    stooq_pre = stooq_df[stooq_df.index < yahoo_start]
+                    if len(stooq_pre) > 0:
+                        df = pd.concat([stooq_pre, df]).sort_index()
+                        # Duplikate entfernen (gleicher Tag)
+                        df = df[~df.index.duplicated(keep="last")]
+                        print(f"[yahoo_downloader] Stooq-Backfill: {len(stooq_pre)} Tage vor {yahoo_start.strftime('%Y-%m-%d')}")
+
         return df
     except Exception as e:
         print(f"[yahoo_downloader] Parse-Fehler für '{ticker}': {e}")

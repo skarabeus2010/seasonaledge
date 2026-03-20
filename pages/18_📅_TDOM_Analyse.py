@@ -226,6 +226,10 @@ def main():
         )
 
         st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
+        st.markdown("---")
 
         st.markdown("**📐 Multi-Day Range**")
         use_range = st.checkbox("Range-Strategie aktivieren", key="tdom_range")
@@ -260,6 +264,17 @@ def main():
         st.warning("Zu wenig Daten.")
         st.stop()
 
+    # ── Outlier-Filter anwenden ──
+    if outlier_method != "off":
+        from shared.calculations import build_year_data, calculate_seasonal_average
+        _available_years = sorted(df["year"].unique())
+        _yd = build_year_data(df, _available_years)
+        from shared.outlier_manager import filter_year_data, outlier_info_box
+        _yd_filtered, _outlier_years = filter_year_data(_yd, method=outlier_method)
+        if _outlier_years:
+            df = df[~df["year"].isin(_outlier_years)]
+            outlier_info_box(_outlier_years, outlier_method)
+
     # ══════════════════════════════════════════════════
     # SEKTION 1: TDoM Balkendiagramm
     # ══════════════════════════════════════════════════
@@ -270,6 +285,32 @@ def main():
         st.stop()
 
     fig_bars = build_tdom_bar_chart(stats, ticker, strategy, direction)
+
+    # "You are here" — aktuellen TDoM markieren
+    from shared.tdom_analysis import add_tdom_columns
+    _today_df = add_tdom_columns(df)
+    _today_row = _today_df.iloc[-1] if not _today_df.empty else None
+    _current_tdom = None
+    if _today_row is not None:
+        _current_tdom = int(_today_row["tdom"]) if direction == "forward" else int(_today_row["tdom_reverse"])
+        if _current_tdom in stats.index:
+            _tdom_labels = [str(t) for t in stats.index]
+            _tdom_pos = _tdom_labels.index(str(_current_tdom))
+            fig_bars.add_annotation(
+                x=str(_current_tdom),
+                y=stats.loc[_current_tdom, "avg_return"],
+                text="We are here",
+                showarrow=True,
+                arrowhead=2,
+                arrowcolor="#F1C40F",
+                ax=0, ay=-35,
+                font=dict(color="#F1C40F", size=11, family="Inter"),
+                bordercolor="#F1C40F",
+                borderwidth=1,
+                borderpad=3,
+                bgcolor="rgba(15,25,35,0.85)",
+            )
+
     st.plotly_chart(fig_bars, use_container_width=True)
 
     # ── KPIs ──
@@ -290,6 +331,33 @@ def main():
     with kpi_cols[3]:
         total_trades = stats["count"].sum()
         st.metric("Trades gesamt", f"{total_trades:,.0f}")
+
+    # ══════════════════════════════════════════════════
+    # TDoM-Anomalien (KI) — direkt nach dem Balkendiagramm
+    # ══════════════════════════════════════════════════
+    st.markdown("---")
+    st.markdown("### TDoM-Anomalien (KI)")
+    st.caption(
+        "Isolation Forest vergleicht die letzten 3 Monate mit der historischen Norm. "
+        "Hoher Z-Score = ungewoehnliches Verhalten."
+    )
+    try:
+        from shared.anomaly_engine import detect_tdom_anomalies
+        anomalies = detect_tdom_anomalies(df, strategy=strategy, recent_months=3)
+        if anomalies:
+            for a in anomalies[:5]:
+                icon = "🟢" if a["direction"] == "bullish" else "🔴"
+                st.markdown(
+                    f'{icon} **TDoM {a["tdom"]}** — '
+                    f'Z-Score: **{a["z_score"]:+.2f}** | '
+                    f'Aktuell: {a["recent_avg"]:+.4f}% vs. '
+                    f'Historisch: {a["historical_avg"]:+.4f}% '
+                    f'(n={a["recent_n"]}/{a["historical_n"]})'
+                )
+        else:
+            st.caption("Keine signifikanten TDoM-Anomalien in den letzten 3 Monaten.")
+    except Exception as _e:
+        st.caption(f"Anomalie-Erkennung nicht verfuegbar: {_e}")
 
     # ══════════════════════════════════════════════════
     # SEKTION 2: Win-Rate + Statistik-Tabelle
@@ -328,6 +396,38 @@ def main():
     matrix = build_tdom_month_matrix(df, strategy, direction)
     if not matrix.empty:
         fig_hm = build_month_tdom_heatmap(matrix, ticker, strategy)
+
+        # "You are here" — aktuellen Monat + TDoM markieren
+        if _current_tdom is not None:
+            _current_month = datetime.now().month
+            _current_month_name = MONTH_NAMES_DE[_current_month - 1]
+            _hm_cols = [str(c) for c in matrix.columns]
+            _tdom_str = str(_current_tdom)
+            if _tdom_str in _hm_cols and _current_month_name in matrix.index:
+                _col_idx = _hm_cols.index(_tdom_str)
+                _row_idx = list(matrix.index).index(_current_month_name)
+                fig_hm.add_shape(
+                    type="rect",
+                    x0=_col_idx - 0.5, x1=_col_idx + 0.5,
+                    y0=_row_idx - 0.5, y1=_row_idx + 0.5,
+                    line=dict(color="#F1C40F", width=3),
+                    fillcolor="rgba(0,0,0,0)",
+                    layer="above",
+                )
+                fig_hm.add_annotation(
+                    x=_col_idx, y=_row_idx,
+                    text="We are here",
+                    showarrow=True,
+                    arrowhead=2,
+                    arrowcolor="#F1C40F",
+                    ax=40, ay=-25,
+                    font=dict(color="#F1C40F", size=10, family="Inter"),
+                    bordercolor="#F1C40F",
+                    borderwidth=1,
+                    borderpad=2,
+                    bgcolor="rgba(15,25,35,0.85)",
+                )
+
         st.plotly_chart(fig_hm, use_container_width=True)
     else:
         st.caption("Heatmap nicht verfügbar.")
@@ -394,33 +494,6 @@ def main():
             st.caption("Keine Daten.")
         else:
             st.dataframe(yearly, use_container_width=True)
-
-    # ══════════════════════════════════════════════════
-    # SEKTION 6: TDoM-Anomalien (KI)
-    # ══════════════════════════════════════════════════
-    st.markdown("---")
-    with st.expander("TDoM-Anomalien (KI)", expanded=False):
-        st.caption(
-            "Isolation Forest vergleicht die letzten 3 Monate mit der historischen Norm. "
-            "Hoher Z-Score = ungewoehnliches Verhalten."
-        )
-        try:
-            from shared.anomaly_engine import detect_tdom_anomalies
-            anomalies = detect_tdom_anomalies(df, strategy=strategy, recent_months=3)
-            if anomalies:
-                for a in anomalies[:5]:
-                    icon = "🟢" if a["direction"] == "bullish" else "🔴"
-                    st.markdown(
-                        f'{icon} **TDoM {a["tdom"]}** — '
-                        f'Z-Score: **{a["z_score"]:+.2f}** | '
-                        f'Aktuell: {a["recent_avg"]:+.4f}% vs. '
-                        f'Historisch: {a["historical_avg"]:+.4f}% '
-                        f'(n={a["recent_n"]}/{a["historical_n"]})'
-                    )
-            else:
-                st.caption("Keine signifikanten TDoM-Anomalien in den letzten 3 Monaten.")
-        except Exception as _e:
-            st.caption(f"Anomalie-Erkennung nicht verfuegbar: {_e}")
 
     # ── Disclaimer ──
     st.markdown("---")

@@ -234,7 +234,7 @@ def calculate_trifecta(
 
     erfuellt_count = sum(
         1 for b in bedingungen.values()
-        if b.get("erfuellt") is True
+        if b.get("erfuellt") == True and b.get("erfuellt") is not None
     )
 
     signal = get_ampel_signal(erfuellt_count)
