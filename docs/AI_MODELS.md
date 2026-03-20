@@ -8,7 +8,14 @@
 | Prophet | Saisonale Prognose 60 Tage | Phase 1 |
 | Isolation Forest | Ausreißer-Jahre erkennen | Phase 1 |
 | Claude API | Natural Language Kommentar | Phase 1 |
-| **KI Seasonal Score** | **Composite 0-10 aus 4 Sub-Scores** | **Phase 1 ✅** |
+| **KI Seasonal Score** | **Composite 0-10 aus 4 Sub-Scores** | **Phase 1** |
+| **Outlier Manager** | **IQR / Winsorize / Isolation Forest Toggle** | **Phase 1.5** |
+| **KI-Zusammenfassung** | **Claude 3-Satz-Summary pro Page** | **Phase 1.5** |
+| **Anomalie-Heatmap** | **Isolation Forest Monat x Dekade** | **Phase 1.5** |
+| **Anomalie-Radar** | **Ticker-Abweichung vom Saisonalmuster (aktuell)** | **Phase 1.5** |
+| **Crash-Fruehwarnung** | **Markt-Regime Ampel (Vola/Drawdown/Rendite)** | **Phase 1.5** |
+| **TDoM-Anomalien** | **Ungewoehnliche Trading Days (Z-Score)** | **Phase 1.5** |
+| **Muster-Brueche** | **Jahre mit gebrochenen Saisonalmustern + Kontext** | **Phase 1.5** |
 | LSTM | Komplexe Mustererkennung | Phase 2 |
 | XGBoost | Multi-Feature Renditeprognose | Phase 2 |
 | Transformer | Attention-basierte Analyse | Phase 3 |
@@ -93,3 +100,108 @@ results = scan_tickers(tickers, years_back=20, quick_mode=True)
 - `pages/15_🧠_KI_Score.py` — Einzelticker: Gauge + Radar + 4 Detail-Expander
 - `pages/16_🔍_Market_Scanner.py` — Multi-Scanner: Top/Flop + Tabelle + Heatmap
 - `pages/17_⭐_Premium_Dashboard.py` — Seasonax-Style Komplettansicht
+
+## Outlier Manager (shared/outlier_manager.py)
+
+Erkennt und behandelt Ausreisser in saisonalen Analysen. 4 Methoden:
+
+| Methode | Logik | Effekt |
+|---------|-------|--------|
+| IQR (1.5x) | Interquartilsabstand | Entfernt moderate Ausreisser |
+| IQR (3x, streng) | Nur extreme Ausreisser | Konservativ |
+| Winsorize (3σ) | Clippt auf mean ± 3 Std | Behaelt alle Jahre, daempft Extreme |
+| Isolation Forest (KI) | sklearn ML-Modell | Erkennt atypische Jahresmuster |
+
+```python
+from shared.outlier_manager import filter_year_data, outlier_sidebar, outlier_info_box
+
+# In Sidebar: Toggle-Widget
+method = outlier_sidebar()
+
+# Nach build_year_data(), vor calculate_seasonal_average():
+year_data, outlier_years = filter_year_data(year_data, method=method)
+outlier_info_box(outlier_years, method)
+```
+
+## KI-Zusammenfassung (shared/ai_models.py)
+
+Claude generiert eine 3-Satz-Zusammenfassung pro Page:
+1. Historisches Muster (bullish/bearish + Kennzahl)
+2. Aktueller Kontext (Tracking vs. Saisonalmuster)
+3. Naechster Katalysator / Ausblick
+
+```python
+from shared.ai_models import generate_page_summary
+
+summary = generate_page_summary(
+    ticker="SPY",
+    page_name="Saisonale Analyse",
+    stats={"avg_return": 1.2, "win_rate": "68%", "period": "Maerz", ...}
+)
+# → "Der Maerz zeigt fuer SPY eine historisch bullische Tendenz mit 68% Win-Rate..."
+```
+
+Benoetigter Key: `ANTHROPIC_API_KEY` in `.streamlit/secrets.toml` oder Environment.
+
+## Anomalie-Heatmap (shared/ai_models.py)
+
+Isolation Forest pro Monat × Dekaden-Endziffer erkennt die groessten Muster-Brueche.
+
+```python
+from shared.ai_models import build_anomaly_matrix, build_anomaly_heatmap_figure
+
+matrix, months, digits = build_anomaly_matrix(df, contamination=0.1)
+fig = build_anomaly_heatmap_figure(matrix, months, digits, ticker="SPY")
+# matrix[monat][digit] = Ausreisser-Anteil in % (0-100)
+```
+
+Benoetigtes Paket: `scikit-learn` (sklearn).
+
+## Anomaly Engine (shared/anomaly_engine.py)
+
+4 Isolation-Forest-Features in einem Modul:
+
+### 1. Anomalie-Radar
+Erkennt ob ein Ticker sich **gerade jetzt** anomal verhaelt vs. saisonalem Muster.
+IF trainiert auf historischen Fenster-Renditen am gleichen Kalenderzeitpunkt.
+
+```python
+from shared.anomaly_engine import compute_ticker_anomaly_score
+result = compute_ticker_anomaly_score(df, lookback_days=10)
+# → {"anomaly_score": 72.3, "direction": "bearish_anomaly", "current_return": -3.2, ...}
+```
+
+Integriert in: Erweiterte Analyse (Expander)
+
+### 2. Crash-Fruehwarnung
+IF auf Rendite/Volatilitaet/Drawdown-Features → Ampel-System (Gruen/Gelb/Rot).
+
+```python
+from shared.anomaly_engine import compute_market_regime, TRAFFIC_LIGHT_LABELS
+regime = compute_market_regime(df)
+# → {"regime": "caution", "risk_score": 55, "traffic_light": "yellow", ...}
+```
+
+Integriert in: Home Page (SPY-basiert)
+
+### 3. TDoM-Anomalien
+Vergleicht letzte 3 Monate TDoM-Renditen mit historischem Durchschnitt via Z-Score.
+
+```python
+from shared.anomaly_engine import detect_tdom_anomalies
+anomalies = detect_tdom_anomalies(df, strategy="open_to_close", recent_months=3)
+# → [{"tdom": 1, "z_score": -2.3, "direction": "bearish", ...}, ...]
+```
+
+Integriert in: TDOM Analyse (Expander)
+
+### 4. Saisonale Muster-Brueche
+IF erkennt Jahre mit gebrochenen Saisonalmustern. Inkl. historischem Event-Kontext.
+
+```python
+from shared.anomaly_engine import detect_pattern_breaks
+breaks = detect_pattern_breaks(year_data, avg, top_n=7)
+# → [{"year": 2020, "break_strength": 85, "event": "COVID-19 Pandemie", ...}, ...]
+```
+
+Integriert in: Erweiterte Analyse (Expander)

@@ -1,0 +1,31 @@
+name: Nightly DB Refresh
+
+on:
+  schedule:
+    # Mo-Fr um 20:00 UTC (nach US-Börsenschluss)
+    - cron: '0 20 * * 1-5'
+  workflow_dispatch:  # Manueller Trigger
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run nightly refresh
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python scripts/nightly_refresh.py

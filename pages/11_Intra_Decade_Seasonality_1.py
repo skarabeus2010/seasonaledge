@@ -25,9 +25,9 @@ from shared.calculations_decade import (
     build_decade_data, get_decade_summary_table,
     get_decade_digit, DECADE_COLORS, DECADE_LABELS,
 )
-from shared.distribution_charts import (
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
+from shared.distribution_charts import (
     build_box_plot, build_decade_monthly_heatmap, build_context_panel_data,
 )
 
@@ -36,6 +36,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+
+from shared.design import inject_se_css
+inject_se_css()
 
 TEMPLATE = "plotly_dark"
 CURRENT_YEAR  = datetime.now().year
@@ -369,6 +372,18 @@ if show_boxplot:
             current_key=f"X{CURRENT_DIGIT}",
         )
         st.plotly_chart(fig_box, use_container_width=True)
+
+        with st.expander("So lesen Sie das Box-Plot-Diagramm"):
+            st.markdown("""
+**Box-Plots** zeigen die Verteilung der Jahresrenditen pro Dekaden-Kohorte auf einen Blick:
+
+- **Box (Kasten):** Umfasst die mittleren 50% aller Werte (25. bis 75. Perzentil). Je schmaler die Box, desto konsistenter die Renditen.
+- **Linie in der Box:** Der **Median** — die Hälfte aller Jahre lag darüber, die andere darunter.
+- **Whiskers (Antennen):** Reichen bis zum 1,5-fachen des Interquartilsabstands. Werte innerhalb dieser Spanne gelten als typisch.
+- **Punkte ausserhalb:** **Ausreisser** — ungewöhnlich starke oder schwache Jahre (z.B. Crash- oder Boom-Jahre).
+
+**Interpretation:** Eine Box, die vollständig über der 0%-Linie liegt, zeigt eine historisch bullische Kohorte. Liegt sie darunter, war die Kohorte eher schwach. Die Breite der Box zeigt die Streuung — breitere Boxen bedeuten weniger Vorhersagbarkeit.
+""")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 6. HEATMAP: Dekade × Monat

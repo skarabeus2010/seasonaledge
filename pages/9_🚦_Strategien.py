@@ -26,9 +26,9 @@ from datetime import datetime
 from shared.yahoo_downloader import download_data, preprocess
 from shared.constants import DEFAULT_TICKER
 from shared.strategies import januar_trifecta, kaeppel, STRATEGIES
-from shared.strategies.definitions import (
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
+from shared.strategies.definitions import (
     KATEGORIEN, STAERKEN,
     get_strategies_by_category,
     get_strategies_by_strength,
@@ -39,6 +39,9 @@ st.set_page_config(
     page_icon="🚦",
     layout="wide",
 )
+
+from shared.design import inject_se_css
+inject_se_css()
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 

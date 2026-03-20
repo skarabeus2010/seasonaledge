@@ -31,6 +31,9 @@ from shared.constants import SE_COLORS
 
 st.set_page_config(page_title="SeasonalEdge - Monthly", page_icon="📆", layout="wide")
 
+from shared.design import inject_se_css
+inject_se_css()
+
 def assign_tdom(df):
     df = df.copy()
     df["tdom"] = df.groupby(["year", "month"]).cumcount() + 1

@@ -6,12 +6,16 @@
 download_manager.py  ←→  yahoo_downloader.py  ←→  Stooq-Fallback
         ↓                          ↓
   supabase_client.py          logger.py (app.log)
+        ↓                          ↓
+  cache_manager.py ←→ market_calendar.py ←→ nightly_refresh.py
         ↓
     data.py (Wrapper, kein Cache!)
         ↓
   calculations.py / calculations_decade.py
         ↓                          ↓
-  distribution_charts.py      ai_models.py
+  distribution_charts.py      ai_models.py (DTW, Prophet, IF, Claude)
+        ↓                          ↓
+  outlier_manager.py      KI-Summary + Anomalie-Heatmap
         ↓                          ↓
      pages/*.py (UI)         apply_se_theme()
 ```
@@ -58,6 +62,56 @@ CREATE TABLE subscribers (
     unsubscribed_at TIMESTAMPTZ, no_emails BOOLEAN DEFAULT FALSE,
     brevo_synced BOOLEAN DEFAULT FALSE, ip_address TEXT,
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+-- Market Calendar + Computed Values Cache (scripts/create_market_tables.sql)
+CREATE TABLE market_events (
+    id BIGSERIAL PRIMARY KEY, event_date DATE NOT NULL,
+    event_type TEXT NOT NULL, event_name TEXT NOT NULL,
+    exchange TEXT NOT NULL, subtype TEXT, meta JSONB DEFAULT '{}',
+    year INT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(event_date, event_type, event_name, exchange)
+);
+
+CREATE TABLE monthly_stats (
+    id BIGSERIAL PRIMARY KEY, ticker TEXT NOT NULL,
+    month INT NOT NULL, years_back INT NOT NULL,
+    avg_return FLOAT, median_return FLOAT, win_rate FLOAT,
+    std_dev FLOAT, max_gain FLOAT, max_loss FLOAT, total_years INT,
+    updated_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(ticker, month, years_back)
+);
+
+CREATE TABLE ki_scores (
+    id BIGSERIAL PRIMARY KEY, ticker TEXT NOT NULL,
+    score FLOAT NOT NULL, signal TEXT NOT NULL,
+    dtw_score FLOAT, prophet_score FLOAT, win_rate_score FLOAT, tracking_score FLOAT,
+    details JSONB DEFAULT '{}', computed_date DATE NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(ticker, computed_date)
+);
+
+CREATE TABLE scanner_results (
+    id BIGSERIAL PRIMARY KEY, ticker TEXT NOT NULL,
+    score FLOAT NOT NULL, signal TEXT NOT NULL,
+    win_rate FLOAT, avg_return FLOAT, deviation FLOAT,
+    scan_date DATE NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(ticker, scan_date)
+);
+
+CREATE TABLE spot_vol_beta (
+    id BIGSERIAL PRIMARY KEY, event_date DATE NOT NULL,
+    spx_close FLOAT, vix_close FLOAT,
+    spx_ret FLOAT, vix_chg FLOAT,
+    daily_beta FLOAT, rolling_beta_60 FLOAT,
+    updated_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(event_date)
+);
+
+CREATE TABLE tdom_stats (
+    id BIGSERIAL PRIMARY KEY, ticker TEXT NOT NULL,
+    tdom INT NOT NULL, direction TEXT NOT NULL, strategy TEXT NOT NULL,
+    avg_return FLOAT, median_return FLOAT, win_rate FLOAT,
+    std_dev FLOAT, count INT, updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(ticker, tdom, direction, strategy)
 );
 ```
 

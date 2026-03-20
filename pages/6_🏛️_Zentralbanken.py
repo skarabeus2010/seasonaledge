@@ -27,15 +27,18 @@ from datetime import datetime
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS
 from shared.data import download_data, preprocess
 from shared.fed_dates import get_fomc_dates
-from shared.central_banks import (
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
+from shared.central_banks import (
     get_ecb_dates, get_boe_dates, get_boj_dates,
     get_fed_rate_changes, get_fed_minutes_dates,
     CENTRAL_BANK_REGISTRY
 )
 
 st.set_page_config(page_title="SeasonalEdge - Zentralbanken", page_icon="🏛️", layout="wide")
+
+from shared.design import inject_se_css
+inject_se_css()
 
 
 # ══════════════════════════════════════════════════════════════

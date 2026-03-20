@@ -23,9 +23,9 @@ from datetime import date
 from shared.yahoo_downloader import download_data, preprocess
 from shared.symbols import SYMBOLS, get_dropdown_label
 from shared.exchange_holidays import get_exchange_for_ticker
-from shared.nyse_holidays import (
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
+from shared.nyse_holidays import (
     _good_friday,
     _nth_weekday,
     _easter_monday,
@@ -41,6 +41,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 # ── Feiertags-Definitionen ──────────────────────────────────────────────────────
 
 NYSE_HOLIDAY_FUNCS = {
@@ -52,6 +55,8 @@ NYSE_HOLIDAY_FUNCS = {
     "Juneteenth":       lambda y: _observed(date(y, 6, 19)) if y >= 2022 else None,
     "Independence Day": lambda y: _observed(date(y, 7, 4)),
     "Labor Day":        lambda y: _nth_weekday(y, 9, 0, 1),
+    "Columbus Day":     lambda y: _nth_weekday(y, 10, 0, 2),
+    "Veterans Day":     lambda y: _observed(date(y, 11, 11)),
     "Thanksgiving":     lambda y: _nth_weekday(y, 11, 3, 4),
     "Christmas Day":    lambda y: _observed(date(y, 12, 25)),
 }
@@ -226,7 +231,7 @@ with col_a:
     selected = st.multiselect(
         "Feiertage auswaehlen",
         options=list(holiday_dates.keys()),
-        default=list(holiday_dates.keys())[:4],
+        default=list(holiday_dates.keys()),
     )
 with col_b:
     show_kaeppel = st.toggle(

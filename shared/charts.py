@@ -125,7 +125,7 @@ def apply_se_theme(
     )
 
     # Style secondary Y-axis if present
-    if fig.layout.yaxis2 is not None:
+    if hasattr(fig.layout, 'yaxis2') and fig.layout.yaxis2 is not None:
         fig.update_layout(yaxis2=dict(
             gridcolor="rgba(0,0,0,0)",
             linecolor=SE_COLORS["axis_line"],

@@ -43,6 +43,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 st.markdown("## 🔄 Sektor-Rotation")
 st.caption("Welche Sektoren performen historisch in welchem Monat am besten?")
 
@@ -74,7 +77,7 @@ if not selected_sectors:
     st.stop()
 
 # ── Daten laden ──────────────────────────────────────
-start_date = f"{datetime.now().year - years_back}-01-01"
+period = f"{years_back}y"
 
 sector_data = {}
 progress = st.progress(0, text="Lade Sektor-Daten...")
@@ -82,7 +85,7 @@ progress = st.progress(0, text="Lade Sektor-Daten...")
 for i, ticker in enumerate(selected_sectors):
     progress.progress((i + 1) / len(selected_sectors), text=f"Lade {ticker}...")
     try:
-        df = download_data(ticker, start=start_date)
+        df = download_data(ticker, period=period)
         if df is not None and not df.empty:
             df = preprocess(df)
             sector_data[ticker] = df
@@ -104,7 +107,7 @@ stats = monthly_sector_stats(sector_data)
 
 # ── Aktueller Monat: Rotationssignal ─────────────────
 current_month = datetime.now().month
-current_month_name = MONTH_NAMES_DE.get(current_month, str(current_month))
+current_month_name = MONTH_NAMES_DE[current_month - 1] if 1 <= current_month <= 12 else str(current_month)
 
 st.markdown("---")
 st.markdown(f"### 🚦 Rotationssignal — {current_month_name}")
@@ -137,7 +140,7 @@ st.markdown("### 🗺️ Saisonale Heatmap — Monat × Sektor")
 
 if not seasonality.empty:
     # Monatsnamen
-    month_labels = [MONTH_NAMES_DE.get(m, str(m)) for m in seasonality.index]
+    month_labels = [MONTH_NAMES_DE[m - 1] if 1 <= m <= 12 else str(m) for m in seasonality.index]
     sector_labels = [f"{t} ({sector_map.get(t, t)})" for t in seasonality.columns]
 
     z_vals = seasonality.values.tolist()
@@ -150,12 +153,11 @@ if not seasonality.empty:
         zmid=0,
         text=[[f"{v:+.1f}%" if not np.isnan(v) else "—" for v in row] for row in z_vals],
         texttemplate="%{text}",
-        textfont=dict(size=11, color=SE_COLORS["text"]),
+        textfont=dict(size=11, color=SE_COLORS["text_primary"]),
         hovertemplate="Sektor: %{x}<br>Monat: %{y}<br>Ø Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
-            title="Ø %",
-            tickfont=dict(color=SE_COLORS["muted"]),
-            titlefont=dict(color=SE_COLORS["muted"]),
+            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+            tickfont=dict(color=SE_COLORS["text_muted"]),
         ),
     ))
 
@@ -175,7 +177,7 @@ with top_col:
     st.markdown("**🟢 Top 3 pro Monat**")
     rows_top = []
     for month in range(1, 13):
-        m_name = MONTH_NAMES_DE.get(month, str(month))
+        m_name = MONTH_NAMES_DE[month - 1] if 1 <= month <= 12 else str(month)
         if month in best:
             entries = best[month]
             for rank, (ticker, ret) in enumerate(entries, 1):
@@ -195,7 +197,7 @@ with flop_col:
     st.markdown("**🔴 Flop 3 pro Monat**")
     rows_flop = []
     for month in range(1, 13):
-        m_name = MONTH_NAMES_DE.get(month, str(month))
+        m_name = MONTH_NAMES_DE[month - 1] if 1 <= month <= 12 else str(month)
         if month in worst:
             entries = worst[month]
             for rank, (ticker, ret) in enumerate(entries, 1):
@@ -238,7 +240,7 @@ if compare_sectors:
 
         vals = seasonality[ticker].values
         months = list(range(1, 13))
-        month_names = [MONTH_NAMES_DE.get(m, str(m))[:3] for m in months]
+        month_names = [MONTH_NAMES_DE[m - 1] if 1 <= m <= 12 else str(m)[:3] for m in months]
 
         # Kumulierte Rendite
         cum_vals = np.nancumsum(vals)
@@ -267,7 +269,7 @@ st.markdown("### 🎯 Win-Rate Heatmap")
 if not stats.empty:
     wr_pivot = stats.pivot_table(index="month", columns="ticker", values="win_rate_pct")
     if not wr_pivot.empty:
-        month_labels_wr = [MONTH_NAMES_DE.get(m, str(m)) for m in wr_pivot.index]
+        month_labels_wr = [MONTH_NAMES_DE[m - 1] if 1 <= m <= 12 else str(m) for m in wr_pivot.index]
         sector_labels_wr = [f"{t}" for t in wr_pivot.columns]
         z_wr = wr_pivot.values.tolist()
 
@@ -280,12 +282,11 @@ if not stats.empty:
             zmin=20, zmax=80,
             text=[[f"{v:.0f}%" if not np.isnan(v) else "—" for v in row] for row in z_wr],
             texttemplate="%{text}",
-            textfont=dict(size=11, color=SE_COLORS["text"]),
+            textfont=dict(size=11, color=SE_COLORS["text_primary"]),
             hovertemplate="Sektor: %{x}<br>Monat: %{y}<br>Win-Rate: %{z:.0f}%<extra></extra>",
             colorbar=dict(
-                title="Win %",
-                tickfont=dict(color=SE_COLORS["muted"]),
-                titlefont=dict(color=SE_COLORS["muted"]),
+                title=dict(text="Win %", font=dict(color=SE_COLORS["text_muted"])),
+                tickfont=dict(color=SE_COLORS["text_muted"]),
             ),
         ))
 

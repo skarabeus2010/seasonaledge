@@ -37,6 +37,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 # ── Kategorien aus SYMBOLS extrahieren ────────────────
 ALL_KATEGORIEN = sorted(set(
     info.get("kategorie", "Sonstige") for info in SYMBOLS.values()
@@ -152,8 +155,7 @@ def build_category_heatmap(results: list[dict]) -> go.Figure:
         ],
         zmin=0, zmax=10,
         colorbar=dict(
-            title="Score",
-            titlefont=dict(color=SE_COLORS["text_muted"]),
+            title=dict(text="Score", font=dict(color=SE_COLORS["text_muted"])),
             tickfont=dict(color=SE_COLORS["text_muted"]),
         ),
     ))

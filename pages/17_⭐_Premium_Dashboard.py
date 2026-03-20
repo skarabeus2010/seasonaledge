@@ -41,6 +41,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 # ── Monat → DOY Mapping ──────────────────────────────
 MONTH_START = {1:1,2:32,3:60,4:91,5:121,6:152,7:182,8:213,9:244,10:274,11:305,12:335}
 MONTH_END = {1:31,2:59,3:90,4:120,5:151,6:181,7:212,8:243,9:273,10:304,11:334,12:365}

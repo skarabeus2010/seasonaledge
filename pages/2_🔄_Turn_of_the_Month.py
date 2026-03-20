@@ -27,6 +27,9 @@ from shared.calculations import analyze_turn_of_month, build_tom_chart
 
 st.set_page_config(page_title="SeasonalEdge - Turn of the Month", page_icon="🔄", layout="wide")
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 def main():
     with st.sidebar:

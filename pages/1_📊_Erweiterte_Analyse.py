@@ -38,6 +38,9 @@ from shared.charts import build_seasonal_chart
 
 st.set_page_config(page_title="SeasonalEdge - Erweitert", page_icon="📊", layout="wide")
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 def main():
     with st.sidebar:
@@ -112,6 +115,11 @@ def main():
             help="Filtert Jahre nach ersten 5 Handelstagen im Januar"
         )
         
+        # ── Outlier-Filter ──
+        st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
         # ── Overlay ──
         st.markdown("---")
         st.markdown("### 🔗 Overlay")
@@ -149,8 +157,14 @@ def main():
         return
     
     year_data = build_year_data(df, selected_years)
+
+    # ── Outlier-Filter anwenden ─────────────────────
+    from shared.outlier_manager import filter_year_data, outlier_info_box
+    year_data, outlier_years = filter_year_data(year_data, method=outlier_method)
+    outlier_info_box(outlier_years, outlier_method)
+
     avg, std = calculate_seasonal_average(year_data)
-    
+
     # ── Indikatoren berechnen ─────────────────────────
     indicator_years = None
     indicator_label = None
@@ -270,17 +284,213 @@ def main():
     if pressure_info:
         st.info(pressure_info)
     
+    # ── KI-Zusammenfassung ────────────────────────────
+    from shared.calculations import calculate_period_stats
+    from shared.constants import MONTH_NAMES_DE
+
+    current_month = datetime.now().month
+    month_name = MONTH_NAMES_DE[current_month - 1]
+    from shared.constants import SE_COLORS
+
+    # Monats-Stats fuer aktuellen Monat
+    month_start_doy = {1:1,2:32,3:60,4:91,5:121,6:152,7:182,8:213,9:244,10:274,11:305,12:335}
+    month_end_doy = {1:31,2:59,3:90,4:120,5:151,6:181,7:212,8:243,9:273,10:304,11:334,12:365}
+    period_stats = calculate_period_stats(year_data, month_start_doy[current_month], month_end_doy[current_month])
+
+    if period_stats:
+        summary_stats = {
+            "avg_return": period_stats.get("avg_return", 0),
+            "win_rate": f"{period_stats.get('win_rate', 0):.0f}%",
+            "period": month_name,
+            "n_years": period_stats.get("total_years", 0),
+            "std_dev": period_stats.get("std_dev", 0),
+        }
+        # Aktuelles Jahr Tracking
+        current_yd = year_data.get(current_year)
+        if current_yd and avg:
+            today_doy = min(datetime.now().timetuple().tm_yday, 364)
+            curr_val = current_yd["full_365"][today_doy]
+            avg_val = avg[today_doy]
+            if avg_val != 0:
+                diff = curr_val - avg_val
+                summary_stats["current_tracking"] = (
+                    f"{diff:+.1f}% vs Saisonalmuster"
+                )
+
+        with st.expander("KI-Zusammenfassung", expanded=False):
+            from shared.ai_models import generate_page_summary
+            with st.spinner("KI analysiert..."):
+                summary = generate_page_summary(
+                    ticker=ticker,
+                    page_name="Saisonale Analyse (Erweitert)",
+                    stats=summary_stats,
+                )
+            if summary:
+                st.markdown(summary)
+            else:
+                st.caption("KI-Zusammenfassung nicht verfuegbar (API-Key nicht gesetzt).")
+
+    # ── Anomalie-Heatmap ──────────────────────────────
+    with st.expander("Anomalie-Heatmap (KI)", expanded=False):
+        st.caption(
+            "Isolation Forest erkennt Monate/Dekaden mit ungewoehnlichen Rendite-Mustern. "
+            "Hohe Werte = mehr Ausreisser-Renditen in dieser Zelle."
+        )
+        from shared.ai_models import build_anomaly_matrix, build_anomaly_heatmap_figure
+        with st.spinner("Anomalie-Erkennung laeuft..."):
+            a_matrix, a_months, a_digits = build_anomaly_matrix(df)
+        if len(a_months) > 0:
+            fig_anomaly = build_anomaly_heatmap_figure(a_matrix, a_months, a_digits, ticker)
+            st.plotly_chart(fig_anomaly, use_container_width=True)
+            # Top-Anomalien als Text
+            flat = []
+            for mi, ml in enumerate(a_months):
+                for di, dl in enumerate(a_digits):
+                    if a_matrix[mi, di] > 40:
+                        flat.append((ml, dl, a_matrix[mi, di]))
+            flat.sort(key=lambda x: x[2], reverse=True)
+            if flat:
+                top_str = " | ".join(f"{m}/{d}: {v:.0f}" for m, d, v in flat[:5])
+                st.caption(f"Staerkste Anomalien: {top_str}")
+
+            with st.expander("So lesen Sie die Anomalie-Heatmap"):
+                st.markdown("""
+Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisch die meisten ungewoehnlichen Renditen aufgetreten sind.
+
+- **Zeilen** = Monate (Januar bis Dezember)
+- **Spalten** = Dekaden-Endziffer (X0 bis X9, z.B. X6 = 2006, 2016, 2026)
+- **Farbskala:** Dunkel = normale, erwartbare Renditen. Hell/Rot = viele Ausreisser, also Monate in denen die Renditen ungewoehnlich stark vom Durchschnitt abwichen.
+- **Gelber Rahmen** = "We are here" — der aktuelle Monat und die aktuelle Dekade.
+
+**Interpretation:** Zellen mit hohen Werten (hell/rot) zeigen Zeitraeume, in denen die Maerkte besonders unberechenbar waren — sowohl nach oben als auch nach unten. Das bedeutet nicht automatisch Verlust, sondern erhoehte Unsicherheit. Dunkle Zellen stehen fuer Phasen mit stabilen, vorhersagbaren saisonalen Mustern.
+
+**Methode:** Ein Isolation Forest (Machine Learning) wird ueber alle historischen Monatsrenditen trainiert und bewertet jede Rendite nach ihrer "Normalitaet". Der Anomalie-Score pro Zelle ist der Durchschnitt dieser Bewertungen.
+""")
+        else:
+            st.caption("sklearn nicht installiert — Anomalie-Erkennung nicht verfuegbar.")
+
+    # ── Anomalie-Radar ──────────────────────────────────
+    with st.expander("Anomalie-Radar (KI)", expanded=False):
+        st.caption("Wie stark weicht das aktuelle Kursverhalten vom saisonalen Muster ab?")
+        try:
+            from shared.anomaly_engine import compute_ticker_anomaly_score
+            with st.spinner("Anomalie-Radar berechnet..."):
+                radar = compute_ticker_anomaly_score(df, lookback_days=10)
+            if "error" not in radar:
+                r_score = radar["anomaly_score"]
+                r_dir = radar["direction"]
+                if r_score >= 70:
+                    r_icon, r_label = "🔴", "Stark anomal"
+                elif r_score >= 40:
+                    r_icon, r_label = "🟡", "Leicht anomal"
+                else:
+                    r_icon, r_label = "🟢", "Normal"
+
+                rc1, rc2, rc3, rc4 = st.columns(4)
+                rc1.metric("Anomalie-Score", f"{r_score:.0f}/100")
+                rc2.metric("Status", f"{r_icon} {r_label}")
+                rc3.metric("Aktuelle 10d-Rendite", f'{radar["current_return"]:+.2f}%')
+                rc4.metric("Historischer Ø", f'{radar["historical_avg"]:+.2f}%')
+                st.caption(
+                    f'Vergleich: {radar["n_comparisons"]} historische Fenster '
+                    f'am gleichen Kalenderzeitpunkt.'
+                )
+            else:
+                st.caption(radar["error"])
+        except Exception as _e:
+            st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+
+    # ── Saisonale Muster-Brueche ─────────────────────
+    with st.expander("Saisonale Muster-Brueche (KI)", expanded=False):
+        st.caption("Jahre in denen das saisonale Muster am staerksten gebrochen wurde.")
+        try:
+            from shared.anomaly_engine import detect_pattern_breaks
+            breaks = detect_pattern_breaks(year_data, avg, top_n=7)
+            if breaks:
+                for b in breaks:
+                    icon = "⚠️" if b["is_outlier"] else "📊"
+                    event_str = f' — *{b["event"]}*' if b["event"] else ""
+                    st.markdown(
+                        f'{icon} **{b["year"]}** | '
+                        f'Bruch-Staerke: **{b["break_strength"]:.0f}** | '
+                        f'Korrelation: {b["correlation"]:.2f} | '
+                        f'Jahresrendite: {b["year_return"]:+.1f}% | '
+                        f'Max DD: {b["max_drawdown"]:.1f}%'
+                        f'{event_str}'
+                    )
+            else:
+                st.caption("Keine Muster-Brueche erkannt.")
+        except Exception as _e:
+            st.caption(f"Muster-Bruch-Erkennung nicht verfuegbar: {_e}")
+
+    # ── MSTL Saisonalitaets-Zerlegung ─────────────────
+    with st.expander("MSTL Saisonalitaets-Zerlegung", expanded=False):
+        st.caption("Zerlegt den Kurs in Trend + Wochensaisonalitaet + Jahressaisonalitaet + Residual.")
+        try:
+            from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
+            with st.spinner("MSTL Zerlegung..."):
+                mstl_result = decompose_mstl(df, periods=[5, 252])
+            if mstl_result:
+                mc1, mc2, mc3 = st.columns(3)
+                mc1.metric("Trend-Anteil", f'{mstl_result.get("strength_trend", 0):.1f}%')
+                mc2.metric("Wochen-Saisonalitaet", f'{mstl_result.get("strength_weekly", 0):.1f}%')
+                mc3.metric("Jahres-Saisonalitaet", f'{mstl_result.get("strength_yearly", 0):.1f}%')
+                fig_mstl = build_decomposition_figure(mstl_result, ticker)
+                st.plotly_chart(fig_mstl, use_container_width=True)
+            else:
+                st.caption("MSTL nicht verfuegbar (zu wenig Daten oder statsmodels fehlt).")
+        except Exception as _e:
+            st.caption(f"MSTL nicht verfuegbar: {_e}")
+
+    # ── Chronos Forecast ────────────────────────────────
+    with st.expander("Chronos Forecast (KI)", expanded=False):
+        st.caption("Probabilistische 30-Tage Prognose mit Konfidenzintervall (Amazon Chronos-Bolt).")
+        try:
+            from shared.chronos_forecast import forecast_chronos, build_chronos_chart
+            with st.spinner("Chronos Forecast berechnet..."):
+                chronos_fc = forecast_chronos(df, periods=30)
+            if chronos_fc is not None:
+                cc1, cc2, cc3 = st.columns(3)
+                cc1.metric("Erwartete Rendite", f'{chronos_fc.attrs.get("expected_return", 0):+.2f}%')
+                cc2.metric("P(positiv)", f'{chronos_fc.attrs.get("p_positive", 50):.0f}%')
+                cc3.metric("Letzter Close", f'{chronos_fc.attrs.get("last_close", 0):.2f}')
+                fig_chronos = build_chronos_chart(df, chronos_fc, ticker)
+                st.plotly_chart(fig_chronos, use_container_width=True)
+            else:
+                st.caption("Chronos nicht verfuegbar (pip install chronos-forecasting).")
+        except Exception as _e:
+            st.caption(f"Chronos nicht verfuegbar: {_e}")
+
+    # ── NeuralProphet Komponenten ───────────────────────
+    with st.expander("NeuralProphet Saisonalitaet (KI)", expanded=False):
+        st.caption("Explizite Wochen- und Jahressaisonalitaet via Neural Network.")
+        try:
+            from shared.neural_prophet_forecast import forecast_neural_prophet, build_neural_prophet_chart
+            with st.spinner("NeuralProphet trainiert..."):
+                np_result = forecast_neural_prophet(df, periods=30)
+            if np_result:
+                st.metric("Erwartete Rendite (30d)", f'{np_result["expected_return"]:+.2f}%')
+                fig_np = build_neural_prophet_chart(df, np_result, ticker)
+                if fig_np.data:
+                    st.plotly_chart(fig_np, use_container_width=True)
+            else:
+                st.caption("NeuralProphet nicht verfuegbar (pip install neuralprophet).")
+        except Exception as _e:
+            st.caption(f"NeuralProphet nicht verfuegbar: {_e}")
+
     # ── Dateninfo ─────────────────────────────────────
-    with st.expander("ℹ️ Dateninfo"):
+    with st.expander("Dateninfo"):
         st.markdown(f"""
-        **Ticker:** {ticker}  
-        **Analyse-Jahre:** {min(selected_years)} – {max(selected_years)} ({len(year_data)} Jahre)  
-        **Methode:** Kumulative Log-Returns (Start = 100)  
-        **Glättung:** {smoothing}-Tage zentrierter MA  
-        **Präsidentenzyklus:** {current_year} = {get_presidential_cycle_year(current_year)}  
+        **Ticker:** {ticker}
+        **Analyse-Jahre:** {min(selected_years)} – {max(selected_years)} ({len(year_data)} Jahre)
+        **Methode:** Kumulative Log-Returns (Start = 100)
+        **Glättung:** {smoothing}-Tage zentrierter MA
+        **Präsidentenzyklus:** {current_year} = {get_presidential_cycle_year(current_year)}
         """)
         if indicator_years and indicator_label:
             st.markdown(f"**Aktiver Indikator:** {indicator_label} — {len(indicator_years)} Jahre")
+        if outlier_years:
+            st.markdown(f"**Outlier-Filter:** {len(outlier_years)} Jahre entfernt/angepasst")
 
 
 if __name__ == "__main__":

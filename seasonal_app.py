@@ -26,14 +26,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Inject global dark CSS ────────────────────────────────────
-st.markdown("""
-<style>
-.stApp { background-color: #080c12; }
-[data-testid="stSidebar"] { background-color: #0a0f17; }
-[data-testid="stPlotlyChart"] { border-radius: 8px; overflow: hidden; }
-</style>
-""", unsafe_allow_html=True)
+# ── Zentrales Dark Theme ──────────────────────────────────────
+from shared.design import inject_se_css
+inject_se_css()
 
 DEFAULT_TICKER = "AAPL"
 DEFAULT_YEARS = 20

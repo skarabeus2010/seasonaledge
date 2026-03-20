@@ -235,3 +235,201 @@ def count_subscribers() -> dict:
         .data
     )
     return {"active": active, "total": total, "unsubscribed": total - active}
+
+
+# ── Market Events ──────────────────────────────────
+
+def upsert_market_events(records: list[dict]):
+    """Market Events in Supabase upserten (Feiertage, OPEX, Zentralbank)."""
+    if not records:
+        return
+    # Supabase hat ein Limit von ~1000 Rows pro Request
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("market_events").upsert(
+            batch,
+            on_conflict="event_date,event_type,event_name,exchange",
+        ).execute()
+
+
+def fetch_market_events(
+    start_date: str,
+    end_date: str,
+    event_types: list[str] = None,
+    exchanges: list[str] = None,
+) -> list[dict]:
+    """Market Events aus Supabase laden."""
+    q = (
+        get_client()
+        .table("market_events")
+        .select("*")
+        .gte("event_date", start_date)
+        .lte("event_date", end_date)
+    )
+    if event_types:
+        q = q.in_("event_type", event_types)
+    if exchanges:
+        q = q.in_("exchange", exchanges)
+    return q.order("event_date").execute().data
+
+
+# ── Monthly Stats ──────────────────────────────────
+
+def upsert_monthly_stats(records: list[dict]):
+    """Monatliche Statistiken upserten."""
+    if not records:
+        return
+    get_client().table("monthly_stats").upsert(
+        records, on_conflict="ticker,month,years_back"
+    ).execute()
+
+
+def fetch_monthly_stats(ticker: str, years_back: int = 20) -> list[dict]:
+    """Monatliche Statistiken aus DB laden."""
+    return (
+        get_client()
+        .table("monthly_stats")
+        .select("*")
+        .eq("ticker", ticker)
+        .eq("years_back", years_back)
+        .order("month")
+        .execute()
+        .data
+    )
+
+
+# ── KI Scores ─────────────────────────────────────
+
+def upsert_ki_score(record: dict):
+    """KI Score upserten."""
+    if not record:
+        return
+    get_client().table("ki_scores").upsert(
+        [record], on_conflict="ticker,computed_date"
+    ).execute()
+
+
+def fetch_ki_score(ticker: str, computed_date: str) -> dict | None:
+    """KI Score aus DB laden."""
+    result = (
+        get_client()
+        .table("ki_scores")
+        .select("*")
+        .eq("ticker", ticker)
+        .eq("computed_date", computed_date)
+        .execute()
+        .data
+    )
+    return result[0] if result else None
+
+
+# ── Scanner Results ────────────────────────────────
+
+def upsert_scanner_results(records: list[dict]):
+    """Scanner-Ergebnisse upserten."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("scanner_results").upsert(
+            batch, on_conflict="ticker,scan_date"
+        ).execute()
+
+
+def fetch_scanner_results(scan_date: str = None) -> list[dict]:
+    """Scanner-Ergebnisse aus DB laden (neuestes Datum wenn kein Datum angegeben)."""
+    client = get_client()
+    if scan_date:
+        return (
+            client.table("scanner_results")
+            .select("*")
+            .eq("scan_date", scan_date)
+            .order("score", desc=True)
+            .execute()
+            .data
+        )
+    # Neuestes Datum
+    latest = (
+        client.table("scanner_results")
+        .select("scan_date")
+        .order("scan_date", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not latest:
+        return []
+    return (
+        client.table("scanner_results")
+        .select("*")
+        .eq("scan_date", latest[0]["scan_date"])
+        .order("score", desc=True)
+        .execute()
+        .data
+    )
+
+
+# ── TDoM Stats ────────────────────────────────────
+
+def upsert_tdom_stats(records: list[dict]):
+    """TDoM-Statistiken upserten."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("tdom_stats").upsert(
+            batch, on_conflict="ticker,tdom,direction,strategy"
+        ).execute()
+
+
+def fetch_tdom_stats(
+    ticker: str,
+    direction: str = "forward",
+    strategy: str = "open_to_close",
+) -> list[dict]:
+    """TDoM-Statistiken aus DB laden."""
+    return (
+        get_client()
+        .table("tdom_stats")
+        .select("*")
+        .eq("ticker", ticker)
+        .eq("direction", direction)
+        .eq("strategy", strategy)
+        .order("tdom")
+        .execute()
+        .data
+    )
+
+
+# ── Spot-Vol Beta ─────────────────────────────────
+
+def upsert_spot_vol_beta(records: list[dict]):
+    """Spot-Vol Beta Daten upserten."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("spot_vol_beta").upsert(
+            batch, on_conflict="event_date"
+        ).execute()
+
+
+def fetch_spot_vol_beta(
+    start_date: str = None,
+    end_date: str = None,
+) -> list[dict]:
+    """Spot-Vol Beta aus DB laden."""
+    q = get_client().table("spot_vol_beta").select("*")
+    if start_date:
+        q = q.gte("event_date", start_date)
+    if end_date:
+        q = q.lte("event_date", end_date)
+    return q.order("event_date").execute().data

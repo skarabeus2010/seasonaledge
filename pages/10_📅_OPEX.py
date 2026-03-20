@@ -28,6 +28,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 st.title("📅 Options Expiration (OPEX) Analyse")
 st.caption("Saisonale Muster rund um monatliche Verfalltage · 3. Freitag im Monat")
 

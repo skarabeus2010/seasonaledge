@@ -140,9 +140,9 @@ def build_decade_monthly_heatmap(
             "Ø Rendite: %{z:+.2f}%<extra></extra>"
         ),
         colorbar=dict(
-            title="Ø %", ticksuffix="%",
+            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+            ticksuffix="%",
             tickfont=dict(color=SE_COLORS["text_muted"]),
-            titlefont=dict(color=SE_COLORS["text_muted"]),
         ),
     ))
 
@@ -150,6 +150,19 @@ def build_decade_monthly_heatmap(
     fig = apply_se_heatmap_theme(fig, title=heatmap_title, height=420)
     fig.update_xaxes(title="Monat", side="bottom")
     fig.update_yaxes(title="Dekaden-Endziffer", autorange="reversed")
+
+    # Aktuelle Dekaden-Zeile markieren (farbiger Rand)
+    from datetime import datetime as _dt
+    current_digit = _dt.now().year % 10
+    # y-Achse ist reversed → Position = current_digit
+    fig.add_shape(
+        type="rect",
+        x0=-0.5, x1=11.5,
+        y0=current_digit - 0.5, y1=current_digit + 0.5,
+        line=dict(color="#F1C40F", width=2.5),
+        fillcolor="rgba(0,0,0,0)",
+        layer="above",
+    )
 
     return fig
 

@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 9.1 | 2026-03-19 | Details → `docs/`
+> Version 10.0 | 2026-03-19 | Details → `docs/`
 
 ## Projekt
 
@@ -25,13 +25,24 @@ shared/                  ← Berechnungen, Daten, Utilities
   charts.py              ← Plotly Theme (apply_se_theme)
   ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
   tdom_analysis.py       ← TDoM Berechnungen (3 Strategien, Ranges, Heatmap)
-  ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API
+  ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API, KI-Summary, Anomalie-Heatmap
+  anomaly_engine.py      ← Anomalie-Radar, Crash-Ampel, TDoM-Anomalien, Muster-Brueche
+  mstl_decomposition.py  ← Multi-Saisonalitaets-Zerlegung (Trend/Woche/Jahr/Residual)
+  chronos_forecast.py    ← Chronos-Bolt-Tiny 30d-Forecast mit Konfidenzbaendern
+  neural_prophet_forecast.py ← NeuralProphet Saisonalitaets-Komponenten
+  spot_vol_beta.py       ← Spot-Vol Beta (SPX vs VIX, Daily + Rolling + Regime-Wendepunkte)
+  outlier_manager.py     ← Outlier-Filter (IQR, Winsorize, Isolation Forest)
+  market_calendar.py     ← Feiertage/OPEX/Zentralbank → Supabase sync
+  cache_manager.py       ← Computed Values Cache (DB → Fallback → Store)
   split_slider.py        ← 3-Layer Split-Slider
-  supabase_client.py     ← DB-Connector + Subscriber-Management
+  supabase_client.py     ← DB-Connector + Subscriber + Market Events + Cache
   logger.py              ← 3 Log-Kanäle (app/error/access)
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
   strategies/            ← 65+ Strategien
+scripts/                 ← Batch-Jobs
+  nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
+  create_market_tables.sql ← SQL-Schema für Cache-Tabellen
 pages/                   ← 19 Streamlit-Pages (0–18)
   0–12                   ← Basis-Analysen (Yearly, Monthly, Weekday, ToM, etc.)
   13_Shock_Analyzer      ← Öl→DAX, VIX→S&P etc.
@@ -40,6 +51,7 @@ pages/                   ← 19 Streamlit-Pages (0–18)
   16_Market_Scanner      ← Multi-Ticker Scanner mit Rankings
   17_Premium_Dashboard   ← Seasonax-Style Einzeltitel-Übersicht
   18_TDOM_Analyse        ← Trading Day of the Month (3 Strategien)
+  19_Spot_Vol_Beta       ← Spot-Vol Beta (SPX vs VIX, Regime-Wendepunkte)
   unsubscribe.py         ← Newsletter-Abmeldung
 docs/                    ← Ausgelagerte Dokumentation
 ```
@@ -107,7 +119,19 @@ UPPER_CASE        → Konstanten
 - [ ] Premium Dashboard: TDOY Sektion freischalten
 - [ ] AI Chat Page (Kunde fragt: "Was geht morgen bei TSLA?")
 - [ ] Split-Slider: Ticker-Auswahl (aktuell nur ^DJI)
-- [ ] Outlier Management (Winsorize 3σ)
+- [x] Outlier Manager (IQR, Winsorize, Isolation Forest) (2026-03-19)
+- [x] Market Calendar DB + Computed Values Cache (2026-03-19)
+- [x] KI-Zusammenfassung pro Page (Claude API) (2026-03-19)
+- [x] Anomalie-Heatmap (Isolation Forest Monat x Dekade) (2026-03-19)
+- [x] Anomaly Engine: Radar, Crash-Ampel, TDoM-Anomalien, Muster-Brueche (2026-03-19)
+- [x] MSTL Saisonalitaets-Zerlegung (statsmodels) (2026-03-20)
+- [x] Chronos-Bolt-Tiny Forecast (Amazon) (2026-03-20)
+- [x] NeuralProphet Saisonalitaet (2026-03-20)
+- [x] Spot-Vol Beta Page + DB-Tabelle (2026-03-20)
+- [x] Nightly Refresh Job (GitHub Actions) (2026-03-19)
+- [ ] Outlier Manager in alle Pages integrieren (aktuell: Erweiterte Analyse)
+- [ ] KI-Zusammenfassung in weitere Pages integrieren
+- [ ] Anomaly Engine in weitere Pages integrieren
 - [ ] Fehlende 42 Ticker nachladen (ETFs, Aktien, Krypto)
 - [ ] Streamlit Cloud Deployment
 - [ ] Stripe Freemium/Abo-Integration
@@ -116,7 +140,8 @@ UPPER_CASE        → Konstanten
 
 ## Docs (bei Bedarf lesen)
 
-- `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Download-Manager, Logger
+- `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Download-Manager, Logger, Cache
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
-- `docs/AI_MODELS.md` — DTW, Prophet, Isolation Forest, Claude API, KI-Score Engine
+- `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
+- `docs/KI_FEATURES.md` — Alle 11 KI-Features mit Beschreibung (fuer Home Page)
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad

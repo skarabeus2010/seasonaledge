@@ -31,6 +31,9 @@ from shared.constants import SE_COLORS
 
 st.set_page_config(page_title="SeasonalEdge - Weekday", page_icon="📅", layout="wide")
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 # ══════════════════════════════════════════════════════════════
 # BERECHNUNG

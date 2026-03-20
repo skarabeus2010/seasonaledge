@@ -38,6 +38,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 # ── Hilfsfunktionen ──────────────────────────────────
 
@@ -357,6 +360,59 @@ def main():
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
+    # ── Anomalie-Radar ──
+    st.markdown("---")
+    st.markdown("### 📡 Anomalie-Radar")
+    try:
+        from shared.anomaly_engine import compute_ticker_anomaly_score
+        with st.spinner("Anomalie-Radar berechnet..."):
+            radar = compute_ticker_anomaly_score(df, lookback_days=10)
+        if "error" not in radar:
+            r_score = radar["anomaly_score"]
+            if r_score >= 70:
+                r_icon, r_label, r_color = "🔴", "Stark anomal", SE_COLORS["negative"]
+            elif r_score >= 40:
+                r_icon, r_label, r_color = "🟡", "Leicht anomal", SE_COLORS["accent_warm"]
+            else:
+                r_icon, r_label, r_color = "🟢", "Normal", SE_COLORS["positive"]
+
+            rc1, rc2, rc3, rc4 = st.columns(4)
+            rc1.metric("Anomalie-Score", f"{r_score:.0f}/100")
+            rc2.metric("Status", f"{r_icon} {r_label}")
+            rc3.metric("Aktuelle 10d-Rendite", f'{radar["current_return"]:+.2f}%')
+            rc4.metric("Historischer Ø", f'{radar["historical_avg"]:+.2f}%')
+            st.caption(
+                f'Isolation Forest vergleicht die letzten 10 Handelstage mit '
+                f'{radar["n_comparisons"]} historischen Fenstern am gleichen Kalenderzeitpunkt.'
+            )
+        else:
+            st.caption(radar["error"])
+    except Exception as _e:
+        st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+
+    # ── Muster-Brueche ──
+    with st.expander("Saisonale Muster-Brueche (KI)", expanded=False):
+        st.caption("Jahre in denen das saisonale Muster am staerksten gebrochen wurde.")
+        try:
+            from shared.anomaly_engine import detect_pattern_breaks
+            breaks = detect_pattern_breaks(year_data, avg, top_n=7)
+            if breaks:
+                for b in breaks:
+                    icon = "⚠️" if b["is_outlier"] else "📊"
+                    event_str = f' — *{b["event"]}*' if b["event"] else ""
+                    st.markdown(
+                        f'{icon} **{b["year"]}** | '
+                        f'Bruch-Staerke: **{b["break_strength"]:.0f}** | '
+                        f'Korrelation: {b["correlation"]:.2f} | '
+                        f'Rendite: {b["year_return"]:+.1f}% | '
+                        f'Max DD: {b["max_drawdown"]:.1f}%'
+                        f'{event_str}'
+                    )
+            else:
+                st.caption("Keine Muster-Brueche erkannt.")
+        except Exception as _e:
+            st.caption(f"Nicht verfuegbar: {_e}")
+
     # ── Claude Kommentar ──
     if use_claude:
         st.markdown("---")
@@ -385,6 +441,41 @@ def main():
                 st.info(f"🤖 {commentary}")
             else:
                 st.warning("Claude-Kommentar nicht verfügbar (API-Key fehlt?).")
+
+    # ── MSTL Zerlegung ──
+    with st.expander("MSTL Saisonalitaets-Zerlegung", expanded=False):
+        try:
+            from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
+            with st.spinner("MSTL..."):
+                mstl_result = decompose_mstl(df, periods=[5, 252])
+            if mstl_result:
+                mc1, mc2, mc3 = st.columns(3)
+                mc1.metric("Trend", f'{mstl_result.get("strength_trend", 0):.1f}%')
+                mc2.metric("Wochen-Saison.", f'{mstl_result.get("strength_weekly", 0):.1f}%')
+                mc3.metric("Jahres-Saison.", f'{mstl_result.get("strength_yearly", 0):.1f}%')
+                fig_mstl = build_decomposition_figure(mstl_result, ticker)
+                st.plotly_chart(fig_mstl, use_container_width=True)
+            else:
+                st.caption("MSTL nicht verfuegbar.")
+        except Exception as _e:
+            st.caption(f"MSTL: {_e}")
+
+    # ── Chronos Forecast ──
+    with st.expander("Chronos Forecast (30 Tage)", expanded=False):
+        try:
+            from shared.chronos_forecast import forecast_chronos, build_chronos_chart
+            with st.spinner("Chronos..."):
+                chronos_fc = forecast_chronos(df, periods=30)
+            if chronos_fc is not None:
+                cc1, cc2 = st.columns(2)
+                cc1.metric("Erwartete Rendite", f'{chronos_fc.attrs.get("expected_return", 0):+.2f}%')
+                cc2.metric("P(positiv)", f'{chronos_fc.attrs.get("p_positive", 50):.0f}%')
+                fig_ch = build_chronos_chart(df, chronos_fc, ticker)
+                st.plotly_chart(fig_ch, use_container_width=True)
+            else:
+                st.caption("Chronos nicht verfuegbar (pip install chronos-forecasting).")
+        except Exception as _e:
+            st.caption(f"Chronos: {_e}")
 
     # ── Disclaimer ──
     st.markdown("---")

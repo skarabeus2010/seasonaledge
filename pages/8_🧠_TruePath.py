@@ -27,15 +27,18 @@ from scipy.spatial.distance import euclidean
 
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, COLOR_SEASONAL_AVG, COLOR_CURRENT_YEAR
 from shared.data import download_data, preprocess
-from shared.calculations import (
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
-    build_year_data, calculate_seasonal_average, 
+from shared.calculations import (
+    build_year_data, calculate_seasonal_average,
     interpolate_to_365, normalize_year,
     get_presidential_cycle_year
 )
 
 st.set_page_config(page_title="SeasonalEdge - TruePath", page_icon="🧠", layout="wide")
+
+from shared.design import inject_se_css
+inject_se_css()
 
 
 # ══════════════════════════════════════════════════════════════

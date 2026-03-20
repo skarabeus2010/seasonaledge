@@ -318,6 +318,9 @@ def build_heatmap(df: pd.DataFrame, col: str, title: str) -> go.Figure:
 
 st.set_page_config(page_title="Overnight vs. Intraday", page_icon="🌙", layout="wide")
 
+from shared.design import inject_se_css
+inject_se_css()
+
 st.title("🌙 Overnight vs. Intraday Saisonalität")
 st.caption(
     "Trennt den täglichen Return in zwei Komponenten: "

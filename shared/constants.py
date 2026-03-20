@@ -31,6 +31,7 @@ SE_COLORS = {
     "accent":        "#00d4aa",
     "accent_warm":   "#e8a425",
     "accent_blue":   "#4d9fff",
+    "accent2":       "#ff6b35",
 
     # Semantic
     "positive":      "#00d4aa",

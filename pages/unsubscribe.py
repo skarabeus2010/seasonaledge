@@ -27,6 +27,9 @@ st.set_page_config(
     layout="centered",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 # ── Token-Validierung (DSGVO-Schutz gegen Missbrauch) ──
 def _generate_token(email: str) -> str:

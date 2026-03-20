@@ -42,6 +42,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 
 # ══════════════════════════════════════════════════════
 # CHART-FUNKTIONEN
@@ -139,8 +142,7 @@ def build_month_tdom_heatmap(
             "<extra></extra>"
         ),
         colorbar=dict(
-            title="Ø %",
-            titlefont=dict(color=SE_COLORS["text_muted"]),
+            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
             tickfont=dict(color=SE_COLORS["text_muted"]),
             tickformat="+.3f",
         ),
@@ -392,6 +394,33 @@ def main():
             st.caption("Keine Daten.")
         else:
             st.dataframe(yearly, use_container_width=True)
+
+    # ══════════════════════════════════════════════════
+    # SEKTION 6: TDoM-Anomalien (KI)
+    # ══════════════════════════════════════════════════
+    st.markdown("---")
+    with st.expander("TDoM-Anomalien (KI)", expanded=False):
+        st.caption(
+            "Isolation Forest vergleicht die letzten 3 Monate mit der historischen Norm. "
+            "Hoher Z-Score = ungewoehnliches Verhalten."
+        )
+        try:
+            from shared.anomaly_engine import detect_tdom_anomalies
+            anomalies = detect_tdom_anomalies(df, strategy=strategy, recent_months=3)
+            if anomalies:
+                for a in anomalies[:5]:
+                    icon = "🟢" if a["direction"] == "bullish" else "🔴"
+                    st.markdown(
+                        f'{icon} **TDoM {a["tdom"]}** — '
+                        f'Z-Score: **{a["z_score"]:+.2f}** | '
+                        f'Aktuell: {a["recent_avg"]:+.4f}% vs. '
+                        f'Historisch: {a["historical_avg"]:+.4f}% '
+                        f'(n={a["recent_n"]}/{a["historical_n"]})'
+                    )
+            else:
+                st.caption("Keine signifikanten TDoM-Anomalien in den letzten 3 Monaten.")
+        except Exception as _e:
+            st.caption(f"Anomalie-Erkennung nicht verfuegbar: {_e}")
 
     # ── Disclaimer ──
     st.markdown("---")

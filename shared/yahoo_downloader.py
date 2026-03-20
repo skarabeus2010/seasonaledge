@@ -55,12 +55,27 @@ def _parse_yahoo_response(data: dict) -> pd.DataFrame:
     adjclose = adj_list[0].get("adjclose") if adj_list else None
 
     index      = pd.to_datetime(timestamps, unit="s", utc=True).tz_localize(None)
-    close_data = adjclose if adjclose is not None else quotes.get("close")
+    raw_close  = quotes.get("close", [np.nan] * len(timestamps))
+    close_data = adjclose if adjclose is not None else raw_close
+
+    raw_open = quotes.get("open",   [np.nan] * len(timestamps))
+    raw_high = quotes.get("high",   [np.nan] * len(timestamps))
+    raw_low  = quotes.get("low",    [np.nan] * len(timestamps))
+
+    # Open/High/Low mit Adjustierungsfaktor skalieren (Splits + Dividenden)
+    if adjclose is not None:
+        adj_factor = [
+            (a / c) if c and a and c != 0 else 1.0
+            for a, c in zip(adjclose, raw_close)
+        ]
+        raw_open = [o * f if o is not None else np.nan for o, f in zip(raw_open, adj_factor)]
+        raw_high = [h * f if h is not None else np.nan for h, f in zip(raw_high, adj_factor)]
+        raw_low  = [l * f if l is not None else np.nan for l, f in zip(raw_low,  adj_factor)]
 
     df = pd.DataFrame({
-        "Open":   quotes.get("open",   [np.nan] * len(timestamps)),
-        "High":   quotes.get("high",   [np.nan] * len(timestamps)),
-        "Low":    quotes.get("low",    [np.nan] * len(timestamps)),
+        "Open":   raw_open,
+        "High":   raw_high,
+        "Low":    raw_low,
         "Close":  close_data,
         "Volume": quotes.get("volume", [np.nan] * len(timestamps)),
     }, index=index)

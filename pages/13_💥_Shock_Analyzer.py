@@ -36,6 +36,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from shared.design import inject_se_css
+inject_se_css()
+
 st.markdown("## 💥 Shock Analyzer")
 st.caption("Wenn Asset A um X% fällt/steigt — wie performt Asset B danach?")
 
@@ -92,12 +95,12 @@ if not trigger_ticker or not target_ticker:
     st.warning("Bitte wähle ein Szenario oder gib Trigger- und Ziel-Ticker ein.")
     st.stop()
 
-start_date = f"{datetime.now().year - years_back}-01-01"
+period = f"{years_back}y"
 
 with st.spinner(f"Lade Daten für {trigger_ticker} und {target_ticker}..."):
     try:
-        df_trigger = download_data(trigger_ticker, start=start_date)
-        df_target = download_data(target_ticker, start=start_date)
+        df_trigger = download_data(trigger_ticker, period=period)
+        df_target = download_data(target_ticker, period=period)
     except Exception as e:
         st.error(f"Fehler beim Laden: {e}")
         st.stop()
@@ -180,7 +183,7 @@ if not summary.empty:
         marker_color=colors,
         text=[f"{v:+.2f}%" for v in summary["avg_return_pct"]],
         textposition="outside",
-        textfont=dict(color=SE_COLORS["text"], size=12),
+        textfont=dict(color=SE_COLORS["text_primary"], size=12),
     ))
     fig_bar = apply_se_theme(fig_bar,
                               title=f"{target_ticker} Ø Rendite nach {trigger_ticker} Shock",
@@ -206,8 +209,8 @@ if ret_col in events.columns:
         marker=dict(
             size=8,
             color=valid_scatter[ret_col],
-            colorscale=[[0, SE_COLORS["negative"]], [0.5, SE_COLORS["muted"]], [1, SE_COLORS["positive"]]],
-            colorbar=dict(title="Rendite %", tickfont=dict(color=SE_COLORS["muted"])),
+            colorscale=[[0, SE_COLORS["negative"]], [0.5, SE_COLORS["text_muted"]], [1, SE_COLORS["positive"]]],
+            colorbar=dict(title="Rendite %", tickfont=dict(color=SE_COLORS["text_muted"])),
             line=dict(width=0.5, color=SE_COLORS["grid"]),
         ),
         text=[f"{d.strftime('%Y-%m-%d') if hasattr(d, 'strftime') else d}"
@@ -220,8 +223,8 @@ if ret_col in events.columns:
     ))
 
     # Nulllinien
-    fig_scatter.add_hline(y=0, line_dash="dash", line_color=SE_COLORS["muted"], line_width=0.5)
-    fig_scatter.add_vline(x=0, line_dash="dash", line_color=SE_COLORS["muted"], line_width=0.5)
+    fig_scatter.add_hline(y=0, line_dash="dash", line_color=SE_COLORS["text_muted"], line_width=0.5)
+    fig_scatter.add_vline(x=0, line_dash="dash", line_color=SE_COLORS["text_muted"], line_width=0.5)
 
     fig_scatter = apply_se_theme(fig_scatter,
                                   title=f"Trigger vs. {scatter_horizon}-Tage Reaktion",
@@ -253,12 +256,11 @@ if not hm_data.empty:
         zmid=0,
         text=[[f"{v:+.2f}%" if not np.isnan(v) else "—" for v in row] for row in z_vals],
         texttemplate="%{text}",
-        textfont=dict(size=12, color=SE_COLORS["text"]),
+        textfont=dict(size=12, color=SE_COLORS["text_primary"]),
         hovertemplate="Schwelle: %{y}<br>Horizont: %{x}<br>Ø Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
-            title="Ø %",
-            tickfont=dict(color=SE_COLORS["muted"]),
-            titlefont=dict(color=SE_COLORS["muted"]),
+            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+            tickfont=dict(color=SE_COLORS["text_muted"]),
         ),
     ))
 
