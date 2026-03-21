@@ -124,8 +124,7 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
             "ticktext": ["Jan", "Mrz", "Mai", "Jul", "Sep", "Nov", "Dez"],
             "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
             "linecolor": SE_COLORS["axis_line"],
-            "title": {"text": "Handelstag im Jahr",
-                      "font": {"color": SE_COLORS["text_muted"], "size": 11}},
+            "title": {"text": ""},
         },
         "yaxis": {
             "range": y_b_range,
@@ -289,11 +288,8 @@ input.sl-ov {{
          class="sl-ov" id="sl-ov">
 </div>
 
-<div class="bar-wrap">
-  <span class="bar-icon">← Ø Saisonal</span>
-  <input type="range" min="0" max="100" value="0" id="sl-bar">
-  <span class="bar-icon">Einzeljahre →</span>
-</div>
+<!-- bar-wrap entfernt: nur der Chart-Slider bleibt -->
+<input type="hidden" id="sl-bar" value="0">
 
 <script>
 (function() {{

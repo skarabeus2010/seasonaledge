@@ -29,7 +29,10 @@ html, body, [class*="css"] {{
 }}
 
 /* ── Header & Footer ausblenden ── */
-#MainMenu, footer, header {{ visibility: hidden; }}
+#MainMenu, footer {{ visibility: hidden; }}
+
+/* ── Hauptdatei (seasonal_app) aus Sidebar-Navigation ausblenden ── */
+[data-testid="stSidebarNav"] li:first-child {{ display: none; }}
 
 /* ── Block Container ── */
 .block-container {{

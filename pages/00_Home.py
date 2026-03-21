@@ -22,7 +22,7 @@ st.set_page_config(
     page_title="SeasonalEdge – Saisonale Börsenanalyse & Trading-Signale",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 from shared.design import inject_se_css
@@ -36,7 +36,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif !important; }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 /* Sidebar sichtbar lassen fuer Navigation */
 .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; max-width: 1200px; }
 
@@ -357,56 +357,69 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="se-section-label">Analyse-Module</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Unsere Analyse-Module</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-sub">Klicke auf einen Titel — du landest direkt im Modul.</div>', unsafe_allow_html=True)
+st.markdown('<div class="se-section-title">Deine SeasonalAlpha Suite</div>', unsafe_allow_html=True)
+st.markdown('<div class="se-section-sub">Klicke auf ein Modul — du landest direkt in der Analyse.</div>', unsafe_allow_html=True)
 
-# ── Light Pages (aktiv, klickbar) ──
+# ── 9 Light-Live Pages (3×3 Grid) ──
 _LIGHT_PAGES = [
-    ("pages/03_Monatszyklus.py",       "📆", "Monatszyklus",       "Monatliche Saisonalität — Heatmap & Boxplots"),
-    ("pages/04_Wochentage.py",         "📅", "Wochentage",         "Wochentagseffekt — Montag bis Freitag"),
-    ("pages/05_Monatswechsel.py",      "🔄", "Monatswechsel",      "Turn of the Month Effekt — erste/letzte 3 Tage"),
-    ("pages/06_Mondphasen.py",         "🌕", "Mondphasen",         "Vollmond & Neumond — Börsen-Effekt"),
-    ("pages/91_Uebernacht_Strategien.py", "🌙", "Overnight vs Intraday", "Overnight Gaps — wo steckt die Rendite?"),
+    ("pages/01_Dekadenzyklus.py",            "📊", "Dekadenzyklus",          "131 Jahre DJI — Dekaden-Kohorten & KI"),
+    ("pages/02_Jahreszyklus.py",             "📈", "Jahreszyklus",           "Saisonaler Jahresverlauf & Anomalie-Radar"),
+    ("pages/03_Monatszyklus.py",             "📆", "Monatszyklus",           "Monatliche Saisonalität — Heatmap & Boxplots"),
+    ("pages/04_Wochentage.py",               "📅", "Wochentage",             "Wochentagseffekt — Montag bis Freitag"),
+    ("pages/05_Monatswechsel.py",            "🔄", "Monatswechsel",          "Turn of the Month — erste/letzte 3 Tage"),
+    ("pages/06_Mondphasen.py",               "🌕", "Mondphasen",             "Vollmond & Neumond — Börsen-Effekt"),
+    ("pages/07_Januar_Trifecta.py",          "🚦", "Januar-Trifecta",        "Ampelsystem — 3 Signale für das Börsenjahr"),
+    ("pages/08_Kriegszeiten.py",             "⚔️", "Kriegszeiten",           "Krieg vs. Frieden — Saisonalität im Vergleich"),
+    ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Saisonal-Kalender",      "Fed, EZB, OPEX, Mond & Feiertage — 12 Monate"),
 ]
 
-# ── "More to come" Platzhalter (füllt Grid) ──
-_MORE_COMING_1 = (None, "🚀", "Coming Soon",      "Weitere Features in der Pipeline")
-_MORE_COMING_2 = (None, "🔬", "Premium Features", "Erweiterte KI & Forecasting")
+# CSS: page_link überlagert die Kachel — ganze Card ist klickbar
+st.markdown("""
+<style>
+.se-card-wrap { position: relative; }
+.se-card-wrap .se-card {
+    background: #0c1420; border: 1px solid #1e2d42; border-radius: 14px;
+    padding: 1rem 1rem 0.6rem; min-height: 90px;
+    transition: border-color 0.2s, background 0.2s;
+}
+.se-card-wrap:hover .se-card {
+    border-color: #4d9fff; background: #0e1828; cursor: pointer;
+}
+/* page_link: Text unsichtbar, über die Card gelegt */
+[data-testid="stVerticalBlock"] [data-testid="stPageLink"] {
+    margin-top: -95px !important; position: relative; z-index: 10;
+    height: 95px !important; overflow: hidden;
+}
+[data-testid="stVerticalBlock"] [data-testid="stPageLink"] a,
+[data-testid="stVerticalBlock"] [data-testid="stPageLink"] span,
+[data-testid="stVerticalBlock"] [data-testid="stPageLink"] p {
+    color: transparent !important; font-size: 0 !important;
+}
+[data-testid="stVerticalBlock"] [data-testid="stPageLink"] a {
+    display: block !important; width: 100% !important;
+    height: 95px !important; min-height: 95px !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# 5 aktive + 2 Platzhalter = 7 = sparsamerer Display
-_all_cards = _LIGHT_PAGES + [_MORE_COMING_1, _MORE_COMING_2]
-
-for row_idx in range(2):
-    cols = st.columns([1.2, 1, 1, 0.8], gap="medium")
-    for col_idx in range(min(4, len(_all_cards) - row_idx * 4)):
-        card_idx = row_idx * 4 + col_idx
-        if card_idx >= len(_all_cards):
+for row_idx in range(3):
+    cols = st.columns(3, gap="medium")
+    for col_idx in range(3):
+        card_idx = row_idx * 3 + col_idx
+        if card_idx >= len(_LIGHT_PAGES):
             continue
-        path, emoji, title, cap = _all_cards[card_idx]
-        is_active = path is not None
-
+        path, emoji, title, cap = _LIGHT_PAGES[card_idx]
         with cols[col_idx]:
-            if is_active:
-                st.markdown(
-                    f"""<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
-                    padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;">
-                      <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">{emoji}</div>
-                      <div style="font-size:.85rem;font-weight:700;color:#dde8f5;margin-bottom:.15rem;">{title}</div>
-                      <div style="font-size:.7rem;color:#5a6e85;line-height:1.3;">{cap}</div>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
-                st.page_link(page=path, label=f"Öffnen", use_container_width=True)
-            else:
-                st.markdown(
-                    f"""<div style="background:#0a0f18;border:1px dashed #1e2d42;border-radius:14px;
-                    padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;opacity:0.6;">
-                      <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">{emoji}</div>
-                      <div style="font-size:.85rem;font-weight:700;color:#6a7a8a;margin-bottom:.15rem;">{title}</div>
-                      <div style="font-size:.7rem;color:#4d9fff;line-height:1.3;">{cap}</div>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
+            st.markdown(
+                f"""<div class="se-card-wrap"><div class="se-card">
+                  <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">{emoji}</div>
+                  <div style="font-size:.85rem;font-weight:700;color:#dde8f5;margin-bottom:.15rem;">{title}</div>
+                  <div style="font-size:.7rem;color:#5a6e85;line-height:1.3;">{cap}</div>
+                </div></div>""",
+                unsafe_allow_html=True,
+            )
+            # page_link wird per CSS über die Card gezogen (unsichtbar, aber klickbar)
+            st.page_link(page=path, label=title, use_container_width=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -416,7 +429,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ══════════════════════════════════════════════════════════════
 st.markdown("---")
 st.markdown('<div class="se-section-label">Saisonalitäts-Analyse</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Vom Rauschen zum klaren Trend</div>', unsafe_allow_html=True)
+st.markdown('<div class="se-section-title">Vom Rauschen zum Trend</div>', unsafe_allow_html=True)
 st.markdown(
     '<div style="color:#e8a425;font-size:.9rem;margin-bottom:1rem;">'
     'Ziehe den Slider — links alle Einzeljahre, rechts der saisonale Durchschnitt.'
@@ -490,7 +503,7 @@ st.markdown("""
 .se-glass-wrap {
     position: relative;
     border-radius: 16px;
-    overflow: hidden;
+    overflow: visible;
     padding: 2.5rem 1rem;
 }
 .se-glass-bg {
@@ -548,8 +561,35 @@ st.markdown("""
 }
 .se-glass-label.blue { color: #4d9fff; }
 .se-glass-label.gold { color: #e8a425; }
+/* ── Tooltip für Seit-1896-Kachel ── */
+.se-tooltip-wrap { position: relative; }
+.se-tooltip {
+    visibility: hidden; opacity: 0;
+    position: absolute; bottom: calc(100% + 12px); left: 50%;
+    transform: translateX(-50%); width: 280px;
+    background: rgba(10, 16, 28, 0.95);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: none;
+    border-radius: 10px; padding: 0.75rem 1rem;
+    font-size: 0.72rem; font-weight: 400; line-height: 1.5;
+    color: #c8d6e5; letter-spacing: 0;
+    text-transform: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(232, 164, 37, 0.08);
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 20; pointer-events: none;
+}
+.se-tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(10, 16, 28, 0.95);
+}
+.se-tooltip-wrap:hover .se-tooltip {
+    visibility: visible; opacity: 1;
+}
 @media (max-width: 700px) {
     .se-glass-grid { grid-template-columns: repeat(2, 1fr); }
+    .se-tooltip { width: 220px; font-size: 0.68rem; }
 }
 </style>
 
@@ -567,19 +607,20 @@ st.markdown("""
   <div class="se-glass-grid">
     <div class="se-glass-card blue">
       <div class="se-glass-num">500+</div>
-      <div class="se-glass-label blue">Instrumente</div>
+      <div class="se-glass-label blue">Basiswerte</div>
     </div>
-    <div class="se-glass-card hero gold">
-      <div class="se-glass-num">131 J.</div>
-      <div class="se-glass-label gold">Historie</div>
+    <div class="se-glass-card hero gold se-tooltip-wrap">
+      <div class="se-glass-num">seit 1896</div>
+      <div class="se-glass-label gold">Markthistorie</div>
+      <div class="se-tooltip">Gilt f\u00fcr den Dow Jones.</div>
     </div>
     <div class="se-glass-card blue">
       <div class="se-glass-num">15</div>
       <div class="se-glass-label blue">ML-Modelle</div>
     </div>
     <div class="se-glass-card gold">
-      <div class="se-glass-num">Gratis</div>
-      <div class="se-glass-label gold">Beta Access</div>
+      <div class="se-glass-num">Open Beta</div>
+      <div class="se-glass-label gold">Early Access</div>
     </div>
   </div>
 </div>
