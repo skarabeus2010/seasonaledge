@@ -18,6 +18,9 @@ if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
 import streamlit as st
+
+st.set_page_config(page_title="Monatliche Saisonalität DAX & S&P 500 – SeasonalEdge", page_icon="📆", layout="wide")
+
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go

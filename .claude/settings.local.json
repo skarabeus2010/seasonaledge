@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py seo/programmatic_seo_builder.py)",
+      "Bash(py -m pip install jinja2 -q)",
+      "Bash(ls -lh *.html)"
+    ]
+  }
+}

@@ -362,27 +362,24 @@ st.markdown('<div class="se-section-sub">Klicke auf einen Titel — du landest d
 
 # ── Light Pages (aktiv, klickbar) ──
 _LIGHT_PAGES = [
-    ("pages/01_Dekadenzyklus.py",   "📊", "Dekadenzyklus",   "131 Jahre Dow Jones, Dekaden-Kohorten + KI"),
-    ("pages/02_Jahreszyklus.py",    "📈", "Jahreszyklus",    "Saisonaler Jahresverlauf + Anomalie-Radar"),
-    ("pages/03_Monatszyklus.py",    "📆", "Monatszyklus",    "Monats-Heatmap, Boxplots + KI Outlier-Filter"),
-    ("pages/04_Wochentage.py",      "📅", "Wochentage",      "Wochentag-Renditen + KI Outlier-Filter"),
-    ("pages/05_Monatswechsel.py",   "🔄", "Monatswechsel",   "Monatswechsel-Effekt + KI Outlier-Filter"),
-    ("pages/06_Mondphasen.py",      "🌕", "Mondphasen",      "Voll-/Neumond-Effekt + KI Outlier-Filter"),
-    ("pages/07_Januar_Trifecta.py", "🚦", "Januar Trifecta", "Ampelsystem + Verlauf je Signal + Drawdown"),
-    ("pages/08_Kriegszeiten.py",    "⚔️", "Kriegszeiten",    "Krieg vs. Frieden Saisonalitaet"),
-    ("pages/09_Crash_Fruehwarnung.py", "🚨", "Crash-Fruehwarnung", "KI-Ampel: Regime-Erkennung (Isolation Forest)"),
+    ("pages/03_Monatszyklus.py",       "📆", "Monatszyklus",       "Monatliche Saisonalität — Heatmap & Boxplots"),
+    ("pages/04_Wochentage.py",         "📅", "Wochentage",         "Wochentagseffekt — Montag bis Freitag"),
+    ("pages/05_Monatswechsel.py",      "🔄", "Monatswechsel",      "Turn of the Month Effekt — erste/letzte 3 Tage"),
+    ("pages/06_Mondphasen.py",         "🌕", "Mondphasen",         "Vollmond & Neumond — Börsen-Effekt"),
+    ("pages/91_Uebernacht_Strategien.py", "🌙", "Overnight vs Intraday", "Overnight Gaps — wo steckt die Rendite?"),
 ]
 
-# ── "More to come" Platzhalter (füllt auf 9 = 3x3 Grid) ──
-_MORE_COMING = (None, "🚀", "More to come...", "Weitere KI-Module in Entwicklung")
+# ── "More to come" Platzhalter (füllt Grid) ──
+_MORE_COMING_1 = (None, "🚀", "Coming Soon",      "Weitere Features in der Pipeline")
+_MORE_COMING_2 = (None, "🔬", "Premium Features", "Erweiterte KI & Forecasting")
 
-# 8 aktive + 1 Platzhalter = 9 = 3x3 perfektes Grid
-_all_cards = _LIGHT_PAGES + [_MORE_COMING]
+# 5 aktive + 2 Platzhalter = 7 = sparsamerer Display
+_all_cards = _LIGHT_PAGES + [_MORE_COMING_1, _MORE_COMING_2]
 
-for row_idx in range(3):
-    cols = st.columns(3, gap="medium")
-    for col_idx in range(3):
-        card_idx = row_idx * 3 + col_idx
+for row_idx in range(2):
+    cols = st.columns([1.2, 1, 1, 0.8], gap="medium")
+    for col_idx in range(min(4, len(_all_cards) - row_idx * 4)):
+        card_idx = row_idx * 4 + col_idx
         if card_idx >= len(_all_cards):
             continue
         path, emoji, title, cap = _all_cards[card_idx]
@@ -399,7 +396,7 @@ for row_idx in range(3):
                     </div>""",
                     unsafe_allow_html=True,
                 )
-                st.page_link(page=path, label=f"{title} öffnen", use_container_width=True)
+                st.page_link(page=path, label=f"Öffnen", use_container_width=True)
             else:
                 st.markdown(
                     f"""<div style="background:#0a0f18;border:1px dashed #1e2d42;border-radius:14px;
@@ -410,20 +407,6 @@ for row_idx in range(3):
                     </div>""",
                     unsafe_allow_html=True,
                 )
-
-# ── Kalender-Kachel zentriert darunter ──
-_ks1, _kcol, _ks2 = st.columns([1, 1, 1])
-with _kcol:
-    st.markdown(
-        """<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
-        padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;text-align:center;">
-          <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">📅</div>
-          <div style="font-size:.85rem;font-weight:700;color:#dde8f5;margin-bottom:.15rem;">Saisonal-Events Kalender</div>
-          <div style="font-size:.7rem;color:#5a6e85;line-height:1.3;">Fed, EZB, OPEX, Mondphasen, Feiertage — 12 Monate</div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-    st.page_link(page="pages/11_Saisonal_Events_Kalender.py", label="Kalender öffnen", use_container_width=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 

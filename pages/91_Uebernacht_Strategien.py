@@ -3,6 +3,10 @@
 #  Vergleicht Close→Open (Overnight) vs. Open→Close (Intraday)
 # ============================================================
 
+import streamlit as st
+
+st.set_page_config(page_title="Overnight vs Intraday Performance – SeasonalEdge", page_icon="🌙", layout="wide")
+
 import sys, os, pathlib
 try:
     _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -15,8 +19,6 @@ if not os.path.isdir(os.path.join(_project_dir, "shared")):
             break
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
-
-import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go

@@ -1,0 +1,10 @@
+logs/
+.git/
+__pycache__/
+pages/_disabled/
+.github/
+docs/
+.streamlit/secrets.toml
+.env
+.env.local
+*.pyc

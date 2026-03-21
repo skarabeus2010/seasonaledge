@@ -30,7 +30,7 @@ from shared.central_banks import get_full_moon_dates, get_new_moon_dates, get_al
 from shared.charts import apply_se_theme
 from shared.constants import SE_COLORS
 
-st.set_page_config(page_title="SeasonalEdge - Mondphasen", page_icon="🌕", layout="wide")
+st.set_page_config(page_title="Mondphasen & Börse – Vollmond-Effekt Analyse – SeasonalEdge", page_icon="🌕", layout="wide")
 
 from shared.design import inject_se_css
 inject_se_css()

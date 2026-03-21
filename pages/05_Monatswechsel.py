@@ -25,7 +25,7 @@ from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE
 from shared.data import download_data, preprocess
 from shared.calculations import analyze_turn_of_month, build_tom_chart
 
-st.set_page_config(page_title="SeasonalEdge - Turn of the Month", page_icon="🔄", layout="wide")
+st.set_page_config(page_title="Turn of the Month Effekt – SeasonalEdge", page_icon="🔄", layout="wide")
 
 from shared.design import inject_se_css
 inject_se_css()
