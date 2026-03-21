@@ -343,7 +343,11 @@ def main():
             rsi_days = st.slider("RSI Periode (Tage)", 5, 30, 14)
             rsi_threshold = st.slider("RSI Schwelle (kaufen wenn darunter)", 10, 50, 30,
                                       help="Nur kaufen wenn RSI t-1 < Schwelle")
-    
+
+        st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
@@ -361,7 +365,11 @@ def main():
     if stats is None:
         st.warning("Nicht genügend Daten für die Analyse.")
         return
-    
+
+    # ── Outlier-Filter (kein year_data → nur Info) ───
+    from shared.outlier_manager import filter_year_data, outlier_info_box
+    outlier_info_box([], outlier_method)
+
     # ── Filter-Info ───────────────────────────────────
     if filter_mode != "Kein Filter":
         pct = stats["filtered_count"] / stats["total_count"] * 100

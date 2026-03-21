@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 11.0 | 2026-03-20 | Details → `docs/`
+> Version 12.0 | 2026-03-21 | Details → `docs/`
 
 ## Projekt
 
@@ -43,15 +43,23 @@ shared/                  ← Berechnungen, Daten, Utilities
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
-pages/                   ← 20 Streamlit-Pages (0–19)
-  0–12                   ← Basis-Analysen (Yearly, Monthly, Weekday, ToM, etc.)
-  13_Shock_Analyzer      ← Öl→DAX, VIX→S&P etc.
-  14_Sector_Rotation     ← US/EU Sektor-Heatmap + Rotation
-  15_KI_Score            ← Einzelticker KI Score (Radar + Details)
-  16_Market_Scanner      ← Multi-Ticker Scanner mit Rankings
-  17_Premium_Dashboard   ← Seasonax-Style Einzeltitel-Übersicht
-  18_TDOM_Analyse        ← Trading Day of the Month (3 Strategien)
-  19_Spot_Vol_Beta       ← Spot-Vol Beta (SPX vs VIX, Regime-Wendepunkte)
+pages/                   ← Light Live + Premium Pages
+  Light Live (aktiv):
+    00_Home              ← Startseite (Hero, Kacheln, Slider, Stats, Newsletter)
+    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten + KI
+    02_Jahreszyklus      ← Saisonaler Jahresverlauf + Anomalie-Radar
+    03_Monatszyklus      ← Monats-Heatmap, Boxplots + Outlier
+    04_Wochentage        ← Wochentag-Renditen + Outlier
+    05_Monatswechsel     ← Turn of the Month + Outlier
+    06_Mondphasen        ← Voll-/Neumond-Effekt + Outlier
+    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown
+    08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet
+    09_Crash_Fruehwarnung← KI-Ampel: Isolation Forest Regime-Erkennung
+    11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate
+  Premium (inaktiv):
+    80-92                ← Erweiterte Analyse, Feiertag, Zentralbanken, TruePath,
+                            OPEX, Shock, Sector, KI Score, Scanner, Premium, TDOM,
+                            Uebernacht, Spot-Vol Beta
   unsubscribe.py         ← Newsletter-Abmeldung
 docs/                    ← Ausgelagerte Dokumentation
 ```
@@ -131,6 +139,14 @@ UPPER_CASE        → Konstanten
 - [x] Stooq-Fallback in yahoo_downloader (DJI 131 Jahre) (2026-03-20)
 - [x] OHLC Split-Adjustierung (Open/High/Low) (2026-03-20)
 - [x] Trifecta numpy.bool Fix + Ampelverlauf-Charts (2026-03-20)
+- [x] Yearly Seasonality Page (Jahreszyklus) (2026-03-21)
+- [x] Kriegszeiten Page (Krieg vs. Frieden) (2026-03-21)
+- [x] Crash-Fruehwarnung eigene Page (2026-03-21)
+- [x] Saisonal-Events Kalender Page (2026-03-21)
+- [x] Home Page Redesign: SeasonalAlpha, Glasmorphismus, SVG Hero (2026-03-21)
+- [x] Split-Slider: Achsen-Fix, Monatslabels, Start=links (2026-03-21)
+- [x] Page-Umbenennung: Deutsch, keine Nummern sichtbar (2026-03-21)
+- [x] Domain: SeasonalAlpha.ai (gesichert 2026-03-20)
 - [x] Nightly Refresh Job (GitHub Actions) (2026-03-19)
 - [ ] Outlier Manager in alle Pages integrieren (aktuell: Erweiterte Analyse)
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
@@ -139,7 +155,7 @@ UPPER_CASE        → Konstanten
 - [ ] Streamlit Cloud Deployment
 - [ ] Stripe Freemium/Abo-Integration
 - [ ] Supabase User-Auth
-- [ ] Domain: seasonaledge.app
+- [ ] Anthropic API-Key einrichten (KI-Zusammenfassung)
 
 ## Docs (bei Bedarf lesen)
 
@@ -147,4 +163,5 @@ UPPER_CASE        → Konstanten
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
 - `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
 - `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
+- `docs/SEO_ENGINE.md` — Programmatic SEO: Template, Builder, Deployment
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad

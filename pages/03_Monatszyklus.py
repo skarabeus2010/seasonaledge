@@ -295,6 +295,10 @@ def main():
         split_day = st.slider("Split nach TDOM", 5, 15, 10,
             help="Teilt den Monat: 1st = TDOM 1 bis X, 2nd = TDOM X+1 bis Ende")
 
+        st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
     if raw_df is None or raw_df.empty:
@@ -309,7 +313,11 @@ def main():
     if len(selected_years) < 2:
         st.warning("Nicht genügend Daten.")
         return
-    
+
+    # ── Outlier-Filter (kein year_data → nur Info) ───
+    from shared.outlier_manager import filter_year_data, outlier_info_box
+    outlier_info_box([], outlier_method)
+
     # Presidential Cycle Filter
     if cycle_filter:
         selected_years = [y for y in selected_years 

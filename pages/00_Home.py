@@ -150,6 +150,19 @@ html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif !impor
 .se-footer { text-align: center; padding: 1.5rem 0 .5rem; color: #2a3a50; font-size: .78rem; border-top: 1px solid #111820; }
 .se-footer a { color: #2a4060; text-decoration: none; margin: 0 .6rem; }
 .se-footer a:hover { color: #4d9fff; }
+
+/* ── Newsletter Button gold ── */
+[data-testid="stFormSubmitButton"] button[kind="primaryFormSubmit"],
+[data-testid="stFormSubmitButton"] button[type="submit"] {
+    background-color: #e8a425 !important;
+    border-color: #e8a425 !important;
+    color: #080c12 !important;
+    font-weight: 700 !important;
+}
+[data-testid="stFormSubmitButton"] button:hover {
+    background-color: #d4941f !important;
+    border-color: #d4941f !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -224,28 +237,116 @@ def _handle_submit(email: str):
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="se-hero">
-  <div class="se-eyebrow">● Early Access läuft</div>
+  <!-- SVG Saisonalitaets-Chart im Hintergrund -->
+  <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.25;pointer-events:none;"
+       viewBox="0 0 1200 400" preserveAspectRatio="none">
+    <!-- Vertikale Grid-Linien (Monate) -->
+    <line x1="100" y1="50" x2="100" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="200" y1="50" x2="200" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="300" y1="50" x2="300" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="400" y1="50" x2="400" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="500" y1="50" x2="500" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="600" y1="50" x2="600" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="700" y1="50" x2="700" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="800" y1="50" x2="800" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="900" y1="50" x2="900" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="1000" y1="50" x2="1000" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <line x1="1100" y1="50" x2="1100" y2="380" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <!-- Horizontale Grid-Linien -->
+    <line x1="0" y1="150" x2="1200" y2="150" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="0" y1="250" x2="1200" y2="250" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <!-- Saisonale Hauptkurve (aufsteigend mit Dips) -->
+    <path d="M0,320 C40,315 80,310 120,300 C160,290 200,285 240,275
+             C280,270 320,280 360,290 C400,275 440,260 480,250
+             C520,245 560,258 600,248 C640,235 680,220 720,210
+             C760,200 800,195 840,185 C880,178 920,195 960,180
+             C1000,165 1040,150 1080,140 C1120,132 1160,125 1200,115"
+          fill="none" stroke="#4d9fff" stroke-width="3"/>
+    <!-- Flaechenfuellung unter der Kurve -->
+    <path d="M0,320 C40,315 80,310 120,300 C160,290 200,285 240,275
+             C280,270 320,280 360,290 C400,275 440,260 480,250
+             C520,245 560,258 600,248 C640,235 680,220 720,210
+             C760,200 800,195 840,185 C880,178 920,195 960,180
+             C1000,165 1040,150 1080,140 C1120,132 1160,125 1200,115
+             L1200,400 L0,400 Z"
+          fill="url(#heroGrad)"/>
+    <defs>
+      <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4d9fff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#4d9fff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <!-- Volatilitaetsband oben -->
+    <path d="M0,290 C100,275 200,260 300,245 C400,230 500,225 600,215
+             C700,200 800,180 900,160 C1000,145 1100,120 1200,95"
+          fill="none" stroke="#4d9fff" stroke-width="1" stroke-dasharray="4,6" opacity="0.4"/>
+    <!-- Volatilitaetsband unten -->
+    <path d="M0,350 C100,340 200,330 300,315 C400,310 500,300 600,285
+             C700,270 800,260 900,250 C1000,235 1100,225 1200,140"
+          fill="none" stroke="#4d9fff" stroke-width="1" stroke-dasharray="4,6" opacity="0.4"/>
+    <!-- Goldene Trendlinie -->
+    <path d="M0,330 C200,310 400,280 600,255 C800,230 1000,190 1200,130"
+          fill="none" stroke="#e8a425" stroke-width="2" opacity="0.7"/>
+    <!-- Gelbe Punkte an den Tiefpunkten (saisonale Dips) -->
+    <circle cx="360" cy="290" r="5" fill="#e8a425" opacity="0.9"/>
+    <circle cx="560" cy="258" r="5" fill="#e8a425" opacity="0.9"/>
+    <circle cx="920" cy="195" r="5" fill="#e8a425" opacity="0.9"/>
+    <!-- Blaue Punkte an Hochpunkten -->
+    <circle cx="240" cy="275" r="4" fill="#4d9fff" opacity="0.7"/>
+    <circle cx="480" cy="250" r="4" fill="#4d9fff" opacity="0.7"/>
+    <circle cx="840" cy="185" r="4" fill="#4d9fff" opacity="0.7"/>
+    <circle cx="1200" cy="115" r="4" fill="#4d9fff" opacity="0.7"/>
+    <!-- Kleine Annotations-Linien von Dip-Punkten -->
+    <line x1="360" y1="290" x2="360" y2="310" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
+    <line x1="560" y1="258" x2="560" y2="278" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
+    <line x1="920" y1="195" x2="920" y2="215" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
+  </svg>
+  <div class="se-eyebrow">Traditionelle Saisonalitaet trifft Intelligenz.</div>
   <div class="se-h1">
-    <span class="gold">Seasonal</span><span class="blue">Edge</span>&nbsp;<span class="white">BETA</span>
+    <span class="gold">Seasonal</span><span class="blue">Alpha</span>&nbsp;<span class="white">BETA</span>
   </div>
   <div class="se-sub">
-    Sei unter den Ersten: Entdecke saisonale Trading-Chancen,<br>
-    bevor der Markt sie sieht. Early Access jetzt!
+    Datengetriebene Saisonalitaets-Analyse mit KI.<br>
+    Bis zu 131 Jahre Boersengeschichte in Charts. 15 Machine-Learning-Modelle.<br>
+    Erkenne Muster, bevor der Markt sie sieht.
   </div>
-  <div class="se-badge">🔒 Nur 100 Early-Bird-Plätze · Lifetime-Zugang für erste 100</div>
+  <div class="se-badge">More. Coming. Soon.</div>
 </div>
 """, unsafe_allow_html=True)
 
-_hero_spacer1, _hero_form_col, _hero_spacer2 = st.columns([1, 2, 1])
-with _hero_form_col:
-    with st.form("hero_form"):
-        hero_mail = st.text_input(
-            "Email", placeholder="name@beispiel.de",
-            label_visibility="collapsed", key="hero_mail",
-        )
-        if st.form_submit_button("🚀 Kostenlos starten", use_container_width=True, type="primary"):
-            _handle_submit(hero_mail)
-    st.caption("🇩🇪 DSGVO-konform · Kein Spam · Jederzeit abmeldbar")
+# ── Begrüßungstext ──
+st.markdown("""
+<div style="max-width:800px;margin:0 auto 2rem;">
+  <h2 style="color:#e8edf5;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;text-align:center;margin-bottom:1.2rem;letter-spacing:-.5px;">
+    Willkommen bei SeasonalAlpha – der naechsten Generation der Marktanalyse
+  </h2>
+  <p style="color:#a0b0c5;font-size:1.15rem;line-height:1.8;text-align:center;margin-bottom:1.2rem;">
+    Wir erweitern traditionelle Saisonalitaets-Charts um modernste Kuenstliche Intelligenz
+    und geben dir Tools an die Hand, die auf dem Markt einzigartig sind.
+  </p>
+  <ul style="color:#a0b0c5;font-size:1.05rem;line-height:1.9;list-style:none;padding:0;">
+    <li style="margin-bottom:.8rem;">
+      <strong style="color:#e8a425;">Klassik trifft High-Tech:</strong>
+      Wir durchsuchen bis zu 130 Jahre Marktdaten nach Dekaden-, Jahres- und Monatszyklen.
+      Wir nehmen auch einzelne Handelstage unter die Lupe, genauso wie Events wie z.B.
+      Notenbanksitzungen, OPEX und Mondphasen und geben Dir konkrete Strategien an die Hand.
+    </li>
+    <li style="margin-bottom:.8rem;">
+      <strong style="color:#4d9fff;">KI-gestuetzte Prognosen:</strong>
+      15 fortschrittliche Machine-Learning-Modelle erkennen Anomalien,
+      bewerten Crash-Risiken und identifizieren optimal getimte Wendepunkte.
+    </li>
+    <li style="margin-bottom:.8rem;">
+      <strong style="color:#4d9fff;">Entdecke unsere innovativen Basis-Charts sofort</strong>
+      – kostenlos und ohne vorherige Registrierung.
+    </li>
+    <li>
+      <strong style="color:#e8a425;">Die Beta-Phase hat gerade erst begonnen.</strong>
+      Freu Dich jetzt schon auf innovativen und tech-getriebene Analysen!
+    </li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -261,66 +362,68 @@ st.markdown('<div class="se-section-sub">Klicke auf einen Titel — du landest d
 
 # ── Light Pages (aktiv, klickbar) ──
 _LIGHT_PAGES = [
-    ("pages/2_🔄_Turn_of_the_Month.py", "🔄", "Turn of the Month",      "Monatswechsel-Effekt, t0=0%-Normalisierung"),
-    ("pages/4_📅_Weekday_Analyse.py",   "📅", "Weekday Analyse",        "Wochentag-Renditen, SMA/RSI-Filter"),
-    ("pages/5_📆_Monthly_Performance.py","📆", "Monthly Performance",    "Monats-Performance, Heatmap, Boxplots"),
-    ("pages/7_🌕_Mondphasen.py",        "🌕", "Mondphasen",             "Voll-/Neumond-Effekt, Meeus-Algorithmus"),
-    ("pages/12_🌙_Overnight_vs_Intraday.py", "🌙", "Overnight vs. Intraday", "Overnight-Gap vs. Intraday-Rendite"),
+    ("pages/01_Dekadenzyklus.py",   "📊", "Dekadenzyklus",   "131 Jahre Dow Jones, Dekaden-Kohorten + KI"),
+    ("pages/02_Jahreszyklus.py",    "📈", "Jahreszyklus",    "Saisonaler Jahresverlauf + Anomalie-Radar"),
+    ("pages/03_Monatszyklus.py",    "📆", "Monatszyklus",    "Monats-Heatmap, Boxplots + KI Outlier-Filter"),
+    ("pages/04_Wochentage.py",      "📅", "Wochentage",      "Wochentag-Renditen + KI Outlier-Filter"),
+    ("pages/05_Monatswechsel.py",   "🔄", "Monatswechsel",   "Monatswechsel-Effekt + KI Outlier-Filter"),
+    ("pages/06_Mondphasen.py",      "🌕", "Mondphasen",      "Voll-/Neumond-Effekt + KI Outlier-Filter"),
+    ("pages/07_Januar_Trifecta.py", "🚦", "Januar Trifecta", "Ampelsystem + Verlauf je Signal + Drawdown"),
+    ("pages/08_Kriegszeiten.py",    "⚔️", "Kriegszeiten",    "Krieg vs. Frieden Saisonalitaet"),
+    ("pages/09_Crash_Fruehwarnung.py", "🚨", "Crash-Fruehwarnung", "KI-Ampel: Regime-Erkennung (Isolation Forest)"),
 ]
 
-# ── Coming Soon (ausgegraut, kein Link) ──
-_COMING_SOON = [
-    ("🧠", "TruePath KI",    "KI-Score 0–100, Pattern-Matching"),
-    ("🚦", "65+ Strategien",  "Käppel-Strategien, Saisonale Regelwerke"),
-    ("📊", "Erweiterte Analyse", "Dekaden- & Präsidentenzyklus, Druckcharts"),
-]
+# ── "More to come" Platzhalter (füllt auf 9 = 3x3 Grid) ──
+_MORE_COMING = (None, "🚀", "More to come...", "Weitere KI-Module in Entwicklung")
 
-# Zeile 1: Light Pages 0-2
-r1c1, r1c2, r1c3 = st.columns(3, gap="medium")
-# Zeile 2: Light Pages 3-4 + Coming Soon 0
-r2c1, r2c2, r2c3 = st.columns(3, gap="medium")
-# Zeile 3: Coming Soon 1-2
-r3c1, r3c2, r3c3 = st.columns(3, gap="medium")
+# 8 aktive + 1 Platzhalter = 9 = 3x3 perfektes Grid
+_all_cards = _LIGHT_PAGES + [_MORE_COMING]
 
-_col_row1 = [r1c1, r1c2, r1c3]
-_col_row2 = [r2c1, r2c2, r2c3]
-_col_row3 = [r3c1, r3c2, r3c3]
+for row_idx in range(3):
+    cols = st.columns(3, gap="medium")
+    for col_idx in range(3):
+        card_idx = row_idx * 3 + col_idx
+        if card_idx >= len(_all_cards):
+            continue
+        path, emoji, title, cap = _all_cards[card_idx]
+        is_active = path is not None
 
-# ── Aktive Light Pages rendern ──
-for col, (path, emoji, title, cap) in zip(_col_row1 + _col_row2[:2], _LIGHT_PAGES):
-    with col:
-        st.markdown(
-            f"""<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
-            padding:1.2rem 1.2rem 0.8rem;margin-bottom:2px;">
-              <div style="font-size:2rem;line-height:1;margin-bottom:.5rem;">{emoji}</div>
-              <div style="font-size:1rem;font-weight:700;color:#dde8f5;margin-bottom:.2rem;">{title}</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-        st.page_link(page=path, label=f"📂 {title} öffnen →", use_container_width=True)
-        st.markdown(
-            f'<div style="font-size:.8rem;font-weight:500;color:#e8a425;'
-            f'padding:.3rem .2rem .8rem;line-height:1.45;">{cap}</div>',
-            unsafe_allow_html=True,
-        )
+        with cols[col_idx]:
+            if is_active:
+                st.markdown(
+                    f"""<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
+                    padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;">
+                      <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">{emoji}</div>
+                      <div style="font-size:.85rem;font-weight:700;color:#dde8f5;margin-bottom:.15rem;">{title}</div>
+                      <div style="font-size:.7rem;color:#5a6e85;line-height:1.3;">{cap}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+                st.page_link(page=path, label=f"{title} öffnen", use_container_width=True)
+            else:
+                st.markdown(
+                    f"""<div style="background:#0a0f18;border:1px dashed #1e2d42;border-radius:14px;
+                    padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;opacity:0.6;">
+                      <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">{emoji}</div>
+                      <div style="font-size:.85rem;font-weight:700;color:#6a7a8a;margin-bottom:.15rem;">{title}</div>
+                      <div style="font-size:.7rem;color:#4d9fff;line-height:1.3;">{cap}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
-# ── Coming Soon Karten rendern (ausgegraut) ──
-for col, (emoji, title, cap) in zip([r2c3] + [r3c1, r3c2], _COMING_SOON):
-    with col:
-        st.markdown(
-            f"""<div style="background:#0a0f18;border:1px solid #151e2c;border-radius:14px;
-            padding:1.2rem 1.2rem 0.8rem;margin-bottom:2px;opacity:0.5;">
-              <div style="font-size:2rem;line-height:1;margin-bottom:.5rem;">{emoji}</div>
-              <div style="font-size:1rem;font-weight:700;color:#6a7a8a;margin-bottom:.2rem;">{title}</div>
-              <div style="font-size:.75rem;font-weight:600;color:#4d9fff;margin-top:.4rem;">🔒 Coming Soon</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div style="font-size:.8rem;font-weight:500;color:#5a6a7a;'
-            f'padding:.3rem .2rem .8rem;line-height:1.45;">{cap}</div>',
-            unsafe_allow_html=True,
-        )
+# ── Kalender-Kachel zentriert darunter ──
+_ks1, _kcol, _ks2 = st.columns([1, 1, 1])
+with _kcol:
+    st.markdown(
+        """<div style="background:#0c1420;border:1px solid #1e2d42;border-radius:14px;
+        padding:1rem 1rem 0.6rem;margin-bottom:2px;min-height:90px;text-align:center;">
+          <div style="font-size:1.4rem;line-height:1;margin-bottom:.4rem;">📅</div>
+          <div style="font-size:.85rem;font-weight:700;color:#dde8f5;margin-bottom:.15rem;">Saisonal-Events Kalender</div>
+          <div style="font-size:.7rem;color:#5a6e85;line-height:1.3;">Fed, EZB, OPEX, Mondphasen, Feiertage — 12 Monate</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    st.page_link(page="pages/11_Saisonal_Events_Kalender.py", label="Kalender öffnen", use_container_width=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -392,96 +495,138 @@ st.markdown("<br>", unsafe_allow_html=True)
 # Wird in der Vollversion wieder aktiviert.
 
 
-# Crash-Frühwarnung (Ampel) — deaktiviert für Light Live
-# Benötigt anomaly_engine + SPY-Daten. Wird in Vollversion aktiviert.
+st.markdown("<br>", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════
+# SEKTION 5 — FEATURE STATS (Glasmorphismus + Glow + Sinuswelle)
+# ══════════════════════════════════════════════════════════════
+
+st.markdown("""
+<style>
+.se-glass-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    padding: 2.5rem 1rem;
+}
+.se-glass-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+}
+.se-glass-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+}
+.se-glass-card {
+    background: rgba(12, 20, 32, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 1.6rem 1rem;
+    text-align: center;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    cursor: default;
+}
+.se-glass-card:hover {
+    transform: translateY(-3px);
+}
+.se-glass-card.blue:hover {
+    box-shadow: 0 0 30px rgba(77,159,255,0.25), inset 0 0 20px rgba(77,159,255,0.05);
+    border-color: rgba(77,159,255,0.4);
+}
+.se-glass-card.gold:hover {
+    box-shadow: 0 0 30px rgba(232,164,37,0.25), inset 0 0 20px rgba(232,164,37,0.05);
+    border-color: rgba(232,164,37,0.4);
+}
+.se-glass-card.hero:hover {
+    box-shadow: 0 0 40px rgba(232,164,37,0.35), inset 0 0 25px rgba(232,164,37,0.08);
+    border-color: rgba(232,164,37,0.5);
+}
+.se-glass-num {
+    font-size: 2.2rem; font-weight: 800;
+    color: #e8edf5; margin-bottom: .3rem;
+}
+.se-glass-card.hero .se-glass-num {
+    font-size: 2.8rem;
+    background: linear-gradient(135deg, #e8a425, #f5d78e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(232,164,37,0.3);
+}
+.se-glass-label {
+    font-size: .72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+}
+.se-glass-label.blue { color: #4d9fff; }
+.se-glass-label.gold { color: #e8a425; }
+@media (max-width: 700px) {
+    .se-glass-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<div class="se-glass-wrap">
+  <!-- SVG Sinuswelle im Hintergrund -->
+  <svg class="se-glass-bg" viewBox="0 0 1200 160" preserveAspectRatio="none">
+    <path d="M0,80 C100,40 200,120 300,80 C400,40 500,120 600,80 C700,40 800,120 900,80 C1000,40 1100,120 1200,80"
+          fill="none" stroke="rgba(77,159,255,0.07)" stroke-width="2"/>
+    <path d="M0,95 C150,55 300,135 450,95 C600,55 750,135 900,95 C1050,55 1200,135 1200,95"
+          fill="none" stroke="rgba(232,164,37,0.05)" stroke-width="1.5"/>
+    <path d="M0,65 C200,45 400,105 600,65 C800,25 1000,105 1200,65"
+          fill="none" stroke="rgba(77,159,255,0.04)" stroke-width="1" stroke-dasharray="6,8"/>
+  </svg>
+
+  <div class="se-glass-grid">
+    <div class="se-glass-card blue">
+      <div class="se-glass-num">500+</div>
+      <div class="se-glass-label blue">Instrumente</div>
+    </div>
+    <div class="se-glass-card hero gold">
+      <div class="se-glass-num">131 J.</div>
+      <div class="se-glass-label gold">Historie</div>
+    </div>
+    <div class="se-glass-card blue">
+      <div class="se-glass-num">15</div>
+      <div class="se-glass-label blue">ML-Modelle</div>
+    </div>
+    <div class="se-glass-card gold">
+      <div class="se-glass-num">Gratis</div>
+      <div class="se-glass-label gold">Beta Access</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════
-# SEKTION 4 — FEATURES
+# SEKTION 6 — NEWSLETTER (ganz unten, vor Footer)
 # ══════════════════════════════════════════════════════════════
 st.markdown("---")
-st.markdown('<div class="se-section-label">Was dich erwartet</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Drei Werkzeuge. Ein Vorteil.</div>', unsafe_allow_html=True)
-
-f1, f2, f3 = st.columns(3, gap="medium")
-_PT = 'style="color:#e8a425;font-size:.82rem;line-height:1.6;margin:0;"'
-_P  = lambda t: f'<div {_PT}>{t}</div>'
-# FIX 3: h3 explizit color:white — Streamlit überschreibt h3 sonst mit eigenem Grau
-# FIX 4: min-height:160px + display:flex/flex-direction:column → gleiche Kartenhöhe
-_CARD = (
-    'style="background:#0c1420;border:1px solid #1a2538;border-radius:14px;'
-    'padding:1.6rem 1.4rem;min-height:180px;display:flex;flex-direction:column;"'
+st.markdown(
+    '<div style="text-align:center;margin-bottom:1rem;">'
+    '<div class="se-section-label">Newsletter</div>'
+    '<div class="se-section-title">Jetzt zum Newsletter anmelden!</div>'
+    '<div style="color:#e8a425;font-size:.9rem;margin-top:.3rem;">'
+    'Erhalten Sie jede Woche einen Newsletter zum Thema Saisonalitaet. Kostenlos.'
+    '</div></div>',
+    unsafe_allow_html=True,
 )
-_H3 = 'style="color:#ffffff !important;font-size:.95rem;font-weight:700;margin-bottom:.4rem;"'
 
-with f1:
-    st.markdown(f"""<div {_CARD}>
-      <div class="se-feat-icon ic-b" style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:1rem;background:rgba(30,110,240,0.15);">📊</div>
-      <h3 {_H3}>Saisonaler Screener</h3>
-      {_P('Scanne alle Instrumente nach historisch starken Phasen. Filtere nach Win-Rate, Median-Rendite und Drawdown auf Knopfdruck.')}
-    </div>""", unsafe_allow_html=True)
-with f2:
-    st.markdown(f"""<div {_CARD}>
-      <div class="se-feat-icon ic-g" style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:1rem;background:rgba(232,164,37,0.12);">🧠</div>
-      <h3 {_H3}>TruePath KI-Score</h3>
-      {_P('Unser KI-Algorithmus bewertet jedes Setup 0–100 nach statistischer Signifikanz. Nur A-Setups, kein Rauschen.')}
-    </div>""", unsafe_allow_html=True)
-with f3:
-    st.markdown(f"""<div {_CARD}>
-      <div class="se-feat-icon ic-t" style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:1rem;background:rgba(20,184,166,0.12);">🌖</div>
-      <h3 {_H3}>Event-Analysen & Alerts</h3>
-      {_P('FOMC, Mondphasen, Feiertage — alle Ereignisse mit historischem Markteinfluss auf einen Blick.')}
-    </div>""", unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════════════
-# SEKTION 5 — STATS
-# ══════════════════════════════════════════════════════════════
-def _stat(num, label):
-    return (
-        f'<div style="background:#0c1420;border:1px solid #1a2538;border-radius:14px;'
-        f'padding:1.8rem 1rem;text-align:center;">'
-        f'<div style="font-size:2rem;font-weight:800;color:#e8edf5;margin-bottom:.4rem;">{num}</div>'
-        f'<div style="font-size:.72rem;font-weight:600;color:#e8a425;'
-        f'text-transform:uppercase;letter-spacing:1.5px;">{label}</div>'
-        f'</div>'
-    )
-
-s1, s2, s3, s4 = st.columns(4, gap="small")
-with s1:
-    st.markdown(_stat("500+", "Instrumente"), unsafe_allow_html=True)
-with s2:
-    st.markdown(_stat("100 J.", "Datenhistorie"), unsafe_allow_html=True)
-with s3:
-    st.markdown(_stat("5", "Analyse-Module"), unsafe_allow_html=True)
-with s4:
-    st.markdown(_stat("Gratis", "Early Access"), unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════════════
-# SEKTION 6 — CTA + BREVO
-# ══════════════════════════════════════════════════════════════
-st.markdown("---")
-cta_l, cta_r = st.columns([2,1], gap="large")
-with cta_l:
-    st.markdown("""<div class="se-cta-box">
-      <div class="se-cta-title">Bereit, die Märkte mit System zu schlagen?</div>
-      <div class="se-cta-sub">Trag dich ein und sichere dir deinen kostenlosen Early-Bird Zugang.<br>
-      Lifetime-Zugang für die ersten 100 Nutzer — kein Abo, kein Risiko.</div>
-    </div>""", unsafe_allow_html=True)
-with cta_r:
-    with st.form("cta_form"):
-        cta_email = st.text_input("E-Mail", placeholder="name@beispiel.de",
-                                   label_visibility="collapsed", key="cta_mail")
-        if st.form_submit_button("Jetzt Platz sichern →", use_container_width=True):
-            _handle_submit(cta_email)
-    st.caption("🇩🇪 DSGVO-konform · Kein Spam · Jederzeit abmeldbar")
+_nl_spacer1, _nl_form_col, _nl_spacer2 = st.columns([1, 2, 1])
+with _nl_form_col:
+    with st.form("newsletter_form"):
+        nl_email = st.text_input("E-Mail", placeholder="name@beispiel.de",
+                                  label_visibility="collapsed", key="nl_mail")
+        if st.form_submit_button("Jetzt anmelden", use_container_width=True, type="primary"):
+            _handle_submit(nl_email)
+    st.caption("DSGVO-konform · Kein Spam · Jederzeit abmeldbar")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -489,7 +634,7 @@ with cta_r:
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="se-footer">
-  © 2026 SeasonalEdge — Keine Anlageberatung. Trading birgt Risiken.<br>
+  &copy; 2026 SeasonalAlpha — Keine Anlageberatung. Trading birgt Risiken.<br>
   <a href="#">Impressum</a>
   <a href="#">Datenschutz</a>
   <a href="#">Risikohinweis</a>

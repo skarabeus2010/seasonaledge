@@ -64,7 +64,11 @@ def main():
             help="Welche Monatswechsel analysieren?"
         )
         show_individual_tom = st.checkbox("Einzelne Fenster zeigen", value=False)
-    
+
+        st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
@@ -86,7 +90,11 @@ def main():
     if len(selected_years) < 2 or not tom_months:
         st.warning("Nicht genügend Daten oder keine Monate ausgewählt.")
         return
-    
+
+    # ── Outlier-Filter (kein year_data → nur Info) ───
+    from shared.outlier_manager import filter_year_data, outlier_info_box
+    outlier_info_box([], outlier_method)
+
     # ── Analyse ───────────────────────────────────────
     tom_result = analyze_turn_of_month(df, tom_days_before, tom_days_after, tom_months, selected_years)
     

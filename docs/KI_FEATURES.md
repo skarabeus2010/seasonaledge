@@ -1,6 +1,6 @@
 # KI-Features — SeasonalEdge
 
-> Stand: 2026-03-20 | 15 KI-Features aktiv | TODO: Alle auf Home Page verpacken
+> Stand: 2026-03-21 | 15 KI-Features aktiv | Light Live: 11 Pages + Home
 
 ## Feature-Uebersicht
 
@@ -188,10 +188,24 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | `chronos-forecasting` + `torch` | Chronos Forecast (13) |
 | `neuralprophet` | NeuralProphet (14) — benoetigt Python <= 3.12 |
 
-## TODO: Home Page Integration
+## Light Live Pages (aktiv)
 
-Alle KI-Features muessen auf der Home Page sichtbar/verlinkt sein:
-- [ ] Feature-Cards fuer alle 15 KI-Features
-- [x] Crash-Fruehwarnung prominent oben (bereits integriert)
-- [ ] Quick-Links zu den Pages mit den jeweiligen Features
-- [ ] "KI-Status" Sektion: Welche Features aktiv, welche API-Keys gesetzt
+| Page | KI-Features |
+|------|-------------|
+| Home | Glasmorphismus Stats, SVG Hero |
+| Dekadenzyklus | Anomalie-Radar, aktuelles Jahr |
+| Jahreszyklus | Anomalie-Radar, Outlier Manager |
+| Monatszyklus | Outlier Manager |
+| Wochentage | Outlier Manager |
+| Monatswechsel | Outlier Manager |
+| Mondphasen | Outlier Manager |
+| Januar Trifecta | Ampelverlauf, Drawdown pro Signal |
+| Kriegszeiten | Outlier Manager |
+| Crash-Fruehwarnung | Isolation Forest Regime-Erkennung |
+| Saisonal-Events Kalender | Fed/EZB/OPEX/Mond/Feiertage |
+
+## Premium Pages (inaktiv, Coming Soon)
+
+Erweiterte Analyse, KI Score, Market Scanner, Premium Dashboard, TDOM,
+Spot-Vol Beta, Uebernacht, Feiertag, Zentralbanken, TruePath, OPEX,
+Shock Analyzer, Sector Rotation

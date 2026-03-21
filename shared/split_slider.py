@@ -34,9 +34,9 @@ def _traces_spaghetti(df: pd.DataFrame) -> tuple[str, list]:
             "y": y_vals,
             "mode": "lines",
             "type": "scatter",
-            "yaxis": "y",
+            "yaxis": "y2",
             "line": {
-                "color": "rgba(232,164,37,0.90)" if is_current else "rgba(200,220,255,0.40)",
+                "color": "#FFE600" if is_current else "rgba(200,220,255,0.40)",
                 "width": 2.5 if is_current else 1.0,
             },
             "hoverinfo": "skip",
@@ -46,11 +46,11 @@ def _traces_spaghetti(df: pd.DataFrame) -> tuple[str, list]:
 
 
 def _traces_average(df: pd.DataFrame) -> tuple[str, list]:
-    avg = (
-        df.groupby("trading_day")["cum_return_pct"]
-        .agg(["mean"])
-        .reset_index()
-    )
+    grouped = df.groupby("trading_day")["cum_return_pct"]
+    avg = grouped.agg(["mean", "count"]).reset_index()
+    # Nur Handelstage mit >= 90% der max. Jahresanzahl (verhindert Knick am Jahresende)
+    max_count = avg["count"].max()
+    avg = avg[avg["count"] >= max_count * 0.9]
     td   = avg["trading_day"].tolist()
     mean = [round(v, 4) for v in avg["mean"].tolist()]
     traces = [{
@@ -58,8 +58,8 @@ def _traces_average(df: pd.DataFrame) -> tuple[str, list]:
         "y": mean,
         "mode": "lines",
         "type": "scatter",
-        "yaxis": "y2",
-        "line": {"color": "#4d9fff", "width": 2.5},
+        "yaxis": "y",
+        "line": {"color": "#4d9fff", "width": 3},
         "hoverinfo": "skip",
         "name": "Ø Saison",
     }]
@@ -69,8 +69,10 @@ def _traces_average(df: pd.DataFrame) -> tuple[str, list]:
 def _align_zero(a_vals, b_vals, pad=0.06):
     if not a_vals or not b_vals:
         return [-50, 50], [-10, 15]
-    a_min = min(a_vals) * (1 + pad)
-    a_max = max(a_vals) * (1 + pad)
+    # Einzeljahre: Clippe auf Perzentile um Crash-Ausreisser zu daempfen
+    import numpy as _np
+    a_min = max(min(a_vals), float(_np.percentile(a_vals, 2))) * (1 + pad)
+    a_max = min(max(a_vals), float(_np.percentile(a_vals, 98))) * (1 + pad)
     b_min = min(b_vals) * (1 + pad)
     b_max = max(b_vals) * (1 + pad)
     def zero_pos(lo, hi):
@@ -91,7 +93,20 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
 
     traces_a_json, y_a = _traces_spaghetti(df)
     traces_b_json, y_b = _traces_average(df)
-    y1_range, y2_range = _align_zero(y_a, y_b)
+    # Zwei Y-Achsen: Links = Saisonal (eng), Rechts = Einzeljahre (weit)
+    import numpy as _np
+    # Saisonal-Achse: eng um die tatsaechlichen Werte
+    # Ignoriere letzte 10 Handelstage (Backfill-Artefakte am Jahresende)
+    y_b_clean = y_b[:-10] if len(y_b) > 20 else y_b
+    b_lo = float(_np.percentile(y_b_clean, 1))
+    b_hi = float(_np.percentile(y_b_clean, 99))
+    b_span = b_hi - b_lo
+    b_pad = max(b_span * 0.1, 0.2)
+    y_b_range = [round(b_lo - b_pad, 1), round(b_hi + b_pad, 1)]
+    # Einzeljahre-Achse: Voller Datenbereich, nichts abschneiden
+    y_a_lo = min(y_a) * 1.05
+    y_a_hi = max(y_a) * 1.05
+    y_a_range = [round(y_a_lo, 1), round(y_a_hi, 1)]
 
     # ── Gemeinsames Basis-Layout (X + beide Y-Achsen) ────────────────
     # Dieses Layout wird von ALLEN 3 Divs geteilt → identische Achsenpositionen
@@ -104,13 +119,16 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
             "range": [1, 252],
             "showgrid": False,
             "zeroline": False,
+            "tickmode": "array",
+            "tickvals": [1, 42, 84, 126, 168, 210, 252],
+            "ticktext": ["Jan", "Mrz", "Mai", "Jul", "Sep", "Nov", "Dez"],
             "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
             "linecolor": SE_COLORS["axis_line"],
             "title": {"text": "Handelstag im Jahr",
                       "font": {"color": SE_COLORS["text_muted"], "size": 11}},
         },
         "yaxis": {
-            "range": y1_range,
+            "range": y_b_range,
             "side": "left",
             "showgrid": True,
             "gridcolor": SE_COLORS["grid"],
@@ -118,23 +136,23 @@ def render_split_slider(df: pd.DataFrame, height: int = 480, info: str = "") -> 
             "zeroline": True,
             "zerolinecolor": SE_COLORS["zero_line"],
             "zerolinewidth": 1,
-            "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
-            "ticksuffix": "%",
-            "linecolor": SE_COLORS["axis_line"],
-            "title": {"text": "Einzeljahre %",
-                      "font": {"color": SE_COLORS["text_muted"], "size": 10}},
-        },
-        "yaxis2": {
-            "range": y2_range,
-            "overlaying": "y",
-            "side": "right",
-            "showgrid": False,
-            "zeroline": False,
             "tickfont": {"color": SE_COLORS["accent_blue"], "size": 10},
             "ticksuffix": "%",
             "linecolor": SE_COLORS["accent_blue"],
             "title": {"text": "Saisonal %",
                       "font": {"color": SE_COLORS["accent_blue"], "size": 10}},
+        },
+        "yaxis2": {
+            "range": y_a_range,
+            "overlaying": "y",
+            "side": "right",
+            "showgrid": False,
+            "zeroline": False,
+            "tickfont": {"color": SE_COLORS["text_muted"], "size": 10},
+            "ticksuffix": "%",
+            "linecolor": SE_COLORS["axis_line"],
+            "title": {"text": "Einzeljahre %",
+                      "font": {"color": SE_COLORS["text_muted"], "size": 10}},
         },
         "showlegend": False,
         "dragmode": False,
@@ -198,11 +216,11 @@ html, body {{ width:100%; height:100%; background:{SE_COLORS["bg"]}; overflow:hi
 /* Axes-Layer: KEIN clip-path → Achsen immer vollständig sichtbar */
 #layer-axes {{ z-index:1; }}
 
-/* Saisonal: sichtbar LINKS vom Divider */
-#layer-b {{ clip-path: inset(0 50% 0 0); z-index:2; will-change:clip-path; }}
+/* Saisonal: sichtbar LINKS vom Divider (Start: 100% sichtbar) */
+#layer-b {{ clip-path: inset(0 0% 0 0); z-index:2; will-change:clip-path; }}
 
-/* Einzeljahre: sichtbar RECHTS vom Divider */
-#layer-a {{ clip-path: inset(0 0 0 50%); z-index:3; will-change:clip-path; }}
+/* Einzeljahre: sichtbar RECHTS vom Divider (Start: 0% sichtbar) */
+#layer-a {{ clip-path: inset(0 0 0 100%); z-index:3; will-change:clip-path; }}
 
 /* Divider + Handle über allem */
 .divider {{
@@ -265,15 +283,15 @@ input.sl-ov {{
   <div class="clayer" id="layer-a"><div id="div-a"></div></div>
 
   <span class="se-watermark">SeasonalEdge</span>
-  <div class="divider"    id="divider"></div>
-  <div class="div-handle" id="handle">↔</div>
-  <input type="range" min="0" max="100" value="50"
+  <div class="divider"    id="divider" style="left:0%"></div>
+  <div class="div-handle" id="handle" style="left:0%">↔</div>
+  <input type="range" min="0" max="100" value="0"
          class="sl-ov" id="sl-ov">
 </div>
 
 <div class="bar-wrap">
   <span class="bar-icon">← Ø Saisonal</span>
-  <input type="range" min="0" max="100" value="50" id="sl-bar">
+  <input type="range" min="0" max="100" value="0" id="sl-bar">
   <span class="bar-icon">Einzeljahre →</span>
 </div>
 

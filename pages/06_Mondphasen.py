@@ -210,7 +210,11 @@ def main():
         days_after = st.slider("Tage NACH Mondphase (t+x)", 1, 15, 5, key="moon_after")
         
         show_individual = st.checkbox("Einzelne Events zeigen", value=False, key="moon_indiv")
-    
+
+        st.markdown("---")
+        from shared.outlier_manager import outlier_sidebar
+        outlier_method = outlier_sidebar()
+
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
@@ -231,7 +235,11 @@ def main():
     
     min_year = min(selected_years) if selected_years else 2000
     max_year = max(selected_years) if selected_years else 2026
-    
+
+    # ── Outlier-Filter (kein year_data → nur Info) ───
+    from shared.outlier_manager import filter_year_data, outlier_info_box
+    outlier_info_box([], outlier_method)
+
     # ── Mondphasen laden ──────────────────────────────
     phases_to_analyze = []
     
