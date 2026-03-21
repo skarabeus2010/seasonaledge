@@ -120,7 +120,7 @@ def build_decade_monthly_heatmap(
     pivot = pivot.sort_index()
 
     z = pivot.values
-    y_labels = [f"X{d}" for d in range(10)]
+    y_labels = [f"x{d}" for d in range(10)]
 
     fig = go.Figure(go.Heatmap(
         z=z,

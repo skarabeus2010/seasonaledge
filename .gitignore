@@ -7,3 +7,7 @@ logs/
 .env
 .streamlit/secrets.toml
 *.db
+.claude/
+.streamlit/
+node_modules/
+__pycache__/

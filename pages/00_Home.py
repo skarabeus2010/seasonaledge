@@ -371,6 +371,7 @@ _LIGHT_PAGES = [
     ("pages/07_Januar_Trifecta.py",          "🚦", "Januar-Trifecta",        "Ampelsystem — 3 Signale für das Börsenjahr"),
     ("pages/08_Kriegszeiten.py",             "⚔️", "Kriegszeiten",           "Krieg vs. Frieden — Saisonalität im Vergleich"),
     ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Saisonal-Kalender",      "Fed, EZB, OPEX, Mond & Feiertage — 12 Monate"),
+    ("pages/12_Backtest_Engine.py",          "🔬", "Backtest Engine",        "KI-Optimierer: Events, Stop-Loss, Walk-Forward"),
 ]
 
 # CSS: page_link überlagert die Kachel — ganze Card ist klickbar

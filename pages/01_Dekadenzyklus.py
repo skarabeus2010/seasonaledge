@@ -89,7 +89,7 @@ with st.sidebar:
     show_digits: dict[int, bool] = {}
     cols = st.columns(2)
     for digit in range(10):
-        label = f"X{digit} (aktuell ✨)" if digit == CURRENT_DIGIT else f"X{digit}"
+        label = f"x{digit} (aktuell ✨)" if digit == CURRENT_DIGIT else f"x{digit}"
         with cols[digit % 2]:
             show_digits[digit] = st.checkbox(label, value=True, key=f"dec_{digit}")
 
@@ -183,7 +183,7 @@ for digit in range(10):
 
     # Ø-Kurve
     end_val = avg[-1]
-    name = f"X{digit} · n={d['n']} · {end_val:+.1f}%"
+    name = f"x{digit} · n={d['n']} · {end_val:+.1f}%"
     if is_current:
         name = f"✨ X{digit} (aktuell) · n={d['n']} · {end_val:+.1f}%"
 
@@ -251,7 +251,7 @@ bar_hover  = []
 
 for digit in range(10):
     d = decade_data[digit]
-    bar_x.append(f"X{digit}")
+    bar_x.append(f"x{digit}")
     val = d["avg_return"] if d["n"] > 0 else 0.0
     bar_y.append(round(val, 2) if val is not None else 0.0)
 
@@ -393,14 +393,14 @@ if show_context:
         st.markdown(f"### 🎯 Was bedeutet das für {CURRENT_YEAR}?")
 
         groups_all = {
-            f"X{digit}": decade_data[digit]["returns"]
+            f"x{digit}": decade_data[digit]["returns"]
             for digit in range(10)
             if decade_data[digit]["n"] > 0
         }
-        ctx = build_context_panel_data(groups_all, f"X{CURRENT_DIGIT}", "Jahr")
+        ctx = build_context_panel_data(groups_all, f"x{CURRENT_DIGIT}", "Jahr")
 
         col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Kohorte", f"X{CURRENT_DIGIT}-Jahre")
+        col1.metric("Kohorte", f"x{CURRENT_DIGIT}-Jahre")
         col2.metric("Ø Rendite", f"{ctx['mean']:+.2f}%")
         col3.metric("Median", f"{ctx['median']:+.2f}%")
         col4.metric("Win-Rate", f"{ctx['win_rate']:.0f}%")
@@ -421,7 +421,7 @@ if show_context:
 if show_boxplot:
     st.markdown("### Rendite-Verteilung nach Kohorte")
     groups = {
-        f"X{digit}": decade_data[digit]["returns"]
+        f"x{digit}": decade_data[digit]["returns"]
         for digit in range(10)
         if decade_data[digit]["n"] >= 2
     }
@@ -432,7 +432,7 @@ if show_boxplot:
             title=f"{ticker} — Jahresrenditen nach Dekaden-Endziffer",
             x_title="Dekaden-Endziffer",
             y_title="Log-Rendite (%)",
-            current_key=f"X{CURRENT_DIGIT}",
+            current_key=f"x{CURRENT_DIGIT}",
         )
         st.plotly_chart(fig_box, use_container_width=True)
 

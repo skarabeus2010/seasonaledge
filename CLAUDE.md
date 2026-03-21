@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 13.0 | 2026-03-21 | Details → `docs/`
+> Version 14.0 | 2026-03-22 | Details → `docs/`
 
 ## Projekt
 
@@ -159,7 +159,12 @@ UPPER_CASE        → Konstanten
 - [ ] Outlier Manager in alle Pages integrieren (aktuell: Jahreszyklus + Erweiterte Analyse)
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
 - [ ] Anomaly Engine in weitere Pages integrieren
-- [ ] Fehlende 42 Ticker nachladen (ETFs, Aktien, Krypto)
+- [x] Ticker-Datenbank erweitert: 53 → 94 Ticker (EU-Aktien, Anleihen, EM, Sektor-ETFs) (2026-03-22)
+- [x] Backtest Engine + Optimierer (Grid-Search, Walk-Forward, KI Event-Relevanz) (2026-03-21)
+- [x] Stooq-Fallback erweitert: 5 → 10 Indizes (CAC, Euro Stoxx, SMI, HSI, KOSPI) (2026-03-22)
+- [x] Achsenbeschriftungen global weiss, max 2 Nachkommastellen (2026-03-21)
+- [x] "We are here!" Helper zentral ausgelagert (shared/we_are_here.py) (2026-03-21)
+- [x] "X" → "x" bei Dekaden-Endziffern global (2026-03-21)
 - [ ] Streamlit Cloud Deployment
 - [ ] Stripe Freemium/Abo-Integration
 - [ ] Supabase User-Auth

@@ -350,6 +350,55 @@ SYMBOLS = {
         "beschreibung": "E-Mini Nasdaq 100 Front-Month Futures",
     },
 
+    # ── EU-EINZELAKTIEN ────────────────────────────────────────────────────────
+    "SAP": {"name": "SAP", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "SAP SE — Enterprise Software"},
+    "SIE.DE": {"name": "Siemens", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Siemens AG — Industrie & Technologie"},
+    "ALV.DE": {"name": "Allianz", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Allianz SE — Versicherung"},
+    "BAS.DE": {"name": "BASF", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "BASF SE — Chemie"},
+    "BMW.DE": {"name": "BMW", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "BMW AG — Automobil"},
+    "MBG.DE": {"name": "Mercedes-Benz", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Mercedes-Benz Group — Automobil"},
+    "DTE.DE": {"name": "Deutsche Telekom", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Deutsche Telekom AG"},
+    "ADS.DE": {"name": "Adidas", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Adidas AG — Sportartikel"},
+    "ASML": {"name": "ASML", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "Euronext", "beschreibung": "ASML Holding — Halbleiter-Lithografie"},
+    "MC.PA": {"name": "LVMH", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "Euronext Paris", "beschreibung": "LVMH — Luxusgüter"},
+
+    # ── WEITERE US-AKTIEN ────────────────────────────────────────────────────────
+    "BRK-B": {"name": "Berkshire Hathaway B", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Berkshire Hathaway — Warren Buffett"},
+    "V": {"name": "Visa", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Visa Inc. — Zahlungsnetzwerk"},
+    "JNJ": {"name": "Johnson & Johnson", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "J&J — Pharma & Consumer Health"},
+    "WMT": {"name": "Walmart", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Walmart Inc. — Einzelhandel"},
+    "PG": {"name": "Procter & Gamble", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "P&G — Konsumgüter"},
+    "UNH": {"name": "UnitedHealth", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "UnitedHealth Group — Krankenversicherung"},
+    "HD": {"name": "Home Depot", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Home Depot — Baumarkt-Kette"},
+    "MA": {"name": "Mastercard", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Mastercard Inc. — Zahlungsnetzwerk"},
+
+    # ── SEKTOR-ETFs (weitere) ────────────────────────────────────────────────────
+    "XLI": {"name": "Industrials Select Sector ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Industriesektor ETF"},
+    "XLC": {"name": "Communication Services ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Kommunikationssektor ETF"},
+    "XLB": {"name": "Materials Select Sector ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Grundstoffsektor ETF"},
+    "XLP": {"name": "Consumer Staples Select ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Basiskonsumgüter ETF"},
+    "XLY": {"name": "Consumer Discretionary ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Zyklische Konsumgüter ETF"},
+
+    # ── ANLEIHEN / FIXED INCOME ──────────────────────────────────────────────────
+    "SHY": {"name": "iShares 1-3Y Treasury ETF", "kategorie": "Anleihen", "währung": "USD", "exchange": "NYSE", "beschreibung": "Kurzläufer US-Staatsanleihen"},
+    "IEF": {"name": "iShares 7-10Y Treasury ETF", "kategorie": "Anleihen", "währung": "USD", "exchange": "NYSE", "beschreibung": "Mittelfristige US-Staatsanleihen"},
+    "HYG": {"name": "iShares High Yield Corp Bond", "kategorie": "Anleihen", "währung": "USD", "exchange": "NYSE", "beschreibung": "US High-Yield Unternehmensanleihen"},
+
+    # ── EMERGING MARKETS ─────────────────────────────────────────────────────────
+    "EEM": {"name": "iShares MSCI EM ETF", "kategorie": "Emerging Markets", "währung": "USD", "exchange": "NYSE", "beschreibung": "Schwellenländer ETF"},
+    "FXI": {"name": "iShares China Large-Cap ETF", "kategorie": "Emerging Markets", "währung": "USD", "exchange": "NYSE", "beschreibung": "China Large-Cap ETF"},
+    "EWZ": {"name": "iShares MSCI Brazil ETF", "kategorie": "Emerging Markets", "währung": "USD", "exchange": "NYSE", "beschreibung": "Brasilien ETF"},
+
+    # ── WEITERE INDIZES ──────────────────────────────────────────────────────────
+    "^SDAXI": {"name": "SDAX", "kategorie": "EU-Index", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Small-Cap Deutsche Aktien"},
+    "^TECDAX": {"name": "TecDAX", "kategorie": "EU-Index", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Deutsche Technologie-Aktien"},
+    "^IBEX": {"name": "IBEX 35", "kategorie": "EU-Index", "währung": "EUR", "exchange": "BME", "beschreibung": "Spanischer Leitindex"},
+
+    # ── WEITERE ROHSTOFFE ────────────────────────────────────────────────────────
+    "HG=F": {"name": "Copper Futures (Kupfer)", "kategorie": "Rohstoff", "währung": "USD", "exchange": "COMEX", "beschreibung": "Kupfer Futures ($/lb)"},
+    "PL=F": {"name": "Platinum Futures (Platin)", "kategorie": "Rohstoff", "währung": "USD", "exchange": "NYMEX", "beschreibung": "Platin Futures ($/oz)"},
+    "ZS=F": {"name": "Soybean Futures (Sojabohnen)", "kategorie": "Rohstoff", "währung": "USD", "exchange": "CBOT", "beschreibung": "Sojabohnen Futures"},
+
     # ── KRYPTOWÄHRUNGEN ────────────────────────────────────────────────────────
     "BTC-USD": {
         "name":         "Bitcoin (USD)",
@@ -372,6 +421,10 @@ SYMBOLS = {
         "exchange":     "Crypto",
         "beschreibung": "Solana / US-Dollar",
     },
+
+    "XRP-USD": {"name": "XRP (Ripple)", "kategorie": "Krypto", "währung": "USD", "exchange": "Crypto", "beschreibung": "XRP / US-Dollar"},
+    "ADA-USD": {"name": "Cardano", "kategorie": "Krypto", "währung": "USD", "exchange": "Crypto", "beschreibung": "Cardano / US-Dollar"},
+    "DOGE-USD": {"name": "Dogecoin", "kategorie": "Krypto", "währung": "USD", "exchange": "Crypto", "beschreibung": "Dogecoin / US-Dollar"},
 
     # ── FX / DEVISEN ───────────────────────────────────────────────────────────
     "EURUSD=X": {
@@ -402,6 +455,9 @@ SYMBOLS = {
         "exchange":     "Forex",
         "beschreibung": "US-Dollar / Schweizer Franken",
     },
+    "AUDUSD=X": {"name": "AUD/USD", "kategorie": "FX", "währung": "USD", "exchange": "Forex", "beschreibung": "Australischer Dollar / US-Dollar"},
+    "NZDUSD=X": {"name": "NZD/USD", "kategorie": "FX", "währung": "USD", "exchange": "Forex", "beschreibung": "Neuseeland Dollar / US-Dollar"},
+    "USDCAD=X": {"name": "USD/CAD", "kategorie": "FX", "währung": "CAD", "exchange": "Forex", "beschreibung": "US-Dollar / Kanadischer Dollar"},
 }
 
 
@@ -413,9 +469,12 @@ KATEGORIEN = [
     "US-ETF",
     "US-Aktie",
     "EU-Index",
+    "EU-Aktie",
     "Asien-Index",
     "Rohstoff",
     "Futures",
+    "Anleihen",
+    "Emerging Markets",
     "Krypto",
     "FX",
 ]

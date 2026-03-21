@@ -25,11 +25,16 @@ _VALID_INTERVALS = ["1d","1wk","1mo"]
 
 # Ticker die lange Historie von Stooq beziehen koennen
 _STOOQ_TICKERS = {
-    "^DJI":   "^dji",
-    "^GSPC":  "^spx",
-    "^GDAXI": "^dax",
-    "^FTSE":  "^ukx",
-    "^N225":  "^nkx",
+    "^DJI":      "^dji",
+    "^GSPC":     "^spx",
+    "^GDAXI":    "^dax",
+    "^FTSE":     "^ukx",
+    "^N225":     "^nkx",
+    "^FCHI":     "^cac",
+    "^STOXX50E": "^sx5e",
+    "^SSMI":     "^smi",
+    "^HSI":      "^hsi",
+    "^KS11":     "^kospi",
 }
 
 

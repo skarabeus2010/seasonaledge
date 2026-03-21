@@ -59,24 +59,10 @@ QUARTER_DOY = {"Q1": (1, 90), "Q2": (91, 181), "Q3": (182, 273), "Q4": (274, 365
 # Plotly config: kein Modebar-Slider, Hover aktiv
 _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
-# ── "We are here!" Annotation Helper ─────────────────
-WE_ARE_HERE_COLOR = "#FFD700"
-
-def _we_are_here_annotation(x_val, y_val, above=True):
-    """Erzeugt eine 'We are here!' Annotation mit Pfeil."""
-    return dict(
-        x=x_val, y=y_val,
-        text="<b>We are here!</b>",
-        showarrow=True,
-        arrowhead=2, arrowsize=1.5, arrowwidth=2,
-        arrowcolor=WE_ARE_HERE_COLOR,
-        ax=0, ay=-70 if above else 70,
-        font=dict(size=11, color=WE_ARE_HERE_COLOR, family="Inter, sans-serif"),
-        bgcolor="rgba(20,28,40,0.9)",
-        bordercolor=WE_ARE_HERE_COLOR,
-        borderwidth=1.5,
-        borderpad=5,
-    )
+# ── "We are here!" — zentraler Helper ─────────────────
+from shared.we_are_here import annotation as _we_are_here_annotation
+from shared import we_are_here as _wah
+WE_ARE_HERE_COLOR = _wah.MARKER_COLOR_SOLID
 
 
 # ══════════════════════════════════════════════════════════════
@@ -125,7 +111,7 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
         x=x_days, y=avg_smooth, mode="lines",
         line=dict(color=SE_COLORS["accent_blue"], width=3),
         name=f"Saisonaler Ø ({len(year_data)} Jahre)",
-        hovertemplate="Tag %{x}<br>Wert: %{y:.3f}<extra></extra>",
+        hovertemplate="Tag %{x}<br>Wert: %{y:.2f}<extra></extra>",
     ))
 
     # Praesidentenzyklus-Overlay
@@ -224,7 +210,7 @@ def build_detrend_chart(avg, ticker, n_years):
         line=dict(color="#FF6B6B", width=2.5),
         fill="tozeroy", fillcolor="rgba(255,107,107,0.1)",
         name="Saisonaler Druck",
-        hovertemplate="Tag %{x}<br>Druck: %{y:+.3f}<extra></extra>",
+        hovertemplate="Tag %{x}<br>Druck: %{y:+.2f}<extra></extra>",
     ))
 
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
@@ -244,7 +230,205 @@ def build_detrend_chart(avg, ticker, n_years):
         tickmode="array", tickvals=MONTH_STARTS, ticktext=MONTH_LABELS,
         range=[1, 365],
     )
+    fig.update_yaxes(tickformat="+.2f")
     return fig
+
+
+def build_combined_seasonal_detrend(
+    year_data, avg, std, df, ticker, smoothing,
+    show_individual, show_bands, show_current, show_pressure, cycle_overlay,
+):
+    """
+    Kombinierter Chart: Saisonalchart (oben) + Detrend-Indikator (unten).
+    Geteilte X-Achse → Hover-Crosshair synchronisiert sich automatisch.
+    """
+    from plotly.subplots import make_subplots
+
+    if len(avg) < 10:
+        return None, None
+
+    x_days = list(range(1, 366))
+    current_year = datetime.now().year
+
+    # Detrend berechnen
+    end_val = avg[-1] - avg[0]
+    daily_drift = end_val / len(avg)
+    detrended = [(avg[i] - avg[0]) - ((i + 1) * daily_drift) for i in range(len(avg))]
+
+    fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.06,
+        row_heights=[0.65, 0.35],
+        subplot_titles=[
+            f"{ticker} — Saisonaler Jahresverlauf ({len(year_data)} Jahre)",
+            f"{ticker} — Detrend-Indikator / Saisonaler Druck",
+        ],
+    )
+
+    # ── Row 1: Saisonalchart ──────────────────────────
+
+    # Einzeljahre
+    if show_individual:
+        for year, yd in year_data.items():
+            fig.add_trace(go.Scatter(
+                x=x_days, y=yd["full_365"], mode="lines",
+                line=dict(color="rgba(200,220,255,0.12)", width=0.7),
+                showlegend=False, hoverinfo="skip",
+            ), row=1, col=1)
+
+    # Konfidenzband
+    if show_bands and std:
+        upper = [avg[i] + std[i] for i in range(365)]
+        lower = [avg[i] - std[i] for i in range(365)]
+        fig.add_trace(go.Scatter(
+            x=x_days, y=upper, mode="lines", line=dict(width=0),
+            showlegend=False, hoverinfo="skip",
+        ), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=x_days, y=lower, mode="lines", line=dict(width=0),
+            fill="tonexty", fillcolor="rgba(77,159,255,0.08)",
+            name="+-1 Sigma", hoverinfo="skip",
+        ), row=1, col=1)
+
+    # Saisonaler Durchschnitt
+    avg_smooth = avg.copy()
+    if smoothing > 1:
+        avg_smooth = pd.Series(avg_smooth).rolling(
+            smoothing, center=True, min_periods=1
+        ).mean().tolist()
+    fig.add_trace(go.Scatter(
+        x=x_days, y=avg_smooth, mode="lines",
+        line=dict(color=SE_COLORS["accent_blue"], width=3),
+        name=f"Saisonaler Ø ({len(year_data)} Jahre)",
+        hovertemplate="Tag %{x}<br>Wert: %{y:.2f}<extra></extra>",
+    ), row=1, col=1)
+
+    # Praesidentenzyklus
+    if cycle_overlay:
+        for cycle_name in cycle_overlay:
+            cycle_years = [y for y in year_data.keys()
+                           if get_presidential_cycle_year(y) == cycle_name]
+            if len(cycle_years) < 2:
+                continue
+            cycle_curves = [year_data[y]["full_365"] for y in cycle_years]
+            cycle_avg = [np.mean([c[d] for c in cycle_curves]) for d in range(365)]
+            if smoothing > 1:
+                cycle_avg = pd.Series(cycle_avg).rolling(
+                    smoothing, center=True, min_periods=1
+                ).mean().tolist()
+            short_label = cycle_name.split("(")[1].rstrip(")") if "(" in cycle_name else cycle_name
+            fig.add_trace(go.Scatter(
+                x=x_days, y=cycle_avg, mode="lines",
+                line=dict(color=CYCLE_COLORS[cycle_name], width=2, dash="dash"),
+                name=f"{short_label} ({len(cycle_years)}y)",
+            ), row=1, col=1)
+
+    # Aktuelles Jahr
+    if show_current and current_year in year_data:
+        yd = year_data[current_year]
+        today_doy = datetime.now().timetuple().tm_yday
+        display_days = [d for d in yd["days"] if d <= today_doy]
+        display_vals = yd["cumulative"][:len(display_days)]
+        if display_days:
+            fig.add_trace(go.Scatter(
+                x=display_days, y=display_vals, mode="lines",
+                line=dict(color="#F1C40F", width=2.5),
+                name=f"{current_year} (aktuell)",
+            ), row=1, col=1)
+
+    fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)",
+                  line_width=1, row=1, col=1)
+
+    # ── Row 2: Detrend-Indikator ──────────────────────
+
+    fig.add_trace(go.Scatter(
+        x=x_days, y=detrended, mode="lines",
+        line=dict(color="#FF6B6B", width=2.5),
+        fill="tozeroy", fillcolor="rgba(255,107,107,0.1)",
+        name="Saisonaler Druck",
+        hovertemplate="Tag %{x}<br>Druck: %{y:+.2f}<extra></extra>",
+    ), row=2, col=1)
+
+    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)",
+                  line_width=1, row=2, col=1)
+
+    # "We are here!" auf beiden Subplots
+    today_doy = datetime.now().timetuple().tm_yday
+    if 1 <= today_doy <= 365:
+        # Vertikale Linie ueber beide Subplots
+        from shared.we_are_here import annotation as _wah_ann
+        # Detrend Annotation
+        today_detrend = detrended[today_doy - 1] if today_doy <= len(detrended) else 0
+        fig.add_annotation(**_wah_ann(today_doy, today_detrend, above=True), row=2, col=1)
+
+    # ── Layout ────────────────────────────────────────
+
+    # Pressure als sekundaere Y-Achse (nur Row 1)
+    pressure_info = None
+    if show_pressure:
+        p_curve, max_years, avail_periods = calculate_pressure_curve(df, smoothing_window=smoothing)
+        if p_curve:
+            fig.add_trace(go.Scatter(
+                x=x_days, y=p_curve, mode="lines",
+                line=dict(color=COLOR_PRESSURE, width=2),
+                name="Pressure", yaxis="y3",
+                hovertemplate="Pressure: %{y:+.2f}<extra></extra>",
+            ), row=1, col=1)
+            unavailable = [p for p in PRESSURE_PERIODS if p > max_years]
+            if unavailable and avail_periods:
+                pressure_info = (
+                    f"Pressure Chart ueber die letzten **{max(avail_periods)} Jahre** "
+                    f"(Datenreihe: {max_years} Jahre)."
+                )
+
+    fig = apply_se_theme(fig, title="", height=750)
+
+    # Subplot-Titel Farbe
+    for ann in fig.layout.annotations:
+        ann.font.color = SE_COLORS["text_primary"]
+        ann.font.size = 13
+
+    # X-Achse nur auf unterem Subplot (shared)
+    fig.update_xaxes(
+        tickmode="array", tickvals=MONTH_STARTS, ticktext=MONTH_LABELS,
+        range=[1, 365], row=2, col=1,
+    )
+    fig.update_xaxes(range=[1, 365], row=1, col=1)
+    fig.update_yaxes(title="Normalisiert (Start = 100)", row=1, col=1)
+    fig.update_yaxes(title="Saisonaler Druck", row=2, col=1)
+
+    # Crosshair: Spike-Linie synchronisiert ueber beide Subplots
+    fig.update_layout(
+        hovermode="closest",
+        hoverlabel=dict(bgcolor=SE_COLORS["surface_alt"], font=dict(size=11)),
+    )
+    # Spike-Lines auf BEIDEN X-Achsen (across = durchgaengig ueber Subplots)
+    for xaxis_name in ["xaxis", "xaxis2"]:
+        fig.update_layout(**{
+            xaxis_name: dict(
+                showspikes=True,
+                spikemode="across",
+                spikethickness=1,
+                spikecolor="rgba(255,215,0,0.5)",
+                spikedash="dot",
+                spikesnap="data",
+            )
+        })
+
+    if show_pressure:
+        fig.update_layout(
+            yaxis3=dict(
+                title=dict(text="Pressure", font=dict(color=COLOR_PRESSURE, size=11)),
+                tickfont=dict(color=COLOR_PRESSURE, size=10),
+                overlaying="y", side="right", showgrid=False,
+                tickformat="+.1f", zeroline=True,
+                zerolinecolor="rgba(224,86,160,0.2)",
+                anchor="x",
+            )
+        )
+
+    return fig, pressure_info
 
 
 def build_monthly_bars(year_data, ticker):
@@ -266,7 +450,7 @@ def build_monthly_bars(year_data, ticker):
         marker=dict(color=colors),
         text=[f"{v:+.2f}%<br>WR {wr:.0f}%" for v, wr in zip(avgs, win_rates)],
         textposition="outside", textfont=dict(size=11, color="#c8d6e5"),
-        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.3f}%<br>n=%{customdata}<extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<br>n=%{customdata}<extra></extra>",
         customdata=ns,
     ))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
@@ -300,7 +484,7 @@ def build_quarterly_bars(year_data, ticker):
         x=q_labels, y=avgs, marker=dict(color=colors),
         text=[f"{v:+.2f}%<br>WR {wr:.0f}% · n={n}" for v, wr, n in zip(avgs, win_rates, ns)],
         textposition="outside", textfont=dict(size=12, color="#c8d6e5"),
-        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.3f}%<extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<extra></extra>",
     ))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
@@ -356,7 +540,7 @@ def build_monthly_heatmap(year_data, ticker):
         text=[[f"{v:+.1f}%" for v in row] for row in z_data],
         texttemplate="%{text}",
         textfont=dict(size=11, color="#1a1a1a"),
-        hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.3f}%<extra></extra>",
+        hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
             title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
             tickfont=dict(color=SE_COLORS["text_muted"], size=10),
@@ -402,6 +586,7 @@ def styled_month_table(year_data):
         return None
 
     mdf = pd.DataFrame(rows)
+    mdf.index = range(1, len(mdf) + 1)
 
     def _color_val(val):
         if not isinstance(val, str) or "%" not in val:
@@ -418,6 +603,58 @@ def styled_month_table(year_data):
 
     return (
         mdf.style
+        .applymap(_color_val)
+        .set_properties(**{"text-align": "center"})
+        .set_table_styles([
+            {"selector": "th", "props": [
+                ("text-align", "center"),
+                ("background-color", SE_COLORS["surface"]),
+                ("color", SE_COLORS["text_primary"]),
+                ("border-bottom", f"1px solid {SE_COLORS['panel_border']}"),
+            ]},
+            {"selector": "td", "props": [
+                ("border-bottom", f"1px solid {SE_COLORS['panel_border']}"),
+            ]},
+        ])
+    )
+
+
+def styled_quarter_table(year_data):
+    """Quartalsstatistiken-Tabelle mit Farbcodierung (analog zu Monats-Detailtabelle)."""
+    rows = []
+    for q_name, (s, e) in QUARTER_DOY.items():
+        stats = calculate_period_stats(year_data, s, e)
+        if stats:
+            rows.append({
+                "Quartal": q_name,
+                "Ø Rendite": f'{stats["avg_return"]:+.2f}%',
+                "Median": f'{stats["median_return"]:+.2f}%',
+                "Win-Rate": f'{stats["win_rate"]:.0f}%',
+                "Max Gewinn": f'{stats["max_gain"]:+.1f}%',
+                "Max Verlust": f'{stats["max_loss"]:+.1f}%',
+                "n": stats["total_years"],
+            })
+    if not rows:
+        return None
+
+    qdf = pd.DataFrame(rows)
+    qdf.index = range(1, len(qdf) + 1)
+
+    def _color_val(val):
+        if not isinstance(val, str) or "%" not in val:
+            return ""
+        try:
+            num = float(val.replace("%", "").replace("+", "").strip())
+        except ValueError:
+            return ""
+        if num > 0:
+            return f"color: {SE_COLORS['positive']}"
+        elif num < 0:
+            return f"color: {SE_COLORS['negative']}"
+        return ""
+
+    return (
+        qdf.style
         .applymap(_color_val)
         .set_properties(**{"text-align": "center"})
         .set_table_styles([
@@ -519,7 +756,7 @@ def main():
         f"{len(year_data)} Jahre | Glaettung: {smoothing}d"
     )
 
-    # ── 1. Saisonaler Jahresverlauf + Pressure + Zyklus ──
+    # ── 1. Saisonalchart ──────────────────────────────────
     fig, pressure_info = build_yearly_chart(
         year_data, avg, std, df, ticker, smoothing,
         show_individual, show_bands, show_current,
@@ -530,7 +767,7 @@ def main():
     if pressure_info:
         st.info(pressure_info)
 
-    # ── 2. Detrend-Indikator (collapsible) ──────────────
+    # ── 2. Detrend-Indikator (Expander) ──────────────────
     if avg:
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
             detrend_fig = build_detrend_chart(avg, ticker, len(year_data))
@@ -596,6 +833,10 @@ def main():
     # ── 5. Quartals-Performance ───────────────────────────
     with st.expander("Quartals-Performance", expanded=False):
         st.plotly_chart(build_quarterly_bars(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
+        with st.expander(f"Quartals-Detailtabelle ({len(year_data)} Jahre)"):
+            styled_q = styled_quarter_table(year_data)
+            if styled_q is not None:
+                st.markdown(styled_q.to_html(), unsafe_allow_html=True)
 
     # ── 6. 10-Jahres Heatmap ─────────────────────────────
     with st.expander("10 Jahres Heatmap", expanded=True):

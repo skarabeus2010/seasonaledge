@@ -35,18 +35,25 @@ from shared.nyse_holidays import (
 TICKER_TO_EXCHANGE = {
     # NYSE / NASDAQ
     "NYSE":    ["SPY", "QQQ", "IWM", "DIA", "TLT", "GLD", "SLV", "USO",
-                "XLF", "XLK", "XLE", "XLV", "XLU", "AAPL", "MSFT", "NVDA",
-                "AMZN", "GOOGL", "META", "TSLA", "JPM", "XOM",
+                "XLF", "XLK", "XLE", "XLV", "XLU", "XLI", "XLC", "XLB", "XLP", "XLY",
+                "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "JPM", "XOM",
+                "BRK-B", "V", "JNJ", "WMT", "PG", "UNH", "HD", "MA",
+                "SHY", "IEF", "HYG", "EEM", "FXI", "EWZ",
                 "^GSPC", "^DJI", "^IXIC", "^NDX", "^RUT", "^VIX",
                 "GC=F", "SI=F", "CL=F", "BZ=F", "NG=F", "ZC=F", "ZW=F",
+                "HG=F", "PL=F", "ZS=F",
                 "ES=F", "NQ=F", "BTC-USD", "ETH-USD", "SOL-USD",
-                "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X"],
+                "XRP-USD", "ADA-USD", "DOGE-USD",
+                "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
+                "AUDUSD=X", "NZDUSD=X", "USDCAD=X"],
     # XETRA (Deutschland)
-    "XETRA":  ["^GDAXI", "^MDAXI", "^SDAXI", "^TECDAX"],
+    "XETRA":  ["^GDAXI", "^MDAXI", "^SDAXI", "^TECDAX",
+               "SAP", "SIE.DE", "ALV.DE", "BAS.DE", "BMW.DE",
+               "MBG.DE", "DTE.DE", "ADS.DE"],
     # LSE (London)
     "LSE":    ["^FTSE", "^FTMC"],
     # Euronext Paris
-    "EURONEXT": ["^FCHI"],
+    "EURONEXT": ["^FCHI", "ASML", "MC.PA"],
     # TSE (Tokyo)
     "TSE":    ["^N225", "^TOPX"],
     # SIX (Schweiz) — nutzt NYSE-ähnliche Feiertage + Schweizer Extras

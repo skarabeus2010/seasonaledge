@@ -1,6 +1,6 @@
 # KI-Features — SeasonalEdge
 
-> Stand: 2026-03-21 | 15 KI-Features aktiv | Light Live: 11 Pages + Home
+> Stand: 2026-03-22 | 16 KI-Features aktiv | Light Live: 12 Pages + Home
 
 ## Feature-Uebersicht
 
@@ -21,6 +21,7 @@
 | 13 | Chronos Forecast | Probabilistische 30d-Prognose mit Konfidenzbaendern (Amazon Chronos-Bolt-Tiny, 9M Params) | Erweiterte Analyse, KI Score | `chronos_forecast.py` |
 | 14 | NeuralProphet | Explizite Saisonalitaets-Komponenten via Neural Network (Fourier-basiert) | Erweiterte Analyse | `neural_prophet_forecast.py` |
 | 15 | Spot-Vol Beta | Daily + Rolling Beta (SPX vs VIX), Regime-Wendepunkte, Forward Returns nach Extremen | Spot-Vol Beta | `spot_vol_beta.py` |
+| 16 | Backtest Engine | Grid-Search Optimierer, Walk-Forward, KI Event-Relevanz (t-Test + Isolation Forest) | Backtest Engine | `backtest_engine.py` |
 
 ---
 
@@ -175,6 +176,8 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | `shared/chronos_forecast.py` | Chronos Forecast | chronos-forecasting, torch |
 | `shared/neural_prophet_forecast.py` | NeuralProphet | neuralprophet (Python <= 3.12) |
 | `shared/spot_vol_beta.py` | Spot-Vol Beta, Regime-Wendepunkte | statsmodels |
+| `shared/backtest_engine.py` | Backtest, Optimierung, Walk-Forward, Event-Relevanz | scipy, sklearn |
+| `shared/we_are_here.py` | Globaler "We are here!" Marker | — |
 
 ## Pakete
 
@@ -203,6 +206,14 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | Kriegszeiten | Outlier Manager |
 | Crash-Fruehwarnung | Isolation Forest Regime-Erkennung |
 | Saisonal-Events Kalender | Fed/EZB/OPEX/Mond/Feiertage |
+| Backtest Engine | Grid-Search, Walk-Forward, KI Event-Relevanz |
+
+## Ticker-Datenbank
+
+94 Instrumente in 12 Kategorien: US-Index (6), US-ETF (18), US-Aktie (17),
+EU-Index (9), EU-Aktie (10), Asien-Index (3), Rohstoff (10), Futures (2),
+Anleihen (3), Emerging Markets (3), Krypto (6), FX (7).
+Stooq-Fallback fuer 10 Indizes (bis zu 131 Jahre Historie).
 
 ## Premium Pages (inaktiv, Coming Soon)
 

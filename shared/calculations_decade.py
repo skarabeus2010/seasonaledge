@@ -139,7 +139,7 @@ def get_decade_summary_table(decade_data: dict) -> pd.DataFrame:
         if d["n"] == 0:
             rows.append({
                 "Ziffer": digit,
-                "Kohorte": f"X{digit} Jahre",
+                "Kohorte": f"x{digit} Jahre",
                 "Anzahl Jahre": 0,
                 "Ø Rendite %": None,
                 "Median %": None,
@@ -150,7 +150,7 @@ def get_decade_summary_table(decade_data: dict) -> pd.DataFrame:
         else:
             rows.append({
                 "Ziffer": digit,
-                "Kohorte": f"X{digit} Jahre",
+                "Kohorte": f"x{digit} Jahre",
                 "Anzahl Jahre": d["n"],
                 "Ø Rendite %": round(d["avg_return"], 2),
                 "Median %": round(d["median_return"], 2),

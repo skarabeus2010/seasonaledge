@@ -52,16 +52,16 @@ def apply_se_theme(
         height=height,
         margin=dict(t=48, r=24, b=52, l=56),
 
-        # Font
-        font=dict(family=SE_FONT, color=SE_COLORS["text_muted"], size=11),
+        # Font (global: Achsentitel, Labels etc.)
+        font=dict(family=SE_FONT, color="#e8edf5", size=11),
 
-        # Title (left-aligned like Highcharts)
+        # Title (left-aligned like Highcharts) — None wenn leer
         title=dict(
             text=title,
             font=dict(color=SE_COLORS["text_primary"], size=15),
             x=0.01, xanchor="left",
             y=0.98, yanchor="top",
-        ) if title else None,
+        ) if (title and title.strip()) else dict(text=""),
 
         # X-Axis
         xaxis=dict(
@@ -72,7 +72,7 @@ def apply_se_theme(
             linewidth=1,
             tickcolor=SE_COLORS["axis_line"],
             ticklen=4,
-            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            tickfont=dict(color="#e8edf5", size=10),
             zeroline=False,
             showgrid=True,
         ),
@@ -86,7 +86,9 @@ def apply_se_theme(
             linewidth=1,
             tickcolor=SE_COLORS["axis_line"],
             ticklen=4,
-            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            tickfont=dict(color="#e8edf5", size=10),
+            tickformat=".2f",
+            hoverformat=".2f",
             zeroline=True,
             zerolinecolor=SE_COLORS["zero_line"],
             zerolinewidth=1,
@@ -102,7 +104,7 @@ def apply_se_theme(
             namelength=-1,
         ),
 
-        # Legend
+        # Legend (linksbündig)
         legend=dict(
             bgcolor="rgba(0,0,0,0)",
             bordercolor="rgba(0,0,0,0)",
@@ -110,7 +112,7 @@ def apply_se_theme(
             font=dict(color=SE_COLORS["text_muted"], size=10),
             orientation="h",
             yanchor="bottom", y=1.02,
-            xanchor="right", x=1,
+            xanchor="left", x=0,
             itemsizing="constant",
             itemwidth=30,
         ) if show_legend else dict(visible=False),
@@ -130,7 +132,9 @@ def apply_se_theme(
             gridcolor="rgba(0,0,0,0)",
             linecolor=SE_COLORS["axis_line"],
             tickcolor=SE_COLORS["axis_line"],
-            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            tickfont=dict(color="#e8edf5", size=10),
+            tickformat=".2f",
+            hoverformat=".2f",
             griddash="dot",
         ))
 

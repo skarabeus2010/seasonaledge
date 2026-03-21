@@ -328,7 +328,7 @@ def build_anomaly_matrix(
 
     MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
                     "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
-    DIGIT_LABELS = [f"X{d}" for d in range(10)]
+    DIGIT_LABELS = [f"x{d}" for d in range(10)]
 
     # Monatsrenditen berechnen
     monthly = df["Close"].resample("ME").last().pct_change().dropna() * 100
@@ -441,18 +441,7 @@ def build_anomaly_heatmap_figure(
         fillcolor="rgba(0,0,0,0)",
         layer="above",
     )
-    fig.add_annotation(
-        x=current_digit, y=current_month_idx,
-        text="We are here",
-        showarrow=True,
-        arrowhead=2,
-        arrowcolor="#F1C40F",
-        ax=40, ay=-30,
-        font=dict(color="#F1C40F", size=11, family="Inter"),
-        bordercolor="#F1C40F",
-        borderwidth=1,
-        borderpad=3,
-        bgcolor="rgba(15,25,35,0.85)",
-    )
+    from shared.we_are_here import annotation_offset as _wah_offset
+    fig.add_annotation(**_wah_offset(current_digit, current_month_idx))
 
     return fig
