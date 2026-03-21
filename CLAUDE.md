@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 12.0 | 2026-03-21 | Details → `docs/`
+> Version 13.0 | 2026-03-21 | Details → `docs/`
 
 ## Projekt
 
@@ -44,22 +44,26 @@ scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
 pages/                   ← Light Live + Premium Pages
-  Light Live (aktiv):
-    00_Home              ← Startseite (Hero, Kacheln, Slider, Stats, Newsletter)
-    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten + KI
-    02_Jahreszyklus      ← Saisonaler Jahresverlauf + Anomalie-Radar
+  Light Live (aktiv, 9 Pages):
+    00_Home              ← Startseite (Hero, 3x3 Kacheln, Slider, Stats, Newsletter)
+    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten + KI (disabled)
+    02_Jahreszyklus      ← Saisonaler Jahresverlauf, Pressure Chart, Detrend,
+                            Anomalie-Radar, Praesidentenzyklus, Outlier Manager,
+                            Monats-/Quartals-Perf, 10J-Heatmap, We-are-here Marker
     03_Monatszyklus      ← Monats-Heatmap, Boxplots + Outlier
     04_Wochentage        ← Wochentag-Renditen + Outlier
     05_Monatswechsel     ← Turn of the Month + Outlier
     06_Mondphasen        ← Voll-/Neumond-Effekt + Outlier
-    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown
-    08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet
+    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown (disabled)
+    08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
+    11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
+  Disabled (pages/_disabled/):
     09_Crash_Fruehwarnung← KI-Ampel: Isolation Forest Regime-Erkennung
-    11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate
+    91_Uebernacht_Strategien ← Overnight vs Intraday
   Premium (inaktiv):
     80-92                ← Erweiterte Analyse, Feiertag, Zentralbanken, TruePath,
                             OPEX, Shock, Sector, KI Score, Scanner, Premium, TDOM,
-                            Uebernacht, Spot-Vol Beta
+                            Spot-Vol Beta
   unsubscribe.py         ← Newsletter-Abmeldung
 docs/                    ← Ausgelagerte Dokumentation
 ```
@@ -148,7 +152,11 @@ UPPER_CASE        → Konstanten
 - [x] Page-Umbenennung: Deutsch, keine Nummern sichtbar (2026-03-21)
 - [x] Domain: SeasonalAlpha.ai (gesichert 2026-03-20)
 - [x] Nightly Refresh Job (GitHub Actions) (2026-03-19)
-- [ ] Outlier Manager in alle Pages integrieren (aktuell: Erweiterte Analyse)
+- [x] Jahreszyklus Rewrite: Pressure Chart, Detrend, Anomalie-Radar, Praesidentenzyklus, Outlier, Heatmap (2026-03-21)
+- [x] Home: 3x3 Kacheln, klickbar, Stat-Kacheln Update, Tooltip "seit 1896" (2026-03-21)
+- [x] Disabled Pages aktiviert (Dekadenzyklus, Trifecta, Kriegszeiten, Events) (2026-03-21)
+- [x] Uebernacht-Strategien + Crash-Fruehwarnung nach _disabled verschoben (2026-03-21)
+- [ ] Outlier Manager in alle Pages integrieren (aktuell: Jahreszyklus + Erweiterte Analyse)
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
 - [ ] Anomaly Engine in weitere Pages integrieren
 - [ ] Fehlende 42 Ticker nachladen (ETFs, Aktien, Krypto)
