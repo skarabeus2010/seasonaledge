@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 14.0 | 2026-03-22 | Details → `docs/`
+> Version 15.0 | 2026-03-22 | Details → `docs/`
 
 ## Projekt
 
@@ -162,6 +162,9 @@ UPPER_CASE        → Konstanten
 - [x] Ticker-Datenbank erweitert: 53 → 94 Ticker (EU-Aktien, Anleihen, EM, Sektor-ETFs) (2026-03-22)
 - [x] Backtest Engine + Optimierer (Grid-Search, Walk-Forward, KI Event-Relevanz) (2026-03-21)
 - [x] Stooq-Fallback erweitert: 5 → 10 Indizes (CAC, Euro Stoxx, SMI, HSI, KOSPI) (2026-03-22)
+- [x] VPS Deployment: Hetzner CPX22, Docker + Nginx + SSL (2026-03-22)
+- [x] Auto-Deploy: GitHub Action → SSH → git pull + docker rebuild (2026-03-22)
+- [x] Domain: seasonalalpha.ai → 178.104.75.46 (DNS ausstehend) (2026-03-22)
 - [x] Achsenbeschriftungen global weiss, max 2 Nachkommastellen (2026-03-21)
 - [x] "We are here!" Helper zentral ausgelagert (shared/we_are_here.py) (2026-03-21)
 - [x] "X" → "x" bei Dekaden-Endziffern global (2026-03-21)
