@@ -8,3 +8,16 @@ docs/
 .env
 .env.local
 *.pyc
+*.pyo
+node_modules/
+package-lock.json
+.claude/
+.agents/
+skills-lock.json
+Screenshot*
+*.png
+deploy/
+docker-compose.yml
+seo/output/
+.vscode/
+.idea/
