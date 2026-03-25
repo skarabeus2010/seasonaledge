@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 16.0 | 2026-03-25 | Details → `docs/`
+> Version 17.0 | 2026-03-25 | Details → `docs/`
 
 ## Projekt
 
@@ -42,6 +42,10 @@ shared/                  ← Berechnungen, Daten, Utilities
   sector_rotation.py     ← Sektor-Rotation Analyse
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge
   strategies/            ← 65+ Strategien
+seo/                     ← Programmatic SEO Engine
+  programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
+  seo_template.html        ← Jinja2 Landingpage-Template
+  output/                  ← Generierte HTML + sitemap.xml + robots.txt
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
@@ -173,7 +177,10 @@ UPPER_CASE        → Konstanten
 - [x] Auto-Deploy: GitHub Action → SSH-Key → git pull + docker rebuild (2026-03-22)
 - [x] App live unter http://178.104.75.46 (2026-03-22)
 - [x] DNS: seasonalpha.ai → 178.104.75.46 (STRATO A-Record + CNAME www) (2026-03-25)
-- [ ] SSL (HTTPS) einrichten nach DNS-Setup
+- [x] SSL (HTTPS) eingerichtet: Let's Encrypt + Certbot (2026-03-25)
+- [x] SEO Engine: 94 Landingpages aus SYMBOLS, Sitemap, robots.txt, Disclaimer (2026-03-25)
+- [x] SEO Nginx-Deployment: /analyse/, /disclaimer, /sitemap.xml Routen (2026-03-25)
+- [x] Google Search Console: Verifizierung (DNS-TXT + Meta-Tag), Sitemap eingereicht (2026-03-25)
 - [x] Achsenbeschriftungen global weiss, max 2 Nachkommastellen (2026-03-21)
 - [x] "We are here!" Helper zentral ausgelagert (shared/we_are_here.py) (2026-03-21)
 - [x] "X" → "x" bei Dekaden-Endziffern global (2026-03-21)
