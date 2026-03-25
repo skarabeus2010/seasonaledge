@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 15.1 | 2026-03-22 | Details → `docs/`
+> Version 16.0 | 2026-03-25 | Details → `docs/`
 
 ## Projekt
 
@@ -40,6 +40,7 @@ shared/                  ← Berechnungen, Daten, Utilities
   cpi_data.py            ← CPI-Daten (BLS/FRED), Inflationsbereinigung
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
+  significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge
   strategies/            ← 65+ Strategien
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
@@ -54,9 +55,10 @@ pages/                   ← Light Live + Premium Pages
     03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
                             Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
                             We-are-here TDOM-Marker, Praesidentenzyklus-Filter, Outlier
-    04_Wochentage        ← Wochentag-Renditen + Outlier
-    05_Monatswechsel     ← Turn of the Month + Outlier
-    06_Mondphasen        ← Voll-/Neumond-Effekt + Outlier
+    04_Wochentage        ← Wochentag-Renditen, Praesidentenzyklus, Heatmap
+                            (gelber Rahmen), Signifikanztest (Expander)
+    05_Monatswechsel     ← Turn of the Month + Signifikanztest (Expander)
+    06_Mondphasen        ← Voll-/Neumond-Effekt + Signifikanztest (Expander)
     07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown (disabled)
     08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
     11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
@@ -116,6 +118,7 @@ if _project_dir not in sys.path:
 - Berechnungen → `shared/`, UI → `pages/`
 - Kein Copy-Paste von Logik zwischen Pages
 - Wiederverwendbare Charts → `distribution_charts.py`
+- Signifikanztests → `significance_gauge.py` (t-Test + Gauge)
 - Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
@@ -179,6 +182,10 @@ UPPER_CASE        → Konstanten
 - [ ] Supabase User-Auth
 - [ ] Anthropic API-Key einrichten (KI-Zusammenfassung)
 - [x] CPI-Inflationsbereinigung: Kriegszeiten Page + shared/cpi_data.py + DB-Tabelle (2026-03-25)
+- [x] Wochentage Rewrite: Heatmap-Design, Praesidentenzyklus, gelber Rahmen, Outlier entfernt (2026-03-25)
+- [x] Backtest Engine: Tab-Styling, Radial Fill Gauge (Gradient), KI-Erklaertext (2026-03-25)
+- [x] Signifikanztest-Modul: shared/significance_gauge.py (t-Test + Gauge) (2026-03-25)
+- [x] Signifikanztest integriert: Wochentage, Monatswechsel, Mondphasen (optionaler Expander) (2026-03-25)
 
 ## Docs (bei Bedarf lesen)
 
