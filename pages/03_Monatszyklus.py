@@ -19,7 +19,7 @@ if _project_dir not in sys.path:
 
 import streamlit as st
 
-st.set_page_config(page_title="Monatliche Saisonalitaet – SeasonalAlpha", page_icon="📆", layout="wide")
+st.set_page_config(page_title="Monatliche Saisonalitaet – SeasonAlpha", page_icon="📆", layout="wide")
 
 import pandas as pd
 import numpy as np
@@ -328,6 +328,62 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
     return fig
 
 
+def build_live_chart(raw_df, ticker, days=90):
+    """Aktueller Kurschart (Candlestick + Volume) der letzten N Handelstage."""
+    df_live = raw_df.tail(days).copy()
+    if len(df_live) < 5:
+        return None
+
+    fig = go.Figure()
+
+    # Candlestick
+    fig.add_trace(go.Candlestick(
+        x=df_live["Date"],
+        open=df_live["Open"], high=df_live["High"],
+        low=df_live["Low"], close=df_live["Close"],
+        increasing_line_color=SE_COLORS["positive"],
+        decreasing_line_color=SE_COLORS["negative"],
+        increasing_fillcolor=SE_COLORS["positive"],
+        decreasing_fillcolor=SE_COLORS["negative"],
+        name="OHLC",
+    ))
+
+    # Volume als Balken auf sekundaerer Y-Achse
+    if "Volume" in df_live.columns and df_live["Volume"].sum() > 0:
+        vol_colors = [
+            SE_COLORS["positive"] if c >= o else SE_COLORS["negative"]
+            for c, o in zip(df_live["Close"], df_live["Open"])
+        ]
+        fig.add_trace(go.Bar(
+            x=df_live["Date"], y=df_live["Volume"],
+            marker_color=vol_colors, opacity=0.3,
+            name="Volume", yaxis="y2",
+            hovertemplate="Vol: %{y:,.0f}<extra></extra>",
+        ))
+
+    last_close = df_live["Close"].iloc[-1]
+    last_date = df_live["Date"].iloc[-1]
+    pct_chg = (df_live["Close"].iloc[-1] / df_live["Close"].iloc[0] - 1) * 100
+    sign = "+" if pct_chg >= 0 else ""
+
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Live-Chart (letzte {len(df_live)} Tage) | {last_close:,.2f} ({sign}{pct_chg:.1f}%)",
+        height=380,
+        show_legend=False,
+    )
+
+    fig.update_layout(
+        xaxis_rangeslider_visible=False,
+        yaxis2=dict(
+            overlaying="y", side="right",
+            showgrid=False, showticklabels=False,
+            range=[0, df_live["Volume"].max() * 4] if "Volume" in df_live.columns and df_live["Volume"].sum() > 0 else None,
+        ),
+    )
+    return fig
+
+
 def build_monthly_heatmap(df, selected_years, ticker):
     """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
     current_month = datetime.now().month
@@ -406,6 +462,7 @@ def main():
         selected_month = st.selectbox("Monat auswaehlen", options=list(range(1, 13)),
             index=current_month - 1,
             format_func=lambda m: f"{MONTH_NAMES_DE[m-1]}" + (" <- aktuell" if m == current_month else ""))
+        show_live_chart = st.checkbox("Live-Chart anzeigen", value=True, key="mp_live")
         show_individual = st.checkbox("Einzelne Jahre zeigen", value=False, key="mp_indiv")
         show_bands = st.checkbox("Konfidenzband (+-1 Sigma)", value=False, key="mp_bands")
 
@@ -457,6 +514,13 @@ def main():
 
     month_name = MONTH_NAMES_DE[selected_month - 1]
     current_tdom = get_current_tdom(df) if selected_month == current_month else None
+
+    # 0. Live-Chart (aktueller Kursverlauf)
+    if show_live_chart:
+        live_fig = build_live_chart(raw_df, ticker)
+        if live_fig:
+            st.plotly_chart(live_fig, use_container_width=True)
+            st.markdown("---")
 
     # 1. Intra-Monat
     tdom_stats, all_curves = calc_intramonth_curve(df, selected_month, selected_years)

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# SeasonalAlpha VPS Setup Script
+# SeasonAlpha VPS Setup Script
 # Ausfuehren auf dem Hetzner VPS als root:
 #   curl -sL https://raw.githubusercontent.com/skarabeus2010/seasonaledge/master/deploy/setup_vps.sh | bash
 # Oder manuell:
@@ -10,7 +10,7 @@
 set -e
 
 echo "============================================"
-echo "  SeasonalAlpha VPS Setup"
+echo "  SeasonAlpha VPS Setup"
 echo "============================================"
 
 # ── 1. System Update ──────────────────────────────────
@@ -57,7 +57,7 @@ fi
 echo "[5/6] Environment konfigurieren..."
 if [ ! -f ".env" ]; then
     cat > .env << 'ENVEOF'
-# SeasonalAlpha Environment
+# SeasonAlpha Environment
 # Bitte diese Werte ausfuellen:
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_KEY=eyJxxx

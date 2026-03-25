@@ -324,7 +324,7 @@ st.markdown("""
 st.markdown("""
 <div style="max-width:800px;margin:0 auto 2rem;">
   <h2 style="color:#e8edf5;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;text-align:center;margin-bottom:1.2rem;letter-spacing:-.5px;">
-    Willkommen bei SeasonalAlpha – der naechsten Generation der Marktanalyse
+    Willkommen bei SeasonAlpha – der naechsten Generation der Marktanalyse
   </h2>
   <p style="color:#a0b0c5;font-size:1.15rem;line-height:1.8;text-align:center;margin-bottom:1.2rem;">
     Wir erweitern traditionelle Saisonalitaets-Charts um modernste Kuenstliche Intelligenz
@@ -363,7 +363,7 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="se-section-label">Analyse-Module</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Deine SeasonalAlpha Suite</div>', unsafe_allow_html=True)
+st.markdown('<div class="se-section-title">Deine SeasonAlpha Suite</div>', unsafe_allow_html=True)
 st.markdown('<div class="se-section-sub">Klicke auf ein Modul — du landest direkt in der Analyse.</div>', unsafe_allow_html=True)
 
 # ── 9 Light-Live Pages (3×3 Grid) ──
@@ -665,7 +665,7 @@ with _nl_form_col:
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="se-footer">
-  &copy; 2026 SeasonalAlpha — Keine Anlageberatung. Trading birgt Risiken.<br>
+  &copy; 2026 SeasonAlpha — Keine Anlageberatung. Trading birgt Risiken.<br>
   <a href="#">Impressum</a>
   <a href="#">Datenschutz</a>
   <a href="#">Risikohinweis</a>

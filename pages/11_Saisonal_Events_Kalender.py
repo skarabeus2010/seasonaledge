@@ -1,5 +1,5 @@
 """
-SeasonalAlpha — Saisonal-Events Kalender
+SeasonAlpha — Saisonal-Events Kalender
 ==========================================
 Alle marktrelevanten Events der naechsten 12 Monate:
 Notenbanken, OPEX, Feiertage, Mondphasen, Crypto-Events.
@@ -25,7 +25,7 @@ from datetime import date, datetime, timedelta
 from shared.constants import SE_COLORS
 
 st.set_page_config(
-    page_title="Saisonal-Events Kalender — SeasonalAlpha",
+    page_title="Saisonal-Events Kalender — SeasonAlpha",
     page_icon="📅",
     layout="wide",
 )

@@ -1,4 +1,4 @@
-# Programmatic SEO Engine — SeasonalAlpha
+# Programmatic SEO Engine — SeasonAlpha
 
 > Stand: 2026-03-25 | 94 Landingpages | Alle Ticker aus SYMBOLS
 
@@ -47,7 +47,7 @@ Neue Ticker hinzufuegen: Einfach in `shared/symbols.py` eintragen → naechster 
 
 | Element | Beispiel |
 |---------|---------|
-| **Title** | `Apple (AAPL) Saisonalitaet & historische Muster \| SeasonalAlpha` |
+| **Title** | `Apple (AAPL) Saisonalitaet & historische Muster \| SeasonAlpha` |
 | **Meta Description** | `Apple (AAPL) saisonale Analyse: Historisch bester Monat ist Oktober.` |
 | **H1** | `Apple (AAPL) – Saisonalitaet & historische Muster` |
 | **Canonical URL** | `https://seasonalpha.ai/analyse/apple-saisonalitaet` |
@@ -58,7 +58,7 @@ Neue Ticker hinzufuegen: Einfach in `shared/symbols.py` eintragen → naechster 
 ### Seitenstruktur
 
 ```
-1. Breadcrumb Navigation (SeasonalAlpha > Analysen > Apple)
+1. Breadcrumb Navigation (SeasonAlpha > Analysen > Apple)
 2. H1 mit Suchbegriff
 3. Einleitungstext (generiert aus Daten)
 4. Statistik-Karten (Bester Monat, Win-Rate, Oe Rendite)

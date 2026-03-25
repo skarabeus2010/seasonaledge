@@ -1,5 +1,5 @@
 """
-SeasonalAlpha — Backtest Engine & Optimierer
+SeasonAlpha — Backtest Engine & Optimierer
 ===============================================
 Generischer Event-Backtester: Feiertage, FOMC, OPEX, Mondphasen.
 Grid-Search Optimierung, Walk-Forward, KI Event-Relevanz.
@@ -35,7 +35,7 @@ from shared.backtest_engine import (
 )
 
 st.set_page_config(
-    page_title="Backtest Engine — SeasonalAlpha",
+    page_title="Backtest Engine — SeasonAlpha",
     page_icon="🔬",
     layout="wide",
 )

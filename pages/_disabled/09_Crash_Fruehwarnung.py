@@ -1,5 +1,5 @@
 """
-SeasonalAlpha — Crash-Fruehwarnung (KI)
+SeasonAlpha — Crash-Fruehwarnung (KI)
 =========================================
 Isolation Forest Regime-Erkennung auf SPY.
 Ampelsystem + Erklaerung + historische Regime-Phasen.
@@ -29,7 +29,7 @@ from shared.charts import apply_se_theme
 from shared.anomaly_engine import compute_market_regime, TRAFFIC_LIGHT_LABELS
 
 st.set_page_config(
-    page_title="Crash-Fruehwarnung — SeasonalAlpha",
+    page_title="Crash-Fruehwarnung — SeasonAlpha",
     page_icon="🚨",
     layout="wide",
 )

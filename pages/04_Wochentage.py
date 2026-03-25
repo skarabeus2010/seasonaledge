@@ -20,7 +20,7 @@ if _project_dir not in sys.path:
 
 import streamlit as st
 
-st.set_page_config(page_title="Wochentagseffekt Aktien & ETFs – SeasonalAlpha", page_icon="📅", layout="wide")
+st.set_page_config(page_title="Wochentagseffekt Aktien & ETFs – SeasonAlpha", page_icon="📅", layout="wide")
 
 import pandas as pd
 import numpy as np

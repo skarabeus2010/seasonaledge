@@ -193,8 +193,8 @@ def build_disclaimer(output_ordner: str):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haftungsausschluss | SeasonalAlpha</title>
-    <meta name="description" content="Rechtlicher Haftungsausschluss fuer SeasonalAlpha. Keine Anlageberatung. Historische Daten garantieren keine zukuenftigen Ergebnisse.">
+    <title>Haftungsausschluss | SeasonAlpha</title>
+    <meta name="description" content="Rechtlicher Haftungsausschluss fuer SeasonAlpha. Keine Anlageberatung. Historische Daten garantieren keine zukuenftigen Ergebnisse.">
     <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
     <meta name="robots" content="noindex, follow">
     <style>
@@ -230,7 +230,7 @@ def build_disclaimer(output_ordner: str):
 <div class="container">
 
     <nav class="breadcrumb">
-        <a href="https://seasonalpha.ai">SeasonalAlpha</a> &rsaquo; Haftungsausschluss
+        <a href="https://seasonalpha.ai">SeasonAlpha</a> &rsaquo; Haftungsausschluss
     </nav>
 
     <h1>Haftungsausschluss &amp; rechtliche Hinweise</h1>
@@ -239,16 +239,16 @@ def build_disclaimer(output_ordner: str):
     <!-- ── 1. Keine Anlageberatung ─────────────────────────────────── -->
 
     <div class="highlight">
-        <strong>Wichtiger Hinweis:</strong> SeasonalAlpha bietet <strong>keine Anlageberatung</strong>
+        <strong>Wichtiger Hinweis:</strong> SeasonAlpha bietet <strong>keine Anlageberatung</strong>
         und gibt <strong>keine Kauf- oder Verkaufsempfehlungen</strong> ab. Alle auf dieser Plattform
         bereitgestellten Informationen dienen ausschliesslich zu Informations- und Bildungszwecken.
     </div>
 
     <h2>1. Keine Anlageberatung</h2>
     <p>
-        Die auf SeasonalAlpha dargestellten Analysen, Statistiken, Prognosen und Bewertungen
+        Die auf SeasonAlpha dargestellten Analysen, Statistiken, Prognosen und Bewertungen
         stellen keine individuelle Anlageberatung im Sinne des Wertpapierhandelsgesetzes (WpHG)
-        oder des Kreditwesengesetzes (KWG) dar. SeasonalAlpha ist kein zugelassener Finanzberater,
+        oder des Kreditwesengesetzes (KWG) dar. SeasonAlpha ist kein zugelassener Finanzberater,
         Vermoegensverwalter oder Anlageberater gemaess &sect; 34f GewO.
     </p>
     <ul>
@@ -261,7 +261,7 @@ def build_disclaimer(output_ordner: str):
 
     <h2>2. Historische Daten &amp; Saisonalitaet</h2>
     <p>
-        SeasonalAlpha analysiert historische Kursdaten, um saisonale Muster und statistische
+        SeasonAlpha analysiert historische Kursdaten, um saisonale Muster und statistische
         Wahrscheinlichkeiten zu identifizieren. Dabei gilt:
     </p>
     <ul>
@@ -278,7 +278,7 @@ def build_disclaimer(output_ordner: str):
 
     <h2>3. Kuenstliche Intelligenz &amp; Modell-Limitierungen</h2>
     <p>
-        SeasonalAlpha setzt verschiedene KI-Modelle und maschinelle Lernverfahren ein
+        SeasonAlpha setzt verschiedene KI-Modelle und maschinelle Lernverfahren ein
         (u.a. Isolation Forest, DTW, Prophet, Chronos, NeuralProphet). Fuer diese gilt:
     </p>
     <ul>
@@ -295,7 +295,7 @@ def build_disclaimer(output_ordner: str):
 
     <h2>4. Datenquellen &amp; Genauigkeit</h2>
     <p>
-        Die auf SeasonalAlpha verwendeten Marktdaten stammen aus oeffentlich zugaenglichen
+        Die auf SeasonAlpha verwendeten Marktdaten stammen aus oeffentlich zugaenglichen
         Quellen (u.a. Yahoo Finance, Stooq). Wir bemuehen uns um Genauigkeit, koennen aber
         keine Gewaehr fuer die Vollstaendigkeit, Aktualitaet oder Richtigkeit der Daten
         uebernehmen.
@@ -311,7 +311,7 @@ def build_disclaimer(output_ordner: str):
 
     <h2>5. Haftungsbeschraenkung</h2>
     <p>
-        SeasonalAlpha haftet nicht fuer Verluste oder Schaeden, die aus der Nutzung der
+        SeasonAlpha haftet nicht fuer Verluste oder Schaeden, die aus der Nutzung der
         Plattform, ihrer Analysen oder Prognosen entstehen. Dies umfasst insbesondere:
     </p>
     <ul>
@@ -325,7 +325,7 @@ def build_disclaimer(output_ordner: str):
 
     <h2>6. Interessenkonflikte</h2>
     <p>
-        Die Betreiber von SeasonalAlpha koennen selbst in Finanzinstrumente investiert
+        Die Betreiber von SeasonAlpha koennen selbst in Finanzinstrumente investiert
         sein, die auf der Plattform analysiert werden. Dies kann zu Interessenkonflikten
         fuehren. Analysen und Bewertungen werden unabhaengig von persoenlichen Positionen
         erstellt.
@@ -340,7 +340,7 @@ def build_disclaimer(output_ordner: str):
     </p>
 
     <div class="footer">
-        &copy; 2026 SeasonalAlpha &middot;
+        &copy; 2026 SeasonAlpha &middot;
         <a href="https://seasonalpha.ai/impressum">Impressum</a> &middot;
         <a href="https://seasonalpha.ai/datenschutz">Datenschutz</a>
     </div>
@@ -376,7 +376,7 @@ def build_seo_pages():
     heute = datetime.now().strftime("%d.%m.%Y")
 
     print(f"\n{'='*60}")
-    print(f"  SeasonalAlpha — Programmatic SEO Builder")
+    print(f"  SeasonAlpha — Programmatic SEO Builder")
     print(f"  {len(titel_daten)} Ticker aus SYMBOLS-Datenbank")
     print(f"{'='*60}\n")
 
