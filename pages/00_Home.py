@@ -28,6 +28,12 @@ st.set_page_config(
 from shared.design import inject_se_css
 inject_se_css()
 
+# Google Search Console Verifizierung
+st.markdown(
+    '<meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">',
+    unsafe_allow_html=True,
+)
+
 # ══════════════════════════════════════════════════════════════
 # CSS
 # ══════════════════════════════════════════════════════════════

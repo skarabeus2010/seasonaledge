@@ -14,5 +14,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Google Search Console Verifizierung
+st.markdown(
+    '<meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">',
+    unsafe_allow_html=True,
+)
+
 # Redirect zur Home Page
 st.switch_page("pages/00_Home.py")
