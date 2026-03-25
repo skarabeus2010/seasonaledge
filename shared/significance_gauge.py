@@ -178,7 +178,8 @@ def build_gauge(score, p_value=None):
 # STREAMLIT RENDERING
 # ══════════════════════════════════════════════════════
 
-def render_significance_section(results, expander_title="📊 Statistische Signifikanz", cols_per_row=4):
+def render_significance_section(results, expander_title="📊 Statistische Signifikanz",
+                                cols_per_row=4, sort_order=None):
     """
     Rendert die Signifikanz-Gauges als optionalen Expander.
 
@@ -186,11 +187,18 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
         results: Liste von dicts aus run_significance_test()
         expander_title: Titel des Expanders
         cols_per_row: Gauges pro Reihe (default 4)
+        sort_order: Optionale Liste von Namen fuer feste Reihenfolge
+                    (statt Sortierung nach Relevanz)
     """
     import streamlit as st
 
     if not results:
         return
+
+    # Optionale feste Reihenfolge statt Relevanz-Sortierung
+    if sort_order:
+        order_map = {name: i for i, name in enumerate(sort_order)}
+        results = sorted(results, key=lambda r: order_map.get(r["name"], 999))
 
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
@@ -230,10 +238,11 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
         # Erklaertext
         st.markdown("---")
         st.markdown(
-            "<p style='color:#5a6e85; font-size:11px;'>"
+            "<p style='color:#c8d6e5; font-size:11px;'>"
             "<b>Relevanz-Score</b> = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen's d). "
             "<b>t-Statistik</b>: Signalstaerke vs. Null. "
             "<b>p-Wert</b>: Wahrscheinlichkeit fuer Zufallsergebnis (p&lt;0.05 = signifikant). "
-            "<b>Gruen</b> = statistisch valide, <b>Rot</b> = wahrscheinlich Zufall.</p>",
+            "<span style='color:#00d4aa;'><b>Gruen</b></span> = statistisch valide, "
+            "<span style='color:#ff4757;'><b>Rot</b></span> = wahrscheinlich Zufall.</p>",
             unsafe_allow_html=True,
         )

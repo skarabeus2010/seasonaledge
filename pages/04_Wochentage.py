@@ -420,7 +420,8 @@ def main():
     sig_results = run_significance_test(sig_groups)
     render_significance_section(sig_results,
         expander_title="📊 Statistische Signifikanz der Wochentags-Effekte",
-        cols_per_row=5)
+        cols_per_row=5,
+        sort_order=WEEKDAY_LABELS)
 
     # ── Detailtabelle ─────────────────────────────────
     st.markdown("#### 📋 Statistik pro Wochentag")
