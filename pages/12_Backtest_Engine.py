@@ -79,42 +79,84 @@ _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 # GAUGE CHART BUILDER (modular, wiederverwendbar)
 # ══════════════════════════════════════════════════════
 
+def _score_to_gradient_color(score):
+    """Fliessender Farbverlauf: 0=Tiefrot → 0.5=Orange/Gelb → 1=Sattgruen."""
+    if score <= 0.5:
+        # Rot (#cc0000) → Orange (#e8a425)
+        t = score / 0.5
+        r = int(204 + (232 - 204) * t)
+        g = int(0 + (164 - 0) * t)
+        b = int(0 + (37 - 0) * t)
+    else:
+        # Orange (#e8a425) → Gruen (#00d4aa)
+        t = (score - 0.5) / 0.5
+        r = int(232 + (0 - 232) * t)
+        g = int(164 + (212 - 164) * t)
+        b = int(37 + (170 - 37) * t)
+    return f"rgb({r},{g},{b})"
+
+
 def build_relevance_gauge(score, event_name, t_stat=None, p_value=None):
     """
-    Erstellt einen Radial Gauge (Halbkreis) fuer den Event-Relevanz Score.
+    Erstellt einen Radial Fill Gauge (Halbkreis) mit fliesssendem Farbverlauf.
 
-    Farbe basiert auf p-Wert (statistische Signifikanz):
-      - Gruen (#00d4aa): p < 0.05 → statistisch signifikant
-      - Rot (#ff4757):   p >= 0.05 → nicht signifikant / Zufall
+    Farbverlauf: Tiefrot (0) → Orange (0.5) → Sattgruen (1).
+    Der gefuellte Balken spiegelt den Score farblich wider.
+    Event-Name und Status-Text werden ausserhalb der Grafik platziert.
 
     Args:
         score: Relevanz-Score (0-1)
-        event_name: Name des Events fuer den Titel
-        t_stat: t-Statistik (optional, fuer Annotation)
-        p_value: p-Wert (Signifikanz-Trigger fuer Farbe)
+        event_name: Name des Events (wird als dict-Key zurueckgegeben)
+        t_stat: t-Statistik (optional)
+        p_value: p-Wert (optional)
 
     Returns:
-        go.Figure mit Radial Gauge Indicator
+        dict mit 'fig' (go.Figure), 'event_name', 'sig_label', 'sig_color',
+              't_stat', 'p_value'
     """
-    # ── Farblogik: p-Wert entscheidet ──
-    if p_value is not None and p_value < 0.05:
-        bar_color = "#00d4aa"        # Gruen = signifikant
-        sig_label = "Signifikant"
-    else:
-        bar_color = "#e8a425"        # Gold/Orange = nicht signifikant
-        sig_label = "Nicht signifikant"
-    if p_value is not None and p_value >= 0.10:
-        bar_color = "#ff4757"        # Rot = klar nicht signifikant
-        sig_label = "Nicht signifikant"
+    # ── Fliessende Farbe basierend auf Score-Position ──
+    bar_color = _score_to_gradient_color(score)
 
-    # Hintergrund-Track: dunkelgrau (leerer Teil des Halbkreises)
+    # ── Signifikanz-Label (fuer Anzeige ausserhalb) ──
+    if p_value is not None and p_value < 0.01:
+        sig_label = "Hochsignifikant"
+        sig_color = "#00d4aa"
+    elif p_value is not None and p_value < 0.05:
+        sig_label = "Signifikant"
+        sig_color = "#00d4aa"
+    elif p_value is not None and p_value < 0.10:
+        sig_label = "Grenzwertig"
+        sig_color = "#e8a425"
+    else:
+        sig_label = "Nicht signifikant"
+        sig_color = "#ff4757"
+
+    # ── Gradient-Steps: feingranulare Farbstufen bis zum Score ──
+    n_steps = 20
+    gradient_steps = []
+    for i in range(n_steps):
+        step_start = i / n_steps
+        step_end = (i + 1) / n_steps
+        if step_end <= score:
+            gradient_steps.append(dict(
+                range=[step_start, step_end],
+                color=_score_to_gradient_color((step_start + step_end) / 2),
+            ))
+        elif step_start < score < step_end:
+            # Teilweise gefuellt
+            gradient_steps.append(dict(
+                range=[step_start, score],
+                color=_score_to_gradient_color((step_start + score) / 2),
+            ))
+
+    # Hintergrund-Track (leerer Teil)
     track_color = "rgba(255,255,255,0.06)"
 
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=score,
         number=dict(
-            font=dict(size=48, color="#FFFFFF", family="DIN Alternate, monospace"),
+            font=dict(size=44, color="#FFFFFF", family="DIN Alternate, monospace"),
             suffix="",
             valueformat=".2f",
         ),
@@ -127,54 +169,38 @@ def build_relevance_gauge(score, event_name, t_stat=None, p_value=None):
                 tickvals=[],
                 showticklabels=False,
             ),
-            # Der sich fuellende Balken
-            bar=dict(color=bar_color, thickness=0.85),
-            # Leerer Hintergrund-Track
+            # Transparenter Balken — die Steps erzeugen den Gradient
+            bar=dict(color="rgba(0,0,0,0)", thickness=0.01),
             bgcolor=track_color,
             borderwidth=0,
             bordercolor="rgba(0,0,0,0)",
-            # Keine Farb-Stufen (clean look)
-            steps=[],
-            # Keine Nadel / Threshold
+            steps=gradient_steps,
             threshold=dict(
                 line=dict(color="rgba(0,0,0,0)", width=0),
                 thickness=0,
                 value=0,
             ),
         ),
-        title=dict(
-            text=f"<b>{event_name}</b>",
-            font=dict(size=13, color="#c8d6e5"),
-        ),
+        # Kein Title in der Grafik — wird extern gerendert
+        title=dict(text="", font=dict(size=1)),
     ))
 
     fig.update_layout(
         paper_bgcolor=SE_COLORS["bg"],
         plot_bgcolor=SE_COLORS["bg"],
-        height=240,
-        margin=dict(l=25, r=25, t=55, b=40),
+        height=200,
+        margin=dict(l=20, r=20, t=30, b=10),
     )
 
-    # Signifikanz-Label unter dem Wert
-    fig.add_annotation(
-        text=f"<b>{sig_label}</b>",
-        xref="paper", yref="paper",
-        x=0.5, y=0.22,
-        showarrow=False,
-        font=dict(size=12, color=bar_color),
-    )
-
-    # t-Stat und p-Wert unter dem Gauge
-    if t_stat is not None and p_value is not None:
-        fig.add_annotation(
-            text=f"t = {t_stat:.2f}  |  p = {p_value:.4f}",
-            xref="paper", yref="paper",
-            x=0.5, y=-0.02,
-            showarrow=False,
-            font=dict(size=10, color="#5a6e85"),
-        )
-
-    return fig
+    return {
+        "fig": fig,
+        "event_name": event_name,
+        "sig_label": sig_label,
+        "sig_color": sig_color,
+        "t_stat": t_stat,
+        "p_value": p_value,
+        "score": score,
+    }
 
 
 # ══════════════════════════════════════════════════════
@@ -526,7 +552,7 @@ with tab4:
             # ── Datentabelle ──
             st.dataframe(relevance_df, use_container_width=True, hide_index=True)
 
-            # ── Gauge-Charts (Tachos) ──
+            # ── Gauge-Charts (Radial Fill) ──
             st.markdown("---")
             st.markdown("#### Event-Relevanz Indikatoren")
 
@@ -540,14 +566,35 @@ with tab4:
 
                 for idx, col in zip(range(row_start, row_end), cols):
                     row = relevance_df.iloc[idx]
-                    gauge_fig = build_relevance_gauge(
+                    gauge_data = build_relevance_gauge(
                         score=row["Relevanz"],
                         event_name=row["Event"],
                         t_stat=row.get("t-Statistik"),
                         p_value=row.get("p-Wert"),
                     )
                     with col:
-                        st.plotly_chart(gauge_fig, use_container_width=True, config=_PLOTLY_CFG)
+                        # Event-Name als Sub-Header (ausserhalb der Grafik)
+                        st.markdown(
+                            f"<p style='text-align:center; color:#c8d6e5; "
+                            f"font-weight:600; font-size:14px; margin-bottom:2px;'>"
+                            f"{gauge_data['event_name']}</p>",
+                            unsafe_allow_html=True,
+                        )
+                        # Gauge-Chart (nur Zahl + Halbkreis)
+                        st.plotly_chart(gauge_data["fig"], use_container_width=True, config=_PLOTLY_CFG)
+                        # Status + Statistik unterhalb
+                        t_val = gauge_data["t_stat"]
+                        p_val = gauge_data["p_value"]
+                        sig_col = gauge_data["sig_color"]
+                        sig_lbl = gauge_data["sig_label"]
+                        p_str = f"  |  t={t_val:.2f}  p={p_val:.4f}" if t_val is not None else ""
+                        st.markdown(
+                            f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
+                            f"<span style='color:{sig_col}; font-weight:600;'>"
+                            f"{sig_lbl}</span>"
+                            f"<span style='color:#5a6e85;'>{p_str}</span></p>",
+                            unsafe_allow_html=True,
+                        )
 
             # ── Erklaertext ──
             st.markdown("---")
