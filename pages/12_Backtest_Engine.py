@@ -81,82 +81,97 @@ _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
 def build_relevance_gauge(score, event_name, t_stat=None, p_value=None):
     """
-    Erstellt einen Tacho-Chart (Gauge) fuer den Event-Relevanz Score.
+    Erstellt einen Radial Gauge (Halbkreis) fuer den Event-Relevanz Score.
+
+    Farbe basiert auf p-Wert (statistische Signifikanz):
+      - Gruen (#00d4aa): p < 0.05 → statistisch signifikant
+      - Rot (#ff4757):   p >= 0.05 → nicht signifikant / Zufall
 
     Args:
         score: Relevanz-Score (0-1)
         event_name: Name des Events fuer den Titel
         t_stat: t-Statistik (optional, fuer Annotation)
-        p_value: p-Wert (optional, fuer Annotation)
+        p_value: p-Wert (Signifikanz-Trigger fuer Farbe)
 
     Returns:
-        go.Figure mit Gauge Indicator
+        go.Figure mit Radial Gauge Indicator
     """
-    # Farbstufen: Rot → Orange → Gelb → Gruen
-    if score >= 0.7:
-        bar_color = "#00d4aa"
-    elif score >= 0.5:
-        bar_color = "#e8a425"
-    elif score >= 0.3:
-        bar_color = "#ff6b35"
+    # ── Farblogik: p-Wert entscheidet ──
+    if p_value is not None and p_value < 0.05:
+        bar_color = "#00d4aa"        # Gruen = signifikant
+        sig_label = "Signifikant"
     else:
-        bar_color = "#ff4757"
+        bar_color = "#e8a425"        # Gold/Orange = nicht signifikant
+        sig_label = "Nicht signifikant"
+    if p_value is not None and p_value >= 0.10:
+        bar_color = "#ff4757"        # Rot = klar nicht signifikant
+        sig_label = "Nicht signifikant"
+
+    # Hintergrund-Track: dunkelgrau (leerer Teil des Halbkreises)
+    track_color = "rgba(255,255,255,0.06)"
 
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=score,
         number=dict(
-            font=dict(size=42, color="#FFFFFF", family="DIN Alternate, monospace"),
+            font=dict(size=48, color="#FFFFFF", family="DIN Alternate, monospace"),
             suffix="",
-            valueformat=".3f",
+            valueformat=".2f",
         ),
         gauge=dict(
+            shape="angular",
             axis=dict(
                 range=[0, 1],
-                tickwidth=2,
-                tickcolor="#5a6e85",
-                tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                ticktext=["0", "0.2", "0.4", "0.6", "0.8", "1.0"],
-                tickfont=dict(color="#c8d6e5", size=11),
+                tickwidth=0,
+                tickcolor="rgba(0,0,0,0)",
+                tickvals=[],
+                showticklabels=False,
             ),
-            bar=dict(color=bar_color, thickness=0.3),
-            bgcolor="rgba(0,0,0,0)",
+            # Der sich fuellende Balken
+            bar=dict(color=bar_color, thickness=0.85),
+            # Leerer Hintergrund-Track
+            bgcolor=track_color,
             borderwidth=0,
-            steps=[
-                dict(range=[0.0, 0.2], color="#cc0000"),
-                dict(range=[0.2, 0.4], color="#ff4757"),
-                dict(range=[0.4, 0.5], color="#ff6b35"),
-                dict(range=[0.5, 0.6], color="#e8a425"),
-                dict(range=[0.6, 0.8], color="#00d4aa"),
-                dict(range=[0.8, 1.0], color="#00ff99"),
-            ],
+            bordercolor="rgba(0,0,0,0)",
+            # Keine Farb-Stufen (clean look)
+            steps=[],
+            # Keine Nadel / Threshold
             threshold=dict(
-                line=dict(color="#FFFFFF", width=3),
-                thickness=0.85,
-                value=score,
+                line=dict(color="rgba(0,0,0,0)", width=0),
+                thickness=0,
+                value=0,
             ),
         ),
         title=dict(
             text=f"<b>{event_name}</b>",
-            font=dict(size=14, color="#c8d6e5"),
+            font=dict(size=13, color="#c8d6e5"),
         ),
     ))
 
     fig.update_layout(
         paper_bgcolor=SE_COLORS["bg"],
         plot_bgcolor=SE_COLORS["bg"],
-        height=250,
-        margin=dict(l=30, r=30, t=60, b=20),
+        height=240,
+        margin=dict(l=25, r=25, t=55, b=40),
     )
 
-    # Annotation mit t-Stat und p-Wert
+    # Signifikanz-Label unter dem Wert
+    fig.add_annotation(
+        text=f"<b>{sig_label}</b>",
+        xref="paper", yref="paper",
+        x=0.5, y=0.22,
+        showarrow=False,
+        font=dict(size=12, color=bar_color),
+    )
+
+    # t-Stat und p-Wert unter dem Gauge
     if t_stat is not None and p_value is not None:
         fig.add_annotation(
-            text=f"t = {t_stat:.2f} | p = {p_value:.4f}",
+            text=f"t = {t_stat:.2f}  |  p = {p_value:.4f}",
             xref="paper", yref="paper",
-            x=0.5, y=-0.05,
+            x=0.5, y=-0.02,
             showarrow=False,
-            font=dict(size=11, color="#5a6e85"),
+            font=dict(size=10, color="#5a6e85"),
         )
 
     return fig
