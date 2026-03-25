@@ -1,6 +1,6 @@
 # shared/assets.py
 # ============================================================
-# ASSET-WÖRTERBUCH — SeasonalEdge v8.3
+# ASSET-WÖRTERBUCH — SeasonAlpha v8.3
 # ============================================================
 # Single Source of Truth für:
 #   - Ticker-Mapping: Klarname / Keyword  →  Yahoo Finance Symbol

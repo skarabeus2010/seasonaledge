@@ -1,6 +1,6 @@
 # shared/ticker_search.py
 # ============================================================
-# GLOBALE SUCH- & MAPPING-KOMPONENTE — SeasonalEdge v8.3
+# GLOBALE SUCH- & MAPPING-KOMPONENTE — SeasonAlpha v8.3
 # ============================================================
 #
 # Verwendung auf JEDER Page (genau eine Zeile in der Sidebar):

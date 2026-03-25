@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Zentraler Download-Manager
+SeasonAlpha — Zentraler Download-Manager
 
 Architektur:
   TickerQueue   — priorisierte Download-Warteschlange
@@ -251,7 +251,7 @@ class DownloadManager:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="SeasonalEdge Download Manager")
+    parser = argparse.ArgumentParser(description="SeasonAlpha Download Manager")
     parser.add_argument("--batch-all", action="store_true", help="Alle Ticker updaten")
     parser.add_argument("--tickers", nargs="+", help="Bestimmte Ticker updaten")
     parser.add_argument("--workers", type=int, default=4, help="Anzahl Worker-Threads")

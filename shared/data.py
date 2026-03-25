@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Data Layer
+SeasonAlpha - Data Layer
 =========================
 Dünner Wrapper um yahoo_downloader.
 Cache liegt in yahoo_downloader.py (ttl=3600).

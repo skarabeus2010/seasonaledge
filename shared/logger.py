@@ -1,5 +1,5 @@
 """
-SeasonalEdge — shared/logger.py
+SeasonAlpha — shared/logger.py
 ================================
 Zentrales Logging-Modul für alle Module und Pages.
 
@@ -146,6 +146,6 @@ def log_ai(model: str, ticker: str, duration_ms: float) -> None:
 
 # ── Startup-Message ────────────────────────────────────────────────────────────
 app_logger.info("=" * 60)
-app_logger.info("SeasonalEdge gestartet")
+app_logger.info("SeasonAlpha gestartet")
 app_logger.info(f"Log-Verzeichnis: {LOG_DIR}")
 app_logger.info("=" * 60)

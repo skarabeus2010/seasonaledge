@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Zentrales UI Design
+SeasonAlpha - Zentrales UI Design
 ====================================
 Einmal pro Page aufrufen: inject_se_css()
 Alle Streamlit-Level Styles an einer Stelle.
@@ -122,7 +122,7 @@ hr {{
 
 
 def inject_se_css():
-    """Inject das zentrale SeasonalEdge CSS. Einmal pro Page aufrufen."""
+    """Inject das zentrale SeasonAlpha CSS. Einmal pro Page aufrufen."""
     st.markdown(_SE_CSS, unsafe_allow_html=True)
 
 

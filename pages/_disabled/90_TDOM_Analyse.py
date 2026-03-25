@@ -1,5 +1,5 @@
 """
-SeasonalEdge — TDoM (Trading Day of the Month) Analyse
+SeasonAlpha — TDoM (Trading Day of the Month) Analyse
 ========================================================
 3 Strategien × 2 Richtungen × Monatsfilter × Multi-Day Ranges.
 """
@@ -37,7 +37,7 @@ from shared.tdom_analysis import (
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
-    page_title="TDoM Analyse — SeasonalEdge",
+    page_title="TDoM Analyse — SeasonAlpha",
     page_icon="📅",
     layout="wide",
 )

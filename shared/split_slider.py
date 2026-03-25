@@ -281,7 +281,7 @@ input.sl-ov {{
   <!-- Layer 3: Einzeljahre (clip RECHTS) -->
   <div class="clayer" id="layer-a"><div id="div-a"></div></div>
 
-  <span class="se-watermark">SeasonalEdge</span>
+  <span class="se-watermark">SeasonAlpha</span>
   <div class="divider"    id="divider" style="left:0%"></div>
   <div class="div-handle" id="handle" style="left:0%">↔</div>
   <input type="range" min="0" max="100" value="0"

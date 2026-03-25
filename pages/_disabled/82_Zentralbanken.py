@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Zentralbank-Effekt
+SeasonAlpha - Zentralbank-Effekt
 ==================================
 Analyse der Rendite rund um Notenbank-Sitzungen (Fed, ECB, BOE, BOJ).
 t0 = Entscheidungstag → normiert auf 0%.
@@ -35,7 +35,7 @@ from shared.central_banks import (
     CENTRAL_BANK_REGISTRY
 )
 
-st.set_page_config(page_title="SeasonalEdge - Zentralbanken", page_icon="🏛️", layout="wide")
+st.set_page_config(page_title="SeasonAlpha - Zentralbanken", page_icon="🏛️", layout="wide")
 
 from shared.design import inject_se_css
 inject_se_css()

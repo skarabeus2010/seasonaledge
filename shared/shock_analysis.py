@@ -1,5 +1,5 @@
 """
-shared/shock_analysis.py — Shock Analyzer für SeasonalEdge
+shared/shock_analysis.py — Shock Analyzer für SeasonAlpha
 
 Analyse: Wenn Asset A um X% steigt/fällt, wie performt Asset B
 nach konfigurierbaren Zeiträumen?

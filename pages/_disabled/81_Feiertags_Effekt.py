@@ -1,7 +1,7 @@
 """
 3_📅_Feiertags_Effekt.py
 ========================
-Feiertags-Effekt Analyse für SeasonalEdge.
+Feiertags-Effekt Analyse für SeasonAlpha.
 
 Analysiert saisonale Rendite-Muster rund um Börsenfeiertage.
 Feiertage werden automatisch aus exchange_holidays.py geladen —
@@ -36,7 +36,7 @@ from shared.nyse_holidays import (
 
 # ── Seiten-Konfiguration ────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Feiertags-Effekt · SeasonalEdge",
+    page_title="Feiertags-Effekt · SeasonAlpha",
     page_icon="🎉",
     layout="wide",
 )

@@ -1,5 +1,5 @@
 """
-SeasonalEdge - TruePath (KI-basierte Saisonalität)
+SeasonAlpha - TruePath (KI-basierte Saisonalität)
 ====================================================
 Rekalibriert das saisonale Muster auf Basis der Korrelation mit dem
 aktuellen Jahresverlauf. Entfernt "Rauschen" von nicht-passenden Jahren.
@@ -35,7 +35,7 @@ from shared.calculations import (
     get_presidential_cycle_year
 )
 
-st.set_page_config(page_title="SeasonalEdge - TruePath", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="SeasonAlpha - TruePath", page_icon="🧠", layout="wide")
 
 from shared.design import inject_se_css
 inject_se_css()
@@ -294,7 +294,7 @@ def build_truepath_chart(year_data, avg, truepath, matches, ticker, current_year
 
 def calculate_seasonal_score(year_data, avg, std, current_year, matches):
     """
-    Multi-Faktor SeasonalEdge Score (0-100).
+    Multi-Faktor SeasonAlpha Score (0-100).
     
     Faktoren:
     1. Saisonalität: Steigt oder fällt der Ø in den nächsten 20 Tagen?
@@ -537,7 +537,7 @@ def main():
     # ══════════════════════════════════════════════════
     
     st.markdown("---")
-    st.markdown("### 📊 SeasonalEdge Score")
+    st.markdown("### 📊 SeasonAlpha Score")
     
     scoring = calculate_seasonal_score(year_data, avg, std, current_year, matches)
     score = scoring["score"]
@@ -578,7 +578,7 @@ def main():
     # Disclaimer
     st.markdown("---")
     st.caption(
-        "⚠️ _Der SeasonalEdge Score basiert auf historischen Mustern und statistischen Wahrscheinlichkeiten. "
+        "⚠️ _Der SeasonAlpha Score basiert auf historischen Mustern und statistischen Wahrscheinlichkeiten. "
         "Keine Anlageberatung. Vergangene Performance ist kein Indikator für zukünftige Ergebnisse._"
     )
 

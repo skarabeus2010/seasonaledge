@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Spot-Vol Beta Analyse
+SeasonAlpha — Spot-Vol Beta Analyse
 ======================================
 SPX vs. VIX: Spot-Volatilitaets-Korrelation, Rolling Beta, Scatter + Regression.
 """
@@ -36,7 +36,7 @@ from shared.spot_vol_beta import (
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
-    page_title="Spot-Vol Beta — SeasonalEdge",
+    page_title="Spot-Vol Beta — SeasonAlpha",
     page_icon="📉",
     layout="wide",
 )

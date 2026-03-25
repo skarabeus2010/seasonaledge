@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Zentralbank-Termine & Sonderdaten
+SeasonAlpha - Zentralbank-Termine & Sonderdaten
 ==================================================
 ECB, BOE, BOJ Meeting Dates + Fed Rate Hikes/Cuts + Fed Minutes
 + Zusätzliche Feiertage + Vollmond/Neumond

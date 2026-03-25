@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Konstanten & Konfiguration
+SeasonAlpha - Konstanten & Konfiguration
 ==========================================
 Farben, Labels, Presets und statische Daten.
 """
@@ -8,7 +8,7 @@ Farben, Labels, Presets und statische Daten.
 DEFAULT_TICKER = "AAPL"
 DEFAULT_YEARS = 20
 
-# ── SeasonalEdge Theme Palette (Highcharts dark-unica inspired) ──
+# ── SeasonAlpha Theme Palette (Highcharts dark-unica inspired) ──
 SE_COLORS = {
     # Backgrounds
     "bg":            "#080c12",

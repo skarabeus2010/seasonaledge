@@ -1,5 +1,5 @@
 """
-SeasonalEdge - FOMC Meeting Dates
+SeasonAlpha - FOMC Meeting Dates
 ===================================
 Alle historischen FOMC-Sitzungstermine (Statement-Datum = Entscheidungstag).
 Bei zweitägigen Meetings ist das Datum der zweite Tag (= Tag der Bekanntgabe).

@@ -1,6 +1,6 @@
 # pages/0_🏠_Home.py
 # ============================================================
-# STARTSEITE — SeasonalEdge Light Live v1.0
+# STARTSEITE — SeasonAlpha Light Live v1.0
 # ============================================================
 
 import sys, os, pathlib, requests  # base64 entfernt (Iframe deaktiviert)
@@ -19,7 +19,7 @@ if _project_dir not in sys.path:
 import streamlit as st
 
 st.set_page_config(
-    page_title="SeasonalEdge – Saisonale Börsenanalyse & Trading-Signale",
+    page_title="SeasonAlpha – Saisonale Börsenanalyse & Trading-Signale",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",

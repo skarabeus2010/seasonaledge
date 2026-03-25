@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fix_index_bugs.py v4 — Heilt ALLE df.index-Bugs in SeasonalEdge Pages + shared/.
+fix_index_bugs.py v4 — Heilt ALLE df.index-Bugs in SeasonAlpha Pages + shared/.
 
 ROOT CAUSE: Nach preprocess() hat jeder DataFrame einen RangeIndex (0,1,2,...).
 Alter Code behandelt df.index als DatetimeIndex mit .year/.month/.weekday etc.

@@ -1,5 +1,5 @@
 # shared/nyse_holidays.py
-# NYSE-Börsenfeiertage für SeasonalEdge.
+# NYSE-Börsenfeiertage für SeasonAlpha.
 #
 # Logik:
 #   1. Historische Feiertage sind als feste Liste gespeichert (PAST_HOLIDAYS)

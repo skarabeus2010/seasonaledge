@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Market Scanner
+SeasonAlpha — Market Scanner
 ==============================
 Scannt alle Ticker und rankt nach KI Seasonal Score.
 """
@@ -32,7 +32,7 @@ from shared.ki_score import scan_tickers
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
-    page_title="Market Scanner — SeasonalEdge",
+    page_title="Market Scanner — SeasonAlpha",
     page_icon="🔍",
     layout="wide",
 )

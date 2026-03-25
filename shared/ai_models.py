@@ -1,5 +1,5 @@
 """
-shared/ai_models.py — KI-Modelle für SeasonalEdge
+shared/ai_models.py — KI-Modelle für SeasonAlpha
 
 Phase 1: DTW Pattern Matching, Prophet, Isolation Forest, Claude API
 Phase 1.5: KI-Zusammenfassung, Anomalie-Heatmap
@@ -262,7 +262,7 @@ def generate_page_summary(
 
     stats_text = "\n".join(stats_lines)
 
-    prompt = f"""Du bist ein Finanzmarkt-Analyst bei SeasonalEdge. Fasse die folgende saisonale Analyse kurz zusammen.
+    prompt = f"""Du bist ein Finanzmarkt-Analyst bei SeasonAlpha. Fasse die folgende saisonale Analyse kurz zusammen.
 
 Ticker: {ticker}
 Analyse: {page_name}

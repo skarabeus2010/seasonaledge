@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Chart Builder
+SeasonAlpha - Chart Builder
 ==============================
 Erstellt den interaktiven Plotly Saisonalchart + zentrales Theme.
 """
@@ -43,7 +43,7 @@ def apply_se_theme(
     show_legend: bool = True,
     hovermode: str = "x unified",
 ) -> go.Figure:
-    """Zentrales Highcharts-inspiriertes Theme fuer alle SeasonalEdge Charts."""
+    """Zentrales Highcharts-inspiriertes Theme fuer alle SeasonAlpha Charts."""
 
     fig.update_layout(
         template=None,
@@ -141,7 +141,7 @@ def apply_se_theme(
     # Watermark (like Highcharts credits)
     if show_watermark:
         fig.add_annotation(
-            text="SeasonalEdge",
+            text="SeasonAlpha",
             xref="paper", yref="paper",
             x=0.99, y=0.01,
             xanchor="right", yanchor="bottom",

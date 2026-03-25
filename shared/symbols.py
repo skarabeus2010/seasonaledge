@@ -1,5 +1,5 @@
 # shared/symbols.py
-# Zentrale Ticker-Datenbank für SeasonalEdge.
+# Zentrale Ticker-Datenbank für SeasonAlpha.
 #
 # Felder pro Symbol:
 #   name       : Anzeigename (Deutsch)

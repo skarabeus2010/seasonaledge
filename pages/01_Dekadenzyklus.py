@@ -32,7 +32,7 @@ from shared.distribution_charts import (
 )
 
 st.set_page_config(
-    page_title="SeasonalEdge – Intra-Decade Seasonality",
+    page_title="SeasonAlpha – Intra-Decade Seasonality",
     page_icon="📊",
     layout="wide",
 )

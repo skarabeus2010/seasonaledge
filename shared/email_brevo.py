@@ -13,7 +13,7 @@ import requests
 from shared.logger import app_logger, error_logger
 
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
-SENDER = {"name": "SeasonalEdge", "email": "noreply@seasonaledge.app"}
+SENDER = {"name": "SeasonAlpha", "email": "noreply@seasonaledge.app"}
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 

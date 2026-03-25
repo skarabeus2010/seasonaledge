@@ -326,7 +326,7 @@ MIN_ROWS_THRESHOLD = 100  # Weniger als 100 Rows = nochmal laden
 
 def main():
     print("=" * 70)
-    print("🚀 SeasonalEdge — Bulk Data Load → Supabase")
+    print("🚀 SeasonAlpha — Bulk Data Load → Supabase")
     print(f"   {len(SYMBOLS)} Ticker | {datetime.datetime.now():%Y-%m-%d %H:%M}")
     print("=" * 70)
 

@@ -1,5 +1,5 @@
 """
-SeasonalEdge — KI Seasonal Score
+SeasonAlpha — KI Seasonal Score
 =================================
 Composite Score 1-10 aus DTW, Prophet, Win-Rate & Tracking.
 """
@@ -33,7 +33,7 @@ from shared.ki_score import calculate_ki_score
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
-    page_title="KI Score — SeasonalEdge",
+    page_title="KI Score — SeasonAlpha",
     page_icon="🧠",
     layout="wide",
 )

@@ -1,5 +1,5 @@
 """
-SeasonalEdge - NYSE Feiertage
+SeasonAlpha - NYSE Feiertage
 =============================
 Berechnung aller NYSE-Feiertage und Feiertags-Effekt-Analyse.
 """

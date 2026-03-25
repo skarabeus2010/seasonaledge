@@ -1,5 +1,5 @@
 """
-shared/supabase_client.py — Supabase DB-Connector für SeasonalEdge
+shared/supabase_client.py — Supabase DB-Connector für SeasonAlpha
 """
 import os
 

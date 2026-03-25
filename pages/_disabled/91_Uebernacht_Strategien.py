@@ -1,11 +1,11 @@
 # ============================================================
-#  SeasonalEdge — Page 12: Overnight vs. Intraday Saisonalität
+#  SeasonAlpha — Page 12: Overnight vs. Intraday Saisonalität
 #  Vergleicht Close→Open (Overnight) vs. Open→Close (Intraday)
 # ============================================================
 
 import streamlit as st
 
-st.set_page_config(page_title="Overnight vs Intraday Performance – SeasonalEdge", page_icon="🌙", layout="wide")
+st.set_page_config(page_title="Overnight vs Intraday Performance – SeasonAlpha", page_icon="🌙", layout="wide")
 
 import sys, os, pathlib
 try:

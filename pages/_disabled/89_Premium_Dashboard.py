@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Premium Dashboard (Seasonax-Style)
+SeasonAlpha — Premium Dashboard (Seasonax-Style)
 ===================================================
 Alles auf einer Seite: Saisonalkurve, KPIs, Jahresrenditen,
 Monatsrenditen, Heatmap, Box-Plot, Jahres-Tabelle, KI-Score.
@@ -36,7 +36,7 @@ from shared.ki_score import calculate_ki_score, SIGNAL_THRESHOLDS
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
-    page_title="Premium Dashboard — SeasonalEdge",
+    page_title="Premium Dashboard — SeasonAlpha",
     page_icon="⭐",
     layout="wide",
 )

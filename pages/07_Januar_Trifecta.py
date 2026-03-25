@@ -35,7 +35,7 @@ from shared.strategies.definitions import (
 )
 
 st.set_page_config(
-    page_title="SeasonalEdge – Strategien",
+    page_title="SeasonAlpha – Strategien",
     page_icon="🚦",
     layout="wide",
 )

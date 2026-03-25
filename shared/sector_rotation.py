@@ -1,5 +1,5 @@
 """
-shared/sector_rotation.py — Sektor-Rotation Analyse für SeasonalEdge
+shared/sector_rotation.py — Sektor-Rotation Analyse für SeasonAlpha
 
 Analyse: Welche Sektoren (XLK, XLE, XLF, ...) performen wann am besten?
 Heatmap: Monat × Sektor mit durchschnittlicher Rendite.

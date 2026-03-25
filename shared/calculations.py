@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Berechnungen
+SeasonAlpha - Berechnungen
 ============================
 Saisonale Analyse, Pressure Chart, Indikatoren, Kriege, ToM.
 """

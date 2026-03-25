@@ -22,7 +22,7 @@ import streamlit as st
 
 # ── Page Config ──────────────────────────────────────
 st.set_page_config(
-    page_title="Abmelden — SeasonalEdge",
+    page_title="Abmelden — SeasonAlpha",
     page_icon="📧",
     layout="centered",
 )
@@ -109,7 +109,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="unsub-box"><div class="unsub-title">SeasonalEdge Newsletter</div></div>',
+st.markdown('<div class="unsub-box"><div class="unsub-title">SeasonAlpha Newsletter</div></div>',
             unsafe_allow_html=True)
 
 # ── Query-Parameter lesen ────────────────────────────

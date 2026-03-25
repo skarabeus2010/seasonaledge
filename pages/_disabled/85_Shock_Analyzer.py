@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Shock Analyzer
+SeasonAlpha — Shock Analyzer
 ==============================
 Wenn Asset A um X% fällt/steigt — wie performt Asset B danach?
 Beispiel: Öl fällt 5% → Was passiert mit dem DAX nach 1, 5, 20, 60 Tagen?
@@ -31,7 +31,7 @@ from shared.shock_analysis import find_shocks, analyze_impact, shock_heatmap_dat
 
 # ── Page Config ──────────────────────────────────────
 st.set_page_config(
-    page_title="Shock Analyzer — SeasonalEdge",
+    page_title="Shock Analyzer — SeasonAlpha",
     page_icon="💥",
     layout="wide",
 )
@@ -290,4 +290,4 @@ with st.expander(f"📋 Alle {n_shocks} Shock-Events anzeigen"):
 # ── Footer ────────────────────────────────────────────
 st.markdown("---")
 st.caption(f"Daten: {trigger_ticker} + {target_ticker} · {years_back} Jahre · "
-           f"{n_shocks} Events · SeasonalEdge Shock Analyzer")
+           f"{n_shocks} Events · SeasonAlpha Shock Analyzer")

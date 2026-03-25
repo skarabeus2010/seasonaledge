@@ -1,7 +1,7 @@
 """
 10_📅_OPEX.py
 =============
-Options Expiration (OPEX) Analyse für SeasonalEdge.
+Options Expiration (OPEX) Analyse für SeasonAlpha.
 
 Analysiert saisonale Muster rund um monatliche Options-Verfalltage
 (3. Freitag im Monat) und Quarterly Triple Witching (Mrz/Jun/Sep/Dez).
@@ -23,7 +23,7 @@ from shared.constants import SE_COLORS
 
 # ── Seiten-Konfiguration ────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="OPEX Analyse · SeasonalEdge",
+    page_title="OPEX Analyse · SeasonAlpha",
     page_icon="📅",
     layout="wide",
 )

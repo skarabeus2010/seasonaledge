@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Jahreszyklus (Yearly Seasonality)
+SeasonAlpha — Jahreszyklus (Yearly Seasonality)
 =================================================
 Saisonaler Jahresverlauf mit Pressure Chart, Detrend-Indikator,
 Praesidentenzyklus-Overlay, Heatmap, Monats-/Quartals-Performance,
@@ -22,7 +22,7 @@ if _project_dir not in sys.path:
 import streamlit as st
 
 st.set_page_config(
-    page_title="Jahreszyklus — SeasonalEdge",
+    page_title="Jahreszyklus — SeasonAlpha",
     page_icon="📈",
     layout="wide",
 )

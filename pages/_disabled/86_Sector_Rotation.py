@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Sektor-Rotation
+SeasonAlpha — Sektor-Rotation
 ================================
 Welche Sektoren performen wann am besten?
 Heatmap: Monat × Sektor · Rotationssignal · Top/Flop Rankings
@@ -38,7 +38,7 @@ from shared.sector_rotation import (
 
 # ── Page Config ──────────────────────────────────────
 st.set_page_config(
-    page_title="Sektor-Rotation — SeasonalEdge",
+    page_title="Sektor-Rotation — SeasonAlpha",
     page_icon="🔄",
     layout="wide",
 )
@@ -297,4 +297,4 @@ if not stats.empty:
 # ── Footer ────────────────────────────────────────────
 st.markdown("---")
 st.caption(f"Daten: {len(sector_data)} Sektoren · {years_back} Jahre · "
-           f"Min. {min_years} Jahre pro Berechnung · SeasonalEdge Sektor-Rotation")
+           f"Min. {min_years} Jahre pro Berechnung · SeasonAlpha Sektor-Rotation")

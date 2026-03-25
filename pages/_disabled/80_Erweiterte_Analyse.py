@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Erweiterte Analyse
+SeasonAlpha - Erweiterte Analyse
 ==================================
 Präsidentenzyklus, Dekadenzyklus, Pressure, Krieg/Frieden, Indikatoren.
 """
@@ -36,7 +36,7 @@ from shared.calculations import (
 )
 from shared.charts import build_seasonal_chart
 
-st.set_page_config(page_title="SeasonalEdge - Erweitert", page_icon="📊", layout="wide")
+st.set_page_config(page_title="SeasonAlpha - Erweitert", page_icon="📊", layout="wide")
 
 from shared.design import inject_se_css
 inject_se_css()

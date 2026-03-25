@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Monats- und Wochen-Performance
+SeasonAlpha - Monats- und Wochen-Performance
 =============================================
 Monats-Saisonalchart, Wochen-Performance, Two-Week-Analyse.
 """

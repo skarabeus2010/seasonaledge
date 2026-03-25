@@ -1,5 +1,5 @@
 """
-SeasonalEdge - Weekday Performance
+SeasonAlpha - Weekday Performance
 ====================================
 Wochentags-Performance (Mo-Fr) mit verschiedenen Rendite-Berechnungen,
 Praesidentenzyklus-Filter und Monat x Wochentag Heatmap.

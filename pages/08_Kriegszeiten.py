@@ -1,5 +1,5 @@
 """
-SeasonalEdge — Im Schatten des Krieges
+SeasonAlpha — Im Schatten des Krieges
 ========================================
 Saisonaler Verlauf in Kriegsjahren vs. Friedensjahren.
 US-Kriege seit 1898 mit historischen Renditen.
@@ -33,7 +33,7 @@ from shared.calculations import (
 from shared.charts import apply_se_theme
 
 st.set_page_config(
-    page_title="Im Schatten des Krieges — SeasonalEdge",
+    page_title="Im Schatten des Krieges — SeasonAlpha",
     page_icon="⚔️",
     layout="wide",
 )
