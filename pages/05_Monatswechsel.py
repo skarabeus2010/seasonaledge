@@ -130,10 +130,26 @@ def main():
         f"Std.Abw: {tom_stats['std_dev']:.3f}%"
     )
     
+    # ── Signifikanztest (optional) ────────────────────
+    from shared.significance_gauge import run_significance_test, render_significance_section
+    # Gesamt-TOM + pro Monatswechsel
+    sig_groups = {"TOM Gesamt": [c["total_return"] for c in tom_result["all_curves"]]}
+    month_perf_sig = {}
+    for entry in tom_result["all_curves"]:
+        m = entry["month"]
+        key = f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}"
+        if key not in month_perf_sig:
+            month_perf_sig[key] = []
+        month_perf_sig[key].append(entry["total_return"])
+    sig_groups.update(month_perf_sig)
+    sig_results = run_significance_test(sig_groups)
+    render_significance_section(sig_results,
+        expander_title="📊 Statistische Signifikanz des Monatswechsel-Effekts")
+
     # ── Best & Worst ──────────────────────────────────
     best = tom_result["best"]
     worst = tom_result["worst"]
-    
+
     st.markdown("#### 🏆 Bester & schlechtester Monatswechsel")
     
     table_data = {

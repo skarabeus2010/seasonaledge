@@ -76,122 +76,16 @@ _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
 
 # ══════════════════════════════════════════════════════
-# GAUGE CHART BUILDER (modular, wiederverwendbar)
+# GAUGE (aus shared/significance_gauge.py)
 # ══════════════════════════════════════════════════════
 
-def _score_to_gradient_color(score):
-    """Fliessender Farbverlauf: 0=Tiefrot → 0.5=Orange/Gelb → 1=Sattgruen."""
-    if score <= 0.5:
-        # Rot (#cc0000) → Orange (#e8a425)
-        t = score / 0.5
-        r = int(204 + (232 - 204) * t)
-        g = int(0 + (164 - 0) * t)
-        b = int(0 + (37 - 0) * t)
-    else:
-        # Orange (#e8a425) → Gruen (#00d4aa)
-        t = (score - 0.5) / 0.5
-        r = int(232 + (0 - 232) * t)
-        g = int(164 + (212 - 164) * t)
-        b = int(37 + (170 - 37) * t)
-    return f"rgb({r},{g},{b})"
+from shared.significance_gauge import build_gauge as _build_gauge, _sig_label
 
 
 def build_relevance_gauge(score, event_name, t_stat=None, p_value=None):
-    """
-    Erstellt einen Radial Fill Gauge (Halbkreis) mit fliesssendem Farbverlauf.
-
-    Farbverlauf: Tiefrot (0) → Orange (0.5) → Sattgruen (1).
-    Der gefuellte Balken spiegelt den Score farblich wider.
-    Event-Name und Status-Text werden ausserhalb der Grafik platziert.
-
-    Args:
-        score: Relevanz-Score (0-1)
-        event_name: Name des Events (wird als dict-Key zurueckgegeben)
-        t_stat: t-Statistik (optional)
-        p_value: p-Wert (optional)
-
-    Returns:
-        dict mit 'fig' (go.Figure), 'event_name', 'sig_label', 'sig_color',
-              't_stat', 'p_value'
-    """
-    # ── Fliessende Farbe basierend auf Score-Position ──
-    bar_color = _score_to_gradient_color(score)
-
-    # ── Signifikanz-Label (fuer Anzeige ausserhalb) ──
-    if p_value is not None and p_value < 0.01:
-        sig_label = "Hochsignifikant"
-        sig_color = "#00d4aa"
-    elif p_value is not None and p_value < 0.05:
-        sig_label = "Signifikant"
-        sig_color = "#00d4aa"
-    elif p_value is not None and p_value < 0.10:
-        sig_label = "Grenzwertig"
-        sig_color = "#e8a425"
-    else:
-        sig_label = "Nicht signifikant"
-        sig_color = "#ff4757"
-
-    # ── Gradient-Steps: feingranulare Farbstufen bis zum Score ──
-    n_steps = 20
-    gradient_steps = []
-    for i in range(n_steps):
-        step_start = i / n_steps
-        step_end = (i + 1) / n_steps
-        if step_end <= score:
-            gradient_steps.append(dict(
-                range=[step_start, step_end],
-                color=_score_to_gradient_color((step_start + step_end) / 2),
-            ))
-        elif step_start < score < step_end:
-            # Teilweise gefuellt
-            gradient_steps.append(dict(
-                range=[step_start, score],
-                color=_score_to_gradient_color((step_start + score) / 2),
-            ))
-
-    # Hintergrund-Track (leerer Teil)
-    track_color = "rgba(255,255,255,0.06)"
-
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=score,
-        number=dict(
-            font=dict(size=44, color="#FFFFFF", family="DIN Alternate, monospace"),
-            suffix="",
-            valueformat=".2f",
-        ),
-        gauge=dict(
-            shape="angular",
-            axis=dict(
-                range=[0, 1],
-                tickwidth=0,
-                tickcolor="rgba(0,0,0,0)",
-                tickvals=[],
-                showticklabels=False,
-            ),
-            # Transparenter Balken — die Steps erzeugen den Gradient
-            bar=dict(color="rgba(0,0,0,0)", thickness=0.01),
-            bgcolor=track_color,
-            borderwidth=0,
-            bordercolor="rgba(0,0,0,0)",
-            steps=gradient_steps,
-            threshold=dict(
-                line=dict(color="rgba(0,0,0,0)", width=0),
-                thickness=0,
-                value=0,
-            ),
-        ),
-        # Kein Title in der Grafik — wird extern gerendert
-        title=dict(text="", font=dict(size=1)),
-    ))
-
-    fig.update_layout(
-        paper_bgcolor=SE_COLORS["bg"],
-        plot_bgcolor=SE_COLORS["bg"],
-        height=200,
-        margin=dict(l=20, r=20, t=30, b=10),
-    )
-
+    """Wrapper: Nutzt shared/significance_gauge fuer Radial Fill Gauge."""
+    sig_label, sig_color = _sig_label(p_value)
+    fig = _build_gauge(score, p_value)
     return {
         "fig": fig,
         "event_name": event_name,

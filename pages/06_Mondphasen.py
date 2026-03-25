@@ -297,10 +297,19 @@ def main():
             f"Std.Abw: {stats['std_dev']:.3f}%"
         )
         
+        # Signifikanztest (optional)
+        from shared.significance_gauge import run_significance_test, render_significance_section
+        phase_name = phase_info["name"]
+        sig_groups = {f"{phase_name} Gesamt": [c["total_return"] for c in result["all_curves"]]}
+        sig_results = run_significance_test(sig_groups)
+        render_significance_section(sig_results,
+            expander_title=f"📊 Statistische Signifikanz: {phase_name}-Effekt",
+            cols_per_row=1)
+
         # Best & Worst
         best = result["best"]
         worst = result["worst"]
-        
+
         st.markdown(f"#### 🏆 Bester & schlechtester {phase_info['name']}-Effekt")
         
         table_data = {

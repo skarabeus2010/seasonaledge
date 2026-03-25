@@ -413,6 +413,15 @@ def main():
     bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
     st.plotly_chart(bar_fig, use_container_width=True)
 
+    # ── Signifikanztest (optional) ────────────────────
+    from shared.significance_gauge import run_significance_test, render_significance_section
+    sig_groups = {WEEKDAY_LABELS[wd]: stats["by_weekday"][wd]["returns"]
+                  for wd in range(5) if stats["by_weekday"][wd]["returns"]}
+    sig_results = run_significance_test(sig_groups)
+    render_significance_section(sig_results,
+        expander_title="📊 Statistische Signifikanz der Wochentags-Effekte",
+        cols_per_row=5)
+
     # ── Detailtabelle ─────────────────────────────────
     st.markdown("#### 📋 Statistik pro Wochentag")
 
