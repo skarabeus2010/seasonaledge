@@ -367,12 +367,17 @@ def build_monthly_heatmap(df, selected_years, ticker):
         ),
     ))
 
-    # "We are here!"
+    # Gelber Rahmen um aktuelle Zelle (Monat x Jahr)
     if current_year in [int(y) for y in y_labels]:
-        y_idx = y_labels.index(str(current_year))
-        fig.add_annotation(**wah_annotation(
-            x_val=MONTH_NAMES_DE[current_month - 1], y_val=str(current_year), above=True,
-        ))
+        fig.add_shape(
+            type="rect",
+            x0=current_month - 1 - 0.5, x1=current_month - 1 + 0.5,
+            y0=y_labels.index(str(current_year)) - 0.5,
+            y1=y_labels.index(str(current_year)) + 0.5,
+            line=dict(color="#FFD700", width=3.5),
+            fillcolor="rgba(0,0,0,0)",
+            layer="above",
+        )
 
     fig = apply_se_theme(
         fig,
