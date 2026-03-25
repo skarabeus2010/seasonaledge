@@ -26,22 +26,24 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
-from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS
+from shared.constants import (
+    DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS,
+    SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR,
+)
 from shared.data import download_data, preprocess
 from shared.calculations import get_presidential_cycle_year
 from shared.charts import apply_se_theme
-from shared.constants import SE_COLORS
 from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 
 from shared.design import inject_se_css
 inject_se_css()
 
-# ── Distinkte Farbpalette fuer Einzeljahre (hoher Kontrast) ──────
+# ── Distinkte Farbpalette fuer Einzeljahre (maximaler Kontrast) ──────
 INDIVIDUAL_COLORS = [
-    "#ff6b6b", "#4ecdc4", "#ffe66d", "#a29bfe", "#fd79a8",
-    "#00cec9", "#fab1a0", "#74b9ff", "#55efc4", "#ffeaa7",
-    "#dfe6e9", "#e17055", "#6c5ce7", "#81ecec", "#fdcb6e",
-    "#00b894", "#e84393", "#0984e3", "#d63031", "#636e72",
+    "#FF6B6B", "#00CEC9", "#FFE66D", "#A29BFE", "#FF9FF3",
+    "#1ABC9C", "#F39C12", "#3498DB", "#E74C3C", "#2ECC71",
+    "#E84393", "#00B894", "#FDCB6E", "#6C5CE7", "#FD79A8",
+    "#0984E3", "#D63031", "#00D2D3", "#EE5A24", "#C8D6E5",
 ]
 
 def assign_tdom(df):
@@ -170,7 +172,7 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
 
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
 
-    # We are here!
+    # We are here! — gleiche X-Position wie im Hauptchart
     if current_tdom is not None and current_tdom in tdoms:
         idx = tdoms.index(current_tdom)
         fig.add_shape(**wah_vline(current_tdom))
@@ -179,11 +181,14 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
             above=True, text=f"We are here! TDOM {current_tdom}",
         ))
 
-    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Detrend-Indikator (saisonaler Druck)", height=300, show_legend=False)
+    n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
+    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Detrend-Indikator (saisonaler Druck, {n_years} Jahre)", height=300, show_legend=False)
+    # Gleicher X-Achsenbereich wie Hauptchart
+    fig.update_xaxes(range=[min(tdoms) - 0.5, max(tdoms) + 0.5])
     return fig
 
 def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
-                           show_individual, show_bands, current_tdom, detrend_mode):
+                           show_individual, show_bands, current_tdom):
     fig = go.Figure()
     tdoms = sorted(tdom_stats.keys())
     avg_curve = [tdom_stats[t]["avg"] for t in tdoms]
@@ -209,19 +214,6 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
         fig.add_trace(go.Scatter(x=tdoms, y=lower, mode="lines", line=dict(width=0),
             fill="tonexty", fillcolor="rgba(0,206,209,0.12)", name="+-1 Sigma", showlegend=True, hoverinfo="skip"))
 
-    # Detrend-Overlay
-    if detrend_mode != "OFF":
-        n = len(avg_curve)
-        end_val = avg_curve[-1]
-        daily_drift = end_val / n
-        detrended = [avg_curve[i] - ((i + 1) * daily_drift) for i in range(n)]
-        fig.add_trace(go.Scatter(
-            x=tdoms, y=detrended, mode="lines",
-            line=dict(color="#FF6B6B", width=2, dash="dash"),
-            name="Detrend",
-            hovertemplate="TDOM %{x}<br>Detrend: %{y:+.3f}%<extra></extra>",
-        ))
-
     # Durchschnittskurve
     fig.add_trace(go.Scatter(x=tdoms, y=avg_curve, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
@@ -239,6 +231,8 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
 
     n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
     fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Intra-Monat Verlauf ({n_years} Jahre)", height=400)
+    # X-Achsenbereich fixieren (synchron mit Detrend)
+    fig.update_xaxes(range=[min(tdoms) - 0.5, max(tdoms) + 0.5])
     return fig
 
 def build_weekly_bars(weekly_stats, ticker, month_name, current_tdom):
@@ -333,6 +327,63 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
     fig = apply_se_theme(fig, title=f"{ticker} — Two-Week Performance (TDOM 1–{split_day} vs. {split_day+1}+), sortiert", height=450, show_legend=False)
     return fig
 
+
+def build_monthly_heatmap(df, selected_years, ticker):
+    """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Letzte 10 Jahre aus selected_years
+    years = sorted(selected_years, reverse=True)[:10]
+
+    z_data = []
+    y_labels = []
+    for year in years:
+        row = []
+        for month in range(1, 13):
+            mdf = df[(df["year"] == year) & (df["month"] == month)]
+            if len(mdf) >= 5:
+                ret = (mdf["Close"].iloc[-1] / mdf["Open"].iloc[0] - 1) * 100
+            else:
+                ret = 0.0
+            row.append(round(ret, 2))
+        z_data.append(row)
+        y_labels.append(str(year))
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data,
+        x=MONTH_NAMES_DE,
+        y=y_labels,
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=0,
+        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
+        texttemplate="%{text}",
+        textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
+        hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
+        colorbar=dict(
+            title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            ticksuffix="%",
+        ),
+    ))
+
+    # "We are here!"
+    if current_year in [int(y) for y in y_labels]:
+        y_idx = y_labels.index(str(current_year))
+        fig.add_annotation(**wah_annotation(
+            x_val=MONTH_NAMES_DE[current_month - 1], y_val=str(current_year), above=True,
+        ))
+
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — 10 Jahres Monats-Heatmap",
+        height=max(300, len(years) * 28 + 100),
+        show_legend=False,
+    )
+    fig.update_yaxes(autorange="reversed", dtick=1)
+    return fig
+
+
 # ── MAIN ──────────────────────────────────────────────────
 
 def main():
@@ -352,13 +403,6 @@ def main():
             format_func=lambda m: f"{MONTH_NAMES_DE[m-1]}" + (" <- aktuell" if m == current_month else ""))
         show_individual = st.checkbox("Einzelne Jahre zeigen", value=False, key="mp_indiv")
         show_bands = st.checkbox("Konfidenzband (+-1 Sigma)", value=False, key="mp_bands")
-        detrend_mode = st.selectbox(
-            "Detrend-Indikator",
-            options=["ON", "OFF"],
-            index=0,
-            key="mp_detrend",
-            help="Zeigt den bereinigten saisonalen Druck (Trend herausgerechnet)",
-        )
 
         st.markdown("---")
         st.markdown("### Praesidentenzyklus-Filter")
@@ -413,15 +457,15 @@ def main():
     tdom_stats, all_curves = calc_intramonth_curve(df, selected_month, selected_years)
     if tdom_stats:
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
-            show_individual, show_bands, current_tdom, detrend_mode), use_container_width=True)
+            show_individual, show_bands, current_tdom), use_container_width=True)
 
-        # Detrend als eigener Chart (wenn ON)
-        if detrend_mode == "ON" and tdom_stats:
+        # 1b. Detrend-Indikator (Expander, wie Jahreszyklus)
+        with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True)
-                st.caption("_Steigt die Linie -> ueberdurchschnittlicher saisonaler Kaufdruck. "
-                          "Faellt sie -> saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
+                st.caption("_Steigt die Linie → ueberdurchschnittlicher saisonaler Kaufdruck. "
+                          "Faellt sie → saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
 
     # 2. Wochen
     weekly_stats = calc_weekly_performance(df, selected_month, selected_years)
@@ -451,5 +495,10 @@ def main():
                 "Haelfte": "1st" if t["half"] == 1 else "2nd", "Oe Rendite": f"{t['avg']:+.3f}%",
                 "Win Rate": f"{t['win_rate']:.0f}%", "n": t["n"]} for t in tw_sorted]),
                 use_container_width=True, hide_index=True)
+
+    # 5. 10-Jahres Heatmap
+    st.markdown("---")
+    with st.expander("10 Jahres Monats-Heatmap", expanded=True):
+        st.plotly_chart(build_monthly_heatmap(df, selected_years, ticker), use_container_width=True)
 
 main()
