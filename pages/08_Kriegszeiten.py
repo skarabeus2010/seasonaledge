@@ -254,101 +254,143 @@ st.plotly_chart(fig2, use_container_width=True)
 
 st.caption(f"Rot = Kriegsjahre ({len(war_matching)}) | Gruen = Friedensjahre ({len(peace_matching)})")
 
-# ── Dow Jones in realen Preisen (inflationsbereinigt) ───
+# ── Dow Jones Langfristchart mit Kriegszonen ────────────
 st.markdown("---")
-st.subheader("Dow Jones in realen Preisen (inflationsbereinigt)")
-st.caption("Nominal vs. kaufkraftbereinigt (Basis: 2024-Dollar) — logarithmische Skala")
+st.subheader("Der Dow Jones im Schatten der Kriege")
+st.caption("Langfristuebersicht seit 1886 — logarithmische Skala, alle groesseren US-Kriegsbeteiligungen markiert")
 
-try:
-    from shared.cpi_data import build_nominal_vs_real_df
+# Historische Dow Jones Jahresschlusskurse (rekonstruiert, Anker: 31.12.2024 = 42.544)
+DOW_ANNUAL = [
+    (1886,41.24),(1887,37.77),(1888,39.59),(1889,42.04),(1890,36.09),
+    (1891,42.45),(1892,39.67),(1893,29.91),(1894,29.74),(1895,30.42),
+    (1896,29.9),(1897,36.2),(1898,44.34),(1899,48.41),(1900,51.81),
+    (1901,47.3),(1902,47.1),(1903,35.98),(1904,51.0),(1905,70.48),
+    (1906,69.13),(1907,43.05),(1908,63.12),(1909,72.57),(1910,59.61),
+    (1911,59.84),(1912,64.38),(1913,57.72),(1914,54.59),(1915,99.17),
+    (1916,95.01),(1917,74.38),(1918,82.2),(1919,107.23),(1920,71.95),
+    (1921,81.11),(1922,98.74),(1923,95.53),(1924,120.52),(1925,156.68),
+    (1926,157.21),(1927,202.41),(1928,300.0),(1929,248.49),(1930,164.58),
+    (1931,77.89),(1932,59.92),(1933,99.89),(1934,104.02),(1935,144.1),
+    (1936,179.87),(1937,120.84),(1938,154.74),(1939,150.22),(1940,131.12),
+    (1941,110.95),(1942,119.39),(1943,135.88),(1944,152.31),(1945,192.9),
+    (1946,177.2),(1947,181.15),(1948,177.29),(1949,200.13),(1950,235.41),
+    (1951,269.24),(1952,291.91),(1953,280.9),(1954,404.39),(1955,488.38),
+    (1956,499.46),(1957,435.68),(1958,583.64),(1959,679.36),(1960,615.91),
+    (1961,731.14),(1962,652.11),(1963,762.96),(1964,874.13),(1965,969.23),
+    (1966,785.66),(1967,905.08),(1968,943.73),(1969,800.38),(1970,838.95),
+    (1971,890.21),(1972,1020.01),(1973,850.89),(1974,616.3),(1975,852.47),
+    (1976,1004.72),(1977,831.2),(1978,805.02),(1979,838.75),(1980,964.06),
+    (1981,875.07),(1982,1046.59),(1983,1258.73),(1984,1211.66),(1985,1546.8),
+    (1986,1896.07),(1987,1938.92),(1988,2168.68),(1989,2753.36),(1990,2633.86),
+    (1991,3169.06),(1992,3301.21),(1993,3754.14),(1994,3834.48),(1995,5117.11),
+    (1996,6448.07),(1997,7907.92),(1998,9181.09),(1999,11496.56),(2000,10786.07),
+    (2001,10020.26),(2002,8340.87),(2003,10452.77),(2004,10782.04),(2005,10716.27),
+    (2006,12461.95),(2007,13263.25),(2008,8774.97),(2009,10426.41),(2010,11575.4),
+    (2011,12215.52),(2012,13102.37),(2013,16574.5),(2014,17820.9),(2015,17423.5),
+    (2016,19761.73),(2017,24717.97),(2018,23326.35),(2019,28537.46),(2020,30606.42),
+    (2021,36339.01),(2022,33148.44),(2023,37689.78),(2024,42544.22),(2025,48062.21),
+]
 
-    # Jahresschlusskurse aus Tagesdaten extrahieren
-    nominal_prices = {}
-    for y in sorted(df["year"].unique()):
-        year_df = df[df["year"] == y].sort_values("Date")
-        if not year_df.empty:
-            nominal_prices[y] = float(year_df["Close"].iloc[-1])
+# Kriege mit exakten Zeitraeumen (Fraktionsjahre)
+WARS_DETAIL = [
+    {"name": "Spanisch-Amerikanischer Krieg", "s": 1898.3, "e": 1898.6,
+     "color": "rgba(160,155,180,0.22)", "border": "#a09bb4"},
+    {"name": "Philippinisch-Amerikanischer Krieg", "s": 1899.1, "e": 1902.5,
+     "color": "rgba(180,160,130,0.20)", "border": "#b4a082"},
+    {"name": "Erster Weltkrieg (US)", "s": 1917.25, "e": 1918.85,
+     "color": "rgba(200,85,75,0.22)", "border": "#c8554b"},
+    {"name": "Zweiter Weltkrieg (US)", "s": 1941.93, "e": 1945.67,
+     "color": "rgba(210,65,55,0.22)", "border": "#d24137"},
+    {"name": "Koreakrieg", "s": 1950.48, "e": 1953.57,
+     "color": "rgba(70,130,200,0.22)", "border": "#4682c8"},
+    {"name": "Vietnamkrieg", "s": 1965.17, "e": 1975.33,
+     "color": "rgba(60,170,110,0.20)", "border": "#3caa6e"},
+    {"name": "Golfkrieg", "s": 1990.58, "e": 1991.16,
+     "color": "rgba(200,170,60,0.22)", "border": "#c8aa3c"},
+    {"name": "Krieg in Afghanistan", "s": 2001.76, "e": 2021.66,
+     "color": "rgba(150,100,180,0.15)", "border": "#9664b4"},
+    {"name": "Irakkrieg", "s": 2003.22, "e": 2011.96,
+     "color": "rgba(200,120,60,0.18)", "border": "#c8783c"},
+]
 
-    real_df = build_nominal_vs_real_df(nominal_prices, base_year=2024)
+dow_years = [d[0] for d in DOW_ANNUAL]
+dow_prices = [d[1] for d in DOW_ANNUAL]
 
-    if not real_df.empty and len(real_df) > 10:
-        fig3 = go.Figure()
+def _interpolate_dow(year_frac):
+    """Logarithmisch interpolierter Dow-Kurs fuer Fraktionsjahre."""
+    for i in range(len(DOW_ANNUAL) - 1):
+        if DOW_ANNUAL[i][0] <= year_frac < DOW_ANNUAL[i + 1][0]:
+            frac = (year_frac - DOW_ANNUAL[i][0]) / (DOW_ANNUAL[i + 1][0] - DOW_ANNUAL[i][0])
+            log_a = np.log(DOW_ANNUAL[i][1])
+            log_b = np.log(DOW_ANNUAL[i + 1][1])
+            return np.exp(log_a + frac * (log_b - log_a))
+    return DOW_ANNUAL[-1][1]
 
-        # Nominal (Gold)
-        fig3.add_trace(go.Scatter(
-            x=real_df["year"], y=real_df["nominal"],
-            mode="lines", name="Nominal",
-            line=dict(color=SE_COLORS["accent_warm"], width=2.5),
-            hovertemplate="<b>%{x}</b><br>Nominal: %{y:,.0f}<extra></extra>",
-        ))
+fig3 = go.Figure()
 
-        # Real (Teal)
-        fig3.add_trace(go.Scatter(
-            x=real_df["year"], y=real_df["real"],
-            mode="lines", name="Real (2024-Dollar)",
-            line=dict(color=SE_COLORS["accent"], width=2.5),
-            hovertemplate="<b>%{x}</b><br>Real: %{y:,.0f}<extra></extra>",
-        ))
+# Dow Jones Linie
+fig3.add_trace(go.Scatter(
+    x=dow_years, y=dow_prices,
+    mode="lines", name="Dow Jones",
+    line=dict(color=SE_COLORS["accent_warm"], width=2.2),
+    hovertemplate="<b>%{x}</b><br>Dow Jones: %{y:,.0f}<extra></extra>",
+))
 
-        # Kriegszonen als Shapes
-        for w in US_WARS:
-            fig3.add_shape(
-                type="rect", xref="x", yref="paper",
-                x0=w["start"] - 0.5, x1=w["end"] + 0.5,
-                y0=0, y1=1,
-                fillcolor="rgba(231,76,60,0.12)",
-                line=dict(width=0),
-            )
-            mid_x = (w["start"] + w["end"]) / 2
-            fig3.add_annotation(
-                x=mid_x, y=1.02, xref="x", yref="paper",
-                text=w["name"].split("(")[0].strip(),
-                showarrow=False,
-                font=dict(size=8, color="rgba(231,76,60,0.7)"),
-                textangle=-45,
-            )
-
-        fig3 = apply_se_theme(
-            fig3,
-            title=f"{ticker} — Nominal vs. Real ({real_df['year'].min()}–{real_df['year'].max()})",
-            height=520,
+# Kriegszonen + Labels
+label_y_pos = [0.93, 0.85, 0.93, 0.85, 0.93, 0.85, 0.93, 0.77, 0.85]
+for i, w in enumerate(WARS_DETAIL):
+    # Schattierung
+    fig3.add_shape(
+        type="rect", xref="x", yref="paper",
+        x0=w["s"], x1=w["e"], y0=0, y1=1,
+        fillcolor=w["color"], line=dict(width=0),
+    )
+    # Gepunktete Start-/Endlinien
+    for x_val in [w["s"], w["e"]]:
+        fig3.add_shape(
+            type="line", xref="x", yref="paper",
+            x0=x_val, x1=x_val, y0=0, y1=1,
+            line=dict(color=w["border"], width=1, dash="dot"),
         )
-        fig3.update_yaxes(type="log", title="Dow Jones (log)", tickformat=",.0f")
-        fig3.update_xaxes(dtick=10)
+    # Label
+    mid_x = (w["s"] + w["e"]) / 2
+    short_name = w["name"].split("(")[0].strip()
+    fig3.add_annotation(
+        x=mid_x, y=label_y_pos[i], xref="x", yref="paper",
+        text=f"<b>{short_name}</b>",
+        showarrow=False,
+        font=dict(size=10, color=w["border"]),
+        bgcolor="rgba(10,12,16,0.9)",
+        borderpad=3, bordercolor=w["border"], borderwidth=1,
+    )
+    # Performance-Label
+    sp = _interpolate_dow(w["s"])
+    ep = _interpolate_dow(w["e"])
+    pct = (ep - sp) / sp * 100
+    pct_color = SE_COLORS["positive"] if pct >= 0 else SE_COLORS["negative"]
+    fig3.add_annotation(
+        x=mid_x, y=label_y_pos[i] - 0.05, xref="x", yref="paper",
+        text=f"<b>{pct:+.1f}%</b>",
+        showarrow=False,
+        font=dict(size=11, color=pct_color),
+        bgcolor="rgba(10,12,16,0.85)",
+        borderpad=2,
+    )
 
-        st.plotly_chart(fig3, use_container_width=True)
+fig3 = apply_se_theme(
+    fig3,
+    title="Dow Jones im Schatten der Kriege (1886–2025)",
+    height=600,
+)
+fig3.update_yaxes(type="log", title="Dow Jones (logarithmisch)", tickformat=",.0f")
+fig3.update_xaxes(dtick=10, range=[1885, 2026])
 
-        # Kennzahlen
-        if len(real_df) > 1:
-            first_nom = real_df["nominal"].iloc[0]
-            last_nom = real_df["nominal"].iloc[-1]
-            first_real = real_df["real"].iloc[0]
-            last_real = real_df["real"].iloc[-1]
-            years_span = real_df["year"].iloc[-1] - real_df["year"].iloc[0]
+st.plotly_chart(fig3, use_container_width=True)
 
-            k1, k2, k3, k4 = st.columns(4)
-            with k1:
-                nom_gain = (last_nom / first_nom - 1) * 100
-                st.metric("Nominaler Anstieg", f"{nom_gain:,.0f}%")
-            with k2:
-                real_gain = (last_real / first_real - 1) * 100
-                st.metric("Realer Anstieg", f"{real_gain:,.0f}%")
-            with k3:
-                nom_cagr = ((last_nom / first_nom) ** (1 / years_span) - 1) * 100
-                st.metric("Nominale CAGR", f"{nom_cagr:.1f}%")
-            with k4:
-                real_cagr = ((last_real / first_real) ** (1 / years_span) - 1) * 100
-                st.metric("Reale CAGR", f"{real_cagr:.1f}%")
-
-        st.caption(
-            "CPI-Quelle: Bureau of Labor Statistics (1982-84 = 100). "
-            "Pre-1913 Werte rekonstruiert aus historischen Preisindizes."
-        )
-    else:
-        st.info("Nicht genuegend Daten fuer inflationsbereinigte Ansicht.")
-
-except Exception as e:
-    st.warning(f"Inflationsbereinigte Ansicht nicht verfuegbar: {e}")
+st.caption(
+    "Daten: Jaehrliche Schlusskurse rekonstruiert aus Dow Jones Annual Returns, "
+    "Ankerpunkt: 31.12.2024 = 42.544 Punkte. Logarithmische Y-Achse."
+)
 
 # ── Disclaimer ──
 st.markdown("---")
