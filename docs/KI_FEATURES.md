@@ -198,7 +198,7 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | Home | Glasmorphismus Stats, SVG Hero |
 | Dekadenzyklus | Anomalie-Radar, aktuelles Jahr |
 | Jahreszyklus | Anomalie-Radar, Outlier Manager |
-| Monatszyklus | Outlier Manager |
+| Monatszyklus | Detrend-Indikator, 10J-Heatmap, TDOM-Marker, Outlier Manager |
 | Wochentage | Outlier Manager |
 | Monatswechsel | Outlier Manager |
 | Mondphasen | Outlier Manager |
