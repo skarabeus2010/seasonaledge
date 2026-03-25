@@ -1,9 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://seasonaledge.app/</loc><priority>1.0</priority></url>
-  <url><loc>https://seasonaledge.app/Monatswechsel</loc><priority>0.8</priority></url>
-  <url><loc>https://seasonaledge.app/Wochentage</loc><priority>0.8</priority></url>
-  <url><loc>https://seasonaledge.app/Monatszyklus</loc><priority>0.8</priority></url>
-  <url><loc>https://seasonaledge.app/Mondphasen</loc><priority>0.8</priority></url>
-  <url><loc>https://seasonaledge.app/Uebernacht_Strategien</loc><priority>0.8</priority></url>
+  <!-- Hauptseiten -->
+  <url><loc>https://seasonalpha.ai/</loc><priority>1.0</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Jahreszyklus</loc><priority>0.9</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Monatszyklus</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Wochentage</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Monatswechsel</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Mondphasen</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Kriegszeiten</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Dekadenzyklus</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/Januar_Trifecta</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <!-- SEO Landing Pages -->
+  <url><loc>https://seasonalpha.ai/analyse/apple-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/dax-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/bmw-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/bitcoin-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/tesla-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/gold-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/oel-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/nasdaq-100-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/dow-jones-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://seasonalpha.ai/analyse/sap-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
 </urlset>
