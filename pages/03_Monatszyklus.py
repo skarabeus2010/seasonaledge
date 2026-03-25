@@ -382,10 +382,10 @@ def build_monthly_heatmap(df, selected_years, ticker):
     fig = apply_se_theme(
         fig,
         title=f"{ticker} — 10 Jahres Monats-Heatmap",
-        height=max(300, len(years) * 28 + 100),
+        height=max(400, len(years) * 40 + 100),
         show_legend=False,
     )
-    fig.update_yaxes(autorange="reversed", dtick=1)
+    fig.update_yaxes(autorange="reversed", type="category")
     return fig
 
 

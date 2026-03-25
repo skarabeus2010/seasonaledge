@@ -67,6 +67,23 @@ render_split_slider(df, height=520, info="77 Jahre")
 # df: year, trading_day, cum_return_pct
 ```
 
+## Heatmap Styling (zentral)
+
+Alle Heatmaps nutzen die zentralen Konstanten aus `shared/constants.py`:
+
+```python
+SE_HEATMAP_COLORSCALE = [
+    [0.0,  "#cc0000"],   # stark negativ → rot
+    [0.25, "#ff4757"],   # leicht negativ → hellrot
+    [0.5,  "#0f1923"],   # neutral → dunkel (SE surface)
+    [0.75, "#00d4aa"],   # leicht positiv → tuerkis
+    [1.0,  "#00ff99"],   # stark positiv → gruen
+]
+SE_HEATMAP_TEXT_COLOR = "#FFFFFF"
+```
+
+**"We are here!" in Heatmaps:** Gelber Rahmen (`#FFD700`, 3.5px) um die aktuelle Zelle via `add_shape(type="rect")` mit `layer="above"`. Kein Text-Label, nur visueller Fokus-Rahmen.
+
 ## Distribution Charts (shared/distribution_charts.py)
 
 | Funktion | Beschreibung |
@@ -76,3 +93,17 @@ render_split_slider(df, height=520, info="77 Jahre")
 | `build_decade_monthly_heatmap()` | Heatmap Dekaden x Monate |
 | `build_monthly_bar_with_vola()` | Balken + Vola (2. Y-Achse) |
 | `get_current_context_stats()` | Statistiken + Rating |
+
+## "We are here!" Marker (shared/we_are_here.py)
+
+Zentraler Helper fuer die Orientierungshilfe in allen Charts:
+
+```python
+from shared.we_are_here import annotation, rect, vline, star_marker, annotation_offset
+
+fig.add_annotation(**annotation(x_val, y_val, above=True, text="We are here! TDOM 18"))
+fig.add_shape(**vline(x_val))           # Vertikale Linie (dot)
+fig.add_shape(**rect(x0, x1, y0, y1))  # Highlight-Rechteck
+```
+
+Farben zentral anpassbar: `MARKER_COLOR`, `RECT_COLOR`, `ARROW_COLOR` etc.

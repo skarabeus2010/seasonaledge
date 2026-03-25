@@ -51,7 +51,9 @@ pages/                   ← Light Live + Premium Pages
     02_Jahreszyklus      ← Saisonaler Jahresverlauf, Pressure Chart, Detrend,
                             Anomalie-Radar, Praesidentenzyklus, Outlier Manager,
                             Monats-/Quartals-Perf, 10J-Heatmap, We-are-here Marker
-    03_Monatszyklus      ← Monats-Heatmap, Boxplots + Outlier
+    03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
+                            Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
+                            We-are-here TDOM-Marker, Praesidentenzyklus-Filter, Outlier
     04_Wochentage        ← Wochentag-Renditen + Outlier
     05_Monatswechsel     ← Turn of the Month + Outlier
     06_Mondphasen        ← Voll-/Neumond-Effekt + Outlier
@@ -157,6 +159,7 @@ UPPER_CASE        → Konstanten
 - [x] Home: 3x3 Kacheln, klickbar, Stat-Kacheln Update, Tooltip "seit 1896" (2026-03-21)
 - [x] Disabled Pages aktiviert (Dekadenzyklus, Trifecta, Kriegszeiten, Events) (2026-03-21)
 - [x] Uebernacht-Strategien + Crash-Fruehwarnung nach _disabled verschoben (2026-03-21)
+- [x] Monatszyklus Rewrite: Detrend-Expander, TDOM-Marker, 10J-Heatmap, Kontrastfarben (2026-03-25)
 - [ ] Outlier Manager in alle Pages integrieren (aktuell: Jahreszyklus + Erweiterte Analyse)
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
 - [ ] Anomaly Engine in weitere Pages integrieren
