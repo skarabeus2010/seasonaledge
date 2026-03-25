@@ -41,6 +41,7 @@ from shared.design import inject_se_css
 inject_se_css()
 
 TEMPLATE = "plotly_dark"
+SMOOTHING = 5
 CURRENT_YEAR  = datetime.now().year
 CURRENT_DIGIT = get_decade_digit(CURRENT_YEAR)
 
@@ -63,11 +64,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Darstellung")
 
-    smoothing = st.slider(
-        "Glättung (Tage)", 1, 21, 5, 2,
-        help="Zentrierter MA über die Ø-Kurven",
-    )
-
     show_bands = st.checkbox("±1σ Konfidenzband", value=False,
                              help="Zeigt Standardabweichung pro Kohorte")
     show_individual = st.checkbox("Einzeljahre anzeigen", value=False,
@@ -79,7 +75,7 @@ with st.sidebar:
     st.markdown("### Rendite-Analyse")
     show_boxplot  = st.checkbox("Box-Plot Verteilung", value=True)
     show_context  = st.checkbox("Kontext-Panel (aktuelles Jahr)", value=True)
-    show_heatmap  = st.checkbox("Heatmap Dekade × Monat", value=False)
+    show_heatmap  = st.checkbox("Heatmap Dekade × Monat", value=True)
 
     st.markdown("---")
     st.markdown("### Kohorten ein/ausblenden")
@@ -159,11 +155,11 @@ for digit in range(10):
             ))
 
     # Glättung
-    avg = pd.Series(d["avg_curve"]).rolling(smoothing, center=True, min_periods=1).mean().tolist()
+    avg = pd.Series(d["avg_curve"]).rolling(SMOOTHING, center=True, min_periods=1).mean().tolist()
 
     # Konfidenzband
     if show_bands and d["n"] >= 3:
-        std = pd.Series(d["std_curve"]).rolling(smoothing, center=True, min_periods=1).mean().tolist()
+        std = pd.Series(d["std_curve"]).rolling(SMOOTHING, center=True, min_periods=1).mean().tolist()
         upper = [a + s for a, s in zip(avg, std)]
         lower = [a - s for a, s in zip(avg, std)]
         # Hex → rgba konvertieren
@@ -256,9 +252,7 @@ for digit in range(10):
     bar_y.append(round(val, 2) if val is not None else 0.0)
 
     is_current = (digit == CURRENT_DIGIT)
-    if is_current:
-        bar_colors.append("#F1C40F")   # gelb für aktuelles Jahr
-    elif val is not None and val >= 0:
+    if val is not None and val >= 0:
         bar_colors.append("#2ECC71")
     else:
         bar_colors.append("#E74C3C")
@@ -292,6 +286,19 @@ fig2 = go.Figure(go.Bar(
 
 fig2.add_hline(y=0, line_dash="dash",
                line_color="rgba(255,255,255,0.25)", line_width=1)
+
+# "We are here!" Marker auf dem aktuellen Dekaden-Balken
+from shared.we_are_here import annotation as wah_annotation, rect as wah_rect
+current_bar_val = bar_y[CURRENT_DIGIT]
+fig2.add_annotation(**wah_annotation(
+    x_val=f"x{CURRENT_DIGIT}",
+    y_val=current_bar_val,
+    above=current_bar_val >= 0,
+))
+fig2.add_shape(**wah_rect(
+    x0=CURRENT_DIGIT - 0.45, x1=CURRENT_DIGIT + 0.45,
+    y0=0, y1=current_bar_val,
+))
 
 fig2 = apply_se_theme(fig2, title="", height=380)
 
@@ -467,5 +474,5 @@ with st.expander("ℹ️ Methodik"):
     **Mindestlänge:** Jahre mit weniger als 200 Handelstagen werden ausgeschlossen  
     **Schalttage:** Kein Sonderhandling nötig — Interpolation auf 252 Punkte gleicht unterschiedliche Jahreslängen aus  
     **Aktuelle Kohorte:** {CURRENT_YEAR} → X{CURRENT_DIGIT} (gelb markiert)  
-    **Glättung:** {smoothing}-Tage zentrierter Moving Average auf Ø-Kurve  
+    **Glättung:** 5-Tage zentrierter Moving Average auf Ø-Kurve
     """)
