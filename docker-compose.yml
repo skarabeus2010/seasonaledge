@@ -4,7 +4,7 @@ services:
   # ── Streamlit App ──────────────────────────────────
   app:
     build: .
-    container_name: seasonalalpha-app
+    container_name: seasonalpha-app
     restart: always
     ports:
       - "8501:8501"
@@ -24,7 +24,7 @@ services:
   # ── Nginx Reverse Proxy + SSL ──────────────────────
   nginx:
     image: nginx:alpine
-    container_name: seasonalalpha-nginx
+    container_name: seasonalpha-nginx
     restart: always
     ports:
       - "80:80"
@@ -39,7 +39,7 @@ services:
   # ── Certbot (SSL) ─────────────────────────────────
   certbot:
     image: certbot/certbot
-    container_name: seasonalalpha-certbot
+    container_name: seasonalpha-certbot
     volumes:
       - ./deploy/certbot/conf:/etc/letsencrypt
       - ./deploy/certbot/www:/var/www/certbot

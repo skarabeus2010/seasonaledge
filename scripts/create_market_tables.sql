@@ -113,3 +113,16 @@ CREATE TABLE IF NOT EXISTS spot_vol_beta (
 );
 
 CREATE INDEX IF NOT EXISTS idx_spot_vol_beta_date ON spot_vol_beta (event_date);
+
+-- ── Historical CPI (Jahresdurchschnitte, 1886–heute) ────────────────────────
+
+CREATE TABLE IF NOT EXISTS historical_cpi (
+    id BIGSERIAL PRIMARY KEY,
+    year INT NOT NULL,
+    cpi FLOAT NOT NULL,
+    source TEXT DEFAULT 'bls_embedded',   -- 'bls_historical','fred_cpiaucsl','bls_embedded'
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_historical_cpi_year ON historical_cpi (year);

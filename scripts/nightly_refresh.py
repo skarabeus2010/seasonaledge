@@ -130,6 +130,15 @@ def main():
         app_logger.error(f"nightly_refresh: Calendar-Sync fehlgeschlagen: {e}")
         print(f"Calendar sync failed: {e}")
 
+    # Phase A2: CPI Update
+    try:
+        from shared.cpi_data import update_cpi_in_db
+        update_cpi_in_db()
+        print("CPI: updated")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: CPI-Update fehlgeschlagen: {e}")
+        print(f"CPI update failed: {e}")
+
     # Phase B: Ticker Data
     tickers = list(SYMBOLS.keys())
     print(f"Ticker refresh: {len(tickers)} Ticker")

@@ -422,6 +422,33 @@ def upsert_spot_vol_beta(records: list[dict]):
         ).execute()
 
 
+# ── Historical CPI ───────────────────────────────
+
+def upsert_historical_cpi(records: list[dict]):
+    """CPI-Jahresdaten upserten (year, cpi, source)."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("historical_cpi").upsert(
+            batch, on_conflict="year"
+        ).execute()
+
+
+def fetch_historical_cpi() -> list[dict]:
+    """CPI-Jahresdaten aus DB laden."""
+    return (
+        get_client()
+        .table("historical_cpi")
+        .select("*")
+        .order("year")
+        .execute()
+        .data
+    )
+
+
 def fetch_spot_vol_beta(
     start_date: str = None,
     end_date: str = None,

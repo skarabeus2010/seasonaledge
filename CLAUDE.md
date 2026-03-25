@@ -37,6 +37,7 @@ shared/                  ← Berechnungen, Daten, Utilities
   split_slider.py        ← 3-Layer Split-Slider
   supabase_client.py     ← DB-Connector + Subscriber + Market Events + Cache
   logger.py              ← 3 Log-Kanäle (app/error/access)
+  cpi_data.py            ← CPI-Daten (BLS/FRED), Inflationsbereinigung
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
   strategies/            ← 65+ Strategien
@@ -165,7 +166,7 @@ UPPER_CASE        → Konstanten
 - [x] VPS Deployment: Hetzner CPX22, Docker + Nginx + SSL (2026-03-22)
 - [x] Auto-Deploy: GitHub Action → SSH-Key → git pull + docker rebuild (2026-03-22)
 - [x] App live unter http://178.104.75.46 (2026-03-22)
-- [ ] DNS: seasonalalpha.ai → 178.104.75.46 (STRATO, Zugangsdaten ausstehend)
+- [x] DNS: seasonalpha.ai → 178.104.75.46 (STRATO A-Record + CNAME www) (2026-03-25)
 - [ ] SSL (HTTPS) einrichten nach DNS-Setup
 - [x] Achsenbeschriftungen global weiss, max 2 Nachkommastellen (2026-03-21)
 - [x] "We are here!" Helper zentral ausgelagert (shared/we_are_here.py) (2026-03-21)
@@ -174,6 +175,7 @@ UPPER_CASE        → Konstanten
 - [ ] Stripe Freemium/Abo-Integration
 - [ ] Supabase User-Auth
 - [ ] Anthropic API-Key einrichten (KI-Zusammenfassung)
+- [x] CPI-Inflationsbereinigung: Kriegszeiten Page + shared/cpi_data.py + DB-Tabelle (2026-03-25)
 
 ## Docs (bei Bedarf lesen)
 

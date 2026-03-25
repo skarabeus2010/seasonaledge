@@ -254,6 +254,102 @@ st.plotly_chart(fig2, use_container_width=True)
 
 st.caption(f"Rot = Kriegsjahre ({len(war_matching)}) | Gruen = Friedensjahre ({len(peace_matching)})")
 
+# ── Dow Jones in realen Preisen (inflationsbereinigt) ───
+st.markdown("---")
+st.subheader("Dow Jones in realen Preisen (inflationsbereinigt)")
+st.caption("Nominal vs. kaufkraftbereinigt (Basis: 2024-Dollar) — logarithmische Skala")
+
+try:
+    from shared.cpi_data import build_nominal_vs_real_df
+
+    # Jahresschlusskurse aus Tagesdaten extrahieren
+    nominal_prices = {}
+    for y in sorted(df["year"].unique()):
+        year_df = df[df["year"] == y].sort_values("Date")
+        if not year_df.empty:
+            nominal_prices[y] = float(year_df["Close"].iloc[-1])
+
+    real_df = build_nominal_vs_real_df(nominal_prices, base_year=2024)
+
+    if not real_df.empty and len(real_df) > 10:
+        fig3 = go.Figure()
+
+        # Nominal (Gold)
+        fig3.add_trace(go.Scatter(
+            x=real_df["year"], y=real_df["nominal"],
+            mode="lines", name="Nominal",
+            line=dict(color=SE_COLORS["accent_warm"], width=2.5),
+            hovertemplate="<b>%{x}</b><br>Nominal: %{y:,.0f}<extra></extra>",
+        ))
+
+        # Real (Teal)
+        fig3.add_trace(go.Scatter(
+            x=real_df["year"], y=real_df["real"],
+            mode="lines", name="Real (2024-Dollar)",
+            line=dict(color=SE_COLORS["accent"], width=2.5),
+            hovertemplate="<b>%{x}</b><br>Real: %{y:,.0f}<extra></extra>",
+        ))
+
+        # Kriegszonen als Shapes
+        for w in US_WARS:
+            fig3.add_shape(
+                type="rect", xref="x", yref="paper",
+                x0=w["start"] - 0.5, x1=w["end"] + 0.5,
+                y0=0, y1=1,
+                fillcolor="rgba(231,76,60,0.12)",
+                line=dict(width=0),
+            )
+            mid_x = (w["start"] + w["end"]) / 2
+            fig3.add_annotation(
+                x=mid_x, y=1.02, xref="x", yref="paper",
+                text=w["name"].split("(")[0].strip(),
+                showarrow=False,
+                font=dict(size=8, color="rgba(231,76,60,0.7)"),
+                textangle=-45,
+            )
+
+        fig3 = apply_se_theme(
+            fig3,
+            title=f"{ticker} — Nominal vs. Real ({real_df['year'].min()}–{real_df['year'].max()})",
+            height=520,
+        )
+        fig3.update_yaxes(type="log", title="Dow Jones (log)", tickformat=",.0f")
+        fig3.update_xaxes(dtick=10)
+
+        st.plotly_chart(fig3, use_container_width=True)
+
+        # Kennzahlen
+        if len(real_df) > 1:
+            first_nom = real_df["nominal"].iloc[0]
+            last_nom = real_df["nominal"].iloc[-1]
+            first_real = real_df["real"].iloc[0]
+            last_real = real_df["real"].iloc[-1]
+            years_span = real_df["year"].iloc[-1] - real_df["year"].iloc[0]
+
+            k1, k2, k3, k4 = st.columns(4)
+            with k1:
+                nom_gain = (last_nom / first_nom - 1) * 100
+                st.metric("Nominaler Anstieg", f"{nom_gain:,.0f}%")
+            with k2:
+                real_gain = (last_real / first_real - 1) * 100
+                st.metric("Realer Anstieg", f"{real_gain:,.0f}%")
+            with k3:
+                nom_cagr = ((last_nom / first_nom) ** (1 / years_span) - 1) * 100
+                st.metric("Nominale CAGR", f"{nom_cagr:.1f}%")
+            with k4:
+                real_cagr = ((last_real / first_real) ** (1 / years_span) - 1) * 100
+                st.metric("Reale CAGR", f"{real_cagr:.1f}%")
+
+        st.caption(
+            "CPI-Quelle: Bureau of Labor Statistics (1982-84 = 100). "
+            "Pre-1913 Werte rekonstruiert aus historischen Preisindizes."
+        )
+    else:
+        st.info("Nicht genuegend Daten fuer inflationsbereinigte Ansicht.")
+
+except Exception as e:
+    st.warning(f"Inflationsbereinigte Ansicht nicht verfuegbar: {e}")
+
 # ── Disclaimer ──
 st.markdown("---")
 st.caption(
