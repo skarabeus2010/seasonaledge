@@ -43,7 +43,123 @@ st.set_page_config(
 from shared.design import inject_se_css
 inject_se_css()
 
+# ── Tab-Styling: Spacing, Kontrast, Hover ──
+st.markdown("""
+<style>
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    padding: 6px 8px;
+}
+.stTabs [data-baseweb="tab"] {
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #FFFFFF;
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    background-color: rgba(255, 215, 0, 0.12);
+    color: #FFD700;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.15);
+}
+.stTabs [aria-selected="true"] {
+    background-color: rgba(255, 215, 0, 0.18) !important;
+    color: #FFD700 !important;
+    border-bottom: 2px solid #FFD700;
+    font-weight: 700;
+}
+</style>
+""", unsafe_allow_html=True)
+
 _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
+
+
+# ══════════════════════════════════════════════════════
+# GAUGE CHART BUILDER (modular, wiederverwendbar)
+# ══════════════════════════════════════════════════════
+
+def build_relevance_gauge(score, event_name, t_stat=None, p_value=None):
+    """
+    Erstellt einen Tacho-Chart (Gauge) fuer den Event-Relevanz Score.
+
+    Args:
+        score: Relevanz-Score (0-1)
+        event_name: Name des Events fuer den Titel
+        t_stat: t-Statistik (optional, fuer Annotation)
+        p_value: p-Wert (optional, fuer Annotation)
+
+    Returns:
+        go.Figure mit Gauge Indicator
+    """
+    # Farbstufen: Rot → Orange → Gelb → Gruen
+    if score >= 0.7:
+        bar_color = "#00d4aa"
+    elif score >= 0.5:
+        bar_color = "#e8a425"
+    elif score >= 0.3:
+        bar_color = "#ff6b35"
+    else:
+        bar_color = "#ff4757"
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=score,
+        number=dict(
+            font=dict(size=42, color="#FFFFFF", family="DIN Alternate, monospace"),
+            suffix="",
+            valueformat=".3f",
+        ),
+        gauge=dict(
+            axis=dict(
+                range=[0, 1],
+                tickwidth=2,
+                tickcolor="#5a6e85",
+                tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                ticktext=["0", "0.2", "0.4", "0.6", "0.8", "1.0"],
+                tickfont=dict(color="#c8d6e5", size=11),
+            ),
+            bar=dict(color=bar_color, thickness=0.3),
+            bgcolor="rgba(0,0,0,0)",
+            borderwidth=0,
+            steps=[
+                dict(range=[0.0, 0.2], color="#cc0000"),
+                dict(range=[0.2, 0.4], color="#ff4757"),
+                dict(range=[0.4, 0.5], color="#ff6b35"),
+                dict(range=[0.5, 0.6], color="#e8a425"),
+                dict(range=[0.6, 0.8], color="#00d4aa"),
+                dict(range=[0.8, 1.0], color="#00ff99"),
+            ],
+            threshold=dict(
+                line=dict(color="#FFFFFF", width=3),
+                thickness=0.85,
+                value=score,
+            ),
+        ),
+        title=dict(
+            text=f"<b>{event_name}</b>",
+            font=dict(size=14, color="#c8d6e5"),
+        ),
+    ))
+
+    fig.update_layout(
+        paper_bgcolor=SE_COLORS["bg"],
+        plot_bgcolor=SE_COLORS["bg"],
+        height=250,
+        margin=dict(l=30, r=30, t=60, b=20),
+    )
+
+    # Annotation mit t-Stat und p-Wert
+    if t_stat is not None and p_value is not None:
+        fig.add_annotation(
+            text=f"t = {t_stat:.2f} | p = {p_value:.4f}",
+            xref="paper", yref="paper",
+            x=0.5, y=-0.05,
+            showarrow=False,
+            font=dict(size=11, color="#5a6e85"),
+        )
+
+    return fig
 
 
 # ══════════════════════════════════════════════════════
@@ -392,34 +508,79 @@ with tab4:
         if relevance_df.empty:
             st.warning("Keine Events mit genuegend Daten.")
         else:
+            # ── Datentabelle ──
             st.dataframe(relevance_df, use_container_width=True, hide_index=True)
 
-            # Balkendiagramm
-            fig_rel = go.Figure(go.Bar(
-                x=relevance_df["Event"],
-                y=relevance_df["Relevanz"],
-                marker_color=[
-                    SE_COLORS["positive"] if r > 0.6 else SE_COLORS["accent_warm"] if r > 0.4 else SE_COLORS["negative"]
-                    for r in relevance_df["Relevanz"]
-                ],
-                text=[f"{r:.2f}" for r in relevance_df["Relevanz"]],
-                textposition="outside",
-                hovertemplate="<b>%{x}</b><br>Relevanz: %{y:.3f}<br>Oe Rendite: %{customdata[0]:+.2f}%<br>Win-Rate: %{customdata[1]:.0f}%<extra></extra>",
-                customdata=relevance_df[["Oe Rendite", "Win-Rate"]].values,
-            ))
-            fig_rel = apply_se_theme(fig_rel, title="Event-Relevanz Ranking", height=400, show_legend=False)
-            fig_rel.update_yaxes(title="Relevanz-Score")
-            st.plotly_chart(fig_rel, use_container_width=True, config=_PLOTLY_CFG)
+            # ── Gauge-Charts (Tachos) ──
+            st.markdown("---")
+            st.markdown("#### Event-Relevanz Indikatoren")
 
-            # Interpretation
+            # Bis zu 4 Gauges pro Reihe
+            n_events = len(relevance_df)
+            cols_per_row = min(4, n_events)
+
+            for row_start in range(0, n_events, cols_per_row):
+                row_end = min(row_start + cols_per_row, n_events)
+                cols = st.columns(cols_per_row)
+
+                for idx, col in zip(range(row_start, row_end), cols):
+                    row = relevance_df.iloc[idx]
+                    gauge_fig = build_relevance_gauge(
+                        score=row["Relevanz"],
+                        event_name=row["Event"],
+                        t_stat=row.get("t-Statistik"),
+                        p_value=row.get("p-Wert"),
+                    )
+                    with col:
+                        st.plotly_chart(gauge_fig, use_container_width=True, config=_PLOTLY_CFG)
+
+            # ── Erklaertext ──
+            st.markdown("---")
+            with st.expander("📖 So lesen Sie den Event-Relevanz Indikator", expanded=False):
+                st.markdown("""
+**Der Relevanz-Score** wird durch unsere KI-Modelle berechnet und kombiniert drei statistische Dimensionen zu einem Gesamtwert zwischen **0** (keine Relevanz) und **1** (maximale Relevanz):
+
+| Komponente | Gewicht | Bedeutung |
+|------------|---------|-----------|
+| **Signifikanz** (1 − p-Wert) | 50% | Wie unwahrscheinlich ist es, dass der beobachtete Effekt reiner Zufall ist? |
+| **Win-Rate** | 30% | Wie oft tritt der Effekt in die erwartete Richtung auf? |
+| **Effect Size** (Cohen's d) | 20% | Wie gross ist der Effekt im Verhaeltnis zur Streuung? |
+
+**t-Statistik** — Misst die *Signalstaerke*: Wie weit weicht die durchschnittliche Event-Rendite von Null ab, gemessen in Standardfehler-Einheiten? Ein |t| > 2 deutet auf einen robusten Effekt hin.
+
+**p-Wert** — Gibt die Wahrscheinlichkeit an, ein solches Ergebnis (oder extremer) rein zufaellig zu beobachten. Ein p < 0.05 gilt als statistisch signifikant; p < 0.01 als hochsignifikant.
+
+**Farbskala des Tachos:**
+- 🔴 **0.0 – 0.4** → Schwache oder keine Evidenz. Event-Effekt wahrscheinlich zufaellig.
+- 🟡 **0.4 – 0.6** → Moderate Evidenz. Signal vorhanden, aber nicht robust genug fuer systematische Strategien.
+- 🟢 **0.6 – 1.0** → Starke Evidenz. Statistisch signifikanter Effekt mit konsistenter Richtung.
+
+*Die Berechnung basiert auf einem einseitigen t-Test (H₀: mittlere Event-Rendite = 0) kombiniert mit der empirischen Effektgroesse nach Cohen.*
+                """)
+
+            # ── Top-Event Info ──
             top = relevance_df.iloc[0]
-            st.info(
-                f'**Relevantestes Event: {top["Event"]}** — '
-                f'Relevanz-Score: {top["Relevanz"]:.3f} | '
-                f'p-Wert: {top["p-Wert"]:.4f} | '
-                f'Oe Rendite: {top["Oe Rendite"]:+.2f}% | '
-                f'Win-Rate: {top["Win-Rate"]:.0f}%'
-            )
+            if top["Relevanz"] >= 0.6:
+                st.success(
+                    f'**Relevantestes Event: {top["Event"]}** — '
+                    f'Score: {top["Relevanz"]:.3f} | '
+                    f'p = {top["p-Wert"]:.4f} | '
+                    f'Oe Rendite: {top["Oe Rendite"]:+.2f}% | '
+                    f'Win-Rate: {top["Win-Rate"]:.0f}%'
+                )
+            elif top["Relevanz"] >= 0.4:
+                st.info(
+                    f'**Relevantestes Event: {top["Event"]}** — '
+                    f'Score: {top["Relevanz"]:.3f} (moderate Evidenz) | '
+                    f'p = {top["p-Wert"]:.4f} | '
+                    f'Oe Rendite: {top["Oe Rendite"]:+.2f}%'
+                )
+            else:
+                st.warning(
+                    f'**Relevantestes Event: {top["Event"]}** — '
+                    f'Score: {top["Relevanz"]:.3f} (schwache Evidenz) | '
+                    f'Kein statistisch signifikanter Effekt gefunden.'
+                )
 
 # ── Disclaimer ──
 st.markdown("---")
