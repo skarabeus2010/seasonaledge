@@ -7,7 +7,7 @@ Box-Plots, Heatmaps, Kontext-Panels für Rendite-Verteilungen.
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from shared.constants import SE_COLORS
+from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
 from shared.charts import apply_se_theme, apply_se_heatmap_theme, apply_se_box_theme
 
 
@@ -126,15 +126,11 @@ def build_decade_monthly_heatmap(
         z=z,
         x=MONTH_LABELS,
         y=y_labels,
-        colorscale=[
-            [0.0, SE_COLORS["negative"]],
-            [0.5, SE_COLORS["surface"]],
-            [1.0, SE_COLORS["positive"]],
-        ],
+        colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
         text=np.round(z, 2),
         texttemplate="%{text:+.1f}%",
-        textfont=dict(size=10, color=SE_COLORS["text_muted"]),
+        textfont=dict(size=10, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate=(
             "<b>%{y} · %{x}</b><br>"
             "Ø Rendite: %{z:+.2f}%<extra></extra>"

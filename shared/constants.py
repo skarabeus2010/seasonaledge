@@ -48,6 +48,18 @@ SE_COLORS = {
     "watermark":     "rgba(255,255,255,0.03)",
 }
 
+# ── Standard-Heatmap Colorscale (Ampelsystem) ──────────────────────
+# Leuchtend, hoher Kontrast, symmetrisch um 0
+SE_HEATMAP_COLORSCALE = [
+    [0.0,  "#cc0000"],     # Starkes Rot (extrem negativ)
+    [0.25, "#ff4757"],     # SE negative (leicht negativ)
+    [0.5,  "#0f1923"],     # SE surface (neutral/null)
+    [0.75, "#00d4aa"],     # SE positive (leicht positiv)
+    [1.0,  "#00ff99"],     # Leuchtend Gruen (extrem positiv)
+]
+
+SE_HEATMAP_TEXT_COLOR = "#FFFFFF"
+
 # ── Farben (Backward-Kompatibilität) ────────────────────────
 COLOR_SEASONAL_AVG = SE_COLORS["avg_line"]
 COLOR_INDIVIDUAL = SE_COLORS["individual"]

@@ -275,11 +275,11 @@ def build_heatmap(stats, ticker):
         x=WEEKDAY_LABELS_SHORT,
         y=MONTH_NAMES_DE,
         colorscale=[
-            [0.0, "#B71C1C"],    # dunkelrot
-            [0.35, "#F44336"],   # rot
-            [0.5, "#1a1a2e"],    # neutral (dunkel)
-            [0.65, "#4CAF50"],   # grün
-            [1.0, "#1B5E20"],    # dunkelgrün
+            [0.0,  "#cc0000"],   # starkes Rot
+            [0.25, "#ff4757"],   # SE negative
+            [0.5,  "#0f1923"],   # SE surface (neutral)
+            [0.75, "#00d4aa"],   # SE positive
+            [1.0,  "#00ff99"],   # leuchtend Gruen
         ],
         zmin=-max_abs,
         zmax=max_abs,

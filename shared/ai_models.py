@@ -409,7 +409,7 @@ def build_anomaly_heatmap_figure(
         zmax=max(np.max(matrix), 1),  # Verhindere Division by zero
         text=np.round(matrix, 0).astype(int).astype(str),
         texttemplate="%{text}",
-        textfont=dict(size=10, color=SE_COLORS["text_primary"]),
+        textfont=dict(size=10, color="#FFFFFF"),
         hovertemplate=(
             "<b>%{y} / %{x}</b><br>"
             "Anomalie-Score: %{z:.1f}<extra></extra>"

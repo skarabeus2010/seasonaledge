@@ -521,15 +521,8 @@ def build_monthly_heatmap(year_data, ticker):
         z_data.append(row)
         y_labels.append(str(year))
 
-    colorscale = [
-        [0.0, "#d32f2f"],
-        [0.25, "#ef5350"],
-        [0.45, "#ffcdd2"],
-        [0.5, "#f5f5f5"],
-        [0.55, "#c8e6c9"],
-        [0.75, "#66bb6a"],
-        [1.0, "#2e7d32"],
-    ]
+    from shared.constants import SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
+    colorscale = SE_HEATMAP_COLORSCALE
 
     fig = go.Figure(data=go.Heatmap(
         z=z_data,
@@ -539,7 +532,7 @@ def build_monthly_heatmap(year_data, ticker):
         zmid=0,
         text=[[f"{v:+.1f}%" for v in row] for row in z_data],
         texttemplate="%{text}",
-        textfont=dict(size=11, color="#1a1a1a"),
+        textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
             title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
