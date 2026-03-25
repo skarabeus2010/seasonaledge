@@ -1,7 +1,8 @@
 """
 SeasonalEdge - Weekday Performance
 ====================================
-Wochentags-Performance (Mo-Fr) mit verschiedenen Rendite-Berechnungen und Filtern.
+Wochentags-Performance (Mo-Fr) mit verschiedenen Rendite-Berechnungen,
+Praesidentenzyklus-Filter und Monat x Wochentag Heatmap.
 """
 
 import sys, os, pathlib
@@ -19,7 +20,7 @@ if _project_dir not in sys.path:
 
 import streamlit as st
 
-st.set_page_config(page_title="Wochentagseffekt Aktien & ETFs – SeasonalEdge", page_icon="📅", layout="wide")
+st.set_page_config(page_title="Wochentagseffekt Aktien & ETFs – SeasonalAlpha", page_icon="📅", layout="wide")
 
 import pandas as pd
 import numpy as np
@@ -27,19 +28,20 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
 
-from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE
+from shared.constants import (
+    DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS,
+    SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR,
+)
 from shared.data import download_data
-from shared.charts import apply_se_theme
-from shared.constants import SE_COLORS
-
-st.set_page_config(page_title="SeasonalEdge - Weekday", page_icon="📅", layout="wide")
+from shared.charts import apply_se_theme, apply_se_heatmap_theme
+from shared.calculations import get_presidential_cycle_year
 
 from shared.design import inject_se_css
 inject_se_css()
 
 
 # ══════════════════════════════════════════════════════════════
-# BERECHNUNG
+# KONSTANTEN
 # ══════════════════════════════════════════════════════════════
 
 WEEKDAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
@@ -65,74 +67,80 @@ RETURN_MODES = {
 }
 
 
+# ══════════════════════════════════════════════════════════════
+# BERECHNUNG
+# ══════════════════════════════════════════════════════════════
+
 def calculate_weekday_stats(df, return_mode, years_back,
                             filter_mode="Kein Filter",
-                            sma_days=200, rsi_days=14, rsi_threshold=30):
+                            sma_days=200, rsi_days=14, rsi_threshold=30,
+                            cycle_filter=None):
     """
-    Berechne Weekday-Performance mit wählbarem Rendite-Modus und Filtern.
-    
+    Berechne Weekday-Performance mit waehlbarem Rendite-Modus und Filtern.
+
     Args:
         df: Raw DataFrame mit Open, Close, High, Low (DatetimeIndex)
         return_mode: Key aus RETURN_MODES
         years_back: Anzahl Jahre Lookback
         filter_mode: "Kein Filter", "Trendfilter (SMA)", "OBOS-Filter (RSI)"
-        sma_days: Tage für SMA-Berechnung
-        rsi_days: Tage für RSI-Berechnung
+        sma_days: Tage fuer SMA-Berechnung
+        rsi_days: Tage fuer RSI-Berechnung
         rsi_threshold: RSI-Schwelle (kaufen wenn RSI darunter)
-    
+        cycle_filter: Liste von Praesidentenzyklus-Labels oder None
+
     Returns:
-        dict: {
-            "by_weekday": {0: {avg, median, std, count, win_rate, returns}, ...},
-            "by_month_weekday": {(month, weekday): {avg, count, win_rate}, ...},
-            "filtered_count": int,
-            "total_count": int
-        }
+        dict mit by_weekday, by_month_weekday, filtered_count, total_count
     """
     df = df.copy()
-    
+
     # ── Zeitraum filtern ──
     cutoff = df.index.max() - pd.DateOffset(years=years_back)
     df = df[df.index >= cutoff]
-    
+
     if len(df) < 20:
         return None
-    
+
+    # ── Praesidentenzyklus-Filter ──
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+        if len(df) < 20:
+            return None
+
     # ── Rendite berechnen ──
     df["wd_return"] = RETURN_MODES[return_mode]["calc"](df)
-    
+
     # ── Wochentag und Monat ──
     df["weekday"] = df.index.weekday  # 0=Mo, 4=Fr
     df["month"] = df.index.month
-    
+
     # ── Filter anwenden ──
     df["filter_pass"] = True
     total_count = len(df)
-    
+
     if filter_mode == "Trendfilter (SMA)":
         df["sma"] = df["Close"].rolling(sma_days, min_periods=sma_days).mean()
-        # Kaufen nur wenn Schlusskurs t-1 über SMA → wir prüfen Close von GESTERN
         df["filter_pass"] = df["Close"].shift(1) > df["sma"].shift(1)
-        
+
     elif filter_mode == "OBOS-Filter (RSI)":
-        # RSI berechnen
         delta = df["Close"].diff()
         gain = delta.where(delta > 0, 0.0).rolling(rsi_days).mean()
         loss = (-delta.where(delta < 0, 0.0)).rolling(rsi_days).mean()
         rs = gain / loss.replace(0, np.nan)
         df["rsi"] = 100 - (100 / (1 + rs))
-        # Kaufen nur wenn RSI von gestern unter Schwelle
         df["filter_pass"] = df["rsi"].shift(1) < rsi_threshold
-    
-    # Nur Wochentage Mo-Fr und gültige Returns
+
+    # Nur Wochentage Mo-Fr und gueltige Returns
     df = df[(df["weekday"] <= 4) & df["wd_return"].notna()]
-    
+
     # Gefilterte Daten
     df_filtered = df[df["filter_pass"]].copy()
     filtered_count = len(df_filtered)
-    
+
     if filtered_count < 10:
         return None
-    
+
     # ── Statistik pro Wochentag ──
     by_weekday = {}
     for wd in range(5):
@@ -141,7 +149,7 @@ def calculate_weekday_stats(df, return_mode, years_back,
             by_weekday[wd] = {"avg": 0, "median": 0, "std": 0, "count": 0,
                               "win_rate": 0, "returns": []}
             continue
-        
+
         wins = (subset > 0).sum()
         by_weekday[wd] = {
             "avg": subset.mean(),
@@ -151,8 +159,8 @@ def calculate_weekday_stats(df, return_mode, years_back,
             "win_rate": wins / len(subset) * 100,
             "returns": subset.tolist()
         }
-    
-    # ── Statistik pro Monat × Wochentag ──
+
+    # ── Statistik pro Monat x Wochentag ──
     by_month_weekday = {}
     for month in range(1, 13):
         for wd in range(5):
@@ -161,14 +169,14 @@ def calculate_weekday_stats(df, return_mode, years_back,
             if len(subset) == 0:
                 by_month_weekday[(month, wd)] = {"avg": 0, "count": 0, "win_rate": 0}
                 continue
-            
+
             wins = (subset > 0).sum()
             by_month_weekday[(month, wd)] = {
                 "avg": subset.mean(),
                 "count": len(subset),
                 "win_rate": wins / len(subset) * 100
             }
-    
+
     return {
         "by_weekday": by_weekday,
         "by_month_weekday": by_month_weekday,
@@ -183,21 +191,21 @@ def calculate_weekday_stats(df, return_mode, years_back,
 
 def build_weekday_bar_chart(stats, ticker, return_mode):
     """Balkendiagramm: Ø Rendite + Win Rate pro Wochentag."""
-    
+
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("Ø Tagesrendite (%)", "Win Rate (%)"),
         horizontal_spacing=0.12
     )
-    
+
     wd_data = stats["by_weekday"]
     avgs = [wd_data[wd]["avg"] for wd in range(5)]
     win_rates = [wd_data[wd]["win_rate"] for wd in range(5)]
     counts = [wd_data[wd]["count"] for wd in range(5)]
-    
-    # Farben: grün wenn positiv, rot wenn negativ
-    bar_colors = ["#4CAF50" if v >= 0 else "#F44336" for v in avgs]
-    
+
+    # Farben: SE positiv/negativ
+    bar_colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+
     # ── Rendite-Balken ──
     fig.add_trace(
         go.Bar(
@@ -212,9 +220,9 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
         ),
         row=1, col=1
     )
-    
+
     # ── Win Rate Balken ──
-    wr_colors = ["#4CAF50" if v >= 50 else "#F44336" for v in win_rates]
+    wr_colors = [SE_COLORS["positive"] if v >= 50 else SE_COLORS["negative"] for v in win_rates]
     fig.add_trace(
         go.Bar(
             x=WEEKDAY_LABELS,
@@ -228,30 +236,36 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
         ),
         row=1, col=2
     )
-    
+
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=1)
     fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=2)
-    
+
     mode_short = return_mode.split("(")[0].strip()
     fig = apply_se_theme(fig, title=f"{ticker} — Weekday Performance · {mode_short}", height=380)
-    
+
     fig.update_yaxes(tickformat="+.3f", ticksuffix="%", row=1, col=1,
                      gridcolor="rgba(255,255,255,0.06)")
     fig.update_yaxes(range=[0, 100], ticksuffix="%", row=1, col=2,
                      gridcolor="rgba(255,255,255,0.06)")
-    
+
     return fig
 
 
 def build_heatmap(stats, ticker):
-    """Heatmap: Monat × Wochentag (Ø Rendite, farbcodiert)."""
-    
+    """Heatmap: Monat x Wochentag (Ø Rendite, farbcodiert).
+    Nutzt das zentrale SE Heatmap-Design (wie Dekadenzyklus).
+    Aktueller Monat + Wochentag wird mit gelbem Rahmen markiert.
+    """
+
     mwd = stats["by_month_weekday"]
-    
+    now = datetime.now()
+    current_month = now.month       # 1-12
+    current_weekday = now.weekday() # 0=Mo, 4=Fr
+
     # Matrix aufbauen: Zeilen = Monate, Spalten = Wochentage
     z_values = []
     hover_texts = []
-    
+
     for month in range(1, 13):
         row_z = []
         row_hover = []
@@ -266,37 +280,44 @@ def build_heatmap(stats, ticker):
             )
         z_values.append(row_z)
         hover_texts.append(row_hover)
-    
-    # Symmetrische Farbskala: max(abs) als Grenze
-    max_abs = max(abs(v) for row in z_values for v in row) if z_values else 0.1
-    
-    fig = go.Figure(data=go.Heatmap(
-        z=z_values,
+
+    z_arr = np.array(z_values)
+
+    fig = go.Figure(go.Heatmap(
+        z=z_arr,
         x=WEEKDAY_LABELS_SHORT,
         y=MONTH_NAMES_DE,
-        colorscale=[
-            [0.0,  "#cc0000"],   # starkes Rot
-            [0.25, "#ff4757"],   # SE negative
-            [0.5,  "#0f1923"],   # SE surface (neutral)
-            [0.75, "#00d4aa"],   # SE positive
-            [1.0,  "#00ff99"],   # leuchtend Gruen
-        ],
-        zmin=-max_abs,
-        zmax=max_abs,
-        text=[[f"{v:+.3f}%" for v in row] for row in z_values],
-        texttemplate="%{text}",
-        textfont=dict(size=11, color="white"),
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=0,
+        text=np.round(z_arr, 2),
+        texttemplate="%{text:+.2f}%",
+        textfont=dict(size=10, color=SE_HEATMAP_TEXT_COLOR),
         hovertext=hover_texts,
         hovertemplate="%{hovertext}<extra></extra>",
         colorbar=dict(
-            title=dict(text="Ø %", font=dict(size=11)),
+            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+            ticksuffix="%",
             tickformat="+.2f",
-            ticksuffix="%"
-        )
+            tickfont=dict(color=SE_COLORS["text_muted"]),
+        ),
     ))
-    
-    fig = apply_se_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
-    
+
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
+    fig.update_xaxes(side="bottom", type="category")
+    fig.update_yaxes(autorange="reversed", type="category")
+
+    # ── Gelber Rahmen um aktuelle Zelle (Monat + Wochentag) ──
+    if 0 <= current_weekday <= 4:
+        # x-Index = Wochentag (0-4), y-Index = Monat-1 (0-11)
+        fig.add_shape(
+            type="rect",
+            x0=current_weekday - 0.5, x1=current_weekday + 0.5,
+            y0=current_month - 1 - 0.5, y1=current_month - 1 + 0.5,
+            line=dict(color="#FFD700", width=3.5),
+            fillcolor="rgba(0,0,0,0)",
+            layer="above",
+        )
+
     return fig
 
 
@@ -308,70 +329,77 @@ def main():
     with st.sidebar:
         st.markdown("## 📅 Weekday Performance")
         st.markdown("---")
-        
+
         ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="wd_ticker").upper().strip()
-        
+
         years_back = st.slider("Analyse-Zeitraum (Jahre)", 1, 30, 10, key="wd_years")
-        
+
         st.markdown("---")
         st.markdown("### Rendite-Berechnung")
-        
+
         return_mode = st.radio(
             "Modus",
             options=list(RETURN_MODES.keys()),
             index=0,
-            help="Welche Kurse werden für die Rendite-Berechnung verwendet?"
+            help="Welche Kurse werden fuer die Rendite-Berechnung verwendet?"
         )
         st.caption(f"_{RETURN_MODES[return_mode]['desc']}_")
-        
+
         st.markdown("---")
         st.markdown("### Filter")
-        
+
         filter_mode = st.radio(
             "Einstiegsfilter",
             ["Kein Filter", "Trendfilter (SMA)", "OBOS-Filter (RSI)"],
             index=0,
             help="Filtert Tage heraus, die nicht zur Bedingung passen"
         )
-        
+
         sma_days = 200
         rsi_days = 14
         rsi_threshold = 30
-        
+
         if filter_mode == "Trendfilter (SMA)":
             sma_days = st.slider("SMA Periode (Tage)", 20, 400, 200,
                                  help="Nur kaufen wenn Close t-1 > SMA")
-        
+
         elif filter_mode == "OBOS-Filter (RSI)":
             rsi_days = st.slider("RSI Periode (Tage)", 5, 30, 14)
             rsi_threshold = st.slider("RSI Schwelle (kaufen wenn darunter)", 10, 50, 30,
                                       help="Nur kaufen wenn RSI t-1 < Schwelle")
 
         st.markdown("---")
-        from shared.outlier_manager import outlier_sidebar
-        outlier_method = outlier_sidebar()
+        st.markdown("### Praesidentenzyklus")
+        cycle_filter = st.multiselect(
+            "Zyklusjahre filtern",
+            options=list(CYCLE_COLORS.keys()),
+            default=None, key="wd_cycle",
+            help="Nur Jahre mit bestimmtem Zyklusjahr beruecksichtigen (leer = alle)"
+        )
 
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
-    
+
     if raw_df is None or raw_df.empty:
-        st.error(f"Keine Daten für '{ticker}' gefunden.")
+        st.error(f"Keine Daten fuer '{ticker}' gefunden.")
         return
-    
+
     # ── Berechnung ────────────────────────────────────
     stats = calculate_weekday_stats(
         raw_df, return_mode, years_back,
-        filter_mode, sma_days, rsi_days, rsi_threshold
+        filter_mode, sma_days, rsi_days, rsi_threshold,
+        cycle_filter=cycle_filter if cycle_filter else None
     )
-    
+
     if stats is None:
-        st.warning("Nicht genügend Daten für die Analyse.")
+        st.warning("Nicht genuegend Daten fuer die Analyse.")
         return
 
-    # ── Outlier-Filter (kein year_data → nur Info) ───
-    from shared.outlier_manager import filter_year_data, outlier_info_box
-    outlier_info_box([], outlier_method)
+    # ── Zyklusfilter-Info ──────────────────────────────
+    if cycle_filter:
+        cycle_info = ", ".join([c.split("(")[1].rstrip(")") for c in cycle_filter])
+        st.info(f"**Zyklusfilter aktiv:** {cycle_info}")
 
     # ── Filter-Info ───────────────────────────────────
     if filter_mode != "Kein Filter":
@@ -380,14 +408,14 @@ def main():
             f"**Filter aktiv:** {filter_mode} · "
             f"{stats['filtered_count']} von {stats['total_count']} Tagen passieren den Filter ({pct:.0f}%)"
         )
-    
+
     # ── Balkendiagramm ────────────────────────────────
     bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
     st.plotly_chart(bar_fig, use_container_width=True)
-    
+
     # ── Detailtabelle ─────────────────────────────────
     st.markdown("#### 📋 Statistik pro Wochentag")
-    
+
     wd_rows = []
     for wd in range(5):
         d = stats["by_weekday"][wd]
@@ -399,23 +427,23 @@ def main():
             "Win Rate": f"{d['win_rate']:.1f}%",
             "Anzahl": d["count"]
         })
-    
+
     st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
-    
-    # ── Heatmap Monat × Wochentag ────────────────────
+
+    # ── Heatmap Monat x Wochentag ────────────────────
     st.markdown("---")
     st.markdown("#### 🗓️ Monat × Wochentag Heatmap")
-    
+
     heatmap_fig = build_heatmap(stats, ticker)
     st.plotly_chart(heatmap_fig, use_container_width=True)
-    
+
     # ── Top / Flop Kombinationen ──────────────────────
     st.markdown("---")
-    
+
     mwd = stats["by_month_weekday"]
     combos = []
     for (month, wd), data in mwd.items():
-        if data["count"] >= 3:  # Mindestens 3 Datenpunkte
+        if data["count"] >= 3:
             combos.append({
                 "Monat": MONTH_NAMES_DE[month - 1],
                 "Wochentag": WEEKDAY_LABELS[wd],
@@ -423,35 +451,37 @@ def main():
                 "Win Rate": data["win_rate"],
                 "n": data["count"]
             })
-    
+
     if combos:
         sorted_combos = sorted(combos, key=lambda x: x["Ø Rendite"], reverse=True)
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.markdown("#### 🟢 Top 10 beste Kombinationen")
             top_df = pd.DataFrame(sorted_combos[:10])
             top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
             top_df["Win Rate"] = top_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
             st.dataframe(top_df, use_container_width=True, hide_index=True)
-        
+
         with col2:
             st.markdown("#### 🔴 Top 10 schlechteste Kombinationen")
             flop_df = pd.DataFrame(sorted_combos[-10:][::-1])
             flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
             flop_df["Win Rate"] = flop_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
             st.dataframe(flop_df, use_container_width=True, hide_index=True)
-    
+
     # ── Dateninfo ─────────────────────────────────────
     with st.expander("ℹ️ Dateninfo"):
+        cycle_str = ", ".join(cycle_filter) if cycle_filter else "Kein Filter"
         st.markdown(f"""
-        **Ticker:** {ticker}  
-        **Zeitraum:** Letzte {years_back} Jahre  
-        **Rendite-Modus:** {return_mode}  
-        **Beschreibung:** {RETURN_MODES[return_mode]['desc']}  
-        **Filter:** {filter_mode}  
-        **Handelstage analysiert:** {stats['filtered_count']}  
+        **Ticker:** {ticker}
+        **Zeitraum:** Letzte {years_back} Jahre
+        **Rendite-Modus:** {return_mode}
+        **Beschreibung:** {RETURN_MODES[return_mode]['desc']}
+        **Filter:** {filter_mode}
+        **Praesidentenzyklus:** {cycle_str}
+        **Handelstage analysiert:** {stats['filtered_count']}
         """)
 
 
