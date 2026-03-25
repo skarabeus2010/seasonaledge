@@ -17,6 +17,9 @@ COPY . .
 # Streamlit Config
 RUN mkdir -p /app/.streamlit
 
+# Verzeichnisse fuer SEO-Seiten und statische Dateien (werden per Volume gemountet)
+RUN mkdir -p /app/seo/output /app/static
+
 # Port 8501 (Streamlit Standard)
 EXPOSE 8501
 

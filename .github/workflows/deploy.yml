@@ -17,5 +17,7 @@ jobs:
           script: |
             cd /opt/seasonaledge
             git pull origin master
+            pip install -q Jinja2 2>/dev/null || pip3 install -q Jinja2 2>/dev/null
+            python3 seo/programmatic_seo_builder.py
             docker compose up -d --build
             echo "Deploy done: $(date)"
