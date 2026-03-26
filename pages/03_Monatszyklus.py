@@ -329,60 +329,39 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
 
 
 def build_live_chart(raw_df, ticker, days=90):
-    """Aktueller Kurschart (Candlestick + Volume) der letzten N Handelstage."""
+    """Aktueller Kursverlauf als normalisierte Linie (Start=100), wie Jahreszyklus."""
     df_live = raw_df.tail(days).copy()
-    if "Date" not in df_live.columns and df_live.index.name == "Date":
-        df_live = df_live.reset_index()
     if len(df_live) < 5:
         return None
 
-    fig = go.Figure()
+    if "Date" not in df_live.columns and df_live.index.name == "Date":
+        df_live = df_live.reset_index()
 
-    # Candlestick
-    fig.add_trace(go.Candlestick(
-        x=df_live["Date"],
-        open=df_live["Open"], high=df_live["High"],
-        low=df_live["Low"], close=df_live["Close"],
-        increasing_line_color=SE_COLORS["positive"],
-        decreasing_line_color=SE_COLORS["negative"],
-        increasing_fillcolor=SE_COLORS["positive"],
-        decreasing_fillcolor=SE_COLORS["negative"],
-        name="OHLC",
+    # Normalisiert auf 100
+    start_price = df_live["Close"].iloc[0]
+    df_live["norm"] = (df_live["Close"] / start_price) * 100
+
+    pct_chg = (df_live["Close"].iloc[-1] / start_price - 1) * 100
+    sign = "+" if pct_chg >= 0 else ""
+    line_color = "#F1C40F"
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df_live["Date"], y=df_live["norm"], mode="lines",
+        line=dict(color=line_color, width=2.5),
+        name=f"{ticker} ({sign}{pct_chg:.1f}%)",
+        hovertemplate="%{x|%d.%m.%Y}<br>%{y:.2f}<extra></extra>",
     ))
 
-    # Volume als Balken auf sekundaerer Y-Achse
-    if "Volume" in df_live.columns and df_live["Volume"].sum() > 0:
-        vol_colors = [
-            SE_COLORS["positive"] if c >= o else SE_COLORS["negative"]
-            for c, o in zip(df_live["Close"], df_live["Open"])
-        ]
-        fig.add_trace(go.Bar(
-            x=df_live["Date"], y=df_live["Volume"],
-            marker_color=vol_colors, opacity=0.3,
-            name="Volume", yaxis="y2",
-            hovertemplate="Vol: %{y:,.0f}<extra></extra>",
-        ))
-
-    last_close = df_live["Close"].iloc[-1]
-    last_date = df_live["Date"].iloc[-1]
-    pct_chg = (df_live["Close"].iloc[-1] / df_live["Close"].iloc[0] - 1) * 100
-    sign = "+" if pct_chg >= 0 else ""
+    fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
 
     fig = apply_se_theme(
         fig,
-        title=f"{ticker} — Live-Chart (letzte {len(df_live)} Tage) | {last_close:,.2f} ({sign}{pct_chg:.1f}%)",
-        height=380,
-        show_legend=False,
+        title=f"{ticker} — Kursverlauf (letzte {len(df_live)} Handelstage) | {sign}{pct_chg:.1f}%",
+        height=350,
+        show_legend=True,
     )
-
-    fig.update_layout(
-        xaxis_rangeslider_visible=False,
-        yaxis2=dict(
-            overlaying="y", side="right",
-            showgrid=False, showticklabels=False,
-            range=[0, df_live["Volume"].max() * 4] if "Volume" in df_live.columns and df_live["Volume"].sum() > 0 else None,
-        ),
-    )
+    fig.update_layout(yaxis_title="Normalisiert (Start = 100)")
     return fig
 
 

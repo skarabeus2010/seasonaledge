@@ -309,7 +309,7 @@ st.markdown("""
   </svg>
   <div class="se-eyebrow">Traditionelle Saisonalitaet trifft Intelligenz.</div>
   <div class="se-h1">
-    <span class="gold">Seasonal</span><span class="blue">Alpha</span>&nbsp;<span class="white">BETA</span>
+    <span class="gold">Season</span><span class="blue">Alpha</span>&nbsp;<span class="white">BETA</span>
   </div>
   <div class="se-sub">
     Datengetriebene Saisonalitaets-Analyse mit KI.<br>
