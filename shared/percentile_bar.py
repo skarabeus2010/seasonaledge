@@ -1,8 +1,8 @@
 """
-SeasonAlpha — Perzentil-Statusbar (Premium Dark Mode)
-=====================================================
-Wiederverwendbare Komponente: Zeigt aktuelle Performance vs. historischen
-Durchschnitt mit elegantem Perzentil-Balken, Z-Score und Einordnung.
+SeasonAlpha — Perzentil Stat-Ribbon (Premium Dark Mode)
+=======================================================
+Kompakte einzeilige Stat-Leiste: Aktuelle Performance vs. historischen
+Durchschnitt mit Micro-Gauge, Perzentil-Badge und Z-Score.
 """
 
 import numpy as np
@@ -16,7 +16,7 @@ def render_percentile_bar(
     value_fmt: str = "+.2f",
     suffix: str = "%",
 ):
-    """Rendert eine kompakte Perzentil-Statusbar unter einem Chart.
+    """Rendert eine kompakte einzeilige Stat-Ribbon unter einem Chart.
 
     Parameters
     ----------
@@ -25,7 +25,7 @@ def render_percentile_bar(
     hist_values : list[float]
         Historische Vergleichswerte (gleiche Metrik, gleicher Zeitpunkt).
     label : str
-        Kontextlabel — Format: "Sekundaer · Primaer" (z.B. "HT 58/252 · AAPL 2026").
+        Kontextlabel (z.B. "HT 58/252 · AAPL 2026", "TDOM 18 · Mär 2026").
     value_fmt : str
         Format-String fuer Werte (default: "+.2f").
     suffix : str
@@ -43,17 +43,7 @@ def render_percentile_bar(
 
     z_score = delta / hist_std if hist_std > 0 else 0.0
 
-    if z_score > 1.5:
-        z_label = "ungewoehnlich stark"
-    elif z_score > 0.5:
-        z_label = "ueberdurchschnittlich"
-    elif z_score > -0.5:
-        z_label = "durchschnittlich"
-    elif z_score > -1.5:
-        z_label = "unterdurchschnittlich"
-    else:
-        z_label = "ungewoehnlich schwach"
-
+    # ── Farben ───────────────────────────────────────
     cur_clr = "#34d399" if current_value >= 0 else "#f87171"
     delta_clr = "#34d399" if delta >= 0 else "#f87171"
 
@@ -64,97 +54,67 @@ def render_percentile_bar(
     else:
         marker_clr = "#f87171"
 
-    bar_pos = max(3, min(97, percentile))
+    bar_pos = max(2, min(98, percentile))
 
+    # ── Label aufteilen ──────────────────────────────
     parts = label.split(" · ", 1)
-    secondary_label = parts[0] if len(parts) > 1 else ""
-    primary_label = parts[1] if len(parts) > 1 else label
+    context_label = parts[0] if len(parts) > 0 else ""
+    title_label = parts[1] if len(parts) > 1 else ""
 
-    sec_html = (f'<span style="font-size:11px; color:#64748b; font-weight:500; '
-                f'letter-spacing:0.3px;">{secondary_label}</span>'
-                if secondary_label else '')
+    title_html = (f'<span style="font-size:11px; font-weight:600; color:#cbd5e1;">'
+                  f'{title_label}</span>' if title_label else '')
 
     html = (
-        f'<div style="background:linear-gradient(135deg, #0f1318 0%, #141a21 50%, #0f1318 100%);'
-        f'border:1px solid rgba(255,255,255,0.07); border-radius:12px;'
-        f'padding:18px 22px; margin:6px 0 18px 0;">'
+        # Outer Container: schmale Ribbon
+        f'<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;'
+        f'padding:8px 16px; margin:2px 0 10px 0;'
+        f'border-top:1px solid rgba(255,255,255,0.04);'
+        f'border-bottom:1px solid rgba(255,255,255,0.04);'
+        f'background:rgba(15,19,24,0.5);">'
 
-        # Header
-        f'<div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;'
-        f'margin-bottom:14px;">'
-        f'{sec_html}'
-        f'<span style="font-size:14px; font-weight:700; color:#f1f5f9;'
-        f'letter-spacing:0.2px;">{primary_label}</span>'
-        f'<span style="flex:1;"></span>'
-        f'<span style="font-size:18px; font-weight:800; color:{cur_clr};'
-        f'letter-spacing:-0.3px;">{current_value:{value_fmt}}{suffix}</span>'
-        f'</div>'
+        # 1) Kontext (links, dezent)
+        f'<span style="font-size:10px; color:#475569; font-weight:500;'
+        f'letter-spacing:0.3px; white-space:nowrap;">'
+        f'{context_label}</span>'
+        f'{title_html}'
 
-        # Kontext-Zeile
-        f'<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;'
-        f'margin-bottom:14px;">'
-        f'<span style="font-size:12px; color:#64748b;">'
-        f'Ø historisch: <span style="color:#94a3b8; font-weight:600;">'
-        f'{hist_mean:{value_fmt}}{suffix}</span></span>'
-        f'<span style="font-size:12px; font-weight:600; color:{delta_clr};'
-        f'background:{delta_clr}14; padding:3px 10px; border-radius:6px;'
-        f'border:1px solid {delta_clr}25;">'
-        f'{delta:{value_fmt}}{suffix} vs. Ø</span>'
-        f'</div>'
+        # 2) Performance: aktuell + Ø + Delta-Badge
+        f'<span style="font-size:14px; font-weight:800; color:{cur_clr};'
+        f'letter-spacing:-0.3px; white-space:nowrap;">'
+        f'{current_value:{value_fmt}}{suffix}</span>'
 
-        # Gauge-Balken
-        f'<div style="position:relative; height:32px;'
+        f'<span style="font-size:10px; color:#64748b; white-space:nowrap;">'
+        f'Ø {hist_mean:{value_fmt}}{suffix}</span>'
+
+        f'<span style="font-size:10px; font-weight:600; color:{delta_clr};'
+        f'background:{delta_clr}12; padding:2px 7px; border-radius:4px;'
+        f'border:1px solid {delta_clr}20; white-space:nowrap;">'
+        f'{delta:{value_fmt}} vs. Ø</span>'
+
+        # 3) Micro-Gauge (hauchdünner Balken)
+        f'<div style="flex:1; min-width:80px; max-width:160px;'
+        f'position:relative; height:6px;'
         f'background:linear-gradient(90deg,'
-        f'rgba(248,113,113,0.08) 0%,'
-        f'rgba(148,163,184,0.06) 40%,'
-        f'rgba(148,163,184,0.06) 60%,'
-        f'rgba(52,211,153,0.08) 100%);'
-        f'border-radius:8px; border:1px solid rgba(255,255,255,0.05);'
-        f'margin-bottom:12px; overflow:visible;">'
+        f'rgba(248,113,113,0.25) 0%,'
+        f'rgba(148,163,184,0.10) 50%,'
+        f'rgba(52,211,153,0.25) 100%);'
+        f'border-radius:3px; overflow:visible;">'
 
-        # Trennlinien
-        f'<div style="position:absolute; top:4px; bottom:4px; left:40%;'
-        f'width:1px; background:rgba(255,255,255,0.06);"></div>'
-        f'<div style="position:absolute; top:4px; bottom:4px; left:60%;'
-        f'width:1px; background:rgba(255,255,255,0.06);"></div>'
-
-        # Zone-Labels
-        f'<span style="position:absolute; left:12px; top:50%; transform:translateY(-50%);'
-        f'font-size:10px; color:#64748b; font-weight:500; letter-spacing:0.5px;'
-        f'text-transform:uppercase;">schwach</span>'
-        f'<span style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);'
-        f'font-size:10px; color:#64748b; font-weight:500;">Ø</span>'
-        f'<span style="position:absolute; right:12px; top:50%; transform:translateY(-50%);'
-        f'font-size:10px; color:#64748b; font-weight:500; letter-spacing:0.5px;'
-        f'text-transform:uppercase;">stark</span>'
-
-        # Marker mit Glow
-        f'<div style="position:absolute; top:-4px; left:{bar_pos}%;'
-        f'transform:translateX(-50%); z-index:3;">'
-        f'<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);'
-        f'width:16px; height:40px;'
-        f'background:radial-gradient(ellipse, {marker_clr}40 0%, transparent 70%);'
-        f'pointer-events:none;"></div>'
-        f'<div style="width:4px; height:40px; background:{marker_clr};'
-        f'border-radius:3px;'
-        f'box-shadow:0 0 10px {marker_clr}80, 0 0 20px {marker_clr}30;"></div>'
+        # Marker
+        f'<div style="position:absolute; top:-3px; left:{bar_pos}%;'
+        f'transform:translateX(-50%); width:4px; height:12px;'
+        f'background:{marker_clr}; border-radius:2px;'
+        f'box-shadow:0 0 6px {marker_clr}90, 0 0 12px {marker_clr}40;"></div>'
         f'</div>'
 
-        f'</div>'
+        # 4) Perzentil-Badge + Stats (rechts)
+        f'<span style="font-size:10px; font-weight:700; color:{marker_clr};'
+        f'background:{marker_clr}10; padding:2px 8px; border-radius:4px;'
+        f'border:1px solid {marker_clr}18; white-space:nowrap;">'
+        f'P{percentile}</span>'
 
-        # Footer
-        f'<div style="display:flex; align-items:center; justify-content:space-between;'
-        f'flex-wrap:wrap; gap:8px;">'
-        f'<span style="font-size:13px; font-weight:700; color:{marker_clr};'
-        f'background:{marker_clr}12; padding:4px 12px; border-radius:6px;'
-        f'border:1px solid {marker_clr}20;">'
-        f'{percentile}. Perzentil</span>'
-        f'<div style="display:flex; align-items:center; gap:12px;">'
-        f'<span style="font-size:12px; color:#64748b;">'
-        f'{z_score:+.1f}σ · {z_label}</span>'
-        f'<span style="font-size:11px; color:#475569;">n={len(hist_values)}</span>'
-        f'</div>'
-        f'</div>'
+        f'<span style="font-size:9px; color:#475569; white-space:nowrap;">'
+        f'{z_score:+.1f}σ · n={len(hist_values)}</span>'
 
         f'</div>'
     )
