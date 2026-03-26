@@ -298,8 +298,8 @@ def main():
         st.markdown("---")
         st.markdown("### Mondphase")
         
-        phase_mode = st.radio("Analysieren", 
-            ["🌕 Vollmond", "🌑 Neumond", "🌕+🌑 Beide (getrennt)"],
+        phase_mode = st.radio("Analysieren",
+            ["🌕 Vollmond", "🌑 Neumond", "🌟 Supermond", "🌕+🌑 Beide (getrennt)"],
             index=0, key="moon_phase")
         
         st.markdown("---")
@@ -340,7 +340,7 @@ def main():
 
     # ── Mondphasen laden ──────────────────────────────
     phases_to_analyze = []
-    
+
     if "Vollmond" in phase_mode or "Beide" in phase_mode:
         phases_to_analyze.append({
             "name": "Vollmond",
@@ -348,13 +348,30 @@ def main():
             "color": "#FFD700",  # Gold
             "emoji": "🌕"
         })
-    
+
     if "Neumond" in phase_mode or "Beide" in phase_mode:
         phases_to_analyze.append({
             "name": "Neumond",
             "dates": get_new_moon_dates(min_year, max_year),
             "color": "#9C27B0",  # Lila
             "emoji": "🌑"
+        })
+
+    if "Supermond" in phase_mode:
+        all_full = get_full_moon_dates(min_year, max_year)
+        super_dates = [d for d in all_full if classify_supermoon(d["date"], d["phase"])]
+        normal_dates = [d for d in all_full if not classify_supermoon(d["date"], d["phase"])]
+        phases_to_analyze.append({
+            "name": "Supermond",
+            "dates": super_dates,
+            "color": "#FFD700",  # Gold
+            "emoji": "🌟"
+        })
+        phases_to_analyze.append({
+            "name": "Normaler Vollmond",
+            "dates": normal_dates,
+            "color": "#94a3b8",  # Silbergrau
+            "emoji": "🌕"
         })
     
     for phase_info in phases_to_analyze:
