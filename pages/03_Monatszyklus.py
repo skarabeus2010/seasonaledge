@@ -451,7 +451,7 @@ def render_seasonal_match(match, ticker, month_name):
                 "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
                 "font-size:13px; margin-bottom:2px;'>Korrelation</p>",
                 unsafe_allow_html=True)
-            st.plotly_chart(build_gauge(corr_score), use_container_width=True, config=_PLOTLY_CFG)
+            st.plotly_chart(build_gauge(corr_score), use_container_width=True, config=_PLOTLY_CFG, key="match_corr")
             corr_col = "#00d4aa" if match["correlation"] > 0.5 else "#e8a425" if match["correlation"] > 0 else "#ff4757"
             st.markdown(
                 f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
@@ -464,7 +464,7 @@ def render_seasonal_match(match, ticker, month_name):
                 "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
                 "font-size:13px; margin-bottom:2px;'>Shape-Match (DTW)</p>",
                 unsafe_allow_html=True)
-            st.plotly_chart(build_gauge(match["dtw_score"]), use_container_width=True, config=_PLOTLY_CFG)
+            st.plotly_chart(build_gauge(match["dtw_score"]), use_container_width=True, config=_PLOTLY_CFG, key="match_dtw")
             dtw_col = "#00d4aa" if match["dtw_score"] > 0.7 else "#e8a425" if match["dtw_score"] > 0.4 else "#ff4757"
             dtw_pct = match["dtw_score"] * 100
             st.markdown(
@@ -485,7 +485,7 @@ def render_seasonal_match(match, ticker, month_name):
                 "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
                 "font-size:13px; margin-bottom:2px;'>Abweichungstest</p>",
                 unsafe_allow_html=True)
-            st.plotly_chart(build_gauge(sig_score), use_container_width=True, config=_PLOTLY_CFG)
+            st.plotly_chart(build_gauge(sig_score), use_container_width=True, config=_PLOTLY_CFG, key="match_sig")
             st.markdown(
                 f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
                 f"<span style='color:{sig_col}; font-weight:700;'>{sig_label}</span>"
@@ -614,7 +614,10 @@ def calc_cycle_match(df, target_month, selected_years, current_month_curve):
             "color": color,
         })
 
-    results.sort(key=lambda x: x["match_score"], reverse=True)
+    # Feste Reihenfolge: Post-Election, Midterm, Pre-Election, Election, Alle Jahre
+    fixed_order = ["Post-Election", "Midterm Election", "Pre-Election", "Election Year", "Alle Jahre"]
+    order_map = {name: i for i, name in enumerate(fixed_order)}
+    results.sort(key=lambda x: order_map.get(x["name"], 99))
     return results
 
 
@@ -629,7 +632,8 @@ def render_cycle_match(cycle_results, ticker, month_name):
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
     with st.expander("🏛️ Praesidentenzyklus — Best Match", expanded=True):
-        best = cycle_results[0]
+        # Bester Match ermitteln (hoechster Score)
+        best = max(cycle_results, key=lambda x: x["match_score"])
         st.markdown(
             f"<p style='color:#FFFFFF; font-size:14px; text-align:center; margin-bottom:16px;'>"
             f"Bester Match: <b style='color:{best['color']};'>{best['name']}</b> "
@@ -637,16 +641,22 @@ def render_cycle_match(cycle_results, ticker, month_name):
             f"n={best['n_years']} Jahre)</p>",
             unsafe_allow_html=True)
 
+        # Ranking nach Score fuer Medaillen
+        ranked = sorted(cycle_results, key=lambda x: x["match_score"], reverse=True)
+        rank_map = {r["name"]: i for i, r in enumerate(ranked)}
+
         cols = st.columns(len(cycle_results))
         for i, (col, r) in enumerate(zip(cols, cycle_results)):
             with col:
-                rank = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                pos = rank_map[r["name"]]
+                rank = "🥇" if pos == 0 else "🥈" if pos == 1 else "🥉" if pos == 2 else f"#{pos+1}"
                 st.markdown(
                     f"<p style='text-align:center; color:{r['color']}; font-weight:700; "
                     f"font-size:13px; margin-bottom:2px;'>{rank} {r['name']}</p>",
                     unsafe_allow_html=True)
                 st.plotly_chart(build_gauge(r["match_score"]),
-                    use_container_width=True, config=_PLOTLY_CFG)
+                    use_container_width=True, config=_PLOTLY_CFG,
+                    key=f"cycle_gauge_{i}")
                 corr_col = "#00d4aa" if r["correlation"] > 0.5 else "#e8a425" if r["correlation"] > 0 else "#ff4757"
                 st.markdown(
                     f"<p style='text-align:center; margin-top:-12px; font-size:11px;'>"
