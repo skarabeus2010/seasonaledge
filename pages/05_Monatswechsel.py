@@ -108,9 +108,10 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
 
     n_years = len(data_years)
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
-                                  height=max(400, n_years * 45 + 120))
+                                  height=max(500, n_years * 50 + 140))
     fig.update_yaxes(autorange="reversed", type="category", tickformat="")
     fig.update_xaxes(type="category", tickangle=-45, tickformat="")
+    fig.update_layout(margin=dict(b=80))
     fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
     return fig
 
@@ -401,37 +402,96 @@ def main():
         st.warning("Nicht genug Daten für die Turn-of-the-Month Analyse.")
         return
     
-    # ── Chart ─────────────────────────────────────────
+    # ── Chart + aktuelles Monat-Overlay ──────────────
     tom_fig = build_tom_chart(
         tom_result, ticker, tom_days_before, tom_days_after,
         tom_months, show_individual_tom
     )
+
+    # Aktueller Monatswechsel als gelbe "We are here" Linie
+    now = datetime.now()
+    cur_month = now.month
+    cur_year = now.year
+    # Aktuellen Monat berechnen: Daten des aktuellen Monats + Vortage
+    try:
+        month_data = df[(df["year"] == cur_year) & (df["month"] == cur_month)].copy()
+        prev_month = cur_month - 1 if cur_month > 1 else 12
+        prev_year = cur_year if cur_month > 1 else cur_year - 1
+        prev_data = df[(df["year"] == prev_year) & (df["month"] == prev_month)].copy()
+
+        if len(prev_data) >= tom_days_before + 1 and len(month_data) >= 1:
+            pre_window = prev_data.iloc[-(tom_days_before + 1):]
+            window_size = tom_days_before + 1 + tom_days_after
+            post_available = min(len(month_data), tom_days_after)
+            post_window = month_data.iloc[:post_available]
+            tom_current = pd.concat([pre_window, post_window])
+
+            if len(tom_current) >= tom_days_before + 2:
+                log_rets = tom_current["log_return"].values
+                cum_log = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+                raw_curve = 100 * np.exp(cum_log)
+                t0_value = raw_curve[tom_days_before]
+                curve_current = ((raw_curve / t0_value - 1) * 100).tolist()
+
+                x_current = list(range(len(curve_current)))
+                tom_fig.add_trace(go.Scatter(
+                    x=x_current, y=curve_current,
+                    mode="lines",
+                    name=f"📍 {MONTH_NAMES_DE[prev_month-1]}→{MONTH_NAMES_DE[prev_month % 12]} {cur_year}",
+                    line=dict(color="#FFD700", width=3, dash="dash"),
+                    hovertemplate="<b>Aktuell</b><br>%{text}<br>%{y:+.3f}%<extra></extra>",
+                    text=tom_result["labels"][:len(curve_current)],
+                ))
+                # Diamant-Marker am letzten Punkt
+                tom_fig.add_trace(go.Scatter(
+                    x=[len(curve_current) - 1], y=[curve_current[-1]],
+                    mode="markers+text",
+                    marker=dict(color="#FFD700", size=10, symbol="diamond",
+                                line=dict(color="white", width=1.5)),
+                    text=[f"  {cur_year}"],
+                    textposition="middle right",
+                    textfont=dict(color="#FFD700", size=11, family="Arial Black"),
+                    showlegend=False, hoverinfo="skip",
+                ))
+    except Exception:
+        pass  # Overlay nicht kritisch
+
     st.plotly_chart(tom_fig, use_container_width=True)
-    
-    # ── Metriken ──────────────────────────────────────
+
+    # ── Metriken (kompakte HTML-Karten) ───────────────
     tom_stats = tom_result["stats"]
-    
-    c1, c2, c3, c4, c5 = st.columns(5)
-    with c1:
-        st.metric("Win Rate", f"{tom_stats['win_rate']:.1f}%")
-    with c2:
-        st.metric("Ø Rendite", f"{tom_stats['avg_return']:+.3f}%")
-    with c3:
-        st.metric("Median", f"{tom_stats['median_return']:+.3f}%")
-    with c4:
-        st.metric("Max Gewinn", f"{tom_stats['max_gain']:+.2f}%")
-    with c5:
-        st.metric("Max Verlust", f"{tom_stats['max_loss']:+.2f}%")
-    
-    st.caption(
-        f"Basierend auf {tom_stats['total_windows']} Monatswechsel-Fenstern · "
-        f"{tom_stats['winning']} Gewinner / {tom_stats['losing']} Verlierer · "
-        f"Std.Abw: {tom_stats['std_dev']:.3f}%"
-    )
-    
+
+    with st.expander("📊 Handelstage relativ — Kennzahlen", expanded=True):
+        c1, c2, c3, c4, c5 = st.columns(5)
+        _metrics = [
+            (c1, "Win Rate", f"{tom_stats['win_rate']:.1f}%", "#00CED1"),
+            (c2, "Ø Rendite", f"{tom_stats['avg_return']:+.3f}%",
+             "#00d4aa" if tom_stats['avg_return'] > 0 else "#ff4757"),
+            (c3, "Median", f"{tom_stats['median_return']:+.3f}%",
+             "#00d4aa" if tom_stats['median_return'] > 0 else "#ff4757"),
+            (c4, "Max Gewinn", f"{tom_stats['max_gain']:+.2f}%", "#00d4aa"),
+            (c5, "Max Verlust", f"{tom_stats['max_loss']:+.2f}%", "#ff4757"),
+        ]
+        for col_i, label, val, clr in _metrics:
+            with col_i:
+                st.markdown(
+                    f"""<div style="background:rgba(255,255,255,0.04); border-left:3px solid {clr};
+                        border-radius:6px; padding:10px 12px;">
+                        <div style="font-size:11px; color:#6e7681;">{label}</div>
+                        <div style="font-size:18px; font-weight:bold; color:#e8edf5; margin:3px 0;">
+                            {val}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+        st.markdown(
+            f"<p style='font-size:11px; color:#6e7681; margin-top:8px;'>"
+            f"Basierend auf {tom_stats['total_windows']} Fenstern · "
+            f"{tom_stats['winning']} Gewinner / {tom_stats['losing']} Verlierer · "
+            f"Std.Abw: {tom_stats['std_dev']:.3f}%</p>",
+            unsafe_allow_html=True)
+
     # ── Signifikanztest (optional) ────────────────────
     from shared.significance_gauge import run_significance_test, render_significance_section
-    # Gesamt-TOM + pro Monatswechsel
     sig_groups = {"TOM Gesamt": [c["total_return"] for c in tom_result["all_curves"]]}
     month_perf_sig = {}
     for entry in tom_result["all_curves"]:
@@ -446,51 +506,44 @@ def main():
         expander_title="📊 Statistische Signifikanz des Monatswechsel-Effekts")
 
     # ── Best & Worst ──────────────────────────────────
-    best = tom_result["best"]
-    worst = tom_result["worst"]
+    with st.expander("🏆 Bester & schlechtester Monatswechsel", expanded=False):
+        best = tom_result["best"]
+        worst = tom_result["worst"]
+        table_data = {
+            "": ["🟢 Bester", "🔴 Schlechtester"],
+            "Jahr": [best["year"], worst["year"]],
+            "Monat": [
+                f"{MONTH_NAMES_DE[best['month']-1]} → {MONTH_NAMES_DE[best['month'] % 12]}",
+                f"{MONTH_NAMES_DE[worst['month']-1]} → {MONTH_NAMES_DE[worst['month'] % 12]}"
+            ],
+            "Rendite": [f"{best['total_return']:+.2f}%", f"{worst['total_return']:+.2f}%"]
+        }
+        st.table(pd.DataFrame(table_data).set_index(""))
 
-    st.markdown("#### 🏆 Bester & schlechtester Monatswechsel")
-    
-    table_data = {
-        "": ["🟢 Bester", "🔴 Schlechtester"],
-        "Jahr": [best["year"], worst["year"]],
-        "Monat": [
-            f"{MONTH_NAMES_DE[best['month']-1]} → {MONTH_NAMES_DE[best['month'] % 12]}",
-            f"{MONTH_NAMES_DE[worst['month']-1]} → {MONTH_NAMES_DE[worst['month'] % 12]}"
-        ],
-        "Rendite": [f"{best['total_return']:+.2f}%", f"{worst['total_return']:+.2f}%"]
-    }
-    st.table(pd.DataFrame(table_data).set_index(""))
-    
     # ── Detailtabelle pro Monat ───────────────────────
-    st.markdown("#### 📋 Performance pro Monatswechsel")
-    st.caption(f"Rendite wenn bei t-{tom_days_before} gekauft und bei t+{tom_days_after} verkauft")
-    
-    month_perf = {}
-    for entry in tom_result["all_curves"]:
-        m = entry["month"]
-        if m not in month_perf:
-            month_perf[m] = []
-        month_perf[m].append(entry["total_return"])
-    
-    perf_rows = []
-    for m in sorted(month_perf.keys()):
-        rets = month_perf[m]
-        wins = [r for r in rets if r > 0]
-        perf_rows.append({
-            "Monat": f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}",
-            "Ø Rendite": f"{np.mean(rets):+.3f}%",
-            "Median": f"{np.median(rets):+.3f}%",
-            "Win Rate": f"{len(wins)/len(rets)*100:.0f}%",
-            "Beste": f"{max(rets):+.2f}%",
-            "Schlecht.": f"{min(rets):+.2f}%",
-            "n": len(rets)
-        })
-    
-    st.dataframe(pd.DataFrame(perf_rows), use_container_width=True, hide_index=True)
+    with st.expander("📋 Performance pro Monatswechsel", expanded=False):
+        st.caption(f"Rendite wenn bei t-{tom_days_before} gekauft und bei t+{tom_days_after} verkauft")
+        month_perf = {}
+        for entry in tom_result["all_curves"]:
+            m = entry["month"]
+            if m not in month_perf:
+                month_perf[m] = []
+            month_perf[m].append(entry["total_return"])
 
-    # ── TOM Heatmap (Monat x Jahr) ──────────────────
-    st.markdown("---")
+        perf_rows = []
+        for m in sorted(month_perf.keys()):
+            rets = month_perf[m]
+            wins = [r for r in rets if r > 0]
+            perf_rows.append({
+                "Monat": f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}",
+                "Ø Rendite": f"{np.mean(rets):+.3f}%",
+                "Median": f"{np.median(rets):+.3f}%",
+                "Win Rate": f"{len(wins)/len(rets)*100:.0f}%",
+                "Beste": f"{max(rets):+.2f}%",
+                "Schlecht.": f"{min(rets):+.2f}%",
+                "n": len(rets)
+            })
+        st.dataframe(pd.DataFrame(perf_rows), use_container_width=True, hide_index=True)
     with st.expander("🗓️ TOM Heatmap (Monatswechsel x Jahr)", expanded=True):
         tom_heatmap = build_tom_heatmap(tom_result, ticker, selected_years)
         st.plotly_chart(tom_heatmap, use_container_width=True, key="tom_heatmap")
