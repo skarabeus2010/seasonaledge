@@ -921,30 +921,82 @@ def main():
 
     # ── Gesamtuebersicht: alle Rendite-Modi × Wochentage ──
     with st.expander("📊 Gesamtübersicht — alle Rendite-Berechnungen × Wochentage", expanded=False):
-        overview_rows = []
+        # Daten fuer alle Modi berechnen
+        all_mode_stats = {}
         for mode_name in RETURN_MODES:
             mode_stats = calculate_weekday_stats(
                 raw_df, mode_name, years_back,
                 filter_mode, sma_days, rsi_days, rsi_threshold,
                 cycle_filter=cycle_filter if cycle_filter else None
             )
-            if mode_stats is None:
-                continue
-            row_avg = {"Modus": mode_name, "Metrik": "Ø Rendite"}
-            row_wr = {"Modus": mode_name, "Metrik": "Win Rate"}
-            for wd in range(5):
-                d = mode_stats["by_weekday"][wd]
-                row_avg[WEEKDAY_LABELS[wd]] = f"{d['avg']:+.4f}%"
-                row_wr[WEEKDAY_LABELS[wd]] = f"{d['win_rate']:.1f}%"
-            overview_rows.append(row_avg)
-            overview_rows.append(row_wr)
+            if mode_stats is not None:
+                all_mode_stats[mode_name] = mode_stats
 
-        if overview_rows:
-            overview_df = pd.DataFrame(overview_rows)
-            st.dataframe(overview_df, use_container_width=True, hide_index=True)
-            st.caption(
-                f"Alle 4 Rendite-Berechnungen × 5 Wochentage · "
-                f"Zeitraum: {years_back}J · Filter: {filter_mode}"
+        if all_mode_stats:
+            mode_short_names = {
+                "Close → Close (t0 → t1)": "C→C",
+                "Close → Open (t0 → t1)": "C→O",
+                "Open → Close (t0)": "O→C intra",
+                "Open → Close (t0 → t1)": "O→C t0→t1",
+            }
+            mode_colors = ["#4d9fff", "#00d4aa", "#e8a425", "#a855f7"]
+
+            cols = st.columns(5)
+            _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
+
+            for wd, col in enumerate(cols):
+                with col:
+                    st.markdown(
+                        f"<p style='text-align:center; color:#c8d6e5; "
+                        f"font-weight:600; font-size:13px; margin-bottom:2px;'>"
+                        f"{WEEKDAY_LABELS[wd]}</p>",
+                        unsafe_allow_html=True,
+                    )
+
+                    mode_names = []
+                    avgs = []
+                    colors = []
+                    for i, (mode_name, ms) in enumerate(all_mode_stats.items()):
+                        avg = ms["by_weekday"][wd]["avg"]
+                        mode_names.append(mode_short_names.get(mode_name, mode_name))
+                        avgs.append(avg)
+                        colors.append(mode_colors[i % len(mode_colors)])
+
+                    bar_colors = [SE_COLORS["positive"] if v >= 0
+                                  else SE_COLORS["negative"] for v in avgs]
+
+                    fig = go.Figure(go.Bar(
+                        x=mode_names,
+                        y=avgs,
+                        marker_color=bar_colors,
+                        text=[f"{v:+.3f}%" for v in avgs],
+                        textposition="outside",
+                        textfont=dict(size=9, color="#c8d6e5"),
+                        hovertemplate="<b>%{x}</b><br>Ø %{y:+.4f}%<extra></extra>",
+                    ))
+                    fig.add_hline(y=0, line_dash="dash",
+                                  line_color="rgba(255,255,255,0.15)")
+                    fig.update_layout(
+                        paper_bgcolor=SE_COLORS["bg"],
+                        plot_bgcolor=SE_COLORS["bg"],
+                        height=200,
+                        margin=dict(l=5, r=5, t=10, b=5),
+                        xaxis=dict(tickfont=dict(size=8, color="#5a6e85"),
+                                   gridcolor="rgba(0,0,0,0)"),
+                        yaxis=dict(tickfont=dict(size=8, color="#5a6e85"),
+                                   tickformat="+.3f", ticksuffix="%",
+                                   gridcolor="rgba(255,255,255,0.04)",
+                                   zeroline=False),
+                        bargap=0.2,
+                    )
+                    st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CFG)
+
+            st.markdown(
+                f"<p style='color:#5a6e85; font-size:11px; text-align:center;'>"
+                f"<b>C→C</b> Close→Close · <b>C→O</b> Close→Open (Overnight) · "
+                f"<b>O→C intra</b> Open→Close Intraday · <b>O→C t0→t1</b> Open→Close Folgetag "
+                f"· Zeitraum: {years_back}J · Filter: {filter_mode}</p>",
+                unsafe_allow_html=True,
             )
         else:
             st.warning("Nicht genügend Daten für die Gesamtübersicht.")
