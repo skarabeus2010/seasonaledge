@@ -51,8 +51,12 @@ def _heatmap_text_color(value, zmid=0, max_abs=None):
     if max_abs is None:
         max_abs = 1
     intensity = abs(value - zmid) / max_abs if max_abs > 0 else 0
-    if value > zmid and intensity > 0.45:
+    # Helle Gruen-Zellen brauchen frueher dunkle Schrift
+    if value > zmid and intensity > 0.3:
         return "#1a1a2e"
+    # Dunkle Rot-Zellen brauchen hellere Schrift
+    if value < zmid and intensity > 0.6:
+        return "#f0f0f0"
     return "#FFFFFF"
 
 

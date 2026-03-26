@@ -47,6 +47,26 @@ INDIVIDUAL_COLORS = [
     "#0984E3", "#D63031", "#00D2D3", "#EE5A24", "#C8D6E5",
 ]
 
+def _heatmap_text_color(value, zmid=0, max_abs=1):
+    intensity = abs(value - zmid) / max_abs if max_abs > 0 else 0
+    if value > zmid and intensity > 0.3:
+        return "#1a1a2e"
+    if value < zmid and intensity > 0.6:
+        return "#f0f0f0"
+    return "#FFFFFF"
+
+
+def _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0, fmt="+.2f", suffix="%"):
+    flat = [v for row in z_data for v in row]
+    max_abs = max(abs(v - zmid) for v in flat) if flat else 1
+    for i, y_label in enumerate(y_labels):
+        for j, x_label in enumerate(x_labels):
+            val = z_data[i][j]
+            color = _heatmap_text_color(val, zmid, max_abs)
+            fig.add_annotation(x=x_label, y=y_label, text=f"{val:{fmt}}{suffix}",
+                showarrow=False, font=dict(size=10, color=color))
+
+
 def assign_tdom(df):
     df = df.copy()
     df["tdom"] = df.groupby(["year", "month"]).cumcount() + 1
@@ -696,15 +716,13 @@ def build_two_week_heatmap(tw_stats, ticker, split_day, current_tdom):
             val = match[0]["avg"] if match else 0
             z_data[half_idx].append(round(val, 3))
 
+    y_labels_tw = [f"1st (TDOM 1-{split_day})", f"2nd (TDOM {split_day+1}+)"]
     fig = go.Figure(data=go.Heatmap(
         z=z_data,
         x=MONTH_NAMES_DE,
-        y=[f"1st (TDOM 1-{split_day})", f"2nd (TDOM {split_day+1}+)"],
+        y=y_labels_tw,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
-        text=[[f"{v:+.2f}%" for v in row] for row in z_data],
-        texttemplate="%{text}",
-        textfont=dict(size=12, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate="<b>%{x} — %{y}</b><br>Oe Rendite: %{z:+.3f}%<extra></extra>",
         colorbar=dict(
             title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
@@ -712,6 +730,8 @@ def build_two_week_heatmap(tw_stats, ticker, split_day, current_tdom):
             ticksuffix="%",
         ),
     ))
+
+    _add_heatmap_annotations(fig, z_data, MONTH_NAMES_DE, y_labels_tw, zmid=0)
 
     # Gelber Rahmen um aktuelle Zelle
     half_idx = 0 if current_half == 1 else 1
@@ -984,9 +1004,6 @@ def build_monthly_heatmap(df, selected_years, ticker):
         y=y_labels,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
-        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
-        texttemplate="%{text}",
-        textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
             title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
@@ -994,6 +1011,8 @@ def build_monthly_heatmap(df, selected_years, ticker):
             ticksuffix="%",
         ),
     ))
+
+    _add_heatmap_annotations(fig, z_data, MONTH_NAMES_DE, y_labels, zmid=0, fmt="+.1f")
 
     # Gelber Rahmen um aktuelle Zelle (Monat x Jahr)
     if current_year in [int(y) for y in y_labels]:

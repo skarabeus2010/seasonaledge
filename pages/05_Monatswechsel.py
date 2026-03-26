@@ -42,8 +42,12 @@ inject_se_css()
 
 def _heatmap_text_color(value, zmid=0, max_abs=1):
     intensity = abs(value - zmid) / max_abs if max_abs > 0 else 0
-    if value > zmid and intensity > 0.45:
+    # Helle Gruen-Zellen (positive Werte) brauchen frueher dunkle Schrift
+    if value > zmid and intensity > 0.3:
         return "#1a1a2e"
+    # Dunkle Rot-Zellen (stark negativ) brauchen hellere Schrift
+    if value < zmid and intensity > 0.6:
+        return "#f0f0f0"
     return "#FFFFFF"
 
 
@@ -62,11 +66,13 @@ def _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0, fmt="+.2f"
 
 def build_tom_heatmap(tom_result, ticker, selected_years):
     """10-Jahres Heatmap: Monatswechsel-Rendite pro Jahr x Monat."""
-    years = sorted(selected_years, reverse=True)[:10]
+    # Jahre die tatsaechlich Daten haben
+    data_years = sorted(set(e["year"] for e in tom_result["all_curves"]), reverse=True)[:10]
+    if len(data_years) < 2:
+        return None
     now = datetime.now()
 
-    # Matrix aufbauen
-    y_labels = [str(y) for y in years]
+    y_labels = [str(y) for y in data_years]
     x_labels = [f"{MONTH_NAMES_DE[m-1]}→{MONTH_NAMES_DE[m % 12]}" for m in range(1, 13)]
 
     # Lookup: (year, month) → total_return
@@ -75,7 +81,7 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
         lookup[(entry["year"], entry["month"])] = entry["total_return"]
 
     z_data = []
-    for year in years:
+    for year in data_years:
         row = [round(lookup.get((year, m), 0), 2) for m in range(1, 13)]
         z_data.append(row)
 
@@ -91,7 +97,7 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
     _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0)
 
     # Gelber Rahmen auf aktuellem Monat + Jahr
-    if now.year in years:
+    if str(now.year) in y_labels:
         fig.add_shape(type="rect",
             x0=now.month - 1 - 0.5, x1=now.month - 1 + 0.5,
             y0=y_labels.index(str(now.year)) - 0.5,
@@ -99,8 +105,9 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
             line=dict(color="#FFD700", width=3.5),
             fillcolor="rgba(0,0,0,0)", layer="above")
 
-    fig = apply_se_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, 10 Jahre)",
-                         height=max(350, len(years) * 38 + 100), show_legend=False)
+    n_years = len(data_years)
+    fig = apply_se_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
+                         height=max(400, n_years * 45 + 120), show_legend=False)
     fig.update_yaxes(autorange="reversed", type="category")
     fig.update_xaxes(type="category", tickangle=-45)
     return fig
@@ -136,10 +143,11 @@ def render_streak_analysis(tom_result):
         blocks = ""
         for e in entries[:10]:
             color = "#00d4aa" if e["ret"] > 0 else "#ff4757"
-            blocks += f"<span style='display:inline-block; width:22px; height:18px; " \
-                       f"background:{color}; border-radius:3px; margin:1px; " \
-                       f"text-align:center; font-size:9px; line-height:18px; " \
-                       f"color:#FFFFFF;' title='{e['year']}: {e['ret']:+.2f}%'>" \
+            blocks += f"<span style='display:inline-block; width:36px; height:28px; " \
+                       f"background:{color}; border-radius:5px; margin:2px; " \
+                       f"text-align:center; font-size:11px; line-height:28px; " \
+                       f"font-weight:700; color:#FFFFFF;' " \
+                       f"title='{e['year']}: {e['ret']:+.2f}%'>" \
                        f"{'W' if e['ret'] > 0 else 'L'}</span>"
 
         label = f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}"
