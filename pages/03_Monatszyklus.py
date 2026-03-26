@@ -523,6 +523,153 @@ def render_seasonal_match(match, ticker, month_name):
             unsafe_allow_html=True)
 
 
+def calc_cycle_match(df, target_month, selected_years, current_month_curve):
+    """
+    Vergleicht den aktuellen Monatsverlauf mit jedem Praesidentenzyklus-Jahr (1-4)
+    und dem Gesamtdurchschnitt. Berechnet Korrelation + DTW fuer jedes.
+
+    Returns:
+        list[dict] sortiert nach Match-Score (beste zuerst)
+    """
+    if current_month_curve is None:
+        return None
+    cm_tdoms, cm_curve = current_month_curve
+    if not cm_tdoms or len(cm_tdoms) < 3:
+        return None
+
+    df_tdom = assign_tdom(df)
+    results = []
+
+    # Alle Zyklusjahre + Gesamt
+    cycle_groups = {name: [] for name in CYCLE_COLORS.keys()}
+    cycle_groups["Alle Jahre"] = selected_years
+
+    for cycle_name in CYCLE_COLORS.keys():
+        cycle_groups[cycle_name] = [y for y in selected_years
+                                     if get_presidential_cycle_year(y) == cycle_name]
+
+    for group_name, years in cycle_groups.items():
+        if len(years) < 3:
+            continue
+
+        # Durchschnittskurve fuer diese Gruppe berechnen
+        curves = []
+        for year in years:
+            month_df = df_tdom[(df_tdom["year"] == year) & (df_tdom["month"] == target_month)].copy()
+            if len(month_df) < 10:
+                continue
+            log_rets = month_df["log_return"].values
+            cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+            curve = (np.exp(cum) - 1) * 100
+            tdoms = month_df["tdom"].tolist()
+            curves.append({"tdoms": tdoms, "curve": curve.tolist()})
+
+        if len(curves) < 3:
+            continue
+
+        # Durchschnittskurve auf gemeinsame TDOMs
+        common_tdoms = [t for t in cm_tdoms if all(t in c["tdoms"] for c in curves)]
+        if len(common_tdoms) < 3:
+            continue
+
+        avg_vals = []
+        for t in common_tdoms:
+            vals = [c["curve"][c["tdoms"].index(t)] for c in curves if t in c["tdoms"]]
+            avg_vals.append(np.mean(vals))
+        avg_vals = np.array(avg_vals)
+        cur_vals = np.array([cm_curve[cm_tdoms.index(t)] for t in common_tdoms])
+
+        # Korrelation
+        if np.std(cur_vals) == 0 or np.std(avg_vals) == 0:
+            corr = 0.0
+        else:
+            corr = float(np.corrcoef(cur_vals, avg_vals)[0, 1])
+            if np.isnan(corr):
+                corr = 0.0
+
+        # DTW
+        try:
+            from fastdtw import fastdtw
+            from scipy.spatial.distance import euclidean
+            dist, _ = fastdtw(cur_vals, avg_vals, dist=euclidean)
+            amplitude = max(np.ptp(avg_vals), 0.1)
+            dtw_score = max(0, 1 - dist / (amplitude * len(common_tdoms)))
+        except ImportError:
+            dtw_score = max(0, (corr + 1) / 2)
+
+        # Kombi-Score: 60% Korrelation + 40% DTW
+        match_score = 0.6 * max(0, (corr + 1) / 2) + 0.4 * dtw_score
+
+        # Kurzname
+        short_name = group_name.split("(")[1].rstrip(")") if "(" in group_name else group_name
+        color = CYCLE_COLORS.get(group_name, SE_COLORS["accent_blue"])
+
+        results.append({
+            "name": short_name,
+            "full_name": group_name,
+            "correlation": round(corr, 3),
+            "dtw_score": round(dtw_score, 3),
+            "match_score": round(match_score, 3),
+            "n_years": len(curves),
+            "color": color,
+        })
+
+    results.sort(key=lambda x: x["match_score"], reverse=True)
+    return results
+
+
+def render_cycle_match(cycle_results, ticker, month_name):
+    """Rendert den Praesidentenzyklus Best-Match als Expander."""
+    import streamlit as st
+    from shared.significance_gauge import build_gauge
+
+    if not cycle_results:
+        return
+
+    _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
+
+    with st.expander("🏛️ Praesidentenzyklus — Best Match", expanded=True):
+        best = cycle_results[0]
+        st.markdown(
+            f"<p style='color:#FFFFFF; font-size:14px; text-align:center; margin-bottom:16px;'>"
+            f"Bester Match: <b style='color:{best['color']};'>{best['name']}</b> "
+            f"(r={best['correlation']:+.2f}, DTW {best['dtw_score']*100:.0f}%, "
+            f"n={best['n_years']} Jahre)</p>",
+            unsafe_allow_html=True)
+
+        cols = st.columns(len(cycle_results))
+        for i, (col, r) in enumerate(zip(cols, cycle_results)):
+            with col:
+                rank = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+                st.markdown(
+                    f"<p style='text-align:center; color:{r['color']}; font-weight:700; "
+                    f"font-size:13px; margin-bottom:2px;'>{rank} {r['name']}</p>",
+                    unsafe_allow_html=True)
+                st.plotly_chart(build_gauge(r["match_score"]),
+                    use_container_width=True, config=_PLOTLY_CFG)
+                corr_col = "#00d4aa" if r["correlation"] > 0.5 else "#e8a425" if r["correlation"] > 0 else "#ff4757"
+                st.markdown(
+                    f"<p style='text-align:center; margin-top:-12px; font-size:11px;'>"
+                    f"<span style='color:{corr_col};'>r={r['correlation']:+.2f}</span> · "
+                    f"DTW {r['dtw_score']*100:.0f}%"
+                    f"<br><span style='color:#8899aa;'>n={r['n_years']}</span></p>",
+                    unsafe_allow_html=True)
+
+        # Erklaerungstext
+        st.markdown("---")
+        st.markdown(
+            "<div style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>So liest du die Ergebnisse:</b><br>"
+            "Fuer jedes Praesidentenzyklus-Jahr (Post-Election, Midterm, Pre-Election, Election) "
+            "wird der historische Durchschnittsverlauf des aktuellen Monats berechnet und mit "
+            "dem tatsaechlichen Verlauf verglichen. "
+            "Der <b>Match-Score</b> kombiniert Korrelation (60%) und Shape-Match/DTW (40%). "
+            "Das Zyklusjahr mit dem hoechsten Score zeigt, welchem historischen Muster "
+            "der aktuelle Monat am staerksten folgt."
+            "</div>",
+            unsafe_allow_html=True)
+
+
 def build_monthly_heatmap(df, selected_years, ticker):
     """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
     current_month = datetime.now().month
@@ -666,12 +813,7 @@ def main():
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
 
-        # 1a. Seasonal Match Analyse (wenn Live-Overlay aktiv)
-        if current_month_curve is not None:
-            match = calc_seasonal_match(tdom_stats, current_month_curve, all_curves)
-            render_seasonal_match(match, ticker, month_name)
-
-        # 1b. Detrend-Indikator (Expander, wie Jahreszyklus)
+        # 1a. Detrend-Indikator (direkt nach Chart)
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)
             if detrend_fig:
@@ -679,21 +821,31 @@ def main():
                 st.caption("_Steigt die Linie → ueberdurchschnittlicher saisonaler Kaufdruck. "
                           "Faellt sie → saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
 
+        # 1b. Seasonal Match Analyse (wenn Live-Overlay aktiv)
+        if current_month_curve is not None:
+            match = calc_seasonal_match(tdom_stats, current_month_curve, all_curves)
+            render_seasonal_match(match, ticker, month_name)
+
+            # 1c. Praesidentenzyklus Best-Match
+            cycle_results = calc_cycle_match(df, selected_month, selected_years, current_month_curve)
+            render_cycle_match(cycle_results, ticker, month_name)
+
     # 2. Wochen
     weekly_stats = calc_weekly_performance(df, selected_month, selected_years)
     if weekly_stats:
-        fig = build_weekly_bars(weekly_stats, ticker, month_name, current_tdom)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
+        with st.expander("📅 Wochen-Performance", expanded=True):
+            fig = build_weekly_bars(weekly_stats, ticker, month_name, current_tdom)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
 
     # 3. Monats-Jahresuebersicht
-    st.markdown("---")
-    st.plotly_chart(build_monthly_bars(calc_monthly_performance(df, selected_years), ticker, current_tdom), use_container_width=True)
-    with st.expander("Monats-Detailtabelle"):
-        mstats = calc_monthly_performance(df, selected_years)
-        st.dataframe(pd.DataFrame([{"Monat": MONTH_NAMES_DE[m["month"]-1], "Oe Rendite": f"{m['avg']:+.3f}%",
-            "Median": f"{m['median']:+.3f}%", "Win Rate": f"{m['win_rate']:.0f}%", "n": m["n"]} for m in mstats]),
-            use_container_width=True, hide_index=True)
+    with st.expander("📊 Monats-Performance (alle 12 Monate)", expanded=True):
+        st.plotly_chart(build_monthly_bars(calc_monthly_performance(df, selected_years), ticker, current_tdom), use_container_width=True)
+        with st.expander("Monats-Detailtabelle"):
+            mstats = calc_monthly_performance(df, selected_years)
+            st.dataframe(pd.DataFrame([{"Monat": MONTH_NAMES_DE[m["month"]-1], "Oe Rendite": f"{m['avg']:+.3f}%",
+                "Median": f"{m['median']:+.3f}%", "Win Rate": f"{m['win_rate']:.0f}%", "n": m["n"]} for m in mstats]),
+                use_container_width=True, hide_index=True)
 
     # 4. Two-Week
     st.markdown("---")
