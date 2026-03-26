@@ -144,6 +144,7 @@ if _project_dir not in sys.path:
 | `significance_gauge`: key_prefix | Bei Mehrfach-Aufruf `key_prefix` übergeben |
 | `st.metric` für kompakte Karten vermeiden | HTML-Karten (10px Label, 14px Wert) verwenden |
 | Perzentil-Bar unter Hauptcharts | `from shared.percentile_bar import render_percentile_bar` |
+| Ticker-Auswahl: `ticker_select()` | Speichert global in `session_state` → bleibt bei Page-Wechsel |
 
 ## Architektur-Prinzipien
 
@@ -157,6 +158,7 @@ if _project_dir not in sys.path:
 - Footer (Impressum/Datenschutz/Risk) → `shared/footer.py` als 3 Expander
 - Kompakte Karten statt `st.metric` → HTML-Flex-Karten (Dark Mode, farbcodiert)
 - Alle Sektionen in Expander verpacken (Default ON/OFF je nach Relevanz)
+- Ticker-Auswahl → `ticker_select()` (speichert global, bleibt bei Page-Wechsel)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
 ## UI-Komponenten (Premium Dark Mode)
@@ -259,6 +261,7 @@ UPPER_CASE        → Konstanten
 - [x] Monatswechsel: Perzentil-Statusbar + TOM Stats als kompakte Karten (2026-03-26)
 - [x] Monatswechsel: Signifikanz-Reihenfolge Fix (Jan→Feb bis Dez→Jan) (2026-03-26)
 - [x] Ticker-Autocomplete: Search-as-you-type mit Supabase (shared/ticker_autocomplete.py) (2026-03-26)
+- [x] Ticker-Persistenz: Gewaehlter Ticker bleibt bei Page-Wechsel erhalten (session_state) (2026-03-26)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 - [ ] Saisonalitaets-Stabilitaet (Rolling 10J-Fenster: Pattern-Veraenderung ueber Jahrzehnte)
