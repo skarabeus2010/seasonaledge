@@ -109,8 +109,8 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
     n_years = len(data_years)
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
                                   height=max(400, n_years * 45 + 120))
-    fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
-    fig.update_xaxes(type="category", tickangle=-45, tickformat=None)
+    fig.update_yaxes(autorange="reversed", type="category", tickformat="")
+    fig.update_xaxes(type="category", tickangle=-45, tickformat="")
     fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
     return fig
 

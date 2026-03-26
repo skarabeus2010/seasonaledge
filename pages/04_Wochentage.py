@@ -366,8 +366,8 @@ def build_heatmap(stats, ticker):
     _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0)
 
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
-    fig.update_xaxes(side="bottom", type="category", tickformat=None)
-    fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
+    fig.update_xaxes(side="bottom", type="category", tickformat="")
+    fig.update_yaxes(autorange="reversed", type="category", tickformat="")
     # Colorbar-Ticks explizit nach Theme setzen (verhindert Float-Artefakte)
     fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
 
@@ -660,8 +660,8 @@ def build_consecutive_heatmap(matrix):
             fillcolor="rgba(0,0,0,0)", layer="above")
 
     fig = apply_se_heatmap_theme(fig, title="Konsekutiv-Analyse: P(Folgetag positiv)", height=220)
-    fig.update_yaxes(type="category", tickformat=None)
-    fig.update_xaxes(type="category", side="bottom", tickformat=None)
+    fig.update_yaxes(type="category", tickformat="")
+    fig.update_xaxes(type="category", side="bottom", tickformat="")
     return fig
 
 
@@ -747,8 +747,8 @@ def build_quarterly_heatmaps(q_stats, ticker):
     fig = apply_se_theme(fig, title=f"{ticker} — Wochentag-Performance nach Quartal", height=340)
     for row in [1, 2]:
         for col in [1, 2]:
-            fig.update_xaxes(type="category", side="bottom", tickformat=None, row=row, col=col)
-            fig.update_yaxes(type="category", tickformat=None, row=row, col=col)
+            fig.update_xaxes(type="category", side="bottom", tickformat="", row=row, col=col)
+            fig.update_yaxes(type="category", tickformat="", row=row, col=col)
     return fig
 
 

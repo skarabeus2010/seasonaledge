@@ -156,8 +156,8 @@ def apply_se_theme(
 def apply_se_heatmap_theme(fig: go.Figure, title: str = "", height: int = 420) -> go.Figure:
     """Theme-Variante fuer Heatmaps."""
     fig = apply_se_theme(fig, title=title, height=height, show_legend=False, hovermode="closest")
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=False, zeroline=False)
+    fig.update_xaxes(showgrid=False, tickformat="")
+    fig.update_yaxes(showgrid=False, zeroline=False, tickformat="", hoverformat="")
     return fig
 
 
