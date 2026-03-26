@@ -73,7 +73,7 @@ WE_ARE_HERE_COLOR = _wah.MARKER_COLOR_SOLID
 
 def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
                        show_individual, show_bands, show_current,
-                       show_pressure, cycle_overlay):
+                       show_pressure, cycle_overlay, show_percentile_bands=False):
     """Haupt-Saisonalchart mit optionalem Pressure + Praesidentenzyklus."""
     fig = go.Figure()
     x_days = list(range(1, 366))
@@ -88,6 +88,21 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
                 showlegend=False, hoverinfo="skip",
             ))
 
+    # Perzentil-Baender (25./75.)
+    if show_percentile_bands and len(year_data) >= 5:
+        all_curves = np.array([yd["full_365"] for yd in year_data.values()])
+        p25 = np.percentile(all_curves, 25, axis=0).tolist()
+        p75 = np.percentile(all_curves, 75, axis=0).tolist()
+        fig.add_trace(go.Scatter(
+            x=x_days, y=p75, mode="lines", line=dict(width=0),
+            showlegend=False, hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scatter(
+            x=x_days, y=p25, mode="lines", line=dict(width=0),
+            fill="tonexty", fillcolor="rgba(52,211,153,0.07)",
+            name="25.–75. Perzentil", hoverinfo="skip",
+        ))
+
     # Konfidenzband
     if show_bands and std:
         upper = [avg[i] + std[i] for i in range(365)]
@@ -99,7 +114,7 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
         fig.add_trace(go.Scatter(
             x=x_days, y=lower, mode="lines", line=dict(width=0),
             fill="tonexty", fillcolor="rgba(77,159,255,0.08)",
-            name="+-1 Sigma", hoverinfo="skip",
+            name="±1 Sigma", hoverinfo="skip",
         ))
 
     # Saisonaler Durchschnitt
@@ -690,7 +705,9 @@ def main():
         st.markdown("### Saisonalchart")
         smoothing = st.slider("Glaettung (Tage)", 1, 21, 1, 2, key="ys_smooth")
         show_individual = st.checkbox("Einzelne Jahre zeigen", value=False, key="ys_indiv")
-        show_bands = st.checkbox("Konfidenzband (+-1 Sigma)", value=False, key="ys_bands")
+        show_bands = st.checkbox("Konfidenzband (±1 Sigma)", value=False, key="ys_bands")
+        show_percentile_bands = st.checkbox("Perzentil-Baender (25./75.)", value=True, key="ys_pctile",
+                                             help="Zeigt den Bereich, in dem die mittleren 50% aller Jahre liegen")
         show_current = st.checkbox("Aktuelles Jahr hervorheben", value=True, key="ys_current")
 
         st.markdown("---")
@@ -756,6 +773,7 @@ def main():
         year_data, avg, std, df, ticker, smoothing,
         show_individual, show_bands, show_current,
         show_pressure, cycle_overlay,
+        show_percentile_bands=show_percentile_bands,
     )
     st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CFG)
 
@@ -843,6 +861,30 @@ def main():
             if styled is not None:
                 st.markdown(styled.to_html(), unsafe_allow_html=True)
 
+    # ── 4b. Monats-Signifikanz (Tachos) ──────────────────
+    from shared.significance_gauge import run_significance_test, render_significance_section
+    _month_sig_groups = {}
+    for m in range(1, 13):
+        s, e = MONTH_DOY[m]
+        _m_returns = []
+        for _y, _yd in year_data.items():
+            sv = _yd["full_365"][s - 1]
+            ev = _yd["full_365"][min(e - 1, 364)]
+            _m_returns.append((ev - sv) / sv * 100 if sv != 0 else 0)
+        if _m_returns:
+            _month_sig_groups[MONTH_NAMES_DE[m - 1]] = _m_returns
+
+    if _month_sig_groups:
+        _month_sig_results = run_significance_test(_month_sig_groups)
+        render_significance_section(
+            _month_sig_results,
+            expander_title="📊 Statistische Signifikanz der Monats-Effekte",
+            cols_per_row=4,
+            sort_order=MONTH_NAMES_DE,
+            key_prefix="month_sig",
+            expanded=True,
+        )
+
     # ── 5. Quartals-Performance ───────────────────────────
     with st.expander("Quartals-Performance", expanded=False):
         st.plotly_chart(build_quarterly_bars(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
@@ -850,6 +892,30 @@ def main():
             styled_q = styled_quarter_table(year_data)
             if styled_q is not None:
                 st.markdown(styled_q.to_html(), unsafe_allow_html=True)
+
+    # ── 5b. Quartals-Signifikanz ──────────────────────────
+    _q_sig_groups = {}
+    _q_labels = list(QUARTER_DOY.keys())
+    for q_name in _q_labels:
+        s, e = QUARTER_DOY[q_name]
+        _q_returns = []
+        for _y, _yd in year_data.items():
+            sv = _yd["full_365"][s - 1]
+            ev = _yd["full_365"][min(e - 1, 364)]
+            _q_returns.append((ev - sv) / sv * 100 if sv != 0 else 0)
+        if _q_returns:
+            _q_sig_groups[q_name] = _q_returns
+
+    if _q_sig_groups:
+        _q_sig_results = run_significance_test(_q_sig_groups)
+        render_significance_section(
+            _q_sig_results,
+            expander_title="📊 Statistische Signifikanz der Quartals-Effekte",
+            cols_per_row=4,
+            sort_order=_q_labels,
+            key_prefix="quarter_sig",
+            expanded=False,
+        )
 
     # ── 6. 10-Jahres Heatmap ─────────────────────────────
     with st.expander("10 Jahres Heatmap", expanded=True):
