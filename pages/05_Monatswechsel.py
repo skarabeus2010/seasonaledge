@@ -402,117 +402,12 @@ def main():
         st.warning("Nicht genug Daten für die Turn-of-the-Month Analyse.")
         return
     
-    # ── Chart + aktuelles Monat-Overlay ──────────────
+    # ── Chart ─────────────────────────────────────────
     tom_fig = build_tom_chart(
         tom_result, ticker, tom_days_before, tom_days_after,
         tom_months, show_individual_tom
     )
-
-    # Aktueller Monatswechsel als gelbe "We are here" Linie
-    now = datetime.now()
-    cur_month = now.month
-    cur_year = now.year
-    # Aktuellen Monat berechnen: Daten des aktuellen Monats + Vortage
-    try:
-        month_data = df[(df["year"] == cur_year) & (df["month"] == cur_month)].copy()
-        prev_month = cur_month - 1 if cur_month > 1 else 12
-        prev_year = cur_year if cur_month > 1 else cur_year - 1
-        prev_data = df[(df["year"] == prev_year) & (df["month"] == prev_month)].copy()
-
-        if len(prev_data) >= tom_days_before + 1 and len(month_data) >= 1:
-            pre_window = prev_data.iloc[-(tom_days_before + 1):]
-            window_size = tom_days_before + 1 + tom_days_after
-            post_available = min(len(month_data), tom_days_after)
-            post_window = month_data.iloc[:post_available]
-            tom_current = pd.concat([pre_window, post_window])
-
-            if len(tom_current) >= tom_days_before + 2:
-                log_rets = tom_current["log_return"].values
-                cum_log = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
-                raw_curve = 100 * np.exp(cum_log)
-                t0_value = raw_curve[tom_days_before]
-                curve_current = ((raw_curve / t0_value - 1) * 100).tolist()
-
-                x_current = list(range(len(curve_current)))
-                tom_fig.add_trace(go.Scatter(
-                    x=x_current, y=curve_current,
-                    mode="lines",
-                    name=f"📍 {MONTH_NAMES_DE[prev_month-1]}→{MONTH_NAMES_DE[prev_month % 12]} {cur_year}",
-                    line=dict(color="#FFD700", width=3, dash="dash"),
-                    hovertemplate="<b>Aktuell</b><br>%{text}<br>%{y:+.3f}%<extra></extra>",
-                    text=tom_result["labels"][:len(curve_current)],
-                ))
-                # Diamant-Marker am letzten Punkt
-                tom_fig.add_trace(go.Scatter(
-                    x=[len(curve_current) - 1], y=[curve_current[-1]],
-                    mode="markers+text",
-                    marker=dict(color="#FFD700", size=10, symbol="diamond",
-                                line=dict(color="white", width=1.5)),
-                    text=[f"  {cur_year}"],
-                    textposition="middle right",
-                    textfont=dict(color="#FFD700", size=11, family="Arial Black"),
-                    showlegend=False, hoverinfo="skip",
-                ))
-        # Speichere aktuelle Rendite fuer Abweichungsanzeige
-        _current_tom_return = curve_current[-1] - curve_current[0] if len(curve_current) >= 2 else None
-        _current_tom_label = f"{MONTH_NAMES_DE[prev_month-1]}→{MONTH_NAMES_DE[prev_month % 12]}"
-        _current_tom_month = prev_month
-    except Exception:
-        _current_tom_return = None
-        _current_tom_label = None
-        _current_tom_month = None
-
     st.plotly_chart(tom_fig, use_container_width=True)
-
-    # ── Abweichungsanzeige: Aktuell vs. Historisch ────
-    if _current_tom_return is not None and _current_tom_month is not None:
-        # Historische Returns fuer genau diesen Monatswechsel
-        hist_returns = [e["total_return"] for e in tom_result["all_curves"]
-                        if e["month"] == _current_tom_month]
-        if len(hist_returns) >= 5:
-            hist_mean = np.mean(hist_returns)
-            hist_std = np.std(hist_returns, ddof=1)
-            delta = _current_tom_return - hist_mean
-
-            # Perzentil
-            below = sum(1 for r in hist_returns if r < _current_tom_return)
-            percentile = int(round(below / len(hist_returns) * 100))
-
-            # Z-Score
-            z_score = delta / hist_std if hist_std > 0 else 0
-
-            # Farbgebung
-            delta_clr = "#00d4aa" if delta >= 0 else "#ff4757"
-            cur_clr = "#00d4aa" if _current_tom_return >= 0 else "#ff4757"
-            z_label = "ungewoehnlich stark" if z_score > 1.5 else \
-                      "ueberdurchschnittlich" if z_score > 0.5 else \
-                      "durchschnittlich" if z_score > -0.5 else \
-                      "unterdurchschnittlich" if z_score > -1.5 else \
-                      "ungewoehnlich schwach"
-
-            st.markdown(
-                f"""<div style="background:linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-                    border:1px solid rgba(255,255,255,0.06); border-radius:10px;
-                    padding:14px 20px; margin:4px 0 16px 0; display:flex;
-                    align-items:center; gap:16px; flex-wrap:wrap;">
-                    <span style="font-size:13px; color:#FFD700; font-weight:600;">
-                        📍 {_current_tom_label} {cur_year}</span>
-                    <span style="font-size:15px; font-weight:700; color:{cur_clr};">
-                        {_current_tom_return:+.2f}%</span>
-                    <span style="font-size:12px; color:#6e7681;">
-                        Ø hist: {hist_mean:+.2f}%</span>
-                    <span style="font-size:13px; font-weight:600; color:{delta_clr};
-                        background:{delta_clr}18; padding:3px 10px; border-radius:6px;">
-                        {delta:+.2f}% vs. Ø</span>
-                    <span style="font-size:12px; color:#8899aa;
-                        background:rgba(255,255,255,0.04); padding:3px 10px; border-radius:6px;">
-                        <b>{percentile}.</b> Perzentil</span>
-                    <span style="font-size:12px; color:#8899aa;">
-                        {z_score:+.1f}σ · {z_label}</span>
-                    <span style="font-size:11px; color:#484f58;">n={len(hist_returns)}</span>
-                </div>""",
-                unsafe_allow_html=True,
-            )
 
     # ── Metriken (kompakte HTML-Karten) ───────────────
     tom_stats = tom_result["stats"]
