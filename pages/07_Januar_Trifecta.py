@@ -65,6 +65,12 @@ with st.sidebar:
         step=4,
     )
     st.divider()
+    show_current_year = st.checkbox(
+        f"📍 Aktuelles Jahr ({datetime.now().year}) einblenden",
+        value=True,
+        help="Zeigt den bisherigen Kursverlauf des aktuellen Jahres als gelbe gestrichelte Linie.",
+    )
+    st.divider()
     st.caption("Daten via Yahoo Finance · NYSE-Kalendar")
 
 # ── Daten laden ────────────────────────────────────────────────────────────────
@@ -291,6 +297,35 @@ with tab1:
                 "n": len(curves),
                 "avg_return": round(float(avg_curve[-1]), 1),
             }
+
+        # ── Aktuelles Jahr als "We are here" Linie ──
+        if show_current_year:
+            current_year = datetime.now().year
+            cydf = df[df.index.year == current_year]
+            if len(cydf) >= 5:
+                closes_cy = cydf["Close"].values.astype(float)
+                if closes_cy[0] > 0:
+                    norm_cy = (closes_cy / closes_cy[0] - 1) * 100
+                    x_cy = np.linspace(0, 251, len(norm_cy))
+                    interp_cy = np.interp(np.arange(min(252, int(x_cy[-1]) + 1)), x_cy, norm_cy)
+                    fig_curves.add_trace(go.Scatter(
+                        x=list(range(len(interp_cy))), y=interp_cy.tolist(),
+                        mode="lines", name=f"📍 {current_year} (aktuell)",
+                        line=dict(color="#FFD700", width=3, dash="dash"),
+                        hovertemplate=f"<b>{current_year}</b><br>HT %{{x}}<br>%{{y:+.2f}}%<extra></extra>",
+                    ))
+                    # Marker am letzten Punkt
+                    fig_curves.add_trace(go.Scatter(
+                        x=[len(interp_cy) - 1], y=[float(interp_cy[-1])],
+                        mode="markers+text",
+                        marker=dict(color="#FFD700", size=10, symbol="diamond",
+                                    line=dict(color="white", width=1.5)),
+                        text=[f"{current_year}"],
+                        textposition="top right",
+                        textfont=dict(color="#FFD700", size=11, family="Arial Black"),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    ))
 
         fig_curves.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.25)", line_width=1)
         fig_curves = apply_se_theme(
