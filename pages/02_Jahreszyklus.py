@@ -917,6 +917,37 @@ def main():
             expanded=False,
         )
 
+    # ── 5c. Praesidentenzyklus-Signifikanz ────────────────
+    _cycle_names = list(CYCLE_COLORS.keys())
+    _cycle_short = {
+        "Year 1 (Post-Election)": "Post-Election",
+        "Year 2 (Midterm Election)": "Midterm",
+        "Year 3 (Pre-Election)": "Pre-Election",
+        "Year 4 (Election Year)": "Election Year",
+    }
+    _cycle_sig_groups = {}
+    for cn in _cycle_names:
+        _cy = [y for y in year_data.keys()
+               if get_presidential_cycle_year(y) == cn]
+        if len(_cy) >= 3:
+            _c_returns = []
+            for y in _cy:
+                sv = year_data[y]["full_365"][0]
+                ev = year_data[y]["full_365"][364]
+                _c_returns.append((ev - sv) / sv * 100 if sv != 0 else 0)
+            _cycle_sig_groups[_cycle_short.get(cn, cn)] = _c_returns
+
+    if _cycle_sig_groups:
+        _cycle_sig_results = run_significance_test(_cycle_sig_groups)
+        render_significance_section(
+            _cycle_sig_results,
+            expander_title="🏛️ Statistische Signifikanz der Praesidentenzyklus-Jahre",
+            cols_per_row=4,
+            sort_order=list(_cycle_short.values()),
+            key_prefix="cycle_sig",
+            expanded=False,
+        )
+
     # ── 6. 10-Jahres Heatmap ─────────────────────────────
     with st.expander("10 Jahres Heatmap", expanded=True):
         st.plotly_chart(build_monthly_heatmap(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
