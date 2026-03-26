@@ -366,8 +366,8 @@ def build_heatmap(stats, ticker):
     _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0)
 
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
-    fig.update_xaxes(side="bottom", type="category")
-    fig.update_yaxes(autorange="reversed", type="category")
+    fig.update_xaxes(side="bottom", type="category", tickformat=None)
+    fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
 
     # ── Gelber Rahmen um aktuelle Zelle (Monat + Wochentag) ──
     if 0 <= current_weekday <= 4:
@@ -658,8 +658,8 @@ def build_consecutive_heatmap(matrix):
             fillcolor="rgba(0,0,0,0)", layer="above")
 
     fig = apply_se_heatmap_theme(fig, title="Konsekutiv-Analyse: P(Folgetag positiv)", height=220)
-    fig.update_yaxes(type="category")
-    fig.update_xaxes(type="category", side="bottom")
+    fig.update_yaxes(type="category", tickformat=None)
+    fig.update_xaxes(type="category", side="bottom", tickformat=None)
     return fig
 
 
@@ -745,8 +745,8 @@ def build_quarterly_heatmaps(q_stats, ticker):
     fig = apply_se_theme(fig, title=f"{ticker} — Wochentag-Performance nach Quartal", height=340)
     for row in [1, 2]:
         for col in [1, 2]:
-            fig.update_xaxes(type="category", side="bottom", row=row, col=col)
-            fig.update_yaxes(type="category", row=row, col=col)
+            fig.update_xaxes(type="category", side="bottom", tickformat=None, row=row, col=col)
+            fig.update_yaxes(type="category", tickformat=None, row=row, col=col)
     return fig
 
 
@@ -936,26 +936,7 @@ def main():
         sort_order=WEEKDAY_LABELS,
         key_prefix="sig_main")
 
-    # ── Gesamtuebersicht: Signifikanztests je Rendite-Modus ──
-    for mi, mode_name in enumerate(RETURN_MODES):
-        if mode_name == return_mode:
-            continue  # Bereits oben angezeigt
-        mode_stats = calculate_weekday_stats(
-            raw_df, mode_name, years_back,
-            filter_mode, sma_days, rsi_days, rsi_threshold,
-            cycle_filter=cycle_filter if cycle_filter else None
-        )
-        if mode_stats is None:
-            continue
-        mode_groups = {WEEKDAY_LABELS[wd]: mode_stats["by_weekday"][wd]["returns"]
-                       for wd in range(5) if mode_stats["by_weekday"][wd]["returns"]}
-        mode_sig = run_significance_test(mode_groups)
-        mode_short = mode_name.split("(")[0].strip()
-        render_significance_section(mode_sig,
-            expander_title=f"📊 Signifikanz — {mode_short}",
-            cols_per_row=5,
-            sort_order=WEEKDAY_LABELS,
-            key_prefix=f"sig_mode_{mi}")
+    # (Signifikanztests fuer andere Modi entfernt — Hauptmodus reicht)
 
     # ── Detailtabelle ─────────────────────────────────
     with st.expander("📋 Statistik pro Wochentag", expanded=True):
