@@ -1,66 +1,210 @@
 """
 SeasonAlpha — Footer Component
 ===============================
-Zentraler Footer fuer alle Pages: Imprint, Datenschutz, Risk Disclosure.
+Zentraler Footer fuer alle Pages: Impressum, Datenschutz, Risk Disclosure.
 """
 
 import streamlit as st
 
+_LEGAL_STYLE = "color:#8899aa; font-size:11px; line-height:1.7; text-align:justify;"
+_HEADING_STYLE = "color:#aabbcc;"
+
 
 def render_footer():
-    """Rendert den SeasonAlpha Footer mit Links und Risk Disclosure."""
+    """Rendert den SeasonAlpha Footer mit Impressum, Datenschutz und Risk Disclosure."""
     st.markdown("---")
     st.markdown(
         """
-        <style>
-        .se-footer {
-            margin-top: 40px;
-            padding: 24px 0 12px 0;
-            text-align: center;
-        }
-        .se-footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-bottom: 16px;
-        }
-        .se-footer-links a {
-            color: #8899aa;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .se-footer-links a:hover {
-            color: #00CED1;
-        }
-        .se-footer-brand {
-            color: #556677;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        </style>
-
-        <div class="se-footer">
-            <div class="se-footer-links">
-                <a href="#imprint" onclick="document.getElementById('se-risk-toggle').style.display='none'; return false;">Imprint</a>
-                <span style="color:#334455;">|</span>
-                <a href="#datenschutz" onclick="return false;">Datenschutz</a>
-                <span style="color:#334455;">|</span>
-                <a href="javascript:void(0)" onclick="var el=document.getElementById('se-risk-toggle'); el.style.display = el.style.display==='none' ? 'block' : 'none';">Risk Disclosure</a>
-            </div>
-            <div class="se-footer-brand">
+        <div style="text-align:center; padding:12px 0 8px 0;">
+            <span style="color:#556677; font-size:12px;">
                 &copy; 2026 SeasonAlpha. All rights reserved.
-            </div>
+            </span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    with st.expander("Risk Disclosure", expanded=False):
+    # ── Impressum ────────────────────────────────────────
+    with st.expander("⚖️ Impressum", expanded=False):
         st.markdown(
-            "<div style='color:#8899aa; font-size:11px; line-height:1.7; text-align:justify;'>"
-            "<b style='color:#aabbcc;'>Risikohinweis (DE)</b><br>"
+            f"<div style='{_LEGAL_STYLE}'>"
+            f"<b style='{_HEADING_STYLE}'>Angaben gemäß § 5 DDG</b><br><br>"
+            "<b>Betreiber:</b><br>"
+            "Anitha Kratochwil (Einzelunternehmen)<br><br>"
+            "<b>Anschrift:</b><br>"
+            "Hansastraße 8<br>"
+            "80686 München<br>"
+            "Deutschland<br><br>"
+            "<b>Kontakt:</b><br>"
+            "E-Mail: info@seasonalpha.ai<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</b><br><br>"
+            "Anitha Kratochwil<br>"
+            "Hansastraße 8<br>"
+            "80686 München<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>EU-Streitschlichtung</b><br><br>"
+            "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:<br>"
+            "<a href='https://ec.europa.eu/consumers/odr/' target='_blank' style='color:#00CED1;'>"
+            "https://ec.europa.eu/consumers/odr/</a><br>"
+            "Unsere E-Mail-Adresse finden Sie oben im Impressum.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Haftung für Inhalte</b><br><br>"
+            "Als Diensteanbieter sind wir gemäß § 7 Abs.1 DDG für eigene Inhalte auf diesen Seiten "
+            "nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als "
+            "Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde "
+            "Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige "
+            "Tätigkeit hinweisen.<br><br>"
+            "Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den "
+            "allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch "
+            "erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei "
+            "Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend "
+            "entfernen.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Haftung für Links</b><br><br>"
+            "Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen "
+            "Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. "
+            "Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber "
+            "der Seiten verantwortlich.<br><br>"
+            "Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße "
+            "überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.<br><br>"
+            "Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete "
+            "Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von "
+            "Rechtsverletzungen werden wir derartige Links umgehend entfernen.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Urheberrecht</b><br><br>"
+            "Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen "
+            "dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art "
+            "der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen "
+            "Zustimmung des jeweiligen Autors bzw. Erstellers.<br><br>"
+            "Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch "
+            "gestattet.<br><br>"
+            "Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die "
+            "Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche "
+            "gekennzeichnet.<br><br>"
+            "Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um "
+            "einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir "
+            "derartige Inhalte umgehend entfernen."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    # ── Datenschutzerklärung ─────────────────────────────
+    with st.expander("🔒 Datenschutzerklärung", expanded=False):
+        st.markdown(
+            f"<div style='{_LEGAL_STYLE}'>"
+            f"<b style='{_HEADING_STYLE}'>1. Allgemeine Hinweise</b><br><br>"
+            "Der Schutz Ihrer persönlichen Daten ist uns ein besonderes Anliegen. Wir verarbeiten "
+            "Ihre Daten ausschließlich auf Grundlage der gesetzlichen Bestimmungen (insbesondere "
+            "DSGVO und BDSG).<br><br>"
+            "Diese Datenschutzerklärung informiert Sie über Art, Umfang und Zweck der Verarbeitung "
+            "personenbezogener Daten auf unserer Website.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>2. Verantwortlicher</b><br><br>"
+            "Anitha Kratochwil<br>"
+            "Hansastraße 8<br>"
+            "80686 München<br>"
+            "Deutschland<br><br>"
+            "E-Mail: info@seasonalpha.ai<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>3. Hosting</b><br><br>"
+            "Unsere Website wird bei folgendem Anbieter gehostet:<br><br>"
+            "Hetzner Online GmbH<br>"
+            "Industriestr. 25<br>"
+            "91710 Gunzenhausen<br>"
+            "Deutschland<br><br>"
+            "Beim Aufruf unserer Website werden durch den Hosting-Anbieter automatisch Informationen "
+            "erfasst (sog. Server-Logfiles), insbesondere: IP-Adresse, Datum und Uhrzeit der Anfrage, "
+            "Browsertyp und -version, Betriebssystem, Referrer-URL.<br><br>"
+            "Diese Daten sind technisch erforderlich, um die Website bereitzustellen und die "
+            "Systemsicherheit zu gewährleisten.<br><br>"
+            "<b>Rechtsgrundlage:</b> Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse)<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>4. Nutzung von KI-Funktionen</b><br><br>"
+            "Auf unserer Website kommen KI-basierte Funktionen zum Einsatz (z.&nbsp;B. über APIs "
+            "externer Anbieter wie OpenAI oder vergleichbare Dienste).<br><br>"
+            "Dabei gilt:<br>"
+            "• Nutzereingaben werden zur Verarbeitung an externe KI-Dienstleister übermittelt<br>"
+            "• Eine Speicherung der Eingaben durch uns erfolgt nicht<br>"
+            "• Eine Verwendung der Daten zu Trainingszwecken durch uns findet nicht statt<br><br>"
+            "Es kann nicht ausgeschlossen werden, dass die Daten durch den jeweiligen KI-Anbieter "
+            "technisch verarbeitet werden.<br><br>"
+            "<b>Rechtsgrundlage:</b><br>"
+            "Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)<br>"
+            "Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an innovativen Services)<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>5. Kontaktaufnahme</b><br><br>"
+            "Wenn Sie uns per E-Mail kontaktieren, werden Ihre Angaben zur Bearbeitung der Anfrage "
+            "gespeichert.<br><br>"
+            "<b>Verarbeitete Daten:</b> E-Mail-Adresse, Inhalt der Nachricht<br><br>"
+            "<b>Rechtsgrundlage:</b><br>"
+            "Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Maßnahmen)<br>"
+            "Art. 6 Abs. 1 lit. f DSGVO<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>6. Newsletter</b><br><br>"
+            "Wenn Sie sich für unseren Newsletter anmelden, verarbeiten wir Ihre E-Mail-Adresse.<br><br>"
+            "Die Anmeldung erfolgt im Double-Opt-in-Verfahren. Die Daten werden ausschließlich für "
+            "den Versand des Newsletters verwendet.<br><br>"
+            "<b>Rechtsgrundlage:</b> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)<br><br>"
+            "Sie können Ihre Einwilligung jederzeit widerrufen.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>7. Cookies</b><br><br>"
+            "Unsere Website verwendet derzeit nur technisch notwendige Cookies.<br><br>"
+            "Sollten künftig Analyse- oder Marketing-Cookies eingesetzt werden, erfolgt dies "
+            "ausschließlich nach vorheriger Einwilligung über ein Cookie-Consent-Tool.<br><br>"
+            "<b>Rechtsgrundlage:</b><br>"
+            "Art. 6 Abs. 1 lit. f DSGVO (notwendige Cookies)<br>"
+            "Art. 6 Abs. 1 lit. a DSGVO (Einwilligung bei optionalen Cookies)<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>8. Drittanbieter-Inhalte (geplant)</b><br><br>"
+            "Wir behalten uns vor, künftig Inhalte von Drittanbietern einzubinden, insbesondere: "
+            "YouTube (Videos), Instagram / TikTok (Social Media Inhalte).<br><br>"
+            "Beim Aufruf solcher Inhalte können personenbezogene Daten (z.&nbsp;B. IP-Adresse) an die "
+            "jeweiligen Anbieter übertragen werden. Die Einbindung erfolgt nur nach entsprechender "
+            "Einwilligung.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>9. Zahlungsdienstleister (zukünftig)</b><br><br>"
+            "Für kostenpflichtige Angebote planen wir die Nutzung von Stripe Payments Europe Ltd.<br><br>"
+            "Im Rahmen von Zahlungsabwicklungen werden personenbezogene Daten an den "
+            "Zahlungsdienstleister übermittelt. Die Verarbeitung erfolgt ausschließlich zum Zweck "
+            "der Zahlungsabwicklung.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>10. Datenübermittlung in Drittländer</b><br><br>"
+            "Eine Übermittlung personenbezogener Daten in Länder außerhalb der EU erfolgt derzeit "
+            "nicht aktiv durch uns.<br><br>"
+            "Bei Nutzung von KI-Diensten kann eine Verarbeitung in Drittländern (z.&nbsp;B. USA) nicht "
+            "ausgeschlossen werden. In solchen Fällen achten wir auf geeignete Garantien gemäß "
+            "Art. 44 ff. DSGVO (z.&nbsp;B. Standardvertragsklauseln).<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>11. Speicherdauer</b><br><br>"
+            "Personenbezogene Daten werden nur so lange gespeichert, wie dies zur Erfüllung der "
+            "jeweiligen Zwecke erforderlich ist oder gesetzliche Aufbewahrungsfristen bestehen.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>12. Ihre Rechte</b><br><br>"
+            "Sie haben folgende Rechte:<br>"
+            "• Auskunft (Art. 15 DSGVO)<br>"
+            "• Berichtigung (Art. 16 DSGVO)<br>"
+            "• Löschung (Art. 17 DSGVO)<br>"
+            "• Einschränkung der Verarbeitung (Art. 18 DSGVO)<br>"
+            "• Datenübertragbarkeit (Art. 20 DSGVO)<br>"
+            "• Widerspruch (Art. 21 DSGVO)<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>13. Beschwerderecht</b><br><br>"
+            "Sie haben das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren.<br>"
+            "Zuständig ist z.&nbsp;B.: Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>14. Aktualität</b><br><br>"
+            "Diese Datenschutzerklärung hat den Stand: März 2026.<br>"
+            "Wir behalten uns vor, sie bei Bedarf anzupassen."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    # ── Risk Disclosure ──────────────────────────────────
+    with st.expander("⚠️ Risk Disclosure", expanded=False):
+        st.markdown(
+            f"<div style='{_LEGAL_STYLE}'>"
+            f"<b style='{_HEADING_STYLE}'>Risikohinweis (DE)</b><br>"
             "Vergangene Ergebnisse sowie fruehere saisonale Muster bieten keinerlei Anhaltspunkt "
             "fuer kuenftige Ertraege, insbesondere nicht fuer zukuenftige Markttrends. SeasonAlpha "
             "empfiehlt noch billigt weder ein bestimmtes Finanzinstrument, eine Gruppe von "
@@ -98,7 +242,7 @@ def render_footer():
             "repraesentativ fuer andere Kunden oder Klienten und stellen keine Garantie fuer "
             "kuenftige Performance oder Erfolg dar."
             "<br><br>"
-            "<b style='color:#aabbcc;'>Risk Disclosure (EN)</b><br>"
+            f"<b style='{_HEADING_STYLE}'>Risk Disclosure (EN)</b><br>"
             "Past results and past seasonal patterns provide no indication whatsoever of future "
             "performance, in particular future market trends. SeasonAlpha neither recommends nor "
             "endorses any particular financial instrument, group of securities, segment of industry, "

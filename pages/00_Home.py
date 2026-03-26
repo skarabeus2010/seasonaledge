@@ -664,13 +664,4 @@ with _nl_form_col:
 # ══════════════════════════════════════════════════════════════
 # FOOTER
 # ══════════════════════════════════════════════════════════════
-st.markdown("""
-<div class="se-footer">
-  &copy; 2026 SeasonAlpha — Keine Anlageberatung. Trading birgt Risiken.<br>
-  <a href="#">Impressum</a>
-  <a href="#">Datenschutz</a>
-  <a href="#">Risikohinweis</a>
-</div>
-""", unsafe_allow_html=True)
-
 render_footer()
