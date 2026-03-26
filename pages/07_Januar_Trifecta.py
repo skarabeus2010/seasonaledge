@@ -213,22 +213,25 @@ with tab1:
             vals = sub_df[col].dropna()
             return vals.mean() if len(vals) > 0 else float("nan")
 
-        with col_s1:
-            st.metric("🟢 Grün",
-                      f"{len(gruen_df)}x ({len(gruen_df)/total*100:.0f}%)",
-                      f"Ø {_avg_rendite(gruen_df):.1f}% (Feb–Dez)")
-        with col_s2:
-            st.metric("🟡 Gelb",
-                      f"{len(gelb_df)}x ({len(gelb_df)/total*100:.0f}%)",
-                      f"Ø {_avg_rendite(gelb_df):.1f}% (Feb–Dez)")
-        with col_s3:
-            st.metric("🟠 Orange",
-                      f"{len(orange_df)}x ({len(orange_df)/total*100:.0f}%)",
-                      f"Ø {_avg_rendite(orange_df):.1f}% (Feb–Dez)")
-        with col_s4:
-            st.metric("🔴 Rot",
-                      f"{len(rot_df)}x ({len(rot_df)/total*100:.0f}%)",
-                      f"Ø {_avg_rendite(rot_df):.1f}% (Feb–Dez)")
+        _hist_data = [
+            ("Grün", "🟢", "#2ECC71", gruen_df),
+            ("Gelb", "🟡", "#F1C40F", gelb_df),
+            ("Orange", "🟠", "#E67E22", orange_df),
+            ("Rot", "🔴", "#E74C3C", rot_df),
+        ]
+        for col_i, (sig, emo, clr, sdf) in zip([col_s1, col_s2, col_s3, col_s4], _hist_data):
+            with col_i:
+                st.markdown(
+                    f"""<div style="background:rgba(255,255,255,0.04); border-left:3px solid {clr};
+                        border-radius:6px; padding:10px 12px; margin-bottom:4px;">
+                        <div style="font-size:12px; color:#8899aa;">{emo} {sig}</div>
+                        <div style="font-size:18px; font-weight:bold; color:#e8edf5; margin:4px 0;">
+                            {len(sdf)}x ({len(sdf)/total*100:.0f}%)</div>
+                        <div style="font-size:11px; color:#8899aa;">
+                            Ø {_avg_rendite(sdf):.1f}% (Feb–Dez)</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
         # ── Durchschnittsverlauf je Ampelfarbe ──────────────────────────
         st.subheader("📈 Durchschnittsverlauf nach Ampelfarbe")
