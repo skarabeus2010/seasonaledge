@@ -108,12 +108,12 @@ def render_percentile_bar(
         f'</div>'
 
         # 4) Perzentil-Badge + Stats (rechts)
-        f'<span style="font-size:11px; font-weight:700; color:{marker_clr};'
+        f'<span style="font-size:12px; font-weight:700; color:{marker_clr};'
         f'background:{marker_clr}10; padding:2px 8px; border-radius:4px;'
         f'border:1px solid {marker_clr}18; white-space:nowrap;">'
-        f'P{percentile}</span>'
+        f'{percentile}%ile</span>'
 
-        f'<span style="font-size:10px; color:#475569; white-space:nowrap;">'
+        f'<span style="font-size:12px; color:#94a3b8; white-space:nowrap;">'
         f'{z_score:+.1f}σ · n={len(hist_values)}</span>'
 
         f'</div>'
