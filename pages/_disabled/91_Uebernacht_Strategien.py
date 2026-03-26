@@ -26,6 +26,7 @@ from plotly.subplots import make_subplots
 
 from shared.yahoo_downloader import download_data
 from shared.charts import apply_se_theme
+from shared.ticker_select import ticker_select
 from shared.constants import SE_COLORS
 
 # ── Farben ────────────────────────────────────────────────────────────────────
@@ -333,7 +334,7 @@ st.caption(
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("⚙️ Einstellungen")
-    ticker  = st.text_input("Ticker", value="SPY").upper().strip()
+    ticker  = ticker_select(key="on_ticker", default="SPY")
     years   = st.slider("Zeitraum (Jahre)", min_value=3, max_value=30, value=10, step=1)
     st.markdown("---")
     st.markdown(

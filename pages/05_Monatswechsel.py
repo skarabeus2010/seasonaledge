@@ -23,6 +23,7 @@ from datetime import datetime
 
 import plotly.graph_objects as go
 
+from shared.ticker_select import ticker_select
 from shared.constants import (
     DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS,
     SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR,
@@ -333,7 +334,7 @@ def main():
         st.markdown("## 🔄 Turn of the Month")
         st.markdown("---")
         
-        ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="tom_ticker").upper().strip()
+        ticker = ticker_select(key="tom_ticker", default=DEFAULT_TICKER)
         
         period_options = [3, 5, 7, 10, 15, 20, 25, 30, "Max"]
         years_back_raw = st.select_slider(

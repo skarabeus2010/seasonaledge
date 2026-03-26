@@ -1,10 +1,10 @@
-# CLAUDE.md — SeasonAlpha
+# CLAUDE.md — SeasonalEdge
 
-> Version 18.0 | 2026-03-26 | Details → `docs/`
+> Version 17.0 | 2026-03-25 | Details → `docs/`
 
 ## Projekt
 
-**SeasonAlpha** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
+**SeasonalEdge** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
 Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe.
 
 ## Entwicklung
@@ -23,7 +23,6 @@ shared/                  ← Berechnungen, Daten, Utilities
   yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback + OHLC Split-Adjustierung (einziger Cache!)
   calculations.py        ← Kern-Berechnungen
   charts.py              ← Plotly Theme (apply_se_theme)
-  footer.py              ← Zentraler Footer (Imprint, Datenschutz, Risk Disclosure DE+EN)
   ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
   tdom_analysis.py       ← TDoM Berechnungen (3 Strategien, Ranges, Heatmap)
   ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API, KI-Summary, Anomalie-Heatmap
@@ -58,26 +57,11 @@ pages/                   ← Light Live + Premium Pages
                             Anomalie-Radar, Praesidentenzyklus, Outlier Manager,
                             Monats-/Quartals-Perf, 10J-Heatmap, We-are-here Marker
     03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
-                            Saisonaler Match (Korrelation, DTW, t-Test),
-                            Praesidentenzyklus Best-Match,
-                            Wochen-/Monats-/Two-Week-Performance,
-                            Two-Week Heatmap, Aktuelles Jahr Overlay,
-                            Best Two-Weeks Ranking, Momentum-Check,
-                            Two-Week Signifikanztest,
-                            10J-Heatmap, We-are-here TDOM-Marker,
-                            Praesidentenzyklus-Filter, Outlier
+                            Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
+                            We-are-here TDOM-Marker, Praesidentenzyklus-Filter, Outlier
     04_Wochentage        ← Wochentag-Renditen, Praesidentenzyklus, Heatmap
-                            (gelber Rahmen), Signifikanztest (Expander),
-                            Kumulierter Wochenverlauf Mo→Fr (Live Overlay),
-                            Overnight vs Intraday Split,
-                            Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit),
-                            Quartals-Heatmaps (Q1-Q4 x Mo-Fr),
-                            Volatilitaets-Profil (Tages-Range)
-    05_Monatswechsel     ← Turn of the Month + Signifikanztest (Expander),
-                            TOM Heatmap (Monat x Jahr, adaptive Textfarben),
-                            Streak-Analyse (W/L Serien),
-                            Fenster-Optimierung (7x7 t-x/t+y Heatmap),
-                            Praesidentenzyklus TOM-Effekt (Radial Gauges)
+                            (gelber Rahmen), Signifikanztest (Expander)
+    05_Monatswechsel     ← Turn of the Month + Signifikanztest (Expander)
     06_Mondphasen        ← Voll-/Neumond-Effekt + Signifikanztest (Expander)
     07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown (disabled)
     08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
@@ -141,8 +125,6 @@ if _project_dir not in sys.path:
 - Signifikanztests → `significance_gauge.py` (t-Test + Gauge)
 - Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
-- Footer in jeder Page: `from shared.footer import render_footer` → `render_footer()` am Ende
-- Heatmap-Textfarben: Adaptive Farben (dunkel auf hell, hell auf dunkel) — `_heatmap_text_color()` Helper
 
 ## Code Style
 
@@ -211,17 +193,8 @@ UPPER_CASE        → Konstanten
 - [x] Backtest Engine: Tab-Styling, Radial Fill Gauge (Gradient), KI-Erklaertext (2026-03-25)
 - [x] Signifikanztest-Modul: shared/significance_gauge.py (t-Test + Gauge) (2026-03-25)
 - [x] Signifikanztest integriert: Wochentage, Monatswechsel, Mondphasen (optionaler Expander) (2026-03-25)
-- [x] Branding: SeasonalEdge → SeasonAlpha (komplettes Rebranding) (2026-03-26)
-- [x] Monatszyklus: Live-Chart (aktueller Monat als Log-Rendite Overlay) (2026-03-26)
-- [x] Monatszyklus: Saisonaler Match (Korrelation + DTW + t-Test + Erklaertext) (2026-03-26)
-- [x] Monatszyklus: Praesidentenzyklus Best-Match (5 Gauges + Ranking) (2026-03-26)
-- [x] Monatszyklus: Two-Week Erweiterte Analysen (Heatmap, Overlay, Ranking, Momentum, Signifikanz) (2026-03-26)
-- [x] Wochentage: 6 neue Analysen (Kum. Verlauf, O/I Split, Konsekutiv, Quartals-HM, Vola-Profil) (2026-03-26)
-- [x] Wochentage: Gelbe Rahmen + adaptive Heatmap-Textfarben in allen Charts (2026-03-26)
-- [x] Monatswechsel: TOM Heatmap + Streak-Analyse + Fenster-Optimierung + Zyklus-Match (2026-03-26)
-- [x] Footer: shared/footer.py — Imprint, Datenschutz, Risk Disclosure (DE+EN) in allen Pages (2026-03-26)
-- [x] Adaptive Heatmap-Textfarben global: dunkle Schrift auf hellen Zellen (2026-03-26)
-- [ ] Deploy-Fix: seo/output/ in .gitignore + git reset im Deploy-Script (2026-03-26)
+- [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
+- [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 
 ## Docs (bei Bedarf lesen)
 

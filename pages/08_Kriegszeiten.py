@@ -24,6 +24,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, SE_COLORS
 from shared.data import download_data, preprocess
 from shared.calculations import (
@@ -62,7 +63,7 @@ with st.sidebar:
     st.markdown("### ⚔️ Im Schatten des Krieges")
     st.markdown("---")
 
-    ticker = st.text_input("Ticker", value="^DJI", key="war_ticker").upper().strip()
+    ticker = ticker_select(key="war_ticker", default="^DJI")
 
     smoothing = st.slider("Glaettung (Tage)", 1, 21, 5, 2, key="war_smooth")
 

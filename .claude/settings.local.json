@@ -7,7 +7,19 @@
       "Bash(git add:*)",
       "Bash(git rm:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(git stash:*)",
+      "Bash(py -m seo.programmatic_seo_builder)",
+      "Bash(find C:/dev/Seasonaledge -type f -name *.sh -o -name *deploy* -o -name *docker*)",
+      "Bash(curl -s -L \"http://seasonalpha.ai/google85fed48a233d6c1f.html\")",
+      "Bash(curl -s -I \"http://seasonalpha.ai/google85fed48a233d6c1f.html\")",
+      "Bash(curl -s -I \"https://seasonalpha.ai/google85fed48a233d6c1f.html\")",
+      "Bash(curl -s \"https://seasonalpha.ai/google85fed48a233d6c1f.html\")",
+      "Bash(xxd)",
+      "Bash(nslookup -type=TXT seasonalpha.ai 8.8.8.8)",
+      "Bash(git pull:*)"
     ]
   }
 }

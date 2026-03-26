@@ -32,6 +32,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import (
     DEFAULT_TICKER, DEFAULT_YEARS, SE_COLORS, MONTH_NAMES_DE,
     CYCLE_COLORS, PRESSURE_PERIODS, COLOR_PRESSURE,
@@ -675,7 +676,7 @@ def main():
         st.markdown("## 📈 Jahreszyklus")
         st.markdown("---")
 
-        ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="ys_ticker").upper().strip()
+        ticker = ticker_select(key="ys_ticker", default=DEFAULT_TICKER)
 
         period_options = [3, 5, 7, 10, 15, 20, 25, 30, "Max"]
         years_back_raw = st.select_slider(

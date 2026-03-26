@@ -449,6 +449,31 @@ def fetch_historical_cpi() -> list[dict]:
     )
 
 
+# ── Tickers (Stammdaten) ─────────────────────────
+
+def upsert_tickers(records: list[dict]):
+    """Ticker-Stammdaten upserten (aus shared/symbols.py)."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("tickers").upsert(
+            batch, on_conflict="ticker"
+        ).execute()
+
+
+def search_tickers_db(query: str, limit: int = 10) -> list[dict]:
+    """Ticker-Suche via Supabase RPC (fuer zukuenftige API-Nutzung)."""
+    return (
+        get_client()
+        .rpc("search_tickers", {"q": query, "lim": limit})
+        .execute()
+        .data
+    )
+
+
 def fetch_spot_vol_beta(
     start_date: str = None,
     end_date: str = None,

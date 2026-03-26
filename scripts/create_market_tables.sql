@@ -126,3 +126,72 @@ CREATE TABLE IF NOT EXISTS historical_cpi (
 );
 
 CREATE INDEX IF NOT EXISTS idx_historical_cpi_year ON historical_cpi (year);
+
+-- ── Ticker-Stammdaten (Symboldatenbank) ─────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS tickers (
+    ticker       TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    kategorie    TEXT NOT NULL,
+    waehrung     TEXT DEFAULT 'USD',
+    exchange     TEXT,
+    beschreibung TEXT,
+    aktiv        BOOLEAN DEFAULT TRUE,
+    updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tickers_kategorie ON tickers (kategorie);
+CREATE INDEX IF NOT EXISTS idx_tickers_name ON tickers (name);
+
+-- RPC: Ticker-Suche (fuer zukuenftige API-Nutzung)
+CREATE OR REPLACE FUNCTION search_tickers(q TEXT, lim INT DEFAULT 10)
+RETURNS TABLE(ticker TEXT, name TEXT, kategorie TEXT) AS $$
+  SELECT t.ticker, t.name, t.kategorie FROM tickers t
+  WHERE t.aktiv = TRUE
+    AND (t.ticker ILIKE q || '%' OR t.name ILIKE '%' || q || '%')
+  ORDER BY
+    CASE WHEN t.ticker ILIKE q THEN 0
+         WHEN t.ticker ILIKE q || '%' THEN 1
+         ELSE 2 END,
+    t.name
+  LIMIT lim;
+$$ LANGUAGE sql STABLE;
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- Row Level Security (RLS)
+-- Ohne RLS kann jeder mit dem anon-Key alle Daten lesen/schreiben/loeschen!
+-- service_role bypassed RLS automatisch (Backend/Nightly Jobs).
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- ── RLS aktivieren ───────────────────────────────────────────────────────────
+
+ALTER TABLE prices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seasonality ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE market_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE monthly_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ki_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scanner_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tdom_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE spot_vol_beta ENABLE ROW LEVEL SECURITY;
+ALTER TABLE historical_cpi ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tickers ENABLE ROW LEVEL SECURITY;
+
+-- ── Policies: Marktdaten read-only fuer anon ────────────────────────────────
+
+CREATE POLICY "anon_read" ON prices FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON seasonality FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON market_events FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON monthly_stats FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON ki_scores FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON scanner_results FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON tdom_stats FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON spot_vol_beta FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON historical_cpi FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON tickers FOR SELECT TO anon USING (true);
+
+-- ── Policies: Subscribers + Logs nur Insert fuer anon ───────────────────────
+
+CREATE POLICY "anon_subscribe" ON subscribers FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_log" ON app_logs FOR INSERT TO anon WITH CHECK (true);

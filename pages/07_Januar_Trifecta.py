@@ -24,6 +24,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 from shared.yahoo_downloader import download_data, preprocess
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER
 from shared.strategies import januar_trifecta, kaeppel, STRATEGIES
 from shared.charts import apply_se_theme
@@ -48,7 +49,7 @@ inject_se_css()
 
 with st.sidebar:
     st.header("⚙️ Einstellungen")
-    ticker = st.text_input("Ticker", value=DEFAULT_TICKER).upper().strip()
+    ticker = ticker_select(key="tri_ticker", default=DEFAULT_TICKER)
     analyse_jahr = st.number_input(
         "Analyse-Jahr (Trifecta)",
         min_value=1990,

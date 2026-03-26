@@ -26,6 +26,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, SE_COLORS, MONTH_NAMES_DE
 from shared.data import download_data, preprocess
 from shared.calculations import (
@@ -280,9 +281,7 @@ def main():
     # ── Sidebar ──────────────────────────────────────
     with st.sidebar:
         st.markdown("### ⭐ Premium Dashboard")
-        ticker = st.text_input(
-            "Ticker", value=DEFAULT_TICKER, key="pd_ticker"
-        ).upper().strip()
+        ticker = ticker_select(key="pd_ticker", default=DEFAULT_TICKER)
 
         years_back = st.slider("📅 Jahre zurück", 3, 50, 20, key="pd_years")
 

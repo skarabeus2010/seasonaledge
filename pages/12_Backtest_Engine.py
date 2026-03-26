@@ -24,6 +24,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, SE_COLORS
 from shared.data import download_data, preprocess
 from shared.charts import apply_se_theme, apply_se_heatmap_theme
@@ -106,7 +107,7 @@ with st.sidebar:
     st.markdown("### Backtest Engine")
     st.markdown("---")
 
-    ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="bt_ticker").upper().strip()
+    ticker = ticker_select(key="bt_ticker", default=DEFAULT_TICKER)
 
     years_back = st.slider("Jahre zurueck", 5, 50, 20, key="bt_years")
 

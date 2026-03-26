@@ -28,6 +28,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import (
     DEFAULT_TICKER, DEFAULT_YEARS, MONTH_NAMES_DE, CYCLE_COLORS,
     SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR,
@@ -830,7 +831,7 @@ def main():
         st.markdown("## 📅 Weekday Performance")
         st.markdown("---")
 
-        ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="wd_ticker").upper().strip()
+        ticker = ticker_select(key="wd_ticker", default=DEFAULT_TICKER)
 
         years_back = st.slider("Analyse-Zeitraum (Jahre)", 1, 30, 10, key="wd_years")
 

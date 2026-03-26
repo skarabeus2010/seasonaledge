@@ -25,6 +25,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, SE_COLORS, MONTH_NAMES_DE
 from shared.data import download_data, preprocess
 from shared.calculations import build_year_data, calculate_seasonal_average
@@ -171,9 +172,7 @@ def main():
     # ── Sidebar ──
     with st.sidebar:
         st.markdown("### 🧠 KI Seasonal Score")
-        ticker = st.text_input(
-            "Ticker", value=DEFAULT_TICKER, key="ki_ticker"
-        ).upper().strip()
+        ticker = ticker_select(key="ki_ticker", default=DEFAULT_TICKER)
 
         years_back = st.slider(
             "📅 Jahre zurück", 5, 50, 20, key="ki_years"

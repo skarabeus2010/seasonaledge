@@ -24,6 +24,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, SE_COLORS
 from shared.data import download_data, preprocess
 from shared.charts import apply_se_theme
@@ -61,10 +62,11 @@ SCENARIOS = {
 scenario = st.sidebar.selectbox("📋 Szenario", list(SCENARIOS.keys()))
 
 if scenario == "Eigene Auswahl":
-    trigger_ticker = st.sidebar.text_input("🔴 Trigger-Asset (A)", value="CL=F",
-                                            help="Asset das den Shock auslöst")
-    target_ticker = st.sidebar.text_input("🎯 Ziel-Asset (B)", value="^GDAXI",
-                                           help="Asset dessen Reaktion gemessen wird")
+    with st.sidebar:
+        trigger_ticker = ticker_select(key="shock_trigger", default="CL=F",
+                                       label="Trigger-Asset (A)")
+        target_ticker = ticker_select(key="shock_target", default="^GDAXI",
+                                      label="Ziel-Asset (B)")
 else:
     trigger_ticker, target_ticker = SCENARIOS[scenario]
     st.sidebar.info(f"Trigger: **{trigger_ticker}** → Ziel: **{target_ticker}**")

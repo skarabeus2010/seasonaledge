@@ -25,6 +25,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from scipy.spatial.distance import euclidean
 
+from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS, COLOR_SEASONAL_AVG, COLOR_CURRENT_YEAR
 from shared.data import download_data, preprocess
 from shared.charts import apply_se_theme
@@ -429,7 +430,7 @@ def main():
         st.markdown("_KI-basierte Saisonalität_")
         st.markdown("---")
         
-        ticker = st.text_input("Ticker", value=DEFAULT_TICKER, key="tp_ticker").upper().strip()
+        ticker = ticker_select(key="tp_ticker", default=DEFAULT_TICKER)
         
         period_options = [5, 7, 10, 15, 20, 25, 30, "Max"]
         years_back_raw = st.select_slider("Analyse-Zeitraum",
