@@ -1,10 +1,10 @@
-# CLAUDE.md — SeasonalEdge
+# CLAUDE.md — SeasonAlpha
 
-> Version 18.0 | 2026-03-26 | Details → `docs/`
+> Version 19.0 | 2026-03-26 | Details → `docs/`
 
 ## Projekt
 
-**SeasonalEdge** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
+**SeasonAlpha** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
 Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe.
 
 ## Entwicklung
@@ -41,7 +41,9 @@ shared/                  ← Berechnungen, Daten, Utilities
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
-  footer.py              ← Footer: Impressum, Datenschutz, Risk Disclosure (Expander)
+  percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
+  footer.py              ← Footer: Impressum, Datenschutz, Risk Disclosure (3 Expander)
+  ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
   strategies/            ← 65+ Strategien
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
@@ -53,22 +55,37 @@ scripts/                 ← Batch-Jobs
 pages/                   ← Light Live + Premium Pages
   Light Live (aktiv, 9 Pages):
     00_Home              ← Startseite (Hero, 3x3 Kacheln, Slider, Stats, Newsletter)
-    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten + KI (disabled)
+    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten, Anomalie-Radar,
+                            Perzentil-Statusbar, Kontext-Panel (kompakte Karten),
+                            Heatmap Dekade×Monat, Box-Plot (alle in Expandern)
     02_Jahreszyklus      ← Saisonaler Jahresverlauf, Pressure Chart, Detrend,
                             Anomalie-Radar, Praesidentenzyklus, Outlier Manager,
+                            Monats-Signifikanz (12 Tachos), Quartals-Signifikanz,
+                            Praesidentenzyklus-Signifikanz (4 Tachos),
+                            Praesidentenzyklus Best Match (DTW + Korrelation),
+                            Perzentil-Statusbar, Perzentil-Baender (25./75.),
                             Monats-/Quartals-Perf, 10J-Heatmap, We-are-here Marker
     03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
                             Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
-                            We-are-here TDOM-Marker, Praesidentenzyklus-Filter, Outlier
-    04_Wochentage        ← Wochentag-Renditen, Praesidentenzyklus, Heatmap
-                            (gelber Rahmen), Signifikanztest (Expander),
+                            We-are-here TDOM-Marker, Praesidentenzyklus-Filter,
+                            Perzentil-Statusbar, Outlier
+    04_Wochentage        ← Wochentag-Renditen (Expander), Praesidentenzyklus,
+                            Heatmap (gelber Rahmen, 2 Nachkommastellen),
+                            Signifikanztest (Expander),
                             Alle-Modi-Signifikanz (4 Rendite-Modi × 5 Tage),
-                            Kumulierter Wochenverlauf, Overnight/Intraday Split
+                            Kumulierter Wochenverlauf, Overnight/Intraday Split,
+                            Konsekutiv-Analyse, Quartals-Performance, Volatilitaet
     05_Monatswechsel     ← Turn of the Month, TOM Heatmap (apply_se_heatmap_theme),
-                            Signifikanztest (Expander)
-    06_Mondphasen        ← Voll-/Neumond-Effekt + Signifikanztest (Expander)
-    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown,
-                            Aktuelles-Jahr-Overlay (goldene Linie, Sidebar-Toggle)
+                            Signifikanztest (Expander), Streak-Analyse,
+                            Perzentil-Statusbar, TOM Stats (kompakte Karten)
+    06_Mondphasen        ← Voll-/Neumond-/Supermond-Effekt,
+                            Signifikanztest (Expander, Default ON),
+                            Mond-Heatmap (Monat × Phase),
+                            Perzentil-Statusbar, naechste Mondphasen
+    07_Januar_Trifecta   ← Premium Ampelsystem (Glow-Karten, Badges),
+                            Ø-Verlauf je Signal + Aktuelles-Jahr-Overlay (gold),
+                            Max Drawdown (kompakte Karten),
+                            Jahresrendite nach Signal, Historische Tabelle
     08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
     11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
   Disabled (pages/_disabled/):
@@ -125,6 +142,8 @@ if _project_dir not in sys.path:
 | Heatmaps: `apply_se_heatmap_theme()` | + `tickformat=None` auf Kategorie-Achsen |
 | Inline `update_layout` VERBOTEN | Nur `apply_se_theme()` + chart-spezifische Overrides |
 | `significance_gauge`: key_prefix | Bei Mehrfach-Aufruf `key_prefix` übergeben |
+| `st.metric` für kompakte Karten vermeiden | HTML-Karten (10px Label, 14px Wert) verwenden |
+| Perzentil-Bar unter Hauptcharts | `from shared.percentile_bar import render_percentile_bar` |
 
 ## Architektur-Prinzipien
 
@@ -132,10 +151,23 @@ if _project_dir not in sys.path:
 - Kein Copy-Paste von Logik zwischen Pages
 - Wiederverwendbare Charts → `distribution_charts.py`
 - Signifikanztests → `significance_gauge.py` (t-Test + Gauge, key_prefix bei Mehrfach-Nutzung)
+- Perzentil-Statusbar → `percentile_bar.py` (Micro-Gauge Ribbon unter Charts)
 - Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
 - Heatmaps → `apply_se_heatmap_theme()` + `tickformat=None` auf Kategorie-Achsen
-- Footer (Impressum/Datenschutz/Risk) → `shared/footer.py` als Expander
+- Footer (Impressum/Datenschutz/Risk) → `shared/footer.py` als 3 Expander
+- Kompakte Karten statt `st.metric` → HTML-Flex-Karten (Dark Mode, farbcodiert)
+- Alle Sektionen in Expander verpacken (Default ON/OFF je nach Relevanz)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
+
+## UI-Komponenten (Premium Dark Mode)
+
+| Komponente | Modul | Verwendung |
+|-----------|-------|------------|
+| Signifikanz-Tachos | `significance_gauge.py` | t-Test + Radial Gauge pro Gruppe |
+| Perzentil Stat-Ribbon | `percentile_bar.py` | Einzeilig: Wert, Ø, Delta, Micro-Gauge, %ile, σ |
+| Kompakte Karten | Inline HTML | Flex-Row, 10px Label, 14px Wert, farbcodiert |
+| Best Match | Inline HTML | DTW + Korrelation, Pokal-Icon beim besten Match |
+| Premium Ampel | Inline HTML | Glow-Effekt, Badges statt massive Farbflächen |
 
 ## Code Style
 
@@ -210,11 +242,28 @@ UPPER_CASE        → Konstanten
 - [x] Wochentage: Heatmap Colorbar weisse Schrift + 2 Nachkommastellen (2026-03-26)
 - [x] Wochentage: DuplicateElementId Fix (key_prefix in significance_gauge) (2026-03-26)
 - [x] Monatswechsel: TOM Heatmap Fix (apply_se_heatmap_theme, tickformat=None) (2026-03-26)
-- [x] Trifecta: Aktuelles-Jahr-Overlay (goldene gestrichelte Linie, Sidebar-Toggle) (2026-03-26)
-- [x] Footer: Impressum + Datenschutz als Expander, Extra-Pages nach _disabled (2026-03-26)
+- [x] Trifecta: Aktuelles-Jahr-Overlay (goldene Linie, nur bis heute) (2026-03-26)
+- [x] Trifecta: Premium Redesign (Glow-Ampel, Badges, kompakte Karten) (2026-03-26)
+- [x] Footer: Impressum + Datenschutz als Expander (vollständige Rechtstexte) (2026-03-26)
 - [x] Footer: Risk Disclosure DE + EN (2026-03-26)
+- [x] Perzentil Stat-Ribbon: shared/percentile_bar.py (Micro-Gauge, %ile, Z-Score) (2026-03-26)
+- [x] Perzentil-Bar integriert: Jahreszyklus, Monatszyklus, Dekadenzyklus, Trifecta (2026-03-26)
+- [x] Dekadenzyklus: Premium Redesign mit Expandern + kompakten HTML-Karten (2026-03-26)
+- [x] Jahreszyklus: Monats-Signifikanz (12 Tachos) + Quartals-Signifikanz (2026-03-26)
+- [x] Jahreszyklus: Praesidentenzyklus-Signifikanz (4 Tachos) (2026-03-26)
+- [x] Jahreszyklus: Praesidentenzyklus Best Match (DTW + Korrelation, 5 Karten) (2026-03-26)
+- [x] Jahreszyklus: Perzentil-Baender (25./75. Perzentil) im Hauptchart (2026-03-26)
+- [x] Mondphasen: Supermond-Effekt in Sidebar + Berechnung (2026-03-26)
+- [x] Mondphasen: Mond-Heatmap (Monat × Phase) (2026-03-26)
+- [x] Mondphasen: Expander-Reorganisation (Signifikanz Default ON) (2026-03-26)
+- [x] Monatswechsel: Perzentil-Statusbar + TOM Stats als kompakte Karten (2026-03-26)
+- [x] Monatswechsel: Signifikanz-Reihenfolge Fix (Jan→Feb bis Dez→Jan) (2026-03-26)
+- [x] Ticker-Autocomplete: Search-as-you-type mit Supabase (shared/ticker_autocomplete.py) (2026-03-26)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
+- [ ] Saisonalitaets-Stabilitaet (Rolling 10J-Fenster: Pattern-Veraenderung ueber Jahrzehnte)
+- [ ] Drawdown-Saisonalitaet (Wann starten/enden groesste Drawdowns im Jahr?)
+- [ ] Bull/Bear Regime-Split (Saisonalitaet getrennt fuer VIX >25 vs <25)
 
 ## Docs (bei Bedarf lesen)
 
