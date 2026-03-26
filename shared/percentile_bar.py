@@ -67,26 +67,26 @@ def render_percentile_bar(
     html = (
         # Outer Container: schmale Ribbon
         f'<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;'
-        f'padding:8px 16px; margin:2px 0 10px 0;'
+        f'padding:8px 16px; margin:-8px 0 10px 0;'
         f'border-top:1px solid rgba(255,255,255,0.04);'
         f'border-bottom:1px solid rgba(255,255,255,0.04);'
         f'background:rgba(15,19,24,0.5);">'
 
-        # 1) Kontext (links, dezent)
-        f'<span style="font-size:10px; color:#475569; font-weight:500;'
+        # 1) Kontext (links) — Label hell/weiss
+        f'<span style="font-size:12px; color:#e2e8f0; font-weight:600;'
         f'letter-spacing:0.3px; white-space:nowrap;">'
         f'{context_label}</span>'
         f'{title_html}'
 
         # 2) Performance: aktuell + Ø + Delta-Badge
-        f'<span style="font-size:14px; font-weight:800; color:{cur_clr};'
+        f'<span style="font-size:16px; font-weight:800; color:{cur_clr};'
         f'letter-spacing:-0.3px; white-space:nowrap;">'
         f'{current_value:{value_fmt}}{suffix}</span>'
 
-        f'<span style="font-size:10px; color:#64748b; white-space:nowrap;">'
+        f'<span style="font-size:12px; color:#64748b; white-space:nowrap;">'
         f'Ø {hist_mean:{value_fmt}}{suffix}</span>'
 
-        f'<span style="font-size:10px; font-weight:600; color:{delta_clr};'
+        f'<span style="font-size:11px; font-weight:600; color:{delta_clr};'
         f'background:{delta_clr}12; padding:2px 7px; border-radius:4px;'
         f'border:1px solid {delta_clr}20; white-space:nowrap;">'
         f'{delta:{value_fmt}} vs. Ø</span>'
@@ -108,12 +108,12 @@ def render_percentile_bar(
         f'</div>'
 
         # 4) Perzentil-Badge + Stats (rechts)
-        f'<span style="font-size:10px; font-weight:700; color:{marker_clr};'
+        f'<span style="font-size:11px; font-weight:700; color:{marker_clr};'
         f'background:{marker_clr}10; padding:2px 8px; border-radius:4px;'
         f'border:1px solid {marker_clr}18; white-space:nowrap;">'
         f'P{percentile}</span>'
 
-        f'<span style="font-size:9px; color:#475569; white-space:nowrap;">'
+        f'<span style="font-size:10px; color:#475569; white-space:nowrap;">'
         f'{z_score:+.1f}σ · n={len(hist_values)}</span>'
 
         f'</div>'
