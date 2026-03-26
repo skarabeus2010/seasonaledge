@@ -355,10 +355,10 @@ def build_heatmap(stats, ticker):
         hovertext=hover_texts,
         hovertemplate="%{hovertext}<extra></extra>",
         colorbar=dict(
-            title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+            title=dict(text="Ø %", font=dict(color="#FFFFFF")),
             ticksuffix="%",
             tickformat="+.2f",
-            tickfont=dict(color=SE_COLORS["text_muted"]),
+            tickfont=dict(color="#FFFFFF"),
         ),
     ))
 
@@ -905,6 +905,22 @@ def main():
             f"{stats['filtered_count']} von {stats['total_count']} Tagen passieren den Filter ({pct:.0f}%)"
         )
 
+    # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
+    with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
+        wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        cw_curve = calc_current_week_curve(raw_df)
+        cum_fig = build_weekly_cumulative_chart(wd_cum_stats, ticker, current_week_curve=cw_curve)
+        if cum_fig:
+            st.plotly_chart(cum_fig, use_container_width=True, key="wd_cum_chart")
+            st.markdown(
+                "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+                "<b>Interpretation:</b> Zeigt, wie sich die Wochenrendite von Montag bis Freitag "
+                "aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. "
+                "Steigt die Kurve vor allem am Anfang der Woche, spricht das fuer "
+                "fruehen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>",
+                unsafe_allow_html=True)
+
     # ── Balkendiagramm ────────────────────────────────
     bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
     st.plotly_chart(bar_fig, use_container_width=True)
@@ -919,87 +935,25 @@ def main():
         cols_per_row=5,
         sort_order=WEEKDAY_LABELS)
 
-    # ── Gesamtuebersicht: alle Rendite-Modi × Wochentage ──
-    with st.expander("📊 Gesamtübersicht — alle Rendite-Berechnungen × Wochentage", expanded=False):
-        # Daten fuer alle Modi berechnen
-        all_mode_stats = {}
-        for mode_name in RETURN_MODES:
-            mode_stats = calculate_weekday_stats(
-                raw_df, mode_name, years_back,
-                filter_mode, sma_days, rsi_days, rsi_threshold,
-                cycle_filter=cycle_filter if cycle_filter else None
-            )
-            if mode_stats is not None:
-                all_mode_stats[mode_name] = mode_stats
-
-        if all_mode_stats:
-            mode_short_names = {
-                "Close → Close (t0 → t1)": "C→C",
-                "Close → Open (t0 → t1)": "C→O",
-                "Open → Close (t0)": "O→C intra",
-                "Open → Close (t0 → t1)": "O→C t0→t1",
-            }
-            mode_colors = ["#4d9fff", "#00d4aa", "#e8a425", "#a855f7"]
-
-            cols = st.columns(5)
-            _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
-
-            for wd, col in enumerate(cols):
-                with col:
-                    st.markdown(
-                        f"<p style='text-align:center; color:#c8d6e5; "
-                        f"font-weight:600; font-size:13px; margin-bottom:2px;'>"
-                        f"{WEEKDAY_LABELS[wd]}</p>",
-                        unsafe_allow_html=True,
-                    )
-
-                    mode_names = []
-                    avgs = []
-                    colors = []
-                    for i, (mode_name, ms) in enumerate(all_mode_stats.items()):
-                        avg = ms["by_weekday"][wd]["avg"]
-                        mode_names.append(mode_short_names.get(mode_name, mode_name))
-                        avgs.append(avg)
-                        colors.append(mode_colors[i % len(mode_colors)])
-
-                    bar_colors = [SE_COLORS["positive"] if v >= 0
-                                  else SE_COLORS["negative"] for v in avgs]
-
-                    fig = go.Figure(go.Bar(
-                        x=mode_names,
-                        y=avgs,
-                        marker_color=bar_colors,
-                        text=[f"{v:+.3f}%" for v in avgs],
-                        textposition="outside",
-                        textfont=dict(size=9, color="#c8d6e5"),
-                        hovertemplate="<b>%{x}</b><br>Ø %{y:+.4f}%<extra></extra>",
-                    ))
-                    fig.add_hline(y=0, line_dash="dash",
-                                  line_color="rgba(255,255,255,0.15)")
-                    fig.update_layout(
-                        paper_bgcolor=SE_COLORS["bg"],
-                        plot_bgcolor=SE_COLORS["bg"],
-                        height=200,
-                        margin=dict(l=5, r=5, t=10, b=5),
-                        xaxis=dict(tickfont=dict(size=8, color="#5a6e85"),
-                                   gridcolor="rgba(0,0,0,0)"),
-                        yaxis=dict(tickfont=dict(size=8, color="#5a6e85"),
-                                   tickformat="+.3f", ticksuffix="%",
-                                   gridcolor="rgba(255,255,255,0.04)",
-                                   zeroline=False),
-                        bargap=0.2,
-                    )
-                    st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CFG)
-
-            st.markdown(
-                f"<p style='color:#5a6e85; font-size:11px; text-align:center;'>"
-                f"<b>C→C</b> Close→Close · <b>C→O</b> Close→Open (Overnight) · "
-                f"<b>O→C intra</b> Open→Close Intraday · <b>O→C t0→t1</b> Open→Close Folgetag "
-                f"· Zeitraum: {years_back}J · Filter: {filter_mode}</p>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.warning("Nicht genügend Daten für die Gesamtübersicht.")
+    # ── Gesamtuebersicht: Signifikanztests je Rendite-Modus ──
+    for mode_name in RETURN_MODES:
+        if mode_name == return_mode:
+            continue  # Bereits oben angezeigt
+        mode_stats = calculate_weekday_stats(
+            raw_df, mode_name, years_back,
+            filter_mode, sma_days, rsi_days, rsi_threshold,
+            cycle_filter=cycle_filter if cycle_filter else None
+        )
+        if mode_stats is None:
+            continue
+        mode_groups = {WEEKDAY_LABELS[wd]: mode_stats["by_weekday"][wd]["returns"]
+                       for wd in range(5) if mode_stats["by_weekday"][wd]["returns"]}
+        mode_sig = run_significance_test(mode_groups)
+        mode_short = mode_name.split("(")[0].strip()
+        render_significance_section(mode_sig,
+            expander_title=f"📊 Signifikanz — {mode_short}",
+            cols_per_row=5,
+            sort_order=WEEKDAY_LABELS)
 
     # ── Detailtabelle ─────────────────────────────────
     with st.expander("📋 Statistik pro Wochentag", expanded=True):
@@ -1015,23 +969,6 @@ def main():
                 "Anzahl": d["count"]
             })
         st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
-
-    # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
-    st.markdown("---")
-    with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
-        wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,
-            cycle_filter=cycle_filter if cycle_filter else None)
-        cw_curve = calc_current_week_curve(raw_df)
-        cum_fig = build_weekly_cumulative_chart(wd_cum_stats, ticker, current_week_curve=cw_curve)
-        if cum_fig:
-            st.plotly_chart(cum_fig, use_container_width=True, key="wd_cum_chart")
-            st.markdown(
-                "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
-                "<b>Interpretation:</b> Zeigt, wie sich die Wochenrendite von Montag bis Freitag "
-                "aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. "
-                "Steigt die Kurve vor allem am Anfang der Woche, spricht das fuer "
-                "fruehen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>",
-                unsafe_allow_html=True)
 
     # ── Overnight vs. Intraday ────────────────────────
     with st.expander("🌙 Overnight vs. Intraday Split", expanded=True):
