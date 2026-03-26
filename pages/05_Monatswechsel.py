@@ -74,7 +74,7 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
     now = datetime.now()
 
     y_labels = [str(y) for y in data_years]
-    x_labels = [f"{MONTH_NAMES_DE[m-1]}→{MONTH_NAMES_DE[m % 12]}" for m in range(1, 13)]
+    x_labels = [f"{MONTH_NAMES_DE[m-1]}–{MONTH_NAMES_DE[m % 12]}" for m in range(1, 13)]
 
     # Lookup: (year, month) → total_return
     lookup = {}
@@ -110,8 +110,8 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
                                   height=max(500, n_years * 50 + 140))
     fig.update_yaxes(autorange="reversed", type="category", tickformat="")
-    fig.update_xaxes(type="category", tickangle=-45, tickformat="")
-    fig.update_layout(margin=dict(b=80))
+    fig.update_xaxes(type="category", tickangle=0, tickformat="",
+                     tickfont=dict(size=10))
     fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
     return fig
 
@@ -442,16 +442,21 @@ def main():
             unsafe_allow_html=True)
 
     # ── Signifikanztest (optional) ────────────────────
+    from collections import OrderedDict
     from shared.significance_gauge import run_significance_test, render_significance_section
-    sig_groups = {"TOM Gesamt": [c["total_return"] for c in tom_result["all_curves"]]}
-    month_perf_sig = {}
-    for entry in tom_result["all_curves"]:
-        m = entry["month"]
+
+    # Sortiert: Jan→Feb, Feb→Mär, ..., Dez→Jan
+    month_perf_sig = OrderedDict()
+    for m in range(1, 13):
         key = f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}"
-        if key not in month_perf_sig:
-            month_perf_sig[key] = []
-        month_perf_sig[key].append(entry["total_return"])
+        rets = [e["total_return"] for e in tom_result["all_curves"] if e["month"] == m]
+        if rets:
+            month_perf_sig[key] = rets
+
+    sig_groups = OrderedDict()
+    sig_groups["TOM Gesamt"] = [c["total_return"] for c in tom_result["all_curves"]]
     sig_groups.update(month_perf_sig)
+
     sig_results = run_significance_test(sig_groups)
     render_significance_section(sig_results,
         expander_title="📊 Statistische Signifikanz des Monatswechsel-Effekts")
