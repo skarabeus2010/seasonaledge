@@ -279,24 +279,32 @@ def main():
                                phase_info["name"], phase_info["color"], show_individual)
         st.plotly_chart(fig, use_container_width=True)
         
-        # Metriken
+        # Metriken (kompakte Karten)
         stats = result["stats"]
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            st.metric("Win Rate", f"{stats['win_rate']:.1f}%")
-        with c2:
-            st.metric("Ø Rendite", f"{stats['avg_return']:+.3f}%")
-        with c3:
-            st.metric("Median", f"{stats['median_return']:+.3f}%")
-        with c4:
-            st.metric("Max Gewinn", f"{stats['max_gain']:+.2f}%")
-        with c5:
-            st.metric("Max Verlust", f"{stats['max_loss']:+.2f}%")
-        
-        st.caption(
-            f"Basierend auf {stats['total_windows']} Mondphasen-Fenstern · "
-            f"{stats['winning']} Gewinner / {stats['losing']} Verlierer · "
-            f"Std.Abw: {stats['std_dev']:.3f}%"
+        avg_clr = "#34d399" if stats["avg_return"] >= 0 else "#f87171"
+        med_clr = "#34d399" if stats["median_return"] >= 0 else "#f87171"
+        _cards = [
+            ("Win Rate", f"{stats['win_rate']:.1f}%", "#e2e8f0"),
+            ("Ø Rendite", f"{stats['avg_return']:+.3f}%", avg_clr),
+            ("Median", f"{stats['median_return']:+.3f}%", med_clr),
+            ("Max Gewinn", f"{stats['max_gain']:+.2f}%", "#34d399"),
+            ("Max Verlust", f"{stats['max_loss']:+.2f}%", "#f87171"),
+        ]
+        _cards_html = "".join(
+            f'<div style="flex:1; min-width:100px; background:rgba(15,19,24,0.6);'
+            f'border:1px solid rgba(255,255,255,0.07); border-radius:8px;'
+            f'padding:10px 12px; text-align:center;">'
+            f'<div style="font-size:10px; color:#64748b; margin-bottom:4px;">{lbl}</div>'
+            f'<div style="font-size:14px; font-weight:700; color:{clr};">{val}</div>'
+            f'</div>'
+            for lbl, val, clr in _cards
+        )
+        st.markdown(
+            f'<div style="display:flex; gap:8px; margin:8px 0 6px 0;">{_cards_html}</div>'
+            f'<div style="font-size:11px; color:#64748b; text-align:center; margin-bottom:12px;">'
+            f'{stats["total_windows"]} Fenster · {stats["winning"]} Gewinner / '
+            f'{stats["losing"]} Verlierer · Std.Abw: {stats["std_dev"]:.3f}%</div>',
+            unsafe_allow_html=True,
         )
         
         # Signifikanztest (optional)
