@@ -91,8 +91,8 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
         colorscale=SE_HEATMAP_COLORSCALE, zmid=0,
         hovertemplate="<b>%{y} — %{x}</b><br>TOM Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
-            title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
-            tickfont=dict(color=SE_COLORS["text_muted"], size=10), ticksuffix="%"),
+            title=dict(text="Rendite %", font=dict(color="#FFFFFF", size=11)),
+            tickfont=dict(color="#FFFFFF", size=10), ticksuffix="%", tickformat="+.2f"),
     ))
 
     _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0)
@@ -107,10 +107,10 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
             fillcolor="rgba(0,0,0,0)", layer="above")
 
     n_years = len(data_years)
-    fig = apply_se_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
-                         height=max(400, n_years * 45 + 120), show_legend=False)
-    fig.update_yaxes(autorange="reversed", type="category")
-    fig.update_xaxes(type="category", tickangle=-45)
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
+                                  height=max(400, n_years * 45 + 120))
+    fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
+    fig.update_xaxes(type="category", tickangle=-45, tickformat=None)
     return fig
 
 
