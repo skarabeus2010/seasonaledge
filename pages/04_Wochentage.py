@@ -924,8 +924,9 @@ def main():
                 unsafe_allow_html=True)
 
     # ── Balkendiagramm ────────────────────────────────
-    bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
-    st.plotly_chart(bar_fig, use_container_width=True)
+    with st.expander("📊 Durchschnittsrendite & Win Rate pro Wochentag", expanded=True):
+        bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
+        st.plotly_chart(bar_fig, use_container_width=True)
 
     # ── Signifikanztest (optional) ────────────────────
     from shared.significance_gauge import run_significance_test, render_significance_section
