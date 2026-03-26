@@ -948,6 +948,101 @@ def main():
             expanded=False,
         )
 
+    # ── 5d. Praesidentenzyklus — Best Match ──────────────
+    _cur_year = datetime.now().year
+    if _cur_year in year_data:
+        _today_doy = datetime.now().timetuple().tm_yday
+        _cur_curve = year_data[_cur_year]["full_365"][:_today_doy]
+
+        if len(_cur_curve) >= 20:
+            with st.expander("🏛️ Praesidentenzyklus — Best Match", expanded=True):
+                # Ø-Kurven pro Zyklus + Alle Jahre berechnen
+                _match_data = {}
+                for cn in _cycle_names:
+                    _cy = [y for y in year_data.keys()
+                           if get_presidential_cycle_year(y) == cn and y != _cur_year]
+                    if len(_cy) >= 2:
+                        _curves = [year_data[y]["full_365"][:_today_doy] for y in _cy]
+                        _avg_c = [float(np.mean([c[i] for c in _curves])) for i in range(_today_doy)]
+                        _match_data[_cycle_short.get(cn, cn)] = {
+                            "curve": _avg_c, "n": len(_cy), "color": CYCLE_COLORS[cn],
+                        }
+
+                # "Alle Jahre" als Referenz
+                _all_other = [y for y in year_data.keys() if y != _cur_year]
+                if len(_all_other) >= 5:
+                    _all_curves = [year_data[y]["full_365"][:_today_doy] for y in _all_other]
+                    _avg_all = [float(np.mean([c[i] for c in _all_curves])) for i in range(_today_doy)]
+                    _match_data[f"Alle Jahre"] = {
+                        "curve": _avg_all, "n": len(_all_other), "color": "#94a3b8",
+                    }
+
+                if _match_data:
+                    # Korrelation + DTW berechnen
+                    _match_results = []
+                    _best_r = -999
+                    _best_name = ""
+                    for name, md in _match_data.items():
+                        _r = float(np.corrcoef(_cur_curve, md["curve"])[0, 1])
+                        if np.isnan(_r):
+                            _r = 0.0
+                        # DTW-Similarity (0-100%)
+                        try:
+                            from fastdtw import fastdtw
+                            from scipy.spatial.distance import euclidean
+                            _dist, _ = fastdtw(_cur_curve, md["curve"], dist=euclidean)
+                            _max_dist = np.sqrt(len(_cur_curve)) * np.std(_cur_curve) * 2
+                            _dtw_pct = max(0, min(100, (1 - _dist / _max_dist) * 100)) if _max_dist > 0 else 0
+                        except ImportError:
+                            _dtw_pct = max(0, min(100, (_r + 1) / 2 * 100))
+
+                        _match_results.append({
+                            "name": name, "r": _r, "dtw_pct": _dtw_pct,
+                            "n": md["n"], "color": md["color"],
+                        })
+                        if _r > _best_r:
+                            _best_r = _r
+                            _best_name = name
+
+                    # Header: Bester Match
+                    _best = next((m for m in _match_results if m["name"] == _best_name), None)
+                    if _best:
+                        st.markdown(
+                            f'<div style="text-align:center; margin-bottom:12px;">'
+                            f'<span style="font-size:13px; color:#94a3b8;">Bester Match: </span>'
+                            f'<span style="font-size:14px; font-weight:700; color:{_best["color"]};">'
+                            f'{_best_name}</span>'
+                            f'<span style="font-size:12px; color:#64748b;"> '
+                            f'(r={_best["r"]:+.2f}, DTW {_best["dtw_pct"]:.0f}%, n={_best["n"]} Jahre)</span>'
+                            f'</div>',
+                            unsafe_allow_html=True)
+
+                    # Gauges als kompakte Karten
+                    _match_cols = st.columns(len(_match_results))
+                    for i, mr in enumerate(_match_results):
+                        with _match_cols[i]:
+                            _is_best = (mr["name"] == _best_name)
+                            _border = f"2px solid {mr['color']}" if _is_best else "1px solid rgba(255,255,255,0.07)"
+                            _r_clr = "#34d399" if mr["r"] > 0.5 else ("#fbbf24" if mr["r"] > 0 else "#f87171")
+
+                            # Radial Score (0-1 → Gauge)
+                            _score = max(0, min(1, (mr["r"] + 1) / 2))
+                            _pct = int(_score * 100)
+
+                            st.markdown(
+                                f'<div style="background:rgba(15,19,24,0.6);'
+                                f'border:{_border}; border-radius:10px;'
+                                f'padding:12px 8px; text-align:center;">'
+                                f'<div style="font-size:10px; color:{mr["color"]}; font-weight:600;'
+                                f'margin-bottom:6px;">{"🏆 " if _is_best else ""}{mr["name"]}</div>'
+                                f'<div style="font-size:28px; font-weight:800; color:{_r_clr};'
+                                f'letter-spacing:-1px; margin:4px 0;">{mr["r"]:.2f}</div>'
+                                f'<div style="font-size:10px; color:#64748b; line-height:1.5;">'
+                                f'<span style="color:{_r_clr};">r={mr["r"]:+.2f}</span>'
+                                f' · DTW {mr["dtw_pct"]:.0f}%<br>n={mr["n"]}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True)
+
     # ── 6. 10-Jahres Heatmap ─────────────────────────────
     with st.expander("10 Jahres Heatmap", expanded=True):
         st.plotly_chart(build_monthly_heatmap(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
