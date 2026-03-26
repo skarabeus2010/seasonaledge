@@ -139,7 +139,7 @@ def build_gauge(score, p_value=None):
         mode="gauge+number",
         value=score,
         number=dict(
-            font=dict(size=44, color="#FFFFFF", family="DIN Alternate, monospace"),
+            font=dict(size=28, color="#FFFFFF", family="DIN Alternate, monospace"),
             valueformat=".2f",
         ),
         gauge=dict(
@@ -167,8 +167,8 @@ def build_gauge(score, p_value=None):
     fig.update_layout(
         paper_bgcolor=SE_COLORS["bg"],
         plot_bgcolor=SE_COLORS["bg"],
-        height=200,
-        margin=dict(l=20, r=20, t=30, b=10),
+        height=160,
+        margin=dict(l=16, r=16, t=24, b=6),
     )
 
     return fig
