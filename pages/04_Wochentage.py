@@ -933,10 +933,11 @@ def main():
     render_significance_section(sig_results,
         expander_title="📊 Statistische Signifikanz der Wochentags-Effekte",
         cols_per_row=5,
-        sort_order=WEEKDAY_LABELS)
+        sort_order=WEEKDAY_LABELS,
+        key_prefix="sig_main")
 
     # ── Gesamtuebersicht: Signifikanztests je Rendite-Modus ──
-    for mode_name in RETURN_MODES:
+    for mi, mode_name in enumerate(RETURN_MODES):
         if mode_name == return_mode:
             continue  # Bereits oben angezeigt
         mode_stats = calculate_weekday_stats(
@@ -953,7 +954,8 @@ def main():
         render_significance_section(mode_sig,
             expander_title=f"📊 Signifikanz — {mode_short}",
             cols_per_row=5,
-            sort_order=WEEKDAY_LABELS)
+            sort_order=WEEKDAY_LABELS,
+            key_prefix=f"sig_mode_{mi}")
 
     # ── Detailtabelle ─────────────────────────────────
     with st.expander("📋 Statistik pro Wochentag", expanded=True):

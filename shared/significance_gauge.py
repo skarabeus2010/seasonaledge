@@ -179,7 +179,7 @@ def build_gauge(score, p_value=None):
 # ══════════════════════════════════════════════════════
 
 def render_significance_section(results, expander_title="📊 Statistische Signifikanz",
-                                cols_per_row=4, sort_order=None):
+                                cols_per_row=4, sort_order=None, key_prefix=None):
     """
     Rendert die Signifikanz-Gauges als optionalen Expander.
 
@@ -189,6 +189,8 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
         cols_per_row: Gauges pro Reihe (default 4)
         sort_order: Optionale Liste von Namen fuer feste Reihenfolge
                     (statt Sortierung nach Relevanz)
+        key_prefix: Optionaler Prefix fuer plotly_chart Keys
+                    (noetig wenn mehrere Sektionen auf einer Page)
     """
     import streamlit as st
 
@@ -223,7 +225,9 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
                         f"{r['name']}</p>",
                         unsafe_allow_html=True,
                     )
-                    st.plotly_chart(gauge_fig, use_container_width=True, config=_PLOTLY_CFG)
+                    chart_key = f"{key_prefix}_{idx}" if key_prefix else None
+                    st.plotly_chart(gauge_fig, use_container_width=True,
+                                   config=_PLOTLY_CFG, key=chart_key)
                     # Status + Stats
                     t_str = f"t={r['t_stat']:.2f}  p={r['p_value']:.4f}"
                     st.markdown(
