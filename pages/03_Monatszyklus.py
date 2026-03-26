@@ -680,6 +680,281 @@ def render_cycle_match(cycle_results, ticker, month_name):
             unsafe_allow_html=True)
 
 
+# ── TWO-WEEK ERWEITERTE ANALYSEN ─────────────────────────
+
+def build_two_week_heatmap(tw_stats, ticker, split_day, current_tdom):
+    """12x2 Heatmap: Monate x Hälften — Wo liegt das Geld im Jahr?"""
+    today = datetime.now()
+    current_half = 1 if (current_tdom or 1) <= split_day else 2
+
+    # Matrix aufbauen: Zeilen = Hälften, Spalten = Monate
+    z_data = [[], []]  # [0]=1st half, [1]=2nd half
+    for month in range(1, 13):
+        for half_idx, half in enumerate([1, 2]):
+            match = [t for t in tw_stats if t["month"] == month and t["half"] == half]
+            val = match[0]["avg"] if match else 0
+            z_data[half_idx].append(round(val, 3))
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data,
+        x=MONTH_NAMES_DE,
+        y=[f"1st (TDOM 1-{split_day})", f"2nd (TDOM {split_day+1}+)"],
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=0,
+        text=[[f"{v:+.2f}%" for v in row] for row in z_data],
+        texttemplate="%{text}",
+        textfont=dict(size=12, color=SE_HEATMAP_TEXT_COLOR),
+        hovertemplate="<b>%{x} — %{y}</b><br>Oe Rendite: %{z:+.3f}%<extra></extra>",
+        colorbar=dict(
+            title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            ticksuffix="%",
+        ),
+    ))
+
+    # Gelber Rahmen um aktuelle Zelle
+    half_idx = 0 if current_half == 1 else 1
+    fig.add_shape(
+        type="rect",
+        x0=today.month - 1 - 0.5, x1=today.month - 1 + 0.5,
+        y0=half_idx - 0.5, y1=half_idx + 0.5,
+        line=dict(color="#FFD700", width=3.5),
+        fillcolor="rgba(0,0,0,0)", layer="above",
+    )
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Two-Week Heatmap (Oe Rendite je Monatshaelfte)", height=250, show_legend=False)
+    fig.update_yaxes(type="category")
+    return fig
+
+
+def calc_two_week_current_year(df, split_day):
+    """Berechnet Two-Week Returns des aktuellen Jahres fuer Overlay."""
+    current_year = datetime.now().year
+    today = pd.Timestamp(datetime.now().date())
+    df_tdom = assign_tdom(df)
+    results = []
+    for month in range(1, 13):
+        for half in [1, 2]:
+            mdf = df_tdom[(df_tdom["year"] == current_year) & (df_tdom["month"] == month)].copy()
+            mdf = mdf[mdf.index <= today]
+            if len(mdf) < 3:
+                continue
+            hdf = mdf[mdf["tdom"] <= split_day] if half == 1 else mdf[mdf["tdom"] > split_day]
+            if len(hdf) >= 2:
+                ret = (hdf["Close"].iloc[-1] / hdf["Open"].iloc[0] - 1) * 100
+                suffix = "1st" if half == 1 else "2nd"
+                results.append({"label": f"{month:02d}/{suffix}", "month": month,
+                                "half": half, "avg": ret})
+    return results if results else None
+
+
+def build_two_week_overlay(tw_stats, tw_current, ticker, split_day, current_tdom):
+    """Two-Week Bars mit aktuellem Jahr als Overlay-Markers."""
+    today = datetime.now()
+    current_half = "1st" if (current_tdom or 1) <= split_day else "2nd"
+    current_label = f"{today.month:02d}/{current_half}"
+
+    # Chronologische Reihenfolge
+    tw_chrono = sorted(tw_stats, key=lambda x: (x["month"], x["half"]))
+    labels = [t["label"] for t in tw_chrono]
+    avgs = [t["avg"] for t in tw_chrono]
+    colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+
+    fig = go.Figure()
+    # Historischer Durchschnitt als Bars
+    fig.add_trace(go.Bar(x=labels, y=avgs, marker_color=colors, name="Historisch Oe",
+        opacity=0.6, hovertemplate="<b>%{x}</b><br>Hist. Oe: %{y:+.3f}%<extra></extra>"))
+
+    # Aktuelles Jahr als Linie/Markers
+    cur_labels = [c["label"] for c in tw_current]
+    cur_vals = [c["avg"] for c in tw_current]
+    fig.add_trace(go.Scatter(x=cur_labels, y=cur_vals, mode="lines+markers",
+        line=dict(color="#F1C40F", width=2.5),
+        marker=dict(size=8, color="#F1C40F", symbol="diamond"),
+        name=f"{today.year} (aktuell)",
+        hovertemplate=f"<b>%{{x}}</b><br>{today.year}: %{{y:+.3f}}%<extra></extra>"))
+
+    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
+
+    # We are here!
+    if current_label in labels:
+        idx = labels.index(current_label)
+        fig.add_shape(**wah_vline(current_label))
+        fig.add_annotation(**wah_annotation(
+            x_val=current_label, y_val=avgs[idx],
+            above=True, text=f"We are here! TDOM {current_tdom}",
+        ))
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Two-Week: {today.year} vs. Historisch", height=400)
+    return fig
+
+
+def build_two_week_ranking(tw_stats, ticker, split_day):
+    """Horizontale Bars: alle 24 Perioden nach Rendite sortiert."""
+    tw_sorted = sorted(tw_stats, key=lambda x: x["avg"], reverse=True)
+    labels = [f"{MONTH_NAMES_DE[t['month']-1]} {'1st' if t['half'] == 1 else '2nd'}" for t in tw_sorted]
+    avgs = [t["avg"] for t in tw_sorted]
+    colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=labels, x=avgs, orientation="h",
+        marker_color=colors,
+        text=[f"{v:+.3f}% (WR {t['win_rate']:.0f}%)" for v, t in zip(avgs, tw_sorted)],
+        textposition="outside", textfont=dict(size=10),
+        hovertemplate="<b>%{y}</b><br>Oe: %{x:+.3f}%<extra></extra>",
+    ))
+    fig.add_vline(x=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
+
+    fig = apply_se_theme(fig,
+        title=f"{ticker} — Best Two-Weeks Ranking (TDOM Split {split_day})",
+        height=max(500, len(labels) * 22 + 100), show_legend=False)
+    fig.update_yaxes(autorange="reversed")
+    return fig
+
+
+def render_momentum_check(df, selected_years, split_day):
+    """Zeigt bedingte Wahrscheinlichkeit: Wenn 1st Half pos/neg → was macht 2nd Half?"""
+    df_tdom = assign_tdom(df)
+    pos_pos, pos_neg, neg_pos, neg_neg = 0, 0, 0, 0
+    total = 0
+
+    for year in selected_years:
+        for month in range(1, 13):
+            mdf = df_tdom[(df_tdom["year"] == year) & (df_tdom["month"] == month)].copy()
+            if len(mdf) < 10:
+                continue
+            h1 = mdf[mdf["tdom"] <= split_day]
+            h2 = mdf[mdf["tdom"] > split_day]
+            if len(h1) < 3 or len(h2) < 3:
+                continue
+            ret1 = (h1["Close"].iloc[-1] / h1["Open"].iloc[0] - 1) * 100
+            ret2 = (h2["Close"].iloc[-1] / h2["Open"].iloc[0] - 1) * 100
+            total += 1
+            if ret1 > 0 and ret2 > 0:
+                pos_pos += 1
+            elif ret1 > 0 and ret2 <= 0:
+                pos_neg += 1
+            elif ret1 <= 0 and ret2 > 0:
+                neg_pos += 1
+            else:
+                neg_neg += 1
+
+    if total < 10:
+        st.info("Nicht genuegend Daten fuer den Momentum-Check.")
+        return
+
+    pos_total = pos_pos + pos_neg
+    neg_total = neg_pos + neg_neg
+
+    col1, col2 = st.columns(2)
+    with col1:
+        pct = pos_pos / pos_total * 100 if pos_total > 0 else 0
+        color = "#00d4aa" if pct >= 55 else "#e8a425" if pct >= 45 else "#ff4757"
+        st.markdown(
+            f"<div style='background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.3); "
+            f"border-radius:12px; padding:16px; text-align:center;'>"
+            f"<p style='color:#FFFFFF; font-size:13px; margin:0 0 8px 0;'>"
+            f"Wenn 1st Half <b style='color:#00d4aa;'>positiv</b></p>"
+            f"<p style='color:{color}; font-size:28px; font-weight:800; margin:0;'>"
+            f"{pct:.0f}%</p>"
+            f"<p style='color:#8899aa; font-size:11px; margin:4px 0 0 0;'>"
+            f"dann auch 2nd Half positiv ({pos_pos}/{pos_total})</p></div>",
+            unsafe_allow_html=True)
+
+    with col2:
+        pct = neg_neg / neg_total * 100 if neg_total > 0 else 0
+        color = "#ff4757" if pct >= 55 else "#e8a425" if pct >= 45 else "#00d4aa"
+        st.markdown(
+            f"<div style='background:rgba(255,71,87,0.08); border:1px solid rgba(255,71,87,0.3); "
+            f"border-radius:12px; padding:16px; text-align:center;'>"
+            f"<p style='color:#FFFFFF; font-size:13px; margin:0 0 8px 0;'>"
+            f"Wenn 1st Half <b style='color:#ff4757;'>negativ</b></p>"
+            f"<p style='color:{color}; font-size:28px; font-weight:800; margin:0;'>"
+            f"{pct:.0f}%</p>"
+            f"<p style='color:#8899aa; font-size:11px; margin:4px 0 0 0;'>"
+            f"dann auch 2nd Half negativ ({neg_neg}/{neg_total})</p></div>",
+            unsafe_allow_html=True)
+
+    # Erklaerungstext
+    st.markdown(
+        "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
+        "<b>Interpretation:</b> Zeigt, ob es innerhalb eines Monats Momentum gibt. "
+        "Werte ueber 55% deuten auf Trendkontinuation hin — eine positive erste Haelfte "
+        "zieht oft eine positive zweite nach sich (und umgekehrt). "
+        f"Basis: {total} Monatshälften.</p>",
+        unsafe_allow_html=True)
+
+
+def render_two_week_significance(df, selected_years, split_day):
+    """t-Test + Gauge fuer jede Monatshälfte (1st vs 2nd)."""
+    from scipy import stats
+    from shared.significance_gauge import build_gauge
+
+    _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
+    df_tdom = assign_tdom(df)
+
+    halves = [
+        ("1st Half", f"TDOM 1-{split_day}", 1),
+        ("2nd Half", f"TDOM {split_day+1}+", 2),
+    ]
+
+    cols = st.columns(2)
+    for col, (name, desc, half_id) in zip(cols, halves):
+        rets = []
+        for year in selected_years:
+            for month in range(1, 13):
+                mdf = df_tdom[(df_tdom["year"] == year) & (df_tdom["month"] == month)].copy()
+                if len(mdf) < 10:
+                    continue
+                hdf = mdf[mdf["tdom"] <= split_day] if half_id == 1 else mdf[mdf["tdom"] > split_day]
+                if len(hdf) >= 3:
+                    rets.append((hdf["Close"].iloc[-1] / hdf["Open"].iloc[0] - 1) * 100)
+
+        with col:
+            if len(rets) < 10:
+                st.info(f"Nicht genuegend Daten fuer {name}.")
+                continue
+
+            arr = np.array(rets)
+            t_stat, p_value = stats.ttest_1samp(arr, 0)
+            cohens_d = abs(np.mean(arr)) / np.std(arr, ddof=1) if np.std(arr, ddof=1) > 0 else 0
+            sig_score = max(0, min(1, 1 - p_value))
+
+            if p_value < 0.05:
+                sig_label, sig_col = "Signifikant", "#00d4aa"
+            elif p_value < 0.10:
+                sig_label, sig_col = "Grenzwertig", "#e8a425"
+            else:
+                sig_label, sig_col = "Nicht signifikant", "#ff4757"
+
+            avg_ret = np.mean(arr)
+            avg_col = "#00d4aa" if avg_ret > 0 else "#ff4757"
+
+            st.markdown(
+                f"<p style='text-align:center; color:#FFFFFF; font-weight:700; "
+                f"font-size:14px; margin-bottom:2px;'>{name} ({desc})</p>",
+                unsafe_allow_html=True)
+            st.plotly_chart(build_gauge(sig_score), use_container_width=True,
+                            config=_PLOTLY_CFG, key=f"tw_sig_{half_id}")
+            st.markdown(
+                f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
+                f"<span style='color:{sig_col}; font-weight:700;'>{sig_label}</span>"
+                f"<br><span style='color:{avg_col};'>Oe {avg_ret:+.3f}%</span> · "
+                f"p={p_value:.3f} · d={cohens_d:.2f}"
+                f"<br><span style='color:#8899aa; font-size:11px;'>n={len(rets)}</span></p>",
+                unsafe_allow_html=True)
+
+    st.markdown(
+        "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
+        "<b>Interpretation:</b> Der t-Test prueft, ob die durchschnittliche Rendite "
+        "einer Monatshaelfte signifikant von Null abweicht. "
+        "<span style='color:#00d4aa;'>Signifikant</span> (p&lt;0.05) = "
+        "die Haelfte hat einen statistisch nachweisbaren Rendite-Bias. "
+        "Cohen's d misst die Effektstaerke (d&gt;0.2 = klein, d&gt;0.5 = mittel, d&gt;0.8 = gross).</p>",
+        unsafe_allow_html=True)
+
+
 def build_monthly_heatmap(df, selected_years, ticker):
     """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
     current_month = datetime.now().month
@@ -859,16 +1134,49 @@ def main():
 
     # 4. Two-Week
     st.markdown("---")
-    st.markdown(f"### Two-Week Performance (Split: TDOM {split_day})")
     tw_valid = [t for t in calc_two_week_performance(df, selected_years, split_day) if t["n"] >= 2]
     if tw_valid:
-        st.plotly_chart(build_two_week_bars(tw_valid, ticker, split_day, current_tdom), use_container_width=True)
-        with st.expander("Two-Week Detailtabelle"):
-            tw_sorted = sorted(tw_valid, key=lambda x: x["avg"], reverse=True)
-            st.dataframe(pd.DataFrame([{"Periode": t["label"], "Monat": MONTH_NAMES_DE[t["month"]-1],
-                "Haelfte": "1st" if t["half"] == 1 else "2nd", "Oe Rendite": f"{t['avg']:+.3f}%",
-                "Win Rate": f"{t['win_rate']:.0f}%", "n": t["n"]} for t in tw_sorted]),
-                use_container_width=True, hide_index=True)
+        with st.expander(f"📅 Two-Week Performance (Split: TDOM {split_day})", expanded=True):
+            st.plotly_chart(build_two_week_bars(tw_valid, ticker, split_day, current_tdom),
+                            use_container_width=True, key="tw_main_bars")
+
+            # 4a. Two-Week Heatmap (12 Monate x 2 Hälften)
+            with st.expander("🗓️ Two-Week Heatmap (12 Monate x 2 Haelften)", expanded=True):
+                tw_heatmap = build_two_week_heatmap(tw_valid, ticker, split_day, current_tdom)
+                if tw_heatmap:
+                    st.plotly_chart(tw_heatmap, use_container_width=True, key="tw_heatmap")
+
+            # 4b. Aktuelles Jahr Overlay
+            with st.expander("📈 Aktuelles Jahr vs. Durchschnitt", expanded=True):
+                tw_current = calc_two_week_current_year(df, split_day)
+                if tw_current:
+                    tw_overlay_fig = build_two_week_overlay(tw_valid, tw_current, ticker, split_day, current_tdom)
+                    if tw_overlay_fig:
+                        st.plotly_chart(tw_overlay_fig, use_container_width=True, key="tw_overlay")
+                else:
+                    st.info("Noch keine Daten fuer das aktuelle Jahr verfuegbar.")
+
+            # 4c. Best Two-Weeks Ranking
+            with st.expander("🏆 Best Two-Weeks Ranking (Top 24)", expanded=True):
+                tw_ranking = build_two_week_ranking(tw_valid, ticker, split_day)
+                if tw_ranking:
+                    st.plotly_chart(tw_ranking, use_container_width=True, key="tw_ranking")
+
+            # 4d. Momentum-Check (1st Half → 2nd Half)
+            with st.expander("⚡ Momentum-Check (1st → 2nd Half)", expanded=True):
+                render_momentum_check(df, selected_years, split_day)
+
+            # 4e. Signifikanztest pro Monatshälfte
+            with st.expander("📊 Signifikanztest pro Monatshaelfte", expanded=True):
+                render_two_week_significance(df, selected_years, split_day)
+
+            # Detailtabelle
+            with st.expander("Two-Week Detailtabelle"):
+                tw_sorted = sorted(tw_valid, key=lambda x: x["avg"], reverse=True)
+                st.dataframe(pd.DataFrame([{"Periode": t["label"], "Monat": MONTH_NAMES_DE[t["month"]-1],
+                    "Haelfte": "1st" if t["half"] == 1 else "2nd", "Oe Rendite": f"{t['avg']:+.3f}%",
+                    "Win Rate": f"{t['win_rate']:.0f}%", "n": t["n"]} for t in tw_sorted]),
+                    use_container_width=True, hide_index=True)
 
     # 5. 10-Jahres Heatmap
     st.markdown("---")
