@@ -93,7 +93,85 @@ tab1, tab2, tab3 = st.tabs([
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab1:
-    st.subheader(f"🚦 Januar Trifecta Ampelsystem — {analyse_jahr}")
+    import numpy as np
+
+    # ── Premium CSS ──────────────────────────────────────────────────────
+    st.markdown("""
+    <style>
+    /* Glow Card für Ampelstatus */
+    .tri-glow-card {
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px;
+        padding: 28px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .tri-glow-card::before {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        border-radius: 50%;
+        opacity: 0.12;
+        z-index: 0;
+        pointer-events: none;
+    }
+    .tri-glow-card > * { position: relative; z-index: 1; }
+    .tri-glow-card .tri-emoji { font-size: 48px; }
+    .tri-glow-card .tri-signal {
+        font-size: 22px; font-weight: 700; color: #e8edf5;
+        margin-top: 8px; letter-spacing: 0.5px;
+    }
+    .tri-glow-card .tri-count {
+        font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 6px;
+    }
+    /* Bedingungen-Card */
+    .tri-cond {
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .tri-cond-icon { font-size: 22px; }
+    .tri-cond-body { flex: 1; }
+    .tri-cond-label {
+        font-size: 13px; font-weight: 600; color: #c9d1d9;
+    }
+    .tri-cond-desc {
+        font-size: 11px; color: #6e7681; margin-top: 2px;
+    }
+    .tri-cond-date {
+        font-size: 10px; color: #484f58; margin-top: 2px;
+    }
+    .tri-badge {
+        font-size: 13px; font-weight: 700; padding: 4px 10px;
+        border-radius: 6px; white-space: nowrap;
+    }
+    .tri-badge-green  { background: rgba(46,204,113,0.15); color: #2ECC71; }
+    .tri-badge-red    { background: rgba(231,76,60,0.15); color: #E74C3C; }
+    .tri-badge-gray   { background: rgba(108,117,125,0.15); color: #6c757d; }
+    /* Historische Stat-Cards mit Farb-Gradient */
+    .tri-stat-card {
+        border-radius: 10px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 6px;
+    }
+    .tri-stat-card .tri-stat-label { font-size: 12px; color: #6e7681; }
+    .tri-stat-card .tri-stat-value {
+        font-size: 20px; font-weight: 700; color: #e8edf5; margin: 4px 0;
+    }
+    .tri-stat-card .tri-stat-sub { font-size: 11px; color: #6e7681; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.subheader(f"🚦 Januar Trifecta — {analyse_jahr}")
     st.caption(
         "Drei Signale kombiniert ergeben ein Jahresprognose-Signal nach Yale Hirsch / "
         "Stock Trader's Almanac. Alle drei positiv → statistisch starkes Bullen-Jahr."
@@ -108,86 +186,72 @@ with tab1:
         result = None
 
     if result:
-        # ── Ampel-Anzeige ──────────────────────────────────────────────────
+        # ── Farbzuordnung für Glow ───────────────────────────────────────
+        _glow_map = {
+            "Grün": "#2ECC71", "Gelb": "#F1C40F",
+            "Orange": "#E67E22", "Rot": "#E74C3C",
+        }
+        glow_color = _glow_map.get(result["signal"], "#6c757d")
+
         col_ampel, col_text = st.columns([1, 3])
 
         with col_ampel:
             st.markdown(
-                f"""
-                <div style="
-                    background-color: {result['farbe']};
-                    border-radius: 16px;
-                    padding: 32px 24px;
-                    text-align: center;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                ">
-                    <div style="font-size: 64px;">{result['emoji']}</div>
-                    <div style="font-size: 28px; font-weight: bold;
-                                color: white; margin-top: 8px;">
-                        {result['signal']}
-                    </div>
-                    <div style="font-size: 14px; color: rgba(255,255,255,0.85);
-                                margin-top: 6px;">
-                        {result['erfuellt_count']} / 3 erfüllt
-                    </div>
-                </div>
-                """,
+                f"""<div class="tri-glow-card" style="border-color: {glow_color}30;">
+                    <div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%;
+                         border-radius:50%; background:radial-gradient(circle, {glow_color}25 0%, transparent 70%);
+                         z-index:0; pointer-events:none;"></div>
+                    <div class="tri-emoji">{result['emoji']}</div>
+                    <div class="tri-signal" style="color:{glow_color};">{result['signal']}</div>
+                    <div class="tri-count">{result['erfuellt_count']} / 3 erfüllt</div>
+                </div>""",
                 unsafe_allow_html=True,
             )
 
         with col_text:
-            st.markdown(f"### {result['interpretation']}")
-            st.markdown("---")
+            st.markdown(
+                f"<div style='font-size:16px; font-weight:600; color:#c9d1d9; "
+                f"margin-bottom:16px;'>{result['interpretation']}</div>",
+                unsafe_allow_html=True)
 
-            # Drei Bedingungen im Detail
             bedingungen_info = {
-                "santa_claus_rally": {
-                    "label": "🎅 Santa Claus Rally",
-                    "beschreibung": "Letzte 5 Handelstage Dez + erste 2 Jan",
-                },
-                "first_five_days": {
-                    "label": "5️⃣ First Five Days",
-                    "beschreibung": "Erste 5 Handelstage im Januar",
-                },
-                "january_barometer": {
-                    "label": "🌡️ January Barometer",
-                    "beschreibung": "Gesamte Januar-Performance",
-                },
+                "santa_claus_rally": ("🎅", "Santa Claus Rally",
+                    "Letzte 5 Handelstage Dez + erste 2 Jan"),
+                "first_five_days": ("5️⃣", "First Five Days",
+                    "Erste 5 Handelstage im Januar"),
+                "january_barometer": ("🌡️", "January Barometer",
+                    "Gesamte Januar-Performance"),
             }
 
-            for key, info in bedingungen_info.items():
+            for key, (ico, label, desc) in bedingungen_info.items():
                 b = result["bedingungen"][key]
                 if b.get("erfuellt") is None:
-                    icon, farbe = "⚪", "#6c757d"
-                    rendite_txt = "Keine Daten"
+                    badge_cls, badge_txt = "tri-badge-gray", "N/A"
                 elif b["erfuellt"]:
-                    icon, farbe = "✅", "#2ECC71"
-                    rendite_txt = f"+{b['rendite']:.2f}%"
+                    badge_cls, badge_txt = "tri-badge-green", f"+{b['rendite']:.2f}%"
                 else:
-                    icon, farbe = "❌", "#E74C3C"
-                    rendite_txt = f"{b['rendite']:.2f}%"
+                    badge_cls, badge_txt = "tri-badge-red", f"{b['rendite']:.2f}%"
+
+                date_html = ""
+                if b.get("start_date"):
+                    date_html = (f'<div class="tri-cond-date">📅 '
+                                 f'{b["start_date"].strftime("%d.%m.%Y")} → '
+                                 f'{b["end_date"].strftime("%d.%m.%Y")}</div>')
 
                 st.markdown(
-                    f"""
-                    <div style="border-left: 4px solid {farbe};
-                                padding: 8px 16px; margin-bottom: 10px;
-                                background: rgba(0,0,0,0.05); border-radius: 0 8px 8px 0;">
-                        <strong>{icon} {info['label']}</strong>
-                        &nbsp;&nbsp;
-                        <span style="color:{farbe}; font-weight:bold;">{rendite_txt}</span>
-                        <br>
-                        <small style="color:#888;">{info['beschreibung']}</small>
-                        {f'<br><small style="color:#aaa;">📅 {b["start_date"].strftime("%d.%m.%Y")} → {b["end_date"].strftime("%d.%m.%Y")}</small>' if b.get("start_date") else ""}
-                    </div>
-                    """,
+                    f"""<div class="tri-cond">
+                        <div class="tri-cond-icon">{ico}</div>
+                        <div class="tri-cond-body">
+                            <div class="tri-cond-label">{label}</div>
+                            <div class="tri-cond-desc">{desc}</div>
+                            {date_html}
+                        </div>
+                        <span class="tri-badge {badge_cls}">{badge_txt}</span>
+                    </div>""",
                     unsafe_allow_html=True,
                 )
 
-    st.divider()
-
     # ── Historische Trefferquote ───────────────────────────────────────────
-    st.subheader("📈 Historische Auswertung")
-
     with st.spinner("Berechne historische Trifecta-Daten …"):
         try:
             history_df = januar_trifecta.calculate_trifecta_history(
@@ -199,187 +263,196 @@ with tab1:
 
     if history_df is not None and len(history_df) > 0:
 
-        # Statistiken pro Signal
-        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+        farb_map = {
+            "Grün": "#2ECC71", "Gelb": "#F1C40F",
+            "Orange": "#E67E22", "Rot": "#E74C3C",
+        }
         total = len(history_df)
-
         gruen_df  = history_df[history_df["Signal"] == "Grün"]
         gelb_df   = history_df[history_df["Signal"] == "Gelb"]
         orange_df = history_df[history_df["Signal"] == "Orange"]
         rot_df    = history_df[history_df["Signal"] == "Rot"]
 
         def _avg_rendite(sub_df):
-            col = "Jahresrendite_Feb_Dez_%"
-            vals = sub_df[col].dropna()
+            vals = sub_df["Jahresrendite_Feb_Dez_%"].dropna()
             return vals.mean() if len(vals) > 0 else float("nan")
 
-        _hist_data = [
-            ("Grün", "🟢", "#2ECC71", gruen_df),
-            ("Gelb", "🟡", "#F1C40F", gelb_df),
-            ("Orange", "🟠", "#E67E22", orange_df),
-            ("Rot", "🔴", "#E74C3C", rot_df),
-        ]
-        for col_i, (sig, emo, clr, sdf) in zip([col_s1, col_s2, col_s3, col_s4], _hist_data):
-            with col_i:
-                st.markdown(
-                    f"""<div style="background:rgba(255,255,255,0.04); border-left:3px solid {clr};
-                        border-radius:6px; padding:10px 12px; margin-bottom:4px;">
-                        <div style="font-size:12px; color:#8899aa;">{emo} {sig}</div>
-                        <div style="font-size:18px; font-weight:bold; color:#e8edf5; margin:4px 0;">
-                            {len(sdf)}x ({len(sdf)/total*100:.0f}%)</div>
-                        <div style="font-size:11px; color:#8899aa;">
-                            Ø {_avg_rendite(sdf):.1f}% (Feb–Dez)</div>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
+        # ── Historische Stat-Cards ────────────────────────────────────
+        with st.expander("📈 Historische Auswertung", expanded=True):
+            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+            _hist_data = [
+                ("Grün", "🟢", "#2ECC71", gruen_df),
+                ("Gelb", "🟡", "#F1C40F", gelb_df),
+                ("Orange", "🟠", "#E67E22", orange_df),
+                ("Rot", "🔴", "#E74C3C", rot_df),
+            ]
+            for col_i, (sig, emo, clr, sdf) in zip(
+                [col_s1, col_s2, col_s3, col_s4], _hist_data
+            ):
+                with col_i:
+                    st.markdown(
+                        f"""<div class="tri-stat-card" style="
+                            background: linear-gradient(160deg, #0d1117 0%, {clr}08 100%);
+                            border-left: 3px solid {clr};">
+                            <div class="tri-stat-label">{emo} {sig}</div>
+                            <div class="tri-stat-value">{len(sdf)}x
+                                <span style="font-size:13px; color:#6e7681;">
+                                    ({len(sdf)/total*100:.0f}%)</span></div>
+                            <div class="tri-stat-sub">
+                                Ø {_avg_rendite(sdf):.1f}% (Feb–Dez)</div>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
 
         # ── Durchschnittsverlauf je Ampelfarbe ──────────────────────────
-        st.subheader("📈 Durchschnittsverlauf nach Ampelfarbe")
+        with st.expander("📈 Durchschnittsverlauf nach Ampelfarbe", expanded=True):
 
-        import numpy as np
+            MONTH_TICKS_252 = [int(i * 21) for i in range(12)]
+            MONTH_LABELS_252 = ["Jan","Feb","Mar","Apr","Mai","Jun",
+                                "Jul","Aug","Sep","Okt","Nov","Dez"]
 
-        MONTH_TICKS_252 = [int(i * 21) for i in range(12)]
-        MONTH_LABELS_252 = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
+            fig_curves = go.Figure()
+            drawdown_data = {}
 
-        farb_map = {
-            "Grün": "#2ECC71", "Gelb": "#F1C40F",
-            "Orange": "#E67E22", "Rot": "#E74C3C",
-        }
+            for signal, color in farb_map.items():
+                signal_years = history_df[
+                    history_df["Signal"] == signal]["Jahr"].tolist()
+                curves = []
+                for year in signal_years:
+                    ydf = df[df.index.year == year]
+                    if len(ydf) < 20:
+                        continue
+                    closes = ydf["Close"].values.astype(float)
+                    if closes[0] <= 0:
+                        continue
+                    norm = (closes / closes[0] - 1) * 100
+                    x_orig = np.linspace(0, 251, len(norm))
+                    interp = np.interp(np.arange(252), x_orig, norm)
+                    curves.append(interp)
 
-        fig_curves = go.Figure()
-        drawdown_data = {}
-
-        for signal, color in farb_map.items():
-            signal_years = history_df[history_df["Signal"] == signal]["Jahr"].tolist()
-            curves = []
-            for year in signal_years:
-                ydf = df[df.index.year == year]
-                if len(ydf) < 20:
+                if len(curves) < 1:
                     continue
-                closes = ydf["Close"].values.astype(float)
-                if closes[0] <= 0:
+
+                avg_curve = np.mean(curves, axis=0)
+
+                fig_curves.add_trace(go.Scatter(
+                    x=list(range(252)), y=avg_curve.tolist(),
+                    mode="lines", name=f"{signal} (n={len(curves)})",
+                    line=dict(color=color, width=2.5),
+                    hovertemplate=(f"<b>{signal}</b><br>"
+                                   "HT %{x}<br>%{y:+.2f}%<extra></extra>"),
+                ))
+
+                # Max Drawdown berechnen
+                dd_list = []
+                for c in curves:
+                    cum = c + 100
+                    peak = np.maximum.accumulate(cum)
+                    dd = ((cum - peak) / peak * 100)
+                    dd_list.append(float(dd.min()))
+                drawdown_data[signal] = {
+                    "avg_dd": round(float(np.mean(dd_list)), 1),
+                    "worst_dd": round(float(min(dd_list)), 1),
+                    "n": len(curves),
+                    "avg_return": round(float(avg_curve[-1]), 1),
+                }
+
+            # ── Aktuelles Jahr (nur bis heute) ──
+            if show_current_year:
+                current_year = datetime.now().year
+                cydf = df[df.index.year == current_year]
+                if len(cydf) >= 5:
+                    closes_cy = cydf["Close"].values.astype(float)
+                    if closes_cy[0] > 0:
+                        n_days = len(closes_cy)
+                        norm_cy = (closes_cy / closes_cy[0] - 1) * 100
+                        x_positions = list(range(n_days))
+                        fig_curves.add_trace(go.Scatter(
+                            x=x_positions, y=norm_cy.tolist(),
+                            mode="lines",
+                            name=f"📍 {current_year} (aktuell)",
+                            line=dict(color="#FFD700", width=3, dash="dash"),
+                            hovertemplate=(f"<b>{current_year}</b><br>"
+                                           "HT %{x}<br>%{y:+.2f}%<extra></extra>"),
+                        ))
+                        fig_curves.add_trace(go.Scatter(
+                            x=[n_days - 1], y=[float(norm_cy[-1])],
+                            mode="markers+text",
+                            marker=dict(color="#FFD700", size=10,
+                                        symbol="diamond",
+                                        line=dict(color="white", width=1.5)),
+                            text=[f"  {current_year}"],
+                            textposition="middle right",
+                            textfont=dict(color="#FFD700", size=11,
+                                          family="Arial Black"),
+                            showlegend=False, hoverinfo="skip",
+                        ))
+
+            fig_curves.add_hline(y=0, line_dash="dash",
+                                 line_color="rgba(255,255,255,0.25)",
+                                 line_width=1)
+            fig_curves = apply_se_theme(
+                fig_curves,
+                title=f"{ticker} — Ø Jahresverlauf nach Trifecta-Signal",
+                height=450,
+            )
+            fig_curves.update_xaxes(
+                tickmode="array", tickvals=MONTH_TICKS_252,
+                ticktext=MONTH_LABELS_252,
+            )
+            fig_curves.update_yaxes(title="Rendite (%)",
+                                    tickformat="+.1f", ticksuffix="%")
+            st.plotly_chart(fig_curves, use_container_width=True)
+
+        # ── Max Drawdown ──────────────────────────────────────────────
+        with st.expander("📉 Max. Drawdown nach Ampelfarbe", expanded=True):
+            dd_cols = st.columns(len(drawdown_data))
+            for i, (signal, dd) in enumerate(drawdown_data.items()):
+                with dd_cols[i]:
+                    emoji = {"Grün": "🟢", "Gelb": "🟡",
+                             "Orange": "🟠", "Rot": "🔴"}[signal]
+                    clr = farb_map[signal]
+                    st.markdown(
+                        f"""<div class="tri-stat-card" style="
+                            background: linear-gradient(160deg, #0d1117 0%, {clr}08 100%);
+                            border-left: 3px solid {clr};">
+                            <div class="tri-stat-label">{emoji} {signal} (n={dd['n']})</div>
+                            <div class="tri-stat-value">Ø DD: {dd['avg_dd']:.1f}%</div>
+                            <div class="tri-stat-sub">
+                                Worst: {dd['worst_dd']:.1f}% · Ø Rendite: {dd['avg_return']:+.1f}%</div>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
+
+        # ── Jahresrendite nach Signal ─────────────────────────────────
+        with st.expander("📊 Jahresrendite (Feb–Dez) nach Trifecta-Signal", expanded=False):
+            fig = go.Figure()
+            for signal, color in farb_map.items():
+                sub = history_df[history_df["Signal"] == signal]
+                if len(sub) == 0:
                     continue
-                norm = (closes / closes[0] - 1) * 100
-                x_orig = np.linspace(0, 251, len(norm))
-                interp = np.interp(np.arange(252), x_orig, norm)
-                curves.append(interp)
+                fig.add_trace(go.Bar(
+                    x=sub["Jahr"],
+                    y=sub["Jahresrendite_Feb_Dez_%"],
+                    name=signal,
+                    marker_color=color,
+                    marker_opacity=0.85,
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        f"Signal: {signal}<br>"
+                        "Rendite Feb–Dez: %{y:.1f}%<extra></extra>"
+                    ),
+                ))
 
-            if len(curves) < 1:
-                continue
+            fig = apply_se_theme(
+                fig,
+                title=f"{ticker} — Jahresrendite (Feb–Dez) nach Trifecta-Signal",
+                height=420)
+            fig.add_hline(y=0, line_color="rgba(128,128,128,0.4)")
+            st.plotly_chart(fig, use_container_width=True)
 
-            avg_curve = np.mean(curves, axis=0)
-
-            fig_curves.add_trace(go.Scatter(
-                x=list(range(252)), y=avg_curve.tolist(),
-                mode="lines", name=f"{signal} (n={len(curves)})",
-                line=dict(color=color, width=2.5),
-                hovertemplate=f"<b>{signal}</b><br>HT %{{x}}<br>%{{y:+.2f}}%<extra></extra>",
-            ))
-
-            # Max Drawdown berechnen
-            dd_list = []
-            for c in curves:
-                cum = c + 100  # Normiert auf 100
-                peak = np.maximum.accumulate(cum)
-                dd = ((cum - peak) / peak * 100)
-                dd_list.append(float(dd.min()))
-            drawdown_data[signal] = {
-                "avg_dd": round(float(np.mean(dd_list)), 1),
-                "worst_dd": round(float(min(dd_list)), 1),
-                "n": len(curves),
-                "avg_return": round(float(avg_curve[-1]), 1),
-            }
-
-        # ── Aktuelles Jahr als "We are here" Linie (nur bis heute) ──
-        if show_current_year:
-            current_year = datetime.now().year
-            cydf = df[df.index.year == current_year]
-            if len(cydf) >= 5:
-                closes_cy = cydf["Close"].values.astype(float)
-                if closes_cy[0] > 0:
-                    n_days = len(closes_cy)
-                    norm_cy = (closes_cy / closes_cy[0] - 1) * 100
-                    # 1:1 Mapping: Handelstag i → x-Position i (kein Stretching!)
-                    x_positions = list(range(n_days))
-                    fig_curves.add_trace(go.Scatter(
-                        x=x_positions, y=norm_cy.tolist(),
-                        mode="lines", name=f"📍 {current_year} (aktuell)",
-                        line=dict(color="#FFD700", width=3, dash="dash"),
-                        hovertemplate=f"<b>{current_year}</b><br>HT %{{x}}<br>%{{y:+.2f}}%<extra></extra>",
-                    ))
-                    # Marker am letzten Punkt
-                    fig_curves.add_trace(go.Scatter(
-                        x=[n_days - 1], y=[float(norm_cy[-1])],
-                        mode="markers+text",
-                        marker=dict(color="#FFD700", size=10, symbol="diamond",
-                                    line=dict(color="white", width=1.5)),
-                        text=[f"  {current_year}"],
-                        textposition="middle right",
-                        textfont=dict(color="#FFD700", size=11, family="Arial Black"),
-                        showlegend=False,
-                        hoverinfo="skip",
-                    ))
-
-        fig_curves.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.25)", line_width=1)
-        fig_curves = apply_se_theme(
-            fig_curves,
-            title=f"{ticker} — Ø Jahresverlauf nach Trifecta-Signal",
-            height=450,
-        )
-        fig_curves.update_xaxes(
-            tickmode="array", tickvals=MONTH_TICKS_252, ticktext=MONTH_LABELS_252,
-        )
-        fig_curves.update_yaxes(title="Rendite (%)", tickformat="+.1f", ticksuffix="%")
-        st.plotly_chart(fig_curves, use_container_width=True)
-
-        # ── Max Drawdown Übersicht ────────────────────────────────────
-        st.subheader("📉 Max. Drawdown nach Ampelfarbe")
-        dd_cols = st.columns(len(drawdown_data))
-        for i, (signal, dd) in enumerate(drawdown_data.items()):
-            with dd_cols[i]:
-                emoji = {"Grün": "🟢", "Gelb": "🟡", "Orange": "🟠", "Rot": "🔴"}[signal]
-                clr = farb_map[signal]
-                st.markdown(
-                    f"""<div style="background:rgba(255,255,255,0.04); border-left:3px solid {clr};
-                        border-radius:6px; padding:10px 12px; margin-bottom:4px;">
-                        <div style="font-size:12px; color:#8899aa;">{emoji} {signal} (n={dd['n']})</div>
-                        <div style="font-size:18px; font-weight:bold; color:#e8edf5; margin:4px 0;">
-                            Ø DD: {dd['avg_dd']:.1f}%</div>
-                        <div style="font-size:11px; color:#8899aa;">
-                            Worst: {dd['worst_dd']:.1f}% · Ø Rendite: {dd['avg_return']:+.1f}%</div>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
-
-        st.divider()
-
-        # ── Chart: Jahresrendite nach Signal ──────────────────────────
-        st.subheader("📊 Jahresrendite (Feb-Dez) nach Trifecta-Signal")
-
-        fig = go.Figure()
-        for signal, color in farb_map.items():
-            sub = history_df[history_df["Signal"] == signal]
-            if len(sub) == 0:
-                continue
-            fig.add_trace(go.Bar(
-                x=sub["Jahr"],
-                y=sub["Jahresrendite_Feb_Dez_%"],
-                name=signal,
-                marker_color=color,
-                marker_opacity=0.85,
-                hovertemplate=(
-                    "<b>%{x}</b><br>"
-                    f"Signal: {signal}<br>"
-                    "Rendite Feb–Dez: %{y:.1f}%<extra></extra>"
-                ),
-            ))
-
-        fig = apply_se_theme(fig, title=f"{ticker} — Jahresrendite (Feb–Dez) nach Trifecta-Signal", height=420)
-        fig.add_hline(y=0, line_color="rgba(128,128,128,0.4)")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Detailtabelle
-        with st.expander("📋 Alle Jahre anzeigen"):
+        # ── Detailtabelle ─────────────────────────────────────────────
+        with st.expander("📋 Alle Jahre anzeigen", expanded=False):
             display_df = history_df[[
                 "Jahr", "Emoji", "Signal", "Anzahl_erfuellt",
                 "SCR_Rendite_%", "FFD_Rendite_%", "JanB_Rendite_%",
