@@ -295,11 +295,6 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
             line=dict(color="#FFD700", width=3),
             fillcolor="rgba(0,0,0,0)", layer="above",
             row=1, col=1)
-        fig.add_annotation(x=today_label, y=avgs[today_wd],
-            text="We are here!", showarrow=False,
-            font=dict(size=10, color="#FFD700"),
-            yshift=20 if avgs[today_wd] >= 0 else -20,
-            row=1, col=1)
         # Win Rate Balken
         fig.add_shape(type="rect",
             x0=today_wd - 0.4, x1=today_wd + 0.4,
@@ -923,6 +918,36 @@ def main():
         expander_title="📊 Statistische Signifikanz der Wochentags-Effekte",
         cols_per_row=5,
         sort_order=WEEKDAY_LABELS)
+
+    # ── Gesamtuebersicht: alle Rendite-Modi × Wochentage ──
+    with st.expander("📊 Gesamtübersicht — alle Rendite-Berechnungen × Wochentage", expanded=False):
+        overview_rows = []
+        for mode_name in RETURN_MODES:
+            mode_stats = calculate_weekday_stats(
+                raw_df, mode_name, years_back,
+                filter_mode, sma_days, rsi_days, rsi_threshold,
+                cycle_filter=cycle_filter if cycle_filter else None
+            )
+            if mode_stats is None:
+                continue
+            row_avg = {"Modus": mode_name, "Metrik": "Ø Rendite"}
+            row_wr = {"Modus": mode_name, "Metrik": "Win Rate"}
+            for wd in range(5):
+                d = mode_stats["by_weekday"][wd]
+                row_avg[WEEKDAY_LABELS[wd]] = f"{d['avg']:+.4f}%"
+                row_wr[WEEKDAY_LABELS[wd]] = f"{d['win_rate']:.1f}%"
+            overview_rows.append(row_avg)
+            overview_rows.append(row_wr)
+
+        if overview_rows:
+            overview_df = pd.DataFrame(overview_rows)
+            st.dataframe(overview_df, use_container_width=True, hide_index=True)
+            st.caption(
+                f"Alle 4 Rendite-Berechnungen × 5 Wochentage · "
+                f"Zeitraum: {years_back}J · Filter: {filter_mode}"
+            )
+        else:
+            st.warning("Nicht genügend Daten für die Gesamtübersicht.")
 
     # ── Detailtabelle ─────────────────────────────────
     with st.expander("📋 Statistik pro Wochentag", expanded=True):
