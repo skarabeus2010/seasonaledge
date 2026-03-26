@@ -320,37 +320,33 @@ def main():
         best = result["best"]
         worst = result["worst"]
 
-        st.markdown(f"#### 🏆 Bester & schlechtester {phase_info['name']}-Effekt")
-        
-        table_data = {
-            "": ["🟢 Bester", "🔴 Schlechtester"],
-            "Datum": [best["date"], worst["date"]],
-            "Rendite": [f"{best['total_return']:+.2f}%", f"{worst['total_return']:+.2f}%"]
-        }
-        st.table(pd.DataFrame(table_data).set_index(""))
-        
-        st.markdown("---")
-    
+        with st.expander(f"🏆 Bester & schlechtester {phase_info['name']}-Effekt", expanded=False):
+            table_data = {
+                "": ["🟢 Bester", "🔴 Schlechtester"],
+                "Datum": [best["date"], worst["date"]],
+                "Rendite": [f"{best['total_return']:+.2f}%", f"{worst['total_return']:+.2f}%"]
+            }
+            st.table(pd.DataFrame(table_data).set_index(""))
+
     # ── Nächste Mondphasen ────────────────────────────
-    st.markdown("#### 📅 Nächste Mondphasen")
-    
-    today = pd.Timestamp(datetime.now().date())
-    all_future = [m for m in get_all_moon_dates(max_year, max_year + 1) if m["date"] > today]
-    all_future.sort(key=lambda x: x["date"])
-    
-    if all_future:
-        next_rows = []
-        for m in all_future[:10]:
-            days_until = (m["date"] - today).days
-            emoji = "🌕" if m["phase"] == "full" else "🌑"
-            name = "Vollmond" if m["phase"] == "full" else "Neumond"
-            next_rows.append({
-                "Datum": m["date"].strftime("%d.%m.%Y"),
-                "Wochentag": m["date"].strftime("%A"),
-                "Phase": f"{emoji} {name}",
-                "In Tagen": days_until
-            })
-        st.dataframe(pd.DataFrame(next_rows), use_container_width=True, hide_index=True)
+    with st.expander("📅 Nächste Mondphasen", expanded=False):
+        today = pd.Timestamp(datetime.now().date())
+        all_future = [m for m in get_all_moon_dates(max_year, max_year + 1) if m["date"] > today]
+        all_future.sort(key=lambda x: x["date"])
+
+        if all_future:
+            next_rows = []
+            for m in all_future[:10]:
+                days_until = (m["date"] - today).days
+                emoji = "🌕" if m["phase"] == "full" else "🌑"
+                name = "Vollmond" if m["phase"] == "full" else "Neumond"
+                next_rows.append({
+                    "Datum": m["date"].strftime("%d.%m.%Y"),
+                    "Wochentag": m["date"].strftime("%A"),
+                    "Phase": f"{emoji} {name}",
+                    "In Tagen": days_until
+                })
+            st.dataframe(pd.DataFrame(next_rows), use_container_width=True, hide_index=True)
 
     render_footer()
 
