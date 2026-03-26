@@ -188,7 +188,8 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
     return fig
 
 def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
-                           show_individual, show_bands, current_tdom):
+                           show_individual, show_bands, current_tdom,
+                           current_month_curve=None):
     fig = go.Figure()
     tdoms = sorted(tdom_stats.keys())
     avg_curve = [tdom_stats[t]["avg"] for t in tdoms]
@@ -219,6 +220,18 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
         name=f"Oe {month_name}", hovertemplate="TDOM %{x}<br>%{y:+.3f}%<extra></extra>"))
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
+
+    # Aktueller Monatsverlauf (gelbe Linie)
+    if current_month_curve is not None:
+        cm_tdoms, cm_curve = current_month_curve
+        if cm_tdoms and cm_curve:
+            current_year = datetime.now().year
+            fig.add_trace(go.Scatter(
+                x=cm_tdoms, y=cm_curve, mode="lines",
+                line=dict(color="#F1C40F", width=2.5),
+                name=f"{current_year} (aktuell)",
+                hovertemplate=f"<b>{current_year}</b><br>TDOM %{{x}}<br>%{{y:+.3f}}%<extra></extra>",
+            ))
 
     # We are here! (TDOM-Marker)
     if current_tdom is not None and current_tdom in tdoms:
@@ -328,41 +341,19 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
     return fig
 
 
-def build_live_chart(raw_df, ticker, days=90):
-    """Aktueller Kursverlauf als normalisierte Linie (Start=100), wie Jahreszyklus."""
-    df_live = raw_df.tail(days).copy()
-    if len(df_live) < 5:
-        return None
-
-    if "Date" not in df_live.columns and df_live.index.name == "Date":
-        df_live = df_live.reset_index()
-
-    # Normalisiert auf 100
-    start_price = df_live["Close"].iloc[0]
-    df_live["norm"] = (df_live["Close"] / start_price) * 100
-
-    pct_chg = (df_live["Close"].iloc[-1] / start_price - 1) * 100
-    sign = "+" if pct_chg >= 0 else ""
-    line_color = "#F1C40F"
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=df_live["Date"], y=df_live["norm"], mode="lines",
-        line=dict(color=line_color, width=2.5),
-        name=f"{ticker} ({sign}{pct_chg:.1f}%)",
-        hovertemplate="%{x|%d.%m.%Y}<br>%{y:.2f}<extra></extra>",
-    ))
-
-    fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
-
-    fig = apply_se_theme(
-        fig,
-        title=f"{ticker} — Kursverlauf (letzte {len(df_live)} Handelstage) | {sign}{pct_chg:.1f}%",
-        height=350,
-        show_legend=True,
-    )
-    fig.update_layout(yaxis_title="Normalisiert (Start = 100)")
-    return fig
+def calc_current_month_curve(df, target_month):
+    """Berechnet die kumulierte Log-Rendite-Kurve des aktuellen Monats (Start=0, wie Durchschnitt)."""
+    current_year = datetime.now().year
+    today = pd.Timestamp(datetime.now().date())
+    df_tdom = assign_tdom(df)
+    month_df = df_tdom[(df_tdom["year"] == current_year) & (df_tdom["month"] == target_month)].copy()
+    month_df = month_df[month_df.index <= today]
+    if len(month_df) < 2:
+        return None, None
+    log_rets = month_df["log_return"].values
+    cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+    curve = (np.exp(cum) - 1) * 100
+    return month_df["tdom"].tolist(), curve.tolist()
 
 
 def build_monthly_heatmap(df, selected_years, ticker):
@@ -443,7 +434,7 @@ def main():
         selected_month = st.selectbox("Monat auswaehlen", options=list(range(1, 13)),
             index=current_month - 1,
             format_func=lambda m: f"{MONTH_NAMES_DE[m-1]}" + (" <- aktuell" if m == current_month else ""))
-        show_live_chart = st.checkbox("Live-Chart anzeigen", value=True, key="mp_live")
+        show_live_chart = st.checkbox("Aktuelles Jahr einblenden", value=True, key="mp_live")
         show_individual = st.checkbox("Einzelne Jahre zeigen", value=False, key="mp_indiv")
         show_bands = st.checkbox("Konfidenzband (+-1 Sigma)", value=False, key="mp_bands")
 
@@ -496,18 +487,17 @@ def main():
     month_name = MONTH_NAMES_DE[selected_month - 1]
     current_tdom = get_current_tdom(df) if selected_month == current_month else None
 
-    # 0. Live-Chart (aktueller Kursverlauf)
-    if show_live_chart:
-        live_fig = build_live_chart(raw_df, ticker)
-        if live_fig:
-            st.plotly_chart(live_fig, use_container_width=True)
-            st.markdown("---")
-
-    # 1. Intra-Monat
+    # 1. Intra-Monat (mit optionalem Live-Overlay)
     tdom_stats, all_curves = calc_intramonth_curve(df, selected_month, selected_years)
+    current_month_curve = None
+    if show_live_chart and selected_month == current_month:
+        cm_tdoms, cm_curve = calc_current_month_curve(df, selected_month)
+        if cm_tdoms:
+            current_month_curve = (cm_tdoms, cm_curve)
     if tdom_stats:
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
-            show_individual, show_bands, current_tdom), use_container_width=True)
+            show_individual, show_bands, current_tdom,
+            current_month_curve=current_month_curve), use_container_width=True)
 
         # 1b. Detrend-Indikator (Expander, wie Jahreszyklus)
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
