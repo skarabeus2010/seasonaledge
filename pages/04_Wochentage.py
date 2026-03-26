@@ -322,6 +322,400 @@ def build_heatmap(stats, ticker):
 
 
 # ══════════════════════════════════════════════════════════════
+# ERWEITERTE ANALYSEN
+# ══════════════════════════════════════════════════════════════
+
+def calc_weekly_cumulative(df, years_back, cycle_filter=None):
+    """Kumulierte Rendite Mo→Fr: Wie baut sich die Wochenperformance auf?"""
+    df = df.copy()
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+
+    df["weekday"] = df.index.weekday
+    df["log_ret"] = np.log(df["Close"] / df["Close"].shift(1))
+    df = df[df["weekday"] <= 4].dropna(subset=["log_ret"])
+
+    # Wochen gruppieren (Woche = Jahr + ISO-Woche)
+    df["week_id"] = df.index.isocalendar().year.astype(str) + "_" + df.index.isocalendar().week.astype(str).str.zfill(2)
+
+    all_curves = []
+    for wid, wdf in df.groupby("week_id"):
+        if len(wdf) < 4:
+            continue
+        wdf = wdf.sort_index()
+        rets = wdf["log_ret"].values
+        cum = np.cumsum(rets)
+        curve = (np.exp(cum) - 1) * 100
+        weekdays = wdf["weekday"].tolist()
+        all_curves.append({"weekdays": weekdays, "curve": curve.tolist()})
+
+    if not all_curves:
+        return None, None
+
+    # Durchschnitt pro Wochentag-Position
+    wd_stats = {}
+    for wd in range(5):
+        vals = [c["curve"][c["weekdays"].index(wd)] for c in all_curves if wd in c["weekdays"]]
+        if vals:
+            wd_stats[wd] = {"avg": np.mean(vals), "std": np.std(vals), "n": len(vals)}
+
+    return wd_stats, all_curves
+
+
+def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
+    """Linienchart: kumulierte Rendite Mo→Fr."""
+    if not wd_stats:
+        return None
+
+    wds = sorted(wd_stats.keys())
+    avg_curve = [wd_stats[w]["avg"] for w in wds]
+    upper = [wd_stats[w]["avg"] + wd_stats[w]["std"] for w in wds]
+    lower = [wd_stats[w]["avg"] - wd_stats[w]["std"] for w in wds]
+    labels = [WEEKDAY_LABELS[w] for w in wds]
+
+    fig = go.Figure()
+
+    # Konfidenzband
+    fig.add_trace(go.Scatter(x=labels, y=upper, mode="lines", line=dict(width=0),
+                             showlegend=False, hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=labels, y=lower, mode="lines", line=dict(width=0),
+                             fill="tonexty", fillcolor="rgba(0,206,209,0.12)",
+                             name="±1 Sigma", showlegend=True, hoverinfo="skip"))
+
+    # Durchschnittskurve
+    fig.add_trace(go.Scatter(x=labels, y=avg_curve, mode="lines+markers",
+        line=dict(color="#00CED1", width=3), marker=dict(size=7, color="#00CED1"),
+        name="Ø Wochenverlauf",
+        hovertemplate="<b>%{x}</b><br>Kum. Rendite: %{y:+.3f}%<extra></extra>"))
+
+    # Aktueller Wochenverlauf
+    if current_week_curve:
+        cw_labels, cw_vals = current_week_curve
+        fig.add_trace(go.Scatter(x=cw_labels, y=cw_vals, mode="lines+markers",
+            line=dict(color="#F1C40F", width=2.5),
+            marker=dict(size=8, color="#F1C40F", symbol="diamond"),
+            name="Diese Woche",
+            hovertemplate="<b>%{x}</b><br>%{y:+.3f}%<extra></extra>"))
+
+    fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)")
+
+    # We are here!
+    today_wd = datetime.now().weekday()
+    if 0 <= today_wd <= 4:
+        today_label = WEEKDAY_LABELS[today_wd]
+        if today_wd in wd_stats:
+            from shared.we_are_here import annotation as wah_annotation, vline as wah_vline
+            fig.add_shape(**wah_vline(today_label))
+            fig.add_annotation(**wah_annotation(
+                x_val=today_label, y_val=avg_curve[wds.index(today_wd)] if today_wd in wds else 0,
+                above=True, text=f"We are here! {today_label}"))
+
+    n = wd_stats[0]["n"] if 0 in wd_stats else 0
+    fig = apply_se_theme(fig, title=f"{ticker} — Kumulierter Wochenverlauf Mo→Fr ({n} Wochen)", height=380)
+    return fig
+
+
+def calc_current_week_curve(df):
+    """Rendite-Kurve der aktuellen Woche."""
+    today = pd.Timestamp(datetime.now().date())
+    df = df.copy()
+    df["weekday"] = df.index.weekday
+
+    # Aktuelle Woche: letzten Montag finden
+    start = today - pd.Timedelta(days=today.weekday())
+    wdf = df[(df.index >= start) & (df.index <= today) & (df["weekday"] <= 4)]
+    if len(wdf) < 1:
+        return None
+
+    wdf = wdf.sort_index()
+    # Rendite relativ zum Close des letzten Freitags
+    prev_friday = df[df.index < start].tail(1)
+    if len(prev_friday) == 0:
+        base = wdf["Open"].iloc[0]
+    else:
+        base = prev_friday["Close"].iloc[0]
+
+    labels = [WEEKDAY_LABELS[w] for w in wdf["weekday"].tolist()]
+    vals = [(c / base - 1) * 100 for c in wdf["Close"].tolist()]
+    return labels, vals
+
+
+def calc_overnight_intraday(df, years_back, cycle_filter=None):
+    """Zerlege jeden Wochentag in Overnight (prev Close→Open) und Intraday (Open→Close)."""
+    df = df.copy()
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+
+    df["weekday"] = df.index.weekday
+    df["overnight"] = (df["Open"] / df["Close"].shift(1) - 1) * 100
+    df["intraday"] = (df["Close"] / df["Open"] - 1) * 100
+    df = df[(df["weekday"] <= 4)].dropna(subset=["overnight", "intraday"])
+
+    results = {}
+    for wd in range(5):
+        sub = df[df["weekday"] == wd]
+        if len(sub) < 10:
+            results[wd] = {"overnight": 0, "intraday": 0, "n": 0}
+            continue
+        results[wd] = {
+            "overnight": sub["overnight"].mean(),
+            "intraday": sub["intraday"].mean(),
+            "n": len(sub),
+        }
+    return results
+
+
+def build_overnight_intraday_chart(oi_stats, ticker):
+    """Gestackte Bars: Overnight + Intraday pro Wochentag."""
+    wds = list(range(5))
+    overnight = [oi_stats[w]["overnight"] for w in wds]
+    intraday = [oi_stats[w]["intraday"] for w in wds]
+    total = [o + i for o, i in zip(overnight, intraday)]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=overnight, name="Overnight (Close→Open)",
+        marker_color="#6C5CE7", text=[f"{v:+.3f}%" for v in overnight],
+        textposition="inside", textfont=dict(size=10),
+        hovertemplate="<b>%{x}</b><br>Overnight: %{y:+.4f}%<extra></extra>"))
+    fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=intraday, name="Intraday (Open→Close)",
+        marker_color="#00CEC9", text=[f"{v:+.3f}%" for v in intraday],
+        textposition="inside", textfont=dict(size=10),
+        hovertemplate="<b>%{x}</b><br>Intraday: %{y:+.4f}%<extra></extra>"))
+
+    # Total-Annotations
+    for i, (label, t) in enumerate(zip(WEEKDAY_LABELS, total)):
+        fig.add_annotation(x=label, y=t, text=f"Σ {t:+.3f}%",
+            showarrow=False, font=dict(size=10, color="#FFFFFF"),
+            yshift=12 if t >= 0 else -12)
+
+    fig.update_layout(barmode="relative")
+    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Overnight vs. Intraday pro Wochentag", height=400)
+    return fig
+
+
+def calc_consecutive_probs(df, years_back, cycle_filter=None):
+    """Bedingte Wahrscheinlichkeit: Wenn Tag X positiv/negativ → was macht Tag X+1?"""
+    df = df.copy()
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+
+    df["weekday"] = df.index.weekday
+    df["daily_ret"] = (df["Close"] / df["Close"].shift(1) - 1) * 100
+    df = df[(df["weekday"] <= 4)].dropna(subset=["daily_ret"])
+
+    # Matrix: Von Wochentag X → Wochentag X+1
+    matrix = {}
+    for from_wd in range(4):  # Mo→Do (Fr hat keinen Folgetag)
+        to_wd = from_wd + 1
+        for condition in ["pos", "neg"]:
+            from_days = df[df["weekday"] == from_wd]
+            key = (from_wd, to_wd, condition)
+            pos_count, neg_count, total = 0, 0, 0
+
+            for idx in from_days.index:
+                ret_from = df.loc[idx, "daily_ret"]
+                if condition == "pos" and ret_from <= 0:
+                    continue
+                if condition == "neg" and ret_from > 0:
+                    continue
+
+                # Nächsten Handelstag finden
+                next_days = df[df.index > idx].head(1)
+                if len(next_days) == 0:
+                    continue
+                next_ret = next_days["daily_ret"].iloc[0]
+                total += 1
+                if next_ret > 0:
+                    pos_count += 1
+                else:
+                    neg_count += 1
+
+            matrix[key] = {"pos_next": pos_count, "neg_next": neg_count, "total": total}
+
+    return matrix
+
+
+def build_consecutive_heatmap(matrix):
+    """Heatmap: Bedingte Wahrscheinlichkeit dass Folgetag positiv ist."""
+    # 4 Paare: Mo→Di, Di→Mi, Mi→Do, Do→Fr
+    pairs = [(0, 1), (1, 2), (2, 3), (3, 4)]
+    pair_labels = ["Mo→Di", "Di→Mi", "Mi→Do", "Do→Fr"]
+
+    z_data = [[], []]  # [0] = nach positivem Tag, [1] = nach negativem Tag
+    hover_data = [[], []]
+
+    for from_wd, to_wd in pairs:
+        for row_idx, cond in enumerate(["pos", "neg"]):
+            data = matrix.get((from_wd, to_wd, cond), {"pos_next": 0, "total": 0})
+            pct = data["pos_next"] / data["total"] * 100 if data["total"] > 0 else 50
+            z_data[row_idx].append(round(pct, 1))
+            hover_data[row_idx].append(
+                f"{WEEKDAY_LABELS_SHORT[from_wd]}{'↑' if cond == 'pos' else '↓'} → "
+                f"{WEEKDAY_LABELS_SHORT[to_wd]}↑: {pct:.0f}% (n={data['total']})")
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data,
+        x=pair_labels,
+        y=["Nach ↑ Tag", "Nach ↓ Tag"],
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=50,
+        text=[[f"{v:.0f}%" for v in row] for row in z_data],
+        texttemplate="%{text}",
+        textfont=dict(size=13, color=SE_HEATMAP_TEXT_COLOR),
+        hovertext=hover_data,
+        hovertemplate="%{hovertext}<extra></extra>",
+        colorbar=dict(
+            title=dict(text="P(↑)", font=dict(color=SE_COLORS["text_muted"], size=11)),
+            ticksuffix="%", tickfont=dict(color=SE_COLORS["text_muted"], size=10)),
+    ))
+
+    fig = apply_se_heatmap_theme(fig, title="Konsekutiv-Analyse: P(Folgetag positiv)", height=220)
+    fig.update_yaxes(type="category")
+    fig.update_xaxes(type="category", side="bottom")
+    return fig
+
+
+def calc_quarterly_weekday(df, years_back, cycle_filter=None):
+    """Wochentag-Rendite aufgesplittet nach Quartal."""
+    df = df.copy()
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+
+    df["weekday"] = df.index.weekday
+    df["quarter"] = df.index.quarter
+    df["daily_ret"] = (df["Close"] / df["Close"].shift(1) - 1) * 100
+    df = df[(df["weekday"] <= 4)].dropna(subset=["daily_ret"])
+
+    results = {}
+    for q in range(1, 5):
+        for wd in range(5):
+            sub = df[(df["quarter"] == q) & (df["weekday"] == wd)]["daily_ret"]
+            results[(q, wd)] = {
+                "avg": sub.mean() if len(sub) > 0 else 0,
+                "n": len(sub),
+                "win_rate": (sub > 0).mean() * 100 if len(sub) > 0 else 0,
+            }
+    return results
+
+
+def build_quarterly_heatmaps(q_stats, ticker):
+    """4 Mini-Heatmaps: Q1-Q4 x Mo-Fr."""
+    fig = make_subplots(rows=2, cols=2,
+        subplot_titles=("Q1 (Jan-Mrz)", "Q2 (Apr-Jun)", "Q3 (Jul-Sep)", "Q4 (Okt-Dez)"),
+        horizontal_spacing=0.08, vertical_spacing=0.12)
+
+    positions = [(1, 1), (1, 2), (2, 1), (2, 2)]
+
+    for q, (row, col) in zip(range(1, 5), positions):
+        z_row = [q_stats[(q, wd)]["avg"] for wd in range(5)]
+        text_row = [f"{v:+.2f}%" for v in z_row]
+
+        fig.add_trace(go.Heatmap(
+            z=[z_row],
+            x=WEEKDAY_LABELS_SHORT,
+            y=[f"Q{q}"],
+            colorscale=SE_HEATMAP_COLORSCALE,
+            zmid=0,
+            text=[text_row],
+            texttemplate="%{text}",
+            textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
+            hovertemplate="<b>Q%{y} %{x}</b><br>Ø %{z:+.3f}%<extra></extra>",
+            showscale=(q == 4),
+            colorbar=dict(
+                title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+                ticksuffix="%", tickfont=dict(color=SE_COLORS["text_muted"])),
+        ), row=row, col=col)
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Wochentag-Performance nach Quartal", height=340)
+    for row in [1, 2]:
+        for col in [1, 2]:
+            fig.update_xaxes(type="category", side="bottom", row=row, col=col)
+            fig.update_yaxes(type="category", row=row, col=col)
+    return fig
+
+
+def calc_volatility_profile(df, years_back, cycle_filter=None):
+    """Range (High-Low)/Close pro Wochentag."""
+    df = df.copy()
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+
+    df["weekday"] = df.index.weekday
+    df["range_pct"] = (df["High"] - df["Low"]) / df["Close"] * 100
+    df = df[(df["weekday"] <= 4)].dropna(subset=["range_pct"])
+
+    results = {}
+    for wd in range(5):
+        sub = df[df["weekday"] == wd]["range_pct"]
+        if len(sub) < 10:
+            results[wd] = {"avg": 0, "median": 0, "std": 0, "n": 0}
+            continue
+        results[wd] = {
+            "avg": sub.mean(),
+            "median": sub.median(),
+            "std": sub.std(),
+            "n": len(sub),
+        }
+    return results
+
+
+def build_volatility_chart(vol_stats, ticker):
+    """Bars: durchschnittliche Tages-Range pro Wochentag."""
+    avgs = [vol_stats[wd]["avg"] for wd in range(5)]
+    medians = [vol_stats[wd]["median"] for wd in range(5)]
+
+    # Farbskala: höchste Vola = intensiveres Rot/Orange
+    max_vol = max(avgs) if avgs else 1
+    colors = [f"rgba(255,{int(165 - 100 * v / max_vol)},{int(80 - 50 * v / max_vol)},0.85)" for v in avgs]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=avgs, marker_color=colors,
+        name="Ø Range",
+        text=[f"{v:.3f}%<br>Med: {m:.3f}%" for v, m in zip(avgs, medians)],
+        textposition="outside", textfont=dict(size=10),
+        hovertemplate="<b>%{x}</b><br>Ø Range: %{y:.4f}%<br>n=%{customdata}<extra></extra>",
+        customdata=[vol_stats[wd]["n"] for wd in range(5)]))
+
+    # Durchschnittslinie
+    overall_avg = np.mean(avgs)
+    fig.add_hline(y=overall_avg, line_dash="dash", line_color="#F1C40F",
+                  annotation_text=f"Ø {overall_avg:.3f}%",
+                  annotation_font_color="#F1C40F")
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Volatilitaets-Profil (Tages-Range pro Wochentag)",
+                         height=380, show_legend=False)
+    fig.update_yaxes(ticksuffix="%")
+    return fig
+
+
+# ══════════════════════════════════════════════════════════════
 # STREAMLIT UI
 # ══════════════════════════════════════════════════════════════
 
@@ -439,6 +833,78 @@ def main():
         })
 
     st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
+
+    # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
+    st.markdown("---")
+    with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
+        wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        cw_curve = calc_current_week_curve(raw_df)
+        cum_fig = build_weekly_cumulative_chart(wd_cum_stats, ticker, current_week_curve=cw_curve)
+        if cum_fig:
+            st.plotly_chart(cum_fig, use_container_width=True, key="wd_cum_chart")
+            st.markdown(
+                "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+                "<b>Interpretation:</b> Zeigt, wie sich die Wochenrendite von Montag bis Freitag "
+                "aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. "
+                "Steigt die Kurve vor allem am Anfang der Woche, spricht das fuer "
+                "fruehen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>",
+                unsafe_allow_html=True)
+
+    # ── Overnight vs. Intraday ────────────────────────
+    with st.expander("🌙 Overnight vs. Intraday Split", expanded=True):
+        oi_stats = calc_overnight_intraday(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        oi_fig = build_overnight_intraday_chart(oi_stats, ticker)
+        st.plotly_chart(oi_fig, use_container_width=True, key="wd_oi_chart")
+        st.markdown(
+            "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>Interpretation:</b> Zerlegt die Tagesrendite in <b style='color:#6C5CE7;'>"
+            "Overnight</b> (Schlusskurs gestern → Eroeffnung heute) und "
+            "<b style='color:#00CEC9;'>Intraday</b> (Eroeffnung → Schluss). "
+            "Wenn die Rendite ueberwiegend overnight entsteht, profitieren "
+            "Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>",
+            unsafe_allow_html=True)
+
+    # ── Konsekutiv-Analyse ────────────────────────────
+    with st.expander("🔗 Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)", expanded=True):
+        consec_matrix = calc_consecutive_probs(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        consec_fig = build_consecutive_heatmap(consec_matrix)
+        st.plotly_chart(consec_fig, use_container_width=True, key="wd_consec_heatmap")
+        st.markdown(
+            "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>Interpretation:</b> Zeigt die Wahrscheinlichkeit, dass der Folgetag positiv ist, "
+            "abhaengig davon ob der Vortag positiv (↑) oder negativ (↓) war. "
+            "Werte ueber 55% deuten auf Trendkontinuation hin, unter 45% auf Mean Reversion.</p>",
+            unsafe_allow_html=True)
+
+    # ── Quartals-Heatmaps ─────────────────────────────
+    with st.expander("📊 Wochentag-Performance nach Quartal", expanded=True):
+        q_stats = calc_quarterly_weekday(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        q_fig = build_quarterly_heatmaps(q_stats, ticker)
+        st.plotly_chart(q_fig, use_container_width=True, key="wd_quarterly_heatmap")
+        st.markdown(
+            "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>Interpretation:</b> Zeigt ob Wochentags-Effekte saisonal variieren. "
+            "Z.B. koennte der Montagseffekt nur in Q4 (Window Dressing, Jahresend-Rallye) "
+            "signifikant sein, waehrend er in Q2/Q3 verschwindet.</p>",
+            unsafe_allow_html=True)
+
+    # ── Volatilitäts-Profil ───────────────────────────
+    with st.expander("📉 Volatilitaets-Profil (Tages-Range)", expanded=True):
+        vol_stats = calc_volatility_profile(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
+        vol_fig = build_volatility_chart(vol_stats, ticker)
+        st.plotly_chart(vol_fig, use_container_width=True, key="wd_vol_chart")
+        st.markdown(
+            "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>Interpretation:</b> Die Tages-Range (High−Low)/Close zeigt die "
+            "durchschnittliche Schwankungsbreite pro Wochentag. "
+            "Hohe Werte = mehr Volatilitaet = groessere Chancen fuer Day-Trader, "
+            "aber auch hoeheres Risiko. Typisch: Montag und Freitag haben hoehere Ranges.</p>",
+            unsafe_allow_html=True)
 
     # ── Heatmap Monat x Wochentag ────────────────────
     st.markdown("---")
