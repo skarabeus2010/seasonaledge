@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonalEdge
 
-> Version 17.0 | 2026-03-25 | Details → `docs/`
+> Version 18.0 | 2026-03-26 | Details → `docs/`
 
 ## Projekt
 
@@ -40,7 +40,8 @@ shared/                  ← Berechnungen, Daten, Utilities
   cpi_data.py            ← CPI-Daten (BLS/FRED), Inflationsbereinigung
   shock_analysis.py      ← Shock Analyzer (Trigger→Target)
   sector_rotation.py     ← Sektor-Rotation Analyse
-  significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge
+  significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
+  footer.py              ← Footer: Impressum, Datenschutz, Risk Disclosure (Expander)
   strategies/            ← 65+ Strategien
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
@@ -60,15 +61,21 @@ pages/                   ← Light Live + Premium Pages
                             Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
                             We-are-here TDOM-Marker, Praesidentenzyklus-Filter, Outlier
     04_Wochentage        ← Wochentag-Renditen, Praesidentenzyklus, Heatmap
-                            (gelber Rahmen), Signifikanztest (Expander)
-    05_Monatswechsel     ← Turn of the Month + Signifikanztest (Expander)
+                            (gelber Rahmen), Signifikanztest (Expander),
+                            Alle-Modi-Signifikanz (4 Rendite-Modi × 5 Tage),
+                            Kumulierter Wochenverlauf, Overnight/Intraday Split
+    05_Monatswechsel     ← Turn of the Month, TOM Heatmap (apply_se_heatmap_theme),
+                            Signifikanztest (Expander)
     06_Mondphasen        ← Voll-/Neumond-Effekt + Signifikanztest (Expander)
-    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown (disabled)
+    07_Januar_Trifecta   ← Ampelsystem + Verlauf je Signal + Drawdown,
+                            Aktuelles-Jahr-Overlay (goldene Linie, Sidebar-Toggle)
     08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
     11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
   Disabled (pages/_disabled/):
     09_Crash_Fruehwarnung← KI-Ampel: Isolation Forest Regime-Erkennung
     91_Uebernacht_Strategien ← Overnight vs Intraday
+    98_Datenschutz       ← (jetzt im Footer-Expander)
+    99_Impressum         ← (jetzt im Footer-Expander)
   Premium (inaktiv):
     80-92                ← Erweiterte Analyse, Feiertag, Zentralbanken, TruePath,
                             OPEX, Shock, Sector, KI Score, Scanner, Premium, TDOM,
@@ -115,15 +122,19 @@ if _project_dir not in sys.path:
 | Split-Slider: 3-Layer-Architektur | Achsen in eigenem Layer ohne clip-path |
 | Handelstage, nicht Kalendertage | Immer Trading Days zählen |
 | Charts: immer `apply_se_theme()` | `from shared.charts import apply_se_theme` |
+| Heatmaps: `apply_se_heatmap_theme()` | + `tickformat=None` auf Kategorie-Achsen |
 | Inline `update_layout` VERBOTEN | Nur `apply_se_theme()` + chart-spezifische Overrides |
+| `significance_gauge`: key_prefix | Bei Mehrfach-Aufruf `key_prefix` übergeben |
 
 ## Architektur-Prinzipien
 
 - Berechnungen → `shared/`, UI → `pages/`
 - Kein Copy-Paste von Logik zwischen Pages
 - Wiederverwendbare Charts → `distribution_charts.py`
-- Signifikanztests → `significance_gauge.py` (t-Test + Gauge)
+- Signifikanztests → `significance_gauge.py` (t-Test + Gauge, key_prefix bei Mehrfach-Nutzung)
 - Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
+- Heatmaps → `apply_se_heatmap_theme()` + `tickformat=None` auf Kategorie-Achsen
+- Footer (Impressum/Datenschutz/Risk) → `shared/footer.py` als Expander
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
 ## Code Style
@@ -193,6 +204,15 @@ UPPER_CASE        → Konstanten
 - [x] Backtest Engine: Tab-Styling, Radial Fill Gauge (Gradient), KI-Erklaertext (2026-03-25)
 - [x] Signifikanztest-Modul: shared/significance_gauge.py (t-Test + Gauge) (2026-03-25)
 - [x] Signifikanztest integriert: Wochentage, Monatswechsel, Mondphasen (optionaler Expander) (2026-03-25)
+- [x] Wochentage: Alle-Modi-Signifikanz (4 Rendite-Modi × 5 Tage als Tachos) (2026-03-26)
+- [x] Wochentage: Kumulierter Wochenverlauf als oberster Expander (2026-03-26)
+- [x] Wochentage: Balkendiagramm in Expander verschoben (2026-03-26)
+- [x] Wochentage: Heatmap Colorbar weisse Schrift + 2 Nachkommastellen (2026-03-26)
+- [x] Wochentage: DuplicateElementId Fix (key_prefix in significance_gauge) (2026-03-26)
+- [x] Monatswechsel: TOM Heatmap Fix (apply_se_heatmap_theme, tickformat=None) (2026-03-26)
+- [x] Trifecta: Aktuelles-Jahr-Overlay (goldene gestrichelte Linie, Sidebar-Toggle) (2026-03-26)
+- [x] Footer: Impressum + Datenschutz als Expander, Extra-Pages nach _disabled (2026-03-26)
+- [x] Footer: Risk Disclosure DE + EN (2026-03-26)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 
