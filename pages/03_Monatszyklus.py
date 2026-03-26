@@ -356,6 +356,173 @@ def calc_current_month_curve(df, target_month):
     return month_df["tdom"].tolist(), curve.tolist()
 
 
+def calc_seasonal_match(tdom_stats, current_month_curve, all_curves):
+    """
+    Berechnet Korrelation, DTW-Score und t-Test zwischen aktuellem Monat und saisonalem Durchschnitt.
+
+    Returns:
+        dict mit correlation, dtw_score, t_stat, p_value, cohens_d, current_return, avg_return, n_years
+        oder None wenn nicht genug Daten
+    """
+    if current_month_curve is None:
+        return None
+    cm_tdoms, cm_curve = current_month_curve
+    if not cm_tdoms or len(cm_tdoms) < 3:
+        return None
+
+    # Durchschnittskurve auf gleiche TDOMs trimmen
+    tdoms_common = [t for t in cm_tdoms if t in tdom_stats]
+    if len(tdoms_common) < 3:
+        return None
+
+    avg_vals = np.array([tdom_stats[t]["avg"] for t in tdoms_common])
+    cur_vals = np.array([cm_curve[cm_tdoms.index(t)] for t in tdoms_common])
+
+    # 1. Pearson-Korrelation
+    if np.std(cur_vals) == 0 or np.std(avg_vals) == 0:
+        correlation = 0.0
+    else:
+        correlation = float(np.corrcoef(cur_vals, avg_vals)[0, 1])
+        if np.isnan(correlation):
+            correlation = 0.0
+
+    # 2. DTW-Score (normalisiert auf 0-1, 1 = perfekter Match)
+    try:
+        from fastdtw import fastdtw
+        from scipy.spatial.distance import euclidean
+        dist, _ = fastdtw(cur_vals, avg_vals, dist=euclidean)
+        # Normalisieren: DTW-Distanz relativ zur Amplitude
+        amplitude = max(np.ptp(avg_vals), 0.1)
+        dtw_score = max(0, 1 - dist / (amplitude * len(tdoms_common)))
+    except ImportError:
+        # Fallback: Score aus Korrelation ableiten
+        dtw_score = max(0, (correlation + 1) / 2)
+
+    # 3. t-Test: Liegt der aktuelle Return im historischen Bereich?
+    hist_final_returns = [c["total_return"] for c in all_curves if len(c["curve"]) > 0]
+    current_return = cm_curve[-1] if cm_curve else 0
+    n_years = len(hist_final_returns)
+
+    if n_years >= 5 and np.std(hist_final_returns) > 0:
+        from scipy import stats
+        arr = np.array(hist_final_returns)
+        # z-Score: wie viele Standardabweichungen ist der aktuelle Return vom Durchschnitt entfernt?
+        avg_return = float(np.mean(arr))
+        std_return = float(np.std(arr, ddof=1))
+        cohens_d = abs(current_return - avg_return) / std_return if std_return > 0 else 0
+        # t-Test: ist der aktuelle Wert signifikant anders als der historische Durchschnitt?
+        t_stat = (current_return - avg_return) / (std_return / np.sqrt(n_years))
+        p_value = float(2 * (1 - stats.t.cdf(abs(t_stat), df=n_years - 1)))
+    else:
+        avg_return = float(np.mean(hist_final_returns)) if hist_final_returns else 0
+        cohens_d = 0
+        t_stat = 0
+        p_value = 1.0
+
+    return {
+        "correlation": round(correlation, 3),
+        "dtw_score": round(dtw_score, 3),
+        "t_stat": round(t_stat, 3),
+        "p_value": round(p_value, 4),
+        "cohens_d": round(cohens_d, 3),
+        "current_return": round(current_return, 3),
+        "avg_return": round(avg_return, 3),
+        "n_years": n_years,
+    }
+
+
+def render_seasonal_match(match, ticker, month_name):
+    """Rendert die Seasonal-Match Analyse als Expander."""
+    import streamlit as st
+    from shared.significance_gauge import build_gauge
+
+    if match is None:
+        return
+
+    _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
+
+    with st.expander("📊 Saisonaler Match — Aktuell vs. Durchschnitt", expanded=True):
+        col1, col2, col3 = st.columns(3)
+
+        # Korrelation Gauge
+        corr_score = max(0, (match["correlation"] + 1) / 2)  # -1..+1 → 0..1
+        with col1:
+            st.markdown(
+                "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
+                "font-size:13px; margin-bottom:2px;'>Korrelation</p>",
+                unsafe_allow_html=True)
+            st.plotly_chart(build_gauge(corr_score), use_container_width=True, config=_PLOTLY_CFG)
+            corr_col = "#00d4aa" if match["correlation"] > 0.5 else "#e8a425" if match["correlation"] > 0 else "#ff4757"
+            st.markdown(
+                f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
+                f"<span style='color:{corr_col}; font-weight:700;'>r = {match['correlation']:+.2f}</span></p>",
+                unsafe_allow_html=True)
+
+        # DTW Shape-Score Gauge
+        with col2:
+            st.markdown(
+                "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
+                "font-size:13px; margin-bottom:2px;'>Shape-Match (DTW)</p>",
+                unsafe_allow_html=True)
+            st.plotly_chart(build_gauge(match["dtw_score"]), use_container_width=True, config=_PLOTLY_CFG)
+            dtw_col = "#00d4aa" if match["dtw_score"] > 0.7 else "#e8a425" if match["dtw_score"] > 0.4 else "#ff4757"
+            dtw_pct = match["dtw_score"] * 100
+            st.markdown(
+                f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
+                f"<span style='color:{dtw_col}; font-weight:700;'>{dtw_pct:.0f}% Match</span></p>",
+                unsafe_allow_html=True)
+
+        # Signifikanz Gauge
+        with col3:
+            sig_score = max(0, 1 - match["p_value"])
+            if match["p_value"] < 0.05:
+                sig_label, sig_col = "Signifikant abweichend", "#ff4757"
+            elif match["p_value"] < 0.10:
+                sig_label, sig_col = "Grenzwertig", "#e8a425"
+            else:
+                sig_label, sig_col = "Im Normalbereich", "#00d4aa"
+            st.markdown(
+                "<p style='text-align:center; color:#c8d6e5; font-weight:600; "
+                "font-size:13px; margin-bottom:2px;'>Abweichungstest</p>",
+                unsafe_allow_html=True)
+            st.plotly_chart(build_gauge(sig_score), use_container_width=True, config=_PLOTLY_CFG)
+            st.markdown(
+                f"<p style='text-align:center; margin-top:-12px; font-size:12px;'>"
+                f"<span style='color:{sig_col}; font-weight:700;'>{sig_label}</span>"
+                f"<br><span style='color:#8899aa; font-size:11px;'>p={match['p_value']:.3f}  "
+                f"d={match['cohens_d']:.2f}</span></p>",
+                unsafe_allow_html=True)
+
+        # Kontext-Zeile
+        sign = "+" if match["current_return"] >= 0 else ""
+        sign_avg = "+" if match["avg_return"] >= 0 else ""
+        st.markdown(
+            f"<p style='color:#c8d6e5; font-size:12px; text-align:center; margin-top:8px;'>"
+            f"Aktuell: <b style='color:#F1C40F;'>{sign}{match['current_return']:.2f}%</b> &nbsp;|&nbsp; "
+            f"Saisonaler Oe: <b style='color:#00CED1;'>{sign_avg}{match['avg_return']:.2f}%</b> &nbsp;|&nbsp; "
+            f"Basis: <b>{match['n_years']}</b> Jahre</p>",
+            unsafe_allow_html=True)
+
+        # Erklaerungstext
+        st.markdown("---")
+        st.markdown(
+            "<div style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+            "<b>So liest du die Zahlen:</b><br>"
+            "<b>Korrelation (r)</b> — Misst, ob sich der aktuelle Monat in die gleiche Richtung "
+            "bewegt wie der saisonale Durchschnitt. "
+            "r = +1.0 bedeutet perfekte Uebereinstimmung, r = 0 kein Zusammenhang, r = -1.0 genau gegenläufig. "
+            "Werte ueber +0.5 deuten auf einen starken saisonalen Match hin.<br>"
+            "<b>Shape-Match (DTW)</b> — Dynamic Time Warping vergleicht die Form der beiden Kurven, "
+            "auch bei leichten Zeitverschiebungen. 100% = identischer Verlauf, unter 40% = kaum Aehnlichkeit.<br>"
+            "<b>Abweichungstest</b> — Prueft per t-Test, ob der aktuelle Monatsreturn statistisch im "
+            "Normalbereich der historischen Verteilung liegt. <span style='color:#00d4aa;'>Im Normalbereich</span> "
+            "= der aktuelle Monat verhält sich typisch. <span style='color:#ff4757;'>Signifikant abweichend</span> "
+            "= der aktuelle Verlauf ist ungewoehnlich (p&lt;0.05). Cohen's d misst die Effektstaerke "
+            "(d&gt;0.8 = grosse Abweichung)."
+            "</div>",
+            unsafe_allow_html=True)
+
+
 def build_monthly_heatmap(df, selected_years, ticker):
     """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
     current_month = datetime.now().month
@@ -498,6 +665,11 @@ def main():
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
+
+        # 1a. Seasonal Match Analyse (wenn Live-Overlay aktiv)
+        if current_month_curve is not None:
+            match = calc_seasonal_match(tdom_stats, current_month_curve, all_curves)
+            render_seasonal_match(match, ticker, month_name)
 
         # 1b. Detrend-Indikator (Expander, wie Jahreszyklus)
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
