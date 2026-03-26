@@ -36,9 +36,47 @@ from shared.data import download_data
 from shared.charts import apply_se_theme, apply_se_heatmap_theme
 from shared.calculations import get_presidential_cycle_year
 
+from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 from shared.design import inject_se_css
 from shared.footer import render_footer
 inject_se_css()
+
+
+# ══════════════════════════════════════════════════════════════
+# HELPERS
+# ══════════════════════════════════════════════════════════════
+
+def _heatmap_text_color(value, zmid=0, max_abs=None):
+    """Gibt dunkle Schriftfarbe zurueck wenn Zelle zu hell (hohe positive Werte = helles Gruen)."""
+    if max_abs is None:
+        max_abs = 1
+    intensity = abs(value - zmid) / max_abs if max_abs > 0 else 0
+    if value > zmid and intensity > 0.45:
+        return "#1a1a2e"
+    return "#FFFFFF"
+
+
+def _heatmap_text_colors(z_data, zmid=0):
+    """Generiert adaptive Textfarben-Matrix fuer eine Heatmap."""
+    flat = [v for row in z_data for v in row]
+    max_abs = max(abs(v - zmid) for v in flat) if flat else 1
+    return [[_heatmap_text_color(v, zmid, max_abs) for v in row] for row in z_data]
+
+
+def _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0, fmt="+.2f", suffix="%"):
+    """Fuegt Text-Annotations mit adaptiver Farbe zu einer Heatmap hinzu."""
+    flat = [v for row in z_data for v in row]
+    max_abs = max(abs(v - zmid) for v in flat) if flat else 1
+    for i, y_label in enumerate(y_labels):
+        for j, x_label in enumerate(x_labels):
+            val = z_data[i][j]
+            color = _heatmap_text_color(val, zmid, max_abs)
+            fig.add_annotation(
+                x=x_label, y=y_label,
+                text=f"{val:{fmt}}{suffix}",
+                showarrow=False,
+                font=dict(size=10, color=color),
+            )
 
 
 # ══════════════════════════════════════════════════════════════
@@ -241,6 +279,30 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=1)
     fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=2)
 
+    # We are here! — gelber Rahmen um aktuellen Wochentag
+    today_wd = datetime.now().weekday()
+    if 0 <= today_wd <= 4:
+        today_label = WEEKDAY_LABELS[today_wd]
+        # Rendite-Balken
+        fig.add_shape(type="rect",
+            x0=today_wd - 0.4, x1=today_wd + 0.4,
+            y0=0, y1=avgs[today_wd],
+            line=dict(color="#FFD700", width=3),
+            fillcolor="rgba(0,0,0,0)", layer="above",
+            row=1, col=1)
+        fig.add_annotation(x=today_label, y=avgs[today_wd],
+            text="We are here!", showarrow=False,
+            font=dict(size=10, color="#FFD700"),
+            yshift=20 if avgs[today_wd] >= 0 else -20,
+            row=1, col=1)
+        # Win Rate Balken
+        fig.add_shape(type="rect",
+            x0=today_wd - 0.4, x1=today_wd + 0.4,
+            y0=0, y1=win_rates[today_wd],
+            line=dict(color="#FFD700", width=3),
+            fillcolor="rgba(0,0,0,0)", layer="above",
+            row=1, col=2)
+
     mode_short = return_mode.split("(")[0].strip()
     fig = apply_se_theme(fig, title=f"{ticker} — Weekday Performance · {mode_short}", height=380)
 
@@ -290,9 +352,6 @@ def build_heatmap(stats, ticker):
         y=MONTH_NAMES_DE,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
-        text=np.round(z_arr, 2),
-        texttemplate="%{text:+.2f}%",
-        textfont=dict(size=10, color=SE_HEATMAP_TEXT_COLOR),
         hovertext=hover_texts,
         hovertemplate="%{hovertext}<extra></extra>",
         colorbar=dict(
@@ -302,6 +361,9 @@ def build_heatmap(stats, ticker):
             tickfont=dict(color=SE_COLORS["text_muted"]),
         ),
     ))
+
+    # Adaptive Textfarben (dunkel auf hellen Zellen)
+    _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0)
 
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
     fig.update_xaxes(side="bottom", type="category")
@@ -403,7 +465,6 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
     if 0 <= today_wd <= 4:
         today_label = WEEKDAY_LABELS[today_wd]
         if today_wd in wd_stats:
-            from shared.we_are_here import annotation as wah_annotation, vline as wah_vline
             fig.add_shape(**wah_vline(today_label))
             fig.add_annotation(**wah_annotation(
                 x_val=today_label, y_val=avg_curve[wds.index(today_wd)] if today_wd in wds else 0,
@@ -495,6 +556,13 @@ def build_overnight_intraday_chart(oi_stats, ticker):
     fig.update_layout(barmode="relative")
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
+    # We are here!
+    today_wd = datetime.now().weekday()
+    if 0 <= today_wd <= 4:
+        fig.add_shape(**wah_rect(
+            x0=today_wd - 0.4, x1=today_wd + 0.4,
+            y0=min(0, total[today_wd]), y1=max(0, total[today_wd])))
+
     fig = apply_se_theme(fig, title=f"{ticker} — Overnight vs. Intraday pro Wochentag", height=400)
     return fig
 
@@ -570,15 +638,24 @@ def build_consecutive_heatmap(matrix):
         y=["Nach ↑ Tag", "Nach ↓ Tag"],
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=50,
-        text=[[f"{v:.0f}%" for v in row] for row in z_data],
-        texttemplate="%{text}",
-        textfont=dict(size=13, color=SE_HEATMAP_TEXT_COLOR),
         hovertext=hover_data,
         hovertemplate="%{hovertext}<extra></extra>",
         colorbar=dict(
             title=dict(text="P(↑)", font=dict(color=SE_COLORS["text_muted"], size=11)),
             ticksuffix="%", tickfont=dict(color=SE_COLORS["text_muted"], size=10)),
     ))
+
+    _add_heatmap_annotations(fig, z_data, pair_labels, ["Nach ↑ Tag", "Nach ↓ Tag"],
+                             zmid=50, fmt=".0f")
+
+    # Gelber Rahmen um aktuelle Spalte (heutiger Wochentag-Uebergang)
+    today_wd = datetime.now().weekday()
+    if 0 <= today_wd <= 3:  # Mo-Do haben Folgetag
+        fig.add_shape(type="rect",
+            x0=today_wd - 0.5, x1=today_wd + 0.5,
+            y0=-0.5, y1=1.5,
+            line=dict(color="#FFD700", width=3.5),
+            fillcolor="rgba(0,0,0,0)", layer="above")
 
     fig = apply_se_heatmap_theme(fig, title="Konsekutiv-Analyse: P(Folgetag positiv)", height=220)
     fig.update_yaxes(type="category")
@@ -622,9 +699,15 @@ def build_quarterly_heatmaps(q_stats, ticker):
 
     positions = [(1, 1), (1, 2), (2, 1), (2, 2)]
 
+    # Sammle alle Werte fuer globale Farbskala
+    all_vals = [q_stats[(q, wd)]["avg"] for q in range(1, 5) for wd in range(5)]
+    max_abs = max(abs(v) for v in all_vals) if all_vals else 1
+
+    today_wd = datetime.now().weekday()
+    today_q = (datetime.now().month - 1) // 3 + 1
+
     for q, (row, col) in zip(range(1, 5), positions):
         z_row = [q_stats[(q, wd)]["avg"] for wd in range(5)]
-        text_row = [f"{v:+.2f}%" for v in z_row]
 
         fig.add_trace(go.Heatmap(
             z=[z_row],
@@ -632,15 +715,32 @@ def build_quarterly_heatmaps(q_stats, ticker):
             y=[f"Q{q}"],
             colorscale=SE_HEATMAP_COLORSCALE,
             zmid=0,
-            text=[text_row],
-            texttemplate="%{text}",
-            textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
-            hovertemplate="<b>Q%{y} %{x}</b><br>Ø %{z:+.3f}%<extra></extra>",
+            hovertemplate="<b>Q%{y} %{x}</b><br>Oe %{z:+.3f}%<extra></extra>",
             showscale=(q == 4),
             colorbar=dict(
-                title=dict(text="Ø %", font=dict(color=SE_COLORS["text_muted"])),
+                title=dict(text="Oe %", font=dict(color=SE_COLORS["text_muted"])),
                 ticksuffix="%", tickfont=dict(color=SE_COLORS["text_muted"])),
         ), row=row, col=col)
+
+        # Adaptive Text-Annotations
+        for wd_idx, wd_label in enumerate(WEEKDAY_LABELS_SHORT):
+            val = z_row[wd_idx]
+            color = _heatmap_text_color(val, 0, max_abs)
+            fig.add_annotation(
+                x=wd_label, y=f"Q{q}",
+                text=f"{val:+.2f}%",
+                showarrow=False,
+                font=dict(size=11, color=color),
+                row=row, col=col)
+
+        # Gelber Rahmen auf aktuelles Quartal + Wochentag
+        if q == today_q and 0 <= today_wd <= 4:
+            fig.add_shape(type="rect",
+                x0=today_wd - 0.5, x1=today_wd + 0.5,
+                y0=-0.5, y1=0.5,
+                line=dict(color="#FFD700", width=3.5),
+                fillcolor="rgba(0,0,0,0)", layer="above",
+                row=row, col=col)
 
     fig = apply_se_theme(fig, title=f"{ticker} — Wochentag-Performance nach Quartal", height=340)
     for row in [1, 2]:
@@ -700,8 +800,16 @@ def build_volatility_chart(vol_stats, ticker):
     # Durchschnittslinie
     overall_avg = np.mean(avgs)
     fig.add_hline(y=overall_avg, line_dash="dash", line_color="#F1C40F",
-                  annotation_text=f"Ø {overall_avg:.3f}%",
+                  annotation_text=f"Oe {overall_avg:.3f}%",
                   annotation_font_color="#F1C40F")
+
+    # We are here!
+    today_wd = datetime.now().weekday()
+    if 0 <= today_wd <= 4:
+        fig.add_shape(**wah_rect(x0=today_wd - 0.4, x1=today_wd + 0.4, y0=0, y1=avgs[today_wd]))
+        fig.add_annotation(**wah_annotation(
+            x_val=WEEKDAY_LABELS[today_wd], y_val=avgs[today_wd],
+            above=True, text="We are here!"))
 
     fig = apply_se_theme(fig, title=f"{ticker} — Volatilitaets-Profil (Tages-Range pro Wochentag)",
                          height=380, show_legend=False)
