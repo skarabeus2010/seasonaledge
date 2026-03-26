@@ -11,3 +11,4 @@ logs/
 .streamlit/
 node_modules/
 __pycache__/
+seo/output/

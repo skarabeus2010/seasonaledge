@@ -16,6 +16,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/seasonaledge
+            git checkout -- seo/output/ 2>/dev/null || true
             git pull origin master
             pip install -q Jinja2 2>/dev/null || pip3 install -q Jinja2 2>/dev/null
             python3 seo/programmatic_seo_builder.py

@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-
-# Streamlit-App nicht crawlen (dynamische Inhalte)
-Disallow: /_stcore/
-Disallow: /static/
-
-Sitemap: https://seasonalpha.ai/sitemap.xml

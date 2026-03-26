@@ -331,6 +331,8 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
 def build_live_chart(raw_df, ticker, days=90):
     """Aktueller Kurschart (Candlestick + Volume) der letzten N Handelstage."""
     df_live = raw_df.tail(days).copy()
+    if "Date" not in df_live.columns and df_live.index.name == "Date":
+        df_live = df_live.reset_index()
     if len(df_live) < 5:
         return None
 
