@@ -1119,6 +1119,25 @@ def main():
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
 
+        # ── Perzentil-Statusbar ──────────────────────────
+        if current_month_curve is not None and current_tdom and current_tdom > 0:
+            from shared.percentile_bar import render_percentile_bar
+            _cm_tdoms, _cm_curve = current_month_curve
+            # Aktueller Wert am letzten verfuegbaren TDOM
+            _cur_val = _cm_curve[-1] if _cm_curve else None
+            _cur_tdom = _cm_tdoms[-1] if _cm_tdoms else None
+            if _cur_val is not None and _cur_tdom is not None:
+                # Historische Werte an genau diesem TDOM
+                _hist_at_tdom = [c["curve"][c["tdoms"].index(_cur_tdom)]
+                                 for c in all_curves
+                                 if _cur_tdom in c["tdoms"]]
+                if len(_hist_at_tdom) >= 5:
+                    render_percentile_bar(
+                        current_value=_cur_val,
+                        hist_values=_hist_at_tdom,
+                        label=f"TDOM {_cur_tdom} · {month_name} {datetime.now().year}",
+                    )
+
         # 1a. Detrend-Indikator (direkt nach Chart)
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)

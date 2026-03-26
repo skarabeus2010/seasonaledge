@@ -759,6 +759,24 @@ def main():
     )
     st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CFG)
 
+    # ── Perzentil-Statusbar ──────────────────────────────
+    if show_current and avg:
+        from shared.percentile_bar import render_percentile_bar
+        _cur_year = datetime.now().year
+        _today_doy = datetime.now().timetuple().tm_yday
+        _day_idx = min(_today_doy - 1, 364)  # 0-basiert, max 364
+
+        if _cur_year in year_data:
+            _cur_val = year_data[_cur_year]["full_365"][_day_idx] - 100  # Normiert auf 0%
+            _hist_vals = [yd["full_365"][_day_idx] - 100
+                          for y, yd in year_data.items() if y != _cur_year]
+            if len(_hist_vals) >= 5:
+                render_percentile_bar(
+                    current_value=_cur_val,
+                    hist_values=_hist_vals,
+                    label=f"HT {_today_doy}/252 · {ticker} {_cur_year}",
+                )
+
     if pressure_info:
         st.info(pressure_info)
 

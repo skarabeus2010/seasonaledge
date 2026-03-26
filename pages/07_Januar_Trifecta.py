@@ -404,6 +404,34 @@ with tab1:
                                     tickformat="+.1f", ticksuffix="%")
             st.plotly_chart(fig_curves, use_container_width=True)
 
+            # ── Perzentil-Statusbar ──────────────────────────
+            if show_current_year:
+                from shared.percentile_bar import render_percentile_bar
+                _cy = datetime.now().year
+                _cydf = df[df.index.year == _cy]
+                if len(_cydf) >= 5:
+                    _closes = _cydf["Close"].values.astype(float)
+                    if _closes[0] > 0:
+                        _n = len(_closes)
+                        _cur_ret = (_closes[-1] / _closes[0] - 1) * 100
+                        # Alle historischen Jahre am gleichen Handelstag
+                        _hist_at_day = []
+                        for _hy in history_df["Jahr"].tolist():
+                            _hydf = df[df.index.year == _hy]
+                            if len(_hydf) >= _n:
+                                _hc = _hydf["Close"].values.astype(float)
+                                if _hc[0] > 0:
+                                    _hist_at_day.append(
+                                        (_hc[_n - 1] / _hc[0] - 1) * 100)
+                        _sig = result["signal"] if result else "?"
+                        if len(_hist_at_day) >= 5:
+                            render_percentile_bar(
+                                current_value=_cur_ret,
+                                hist_values=_hist_at_day,
+                                label=(f"HT {_n}/252 · {ticker} {_cy} "
+                                       f"(Signal: {_sig})"),
+                            )
+
         # ── Max Drawdown ──────────────────────────────────────────────
         with st.expander("📉 Max. Drawdown nach Ampelfarbe", expanded=True):
             dd_cols = st.columns(len(drawdown_data))
