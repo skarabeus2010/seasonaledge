@@ -6,6 +6,7 @@ Start: py -3.14 -m streamlit run seasonal_app.py
 """
 
 import streamlit as st
+from shared.footer import render_footer
 
 st.set_page_config(
     page_title="SeasonAlpha",
@@ -22,3 +23,5 @@ st.markdown(
 
 # Redirect zur Home Page
 st.switch_page("pages/00_Home.py")
+
+render_footer()

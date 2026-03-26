@@ -41,6 +41,7 @@ st.set_page_config(
 )
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -709,3 +710,5 @@ with tab3:
     ))
     fig3 = apply_se_theme(fig3, title="Anzahl Strategien pro Kategorie", height=350)
     st.plotly_chart(fig3, use_container_width=True)
+
+render_footer()

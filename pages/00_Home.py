@@ -26,6 +26,7 @@ st.set_page_config(
 )
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 # Google Search Console Verifizierung
@@ -671,3 +672,5 @@ st.markdown("""
   <a href="#">Risikohinweis</a>
 </div>
 """, unsafe_allow_html=True)
+
+render_footer()

@@ -38,6 +38,7 @@ st.set_page_config(
 )
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 TEMPLATE = "plotly_dark"
@@ -476,3 +477,5 @@ with st.expander("ℹ️ Methodik"):
     **Aktuelle Kohorte:** {CURRENT_YEAR} → X{CURRENT_DIGIT} (gelb markiert)  
     **Glättung:** 5-Tage zentrierter Moving Average auf Ø-Kurve
     """)
+
+render_footer()

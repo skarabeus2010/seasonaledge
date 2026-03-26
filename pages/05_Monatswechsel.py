@@ -28,6 +28,7 @@ from shared.calculations import analyze_turn_of_month, build_tom_chart
 st.set_page_config(page_title="Turn of the Month Effekt – SeasonAlpha", page_icon="🔄", layout="wide")
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 
@@ -189,6 +190,8 @@ def main():
         })
     
     st.dataframe(pd.DataFrame(perf_rows), use_container_width=True, hide_index=True)
+
+    render_footer()
 
 
 if __name__ == "__main__":

@@ -36,6 +36,7 @@ from shared.charts import apply_se_theme
 from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 # ── Distinkte Farbpalette fuer Einzeljahre (maximaler Kontrast) ──────
@@ -1182,5 +1183,7 @@ def main():
     st.markdown("---")
     with st.expander("10 Jahres Monats-Heatmap", expanded=True):
         st.plotly_chart(build_monthly_heatmap(df, selected_years, ticker), use_container_width=True)
+
+    render_footer()
 
 main()

@@ -33,6 +33,7 @@ from shared.constants import SE_COLORS
 st.set_page_config(page_title="Mondphasen & Börse – Vollmond-Effekt Analyse – SeasonAlpha", page_icon="🌕", layout="wide")
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 
@@ -341,6 +342,8 @@ def main():
                 "In Tagen": days_until
             })
         st.dataframe(pd.DataFrame(next_rows), use_container_width=True, hide_index=True)
+
+    render_footer()
 
 
 if __name__ == "__main__":

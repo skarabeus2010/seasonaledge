@@ -39,6 +39,7 @@ st.set_page_config(
 )
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 MONTH_STARTS = [datetime(2024, m, 1).timetuple().tm_yday for m in range(1, 13)]
@@ -397,3 +398,5 @@ st.markdown("---")
 st.caption(
     "Historische Muster garantieren keine zukuenftigen Ergebnisse. Keine Anlageberatung."
 )
+
+render_footer()

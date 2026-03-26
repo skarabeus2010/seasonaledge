@@ -41,6 +41,7 @@ st.set_page_config(
 )
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 # ── Tab-Styling: Spacing, Kontrast, Hover ──
@@ -545,3 +546,5 @@ st.caption(
     "fuer zukuenftige Ergebnisse. Transaktionskosten und Slippage nicht beruecksichtigt. "
     "Keine Anlageberatung."
 )
+
+render_footer()

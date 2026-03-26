@@ -37,6 +37,7 @@ from shared.charts import apply_se_theme, apply_se_heatmap_theme
 from shared.calculations import get_presidential_cycle_year
 
 from shared.design import inject_se_css
+from shared.footer import render_footer
 inject_se_css()
 
 
@@ -379,13 +380,6 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
     labels = [WEEKDAY_LABELS[w] for w in wds]
 
     fig = go.Figure()
-
-    # Konfidenzband
-    fig.add_trace(go.Scatter(x=labels, y=upper, mode="lines", line=dict(width=0),
-                             showlegend=False, hoverinfo="skip"))
-    fig.add_trace(go.Scatter(x=labels, y=lower, mode="lines", line=dict(width=0),
-                             fill="tonexty", fillcolor="rgba(0,206,209,0.12)",
-                             name="±1 Sigma", showlegend=True, hoverinfo="skip"))
 
     # Durchschnittskurve
     fig.add_trace(go.Scatter(x=labels, y=avg_curve, mode="lines+markers",
@@ -818,21 +812,19 @@ def main():
         sort_order=WEEKDAY_LABELS)
 
     # ── Detailtabelle ─────────────────────────────────
-    st.markdown("#### 📋 Statistik pro Wochentag")
-
-    wd_rows = []
-    for wd in range(5):
-        d = stats["by_weekday"][wd]
-        wd_rows.append({
-            "Wochentag": WEEKDAY_LABELS[wd],
-            "Ø Rendite": f"{d['avg']:+.4f}%",
-            "Median": f"{d['median']:+.4f}%",
-            "Std.Abw.": f"{d['std']:.4f}%",
-            "Win Rate": f"{d['win_rate']:.1f}%",
-            "Anzahl": d["count"]
-        })
-
-    st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
+    with st.expander("📋 Statistik pro Wochentag", expanded=True):
+        wd_rows = []
+        for wd in range(5):
+            d = stats["by_weekday"][wd]
+            wd_rows.append({
+                "Wochentag": WEEKDAY_LABELS[wd],
+                "Ø Rendite": f"{d['avg']:+.4f}%",
+                "Median": f"{d['median']:+.4f}%",
+                "Std.Abw.": f"{d['std']:.4f}%",
+                "Win Rate": f"{d['win_rate']:.1f}%",
+                "Anzahl": d["count"]
+            })
+        st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
 
     # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
     st.markdown("---")
@@ -907,45 +899,42 @@ def main():
             unsafe_allow_html=True)
 
     # ── Heatmap Monat x Wochentag ────────────────────
-    st.markdown("---")
-    st.markdown("#### 🗓️ Monat × Wochentag Heatmap")
-
-    heatmap_fig = build_heatmap(stats, ticker)
-    st.plotly_chart(heatmap_fig, use_container_width=True)
+    with st.expander("🗓️ Monat × Wochentag Heatmap", expanded=True):
+        heatmap_fig = build_heatmap(stats, ticker)
+        st.plotly_chart(heatmap_fig, use_container_width=True)
 
     # ── Top / Flop Kombinationen ──────────────────────
-    st.markdown("---")
+    with st.expander("🏆 Top / Flop Monat×Wochentag Kombinationen", expanded=True):
+        mwd = stats["by_month_weekday"]
+        combos = []
+        for (month, wd), data in mwd.items():
+            if data["count"] >= 3:
+                combos.append({
+                    "Monat": MONTH_NAMES_DE[month - 1],
+                    "Wochentag": WEEKDAY_LABELS[wd],
+                    "Ø Rendite": data["avg"],
+                    "Win Rate": data["win_rate"],
+                    "n": data["count"]
+                })
 
-    mwd = stats["by_month_weekday"]
-    combos = []
-    for (month, wd), data in mwd.items():
-        if data["count"] >= 3:
-            combos.append({
-                "Monat": MONTH_NAMES_DE[month - 1],
-                "Wochentag": WEEKDAY_LABELS[wd],
-                "Ø Rendite": data["avg"],
-                "Win Rate": data["win_rate"],
-                "n": data["count"]
-            })
+        if combos:
+            sorted_combos = sorted(combos, key=lambda x: x["Ø Rendite"], reverse=True)
 
-    if combos:
-        sorted_combos = sorted(combos, key=lambda x: x["Ø Rendite"], reverse=True)
+            col1, col2 = st.columns(2)
 
-        col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("#### 🟢 Top 10 beste Kombinationen")
+                top_df = pd.DataFrame(sorted_combos[:10])
+                top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
+                top_df["Win Rate"] = top_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
+                st.dataframe(top_df, use_container_width=True, hide_index=True)
 
-        with col1:
-            st.markdown("#### 🟢 Top 10 beste Kombinationen")
-            top_df = pd.DataFrame(sorted_combos[:10])
-            top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
-            top_df["Win Rate"] = top_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
-            st.dataframe(top_df, use_container_width=True, hide_index=True)
-
-        with col2:
-            st.markdown("#### 🔴 Top 10 schlechteste Kombinationen")
-            flop_df = pd.DataFrame(sorted_combos[-10:][::-1])
-            flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
-            flop_df["Win Rate"] = flop_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
-            st.dataframe(flop_df, use_container_width=True, hide_index=True)
+            with col2:
+                st.markdown("#### 🔴 Top 10 schlechteste Kombinationen")
+                flop_df = pd.DataFrame(sorted_combos[-10:][::-1])
+                flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
+                flop_df["Win Rate"] = flop_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
+                st.dataframe(flop_df, use_container_width=True, hide_index=True)
 
     # ── Dateninfo ─────────────────────────────────────
     with st.expander("ℹ️ Dateninfo"):
@@ -959,6 +948,8 @@ def main():
         **Praesidentenzyklus:** {cycle_str}
         **Handelstage analysiert:** {stats['filtered_count']}
         """)
+
+    render_footer()
 
 
 # ══════════════════════════════════════════════════════════════
