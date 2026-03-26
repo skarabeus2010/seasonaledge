@@ -335,11 +335,17 @@ with tab1:
         for i, (signal, dd) in enumerate(drawdown_data.items()):
             with dd_cols[i]:
                 emoji = {"Grün": "🟢", "Gelb": "🟡", "Orange": "🟠", "Rot": "🔴"}[signal]
-                st.metric(
-                    f"{emoji} {signal} (n={dd['n']})",
-                    f"Ø DD: {dd['avg_dd']:.1f}%",
-                    f"Worst: {dd['worst_dd']:.1f}% | Ø Rendite: {dd['avg_return']:+.1f}%",
-                    delta_color="inverse",
+                clr = farb_map[signal]
+                st.markdown(
+                    f"""<div style="background:rgba(255,255,255,0.04); border-left:3px solid {clr};
+                        border-radius:6px; padding:10px 12px; margin-bottom:4px;">
+                        <div style="font-size:12px; color:#8899aa;">{emoji} {signal} (n={dd['n']})</div>
+                        <div style="font-size:18px; font-weight:bold; color:#e8edf5; margin:4px 0;">
+                            Ø DD: {dd['avg_dd']:.1f}%</div>
+                        <div style="font-size:11px; color:#8899aa;">
+                            Worst: {dd['worst_dd']:.1f}% · Ø Rendite: {dd['avg_return']:+.1f}%</div>
+                    </div>""",
+                    unsafe_allow_html=True,
                 )
 
         st.divider()
