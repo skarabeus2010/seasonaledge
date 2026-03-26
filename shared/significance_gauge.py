@@ -234,7 +234,7 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
                         f"<p style='text-align:center; margin-top:-12px; font-size:11px;'>"
                         f"<span style='color:{sig_col}; font-weight:600;'>{sig_lbl}</span>"
                         f"<br><span style='color:#5a6e85;'>{t_str}</span>"
-                        f"<br><span style='color:#5a6e85;'>Oe {r['avg_return']:+.3f}%  "
+                        f"<br><span style='color:#5a6e85;'>Oe {r['avg_return']:+.2f}%  "
                         f"Win {r['win_rate']:.0f}%  n={r['n']}</span></p>",
                         unsafe_allow_html=True,
                     )

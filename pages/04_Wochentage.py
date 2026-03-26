@@ -256,10 +256,10 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
             x=WEEKDAY_LABELS,
             y=avgs,
             marker_color=bar_colors,
-            text=[f"{v:+.3f}%<br>n={c}" for v, c in zip(avgs, counts)],
+            text=[f"{v:+.2f}%<br>n={c}" for v, c in zip(avgs, counts)],
             textposition="outside",
             textfont=dict(size=11),
-            hovertemplate="<b>%{x}</b><br>Ø Rendite: %{y:+.4f}%<extra></extra>",
+            hovertemplate="<b>%{x}</b><br>Ø Rendite: %{y:+.2f}%<extra></extra>",
             showlegend=False
         ),
         row=1, col=1
@@ -306,7 +306,7 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     mode_short = return_mode.split("(")[0].strip()
     fig = apply_se_theme(fig, title=f"{ticker} — Weekday Performance · {mode_short}", height=380)
 
-    fig.update_yaxes(tickformat="+.3f", ticksuffix="%", row=1, col=1,
+    fig.update_yaxes(tickformat="+.2f", ticksuffix="%", row=1, col=1,
                      gridcolor="rgba(255,255,255,0.06)")
     fig.update_yaxes(range=[0, 100], ticksuffix="%", row=1, col=2,
                      gridcolor="rgba(255,255,255,0.06)")
@@ -337,7 +337,7 @@ def build_heatmap(stats, ticker):
             row_z.append(data["avg"])
             row_hover.append(
                 f"<b>{MONTH_NAMES_DE[month-1]} · {WEEKDAY_LABELS[wd]}</b><br>"
-                f"Ø Rendite: {data['avg']:+.3f}%<br>"
+                f"Ø Rendite: {data['avg']:+.2f}%<br>"
                 f"Win Rate: {data['win_rate']:.0f}%<br>"
                 f"n = {data['count']}"
             )
@@ -447,7 +447,7 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
     fig.add_trace(go.Scatter(x=labels, y=avg_curve, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=7, color="#00CED1"),
         name="Ø Wochenverlauf",
-        hovertemplate="<b>%{x}</b><br>Kum. Rendite: %{y:+.3f}%<extra></extra>"))
+        hovertemplate="<b>%{x}</b><br>Kum. Rendite: %{y:+.2f}%<extra></extra>"))
 
     # Aktueller Wochenverlauf
     if current_week_curve:
@@ -456,7 +456,7 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
             line=dict(color="#F1C40F", width=2.5),
             marker=dict(size=8, color="#F1C40F", symbol="diamond"),
             name="Diese Woche",
-            hovertemplate="<b>%{x}</b><br>%{y:+.3f}%<extra></extra>"))
+            hovertemplate="<b>%{x}</b><br>%{y:+.2f}%<extra></extra>"))
 
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)")
 
@@ -539,17 +539,17 @@ def build_overnight_intraday_chart(oi_stats, ticker):
 
     fig = go.Figure()
     fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=overnight, name="Overnight (Close→Open)",
-        marker_color="#6C5CE7", text=[f"{v:+.3f}%" for v in overnight],
+        marker_color="#6C5CE7", text=[f"{v:+.2f}%" for v in overnight],
         textposition="inside", textfont=dict(size=10),
-        hovertemplate="<b>%{x}</b><br>Overnight: %{y:+.4f}%<extra></extra>"))
+        hovertemplate="<b>%{x}</b><br>Overnight: %{y:+.2f}%<extra></extra>"))
     fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=intraday, name="Intraday (Open→Close)",
-        marker_color="#00CEC9", text=[f"{v:+.3f}%" for v in intraday],
+        marker_color="#00CEC9", text=[f"{v:+.2f}%" for v in intraday],
         textposition="inside", textfont=dict(size=10),
-        hovertemplate="<b>%{x}</b><br>Intraday: %{y:+.4f}%<extra></extra>"))
+        hovertemplate="<b>%{x}</b><br>Intraday: %{y:+.2f}%<extra></extra>"))
 
     # Total-Annotations
     for i, (label, t) in enumerate(zip(WEEKDAY_LABELS, total)):
-        fig.add_annotation(x=label, y=t, text=f"Σ {t:+.3f}%",
+        fig.add_annotation(x=label, y=t, text=f"Σ {t:+.2f}%",
             showarrow=False, font=dict(size=10, color="#FFFFFF"),
             yshift=12 if t >= 0 else -12)
 
@@ -715,7 +715,7 @@ def build_quarterly_heatmaps(q_stats, ticker):
             y=[f"Q{q}"],
             colorscale=SE_HEATMAP_COLORSCALE,
             zmid=0,
-            hovertemplate="<b>Q%{y} %{x}</b><br>Oe %{z:+.3f}%<extra></extra>",
+            hovertemplate="<b>Q%{y} %{x}</b><br>Oe %{z:+.2f}%<extra></extra>",
             showscale=(q == 4),
             colorbar=dict(
                 title=dict(text="Oe %", font=dict(color=SE_COLORS["text_muted"])),
@@ -792,15 +792,15 @@ def build_volatility_chart(vol_stats, ticker):
     fig = go.Figure()
     fig.add_trace(go.Bar(x=WEEKDAY_LABELS, y=avgs, marker_color=colors,
         name="Ø Range",
-        text=[f"{v:.3f}%<br>Med: {m:.3f}%" for v, m in zip(avgs, medians)],
+        text=[f"{v:.2f}%<br>Med: {m:.2f}%" for v, m in zip(avgs, medians)],
         textposition="outside", textfont=dict(size=10),
-        hovertemplate="<b>%{x}</b><br>Ø Range: %{y:.4f}%<br>n=%{customdata}<extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Ø Range: %{y:.2f}%<br>n=%{customdata}<extra></extra>",
         customdata=[vol_stats[wd]["n"] for wd in range(5)]))
 
     # Durchschnittslinie
     overall_avg = np.mean(avgs)
     fig.add_hline(y=overall_avg, line_dash="dash", line_color="#F1C40F",
-                  annotation_text=f"Oe {overall_avg:.3f}%",
+                  annotation_text=f"Oe {overall_avg:.2f}%",
                   annotation_font_color="#F1C40F")
 
     # We are here!
@@ -964,9 +964,9 @@ def main():
             d = stats["by_weekday"][wd]
             wd_rows.append({
                 "Wochentag": WEEKDAY_LABELS[wd],
-                "Ø Rendite": f"{d['avg']:+.4f}%",
-                "Median": f"{d['median']:+.4f}%",
-                "Std.Abw.": f"{d['std']:.4f}%",
+                "Ø Rendite": f"{d['avg']:+.2f}%",
+                "Median": f"{d['median']:+.2f}%",
+                "Std.Abw.": f"{d['std']:.2f}%",
                 "Win Rate": f"{d['win_rate']:.1f}%",
                 "Anzahl": d["count"]
             })
@@ -1054,14 +1054,14 @@ def main():
             with col1:
                 st.markdown("#### 🟢 Top 10 beste Kombinationen")
                 top_df = pd.DataFrame(sorted_combos[:10])
-                top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
+                top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.2f}%")
                 top_df["Win Rate"] = top_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
                 st.dataframe(top_df, use_container_width=True, hide_index=True)
 
             with col2:
                 st.markdown("#### 🔴 Top 10 schlechteste Kombinationen")
                 flop_df = pd.DataFrame(sorted_combos[-10:][::-1])
-                flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.3f}%")
+                flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.2f}%")
                 flop_df["Win Rate"] = flop_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
                 st.dataframe(flop_df, use_container_width=True, hide_index=True)
 
