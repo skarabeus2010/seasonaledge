@@ -453,10 +453,66 @@ def main():
                     textfont=dict(color="#FFD700", size=11, family="Arial Black"),
                     showlegend=False, hoverinfo="skip",
                 ))
+        # Speichere aktuelle Rendite fuer Abweichungsanzeige
+        _current_tom_return = curve_current[-1] - curve_current[0] if len(curve_current) >= 2 else None
+        _current_tom_label = f"{MONTH_NAMES_DE[prev_month-1]}→{MONTH_NAMES_DE[prev_month % 12]}"
+        _current_tom_month = prev_month
     except Exception:
-        pass  # Overlay nicht kritisch
+        _current_tom_return = None
+        _current_tom_label = None
+        _current_tom_month = None
 
     st.plotly_chart(tom_fig, use_container_width=True)
+
+    # ── Abweichungsanzeige: Aktuell vs. Historisch ────
+    if _current_tom_return is not None and _current_tom_month is not None:
+        # Historische Returns fuer genau diesen Monatswechsel
+        hist_returns = [e["total_return"] for e in tom_result["all_curves"]
+                        if e["month"] == _current_tom_month]
+        if len(hist_returns) >= 5:
+            hist_mean = np.mean(hist_returns)
+            hist_std = np.std(hist_returns, ddof=1)
+            delta = _current_tom_return - hist_mean
+
+            # Perzentil
+            below = sum(1 for r in hist_returns if r < _current_tom_return)
+            percentile = int(round(below / len(hist_returns) * 100))
+
+            # Z-Score
+            z_score = delta / hist_std if hist_std > 0 else 0
+
+            # Farbgebung
+            delta_clr = "#00d4aa" if delta >= 0 else "#ff4757"
+            cur_clr = "#00d4aa" if _current_tom_return >= 0 else "#ff4757"
+            z_label = "ungewoehnlich stark" if z_score > 1.5 else \
+                      "ueberdurchschnittlich" if z_score > 0.5 else \
+                      "durchschnittlich" if z_score > -0.5 else \
+                      "unterdurchschnittlich" if z_score > -1.5 else \
+                      "ungewoehnlich schwach"
+
+            st.markdown(
+                f"""<div style="background:linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+                    border:1px solid rgba(255,255,255,0.06); border-radius:10px;
+                    padding:14px 20px; margin:4px 0 16px 0; display:flex;
+                    align-items:center; gap:16px; flex-wrap:wrap;">
+                    <span style="font-size:13px; color:#FFD700; font-weight:600;">
+                        📍 {_current_tom_label} {cur_year}</span>
+                    <span style="font-size:15px; font-weight:700; color:{cur_clr};">
+                        {_current_tom_return:+.2f}%</span>
+                    <span style="font-size:12px; color:#6e7681;">
+                        Ø hist: {hist_mean:+.2f}%</span>
+                    <span style="font-size:13px; font-weight:600; color:{delta_clr};
+                        background:{delta_clr}18; padding:3px 10px; border-radius:6px;">
+                        {delta:+.2f}% vs. Ø</span>
+                    <span style="font-size:12px; color:#8899aa;
+                        background:rgba(255,255,255,0.04); padding:3px 10px; border-radius:6px;">
+                        <b>{percentile}.</b> Perzentil</span>
+                    <span style="font-size:12px; color:#8899aa;">
+                        {z_score:+.1f}σ · {z_label}</span>
+                    <span style="font-size:11px; color:#484f58;">n={len(hist_returns)}</span>
+                </div>""",
+                unsafe_allow_html=True,
+            )
 
     # ── Metriken (kompakte HTML-Karten) ───────────────
     tom_stats = tom_result["stats"]
