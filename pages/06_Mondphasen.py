@@ -391,7 +391,19 @@ def main():
         fig = build_moon_chart(result, ticker, days_before, days_after,
                                phase_info["name"], phase_info["color"], show_individual)
         st.plotly_chart(fig, use_container_width=True)
-        
+
+        # ── Perzentil-Statusbar (direkt unter Chart) ────
+        from shared.percentile_bar import render_percentile_bar
+        _last_return = result["all_curves"][-1]["total_return"] if result["all_curves"] else None
+        _hist_rets = [c["total_return"] for c in result["all_curves"][:-1]]
+        if _last_return is not None and len(_hist_rets) >= 5:
+            _last_date = result["all_curves"][-1]["date"]
+            render_percentile_bar(
+                current_value=_last_return,
+                hist_values=_hist_rets,
+                label=f"Letzter {phase_info['name']} · {_last_date}",
+            )
+
         # Metriken (kompakte Karten)
         stats = result["stats"]
         avg_clr = "#34d399" if stats["avg_return"] >= 0 else "#f87171"
@@ -420,26 +432,14 @@ def main():
             unsafe_allow_html=True,
         )
         
-        # Signifikanztest (optional)
+        # Signifikanztest
         from shared.significance_gauge import run_significance_test, render_significance_section
         phase_name = phase_info["name"]
         sig_groups = {f"{phase_name} Gesamt": [c["total_return"] for c in result["all_curves"]]}
         sig_results = run_significance_test(sig_groups)
         render_significance_section(sig_results,
             expander_title=f"📊 Statistische Signifikanz: {phase_name}-Effekt",
-            cols_per_row=1)
-
-        # ── Perzentil-Statusbar ──────────────────────────
-        from shared.percentile_bar import render_percentile_bar
-        _last_return = result["all_curves"][-1]["total_return"] if result["all_curves"] else None
-        _hist_rets = [c["total_return"] for c in result["all_curves"][:-1]]
-        if _last_return is not None and len(_hist_rets) >= 5:
-            _last_date = result["all_curves"][-1]["date"]
-            render_percentile_bar(
-                current_value=_last_return,
-                hist_values=_hist_rets,
-                label=f"Letzter {phase_info['name']} · {_last_date}",
-            )
+            cols_per_row=1, expanded=True)
 
         # Best & Worst
         best = result["best"]

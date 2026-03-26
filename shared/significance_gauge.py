@@ -179,7 +179,8 @@ def build_gauge(score, p_value=None):
 # ══════════════════════════════════════════════════════
 
 def render_significance_section(results, expander_title="📊 Statistische Signifikanz",
-                                cols_per_row=4, sort_order=None, key_prefix=None):
+                                cols_per_row=4, sort_order=None, key_prefix=None,
+                                expanded=False):
     """
     Rendert die Signifikanz-Gauges als optionalen Expander.
 
@@ -204,7 +205,7 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
 
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
-    with st.expander(expander_title, expanded=False):
+    with st.expander(expander_title, expanded=expanded):
         n = len(results)
         cpr = min(cols_per_row, n)
 
