@@ -36,12 +36,16 @@ def ticker_select(
 ) -> str:
     """Autocomplete-Ticker-Auswahl fuer die Sidebar.
 
+    Der gewaehlte Ticker wird in ``st.session_state["global_ticker"]``
+    gespeichert, sodass er beim Wechsel zwischen Pages erhalten bleibt.
+
     Parameters
     ----------
     key : str
         Eindeutiger Streamlit-Widget-Key (z.B. "ys_ticker").
     default : str
         Vorausgewaehlter Ticker (muss in SYMBOLS sein oder Freitext).
+        Wird ignoriert, wenn bereits ein globaler Ticker gesetzt ist.
     label : str
         Label ueber dem Widget (Standard: "Ticker").
 
@@ -50,9 +54,15 @@ def ticker_select(
     str
         Reiner Ticker-String (z.B. "SPY", "RHM.DE").
     """
-    # Selectbox mit eingebauter Suche
+    # Globalen Ticker aus Session State lesen (Page-uebergreifend)
+    effective_default = st.session_state.get("global_ticker", default)
+
+    # Sicherstellen, dass der Default in der Liste existiert
+    if effective_default not in _TICKER_OPTIONS:
+        effective_default = default
+
     try:
-        default_idx = _TICKER_OPTIONS.index(default)
+        default_idx = _TICKER_OPTIONS.index(effective_default)
     except ValueError:
         default_idx = _TICKER_OPTIONS.index(DEFAULT_SYMBOL)
 
@@ -63,4 +73,8 @@ def ticker_select(
         format_func=lambda t: _TICKER_LABELS.get(t, t),
         key=key,
     )
+
+    # Gewaehlten Ticker global speichern
+    st.session_state["global_ticker"] = selected
+
     return selected
