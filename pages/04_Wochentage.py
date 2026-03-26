@@ -368,6 +368,8 @@ def build_heatmap(stats, ticker):
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
     fig.update_xaxes(side="bottom", type="category", tickformat=None)
     fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
+    # Colorbar-Ticks explizit nach Theme setzen (verhindert Float-Artefakte)
+    fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
 
     # ── Gelber Rahmen um aktuelle Zelle (Monat + Wochentag) ──
     if 0 <= current_weekday <= 4:

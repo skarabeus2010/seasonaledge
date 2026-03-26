@@ -111,6 +111,7 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
                                   height=max(400, n_years * 45 + 120))
     fig.update_yaxes(autorange="reversed", type="category", tickformat=None)
     fig.update_xaxes(type="category", tickangle=-45, tickformat=None)
+    fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
     return fig
 
 
