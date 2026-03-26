@@ -50,21 +50,6 @@ def ticker_select(
     str
         Reiner Ticker-String (z.B. "SPY", "RHM.DE").
     """
-    custom_key = f"{key}_custom"
-    default_not_in_list = default not in SYMBOLS
-
-    use_custom = st.toggle(
-        "Eigenen Ticker eingeben",
-        value=default_not_in_list,
-        key=f"{key}_toggle",
-    )
-
-    if use_custom:
-        ticker = st.text_input(
-            label, value=default, key=custom_key
-        ).upper().strip()
-        return ticker
-
     # Selectbox mit eingebauter Suche
     try:
         default_idx = _TICKER_OPTIONS.index(default)
