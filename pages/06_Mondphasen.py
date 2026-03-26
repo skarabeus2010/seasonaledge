@@ -28,8 +28,8 @@ from shared.ticker_select import ticker_select
 from shared.constants import DEFAULT_TICKER, DEFAULT_YEARS
 from shared.data import download_data, preprocess
 from shared.central_banks import get_full_moon_dates, get_new_moon_dates, get_all_moon_dates
-from shared.charts import apply_se_theme
-from shared.constants import SE_COLORS
+from shared.charts import apply_se_theme, apply_se_heatmap_theme
+from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE
 
 st.set_page_config(page_title="Mondphasen & Börse – Vollmond-Effekt Analyse – SeasonAlpha", page_icon="🌕", layout="wide")
 
@@ -183,6 +183,102 @@ def build_moon_chart(result, ticker, days_before, days_after, phase_name,
 
 
 # ══════════════════════════════════════════════════════════════
+# HEATMAP HELPERS
+# ══════════════════════════════════════════════════════════════
+
+MONTH_NAMES_DE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
+
+
+def _heatmap_text_color(value, zmid=0, max_abs=None):
+    if max_abs is None:
+        max_abs = 1
+    intensity = abs(value - zmid) / max_abs if max_abs > 0 else 0
+    if value > zmid and intensity > 0.3:
+        return "#1a1a2e"
+    if value < zmid and intensity > 0.6:
+        return "#f0f0f0"
+    return "#FFFFFF"
+
+
+def _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0, fmt="+.2f", suffix="%"):
+    flat = [v for row in z_data for v in row]
+    max_abs = max(abs(v - zmid) for v in flat) if flat else 1
+    for i, y_label in enumerate(y_labels):
+        for j, x_label in enumerate(x_labels):
+            val = z_data[i][j]
+            color = _heatmap_text_color(val, zmid, max_abs)
+            fig.add_annotation(
+                x=x_label, y=y_label,
+                text=f"{val:{fmt}}{suffix}",
+                showarrow=False,
+                font=dict(size=10, color=color),
+            )
+
+
+def build_moon_month_heatmap(all_curves, ticker, phase_name):
+    """Heatmap: Monat × Phase (Ø Rendite pro Monat fuer Vollmond/Neumond)."""
+    from collections import defaultdict
+    month_returns = defaultdict(list)
+    for c in all_curves:
+        dt = pd.Timestamp(c["date"])
+        month_returns[dt.month].append(c["total_return"])
+
+    z_data = [[]]
+    for m in range(1, 13):
+        vals = month_returns.get(m, [])
+        z_data[0].append(round(np.mean(vals), 2) if vals else 0)
+
+    y_labels = [f"Ø {phase_name}"]
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data, x=MONTH_NAMES_DE, y=y_labels,
+        colorscale=SE_HEATMAP_COLORSCALE, zmid=0,
+        hovertemplate="<b>%{x} — %{y}</b><br>Ø Rendite: %{z:+.2f}%<extra></extra>",
+        colorbar=dict(
+            title=dict(text="Rendite %", font=dict(color="#FFFFFF", size=11)),
+            tickfont=dict(color="#FFFFFF", size=10), ticksuffix="%", tickformat="+.2f"),
+    ))
+    _add_heatmap_annotations(fig, z_data, MONTH_NAMES_DE, y_labels, zmid=0)
+
+    now = datetime.now()
+    fig.add_shape(type="rect",
+        x0=now.month - 1 - 0.5, x1=now.month - 1 + 0.5,
+        y0=-0.5, y1=0.5,
+        line=dict(color="#FFD700", width=3.5),
+        fillcolor="rgba(0,0,0,0)", layer="above")
+
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Ø {phase_name}-Rendite nach Monat", height=180)
+    fig.update_yaxes(type="category", tickformat=None)
+    fig.update_xaxes(type="category", tickformat=None)
+    return fig
+
+
+def classify_supermoon(moon_date, phase):
+    """Prueft ob Vollmond ein Supermond ist (Perigaeum-Naehe)."""
+    known_new_moon = datetime(2000, 1, 6, 18, 14)
+    synodic_month = 29.530588853
+    anomalistic_month = 27.554551  # Perigaeum-Zyklus
+
+    delta_days = (moon_date - pd.Timestamp(known_new_moon)).total_seconds() / 86400
+    k = delta_days / synodic_month
+
+    # Anomalie-Phase: 0 = Perigaeum
+    anomaly_phase = (delta_days % anomalistic_month) / anomalistic_month
+    # Supermond: Vollmond innerhalb 10% vom Perigaeum
+    is_super = phase == "full" and (anomaly_phase < 0.10 or anomaly_phase > 0.90)
+    return is_super
+
+
+def get_lunar_calendar_context(moon_date):
+    """Berechnet vereinfachten Lunar-Kalender Kontext (Mondmonat)."""
+    known_new_moon = pd.Timestamp(datetime(2000, 1, 6))
+    synodic_month = 29.530588853
+    delta_days = (moon_date - known_new_moon).days
+    lunar_month_num = int(delta_days / synodic_month) % 12 + 1
+    lunar_day = int(delta_days % synodic_month)
+    return lunar_month_num, lunar_day
+
+
+# ══════════════════════════════════════════════════════════════
 # STREAMLIT UI
 # ══════════════════════════════════════════════════════════════
 
@@ -316,6 +412,18 @@ def main():
             expander_title=f"📊 Statistische Signifikanz: {phase_name}-Effekt",
             cols_per_row=1)
 
+        # ── Perzentil-Statusbar ──────────────────────────
+        from shared.percentile_bar import render_percentile_bar
+        _last_return = result["all_curves"][-1]["total_return"] if result["all_curves"] else None
+        _hist_rets = [c["total_return"] for c in result["all_curves"][:-1]]
+        if _last_return is not None and len(_hist_rets) >= 5:
+            _last_date = result["all_curves"][-1]["date"]
+            render_percentile_bar(
+                current_value=_last_return,
+                hist_values=_hist_rets,
+                label=f"Letzter {phase_info['name']} · {_last_date}",
+            )
+
         # Best & Worst
         best = result["best"]
         worst = result["worst"]
@@ -327,6 +435,101 @@ def main():
                 "Rendite": [f"{best['total_return']:+.2f}%", f"{worst['total_return']:+.2f}%"]
             }
             st.table(pd.DataFrame(table_data).set_index(""))
+
+        # ── Mond-Heatmap (Monat × Phase) ────────────────
+        with st.expander(f"🗓️ {phase_info['name']}-Heatmap (Monat × Ø Rendite)", expanded=False):
+            hm_fig = build_moon_month_heatmap(result["all_curves"], ticker, phase_info["name"])
+            st.plotly_chart(hm_fig, use_container_width=True,
+                            key=f"moon_hm_{phase_info['name']}")
+            st.caption("Zeigt die durchschnittliche Rendite pro Kalendermonat. "
+                       "Gelber Rahmen = aktueller Monat.")
+
+        # ── Supermond-Analyse ────────────────────────────
+        if phase_info["name"] == "Vollmond":
+            with st.expander("🌟 Supermond-Analyse", expanded=False):
+                super_returns = []
+                normal_returns = []
+                for c in result["all_curves"]:
+                    dt = pd.Timestamp(c["date"])
+                    if classify_supermoon(dt, c["phase"]):
+                        super_returns.append(c["total_return"])
+                    else:
+                        normal_returns.append(c["total_return"])
+
+                if len(super_returns) >= 2:
+                    s_avg = np.mean(super_returns)
+                    n_avg = np.mean(normal_returns) if normal_returns else 0
+                    s_clr = "#34d399" if s_avg >= 0 else "#f87171"
+                    n_clr = "#34d399" if n_avg >= 0 else "#f87171"
+                    st.markdown(
+                        f'<div style="display:flex; gap:12px; margin:8px 0;">'
+                        f'<div style="flex:1; background:rgba(15,19,24,0.6);'
+                        f'border:1px solid rgba(255,215,0,0.2); border-radius:8px;'
+                        f'padding:12px; text-align:center;">'
+                        f'<div style="font-size:10px; color:#FFD700; margin-bottom:4px;">🌟 Supermond (n={len(super_returns)})</div>'
+                        f'<div style="font-size:16px; font-weight:700; color:{s_clr};">{s_avg:+.3f}%</div>'
+                        f'</div>'
+                        f'<div style="flex:1; background:rgba(15,19,24,0.6);'
+                        f'border:1px solid rgba(255,255,255,0.07); border-radius:8px;'
+                        f'padding:12px; text-align:center;">'
+                        f'<div style="font-size:10px; color:#94a3b8; margin-bottom:4px;">🌕 Normal (n={len(normal_returns)})</div>'
+                        f'<div style="font-size:16px; font-weight:700; color:{n_clr};">{n_avg:+.3f}%</div>'
+                        f'</div>'
+                        f'</div>',
+                        unsafe_allow_html=True)
+                    delta = s_avg - n_avg
+                    d_clr = "#34d399" if delta >= 0 else "#f87171"
+                    st.markdown(
+                        f'<div style="text-align:center; font-size:12px; color:#94a3b8;">'
+                        f'Differenz Supermond vs. Normal: '
+                        f'<span style="color:{d_clr}; font-weight:700;">{delta:+.3f}%</span></div>',
+                        unsafe_allow_html=True)
+                    st.caption("Supermond = Vollmond in Perigaeum-Naehe (Mond am erdnaechsten Punkt). "
+                               "Die Klassifikation basiert auf dem anomalistischen Mondzyklus (~27.55 Tage).")
+                else:
+                    st.info("Zu wenige Supermond-Events im gewaehlten Zeitraum.")
+
+        # ── Lunar-Kalender Kontext ───────────────────────
+        with st.expander(f"🌙 Lunar-Kalender: {phase_info['name']} nach Mondmonat", expanded=False):
+            from collections import defaultdict
+            lunar_month_returns = defaultdict(list)
+            for c in result["all_curves"]:
+                dt = pd.Timestamp(c["date"])
+                lm, _ = get_lunar_calendar_context(dt)
+                lunar_month_returns[lm].append(c["total_return"])
+
+            lunar_labels = [f"LM {m}" for m in range(1, 13)]
+            lunar_avgs = [round(np.mean(lunar_month_returns.get(m, [0])), 3) for m in range(1, 13)]
+            lunar_ns = [len(lunar_month_returns.get(m, [])) for m in range(1, 13)]
+
+            fig_lunar = go.Figure()
+            colors = ["#34d399" if v >= 0 else "#f87171" for v in lunar_avgs]
+            fig_lunar.add_trace(go.Bar(
+                x=lunar_labels, y=lunar_avgs,
+                marker_color=colors, marker_opacity=0.85,
+                text=[f"{v:+.3f}%" for v in lunar_avgs],
+                textposition="outside", textfont=dict(size=10, color="#e2e8f0"),
+                hovertemplate="<b>%{x}</b><br>Ø Rendite: %{y:+.3f}%<br>n=%{customdata}<extra></extra>",
+                customdata=lunar_ns,
+            ))
+            fig_lunar.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.25)")
+            fig_lunar = apply_se_theme(fig_lunar,
+                title=f"{ticker} — {phase_info['name']}-Effekt nach Mondmonat (Lunar-Kalender)",
+                height=350)
+            fig_lunar.update_yaxes(tickformat="+.3f", ticksuffix="%")
+            st.plotly_chart(fig_lunar, use_container_width=True,
+                            key=f"lunar_{phase_info['name']}")
+
+            # Vergleich: Solar vs Lunar beste/schlechteste Monate
+            solar_best_m = MONTH_NAMES_DE[max(range(12), key=lambda i: [round(np.mean(
+                [c["total_return"] for c in result["all_curves"] if pd.Timestamp(c["date"]).month == i+1] or [0]), 3)
+                for i in range(12)][i])]
+            lunar_best_m = f"LM {max(range(1,13), key=lambda m: np.mean(lunar_month_returns.get(m, [0])))}"
+            st.caption(
+                f"Vergleich: Bester Solar-Monat = **{solar_best_m}**, "
+                f"Bester Lunar-Monat = **{lunar_best_m}**. "
+                f"Mondmonate (LM 1-12) basieren auf dem synodischen Zyklus (~29.5 Tage) "
+                f"und sind unabhaengig vom Gregorianischen Kalender.")
 
     # ── Nächste Mondphasen ────────────────────────────
     with st.expander("📅 Nächste Mondphasen", expanded=False):
@@ -340,13 +543,16 @@ def main():
                 days_until = (m["date"] - today).days
                 emoji = "🌕" if m["phase"] == "full" else "🌑"
                 name = "Vollmond" if m["phase"] == "full" else "Neumond"
+                is_super = classify_supermoon(m["date"], m["phase"])
+                super_tag = " 🌟" if is_super else ""
                 next_rows.append({
                     "Datum": m["date"].strftime("%d.%m.%Y"),
                     "Wochentag": m["date"].strftime("%A"),
-                    "Phase": f"{emoji} {name}",
+                    "Phase": f"{emoji} {name}{super_tag}",
                     "In Tagen": days_until
                 })
             st.dataframe(pd.DataFrame(next_rows), use_container_width=True, hide_index=True)
+            st.caption("🌟 = Supermond (Vollmond in Perigaeum-Naehe)")
 
     render_footer()
 
