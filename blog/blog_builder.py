@@ -18,6 +18,8 @@ import yaml
 from datetime import datetime, date
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 
 # ── Projekt-Root ──────────────────────────────────────────
@@ -58,7 +60,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return meta, content
 
 
-def markdown_to_html(md_text: str) -> str:
+def markdown_to_html(md_text: str, post_slug: str = "") -> str:
     """Einfacher Markdown ->HTML Converter (kein externes Package noetig)."""
     lines = md_text.split("\n")
     html_parts = []
@@ -119,7 +121,10 @@ def markdown_to_html(md_text: str) -> str:
         chart_match = re.match(r"\{\{chart:(\w+):([^:]+):(\d+)\}\}", stripped)
         if chart_match:
             chart_type, ticker, years = chart_match.groups()
-            html_parts.append(_build_chart_placeholder(chart_type, ticker, int(years)))
+            if post_slug:
+                html_parts.append(_build_chart_image(chart_type, ticker, int(years), post_slug))
+            else:
+                html_parts.append(_build_chart_placeholder(chart_type, ticker, int(years)))
             continue
 
         # Regular paragraph
@@ -144,8 +149,195 @@ def _inline(text: str) -> str:
     return text
 
 
+# ── Chart-Generierung ─────────────────────────────────────
+
+# Cache fuer heruntergeladene Ticker-Daten (vermeidet Mehrfach-Downloads)
+_ticker_cache: dict[str, pd.DataFrame] = {}
+
+# Konstanten fuer Charts (aus pages/02_Jahreszyklus.py)
+_MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
+                 "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+_MONTH_DOY = {
+    1: (1, 31), 2: (32, 59), 3: (60, 90), 4: (91, 120),
+    5: (121, 151), 6: (152, 181), 7: (182, 212), 8: (213, 243),
+    9: (244, 273), 10: (274, 304), 11: (305, 334), 12: (335, 365),
+}
+_MONTH_NAMES_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+                   "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+
+
+def _get_ticker_data(ticker: str) -> pd.DataFrame | None:
+    """Laedt Ticker-Daten mit Cache."""
+    if ticker in _ticker_cache:
+        return _ticker_cache[ticker]
+    try:
+        from shared.yahoo_downloader import download_data, preprocess
+        df = download_data(ticker)
+        if df is not None and len(df) > 0:
+            df = preprocess(df)
+            _ticker_cache[ticker] = df
+            return df
+    except Exception as e:
+        print(f"    [WARN] Daten fuer {ticker} nicht verfuegbar: {e}")
+    return None
+
+
+def _build_seasonal_yearly_chart(ticker: str, years: int) -> "go.Figure | None":
+    """Baut einen saisonalen Jahresverlauf-Chart."""
+    import plotly.graph_objects as go
+    from shared.calculations import build_year_data, calculate_seasonal_average
+    from shared.charts import apply_se_theme
+    from shared.constants import SE_COLORS
+
+    df = _get_ticker_data(ticker)
+    if df is None:
+        return None
+
+    current_year = date.today().year
+    all_years = sorted(df["year"].unique())
+    selected = [y for y in all_years if y >= current_year - years]
+    if not selected:
+        return None
+
+    year_data = build_year_data(df, selected)
+    if not year_data:
+        return None
+    avg, std = calculate_seasonal_average(year_data)
+
+    fig = go.Figure()
+    x_days = list(range(1, 366))
+
+    # Konfidenzband (±1 Sigma)
+    if std:
+        upper = [avg[i] + std[i] for i in range(365)]
+        lower = [avg[i] - std[i] for i in range(365)]
+        fig.add_trace(go.Scatter(
+            x=x_days, y=upper, mode="lines", line=dict(width=0),
+            showlegend=False, hoverinfo="skip",
+        ))
+        fig.add_trace(go.Scatter(
+            x=x_days, y=lower, mode="lines", line=dict(width=0),
+            fill="tonexty", fillcolor="rgba(77,159,255,0.12)",
+            name="±1 Sigma", hoverinfo="skip",
+        ))
+
+    # Saisonaler Durchschnitt
+    fig.add_trace(go.Scatter(
+        x=x_days, y=avg, mode="lines",
+        line=dict(color=SE_COLORS["accent_blue"], width=3),
+        name=f"Saisonaler Ø ({len(year_data)} Jahre)",
+    ))
+
+    fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
+
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — Saisonaler Jahresverlauf ({len(year_data)} Jahre)",
+        height=520, show_watermark=True,
+    )
+    fig.update_xaxes(
+        tickmode="array", tickvals=_MONTH_STARTS, ticktext=_MONTH_LABELS,
+        range=[1, 365],
+    )
+    fig.update_yaxes(title="Normalisiert (Start = 100)")
+    return fig
+
+
+def _build_monthly_heatmap_chart(ticker: str, years: int) -> "go.Figure | None":
+    """Baut eine Monats-Rendite Heatmap."""
+    import plotly.graph_objects as go
+    from shared.calculations import build_year_data
+    from shared.charts import apply_se_heatmap_theme
+    from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
+
+    df = _get_ticker_data(ticker)
+    if df is None:
+        return None
+
+    current_year = date.today().year
+    all_years = sorted(df["year"].unique(), reverse=True)
+    selected = [y for y in all_years if y >= current_year - years][:years]
+    if not selected:
+        return None
+
+    year_data = build_year_data(df, selected)
+    if not year_data:
+        return None
+
+    sorted_years = sorted(year_data.keys(), reverse=True)[:10]
+    z_data = []
+    y_labels = []
+    for year in sorted_years:
+        row = []
+        for m in range(1, 13):
+            s, e = _MONTH_DOY[m]
+            yd = year_data[year]
+            start_val = yd["full_365"][s - 1]
+            end_val = yd["full_365"][min(e - 1, 364)]
+            ret = (end_val - start_val) / start_val * 100 if start_val != 0 else 0
+            row.append(round(ret, 2))
+        z_data.append(row)
+        y_labels.append(str(year))
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data,
+        x=_MONTH_NAMES_DE,
+        y=y_labels,
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=0,
+        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
+        texttemplate="%{text}",
+        textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
+        hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
+        colorbar=dict(
+            title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
+            tickfont=dict(color=SE_COLORS["text_muted"], size=10),
+            ticksuffix="%",
+        ),
+    ))
+
+    fig = apply_se_heatmap_theme(
+        fig,
+        title=f"{ticker} — Monats-Heatmap ({len(sorted_years)} Jahre)",
+        height=max(300, len(sorted_years) * 28 + 100),
+    )
+    fig.update_yaxes(autorange="reversed", dtick=1)
+    return fig
+
+
+_CHART_BUILDERS = {
+    "seasonal_yearly": _build_seasonal_yearly_chart,
+    "monthly_heatmap": _build_monthly_heatmap_chart,
+}
+
+
+def _build_chart_image(chart_type: str, ticker: str, years: int,
+                       post_slug: str) -> str:
+    """Generiert interaktiven Plotly-Chart als HTML-Div. Fallback auf Platzhalter."""
+    builder = _CHART_BUILDERS.get(chart_type)
+    if not builder:
+        return _build_chart_placeholder(chart_type, ticker, years)
+
+    try:
+        fig = builder(ticker, years)
+        if fig is None:
+            return _build_chart_placeholder(chart_type, ticker, years)
+
+        import plotly.io as pio
+        # Interaktives HTML-Div (mit Plotly.js CDN, ohne full_html)
+        chart_html = pio.to_html(
+            fig, include_plotlyjs="cdn", full_html=False,
+            config={"displayModeBar": False, "scrollZoom": False},
+        )
+        return f'<div class="chart-container">{chart_html}</div>'
+    except Exception as e:
+        print(f"    [WARN] Chart {chart_type}/{ticker} fehlgeschlagen: {e}")
+        return _build_chart_placeholder(chart_type, ticker, years)
+
+
 def _build_chart_placeholder(chart_type: str, ticker: str, years: int) -> str:
-    """Erzeugt Chart-Platzhalter (wird spaeter durch echte Charts ersetzt)."""
+    """Fallback-Platzhalter wenn Chart-Generierung fehlschlaegt."""
     labels = {
         "seasonal_yearly": "Saisonaler Jahresverlauf",
         "monthly_heatmap": "Monats-Rendite Heatmap",
@@ -161,7 +353,7 @@ def _build_chart_placeholder(chart_type: str, ticker: str, years: int) -> str:
         f'<div style="color:#5a6e85; font-size:0.9rem;">'
         f'{label} — {ticker} ({years} Jahre)</div>'
         f'<div style="color:#3a4a5e; font-size:0.8rem; margin-top:0.5rem;">'
-        f'Interaktiver Chart wird beim naechsten Build generiert</div>'
+        f'Chart wird beim naechsten Build generiert</div>'
         f'</div></div>'
     )
 
@@ -200,8 +392,8 @@ def load_posts() -> list[dict]:
                     print(f"  [SCHEDULED] {md_file.name} ->{pub_date}")
                     continue
 
-        # Content zu HTML
-        html_content = markdown_to_html(content)
+        # Content zu HTML (mit Chart-Generierung)
+        html_content = markdown_to_html(content, post_slug=meta.get("slug", ""))
 
         # Reading time
         word_count = len(content.split())
