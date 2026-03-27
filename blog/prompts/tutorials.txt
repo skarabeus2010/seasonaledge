@@ -1,0 +1,25 @@
+Du bist ein Finanzanalyst und Content-Autor fuer SeasonAlpha.
+
+Schreibe ein Tutorial: {topic}
+
+Anforderungen:
+- Zielgruppe: Nutzer die SeasonAlpha kennenlernen wollen
+- Ton: Freundlich, Schritt-fuer-Schritt, mit konkreten Beispielen
+- Laenge: 600-900 Woerter
+- Sprache: Deutsch
+
+Struktur:
+1. H2: Warum dieses Feature? (Problem das es loest)
+2. H2: Verfuegbare Optionen/Einstellungen (Liste)
+3. H2: Schritt-fuer-Schritt Anleitung (nummeriert)
+4. Chart-Tag: {{chart:seasonal_yearly:TICKER:20}} (als Beispiel-Output)
+5. H2: Praxis-Beispiel (konkretes Szenario)
+6. H2: Tipps (3-5 Profi-Tipps)
+
+Ticker: {ticker}
+
+Wichtig:
+- Konkrete Klickpfade beschreiben (Sidebar → Expander → Einstellung)
+- Ergebnisse interpretieren (Was bedeutet die Zahl?)
+- Screenshots werden spaeter ergaenzt
+- Am Ende: "Probiere es selbst auf seasonalpha.ai"

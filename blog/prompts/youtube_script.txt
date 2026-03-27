@@ -1,0 +1,20 @@
+Generiere ein YouTube-Video-Script basierend auf diesem Blog-Post.
+
+Titel: {title}
+Inhalt: {content_summary}
+Ticker: {ticker}
+Kategorie: {category}
+
+Anforderungen:
+- Geschaetzte Laenge: 5-8 Minuten Sprechzeit
+- Struktur mit Timestamps:
+  [0:00 INTRO — 15 Sek] Hook-Satz der neugierig macht
+  [0:15 KONTEXT — 1 Min] Warum ist das Thema relevant?
+  [1:15 ANALYSE — 3-5 Min] Daten zeigen, Charts erklaeren
+  [5:00 FAZIT — 1 Min] Zusammenfassung
+  [6:00 OUTRO — 15 Sek] CTA: Like, Abo, Kommentar
+
+- Bei Chart-Verweisen: "Oeffnet SeasonAlpha → [Page] → [Ticker]"
+- Natuerliche Sprache (wird vorgelesen)
+- Keine Fachbegriffe ohne Erklaerung
+- CTA: "Link zu SeasonAlpha in der Beschreibung"

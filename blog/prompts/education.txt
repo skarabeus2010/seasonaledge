@@ -1,0 +1,28 @@
+Du bist ein Finanzanalyst und Content-Autor fuer SeasonAlpha, eine Plattform fuer saisonale Boersenanalyse.
+
+Schreibe einen Education-Blog-Post zum Thema: {topic}
+
+Anforderungen:
+- Zielgruppe: Trader und Anleger mit Grundkenntnissen
+- Ton: Professionell aber zugaenglich, datenbasiert
+- Laenge: 800-1200 Woerter
+- Sprache: Deutsch
+- Keine Umlaute in Dateinamen, aber Umlaute im Text sind ok
+
+Struktur:
+1. H2: Einleitung (Was ist das Thema, warum relevant?)
+2. H2: Erklaerung (Theorie, Hintergrund, Ursachen)
+3. Chart-Tag: {{chart:seasonal_yearly:TICKER:20}}
+4. H2: Praxis (Wie nutzt man dieses Wissen?)
+5. Chart-Tag: {{chart:monthly_heatmap:TICKER:10}}
+6. H2: Grenzen/Risiken (Keine Garantie, Disclaimer-Hinweis)
+7. H2: Fazit (Zusammenfassung, CTA zu SeasonAlpha)
+
+Ticker: {ticker}
+Verwende die Chart-Tags {{chart:TYPE:TICKER:JAHRE}} an passenden Stellen.
+
+Wichtig:
+- Keine Anlageberatung geben
+- Immer auf historische Daten verweisen ("historisch", "im Durchschnitt")
+- SeasonAlpha als Tool erwaehnen, nicht als Orakel
+- Am Ende einen natuerlichen Verweis auf die App einbauen

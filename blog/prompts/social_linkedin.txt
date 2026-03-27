@@ -1,0 +1,16 @@
+Generiere einen LinkedIn-Post fuer diesen Blog-Beitrag.
+
+Titel: {title}
+Beschreibung: {description}
+Ticker: {ticker}
+URL: {url}
+Kategorie: {category}
+
+Anforderungen:
+- 150-300 Woerter
+- Professioneller, analytischer Ton
+- Struktur: Hook → Kontext → 3 Key Insights → CTA
+- Bullet Points fuer Key Insights
+- URL als "Zum vollstaendigen Beitrag: {url}"
+- 5 Hashtags am Ende
+- Kein "Ich" sondern "Wir" oder neutral

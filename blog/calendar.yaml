@@ -1,0 +1,46 @@
+# SeasonAlpha Blog — Redaktionsplan
+# 4 Posts/Monat: 2x Marktausblick, 1x Education, 1x Tutorial
+
+2026-03:
+  - date: 2026-03-27
+    title: "Was ist Saisonalitaet?"
+    category: education
+    ticker: ^DJI
+    status: published
+
+  - date: 2026-03-27
+    title: "April 2026 S&P 500 Ausblick"
+    category: marktausblick
+    ticker: ^GSPC
+    status: published
+
+  - date: 2026-03-27
+    title: "Indikator-Filter Tutorial"
+    category: tutorials
+    ticker: AAPL
+    status: published
+
+2026-04:
+  - date: 2026-04-01
+    title: "Sell in May 2026 — Funktioniert die Strategie noch?"
+    category: marktausblick
+    ticker: ^GSPC
+    status: draft
+
+  - date: 2026-04-08
+    title: "Turn-of-Month Effekt erklaert"
+    category: education
+    ticker: ^GSPC
+    status: draft
+
+  - date: 2026-04-15
+    title: "Mai-Saisonalitaet: Tesla vs. Apple"
+    category: marktausblick
+    ticker: TSLA
+    status: draft
+
+  - date: 2026-04-22
+    title: "Tutorial: Praesidentenzyklus nutzen"
+    category: tutorials
+    ticker: ^DJI
+    status: draft

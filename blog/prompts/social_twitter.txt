@@ -1,0 +1,15 @@
+Generiere 3 Tweet-Varianten fuer diesen Blog-Post.
+
+Titel: {title}
+Beschreibung: {description}
+Ticker: {ticker}
+URL: {url}
+
+Anforderungen pro Tweet:
+- Max 280 Zeichen (inkl. URL und Hashtags)
+- Variante 1: Daten-Hook (Zahl/Statistik im Vordergrund)
+- Variante 2: Frage-Hook (Neugier wecken)
+- Variante 3: Insight-Hook (Ueberraschendes Ergebnis)
+- 2-3 Hashtags (#Saisonalitaet #Trading #SeasonAlpha)
+- URL am Ende
+- Emoji sparsam (max 1-2)
