@@ -13,6 +13,7 @@ Verwendung:
 import os
 import sys
 import re
+import shutil
 import argparse
 import yaml
 from datetime import datetime, date
@@ -82,12 +83,25 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
                 in_blockquote = False
             continue
 
+        # Standalone-Bild (eigene Zeile: ![Alt](src))
+        img_match = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)$", stripped)
+        if img_match:
+            alt, src = img_match.group(1), img_match.group(2)
+            if not src.startswith(("http://", "https://", "/")):
+                src = f"/blog/{post_slug}/{src}" if post_slug else src
+            html_parts.append(
+                f'<figure><img src="{src}" alt="{alt}" loading="lazy">'
+                f'{"<figcaption>" + alt + "</figcaption>" if alt else ""}'
+                f'</figure>'
+            )
+            continue
+
         # Headings
         if stripped.startswith("### "):
-            html_parts.append(f"<h3>{_inline(stripped[4:])}</h3>")
+            html_parts.append(f"<h3>{_inline(stripped[4:], post_slug)}</h3>")
             continue
         if stripped.startswith("## "):
-            html_parts.append(f"<h2>{_inline(stripped[3:])}</h2>")
+            html_parts.append(f"<h2>{_inline(stripped[3:], post_slug)}</h2>")
             continue
 
         # Blockquote
@@ -95,7 +109,7 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
             if not in_blockquote:
                 html_parts.append("<blockquote>")
                 in_blockquote = True
-            html_parts.append(f"<p>{_inline(stripped[2:])}</p>")
+            html_parts.append(f"<p>{_inline(stripped[2:], post_slug)}</p>")
             continue
 
         # Unordered list
@@ -103,7 +117,7 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
             if not in_list:
                 html_parts.append("<ul>")
                 in_list = True
-            html_parts.append(f"<li>{_inline(stripped[2:])}</li>")
+            html_parts.append(f"<li>{_inline(stripped[2:], post_slug)}</li>")
             continue
 
         # Ordered list
@@ -112,7 +126,7 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
             if not in_ol:
                 html_parts.append("<ol>")
                 in_ol = True
-            html_parts.append(f"<li>{_inline(ol_match.group(1))}</li>")
+            html_parts.append(f"<li>{_inline(ol_match.group(1), post_slug)}</li>")
             continue
 
         # Chart tags
@@ -126,7 +140,7 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
             continue
 
         # Regular paragraph
-        html_parts.append(f"<p>{_inline(stripped)}</p>")
+        html_parts.append(f"<p>{_inline(stripped, post_slug)}</p>")
 
     if in_list:
         html_parts.append("</ul>")
@@ -138,8 +152,17 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
     return "\n".join(html_parts)
 
 
-def _inline(text: str) -> str:
-    """Inline-Markdown: **bold**, *italic*, `code`, [link](url)."""
+def _inline(text: str, post_slug: str = "") -> str:
+    """Inline-Markdown: **bold**, *italic*, `code`, [link](url), ![img](src)."""
+    # Bilder ZUERST (vor Links, da ![...] sonst als Link gematcht wird)
+    def _img_replace(m):
+        alt, src = m.group(1), m.group(2)
+        # Relative Pfade → /blog/{slug}/images/...
+        if not src.startswith(("http://", "https://", "/")):
+            src = f"/blog/{post_slug}/{src}" if post_slug else src
+        return f'<img src="{src}" alt="{alt}" loading="lazy">'
+    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", _img_replace, text)
+    # Standard-Inline
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
     text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
@@ -475,6 +498,14 @@ def build_all():
         out_file = post_dir / "index.html"
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html)
+
+        # Bilder kopieren (blog/posts/images/ → blog/output/{slug}/images/)
+        images_src = POSTS_DIR / "images"
+        if images_src.exists() and images_src.is_dir():
+            images_dst = post_dir / "images"
+            if images_dst.exists():
+                shutil.rmtree(images_dst)
+            shutil.copytree(images_src, images_dst)
 
         # Social-Media Texte generieren
         _generate_social(post, social_dir)
