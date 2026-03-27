@@ -18,7 +18,7 @@ jobs:
             cd /opt/seasonaledge
             git checkout -- seo/output/ 2>/dev/null || true
             git pull origin master
-            pip install -q Jinja2 PyYAML plotly pandas numpy requests 2>/dev/null || pip3 install -q Jinja2 PyYAML plotly pandas numpy requests 2>/dev/null
+            pip install -q Jinja2 PyYAML plotly pandas numpy requests || pip3 install -q Jinja2 PyYAML plotly pandas numpy requests
             python3 seo/programmatic_seo_builder.py
             python3 blog/blog_builder.py --build
             docker compose up -d --build

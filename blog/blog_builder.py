@@ -18,8 +18,6 @@ import yaml
 from datetime import datetime, date
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 from jinja2 import Environment, FileSystemLoader
 
 # ── Projekt-Root ──────────────────────────────────────────
@@ -152,7 +150,7 @@ def _inline(text: str) -> str:
 # ── Chart-Generierung ─────────────────────────────────────
 
 # Cache fuer heruntergeladene Ticker-Daten (vermeidet Mehrfach-Downloads)
-_ticker_cache: dict[str, pd.DataFrame] = {}
+_ticker_cache: dict = {}
 
 # Konstanten fuer Charts (aus pages/02_Jahreszyklus.py)
 _MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
