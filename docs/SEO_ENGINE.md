@@ -1,6 +1,6 @@
 # Programmatic SEO Engine — SeasonAlpha
 
-> Stand: 2026-03-25 | 94 Landingpages | Alle Ticker aus SYMBOLS
+> Stand: 2026-03-27 | 94 Landingpages + Blog Engine | Alle Ticker aus SYMBOLS
 
 ## Ueberblick
 
@@ -178,12 +178,33 @@ fig.write_image(f"seo/output/charts/{slug}.png")
      width="800" height="400" loading="lazy">
 ```
 
+## Blog Engine (blog/)
+
+Zusaetzlich zu den 94 Ticker-Landingpages gibt es eine Blog Engine fuer
+Content Marketing und organischen Traffic.
+
+| Eigenschaft | Details |
+|-------------|---------|
+| Technik | Markdown → HTML (Jinja2), gleicher Stack wie SEO-Pages |
+| URL | `/blog/`, `/blog/{slug}/` |
+| Kategorien | Education, Marktausblick, Tutorials |
+| Chart-Einbettung | `{{chart:TYPE:TICKER:YEARS}}` Tags im Markdown |
+| Social Media | 3 Tweets + LinkedIn-Post automatisch pro Post |
+| YouTube | Video-Script, Shorts-Script, Description, Tags pro Post |
+| Publishing | draft / scheduled / published Status im Frontmatter |
+| Builder | `python blog/blog_builder.py --build` |
+| Nginx | `/blog/` → `blog/output/` |
+
+Details: `docs/BLOG_WORKFLOW.md`
+
 ## Metriken & Ziele
 
 | Metrik | Ist | Ziel |
 |--------|-----|------|
-| Seiten | 94 | 500+ (weitere Ticker hinzufuegen) |
+| SEO-Landingpages | 94 | 500+ (weitere Ticker hinzufuegen) |
+| Blog-Posts | 3 | 4/Monat (Education, Marktausblick, Tutorials) |
 | Core Web Vitals | LCP < 1s | LCP < 1s, CLS < 0.1 |
 | Suchbegriffe | "[Ticker] Saisonalitaet", "[Name] saisonale Muster" | Top 10 |
+| Blog Keywords | "Sell in May", "Saisonale Strategie", "Mondphasen Boerse" | Top 20 |
 | Conversion | CTA-Klick → Registrierung | >5% CTR |
 | Kosten | 0 EUR (auf bestehendem VPS) | 0 EUR |

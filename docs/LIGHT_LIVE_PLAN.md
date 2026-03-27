@@ -1,6 +1,7 @@
-# SeasonalEdge "Light Live" — Launch-Plan
+# SeasonAlpha "Light Live" — Launch-Plan
 
-> Erstellt: 2026-03-20 | Status: Geplant
+> Erstellt: 2026-03-20 | Status: ABGESCHLOSSEN (2026-03-27)
+> Dieses Dokument ist historisch. Light Live ist seit 2026-03-22 live unter seasonalpha.ai.
 
 ## Ziel
 Schnellstmöglich eine reduzierte "Light"-Version von SeasonalEdge mit eigener Domain live bringen.

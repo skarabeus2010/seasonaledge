@@ -310,6 +310,42 @@ from shared.ticker_select import ticker_select
 ticker = ticker_select(key="page_ticker")  # → "SPY", "AAPL", "RHM.DE" etc.
 ```
 
+## Indikator-Filter (shared/indicators.py + indicator_filter_ui.py)
+
+6 technische Indikatoren als Berechnungs-Filter. Nur Tage mit erfuellter Bedingung
+fliessen in die Saisonalitaets-Berechnung ein. Mehrfachauswahl mit UND-Verknuepfung.
+
+```python
+from shared.indicator_filter_ui import indicator_filter_sidebar, render_filter_badge
+from shared.indicators import apply_indicator_filter
+
+# Sidebar (in with st.sidebar:)
+filters = indicator_filter_sidebar(key_prefix="mp")
+
+# Vor Berechnung anwenden
+if filters:
+    mask = apply_indicator_filter(df, filters)
+    df = df[mask].copy()
+    render_filter_badge(filters, total_days, filtered_days)
+```
+
+Indikatoren: SMA, EMA, RSI, Bollinger Bands, MACD, LBR Oscillator (Raschke).
+Integriert in: Mondphasen, Wochentage, Monatswechsel, OPEX, Zentralbanken.
+
+## Blog Engine (blog/blog_builder.py)
+
+Markdown → statisches HTML mit eingebetteten Charts, Social-Media und YouTube-Generierung.
+
+```bash
+python blog/blog_builder.py --build                    # Alle Posts bauen
+python blog/blog_builder.py --generate "Titel" --ticker ^GSPC --category marktausblick
+```
+
+3 Kategorien: Education, Marktausblick, Tutorials.
+Scheduled Publishing: Posts mit `status: scheduled` + `publish_date` erscheinen automatisch.
+Pro Post generiert: HTML + 3 Tweets + LinkedIn-Post + Video-Script + Shorts + YouTube-Description.
+Details: `docs/BLOG_WORKFLOW.md`
+
 ## Deployment
 
 ### VPS (Hetzner CPX22)
@@ -322,12 +358,15 @@ ticker = ticker_select(key="page_ticker")  # → "SPY", "AAPL", "RHM.DE" etc.
 1. git reset --hard HEAD
 2. git pull origin master
 3. python3 seo/programmatic_seo_builder.py
-4. docker compose up -d --build
+4. python3 blog/blog_builder.py --build
+5. docker compose up -d --build
 ```
 
-### SEO-Routing (Nginx)
+### Routing (Nginx)
 | URL | Ziel |
 |-----|------|
+| `/blog/` | `blog/output/` (Blog-Index + Posts) |
+| `/blog/{slug}/` | `blog/output/{slug}/index.html` |
 | `/analyse/{slug}` | `seo/output/{slug}.html` (94 Landingpages) |
 | `/disclaimer` | `seo/output/disclaimer.html` |
 | `/sitemap.xml` | `seo/output/sitemap.xml` |

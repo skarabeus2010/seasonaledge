@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 19.0 | 2026-03-26 | Details → `docs/`
+> Version 20.0 | 2026-03-27 | Details → `docs/`
 
 ## Projekt
 
@@ -42,13 +42,22 @@ shared/                  ← Berechnungen, Daten, Utilities
   sector_rotation.py     ← Sektor-Rotation Analyse
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
   percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
-  footer.py              ← Footer: Impressum, Datenschutz, Risk Disclosure (3 Expander)
+  footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Risk Disclosure
   ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
+  indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
+  indicator_filter_ui.py ← Sidebar UI fuer Indikator-Filter (Pulldowns, Badges)
   strategies/            ← 65+ Strategien
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
   seo_template.html        ← Jinja2 Landingpage-Template
   output/                  ← Generierte HTML + sitemap.xml + robots.txt
+blog/                    ← Blog Engine (Markdown → statisches HTML)
+  blog_builder.py          ← Generator: MD → HTML + Charts + Social + YouTube
+  templates/               ← Jinja2 Blog-Templates (Post, Index, Kategorie)
+  posts/                   ← Markdown Blog-Posts (Frontmatter + Content)
+  prompts/                 ← Claude API Prompt-Templates (6 Templates)
+  calendar.yaml            ← Redaktionsplan
+  output/                  ← Generierte HTML (.gitignore)
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
@@ -68,20 +77,28 @@ pages/                   ← Light Live + Premium Pages
     03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
                             Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
                             We-are-here TDOM-Marker, Praesidentenzyklus-Filter,
-                            Perzentil-Statusbar, Outlier
+                            Perzentil-Statusbar, Outlier, Live-Chart Overlay,
+                            Seasonal Match (Korrelation + DTW), Cycle Match,
+                            Two-Week Heatmap/Ranking/Momentum/Signifikanz
     04_Wochentage        ← Wochentag-Renditen (Expander), Praesidentenzyklus,
                             Heatmap (gelber Rahmen, 2 Nachkommastellen),
                             Signifikanztest (Expander),
                             Alle-Modi-Signifikanz (4 Rendite-Modi × 5 Tage),
                             Kumulierter Wochenverlauf, Overnight/Intraday Split,
-                            Konsekutiv-Analyse, Quartals-Performance, Volatilitaet
+                            Konsekutiv-Analyse, Quartals-Performance, Volatilitaet,
+                            Monat×Wochentag Heatmap, Top-10 Kombinationen,
+                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
     05_Monatswechsel     ← Turn of the Month, TOM Heatmap (apply_se_heatmap_theme),
                             Signifikanztest (Expander), Streak-Analyse,
-                            Perzentil-Statusbar, TOM Stats (kompakte Karten)
+                            Perzentil-Statusbar, TOM Stats (kompakte Karten),
+                            Window-Optimierung, Praesidentenzyklus-TOM,
+                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
     06_Mondphasen        ← Voll-/Neumond-/Supermond-Effekt,
                             Signifikanztest (Expander, Default ON),
                             Mond-Heatmap (Monat × Phase),
-                            Perzentil-Statusbar, naechste Mondphasen
+                            Perzentil-Statusbar, naechste Mondphasen,
+                            Lunar-Kalender, Supermond-Vergleich,
+                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
     07_Januar_Trifecta   ← Premium Ampelsystem (Glow-Karten, Badges),
                             Ø-Verlauf je Signal + Aktuelles-Jahr-Overlay (gold),
                             Max Drawdown (kompakte Karten),
@@ -145,6 +162,9 @@ if _project_dir not in sys.path:
 | `st.metric` für kompakte Karten vermeiden | HTML-Karten (10px Label, 14px Wert) verwenden |
 | Perzentil-Bar unter Hauptcharts | `from shared.percentile_bar import render_percentile_bar` |
 | Ticker-Auswahl: `ticker_select()` | Speichert global in `session_state` → bleibt bei Page-Wechsel |
+| Indikator-Filter: `indicator_filter_sidebar()` | `from shared.indicator_filter_ui import indicator_filter_sidebar` |
+| Indikator-Berechnung: `indicators.py` | SMA, EMA, RSI, Bollinger, MACD, LBR + `apply_indicator_filter()` |
+| Blog: `blog/blog_builder.py` | `--build` (HTML) oder `--generate` (KI-Entwurf) |
 
 ## Architektur-Prinzipien
 
@@ -159,6 +179,8 @@ if _project_dir not in sys.path:
 - Kompakte Karten statt `st.metric` → HTML-Flex-Karten (Dark Mode, farbcodiert)
 - Alle Sektionen in Expander verpacken (Default ON/OFF je nach Relevanz)
 - Ticker-Auswahl → `ticker_select()` (speichert global, bleibt bei Page-Wechsel)
+- Indikator-Filter → `indicator_filter_ui.py` (Sidebar, 0-4 Filter, UND-Verknuepfung)
+- Blog → `blog/blog_builder.py` (Markdown → HTML + Charts + Social + YouTube)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
 ## UI-Komponenten (Premium Dark Mode)
@@ -262,17 +284,29 @@ UPPER_CASE        → Konstanten
 - [x] Monatswechsel: Signifikanz-Reihenfolge Fix (Jan→Feb bis Dez→Jan) (2026-03-26)
 - [x] Ticker-Autocomplete: Search-as-you-type mit Supabase (shared/ticker_autocomplete.py) (2026-03-26)
 - [x] Ticker-Persistenz: Gewaehlter Ticker bleibt bei Page-Wechsel erhalten (session_state) (2026-03-26)
+- [x] Indikator-Filter: shared/indicators.py + indicator_filter_ui.py (6 Indikatoren, 5 Pages) (2026-03-27)
+- [x] LBR Oscillator (Linda Bradford Raschke) als Indikator-Filter (2026-03-27)
+- [x] Blog Engine: Markdown → HTML + Charts + Social + YouTube (2026-03-27)
+- [x] Blog: 3 Beispiel-Posts (Education, Marktausblick, Tutorial) (2026-03-27)
+- [x] Blog: KI-Prompt-Templates (6 Templates fuer Content + Social + YouTube) (2026-03-27)
+- [x] Blog: Nginx /blog/ Route + Deploy-Action + Sitemap (2026-03-27)
+- [x] Blog-Links: Footer (alle Pages) + Home Page Blog-Kacheln (2026-03-27)
+- [x] Docs: ARCHITECTURE.md komplett ueberarbeitet (2026-03-27)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
+- [ ] Blog: Claude API Integration fuer automatische Content-Generierung
+- [ ] Blog: OG-Image Generierung (Plotly write_image, 1200x630)
+- [ ] Blog: YouTube Thumbnail Generierung (1280x720)
 - [ ] Saisonalitaets-Stabilitaet (Rolling 10J-Fenster: Pattern-Veraenderung ueber Jahrzehnte)
 - [ ] Drawdown-Saisonalitaet (Wann starten/enden groesste Drawdowns im Jahr?)
 - [ ] Bull/Bear Regime-Split (Saisonalitaet getrennt fuer VIX >25 vs <25)
 
 ## Docs (bei Bedarf lesen)
 
-- `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Download-Manager, Logger, Cache
+- `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Module, Deployment, Blog
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
 - `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
 - `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
-- `docs/SEO_ENGINE.md` — Programmatic SEO: Template, Builder, Deployment
+- `docs/SEO_ENGINE.md` — Programmatic SEO + Blog Engine
+- `docs/BLOG_WORKFLOW.md` — Blog + Social Media + YouTube Workflow-Anleitung
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad

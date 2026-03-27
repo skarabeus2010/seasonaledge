@@ -1,6 +1,6 @@
-# KI-Features — SeasonalEdge
+# KI-Features — SeasonAlpha
 
-> Stand: 2026-03-22 | 16 KI-Features aktiv | Light Live: 12 Pages + Home
+> Stand: 2026-03-27 | 18 KI-Features aktiv | Light Live: 9 Pages + Home
 
 ## Feature-Uebersicht
 
@@ -22,6 +22,8 @@
 | 14 | NeuralProphet | Explizite Saisonalitaets-Komponenten via Neural Network (Fourier-basiert) | Erweiterte Analyse | `neural_prophet_forecast.py` |
 | 15 | Spot-Vol Beta | Daily + Rolling Beta (SPX vs VIX), Regime-Wendepunkte, Forward Returns nach Extremen | Spot-Vol Beta | `spot_vol_beta.py` |
 | 16 | Backtest Engine | Grid-Search Optimierer, Walk-Forward, KI Event-Relevanz (t-Test + Isolation Forest) | Backtest Engine | `backtest_engine.py` |
+| 17 | Indikator-Filter | 6 technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR) als Berechnungs-Filter mit UND-Verknuepfung | Wochentage, Monatswechsel, Mondphasen, OPEX, Zentralbanken | `indicators.py` + `indicator_filter_ui.py` |
+| 18 | Blog Engine | KI-gestuetzte Content-Generierung (Prompt-Templates), automatische Social-Media + YouTube-Texte | Blog (`/blog/`) | `blog/blog_builder.py` + `blog/prompts/` |
 
 ---
 
@@ -178,6 +180,9 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | `shared/spot_vol_beta.py` | Spot-Vol Beta, Regime-Wendepunkte | statsmodels |
 | `shared/backtest_engine.py` | Backtest, Optimierung, Walk-Forward, Event-Relevanz | scipy, sklearn |
 | `shared/we_are_here.py` | Globaler "We are here!" Marker | — |
+| `shared/indicators.py` | Indikator-Filter (SMA, EMA, RSI, BB, MACD, LBR) | pandas, numpy |
+| `shared/indicator_filter_ui.py` | Sidebar UI fuer Indikator-Filter | streamlit |
+| `blog/blog_builder.py` | Blog Engine + KI Content-Generierung + Social | jinja2, yaml |
 
 ## Pakete
 
@@ -198,10 +203,10 @@ Die Top-7 Ausreisser werden angezeigt, mit historischem Kontext (COVID, Lehman, 
 | Home | Glasmorphismus Stats, SVG Hero |
 | Dekadenzyklus | Anomalie-Radar, aktuelles Jahr |
 | Jahreszyklus | Anomalie-Radar, Outlier Manager |
-| Monatszyklus | Detrend-Indikator, 10J-Heatmap, TDOM-Marker, Outlier Manager |
-| Wochentage | Outlier Manager |
-| Monatswechsel | Outlier Manager |
-| Mondphasen | Outlier Manager |
+| Monatszyklus | Detrend, 10J-Heatmap, TDOM-Marker, Outlier, Seasonal Match, Cycle Match, Two-Week Analysen |
+| Wochentage | Outlier, Monat×Wochentag Heatmap, Top-10, **Indikator-Filter** |
+| Monatswechsel | Outlier, Window-Optimierung, Praesidentenzyklus-TOM, **Indikator-Filter** |
+| Mondphasen | Outlier, Lunar-Kalender, Supermond-Vergleich, **Indikator-Filter** |
 | Januar Trifecta | Ampelverlauf, Drawdown pro Signal |
 | Kriegszeiten | Outlier Manager |
 | Crash-Fruehwarnung | Isolation Forest Regime-Erkennung |
