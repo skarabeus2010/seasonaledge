@@ -44,7 +44,7 @@ st.markdown("""
 
 html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 #MainMenu, footer { visibility: hidden; }
-/* Sidebar sichtbar lassen fuer Navigation */
+/* Sidebar sichtbar lassen für Navigation */
 .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; max-width: 1200px; }
 
 /* ── Hero ── */
@@ -244,7 +244,7 @@ def _handle_submit(email: str):
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="se-hero">
-  <!-- SVG Saisonalitaets-Chart im Hintergrund -->
+  <!-- SVG Saisonalitäts-Chart im Hintergrund -->
   <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.25;pointer-events:none;"
        viewBox="0 0 1200 400" preserveAspectRatio="none">
     <!-- Vertikale Grid-Linien (Monate) -->
@@ -269,7 +269,7 @@ st.markdown("""
              C760,200 800,195 840,185 C880,178 920,195 960,180
              C1000,165 1040,150 1080,140 C1120,132 1160,125 1200,115"
           fill="none" stroke="#4d9fff" stroke-width="3"/>
-    <!-- Flaechenfuellung unter der Kurve -->
+    <!-- Flächenfüllung unter der Kurve -->
     <path d="M0,320 C40,315 80,310 120,300 C160,290 200,285 240,275
              C280,270 320,280 360,290 C400,275 440,260 480,250
              C520,245 560,258 600,248 C640,235 680,220 720,210
@@ -283,11 +283,11 @@ st.markdown("""
         <stop offset="100%" stop-color="#4d9fff" stop-opacity="0"/>
       </linearGradient>
     </defs>
-    <!-- Volatilitaetsband oben -->
+    <!-- Volatilitätsband oben -->
     <path d="M0,290 C100,275 200,260 300,245 C400,230 500,225 600,215
              C700,200 800,180 900,160 C1000,145 1100,120 1200,95"
           fill="none" stroke="#4d9fff" stroke-width="1" stroke-dasharray="4,6" opacity="0.4"/>
-    <!-- Volatilitaetsband unten -->
+    <!-- Volatilitätsband unten -->
     <path d="M0,350 C100,340 200,330 300,315 C400,310 500,300 600,285
              C700,270 800,260 900,250 C1000,235 1100,225 1200,140"
           fill="none" stroke="#4d9fff" stroke-width="1" stroke-dasharray="4,6" opacity="0.4"/>
@@ -308,13 +308,13 @@ st.markdown("""
     <line x1="560" y1="258" x2="560" y2="278" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
     <line x1="920" y1="195" x2="920" y2="215" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
   </svg>
-  <div class="se-eyebrow">Traditionelle Saisonalitaet trifft Intelligenz.</div>
+  <div class="se-eyebrow">Traditionelle Saisonalität trifft Intelligenz.</div>
   <div class="se-h1">
     <span class="gold">Season</span><span class="blue">Alpha</span>&nbsp;<span class="white">BETA</span>
   </div>
   <div class="se-sub">
-    Datengetriebene Saisonalitaets-Analyse mit KI.<br>
-    Bis zu 131 Jahre Boersengeschichte in Charts. 15 Machine-Learning-Modelle.<br>
+    Datengetriebene Saisonalitäts-Analyse mit KI.<br>
+    Bis zu 131 Jahre Börsengeschichte in Charts. 15 Machine-Learning-Modelle.<br>
     Erkenne Muster, bevor der Markt sie sieht.
   </div>
   <div class="se-badge">More. Coming. Soon.</div>
@@ -325,10 +325,10 @@ st.markdown("""
 st.markdown("""
 <div style="max-width:800px;margin:0 auto 2rem;">
   <h2 style="color:#e8edf5;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;text-align:center;margin-bottom:1.2rem;letter-spacing:-.5px;">
-    Willkommen bei SeasonAlpha – der naechsten Generation der Marktanalyse
+    Willkommen bei SeasonAlpha – der nächsten Generation der Marktanalyse
   </h2>
   <p style="color:#a0b0c5;font-size:1.15rem;line-height:1.8;text-align:center;margin-bottom:1.2rem;">
-    Wir erweitern traditionelle Saisonalitaets-Charts um modernste Kuenstliche Intelligenz
+    Wir erweitern traditionelle Saisonalitäts-Charts um modernste Künstliche Intelligenz
     und geben dir Tools an die Hand, die auf dem Markt einzigartig sind.
   </p>
   <ul style="color:#a0b0c5;font-size:1.05rem;line-height:1.9;list-style:none;padding:0;">
@@ -339,7 +339,7 @@ st.markdown("""
       Notenbanksitzungen, OPEX und Mondphasen und geben Dir konkrete Strategien an die Hand.
     </li>
     <li style="margin-bottom:.8rem;">
-      <strong style="color:#4d9fff;">KI-gestuetzte Prognosen:</strong>
+      <strong style="color:#4d9fff;">KI-gestützte Prognosen:</strong>
       15 fortschrittliche Machine-Learning-Modelle erkennen Anomalien,
       bewerten Crash-Risiken und identifizieren optimal getimte Wendepunkte.
     </li>
@@ -349,7 +349,7 @@ st.markdown("""
     </li>
     <li>
       <strong style="color:#e8a425;">Die Beta-Phase hat gerade erst begonnen.</strong>
-      Freu Dich jetzt schon auf innovativen und tech-getriebene Analysen!
+      Freu dich jetzt schon auf innovative und tech-getriebene Analysen!
     </li>
   </ul>
 </div>
@@ -620,7 +620,7 @@ st.markdown("""
     <div class="se-glass-card hero gold se-tooltip-wrap">
       <div class="se-glass-num">seit 1896</div>
       <div class="se-glass-label gold">Markthistorie</div>
-      <div class="se-tooltip">Gilt f\u00fcr den Dow Jones.</div>
+      <div class="se-tooltip">Gilt für den Dow Jones.</div>
     </div>
     <div class="se-glass-card blue">
       <div class="se-glass-num">15</div>
@@ -646,7 +646,7 @@ st.markdown(
     '<div class="se-section-label">Newsletter</div>'
     '<div class="se-section-title">Jetzt zum Newsletter anmelden!</div>'
     '<div style="color:#e8a425;font-size:.9rem;margin-top:.3rem;">'
-    'Erhalten Sie jede Woche einen Newsletter zum Thema Saisonalitaet. Kostenlos.'
+    'Erhalten Sie jede Woche einen Newsletter zum Thema Saisonalität. Kostenlos.'
     '</div></div>',
     unsafe_allow_html=True,
 )
@@ -675,7 +675,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 _bc1, _bc2, _bc3, _bc4 = st.columns(4)
-_bc1.link_button("📊 Alle Beitraege", "https://seasonalpha.ai/blog/", use_container_width=True)
+_bc1.link_button("📊 Alle Beiträge", "https://seasonalpha.ai/blog/", use_container_width=True)
 _bc2.link_button("🎓 Education", "https://seasonalpha.ai/blog/education/", use_container_width=True)
 _bc3.link_button("📈 Marktausblick", "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
 _bc4.link_button("🔧 Tutorials", "https://seasonalpha.ai/blog/tutorials/", use_container_width=True)
