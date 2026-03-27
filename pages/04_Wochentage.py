@@ -875,6 +875,10 @@ def main():
             help="Nur Jahre mit bestimmtem Zyklusjahr beruecksichtigen (leer = alle)"
         )
 
+        # ── Technische Filter ──────────────────────────
+        from shared.indicator_filter_ui import indicator_filter_sidebar
+        ind_filters = indicator_filter_sidebar(key_prefix="wd")
+
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
@@ -882,6 +886,19 @@ def main():
     if raw_df is None or raw_df.empty:
         st.error(f"Keine Daten fuer '{ticker}' gefunden.")
         return
+
+    # ── Indikator-Filter anwenden ─────────────────────
+    if ind_filters:
+        from shared.indicators import apply_indicator_filter
+        from shared.indicator_filter_ui import render_filter_badge
+        _df_temp = raw_df.copy()
+        if "Close" not in _df_temp.columns and "close" in _df_temp.columns:
+            _df_temp = _df_temp.rename(columns={"close": "Close"})
+        mask = apply_indicator_filter(_df_temp, ind_filters)
+        total_days = len(raw_df)
+        raw_df = raw_df[mask].copy()
+        filtered_days = len(raw_df)
+        render_filter_badge(ind_filters, total_days, filtered_days)
 
     # ── Berechnung ────────────────────────────────────
     stats = calculate_weekday_stats(

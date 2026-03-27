@@ -89,6 +89,15 @@ DECADE_LABELS = {
     8: "X8er (1908, 1918, ...2028)", 9: "X9er (1909, 1919, ...2029)"
 }
 
+# ── Indikator-Filter Farben ──────────────────────────────────
+INDICATOR_COLORS = {
+    "SMA":       "#FF9800",
+    "EMA":       "#FF9800",
+    "RSI":       "#AB47BC",
+    "Bollinger": "#4D9FFF",
+    "MACD":      "#4FC3F7",
+}
+
 OVERLAY_CONFIGS = {
     "Last Year": {
         "years_back": 1,

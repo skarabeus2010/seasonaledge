@@ -313,15 +313,30 @@ def main():
         from shared.outlier_manager import outlier_sidebar
         outlier_method = outlier_sidebar()
 
+        # ── Technische Filter ──────────────────────────
+        from shared.indicator_filter_ui import indicator_filter_sidebar
+        ind_filters = indicator_filter_sidebar(key_prefix="mp")
+
     # ── Daten laden ───────────────────────────────────
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
-    
+
     if raw_df is None or raw_df.empty:
         st.error(f"Keine Daten für '{ticker}' gefunden.")
         return
-    
+
     df = preprocess(raw_df)
+
+    # ── Indikator-Filter anwenden ─────────────────────
+    if ind_filters:
+        from shared.indicators import apply_indicator_filter
+        from shared.indicator_filter_ui import render_filter_badge
+        mask = apply_indicator_filter(df, ind_filters)
+        total_days = len(df)
+        df = df[mask].copy()
+        filtered_days = len(df)
+        render_filter_badge(ind_filters, total_days, filtered_days)
+
     all_years = sorted(df["year"].unique())
     
     if years_back_is_max:

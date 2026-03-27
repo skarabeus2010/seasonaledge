@@ -198,6 +198,11 @@ with st.sidebar:
     show_backtest  = st.checkbox("🔄 Backtest",          value=True)
 
     st.divider()
+
+    # ── Technische Filter ──────────────────────────
+    from shared.indicator_filter_ui import indicator_filter_sidebar
+    ind_filters = indicator_filter_sidebar(key_prefix="opex")
+
     st.caption("Daten via Yahoo Finance · OPEX = 3. Freitag im Monat")
 
 # ── Daten laden ──────────────────────────────────────────────────────────────────
@@ -214,6 +219,16 @@ df = load_data(ticker)
 if df is None or len(df) == 0:
     st.error(f"Keine Daten für **{ticker}** verfügbar.")
     st.stop()
+
+# ── Indikator-Filter anwenden ─────────────────────
+if ind_filters:
+    from shared.indicators import apply_indicator_filter
+    from shared.indicator_filter_ui import render_filter_badge
+    mask = apply_indicator_filter(df, ind_filters)
+    total_days = len(df)
+    df = df[mask].copy()
+    filtered_days = len(df)
+    render_filter_badge(ind_filters, total_days, filtered_days)
 
 # Auf gewählten Zeitraum filtern
 df_filtered = df[
