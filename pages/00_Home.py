@@ -662,6 +662,58 @@ with _nl_form_col:
 
 
 # ══════════════════════════════════════════════════════════════
+# SEKTION 7 — BLOG (vor Footer)
+# ══════════════════════════════════════════════════════════════
+st.markdown("---")
+st.markdown(
+    '<div style="text-align:center;margin-bottom:1.5rem;">'
+    '<div class="se-section-label">Blog</div>'
+    '<div class="se-section-title">Saisonale Insights & Analysen</div>'
+    '<div style="color:#5a6e85;font-size:.9rem;margin-top:.3rem;">'
+    'Education, Marktausblick und Tutorials — datenbasiert und kostenlos.'
+    '</div></div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:1rem;">'
+    '<a href="/blog/" target="_blank" style="text-decoration:none;">'
+    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
+    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
+    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
+    '<div style="font-size:1.5rem; margin-bottom:6px;">📊</div>'
+    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Alle Beitraege</div>'
+    '<div style="color:#5a6e85; font-size:0.8rem;">Zum Blog</div>'
+    '</div></a>'
+    '<a href="/blog/education/" target="_blank" style="text-decoration:none;">'
+    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
+    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
+    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
+    '<div style="font-size:1.5rem; margin-bottom:6px;">🎓</div>'
+    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Education</div>'
+    '<div style="color:#5a6e85; font-size:0.8rem;">Grundlagen lernen</div>'
+    '</div></a>'
+    '<a href="/blog/marktausblick/" target="_blank" style="text-decoration:none;">'
+    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
+    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
+    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
+    '<div style="font-size:1.5rem; margin-bottom:6px;">📈</div>'
+    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Marktausblick</div>'
+    '<div style="color:#5a6e85; font-size:0.8rem;">Aktuelle Analysen</div>'
+    '</div></a>'
+    '<a href="/blog/tutorials/" target="_blank" style="text-decoration:none;">'
+    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
+    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
+    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
+    '<div style="font-size:1.5rem; margin-bottom:6px;">🔧</div>'
+    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Tutorials</div>'
+    '<div style="color:#5a6e85; font-size:0.8rem;">Features nutzen</div>'
+    '</div></a>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+
+# ══════════════════════════════════════════════════════════════
 # FOOTER
 # ══════════════════════════════════════════════════════════════
 render_footer()

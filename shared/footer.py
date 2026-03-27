@@ -16,6 +16,15 @@ def render_footer():
     st.markdown(
         """
         <div style="text-align:center; padding:12px 0 8px 0;">
+            <div style="margin-bottom:8px;">
+                <a href="/blog/" target="_blank" style="color:#4d9fff; text-decoration:none; font-size:13px; font-weight:600; margin:0 10px;">Blog</a>
+                <span style="color:#2a3a4e;">|</span>
+                <a href="/" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">App</a>
+                <span style="color:#2a3a4e;">|</span>
+                <a href="/blog/education/" target="_blank" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">Education</a>
+                <span style="color:#2a3a4e;">|</span>
+                <a href="/blog/marktausblick/" target="_blank" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">Marktausblick</a>
+            </div>
             <span style="color:#556677; font-size:12px;">
                 &copy; 2026 SeasonAlpha. All rights reserved.
             </span>
