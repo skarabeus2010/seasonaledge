@@ -34,6 +34,7 @@ services:
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
       - ./deploy/certbot/www:/var/www/certbot:ro
       - ./seo/output:/app/seo/output:ro
+      - ./blog/output:/app/blog/output:ro
       - ./seo/output/sitemap.xml:/app/static/sitemap.xml:ro
       - ./seo/output/robots.txt:/app/static/robots.txt:ro
     depends_on:
