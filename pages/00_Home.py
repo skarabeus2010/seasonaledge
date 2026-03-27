@@ -674,43 +674,11 @@ st.markdown(
     '</div></div>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    '<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:1rem;">'
-    '<a href="https://seasonalpha.ai/blog/" target="_blank" style="text-decoration:none;">'
-    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
-    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
-    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
-    '<div style="font-size:1.5rem; margin-bottom:6px;">📊</div>'
-    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Alle Beitraege</div>'
-    '<div style="color:#5a6e85; font-size:0.8rem;">Zum Blog</div>'
-    '</div></a>'
-    '<a href="https://seasonalpha.ai/blog/education/" target="_blank" style="text-decoration:none;">'
-    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
-    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
-    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
-    '<div style="font-size:1.5rem; margin-bottom:6px;">🎓</div>'
-    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Education</div>'
-    '<div style="color:#5a6e85; font-size:0.8rem;">Grundlagen lernen</div>'
-    '</div></a>'
-    '<a href="https://seasonalpha.ai/blog/marktausblick/" target="_blank" style="text-decoration:none;">'
-    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
-    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
-    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
-    '<div style="font-size:1.5rem; margin-bottom:6px;">📈</div>'
-    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Marktausblick</div>'
-    '<div style="color:#5a6e85; font-size:0.8rem;">Aktuelle Analysen</div>'
-    '</div></a>'
-    '<a href="https://seasonalpha.ai/blog/tutorials/" target="_blank" style="text-decoration:none;">'
-    '<div style="background:#0f1923; border:1px solid #1c2a3e; border-radius:10px; '
-    'padding:16px 24px; text-align:center; min-width:180px; transition:border-color 0.2s;"'
-    ' onmouseover="this.style.borderColor=\'#4d9fff\'" onmouseout="this.style.borderColor=\'#1c2a3e\'">'
-    '<div style="font-size:1.5rem; margin-bottom:6px;">🔧</div>'
-    '<div style="color:#e8edf5; font-weight:700; font-size:0.95rem;">Tutorials</div>'
-    '<div style="color:#5a6e85; font-size:0.8rem;">Features nutzen</div>'
-    '</div></a>'
-    '</div>',
-    unsafe_allow_html=True,
-)
+_bc1, _bc2, _bc3, _bc4 = st.columns(4)
+_bc1.link_button("📊 Alle Beitraege", "https://seasonalpha.ai/blog/", use_container_width=True)
+_bc2.link_button("🎓 Education", "https://seasonalpha.ai/blog/education/", use_container_width=True)
+_bc3.link_button("📈 Marktausblick", "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
+_bc4.link_button("🔧 Tutorials", "https://seasonalpha.ai/blog/tutorials/", use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════

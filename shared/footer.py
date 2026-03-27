@@ -13,43 +13,26 @@ _HEADING_STYLE = "color:#aabbcc;"
 def render_sidebar_blog_link():
     """Rendert einen Blog-Link in der Sidebar, visuell abgesetzt."""
     st.sidebar.markdown(
-        '<hr style="border:none; border-top:1px solid #1c2a3e; margin:1.5rem 0 1rem 0;">'
-        '<div style="padding:0 0 0.5rem 0;">'
-        '<a href="https://seasonalpha.ai/blog/" target="_blank" '
-        'style="text-decoration:none; display:flex; align-items:center; gap:8px; '
-        'padding:8px 12px; border-radius:8px; border:1px solid #1c2a3e; '
-        'transition:border-color 0.2s; background:#0f1923;"'
-        ' onmouseover="this.style.borderColor=\'#4d9fff\'" '
-        'onmouseout="this.style.borderColor=\'#1c2a3e\'">'
-        '<span style="font-size:1.1rem;">📝</span>'
-        '<span style="color:#e8edf5; font-weight:600; font-size:0.9rem;">Blog</span>'
-        '<span style="color:#5a6e85; font-size:0.75rem; margin-left:auto;">Neu</span>'
-        '</a></div>',
+        '<hr style="border:none; border-top:1px solid #1c2a3e; margin:1.5rem 0 1rem 0;">',
         unsafe_allow_html=True,
     )
+    st.sidebar.link_button("📝 Blog", "https://seasonalpha.ai/blog/", use_container_width=True)
 
 
 def render_footer():
     """Rendert den SeasonAlpha Footer mit Impressum, Datenschutz und Risk Disclosure."""
     render_sidebar_blog_link()
     st.markdown("---")
+    _fc1, _fc2, _fc3, _fc4 = st.columns(4)
+    _fc1.link_button("📊 Blog", "https://seasonalpha.ai/blog/", use_container_width=True)
+    _fc2.link_button("🎓 Education", "https://seasonalpha.ai/blog/education/", use_container_width=True)
+    _fc3.link_button("📈 Marktausblick", "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
+    _fc4.link_button("🔧 Tutorials", "https://seasonalpha.ai/blog/tutorials/", use_container_width=True)
     st.markdown(
-        """
-        <div style="text-align:center; padding:12px 0 8px 0;">
-            <div style="margin-bottom:8px;">
-                <a href="https://seasonalpha.ai/blog/" target="_blank" style="color:#4d9fff; text-decoration:none; font-size:13px; font-weight:600; margin:0 10px;">Blog</a>
-                <span style="color:#2a3a4e;">|</span>
-                <a href="https://seasonalpha.ai/" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">App</a>
-                <span style="color:#2a3a4e;">|</span>
-                <a href="https://seasonalpha.ai/blog/education/" target="_blank" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">Education</a>
-                <span style="color:#2a3a4e;">|</span>
-                <a href="https://seasonalpha.ai/blog/marktausblick/" target="_blank" style="color:#5a6e85; text-decoration:none; font-size:13px; margin:0 10px;">Marktausblick</a>
-            </div>
-            <span style="color:#556677; font-size:12px;">
-                &copy; 2026 SeasonAlpha. All rights reserved.
-            </span>
-        </div>
-        """,
+        '<div style="text-align:center; padding:8px 0;">'
+        '<span style="color:#556677; font-size:12px;">'
+        '&copy; 2026 SeasonAlpha. All rights reserved.'
+        '</span></div>',
         unsafe_allow_html=True,
     )
 
