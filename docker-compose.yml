@@ -14,6 +14,7 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
       - ./logs:/app/logs
+      - ./blog/output:/app/blog/output
       - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
