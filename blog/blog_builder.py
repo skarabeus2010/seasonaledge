@@ -165,7 +165,7 @@ _MONTH_NAMES_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
                    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 
 
-def _get_ticker_data(ticker: str) -> pd.DataFrame | None:
+def _get_ticker_data(ticker: str):
     """Laedt Ticker-Daten mit Cache."""
     if ticker in _ticker_cache:
         return _ticker_cache[ticker]
