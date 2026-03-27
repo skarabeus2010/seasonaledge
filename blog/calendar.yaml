@@ -3,6 +3,12 @@
 
 2026-03:
   - date: 2026-03-27
+    title: "Willkommen bei SeasonAlpha.ai"
+    category: education
+    ticker: ^DJI
+    status: published
+
+  - date: 2026-03-27
     title: "Was ist Saisonalitaet?"
     category: education
     ticker: ^DJI
