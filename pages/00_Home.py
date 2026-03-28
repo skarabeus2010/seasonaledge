@@ -27,7 +27,9 @@ st.set_page_config(
 
 from shared.design import inject_se_css
 from shared.footer import render_footer
+from shared.i18n import t, lang_toggle, get_lang
 inject_se_css()
+lang_toggle()
 
 # Google Search Console Verifizierung
 st.markdown(
@@ -242,7 +244,7 @@ def _handle_submit(email: str):
 # ══════════════════════════════════════════════════════════════
 # SEKTION 1 — HERO
 # ══════════════════════════════════════════════════════════════
-st.markdown("""
+st.markdown(f"""
 <div class="se-hero">
   <!-- SVG Saisonalitäts-Chart im Hintergrund -->
   <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.25;pointer-events:none;"
@@ -308,49 +310,56 @@ st.markdown("""
     <line x1="560" y1="258" x2="560" y2="278" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
     <line x1="920" y1="195" x2="920" y2="215" stroke="#e8a425" stroke-width="1" opacity="0.5"/>
   </svg>
-  <div class="se-eyebrow">Traditionelle Saisonalität trifft Intelligenz.</div>
+  <div class="se-eyebrow">{t('home_eyebrow')}</div>
   <div class="se-h1">
     <span class="gold">Season</span><span class="blue">Alpha</span>&nbsp;<span class="white">BETA</span>
   </div>
-  <div class="se-sub">
-    Datengetriebene Saisonalitäts-Analyse mit KI.<br>
-    Bis zu 131 Jahre Börsengeschichte in Charts. 15 Machine-Learning-Modelle.<br>
-    Erkenne Muster, bevor der Markt sie sieht.
-  </div>
-  <div class="se-badge">More. Coming. Soon.</div>
+  <div class="se-sub">{t('home_subtitle')}</div>
+  <div class="se-badge">{t('home_badge')}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Begrüßungstext ──
-st.markdown("""
+_welcome = {
+    "de": {
+        "h2": "Willkommen bei SeasonAlpha – der nächsten Generation der Marktanalyse",
+        "p":  "Wir erweitern traditionelle Saisonalitäts-Charts um modernste Künstliche Intelligenz und geben dir Tools an die Hand, die auf dem Markt einzigartig sind.",
+        "li1_title": "Klassik trifft High-Tech:",
+        "li1_text": "Wir durchsuchen bis zu 130 Jahre Marktdaten nach Dekaden-, Jahres- und Monatszyklen. Events wie Notenbanksitzungen, OPEX und Mondphasen inklusive.",
+        "li2_title": "KI-gestützte Prognosen:",
+        "li2_text": "15 fortschrittliche Machine-Learning-Modelle erkennen Anomalien, bewerten Crash-Risiken und identifizieren Wendepunkte.",
+        "li3_title": "Entdecke unsere innovativen Basis-Charts sofort",
+        "li3_text": "– kostenlos und ohne Registrierung.",
+        "li4_title": "Die Beta-Phase hat gerade erst begonnen.",
+        "li4_text": "Freu dich auf innovative und tech-getriebene Analysen!",
+    },
+    "en": {
+        "h2": "Welcome to SeasonAlpha – the next generation of market analysis",
+        "p":  "We combine traditional seasonality charts with cutting-edge artificial intelligence — giving you tools that are unique on the market.",
+        "li1_title": "Classic meets High-Tech:",
+        "li1_text": "We scan up to 130 years of market data for decade, annual and monthly cycles — including events like central bank meetings, OPEX and moon phases.",
+        "li2_title": "AI-powered forecasts:",
+        "li2_text": "15 advanced machine learning models detect anomalies, assess crash risks and identify optimal turning points.",
+        "li3_title": "Explore our innovative base charts right now",
+        "li3_text": "– free and without registration.",
+        "li4_title": "The beta phase has just begun.",
+        "li4_text": "Look forward to innovative, tech-driven analysis!",
+    },
+}
+_wl = _welcome[get_lang()]
+st.markdown(f"""
 <div style="max-width:800px;margin:0 auto 2rem;">
   <h2 style="color:#e8edf5;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;text-align:center;margin-bottom:1.2rem;letter-spacing:-.5px;">
-    Willkommen bei SeasonAlpha – der nächsten Generation der Marktanalyse
+    {_wl['h2']}
   </h2>
   <p style="color:#a0b0c5;font-size:1.15rem;line-height:1.8;text-align:center;margin-bottom:1.2rem;">
-    Wir erweitern traditionelle Saisonalitäts-Charts um modernste Künstliche Intelligenz
-    und geben dir Tools an die Hand, die auf dem Markt einzigartig sind.
+    {_wl['p']}
   </p>
   <ul style="color:#a0b0c5;font-size:1.05rem;line-height:1.9;list-style:none;padding:0;">
-    <li style="margin-bottom:.8rem;">
-      <strong style="color:#e8a425;">Klassik trifft High-Tech:</strong>
-      Wir durchsuchen bis zu 130 Jahre Marktdaten nach Dekaden-, Jahres- und Monatszyklen.
-      Wir nehmen auch einzelne Handelstage unter die Lupe, genauso wie Events wie z.B.
-      Notenbanksitzungen, OPEX und Mondphasen und geben Dir konkrete Strategien an die Hand.
-    </li>
-    <li style="margin-bottom:.8rem;">
-      <strong style="color:#4d9fff;">KI-gestützte Prognosen:</strong>
-      15 fortschrittliche Machine-Learning-Modelle erkennen Anomalien,
-      bewerten Crash-Risiken und identifizieren optimal getimte Wendepunkte.
-    </li>
-    <li style="margin-bottom:.8rem;">
-      <strong style="color:#4d9fff;">Entdecke unsere innovativen Basis-Charts sofort</strong>
-      – kostenlos und ohne vorherige Registrierung.
-    </li>
-    <li>
-      <strong style="color:#e8a425;">Die Beta-Phase hat gerade erst begonnen.</strong>
-      Freu dich jetzt schon auf innovative und tech-getriebene Analysen!
-    </li>
+    <li style="margin-bottom:.8rem;"><strong style="color:#e8a425;">{_wl['li1_title']}</strong> {_wl['li1_text']}</li>
+    <li style="margin-bottom:.8rem;"><strong style="color:#4d9fff;">{_wl['li2_title']}</strong> {_wl['li2_text']}</li>
+    <li style="margin-bottom:.8rem;"><strong style="color:#4d9fff;">{_wl['li3_title']}</strong> {_wl['li3_text']}</li>
+    <li><strong style="color:#e8a425;">{_wl['li4_title']}</strong> {_wl['li4_text']}</li>
   </ul>
 </div>
 """, unsafe_allow_html=True)
@@ -363,9 +372,9 @@ st.markdown("""
 # als echte Streamlit-Navigation.
 # ══════════════════════════════════════════════════════════════
 st.markdown("<br>", unsafe_allow_html=True)
-st.markdown('<div class="se-section-label">Analyse-Module</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Deine SeasonAlpha Suite</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-sub">Klicke auf ein Modul — du landest direkt in der Analyse.</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="se-section-label">{t("home_modules_label")}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="se-section-title">{t("home_modules_title")}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="se-section-sub">{t("home_modules_sub")}</div>', unsafe_allow_html=True)
 
 # ── 9 Light-Live Pages (3×3 Grid) ──
 _LIGHT_PAGES = [
