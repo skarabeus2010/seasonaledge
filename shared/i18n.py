@@ -164,49 +164,70 @@ def t(key: str, **kwargs) -> str:
 
 
 def get_lang() -> str:
-    """Gibt die aktuelle Sprache zurück ('de' oder 'en')."""
+    """Gibt die aktuelle Sprache zurück ('de' oder 'en').
+    Priorität: URL-Parameter → session_state → Browser → Default 'de'
+    """
+    # 1. URL-Parameter hat höchste Priorität
+    qp = st.query_params.get("lang", "")
+    if qp in ("de", "en"):
+        st.session_state["lang"] = qp
+        return qp
+    # 2. Session State
     return st.session_state.get("lang", "de")
 
 
 def set_lang(lang: str) -> None:
-    """Setzt die Sprache und speichert sie in der Session."""
+    """Setzt die Sprache in Session und URL-Parameter."""
     st.session_state["lang"] = lang
+    st.query_params["lang"] = lang
 
 
-# ── Language Toggle für Sidebar ───────────────────────────────
+# ── Language Toggle — fixed oben rechts ──────────────────────
 def lang_toggle() -> None:
-    """Rendert einen kompakten 🇩🇪 / 🇬🇧 Toggle in der Sidebar.
+    """Rendert kleine 🇩🇪 / 🇺🇸 Flaggen fixed oben rechts.
 
-    Aufruf ganz oben in jeder Page-Sidebar:
+    Aufruf einmalig pro Page direkt nach inject_se_css():
         from shared.i18n import lang_toggle
         lang_toggle()
     """
-    # Browser-Sprache beim ersten Aufruf erkennen (JS)
-    if "lang" not in st.session_state:
+    # Browser-Sprache beim allerersten Besuch (kein URL-Param, kein State)
+    if "lang" not in st.session_state and not st.query_params.get("lang"):
         st.components.v1.html(_LANG_DETECT_JS, height=0)
-        st.session_state["lang"] = "de"  # Default bis JS geantwortet hat
+        st.session_state["lang"] = "de"
 
-    current = get_lang()
+    lang = get_lang()
+    de_style = "opacity:1;transform:scale(1.15)" if lang == "de" else "opacity:0.45;transform:scale(1)"
+    en_style = "opacity:1;transform:scale(1.15)" if lang == "en" else "opacity:0.45;transform:scale(1)"
 
-    with st.sidebar:
-        st.markdown("---")
-        col_de, col_en = st.columns(2)
-        with col_de:
-            if st.button(
-                "🇩🇪 DE",
-                use_container_width=True,
-                type="primary" if current == "de" else "secondary",
-                key="_lang_de",
-            ):
-                set_lang("de")
-                st.rerun()
-        with col_en:
-            if st.button(
-                "🇬🇧 EN",
-                use_container_width=True,
-                type="primary" if current == "en" else "secondary",
-                key="_lang_en",
-            ):
-                set_lang("en")
-                st.rerun()
-        st.markdown("---")
+    st.markdown(f"""
+    <div style="
+        position: fixed;
+        top: 10px;
+        right: 56px;
+        z-index: 99999;
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        background: rgba(8,12,18,0.75);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px;
+        padding: 3px 8px;
+    ">
+        <a href="?lang=de" title="Deutsch" style="
+            text-decoration: none;
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: all .2s;
+            {de_style};
+        ">🇩🇪</a>
+        <span style="color:rgba(255,255,255,0.2);font-size:.7rem;">│</span>
+        <a href="?lang=en" title="English" style="
+            text-decoration: none;
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: all .2s;
+            {en_style};
+        ">🇺🇸</a>
+    </div>
+    """, unsafe_allow_html=True)
