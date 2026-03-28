@@ -42,7 +42,8 @@ shared/                  ← Berechnungen, Daten, Utilities
   sector_rotation.py     ← Sektor-Rotation Analyse
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
   percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
-  footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Risk Disclosure
+  footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk Disclosure
+  i18n.py                ← Internationalisierung DE/EN: t(), get_lang(), lang_toggle() (JS-basiert)
   ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
   indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
   indicator_filter_ui.py ← Sidebar UI fuer Indikator-Filter (Pulldowns, Badges)
@@ -55,9 +56,12 @@ blog/                    ← Blog Engine (Markdown → statisches HTML)
   blog_builder.py          ← Generator: MD → HTML + Charts + Social + YouTube
   templates/               ← Jinja2 Blog-Templates (Post, Index, Kategorie)
   posts/                   ← Markdown Blog-Posts (Frontmatter + Content)
+  posts/images/            ← Blog-Screenshots (committed, wird beim Build nach output/ kopiert)
   prompts/                 ← Claude API Prompt-Templates (6 Templates)
   calendar.yaml            ← Redaktionsplan
   output/                  ← Generierte HTML (.gitignore)
+.claude/
+  blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
@@ -165,6 +169,9 @@ if _project_dir not in sys.path:
 | Indikator-Filter: `indicator_filter_sidebar()` | `from shared.indicator_filter_ui import indicator_filter_sidebar` |
 | Indikator-Berechnung: `indicators.py` | SMA, EMA, RSI, Bollinger, MACD, LBR + `apply_indicator_filter()` |
 | Blog: `blog/blog_builder.py` | `--build` (HTML) oder `--generate` (KI-Entwurf) |
+| Blog-Screenshots: `blog/posts/images/` | Committed → wird beim Build nach output/ kopiert |
+| i18n: `from shared.i18n import t, lang_toggle, get_lang` | `lang_toggle()` VOR sidebar-Blöcken aufrufen |
+| Heatmap (Monatszyklus): `apply_se_theme` + `dtick=1` | Nicht `apply_se_heatmap_theme` + `type="category"` |
 
 ## Architektur-Prinzipien
 
@@ -175,7 +182,8 @@ if _project_dir not in sys.path:
 - Perzentil-Statusbar → `percentile_bar.py` (Micro-Gauge Ribbon unter Charts)
 - Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
 - Heatmaps → `apply_se_heatmap_theme()` + `tickformat=None` auf Kategorie-Achsen
-- Footer (Impressum/Datenschutz/Risk) → `shared/footer.py` als 3 Expander
+- Footer (Impressum/Datenschutz/Legal Notice/Financial Disclaimer/Risk) → `shared/footer.py` als 5 Expander
+- Mehrsprachigkeit → `shared/i18n.py`: `t("key")` für Strings, `lang_toggle()` für DE/US-Flaggen (JS-basiert, VOR sidebar)
 - Kompakte Karten statt `st.metric` → HTML-Flex-Karten (Dark Mode, farbcodiert)
 - Alle Sektionen in Expander verpacken (Default ON/OFF je nach Relevanz)
 - Ticker-Auswahl → `ticker_select()` (speichert global, bleibt bei Page-Wechsel)
@@ -292,6 +300,15 @@ UPPER_CASE        → Konstanten
 - [x] Blog: Nginx /blog/ Route + Deploy-Action + Sitemap (2026-03-27)
 - [x] Blog-Links: Footer (alle Pages) + Home Page Blog-Kacheln (2026-03-27)
 - [x] Docs: ARCHITECTURE.md komplett ueberarbeitet (2026-03-27)
+- [x] Fix: 10-Jahres Heatmap Monatszyklus (Jahreszyklus-Variante: text/texttemplate + dtick=1) (2026-03-28)
+- [x] Blog: Skill blog-tutorial.md SEO-optimiert + ins Repo committed (.claude/) (2026-03-28)
+- [x] Blog: Tutorial Wochentag-Signifikanztest Siemens + Screenshot-Support (posts/images/) (2026-03-28)
+- [x] Blog: Tutorial Overnight vs. Intraday Split (Google) (2026-03-28)
+- [x] Blog: Tutorial Box-Plot Dekadenzyklus (Dow Jones) (2026-03-28)
+- [x] i18n: shared/i18n.py Grundgeruest (t(), get_lang(), lang_toggle(), TRANSLATIONS dict DE/EN) (2026-03-28)
+- [x] i18n: Flaggen-Toggle via JS window.parent.document.body (SVG-Flags, position:fixed) (2026-03-28)
+- [x] i18n: Home Page vollstaendig uebersetzt (Kacheln, Slider, Stats, Newsletter, Blog) (2026-03-28)
+- [x] Footer: Legal Notice EN (§5 DDG auf Englisch) + Financial Disclaimer (2026-03-28)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 - [ ] Blog: Claude API Integration fuer automatische Content-Generierung
@@ -310,3 +327,4 @@ UPPER_CASE        → Konstanten
 - `docs/SEO_ENGINE.md` — Programmatic SEO + Blog Engine
 - `docs/BLOG_WORKFLOW.md` — Blog + Social Media + YouTube Workflow-Anleitung
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad
+- `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel schreiben (DE, SeasonAlpha-Kontext)
