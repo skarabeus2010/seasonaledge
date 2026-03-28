@@ -88,7 +88,7 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
         if img_match:
             alt, src = img_match.group(1), img_match.group(2)
             if not src.startswith(("http://", "https://", "/")):
-                src = f"/blog/{post_slug}/{src}" if post_slug else src
+                src = f"/blog/{post_slug}/images/{src}" if post_slug else src
             html_parts.append(
                 f'<figure><img src="{src}" alt="{alt}" loading="lazy">'
                 f'{"<figcaption>" + alt + "</figcaption>" if alt else ""}'
@@ -159,7 +159,7 @@ def _inline(text: str, post_slug: str = "") -> str:
         alt, src = m.group(1), m.group(2)
         # Relative Pfade → /blog/{slug}/images/...
         if not src.startswith(("http://", "https://", "/")):
-            src = f"/blog/{post_slug}/{src}" if post_slug else src
+            src = f"/blog/{post_slug}/images/{src}" if post_slug else src
         return f'<img src="{src}" alt="{alt}" loading="lazy">'
     text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", _img_replace, text)
     # Standard-Inline
