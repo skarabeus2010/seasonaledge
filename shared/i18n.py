@@ -205,48 +205,66 @@ _FLAG_US = (
 def lang_toggle() -> None:
     """Rendert DE/US Flaggen-Toggle über den Sidebar-Nav-Items.
 
-    WICHTIG: In der aufrufenden Page VOR st.sidebar-Blöcken aufrufen,
-    damit die CSS-Injektion im Hauptkontext landet (position:fixed klappt nur so).
-
-        from shared.i18n import lang_toggle
-        lang_toggle()   # vor allen with st.sidebar: Blöcken
+    Nutzt window.parent.document.body via JS-Iframe — einziger Weg,
+    position:fixed aus Streamlit heraus korrekt zu rendern.
     """
     import streamlit.components.v1 as _components
 
     # Browser-Sprache beim allerersten Besuch
     if "lang" not in st.session_state and not st.query_params.get("lang"):
-        _components.html(_LANG_DETECT_JS, height=0)
         st.session_state["lang"] = "de"
 
     lang = get_lang()
-    de_style = "outline:2px solid #fff;outline-offset:1px;border-radius:3px;" if lang == "de" else "opacity:0.4;border-radius:3px;"
-    en_style = "outline:2px solid #fff;outline-offset:1px;border-radius:3px;" if lang == "en" else "opacity:0.4;border-radius:3px;"
+    de_outline = "outline:2px solid #fff;outline-offset:1px;" if lang == "de" else "opacity:0.45;"
+    en_outline = "outline:2px solid #fff;outline-offset:1px;" if lang == "en" else "opacity:0.45;"
 
-    # Injektion im HAUPT-Kontext (nicht in with st.sidebar),
-    # damit position:fixed korrekt gerendert wird.
-    st.markdown(f"""
-    <style>
-    /* Platz für Flaggen über den Nav-Items schaffen */
-    [data-testid="stSidebarNav"] {{
-        padding-top: 46px !important;
-    }}
-    </style>
-    <div style="
-        position: fixed;
-        top: 11px;
-        left: 13px;
-        z-index: 99999;
-        display: flex;
-        gap: 7px;
-        align-items: center;
-    ">
-        <a href="?lang=de" title="Deutsch" style="text-decoration:none;line-height:0;cursor:pointer;">
-            <img src="{_FLAG_DE}" width="26" height="16"
-                 style="display:block;transition:all .15s;{de_style}">
-        </a>
-        <a href="?lang=en" title="English" style="text-decoration:none;line-height:0;cursor:pointer;">
-            <img src="{_FLAG_US}" width="26" height="16"
-                 style="display:block;transition:all .15s;{en_style}">
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+    _components.html(f"""
+    <script>
+    (function() {{
+        function injectFlags() {{
+            var doc = window.parent ? window.parent.document : document;
+
+            // Bereits vorhandenen Toggle entfernen (bei Rerender)
+            var old = doc.getElementById('sa-lang-toggle');
+            if (old) old.remove();
+
+            // Sidebar-Nav Platz schaffen
+            var nav = doc.querySelector('[data-testid="stSidebarNav"]');
+            if (nav) nav.style.paddingTop = '46px';
+
+            // Toggle-Div direkt in body einhängen → position:fixed funktioniert
+            var div = doc.createElement('div');
+            div.id = 'sa-lang-toggle';
+            div.style.cssText = [
+                'position:fixed',
+                'top:11px',
+                'left:13px',
+                'z-index:99999',
+                'display:flex',
+                'gap:7px',
+                'align-items:center',
+                'pointer-events:auto'
+            ].join(';');
+
+            div.innerHTML =
+                '<a href="?lang=de" title="Deutsch" style="text-decoration:none;line-height:0;cursor:pointer;">' +
+                    '<img src="{_FLAG_DE}" width="26" height="16" ' +
+                         'style="display:block;border-radius:3px;{de_outline}">' +
+                '</a>' +
+                '<a href="?lang=en" title="English" style="text-decoration:none;line-height:0;cursor:pointer;">' +
+                    '<img src="{_FLAG_US}" width="26" height="16" ' +
+                         'style="display:block;border-radius:3px;{en_outline}">' +
+                '</a>';
+
+            doc.body.appendChild(div);
+        }}
+
+        // Sofort + nach DOM-Ready ausführen
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', injectFlags);
+        }} else {{
+            injectFlags();
+        }}
+    }})();
+    </script>
+    """, height=0)
