@@ -33,7 +33,7 @@ from shared.constants import (
 )
 from shared.data import download_data, preprocess
 from shared.calculations import get_presidential_cycle_year
-from shared.charts import apply_se_theme
+from shared.charts import apply_se_theme, apply_se_heatmap_theme
 from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 
 from shared.design import inject_se_css
@@ -1032,13 +1032,10 @@ def build_monthly_heatmap(df, selected_years, ticker):
             layer="above",
         )
 
-    fig = apply_se_theme(
-        fig,
-        title=f"{ticker} — 10 Jahres Monats-Heatmap",
-        height=max(400, len(years) * 40 + 100),
-        show_legend=False,
-    )
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — 10 Jahres Monats-Heatmap",
+                                    height=max(400, len(years) * 40 + 100))
     fig.update_yaxes(autorange="reversed", type="category")
+    fig.update_xaxes(type="category")
     return fig
 
 
