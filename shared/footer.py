@@ -212,6 +212,99 @@ def render_footer():
             unsafe_allow_html=True,
         )
 
+    # ── Legal Notice (EN) ────────────────────────────────
+    with st.expander("🇺🇸 Legal Notice (Imprint)", expanded=False):
+        st.markdown(
+            f"<div style='{_LEGAL_STYLE}'>"
+            f"<b style='{_HEADING_STYLE}'>Imprint according to German law – § 5 DDG</b><br><br>"
+            f"<b style='{_HEADING_STYLE}'>Information according to § 5 DDG (German Digital Services Act)</b><br><br>"
+            "<b>Operator:</b><br>"
+            "Anitha Kratochwil<br>"
+            "Sole Proprietorship under German law<br><br>"
+            "<b>Address:</b><br>"
+            "Hansastraße 8<br>"
+            "80686 Munich<br>"
+            "Germany<br><br>"
+            "<b>Contact:</b><br>"
+            "Email: info@seasonalpha.ai<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Responsible for content according to § 18 para. 2 MStV</b><br><br>"
+            "Anitha Kratochwil<br>"
+            "Hansastraße 8<br>"
+            "80686 Munich<br>"
+            "Germany<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>EU Dispute Resolution</b><br><br>"
+            "The European Commission provides a platform for online dispute resolution (ODR):<br>"
+            "<a href='https://ec.europa.eu/consumers/odr/' target='_blank' style='color:#00CED1;'>"
+            "https://ec.europa.eu/consumers/odr/</a><br><br>"
+            "We are not obliged and not willing to participate in dispute resolution proceedings "
+            "before a consumer arbitration board.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Liability for Content</b><br><br>"
+            "As a service provider, we are responsible for our own content on these pages in "
+            "accordance with general laws pursuant to § 7 para.1 DDG. According to §§ 8 to 10 DDG, "
+            "however, we are not obliged to monitor transmitted or stored third-party information or "
+            "to investigate circumstances that indicate illegal activity.<br><br>"
+            "Obligations to remove or block the use of information under general laws remain "
+            "unaffected. Liability in this respect is, however, only possible from the time of "
+            "knowledge of a specific infringement. Upon notification of such violations, we will "
+            "remove the content immediately.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Liability for Links</b><br><br>"
+            "Our website contains links to external third-party websites over whose content we have "
+            "no control. Therefore, we cannot assume any liability for these external contents. The "
+            "respective provider or operator of the linked pages is always responsible for their "
+            "content.<br><br>"
+            "The linked pages were checked for possible legal violations at the time of linking. "
+            "Illegal content was not recognizable at the time of linking.<br><br>"
+            "Permanent monitoring of the content of linked pages is not reasonable without concrete "
+            "evidence of a violation. Upon notification of violations, we will remove such links "
+            "immediately.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            f"<b style='{_HEADING_STYLE}'>Copyright</b><br><br>"
+            "The content and works created by the site operators on these pages are subject to "
+            "German copyright law. Duplication, processing, distribution, or any form of "
+            "commercialization beyond the scope of copyright law requires the prior written consent "
+            "of the respective author or creator.<br><br>"
+            "Downloads and copies of this site are permitted for private, non-commercial use only.<br><br>"
+            "Insofar as content on this site was not created by the operator, third-party copyrights "
+            "are respected. Third-party content is identified as such.<br><br>"
+            "If you become aware of a copyright infringement, please inform us accordingly. Upon "
+            "notification of violations, we will remove such content immediately."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    # ── Financial Disclaimer (EN) ─────────────────────────
+    with st.expander("💰 Financial Disclaimer", expanded=False):
+        st.markdown(
+            f"<div style='{_LEGAL_STYLE}'>"
+            f"<b style='{_HEADING_STYLE}'>Financial Disclaimer</b><br><br>"
+            "The content provided on this website is for informational and educational purposes only "
+            "and does not constitute financial, investment, legal, or tax advice.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            "All information, analyses, and opinions expressed on this website are based on "
+            "historical data and statistical evaluations. They do not represent recommendations to "
+            "buy, sell, or hold any financial instrument.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            "Past performance is not indicative of future results. Financial markets are subject to "
+            "risks and uncertainties, and actual outcomes may differ significantly from historical "
+            "patterns or expectations.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            "Users are solely responsible for their investment decisions and should conduct their "
+            "own research or consult a qualified financial advisor before making any investment "
+            "decisions.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            "The operator of this website assumes no liability for any financial losses or damages "
+            "resulting from the use of the information provided.<br><br>"
+            "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.1);'>"
+            "No guarantee is given regarding the accuracy, completeness, or timeliness of the "
+            "information presented."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
     # ── Risk Disclosure ──────────────────────────────────
     with st.expander("⚠️ Risk Disclosure", expanded=False):
         st.markdown(
