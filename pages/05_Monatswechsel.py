@@ -287,7 +287,7 @@ def render_cycle_tom(tom_result, df, selected_years, selected_months,
         })
 
     if not results:
-        st.info("Nicht genuegend Daten fuer Praesidentenzyklus-Analyse.")
+        st.info("Nicht genügend Daten für Präsidentenzyklus-Analyse.")
         return
 
     # Bester Zyklus
@@ -325,9 +325,9 @@ def render_cycle_tom(tom_result, df, selected_years, selected_months,
 
     st.markdown(
         "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
-        "<b>Interpretation:</b> Zeigt den TOM-Effekt aufgesplittet nach Praesidentenzyklus-Jahr. "
-        "Pre-Election Years zeigen typischerweise den staerksten Monatswechsel-Effekt "
-        "durch erhoehte fiskalische Stimuli.</p>",
+        "<b>Interpretation:</b> Zeigt den TOM-Effekt aufgesplittet nach Präsidentenzyklus-Jahr. "
+        "Pre-Election Years zeigen typischerweise den stärksten Monatswechsel-Effekt "
+        "durch erhöhte fiskalische Stimuli.</p>",
         unsafe_allow_html=True)
 
 
@@ -535,13 +535,13 @@ def main():
             f"<b>Optimales Fenster:</b> Kauf bei <b style='color:#F1C40F;'>t-{best_key[0]}</b>, "
             f"Verkauf bei <b style='color:#F1C40F;'>t+{best_key[1]}</b> → "
             f"Oe Rendite: <b style='color:#00d4aa;'>{opt_data[best_key]:+.3f}%</b><br>"
-            f"<b>Interpretation:</b> Jede Zelle zeigt die durchschnittliche Rendite fuer "
+            f"<b>Interpretation:</b> Jede Zelle zeigt die durchschnittliche Rendite für "
             f"eine bestimmte Kauf-/Verkauf-Kombination rund um den Monatswechsel. "
             f"Der gelbe Rahmen markiert das profitabelste Fenster.</p>",
             unsafe_allow_html=True)
 
     # ── Praesidentenzyklus TOM-Effekt ────────────────
-    with st.expander("🏛️ Praesidentenzyklus — TOM-Effekt nach Zyklusjahr", expanded=True):
+    with st.expander("🏛️ Präsidentenzyklus — TOM-Effekt nach Zyklusjahr", expanded=True):
         render_cycle_tom(tom_result, df, selected_years, tom_months,
                          tom_days_before, tom_days_after, ticker)
 

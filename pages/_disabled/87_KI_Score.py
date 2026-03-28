@@ -387,11 +387,11 @@ def main():
         else:
             st.caption(radar["error"])
     except Exception as _e:
-        st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+        st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
     # ── Muster-Brueche ──
-    with st.expander("Saisonale Muster-Brueche (KI)", expanded=False):
-        st.caption("Jahre in denen das saisonale Muster am staerksten gebrochen wurde.")
+    with st.expander("Saisonale Muster-Brüche (KI)", expanded=False):
+        st.caption("Jahre in denen das saisonale Muster am stärksten gebrochen wurde.")
         try:
             from shared.anomaly_engine import detect_pattern_breaks
             breaks = detect_pattern_breaks(year_data, avg, top_n=7)
@@ -408,9 +408,9 @@ def main():
                         f'{event_str}'
                     )
             else:
-                st.caption("Keine Muster-Brueche erkannt.")
+                st.caption("Keine Muster-Brüche erkannt.")
         except Exception as _e:
-            st.caption(f"Nicht verfuegbar: {_e}")
+            st.caption(f"Nicht verfügbar: {_e}")
 
     # ── Claude Kommentar ──
     if use_claude:
@@ -442,7 +442,7 @@ def main():
                 st.warning("Claude-Kommentar nicht verfügbar (API-Key fehlt?).")
 
     # ── MSTL Zerlegung ──
-    with st.expander("MSTL Saisonalitaets-Zerlegung", expanded=False):
+    with st.expander("MSTL Saisonalitäts-Zerlegung", expanded=False):
         try:
             from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
             with st.spinner("MSTL..."):
@@ -455,7 +455,7 @@ def main():
                 fig_mstl = build_decomposition_figure(mstl_result, ticker)
                 st.plotly_chart(fig_mstl, use_container_width=True)
             else:
-                st.caption("MSTL nicht verfuegbar.")
+                st.caption("MSTL nicht verfügbar.")
         except Exception as _e:
             st.caption(f"MSTL: {_e}")
 
@@ -472,7 +472,7 @@ def main():
                 fig_ch = build_chronos_chart(df, chronos_fc, ticker)
                 st.plotly_chart(fig_ch, use_container_width=True)
             else:
-                st.caption("Chronos nicht verfuegbar (pip install chronos-forecasting).")
+                st.caption("Chronos nicht verfügbar (pip install chronos-forecasting).")
         except Exception as _e:
             st.caption(f"Chronos: {_e}")
 

@@ -223,7 +223,7 @@ def generate_page_summary(
         stats: Dict mit relevanten Kennzahlen der Analyse, z.B.:
             {"avg_return": 1.2, "win_rate": 68, "period": "Maerz",
              "best_year": 2019, "worst_year": 2020, "n_years": 20,
-             "current_tracking": "ueber Durchschnitt",
+             "current_tracking": "über Durchschnitt",
              "next_event": "FOMC am 19.03."}
         model: Claude-Modell
 
@@ -272,8 +272,8 @@ Kennzahlen:
 Regeln:
 - Genau 3 Saetze auf Deutsch
 - Satz 1: Historisches Muster (bullish/bearish/neutral + Kennzahl)
-- Satz 2: Aktueller Kontext (wie verhaelt sich das aktuelle Jahr)
-- Satz 3: Was kommt als naechstes (naechster Katalysator oder worauf achten)
+- Satz 2: Aktueller Kontext (wie verhält sich das aktuelle Jahr)
+- Satz 3: Was kommt als nächstes (nächster Katalysator oder worauf achten)
 - Keine Anlageempfehlung, keine Emojis
 - Sachlich, praezise, datenbasiert"""
 

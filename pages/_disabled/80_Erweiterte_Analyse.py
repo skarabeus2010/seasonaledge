@@ -329,13 +329,13 @@ def main():
             if summary:
                 st.markdown(summary)
             else:
-                st.caption("KI-Zusammenfassung nicht verfuegbar (API-Key nicht gesetzt).")
+                st.caption("KI-Zusammenfassung nicht verfügbar (API-Key nicht gesetzt).")
 
     # ── Anomalie-Heatmap ──────────────────────────────
     with st.expander("Anomalie-Heatmap (KI)", expanded=False):
         st.caption(
-            "Isolation Forest erkennt Monate/Dekaden mit ungewoehnlichen Rendite-Mustern. "
-            "Hohe Werte = mehr Ausreisser-Renditen in dieser Zelle."
+            "Isolation Forest erkennt Monate/Dekaden mit ungewöhnlichen Rendite-Mustern. "
+            "Hohe Werte = mehr Ausreißer-Renditen in dieser Zelle."
         )
         from shared.ai_models import build_anomaly_matrix, build_anomaly_heatmap_figure
         with st.spinner("Anomalie-Erkennung laeuft..."):
@@ -352,23 +352,23 @@ def main():
             flat.sort(key=lambda x: x[2], reverse=True)
             if flat:
                 top_str = " | ".join(f"{m}/{d}: {v:.0f}" for m, d, v in flat[:5])
-                st.caption(f"Staerkste Anomalien: {top_str}")
+                st.caption(f"Stärkste Anomalien: {top_str}")
 
             with st.expander("So lesen Sie die Anomalie-Heatmap"):
                 st.markdown("""
-Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisch die meisten ungewoehnlichen Renditen aufgetreten sind.
+Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisch die meisten ungewöhnlichen Renditen aufgetreten sind.
 
 - **Zeilen** = Monate (Januar bis Dezember)
 - **Spalten** = Dekaden-Endziffer (X0 bis X9, z.B. X6 = 2006, 2016, 2026)
-- **Farbskala:** Dunkel = normale, erwartbare Renditen. Hell/Rot = viele Ausreisser, also Monate in denen die Renditen ungewoehnlich stark vom Durchschnitt abwichen.
+- **Farbskala:** Dunkel = normale, erwartbare Renditen. Hell/Rot = viele Ausreißer, also Monate in denen die Renditen ungewöhnlich stark vom Durchschnitt abwichen.
 - **Gelber Rahmen** = "We are here" — der aktuelle Monat und die aktuelle Dekade.
 
-**Interpretation:** Zellen mit hohen Werten (hell/rot) zeigen Zeitraeume, in denen die Maerkte besonders unberechenbar waren — sowohl nach oben als auch nach unten. Das bedeutet nicht automatisch Verlust, sondern erhoehte Unsicherheit. Dunkle Zellen stehen fuer Phasen mit stabilen, vorhersagbaren saisonalen Mustern.
+**Interpretation:** Zellen mit hohen Werten (hell/rot) zeigen Zeiträume, in denen die Märkte besonders unberechenbar waren — sowohl nach oben als auch nach unten. Das bedeutet nicht automatisch Verlust, sondern erhöhte Unsicherheit. Dunkle Zellen stehen für Phasen mit stabilen, vorhersagbaren saisonalen Mustern.
 
-**Methode:** Ein Isolation Forest (Machine Learning) wird ueber alle historischen Monatsrenditen trainiert und bewertet jede Rendite nach ihrer "Normalitaet". Der Anomalie-Score pro Zelle ist der Durchschnitt dieser Bewertungen.
+**Methode:** Ein Isolation Forest (Machine Learning) wird über alle historischen Monatsrenditen trainiert und bewertet jede Rendite nach ihrer "Normalität". Der Anomalie-Score pro Zelle ist der Durchschnitt dieser Bewertungen.
 """)
         else:
-            st.caption("sklearn nicht installiert — Anomalie-Erkennung nicht verfuegbar.")
+            st.caption("sklearn nicht installiert — Anomalie-Erkennung nicht verfügbar.")
 
     # ── Anomalie-Radar ──────────────────────────────────
     with st.expander("Anomalie-Radar (KI)", expanded=False):
@@ -399,11 +399,11 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
             else:
                 st.caption(radar["error"])
         except Exception as _e:
-            st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+            st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
     # ── Saisonale Muster-Brueche ─────────────────────
-    with st.expander("Saisonale Muster-Brueche (KI)", expanded=False):
-        st.caption("Jahre in denen das saisonale Muster am staerksten gebrochen wurde.")
+    with st.expander("Saisonale Muster-Brüche (KI)", expanded=False):
+        st.caption("Jahre in denen das saisonale Muster am stärksten gebrochen wurde.")
         try:
             from shared.anomaly_engine import detect_pattern_breaks
             breaks = detect_pattern_breaks(year_data, avg, top_n=7)
@@ -420,13 +420,13 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
                         f'{event_str}'
                     )
             else:
-                st.caption("Keine Muster-Brueche erkannt.")
+                st.caption("Keine Muster-Brüche erkannt.")
         except Exception as _e:
-            st.caption(f"Muster-Bruch-Erkennung nicht verfuegbar: {_e}")
+            st.caption(f"Muster-Bruch-Erkennung nicht verfügbar: {_e}")
 
     # ── MSTL Saisonalitaets-Zerlegung ─────────────────
-    with st.expander("MSTL Saisonalitaets-Zerlegung", expanded=False):
-        st.caption("Zerlegt den Kurs in Trend + Wochensaisonalitaet + Jahressaisonalitaet + Residual.")
+    with st.expander("MSTL Saisonalitäts-Zerlegung", expanded=False):
+        st.caption("Zerlegt den Kurs in Trend + Wochensaisonalität + Jahressaisonalität + Residual.")
         try:
             from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
             with st.spinner("MSTL Zerlegung..."):
@@ -434,14 +434,14 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
             if mstl_result:
                 mc1, mc2, mc3 = st.columns(3)
                 mc1.metric("Trend-Anteil", f'{mstl_result.get("strength_trend", 0):.1f}%')
-                mc2.metric("Wochen-Saisonalitaet", f'{mstl_result.get("strength_weekly", 0):.1f}%')
-                mc3.metric("Jahres-Saisonalitaet", f'{mstl_result.get("strength_yearly", 0):.1f}%')
+                mc2.metric("Wochen-Saisonalität", f'{mstl_result.get("strength_weekly", 0):.1f}%')
+                mc3.metric("Jahres-Saisonalität", f'{mstl_result.get("strength_yearly", 0):.1f}%')
                 fig_mstl = build_decomposition_figure(mstl_result, ticker)
                 st.plotly_chart(fig_mstl, use_container_width=True)
             else:
-                st.caption("MSTL nicht verfuegbar (zu wenig Daten oder statsmodels fehlt).")
+                st.caption("MSTL nicht verfügbar (zu wenig Daten oder statsmodels fehlt).")
         except Exception as _e:
-            st.caption(f"MSTL nicht verfuegbar: {_e}")
+            st.caption(f"MSTL nicht verfügbar: {_e}")
 
     # ── Chronos Forecast ────────────────────────────────
     with st.expander("Chronos Forecast (KI)", expanded=False):
@@ -458,13 +458,13 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
                 fig_chronos = build_chronos_chart(df, chronos_fc, ticker)
                 st.plotly_chart(fig_chronos, use_container_width=True)
             else:
-                st.caption("Chronos nicht verfuegbar (pip install chronos-forecasting).")
+                st.caption("Chronos nicht verfügbar (pip install chronos-forecasting).")
         except Exception as _e:
-            st.caption(f"Chronos nicht verfuegbar: {_e}")
+            st.caption(f"Chronos nicht verfügbar: {_e}")
 
     # ── NeuralProphet Komponenten ───────────────────────
-    with st.expander("NeuralProphet Saisonalitaet (KI)", expanded=False):
-        st.caption("Explizite Wochen- und Jahressaisonalitaet via Neural Network.")
+    with st.expander("NeuralProphet Saisonalität (KI)", expanded=False):
+        st.caption("Explizite Wochen- und Jahressaisonalität via Neural Network.")
         try:
             from shared.neural_prophet_forecast import forecast_neural_prophet, build_neural_prophet_chart
             with st.spinner("NeuralProphet trainiert..."):
@@ -475,9 +475,9 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
                 if fig_np.data:
                     st.plotly_chart(fig_np, use_container_width=True)
             else:
-                st.caption("NeuralProphet nicht verfuegbar (pip install neuralprophet).")
+                st.caption("NeuralProphet nicht verfügbar (pip install neuralprophet).")
         except Exception as _e:
-            st.caption(f"NeuralProphet nicht verfuegbar: {_e}")
+            st.caption(f"NeuralProphet nicht verfügbar: {_e}")
 
     # ── Dateninfo ─────────────────────────────────────
     with st.expander("Dateninfo"):

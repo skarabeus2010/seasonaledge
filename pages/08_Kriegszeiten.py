@@ -77,13 +77,13 @@ with st.sidebar:
 
 # ── Daten laden ──────────────────────────────────────
 st.markdown("## ⚔️ Im Schatten des Krieges")
-st.caption("Wie verhaelt sich der Markt in Kriegsjahren vs. Friedensjahren?")
+st.caption("Wie verhält sich der Markt in Kriegsjahren vs. Friedensjahren?")
 
 with st.spinner(f"Lade {ticker}..."):
     raw_df = download_data(ticker)
 
 if raw_df is None or raw_df.empty:
-    st.error(f"Keine Daten fuer '{ticker}'.")
+    st.error(f"Keine Daten für '{ticker}'.")
     st.stop()
 
 df = preprocess(raw_df)
@@ -214,7 +214,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 # ── Kriegsliste ──────────────────────────────────────
 st.markdown("---")
-st.subheader("US-Kriege mit Boerseneinfluss")
+st.subheader("US-Kriege mit Börseneinfluss")
 
 war_rows = []
 for w in US_WARS:
@@ -259,7 +259,7 @@ st.caption(f"Rot = Kriegsjahre ({len(war_matching)}) | Gruen = Friedensjahre ({l
 # ── Dow Jones Langfristchart mit Kriegszonen ────────────
 st.markdown("---")
 st.subheader("Der Dow Jones im Schatten der Kriege")
-st.caption("Langfristuebersicht seit 1886 — logarithmische Skala, alle groesseren US-Kriegsbeteiligungen markiert")
+st.caption("Langfristübersicht seit 1886 — logarithmische Skala, alle größeren US-Kriegsbeteiligungen markiert")
 
 # Historische Dow Jones Jahresschlusskurse (rekonstruiert, Anker: 31.12.2024 = 42.544)
 DOW_ANNUAL = [

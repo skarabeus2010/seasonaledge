@@ -395,7 +395,7 @@ with st.expander("🔬 Anomalie-Radar (KI)", expanded=True):
         else:
             st.caption(radar["error"])
     except Exception as _e:
-        st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+        st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 5. DATENTABELLE

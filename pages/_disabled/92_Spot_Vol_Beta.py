@@ -54,7 +54,7 @@ with st.sidebar:
     st.markdown("---")
 
     ticker_spot = st.text_input("Spot-Index", value="^GSPC", key="svb_spot").upper().strip()
-    ticker_vol = st.text_input("Volatilitaets-Index", value="^VIX", key="svb_vol").upper().strip()
+    ticker_vol = st.text_input("Volatilitäts-Index", value="^VIX", key="svb_vol").upper().strip()
 
     st.markdown("---")
 
@@ -70,7 +70,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption(
         "Spot-Vol Beta misst die Korrelation zwischen "
-        "Index-Renditen und Volatilitaetsaenderungen. "
+        "Index-Renditen und Volatilitätsänderungen. "
         "Negatives Beta = typisches 'Fear Gauge' Verhalten."
     )
 
@@ -86,7 +86,7 @@ with st.spinner(f"Lade {ticker_spot} und {ticker_vol}..."):
     raw_df = load_spot_vol_data(ticker_spot, ticker_vol)
 
 if raw_df is None or raw_df.empty:
-    st.error(f"Keine Daten fuer {ticker_spot} und/oder {ticker_vol} gefunden.")
+    st.error(f"Keine Daten für {ticker_spot} und/oder {ticker_vol} gefunden.")
     st.stop()
 
 # Zeitraum filtern
@@ -96,7 +96,7 @@ df_filtered = raw_df[
 ].copy()
 
 if len(df_filtered) < 60:
-    st.warning("Zu wenig Daten im gewaehlten Zeitraum.")
+    st.warning("Zu wenig Daten im gewählten Zeitraum.")
     st.stop()
 
 # ══════════════════════════════════════════════════════
@@ -268,7 +268,7 @@ fig2 = apply_se_theme(
     height=450,
 )
 fig2.update_xaxes(title=f"{ticker_spot} Rendite")
-fig2.update_yaxes(title=f"{ticker_vol} Aenderung")
+fig2.update_yaxes(title=f"{ticker_vol} Änderung")
 fig2.update_layout(legend=dict(orientation="h", yanchor="bottom", y=-0.25, x=0))
 
 st.plotly_chart(fig2, use_container_width=True)
@@ -277,20 +277,20 @@ st.plotly_chart(fig2, use_container_width=True)
 if metrics["beta"] < -0.3:
     st.info(
         f'**Beta = {metrics["beta"]:.3f}** — Typisches "Fear Gauge" Verhalten: '
-        f'Wenn {ticker_spot} faellt, steigt {ticker_vol} ueberproportional. '
-        f'Die Korrelation betraegt {metrics["corr"]:.3f}.',
+        f'Wenn {ticker_spot} fällt, steigt {ticker_vol} überproportional. '
+        f'Die Korrelation beträgt {metrics["corr"]:.3f}.',
         icon="📊",
     )
 elif metrics["beta"] < 0.3:
     st.warning(
         f'**Beta = {metrics["beta"]:.3f}** — Schwache Spot-Vol Korrelation. '
-        f'Das ist ungewoehnlich und kann auf Regimewechsel hindeuten.',
+        f'Das ist ungewöhnlich und kann auf Regimewechsel hindeuten.',
         icon="⚠️",
     )
 else:
     st.error(
         f'**Beta = {metrics["beta"]:.3f}** — Positives Spot-Vol Beta! '
-        f'Sehr selten — Volatilitaet steigt trotz steigender Kurse.',
+        f'Sehr selten — Volatilität steigt trotz steigender Kurse.',
         icon="🔴",
     )
 
@@ -392,7 +392,7 @@ for wtab, key, color in [
     with wtab:
         data = extremes[key]
         if data["n"] == 0:
-            st.caption("Keine Events im gewaehlten Zeitraum.")
+            st.caption("Keine Events im gewählten Zeitraum.")
             continue
 
         st.markdown(f'**{data["n"]} Events** gefunden: {data["label"]}')
@@ -486,22 +486,22 @@ with st.expander("So lesen Sie die Spot-Vol Beta Analyse"):
 **Was ist Spot-Vol Beta?**
 
 Das Spot-Vol Beta misst den statistischen Zusammenhang zwischen den Renditen
-eines Index ({ticker_spot}) und den Aenderungen der impliziten Volatilitaet ({ticker_vol}).
+eines Index ({ticker_spot}) und den Änderungen der impliziten Volatilität ({ticker_vol}).
 
 **Interpretation:**
 - **Beta < -0.8** (stark negativ): Klassisches "Fear Gauge" — starke inverse Beziehung.
-  Wenn Aktien fallen, explodiert die Volatilitaet. Typisch fuer Stress-Phasen.
+  Wenn Aktien fallen, explodiert die Volatilität. Typisch für Stress-Phasen.
 - **Beta -0.3 bis -0.8** (negativ): Normaler Zustand — moderate inverse Beziehung.
 - **Beta nahe 0**: Keine klare Beziehung — kann auf Regimewechsel hindeuten.
-- **Beta > 0** (positiv): Sehr selten — Volatilitaet steigt trotz steigender Kurse.
+- **Beta > 0** (positiv): Sehr selten — Volatilität steigt trotz steigender Kurse.
 
 **Rolling Beta:**
-Das {rolling_window}-Tage Rolling Beta zeigt wie sich die Beziehung ueber die Zeit veraendert.
-Phasen mit staerker negativem Beta deuten auf erhoehte Marktangst hin.
+Das {rolling_window}-Tage Rolling Beta zeigt wie sich die Beziehung über die Zeit verändert.
+Phasen mit stärker negativem Beta deuten auf erhöhte Marktangst hin.
 
-**R² (Bestimmtheitsmass):**
-Zeigt wie viel der VIX-Bewegung durch SPX-Renditen erklaert wird.
-R² von 0.5 = 50% der VIX-Bewegung ist durch SPX-Renditen erklaerbar.
+**R² (Bestimmtheitsmaß):**
+Zeigt wie viel der VIX-Bewegung durch SPX-Renditen erklärt wird.
+R² von 0.5 = 50% der VIX-Bewegung ist durch SPX-Renditen erklärbar.
 """)
 
 
@@ -509,6 +509,6 @@ R² von 0.5 = 50% der VIX-Bewegung ist durch SPX-Renditen erklaerbar.
 st.markdown("---")
 st.caption(
     "⚠️ _Spot-Vol Beta basiert auf historischen Regressionen. "
-    "Die Beziehung ist nicht stationaer und kann sich in Krisenzeiten "
-    "deutlich veraendern. Keine Anlageberatung._"
+    "Die Beziehung ist nicht stationär und kann sich in Krisenzeiten "
+    "deutlich verändern. Keine Anlageberatung._"
 )

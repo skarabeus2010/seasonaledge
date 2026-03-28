@@ -327,7 +327,7 @@ def build_monthly_bars(monthly_stats, ticker, current_tdom):
         y0=0, y1=bar_val,
     ))
 
-    fig = apply_se_theme(fig, title=f"{ticker} — Monats-Performance (Jahresuebersicht)", height=400, show_legend=False)
+    fig = apply_se_theme(fig, title=f"{ticker} — Monats-Performance (Jahresübersicht)", height=400, show_legend=False)
     return fig
 
 def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
@@ -644,7 +644,7 @@ def calc_cycle_match(df, target_month, selected_years, current_month_curve):
 
 
 def render_cycle_match(cycle_results, ticker, month_name):
-    """Rendert den Praesidentenzyklus Best-Match als Expander."""
+    """Rendert den Präsidentenzyklus Best-Match als Expander."""
     import streamlit as st
     from shared.significance_gauge import build_gauge
 
@@ -653,7 +653,7 @@ def render_cycle_match(cycle_results, ticker, month_name):
 
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
-    with st.expander("🏛️ Praesidentenzyklus — Best Match", expanded=True):
+    with st.expander("🏛️ Präsidentenzyklus — Best Match", expanded=True):
         # Bester Match ermitteln (hoechster Score)
         best = max(cycle_results, key=lambda x: x["match_score"])
         st.markdown(
@@ -692,9 +692,9 @@ def render_cycle_match(cycle_results, ticker, month_name):
         st.markdown(
             "<div style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
             "<b>So liest du die Ergebnisse:</b><br>"
-            "Fuer jedes Praesidentenzyklus-Jahr (Post-Election, Midterm, Pre-Election, Election) "
+            "Für jedes Präsidentenzyklus-Jahr (Post-Election, Midterm, Pre-Election, Election) "
             "wird der historische Durchschnittsverlauf des aktuellen Monats berechnet und mit "
-            "dem tatsaechlichen Verlauf verglichen. "
+            "dem tatsächlichen Verlauf verglichen. "
             "Der <b>Match-Score</b> kombiniert Korrelation (60%) und Shape-Match/DTW (40%). "
             "Das Zyklusjahr mit dem hoechsten Score zeigt, welchem historischen Muster "
             "der aktuelle Monat am staerksten folgt."
@@ -744,7 +744,7 @@ def build_two_week_heatmap(tw_stats, ticker, split_day, current_tdom):
         fillcolor="rgba(0,0,0,0)", layer="above",
     )
 
-    fig = apply_se_theme(fig, title=f"{ticker} — Two-Week Heatmap (Oe Rendite je Monatshaelfte)", height=250, show_legend=False)
+    fig = apply_se_theme(fig, title=f"{ticker} — Two-Week Heatmap (Ø Rendite je Monatshälfte)", height=250, show_legend=False)
     fig.update_yaxes(type="category")
     return fig
 
@@ -863,7 +863,7 @@ def render_momentum_check(df, selected_years, split_day):
                 neg_neg += 1
 
     if total < 10:
-        st.info("Nicht genuegend Daten fuer den Momentum-Check.")
+        st.info("Nicht genügend Daten für den Momentum-Check.")
         return
 
     pos_total = pos_pos + pos_neg
@@ -902,7 +902,7 @@ def render_momentum_check(df, selected_years, split_day):
     st.markdown(
         "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
         "<b>Interpretation:</b> Zeigt, ob es innerhalb eines Monats Momentum gibt. "
-        "Werte ueber 55% deuten auf Trendkontinuation hin — eine positive erste Haelfte "
+        "Werte über 55% deuten auf Trendkontinuation hin — eine positive erste Hälfte "
         "zieht oft eine positive zweite nach sich (und umgekehrt). "
         f"Basis: {total} Monatshälften.</p>",
         unsafe_allow_html=True)
@@ -935,7 +935,7 @@ def render_two_week_significance(df, selected_years, split_day):
 
         with col:
             if len(rets) < 10:
-                st.info(f"Nicht genuegend Daten fuer {name}.")
+                st.info(f"Nicht genügend Daten für {name}.")
                 continue
 
             arr = np.array(rets)
@@ -970,10 +970,10 @@ def render_two_week_significance(df, selected_years, split_day):
     st.markdown(
         "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
         "<b>Interpretation:</b> Der t-Test prueft, ob die durchschnittliche Rendite "
-        "einer Monatshaelfte signifikant von Null abweicht. "
+        "einer Monatshälfte signifikant von Null abweicht. "
         "<span style='color:#00d4aa;'>Signifikant</span> (p&lt;0.05) = "
-        "die Haelfte hat einen statistisch nachweisbaren Rendite-Bias. "
-        "Cohen's d misst die Effektstaerke (d&gt;0.2 = klein, d&gt;0.5 = mittel, d&gt;0.8 = gross).</p>",
+        "die Hälfte hat einen statistisch nachweisbaren Rendite-Bias. "
+        "Cohen's d misst die Effektstärke (d&gt;0.2 = klein, d&gt;0.5 = mittel, d&gt;0.8 = groß).</p>",
         unsafe_allow_html=True)
 
 
@@ -1059,12 +1059,12 @@ def main():
         show_bands = st.checkbox("Konfidenzband (+-1 Sigma)", value=False, key="mp_bands")
 
         st.markdown("---")
-        st.markdown("### Praesidentenzyklus-Filter")
+        st.markdown("### Präsidentenzyklus-Filter")
         cycle_filter = st.multiselect(
             "Zyklusjahre filtern",
             options=list(CYCLE_COLORS.keys()),
             default=None, key="mp_cycle",
-            help="Nur Jahre mit bestimmtem Zyklusjahr beruecksichtigen (leer = alle Jahre)"
+            help="Nur Jahre mit bestimmtem Zyklusjahr berücksichtigen (leer = alle Jahre)"
         )
         st.markdown("---")
         st.markdown("### Two-Week Split")
@@ -1078,7 +1078,7 @@ def main():
     with st.spinner(f"Lade {ticker} Daten..."):
         raw_df = download_data(ticker)
     if raw_df is None or raw_df.empty:
-        st.error(f"Keine Daten fuer '{ticker}' gefunden.")
+        st.error(f"Keine Daten für '{ticker}' gefunden.")
         return
     df = preprocess(raw_df)
     all_years = sorted(df["year"].unique())
@@ -1087,7 +1087,7 @@ def main():
     else:
         selected_years = [y for y in all_years if y >= datetime.now().year - int(years_back_raw)]
     if len(selected_years) < 2:
-        st.warning("Nicht genuegend Daten.")
+        st.warning("Nicht genügend Daten.")
         return
 
     # Outlier-Filter
@@ -1099,7 +1099,7 @@ def main():
         selected_years = [y for y in selected_years
                          if get_presidential_cycle_year(y) in cycle_filter]
         if len(selected_years) < 2:
-            st.warning("Nach Zyklusfilter nicht genuegend Jahre uebrig.")
+            st.warning("Nach Zyklusfilter nicht genügend Jahre übrig.")
             return
         cycle_info = ", ".join([c.split("(")[1].rstrip(")") for c in cycle_filter])
         st.info(f"**Zyklusfilter aktiv:** {cycle_info} — {len(selected_years)} Jahre")
@@ -1143,8 +1143,8 @@ def main():
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True)
-                st.caption("_Steigt die Linie → ueberdurchschnittlicher saisonaler Kaufdruck. "
-                          "Faellt sie → saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
+                st.caption("_Steigt die Linie → überdurchschnittlicher saisonaler Kaufdruck. "
+                          "Fällt sie → saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
 
         # 1b. Seasonal Match Analyse (wenn Live-Overlay aktiv)
         if current_month_curve is not None:
@@ -1181,7 +1181,7 @@ def main():
                             use_container_width=True, key="tw_main_bars")
 
             # 4a. Two-Week Heatmap (12 Monate x 2 Hälften)
-            with st.expander("🗓️ Two-Week Heatmap (12 Monate x 2 Haelften)", expanded=True):
+            with st.expander("🗓️ Two-Week Heatmap (12 Monate x 2 Hälften)", expanded=True):
                 tw_heatmap = build_two_week_heatmap(tw_valid, ticker, split_day, current_tdom)
                 if tw_heatmap:
                     st.plotly_chart(tw_heatmap, use_container_width=True, key="tw_heatmap")
@@ -1194,7 +1194,7 @@ def main():
                     if tw_overlay_fig:
                         st.plotly_chart(tw_overlay_fig, use_container_width=True, key="tw_overlay")
                 else:
-                    st.info("Noch keine Daten fuer das aktuelle Jahr verfuegbar.")
+                    st.info("Noch keine Daten für das aktuelle Jahr verfügbar.")
 
             # 4c. Best Two-Weeks Ranking
             with st.expander("🏆 Best Two-Weeks Ranking (Top 24)", expanded=True):
@@ -1207,14 +1207,14 @@ def main():
                 render_momentum_check(df, selected_years, split_day)
 
             # 4e. Signifikanztest pro Monatshälfte
-            with st.expander("📊 Signifikanztest pro Monatshaelfte", expanded=True):
+            with st.expander("📊 Signifikanztest pro Monatshälfte", expanded=True):
                 render_two_week_significance(df, selected_years, split_day)
 
             # Detailtabelle
             with st.expander("Two-Week Detailtabelle"):
                 tw_sorted = sorted(tw_valid, key=lambda x: x["avg"], reverse=True)
                 st.dataframe(pd.DataFrame([{"Periode": t["label"], "Monat": MONTH_NAMES_DE[t["month"]-1],
-                    "Haelfte": "1st" if t["half"] == 1 else "2nd", "Oe Rendite": f"{t['avg']:+.3f}%",
+                    "Hälfte": "1st" if t["half"] == 1 else "2nd", "Ø Rendite": f"{t['avg']:+.3f}%",
                     "Win Rate": f"{t['win_rate']:.0f}%", "n": t["n"]} for t in tw_sorted]),
                     use_container_width=True, hide_index=True)
 

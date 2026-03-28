@@ -813,7 +813,7 @@ def build_volatility_chart(vol_stats, ticker):
             x_val=WEEKDAY_LABELS[today_wd], y_val=avgs[today_wd],
             above=True, text="We are here!"))
 
-    fig = apply_se_theme(fig, title=f"{ticker} — Volatilitaets-Profil (Tages-Range pro Wochentag)",
+    fig = apply_se_theme(fig, title=f"{ticker} — Volatilitäts-Profil (Tages-Range pro Wochentag)",
                          height=380, show_legend=False)
     fig.update_yaxes(ticksuffix="%")
     return fig
@@ -839,7 +839,7 @@ def main():
             "Modus",
             options=list(RETURN_MODES.keys()),
             index=0,
-            help="Welche Kurse werden fuer die Rendite-Berechnung verwendet?"
+            help="Welche Kurse werden für die Rendite-Berechnung verwendet?"
         )
         st.caption(f"_{RETURN_MODES[return_mode]['desc']}_")
 
@@ -867,7 +867,7 @@ def main():
                                       help="Nur kaufen wenn RSI t-1 < Schwelle")
 
         st.markdown("---")
-        st.markdown("### Praesidentenzyklus")
+        st.markdown("### Präsidentenzyklus")
         cycle_filter = st.multiselect(
             "Zyklusjahre filtern",
             options=list(CYCLE_COLORS.keys()),
@@ -884,7 +884,7 @@ def main():
         raw_df = download_data(ticker)
 
     if raw_df is None or raw_df.empty:
-        st.error(f"Keine Daten fuer '{ticker}' gefunden.")
+        st.error(f"Keine Daten für '{ticker}' gefunden.")
         return
 
     # ── Indikator-Filter anwenden ─────────────────────
@@ -908,7 +908,7 @@ def main():
     )
 
     if stats is None:
-        st.warning("Nicht genuegend Daten fuer die Analyse.")
+        st.warning("Nicht genügend Daten für die Analyse.")
         return
 
     # ── Zyklusfilter-Info ──────────────────────────────
@@ -936,8 +936,8 @@ def main():
                 "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
                 "<b>Interpretation:</b> Zeigt, wie sich die Wochenrendite von Montag bis Freitag "
                 "aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. "
-                "Steigt die Kurve vor allem am Anfang der Woche, spricht das fuer "
-                "fruehen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>",
+                "Steigt die Kurve vor allem am Anfang der Woche, spricht das für "
+                "frühen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>",
                 unsafe_allow_html=True)
 
     # ── Balkendiagramm ────────────────────────────────
@@ -1015,7 +1015,7 @@ def main():
             unsafe_allow_html=True)
 
     # ── Volatilitäts-Profil ───────────────────────────
-    with st.expander("📉 Volatilitaets-Profil (Tages-Range)", expanded=True):
+    with st.expander("📉 Volatilitäts-Profil (Tages-Range)", expanded=True):
         vol_stats = calc_volatility_profile(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         vol_fig = build_volatility_chart(vol_stats, ticker)
@@ -1024,8 +1024,8 @@ def main():
             "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
             "<b>Interpretation:</b> Die Tages-Range (High−Low)/Close zeigt die "
             "durchschnittliche Schwankungsbreite pro Wochentag. "
-            "Hohe Werte = mehr Volatilitaet = groessere Chancen fuer Day-Trader, "
-            "aber auch hoeheres Risiko. Typisch: Montag und Freitag haben hoehere Ranges.</p>",
+            "Hohe Werte = mehr Volatilität = größere Chancen für Day-Trader, "
+            "aber auch höheres Risiko. Typisch: Montag und Freitag haben höhere Ranges.</p>",
             unsafe_allow_html=True)
 
     # ── Heatmap Monat x Wochentag ────────────────────
@@ -1075,7 +1075,7 @@ def main():
         **Rendite-Modus:** {return_mode}
         **Beschreibung:** {RETURN_MODES[return_mode]['desc']}
         **Filter:** {filter_mode}
-        **Praesidentenzyklus:** {cycle_str}
+        **Präsidentenzyklus:** {cycle_str}
         **Handelstage analysiert:** {stats['filtered_count']}
         """)
 

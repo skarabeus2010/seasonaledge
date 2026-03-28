@@ -182,7 +182,7 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
             unavailable = [p for p in PRESSURE_PERIODS if p > max_years]
             if unavailable and avail_periods:
                 pressure_info = (
-                    f"Pressure Chart ueber die letzten **{max(avail_periods)} Jahre** "
+                    f"Pressure Chart über die letzten **{max(avail_periods)} Jahre** "
                     f"(Datenreihe: {max_years} Jahre)."
                 )
 
@@ -395,7 +395,7 @@ def build_combined_seasonal_detrend(
             unavailable = [p for p in PRESSURE_PERIODS if p > max_years]
             if unavailable and avail_periods:
                 pressure_info = (
-                    f"Pressure Chart ueber die letzten **{max(avail_periods)} Jahre** "
+                    f"Pressure Chart über die letzten **{max(avail_periods)} Jahre** "
                     f"(Datenreihe: {max_years} Jahre)."
                 )
 
@@ -711,18 +711,18 @@ def main():
         show_current = st.checkbox("Aktuelles Jahr hervorheben", value=True, key="ys_current")
 
         st.markdown("---")
-        st.markdown("### Praesidentenzyklus")
+        st.markdown("### Präsidentenzyklus")
         cycle_overlay = st.multiselect(
             "Zyklusjahre als Overlay",
             options=list(CYCLE_COLORS.keys()),
             default=None, key="ys_cycle",
-            help="Zeigt den Ø-Verlauf der gewaehlten Zyklusjahre als zusaetzliche Linien im Chart",
+            help="Zeigt den Ø-Verlauf der gewählten Zyklusjahre als zusätzliche Linien im Chart",
         )
 
         st.markdown("---")
         st.markdown("### Pressure Chart")
         show_pressure = st.checkbox("Pressure im Hauptchart", value=False, key="ys_pressure",
-                                    help="Addiert Ø-Tagesrenditen verschiedener Lookback-Perioden (sekundaere Y-Achse)")
+                                    help="Addiert Ø-Tagesrenditen verschiedener Lookback-Perioden (sekundäre Y-Achse)")
 
         st.markdown("---")
         from shared.outlier_manager import outlier_sidebar
@@ -733,7 +733,7 @@ def main():
         raw_df = download_data(ticker)
 
     if raw_df is None or raw_df.empty:
-        st.error(f"Keine Daten fuer '{ticker}'.")
+        st.error(f"Keine Daten für '{ticker}'.")
         return
 
     df = preprocess(raw_df)
@@ -751,7 +751,7 @@ def main():
         selected_years.sort()
 
     if len(selected_years) < 2:
-        st.warning("Nicht genuegend Daten.")
+        st.warning("Nicht genügend Daten.")
         return
 
     year_data = build_year_data(df, selected_years)
@@ -805,8 +805,8 @@ def main():
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True, config=_PLOTLY_CFG)
                 st.caption(
-                    "_Steigt die Linie → ueberdurchschnittlicher saisonaler Kaufdruck. "
-                    "Faellt sie → saisonaler Verkaufsdruck (auch wenn das Jahr insgesamt steigt)._"
+                    "_Steigt die Linie → überdurchschnittlicher saisonaler Kaufdruck. "
+                    "Fällt sie → saisonaler Verkaufsdruck (auch wenn das Jahr insgesamt steigt)._"
                 )
 
     # ── 3. Anomalie-Radar (immer sichtbar) ──────────────
@@ -849,7 +849,7 @@ def main():
     except ImportError:
         st.caption("scikit-learn nicht installiert — Anomalie-Radar deaktiviert.")
     except Exception as _e:
-        st.caption(f"Anomalie-Radar nicht verfuegbar: {_e}")
+        st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
     # ── 4. Monats-Performance (Balken) ────────────────────
     st.markdown("---")
@@ -941,7 +941,7 @@ def main():
         _cycle_sig_results = run_significance_test(_cycle_sig_groups)
         render_significance_section(
             _cycle_sig_results,
-            expander_title="🏛️ Statistische Signifikanz der Praesidentenzyklus-Jahre",
+            expander_title="🏛️ Statistische Signifikanz der Präsidentenzyklus-Jahre",
             cols_per_row=4,
             sort_order=list(_cycle_short.values()),
             key_prefix="cycle_sig",
@@ -955,7 +955,7 @@ def main():
         _cur_curve = year_data[_cur_year]["full_365"][:_today_doy]
 
         if len(_cur_curve) >= 20:
-            with st.expander("🏛️ Praesidentenzyklus — Best Match", expanded=True):
+            with st.expander("🏛️ Präsidentenzyklus — Best Match", expanded=True):
                 # Ø-Kurven pro Zyklus + Alle Jahre berechnen
                 _match_data = {}
                 for cn in _cycle_names:
@@ -1050,7 +1050,7 @@ def main():
     # ── Disclaimer ──
     st.markdown("---")
     st.caption(
-        "Historische Muster garantieren keine zukuenftigen Ergebnisse. Keine Anlageberatung."
+        "Historische Muster garantieren keine zukünftigen Ergebnisse. Keine Anlageberatung."
     )
 
     render_footer()

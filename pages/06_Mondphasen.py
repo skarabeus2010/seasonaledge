@@ -516,10 +516,10 @@ def main():
                         f'Differenz Supermond vs. Normal: '
                         f'<span style="color:{d_clr}; font-weight:700;">{delta:+.3f}%</span></div>',
                         unsafe_allow_html=True)
-                    st.caption("Supermond = Vollmond in Perigaeum-Naehe (Mond am erdnaechsten Punkt). "
+                    st.caption("Supermond = Vollmond in Perigäum-Nähe (Mond am erdnächsten Punkt). "
                                "Die Klassifikation basiert auf dem anomalistischen Mondzyklus (~27.55 Tage).")
                 else:
-                    st.info("Zu wenige Supermond-Events im gewaehlten Zeitraum.")
+                    st.info("Zu wenige Supermond-Events im gewählten Zeitraum.")
 
         # ── Lunar-Kalender Kontext ───────────────────────
         with st.expander(f"🌙 Lunar-Kalender: {phase_info['name']} nach Mondmonat", expanded=False):
@@ -584,7 +584,7 @@ def main():
                     "In Tagen": days_until
                 })
             st.dataframe(pd.DataFrame(next_rows), use_container_width=True, hide_index=True)
-            st.caption("🌟 = Supermond (Vollmond in Perigaeum-Naehe)")
+            st.caption("🌟 = Supermond (Vollmond in Perigäum-Nähe)")
 
     render_footer()
 

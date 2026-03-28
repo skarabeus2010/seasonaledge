@@ -146,7 +146,7 @@ with st.spinner(f"Lade {ticker}..."):
     raw_df = download_data(ticker)
 
 if raw_df is None or raw_df.empty:
-    st.error(f"Keine Daten fuer '{ticker}'.")
+    st.error(f"Keine Daten für '{ticker}'.")
     st.stop()
 
 df = preprocess(raw_df)
@@ -210,7 +210,7 @@ with tab1:
         )
 
     if result.n_trades == 0:
-        st.warning("Keine Trades im gewaehlten Zeitraum.")
+        st.warning("Keine Trades im gewählten Zeitraum.")
     else:
         # Metriken
         m1, m2, m3, m4, m5, m6 = st.columns(6)
@@ -418,7 +418,7 @@ with tab3:
             else:
                 st.warning("Keine OOS-Trades generiert.")
         else:
-            st.warning("Walk-Forward konnte nicht durchgefuehrt werden (zu wenig Daten?).")
+            st.warning("Walk-Forward konnte nicht durchgeführt werden (zu wenig Daten?).")
 
 
 # ── TAB 4: EVENT-RELEVANZ (KI) ───────────────────────
@@ -443,7 +443,7 @@ with tab4:
             )
 
         if relevance_df.empty:
-            st.warning("Keine Events mit genuegend Daten.")
+            st.warning("Keine Events mit genügend Daten.")
         else:
             # ── Datentabelle ──
             st.dataframe(relevance_df, use_container_width=True, hide_index=True)
@@ -509,8 +509,8 @@ with tab4:
 **p-Wert** — Gibt die Wahrscheinlichkeit an, ein solches Ergebnis (oder extremer) rein zufaellig zu beobachten. Ein p < 0.05 gilt als statistisch signifikant; p < 0.01 als hochsignifikant.
 
 **Farbskala des Tachos:**
-- 🔴 **0.0 – 0.4** → Schwache oder keine Evidenz. Event-Effekt wahrscheinlich zufaellig.
-- 🟡 **0.4 – 0.6** → Moderate Evidenz. Signal vorhanden, aber nicht robust genug fuer systematische Strategien.
+- 🔴 **0.0 – 0.4** → Schwache oder keine Evidenz. Event-Effekt wahrscheinlich zufällig.
+- 🟡 **0.4 – 0.6** → Moderate Evidenz. Signal vorhanden, aber nicht robust genug für systematische Strategien.
 - 🟢 **0.6 – 1.0** → Starke Evidenz. Statistisch signifikanter Effekt mit konsistenter Richtung.
 
 *Die Berechnung basiert auf einem einseitigen t-Test (H₀: mittlere Event-Rendite = 0) kombiniert mit der empirischen Effektgroesse nach Cohen.*
@@ -544,7 +544,7 @@ with tab4:
 st.markdown("---")
 st.caption(
     "Backtests basieren auf historischen Daten. Vergangene Performance ist kein Indikator "
-    "fuer zukuenftige Ergebnisse. Transaktionskosten und Slippage nicht beruecksichtigt. "
+    "für zukünftige Ergebnisse. Transaktionskosten und Slippage nicht berücksichtigt. "
     "Keine Anlageberatung."
 )
 

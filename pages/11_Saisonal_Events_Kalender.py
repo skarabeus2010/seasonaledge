@@ -138,7 +138,7 @@ def _collect_events() -> list[dict]:
             for dt in _compute_nyse_holidays(yr):
                 if today <= dt <= end_date:
                     events.append({
-                        "datum": dt, "event": "NYSE Feiertag (Boerse geschlossen)",
+                        "datum": dt, "event": "NYSE Feiertag (Börse geschlossen)",
                         "kategorie": "Feiertag", "land": "US",
                         "icon": "🏛️", "relevanz": "Info", "btc": False,
                     })
@@ -194,7 +194,7 @@ def _collect_events() -> list[dict]:
 # ══════════════════════════════════════════════════════
 
 st.markdown("## Saisonal-Events Kalender")
-st.caption(f"Alle marktrelevanten Termine der naechsten 12 Monate | Stand: {today.strftime('%d.%m.%Y')}")
+st.caption(f"Alle marktrelevanten Termine der nächsten 12 Monate | Stand: {today.strftime('%d.%m.%Y')}")
 
 # ── Sidebar Filter ───────────────────────────────────
 with st.sidebar:
@@ -244,7 +244,7 @@ m5.metric("Mondphasen", sum(1 for e in filtered if e["kategorie"] == "Mondphase"
 
 # ── Naechste 5 Events ───────────────────────────────
 st.markdown("---")
-st.subheader("Naechste Events")
+st.subheader("Nächste Events")
 
 upcoming = filtered[:5]
 for e in upcoming:
@@ -336,7 +336,7 @@ if filtered:
         "text/csv",
     )
 else:
-    st.info("Keine Events fuer die gewaehlten Filter.")
+    st.info("Keine Events für die gewählten Filter.")
 
 # ── Disclaimer ──
 st.markdown("---")

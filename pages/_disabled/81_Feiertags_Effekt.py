@@ -166,7 +166,7 @@ with st.sidebar:
     end_year   = st.slider("Bis Jahr", start_year + 2, current_year, current_year)
 
     st.divider()
-    st.caption("Feiertage automatisch nach Boerse des Tickers")
+    st.caption("Feiertage automatisch nach Börse des Tickers")
 
 # ── Daten laden ──────────────────────────────────────────────────────────────────
 st.title("🎉 Feiertags-Effekt Analyse")
@@ -180,7 +180,7 @@ def load_data(ticker):
 
 df_raw = load_data(ticker)
 if df_raw is None or len(df_raw) == 0:
-    st.error(f"Keine Daten fuer **{ticker}** verfuegbar.")
+    st.error(f"Keine Daten für **{ticker}** verfügbar.")
     st.stop()
 
 df = df_raw[
@@ -189,7 +189,7 @@ df = df_raw[
 ].copy().sort_index()
 
 if len(df) < 100:
-    st.warning("Zu wenig Daten fuer den gewahlten Zeitraum.")
+    st.warning("Zu wenig Daten für den gewählten Zeitraum.")
     st.stop()
 
 trading_days = df.index.tolist()
@@ -199,7 +199,7 @@ exchange      = get_exchange_for_ticker(ticker)
 holiday_funcs = EXCHANGE_HOLIDAY_FUNCS.get(exchange, NYSE_HOLIDAY_FUNCS)
 
 st.caption(
-    f"Boerse: **{exchange}** | "
+    f"Börse: **{exchange}** | "
     f"{len(holiday_funcs)} Feiertage | "
     f"Zeitraum: {start_year}-{end_year} | "
     f"Handelstage: {len(df):,}"
@@ -229,7 +229,7 @@ st.subheader("Feiertag-Auswahl")
 col_a, col_b = st.columns([3, 1])
 with col_a:
     selected = st.multiselect(
-        "Feiertage auswaehlen",
+        "Feiertage auswählen",
         options=list(holiday_dates.keys()),
         default=list(holiday_dates.keys()),
     )
@@ -241,7 +241,7 @@ with col_b:
     )
 
 if not selected:
-    st.warning("Bitte mindestens einen Feiertag auswaehlen.")
+    st.warning("Bitte mindestens einen Feiertag auswählen.")
     st.stop()
 
 # ── Kern-Berechnung ──────────────────────────────────────────────────────────────
@@ -305,7 +305,7 @@ def compute_all(ticker, exchange, start_year, end_year, days_before, days_after,
 all_data = compute_all(ticker, exchange, start_year, end_year, days_before, days_after, tuple(selected))
 
 if not all_data:
-    st.error("Keine auswertbaren Daten fuer die gewaehlten Feiertage.")
+    st.error("Keine auswertbaren Daten für die gewählten Feiertage.")
     st.stop()
 
 offsets       = list(range(-days_before, days_after + 1))
@@ -388,7 +388,7 @@ with tab1:
 # ── TAB 2: BEST / WORST ──────────────────────────────────────────────────────────
 with tab2:
     st.subheader(f"Feiertags-Ranking | {ticker} | {start_year}-{end_year}")
-    st.caption(f"Gemessen: Gesamt-Rendite ueber {days_before+days_after+1} Tage (t{-days_before:+d} bis t{days_after:+d})")
+    st.caption(f"Gemessen: Gesamt-Rendite über {days_before+days_after+1} Tage (t{-days_before:+d} bis t{days_after:+d})")
 
     summary = []
     for hname, hdata in all_data.items():
@@ -477,7 +477,7 @@ with tab3:
     trades_df = run_kaeppel(ticker, exchange, start_year, end_year)
 
     if len(trades_df) == 0:
-        st.warning("Keine Trades im gewaehlten Zeitraum.")
+        st.warning("Keine Trades im gewählten Zeitraum.")
     else:
         yearly = (
             trades_df.groupby("Jahr")["Rendite"]
@@ -544,7 +544,7 @@ with tab4:
     st.subheader("Detailansicht pro Feiertag")
 
     selected_detail = st.selectbox(
-        "Feiertag waehlen",
+        "Feiertag wählen",
         options=list(all_data.keys()),
         key="detail_select",
     )
@@ -587,7 +587,7 @@ with tab4:
                 fig5 = apply_se_theme(fig5, height=280, show_legend=False)
                 fig5.update_layout(
                     title=f"Verteilung t=0 | {selected_detail}",
-                    xaxis_title="Rendite (%)", yaxis_title="Haeufigkeit",
+                    xaxis_title="Rendite (%)", yaxis_title="Häufigkeit",
                     showlegend=False,
                 )
                 st.plotly_chart(fig5, use_container_width=True)
@@ -608,7 +608,7 @@ with tab4:
                 fig6 = apply_se_theme(fig6, height=280, show_legend=False)
                 fig6.update_layout(
                     title=f"Gesamtfenster t{-days_before:+d} bis t{days_after:+d} | {selected_detail}",
-                    xaxis_title="Rendite (%)", yaxis_title="Haeufigkeit",
+                    xaxis_title="Rendite (%)", yaxis_title="Häufigkeit",
                     showlegend=False,
                 )
                 st.plotly_chart(fig6, use_container_width=True)

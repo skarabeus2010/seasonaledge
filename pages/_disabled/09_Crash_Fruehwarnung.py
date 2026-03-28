@@ -29,7 +29,7 @@ from shared.charts import apply_se_theme
 from shared.anomaly_engine import compute_market_regime, TRAFFIC_LIGHT_LABELS
 
 st.set_page_config(
-    page_title="Crash-Fruehwarnung — SeasonAlpha",
+    page_title="Crash-Frühwarnung — SeasonAlpha",
     page_icon="🚨",
     layout="wide",
 )
@@ -38,14 +38,14 @@ from shared.design import inject_se_css
 inject_se_css()
 
 # ── Daten laden ──────────────────────────────────────
-st.markdown("## Crash-Fruehwarnung (KI)")
+st.markdown("## Crash-Frühwarnung (KI)")
 st.caption("Isolation Forest Regime-Erkennung auf Basis des S&P 500 (SPY)")
 
 with st.spinner("Lade SPY Daten..."):
     raw_df = download_data("SPY")
 
 if raw_df is None or raw_df.empty:
-    st.error("Keine Daten fuer SPY verfuegbar.")
+    st.error("Keine Daten für SPY verfügbar.")
     st.stop()
 
 df = preprocess(raw_df)
@@ -76,8 +76,8 @@ with ac2:
 
     mc1, mc2, mc3, mc4 = st.columns(4)
     mc1.metric("Risk-Score", f'{regime["risk_score"]:.0f}/100')
-    mc2.metric("Volatilitaet (5d)", f'{regime.get("volatility_5d", 0):.3f}%')
-    mc3.metric("Volatilitaet (20d)", f'{regime.get("volatility_20d", 0):.3f}%')
+    mc2.metric("Volatilität (5d)", f'{regime.get("volatility_5d", 0):.3f}%')
+    mc3.metric("Volatilität (20d)", f'{regime.get("volatility_20d", 0):.3f}%')
     mc4.metric("Drawdown", f'{regime.get("drawdown", 0):.1f}%')
 
     mc5, mc6 = st.columns(2)
@@ -104,19 +104,19 @@ st.plotly_chart(fig, use_container_width=True)
 
 # ── Erklaerung ───────────────────────────────────────
 st.markdown("---")
-st.subheader("So funktioniert die Crash-Fruehwarnung")
+st.subheader("So funktioniert die Crash-Frühwarnung")
 
 st.markdown("""
 **Methode: Isolation Forest (Machine Learning)**
 
-Die KI analysiert taeglich 7 Markt-Features des S&P 500:
+Die KI analysiert täglich 7 Markt-Features des S&P 500:
 
 | Feature | Beschreibung |
 |---------|-------------|
-| Tagesrendite | Heutige prozentuale Veraenderung |
-| Volatilitaet (5d) | Standardabweichung der letzten 5 Handelstage |
-| Volatilitaet (10d) | Standardabweichung der letzten 10 Handelstage |
-| Volatilitaet (20d) | Standardabweichung der letzten 20 Handelstage |
+| Tagesrendite | Heutige prozentuale Veränderung |
+| Volatilität (5d) | Standardabweichung der letzten 5 Handelstage |
+| Volatilität (10d) | Standardabweichung der letzten 10 Handelstage |
+| Volatilität (20d) | Standardabweichung der letzten 20 Handelstage |
 | Rendite (5d) | Kumulative Rendite der letzten 5 Tage |
 | Rendite (20d) | Kumulative Rendite der letzten 20 Tage |
 | Drawdown | Abstand vom 20-Tage-Hoch |
@@ -128,19 +128,19 @@ Tage die stark von diesem Muster abweichen erhalten einen hohen Anomalie-Score.
 
 | Ampel | Risk-Score | Bedeutung |
 |-------|-----------|-----------|
-| 🟢 Ruhig | 0–39 | Markt verhaelt sich normal — keine Auffaelligkeiten |
-| 🟡 Erhoehte Vorsicht | 40–69 | Ungewoehnliche Muster erkannt — erhoehte Aufmerksamkeit |
+| 🟢 Ruhig | 0–39 | Markt verhält sich normal — keine Auffälligkeiten |
+| 🟡 Erhöhte Vorsicht | 40–69 | Ungewöhnliche Muster erkannt — erhöhte Aufmerksamkeit |
 | 🔴 Stress-Regime | 70–100 | Stark anomales Verhalten — historisch selten |
 
-**Wichtig:** Die Ampel ist ein statistisches Fruehwarnsystem, keine Handelsempfehlung.
+**Wichtig:** Die Ampel ist ein statistisches Frühwarnsystem, keine Handelsempfehlung.
 Ein rotes Signal bedeutet nicht zwingend einen Crash, sondern dass sich der Markt
-ungewoehnlich verhaelt. Historisch gingen viele (aber nicht alle) groessere Korrekturen
-eine erhoehte Anomalie-Phase voraus.
+ungewöhnlich verhält. Historisch gingen viele (aber nicht alle) größere Korrekturen
+eine erhöhte Anomalie-Phase voraus.
 """)
 
 # ── Disclaimer ──
 st.markdown("---")
 st.caption(
-    "Historische Muster garantieren keine zukuenftigen Ergebnisse. "
+    "Historische Muster garantieren keine zukünftigen Ergebnisse. "
     "Keine Anlageberatung. Der Isolation Forest wurde auf SPY-Daten trainiert."
 )
