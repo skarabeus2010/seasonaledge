@@ -338,12 +338,17 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
     labels = [t["label"] for t in sorted_tw]
     avgs = [t["avg"] for t in sorted_tw]
     colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+
+    # Mindest-Balkenhöhe damit auch Werte nahe 0 sichtbar + hoverbar bleiben
+    min_height = 0.04
+    display_avgs = [v if abs(v) >= min_height else (min_height if v >= 0 else -min_height) for v in avgs]
+
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=labels, y=avgs,
+    fig.add_trace(go.Bar(x=labels, y=display_avgs,
         marker_color=colors,
         text=[f"{v:+.3f}%" for v in avgs], textposition="outside", textfont=dict(size=9),
-        hovertemplate="<b>%{x}</b><br>Oe: %{y:+.3f}%<br>WR: %{customdata[0]:.0f}%<br>n=%{customdata[1]}<extra></extra>",
-        customdata=[[t["win_rate"], t["n"]] for t in sorted_tw]))
+        hovertemplate="<b>%{x}</b><br>Ø: %{customdata[0]:+.3f}%<br>WR: %{customdata[1]:.0f}%<br>n=%{customdata[2]}<extra></extra>",
+        customdata=[[t["avg"], t["win_rate"], t["n"]] for t in sorted_tw]))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
     # We are here!
