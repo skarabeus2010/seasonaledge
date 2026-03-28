@@ -6,7 +6,7 @@ category: tutorials
 tags: [signifikanz, wochentage, t-test, p-wert, siemens, statistik, tutorial]
 description: "Welcher Wochentag bringt bei Siemens die höchste Rendite? Wir erklären statistische Signifikanztests einfach und zeigen, wie du sie in SeasonAlpha nutzt."
 ticker: SIE.DE
-screenshot: Screenshot.png
+screenshot: wochentag-signifikanz-siemens.png
 status: published
 ---
 
@@ -37,7 +37,7 @@ Die wichtigsten Kennzahlen dabei:
 
 Schauen wir uns die Ergebnisse aus SeasonAlpha für die Siemens-Aktie an:
 
-![Statistische Signifikanz der Wochentags-Effekte bei Siemens](Images/Screenshot.png)
+![Statistische Signifikanz der Wochentags-Effekte bei Siemens](wochentag-signifikanz-siemens.png)
 
 | Wochentag | Ø Rendite | Win-Rate | t-Wert | p-Wert | Signifikant? |
 |-----------|-----------|----------|--------|--------|--------------|
