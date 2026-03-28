@@ -377,7 +377,7 @@ st.markdown(f'<div class="se-section-title">{t("home_modules_title")}</div>', un
 st.markdown(f'<div class="se-section-sub">{t("home_modules_sub")}</div>', unsafe_allow_html=True)
 
 # ── 9 Light-Live Pages (3×3 Grid) ──
-_LIGHT_PAGES = [
+_PAGES_DE = [
     ("pages/01_Dekadenzyklus.py",            "📊", "Dekadenzyklus",          "131 Jahre DJI — Dekaden-Kohorten & KI"),
     ("pages/02_Jahreszyklus.py",             "📈", "Jahreszyklus",           "Saisonaler Jahresverlauf & Anomalie-Radar"),
     ("pages/03_Monatszyklus.py",             "📆", "Monatszyklus",           "Monatliche Saisonalität — Heatmap & Boxplots"),
@@ -389,6 +389,19 @@ _LIGHT_PAGES = [
     ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Saisonal-Kalender",      "Fed, EZB, OPEX, Mond & Feiertage — 12 Monate"),
     ("pages/12_Backtest_Engine.py",          "🔬", "Backtest Engine",        "KI-Optimierer: Events, Stop-Loss, Walk-Forward"),
 ]
+_PAGES_EN = [
+    ("pages/01_Dekadenzyklus.py",            "📊", "Decade Cycle",           "131 years DJI — Decade cohorts & AI"),
+    ("pages/02_Jahreszyklus.py",             "📈", "Annual Cycle",           "Seasonal annual pattern & anomaly radar"),
+    ("pages/03_Monatszyklus.py",             "📆", "Monthly Cycle",          "Monthly seasonality — heatmap & boxplots"),
+    ("pages/04_Wochentage.py",               "📅", "Weekdays",               "Weekday effect — Monday to Friday"),
+    ("pages/05_Monatswechsel.py",            "🔄", "Turn of Month",          "Turn-of-Month effect — first/last 3 days"),
+    ("pages/06_Mondphasen.py",               "🌕", "Moon Phases",            "Full moon & new moon — market effect"),
+    ("pages/07_Januar_Trifecta.py",          "🚦", "January Trifecta",       "Signal system — 3 indicators for the year"),
+    ("pages/08_Kriegszeiten.py",             "⚔️", "War & Peace",            "War vs. peace — seasonality compared"),
+    ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Events Calendar",        "Fed, ECB, OPEX, moon & holidays — 12 months"),
+    ("pages/12_Backtest_Engine.py",          "🔬", "Backtest Engine",        "AI optimizer: events, stop-loss, walk-forward"),
+]
+_LIGHT_PAGES = _PAGES_EN if get_lang() == "en" else _PAGES_DE
 
 # CSS: page_link überlagert die Kachel — ganze Card ist klickbar
 st.markdown("""
@@ -445,12 +458,17 @@ st.markdown("<br>", unsafe_allow_html=True)
 # SEKTION 3 — SPLIT-SLIDER: Spaghetti → Durchschnitt
 # ══════════════════════════════════════════════════════════════
 st.markdown("---")
-st.markdown('<div class="se-section-label">Saisonalitäts-Analyse</div>', unsafe_allow_html=True)
-st.markdown('<div class="se-section-title">Vom Rauschen zum Trend</div>', unsafe_allow_html=True)
+_slider_texts = {
+    "de": ("Saisonalitäts-Analyse", "Vom Rauschen zum Trend",
+           "Ziehe den Slider — links alle Einzeljahre, rechts der saisonale Durchschnitt."),
+    "en": ("Seasonality Analysis", "From Noise to Trend",
+           "Move the slider — left shows individual years, right shows the seasonal average."),
+}
+_sl_label, _sl_title, _sl_sub = _slider_texts[get_lang()]
+st.markdown(f'<div class="se-section-label">{_sl_label}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="se-section-title">{_sl_title}</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div style="color:#e8a425;font-size:.9rem;margin-bottom:1rem;">'
-    'Ziehe den Slider — links alle Einzeljahre, rechts der saisonale Durchschnitt.'
-    '</div>',
+    f'<div style="color:#e8a425;font-size:.9rem;margin-bottom:1rem;">{_sl_sub}</div>',
     unsafe_allow_html=True,
 )
 
@@ -514,6 +532,14 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ══════════════════════════════════════════════════════════════
 # SEKTION 5 — FEATURE STATS (Glasmorphismus + Glow + Sinuswelle)
 # ══════════════════════════════════════════════════════════════
+
+_stats_t = {
+    "de": ("Basiswerte", "seit 1896", "Markthistorie", "Gilt für den Dow Jones.",
+           "ML-Modelle", "Open Beta", "Early Access"),
+    "en": ("Assets", "since 1896", "Market History", "Applies to the Dow Jones.",
+           "ML Models", "Open Beta", "Early Access"),
+}
+_st = _stats_t[get_lang()]
 
 st.markdown("""
 <style>
@@ -609,7 +635,8 @@ st.markdown("""
     .se-tooltip { width: 220px; font-size: 0.68rem; }
 }
 </style>
-
+""", unsafe_allow_html=True)
+st.markdown(f"""
 <div class="se-glass-wrap">
   <!-- SVG Sinuswelle im Hintergrund -->
   <svg class="se-glass-bg" viewBox="0 0 1200 160" preserveAspectRatio="none">
@@ -624,20 +651,20 @@ st.markdown("""
   <div class="se-glass-grid">
     <div class="se-glass-card blue">
       <div class="se-glass-num">500+</div>
-      <div class="se-glass-label blue">Basiswerte</div>
+      <div class="se-glass-label blue">{_st[0]}</div>
     </div>
     <div class="se-glass-card hero gold se-tooltip-wrap">
-      <div class="se-glass-num">seit 1896</div>
-      <div class="se-glass-label gold">Markthistorie</div>
-      <div class="se-tooltip">Gilt für den Dow Jones.</div>
+      <div class="se-glass-num">{_st[1]}</div>
+      <div class="se-glass-label gold">{_st[2]}</div>
+      <div class="se-tooltip">{_st[3]}</div>
     </div>
     <div class="se-glass-card blue">
       <div class="se-glass-num">15</div>
-      <div class="se-glass-label blue">ML-Modelle</div>
+      <div class="se-glass-label blue">{_st[4]}</div>
     </div>
     <div class="se-glass-card gold">
-      <div class="se-glass-num">Open Beta</div>
-      <div class="se-glass-label gold">Early Access</div>
+      <div class="se-glass-num">{_st[5]}</div>
+      <div class="se-glass-label gold">{_st[6]}</div>
     </div>
   </div>
 </div>
@@ -650,43 +677,58 @@ st.markdown("<br>", unsafe_allow_html=True)
 # SEKTION 6 — NEWSLETTER (ganz unten, vor Footer)
 # ══════════════════════════════════════════════════════════════
 st.markdown("---")
+_nl_t = {
+    "de": ("Newsletter", "Jetzt zum Newsletter anmelden!",
+           "Erhalten Sie jede Woche einen Newsletter zum Thema Saisonalität. Kostenlos."),
+    "en": ("Newsletter", "Subscribe to our Newsletter!",
+           "Get a weekly newsletter on market seasonality. Free of charge."),
+}
+_nl = _nl_t[get_lang()]
 st.markdown(
-    '<div style="text-align:center;margin-bottom:1rem;">'
-    '<div class="se-section-label">Newsletter</div>'
-    '<div class="se-section-title">Jetzt zum Newsletter anmelden!</div>'
-    '<div style="color:#e8a425;font-size:.9rem;margin-top:.3rem;">'
-    'Erhalten Sie jede Woche einen Newsletter zum Thema Saisonalität. Kostenlos.'
-    '</div></div>',
+    f'<div style="text-align:center;margin-bottom:1rem;">'
+    f'<div class="se-section-label">{_nl[0]}</div>'
+    f'<div class="se-section-title">{_nl[1]}</div>'
+    f'<div style="color:#e8a425;font-size:.9rem;margin-top:.3rem;">{_nl[2]}</div></div>',
     unsafe_allow_html=True,
 )
 
 _nl_spacer1, _nl_form_col, _nl_spacer2 = st.columns([1, 2, 1])
 with _nl_form_col:
     with st.form("newsletter_form"):
-        nl_email = st.text_input("E-Mail", placeholder="name@beispiel.de",
+        _ph = "name@example.com" if get_lang() == "en" else "name@beispiel.de"
+        _btn = "Subscribe now" if get_lang() == "en" else "Jetzt anmelden"
+        nl_email = st.text_input("E-Mail", placeholder=_ph,
                                   label_visibility="collapsed", key="nl_mail")
-        if st.form_submit_button("Jetzt anmelden", use_container_width=True, type="primary"):
+        if st.form_submit_button(_btn, use_container_width=True, type="primary"):
             _handle_submit(nl_email)
-    st.caption("DSGVO-konform · Kein Spam · Jederzeit abmeldbar")
+    _cap = "GDPR compliant · No spam · Cancel anytime" if get_lang() == "en" else "DSGVO-konform · Kein Spam · Jederzeit abmeldbar"
+    st.caption(_cap)
 
 
 # ══════════════════════════════════════════════════════════════
 # SEKTION 7 — BLOG (vor Footer)
 # ══════════════════════════════════════════════════════════════
 st.markdown("---")
+_blog_t = {
+    "de": ("Blog", "Saisonale Insights & Analysen",
+           "Education, Marktausblick und Tutorials — datenbasiert und kostenlos.",
+           "📊 Alle Beiträge", "📈 Marktausblick"),
+    "en": ("Blog", "Seasonal Insights & Analysis",
+           "Education, market outlook and tutorials — data-driven and free.",
+           "📊 All Posts", "📈 Market Outlook"),
+}
+_bl = _blog_t[get_lang()]
 st.markdown(
-    '<div style="text-align:center;margin-bottom:1.5rem;">'
-    '<div class="se-section-label">Blog</div>'
-    '<div class="se-section-title">Saisonale Insights & Analysen</div>'
-    '<div style="color:#5a6e85;font-size:.9rem;margin-top:.3rem;">'
-    'Education, Marktausblick und Tutorials — datenbasiert und kostenlos.'
-    '</div></div>',
+    f'<div style="text-align:center;margin-bottom:1.5rem;">'
+    f'<div class="se-section-label">{_bl[0]}</div>'
+    f'<div class="se-section-title">{_bl[1]}</div>'
+    f'<div style="color:#5a6e85;font-size:.9rem;margin-top:.3rem;">{_bl[2]}</div></div>',
     unsafe_allow_html=True,
 )
 _bc1, _bc2, _bc3, _bc4 = st.columns(4)
-_bc1.link_button("📊 Alle Beiträge", "https://seasonalpha.ai/blog/", use_container_width=True)
+_bc1.link_button(_bl[3], "https://seasonalpha.ai/blog/", use_container_width=True)
 _bc2.link_button("🎓 Education", "https://seasonalpha.ai/blog/education/", use_container_width=True)
-_bc3.link_button("📈 Marktausblick", "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
+_bc3.link_button(_bl[4], "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
 _bc4.link_button("🔧 Tutorials", "https://seasonalpha.ai/blog/tutorials/", use_container_width=True)
 
 

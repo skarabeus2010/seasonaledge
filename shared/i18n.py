@@ -201,35 +201,52 @@ _FLAG_US = (
 )
 
 
-# ── Language Toggle — Sidebar oben ───────────────────────────
+# ── Language Toggle — Sidebar oben (via Main-Kontext injiziert) ──────────
 def lang_toggle() -> None:
-    """Rendert DE/US Flaggen-Toggle ganz oben in der Sidebar.
+    """Rendert DE/US Flaggen-Toggle über den Sidebar-Nav-Items.
 
-    Aufruf einmalig pro Page:
+    WICHTIG: In der aufrufenden Page VOR st.sidebar-Blöcken aufrufen,
+    damit die CSS-Injektion im Hauptkontext landet (position:fixed klappt nur so).
+
         from shared.i18n import lang_toggle
-        lang_toggle()
+        lang_toggle()   # vor allen with st.sidebar: Blöcken
     """
+    import streamlit.components.v1 as _components
+
     # Browser-Sprache beim allerersten Besuch
     if "lang" not in st.session_state and not st.query_params.get("lang"):
-        st.components.v1.html(_LANG_DETECT_JS, height=0)
+        _components.html(_LANG_DETECT_JS, height=0)
         st.session_state["lang"] = "de"
 
     lang = get_lang()
+    de_style = "outline:2px solid #fff;outline-offset:1px;border-radius:3px;" if lang == "de" else "opacity:0.4;border-radius:3px;"
+    en_style = "outline:2px solid #fff;outline-offset:1px;border-radius:3px;" if lang == "en" else "opacity:0.4;border-radius:3px;"
 
-    de_ring = "box-shadow:0 0 0 2px #fff" if lang == "de" else "box-shadow:none;opacity:0.5"
-    en_ring = "box-shadow:0 0 0 2px #fff" if lang == "en" else "box-shadow:none;opacity:0.5"
-
-    with st.sidebar:
-        st.markdown(f"""
-        <div style="display:flex;gap:8px;align-items:center;padding:6px 0 10px 0;
-                    border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:10px;">
-            <a href="?lang=de" title="Deutsch" style="text-decoration:none;cursor:pointer;">
-                <img src="{_FLAG_DE}" width="28" height="17" style="
-                    display:block;border-radius:3px;{de_ring};transition:all .2s;">
-            </a>
-            <a href="?lang=en" title="English" style="text-decoration:none;cursor:pointer;">
-                <img src="{_FLAG_US}" width="28" height="17" style="
-                    display:block;border-radius:3px;{en_ring};transition:all .2s;">
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
+    # Injektion im HAUPT-Kontext (nicht in with st.sidebar),
+    # damit position:fixed korrekt gerendert wird.
+    st.markdown(f"""
+    <style>
+    /* Platz für Flaggen über den Nav-Items schaffen */
+    [data-testid="stSidebarNav"] {{
+        padding-top: 46px !important;
+    }}
+    </style>
+    <div style="
+        position: fixed;
+        top: 11px;
+        left: 13px;
+        z-index: 99999;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+    ">
+        <a href="?lang=de" title="Deutsch" style="text-decoration:none;line-height:0;cursor:pointer;">
+            <img src="{_FLAG_DE}" width="26" height="16"
+                 style="display:block;transition:all .15s;{de_style}">
+        </a>
+        <a href="?lang=en" title="English" style="text-decoration:none;line-height:0;cursor:pointer;">
+            <img src="{_FLAG_US}" width="26" height="16"
+                 style="display:block;transition:all .15s;{en_style}">
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
