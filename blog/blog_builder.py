@@ -61,6 +61,10 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 def markdown_to_html(md_text: str, post_slug: str = "") -> str:
     """Einfacher Markdown ->HTML Converter (kein externes Package noetig)."""
+    # HTML-Kommentare entfernen (<!-- ... -->, auch mehrzeilig)
+    import re as _re
+    md_text = _re.sub(r'<!--.*?-->', '', md_text, flags=_re.DOTALL)
+
     lines = md_text.split("\n")
     html_parts = []
     in_list = False

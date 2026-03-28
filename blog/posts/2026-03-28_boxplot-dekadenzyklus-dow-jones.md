@@ -101,8 +101,7 @@ SeasonAlpha zeigt den Dekadenzyklus für alle verfügbaren Ticker — von Dow Jo
 
 *Hinweis: Dieser Artikel dient ausschließlich der Information und Bildung. Er stellt keine Anlageberatung dar. Vergangene Muster garantieren keine zukünftigen Renditen.*
 
----
-
+<!--
 #### Social Media Snippet
 
 **LinkedIn:**
@@ -116,16 +115,13 @@ Welche Endziffer hat dein aktuelles Investmentjahr? 👇
 📦 Box-Plots erklärt: Warum x5-Jahre beim Dow Jones historisch die stärksten sind — und warum der Durchschnitt dabei lügt.
 👉 seasonalpha.ai #Börse #DowJones #Saisonalität #SeasonAlpha #Aktien2026
 
----
-
 #### Interne Verlinkung
 - Seite „Jahreszyklus" — saisonale Muster innerhalb eines Jahres
 - Seite „Wochentage" — Rendite-Unterschiede nach Wochentag
 - Blog: „Ist der Dienstag wirklich der beste Börsentag?" — Signifikanztests verstehen
 
----
-
 #### Content-Ideen (Folgeartikel)
 1. „x5 vs. x0: Die besten und schlechtesten Börsenjahrzehnte im Vergleich"
 2. „Dekadenzyklus international: Gilt das Muster auch für DAX und Nikkei?"
 3. „Wie viel Streuung ist zu viel? Wann du einem saisonalen Muster nicht vertrauen solltest"
+-->

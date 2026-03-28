@@ -93,19 +93,24 @@ status: published
 - Neben-Keywords und Longtail-Begriffe einbauen
 - Beispiel: "Was bedeutet p-Wert bei Aktien?" / "Welcher Wochentag ist der beste für Aktien?"
 
-### 9. Anhang (nach dem Artikel)
-#### Tags / Schlagwörter
-5–10 relevante Keywords für Blog-Index und Suche
+### 9. Anhang — NUR als HTML-Kommentar! (<!-- ... -->)
+WICHTIG: Der gesamte Anhang kommt in einen HTML-Kommentar-Block.
+Er ist für den Autor sichtbar (im Markdown), aber NICHT im veröffentlichten Artikel.
 
+```
+<!--
 #### Social Media Snippet
-- LinkedIn: 3–5 Sätze, sachlich, mit Emoji, Frage am Ende
-- Twitter/X: max. 280 Zeichen, knackig, Hashtags (#Börse #Saisonalität #SeasonAlpha)
+
+**LinkedIn:** 3–5 Sätze, sachlich, Emoji, Frage am Ende, Link seasonalpha.ai
+**Twitter/X:** max. 280 Zeichen, knackig, Hashtags (#Börse #Saisonalität #SeasonAlpha)
 
 #### Interne Verlinkung
-- 2–3 Vorschläge: welche anderen SeasonAlpha-Seiten oder Blog-Artikel passen thematisch?
+- 2–3 Vorschläge: SeasonAlpha-Seiten oder Blog-Artikel die thematisch passen
 
 #### Content-Ideen (Folgeartikel)
 - 2–3 verwandte Themen zur Weiterverwertung
+-->
+```
 
 ---
 
