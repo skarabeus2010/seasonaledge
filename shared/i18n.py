@@ -182,52 +182,37 @@ def set_lang(lang: str) -> None:
     st.query_params["lang"] = lang
 
 
-# ── Language Toggle — fixed oben rechts ──────────────────────
+# ── Language Toggle — Sidebar oben links ─────────────────────
 def lang_toggle() -> None:
-    """Rendert kleine 🇩🇪 / 🇺🇸 Flaggen fixed oben rechts.
+    """Rendert 🇩🇪 / 🇺🇸 Toggle ganz oben in der Sidebar.
 
-    Aufruf einmalig pro Page direkt nach inject_se_css():
+    Aufruf einmalig pro Page am Anfang der Sidebar:
         from shared.i18n import lang_toggle
         lang_toggle()
     """
-    # Browser-Sprache beim allerersten Besuch (kein URL-Param, kein State)
+    # Browser-Sprache beim allerersten Besuch
     if "lang" not in st.session_state and not st.query_params.get("lang"):
         st.components.v1.html(_LANG_DETECT_JS, height=0)
         st.session_state["lang"] = "de"
 
     lang = get_lang()
-    de_style = "opacity:1;transform:scale(1.15)" if lang == "de" else "opacity:0.45;transform:scale(1)"
-    en_style = "opacity:1;transform:scale(1.15)" if lang == "en" else "opacity:0.45;transform:scale(1)"
 
-    st.markdown(f"""
-    <div style="
-        position: fixed;
-        top: 10px;
-        right: 56px;
-        z-index: 99999;
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        background: rgba(8,12,18,0.75);
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 20px;
-        padding: 3px 8px;
-    ">
-        <a href="?lang=de" title="Deutsch" style="
-            text-decoration: none;
-            font-size: 1.25rem;
-            line-height: 1;
-            transition: all .2s;
-            {de_style};
-        ">🇩🇪</a>
-        <span style="color:rgba(255,255,255,0.2);font-size:.7rem;">│</span>
-        <a href="?lang=en" title="English" style="
-            text-decoration: none;
-            font-size: 1.25rem;
-            line-height: 1;
-            transition: all .2s;
-            {en_style};
-        ">🇺🇸</a>
-    </div>
-    """, unsafe_allow_html=True)
+    with st.sidebar:
+        de_active = "background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3)" if lang == "de" else "background:transparent;border:1px solid rgba(255,255,255,0.08)"
+        en_active = "background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3)" if lang == "en" else "background:transparent;border:1px solid rgba(255,255,255,0.08)"
+
+        st.markdown(f"""
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;">
+            <a href="?lang=de" title="Deutsch" style="
+                text-decoration:none;font-size:1.4rem;line-height:1;
+                border-radius:8px;padding:2px 6px;
+                {de_active};cursor:pointer;
+            ">🇩🇪</a>
+            <a href="?lang=en" title="English" style="
+                text-decoration:none;font-size:1.4rem;line-height:1;
+                border-radius:8px;padding:2px 6px;
+                {en_active};cursor:pointer;
+            ">🇺🇸</a>
+        </div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0 0 10px 0;">
+        """, unsafe_allow_html=True)
