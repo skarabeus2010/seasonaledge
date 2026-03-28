@@ -33,7 +33,7 @@ from shared.constants import (
 )
 from shared.data import download_data, preprocess
 from shared.calculations import get_presidential_cycle_year
-from shared.charts import apply_se_theme, apply_se_heatmap_theme
+from shared.charts import apply_se_theme
 from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 
 from shared.design import inject_se_css
@@ -983,7 +983,8 @@ def render_two_week_significance(df, selected_years, split_day):
 
 
 def build_monthly_heatmap(df, selected_years, ticker):
-    """10-Jahres Monats-Renditen Heatmap (wie Jahreszyklus)."""
+    """10-Jahres Monats-Renditen Heatmap (identisch mit Jahreszyklus-Variante)."""
+    from shared.constants import SE_HEATMAP_TEXT_COLOR
     current_month = datetime.now().month
     current_year = datetime.now().year
 
@@ -1010,6 +1011,9 @@ def build_monthly_heatmap(df, selected_years, ticker):
         y=y_labels,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
+        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
+        texttemplate="%{text}",
+        textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
             title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
@@ -1018,24 +1022,13 @@ def build_monthly_heatmap(df, selected_years, ticker):
         ),
     ))
 
-    _add_heatmap_annotations(fig, z_data, MONTH_NAMES_DE, y_labels, zmid=0, fmt="+.1f")
-
-    # Gelber Rahmen um aktuelle Zelle (Monat x Jahr)
-    if current_year in [int(y) for y in y_labels]:
-        fig.add_shape(
-            type="rect",
-            x0=current_month - 1 - 0.5, x1=current_month - 1 + 0.5,
-            y0=y_labels.index(str(current_year)) - 0.5,
-            y1=y_labels.index(str(current_year)) + 0.5,
-            line=dict(color="#FFD700", width=3.5),
-            fillcolor="rgba(0,0,0,0)",
-            layer="above",
-        )
-
-    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — 10 Jahres Monats-Heatmap",
-                                    height=max(400, len(years) * 40 + 100))
-    fig.update_yaxes(autorange="reversed", type="category")
-    fig.update_xaxes(type="category")
+    fig = apply_se_theme(
+        fig,
+        title=f"{ticker} — 10 Jahres Monats-Heatmap",
+        height=max(300, len(years) * 28 + 100),
+        show_legend=False,
+    )
+    fig.update_yaxes(autorange="reversed", dtick=1)
     return fig
 
 
