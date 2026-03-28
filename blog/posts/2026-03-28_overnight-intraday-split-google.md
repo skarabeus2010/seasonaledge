@@ -1,5 +1,5 @@
 ---
-title: "Wann verdient Google wirklich Geld — nachts oder tagsüber?"
+title: "Wann verdienst Du mit Google wirklich Geld — nachts oder tagsüber?"
 slug: overnight-intraday-split-google
 date: 2026-03-28
 category: tutorials
