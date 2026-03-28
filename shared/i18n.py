@@ -182,11 +182,30 @@ def set_lang(lang: str) -> None:
     st.query_params["lang"] = lang
 
 
-# ── Language Toggle — Sidebar oben links ─────────────────────
-def lang_toggle() -> None:
-    """Rendert 🇩🇪 / 🇺🇸 Toggle ganz oben in der Sidebar.
+# SVG-Flags als Data-URI (funktioniert auf allen Plattformen inkl. Windows)
+_FLAG_DE = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 3'%3E"
+    "%3Crect width='5' height='1' fill='%23000'/%3E"
+    "%3Crect width='5' height='1' y='1' fill='%23D00'/%3E"
+    "%3Crect width='5' height='1' y='2' fill='%23FFCE00'/%3E"
+    "%3C/svg%3E"
+)
+_FLAG_US = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 19 10'%3E"
+    "%3Crect width='19' height='10' fill='%23B22234'/%3E"
+    "%3Crect width='19' height='1.54' y='1.54' fill='%23fff'/%3E"
+    "%3Crect width='19' height='1.54' y='4.62' fill='%23fff'/%3E"
+    "%3Crect width='19' height='1.54' y='7.69' fill='%23fff'/%3E"
+    "%3Crect width='7.6' height='5.38' fill='%233C3B6E'/%3E"
+    "%3C/svg%3E"
+)
 
-    Aufruf einmalig pro Page am Anfang der Sidebar:
+
+# ── Language Toggle — Sidebar oben ───────────────────────────
+def lang_toggle() -> None:
+    """Rendert DE/US Flaggen-Toggle ganz oben in der Sidebar.
+
+    Aufruf einmalig pro Page:
         from shared.i18n import lang_toggle
         lang_toggle()
     """
@@ -197,22 +216,20 @@ def lang_toggle() -> None:
 
     lang = get_lang()
 
-    with st.sidebar:
-        de_active = "background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3)" if lang == "de" else "background:transparent;border:1px solid rgba(255,255,255,0.08)"
-        en_active = "background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3)" if lang == "en" else "background:transparent;border:1px solid rgba(255,255,255,0.08)"
+    de_ring = "box-shadow:0 0 0 2px #fff" if lang == "de" else "box-shadow:none;opacity:0.5"
+    en_ring = "box-shadow:0 0 0 2px #fff" if lang == "en" else "box-shadow:none;opacity:0.5"
 
+    with st.sidebar:
         st.markdown(f"""
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;">
-            <a href="?lang=de" title="Deutsch" style="
-                text-decoration:none;font-size:1.4rem;line-height:1;
-                border-radius:8px;padding:2px 6px;
-                {de_active};cursor:pointer;
-            ">🇩🇪</a>
-            <a href="?lang=en" title="English" style="
-                text-decoration:none;font-size:1.4rem;line-height:1;
-                border-radius:8px;padding:2px 6px;
-                {en_active};cursor:pointer;
-            ">🇺🇸</a>
+        <div style="display:flex;gap:8px;align-items:center;padding:6px 0 10px 0;
+                    border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:10px;">
+            <a href="?lang=de" title="Deutsch" style="text-decoration:none;cursor:pointer;">
+                <img src="{_FLAG_DE}" width="28" height="17" style="
+                    display:block;border-radius:3px;{de_ring};transition:all .2s;">
+            </a>
+            <a href="?lang=en" title="English" style="text-decoration:none;cursor:pointer;">
+                <img src="{_FLAG_US}" width="28" height="17" style="
+                    display:block;border-radius:3px;{en_ring};transition:all .2s;">
+            </a>
         </div>
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:0 0 10px 0;">
         """, unsafe_allow_html=True)
