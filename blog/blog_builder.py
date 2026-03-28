@@ -449,6 +449,7 @@ def load_posts() -> list[dict]:
             "content": html_content,
             "reading_time": reading_time,
             "file": md_file.name,
+            "raw_md": raw,  # Rohes Markdown inkl. Kommentare (für Social-Extraktion)
         }
         posts.append(post)
 
@@ -559,8 +560,36 @@ def _category_subtitle(cat: str) -> str:
 
 # ── Social-Media Generierung ────────────────────────────
 
+def _extract_social_from_comment(raw_md: str) -> dict:
+    """Extrahiert LinkedIn- und Twitter-Text aus <!-- Social Media Snippet --> Kommentar."""
+    import re as _re
+    result = {"linkedin": None, "twitter": None}
+
+    # Alle Kommentar-Blöcke durchsuchen (nicht nur den ersten)
+    all_comments = _re.findall(r'<!--(.*?)-->', raw_md, _re.DOTALL)
+    comment = None
+    for c in all_comments:
+        if "LinkedIn" in c or "Twitter" in c:
+            comment = c
+            break
+    if not comment:
+        return result
+
+    # LinkedIn-Block: alles zwischen **LinkedIn:** und **Twitter/X:**
+    li_match = _re.search(r'\*\*LinkedIn:\*\*(.*?)(?=\*\*Twitter/X:\*\*|$)', comment, _re.DOTALL)
+    if li_match:
+        result["linkedin"] = li_match.group(1).strip()
+
+    # Twitter-Block: alles nach **Twitter/X:**
+    tw_match = _re.search(r'\*\*Twitter/X:\*\*(.*?)(?=####|$)', comment, _re.DOTALL)
+    if tw_match:
+        result["twitter"] = tw_match.group(1).strip()
+
+    return result
+
+
 def _generate_social(post: dict, social_dir: Path):
-    """Generiert Social-Media Texte (ohne Claude API — Template-basiert)."""
+    """Generiert Social-Media Texte — aus Markdown-Kommentar oder Template-Fallback."""
 
     title = post["title"]
     desc = post["description"]
@@ -568,44 +597,50 @@ def _generate_social(post: dict, social_dir: Path):
     ticker = post.get("ticker", "")
     url = f"{BASE_URL}/blog/{slug}/"
 
-    # Twitter: 3 Varianten
-    tweets = [
-        f"📊 {title}\n\n{desc}\n\n{url}\n\n#Saisonalitaet #Trading #Boerse",
-        f"🔍 Neue Analyse: {title}\n\nDatenbasierte Insights auf SeasonAlpha 👇\n{url}",
-    ]
-    if ticker:
-        tweets.append(
-            f"📈 {ticker} Saisonalitaet: {title}\n\n"
-            f"Was sagen 20+ Jahre Daten?\n{url}\n\n#SeasonAlpha #{ticker.replace('^','')}"
-        )
-    else:
-        tweets.append(
-            f"💡 {title}\n\nMehr auf dem SeasonAlpha Blog:\n{url}"
-        )
+    # Versuche Snippets aus <!-- --> Kommentar zu extrahieren
+    extracted = _extract_social_from_comment(post.get("raw_md", ""))
 
-    with open(social_dir / "twitter_posts.txt", "w", encoding="utf-8") as f:
-        for i, tweet in enumerate(tweets):
-            f.write(f"=== Variante {i+1} ({len(tweet)} Zeichen) ===\n\n")
-            f.write(tweet)
+    # ── Twitter / X ──────────────────────────────────────
+    if extracted["twitter"]:
+        twitter_text = extracted["twitter"]
+        with open(social_dir / "twitter_posts.txt", "w", encoding="utf-8") as f:
+            f.write(f"=== Aus Artikel ({len(twitter_text)} Zeichen) ===\n\n")
+            f.write(twitter_text)
             f.write("\n\n")
+    else:
+        # Fallback: Template
+        tweets = [
+            f"📊 {title}\n\n{desc}\n\n{url}\n\n#Saisonalitaet #Trading #Boerse",
+            f"🔍 Neue Analyse: {title}\n\nDatenbasierte Insights auf SeasonAlpha 👇\n{url}",
+            f"📈 {ticker + ' ' if ticker else ''}{title}\n\nMehr auf dem SeasonAlpha Blog:\n{url}\n\n#SeasonAlpha",
+        ]
+        with open(social_dir / "twitter_posts.txt", "w", encoding="utf-8") as f:
+            for i, tweet in enumerate(tweets):
+                f.write(f"=== Variante {i+1} ({len(tweet)} Zeichen) ===\n\n")
+                f.write(tweet)
+                f.write("\n\n")
 
-    # LinkedIn
-    linkedin = (
-        f"📊 {title}\n\n"
-        f"{desc}\n\n"
-        f"In unserer neuesten Analyse auf dem SeasonAlpha Blog schauen wir uns "
-        f"die historischen Daten genauer an"
-        f"{f' — mit Fokus auf {ticker}' if ticker else ''}.\n\n"
-        f"Die wichtigsten Erkenntnisse:\n"
-        f"- Datenbasierte saisonale Muster\n"
-        f"- Historische Win-Rates und Durchschnittsrenditen\n"
-        f"- Interaktive Charts zur eigenen Analyse\n\n"
-        f"Zum vollstaendigen Beitrag: {url}\n\n"
-        f"#Saisonalitaet #Trading #Boersenanalyse #SeasonAlpha #Finanzmarkt"
-    )
+    # ── LinkedIn ─────────────────────────────────────────
+    if extracted["linkedin"]:
+        linkedin_text = extracted["linkedin"]
+    else:
+        # Fallback: Template
+        linkedin_text = (
+            f"📊 {title}\n\n"
+            f"{desc}\n\n"
+            f"In unserer neuesten Analyse auf dem SeasonAlpha Blog schauen wir uns "
+            f"die historischen Daten genauer an"
+            f"{f' — mit Fokus auf {ticker}' if ticker else ''}.\n\n"
+            f"Die wichtigsten Erkenntnisse:\n"
+            f"- Datenbasierte saisonale Muster\n"
+            f"- Historische Win-Rates und Durchschnittsrenditen\n"
+            f"- Interaktive Charts zur eigenen Analyse\n\n"
+            f"Zum vollstaendigen Beitrag: {url}\n\n"
+            f"#Saisonalitaet #Trading #Boersenanalyse #SeasonAlpha #Finanzmarkt"
+        )
 
     with open(social_dir / "linkedin_post.txt", "w", encoding="utf-8") as f:
-        f.write(linkedin)
+        f.write(linkedin_text)
 
 
 # ── YouTube Generierung ─────────────────────────────────
