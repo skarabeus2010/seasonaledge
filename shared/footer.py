@@ -5,6 +5,7 @@ Zentraler Footer für alle Pages: Impressum, Datenschutz, Risk Disclosure.
 """
 
 import streamlit as st
+from shared.i18n import get_lang
 
 _LEGAL_STYLE = "color:#8899aa; font-size:11px; line-height:1.7; text-align:justify;"
 _HEADING_STYLE = "color:#aabbcc;"
@@ -23,11 +24,6 @@ def render_footer():
     """Rendert den SeasonAlpha Footer mit Impressum, Datenschutz und Risk Disclosure."""
     render_sidebar_blog_link()
     st.markdown("---")
-    _fc1, _fc2, _fc3, _fc4 = st.columns(4)
-    _fc1.link_button("📊 Blog", "https://seasonalpha.ai/blog/", use_container_width=True)
-    _fc2.link_button("🎓 Education", "https://seasonalpha.ai/blog/education/", use_container_width=True)
-    _fc3.link_button("📈 Marktausblick", "https://seasonalpha.ai/blog/marktausblick/", use_container_width=True)
-    _fc4.link_button("🔧 Tutorials", "https://seasonalpha.ai/blog/tutorials/", use_container_width=True)
     st.markdown(
         '<div style="text-align:center; padding:8px 0;">'
         '<span style="color:#556677; font-size:12px;">'
@@ -212,8 +208,9 @@ def render_footer():
             unsafe_allow_html=True,
         )
 
-    # ── Legal Notice (EN) ────────────────────────────────
-    with st.expander("🇺🇸 Legal Notice (Imprint)", expanded=False):
+    # ── Legal Notice (EN) — nur in englischer Version ────
+    if get_lang() != "de":
+      with st.expander("🇺🇸 Legal Notice (Imprint)", expanded=False):
         st.markdown(
             f"<div style='{_LEGAL_STYLE}'>"
             f"<b style='{_HEADING_STYLE}'>Imprint according to German law – § 5 DDG</b><br><br>"
@@ -276,8 +273,9 @@ def render_footer():
             unsafe_allow_html=True,
         )
 
-    # ── Financial Disclaimer (EN) ─────────────────────────
-    with st.expander("💰 Financial Disclaimer", expanded=False):
+    # ── Financial Disclaimer (EN) — nur in englischer Version ──
+    if get_lang() != "de":
+      with st.expander("💰 Financial Disclaimer", expanded=False):
         st.markdown(
             f"<div style='{_LEGAL_STYLE}'>"
             f"<b style='{_HEADING_STYLE}'>Financial Disclaimer</b><br><br>"

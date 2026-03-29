@@ -712,7 +712,7 @@ st.markdown("---")
 _blog_t = {
     "de": ("Blog", "Saisonale Insights & Analysen",
            "Education, Marktausblick und Tutorials — datenbasiert und kostenlos.",
-           "📊 Alle Beiträge", "📈 Marktausblick"),
+           "📊 Blog", "📈 Marktausblick"),
     "en": ("Blog", "Seasonal Insights & Analysis",
            "Education, market outlook and tutorials — data-driven and free.",
            "📊 All Posts", "📈 Market Outlook"),
