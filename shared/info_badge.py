@@ -2,7 +2,8 @@
 shared/info_badge.py — Info-Badge ⓘ für Expander
 ==================================================
 Zeigt ein kleines ⓘ-Icon rechts oben im Expander.
-Bei Klick erscheint ein Popover mit einer kurzen Erklärung.
+Hover → Tooltip mit kurzer Erklärung erscheint.
+Nimmt keinen vertikalen Platz weg (float + negativer Margin).
 Texte zentral in shared/info_texts.yaml, i18n-ready (DE/EN).
 
 Verwendung:
@@ -12,7 +13,6 @@ Verwendung:
         # ... restlicher Content
 """
 
-import os
 from pathlib import Path
 from functools import lru_cache
 
@@ -21,6 +21,60 @@ import yaml
 
 
 _YAML_PATH = Path(__file__).resolve().parent / "info_texts.yaml"
+
+# CSS wird einmal pro Session injiziert
+_CSS_KEY = "_info_badge_css_injected"
+
+_CSS = """
+<style>
+.se-info-wrap {
+    float: right;
+    margin-top: -2.2rem;
+    margin-right: 0.25rem;
+    position: relative;
+    z-index: 10;
+    height: 0;
+}
+.se-info-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 50%;
+    background: rgba(77,159,255,0.12);
+    color: #4d9fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: help;
+    user-select: none;
+    transition: background 0.2s;
+}
+.se-info-badge:hover {
+    background: rgba(77,159,255,0.25);
+}
+.se-info-tip {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 1.6rem;
+    width: 320px;
+    max-width: 80vw;
+    background: #131d2a;
+    border: 1px solid #1c2a3e;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #a0b0c5;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 100;
+}
+.se-info-wrap:hover .se-info-tip {
+    display: block;
+}
+</style>
+"""
 
 
 @lru_cache(maxsize=1)
@@ -43,7 +97,8 @@ def _get_lang() -> str:
 
 def render_info_badge(key: str) -> None:
     """
-    Rendert ein ⓘ-Badge als Popover mit Erklärungstext.
+    Rendert ein ⓘ-Badge mit Hover-Tooltip.
+    Nimmt keinen vertikalen Platz weg (float + negativer Margin).
 
     Args:
         key: Schlüssel aus info_texts.yaml (z.B. "anomalie_radar")
@@ -51,18 +106,22 @@ def render_info_badge(key: str) -> None:
     texts = _load_texts()
     entry = texts.get(key)
     if not entry:
-        return  # Key nicht gefunden → nichts rendern
+        return
 
     lang = _get_lang()
     text = entry.get(lang) or entry.get("de") or ""
     if not text:
         return
 
-    # Rechts ausgerichtetes Popover mit ⓘ-Icon
-    cols = st.columns([0.92, 0.08])
-    with cols[1]:
-        with st.popover("ⓘ"):
-            st.markdown(
-                f'<div style="font-size:0.85rem;line-height:1.6;color:#a0b0c5;">{text}</div>',
-                unsafe_allow_html=True,
-            )
+    # CSS einmal pro Session injizieren
+    if not st.session_state.get(_CSS_KEY):
+        st.markdown(_CSS, unsafe_allow_html=True)
+        st.session_state[_CSS_KEY] = True
+
+    st.markdown(
+        f'<div class="se-info-wrap">'
+        f'<span class="se-info-badge">i</span>'
+        f'<div class="se-info-tip">{text}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
