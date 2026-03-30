@@ -1,15 +1,25 @@
 """
 shared/info_badge.py — Info-Badge ⓘ für Expander
 ==================================================
-Ghost-Container-Strategie: Badge wird VOR dem Expander gerendert
-in einem height:0 Container. Per position:absolute + top:45px
-schwebt es optisch im Header des darunterliegenden Expanders.
+MutationObserver-Strategie:
+
+  1. render_info_badge("key") wird als ERSTE Zeile INSIDE des
+     with st.expander() aufgerufen.
+  2. Das Badge-HTML trägt die Klasse `se-ib-wrapper` und ist
+     zunächst unsichtbar (visibility:hidden, height:0).
+  3. Ein permanenter MutationObserver wartet auf
+     [data-testid="stExpander"] Elemente. Sobald eines auftaucht,
+     wird `.se-ib-wrapper` mit appendChild() physisch in den
+     <summary>-Tag verschoben.
+  4. CSS macht das Badge erst sichtbar, wenn es sich im <summary>
+     befindet — Streamlit's Flexbox richtet es automatisch rechts aus.
 
 Verwendung:
     from shared.info_badge import render_info_badge
-    render_info_badge("anomalie_radar")          # ← VOR dem Expander
+
     with st.expander("Anomalie-Radar (KI)", expanded=True):
-        # ... Content
+        render_info_badge("anomalie_radar")   # ← ERSTE Zeile inside
+        # ... restlicher Content
 """
 
 from pathlib import Path
@@ -20,28 +30,35 @@ import yaml
 
 
 _YAML_PATH = Path(__file__).resolve().parent / "info_texts.yaml"
-_CSS_KEY = "_info_badge_css_v6"
+_CSS_JS_KEY = "_info_badge_v8"
 
+# ── CSS ────────────────────────────────────────────────────────────────────
 _CSS = """
 <style>
-/* ── Ghost-Container: nimmt keinen Platz ein ── */
-.se-badge-ghost {
-    position: relative;
-    height: 0px;
-    width: 100%;
-    z-index: 999;
+/* Badge unsichtbar solange es im Content-Bereich des Expanders liegt */
+.se-ib-wrapper {
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Badge sichtbar + positioniert sobald es im <summary> ist */
+[data-testid="stExpander"] summary .se-ib-wrapper {
+    visibility: visible;
+    height: auto;
     overflow: visible;
+    pointer-events: auto;
+    /* summary ist ein Flexbox in Streamlit → auto-margin schiebt nach rechts */
+    margin-left: auto;
+    margin-right: 2.5rem;   /* Platz für den Expand-Pfeil */
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
 }
 
-/* ── Badge-Overlay: schwebt nach unten in den Expander-Header ── */
-.se-badge-overlay {
-    position: absolute;
-    top: 45px;
-    right: 45px;
-}
-
-/* ── Das i-Badge ── */
-.se-badge-overlay .se-ib {
+/* Das i-Kreis-Badge */
+.se-ib-wrapper .se-ib {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -56,13 +73,14 @@ _CSS = """
     user-select: none;
     transition: background 0.2s;
     line-height: 1;
+    vertical-align: middle;
 }
-.se-badge-overlay .se-ib:hover {
+.se-ib-wrapper .se-ib:hover {
     background: rgba(77,159,255,0.35);
 }
 
-/* ── Tooltip bei Hover ── */
-.se-badge-overlay .se-tip {
+/* Tooltip */
+.se-ib-wrapper .se-tip {
     display: none;
     position: absolute;
     right: 0;
@@ -77,13 +95,57 @@ _CSS = """
     line-height: 1.55;
     color: #a0b0c5;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    z-index: 1000;
+    z-index: 9999;
     pointer-events: auto;
+    white-space: normal;
 }
-.se-badge-overlay:hover .se-tip {
+.se-ib-wrapper:hover .se-tip {
     display: block;
 }
 </style>
+"""
+
+# ── JavaScript — einmaliger permanenter MutationObserver ───────────────────
+_JS = """
+<script>
+(function() {
+    if (window.__seInfoBadgeObserver) return;   // nur einmal initialisieren
+
+    function moveBadges() {
+        document.querySelectorAll('[data-testid="stExpander"]').forEach(function(expander) {
+            var summary = expander.querySelector('summary');
+            if (!summary) return;
+
+            // Alle Badges im Content-Bereich dieses Expanders suchen
+            var contentArea = expander.querySelector('[data-testid="stExpanderDetails"]');
+            if (!contentArea) {
+                // Fallback: direkt im expander suchen (außerhalb von summary)
+                contentArea = expander;
+            }
+
+            contentArea.querySelectorAll('.se-ib-wrapper').forEach(function(badge) {
+                if (!summary.contains(badge)) {
+                    summary.appendChild(badge);
+                }
+            });
+        });
+    }
+
+    // Initialer Durchlauf (für bereits gerenderte Expander)
+    moveBadges();
+
+    // Observer für dynamisch nachgeladene Inhalte (Streamlit re-renders)
+    var observer = new MutationObserver(function(mutations) {
+        var relevant = mutations.some(function(m) {
+            return m.addedNodes.length > 0;
+        });
+        if (relevant) moveBadges();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.__seInfoBadgeObserver = observer;
+})();
+</script>
 """
 
 
@@ -107,10 +169,14 @@ def _get_lang() -> str:
 
 def render_info_badge(key: str) -> None:
     """
-    Rendert ein ⓘ-Badge als Ghost-Container VOR dem Expander.
-    Das Badge schwebt per CSS in den Header des nächsten Expanders.
+    Rendert ein ⓘ-Badge das per MutationObserver in den Expander-Header
+    verschoben wird.
 
-    MUSS direkt VOR dem zugehörigen st.expander() aufgerufen werden.
+    MUSS als ERSTE Zeile INNERHALB des with st.expander() Blocks stehen:
+
+        with st.expander("Titel", expanded=True):
+            render_info_badge("mein_key")   # ← erste Zeile
+            # ... restlicher Content
 
     Args:
         key: Schlüssel aus info_texts.yaml (z.B. "anomalie_radar")
@@ -125,18 +191,17 @@ def render_info_badge(key: str) -> None:
     if not text:
         return
 
-    # CSS einmal pro Session injizieren
-    if not st.session_state.get(_CSS_KEY):
-        st.markdown(_CSS, unsafe_allow_html=True)
-        st.session_state[_CSS_KEY] = True
+    # CSS + JS einmalig pro Session injizieren
+    if not st.session_state.get(_CSS_JS_KEY):
+        st.markdown(_CSS + _JS, unsafe_allow_html=True)
+        st.session_state[_CSS_JS_KEY] = True
 
-    # Ghost-Container + Badge
+    # Badge-HTML (startet unsichtbar, wird per JS in <summary> verschoben)
+    safe_key = key.replace("_", "-")
     st.markdown(
-        f'<div class="se-badge-ghost">'
-        f'<div class="se-badge-overlay">'
+        f'<div class="se-ib-wrapper" id="se-badge-{safe_key}">'
         f'<span class="se-ib">i</span>'
         f'<div class="se-tip">{text}</div>'
-        f'</div>'
         f'</div>',
         unsafe_allow_html=True,
     )

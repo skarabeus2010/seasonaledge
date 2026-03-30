@@ -428,8 +428,8 @@ def main():
     # ── Metriken (kompakte HTML-Karten) ───────────────
     tom_stats = tom_result["stats"]
 
-    render_info_badge("tom_kennzahlen")
     with st.expander("📊 Handelstage relativ — Kennzahlen", expanded=True):
+        render_info_badge("tom_kennzahlen")
         c1, c2, c3, c4, c5 = st.columns(5)
         _metrics = [
             (c1, "Win Rate", f"{tom_stats['win_rate']:.1f}%", "#00CED1"),
@@ -517,19 +517,19 @@ def main():
                 "n": len(rets)
             })
         st.dataframe(pd.DataFrame(perf_rows), use_container_width=True, hide_index=True)
-    render_info_badge("tom_heatmap")
     with st.expander("🗓️ TOM Heatmap (Monatswechsel x Jahr)", expanded=True):
+        render_info_badge("tom_heatmap")
         tom_heatmap = build_tom_heatmap(tom_result, ticker, selected_years)
         st.plotly_chart(tom_heatmap, use_container_width=True, key="tom_heatmap")
 
     # ── Streak-Analyse ───────────────────────────────
-    render_info_badge("streak_analyse")
     with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien)", expanded=True):
+        render_info_badge("streak_analyse")
         render_streak_analysis(tom_result)
 
     # ── Fensterbreite-Optimierung ────────────────────
-    render_info_badge("fenster_optimierung")
     with st.expander("⚙️ Fenster-Optimierung (bestes t-x / t+y)", expanded=True):
+        render_info_badge("fenster_optimierung")
         with st.spinner("Berechne optimale Fensterbreite..."):
             opt_results = calc_window_optimization(df, tom_months, selected_years)
             opt_fig, opt_data = build_window_heatmap(opt_results, ticker)
@@ -546,8 +546,8 @@ def main():
             unsafe_allow_html=True)
 
     # ── Praesidentenzyklus TOM-Effekt ────────────────
-    render_info_badge("praesidentenzyklus_tom")
     with st.expander("🏛️ Präsidentenzyklus — TOM-Effekt nach Zyklusjahr", expanded=True):
+        render_info_badge("praesidentenzyklus_tom")
         render_cycle_tom(tom_result, df, selected_years, tom_months,
                          tom_days_before, tom_days_after, ticker)
 
