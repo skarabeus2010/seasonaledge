@@ -31,6 +31,7 @@ from shared.data import download_data, preprocess
 from shared.calculations import build_year_data, calculate_seasonal_average
 from shared.charts import apply_se_theme
 from shared.ki_score import calculate_ki_score
+from shared.info_badge import render_info_badge
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
@@ -293,6 +294,7 @@ def main():
     # DTW
     dtw = sub["dtw"]
     with st.expander(f"🔍 DTW Ähnlichkeit — {dtw['weighted']:.2f} / 2.5"):
+        render_info_badge("dtw_aehnlichkeit")
         dtw_d = dtw["details"]
         if "error" in dtw_d and not dtw_d.get("similar_years"):
             st.warning(dtw_d["error"])
@@ -312,6 +314,7 @@ def main():
     # Prophet
     prophet = sub["prophet"]
     with st.expander(f"🔮 Prophet Prognose — {prophet['weighted']:.2f} / 2.5"):
+        render_info_badge("prophet_prognose")
         p_d = prophet["details"]
         if "error" in p_d:
             st.info(p_d["error"])
@@ -325,6 +328,7 @@ def main():
     # Win-Rate
     wr = sub["win_rate"]
     with st.expander(f"📊 Win-Rate — {wr['weighted']:.2f} / 2.5"):
+        render_info_badge("ki_winrate")
         wr_d = wr["details"]
         if "error" in wr_d and wr_d.get("total_years", 0) == 0:
             st.warning(wr_d["error"])
@@ -342,6 +346,7 @@ def main():
     # Tracking
     tracking = sub["tracking"]
     with st.expander(f"📐 Tracking-Qualität — {tracking['weighted']:.2f} / 2.5"):
+        render_info_badge("tracking_qualitaet")
         t_d = tracking["details"]
         if "error" in t_d:
             st.info(t_d["error"])

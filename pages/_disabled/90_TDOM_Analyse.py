@@ -35,6 +35,7 @@ from shared.tdom_analysis import (
     build_tdom_year_breakdown,
     STRATEGY_LABELS, DIRECTION_LABELS,
 )
+from shared.info_badge import render_info_badge
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(

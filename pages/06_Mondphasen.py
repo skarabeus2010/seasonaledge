@@ -30,6 +30,7 @@ from shared.data import download_data, preprocess
 from shared.central_banks import get_full_moon_dates, get_new_moon_dates, get_all_moon_dates
 from shared.charts import apply_se_theme, apply_se_heatmap_theme
 from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE
+from shared.info_badge import render_info_badge
 
 st.set_page_config(page_title="Mondphasen & Börse – Vollmond-Effekt Analyse – SeasonAlpha", page_icon="🌕", layout="wide")
 
@@ -470,6 +471,7 @@ def main():
 
         # ── Mond-Heatmap (Monat × Phase) ────────────────
         with st.expander(f"🗓️ {phase_info['name']}-Heatmap (Monat × Ø Rendite)", expanded=False):
+            render_info_badge("mond_heatmap")
             hm_fig = build_moon_month_heatmap(result["all_curves"], ticker, phase_info["name"])
             st.plotly_chart(hm_fig, use_container_width=True,
                             key=f"moon_hm_{phase_info['name']}")
@@ -479,6 +481,7 @@ def main():
         # ── Supermond-Analyse ────────────────────────────
         if phase_info["name"] == "Vollmond":
             with st.expander("🌟 Supermond-Analyse", expanded=False):
+                render_info_badge("supermond_analyse")
                 super_returns = []
                 normal_returns = []
                 for c in result["all_curves"]:
@@ -523,6 +526,7 @@ def main():
 
         # ── Lunar-Kalender Kontext ───────────────────────
         with st.expander(f"🌙 Lunar-Kalender: {phase_info['name']} nach Mondmonat", expanded=False):
+            render_info_badge("lunar_kalender")
             from collections import defaultdict
             lunar_month_returns = defaultdict(list)
             for c in result["all_curves"]:

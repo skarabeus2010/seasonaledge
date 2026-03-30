@@ -1,0 +1,215 @@
+# ══════════════════════════════════════════════════════════════
+# Info-Texte für ⓘ Badges in Expandern
+# Zentral gepflegt, i18n-ready (DE + EN)
+# Key = Expander-Kennung, wird in render_info_badge(key) übergeben
+# ══════════════════════════════════════════════════════════════
+
+# ── 01_Dekadenzyklus ─────────────────────────────────────────
+
+dekade_kohorte:
+  de: "Gruppiert alle Jahre nach ihrer Endziffer (z. B. X6 = 1896, 1906, … 2026). Zeigt den durchschnittlichen Jahresverlauf dieser Kohorte und ordnet das aktuelle Jahr ein."
+  en: "Groups all years by their ending digit (e.g. X6 = 1896, 1906, … 2026). Shows the average annual pattern of this cohort and places the current year in context."
+
+dekade_jahresrendite:
+  de: "Durchschnittliche Gesamtjahresrendite für jede Dekaden-Endziffer (0–9). Berechnet aus allen verfügbaren historischen Jahren. Zeigt, ob bestimmte Endziffern systematisch besser oder schlechter abschneiden."
+  en: "Average full-year return for each decade ending digit (0–9). Calculated from all available historical years. Shows whether certain ending digits systematically outperform or underperform."
+
+dekade_monatsrendite:
+  de: "Heatmap der durchschnittlichen Monatsrenditen aufgeteilt nach Dekaden-Endziffer. Zeigt saisonale Muster innerhalb einzelner Dekaden-Kohorten — z. B. ob der Oktober in X8-Jahren besonders volatil ist."
+  en: "Heatmap of average monthly returns split by decade ending digit. Reveals seasonal patterns within individual decade cohorts — e.g. whether October is particularly volatile in X8 years."
+
+dekade_boxplot:
+  de: "Box-Plot der Jahresrendite-Verteilung pro Dekaden-Endziffer. Der Kasten zeigt das 25.–75. Perzentil, die Linie den Median. Punkte außerhalb der Whisker sind statistische Ausreißer."
+  en: "Box plot of annual return distribution per decade ending digit. The box shows the 25th–75th percentile, the line the median. Points beyond the whiskers are statistical outliers."
+
+# ── 02_Jahreszyklus ──────────────────────────────────────────
+
+detrend_indikator:
+  de: "Zeigt die Abweichung des aktuellen Jahres vom saisonalen Durchschnitt als Linienchart. Werte über 0 = aktuelles Jahr läuft besser als der historische Durchschnitt, unter 0 = schlechter. Hilft zu erkennen ob sich das Jahr gerade vom Muster entfernt."
+  en: "Shows the deviation of the current year from the seasonal average as a line chart. Values above 0 = current year outperforming the historical average, below 0 = underperforming."
+
+pattern_breaks:
+  de: "Isolation Forest bewertet jedes historische Jahr anhand von 4 Merkmalen: Korrelation mit dem Durchschnitt, mittlere Abweichung (MAE), Jahresrendite und maximaler Drawdown. Jahre mit den stärksten Brüchen werden angezeigt — inklusive historischem Event-Kontext."
+  en: "Isolation Forest evaluates each historical year on 4 features: correlation with average, mean absolute error, annual return, and max drawdown. Years with the strongest pattern breaks are shown — including historical event context."
+
+monats_performance:
+  de: "Durchschnittliche Rendite pro Kalendermonat über den gewählten Zeitraum. Die Balkenhöhe zeigt die Ø-Rendite, die Farbe unterscheidet positive (grün) und negative (rot) Monate."
+  en: "Average return per calendar month over the selected period. Bar height shows average return, color distinguishes positive (green) and negative (red) months."
+
+monats_signifikanz:
+  de: "Statistischer t-Test pro Monat: Prüft ob die beobachtete Rendite signifikant von Null abweicht. p < 0,05 (grüner Tacho) = statistisch belastbar. p ≥ 0,05 (roter Tacho) = könnte Zufall sein. Cohen's d misst die Effektstärke."
+  en: "Statistical t-test per month: Tests whether the observed return significantly differs from zero. p < 0.05 (green gauge) = statistically significant. p ≥ 0.05 (red gauge) = could be random. Cohen's d measures effect size."
+
+signal_robustheit:
+  de: "Isolation Forest bewertet die Cluster-Reinheit der Rendite-Verläufe pro Monat. Hoher Score = die meisten Jahre zeigen ein konsistentes Muster (robustes Signal). Niedriger Score = das Muster wird von Einzelereignissen dominiert (unzuverlässig)."
+  en: "Isolation Forest evaluates the cluster purity of return patterns per month. High score = most years show a consistent pattern (robust signal). Low score = the pattern is dominated by individual events (unreliable)."
+
+praesidentenzyklus_match:
+  de: "Vergleicht das aktuelle Jahr mit den 4 Phasen des US-Präsidentenzyklus (Wahl/Post/Mid/Pre). DTW (Dynamic Time Warping) und Korrelation messen die Ähnlichkeit des bisherigen Kursverlaufs mit dem historischen Durchschnitt jeder Phase."
+  en: "Compares the current year with the 4 phases of the US presidential cycle (Election/Post/Mid/Pre). DTW and correlation measure the similarity of the current price trajectory with the historical average of each phase."
+
+heatmap_10j:
+  de: "Rendite-Heatmap der letzten 10 Jahre: Jede Zelle zeigt die Monatsrendite eines Jahres. Grün = positiv, rot = negativ. Die gelbe Umrandung markiert den aktuellen Monat ('We are here')."
+  en: "Return heatmap of the last 10 years: Each cell shows one month's return for one year. Green = positive, red = negative. The yellow border marks the current month ('We are here')."
+
+# ── 03_Monatszyklus ──────────────────────────────────────────
+
+seasonal_match:
+  de: "Vergleicht den bisherigen Monatsverlauf des aktuellen Jahres mit dem saisonalen Durchschnitt. Korrelation und DTW-Distanz messen wie nah das aktuelle Muster am historischen Durchschnitt liegt."
+  en: "Compares the current month's trajectory with the seasonal average. Correlation and DTW distance measure how closely the current pattern follows the historical average."
+
+wochen_performance:
+  de: "Durchschnittliche Rendite pro Kalenderwoche innerhalb des Monats. Zeigt ob bestimmte Wochen systematisch stärker oder schwächer sind — z. B. ob die erste Woche des Monats typischerweise positiv ist."
+  en: "Average return per calendar week within the month. Shows whether certain weeks are systematically stronger or weaker — e.g. whether the first week of the month is typically positive."
+
+two_week_performance:
+  de: "Teilt jeden Monat in zwei Hälften (erste und zweite Monatshälfte, Split am gewählten Trading Day). Vergleicht die durchschnittliche Rendite beider Hälften über alle Monate."
+  en: "Splits each month into two halves (first and second half, split at the chosen trading day). Compares average return of both halves across all months."
+
+two_week_heatmap:
+  de: "Heatmap mit 24 Zellen (12 Monate × 2 Hälften). Zeigt auf einen Blick, in welcher Monatshälfte die Rendite typischerweise höher oder niedriger ist."
+  en: "Heatmap with 24 cells (12 months × 2 halves). Shows at a glance which half of each month typically has higher or lower returns."
+
+# ── 04_Wochentage ────────────────────────────────────────────
+
+kumulierter_wochenverlauf:
+  de: "Kumulierte Rendite von Montag bis Freitag — zeigt wie sich die Woche im Durchschnitt aufbaut. Normalisiert auf 100 am Montag-Open. Steigende Linie = positive Wochentendenz."
+  en: "Cumulative return from Monday to Friday — shows how the week builds on average. Normalized to 100 at Monday open. Rising line = positive weekly tendency."
+
+wochentag_rendite:
+  de: "Durchschnittliche Tagesrendite und Win-Rate (Anteil positiver Tage) pro Wochentag. Berechnet aus allen Handelstagen im gewählten Zeitraum."
+  en: "Average daily return and win rate (share of positive days) per weekday. Calculated from all trading days in the selected period."
+
+overnight_split:
+  de: "Zerlegt die Tagesrendite in Overnight (Close→Open, nachts) und Intraday (Open→Close, tagsüber). Zeigt wo die Rendite wirklich entsteht — oft dominiert der Overnight-Anteil."
+  en: "Splits the daily return into overnight (close→open, at night) and intraday (open→close, during the day). Shows where returns actually come from — often the overnight component dominates."
+
+konsekutiv_analyse:
+  de: "Bedingte Wahrscheinlichkeit: Wie wahrscheinlich ist ein positiver Dienstag nach einem positiven Montag? Zeigt Folgetag-Abhängigkeiten in den historischen Daten."
+  en: "Conditional probability: How likely is a positive Tuesday after a positive Monday? Shows next-day dependencies in historical data."
+
+quartals_wochentag:
+  de: "Wochentag-Performance aufgeteilt nach Quartal (Q1–Q4). Zeigt ob der Wochentagseffekt in bestimmten Quartalen stärker oder schwächer ausfällt."
+  en: "Weekday performance split by quarter (Q1–Q4). Shows whether the weekday effect is stronger or weaker in certain quarters."
+
+volatilitaets_profil:
+  de: "Durchschnittliche Tages-Range (High – Low) in Prozent pro Wochentag. Hohe Range = volatiler Tag, niedrige Range = ruhiger Tag. Hilfreich für die Positionsgrößen-Planung."
+  en: "Average daily range (high – low) in percent per weekday. High range = volatile day, low range = calm day. Useful for position sizing."
+
+monat_wochentag_heatmap:
+  de: "Kreuztabelle: 12 Monate × 5 Wochentage. Jede Zelle zeigt die Ø-Rendite dieser Kombination. Gelber Rahmen markiert den aktuellen Monat und Wochentag."
+  en: "Cross-table: 12 months × 5 weekdays. Each cell shows the average return of that combination. Yellow border marks the current month and weekday."
+
+# ── 05_Monatswechsel ─────────────────────────────────────────
+
+tom_kennzahlen:
+  de: "Turn-of-Month Effekt: Rendite rund um den Monatswechsel (letzte x + erste y Handelstage). Historisch einer der stärksten saisonalen Effekte — ein Großteil der Monatsrendite entsteht in diesem Fenster."
+  en: "Turn-of-Month effect: Returns around the month-end transition (last x + first y trading days). Historically one of the strongest seasonal effects — a large portion of monthly returns occurs in this window."
+
+tom_heatmap:
+  de: "Heatmap der TOM-Rendite pro Monatswechsel (Jan→Feb bis Dez→Jan) über die letzten Jahre. Zeigt welche Monatswechsel historisch die stärksten und schwächsten sind."
+  en: "Heatmap of TOM returns per month transition (Jan→Feb through Dec→Jan) over recent years. Shows which month transitions are historically strongest and weakest."
+
+streak_analyse:
+  de: "Zählt aufeinanderfolgende positive und negative TOM-Perioden. Lange Gewinnstreaks deuten auf einen robusten Effekt hin, häufige Wechsel auf Instabilität."
+  en: "Counts consecutive positive and negative TOM periods. Long win streaks indicate a robust effect, frequent alternation suggests instability."
+
+fenster_optimierung:
+  de: "Grid-Search über alle möglichen TOM-Fenster (t-x bis t+y Tage). Findet die Kombination mit der höchsten historischen Rendite. Vorsicht: Überoptimierung möglich — daher Walk-Forward-Validierung empfohlen."
+  en: "Grid search over all possible TOM windows (t-x to t+y days). Finds the combination with the highest historical return. Caution: overfitting possible — walk-forward validation recommended."
+
+praesidentenzyklus_tom:
+  de: "TOM-Effekt aufgeteilt nach den 4 Phasen des Präsidentenzyklus (Wahl/Post/Mid/Pre). Zeigt ob der Turn-of-Month in bestimmten Zyklusjahren stärker ausfällt."
+  en: "TOM effect split by the 4 phases of the presidential cycle (Election/Post/Mid/Pre). Shows whether the turn-of-month effect is stronger in certain cycle years."
+
+# ── 06_Mondphasen ────────────────────────────────────────────
+
+mond_heatmap:
+  de: "Heatmap der Renditen rund um Vollmond/Neumond, aufgeteilt nach Kalendermonat. Zeigt ob der Mond-Effekt in bestimmten Monaten stärker ausfällt."
+  en: "Heatmap of returns around full/new moon, split by calendar month. Shows whether the moon effect is stronger in certain months."
+
+supermond_analyse:
+  de: "Ein Supermond tritt auf wenn der Mond der Erde besonders nah ist. Vergleicht Renditen rund um Supermonde mit normalen Vollmonden. Kleiner Datensatz — Ergebnisse mit Vorsicht interpretieren."
+  en: "A supermoon occurs when the moon is especially close to Earth. Compares returns around supermoons with regular full moons. Small sample — interpret results with caution."
+
+lunar_kalender:
+  de: "Übersicht der Renditen pro Mondmonat (Vollmond zu Vollmond oder Neumond zu Neumond). Zeigt den Mond-Effekt im Kalenderkontext statt in aggregierter Form."
+  en: "Overview of returns per lunar month (full moon to full moon or new moon to new moon). Shows the moon effect in calendar context rather than aggregated form."
+
+# ── 07_Januar_Trifecta ───────────────────────────────────────
+
+trifecta_auswertung:
+  de: "Das Januar-Trifecta kombiniert 3 Signale: Santa Claus Rally (letzte 5 + erste 2 Handelstage), First Five Days (erste 5 Januartage) und January Barometer (ganzer Januar). Historisch korreliert die Kombination mit der Jahresrendite."
+  en: "The January Trifecta combines 3 signals: Santa Claus Rally (last 5 + first 2 trading days), First Five Days (first 5 January days), and January Barometer (full January). Historically, the combination correlates with annual returns."
+
+trifecta_verlauf:
+  de: "Durchschnittlicher Jahresverlauf (Feb–Dez) gruppiert nach Trifecta-Ampelfarbe: Grün (3/3 positiv), Gelb (gemischt), Rot (3/3 negativ). Goldene Linie = aktuelles Jahr bis heute."
+  en: "Average annual trajectory (Feb–Dec) grouped by Trifecta signal color: Green (3/3 positive), Yellow (mixed), Red (3/3 negative). Gold line = current year to date."
+
+trifecta_drawdown:
+  de: "Maximaler Drawdown (größter Rückgang vom Hoch) im Jahresverlauf nach Trifecta-Signal. Zeigt das typische Risikoprofil pro Signalgruppe."
+  en: "Maximum drawdown (largest decline from peak) during the year by Trifecta signal. Shows the typical risk profile per signal group."
+
+# ── 12_Backtest_Engine ───────────────────────────────────────
+
+event_relevanz:
+  de: "Isolation Forest + t-Test bewerten ob ein Event (z. B. OPEX, Fed-Sitzung) einen statistisch nachweisbaren Einfluss auf die Rendite hat. Hohe Relevanz = signifikanter Unterschied zwischen Event- und Nicht-Event-Tagen."
+  en: "Isolation Forest + t-test evaluate whether an event (e.g. OPEX, Fed meeting) has a statistically detectable impact on returns. High relevance = significant difference between event and non-event days."
+
+# ── Disabled: 80_Erweiterte_Analyse ──────────────────────────
+
+ki_zusammenfassung:
+  de: "Claude (KI) fasst die Analyse-Ergebnisse in 3 Sätzen zusammen: 1) Historisches Muster, 2) Aktueller Kontext, 3) Ausblick. Benötigt Anthropic API-Key."
+  en: "Claude (AI) summarizes the analysis results in 3 sentences: 1) Historical pattern, 2) Current context, 3) Outlook. Requires Anthropic API key."
+
+anomalie_heatmap:
+  de: "Isolation Forest bewertet monatliche Renditen im Kontext von Monat × Dekaden-Endziffer. Hohe Werte = viele historische Ausreißer in dieser Zelle. Zeigt wo die Saisonalität besonders unberechenbar ist."
+  en: "Isolation Forest evaluates monthly returns in the context of month × decade ending digit. High values = many historical outliers in that cell. Shows where seasonality is particularly unpredictable."
+
+mstl_zerlegung:
+  de: "MSTL (Multiple Seasonal-Trend Decomposition) zerlegt den Kursverlauf in 4 Komponenten: Langfristiger Trend, Wochensaisonalität (5 Tage), Jahressaisonalität (252 Tage) und Residual (Rauschen)."
+  en: "MSTL (Multiple Seasonal-Trend Decomposition) breaks down the price series into 4 components: Long-term trend, weekly seasonality (5 days), annual seasonality (252 days), and residual (noise)."
+
+chronos_forecast:
+  de: "Amazon Chronos-Bolt-Tiny (9M Parameter): Probabilistische 30-Tage-Prognose mit Konfidenzintervall. Rein datengetrieben, kein Feature-Engineering nötig. Läuft auf CPU in unter 1 Sekunde."
+  en: "Amazon Chronos-Bolt-Tiny (9M parameters): Probabilistic 30-day forecast with confidence intervals. Purely data-driven, no feature engineering needed. Runs on CPU in under 1 second."
+
+# ── Disabled: 87_KI_Score ────────────────────────────────────
+
+dtw_aehnlichkeit:
+  de: "Dynamic Time Warping vergleicht den bisherigen Jahresverlauf mit allen historischen Jahren. Findet die ähnlichsten Muster auch wenn sie zeitlich leicht verschoben sind — robuster als einfache Korrelation."
+  en: "Dynamic Time Warping compares the current year's trajectory with all historical years. Finds the most similar patterns even when slightly time-shifted — more robust than simple correlation."
+
+prophet_prognose:
+  de: "Facebook Prophet: Zeitreihen-ML-Modell spezialisiert auf saisonale Muster. Generiert eine 30-Tage-Prognose mit Konfidenzintervall basierend auf historischer Jahres- und Wochensaisonalität."
+  en: "Facebook Prophet: Time series ML model specialized in seasonal patterns. Generates a 30-day forecast with confidence interval based on historical annual and weekly seasonality."
+
+ki_winrate:
+  de: "Historische Win-Rate des aktuellen Monats: Wie oft war dieser Monat in der Vergangenheit positiv? Einfacher aber aussagekräftiger Indikator — 60%+ deutet auf eine robuste saisonale Tendenz."
+  en: "Historical win rate of the current month: How often was this month positive in the past? Simple but meaningful indicator — 60%+ suggests a robust seasonal tendency."
+
+tracking_qualitaet:
+  de: "Korrelation zwischen dem bisherigen Jahresverlauf und dem saisonalen Durchschnitt. Hohe Korrelation = das aktuelle Jahr folgt dem historischen Muster eng. Niedrig = das Jahr weicht deutlich ab."
+  en: "Correlation between the current year's trajectory and the seasonal average. High correlation = the current year closely follows the historical pattern. Low = the year deviates significantly."
+
+# ── Disabled: 90_TDOM_Analyse ────────────────────────────────
+
+tdom_anomalien:
+  de: "Vergleicht die TDoM-Renditen der letzten 3 Monate mit dem historischen Durchschnitt via Z-Score. |Z| > 2 = statistisch ungewöhnlich. Zeigt welche Trading Days of Month sich aktuell anomal verhalten."
+  en: "Compares TDoM returns of the last 3 months with the historical average via Z-score. |Z| > 2 = statistically unusual. Shows which trading days of the month are currently behaving anomalously."
+
+# ── Disabled: 92_Spot_Vol_Beta ───────────────────────────────
+
+spot_vol_beta:
+  de: "Misst die tägliche Beziehung zwischen S&P 500 und VIX (Angst-Index). Rolling Beta über 60 Tage zeigt ob die inverse Korrelation aktuell stärker oder schwächer ist als üblich. Regime-Wendepunkte markieren strukturelle Veränderungen."
+  en: "Measures the daily relationship between S&P 500 and VIX (fear index). Rolling 60-day beta shows whether the inverse correlation is currently stronger or weaker than usual. Regime turning points mark structural changes."
+
+vix_extreme:
+  de: "Forward Returns nach VIX-Extremen: Wie entwickelt sich der S&P 500 in den 5/10/20 Tagen nach einem VIX-Spike (>30) oder VIX-Tief (<15)? Historisch folgen auf extreme Angst-Spitzen oft Erholungen."
+  en: "Forward returns after VIX extremes: How does the S&P 500 perform in the 5/10/20 days after a VIX spike (>30) or VIX low (<15)? Historically, extreme fear spikes are often followed by recoveries."
+
+# ── Anomalie-Radar (wiederverwendet auf mehreren Pages) ──────
+
+anomalie_radar:
+  de: "Vergleicht die letzten 10 Handelstage mit dem historischen Durchschnitt desselben Zeitraums (20 Jahre). Isolation Forest bewertet ob das aktuelle Verhalten untypisch ist. Score 0 = normal, 100 = stark anomal."
+  en: "Compares the last 10 trading days with the historical average of the same period (20 years). Isolation Forest evaluates whether current behavior is atypical. Score 0 = normal, 100 = highly anomalous."

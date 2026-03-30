@@ -39,6 +39,7 @@ st.set_page_config(
 
 from shared.design import inject_se_css
 from shared.footer import render_footer
+from shared.info_badge import render_info_badge
 inject_se_css()
 
 TEMPLATE = "plotly_dark"
@@ -245,6 +246,7 @@ if show_current_year:
 d_current = decade_data[CURRENT_DIGIT]
 if d_current["n"] >= 2:
     with st.expander(f"🎯 X{CURRENT_DIGIT}-Kohorte — Einordnung {CURRENT_YEAR}", expanded=True):
+        render_info_badge("dekade_kohorte")
         groups_all = {
             f"x{digit}": decade_data[digit]["returns"]
             for digit in range(10)
@@ -289,6 +291,7 @@ if d_current["n"] >= 2:
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
+    render_info_badge("dekade_jahresrendite")
     bar_x      = []
     bar_y      = []
     bar_colors = []
@@ -356,6 +359,7 @@ with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("🔬 Anomalie-Radar (KI)", expanded=True):
+    render_info_badge("anomalie_radar")
     try:
         from shared.anomaly_engine import compute_ticker_anomaly_score
         with st.spinner("Anomalie-Radar berechnet..."):
@@ -452,6 +456,7 @@ with st.expander("📋 Übersicht nach Kohorte", expanded=False):
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
+    render_info_badge("dekade_monatsrendite")
     fig_heat = build_decade_monthly_heatmap(df, ticker)
     st.plotly_chart(fig_heat, use_container_width=True)
 
@@ -460,6 +465,7 @@ with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.expander("📦 Rendite-Verteilung nach Kohorte (Box-Plot)", expanded=False):
+    render_info_badge("dekade_boxplot")
     groups = {
         f"x{digit}": decade_data[digit]["returns"]
         for digit in range(10)

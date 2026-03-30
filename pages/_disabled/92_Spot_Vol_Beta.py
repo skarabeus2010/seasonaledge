@@ -33,6 +33,7 @@ from shared.spot_vol_beta import (
     classify_beta,
     regime_color,
 )
+from shared.info_badge import render_info_badge
 
 # ── Page Config ───────────────────────────────────────
 st.set_page_config(
@@ -482,6 +483,7 @@ with st.expander(f"Historischer {ticker_spot} Chart", expanded=False):
 # ══════════════════════════════════════════════════════
 
 with st.expander("So lesen Sie die Spot-Vol Beta Analyse"):
+    render_info_badge("spot_vol_beta")
     st.markdown(f"""
 **Was ist Spot-Vol Beta?**
 

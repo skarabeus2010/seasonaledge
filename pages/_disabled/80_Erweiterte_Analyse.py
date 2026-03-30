@@ -36,6 +36,7 @@ from shared.calculations import (
     classify_january_first5, get_war_years, get_peace_years
 )
 from shared.charts import build_seasonal_chart
+from shared.info_badge import render_info_badge
 
 st.set_page_config(page_title="SeasonAlpha - Erweitert", page_icon="📊", layout="wide")
 
@@ -319,6 +320,7 @@ def main():
                 )
 
         with st.expander("KI-Zusammenfassung", expanded=False):
+            render_info_badge("ki_zusammenfassung")
             from shared.ai_models import generate_page_summary
             with st.spinner("KI analysiert..."):
                 summary = generate_page_summary(
@@ -333,6 +335,7 @@ def main():
 
     # ── Anomalie-Heatmap ──────────────────────────────
     with st.expander("Anomalie-Heatmap (KI)", expanded=False):
+        render_info_badge("anomalie_heatmap")
         st.caption(
             "Isolation Forest erkennt Monate/Dekaden mit ungewöhnlichen Rendite-Mustern. "
             "Hohe Werte = mehr Ausreißer-Renditen in dieser Zelle."
@@ -372,6 +375,7 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
 
     # ── Anomalie-Radar ──────────────────────────────────
     with st.expander("Anomalie-Radar (KI)", expanded=False):
+        render_info_badge("anomalie_radar")
         st.caption("Wie stark weicht das aktuelle Kursverhalten vom saisonalen Muster ab?")
         try:
             from shared.anomaly_engine import compute_ticker_anomaly_score
@@ -403,6 +407,7 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
 
     # ── Saisonale Muster-Brueche ─────────────────────
     with st.expander("Saisonale Muster-Brüche (KI)", expanded=False):
+        render_info_badge("pattern_breaks")
         st.caption("Jahre in denen das saisonale Muster am stärksten gebrochen wurde.")
         try:
             from shared.anomaly_engine import detect_pattern_breaks
@@ -426,6 +431,7 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
 
     # ── MSTL Saisonalitaets-Zerlegung ─────────────────
     with st.expander("MSTL Saisonalitäts-Zerlegung", expanded=False):
+        render_info_badge("mstl_zerlegung")
         st.caption("Zerlegt den Kurs in Trend + Wochensaisonalität + Jahressaisonalität + Residual.")
         try:
             from shared.mstl_decomposition import decompose_mstl, build_decomposition_figure
@@ -445,6 +451,7 @@ Die Anomalie-Heatmap zeigt, in welchen **Monat/Dekaden-Kombinationen** historisc
 
     # ── Chronos Forecast ────────────────────────────────
     with st.expander("Chronos Forecast (KI)", expanded=False):
+        render_info_badge("chronos_forecast")
         st.caption("Probabilistische 30-Tage Prognose mit Konfidenzintervall (Amazon Chronos-Bolt).")
         try:
             from shared.chronos_forecast import forecast_chronos, build_chronos_chart
