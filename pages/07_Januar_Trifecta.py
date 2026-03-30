@@ -279,8 +279,8 @@ with tab1:
             return vals.mean() if len(vals) > 0 else float("nan")
 
         # ── Historische Stat-Cards ────────────────────────────────────
+        render_info_badge("trifecta_auswertung")
         with st.expander("📈 Historische Auswertung", expanded=True):
-            render_info_badge("trifecta_auswertung")
             col_s1, col_s2, col_s3, col_s4 = st.columns(4)
             _hist_data = [
                 ("Grün", "🟢", "#2ECC71", gruen_df),
@@ -307,8 +307,8 @@ with tab1:
                     )
 
         # ── Durchschnittsverlauf je Ampelfarbe ──────────────────────────
+        render_info_badge("trifecta_verlauf")
         with st.expander("📈 Durchschnittsverlauf nach Ampelfarbe", expanded=True):
-            render_info_badge("trifecta_verlauf")
 
             MONTH_TICKS_252 = [int(i * 21) for i in range(12)]
             MONTH_LABELS_252 = ["Jan","Feb","Mar","Apr","Mai","Jun",
@@ -436,8 +436,8 @@ with tab1:
                             )
 
         # ── Max Drawdown ──────────────────────────────────────────────
+        render_info_badge("trifecta_drawdown")
         with st.expander("📉 Max. Drawdown nach Ampelfarbe", expanded=True):
-            render_info_badge("trifecta_drawdown")
             dd_cols = st.columns(len(drawdown_data))
             for i, (signal, dd) in enumerate(drawdown_data.items()):
                 with dd_cols[i]:

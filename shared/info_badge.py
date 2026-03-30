@@ -8,9 +8,9 @@ Texte zentral in shared/info_texts.yaml, i18n-ready (DE/EN).
 
 Verwendung:
     from shared.info_badge import render_info_badge
+    render_info_badge("anomalie_radar")          # ← VOR dem Expander!
     with st.expander("Anomalie-Radar (KI)", expanded=True):
-        render_info_badge("anomalie_radar")
-        # ... restlicher Content
+        # ... Content
 """
 
 from pathlib import Path
@@ -27,19 +27,19 @@ _CSS_KEY = "_info_badge_css_injected"
 
 _CSS = """
 <style>
-/* Der Trick: Jeder Streamlit-Expander ist ein <details> in einem
-   div[data-testid="stExpander"]. Wir setzen diesen auf position:relative
-   damit das Badge sich daran orientieren kann. */
-div[data-testid="stExpander"] {
-    position: relative !important;
-}
+/* Info-Badge: wird VOR dem Expander gerendert.
+   Das Streamlit-div hat margin-bottom → das Badge "fällt" per
+   negativem margin in die nächste Zeile (= Expander-Header). */
 .se-info-wrap {
-    position: absolute !important;
-    top: 0.45rem;
-    right: 2.5rem;
-    z-index: 10;
     height: 0;
     overflow: visible;
+    position: relative;
+    z-index: 10;
+    text-align: right;
+    margin-bottom: 0;
+    padding-right: 1rem;
+    /* Schiebt das Badge in die NÄCHSTE Zeile (den Expander-Header) */
+    transform: translateY(2.35rem);
 }
 .se-info-badge {
     display: inline-flex;
@@ -63,7 +63,7 @@ div[data-testid="stExpander"] {
 .se-info-tip {
     display: none;
     position: absolute;
-    right: 0;
+    right: 1rem;
     top: 1.5rem;
     width: 320px;
     max-width: 80vw;
