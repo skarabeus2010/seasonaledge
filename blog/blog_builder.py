@@ -491,6 +491,9 @@ def load_posts() -> list[dict]:
             "tags": tags,
             "description": meta.get("description", ""),
             "ticker": meta.get("ticker", ""),
+            "seo_title": meta.get("seo_title", ""),             # Separater Meta-Title (max 60 Zeichen)
+            "canonical_url": meta.get("canonical_url", ""),      # Override fuer Content Syndication
+            "og_image": meta.get("og_image", ""),                # Custom OG-Image Pfad
             "status": status,
             "content": html_content,
             "reading_time": reading_time,
