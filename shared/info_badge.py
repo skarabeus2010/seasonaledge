@@ -1,22 +1,22 @@
 """
 shared/info_badge.py — Info-Badge ⓘ für Expander
 ==================================================
-Zeigt ein kleines ⓘ-Icon DIREKT in der Expander-Header-Leiste.
+Zeigt ein kleines ⓘ-Icon in der Expander-Header-Leiste.
 Hover → Tooltip mit kurzer Erklärung.
 Texte zentral in shared/info_texts.yaml, i18n-ready (DE/EN).
 
-Technik:
-    Streamlit rendert <summary> (Header) und Content in getrennten
-    DOM-Containern. Per st.markdown() kann man nichts in den Header
-    injizieren. Lösung: Badge wird als verstecktes HTML gerendert,
-    ein JS-Snippet verschiebt es in das <summary>-Element des
-    nächsten Expanders.
+Technik (Pure CSS, kein JavaScript):
+    1. Globales CSS setzt [data-testid="stExpander"] auf position:relative
+    2. Badge wird als ERSTES Element INNERHALB des Expanders gerendert
+    3. position:absolute + top:-2.35rem + right:2rem schiebt es optisch
+       in die Header-Leiste hoch
+    4. height:0 + overflow:visible → nimmt keinen Platz im Content weg
 
 Verwendung:
     from shared.info_badge import render_info_badge
-    render_info_badge("anomalie_radar")          # ← VOR dem Expander!
     with st.expander("Anomalie-Radar (KI)", expanded=True):
-        # ... Content
+        render_info_badge("anomalie_radar")   # ← ERSTES Element im Expander
+        # ... restlicher Content
 """
 
 from pathlib import Path
@@ -27,22 +27,29 @@ import yaml
 
 
 _YAML_PATH = Path(__file__).resolve().parent / "info_texts.yaml"
+_CSS_KEY = "_info_badge_css_v5"
 
-# Keys für einmalige Injection pro Session
-_CSS_KEY = "_info_badge_css_injected"
-_JS_KEY = "_info_badge_js_injected"
-
-# ── CSS ──────────────────────────────────────────────────
 _CSS = """
 <style>
-/* Badge-Wrapper: Inline im <summary>, rechts angedockt */
-.se-info-wrap {
-    position: absolute;
-    right: 2.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
+/* ── Expander-Container: position:relative als Anker ── */
+div[data-testid="stExpander"] {
+    position: relative !important;
 }
+
+/* ── Badge-Wrapper: absolut positioniert, in Header-Höhe ── */
+.se-info-wrap {
+    position: absolute !important;
+    top: 0.55rem;
+    right: 2rem;
+    z-index: 99;
+    height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+}
+
+/* ── Das i-Badge selbst ── */
 .se-info-badge {
     display: inline-flex;
     align-items: center;
@@ -62,12 +69,13 @@ _CSS = """
 .se-info-badge:hover {
     background: rgba(77,159,255,0.35);
 }
-/* Tooltip */
+
+/* ── Tooltip bei Hover ── */
 .se-info-tip {
     display: none;
     position: absolute;
     right: 0;
-    top: 1.8rem;
+    top: 1.6rem;
     width: 320px;
     max-width: 80vw;
     background: #131d2a;
@@ -84,71 +92,7 @@ _CSS = """
 .se-info-wrap:hover .se-info-tip {
     display: block;
 }
-/* Verstecktes Placeholder-Element (vor JS-Verschiebung) */
-.se-info-pending {
-    display: none !important;
-    height: 0 !important;
-    overflow: hidden !important;
-}
 </style>
-"""
-
-# ── JavaScript ───────────────────────────────────────────
-# Sucht alle .se-info-pending Elemente, findet den nächsten
-# Expander-Sibling und verschiebt das Badge in dessen <summary>.
-_JS = """
-<script>
-(function() {
-    function moveInfoBadges() {
-        document.querySelectorAll('.se-info-pending').forEach(function(pending) {
-            // Navigiere hoch zum Streamlit element-container
-            var container = pending.closest('.element-container')
-                         || pending.closest('[data-testid="stMarkdown"]')
-                         || pending.parentElement;
-            if (!container) return;
-
-            // Suche den nächsten Geschwister-Container mit einem Expander
-            var sibling = container.nextElementSibling;
-            var maxSteps = 5;
-            while (sibling && maxSteps-- > 0) {
-                var expander = sibling.querySelector('[data-testid="stExpander"]')
-                            || sibling.querySelector('details');
-                if (expander) {
-                    var summary = expander.querySelector('summary');
-                    if (summary) {
-                        // summary braucht position:relative für das absolute Badge
-                        summary.style.position = 'relative';
-                        // Badge aus dem Pending-Container holen und in summary einfügen
-                        var badge = pending.querySelector('.se-info-wrap');
-                        if (badge) {
-                            badge.style.display = '';
-                            summary.appendChild(badge);
-                        }
-                    }
-                    // Pending-Container entfernen (spart DOM-Platz)
-                    pending.remove();
-                    return;
-                }
-                sibling = sibling.nextElementSibling;
-            }
-        });
-    }
-
-    // Streamlit rendert asynchron → mehrere Versuche
-    setTimeout(moveInfoBadges, 200);
-    setTimeout(moveInfoBadges, 800);
-    setTimeout(moveInfoBadges, 2000);
-
-    // MutationObserver für dynamische Re-Renders (Tab-Wechsel etc.)
-    var observer = new MutationObserver(function(mutations) {
-        var hasPending = document.querySelector('.se-info-pending');
-        if (hasPending) {
-            setTimeout(moveInfoBadges, 100);
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>
 """
 
 
@@ -172,8 +116,8 @@ def _get_lang() -> str:
 
 def render_info_badge(key: str) -> None:
     """
-    Rendert ein ⓘ-Badge das per JS in den Expander-Header verschoben wird.
-    MUSS direkt VOR dem zugehörigen st.expander() aufgerufen werden.
+    Rendert ein ⓘ-Badge mit Hover-Tooltip.
+    MUSS als ERSTES Element INNERHALB des st.expander() aufgerufen werden.
 
     Args:
         key: Schlüssel aus info_texts.yaml (z.B. "anomalie_radar")
@@ -188,21 +132,16 @@ def render_info_badge(key: str) -> None:
     if not text:
         return
 
-    # CSS + JS einmal pro Session injizieren
+    # CSS einmal pro Session injizieren
     if not st.session_state.get(_CSS_KEY):
         st.markdown(_CSS, unsafe_allow_html=True)
         st.session_state[_CSS_KEY] = True
-    if not st.session_state.get(_JS_KEY):
-        st.markdown(_JS, unsafe_allow_html=True)
-        st.session_state[_JS_KEY] = True
 
-    # Badge als verstecktes Element rendern — JS verschiebt es in den Header
+    # Badge — position:absolute hebt es in die Header-Leiste
     st.markdown(
-        f'<div class="se-info-pending">'
         f'<div class="se-info-wrap">'
         f'<span class="se-info-badge">i</span>'
         f'<div class="se-info-tip">{text}</div>'
-        f'</div>'
         f'</div>',
         unsafe_allow_html=True,
     )

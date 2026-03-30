@@ -495,8 +495,8 @@ with tab4:
 
             # ── Erklaertext ──
             st.markdown("---")
-            render_info_badge("event_relevanz")
             with st.expander("📖 So lesen Sie den Event-Relevanz Indikator", expanded=False):
+                render_info_badge("event_relevanz")
                 st.markdown("""
 **Der Relevanz-Score** wird durch unsere KI-Modelle berechnet und kombiniert drei statistische Dimensionen zu einem Gesamtwert zwischen **0** (keine Relevanz) und **1** (maximale Relevanz):
 

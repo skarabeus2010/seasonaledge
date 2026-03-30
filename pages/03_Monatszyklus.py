@@ -482,8 +482,8 @@ def render_seasonal_match(match, ticker, month_name):
 
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
-    render_info_badge("seasonal_match")
     with st.expander("📊 Saisonaler Match — Aktuell vs. Durchschnitt", expanded=True):
+        render_info_badge("seasonal_match")
         col1, col2, col3 = st.columns(3)
 
         # Korrelation Gauge
@@ -673,8 +673,8 @@ def render_cycle_match(cycle_results, ticker, month_name):
 
     _PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False}
 
-    render_info_badge("praesidentenzyklus_match")
     with st.expander("🏛️ Präsidentenzyklus — Best Match", expanded=True):
+        render_info_badge("praesidentenzyklus_match")
         # Bester Match ermitteln (hoechster Score)
         best = max(cycle_results, key=lambda x: x["match_score"])
         st.markdown(
@@ -1150,8 +1150,8 @@ def main():
                     )
 
         # 1a. Detrend-Indikator (direkt nach Chart)
-        render_info_badge("detrend_indikator")
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
+            render_info_badge("detrend_indikator")
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True)
@@ -1170,15 +1170,15 @@ def main():
     # 2. Wochen
     weekly_stats = calc_weekly_performance(df, selected_month, selected_years)
     if weekly_stats:
-        render_info_badge("wochen_performance")
         with st.expander("📅 Wochen-Performance", expanded=True):
+            render_info_badge("wochen_performance")
             fig = build_weekly_bars(weekly_stats, ticker, month_name, current_tdom)
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
 
     # 3. Monats-Jahresuebersicht
-    render_info_badge("monats_performance")
     with st.expander("📊 Monats-Performance (alle 12 Monate)", expanded=True):
+        render_info_badge("monats_performance")
         st.plotly_chart(build_monthly_bars(calc_monthly_performance(df, selected_years), ticker, current_tdom), use_container_width=True)
         with st.expander("Monats-Detailtabelle"):
             mstats = calc_monthly_performance(df, selected_years)
@@ -1190,14 +1190,14 @@ def main():
     st.markdown("---")
     tw_valid = [t for t in calc_two_week_performance(df, selected_years, split_day) if t["n"] >= 2]
     if tw_valid:
-        render_info_badge("two_week_performance")
         with st.expander(f"📅 Two-Week Performance (Split: TDOM {split_day})", expanded=True):
+            render_info_badge("two_week_performance")
             st.plotly_chart(build_two_week_bars(tw_valid, ticker, split_day, current_tdom),
                             use_container_width=True, key="tw_main_bars")
 
             # 4a. Two-Week Heatmap (12 Monate x 2 Hälften)
-            render_info_badge("two_week_heatmap")
             with st.expander("🗓️ Two-Week Heatmap (12 Monate x 2 Hälften)", expanded=True):
+                render_info_badge("two_week_heatmap")
                 tw_heatmap = build_two_week_heatmap(tw_valid, ticker, split_day, current_tdom)
                 if tw_heatmap:
                     st.plotly_chart(tw_heatmap, use_container_width=True, key="tw_heatmap")
@@ -1236,8 +1236,8 @@ def main():
 
     # 5. 10-Jahres Heatmap
     st.markdown("---")
-    render_info_badge("heatmap_10j")
     with st.expander("10 Jahres Monats-Heatmap", expanded=True):
+        render_info_badge("heatmap_10j")
         st.plotly_chart(build_monthly_heatmap(df, selected_years, ticker), use_container_width=True)
 
     render_footer()

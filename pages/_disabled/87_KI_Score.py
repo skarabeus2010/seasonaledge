@@ -293,8 +293,8 @@ def main():
 
     # DTW
     dtw = sub["dtw"]
-    render_info_badge("dtw_aehnlichkeit")
     with st.expander(f"🔍 DTW Ähnlichkeit — {dtw['weighted']:.2f} / 2.5"):
+        render_info_badge("dtw_aehnlichkeit")
         dtw_d = dtw["details"]
         if "error" in dtw_d and not dtw_d.get("similar_years"):
             st.warning(dtw_d["error"])
@@ -313,8 +313,8 @@ def main():
 
     # Prophet
     prophet = sub["prophet"]
-    render_info_badge("prophet_prognose")
     with st.expander(f"🔮 Prophet Prognose — {prophet['weighted']:.2f} / 2.5"):
+        render_info_badge("prophet_prognose")
         p_d = prophet["details"]
         if "error" in p_d:
             st.info(p_d["error"])
@@ -327,8 +327,8 @@ def main():
 
     # Win-Rate
     wr = sub["win_rate"]
-    render_info_badge("ki_winrate")
     with st.expander(f"📊 Win-Rate — {wr['weighted']:.2f} / 2.5"):
+        render_info_badge("ki_winrate")
         wr_d = wr["details"]
         if "error" in wr_d and wr_d.get("total_years", 0) == 0:
             st.warning(wr_d["error"])
@@ -345,8 +345,8 @@ def main():
 
     # Tracking
     tracking = sub["tracking"]
-    render_info_badge("tracking_qualitaet")
     with st.expander(f"📐 Tracking-Qualität — {tracking['weighted']:.2f} / 2.5"):
+        render_info_badge("tracking_qualitaet")
         t_d = tracking["details"]
         if "error" in t_d:
             st.info(t_d["error"])
