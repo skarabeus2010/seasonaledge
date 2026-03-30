@@ -27,37 +27,44 @@ _CSS_KEY = "_info_badge_css_injected"
 
 _CSS = """
 <style>
+/* Der Trick: Jeder Streamlit-Expander ist ein <details> in einem
+   div[data-testid="stExpander"]. Wir setzen diesen auf position:relative
+   damit das Badge sich daran orientieren kann. */
+div[data-testid="stExpander"] {
+    position: relative !important;
+}
 .se-info-wrap {
-    float: right;
-    margin-top: -3.4rem;
-    margin-right: 0.25rem;
-    position: relative;
+    position: absolute !important;
+    top: 0.45rem;
+    right: 2.5rem;
     z-index: 10;
     height: 0;
+    overflow: visible;
 }
 .se-info-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.2rem;
+    height: 1.2rem;
     border-radius: 50%;
-    background: rgba(77,159,255,0.12);
+    background: rgba(77,159,255,0.15);
     color: #4d9fff;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 700;
     cursor: help;
     user-select: none;
     transition: background 0.2s;
+    line-height: 1;
 }
 .se-info-badge:hover {
-    background: rgba(77,159,255,0.25);
+    background: rgba(77,159,255,0.35);
 }
 .se-info-tip {
     display: none;
     position: absolute;
     right: 0;
-    top: 1.6rem;
+    top: 1.5rem;
     width: 320px;
     max-width: 80vw;
     background: #131d2a;
