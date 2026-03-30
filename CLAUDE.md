@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 20.0 | 2026-03-27 | Details → `docs/`
+> Version 20.1 | 2026-03-30 | Details → `docs/`
 
 ## Projekt
 
@@ -43,6 +43,8 @@ shared/                  ← Berechnungen, Daten, Utilities
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
   percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
   footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk Disclosure
+  info_badge.py          ← ⓘ-Badge für Expander (MutationObserver → physisch in <summary> verschoben) — GEPLANT: entfernen, stattdessen eigene Info-Page
+  info_texts.yaml        ← Zentrale Badge-Texte DE/EN (~40 Einträge) — GEPLANT: Basis für Info-Page
   i18n.py                ← Internationalisierung DE/EN: t(), get_lang(), lang_toggle() (JS-basiert)
   ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
   indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
@@ -309,6 +311,10 @@ UPPER_CASE        → Konstanten
 - [x] i18n: Flaggen-Toggle via JS window.parent.document.body (SVG-Flags, position:fixed) (2026-03-28)
 - [x] i18n: Home Page vollstaendig uebersetzt (Kacheln, Slider, Stats, Newsletter, Blog) (2026-03-28)
 - [x] Footer: Legal Notice EN (§5 DDG auf Englisch) + Financial Disclaimer (2026-03-28)
+- [x] Info-Badge: shared/info_badge.py + info_texts.yaml (~40 Einträge DE/EN) (2026-03-30)
+- [x] Info-Badge: MutationObserver-Strategie (physisch in <summary> verschoben, 49 Badges, 11 Pages) (2026-03-30)
+- [x] Detrend-Indikator: Skalierung 0–100 (Midline 50), grün/rot Fill, korrigierte Beschreibung (2026-03-30)
+- [ ] Info-Badge ENTFERNEN: stattdessen eigene "Methodik & Erklärungen"-Page bauen (info_texts.yaml als Basis nutzen)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 - [ ] Blog: Claude API Integration fuer automatische Content-Generierung
