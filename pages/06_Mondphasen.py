@@ -470,8 +470,8 @@ def main():
             st.table(pd.DataFrame(table_data).set_index(""))
 
         # ── Mond-Heatmap (Monat × Phase) ────────────────
+        render_info_badge("mond_heatmap")
         with st.expander(f"🗓️ {phase_info['name']}-Heatmap (Monat × Ø Rendite)", expanded=False):
-            render_info_badge("mond_heatmap")
             hm_fig = build_moon_month_heatmap(result["all_curves"], ticker, phase_info["name"])
             st.plotly_chart(hm_fig, use_container_width=True,
                             key=f"moon_hm_{phase_info['name']}")
@@ -480,8 +480,8 @@ def main():
 
         # ── Supermond-Analyse ────────────────────────────
         if phase_info["name"] == "Vollmond":
+            render_info_badge("supermond_analyse")
             with st.expander("🌟 Supermond-Analyse", expanded=False):
-                render_info_badge("supermond_analyse")
                 super_returns = []
                 normal_returns = []
                 for c in result["all_curves"]:
@@ -525,8 +525,8 @@ def main():
                     st.info("Zu wenige Supermond-Events im gewählten Zeitraum.")
 
         # ── Lunar-Kalender Kontext ───────────────────────
+        render_info_badge("lunar_kalender")
         with st.expander(f"🌙 Lunar-Kalender: {phase_info['name']} nach Mondmonat", expanded=False):
-            render_info_badge("lunar_kalender")
             from collections import defaultdict
             lunar_month_returns = defaultdict(list)
             for c in result["all_curves"]:

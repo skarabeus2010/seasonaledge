@@ -245,8 +245,8 @@ if show_current_year:
 
 d_current = decade_data[CURRENT_DIGIT]
 if d_current["n"] >= 2:
+    render_info_badge("dekade_kohorte")
     with st.expander(f"🎯 X{CURRENT_DIGIT}-Kohorte — Einordnung {CURRENT_YEAR}", expanded=True):
-        render_info_badge("dekade_kohorte")
         groups_all = {
             f"x{digit}": decade_data[digit]["returns"]
             for digit in range(10)
@@ -290,8 +290,8 @@ if d_current["n"] >= 2:
 # 3. BALKEN-CHART: Ø-Jahresrendite pro Kohorte
 # ══════════════════════════════════════════════════════════════════════════════
 
+render_info_badge("dekade_jahresrendite")
 with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
-    render_info_badge("dekade_jahresrendite")
     bar_x      = []
     bar_y      = []
     bar_colors = []
@@ -358,8 +358,8 @@ with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
 # 4. ANOMALIE-RADAR (KI)
 # ══════════════════════════════════════════════════════════════════════════════
 
+render_info_badge("anomalie_radar")
 with st.expander("🔬 Anomalie-Radar (KI)", expanded=True):
-    render_info_badge("anomalie_radar")
     try:
         from shared.anomaly_engine import compute_ticker_anomaly_score
         with st.spinner("Anomalie-Radar berechnet..."):
@@ -455,8 +455,8 @@ with st.expander("📋 Übersicht nach Kohorte", expanded=False):
 # 6. HEATMAP: Dekade × Monat
 # ══════════════════════════════════════════════════════════════════════════════
 
+render_info_badge("dekade_monatsrendite")
 with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
-    render_info_badge("dekade_monatsrendite")
     fig_heat = build_decade_monthly_heatmap(df, ticker)
     st.plotly_chart(fig_heat, use_container_width=True)
 
@@ -464,8 +464,8 @@ with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
 # 7. BOX-PLOT: Rendite-Verteilung pro Kohorte
 # ══════════════════════════════════════════════════════════════════════════════
 
+render_info_badge("dekade_boxplot")
 with st.expander("📦 Rendite-Verteilung nach Kohorte (Box-Plot)", expanded=False):
-    render_info_badge("dekade_boxplot")
     groups = {
         f"x{digit}": decade_data[digit]["returns"]
         for digit in range(10)

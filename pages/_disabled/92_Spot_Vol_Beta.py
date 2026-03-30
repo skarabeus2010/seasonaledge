@@ -482,8 +482,8 @@ with st.expander(f"Historischer {ticker_spot} Chart", expanded=False):
 # ERKLÄRUNG
 # ══════════════════════════════════════════════════════
 
+render_info_badge("spot_vol_beta")
 with st.expander("So lesen Sie die Spot-Vol Beta Analyse"):
-    render_info_badge("spot_vol_beta")
     st.markdown(f"""
 **Was ist Spot-Vol Beta?**
 

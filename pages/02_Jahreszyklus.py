@@ -846,8 +846,8 @@ def main():
 
     # ── 2. Detrend-Indikator (Expander) ──────────────────
     if avg:
+        render_info_badge("detrend_indikator")
         with st.expander("Detrend-Indikator / Saisonaler Druck", expanded=True):
-            render_info_badge("detrend_indikator")
             detrend_fig = build_detrend_chart(avg, ticker, len(year_data))
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True, config=_PLOTLY_CFG)
@@ -900,8 +900,8 @@ def main():
         st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
     # ── 3b. Saisonale Muster-Brüche (KI) ──────────────────
+    render_info_badge("pattern_breaks")
     with st.expander("Saisonale Muster-Brüche (KI)", expanded=False):
-        render_info_badge("pattern_breaks")
         st.caption("Jahre in denen das saisonale Muster am stärksten gebrochen wurde — erkannt via Isolation Forest.")
         try:
             from shared.anomaly_engine import detect_pattern_breaks
@@ -940,8 +940,8 @@ def main():
 
     # ── 4. Monats-Performance (Balken) ────────────────────
     st.markdown("---")
+    render_info_badge("monats_performance")
     with st.expander("Monats-Performance", expanded=True):
-        render_info_badge("monats_performance")
         st.plotly_chart(build_monthly_bars(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
         _n_filtered = len(year_data)
         with st.expander(f"Monats-Detailtabelle ({_n_filtered} Jahre)"):
@@ -975,8 +975,8 @@ def main():
         )
 
     # ── 4c. Signal-Robustheit (Seasonal Confidence) ────────
+    render_info_badge("signal_robustheit")
     with st.expander("Signal-Robustheit pro Monat (KI)", expanded=False):
-        render_info_badge("signal_robustheit")
         st.caption("Wie robust ist das saisonale Muster in jedem Monat? Isolation Forest bewertet die Cluster-Reinheit der historischen Rendite-Verläufe.")
         try:
             from shared.anomaly_engine import compute_seasonal_confidence
@@ -1084,8 +1084,8 @@ def main():
         _cur_curve = year_data[_cur_year]["full_365"][:_today_doy]
 
         if len(_cur_curve) >= 20:
+            render_info_badge("praesidentenzyklus_match")
             with st.expander("🏛️ Präsidentenzyklus — Best Match", expanded=True):
-                render_info_badge("praesidentenzyklus_match")
                 # Ø-Kurven pro Zyklus + Alle Jahre berechnen
                 _match_data = {}
                 for cn in _cycle_names:
@@ -1174,8 +1174,8 @@ def main():
                                 unsafe_allow_html=True)
 
     # ── 6. 10-Jahres Heatmap ─────────────────────────────
+    render_info_badge("heatmap_10j")
     with st.expander("10 Jahres Heatmap", expanded=True):
-        render_info_badge("heatmap_10j")
         st.plotly_chart(build_monthly_heatmap(year_data, ticker), use_container_width=True, config=_PLOTLY_CFG)
 
     # ── Disclaimer ──

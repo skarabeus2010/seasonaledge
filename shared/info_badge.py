@@ -1,22 +1,15 @@
 """
 shared/info_badge.py — Info-Badge ⓘ für Expander
 ==================================================
-Zeigt ein kleines ⓘ-Icon in der Expander-Header-Leiste.
-Hover → Tooltip mit kurzer Erklärung.
-Texte zentral in shared/info_texts.yaml, i18n-ready (DE/EN).
-
-Technik (Pure CSS, kein JavaScript):
-    1. Globales CSS setzt [data-testid="stExpander"] auf position:relative
-    2. Badge wird als ERSTES Element INNERHALB des Expanders gerendert
-    3. position:absolute + top:-2.35rem + right:2rem schiebt es optisch
-       in die Header-Leiste hoch
-    4. height:0 + overflow:visible → nimmt keinen Platz im Content weg
+Ghost-Container-Strategie: Badge wird VOR dem Expander gerendert
+in einem height:0 Container. Per position:absolute + top:45px
+schwebt es optisch im Header des darunterliegenden Expanders.
 
 Verwendung:
     from shared.info_badge import render_info_badge
+    render_info_badge("anomalie_radar")          # ← VOR dem Expander
     with st.expander("Anomalie-Radar (KI)", expanded=True):
-        render_info_badge("anomalie_radar")   # ← ERSTES Element im Expander
-        # ... restlicher Content
+        # ... Content
 """
 
 from pathlib import Path
@@ -27,30 +20,28 @@ import yaml
 
 
 _YAML_PATH = Path(__file__).resolve().parent / "info_texts.yaml"
-_CSS_KEY = "_info_badge_css_v5"
+_CSS_KEY = "_info_badge_css_v6"
 
 _CSS = """
 <style>
-/* ── Expander-Container: position:relative als Anker ── */
-div[data-testid="stExpander"] {
-    position: relative !important;
+/* ── Ghost-Container: nimmt keinen Platz ein ── */
+.se-badge-ghost {
+    position: relative;
+    height: 0px;
+    width: 100%;
+    z-index: 999;
+    overflow: visible;
 }
 
-/* ── Badge-Wrapper: absolut positioniert, in Header-Höhe ── */
-.se-info-wrap {
-    position: absolute !important;
-    top: 0.55rem;
-    right: 2rem;
-    z-index: 99;
-    height: 0 !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 0 !important;
+/* ── Badge-Overlay: schwebt nach unten in den Expander-Header ── */
+.se-badge-overlay {
+    position: absolute;
+    top: 45px;
+    right: 45px;
 }
 
-/* ── Das i-Badge selbst ── */
-.se-info-badge {
+/* ── Das i-Badge ── */
+.se-badge-overlay .se-ib {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -66,12 +57,12 @@ div[data-testid="stExpander"] {
     transition: background 0.2s;
     line-height: 1;
 }
-.se-info-badge:hover {
+.se-badge-overlay .se-ib:hover {
     background: rgba(77,159,255,0.35);
 }
 
 /* ── Tooltip bei Hover ── */
-.se-info-tip {
+.se-badge-overlay .se-tip {
     display: none;
     position: absolute;
     right: 0;
@@ -86,10 +77,10 @@ div[data-testid="stExpander"] {
     line-height: 1.55;
     color: #a0b0c5;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    z-index: 999;
+    z-index: 1000;
     pointer-events: auto;
 }
-.se-info-wrap:hover .se-info-tip {
+.se-badge-overlay:hover .se-tip {
     display: block;
 }
 </style>
@@ -116,8 +107,10 @@ def _get_lang() -> str:
 
 def render_info_badge(key: str) -> None:
     """
-    Rendert ein ⓘ-Badge mit Hover-Tooltip.
-    MUSS als ERSTES Element INNERHALB des st.expander() aufgerufen werden.
+    Rendert ein ⓘ-Badge als Ghost-Container VOR dem Expander.
+    Das Badge schwebt per CSS in den Header des nächsten Expanders.
+
+    MUSS direkt VOR dem zugehörigen st.expander() aufgerufen werden.
 
     Args:
         key: Schlüssel aus info_texts.yaml (z.B. "anomalie_radar")
@@ -137,11 +130,13 @@ def render_info_badge(key: str) -> None:
         st.markdown(_CSS, unsafe_allow_html=True)
         st.session_state[_CSS_KEY] = True
 
-    # Badge — position:absolute hebt es in die Header-Leiste
+    # Ghost-Container + Badge
     st.markdown(
-        f'<div class="se-info-wrap">'
-        f'<span class="se-info-badge">i</span>'
-        f'<div class="se-info-tip">{text}</div>'
+        f'<div class="se-badge-ghost">'
+        f'<div class="se-badge-overlay">'
+        f'<span class="se-ib">i</span>'
+        f'<div class="se-tip">{text}</div>'
+        f'</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
