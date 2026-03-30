@@ -29,7 +29,7 @@ _CSS = """
 <style>
 .se-info-wrap {
     float: right;
-    margin-top: -2.2rem;
+    margin-top: -3.4rem;
     margin-right: 0.25rem;
     position: relative;
     z-index: 10;
