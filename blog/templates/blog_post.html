@@ -316,6 +316,49 @@
             margin-top: 0.3rem;
         }
 
+        /* Disclaimer Kurz */
+        .disclaimer-short {
+            margin-top: 2.5rem;
+            padding: 1.2rem 1.5rem;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: #5a6e85;
+            border-top: 1px solid #1c2a3e;
+        }
+        .disclaimer-short p {
+            margin-bottom: 0.5rem;
+            color: #5a6e85;
+        }
+        .disclaimer-short p:last-child { margin-bottom: 0; }
+
+        /* Disclaimer Lang (Expander) */
+        .disclaimer-long {
+            margin: 1rem 0 2rem;
+            padding: 0 1.5rem;
+            font-size: 0.8rem;
+            color: #5a6e85;
+            line-height: 1.7;
+        }
+        .disclaimer-long summary {
+            cursor: pointer;
+            color: #4d9fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.5rem 0;
+            user-select: none;
+        }
+        .disclaimer-long summary:hover { text-decoration: underline; }
+        .disclaimer-long h3 {
+            color: #a0b0c5;
+            font-size: 0.95rem;
+            margin: 1rem 0 0.75rem;
+        }
+        .disclaimer-long p {
+            margin-bottom: 0.6rem;
+            color: #5a6e85;
+        }
+        .disclaimer-long strong { color: #a0b0c5; }
+
         /* Footer */
         .site-footer {
             margin-top: 3rem;
@@ -381,6 +424,21 @@
         <p>Interaktive Charts, KI-Prognosen und technische Filter fuer 94 Ticker.</p>
         <a href="https://seasonalpha.ai" class="cta-button">Kostenlos starten</a>
     </div>
+
+    <!-- Disclaimer Kurz -->
+    {% if disclaimer_short %}
+    <div class="disclaimer-short">
+        {{ disclaimer_short }}
+    </div>
+    {% endif %}
+
+    <!-- Disclaimer Lang (Expander) -->
+    {% if disclaimer_long %}
+    <details class="disclaimer-long">
+        <summary>Vollständiger rechtlicher Hinweis</summary>
+        {{ disclaimer_long }}
+    </details>
+    {% endif %}
 
     {% if tags %}
     <div class="post-tags">

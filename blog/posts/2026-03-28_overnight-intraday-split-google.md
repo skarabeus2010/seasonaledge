@@ -81,5 +81,3 @@ Das bedeutet nicht, dass Intraday-Trading sinnlos ist — aber es lohnt sich zu 
 
 > **Finde den Split für deine Lieblingsaktie auf [seasonalpha.ai](https://seasonalpha.ai)** — und schau, ob du nachts oder tagsüber auf der richtigen Seite bist.
 
----
-*Hinweis: Dieser Artikel dient ausschließlich der Information und Bildung. Er stellt keine Anlageberatung dar. Vergangene Muster garantieren keine zukünftigen Renditen.*

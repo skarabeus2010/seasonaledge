@@ -97,10 +97,6 @@ Historisch ja — aber „immer" gibt es an der Börse nicht. 2025 ist statistis
 ### Für welche Märkte funktioniert der Dekadenzyklus?
 SeasonAlpha zeigt den Dekadenzyklus für alle verfügbaren Ticker — von Dow Jones und S&P 500 über DAX und Euro Stoxx bis hin zu einzelnen Aktien und ETFs. Je länger die Datenhistorie, desto belastbarer die Aussage.
 
----
-
-*Hinweis: Dieser Artikel dient ausschließlich der Information und Bildung. Er stellt keine Anlageberatung dar. Vergangene Muster garantieren keine zukünftigen Renditen.*
-
 <!--
 #### Social Media Snippet
 

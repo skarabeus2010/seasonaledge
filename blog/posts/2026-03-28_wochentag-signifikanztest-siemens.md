@@ -87,5 +87,3 @@ Das ist die Stärke von SeasonAlpha: Nicht einfach Durchschnittswerte anzeigen, 
 
 > **Probiere es selbst auf [seasonalpha.ai](https://seasonalpha.ai)** — wähle deine Lieblingsaktie und schau, welcher Wochentag bei ihr statistisch wirklich zählt.
 
----
-*Hinweis: Dieser Artikel dient ausschließlich der Information und Bildung. Er stellt keine Anlageberatung dar. Vergangene Muster garantieren keine zukünftigen Renditen.*

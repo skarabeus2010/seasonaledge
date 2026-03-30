@@ -43,6 +43,52 @@ CATEGORY_LABELS = {
 
 MONTHS_DE = ["", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
              "Juli", "August", "September", "Oktober", "November", "Dezember"]
+DISCLAIMER_FILE = _script_dir / "disclaimer_blog.md"
+
+
+# ── Disclaimer laden ─────────────────────────────────────
+
+def load_blog_disclaimer() -> tuple[str, str]:
+    """
+    Laedt Kurz- und Langversion des Blog-Disclaimers aus disclaimer_blog.md.
+    Konvertiert Markdown-Inline-Formatierung zu HTML.
+
+    Returns:
+        (short_html, long_html)
+    """
+    if not DISCLAIMER_FILE.exists():
+        return "", ""
+
+    raw = DISCLAIMER_FILE.read_text(encoding="utf-8")
+
+    short_text = ""
+    long_text = ""
+
+    if "---SHORT---" in raw and "---LONG---" in raw:
+        parts = raw.split("---LONG---", 1)
+        short_text = parts[0].replace("---SHORT---", "").strip()
+        long_text = parts[1].strip() if len(parts) > 1 else ""
+    elif "---SHORT---" in raw:
+        short_text = raw.replace("---SHORT---", "").strip()
+
+    def _md_to_html(text: str) -> str:
+        """Minimaler Markdown→HTML Converter fuer Disclaimer-Texte."""
+        lines = text.split("\n")
+        html_parts = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("### "):
+                inner = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", stripped[4:])
+                html_parts.append(f"<h3>{inner}</h3>")
+            else:
+                inner = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", stripped)
+                inner = re.sub(r"\*(.+?)\*", r"<em>\1</em>", inner)
+                html_parts.append(f"<p>{inner}</p>")
+        return "\n".join(html_parts)
+
+    return _md_to_html(short_text), _md_to_html(long_text)
 
 
 # ── Markdown Parser ──────────────────────────────────────
@@ -473,6 +519,11 @@ def build_all():
     # Output-Verzeichnis
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Disclaimer laden
+    disclaimer_short, disclaimer_long = load_blog_disclaimer()
+    if disclaimer_short:
+        print("  [OK] Blog-Disclaimer geladen (Kurz + Lang)")
+
     # Posts laden
     posts = load_posts()
     print(f"\n  {len(posts)} Posts zum Generieren\n")
@@ -499,6 +550,8 @@ def build_all():
         html = post_tpl.render(
             **post,
             related_posts=related_posts,
+            disclaimer_short=disclaimer_short,
+            disclaimer_long=disclaimer_long,
         )
         out_file = post_dir / "index.html"
         with open(out_file, "w", encoding="utf-8") as f:
