@@ -170,7 +170,12 @@ def calc_two_week_performance(df, selected_years, split_day=10):
 # ── CHARTS ────────────────────────────────────────────────
 
 def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
-    """Detrend-Indikator: Saisonaler Druck mit herausgerechnetem Trend."""
+    """
+    Detrend-Indikator: Saisonaler Intra-Monat-Verlauf ohne Trendkomponente.
+
+    Der lineare Trend wird subtrahiert. Was bleibt ist die reine saisonale
+    Schwankung innerhalb des Monats. Skalierung 0–100, Midline 50.
+    """
     tdoms = sorted(tdom_stats.keys())
     avg_curve = [tdom_stats[t]["avg"] for t in tdoms]
 
@@ -180,7 +185,15 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
     n = len(avg_curve)
     end_val = avg_curve[-1]
     daily_drift = end_val / n
-    detrended = [avg_curve[i] - ((i + 1) * daily_drift) for i in range(n)]
+    raw = [avg_curve[i] - ((i + 1) * daily_drift) for i in range(n)]
+
+    # Skalierung auf 0–100 (Midline = 50)
+    r_min, r_max = min(raw), max(raw)
+    r_range = r_max - r_min
+    if r_range == 0:
+        detrended = [50.0] * n
+    else:
+        detrended = [((v - r_min) / r_range) * 100 for v in raw]
 
     fig = go.Figure()
 
@@ -188,14 +201,14 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
         x=tdoms, y=detrended, mode="lines+markers",
         line=dict(color="#FF6B6B", width=2.5),
         marker=dict(size=4, color="#FF6B6B"),
-        fill="tozeroy", fillcolor="rgba(255,107,107,0.1)",
         name="Saisonaler Druck",
-        hovertemplate="TDOM %{x}<br>Druck: %{y:+.3f}%<extra></extra>"
+        hovertemplate="TDOM %{x}<br>Wert: %{y:.1f}<extra></extra>"
     ))
 
-    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
+    # Midline bei 50
+    fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
 
-    # We are here! — gleiche X-Position wie im Hauptchart
+    # We are here!
     if current_tdom is not None and current_tdom in tdoms:
         idx = tdoms.index(current_tdom)
         fig.add_shape(**wah_vline(current_tdom))
@@ -205,9 +218,9 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
         ))
 
     n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
-    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Detrend-Indikator (saisonaler Druck, {n_years} Jahre)", height=300, show_legend=False)
-    # Gleicher X-Achsenbereich wie Hauptchart
+    fig = apply_se_theme(fig, title=f"{ticker} — {month_name} Detrend-Indikator ({n_years} Jahre)", height=300, show_legend=False)
     fig.update_xaxes(range=[min(tdoms) - 0.5, max(tdoms) + 0.5])
+    fig.update_yaxes(range=[0, 100], dtick=25)
     return fig
 
 def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
@@ -1142,8 +1155,8 @@ def main():
             detrend_fig = build_detrend_chart(tdom_stats, ticker, month_name, current_tdom)
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True)
-                st.caption("_Steigt die Linie → überdurchschnittlicher saisonaler Kaufdruck. "
-                          "Fällt sie → saisonaler Verkaufsdruck (auch wenn der Monat insgesamt steigt)._")
+                st.caption("_Saisonaler Intra-Monat-Verlauf ohne Trendkomponente. "
+                          "Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase._")
 
         # 1b. Seasonal Match Analyse (wenn Live-Overlay aktiv)
         if current_month_curve is not None:

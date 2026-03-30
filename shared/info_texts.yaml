@@ -25,8 +25,8 @@ dekade_boxplot:
 # ── 02_Jahreszyklus ──────────────────────────────────────────
 
 detrend_indikator:
-  de: "Zeigt die Abweichung des aktuellen Jahres vom saisonalen Durchschnitt als Linienchart. Werte über 0 = aktuelles Jahr läuft besser als der historische Durchschnitt, unter 0 = schlechter. Hilft zu erkennen ob sich das Jahr gerade vom Muster entfernt."
-  en: "Shows the deviation of the current year from the seasonal average as a line chart. Values above 0 = current year outperforming the historical average, below 0 = underperforming."
+  de: "Zeigt den saisonalen Durchschnittsverlauf ohne Trendkomponente. Der lineare Jahrestrend wird herausgerechnet — übrig bleibt die reine saisonale Schwankung. Skala 0–100, Midline 50. Über 50 = saisonal typisch starke Phase, unter 50 = saisonal typisch schwache Phase."
+  en: "Shows the seasonal average pattern with the trend component removed. The linear annual trend is subtracted — what remains is the pure seasonal oscillation. Scale 0–100, midline 50. Above 50 = seasonally strong phase, below 50 = seasonally weak phase."
 
 pattern_breaks:
   de: "Isolation Forest bewertet jedes historische Jahr anhand von 4 Merkmalen: Korrelation mit dem Durchschnitt, mittlere Abweichung (MAE), Jahresrendite und maximaler Drawdown. Jahre mit den stärksten Brüchen werden angezeigt — inklusive historischem Event-Kontext."

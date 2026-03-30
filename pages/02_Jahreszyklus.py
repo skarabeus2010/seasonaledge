@@ -213,12 +213,33 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
 
 
 def build_detrend_chart(avg, ticker, n_years):
-    """Detrend-Indikator: Saisonaler Druck mit herausgerechnetem Trend."""
+    """
+    Detrend-Indikator: Saisonaler Durchschnittsverlauf ohne Trendkomponente.
+
+    Formel:
+      daily_drift = (avg[-1] - avg[0]) / len(avg)
+      detrended[i] = (avg[i] - avg[0]) - (i+1) * daily_drift
+
+    Der lineare Jahrestrend wird subtrahiert. Was bleibt ist die reine
+    saisonale Schwankung: Wann im Jahr liegt der Kurs typischerweise
+    über oder unter seinem Trend?
+
+    Skalierung: 0–100 (Midline 50). Über 50 = saisonal überdurchschnittlich,
+    unter 50 = saisonal unterdurchschnittlich.
+    """
     if len(avg) < 10:
         return None
     end_val = avg[-1] - avg[0]
     daily_drift = end_val / len(avg)
-    detrended = [(avg[i] - avg[0]) - ((i + 1) * daily_drift) for i in range(len(avg))]
+    raw = [(avg[i] - avg[0]) - ((i + 1) * daily_drift) for i in range(len(avg))]
+
+    # Skalierung auf 0–100 (Midline = 50)
+    r_min, r_max = min(raw), max(raw)
+    r_range = r_max - r_min
+    if r_range == 0:
+        detrended = [50.0] * len(raw)
+    else:
+        detrended = [((v - r_min) / r_range) * 100 for v in raw]
 
     fig = go.Figure()
     x_days = list(range(1, 366))
@@ -226,29 +247,48 @@ def build_detrend_chart(avg, ticker, n_years):
     fig.add_trace(go.Scatter(
         x=x_days, y=detrended, mode="lines",
         line=dict(color="#FF6B6B", width=2.5),
-        fill="tozeroy", fillcolor="rgba(255,107,107,0.1)",
+        fill="tonexty", fillcolor="rgba(255,107,107,0.08)",
         name="Saisonaler Druck",
-        hovertemplate="Tag %{x}<br>Druck: %{y:+.2f}<extra></extra>",
+        hovertemplate="Tag %{x}<br>Wert: %{y:.1f}<extra></extra>",
     ))
 
-    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
+    # Midline bei 50
+    fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
 
-    # Heute: nur "We are here!" Annotation, keine vertikale Linie
+    # Fill: Über 50 grün, unter 50 rot (via zwei Traces)
+    above = [max(v, 50) for v in detrended]
+    below = [min(v, 50) for v in detrended]
+    fig.add_trace(go.Scatter(
+        x=x_days, y=above, mode="lines", line=dict(width=0),
+        fill="tonexty", fillcolor="rgba(0,212,170,0.12)",
+        showlegend=False, hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=x_days, y=[50] * 365, mode="lines", line=dict(width=0),
+        showlegend=False, hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=x_days, y=below, mode="lines", line=dict(width=0),
+        fill="tonexty", fillcolor="rgba(255,71,87,0.12)",
+        showlegend=False, hoverinfo="skip",
+    ))
+
+    # Heute: "We are here!" Annotation
     today_doy = datetime.now().timetuple().tm_yday
     if 1 <= today_doy <= 365:
-        today_val = detrended[today_doy - 1] if today_doy <= len(detrended) else 0
+        today_val = detrended[today_doy - 1] if today_doy <= len(detrended) else 50
         fig.add_annotation(**_we_are_here_annotation(today_doy, today_val, above=True))
 
     fig = apply_se_theme(
         fig,
-        title=f"{ticker} — Detrend-Indikator / Saisonaler Druck ({n_years} Jahre)",
+        title=f"{ticker} — Detrend-Indikator ({n_years} Jahre)",
         height=300, show_legend=False,
     )
     fig.update_xaxes(
         tickmode="array", tickvals=MONTH_STARTS, ticktext=MONTH_LABELS,
         range=[1, 365],
     )
-    fig.update_yaxes(tickformat="+.2f")
+    fig.update_yaxes(range=[0, 100], dtick=25)
     return fig
 
 
@@ -268,10 +308,16 @@ def build_combined_seasonal_detrend(
     x_days = list(range(1, 366))
     current_year = datetime.now().year
 
-    # Detrend berechnen
+    # Detrend berechnen (0–100, Midline 50)
     end_val = avg[-1] - avg[0]
     daily_drift = end_val / len(avg)
-    detrended = [(avg[i] - avg[0]) - ((i + 1) * daily_drift) for i in range(len(avg))]
+    raw_detrend = [(avg[i] - avg[0]) - ((i + 1) * daily_drift) for i in range(len(avg))]
+    r_min, r_max = min(raw_detrend), max(raw_detrend)
+    r_range = r_max - r_min
+    if r_range == 0:
+        detrended = [50.0] * len(raw_detrend)
+    else:
+        detrended = [((v - r_min) / r_range) * 100 for v in raw_detrend]
 
     fig = make_subplots(
         rows=2, cols=1,
@@ -280,7 +326,7 @@ def build_combined_seasonal_detrend(
         row_heights=[0.65, 0.35],
         subplot_titles=[
             f"{ticker} — Saisonaler Jahresverlauf ({len(year_data)} Jahre)",
-            f"{ticker} — Detrend-Indikator / Saisonaler Druck",
+            f"{ticker} — Detrend-Indikator",
         ],
     )
 
@@ -363,12 +409,11 @@ def build_combined_seasonal_detrend(
     fig.add_trace(go.Scatter(
         x=x_days, y=detrended, mode="lines",
         line=dict(color="#FF6B6B", width=2.5),
-        fill="tozeroy", fillcolor="rgba(255,107,107,0.1)",
-        name="Saisonaler Druck",
-        hovertemplate="Tag %{x}<br>Druck: %{y:+.2f}<extra></extra>",
+        name="Detrend",
+        hovertemplate="Tag %{x}<br>Wert: %{y:.1f}<extra></extra>",
     ), row=2, col=1)
 
-    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)",
+    fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)",
                   line_width=1, row=2, col=1)
 
     # "We are here!" auf beiden Subplots
@@ -414,7 +459,7 @@ def build_combined_seasonal_detrend(
     )
     fig.update_xaxes(range=[1, 365], row=1, col=1)
     fig.update_yaxes(title="Normalisiert (Start = 100)", row=1, col=1)
-    fig.update_yaxes(title="Saisonaler Druck", row=2, col=1)
+    fig.update_yaxes(title="Detrend", range=[0, 100], dtick=25, row=2, col=1)
 
     # Crosshair: Spike-Linie synchronisiert ueber beide Subplots
     fig.update_layout(
@@ -807,8 +852,8 @@ def main():
             if detrend_fig:
                 st.plotly_chart(detrend_fig, use_container_width=True, config=_PLOTLY_CFG)
                 st.caption(
-                    "_Steigt die Linie → überdurchschnittlicher saisonaler Kaufdruck. "
-                    "Fällt sie → saisonaler Verkaufsdruck (auch wenn das Jahr insgesamt steigt)._"
+                    "_Saisonaler Durchschnitt ohne Trendkomponente. "
+                    "Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase._"
                 )
 
     # ── 3. Anomalie-Radar (immer sichtbar) ──────────────
