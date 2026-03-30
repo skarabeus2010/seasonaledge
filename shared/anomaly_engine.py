@@ -1,11 +1,12 @@
 """
 shared/anomaly_engine.py — Anomalie-Erkennung mit Isolation Forest
 ===================================================================
-4 Features:
+5 Features:
   1. Anomalie-Radar: Ticker-Abweichung vom Saisonalmuster (aktuell)
   2. Crash-Fruehwarnung: Markt-Regime-Erkennung (Ampel)
   3. TDoM-Anomalien: Ungewoehnliche Trading Days
   4. Saisonale Muster-Brueche: Jahre mit gebrochenem Muster + Kontext
+  5. Signal-Robustheit: Confidence Score pro Monat (Cluster-Reinheit)
 
 Kein Streamlit-Import! Reine Berechnung.
 """
@@ -422,3 +423,131 @@ def detect_pattern_breaks(
     # Sortiere nach Bruch-Staerke (staerkster zuerst)
     results.sort(key=lambda x: x["break_strength"], reverse=True)
     return results[:top_n]
+
+
+# ══════════════════════════════════════════════════════
+# 5. SIGNAL-ROBUSTHEIT (Seasonal Confidence)
+# ══════════════════════════════════════════════════════
+
+def compute_seasonal_confidence(
+    year_data: dict,
+    avg: list[float],
+    contamination: float = 0.15,
+) -> list[dict]:
+    """
+    Berechnet pro Monat einen Confidence Score (0-100) der angibt,
+    wie robust das saisonale Muster in diesem Zeitraum ist.
+
+    Logik: Isolation Forest bewertet den Renditeverlauf jedes Jahres
+    innerhalb eines Monats. Monate in denen die meisten Jahre ein
+    "normales" Muster zeigen (niedriger Anomaly Score) haben hohe
+    Confidence. Monate die von Einzelereignissen dominiert werden
+    (hoher Anteil anomaler Jahre) haben niedrige Confidence.
+
+    Args:
+        year_data: Output von build_year_data() — {year: {"full_365": [...]}}
+        avg: Saisonaler Durchschnitt (365 Werte) von calculate_seasonal_average()
+        contamination: IF-Parameter (0.05-0.2)
+
+    Returns:
+        Liste von 12 Dicts (Jan-Dez):
+        {
+            "month": 1-12,
+            "month_name": "Jan"-"Dez",
+            "confidence": 0-100 (hoher = robusteres Muster),
+            "normal_pct": Anteil normaler Jahre in %,
+            "anomaly_pct": Anteil anomaler Jahre in %,
+            "n_years": Anzahl ausgewerteter Jahre,
+            "avg_return": Durchschnittliche Monatsrendite,
+        }
+    """
+    try:
+        from sklearn.ensemble import IsolationForest
+    except ImportError:
+        return []
+
+    if not year_data or len(year_data) < 5 or not avg or len(avg) < 365:
+        return []
+
+    # Monatsgrenzen (Trading Days of Year, approximiert)
+    _MONTH_DOY = {
+        1: (0, 30), 2: (31, 58), 3: (59, 89), 4: (90, 119),
+        5: (120, 150), 6: (151, 180), 7: (181, 211), 8: (212, 242),
+        9: (243, 272), 10: (273, 303), 11: (304, 333), 12: (334, 364),
+    }
+    _MONTH_NAMES = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+                    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+
+    years = sorted(year_data.keys())
+    results = []
+
+    for month in range(1, 13):
+        start_doy, end_doy = _MONTH_DOY[month]
+
+        # Rendite-Vektoren pro Jahr fuer diesen Monat
+        month_vectors = []
+        month_returns = []
+        valid_years = []
+
+        for y in years:
+            curve = year_data[y].get("full_365", [])
+            if not curve or len(curve) < end_doy + 1:
+                continue
+            segment = curve[start_doy:end_doy + 1]
+            if len(segment) < 5 or segment[0] == 0:
+                continue
+            # Normalisierte Segment-Renditen (relativ zum Segment-Start)
+            normed = [(v / segment[0] - 1) * 100 for v in segment]
+            month_vectors.append(normed)
+            month_returns.append(segment[-1] / segment[0] - 1)
+            valid_years.append(y)
+
+        if len(month_vectors) < 5:
+            results.append({
+                "month": month,
+                "month_name": _MONTH_NAMES[month - 1],
+                "confidence": 50.0,
+                "normal_pct": 0.0,
+                "anomaly_pct": 0.0,
+                "n_years": len(month_vectors),
+                "avg_return": 0.0,
+            })
+            continue
+
+        # Alle Vektoren auf gleiche Laenge bringen
+        min_len = min(len(v) for v in month_vectors)
+        X = np.array([v[:min_len] for v in month_vectors])
+
+        # Isolation Forest trainieren
+        clf = IsolationForest(contamination=contamination, random_state=42, n_estimators=100)
+        labels = clf.fit_predict(X)
+
+        # Normal = 1, Anomal = -1
+        n_normal = int(np.sum(labels == 1))
+        n_anomal = int(np.sum(labels == -1))
+        n_total = len(labels)
+
+        # Confidence Score: Anteil normaler Jahre, skaliert auf 0-100
+        # Bonus wenn durchschnittliche Anomaly-Score-Streuung gering ist
+        scores = clf.decision_function(X)
+        score_std = float(np.std(scores)) if len(scores) > 1 else 0
+
+        normal_pct = (n_normal / n_total) * 100
+        # Hauptfaktor: Anteil normaler Jahre (80%) + Homogenitaet (20%)
+        homogeneity = max(0, 100 - score_std * 200)  # niedriger std = hoher Bonus
+        confidence = round(normal_pct * 0.8 + homogeneity * 0.2, 1)
+        confidence = max(0, min(100, confidence))
+
+        avg_ret = float(np.mean(month_returns)) * 100
+
+        results.append({
+            "month": month,
+            "month_name": _MONTH_NAMES[month - 1],
+            "confidence": confidence,
+            "normal_pct": round(normal_pct, 1),
+            "anomaly_pct": round((n_anomal / n_total) * 100, 1),
+            "n_years": n_total,
+            "avg_return": round(avg_ret, 2),
+        })
+
+    return results

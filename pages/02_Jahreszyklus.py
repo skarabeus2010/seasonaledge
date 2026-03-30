@@ -851,6 +851,44 @@ def main():
     except Exception as _e:
         st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
+    # ── 3b. Saisonale Muster-Brüche (KI) ──────────────────
+    with st.expander("Saisonale Muster-Brüche (KI)", expanded=False):
+        st.caption("Jahre in denen das saisonale Muster am stärksten gebrochen wurde — erkannt via Isolation Forest.")
+        try:
+            from shared.anomaly_engine import detect_pattern_breaks
+            with st.spinner("Muster-Brüche analysieren..."):
+                _breaks = detect_pattern_breaks(year_data, avg, top_n=5)
+            if _breaks:
+                _cards_html = '<div style="display:flex;flex-direction:column;gap:0.6rem;">'
+                for _b in _breaks:
+                    _b_icon = "⚠️" if _b["is_outlier"] else "📊"
+                    _b_event = f'<span style="color:{SE_COLORS["accent_warm"]};font-weight:600;"> — {_b["event"]}</span>' if _b.get("event") else ""
+                    _b_strength = _b["break_strength"]
+                    if _b_strength >= 70:
+                        _b_color = SE_COLORS["negative"]
+                    elif _b_strength >= 40:
+                        _b_color = SE_COLORS["accent_warm"]
+                    else:
+                        _b_color = SE_COLORS["positive"]
+                    _cards_html += (
+                        f'<div style="background:{SE_COLORS["surface"]};border:1px solid {SE_COLORS["panel_border"]};'
+                        f'border-radius:10px;padding:0.6rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">'
+                        f'<span style="font-size:1.2rem;">{_b_icon}</span>'
+                        f'<span style="color:{SE_COLORS["text_primary"]};font-weight:700;font-size:1.05rem;min-width:3rem;">{_b["year"]}</span>'
+                        f'<span style="color:{_b_color};font-weight:700;font-size:0.85rem;min-width:5rem;">Stärke: {_b_strength:.0f}/100</span>'
+                        f'<span style="color:{SE_COLORS["text_muted"]};font-size:0.8rem;">'
+                        f'Korr: {_b["correlation"]:.2f} · Rendite: {_b["year_return"]:+.1f}% · Max DD: {_b["max_drawdown"]:.1f}%'
+                        f'</span>{_b_event}</div>'
+                    )
+                _cards_html += '</div>'
+                st.markdown(_cards_html, unsafe_allow_html=True)
+            else:
+                st.caption("Keine Muster-Brüche erkannt (zu wenig Daten).")
+        except ImportError:
+            st.caption("scikit-learn nicht installiert — Muster-Brüche deaktiviert.")
+        except Exception as _e:
+            st.caption(f"Muster-Bruch-Erkennung nicht verfügbar: {_e}")
+
     # ── 4. Monats-Performance (Balken) ────────────────────
     st.markdown("---")
     with st.expander("Monats-Performance", expanded=True):
@@ -884,6 +922,45 @@ def main():
             key_prefix="month_sig",
             expanded=True,
         )
+
+    # ── 4c. Signal-Robustheit (Seasonal Confidence) ────────
+    with st.expander("Signal-Robustheit pro Monat (KI)", expanded=False):
+        st.caption("Wie robust ist das saisonale Muster in jedem Monat? Isolation Forest bewertet die Cluster-Reinheit der historischen Rendite-Verläufe.")
+        try:
+            from shared.anomaly_engine import compute_seasonal_confidence
+            with st.spinner("Signal-Robustheit berechnen..."):
+                _conf = compute_seasonal_confidence(year_data, avg)
+            if _conf and len(_conf) == 12:
+                _conf_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;">'
+                for _c in _conf:
+                    _cv = _c["confidence"]
+                    if _cv >= 75:
+                        _c_color = SE_COLORS["positive"]
+                        _c_label = "Robust"
+                    elif _cv >= 50:
+                        _c_color = SE_COLORS["accent_warm"]
+                        _c_label = "Mittel"
+                    else:
+                        _c_color = SE_COLORS["negative"]
+                        _c_label = "Schwach"
+                    _conf_html += (
+                        f'<div style="background:{SE_COLORS["surface"]};border:1px solid {SE_COLORS["panel_border"]};'
+                        f'border-radius:10px;padding:0.5rem 0.7rem;text-align:center;">'
+                        f'<div style="color:{SE_COLORS["text_muted"]};font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;">{_c["month_name"]}</div>'
+                        f'<div style="color:{_c_color};font-size:1.1rem;font-weight:700;">{_cv:.0f}</div>'
+                        f'<div style="color:{SE_COLORS["text_muted"]};font-size:0.6rem;">{_c_label}</div>'
+                        f'<div style="color:{SE_COLORS["text_dim"]};font-size:0.55rem;margin-top:2px;">Ø {_c["avg_return"]:+.2f}% · {_c["n_years"]}J</div>'
+                        f'</div>'
+                    )
+                _conf_html += '</div>'
+                st.markdown(_conf_html, unsafe_allow_html=True)
+                st.caption("Score 0–100: Hoher Wert = robustes, konsistentes Muster über viele Jahre. Niedriger Wert = von Einzelereignissen getrieben.")
+            else:
+                st.caption("Zu wenig Daten für Confidence-Berechnung.")
+        except ImportError:
+            st.caption("scikit-learn nicht installiert — Signal-Robustheit deaktiviert.")
+        except Exception as _e:
+            st.caption(f"Signal-Robustheit nicht verfügbar: {_e}")
 
     # ── 5. Quartals-Performance ───────────────────────────
     with st.expander("Quartals-Performance", expanded=False):

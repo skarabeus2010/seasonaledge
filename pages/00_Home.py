@@ -366,6 +366,49 @@ st.markdown(f"""
 
 
 # ══════════════════════════════════════════════════════════════
+# SEKTION 1b — MARKT-REGIME AMPEL (SPY-basiert)
+# ══════════════════════════════════════════════════════════════
+try:
+    from shared.anomaly_engine import compute_market_regime
+    from shared.yahoo_downloader import download_data, preprocess
+
+    _spy_df = download_data("SPY")
+    if _spy_df is not None and len(_spy_df) > 60:
+        _spy_df = preprocess(_spy_df)
+        _regime = compute_market_regime(_spy_df)
+        if "error" not in _regime:
+            _tl = _regime["traffic_light"]
+            _rs = _regime["risk_score"]
+            if _tl == "green":
+                _amp_icon, _amp_color, _amp_bg = "🟢", "#00d4aa", "rgba(0,212,170,0.08)"
+            elif _tl == "yellow":
+                _amp_icon, _amp_color, _amp_bg = "🟡", "#e8a425", "rgba(232,164,37,0.08)"
+            elif _tl == "red":
+                _amp_icon, _amp_color, _amp_bg = "🔴", "#ff4757", "rgba(255,71,87,0.08)"
+            else:
+                _amp_icon, _amp_color, _amp_bg = "⚪", "#5a6e85", "rgba(90,110,133,0.08)"
+
+            _regime_labels = {
+                "de": {"calm": "Ruhig", "caution": "Erhöhte Vorsicht", "stress": "Stress-Phase"},
+                "en": {"calm": "Calm", "caution": "Elevated Caution", "stress": "Stress Phase"},
+            }
+            _r_label = _regime_labels.get(get_lang(), _regime_labels["de"]).get(_regime["regime"], _regime["regime"])
+
+            st.markdown(f"""
+<div style="background:{_amp_bg};border:1px solid {_amp_color}22;border-radius:12px;
+padding:0.7rem 1.2rem;margin:1.5rem 0;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+  <span style="font-size:1.4rem;">{_amp_icon}</span>
+  <span style="color:{_amp_color};font-weight:700;font-size:0.95rem;">{t('home_regime_label') if t('home_regime_label') != 'home_regime_label' else 'Markt-Regime'}: {_r_label}</span>
+  <span style="color:#5a6e85;font-size:0.8rem;">Risk-Score: {_rs:.0f}/100 · Vol 20d: {_regime.get('volatility_20d', 0):.1f}% · Drawdown: {_regime.get('drawdown', 0):.1f}%</span>
+  <span style="color:#3a4a5e;font-size:0.7rem;margin-left:auto;">Basiert auf SPY · Isolation Forest (7 Features)</span>
+</div>
+""", unsafe_allow_html=True)
+except ImportError:
+    pass  # scikit-learn nicht installiert — leise überspringen
+except Exception:
+    pass  # Fehler bei Regime-Berechnung — Home nicht blockieren
+
+# ══════════════════════════════════════════════════════════════
 # SEKTION 2 — ALLE 12 MODULE als HTML-Grid mit st.page_link
 # Die Cards sind in reinem HTML für sauberes Layout.
 # Die st.page_link-Elemente folgen darunter — unsichtbar positioniert
