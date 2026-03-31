@@ -319,6 +319,11 @@ UPPER_CASE        → Konstanten
 - [x] Info-Badge: MutationObserver-Strategie (physisch in <summary> verschoben, 49 Badges, 11 Pages) (2026-03-30)
 - [x] Detrend-Indikator: Skalierung 0–100 (Midline 50), grün/rot Fill, korrigierte Beschreibung (2026-03-30)
 - [x] Info-Badge ENTFERNT: eigene "10_Methodik" Page ersetzt 68 verteilte Badges (2026-03-31)
+- [x] Home: Market Regime Ampel entfernt, Methodik-Kachel hinzugefügt, Grid 3×4 (2026-03-31)
+- [x] Split-Slider: Startposition 0 (zeigt Einzeljahre + goldenes aktuelles Jahr) (2026-03-31)
+- [x] Monatswechsel: DuplicateElementId Fix (key_prefix="tom_sig") (2026-03-31)
+- [x] Nightly Refresh: Supabase Heartbeat gegen Free-Tier Pausing (2026-03-31)
+- [x] Blog: Monatswechsel DAX März → April (Marktausblick, Screenshot) (2026-03-31)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 - [ ] Blog: Claude API Integration fuer automatische Content-Generierung
