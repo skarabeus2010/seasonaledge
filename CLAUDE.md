@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 20.1 | 2026-03-30 | Details → `docs/`
+> Version 21.0 | 2026-03-31 | Details → `docs/`
 
 ## Projekt
 
@@ -66,6 +66,7 @@ blog/                    ← Blog Engine (Markdown → statisches HTML)
   blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
 scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
+  intraday_refresh.py    ← Intraday Kurs-Updates (EU/US/Asien/FX/Crypto, alle 30 Min)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
 pages/                   ← Light Live + Premium Pages
   Light Live (aktiv, 10 Pages):

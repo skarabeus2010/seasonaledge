@@ -1,0 +1,20 @@
+name: Intraday Price Update
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'    # Alle 30 Minuten, 24/7
+  workflow_dispatch:           # Manuell triggerbar
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Update prices on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker exec seasonalpha-app python3 scripts/intraday_refresh.py 2>&1 | tail -20

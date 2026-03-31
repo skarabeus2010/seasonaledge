@@ -357,6 +357,31 @@ Scheduled Publishing: Posts mit `status: scheduled` + `publish_date` erscheinen 
 Pro Post generiert: HTML + 3 Tweets + LinkedIn-Post + Video-Script + Shorts + YouTube-Description.
 Details: `docs/BLOG_WORKFLOW.md`
 
+## Intraday Price Updates (scripts/intraday_refresh.py)
+
+Lightweight-Script fuer untertaegige Kurs-Updates. Nur Preise, keine KI-Berechnungen.
+GitHub Actions Workflow `intraday_update.yml` triggert alle 30 Min.
+Das Script entscheidet anhand der UTC-Zeit welche Gruppen aktiv sind.
+
+### Zeitplan (MESZ / UTC+2)
+
+| Gruppe | Ticker | Zeiten (MESZ) | Tage |
+|--------|--------|---------------|------|
+| EU (Indizes + Aktien) | 25 | 9:15, 9:35, 11:00, 13:00, 15:00, 17:00, 17:35 | Mo-Fr |
+| US (Indizes, ETFs, Aktien, Commodities) | 50 | 15:35, 16:15, 17:00, 18:00, 19:00, 20:00, 21:30, 22:05 | Mo-Fr |
+| Asien | 3 | 3:00, 5:00, 8:00 | Mo-Fr |
+| FX | 7 | 8:00, 12:00, 15:30, 18:00, 22:00 | Mo-Fr |
+| Crypto | 6 | Stuendlich (0:00-23:00) | Mo-So |
+
+```bash
+python scripts/intraday_refresh.py              # Normaler Lauf
+python scripts/intraday_refresh.py --dry-run    # Nur anzeigen
+python scripts/intraday_refresh.py --group eu   # Nur EU-Ticker
+```
+
+### GitHub Actions Budget
+~1.370 Min/Monat von 2.000 Free Tier (Intraday + Nightly + Deploy).
+
 ## Deployment
 
 ### VPS (Hetzner CPX22)
