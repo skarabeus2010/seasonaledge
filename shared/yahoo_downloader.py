@@ -138,7 +138,7 @@ def _parse_yahoo_response(data: dict) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=900, show_spinner=False)
 def download_data(
     ticker:   str,
     period:   str = "max",
