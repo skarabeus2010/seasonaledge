@@ -34,7 +34,6 @@ from shared.strategies.definitions import (
     get_strategies_by_category,
     get_strategies_by_strength,
 )
-from shared.info_badge import render_info_badge
 
 st.set_page_config(
     page_title="SeasonAlpha – Strategien",
@@ -280,7 +279,6 @@ with tab1:
 
         # ── Historische Stat-Cards ────────────────────────────────────
         with st.expander("📈 Historische Auswertung", expanded=True):
-            render_info_badge("trifecta_auswertung")
             col_s1, col_s2, col_s3, col_s4 = st.columns(4)
             _hist_data = [
                 ("Grün", "🟢", "#2ECC71", gruen_df),
@@ -308,8 +306,6 @@ with tab1:
 
         # ── Durchschnittsverlauf je Ampelfarbe ──────────────────────────
         with st.expander("📈 Durchschnittsverlauf nach Ampelfarbe", expanded=True):
-            render_info_badge("trifecta_verlauf")
-
             MONTH_TICKS_252 = [int(i * 21) for i in range(12)]
             MONTH_LABELS_252 = ["Jan","Feb","Mar","Apr","Mai","Jun",
                                 "Jul","Aug","Sep","Okt","Nov","Dez"]
@@ -437,7 +433,6 @@ with tab1:
 
         # ── Max Drawdown ──────────────────────────────────────────────
         with st.expander("📉 Max. Drawdown nach Ampelfarbe", expanded=True):
-            render_info_badge("trifecta_drawdown")
             dd_cols = st.columns(len(drawdown_data))
             for i, (signal, dd) in enumerate(drawdown_data.items()):
                 with dd_cols[i]:

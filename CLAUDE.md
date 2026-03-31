@@ -43,8 +43,8 @@ shared/                  ← Berechnungen, Daten, Utilities
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
   percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
   footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk Disclosure
-  info_badge.py          ← ⓘ-Badge für Expander (MutationObserver → physisch in <summary> verschoben) — GEPLANT: entfernen, stattdessen eigene Info-Page
-  info_texts.yaml        ← Zentrale Badge-Texte DE/EN (~40 Einträge) — GEPLANT: Basis für Info-Page
+  info_badge.py          ← ⓘ-Badge für Expander (DEPRECATED — nur noch in _disabled/ Pages)
+  info_texts.yaml        ← Zentrale Erklärungs-Texte DE/EN (51 Einträge) → Datenquelle für 10_Methodik
   i18n.py                ← Internationalisierung DE/EN: t(), get_lang(), lang_toggle() (JS-basiert)
   ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
   indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
@@ -68,7 +68,7 @@ scripts/                 ← Batch-Jobs
   nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
 pages/                   ← Light Live + Premium Pages
-  Light Live (aktiv, 9 Pages):
+  Light Live (aktiv, 10 Pages):
     00_Home              ← Startseite (Hero, 3x3 Kacheln, Slider, Stats, Newsletter)
     01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten, Anomalie-Radar,
                             Perzentil-Statusbar, Kontext-Panel (kompakte Karten),
@@ -110,6 +110,8 @@ pages/                   ← Light Live + Premium Pages
                             Max Drawdown (kompakte Karten),
                             Jahresrendite nach Signal, Historische Tabelle
     08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
+    10_Methodik          ← Methodik & Erklärungen: alle Analyse-Methoden zentral
+                            (ersetzt verteiltes ⓘ-Badge-System, Quelle: info_texts.yaml)
     11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
   Disabled (pages/_disabled/):
     09_Crash_Fruehwarnung← KI-Ampel: Isolation Forest Regime-Erkennung
@@ -191,6 +193,8 @@ if _project_dir not in sys.path:
 - Ticker-Auswahl → `ticker_select()` (speichert global, bleibt bei Page-Wechsel)
 - Indikator-Filter → `indicator_filter_ui.py` (Sidebar, 0-4 Filter, UND-Verknuepfung)
 - Blog → `blog/blog_builder.py` (Markdown → HTML + Charts + Social + YouTube)
+- Methodik-Erklärungen → `pages/10_Methodik.py` (zentrale Referenz, Quelle: `info_texts.yaml`)
+- `render_info_badge()` NICHT mehr verwenden → Erklärungen gehören auf die Methodik-Page
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
 ## UI-Komponenten (Premium Dark Mode)
@@ -314,7 +318,7 @@ UPPER_CASE        → Konstanten
 - [x] Info-Badge: shared/info_badge.py + info_texts.yaml (~40 Einträge DE/EN) (2026-03-30)
 - [x] Info-Badge: MutationObserver-Strategie (physisch in <summary> verschoben, 49 Badges, 11 Pages) (2026-03-30)
 - [x] Detrend-Indikator: Skalierung 0–100 (Midline 50), grün/rot Fill, korrigierte Beschreibung (2026-03-30)
-- [ ] Info-Badge ENTFERNEN: stattdessen eigene "Methodik & Erklärungen"-Page bauen (info_texts.yaml als Basis nutzen)
+- [x] Info-Badge ENTFERNT: eigene "10_Methodik" Page ersetzt 68 verteilte Badges (2026-03-31)
 - [ ] SEO Landingpages: Platzhalter-Statistiken durch echte Berechnungen ersetzen (Supabase)
 - [ ] SEO Landingpages: Statische Saisonalitaets-Charts generieren (Plotly write_image)
 - [ ] Blog: Claude API Integration fuer automatische Content-Generierung

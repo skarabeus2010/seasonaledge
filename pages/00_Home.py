@@ -366,49 +366,6 @@ st.markdown(f"""
 
 
 # ══════════════════════════════════════════════════════════════
-# SEKTION 1b — MARKT-REGIME AMPEL (SPY-basiert)
-# ══════════════════════════════════════════════════════════════
-try:
-    from shared.anomaly_engine import compute_market_regime
-    from shared.yahoo_downloader import download_data, preprocess
-
-    _spy_df = download_data("SPY")
-    if _spy_df is not None and len(_spy_df) > 60:
-        _spy_df = preprocess(_spy_df)
-        _regime = compute_market_regime(_spy_df)
-        if "error" not in _regime:
-            _tl = _regime["traffic_light"]
-            _rs = _regime["risk_score"]
-            if _tl == "green":
-                _amp_icon, _amp_color, _amp_bg = "🟢", "#00d4aa", "rgba(0,212,170,0.08)"
-            elif _tl == "yellow":
-                _amp_icon, _amp_color, _amp_bg = "🟡", "#e8a425", "rgba(232,164,37,0.08)"
-            elif _tl == "red":
-                _amp_icon, _amp_color, _amp_bg = "🔴", "#ff4757", "rgba(255,71,87,0.08)"
-            else:
-                _amp_icon, _amp_color, _amp_bg = "⚪", "#5a6e85", "rgba(90,110,133,0.08)"
-
-            _regime_labels = {
-                "de": {"calm": "Ruhig", "caution": "Erhöhte Vorsicht", "stress": "Stress-Phase"},
-                "en": {"calm": "Calm", "caution": "Elevated Caution", "stress": "Stress Phase"},
-            }
-            _r_label = _regime_labels.get(get_lang(), _regime_labels["de"]).get(_regime["regime"], _regime["regime"])
-
-            st.markdown(f"""
-<div style="background:{_amp_bg};border:1px solid {_amp_color}22;border-radius:12px;
-padding:0.7rem 1.2rem;margin:1.5rem 0;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-  <span style="font-size:1.4rem;">{_amp_icon}</span>
-  <span style="color:{_amp_color};font-weight:700;font-size:0.95rem;">{t('home_regime_label') if t('home_regime_label') != 'home_regime_label' else 'Markt-Regime'}: {_r_label}</span>
-  <span style="color:#5a6e85;font-size:0.8rem;">Risk-Score: {_rs:.0f}/100 · Vol 20d: {_regime.get('volatility_20d', 0):.1f}% · Drawdown: {_regime.get('drawdown', 0):.1f}%</span>
-  <span style="color:#3a4a5e;font-size:0.7rem;margin-left:auto;">Basiert auf SPY · Isolation Forest (7 Features)</span>
-</div>
-""", unsafe_allow_html=True)
-except ImportError:
-    pass  # scikit-learn nicht installiert — leise überspringen
-except Exception:
-    pass  # Fehler bei Regime-Berechnung — Home nicht blockieren
-
-# ══════════════════════════════════════════════════════════════
 # SEKTION 2 — ALLE 12 MODULE als HTML-Grid mit st.page_link
 # Die Cards sind in reinem HTML für sauberes Layout.
 # Die st.page_link-Elemente folgen darunter — unsichtbar positioniert
@@ -431,6 +388,7 @@ _PAGES_DE = [
     ("pages/08_Kriegszeiten.py",             "⚔️", "Kriegszeiten",           "Krieg vs. Frieden — Saisonalität im Vergleich"),
     ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Saisonal-Kalender",      "Fed, EZB, OPEX, Mond & Feiertage — 12 Monate"),
     ("pages/12_Backtest_Engine.py",          "🔬", "Backtest Engine",        "KI-Optimierer: Events, Stop-Loss, Walk-Forward"),
+    ("pages/10_Methodik.py",                "📖", "Methodik",               "Alle Analyse-Methoden & Kennzahlen erklärt"),
 ]
 _PAGES_EN = [
     ("pages/01_Dekadenzyklus.py",            "📊", "Decade Cycle",           "131 years DJI — Decade cohorts & AI"),
@@ -443,6 +401,7 @@ _PAGES_EN = [
     ("pages/08_Kriegszeiten.py",             "⚔️", "War & Peace",            "War vs. peace — seasonality compared"),
     ("pages/11_Saisonal_Events_Kalender.py", "🗓️", "Events Calendar",        "Fed, ECB, OPEX, moon & holidays — 12 months"),
     ("pages/12_Backtest_Engine.py",          "🔬", "Backtest Engine",        "AI optimizer: events, stop-loss, walk-forward"),
+    ("pages/10_Methodik.py",                "📖", "Methodology",            "All analysis methods & metrics explained"),
 ]
 _LIGHT_PAGES = _PAGES_EN if get_lang() == "en" else _PAGES_DE
 
@@ -475,7 +434,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-for row_idx in range(3):
+for row_idx in range(4):
     cols = st.columns(3, gap="medium")
     for col_idx in range(3):
         card_idx = row_idx * 3 + col_idx
@@ -503,9 +462,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")
 _slider_texts = {
     "de": ("Saisonalitäts-Analyse", "Vom Rauschen zum Trend",
-           "Ziehe den Slider — links alle Einzeljahre, rechts der saisonale Durchschnitt."),
+           "Ziehe den Slider nach rechts — die Einzeljahre verschmelzen zum saisonalen Durchschnitt."),
     "en": ("Seasonality Analysis", "From Noise to Trend",
-           "Move the slider — left shows individual years, right shows the seasonal average."),
+           "Drag the slider right — individual years merge into the seasonal average."),
 }
 _sl_label, _sl_title, _sl_sub = _slider_texts[get_lang()]
 st.markdown(f'<div class="se-section-label">{_sl_label}</div>', unsafe_allow_html=True)

@@ -326,7 +326,7 @@ input.sl-ov {{
   var handle  = document.getElementById('handle');
   var slOv    = document.getElementById('sl-ov');
   var slBar   = document.getElementById('sl-bar');
-  var cur = 50, raf = false;
+  var cur = 0, raf = false;
 
   function apply(pct) {{
     pct = Math.round(pct);
@@ -359,7 +359,7 @@ input.sl-ov {{
     }});
   }});
 
-  apply(50);
+  apply(0);
 }})();
 </script>
 </body>

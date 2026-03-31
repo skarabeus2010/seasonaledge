@@ -40,7 +40,6 @@ from shared.calculations import get_presidential_cycle_year
 from shared.we_are_here import annotation as wah_annotation, rect as wah_rect, vline as wah_vline
 from shared.design import inject_se_css
 from shared.footer import render_footer
-from shared.info_badge import render_info_badge
 inject_se_css()
 
 
@@ -927,7 +926,6 @@ def main():
 
     # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
     with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
-        render_info_badge("kumulierter_wochenverlauf")
         wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         cw_curve = calc_current_week_curve(raw_df)
@@ -944,7 +942,6 @@ def main():
 
     # ── Balkendiagramm ────────────────────────────────
     with st.expander("📊 Durchschnittsrendite & Win Rate pro Wochentag", expanded=True):
-        render_info_badge("wochentag_rendite")
         bar_fig = build_weekday_bar_chart(stats, ticker, return_mode)
         st.plotly_chart(bar_fig, use_container_width=True)
 
@@ -978,7 +975,6 @@ def main():
 
     # ── Overnight vs. Intraday ────────────────────────
     with st.expander("🌙 Overnight vs. Intraday Split", expanded=True):
-        render_info_badge("overnight_split")
         oi_stats = calc_overnight_intraday(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         oi_fig = build_overnight_intraday_chart(oi_stats, ticker)
@@ -994,7 +990,6 @@ def main():
 
     # ── Konsekutiv-Analyse ────────────────────────────
     with st.expander("🔗 Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)", expanded=True):
-        render_info_badge("konsekutiv_analyse")
         consec_matrix = calc_consecutive_probs(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         consec_fig = build_consecutive_heatmap(consec_matrix)
@@ -1008,7 +1003,6 @@ def main():
 
     # ── Quartals-Heatmaps ─────────────────────────────
     with st.expander("📊 Wochentag-Performance nach Quartal", expanded=True):
-        render_info_badge("quartals_wochentag")
         q_stats = calc_quarterly_weekday(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         q_fig = build_quarterly_heatmaps(q_stats, ticker)
@@ -1022,7 +1016,6 @@ def main():
 
     # ── Volatilitäts-Profil ───────────────────────────
     with st.expander("📉 Volatilitäts-Profil (Tages-Range)", expanded=True):
-        render_info_badge("volatilitaets_profil")
         vol_stats = calc_volatility_profile(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         vol_fig = build_volatility_chart(vol_stats, ticker)
@@ -1037,7 +1030,6 @@ def main():
 
     # ── Heatmap Monat x Wochentag ────────────────────
     with st.expander("🗓️ Monat × Wochentag Heatmap", expanded=True):
-        render_info_badge("monat_wochentag_heatmap")
         heatmap_fig = build_heatmap(stats, ticker)
         st.plotly_chart(heatmap_fig, use_container_width=True)
 

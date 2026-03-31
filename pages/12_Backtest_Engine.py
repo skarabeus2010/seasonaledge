@@ -34,7 +34,6 @@ from shared.backtest_engine import (
     make_opex_events, make_moon_events, extract_trade_features,
     filter_trades_isolation_forest, OBJECTIVES,
 )
-from shared.info_badge import render_info_badge
 
 st.set_page_config(
     page_title="Backtest Engine — SeasonAlpha",
@@ -496,7 +495,6 @@ with tab4:
             # ── Erklaertext ──
             st.markdown("---")
             with st.expander("📖 So lesen Sie den Event-Relevanz Indikator", expanded=False):
-                render_info_badge("event_relevanz")
                 st.markdown("""
 **Der Relevanz-Score** wird durch unsere KI-Modelle berechnet und kombiniert drei statistische Dimensionen zu einem Gesamtwert zwischen **0** (keine Relevanz) und **1** (maximale Relevanz):
 
