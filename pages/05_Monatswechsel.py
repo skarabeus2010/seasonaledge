@@ -474,7 +474,8 @@ def main():
 
     sig_results = run_significance_test(sig_groups)
     render_significance_section(sig_results,
-        expander_title="📊 Statistische Signifikanz des Monatswechsel-Effekts")
+        expander_title="📊 Statistische Signifikanz des Monatswechsel-Effekts",
+        key_prefix="tom_sig")
 
     # ── Best & Worst ──────────────────────────────────
     with st.expander("🏆 Bester & schlechtester Monatswechsel", expanded=False):
