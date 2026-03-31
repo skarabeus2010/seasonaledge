@@ -389,14 +389,20 @@ python scripts/intraday_refresh.py --group eu   # Nur EU-Ticker
 - Domain: seasonalpha.ai (STRATO A-Record + CNAME www)
 - Auto-Deploy: GitHub Action → SSH → git pull + docker rebuild
 
-### GitHub Actions (deploy.yml)
-```yaml
-1. git reset --hard HEAD
-2. git pull origin master
-3. python3 seo/programmatic_seo_builder.py
-4. python3 blog/blog_builder.py --build
-5. docker compose up -d --build
-```
+### GitHub Actions Workflows
+
+Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`).
+
+| Workflow | Datei | Zeitplan | Funktion |
+|----------|-------|----------|----------|
+| Deploy | `deploy.yml` | Push auf master | git pull + SEO + Blog + docker rebuild |
+| Intraday Update | `intraday_update.yml` | `*/30 * * * *` (24/7) | Kurs-Updates (EU/US/Asien/FX/Crypto) |
+| Nightly Refresh | `nightly_refresh.yml` | `0 20 * * 1-5` | Voller Refresh + KI-Scores + TDOM + Calendar |
+| Nightly Update | `nightly_update.yml` | `30 20 * * 1-5` | Batch-Download aller Ticker |
+
+### Streamlit Cache
+- `yahoo_downloader.py`: `@st.cache_data(ttl=900)` — 15 Min TTL
+- Intraday-Updates werden spaetestens 15 Min nach Refresh in der App sichtbar
 
 ### Routing (Nginx)
 | URL | Ziel |
