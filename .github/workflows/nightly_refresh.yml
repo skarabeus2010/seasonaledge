@@ -2,30 +2,22 @@ name: Nightly DB Refresh
 
 on:
   schedule:
-    # Mo-Fr um 20:00 UTC (nach US-Börsenschluss)
+    # Mo-Fr um 20:00 UTC (22:00 MESZ) — nach US-Boersenschluss
     - cron: '0 20 * * 1-5'
   workflow_dispatch:  # Manueller Trigger
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Run nightly refresh on VPS
+        uses: appleboy/ssh-action@v1
         with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run nightly refresh
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python scripts/nightly_refresh.py
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            docker exec seasonalpha-app python3 scripts/nightly_refresh.py 2>&1 | tail -30
+            echo "Nightly refresh done: $(date)"

@@ -2,34 +2,27 @@ name: Nightly Data Update
 
 on:
   schedule:
-    # Mo–Fr 20:00 UTC (22:00 MEZ / 21:00 MESZ)
-    - cron: '0 20 * * 1-5'
-  workflow_dispatch:  # Manueller Trigger über GitHub UI
+    # Mo-Fr 20:30 UTC (22:30 MESZ) — 30 Min nach Nightly Refresh
+    - cron: '30 20 * * 1-5'
+  workflow_dispatch:  # Manueller Trigger
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Run batch download on VPS
+        uses: appleboy/ssh-action@v1
         with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run batch download
-        run: python -m shared.download_manager --batch-all
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-
-      - name: Report status
-        if: failure()
-        run: echo "::error::Nightly data update failed!"
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 8m
+          script: |
+            docker exec seasonalpha-app python3 -c "
+            from shared.download_manager import DownloadManager
+            import os, pathlib
+            dm = DownloadManager(str(pathlib.Path('/app')))
+            dm.batch_all()
+            " 2>&1 | tail -20
+            echo "Nightly update done: $(date)"
