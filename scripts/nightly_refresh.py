@@ -115,8 +115,36 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
     return len(scanner_results)
 
 
+def heartbeat():
+    """Phase Z: Supabase Heartbeat — verhindert Free-Tier Pausing."""
+    from shared.supabase_client import get_client
+    from datetime import datetime
+
+    client = get_client()
+
+    # 1) Einfacher DB-Ping via RPC oder direkten SELECT
+    try:
+        client.table("market_events").select("id").limit(1).execute()
+    except Exception:
+        pass  # Tabelle existiert evtl. nicht — egal, der Request zählt
+
+    # 2) Heartbeat-Eintrag in app_logs schreiben (echte Write-Aktivität)
+    try:
+        client.table("app_logs").insert({
+            "level": "info",
+            "message": f"nightly_heartbeat: alive — {datetime.utcnow().isoformat()}",
+            "created_at": datetime.utcnow().isoformat(),
+        }).execute()
+        app_logger.info("nightly_refresh: Supabase heartbeat OK")
+        print("Heartbeat: Supabase pinged")
+    except Exception as e:
+        # Fallback: Mindestens der SELECT oben war ein API-Call
+        app_logger.info(f"nightly_refresh: Heartbeat write failed ({e}), SELECT sent")
+        print(f"Heartbeat: SELECT sent (write failed: {e})")
+
+
 def main():
-    """Hauptfunktion: Calendar + Ticker Refresh."""
+    """Hauptfunktion: Calendar + Ticker Refresh + Heartbeat."""
     from shared.symbols import SYMBOLS
 
     app_logger.info("nightly_refresh: Start")
@@ -144,6 +172,13 @@ def main():
     print(f"Ticker refresh: {len(tickers)} Ticker")
 
     n_results = refresh_ticker_data(tickers, years_back=20, quick_mode=True)
+
+    # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
+    try:
+        heartbeat()
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Heartbeat fehlgeschlagen: {e}")
+        print(f"Heartbeat failed: {e}")
 
     elapsed = time.time() - t_start
     app_logger.info(f"nightly_refresh: Fertig — {n_results} Scanner-Ergebnisse in {elapsed:.0f}s")
