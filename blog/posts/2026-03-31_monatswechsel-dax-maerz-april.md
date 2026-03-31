@@ -82,8 +82,6 @@ Wer saisonale Muster nutzen möchte, kann sie als **zusätzlichen Filter** einse
 - **Planst du einen Einstieg?** Die Tage t-3 bis t+3 bieten historisch ein günstiges Zeitfenster.
 - **Nutze den Signifikanztest** auf SeasonAlpha, um zu prüfen, welche Monatswechsel wirklich belastbar sind — und welche nur Rauschen.
 
-{{chart:tom_effect:^GDAXI:20}}
-
 ## So findest du die Analyse auf SeasonAlpha
 
 1. Öffne [seasonalpha.ai](https://seasonalpha.ai)
