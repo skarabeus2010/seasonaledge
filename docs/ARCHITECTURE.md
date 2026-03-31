@@ -48,7 +48,18 @@ Direkt in `yahoo_downloader.py` integriert. Automatisch aktiv wenn Yahoo < 40 Ja
 | `^HSI` | `^hsi` | ~1986 |
 | `^KS11` | `^kospi` | ~1997 |
 
-## Supabase Tabellen-Schema
+## Supabase
+
+| Eigenschaft | Wert |
+|-------------|------|
+| Projekt | **SeasonAlpha** |
+| Projekt-ID | `dkrebzobcwxyagximuxy` |
+| URL | `https://dkrebzobcwxyagximuxy.supabase.co` |
+| Plan | Free |
+| Region | EU (Frankfurt) |
+| VPS `.env` | `SUPABASE_URL` + `SUPABASE_KEY` (anon/public) |
+
+### Tabellen-Schema
 
 ```sql
 CREATE TABLE prices (
