@@ -1314,13 +1314,15 @@ def main():
 
             if not dd_monthly.empty:
                 z_vals = dd_monthly.values
+                _n_rows = len(dd_monthly)
+
                 fig_hm = go.Figure(data=go.Heatmap(
                     z=z_vals,
                     x=dd_monthly.columns.tolist(),
                     y=dd_monthly.index.tolist(),
                     text=[[f"{v:.1f}%" for v in row] for row in z_vals],
                     texttemplate="%{text}",
-                    textfont=dict(size=11, color="white"),
+                    textfont=dict(size=10, color="white"),
                     colorscale=SE_DRAWDOWN_COLORSCALE,
                     zmin=float(z_vals.min()),
                     zmax=0,
@@ -1328,18 +1330,24 @@ def main():
                     hovertemplate="Jahr %{y} · %{x}: %{z:.2f}%<extra></extra>",
                 ))
 
+                # Gelber Rahmen um aktuelles Jahr + Monat
                 _cur_year_str = str(_cur_year)
                 _cur_month_idx = datetime.now().month - 1
                 if _cur_year_str in dd_monthly.index:
                     _y_idx = dd_monthly.index.tolist().index(_cur_year_str)
+                    # Ganzes Jahr-Zeile markieren
                     fig_hm.add_shape(
                         type="rect",
-                        x0=_cur_month_idx - 0.5, x1=_cur_month_idx + 0.5,
+                        x0=-0.5, x1=11.5,
                         y0=_y_idx - 0.5, y1=_y_idx + 0.5,
-                        line=dict(color="#FFD700", width=3),
+                        line=dict(color="#FFD700", width=2.5),
                     )
 
-                fig_hm = apply_se_heatmap_theme(fig_hm, title=f"Max Drawdown pro Monat × Jahr — {ticker}", height=max(350, len(_recent_years) * 24))
+                fig_hm = apply_se_heatmap_theme(
+                    fig_hm,
+                    title=f"Max Drawdown pro Monat × Jahr — {ticker}",
+                    height=max(400, _n_rows * 28 + 80),
+                )
                 fig_hm.update_xaxes(tickformat=None)
                 fig_hm.update_yaxes(tickformat=None, dtick=1)
                 st.plotly_chart(fig_hm, use_container_width=True, config=_PLOTLY_CFG)
