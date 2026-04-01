@@ -259,7 +259,8 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     # Aktueller Monatsverlauf (gelbe Linie, eigene Y-Achse rechts)
     if current_month_curve is not None:
         cm_tdoms, cm_curve = current_month_curve
-        if cm_tdoms and cm_curve:
+        if cm_tdoms and cm_curve and len(cm_tdoms) > 1:
+            # Mehr als 1 Tag → Linie zeichnen
             current_year = datetime.now().year
             fig.add_trace(go.Scatter(
                 x=cm_tdoms, y=cm_curve, mode="lines",
@@ -275,6 +276,15 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
                     tickfont=dict(color="#F1C40F", size=10),
                 ),
             )
+        elif cm_tdoms and len(cm_tdoms) == 1:
+            # TDOM 1 (erster Tag) → goldener Stern-Marker auf der Ø-Kurve
+            _tdom1_avg = tdom_stats.get(1, {}).get("avg", 0)
+            fig.add_trace(go.Scatter(
+                x=[1], y=[_tdom1_avg], mode="markers",
+                marker=dict(size=14, color="#F1C40F", symbol="star", line=dict(width=1, color="#080c12")),
+                name=f"{datetime.now().year} Start (TDOM 1)",
+                hovertemplate=f"<b>{datetime.now().year} — TDOM 1</b><br>Ø: %{{y:+.3f}}%<extra></extra>",
+            ))
 
     # We are here! (TDOM-Marker)
     if current_tdom is not None and current_tdom in tdoms:
