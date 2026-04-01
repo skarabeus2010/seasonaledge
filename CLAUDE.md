@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 21.0 | 2026-03-31 | Details → `docs/`
+> Version 22.0 | 2026-04-01 | Details → `docs/`
 
 ## Projekt
 
@@ -20,7 +20,8 @@ Python: PowerShell → immer `py -m` (nicht `python`)
 ```
 seasonal_app.py          ← Startseite
 shared/                  ← Berechnungen, Daten, Utilities
-  yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback + OHLC Split-Adjustierung (einziger Cache!)
+  yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback + OHLC Split+Dividend-Adjustierung (einziger Cache!)
+  data.py                ← Supabase-First Daten-Layer + OHLC-Konsistenzcheck (Split+Dividend)
   calculations.py        ← Kern-Berechnungen
   charts.py              ← Plotly Theme (apply_se_theme)
   ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
@@ -192,6 +193,13 @@ if _project_dir not in sys.path:
 | Blog-Screenshots: `blog/posts/images/` | Committed → wird beim Build nach output/ kopiert |
 | i18n: `from shared.i18n import t, lang_toggle, get_lang` | `lang_toggle()` VOR sidebar-Blöcken aufrufen |
 | Heatmap (Monatszyklus): `apply_se_theme` + `dtick=1` | Nicht `apply_se_heatmap_theme` + `type="category"` |
+| Heatmap Jahreslabels: `f" {y} "` padden | Plotly interpretiert `"2021"` als Zahl → Leerzeichen erzwingt Kategorie |
+| Heatmap Text: `text`+`texttemplate` | Statt `_add_heatmap_annotations` → bessere Positionierung |
+| Overnight/Intraday: Residual-Ansatz | `overnight = total - intraday` (NICHT `Open/Close.shift(1)`) |
+| OHLC Cross-Day Berechnung verboten | `Open[t]/Close[t-1]` mischt verschiedene adj_factors → Dividend-Bias |
+| Nightly-Refresh: nur 5 Tage | Historische Daten bleiben unveraendert in Supabase |
+| `log_return` Spalte in Supabase | Vorberechnet, wird von preprocess() genutzt wenn vorhanden |
+| `from shared.data import download_data` | NICHT `from shared.yahoo_downloader` (Supabase-First!) |
 
 ## Architektur-Prinzipien
 
@@ -218,6 +226,11 @@ if _project_dir not in sys.path:
 - Page-Layout: Rendite-Sektionen oben, Drawdown/Risiko unten (visuell getrennt)
 - SEO-Tools → `seo/tools/` (statisches HTML mit JS-Client, Nginx /tools/ Route)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
+- Daten-Layer → `shared/data.py` (Supabase-First, Yahoo-Fallback, OHLC-Konsistenzcheck)
+- OHLC-Adjustierung → `yahoo_downloader.py` adj_factor (Split+Dividend auf Open/High/Low)
+- Overnight/Intraday → Residual-Ansatz: `overnight = total - intraday` (nie cross-day OHLC mischen)
+- Heatmaps mit Jahreslabels → Leerzeichen-Padding `f" {y} "` + `categoryorder="array"`
+- Nightly-Refresh → nur letzte 5 Tage (historische Daten bleiben unveraendert)
 
 ## UI-Komponenten (Premium Dark Mode)
 
@@ -269,12 +282,9 @@ UPPER_CASE        → Konstanten
 
 ## Offene TODOs
 
-- [ ] **PRIO 1: Pages auf Supabase-Daten umstellen (statt Yahoo-Live-Fetch)**
-      Alle 6 Analysis-Pages (01-06) laden Kursdaten live von Yahoo Finance.
-      Die Supabase `prices`-Tabelle wird vom Nightly-Job befuellt, aber nie gelesen.
-      Refactoring: `shared/data.py` → erst `fetch_prices()` aus Supabase, Fallback Yahoo.
-      Betrifft: Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen.
-      Vorteil: Schnellere Ladezeit, weniger Yahoo-Rate-Limits, Stooq-Daten (DJI 130J) sofort verfuegbar.
+- [x] **PRIO 1: Pages auf Supabase-Daten umstellen (statt Yahoo-Live-Fetch)** (2026-04-01)
+      `shared/data.py` → Supabase-First + OHLC-Konsistenzcheck (Split+Dividend) + Yahoo-Fallback.
+      OHLC-Backfill: `scripts/fix_ohlc_adjustment.py` (263 Ticker, 102k Zeilen korrigiert).
 - [ ] `shared/download_manager.py` fertigstellen
 - [x] Premium Dashboard: TDOM freigeschaltet (2026-03-19)
 - [ ] Premium Dashboard: TDOY Sektion freischalten
@@ -439,6 +449,14 @@ UPPER_CASE        → Konstanten
 - [x] Nightly Jobs: 22:00→22:30 MESZ fuer amtliche Schlusskurse (2026-04-01)
 - [x] Intraday-Refresh: Schreibt Preise in Supabase (2026-04-01)
 - [x] Supabase fetch_prices: Paginierung 1000-Row-Limit gefixt (2026-04-01)
+- [x] OHLC Split+Dividend Adjustierung: Backfill 263 Ticker, 102k Zeilen korrigiert (2026-04-01)
+- [x] OHLC-Konsistenzcheck in data.py: Split-Check + Dividend-Check → Yahoo-Fallback (2026-04-01)
+- [x] Overnight/Intraday Residual-Ansatz: `overnight = total - intraday` (kein cross-day OHLC) (2026-04-01)
+- [x] Weekend-Effekt: Neues Feature (Fr Close → Mo Open) mit Heatmap, Signifikanz, Praesidentenzyklus (2026-04-01)
+- [x] Heatmap Jahres-Kategorie Fix: Leerzeichen-Padding + built-in texttemplate (Plotly Bug) (2026-04-01)
+- [x] TOM Heatmap Fix: Gleicher Plotly-Kategorie Fix (Monatswechsel Page) (2026-04-01)
+- [x] log_return Spalte in Supabase: Vorberechnet fuer alle 263 Ticker (2026-04-01)
+- [x] Nightly-Refresh: 60 Tage → 5 Tage (historische Daten bleiben unveraendert) (2026-04-01)
 
 ## Docs (bei Bedarf lesen)
 
