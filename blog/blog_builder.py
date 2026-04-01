@@ -111,6 +111,70 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
     import re as _re
     md_text = _re.sub(r'<!--.*?-->', '', md_text, flags=_re.DOTALL)
 
+    # ── Markdown-Tabellen vorab in HTML umwandeln ──
+    def _convert_tables(text):
+        """Wandelt Markdown-Tabellen (|...|) in <table> HTML um."""
+        import re as _r
+        result_lines = []
+        table_lines = []
+        in_table = False
+
+        for line in text.split("\n"):
+            stripped = line.strip()
+            is_table_row = stripped.startswith("|") and stripped.endswith("|") and stripped.count("|") >= 3
+
+            if is_table_row:
+                table_lines.append(stripped)
+                in_table = True
+            else:
+                if in_table and table_lines:
+                    result_lines.append(_build_table_html(table_lines))
+                    table_lines = []
+                    in_table = False
+                result_lines.append(line)
+
+        if table_lines:
+            result_lines.append(_build_table_html(table_lines))
+
+        return "\n".join(result_lines)
+
+    def _build_table_html(table_lines):
+        """Konvertiert gesammelte Tabellenzeilen in HTML."""
+        rows = []
+        for line in table_lines:
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            rows.append(cells)
+
+        if len(rows) < 2:
+            return ""
+
+        # Zeile 2 ist die Separator-Zeile (|---|---|)
+        has_separator = all(c.replace("-", "").replace(":", "").strip() == "" for c in rows[1])
+
+        html = '<table>\n<thead>\n<tr>'
+        for cell in rows[0]:
+            html += f'<th>{_inline_format(cell)}</th>'
+        html += '</tr>\n</thead>\n<tbody>\n'
+
+        start = 2 if has_separator else 1
+        for row in rows[start:]:
+            html += '<tr>'
+            for cell in row:
+                html += f'<td>{_inline_format(cell)}</td>'
+            html += '</tr>\n'
+
+        html += '</tbody>\n</table>'
+        return html
+
+    def _inline_format(text):
+        """Inline-Formatting für Tabellenzellen (bold, links)."""
+        import re as _r
+        text = _r.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+        text = _r.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', text)
+        return text
+
+    md_text = _convert_tables(md_text)
+
     lines = md_text.split("\n")
     html_parts = []
     in_list = False
@@ -187,6 +251,11 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
                 html_parts.append(_build_chart_image(chart_type, ticker, int(years), post_slug))
             else:
                 html_parts.append(_build_chart_placeholder(chart_type, ticker, int(years)))
+            continue
+
+        # HTML passthrough (Tabellen etc.)
+        if stripped.startswith("<"):
+            html_parts.append(stripped)
             continue
 
         # Regular paragraph
