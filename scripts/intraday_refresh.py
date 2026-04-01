@@ -114,7 +114,8 @@ def get_active_groups(now_utc=None, force_group=None):
 
 
 def refresh_tickers(tickers, group_name, dry_run=False):
-    """Laedt Kursdaten fuer eine Liste von Tickern."""
+    """Laedt Kursdaten fuer eine Liste von Tickern und schreibt sie in Supabase."""
+    import pandas as pd
     success = 0
     errors = []
 
@@ -126,9 +127,32 @@ def refresh_tickers(tickers, group_name, dry_run=False):
 
         try:
             t0 = time.time()
-            download_data(ticker, period="5d")
+            df = download_data(ticker, period="5d")
+            if df is not None and not df.empty:
+                # Preise in Supabase schreiben
+                try:
+                    from shared.supabase_client import upsert_prices
+                    records = []
+                    for idx, row in df.iterrows():
+                        rec = {
+                            "ticker": ticker,
+                            "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
+                            "close": round(float(row["Close"]), 4),
+                            "source": "yahoo",
+                        }
+                        for col in ["Open", "High", "Low"]:
+                            if col in row and pd.notna(row[col]):
+                                rec[col.lower()] = round(float(row[col]), 4)
+                        if "Volume" in row and pd.notna(row["Volume"]):
+                            rec["volume"] = int(row["Volume"])
+                        records.append(rec)
+                    if records:
+                        upsert_prices(records)
+                except Exception as db_err:
+                    print(f"    [{i:2d}/{len(tickers)}] {ticker} — DB-Fehler: {db_err}")
+
             elapsed = time.time() - t0
-            print(f"    [{i:2d}/{len(tickers)}] {ticker} — {elapsed:.1f}s")
+            print(f"    [{i:2d}/{len(tickers)}] {ticker} — {elapsed:.1f}s ({len(df) if df is not None else 0} rows)")
             success += 1
         except Exception as e:
             errors.append(ticker)
