@@ -108,9 +108,11 @@ def main():
 
     # ── Kachel-Auswahl (2×5 Grid) ──────────────────────
     st.markdown(
-        f'<div style="text-align:center; margin-bottom:1rem;">'
+        f'<div style="text-align:center; margin-bottom:1.2rem;">'
         f'<span style="color:{SE_COLORS["text_muted"]}; font-size:13px; '
-        f'letter-spacing:2px; text-transform:uppercase;">Strategie wählen</span></div>',
+        f'letter-spacing:2px; text-transform:uppercase;">Strategie wählen</span>'
+        f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.9rem; margin-top:0.3rem;">'
+        f'Wählen Sie aus altbekannten Strategien eine, die zu Ihnen passt.</p></div>',
         unsafe_allow_html=True,
     )
 
@@ -136,13 +138,13 @@ def main():
                 _bg = "background:linear-gradient(135deg,#131d2a,#1a2535);" if is_selected else "background:linear-gradient(135deg,#0f1923,#131d2a);"
 
                 st.markdown(
-                    f'<div style="{_bg}{_border}border-radius:12px;padding:12px 8px;'
-                    f'text-align:center;min-height:90px;">'
-                    f'<div style="font-size:1.4rem;">{strat["icon"]}</div>'
-                    f'<div style="color:{SE_COLORS["text_primary"]};font-size:11px;font-weight:600;'
-                    f'margin:4px 0 2px;">{strat["name"]}</div>'
-                    f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:13px;'
-                    f'font-weight:700;">{cagr:+.1f}% p.a.</div>'
+                    f'<div style="{_bg}{_border}border-radius:12px;padding:14px 6px;'
+                    f'text-align:center;min-height:100px;overflow:visible;">'
+                    f'<div style="font-size:1.3rem;">{strat["icon"]}</div>'
+                    f'<div style="color:{SE_COLORS["text_primary"]};font-size:10px;font-weight:600;'
+                    f'margin:4px 0 2px;line-height:1.3;word-wrap:break-word;">{strat["name"]}</div>'
+                    f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;'
+                    f'font-weight:700;">{cagr:+.1f}%</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
