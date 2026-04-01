@@ -457,20 +457,17 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
     # Aktuelles Jahr als goldene Linie hervorheben
     if show_current_year:
         _cy_df = df[df.index.year == CURRENT_YEAR]
-        if len(_cy_df) >= 20:
+        if len(_cy_df) >= 10:
             _cy_closes = _cy_df["Close"].values.astype(float)
             _cy_log = (np.log(_cy_closes) - np.log(_cy_closes[0])) * 100
-            # Auf 252 interpolieren (partial year → nur bis aktueller Tag)
-            _n_orig = len(_cy_log)
-            _x_orig = np.linspace(0, 251, _n_orig)
-            _cy_interp = np.interp(np.arange(_n_orig), _x_orig * (_n_orig - 1) / 251, _cy_log)
             _cy_dd = compute_drawdown_series(np.array(_cy_log), base=100.0)
-            # Auf 252 Punkte skalieren (nur bis zum heutigen Handelstag)
-            _today_tdoy = min(_n_orig, 252)
-            _x_mapped = np.linspace(0, 251, _n_orig)[:_today_tdoy]
+            _n_trading_days = len(_cy_dd)
+            # X-Positionen: Handelstage auf 252er-Skala abbilden
+            # z.B. 61 Handelstage von 252 → x geht von 0 bis ~60
+            _x_pos = np.linspace(0, 251 * _n_trading_days / 252, _n_trading_days)
             fig_dd.add_trace(go.Scatter(
-                x=_x_mapped.tolist(),
-                y=_cy_dd[:_today_tdoy].tolist(),
+                x=_x_pos.tolist(),
+                y=_cy_dd.tolist(),
                 name=f"{CURRENT_YEAR} (aktuell)",
                 line=dict(color=SE_COLORS["accent_warm"], width=3, dash="solid"),
                 hovertemplate=f"{CURRENT_YEAR}: %{{y:.2f}}%<extra></extra>",
@@ -496,7 +493,19 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
         _lbl = 'color:#8899aa;font-size:10px;text-transform:uppercase;letter-spacing:1px;'
         _val = 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
 
-        c1, c2, c3 = st.columns(3)
+        # Aktueller Drawdown
+        _cur_dd_val = "–"
+        _cur_dd_clr = SE_COLORS["text_primary"]
+        if show_current_year:
+            _cy_df2 = df[df.index.year == CURRENT_YEAR]
+            if len(_cy_df2) >= 10:
+                _cy_c = _cy_df2["Close"].values.astype(float)
+                _cy_l = (np.log(_cy_c) - np.log(_cy_c[0])) * 100
+                _cy_d = compute_drawdown_series(np.array(_cy_l), base=100.0)
+                _cur_dd_val = f"{_cy_d[-1]:.1f}%"
+                _cur_dd_clr = "#ff4444" if _cy_d[-1] < -1 else "#34d399"
+
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max Drawdown</div>'
                         f'<div style="{_val}color:#ff4444;">{_dd_kpi_data["avg_max_dd"]:.1f}%</div></div>',
@@ -508,6 +517,10 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
         with c3:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Zeit im Drawdown</div>'
                         f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_dd_kpi_data["avg_time_in_dd"]:.0f}%</div></div>',
+                        unsafe_allow_html=True)
+        with c4:
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Aktueller DD {CURRENT_YEAR}</div>'
+                        f'<div style="{_val}color:{_cur_dd_clr};">{_cur_dd_val}</div></div>',
                         unsafe_allow_html=True)
 
 # ── 3b. Drawdown-Heatmap (Dekade × Monat) ────────────────────
