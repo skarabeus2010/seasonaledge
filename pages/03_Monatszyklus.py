@@ -253,10 +253,10 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     # Durchschnittskurve
     fig.add_trace(go.Scatter(x=tdoms, y=avg_curve, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
-        name=f"Oe {month_name}", hovertemplate="TDOM %{x}<br>%{y:+.3f}%<extra></extra>"))
+        name=f"Ø {month_name} (linke Achse)", hovertemplate="TDOM %{x}<br>%{y:+.3f}%<extra></extra>"))
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
 
-    # Aktueller Monatsverlauf (gelbe Linie)
+    # Aktueller Monatsverlauf (gelbe Linie, eigene Y-Achse rechts)
     if current_month_curve is not None:
         cm_tdoms, cm_curve = current_month_curve
         if cm_tdoms and cm_curve:
@@ -264,9 +264,17 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             fig.add_trace(go.Scatter(
                 x=cm_tdoms, y=cm_curve, mode="lines",
                 line=dict(color="#F1C40F", width=2.5),
-                name=f"{current_year} (aktuell)",
+                name=f"{current_year} aktuell (rechte Achse)",
+                yaxis="y2",
                 hovertemplate=f"<b>{current_year}</b><br>TDOM %{{x}}<br>%{{y:+.3f}}%<extra></extra>",
             ))
+            fig.update_layout(
+                yaxis2=dict(
+                    overlaying="y", side="right", showgrid=False,
+                    ticksuffix="%", tickformat="+.2f", title=None,
+                    tickfont=dict(color="#F1C40F", size=10),
+                ),
+            )
 
     # We are here! (TDOM-Marker)
     if current_tdom is not None and current_tdom in tdoms:
