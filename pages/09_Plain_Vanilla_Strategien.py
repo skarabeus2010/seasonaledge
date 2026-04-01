@@ -158,7 +158,7 @@ def main():
                         f'<div style="{_bg}{_border}border-radius:12px;padding:14px 8px;'
                         f'text-align:center;min-height:100px;">'
                         f'<div style="font-size:1.3rem;">{strat["icon"]}</div>'
-                        f'<div style="color:{SE_COLORS["text_primary"]};font-size:10px;font-weight:600;'
+                        f'<div style="color:{SE_COLORS["text_primary"]};font-size:12px;font-weight:600;'
                         f'margin:4px 0 2px;line-height:1.3;">{strat["name"]}</div>'
                         f'{_cagr_html}'
                         f'</div>',
