@@ -396,6 +396,46 @@ Der Known Trends Index (KTI) ist ein zusammengesetzter Indikator, der bis zu 14 
 
 Die aggressive Variante des KTI-Systems. Bei KTI ≥ 5 (viele gleichzeitig bullische Trends) wird mit doppeltem Hebel investiert. Bei KTI 3-4 normal long, unter 3 in Cash. Der durchschnittliche Hebel pro Trade wird berechnet und auf die Rendite angewendet.
 
+### 5️⃣ First Five Days of January
+
+Einer der ältesten Januar-Indikatoren: Wenn die ersten 5 Handelstage im Januar einen Nettogewinn aufweisen, wird ab Februar eine Long-Position eröffnet und bis Dezember gehalten. Seit 1937 erzielte dieses Signal eine annualisierte Rendite von über 10 %.
+
+### 🔚 Last Five Days of January
+
+Komplementär zum First-Five-Indikator: Hier zählt die Performance der letzten 5 Handelstage im Januar. Ein positives Signal führte in über 83 % der Fälle zu höheren Kursen am Jahresende.
+
+### 🌡️ Januar-Barometer
+
+"So geht der Januar, so geht das Jahr." Wenn der gesamte Monat Januar einen Nettogewinn verzeichnet, wird ab Februar investiert. Seit 1937 wuchsen 1.000 USD bei bullischen Signalen auf fast 90.000 USD an.
+
+### 🎆 Ein-Tages-Feiertagsstrategie
+
+Der stärkste Einzeltag des Jahres: Kauf 2 Handelstage vor einem der 8 großen US-Börsenfeiertage, Verkauf 1 Handelstag vor dem Feiertag. Ein einziger Tag pro Feiertag — aber konstant profitabel seit 1933.
+
+### 🎇 Ultimate Holiday Trading System (UHTS)
+
+Erweiterte Feiertagsstrategie mit Hebel: 3 Handelstage vor dem Feiertag Long, am Tag unmittelbar davor wird auf ~1,5x Hebel erhöht, Ausstieg 3 Handelstage danach. Obwohl man nur ~18 % der Zeit im Markt ist, liefert das System bemerkenswerte Ergebnisse.
+
+### 🎄 Nach-Weihnachten bis Silvester
+
+Das kürzeste Zeitfenster aller Strategien: Kauf am ersten Handelstag nach Weihnachten, Verkauf am letzten Handelstag des Jahres (Silvester). In den letzten 107 Jahren war diese Phase in 78,7 % der Fälle profitabel.
+
+### 2️⃣ Zweiter Handelstag des Monats
+
+Microstructure-Effekt: Kauf zum Handelsschluss am 1. Handelstag, Verkauf am 2. Handelstag. Dies ist historisch der stärkste Einzeltag des Monats — institutionelle Mittelflüsse am Monatsanfang treiben die Kurse.
+
+### 📆 Mid-Decade Rallye
+
+Langfristiger Intradekaden-Trend: Kauf am 30. September eines auf "4" endenden Jahres, Verkauf am 31. März des auf "6" endenden Jahres. Dieser 18-monatige Zeitraum erzielte seit 1900 einen durchschnittlichen Gewinn von über 40 %.
+
+### 🔄 20-Jahres-Zyklus
+
+Der seltenste aller Zyklen: Nur alle 20 Jahre. Kauf am 30. September eines auf "2" endenden Jahres in einem geraden Jahrzehnt (z.B. 1902, 1922, 1982), Verkauf am 31. Dezember des auf "5" endenden Jahres. Bisheriger Durchschnittsgewinn: über 60 %.
+
+### 🗳️ Wahljahr letzte 7 Monate
+
+Investiert von Ende Mai bis Jahresende im Präsidentschaftswahljahr. Seit 1900 war dieses Fenster in über 80 % der Fälle profitabel mit einem durchschnittlichen Gewinn von 10,5 %. Hintergrund: Im Wahljahr wird Fiskalpolitik aufgedreht.
+
 ---
 
 ### Hinweise zur Interpretation
