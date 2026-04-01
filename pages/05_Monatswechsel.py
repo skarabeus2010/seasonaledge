@@ -73,7 +73,8 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
         return None
     now = datetime.now()
 
-    y_labels = [str(y) for y in data_years]
+    # Leerzeichen-Padding verhindert dass Plotly Jahreszahlen als numerisch interpretiert
+    y_labels = [f" {y} " for y in data_years]
     x_labels = [f"{MONTH_NAMES_DE[m-1]}–{MONTH_NAMES_DE[m % 12]}" for m in range(1, 13)]
 
     # Lookup: (year, month) → total_return
@@ -82,12 +83,15 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
         lookup[(entry["year"], entry["month"])] = entry["total_return"]
 
     z_data = []
+    text_data = []
     for year in data_years:
         row = [round(lookup.get((year, m), 0), 2) for m in range(1, 13)]
         z_data.append(row)
+        text_data.append([f"{v:+.2f}%" for v in row])
 
     fig = go.Figure(data=go.Heatmap(
         z=z_data, x=x_labels, y=y_labels,
+        text=text_data, texttemplate="%{text}", textfont=dict(size=9, color="#FFFFFF"),
         colorscale=SE_HEATMAP_COLORSCALE, zmid=0,
         hovertemplate="<b>%{y} — %{x}</b><br>TOM Rendite: %{z:+.2f}%<extra></extra>",
         colorbar=dict(
@@ -95,23 +99,23 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
             tickfont=dict(color="#FFFFFF", size=10), ticksuffix="%", tickformat="+.2f"),
     ))
 
-    _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0)
-
     # Gelber Rahmen auf aktuellem Monat + Jahr
-    if str(now.year) in y_labels:
+    now_label = f" {now.year} "
+    if now_label in y_labels:
         fig.add_shape(type="rect",
             x0=now.month - 1 - 0.5, x1=now.month - 1 + 0.5,
-            y0=y_labels.index(str(now.year)) - 0.5,
-            y1=y_labels.index(str(now.year)) + 0.5,
+            y0=y_labels.index(now_label) - 0.5,
+            y1=y_labels.index(now_label) + 0.5,
             line=dict(color="#FFD700", width=3.5),
             fillcolor="rgba(0,0,0,0)", layer="above")
 
     n_years = len(data_years)
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — TOM Heatmap (Monatswechsel-Rendite, {n_years} Jahre)",
                                   height=max(500, n_years * 50 + 140))
-    fig.update_yaxes(autorange="reversed", type="category", tickformat="")
-    fig.update_xaxes(type="category", tickangle=0, tickformat="",
-                     tickfont=dict(size=10))
+    fig.update_yaxes(autorange="reversed", type="category", categoryorder="array",
+                     categoryarray=y_labels, tickformat="")
+    fig.update_xaxes(type="category", categoryorder="array", categoryarray=x_labels,
+                     tickangle=0, tickformat="", tickfont=dict(size=10))
     fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
     return fig
 
