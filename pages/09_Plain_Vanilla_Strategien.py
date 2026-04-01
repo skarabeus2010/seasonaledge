@@ -94,10 +94,16 @@ def main():
     from shared.trading_day_header import render_trading_day_header
     render_trading_day_header(df)
 
-    # ── Alle Strategien vorberechnen (für Kachel-Vorschau) ──
+    # ── Nur ausgewählte Strategie berechnen (Performance!) ──
+    # Kacheln zeigen "?" bis sie ausgewählt werden
     all_results = {}
-    for key, strat in STRATEGIES.items():
+
+    def _calc_strategy(key):
+        """Lazy: Berechnet Strategie nur bei Bedarf."""
+        if key in all_results:
+            return all_results[key]
         try:
+            strat = STRATEGIES[key]
             trades = strat["func"](df)
             if use_stop and trades:
                 trades = apply_stop_loss(raw_df, trades, stop_pct, stop_type)
@@ -105,6 +111,12 @@ def main():
             all_results[key] = {"trades": trades, "stats": stats}
         except Exception:
             all_results[key] = {"trades": [], "stats": {}}
+        return all_results[key]
+
+    # Ausgewählte Strategie sofort berechnen
+    if "pv_selected" not in st.session_state:
+        st.session_state["pv_selected"] = "sell_in_may"
+    _calc_strategy(st.session_state["pv_selected"])
 
     # ── Kachel-Auswahl mit Tabs ──────────────────────
     st.markdown(
@@ -115,9 +127,6 @@ def main():
         f'Wählen Sie aus altbekannten Strategien eine, die zu Ihnen passt.</p></div>',
         unsafe_allow_html=True,
     )
-
-    if "pv_selected" not in st.session_state:
-        st.session_state["pv_selected"] = "sell_in_may"
 
     # Tabs nach Kategorie
     sorted_cats = sorted(STRATEGY_CATEGORIES.items(), key=lambda x: x[1]["order"])
@@ -132,9 +141,14 @@ def main():
 
             for i, key in enumerate(cat_keys):
                 strat = STRATEGIES[key]
-                stats = all_results[key]["stats"]
-                cagr = stats.get("cagr", 0)
                 is_selected = (st.session_state["pv_selected"] == key)
+
+                # CAGR nur anzeigen wenn bereits berechnet
+                if key in all_results:
+                    cagr = all_results[key]["stats"].get("cagr", 0)
+                    _cagr_html = f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;font-weight:700;">{cagr:+.1f}%</div>'
+                else:
+                    _cagr_html = f'<div style="color:{SE_COLORS["text_muted"]};font-size:12px;">—</div>'
 
                 with cols[i % len(cols)]:
                     _border = f"border:2px solid {SE_COLORS['accent_warm']};" if is_selected else "border:1px solid rgba(255,255,255,0.08);"
@@ -146,8 +160,7 @@ def main():
                         f'<div style="font-size:1.3rem;">{strat["icon"]}</div>'
                         f'<div style="color:{SE_COLORS["text_primary"]};font-size:10px;font-weight:600;'
                         f'margin:4px 0 2px;line-height:1.3;">{strat["name"]}</div>'
-                        f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;'
-                        f'font-weight:700;">{cagr:+.1f}%</div>'
+                        f'{_cagr_html}'
                         f'</div>',
                         unsafe_allow_html=True,
                     )
@@ -267,7 +280,12 @@ def main():
             st.dataframe(trade_df, use_container_width=True, hide_index=True)
 
     # ── Vergleichs-Modus ─────────────────────────────────
-    with st.expander("📊 Alle Strategien vergleichen", expanded=False):
+    with st.expander("📊 Alle Strategien vergleichen (berechnet alle — kann dauern)", expanded=False):
+        # Alle Strategien berechnen wenn Vergleich geöffnet
+        with st.spinner("Berechne alle 24 Strategien..."):
+            for key in STRATEGIES:
+                _calc_strategy(key)
+
         fig_cmp = go.Figure()
         ranking = []
 
@@ -275,7 +293,7 @@ def main():
                   "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#c084fc"]
 
         for i, (key, strat) in enumerate(STRATEGIES.items()):
-            data = all_results[key]
+            data = all_results.get(key, {"trades": [], "stats": {}})
             if not data["trades"]:
                 continue
             equity = build_equity_curve(data["trades"], 1000.0)
