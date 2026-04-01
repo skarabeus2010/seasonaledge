@@ -1506,6 +1506,49 @@ def main():
                             unsafe_allow_html=True,
                         )
 
+    # ── Methodik ──────────────────────────────────────────
+    with st.expander("ℹ️ Methodik"):
+        _n_years = len(year_data)
+        _first_y = min(year_data.keys()) if year_data else "?"
+        _last_y = max(year_data.keys()) if year_data else "?"
+        st.markdown(f"""
+### Datengrundlage
+
+- **Ticker:** {ticker}
+- **Datenzeitraum:** {_first_y}–{_last_y} ({_n_years} ausgewählte Jahre)
+- **Datenquellen:** Yahoo Finance (ab ~1992) + Stooq.com (historische Daten ab 1896 für ausgewählte Indizes)
+- **Normierung:** Jedes Jahr startet bei 100. Tägliche Returns werden kumuliert: Wert = 100 × exp(Σ log_return).
+- **Interpolation:** Jede Jahreskurve wird auf 365 Kalendertage interpoliert, damit Jahre mit unterschiedlicher Handelstag-Anzahl vergleichbar sind.
+
+### Rendite-Analyse
+
+- **Saisonalchart:** Durchschnitt der normalisierten Jahreskurven über alle ausgewählten Jahre. Zeigt den typischen Jahresverlauf.
+- **Konfidenzband (±1σ):** Standardabweichung um den Durchschnitt — wie stark streuen die Einzeljahre?
+- **Aktuelles Jahr (Gold):** Das laufende Jahr wird als Overlay eingezeichnet, um die aktuelle Position mit dem Durchschnitt zu vergleichen.
+- **Glättung:** Einstellbarer Moving Average auf der Ø-Kurve (Sidebar). Glättet Tagesrauschen.
+- **Präsidentenzyklus-Overlay:** Optional: Ø-Kurve nur für eine Zyklusposition (Post-Election, Midterm, Pre-Election, Election).
+- **Detrend-Indikator:** Entfernt den Trend und zeigt die reine Saisonalität auf einer 0–100 Skala. Über 50 = saisonal überdurchschnittlich.
+- **Monats-/Quartals-Performance:** Durchschnittliche Rendite pro Monat/Quartal über alle ausgewählten Jahre.
+- **Signifikanz-Tachos:** t-Test pro Monat/Quartal. p < 0,05 = statistisch signifikant (grün).
+- **10-Jahres-Heatmap:** Monatsrenditen der letzten 10–20 Jahre als Farbmatrix. Gelber Rahmen = aktuelles Jahr+Monat.
+
+### Drawdown-Analyse
+
+- **Definition:** Der Drawdown misst den prozentualen Rückgang vom bisherigen Jahreshoch. Formel: DD = (Kurs – Höchstkurs seit Jahresbeginn) / Höchstkurs × 100. Ein Drawdown von –20% bedeutet: Der Kurs liegt 20% unter dem bisherigen Jahreshoch.
+- **Ø Drawdown-Verlauf:** Für jedes Jahr wird der Drawdown pro Tag berechnet, dann über alle ausgewählten Jahre gemittelt. Das zeigt, wann im Jahr typischerweise die größten Rücksetzer auftreten.
+- **Aktuelles Jahr (Gold):** Drawdown des laufenden Jahres als Overlay.
+- **KPI-Karten:** Ø Max Drawdown (Durchschnitt der schlimmsten Rücksetzer pro Jahr), Worst DD (schlimmstes Einzeljahr), Aktueller DD.
+- **Perzentil-Bar:** Vergleicht den aktuellen Max-Drawdown mit der historischen Verteilung.
+- **Präsidentenzyklus-Drawdown:** Ø Drawdown-Verlauf getrennt nach den 4 Zyklusjahren. Zeigt, welche Zyklusposition historisch die tiefsten Rücksetzer hat (Midterm > Election).
+
+### Volatilitäts-Analyse
+
+- **Rolling Volatilität:** Annualisierte Standardabweichung der täglichen Log-Returns über ein rollendes Fenster (einstellbar: {vola_window} Tage in der Sidebar). Formel: σ_annualisiert = σ_täglich × √252 × 100.
+- **Darstellung:** Pro Jahr wird die Rolling-Vola berechnet, auf 365 Punkte interpoliert, dann über alle ausgewählten Jahre gemittelt.
+- **KPI-Karten:** Aktuelle Vola im historischen Kontext — Perzentil zeigt: "In wie viel Prozent der vergangenen Jahre war die Vola niedriger als heute?"
+- **Farbcodierung:** Rot = erhöht (> Ø + 1σ), Grün = niedrig (< Ø – 1σ), Gold = normal.
+        """)
+
     # ── Disclaimer ──
     st.markdown("---")
     st.caption(
