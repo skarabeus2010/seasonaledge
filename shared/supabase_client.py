@@ -43,11 +43,27 @@ def get_client():
 # ── Prices ──────────────────────────────────────────
 
 def fetch_prices(ticker: str, start_date: str = None) -> list[dict]:
-    """Kursdaten aus Supabase laden."""
-    q = get_client().table("prices").select("*").eq("ticker", ticker)
-    if start_date:
-        q = q.gte("date", start_date)
-    return q.order("date").execute().data
+    """Kursdaten aus Supabase laden (paginiert, kein Row-Limit)."""
+    all_data = []
+    page_size = 1000
+    offset = 0
+
+    while True:
+        q = get_client().table("prices").select("*").eq("ticker", ticker)
+        if start_date:
+            q = q.gte("date", start_date)
+        q = q.order("date").range(offset, offset + page_size - 1)
+        batch = q.execute().data
+
+        if not batch:
+            break
+
+        all_data.extend(batch)
+        if len(batch) < page_size:
+            break  # Letzte Seite
+        offset += page_size
+
+    return all_data
 
 
 def upsert_prices(records: list[dict]):
