@@ -234,6 +234,33 @@ Zentrale Datei: `blog/disclaimer_blog.md` (Kurzversion immer sichtbar + Langvers
 
 ---
 
+## Tabellen in Blog-Posts
+
+Der Blog-Builder konvertiert Markdown-Tabellen automatisch in gestylte HTML-Tabellen (Dark Mode, Linien, Hover-Effekt).
+
+### Format (Standard Markdown)
+
+```markdown
+| Jahr | Max DD | Recovery |
+|------|--------|----------|
+| 1929 | **–47,9 %** | 346 Monate |
+| 2020 | –37,1 % | 7 Monate |
+```
+
+### Regeln
+- Erste Zeile = Header (wird fett, dunkler Hintergrund, blaue Trennlinie)
+- Zweite Zeile = Separator (`|---|---|---`)  — PFLICHT
+- Inline-Formatting in Zellen: `**bold**` und `[Link](url)` funktionieren
+- Leere Zeile vor und nach der Tabelle für saubere Trennung
+- Tabellen werden im Dark Theme gerendert (CSS aus `blog_post.html`)
+
+### Styling (automatisch via Template)
+- Header: `#131d2a`, weiße Schrift, blaue Unterlinie
+- Zeilen: dezente Trennlinien `#1c2a3e`, Hover-Effekt
+- Responsive: Kleinere Schrift auf Mobile
+
+---
+
 ## Verfügbare Chart-Tags
 
 | Tag | Beschreibung |
