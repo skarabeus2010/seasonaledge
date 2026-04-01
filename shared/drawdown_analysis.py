@@ -248,6 +248,92 @@ def compute_monthly_max_drawdown(
 # ROLLING VOLATILITÄT
 # ══════════════════════════════════════════════════════════════
 
+def compute_current_vola_stats(
+    df: pd.DataFrame,
+    window: int = 20,
+    years: Optional[list[int]] = None,
+) -> Optional[dict]:
+    """
+    Berechnet aktuelle Volatilitäts-Kennzahlen im historischen Kontext.
+    Wiederverwendbar für alle Pages.
+
+    Args:
+        df: Preprocessed DataFrame (mit log_return, year)
+        window: Rolling-Fenster in Tagen
+        years: Liste der Vergleichsjahre (None = alle verfügbaren)
+
+    Returns:
+        dict mit: current_vola, avg_vola, percentile, zscore,
+                  current_year, window, hist_volas, is_elevated
+    """
+    from datetime import datetime
+    today = datetime.now()
+    cur_year = today.year
+
+    if "year" not in df.columns:
+        return None
+
+    # Aktuelle Vola berechnen
+    cur_vola_arr = compute_rolling_volatility(df, cur_year, window)
+    if cur_vola_arr is None:
+        return None
+
+    # Letzter gültiger Wert (NaN am Anfang möglich)
+    valid = cur_vola_arr[~np.isnan(cur_vola_arr)]
+    if len(valid) == 0:
+        return None
+    current_vola = float(valid[-1])
+
+    # Historische Vergleichswerte: Vola am gleichen TDOY für jedes Jahr
+    if years is None:
+        years = sorted(df["year"].unique())
+    years = [y for y in years if y != cur_year]
+
+    # Aktueller TDOY-Index (Position im Jahr)
+    cur_year_df = df[df["year"] == cur_year]
+    cur_tdoy_idx = len(cur_year_df) - 1  # 0-basiert
+
+    hist_volas_at_tdoy = []
+    for y in years:
+        v = compute_rolling_volatility(df, y, window)
+        if v is None:
+            continue
+        # Gleiche relative Position im Jahr
+        idx = min(cur_tdoy_idx, len(v) - 1)
+        val = v[idx]
+        if not np.isnan(val):
+            hist_volas_at_tdoy.append(float(val))
+
+    if len(hist_volas_at_tdoy) < 3:
+        return None
+
+    hist_arr = np.array(hist_volas_at_tdoy)
+    avg_vola = float(np.mean(hist_arr))
+    std_vola = float(np.std(hist_arr))
+
+    # Perzentil: Wie viel % der historischen Werte sind kleiner als aktuell?
+    percentile = float(np.sum(hist_arr <= current_vola) / len(hist_arr) * 100)
+
+    # Z-Score
+    zscore = float((current_vola - avg_vola) / std_vola) if std_vola > 0 else 0.0
+
+    return {
+        "current_vola": round(current_vola, 1),
+        "avg_vola": round(avg_vola, 1),
+        "median_vola": round(float(np.median(hist_arr)), 1),
+        "min_vola": round(float(np.min(hist_arr)), 1),
+        "max_vola": round(float(np.max(hist_arr)), 1),
+        "percentile": round(percentile, 0),
+        "zscore": round(zscore, 2),
+        "delta": round(current_vola - avg_vola, 1),
+        "current_year": cur_year,
+        "window": window,
+        "n_years": len(hist_volas_at_tdoy),
+        "is_elevated": current_vola > avg_vola + std_vola,
+        "is_low": current_vola < avg_vola - std_vola,
+    }
+
+
 def compute_rolling_volatility(
     df: pd.DataFrame,
     year: int,

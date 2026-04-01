@@ -511,6 +511,7 @@ from shared.drawdown_analysis import (
     compute_avg_drawdown_curve, compute_drawdown_series, compute_drawdown_kpi,
     compute_drawdown_stats, compute_real_recovery,
     compute_monthly_max_drawdown, compute_avg_rolling_volatility,
+    compute_current_vola_stats, compute_rolling_volatility,
     SE_DRAWDOWN_COLORSCALE, MONTH_STARTS_252, MONTH_LABELS_SHORT,
 )
 from shared.charts import apply_se_heatmap_theme
@@ -707,6 +708,7 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
     fig_vol = go.Figure()
     _has_vola = False
 
+    # Ø-Kurven pro Dekade
     for digit in range(10):
         if not show_digits.get(digit, True):
             continue
@@ -732,11 +734,77 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
         ))
         _has_vola = True
 
+    # Aktuelles Jahr als goldene Linie
+    if show_current_year:
+        _cy_vola = compute_rolling_volatility(df, CURRENT_YEAR, window=vola_window)
+        if _cy_vola is not None:
+            _n_v = len(_cy_vola)
+            _x_v = np.linspace(0, 251 * _n_v / 252, _n_v)
+            # NaN am Anfang durch erste gültige Werte ersetzen
+            _cy_vola_clean = pd.Series(_cy_vola).ffill().bfill().values
+            fig_vol.add_trace(go.Scatter(
+                x=_x_v.tolist(),
+                y=_cy_vola_clean.tolist(),
+                name=f"{CURRENT_YEAR} (aktuell)",
+                line=dict(color=SE_COLORS["accent_warm"], width=3),
+                hovertemplate=f"{CURRENT_YEAR}: %{{y:.1f}}%<extra></extra>",
+            ))
+            _has_vola = True
+
     if _has_vola:
         fig_vol.update_xaxes(tickvals=MONTH_STARTS_252, ticktext=MONTH_LABELS_SHORT)
         fig_vol.update_yaxes(ticksuffix="%")
         fig_vol = apply_se_theme(fig_vol, title=f"Ø Rolling {vola_window}d Volatilität nach Dekade — {ticker}", height=420)
         st.plotly_chart(fig_vol, use_container_width=True)
+
+        # KPI-Karten: Aktuelle Vola im historischen Kontext
+        _all_years = []
+        for digit in range(10):
+            d = decade_data[digit]
+            if d["years"]:
+                _all_years.extend(d["years"])
+        _vola_stats = compute_current_vola_stats(df, window=vola_window, years=_all_years)
+
+        if _vola_stats:
+            _card = (
+                'background:linear-gradient(135deg,#0f1923,#131d2a);'
+                'border:1px solid rgba(255,255,255,0.08);border-radius:10px;'
+                'padding:12px 16px;text-align:center;'
+            )
+            _lbl = 'color:#8899aa;font-size:10px;text-transform:uppercase;letter-spacing:1px;'
+            _val = 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
+
+            # Farbe basierend auf Niveau
+            if _vola_stats["is_elevated"]:
+                _v_clr = "#ff4444"
+                _v_status = "Erhöht"
+            elif _vola_stats["is_low"]:
+                _v_clr = "#34d399"
+                _v_status = "Niedrig"
+            else:
+                _v_clr = SE_COLORS["accent_warm"]
+                _v_status = "Normal"
+
+            _delta_clr = "#ff4444" if _vola_stats["delta"] > 0 else "#34d399"
+            _delta_sign = "+" if _vola_stats["delta"] > 0 else ""
+
+            vc1, vc2, vc3, vc4 = st.columns(4)
+            with vc1:
+                st.markdown(f'<div style="{_card}"><div style="{_lbl}">Aktuelle {vola_window}d Vola</div>'
+                            f'<div style="{_val}color:{_v_clr};">{_vola_stats["current_vola"]:.1f}%</div></div>',
+                            unsafe_allow_html=True)
+            with vc2:
+                st.markdown(f'<div style="{_card}"><div style="{_lbl}">Historischer Ø</div>'
+                            f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_vola_stats["avg_vola"]:.1f}%</div></div>',
+                            unsafe_allow_html=True)
+            with vc3:
+                st.markdown(f'<div style="{_card}"><div style="{_lbl}">Delta zum Ø</div>'
+                            f'<div style="{_val}color:{_delta_clr};">{_delta_sign}{_vola_stats["delta"]:.1f}%</div></div>',
+                            unsafe_allow_html=True)
+            with vc4:
+                st.markdown(f'<div style="{_card}"><div style="{_lbl}">Perzentil ({_vola_stats["n_years"]}J)</div>'
+                            f'<div style="{_val}color:{_v_clr};">{_vola_stats["percentile"]:.0f}% · {_v_status}</div></div>',
+                            unsafe_allow_html=True)
     else:
         st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
 
