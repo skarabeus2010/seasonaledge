@@ -1386,6 +1386,126 @@ def main():
         else:
             st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
 
+    # ── Expander C: Drawdown nach Präsidentenzyklus ──
+    with st.expander("🏛️ Drawdown nach Präsidentenzyklus", expanded=False):
+        _cycle_labels = {
+            "Year 1 (Post-Election)": "Jahr 1 (Post-Election)",
+            "Year 2 (Midterm Election)": "Jahr 2 (Midterm)",
+            "Year 3 (Pre-Election)": "Jahr 3 (Pre-Election)",
+            "Year 4 (Election Year)": "Jahr 4 (Election)",
+        }
+        _cycle_colors = {
+            "Year 1 (Post-Election)": "#4d9fff",
+            "Year 2 (Midterm Election)": "#ff6b6b",
+            "Year 3 (Pre-Election)": "#34d399",
+            "Year 4 (Election Year)": "#e8a425",
+        }
+
+        # Jahre nach Zyklusposition gruppieren
+        _cycle_groups = {}
+        for yr in _yd_years:
+            cycle = get_presidential_cycle_year(yr)
+            if cycle not in _cycle_groups:
+                _cycle_groups[cycle] = []
+            _cycle_groups[cycle].append(yr)
+
+        if _cycle_groups:
+            # Chart: Ø DD pro Zyklusposition
+            fig_cyc = go.Figure()
+
+            for cycle_key in ["Year 1 (Post-Election)", "Year 2 (Midterm Election)",
+                              "Year 3 (Pre-Election)", "Year 4 (Election Year)"]:
+                if cycle_key not in _cycle_groups:
+                    continue
+                _cyc_years = _cycle_groups[cycle_key]
+                _cyc_curves = [np.array(year_data[y]["full_365"]) for y in _cyc_years if y in year_data]
+
+                if not _cyc_curves:
+                    continue
+
+                avg_cyc_dd, _ = compute_avg_drawdown_curve(_cyc_curves, base=0.0)
+                if len(avg_cyc_dd) == 0:
+                    continue
+
+                _is_current = (get_presidential_cycle_year(datetime.now().year) == cycle_key)
+                _lw = 3.0 if _is_current else 1.8
+
+                fig_cyc.add_trace(go.Scatter(
+                    x=list(range(365)),
+                    y=avg_cyc_dd.tolist(),
+                    name=_cycle_labels.get(cycle_key, cycle_key) + f" ({len(_cyc_years)}J)",
+                    line=dict(color=_cycle_colors.get(cycle_key, "#888"), width=_lw),
+                    hovertemplate="%{y:.2f}%<extra></extra>",
+                ))
+
+            fig_cyc.update_xaxes(tickvals=MONTH_STARTS, ticktext=MONTH_LABELS)
+            fig_cyc.update_yaxes(ticksuffix="%")
+            fig_cyc = apply_se_theme(fig_cyc, title=f"Ø Drawdown nach Präsidentenzyklus — {ticker}", height=420)
+            st.plotly_chart(fig_cyc, use_container_width=True, config=_PLOTLY_CFG)
+
+            # Tabelle: Ø DD, Best, Worst pro Zyklusposition
+            _card = (
+                'background:linear-gradient(135deg,#0f1923,#131d2a);'
+                'border:1px solid rgba(255,255,255,0.08);border-radius:10px;'
+                'padding:12px 16px;text-align:center;'
+            )
+            _lbl_s = 'color:#8899aa;font-size:10px;text-transform:uppercase;letter-spacing:1px;'
+            _val_s = 'font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
+
+            _table_rows = []
+            for cycle_key in ["Year 1 (Post-Election)", "Year 2 (Midterm Election)",
+                              "Year 3 (Pre-Election)", "Year 4 (Election Year)"]:
+                if cycle_key not in _cycle_groups:
+                    continue
+                _cyc_years = _cycle_groups[cycle_key]
+                _cyc_dds = []
+                for y in _cyc_years:
+                    if y not in year_data:
+                        continue
+                    c = np.array(year_data[y]["full_365"])
+                    dd = compute_drawdown_series(c, base=0.0)
+                    _cyc_dds.append({"year": y, "max_dd": float(dd.min())})
+
+                if not _cyc_dds:
+                    continue
+
+                _dds_vals = [d["max_dd"] for d in _cyc_dds]
+                _best = min(_cyc_dds, key=lambda d: abs(d["max_dd"]))  # Kleinster DD = bestes Jahr
+                _worst = min(_cyc_dds, key=lambda d: d["max_dd"])       # Tiefster DD = schlimmstes
+
+                _table_rows.append({
+                    "cycle": cycle_key,
+                    "label": _cycle_labels.get(cycle_key, cycle_key),
+                    "color": _cycle_colors.get(cycle_key, "#888"),
+                    "n": len(_cyc_dds),
+                    "avg_dd": np.mean(_dds_vals),
+                    "best_dd": _best["max_dd"],
+                    "best_year": _best["year"],
+                    "worst_dd": _worst["max_dd"],
+                    "worst_year": _worst["year"],
+                })
+
+            if _table_rows:
+                _cols = st.columns(len(_table_rows))
+                for i, row in enumerate(_table_rows):
+                    _is_cur = (get_presidential_cycle_year(datetime.now().year) == row["cycle"])
+                    _border = f'border:2px solid {row["color"]};' if _is_cur else 'border:1px solid rgba(255,255,255,0.08);'
+                    with _cols[i]:
+                        st.markdown(
+                            f'<div style="background:linear-gradient(135deg,#0f1923,#131d2a);'
+                            f'{_border}border-radius:10px;padding:14px 10px;text-align:center;">'
+                            f'<div style="color:{row["color"]};font-size:12px;font-weight:700;'
+                            f'margin-bottom:8px;">{row["label"]}</div>'
+                            f'<div style="{_lbl_s}">Ø Max DD ({row["n"]}J)</div>'
+                            f'<div style="{_val_s}color:#ff4444;">{row["avg_dd"]:.1f}%</div>'
+                            f'<div style="{_lbl_s}margin-top:6px;">Best</div>'
+                            f'<div style="{_val_s}color:#34d399;">{row["best_dd"]:.1f}% ({row["best_year"]})</div>'
+                            f'<div style="{_lbl_s}margin-top:6px;">Worst</div>'
+                            f'<div style="{_val_s}color:#ff2222;">{row["worst_dd"]:.1f}% ({row["worst_year"]})</div>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+
     # ── Disclaimer ──
     st.markdown("---")
     st.caption(
