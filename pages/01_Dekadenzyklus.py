@@ -76,7 +76,7 @@ with st.sidebar:
     st.markdown("### Risiko-Analyse")
     vola_window = st.select_slider(
         "Rolling-Vola Fenster (Tage)",
-        options=[10, 20, 30, 60],
+        options=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
         value=20,
         key="dec_vola_win",
     )
@@ -708,6 +708,8 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
     _has_vola = False
 
     for digit in range(10):
+        if not show_digits.get(digit, True):
+            continue
         d = decade_data[digit]
         if d["n"] == 0 or not d["years"]:
             continue
@@ -742,13 +744,41 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
 # ── Methodik ──────────────────────────────────────────────────────────────────
 with st.expander("ℹ️ Methodik"):
     st.markdown(f"""
-    **Ticker:** {ticker}
-    **Datenzeitraum:** {data_start}–{data_end} ({total_years} vollständige Jahre)
-    **Normierung:** Erster Handelstag jedes Jahres = 0% (Log-Returns)
-    **Interpolation:** Jede Jahreskurve wird auf 252 Handelstage normiert (lineare Interpolation)
-    **Mindestlänge:** Jahre mit weniger als 200 Handelstagen werden ausgeschlossen
-    **Aktuelle Kohorte:** {CURRENT_YEAR} → X{CURRENT_DIGIT} (gelb markiert)
-    **Glättung:** 5-Tage zentrierter Moving Average auf Ø-Kurve
+### Datengrundlage
+
+- **Ticker:** {ticker}
+- **Datenzeitraum:** {data_start}–{data_end} ({total_years} vollständige Jahre)
+- **Datenquellen:** Yahoo Finance (ab ~1992) + Stooq.com (historische Daten ab 1896 für ausgewählte Indizes)
+- **Mindestlänge:** Jahre mit weniger als 200 Handelstagen werden ausgeschlossen
+
+### Rendite-Analyse
+
+- **Normierung:** Erster Handelstag jedes Jahres = 0% (logarithmische Returns)
+- **Interpolation:** Jede Jahreskurve wird auf 252 Handelstage normiert (lineare Interpolation), damit Jahre mit unterschiedlicher Handelstag-Anzahl vergleichbar sind
+- **Kohorten:** Alle Jahre werden nach ihrer letzten Ziffer gruppiert (x0 = 1900, 1910, …, 2020; x6 = 1896, 1906, …, 2026). Die Ø-Kurve ist der Mittelwert aller Jahre einer Kohorte.
+- **Glättung:** 5-Tage zentrierter Moving Average auf der Ø-Kurve
+- **Aktuelle Kohorte:** {CURRENT_YEAR} → X{CURRENT_DIGIT} (gelb markiert)
+- **Monatsrendite-Heatmap:** Zeigt die durchschnittliche Monatsrendite pro Dekaden-Endziffer. Grün = positiv, Rot = negativ.
+- **Box-Plot:** Verteilung der Jahresrenditen pro Kohorte. Kasten = mittlere 50% (25.–75. Perzentil), Linie = Median, Antennen = 1.5× Interquartilsabstand, Punkte = Ausreißer (Crash-/Boom-Jahre).
+
+### Drawdown-Analyse
+
+- **Definition:** Der Drawdown misst den prozentualen Rückgang vom bisherigen Jahreshoch. Formel: DD = (Kurs – Höchstkurs seit Jahresbeginn) / Höchstkurs × 100. Ein Drawdown von –20% bedeutet: Der Kurs liegt 20% unter dem bisherigen Jahreshoch.
+- **Ø Drawdown-Verlauf:** Für jede Kohorte (Endziffer) wird der Drawdown pro Tag berechnet, dann über alle Jahre der Kohorte gemittelt. Das zeigt, wann im Jahr typischerweise die größten Rücksetzer auftreten.
+- **Aktuelles Jahr (Gold):** Das laufende Jahr {CURRENT_YEAR} wird als goldene Linie eingezeichnet, um den aktuellen Drawdown mit dem historischen Durchschnitt zu vergleichen.
+- **Worst-DD-Tabelle:** Zeigt die 25 schlimmsten Drawdown-Jahre mit Peak-Datum (Höchstkurs), Tief-Datum und Recovery. Die Recovery misst, wie viele Handelstage es dauerte, bis der Kurs den Peak-Preis wieder überschritten hat — auch über das Jahresende hinaus (z.B. DJI 1929: 25 Jahre bis zur Erholung).
+- **Drawdown-Heatmap:** Durchschnittlicher maximaler Drawdown pro Monat und Dekade. Zeigt saisonal-zyklische Risikophasen.
+
+### Volatilitäts-Analyse
+
+- **Rolling Volatilität:** Annualisierte Standardabweichung der täglichen Log-Returns über ein rollendes Fenster (einstellbar: {vola_window} Tage in der Sidebar). Formel: σ_annualisiert = σ_täglich × √252 × 100.
+- **Darstellung:** Pro Kohorte wird die Rolling-Vola für jedes Jahr berechnet, auf 252 Punkte interpoliert und dann über alle Jahre gemittelt. Das zeigt, wann im Jahr die Schwankungsbreite typischerweise am höchsten ist (z.B. Oktober = historisch volatilster Monat).
+- **Kohorten-Filter:** Über die Sidebar können einzelne Dekaden-Kohorten ein-/ausgeblendet werden. Das gilt für alle Charts (Rendite, Drawdown und Volatilität).
+
+### Anomalie-Radar
+
+- **Methode:** Isolation Forest (Machine Learning) vergleicht die letzten 10 Handelstage mit allen historischen 10-Tages-Fenstern am gleichen Kalenderzeitpunkt.
+- **Score:** 0–100 (0 = völlig normal, 100 = extrem ungewöhnlich). Ab 40 = leicht anomal, ab 70 = stark anomal.
     """)
 
 render_footer()
