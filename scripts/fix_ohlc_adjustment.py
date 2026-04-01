@@ -52,6 +52,12 @@ def fix_ticker(ticker: str) -> dict:
     if yahoo_df is None or yahoo_df.empty:
         return {"status": "yahoo_fail", "updated": 0, "total": len(db_df)}
 
+    # Dates normalisieren (Yahoo hat Uhrzeiten, Supabase nur Datum)
+    yahoo_df.index = yahoo_df.index.normalize()
+    db_df.index = db_df.index.normalize()
+    # Duplikate entfernen (nach normalize koennen doppelte Dates entstehen)
+    yahoo_df = yahoo_df[~yahoo_df.index.duplicated(keep="last")]
+
     # log_return berechnen
     yahoo_df["log_return"] = np.log(yahoo_df["Close"] / yahoo_df["Close"].shift(1))
 
@@ -87,7 +93,8 @@ def fix_ticker(ticker: str) -> dict:
         chunk = updates[i:i + chunk_size]
         upsert_prices(chunk)
 
-    return {"status": "fixed", "updated": len(updates), "total": len(db_df)}
+    status = "fixed" if len(updates) > 0 else "no_match"
+    return {"status": status, "updated": len(updates), "total": len(db_df)}
 
 
 def main():
