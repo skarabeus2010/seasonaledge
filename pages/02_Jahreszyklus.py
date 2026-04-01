@@ -770,6 +770,11 @@ def main():
                                     help="Addiert Ø-Tagesrenditen verschiedener Lookback-Perioden (sekundäre Y-Achse)")
 
         st.markdown("---")
+        st.markdown("### Risiko-Analyse")
+        vola_window = st.slider("Rolling-Vola Fenster (Tage)", 10, 60, 20, 5, key="ys_vola_win")
+        show_dd_individual = st.checkbox("Einzeljahre im Drawdown-Chart", value=False, key="ys_dd_indiv")
+
+        st.markdown("---")
         from shared.outlier_manager import outlier_sidebar
         outlier_method = outlier_sidebar()
 
@@ -935,6 +940,209 @@ def main():
             st.caption("scikit-learn nicht installiert — Muster-Brüche deaktiviert.")
         except Exception as _e:
             st.caption(f"Muster-Bruch-Erkennung nicht verfügbar: {_e}")
+
+    # ── 3d. Saisonaler Drawdown & Volatilität ──────────────
+    st.markdown("---")
+
+    from shared.drawdown_analysis import (
+        compute_avg_drawdown_curve, compute_drawdown_series,
+        compute_drawdown_kpi, compute_monthly_max_drawdown,
+        compute_avg_rolling_volatility,
+        SE_DRAWDOWN_COLORSCALE, MONTH_LABELS_SHORT,
+    )
+    from shared.charts import apply_se_heatmap_theme
+
+    _yd_curves = [np.array(yd["full_365"]) for yd in year_data.values()]
+    _yd_years = list(year_data.keys())
+
+    # ── Expander A: Ø Drawdown-Verlauf ──
+    with st.expander("📉 Saisonaler Drawdown-Verlauf", expanded=True):
+        avg_dd, std_dd = compute_avg_drawdown_curve(_yd_curves, base=100.0)
+
+        if len(avg_dd) > 0:
+            fig_dd = go.Figure()
+
+            # Optional: Einzeljahre
+            if show_dd_individual:
+                for yr, yd in year_data.items():
+                    dd_yr = compute_drawdown_series(np.array(yd["full_365"]), base=100.0)
+                    fig_dd.add_trace(go.Scatter(
+                        x=list(range(365)), y=dd_yr.tolist(),
+                        name=str(yr), line=dict(color=SE_COLORS["individual"], width=0.5),
+                        showlegend=False, hoverinfo="skip",
+                    ))
+
+            # ±1σ Band
+            x_range = list(range(365))
+            upper = (avg_dd + std_dd).tolist()
+            lower = (avg_dd - std_dd).tolist()
+            fig_dd.add_trace(go.Scatter(
+                x=x_range + x_range[::-1],
+                y=upper + lower[::-1],
+                fill="toself", fillcolor="rgba(255,68,68,0.08)",
+                line=dict(width=0), showlegend=False, hoverinfo="skip",
+            ))
+
+            # Ø Drawdown (rot gefüllt)
+            fig_dd.add_trace(go.Scatter(
+                x=x_range, y=avg_dd.tolist(),
+                name="Ø Drawdown",
+                fill="tozeroy", fillcolor="rgba(255,34,34,0.15)",
+                line=dict(color="#ff4444", width=2.5),
+                hovertemplate="Tag %{x}: %{y:.2f}%<extra></extra>",
+            ))
+
+            # Aktuelles Jahr (goldene Linie)
+            _cur_year = datetime.now().year
+            if show_current and _cur_year in year_data:
+                _cur_curve = np.array(year_data[_cur_year]["full_365"])
+                _cur_dd = compute_drawdown_series(_cur_curve, base=100.0)
+                _today_doy = min(datetime.now().timetuple().tm_yday, 365)
+                fig_dd.add_trace(go.Scatter(
+                    x=list(range(_today_doy)), y=_cur_dd[:_today_doy].tolist(),
+                    name=f"{_cur_year} (aktuell)",
+                    line=dict(color=SE_COLORS["current_year"], width=2.5),
+                    hovertemplate=f"{_cur_year} Tag %{{x}}: %{{y:.2f}}%<extra></extra>",
+                ))
+
+            fig_dd.update_xaxes(tickvals=MONTH_STARTS, ticktext=MONTH_LABELS)
+            fig_dd.update_yaxes(ticksuffix="%")
+            fig_dd = apply_se_theme(fig_dd, title=f"Ø Saisonaler Drawdown — {ticker}", height=450)
+            st.plotly_chart(fig_dd, use_container_width=True, config=_PLOTLY_CFG)
+
+            # KPI-Karten
+            _kpi = compute_drawdown_kpi(_yd_curves, base=100.0)
+            if _kpi:
+                _card = (
+                    'background:linear-gradient(135deg,#0f1923,#131d2a);'
+                    'border:1px solid rgba(255,255,255,0.08);border-radius:10px;'
+                    'padding:12px 16px;text-align:center;'
+                )
+                _lbl = 'color:#8899aa;font-size:10px;text-transform:uppercase;letter-spacing:1px;'
+                _val = 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
+
+                k1, k2, k3, k4 = st.columns(4)
+                with k1:
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max DD</div>'
+                                f'<div style="{_val}color:#ff4444;">{_kpi["avg_max_dd"]:.1f}%</div></div>',
+                                unsafe_allow_html=True)
+                with k2:
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst DD</div>'
+                                f'<div style="{_val}color:#ff2222;">{_kpi["worst_max_dd"]:.1f}%</div></div>',
+                                unsafe_allow_html=True)
+                with k3:
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Zeit im DD</div>'
+                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_kpi["avg_time_in_dd"]:.0f}%</div></div>',
+                                unsafe_allow_html=True)
+                with k4:
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Recovery</div>'
+                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_kpi["avg_recovery_days"]:.0f} Tage</div></div>',
+                                unsafe_allow_html=True)
+
+            # Perzentil-Bar: Aktueller DD vs. Historie
+            if show_current and _cur_year in year_data:
+                from shared.percentile_bar import render_percentile_bar
+                from shared.drawdown_analysis import compute_drawdown_stats
+                _cur_stats = compute_drawdown_stats(np.array(year_data[_cur_year]["full_365"]), base=100.0)
+                _hist_dds = [compute_drawdown_stats(c, base=100.0)["max_drawdown"] for c in _yd_curves
+                             if not np.array_equal(c, np.array(year_data.get(_cur_year, {}).get("full_365", [])))]
+                if len(_hist_dds) >= 5:
+                    render_percentile_bar(
+                        current_value=_cur_stats["max_drawdown"],
+                        hist_values=_hist_dds,
+                        label=f"Max DD {_cur_year} · {ticker}",
+                    )
+
+    # ── Expander B: Drawdown-Heatmap (Jahr × Monat) ──
+    with st.expander("🗓️ Max Drawdown: Jahr × Monat", expanded=True):
+        # Letzte 20 Jahre für Heatmap
+        _recent_years = sorted(_yd_years)[-20:]
+        _hm_dict = {str(y): [np.array(year_data[y]["full_365"])] for y in _recent_years if y in year_data}
+
+        if _hm_dict:
+            dd_monthly = compute_monthly_max_drawdown(_hm_dict, n_points=365, base=100.0)
+
+            if not dd_monthly.empty:
+                z_vals = dd_monthly.values
+                fig_hm = go.Figure(data=go.Heatmap(
+                    z=z_vals,
+                    x=dd_monthly.columns.tolist(),
+                    y=dd_monthly.index.tolist(),
+                    text=[[f"{v:.1f}%" for v in row] for row in z_vals],
+                    texttemplate="%{text}",
+                    textfont=dict(size=11, color="white"),
+                    colorscale=SE_DRAWDOWN_COLORSCALE,
+                    zmin=float(z_vals.min()),
+                    zmax=0,
+                    colorbar=dict(title="DD %", ticksuffix="%"),
+                    hovertemplate="Jahr %{y} · %{x}: %{z:.2f}%<extra></extra>",
+                ))
+
+                # "We are here" Markierung
+                _cur_year_str = str(datetime.now().year)
+                _cur_month_idx = datetime.now().month - 1
+                if _cur_year_str in dd_monthly.index:
+                    _y_idx = dd_monthly.index.tolist().index(_cur_year_str)
+                    fig_hm.add_shape(
+                        type="rect",
+                        x0=_cur_month_idx - 0.5, x1=_cur_month_idx + 0.5,
+                        y0=_y_idx - 0.5, y1=_y_idx + 0.5,
+                        line=dict(color="#FFD700", width=3),
+                    )
+
+                fig_hm = apply_se_heatmap_theme(fig_hm, title=f"Max Drawdown pro Monat × Jahr — {ticker}", height=max(350, len(_recent_years) * 24))
+                fig_hm.update_xaxes(tickformat=None)
+                fig_hm.update_yaxes(tickformat=None, dtick=1)
+                st.plotly_chart(fig_hm, use_container_width=True, config=_PLOTLY_CFG)
+
+    # ── Expander C: Saisonale Volatilität (Rolling) ──
+    with st.expander("📊 Saisonale Volatilität (Rolling)", expanded=False):
+        vola_result = compute_avg_rolling_volatility(df, _yd_years, window=vola_window, n_points=365)
+
+        if vola_result is not None:
+            avg_v, std_v = vola_result
+            fig_vol = go.Figure()
+
+            # ±1σ Band
+            x_range = list(range(365))
+            fig_vol.add_trace(go.Scatter(
+                x=x_range + x_range[::-1],
+                y=(avg_v + std_v).tolist() + (avg_v - std_v).tolist()[::-1],
+                fill="toself", fillcolor="rgba(0,212,170,0.08)",
+                line=dict(width=0), showlegend=False, hoverinfo="skip",
+            ))
+
+            # Ø Vola
+            fig_vol.add_trace(go.Scatter(
+                x=x_range, y=avg_v.tolist(),
+                name=f"Ø {vola_window}d Vola",
+                line=dict(color=SE_COLORS["accent"], width=2.5),
+                hovertemplate="Tag %{x}: %{y:.1f}%<extra></extra>",
+            ))
+
+            # Aktuelles Jahr
+            if show_current and _cur_year in year_data:
+                from shared.drawdown_analysis import compute_rolling_volatility
+                _cur_vola = compute_rolling_volatility(df, _cur_year, window=vola_window)
+                if _cur_vola is not None:
+                    _today_doy = min(datetime.now().timetuple().tm_yday, 365)
+                    # Auf 365 Punkte interpolieren
+                    _n = len(_cur_vola)
+                    _x_orig = np.linspace(0, 364, _n)
+                    _interp = np.interp(np.arange(365), _x_orig, pd.Series(_cur_vola).ffill().bfill().values)
+                    fig_vol.add_trace(go.Scatter(
+                        x=list(range(min(_today_doy, 365))),
+                        y=_interp[:_today_doy].tolist(),
+                        name=f"{_cur_year} (aktuell)",
+                        line=dict(color=SE_COLORS["current_year"], width=2.5),
+                    ))
+
+            fig_vol.update_xaxes(tickvals=MONTH_STARTS, ticktext=MONTH_LABELS)
+            fig_vol.update_yaxes(ticksuffix="%")
+            fig_vol = apply_se_theme(fig_vol, title=f"Ø Rolling {vola_window}d Volatilität — {ticker}", height=420)
+            st.plotly_chart(fig_vol, use_container_width=True, config=_PLOTLY_CFG)
+        else:
+            st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
 
     # ── 4. Monats-Performance (Balken) ────────────────────
     st.markdown("---")

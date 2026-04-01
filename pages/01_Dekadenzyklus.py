@@ -73,6 +73,15 @@ with st.sidebar:
                                     help="Zeigt das aktuelle Jahr als eigene Linie")
 
     st.markdown("---")
+    st.markdown("### Risiko-Analyse")
+    vola_window = st.select_slider(
+        "Rolling-Vola Fenster (Tage)",
+        options=[10, 20, 30, 60],
+        value=20,
+        key="dec_vola_win",
+    )
+
+    st.markdown("---")
     st.markdown("### Kohorten ein/ausblenden")
     st.caption("Welche Endziffern im Linien-Chart zeigen?")
 
@@ -352,6 +361,169 @@ with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
 
     fig2 = apply_se_theme(fig2, title="", height=380)
     st.plotly_chart(fig2, use_container_width=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 3a. DRAWDOWN & VOLATILITÄT
+# ══════════════════════════════════════════════════════════════════════════════
+
+from shared.drawdown_analysis import (
+    compute_avg_drawdown_curve, compute_drawdown_kpi,
+    compute_monthly_max_drawdown, compute_avg_rolling_volatility,
+    SE_DRAWDOWN_COLORSCALE, MONTH_STARTS_252, MONTH_LABELS_SHORT,
+)
+from shared.charts import apply_se_heatmap_theme
+
+# ── 3a. Ø Drawdown-Verlauf nach Dekade ───────────────────────
+
+with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
+    fig_dd = go.Figure()
+    _dd_kpi_data = {}
+
+    for digit in range(10):
+        d = decade_data[digit]
+        if d["n"] == 0 or not d["curves"]:
+            continue
+
+        curves_np = d["curves"] if isinstance(d["curves"], list) and isinstance(d["curves"][0], np.ndarray) else [np.array(c) for c in d["curves"]]
+        avg_dd, std_dd = compute_avg_drawdown_curve(curves_np, base=0.0)
+
+        if len(avg_dd) == 0:
+            continue
+
+        color = DECADE_COLORS[digit]
+        is_current = (digit == CURRENT_DIGIT)
+        lw = 3.0 if is_current else 1.5
+        opacity = 1.0 if is_current else 0.7
+
+        fig_dd.add_trace(go.Scatter(
+            x=list(range(252)),
+            y=avg_dd.tolist(),
+            name=f"x{digit} ({d['n']}J)",
+            line=dict(color=color, width=lw),
+            opacity=opacity,
+            hovertemplate="x%{text}: %{y:.2f}%<extra></extra>",
+            text=[str(digit)] * 252,
+        ))
+
+        if is_current:
+            _dd_kpi_data = compute_drawdown_kpi(curves_np, base=0.0)
+
+    # X-Achse: Monatslabels
+    fig_dd.update_xaxes(
+        tickvals=MONTH_STARTS_252,
+        ticktext=MONTH_LABELS_SHORT,
+    )
+    fig_dd.update_yaxes(ticksuffix="%")
+
+    fig_dd = apply_se_theme(fig_dd, title=f"Ø Intra-Year Drawdown nach Dekaden-Endziffer — {ticker}", height=450)
+    st.plotly_chart(fig_dd, use_container_width=True)
+
+    # KPI-Karten für aktuelle Dekade
+    if _dd_kpi_data:
+        _card = (
+            'background:linear-gradient(135deg,#0f1923,#131d2a);'
+            'border:1px solid rgba(255,255,255,0.08);border-radius:10px;'
+            'padding:12px 16px;text-align:center;'
+        )
+        _lbl = 'color:#8899aa;font-size:10px;text-transform:uppercase;letter-spacing:1px;'
+        _val = 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max Drawdown</div>'
+                        f'<div style="{_val}color:#ff4444;">{_dd_kpi_data["avg_max_dd"]:.1f}%</div></div>',
+                        unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst Drawdown</div>'
+                        f'<div style="{_val}color:#ff2222;">{_dd_kpi_data["worst_max_dd"]:.1f}%</div></div>',
+                        unsafe_allow_html=True)
+        with c3:
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Zeit im Drawdown</div>'
+                        f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_dd_kpi_data["avg_time_in_dd"]:.0f}%</div></div>',
+                        unsafe_allow_html=True)
+
+# ── 3b. Drawdown-Heatmap (Dekade × Monat) ────────────────────
+
+with st.expander("🗓️ Max Drawdown: Dekade × Monat", expanded=True):
+    _dd_curves_dict = {}
+    for digit in range(10):
+        d = decade_data[digit]
+        if d["n"] > 0 and d["curves"]:
+            curves_np = d["curves"] if isinstance(d["curves"], list) and isinstance(d["curves"][0], np.ndarray) else [np.array(c) for c in d["curves"]]
+            _dd_curves_dict[f"x{digit}"] = curves_np
+
+    if _dd_curves_dict:
+        dd_monthly = compute_monthly_max_drawdown(_dd_curves_dict, n_points=252, base=0.0)
+
+        if not dd_monthly.empty:
+            z_vals = dd_monthly.values
+            fig_hm = go.Figure(data=go.Heatmap(
+                z=z_vals,
+                x=dd_monthly.columns.tolist(),
+                y=dd_monthly.index.tolist(),
+                text=[[f"{v:.1f}%" for v in row] for row in z_vals],
+                texttemplate="%{text}",
+                textfont=dict(size=11, color="white"),
+                colorscale=SE_DRAWDOWN_COLORSCALE,
+                zmin=float(z_vals.min()),
+                zmax=0,
+                colorbar=dict(title="DD %", ticksuffix="%"),
+                hovertemplate="Dekade %{y} · %{x}: %{z:.2f}%<extra></extra>",
+            ))
+
+            # Gelber Rahmen um aktuelle Dekade
+            _cur_label = f"x{CURRENT_DIGIT}"
+            _cur_idx = dd_monthly.index.tolist().index(_cur_label) if _cur_label in dd_monthly.index else -1
+            if _cur_idx >= 0:
+                fig_hm.add_shape(
+                    type="rect",
+                    x0=-0.5, x1=11.5,
+                    y0=_cur_idx - 0.5, y1=_cur_idx + 0.5,
+                    line=dict(color="#FFD700", width=2.5),
+                )
+
+            fig_hm = apply_se_heatmap_theme(fig_hm, title=f"Ø Max Drawdown pro Monat × Dekade — {ticker}", height=420)
+            fig_hm.update_xaxes(tickformat=None)
+            fig_hm.update_yaxes(tickformat=None)
+            st.plotly_chart(fig_hm, use_container_width=True)
+
+# ── 3c. Saisonale Volatilität nach Dekade ─────────────────────
+
+with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
+    fig_vol = go.Figure()
+    _has_vola = False
+
+    for digit in range(10):
+        d = decade_data[digit]
+        if d["n"] == 0 or not d["years"]:
+            continue
+
+        vola_result = compute_avg_rolling_volatility(df, d["years"], window=vola_window, n_points=252)
+        if vola_result is None:
+            continue
+
+        avg_v, std_v = vola_result
+        color = DECADE_COLORS[digit]
+        is_current = (digit == CURRENT_DIGIT)
+        lw = 3.0 if is_current else 1.5
+
+        fig_vol.add_trace(go.Scatter(
+            x=list(range(252)),
+            y=avg_v.tolist(),
+            name=f"x{digit}",
+            line=dict(color=color, width=lw),
+            opacity=1.0 if is_current else 0.6,
+        ))
+        _has_vola = True
+
+    if _has_vola:
+        fig_vol.update_xaxes(tickvals=MONTH_STARTS_252, ticktext=MONTH_LABELS_SHORT)
+        fig_vol.update_yaxes(ticksuffix="%")
+        fig_vol = apply_se_theme(fig_vol, title=f"Ø Rolling {vola_window}d Volatilität nach Dekade — {ticker}", height=420)
+        st.plotly_chart(fig_vol, use_container_width=True)
+    else:
+        st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 4. ANOMALIE-RADAR (KI)
