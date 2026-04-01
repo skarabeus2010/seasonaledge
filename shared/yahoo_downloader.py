@@ -42,8 +42,11 @@ def _fetch_stooq(stooq_ticker: str, timeout: int = 15) -> pd.DataFrame:
     """Laedt historische Daten von Stooq.com (Langzeit-Fallback)."""
     url = f"https://stooq.com/q/d/l/?s={stooq_ticker}&i=d"
     try:
-        resp = requests.get(url, headers=_HEADERS, timeout=timeout)
-        if resp.status_code != 200:
+        # Stooq erfordert ein Session-Cookie (cookie_uu) — ohne liefert es leeren Body
+        session = requests.Session()
+        session.get("https://stooq.com/", headers=_HEADERS, timeout=timeout)
+        resp = session.get(url, headers=_HEADERS, timeout=timeout)
+        if resp.status_code != 200 or len(resp.text) < 50:
             return pd.DataFrame()
 
         from io import StringIO
