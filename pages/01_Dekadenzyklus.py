@@ -296,6 +296,52 @@ if d_current["n"] >= 2:
             unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
+# 2b. ANOMALIE-RADAR (KI) — direkt unter Kohorte
+# ══════════════════════════════════════════════════════════════════════════════
+
+with st.expander("🔬 Anomalie-Radar (KI)", expanded=True):
+    try:
+        from shared.anomaly_engine import compute_ticker_anomaly_score
+        with st.spinner("Anomalie-Radar berechnet..."):
+            radar = compute_ticker_anomaly_score(df, lookback_days=10)
+        if "error" not in radar:
+            r_score = radar["anomaly_score"]
+            if r_score >= 70:
+                r_icon, r_label, r_clr = "🔴", "Stark anomal", "#f87171"
+            elif r_score >= 40:
+                r_icon, r_label, r_clr = "🟡", "Leicht anomal", "#fbbf24"
+            else:
+                r_icon, r_label, r_clr = "🟢", "Normal", "#34d399"
+
+            cur_ret_clr = "#34d399" if radar["current_return"] >= 0 else "#f87171"
+            hist_clr = "#34d399" if radar["historical_avg"] >= 0 else "#f87171"
+            _ar_cards = [
+                ("Anomalie-Score", f"{r_score:.0f}/100", r_clr),
+                ("Status", f"{r_icon} {r_label}", r_clr),
+                ("Aktuelle 10d-Rendite", f'{radar["current_return"]:+.2f}%', cur_ret_clr),
+                ("Historischer Ø", f'{radar["historical_avg"]:+.2f}%', hist_clr),
+            ]
+            _ar_html = "".join(
+                f'<div style="flex:1; min-width:100px; background:rgba(15,19,24,0.6);'
+                f'border:1px solid rgba(255,255,255,0.07); border-radius:8px;'
+                f'padding:10px 12px; text-align:center;">'
+                f'<div style="font-size:10px; color:#64748b; margin-bottom:4px;">{lbl}</div>'
+                f'<div style="font-size:14px; font-weight:700; color:{clr};">{val}</div>'
+                f'</div>'
+                for lbl, val, clr in _ar_cards
+            )
+            st.markdown(
+                f'<div style="display:flex; gap:8px; margin:4px 0 8px 0;">{_ar_html}</div>'
+                f'<div style="font-size:11px; color:#64748b; text-align:center;">'
+                f'Isolation Forest vergleicht die letzten 10 Handelstage mit '
+                f'{radar["n_comparisons"]} historischen Fenstern am gleichen Kalenderzeitpunkt.</div>',
+                unsafe_allow_html=True)
+        else:
+            st.caption(radar["error"])
+    except Exception as _e:
+        st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
+
+# ══════════════════════════════════════════════════════════════════════════════
 # 3. BALKEN-CHART: Ø-Jahresrendite pro Kohorte
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -367,7 +413,7 @@ with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
 # ══════════════════════════════════════════════════════════════════════════════
 
 from shared.drawdown_analysis import (
-    compute_avg_drawdown_curve, compute_drawdown_kpi,
+    compute_avg_drawdown_curve, compute_drawdown_series, compute_drawdown_kpi,
     compute_monthly_max_drawdown, compute_avg_rolling_volatility,
     SE_DRAWDOWN_COLORSCALE, MONTH_STARTS_252, MONTH_LABELS_SHORT,
 )
@@ -385,7 +431,7 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
             continue
 
         curves_np = d["curves"] if isinstance(d["curves"], list) and isinstance(d["curves"][0], np.ndarray) else [np.array(c) for c in d["curves"]]
-        avg_dd, std_dd = compute_avg_drawdown_curve(curves_np, base=0.0)
+        avg_dd, std_dd = compute_avg_drawdown_curve(curves_np, base=100.0)
 
         if len(avg_dd) == 0:
             continue
@@ -406,7 +452,29 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
         ))
 
         if is_current:
-            _dd_kpi_data = compute_drawdown_kpi(curves_np, base=0.0)
+            _dd_kpi_data = compute_drawdown_kpi(curves_np, base=100.0)
+
+    # Aktuelles Jahr als goldene Linie hervorheben
+    if show_current_year:
+        _cy_df = df[df.index.year == CURRENT_YEAR]
+        if len(_cy_df) >= 20:
+            _cy_closes = _cy_df["Close"].values.astype(float)
+            _cy_log = (np.log(_cy_closes) - np.log(_cy_closes[0])) * 100
+            # Auf 252 interpolieren (partial year → nur bis aktueller Tag)
+            _n_orig = len(_cy_log)
+            _x_orig = np.linspace(0, 251, _n_orig)
+            _cy_interp = np.interp(np.arange(_n_orig), _x_orig * (_n_orig - 1) / 251, _cy_log)
+            _cy_dd = compute_drawdown_series(np.array(_cy_log), base=100.0)
+            # Auf 252 Punkte skalieren (nur bis zum heutigen Handelstag)
+            _today_tdoy = min(_n_orig, 252)
+            _x_mapped = np.linspace(0, 251, _n_orig)[:_today_tdoy]
+            fig_dd.add_trace(go.Scatter(
+                x=_x_mapped.tolist(),
+                y=_cy_dd[:_today_tdoy].tolist(),
+                name=f"{CURRENT_YEAR} (aktuell)",
+                line=dict(color=SE_COLORS["accent_warm"], width=3, dash="solid"),
+                hovertemplate=f"{CURRENT_YEAR}: %{{y:.2f}}%<extra></extra>",
+            ))
 
     # X-Achse: Monatslabels
     fig_dd.update_xaxes(
@@ -453,7 +521,7 @@ with st.expander("🗓️ Max Drawdown: Dekade × Monat", expanded=True):
             _dd_curves_dict[f"x{digit}"] = curves_np
 
     if _dd_curves_dict:
-        dd_monthly = compute_monthly_max_drawdown(_dd_curves_dict, n_points=252, base=0.0)
+        dd_monthly = compute_monthly_max_drawdown(_dd_curves_dict, n_points=252, base=100.0)
 
         if not dd_monthly.empty:
             z_vals = dd_monthly.values
@@ -524,52 +592,6 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
     else:
         st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 4. ANOMALIE-RADAR (KI)
-# ══════════════════════════════════════════════════════════════════════════════
-
-with st.expander("🔬 Anomalie-Radar (KI)", expanded=True):
-    try:
-        from shared.anomaly_engine import compute_ticker_anomaly_score
-        with st.spinner("Anomalie-Radar berechnet..."):
-            radar = compute_ticker_anomaly_score(df, lookback_days=10)
-        if "error" not in radar:
-            r_score = radar["anomaly_score"]
-            if r_score >= 70:
-                r_icon, r_label, r_clr = "🔴", "Stark anomal", "#f87171"
-            elif r_score >= 40:
-                r_icon, r_label, r_clr = "🟡", "Leicht anomal", "#fbbf24"
-            else:
-                r_icon, r_label, r_clr = "🟢", "Normal", "#34d399"
-
-            cur_ret_clr = "#34d399" if radar["current_return"] >= 0 else "#f87171"
-            hist_clr = "#34d399" if radar["historical_avg"] >= 0 else "#f87171"
-            _ar_cards = [
-                ("Anomalie-Score", f"{r_score:.0f}/100", r_clr),
-                ("Status", f"{r_icon} {r_label}", r_clr),
-                ("Aktuelle 10d-Rendite", f'{radar["current_return"]:+.2f}%', cur_ret_clr),
-                ("Historischer Ø", f'{radar["historical_avg"]:+.2f}%', hist_clr),
-            ]
-            _ar_html = "".join(
-                f'<div style="flex:1; min-width:100px; background:rgba(15,19,24,0.6);'
-                f'border:1px solid rgba(255,255,255,0.07); border-radius:8px;'
-                f'padding:10px 12px; text-align:center;">'
-                f'<div style="font-size:10px; color:#64748b; margin-bottom:4px;">{lbl}</div>'
-                f'<div style="font-size:14px; font-weight:700; color:{clr};">{val}</div>'
-                f'</div>'
-                for lbl, val, clr in _ar_cards
-            )
-            st.markdown(
-                f'<div style="display:flex; gap:8px; margin:4px 0 8px 0;">{_ar_html}</div>'
-                f'<div style="font-size:11px; color:#64748b; text-align:center;">'
-                f'Isolation Forest vergleicht die letzten 10 Handelstage mit '
-                f'{radar["n_comparisons"]} historischen Fenstern am gleichen Kalenderzeitpunkt.</div>',
-                unsafe_allow_html=True)
-        else:
-            st.caption(radar["error"])
-    except Exception as _e:
-        st.caption(f"Anomalie-Radar nicht verfügbar: {_e}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 5. DATENTABELLE
