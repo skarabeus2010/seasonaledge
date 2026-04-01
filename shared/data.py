@@ -69,12 +69,21 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
             return None  # Zu alt → Yahoo-Fallback
 
         # OHLC-Qualität prüfen: Open muss für >90% der Zeilen vorhanden sein.
-        # Nightly-Refresh schreibt nur die letzten 60 Tage OHLC → ältere Zeilen haben Open=NULL.
-        # Strenger Check (90%): Verhindert verzerrte Rendite-Berechnungen mit zu wenig Open-Daten.
         if "Open" in df.columns:
             open_fill_rate = df["Open"].notna().mean()
             if open_fill_rate < 0.9:
                 return None  # Zu viele fehlende Open-Werte → Yahoo-Fallback
+
+        # OHLC-Konsistenz prüfen: Erkennt nicht split-adjustierte Open/High/Low.
+        # Vor dem Fix (2026-03-20) wurden Open/High/Low ohne adj_factor gespeichert.
+        # Bei Splits ist Open >> Close (z.B. AAPL 4:1: Open=400, Close=100).
+        if "Open" in df.columns and len(df) > 200:
+            ratio = (df["Open"] / df["Close"]).dropna()
+            if len(ratio) > 200:
+                # >0.5% der Tage mit Open/Close Ratio > 1.5 oder < 0.67 → defekte OHLC
+                extreme_pct = ((ratio > 1.5) | (ratio < 0.67)).mean()
+                if extreme_pct > 0.005:
+                    return None  # Nicht-adjustierte OHLC → Yahoo-Fallback
 
         return df
 
