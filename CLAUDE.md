@@ -49,11 +49,16 @@ shared/                  ← Berechnungen, Daten, Utilities
   ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
   indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
   indicator_filter_ui.py ← Sidebar UI fuer Indikator-Filter (Pulldowns, Badges)
+  tdoy_analysis.py       ← TDoY Berechnungen (9 Funktionen, dynamisch Aktien ~252 / Crypto ~365)
+  trading_day_header.py  ← Trading Day Header (TDOM/TDOY Anzeige) + Converter Widget
+  drawdown_analysis.py   ← Saisonaler Drawdown + Rolling Volatilitaet (DD-Serie, KPI, Heatmap, Recovery)
   strategies/            ← 65+ Strategien
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
   seo_template.html        ← Jinja2 Landingpage-Template
   output/                  ← Generierte HTML + sitemap.xml + robots.txt
+  tools/                   ← Tool-Landingpages (statisches HTML)
+    trading-day-converter.html ← SEO-Landingpage: CDOY/TDOM/TDOY Converter (JS-Client)
 blog/                    ← Blog Engine (Markdown → statisches HTML)
   blog_builder.py          ← Generator: MD → HTML + Charts + Social + YouTube
   templates/               ← Jinja2 Blog-Templates (Post, Index, Kategorie)
@@ -172,6 +177,13 @@ if _project_dir not in sys.path:
 | Perzentil-Bar unter Hauptcharts | `from shared.percentile_bar import render_percentile_bar` |
 | Ticker-Auswahl: `ticker_select()` | Speichert global in `session_state` → bleibt bei Page-Wechsel |
 | Indikator-Filter: `indicator_filter_sidebar()` | `from shared.indicator_filter_ui import indicator_filter_sidebar` |
+| TDOY: `from shared.tdoy_analysis import ...` | Dynamisch: Aktien ~252, Crypto ~365 Handelstage |
+| Trading Day Header: `render_trading_day_header(df)` | `from shared.trading_day_header import render_trading_day_header` |
+| Drawdown: `from shared.drawdown_analysis import ...` | base=100.0 fuer alle Kurven (auch Log-Return bei 0 startend) |
+| Drawdown-Heatmap: `SE_DRAWDOWN_COLORSCALE` | Rot-Gradient, zmin=worst, zmax=0 (NICHT symmetrisch) |
+| Recovery: `compute_real_recovery(df, year)` | Echte Tage bis Peak-Preis ueberschritten, auch ueber Jahresende |
+| SEO Tools: `seo/tools/*.html` | Statisches HTML, Nginx /tools/ Route, JS-Client |
+| Stooq: Session-Cookie erforderlich | `session.get("https://stooq.com/")` vor CSV-Download |
 | Indikator-Berechnung: `indicators.py` | SMA, EMA, RSI, Bollinger, MACD, LBR + `apply_indicator_filter()` |
 | Blog: `blog/blog_builder.py` | `--build` (HTML) oder `--generate` (KI-Entwurf) |
 | Blog-Screenshots: `blog/posts/images/` | Committed → wird beim Build nach output/ kopiert |
@@ -196,6 +208,12 @@ if _project_dir not in sys.path:
 - Blog → `blog/blog_builder.py` (Markdown → HTML + Charts + Social + YouTube)
 - Methodik-Erklärungen → `pages/10_Methodik.py` (zentrale Referenz, Quelle: `info_texts.yaml`)
 - `render_info_badge()` NICHT mehr verwenden → Erklärungen gehören auf die Methodik-Page
+- TDOY-Analyse → `tdoy_analysis.py` (Handelstag des Jahres, dynamisch Aktien/Crypto)
+- Trading Day Header → `trading_day_header.py` (TDOM/TDOY Anzeige auf allen Pages)
+- Drawdown-Analyse → `drawdown_analysis.py` (DD-Kurven, Heatmaps, Recovery, Rolling Vola)
+- Drawdown-Heatmaps → `SE_DRAWDOWN_COLORSCALE` (Rot-Gradient, NICHT symmetrisch)
+- Page-Layout: Rendite-Sektionen oben, Drawdown/Risiko unten (visuell getrennt)
+- SEO-Tools → `seo/tools/` (statisches HTML mit JS-Client, Nginx /tools/ Route)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 
 ## UI-Komponenten (Premium Dark Mode)
@@ -207,6 +225,12 @@ if _project_dir not in sys.path:
 | Kompakte Karten | Inline HTML | Flex-Row, 10px Label, 14px Wert, farbcodiert |
 | Best Match | Inline HTML | DTW + Korrelation, Pokal-Icon beim besten Match |
 | Premium Ampel | Inline HTML | Glow-Effekt, Badges statt massive Farbflächen |
+| Trading Day Header | `trading_day_header.py` | Gelber Einzeiler: Datum · TDOM · TDOY |
+| Trading Day Converter | `trading_day_header.py` | Datepicker + Inline-Ergebnis auf Home |
+| Drawdown-Kurve | `drawdown_analysis.py` | Ø DD pro Tag, Fill nach unten, Gold aktuelles Jahr |
+| Drawdown-Heatmap | `drawdown_analysis.py` | Monat × Dekade/Jahr, SE_DRAWDOWN_COLORSCALE |
+| Worst-DD-Tabelle | `drawdown_analysis.py` | Top 25 Extremjahre mit Peak/Tief/Recovery |
+| Rolling Volatilität | `drawdown_analysis.py` | Einstellbares Fenster (5-60d), Kohorten-Filter |
 
 ## Code Style
 
@@ -337,8 +361,23 @@ UPPER_CASE        → Konstanten
 - [ ] Blog: OG-Image Generierung (Plotly write_image, 1200x630)
 - [ ] Blog: YouTube Thumbnail Generierung (1280x720)
 - [ ] Saisonalitaets-Stabilitaet (Rolling 10J-Fenster: Pattern-Veraenderung ueber Jahrzehnte)
-- [ ] Drawdown-Saisonalitaet (Wann starten/enden groesste Drawdowns im Jahr?)
+- [x] Drawdown-Saisonalitaet (Wann starten/enden groesste Drawdowns im Jahr?) (2026-04-01)
 - [ ] Bull/Bear Regime-Split (Saisonalitaet getrennt fuer VIX >25 vs <25)
+- [x] TDOY-Modul: shared/tdoy_analysis.py (9 Funktionen, dynamisch Aktien/Crypto) (2026-04-01)
+- [x] TDOY in preprocess(): tdoy-Spalte in jedem DataFrame (2026-04-01)
+- [x] tdoy_stats DB-Tabelle + Supabase-Funktionen + Nightly-Refresh (2026-04-01)
+- [x] Trading Day Header: "Heute: DD.MM.YYYY · TDOM X · TDOY Y" auf 6 Pages (2026-04-01)
+- [x] Trading Day Converter: Datepicker auf Home-Page (kompakter Einzeiler, gelb) (2026-04-01)
+- [x] SEO-Landingpage: /tools/trading-day-converter (JS-Client, Schema.org, FAQ) (2026-04-01)
+- [x] Nginx /tools/ Route + Docker-Volume + Sitemap-Eintrag (2026-04-01)
+- [x] Newsletter-Fix: Supabase-Insert auch bei Brevo-Fehler (2026-04-01)
+- [x] Stooq-Fix: Session-Cookie fuer DJI 130 Jahre (2026-04-01)
+- [x] Drawdown-Modul: shared/drawdown_analysis.py (DD-Serie, Avg-Kurve, KPI, Heatmap, Vola) (2026-04-01)
+- [x] Drawdown + Vola in Dekadenzyklus: 3 Expander + Worst-DD-Tabelle + Methodik (2026-04-01)
+- [x] Drawdown + Vola in Jahreszyklus: 3 Expander + Perzentil-Bar + Aktuelles-Jahr (2026-04-01)
+- [x] Dekadenzyklus Layout: Rendite/Drawdown getrennt, Anomalie-Radar nach oben (2026-04-01)
+- [x] Recovery-Berechnung: Echte Handelstage bis Peak-Preis ueberschritten (auch ueber Jahresende) (2026-04-01)
+- [x] Dekadenzyklus Methodik: Ausfuehrliche Erklaerungen Rendite + Drawdown + Vola + Anomalie (2026-04-01)
 
 ## Docs (bei Bedarf lesen)
 
