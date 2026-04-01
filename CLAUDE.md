@@ -307,6 +307,7 @@ UPPER_CASE        → Konstanten
 - [ ] KI-Zusammenfassung in weitere Pages integrieren
 - [ ] Anomaly Engine in weitere Pages integrieren
 - [x] Ticker-Datenbank erweitert: 53 → 94 Ticker (EU-Aktien, Anleihen, EM, Sektor-ETFs) (2026-03-22)
+- [x] Ticker-Datenbank erweitert: 94 → 163 Ticker (69 neue EU-Aktien Top 75 Marktkapitalisierung) (2026-04-01)
 - [x] Backtest Engine + Optimierer (Grid-Search, Walk-Forward, KI Event-Relevanz) (2026-03-21)
 - [x] Stooq-Fallback erweitert: 5 → 10 Indizes (CAC, Euro Stoxx, SMI, HSI, KOSPI) (2026-03-22)
 - [x] VPS Deployment: Hetzner CPX22, Docker + Nginx + SSL (2026-03-22)
