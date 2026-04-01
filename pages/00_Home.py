@@ -549,8 +549,8 @@ try:
         if "tdom" not in _conv_df.columns:
             _conv_df["tdom"] = _conv_df.groupby(["year", "month"]).cumcount() + 1
         render_converter_widget(_conv_df)
-except Exception:
-    pass  # Converter nicht kritisch — bei Fehler einfach ausblenden
+except Exception as _conv_err:
+    st.caption(f"⚠️ Converter: {_conv_err}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
