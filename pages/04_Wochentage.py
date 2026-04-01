@@ -327,7 +327,7 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     return fig
 
 
-def build_heatmap(stats, ticker):
+def build_heatmap(stats, ticker, return_mode=""):
     """Heatmap: Monat x Wochentag (Ø Rendite, farbcodiert).
     Nutzt das zentrale SE Heatmap-Design (wie Dekadenzyklus).
     Aktueller Monat + Wochentag wird mit gelbem Rahmen markiert.
@@ -378,7 +378,8 @@ def build_heatmap(stats, ticker):
     # Adaptive Textfarben (dunkel auf hellen Zellen)
     _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0, fmt="+.3f")
 
-    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
+    _mode_label = f" · {return_mode.split('(')[0].strip()}" if return_mode else ""
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap{_mode_label}", height=480)
     fig.update_xaxes(side="bottom", type="category", tickformat="")
     fig.update_yaxes(autorange="reversed", type="category", tickformat="")
     # Colorbar-Ticks explizit nach Theme setzen (verhindert Float-Artefakte)
@@ -1488,7 +1489,7 @@ def main():
 
     # ── Heatmap Monat x Wochentag ────────────────────
     with st.expander("🗓️ Monat × Wochentag Heatmap", expanded=True):
-        heatmap_fig = build_heatmap(stats, ticker)
+        heatmap_fig = build_heatmap(stats, ticker, return_mode=return_mode)
         st.plotly_chart(heatmap_fig, use_container_width=True, key=f"wd_heatmap_{return_mode}")
         # Hinweis bei einseitigen Modi
         _mode_key = return_mode.split("(")[0].strip()
