@@ -68,12 +68,12 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
         if last_date < pd.Timestamp(cutoff):
             return None  # Zu alt → Yahoo-Fallback
 
-        # OHLC-Qualität prüfen: Open/High/Low müssen für >50% der Zeilen vorhanden sein.
-        # Nightly-Refresh schreibt nur die letzten 60 Tage → ältere Zeilen haben Open=NULL.
-        # Wenn zu viel fehlt, liefert Yahoo-Fallback vollständige OHLCV-Daten.
+        # OHLC-Qualität prüfen: Open muss für >90% der Zeilen vorhanden sein.
+        # Nightly-Refresh schreibt nur die letzten 60 Tage OHLC → ältere Zeilen haben Open=NULL.
+        # Strenger Check (90%): Verhindert verzerrte Rendite-Berechnungen mit zu wenig Open-Daten.
         if "Open" in df.columns:
             open_fill_rate = df["Open"].notna().mean()
-            if open_fill_rate < 0.5:
+            if open_fill_rate < 0.9:
                 return None  # Zu viele fehlende Open-Werte → Yahoo-Fallback
 
         return df
