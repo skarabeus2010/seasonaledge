@@ -10,7 +10,7 @@
 
   <!-- Open Graph -->
   <meta property="og:title" content="SeasonAlpha &mdash; Saisonale B&ouml;rsenanalyse mit KI">
-  <meta property="og:description" content="130+ Jahre Marktdaten. 15 ML-Modelle. 263 Basiswerte. Kostenlos.">
+  <meta property="og:description" content="130+ Jahre Marktdaten. 15 KI-Modelle. 263 Basiswerte. Kostenlos.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
@@ -19,7 +19,7 @@
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SeasonAlpha &mdash; Saisonale B&ouml;rsenanalyse">
-  <meta name="twitter:description" content="130+ Jahre Marktdaten. 15 ML-Modelle. Kostenlos testen.">
+  <meta name="twitter:description" content="130+ Jahre Marktdaten. 15 KI-Modelle. Zur Analyse.">
 
   <!-- Google -->
   <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
@@ -706,7 +706,6 @@
       </a>
       <span class="sa-badge sa-badge--early-access">Early Access</span>
       <nav class="sa-nav__links" id="nav-links">
-        <a href="#hero-demo">Produkt</a>
         <div class="sa-nav__dropdown">
           <button class="sa-nav__dropdown-trigger">
             Zyklen
@@ -721,10 +720,31 @@
             <a href="/app/">Mondphasen</a>
           </div>
         </div>
-        <a href="#strategies">Backtest</a>
-        <a href="#methodology">Methodik</a>
+        <div class="sa-nav__dropdown">
+          <button class="sa-nav__dropdown-trigger">
+            Strategien
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="sa-nav__dropdown-menu">
+            <a href="/app/">Januar Trifecta</a>
+            <a href="/app/">Plain Vanilla Strategien</a>
+            <a href="/app/">Backtest Engine</a>
+          </div>
+        </div>
+        <div class="sa-nav__dropdown">
+          <button class="sa-nav__dropdown-trigger">
+            Mehr
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="sa-nav__dropdown-menu">
+            <a href="/app/">Methodik</a>
+            <a href="/app/">Kriegszeiten</a>
+            <a href="/app/">Saisonal Events Kalender</a>
+          </div>
+        </div>
+        <a href="/blog/">Blog</a>
       </nav>
-      <a href="/app/" class="sa-btn sa-btn--primary sa-nav__cta">Kostenlos testen</a>
+      <a href="/app/" class="sa-btn sa-btn--primary sa-nav__cta">Zur Analyse</a>
       <button class="sa-nav__burger" id="nav-burger" aria-label="Menu">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -740,19 +760,20 @@
       <div class="sa-container">
         <p class="sa-section__eyebrow">Datengetriebene B&ouml;rsenanalyse</p>
         <h1 class="sa-hero__h1">
-          Saisonale B&ouml;rsenmuster erkennen &mdash;
-          <span class="sa-hero__h1-accent">mit 130&nbsp;Jahren Marktdaten und&nbsp;KI</span>
+          Saisonale B&ouml;rsenmuster &mdash; bis zu 131 Jahre Markthistorie
+          kombiniert mit 15 KI-Modellen.
+          <span class="sa-hero__h1-accent">Dein unfairer Vorteil.</span>
         </h1>
         <p class="sa-hero__sub">
-          SeasonAlpha analysiert Dekaden-, Jahres- und Monatszyklen mit
-          15&nbsp;Machine-Learning-Modellen. Finde statistische Signale
-          bevor der Markt sie einpreist.
+          SeasonAlpha identifiziert f&uuml;r Dich saisonale Trends, generiert
+          Trading-Signale auf Grundlage von signifikanten Marktzyklen.
+          Unterst&uuml;tzt durch Deep Learning Modelle.
         </p>
         <div class="sa-hero__actions">
-          <a href="/app/" class="sa-btn sa-btn--primary sa-btn--lg">Kostenlos testen</a>
+          <a href="/app/" class="sa-btn sa-btn--primary sa-btn--lg">Zur Analyse</a>
         </div>
         <p class="sa-hero__hint" id="hero-hint">
-          Kein Abo n&ouml;tig &mdash; alle Basis-Charts sofort verf&uuml;gbar
+          263 Aktien, ETFs, Krypto und Rohstoffe &mdash; direkt analysieren
         </p>
       </div>
     </section>
@@ -763,7 +784,7 @@
     <section id="hero-demo" class="sa-section">
       <div class="sa-container">
         <p class="sa-section__eyebrow">Interaktive Demo</p>
-        <h2 class="sa-section__title">Vom Rauschen zum Trend</h2>
+        <h2 class="sa-section__title">From Noise to Signal</h2>
         <p class="sa-section__sub">
           Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster.
           So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten ein klares Signal.
@@ -824,7 +845,7 @@
           </div>
           <div class="sa-stat">
             <div class="sa-stat__number">15</div>
-            <div class="sa-stat__label">ML-Modelle</div>
+            <div class="sa-stat__label">KI-Modelle</div>
           </div>
           <div class="sa-stat">
             <div class="sa-stat__number">24</div>
@@ -895,7 +916,7 @@
     <section id="ai-features" class="sa-section sa-section--dark">
       <div class="sa-container">
         <p class="sa-section__eyebrow">K&uuml;nstliche Intelligenz</p>
-        <h2 class="sa-section__title">15 ML-Modelle f&uuml;r pr&auml;zise Signale</h2>
+        <h2 class="sa-section__title">15 KI-Modelle f&uuml;r pr&auml;zise Signale</h2>
         <p class="sa-section__sub">Von DTW Pattern Matching bis Chronos-Forecast &mdash; jedes Modell beleuchtet einen anderen Aspekt saisonaler Muster.</p>
         <div class="sa-grid sa-grid--3col">
           <div class="sa-card sa-card--highlight">
@@ -971,7 +992,7 @@
             </div>
             <div class="sa-stat">
               <div class="sa-stat__number">15</div>
-              <div class="sa-stat__label">ML-Modelle</div>
+              <div class="sa-stat__label">KI-Modelle</div>
             </div>
             <div class="sa-stat">
               <div class="sa-stat__number">24</div>
@@ -1035,7 +1056,7 @@
           <button type="submit" class="sa-btn sa-btn--primary">Anmelden</button>
         </form>
         <p class="sa-text-muted">Oder direkt zur App:</p>
-        <a href="/app/" class="sa-btn sa-btn--secondary">Kostenlos testen</a>
+        <a href="/app/" class="sa-btn sa-btn--secondary">Zur Analyse</a>
       </div>
     </section>
   </main>
@@ -1090,9 +1111,9 @@
     // Rotating hero hints
     (function() {
       var hints = [
-        'Kein Abo n\u00f6tig \u2014 alle Basis-Charts sofort verf\u00fcgbar',
-        '263 Aktien, ETFs, Krypto und Rohstoffe \u2014 gratis analysieren',
-        '130+ Jahre Dow Jones Historie \u2014 kostenlos erkunden'
+        '263 Aktien, ETFs, Krypto und Rohstoffe \u2014 direkt analysieren',
+        '130+ Jahre Dow Jones Historie \u2014 interaktiv erkunden',
+        '15 KI-Modelle \u2014 von DTW bis Chronos Forecast'
       ];
       var el = document.getElementById('hero-hint');
       var i = 0;

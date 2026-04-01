@@ -35,7 +35,7 @@
 
 **Eyebrow:** INTERAKTIVE DEMO
 
-**H2:** Vom Rauschen zum Trend
+**H2:** From Noise to Signal
 
 **Subtitle:** Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten ein klares Signal.
 
@@ -51,7 +51,7 @@
 |------|-------|
 | 130+ | Jahre Markthistorie |
 | 263 | Basiswerte |
-| 15 | ML-Modelle |
+| 15 | KI-Modelle |
 | 24 | Saisonalstrategien |
 
 ---
@@ -96,7 +96,7 @@
 
 **Eyebrow:** KUENSTLICHE INTELLIGENZ
 
-**H2:** 15 ML-Modelle fuer praezise Signale
+**H2:** 15 KI-Modelle fuer praezise Signale
 
 **Subtitle:** Von DTW Pattern Matching bis Chronos-Forecast — jedes Modell beleuchtet einen anderen Aspekt saisonaler Muster.
 
