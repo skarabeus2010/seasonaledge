@@ -391,8 +391,10 @@ def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
     today = datetime.now()
     if "tdoy" not in df.columns:
         return None
+    # Ende des heutigen Tages als Cutoff (damit 07:00 Timestamps eingeschlossen werden)
+    cutoff = pd.Timestamp(today.date()) + pd.Timedelta(days=1)
     current = df[(df["year"] == today.year)]
-    current = current[current.index <= pd.Timestamp(today.date())]
+    current = current[current.index < cutoff]
     if len(current) == 0:
         return None
     return int(current["tdoy"].iloc[-1])
@@ -401,14 +403,22 @@ def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
 def _get_current_tdom(df: pd.DataFrame) -> Optional[int]:
     """Aktueller TDOM aus den Daten. Fallback auf letzten bekannten Tag."""
     today = datetime.now()
+    # Ende des heutigen Tages als Cutoff
+    cutoff = pd.Timestamp(today.date()) + pd.Timedelta(days=1)
     current = df[(df["year"] == today.year) & (df["month"] == today.month)]
-    current = current[current.index <= pd.Timestamp(today.date())]
+    current = current[current.index < cutoff]
     if len(current) > 0:
         return len(current)
-    # Fallback: letzter bekannter Monat (z.B. Daten enden gestern)
+    # Fallback: letzter bekannter Monat (z.B. US-Börse hat noch nicht geöffnet)
     year_df = df[df["year"] == today.year]
+    year_df = year_df[year_df.index < cutoff]
     if len(year_df) > 0:
         last_month = int(year_df["month"].iloc[-1])
-        month_df = year_df[year_df["month"] == last_month]
-        return len(month_df)
+        if last_month == today.month:
+            # Gleicher Monat, aber keine Daten bis heute
+            month_df = year_df[year_df["month"] == last_month]
+            return len(month_df)
+        else:
+            # Vormonat — zeige TDOM 1 als Schätzung (neuer Monat hat begonnen)
+            return 1
     return None
