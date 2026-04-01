@@ -863,6 +863,328 @@ def build_volatility_chart(vol_stats, ticker):
 
 
 # ══════════════════════════════════════════════════════════════
+# WEEKEND EFFEKT
+# ══════════════════════════════════════════════════════════════
+
+def calc_weekend_effect(df, years_back, cycle_filter=None,
+                        filter_mode="Kein Filter",
+                        sma_days=200, rsi_days=14, rsi_threshold=30):
+    """
+    Weekend-Effekt: Close Freitag → Open Montag.
+
+    Berechnet die Ueber-Wochenende-Rendite (Freitag Schluss → Montag Eroeffnung)
+    und aggregiert nach Monat, Jahr, und insgesamt.
+    """
+    df = df.copy()
+
+    # ── Zeitraum filtern ──
+    cutoff = df.index.max() - pd.DateOffset(years=years_back)
+    df = df[df.index >= cutoff]
+
+    if len(df) < 20:
+        return None
+
+    # ── Praesidentenzyklus-Filter ──
+    if cycle_filter:
+        df["_cycle"] = df.index.year.map(get_presidential_cycle_year)
+        df = df[df["_cycle"].isin(cycle_filter)]
+        df = df.drop(columns=["_cycle"])
+        if len(df) < 20:
+            return None
+
+    # ── Filter anwenden (auf Freitags-Close) ──
+    df["filter_pass"] = True
+    total_count = len(df)
+
+    if filter_mode == "Trendfilter (SMA)":
+        df["sma"] = df["Close"].rolling(sma_days, min_periods=sma_days).mean()
+        df["filter_pass"] = df["Close"] > df["sma"]
+
+    elif filter_mode == "OBOS-Filter (RSI)":
+        delta = df["Close"].diff()
+        gain = delta.where(delta > 0, 0.0).rolling(rsi_days).mean()
+        loss = (-delta.where(delta < 0, 0.0)).rolling(rsi_days).mean()
+        rs = gain / loss.replace(0, np.nan)
+        df["rsi"] = 100 - (100 / (1 + rs))
+        df["filter_pass"] = df["rsi"] < rsi_threshold
+
+    df["weekday"] = df.index.weekday
+
+    # ── Freitage finden ──
+    fridays = df[df["weekday"] == 4].copy()
+    if len(fridays) == 0:
+        return None
+
+    # ── Naechsten Montag finden (Open) ──
+    weekend_returns = []
+    for fri_date in fridays.index:
+        if not fridays.loc[fri_date, "filter_pass"]:
+            continue
+
+        # Naechste Handelstage nach Freitag suchen
+        next_days = df[df.index > fri_date].head(5)
+        # Montag = weekday 0
+        mondays = next_days[next_days["weekday"] == 0]
+        if len(mondays) == 0:
+            continue
+
+        monday = mondays.iloc[0]
+        fri_close = fridays.loc[fri_date, "Close"]
+        mon_open = monday["Open"]
+
+        if fri_close <= 0 or pd.isna(mon_open):
+            continue
+
+        ret = (mon_open / fri_close - 1) * 100
+        weekend_returns.append({
+            "date_friday": fri_date,
+            "date_monday": mondays.index[0],
+            "month": fri_date.month,
+            "year": fri_date.year,
+            "return": ret,
+            "cycle": get_presidential_cycle_year(fri_date.year),
+        })
+
+    if not weekend_returns:
+        return None
+
+    wr_df = pd.DataFrame(weekend_returns)
+    filtered_count = len(wr_df)
+
+    # ── Statistik gesamt ──
+    overall = {
+        "avg": wr_df["return"].mean(),
+        "median": wr_df["return"].median(),
+        "std": wr_df["return"].std(),
+        "win_rate": (wr_df["return"] > 0).mean() * 100,
+        "count": len(wr_df),
+        "returns": wr_df["return"].tolist(),
+    }
+
+    # ── Statistik pro Monat ──
+    by_month = {}
+    for month in range(1, 13):
+        sub = wr_df[wr_df["month"] == month]["return"]
+        if len(sub) == 0:
+            by_month[month] = {"avg": 0, "median": 0, "std": 0,
+                               "win_rate": 0, "count": 0, "returns": []}
+            continue
+        by_month[month] = {
+            "avg": sub.mean(),
+            "median": sub.median(),
+            "std": sub.std(),
+            "win_rate": (sub > 0).mean() * 100,
+            "count": len(sub),
+            "returns": sub.tolist(),
+        }
+
+    # ── Heatmap: Monat × Jahr ──
+    by_month_year = {}
+    for (month, year), grp in wr_df.groupby(["month", "year"]):
+        by_month_year[(month, year)] = {
+            "avg": grp["return"].mean(),
+            "count": len(grp),
+            "win_rate": (grp["return"] > 0).mean() * 100,
+        }
+
+    # ── Statistik pro Praesidentenzyklus ──
+    by_cycle = {}
+    for cycle_label, grp in wr_df.groupby("cycle"):
+        by_cycle[cycle_label] = {
+            "avg": grp["return"].mean(),
+            "median": grp["return"].median(),
+            "std": grp["return"].std(),
+            "win_rate": (grp["return"] > 0).mean() * 100,
+            "count": len(grp),
+            "returns": grp["return"].tolist(),
+        }
+
+    return {
+        "overall": overall,
+        "by_month": by_month,
+        "by_month_year": by_month_year,
+        "by_cycle": by_cycle,
+        "filtered_count": filtered_count,
+        "total_count": total_count,
+        "years": sorted(wr_df["year"].unique()),
+    }
+
+
+def build_weekend_bar_chart(we_stats, ticker):
+    """Balkendiagramm: Weekend-Effekt Ø Rendite + Win Rate pro Monat."""
+
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("Ø Weekend-Rendite (%)", "Win Rate (%)"),
+        horizontal_spacing=0.12
+    )
+
+    months = list(range(1, 13))
+    avgs = [we_stats["by_month"][m]["avg"] for m in months]
+    win_rates = [we_stats["by_month"][m]["win_rate"] for m in months]
+    counts = [we_stats["by_month"][m]["count"] for m in months]
+
+    bar_colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+
+    fig.add_trace(
+        go.Bar(
+            x=MONTH_NAMES_DE, y=avgs,
+            marker_color=bar_colors,
+            text=[f"{v:+.3f}%<br>n={c}" for v, c in zip(avgs, counts)],
+            textposition="outside", textfont=dict(size=9),
+            hovertemplate="<b>%{x}</b><br>Ø Weekend: %{y:+.3f}%<extra></extra>",
+            showlegend=False
+        ), row=1, col=1)
+
+    wr_colors = [SE_COLORS["positive"] if v >= 50 else SE_COLORS["negative"] for v in win_rates]
+    fig.add_trace(
+        go.Bar(
+            x=MONTH_NAMES_DE, y=win_rates,
+            marker_color=wr_colors,
+            text=[f"{v:.0f}%" for v in win_rates],
+            textposition="outside", textfont=dict(size=9),
+            hovertemplate="<b>%{x}</b><br>Win Rate: %{y:.1f}%<extra></extra>",
+            showlegend=False
+        ), row=1, col=2)
+
+    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=1)
+    fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=2)
+
+    # Gesamtdurchschnitt als Referenzlinie
+    overall_avg = we_stats["overall"]["avg"]
+    fig.add_hline(y=overall_avg, line_dash="dot", line_color="#F1C40F",
+                  annotation_text=f"Ø {overall_avg:+.3f}%",
+                  annotation_font_color="#F1C40F", row=1, col=1)
+
+    # We are here! — gelber Rahmen um aktuellen Monat
+    current_month = datetime.now().month
+    fig.add_shape(type="rect",
+        x0=current_month - 1 - 0.4, x1=current_month - 1 + 0.4,
+        y0=0, y1=avgs[current_month - 1],
+        line=dict(color="#FFD700", width=3),
+        fillcolor="rgba(0,0,0,0)", layer="above", row=1, col=1)
+    fig.add_shape(type="rect",
+        x0=current_month - 1 - 0.4, x1=current_month - 1 + 0.4,
+        y0=0, y1=win_rates[current_month - 1],
+        line=dict(color="#FFD700", width=3),
+        fillcolor="rgba(0,0,0,0)", layer="above", row=1, col=2)
+
+    n = we_stats["overall"]["count"]
+    fig = apply_se_theme(fig,
+        title=f"{ticker} — Weekend-Effekt: Fr Close → Mo Open ({n} Wochenenden)", height=400)
+    fig.update_yaxes(tickformat="+.3f", ticksuffix="%", row=1, col=1,
+                     gridcolor="rgba(255,255,255,0.06)")
+    fig.update_yaxes(range=[0, 100], ticksuffix="%", row=1, col=2,
+                     gridcolor="rgba(255,255,255,0.06)")
+    return fig
+
+
+def build_weekend_heatmap(we_stats, ticker):
+    """Heatmap: Monat × Jahr des Weekend-Effekts."""
+
+    years = we_stats["years"]
+    if not years:
+        return None
+
+    year_labels = [str(y) for y in years]
+    z_values = []
+    hover_texts = []
+
+    for month in range(1, 13):
+        row_z = []
+        row_hover = []
+        for year in years:
+            data = we_stats["by_month_year"].get((month, year), {"avg": 0, "count": 0, "win_rate": 0})
+            row_z.append(data["avg"])
+            row_hover.append(
+                f"<b>{MONTH_NAMES_DE[month-1]} {year}</b><br>"
+                f"Ø Weekend: {data['avg']:+.3f}%<br>"
+                f"Win Rate: {data['win_rate']:.0f}%<br>"
+                f"n = {data['count']}"
+            )
+        z_values.append(row_z)
+        hover_texts.append(row_hover)
+
+    fig = go.Figure(go.Heatmap(
+        z=z_values,
+        x=year_labels,
+        y=MONTH_NAMES_DE,
+        colorscale=SE_HEATMAP_COLORSCALE,
+        zmid=0,
+        hovertext=hover_texts,
+        hovertemplate="%{hovertext}<extra></extra>",
+        colorbar=dict(
+            title=dict(text="Ø %", font=dict(color="#FFFFFF")),
+            ticksuffix="%", tickformat="+.3f",
+            tickfont=dict(color="#FFFFFF"),
+        ),
+    ))
+
+    _add_heatmap_annotations(fig, z_values, year_labels, MONTH_NAMES_DE, zmid=0, fmt="+.2f")
+
+    fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Weekend-Effekt Heatmap (Monat × Jahr)", height=480)
+    fig.update_xaxes(side="bottom", type="category", tickformat="")
+    fig.update_yaxes(autorange="reversed", type="category", tickformat="")
+
+    # Gelber Rahmen um aktuelle Zelle
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    if current_year in years:
+        year_idx = years.index(current_year)
+        fig.add_shape(type="rect",
+            x0=year_idx - 0.5, x1=year_idx + 0.5,
+            y0=current_month - 1 - 0.5, y1=current_month - 1 + 0.5,
+            line=dict(color="#FFD700", width=3.5),
+            fillcolor="rgba(0,0,0,0)", layer="above")
+
+    return fig
+
+
+def build_weekend_cycle_chart(we_stats, ticker):
+    """Balkendiagramm: Weekend-Effekt nach Praesidentenzyklus."""
+    by_cycle = we_stats["by_cycle"]
+    if not by_cycle:
+        return None
+
+    # Feste Reihenfolge
+    cycle_order = [
+        "Year 1 (Post-Election)",
+        "Year 2 (Midterm Election)",
+        "Year 3 (Pre-Election)",
+        "Year 4 (Election Year)",
+    ]
+    labels = []
+    avgs = []
+    counts = []
+    colors = []
+
+    for c in cycle_order:
+        if c in by_cycle:
+            labels.append(c.split("(")[1].rstrip(")"))
+            avgs.append(by_cycle[c]["avg"])
+            counts.append(by_cycle[c]["count"])
+            colors.append(CYCLE_COLORS.get(c, "#888888"))
+
+    if not labels:
+        return None
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=labels, y=avgs,
+        marker_color=colors,
+        text=[f"{v:+.3f}%<br>n={c}" for v, c in zip(avgs, counts)],
+        textposition="outside", textfont=dict(size=11),
+        hovertemplate="<b>%{x}</b><br>Ø Weekend: %{y:+.3f}%<extra></extra>",
+        showlegend=False,
+    ))
+    fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
+
+    fig = apply_se_theme(fig, title=f"{ticker} — Weekend-Effekt nach Präsidentenzyklus", height=350)
+    fig.update_yaxes(tickformat="+.3f", ticksuffix="%")
+    return fig
+
+
+# ══════════════════════════════════════════════════════════════
 # STREAMLIT UI
 # ══════════════════════════════════════════════════════════════
 
@@ -1049,6 +1371,81 @@ def main():
             "Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>",
             unsafe_allow_html=True)
 
+    # ── Weekend-Effekt (nur Aktien) ──────────────────
+    if not _is_crypto:
+      with st.expander("🌅 Weekend-Effekt (Fr Close → Mo Open)", expanded=True):
+        we_stats = calc_weekend_effect(
+            raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None,
+            filter_mode=filter_mode, sma_days=sma_days,
+            rsi_days=rsi_days, rsi_threshold=rsi_threshold)
+
+        if we_stats is None:
+            st.warning("Nicht genuegend Daten fuer die Weekend-Effekt Analyse.")
+        else:
+            # ── Kompakte Statistik-Karten ──
+            ov = we_stats["overall"]
+            _color_avg = SE_COLORS["positive"] if ov["avg"] >= 0 else SE_COLORS["negative"]
+            _color_wr = SE_COLORS["positive"] if ov["win_rate"] >= 50 else SE_COLORS["negative"]
+            st.markdown(f"""
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+              <div style="background:#1a1a2e; border-radius:8px; padding:8px 14px; min-width:120px;">
+                <span style="font-size:10px; color:#aaa;">Ø Weekend-Rendite</span><br>
+                <span style="font-size:14px; font-weight:700; color:{_color_avg};">{ov['avg']:+.3f}%</span>
+              </div>
+              <div style="background:#1a1a2e; border-radius:8px; padding:8px 14px; min-width:120px;">
+                <span style="font-size:10px; color:#aaa;">Median</span><br>
+                <span style="font-size:14px; font-weight:700; color:#FFFFFF;">{ov['median']:+.3f}%</span>
+              </div>
+              <div style="background:#1a1a2e; border-radius:8px; padding:8px 14px; min-width:120px;">
+                <span style="font-size:10px; color:#aaa;">Win Rate</span><br>
+                <span style="font-size:14px; font-weight:700; color:{_color_wr};">{ov['win_rate']:.1f}%</span>
+              </div>
+              <div style="background:#1a1a2e; border-radius:8px; padding:8px 14px; min-width:120px;">
+                <span style="font-size:10px; color:#aaa;">Std.Abw.</span><br>
+                <span style="font-size:14px; font-weight:700; color:#FFFFFF;">{ov['std']:.3f}%</span>
+              </div>
+              <div style="background:#1a1a2e; border-radius:8px; padding:8px 14px; min-width:120px;">
+                <span style="font-size:10px; color:#aaa;">Wochenenden</span><br>
+                <span style="font-size:14px; font-weight:700; color:#FFFFFF;">{ov['count']}</span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── Balkendiagramm pro Monat ──
+            we_bar_fig = build_weekend_bar_chart(we_stats, ticker)
+            st.plotly_chart(we_bar_fig, use_container_width=True, key="wd_weekend_bar")
+
+            # ── Signifikanztest pro Monat ──
+            sig_we_groups = {MONTH_NAMES_DE[m-1]: we_stats["by_month"][m]["returns"]
+                            for m in range(1, 13) if we_stats["by_month"][m]["returns"]}
+            if sig_we_groups:
+                sig_we_results = run_significance_test(sig_we_groups)
+                render_significance_section(sig_we_results,
+                    expander_title="📊 Signifikanz Weekend-Effekt pro Monat",
+                    cols_per_row=6,
+                    sort_order=MONTH_NAMES_DE,
+                    key_prefix="sig_weekend")
+
+            # ── Heatmap Monat × Jahr ──
+            we_heatmap_fig = build_weekend_heatmap(we_stats, ticker)
+            if we_heatmap_fig:
+                st.plotly_chart(we_heatmap_fig, use_container_width=True, key="wd_weekend_heatmap")
+
+            # ── Praesidentenzyklus ──
+            we_cycle_fig = build_weekend_cycle_chart(we_stats, ticker)
+            if we_cycle_fig:
+                st.plotly_chart(we_cycle_fig, use_container_width=True, key="wd_weekend_cycle")
+
+            st.markdown(
+                "<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+                "<b>Interpretation:</b> Der Weekend-Effekt misst die Rendite ueber "
+                "das Wochenende (Freitag Schluss → Montag Eroeffnung). Historisch zeigt "
+                "sich oft ein negativer Weekend-Effekt bei Aktien — Montage eroeffnen "
+                "unter dem Freitags-Schluss. Dieser Effekt variiert saisonal und kann "
+                "durch Nachrichtenfluss am Wochenende (Earnings, Geopolitik) verstaerkt werden.</p>",
+                unsafe_allow_html=True)
+
     # ── Konsekutiv-Analyse ────────────────────────────
     with st.expander("🔗 Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)", expanded=True):
         consec_matrix = calc_consecutive_probs(raw_df, years_back,
@@ -1092,7 +1489,25 @@ def main():
     # ── Heatmap Monat x Wochentag ────────────────────
     with st.expander("🗓️ Monat × Wochentag Heatmap", expanded=True):
         heatmap_fig = build_heatmap(stats, ticker)
-        st.plotly_chart(heatmap_fig, use_container_width=True)
+        st.plotly_chart(heatmap_fig, use_container_width=True, key=f"wd_heatmap_{return_mode}")
+        # Hinweis bei einseitigen Modi
+        _mode_key = return_mode.split("(")[0].strip()
+        if "Open" in return_mode and "Close" in return_mode and "t0 →" not in return_mode:
+            st.markdown(
+                "<p style='color:#aaa; font-size:11px; line-height:1.5;'>"
+                "<b>Hinweis:</b> Im Modus <i>Open → Close</i> (Intraday) sind die Werte oft "
+                "überwiegend negativ — der Großteil der Aktienrenditen entsteht "
+                "über Nacht (Overnight-Effekt). Dies ist kein Fehler, sondern ein "
+                "dokumentiertes Marktphänomen.</p>",
+                unsafe_allow_html=True)
+        elif "Close → Open" in return_mode:
+            st.markdown(
+                "<p style='color:#aaa; font-size:11px; line-height:1.5;'>"
+                "<b>Hinweis:</b> Im Modus <i>Close → Open</i> (Overnight) sind die Werte oft "
+                "überwiegend positiv — der Großteil der Aktienrenditen entsteht "
+                "über Nacht (Overnight-Effekt). Dies ist kein Fehler, sondern ein "
+                "dokumentiertes Marktphänomen.</p>",
+                unsafe_allow_html=True)
 
     # ── Top / Flop Kombinationen ──────────────────────
     with st.expander("🏆 Top / Flop Monat×Wochentag Kombinationen", expanded=True):
@@ -1173,6 +1588,15 @@ def main():
 
 - **Tages-Range:** (High – Low) / Close × 100. Misst die Schwankungsbreite an jedem Wochentag.
 - **Interpretation:** Höhere Range = volatilerer Handelstag. Montage und Freitage sind bei Aktien oft volatiler als Mittwoche.
+
+### Weekend-Effekt
+
+- **Berechnung:** (Montag Open / Freitag Close − 1) × 100. Misst die Rendite über das Wochenende.
+- **Balkendiagramm:** Ø Weekend-Rendite und Win Rate pro Monat (Jan–Dez).
+- **Heatmap:** Monat × Jahr zeigt den Weekend-Effekt pro Monat und Jahr.
+- **Signifikanz-Tachos:** t-Test pro Monat: p < 0,05 = statistisch signifikanter Weekend-Effekt.
+- **Präsidentenzyklus:** Vergleich des Weekend-Effekts nach Zyklusjahr (Post-Election, Midterm, Pre-Election, Election).
+- **Filter:** Trendfilter (SMA) und OBOS-Filter (RSI) werden auf den Freitag angewendet — nur Wochenenden, an denen der Filter aktiv war, werden berücksichtigt.
 
 ### Monat × Wochentag Heatmap
 

@@ -21,7 +21,7 @@
       "Bash(nslookup -type=TXT seasonalpha.ai 8.8.8.8)",
       "Bash(git pull:*)",
       "Bash(ls -la /c/dev/Seasonaledge/shared/*.py)",
-      "Bash(grep -r \"get_dropdown_label\\\\|get_display_name\\\\|SYMBOLS\\\\|DEFAULT_SYMBOL\" /c/dev/Seasonaledge/pages/*.py)",
+      "Bash(grep -r \"get_dropdown_label\\|get_display_name\\|SYMBOLS\\|DEFAULT_SYMBOL\" /c/dev/Seasonaledge/pages/*.py)",
       "Bash(gh run:*)"
     ]
   }
