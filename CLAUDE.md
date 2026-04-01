@@ -218,6 +218,12 @@ UPPER_CASE        → Konstanten
 
 ## Offene TODOs
 
+- [ ] **PRIO 1: Pages auf Supabase-Daten umstellen (statt Yahoo-Live-Fetch)**
+      Alle 6 Analysis-Pages (01-06) laden Kursdaten live von Yahoo Finance.
+      Die Supabase `prices`-Tabelle wird vom Nightly-Job befuellt, aber nie gelesen.
+      Refactoring: `shared/data.py` → erst `fetch_prices()` aus Supabase, Fallback Yahoo.
+      Betrifft: Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen.
+      Vorteil: Schnellere Ladezeit, weniger Yahoo-Rate-Limits, Stooq-Daten (DJI 130J) sofort verfuegbar.
 - [ ] `shared/download_manager.py` fertigstellen
 - [x] Premium Dashboard: TDOM freigeschaltet (2026-03-19)
 - [ ] Premium Dashboard: TDOY Sektion freischalten
