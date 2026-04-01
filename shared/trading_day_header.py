@@ -207,32 +207,26 @@ def convert_trading_days(
 
 def render_converter_widget(df: pd.DataFrame):
     """
-    Rendert den Trading Day Converter als Streamlit-Widget.
-    Einfach: Kalender-Datepicker → zeigt sofort TDOM + TDOY.
+    Kompakter Trading Day Converter: Datepicker + Einzeiler-Ergebnis (gelb).
     """
     if df is None or df.empty:
         return
 
-    # ── Section Header ──
-    st.markdown(
-        f'<div style="text-align:center; margin: 2rem 0 1rem 0;">'
-        f'<span style="color:{SE_COLORS["text_muted"]}; font-size:13px; '
-        f'letter-spacing:2px; text-transform:uppercase;">Werkzeug</span>'
-        f'<h2 style="color:{SE_COLORS["text_primary"]}; font-size:1.6rem; '
-        f'margin:0.3rem 0 0.5rem 0;">Trading Day Converter</h2>'
-        f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.95rem; '
-        f'max-width:600px; margin:0 auto;">'
-        f'Datum auswählen &mdash; TDOM und TDOY werden sofort angezeigt '
-        f'(S&amp;P 500 Handelstage)</p>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    # ── Kompaktes Layout: Label + Datepicker + Ergebnis in einer Zeile ──
+    col_label, col_cal, col_result = st.columns([1.2, 1.2, 3])
 
-    # ── Kalender-Input (zentriert) ──
-    _spacer_l, col_cal, _spacer_r = st.columns([1, 2, 1])
+    with col_label:
+        st.markdown(
+            f'<div style="padding-top:6px;">'
+            f'<span style="color:{SE_COLORS["accent_warm"]}; font-size:14px; '
+            f'font-weight:600;">📅 Trading Day Converter</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
     with col_cal:
         selected_date = st.date_input(
-            "Datum wählen",
+            "Datum",
             value=date.today(),
             min_value=date(2000, 1, 1),
             max_value=date(date.today().year, 12, 31),
@@ -240,62 +234,47 @@ def render_converter_widget(df: pd.DataFrame):
             label_visibility="collapsed",
         )
 
-    # ── Sofort umrechnen ──
-    if selected_date:
-        cdoy = selected_date.timetuple().tm_yday
-        result = convert_trading_days(df, "calendar_day", cdoy, year=selected_date.year)
+    with col_result:
+        if selected_date:
+            cdoy = selected_date.timetuple().tm_yday
+            result = convert_trading_days(df, "calendar_day", cdoy, year=selected_date.year)
 
-        if result:
-            _render_converter_result(result)
-        else:
-            st.info("Kein Handelstag — Wochenende oder Feiertag.")
+            if result:
+                _render_converter_inline(result)
+            else:
+                st.markdown(
+                    f'<div style="color:{SE_COLORS["accent_warm"]}; font-size:14px; '
+                    f'padding-top:6px; font-weight:500;">'
+                    f'Kein Handelstag (Wochenende/Feiertag)</div>',
+                    unsafe_allow_html=True,
+                )
 
 
-def _render_converter_result(r: dict):
-    """Rendert die 3 Ergebnis-Karten im SE-Design."""
-    card_style = (
-        "background: linear-gradient(135deg, #0f1923 0%, #131d2a 100%);"
-        "border: 1px solid rgba(255,255,255,0.08);"
-        "border-radius: 12px;"
-        "padding: 16px 20px;"
-        "text-align: center;"
+def _render_converter_inline(r: dict):
+    """Einzeiler-Ergebnis in Gelb mit Trennstrichen."""
+    gold = SE_COLORS["accent_warm"]
+    muted = SE_COLORS["text_muted"]
+
+    tdom_str = str(r["tdom"]) if r["tdom"] else "–"
+
+    st.markdown(
+        f'<div style="'
+        f'color:{gold}; font-size:15px; font-weight:600; '
+        f'font-variant-numeric:tabular-nums; padding-top:6px; '
+        f'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'
+        f'">'
+        f'{r["date_str"]} {r["weekday"]}'
+        f' <span style="color:{muted};">·</span> '
+        f'CDOY {r["cdoy"]}'
+        f' <span style="color:{muted};">·</span> '
+        f'<span style="color:#4d9fff;">TDOM {tdom_str}</span>'
+        f'<span style="color:{muted};font-size:11px;">/{r["tdom_max"]}</span>'
+        f' <span style="color:{muted};">·</span> '
+        f'TDOY {r["tdoy"]}'
+        f'<span style="color:{muted};font-size:11px;">/{r["tdoy_max"]}</span>'
+        f'</div>',
+        unsafe_allow_html=True,
     )
-    label_style = "color: #8899aa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;"
-    value_style = "font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 4px 0;"
-    sub_style = "color: #667788; font-size: 12px;"
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown(
-            f'<div style="{card_style}">'
-            f'<div style="{label_style}">Datum</div>'
-            f'<div style="{value_style} color: {SE_COLORS["text_primary"]};">{r["date_str"]}</div>'
-            f'<div style="{sub_style}">{r["weekday"]} · CDOY {r["cdoy"]}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-    with col2:
-        st.markdown(
-            f'<div style="{card_style}">'
-            f'<div style="{label_style}">TDOM</div>'
-            f'<div style="{value_style} color: {SE_COLORS["accent_blue"]};">'
-            f'{r["tdom"] if r["tdom"] else "–"}</div>'
-            f'<div style="{sub_style}">{r["month_name"]} · von {r["tdom_max"]}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-    with col3:
-        st.markdown(
-            f'<div style="{card_style}">'
-            f'<div style="{label_style}">TDOY</div>'
-            f'<div style="{value_style} color: {SE_COLORS["accent_warm"]};">{r["tdoy"]}</div>'
-            f'<div style="{sub_style}">von {r["tdoy_max"]} Handelstagen</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
 
 
 # ══════════════════════════════════════════════════════════════

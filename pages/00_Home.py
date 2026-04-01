@@ -536,27 +536,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════
-# SEKTION 4 — TRADING DAY CONVERTER
-# ══════════════════════════════════════════════════════════════
-
-try:
-    from shared.yahoo_downloader import download_data, preprocess
-    from shared.trading_day_header import render_converter_widget
-
-    _conv_df = preprocess(download_data("^GSPC"))
-    if _conv_df is not None and not _conv_df.empty:
-        # TDOM-Spalte sicherstellen
-        if "tdom" not in _conv_df.columns:
-            _conv_df["tdom"] = _conv_df.groupby(["year", "month"]).cumcount() + 1
-        render_converter_widget(_conv_df)
-except Exception as _conv_err:
-    st.caption(f"⚠️ Converter: {_conv_err}")
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════════════
-# SEKTION 5 — FEATURE STATS (Glasmorphismus + Glow + Sinuswelle)
+# SEKTION 4 — FEATURE STATS (Glasmorphismus + Glow + Sinuswelle)
 # ══════════════════════════════════════════════════════════════
 
 _stats_t = {
@@ -695,6 +675,25 @@ st.markdown(f"""
   </div>
 </div>
 """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════
+# SEKTION 5 — TRADING DAY CONVERTER (kompakter Einzeiler)
+# ══════════════════════════════════════════════════════════════
+
+try:
+    from shared.yahoo_downloader import download_data, preprocess
+    from shared.trading_day_header import render_converter_widget
+
+    _conv_df = preprocess(download_data("^GSPC"))
+    if _conv_df is not None and not _conv_df.empty:
+        if "tdom" not in _conv_df.columns:
+            _conv_df["tdom"] = _conv_df.groupby(["year", "month"]).cumcount() + 1
+        render_converter_widget(_conv_df)
+except Exception as _conv_err:
+    st.caption(f"⚠️ Converter: {_conv_err}")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
