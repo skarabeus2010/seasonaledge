@@ -310,6 +310,66 @@ def main():
             rank_df.index.name = "#"
             st.dataframe(rank_df, use_container_width=True)
 
+    # ── Erklärungen ──
+    with st.expander("ℹ️ Erklärungen zu den Plain Vanilla Strategien"):
+        st.markdown("""
+### Was sind Plain Vanilla Strategien?
+
+Plain Vanilla Strategien sind einfache, regelbasierte Handelsansätze mit fixen Ein- und Ausstiegszeitpunkten. Sie benötigen keine komplexe Optimierung — die Regeln stehen fest und werden Jahr für Jahr identisch angewendet.
+
+---
+
+### 📅 Sell in May (Halloween-Effekt)
+
+Die bekannteste saisonale Strategie überhaupt. "Sell in May and go away, but remember to come back in November." Investiert von November bis April, Cash von Mai bis Oktober. Der Effekt ist seit über 100 Jahren in fast allen Aktienmärkten nachweisbar.
+
+### 📊 LBR-gefilterte November-Mai
+
+Eine Verfeinerung von Sell in May: Statt fix am letzten Oktober-Tag einzusteigen, wartet diese Strategie auf ein bullisches Signal des LBR-Oszillators (Linda Bradford Raschke). Ebenso wird im Frühjahr erst bei einem bärischen LBR-Signal ausgestiegen. Der Filter vermeidet Einstiege in schwache Marktphasen.
+
+### 📈 Nasdaq-Trend (November bis Juni)
+
+Erweiterte Sell-in-May Variante: 8 Monate investiert (November bis Juni) statt nur 6. Besonders bei wachstumsstarken Titeln wie dem Nasdaq zeigt der Juni oft noch positive Renditen, die durch einen früheren Ausstieg im Mai verpasst werden.
+
+### 🔄 Month-End Muster
+
+Nutzt den statistisch gut belegten Turn-of-the-Month-Effekt: Rund um den Monatswechsel fließen institutionelle Gelder (Gehälter, Pensionsfonds, Sparraten) in den Markt. Einstieg am vorletzten Handelstag, Ausstieg am 4. Handelstag des Folgemonats.
+
+### 🗓️ Monthly 10 System
+
+Kombiniert mehrere Intra-Monat-Effekte: Die ersten 4 Handelstage (Monatsanfang), TDOM 9-12 (Monatsmitte) und die letzten 2 Handelstage (Monatsende) sind historisch die stärksten Phasen. An den restlichen Tagen ist das Kapital in Cash.
+
+### 🎅 Santa Claus Rallye (Erweitert)
+
+Die erweiterte Weihnachtsrallye: Einstieg 3 Handelstage vor Thanksgiving (Ende November), Ausstieg am 5. Handelstag im Januar. Deckt die saisonal stärkste Phase des Jahres ab — Jahresend-Rallye, Window Dressing und Januar-Effekt.
+
+### 🔁 212-Wochen-Zyklus
+
+Ein langfristiger Marktzyklus von 1.484 Kalendertagen (~4,06 Jahre). Startpunkt: 16. Mai 1938. Bei jedem Zyklus-Start wird für 6 Monate investiert. Der Zyklus basiert auf der Beobachtung, dass Aktienmärkte in regelmäßigen Mehrjahres-Wellen schwingen.
+
+### ⚡ 40-Wochen-Zyklus (Bullische Phase)
+
+Ein kürzerer Zyklus von 280 Kalendertagen (~40 Wochen). Startpunkt: 21. April 1967. Die erste Hälfte des Zyklus (20 Wochen = 140 Tage) gilt als bullische Phase, die zweite als bärisch. Investiert wird nur in der ersten Hälfte.
+
+### 🏛️ Midterm Election Trade
+
+Kurzfristiger Trade rund um die US-Zwischenwahlen (alle 4 Jahre im November des 2. Präsidentschaftsjahres). Einstieg 5 Handelstage vor der Wahl, Ausstieg 3 Handelstage danach. Nutzt die Unsicherheitsauflösung nach dem Wahlergebnis.
+
+### 🚫 September-Vermeidung
+
+Die einfachste Strategie: 11 Monate investiert, nur im September in Cash. September ist historisch der schwächste Börsenmonat — in über 100 Jahren Dow Jones im Schnitt negativ. Durch Vermeidung dieses einen Monats verbessert sich die Gesamtperformance.
+
+---
+
+### Hinweise zur Interpretation
+
+- **CAGR** (Compound Annual Growth Rate): Durchschnittliche jährliche Rendite unter Berücksichtigung des Zinseszinseffekts.
+- **Max Drawdown**: Größter Rückgang vom Höchststand — zeigt das Verlustrisiko der Strategie.
+- **Win-Rate**: Anteil der profitablen Trades. Eine hohe Win-Rate allein sagt wenig aus — die Höhe der Gewinne und Verluste ist entscheidend.
+- **Stop-Loss**: Optional in der Sidebar aktivierbar. Begrenzt Verluste pro Trade, kann aber auch profitable Trades vorzeitig beenden.
+- Die Ergebnisse basieren auf historischen Daten und garantieren keine zukünftigen Renditen.
+        """)
+
     # ── Disclaimer ──
     st.markdown("---")
     st.caption("Historische Muster garantieren keine zukünftigen Ergebnisse. Keine Anlageberatung.")
