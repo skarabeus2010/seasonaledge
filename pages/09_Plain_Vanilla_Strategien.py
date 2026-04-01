@@ -365,6 +365,18 @@ Die einfachste Strategie: 11 Monate investiert, nur im September in Cash. Septem
 
 Das umfassendste Präsidentenzyklus-System. Kombiniert 6 verschiedene Zeitfenster innerhalb des 4-Jahres-Zyklus: (1) Kurzfristiger Trade um die Midterm-Wahl, (2) März bis Juli des Vorwahljahres, (3) Oktober des Midterm-Jahres bis September des Vorwahljahres, (4) November/Dezember des Vorwahljahres, (5) Juni bis Dezember des Wahljahres, und (6) das gesamte Post-Election-Jahr wenn es auf "5" endet (z.B. 2025). Überlappende Phasen werden automatisch zusammengeführt.
 
+### 💎 Ultimate Monthly Days System
+
+Vereint die stärksten Monatstage, Feiertags-Effekte und die Weihnachtsrallye in einem System. Investiert an TDOM 1-4, 9-12 und den letzten 2 Handelstagen, zusätzlich am Tag vor jedem der 8 großen Börsenfeiertage, sowie in der erweiterten Santa-Claus-Phase (Thanksgiving bis 5. Januar). An allen übrigen Tagen ist das Kapital in Cash.
+
+### 📡 KTI Long-Only (Jay Kaeppel)
+
+Der Known Trends Index (KTI) ist ein zusammengesetzter Indikator, der bis zu 14 gleichzeitig aktive saisonale Trends misst. Jeder aktive Trend gibt +1 Punkt (September -1). Komponenten: Monatstage, November-Mai, Sommer-Rallye, Wahlzyklus-Phasen, 40-Wochen- und 212-Wochen-Zyklus, Dekaden-Trends, 20-Jahres-Zyklus und Feiertage. Bei KTI ≥ 3 wird investiert, darunter Cash.
+
+### 🔥 KTI + Hebel
+
+Die aggressive Variante des KTI-Systems. Bei KTI ≥ 5 (viele gleichzeitig bullische Trends) wird mit doppeltem Hebel investiert. Bei KTI 3-4 normal long, unter 3 in Cash. Der durchschnittliche Hebel pro Trade wird berechnet und auf die Rendite angewendet.
+
 ---
 
 ### Hinweise zur Interpretation

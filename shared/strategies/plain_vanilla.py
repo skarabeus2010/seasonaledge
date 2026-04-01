@@ -420,7 +420,315 @@ def calc_september_avoid(df: pd.DataFrame) -> list[dict]:
 
 
 # ══════════════════════════════════════════════════════════════
-# STRATEGIE 11: ULTIMATE ELECTION CYCLE SYSTEM (UECS)
+# STRATEGIE 11: ULTIMATE MONTHLY DAYS SYSTEM
+# ══════════════════════════════════════════════════════════════
+
+# 8 große US-Börsenfeiertage (ohne MLK)
+_US_HOLIDAYS_MONTH_DAY = [
+    (1, 1),   # New Year's Day
+    (2, 15),  # Presidents' Day (ca.)
+    (5, 25),  # Memorial Day (ca.)
+    (7, 4),   # Independence Day
+    (9, 1),   # Labor Day (ca.)
+    (11, 25), # Thanksgiving (ca.)
+    (12, 25), # Christmas
+    (4, 10),  # Good Friday (ca.)
+]
+
+
+def _is_near_holiday(dt, df, days_before=1):
+    """Prüft ob ein Tag innerhalb von days_before HT vor einem Feiertag liegt."""
+    year = dt.year
+    for m, d in _US_HOLIDAYS_MONTH_DAY:
+        try:
+            hol = _nearest_trading_day(df, date(year, m, d))
+            if hol is None:
+                continue
+            # Handelstage vor dem Feiertag
+            before = df[df.index < hol]
+            if len(before) >= days_before:
+                window_start = before.index[-days_before]
+                if window_start <= dt <= hol:
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def calc_ultimate_monthly(df: pd.DataFrame) -> list[dict]:
+    """
+    Ultimate Monthly Days System:
+    - HT vor 8 Börsenfeiertagen
+    - TDOM 1-4, 9-12, letzte 2
+    - Thanksgiving bis 5. Januar
+    Investiert an aktiven Tagen, Cash an allen anderen.
+    """
+    from shared.tdom_analysis import add_tdom_columns
+
+    df2 = add_tdom_columns(df.copy())
+    if "month" not in df2.columns:
+        df2["month"] = df2.index.month
+
+    trades = []
+    years = sorted(df2.index.year.unique())
+
+    for year in years:
+        year_df = df2[df2.index.year == year].copy()
+        if len(year_df) < 50:
+            continue
+
+        # Santa-Claus-Phase: Thanksgiving bis 5. Jan
+        thanksgiving = _get_thanksgiving(year)
+        thx_ts = pd.Timestamp(thanksgiving)
+        before_thx = df2[df2.index < thx_ts]
+        santa_start = before_thx.index[-3] if len(before_thx) >= 3 else None
+        jan5_next = _nth_trading_day(df2, year + 1, 1, 5)
+
+        # Markiere aktive Tage
+        active_dates = set()
+
+        for idx, row in year_df.iterrows():
+            tdom = int(row["tdom"])
+            max_tdom = int(year_df[year_df["month"] == row["month"]]["tdom"].max())
+            is_active = False
+
+            # TDOM 1-4, 9-12, letzte 2
+            if tdom <= 4 or (9 <= tdom <= 12) or tdom >= max_tdom - 1:
+                is_active = True
+
+            # Vor Feiertag
+            if _is_near_holiday(idx, df2, days_before=1):
+                is_active = True
+
+            # Santa-Claus Phase
+            if santa_start and jan5_next:
+                if santa_start <= idx <= jan5_next:
+                    is_active = True
+
+            if is_active:
+                active_dates.add(idx)
+
+        # Jan nächstes Jahr (Santa-Phase)
+        if jan5_next:
+            jan_df = df2[(df2.index.year == year + 1) & (df2.index.month == 1)]
+            for idx in jan_df.index:
+                if idx <= jan5_next:
+                    active_dates.add(idx)
+
+        # Zusammenhängende Blöcke bilden
+        sorted_dates = sorted(active_dates)
+        if not sorted_dates:
+            continue
+
+        block_start = sorted_dates[0]
+        prev = sorted_dates[0]
+        for d in sorted_dates[1:]:
+            # Gap > 1 Handelstag → neuer Block
+            gap = len(df2[(df2.index > prev) & (df2.index < d)])
+            if gap > 0:
+                trade = _make_trade(df, block_start, prev)
+                if trade:
+                    trades.append(trade)
+                block_start = d
+            prev = d
+        # Letzter Block
+        trade = _make_trade(df, block_start, prev)
+        if trade:
+            trades.append(trade)
+
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 12/13: KTI-SYSTEM (Known Trends Index)
+# ══════════════════════════════════════════════════════════════
+
+def _compute_kti_daily(df: pd.DataFrame) -> pd.Series:
+    """
+    Berechnet den KTI-Score (0-14) für jeden Handelstag.
+    Vektorisiert für Performance (~1s statt Minuten).
+    """
+    from shared.tdom_analysis import add_tdom_columns
+    from shared.calculations import get_presidential_cycle_year
+
+    df2 = add_tdom_columns(df.copy())
+    if "month" not in df2.columns:
+        df2["month"] = df2.index.month
+    if "year" not in df2.columns:
+        df2["year"] = df2.index.year
+
+    kti = pd.Series(0, index=df2.index, dtype=int)
+    month = df2["month"]
+    year = df2["year"]
+    tdom = df2["tdom"]
+    decade_digit = year % 10
+
+    # Max TDOM pro Monat (vektorisiert)
+    max_tdom = df2.groupby([year, month])["tdom"].transform("max")
+
+    # 1. Monatstage: TDOM 1-4, 9-12, letzter, vorletzter
+    kti += ((tdom <= 4) | ((tdom >= 9) & (tdom <= 12)) | (tdom >= max_tdom - 1)).astype(int)
+
+    # 2. November bis Mai
+    kti += ((month >= 11) | (month <= 4) | ((month == 5) & (tdom <= 3))).astype(int)
+
+    # 3. Sommer-Rallye
+    kti += (((month == 6) & (tdom >= max_tdom - 2)) | ((month == 7) & (tdom <= 9))).astype(int)
+
+    # 4. September-Effekt
+    kti -= (month == 9).astype(int)
+
+    # 5-8. Wahlzyklus (vektorisiert)
+    cycle = year.map(get_presidential_cycle_year)
+
+    # 5. Okt Midterm bis Sep Vorwahljahr
+    kti += (((cycle == "Year 2 (Midterm Election)") & (month >= 10)) |
+            ((cycle == "Year 3 (Pre-Election)") & (month <= 9))).astype(int)
+
+    # 6. Nov-Dez Vorwahljahr
+    kti += ((cycle == "Year 3 (Pre-Election)") & (month >= 11)).astype(int)
+
+    # 7. Jun-Dez Wahljahr
+    kti += ((cycle == "Year 4 (Election Year)") & (month >= 6)).astype(int)
+
+    # 8. Mär-Jul Vorwahljahr
+    kti += ((cycle == "Year 3 (Pre-Election)") & (month >= 3) & (month <= 7)).astype(int)
+
+    # 9. Midterm-Wahl: 5 HT vor bis 3 HT nach (markiere Fenster)
+    midterm_years = [y for y in year.unique() if get_presidential_cycle_year(y) == "Year 2 (Midterm Election)"]
+    for y in midterm_years:
+        try:
+            el = _get_election_day(y)
+            el_ts = pd.Timestamp(el)
+            before = df2[df2.index < el_ts]
+            after = df2[df2.index > el_ts]
+            if len(before) >= 5 and len(after) >= 3:
+                win_start, win_end = before.index[-5], after.index[2]
+                mask = (df2.index >= win_start) & (df2.index <= win_end)
+                kti.loc[mask] += 1
+        except Exception:
+            pass
+
+    # 10. 40-Wochen-Zyklus
+    _ref_40w = pd.Timestamp(date(1967, 4, 21))
+    _days_since_40 = (df2.index - _ref_40w).days
+    _pos_40 = _days_since_40 % 280
+    kti += ((_days_since_40 >= 0) & (_pos_40 < 140)).astype(int)
+
+    # 11. 212-Wochen-Zyklus
+    _ref_212w = pd.Timestamp(date(1938, 5, 16))
+    _days_since_212 = (df2.index - _ref_212w).days
+    _pos_212 = _days_since_212 % 1484
+    kti += ((_days_since_212 >= 0) & (_pos_212 < 182)).astype(int)
+
+    # 12. Dekaden: Okt x4 bis Mär x6
+    kti += (((decade_digit == 4) & (month >= 10)) | (decade_digit == 5) |
+            ((decade_digit == 6) & (month <= 3))).astype(int)
+
+    # 13. Dekaden: Mär x8 bis Sep x9
+    kti += (((decade_digit == 8) & (month >= 3)) | ((decade_digit == 9) & (month <= 9))).astype(int)
+
+    # 14. 20-Jahres-Zyklus
+    _even_decade = ((year // 10) % 2 == 0)
+    kti += ((_even_decade & (decade_digit == 2) & (month >= 10)) |
+            (_even_decade & (decade_digit >= 3) & (decade_digit <= 4)) |
+            (_even_decade & (decade_digit == 5))).astype(int)
+
+    # 15. Feiertage: Vereinfacht — 3 HT vor festen Terminen
+    for m, d in _US_HOLIDAYS_MONTH_DAY:
+        for y in year.unique():
+            try:
+                hol = _nearest_trading_day(df2, date(int(y), m, d))
+                if hol is None:
+                    continue
+                before = df2[df2.index <= hol]
+                if len(before) >= 4:
+                    win_start = before.index[-4]
+                    mask = (df2.index >= win_start) & (df2.index <= hol)
+                    kti.loc[mask] += 1
+            except Exception:
+                pass
+
+    return kti
+
+
+def calc_kti_long_only(df: pd.DataFrame) -> list[dict]:
+    """
+    KTI Long-Only: Investiert wenn KTI >= 3, Cash wenn < 3.
+    """
+    kti = _compute_kti_daily(df)
+    trades = []
+    in_trade = False
+    entry_date = None
+
+    for idx in kti.index:
+        if not in_trade and kti.loc[idx] >= 3:
+            entry_date = idx
+            in_trade = True
+        elif in_trade and kti.loc[idx] < 3:
+            trade = _make_trade(df, entry_date, idx)
+            if trade:
+                trades.append(trade)
+            in_trade = False
+
+    # Offener Trade am Ende
+    if in_trade and entry_date is not None:
+        trade = _make_trade(df, entry_date, kti.index[-1])
+        if trade:
+            trades.append(trade)
+
+    return trades
+
+
+def calc_kti_leveraged(df: pd.DataFrame) -> list[dict]:
+    """
+    KTI Long + Leverage: KTI >= 5 → 2x Hebel, KTI 3-4 → 1x, < 3 → Cash.
+    Returns Trades mit 'leverage' Feld.
+    """
+    kti = _compute_kti_daily(df)
+    trades = []
+    in_trade = False
+    entry_date = None
+    current_leverage = 0
+
+    for idx in kti.index:
+        score = kti.loc[idx]
+        new_leverage = 2 if score >= 5 else (1 if score >= 3 else 0)
+
+        if current_leverage == 0 and new_leverage > 0:
+            # Neuer Einstieg
+            entry_date = idx
+            in_trade = True
+            current_leverage = new_leverage
+        elif current_leverage > 0 and new_leverage == 0:
+            # Ausstieg
+            trade = _make_trade(df, entry_date, idx)
+            if trade:
+                # Durchschnittlichen Leverage für den Trade berechnen
+                window_kti = kti.loc[entry_date:idx]
+                avg_lev = window_kti.apply(lambda s: 2 if s >= 5 else (1 if s >= 3 else 0)).mean()
+                trade["return_pct"] = round(trade["return_pct"] * avg_lev, 4)
+                trade["leverage"] = round(avg_lev, 1)
+                trades.append(trade)
+            in_trade = False
+            current_leverage = 0
+        else:
+            current_leverage = new_leverage
+
+    if in_trade and entry_date is not None:
+        trade = _make_trade(df, entry_date, kti.index[-1])
+        if trade:
+            window_kti = kti.loc[entry_date:kti.index[-1]]
+            avg_lev = window_kti.apply(lambda s: 2 if s >= 5 else (1 if s >= 3 else 0)).mean()
+            trade["return_pct"] = round(trade["return_pct"] * avg_lev, 4)
+            trade["leverage"] = round(avg_lev, 1)
+            trades.append(trade)
+
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 14: ULTIMATE ELECTION CYCLE SYSTEM (UECS)
 # ══════════════════════════════════════════════════════════════
 
 def calc_uecs(df: pd.DataFrame) -> list[dict]:
@@ -717,5 +1025,26 @@ STRATEGIES = {
         "func": calc_uecs,
         "desc": "Investiert in 6 Phasen des 4-Jahres-Präsidentenzyklus.",
         "info": "Ultimate Election Cycle System: Midterm-Wahl, Vorwahljahr Mär-Jul + Okt-Sep + Nov-Dez, Wahljahr Jun-Dez, Dekaden-5-Jahre.",
+    },
+    "ultimate_monthly": {
+        "name": "Ultimate Monthly",
+        "icon": "💎",
+        "func": calc_ultimate_monthly,
+        "desc": "TDOM 1-4, 9-12, letzte 2 + Feiertage + Santa-Claus-Phase.",
+        "info": "Kombiniert die stärksten Monatstage, Feiertags-Effekte und die Weihnachtsrallye in einem System.",
+    },
+    "kti_long": {
+        "name": "KTI Long-Only",
+        "icon": "📡",
+        "func": calc_kti_long_only,
+        "desc": "Long wenn KTI ≥ 3, Cash wenn < 3. KTI = Summe aktiver saisonaler Trends.",
+        "info": "Known Trends Index (Jay Kaeppel): 14 Komponenten (Monatstage, Zyklen, Wahlzyklus, Feiertage). KTI ≥ 3 = bullisch.",
+    },
+    "kti_leveraged": {
+        "name": "KTI + Hebel",
+        "icon": "🔥",
+        "func": calc_kti_leveraged,
+        "desc": "KTI ≥ 5 → 2x Hebel, KTI 3-4 → 1x Long, KTI < 3 → Cash.",
+        "info": "Aggressive KTI-Variante: Verdoppelt die Position wenn viele saisonale Trends gleichzeitig bullisch sind.",
     },
 }
