@@ -17,482 +17,216 @@
   <meta name="twitter:title" content="SeasonAlpha &mdash; Dein unfairer Vorteil">
   <meta name="twitter:description" content="131 Jahre Marktdaten. 15 KI-Modelle. Saisonale Trading-Signale.">
   <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
-
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SeasonAlpha","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Saisonale Boersenanalyse mit 131 Jahren Marktdaten und 15 KI-Modellen","url":"https://seasonalpha.ai","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"creator":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SeasonAlpha","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Saisonale Boersenanalyse mit 131 Jahren Marktdaten und 15 KI-Modellen","url":"https://seasonalpha.ai","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist saisonale Boersenanalyse?","acceptedAnswer":{"@type":"Answer","text":"Saisonale Boersenanalyse untersucht wiederkehrende Muster in Aktienkursen ueber Jahrzehnte. SeasonAlpha nutzt 131 Jahre Marktdaten und 15 KI-Modelle."}},{"@type":"Question","name":"Ist SeasonAlpha kostenlos?","acceptedAnswer":{"@type":"Answer","text":"Ja. Alle 6 Analyse-Zyklen, 263 Basiswerte und interaktive Charts sind frei verfuegbar."}}]}</script>
-
-  <!-- Fonts: Sora (display) + DM Sans (body) — distinctive, not generic -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <style>
-    /* ═══════════════════════════════════════════
-       DESIGN TOKENS
-       Palette: Deep Space + Electric Accents
-       ═══════════════════════════════════════════ */
-    :root {
-      --bg:          #060a13;
-      --bg-surface:  #0d1424;
-      --bg-card:     #111b2e;
-      --bg-elevated: #162036;
-      --text:        #e2e8f0;
-      --text-dim:    #8b9bb4;
-      --text-muted:  #4a5a74;
-      --accent:      #3b82f6;
-      --accent-hover:#2563eb;
-      --accent-glow: rgba(59,130,246,0.35);
-      --gold:        #f59e0b;
-      --gold-dim:    rgba(245,158,11,0.12);
-      --teal:        #06d6a0;
-      --teal-dim:    rgba(6,214,160,0.1);
-      --red:         #ef4444;
-      --border:      rgba(255,255,255,0.06);
-      --border-lit:  rgba(59,130,246,0.25);
-      --r:           10px;
-      --r-lg:        16px;
-      --max-w:       1180px;
-      --nav-h:       60px;
-      --font-display:'Sora', sans-serif;
-      --font-body:   'DM Sans', sans-serif;
-      --ease:        cubic-bezier(.22,1,.36,1);
+    :root{
+      --bg:#060a13;--surface:#0d1424;--card:#111b2e;--elevated:#162036;
+      --text:#e2e8f0;--dim:#8b9bb4;--muted:#4a5a74;
+      --accent:#3b82f6;--accent-h:#2563eb;--accent-g:rgba(59,130,246,.35);
+      --teal:#06d6a0;--teal-d:rgba(6,214,160,.1);
+      --gold:#f59e0b;--gold-d:rgba(245,158,11,.12);
+      --border:rgba(255,255,255,.06);--border-l:rgba(59,130,246,.25);
+      --r:10px;--r-lg:16px;--max-w:1180px;--nav-h:60px;
+      --f-d:'Sora',sans-serif;--f-b:'DM Sans',sans-serif;--f-m:'JetBrains Mono',monospace;
+      --ease:cubic-bezier(.22,1,.36,1);
     }
-
-    /* ═══════════════════════════════════════════
-       RESET
-       ═══════════════════════════════════════════ */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-    body{
-      font-family:var(--font-body);
-      background:var(--bg);
-      color:var(--text);
-      line-height:1.65;
-      font-size:1rem;
-      -webkit-font-smoothing:antialiased;
-      overflow-x:hidden;
-    }
-    a{color:var(--accent);text-decoration:none;transition:color .2s}
-    a:hover{color:var(--text)}
-    img{max-width:100%;height:auto;display:block}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--f-b);background:var(--bg);color:var(--text);line-height:1.65;font-size:1rem;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    a{color:var(--accent);text-decoration:none;transition:color .2s}a:hover{color:var(--text)}
     ul{list-style:none}
     ::selection{background:var(--accent);color:#fff}
-
-    /* Focus ring — accessibility */
     :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 
-    /* ═══════════════════════════════════════════
-       LAYOUT
-       ═══════════════════════════════════════════ */
+    /* ── LAYOUT ── */
     .wrap{max-width:var(--max-w);margin:0 auto;padding:0 1.5rem}
-    .sec{padding:6rem 0}
-    .sec--alt{background:var(--bg-surface)}
+    .sec{padding:6rem 0}.sec--alt{background:var(--surface)}
+    .eyebrow{font-family:var(--f-m);font-size:.6875rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
+    .sec-title{font-family:var(--f-d);font-size:clamp(1.5rem,3.2vw,2.25rem);font-weight:800;line-height:1.15;margin-bottom:.5rem}
+    .sec-sub{font-size:1.0625rem;color:var(--dim);max-width:580px;margin-bottom:3rem}
+    .g{display:grid;gap:1.25rem}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+    @media(max-width:1024px){.g3{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.g2,.g3{grid-template-columns:1fr}}
 
-    .eyebrow{
-      font-family:var(--font-display);
-      font-size:.6875rem;font-weight:700;
-      letter-spacing:.2em;text-transform:uppercase;
-      color:var(--accent);margin-bottom:.75rem;
-    }
-    .sec-title{
-      font-family:var(--font-display);
-      font-size:clamp(1.5rem,3.2vw,2.25rem);
-      font-weight:800;line-height:1.15;
-      margin-bottom:.5rem;
-    }
-    .sec-sub{
-      font-size:1.0625rem;color:var(--text-dim);
-      max-width:580px;margin-bottom:3rem;
-    }
-
-    /* Grid */
-    .g{display:grid;gap:1.25rem}
-    .g2{grid-template-columns:repeat(2,1fr)}
-    .g3{grid-template-columns:repeat(3,1fr)}
-    .g4{grid-template-columns:repeat(4,1fr)}
-    @media(max-width:1024px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
-
-    /* ═══════════════════════════════════════════
-       BUTTONS
-       ═══════════════════════════════════════════ */
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;
-      padding:.75rem 1.75rem;border-radius:var(--r);
-      font-family:var(--font-display);font-weight:600;font-size:.9375rem;
-      border:none;cursor:pointer;transition:all .25s var(--ease);
-      text-decoration:none;min-height:48px;/* touch target */
-    }
+    /* ── BUTTONS ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.75rem;border-radius:var(--r);font-family:var(--f-d);font-weight:600;font-size:.9375rem;border:none;cursor:pointer;transition:all .25s var(--ease);text-decoration:none;min-height:48px}
     .btn:active{transform:scale(.97)}
-    .btn--primary{
-      background:var(--accent);color:#fff;
-      box-shadow:0 0 24px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,.1);
-    }
-    .btn--primary:hover{
-      background:var(--accent-hover);color:#fff;
-      transform:translateY(-2px);
-      box-shadow:0 8px 32px var(--accent-glow);
-    }
-    .btn--ghost{
-      background:transparent;color:var(--text);
-      border:1px solid var(--border);
-    }
-    .btn--ghost:hover{border-color:var(--border-lit);color:var(--accent)}
+    .btn--p{background:var(--accent);color:#fff;box-shadow:0 0 24px var(--accent-g),inset 0 1px 0 rgba(255,255,255,.1)}
+    .btn--p:hover{background:var(--accent-h);color:#fff;transform:translateY(-2px);box-shadow:0 8px 32px var(--accent-g)}
+    .btn--g{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn--g:hover{border-color:var(--border-l);color:var(--accent)}
 
-    /* ═══════════════════════════════════════════
-       NAV
-       ═══════════════════════════════════════════ */
-    .nav{
-      position:sticky;top:0;z-index:100;
-      height:var(--nav-h);
-      background:rgba(6,10,19,.75);
-      backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-      border-bottom:1px solid var(--border);
-    }
-    .nav__inner{
-      max-width:var(--max-w);margin:0 auto;padding:0 1.5rem;
-      display:flex;align-items:center;height:100%;gap:1rem;
-    }
-    .nav__logo{
-      font-family:var(--font-display);font-size:1.1875rem;font-weight:800;
-      color:var(--text);flex-shrink:0;
-    }
-    .nav__logo:hover{color:var(--text)}
-    .nav__logo b{color:var(--teal)}
-
-    /* Early Access badge */
-    .badge-ea{
-      font-family:var(--font-display);font-size:.625rem;font-weight:700;
-      letter-spacing:.08em;padding:.2rem .6rem;
-      border:1px solid var(--gold);color:var(--gold);
-      border-radius:100px;background:var(--gold-dim);white-space:nowrap;
-    }
-
+    /* ── NAV ── */
+    .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(6,10,19,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .nav__i{max-width:var(--max-w);margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;height:100%;gap:1rem}
+    .nav__logo{font-family:var(--f-d);font-size:1.1875rem;font-weight:800;color:var(--text);flex-shrink:0}.nav__logo:hover{color:var(--text)}.nav__logo b{color:var(--teal)}
+    .badge-ea{font-family:var(--f-m);font-size:.5625rem;font-weight:400;letter-spacing:.1em;padding:.2rem .6rem;border:1px solid var(--gold);color:var(--gold);border-radius:100px;background:var(--gold-d);white-space:nowrap}
     .nav__links{display:flex;align-items:center;gap:.125rem;margin-left:auto}
-    .nav__links>a,.nav__dd>button{
-      padding:.5rem .625rem;font-size:.8125rem;font-weight:500;
-      color:var(--text-dim);border-radius:6px;
-      transition:color .2s,background .2s;
-      background:none;border:none;cursor:pointer;font-family:var(--font-body);
-    }
+    .nav__links>a,.nav__dd>button{padding:.5rem .625rem;font-size:.8125rem;font-weight:500;color:var(--dim);border-radius:6px;transition:color .2s,background .2s;background:none;border:none;cursor:pointer;font-family:var(--f-b)}
     .nav__links>a:hover,.nav__dd>button:hover{color:var(--text);background:rgba(255,255,255,.04)}
-
-    /* Dropdown */
-    .nav__dd{position:relative}
-    .nav__dd>button{display:inline-flex;align-items:center;gap:.2rem}
-    .nav__dd>button svg{width:12px;height:12px;opacity:.5}
-    .nav__dd-menu{
-      position:absolute;top:calc(100% + 4px);left:0;min-width:210px;
-      background:var(--bg-card);border:1px solid var(--border);
-      border-radius:var(--r);padding:.375rem 0;
-      opacity:0;visibility:hidden;transform:translateY(6px);
-      transition:all .2s var(--ease);
-      box-shadow:0 16px 48px rgba(0,0,0,.55);
-    }
-    .nav__dd:hover .nav__dd-menu{opacity:1;visibility:visible;transform:translateY(0)}
-    .nav__dd-menu a{
-      display:block;padding:.5rem 1rem;font-size:.8125rem;color:var(--text-dim);
-    }
-    .nav__dd-menu a:hover{background:rgba(255,255,255,.04);color:var(--text)}
-
+    .nav__dd{position:relative}.nav__dd>button{display:inline-flex;align-items:center;gap:.2rem}.nav__dd>button svg{width:12px;height:12px;opacity:.5}
+    .nav__dd-m{position:absolute;top:calc(100% + 4px);left:0;min-width:210px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.375rem 0;opacity:0;visibility:hidden;transform:translateY(6px);transition:all .2s var(--ease);box-shadow:0 16px 48px rgba(0,0,0,.55)}
+    .nav__dd:hover .nav__dd-m{opacity:1;visibility:visible;transform:translateY(0)}
+    .nav__dd-m a{display:block;padding:.5rem 1rem;font-size:.8125rem;color:var(--dim)}.nav__dd-m a:hover{background:rgba(255,255,255,.04);color:var(--text)}
     .nav__cta{margin-left:.5rem;flex-shrink:0;padding:.5rem 1.25rem;font-size:.8125rem}
-    .nav__burger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;margin-left:auto}
-    .nav__burger svg{width:22px;height:22px;color:var(--text)}
-
+    .nav__burger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;margin-left:auto}.nav__burger svg{width:22px;height:22px;color:var(--text)}
     @media(max-width:768px){
-      .nav__links{
-        display:none;flex-direction:column;
-        position:absolute;top:var(--nav-h);left:0;right:0;
-        background:var(--bg-card);border-bottom:1px solid var(--border);
-        padding:1rem;gap:.25rem;
-      }
+      .nav__links{display:none;flex-direction:column;position:absolute;top:var(--nav-h);left:0;right:0;background:var(--card);border-bottom:1px solid var(--border);padding:1rem;gap:.25rem}
       .nav__links.open{display:flex}
-      .nav__links .nav__dd-menu{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:0;background:transparent;padding-left:1rem}
-      .nav__cta{display:none}
-      .nav__burger{display:block}
-      .badge-ea{display:none}
+      .nav__links .nav__dd-m{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:0;background:transparent;padding-left:1rem}
+      .nav__cta{display:none}.nav__burger{display:block}.badge-ea{display:none}
     }
 
-    /* ═══════════════════════════════════════════
-       HERO
-       ═══════════════════════════════════════════ */
+    /* ══════════════════════════════════════════
+       HERO — 21st.dev inspired
+       Word-reveal + Grid pattern + Mouse gradient
+       ══════════════════════════════════════════ */
     .hero{
-      position:relative;
-      padding:7rem 0 4rem;
-      text-align:center;overflow:hidden;
-      min-height:min(85vh,720px);
-      display:flex;align-items:center;
+      position:relative;min-height:100vh;min-height:100dvh;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      overflow:hidden;padding:2rem;
     }
-    /* Animated gradient orbs */
-    .hero__orb{
-      position:absolute;border-radius:50%;filter:blur(100px);
-      pointer-events:none;animation:orbFloat 12s ease-in-out infinite alternate;
-    }
-    .hero__orb--1{
-      width:600px;height:600px;top:-200px;left:50%;
-      transform:translateX(-50%);
-      background:radial-gradient(circle,rgba(59,130,246,.14),transparent 70%);
-    }
-    .hero__orb--2{
-      width:400px;height:400px;bottom:-100px;right:-100px;
-      background:radial-gradient(circle,rgba(6,214,160,.08),transparent 70%);
-      animation-delay:-6s;
-    }
-    .hero__orb--3{
-      width:300px;height:300px;top:40%;left:-80px;
-      background:radial-gradient(circle,rgba(245,158,11,.06),transparent 70%);
-      animation-delay:-3s;
-    }
-    @keyframes orbFloat{
-      0%{transform:translate(0,0) scale(1)}
-      100%{transform:translate(30px,-20px) scale(1.1)}
-    }
+    /* SVG Grid overlay */
+    .hero__grid{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    .grid-line{stroke:rgba(59,130,246,.08);stroke-width:.5;stroke-dasharray:1000;stroke-dashoffset:1000;animation:grid-draw 3s ease-out forwards}
+    .detail-dot{fill:rgba(59,130,246,.25);opacity:0;animation:dot-appear .6s ease-out forwards}
 
-    /* Noise texture overlay */
-    .hero::after{
-      content:'';position:absolute;inset:0;
-      background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
-      background-size:128px 128px;
-      pointer-events:none;z-index:1;opacity:.5;
-    }
+    /* Corner markers */
+    .corner{position:absolute;width:8px;height:8px;opacity:0;animation:dot-appear .5s ease-out forwards}
+    .corner::before,.corner::after{content:'';position:absolute;background:rgba(59,130,246,.2)}
+    .corner::before{width:100%;height:1px;top:0;left:0}
+    .corner::after{width:1px;height:100%;top:0;left:0}
+    .corner--tr::before{right:0;left:auto}.corner--tr::after{right:0;left:auto}
+    .corner--bl::before{bottom:0;top:auto}.corner--bl::after{bottom:0;top:auto}
+    .corner--br::before{right:0;left:auto;bottom:0;top:auto}.corner--br::after{right:0;left:auto;bottom:0;top:auto}
 
-    .hero .wrap{position:relative;z-index:2}
+    /* Floating particles */
+    .particle{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(59,130,246,.3);opacity:0;animation:float 8s ease-in-out infinite;animation-play-state:paused}
 
-    .hero__h1{
-      font-family:var(--font-display);
-      font-size:clamp(2rem,5.5vw,3.75rem);
-      font-weight:800;line-height:1.08;
-      margin-bottom:1.5rem;
-      max-width:860px;margin-left:auto;margin-right:auto;
-      letter-spacing:-.02em;
-    }
-    .hero__h1 em{
-      font-style:normal;
-      background:linear-gradient(135deg,var(--accent) 0%,var(--teal) 50%,var(--gold) 100%);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;
-    }
-    .hero__sub{
-      font-size:clamp(1rem,1.8vw,1.1875rem);
-      color:var(--text-dim);max-width:620px;
-      margin:0 auto 2.5rem;line-height:1.7;
-    }
-    .hero__actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.75rem}
-    .hero__hint{
-      font-size:.8125rem;color:var(--text-muted);
-      min-height:1.4em;transition:opacity .4s var(--ease);
-    }
+    /* Mouse gradient */
+    #mouse-glow{position:fixed;pointer-events:none;width:384px;height:384px;border-radius:50%;filter:blur(80px);transition:opacity .5s ease-out;opacity:0;background:radial-gradient(circle,rgba(59,130,246,.06),transparent 70%);z-index:1}
 
-    /* ═══════════════════════════════════════════
-       DEMO
-       ═══════════════════════════════════════════ */
-    .demo-box{
-      background:linear-gradient(145deg,var(--bg-card) 0%,var(--bg-surface) 100%);
-      border:1px solid var(--border);border-radius:var(--r-lg);
-      padding:2.5rem 2rem;min-height:340px;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      position:relative;overflow:hidden;
+    .hero__content{position:relative;z-index:10;text-align:center;max-width:900px}
+
+    /* Tagline top */
+    .hero__tag{font-family:var(--f-m);font-size:.6875rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:2rem}
+    .hero__tag::after{content:'';display:block;width:48px;height:1px;margin:1rem auto 0;background:linear-gradient(90deg,transparent,var(--dim),transparent);opacity:.3}
+
+    /* Word animation */
+    .w{display:inline-block;opacity:0;transform:translateY(28px) scale(.85);filter:blur(8px);transition:none}
+    .w.vis{animation:word-appear .7s var(--ease) forwards}
+
+    .hero__h1{font-family:var(--f-d);font-size:clamp(2rem,5.5vw,3.75rem);font-weight:300;line-height:1.1;letter-spacing:-.025em;margin-bottom:1.5rem}
+    .hero__h1 em{font-style:normal;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--teal),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero__h1-sub{font-family:var(--f-d);font-size:clamp(1.125rem,2.5vw,1.625rem);font-weight:300;line-height:1.5;color:var(--dim);margin-bottom:3rem}
+
+    .hero__actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
+
+    /* Bottom tag */
+    .hero__btm{font-family:var(--f-m);font-size:.6875rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+    .hero__btm::before{content:'';display:block;width:48px;height:1px;margin:0 auto 1rem;background:linear-gradient(90deg,transparent,var(--muted),transparent);opacity:.3}
+    .hero__dots{display:flex;justify-content:center;gap:.5rem;margin-top:1rem}
+    .hero__dots span{width:4px;height:4px;border-radius:50%;background:var(--dim);opacity:.3}
+    .hero__dots span:nth-child(2){opacity:.6}
+
+    /* ── ANIMATIONS ── */
+    @keyframes word-appear{
+      0%{opacity:0;transform:translateY(28px) scale(.85);filter:blur(8px)}
+      50%{opacity:.8;transform:translateY(8px) scale(.96);filter:blur(2px)}
+      100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
     }
-    /* Subtle glow top-left */
-    .demo-box::before{
-      content:'';position:absolute;top:-60px;left:-60px;
-      width:200px;height:200px;border-radius:50%;
-      background:radial-gradient(circle,rgba(59,130,246,.08),transparent 70%);
-      pointer-events:none;
-    }
+    @keyframes grid-draw{0%{stroke-dashoffset:1000;opacity:0}50%{opacity:.3}100%{stroke-dashoffset:0;opacity:.12}}
+    @keyframes dot-appear{0%{opacity:0;transform:scale(0)}100%{opacity:1;transform:scale(1)}}
+    @keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:.15}25%{transform:translateY(-10px) translateX(5px);opacity:.5}50%{transform:translateY(-5px) translateX(-3px);opacity:.3}75%{transform:translateY(-15px) translateX(7px);opacity:.6}}
+    @keyframes pulse-ripple{0%{opacity:.5;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(40)}}
+
+    /* ── DEMO ── */
+    .demo-box{background:linear-gradient(145deg,var(--card),var(--surface));border:1px solid var(--border);border-radius:var(--r-lg);padding:2.5rem 2rem;min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .demo-box::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.08),transparent 70%);pointer-events:none}
     .demo-box svg{width:100%;max-width:780px;height:auto;margin-bottom:1.5rem}
-    .demo-slider{
-      width:100%;max-width:560px;height:4px;
-      -webkit-appearance:none;appearance:none;
-      background:linear-gradient(90deg,var(--accent),var(--teal));
-      border-radius:2px;outline:none;margin-bottom:1rem;opacity:.7;
-      transition:opacity .2s;
-    }
+    .demo-slider{width:100%;max-width:560px;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:2px;outline:none;margin-bottom:1rem;opacity:.7;transition:opacity .2s}
     .demo-slider:hover,.demo-slider:focus{opacity:1}
-    .demo-slider::-webkit-slider-thumb{
-      -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
-      background:#fff;cursor:pointer;
-      box-shadow:0 0 16px var(--accent-glow),0 2px 6px rgba(0,0,0,.3);
-    }
-    .demo-labels{
-      display:flex;justify-content:space-between;width:100%;max-width:560px;
-      font-size:.75rem;color:var(--text-muted);font-family:var(--font-display);
-      letter-spacing:.05em;text-transform:uppercase;
-    }
+    .demo-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 0 16px var(--accent-g),0 2px 6px rgba(0,0,0,.3)}
+    .demo-labels{display:flex;justify-content:space-between;width:100%;max-width:560px;font-size:.6875rem;color:var(--muted);font-family:var(--f-m);letter-spacing:.05em;text-transform:uppercase}
 
-    /* ═══════════════════════════════════════════
-       STATS BAR
-       ═══════════════════════════════════════════ */
-    .stats{
-      display:flex;justify-content:center;gap:4rem;flex-wrap:wrap;
-      padding:3.5rem 0;
-      border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-    }
+    /* ── STATS ── */
+    .stats{display:flex;justify-content:center;gap:4rem;flex-wrap:wrap;padding:3.5rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .stat{text-align:center}
-    .stat__num{
-      font-family:var(--font-display);
-      font-size:clamp(2.25rem,4.5vw,3.25rem);
-      font-weight:800;line-height:1;
-      font-variant-numeric:tabular-nums;
-      background:linear-gradient(180deg,var(--text) 40%,var(--text-dim));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;
-    }
-    .stat__label{font-size:.75rem;color:var(--text-muted);margin-top:.25rem;letter-spacing:.04em}
+    .stat__num{font-family:var(--f-d);font-size:clamp(2.25rem,4.5vw,3.25rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,var(--text) 40%,var(--dim));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .stat__label{font-size:.6875rem;color:var(--muted);margin-top:.25rem;letter-spacing:.04em;font-family:var(--f-m)}
 
-    /* ═══════════════════════════════════════════
-       CARDS
-       ═══════════════════════════════════════════ */
-    .card{
-      background:var(--bg-card);
-      border:1px solid var(--border);border-radius:var(--r-lg);
-      padding:1.75rem;
-      transition:all .3s var(--ease);
-      position:relative;overflow:hidden;
-      display:block;color:var(--text);
-    }
-    .card::before{
-      content:'';position:absolute;inset:0;
-      border-radius:inherit;opacity:0;
-      background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(59,130,246,.06),transparent 50%);
-      transition:opacity .4s;pointer-events:none;
-    }
-    .card:hover{
-      border-color:var(--border-lit);
-      transform:translateY(-3px);
-    }
-    .card:hover::before{opacity:1}
-    .card__icon{
-      width:42px;height:42px;display:flex;align-items:center;justify-content:center;
-      border-radius:10px;margin-bottom:1rem;
-      background:rgba(59,130,246,.08);color:var(--accent);
-    }
-    .card__icon svg{width:20px;height:20px}
-    .card h3{
-      font-family:var(--font-display);font-size:1rem;font-weight:700;
-      margin-bottom:.5rem;
-    }
-    .card p{font-size:.875rem;color:var(--text-dim);line-height:1.6}
-    .card--teal .card__icon{background:var(--teal-dim);color:var(--teal)}
+    /* ── CARDS ── */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.75rem;transition:all .3s var(--ease);position:relative;overflow:hidden;display:block;color:var(--text)}
+    .card::before{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(59,130,246,.06),transparent 50%);transition:opacity .4s;pointer-events:none}
+    .card:hover{border-color:var(--border-l);transform:translateY(-3px)}.card:hover::before{opacity:1}
+    .card__ic{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;margin-bottom:1rem;background:rgba(59,130,246,.08);color:var(--accent)}.card__ic svg{width:20px;height:20px}
+    .card h3{font-family:var(--f-d);font-size:1rem;font-weight:700;margin-bottom:.5rem}
+    .card p{font-size:.875rem;color:var(--dim);line-height:1.6}
+    .card--t .card__ic{background:var(--teal-d);color:var(--teal)}
 
-    /* ═══════════════════════════════════════════
-       METHODOLOGY 2-COL
-       ═══════════════════════════════════════════ */
-    .meth-text h3{
-      font-family:var(--font-display);font-size:.9375rem;font-weight:700;
-      margin:1.75rem 0 .5rem;color:var(--text);
-    }
-    .meth-text h3:first-child{margin-top:0}
-    .meth-text p{font-size:.9375rem;color:var(--text-dim);line-height:1.7}
+    /* ── METHODOLOGY ── */
+    .meth h3{font-family:var(--f-d);font-size:.9375rem;font-weight:700;margin:1.75rem 0 .5rem}.meth h3:first-child{margin-top:0}
+    .meth p{font-size:.9375rem;color:var(--dim);line-height:1.7}
     .meth-stats{display:flex;flex-direction:column;gap:1rem;justify-content:center}
-    .meth-stats .stat{
-      background:var(--bg-card);border:1px solid var(--border);
-      border-radius:var(--r);padding:1.25rem;
-    }
+    .meth-stats .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem}
 
-    /* ═══════════════════════════════════════════
-       NEWSLETTER
-       ═══════════════════════════════════════════ */
-    .nl-form{
-      display:flex;gap:.75rem;max-width:460px;margin:0 auto 1.5rem;
-    }
-    .nl-input{
-      flex:1;padding:.75rem 1rem;
-      background:var(--bg-card);border:1px solid var(--border);
-      border-radius:var(--r);color:var(--text);
-      font-family:var(--font-body);font-size:.9375rem;
-      min-height:48px;transition:border-color .2s;
-    }
-    .nl-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-    .nl-input::placeholder{color:var(--text-muted)}
+    /* ── NEWSLETTER ── */
+    .nl-form{display:flex;gap:.75rem;max-width:460px;margin:0 auto 1.5rem}
+    .nl-input{flex:1;padding:.75rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--f-b);font-size:.9375rem;min-height:48px;transition:border-color .2s}
+    .nl-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g)}.nl-input::placeholder{color:var(--muted)}
     @media(max-width:480px){.nl-form{flex-direction:column}}
 
-    /* ═══════════════════════════════════════════
-       PRICING (HIDDEN)
-       ═══════════════════════════════════════════ */
-    .sec--hidden{display:none!important}
-
-    /* ═══════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════ */
+    /* ── FOOTER ── */
     .foot{border-top:1px solid var(--border);padding:3rem 0 2rem;font-size:.8125rem}
     .foot__grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:2rem}
-    @media(max-width:768px){.foot__grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:480px){.foot__grid{grid-template-columns:1fr}}
-    .foot__brand p{color:var(--text-muted);margin-top:.5rem;font-size:.75rem}
-    .foot__col h4{
-      font-family:var(--font-display);font-size:.6875rem;font-weight:700;
-      color:var(--text-dim);margin-bottom:.75rem;
-      text-transform:uppercase;letter-spacing:.08em;
-    }
-    .foot__col a{display:block;color:var(--text-muted);padding:.2rem 0;font-size:.8125rem}
-    .foot__col a:hover{color:var(--text)}
-    .foot__bottom{
-      border-top:1px solid var(--border);padding-top:1.5rem;
-      text-align:center;color:var(--text-muted);font-size:.6875rem;
-    }
+    @media(max-width:768px){.foot__grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.foot__grid{grid-template-columns:1fr}}
+    .foot__brand p{color:var(--muted);margin-top:.5rem;font-size:.75rem}
+    .foot__col h4{font-family:var(--f-m);font-size:.5625rem;font-weight:400;color:var(--dim);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.15em}
+    .foot__col a{display:block;color:var(--muted);padding:.2rem 0;font-size:.8125rem}.foot__col a:hover{color:var(--text)}
+    .foot__btm{border-top:1px solid var(--border);padding-top:1.5rem;text-align:center;color:var(--muted);font-size:.6875rem}
 
-    /* ═══════════════════════════════════════════
-       SCROLL REVEAL
-       ═══════════════════════════════════════════ */
-    .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
-    .reveal.visible{opacity:1;transform:translateY(0)}
-    .reveal-delay-1{transition-delay:.1s}
-    .reveal-delay-2{transition-delay:.2s}
-    .reveal-delay-3{transition-delay:.3s}
-    .reveal-delay-4{transition-delay:.4s}
-    .reveal-delay-5{transition-delay:.5s}
+    /* ── SCROLL REVEAL ── */
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+    .reveal.vis{opacity:1;transform:translateY(0)}
+    .reveal-d1{transition-delay:.1s}.reveal-d2{transition-delay:.2s}.reveal-d3{transition-delay:.3s}.reveal-d4{transition-delay:.4s}.reveal-d5{transition-delay:.5s}
+    @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.w{opacity:1;transform:none;filter:none}.particle{animation:none}.grid-line{animation:none;stroke-dashoffset:0;opacity:.12}.detail-dot{opacity:1}}
 
-    /* reduced motion */
-    @media(prefers-reduced-motion:reduce){
-      .reveal{opacity:1;transform:none;transition:none}
-      .hero__orb{animation:none}
-      .hero__hint{transition:none}
-    }
-
-    /* Utility */
-    .tc{text-align:center}
-    .muted{color:var(--text-muted);font-size:.8125rem}
+    .sec--hidden{display:none!important}
+    .tc{text-align:center}.muted-text{color:var(--muted);font-size:.8125rem}
   </style>
 </head>
 <body>
 
+  <!-- ═══════ MOUSE GLOW ═══════ -->
+  <div id="mouse-glow"></div>
+
   <!-- ═══════ NAV ═══════ -->
   <header class="nav" id="site-header">
-    <div class="nav__inner">
+    <div class="nav__i">
       <a class="nav__logo" href="/"><b>Season</b>Alpha</a>
       <span class="badge-ea">Early Access</span>
       <nav class="nav__links" id="nav-links" aria-label="Hauptnavigation">
         <div class="nav__dd">
           <button aria-haspopup="true" aria-expanded="false">Zyklen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="nav__dd-menu">
-            <a href="/app/">Dekadenzyklus</a>
-            <a href="/app/">Jahreszyklus</a>
-            <a href="/app/">Monatszyklus</a>
-            <a href="/app/">Wochentage</a>
-            <a href="/app/">Monatswechsel</a>
-            <a href="/app/">Mondphasen</a>
-          </div>
+          <div class="nav__dd-m"><a href="/app/">Dekadenzyklus</a><a href="/app/">Jahreszyklus</a><a href="/app/">Monatszyklus</a><a href="/app/">Wochentage</a><a href="/app/">Monatswechsel</a><a href="/app/">Mondphasen</a></div>
         </div>
         <div class="nav__dd">
           <button aria-haspopup="true" aria-expanded="false">Strategien <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="nav__dd-menu">
-            <a href="/app/">Januar Trifecta</a>
-            <a href="/app/">Plain Vanilla Strategien</a>
-            <a href="/app/">Backtest Engine</a>
-          </div>
+          <div class="nav__dd-m"><a href="/app/">Januar Trifecta</a><a href="/app/">Plain Vanilla Strategien</a><a href="/app/">Backtest Engine</a></div>
         </div>
         <div class="nav__dd">
           <button aria-haspopup="true" aria-expanded="false">Mehr <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="nav__dd-menu">
-            <a href="/app/">Methodik</a>
-            <a href="/app/">Kriegszeiten</a>
-            <a href="/app/">Events Kalender</a>
-          </div>
+          <div class="nav__dd-m"><a href="/app/">Methodik</a><a href="/app/">Kriegszeiten</a><a href="/app/">Events Kalender</a></div>
         </div>
         <a href="/blog/">Blog</a>
       </nav>
-      <a href="/app/" class="btn btn--primary nav__cta">Zur Analyse</a>
+      <a href="/app/" class="btn btn--p nav__cta">Zur Analyse</a>
       <button class="nav__burger" id="nav-burger" aria-label="Navigation &ouml;ffnen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
       </button>
@@ -500,30 +234,91 @@
   </header>
 
   <main>
-    <!-- ═══════ HERO ═══════ -->
+    <!-- ══════════════════════════════════════
+         HERO — 21st.dev inspired
+         ══════════════════════════════════════ -->
     <section class="hero" id="hero">
-      <div class="hero__orb hero__orb--1"></div>
-      <div class="hero__orb hero__orb--2"></div>
-      <div class="hero__orb hero__orb--3"></div>
-      <div class="wrap">
-        <p class="eyebrow reveal">Datengetriebene B&ouml;rsenanalyse</p>
-        <h1 class="hero__h1 reveal reveal-delay-1">
-          Saisonale B&ouml;rsenmuster &mdash; bis zu 131&nbsp;Jahre Markthistorie
-          kombiniert mit 15&nbsp;KI-Modellen.<br>
-          <em>Dein unfairer Vorteil.</em>
-        </h1>
-        <p class="hero__sub reveal reveal-delay-2">
-          SeasonAlpha identifiziert f&uuml;r Dich saisonale Trends, generiert
-          Trading-Signale auf Grundlage von signifikanten Marktzyklen.
-          Unterst&uuml;tzt durch Deep Learning Modelle.
-        </p>
-        <div class="hero__actions reveal reveal-delay-3">
-          <a href="/app/" class="btn btn--primary">Zur Analyse</a>
-          <a href="#demo" class="btn btn--ghost">Demo ansehen</a>
+      <!-- SVG Grid -->
+      <svg class="hero__grid" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(59,130,246,.05)" stroke-width=".5"/></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+        <line x1="0" y1="20%" x2="100%" y2="20%" class="grid-line" style="animation-delay:.5s"/>
+        <line x1="0" y1="80%" x2="100%" y2="80%" class="grid-line" style="animation-delay:1s"/>
+        <line x1="20%" y1="0" x2="20%" y2="100%" class="grid-line" style="animation-delay:1.5s"/>
+        <line x1="80%" y1="0" x2="80%" y2="100%" class="grid-line" style="animation-delay:2s"/>
+        <circle cx="20%" cy="20%" r="2" class="detail-dot" style="animation-delay:3s"/>
+        <circle cx="80%" cy="20%" r="2" class="detail-dot" style="animation-delay:3.2s"/>
+        <circle cx="20%" cy="80%" r="2" class="detail-dot" style="animation-delay:3.4s"/>
+        <circle cx="80%" cy="80%" r="2" class="detail-dot" style="animation-delay:3.6s"/>
+      </svg>
+
+      <!-- Corners -->
+      <div class="corner" style="top:2rem;left:2rem;animation-delay:4s"></div>
+      <div class="corner corner--tr" style="top:2rem;right:2rem;animation-delay:4.2s"></div>
+      <div class="corner corner--bl" style="bottom:2rem;left:2rem;animation-delay:4.4s"></div>
+      <div class="corner corner--br" style="bottom:2rem;right:2rem;animation-delay:4.6s"></div>
+
+      <!-- Particles -->
+      <div class="particle" style="top:25%;left:15%;animation-delay:5s"></div>
+      <div class="particle" style="top:60%;left:85%;animation-delay:5.5s"></div>
+      <div class="particle" style="top:40%;left:10%;animation-delay:6s"></div>
+      <div class="particle" style="top:75%;left:90%;animation-delay:6.5s"></div>
+
+      <div class="hero__content">
+        <!-- Top tagline -->
+        <div class="hero__tag">
+          <span class="w" data-d="0">Datengetriebene</span>
+          <span class="w" data-d="150">B&ouml;rsenanalyse</span>
+          <span class="w" data-d="300">&mdash;</span>
+          <span class="w" data-d="450">seit</span>
+          <span class="w" data-d="600">1895</span>
         </div>
-        <p class="hero__hint reveal reveal-delay-4" id="hero-hint">
-          263 Aktien, ETFs, Krypto und Rohstoffe &mdash; direkt analysieren
+
+        <!-- Headline -->
+        <h1 class="hero__h1">
+          <span class="w" data-d="800">Saisonale</span>
+          <span class="w" data-d="950">B&ouml;rsenmuster</span>
+          <span class="w" data-d="1100">&mdash;</span>
+          <span class="w" data-d="1250">bis</span>
+          <span class="w" data-d="1350">zu</span>
+          <span class="w" data-d="1450">131&nbsp;Jahre</span>
+          <span class="w" data-d="1600">Markthistorie</span><br>
+          <span class="w" data-d="1800">kombiniert</span>
+          <span class="w" data-d="1950">mit</span>
+          <span class="w" data-d="2050">15&nbsp;KI-Modellen.</span><br>
+          <em><span class="w" data-d="2300">Dein</span>
+          <span class="w" data-d="2450">unfairer</span>
+          <span class="w" data-d="2600">Vorteil.</span></em>
+        </h1>
+
+        <!-- Subheadline -->
+        <p class="hero__h1-sub">
+          <span class="w" data-d="2900">SeasonAlpha</span>
+          <span class="w" data-d="3000">identifiziert</span>
+          <span class="w" data-d="3100">saisonale</span>
+          <span class="w" data-d="3200">Trends,</span>
+          <span class="w" data-d="3300">generiert</span>
+          <span class="w" data-d="3400">Trading-Signale</span>
+          <span class="w" data-d="3550">auf</span>
+          <span class="w" data-d="3600">Grundlage</span>
+          <span class="w" data-d="3700">signifikanter</span>
+          <span class="w" data-d="3800">Marktzyklen.</span>
+          <span class="w" data-d="3950">Unterst&uuml;tzt</span>
+          <span class="w" data-d="4050">durch</span>
+          <span class="w" data-d="4150">Deep</span>
+          <span class="w" data-d="4250">Learning.</span>
         </p>
+
+        <div class="hero__actions" style="opacity:0;animation:word-appear 1s var(--ease) forwards;animation-delay:4.5s">
+          <a href="/app/" class="btn btn--p">Zur Analyse</a>
+          <a href="#demo" class="btn btn--g">Demo ansehen</a>
+        </div>
+
+        <!-- Bottom tag -->
+        <div class="hero__btm" style="opacity:0;animation:word-appear 1s var(--ease) forwards;animation-delay:5s">
+          131 Jahre Daten &middot; 263 Basiswerte &middot; 15 KI-Modelle
+          <div class="hero__dots"><span></span><span></span><span></span></div>
+        </div>
       </div>
     </section>
 
@@ -531,234 +326,157 @@
     <section class="sec" id="demo">
       <div class="wrap">
         <p class="eyebrow reveal">Interaktive Demo</p>
-        <h2 class="sec-title reveal reveal-delay-1">From Noise to Signal</h2>
-        <p class="sec-sub reveal reveal-delay-2">
-          Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster.
-          So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten ein klares Signal.
-        </p>
-        <div class="demo-box reveal reveal-delay-3" id="hero-chart-container"
-             data-ticker="^DJI" data-years="131">
-          <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Saisonalitaets-Chart Konzept: Einzeljahre verschmelzen zum Durchschnitt">
-            <defs>
-              <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#3b82f6" stop-opacity=".6"/>
-                <stop offset="50%" stop-color="#06d6a0" stop-opacity=".8"/>
-                <stop offset="100%" stop-color="#3b82f6" stop-opacity=".6"/>
-              </linearGradient>
-            </defs>
+        <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
+        <p class="sec-sub reveal reveal-d2">Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten ein klares Signal.</p>
+        <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
+          <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Saisonalitaets-Chart: Einzeljahre verschmelzen zum Durchschnitt">
+            <defs><linearGradient id="gl" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3b82f6" stop-opacity=".6"/><stop offset="50%" stop-color="#06d6a0" stop-opacity=".8"/><stop offset="100%" stop-color="#3b82f6" stop-opacity=".6"/></linearGradient></defs>
             <line x1="0" y1="130" x2="800" y2="130" stroke="rgba(255,255,255,.04)" stroke-dasharray="3"/>
-            <path d="M0,155 Q80,115 160,150 T320,125 T480,158 T640,120 T800,145" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,125 Q80,165 160,120 T320,155 T480,110 T640,150 T800,130" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,145 Q80,100 160,165 T320,110 T480,150 T640,115 T800,155" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,135 Q80,155 160,105 T320,165 T480,125 T640,155 T800,120" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,165 Q80,125 160,155 T320,115 T480,165 T640,130 T800,140" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,115 Q80,145 160,135 T320,140 T480,105 T640,148 T800,125" fill="none" stroke="rgba(148,163,184,.12)" stroke-width="1"/>
-            <path d="M0,140 Q67,134 133,138 Q200,145 267,130 Q333,122 400,128 Q467,136 533,120 Q600,114 667,124 Q733,134 800,138"
-                  fill="none" stroke="url(#glow)" stroke-width="3" stroke-linecap="round"/>
-            <text x="16" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">Jan</text>
-            <text x="130" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">M&auml;r</text>
-            <text x="260" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">Mai</text>
-            <text x="390" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">Jul</text>
-            <text x="520" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">Sep</text>
-            <text x="650" y="250" fill="#4a5a74" font-size="10" font-family="Sora,sans-serif">Nov</text>
+            <path d="M0,155 Q80,115 160,150 T320,125 T480,158 T640,120 T800,145" fill="none" stroke="rgba(139,155,180,.1)" stroke-width="1"/>
+            <path d="M0,125 Q80,165 160,120 T320,155 T480,110 T640,150 T800,130" fill="none" stroke="rgba(139,155,180,.1)" stroke-width="1"/>
+            <path d="M0,145 Q80,100 160,165 T320,110 T480,150 T640,115 T800,155" fill="none" stroke="rgba(139,155,180,.1)" stroke-width="1"/>
+            <path d="M0,135 Q80,155 160,105 T320,165 T480,125 T640,155 T800,120" fill="none" stroke="rgba(139,155,180,.1)" stroke-width="1"/>
+            <path d="M0,165 Q80,125 160,155 T320,115 T480,165 T640,130 T800,140" fill="none" stroke="rgba(139,155,180,.1)" stroke-width="1"/>
+            <path d="M0,140 Q67,134 133,138 Q200,145 267,130 Q333,122 400,128 Q467,136 533,120 Q600,114 667,124 Q733,134 800,138" fill="none" stroke="url(#gl)" stroke-width="3" stroke-linecap="round"/>
+            <text x="16" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">Jan</text>
+            <text x="145" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">M&auml;r</text>
+            <text x="275" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">Mai</text>
+            <text x="405" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">Jul</text>
+            <text x="535" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">Sep</text>
+            <text x="665" y="250" fill="#4a5a74" font-size="10" font-family="JetBrains Mono,monospace">Nov</text>
           </svg>
-          <input type="range" id="demo-slider" min="0" max="100" value="50"
-                 class="demo-slider" aria-label="Noise to Signal">
-          <div class="demo-labels">
-            <span>Einzeljahre</span>
-            <span>Saisonaler Durchschnitt</span>
-          </div>
+          <input type="range" id="demo-slider" min="0" max="100" value="50" class="demo-slider" aria-label="Noise to Signal">
+          <div class="demo-labels"><span>Einzeljahre</span><span>Saisonaler Durchschnitt</span></div>
         </div>
       </div>
     </section>
 
     <!-- ═══════ STATS ═══════ -->
-    <section id="social-proof">
-      <div class="wrap">
-        <div class="stats reveal">
+    <section id="social-proof"><div class="wrap"><div class="stats reveal">
+      <div class="stat"><div class="stat__num">131</div><div class="stat__label">Jahre Markthistorie</div></div>
+      <div class="stat"><div class="stat__num">263</div><div class="stat__label">Basiswerte</div></div>
+      <div class="stat"><div class="stat__num">15</div><div class="stat__label">KI-Modelle</div></div>
+      <div class="stat"><div class="stat__num">24</div><div class="stat__label">Saisonalstrategien</div></div>
+    </div></div></section>
+
+    <!-- ═══════ 6 ZYKLEN ═══════ -->
+    <section class="sec" id="analysis-cycles"><div class="wrap">
+      <p class="eyebrow reveal">Analyse-Module</p>
+      <h2 class="sec-title reveal reveal-d1">6 Zyklen. Eine Plattform.</h2>
+      <p class="sec-sub reveal reveal-d2">Jeder Zeitraum offenbart eigene statistische Muster &mdash; von der Dekade bis zum Wochentag.</p>
+      <div class="g g3">
+        <a href="/app/" class="card reveal" id="feature-decade"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.84Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></div><h3>Dekadenzyklus</h3><p>131 Jahre Dow Jones. Kohorten nach Endziffern. Anomalie-Radar und Drawdown-Analyse.</p></a>
+        <a href="/app/" class="card reveal reveal-d1" id="feature-year"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div><h3>Jahreszyklus</h3><p>Saisonaler Jahresverlauf mit Pr&auml;sidentenzyklus, Signifikanztests und Perzentil-B&auml;ndern.</p></a>
+        <a href="/app/" class="card reveal reveal-d2" id="feature-month"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></div><h3>Monatszyklus</h3><p>Intra-Monat TDOM-Verlauf mit Detrend-Indikator, Heatmaps und Cycle-Matching.</p></a>
+        <a href="/app/" class="card reveal reveal-d3" id="feature-weekday"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg></div><h3>Wochentage</h3><p>Wochentag-Renditen, Overnight vs. Intraday Split, Weekend-Effekt und Konsekutiv-Analyse.</p></a>
+        <a href="/app/" class="card reveal reveal-d4" id="feature-tom"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div><h3>Monatswechsel</h3><p>Turn of the Month Effekt mit Streak-Analyse, Window-Optimierung und TOM-Heatmap.</p></a>
+        <a href="/app/" class="card reveal reveal-d5" id="feature-moon"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></div><h3>Mondphasen</h3><p>Voll- und Neumond-Effekt, Supermond-Vergleich und Lunar-Kalender.</p></a>
+      </div>
+    </div></section>
+
+    <!-- ═══════ KI-FEATURES ═══════ -->
+    <section class="sec sec--alt" id="ai-features"><div class="wrap">
+      <p class="eyebrow reveal">K&uuml;nstliche Intelligenz</p>
+      <h2 class="sec-title reveal reveal-d1">15 KI-Modelle f&uuml;r pr&auml;zise Signale</h2>
+      <p class="sec-sub reveal reveal-d2">Von DTW Pattern Matching bis Chronos-Forecast &mdash; jedes Modell beleuchtet einen anderen Aspekt.</p>
+      <div class="g g3">
+        <div class="card card--t reveal"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>DTW Pattern Matching</h3><p>Historische Jahre mit &auml;hnlichem Kursverlauf. Dynamic Time Warping misst Form&auml;hnlichkeit.</p></div>
+        <div class="card card--t reveal reveal-d1"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg></div><h3>Chronos Forecast</h3><p>30-Tage-Prognose mit Konfidenzb&auml;ndern. Amazon-Forschungsmodell, Millionen Zeitreihen.</p></div>
+        <div class="card card--t reveal reveal-d2"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"/><circle cx="18" cy="18" r="3"/><path d="m22 22-1.5-1.5"/></svg></div><h3>Anomalie-Radar</h3><p>Echtzeit-Abweichung vom Muster. Isolation Forest erkennt Regime-Wechsel fr&uuml;hzeitig.</p></div>
+        <div class="card card--t reveal reveal-d3"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Signifikanztests</h3><p>t-Test und Cohen's d f&uuml;r jedes Ergebnis. Radiale Tachos zeigen Belastbarkeit.</p></div>
+        <div class="card card--t reveal reveal-d4"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><h3>Backtest Engine</h3><p>Grid-Search und Walk-Forward f&uuml;r 24 Strategien. Out-of-Sample gegen Overfitting.</p></div>
+        <div class="card card--t reveal reveal-d5"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><h3>Indikator-Filter</h3><p>SMA, EMA, RSI, Bollinger, MACD, LBR als UND-Verkn&uuml;pfung. Saisonalit&auml;t trifft Technik.</p></div>
+      </div>
+    </div></section>
+
+    <!-- ═══════ METHODIK ═══════ -->
+    <section class="sec" id="methodology"><div class="wrap">
+      <p class="eyebrow reveal">Methodik</p>
+      <h2 class="sec-title reveal reveal-d1">Normalisierte Renditen statt Bauchgef&uuml;hl</h2>
+      <div class="g g2" style="margin-top:2.5rem">
+        <div class="meth reveal">
+          <h3>Datenqualit&auml;t seit 1895</h3><p>Der Dow Jones seit 1895 &mdash; l&uuml;ckenlos, split- und dividend-adjustiert. 263 Basiswerte mit maximaler Historie.</p>
+          <h3>Statistische Signifikanz</h3><p>t-Tests und Cohen's d pr&uuml;fen jedes Ergebnis. Signifikanz-Tachos zeigen Belastbarkeit auf einen Blick.</p>
+          <h3>Reproduzierbare Methodik</h3><p>Renditen normiert auf 100. Jedes Jahr startet bei 100, t&auml;gliche Returns kumulieren. Transparent, frei von Survivorship-Bias.</p>
+        </div>
+        <div class="meth-stats reveal reveal-d2">
           <div class="stat"><div class="stat__num">131</div><div class="stat__label">Jahre Markthistorie</div></div>
           <div class="stat"><div class="stat__num">263</div><div class="stat__label">Basiswerte</div></div>
           <div class="stat"><div class="stat__num">15</div><div class="stat__label">KI-Modelle</div></div>
           <div class="stat"><div class="stat__num">24</div><div class="stat__label">Saisonalstrategien</div></div>
         </div>
       </div>
-    </section>
-
-    <!-- ═══════ 6 ZYKLEN ═══════ -->
-    <section class="sec" id="analysis-cycles">
-      <div class="wrap">
-        <p class="eyebrow reveal">Analyse-Module</p>
-        <h2 class="sec-title reveal reveal-delay-1">6 Zyklen. Eine Plattform.</h2>
-        <p class="sec-sub reveal reveal-delay-2">Jeder Zeitraum offenbart eigene statistische Muster &mdash; von der Dekade bis zum Wochentag.</p>
-        <div class="g g3">
-          <a href="/app/" class="card reveal" id="feature-decade">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.84Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></div>
-            <h3>Dekadenzyklus</h3><p>131 Jahre Dow Jones. Kohorten nach Endziffern. Anomalie-Radar und Drawdown-Analyse.</p>
-          </a>
-          <a href="/app/" class="card reveal reveal-delay-1" id="feature-year">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
-            <h3>Jahreszyklus</h3><p>Saisonaler Jahresverlauf mit Pr&auml;sidentenzyklus, Signifikanztests und Perzentil-B&auml;ndern.</p>
-          </a>
-          <a href="/app/" class="card reveal reveal-delay-2" id="feature-month">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></div>
-            <h3>Monatszyklus</h3><p>Intra-Monat TDOM-Verlauf mit Detrend-Indikator, Heatmaps und Cycle-Matching.</p>
-          </a>
-          <a href="/app/" class="card reveal reveal-delay-3" id="feature-weekday">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg></div>
-            <h3>Wochentage</h3><p>Wochentag-Renditen, Overnight vs. Intraday Split, Weekend-Effekt und Konsekutiv-Analyse.</p>
-          </a>
-          <a href="/app/" class="card reveal reveal-delay-4" id="feature-tom">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
-            <h3>Monatswechsel</h3><p>Turn of the Month Effekt mit Streak-Analyse, Window-Optimierung und TOM-Heatmap.</p>
-          </a>
-          <a href="/app/" class="card reveal reveal-delay-5" id="feature-moon">
-            <div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></div>
-            <h3>Mondphasen</h3><p>Voll- und Neumond-Effekt, Supermond-Vergleich und Lunar-Kalender.</p>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════ KI-FEATURES ═══════ -->
-    <section class="sec sec--alt" id="ai-features">
-      <div class="wrap">
-        <p class="eyebrow reveal">K&uuml;nstliche Intelligenz</p>
-        <h2 class="sec-title reveal reveal-delay-1">15 KI-Modelle f&uuml;r pr&auml;zise Signale</h2>
-        <p class="sec-sub reveal reveal-delay-2">Von DTW Pattern Matching bis Chronos-Forecast &mdash; jedes Modell beleuchtet einen anderen Aspekt saisonaler Muster.</p>
-        <div class="g g3">
-          <div class="card card--teal reveal"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>DTW Pattern Matching</h3><p>Findet historische Jahre mit &auml;hnlichem Kursverlauf. Dynamic Time Warping misst Form&auml;hnlichkeit statt nur Korrelation.</p></div>
-          <div class="card card--teal reveal reveal-delay-1"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg></div><h3>Chronos Forecast</h3><p>Probabilistische 30-Tage-Prognose mit Konfidenzb&auml;ndern. Amazon-Forschungsmodell, trainiert auf Millionen Zeitreihen.</p></div>
-          <div class="card card--teal reveal reveal-delay-2"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"/><circle cx="18" cy="18" r="3"/><path d="m22 22-1.5-1.5"/></svg></div><h3>Anomalie-Radar</h3><p>Echtzeit-Abweichung vom saisonalen Muster. Isolation Forest erkennt Regime-Wechsel bevor sie offensichtlich werden.</p></div>
-          <div class="card card--teal reveal reveal-delay-3"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Signifikanztests</h3><p>Jedes Ergebnis mit t-Test und Cohen's d gepr&uuml;ft. Radiale Tachos zeigen statistische Belastbarkeit auf einen Blick.</p></div>
-          <div class="card card--teal reveal reveal-delay-4"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><h3>Backtest Engine</h3><p>Grid-Search und Walk-Forward Optimierung f&uuml;r 24 Saisonalstrategien. Out-of-Sample Validierung gegen Overfitting.</p></div>
-          <div class="card card--teal reveal reveal-delay-5"><div class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><h3>Indikator-Filter</h3><p>6 technische Filter (SMA, EMA, RSI, Bollinger, MACD, LBR) als UND-Verkn&uuml;pfung. Saisonalit&auml;t trifft Technik.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════ METHODIK ═══════ -->
-    <section class="sec" id="methodology">
-      <div class="wrap">
-        <p class="eyebrow reveal">Methodik</p>
-        <h2 class="sec-title reveal reveal-delay-1">Normalisierte Renditen statt Bauchgef&uuml;hl</h2>
-        <div class="g g2" style="margin-top:2.5rem">
-          <div class="meth-text reveal">
-            <h3>Datenqualit&auml;t seit 1895</h3>
-            <p>Der Dow Jones Industrial Average seit 1895 &mdash; l&uuml;ckenlos, split- und dividend-adjustiert. 263 weitere Basiswerte mit maximaler verf&uuml;gbarer Historie.</p>
-            <h3>Statistische Signifikanz</h3>
-            <p>Kein Muster ohne Beweis. t-Tests und Cohen's d pr&uuml;fen jedes Ergebnis. Signifikanz-Tachos zeigen auf einen Blick, ob ein Pattern belastbar ist.</p>
-            <h3>Reproduzierbare Methodik</h3>
-            <p>Prozentuale Renditen normiert auf 100. Jedes Jahr startet bei 100, t&auml;gliche Returns kumulieren darauf. Transparent und frei von Survivorship-Bias.</p>
-          </div>
-          <div class="meth-stats reveal reveal-delay-2">
-            <div class="stat"><div class="stat__num">131</div><div class="stat__label">Jahre Markthistorie</div></div>
-            <div class="stat"><div class="stat__num">263</div><div class="stat__label">Basiswerte</div></div>
-            <div class="stat"><div class="stat__num">15</div><div class="stat__label">KI-Modelle</div></div>
-            <div class="stat"><div class="stat__num">24</div><div class="stat__label">Saisonalstrategien</div></div>
-          </div>
-        </div>
-      </div>
-    </section>
+    </div></section>
 
     <!-- ═══════ PRICING (HIDDEN) ═══════ -->
-    <section class="sec sec--hidden" id="pricing">
-      <div class="wrap tc">
-        <p class="eyebrow">Preise</p>
-        <h2 class="sec-title">Jetzt starten. Premium sp&auml;ter.</h2>
-      </div>
-    </section>
+    <section class="sec sec--hidden" id="pricing"><div class="wrap tc"><p class="eyebrow">Preise</p><h2 class="sec-title">Jetzt starten.</h2></div></section>
 
-    <!-- ═══════ NEWSLETTER CTA ═══════ -->
-    <section class="sec sec--alt tc" id="cta-final">
-      <div class="wrap">
-        <p class="eyebrow reveal">Newsletter</p>
-        <h2 class="sec-title reveal reveal-delay-1" style="max-width:520px;margin-left:auto;margin-right:auto">Jede Woche saisonale Insights</h2>
-        <p class="sec-sub reveal reveal-delay-2" style="margin-left:auto;margin-right:auto">DSGVO-konform, jederzeit abbestellbar.</p>
-        <form class="nl-form reveal reveal-delay-3" id="newsletter-form">
-          <label for="nl-email" class="sr-only">E-Mail-Adresse</label>
-          <input type="email" id="nl-email" name="email" placeholder="name@beispiel.de" required class="nl-input" autocomplete="email">
-          <button type="submit" class="btn btn--primary">Anmelden</button>
-        </form>
-        <p class="muted reveal reveal-delay-4" style="margin-bottom:.75rem">Oder direkt:</p>
-        <a href="/app/" class="btn btn--ghost reveal reveal-delay-4">Zur Analyse</a>
-      </div>
-    </section>
+    <!-- ═══════ NEWSLETTER ═══════ -->
+    <section class="sec sec--alt tc" id="cta-final"><div class="wrap">
+      <p class="eyebrow reveal">Newsletter</p>
+      <h2 class="sec-title reveal reveal-d1" style="max-width:520px;margin-left:auto;margin-right:auto">Jede Woche saisonale Insights</h2>
+      <p class="sec-sub reveal reveal-d2" style="margin-left:auto;margin-right:auto">DSGVO-konform, jederzeit abbestellbar.</p>
+      <form class="nl-form reveal reveal-d3" id="newsletter-form"><label for="nl-email" class="sr-only">E-Mail</label><input type="email" id="nl-email" name="email" placeholder="name@beispiel.de" required class="nl-input" autocomplete="email"><button type="submit" class="btn btn--p">Anmelden</button></form>
+      <p class="muted-text reveal reveal-d4" style="margin-bottom:.75rem">Oder direkt:</p>
+      <a href="/app/" class="btn btn--g reveal reveal-d4">Zur Analyse</a>
+    </div></section>
   </main>
 
   <!-- ═══════ FOOTER ═══════ -->
-  <footer class="foot" id="site-footer">
-    <div class="wrap">
-      <div class="foot__grid">
-        <div class="foot__brand">
-          <span style="font-family:var(--font-display);font-size:1.0625rem;font-weight:800"><b style="color:var(--teal)">Season</b>Alpha</span>
-          <p>Datengetriebene B&ouml;rsenanalyse seit 1895.</p>
-        </div>
-        <div class="foot__col">
-          <h4>Produkt</h4>
-          <a href="/app/">App starten</a>
-          <a href="/blog/">Blog</a>
-          <a href="/tools/trading-day-converter">Tools</a>
-          <a href="/analyse/dax-saisonalitaet">Analysen</a>
-        </div>
-        <div class="foot__col">
-          <h4>Rechtliches</h4>
-          <a href="/disclaimer">Disclaimer</a>
-          <a href="/app/">Impressum</a>
-          <a href="/app/">Datenschutz</a>
-        </div>
-        <div class="foot__col">
-          <h4>Kontakt</h4>
-          <a href="mailto:info@seasonalpha.ai">info@seasonalpha.ai</a>
-        </div>
-      </div>
-      <div class="foot__bottom">
-        <p>&copy; 2026 SeasonAlpha. All rights reserved.</p>
-        <p style="margin-top:.35rem;opacity:.6">Keine Anlageberatung. Historische Daten garantieren keine zuk&uuml;nftigen Ergebnisse. <a href="/disclaimer" style="color:inherit;text-decoration:underline">Disclaimer</a></p>
-      </div>
+  <footer class="foot" id="site-footer"><div class="wrap">
+    <div class="foot__grid">
+      <div class="foot__brand"><span style="font-family:var(--f-d);font-size:1.0625rem;font-weight:800"><b style="color:var(--teal)">Season</b>Alpha</span><p>Datengetriebene B&ouml;rsenanalyse seit 1895.</p></div>
+      <div class="foot__col"><h4>Produkt</h4><a href="/app/">App starten</a><a href="/blog/">Blog</a><a href="/tools/trading-day-converter">Tools</a><a href="/analyse/dax-saisonalitaet">Analysen</a></div>
+      <div class="foot__col"><h4>Rechtliches</h4><a href="/disclaimer">Disclaimer</a><a href="/app/">Impressum</a><a href="/app/">Datenschutz</a></div>
+      <div class="foot__col"><h4>Kontakt</h4><a href="mailto:info@seasonalpha.ai">info@seasonalpha.ai</a></div>
     </div>
-  </footer>
+    <div class="foot__btm"><p>&copy; 2026 SeasonAlpha. All rights reserved.</p><p style="margin-top:.35rem;opacity:.6">Keine Anlageberatung. Historische Daten garantieren keine zuk&uuml;nftigen Ergebnisse. <a href="/disclaimer" style="color:inherit;text-decoration:underline">Disclaimer</a></p></div>
+  </div></footer>
 
-  <!-- ═══════ SCREEN-READER ONLY ═══════ -->
-  <style>.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}</style>
-
-  <!-- ═══════ JS ═══════ -->
   <script>
-    // Burger toggle
-    document.getElementById('nav-burger').addEventListener('click',function(){
-      document.getElementById('nav-links').classList.toggle('open');
+    // ── Burger toggle ──
+    document.getElementById('nav-burger').addEventListener('click',function(){document.getElementById('nav-links').classList.toggle('open')});
+
+    // ── Word-by-word reveal (21st.dev pattern) ──
+    document.querySelectorAll('.w').forEach(function(w){
+      var d=parseInt(w.getAttribute('data-d')||'0',10);
+      setTimeout(function(){w.classList.add('vis')},d);
     });
 
-    // Rotating hints
-    !function(){
-      var h=[
-        '263 Aktien, ETFs, Krypto und Rohstoffe \u2014 direkt analysieren',
-        '131 Jahre Dow Jones Historie \u2014 interaktiv erkunden',
-        '15 KI-Modelle \u2014 von DTW bis Chronos Forecast'
-      ],el=document.getElementById('hero-hint'),i=0;
-      setInterval(function(){
-        el.style.opacity='0';
-        setTimeout(function(){i=(i+1)%h.length;el.textContent=h[i];el.style.opacity='1'},350);
-      },4000);
-    }();
+    // ── Word hover glow ──
+    document.querySelectorAll('.w').forEach(function(w){
+      w.addEventListener('mouseenter',function(){w.style.textShadow='0 0 20px rgba(59,130,246,.4)'});
+      w.addEventListener('mouseleave',function(){w.style.textShadow='none'});
+    });
 
-    // Scroll reveal (IntersectionObserver)
+    // ── Mouse gradient follow ──
+    var glow=document.getElementById('mouse-glow');
+    document.addEventListener('mousemove',function(e){glow.style.left=e.clientX-192+'px';glow.style.top=e.clientY-192+'px';glow.style.opacity='1'});
+    document.addEventListener('mouseleave',function(){glow.style.opacity='0'});
+
+    // ── Click ripple ──
+    document.addEventListener('click',function(e){
+      var r=document.createElement('div');
+      r.style.cssText='position:fixed;left:'+e.clientX+'px;top:'+e.clientY+'px;width:4px;height:4px;background:rgba(59,130,246,.5);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;animation:pulse-ripple .8s ease-out forwards';
+      document.body.appendChild(r);setTimeout(function(){r.remove()},800);
+    });
+
+    // ── Floating particles on scroll ──
+    var scrolled=false;
+    window.addEventListener('scroll',function(){
+      if(!scrolled){scrolled=true;document.querySelectorAll('.particle').forEach(function(el,i){setTimeout(function(){el.style.animationPlayState='running'},i*200)})}
+    },{passive:true});
+
+    // ── Scroll reveal (IntersectionObserver) ──
     !function(){
       var els=document.querySelectorAll('.reveal');
-      if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('visible')});return}
-      var obs=new IntersectionObserver(function(entries){
-        entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
-      },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+      if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('vis')});return}
+      var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
       els.forEach(function(e){obs.observe(e)});
     }();
 
-    // Card mouse-follow glow
-    document.querySelectorAll('.card').forEach(function(card){
-      card.addEventListener('mousemove',function(e){
-        var r=card.getBoundingClientRect();
-        card.style.setProperty('--mx',(e.clientX-r.left)+'px');
-        card.style.setProperty('--my',(e.clientY-r.top)+'px');
-      });
-    });
+    // ── Card mouse-follow glow ──
+    document.querySelectorAll('.card').forEach(function(c){c.addEventListener('mousemove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})});
   </script>
 </body>
 </html>
