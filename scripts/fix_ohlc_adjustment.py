@@ -39,12 +39,17 @@ def fix_ticker(ticker: str) -> dict:
         if col in db_df.columns:
             db_df[col] = pd.to_numeric(db_df[col], errors="coerce")
 
-    # 2. Pruefen ob OHLC-Daten defekt sind (Open/Close Ratio extrem)
-    if "open" in db_df.columns:
+    # 2. Pruefen ob OHLC-Daten defekt sind
+    # Check A: Split-Adjustierung (Open/Close Ratio extrem)
+    # Check B: Dividend-Adjustierung (mittlere Intraday-Rendite zu weit von 0)
+    if "open" in db_df.columns and "close" in db_df.columns:
         ratio = (db_df["open"] / db_df["close"]).dropna()
         if len(ratio) > 50:
+            # Split-Check
             extreme_pct = ((ratio > 1.5) | (ratio < 0.67)).mean()
-            if extreme_pct <= 0.005:
+            # Dividend-Check: mittlere Intraday = mean(Close/Open - 1)
+            mean_intraday = (1 / ratio - 1).mean() * 100
+            if extreme_pct <= 0.005 and abs(mean_intraday) <= 0.15:
                 return {"status": "ok", "updated": 0, "total": len(db_df)}
 
     # 3. Yahoo-Daten laden (adjustiert)

@@ -74,16 +74,25 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
             if open_fill_rate < 0.9:
                 return None  # Zu viele fehlende Open-Werte → Yahoo-Fallback
 
-        # OHLC-Konsistenz prüfen: Erkennt nicht split-adjustierte Open/High/Low.
-        # Vor dem Fix (2026-03-20) wurden Open/High/Low ohne adj_factor gespeichert.
-        # Bei Splits ist Open >> Close (z.B. AAPL 4:1: Open=400, Close=100).
+        # OHLC-Konsistenz prüfen: Erkennt fehlende Split- ODER Dividend-Adjustierung.
+        #
+        # Check 1 (Split): Open/Close Ratio > 1.5 oder < 0.67 bei >0.5% der Tage
+        # Check 2 (Dividend): Mittlere Intraday-Rendite (Close/Open) zu weit von 0
+        #   → Wenn Close dividend-adjustiert ist aber Open nicht, ist Close systematisch
+        #     niedriger als Open → mittlere Intraday-Rendite stark negativ (~-3%)
+        #   → Bei korrekter Adjustierung: mittlere Intraday < ±0.15%
         if "Open" in df.columns and len(df) > 200:
             ratio = (df["Open"] / df["Close"]).dropna()
             if len(ratio) > 200:
-                # >0.5% der Tage mit Open/Close Ratio > 1.5 oder < 0.67 → defekte OHLC
+                # Split-Check
                 extreme_pct = ((ratio > 1.5) | (ratio < 0.67)).mean()
                 if extreme_pct > 0.005:
-                    return None  # Nicht-adjustierte OHLC → Yahoo-Fallback
+                    return None
+
+                # Dividend-Check: mittlere Intraday-Rendite
+                mean_intraday = (1 / ratio - 1).mean() * 100  # = mean(Close/Open - 1)
+                if abs(mean_intraday) > 0.15:
+                    return None  # Dividend-Adjustierung fehlt → Yahoo-Fallback
 
         return df
 
