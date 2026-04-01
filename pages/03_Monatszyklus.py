@@ -406,8 +406,11 @@ def calc_current_month_curve(df, target_month):
     df_tdom = assign_tdom(df)
     month_df = df_tdom[(df_tdom["year"] == current_year) & (df_tdom["month"] == target_month)].copy()
     month_df = month_df[month_df.index <= today]
-    if len(month_df) < 2:
+    if len(month_df) < 1:
         return None, None
+    if len(month_df) == 1:
+        # Erster Tag: nur Startpunkt (0%)
+        return [int(month_df["tdom"].iloc[0])], [0.0]
     log_rets = month_df["log_return"].values
     cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
     curve = (np.exp(cum) - 1) * 100
