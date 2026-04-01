@@ -298,7 +298,7 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", row=1, col=2)
 
     # We are here! — gelber Rahmen um aktuellen Wochentag
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     if 0 <= today_wd < len(WEEKDAY_LABELS):
         today_label = WEEKDAY_LABELS[today_wd]
         # Rendite-Balken
@@ -476,7 +476,7 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)")
 
     # We are here!
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     if 0 <= today_wd < len(WEEKDAY_LABELS):
         today_label = WEEKDAY_LABELS[today_wd]
         if today_wd in wd_stats:
@@ -572,7 +572,7 @@ def build_overnight_intraday_chart(oi_stats, ticker):
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
     # We are here!
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     if 0 <= today_wd < len(WEEKDAY_LABELS):
         fig.add_shape(**wah_rect(
             x0=today_wd - 0.4, x1=today_wd + 0.4,
@@ -664,7 +664,7 @@ def build_consecutive_heatmap(matrix):
                              zmid=50, fmt=".0f")
 
     # Gelber Rahmen um aktuelle Spalte (heutiger Wochentag-Uebergang)
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     if 0 <= today_wd <= 3:  # Mo-Do haben Folgetag
         fig.add_shape(type="rect",
             x0=today_wd - 0.5, x1=today_wd + 0.5,
@@ -718,7 +718,7 @@ def build_quarterly_heatmaps(q_stats, ticker):
     all_vals = [q_stats[(q, wd)]["avg"] for q in range(1, 5) for wd in range(len(WEEKDAY_LABELS))]
     max_abs = max(abs(v) for v in all_vals) if all_vals else 1
 
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     today_q = (datetime.now().month - 1) // 3 + 1
 
     for q, (row, col) in zip(range(1, 5), positions):
@@ -819,7 +819,7 @@ def build_volatility_chart(vol_stats, ticker):
                   annotation_font_color="#F1C40F")
 
     # We are here!
-    today_wd = datetime.now().weekday()
+    today_wd = datetime.now().weekday() if st.session_state.get("wd_show_current", True) else -1
     if 0 <= today_wd < len(WEEKDAY_LABELS):
         fig.add_shape(**wah_rect(x0=today_wd - 0.4, x1=today_wd + 0.4, y0=0, y1=avgs[today_wd]))
         fig.add_annotation(**wah_annotation(
@@ -887,6 +887,10 @@ def main():
             default=None, key="wd_cycle",
             help="Nur Jahre mit bestimmtem Zyklusjahr beruecksichtigen (leer = alle)"
         )
+
+        st.markdown("---")
+        st.markdown("### Anzeige")
+        _show_current_wd = st.checkbox("Aktuellen Wochentag hervorheben", value=True, key="wd_show_current")
 
         # ── Technische Filter ──────────────────────────
         from shared.indicator_filter_ui import indicator_filter_sidebar
