@@ -52,7 +52,10 @@ shared/                  ← Berechnungen, Daten, Utilities
   tdoy_analysis.py       ← TDoY Berechnungen (9 Funktionen, dynamisch Aktien ~252 / Crypto ~365)
   trading_day_header.py  ← Trading Day Header (TDOM/TDOY Anzeige) + Converter Widget
   drawdown_analysis.py   ← Saisonaler Drawdown + Rolling Volatilitaet (DD-Serie, KPI, Heatmap, Recovery)
-  strategies/            ← 65+ Strategien
+  strategies/            ← Strategie-Module
+    plain_vanilla.py     ← 24 Plain Vanilla Strategien (Sell in May, KTI, UECS etc.)
+    definitions.py       ← Strategie-Metadaten (65+ Eintraege)
+    kaeppel.py           ← Jay Kaeppel Strategien
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
   seo_template.html        ← Jinja2 Landingpage-Template
@@ -427,6 +430,15 @@ UPPER_CASE        → Konstanten
 - [x] Ticker-Datenbank erweitert: 163 → 263 Ticker (100 neue US-Aktien Top S&P 500) (2026-04-01)
 - [x] Bulk-Download EU + US: Alle 169 neue Ticker in Supabase geladen (2026-04-01)
 - [x] SEO-Landingpages: 94 → 263 Pages neu generiert + Sitemap aktualisiert (2026-04-01)
+- [x] Plain Vanilla Strategien: 24 saisonale Trading-Strategien in 6 Tab-Kategorien (2026-04-01)
+- [x] Strategien-Backend: shared/strategies/plain_vanilla.py (24 Funktionen + Registry + Helpers) (2026-04-01)
+- [x] Strategien-Frontend: pages/09_Plain_Vanilla_Strategien.py (Tabs, Kacheln, Equity, Trades) (2026-04-01)
+- [x] Strategien Lazy Loading: Nur ausgewaehlte Strategie berechnen (Performance-Fix) (2026-04-01)
+- [x] Wochentage: Heatmap 3 Nachkommastellen (2026-04-01)
+- [x] Monatszyklus: Goldener Stern bei TDOM 1 (2026-04-01)
+- [x] Nightly Jobs: 22:00→22:30 MESZ fuer amtliche Schlusskurse (2026-04-01)
+- [x] Intraday-Refresh: Schreibt Preise in Supabase (2026-04-01)
+- [x] Supabase fetch_prices: Paginierung 1000-Row-Limit gefixt (2026-04-01)
 
 ## Docs (bei Bedarf lesen)
 
