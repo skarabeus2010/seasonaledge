@@ -90,8 +90,10 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
                     return None
 
                 # Dividend-Check: mittlere Intraday-Rendite
+                # Nur NEGATIVE Bias ist verdaechtig (Close div-adjustiert < Open nicht-adjustiert)
+                # Positive Werte koennen bei Growth-Stocks legitim sein
                 mean_intraday = (1 / ratio - 1).mean() * 100  # = mean(Close/Open - 1)
-                if abs(mean_intraday) > 0.15:
+                if mean_intraday < -0.5:
                     return None  # Dividend-Adjustierung fehlt → Yahoo-Fallback
 
         return df
