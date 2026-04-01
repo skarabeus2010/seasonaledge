@@ -236,6 +236,23 @@ if _project_dir not in sys.path:
 - Heatmaps mit Jahreslabels → Leerzeichen-Padding `f" {y} "` + `categoryorder="array"`
 - Nightly-Refresh → nur letzte 5 Tage (historische Daten bleiben unveraendert)
 
+## Design-Regeln (PFLICHT bei allen UI-Arbeiten)
+
+| Regel | Details |
+|-------|---------|
+| `frontend-design` Skill nutzen | Fuer alle HTML/CSS Pages, Components, Layouts — Bold, distinctive Choices |
+| `ui-ux-pro-max` Skill nutzen | Design System Generierung: Farben, Typography, Spacing, Accessibility |
+| `21dev` fuer Component Inspiration | Moderne Component-Patterns als Referenz |
+| Keine generische AI-Aesthetics | NIEMALS: Inter/Arial/Roboto, Purple-Gradients-on-White, Cookie-Cutter Layouts |
+| Bold, distinctive Design Choices | Klare aesthetische Richtung, intentional, NICHT "safe" oder generisch |
+| Performance-optimiert | Inline Critical CSS, font-display:swap, lazy-load, keine unnuetzen Requests |
+| SVG Icons (Lucide) | Keine Emojis, keine Icon-Fonts — immer inline SVG |
+| Distinctive Typography | Sora (Display) + DM Sans (Body) fuer Landing; Plus Jakarta Sans fuer App |
+| Accessibility CRITICAL | Kontrast 4.5:1, focus-visible Rings, aria-labels, prefers-reduced-motion |
+| Touch Targets ≥ 44px | Buttons, Links, interaktive Elemente — minimum 44x44px |
+| Animation 150-300ms | transform/opacity only, ease-out enter, ease-in exit, staggered reveals |
+| Dark Mode First | Deep Space Palette: bg #060a13, surface #0d1424, accent #3b82f6 |
+
 ## UI-Komponenten (Premium Dark Mode)
 
 | Komponente | Modul | Verwendung |
