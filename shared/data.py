@@ -57,8 +57,8 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
         else:
             df["Volume"] = 0
 
-        # Nur OHLCV behalten (wie Yahoo-Format)
-        keep_cols = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in df.columns]
+        # OHLCV + log_return behalten
+        keep_cols = [c for c in ["Open", "High", "Low", "Close", "Volume", "log_return"] if c in df.columns]
         df = df[keep_cols].dropna(subset=["Close"])
 
         # Frische prüfen: Letzter Eintrag < _MAX_STALE_DAYS alt?

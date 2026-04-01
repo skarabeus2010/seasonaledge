@@ -28,6 +28,7 @@ except NameError:
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
+import numpy as np
 from shared.yahoo_downloader import download_data
 from shared.symbols import SYMBOLS
 
@@ -129,6 +130,9 @@ def refresh_tickers(tickers, group_name, dry_run=False):
             t0 = time.time()
             df = download_data(ticker, period="5d")
             if df is not None and not df.empty:
+                # log_return berechnen (ln(close_t / close_{t-1}))
+                df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
+
                 # Preise in Supabase schreiben
                 try:
                     from shared.supabase_client import upsert_prices
@@ -145,6 +149,8 @@ def refresh_tickers(tickers, group_name, dry_run=False):
                                 rec[col.lower()] = round(float(row[col]), 4)
                         if "Volume" in row and pd.notna(row["Volume"]):
                             rec["volume"] = int(row["Volume"])
+                        if "log_return" in row and pd.notna(row["log_return"]):
+                            rec["log_return"] = round(float(row["log_return"]), 8)
                         records.append(rec)
                     if records:
                         upsert_prices(records)

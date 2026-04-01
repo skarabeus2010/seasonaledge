@@ -238,13 +238,22 @@ def get_current_price(ticker: str, timeout: int = 10) -> dict | None:
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     """
     Ergänzt rohen OHLCV-DataFrame um berechnete Spalten.
-    Fügt hinzu: return, log_return, day_of_year, year, month
+    Fügt hinzu: return, log_return, day_of_year, year, month, tdoy.
+
+    Wenn log_return bereits aus Supabase vorhanden ist, wird die
+    Berechnung uebersprungen (Performance-Optimierung).
     """
     if df is None or len(df) == 0:
         return df
     df = df.copy()
-    df["return"]      = df["Close"].pct_change()
-    df["log_return"]  = np.log(df["Close"] / df["Close"].shift(1))
+
+    # Renditen: nur berechnen wenn nicht bereits aus DB vorhanden
+    if "return" not in df.columns or df["return"].isna().all():
+        df["return"] = df["Close"].pct_change()
+    if "log_return" not in df.columns or df["log_return"].isna().all():
+        df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
+
+    # Metadata-Spalten (immer setzen — sehr guenstig)
     df["day_of_year"] = df.index.dayofyear          # CDOY (Kalendertag)
     df["year"]        = df.index.year
     df["month"]       = df.index.month

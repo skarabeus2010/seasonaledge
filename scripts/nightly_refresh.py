@@ -80,6 +80,8 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                             _rec[_col.lower()] = round(float(_row[_col]), 4)
                     if "Volume" in _row and pd.notna(_row["Volume"]):
                         _rec["volume"] = int(_row["Volume"])
+                    if "log_return" in _row and pd.notna(_row["log_return"]):
+                        _rec["log_return"] = round(float(_row["log_return"]), 8)
                     _price_records.append(_rec)
                 if _price_records:
                     upsert_prices(_price_records)

@@ -182,6 +182,10 @@ $$ LANGUAGE sql STABLE;
 -- service_role bypassed RLS automatisch (Backend/Nightly Jobs).
 -- ══════════════════════════════════════════════════════════════════════════════
 
+-- ── Prices: log_return Spalte (einmalig ausfuehren) ─────────────────────────
+-- Formel: ln(close_t / close_{t-1}) — berechnet vom Nightly/Intraday Refresh
+-- ALTER TABLE prices ADD COLUMN IF NOT EXISTS log_return DOUBLE PRECISION;
+
 -- ── RLS aktivieren ───────────────────────────────────────────────────────────
 
 ALTER TABLE prices ENABLE ROW LEVEL SECURITY;
