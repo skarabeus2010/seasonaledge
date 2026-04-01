@@ -2,8 +2,8 @@ name: Nightly Data Update
 
 on:
   schedule:
-    # Mo-Fr 20:30 UTC (22:30 MESZ) — 30 Min nach Nightly Refresh
-    - cron: '30 20 * * 1-5'
+    # Mo-Fr 21:00 UTC (23:00 MESZ) — 30 Min nach Nightly Refresh
+    - cron: '0 21 * * 1-5'
   workflow_dispatch:  # Manueller Trigger
 
 jobs:

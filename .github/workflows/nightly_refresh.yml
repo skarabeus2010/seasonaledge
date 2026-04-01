@@ -2,8 +2,8 @@ name: Nightly DB Refresh
 
 on:
   schedule:
-    # Mo-Fr um 20:00 UTC (22:00 MESZ) — nach US-Boersenschluss
-    - cron: '0 20 * * 1-5'
+    # Mo-Fr um 20:30 UTC (22:30 MESZ) — 30 Min nach US-Boersenschluss fuer amtliche Schlusskurse
+    - cron: '30 20 * * 1-5'
   workflow_dispatch:  # Manueller Trigger
 
 jobs:
