@@ -240,6 +240,30 @@ UPPER_CASE        → Konstanten
 # ── Abschnitt ──  → Section Headers
 ```
 
+## Arbeitsprotokoll & Kontinuität
+
+> GEHE DAVON AUS, DASS EINE UNTERBRECHUNG JEDERZEIT PASSIEREN KANN.
+
+| Regel | Wann |
+|-------|------|
+| **Auto Memory aktualisieren** | Nach jeder größeren Änderung (neues Modul, Bug-Fix, Feature) |
+| **CLAUDE.md TODOs pflegen** | Erledigte Punkte mit `[x]` + Datum markieren, neue hinzufügen |
+| **Commit-Messages aussagekräftig** | Jeder Commit beschreibt WAS und WARUM (nicht nur Dateinamen) |
+| **Nach Compaction: /memory prüfen** | Auto Memory kann veralten — kritische Infos aktualisieren |
+| **Vor Deploy: Syntax-Check** | `py -c "import ast; ast.parse(open(f).read())"` für alle geänderten Dateien |
+| **Vor Deploy: Funktionstest** | Mindestens 1 Import-Test + 1 Daten-Test pro neuem Modul |
+
+### Was in Auto Memory gehört
+- Aktuelle Architektur-Entscheidungen die nicht in CLAUDE.md stehen
+- Bekannte Bugs / Workarounds die noch nicht gefixt sind
+- User-Präferenzen (z.B. "immer Umlaute", "gelbe Farbe für Highlights")
+- Letzte Session: Was wurde gemacht, was ist offen
+
+### Was in CLAUDE.md gehört
+- Projektstruktur, Module, Regeln (dauerhaft gültig)
+- Erledigte + offene TODOs mit Datum
+- Kritische Regeln (Import-Verbote, Styling, Architektur)
+
 ## Offene TODOs
 
 - [ ] **PRIO 1: Pages auf Supabase-Daten umstellen (statt Yahoo-Live-Fetch)**
