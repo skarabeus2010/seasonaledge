@@ -509,7 +509,8 @@ st.markdown(
 
 from shared.drawdown_analysis import (
     compute_avg_drawdown_curve, compute_drawdown_series, compute_drawdown_kpi,
-    compute_drawdown_stats, compute_monthly_max_drawdown, compute_avg_rolling_volatility,
+    compute_drawdown_stats, compute_real_recovery,
+    compute_monthly_max_drawdown, compute_avg_rolling_volatility,
     SE_DRAWDOWN_COLORSCALE, MONTH_STARTS_252, MONTH_LABELS_SHORT,
 )
 from shared.charts import apply_se_heatmap_theme
@@ -602,75 +603,56 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
                 _cur_dd_val = f"{_cy_d[-1]:.1f}%"
                 _cur_dd_clr = "#ff4444" if _cy_d[-1] < -1 else "#34d399"
 
-        _recovery_str = f'{_dd_kpi_data["avg_recovery_days"]:.0f} Tage' if _dd_kpi_data.get("avg_recovery_days") else "–"
-
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3 = st.columns(3)
         with c1:
-            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max Drawdown</div>'
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max Drawdown (x{CURRENT_DIGIT})</div>'
                         f'<div style="{_val}color:#ff4444;">{_dd_kpi_data["avg_max_dd"]:.1f}%</div></div>',
                         unsafe_allow_html=True)
         with c2:
-            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst Drawdown</div>'
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst Drawdown (x{CURRENT_DIGIT})</div>'
                         f'<div style="{_val}color:#ff2222;">{_dd_kpi_data["worst_max_dd"]:.1f}%</div></div>',
                         unsafe_allow_html=True)
         with c3:
-            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Recovery</div>'
-                        f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_recovery_str}</div></div>',
-                        unsafe_allow_html=True)
-        with c4:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Aktueller DD {CURRENT_YEAR}</div>'
                         f'<div style="{_val}color:{_cur_dd_clr};">{_cur_dd_val}</div></div>',
                         unsafe_allow_html=True)
 
 # ── Worst Drawdown Tabelle pro Dekade ────────────────────────
 
-with st.expander("📋 Worst Drawdown pro Dekade — Historische Extremjahre", expanded=False):
+with st.expander("📋 Worst Drawdown — Historische Extremjahre + Recovery", expanded=False):
     _worst_rows = []
     for digit in range(10):
         d = decade_data[digit]
-        if d["n"] == 0 or not d["curves"]:
+        if d["n"] == 0 or not d["years"]:
             continue
-        curves_np = [np.array(c) for c in d["curves"]]
-        for i, c in enumerate(curves_np):
-            stats = compute_drawdown_stats(c, base=100.0)
-            rec_str = f'{stats["recovery_days"]} Tage' if stats["recovered"] else "nicht erholt"
-            _worst_rows.append({
-                "Dekade": f"x{digit}",
-                "Jahr": d["years"][i],
-                "Max DD": stats["max_drawdown"],
-                "Ø DD": stats["avg_drawdown"],
-                "Recovery": rec_str,
-            })
+        for year in d["years"]:
+            rec = compute_real_recovery(df, year)
+            if rec and rec["max_drawdown"] < -10:
+                _worst_rows.append({
+                    "Dekade": f"x{digit}",
+                    "Jahr": rec["year"],
+                    "Max DD": rec["max_drawdown"],
+                    "Peak": rec["peak_date"].strftime("%d.%m.%Y") if rec["peak_date"] is not None else "–",
+                    "Tief": rec["trough_date"].strftime("%d.%m.%Y") if rec["trough_date"] is not None else "–",
+                    "Recovery": rec["recovery_str"],
+                })
 
     if _worst_rows:
         _worst_df = pd.DataFrame(_worst_rows).sort_values("Max DD", ascending=True)
-        _top20 = _worst_df.head(20).reset_index(drop=True)
+        _top25 = _worst_df.head(25).reset_index(drop=True)
 
         def _dd_color_max(v):
             if isinstance(v, (int, float)) and v < 0:
-                intensity = min(abs(v) / 80, 1.0)
+                intensity = min(abs(v) / 60, 1.0)
                 r = int(200 + 55 * intensity)
                 g = int(100 * (1 - intensity))
                 return f"color: rgb({r}, {g}, {g}); font-weight: bold"
             return ""
 
-        def _dd_color_avg(v):
-            if isinstance(v, (int, float)) and v < 0:
-                intensity = min(abs(v) / 40, 1.0)
-                r = int(180 + 75 * intensity)
-                g = int(140 * (1 - intensity) + 80)
-                b = int(140 * (1 - intensity) + 80)
-                return f"color: rgb({r}, {g}, {b})"
-            return ""
-
         _styled = (
-            _top20.style
+            _top25.style
             .applymap(_dd_color_max, subset=["Max DD"])
-            .applymap(_dd_color_avg, subset=["Ø DD"])
-            .format({
-                "Max DD": lambda v: f"{v:.1f}%",
-                "Ø DD": lambda v: f"{v:.1f}%",
-            })
+            .format({"Max DD": lambda v: f"{v:.1f}%"})
         )
         st.dataframe(_styled, use_container_width=True, hide_index=True)
 

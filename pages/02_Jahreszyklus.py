@@ -1030,10 +1030,9 @@ def main():
                     st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst DD</div>'
                                 f'<div style="{_val}color:#ff2222;">{_kpi["worst_max_dd"]:.1f}%</div></div>',
                                 unsafe_allow_html=True)
-                _recovery_str = f'{_kpi["avg_recovery_days"]:.0f} Tage' if _kpi.get("avg_recovery_days") else "–"
                 with k3:
-                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Recovery</div>'
-                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_recovery_str}</div></div>',
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Anzahl Jahre</div>'
+                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_kpi["n"]}</div></div>',
                                 unsafe_allow_html=True)
 
                 # Aktueller DD

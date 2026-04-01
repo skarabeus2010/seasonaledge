@@ -90,36 +90,85 @@ def compute_avg_drawdown_curve(
 
 def compute_drawdown_stats(curve: np.ndarray, base: float = 100.0) -> dict:
     """
-    Einzelne Kurve → Drawdown-Statistiken.
+    Einzelne Kurve → Drawdown-Statistiken (Intra-Year, ohne Recovery).
 
     Returns:
-        dict mit: max_drawdown, avg_drawdown, max_dd_day, recovery_days, recovered
+        dict mit: max_drawdown, avg_drawdown, max_dd_day
     """
     dd = compute_drawdown_series(curve, base)
 
-    max_dd = float(np.min(dd))
-    avg_dd = float(np.mean(dd))
-    max_dd_day = int(np.argmin(dd))
+    return {
+        "max_drawdown": round(float(np.min(dd)), 2),
+        "avg_drawdown": round(float(np.mean(dd)), 2),
+        "max_dd_day": int(np.argmin(dd)),
+    }
 
-    # Recovery: Tage vom Max-DD bis DD wieder >= -1% (praktisch erholt)
-    recovery = 0
-    recovered = False
-    if max_dd < -0.5:
-        after_max = dd[max_dd_day:]
-        recovered_idx = np.where(after_max >= -1.0)[0]
-        if len(recovered_idx) > 0:
-            recovery = int(recovered_idx[0])
-            recovered = True
-        else:
-            # Nicht erholt bis Jahresende → zeige Restlänge als "nicht erholt"
-            recovery = len(after_max)
-            recovered = False
+
+def compute_real_recovery(
+    df: pd.DataFrame,
+    year: int,
+) -> Optional[dict]:
+    """
+    Berechnet den echten Recovery-Zeitraum aus den Preisdaten.
+    Schaut über das Jahresende hinaus, bis der Peak-Preis wieder erreicht wird.
+
+    Args:
+        df: Vollständiger preprocessed DataFrame (alle Jahre)
+        year: Jahr für das der Max-DD berechnet wird
+
+    Returns:
+        dict mit: max_drawdown, peak_date, trough_date, recovery_date,
+                  recovery_days, recovery_str, recovered
+    """
+    year_df = df[df.index.year == year]
+    if len(year_df) < 50:
+        return None
+
+    closes = year_df["Close"].values.astype(float)
+    peaks = np.maximum.accumulate(closes)
+    dd = (closes - peaks) / peaks * 100
+
+    max_dd_idx = int(np.argmin(dd))
+    max_dd = float(dd[max_dd_idx])
+    peak_price = float(peaks[max_dd_idx])
+
+    # Peak-Datum = höchster Kurs VOR dem Trough
+    peak_date = year_df.index[int(np.argmax(closes[:max_dd_idx + 1]))]
+    trough_date = year_df.index[max_dd_idx]
+
+    # Ab Trough: wann wird peak_price wieder überschritten?
+    after_trough = df[df.index >= trough_date]
+    recovered_mask = after_trough["Close"] >= peak_price
+
+    if recovered_mask.any():
+        recovery_date = after_trough[recovered_mask].index[0]
+        recovery_days = len(df[(df.index >= trough_date) & (df.index <= recovery_date)])
+        recovered = True
+    else:
+        recovery_date = None
+        recovery_days = len(after_trough)
+        recovered = False
+
+    # Formatierung: "X Mon + Y Tage"
+    months = recovery_days // 21
+    rest_days = recovery_days % 21
+    if not recovered:
+        recovery_str = f"nicht erholt (>{months} Mon)"
+    elif months == 0:
+        recovery_str = f"{rest_days} Tage"
+    elif rest_days == 0:
+        recovery_str = f"{months} Mon"
+    else:
+        recovery_str = f"{months} Mon + {rest_days}d"
 
     return {
-        "max_drawdown": round(max_dd, 2),
-        "avg_drawdown": round(avg_dd, 2),
-        "max_dd_day": max_dd_day,
-        "recovery_days": recovery,
+        "year": year,
+        "max_drawdown": round(max_dd, 1),
+        "peak_date": peak_date,
+        "trough_date": trough_date,
+        "recovery_date": recovery_date,
+        "recovery_days": recovery_days,
+        "recovery_str": recovery_str,
         "recovered": recovered,
     }
 
@@ -129,24 +178,19 @@ def compute_drawdown_kpi(curves: list[np.ndarray], base: float = 100.0) -> dict:
     Zusammenfassung über alle Kurven für KPI-Karten.
 
     Returns:
-        dict: avg_max_dd, worst_max_dd, worst_dd_idx, avg_time_in_dd, avg_recovery_days
+        dict: avg_max_dd, worst_max_dd, worst_dd_idx, n
     """
     if not curves:
         return {}
 
     stats_list = [compute_drawdown_stats(c, base) for c in curves]
-
     max_dds = [s["max_drawdown"] for s in stats_list]
-    # Recovery nur für Jahre die sich erholt haben
-    recovered_days = [s["recovery_days"] for s in stats_list if s["recovered"]]
-
     worst_idx = int(np.argmin(max_dds))
 
     return {
         "avg_max_dd": round(float(np.mean(max_dds)), 2),
         "worst_max_dd": round(float(np.min(max_dds)), 2),
         "worst_dd_idx": worst_idx,
-        "avg_recovery_days": round(float(np.mean(recovered_days)), 0) if recovered_days else None,
         "n": len(curves),
     }
 
