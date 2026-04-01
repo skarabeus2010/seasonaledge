@@ -376,13 +376,13 @@ def build_heatmap(stats, ticker):
     ))
 
     # Adaptive Textfarben (dunkel auf hellen Zellen)
-    _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0)
+    _add_heatmap_annotations(fig, z_values, WEEKDAY_LABELS_SHORT, MONTH_NAMES_DE, zmid=0, fmt="+.3f")
 
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Monat × Wochentag Heatmap", height=480)
     fig.update_xaxes(side="bottom", type="category", tickformat="")
     fig.update_yaxes(autorange="reversed", type="category", tickformat="")
     # Colorbar-Ticks explizit nach Theme setzen (verhindert Float-Artefakte)
-    fig.update_traces(colorbar=dict(tickformat="+.2f", ticksuffix="%"))
+    fig.update_traces(colorbar=dict(tickformat="+.3f", ticksuffix="%"))
 
     # ── Gelber Rahmen um aktuelle Zelle (Monat + Wochentag) ──
     if 0 <= current_weekday <= 4:
