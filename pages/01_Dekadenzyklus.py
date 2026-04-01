@@ -409,12 +409,103 @@ with st.expander("📊 Ø-Jahresrendite nach Dekaden-Endziffer", expanded=True):
     st.plotly_chart(fig2, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3a. DRAWDOWN & VOLATILITÄT
+# 4. RENDITE-DETAILS (Tabelle, Heatmap, Box-Plot)
 # ══════════════════════════════════════════════════════════════════════════════
+
+with st.expander("📋 Übersicht nach Kohorte", expanded=False):
+    def _color_val(v):
+        if not isinstance(v, (int, float)) or pd.isna(v):
+            return ""
+        if v > 0:
+            return "color: #2ECC71; font-weight: bold"
+        elif v < 0:
+            return "color: #E74C3C; font-weight: bold"
+        return ""
+
+    display_df = summary_df.drop(columns=["Ziffer"]).reset_index(drop=True)
+    _digit_map = summary_df["Ziffer"].reset_index(drop=True)
+
+    def _highlight_current(row):
+        digit = _digit_map.loc[row.name]
+        if digit == CURRENT_DIGIT:
+            return ["background-color: rgba(241,196,15,0.15)"] * len(row)
+        return [""] * len(row)
+
+    styled = (
+        display_df.style
+        .apply(_highlight_current, axis=1, subset=None)
+        .applymap(_color_val, subset=["Ø Rendite %", "Median %", "Win-Rate %"])
+        .format({
+            "Ø Rendite %":    lambda v: f"{v:+.2f}%" if pd.notna(v) else "—",
+            "Median %":       lambda v: f"{v:+.2f}%" if pd.notna(v) else "—",
+            "Win-Rate %":     lambda v: f"{v:.1f}%"  if pd.notna(v) else "—",
+            "Volatilität %":  lambda v: f"{v:.2f}%"  if pd.notna(v) else "—",
+        })
+    )
+
+    st.dataframe(
+        styled,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Kohorte":        st.column_config.TextColumn("Kohorte", width="small"),
+            "Anzahl Jahre":   st.column_config.NumberColumn("n", width="small"),
+            "Ø Rendite %":    st.column_config.TextColumn("Ø Rendite", width="small"),
+            "Median %":       st.column_config.TextColumn("Median", width="small"),
+            "Win-Rate %":     st.column_config.TextColumn("Win-Rate", width="small"),
+            "Volatilität %":  st.column_config.TextColumn("Volatilität", width="small"),
+            "Jahre":          st.column_config.TextColumn("Jahre in Kohorte", width="large"),
+        },
+    )
+
+with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
+    fig_heat = build_decade_monthly_heatmap(df, ticker)
+    st.plotly_chart(fig_heat, use_container_width=True)
+
+with st.expander("📦 Rendite-Verteilung nach Kohorte (Box-Plot)", expanded=False):
+    groups = {
+        f"x{digit}": decade_data[digit]["returns"]
+        for digit in range(10)
+        if decade_data[digit]["n"] >= 2
+    }
+    if groups:
+        fig_box = build_box_plot(
+            groups=groups,
+            colors=DECADE_COLORS,
+            title=f"{ticker} — Jahresrenditen nach Dekaden-Endziffer",
+            x_title="Dekaden-Endziffer",
+            y_title="Log-Rendite (%)",
+            current_key=f"x{CURRENT_DIGIT}",
+        )
+        st.plotly_chart(fig_box, use_container_width=True)
+
+        st.markdown(
+            "<div style='font-size:11px; color:#64748b; line-height:1.6;'>"
+            "<b style='color:#94a3b8;'>So lesen Sie Box-Plots:</b> "
+            "Kasten = mittlere 50% (25.-75. Perzentil). "
+            "Linie = Median. Antennen = 1.5× IQR. "
+            "Punkte = Ausreißer (Crash-/Boom-Jahre)."
+            "</div>",
+            unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. DRAWDOWN & RISIKO
+# ══════════════════════════════════════════════════════════════════════════════
+
+st.markdown(
+    f'<div style="text-align:center; margin:2rem 0 1rem 0; padding-top:1rem; '
+    f'border-top:2px solid rgba(255,68,68,0.2);">'
+    f'<span style="color:#ff4444; font-size:1.3rem; font-weight:700;">'
+    f'📉 Drawdown &amp; Risiko</span>'
+    f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.9rem; margin-top:0.3rem;">'
+    f'Wann im Jahr passieren die größten Rücksetzer?</p>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
 
 from shared.drawdown_analysis import (
     compute_avg_drawdown_curve, compute_drawdown_series, compute_drawdown_kpi,
-    compute_monthly_max_drawdown, compute_avg_rolling_volatility,
+    compute_drawdown_stats, compute_monthly_max_drawdown, compute_avg_rolling_volatility,
     SE_DRAWDOWN_COLORSCALE, MONTH_STARTS_252, MONTH_LABELS_SHORT,
 )
 from shared.charts import apply_se_heatmap_theme
@@ -523,6 +614,49 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
                         f'<div style="{_val}color:{_cur_dd_clr};">{_cur_dd_val}</div></div>',
                         unsafe_allow_html=True)
 
+# ── Worst Drawdown Tabelle pro Dekade ────────────────────────
+
+with st.expander("📋 Worst Drawdown pro Dekade — Historische Extremjahre", expanded=False):
+    _worst_rows = []
+    for digit in range(10):
+        d = decade_data[digit]
+        if d["n"] == 0 or not d["curves"]:
+            continue
+        curves_np = [np.array(c) for c in d["curves"]]
+        for i, c in enumerate(curves_np):
+            dd = compute_drawdown_series(c, base=100.0)
+            stats = compute_drawdown_stats(c, base=100.0)
+            _worst_rows.append({
+                "Dekade": f"x{digit}",
+                "Jahr": d["years"][i],
+                "Max DD": stats["max_drawdown"],
+                "Ø DD": stats["avg_drawdown"],
+                "Tage im DD": f'{stats["time_in_dd_pct"]:.0f}%',
+                "Recovery": f'{stats["recovery_days"]} Tage',
+            })
+
+    if _worst_rows:
+        _worst_df = pd.DataFrame(_worst_rows).sort_values("Max DD", ascending=True)
+        # Top 20 schlimmste Jahre
+        _top20 = _worst_df.head(20).reset_index(drop=True)
+
+        def _dd_color(v):
+            if isinstance(v, (int, float)) and v < 0:
+                intensity = min(abs(v) / 60, 1.0)
+                r = int(255 * intensity)
+                return f"color: rgb({r}, {int(50*(1-intensity))}, {int(50*(1-intensity))}); font-weight: bold"
+            return ""
+
+        _styled = (
+            _top20.style
+            .applymap(_dd_color, subset=["Max DD", "Ø DD"])
+            .format({
+                "Max DD": lambda v: f"{v:.1f}%",
+                "Ø DD": lambda v: f"{v:.1f}%",
+            })
+        )
+        st.dataframe(_styled, use_container_width=True, hide_index=True)
+
 # ── 3b. Drawdown-Heatmap (Dekade × Monat) ────────────────────
 
 with st.expander("🗓️ Max Drawdown: Dekade × Monat", expanded=True):
@@ -605,94 +739,6 @@ with st.expander("📊 Saisonale Volatilität nach Dekade", expanded=False):
     else:
         st.info("Nicht genügend Daten für Volatilitäts-Berechnung.")
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 5. DATENTABELLE
-# ══════════════════════════════════════════════════════════════════════════════
-
-with st.expander("📋 Übersicht nach Kohorte", expanded=False):
-    def _color_val(v):
-        if not isinstance(v, (int, float)) or pd.isna(v):
-            return ""
-        if v > 0:
-            return "color: #2ECC71; font-weight: bold"
-        elif v < 0:
-            return "color: #E74C3C; font-weight: bold"
-        return ""
-
-    display_df = summary_df.drop(columns=["Ziffer"]).reset_index(drop=True)
-    _digit_map = summary_df["Ziffer"].reset_index(drop=True)
-
-    def _highlight_current(row):
-        digit = _digit_map.loc[row.name]
-        if digit == CURRENT_DIGIT:
-            return ["background-color: rgba(241,196,15,0.15)"] * len(row)
-        return [""] * len(row)
-
-    styled = (
-        display_df.style
-        .apply(_highlight_current, axis=1, subset=None)
-        .applymap(_color_val, subset=["Ø Rendite %", "Median %", "Win-Rate %"])
-        .format({
-            "Ø Rendite %":    lambda v: f"{v:+.2f}%" if pd.notna(v) else "—",
-            "Median %":       lambda v: f"{v:+.2f}%" if pd.notna(v) else "—",
-            "Win-Rate %":     lambda v: f"{v:.1f}%"  if pd.notna(v) else "—",
-            "Volatilität %":  lambda v: f"{v:.2f}%"  if pd.notna(v) else "—",
-        })
-    )
-
-    st.dataframe(
-        styled,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Kohorte":        st.column_config.TextColumn("Kohorte", width="small"),
-            "Anzahl Jahre":   st.column_config.NumberColumn("n", width="small"),
-            "Ø Rendite %":    st.column_config.TextColumn("Ø Rendite", width="small"),
-            "Median %":       st.column_config.TextColumn("Median", width="small"),
-            "Win-Rate %":     st.column_config.TextColumn("Win-Rate", width="small"),
-            "Volatilität %":  st.column_config.TextColumn("Volatilität", width="small"),
-            "Jahre":          st.column_config.TextColumn("Jahre in Kohorte", width="large"),
-        },
-    )
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 6. HEATMAP: Dekade × Monat
-# ══════════════════════════════════════════════════════════════════════════════
-
-with st.expander("🗓️ Ø Monatsrendite nach Dekade", expanded=True):
-    fig_heat = build_decade_monthly_heatmap(df, ticker)
-    st.plotly_chart(fig_heat, use_container_width=True)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 7. BOX-PLOT: Rendite-Verteilung pro Kohorte
-# ══════════════════════════════════════════════════════════════════════════════
-
-with st.expander("📦 Rendite-Verteilung nach Kohorte (Box-Plot)", expanded=False):
-    groups = {
-        f"x{digit}": decade_data[digit]["returns"]
-        for digit in range(10)
-        if decade_data[digit]["n"] >= 2
-    }
-    if groups:
-        fig_box = build_box_plot(
-            groups=groups,
-            colors=DECADE_COLORS,
-            title=f"{ticker} — Jahresrenditen nach Dekaden-Endziffer",
-            x_title="Dekaden-Endziffer",
-            y_title="Log-Rendite (%)",
-            current_key=f"x{CURRENT_DIGIT}",
-        )
-        st.plotly_chart(fig_box, use_container_width=True)
-
-        st.markdown(
-            "<div style='font-size:11px; color:#64748b; line-height:1.6;'>"
-            "<b style='color:#94a3b8;'>So lesen Sie Box-Plots:</b> "
-            "Kasten = mittlere 50% (25.-75. Perzentil). "
-            "Linie = Median. Antennen = 1.5× IQR. "
-            "Punkte = Ausreißer (Crash-/Boom-Jahre)."
-            "</div>",
-            unsafe_allow_html=True)
 
 # ── Methodik ──────────────────────────────────────────────────────────────────
 with st.expander("ℹ️ Methodik"):
