@@ -88,8 +88,14 @@ def _add_heatmap_annotations(fig, z_data, x_labels, y_labels, zmid=0, fmt="+.2f"
 # KONSTANTEN
 # ══════════════════════════════════════════════════════════════
 
-WEEKDAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
-WEEKDAY_LABELS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr"]
+WEEKDAY_LABELS_5 = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
+WEEKDAY_LABELS_7 = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+WEEKDAY_LABELS_SHORT_5 = ["Mo", "Di", "Mi", "Do", "Fr"]
+WEEKDAY_LABELS_SHORT_7 = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+# Dynamisch: wird in main() gesetzt basierend auf Daten
+WEEKDAY_LABELS = WEEKDAY_LABELS_5
+WEEKDAY_LABELS_SHORT = WEEKDAY_LABELS_SHORT_5
 
 RETURN_MODES = {
     "Close → Close (t0 → t1)": {
@@ -175,8 +181,12 @@ def calculate_weekday_stats(df, return_mode, years_back,
         df["rsi"] = 100 - (100 / (1 + rs))
         df["filter_pass"] = df["rsi"].shift(1) < rsi_threshold
 
-    # Nur Wochentage Mo-Fr und gueltige Returns
-    df = df[(df["weekday"] <= 4) & df["wd_return"].notna()]
+    # Crypto handelt 7 Tage → Sa+So behalten; Aktien nur Mo-Fr
+    _has_weekend = (df["weekday"] >= 5).any()
+    if not _has_weekend:
+        df = df[(df["weekday"] <= 4) & df["wd_return"].notna()]
+    else:
+        df = df[df["wd_return"].notna()]
 
     # Gefilterte Daten
     df_filtered = df[df["filter_pass"]].copy()
@@ -186,8 +196,9 @@ def calculate_weekday_stats(df, return_mode, years_back,
         return None
 
     # ── Statistik pro Wochentag ──
+    _n_weekdays = 7 if _has_weekend else 5
     by_weekday = {}
-    for wd in range(5):
+    for wd in range(_n_weekdays):
         subset = df_filtered[df_filtered["weekday"] == wd]["wd_return"]
         if len(subset) == 0:
             by_weekday[wd] = {"avg": 0, "median": 0, "std": 0, "count": 0,
@@ -207,7 +218,7 @@ def calculate_weekday_stats(df, return_mode, years_back,
     # ── Statistik pro Monat x Wochentag ──
     by_month_weekday = {}
     for month in range(1, 13):
-        for wd in range(5):
+        for wd in range(_n_weekdays):
             subset = df_filtered[(df_filtered["month"] == month) &
                                  (df_filtered["weekday"] == wd)]["wd_return"]
             if len(subset) == 0:
@@ -225,7 +236,9 @@ def calculate_weekday_stats(df, return_mode, years_back,
         "by_weekday": by_weekday,
         "by_month_weekday": by_month_weekday,
         "filtered_count": filtered_count,
-        "total_count": total_count
+        "total_count": total_count,
+        "n_weekdays": _n_weekdays,
+        "is_crypto": _has_weekend,
     }
 
 
@@ -243,9 +256,9 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
     )
 
     wd_data = stats["by_weekday"]
-    avgs = [wd_data[wd]["avg"] for wd in range(5)]
-    win_rates = [wd_data[wd]["win_rate"] for wd in range(5)]
-    counts = [wd_data[wd]["count"] for wd in range(5)]
+    avgs = [wd_data[wd]["avg"] for wd in range(len(WEEKDAY_LABELS))]
+    win_rates = [wd_data[wd]["win_rate"] for wd in range(len(WEEKDAY_LABELS))]
+    counts = [wd_data[wd]["count"] for wd in range(len(WEEKDAY_LABELS))]
 
     # Farben: SE positiv/negativ
     bar_colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
@@ -286,7 +299,7 @@ def build_weekday_bar_chart(stats, ticker, return_mode):
 
     # We are here! — gelber Rahmen um aktuellen Wochentag
     today_wd = datetime.now().weekday()
-    if 0 <= today_wd <= 4:
+    if 0 <= today_wd < len(WEEKDAY_LABELS):
         today_label = WEEKDAY_LABELS[today_wd]
         # Rendite-Balken
         fig.add_shape(type="rect",
@@ -332,7 +345,7 @@ def build_heatmap(stats, ticker):
     for month in range(1, 13):
         row_z = []
         row_hover = []
-        for wd in range(5):
+        for wd in range(len(WEEKDAY_LABELS)):
             data = mwd.get((month, wd), {"avg": 0, "count": 0, "win_rate": 0})
             row_z.append(data["avg"])
             row_hover.append(
@@ -424,7 +437,7 @@ def calc_weekly_cumulative(df, years_back, cycle_filter=None):
 
     # Durchschnitt pro Wochentag-Position
     wd_stats = {}
-    for wd in range(5):
+    for wd in range(len(WEEKDAY_LABELS)):
         vals = [c["curve"][c["weekdays"].index(wd)] for c in all_curves if wd in c["weekdays"]]
         if vals:
             wd_stats[wd] = {"avg": np.mean(vals), "std": np.std(vals), "n": len(vals)}
@@ -464,7 +477,7 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
 
     # We are here!
     today_wd = datetime.now().weekday()
-    if 0 <= today_wd <= 4:
+    if 0 <= today_wd < len(WEEKDAY_LABELS):
         today_label = WEEKDAY_LABELS[today_wd]
         if today_wd in wd_stats:
             fig.add_shape(**wah_vline(today_label))
@@ -519,7 +532,7 @@ def calc_overnight_intraday(df, years_back, cycle_filter=None):
     df = df[(df["weekday"] <= 4)].dropna(subset=["overnight", "intraday"])
 
     results = {}
-    for wd in range(5):
+    for wd in range(len(WEEKDAY_LABELS)):
         sub = df[df["weekday"] == wd]
         if len(sub) < 10:
             results[wd] = {"overnight": 0, "intraday": 0, "n": 0}
@@ -534,7 +547,7 @@ def calc_overnight_intraday(df, years_back, cycle_filter=None):
 
 def build_overnight_intraday_chart(oi_stats, ticker):
     """Gestackte Bars: Overnight + Intraday pro Wochentag."""
-    wds = list(range(5))
+    wds = list(range(len(WEEKDAY_LABELS)))
     overnight = [oi_stats[w]["overnight"] for w in wds]
     intraday = [oi_stats[w]["intraday"] for w in wds]
     total = [o + i for o, i in zip(overnight, intraday)]
@@ -560,7 +573,7 @@ def build_overnight_intraday_chart(oi_stats, ticker):
 
     # We are here!
     today_wd = datetime.now().weekday()
-    if 0 <= today_wd <= 4:
+    if 0 <= today_wd < len(WEEKDAY_LABELS):
         fig.add_shape(**wah_rect(
             x0=today_wd - 0.4, x1=today_wd + 0.4,
             y0=min(0, total[today_wd]), y1=max(0, total[today_wd])))
@@ -683,7 +696,7 @@ def calc_quarterly_weekday(df, years_back, cycle_filter=None):
 
     results = {}
     for q in range(1, 5):
-        for wd in range(5):
+        for wd in range(len(WEEKDAY_LABELS)):
             sub = df[(df["quarter"] == q) & (df["weekday"] == wd)]["daily_ret"]
             results[(q, wd)] = {
                 "avg": sub.mean() if len(sub) > 0 else 0,
@@ -702,14 +715,14 @@ def build_quarterly_heatmaps(q_stats, ticker):
     positions = [(1, 1), (1, 2), (2, 1), (2, 2)]
 
     # Sammle alle Werte fuer globale Farbskala
-    all_vals = [q_stats[(q, wd)]["avg"] for q in range(1, 5) for wd in range(5)]
+    all_vals = [q_stats[(q, wd)]["avg"] for q in range(1, 5) for wd in range(len(WEEKDAY_LABELS))]
     max_abs = max(abs(v) for v in all_vals) if all_vals else 1
 
     today_wd = datetime.now().weekday()
     today_q = (datetime.now().month - 1) // 3 + 1
 
     for q, (row, col) in zip(range(1, 5), positions):
-        z_row = [q_stats[(q, wd)]["avg"] for wd in range(5)]
+        z_row = [q_stats[(q, wd)]["avg"] for wd in range(len(WEEKDAY_LABELS))]
 
         fig.add_trace(go.Heatmap(
             z=[z_row],
@@ -736,7 +749,7 @@ def build_quarterly_heatmaps(q_stats, ticker):
                 row=row, col=col)
 
         # Gelber Rahmen auf aktuelles Quartal + Wochentag
-        if q == today_q and 0 <= today_wd <= 4:
+        if q == today_q and 0 <= today_wd < len(WEEKDAY_LABELS):
             fig.add_shape(type="rect",
                 x0=today_wd - 0.5, x1=today_wd + 0.5,
                 y0=-0.5, y1=0.5,
@@ -768,7 +781,7 @@ def calc_volatility_profile(df, years_back, cycle_filter=None):
     df = df[(df["weekday"] <= 4)].dropna(subset=["range_pct"])
 
     results = {}
-    for wd in range(5):
+    for wd in range(len(WEEKDAY_LABELS)):
         sub = df[df["weekday"] == wd]["range_pct"]
         if len(sub) < 10:
             results[wd] = {"avg": 0, "median": 0, "std": 0, "n": 0}
@@ -784,8 +797,8 @@ def calc_volatility_profile(df, years_back, cycle_filter=None):
 
 def build_volatility_chart(vol_stats, ticker):
     """Bars: durchschnittliche Tages-Range pro Wochentag."""
-    avgs = [vol_stats[wd]["avg"] for wd in range(5)]
-    medians = [vol_stats[wd]["median"] for wd in range(5)]
+    avgs = [vol_stats[wd]["avg"] for wd in range(len(WEEKDAY_LABELS))]
+    medians = [vol_stats[wd]["median"] for wd in range(len(WEEKDAY_LABELS))]
 
     # Farbskala: höchste Vola = intensiveres Rot/Orange
     max_vol = max(avgs) if avgs else 1
@@ -797,7 +810,7 @@ def build_volatility_chart(vol_stats, ticker):
         text=[f"{v:.2f}%<br>Med: {m:.2f}%" for v, m in zip(avgs, medians)],
         textposition="outside", textfont=dict(size=10),
         hovertemplate="<b>%{x}</b><br>Ø Range: %{y:.2f}%<br>n=%{customdata}<extra></extra>",
-        customdata=[vol_stats[wd]["n"] for wd in range(5)]))
+        customdata=[vol_stats[wd]["n"] for wd in range(len(WEEKDAY_LABELS))]))
 
     # Durchschnittslinie
     overall_avg = np.mean(avgs)
@@ -807,7 +820,7 @@ def build_volatility_chart(vol_stats, ticker):
 
     # We are here!
     today_wd = datetime.now().weekday()
-    if 0 <= today_wd <= 4:
+    if 0 <= today_wd < len(WEEKDAY_LABELS):
         fig.add_shape(**wah_rect(x0=today_wd - 0.4, x1=today_wd + 0.4, y0=0, y1=avgs[today_wd]))
         fig.add_annotation(**wah_annotation(
             x_val=WEEKDAY_LABELS[today_wd], y_val=avgs[today_wd],
@@ -911,6 +924,15 @@ def main():
         st.warning("Nicht genügend Daten für die Analyse.")
         return
 
+    # ── Crypto-Erkennung: Labels dynamisch setzen ────
+    global WEEKDAY_LABELS, WEEKDAY_LABELS_SHORT
+    if stats.get("is_crypto", False):
+        WEEKDAY_LABELS = WEEKDAY_LABELS_7
+        WEEKDAY_LABELS_SHORT = WEEKDAY_LABELS_SHORT_7
+    else:
+        WEEKDAY_LABELS = WEEKDAY_LABELS_5
+        WEEKDAY_LABELS_SHORT = WEEKDAY_LABELS_SHORT_5
+
     # ── Zyklusfilter-Info ──────────────────────────────
     if cycle_filter:
         cycle_info = ", ".join([c.split("(")[1].rstrip(")") for c in cycle_filter])
@@ -951,7 +973,7 @@ def main():
     # ── Signifikanztest (optional) ────────────────────
     from shared.significance_gauge import run_significance_test, render_significance_section
     sig_groups = {WEEKDAY_LABELS[wd]: stats["by_weekday"][wd]["returns"]
-                  for wd in range(5) if stats["by_weekday"][wd]["returns"]}
+                  for wd in range(len(WEEKDAY_LABELS)) if stats["by_weekday"][wd]["returns"]}
     sig_results = run_significance_test(sig_groups)
     render_significance_section(sig_results,
         expander_title="📊 Statistische Signifikanz der Wochentags-Effekte",
@@ -964,7 +986,7 @@ def main():
     # ── Detailtabelle ─────────────────────────────────
     with st.expander("📋 Statistik pro Wochentag", expanded=True):
         wd_rows = []
-        for wd in range(5):
+        for wd in range(len(WEEKDAY_LABELS)):
             d = stats["by_weekday"][wd]
             wd_rows.append({
                 "Wochentag": WEEKDAY_LABELS[wd],
