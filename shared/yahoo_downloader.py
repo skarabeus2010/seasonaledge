@@ -1,5 +1,6 @@
 # shared/yahoo_downloader.py
 # Direkter Yahoo Finance Downloader — ersetzt yfinance komplett.
+from __future__ import annotations
 
 import requests
 import pandas as pd
