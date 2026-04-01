@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 22.0 | 2026-04-01 | Details → `docs/`
+> Version 23.0 | 2026-04-02 | Details → `docs/`
 
 ## Projekt
 
@@ -57,6 +57,10 @@ shared/                  ← Berechnungen, Daten, Utilities
     plain_vanilla.py     ← 24 Plain Vanilla Strategien (Sell in May, KTI, UECS etc.)
     definitions.py       ← Strategie-Metadaten (65+ Eintraege)
     kaeppel.py           ← Jay Kaeppel Strategien
+landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
+  index.html             ← Komplette Landing Page (inline CSS + vanilla JS)
+  content.md             ← Content-Quelle (Markdown, wie Blog-Workflow)
+  assets/                ← Fonts, Images (OG, Favicon)
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
   seo_template.html        ← Jinja2 Landingpage-Template
@@ -457,6 +461,17 @@ UPPER_CASE        → Konstanten
 - [x] TOM Heatmap Fix: Gleicher Plotly-Kategorie Fix (Monatswechsel Page) (2026-04-01)
 - [x] log_return Spalte in Supabase: Vorberechnet fuer alle 263 Ticker (2026-04-01)
 - [x] Nightly-Refresh: 60 Tage → 5 Tage (historische Daten bleiben unveraendert) (2026-04-01)
+- [x] Landing Page: Statisches HTML/CSS, institutional-grade Design (2026-04-02)
+      Deep-Space-Blue #0f172a, Electric-Blue #3b82f6, Lucide SVG Icons, Inter Font.
+      10 Sektionen: Hero, Demo (From Noise to Signal), Social Proof, 6 Zyklen,
+      KI-Features, Methodik, Pricing (hidden), Newsletter, Footer.
+      Nav: Zyklen/Strategien/Mehr (Dropdowns) + Blog + Zur Analyse.
+      Backend-Hooks: #hero-chart-container fuer spaetere Chart-Injection.
+      SEO: Schema.org (SoftwareApplication + Organization + FAQPage).
+- [ ] Landing Page: nginx.conf + docker-compose.yml (/ → Landing, /app/ → Streamlit)
+- [ ] Landing Page: Echten Split-Slider in #hero-chart-container injizieren
+- [ ] Landing Page: OG-Image generieren (1200x630)
+- [ ] Landing Page: Inter Font self-hosted (woff2)
 
 ## Docs (bei Bedarf lesen)
 
