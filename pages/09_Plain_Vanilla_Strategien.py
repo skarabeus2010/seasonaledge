@@ -217,10 +217,17 @@ def main():
             eq_vals = [e[1] for e in equity]
 
             fig = go.Figure()
+
+            # Baseline für Fill (unsichtbar)
+            _y_min = min(eq_vals) * 0.95
+            fig.add_trace(go.Scatter(
+                x=eq_dates, y=[_y_min] * len(eq_dates),
+                mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip",
+            ))
             fig.add_trace(go.Scatter(
                 x=eq_dates, y=eq_vals,
                 mode="lines",
-                fill="tozeroy",
+                fill="tonexty",
                 fillcolor="rgba(0,212,170,0.08)",
                 line=dict(color=SE_COLORS["accent"], width=2.5),
                 name="Portfolio",
