@@ -468,14 +468,27 @@ def build_weekly_cumulative_chart(wd_stats, ticker, current_week_curve=None):
         name="Ø Wochenverlauf",
         hovertemplate="<b>%{x}</b><br>Kum. Rendite: %{y:+.2f}%<extra></extra>"))
 
-    # Aktueller Wochenverlauf
+    # Aktueller Wochenverlauf (eigene Y-Achse rechts)
     if current_week_curve:
         cw_labels, cw_vals = current_week_curve
         fig.add_trace(go.Scatter(x=cw_labels, y=cw_vals, mode="lines+markers",
             line=dict(color="#F1C40F", width=2.5),
             marker=dict(size=8, color="#F1C40F", symbol="diamond"),
             name="Diese Woche",
-            hovertemplate="<b>%{x}</b><br>%{y:+.2f}%<extra></extra>"))
+            yaxis="y2",
+            hovertemplate="<b>%{x}</b><br>Diese Woche: %{y:+.2f}%<extra></extra>"))
+
+        fig.update_layout(
+            yaxis2=dict(
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                ticksuffix="%",
+                tickformat="+.2f",
+                title=dict(text="Diese Woche %", font=dict(color="#F1C40F", size=11)),
+                tickfont=dict(color="#F1C40F", size=10),
+            ),
+        )
 
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)")
 
