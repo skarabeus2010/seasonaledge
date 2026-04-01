@@ -497,8 +497,12 @@ st.markdown(
     f'border-top:2px solid rgba(255,68,68,0.2);">'
     f'<span style="color:#ff4444; font-size:1.3rem; font-weight:700;">'
     f'📉 Drawdown &amp; Risiko</span>'
-    f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.9rem; margin-top:0.3rem;">'
-    f'Wann im Jahr passieren die größten Rücksetzer?</p>'
+    f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.9rem; margin-top:0.3rem; '
+    f'max-width:700px; margin-left:auto; margin-right:auto;">'
+    f'Der Drawdown misst den maximalen Rückgang vom Jahreshoch in Prozent. '
+    f'Jede Linie zeigt den <b>Durchschnitt aller Jahre mit derselben Dekaden-Endziffer</b> '
+    f'(z.B. x6 = 1896, 1906, 1916, …, 2016, 2026). '
+    f'Das aktuelle Jahr {CURRENT_YEAR} ist als goldene Linie hervorgehoben.</p>'
     f'</div>',
     unsafe_allow_html=True,
 )
@@ -517,6 +521,8 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
     _dd_kpi_data = {}
 
     for digit in range(10):
+        if not show_digits.get(digit, True):
+            continue
         d = decade_data[digit]
         if d["n"] == 0 or not d["curves"]:
             continue
@@ -596,6 +602,8 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
                 _cur_dd_val = f"{_cy_d[-1]:.1f}%"
                 _cur_dd_clr = "#ff4444" if _cy_d[-1] < -1 else "#34d399"
 
+        _recovery_str = f'{_dd_kpi_data["avg_recovery_days"]:.0f} Tage' if _dd_kpi_data.get("avg_recovery_days") else "–"
+
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Max Drawdown</div>'
@@ -606,8 +614,8 @@ with st.expander("📉 Ø Drawdown-Verlauf nach Dekade", expanded=True):
                         f'<div style="{_val}color:#ff2222;">{_dd_kpi_data["worst_max_dd"]:.1f}%</div></div>',
                         unsafe_allow_html=True)
         with c3:
-            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Zeit im Drawdown</div>'
-                        f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_dd_kpi_data["avg_time_in_dd"]:.0f}%</div></div>',
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Recovery</div>'
+                        f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_recovery_str}</div></div>',
                         unsafe_allow_html=True)
         with c4:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Aktueller DD {CURRENT_YEAR}</div>'
@@ -624,32 +632,41 @@ with st.expander("📋 Worst Drawdown pro Dekade — Historische Extremjahre", e
             continue
         curves_np = [np.array(c) for c in d["curves"]]
         for i, c in enumerate(curves_np):
-            dd = compute_drawdown_series(c, base=100.0)
             stats = compute_drawdown_stats(c, base=100.0)
+            rec_str = f'{stats["recovery_days"]} Tage' if stats["recovered"] else "nicht erholt"
             _worst_rows.append({
                 "Dekade": f"x{digit}",
                 "Jahr": d["years"][i],
                 "Max DD": stats["max_drawdown"],
                 "Ø DD": stats["avg_drawdown"],
-                "Tage im DD": f'{stats["time_in_dd_pct"]:.0f}%',
-                "Recovery": f'{stats["recovery_days"]} Tage',
+                "Recovery": rec_str,
             })
 
     if _worst_rows:
         _worst_df = pd.DataFrame(_worst_rows).sort_values("Max DD", ascending=True)
-        # Top 20 schlimmste Jahre
         _top20 = _worst_df.head(20).reset_index(drop=True)
 
-        def _dd_color(v):
+        def _dd_color_max(v):
             if isinstance(v, (int, float)) and v < 0:
-                intensity = min(abs(v) / 60, 1.0)
-                r = int(255 * intensity)
-                return f"color: rgb({r}, {int(50*(1-intensity))}, {int(50*(1-intensity))}); font-weight: bold"
+                intensity = min(abs(v) / 80, 1.0)
+                r = int(200 + 55 * intensity)
+                g = int(100 * (1 - intensity))
+                return f"color: rgb({r}, {g}, {g}); font-weight: bold"
+            return ""
+
+        def _dd_color_avg(v):
+            if isinstance(v, (int, float)) and v < 0:
+                intensity = min(abs(v) / 40, 1.0)
+                r = int(180 + 75 * intensity)
+                g = int(140 * (1 - intensity) + 80)
+                b = int(140 * (1 - intensity) + 80)
+                return f"color: rgb({r}, {g}, {b})"
             return ""
 
         _styled = (
             _top20.style
-            .applymap(_dd_color, subset=["Max DD", "Ø DD"])
+            .applymap(_dd_color_max, subset=["Max DD"])
+            .applymap(_dd_color_avg, subset=["Ø DD"])
             .format({
                 "Max DD": lambda v: f"{v:.1f}%",
                 "Ø DD": lambda v: f"{v:.1f}%",

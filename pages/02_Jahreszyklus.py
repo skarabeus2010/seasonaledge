@@ -1030,13 +1030,26 @@ def main():
                     st.markdown(f'<div style="{_card}"><div style="{_lbl}">Worst DD</div>'
                                 f'<div style="{_val}color:#ff2222;">{_kpi["worst_max_dd"]:.1f}%</div></div>',
                                 unsafe_allow_html=True)
+                _recovery_str = f'{_kpi["avg_recovery_days"]:.0f} Tage' if _kpi.get("avg_recovery_days") else "–"
                 with k3:
-                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Zeit im DD</div>'
-                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_kpi["avg_time_in_dd"]:.0f}%</div></div>',
-                                unsafe_allow_html=True)
-                with k4:
                     st.markdown(f'<div style="{_card}"><div style="{_lbl}">Ø Recovery</div>'
-                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_kpi["avg_recovery_days"]:.0f} Tage</div></div>',
+                                f'<div style="{_val}color:{SE_COLORS["text_primary"]};">{_recovery_str}</div></div>',
+                                unsafe_allow_html=True)
+
+                # Aktueller DD
+                _cur_dd_str = "–"
+                _cur_dd_c = SE_COLORS["text_primary"]
+                if show_current and _cur_year in year_data:
+                    _cur_c = np.array(year_data[_cur_year]["full_365"])
+                    from shared.drawdown_analysis import compute_drawdown_series as _cds
+                    _cur_dd_arr = _cds(_cur_c, base=100.0)
+                    _today_idx = min(datetime.now().timetuple().tm_yday - 1, len(_cur_dd_arr) - 1)
+                    _cur_dd_now = _cur_dd_arr[_today_idx]
+                    _cur_dd_str = f"{_cur_dd_now:.1f}%"
+                    _cur_dd_c = "#ff4444" if _cur_dd_now < -1 else "#34d399"
+                with k4:
+                    st.markdown(f'<div style="{_card}"><div style="{_lbl}">Aktueller DD {_cur_year}</div>'
+                                f'<div style="{_val}color:{_cur_dd_c};">{_cur_dd_str}</div></div>',
                                 unsafe_allow_html=True)
 
             # Perzentil-Bar: Aktueller DD vs. Historie

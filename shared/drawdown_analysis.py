@@ -93,7 +93,7 @@ def compute_drawdown_stats(curve: np.ndarray, base: float = 100.0) -> dict:
     Einzelne Kurve → Drawdown-Statistiken.
 
     Returns:
-        dict mit: max_drawdown, avg_drawdown, max_dd_day, recovery_days, time_in_dd_pct
+        dict mit: max_drawdown, avg_drawdown, max_dd_day, recovery_days, recovered
     """
     dd = compute_drawdown_series(curve, base)
 
@@ -101,25 +101,26 @@ def compute_drawdown_stats(curve: np.ndarray, base: float = 100.0) -> dict:
     avg_dd = float(np.mean(dd))
     max_dd_day = int(np.argmin(dd))
 
-    # Zeit im Drawdown (% der Tage mit DD < -0.1%)
-    in_dd = np.sum(dd < -0.1) / len(dd) * 100
-
-    # Recovery: Tage vom Max-DD bis wieder 0 (oder Ende)
+    # Recovery: Tage vom Max-DD bis DD wieder >= -1% (praktisch erholt)
     recovery = 0
-    if max_dd < -0.1:
+    recovered = False
+    if max_dd < -0.5:
         after_max = dd[max_dd_day:]
-        recovered = np.where(after_max >= -0.01)[0]
-        if len(recovered) > 0:
-            recovery = int(recovered[0])
+        recovered_idx = np.where(after_max >= -1.0)[0]
+        if len(recovered_idx) > 0:
+            recovery = int(recovered_idx[0])
+            recovered = True
         else:
-            recovery = len(after_max)  # nicht erholt bis Jahresende
+            # Nicht erholt bis Jahresende → zeige Restlänge als "nicht erholt"
+            recovery = len(after_max)
+            recovered = False
 
     return {
         "max_drawdown": round(max_dd, 2),
         "avg_drawdown": round(avg_dd, 2),
         "max_dd_day": max_dd_day,
         "recovery_days": recovery,
-        "time_in_dd_pct": round(in_dd, 1),
+        "recovered": recovered,
     }
 
 
@@ -136,8 +137,8 @@ def compute_drawdown_kpi(curves: list[np.ndarray], base: float = 100.0) -> dict:
     stats_list = [compute_drawdown_stats(c, base) for c in curves]
 
     max_dds = [s["max_drawdown"] for s in stats_list]
-    recoveries = [s["recovery_days"] for s in stats_list]
-    time_in_dd = [s["time_in_dd_pct"] for s in stats_list]
+    # Recovery nur für Jahre die sich erholt haben
+    recovered_days = [s["recovery_days"] for s in stats_list if s["recovered"]]
 
     worst_idx = int(np.argmin(max_dds))
 
@@ -145,8 +146,7 @@ def compute_drawdown_kpi(curves: list[np.ndarray], base: float = 100.0) -> dict:
         "avg_max_dd": round(float(np.mean(max_dds)), 2),
         "worst_max_dd": round(float(np.min(max_dds)), 2),
         "worst_dd_idx": worst_idx,
-        "avg_time_in_dd": round(float(np.mean(time_in_dd)), 1),
-        "avg_recovery_days": round(float(np.mean(recoveries)), 0),
+        "avg_recovery_days": round(float(np.mean(recovered_days)), 0) if recovered_days else None,
         "n": len(curves),
     }
 
