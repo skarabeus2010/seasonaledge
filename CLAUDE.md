@@ -402,6 +402,14 @@ UPPER_CASE        → Konstanten
 - [x] Dekadenzyklus Layout: Rendite/Drawdown getrennt, Anomalie-Radar nach oben (2026-04-01)
 - [x] Recovery-Berechnung: Echte Handelstage bis Peak-Preis ueberschritten (auch ueber Jahresende) (2026-04-01)
 - [x] Dekadenzyklus Methodik: Ausfuehrliche Erklaerungen Rendite + Drawdown + Vola + Anomalie (2026-04-01)
+- [x] Supabase-First Daten-Layer: shared/data.py liest erst Supabase, Fallback Yahoo (2026-04-01)
+- [x] Nightly Refresh: Schreibt letzte 60 Tage Preise in Supabase (2026-04-01)
+- [x] Jahreszyklus: DD nach Praesidentenzyklus (Chart + 4 Karten: Avg/Best/Worst) (2026-04-01)
+- [x] Jahreszyklus: DD-Fix base=100→0 (full_365 startet bei 100) (2026-04-01)
+- [x] Jahreszyklus: Layout Rendite/Risiko getrennt (wie Dekadenzyklus) (2026-04-01)
+- [x] Jahreszyklus: DD-Heatmap entfernt (Rendite-Heatmap reicht) (2026-04-01)
+- [x] Blog: Drawdown Crashjahre + Recovery (Education) (2026-04-01)
+- [x] Blog: Rendite vs Drawdown erklaert (Education, mit Screenshots) (2026-04-01)
 
 ## Docs (bei Bedarf lesen)
 
