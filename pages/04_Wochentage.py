@@ -416,14 +416,18 @@ def calc_weekly_cumulative(df, years_back, cycle_filter=None):
 
     df["weekday"] = df.index.weekday
     df["log_ret"] = np.log(df["Close"] / df["Close"].shift(1))
-    df = df[df["weekday"] <= 4].dropna(subset=["log_ret"])
+    _is_crypto = (df["weekday"] >= 5).any()
+    if not _is_crypto:
+        df = df[df["weekday"] <= 4]
+    df = df.dropna(subset=["log_ret"])
 
     # Wochen gruppieren (Woche = Jahr + ISO-Woche)
     df["week_id"] = df.index.isocalendar().year.astype(str) + "_" + df.index.isocalendar().week.astype(str).str.zfill(2)
 
+    _min_days_per_week = 5 if _is_crypto else 4
     all_curves = []
     for wid, wdf in df.groupby("week_id"):
-        if len(wdf) < 4:
+        if len(wdf) < _min_days_per_week:
             continue
         wdf = wdf.sort_index()
         rets = wdf["log_ret"].values
@@ -529,7 +533,9 @@ def calc_overnight_intraday(df, years_back, cycle_filter=None):
     df["weekday"] = df.index.weekday
     df["overnight"] = (df["Open"] / df["Close"].shift(1) - 1) * 100
     df["intraday"] = (df["Close"] / df["Open"] - 1) * 100
-    df = df[(df["weekday"] <= 4)].dropna(subset=["overnight", "intraday"])
+    if not (df["weekday"] >= 5).any():
+        df = df[df["weekday"] <= 4]
+    df = df.dropna(subset=["overnight", "intraday"])
 
     results = {}
     for wd in range(len(WEEKDAY_LABELS)):
@@ -595,12 +601,16 @@ def calc_consecutive_probs(df, years_back, cycle_filter=None):
 
     df["weekday"] = df.index.weekday
     df["daily_ret"] = (df["Close"] / df["Close"].shift(1) - 1) * 100
-    df = df[(df["weekday"] <= 4)].dropna(subset=["daily_ret"])
+    _has_weekend = (df["weekday"] >= 5).any()
+    if not _has_weekend:
+        df = df[df["weekday"] <= 4]
+    df = df.dropna(subset=["daily_ret"])
 
     # Matrix: Von Wochentag X → Wochentag X+1
+    _max_wd = 6 if _has_weekend else 4  # Crypto: Mo-Sa→Di-So, Aktien: Mo-Do→Di-Fr
     matrix = {}
-    for from_wd in range(4):  # Mo→Do (Fr hat keinen Folgetag)
-        to_wd = from_wd + 1
+    for from_wd in range(_max_wd + 1):  # Crypto: 0-6, Aktien: 0-4
+        to_wd = (from_wd + 1) % (7 if _has_weekend else 5)
         for condition in ["pos", "neg"]:
             from_days = df[df["weekday"] == from_wd]
             key = (from_wd, to_wd, condition)
@@ -631,9 +641,13 @@ def calc_consecutive_probs(df, years_back, cycle_filter=None):
 
 def build_consecutive_heatmap(matrix):
     """Heatmap: Bedingte Wahrscheinlichkeit dass Folgetag positiv ist."""
-    # 4 Paare: Mo→Di, Di→Mi, Mi→Do, Do→Fr
-    pairs = [(0, 1), (1, 2), (2, 3), (3, 4)]
-    pair_labels = ["Mo→Di", "Di→Mi", "Mi→Do", "Do→Fr"]
+    _n_wd = len(WEEKDAY_LABELS)
+    if _n_wd == 7:
+        pairs = [(i, (i + 1) % 7) for i in range(7)]
+        pair_labels = [f"{WEEKDAY_LABELS_SHORT[i]}→{WEEKDAY_LABELS_SHORT[(i+1)%7]}" for i in range(7)]
+    else:
+        pairs = [(0, 1), (1, 2), (2, 3), (3, 4)]
+        pair_labels = ["Mo→Di", "Di→Mi", "Mi→Do", "Do→Fr"]
 
     z_data = [[], []]  # [0] = nach positivem Tag, [1] = nach negativem Tag
     hover_data = [[], []]
@@ -778,7 +792,10 @@ def calc_volatility_profile(df, years_back, cycle_filter=None):
 
     df["weekday"] = df.index.weekday
     df["range_pct"] = (df["High"] - df["Low"]) / df["Close"] * 100
-    df = df[(df["weekday"] <= 4)].dropna(subset=["range_pct"])
+    _has_weekend = (df["weekday"] >= 5).any()
+    if not _has_weekend:
+        df = df[df["weekday"] <= 4]
+    df = df.dropna(subset=["range_pct"])
 
     results = {}
     for wd in range(len(WEEKDAY_LABELS)):
@@ -1002,8 +1019,10 @@ def main():
             })
         st.dataframe(pd.DataFrame(wd_rows), use_container_width=True, hide_index=True)
 
-    # ── Overnight vs. Intraday ────────────────────────
-    with st.expander("🌙 Overnight vs. Intraday Split", expanded=True):
+    # ── Overnight vs. Intraday (nur Aktien — Crypto handelt 24/7) ──
+    _is_crypto = stats.get("is_crypto", False)
+    if not _is_crypto:
+      with st.expander("🌙 Overnight vs. Intraday Split", expanded=True):
         oi_stats = calc_overnight_intraday(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
         oi_fig = build_overnight_intraday_chart(oi_stats, ticker)
@@ -1082,14 +1101,14 @@ def main():
             col1, col2 = st.columns(2)
 
             with col1:
-                st.markdown("#### 🟢 Top 10 beste Kombinationen")
+                st.markdown("<p style='font-size:14px; font-weight:700; color:#34d399; margin:0.5rem 0 0.3rem;'>🟢 Top 10 beste Kombinationen</p>", unsafe_allow_html=True)
                 top_df = pd.DataFrame(sorted_combos[:10])
                 top_df["Ø Rendite"] = top_df["Ø Rendite"].apply(lambda x: f"{x:+.2f}%")
                 top_df["Win Rate"] = top_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
                 st.dataframe(top_df, use_container_width=True, hide_index=True)
 
             with col2:
-                st.markdown("#### 🔴 Top 10 schlechteste Kombinationen")
+                st.markdown("<p style='font-size:14px; font-weight:700; color:#ff6b6b; margin:0.5rem 0 0.3rem;'>🔴 Top 10 schlechteste Kombinationen</p>", unsafe_allow_html=True)
                 flop_df = pd.DataFrame(sorted_combos[-10:][::-1])
                 flop_df["Ø Rendite"] = flop_df["Ø Rendite"].apply(lambda x: f"{x:+.2f}%")
                 flop_df["Win Rate"] = flop_df["Win Rate"].apply(lambda x: f"{x:.0f}%")
@@ -1106,6 +1125,46 @@ def main():
         **Filter:** {filter_mode}
         **Präsidentenzyklus:** {cycle_str}
         **Handelstage analysiert:** {stats['filtered_count']}
+        """)
+
+    # ── Methodik ──────────────────────────────────────────
+    with st.expander("ℹ️ Methodik"):
+        _crypto_note = " Crypto-Assets handeln 7 Tage/Woche — Samstag und Sonntag werden automatisch einbezogen." if _is_crypto else ""
+        st.markdown(f"""
+### Datengrundlage
+
+- **Ticker:** {ticker}
+- **Analyse-Zeitraum:** {years_back} Jahre
+- **Rendite-Modus:** {return_mode}
+- **Filter:** {filter_mode}{_crypto_note}
+
+### Rendite-Analyse
+
+- **Wochentag-Rendite:** Für jeden Handelstag wird die Rendite gemäß dem gewählten Modus berechnet (z.B. Close→Close: Schlusskurs heute vs. Schlusskurs morgen).
+- **Kumulierter Wochenverlauf:** Zeigt, wie sich die Wochenrendite von Montag bis {"Sonntag" if _is_crypto else "Freitag"} aufbaut. Jede Woche wird einzeln berechnet (log-Returns kumuliert), dann über alle Wochen gemittelt.
+- **Win-Rate:** Anteil der Tage mit positiver Rendite (in %).
+- **Signifikanz-Tachos:** t-Test pro Wochentag: p < 0,05 = statistisch signifikant (grün). Ein signifikanter Wochentag hat eine Rendite, die sich statistisch vom Zufall unterscheidet.
+
+### Overnight vs. Intraday
+
+- **Overnight:** Schlusskurs gestern → Eröffnung heute. Misst die Kursänderung über Nacht (Nachrichten, Gaps).
+- **Intraday:** Eröffnung → Schluss. Misst die Kursänderung während der Handelszeit.
+- {"**Hinweis:** Bei Crypto (24/7-Handel) ist diese Zerlegung nicht aussagekräftig und wird daher ausgeblendet." if _is_crypto else "Die Summe ergibt die Close→Close Rendite."}
+
+### Konsekutiv-Analyse
+
+- **Folgetag-Wahrscheinlichkeit:** Wie wahrscheinlich ist ein positiver Folgetag, wenn heute positiv (↑) oder negativ (↓) war?
+- **Heatmap:** Zeigt die bedingte Wahrscheinlichkeit für jedes Wochentag-Paar (z.B. Montag↑ → Dienstag↑: 58%).
+
+### Volatilitäts-Profil
+
+- **Tages-Range:** (High – Low) / Close × 100. Misst die Schwankungsbreite an jedem Wochentag.
+- **Interpretation:** Höhere Range = volatilerer Handelstag. Montage und Freitage sind bei Aktien oft volatiler als Mittwoche.
+
+### Monat × Wochentag Heatmap
+
+- **Matrix:** Zeilen = Monate (Jan–Dez), Spalten = Wochentage. Farbe = Ø Rendite.
+- **Top 10 Kombinationen:** Die 10 besten und schlechtesten Monat-Wochentag-Paare nach Durchschnittsrendite.
         """)
 
     render_footer()
