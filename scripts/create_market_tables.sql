@@ -97,6 +97,25 @@ CREATE TABLE IF NOT EXISTS tdom_stats (
 
 CREATE INDEX IF NOT EXISTS idx_tdom_stats_ticker ON tdom_stats (ticker);
 
+-- ── TDoY Stats (900 Ticker x ~504 TDoY-Werte: forward + backward) ───────────
+
+CREATE TABLE IF NOT EXISTS tdoy_stats (
+    id BIGSERIAL PRIMARY KEY,
+    ticker TEXT NOT NULL,
+    tdoy INT NOT NULL,
+    direction TEXT NOT NULL,          -- 'forward' oder 'backward'
+    strategy TEXT NOT NULL,           -- 'open_to_close','open_to_next_open','close_to_next_close'
+    avg_return FLOAT,
+    median_return FLOAT,
+    win_rate FLOAT,
+    std_dev FLOAT,
+    count INT,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(ticker, tdoy, direction, strategy)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tdoy_stats_ticker ON tdoy_stats (ticker);
+
 -- ── Spot-Vol Beta (taeglich) ──────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS spot_vol_beta (
@@ -174,6 +193,7 @@ ALTER TABLE monthly_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ki_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scanner_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tdom_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tdoy_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE spot_vol_beta ENABLE ROW LEVEL SECURITY;
 ALTER TABLE historical_cpi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickers ENABLE ROW LEVEL SECURITY;
@@ -187,6 +207,7 @@ CREATE POLICY "anon_read" ON monthly_stats FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON ki_scores FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON scanner_results FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON tdom_stats FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_read" ON tdoy_stats FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON spot_vol_beta FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON historical_cpi FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_read" ON tickers FOR SELECT TO anon USING (true);

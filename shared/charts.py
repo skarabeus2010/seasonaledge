@@ -200,25 +200,27 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
     # ── Hover-Lookup: Datum, CDOY, TDOY, TDOM für jeden der 365 Tage ──
     hover_texts = []
     current_year = datetime.now().year
-    
-    # Schritt 1: Bekannte Handelstage aus den echten Daten (Vergangenheit)
+
+    # Schritt 1: Bekannte Handelstage aus den echten Daten
+    # preprocess() liefert bereits tdoy-Spalte; TDOM wird hier berechnet
     tdoy_map = {}  # cdoy → tdoy
     tdom_map = {}  # cdoy → tdom
-    
+
     if df is not None:
         cy_df = df[df["year"] == current_year].copy()
         if len(cy_df) > 0:
             cy_df = cy_df.sort_index()
-            cy_df["tdoy"] = range(1, len(cy_df) + 1)
+            # tdoy kommt aus preprocess(); Fallback falls nicht vorhanden
+            if "tdoy" not in cy_df.columns:
+                cy_df["tdoy"] = range(1, len(cy_df) + 1)
             cy_df["tdom"] = cy_df.groupby("month").cumcount() + 1
-            
+
             for _, row in cy_df.iterrows():
                 cdoy = int(row["day_of_year"])
                 tdoy_map[cdoy] = int(row["tdoy"])
                 tdom_map[cdoy] = int(row["tdom"])
-    
+
     # Schritt 2: Zukünftige Handelstage projizieren (Wochenenden + Feiertage auslassen)
-    # Sammle NYSE-Feiertage für das aktuelle Jahr
     holiday_dates = set()
     try:
         for hol in get_nyse_holidays(current_year):
@@ -226,56 +228,52 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
             holiday_dates.add(hd.timetuple().tm_yday)
     except Exception:
         pass
-    
-    # Finde den letzten bekannten TDOY und TDOM
+
     last_known_cdoy = max(tdoy_map.keys()) if tdoy_map else 0
     last_tdoy = tdoy_map.get(last_known_cdoy, 0)
-    
-    # Für TDOM: letzten bekannten Monat und TDOM merken
+
     last_known_month = 0
     last_tdom = 0
     if tdom_map and last_known_cdoy > 0:
         dt_last = datetime(current_year, 1, 1) + pd.Timedelta(days=last_known_cdoy - 1)
         last_known_month = dt_last.month
         last_tdom = tdom_map[last_known_cdoy]
-    
-    # Projiziere ab dem letzten bekannten Tag weiter
+
     projected_tdoy = last_tdoy
     projected_tdom = last_tdom
     projected_month = last_known_month
-    
+
     for cdoy in range(last_known_cdoy + 1, 366):
         try:
             dt = datetime(current_year, 1, 1) + pd.Timedelta(days=cdoy - 1)
         except Exception:
             continue
-        
+
         wd = dt.weekday()  # 0=Mo, 5=Sa, 6=So
         is_weekend = wd >= 5
         is_holiday = cdoy in holiday_dates
-        
-        # Monatswechsel? → TDOM zurücksetzen
+
         if dt.month != projected_month:
             projected_month = dt.month
             projected_tdom = 0
-        
+
         if not is_weekend and not is_holiday:
             projected_tdoy += 1
             projected_tdom += 1
             tdoy_map[cdoy] = projected_tdoy
             tdom_map[cdoy] = projected_tdom
-    
-    # Schritt 3: Hover-Text bauen — Format wie im Screenshot
+
+    # Schritt 3: Hover-Text bauen
     for cdoy in range(1, 366):
         try:
             dt = datetime(current_year, 1, 1) + pd.Timedelta(days=cdoy - 1)
             date_str = dt.strftime("%d.%m.%Y")
         except Exception:
             date_str = f"Tag {cdoy}"
-        
+
         tdoy_val = tdoy_map.get(cdoy, None)
         tdom_val = tdom_map.get(cdoy, None)
-        
+
         # Für Wochenenden/Feiertage: letzten bekannten Wert mit * anzeigen
         if tdoy_val is None:
             for lookback in range(1, 6):
@@ -284,11 +282,11 @@ def build_seasonal_chart(year_data, avg, std, ticker, smoothing_window,
                     tdoy_val = f"{tdoy_map[prev]}*"
                     tdom_val = f"{tdom_map[prev]}*"
                     break
-        
+
         if tdoy_val is None:
             tdoy_val = "–"
             tdom_val = "–"
-        
+
         hover_texts.append(
             f"<b>{date_str}</b><br>"
             f"CDOY: {cdoy}<br>"

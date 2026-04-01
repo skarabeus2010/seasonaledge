@@ -40,6 +40,7 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
         get_or_compute_monthly_stats,
         get_or_compute_ki_score,
         get_or_compute_tdom_stats,
+        get_or_compute_tdoy_stats,
         store_scanner_results,
     )
 
@@ -96,6 +97,10 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             # TDoM Stats (alle 3 Strategien, forward)
             for strategy in ["open_to_close", "open_to_next_open", "close_to_next_close"]:
                 get_or_compute_tdom_stats(ticker, df, strategy=strategy, direction="forward")
+
+            # TDoY Stats (alle 3 Strategien, forward)
+            for strategy in ["open_to_close", "open_to_next_open", "close_to_next_close"]:
+                get_or_compute_tdoy_stats(ticker, df, strategy=strategy, direction="forward")
 
             elapsed = time.time() - t0
             app_logger.info(

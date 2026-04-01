@@ -812,6 +812,8 @@ def main():
         f"**{ticker}** | {min(selected_years)}–{max(selected_years)} | "
         f"{len(year_data)} Jahre | Glaettung: {smoothing}d"
     )
+    from shared.trading_day_header import render_trading_day_header
+    render_trading_day_header(df)
 
     # ── 1. Saisonalchart ──────────────────────────────────
     fig, pressure_info = build_yearly_chart(

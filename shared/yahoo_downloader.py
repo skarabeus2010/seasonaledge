@@ -242,9 +242,10 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["return"]      = df["Close"].pct_change()
     df["log_return"]  = np.log(df["Close"] / df["Close"].shift(1))
-    df["day_of_year"] = df.index.dayofyear
+    df["day_of_year"] = df.index.dayofyear          # CDOY (Kalendertag)
     df["year"]        = df.index.year
     df["month"]       = df.index.month
+    df["tdoy"]        = df.groupby("year").cumcount() + 1  # TDOY (Handelstag)
     df = df.dropna(subset=["return"])
     return df
 

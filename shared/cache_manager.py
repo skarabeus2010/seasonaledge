@@ -278,3 +278,59 @@ def get_or_compute_tdom_stats(
         app_logger.debug(f"cache_manager: DB-Upsert tdom_stats fehlgeschlagen: {e}")
 
     return records
+
+
+# ── TDoY Stats ──────────────────────────────────────
+
+def get_or_compute_tdoy_stats(
+    ticker: str,
+    df=None,
+    strategy: str = "open_to_close",
+    direction: str = "forward",
+) -> list[dict]:
+    """
+    TDoY-Statistiken aus DB laden, bei Bedarf live berechnen + speichern.
+
+    Returns:
+        list[dict] — TDoY-Stats pro Handelstag des Jahres
+    """
+    try:
+        from shared.supabase_client import fetch_tdoy_stats
+        cached = fetch_tdoy_stats(ticker, strategy, direction)
+        if cached and not _is_stale(cached[0].get("updated_at")):
+            return cached
+    except Exception as e:
+        app_logger.debug(f"cache_manager: DB-Lookup tdoy_stats fehlgeschlagen: {e}")
+
+    # Fallback: Live-Berechnung
+    if df is None or df.empty:
+        return []
+
+    from shared.tdoy_analysis import build_tdoy_stats
+    stats_df = build_tdoy_stats(df, strategy=strategy, direction=direction)
+
+    if stats_df.empty:
+        return []
+
+    records = []
+    for tdoy_val, row in stats_df.iterrows():
+        records.append({
+            "ticker": ticker,
+            "tdoy": int(tdoy_val),
+            "direction": direction,
+            "strategy": strategy,
+            "avg_return": round(float(row["avg_return"]), 4),
+            "median_return": round(float(row["median_return"]), 4),
+            "win_rate": round(float(row["win_rate"]), 1),
+            "std_dev": round(float(row["std_dev"]), 4) if not math.isnan(row["std_dev"]) else 0.0,
+            "count": int(row["count"]),
+        })
+
+    # Store in DB
+    try:
+        from shared.supabase_client import upsert_tdoy_stats
+        upsert_tdoy_stats(records)
+    except Exception as e:
+        app_logger.debug(f"cache_manager: DB-Upsert tdoy_stats fehlgeschlagen: {e}")
+
+    return records

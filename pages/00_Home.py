@@ -181,11 +181,12 @@ html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif !impor
 # ══════════════════════════════════════════════════════════════
 def _subscribe_email(email: str) -> tuple[bool, str]:
     brevo_ok = False
+    brevo_err = ""
     try:
         api_key = st.secrets["brevo_api_key"]
         list_id = int(st.secrets["brevo_list_id"])
     except (KeyError, FileNotFoundError):
-        brevo_ok = True  # Dev-Modus — kein Brevo
+        # Dev-Modus — kein Brevo, nur Supabase
         _save_to_supabase(email, brevo_synced=False)
         return True, "dev_mode"
     try:
@@ -198,16 +199,19 @@ def _subscribe_email(email: str) -> tuple[bool, str]:
         if resp.status_code in (200, 201, 204):
             brevo_ok = True
         elif resp.status_code == 400:
-            return False, "Ungültige E-Mail-Adresse."
+            brevo_err = "Ungültige E-Mail-Adresse."
         else:
-            return False, f"Brevo-Fehler {resp.status_code}"
+            brevo_err = f"Brevo-Fehler {resp.status_code}"
     except requests.exceptions.Timeout:
-        return False, "Timeout — bitte nochmal versuchen."
+        brevo_err = "Timeout — bitte nochmal versuchen."
     except Exception as e:
-        return False, str(e)
+        brevo_err = str(e)
 
-    # Immer auch in Supabase speichern
+    # Immer in Supabase speichern — auch bei Brevo-Fehler
     _save_to_supabase(email, brevo_synced=brevo_ok)
+
+    if brevo_err:
+        return False, brevo_err
     return True, ""
 
 
@@ -527,6 +531,26 @@ st.markdown("<br>", unsafe_allow_html=True)
 # Dow Jones Wars Chart — deaktiviert für Light Live (Performance)
 # Wird in der Vollversion wieder aktiviert.
 
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════
+# SEKTION 4 — TRADING DAY CONVERTER
+# ══════════════════════════════════════════════════════════════
+
+try:
+    from shared.yahoo_downloader import download_data, preprocess
+    from shared.trading_day_header import render_converter_widget
+
+    _conv_df = preprocess(download_data("^GSPC"))
+    if _conv_df is not None and not _conv_df.empty:
+        # TDOM-Spalte sicherstellen
+        if "tdom" not in _conv_df.columns:
+            _conv_df["tdom"] = _conv_df.groupby(["year", "month"]).cumcount() + 1
+        render_converter_widget(_conv_df)
+except Exception:
+    pass  # Converter nicht kritisch — bei Fehler einfach ausblenden
 
 st.markdown("<br>", unsafe_allow_html=True)
 

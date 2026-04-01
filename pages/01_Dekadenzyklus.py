@@ -115,6 +115,8 @@ st.caption(
     f"**{total_years} vollständige Jahre** · "
     f"Aktuelles Jahr: **{CURRENT_YEAR}** (X{CURRENT_DIGIT}-Kohorte)"
 )
+from shared.trading_day_header import render_trading_day_header
+render_trading_day_header(df)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. LINIEN-CHART: Ø-Jahresverläufe pro Kohorte

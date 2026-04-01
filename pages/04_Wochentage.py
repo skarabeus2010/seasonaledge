@@ -924,6 +924,9 @@ def main():
             f"{stats['filtered_count']} von {stats['total_count']} Tagen passieren den Filter ({pct:.0f}%)"
         )
 
+    from shared.trading_day_header import render_trading_day_header
+    render_trading_day_header(raw_df)
+
     # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
     with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
         wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,

@@ -410,6 +410,9 @@ def main():
     from shared.outlier_manager import filter_year_data, outlier_info_box
     outlier_info_box([], outlier_method)
 
+    from shared.trading_day_header import render_trading_day_header
+    render_trading_day_header(df)
+
     # ── Analyse ───────────────────────────────────────
     tom_result = analyze_turn_of_month(df, tom_days_before, tom_days_after, tom_months, selected_years)
     

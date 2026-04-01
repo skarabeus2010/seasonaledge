@@ -88,6 +88,36 @@ def upsert_seasonality(records: list[dict]):
     ).execute()
 
 
+# ── TDoY Stats ─────────────────────────────────────
+
+def upsert_tdoy_stats(records: list[dict]):
+    """TDoY-Statistiken in Supabase upserten (Batch)."""
+    if not records:
+        return
+    get_client().table("tdoy_stats").upsert(
+        records, on_conflict="ticker,tdoy,direction,strategy"
+    ).execute()
+
+
+def fetch_tdoy_stats(
+    ticker: str,
+    strategy: str = "open_to_close",
+    direction: str = "forward",
+) -> list[dict]:
+    """Vorberechnete TDoY-Statistiken für einen Ticker laden."""
+    return (
+        get_client()
+        .table("tdoy_stats")
+        .select("*")
+        .eq("ticker", ticker)
+        .eq("strategy", strategy)
+        .eq("direction", direction)
+        .order("tdoy")
+        .execute()
+        .data
+    )
+
+
 # ── App Logs ────────────────────────────────────────
 
 def insert_log(level: str, channel: str, message: str, user_email: str = None):
