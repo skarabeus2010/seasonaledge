@@ -208,7 +208,7 @@ def convert_trading_days(
 def render_converter_widget(df: pd.DataFrame):
     """
     Rendert den Trading Day Converter als Streamlit-Widget.
-    Wird auf der Home-Page eingebunden.
+    Einfach: Kalender-Datepicker → zeigt sofort TDOM + TDOY.
     """
     if df is None or df.empty:
         return
@@ -221,75 +221,34 @@ def render_converter_widget(df: pd.DataFrame):
         f'<h2 style="color:{SE_COLORS["text_primary"]}; font-size:1.6rem; '
         f'margin:0.3rem 0 0.5rem 0;">Trading Day Converter</h2>'
         f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.95rem; '
-        f'max-width:600px; margin:0 auto;">Kalendertag, TDOM und TDOY '
-        f'umrechnen &mdash; basierend auf echten Handelstagen (S&amp;P 500)</p>'
+        f'max-width:600px; margin:0 auto;">'
+        f'Datum auswählen &mdash; TDOM und TDOY werden sofort angezeigt '
+        f'(S&amp;P 500 Handelstage)</p>'
         f'</div>',
         unsafe_allow_html=True,
     )
 
-    # ── Input-Bereich ──
-    col_type, col_val, col_month, col_btn = st.columns([2, 1.5, 2, 1])
-
-    with col_type:
-        input_type = st.selectbox(
-            "Eingabe-Typ",
-            options=["calendar_day", "tdoy", "tdom"],
-            format_func=lambda x: {
-                "calendar_day": "Kalendertag (CDOY 1-366)",
-                "tdoy": "Handelstag des Jahres (TDOY)",
-                "tdom": "Handelstag des Monats (TDOM)",
-            }[x],
-            key="converter_type",
+    # ── Kalender-Input (zentriert) ──
+    _spacer_l, col_cal, _spacer_r = st.columns([1, 2, 1])
+    with col_cal:
+        selected_date = st.date_input(
+            "Datum wählen",
+            value=date.today(),
+            min_value=date(2000, 1, 1),
+            max_value=date(date.today().year, 12, 31),
+            key="converter_date",
+            label_visibility="collapsed",
         )
 
-    with col_val:
-        # Sinnvolle Defaults je nach Typ
-        today = datetime.now()
-        if input_type == "calendar_day":
-            default_val = today.timetuple().tm_yday
-            max_val = 366
-        elif input_type == "tdoy":
-            default_val = _get_current_tdoy(df) or 1
-            max_val = int(df[df["year"] == today.year]["tdoy"].max()) if "tdoy" in df.columns else 366
-        else:
-            default_val = _get_current_tdom(df) or 1
-            max_val = 23
-
-        value = st.number_input(
-            "Wert",
-            min_value=1,
-            max_value=max_val,
-            value=min(default_val, max_val),
-            step=1,
-            key="converter_value",
-        )
-
-    with col_month:
-        if input_type == "tdom":
-            month = st.selectbox(
-                "Monat",
-                options=list(range(1, 13)),
-                index=today.month - 1,
-                format_func=lambda m: MONTH_NAMES_DE[m - 1],
-                key="converter_month",
-            )
-        else:
-            st.markdown("<br>", unsafe_allow_html=True)
-            month = None
-
-    with col_btn:
-        st.markdown("<br>", unsafe_allow_html=True)
-        convert_clicked = st.button("Umrechnen", key="converter_btn", type="primary")
-
-    # ── Ergebnis ──
-    if convert_clicked or st.session_state.get("converter_result"):
-        result = convert_trading_days(df, input_type, int(value), month=month)
+    # ── Sofort umrechnen ──
+    if selected_date:
+        cdoy = selected_date.timetuple().tm_yday
+        result = convert_trading_days(df, "calendar_day", cdoy, year=selected_date.year)
 
         if result:
-            st.session_state["converter_result"] = result
             _render_converter_result(result)
         else:
-            st.warning("Kein Handelstag gefunden. Bitte Eingabe prüfen.")
+            st.info("Kein Handelstag — Wochenende oder Feiertag.")
 
 
 def _render_converter_result(r: dict):
