@@ -6,6 +6,7 @@ Fallback auf Yahoo Finance + Stooq (langsam, ~3-7s).
 
 Alle Pages importieren: from shared.data import download_data, preprocess
 """
+from __future__ import annotations
 
 import pandas as pd
 import numpy as np

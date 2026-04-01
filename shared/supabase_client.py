@@ -1,6 +1,7 @@
 """
 shared/supabase_client.py — Supabase DB-Connector für SeasonAlpha
 """
+from __future__ import annotations
 import os
 
 try:
