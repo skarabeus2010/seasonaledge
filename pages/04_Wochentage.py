@@ -1087,16 +1087,21 @@ def build_weekend_heatmap(we_stats, ticker):
     if not years:
         return None
 
-    year_labels = [str(y) for y in years]
+    # Jahreslabels mit Leerzeichen suffixen — verhindert dass Plotly
+    # numerische Strings ("2021") als Zahlen auf linearer Achse interpretiert
+    year_labels = [f" {y} " for y in years]
     z_values = []
     hover_texts = []
+    text_values = []
 
     for month in range(1, 13):
         row_z = []
         row_hover = []
+        row_text = []
         for year in years:
             data = we_stats["by_month_year"].get((month, year), {"avg": 0, "count": 0, "win_rate": 0})
             row_z.append(data["avg"])
+            row_text.append(f"{data['avg']:+.2f}%")
             row_hover.append(
                 f"<b>{MONTH_NAMES_DE[month-1]} {year}</b><br>"
                 f"Ø Weekend: {data['avg']:+.3f}%<br>"
@@ -1105,11 +1110,15 @@ def build_weekend_heatmap(we_stats, ticker):
             )
         z_values.append(row_z)
         hover_texts.append(row_hover)
+        text_values.append(row_text)
 
     fig = go.Figure(go.Heatmap(
         z=z_values,
         x=year_labels,
         y=MONTH_NAMES_DE,
+        text=text_values,
+        texttemplate="%{text}",
+        textfont=dict(size=9, color="#FFFFFF"),
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
         hovertext=hover_texts,
@@ -1121,10 +1130,9 @@ def build_weekend_heatmap(we_stats, ticker):
         ),
     ))
 
-    _add_heatmap_annotations(fig, z_values, year_labels, MONTH_NAMES_DE, zmid=0, fmt="+.2f")
-
     fig = apply_se_heatmap_theme(fig, title=f"{ticker} — Weekend-Effekt Heatmap (Monat × Jahr)", height=480)
-    fig.update_xaxes(side="bottom", type="category", tickformat="")
+    fig.update_xaxes(side="bottom", type="category", categoryorder="array",
+                     categoryarray=year_labels, tickformat="")
     fig.update_yaxes(autorange="reversed", type="category", tickformat="")
 
     # Gelber Rahmen um aktuelle Zelle
