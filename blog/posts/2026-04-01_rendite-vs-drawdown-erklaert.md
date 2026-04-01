@@ -90,6 +90,10 @@ Drei wichtige Erkenntnisse:
 
 Du kannst über die Sidebar einzelne Dekaden ein- und ausblenden, den Ticker wechseln und die Rolling-Volatilität einstellen.
 
+## Weiterlesen: Die schlimmsten Crashs und ihre Recovery
+
+Du willst wissen, wie tief es wirklich gehen kann? In unserem Artikel [Drawdown verstehen: Was Crash-Jahre verraten](/blog/drawdown-crashjahre-recovery/) analysieren wir die 10 schlimmsten Drawdowns in 130 Jahren Dow Jones — inklusive der Recovery-Zeiten (Spoiler: 1929 brauchte 25 Jahre).
+
 ## Fazit
 
 Steigende Rendite und fallender Drawdown sind kein Widerspruch — sie messen zwei verschiedene Dinge. Die Rendite sagt: "So viel hast du verdient." Der Drawdown sagt: "So weit warst du zwischenzeitlich im Minus." Beide zusammen geben dir das vollständige Bild.

@@ -101,6 +101,10 @@ Auf SeasonAlpha findest du den Drawdown-Verlauf unter **Dekadenzyklus** und **Ja
 - **Dekadenzyklus → Drawdown & Risiko:** Ø Drawdown nach Dekaden-Endziffer, Worst-DD-Tabelle mit Recovery, Heatmap Monat × Dekade
 - **Jahreszyklus → Saisonaler Drawdown:** Ø Drawdown-Kurve mit aktuellem Jahr als Overlay, Perzentil-Vergleich, Monatliche Heatmap
 
+## Weiterlesen: Rendite steigt, Drawdown fällt — wie passt das zusammen?
+
+Wenn du den Drawdown zum ersten Mal neben dem Renditechart siehst, stutzt du vielleicht: Die Rendite steigt, aber der Drawdown fällt immer weiter? Das ist kein Fehler — sondern liegt an der unterschiedlichen Berechnung. In unserem Artikel [Rendite vs. Drawdown erklärt](/blog/rendite-vs-drawdown-erklaert/) zeigen wir mit zwei Charts, warum beides gleichzeitig stimmt.
+
 ## Fazit
 
 Der Drawdown zeigt dir die Schattenseite der Rendite. 130 Jahre Dow Jones beweisen: Tiefe Einbrüche gehören zur Börse — aber die Erholung kommt. Die Frage ist nur: Wie lange kannst du warten?
