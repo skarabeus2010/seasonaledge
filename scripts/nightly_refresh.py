@@ -62,6 +62,30 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             if df is None or df.empty:
                 continue
 
+            # Preise in Supabase schreiben (letzte 60 Tage, nicht alles)
+            try:
+                from shared.supabase_client import upsert_prices
+                _cutoff = (date.today() - __import__('datetime').timedelta(days=60)).strftime("%Y-%m-%d")
+                _recent = raw_df[raw_df.index >= _cutoff] if hasattr(raw_df.index, 'year') else raw_df
+                _price_records = []
+                for _idx, _row in _recent.iterrows():
+                    _rec = {
+                        "ticker": ticker,
+                        "date": _idx.strftime("%Y-%m-%d") if hasattr(_idx, 'strftime') else str(_idx),
+                        "close": round(float(_row["Close"]), 4),
+                        "source": "yahoo",
+                    }
+                    for _col in ["Open", "High", "Low"]:
+                        if _col in _row and pd.notna(_row[_col]):
+                            _rec[_col.lower()] = round(float(_row[_col]), 4)
+                    if "Volume" in _row and pd.notna(_row["Volume"]):
+                        _rec["volume"] = int(_row["Volume"])
+                    _price_records.append(_rec)
+                if _price_records:
+                    upsert_prices(_price_records)
+            except Exception as _pe:
+                app_logger.debug(f"nightly_refresh: {ticker} price upsert failed: {_pe}")
+
             # Monthly Stats
             get_or_compute_monthly_stats(ticker, df, years_back)
 

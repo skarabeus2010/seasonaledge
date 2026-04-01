@@ -20,7 +20,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
-from shared.yahoo_downloader import download_data, preprocess
+from shared.data import download_data, preprocess
 from shared.calculations_decade import (
     build_decade_data, get_decade_summary_table,
     get_decade_digit, DECADE_COLORS, DECADE_LABELS,
