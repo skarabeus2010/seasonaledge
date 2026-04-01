@@ -62,10 +62,10 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             if df is None or df.empty:
                 continue
 
-            # Preise in Supabase schreiben (letzte 60 Tage, nicht alles)
+            # Preise in Supabase schreiben (letzte 5 Tage — historische Daten bleiben unverändert)
             try:
                 from shared.supabase_client import upsert_prices
-                _cutoff = (date.today() - __import__('datetime').timedelta(days=60)).strftime("%Y-%m-%d")
+                _cutoff = (date.today() - __import__('datetime').timedelta(days=5)).strftime("%Y-%m-%d")
                 _recent = raw_df[raw_df.index >= _cutoff] if hasattr(raw_df.index, 'year') else raw_df
                 _price_records = []
                 for _idx, _row in _recent.iterrows():
