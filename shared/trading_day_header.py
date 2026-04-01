@@ -29,6 +29,18 @@ def render_trading_day_header(df: pd.DataFrame):
     if df is None or df.empty:
         return
 
+    # ── Sicherstellen: preprocess()-Spalten vorhanden ──
+    if "year" not in df.columns or "tdoy" not in df.columns:
+        df = df.copy()
+        if "year" not in df.columns:
+            df["year"] = df.index.year
+        if "month" not in df.columns:
+            df["month"] = df.index.month
+        if "day_of_year" not in df.columns:
+            df["day_of_year"] = df.index.dayofyear
+        if "tdoy" not in df.columns:
+            df["tdoy"] = df.groupby("year").cumcount() + 1
+
     today = datetime.now()
     date_str = today.strftime("%d.%m.%Y")
 
