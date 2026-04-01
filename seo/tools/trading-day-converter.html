@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Trading Day Converter – Kalendertag in Handelstag umrechnen | SeasonAlpha</title>
+    <meta name="description" content="Kostenloser Trading Day Converter: Kalendertag (CDOY) in Handelstag des Monats (TDOM) und Handelstag des Jahres (TDOY) umrechnen. Basierend auf echten S&P 500 Handelstagen.">
+
+    <link rel="canonical" href="https://seasonalpha.ai/tools/trading-day-converter">
+
+    <meta property="og:title" content="Trading Day Converter – CDOY, TDOM, TDOY umrechnen">
+    <meta property="og:description" content="Wie viele Handelstage hat der Monat? Welcher Handelstag ist heute? Kostenlos umrechnen auf SeasonAlpha.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://seasonalpha.ai/tools/trading-day-converter">
+
+    <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Trading Day Converter",
+        "description": "Rechnet Kalendertage in Handelstage um (TDOM, TDOY). Basierend auf S&P 500 / NYSE Handelstagen.",
+        "url": "https://seasonalpha.ai/tools/trading-day-converter",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+        },
+        "creator": {
+            "@type": "Organization",
+            "name": "SeasonAlpha",
+            "url": "https://seasonalpha.ai"
+        }
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: #080c12; color: #c8d6e5; line-height: 1.7;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+        .breadcrumb { font-size: 0.85rem; color: #5a6e85; margin-bottom: 1.5rem; }
+        .breadcrumb a { color: #4d9fff; text-decoration: none; }
+        h1 { font-size: 2rem; font-weight: 800; color: #e8edf5; margin-bottom: 0.5rem; line-height: 1.3; }
+        .subtitle { color: #5a6e85; font-size: 0.95rem; margin-bottom: 2rem; }
+        h2 { font-size: 1.3rem; font-weight: 700; color: #e8edf5; margin: 2rem 0 0.8rem; padding-top: 1rem; border-top: 1px solid #1c2a3e; }
+        h3 { font-size: 1.1rem; font-weight: 600; color: #e8edf5; margin: 1.5rem 0 0.5rem; }
+        p { margin-bottom: 1rem; color: #a0b0c5; }
+
+        /* Converter Tool */
+        .converter-box {
+            background: linear-gradient(135deg, #0f1923 0%, #131d2a 100%);
+            border: 1px solid rgba(77,159,255,0.15);
+            border-radius: 16px; padding: 1.5rem; margin: 1.5rem 0;
+        }
+        .converter-row {
+            display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+        }
+        .converter-row label {
+            color: #e8a425; font-weight: 600; font-size: 0.9rem;
+            min-width: 60px;
+        }
+        .converter-row input[type="date"] {
+            background: #1a2435; border: 1px solid #2a3a50; border-radius: 8px;
+            color: #e8edf5; padding: 0.5rem 0.8rem; font-size: 1rem;
+            font-family: inherit; cursor: pointer;
+        }
+        .converter-row input[type="date"]:focus {
+            outline: none; border-color: #e8a425;
+        }
+        .result-line {
+            color: #e8a425; font-size: 1.1rem; font-weight: 600;
+            font-variant-numeric: tabular-nums; padding: 0.5rem 0;
+            letter-spacing: 0.3px;
+        }
+        .result-line .sep { color: #5a6e85; margin: 0 0.3rem; }
+        .result-line .blue { color: #4d9fff; }
+        .result-line .sub { color: #5a6e85; font-size: 0.8rem; font-weight: 400; }
+
+        /* Erklärungskarten */
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+        .info-card {
+            background: rgba(12,20,32,0.65); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 1.2rem; text-align: center;
+        }
+        .info-card .num { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.3rem; }
+        .info-card .num.gold { color: #e8a425; }
+        .info-card .num.blue { color: #4d9fff; }
+        .info-card .num.teal { color: #00d4aa; }
+        .info-card .lbl { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #5a6e85; }
+
+        /* CTA */
+        .cta-box {
+            background: linear-gradient(135deg, #0d1520 0%, #142030 100%);
+            border: 1px solid rgba(232,164,37,0.2); border-radius: 16px;
+            padding: 2rem; text-align: center; margin: 2rem 0;
+        }
+        .cta-box h3 { color: #e8a425; margin: 0 0 0.5rem; }
+        .cta-btn {
+            display: inline-block; padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, #e8a425, #f5c563);
+            color: #080c12; font-weight: 700; font-size: 1rem;
+            border-radius: 10px; text-decoration: none; margin-top: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(232,164,37,0.3); }
+
+        /* FAQ Schema */
+        .faq dt { color: #e8edf5; font-weight: 600; margin: 1rem 0 0.3rem; cursor: default; }
+        .faq dd { color: #a0b0c5; margin-bottom: 1rem; padding-left: 0; }
+
+        /* Footer */
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #1c2a3e; font-size: 0.8rem; color: #5a6e85; }
+        .footer a { color: #4d9fff; text-decoration: none; }
+
+        @media (max-width: 600px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .converter-row { flex-direction: column; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <nav class="breadcrumb">
+        <a href="https://seasonalpha.ai">SeasonAlpha</a> &rsaquo;
+        Tools &rsaquo;
+        Trading Day Converter
+    </nav>
+
+    <h1>Trading Day Converter</h1>
+    <p class="subtitle">Kalendertag in Handelstag umrechnen &mdash; CDOY, TDOM &amp; TDOY auf einen Blick</p>
+
+    <!-- ══ CONVERTER TOOL ══ -->
+    <div class="converter-box">
+        <div class="converter-row">
+            <label for="datepicker">Datum:</label>
+            <input type="date" id="datepicker">
+            <div class="result-line" id="result">Datum auswählen&hellip;</div>
+        </div>
+    </div>
+
+    <!-- ══ ERKLÄRUNGSKARTEN ══ -->
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="num gold">CDOY</div>
+            <div class="lbl">Calendar Day of Year</div>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Kalendertag 1&ndash;366. Zählt jeden Tag, auch Wochenenden und Feiertage.</p>
+        </div>
+        <div class="info-card">
+            <div class="num blue">TDOM</div>
+            <div class="lbl">Trading Day of Month</div>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Handelstag im Monat (1&ndash;23). Nur Börsentage, keine Wochenenden/Feiertage.</p>
+        </div>
+        <div class="info-card">
+            <div class="num teal">TDOY</div>
+            <div class="lbl">Trading Day of Year</div>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Handelstag im Jahr (1&ndash;252). Basis für saisonale Muster-Analyse.</p>
+        </div>
+    </div>
+
+    <!-- ══ SEO-TEXT ══ -->
+    <h2>Warum Handelstage statt Kalendertage?</h2>
+    <p>Saisonale Muster an der Börse wiederholen sich nicht nach Kalendertagen, sondern nach <strong>Handelstagen</strong>. Der 15. Januar kann ein Montag oder ein Samstag sein &mdash; aber der <strong>10. Handelstag des Jahres</strong> fällt immer auf einen Börsentag.</p>
+    <p>Professionelle Trader und quantitative Analysten nutzen daher TDOM (Trading Day of Month) und TDOY (Trading Day of Year) statt Kalenderdaten. Der <strong>Turn-of-the-Month-Effekt</strong> etwa zeigt sich an den letzten 2&ndash;3 TDOM, nicht an festen Kalendertagen.</p>
+
+    <h2>Was ist TDOM?</h2>
+    <p>Der <strong>Trading Day of Month (TDOM)</strong> nummeriert die Börsentage innerhalb eines Monats. Der Januar hat typischerweise 21 Handelstage, der Februar 19&ndash;20. TDOM 1 ist der erste Börsentag, TDOM -1 der letzte.</p>
+    <p>In der saisonalen Analyse zeigt sich: bestimmte TDOMs haben historisch signifikant höhere oder niedrigere Renditen. Beispiel: TDOM 1 und die letzten 3 Handelstage des Monats sind statistisch oft positiv.</p>
+
+    <h2>Was ist TDOY?</h2>
+    <p>Der <strong>Trading Day of Year (TDOY)</strong> zählt die Handelstage seit Jahresbeginn. Die NYSE hat ~252 Handelstage pro Jahr, Krypto-Börsen ~365. TDOY ermöglicht jahresübergreifende Vergleiche unabhängig von Kalenderverschiebungen.</p>
+    <p>Auf SeasonAlpha nutzen wir TDOY für die <a href="https://seasonalpha.ai" style="color:#4d9fff;">Jahreszyklus-Analyse</a>: Jedes Jahr wird auf Handelstage normiert, dann über Jahrzehnte gemittelt.</p>
+
+    <h3>Beispiel: S&amp;P 500 Saisonalität</h3>
+    <p>TDOY 1&ndash;20 (Januar): Historisch leicht positiv. TDOY 60&ndash;80 (März/April): Oft Erholung nach Q1-Schwäche. TDOY 190&ndash;210 (Oktober): Historisch die volatilste Phase. Diese Muster sind über 130 Jahre Dow-Jones-Historie stabil.</p>
+
+    <!-- ══ CTA ══ -->
+    <div class="cta-box">
+        <h3>Saisonale Muster live analysieren</h3>
+        <p>Welche Rendite bringt TDOM 3 historisch? Wie verhält sich TDOY 150 im Präsidentenzyklus? Analysiere 500+ Aktien, ETFs und Krypto kostenlos.</p>
+        <a href="https://seasonalpha.ai" class="cta-btn">Kostenlose Analyse starten &rarr;</a>
+    </div>
+
+    <!-- ══ FAQ (Schema.org) ══ -->
+    <h2>Häufige Fragen</h2>
+    <dl class="faq" itemscope itemtype="https://schema.org/FAQPage">
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+            <dt itemprop="name">Wie viele Handelstage hat ein Jahr?</dt>
+            <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                <span itemprop="text">Die NYSE hat typischerweise 252 Handelstage pro Jahr. Krypto-Märkte handeln 365 Tage. Die genaue Zahl variiert je nach Feiertagen.</span>
+            </dd>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+            <dt itemprop="name">Was ist der Unterschied zwischen CDOY und TDOY?</dt>
+            <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                <span itemprop="text">CDOY (Calendar Day of Year) zählt jeden Kalendertag (1&ndash;366). TDOY (Trading Day of Year) zählt nur Börsentage (1&ndash;252). Am 1. März ist CDOY=60, aber TDOY nur ~40, weil Wochenenden und Feiertage nicht gezählt werden.</span>
+            </dd>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+            <dt itemprop="name">Warum ist TDOM wichtig für saisonale Analyse?</dt>
+            <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                <span itemprop="text">Saisonale Effekte wie der Turn-of-the-Month- oder der Monday-Effekt basieren auf Handelstagen, nicht Kalendertagen. TDOM 1 (erster Handelstag des Monats) zeigt statistisch höhere Renditen als andere Tage.</span>
+            </dd>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+            <dt itemprop="name">Auf welchen Daten basiert dieser Converter?</dt>
+            <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                <span itemprop="text">Der Converter nutzt den S&amp;P 500 (NYSE) Handelskalender. Wochenenden und US-Feiertage (Martin Luther King, Presidents Day, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas) werden ausgeschlossen.</span>
+            </dd>
+        </div>
+    </dl>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="footer">
+        <p>&copy; 2026 SeasonAlpha &mdash;
+            <a href="https://seasonalpha.ai">Startseite</a> &middot;
+            <a href="https://seasonalpha.ai/disclaimer">Disclaimer</a> &middot;
+            <a href="https://seasonalpha.ai/datenschutz">Datenschutz</a>
+        </p>
+    </div>
+
+</div>
+
+<!-- ══ JAVASCRIPT: Converter-Logik (Client-Side) ══ -->
+<script>
+(function() {
+    // NYSE-Feiertage 2024-2027 (statisch, reicht für den Converter)
+    const holidays = new Set([
+        // 2024
+        '2024-01-01','2024-01-15','2024-02-19','2024-03-29','2024-05-27',
+        '2024-06-19','2024-07-04','2024-09-02','2024-11-28','2024-12-25',
+        // 2025
+        '2025-01-01','2025-01-20','2025-02-17','2025-04-18','2025-05-26',
+        '2025-06-19','2025-07-04','2025-09-01','2025-11-27','2025-12-25',
+        // 2026
+        '2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25',
+        '2026-06-19','2026-07-03','2026-09-07','2026-11-26','2026-12-25',
+        // 2027
+        '2027-01-01','2027-01-18','2027-02-15','2027-03-26','2027-05-31',
+        '2027-06-18','2027-07-05','2027-09-06','2027-11-25','2027-12-24',
+    ]);
+
+    const WEEKDAYS_DE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+    function isTradingDay(d) {
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) return false;
+        const iso = d.toISOString().slice(0, 10);
+        return !holidays.has(iso);
+    }
+
+    function getCDOY(d) {
+        const start = new Date(d.getFullYear(), 0, 1);
+        return Math.floor((d - start) / 86400000) + 1;
+    }
+
+    function getTDOY(d) {
+        let count = 0;
+        const cur = new Date(d.getFullYear(), 0, 1);
+        const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        while (cur <= target) {
+            if (isTradingDay(cur)) count++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    }
+
+    function getTDOM(d) {
+        let count = 0;
+        const cur = new Date(d.getFullYear(), d.getMonth(), 1);
+        const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        while (cur <= target) {
+            if (isTradingDay(cur)) count++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    }
+
+    function getTDOMMax(d) {
+        let count = 0;
+        const cur = new Date(d.getFullYear(), d.getMonth(), 1);
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        while (cur <= lastDay) {
+            if (isTradingDay(cur)) count++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    }
+
+    function update() {
+        const input = document.getElementById('datepicker');
+        const result = document.getElementById('result');
+        if (!input.value) { result.textContent = 'Datum auswählen\u2026'; return; }
+
+        const parts = input.value.split('-');
+        const d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dateStr = dd + '.' + mm + '.' + d.getFullYear();
+        const weekday = WEEKDAYS_DE[d.getDay()];
+        const cdoy = getCDOY(d);
+
+        if (!isTradingDay(d)) {
+            result.innerHTML = dateStr + ' ' + weekday +
+                ' <span class="sep">&middot;</span> CDOY ' + cdoy +
+                ' <span class="sep">&middot;</span> <em style="color:#5a6e85;">kein Handelstag</em>';
+            return;
+        }
+
+        const tdoy = getTDOY(d);
+        const tdom = getTDOM(d);
+        const tdomMax = getTDOMMax(d);
+        const month = MONTHS_DE[d.getMonth()];
+
+        result.innerHTML =
+            dateStr + ' ' + weekday +
+            ' <span class="sep">&middot;</span> CDOY ' + cdoy +
+            ' <span class="sep">&middot;</span> <span class="blue">TDOM ' + tdom + '</span><span class="sub">/' + tdomMax + '</span>' +
+            ' <span class="sep">&middot;</span> TDOY ' + tdoy + '<span class="sub">/~252</span>';
+    }
+
+    // Init: Heute als Default
+    const picker = document.getElementById('datepicker');
+    const now = new Date();
+    picker.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+    picker.addEventListener('change', update);
+    update();
+})();
+</script>
+
+</body>
+</html>

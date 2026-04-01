@@ -140,6 +140,20 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
             f'  </url>'
         )
 
+    # Tools (hohe Prioritaet — interaktive, kostenlose Tools)
+    tool_pages = [
+        {"loc": f"{BASE_URL}/tools/trading-day-converter", "priority": "0.9", "changefreq": "monthly"},
+    ]
+    for page in tool_pages:
+        urls.append(
+            f'  <url>\n'
+            f'    <loc>{page["loc"]}</loc>\n'
+            f'    <lastmod>{heute_iso}</lastmod>\n'
+            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+            f'    <priority>{page["priority"]}</priority>\n'
+            f'  </url>'
+        )
+
     # SEO-Landingpages (mittlere Prioritaet)
     for titel in titel_daten:
         urls.append(
