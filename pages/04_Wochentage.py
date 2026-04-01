@@ -545,11 +545,15 @@ def calc_overnight_intraday(df, years_back, cycle_filter=None):
         df = df.drop(columns=["_cycle"])
 
     df["weekday"] = df.index.weekday
-    df["overnight"] = (df["Open"] / df["Close"].shift(1) - 1) * 100
+    # Residual-Ansatz: Overnight = Total - Intraday
+    # Verhindert Verzerrung durch unterschiedliche Dividend-Adjustierung
+    # zwischen Open[t] und Close[t-1] (verschiedene adj_factors).
+    df["total"] = (df["Close"] / df["Close"].shift(1) - 1) * 100
     df["intraday"] = (df["Close"] / df["Open"] - 1) * 100
+    df["overnight"] = df["total"] - df["intraday"]
     if not (df["weekday"] >= 5).any():
         df = df[df["weekday"] <= 4]
-    df = df.dropna(subset=["overnight", "intraday"])
+    df = df.dropna(subset=["total", "overnight", "intraday"])
 
     results = {}
     for wd in range(len(WEEKDAY_LABELS)):
@@ -930,13 +934,19 @@ def calc_weekend_effect(df, years_back, cycle_filter=None,
             continue
 
         monday = mondays.iloc[0]
+        mon_date = mondays.index[0]
         fri_close = fridays.loc[fri_date, "Close"]
+        mon_close = monday["Close"]
         mon_open = monday["Open"]
 
-        if fri_close <= 0 or pd.isna(mon_open):
+        if fri_close <= 0 or pd.isna(mon_open) or pd.isna(mon_close) or mon_open <= 0:
             continue
 
-        ret = (mon_open / fri_close - 1) * 100
+        # Residual-Ansatz: Weekend = Total(Fr→Mo) - Intraday(Mo)
+        # Vermeidet Verzerrung durch unterschiedliche Dividend-Adjustierung
+        total_ret = (mon_close / fri_close - 1) * 100
+        intraday_mon = (mon_close / mon_open - 1) * 100
+        ret = total_ret - intraday_mon
         weekend_returns.append({
             "date_friday": fri_date,
             "date_monday": mondays.index[0],
