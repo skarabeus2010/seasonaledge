@@ -216,11 +216,11 @@ def render_converter_widget(df: pd.DataFrame):
     # ── Section Header ──
     st.markdown(
         f'<div style="text-align:center; margin: 2rem 0 1rem 0;">'
-        f'<span style="color:{SE_COLORS["text_secondary"]}; font-size:13px; '
+        f'<span style="color:{SE_COLORS["text_muted"]}; font-size:13px; '
         f'letter-spacing:2px; text-transform:uppercase;">Werkzeug</span>'
         f'<h2 style="color:{SE_COLORS["text_primary"]}; font-size:1.6rem; '
         f'margin:0.3rem 0 0.5rem 0;">Trading Day Converter</h2>'
-        f'<p style="color:{SE_COLORS["text_secondary"]}; font-size:0.95rem; '
+        f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.95rem; '
         f'max-width:600px; margin:0 auto;">Kalendertag, TDOM und TDOY '
         f'umrechnen &mdash; basierend auf echten Handelstagen (S&amp;P 500)</p>'
         f'</div>',
