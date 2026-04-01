@@ -64,10 +64,10 @@ def main():
     print("SeasonAlpha — Backfill log_return")
     print("=" * 60)
 
-    # Alle Ticker aus der prices-Tabelle holen
+    # Alle Ticker aus der tickers-Tabelle holen (statt prices — 1000-Row-Limit)
     client = get_client()
-    result = client.table("prices").select("ticker").execute()
-    all_tickers = sorted(set(r["ticker"] for r in result.data))
+    result = client.table("tickers").select("ticker").eq("aktiv", True).execute()
+    all_tickers = sorted(r["ticker"] for r in result.data)
 
     print(f"Gefunden: {len(all_tickers)} Ticker\n")
 
