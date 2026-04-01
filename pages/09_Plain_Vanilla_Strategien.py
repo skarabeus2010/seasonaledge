@@ -121,10 +121,12 @@ def main():
         st.session_state["pv_selected"] = "sell_in_may"
 
     keys = list(STRATEGIES.keys())
-    for row in range(2):
-        cols = st.columns(5)
-        for col_idx in range(5):
-            idx = row * 5 + col_idx
+    _cols_per_row = 4 if len(keys) > 10 else 5
+    _n_rows = (len(keys) + _cols_per_row - 1) // _cols_per_row
+    for row in range(_n_rows):
+        cols = st.columns(_cols_per_row)
+        for col_idx in range(_cols_per_row):
+            idx = row * _cols_per_row + col_idx
             if idx >= len(keys):
                 break
             key = keys[idx]
@@ -358,6 +360,10 @@ Kurzfristiger Trade rund um die US-Zwischenwahlen (alle 4 Jahre im November des 
 ### 🚫 September-Vermeidung
 
 Die einfachste Strategie: 11 Monate investiert, nur im September in Cash. September ist historisch der schwächste Börsenmonat — in über 100 Jahren Dow Jones im Schnitt negativ. Durch Vermeidung dieses einen Monats verbessert sich die Gesamtperformance.
+
+### 🇺🇸 Ultimate Election Cycle System (UECS)
+
+Das umfassendste Präsidentenzyklus-System. Kombiniert 6 verschiedene Zeitfenster innerhalb des 4-Jahres-Zyklus: (1) Kurzfristiger Trade um die Midterm-Wahl, (2) März bis Juli des Vorwahljahres, (3) Oktober des Midterm-Jahres bis September des Vorwahljahres, (4) November/Dezember des Vorwahljahres, (5) Juni bis Dezember des Wahljahres, und (6) das gesamte Post-Election-Jahr wenn es auf "5" endet (z.B. 2025). Überlappende Phasen werden automatisch zusammengeführt.
 
 ---
 

@@ -420,6 +420,99 @@ def calc_september_avoid(df: pd.DataFrame) -> list[dict]:
 
 
 # ══════════════════════════════════════════════════════════════
+# STRATEGIE 11: ULTIMATE ELECTION CYCLE SYSTEM (UECS)
+# ══════════════════════════════════════════════════════════════
+
+def calc_uecs(df: pd.DataFrame) -> list[dict]:
+    """
+    Ultimate Election Cycle System — Mehrere Zeitfenster im 4-Jahres-Zyklus.
+
+    Investiert in folgenden Phasen:
+    1. 5 Tage vor bis 3 Tage nach Midterm-Wahl
+    2. März bis Juli des Vorwahljahres (Pre-Election Year 3)
+    3. Oktober Midterm bis September Vorwahljahr
+    4. November + Dezember des Vorwahljahres
+    5. Juni bis Dezember des Wahljahres (Election Year 4)
+    6. Gesamtes Post-Election Jahr (Year 1), wenn es auf "5" endet (Dekade)
+    """
+    from shared.calculations import get_presidential_cycle_year
+
+    trades = []
+    years = sorted(df.index.year.unique())
+
+    for year in years:
+        cycle = get_presidential_cycle_year(year)
+
+        # ── Phase 1: Midterm-Wahl (Year 2) — 5 HT vor bis 3 HT nach ──
+        if cycle == "Year 2 (Midterm Election)":
+            election = _get_election_day(year)
+            election_ts = pd.Timestamp(election)
+            before = df[df.index < election_ts]
+            after = df[df.index > election_ts]
+            if len(before) >= 5 and len(after) >= 3:
+                trade = _make_trade(df, before.index[-5], after.index[2])
+                if trade:
+                    trades.append(trade)
+
+        # ── Phase 2: März bis Juli des Vorwahljahres (Year 3) ──
+        if cycle == "Year 3 (Pre-Election)":
+            entry = _nth_trading_day(df, year, 3, 1)  # 1. HT März
+            exit_d = _last_trading_day(df, year, 7)    # Letzter HT Juli
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+
+        # ── Phase 3: Oktober Midterm bis September Vorwahljahr ──
+        if cycle == "Year 2 (Midterm Election)":
+            entry = _nth_trading_day(df, year, 10, 1)      # 1. HT Oktober Midterm
+            exit_d = _last_trading_day(df, year + 1, 9)    # Letzter HT September Vorwahljahr
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+
+        # ── Phase 4: November + Dezember des Vorwahljahres (Year 3) ──
+        if cycle == "Year 3 (Pre-Election)":
+            entry = _nth_trading_day(df, year, 11, 1)  # 1. HT November
+            exit_d = _last_trading_day(df, year, 12)   # Letzter HT Dezember
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+
+        # ── Phase 5: Juni bis Dezember des Wahljahres (Year 4) ──
+        if cycle == "Year 4 (Election Year)":
+            entry = _nth_trading_day(df, year, 6, 1)   # 1. HT Juni
+            exit_d = _last_trading_day(df, year, 12)   # Letzter HT Dezember
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+
+        # ── Phase 6: Gesamtes Post-Election Jahr (Year 1), wenn auf "5" endend ──
+        if cycle == "Year 1 (Post-Election)" and year % 10 == 5:
+            entry = _nth_trading_day(df, year, 1, 1)   # 1. HT Januar
+            exit_d = _last_trading_day(df, year, 12)   # Letzter HT Dezember
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+
+    # Chronologisch sortieren und überlappende Trades entfernen
+    trades.sort(key=lambda t: t["entry_date"])
+    cleaned = []
+    for t in trades:
+        if cleaned and t["entry_date"] < cleaned[-1]["exit_date"]:
+            # Überlappung: Merge — behalte den längeren
+            if t["exit_date"] > cleaned[-1]["exit_date"]:
+                cleaned[-1]["exit_date"] = t["exit_date"]
+                cleaned[-1]["exit_price"] = t["exit_price"]
+                cleaned[-1]["return_pct"] = round(
+                    (cleaned[-1]["exit_price"] - cleaned[-1]["entry_price"]) / cleaned[-1]["entry_price"] * 100, 4
+                )
+        else:
+            cleaned.append(t)
+
+    return cleaned
+
+
+# ══════════════════════════════════════════════════════════════
 # PORTFOLIO & STATISTIK
 # ══════════════════════════════════════════════════════════════
 
@@ -617,5 +710,12 @@ STRATEGIES = {
         "func": calc_september_avoid,
         "desc": "Einstieg: 30. September. Ausstieg: 31. August. Cash nur im September.",
         "info": "Die einfachste Strategie: 11 Monate investiert, September = Cash.",
+    },
+    "uecs": {
+        "name": "Election Cycle",
+        "icon": "🇺🇸",
+        "func": calc_uecs,
+        "desc": "Investiert in 6 Phasen des 4-Jahres-Präsidentenzyklus.",
+        "info": "Ultimate Election Cycle System: Midterm-Wahl, Vorwahljahr Mär-Jul + Okt-Sep + Nov-Dez, Wahljahr Jun-Dez, Dekaden-5-Jahre.",
     },
 }
