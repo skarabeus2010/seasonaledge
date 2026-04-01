@@ -57,6 +57,15 @@ def main():
         ticker = ticker_select(key="pv_ticker", default=DEFAULT_TICKER)
 
         st.markdown("---")
+        st.markdown("### Zeitraum")
+        period_options = [5, 10, 15, 20, 25, 30, "Max"]
+        years_back_raw = st.select_slider(
+            "Analyse-Zeitraum (Jahre)",
+            options=period_options, value="Max",
+            format_func=lambda x: str(x), key="pv_period",
+        )
+
+        st.markdown("---")
         st.markdown("### Stop-Loss")
         use_stop = st.checkbox("Stop-Loss aktivieren", value=False, key="pv_stop")
         stop_pct = 0.0
@@ -75,6 +84,12 @@ def main():
         return
 
     df = preprocess(raw_df)
+
+    # Zeitraum filtern
+    if years_back_raw != "Max":
+        cutoff_year = datetime.now().year - int(years_back_raw)
+        df = df[df["year"] >= cutoff_year]
+        raw_df = raw_df[raw_df.index >= df.index[0]] if len(df) > 0 else raw_df
 
     from shared.trading_day_header import render_trading_day_header
     render_trading_day_header(df)
