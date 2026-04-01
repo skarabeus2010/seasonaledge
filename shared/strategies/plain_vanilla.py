@@ -728,7 +728,223 @@ def calc_kti_leveraged(df: pd.DataFrame) -> list[dict]:
 
 
 # ══════════════════════════════════════════════════════════════
-# STRATEGIE 14: ULTIMATE ELECTION CYCLE SYSTEM (UECS)
+# STRATEGIE 14: FIRST FIVE DAYS OF JANUARY
+# ══════════════════════════════════════════════════════════════
+
+def calc_first_five_days(df: pd.DataFrame) -> list[dict]:
+    """Wenn erste 5 Jan-HT positiv → Long ab 1. Feb bis 31. Dez."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        jan_days = _get_trading_days(df, year, 1)
+        if len(jan_days) < 5:
+            continue
+        first_close = float(df.loc[jan_days[0], "Close"])
+        fifth_close = float(df.loc[jan_days[4], "Close"])
+        if fifth_close > first_close:
+            entry = _nth_trading_day(df, year, 2, 1)
+            exit_d = _last_trading_day(df, year, 12)
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 15: LAST FIVE DAYS OF JANUARY
+# ══════════════════════════════════════════════════════════════
+
+def calc_last_five_days(df: pd.DataFrame) -> list[dict]:
+    """Wenn letzte 5 Jan-HT positiv → Long ab 1. Feb bis 31. Dez."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        jan_days = _get_trading_days(df, year, 1)
+        if len(jan_days) < 5:
+            continue
+        start_close = float(df.loc[jan_days[-5], "Close"])
+        end_close = float(df.loc[jan_days[-1], "Close"])
+        if end_close > start_close:
+            entry = _nth_trading_day(df, year, 2, 1)
+            exit_d = _last_trading_day(df, year, 12)
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 16: JANUAR-BAROMETER
+# ══════════════════════════════════════════════════════════════
+
+def calc_january_barometer(df: pd.DataFrame) -> list[dict]:
+    """Wenn gesamter Januar positiv → Long ab 1. Feb bis 31. Dez."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        jan_days = _get_trading_days(df, year, 1)
+        if len(jan_days) < 10:
+            continue
+        jan_open = float(df.loc[jan_days[0], "Close"])
+        jan_close = float(df.loc[jan_days[-1], "Close"])
+        if jan_close > jan_open:
+            entry = _nth_trading_day(df, year, 2, 1)
+            exit_d = _last_trading_day(df, year, 12)
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 17: EIN-TAGES-FEIERTAG
+# ══════════════════════════════════════════════════════════════
+
+def calc_one_day_holiday(df: pd.DataFrame) -> list[dict]:
+    """Kauf 2 HT vor Feiertag (Close), Verkauf 1 HT vor Feiertag (Close)."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        for m, d in _US_HOLIDAYS_MONTH_DAY:
+            try:
+                hol = _nearest_trading_day(df, date(year, m, d))
+                if hol is None:
+                    continue
+                before = df[df.index < hol]
+                if len(before) < 2:
+                    continue
+                entry = before.index[-2]
+                exit_d = before.index[-1]
+                trade = _make_trade(df, entry, exit_d)
+                if trade:
+                    trades.append(trade)
+            except Exception:
+                continue
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 18: ULTIMATE HOLIDAY TRADING SYSTEM (UHTS)
+# ══════════════════════════════════════════════════════════════
+
+def calc_uhts(df: pd.DataFrame) -> list[dict]:
+    """3 HT vor Feiertag Long, Tag davor 2x Hebel, 3 HT nach Feiertag Exit."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        for m, d in _US_HOLIDAYS_MONTH_DAY:
+            try:
+                hol = _nearest_trading_day(df, date(year, m, d))
+                if hol is None:
+                    continue
+                before = df[df.index < hol]
+                after = df[df.index > hol]
+                if len(before) < 3 or len(after) < 3:
+                    continue
+                entry = before.index[-3]
+                exit_d = after.index[2]
+                trade = _make_trade(df, entry, exit_d)
+                if trade:
+                    # Hebel: Tag vor Feiertag = 2x
+                    pre_hol = before.index[-1]
+                    p_pre = float(df.loc[pre_hol, "Close"])
+                    p_entry = trade["entry_price"]
+                    # Return Split: Normal bis pre_hol, dann 2x bis exit
+                    r1 = (p_pre - p_entry) / p_entry * 100
+                    r2 = (trade["exit_price"] - p_pre) / p_pre * 100 * 1.5  # Misch-Hebel ~1.5x
+                    trade["return_pct"] = round(r1 + r2, 4)
+                    trade["leverage"] = 1.5
+                    trades.append(trade)
+            except Exception:
+                continue
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 19: NACH-WEIHNACHTEN BIS SILVESTER
+# ══════════════════════════════════════════════════════════════
+
+def calc_post_christmas(df: pd.DataFrame) -> list[dict]:
+    """Erster HT nach Weihnachten bis letzter HT des Jahres."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        entry = _nearest_trading_day(df, date(year, 12, 26))
+        exit_d = _last_trading_day(df, year, 12)
+        trade = _make_trade(df, entry, exit_d)
+        if trade:
+            trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 20: ZWEITER HANDELSTAG DES MONATS
+# ══════════════════════════════════════════════════════════════
+
+def calc_second_trading_day(df: pd.DataFrame) -> list[dict]:
+    """Kauf Close TDOM 1, Verkauf Close TDOM 2 (jeden Monat)."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        for month in range(1, 13):
+            entry = _nth_trading_day(df, year, month, 1)
+            exit_d = _nth_trading_day(df, year, month, 2)
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 21: MID-DECADE RALLYE (Intradekaden-Trend 1)
+# ══════════════════════════════════════════════════════════════
+
+def calc_mid_decade(df: pd.DataFrame) -> list[dict]:
+    """Kauf 30. Sep x4-Jahr, Verkauf 31. Mär x6-Jahr. 18 Monate pro Dekade."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        if year % 10 == 4:
+            entry = _nearest_trading_day(df, date(year, 9, 30))
+            exit_d = _nearest_trading_day(df, date(year + 2, 3, 31), direction="backward")
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 22: 20-JAHRES-ZYKLUS (Intradekaden-Trend 3)
+# ══════════════════════════════════════════════════════════════
+
+def calc_20_year_cycle(df: pd.DataFrame) -> list[dict]:
+    """Kauf 30. Sep x2-Jahr (gerades Jahrzehnt), Verkauf 31. Dez x5-Jahr."""
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        decade_digit = year % 10
+        even_decade = (year // 10) % 2 == 0
+        if decade_digit == 2 and even_decade:
+            entry = _nearest_trading_day(df, date(year, 9, 30))
+            exit_d = _nearest_trading_day(df, date(year + 3, 12, 31), direction="backward")
+            trade = _make_trade(df, entry, exit_d)
+            if trade:
+                trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 23: WAHLJAHR LETZTE 7 MONATE
+# ══════════════════════════════════════════════════════════════
+
+def calc_election_year_7months(df: pd.DataFrame) -> list[dict]:
+    """Long 31. Mai bis 31. Dez im Präsidentschaftswahljahr."""
+    from shared.calculations import get_presidential_cycle_year
+    trades = []
+    for year in sorted(df.index.year.unique()):
+        if get_presidential_cycle_year(year) != "Year 4 (Election Year)":
+            continue
+        entry = _nearest_trading_day(df, date(year, 5, 31))
+        exit_d = _last_trading_day(df, year, 12)
+        trade = _make_trade(df, entry, exit_d)
+        if trade:
+            trades.append(trade)
+    return trades
+
+
+# ══════════════════════════════════════════════════════════════
+# STRATEGIE 24 (vorher 14): ULTIMATE ELECTION CYCLE SYSTEM (UECS)
 # ══════════════════════════════════════════════════════════════
 
 def calc_uecs(df: pd.DataFrame) -> list[dict]:
@@ -949,102 +1165,73 @@ def compute_strategy_stats(trades, start_capital=1000.0):
 # ══════════════════════════════════════════════════════════════
 
 STRATEGIES = {
-    "sell_in_may": {
-        "name": "Sell in May",
-        "icon": "📅",
-        "func": calc_sell_in_may,
-        "desc": "Einstieg: Letzter Handelstag Oktober. Ausstieg: 3. Handelstag Mai.",
-        "info": "Die klassische Halloween-Strategie: November bis April investiert, Mai bis Oktober Cash.",
-    },
-    "lbr_november_mai": {
-        "name": "LBR Nov-Mai",
-        "icon": "📊",
-        "func": calc_lbr_november_mai,
-        "desc": "Einstieg: Ab Oktober wenn LBR > 0. Ausstieg: Ab April wenn LBR < 0.",
-        "info": "Sell-in-May mit LBR-Indikator gefiltert — nur investieren wenn der Trend bullisch ist.",
-    },
-    "nasdaq_trend": {
-        "name": "Nasdaq-Trend",
-        "icon": "📈",
-        "func": calc_nasdaq_trend,
-        "desc": "Einstieg: Letzter HT Oktober. Ausstieg: Letzter HT Juni.",
-        "info": "Erweiterte Sell-in-May Variante: 8 Monate investiert (Nov-Jun) statt 6.",
-    },
-    "month_end": {
-        "name": "Month-End",
-        "icon": "🔄",
-        "func": calc_month_end,
-        "desc": "Einstieg: Vorletzter HT des Monats. Ausstieg: 4. HT Folgemonat.",
-        "info": "Nutzt den Turn-of-the-Month Effekt: Monatswechsel sind historisch positiv.",
-    },
-    "monthly_10": {
-        "name": "Monthly 10",
-        "icon": "🗓️",
-        "func": calc_monthly_10,
-        "desc": "Investiert an TDOM 1-4, 9-12 und den letzten 2 Handelstagen.",
-        "info": "Kombiniert mehrere Monatsmuster: Monatsanfang, Monatsmitte und Monatsende.",
-    },
-    "santa_claus": {
-        "name": "Santa Claus",
-        "icon": "🎅",
-        "func": calc_santa_claus,
-        "desc": "Einstieg: 3 TDOM vor Thanksgiving. Ausstieg: 5. TDOM Januar.",
-        "info": "Erweiterte Weihnachtsrallye: Thanksgiving bis Anfang Januar.",
-    },
-    "cycle_212_week": {
-        "name": "212-Wochen-Zyklus",
-        "icon": "🔁",
-        "func": calc_212_week_cycle,
-        "desc": "Einstieg: Alle 1.484 Kalendertage (ab 16.05.1938). Ausstieg: 6 Monate später.",
-        "info": "Langfristiger Markt-Zyklus: Alle ~4 Jahre, 6 Monate investiert.",
-    },
-    "cycle_40_week": {
-        "name": "40-Wochen-Zyklus",
-        "icon": "⚡",
-        "func": calc_40_week_cycle,
-        "desc": "Einstieg: 280-Tage-Zyklus (ab 21.04.1967). Ausstieg: 140 Tage später.",
-        "info": "Kurzfristiger Zyklus: Erste Hälfte (20 Wochen) = bullische Phase.",
-    },
-    "midterm_election": {
-        "name": "Midterm Election",
-        "icon": "🏛️",
-        "func": calc_midterm_election,
-        "desc": "Einstieg: 5 HT vor Midterm-Wahl. Ausstieg: 3 HT nach der Wahl.",
-        "info": "Kurzfristiger Trade um die US-Zwischenwahlen (alle 4 Jahre).",
-    },
-    "september_avoid": {
-        "name": "September-Vermeidung",
-        "icon": "🚫",
-        "func": calc_september_avoid,
-        "desc": "Einstieg: 30. September. Ausstieg: 31. August. Cash nur im September.",
-        "info": "Die einfachste Strategie: 11 Monate investiert, September = Cash.",
-    },
-    "uecs": {
-        "name": "Election Cycle",
-        "icon": "🇺🇸",
-        "func": calc_uecs,
-        "desc": "Investiert in 6 Phasen des 4-Jahres-Präsidentenzyklus.",
-        "info": "Ultimate Election Cycle System: Midterm-Wahl, Vorwahljahr Mär-Jul + Okt-Sep + Nov-Dez, Wahljahr Jun-Dez, Dekaden-5-Jahre.",
-    },
-    "ultimate_monthly": {
-        "name": "Ultimate Monthly",
-        "icon": "💎",
-        "func": calc_ultimate_monthly,
-        "desc": "TDOM 1-4, 9-12, letzte 2 + Feiertage + Santa-Claus-Phase.",
-        "info": "Kombiniert die stärksten Monatstage, Feiertags-Effekte und die Weihnachtsrallye in einem System.",
-    },
-    "kti_long": {
-        "name": "KTI Long-Only",
-        "icon": "📡",
-        "func": calc_kti_long_only,
-        "desc": "Long wenn KTI ≥ 3, Cash wenn < 3. KTI = Summe aktiver saisonaler Trends.",
-        "info": "Known Trends Index (Jay Kaeppel): 14 Komponenten (Monatstage, Zyklen, Wahlzyklus, Feiertage). KTI ≥ 3 = bullisch.",
-    },
-    "kti_leveraged": {
-        "name": "KTI + Hebel",
-        "icon": "🔥",
-        "func": calc_kti_leveraged,
-        "desc": "KTI ≥ 5 → 2x Hebel, KTI 3-4 → 1x Long, KTI < 3 → Cash.",
-        "info": "Aggressive KTI-Variante: Verdoppelt die Position wenn viele saisonale Trends gleichzeitig bullisch sind.",
-    },
+    # ── Saisonale Klassiker ──
+    "sell_in_may": {"name": "Sell in May", "icon": "📅", "category": "saisonal", "func": calc_sell_in_may,
+        "desc": "Einstieg: Letzter HT Oktober. Ausstieg: 3. HT Mai.", "info": "Die klassische Halloween-Strategie: November bis April investiert, Mai bis Oktober Cash."},
+    "lbr_november_mai": {"name": "LBR Nov-Mai", "icon": "📊", "category": "saisonal", "func": calc_lbr_november_mai,
+        "desc": "Einstieg: Ab Oktober wenn LBR > 0. Ausstieg: Ab April wenn LBR < 0.", "info": "Sell-in-May mit LBR-Indikator gefiltert."},
+    "nasdaq_trend": {"name": "Nasdaq-Trend", "icon": "📈", "category": "saisonal", "func": calc_nasdaq_trend,
+        "desc": "Einstieg: Letzter HT Oktober. Ausstieg: Letzter HT Juni.", "info": "Erweiterte Sell-in-May Variante: 8 Monate investiert (Nov-Jun)."},
+    "september_avoid": {"name": "Sep-Vermeidung", "icon": "🚫", "category": "saisonal", "func": calc_september_avoid,
+        "desc": "Einstieg: 30. Sep. Ausstieg: 31. Aug. Cash nur im September.", "info": "11 Monate investiert, September = Cash."},
+    "election_7months": {"name": "Wahljahr 7 Mon", "icon": "🗳️", "category": "saisonal", "func": calc_election_year_7months,
+        "desc": "Long 31. Mai bis 31. Dez im Wahljahr.", "info": "Letzte 7 Monate des Präsidentschaftswahljahres."},
+
+    # ── Januar-Signale ──
+    "first_five_days": {"name": "First Five Days", "icon": "5️⃣", "category": "januar", "func": calc_first_five_days,
+        "desc": "Wenn erste 5 Jan-HT positiv → Long Feb-Dez.", "info": "Früher Januar-Indikator: Positive erste Woche = bullisches Jahressignal."},
+    "last_five_days": {"name": "Last Five Days", "icon": "🔚", "category": "januar", "func": calc_last_five_days,
+        "desc": "Wenn letzte 5 Jan-HT positiv → Long Feb-Dez.", "info": "Späte Januar-Bestätigung: Positive letzte Woche = bullisch."},
+    "january_barometer": {"name": "Jan-Barometer", "icon": "🌡️", "category": "januar", "func": calc_january_barometer,
+        "desc": "Wenn Januar gesamt positiv → Long Feb-Dez.", "info": "So geht der Januar, so geht das Jahr. Seit 1937 bewährt."},
+
+    # ── Feiertage & Jahresende ──
+    "santa_claus": {"name": "Santa Claus", "icon": "🎅", "category": "feiertag", "func": calc_santa_claus,
+        "desc": "Einstieg: 3 TDOM vor Thanksgiving. Ausstieg: 5. TDOM Jan.", "info": "Erweiterte Weihnachtsrallye."},
+    "one_day_holiday": {"name": "Feiertag 1-Tag", "icon": "🎆", "category": "feiertag", "func": calc_one_day_holiday,
+        "desc": "Kauf 2 HT vor Feiertag, Verkauf 1 HT vor Feiertag.", "info": "Der stärkste Einzeltag: direkt vor dem Feiertag."},
+    "uhts": {"name": "UHTS (Hebel)", "icon": "🎇", "category": "feiertag", "func": calc_uhts,
+        "desc": "3 HT vor Feiertag Long, Tag davor 2x Hebel, 3 HT danach Exit.", "info": "Ultimate Holiday Trading System mit Hebel."},
+    "post_christmas": {"name": "Nach Weihnachten", "icon": "🎄", "category": "feiertag", "func": calc_post_christmas,
+        "desc": "1. HT nach Weihnachten bis Silvester.", "info": "78,7% Win-Rate über 107 Jahre."},
+
+    # ── Monatsmuster ──
+    "month_end": {"name": "Month-End", "icon": "🔄", "category": "monat", "func": calc_month_end,
+        "desc": "Vorletzter HT des Monats bis 4. HT Folgemonat.", "info": "Turn-of-the-Month Effekt."},
+    "monthly_10": {"name": "Monthly 10", "icon": "🗓️", "category": "monat", "func": calc_monthly_10,
+        "desc": "TDOM 1-4, 9-12 und letzte 2 HT.", "info": "Kombiniert Monatsanfang, -mitte und -ende."},
+    "ultimate_monthly": {"name": "Ultimate Monthly", "icon": "💎", "category": "monat", "func": calc_ultimate_monthly,
+        "desc": "TDOM-Tage + Feiertage + Santa-Claus-Phase.", "info": "Das kompletteste Monatsmuster-System."},
+    "second_trading_day": {"name": "2. Handelstag", "icon": "2️⃣", "category": "monat", "func": calc_second_trading_day,
+        "desc": "Kauf Close TDOM 1, Verkauf Close TDOM 2.", "info": "Stärkster Einzeltag des Monats."},
+
+    # ── Zyklen ──
+    "cycle_40_week": {"name": "40-Wochen-Zyklus", "icon": "⚡", "category": "zyklus", "func": calc_40_week_cycle,
+        "desc": "280-Tage-Zyklus ab 21.04.1967, 140 Tage investiert.", "info": "Bullische erste Hälfte des 40-Wochen-Zyklus."},
+    "cycle_212_week": {"name": "212-Wochen-Zyklus", "icon": "🔁", "category": "zyklus", "func": calc_212_week_cycle,
+        "desc": "Alle 1.484 Tage ab 16.05.1938, 6 Monate investiert.", "info": "Langfristiger ~4-Jahres-Zyklus."},
+    "mid_decade": {"name": "Mid-Decade Rallye", "icon": "📆", "category": "zyklus", "func": calc_mid_decade,
+        "desc": "Okt x4-Jahr bis Mär x6-Jahr (18 Monate/Dekade).", "info": "Ø +41,7% Gewinn pro Dekade seit 1900."},
+    "cycle_20_year": {"name": "20-Jahres-Zyklus", "icon": "🔄", "category": "zyklus", "func": calc_20_year_cycle,
+        "desc": "Sep x2 (gerades Jahrzehnt) bis Dez x5 (27 Monate).", "info": "Tritt alle 20 Jahre auf. Ø +61% Gewinn."},
+
+    # ── Wahlzyklus & KTI ──
+    "uecs": {"name": "Election Cycle", "icon": "🇺🇸", "category": "wahlzyklus", "func": calc_uecs,
+        "desc": "6 Phasen des Präsidentenzyklus kombiniert.", "info": "Ultimate Election Cycle System."},
+    "midterm_election": {"name": "Midterm Election", "icon": "🏛️", "category": "wahlzyklus", "func": calc_midterm_election,
+        "desc": "5 HT vor bis 3 HT nach Midterm-Wahl.", "info": "Kurzfristiger Trade um die Zwischenwahlen."},
+    "kti_long": {"name": "KTI Long-Only", "icon": "📡", "category": "wahlzyklus", "func": calc_kti_long_only,
+        "desc": "Long wenn KTI ≥ 3, Cash wenn < 3.", "info": "Known Trends Index: 14 saisonale Komponenten."},
+    "kti_leveraged": {"name": "KTI + Hebel", "icon": "🔥", "category": "wahlzyklus", "func": calc_kti_leveraged,
+        "desc": "KTI ≥ 5 → 2x, KTI 3-4 → 1x, < 3 → Cash.", "info": "Aggressive KTI-Variante mit Hebel."},
+}
+
+# Kategorie-Definitionen für Tabs
+STRATEGY_CATEGORIES = {
+    "saisonal":    {"label": "📅 Saisonale Klassiker", "order": 1},
+    "januar":      {"label": "🌡️ Januar-Signale",     "order": 2},
+    "feiertag":    {"label": "🎁 Feiertage",          "order": 3},
+    "monat":       {"label": "📊 Monatsmuster",       "order": 4},
+    "zyklus":      {"label": "🔄 Zyklen",             "order": 5},
+    "wahlzyklus":  {"label": "🏛️ Wahlzyklus & KTI",   "order": 6},
 }

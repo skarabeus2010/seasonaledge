@@ -30,7 +30,7 @@ from shared.constants import SE_COLORS, DEFAULT_TICKER
 from shared.charts import apply_se_theme
 from shared.data import download_data, preprocess
 from shared.strategies.plain_vanilla import (
-    STRATEGIES, apply_stop_loss, build_equity_curve, compute_strategy_stats,
+    STRATEGIES, STRATEGY_CATEGORIES, apply_stop_loss, build_equity_curve, compute_strategy_stats,
 )
 
 # ── Page Config ──────────────────────────────────────
@@ -106,9 +106,9 @@ def main():
         except Exception:
             all_results[key] = {"trades": [], "stats": {}}
 
-    # ── Kachel-Auswahl (2×5 Grid) ──────────────────────
+    # ── Kachel-Auswahl mit Tabs ──────────────────────
     st.markdown(
-        f'<div style="text-align:center; margin-bottom:1.2rem;">'
+        f'<div style="text-align:center; margin-bottom:0.5rem;">'
         f'<span style="color:{SE_COLORS["text_muted"]}; font-size:13px; '
         f'letter-spacing:2px; text-transform:uppercase;">Strategie wählen</span>'
         f'<p style="color:{SE_COLORS["text_muted"]}; font-size:0.9rem; margin-top:0.3rem;">'
@@ -116,44 +116,45 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Initialer State
     if "pv_selected" not in st.session_state:
         st.session_state["pv_selected"] = "sell_in_may"
 
-    keys = list(STRATEGIES.keys())
-    _cols_per_row = 4 if len(keys) > 10 else 5
-    _n_rows = (len(keys) + _cols_per_row - 1) // _cols_per_row
-    for row in range(_n_rows):
-        cols = st.columns(_cols_per_row)
-        for col_idx in range(_cols_per_row):
-            idx = row * _cols_per_row + col_idx
-            if idx >= len(keys):
-                break
-            key = keys[idx]
-            strat = STRATEGIES[key]
-            stats = all_results[key]["stats"]
-            cagr = stats.get("cagr", 0)
-            is_selected = (st.session_state["pv_selected"] == key)
+    # Tabs nach Kategorie
+    sorted_cats = sorted(STRATEGY_CATEGORIES.items(), key=lambda x: x[1]["order"])
+    tab_labels = [cat["label"] for _, cat in sorted_cats]
+    tabs = st.tabs(tab_labels)
 
-            with cols[col_idx]:
-                _border = f"border:2px solid {SE_COLORS['accent_warm']};" if is_selected else "border:1px solid rgba(255,255,255,0.08);"
-                _bg = "background:linear-gradient(135deg,#131d2a,#1a2535);" if is_selected else "background:linear-gradient(135deg,#0f1923,#131d2a);"
+    for tab_idx, (cat_key, cat_info) in enumerate(sorted_cats):
+        with tabs[tab_idx]:
+            cat_strategies = {k: v for k, v in STRATEGIES.items() if v.get("category") == cat_key}
+            cat_keys = list(cat_strategies.keys())
+            cols = st.columns(min(len(cat_keys), 5))
 
-                st.markdown(
-                    f'<div style="{_bg}{_border}border-radius:12px;padding:14px 6px;'
-                    f'text-align:center;min-height:100px;overflow:visible;">'
-                    f'<div style="font-size:1.3rem;">{strat["icon"]}</div>'
-                    f'<div style="color:{SE_COLORS["text_primary"]};font-size:10px;font-weight:600;'
-                    f'margin:4px 0 2px;line-height:1.3;word-wrap:break-word;">{strat["name"]}</div>'
-                    f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;'
-                    f'font-weight:700;">{cagr:+.1f}%</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-                if st.button("Auswählen", key=f"pv_btn_{key}",
-                             use_container_width=True, type="primary" if is_selected else "secondary"):
-                    st.session_state["pv_selected"] = key
-                    st.rerun()
+            for i, key in enumerate(cat_keys):
+                strat = STRATEGIES[key]
+                stats = all_results[key]["stats"]
+                cagr = stats.get("cagr", 0)
+                is_selected = (st.session_state["pv_selected"] == key)
+
+                with cols[i % len(cols)]:
+                    _border = f"border:2px solid {SE_COLORS['accent_warm']};" if is_selected else "border:1px solid rgba(255,255,255,0.08);"
+                    _bg = "background:linear-gradient(135deg,#131d2a,#1a2535);" if is_selected else "background:linear-gradient(135deg,#0f1923,#131d2a);"
+
+                    st.markdown(
+                        f'<div style="{_bg}{_border}border-radius:12px;padding:14px 8px;'
+                        f'text-align:center;min-height:100px;">'
+                        f'<div style="font-size:1.3rem;">{strat["icon"]}</div>'
+                        f'<div style="color:{SE_COLORS["text_primary"]};font-size:10px;font-weight:600;'
+                        f'margin:4px 0 2px;line-height:1.3;">{strat["name"]}</div>'
+                        f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;'
+                        f'font-weight:700;">{cagr:+.1f}%</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button("Auswählen", key=f"pv_btn_{key}",
+                                 use_container_width=True, type="primary" if is_selected else "secondary"):
+                        st.session_state["pv_selected"] = key
+                        st.rerun()
 
     # ── Ausgewählte Strategie ────────────────────────────
     sel_key = st.session_state["pv_selected"]
