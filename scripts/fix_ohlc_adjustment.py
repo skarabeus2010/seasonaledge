@@ -109,24 +109,9 @@ def main():
     print("Prüft jeden Ticker auf defekte Open/Close Ratios")
     print("und überschreibt OHLC mit adjustierten Yahoo-Daten.\n")
 
-    # Alle Ticker aus prices-Tabelle (paginiert)
-    client = get_client()
-    all_tickers = set()
-    offset = 0
-    while True:
-        result = (client.table("prices")
-                  .select("ticker")
-                  .range(offset, offset + 999)
-                  .execute())
-        if not result.data:
-            break
-        for r in result.data:
-            all_tickers.add(r["ticker"])
-        if len(result.data) < 1000:
-            break
-        offset += 1000
-
-    all_tickers = sorted(all_tickers)
+    # Ticker-Liste aus symbols.py (schnell, kein DB-Scan)
+    from shared.symbols import SYMBOLS
+    all_tickers = sorted(SYMBOLS.keys())
     print(f"Gefunden: {len(all_tickers)} Ticker\n")
 
     total_fixed = 0
