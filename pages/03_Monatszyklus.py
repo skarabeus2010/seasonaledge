@@ -87,8 +87,10 @@ def calc_intramonth_curve(df, target_month, selected_years):
         month_df = df[(df["year"] == year) & (df["month"] == target_month)].copy()
         if len(month_df) < 10:
             continue
+        # Basis = Close letzter Handelstag Vormonat (in log_return bereits enthalten)
+        # log_return[TDOM1] = log(Close_TDOM1 / Close_Vormonat_Ende)
         log_rets = month_df["log_return"].values
-        cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+        cum = np.cumsum(log_rets)
         curve = (np.exp(cum) - 1) * 100
         all_curves.append({"year": year, "tdoms": month_df["tdom"].tolist(),
                            "curve": curve.tolist(), "total_return": curve[-1] if len(curve) > 0 else 0})
@@ -277,14 +279,22 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
                 ),
             )
         elif cm_tdoms and len(cm_tdoms) == 1:
-            # TDOM 1 (erster Tag) → goldener Stern-Marker auf der Ø-Kurve
-            _tdom1_avg = tdom_stats.get(1, {}).get("avg", 0)
+            # TDOM 1 → goldener Stern auf der rechten Achse (echte Rendite ggü Vormonat)
+            _tdom1_actual = cm_curve[0] if cm_curve else 0
             fig.add_trace(go.Scatter(
-                x=[1], y=[_tdom1_avg], mode="markers",
+                x=[cm_tdoms[0]], y=[_tdom1_actual], mode="markers",
                 marker=dict(size=14, color="#F1C40F", symbol="star", line=dict(width=1, color="#080c12")),
-                name=f"{datetime.now().year} Start (TDOM 1)",
-                hovertemplate=f"<b>{datetime.now().year} — TDOM 1</b><br>Ø: %{{y:+.3f}}%<extra></extra>",
+                name="{} TDOM 1".format(datetime.now().year),
+                yaxis="y2",
+                hovertemplate="<b>{} — TDOM 1</b><br>Rendite: %{{y:+.3f}}%<extra></extra>".format(datetime.now().year),
             ))
+            fig.update_layout(
+                yaxis2=dict(
+                    overlaying="y", side="right", showgrid=False,
+                    ticksuffix="%", tickformat="+.2f", title=None,
+                    tickfont=dict(color="#F1C40F", size=10),
+                ),
+            )
 
     # We are here! (TDOM-Marker)
     if current_tdom is not None and current_tdom in tdoms:
@@ -400,7 +410,11 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
 
 
 def calc_current_month_curve(df, target_month):
-    """Berechnet die kumulierte Log-Rendite-Kurve des aktuellen Monats (Start=0, wie Durchschnitt)."""
+    """Berechnet die kumulierte Log-Rendite-Kurve des aktuellen Monats.
+
+    Basis = Close letzter Handelstag Vormonat.
+    TDOM 1 zeigt bereits die Rendite des ersten Tages.
+    """
     current_year = datetime.now().year
     today = pd.Timestamp(datetime.now().date())
     df_tdom = assign_tdom(df)
@@ -408,11 +422,9 @@ def calc_current_month_curve(df, target_month):
     month_df = month_df[month_df.index <= today]
     if len(month_df) < 1:
         return None, None
-    if len(month_df) == 1:
-        # Erster Tag: nur Startpunkt (0%)
-        return [int(month_df["tdom"].iloc[0])], [0.0]
+    # Basis = Close Vormonat (log_return[TDOM1] enthält bereits die Rendite ggü Vormonat)
     log_rets = month_df["log_return"].values
-    cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+    cum = np.cumsum(log_rets)
     curve = (np.exp(cum) - 1) * 100
     return month_df["tdom"].tolist(), curve.tolist()
 
