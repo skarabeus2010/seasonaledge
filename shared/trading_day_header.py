@@ -337,38 +337,18 @@ def _estimate_from_previous_years(
 
 
 def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOY aus den Daten."""
-    today = datetime.now()
-    if "tdoy" not in df.columns:
+    """Aktueller TDOY — berechnet aus pd.bdate_range, nicht aus DB-Daten."""
+    today = date.today()
+    bdays = pd.bdate_range(date(today.year, 1, 1), today)
+    if len(bdays) == 0:
         return None
-    # Ende des heutigen Tages als Cutoff (damit 07:00 Timestamps eingeschlossen werden)
-    cutoff = pd.Timestamp(today.date()) + pd.Timedelta(days=1)
-    current = df[(df["year"] == today.year)]
-    current = current[current.index < cutoff]
-    if len(current) == 0:
-        return None
-    return int(current["tdoy"].iloc[-1])
+    return len(bdays)
 
 
 def _get_current_tdom(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOM aus den Daten. Fallback auf letzten bekannten Tag."""
-    today = datetime.now()
-    # Ende des heutigen Tages als Cutoff
-    cutoff = pd.Timestamp(today.date()) + pd.Timedelta(days=1)
-    current = df[(df["year"] == today.year) & (df["month"] == today.month)]
-    current = current[current.index < cutoff]
-    if len(current) > 0:
-        return len(current)
-    # Fallback: letzter bekannter Monat (z.B. US-Börse hat noch nicht geöffnet)
-    year_df = df[df["year"] == today.year]
-    year_df = year_df[year_df.index < cutoff]
-    if len(year_df) > 0:
-        last_month = int(year_df["month"].iloc[-1])
-        if last_month == today.month:
-            # Gleicher Monat, aber keine Daten bis heute
-            month_df = year_df[year_df["month"] == last_month]
-            return len(month_df)
-        else:
-            # Vormonat — zeige TDOM 1 als Schätzung (neuer Monat hat begonnen)
-            return 1
-    return None
+    """Aktueller TDOM — berechnet aus pd.bdate_range, nicht aus DB-Daten."""
+    today = date.today()
+    bdays = pd.bdate_range(date(today.year, today.month, 1), today)
+    if len(bdays) == 0:
+        return None
+    return len(bdays)
