@@ -1328,7 +1328,10 @@ def main():
     with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):
         wd_cum_stats, _ = calc_weekly_cumulative(raw_df, years_back,
             cycle_filter=cycle_filter if cycle_filter else None)
-        cw_curve = calc_current_week_curve(raw_df) if st.session_state.get("wd_show_current_chart", True) else None
+        # Live-Close anhängen falls heute noch nicht in DB
+        from shared.data import append_today_if_missing
+        _live_df = append_today_if_missing(raw_df, ticker)
+        cw_curve = calc_current_week_curve(_live_df) if st.session_state.get("wd_show_current_chart", True) else None
         cum_fig = build_weekly_cumulative_chart(wd_cum_stats, ticker, current_week_curve=cw_curve)
         if cum_fig:
             st.plotly_chart(cum_fig, use_container_width=True, key="wd_cum_chart")

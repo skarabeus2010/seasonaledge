@@ -117,3 +117,76 @@ def download_data(ticker: str, period: str = "max", interval: str = "1d",
 
     # 2. Fallback: Yahoo Finance + Stooq
     return _yahoo_download(ticker, period=period, interval=interval, timeout=timeout)
+
+
+def append_today_if_missing(df: pd.DataFrame, ticker: str) -> pd.DataFrame:
+    """
+    Hängt heutigen Intraday-Close an wenn er fehlt.
+
+    Wird auf der Wochentage-Page genutzt damit die goldene
+    "Diese Woche"-Linie auch vor dem Intraday-Refresh angezeigt wird.
+    Schreibt den Kurs sofort in Supabase (erster User zahlt Yahoo-Call,
+    alle weiteren laden aus DB).
+    """
+    if df is None or df.empty:
+        return df
+
+    today = pd.Timestamp(datetime.now().date())
+
+    # Schon vorhanden?
+    if today in df.index:
+        return df
+
+    # Wochenende?
+    if today.weekday() >= 5:
+        return df
+
+    # Feiertag? (boersenspezifisch)
+    try:
+        from shared.exchange_holidays import is_trading_day
+        from shared.symbols import get_exchange_for_holidays
+        exchange = get_exchange_for_holidays(ticker)
+        if not is_trading_day(today.date(), exchange):
+            return df
+    except Exception:
+        pass  # Im Zweifel trotzdem versuchen
+
+    # Yahoo-Call: nur letzter Close
+    try:
+        fresh = _yahoo_download(ticker, period="5d", timeout=10)
+        if fresh is None or fresh.empty:
+            return df
+
+        # Normalisiere Index auf Date-only (Yahoo hat manchmal Uhrzeiten)
+        fresh.index = fresh.index.normalize()
+
+        if today not in fresh.index:
+            return df
+
+        # Nur Close extrahieren, Rest NaN
+        last_close = float(fresh.loc[today, "Close"])
+        new_row = pd.DataFrame(
+            {"Open": [np.nan], "High": [np.nan], "Low": [np.nan],
+             "Close": [last_close], "Volume": [0]},
+            index=pd.DatetimeIndex([today])
+        )
+        new_row.index.name = df.index.name
+
+        # An DataFrame anhängen
+        df = pd.concat([df, new_row]).sort_index()
+
+        # In Supabase schreiben (fire-and-forget)
+        try:
+            from shared.supabase_client import upsert_prices
+            upsert_prices([{
+                "ticker": ticker,
+                "date": today.strftime("%Y-%m-%d"),
+                "close": last_close,
+            }])
+        except Exception:
+            pass  # Nicht kritisch
+
+    except Exception:
+        pass  # Yahoo-Fehler → DataFrame unverändert zurückgeben
+
+    return df
