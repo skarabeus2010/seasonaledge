@@ -116,25 +116,45 @@ def refresh_tickers(tickers, group_name, dry_run=False):
                 # log_return berechnen (ln(close_t / close_{t-1}))
                 df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
 
-                # TDOM/TDOY berechnen (boersenspezifisch)
+                # TDOM/TDOY berechnen: Letzten bekannten Wert aus DB lesen + weiterzaehlen
                 try:
                     from shared.exchange_holidays import is_trading_day as _is_td
                     from shared.symbols import get_exchange_for_holidays
+                    from shared.supabase_client import get_client as _get_client
                     _exchange = get_exchange_for_holidays(ticker)
+
+                    # Letzten TDOY/TDOM aus Supabase holen (vor dem aeltesten Tag im Download)
+                    _sorted_df = df.sort_index()
+                    _first_date = _sorted_df.index[0]
+                    _first_str = _first_date.strftime("%Y-%m-%d") if hasattr(_first_date, 'strftime') else str(_first_date)
+                    _db_client = _get_client()
+                    _prev = (_db_client.table("prices")
+                             .select("date,tdom,tdoy")
+                             .eq("ticker", ticker)
+                             .lt("date", _first_str)
+                             .order("date", desc=True)
+                             .limit(1)
+                             .execute())
+
                     _tdoy = 0
                     _tdom = 0
-                    _cur_year = None
-                    _cur_month = None
-                    for _d_idx in df.sort_index().index:
+                    _prev_month = None
+                    if _prev.data and _prev.data[0].get("tdoy") is not None:
+                        _tdoy = int(_prev.data[0]["tdoy"])
+                        _tdom = int(_prev.data[0]["tdom"])
+                        _prev_month = int(_prev.data[0]["date"].split("-")[1])
+
+                    for _d_idx in _sorted_df.index:
                         _d = _d_idx.date() if hasattr(_d_idx, 'date') else _d_idx
-                        if _d.year != _cur_year:
-                            _cur_year = _d.year
+                        # Jahreswechsel: TDOY reset
+                        if _prev_month is not None and _d.month == 1 and _prev_month == 12:
                             _tdoy = 0
-                            _cur_month = _d.month
                             _tdom = 0
-                        if _d.month != _cur_month:
-                            _cur_month = _d.month
+                        # Monatswechsel: TDOM reset
+                        if _prev_month is not None and _d.month != _prev_month:
                             _tdom = 0
+                        _prev_month = _d.month
+
                         if _is_td(_d, _exchange):
                             _tdoy += 1
                             _tdom += 1

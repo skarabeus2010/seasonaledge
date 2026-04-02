@@ -22,7 +22,30 @@
       "Bash(git pull:*)",
       "Bash(ls -la /c/dev/Seasonaledge/shared/*.py)",
       "Bash(grep -r \"get_dropdown_label\\|get_display_name\\|SYMBOLS\\|DEFAULT_SYMBOL\" /c/dev/Seasonaledge/pages/*.py)",
-      "Bash(gh run:*)"
+      "Bash(gh run:*)",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/04_Wochentage.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/04_Wochentage.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo skarabeus2010/seasonaledge --limit 3)",
+      "Bash(where gh.exe)",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/04_Wochentage.py'', encoding=''utf-8''\\).read\\(\\)\\); ast.parse\\(open\\(''shared/data.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(py -c \":*)",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/05_Monatswechsel.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/05_Monatswechsel.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(npx skills:*)",
+      "Bash(ln -s \"/c/dev/SeasonalEdge/.agents/skills/frontend-design\" \"/c/dev/SeasonalEdge/.claude/skills/frontend-design\")",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(npx -y @21st-dev/cli@latest install cursor --api-key \"33444404d46b2e67712ffc36f130189855ed0d1ef9145358f0e34d9b41958d80\")",
+      "WebFetch(domain:21st.dev)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(grep -n \"ticker_select\\\\|ticker = st.text_input\" pages/*.py)",
+      "Bash(grep -n \"DEFAULT_TICKER\" pages/*.py)",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''shared/data.py''\\).read\\(\\)\\); print\\(''data.py OK''\\); ast.parse\\(open\\(''pages/04_Wochentage.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''04_Wochentage.py OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''scripts/backfill_tdoy.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/04_Wochentage.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/06_Mondphasen.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/03_Monatszyklus.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }
