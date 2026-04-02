@@ -119,15 +119,28 @@ def backfill_ticker(client, ticker: str, exchange: str) -> int:
             total_updated += len(records)
         except Exception as e:
             print(f"    ⚠ Batch-Fehler bei {ticker}: {e}")
+        del records  # Speicher freigeben
 
+    # Explizit aufraeumen
+    del all_rows, all_dates, td_values
     return total_updated
 
 
 def main():
+    import gc
+    args = sys.argv[1:]
+    single_ticker = None
+    for i, arg in enumerate(args):
+        if arg == "--ticker" and i + 1 < len(args):
+            single_ticker = args[i + 1]
+
     client = get_client()
 
-    # Alle Ticker aus SYMBOLS
-    tickers = sorted(SYMBOLS.keys())
+    # Alle Ticker aus SYMBOLS (oder einzelner)
+    if single_ticker:
+        tickers = [single_ticker]
+    else:
+        tickers = sorted(SYMBOLS.keys())
     print(f"\nGefunden: {len(tickers)} Ticker\n")
 
     total_rows = 0
@@ -143,6 +156,9 @@ def main():
             print(f"  [{idx:3d}/{len(tickers)}] {ticker:<12s} — ✓ {updated:6d} Zeilen ({exchange})")
         else:
             print(f"  [{idx:3d}/{len(tickers)}] — ⚠ Übersprungen (keine Daten)")
+
+        # Speicher freigeben nach jedem Ticker (verhindert OOM bei Docker)
+        gc.collect()
 
     print(f"\n{'=' * 60}")
     print(f"Fertig: {total_fixed} Ticker, {total_rows} Zeilen aktualisiert")
