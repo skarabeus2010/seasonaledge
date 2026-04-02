@@ -123,71 +123,27 @@ def build_tom_heatmap(tom_result, ticker, selected_years):
 # ── 3. STREAK-ANALYSE ────────────────────────────────────
 
 def render_streak_analysis(tom_result):
-    """Zeigt aktuelle Gewinn-/Verlust-Serien pro Monatswechsel."""
-    # Gruppiere nach Monat, sortiere nach Jahr
-    month_data = {}
-    for entry in tom_result["all_curves"]:
-        m = entry["month"]
-        if m not in month_data:
-            month_data[m] = []
-        month_data[m].append({"year": entry["year"], "ret": entry["total_return"]})
+    """Zeigt aktuelle Gewinn-/Verlust-Serien pro Monatswechsel. Nutzt shared/streak_analysis.py."""
+    from shared.streak_analysis import compute_streaks_from_list, render_streak_table
 
-    streak_rows = []
-    for m in sorted(month_data.keys()):
-        entries = sorted(month_data[m], key=lambda x: x["year"], reverse=True)
-        # Aktuelle Streak zaehlen
-        if not entries:
-            continue
-        streak_type = "win" if entries[0]["ret"] > 0 else "loss"
-        streak_count = 0
-        for e in entries:
-            if (streak_type == "win" and e["ret"] > 0) or (streak_type == "loss" and e["ret"] <= 0):
-                streak_count += 1
-            else:
-                break
+    label_map = {m: "{} \u2192 {}".format(MONTH_NAMES_DE[m - 1], MONTH_NAMES_DE[m % 12])
+                 for m in range(1, 13)}
 
-        # Letzte 10 als farbige Bloecke
-        blocks = ""
-        for e in entries[:10]:
-            color = "#00d4aa" if e["ret"] > 0 else "#ff4757"
-            blocks += f"<span style='display:inline-block; width:36px; height:28px; " \
-                       f"background:{color}; border-radius:5px; margin:2px; " \
-                       f"text-align:center; font-size:11px; line-height:28px; " \
-                       f"font-weight:700; color:#FFFFFF;' " \
-                       f"title='{e['year']}: {e['ret']:+.2f}%'>" \
-                       f"{'W' if e['ret'] > 0 else 'L'}</span>"
-
-        label = f"{MONTH_NAMES_DE[m-1]} → {MONTH_NAMES_DE[m % 12]}"
-        streak_color = "#00d4aa" if streak_type == "win" else "#ff4757"
-        streak_text = f"{streak_count}x {'Gewinn' if streak_type == 'win' else 'Verlust'}"
-
-        streak_rows.append(
-            f"<tr>"
-            f"<td style='color:#FFFFFF; font-size:13px; padding:6px 12px;'>{label}</td>"
-            f"<td style='color:{streak_color}; font-weight:700; font-size:13px; "
-            f"padding:6px 12px; text-align:center;'>{streak_text}</td>"
-            f"<td style='padding:6px 8px;'>{blocks}</td>"
-            f"</tr>"
-        )
-
-    table_html = (
-        "<table style='width:100%; border-collapse:collapse;'>"
-        "<tr style='border-bottom:1px solid rgba(255,255,255,0.1);'>"
-        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 12px;'>Monatswechsel</th>"
-        "<th style='color:#8899aa; font-size:11px; text-align:center; padding:4px 12px;'>Aktuelle Serie</th>"
-        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 8px;'>Letzte 10 (neueste links)</th>"
-        "</tr>"
-        + "".join(streak_rows)
-        + "</table>"
+    groups = compute_streaks_from_list(
+        tom_result["all_curves"],
+        group_key="month",
+        return_key="total_return",
+        year_key="year",
+        label_map=label_map,
     )
-    st.markdown(table_html, unsafe_allow_html=True)
-    st.markdown(
-        "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
-        "<b>Interpretation:</b> Lange Gewinnserien deuten auf einen robusten saisonalen Effekt hin. "
+    render_streak_table(
+        groups,
+        col_header="Monatswechsel",
+        interpretation="Lange Gewinnserien deuten auf einen robusten saisonalen Effekt hin. "
         "Abbrechende Serien koennen auf Regimewechsel hinweisen. "
         "<span style='color:#00d4aa;'>W</span> = Gewinn, "
-        "<span style='color:#ff4757;'>L</span> = Verlust.</p>",
-        unsafe_allow_html=True)
+        "<span style='color:#ff4757;'>L</span> = Verlust.",
+    )
 
 
 # ── 4. FENSTERBREITE-OPTIMIERUNG ─────────────────────────

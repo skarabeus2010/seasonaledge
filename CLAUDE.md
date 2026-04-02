@@ -43,6 +43,7 @@ shared/                  ← Berechnungen, Daten, Utilities
   sector_rotation.py     ← Sektor-Rotation Analyse
   significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
   percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
+  streak_analysis.py     ← Wiederverwendbare Streak-Analyse (W/L-Serien, HTML-Tabelle)
   footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk Disclosure
   info_badge.py          ← ⓘ-Badge für Expander (DEPRECATED — nur noch in _disabled/ Pages)
   info_texts.yaml        ← Zentrale Erklärungs-Texte DE/EN (51 Einträge) → Datenquelle für 10_Methodik
@@ -511,9 +512,15 @@ UPPER_CASE        → Konstanten
 - [x] OHLC Fix: 18 Ticker / 102k Zeilen in Supabase korrigiert (2026-04-02)
       Dividend-Check (mean_intraday < -0.5%) erkennt fehlende Dividend-Adjustierung.
 - [x] log_return Spalte: Backfill fuer alle 263 Ticker (2026-04-02)
+- [x] Streak-Analyse: shared/streak_analysis.py (wiederverwendbar) (2026-04-02)
+      compute_streaks_from_df() + compute_streaks_from_list() + render_streak_table().
+      Eingesetzt: Wochentage + Monatswechsel. Bereit fuer: OPEX, Fed, Mondphasen.
+- [x] Live-Close Fallback: append_today_if_missing() in data.py (2026-04-02)
+      Yahoo-Call fuer heutigen Close wenn nicht in DB. Schreibt sofort in Supabase.
+- [x] TDOM/TDOY als DB-Spalten in prices-Tabelle (2026-04-02)
+      Nightly+Intraday Refresh schreiben tdom/tdoy. preprocess() nutzt DB-Werte.
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
-- [ ] tdoy als echte Spalte in Supabase (statt cumcount in preprocess)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
 
 ## Docs (bei Bedarf lesen)
