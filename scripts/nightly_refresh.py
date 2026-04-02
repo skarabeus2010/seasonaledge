@@ -19,6 +19,7 @@ _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
+import pandas as pd
 from shared.logger import app_logger
 
 
