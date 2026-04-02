@@ -198,13 +198,40 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
 
     fig = go.Figure()
 
+    # Solide Linie fuer n>=10, gestrichelt fuer n<10
+    _MIN_N = 10
+    _solid_x, _solid_y = [], []
+    _weak_x, _weak_y = [], []
+    for i, t in enumerate(tdoms):
+        if tdom_stats[t]["n"] >= _MIN_N:
+            _solid_x.append(t)
+            _solid_y.append(detrended[i])
+        else:
+            _weak_x.append(t)
+            _weak_y.append(detrended[i])
+
     fig.add_trace(go.Scatter(
-        x=tdoms, y=detrended, mode="lines+markers",
+        x=_solid_x, y=_solid_y, mode="lines+markers",
         line=dict(color="#FF6B6B", width=2.5),
         marker=dict(size=4, color="#FF6B6B"),
         name="Saisonaler Druck",
         hovertemplate="TDOM %{x}<br>Wert: %{y:.1f}<extra></extra>"
     ))
+
+    if _weak_x:
+        _tr_x, _tr_y = [], []
+        if _solid_x:
+            _tr_x.append(_solid_x[-1])
+            _tr_y.append(_solid_y[-1])
+        _tr_x.extend(_weak_x)
+        _tr_y.extend(_weak_y)
+        fig.add_trace(go.Scatter(
+            x=_tr_x, y=_tr_y, mode="lines+markers",
+            line=dict(color="#ff6b6b", width=2, dash="dot"),
+            marker=dict(size=12, color="#ff6b6b", symbol="diamond",
+                        line=dict(width=2, color="#ffffff")),
+            name="⚠ n<{} (unsicher)".format(_MIN_N),
+        ))
 
     # Midline bei 50
     fig.add_hline(y=50, line_dash="dash", line_color="rgba(255,255,255,0.3)", line_width=1)
@@ -268,29 +295,33 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             _weak_x.append(t)
             _weak_y.append(avg_curve[i])
 
-    # Solide Linie (n >= 10)
-    fig.add_trace(go.Scatter(x=tdoms, y=avg_curve, mode="lines+markers",
+    # Solide Linie NUR fuer n>=10 TDOMs
+    _solid_hover = [_hover_texts[i] for i, t in enumerate(tdoms) if tdom_stats[t]["n"] >= _MIN_N]
+    fig.add_trace(go.Scatter(x=_solid_x, y=_solid_y, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
         name="Ø {} (linke Achse)".format(month_name),
-        hovertext=_hover_texts, hoverinfo="text"))
+        hovertext=_solid_hover, hoverinfo="text"))
 
-    # Schwache TDOMs markieren (n < 10) — rote Marker + gestrichelte Verbindung
+    # Schwache TDOMs (n < 10) — grosse rote Marker + gestrichelte orangene Linie
     if _weak_x:
-        # Finde den Übergang: letzter solider + erster schwacher Punkt
         _transition_x = []
         _transition_y = []
+        _transition_hover = []
         if _solid_x:
             _transition_x.append(_solid_x[-1])
             _transition_y.append(_solid_y[-1])
+            _transition_hover.append("")
         _transition_x.extend(_weak_x)
         _transition_y.extend(_weak_y)
+        for t in _weak_x:
+            _transition_hover.append("TDOM {} · n={} ⚠ wenig Daten".format(t, tdom_stats[t]["n"]))
         fig.add_trace(go.Scatter(
             x=_transition_x, y=_transition_y, mode="lines+markers",
-            line=dict(color="#00CED1", width=2, dash="dot"),
-            marker=dict(size=7, color="#ff6b6b", symbol="circle-open", line=dict(width=2, color="#ff6b6b")),
+            line=dict(color="#ff6b6b", width=2, dash="dot"),
+            marker=dict(size=12, color="#ff6b6b", symbol="diamond",
+                        line=dict(width=2, color="#ffffff")),
             name="⚠ n<{} (unsicher)".format(_MIN_N),
-            hovertext=["n={} ⚠ wenig Daten".format(tdom_stats[t]["n"]) for t in _transition_x],
-            hoverinfo="text",
+            hovertext=_transition_hover, hoverinfo="text",
         ))
 
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
@@ -351,14 +382,22 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
 def build_weekly_bars(weekly_stats, ticker, month_name, current_tdom):
     if not weekly_stats:
         return None
+    _MIN_N = 10
     labels = [w["label"] for w in weekly_stats]
     avgs = [w["avg"] for w in weekly_stats]
-    colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+    ns = [w["n"] for w in weekly_stats]
+    colors = []
+    for i, v in enumerate(avgs):
+        base = SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"]
+        colors.append("rgba(128,128,128,0.3)" if ns[i] < _MIN_N else base)
+    _texts = []
+    for v, w in zip(avgs, weekly_stats):
+        warn = " ⚠" if w["n"] < _MIN_N else ""
+        _texts.append("{:+.3f}%<br>WR {:.0f}% · n={}{}".format(v, w["win_rate"], w["n"], warn))
     fig = go.Figure()
     fig.add_trace(go.Bar(x=labels, y=avgs, marker_color=colors,
-        text=[f"{v:+.3f}%<br>WR {w['win_rate']:.0f}% · n={w['n']}" for v, w in zip(avgs, weekly_stats)],
-        textposition="outside", textfont=dict(size=10),
-        hovertemplate="<b>%{x}</b><br>Oe %{y:+.3f}%<extra></extra>"))
+        text=_texts, textposition="outside", textfont=dict(size=10),
+        hovertemplate="<b>%{x}</b><br>Ø %{y:+.3f}%<extra></extra>"))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
     # We are here!
@@ -413,18 +452,34 @@ def build_two_week_bars(tw_stats, ticker, split_day, current_tdom):
     current_half = "1st" if (current_tdom or 1) <= split_day else "2nd"
     current_label = f"{today.month:02d}/{current_half}"
     sorted_tw = sorted(tw_stats, key=lambda x: x["avg"], reverse=True)
+    _MIN_N = 10
     labels = [t["label"] for t in sorted_tw]
     avgs = [t["avg"] for t in sorted_tw]
-    colors = [SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"] for v in avgs]
+    ns = [t["n"] for t in sorted_tw]
+    # Schwache Balken (n<10) halbtransparent
+    colors = []
+    for i, v in enumerate(avgs):
+        base = SE_COLORS["positive"] if v >= 0 else SE_COLORS["negative"]
+        if ns[i] < _MIN_N:
+            # Transparent + gestrichelte Border
+            colors.append("rgba(128,128,128,0.3)")
+        else:
+            colors.append(base)
 
     # Mindest-Balkenhöhe damit auch Werte nahe 0 sichtbar + hoverbar bleiben
     min_height = 0.04
     display_avgs = [v if abs(v) >= min_height else (min_height if v >= 0 else -min_height) for v in avgs]
 
     fig = go.Figure()
+    _texts = []
+    for i, v in enumerate(avgs):
+        if ns[i] < _MIN_N:
+            _texts.append("{:+.3f}% (n={})".format(v, ns[i]))
+        else:
+            _texts.append("{:+.3f}%".format(v))
     fig.add_trace(go.Bar(x=labels, y=display_avgs,
         marker_color=colors,
-        text=[f"{v:+.3f}%" for v in avgs], textposition="outside", textfont=dict(size=9),
+        text=_texts, textposition="outside", textfont=dict(size=9),
         hovertemplate="<b>%{x}</b><br>Ø: %{customdata[0]:+.3f}%<br>WR: %{customdata[1]:.0f}%<br>n=%{customdata[2]}<extra></extra>",
         customdata=[[t["avg"], t["win_rate"], t["n"]] for t in sorted_tw]))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
