@@ -64,46 +64,48 @@ def compute_tdoy_tdom(dates: list[date], exchange: str) -> list[dict]:
 def backfill_ticker(client, ticker: str, exchange: str) -> int:
     """Backfill TDOM/TDOY fuer einen Ticker. Returns: Anzahl aktualisierter Zeilen."""
 
-    # Alle Dates fuer diesen Ticker laden
-    all_dates = []
+    # Alle Rows fuer diesen Ticker laden (date + close fuer Upsert)
+    all_rows = []
     page_size = 1000
     offset = 0
     while True:
         result = (client.table("prices")
-                  .select("date")
+                  .select("date,close")
                   .eq("ticker", ticker)
                   .order("date")
                   .range(offset, offset + page_size - 1)
                   .execute())
         if not result.data:
             break
-        for row in result.data:
-            all_dates.append(date.fromisoformat(row["date"]))
+        all_rows.extend(result.data)
         if len(result.data) < page_size:
             break
         offset += page_size
 
-    if not all_dates:
+    if not all_rows:
         return 0
+
+    all_dates = [date.fromisoformat(r["date"]) for r in all_rows]
 
     # TDOM/TDOY berechnen
     td_values = compute_tdoy_tdom(all_dates, exchange)
 
-    # In Batches zurueckschreiben (max 500 pro Upsert)
+    # In Batches zurueckschreiben (Upsert MIT close → NOT NULL constraint OK)
     batch_size = 500
     total_updated = 0
 
     for i in range(0, len(td_values), batch_size):
         batch = td_values[i:i + batch_size]
-        records = [
-            {
+        records = []
+        for j, v in enumerate(batch):
+            row_idx = i + j
+            records.append({
                 "ticker": ticker,
                 "date": v["date"].isoformat(),
+                "close": all_rows[row_idx]["close"],  # Bestehenden Close mitgeben
                 "tdom": v["tdom"],
                 "tdoy": v["tdoy"],
-            }
-            for v in batch
-        ]
+            })
         try:
             client.table("prices").upsert(
                 records,
