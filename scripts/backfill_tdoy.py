@@ -85,6 +85,11 @@ def backfill_ticker(client, ticker: str, exchange: str) -> int:
     if not all_rows:
         return 0
 
+    # Zeilen ohne Close filtern (NOT NULL constraint)
+    all_rows = [r for r in all_rows if r.get("close") is not None]
+    if not all_rows:
+        return 0
+
     all_dates = [date.fromisoformat(r["date"]) for r in all_rows]
 
     # TDOM/TDOY berechnen
