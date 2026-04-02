@@ -239,10 +239,13 @@ def build_detrend_chart(tdom_stats, ticker, month_name, current_tdom):
     # We are here!
     if current_tdom is not None and current_tdom in tdoms:
         idx = tdoms.index(current_tdom)
+        val = detrended[idx]
         fig.add_shape(**wah_vline(current_tdom))
         fig.add_annotation(**wah_annotation(
-            x_val=current_tdom, y_val=detrended[idx],
-            above=True, text=f"We are here! TDOM {current_tdom}",
+            x_val=current_tdom, y_val=val,
+            above=val < 65,  # Unter 65 → Pfeil oben, ueber 65 → Pfeil unten (Titel-Kollision)
+            text=f"TDOM {current_tdom}",
+            y_range=(0, 100), chart_height=300,
         ))
 
     n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
@@ -358,10 +361,15 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     # We are here! (TDOM-Marker)
     if current_tdom is not None and current_tdom in tdoms:
         idx = tdoms.index(current_tdom)
+        val = avg_curve[idx]
+        y_min = min(avg_curve) if avg_curve else 0
+        y_max = max(avg_curve) if avg_curve else 1
         fig.add_shape(**wah_vline(current_tdom))
         fig.add_annotation(**wah_annotation(
-            x_val=current_tdom, y_val=avg_curve[idx],
-            above=True, text=f"We are here! TDOM {current_tdom}",
+            x_val=current_tdom, y_val=val,
+            above=val < (y_max - (y_max - y_min) * 0.3),  # Oben wenn genug Platz
+            text=f"We are here! TDOM {current_tdom}",
+            y_range=(y_min, y_max),
         ))
 
     n_years = tdom_stats[1]["n"] if 1 in tdom_stats else 0
