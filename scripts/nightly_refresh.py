@@ -210,6 +210,103 @@ def main():
 
     n_results = refresh_ticker_data(tickers, years_back=20, quick_mode=True)
 
+    # Phase C: Health-Check — fehlende Handelstage der letzten 7 Tage finden + nachladen
+    missing_total = 0
+    auto_fixed = 0
+    missing_details = {}
+    health_errors = []
+    try:
+        from shared.supabase_client import get_client, upsert_prices
+        from shared.exchange_holidays import is_trading_day
+        from shared.symbols import get_exchange_for_holidays
+        from shared.yahoo_downloader import download_data as yahoo_download
+
+        client = get_client()
+        check_start = date.today() - __import__('datetime').timedelta(days=7)
+        check_end = date.today()
+
+        for ticker in tickers:
+            try:
+                exchange = get_exchange_for_holidays(ticker)
+
+                # DB-Dates der letzten 7 Tage
+                result = (client.table("prices")
+                          .select("date")
+                          .eq("ticker", ticker)
+                          .gte("date", check_start.strftime("%Y-%m-%d"))
+                          .lte("date", check_end.strftime("%Y-%m-%d"))
+                          .execute())
+                db_dates = set(r["date"] for r in result.data)
+
+                # Erwartete Handelstage
+                d = check_start
+                missing_days = []
+                while d <= check_end:
+                    if is_trading_day(d, exchange) and d.strftime("%Y-%m-%d") not in db_dates:
+                        missing_days.append(d)
+                    d += __import__('datetime').timedelta(days=1)
+
+                if missing_days:
+                    missing_total += len(missing_days)
+                    missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
+
+                    # Auto-Fix: Yahoo nachladen
+                    try:
+                        fresh = yahoo_download(ticker, period="1mo")
+                        if fresh is not None and not fresh.empty:
+                            fresh.index = fresh.index.normalize()
+                            records = []
+                            for md in missing_days:
+                                ts = pd.Timestamp(md)
+                                if ts in fresh.index and pd.notna(fresh.loc[ts, "Close"]):
+                                    rec = {
+                                        "ticker": ticker,
+                                        "date": md.strftime("%Y-%m-%d"),
+                                        "close": round(float(fresh.loc[ts, "Close"]), 4),
+                                        "source": "yahoo",
+                                    }
+                                    for col in ["Open", "High", "Low"]:
+                                        if col in fresh.columns and pd.notna(fresh.loc[ts, col]):
+                                            rec[col.lower()] = round(float(fresh.loc[ts, col]), 4)
+                                    records.append(rec)
+                            if records:
+                                upsert_prices(records)
+                                auto_fixed += len(records)
+                    except Exception:
+                        pass  # Yahoo-Fehler → beim nächsten Run erneut versuchen
+
+            except Exception as te:
+                health_errors.append(f"{ticker}: {te}")
+
+        if missing_total > 0:
+            print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} fehlenden Tagen, {auto_fixed} auto-gefixt")
+        else:
+            print("Health-Check: Alle Ticker vollständig ✓")
+
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Health-Check fehlgeschlagen: {e}")
+        print(f"Health-Check failed: {e}")
+
+    # Phase D: refresh_log schreiben
+    try:
+        from shared.supabase_client import get_client
+        _log_client = get_client()
+        import json
+        _log_client.table("refresh_log").insert({
+            "run_date": date.today().strftime("%Y-%m-%d"),
+            "run_type": "nightly",
+            "tickers_total": len(tickers),
+            "tickers_success": len(tickers) - len(missing_details),
+            "tickers_missing": len(missing_details),
+            "missing_details": json.dumps(missing_details),
+            "auto_fixed": auto_fixed,
+            "duration_seconds": round(time.time() - t_start, 1),
+            "errors": json.dumps(health_errors[:20]),  # Max 20 Fehler loggen
+        }).execute()
+        print("Refresh-Log: geschrieben ✓")
+    except Exception as e:
+        print(f"Refresh-Log failed: {e}")
+
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
         heartbeat()
