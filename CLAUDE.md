@@ -521,6 +521,8 @@ UPPER_CASE        → Konstanten
       Yahoo-Call fuer heutigen Close wenn nicht in DB. Schreibt sofort in Supabase.
 - [x] TDOM/TDOY als DB-Spalten in prices-Tabelle (2026-04-02)
       Nightly+Intraday Refresh schreiben tdom/tdoy. preprocess() nutzt DB-Werte.
+- [x] Intraday Refresh: TDOM/TDOY Fix (liest letzten DB-Wert + zaehlt weiter) (2026-04-02)
+      Vorher: TDOY=1-5 (nur 5 geladene Tage). Nachher: Supabase-Lookup + weiterzaehlen.
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
