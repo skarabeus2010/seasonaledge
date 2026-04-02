@@ -1274,12 +1274,14 @@ def main():
         cm_tdoms, cm_curve = calc_current_month_curve(df, selected_month)
         if cm_tdoms:
             current_month_curve = (cm_tdoms, cm_curve)
-            # DEBUG: Temporär — zeigt was die goldene Linie bekommt
-            st.caption(f"🔍 Debug: cm_tdoms={cm_tdoms}, cm_curve={[round(v,3) for v in cm_curve]}")
     if tdom_stats:
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
+        # DEBUG: Temporär — zeigt was die goldene Linie bekommt
+        if current_month_curve:
+            _dbg_t, _dbg_c = current_month_curve
+            st.warning(f"DEBUG: tdoms={_dbg_t}, curve={[round(v,3) for v in _dbg_c]}, current_tdom={current_tdom}")
 
         # Erklärung + Warnung bei wenig Daten
         _max_tdom = max(tdom_stats.keys()) if tdom_stats else 0
