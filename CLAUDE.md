@@ -2,6 +2,7 @@
 
 > Version 25.0 | 2026-04-02 | Details → `docs/`
 
+
 ## Projekt
 
 **SeasonAlpha** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
@@ -523,6 +524,22 @@ UPPER_CASE        → Konstanten
       Nightly+Intraday Refresh schreiben tdom/tdoy. preprocess() nutzt DB-Werte.
 - [x] Intraday Refresh: TDOM/TDOY Fix (liest letzten DB-Wert + zaehlt weiter) (2026-04-02)
       Vorher: TDOY=1-5 (nur 5 geladene Tage). Nachher: Supabase-Lookup + weiterzaehlen.
+- [x] Streak-Analyse: shared/streak_analysis.py (wiederverwendbar) (2026-04-02)
+      compute_streaks_from_df() + compute_streaks_from_list() + render_streak_table().
+      Eingesetzt: Wochentage + Monatswechsel. Bereit fuer: OPEX, Fed, Mondphasen.
+- [x] Live-Close Fallback: append_today_if_missing() in data.py (2026-04-02)
+      Yahoo-Call fuer heutigen Close wenn nicht in DB. Schreibt sofort in Supabase.
+- [x] TDOM/TDOY als DB-Spalten in prices-Tabelle (2026-04-02)
+      Nightly+Intraday Refresh schreiben tdom/tdoy. preprocess() nutzt DB-Werte.
+- [x] Intraday Refresh: TDOM/TDOY Fix (liest letzten DB-Wert + zaehlt weiter) (2026-04-02)
+      Vorher: TDOY=1-5 (nur 5 geladene Tage). Nachher: Supabase-Lookup + weiterzaehlen.
+- [x] Fehlende Handelstage: scripts/fix_missing_days.py (2026-04-02)
+      Prueft alle 263 Ticker auf Luecken, laedt von Yahoo nach. ~30 Ticker gefixt.
+- [x] Refresh Monitoring: refresh_log Tabelle + Health-Check im Nightly Refresh (2026-04-02)
+      Phase C: Prueft letzte 7 Tage, Auto-Fix. Phase D: Logging in refresh_log.
+      docs/REFRESH_MONITORING.md: Komplette Anleitung.
+- [x] Newsletter-Fix: Supabase-Insert auch bei Brevo-Fehler (2026-04-02)
+      secrets.toml Parse-Fehler gefixt + Supabase Permissions (GRANT INSERT/SELECT).
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
@@ -535,5 +552,6 @@ UPPER_CASE        → Konstanten
 - `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
 - `docs/SEO_ENGINE.md` — Programmatic SEO + Blog Engine
 - `docs/BLOG_WORKFLOW.md` — Blog + Social Media + YouTube Workflow-Anleitung
+- `docs/REFRESH_MONITORING.md` — Kurs-Ueberwachung, Health-Check, Troubleshooting
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel schreiben (DE, SeasonAlpha-Kontext)
