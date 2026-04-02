@@ -252,10 +252,47 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
         fig.add_trace(go.Scatter(x=tdoms, y=lower, mode="lines", line=dict(width=0),
             fill="tonexty", fillcolor="rgba(0,206,209,0.12)", name="+-1 Sigma", showlegend=True, hoverinfo="skip"))
 
-    # Durchschnittskurve
+    # Durchschnittskurve — solide (n>=10) vs. gestrichelt (n<10)
+    _MIN_N = 10
+    _solid_x, _solid_y = [], []
+    _weak_x, _weak_y = [], []
+    _hover_texts = []
+    for i, t in enumerate(tdoms):
+        n = tdom_stats[t]["n"]
+        _hover_texts.append("TDOM {}<br>{:+.3f}%<br>n={}{}".format(
+            t, avg_curve[i], n, " ⚠" if n < _MIN_N else ""))
+        if n >= _MIN_N:
+            _solid_x.append(t)
+            _solid_y.append(avg_curve[i])
+        else:
+            _weak_x.append(t)
+            _weak_y.append(avg_curve[i])
+
+    # Solide Linie (n >= 10)
     fig.add_trace(go.Scatter(x=tdoms, y=avg_curve, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
-        name=f"Ø {month_name} (linke Achse)", hovertemplate="TDOM %{x}<br>%{y:+.3f}%<extra></extra>"))
+        name="Ø {} (linke Achse)".format(month_name),
+        hovertext=_hover_texts, hoverinfo="text"))
+
+    # Schwache TDOMs markieren (n < 10) — rote Marker + gestrichelte Verbindung
+    if _weak_x:
+        # Finde den Übergang: letzter solider + erster schwacher Punkt
+        _transition_x = []
+        _transition_y = []
+        if _solid_x:
+            _transition_x.append(_solid_x[-1])
+            _transition_y.append(_solid_y[-1])
+        _transition_x.extend(_weak_x)
+        _transition_y.extend(_weak_y)
+        fig.add_trace(go.Scatter(
+            x=_transition_x, y=_transition_y, mode="lines+markers",
+            line=dict(color="#00CED1", width=2, dash="dot"),
+            marker=dict(size=7, color="#ff6b6b", symbol="circle-open", line=dict(width=2, color="#ff6b6b")),
+            name="⚠ n<{} (unsicher)".format(_MIN_N),
+            hovertext=["n={} ⚠ wenig Daten".format(tdom_stats[t]["n"]) for t in _transition_x],
+            hoverinfo="text",
+        ))
+
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
 
     # Aktueller Monatsverlauf (gelbe Linie, eigene Y-Achse rechts)
@@ -1162,6 +1199,19 @@ def main():
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
+
+        # Erklärung + Warnung bei wenig Daten
+        _max_tdom = max(tdom_stats.keys()) if tdom_stats else 0
+        _weak_tdoms = [t for t in tdom_stats if tdom_stats[t]["n"] < 10]
+        _hint = ("<p style='color:#FFFFFF; font-size:12px; line-height:1.6;'>"
+                 "<b>Interpretation:</b> Kumulierte Rendite ab Vormonatsschluss (Basis = 0%). "
+                 "Zeigt, wie sich der {} typisch entwickelt. "
+                 "Die gelbe Linie zeigt den aktuellen Verlauf.".format(month_name))
+        if _weak_tdoms:
+            _hint += (" <span style='color:#ff6b6b;'>⚠ Gestrichelte Linie (TDOM {}+): "
+                       "Weniger als 10 Datenpunkte — statistisch unsicher.</span>".format(min(_weak_tdoms)))
+        _hint += "</p>"
+        st.markdown(_hint, unsafe_allow_html=True)
 
         # ── Perzentil-Statusbar ──────────────────────────
         if current_month_curve is not None and current_tdom and current_tdom > 0:
