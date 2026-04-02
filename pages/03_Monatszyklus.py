@@ -73,11 +73,34 @@ def assign_tdom(df):
     df["tdom"] = df.groupby(["year", "month"]).cumcount() + 1
     return df
 
-def get_current_tdom(df):
+def get_current_tdom(df, ticker=None):
+    """Aktuellen TDOM ermitteln. Nutzt DB-Spalte wenn vorhanden, sonst cumcount.
+    Addiert +1 wenn heute ein Handelstag ist und noch kein Kurs in DB."""
     today = datetime.now()
+    today_ts = pd.Timestamp(today.date())
+
+    # DB-Spalte nutzen wenn vorhanden
+    if "tdom" in df.columns and df["tdom"].notna().any():
+        current = df[(df.index.year == today.year) & (df.index.month == today.month)]
+        current = current[current.index <= today_ts].sort_index()
+        if len(current) > 0:
+            last_tdom = int(current["tdom"].dropna().iloc[-1])
+            last_date = current.index[-1].date() if hasattr(current.index[-1], 'date') else current.index[-1]
+            # Wenn letzter Eintrag vor heute → +1 wenn heute Handelstag
+            if last_date < today.date():
+                try:
+                    from shared.exchange_holidays import is_trading_day
+                    from shared.symbols import get_exchange_for_holidays
+                    exchange = get_exchange_for_holidays(ticker) if ticker else "NYSE"
+                    if is_trading_day(today.date(), exchange):
+                        return last_tdom + 1
+                except Exception:
+                    pass
+            return last_tdom
+    # Fallback: cumcount
     df_tdom = assign_tdom(df)
     current = df_tdom[(df_tdom["year"] == today.year) & (df_tdom["month"] == today.month)]
-    current = current[current.index <= pd.Timestamp(today.date())]
+    current = current[current.index <= today_ts]
     return int(current["tdom"].iloc[-1]) if len(current) > 0 else None
 
 def calc_intramonth_curve(df, target_month, selected_years):
@@ -261,12 +284,18 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     tdoms = sorted(tdom_stats.keys())
     avg_curve = [tdom_stats[t]["avg"] for t in tdoms]
 
-    # Einzeljahre mit distinkten Farben
+    # TDOM 0 = 0% als Startpunkt (Vormonatsschluss = Basis)
+    plot_tdoms = [0] + list(tdoms)
+    plot_avg = [0.0] + list(avg_curve)
+
+    # Einzeljahre mit distinkten Farben (auch bei 0 starten)
     if show_individual:
         for i, entry in enumerate(all_curves):
             color = INDIVIDUAL_COLORS[i % len(INDIVIDUAL_COLORS)]
+            entry_tdoms = [0] + list(entry["tdoms"])
+            entry_curve = [0.0] + list(entry["curve"])
             fig.add_trace(go.Scatter(
-                x=entry["tdoms"], y=entry["curve"], mode="lines",
+                x=entry_tdoms, y=entry_curve, mode="lines",
                 line=dict(color=color, width=1.2),
                 opacity=0.6,
                 name=str(entry["year"]),
@@ -276,34 +305,38 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
 
     # Konfidenzband
     if show_bands:
-        upper = [tdom_stats[t]["avg"] + tdom_stats[t]["std"] for t in tdoms]
-        lower = [tdom_stats[t]["avg"] - tdom_stats[t]["std"] for t in tdoms]
-        fig.add_trace(go.Scatter(x=tdoms, y=upper, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))
-        fig.add_trace(go.Scatter(x=tdoms, y=lower, mode="lines", line=dict(width=0),
+        upper = [0.0] + [tdom_stats[t]["avg"] + tdom_stats[t]["std"] for t in tdoms]
+        lower = [0.0] + [tdom_stats[t]["avg"] - tdom_stats[t]["std"] for t in tdoms]
+        band_x = [0] + list(tdoms)
+        fig.add_trace(go.Scatter(x=band_x, y=upper, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip"))
+        fig.add_trace(go.Scatter(x=band_x, y=lower, mode="lines", line=dict(width=0),
             fill="tonexty", fillcolor="rgba(0,206,209,0.12)", name="+-1 Sigma", showlegend=True, hoverinfo="skip"))
 
     # Durchschnittskurve — solide (n>=10) vs. gestrichelt (n<10)
+    # Startet bei TDOM 0 = 0% (Vormonatsschluss)
     _MIN_N = 10
-    _solid_x, _solid_y = [], []
+    _solid_x, _solid_y = [0], [0.0]  # Start bei 0
     _weak_x, _weak_y = [], []
-    _hover_texts = []
+    _hover_texts_solid = ["Basis (Vormonat)<br>0.000%"]
+    _hover_texts_weak = []
     for i, t in enumerate(tdoms):
         n = tdom_stats[t]["n"]
-        _hover_texts.append("TDOM {}<br>{:+.3f}%<br>n={}{}".format(
-            t, avg_curve[i], n, " ⚠" if n < _MIN_N else ""))
+        hover = "TDOM {}<br>{:+.3f}%<br>n={}{}".format(
+            t, avg_curve[i], n, " ⚠" if n < _MIN_N else "")
         if n >= _MIN_N:
             _solid_x.append(t)
             _solid_y.append(avg_curve[i])
+            _hover_texts_solid.append(hover)
         else:
             _weak_x.append(t)
             _weak_y.append(avg_curve[i])
+            _hover_texts_weak.append(hover)
 
-    # Solide Linie NUR fuer n>=10 TDOMs
-    _solid_hover = [_hover_texts[i] for i, t in enumerate(tdoms) if tdom_stats[t]["n"] >= _MIN_N]
+    # Solide Linie NUR fuer n>=10 TDOMs (inkl. TDOM 0 Startpunkt)
     fig.add_trace(go.Scatter(x=_solid_x, y=_solid_y, mode="lines+markers",
         line=dict(color="#00CED1", width=3), marker=dict(size=5, color="#00CED1"),
-        name="Ø {} (linke Achse)".format(month_name),
-        hovertext=_solid_hover, hoverinfo="text"))
+        name="Ø {}".format(month_name),
+        hovertext=_hover_texts_solid, hoverinfo="text"))
 
     # Schwache TDOMs (n < 10) — grosse rote Marker + gestrichelte orangene Linie
     if _weak_x:
@@ -1229,7 +1262,7 @@ def main():
         st.info(f"**Zyklusfilter aktiv:** {cycle_info} — {len(selected_years)} Jahre")
 
     month_name = MONTH_NAMES_DE[selected_month - 1]
-    current_tdom = get_current_tdom(df) if selected_month == current_month else None
+    current_tdom = get_current_tdom(df, ticker=ticker) if selected_month == current_month else None
 
     from shared.trading_day_header import render_trading_day_header
     render_trading_day_header(df, ticker=ticker)
