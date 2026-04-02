@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeasonAlpha — Farbschema V2: Futuristic High-Contrast</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:#030304;color:#b8b0a8;line-height:1.6;padding:2rem}
+    .wrap{max-width:1100px;margin:0 auto}
+    h1{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:#fff;margin-bottom:.5rem}
+    h2{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:700;color:#e8e0d4;margin:3rem 0 1rem;padding-top:2rem;border-top:1px solid rgba(255,200,80,.06)}
+    h3{font-family:'Sora',sans-serif;font-size:.875rem;font-weight:600;color:#d4a84a;margin:1.5rem 0 .75rem}
+    p{color:#6a5e52;font-size:.875rem;margin-bottom:2rem}
+    .mono{font-family:'JetBrains Mono',monospace}
+    .palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+    .sw{border-radius:12px;overflow:hidden;border:1px solid rgba(255,200,80,.06)}
+    .sw__c{height:80px;display:flex;align-items:flex-end;padding:.5rem .75rem}
+    .sw__i{padding:.75rem;background:#07070a}
+    .sw__n{font-family:'Sora',sans-serif;font-size:.8125rem;font-weight:600;color:#e8e0d4}
+    .sw__h{font-family:'JetBrains Mono',monospace;font-size:.6875rem;color:#6a5e52;margin-top:.2rem}
+    .sw__u{font-size:.6875rem;color:#4a4038;margin-top:.2rem}
+    .compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin:2rem 0}
+    @media(max-width:900px){.compare{grid-template-columns:1fr}}
+    .cbox{border-radius:14px;padding:2rem;border:1px solid rgba(255,200,80,.06);position:relative;overflow:hidden}
+    .cbox__label{font-family:'JetBrains Mono',monospace;font-size:.5625rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.25rem}
+    .btn-d{display:inline-flex;align-items:center;padding:.625rem 1.5rem;border-radius:8px;font-family:'Sora',sans-serif;font-weight:600;font-size:.8125rem;border:none;cursor:pointer;margin-right:.5rem;margin-bottom:.5rem}
+    .badge-d{display:inline-flex;padding:.2rem .6rem;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:.5625rem;letter-spacing:.08em}
+    .grad-row{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+    .grad{width:220px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5625rem;letter-spacing:.05em}
+    .divider{width:48px;height:1px;margin:2rem 0;background:linear-gradient(90deg,transparent,#d4a84a,transparent)}
+    .stat-d{font-family:'Sora',sans-serif;font-weight:800;line-height:1}
+    .stat-l{font-family:'JetBrains Mono',monospace;font-size:.5625rem;letter-spacing:.12em;text-transform:uppercase;margin-top:.25rem}
+
+    /* Glow scanline effect */
+    .scanline{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,74,.15),transparent);animation:scan 4s linear infinite}
+    @keyframes scan{0%{top:0}100%{top:100%}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="mono" style="font-size:.5625rem;letter-spacing:.25em;color:#d4a84a;margin-bottom:.5rem">DESIGN SYSTEM V2</p>
+  <h1>SeasonAlpha <span style="color:#d4a84a">Futuristic</span></h1>
+  <p style="color:#8a7e72;font-size:1rem">High-Contrast. Terminal-Aesthetic. Neon-Gold auf Ultra-Dark.<br>Kein generisches Tech-Blue &mdash; eine Plattform die aussieht wie aus der Zukunft.</p>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Backgrounds</h2>
+  <p>Fast reines Schwarz. Maximaler Kontrast. Wie ein Bloomberg Terminal trifft Blade Runner.</p>
+  <div class="palette">
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:rgba(255,255,255,.2);font-size:.625rem">Void</span></div><div class="sw__i"><div class="sw__n">Abyss</div><div class="sw__h">#030304</div><div class="sw__u">Body Background</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#07070a"></div><div class="sw__i"><div class="sw__n">Void</div><div class="sw__h">#07070a</div><div class="sw__u">Nav, Footer, Panels</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#0c0c10"></div><div class="sw__i"><div class="sw__n">Onyx</div><div class="sw__h">#0c0c10</div><div class="sw__u">Cards</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#131318"></div><div class="sw__i"><div class="sw__n">Charcoal</div><div class="sw__h">#131318</div><div class="sw__u">Elevated, Hover</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#1a1a22"></div><div class="sw__i"><div class="sw__n">Gunmetal</div><div class="sw__h">#1a1a22</div><div class="sw__u">Active, Input Focus</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Text</h2>
+  <p>Wei&szlig; f&uuml;r Headlines (maximaler Kontrast), warme Abstufungen f&uuml;r Body.</p>
+  <div class="palette">
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:#ffffff;font-size:1.125rem;font-weight:800">Aa</span></div><div class="sw__i"><div class="sw__n">Pure White</div><div class="sw__h">#ffffff</div><div class="sw__u">Headlines H1</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:#e8e0d4;font-size:1rem;font-weight:700">Aa</span></div><div class="sw__i"><div class="sw__n">Bone</div><div class="sw__h">#e8e0d4</div><div class="sw__u">H2, H3, Bold Text</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:#b8b0a8;font-size:.9375rem">Aa</span></div><div class="sw__i"><div class="sw__n">Ash</div><div class="sw__h">#b8b0a8</div><div class="sw__u">Body Text</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:#7a6e62;font-size:.9375rem">Aa</span></div><div class="sw__i"><div class="sw__n">Dusk</div><div class="sw__h">#7a6e62</div><div class="sw__u">Secondary, Labels</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304"><span style="color:#4a4038;font-size:.9375rem">Aa</span></div><div class="sw__i"><div class="sw__n">Ember</div><div class="sw__h">#4a4038</div><div class="sw__u">Muted, Disabled</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Accent Colors</h2>
+  <p>Gold als dominanter Akzent. Hochkontrastiv auf dem dunklen Grund. Signal-Farben f&uuml;r Daten.</p>
+  <div class="palette">
+    <div class="sw"><div class="sw__c" style="background:#d4a84a"></div><div class="sw__i"><div class="sw__n">Signal Gold</div><div class="sw__h">#d4a84a</div><div class="sw__u">Primary CTA, Links</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#f0c860"></div><div class="sw__i"><div class="sw__n">Flare</div><div class="sw__h">#f0c860</div><div class="sw__u">Hover, Active Glow</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#a08040"></div><div class="sw__i"><div class="sw__n">Brass</div><div class="sw__h">#a08040</div><div class="sw__u">Pressed, Visited</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#e05545"></div><div class="sw__i"><div class="sw__n">Neon Red</div><div class="sw__h">#e05545</div><div class="sw__u">Negative, Sell</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#45c88a"></div><div class="sw__i"><div class="sw__n">Matrix Green</div><div class="sw__h">#45c88a</div><div class="sw__u">Positive, Buy</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Borders &amp; Glow</h2>
+  <div class="palette">
+    <div class="sw"><div class="sw__c" style="background:#030304;border:1px solid rgba(212,168,74,.06)"><span style="color:#4a4038;font-size:.625rem">Standard</span></div><div class="sw__i"><div class="sw__n">Whisper Gold</div><div class="sw__h">rgba(212,168,74,.06)</div><div class="sw__u">Default Border</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304;border:1px solid rgba(212,168,74,.15)"><span style="color:#7a6e62;font-size:.625rem">Hover</span></div><div class="sw__i"><div class="sw__n">Amber Line</div><div class="sw__h">rgba(212,168,74,.15)</div><div class="sw__u">Hover Border</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#030304;border:1px solid rgba(212,168,74,.35);box-shadow:0 0 20px rgba(212,168,74,.08)"><span style="color:#d4a84a;font-size:.625rem">Focus</span></div><div class="sw__i"><div class="sw__n">Gold Glow</div><div class="sw__h">rgba(212,168,74,.35)</div><div class="sw__u">Focus + Box-Shadow</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Gradients</h2>
+  <div class="grad-row">
+    <div class="grad" style="background:linear-gradient(135deg,#030304,#131318);color:rgba(255,255,255,.3)">abyss → charcoal</div>
+    <div class="grad" style="background:linear-gradient(135deg,#d4a84a,#f0c860);color:#030304">gold → flare</div>
+    <div class="grad" style="background:linear-gradient(135deg,#d4a84a,#e05545);color:#030304">gold → neon red</div>
+    <div class="grad" style="background:radial-gradient(circle,rgba(212,168,74,.12),transparent 70%);color:rgba(212,168,74,.5)">glow (radial)</div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>3-Way Comparison</h2>
+  <div class="compare">
+    <!-- V0: Current -->
+    <div class="cbox" style="background:#060a13;border-color:rgba(59,130,246,.1)">
+      <div class="cbox__label" style="color:#3b82f6">V0 &middot; Aktuell (Tech Blue)</div>
+      <div style="font-family:'Sora',sans-serif;font-size:1.375rem;font-weight:800;color:#e2e8f0;margin-bottom:.5rem">Season<span style="color:#06d6a0">Alpha</span></div>
+      <p style="color:#8b9bb4;font-size:.8125rem;margin-bottom:1rem">K&uuml;hl, generisch. Sieht aus wie 1000 andere SaaS-Pages.</p>
+      <div class="btn-d" style="background:#3b82f6;color:#fff;font-size:.75rem">Zur Analyse</div>
+      <div class="btn-d" style="background:transparent;color:#e2e8f0;border:1px solid rgba(59,130,246,.25);font-size:.75rem">Demo</div>
+    </div>
+    <!-- V1: Warm/Organic -->
+    <div class="cbox" style="background:#08090b;border-color:rgba(200,180,160,.08)">
+      <div class="cbox__label" style="color:#a89880">V1 &middot; 21st.dev Warm</div>
+      <div style="font-family:'Sora',sans-serif;font-size:1.375rem;font-weight:800;color:#f0ebe3;margin-bottom:.5rem">Season<span style="color:#6b8f71">Alpha</span></div>
+      <p style="color:#a89880;font-size:.8125rem;margin-bottom:1rem">Warm, organisch. Eigenst&auml;ndig aber vielleicht zu subtil.</p>
+      <div class="btn-d" style="background:#c8a455;color:#08090b;font-size:.75rem">Zur Analyse</div>
+      <div class="btn-d" style="background:transparent;color:#d4cdc0;border:1px solid rgba(200,180,160,.12);font-size:.75rem">Demo</div>
+    </div>
+    <!-- V2: Futuristic -->
+    <div class="cbox" style="background:#030304;border-color:rgba(212,168,74,.1)">
+      <div class="scanline"></div>
+      <div class="cbox__label" style="color:#d4a84a">V2 &middot; Futuristic &star;</div>
+      <div style="font-family:'Sora',sans-serif;font-size:1.375rem;font-weight:800;color:#fff;margin-bottom:.5rem">Season<span style="color:#d4a84a">Alpha</span></div>
+      <p style="color:#b8b0a8;font-size:.8125rem;margin-bottom:1rem">Maximum Kontrast. Gold auf Schwarz. Bloomberg trifft Blade Runner.</p>
+      <div class="btn-d" style="background:#d4a84a;color:#030304;font-size:.75rem;box-shadow:0 0 20px rgba(212,168,74,.25)">Zur Analyse</div>
+      <div class="btn-d" style="background:transparent;color:#e8e0d4;border:1px solid rgba(212,168,74,.15);font-size:.75rem">Demo</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Component Preview — Futuristic</h2>
+
+  <h3>Hero Text</h3>
+  <div style="background:#030304;border:1px solid rgba(212,168,74,.06);border-radius:14px;padding:3rem;text-align:center;position:relative;overflow:hidden;margin-bottom:2rem">
+    <div class="scanline"></div>
+    <p class="mono" style="font-size:.625rem;letter-spacing:.25em;color:#d4a84a;margin-bottom:1rem">DATENGETRIEBENE B&Ouml;RSENANALYSE</p>
+    <div style="font-family:'Sora',sans-serif;font-size:clamp(1.5rem,4vw,2.5rem);font-weight:300;color:#fff;line-height:1.15;margin-bottom:1rem;letter-spacing:-.02em">
+      Saisonale B&ouml;rsenmuster &mdash;<br>
+      <span style="font-weight:800;background:linear-gradient(135deg,#d4a84a,#f0c860);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Dein unfairer Vorteil.</span>
+    </div>
+    <p style="color:#7a6e62;font-size:.9375rem;max-width:500px;margin:0 auto 1.5rem">Trading-Signale auf Grundlage signifikanter Marktzyklen. Unterst&uuml;tzt durch Deep Learning.</p>
+    <div class="btn-d" style="background:#d4a84a;color:#030304;padding:.75rem 2rem;box-shadow:0 0 30px rgba(212,168,74,.2),inset 0 1px 0 rgba(255,255,255,.15)">Zur Analyse</div>
+  </div>
+
+  <h3>Cards</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem">
+    <div style="background:#0c0c10;border:1px solid rgba(212,168,74,.06);border-radius:12px;padding:1.5rem;transition:all .3s">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,168,74,.08);display:flex;align-items:center;justify-content:center;color:#d4a84a;margin-bottom:.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:.9375rem;font-weight:700;color:#fff;margin-bottom:.375rem">Jahreszyklus</div>
+      <div style="font-size:.8125rem;color:#7a6e62;line-height:1.5">Saisonaler Verlauf mit Pr&auml;sidentenzyklus.</div>
+    </div>
+    <div style="background:#0c0c10;border:1px solid rgba(212,168,74,.06);border-radius:12px;padding:1.5rem">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,168,74,.08);display:flex;align-items:center;justify-content:center;color:#f0c860;margin-bottom:.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:.9375rem;font-weight:700;color:#fff;margin-bottom:.375rem">DTW Matching</div>
+      <div style="font-size:.8125rem;color:#7a6e62;line-height:1.5">Historische Pattern-&Auml;hnlichkeit.</div>
+    </div>
+    <div style="background:#0c0c10;border:1px solid rgba(212,168,74,.06);border-radius:12px;padding:1.5rem">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,168,74,.08);display:flex;align-items:center;justify-content:center;color:#d4a84a;margin-bottom:.75rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:.9375rem;font-weight:700;color:#fff;margin-bottom:.375rem">Mondphasen</div>
+      <div style="font-size:.8125rem;color:#7a6e62;line-height:1.5">Lunar-Effekt und Supermond.</div>
+    </div>
+  </div>
+
+  <h3>Statistics</h3>
+  <div style="display:flex;gap:4rem;padding:2rem 0;border-top:1px solid rgba(212,168,74,.06);border-bottom:1px solid rgba(212,168,74,.06);margin:1rem 0 2rem">
+    <div style="text-align:center">
+      <div class="stat-d" style="font-size:3rem;background:linear-gradient(180deg,#fff 30%,#d4a84a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">131</div>
+      <div class="stat-l" style="color:#7a6e62">Jahre</div>
+    </div>
+    <div style="text-align:center">
+      <div class="stat-d" style="font-size:3rem;background:linear-gradient(180deg,#fff 30%,#d4a84a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">263</div>
+      <div class="stat-l" style="color:#7a6e62">Basiswerte</div>
+    </div>
+    <div style="text-align:center">
+      <div class="stat-d" style="font-size:3rem;background:linear-gradient(180deg,#fff 30%,#d4a84a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">15</div>
+      <div class="stat-l" style="color:#7a6e62">KI-Modelle</div>
+    </div>
+    <div style="text-align:center">
+      <div class="stat-d" style="font-size:3rem;background:linear-gradient(180deg,#fff 30%,#d4a84a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">24</div>
+      <div class="stat-l" style="color:#7a6e62">Strategien</div>
+    </div>
+  </div>
+
+  <h3>Data Semantic (Positiv / Negativ / Signal)</h3>
+  <div style="display:flex;gap:1rem;margin:1rem 0 2rem;flex-wrap:wrap">
+    <div style="padding:.625rem 1.25rem;border-radius:8px;background:rgba(69,200,138,.06);border:1px solid rgba(69,200,138,.2);color:#45c88a;font-family:'JetBrains Mono',monospace;font-size:.8125rem">+2.34% <span style="color:#7a6e62;font-size:.6875rem">Buy</span></div>
+    <div style="padding:.625rem 1.25rem;border-radius:8px;background:rgba(224,85,69,.06);border:1px solid rgba(224,85,69,.2);color:#e05545;font-family:'JetBrains Mono',monospace;font-size:.8125rem">-1.87% <span style="color:#7a6e62;font-size:.6875rem">Sell</span></div>
+    <div style="padding:.625rem 1.25rem;border-radius:8px;background:rgba(212,168,74,.06);border:1px solid rgba(212,168,74,.2);color:#d4a84a;font-family:'JetBrains Mono',monospace;font-size:.8125rem">Early Access <span style="color:#7a6e62;font-size:.6875rem">Badge</span></div>
+    <div style="padding:.625rem 1.25rem;border-radius:8px;background:rgba(240,200,96,.06);border:1px solid rgba(240,200,96,.2);color:#f0c860;font-family:'JetBrains Mono',monospace;font-size:.8125rem">Signal <span style="color:#7a6e62;font-size:.6875rem">Active</span></div>
+  </div>
+
+  <h3>Navigation Preview</h3>
+  <div style="background:#07070a;border:1px solid rgba(212,168,74,.06);border-radius:12px;padding:0 1.5rem;display:flex;align-items:center;height:56px;gap:1rem;margin-bottom:2rem">
+    <span style="font-family:'Sora',sans-serif;font-size:1.0625rem;font-weight:800;color:#fff"><span style="color:#d4a84a">Season</span>Alpha</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.1em;padding:.15rem .5rem;border:1px solid rgba(212,168,74,.3);color:#d4a84a;border-radius:100px;background:rgba(212,168,74,.06)">EARLY ACCESS</span>
+    <div style="margin-left:auto;display:flex;gap:.25rem">
+      <span style="padding:.4rem .6rem;font-size:.75rem;color:#7a6e62;border-radius:6px">Zyklen</span>
+      <span style="padding:.4rem .6rem;font-size:.75rem;color:#7a6e62;border-radius:6px">Strategien</span>
+      <span style="padding:.4rem .6rem;font-size:.75rem;color:#7a6e62;border-radius:6px">Mehr</span>
+      <span style="padding:.4rem .6rem;font-size:.75rem;color:#b8b0a8;border-radius:6px">Blog</span>
+    </div>
+    <div style="padding:.4rem 1rem;background:#d4a84a;color:#030304;font-family:'Sora',sans-serif;font-weight:600;font-size:.75rem;border-radius:6px;box-shadow:0 0 16px rgba(212,168,74,.2)">Zur Analyse</div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>CSS Custom Properties</h2>
+  <pre style="background:#07070a;border:1px solid rgba(212,168,74,.06);border-radius:12px;padding:1.5rem;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#b8b0a8;line-height:1.9;overflow-x:auto"><span style="color:#4a4038">/* SeasonAlpha V2 — Futuristic High-Contrast */</span>
+<span style="color:#d4a84a">:root</span> {
+  <span style="color:#7a6e62">/* Backgrounds — near-black, maximum contrast */</span>
+  <span style="color:#d4a84a">--bg:</span>         <span style="color:#e8e0d4">#030304</span>;  <span style="color:#4a4038">/* Abyss */</span>
+  <span style="color:#d4a84a">--surface:</span>    <span style="color:#e8e0d4">#07070a</span>;  <span style="color:#4a4038">/* Void */</span>
+  <span style="color:#d4a84a">--card:</span>       <span style="color:#e8e0d4">#0c0c10</span>;  <span style="color:#4a4038">/* Onyx */</span>
+  <span style="color:#d4a84a">--elevated:</span>   <span style="color:#e8e0d4">#131318</span>;  <span style="color:#4a4038">/* Charcoal */</span>
+  <span style="color:#d4a84a">--active:</span>     <span style="color:#e8e0d4">#1a1a22</span>;  <span style="color:#4a4038">/* Gunmetal */</span>
+
+  <span style="color:#7a6e62">/* Text — white headlines, warm body */</span>
+  <span style="color:#d4a84a">--text:</span>       <span style="color:#e8e0d4">#ffffff</span>;  <span style="color:#4a4038">/* Pure White (H1 only) */</span>
+  <span style="color:#d4a84a">--text-2:</span>     <span style="color:#e8e0d4">#e8e0d4</span>;  <span style="color:#4a4038">/* Bone */</span>
+  <span style="color:#d4a84a">--text-3:</span>     <span style="color:#e8e0d4">#b8b0a8</span>;  <span style="color:#4a4038">/* Ash */</span>
+  <span style="color:#d4a84a">--text-dim:</span>   <span style="color:#e8e0d4">#7a6e62</span>;  <span style="color:#4a4038">/* Dusk */</span>
+  <span style="color:#d4a84a">--text-muted:</span> <span style="color:#e8e0d4">#4a4038</span>;  <span style="color:#4a4038">/* Ember */</span>
+
+  <span style="color:#7a6e62">/* Accent — Gold dominant */</span>
+  <span style="color:#d4a84a">--accent:</span>     <span style="color:#e8e0d4">#d4a84a</span>;  <span style="color:#4a4038">/* Signal Gold */</span>
+  <span style="color:#d4a84a">--accent-h:</span>   <span style="color:#e8e0d4">#f0c860</span>;  <span style="color:#4a4038">/* Flare (hover) */</span>
+  <span style="color:#d4a84a">--accent-p:</span>   <span style="color:#e8e0d4">#a08040</span>;  <span style="color:#4a4038">/* Brass (pressed) */</span>
+  <span style="color:#d4a84a">--accent-g:</span>   <span style="color:#e8e0d4">rgba(212,168,74,.2)</span>; <span style="color:#4a4038">/* Glow */</span>
+
+  <span style="color:#7a6e62">/* Semantic */</span>
+  <span style="color:#d4a84a">--positive:</span>   <span style="color:#e8e0d4">#45c88a</span>;  <span style="color:#4a4038">/* Matrix Green */</span>
+  <span style="color:#d4a84a">--negative:</span>   <span style="color:#e8e0d4">#e05545</span>;  <span style="color:#4a4038">/* Neon Red */</span>
+
+  <span style="color:#7a6e62">/* Borders */</span>
+  <span style="color:#d4a84a">--border:</span>     <span style="color:#e8e0d4">rgba(212,168,74,.06)</span>;
+  <span style="color:#d4a84a">--border-h:</span>   <span style="color:#e8e0d4">rgba(212,168,74,.15)</span>;
+  <span style="color:#d4a84a">--border-f:</span>   <span style="color:#e8e0d4">rgba(212,168,74,.35)</span>;
+}</pre>
+
+  <div class="divider"></div>
+  <p class="mono" style="font-size:.5625rem;color:#4a4038;text-align:center;padding:2rem 0;letter-spacing:.2em">SEASONALPHA &middot; FUTURISTIC HIGH-CONTRAST &middot; V2</p>
+
+</div>
+</body>
+</html>

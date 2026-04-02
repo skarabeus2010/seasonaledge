@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeasonAlpha — V3 ULTRA: Maximum Contrast + Bold</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:#000;color:#c0b8a8;line-height:1.6;padding:0;overflow-x:hidden}
+    .wrap{max-width:1100px;margin:0 auto;padding:0 2rem}
+
+    /* Noise texture */
+    body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;
+      background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+      background-size:128px}
+
+    h1{font-family:'Sora',sans-serif;font-weight:800;color:#fff}
+    h2{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:800;color:#fff;margin:4rem 0 1rem;padding-top:2.5rem;border-top:1px solid rgba(255,180,40,.08)}
+    h3{font-family:'Sora',sans-serif;font-size:.875rem;font-weight:700;color:#e8a820;margin:2rem 0 .75rem}
+    p.desc{color:#5a5040;font-size:.875rem;margin-bottom:2rem}
+    .mono{font-family:'JetBrains Mono',monospace}
+
+    /* Swatches */
+    .pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem;margin-bottom:2rem}
+    .sw{border-radius:10px;overflow:hidden;border:1px solid rgba(255,180,40,.05);transition:border-color .3s}
+    .sw:hover{border-color:rgba(255,180,40,.2)}
+    .sw__c{height:88px;display:flex;align-items:flex-end;padding:.5rem .75rem;position:relative}
+    .sw__i{padding:.75rem;background:#050505}
+    .sw__n{font-family:'Sora',sans-serif;font-size:.8125rem;font-weight:700;color:#fff}
+    .sw__h{font-family:'JetBrains Mono',monospace;font-size:.6875rem;color:#5a5040;margin-top:.15rem}
+    .sw__u{font-size:.6875rem;color:#3a3228;margin-top:.15rem}
+
+    /* Compare */
+    .cmp{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0}
+    @media(max-width:700px){.cmp{grid-template-columns:1fr}}
+    .cbox{border-radius:14px;padding:2.5rem;position:relative;overflow:hidden}
+    .cbox__tag{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+    .cbox__tag::after{content:'';flex:1;height:1px;opacity:.15}
+
+    .btn-d{display:inline-flex;align-items:center;padding:.75rem 1.75rem;border-radius:8px;font-family:'Sora',sans-serif;font-weight:700;font-size:.875rem;border:none;cursor:pointer;margin-right:.75rem;margin-bottom:.5rem;letter-spacing:-.01em}
+    .badge-d{display:inline-flex;padding:.2rem .65rem;border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.1em;font-weight:700}
+
+    .grad-row{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+    .grad{height:72px;flex:1;min-width:180px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5625rem;letter-spacing:.05em}
+
+    .divider{width:64px;height:2px;margin:2.5rem 0;background:linear-gradient(90deg,#e8a820,transparent)}
+
+    .stat-d{font-family:'Sora',sans-serif;font-weight:800;line-height:1}
+    .stat-l{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;margin-top:.35rem}
+
+    /* Scanline */
+    .scan{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(232,168,32,.2),transparent);animation:sc 3s linear infinite}
+    @keyframes sc{0%{top:0}100%{top:100%}}
+
+    /* Pulse ring */
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,168,32,.3)}50%{box-shadow:0 0 0 8px rgba(232,168,32,0)}}
+
+    /* Section intros */
+    .sec-intro{padding:5rem 0;text-align:center;position:relative}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO PREVIEW — Full Width
+     ═══════════════════════════════════════════════════════════ -->
+<section style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:3rem 2rem;position:relative;overflow:hidden">
+  <!-- Grid -->
+  <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+    <defs><pattern id="g" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M 80 0 L 0 0 0 80" fill="none" stroke="rgba(232,168,32,.03)" stroke-width=".5"/></pattern></defs>
+    <rect width="100%" height="100%" fill="url(#g)"/>
+  </svg>
+  <!-- Glow orb -->
+  <div style="position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(232,168,32,.06) 0%,transparent 60%);pointer-events:none"></div>
+  <!-- Corner accents -->
+  <div style="position:absolute;top:2rem;left:2rem;width:40px;height:40px;border-left:2px solid rgba(232,168,32,.15);border-top:2px solid rgba(232,168,32,.15)"></div>
+  <div style="position:absolute;top:2rem;right:2rem;width:40px;height:40px;border-right:2px solid rgba(232,168,32,.15);border-top:2px solid rgba(232,168,32,.15)"></div>
+  <div style="position:absolute;bottom:2rem;left:2rem;width:40px;height:40px;border-left:2px solid rgba(232,168,32,.15);border-bottom:2px solid rgba(232,168,32,.15)"></div>
+  <div style="position:absolute;bottom:2rem;right:2rem;width:40px;height:40px;border-right:2px solid rgba(232,168,32,.15);border-bottom:2px solid rgba(232,168,32,.15)"></div>
+
+  <div style="position:relative;z-index:2;max-width:920px">
+    <p class="mono" style="font-size:.625rem;letter-spacing:.3em;color:#e8a820;margin-bottom:1.5rem">DATENGETRIEBENE B&Ouml;RSENANALYSE &mdash; SEIT 1895</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,5rem);line-height:1;letter-spacing:-.04em;margin-bottom:1.5rem">
+      <span style="font-weight:300;color:#fff">Saisonale</span><br>
+      <span style="font-weight:300;color:#fff">B&ouml;rsenmuster.</span><br>
+      <span style="background:linear-gradient(135deg,#e8a820,#ffcc44,#e8a820);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800">Dein unfairer Vorteil.</span>
+    </h1>
+    <p style="color:#8a7e68;font-size:clamp(1rem,2vw,1.25rem);max-width:600px;margin:0 auto 2.5rem;line-height:1.6">
+      131 Jahre Markthistorie. 15 KI-Modelle. Trading-Signale<br>auf Grundlage signifikanter Marktzyklen.
+    </p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+      <div class="btn-d" style="background:linear-gradient(135deg,#e8a820,#d49818);color:#000;box-shadow:0 0 40px rgba(232,168,32,.25),0 0 80px rgba(232,168,32,.08);font-size:1rem;padding:.875rem 2.5rem">Zur Analyse</div>
+      <div class="btn-d" style="background:transparent;color:#e8e0d0;border:1px solid rgba(232,168,32,.2);font-size:1rem;padding:.875rem 2.5rem">Demo ansehen</div>
+    </div>
+    <div style="display:flex;gap:3rem;justify-content:center;margin-top:3rem">
+      <div style="text-align:center"><div class="stat-d" style="font-size:2rem;color:#fff">131</div><div class="stat-l" style="color:#5a5040">Jahre</div></div>
+      <div style="text-align:center"><div class="stat-d" style="font-size:2rem;color:#fff">263</div><div class="stat-l" style="color:#5a5040">Assets</div></div>
+      <div style="text-align:center"><div class="stat-d" style="font-size:2rem;color:#fff">15</div><div class="stat-l" style="color:#5a5040">KI-Modelle</div></div>
+      <div style="text-align:center"><div class="stat-d" style="font-size:2rem;color:#fff">24</div><div class="stat-l" style="color:#5a5040">Strategien</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <div class="divider"></div>
+  <p class="mono" style="font-size:.5rem;letter-spacing:.3em;color:#e8a820;margin-bottom:.5rem">DESIGN SYSTEM V3 &mdash; ULTRA</p>
+  <h1 style="font-size:2.5rem;letter-spacing:-.03em;margin-bottom:.25rem">Maximum Contrast.</h1>
+  <h1 style="font-size:2.5rem;letter-spacing:-.03em;margin-bottom:.5rem"><span style="background:linear-gradient(135deg,#e8a820,#ffcc44);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Maximum Bold.</span></h1>
+  <p class="desc" style="font-size:1.0625rem">Pures Schwarz. Gl&uuml;hendes Gold. Kein Kompromiss.</p>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Backgrounds</h2>
+  <p class="desc">Reines #000 als Basis. Maximaler Kontrast zu Wei&szlig; und Gold.</p>
+  <div class="pal">
+    <div class="sw"><div class="sw__c" style="background:#000000"></div><div class="sw__i"><div class="sw__n">Black</div><div class="sw__h">#000000</div><div class="sw__u">Body — reines Schwarz</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#050505"></div><div class="sw__i"><div class="sw__n">Pitch</div><div class="sw__h">#050505</div><div class="sw__u">Nav, Footer</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#0a0a0e"></div><div class="sw__i"><div class="sw__n">Obsidian</div><div class="sw__h">#0a0a0e</div><div class="sw__u">Cards</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#111115"></div><div class="sw__i"><div class="sw__n">Slate</div><div class="sw__h">#111115</div><div class="sw__u">Elevated, Hover</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#18181e"></div><div class="sw__i"><div class="sw__n">Steel</div><div class="sw__h">#18181e</div><div class="sw__u">Active, Focus</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Text</h2>
+  <p class="desc">Reines Wei&szlig; f&uuml;r alles Wichtige. Kontrastratio &gt;15:1 auf Schwarz.</p>
+  <div class="pal">
+    <div class="sw"><div class="sw__c" style="background:#000"><span style="color:#ffffff;font-size:1.5rem;font-weight:800">Aa</span></div><div class="sw__i"><div class="sw__n">White</div><div class="sw__h">#ffffff</div><div class="sw__u">Headlines — maximum impact</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000"><span style="color:#e8e0d0;font-size:1.125rem;font-weight:700">Aa</span></div><div class="sw__i"><div class="sw__n">Ivory</div><div class="sw__h">#e8e0d0</div><div class="sw__u">Subheadlines, Bold Body</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000"><span style="color:#a89878;font-size:1rem">Aa</span></div><div class="sw__i"><div class="sw__n">Sand</div><div class="sw__h">#a89878</div><div class="sw__u">Body Text</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000"><span style="color:#6a5e4a;font-size:1rem">Aa</span></div><div class="sw__i"><div class="sw__n">Clay</div><div class="sw__h">#6a5e4a</div><div class="sw__u">Secondary, Captions</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000"><span style="color:#3a3228;font-size:1rem">Aa</span></div><div class="sw__i"><div class="sw__n">Ash</div><div class="sw__h">#3a3228</div><div class="sw__u">Disabled, Placeholder</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Accents</h2>
+  <p class="desc">Gold als einziger Prim&auml;r-Akzent. Gl&uuml;hend, warm, dominant. Rot/Gr&uuml;n nur f&uuml;r Daten.</p>
+  <div class="pal">
+    <div class="sw"><div class="sw__c" style="background:#e8a820;box-shadow:0 0 40px rgba(232,168,32,.3)"></div><div class="sw__i"><div class="sw__n">Signal Gold</div><div class="sw__h">#e8a820</div><div class="sw__u">Primary CTA, Links, Active</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#ffcc44;box-shadow:0 0 30px rgba(255,204,68,.25)"></div><div class="sw__i"><div class="sw__n">Flare</div><div class="sw__h">#ffcc44</div><div class="sw__u">Hover Glow, Highlights</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#b88818"></div><div class="sw__i"><div class="sw__n">Brass</div><div class="sw__h">#b88818</div><div class="sw__u">Pressed, Visited</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#ff4040;box-shadow:0 0 25px rgba(255,64,64,.2)"></div><div class="sw__i"><div class="sw__n">Neon Red</div><div class="sw__h">#ff4040</div><div class="sw__u">Negative, Sell, Warning</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#30e878;box-shadow:0 0 25px rgba(48,232,120,.15)"></div><div class="sw__i"><div class="sw__n">Neon Green</div><div class="sw__h">#30e878</div><div class="sw__u">Positive, Buy, Success</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Borders &amp; Glow</h2>
+  <div class="pal">
+    <div class="sw"><div class="sw__c" style="background:#000;border:1px solid rgba(232,168,32,.05)"><span style="color:#3a3228;font-size:.6875rem">Subtle</span></div><div class="sw__i"><div class="sw__n">Trace</div><div class="sw__h">rgba(232,168,32,.05)</div><div class="sw__u">Default Border</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000;border:1px solid rgba(232,168,32,.15)"><span style="color:#6a5e4a;font-size:.6875rem">Hover</span></div><div class="sw__i"><div class="sw__n">Ember</div><div class="sw__h">rgba(232,168,32,.15)</div><div class="sw__u">Hover Border</div></div></div>
+    <div class="sw"><div class="sw__c" style="background:#000;border:2px solid rgba(232,168,32,.5);box-shadow:0 0 24px rgba(232,168,32,.12),inset 0 0 24px rgba(232,168,32,.03)"><span style="color:#e8a820;font-size:.6875rem;font-weight:700">Focus</span></div><div class="sw__i"><div class="sw__n">Ignite</div><div class="sw__h">rgba(232,168,32,.5) + glow</div><div class="sw__u">Focus Ring + Box-Shadow</div></div></div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Gradients</h2>
+  <div class="grad-row">
+    <div class="grad" style="background:linear-gradient(135deg,#e8a820,#ffcc44);color:#000;font-weight:700">Signal → Flare</div>
+    <div class="grad" style="background:linear-gradient(135deg,#e8a820,#ff4040);color:#000;font-weight:700">Gold → Red</div>
+    <div class="grad" style="background:linear-gradient(135deg,#30e878,#e8a820);color:#000;font-weight:700">Green → Gold</div>
+    <div class="grad" style="background:radial-gradient(circle,rgba(232,168,32,.15) 0%,transparent 60%);color:rgba(232,168,32,.5)">Glow (ambient)</div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>Component Preview</h2>
+
+  <h3>Navigation</h3>
+  <div style="background:#050505;border:1px solid rgba(232,168,32,.05);border-radius:12px;padding:0 1.5rem;display:flex;align-items:center;height:60px;gap:1.25rem;margin-bottom:2rem">
+    <span style="font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:800;color:#fff;letter-spacing:-.02em"><span style="color:#e8a820">Season</span>Alpha</span>
+    <span class="badge-d" style="border:1px solid #e8a820;color:#e8a820;background:rgba(232,168,32,.06);animation:pulse 2s infinite">EARLY ACCESS</span>
+    <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center">
+      <span style="padding:.4rem .75rem;font-size:.8125rem;font-weight:500;color:#6a5e4a;border-radius:6px">Zyklen</span>
+      <span style="padding:.4rem .75rem;font-size:.8125rem;font-weight:500;color:#6a5e4a;border-radius:6px">Strategien</span>
+      <span style="padding:.4rem .75rem;font-size:.8125rem;font-weight:500;color:#6a5e4a;border-radius:6px">Mehr</span>
+      <span style="padding:.4rem .75rem;font-size:.8125rem;font-weight:500;color:#e8e0d0;border-radius:6px">Blog</span>
+      <div style="padding:.5rem 1.25rem;background:linear-gradient(135deg,#e8a820,#d49818);color:#000;font-family:'Sora',sans-serif;font-weight:700;font-size:.8125rem;border-radius:8px;box-shadow:0 0 24px rgba(232,168,32,.25);letter-spacing:-.01em">Zur Analyse</div>
+    </div>
+  </div>
+
+  <h3>Cards (3er Grid)</h3>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem">
+    <div style="background:#0a0a0e;border:1px solid rgba(232,168,32,.05);border-radius:12px;padding:1.75rem;position:relative;overflow:hidden;transition:all .3s">
+      <div class="scan"></div>
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.1);display:flex;align-items:center;justify-content:center;color:#e8a820;margin-bottom:1rem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:1rem;font-weight:800;color:#fff;margin-bottom:.5rem">Jahreszyklus</div>
+      <div style="font-size:.8125rem;color:#6a5e4a;line-height:1.55">Saisonaler Verlauf mit Pr&auml;sidentenzyklus, Signifikanztests und Perzentil-B&auml;ndern.</div>
+    </div>
+    <div style="background:#0a0a0e;border:1px solid rgba(232,168,32,.05);border-radius:12px;padding:1.75rem;position:relative;overflow:hidden">
+      <div class="scan" style="animation-delay:1s"></div>
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.1);display:flex;align-items:center;justify-content:center;color:#ffcc44;margin-bottom:1rem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:1rem;font-weight:800;color:#fff;margin-bottom:.5rem">DTW Matching</div>
+      <div style="font-size:.8125rem;color:#6a5e4a;line-height:1.55">Dynamic Time Warping misst Form&auml;hnlichkeit historischer Kursverl&auml;ufe.</div>
+    </div>
+    <div style="background:#0a0a0e;border:1px solid rgba(232,168,32,.05);border-radius:12px;padding:1.75rem;position:relative;overflow:hidden">
+      <div class="scan" style="animation-delay:2s"></div>
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.1);display:flex;align-items:center;justify-content:center;color:#e8a820;margin-bottom:1rem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div style="font-family:'Sora',sans-serif;font-size:1rem;font-weight:800;color:#fff;margin-bottom:.5rem">Backtest Engine</div>
+      <div style="font-size:.8125rem;color:#6a5e4a;line-height:1.55">Grid-Search und Walk-Forward f&uuml;r 24 Saisonalstrategien.</div>
+    </div>
+  </div>
+
+  <h3>Statistics</h3>
+  <div style="display:flex;gap:0;margin:1rem 0 2rem;border:1px solid rgba(232,168,32,.08);border-radius:12px;overflow:hidden">
+    <div style="flex:1;text-align:center;padding:2rem 1rem;border-right:1px solid rgba(232,168,32,.05)">
+      <div class="stat-d" style="font-size:3.5rem;color:#fff;letter-spacing:-.03em">131</div>
+      <div class="stat-l" style="color:#6a5e4a">Jahre Marktdaten</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:2rem 1rem;border-right:1px solid rgba(232,168,32,.05)">
+      <div class="stat-d" style="font-size:3.5rem;color:#fff;letter-spacing:-.03em">263</div>
+      <div class="stat-l" style="color:#6a5e4a">Basiswerte</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:2rem 1rem;border-right:1px solid rgba(232,168,32,.05)">
+      <div class="stat-d" style="font-size:3.5rem;color:#fff;letter-spacing:-.03em">15</div>
+      <div class="stat-l" style="color:#6a5e4a">KI-Modelle</div>
+    </div>
+    <div style="flex:1;text-align:center;padding:2rem 1rem">
+      <div class="stat-d" style="font-size:3.5rem;color:#fff;letter-spacing:-.03em">24</div>
+      <div class="stat-l" style="color:#6a5e4a">Strategien</div>
+    </div>
+  </div>
+
+  <h3>Data Semantic</h3>
+  <div style="display:flex;gap:1rem;margin:1rem 0 2rem;flex-wrap:wrap">
+    <div style="padding:.75rem 1.5rem;border-radius:8px;background:rgba(48,232,120,.04);border:1px solid rgba(48,232,120,.2);color:#30e878;font-family:'JetBrains Mono',monospace;font-size:.9375rem;font-weight:700">+2.34%</div>
+    <div style="padding:.75rem 1.5rem;border-radius:8px;background:rgba(255,64,64,.04);border:1px solid rgba(255,64,64,.2);color:#ff4040;font-family:'JetBrains Mono',monospace;font-size:.9375rem;font-weight:700">-1.87%</div>
+    <div style="padding:.75rem 1.5rem;border-radius:8px;background:rgba(232,168,32,.04);border:1px solid rgba(232,168,32,.2);color:#e8a820;font-family:'JetBrains Mono',monospace;font-size:.9375rem;font-weight:700">SIGNAL</div>
+    <div style="padding:.75rem 1.5rem;border-radius:8px;background:rgba(255,204,68,.04);border:1px solid rgba(255,204,68,.2);color:#ffcc44;font-family:'JetBrains Mono',monospace;font-size:.9375rem;font-weight:700">ACTIVE</div>
+  </div>
+
+  <h3>CTA Button (Glow Variants)</h3>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0 2rem;align-items:center">
+    <div class="btn-d" style="background:linear-gradient(135deg,#e8a820,#d49818);color:#000;box-shadow:0 0 40px rgba(232,168,32,.3),0 0 80px rgba(232,168,32,.1);font-size:1rem;padding:.875rem 2.5rem">Zur Analyse</div>
+    <div class="btn-d" style="background:transparent;color:#e8e0d0;border:2px solid rgba(232,168,32,.25);font-size:1rem;padding:.875rem 2.5rem">Demo ansehen</div>
+    <div class="btn-d" style="background:#111115;color:#e8a820;border:1px solid rgba(232,168,32,.15);font-size:.875rem;padding:.625rem 1.5rem">Secondary</div>
+  </div>
+
+  <h3>Badge Variants</h3>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0 2rem;align-items:center">
+    <span class="badge-d" style="border:1px solid #e8a820;color:#e8a820;background:rgba(232,168,32,.06);font-size:.625rem;padding:.25rem .75rem">EARLY ACCESS</span>
+    <span class="badge-d" style="border:1px solid #30e878;color:#30e878;background:rgba(48,232,120,.06);font-size:.625rem;padding:.25rem .75rem">BULLISH</span>
+    <span class="badge-d" style="border:1px solid #ff4040;color:#ff4040;background:rgba(255,64,64,.06);font-size:.625rem;padding:.25rem .75rem">BEARISH</span>
+    <span class="badge-d" style="border:1px solid #ffcc44;color:#ffcc44;background:rgba(255,204,68,.06);font-size:.625rem;padding:.25rem .75rem">NEW</span>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <h2>CSS Custom Properties</h2>
+  <pre style="background:#050505;border:1px solid rgba(232,168,32,.08);border-radius:12px;padding:2rem;font-family:'JetBrains Mono',monospace;font-size:.8125rem;color:#a89878;line-height:2;overflow-x:auto"><span style="color:#3a3228">/* SeasonAlpha V3 — ULTRA: Maximum Contrast + Bold */</span>
+<span style="color:#e8a820;font-weight:700">:root</span> {
+  <span style="color:#6a5e4a">/* Backgrounds */</span>
+  <span style="color:#e8a820">--bg:</span>         <span style="color:#fff">#000000</span>;  <span style="color:#3a3228">/* Pure Black */</span>
+  <span style="color:#e8a820">--surface:</span>    <span style="color:#fff">#050505</span>;  <span style="color:#3a3228">/* Pitch */</span>
+  <span style="color:#e8a820">--card:</span>       <span style="color:#fff">#0a0a0e</span>;  <span style="color:#3a3228">/* Obsidian */</span>
+  <span style="color:#e8a820">--elevated:</span>   <span style="color:#fff">#111115</span>;  <span style="color:#3a3228">/* Slate */</span>
+  <span style="color:#e8a820">--active:</span>     <span style="color:#fff">#18181e</span>;  <span style="color:#3a3228">/* Steel */</span>
+
+  <span style="color:#6a5e4a">/* Text */</span>
+  <span style="color:#e8a820">--text:</span>       <span style="color:#fff">#ffffff</span>;  <span style="color:#3a3228">/* Headlines */</span>
+  <span style="color:#e8a820">--text-2:</span>     <span style="color:#fff">#e8e0d0</span>;  <span style="color:#3a3228">/* Subheadlines */</span>
+  <span style="color:#e8a820">--text-3:</span>     <span style="color:#fff">#a89878</span>;  <span style="color:#3a3228">/* Body */</span>
+  <span style="color:#e8a820">--text-dim:</span>   <span style="color:#fff">#6a5e4a</span>;  <span style="color:#3a3228">/* Secondary */</span>
+  <span style="color:#e8a820">--text-muted:</span> <span style="color:#fff">#3a3228</span>;  <span style="color:#3a3228">/* Disabled */</span>
+
+  <span style="color:#6a5e4a">/* Accent — Gold dominant */</span>
+  <span style="color:#e8a820">--accent:</span>     <span style="color:#fff">#e8a820</span>;  <span style="color:#3a3228">/* Signal Gold */</span>
+  <span style="color:#e8a820">--accent-h:</span>   <span style="color:#fff">#ffcc44</span>;  <span style="color:#3a3228">/* Flare */</span>
+  <span style="color:#e8a820">--accent-p:</span>   <span style="color:#fff">#b88818</span>;  <span style="color:#3a3228">/* Brass */</span>
+  <span style="color:#e8a820">--accent-g:</span>   <span style="color:#fff">rgba(232,168,32,.25)</span>;
+
+  <span style="color:#6a5e4a">/* Semantic */</span>
+  <span style="color:#e8a820">--positive:</span>   <span style="color:#fff">#30e878</span>;  <span style="color:#3a3228">/* Neon Green */</span>
+  <span style="color:#e8a820">--negative:</span>   <span style="color:#fff">#ff4040</span>;  <span style="color:#3a3228">/* Neon Red */</span>
+
+  <span style="color:#6a5e4a">/* Borders */</span>
+  <span style="color:#e8a820">--border:</span>     <span style="color:#fff">rgba(232,168,32,.05)</span>;
+  <span style="color:#e8a820">--border-h:</span>   <span style="color:#fff">rgba(232,168,32,.15)</span>;
+  <span style="color:#e8a820">--border-f:</span>   <span style="color:#fff">rgba(232,168,32,.5)</span>;
+}</pre>
+
+  <div class="divider" style="width:100%;height:2px;background:linear-gradient(90deg,#e8a820,transparent)"></div>
+  <p class="mono" style="font-size:.5rem;color:#3a3228;text-align:center;padding:3rem 0;letter-spacing:.25em">SEASONALPHA &middot; V3 ULTRA &middot; MAXIMUM CONTRAST + BOLD</p>
+
+</div>
+</body>
+</html>

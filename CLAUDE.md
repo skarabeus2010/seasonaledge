@@ -251,7 +251,9 @@ if _project_dir not in sys.path:
 | Accessibility CRITICAL | Kontrast 4.5:1, focus-visible Rings, aria-labels, prefers-reduced-motion |
 | Touch Targets ≥ 44px | Buttons, Links, interaktive Elemente — minimum 44x44px |
 | Animation 150-300ms | transform/opacity only, ease-out enter, ease-in exit, staggered reveals |
-| Dark Mode First | Deep Space Palette: bg #060a13, surface #0d1424, accent #3b82f6 |
+| Dark Mode First | V3 Ultra Palette: bg #000, card #0a0a0e, accent #e8a820 (Signal Gold) |
+| 21st.dev Magic MCP | Component Inspiration via `/ui` Prompt — generiert moderne UI-Patterns |
+| Farbschema V3 Ultra | Pure Black + Signal Gold + Neon Red/Green. Maximaler Kontrast. |
 
 ## UI-Komponenten (Premium Dark Mode)
 
