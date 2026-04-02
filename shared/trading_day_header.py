@@ -13,7 +13,8 @@ from datetime import datetime, date
 from typing import Optional
 
 from shared.constants import SE_COLORS, MONTH_NAMES_DE
-from shared.exchange_holidays import is_trading_day, get_exchange_for_ticker
+from shared.exchange_holidays import is_trading_day
+from shared.symbols import get_exchange_for_holidays
 
 
 # ══════════════════════════════════════════════════════════════
@@ -47,7 +48,7 @@ def render_trading_day_header(df: pd.DataFrame, ticker: str = "^GSPC"):
     date_str = today.strftime("%d.%m.%Y")
 
     # ── Exchange fuer diesen Ticker ermitteln ──
-    exchange = get_exchange_for_ticker(ticker)
+    exchange = get_exchange_for_holidays(ticker)
 
     # ── TDOY aus preprocess()-Spalte ──
     tdoy_val = _get_current_tdoy(df, exchange)

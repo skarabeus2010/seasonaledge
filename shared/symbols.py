@@ -8,9 +8,76 @@
 #   exchange   : Börse (informativ)
 #   beschreibung: Kurzbeschreibung (optional, für Tooltips)
 #
+# Holiday-Kalender wird automatisch aus exchange abgeleitet (siehe unten).
+#
 # Neue Symbole einfach unten in die passende Gruppe eintragen.
 # Import-Beispiel:
 #   from shared.symbols import SYMBOLS, get_symbols_by_category, KATEGORIEN
+#   from shared.symbols import get_holiday_calendar
+
+# ── Exchange → Holiday-Kalender Mapping ──────────────────────────────────────
+# Wird genutzt um aus der Börse den richtigen Feiertagskalender zu ermitteln.
+# Werte: "US", "DE", "UK", "FR", "JP", "CH", "NONE" (Crypto/FX = immer offen)
+EXCHANGE_TO_HOLIDAY = {
+    "NYSE":              "US",
+    "NASDAQ":            "US",
+    "CBOE":              "US",
+    "CME":               "US",
+    "CBOT":              "US",
+    "COMEX":             "US",
+    "NYMEX":             "US",
+    "ICE":               "US",
+    "OTC":               "US",
+    "XETRA":             "DE",
+    "LSE":               "UK",
+    "Euronext":          "FR",
+    "Euronext Paris":    "FR",
+    "Euronext Amsterdam": "FR",
+    "Euronext Brüssel":  "FR",
+    "Borsa Italiana":    "FR",   # Euronext-Kalender
+    "BME":               "FR",   # Spanien ~ Euronext-Kalender
+    "BME Madrid":        "FR",
+    "SIX":               "CH",
+    "TSE":               "JP",
+    "HKEX":              "JP",   # Asien-Kalender (Näherung)
+    "KRX":               "JP",   # Asien-Kalender (Näherung)
+    "Kopenhagen":        "FR",   # Nordeuropa ~ Euronext-Kalender
+    "Oslo":              "FR",
+    "Stockholm":         "FR",
+    "Forex":             "NONE", # 24/5, keine Feiertage
+    "Crypto":            "NONE", # 24/7, keine Feiertage
+}
+
+# Holiday-Kalender → exchange_holidays.py Exchange-Name
+HOLIDAY_TO_EXCHANGE = {
+    "US": "NYSE",
+    "DE": "XETRA",
+    "UK": "LSE",
+    "FR": "EURONEXT",
+    "JP": "TSE",
+    "CH": "NYSE",    # SIX nutzt NYSE-aehnlichen Kalender
+    "NONE": "NYSE",  # Fallback (wird nie Feiertag-Check brauchen)
+}
+
+
+def get_holiday_calendar(ticker: str) -> str:
+    """Gibt den Holiday-Kalender-Code fuer einen Ticker zurueck.
+
+    Returns: "US", "DE", "UK", "FR", "JP", "CH", "NONE"
+    """
+    sym = SYMBOLS.get(ticker, {})
+    exchange = sym.get("exchange", "NYSE")
+    return EXCHANGE_TO_HOLIDAY.get(exchange, "US")
+
+
+def get_exchange_for_holidays(ticker: str) -> str:
+    """Gibt den exchange_holidays.py Exchange-Namen fuer einen Ticker zurueck.
+
+    Nutzt: ticker → SYMBOLS.exchange → EXCHANGE_TO_HOLIDAY → HOLIDAY_TO_EXCHANGE
+    Returns: "NYSE", "XETRA", "LSE", "EURONEXT", "TSE"
+    """
+    cal = get_holiday_calendar(ticker)
+    return HOLIDAY_TO_EXCHANGE.get(cal, "NYSE")
 
 # ── Symboldatenbank ────────────────────────────────────────────────────────────
 
