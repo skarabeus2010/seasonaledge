@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 24.0 | 2026-04-02 | Details → `docs/`
+> Version 25.0 | 2026-04-02 | Details → `docs/`
 
 ## Projekt
 
@@ -204,6 +204,10 @@ if _project_dir not in sys.path:
 | Nightly-Refresh: nur 5 Tage | Historische Daten bleiben unveraendert in Supabase |
 | `log_return` Spalte in Supabase | Vorberechnet, wird von preprocess() genutzt wenn vorhanden |
 | `from shared.data import download_data` | NICHT `from shared.yahoo_downloader` (Supabase-First!) |
+| TDOM/TDOY: boersenspezifisch | `render_trading_day_header(df, ticker=ticker)` — IMMER ticker uebergeben |
+| Holiday-Kalender: `symbols.py` | `get_exchange_for_holidays(ticker)` → NYSE/XETRA/LSE/EURONEXT/TSE |
+| TDOM/TDOY +1 Logik | `is_trading_day(today, exchange)` — NICHT `weekday < 5` |
+| Intraday Refresh: Zeitfenster | Boerse offen → laden. KEINE festen Zeitslots mehr |
 
 ## Architektur-Prinzipien
 
@@ -497,6 +501,20 @@ UPPER_CASE        → Konstanten
 - [ ] Landing Page: Echten Split-Slider in #hero-chart-container injizieren
 - [ ] Landing Page: OG-Image generieren (1200x630)
 - [ ] Landing Page: Inter Font self-hosted (woff2)
+- [x] TDOM/TDOY boersenspezifisch: Echter Feiertagskalender (XETRA/NYSE/LSE/TSE/Euronext) (2026-04-02)
+      `is_trading_day(today, exchange)` statt `weekday < 5`. Holiday-Mapping in symbols.py.
+      Alle 7 Pages uebergeben jetzt `ticker=ticker` an render_trading_day_header().
+- [x] Holiday-Kalender Mapping: EXCHANGE_TO_HOLIDAY in symbols.py (2026-04-02)
+      Exchange → Land (US/DE/UK/FR/JP/CH/NONE). get_exchange_for_holidays(ticker).
+- [x] Intraday Refresh: Zeitfenster statt feste Slots (2026-04-02)
+      Boerse offen → laden. Cron stuendlich :17. Kein Slot-Matching/Toleranz mehr.
+- [x] OHLC Fix: 18 Ticker / 102k Zeilen in Supabase korrigiert (2026-04-02)
+      Dividend-Check (mean_intraday < -0.5%) erkennt fehlende Dividend-Adjustierung.
+- [x] log_return Spalte: Backfill fuer alle 263 Ticker (2026-04-02)
+- [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
+- [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
+- [ ] tdoy als echte Spalte in Supabase (statt cumcount in preprocess)
+- [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
 
 ## Docs (bei Bedarf lesen)
 
