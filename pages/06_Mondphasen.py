@@ -483,11 +483,17 @@ def main():
         with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien)", expanded=True):
             from shared.streak_analysis import compute_streaks_from_list, render_streak_table
             _phase_label = phase_info["name"]
-            # Gruppiere nach Monat: "Jan Vollmond", "Feb Vollmond" etc.
+            # Monat aus date-String extrahieren (all_curves hat kein 'month' Key)
+            _moon_curves_with_month = []
+            for _c in result["all_curves"]:
+                _m = pd.Timestamp(_c["date"]).month
+                _moon_curves_with_month.append({
+                    "month": _m, "year": _c["year"], "total_return": _c["total_return"]
+                })
             _moon_label_map = {m: "{} {}".format(MONTH_NAMES_DE[m - 1], _phase_label)
                                for m in range(1, 13)}
             _moon_groups = compute_streaks_from_list(
-                result["all_curves"],
+                _moon_curves_with_month,
                 group_key="month",
                 return_key="total_return",
                 year_key="year",

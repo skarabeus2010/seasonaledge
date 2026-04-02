@@ -230,9 +230,11 @@ if _project_dir not in sys.path:
 - `render_info_badge()` NICHT mehr verwenden → Erklärungen gehören auf die Methodik-Page
 - TDOY-Analyse → `tdoy_analysis.py` (Handelstag des Jahres, dynamisch Aktien/Crypto)
 - Trading Day Header → `trading_day_header.py` (TDOM/TDOY Anzeige auf allen Pages)
+- Streak-Analyse → `streak_analysis.py` (W/L-Serien, wiederverwendbar fuer alle Pages)
 - Drawdown-Analyse → `drawdown_analysis.py` (DD-Kurven, Heatmaps, Recovery, Rolling Vola)
 - Drawdown-Heatmaps → `SE_DRAWDOWN_COLORSCALE` (Rot-Gradient, NICHT symmetrisch)
 - Page-Layout: Rendite-Sektionen oben, Drawdown/Risiko unten (visuell getrennt)
+- Live-Close → `append_today_if_missing()` in data.py (Yahoo-Fallback + Supabase-Write)
 - SEO-Tools → `seo/tools/` (statisches HTML mit JS-Client, Nginx /tools/ Route)
 - Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
 - Daten-Layer → `shared/data.py` (Supabase-First, Yahoo-Fallback, OHLC-Konsistenzcheck)
