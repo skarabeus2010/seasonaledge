@@ -612,3 +612,23 @@ with tab4:
                     showlegend=False,
                 )
                 st.plotly_chart(fig6, use_container_width=True)
+
+# ── STREAK-ANALYSE ────────────────────────────────────────────────────────────
+st.divider()
+with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien pro Feiertag)", expanded=True):
+    from shared.streak_analysis import render_streak_table
+    _streak_groups = []
+    for hname, hdata in all_data.items():
+        # Fenster-Rendite pro Jahr = cum_ret bei max offset
+        _end_offset = hdata["offset"].max()
+        _end_data = hdata[hdata["offset"] == _end_offset].sort_values("year", ascending=False)
+        entries = [{"date": int(row["year"]), "ret": float(row["cum_ret"])}
+                   for _, row in _end_data.iterrows()]
+        _streak_groups.append({"label": hname, "entries": entries})
+    render_streak_table(
+        _streak_groups,
+        col_header="Feiertag",
+        interpretation="Zeigt die aktuelle Gewinn-/Verlust-Serie pro Feiertag. "
+        "Fenster-Rendite = kumulierte Rendite von t-{} bis t+{}. "
+        "Lange Serien deuten auf einen stabilen Feiertags-Effekt hin.".format(days_before, days_after),
+    )

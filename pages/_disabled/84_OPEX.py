@@ -719,3 +719,23 @@ if show_backtest:
                     disp["profitable"]   = disp["profitable"].apply(lambda x: "✅" if x else "❌")
                     disp.columns = ["OPEX-Datum", "Jahr", "Monat", "Typ", "Rendite", "Gewinner"]
                     st.dataframe(disp, use_container_width=True, hide_index=True)
+
+                # ── Streak-Analyse ──────────────────────────
+                with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien)", expanded=True):
+                    from shared.streak_analysis import render_streak_table
+                    # Gruppiere nach Monat
+                    _opex_streak_groups = []
+                    MONTH_DE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]
+                    for m in range(1, 13):
+                        m_data = opex_windows_sorted[opex_windows_sorted["opex_date"].dt.month == m].sort_values("year", ascending=False)
+                        if len(m_data) == 0:
+                            continue
+                        entries = [{"date": int(row["year"]), "ret": float(row["total_return"])}
+                                   for _, row in m_data.iterrows()]
+                        _opex_streak_groups.append({"label": MONTH_DE[m-1] + " OPEX", "entries": entries})
+                    render_streak_table(
+                        _opex_streak_groups,
+                        col_header="OPEX Monat",
+                        interpretation="Zeigt die aktuelle Gewinn-/Verlust-Serie pro OPEX-Monat. "
+                        "Triple Witching (Mär/Jun/Sep/Dez) hat oft staerkere Effekte.",
+                    )

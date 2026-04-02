@@ -379,6 +379,32 @@ def main():
             })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     
+    # ── Streak-Analyse ────────────────────────────────
+    st.markdown("---")
+    with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien)", expanded=True):
+        from shared.streak_analysis import compute_streaks_from_list, render_streak_table
+        # Gruppiere nach Eventtyp (label)
+        _event_type_data = []
+        for entry in result["all_curves"]:
+            _event_type_data.append({
+                "event_type": entry.get("label", event_name),
+                "year": entry["year"],
+                "total_return": entry["total_return"],
+            })
+        if _event_type_data:
+            _groups = compute_streaks_from_list(
+                _event_type_data,
+                group_key="event_type",
+                return_key="total_return",
+                year_key="year",
+            )
+            render_streak_table(
+                _groups,
+                col_header="Event-Typ",
+                interpretation="Zeigt die aktuelle Gewinn-/Verlust-Serie pro Zentralbank-Event. "
+                "Lange Serien deuten auf eine konsistente Marktreaktion hin.",
+            )
+
     # ── Nächstes Event ────────────────────────────────
     st.markdown("---")
     st.markdown("#### 📅 Nächste Termine")

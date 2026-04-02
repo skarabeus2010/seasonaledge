@@ -479,6 +479,27 @@ def main():
             st.caption("Zeigt die durchschnittliche Rendite pro Kalendermonat. "
                        "Gelber Rahmen = aktueller Monat.")
 
+        # ── Streak-Analyse ──────────────────────────────
+        with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien)", expanded=True):
+            from shared.streak_analysis import compute_streaks_from_list, render_streak_table
+            _phase_label = phase_info["name"]
+            # Gruppiere nach Monat: "Jan Vollmond", "Feb Vollmond" etc.
+            _moon_label_map = {m: "{} {}".format(MONTH_NAMES_DE[m - 1], _phase_label)
+                               for m in range(1, 13)}
+            _moon_groups = compute_streaks_from_list(
+                result["all_curves"],
+                group_key="month",
+                return_key="total_return",
+                year_key="year",
+                label_map=_moon_label_map,
+            )
+            render_streak_table(
+                _moon_groups,
+                col_header="{} Monat".format(_phase_label),
+                interpretation="Zeigt die aktuelle Gewinn-/Verlust-Serie pro Monat fuer den {}-Effekt. "
+                "Lange Serien deuten auf einen stabilen Mond-Effekt in diesem Monat hin.".format(_phase_label),
+            )
+
         # ── Supermond-Analyse ────────────────────────────
         if phase_info["name"] == "Vollmond":
             with st.expander("🌟 Supermond-Analyse", expanded=False):
