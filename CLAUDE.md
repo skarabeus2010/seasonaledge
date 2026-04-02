@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 23.0 | 2026-04-02 | Details → `docs/`
+> Version 24.0 | 2026-04-02 | Details → `docs/`
 
 ## Projekt
 
@@ -482,11 +482,17 @@ UPPER_CASE        → Konstanten
 - [x] Nightly-Refresh: 60 Tage → 5 Tage (historische Daten bleiben unveraendert) (2026-04-01)
 - [x] Landing Page: Statisches HTML/CSS, institutional-grade Design (2026-04-02)
       Deep-Space-Blue #0f172a, Electric-Blue #3b82f6, Lucide SVG Icons, Inter Font.
+      Deep-Space-Blue #0f172a, Electric-Blue #3b82f6, Lucide SVG Icons, Inter Font.
       10 Sektionen: Hero, Demo (From Noise to Signal), Social Proof, 6 Zyklen,
       KI-Features, Methodik, Pricing (hidden), Newsletter, Footer.
       Nav: Zyklen/Strategien/Mehr (Dropdowns) + Blog + Zur Analyse.
       Backend-Hooks: #hero-chart-container fuer spaetere Chart-Injection.
       SEO: Schema.org (SoftwareApplication + Organization + FAQPage).
+- [x] Landing Page: V3 Ultra Palette (Pure Black #000 + Signal Gold #e8a820) (2026-04-02)
+      H1: "The Beauty of Noise", Sub: "When noise becomes signal, patterns become profit."
+      9 Feature Cards (6 Zyklen + Backtest + Strategien + Indikatoren).
+      Nav: 3 Dropdowns (Zyklen/Strategien/Mehr) + Blog + Zur Analyse.
+      Stats: Max Markthistorie, >500 Basiswerte, 15 KI-Modelle, 24 Strategien.
 - [ ] Landing Page: nginx.conf + docker-compose.yml (/ → Landing, /app/ → Streamlit)
 - [ ] Landing Page: Echten Split-Slider in #hero-chart-container injizieren
 - [ ] Landing Page: OG-Image generieren (1200x630)

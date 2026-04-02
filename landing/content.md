@@ -1,33 +1,39 @@
 # SeasonAlpha Landing Page — Content
 
-> Quelle fuer index.html. Alle Texte DE, SEO-optimiert.
+> Quelle fuer index.html. Alle Texte DE (Slogan EN), SEO-optimiert.
 > Aenderungen hier pflegen, dann in index.html uebertragen.
+> Farbschema: V3 Ultra (Pure Black #000 + Signal Gold #e8a820)
 
 ---
 
 ## Header / Navigation
 
-- **Logo:** SeasonAlpha
-- **Badge:** Early Access
-- **Nav-Items:** Produkt | Zyklen (Dropdown) | Backtest | Preise | Ueber uns
-- **CTA Button:** Kostenlos testen
+- **Logo:** SeasonAlpha (Gold-Akzent auf "Alpha")
+- **Badge:** Early Access (Gold)
+- **Nav-Items:** Zyklen (Dropdown) | Strategien (Dropdown) | Mehr (Dropdown) | Blog | [Zur Analyse]
+- **Zyklen:** Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen
+- **Strategien:** Januar Trifecta, Plain Vanilla Strategien, Backtest Engine
+- **Mehr:** Kriegszeiten, Saisonal Events Kalender, Methodik
+- **CTA Button:** Zur Analyse
 
 ---
 
 ## Hero
 
-**Eyebrow:** DATENGETRIEBENE BOERSENANALYSE
+**H1:** The Beauty of Noise
 
-**H1:** Saisonale Boersenmuster erkennen — mit 130 Jahren Marktdaten und KI
+**Subtitle:** When noise becomes signal, patterns become profit.
 
-**Subtitle:** SeasonAlpha analysiert Dekaden-, Jahres- und Monatszyklen mit 15 Machine-Learning-Modellen. Finde statistische Signale bevor der Markt sie einpreist.
+**Stats-Zeile:**
 
-**CTA:** Kostenlos testen
+| Zahl | Label |
+|------|-------|
+| Max | Markthistorie |
+| >500 | Basiswerte |
+| 15 | KI-Modelle |
+| 24 | Plain Vanilla Strategien |
 
-**Rotierende Hints (alle 4s):**
-1. Kein Abo noetig — alle Basis-Charts sofort verfuegbar
-2. 263 Aktien, ETFs, Krypto und Rohstoffe — gratis analysieren
-3. 130+ Jahre Dow Jones Historie — kostenlos erkunden
+**CTA:** Zur Analyse
 
 ---
 
@@ -37,7 +43,7 @@
 
 **H2:** From Noise to Signal
 
-**Subtitle:** Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten ein klares Signal.
+**Subtitle:** Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten Saisonalcharts.
 
 **Container-ID:** hero-chart-container (Platzhalter fuer spaetere Chart-Injection)
 
@@ -49,46 +55,49 @@
 
 | Zahl | Label |
 |------|-------|
-| 130+ | Jahre Markthistorie |
-| 263 | Basiswerte |
+| Max | Markthistorie |
+| >500 | Basiswerte |
 | 15 | KI-Modelle |
-| 24 | Saisonalstrategien |
+| 24 | Plain Vanilla Strategien |
 
 ---
 
-## Analyse-Module (6 Zyklen)
+## Analyse-Module (9 Module)
 
 **Eyebrow:** ANALYSE-MODULE
 
-**H2:** 6 Zyklen. Eine Plattform.
+**H2:** 9 Module. Eine Plattform.
 
 **Subtitle:** Jeder Zeitraum offenbart eigene statistische Muster — von der Dekade bis zum Wochentag.
 
-### Cards:
+### Cards (3x3 Grid):
 
-1. **Dekadenzyklus**
-   Icon: layers
-   Text: 131 Jahre Dow Jones. Kohorten nach Endziffern. Anomalie-Radar und Drawdown-Analyse.
+1. **Dekadenzyklus** (Icon: layers)
+   Bis zu 131 Jahre Historie. Kohorten nach Endziffern. Anomalie-Radar und Drawdown-Analyse.
 
-2. **Jahreszyklus**
-   Icon: trending-up
-   Text: Saisonaler Jahresverlauf mit Praesidentenzyklus, Signifikanztests und Perzentil-Baendern.
+2. **Jahreszyklus** (Icon: trending-up)
+   Saisonaler Jahresverlauf mit Praesidentenzyklus, Signifikanztests und Perzentil-Baendern.
 
-3. **Monatszyklus**
-   Icon: calendar
-   Text: Intra-Monat TDOM-Verlauf mit Detrend-Indikator, Heatmaps und Cycle-Matching.
+3. **Monatszyklus** (Icon: calendar)
+   Intra-Monat TDOM-Verlauf mit De-Trend-Indikator, Heatmaps und Cycle-Matching.
 
-4. **Wochentage**
-   Icon: bar-chart-2
-   Text: Wochentag-Renditen, Overnight vs. Intraday Split, Weekend-Effekt und Konsekutiv-Analyse.
+4. **Wochentage** (Icon: bar-chart-2)
+   Wochentag-Performance, Overnight vs. Intraday, Weekend-Effekt und Konsekutiv-Analyse.
 
-5. **Monatswechsel**
-   Icon: arrow-right-left
-   Text: Turn of the Month Effekt mit Streak-Analyse, Window-Optimierung und TOM-Heatmap.
+5. **Monatswechsel** (Icon: arrow-right-left)
+   Turn of the Month Effekt mit Streak-Analyse, Zeitfenster-Optimierung und ToM-Heatmap.
 
-6. **Mondphasen**
-   Icon: moon
-   Text: Voll- und Neumond-Effekt, Supermond-Vergleich und Lunar-Kalender.
+6. **Mondphasen** (Icon: moon)
+   Voll- und Neumond-Effekt, Supermond-Vergleich und Lunar-Kalender.
+
+7. **Backtest Engine** (Icon: play-circle)
+   Walk-Forward-Optimierung, Grid-Search ueber Zeitfenster und KI-gestuetzte Event-Relevanz. Validiere jede Strategie bevor du sie einsetzt.
+
+8. **Plain Vanilla Strategien** (Icon: layers)
+   24 regelbasierte Saisonalstrategien — von Sell in May bis Halloween-Indikator. Equity-Kurven, Trade-Listen und Performance-Metriken auf Knopfdruck.
+
+9. **Jahres-Indikatoren** (Icon: activity)
+   Technische Filter (SMA, EMA, RSI, Bollinger, MACD, LBR) als Overlay auf saisonale Muster. Kombiniere Trend- und Momentum-Signale mit Zyklusanalyse.
 
 ---
 
@@ -98,7 +107,7 @@
 
 **H2:** 15 KI-Modelle fuer praezise Signale
 
-**Subtitle:** Von DTW Pattern Matching bis Chronos-Forecast — jedes Modell beleuchtet einen anderen Aspekt saisonaler Muster.
+**Subtitle:** Von DTW Pattern Matching bis Chronos-Forecast — jedes Modell fuer Dein SeasonAlpha.
 
 ### Highlight-Features (6 ausgewaehlte):
 
@@ -122,25 +131,6 @@
 
 ---
 
-## Methodik
-
-**Eyebrow:** METHODIK
-
-**H2:** Normalisierte Renditen statt Bauchgefuehl
-
-### 3 Saeulen:
-
-1. **Datenqualitaet seit 1895**
-   Der Dow Jones Industrial Average seit 1895 — lueckenlos, split- und dividend-adjustiert. 263 weitere Basiswerte mit jeweils maximaler verfuegbarer Historie.
-
-2. **Statistische Signifikanz**
-   Kein Muster ohne Beweis. Jedes Ergebnis wird mit t-Tests und Cohen's d geprueft. Signifikanz-Tachos zeigen auf einen Blick, ob ein Pattern statistisch belastbar ist.
-
-3. **Reproduzierbare Methodik**
-   Prozentuale Renditen normiert auf 100. Jedes Jahr startet bei 100, taegliche Returns kumulieren darauf. Transparent, nachvollziehbar, frei von Survivorship-Bias.
-
----
-
 ## Pricing (HIDDEN — vorbereitet fuer spaeter)
 
 **Eyebrow:** PREISE
@@ -148,8 +138,8 @@
 **H2:** Kostenlos starten. Premium wenn du bereit bist.
 
 ### Free (0 EUR):
-- 6 Analyse-Zyklen
-- 263 Basiswerte
+- 9 Analyse-Module
+- >500 Basiswerte
 - Interaktive Charts
 - Signifikanztests
 - Heatmaps und Boxplots
@@ -170,33 +160,32 @@
 
 **H2:** Jede Woche saisonale Insights
 
-**Subtitle:** Kostenlos, DSGVO-konform, jederzeit abbestellbar.
+**Subtitle:** DSGVO-konform, jederzeit abbestellbar.
 
 **Formular:** E-Mail-Feld + Anmelden-Button
-
-**Sekundaerer CTA:** Oder direkt zur App: Kostenlos testen
 
 ---
 
 ## Footer
 
 ### Spalte 1: Marke
-SeasonAlpha — Datengetriebene Boersenanalyse seit 1895.
+SeasonAlpha — Datengetriebene Boersenanalyse.
 
-### Spalte 2: Produkt
-- App starten (/app/)
-- Blog (/blog/)
-- Tools (/tools/trading-day-converter)
-- SEO-Analysen (/analyse/dax-saisonalitaet)
+### Spalte 2: Zyklen
+- Dekadenzyklus, Jahreszyklus, Monatszyklus
+- Wochentage, Monatswechsel, Mondphasen
 
-### Spalte 3: Rechtliches
+### Spalte 3: Strategien & Mehr
+- Januar Trifecta, Plain Vanilla Strategien
+- Backtest Engine, Kriegszeiten
+- Events Kalender, Methodik
+
+### Spalte 4: Rechtliches
 - Disclaimer (/disclaimer)
 - Impressum
 - Datenschutz
 - Legal Notice (EN)
-
-### Spalte 4: Kontakt
-- info@seasonalpha.ai
+- Blog (/blog/)
 
 ### Bottom Bar
 Copyright 2026 SeasonAlpha. All rights reserved.
