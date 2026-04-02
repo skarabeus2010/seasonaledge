@@ -2,7 +2,7 @@ name: Intraday Price Update
 
 on:
   schedule:
-    - cron: '*/30 * * * *'    # Alle 30 Minuten, 24/7
+    - cron: '17 * * * *'       # Stuendlich um :17 (off-peak, vermeidet GitHub Delays)
   workflow_dispatch:           # Manuell triggerbar
 
 jobs:

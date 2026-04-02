@@ -47,45 +47,33 @@ TICKERS_ASIA = [t for t, v in SYMBOLS.items() if v["kategorie"] in ASIA_CATEGORI
 TICKERS_FX = [t for t, v in SYMBOLS.items() if v["kategorie"] in FX_CATEGORIES]
 TICKERS_CRYPTO = [t for t, v in SYMBOLS.items() if v["kategorie"] in CRYPTO_CATEGORIES]
 
-# ── Update-Zeiten (UTC-Minuten seit Mitternacht) ────────────────────────────
+# ── Handelszeiten als Zeitfenster (UTC) ──────────────────────────────────────
+# Statt fester Slots: Wenn die Boerse OFFEN ist, wird geladen.
+# Jeder Cron-Run der ins Fenster faellt, aktualisiert die Gruppe.
 # MESZ = UTC + 2 (Sommerzeit), MEZ = UTC + 1 (Winterzeit)
-# Alle Zeiten hier in UTC (MESZ - 2h)
 
 def _hm(h, m=0):
     """Stunde:Minute → Minuten seit Mitternacht."""
     return h * 60 + m
 
-# EU:  9:15-17:35 MESZ → 7:15-15:35 UTC
-EU_TIMES = [_hm(7, 15), _hm(7, 35), _hm(9), _hm(11), _hm(13), _hm(15), _hm(15, 35)]
-
-# US: 15:35-22:05 MESZ → 13:35-20:05 UTC
-US_TIMES = [_hm(13, 35), _hm(14, 15), _hm(15), _hm(16), _hm(17), _hm(18),
-            _hm(19, 30), _hm(20, 5)]
-
-# Asien: 3:00-8:00 MESZ → 1:00-6:00 UTC
-ASIA_TIMES = [_hm(1), _hm(3), _hm(6)]
-
-# FX: 8:00-22:00 MESZ → 6:00-20:00 UTC
-FX_TIMES = [_hm(6), _hm(10), _hm(13, 30), _hm(16), _hm(20)]
-
-# Crypto: stuendlich
-CRYPTO_TIMES = [_hm(h) for h in range(24)]
-
+# Zeitfenster: (start_utc, end_utc) — waehrend dieser Zeit wird geladen
 GROUPS = {
-    "eu":     {"tickers": TICKERS_EU,     "times": EU_TIMES,     "weekdays_only": True},
-    "us":     {"tickers": TICKERS_US,     "times": US_TIMES,     "weekdays_only": True},
-    "asia":   {"tickers": TICKERS_ASIA,   "times": ASIA_TIMES,   "weekdays_only": True},
-    "fx":     {"tickers": TICKERS_FX,     "times": FX_TIMES,     "weekdays_only": True},
-    "crypto": {"tickers": TICKERS_CRYPTO, "times": CRYPTO_TIMES, "weekdays_only": False},
+    "eu":     {"tickers": TICKERS_EU,     "open": _hm(7, 0),  "close": _hm(16, 0),  "weekdays_only": True},
+    "us":     {"tickers": TICKERS_US,     "open": _hm(13, 30), "close": _hm(21, 0),  "weekdays_only": True},
+    "asia":   {"tickers": TICKERS_ASIA,   "open": _hm(0, 0),  "close": _hm(8, 0),   "weekdays_only": True},
+    "fx":     {"tickers": TICKERS_FX,     "open": _hm(6, 0),  "close": _hm(20, 0),  "weekdays_only": True},
+    "crypto": {"tickers": TICKERS_CRYPTO, "open": _hm(0, 0),  "close": _hm(23, 59), "weekdays_only": False},
 }
 
 # ── Logik ────────────────────────────────────────────────────────────────────
 
-TOLERANCE_MINUTES = 16  # ±16 Min Toleranz (Cron laeuft alle 30 Min)
-
 
 def get_active_groups(now_utc=None, force_group=None):
-    """Ermittelt welche Gruppen jetzt aktualisiert werden sollen."""
+    """Ermittelt welche Gruppen jetzt aktualisiert werden sollen.
+
+    Einfache Logik: Liegt die aktuelle UTC-Zeit im Handelsfenster
+    der Gruppe? Wenn ja → laden. Kein Slot-Matching, keine Toleranz.
+    """
     if now_utc is None:
         now_utc = datetime.now(timezone.utc)
 
@@ -103,13 +91,8 @@ def get_active_groups(now_utc=None, force_group=None):
     for name, cfg in GROUPS.items():
         if cfg["weekdays_only"] and not is_weekday:
             continue
-        for t in cfg["times"]:
-            diff = abs(now_minutes - t)
-            # Mitternachts-Wrap (z.B. 23:50 vs 0:05)
-            diff = min(diff, 1440 - diff)
-            if diff <= TOLERANCE_MINUTES:
-                active[name] = cfg
-                break
+        if cfg["open"] <= now_minutes <= cfg["close"]:
+            active[name] = cfg
 
     return active
 
