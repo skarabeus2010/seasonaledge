@@ -258,7 +258,14 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df["day_of_year"] = df.index.dayofyear          # CDOY (Kalendertag)
     df["year"]        = df.index.year
     df["month"]       = df.index.month
-    df["tdoy"]        = df.groupby("year").cumcount() + 1  # TDOY (Handelstag)
+
+    # TDOY/TDOM: DB-Spalten nutzen wenn vorhanden, sonst Fallback cumcount
+    if "tdoy" in df.columns and df["tdoy"].notna().sum() > 0:
+        pass  # Bereits aus Supabase geladen
+    else:
+        df["tdoy"] = df.groupby("year").cumcount() + 1  # Fallback
+    if "tdom" not in df.columns or df["tdom"].isna().all():
+        df["tdom"] = df.groupby(["year", "month"]).cumcount() + 1  # Fallback
     df = df.dropna(subset=["return"])
     return df
 

@@ -175,14 +175,40 @@ def append_today_if_missing(df: pd.DataFrame, ticker: str) -> pd.DataFrame:
         # An DataFrame anhängen
         df = pd.concat([df, new_row]).sort_index()
 
+        # TDOM/TDOY berechnen
+        tdom_val = None
+        tdoy_val = None
+        try:
+            from shared.exchange_holidays import is_trading_day as _is_td
+            _exchange = get_exchange_for_holidays(ticker)
+            _today_d = today.date() if hasattr(today, 'date') else today
+
+            # TDOY: letzten bekannten Wert aus df + 1
+            year_df = df[df.index.year == _today_d.year].sort_index()
+            if "tdoy" in year_df.columns and year_df["tdoy"].notna().any():
+                tdoy_val = int(year_df["tdoy"].dropna().iloc[-1]) + 1
+            # TDOM: letzten bekannten Wert aus df + 1 (oder 1 bei neuem Monat)
+            month_df = year_df[year_df.index.month == _today_d.month]
+            if "tdom" in month_df.columns and month_df["tdom"].notna().any():
+                tdom_val = int(month_df["tdom"].dropna().iloc[-1]) + 1
+            elif len(month_df) == 0:
+                tdom_val = 1  # Erster Tag im neuen Monat
+        except Exception:
+            pass
+
         # In Supabase schreiben (fire-and-forget)
         try:
             from shared.supabase_client import upsert_prices
-            upsert_prices([{
+            record = {
                 "ticker": ticker,
                 "date": today.strftime("%Y-%m-%d"),
                 "close": last_close,
-            }])
+            }
+            if tdom_val is not None:
+                record["tdom"] = tdom_val
+            if tdoy_val is not None:
+                record["tdoy"] = tdoy_val
+            upsert_prices([record])
         except Exception:
             pass  # Nicht kritisch
 

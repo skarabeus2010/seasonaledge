@@ -367,9 +367,10 @@ def _get_current_tdoy(df: pd.DataFrame, exchange: str = "NYSE") -> Optional[int]
 
 
 def _get_current_tdom(df: pd.DataFrame, exchange: str = "NYSE") -> Optional[int]:
-    """Aktueller TDOM — aus echten Handelstagen (DB).
+    """Aktueller TDOM — aus DB-Spalte 'tdom' wenn vorhanden.
 
-    +1 nur wenn heute ein Handelstag ist (echter Boersenkalender).
+    Fallback: Zeilen im aktuellen Monat zaehlen.
+    +1 wenn heute ein Handelstag ist und noch nicht in DB.
     """
     today = date.today()
     cutoff = pd.Timestamp(today) + pd.Timedelta(days=1)
@@ -380,7 +381,13 @@ def _get_current_tdom(df: pd.DataFrame, exchange: str = "NYSE") -> Optional[int]
     month_df = year_df[year_df["month"] == today.month]
     if len(month_df) > 0:
         last_date = month_df.index[-1].date() if hasattr(month_df.index[-1], 'date') else today
-        tdom = len(month_df)
+
+        # DB-Spalte bevorzugen
+        if "tdom" in month_df.columns and month_df["tdom"].notna().any():
+            tdom = int(month_df["tdom"].iloc[-1])
+        else:
+            tdom = len(month_df)
+
         if last_date < today and is_trading_day(today, exchange):
             tdom += 1
         return tdom

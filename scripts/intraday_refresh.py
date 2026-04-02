@@ -116,6 +116,33 @@ def refresh_tickers(tickers, group_name, dry_run=False):
                 # log_return berechnen (ln(close_t / close_{t-1}))
                 df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
 
+                # TDOM/TDOY berechnen (boersenspezifisch)
+                try:
+                    from shared.exchange_holidays import is_trading_day as _is_td
+                    from shared.symbols import get_exchange_for_holidays
+                    _exchange = get_exchange_for_holidays(ticker)
+                    _tdoy = 0
+                    _tdom = 0
+                    _cur_year = None
+                    _cur_month = None
+                    for _d_idx in df.sort_index().index:
+                        _d = _d_idx.date() if hasattr(_d_idx, 'date') else _d_idx
+                        if _d.year != _cur_year:
+                            _cur_year = _d.year
+                            _tdoy = 0
+                            _cur_month = _d.month
+                            _tdom = 0
+                        if _d.month != _cur_month:
+                            _cur_month = _d.month
+                            _tdom = 0
+                        if _is_td(_d, _exchange):
+                            _tdoy += 1
+                            _tdom += 1
+                        df.loc[_d_idx, "tdoy"] = _tdoy
+                        df.loc[_d_idx, "tdom"] = _tdom
+                except Exception:
+                    pass  # Fallback: kein TDOM/TDOY
+
                 # Preise in Supabase schreiben
                 try:
                     from shared.supabase_client import upsert_prices
@@ -134,6 +161,10 @@ def refresh_tickers(tickers, group_name, dry_run=False):
                             rec["volume"] = int(row["Volume"])
                         if "log_return" in row and pd.notna(row["log_return"]):
                             rec["log_return"] = round(float(row["log_return"]), 8)
+                        if "tdoy" in row and pd.notna(row["tdoy"]):
+                            rec["tdoy"] = int(row["tdoy"])
+                        if "tdom" in row and pd.notna(row["tdom"]):
+                            rec["tdom"] = int(row["tdom"])
                         records.append(rec)
                     if records:
                         upsert_prices(records)

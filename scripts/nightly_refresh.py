@@ -83,6 +83,11 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                         _rec["volume"] = int(_row["Volume"])
                     if "log_return" in _row and pd.notna(_row["log_return"]):
                         _rec["log_return"] = round(float(_row["log_return"]), 8)
+                    # TDOM/TDOY aus preprocess() (nutzt DB-Werte oder Fallback)
+                    if "tdoy" in _row and pd.notna(_row["tdoy"]):
+                        _rec["tdoy"] = int(_row["tdoy"])
+                    if "tdom" in _row and pd.notna(_row["tdom"]):
+                        _rec["tdom"] = int(_row["tdom"])
                     _price_records.append(_rec)
                 if _price_records:
                     upsert_prices(_price_records)
