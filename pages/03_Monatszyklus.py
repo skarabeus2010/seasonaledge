@@ -366,10 +366,13 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     # Immer Startpunkt bei TDOM 0 = 0% (Vormonatsschluss als Basis)
     if current_month_curve is not None:
         cm_tdoms, cm_curve = current_month_curve
+        # DEBUG: Was kommt in build_intramonth_chart an?
+        print(f"BUILD_CHART: cm_tdoms={cm_tdoms}, cm_curve={cm_curve}", flush=True)
         if cm_tdoms and cm_curve:
             # TDOM 0 = 0% (Vormonatsschluss) als Startpunkt einfügen
             plot_tdoms = [0] + list(cm_tdoms)
             plot_curve = [0.0] + list(cm_curve)
+            print(f"BUILD_CHART: plot_tdoms={plot_tdoms}, plot_curve={plot_curve}", flush=True)
             current_year = datetime.now().year
             # Hover-Texte: TDOM 0 = "Basis", rest = TDOM X
             hover_texts = [f"<b>{current_year}</b><br>Basis (Vormonat)<br>0.000%"]
