@@ -124,12 +124,46 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
             smoothing, center=True, min_periods=1
         ).mean().tolist()
 
+    # n pro Kalendertag zaehlen (wie viele Jahre haben echte Daten an diesem Tag?)
+    _n_years = len(year_data)
+    _MIN_N_PCT = 0.5  # Weniger als 50% der Jahre = unsicher
+    _MIN_N = max(int(_n_years * _MIN_N_PCT), 3)
+    _day_counts = [0] * 365
+    for yd in year_data.values():
+        for d in yd.get("days", []):
+            if 1 <= d <= 365:
+                _day_counts[d - 1] += 1
+
+    # Split: solide vs. schwach
+    _last_solid_day = 365
+    for d in range(364, -1, -1):
+        if _day_counts[d] >= _MIN_N:
+            _last_solid_day = d + 1  # 1-basiert
+            break
+
+    _solid_x = [d for d in x_days if d <= _last_solid_day]
+    _solid_y = [avg_smooth[d - 1] for d in _solid_x]
+    _weak_x = [d for d in x_days if d > _last_solid_day]
+    _weak_y = [avg_smooth[d - 1] for d in _weak_x]
+
     fig.add_trace(go.Scatter(
-        x=x_days, y=avg_smooth, mode="lines",
+        x=_solid_x, y=_solid_y, mode="lines",
         line=dict(color=SE_COLORS["accent_blue"], width=3),
-        name=f"Saisonaler Ø ({len(year_data)} Jahre)",
+        name="Saisonaler Ø ({} Jahre)".format(_n_years),
         hovertemplate="Tag %{x}<br>Wert: %{y:.2f}<extra></extra>",
     ))
+
+    if _weak_x:
+        _tr_x = [_solid_x[-1]] + _weak_x if _solid_x else _weak_x
+        _tr_y = [_solid_y[-1]] + _weak_y if _solid_y else _weak_y
+        fig.add_trace(go.Scatter(
+            x=_tr_x, y=_tr_y, mode="lines+markers",
+            line=dict(color="#ff6b6b", width=2, dash="dot"),
+            marker=dict(size=8, color="#ff6b6b", symbol="diamond",
+                        line=dict(width=1.5, color="#ffffff")),
+            name="⚠ n<{} (unsicher)".format(_MIN_N),
+            hovertemplate="Tag %{x}<br>Wert: %{y:.2f}<br>⚠ wenig Daten<extra></extra>",
+        ))
 
     # Praesidentenzyklus-Overlay
     if cycle_overlay:
