@@ -336,8 +336,42 @@ def _estimate_from_previous_years(
     return None
 
 
+def _is_likely_trading_day(df: pd.DataFrame, today: date) -> bool:
+    """Prueft ob heute wahrscheinlich ein Handelstag ist.
+
+    Nutzt historische Daten: Wenn dieses Kalenderdatum in >50% der
+    Vorjahre ein Handelstag war, ist es heute wahrscheinlich auch einer.
+    Beruecksichtigt automatisch den richtigen Boersenkalender (XETRA, NYSE, etc.)
+    """
+    if today.weekday() >= 5:  # Wochenende → nie Handelstag
+        return False
+
+    doy = today.timetuple().tm_yday
+    # Pruefe ob day_of_year in Vorjahren ein Handelstag war (±1 Tag Toleranz)
+    years_with_data = df["year"].nunique()
+    if years_with_data < 3:
+        return True  # Zu wenig Historie → optimistisch annehmen
+
+    count = 0
+    for yr in df["year"].unique():
+        if yr == today.year:
+            continue
+        yr_df = df[df["year"] == yr]
+        if "day_of_year" in yr_df.columns:
+            if ((yr_df["day_of_year"] >= doy - 1) & (yr_df["day_of_year"] <= doy + 1)).any():
+                count += 1
+
+    # Wenn >40% der Vorjahre hier einen Handelstag hatten → ja
+    prev_years = max(1, years_with_data - 1)
+    return (count / prev_years) > 0.4
+
+
 def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOY — aus echten Handelstagen (DB), +1 wenn heute noch fehlt."""
+    """Aktueller TDOY — aus echten Handelstagen (DB).
+
+    +1 nur wenn heute wahrscheinlich ein Handelstag ist (historisch geprueft).
+    Funktioniert korrekt fuer alle Boersen (XETRA, NYSE, TSE, etc.).
+    """
     today = date.today()
     cutoff = pd.Timestamp(today) + pd.Timedelta(days=1)
     year_df = df[df["year"] == today.year]
@@ -346,19 +380,21 @@ def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
     if len(year_df) == 0:
         return None
 
-    # Letzter bekannter Handelstag
     last_date = year_df.index[-1].date() if hasattr(year_df.index[-1], 'date') else today
     tdoy = int(year_df["tdoy"].iloc[-1]) if "tdoy" in year_df.columns else len(year_df)
 
-    # Wenn heute ein Werktag ist und noch nicht in den Daten → +1
-    if last_date < today and today.weekday() < 5:
+    # Heute noch nicht in DB → pruefen ob Handelstag
+    if last_date < today and _is_likely_trading_day(df, today):
         tdoy += 1
 
     return tdoy
 
 
 def _get_current_tdom(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOM — aus echten Handelstagen (DB), +1 wenn heute noch fehlt."""
+    """Aktueller TDOM — aus echten Handelstagen (DB).
+
+    +1 nur wenn heute wahrscheinlich ein Handelstag ist (historisch geprueft).
+    """
     today = date.today()
     cutoff = pd.Timestamp(today) + pd.Timedelta(days=1)
     year_df = df[(df["year"] == today.year)]
@@ -369,11 +405,11 @@ def _get_current_tdom(df: pd.DataFrame) -> Optional[int]:
     if len(month_df) > 0:
         last_date = month_df.index[-1].date() if hasattr(month_df.index[-1], 'date') else today
         tdom = len(month_df)
-        if last_date < today and today.weekday() < 5:
+        if last_date < today and _is_likely_trading_day(df, today):
             tdom += 1
         return tdom
 
     # Kein Daten im aktuellen Monat → neuer Monat hat begonnen
-    if today.weekday() < 5:
-        return 1  # Erster Handelstag im neuen Monat
+    if _is_likely_trading_day(df, today):
+        return 1
     return None
