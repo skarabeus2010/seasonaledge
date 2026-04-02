@@ -366,13 +366,10 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     # Immer Startpunkt bei TDOM 0 = 0% (Vormonatsschluss als Basis)
     if current_month_curve is not None:
         cm_tdoms, cm_curve = current_month_curve
-        # DEBUG: Was kommt in build_intramonth_chart an?
-        print(f"BUILD_CHART: cm_tdoms={cm_tdoms}, cm_curve={cm_curve}", flush=True)
         if cm_tdoms and cm_curve:
             # TDOM 0 = 0% (Vormonatsschluss) als Startpunkt einfügen
             plot_tdoms = [0] + list(cm_tdoms)
             plot_curve = [0.0] + list(cm_curve)
-            print(f"BUILD_CHART: plot_tdoms={plot_tdoms}, plot_curve={plot_curve}", flush=True)
             current_year = datetime.now().year
             # Hover-Texte: TDOM 0 = "Basis", rest = TDOM X
             hover_texts = [f"<b>{current_year}</b><br>Basis (Vormonat)<br>0.000%"]
@@ -533,14 +530,11 @@ def calc_current_month_curve(df, target_month):
 
     Basis = Close letzter Handelstag Vormonat.
     TDOM 1 zeigt bereits die Rendite des ersten Tages.
+    Nutzt IMMER cumcount (nicht DB-Spalte) weil heute evtl. NaN in DB.
     """
     current_year = datetime.now().year
     today = pd.Timestamp(datetime.now().date())
-    # Nutze DB-Spalte tdom wenn vorhanden, sonst cumcount
-    if "tdom" in df.columns and df["tdom"].notna().any():
-        df_tdom = df.copy()
-    else:
-        df_tdom = assign_tdom(df)
+    df_tdom = assign_tdom(df)
     month_df = df_tdom[(df_tdom["year"] == current_year) & (df_tdom["month"] == target_month)].copy()
     month_df = month_df[month_df.index <= today]
     if len(month_df) < 1:
@@ -1281,10 +1275,6 @@ def main():
         if cm_tdoms:
             current_month_curve = (cm_tdoms, cm_curve)
     if tdom_stats:
-        # DEBUG: Direkt vor Chart
-        if current_month_curve:
-            _dbg_t, _dbg_c = current_month_curve
-            st.warning(f"DEBUG VOR CHART: tdoms={_dbg_t}, curve={[round(v,3) for v in _dbg_c]}, current_tdom={current_tdom}")
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
