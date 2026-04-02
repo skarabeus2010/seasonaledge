@@ -606,6 +606,88 @@ def build_overnight_intraday_chart(oi_stats, ticker):
     return fig
 
 
+def _render_weekday_streaks(df, years_back, cycle_filter=None):
+    """Streak-Analyse: Aktuelle Gewinn-/Verlust-Serien pro Wochentag."""
+    _df = df.copy()
+    cutoff = _df.index.max() - pd.DateOffset(years=years_back)
+    _df = _df[_df.index >= cutoff]
+
+    if cycle_filter:
+        from shared.calculations import filter_by_presidential_cycle
+        _df = filter_by_presidential_cycle(_df, cycle_filter)
+
+    _df["weekday"] = _df.index.weekday
+    _df["wd_return"] = _df["Close"].pct_change() * 100
+    _n_wd = 7 if (_df["weekday"] > 4).any() else 5
+    _labels = WEEKDAY_LABELS_7 if _n_wd == 7 else WEEKDAY_LABELS_5
+
+    streak_rows = []
+    for wd in range(_n_wd):
+        wd_df = _df[_df["weekday"] == wd].sort_index(ascending=False)
+        if len(wd_df) == 0:
+            continue
+
+        # Wochen-Renditen (jede Zeile = ein Wochentag-Auftritt)
+        entries = [{"date": idx, "ret": row["wd_return"]}
+                   for idx, row in wd_df.iterrows()
+                   if pd.notna(row["wd_return"])]
+
+        if not entries:
+            continue
+
+        # Aktuelle Streak zaehlen
+        streak_type = "win" if entries[0]["ret"] > 0 else "loss"
+        streak_count = 0
+        for e in entries:
+            if (streak_type == "win" and e["ret"] > 0) or (streak_type == "loss" and e["ret"] <= 0):
+                streak_count += 1
+            else:
+                break
+
+        # Letzte 10 als farbige Bloecke
+        blocks = ""
+        for e in entries[:10]:
+            color = "#00d4aa" if e["ret"] > 0 else "#ff4757"
+            d_str = e["date"].strftime("%d.%m.%y") if hasattr(e["date"], "strftime") else ""
+            wl = "W" if e["ret"] > 0 else "L"
+            ret_fmt = "{:+.2f}%".format(e["ret"])
+            blocks += ("<span style='display:inline-block; width:36px; height:28px; "
+                       "background:{}; border-radius:5px; margin:2px; "
+                       "text-align:center; font-size:11px; line-height:28px; "
+                       "font-weight:700; color:#FFFFFF;' "
+                       "title='{}: {}'>{}</span>".format(color, d_str, ret_fmt, wl))
+
+        streak_color = "#00d4aa" if streak_type == "win" else "#ff4757"
+        streak_text = f"{streak_count}x {'Gewinn' if streak_type == 'win' else 'Verlust'}"
+
+        streak_rows.append(
+            f"<tr>"
+            f"<td style='color:#FFFFFF; font-size:13px; padding:6px 12px;'>{_labels[wd]}</td>"
+            f"<td style='color:{streak_color}; font-weight:700; font-size:13px; "
+            f"padding:6px 12px; text-align:center;'>{streak_text}</td>"
+            f"<td style='padding:6px 8px;'>{blocks}</td>"
+            f"</tr>"
+        )
+
+    table_html = (
+        "<table style='width:100%; border-collapse:collapse;'>"
+        "<tr style='border-bottom:1px solid rgba(255,255,255,0.1);'>"
+        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 12px;'>Wochentag</th>"
+        "<th style='color:#8899aa; font-size:11px; text-align:center; padding:4px 12px;'>Aktuelle Serie</th>"
+        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 8px;'>Letzte 10 (neueste links)</th>"
+        "</tr>"
+        + "".join(streak_rows)
+        + "</table>"
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#FFFFFF; font-size:12px; margin-top:12px; line-height:1.6;'>"
+        "<b>Interpretation:</b> Zeigt die aktuelle Gewinn-/Verlust-Serie pro Wochentag. "
+        "Lange Serien deuten auf einen persistenten Wochentag-Effekt hin. "
+        "W = Gewinn (Close &gt; Close Vortag), L = Verlust. Hover zeigt Datum und Rendite.</p>",
+        unsafe_allow_html=True)
+
+
 def calc_consecutive_probs(df, years_back, cycle_filter=None):
     """Bedingte Wahrscheinlichkeit: Wenn Tag X positiv/negativ → was macht Tag X+1?"""
     df = df.copy()
@@ -1480,6 +1562,11 @@ def main():
             "abhaengig davon ob der Vortag positiv (↑) oder negativ (↓) war. "
             "Werte ueber 55% deuten auf Trendkontinuation hin, unter 45% auf Mean Reversion.</p>",
             unsafe_allow_html=True)
+
+    # ── Streak-Analyse ────────────────────────────────
+    with st.expander("🔥 Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)", expanded=True):
+        _render_weekday_streaks(raw_df, years_back,
+            cycle_filter=cycle_filter if cycle_filter else None)
 
     # ── Quartals-Heatmaps ─────────────────────────────
     with st.expander("📊 Wochentag-Performance nach Quartal", expanded=True):
