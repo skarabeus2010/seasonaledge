@@ -535,7 +535,16 @@ def calc_current_month_curve(df, target_month):
     today = pd.Timestamp(datetime.now().date())
     df_tdom = assign_tdom(df)
     month_df = df_tdom[(df_tdom["year"] == current_year) & (df_tdom["month"] == target_month)].copy()
+
+    # DEBUG: VOR Filter
+    _pre_filter = len(month_df)
+
     month_df = month_df[month_df.index <= today]
+
+    # DEBUG: NACH Filter
+    import streamlit as _st
+    _st.caption(f"🔬 calc_current_month_curve: year={current_year}, month={target_month}, today={today}, pre={_pre_filter}, post={len(month_df)}, idx={[str(x) for x in month_df.index]}")
+
     if len(month_df) < 1:
         return None, None
     # Basis = Close Vormonat (log_return[TDOM1] enthält bereits die Rendite ggü Vormonat)
@@ -1278,10 +1287,17 @@ def main():
         st.plotly_chart(build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
             show_individual, show_bands, current_tdom,
             current_month_curve=current_month_curve), use_container_width=True)
-        # DEBUG: Temporär — zeigt was die goldene Linie bekommt
+        # DEBUG: Temporär
         if current_month_curve:
             _dbg_t, _dbg_c = current_month_curve
             st.warning(f"DEBUG: tdoms={_dbg_t}, curve={[round(v,3) for v in _dbg_c]}, current_tdom={current_tdom}")
+        else:
+            # Teste raw
+            from datetime import datetime as _dt
+            _df2 = assign_tdom(df)
+            _mdf = _df2[(_df2["year"]==_dt.now().year)&(_df2["month"]==selected_month)]
+            _mdf = _mdf[_mdf.index <= pd.Timestamp(_dt.now().date())]
+            st.error(f"DEBUG no curve: month_df rows={len(_mdf)}, tdoms={_mdf['tdom'].tolist()}, log_ret={_mdf['log_return'].tolist()}")
 
         # Erklärung + Warnung bei wenig Daten
         _max_tdom = max(tdom_stats.keys()) if tdom_stats else 0
