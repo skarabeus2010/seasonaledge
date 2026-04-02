@@ -350,11 +350,32 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
                 yaxis="y2",
                 hovertext=hover_texts, hoverinfo="text",
             ))
+            # Rechte Achse: 0% soll auf gleicher Hoehe liegen wie 0% der linken Achse.
+            # Berechne Range so, dass das Verhaeltnis oben/unten gleich ist.
+            _y1_min = min(avg_curve) if avg_curve else -1
+            _y1_max = max(avg_curve) if avg_curve else 1
+            _y2_vals = plot_curve
+            _y2_min_data = min(_y2_vals)
+            _y2_max_data = max(_y2_vals)
+            # Puffer
+            _y2_pad = max(abs(_y2_max_data), abs(_y2_min_data), 0.5) * 0.2
+            if _y1_max > 0 and _y1_min < 0:
+                # Linke Achse hat pos + neg → rechte Achse proportional
+                _ratio_above = _y1_max / (_y1_max - _y1_min)
+                _y2_range = max(abs(_y2_max_data) / max(_ratio_above, 0.1),
+                               abs(_y2_min_data) / max(1 - _ratio_above, 0.1))
+                _y2_lo = -_y2_range * (1 - _ratio_above) - _y2_pad
+                _y2_hi = _y2_range * _ratio_above + _y2_pad
+            else:
+                # Linke Achse nur positiv → rechte startet bei leicht unter 0
+                _y2_lo = min(_y2_min_data, 0) - _y2_pad
+                _y2_hi = _y2_max_data + _y2_pad
             fig.update_layout(
                 yaxis2=dict(
                     overlaying="y", side="right", showgrid=False,
                     ticksuffix="%", tickformat="+.2f", title=None,
                     tickfont=dict(color="#F1C40F", size=10),
+                    range=[_y2_lo, _y2_hi],
                 ),
             )
 
