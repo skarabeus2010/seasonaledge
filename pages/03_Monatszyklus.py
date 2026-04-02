@@ -1137,7 +1137,7 @@ def main():
     current_tdom = get_current_tdom(df) if selected_month == current_month else None
 
     from shared.trading_day_header import render_trading_day_header
-    render_trading_day_header(df)
+    render_trading_day_header(df, ticker=ticker)
 
     # 1. Intra-Monat (mit optionalem Live-Overlay)
     tdom_stats, all_curves = calc_intramonth_curve(df, selected_month, selected_years)

@@ -354,7 +354,7 @@ def main():
     outlier_info_box([], outlier_method)
 
     from shared.trading_day_header import render_trading_day_header
-    render_trading_day_header(df)
+    render_trading_day_header(df, ticker=ticker)
 
     # ── Mondphasen laden ──────────────────────────────
     phases_to_analyze = []

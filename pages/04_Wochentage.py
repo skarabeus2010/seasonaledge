@@ -1322,7 +1322,7 @@ def main():
         )
 
     from shared.trading_day_header import render_trading_day_header
-    render_trading_day_header(raw_df)
+    render_trading_day_header(raw_df, ticker=ticker)
 
     # ── Kumulierter Wochenverlauf Mo→Fr ──────────────
     with st.expander("📈 Kumulierter Wochenverlauf Mo→Fr", expanded=True):

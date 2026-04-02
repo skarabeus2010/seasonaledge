@@ -92,7 +92,7 @@ def main():
         raw_df = raw_df[raw_df.index >= df.index[0]] if len(df) > 0 else raw_df
 
     from shared.trading_day_header import render_trading_day_header
-    render_trading_day_header(df)
+    render_trading_day_header(df, ticker=ticker)
 
     # ── Nur ausgewählte Strategie berechnen (Performance!) ──
     # Kacheln zeigen "?" bis sie ausgewählt werden
