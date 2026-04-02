@@ -327,34 +327,25 @@ def build_intramonth_chart(tdom_stats, all_curves, ticker, month_name,
     fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
 
     # Aktueller Monatsverlauf (gelbe Linie, eigene Y-Achse rechts)
+    # Immer Startpunkt bei TDOM 0 = 0% (Vormonatsschluss als Basis)
     if current_month_curve is not None:
         cm_tdoms, cm_curve = current_month_curve
-        if cm_tdoms and cm_curve and len(cm_tdoms) > 1:
-            # Mehr als 1 Tag → Linie zeichnen
+        if cm_tdoms and cm_curve:
+            # TDOM 0 = 0% (Vormonatsschluss) als Startpunkt einfügen
+            plot_tdoms = [0] + list(cm_tdoms)
+            plot_curve = [0.0] + list(cm_curve)
             current_year = datetime.now().year
+            # Hover-Texte: TDOM 0 = "Basis", rest = TDOM X
+            hover_texts = [f"<b>{current_year}</b><br>Basis (Vormonat)<br>0.000%"]
+            for t, v in zip(cm_tdoms, cm_curve):
+                hover_texts.append(f"<b>{current_year}</b><br>TDOM {t}<br>{v:+.3f}%")
             fig.add_trace(go.Scatter(
-                x=cm_tdoms, y=cm_curve, mode="lines",
+                x=plot_tdoms, y=plot_curve, mode="lines+markers",
                 line=dict(color="#F1C40F", width=2.5),
+                marker=dict(size=6, color="#F1C40F"),
                 name=f"{current_year} aktuell (rechte Achse)",
                 yaxis="y2",
-                hovertemplate=f"<b>{current_year}</b><br>TDOM %{{x}}<br>%{{y:+.3f}}%<extra></extra>",
-            ))
-            fig.update_layout(
-                yaxis2=dict(
-                    overlaying="y", side="right", showgrid=False,
-                    ticksuffix="%", tickformat="+.2f", title=None,
-                    tickfont=dict(color="#F1C40F", size=10),
-                ),
-            )
-        elif cm_tdoms and len(cm_tdoms) == 1:
-            # TDOM 1 → goldener Stern auf der rechten Achse (echte Rendite ggü Vormonat)
-            _tdom1_actual = cm_curve[0] if cm_curve else 0
-            fig.add_trace(go.Scatter(
-                x=[cm_tdoms[0]], y=[_tdom1_actual], mode="markers",
-                marker=dict(size=14, color="#F1C40F", symbol="star", line=dict(width=1, color="#080c12")),
-                name="{} TDOM 1".format(datetime.now().year),
-                yaxis="y2",
-                hovertemplate="<b>{} — TDOM 1</b><br>Rendite: %{{y:+.3f}}%<extra></extra>".format(datetime.now().year),
+                hovertext=hover_texts, hoverinfo="text",
             ))
             fig.update_layout(
                 yaxis2=dict(
