@@ -337,18 +337,43 @@ def _estimate_from_previous_years(
 
 
 def _get_current_tdoy(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOY — berechnet aus pd.bdate_range, nicht aus DB-Daten."""
+    """Aktueller TDOY — aus echten Handelstagen (DB), +1 wenn heute noch fehlt."""
     today = date.today()
-    bdays = pd.bdate_range(date(today.year, 1, 1), today)
-    if len(bdays) == 0:
+    cutoff = pd.Timestamp(today) + pd.Timedelta(days=1)
+    year_df = df[df["year"] == today.year]
+    year_df = year_df[year_df.index < cutoff].sort_index()
+
+    if len(year_df) == 0:
         return None
-    return len(bdays)
+
+    # Letzter bekannter Handelstag
+    last_date = year_df.index[-1].date() if hasattr(year_df.index[-1], 'date') else today
+    tdoy = int(year_df["tdoy"].iloc[-1]) if "tdoy" in year_df.columns else len(year_df)
+
+    # Wenn heute ein Werktag ist und noch nicht in den Daten → +1
+    if last_date < today and today.weekday() < 5:
+        tdoy += 1
+
+    return tdoy
 
 
 def _get_current_tdom(df: pd.DataFrame) -> Optional[int]:
-    """Aktueller TDOM — berechnet aus pd.bdate_range, nicht aus DB-Daten."""
+    """Aktueller TDOM — aus echten Handelstagen (DB), +1 wenn heute noch fehlt."""
     today = date.today()
-    bdays = pd.bdate_range(date(today.year, today.month, 1), today)
-    if len(bdays) == 0:
-        return None
-    return len(bdays)
+    cutoff = pd.Timestamp(today) + pd.Timedelta(days=1)
+    year_df = df[(df["year"] == today.year)]
+    year_df = year_df[year_df.index < cutoff].sort_index()
+
+    # Daten im aktuellen Monat?
+    month_df = year_df[year_df["month"] == today.month]
+    if len(month_df) > 0:
+        last_date = month_df.index[-1].date() if hasattr(month_df.index[-1], 'date') else today
+        tdom = len(month_df)
+        if last_date < today and today.weekday() < 5:
+            tdom += 1
+        return tdom
+
+    # Kein Daten im aktuellen Monat → neuer Monat hat begonnen
+    if today.weekday() < 5:
+        return 1  # Erster Handelstag im neuen Monat
+    return None
