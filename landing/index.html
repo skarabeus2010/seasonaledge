@@ -329,7 +329,7 @@
         <p class="sec-sub reveal reveal-d2">Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten Saisonalcharts.</p>
         <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
           <canvas id="seasonal-chart" style="width:100%;max-width:800px;height:280px;display:block;margin:0 auto"></canvas>
-          <input type="range" id="demo-slider" min="0" max="100" value="0" class="demo-slider" aria-label="Noise to Signal">
+          <input type="range" id="demo-slider" min="0" max="100" value="100" class="demo-slider" aria-label="Noise to Signal">
           <div class="demo-labels"><span>Saisonaler Durchschnitt</span><span>Einzeljahre</span></div>
         </div>
       </div>
@@ -535,106 +535,135 @@
         var years=chartData.years;
         var td=chartData.trading_days;
         var curYear=String(chartData.current_year);
-        var t01=pct/100; // 0..1
 
-        // Y-Range DYNAMISCH: Slider steuert Zoom
-        // Links (pct=0): enge Range um Durchschnitt → Konturen sichtbar
-        // Rechts (pct=100): weite Range fuer alle Einzeljahre
+        // Divider-Position in Pixeln
+        var divX=pad.l+(pct/100)*cw;
+
+        // Zwei Y-Ranges: links (Durchschnitt, eng), rechts (Einzeljahre, weit)
         var avgMin=Infinity,avgMax=-Infinity;
         for(var i=0;i<avg.length;i++){if(avg[i]<avgMin)avgMin=avg[i];if(avg[i]>avgMax)avgMax=avg[i]}
         var allMin=Infinity,allMax=-Infinity;
         for(var k in years){var c=years[k];for(var i=0;i<c.length;i++){if(c[i]<allMin)allMin=c[i];if(c[i]>allMax)allMax=c[i]}}
-        // Interpolation zwischen enger (Avg) und weiter (All) Range
-        var yMin=avgMin+(allMin-avgMin)*t01;
-        var yMax=avgMax+(allMax-avgMax)*t01;
-        var yPad=(yMax-yMin)*0.1;
-        yMin-=yPad; yMax+=yPad;
+        var avgPad=(avgMax-avgMin)*0.15;
+        var allPad=(allMax-allMin)*0.08;
+        var yMinL=avgMin-avgPad, yMaxL=avgMax+avgPad; // Links: eng
+        var yMinR=allMin-allPad, yMaxR=allMax+allPad; // Rechts: weit
 
         function xPos(i){return pad.l+(i/(td-1))*cw}
-        function yPos(v){return pad.t+ch-(v-yMin)/(yMax-yMin)*ch}
+        function yPosL(v){return pad.t+ch-(v-yMinL)/(yMaxL-yMinL)*ch}
+        function yPosR(v){return pad.t+ch-(v-yMinR)/(yMaxR-yMinR)*ch}
 
-        // Nulllinie
-        if(yMin<0&&yMax>0){
-          ctx.strokeStyle='rgba(255,255,255,0.08)';
-          ctx.lineWidth=1;
-          ctx.setLineDash([4,4]);
-          ctx.beginPath();
-          var zy=yPos(0);
+        // ── RECHTE SEITE: Einzeljahre (clip rechts vom Divider) ──
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(divX,0,w-divX,h);
+        ctx.clip();
+
+        // Nulllinie rechts
+        if(yMinR<0&&yMaxR>0){
+          ctx.strokeStyle='rgba(255,255,255,0.06)';
+          ctx.lineWidth=1;ctx.setLineDash([4,4]);
+          ctx.beginPath();var zy=yPosR(0);
           ctx.moveTo(pad.l,zy);ctx.lineTo(pad.l+cw,zy);ctx.stroke();
           ctx.setLineDash([]);
         }
 
-        // Einzeljahre (Opacity abhaengig von Slider)
-        var alpha=t01*0.35;
+        // Einzeljahre
         for(var yr in years){
           if(yr===curYear)continue;
-          if(alpha<0.01)continue; // Skip wenn unsichtbar
           var c=years[yr];
-          ctx.strokeStyle='rgba(180,200,230,'+alpha+')';
+          ctx.strokeStyle='rgba(180,200,230,0.25)';
           ctx.lineWidth=0.8;
           ctx.beginPath();
           for(var i=0;i<c.length;i++){
-            if(i===0)ctx.moveTo(xPos(i),yPos(c[i]));
-            else ctx.lineTo(xPos(i),yPos(c[i]));
+            if(i===0)ctx.moveTo(xPos(i),yPosR(c[i]));
+            else ctx.lineTo(xPos(i),yPosR(c[i]));
           }
           ctx.stroke();
         }
 
-        // Durchschnitt (dimmt stark bei Slider rechts)
-        var avgAlpha=1.0-t01*0.7;
-        var avgWidth=3-t01*1.5;
-        ctx.strokeStyle='rgba(232,168,32,'+avgAlpha+')';
-        ctx.lineWidth=avgWidth;
+        // Aktuelles Jahr rechts
+        if(years[curYear]){
+          var cur=years[curYear];
+          ctx.strokeStyle='#FFE600';ctx.lineWidth=2.5;
+          ctx.beginPath();
+          for(var i=0;i<cur.length;i++){
+            if(i===0)ctx.moveTo(xPos(i),yPosR(cur[i]));
+            else ctx.lineTo(xPos(i),yPosR(cur[i]));
+          }
+          ctx.stroke();
+        }
+
+        // Y-Achse rechts
+        ctx.fillStyle='rgba(180,200,230,0.4)';
+        ctx.font='9px JetBrains Mono,monospace';
+        ctx.textAlign='left';
+        for(var t=0;t<=5;t++){
+          var val=yMinR+(yMaxR-yMinR)*(1-t/5);
+          ctx.fillText(val.toFixed(0)+'%',pad.l+cw+6,pad.t+ch*t/5+3);
+        }
+        ctx.restore();
+
+        // ── LINKE SEITE: Saisonaler Durchschnitt (clip links vom Divider) ──
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0,0,divX,h);
+        ctx.clip();
+
+        // Nulllinie links
+        if(yMinL<0&&yMaxL>0){
+          ctx.strokeStyle='rgba(255,255,255,0.06)';
+          ctx.lineWidth=1;ctx.setLineDash([4,4]);
+          ctx.beginPath();var zy2=yPosL(0);
+          ctx.moveTo(pad.l,zy2);ctx.lineTo(pad.l+cw,zy2);ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Durchschnittslinie
+        ctx.strokeStyle='#e8a820';ctx.lineWidth=3;
         ctx.beginPath();
         for(var i=0;i<avg.length;i++){
-          if(i===0)ctx.moveTo(xPos(i),yPos(avg[i]));
-          else ctx.lineTo(xPos(i),yPos(avg[i]));
+          if(i===0)ctx.moveTo(xPos(i),yPosL(avg[i]));
+          else ctx.lineTo(xPos(i),yPosL(avg[i]));
         }
         ctx.stroke();
 
-        // Aktuelles Jahr (gold, hervorgehoben)
+        // Aktuelles Jahr links
         if(years[curYear]){
           var cur=years[curYear];
-          ctx.strokeStyle='#FFE600';
-          ctx.lineWidth=2.5;
+          ctx.strokeStyle='#FFE600';ctx.lineWidth=2;
           ctx.beginPath();
           for(var i=0;i<cur.length;i++){
-            if(i===0)ctx.moveTo(xPos(i),yPos(cur[i]));
-            else ctx.lineTo(xPos(i),yPos(cur[i]));
+            if(i===0)ctx.moveTo(xPos(i),yPosL(cur[i]));
+            else ctx.lineTo(xPos(i),yPosL(cur[i]));
           }
           ctx.stroke();
         }
 
-        // X-Achse Labels (Monate)
+        // Y-Achse links
+        ctx.fillStyle='rgba(232,168,32,0.5)';
+        ctx.font='9px JetBrains Mono,monospace';
+        ctx.textAlign='right';
+        for(var t=0;t<=5;t++){
+          var val=yMinL+(yMaxL-yMinL)*(1-t/5);
+          var yy=pad.t+ch*t/5;
+          ctx.fillText(val.toFixed(0)+'%',pad.l-6,yy+3);
+          ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
+          ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+cw,yy);ctx.stroke();
+        }
+        ctx.restore();
+
+        // ── Divider-Linie ──
+        ctx.strokeStyle='rgba(77,159,255,0.5)';
+        ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(divX,pad.t);ctx.lineTo(divX,pad.t+ch);ctx.stroke();
+
+        // ── X-Achse Labels (immer sichtbar) ──
         ctx.fillStyle='#a89878';
         ctx.font='10px JetBrains Mono,monospace';
         ctx.textAlign='center';
         for(var m=0;m<12;m++){
-          var xi=xPos(Math.round(m/12*td));
-          ctx.fillText(months[m],xi,h-6);
-        }
-
-        // Y-Achsen Labels (dynamische Range)
-        var yTicks=5;
-        // Links
-        ctx.fillStyle='rgba(232,168,32,0.5)';
-        ctx.font='9px JetBrains Mono,monospace';
-        ctx.textAlign='right';
-        for(var t=0;t<=yTicks;t++){
-          var val=yMin+(yMax-yMin)*(1-t/yTicks);
-          var yy=pad.t+ch*t/yTicks;
-          ctx.fillText(val.toFixed(0)+'%',pad.l-6,yy+3);
-          // Gridline
-          ctx.strokeStyle='rgba(255,255,255,0.03)';
-          ctx.lineWidth=0.5;
-          ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+cw,yy);ctx.stroke();
-        }
-        // Rechts
-        ctx.fillStyle='rgba(180,200,230,0.4)';
-        ctx.textAlign='left';
-        for(var t=0;t<=yTicks;t++){
-          var val=yMin+(yMax-yMin)*(1-t/yTicks);
-          ctx.fillText(val.toFixed(0)+'%',pad.l+cw+6,pad.t+ch*t/yTicks+3);
+          ctx.fillText(months[m],xPos(Math.round(m/12*td)),h-6);
         }
 
         // Info-Label
