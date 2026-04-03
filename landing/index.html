@@ -39,7 +39,7 @@
       --teal:#30e878;--teal-d:rgba(48,232,120,.1);
       --gold:#e8a820;--gold-d:rgba(232,168,32,.12);
       --border:rgba(232,168,32,.05);--border-l:rgba(232,168,32,.15);
-      --r:10px;--r-lg:16px;--max-w:1400px;--nav-h:60px;
+      --r:10px;--r-lg:16px;--max-w:1600px;--nav-h:60px;
       --f-d:'Sora',sans-serif;--f-b:'DM Sans',sans-serif;--f-m:'JetBrains Mono',monospace;
       --ease:cubic-bezier(.22,1,.36,1);
     }
@@ -99,18 +99,28 @@
       position:relative;min-height:100vh;min-height:100dvh;
       display:flex;flex-direction:column;justify-content:center;align-items:center;
       overflow:hidden;padding:2rem;
-      background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(232,168,32,.06),transparent 60%),
-                 radial-gradient(ellipse 60% 50% at 80% 100%,rgba(232,168,32,.04),transparent 50%),
-                 radial-gradient(ellipse 50% 40% at 10% 80%,rgba(48,232,120,.03),transparent 50%);
     }
-    .hero::before{content:'';position:absolute;inset:0;
-      background:linear-gradient(to_right,rgba(232,168,32,.03) 1px,transparent 1px),
-                 linear-gradient(to_bottom,rgba(232,168,32,.03) 1px,transparent 1px);
-      background-size:6rem 5rem;
-      mask-image:radial-gradient(ellipse 70% 50% at 50% 30%,#000 40%,transparent 100%);
-      -webkit-mask-image:radial-gradient(ellipse 70% 50% at 50% 30%,#000 40%,transparent 100%);
-      pointer-events:none;z-index:0;
+    /* Aurora animated background */
+    .aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+    .aurora__blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform}
+    .aurora__b1{top:-10%;left:20%;width:600px;height:400px;background:radial-gradient(ellipse,rgba(232,168,32,.15),transparent 70%);animation:aur1 12s ease-in-out infinite alternate}
+    .aurora__b2{bottom:0;right:10%;width:500px;height:350px;background:radial-gradient(ellipse,rgba(48,232,120,.08),transparent 70%);animation:aur2 10s ease-in-out infinite alternate-reverse}
+    .aurora__b3{top:30%;right:30%;width:400px;height:300px;background:radial-gradient(ellipse,rgba(232,168,32,.10),transparent 70%);animation:aur3 14s ease-in-out infinite alternate}
+    .aurora__b4{bottom:20%;left:5%;width:350px;height:250px;background:radial-gradient(ellipse,rgba(232,120,32,.06),transparent 70%);animation:aur4 9s ease-in-out infinite alternate-reverse}
+    @keyframes aur1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,40px) scale(1.2)}100%{transform:translate(-40px,-20px) scale(.9)}}
+    @keyframes aur2{0%{transform:translate(0,0) scale(.9)}50%{transform:translate(-60px,-30px) scale(1.15)}100%{transform:translate(50px,20px) scale(1)}}
+    @keyframes aur3{0%{transform:translate(0,0) scale(1.1)}50%{transform:translate(50px,-50px) scale(.85)}100%{transform:translate(-30px,30px) scale(1.05)}}
+    @keyframes aur4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,20px) scale(1.1)}100%{transform:translate(60px,-40px) scale(.9)}}
+    /* Grid overlay */
+    .aurora__grid{position:absolute;inset:0;
+      background:linear-gradient(90deg,rgba(232,168,32,.025) 1px,transparent 1px),
+                 linear-gradient(rgba(232,168,32,.025) 1px,transparent 1px);
+      background-size:5rem 4rem;
+      mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 80%);
+      -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 30%,transparent 80%);
     }
+    /* Depth overlay */
+    .aurora::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 60%,#000 100%)}
     /* SVG Grid overlay */
     .hero__grid{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
     .grid-line{stroke:rgba(232,168,32,.06);stroke-width:.5;stroke-dasharray:1000;stroke-dashoffset:1000;animation:grid-draw 3s ease-out forwards}
@@ -257,25 +267,14 @@
          HERO — 21st.dev inspired
          ══════════════════════════════════════ -->
     <section class="hero" id="hero">
-      <!-- SVG Grid -->
-      <svg class="hero__grid" xmlns="http://www.w3.org/2000/svg">
-        <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(232,168,32,.04)" stroke-width=".5"/></pattern></defs>
-        <rect width="100%" height="100%" fill="url(#grid)"/>
-        <line x1="0" y1="20%" x2="100%" y2="20%" class="grid-line" style="animation-delay:.5s"/>
-        <line x1="0" y1="80%" x2="100%" y2="80%" class="grid-line" style="animation-delay:1s"/>
-        <line x1="20%" y1="0" x2="20%" y2="100%" class="grid-line" style="animation-delay:1.5s"/>
-        <line x1="80%" y1="0" x2="80%" y2="100%" class="grid-line" style="animation-delay:2s"/>
-        <circle cx="20%" cy="20%" r="2" class="detail-dot" style="animation-delay:3s"/>
-        <circle cx="80%" cy="20%" r="2" class="detail-dot" style="animation-delay:3.2s"/>
-        <circle cx="20%" cy="80%" r="2" class="detail-dot" style="animation-delay:3.4s"/>
-        <circle cx="80%" cy="80%" r="2" class="detail-dot" style="animation-delay:3.6s"/>
-      </svg>
-
-      <!-- Corners -->
-      <div class="corner" style="top:2rem;left:2rem;animation-delay:4s"></div>
-      <div class="corner corner--tr" style="top:2rem;right:2rem;animation-delay:4.2s"></div>
-      <div class="corner corner--bl" style="bottom:2rem;left:2rem;animation-delay:4.4s"></div>
-      <div class="corner corner--br" style="bottom:2rem;right:2rem;animation-delay:4.6s"></div>
+      <!-- Aurora animated background -->
+      <div class="aurora">
+        <div class="aurora__blob aurora__b1"></div>
+        <div class="aurora__blob aurora__b2"></div>
+        <div class="aurora__blob aurora__b3"></div>
+        <div class="aurora__blob aurora__b4"></div>
+        <div class="aurora__grid"></div>
+      </div>
 
       <!-- Particles -->
       <div class="particle" style="top:25%;left:15%;animation-delay:5s"></div>
@@ -334,7 +333,7 @@
         <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
         <p class="sec-sub reveal reveal-d2">Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten Saisonalcharts.</p>
         <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
-          <canvas id="seasonal-chart" style="width:100%;max-width:800px;height:280px;display:block;margin:0 auto"></canvas>
+          <canvas id="seasonal-chart" style="width:100%;max-width:1200px;height:320px;display:block;margin:0 auto"></canvas>
           <input type="range" id="demo-slider" min="0" max="100" value="0" class="demo-slider" aria-label="Noise to Signal">
           <div class="demo-labels"><span>Saisonaler Durchschnitt</span><span>Einzeljahre</span></div>
         </div>
