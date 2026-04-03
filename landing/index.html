@@ -329,7 +329,7 @@
         <p class="sec-sub reveal reveal-d2">Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten Saisonalcharts.</p>
         <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
           <canvas id="seasonal-chart" style="width:100%;max-width:800px;height:280px;display:block;margin:0 auto"></canvas>
-          <input type="range" id="demo-slider" min="0" max="100" value="100" class="demo-slider" aria-label="Noise to Signal">
+          <input type="range" id="demo-slider" min="0" max="100" value="0" class="demo-slider" aria-label="Noise to Signal">
           <div class="demo-labels"><span>Saisonaler Durchschnitt</span><span>Einzeljahre</span></div>
         </div>
       </div>
@@ -568,11 +568,11 @@
           ctx.setLineDash([]);
         }
 
-        // Einzeljahre
+        // Einzeljahre (gold-getönt, heller)
         for(var yr in years){
           if(yr===curYear)continue;
           var c=years[yr];
-          ctx.strokeStyle='rgba(180,200,230,0.25)';
+          ctx.strokeStyle='rgba(232,190,100,0.30)';
           ctx.lineWidth=0.8;
           ctx.beginPath();
           for(var i=0;i<c.length;i++){
@@ -594,8 +594,8 @@
           ctx.stroke();
         }
 
-        // Y-Achse rechts
-        ctx.fillStyle='rgba(180,200,230,0.4)';
+        // Y-Achse rechts (heller, lesbar)
+        ctx.fillStyle='rgba(232,190,100,0.7)';
         ctx.font='9px JetBrains Mono,monospace';
         ctx.textAlign='left';
         for(var t=0;t<=5;t++){
@@ -653,8 +653,8 @@
         }
         ctx.restore();
 
-        // ── Divider-Linie ──
-        ctx.strokeStyle='rgba(77,159,255,0.5)';
+        // ── Divider-Linie (Signal Gold) ──
+        ctx.strokeStyle='rgba(232,168,32,0.6)';
         ctx.lineWidth=2;
         ctx.beginPath();ctx.moveTo(divX,pad.t);ctx.lineTo(divX,pad.t+ch);ctx.stroke();
 
