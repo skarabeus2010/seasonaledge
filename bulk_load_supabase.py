@@ -1,409 +1,307 @@
 """
-bulk_load_supabase.py — Massiver Initial-Load aller Ticker nach Supabase
-=========================================================================
-Lädt historische Kursdaten von Yahoo Finance + Stooq-Fallback
-und schreibt sie in die Supabase `prices` Tabelle.
+bulk_load_supabase.py — Full History Load: alle Ticker nach Supabase
+=====================================================================
+Laedt vollstaendige Kurshistorie (Yahoo + Stooq-Fallback) und schreibt
+OHLCV + log_return + tdom + tdoy nach Supabase.
 
-Aufruf:  py bulk_load_supabase.py
+Nutzt shared/yahoo_downloader.py (adj_factor, Stooq-Fallback) direkt.
+
+Aufruf:
+  py bulk_load_supabase.py                    # Alle 263 Ticker (skip wenn >80% da)
+  py bulk_load_supabase.py --force            # Alles neu laden (kein Skip)
+  py bulk_load_supabase.py --ticker ETH-USD BTC-USD
+  py bulk_load_supabase.py --category Krypto
+  py bulk_load_supabase.py --missing-only     # Nur Ticker ohne DB-Daten
+  py bulk_load_supabase.py --audit            # Nur Uebersicht (kein Upload)
 """
 
-import io
-import os
 import sys
+import os
+import pathlib
+import argparse
 import time
-import datetime
+import gc
+
+_project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
+if _project_dir not in sys.path:
+    sys.path.insert(0, _project_dir)
+
+# Windows Console Encoding
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 import numpy as np
-import requests
-
-# Fix Windows Console Encoding
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import pandas as pd
-from supabase import create_client
-
-# ── Supabase Credentials ─────────────────────────────────────────────────────
-# Versuche erst Streamlit Secrets, dann Umgebungsvariablen
-try:
-    import tomllib
-    with open(os.path.join(os.path.dirname(__file__), ".streamlit", "secrets.toml"), "rb") as f:
-        _secrets = tomllib.load(f)
-    SUPABASE_URL = _secrets["SUPABASE_URL"]
-    SUPABASE_KEY = _secrets["SUPABASE_KEY"]
-except Exception:
-    SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("❌ SUPABASE_URL / SUPABASE_KEY nicht gefunden!")
-    sys.exit(1)
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# ── Alle Ticker aus symbols.py ────────────────────────────────────────────────
-
-SYMBOLS = {
-    # US-Indizes
-    "^GSPC":      "S&P 500",
-    "^DJI":       "Dow Jones",
-    "^IXIC":      "Nasdaq Composite",
-    "^NDX":       "Nasdaq 100",
-    "^RUT":       "Russell 2000",
-    "^VIX":       "VIX",
-    # US-ETFs
-    "SPY":        "SPDR S&P 500 ETF",
-    "QQQ":        "Invesco Nasdaq 100 ETF",
-    "IWM":        "iShares Russell 2000 ETF",
-    "DIA":        "SPDR Dow Jones ETF",
-    "TLT":        "iShares 20+ Year Treasury",
-    "GLD":        "SPDR Gold ETF",
-    "SLV":        "iShares Silver ETF",
-    "USO":        "United States Oil ETF",
-    "XLF":        "Financial Select ETF",
-    "XLK":        "Technology Select ETF",
-    "XLE":        "Energy Select ETF",
-    "XLV":        "Health Care Select ETF",
-    "XLU":        "Utilities Select ETF",
-    # US-Aktien
-    "AAPL":       "Apple",
-    "MSFT":       "Microsoft",
-    "NVDA":       "Nvidia",
-    "AMZN":       "Amazon",
-    "GOOGL":      "Alphabet",
-    "META":       "Meta Platforms",
-    "TSLA":       "Tesla",
-    "JPM":        "JPMorgan Chase",
-    "XOM":        "ExxonMobil",
-    # EU-Indizes
-    "^GDAXI":     "DAX 40",
-    "^MDAXI":     "MDAX",
-    "^STOXX50E":  "Euro Stoxx 50",
-    "^FTSE":      "FTSE 100",
-    "^FCHI":      "CAC 40",
-    "^SSMI":      "SMI (Schweiz)",
-    # Asien-Indizes
-    "^N225":      "Nikkei 225",
-    "^HSI":       "Hang Seng",
-    "^KS11":      "KOSPI",
-    # Rohstoffe
-    "GC=F":       "Gold Futures",
-    "SI=F":       "Silber Futures",
-    "CL=F":       "WTI Rohöl",
-    "BZ=F":       "Brent Rohöl",
-    "NG=F":       "Natural Gas",
-    "ZC=F":       "Corn (Mais)",
-    "ZW=F":       "Wheat (Weizen)",
-    # Futures
-    "ES=F":       "E-Mini S&P 500",
-    "NQ=F":       "E-Mini Nasdaq 100",
-    # Krypto
-    "BTC-USD":    "Bitcoin",
-    "ETH-USD":    "Ethereum",
-    "SOL-USD":    "Solana",
-    # FX
-    "EURUSD=X":   "EUR/USD",
-    "GBPUSD=X":   "GBP/USD",
-    "USDJPY=X":   "USD/JPY",
-    "USDCHF=X":   "USD/CHF",
-}
-
-# ── Stooq-Mapping für Langzeitdaten (ab ~1928) ───────────────────────────────
-# Stooq liefert für bestimmte Indizes viel längere Historien als Yahoo
-STOOQ_MAP = {
-    "^GSPC":    "^spx",
-    "^DJI":     "^dji",
-    "^GDAXI":   "^dax",
-    "^FTSE":    "^ukx",
-    "^FCHI":    "^cac",
-    "^N225":    "^nkx",
-    "^STOXX50E": "^sx5e",
-    "^SSMI":    "^smi",
-    "GC=F":     "gc.f",
-    "SI=F":     "si.f",
-    "CL=F":     "cl.f",
-    "NG=F":     "ng.f",
-    "EURUSD=X": "eurusd",
-    "GBPUSD=X": "gbpusd",
-    "USDJPY=X": "usdjpy",
-    "USDCHF=X": "usdchf",
-}
-
-# Priorisierte Ticker: Diese zuerst laden (Langzeitdaten)
-PRIORITY_TICKERS = ["^DJI", "^GSPC", "^GDAXI", "^FTSE", "^N225", "GC=F", "CL=F", "EURUSD=X"]
+from shared.symbols import SYMBOLS
+from shared.yahoo_downloader import download_data, preprocess
 
 
-# ── Download-Funktionen ──────────────────────────────────────────────────────
+# ── Supabase ─────────────────────────────────────────────────────────────────
 
-_YAHOO_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-}
-
-def download_yahoo(ticker: str) -> pd.DataFrame | None:
-    """Lädt maximale Historie von Yahoo Finance JSON-API (v8/chart)."""
-    params = {
-        "interval": "1d",
-        "period1":  0,
-        "period2":  int(time.time()),
-    }
-    for base in [
-        "https://query1.finance.yahoo.com/v8/finance/chart/",
-        "https://query2.finance.yahoo.com/v8/finance/chart/",
-    ]:
-        try:
-            resp = requests.get(
-                base + ticker.upper(),
-                headers=_YAHOO_HEADERS,
-                params=params,
-                timeout=30,
-                allow_redirects=True,
-            )
-            if resp.status_code != 200:
-                continue
-            data = resp.json()
-            chart = data.get("chart", {})
-            if chart.get("error") is not None or not chart.get("result"):
-                continue
-
-            result     = chart["result"][0]
-            timestamps = result.get("timestamp", [])
-            if not timestamps:
-                continue
-
-            quotes   = result["indicators"]["quote"][0]
-            adj_list = result["indicators"].get("adjclose", [{}])
-            adjclose = adj_list[0].get("adjclose") if adj_list else None
-            close_data = adjclose if adjclose is not None else quotes.get("close")
-
-            dates = pd.to_datetime(timestamps, unit="s", utc=True).tz_localize(None)
-            df = pd.DataFrame({
-                "Date":   dates,
-                "Open":   quotes.get("open",   [np.nan] * len(timestamps)),
-                "High":   quotes.get("high",   [np.nan] * len(timestamps)),
-                "Low":    quotes.get("low",    [np.nan] * len(timestamps)),
-                "Close":  close_data,
-                "Volume": quotes.get("volume", [np.nan] * len(timestamps)),
-            })
-            for col in ["Open", "High", "Low", "Close"]:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-            df["Volume"] = pd.to_numeric(df["Volume"], errors="coerce").fillna(0).astype(int)
-            df = df.dropna(subset=["Close"])
-            df = df[df["Close"] > 0]
-            if len(df) > 0:
-                return df
-        except Exception as e:
-            print(f"    ⚠️  Yahoo Fehler für {ticker}: {e}")
-            continue
-    return None
-
-
-def download_stooq(stooq_ticker: str) -> pd.DataFrame | None:
-    """Lädt Langzeitdaten von Stooq.com (CSV)."""
+def _get_supabase():
+    """Lazy Supabase-Client (liest Credentials aus secrets.toml oder env)."""
     try:
-        url = f"https://stooq.com/q/d/l/?s={stooq_ticker}&i=d"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=30)
-        if resp.status_code != 200 or len(resp.text) < 100:
-            return None
-        df = pd.read_csv(io.StringIO(resp.text), parse_dates=["Date"])
-        if "Close" not in df.columns or len(df) < 10:
-            return None
-        df = df.dropna(subset=["Close"])
-        df = df[df["Close"] > 0]
-        # Stooq hat manchmal keine Volume-Spalte
-        if "Volume" not in df.columns:
-            df["Volume"] = None
-        return df
+        from shared.supabase_client import get_client
+        return get_client()
+    except Exception:
+        pass
+    # Fallback: direkt laden
+    try:
+        import tomllib
+        with open(os.path.join(_project_dir, ".streamlit", "secrets.toml"), "rb") as f:
+            _secrets = tomllib.load(f)
+        url = _secrets["SUPABASE_URL"]
+        key = _secrets["SUPABASE_KEY"]
+    except Exception:
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_KEY", "")
+    if not url or not key:
+        print("FEHLER: SUPABASE_URL / SUPABASE_KEY nicht gefunden!")
+        sys.exit(1)
+    from supabase import create_client
+    return create_client(url, key)
+
+
+_sb = None
+
+def sb():
+    global _sb
+    if _sb is None:
+        _sb = _get_supabase()
+    return _sb
+
+
+# ── Bestandspruefung ─────────────────────────────────────────────────────────
+
+def check_existing(ticker):
+    """Prueft Supabase-Bestand: count, first_date, last_date, lr_null_pct."""
+    try:
+        client = sb()
+        first = client.table("prices").select("date").eq("ticker", ticker) \
+            .order("date", desc=False).limit(1).execute()
+        last = client.table("prices").select("date").eq("ticker", ticker) \
+            .order("date", desc=True).limit(1).execute()
+        count = client.table("prices").select("id", count="exact") \
+            .eq("ticker", ticker).execute()
+
+        first_date = first.data[0]["date"] if first.data else None
+        last_date = last.data[0]["date"] if last.data else None
+        n_rows = count.count if count.count else 0
+
+        # log_return NULL-Quote (letzte 50 Zeilen)
+        lr = client.table("prices").select("log_return") \
+            .eq("ticker", ticker).order("date", desc=True).limit(50).execute()
+        lr_null = sum(1 for r in (lr.data or []) if r.get("log_return") is None)
+        lr_pct = (lr_null / len(lr.data) * 100) if lr.data else 0
+
+        return {"count": n_rows, "first": first_date, "last": last_date,
+                "lr_null_pct": lr_pct}
     except Exception as e:
-        print(f"    ⚠️  Stooq Fehler für {stooq_ticker}: {e}")
-        return None
+        return {"count": 0, "error": str(e)}
 
 
-def merge_yahoo_stooq(yahoo_df: pd.DataFrame | None, stooq_df: pd.DataFrame | None) -> pd.DataFrame | None:
-    """Merged Yahoo + Stooq Daten: Stooq füllt ältere Lücken auf."""
-    if yahoo_df is None and stooq_df is None:
-        return None
-    if yahoo_df is None:
-        return stooq_df
-    if stooq_df is None:
-        return yahoo_df
+# ── Upload ───────────────────────────────────────────────────────────────────
 
-    # Stooq-Daten die VOR dem ältesten Yahoo-Datum liegen
-    yahoo_min_date = yahoo_df["Date"].min()
-    stooq_older = stooq_df[stooq_df["Date"] < yahoo_min_date].copy()
+def upload_ticker(ticker, df, source="yahoo"):
+    """Schreibt DataFrame nach Supabase: OHLCV + log_return + tdom + tdoy.
 
-    if len(stooq_older) == 0:
-        return yahoo_df
-
-    # Spalten angleichen
-    common_cols = ["Date", "Open", "High", "Low", "Close", "Volume"]
-    for col in common_cols:
-        if col not in stooq_older.columns:
-            stooq_older[col] = None
-        if col not in yahoo_df.columns:
-            yahoo_df[col] = None
-
-    merged = pd.concat([stooq_older[common_cols], yahoo_df[common_cols]], ignore_index=True)
-    merged = merged.sort_values("Date").drop_duplicates(subset=["Date"], keep="last")
-    return merged
-
-
-# ── Supabase Upload ──────────────────────────────────────────────────────────
-
-def upload_to_supabase(ticker: str, df: pd.DataFrame, source: str = "yahoo") -> int:
-    """Lädt DataFrame in Supabase `prices` Tabelle. Returns: Anzahl Rows."""
-    if df is None or len(df) == 0:
+    Args:
+        df: Preprocessed DataFrame (nach preprocess(), hat alle Spalten).
+    Returns:
+        int: Anzahl geschriebener Rows.
+    """
+    if df is None or df.empty:
         return 0
 
     records = []
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         rec = {
             "ticker": ticker,
-            "date":   row["Date"].strftime("%Y-%m-%d"),
-            "close":  round(float(row["Close"]), 4),
+            "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
+            "close": round(float(row["Close"]), 4),
             "source": source,
         }
-        if pd.notna(row.get("Open")):
-            rec["open"] = round(float(row["Open"]), 4)
-        if pd.notna(row.get("High")):
-            rec["high"] = round(float(row["High"]), 4)
-        if pd.notna(row.get("Low")):
-            rec["low"] = round(float(row["Low"]), 4)
-        if pd.notna(row.get("Volume")):
+        for col in ["Open", "High", "Low"]:
+            if col in row and pd.notna(row[col]):
+                rec[col.lower()] = round(float(row[col]), 4)
+        if "Volume" in row and pd.notna(row["Volume"]):
             rec["volume"] = int(row["Volume"])
+        if "log_return" in row and pd.notna(row["log_return"]):
+            rec["log_return"] = round(float(row["log_return"]), 8)
+        if "tdom" in row and pd.notna(row["tdom"]):
+            rec["tdom"] = int(row["tdom"])
+        if "tdoy" in row and pd.notna(row["tdoy"]):
+            rec["tdoy"] = int(row["tdoy"])
         records.append(rec)
 
-    # Batch-Upsert in Chunks von 1000
+    # Batch-Upsert in Chunks
     uploaded = 0
-    chunk_size = 1000
+    chunk_size = 500
     for i in range(0, len(records), chunk_size):
         chunk = records[i:i + chunk_size]
         try:
-            supabase.table("prices").upsert(
-                chunk, on_conflict="ticker,date"
-            ).execute()
+            sb().table("prices").upsert(chunk, on_conflict="ticker,date").execute()
             uploaded += len(chunk)
         except Exception as e:
-            print(f"    ❌ Upload-Fehler bei Chunk {i}: {e}")
+            print(f"    Upload-Fehler Chunk {i}: {e}")
     return uploaded
-
-
-# ── Bestandsprüfung ──────────────────────────────────────────────────────────
-
-def check_existing(ticker: str) -> dict | None:
-    """Prüft ob und wie viele Daten für einen Ticker bereits in Supabase liegen."""
-    try:
-        # Anzahl Rows + Datum-Range abfragen
-        result = supabase.table("prices").select("date") \
-            .eq("ticker", ticker) \
-            .order("date", desc=False).limit(1).execute()
-        first_date = result.data[0]["date"] if result.data else None
-
-        result2 = supabase.table("prices").select("date") \
-            .eq("ticker", ticker) \
-            .order("date", desc=True).limit(1).execute()
-        last_date = result2.data[0]["date"] if result2.data else None
-
-        count_result = supabase.table("prices").select("id", count="exact") \
-            .eq("ticker", ticker).execute()
-        count = count_result.count if count_result.count else 0
-
-        if count > 0:
-            return {"count": count, "first": first_date, "last": last_date}
-        return None
-    except Exception:
-        return None
 
 
 # ── Hauptprogramm ────────────────────────────────────────────────────────────
 
-MIN_ROWS_THRESHOLD = 100  # Weniger als 100 Rows = nochmal laden
-
 def main():
-    print("=" * 70)
-    print("🚀 SeasonAlpha — Bulk Data Load → Supabase")
-    print(f"   {len(SYMBOLS)} Ticker | {datetime.datetime.now():%Y-%m-%d %H:%M}")
-    print("=" * 70)
+    parser = argparse.ArgumentParser(description="Bulk Load: Full History nach Supabase")
+    parser.add_argument("--ticker", nargs="+", help="Nur bestimmte Ticker laden")
+    parser.add_argument("--category", help="Nur Kategorie (z.B. Krypto, US-Aktien)")
+    parser.add_argument("--force", action="store_true", help="Alles neu laden (kein Skip)")
+    parser.add_argument("--missing-only", action="store_true",
+                        help="Nur Ticker ohne DB-Daten laden")
+    parser.add_argument("--audit", action="store_true",
+                        help="Nur Uebersicht anzeigen (kein Upload)")
+    parser.add_argument("--skip-threshold", type=float, default=0.8,
+                        help="Skip wenn DB >= X%% der Yahoo-Daten hat (default: 0.8)")
+    args = parser.parse_args()
 
-    # Priorisierte Ticker zuerst, dann den Rest
-    ordered = PRIORITY_TICKERS + [t for t in SYMBOLS if t not in PRIORITY_TICKERS]
+    # Ticker-Liste
+    if args.ticker:
+        tickers = args.ticker
+    elif args.category:
+        tickers = [t for t, info in SYMBOLS.items()
+                    if info.get("kategorie", "").lower() == args.category.lower()]
+        if not tickers:
+            print(f"Keine Ticker fuer Kategorie '{args.category}' gefunden.")
+            print(f"Verfuegbare: {sorted(set(i.get('kategorie','') for i in SYMBOLS.values()))}")
+            return
+    else:
+        tickers = list(SYMBOLS.keys())
 
-    stats = {"ok": 0, "fail": 0, "rows": 0, "skipped": 0}
+    print("=" * 90)
+    print(f"  SeasonAlpha Bulk Load — {len(tickers)} Ticker")
+    if args.audit:
+        print("  MODUS: Audit (nur Uebersicht, kein Upload)")
+    if args.force:
+        print("  MODUS: Force (kein Skip)")
+    print("=" * 90)
 
-    for idx, ticker in enumerate(ordered, 1):
-        name = SYMBOLS[ticker]
-        print(f"\n[{idx}/{len(ordered)}] {ticker} — {name}")
+    stats = {"ok": 0, "skip": 0, "fail": 0, "rows": 0}
+    audit_results = []
 
-        # 0. Prüfe ob Daten schon in Supabase liegen
+    for i, ticker in enumerate(tickers, 1):
+        info = SYMBOLS.get(ticker, {})
+        name = info.get("name", ticker)
+        kat = info.get("kategorie", "?")
+
+        print(f"\n[{i}/{len(tickers)}] {ticker} — {name} ({kat})")
+
+        # 1. Supabase-Bestand pruefen
         existing = check_existing(ticker)
-        if existing and existing["count"] >= MIN_ROWS_THRESHOLD:
-            print(f"    ⏭️  SKIP — bereits {existing['count']:,} Rows in DB "
-                  f"({existing['first']} → {existing['last']})")
-            stats["skipped"] += 1
-            stats["rows"] += existing["count"]
+        db_count = existing.get("count", 0)
+        db_first = existing.get("first", "-")
+        db_last = existing.get("last", "-")
+        lr_null = existing.get("lr_null_pct", 0)
+
+        print(f"    DB: {db_count:>6,} Zeilen ({db_first} -> {db_last})"
+              f" | LR-NULL: {lr_null:.0f}%")
+
+        # 2. Yahoo Download
+        print(f"    Yahoo download ...", end=" ", flush=True)
+        t0 = time.time()
+        raw_df = download_data(ticker, period="max", timeout=20)
+        dt = time.time() - t0
+
+        if raw_df is None or raw_df.empty:
+            print(f"KEINE DATEN ({dt:.1f}s)")
+            stats["fail"] += 1
+            audit_results.append({"ticker": ticker, "kat": kat,
+                                  "yh": 0, "db": db_count, "status": "NO_DATA"})
             continue
 
-        # 1. Yahoo Download
-        print("    📥 Yahoo Finance ...", end=" ", flush=True)
-        yahoo_df = download_yahoo(ticker)
-        if yahoo_df is not None:
-            y_start = yahoo_df["Date"].min().strftime("%Y-%m-%d")
-            y_end = yahoo_df["Date"].max().strftime("%Y-%m-%d")
-            print(f"✅ {len(yahoo_df)} Tage ({y_start} → {y_end})")
-        else:
-            print("❌ keine Daten")
+        yh_count = len(raw_df)
+        yh_first = str(raw_df.index[0].date())
+        yh_last = str(raw_df.index[-1].date())
+        yh_years = raw_df.index[-1].year - raw_df.index[0].year + 1
+        print(f"{yh_count:,} Zeilen ({yh_first} -> {yh_last}) = {yh_years}J ({dt:.1f}s)")
 
-        # 2. Stooq Fallback (für Langzeitdaten)
-        stooq_df = None
-        if ticker in STOOQ_MAP:
-            stooq_ticker = STOOQ_MAP[ticker]
-            print(f"    📥 Stooq ({stooq_ticker}) ...", end=" ", flush=True)
-            stooq_df = download_stooq(stooq_ticker)
-            if stooq_df is not None:
-                s_start = stooq_df["Date"].min().strftime("%Y-%m-%d")
-                s_end = stooq_df["Date"].max().strftime("%Y-%m-%d")
-                print(f"✅ {len(stooq_df)} Tage ({s_start} → {s_end})")
-            else:
-                print("❌ keine Daten")
-            time.sleep(1)  # Rate-Limit Stooq
+        audit_results.append({
+            "ticker": ticker, "kat": kat,
+            "yh": yh_count, "yh_first": yh_first, "yh_last": yh_last,
+            "db": db_count, "db_first": db_first, "db_last": db_last,
+            "lr_null": lr_null,
+            "gap": yh_count - db_count,
+        })
 
-        # 3. Merge
-        merged = merge_yahoo_stooq(yahoo_df, stooq_df)
-        if merged is not None:
-            source = "yahoo+stooq" if stooq_df is not None and yahoo_df is not None else (
-                "stooq" if yahoo_df is None else "yahoo"
-            )
-            m_start = merged["Date"].min().strftime("%Y-%m-%d")
-            m_end = merged["Date"].max().strftime("%Y-%m-%d")
-            years = (merged["Date"].max() - merged["Date"].min()).days / 365.25
-            print(f"    📊 Merged: {len(merged)} Tage ({m_start} → {m_end}) = {years:.0f} Jahre")
+        # Audit-Modus: kein Upload
+        if args.audit:
+            continue
 
-            # 4. Upload
-            print(f"    ☁️  Upload nach Supabase ...", end=" ", flush=True)
-            n = upload_to_supabase(ticker, merged, source)
-            print(f"✅ {n} Rows")
-            stats["ok"] += 1
-            stats["rows"] += n
-        else:
-            print(f"    ❌ Keine Daten verfügbar — übersprungen")
+        # 3. Skip-Logik
+        if not args.force and db_count > 0:
+            ratio = db_count / yh_count if yh_count > 0 else 0
+            if args.missing_only:
+                print(f"    SKIP (bereits in DB, {ratio:.0%})")
+                stats["skip"] += 1
+                continue
+            if ratio >= args.skip_threshold and lr_null < 20:
+                print(f"    SKIP ({ratio:.0%} vorhanden, LR-NULL {lr_null:.0f}%)")
+                stats["skip"] += 1
+                continue
+            print(f"    RELOAD ({ratio:.0%} vorhanden, Ziel: {args.skip_threshold:.0%})")
+
+        # 4. Preprocess (log_return, tdom, tdoy)
+        df = preprocess(raw_df)
+        if df is None or df.empty:
+            print(f"    Preprocess fehlgeschlagen")
             stats["fail"] += 1
+            continue
 
-        # Rate-Limit Yahoo
-        time.sleep(1.5)
+        # 5. Upload
+        print(f"    Upload {len(df):,} Zeilen ...", end=" ", flush=True)
+        t0 = time.time()
+        n = upload_ticker(ticker, df)
+        dt = time.time() - t0
+        print(f"OK ({n:,} Rows, {dt:.1f}s)")
 
-    # Zusammenfassung
-    print("\n" + "=" * 70)
-    print(f"✅ FERTIG!")
-    print(f"   Neu geladen:    {stats['ok']}")
-    print(f"   Übersprungen:   {stats['skipped']} (bereits in DB)")
-    print(f"   Fehlgeschlagen: {stats['fail']}")
-    print(f"   Gesamt-Rows:    {stats['rows']:,}")
-    print("=" * 70)
+        stats["ok"] += 1
+        stats["rows"] += n
+
+        # Memory freigeben
+        del raw_df, df
+        gc.collect()
+
+        # Rate-Limit
+        time.sleep(1.0)
+
+    # ── Zusammenfassung ──────────────────────────────────────────────────────
+
+    print("\n" + "=" * 90)
+
+    if args.audit:
+        # Audit-Tabelle
+        print(f"\n{'Ticker':<12} {'Kat':<12} {'Yahoo':>7} {'Supabase':>8} "
+              f"{'Luecke':>7} {'LR-NULL':>7} {'Yahoo Start':<12} {'DB Start':<12}")
+        print("-" * 90)
+        for r in sorted(audit_results, key=lambda x: x.get("gap", 0), reverse=True):
+            gap = r.get("gap", 0)
+            marker = " <<<" if gap > 500 else ""
+            print(f"{r['ticker']:<12} {r['kat']:<12} {r['yh']:>7,} {r['db']:>8,} "
+                  f"{gap:>7,} {r.get('lr_null',0):>6.0f}% "
+                  f"{r.get('yh_first','-'):<12} {r.get('db_first','-'):<12}{marker}")
+
+        n_gap = sum(1 for r in audit_results if r.get("gap", 0) > 500)
+        n_lr = sum(1 for r in audit_results if r.get("lr_null", 0) > 20)
+        print(f"\nLuecken >500 Zeilen: {n_gap} Ticker")
+        print(f"LR-NULL >20%%: {n_lr} Ticker")
+    else:
+        print(f"  FERTIG!")
+        print(f"  Geladen:       {stats['ok']}")
+        print(f"  Uebersprungen: {stats['skip']}")
+        print(f"  Fehler:        {stats['fail']}")
+        print(f"  Gesamt-Rows:   {stats['rows']:,}")
+
+    print("=" * 90)
 
 
 if __name__ == "__main__":

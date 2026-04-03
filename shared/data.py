@@ -35,6 +35,15 @@ def _load_from_supabase(ticker: str) -> pd.DataFrame | None:
         if not records or len(records) < 50:
             return None
 
+        # Jahresspanne pruefen: Saisonalanalyse braucht mindestens 3 Jahre Daten.
+        # Nightly-Refresh schreibt nur 5 Tage → Supabase kann nur wenige Monate haben.
+        _dates = [r.get("date", "") for r in records if r.get("date")]
+        if _dates:
+            _min_year = int(min(_dates)[:4])
+            _max_year = int(max(_dates)[:4])
+            if _max_year - _min_year < 3:
+                return None  # Zu wenig Historie → Yahoo-Fallback
+
         df = pd.DataFrame(records)
 
         # Spalten normalisieren (Supabase: lowercase, Yahoo: Title)

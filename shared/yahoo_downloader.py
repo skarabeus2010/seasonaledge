@@ -251,8 +251,13 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # Renditen: nur berechnen wenn nicht bereits aus DB vorhanden
     if "return" not in df.columns or df["return"].isna().all():
         df["return"] = df["Close"].pct_change()
+    elif df["return"].isna().any():
+        df["return"] = df["return"].fillna(df["Close"].pct_change())
     if "log_return" not in df.columns or df["log_return"].isna().all():
         df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
+    elif df["log_return"].isna().any():
+        df["log_return"] = df["log_return"].fillna(
+            np.log(df["Close"] / df["Close"].shift(1)))
 
     # Metadata-Spalten (immer setzen — sehr guenstig)
     df["day_of_year"] = df.index.dayofyear          # CDOY (Kalendertag)

@@ -540,6 +540,13 @@ def calc_current_month_curve(df, target_month):
     if len(month_df) < 1:
         return None, None
     log_rets = month_df["log_return"].values
+    # NaN-Schutz: fehlende log_returns aus Close berechnen
+    if np.isnan(log_rets).any():
+        closes = month_df["Close"].values
+        first_loc = df.index.get_loc(month_df.index[0])
+        prev_close = df["Close"].iloc[first_loc - 1] if first_loc > 0 else closes[0]
+        all_closes = np.concatenate([[prev_close], closes])
+        log_rets = np.log(all_closes[1:] / all_closes[:-1])
     cum = np.cumsum(log_rets)
     curve = (np.exp(cum) - 1) * 100
     return month_df["tdom"].tolist(), curve.tolist()
@@ -1238,6 +1245,10 @@ def main():
         st.error(f"Keine Daten für '{ticker}' gefunden.")
         return
     df = preprocess(raw_df)
+    # Heute-Kurs anhängen (vor Intraday-Refresh sichtbar)
+    from shared.data import append_today_if_missing
+    df = append_today_if_missing(df, ticker)
+    df = preprocess(df)
     all_years = sorted(df["year"].unique())
     if years_back_is_max:
         selected_years = all_years
