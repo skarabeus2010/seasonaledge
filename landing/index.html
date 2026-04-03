@@ -322,7 +322,7 @@
     </section>
 
     <!-- ═══════ DEMO ═══════ -->
-    <section class="sec" id="demo">
+    <section class="sec" id="demo" style="padding-top:2rem">
       <div class="wrap">
         <p class="eyebrow reveal">Interaktive Demo</p>
         <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
@@ -336,7 +336,7 @@
     </section>
 
     <!-- ═══════ STATS ═══════ -->
-    <section id="social-proof"><div class="wrap"><div class="stats reveal">
+    <section id="social-proof" style="padding:2rem 0"><div class="wrap"><div class="stats reveal">
       <div class="stat"><div class="stat__num">Max</div><div class="stat__label">Markthistorie</div></div>
       <div class="stat"><div class="stat__num">&gt;500</div><div class="stat__label">Basiswerte</div></div>
       <div class="stat"><div class="stat__num">15</div><div class="stat__label">KI-Modelle</div></div>
@@ -473,18 +473,19 @@
         var years=chartData.years;
         var td=chartData.trading_days;
         var curYear=String(chartData.current_year);
+        var t01=pct/100; // 0..1
 
-        // Y-Range aus Durchschnitt + Einzeljahren berechnen
-        var yMin=Infinity, yMax=-Infinity;
-        for(var k in years){
-          var c=years[k];
-          for(var i=0;i<c.length;i++){
-            if(c[i]<yMin)yMin=c[i];
-            if(c[i]>yMax)yMax=c[i];
-          }
-        }
-        // Padding
-        var yPad=(yMax-yMin)*0.08;
+        // Y-Range DYNAMISCH: Slider steuert Zoom
+        // Links (pct=0): enge Range um Durchschnitt → Konturen sichtbar
+        // Rechts (pct=100): weite Range fuer alle Einzeljahre
+        var avgMin=Infinity,avgMax=-Infinity;
+        for(var i=0;i<avg.length;i++){if(avg[i]<avgMin)avgMin=avg[i];if(avg[i]>avgMax)avgMax=avg[i]}
+        var allMin=Infinity,allMax=-Infinity;
+        for(var k in years){var c=years[k];for(var i=0;i<c.length;i++){if(c[i]<allMin)allMin=c[i];if(c[i]>allMax)allMax=c[i]}}
+        // Interpolation zwischen enger (Avg) und weiter (All) Range
+        var yMin=avgMin+(allMin-avgMin)*t01;
+        var yMax=avgMax+(allMax-avgMax)*t01;
+        var yPad=(yMax-yMin)*0.1;
         yMin-=yPad; yMax+=yPad;
 
         function xPos(i){return pad.l+(i/(td-1))*cw}
@@ -502,9 +503,10 @@
         }
 
         // Einzeljahre (Opacity abhaengig von Slider)
-        var alpha=0.03+pct/100*0.30;
+        var alpha=t01*0.35;
         for(var yr in years){
           if(yr===curYear)continue;
+          if(alpha<0.01)continue; // Skip wenn unsichtbar
           var c=years[yr];
           ctx.strokeStyle='rgba(180,200,230,'+alpha+')';
           ctx.lineWidth=0.8;
@@ -516,10 +518,11 @@
           ctx.stroke();
         }
 
-        // Durchschnitt (immer sichtbar, leicht dimmen bei vollem Spaghetti)
-        var avgAlpha=1.0-pct/100*0.3;
+        // Durchschnitt (dimmt stark bei Slider rechts)
+        var avgAlpha=1.0-t01*0.7;
+        var avgWidth=3-t01*1.5;
         ctx.strokeStyle='rgba(232,168,32,'+avgAlpha+')';
-        ctx.lineWidth=3;
+        ctx.lineWidth=avgWidth;
         ctx.beginPath();
         for(var i=0;i<avg.length;i++){
           if(i===0)ctx.moveTo(xPos(i),yPos(avg[i]));
@@ -549,26 +552,27 @@
           ctx.fillText(months[m],xi,h-6);
         }
 
-        // Y-Achse Links (Saisonal %) — Durchschnitt-Skala
+        // Y-Achsen Labels (dynamische Range)
+        var yTicks=5;
+        // Links
         ctx.fillStyle='rgba(232,168,32,0.5)';
         ctx.font='9px JetBrains Mono,monospace';
         ctx.textAlign='right';
-        var avgMin=Infinity,avgMax=-Infinity;
-        for(var i=0;i<avg.length;i++){if(avg[i]<avgMin)avgMin=avg[i];if(avg[i]>avgMax)avgMax=avg[i]}
-        var yTicks=5;
         for(var t=0;t<=yTicks;t++){
           var val=yMin+(yMax-yMin)*(1-t/yTicks);
           var yy=pad.t+ch*t/yTicks;
           ctx.fillText(val.toFixed(0)+'%',pad.l-6,yy+3);
+          // Gridline
+          ctx.strokeStyle='rgba(255,255,255,0.03)';
+          ctx.lineWidth=0.5;
+          ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+cw,yy);ctx.stroke();
         }
-
-        // Y-Achse Rechts (Einzeljahre %)
+        // Rechts
         ctx.fillStyle='rgba(180,200,230,0.4)';
         ctx.textAlign='left';
         for(var t=0;t<=yTicks;t++){
           var val=yMin+(yMax-yMin)*(1-t/yTicks);
-          var yy=pad.t+ch*t/yTicks;
-          ctx.fillText(val.toFixed(0)+'%',pad.l+cw+6,yy+3);
+          ctx.fillText(val.toFixed(0)+'%',pad.l+cw+6,pad.t+ch*t/yTicks+3);
         }
 
         // Info-Label
