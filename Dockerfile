@@ -32,6 +32,5 @@ CMD ["streamlit", "run", "seasonal_app.py", \
      "--server.port=8501", \
      "--server.address=0.0.0.0", \
      "--server.headless=true", \
-     "--server.baseUrlPath=/app", \
      "--browser.gatherUsageStats=false", \
      "--server.maxUploadSize=5"]
