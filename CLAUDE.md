@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 26.0 | 2026-04-03 | Details → `docs/`
+> Version 27.0 | 2026-04-04 | Details → `docs/`
 
 
 ## Projekt
@@ -63,6 +63,21 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
   index.html             ← Komplette Landing Page (inline CSS + vanilla JS)
   content.md             ← Content-Quelle (Markdown, wie Blog-Workflow)
   assets/                ← Fonts, Images (OG, Favicon)
+  components/            ← Shared Nav + Footer (JS-Include)
+    nav.html
+    footer.html
+  css/
+    app.css              ← Gemeinsames Design System (V3 Ultra)
+  js/
+    app.js               ← Component-Loader + Supabase Client
+    charts.js            ← ApexCharts Theme + Helpers
+  pages/
+    dekadenzyklus.html   ← Erste migrierte Page (alle 12 Sektionen)
+    apex-demo.html       ← Chart-Demo
+  data/
+    DJI-decade.json      ← Vorberechnete Dekaden-Daten
+    chart-data.json      ← Landing-Slider Daten
+  rechtliches.html       ← Impressum + Datenschutz + Risk
 seo/                     ← Programmatic SEO Engine
   programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
   seo_template.html        ← Jinja2 Landingpage-Template
@@ -214,6 +229,11 @@ if _project_dir not in sys.path:
 | CRYPTO Exchange: `is_trading_day()` | Immer True (24/7 inkl. Wochenende) |
 | Landing Page: statisches HTML | `landing/`, nginx liefert direkt aus |
 | Streamlit App: unter `/app/` | nginx proxy_pass mit trailing slash |
+| Neue HTML-Pages: `landing/pages/` | Nutzen `app.css` + `app.js` + `charts.js` |
+| Nav + Footer: JS-Include | `/landing/components/nav.html`, `footer.html` |
+| Frontend-Charts: ApexCharts (CDN) | Theme in `charts.js`, kein Plotly.js im Frontend |
+| Daten: Pre-computed JSON | `landing/data/`, Generator-Scripts in `scripts/` |
+| Docker JSON-Transfer | Im Container generieren, `docker cp` auf Host fuer nginx |
 
 ## Architektur-Prinzipien
 
@@ -247,6 +267,11 @@ if _project_dir not in sys.path:
 - Overnight/Intraday → Residual-Ansatz: `overnight = total - intraday` (nie cross-day OHLC mischen)
 - Heatmaps mit Jahreslabels → Leerzeichen-Padding `f" {y} "` + `categoryorder="array"`
 - Nightly-Refresh → nur letzte 5 Tage (historische Daten bleiben unveraendert)
+- HTML-Pages → `landing/pages/` mit modularem Framework (Nav/Footer JS-Include, app.css, charts.js)
+- Frontend-Charts → ApexCharts (120KB CDN) statt Plotly.js (3MB), Theme in `charts.js`
+- Pre-computed JSON → `landing/data/` fuer Default-Ticker, Generator in `scripts/`
+- Component-Loader → JS fetch+inject fuer Nav/Footer (kein Copy-Paste)
+- Docker JSON-Transfer → `docker cp` Container→Host (nginx liest vom Host-Volume)
 
 ## Design-Regeln (PFLICHT bei allen UI-Arbeiten)
 
@@ -556,6 +581,12 @@ UPPER_CASE        → Konstanten
 - [x] Landing Page: Newsletter JS-Handler (Supabase REST API) (2026-04-03)
 - [x] Landing Page: /rechtliches Unterseite (Impressum, Datenschutz, Risk DE+EN) (2026-04-03)
 - [x] Landing Page: Footer mit Risk-Disclaimer Volltext (2026-04-03)
+- [x] Modulares App-Framework: components/nav.html, footer.html, css/app.css, js/app.js, js/charts.js (2026-04-04)
+- [x] ApexCharts Integration: Dark Theme, Line/Bar/Heatmap/BoxPlot Helpers (2026-04-04)
+- [x] Dekadenzyklus HTML Page: Alle 12 Sektionen 1:1 aus Streamlit migriert (2026-04-04)
+- [x] generate_decade_data.py: Pre-compute Dekaden-JSON (Rendite, DD, Vola, Anomalie) (2026-04-04)
+- [x] Box-Plot: Canvas-Renderer (ApexCharts boxPlot war defekt) (2026-04-04)
+- [x] Landing Page: Background Paths Animation + Aurora Blobs (2026-04-04)
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
