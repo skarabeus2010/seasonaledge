@@ -40,6 +40,8 @@ SA.chartTheme = {
     foreColor: SA.COLORS.muted,
     fontFamily: 'DM Sans, sans-serif',
     toolbar: { show: false },
+    zoom: { enabled: false },
+    selection: { enabled: false },
     animations: { enabled: true, easing: 'easeinout', speed: 400 }
   },
   grid: {

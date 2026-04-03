@@ -353,7 +353,7 @@
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:Object.assign({categories:cats},SA.chartTheme.xaxis),
         yaxis:SA.chartTheme.yaxis,legend:{show:false},
-        annotations:{points:[{x:'x'+D.current_digit,y:D.decades[D.current_digit].avg_return,marker:{size:0},label:{text:'We are here!',style:{color:'#FFE600',fontSize:'11px',fontWeight:700,background:'rgba(0,0,0,.7)',padding:{left:8,right:8,top:4,bottom:4}}}}]},
+        annotations:{points:[{x:'x'+D.current_digit,y:D.decades[D.current_digit].avg_return,marker:{size:0},label:{text:'\u2B50 We are here!',offsetY:-30,style:{color:'#FFE600',fontSize:'11px',fontWeight:700,background:'rgba(0,0,0,.85)',padding:{left:8,right:8,top:4,bottom:4}}}}]},
         dataLabels:{enabled:true,style:{fontSize:'11px',colors:['#fff']},formatter:function(v){return v.toFixed(1)+'%'}}
       });
       charts.bar.render();
@@ -386,48 +386,92 @@
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
         colorScale:{ranges:[
-          {from:-10,to:-2,color:'#c0392b',name:'stark negativ'},
-          {from:-2,to:-1,color:'#e74c3c',name:'negativ'},
-          {from:-1,to:-0.01,color:'#e67e73',name:'leicht negativ'},
-          {from:-0.01,to:0.01,color:'#555',name:'neutral'},
-          {from:0.01,to:1,color:'#6dbd6d',name:'leicht positiv'},
-          {from:1,to:2,color:'#27ae60',name:'positiv'},
-          {from:2,to:10,color:'#1e8449',name:'stark positiv'}
+          {from:-10,to:-3,color:'#922b21',name:'stark negativ'},
+          {from:-3,to:-2,color:'#c0392b',name:'negativ'},
+          {from:-2,to:-1,color:'#d4736b',name:'m\u00E4\u00DFig negativ'},
+          {from:-1,to:-0.3,color:'#dba8a0',name:'leicht negativ'},
+          {from:-0.3,to:0.3,color:'#444',name:'neutral'},
+          {from:0.3,to:1,color:'#82c991',name:'leicht positiv'},
+          {from:1,to:2,color:'#27ae60',name:'m\u00E4\u00DFig positiv'},
+          {from:2,to:3,color:'#1e8449',name:'positiv'},
+          {from:3,to:10,color:'#145a32',name:'stark positiv'}
         ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#000']},formatter:function(v){return v.toFixed(1)}},
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)}},
         plotOptions:{heatmap:{radius:4,enableShades:false}}
       });
       charts.heatmap.render();
     }
 
-    // ── Chart 4: Box-Plot (als Scatter mit manuellen Boxen) ──
+    // ── Chart 4: Box-Plot (HTML Canvas, kein ApexCharts) ──
     function renderBoxPlot(){
-      // ApexCharts boxPlot braucht spezifisches Format
-      var boxData=[];
+      var el=document.getElementById('chart-box');
+      var canvas=el.querySelector('canvas');
+      if(!canvas){canvas=document.createElement('canvas');canvas.style.cssText='width:100%;height:380px';el.appendChild(canvas)}
+      var dpr=window.devicePixelRatio||1;
+      var rect=canvas.getBoundingClientRect();
+      canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
+      var ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+      var w=rect.width,h=rect.height;
+      var pad={l:50,r:20,t:30,b:40};
+      var cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+
+      // Y-Range berechnen
+      var yMin=Infinity,yMax=-Infinity;
+      for(var i=0;i<10;i++){
+        var rets=D.decades[i].returns;
+        for(var j=0;j<rets.length;j++){if(rets[j]<yMin)yMin=rets[j];if(rets[j]>yMax)yMax=rets[j]}
+      }
+      var yPad=(yMax-yMin)*.1;yMin-=yPad;yMax+=yPad;
+      function yPos(v){return pad.t+ch-(v-yMin)/(yMax-yMin)*ch}
+
+      ctx.clearRect(0,0,w,h);
+      // Nulllinie
+      ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(pad.l,yPos(0));ctx.lineTo(pad.l+cw,yPos(0));ctx.stroke();ctx.setLineDash([]);
+
+      var bw=cw/10*.6;
       for(var i=0;i<10;i++){
         var rets=D.decades[i].returns.slice().sort(function(a,b){return a-b});
         if(rets.length<3)continue;
         var n=rets.length;
         var mn=rets[0],q1=rets[Math.floor(n*.25)],med=rets[Math.floor(n*.5)],q3=rets[Math.floor(n*.75)],mx=rets[n-1];
-        boxData.push({x:'x'+i,y:[
-          parseFloat(mn.toFixed(1)),parseFloat(q1.toFixed(1)),
-          parseFloat(med.toFixed(1)),parseFloat(q3.toFixed(1)),
-          parseFloat(mx.toFixed(1))
-        ]});
+        var cx=pad.l+cw/10*(i+.5);
+        var isCur=i===D.current_digit;
+        // Whiskers
+        ctx.strokeStyle=isCur?SA.COLORS.accent:'rgba(255,255,255,.3)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(cx,yPos(mn));ctx.lineTo(cx,yPos(q1));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx,yPos(q3));ctx.lineTo(cx,yPos(mx));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mn));ctx.lineTo(cx+bw*.3,yPos(mn));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mx));ctx.lineTo(cx+bw*.3,yPos(mx));ctx.stroke();
+        // Box
+        ctx.fillStyle=isCur?'rgba(232,168,32,.3)':'rgba(77,159,255,.2)';
+        ctx.fillRect(cx-bw/2,yPos(q3),bw,yPos(q1)-yPos(q3));
+        ctx.strokeStyle=isCur?SA.COLORS.accent:'#4d9fff';ctx.lineWidth=isCur?2:1;
+        ctx.strokeRect(cx-bw/2,yPos(q3),bw,yPos(q1)-yPos(q3));
+        // Median
+        ctx.strokeStyle=isCur?'#FFE600':'#fff';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(cx-bw/2,yPos(med));ctx.lineTo(cx+bw/2,yPos(med));ctx.stroke();
+        // Outliers
+        for(var j=0;j<rets.length;j++){
+          if(rets[j]<q1-1.5*(q3-q1)||rets[j]>q3+1.5*(q3-q1)){
+            ctx.fillStyle=isCur?SA.COLORS.accent:'#4d9fff';
+            ctx.beginPath();ctx.arc(cx,yPos(rets[j]),3,0,Math.PI*2);ctx.fill();
+          }
+        }
+        // Label
+        ctx.fillStyle=SA.COLORS.muted;ctx.font='11px DM Sans,sans-serif';ctx.textAlign='center';
+        ctx.fillText('x'+i,cx,h-pad.b+16);
       }
-      if(charts.box)charts.box.destroy();
-      charts.box=new ApexCharts(document.getElementById('chart-box'),{
-        series:[{data:boxData}],
-        chart:{type:'boxPlot',height:380,background:'transparent',foreColor:SA.COLORS.muted,fontFamily:'DM Sans,sans-serif',toolbar:{show:false}},
-        colors:[SA.COLORS.accent],
-        plotOptions:{boxPlot:{colors:{upper:SA.COLORS.accent,lower:'#4d9fff'}}},
-        grid:SA.chartTheme.grid,tooltip:{theme:'dark'},
-        xaxis:{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'}}},
-        yaxis:{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
-        title:{text:'Jahresrenditen nach Dekaden-Endziffer',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
-      });
-      charts.box.render();
+      // Y-Achse
+      ctx.fillStyle=SA.COLORS.muted;ctx.font='11px DM Sans,sans-serif';ctx.textAlign='right';
+      for(var t=0;t<=5;t++){
+        var val=yMin+(yMax-yMin)*(1-t/5);
+        ctx.fillText(val.toFixed(0)+'%',pad.l-8,pad.t+ch*t/5+4);
+      }
+      // Titel
+      ctx.fillStyle='#fff';ctx.font='bold 14px Sora,sans-serif';ctx.textAlign='left';
+      ctx.fillText('Jahresrenditen nach Dekaden-Endziffer',pad.l,pad.t-10);
     }
 
     // ── Chart 5: Drawdown ──
@@ -492,16 +536,17 @@
       if(charts.ddHm)charts.ddHm.destroy();
       charts.ddHm=new ApexCharts(document.getElementById('chart-dd-heatmap'),{
         series:series,
-        chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
+        chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart,{selection:{enabled:false},zoom:{enabled:false}}),
         colorScale:{ranges:[
-          {from:-20,to:-10,color:'#7b241c',name:'extrem'},
-          {from:-10,to:-5,color:'#a93226',name:'stark'},
-          {from:-5,to:-3,color:'#c0392b',name:'moderat'},
-          {from:-3,to:-1,color:'#d4736b',name:'leicht'},
-          {from:-1,to:0,color:'#e8a090',name:'minimal'}
+          {from:-20,to:-8,color:'#4a0e0e',name:'extrem'},
+          {from:-8,to:-5,color:'#7b241c',name:'sehr stark'},
+          {from:-5,to:-3,color:'#a93226',name:'stark'},
+          {from:-3,to:-2,color:'#c0392b',name:'moderat'},
+          {from:-2,to:-1,color:'#cd6155',name:'leicht'},
+          {from:-1,to:0,color:'#d4978f',name:'minimal'}
         ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#1a1a1a']},formatter:function(v){return v.toFixed(0)+'%'}},
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(0)+'%'}},
         plotOptions:{heatmap:{radius:4,enableShades:false}}
       });
       charts.ddHm.render();
