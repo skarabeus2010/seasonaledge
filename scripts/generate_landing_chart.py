@@ -54,22 +54,24 @@ def generate(ticker="^DJI", output_path=None):
         cum = np.cumsum(log_rets)
         curve = (np.exp(cum) - 1) * 100  # In Prozent
 
-        # Auf target_days interpolieren (kuerzere Jahre padding mit letztem Wert)
+        # Aktuelles Jahr: NICHT padden (nur echte Daten)
+        if year == current_year:
+            curve_list = [round(float(v), 2) for v in curve]
+            years_data[str(year)] = curve_list
+            continue
+
+        # Historische Jahre: auf target_days interpolieren
         if len(curve) < target_days:
             padded = np.full(target_days, curve[-1])
             padded[:len(curve)] = curve
             curve = padded
         elif len(curve) > target_days:
-            # Resample auf 252 Punkte
             indices = np.linspace(0, len(curve) - 1, target_days).astype(int)
             curve = curve[indices]
 
-        # Auf 2 Dezimalstellen runden (spart Platz)
         curve_list = [round(float(v), 2) for v in curve]
         years_data[str(year)] = curve_list
-
-        if year != current_year:
-            all_curves.append(curve)
+        all_curves.append(curve)
 
     # Durchschnitt berechnen
     if all_curves:
