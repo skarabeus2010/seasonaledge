@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 25.0 | 2026-04-02 | Details → `docs/`
+> Version 26.0 | 2026-04-03 | Details → `docs/`
 
 
 ## Projekt
@@ -210,6 +210,10 @@ if _project_dir not in sys.path:
 | Holiday-Kalender: `symbols.py` | `get_exchange_for_holidays(ticker)` → NYSE/XETRA/LSE/EURONEXT/TSE |
 | TDOM/TDOY +1 Logik | `is_trading_day(today, exchange)` — NICHT `weekday < 5` |
 | Intraday Refresh: Zeitfenster | Boerse offen → laden. KEINE festen Zeitslots mehr |
+| FOREX Exchange: `is_trading_day()` | Mo-Fr, keine Feiertage (Karfreitag = offen) |
+| CRYPTO Exchange: `is_trading_day()` | Immer True (24/7 inkl. Wochenende) |
+| Landing Page: statisches HTML | `landing/`, nginx liefert direkt aus |
+| Streamlit App: unter `/app/` | nginx proxy_pass mit trailing slash |
 
 ## Architektur-Prinzipien
 
@@ -501,8 +505,8 @@ UPPER_CASE        → Konstanten
       9 Feature Cards (6 Zyklen + Backtest + Strategien + Indikatoren).
       Nav: 3 Dropdowns (Zyklen/Strategien/Mehr) + Blog + Zur Analyse.
       Stats: Max Markthistorie, >500 Basiswerte, 15 KI-Modelle, 24 Strategien.
-- [ ] Landing Page: nginx.conf + docker-compose.yml (/ → Landing, /app/ → Streamlit)
-- [ ] Landing Page: Echten Split-Slider in #hero-chart-container injizieren
+- [x] Landing Page: nginx.conf + docker-compose.yml (/ → Landing, /app/ → Streamlit) (2026-04-03)
+- [x] Landing Page: Interaktiver Split-Slider (Canvas + JSON, keine Plotly-Dependency) (2026-04-03)
 - [ ] Landing Page: OG-Image generieren (1200x630)
 - [ ] Landing Page: Inter Font self-hosted (woff2)
 - [x] TDOM/TDOY boersenspezifisch: Echter Feiertagskalender (XETRA/NYSE/LSE/TSE/Euronext) (2026-04-02)
@@ -540,6 +544,18 @@ UPPER_CASE        → Konstanten
       docs/REFRESH_MONITORING.md: Komplette Anleitung.
 - [x] Newsletter-Fix: Supabase-Insert auch bei Brevo-Fehler (2026-04-02)
       secrets.toml Parse-Fehler gefixt + Supabase Permissions (GRANT INSERT/SELECT).
+- [x] Fix: Goldene Linie TDOM-Bug (nightly_refresh raw_df→df, preprocess NaN-Fill, calc_current_month_curve NaN-Schutz) (2026-04-03)
+- [x] Fix: Supabase Jahresspanne-Check (<3 Jahre → Yahoo-Fallback) in data.py (2026-04-03)
+- [x] Bulk Load Rewrite: 263 Ticker statt 53 hardcoded, log_return + tdom + tdoy (2026-04-03)
+- [x] Data Audit Script: scripts/data_audit.py (Yahoo vs Supabase Vergleich) (2026-04-03)
+- [x] FOREX + CRYPTO Exchange-Logik: eigene Exchanges in exchange_holidays.py (2026-04-03)
+- [x] 4 neue FX-Paare: EURGBP, EURJPY, EURCHF, GBPJPY (11 FX total) (2026-04-03)
+- [x] Streak-Bloecke chronologisch: aelteste links, neueste rechts (2026-04-03)
+- [x] Landing Page Deployment: nginx / → Landing, /app/ → Streamlit (2026-04-03)
+- [x] Landing Page: Background Paths Animation (21st.dev, Vanilla SVG) (2026-04-03)
+- [x] Landing Page: Newsletter JS-Handler (Supabase REST API) (2026-04-03)
+- [x] Landing Page: /rechtliches Unterseite (Impressum, Datenschutz, Risk DE+EN) (2026-04-03)
+- [x] Landing Page: Footer mit Risk-Disclaimer Volltext (2026-04-03)
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
