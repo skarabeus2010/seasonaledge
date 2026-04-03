@@ -582,17 +582,7 @@
           ctx.stroke();
         }
 
-        // Aktuelles Jahr rechts
-        if(years[curYear]){
-          var cur=years[curYear];
-          ctx.strokeStyle='#FFE600';ctx.lineWidth=2.5;
-          ctx.beginPath();
-          for(var i=0;i<cur.length;i++){
-            if(i===0)ctx.moveTo(xPos(i),yPosR(cur[i]));
-            else ctx.lineTo(xPos(i),yPosR(cur[i]));
-          }
-          ctx.stroke();
-        }
+        // Aktuelles Jahr: nur links (mit Saisonalchart, gleiche Y-Skala)
 
         // Y-Achse rechts (heller, lesbar)
         ctx.fillStyle='rgba(232,190,100,0.7)';
