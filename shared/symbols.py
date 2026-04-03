@@ -698,6 +698,10 @@ SYMBOLS = {
     "AUDUSD=X": {"name": "AUD/USD", "kategorie": "FX", "währung": "USD", "exchange": "Forex", "beschreibung": "Australischer Dollar / US-Dollar"},
     "NZDUSD=X": {"name": "NZD/USD", "kategorie": "FX", "währung": "USD", "exchange": "Forex", "beschreibung": "Neuseeland Dollar / US-Dollar"},
     "USDCAD=X": {"name": "USD/CAD", "kategorie": "FX", "währung": "CAD", "exchange": "Forex", "beschreibung": "US-Dollar / Kanadischer Dollar"},
+    "EURGBP=X": {"name": "EUR/GBP", "kategorie": "FX", "währung": "GBP", "exchange": "Forex", "beschreibung": "Euro / Britisches Pfund"},
+    "EURJPY=X": {"name": "EUR/JPY", "kategorie": "FX", "währung": "JPY", "exchange": "Forex", "beschreibung": "Euro / Japanischer Yen"},
+    "EURCHF=X": {"name": "EUR/CHF", "kategorie": "FX", "währung": "CHF", "exchange": "Forex", "beschreibung": "Euro / Schweizer Franken"},
+    "GBPJPY=X": {"name": "GBP/JPY", "kategorie": "FX", "währung": "JPY", "exchange": "Forex", "beschreibung": "Britisches Pfund / Japanischer Yen"},
 }
 
 

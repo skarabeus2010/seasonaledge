@@ -42,10 +42,14 @@ TICKER_TO_EXCHANGE = {
                 "^GSPC", "^DJI", "^IXIC", "^NDX", "^RUT", "^VIX",
                 "GC=F", "SI=F", "CL=F", "BZ=F", "NG=F", "ZC=F", "ZW=F",
                 "HG=F", "PL=F", "ZS=F",
-                "ES=F", "NQ=F", "BTC-USD", "ETH-USD", "SOL-USD",
-                "XRP-USD", "ADA-USD", "DOGE-USD",
-                "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
-                "AUDUSD=X", "NZDUSD=X", "USDCAD=X"],
+                "ES=F", "NQ=F"],
+    # Forex: Mo-Fr 24h, keine Feiertage, Sa geschlossen, So ab 23:00 CET
+    "FOREX":   ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
+                "AUDUSD=X", "NZDUSD=X", "USDCAD=X",
+                "EURGBP=X", "EURJPY=X", "EURCHF=X", "GBPJPY=X"],
+    # Crypto: 24/7 inkl. Wochenende
+    "CRYPTO":  ["BTC-USD", "ETH-USD", "SOL-USD",
+                "XRP-USD", "ADA-USD", "DOGE-USD"],
     # XETRA (Deutschland)
     "XETRA":  ["^GDAXI", "^MDAXI", "^SDAXI", "^TECDAX",
                "SAP", "SIE.DE", "ALV.DE", "BAS.DE", "BMW.DE",
@@ -347,6 +351,8 @@ _EXCHANGE_FUNCTIONS = {
     "EURONEXT": _compute_euronext_holidays,
     "TSE":      _compute_tse_holidays,
     "SIX":      _compute_xetra_holidays,  # Schweiz ähnlich wie XETRA
+    "FOREX":    lambda year: [],          # Keine Feiertage (Mo-Fr 24h)
+    "CRYPTO":   lambda year: [],          # Keine Feiertage (24/7)
 }
 
 
@@ -386,7 +392,14 @@ def is_holiday(d: date, exchange: str = "NYSE") -> bool:
 
 
 def is_trading_day(d: date, exchange: str = "NYSE") -> bool:
-    """Prüft ob ein Datum ein Handelstag ist (kein Wochenende, kein Feiertag)."""
+    """Prüft ob ein Datum ein Handelstag ist (kein Wochenende, kein Feiertag).
+
+    Sonderfaelle:
+      - CRYPTO: 24/7, immer True (auch Sa/So)
+      - FOREX:  Mo-Fr 24h, keine Feiertage (Sa/So geschlossen)
+    """
+    if exchange.upper() == "CRYPTO":
+        return True  # 24/7
     if d.weekday() >= 5:
         return False
     return not is_holiday(d, exchange)
@@ -415,8 +428,25 @@ def get_holidays_for_ticker(
 
 
 def get_exchange_for_ticker(ticker: str) -> str:
-    """Gibt das Exchange-Kürzel für einen Ticker zurück. Fallback: NYSE."""
-    return _TICKER_MAP.get(ticker.upper(), "NYSE")
+    """Gibt das Exchange-Kürzel für einen Ticker zurück.
+
+    Prueft zuerst TICKER_TO_EXCHANGE, dann SYMBOLS["exchange"] Fallback.
+    """
+    ex = _TICKER_MAP.get(ticker.upper())
+    if ex:
+        return ex
+    # Fallback: exchange-Feld aus SYMBOLS
+    try:
+        from shared.symbols import SYMBOLS
+        sym = SYMBOLS.get(ticker, {})
+        exchange = sym.get("exchange", "")
+        if exchange == "Forex":
+            return "FOREX"
+        if exchange == "Crypto":
+            return "CRYPTO"
+    except Exception:
+        pass
+    return "NYSE"
 
 
 # ── Selbsttest ─────────────────────────────────────────────────────────────────
