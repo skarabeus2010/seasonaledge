@@ -187,13 +187,12 @@
     @keyframes pulse-ripple{0%{opacity:.5;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(40)}}
 
     /* ── DEMO ── */
-    .demo-box{background:linear-gradient(145deg,var(--card),var(--surface));border:1px solid var(--border);border-radius:var(--r-lg);padding:2.5rem 2rem;min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .demo-box{background:linear-gradient(145deg,var(--card),var(--surface));border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem 1rem .75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
     .demo-box::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(232,168,32,.08),transparent 70%);pointer-events:none}
-    .demo-box svg{width:100%;max-width:780px;height:auto;margin-bottom:1.5rem}
-    .demo-slider{width:100%;max-width:560px;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:2px;outline:none;margin-bottom:1rem;opacity:.7;transition:opacity .2s}
+    .demo-slider{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:2px;outline:none;margin-bottom:.5rem;opacity:.7;transition:opacity .2s}
     .demo-slider:hover,.demo-slider:focus{opacity:1}
     .demo-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 0 16px var(--accent-g),0 2px 6px rgba(0,0,0,.3)}
-    .demo-labels{display:flex;justify-content:space-between;width:100%;max-width:560px;font-size:.6875rem;color:var(--muted);font-family:var(--f-m);letter-spacing:.05em;text-transform:uppercase}
+    .demo-labels{display:flex;justify-content:space-between;width:100%;font-size:.6875rem;color:var(--muted);font-family:var(--f-m);letter-spacing:.05em;text-transform:uppercase}
 
     /* ── STATS ── */
     .stats{display:flex;justify-content:center;gap:4rem;flex-wrap:wrap;padding:3.5rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
@@ -320,7 +319,7 @@
         <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
         <p class="sec-sub reveal reveal-d2">Bewege den Slider: Einzeljahre verschmelzen zum saisonalen Muster. So destilliert SeasonAlpha aus Jahrzehnten von Kursdaten Saisonalcharts.</p>
         <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
-          <canvas id="seasonal-chart" style="width:100%;max-width:1200px;height:320px;display:block;margin:0 auto"></canvas>
+          <canvas id="seasonal-chart" style="width:100%;height:380px;display:block"></canvas>
           <input type="range" id="demo-slider" min="0" max="100" value="0" class="demo-slider" aria-label="Noise to Signal">
           <div class="demo-labels"><span>Saisonaler Durchschnitt</span><span>Einzeljahre</span></div>
         </div>
