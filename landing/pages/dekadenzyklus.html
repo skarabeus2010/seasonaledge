@@ -38,19 +38,20 @@
   <div class="app">
     <!-- ═══ SIDEBAR ═══ -->
     <aside class="sidebar" id="sidebar">
-      <h3>Intra-Decade Seasonality</h3>
-      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
       <hr>
       <h3>Darstellung</h3>
       <label><input type="checkbox" id="chk-bands"> &plusmn;1&sigma; Konfidenzband</label>
       <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <hr>
-      <h3>Rolling-Vola Fenster</h3>
-      <select id="vola-window"><option>5</option><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option><option>60</option></select>
-      <hr>
       <h3>Kohorten ein/ausblenden</h3>
       <div id="decade-toggles"></div>
+      <hr>
+      <h3>Rolling-Vola Fenster</h3>
+      <select id="vola-window"><option>5</option><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option><option>60</option></select>
     </aside>
 
     <!-- ═══ MAIN CONTENT ═══ -->
@@ -168,6 +169,21 @@
       .catch(function(e){document.getElementById('page-caption').textContent='Fehler beim Laden: '+e});
 
     function init(){
+      // Ticker-Liste laden (Supabase)
+      if(SA.supabase.url){
+        SA.supabase.get('tickers','select=ticker,name&aktiv=eq.true&order=ticker').then(function(tickers){
+          var dl=document.getElementById('ticker-list');
+          if(dl&&tickers&&tickers.length){
+            tickers.forEach(function(t){
+              var opt=document.createElement('option');
+              opt.value=t.ticker;
+              opt.textContent=t.name;
+              dl.appendChild(opt);
+            });
+          }
+        }).catch(function(){});
+      }
+
       // Header
       document.getElementById('title-ticker').textContent=D.ticker;
       document.getElementById('page-caption').textContent=
@@ -326,7 +342,7 @@
       for(var i=0;i<10;i++){
         cats.push('x'+i);
         var v=D.decades[i].avg_return;
-        vals.push(v);colors.push(v>=0?SA.COLORS.green:SA.COLORS.red);
+        vals.push(v);colors.push(v>=0?'#2ECC71':SA.COLORS.red);
       }
       if(charts.bar)charts.bar.destroy();
       charts.bar=new ApexCharts(document.getElementById('chart-bar'),{
@@ -369,30 +385,47 @@
       charts.heatmap=new ApexCharts(document.getElementById('chart-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
-        colorScale:{ranges:[{from:-100,to:-0.01,color:SA.COLORS.red},{from:0,to:0,color:'#333'},{from:0.01,to:100,color:SA.COLORS.green}]},
+        colorScale:{ranges:[
+          {from:-10,to:-2,color:'#c0392b',name:'stark negativ'},
+          {from:-2,to:-1,color:'#e74c3c',name:'negativ'},
+          {from:-1,to:-0.01,color:'#e67e73',name:'leicht negativ'},
+          {from:-0.01,to:0.01,color:'#555',name:'neutral'},
+          {from:0.01,to:1,color:'#6dbd6d',name:'leicht positiv'},
+          {from:1,to:2,color:'#27ae60',name:'positiv'},
+          {from:2,to:10,color:'#1e8449',name:'stark positiv'}
+        ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#fff']},formatter:function(v){return v.toFixed(1)}},
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#000']},formatter:function(v){return v.toFixed(1)}},
         plotOptions:{heatmap:{radius:4,enableShades:false}}
       });
       charts.heatmap.render();
     }
 
-    // ── Chart 4: Box-Plot ──
+    // ── Chart 4: Box-Plot (als Scatter mit manuellen Boxen) ──
     function renderBoxPlot(){
-      var data=[];
+      // ApexCharts boxPlot braucht spezifisches Format
+      var boxData=[];
       for(var i=0;i<10;i++){
         var rets=D.decades[i].returns.slice().sort(function(a,b){return a-b});
-        if(rets.length<3){data.push({x:'x'+i,y:[0,0,0,0,0]});continue}
-        var q1=rets[Math.floor(rets.length*.25)],med=rets[Math.floor(rets.length*.5)],q3=rets[Math.floor(rets.length*.75)];
-        data.push({x:'x'+i,y:[parseFloat(rets[0].toFixed(1)),parseFloat(q1.toFixed(1)),parseFloat(med.toFixed(1)),parseFloat(q3.toFixed(1)),parseFloat(rets[rets.length-1].toFixed(1))]});
+        if(rets.length<3)continue;
+        var n=rets.length;
+        var mn=rets[0],q1=rets[Math.floor(n*.25)],med=rets[Math.floor(n*.5)],q3=rets[Math.floor(n*.75)],mx=rets[n-1];
+        boxData.push({x:'x'+i,y:[
+          parseFloat(mn.toFixed(1)),parseFloat(q1.toFixed(1)),
+          parseFloat(med.toFixed(1)),parseFloat(q3.toFixed(1)),
+          parseFloat(mx.toFixed(1))
+        ]});
       }
       if(charts.box)charts.box.destroy();
       charts.box=new ApexCharts(document.getElementById('chart-box'),{
-        series:[{type:'boxPlot',data:data}],
-        chart:Object.assign({type:'boxPlot',height:380},SA.chartTheme.chart),
+        series:[{data:boxData}],
+        chart:{type:'boxPlot',height:380,background:'transparent',foreColor:SA.COLORS.muted,fontFamily:'DM Sans,sans-serif',toolbar:{show:false}},
         colors:[SA.COLORS.accent],
         plotOptions:{boxPlot:{colors:{upper:SA.COLORS.accent,lower:'#4d9fff'}}},
-        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,yaxis:SA.chartTheme.yaxis
+        grid:SA.chartTheme.grid,tooltip:{theme:'dark'},
+        xaxis:{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'}}},
+        yaxis:{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
+        title:{text:'Jahresrenditen nach Dekaden-Endziffer',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.box.render();
     }
@@ -460,10 +493,16 @@
       charts.ddHm=new ApexCharts(document.getElementById('chart-dd-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
-        colors:[SA.COLORS.red],
+        colorScale:{ranges:[
+          {from:-20,to:-10,color:'#7b241c',name:'extrem'},
+          {from:-10,to:-5,color:'#a93226',name:'stark'},
+          {from:-5,to:-3,color:'#c0392b',name:'moderat'},
+          {from:-3,to:-1,color:'#d4736b',name:'leicht'},
+          {from:-1,to:0,color:'#e8a090',name:'minimal'}
+        ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#fff']},formatter:function(v){return v.toFixed(0)}},
-        plotOptions:{heatmap:{radius:4,colorScale:{min:-20,max:0}}}
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#1a1a1a']},formatter:function(v){return v.toFixed(0)+'%'}},
+        plotOptions:{heatmap:{radius:4,enableShades:false}}
       });
       charts.ddHm.render();
     }
