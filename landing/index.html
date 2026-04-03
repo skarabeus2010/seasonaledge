@@ -100,6 +100,11 @@
       display:flex;flex-direction:column;justify-content:center;align-items:center;
       overflow:hidden;padding:4rem 2rem 2rem;
     }
+    /* Background Paths */
+    .bg-paths{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .bg-paths svg{width:100%;height:100%}
+    .bg-paths path{stroke-dasharray:1000;animation:path-flow 25s linear infinite}
+    @keyframes path-flow{0%{stroke-dashoffset:1000;opacity:.3}50%{opacity:.6}100%{stroke-dashoffset:-1000;opacity:.3}}
     /* Aurora animated background */
     .aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none}
     .aurora__blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform}
@@ -267,15 +272,15 @@
          HERO — 21st.dev inspired
          ══════════════════════════════════════ -->
     <section class="hero" id="hero">
-      <!-- Particle constellation background -->
-      <canvas id="hero-particles" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+      <!-- Background Paths (21st.dev inspired) -->
+      <div class="bg-paths"><svg id="bg-paths-1" viewBox="0 0 696 316" fill="none"></svg></div>
+      <div class="bg-paths"><svg id="bg-paths-2" viewBox="0 0 696 316" fill="none"></svg></div>
       <!-- Aurora gradient blobs -->
       <div class="aurora">
         <div class="aurora__blob aurora__b1"></div>
         <div class="aurora__blob aurora__b2"></div>
         <div class="aurora__blob aurora__b3"></div>
         <div class="aurora__blob aurora__b4"></div>
-        <div class="aurora__grid"></div>
       </div>
 
       <!-- Particles -->
@@ -624,76 +629,26 @@
       });
     }();
 
-    // ── Hero Particle Constellation ──
+    // ── Background Paths (21st.dev) ──
     !function(){
-      var c=document.getElementById('hero-particles');
-      if(!c)return;
-      var ctx=c.getContext('2d');
-      var dpr=window.devicePixelRatio||1;
-      var particles=[];
-      var N=80; // Anzahl Partikel
-      var maxDist=120; // Max Verbindungsdistanz
-
-      function resize(){
-        var r=c.parentElement.getBoundingClientRect();
-        c.width=r.width*dpr;c.height=r.height*dpr;
-        c.style.width=r.width+'px';c.style.height=r.height+'px';
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-      }
-
-      function init(){
-        resize();
-        var w=c.width/dpr,h=c.height/dpr;
-        particles=[];
-        for(var i=0;i<N;i++){
-          particles.push({
-            x:Math.random()*w, y:Math.random()*h,
-            vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
-            r:Math.random()*1.5+.5,
-            a:Math.random()*.4+.2 // alpha
-          });
+      function genPaths(svgId,pos){
+        var svg=document.getElementById(svgId);
+        if(!svg)return;
+        for(var i=0;i<36;i++){
+          var p=document.createElementNS('http://www.w3.org/2000/svg','path');
+          var d='M-'+(380-i*5*pos)+' -'+(189+i*6)+'C-'+(380-i*5*pos)+' -'+(189+i*6)+' -'+(312-i*5*pos)+' '+(216-i*6)+' '+(152-i*5*pos)+' '+(343-i*6)+'C'+(616-i*5*pos)+' '+(470-i*6)+' '+(684-i*5*pos)+' '+(875-i*6)+' '+(684-i*5*pos)+' '+(875-i*6);
+          p.setAttribute('d',d);
+          p.setAttribute('stroke','#e8a820');
+          p.setAttribute('stroke-width',(.5+i*.03).toFixed(2));
+          p.setAttribute('stroke-opacity',(.05+i*.02).toFixed(2));
+          p.setAttribute('fill','none');
+          p.style.animationDuration=(20+Math.random()*10).toFixed(0)+'s';
+          p.style.animationDelay=(Math.random()*5).toFixed(1)+'s';
+          svg.appendChild(p);
         }
       }
-
-      function draw(){
-        var w=c.width/dpr,h=c.height/dpr;
-        ctx.clearRect(0,0,w,h);
-
-        // Update + draw particles
-        for(var i=0;i<particles.length;i++){
-          var p=particles[i];
-          p.x+=p.vx;p.y+=p.vy;
-          if(p.x<0)p.x=w;if(p.x>w)p.x=0;
-          if(p.y<0)p.y=h;if(p.y>h)p.y=0;
-
-          ctx.beginPath();
-          ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-          ctx.fillStyle='rgba(232,168,32,'+p.a+')';
-          ctx.fill();
-        }
-
-        // Draw connections
-        for(var i=0;i<particles.length;i++){
-          for(var j=i+1;j<particles.length;j++){
-            var dx=particles[i].x-particles[j].x;
-            var dy=particles[i].y-particles[j].y;
-            var d=Math.sqrt(dx*dx+dy*dy);
-            if(d<maxDist){
-              var alpha=(1-d/maxDist)*.12;
-              ctx.strokeStyle='rgba(232,168,32,'+alpha+')';
-              ctx.lineWidth=.5;
-              ctx.beginPath();
-              ctx.moveTo(particles[i].x,particles[i].y);
-              ctx.lineTo(particles[j].x,particles[j].y);
-              ctx.stroke();
-            }
-          }
-        }
-        requestAnimationFrame(draw);
-      }
-
-      init();draw();
-      window.addEventListener('resize',function(){resize()});
+      genPaths('bg-paths-1',1);
+      genPaths('bg-paths-2',-1);
     }();
 
     // ── Newsletter Anmeldung (Supabase REST API) ──
