@@ -459,6 +459,41 @@
 
     // ── Card mouse-follow glow ──
     document.querySelectorAll('.card').forEach(function(c){c.addEventListener('mousemove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})});
+
+    // ── Newsletter Anmeldung (Supabase REST API) ──
+    document.getElementById('newsletter-form').addEventListener('submit',function(e){
+      e.preventDefault();
+      var email=document.getElementById('nl-email').value.trim().toLowerCase();
+      if(!email)return;
+      var btn=this.querySelector('button');
+      var orig=btn.textContent;
+      btn.textContent='...';btn.disabled=true;
+      fetch(window.__SA_SB_URL+'/rest/v1/subscribers',{
+        method:'POST',
+        headers:{
+          'apikey':window.__SA_SB_KEY,
+          'Authorization':'Bearer '+window.__SA_SB_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates'
+        },
+        body:JSON.stringify({email:email,source:'landing',status:'active',brevo_synced:false})
+      }).then(function(r){
+        if(r.ok||r.status===409){
+          btn.textContent='\u2713 Angemeldet!';
+          btn.style.background='#30e878';btn.style.borderColor='#30e878';
+          document.getElementById('nl-email').value='';
+        }else{
+          btn.textContent='Fehler \u2014 nochmal';btn.disabled=false;
+        }
+      }).catch(function(){
+        btn.textContent='Fehler \u2014 nochmal';btn.disabled=false;
+      });
+    });
+  </script>
+  <!-- Supabase Credentials (Anon Key = public, RLS schuetzt) -->
+  <script>
+    window.__SA_SB_URL='%%SUPABASE_URL%%';
+    window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';
   </script>
 </body>
 </html>
