@@ -101,17 +101,17 @@
       overflow:hidden;padding:4rem 2rem 2rem;
     }
     /* Background Paths */
-    .bg-paths{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .bg-paths{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
     .bg-paths svg{width:100%;height:100%}
-    .bg-paths path{stroke-dasharray:1000;animation:path-flow 25s linear infinite}
-    @keyframes path-flow{0%{stroke-dashoffset:1000;opacity:.3}50%{opacity:.6}100%{stroke-dashoffset:-1000;opacity:.3}}
+    .bg-paths path{stroke-dasharray:600 400;animation:path-flow 30s linear infinite}
+    @keyframes path-flow{0%{stroke-dashoffset:1000}100%{stroke-dashoffset:-1000}}
     /* Aurora animated background */
     .aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none}
     .aurora__blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform}
-    .aurora__b1{top:-10%;left:20%;width:600px;height:400px;background:radial-gradient(ellipse,rgba(232,168,32,.15),transparent 70%);animation:aur1 12s ease-in-out infinite alternate}
-    .aurora__b2{bottom:0;right:10%;width:500px;height:350px;background:radial-gradient(ellipse,rgba(48,232,120,.08),transparent 70%);animation:aur2 10s ease-in-out infinite alternate-reverse}
-    .aurora__b3{top:30%;right:30%;width:400px;height:300px;background:radial-gradient(ellipse,rgba(232,168,32,.10),transparent 70%);animation:aur3 14s ease-in-out infinite alternate}
-    .aurora__b4{bottom:20%;left:5%;width:350px;height:250px;background:radial-gradient(ellipse,rgba(232,120,32,.06),transparent 70%);animation:aur4 9s ease-in-out infinite alternate-reverse}
+    .aurora__b1{top:-10%;left:20%;width:600px;height:400px;background:radial-gradient(ellipse,rgba(232,168,32,.10),transparent 70%);animation:aur1 25s ease-in-out infinite alternate}
+    .aurora__b2{bottom:0;right:10%;width:500px;height:350px;background:radial-gradient(ellipse,rgba(48,232,120,.05),transparent 70%);animation:aur2 20s ease-in-out infinite alternate-reverse}
+    .aurora__b3{top:30%;right:30%;width:400px;height:300px;background:radial-gradient(ellipse,rgba(232,168,32,.07),transparent 70%);animation:aur3 30s ease-in-out infinite alternate}
+    .aurora__b4{bottom:20%;left:5%;width:350px;height:250px;background:radial-gradient(ellipse,rgba(232,120,32,.04),transparent 70%);animation:aur4 22s ease-in-out infinite alternate-reverse}
     @keyframes aur1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,40px) scale(1.2)}100%{transform:translate(-40px,-20px) scale(.9)}}
     @keyframes aur2{0%{transform:translate(0,0) scale(.9)}50%{transform:translate(-60px,-30px) scale(1.15)}100%{transform:translate(50px,20px) scale(1)}}
     @keyframes aur3{0%{transform:translate(0,0) scale(1.1)}50%{transform:translate(50px,-50px) scale(.85)}100%{transform:translate(-30px,30px) scale(1.05)}}
