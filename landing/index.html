@@ -464,7 +464,7 @@
 
       function draw(pct){
         var w=canvas.width/dpr, h=canvas.height/dpr;
-        var pad={l:10,r:10,t:16,b:28};
+        var pad={l:48,r:48,t:16,b:28};
         var cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
         ctx.clearRect(0,0,w,h);
 
@@ -547,6 +547,28 @@
         for(var m=0;m<12;m++){
           var xi=xPos(Math.round(m/12*td));
           ctx.fillText(months[m],xi,h-6);
+        }
+
+        // Y-Achse Links (Saisonal %) — Durchschnitt-Skala
+        ctx.fillStyle='rgba(232,168,32,0.5)';
+        ctx.font='9px JetBrains Mono,monospace';
+        ctx.textAlign='right';
+        var avgMin=Infinity,avgMax=-Infinity;
+        for(var i=0;i<avg.length;i++){if(avg[i]<avgMin)avgMin=avg[i];if(avg[i]>avgMax)avgMax=avg[i]}
+        var yTicks=5;
+        for(var t=0;t<=yTicks;t++){
+          var val=yMin+(yMax-yMin)*(1-t/yTicks);
+          var yy=pad.t+ch*t/yTicks;
+          ctx.fillText(val.toFixed(0)+'%',pad.l-6,yy+3);
+        }
+
+        // Y-Achse Rechts (Einzeljahre %)
+        ctx.fillStyle='rgba(180,200,230,0.4)';
+        ctx.textAlign='left';
+        for(var t=0;t<=yTicks;t++){
+          var val=yMin+(yMax-yMin)*(1-t/yTicks);
+          var yy=pad.t+ch*t/yTicks;
+          ctx.fillText(val.toFixed(0)+'%',pad.l+cw+6,yy+3);
         }
 
         // Info-Label

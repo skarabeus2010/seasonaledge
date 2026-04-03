@@ -23,12 +23,17 @@ from datetime import datetime
 from shared.yahoo_downloader import download_data, preprocess
 
 
-def generate(ticker="^DJI", output_path=None):
-    """Generiert chart-data.json mit normalisierten Jahreskurven."""
+def generate(ticker="^DJI", n_years=20, output_path=None):
+    """Generiert chart-data.json mit normalisierten Jahreskurven.
+
+    Args:
+        ticker: Ticker-Symbol (default: ^DJI)
+        n_years: Anzahl Jahre zurueck (default: 20, None=alle)
+    """
     if output_path is None:
         output_path = os.path.join(_project_dir, "landing", "chart-data.json")
 
-    print(f"Lade {ticker} ...")
+    print(f"Lade {ticker} (letzte {n_years or 'alle'} Jahre) ...")
     raw_df = download_data(ticker, period="max")
     if raw_df is None or raw_df.empty:
         print("FEHLER: Keine Daten!")
@@ -44,7 +49,13 @@ def generate(ticker="^DJI", output_path=None):
     years_data = {}
     all_curves = []
 
-    for year in sorted(df["year"].unique()):
+    # Nur letzte n_years Jahre
+    all_years = sorted(df["year"].unique())
+    if n_years:
+        min_year = current_year - n_years
+        all_years = [y for y in all_years if y >= min_year]
+
+    for year in all_years:
         ydf = df[df["year"] == year].sort_index()
         if len(ydf) < 20:
             continue
