@@ -21,7 +21,7 @@ if _project_dir not in sys.path:
 
 import numpy as np
 import pandas as pd
-from shared.yahoo_downloader import download_data, preprocess
+from shared.data import download_data, preprocess
 
 
 def compute_drawdown_series(curve, base=100.0):
