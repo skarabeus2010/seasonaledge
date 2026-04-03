@@ -99,6 +99,17 @@
       position:relative;min-height:100vh;min-height:100dvh;
       display:flex;flex-direction:column;justify-content:center;align-items:center;
       overflow:hidden;padding:2rem;
+      background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(232,168,32,.06),transparent 60%),
+                 radial-gradient(ellipse 60% 50% at 80% 100%,rgba(232,168,32,.04),transparent 50%),
+                 radial-gradient(ellipse 50% 40% at 10% 80%,rgba(48,232,120,.03),transparent 50%);
+    }
+    .hero::before{content:'';position:absolute;inset:0;
+      background:linear-gradient(to_right,rgba(232,168,32,.03) 1px,transparent 1px),
+                 linear-gradient(to_bottom,rgba(232,168,32,.03) 1px,transparent 1px);
+      background-size:6rem 5rem;
+      mask-image:radial-gradient(ellipse 70% 50% at 50% 30%,#000 40%,transparent 100%);
+      -webkit-mask-image:radial-gradient(ellipse 70% 50% at 50% 30%,#000 40%,transparent 100%);
+      pointer-events:none;z-index:0;
     }
     /* SVG Grid overlay */
     .hero__grid{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -123,8 +134,8 @@
     .hero__content{position:relative;z-index:10;text-align:center;max-width:900px}
 
     /* Tagline top */
-    .hero__tag{font-family:var(--f-m);font-size:.6875rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:2rem}
-    .hero__tag::after{content:'';display:block;width:48px;height:1px;margin:1rem auto 0;background:linear-gradient(90deg,transparent,var(--dim),transparent);opacity:.3}
+    .hero__tag{font-family:var(--f-m);font-size:.6875rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:1rem}
+    .hero__tag::after{content:'';display:block;width:48px;height:1px;margin:.75rem auto 0;background:linear-gradient(90deg,transparent,var(--dim),transparent);opacity:.3}
 
     /* Word animation */
     .w{display:inline-block;opacity:0;transform:translateY(28px) scale(.85);filter:blur(8px);transition:none}
@@ -132,7 +143,7 @@
 
     .hero__h1{font-family:var(--f-d);font-size:clamp(2rem,5.5vw,3.75rem);font-weight:300;line-height:1.1;letter-spacing:-.025em;margin-bottom:1.5rem}
     .hero__h1 em{font-style:normal;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--teal),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .hero__h1-sub{font-family:var(--f-d);font-size:clamp(1.125rem,2.5vw,1.625rem);font-weight:300;line-height:1.5;color:var(--dim);margin-bottom:3rem}
+    .hero__h1-sub{font-family:var(--f-d);font-size:clamp(1.125rem,2.5vw,1.625rem);font-weight:300;line-height:1.5;color:var(--dim);margin-bottom:1.5rem}
 
     .hero__actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem}
 
@@ -313,16 +324,11 @@
           <a href="/app/" class="btn btn--p">Zur Analyse</a>
         </div>
 
-        <!-- Bottom tag -->
-        <div class="hero__btm" style="opacity:0;animation:word-appear 1s var(--ease) forwards;animation-delay:4s">
-          Max Markthistorie &middot; &gt;500 Basiswerte &middot; 15 KI-Modelle
-          <div class="hero__dots"><span></span><span></span><span></span></div>
-        </div>
       </div>
     </section>
 
     <!-- ═══════ DEMO ═══════ -->
-    <section class="sec" id="demo" style="padding-top:2rem">
+    <section class="sec" id="demo" style="padding-top:1rem;padding-bottom:2rem">
       <div class="wrap">
         <p class="eyebrow reveal">Interaktive Demo</p>
         <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
@@ -334,14 +340,6 @@
         </div>
       </div>
     </section>
-
-    <!-- ═══════ STATS ═══════ -->
-    <section id="social-proof" style="padding:2rem 0"><div class="wrap"><div class="stats reveal">
-      <div class="stat"><div class="stat__num">Max</div><div class="stat__label">Markthistorie</div></div>
-      <div class="stat"><div class="stat__num">&gt;500</div><div class="stat__label">Basiswerte</div></div>
-      <div class="stat"><div class="stat__num">15</div><div class="stat__label">KI-Modelle</div></div>
-      <div class="stat"><div class="stat__num">24</div><div class="stat__label">Plain Vanilla Strategien</div></div>
-    </div></div></section>
 
     <!-- ═══════ 9 MODULE ═══════ -->
     <section class="sec" id="analysis-cycles"><div class="wrap">
