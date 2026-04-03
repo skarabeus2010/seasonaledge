@@ -4,262 +4,133 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ApexCharts Demo &mdash; SeasonAlpha</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
-  <style>
-    :root{--bg:#000;--surface:#050505;--card:#0a0a0e;--border:rgba(232,168,32,.1);--accent:#e8a820;--text:#fff;--dim:#e8e0d0;--muted:#a89878;--green:#30e878;--red:#ff4040}
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:var(--bg);color:var(--dim);font-family:'DM Sans',sans-serif}
-    .wrap{max-width:1400px;margin:0 auto;padding:2rem 1.5rem}
-    h1{font-family:'Sora',sans-serif;font-size:1.75rem;font-weight:800;color:var(--text);margin-bottom:.5rem}
-    h1 b{color:var(--accent)}
-    .subtitle{color:var(--muted);font-size:.875rem;margin-bottom:2rem}
-    h2{font-family:'Sora',sans-serif;font-size:1.125rem;font-weight:700;color:var(--text);margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
-
-    /* Layout */
-    .app{display:grid;grid-template-columns:260px 1fr;gap:1.5rem}
-    @media(max-width:768px){.app{grid-template-columns:1fr}}
-
-    /* Sidebar */
-    .sidebar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;height:fit-content;position:sticky;top:80px}
-    .sidebar h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.75rem}
-    .sidebar label{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);padding:.25rem 0;cursor:pointer}
-    .sidebar input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px}
-    .sidebar select,.sidebar input[type="text"]{width:100%;padding:.4rem .6rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8125rem;margin-bottom:.75rem}
-    .sidebar hr{border:none;border-top:1px solid var(--border);margin:.75rem 0}
-
-    /* Chart Container */
-    .chart-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1.5rem}
-
-    /* Expander */
-    details{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:1rem}
-    summary{padding:1rem 1.25rem;cursor:pointer;font-weight:600;font-size:.9375rem;color:var(--text);list-style:none;display:flex;align-items:center;gap:.5rem}
-    summary::before{content:'\25B6';font-size:.625rem;transition:transform .2s;color:var(--accent)}
-    details[open] summary::before{transform:rotate(90deg)}
-    details .content{padding:0 1.25rem 1.25rem}
-
-    /* KPI Cards */
-    .kpi-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem}
-    .kpi{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;text-align:center}
-    .kpi-label{font-size:.625rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.25rem}
-    .kpi-value{font-family:'Sora',sans-serif;font-size:1.125rem;font-weight:700;color:var(--text)}
-    .kpi-value.green{color:var(--green)}
-    .kpi-value.red{color:var(--red)}
-    .kpi-value.gold{color:var(--accent)}
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
 </head>
 <body>
-  <div class="wrap">
-    <h1><b>Season</b>Alpha &mdash; ApexCharts Demo</h1>
-    <p class="subtitle">7 Chart-Typen im V3 Ultra Design (Pure Black + Signal Gold)</p>
 
-    <div class="app">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <h3>Einstellungen</h3>
-        <input type="text" value="^DJI" placeholder="Ticker">
-        <label><input type="checkbox" checked> &plusmn;1&sigma; Konfidenzband</label>
-        <label><input type="checkbox"> Einzeljahre anzeigen</label>
-        <label><input type="checkbox" checked> Aktuelles Jahr</label>
-        <hr>
-        <h3>Vola-Fenster</h3>
-        <select><option>10</option><option selected>20</option><option>30</option><option>60</option></select>
-        <hr>
-        <h3>Dekaden-Filter</h3>
-        <label><input type="checkbox" checked> x0</label>
-        <label><input type="checkbox" checked> x1</label>
-        <label><input type="checkbox" checked> x2</label>
-        <label><input type="checkbox" checked> x3</label>
-        <label><input type="checkbox" checked> x4</label>
-        <label><input type="checkbox" checked> x5</label>
-        <label><input type="checkbox" checked> x6 (aktuell)</label>
-        <label><input type="checkbox" checked> x7</label>
-        <label><input type="checkbox" checked> x8</label>
-        <label><input type="checkbox" checked> x9</label>
-      </aside>
+  <!-- Nav (per JS geladen) -->
+  <div id="nav-container"></div>
 
-      <!-- Main Content -->
-      <main>
-        <!-- KPI Cards -->
-        <div class="kpi-row">
-          <div class="kpi"><div class="kpi-label">Kohorte</div><div class="kpi-value gold">x6-Jahre</div></div>
-          <div class="kpi"><div class="kpi-label">&Oslash; Rendite</div><div class="kpi-value green">+8.45%</div></div>
-          <div class="kpi"><div class="kpi-label">Median</div><div class="kpi-value green">+6.20%</div></div>
-          <div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value">69%</div></div>
-          <div class="kpi"><div class="kpi-label">Volatilit&auml;t</div><div class="kpi-value">14.2%</div></div>
-        </div>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h3>Einstellungen</h3>
+      <input type="text" value="^DJI" placeholder="Ticker">
+      <label><input type="checkbox" checked> &plusmn;1&sigma; Konfidenzband</label>
+      <label><input type="checkbox"> Einzeljahre anzeigen</label>
+      <label><input type="checkbox" checked> Aktuelles Jahr</label>
+      <hr>
+      <h3>Vola-Fenster</h3>
+      <select><option>10</option><option selected>20</option><option>30</option><option>60</option></select>
+      <hr>
+      <h3>Dekaden-Filter</h3>
+      <label><input type="checkbox" checked> x0</label>
+      <label><input type="checkbox" checked> x1</label>
+      <label><input type="checkbox" checked> x2</label>
+      <label><input type="checkbox" checked> x3</label>
+      <label><input type="checkbox" checked> x4</label>
+      <label><input type="checkbox" checked> x5</label>
+      <label><input type="checkbox" checked> x6 (aktuell)</label>
+      <label><input type="checkbox" checked> x7</label>
+      <label><input type="checkbox" checked> x8</label>
+      <label><input type="checkbox" checked> x9</label>
+    </aside>
 
-        <!-- Chart 1: Dekaden-Linien -->
-        <div class="chart-box"><div id="chart-lines"></div></div>
+    <!-- Main Content -->
+    <main>
+      <!-- KPI Cards -->
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Kohorte</div><div class="kpi-value gold">x6-Jahre</div></div>
+        <div class="kpi"><div class="kpi-label">&Oslash; Rendite</div><div class="kpi-value green">+8.45%</div></div>
+        <div class="kpi"><div class="kpi-label">Median</div><div class="kpi-value green">+6.20%</div></div>
+        <div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value">69%</div></div>
+        <div class="kpi"><div class="kpi-label">Volatilit&auml;t</div><div class="kpi-value">14.2%</div></div>
+      </div>
 
-        <!-- Chart 2: Bar -->
-        <details open>
-          <summary>&Oslash; Jahresrendite nach Dekade</summary>
-          <div class="content"><div id="chart-bar"></div></div>
-        </details>
+      <!-- Chart 1: Dekaden-Linien -->
+      <div class="chart-box"><div id="chart-lines"></div></div>
 
-        <!-- Chart 3: Heatmap -->
-        <details open>
-          <summary>Monatsrendite nach Dekade</summary>
-          <div class="content"><div id="chart-heatmap"></div></div>
-        </details>
+      <!-- Chart 2: Bar -->
+      <details open>
+        <summary>&Oslash; Jahresrendite nach Dekade</summary>
+        <div class="content"><div id="chart-bar"></div></div>
+      </details>
 
-        <!-- Chart 4: Box-Plot -->
-        <details>
-          <summary>Rendite-Verteilung (Box-Plot)</summary>
-          <div class="content"><div id="chart-box"></div></div>
-        </details>
+      <!-- Chart 3: Heatmap -->
+      <details open>
+        <summary>Monatsrendite nach Dekade</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
 
-        <!-- Chart 5: Drawdown -->
-        <details open>
-          <summary>&Oslash; Drawdown-Verlauf</summary>
-          <div class="content"><div id="chart-dd"></div></div>
-        </details>
+      <!-- Chart 4: Box-Plot -->
+      <details>
+        <summary>Rendite-Verteilung (Box-Plot)</summary>
+        <div class="content"><div id="chart-box"></div></div>
+      </details>
 
-        <!-- Chart 6: DD-Heatmap -->
-        <details>
-          <summary>Max Drawdown: Dekade &times; Monat</summary>
-          <div class="content"><div id="chart-dd-heatmap"></div></div>
-        </details>
+      <h2 class="section-header">Drawdown &amp; Risiko</h2>
 
-        <!-- Chart 7: Volatilität -->
-        <details>
-          <summary>Rolling Volatilit&auml;t</summary>
-          <div class="content"><div id="chart-vola"></div></div>
-        </details>
-      </main>
-    </div>
+      <!-- Chart 5: Drawdown -->
+      <details open>
+        <summary>&Oslash; Drawdown-Verlauf</summary>
+        <div class="content"><div id="chart-dd"></div></div>
+      </details>
+
+      <!-- Chart 6: DD-Heatmap -->
+      <details>
+        <summary>Max Drawdown: Dekade &times; Monat</summary>
+        <div class="content"><div id="chart-dd-heatmap"></div></div>
+      </details>
+
+      <!-- Chart 7: Volatilität -->
+      <details>
+        <summary>Rolling Volatilit&auml;t</summary>
+        <div class="content"><div id="chart-vola"></div></div>
+      </details>
+    </main>
   </div>
 
+  <!-- Footer (per JS geladen) -->
+  <div id="footer-container"></div>
+
+  <!-- Scripts -->
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
   <script>
-    // ── Demo-Daten generieren ──
-    var COLORS = ['#4d9fff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff922b','#20c997','#e64980','#748ffc','#f06595'];
-    var LABELS = ['x0','x1','x2','x3','x4','x5','x6','x7','x8','x9'];
-    var MONTHS = ['Jan','Feb','M\u00e4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    // ── Demo-Daten (Random) ──
+    function rand(a,b){return a+Math.random()*(b-a)}
+    function curve(n,d,v){var c=[0];for(var i=1;i<n;i++)c.push(c[i-1]+d+v*(Math.random()-.5));return c}
 
-    function rand(min,max){return min+Math.random()*(max-min)}
-    function curve(n,drift,vol){var c=[0];for(var i=1;i<n;i++)c.push(c[i-1]+drift+vol*(Math.random()-.5));return c}
+    // Chart 1: Dekaden-Linien
+    var s1=SA.DECADE_LABELS.map(function(l,i){return{name:l,data:curve(252,rand(.02,.06),rand(.8,1.5)),color:SA.DECADE_COLORS[i]}});
+    s1.push({name:'2026',data:curve(63,.04,1),color:'#FFE600'});
+    SA.lineChart('chart-lines',s1,{title:'^DJI \u2014 Intra-Decade Seasonality',strokeWidth:s1.map(function(_,i){return i===10?3:1.5})});
 
-    // ApexCharts globale Dark-Theme Config
-    var THEME = {
-      chart:{background:'transparent',foreColor:'#a89878',fontFamily:'DM Sans,sans-serif',toolbar:{show:false}},
-      grid:{borderColor:'rgba(255,255,255,.04)',strokeDashArray:3},
-      tooltip:{theme:'dark',style:{fontSize:'12px'}},
-      xaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'}},axisBorder:{color:'rgba(255,255,255,.06)'},axisTicks:{color:'rgba(255,255,255,.06)'}},
-      yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%'}}}
-    };
+    // Chart 2: Bar
+    var bd=SA.DECADE_LABELS.map(function(){return parseFloat(rand(-5,15).toFixed(2))});
+    SA.barChart('chart-bar',SA.DECADE_LABELS,bd,{seriesName:'\u00d8 Return'});
 
-    // ── Chart 1: Dekaden-Linien ──
-    var lineSeries = LABELS.map(function(l,i){
-      return {name:l,data:curve(252,rand(.02,.06),rand(.8,1.5)),color:COLORS[i]};
-    });
-    // Aktuelles Jahr (gold, dicker)
-    lineSeries.push({name:'2026',data:curve(63,0.04,1.0),color:'#FFE600'});
+    // Chart 3: Heatmap
+    var hm=SA.DECADE_LABELS.map(function(l){return{name:l,data:SA.MONTHS.map(function(m){return{x:m,y:parseFloat(rand(-3,4).toFixed(2))}})}}).reverse();
+    SA.heatmapChart('chart-heatmap',hm);
 
-    new ApexCharts(document.getElementById('chart-lines'), Object.assign({
-      series:lineSeries,
-      chart:Object.assign({type:'line',height:420},THEME.chart),
-      stroke:{width:lineSeries.map(function(_,i){return i===10?3:1.5}),curve:'smooth'},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i+1}),
-        tickAmount:12,labels:Object.assign({},THEME.xaxis.labels,{formatter:function(v){var m=Math.floor((v-1)/21);return MONTHS[m]||''}})},THEME.xaxis),
-      yaxis:THEME.yaxis,
-      legend:{position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},fontSize:'11px',markers:{size:4}},
-      title:{text:'^DJI \u2014 Intra-Decade Seasonality (131 Jahre)',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
-    })).render();
+    // Chart 4: Box-Plot
+    var bp=SA.DECADE_LABELS.map(function(l){var v=Array.from({length:13},function(){return rand(-20,40)}).sort(function(a,b){return a-b});return{x:l,y:[v[0],v[3],v[6],v[9],v[12]].map(function(x){return parseFloat(x.toFixed(1))})};});
+    SA.boxPlotChart('chart-box',bp);
 
-    // ── Chart 2: Bar ──
-    var barData = LABELS.map(function(){return parseFloat((rand(-5,15)).toFixed(2))});
-    new ApexCharts(document.getElementById('chart-bar'), Object.assign({
-      series:[{name:'\u00d8 Return',data:barData}],
-      chart:Object.assign({type:'bar',height:320},THEME.chart),
-      colors:barData.map(function(v){return v>=0?'#30e878':'#ff4040'}),
-      plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'60%'}},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:Object.assign({categories:LABELS},THEME.xaxis),
-      yaxis:THEME.yaxis,
-      legend:{show:false},
-      dataLabels:{enabled:true,style:{fontSize:'11px',colors:['#fff']},formatter:function(v){return v.toFixed(1)+'%'}}
-    })).render();
+    // Chart 5: Drawdown
+    var dd=SA.DECADE_LABELS.map(function(l,i){var c=curve(252,-.01,.5),p=c[0];return{name:l,data:c.map(function(v){if(v>p)p=v;return parseFloat((v-p).toFixed(2))}),color:SA.DECADE_COLORS[i]}});
+    SA.lineChart('chart-dd',dd,{height:350,yaxis:{labels:{formatter:function(v){return v.toFixed(0)+'%'}}}});
 
-    // ── Chart 3: Heatmap ──
-    var hmSeries = LABELS.map(function(l){
-      return {name:l,data:MONTHS.map(function(m){return {x:m,y:parseFloat(rand(-3,4).toFixed(2))}})};
-    }).reverse();
-    new ApexCharts(document.getElementById('chart-heatmap'), Object.assign({
-      series:hmSeries,
-      chart:Object.assign({type:'heatmap',height:380},THEME.chart),
-      colors:['#ff4040'],
-      colorScale:{ranges:[
-        {from:-10,to:-0.01,color:'#ff4040',name:'Negativ'},
-        {from:0,to:0,color:'#333',name:'Neutral'},
-        {from:0.01,to:10,color:'#30e878',name:'Positiv'}
-      ]},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:THEME.xaxis,
-      dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#fff']},formatter:function(v){return v.toFixed(1)}},
-      plotOptions:{heatmap:{radius:4,enableShades:false}}
-    })).render();
+    // Chart 6: DD-Heatmap
+    var dh=SA.DECADE_LABELS.map(function(l){return{name:l,data:SA.MONTHS.map(function(m){return{x:m,y:parseFloat(rand(-15,-1).toFixed(1))}})}}).reverse();
+    SA.heatmapChart('chart-dd-heatmap',dh,{negativeOnly:true});
 
-    // ── Chart 4: Box-Plot ──
-    var boxSeries = [{type:'boxPlot',data:LABELS.map(function(l,i){
-      var vals = Array.from({length:13},function(){return rand(-20,40)}).sort(function(a,b){return a-b});
-      return {x:l,y:[vals[0],vals[3],vals[6],vals[9],vals[12]].map(function(v){return parseFloat(v.toFixed(1))})};
-    })}];
-    new ApexCharts(document.getElementById('chart-box'), Object.assign({
-      series:boxSeries,
-      chart:Object.assign({type:'boxPlot',height:350},THEME.chart),
-      colors:['#e8a820'],
-      plotOptions:{boxPlot:{colors:{upper:'#e8a820',lower:'#4d9fff'}}},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:THEME.xaxis,yaxis:THEME.yaxis
-    })).render();
-
-    // ── Chart 5: Drawdown ──
-    var ddSeries = LABELS.map(function(l,i){
-      var c=curve(252,-0.01,0.5);
-      var peak=c[0],dd=c.map(function(v){if(v>peak)peak=v;return parseFloat(((v-peak)).toFixed(2))});
-      return {name:l,data:dd,color:COLORS[i]};
-    });
-    new ApexCharts(document.getElementById('chart-dd'), Object.assign({
-      series:ddSeries,
-      chart:Object.assign({type:'line',height:350},THEME.chart),
-      stroke:{width:1.5,curve:'smooth'},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i+1}),tickAmount:12,
-        labels:Object.assign({},THEME.xaxis.labels,{formatter:function(v){var m=Math.floor((v-1)/21);return MONTHS[m]||''}})},THEME.xaxis),
-      yaxis:Object.assign({},THEME.yaxis,{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}}),
-      legend:{position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},fontSize:'11px'}
-    })).render();
-
-    // ── Chart 6: DD-Heatmap ──
-    var ddHmSeries = LABELS.map(function(l){
-      return {name:l,data:MONTHS.map(function(m){return {x:m,y:parseFloat(rand(-15,-1).toFixed(1))}})};
-    }).reverse();
-    new ApexCharts(document.getElementById('chart-dd-heatmap'), Object.assign({
-      series:ddHmSeries,
-      chart:Object.assign({type:'heatmap',height:380},THEME.chart),
-      colors:['#ff4040'],
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:THEME.xaxis,
-      dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#fff']},formatter:function(v){return v.toFixed(0)}},
-      plotOptions:{heatmap:{radius:4,colorScale:{min:-15,max:0}}}
-    })).render();
-
-    // ── Chart 7: Volatilität ──
-    var volaSeries = LABELS.map(function(l,i){
-      return {name:l,data:curve(252,0,0.3).map(function(v){return parseFloat((12+v).toFixed(2))}),color:COLORS[i]};
-    });
-    new ApexCharts(document.getElementById('chart-vola'), Object.assign({
-      series:volaSeries,
-      chart:Object.assign({type:'line',height:320},THEME.chart),
-      stroke:{width:1.5,curve:'smooth'},
-      grid:THEME.grid,tooltip:THEME.tooltip,
-      xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i+1}),tickAmount:12,
-        labels:Object.assign({},THEME.xaxis.labels,{formatter:function(v){var m=Math.floor((v-1)/21);return MONTHS[m]||''}})},THEME.xaxis),
-      yaxis:Object.assign({},THEME.yaxis,{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}}),
-      legend:{position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},fontSize:'11px'}
-    })).render();
+    // Chart 7: Volatilität
+    var vo=SA.DECADE_LABELS.map(function(l,i){return{name:l,data:curve(252,0,.3).map(function(v){return parseFloat((12+v).toFixed(2))}),color:SA.DECADE_COLORS[i]}});
+    SA.lineChart('chart-vola',vo,{height:320});
   </script>
 </body>
 </html>
