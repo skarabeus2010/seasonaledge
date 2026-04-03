@@ -138,9 +138,9 @@ def render_streak_table(
             else:
                 break
 
-        # W/L Bloecke
+        # W/L Bloecke (aelteste links, neueste rechts — chronologisch)
         blocks = ""
-        for e in entries[:n_blocks]:
+        for e in reversed(entries[:n_blocks]):
             color = "#00d4aa" if e["ret"] > 0 else "#ff4757"
             wl = "W" if e["ret"] > 0 else "L"
             # Tooltip: Datum + Rendite
@@ -172,7 +172,7 @@ def render_streak_table(
         "<tr style='border-bottom:1px solid rgba(255,255,255,0.1);'>"
         "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 12px;'>{}</th>"
         "<th style='color:#8899aa; font-size:11px; text-align:center; padding:4px 12px;'>Aktuelle Serie</th>"
-        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 8px;'>Letzte {} (neueste links)</th>"
+        "<th style='color:#8899aa; font-size:11px; text-align:left; padding:4px 8px;'>Letzte {} (neueste rechts)</th>"
         "</tr>"
         "{}"
         "</table>".format(col_header, n_blocks, "".join(streak_rows))
