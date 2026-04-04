@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Plain Vanilla Strategien &mdash; SeasonAlpha</title>
+  <meta name="description" content="24 saisonale Trading-Strategien: Sell in May, Santa Claus, KTI und mehr. Backtests mit Equity-Kurven, CAGR, Max Drawdown.">
+  <meta property="og:title" content="Plain Vanilla Strategien &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/plain-vanilla">
+  <link rel="canonical" href="https://seasonalpha.ai/plain-vanilla">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .apexcharts-xaxis text title{display:none}
+
+    /* Strategy Tabs */
+    .cat-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+    .cat-tab{padding:.4rem .8rem;border-radius:6px;font-size:.8125rem;cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .15s}
+    .cat-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(232,168,32,.08)}
+    .cat-tab:hover{border-color:var(--accent);color:var(--text)}
+
+    /* Strategy Cards */
+    .strat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.5rem;margin-bottom:1.5rem}
+    .strat-card{background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .strat-card:hover{border-color:rgba(232,168,32,.3)}
+    .strat-card.selected{border:2px solid var(--accent);background:linear-gradient(135deg,#131d2a,#1a2535)}
+    .strat-card .icon{font-size:1.3rem;margin-bottom:4px}
+    .strat-card .name{color:var(--text);font-size:.7rem;font-weight:600;line-height:1.3}
+    .strat-card .cagr{font-size:.8rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+
+    /* Info Box */
+    .strat-info{background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(77,159,255,.15);border-radius:12px;padding:16px 20px;margin-bottom:1rem}
+    .strat-info .title{color:#4d9fff;font-size:1.1rem;font-weight:700;margin-bottom:4px}
+    .strat-info .desc{color:var(--text);font-size:.875rem}
+
+    /* Trade Table */
+    .trade-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .trade-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .trade-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .trade-table tr:hover td{background:rgba(232,168,32,.03)}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-period">
+        <option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max" selected>Max</option>
+      </select>
+      <hr>
+      <h3>Stop-Loss</h3>
+      <label><input type="checkbox" id="chk-stop"> Aktivieren</label>
+      <div id="stop-controls" style="display:none;margin-top:.5rem">
+        <label>Stop %<br><input type="range" id="rng-stop" min="1" max="20" value="8" step="0.5"><span id="lbl-stop">8</span>%</label>
+      </div>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Plain Vanilla Strategien</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption">24 saisonale Trading-Strategien mit fixen Regeln</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- Category Tabs -->
+      <div class="cat-tabs" id="cat-tabs"></div>
+
+      <!-- Strategy Cards -->
+      <div class="strat-grid" id="strat-grid"></div>
+
+      <!-- Selected Strategy Info -->
+      <div class="strat-info" id="strat-info" style="display:none"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-strat"></div>
+
+      <!-- Equity Chart -->
+      <div class="chart-box"><div id="chart-equity"></div></div>
+
+      <!-- Trade Table -->
+      <details>
+        <summary>Alle Trades</summary>
+        <div class="content" id="content-trades"></div>
+      </details>
+
+      <!-- Vergleich -->
+      <details>
+        <summary>Alle Strategien vergleichen</summary>
+        <div class="content">
+          <div id="chart-compare"></div>
+          <div id="content-ranking"></div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik" id="content-methodik">
+          <h3>Plain Vanilla Strategien</h3>
+          <p>Regelbasierte Handelsans&auml;tze mit fixen Ein- und Ausstiegszeitpunkten. Keine Optimierung &mdash; die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet.</p>
+          <h3>Kennzahlen</h3>
+          <ul>
+            <li><b>CAGR</b>: Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</li>
+            <li><b>Max Drawdown</b>: Gr&ouml;&szlig;ter R&uuml;ckgang vom H&ouml;chststand</li>
+            <li><b>Win-Rate</b>: Anteil profitabler Trades</li>
+            <li><b>Sharpe Ratio</b>: Risikoadjustierte Rendite</li>
+            <li><b>Profit Factor</b>: Bruttogewinne / Bruttoverluste</li>
+          </ul>
+          <p>Ergebnisse basieren auf historischen Daten. Keine Anlageberatung.</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/strategy-compute.js"></script>
+  <script>
+  !function(){
+    var rawRows=null,currentTicker='',charts={},cachedResults={};
+    var selectedKey='sell_in_may',selectedCat='saisonal';
+
+    function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
+    function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
+
+    /* ── Sidebar Events ── */
+    document.getElementById('chk-stop').addEventListener('change',function(){
+      document.getElementById('stop-controls').style.display=this.checked?'block':'none';
+      cachedResults={};renderSelected();
+    });
+    document.getElementById('rng-stop').addEventListener('input',function(){
+      document.getElementById('lbl-stop').textContent=this.value;
+      cachedResults={};renderSelected();
+    });
+    document.getElementById('sel-period').addEventListener('change',function(){
+      cachedResults={};renderAll();
+    });
+
+    /* ── Build Tabs + Cards ── */
+    function buildUI(){
+      var tabsEl=document.getElementById('cat-tabs');
+      var cats=Object.keys(SA.STRATEGY_CATEGORIES).sort(function(a,b){
+        return SA.STRATEGY_CATEGORIES[a].order-SA.STRATEGY_CATEGORIES[b].order;
+      });
+      tabsEl.innerHTML='';
+      cats.forEach(function(cat){
+        var btn=document.createElement('button');
+        btn.className='cat-tab'+(cat===selectedCat?' active':'');
+        btn.textContent=SA.STRATEGY_CATEGORIES[cat].label;
+        btn.onclick=function(){selectedCat=cat;buildUI();renderSelected()};
+        tabsEl.appendChild(btn);
+      });
+      buildCards();
+    }
+
+    function buildCards(){
+      var grid=document.getElementById('strat-grid');
+      grid.innerHTML='';
+      for(var key in SA.STRATEGIES){
+        var s=SA.STRATEGIES[key];
+        if(s.cat!==selectedCat) continue;
+        var card=document.createElement('div');
+        card.className='strat-card'+(key===selectedKey?' selected':'');
+        var cagrHtml='<div class="cagr" style="color:var(--muted)">\u2014</div>';
+        if(cachedResults[key]){
+          var cagr=cachedResults[key].stats?cachedResults[key].stats.cagr:0;
+          cagrHtml='<div class="cagr" style="color:'+(cagr>=0?'#00d4aa':'#ff4757')+'">'+(cagr>=0?'+':'')+cagr.toFixed(1)+'%</div>';
+        }
+        card.innerHTML='<div class="icon">'+s.icon+'</div><div class="name">'+s.name+'</div>'+cagrHtml;
+        card.dataset.key=key;
+        card.onclick=function(){selectedKey=this.dataset.key;buildCards();renderSelected()};
+        grid.appendChild(card);
+      }
+    }
+
+    /* ── Calc Strategy (lazy) ── */
+    function calcStrategy(key){
+      if(cachedResults[key]) return cachedResults[key];
+      var s=SA.STRATEGIES[key];
+      if(!s||!SA.strategy[s.func]) return null;
+      try{
+        var rows=getFilteredRows();
+        var trades=SA.strategy[s.func](rows);
+        // Stop-Loss
+        if(document.getElementById('chk-stop').checked){
+          var stopPct=parseFloat(document.getElementById('rng-stop').value)||8;
+          trades=SA.strategy.applyStopLoss(rows,trades,stopPct);
+        }
+        var stats=SA.strategy.computeStats(trades);
+        cachedResults[key]={trades:trades,stats:stats};
+      }catch(e){
+        cachedResults[key]={trades:[],stats:null};
+      }
+      return cachedResults[key];
+    }
+
+    function getFilteredRows(){
+      if(!rawRows) return [];
+      var period=document.getElementById('sel-period').value;
+      if(period==='max') return rawRows;
+      var cutoff=new Date().getFullYear()-parseInt(period);
+      var cutoffDate=cutoff+'-01-01';
+      return rawRows.filter(function(r){return r.date>=cutoffDate});
+    }
+
+    /* ── Init ── */
+    function initialLoad(){
+      if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0){buildUI();loadTicker('^DJI')}
+      else document.getElementById('page-caption').textContent='Supabase nicht konfiguriert';
+    }
+    initialLoad();
+
+    function loadTicker(ticker){
+      ticker=ticker.trim().toUpperCase();
+      if(!ticker||ticker===currentTicker) return;
+      showLoading('Lade '+ticker+'...');
+      SA.fetchAllPrices(ticker,'&date=gte.1895-01-01').then(function(rows){
+        if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten');return}
+        rows.forEach(function(r){r.close=parseFloat(r.close);if(r.log_return!=null)r.log_return=parseFloat(r.log_return)});
+        rawRows=rows;currentTicker=ticker;cachedResults={};renderAll();hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    function renderAll(){
+      if(!rawRows) return;
+      document.getElementById('title-ticker').textContent=currentTicker;
+      SA.renderTradingDayHeader('trading-day-header',currentTicker,rawRows);
+      calcStrategy(selectedKey);
+      buildCards();
+      renderSelected();
+    }
+
+    /* ── Render Selected Strategy ── */
+    function renderSelected(){
+      var data=calcStrategy(selectedKey);
+      var s=SA.STRATEGIES[selectedKey];
+      if(!s) return;
+
+      // Info Box
+      var info=document.getElementById('strat-info');
+      info.style.display='block';
+      info.innerHTML='<div class="title">'+s.icon+' '+s.name+'</div><div class="desc">'+s.desc+'</div>';
+
+      // KPIs
+      var kpiEl=document.getElementById('kpi-strat');
+      if(data&&data.stats){
+        var st=data.stats;
+        kpiEl.innerHTML=
+          kpi('CAGR',(st.cagr>=0?'+':'')+st.cagr.toFixed(1)+'%',st.cagr>=0?'green':'red')+
+          kpi('Max Drawdown',st.max_drawdown.toFixed(1)+'%','red')+
+          kpi('Win-Rate',st.win_rate.toFixed(0)+'%',st.win_rate>=50?'green':'')+
+          kpi('Trades',st.n_trades)+
+          kpi('$1.000 Endwert','$'+st.final_equity.toLocaleString(undefined,{maximumFractionDigits:0}),st.final_equity>=1000?'green':'red')+
+          kpi('Sharpe',st.sharpe.toFixed(2));
+      } else kpiEl.innerHTML=kpi('Status','Keine Trades','red');
+
+      // Equity Chart
+      if(data&&data.trades&&data.trades.length>0){
+        var equity=SA.strategy.buildEquityCurve(data.trades,1000);
+        var series=[{name:'Portfolio',data:equity.map(function(e){return{x:e.date,y:e.value}})}];
+
+        if(charts.equity) charts.equity.destroy();
+        charts.equity=new ApexCharts(document.getElementById('chart-equity'),{
+          series:series,
+          chart:Object.assign({type:'area',height:420},SA.chartTheme.chart),
+          stroke:{width:2.5,curve:'straight'},
+          fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.15,opacityTo:0.02,stops:[0,100]}},
+          colors:['#00d4aa'],
+          grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+          annotations:{yaxis:[{y:1000,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
+          xaxis:{type:'datetime',labels:{style:{colors:'#a89878',fontSize:'10px'}}},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return'$'+v.toLocaleString(undefined,{maximumFractionDigits:0})}}},
+          legend:{show:false},
+          title:{text:s.icon+' '+s.name+' \u2014 '+currentTicker+' \u00B7 $1.000 Portfolio',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+        });
+        charts.equity.render();
+      } else {
+        document.getElementById('chart-equity').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Keine Trades f\u00FCr diese Strategie.</p>';
+      }
+
+      // Trade Table
+      renderTradeTable(data);
+      buildCards();
+    }
+
+    function renderTradeTable(data){
+      var el=document.getElementById('content-trades');
+      if(!data||!data.trades||!data.trades.length){el.innerHTML='<p style="color:var(--muted)">Keine Trades.</p>';return}
+      var html='<table class="trade-table"><tr><th>Einstieg</th><th>Ausstieg</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr>';
+      data.trades.forEach(function(t){
+        var clr=t.return_pct>=0?'var(--green)':'var(--red)';
+        html+='<tr><td>'+t.entry_date+'</td><td>'+t.exit_date+'</td>';
+        html+='<td>'+t.entry_price.toFixed(2)+'</td><td>'+t.exit_price.toFixed(2)+'</td>';
+        html+='<td style="color:'+clr+'">'+(t.return_pct>=0?'+':'')+t.return_pct.toFixed(2)+'%'+(t.stopped?' \u26D4':'')+'</td></tr>';
+      });
+      html+='</table>';
+      el.innerHTML=html;
+    }
+
+    SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+  }();
+  </script>
+</body>
+</html>
