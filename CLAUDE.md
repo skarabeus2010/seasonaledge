@@ -342,42 +342,46 @@ UPPER_CASE        → Konstanten
 
 ## HTML-Migration Plan (Landing Pages)
 
-Streamlit → statisches HTML. Jede Page baut ein wiederverwendbares JS-Modul.
+Streamlit → statisches HTML. 8 wiederverwendbare JS-Module (2142 Zeilen total).
 
-### Migrations-Reihenfolge
-| # | Page | Zeilen | Charts | Baut Modul | Status |
-|---|------|--------|--------|-----------|--------|
-| 1 | Dekadenzyklus | 853 | 12 | `decade-compute.js` | ✅ |
-| 2 | Monatswechsel | 516 | 8 | `seasonal-compute.js` + `streak-analysis.js` | naechste |
-| 3 | Mondphasen | 623 | 8 | `significance.js` | |
-| 4 | Kriegszeiten | 403 | 6 | nutzt Event-Window | |
-| 5 | Plain Vanilla | 457 | 4 | `strategy-compute.js` | |
+### Fertige JS-Module (8 Module, 57 Funktionen)
+
+| Modul | Zeilen | Python-Quelle | Kern-Funktionen | Genutzt von |
+|-------|--------|---------------|-----------------|-------------|
+| `app.js` | 249 | — (original) | `initTickerInput`, `fetchAllPrices`, `renderTradingDayHeader`, Supabase REST | **Alle Pages** |
+| `charts.js` | 166 | — (original) | `lineChart`, `barChart`, `heatmapChart`, `boxPlotChart`, Theme | **Alle Pages** |
+| `decade-compute.js` | 495 | `calculations_decade.py` + `generate_decade_data.py` | `fromPrices`, `computeDrawdown`, `computePercentile`, `computeRollingVola` | Dekadenzyklus |
+| `seasonal-compute.js` | 446 | `calculations.py` + `central_banks.py` | `analyzeTurnOfMonth`, `analyzeMoonEffect`, `getMoonDates`, `isSupermoon`, `buildMonthlyStats`, `buildTOMHeatmap`, `calcWindowOptimization`, `getPresidentialCycleYear` | Monatswechsel, Mondphasen, *+4 Pages* |
+| `streak-analysis.js` | 114 | `streak_analysis.py` | `computeStreaksFromList`, `currentStreak`, `renderStreakTable` | Monatswechsel, Mondphasen, *+2 Pages* |
+| `significance.js` | 243 | `significance_gauge.py` | `runSignificanceTest` (t-Test, Cohen's d, Relevanz), `renderSection` (CSS Gauges), `scoreToColor` | Monatswechsel, Mondphasen, *+3 Pages* |
+| `indicators.js` | 306 | `indicators.py` + `indicator_filter_ui.py` | `calcSMA/EMA/RSI/Bollinger/MACD/LBR`, `applyFilter`, `renderFilterUI`, `REGISTRY` | Monatswechsel, Mondphasen, *+3 Pages* |
+| `outlier.js` | 123 | `outlier_manager.py` | `detectIQR`, `winsorize`, `filterCurves`, `renderFilterUI` | Monatswechsel, Mondphasen, *+3 Pages* |
+
+### Fertige HTML-Pages
+| Page | URL | Module genutzt |
+|------|-----|---------------|
+| Dekadenzyklus | `/dekadenzyklus` | app, charts, decade-compute |
+| Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier |
+| Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier |
+
+### Migrations-Reihenfolge (naechste Pages)
+| # | Page | Zeilen | Charts | Neue Module noetig | Status |
+|---|------|--------|--------|-------------------|--------|
+| 4 | Kriegszeiten | 403 | 6 | keine (Event-Window = analyzeMoonEffect Pattern) | naechste |
+| 5 | Plain Vanilla | 457 | 4 | `strategy-compute.js` (Equity, Stats, Trades) | |
 | 6 | Trifecta | 849 | 8 | nutzt strategy-compute | |
-| 7 | Crash-Fruehw. | 146 | 2 | — | |
-| 8 | Shock Analyzer | 295 | 6 | — | |
-| 9 | Sector Rotation | 300 | 6 | — | |
-| 10 | TDOM Analyse | 507 | 8 | — | |
-| 11 | Overnight | 462 | 6 | — | |
-| 12 | Jahreszyklus | 1595 | 20 | `annotations.js` | |
-| 13 | Monatszyklus | 1412 | 26 | nutzt yearly-compute | |
-| 14 | Wochentage | 1670 | 29 | nutzt alle Module | |
-
-### JS-Modul → Python-Quelle Mapping
-| JS-Modul | Python-Quelle | Kern-Funktionen |
-|----------|---------------|-----------------|
-| `app.js` ✅ | — | initTickerInput, fetchAllPrices, Supabase |
-| `charts.js` ✅ | `shared/charts.py` | lineChart, barChart, heatmapChart |
-| `decade-compute.js` ✅ | `shared/calculations_decade.py` | fromPrices, computeDrawdown |
-| `seasonal-compute.js` | `shared/calculations.py` | buildYearData, seasonalAverage, analyzeTOM, presidentialCycle |
-| `streak-analysis.js` | `shared/streak_analysis.py` | computeStreaks, renderStreakTable |
-| `significance.js` | `shared/significance_gauge.py` | runTTest, cohensD |
-| `annotations.js` | `shared/we_are_here.py` | weAreHere, vline, rect |
+| 7 | Crash-Fruehw. | 146 | 2 | keine | |
+| 8-11 | Disabled Pages | 300-500 | 6-8 | keine | |
+| 12 | Jahreszyklus | 1595 | 20 | `annotations.js` (we-are-here) | |
+| 13 | Monatszyklus | 1412 | 26 | nutzt alle | |
+| 14 | Wochentage | 1670 | 29 | nutzt alle | |
 
 ### Portierungs-Vorgehen
 1. Python-Datei lesen, Streamlit-Code ignorieren
 2. Reine Berechnungslogik 1:1 nach JS uebersetzen
 3. DataFrame → Array of Objects, NumPy → Array-Ops
 4. Gleiche Funktionsnamen + Parameter-Reihenfolge
+5. Wiederverwendbare Module in `landing/js/` ablegen
 
 ## Offene TODOs
 
