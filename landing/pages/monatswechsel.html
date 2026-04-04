@@ -386,14 +386,14 @@
         series:series,
         chart:Object.assign({type:'heatmap',height:420},SA.chartTheme.chart),
         plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
-          {from:-99,to:-2,color:'#6b0f0f'},{from:-2,to:-1,color:'#8b1a1a'},
-          {from:-1,to:-0.3,color:'#6b3030'},{from:-0.3,to:0.3,color:'#2a2a2a'},
-          {from:0.3,to:1,color:'#1a4a2a'},{from:1,to:2,color:'#1a6b35'},
-          {from:2,to:99,color:'#0f6b2f'}
+          {from:-99,to:-2,color:'#6b0f0f',name:'< -2%'},{from:-2,to:-1,color:'#8b1a1a',name:'-2% \u2013 -1%'},
+          {from:-1,to:-0.3,color:'#6b3030',name:'-1% \u2013 -0.3%'},{from:-0.3,to:0.3,color:'#2a2a2a',name:'\u00B10.3%'},
+          {from:0.3,to:1,color:'#1a4a2a',name:'0.3% \u2013 1%'},{from:1,to:2,color:'#1a6b35',name:'1% \u2013 2%'},
+          {from:2,to:99,color:'#0f6b2f',name:'> 2%'}
         ]}}},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}}},
-        dataLabels:{enabled:true,style:{fontSize:'9px',colors:['#e0e0e0']},formatter:function(v){return v!==0?v.toFixed(1):''}},
+        dataLabels:{enabled:true,style:{fontSize:'9px',colors:['#e0e0e0']},formatter:function(v){return v!==0?v.toFixed(1)+'%':''}},
         title:{text:'TOM-Rendite: Monat \u00D7 Jahr \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.heatmap.render();
@@ -423,13 +423,13 @@
         series:series,
         chart:Object.assign({type:'heatmap',height:320},SA.chartTheme.chart),
         plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
-          {from:-99,to:-0.3,color:'#6b0f0f'},{from:-0.3,to:0,color:'#6b3030'},
-          {from:0,to:0.3,color:'#2a2a2a'},{from:0.3,to:0.6,color:'#1a4a2a'},
-          {from:0.6,to:99,color:'#0f6b2f'}
+          {from:-99,to:-0.3,color:'#6b0f0f',name:'< -0.3%'},{from:-0.3,to:0,color:'#6b3030',name:'-0.3% \u2013 0%'},
+          {from:0,to:0.3,color:'#2a2a2a',name:'0% \u2013 0.3%'},{from:0.3,to:0.6,color:'#1a4a2a',name:'0.3% \u2013 0.6%'},
+          {from:0.6,to:99,color:'#0f6b2f',name:'> 0.6%'}
         ]}}},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'}}},
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(2)}},
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(2)+'%'}},
         title:{text:'Window-Optimierung: \u00D8 Rendite je Fenster \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.windowOpt.render();
