@@ -340,6 +340,45 @@ UPPER_CASE        → Konstanten
 - Erledigte + offene TODOs mit Datum
 - Kritische Regeln (Import-Verbote, Styling, Architektur)
 
+## HTML-Migration Plan (Landing Pages)
+
+Streamlit → statisches HTML. Jede Page baut ein wiederverwendbares JS-Modul.
+
+### Migrations-Reihenfolge
+| # | Page | Zeilen | Charts | Baut Modul | Status |
+|---|------|--------|--------|-----------|--------|
+| 1 | Dekadenzyklus | 853 | 12 | `decade-compute.js` | ✅ |
+| 2 | Monatswechsel | 516 | 8 | `seasonal-compute.js` + `streak-analysis.js` | naechste |
+| 3 | Mondphasen | 623 | 8 | `significance.js` | |
+| 4 | Kriegszeiten | 403 | 6 | nutzt Event-Window | |
+| 5 | Plain Vanilla | 457 | 4 | `strategy-compute.js` | |
+| 6 | Trifecta | 849 | 8 | nutzt strategy-compute | |
+| 7 | Crash-Fruehw. | 146 | 2 | — | |
+| 8 | Shock Analyzer | 295 | 6 | — | |
+| 9 | Sector Rotation | 300 | 6 | — | |
+| 10 | TDOM Analyse | 507 | 8 | — | |
+| 11 | Overnight | 462 | 6 | — | |
+| 12 | Jahreszyklus | 1595 | 20 | `annotations.js` | |
+| 13 | Monatszyklus | 1412 | 26 | nutzt yearly-compute | |
+| 14 | Wochentage | 1670 | 29 | nutzt alle Module | |
+
+### JS-Modul → Python-Quelle Mapping
+| JS-Modul | Python-Quelle | Kern-Funktionen |
+|----------|---------------|-----------------|
+| `app.js` ✅ | — | initTickerInput, fetchAllPrices, Supabase |
+| `charts.js` ✅ | `shared/charts.py` | lineChart, barChart, heatmapChart |
+| `decade-compute.js` ✅ | `shared/calculations_decade.py` | fromPrices, computeDrawdown |
+| `seasonal-compute.js` | `shared/calculations.py` | buildYearData, seasonalAverage, analyzeTOM, presidentialCycle |
+| `streak-analysis.js` | `shared/streak_analysis.py` | computeStreaks, renderStreakTable |
+| `significance.js` | `shared/significance_gauge.py` | runTTest, cohensD |
+| `annotations.js` | `shared/we_are_here.py` | weAreHere, vline, rect |
+
+### Portierungs-Vorgehen
+1. Python-Datei lesen, Streamlit-Code ignorieren
+2. Reine Berechnungslogik 1:1 nach JS uebersetzen
+3. DataFrame → Array of Objects, NumPy → Array-Ops
+4. Gleiche Funktionsnamen + Parameter-Reihenfolge
+
 ## Offene TODOs
 
 - [x] **PRIO 1: Pages auf Supabase-Daten umstellen (statt Yahoo-Live-Fetch)** (2026-04-01)
