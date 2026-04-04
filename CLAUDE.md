@@ -403,8 +403,9 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
 | Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
 | Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
 | Kriegszeiten | `/kriegszeiten` | app, charts, seasonal-compute | `computeEventWindow`, `smooth`, `toPairs`, Monatslabel-Formatter, Min-HT-Filter |
-| Crash-Fruehwarnung | `/crash-fruehwarnung` | app, charts | `computeRegime` (Composite Score, Percentile-Ranking, Ampel) |
-| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, strategy-compute | Lazy Calc, Kategorie-Tabs, Equity-Chart, Trade-Tabelle |
+| Crash-Frühwarnung | `/crash-fruehwarnung` | app, charts | Regime-Scores aus Supabase (IF), JS-Fallback, Risk-Score Backtest-Chart |
+| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, strategy-compute | 22 Strategien, Equity mit High/Low/Aktuell Annotations, Trade-Tabelle |
+| Trifecta | `/trifecta` | app, charts, seasonal-compute | Ampel (SCR+FFD+JanB), Durchschnittsverlauf, DD-KPIs, Jahresrendite-Bar |
 
 ### Migrations-Reihenfolge (naechste Pages)
 | # | Page | Zeilen | Charts | Neue Module noetig | Status |
@@ -412,7 +413,8 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
 | 4 | Kriegszeiten | 403→640 | 5+Tabelle | keine (Event-Window inline) | ✅ fertig |
 | 5 | Crash-Fruehw. | 146→281 | 1+Ampel | keine (Regime-Score inline) | ✅ fertig |
 | 6 | Plain Vanilla | 457→329+672 | 1+Karten | `strategy-compute.js` (22 Strategien) | ✅ fertig |
-| 7 | Trifecta | 849 | 8 | nutzt strategy-compute | naechste |
+| 7 | Trifecta | 849→382 | 2+Ampel | Trifecta-Logik inline (SCR/FFD/JanB) | ✅ fertig |
+| 8 | Disabled Pages | 300-500 | 6-8 | keine | naechste |
 | 8-11 | Disabled Pages | 300-500 | 6-8 | keine | |
 | 12 | Jahreszyklus | 1595 | 20 | `annotations.js` (we-are-here), smooth aus seasonal-compute | |
 | 13 | Monatszyklus | 1412 | 26 | nutzt alle + Monatslabel-Formatter | |
@@ -681,9 +683,13 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
       Isolation Forest Scores aus Supabase, JS-Fallback, Stale-Warning, dynamische Y-Achse.
 - [x] Plain Vanilla Strategien HTML-Page + strategy-compute.js (2026-04-04)
       22 Strategien, Equity-Chart mit High/Low/Aktuell Annotations, Trade-Tabelle, 6 Kategorie-Tabs.
+- [x] Januar Trifecta HTML-Page (2026-04-04)
+      Ampel (SCR+FFD+JanB), Durchschnittsverlauf nach Signal, DD-KPIs, Jahresrendite-Bar, Tabelle.
 - [x] Regime-Scores Backend: regime_scores Tabelle + compute_regime_scores.py (2026-04-04)
       Isolation Forest (sklearn), 8330 historische SPY-Scores, Nightly Refresh Phase E.
+- [x] nginx-Routen: fix_nginx_routes.sh Script fuer neue HTML-Pages (2026-04-04)
 - [x] curve:'smooth' → 'straight' global auf allen HTML-Pages + charts.js (2026-04-04)
+- [x] dataLabels:{enabled:false} global + High/Low/Aktuell Annotations (2026-04-04)
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
