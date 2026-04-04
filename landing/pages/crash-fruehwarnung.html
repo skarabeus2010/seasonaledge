@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Crash-Fr&uuml;hwarnung &mdash; SeasonAlpha</title>
-  <meta name="description" content="KI-basierte Crash-Fr&uuml;hwarnung: Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY). Ampelsystem mit Risk-Score.">
-  <meta property="og:title" content="Crash-Fr&uuml;hwarnung &mdash; SeasonAlpha">
+  <title>Crash-Frühwarnung &mdash; SeasonAlpha</title>
+  <meta name="description" content="Crash-Frühwarnung: Statistisches Markt-Regime-Scoring auf Basis des S&amp;P 500 (SPY). Ampelsystem mit Risk-Score aus Volatilität und Drawdown.">
+  <meta property="og:title" content="Crash-Frühwarnung &mdash; SeasonAlpha">
   <meta property="og:url" content="https://seasonalpha.ai/crash-fruehwarnung">
   <link rel="canonical" href="https://seasonalpha.ai/crash-fruehwarnung">
   <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
@@ -47,7 +47,7 @@
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Crash-Fr&uuml;hwarnung</b></h1>
+      <h1 class="page-title"><b>Crash-Frühwarnung</b></h1>
       <p class="page-caption" id="page-caption">Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY)</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
@@ -75,7 +75,7 @@
 
       <!-- Methodik -->
       <details>
-        <summary>So funktioniert die Crash-Fr&uuml;hwarnung</summary>
+        <summary>So funktioniert die Crash-Frühwarnung</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>
@@ -230,7 +230,7 @@
       var recent=rawRows.slice(-126);
       var series=[{
         name:'SPY',
-        data:recent.map(function(r){return{x:r.date,y:r.close}})
+        data:recent.map(function(r){return{x:new Date(r.date).getTime(),y:r.close}})
       }];
 
       if(charts.spy) charts.spy.destroy();
@@ -240,8 +240,9 @@
         stroke:{width:1.5,curve:'straight'},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.15,opacityTo:0.02,stops:[0,100]}},
         colors:[tl.color],
+        dataLabels:{enabled:false},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
-        xaxis:{type:'datetime',labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeFormatter:{month:'MMM',day:'dd. MMM'}}},
+        xaxis:{type:'datetime',tickAmount:8,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
         legend:{show:false},
         title:{text:'SPY \u2014 letzte 6 Monate',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
@@ -263,7 +264,7 @@
       // ── Methodik ──
       document.getElementById('content-methodik').innerHTML=
         '<h3>Methode: Statistisches Regime-Scoring</h3>'+
-        '<p>Die Crash-Fr\u00FChwarnung analysiert t\u00E4glich 7 Markt-Features des S&amp;P 500 (SPY):</p>'+
+        '<p>Die Crash-Frühwarnung analysiert t\u00E4glich 7 Markt-Features des S&amp;P 500 (SPY):</p>'+
         '<ul><li><b>Volatilit\u00E4t</b> (5d, 10d, 20d) \u2014 Standardabweichung der Tagesrenditen</li>'+
         '<li><b>Renditen</b> (1d, 5d, 20d) \u2014 kumulative Performance</li>'+
         '<li><b>Drawdown</b> \u2014 Abstand vom 20-Tage-Hoch</li></ul>'+
