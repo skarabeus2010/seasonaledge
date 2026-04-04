@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Turn of the Month Effekt &mdash; SeasonAlpha</title>
+  <meta name="description" content="Turn of the Month Effekt: Saisonale Analyse der Renditen um den Monatswechsel. Historische Daten, Heatmap, Streak-Analyse.">
+  <meta property="og:title" content="Monatswechsel &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/monatswechsel">
+  <link rel="canonical" href="https://seasonalpha.ai/monatswechsel">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .best-worst-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .best-worst-table th,.best-worst-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.04)}
+    .best-worst-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em}
+    .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .perf-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .perf-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Analysezeitraum</h3>
+      <select id="sel-period">
+        <option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>TOM-Fenster</h3>
+      <label>Tage vor Monatsende<br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
+      <label>Tage nach Monatswechsel<br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
+      <hr>
+      <label><input type="checkbox" id="chk-individual"> Einzelne Fenster zeigen</label>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Turn of the Month</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption">Lade Daten...</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- TOM Hauptchart -->
+      <div class="chart-box"><div id="chart-tom"></div></div>
+
+      <!-- KPI Cards -->
+      <details open>
+        <summary>Monatswechsel-Statistik</summary>
+        <div class="content"><div class="kpi-row" id="kpi-tom"></div><p class="box-info" id="kpi-info"></p></div>
+      </details>
+
+      <!-- Best & Worst -->
+      <details>
+        <summary>Bester &amp; Schlechtester Monatswechsel</summary>
+        <div class="content" id="content-best-worst"></div>
+      </details>
+
+      <!-- Monats-Performance -->
+      <details>
+        <summary>Performance pro Monat</summary>
+        <div class="content" id="content-monthly-perf"></div>
+      </details>
+
+      <!-- TOM Heatmap -->
+      <details open>
+        <summary>TOM Heatmap (Monat &times; Jahr)</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
+
+      <!-- Streak-Analyse -->
+      <details open>
+        <summary>Streak-Analyse (W/L-Serien pro Monat)</summary>
+        <div class="content" id="content-streaks"></div>
+      </details>
+
+      <!-- Window-Optimierung -->
+      <details>
+        <summary>Window-Optimierung (t-X bis t+Y)</summary>
+        <div class="content"><div id="chart-window-opt"></div><p class="box-info" id="window-opt-info"></p></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik" id="content-methodik"></div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
+  <script>
+  !function(){
+    var rawRows=null;
+    var currentTicker='';
+    var charts={};
+    var MN=SA.seasonal.MONTH_NAMES_DE;
+
+    function showLoading(msg){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(msg||'Lade...')+'</span>';el.style.display='flex'}
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(msg){var el=document.getElementById('error-banner');el.textContent=msg;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
+    function kpi(label,value,colorClass){var cls=colorClass?'kpi-value '+colorClass:'kpi-value';return'<div class="kpi"><div class="kpi-label">'+label+'</div><div class="'+cls+'">'+value+'</div></div>'}
+    function fmtPct(v){return(v>=0?'+':'')+v.toFixed(2)+'%'}
+    function clr(v){return v>=0?'green':'red'}
+
+    // ── Daten laden ──
+    function initialLoad(){
+      if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0){loadTicker('^DJI')}
+      else{document.getElementById('page-caption').textContent='Supabase nicht konfiguriert'}
+    }
+    initialLoad();
+
+    function loadTicker(ticker){
+      ticker=ticker.trim().toUpperCase();
+      if(!ticker||ticker===currentTicker)return;
+      showLoading('Lade '+ticker+'...');
+      SA.fetchAllPrices(ticker).then(function(rows){
+        if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten');return}
+        rows.forEach(function(r){r.close=parseFloat(r.close);if(r.log_return!=null)r.log_return=parseFloat(r.log_return)});
+        rawRows=rows;currentTicker=ticker;
+        renderAll();hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    // ── Sidebar Parameter ──
+    function getParams(){
+      var periodSel=document.getElementById('sel-period').value;
+      var yearsBack=periodSel==='max'?999:parseInt(periodSel);
+      var daysBefore=parseInt(document.getElementById('rng-before').value);
+      var daysAfter=parseInt(document.getElementById('rng-after').value);
+      var currentYear=new Date().getFullYear();
+      var allYears={};
+      rawRows.forEach(function(r){allYears[parseInt(r.date.substring(0,4))]=true});
+      var years=Object.keys(allYears).map(Number).sort(function(a,b){return a-b});
+      if(yearsBack<999)years=years.filter(function(y){return y>=currentYear-yearsBack});
+      return{daysBefore:daysBefore,daysAfter:daysAfter,years:years,months:[1,2,3,4,5,6,7,8,9,10,11,12]};
+    }
+
+    function renderAll(){
+      var p=getParams();
+      var tomResult=SA.seasonal.analyzeTurnOfMonth(rawRows,p.daysBefore,p.daysAfter,p.months,p.years);
+
+      // Header
+      document.getElementById('title-ticker').textContent=currentTicker;
+      document.getElementById('page-caption').textContent=p.years.length+' Jahre \u00B7 Fenster: t-'+p.daysBefore+' bis t+'+p.daysAfter+' \u00B7 Alle Monate';
+      var today=new Date();
+      document.getElementById('trading-day-header').textContent='Heute: '+today.toLocaleDateString('de-DE')+' \u00B7 '+currentTicker;
+
+      if(!tomResult){showError('Keine TOM-Daten');return}
+
+      renderTOMChart(tomResult,p);
+      renderKPI(tomResult);
+      renderBestWorst(tomResult);
+      renderMonthlyPerf();
+      renderHeatmap(tomResult);
+      renderStreaks(tomResult);
+      renderWindowOpt(p);
+      renderMethodik(p);
+    }
+
+    // ── TOM Hauptchart ──
+    function renderTOMChart(tom,p){
+      var series=[];
+      // Einzelne Fenster
+      if(document.getElementById('chk-individual').checked){
+        for(var i=0;i<tom.all_curves.length;i++){
+          var c=tom.all_curves[i];
+          series.push({name:c.year+'/'+c.month,data:c.curve,color:'rgba(255,255,255,.08)'});
+        }
+      }
+      // Durchschnitt
+      series.push({name:'\u00D8 TOM ('+tom.stats.total_windows+' Fenster)',data:tom.avg_curve,color:'#00CED1'});
+
+      if(charts.tom)charts.tom.destroy();
+      var sw=series.map(function(s){return s.name.indexOf('\u00D8')>=0?3:0.5});
+      charts.tom=new ApexCharts(document.getElementById('chart-tom'),{
+        series:series,
+        chart:Object.assign({type:'line',height:420},SA.chartTheme.chart),
+        stroke:{width:sw,curve:'smooth'},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        annotations:{
+          xaxis:[{x:p.daysBefore,borderColor:'#e8a820',strokeDashArray:3,label:{text:'t0 (letzter HT)',style:{color:'#e8a820',fontSize:'10px',background:'rgba(0,0,0,.8)'}}}],
+          yaxis:[{y:0,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]
+        },
+        xaxis:{categories:tom.labels,labels:{style:{colors:'#a89878',fontSize:'11px'}}},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(2)+'%'}}},
+        legend:Object.assign({},SA.chartTheme.legend,{show:series.length<=3}),
+        title:{text:currentTicker+' \u2014 Turn of the Month (t-'+p.daysBefore+' bis t+'+p.daysAfter+')',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.tom.render();
+    }
+
+    // ── KPI Cards ──
+    function renderKPI(tom){
+      var s=tom.stats;
+      document.getElementById('kpi-tom').innerHTML=
+        kpi('Win-Rate',s.win_rate.toFixed(1)+'%',s.win_rate>=50?'green':'red')+
+        kpi('\u00D8 Rendite',fmtPct(s.avg_return),clr(s.avg_return))+
+        kpi('Median',fmtPct(s.median_return),clr(s.median_return))+
+        kpi('Max Gewinn',fmtPct(s.max_gain),'green')+
+        kpi('Max Verlust',fmtPct(s.max_loss),'red');
+      document.getElementById('kpi-info').textContent=
+        'Basierend auf '+s.total_windows+' Fenstern \u00B7 '+s.winning+' Gewinner / '+s.losing+' Verlierer \u00B7 Std.Abw: '+s.std_dev.toFixed(2)+'%';
+    }
+
+    // ── Best & Worst ──
+    function renderBestWorst(tom){
+      var b=tom.best,w=tom.worst;
+      var monthLabel=function(m){return MN[m-1]||'?'};
+      document.getElementById('content-best-worst').innerHTML=
+        '<table class="best-worst-table"><tr><th></th><th>Jahr</th><th>Monat</th><th>Rendite</th></tr>'+
+        '<tr><td style="color:var(--green);font-weight:700">\uD83C\uDFC6 Bester</td><td>'+b.year+'</td><td>'+monthLabel(b.month)+' \u2192 '+monthLabel(b.month%12+1)+'</td><td style="color:var(--green);font-weight:700">'+fmtPct(b.total_return)+'</td></tr>'+
+        '<tr><td style="color:var(--red);font-weight:700">\u26A0 Schlechtester</td><td>'+w.year+'</td><td>'+monthLabel(w.month)+' \u2192 '+monthLabel(w.month%12+1)+'</td><td style="color:var(--red);font-weight:700">'+fmtPct(w.total_return)+'</td></tr>'+
+        '</table>';
+    }
+
+    // ── Monats-Performance Tabelle ──
+    function renderMonthlyPerf(){
+      var stats=SA.seasonal.buildMonthlyStats(rawRows);
+      var html='<table class="perf-table"><tr><th>Monat</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Beste</th><th>Schlecht.</th><th>n</th></tr>';
+      for(var i=0;i<stats.length;i++){
+        var s=stats[i];
+        html+='<tr><td>'+MN[s.month-1]+'</td>';
+        html+='<td style="color:'+(s.avg>=0?'var(--green)':'var(--red)')+'">'+fmtPct(s.avg)+'</td>';
+        html+='<td style="color:'+(s.median>=0?'var(--green)':'var(--red)')+'">'+fmtPct(s.median)+'</td>';
+        html+='<td>'+s.winRate.toFixed(0)+'%</td>';
+        html+='<td style="color:var(--green)">'+fmtPct(s.maxGain)+'</td>';
+        html+='<td style="color:var(--red)">'+fmtPct(s.maxLoss)+'</td>';
+        html+='<td>'+s.n+'</td></tr>';
+      }
+      html+='</table>';
+      document.getElementById('content-monthly-perf').innerHTML=html;
+    }
+
+    // ── Heatmap ──
+    function renderHeatmap(tom){
+      var hm=SA.seasonal.buildTOMHeatmap(tom,10);
+      if(!hm)return;
+      var series=[];
+      for(var mi=11;mi>=0;mi--){
+        series.push({name:hm.months[mi],data:hm.years.map(function(y,yi){return{x:' '+y+' ',y:hm.matrix[mi][yi]!==null?hm.matrix[mi][yi]:0}})});
+      }
+      if(charts.heatmap)charts.heatmap.destroy();
+      charts.heatmap=new ApexCharts(document.getElementById('chart-heatmap'),{
+        series:series,
+        chart:Object.assign({type:'heatmap',height:420},SA.chartTheme.chart),
+        plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
+          {from:-99,to:-2,color:'#6b0f0f'},{from:-2,to:-1,color:'#8b1a1a'},
+          {from:-1,to:-0.3,color:'#6b3030'},{from:-0.3,to:0.3,color:'#2a2a2a'},
+          {from:0.3,to:1,color:'#1a4a2a'},{from:1,to:2,color:'#1a6b35'},
+          {from:2,to:99,color:'#0f6b2f'}
+        ]}}},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        xaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}}},
+        dataLabels:{enabled:true,style:{fontSize:'9px',colors:['#e0e0e0']},formatter:function(v){return v!==0?v.toFixed(1):''}},
+        title:{text:'TOM-Rendite: Monat \u00D7 Jahr \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.heatmap.render();
+    }
+
+    // ── Streak-Analyse ──
+    function renderStreaks(tom){
+      // Label-Map: Monat → "Januar → Februar"
+      var labelMap={};
+      for(var m=1;m<=12;m++){
+        labelMap[m]=MN[m-1]+' \u2192 '+MN[m%12];
+      }
+      var groups=SA.streaks.computeStreaksFromList(tom.all_curves,'month','total_return','year',labelMap);
+      document.getElementById('content-streaks').innerHTML=SA.streaks.renderStreakTable(groups,'Monatswechsel',10);
+    }
+
+    // ── Window-Optimierung ──
+    function renderWindowOpt(p){
+      var opt=SA.seasonal.calcWindowOptimization(rawRows,p.months,p.years,7);
+      // Heatmap: Zeilen = daysBefore (1-7), Spalten = daysAfter (1-7)
+      var series=[];
+      for(var db=6;db>=0;db--){
+        series.push({name:'t-'+(db+1),data:[1,2,3,4,5,6,7].map(function(da){return{x:'t+'+(da),y:opt.matrix[db][da-1]}})});
+      }
+      if(charts.windowOpt)charts.windowOpt.destroy();
+      charts.windowOpt=new ApexCharts(document.getElementById('chart-window-opt'),{
+        series:series,
+        chart:Object.assign({type:'heatmap',height:320},SA.chartTheme.chart),
+        plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
+          {from:-99,to:-0.3,color:'#6b0f0f'},{from:-0.3,to:0,color:'#6b3030'},
+          {from:0,to:0.3,color:'#2a2a2a'},{from:0.3,to:0.6,color:'#1a4a2a'},
+          {from:0.6,to:99,color:'#0f6b2f'}
+        ]}}},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        xaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'}}},
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(2)}},
+        title:{text:'Window-Optimierung: \u00D8 Rendite je Fenster \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.windowOpt.render();
+      document.getElementById('window-opt-info').innerHTML=
+        '<b>Bestes Fenster:</b> t-'+opt.bestBefore+' bis t+'+opt.bestAfter+' mit <b style="color:var(--green)">'+fmtPct(opt.bestReturn)+'</b> \u00D8-Rendite pro Monatswechsel.';
+    }
+
+    // ── Methodik ──
+    function renderMethodik(p){
+      document.getElementById('content-methodik').innerHTML=
+        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq)</li><li><b>Zeitraum:</b> '+p.years[0]+'\u2013'+p.years[p.years.length-1]+' ('+p.years.length+' Jahre)</li></ul>'+
+        '<h3>Turn of the Month (TOM)</h3><ul><li><b>Fenster:</b> t-'+p.daysBefore+' bis t+'+p.daysAfter+' ('+p.daysBefore+' Tage vor + '+p.daysAfter+' Tage nach Monatswechsel)</li><li><b>t0:</b> Letzter Handelstag des Monats</li><li><b>Rendite:</b> Kumulierte Log-Returns, normiert auf t0 = 0%</li></ul>'+
+        '<h3>Heatmap</h3><ul><li>TOM-Rendite pro Monat \u00D7 Jahr (letzte 10 Jahre)</li></ul>'+
+        '<h3>Window-Optimierung</h3><ul><li>7\u00D77 Matrix: Alle Kombinationen t-1..t-7 \u00D7 t+1..t+7</li><li>Zeigt welches Fenster historisch die beste \u00D8-Rendite hatte</li></ul>';
+    }
+
+    // ── Sidebar Events ──
+    document.getElementById('rng-before').addEventListener('input',function(){document.getElementById('lbl-before').textContent=this.value});
+    document.getElementById('rng-after').addEventListener('input',function(){document.getElementById('lbl-after').textContent=this.value});
+    document.getElementById('rng-before').addEventListener('change',function(){if(rawRows)renderAll()});
+    document.getElementById('rng-after').addEventListener('change',function(){if(rawRows)renderAll()});
+    document.getElementById('sel-period').addEventListener('change',function(){if(rawRows)renderAll()});
+    document.getElementById('chk-individual').addEventListener('change',function(){if(rawRows)renderAll()});
+
+    SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+  }();
+  </script>
+</body>
+</html>

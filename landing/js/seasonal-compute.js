@@ -1,0 +1,274 @@
+/**
+ * SeasonAlpha — Seasonal Compute (Port von shared/calculations.py)
+ * =================================================================
+ * Kern-Berechnungen fuer saisonale Analysen.
+ * Wird von: Monatswechsel, Mondphasen, Jahreszyklus, Monatszyklus, Wochentage genutzt.
+ */
+
+var SA = window.SA || {};
+
+SA.seasonal = {
+
+  MONTH_NAMES_DE: ['Januar','Februar','M\u00E4rz','April','Mai','Juni',
+                   'Juli','August','September','Oktober','November','Dezember'],
+
+  /**
+   * Praesidentenzyklus-Position (1:1 Port von get_presidential_cycle_year)
+   * @param {number} year
+   * @returns {string}
+   */
+  getPresidentialCycleYear: function(year) {
+    var pos = ((year - 2024) % 4 + 4) % 4; // Sicher positiv
+    if (pos === 0) return 'Year 4 (Election Year)';
+    if (pos === 1) return 'Year 1 (Post-Election)';
+    if (pos === 2) return 'Year 2 (Midterm Election)';
+    return 'Year 3 (Pre-Election)';
+  },
+
+  /**
+   * Turn-of-Month Analyse (1:1 Port von analyze_turn_of_month)
+   * @param {Array} rows - [{date, close, log_return, ...}] sortiert nach Datum
+   * @param {number} daysBefore - Handelstage vor Monatsende (default 3)
+   * @param {number} daysAfter - Handelstage nach Monatswechsel (default 3)
+   * @param {Array} selectedMonths - [1..12] oder null fuer alle
+   * @param {Array} selectedYears - [2000, 2001, ...] oder null fuer alle
+   * @returns {Object|null} {avg_curve, all_curves, labels, stats, best, worst}
+   */
+  analyzeTurnOfMonth: function(rows, daysBefore, daysAfter, selectedMonths, selectedYears) {
+    daysBefore = daysBefore || 3;
+    daysAfter = daysAfter || 3;
+    var windowSize = daysBefore + 1 + daysAfter;
+
+    // Nach Jahr+Monat gruppieren
+    var ymGroups = {};
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var y = parseInt(r.date.substring(0, 4));
+      var m = parseInt(r.date.substring(5, 7));
+      var key = y + '-' + m;
+      if (!ymGroups[key]) ymGroups[key] = { year: y, month: m, rows: [] };
+      ymGroups[key].rows.push(r);
+    }
+
+    var allCurves = [];
+
+    var keys = Object.keys(ymGroups).sort();
+    for (var ki = 0; ki < keys.length - 1; ki++) {
+      var cur = ymGroups[keys[ki]];
+      var nxt = ymGroups[keys[ki + 1]];
+
+      // Filter: ausgewaehlte Monate
+      if (selectedMonths && selectedMonths.indexOf(cur.month) < 0) continue;
+      // Filter: ausgewaehlte Jahre
+      if (selectedYears && selectedYears.indexOf(cur.year) < 0) continue;
+
+      // Pre-Window: letzte (daysBefore + 1) Tage des aktuellen Monats
+      var pre = cur.rows.slice(-(daysBefore + 1));
+      if (pre.length < daysBefore + 1) continue;
+
+      // Post-Window: erste daysAfter Tage des naechsten Monats
+      var post = nxt.rows.slice(0, daysAfter);
+      if (post.length < daysAfter) continue;
+
+      // Fenster zusammenbauen
+      var window = pre.concat(post);
+      if (window.length !== windowSize) continue;
+
+      // Log-Returns extrahieren und kumulieren
+      var logRets = [];
+      for (var wi = 1; wi < window.length; wi++) {
+        var lr = window[wi].log_return != null
+          ? window[wi].log_return
+          : (window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0);
+        logRets.push(lr);
+      }
+
+      // Kumulative Kurve (normiert auf t0 = 0%)
+      var cumLog = [0];
+      for (var ci = 0; ci < logRets.length; ci++) {
+        cumLog.push(cumLog[ci] + logRets[ci]);
+      }
+      // In Prozent umrechnen: 100 * (exp(cumLog) - 1)
+      var rawCurve = cumLog.map(function(v) { return (Math.exp(v) - 1) * 100; });
+
+      // Normierung auf t0 (letzter Handelstag des Monats)
+      var t0Idx = daysBefore;
+      var t0Val = rawCurve[t0Idx];
+      var curve = rawCurve.map(function(v) { return Math.round((v - t0Val) * 100) / 100; });
+
+      var totalReturn = curve[curve.length - 1] - curve[0];
+
+      allCurves.push({
+        year: cur.year,
+        month: cur.month,
+        curve: curve,
+        total_return: Math.round(totalReturn * 100) / 100
+      });
+    }
+
+    if (allCurves.length === 0) return null;
+
+    // Durchschnittskurve
+    var avgCurve = new Array(windowSize).fill(0);
+    for (var ai = 0; ai < allCurves.length; ai++) {
+      for (var aj = 0; aj < windowSize; aj++) {
+        avgCurve[aj] += (allCurves[ai].curve[aj] || 0);
+      }
+    }
+    avgCurve = avgCurve.map(function(v) { return Math.round(v / allCurves.length * 100) / 100; });
+
+    // Labels: t-3, t-2, t-1, t0, t+1, t+2, t+3
+    var labels = [];
+    for (var li = -daysBefore; li <= daysAfter; li++) {
+      labels.push(li === 0 ? 't0' : (li < 0 ? 't' + li : 't+' + li));
+    }
+
+    // Statistiken
+    var returns = allCurves.map(function(c) { return c.total_return; });
+    returns.sort(function(a, b) { return a - b; });
+    var sum = returns.reduce(function(s, v) { return s + v; }, 0);
+    var avg = sum / returns.length;
+    var med = returns[Math.floor(returns.length / 2)];
+    var winning = returns.filter(function(r) { return r > 0; }).length;
+    var variance = returns.reduce(function(s, v) { return s + (v - avg) * (v - avg); }, 0) / returns.length;
+
+    // Best/Worst
+    var best = allCurves[0], worst = allCurves[0];
+    for (var bi = 1; bi < allCurves.length; bi++) {
+      if (allCurves[bi].total_return > best.total_return) best = allCurves[bi];
+      if (allCurves[bi].total_return < worst.total_return) worst = allCurves[bi];
+    }
+
+    return {
+      avg_curve: avgCurve,
+      all_curves: allCurves,
+      labels: labels,
+      stats: {
+        avg_return: Math.round(avg * 100) / 100,
+        median_return: Math.round(med * 100) / 100,
+        win_rate: Math.round(winning / returns.length * 10000) / 100,
+        std_dev: Math.round(Math.sqrt(variance) * 100) / 100,
+        max_gain: Math.round(returns[returns.length - 1] * 100) / 100,
+        max_loss: Math.round(returns[0] * 100) / 100,
+        total_windows: allCurves.length,
+        winning: winning,
+        losing: returns.length - winning
+      },
+      best: { year: best.year, month: best.month, total_return: best.total_return },
+      worst: { year: worst.year, month: worst.month, total_return: worst.total_return }
+    };
+  },
+
+  /**
+   * Monatliche Performance-Statistiken
+   * @param {Array} rows - [{date, close}]
+   * @returns {Array} [{month, avg, median, winRate, maxGain, maxLoss, n}]
+   */
+  buildMonthlyStats: function(rows) {
+    var monthData = {};
+    for (var m = 1; m <= 12; m++) monthData[m] = [];
+
+    // Nach Jahr+Monat gruppieren, Monatsrendite berechnen
+    var ymGroups = {};
+    for (var i = 0; i < rows.length; i++) {
+      var y = parseInt(rows[i].date.substring(0, 4));
+      var m = parseInt(rows[i].date.substring(5, 7));
+      var key = y + '-' + m;
+      if (!ymGroups[key]) ymGroups[key] = { month: m, rows: [] };
+      ymGroups[key].rows.push(rows[i]);
+    }
+
+    for (var k in ymGroups) {
+      var g = ymGroups[k];
+      if (g.rows.length < 10) continue;
+      var first = g.rows[0].close;
+      var last = g.rows[g.rows.length - 1].close;
+      if (first > 0) {
+        monthData[g.month].push((last / first - 1) * 100);
+      }
+    }
+
+    var result = [];
+    for (var m = 1; m <= 12; m++) {
+      var rets = monthData[m];
+      if (rets.length === 0) {
+        result.push({ month: m, avg: 0, median: 0, winRate: 0, maxGain: 0, maxLoss: 0, n: 0 });
+        continue;
+      }
+      rets.sort(function(a, b) { return a - b; });
+      var sum = rets.reduce(function(s, v) { return s + v; }, 0);
+      var wins = rets.filter(function(r) { return r > 0; }).length;
+      result.push({
+        month: m,
+        avg: Math.round(sum / rets.length * 100) / 100,
+        median: Math.round(rets[Math.floor(rets.length / 2)] * 100) / 100,
+        winRate: Math.round(wins / rets.length * 1000) / 10,
+        maxGain: Math.round(rets[rets.length - 1] * 100) / 100,
+        maxLoss: Math.round(rets[0] * 100) / 100,
+        n: rets.length
+      });
+    }
+    return result;
+  },
+
+  /**
+   * TOM-Heatmap: Monat × Jahr Matrix
+   * @param {Object} tomResult - Ergebnis von analyzeTurnOfMonth
+   * @param {number} nYears - Letzte N Jahre anzeigen (default 10)
+   * @returns {Object} {years, months, matrix}
+   */
+  buildTOMHeatmap: function(tomResult, nYears) {
+    nYears = nYears || 10;
+    if (!tomResult || !tomResult.all_curves) return null;
+
+    // Alle (year, month) → return
+    var ymMap = {};
+    var allYears = {};
+    for (var i = 0; i < tomResult.all_curves.length; i++) {
+      var c = tomResult.all_curves[i];
+      ymMap[c.year + '-' + c.month] = c.total_return;
+      allYears[c.year] = true;
+    }
+    var years = Object.keys(allYears).map(Number).sort(function(a, b) { return a - b; });
+    years = years.slice(-nYears);
+
+    var matrix = [];
+    for (var mi = 0; mi < 12; mi++) {
+      var row = [];
+      for (var yi = 0; yi < years.length; yi++) {
+        var key = years[yi] + '-' + (mi + 1);
+        row.push(ymMap[key] !== undefined ? Math.round(ymMap[key] * 100) / 100 : null);
+      }
+      matrix.push(row);
+    }
+    return { years: years, months: SA.seasonal.MONTH_NAMES_DE.map(function(n) { return n.substring(0, 3); }), matrix: matrix };
+  },
+
+  /**
+   * Window-Optimierung: Matrix daysBefore × daysAfter → avg return
+   * @param {Array} rows
+   * @param {Array} selectedMonths
+   * @param {Array} selectedYears
+   * @param {number} maxWindow - max Fenster (default 7)
+   * @returns {Object} {matrix, bestBefore, bestAfter, bestReturn}
+   */
+  calcWindowOptimization: function(rows, selectedMonths, selectedYears, maxWindow) {
+    maxWindow = maxWindow || 7;
+    var matrix = [];
+    var bestReturn = -Infinity, bestBefore = 1, bestAfter = 1;
+
+    for (var db = 1; db <= maxWindow; db++) {
+      var row = [];
+      for (var da = 1; da <= maxWindow; da++) {
+        var result = SA.seasonal.analyzeTurnOfMonth(rows, db, da, selectedMonths, selectedYears);
+        var avg = result && result.stats ? result.stats.avg_return : 0;
+        row.push(Math.round(avg * 100) / 100);
+        if (avg > bestReturn) { bestReturn = avg; bestBefore = db; bestAfter = da; }
+      }
+      matrix.push(row);
+    }
+    return { matrix: matrix, bestBefore: bestBefore, bestAfter: bestAfter, bestReturn: Math.round(bestReturn * 100) / 100 };
+  }
+};
+
+window.SA = SA;
