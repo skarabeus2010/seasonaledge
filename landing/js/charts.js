@@ -83,7 +83,7 @@ SA.lineChart = function(elementId, series, opts) {
   var config = {
     series: series,
     chart: Object.assign({ type: 'line', height: opts.height || 420 }, SA.chartTheme.chart),
-    stroke: { width: opts.strokeWidth || 1.5, curve: 'smooth' },
+    stroke: { width: opts.strokeWidth || 1.5, curve: 'straight' },
     grid: SA.chartTheme.grid,
     tooltip: SA.chartTheme.tooltip,
     xaxis: Object.assign({
