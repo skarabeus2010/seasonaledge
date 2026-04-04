@@ -310,11 +310,11 @@
         title:{text:'\u00D8 Rendite: Monat \u00D7 Phase \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.heatmap.render();
-      // Hinweis
+      // Hinweis (nur einmal)
+      var oldHmInfo=document.getElementById('hm-phase-info');
+      if(oldHmInfo)oldHmInfo.remove();
       var hmInfo=document.getElementById('chart-heatmap');
-      if(hmInfo&&!hmInfo.nextElementSibling||hmInfo.nextElementSibling&&!hmInfo.nextElementSibling.classList.contains('hm-info')){
-        hmInfo.insertAdjacentHTML('afterend','<p class="hm-info" style="font-size:.75rem;color:var(--muted);margin-top:.25rem"><span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt den aktuellen Monat.</p>');
-      }
+      hmInfo.insertAdjacentHTML('afterend','<p id="hm-phase-info" style="font-size:.75rem;color:var(--muted);margin-top:.25rem"><span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt den aktuellen Monat.</p>');
     }
 
     function renderStreaks(mr){
@@ -488,15 +488,18 @@
         lmDates.push('LM '+lmNum+' = ab '+lmStart.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'}));
       }
 
+      // Alte Erklaerung entfernen falls vorhanden
+      var oldInfo=document.getElementById('lunar-info');
+      if(oldInfo)oldInfo.remove();
       var hmEl=document.getElementById('chart-lunar-heatmap');
-      hmEl.insertAdjacentHTML('afterend',
+      hmEl.insertAdjacentHTML('afterend','<div id="lunar-info">'+
         '<div style="margin-top:.75rem">'+
         '<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.5">'+
         '<b>Aktueller Mondmonat:</b> LM '+curLM+' \u00B7 Ein Mondmonat = 29.53 Tage (synodischer Zyklus). '+
         'Die 12 Mondmonate wiederholen sich unabh\u00E4ngig vom Sonnenkalender.<br>'+
         '<b>N\u00E4chste 6 Mondmonate:</b> '+lmDates.slice(0,6).join(' \u00B7 ')+'<br>'+
         '<span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt die aktuelle Position (Mondmonat \u00D7 Sonnenmonat).</p>'+
-        '</div>');
+        '</div></div>');
     }
 
     // ── Heatmap Zelle hervorheben (gelber Rahmen) ──
