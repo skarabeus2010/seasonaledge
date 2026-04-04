@@ -272,4 +272,173 @@ SA.seasonal = {
   }
 };
 
+  // ── Mondphasen (Port von shared/central_banks.py) ──
+
+  /** Bekannter Neumond + Synodischer Monat */
+  _KNOWN_NEW_MOON: new Date(2000, 0, 6, 18, 14), // 6. Jan 2000 UTC
+  _SYNODIC_MONTH: 29.530588853,
+  _ANOMALISTIC_MONTH: 27.554551,
+
+  /**
+   * Berechnet Voll-/Neumond-Daten (Meeus-Algorithmus, ±1 Tag).
+   * @param {number} startYear
+   * @param {number} endYear
+   * @param {string} filter - "full", "new", oder "all" (default)
+   * @returns {Array} [{date: "YYYY-MM-DD", phase: "full"/"new"}, ...]
+   */
+  getMoonDates: function(startYear, endYear, filter) {
+    filter = filter || 'all';
+    var results = [];
+    var known = SA.seasonal._KNOWN_NEW_MOON.getTime();
+    var syn = SA.seasonal._SYNODIC_MONTH;
+    var msPerDay = 86400000;
+
+    var startMs = new Date(startYear, 0, 1).getTime();
+    var endMs = new Date(endYear + 1, 0, 1).getTime();
+    var kStart = Math.floor((startMs - known) / (syn * msPerDay)) - 1;
+    var kEnd = Math.ceil((endMs - known) / (syn * msPerDay)) + 1;
+
+    for (var k = kStart; k <= kEnd; k++) {
+      // Neumond
+      var newMs = known + k * syn * msPerDay;
+      var newD = new Date(newMs);
+      var newY = newD.getFullYear();
+      if (newY >= startYear && newY <= endYear && filter !== 'full') {
+        results.push({ date: SA.seasonal._fmtDate(newD), phase: 'new' });
+      }
+      // Vollmond = Neumond + halber synodischer Monat
+      var fullMs = newMs + syn / 2 * msPerDay;
+      var fullD = new Date(fullMs);
+      var fullY = fullD.getFullYear();
+      if (fullY >= startYear && fullY <= endYear && filter !== 'new') {
+        results.push({ date: SA.seasonal._fmtDate(fullD), phase: 'full' });
+      }
+    }
+    results.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    // Duplikate entfernen
+    var seen = {};
+    return results.filter(function(r) { var k = r.date + r.phase; if (seen[k]) return false; seen[k] = true; return true; });
+  },
+
+  /** Supermond-Klassifizierung (Perigaeum-Naehe). */
+  isSupermoon: function(dateStr) {
+    var d = new Date(dateStr);
+    var deltaDays = (d.getTime() - SA.seasonal._KNOWN_NEW_MOON.getTime()) / 86400000;
+    var anomalyPhase = (deltaDays % SA.seasonal._ANOMALISTIC_MONTH) / SA.seasonal._ANOMALISTIC_MONTH;
+    if (anomalyPhase < 0) anomalyPhase += 1;
+    return anomalyPhase < 0.10 || anomalyPhase > 0.90;
+  },
+
+  /**
+   * Mondphasen-Effekt Analyse (Port von analyze_moon_effect).
+   * @param {Array} rows - [{date, close, log_return}] sortiert
+   * @param {Array} moonDates - [{date, phase}] von getMoonDates
+   * @param {number} daysBefore
+   * @param {number} daysAfter
+   * @returns {Object|null} {avg_curve, all_curves, labels, stats, best, worst}
+   */
+  analyzeMoonEffect: function(rows, moonDates, daysBefore, daysAfter) {
+    daysBefore = daysBefore || 5;
+    daysAfter = daysAfter || 5;
+    var windowSize = daysBefore + 1 + daysAfter;
+    var t0Idx = daysBefore;
+
+    // Index: date → position in rows
+    var dateIdx = {};
+    for (var i = 0; i < rows.length; i++) dateIdx[rows[i].date] = i;
+
+    var allCurves = [];
+
+    for (var mi = 0; mi < moonDates.length; mi++) {
+      var moon = moonDates[mi];
+      // t0 = Mondtag oder vorheriger Handelstag
+      var t0Pos = dateIdx[moon.date];
+      if (t0Pos === undefined) {
+        // Naechsten vorherigen Handelstag finden
+        for (var di = 0; di < rows.length; di++) {
+          if (rows[di].date <= moon.date) t0Pos = di;
+          else break;
+        }
+      }
+      if (t0Pos === undefined) continue;
+
+      var startPos = t0Pos - daysBefore;
+      var endPos = t0Pos + daysAfter + 1;
+      if (startPos < 0 || endPos > rows.length) continue;
+
+      var window = rows.slice(startPos, endPos);
+      if (window.length !== windowSize) continue;
+
+      // Log-Returns kumulieren (1:1 wie Python)
+      var logRets = [];
+      for (var wi = 0; wi < window.length; wi++) {
+        logRets.push(window[wi].log_return != null ? window[wi].log_return
+          : (wi > 0 && window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0));
+      }
+      var cumLog = [0];
+      for (var ci = 0; ci < logRets.length - 1; ci++) cumLog.push(cumLog[ci] + logRets[ci]);
+      var rawCurve = cumLog.map(function(v) { return 100 * Math.exp(v); });
+
+      var t0Val = rawCurve[t0Idx];
+      var curve = rawCurve.map(function(v) { return Math.round((v / t0Val - 1) * 10000) / 100; });
+      var totalReturn = curve[curve.length - 1] - curve[0];
+
+      allCurves.push({
+        year: parseInt(moon.date.substring(0, 4)),
+        date: moon.date,
+        phase: moon.phase,
+        curve: curve,
+        total_return: Math.round(totalReturn * 100) / 100
+      });
+    }
+
+    if (allCurves.length === 0) return null;
+
+    // Durchschnittskurve
+    var avgCurve = new Array(windowSize).fill(0);
+    for (var ai = 0; ai < allCurves.length; ai++)
+      for (var aj = 0; aj < windowSize; aj++) avgCurve[aj] += (allCurves[ai].curve[aj] || 0);
+    avgCurve = avgCurve.map(function(v) { return Math.round(v / allCurves.length * 100) / 100; });
+
+    // Labels
+    var labels = [];
+    for (var li = -daysBefore; li <= daysAfter; li++)
+      labels.push(li === 0 ? 't0' : (li < 0 ? 't' + li : 't+' + li));
+
+    // Statistiken
+    var returns = allCurves.map(function(c) { return c.total_return; });
+    returns.sort(function(a, b) { return a - b; });
+    var sum = returns.reduce(function(s, v) { return s + v; }, 0);
+    var avg = sum / returns.length;
+    var med = returns[Math.floor(returns.length / 2)];
+    var winning = returns.filter(function(r) { return r > 0; }).length;
+    var variance = returns.reduce(function(s, v) { return s + (v - avg) * (v - avg); }, 0) / returns.length;
+
+    var best = allCurves[0], worst = allCurves[0];
+    for (var bi = 1; bi < allCurves.length; bi++) {
+      if (allCurves[bi].total_return > best.total_return) best = allCurves[bi];
+      if (allCurves[bi].total_return < worst.total_return) worst = allCurves[bi];
+    }
+
+    return {
+      avg_curve: avgCurve, all_curves: allCurves, labels: labels,
+      stats: {
+        avg_return: Math.round(avg * 100) / 100, median_return: Math.round(med * 100) / 100,
+        win_rate: Math.round(winning / returns.length * 10000) / 100,
+        std_dev: Math.round(Math.sqrt(variance) * 100) / 100,
+        max_gain: Math.round(returns[returns.length - 1] * 100) / 100,
+        max_loss: Math.round(returns[0] * 100) / 100,
+        total_windows: allCurves.length, winning: winning, losing: returns.length - winning
+      },
+      best: best, worst: worst
+    };
+  },
+
+  _fmtDate: function(d) {
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+};
+
 window.SA = SA;
