@@ -53,7 +53,6 @@
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <hr>
-      <label><input type="checkbox" id="chk-individual"> Einzelne Fenster zeigen</label>
       <hr>
       <h3>Technische Filter</h3>
       <div id="indicator-filters"></div>
@@ -226,13 +225,14 @@
       // Indikator-Filter anwenden
       var filteredRows=rawRows;
       var indFilters=typeof getIndicatorFilters==='function'?getIndicatorFilters():[];
+      var badge=document.getElementById('ind_badge');
       if(indFilters.length>0){
         var closes=rawRows.map(function(r){return r.close});
         var mask=SA.indicators.applyFilter(closes,indFilters);
         filteredRows=rawRows.filter(function(_,i){return mask[i]});
-        // Badge anzeigen
-        var badge=document.getElementById('ind_badge');
         if(badge)badge.textContent=indFilters.length+' Filter aktiv: '+filteredRows.length+'/'+rawRows.length+' Tage ('+Math.round(filteredRows.length/rawRows.length*100)+'%)';
+      } else {
+        if(badge)badge.textContent='';
       }
 
       var tomResult=SA.seasonal.analyzeTurnOfMonth(filteredRows,p.daysBefore,p.daysAfter,p.months,p.years);
@@ -259,13 +259,6 @@
     // ── TOM Hauptchart ──
     function renderTOMChart(tom,p){
       var series=[];
-      // Einzelne Fenster
-      if(document.getElementById('chk-individual').checked){
-        for(var i=0;i<tom.all_curves.length;i++){
-          var c=tom.all_curves[i];
-          series.push({name:c.year+'/'+c.month,data:c.curve,color:'rgba(255,255,255,.08)'});
-        }
-      }
       // Durchschnitt
       series.push({name:'\u00D8 TOM ('+tom.stats.total_windows+' Fenster)',data:tom.avg_curve,color:'#00CED1'});
 
@@ -311,8 +304,11 @@
         var rets=tom.all_curves.filter(function(c){return c.month===m}).map(function(c){return c.total_return});
         if(rets.length>=5)groups[key]=rets;
       }
+      // Feste Reihenfolge: TOM Gesamt zuerst, dann Jan→Feb bis Dez→Jan
+      var sortOrder=['TOM Gesamt'];
+      for(var si=1;si<=12;si++)sortOrder.push(MN[si-1]+' \u2192 '+MN[si%12]);
       var results=SA.significance.runSignificanceTest(groups);
-      document.getElementById('content-significance').innerHTML=SA.significance.renderSection(results,4);
+      document.getElementById('content-significance').innerHTML=SA.significance.renderSection(results,4,sortOrder);
     }
 
     // ── Best & Worst ──
@@ -435,17 +431,17 @@
       var ranked=results.slice().sort(function(a,b){return b.avg-a.avg});
       var ranks=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49','#4'];
 
-      var html='<p style="text-align:center;font-size:.8125rem;margin-bottom:1rem">St\u00E4rkster TOM-Effekt: <b style="color:'+best.color+'">'+best.name+'</b> (\u00D8 '+fmtPct(best.avg)+', WR '+best.winRate.toFixed(0)+'%, n='+best.n+')</p>';
+      var html='<p style="text-align:center;font-size:1rem;margin-bottom:1rem">St\u00E4rkster TOM-Effekt: <b style="color:'+best.color+'">'+best.name+'</b> (\u00D8 '+fmtPct(best.avg)+', WR '+best.winRate.toFixed(0)+'%, n='+best.n+')</p>';
       html+='<div class="kpi-row">';
       for(var i=0;i<ranked.length;i++){
         var r=ranked[i];
         var rank=i<ranks.length?ranks[i]:'#'+(i+1);
         var curBorder=r.isCurrent?'border:2px solid #FFE600;box-shadow:0 0 12px rgba(255,230,0,.2)':'border-color:'+r.color;
-        var curTag=r.isCurrent?' <span style="color:#FFE600;font-size:.625rem">\u2B50 aktuell</span>':'';
-        html+='<div class="kpi" style="'+curBorder+'"><div class="kpi-label" style="color:'+r.color+'">'+rank+' '+r.name+curTag+'</div><div class="kpi-value '+clr(r.avg)+'">'+fmtPct(r.avg)+'</div><div class="kpi-label">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
+        var curTag=r.isCurrent?' <span style="color:#FFE600;font-size:.75rem">\u2B50 aktuell</span>':'';
+        html+='<div class="kpi" style="'+curBorder+';padding:1rem"><div class="kpi-label" style="color:'+r.color+';font-size:.875rem">'+rank+' '+r.name+curTag+'</div><div class="kpi-value '+clr(r.avg)+'" style="font-size:1.25rem">'+fmtPct(r.avg)+'</div><div class="kpi-label" style="font-size:.8125rem">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
       }
       html+='</div>';
-      html+='<p style="font-size:.75rem;color:var(--muted);margin-top:.75rem"><b>Interpretation:</b> TOM-Effekt aufgesplittet nach Pr\u00E4sidentenzyklus-Jahr. Pre-Election Years zeigen typischerweise den st\u00E4rksten Monatswechsel-Effekt durch erh\u00F6hte fiskalische Stimuli.</p>';
+      html+='<p style="font-size:.875rem;color:var(--dim);margin-top:1rem;line-height:1.6"><b>Interpretation:</b> TOM-Effekt aufgesplittet nach Pr\u00E4sidentenzyklus-Jahr. Pre-Election Years zeigen typischerweise den st\u00E4rksten Monatswechsel-Effekt durch erh\u00F6hte fiskalische Stimuli.</p>';
       document.getElementById('content-cycle').innerHTML=html;
     }
 
@@ -455,8 +451,6 @@
     document.getElementById('rng-before').addEventListener('change',function(){if(rawRows)renderAll()});
     document.getElementById('rng-after').addEventListener('change',function(){if(rawRows)renderAll()});
     document.getElementById('sel-period').addEventListener('change',function(){if(rawRows)renderAll()});
-    document.getElementById('chk-individual').addEventListener('change',function(){if(rawRows)renderAll()});
-
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
 
     // Indikator-Filter UI

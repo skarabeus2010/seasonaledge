@@ -107,9 +107,24 @@ SA.significance = {
    * @param {number} colsPerRow - Gauges pro Reihe (default 4)
    * @returns {string} HTML-String
    */
-  renderSection: function(results, colsPerRow) {
+  /**
+   * @param {Array} results
+   * @param {number} colsPerRow
+   * @param {Array} sortOrder - optionale feste Reihenfolge (Array von Namen)
+   */
+  renderSection: function(results, colsPerRow, sortOrder) {
     colsPerRow = colsPerRow || 4;
     if (!results || results.length === 0) return '';
+    // Feste Reihenfolge statt Relevanz-Sortierung
+    if (sortOrder) {
+      var orderMap = {};
+      for (var oi = 0; oi < sortOrder.length; oi++) orderMap[sortOrder[oi]] = oi;
+      results = results.slice().sort(function(a, b) {
+        var ia = orderMap[a.name] !== undefined ? orderMap[a.name] : 999;
+        var ib = orderMap[b.name] !== undefined ? orderMap[b.name] : 999;
+        return ia - ib;
+      });
+    }
 
     var html = '<div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">';
     for (var i = 0; i < results.length; i++) {
@@ -118,25 +133,23 @@ SA.significance = {
       var gaugeColor = SA.significance.scoreToColor(r.relevance);
       var avgColor = r.avg_return >= 0 ? '#00d4aa' : '#ff4757';
 
-      // Gauge als CSS-Halbkreis (kein Plotly noetig)
-      var pct = Math.round(r.relevance * 100);
       var deg = Math.round(r.relevance * 180);
 
-      html += '<div style="flex:1 1 ' + Math.floor(100 / colsPerRow - 2) + '%;min-width:140px;max-width:' + Math.floor(100 / colsPerRow) + '%;background:var(--card,#0a0a0e);border:1px solid var(--border,rgba(232,168,32,.1));border-radius:10px;padding:.75rem;text-align:center">';
+      html += '<div style="flex:1 1 ' + Math.floor(100 / colsPerRow - 2) + '%;min-width:170px;max-width:' + Math.floor(100 / colsPerRow) + '%;background:var(--card,#0a0a0e);border:1px solid var(--border,rgba(232,168,32,.1));border-radius:10px;padding:1rem;text-align:center">';
       // Name
-      html += '<div style="color:#c8d6e5;font-weight:600;font-size:.8125rem;margin-bottom:.5rem">' + r.name + '</div>';
-      // CSS Gauge (Halbkreis)
-      html += '<div style="position:relative;width:100px;height:55px;margin:0 auto;overflow:hidden">';
-      html += '<div style="width:100px;height:100px;border-radius:50%;background:conic-gradient(' + gaugeColor + ' 0deg,' + gaugeColor + ' ' + deg + 'deg,rgba(255,255,255,.06) ' + deg + 'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>';
-      html += '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70px;height:35px;border-radius:0 0 70px 70px;background:var(--card,#0a0a0e)"></div>';
-      html += '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1rem;font-weight:700;color:#fff;font-family:var(--f-m,monospace)">' + r.relevance.toFixed(2) + '</div>';
+      html += '<div style="color:#e8e0d0;font-weight:700;font-size:.9375rem;margin-bottom:.625rem">' + r.name + '</div>';
+      // CSS Gauge (Halbkreis — groesser, Tacho-Stil)
+      html += '<div style="position:relative;width:140px;height:75px;margin:0 auto;overflow:hidden">';
+      html += '<div style="width:140px;height:140px;border-radius:50%;background:conic-gradient(' + gaugeColor + ' 0deg,' + gaugeColor + ' ' + deg + 'deg,rgba(255,255,255,.06) ' + deg + 'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>';
+      html += '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100px;height:50px;border-radius:0 0 100px 100px;background:var(--card,#0a0a0e)"></div>';
+      html += '<div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:1.375rem;font-weight:700;color:#fff;font-family:var(--f-m,monospace)">' + r.relevance.toFixed(2) + '</div>';
       html += '</div>';
-      // Signifikanz-Label
-      html += '<div style="color:' + sig.color + ';font-weight:600;font-size:.6875rem;margin-top:.25rem">' + sig.text + '</div>';
-      // Stats
-      html += '<div style="color:#5a6e85;font-size:.625rem;margin-top:.25rem;font-family:var(--f-m,monospace)">';
+      // Signifikanz-Label (groesser, gut lesbar)
+      html += '<div style="color:' + sig.color + ';font-weight:700;font-size:.9375rem;margin-top:.5rem">' + sig.text + '</div>';
+      // Stats (weiss, groesser)
+      html += '<div style="color:#c8d6e5;font-size:.8125rem;margin-top:.375rem;font-family:var(--f-m,monospace);line-height:1.6">';
       html += 't=' + r.t_stat.toFixed(2) + '  p=' + r.p_value.toFixed(4);
-      html += '<br>\u00D8 ' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%  Win ' + r.win_rate.toFixed(0) + '%  n=' + r.n;
+      html += '<br><span style="color:' + avgColor + '">\u00D8 ' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</span>  Win ' + r.win_rate.toFixed(0) + '%  n=' + r.n;
       html += '</div></div>';
     }
     html += '</div>';
