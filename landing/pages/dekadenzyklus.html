@@ -215,38 +215,6 @@
     }
     initialLoad();
 
-    // ── Supabase Pagination: Alle Rows laden ──
-    function fetchAllPrices(ticker){
-      var allRows=[];
-      var batchSize=1000;
-      function fetchBatch(offset){
-        var q='ticker=eq.'+encodeURIComponent(ticker)+'&select=date,close,log_return,tdom,tdoy&order=date';
-        return fetch(SA.supabase.url+'/rest/v1/prices?'+q,{
-          headers:{
-            'apikey':SA.supabase.key,
-            'Authorization':'Bearer '+SA.supabase.key,
-            'Range':offset+'-'+(offset+batchSize-1),
-            'Prefer':'count=exact'
-          }
-        }).then(function(r){
-          var contentRange=r.headers.get('content-range'); // e.g. "0-999/5432"
-          return r.json().then(function(rows){
-            allRows=allRows.concat(rows);
-            // Pruefen ob es noch mehr Rows gibt
-            if(contentRange){
-              var parts=contentRange.split('/');
-              var total=parseInt(parts[1]);
-              if(allRows.length<total) return fetchBatch(allRows.length);
-            } else if(rows.length===batchSize){
-              return fetchBatch(allRows.length);
-            }
-            return allRows;
-          });
-        });
-      }
-      return fetchBatch(0);
-    }
-
     // ── Ticker wechseln ──
     function loadTicker(ticker){
       ticker=ticker.trim().toUpperCase();
@@ -256,7 +224,7 @@
       if(!SA.supabase.url){showError('Supabase nicht konfiguriert');return}
       showLoading('Lade '+ticker+' aus Datenbank...');
 
-      fetchAllPrices(ticker).then(function(rows){
+      SA.fetchAllPrices(ticker).then(function(rows){
         if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten ('+((rows&&rows.length)||0)+' Zeilen, min. 200 noetig)');return}
 
         // Numerische Werte sicherstellen
@@ -275,22 +243,6 @@
     }
 
     function init(){
-      // Ticker-Liste laden (statisches JSON) — nur einmal
-      if(!document.getElementById('ticker-list').children.length){
-        fetch('/landing/data/tickers.json')
-          .then(function(r){return r.json()})
-          .then(function(tickers){
-            var dl=document.getElementById('ticker-list');
-            if(dl&&tickers&&tickers.length){
-              tickers.forEach(function(t){
-                var opt=document.createElement('option');
-                opt.value=t.t;
-                opt.textContent=t.n+' ('+t.t+')';
-                dl.appendChild(opt);
-              });
-            }
-          }).catch(function(){});
-      }
 
       // Header
       document.getElementById('title-ticker').textContent=D.ticker;
@@ -896,13 +848,8 @@
     // Vola-Window Sync
     document.getElementById('vola-window').addEventListener('change',function(){renderVola()});
 
-    // Ticker-Wechsel (Enter oder Auswahl aus Datalist)
-    var tickerInput=document.getElementById('ticker-input');
-    tickerInput.addEventListener('focus',function(){this.select()});
-    tickerInput.addEventListener('keydown',function(e){
-      if(e.key==='Enter'){e.preventDefault();loadTicker(tickerInput.value)}
-    });
-    tickerInput.addEventListener('change',function(){loadTicker(tickerInput.value)});
+    // Ticker-Input (modular via SA.initTickerInput)
+    SA.initTickerInput('ticker-input','ticker-list',function(ticker){loadTicker(ticker)});
   }();
   </script>
 </body>

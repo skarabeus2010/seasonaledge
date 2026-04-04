@@ -107,4 +107,107 @@ SA.supabase = {
   }
 };
 
+// ── Ticker-Input (wiederverwendbar) ────────────────────────────────────────
+
+/**
+ * Initialisiert ein Ticker-Input mit Autocomplete (Datalist) + Focus-Select.
+ *
+ * Laedt tickers.json einmal (263 Ticker mit Namen), cached im SA-Objekt.
+ * Bei Focus wird der Text markiert (sofort ueberschreibbar).
+ * Bei Enter oder Datalist-Auswahl wird der Callback aufgerufen.
+ *
+ * @param {string} inputId    - ID des <input> Elements
+ * @param {string} datalistId - ID des <datalist> Elements
+ * @param {function} onSelect - Callback(ticker) bei Auswahl
+ *
+ * Beispiel:
+ *   <input type="text" id="ticker-input" value="^DJI" list="ticker-list">
+ *   <datalist id="ticker-list"></datalist>
+ *   SA.initTickerInput('ticker-input', 'ticker-list', function(ticker) {
+ *     loadTicker(ticker);
+ *   });
+ */
+SA._tickerCache = null;
+
+SA.initTickerInput = function(inputId, datalistId, onSelect) {
+  var input = document.getElementById(inputId);
+  var dl = document.getElementById(datalistId);
+  if (!input) return;
+
+  // Focus → Text markieren (sofort ueberschreibbar)
+  input.addEventListener('focus', function() { this.select(); });
+
+  // Enter → Callback
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (onSelect) onSelect(input.value.trim().toUpperCase());
+    }
+  });
+
+  // Datalist-Auswahl → Callback
+  input.addEventListener('change', function() {
+    if (onSelect) onSelect(input.value.trim().toUpperCase());
+  });
+
+  // Ticker-Liste laden (einmal, dann gecached)
+  if (!dl) return;
+  if (SA._tickerCache) {
+    _populateDatalist(dl, SA._tickerCache);
+    return;
+  }
+  fetch('/landing/data/tickers.json')
+    .then(function(r) { return r.json(); })
+    .then(function(tickers) {
+      SA._tickerCache = tickers;
+      _populateDatalist(dl, tickers);
+    })
+    .catch(function() {});
+};
+
+function _populateDatalist(dl, tickers) {
+  if (dl.children.length > 0) return; // bereits gefuellt
+  for (var i = 0; i < tickers.length; i++) {
+    var opt = document.createElement('option');
+    opt.value = tickers[i].t;
+    opt.textContent = tickers[i].n + ' (' + tickers[i].t + ')';
+    dl.appendChild(opt);
+  }
+}
+
+/**
+ * Laedt alle Preise eines Tickers aus Supabase (paginiert, 1000er Batches).
+ * @param {string} ticker
+ * @returns {Promise<Array>} [{date, close, log_return, tdom, tdoy}, ...]
+ */
+SA.fetchAllPrices = function(ticker) {
+  var allRows = [];
+  var batchSize = 1000;
+  function fetchBatch(offset) {
+    var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date';
+    return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+      headers: {
+        'apikey': SA.supabase.key,
+        'Authorization': 'Bearer ' + SA.supabase.key,
+        'Range': offset + '-' + (offset + batchSize - 1),
+        'Prefer': 'count=exact'
+      }
+    }).then(function(r) {
+      var contentRange = r.headers.get('content-range');
+      return r.json().then(function(rows) {
+        allRows = allRows.concat(rows);
+        if (contentRange) {
+          var parts = contentRange.split('/');
+          var total = parseInt(parts[1]);
+          if (allRows.length < total) return fetchBatch(allRows.length);
+        } else if (rows.length === batchSize) {
+          return fetchBatch(allRows.length);
+        }
+        return allRows;
+      });
+    });
+  }
+  return fetchBatch(0);
+};
+
 window.SA = SA;
