@@ -84,9 +84,6 @@
       <p class="page-caption" id="page-caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
-      <!-- KPI Cards: Kohorte -->
-      <div class="kpi-row" id="kpi-kohorte"></div>
-
       <!-- Chart 1: Hauptchart (Dekaden-Linien) -->
       <div class="chart-box"><div id="chart-lines"></div></div>
 
@@ -344,7 +341,7 @@
     }
 
     function renderAll(){
-      renderKPI();
+      renderKohorteExpander();
       renderMainChart();
       renderPercentileBar();
       renderAnomalieRadar();
@@ -358,18 +355,12 @@
       renderVola();
     }
 
-    // ── KPI Cards ──
-    function renderKPI(){
+    // ── Expander: Dekadenjahr-Einordnung ──
+    function renderKohorteExpander(){
       var d=D.decades[D.current_digit];
-      if(!d||d.n===0){document.getElementById('kpi-kohorte').innerHTML='<p style="color:var(--muted)">Keine Daten fuer x'+D.current_digit+'</p>';return}
+      if(!d||d.n===0)return;
       var avgClr=d.avg_return>=0?'green':'red';
       var medClr=d.median_return>=0?'green':'red';
-      document.getElementById('kpi-kohorte').innerHTML=
-        kpi('Dekadenjahr','x'+D.current_digit+'-Jahre','gold')+
-        kpi('\u00D8 Rendite',(d.avg_return>=0?'+':'')+d.avg_return.toFixed(2)+'%',avgClr)+
-        kpi('Median',(d.median_return>=0?'+':'')+d.median_return.toFixed(2)+'%',medClr)+
-        kpi('Win-Rate',d.win_rate.toFixed(0)+'%','')+
-        kpi('Volatilit\u00E4t (\u03C3)',d.volatility.toFixed(2)+'%','');
       document.getElementById('sum-kohorte').textContent='\uD83C\uDFAF X'+D.current_digit+'-Dekadenjahr \u2014 Einordnung '+D.current_year;
       var best=Math.max.apply(null,d.returns);
       var worst=Math.min.apply(null,d.returns);
@@ -430,19 +421,23 @@
       var showBands=document.getElementById('chk-bands').checked;
       var showPercentile=document.getElementById('chk-percentile').checked;
 
+      var bandsActive=showBands||showPercentile;
+
       for(var i=0;i<10;i++){
         if(active.indexOf(i)<0)continue;
         var d=D.decades[i];
         if(!d||d.n===0)continue;
         var isCur=i===D.current_digit;
 
-        // Einzeljahre (ausblenden wenn Konfidenz- oder Percentilband aktiv)
-        var bandsActive=showBands||showPercentile;
-        if(document.getElementById('chk-individual').checked&&d.individual_curves&&!(bandsActive&&isCur)){
+        // Einzeljahre: AUS wenn Bands aktiv
+        if(!bandsActive&&document.getElementById('chk-individual').checked&&d.individual_curves){
           for(var j=0;j<d.individual_curves.length;j++){
             series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i]});
           }
         }
+
+        // Wenn Bands aktiv: nur aktuelle Dekade anzeigen, Rest ausblenden
+        if(bandsActive&&!isCur)continue;
 
         // Konfidenzband (±1σ)
         if(showBands&&isCur&&d.std_curve&&d.std_curve.length===252){

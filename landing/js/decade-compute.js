@@ -209,49 +209,61 @@ SA.decadeCompute = {
       ddMonthlyHeatmap[digit] = mdd;
     }
 
-    // Worst-DD-Tabelle (Top 25)
+    // Worst-DD-Tabelle (Top 25) — echte Rohdaten + Recovery UEBER Jahresende hinaus
     var worstDDTable = [];
-    for (var digit = 0; digit < 10; digit++) {
-      var d = decades[digit];
-      for (var wi = 0; wi < d.years.length; wi++) {
-        if (wi >= d.individual_curves.length) break;
-        var wCurve = d.individual_curves[wi];
-        var wDD = SA.decadeCompute.computeDrawdown(wCurve.map(Number), 100);
-        var maxDD = Math.min.apply(null, wDD);
-        if (maxDD < -10) {
-          var troughIdx = wDD.indexOf(maxDD);
-          var peakIdx = 0;
-          var peakVal = -Infinity;
-          for (var pi = 0; pi <= troughIdx; pi++) {
-            if (wCurve[pi] > peakVal) { peakVal = wCurve[pi]; peakIdx = pi; }
-          }
-          // Recovery: Wie viele Handelstage bis Peak wieder erreicht?
-          var recoveryDays = 0;
-          var recovered = false;
-          var peakVal = wCurve[peakIdx];
-          for (var ri = troughIdx + 1; ri < wCurve.length; ri++) {
-            recoveryDays++;
-            if (wCurve[ri] >= peakVal) { recovered = true; break; }
-          }
-          var recStr = '';
-          if (!recovered) {
-            recStr = 'nicht erholt (>' + Math.floor(recoveryDays / 21) + ' Mon)';
-          } else {
-            var mon = Math.floor(recoveryDays / 21);
-            var rest = recoveryDays % 21;
-            recStr = mon > 0 ? (mon + ' Mon' + (rest > 0 ? ' + ' + rest + 'd' : '')) : (rest + ' Tage');
-          }
-          worstDDTable.push({
-            digit: digit,
-            year: d.years[wi],
-            max_dd: Math.round(maxDD * 10) / 10,
-            peak_day: peakIdx,
-            trough_day: troughIdx,
-            recovery_str: recStr,
-            recovered: recovered
-          });
+    for (var wyi = 0; wyi < validYears.length; wyi++) {
+      var wyear = validYears[wyi];
+      var wRows = yearGroups[wyear];
+      if (!wRows || wRows.length < 50) continue;
+      var wCloses = wRows.map(function(r) { return r.close; });
+      // Max DD innerhalb des Jahres berechnen
+      var wPeak = 0, wMaxDD = 0, wPeakIdx = 0, wTroughIdx = 0;
+      for (var wi = 0; wi < wCloses.length; wi++) {
+        if (wCloses[wi] > wPeak) { wPeak = wCloses[wi]; wPeakIdx = wi; }
+        var dd = (wCloses[wi] - wPeak) / wPeak * 100;
+        if (dd < wMaxDD) { wMaxDD = dd; wTroughIdx = wi; }
+      }
+      if (wMaxDD > -10) continue; // Nur signifikante DDs
+      // Peak-Datum = hoechster Kurs VOR dem Trough
+      var realPeakIdx = 0, realPeakVal = 0;
+      for (var rpi = 0; rpi <= wTroughIdx; rpi++) {
+        if (wCloses[rpi] > realPeakVal) { realPeakVal = wCloses[rpi]; realPeakIdx = rpi; }
+      }
+      var peakDate = wRows[realPeakIdx].date;
+      var troughDate = wRows[wTroughIdx].date;
+      var peakPrice = wCloses[realPeakIdx];
+      // Recovery: UEBER Jahresende hinaus suchen (wie Python compute_real_recovery)
+      var recoveryDays = 0;
+      var recovered = false;
+      // Ab Trough-Datum in ALLEN Rows suchen (nicht nur aktuelles Jahr)
+      for (var ryi = wyi; ryi < validYears.length && !recovered; ryi++) {
+        var rRows = yearGroups[validYears[ryi]];
+        if (!rRows) continue;
+        for (var rri = 0; rri < rRows.length; rri++) {
+          if (rRows[rri].date < troughDate) continue;
+          if (rRows[rri].date === troughDate) continue; // Trough selbst ueberspringen
+          recoveryDays++;
+          if (rRows[rri].close >= peakPrice) { recovered = true; break; }
         }
       }
+      // Formatierung
+      var recMon = Math.floor(recoveryDays / 21);
+      var recRest = recoveryDays % 21;
+      var recStr;
+      if (!recovered) recStr = 'nicht erholt (>' + recMon + ' Mon)';
+      else if (recMon === 0) recStr = recRest + ' Tage';
+      else if (recRest === 0) recStr = recMon + ' Mon';
+      else recStr = recMon + ' Mon + ' + recRest + 'd';
+
+      worstDDTable.push({
+        digit: wyear % 10,
+        year: wyear,
+        max_dd: Math.round(wMaxDD * 10) / 10,
+        peak_date: SA.decadeCompute._formatDate(peakDate),
+        trough_date: SA.decadeCompute._formatDate(troughDate),
+        recovery_str: recStr,
+        recovered: recovered
+      });
     }
     worstDDTable.sort(function(a, b) { return a.max_dd - b.max_dd; });
     worstDDTable = worstDDTable.slice(0, 25);
@@ -454,6 +466,12 @@ SA.decadeCompute = {
       result.push(Math.sqrt(variance));
     }
     return result;
+  },
+
+  /** "YYYY-MM-DD" → "DD.MM.YYYY" */
+  _formatDate: function(dateStr) {
+    if (!dateStr || dateStr.length < 10) return dateStr || '';
+    return dateStr.substring(8, 10) + '.' + dateStr.substring(5, 7) + '.' + dateStr.substring(0, 4);
   },
 
   /** Tag des Jahres aus "YYYY-MM-DD" String. */
