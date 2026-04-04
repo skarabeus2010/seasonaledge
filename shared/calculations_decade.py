@@ -87,7 +87,7 @@ def build_decade_data(df: pd.DataFrame, min_days: int = 200) -> dict:
         cohorts[digit].append({
             "year":   year,
             "curve":  interp,
-            "ret":    float(log_curve[-1]),   # Jahresrendite (log %)
+            "ret":    float((closes[-1] / closes[0] - 1) * 100),  # Simple Return (%)
         })
 
     # Kohorte aggregieren

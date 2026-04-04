@@ -239,7 +239,8 @@ if show_current_year:
     from shared.percentile_bar import render_percentile_bar
     d_cur = decade_data[CURRENT_DIGIT]
     if d_cur["n"] >= 5 and len(current_year_df) >= 20:
-        _cur_return = float(log_curve[-1]) if 'log_curve' in dir() else None
+        # Simple Return fuer Percentile Bar (nicht Log Return)
+        _cur_return = float((closes[-1] / closes[0] - 1) * 100) if 'closes' in dir() and len(closes) > 0 and closes[0] > 0 else None
         if _cur_return is not None:
             _hist_returns = d_cur["returns"] if d_cur["returns"] else []
             if len(_hist_returns) >= 5:
