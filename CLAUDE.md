@@ -356,6 +356,7 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | `significance.js` | 243 | `significance_gauge.py` | `runSignificanceTest` (t-Test, Cohen's d, Relevanz), `renderSection` (CSS Gauges), `scoreToColor` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `indicators.js` | 306 | `indicators.py` + `indicator_filter_ui.py` | `calcSMA/EMA/RSI/Bollinger/MACD/LBR`, `applyFilter`, `renderFilterUI`, `REGISTRY` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `outlier.js` | 123 | `outlier_manager.py` | `detectIQR`, `winsorize`, `filterCurves`, `renderFilterUI` | Monatswechsel, Mondphasen, *+3 Pages* |
+| `strategy-compute.js` | 672 | `strategies/plain_vanilla.py` | 22 Strategie-Funktionen, `buildEquityCurve`, `computeStats`, `applyStopLoss`, `STRATEGIES` Registry | Plain Vanilla, *Trifecta* |
 
 ### Wiederverwendbare Patterns aus Kriegszeiten (inline, nicht als Modul)
 
@@ -385,14 +386,16 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
 | Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
 | Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
 | Kriegszeiten | `/kriegszeiten` | app, charts, seasonal-compute | `computeEventWindow`, `smooth`, `toPairs`, Monatslabel-Formatter, Min-HT-Filter |
+| Crash-Fruehwarnung | `/crash-fruehwarnung` | app, charts | `computeRegime` (Composite Score, Percentile-Ranking, Ampel) |
+| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, strategy-compute | Lazy Calc, Kategorie-Tabs, Equity-Chart, Trade-Tabelle |
 
 ### Migrations-Reihenfolge (naechste Pages)
 | # | Page | Zeilen | Charts | Neue Module noetig | Status |
 |---|------|--------|--------|-------------------|--------|
 | 4 | Kriegszeiten | 403→640 | 5+Tabelle | keine (Event-Window inline) | ✅ fertig |
-| 5 | Plain Vanilla | 457 | 4 | `strategy-compute.js` (Equity, Stats, Trades) | |
-| 6 | Trifecta | 849 | 8 | nutzt strategy-compute | |
-| 7 | Crash-Fruehw. | 146 | 2 | keine | |
+| 5 | Crash-Fruehw. | 146→281 | 1+Ampel | keine (Regime-Score inline) | ✅ fertig |
+| 6 | Plain Vanilla | 457→329+672 | 1+Karten | `strategy-compute.js` (22 Strategien) | ✅ fertig |
+| 7 | Trifecta | 849 | 8 | nutzt strategy-compute | naechste |
 | 8-11 | Disabled Pages | 300-500 | 6-8 | keine | |
 | 12 | Jahreszyklus | 1595 | 20 | `annotations.js` (we-are-here), smooth aus seasonal-compute | |
 | 13 | Monatszyklus | 1412 | 26 | nutzt alle + Monatslabel-Formatter | |
