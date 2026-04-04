@@ -139,7 +139,10 @@
       ticker=ticker.trim().toUpperCase();
       if(!ticker||ticker===currentTicker)return;
       showLoading('Lade '+ticker+'...');
-      SA.fetchAllPrices(ticker).then(function(rows){
+      // Nur letzte 30 Jahre laden (reicht fuer TOM, spart 90% der API-Calls)
+      var startDate=new Date();startDate.setFullYear(startDate.getFullYear()-30);
+      var dateFilter='&date=gte.'+startDate.toISOString().substring(0,10);
+      SA.fetchAllPrices(ticker,dateFilter).then(function(rows){
         if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten');return}
         rows.forEach(function(r){r.close=parseFloat(r.close);if(r.log_return!=null)r.log_return=parseFloat(r.log_return)});
         rawRows=rows;currentTicker=ticker;

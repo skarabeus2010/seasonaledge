@@ -180,11 +180,15 @@ function _populateDatalist(dl, tickers) {
  * @param {string} ticker
  * @returns {Promise<Array>} [{date, close, log_return, tdom, tdoy}, ...]
  */
-SA.fetchAllPrices = function(ticker) {
+/**
+ * @param {string} ticker
+ * @param {string} extraFilter - optionaler Supabase-Filter (z.B. "&date=gte.2000-01-01")
+ */
+SA.fetchAllPrices = function(ticker, extraFilter) {
   var allRows = [];
   var batchSize = 1000;
   function fetchBatch(offset) {
-    var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date';
+    var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date' + (extraFilter || '');
     return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
       headers: {
         'apikey': SA.supabase.key,
