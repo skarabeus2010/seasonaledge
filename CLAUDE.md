@@ -342,38 +342,60 @@ UPPER_CASE        → Konstanten
 
 ## HTML-Migration Plan (Landing Pages)
 
-Streamlit → statisches HTML. 8 wiederverwendbare JS-Module (2142 Zeilen total).
+Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 
-### Fertige JS-Module (8 Module, 57 Funktionen)
+### Fertige JS-Module (8 Module)
 
 | Modul | Zeilen | Python-Quelle | Kern-Funktionen | Genutzt von |
 |-------|--------|---------------|-----------------|-------------|
 | `app.js` | 249 | — (original) | `initTickerInput`, `fetchAllPrices`, `renderTradingDayHeader`, Supabase REST | **Alle Pages** |
 | `charts.js` | 166 | — (original) | `lineChart`, `barChart`, `heatmapChart`, `boxPlotChart`, Theme | **Alle Pages** |
 | `decade-compute.js` | 495 | `calculations_decade.py` + `generate_decade_data.py` | `fromPrices`, `computeDrawdown`, `computePercentile`, `computeRollingVola` | Dekadenzyklus |
-| `seasonal-compute.js` | 446 | `calculations.py` + `central_banks.py` | `analyzeTurnOfMonth`, `analyzeMoonEffect`, `getMoonDates`, `isSupermoon`, `buildMonthlyStats`, `buildTOMHeatmap`, `calcWindowOptimization`, `getPresidentialCycleYear` | Monatswechsel, Mondphasen, *+4 Pages* |
+| `seasonal-compute.js` | 531 | `calculations.py` + `central_banks.py` | `buildYearData`, `calculateSeasonalAverage`, `analyzeTurnOfMonth`, `analyzeMoonEffect`, `getMoonDates`, `isSupermoon`, `buildMonthlyStats`, `buildTOMHeatmap`, `calcWindowOptimization`, `getPresidentialCycleYear` | Monatswechsel, Mondphasen, Kriegszeiten, *+4 Pages* |
 | `streak-analysis.js` | 114 | `streak_analysis.py` | `computeStreaksFromList`, `currentStreak`, `renderStreakTable` | Monatswechsel, Mondphasen, *+2 Pages* |
 | `significance.js` | 243 | `significance_gauge.py` | `runSignificanceTest` (t-Test, Cohen's d, Relevanz), `renderSection` (CSS Gauges), `scoreToColor` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `indicators.js` | 306 | `indicators.py` + `indicator_filter_ui.py` | `calcSMA/EMA/RSI/Bollinger/MACD/LBR`, `applyFilter`, `renderFilterUI`, `REGISTRY` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `outlier.js` | 123 | `outlier_manager.py` | `detectIQR`, `winsorize`, `filterCurves`, `renderFilterUI` | Monatswechsel, Mondphasen, *+3 Pages* |
 
+### Wiederverwendbare Patterns aus Kriegszeiten (inline, nicht als Modul)
+
+Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendbar fuer andere Pages:
+
+| Pattern | Funktion | Wiederverwendbar fuer | Auslagerung? |
+|---------|----------|----------------------|-------------|
+| **Event-Window** | `computeEventWindow(event, daysBefore, daysAfter)` | OPEX, Fed-Sitzungen, Feiertage, Earnings, Schock-Analyse | → `event-window.js` wenn 2+ Pages |
+| **Smoothing** | `smooth(arr, windowSize)` | Jahreszyklus, Monatszyklus, alle Saisonalkurven | → `seasonal-compute.js` ergaenzen |
+| **Min-Handelstage Filter** | `yearTradingDays[y] >= 150` | Alle Pages mit `buildYearData` (CL=F, BTC etc.) | → `seasonal-compute.js` als Parameter |
+| **Numerische x-Achse** | `toPairs(arr)` + `type:'numeric'` | Alle Saisonalcharts (verhindert 365 Tick-Marks) | Pattern in jeder Page |
+| **Monatslabel-Formatter** | `bestDist`-Algorithmus fuer 12 Monatsnamen | Jahreszyklus, Monatszyklus, alle 365-Tage Charts | → `charts.js` als Helper |
+| **Active/Live Tag** | `war.active` → LIVE-Badge, dickere Linie, KPI | Laufende Events jeder Art | CSS-Klasse `war-tag.active` |
+| **Drawdown nach Event** | Peak-Tracking ab T=0 | Schock-Analyse, OPEX-Drawdowns, Fed-Reaktionen | → `event-window.js` |
+
+### Empfehlung: Naechste Auslagerungen
+
+1. **`smooth()` → `seasonal-compute.js`** — wird von 5+ Pages gebraucht
+2. **Monatslabel-Formatter → `charts.js`** — `SA.chartTheme.monthFormatter` fuer alle 365-Tage Charts
+3. **`computeEventWindow()` → `event-window.js`** — sobald OPEX/Fed/Feiertag-Pages migriert werden
+4. **Min-Handelstage Filter → `buildYearData()` Parameter** — `minTradingDays: 150` Option
+
 ### Fertige HTML-Pages
-| Page | URL | Module genutzt |
-|------|-----|---------------|
-| Dekadenzyklus | `/dekadenzyklus` | app, charts, decade-compute |
-| Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier |
-| Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier |
+| Page | URL | Module genutzt | Inline-Funktionen |
+|------|-----|---------------|-------------------|
+| Dekadenzyklus | `/dekadenzyklus` | app, charts, decade-compute | — |
+| Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
+| Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
+| Kriegszeiten | `/kriegszeiten` | app, charts, seasonal-compute | `computeEventWindow`, `smooth`, `toPairs`, Monatslabel-Formatter, Min-HT-Filter |
 
 ### Migrations-Reihenfolge (naechste Pages)
 | # | Page | Zeilen | Charts | Neue Module noetig | Status |
 |---|------|--------|--------|-------------------|--------|
-| 4 | Kriegszeiten | 403 | 6 | keine (Event-Window = analyzeMoonEffect Pattern) | naechste |
+| 4 | Kriegszeiten | 403→640 | 5+Tabelle | keine (Event-Window inline) | ✅ fertig |
 | 5 | Plain Vanilla | 457 | 4 | `strategy-compute.js` (Equity, Stats, Trades) | |
 | 6 | Trifecta | 849 | 8 | nutzt strategy-compute | |
 | 7 | Crash-Fruehw. | 146 | 2 | keine | |
 | 8-11 | Disabled Pages | 300-500 | 6-8 | keine | |
-| 12 | Jahreszyklus | 1595 | 20 | `annotations.js` (we-are-here) | |
-| 13 | Monatszyklus | 1412 | 26 | nutzt alle | |
+| 12 | Jahreszyklus | 1595 | 20 | `annotations.js` (we-are-here), smooth aus seasonal-compute | |
+| 13 | Monatszyklus | 1412 | 26 | nutzt alle + Monatslabel-Formatter | |
 | 14 | Wochentage | 1670 | 29 | nutzt alle | |
 
 ### Portierungs-Vorgehen
@@ -382,6 +404,8 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module (2142 Zeilen total)
 3. DataFrame → Array of Objects, NumPy → Array-Ops
 4. Gleiche Funktionsnamen + Parameter-Reihenfolge
 5. Wiederverwendbare Module in `landing/js/` ablegen
+6. Numerische x-Achsen (`type:'numeric'` + `toPairs`) statt kategorisch (verhindert Tick-Spam)
+7. ApexCharts `<title>` Doppel-Label Bug: CSS `title{display:none}` in `<style>`
 
 ## Offene TODOs
 
@@ -630,6 +654,9 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module (2142 Zeilen total)
 - [x] generate_decade_data.py: Pre-compute Dekaden-JSON (Rendite, DD, Vola, Anomalie) (2026-04-04)
 - [x] Box-Plot: Canvas-Renderer (ApexCharts boxPlot war defekt) (2026-04-04)
 - [x] Landing Page: Background Paths Animation + Aurora Blobs (2026-04-04)
+- [x] Kriegszeiten HTML-Page: Event-Window-Analyse, 11 Kriege, Ukraine+Iran laufend (2026-04-04)
+      `computeEventWindow()`, T=0 Annotation, Live-Tracking, Drawdown-Vergleich,
+      Min-150-Handelstage-Filter, numerische x-Achse, Monatslabel-Formatter.
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
