@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dekadenzyklus &mdash; Intra-Decade Seasonality | SeasonAlpha</title>
-  <meta name="description" content="Saisonale Analyse nach Dekaden-Endziffern. 131 Jahre Dow Jones, 10 Kohorten, Drawdown, Volatilit&auml;t, Anomalie-Radar.">
+  <meta name="description" content="Saisonale Analyse nach Dekaden-Endziffern. 131 Jahre Dow Jones, 10 Dekadenjahre, Drawdown, Volatilit&auml;t, Anomalie-Radar.">
   <meta property="og:title" content="Dekadenzyklus &mdash; SeasonAlpha">
   <meta property="og:description" content="Intra-Decade Seasonality: Wie performen Jahre mit gleicher Endziffer?">
   <meta property="og:url" content="https://seasonalpha.ai/dekadenzyklus">
@@ -69,7 +69,7 @@
       <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <hr>
-      <h3>Kohorten ein/ausblenden</h3>
+      <h3>Dekadenjahre ein/ausblenden</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades" checked> Alle / Keine</label>
       <div id="decade-toggles"></div>
       <hr>
@@ -125,7 +125,7 @@
 
       <!-- Expander: Box-Plot -->
       <details>
-        <summary>Rendite-Verteilung nach Kohorte (Box-Plot)</summary>
+        <summary>Rendite-Verteilung nach Dekadenjahr (Box-Plot)</summary>
         <div class="content">
           <div id="chart-box"></div>
           <div class="box-info"><b>So lesen Sie Box-Plots:</b> Kasten = mittlere 50% (25.&ndash;75. Perzentil). Linie = Median. Antennen = 1.5&times; IQR. Punkte = Ausrei&szlig;er.</div>
@@ -299,11 +299,11 @@
       document.getElementById('title-ticker').textContent=D.ticker;
       document.getElementById('ticker-input').value=D.ticker;
       document.getElementById('page-caption').textContent=
-        'Zeitreihe: '+D.data_start+'\u2013'+D.data_end+' \u00B7 '+D.total_years+' vollst\u00E4ndige Jahre \u00B7 Aktuelles Jahr: '+D.current_year+' (X'+D.current_digit+'-Kohorte)';
+        'Zeitreihe: '+D.data_start+'\u2013'+D.data_end+' \u00B7 '+D.total_years+' vollst\u00E4ndige Jahre \u00B7 Aktuelles Jahr: '+D.current_year+' (X'+D.current_digit+'-Dekadenjahr)';
 
       var today=new Date();
       document.getElementById('trading-day-header').textContent=
-        'Heute: '+today.toLocaleDateString('de-DE')+' \u00B7 '+D.ticker+' \u00B7 X'+D.current_digit+'-Kohorte \u00B7 '+D.total_years+' Jahre Historie';
+        'Heute: '+today.toLocaleDateString('de-DE')+' \u00B7 '+D.ticker+' \u00B7 X'+D.current_digit+'-Dekadenjahr \u00B7 '+D.total_years+' Jahre Historie';
 
       // Dekaden-Toggles generieren
       var togglesEl=document.getElementById('decade-toggles');
@@ -327,8 +327,8 @@
       var volaWin=parseInt(document.getElementById('vola-window').value)||D.vola_window||20;
       document.getElementById('content-methodik').innerHTML=
         '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+D.ticker+'</li><li><b>Datenzeitraum:</b> '+D.data_start+'\u2013'+D.data_end+' ('+D.total_years+' vollst\u00E4ndige Jahre)</li><li><b>Datenquellen:</b> Yahoo Finance + Stooq.com (historisch) + Supabase</li><li><b>Mindestl\u00E4nge:</b> Jahre mit &lt;200 Handelstagen werden ausgeschlossen</li></ul>'+
-        '<h3>Rendite-Analyse</h3><ul><li><b>Normierung:</b> Erster Handelstag jedes Jahres = 0% (logarithmische Returns)</li><li><b>Interpolation:</b> Jede Jahreskurve auf 252 Handelstage normiert</li><li><b>Kohorten:</b> Gruppierung nach letzter Ziffer (x0 = 1900, 1910, \u2026)</li><li><b>Gl\u00E4ttung:</b> 5-Tage zentrierter Moving Average</li></ul>'+
-        '<h3>Drawdown-Analyse</h3><ul><li><b>Definition:</b> DD = (Kurs \u2013 H\u00F6chstkurs seit Jahresbeginn) / H\u00F6chstkurs \u00D7 100</li><li><b>\u00D8 Drawdown-Verlauf:</b> Pro Kohorte gemittelt</li><li><b>Worst-DD-Tabelle:</b> Top 25 schlimmste Drawdown-Jahre</li></ul>'+
+        '<h3>Rendite-Analyse</h3><ul><li><b>Normierung:</b> Erster Handelstag jedes Jahres = 0% (logarithmische Returns)</li><li><b>Interpolation:</b> Jede Jahreskurve auf 252 Handelstage normiert</li><li><b>Dekadenjahre:</b> Gruppierung nach letzter Ziffer (x0 = 1900, 1910, \u2026)</li><li><b>Gl\u00E4ttung:</b> 5-Tage zentrierter Moving Average</li></ul>'+
+        '<h3>Drawdown-Analyse</h3><ul><li><b>Definition:</b> DD = (Kurs \u2013 H\u00F6chstkurs seit Jahresbeginn) / H\u00F6chstkurs \u00D7 100</li><li><b>\u00D8 Drawdown-Verlauf:</b> Pro Dekadenjahr gemittelt</li><li><b>Worst-DD-Tabelle:</b> Top 25 schlimmste Drawdown-Jahre</li></ul>'+
         '<h3>Volatilit\u00E4ts-Analyse</h3><ul><li><b>Rolling Volatilit\u00E4t:</b> \u03C3_annualisiert = \u03C3_t\u00E4glich \u00D7 \u221A252 \u00D7 100</li><li><b>Fenster:</b> '+volaWin+' Tage (einstellbar in Sidebar)</li></ul>'+
         '<h3>Anomalie-Radar</h3><ul><li><b>Methode:</b> '+(rawRows?'Z-Score Vergleich':'Isolation Forest (ML)')+'</li><li><b>Score:</b> 0\u2013100 (ab 40 = leicht anomal, ab 70 = stark anomal)</li></ul>';
 
@@ -365,16 +365,16 @@
       var avgClr=d.avg_return>=0?'green':'red';
       var medClr=d.median_return>=0?'green':'red';
       document.getElementById('kpi-kohorte').innerHTML=
-        kpi('Kohorte','x'+D.current_digit+'-Jahre','gold')+
+        kpi('Dekadenjahr','x'+D.current_digit+'-Jahre','gold')+
         kpi('\u00D8 Rendite',(d.avg_return>=0?'+':'')+d.avg_return.toFixed(2)+'%',avgClr)+
         kpi('Median',(d.median_return>=0?'+':'')+d.median_return.toFixed(2)+'%',medClr)+
         kpi('Win-Rate',d.win_rate.toFixed(0)+'%','')+
         kpi('Volatilit\u00E4t (\u03C3)',d.volatility.toFixed(2)+'%','');
-      document.getElementById('sum-kohorte').textContent='\uD83C\uDFAF X'+D.current_digit+'-Kohorte \u2014 Einordnung '+D.current_year;
+      document.getElementById('sum-kohorte').textContent='\uD83C\uDFAF X'+D.current_digit+'-Dekadenjahr \u2014 Einordnung '+D.current_year;
       var best=Math.max.apply(null,d.returns);
       var worst=Math.min.apply(null,d.returns);
       document.getElementById('content-kohorte').innerHTML=
-        '<div class="kpi-row">'+kpi('Kohorte','x'+D.current_digit+'-Jahre','gold')+kpi('\u00D8 Rendite',(d.avg_return>=0?'+':'')+d.avg_return.toFixed(2)+'%',avgClr)+kpi('Median',(d.median_return>=0?'+':'')+d.median_return.toFixed(2)+'%',medClr)+kpi('Win-Rate',d.win_rate.toFixed(0)+'%','')+kpi('Volatilit\u00E4t',d.volatility.toFixed(2)+'%','')+'</div>'+
+        '<div class="kpi-row">'+kpi('Dekadenjahr','x'+D.current_digit+'-Jahre','gold')+kpi('\u00D8 Rendite',(d.avg_return>=0?'+':'')+d.avg_return.toFixed(2)+'%',avgClr)+kpi('Median',(d.median_return>=0?'+':'')+d.median_return.toFixed(2)+'%',medClr)+kpi('Win-Rate',d.win_rate.toFixed(0)+'%','')+kpi('Volatilit\u00E4t',d.volatility.toFixed(2)+'%','')+'</div>'+
         '<p style="font-size:.8125rem;color:var(--muted);margin-top:.75rem">Beste X'+D.current_digit+'-Jahr: <b style="color:var(--green)">'+(best>=0?'+':'')+best.toFixed(1)+'%</b> \u00B7 Schlechteste: <b style="color:var(--red)">'+(worst>=0?'+':'')+worst.toFixed(1)+'%</b> \u00B7 n = '+d.n+' Jahre ('+d.years.join(', ')+')</p>';
     }
 
@@ -436,8 +436,9 @@
         if(!d||d.n===0)continue;
         var isCur=i===D.current_digit;
 
-        // Einzeljahre
-        if(document.getElementById('chk-individual').checked&&d.individual_curves){
+        // Einzeljahre (ausblenden wenn Konfidenz- oder Percentilband aktiv)
+        var bandsActive=showBands||showPercentile;
+        if(document.getElementById('chk-individual').checked&&d.individual_curves&&!(bandsActive&&isCur)){
           for(var j=0;j<d.individual_curves.length;j++){
             series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i]});
           }
@@ -612,7 +613,7 @@
 
     // ── Tabelle ──
     function renderTable(){
-      var html='<table class="worst-table"><tr><th>Kohorte</th><th>n</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Avg. DD</th><th>Jahre</th></tr>';
+      var html='<table class="worst-table"><tr><th>Dekadenjahr</th><th>n</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Avg. DD</th><th>Jahre</th></tr>';
       for(var i=0;i<10;i++){
         var d=D.decades[i];
         var bg=i===D.current_digit?'background:rgba(232,168,32,.08)':'';
@@ -654,6 +655,13 @@
       charts.heatmap.render();
     }
 
+    // Lineare Interpolation fuer Perzentile (wie Plotly/numpy)
+    function interpPercentile(sorted,p){
+      var idx=(sorted.length-1)*p/100;
+      var lo=Math.floor(idx),hi=Math.ceil(idx),frac=idx-lo;
+      return lo===hi?sorted[lo]:sorted[lo]*(1-frac)+sorted[hi]*frac;
+    }
+
     // ── Chart 4: Box-Plot (HTML Canvas) ──
     function renderBoxPlot(){
       var el=document.getElementById('chart-box');
@@ -684,14 +692,21 @@
         var rets=D.decades[i].returns.slice().sort(function(a,b){return a-b});
         if(rets.length<3)continue;
         var n=rets.length;
-        var mn=rets[0],q1=rets[Math.floor(n*.25)],med=rets[Math.floor(n*.5)],q3=rets[Math.floor(n*.75)],mx=rets[n-1];
+        var mn=rets[0],mx=rets[n-1];
+        var q1=interpPercentile(rets,25),med=interpPercentile(rets,50),q3=interpPercentile(rets,75);
         var cx=pad.l+cw/10*(i+.5);
         var isCur=i===D.current_digit;
+        var iqr=q3-q1;
+        var wLo=q1-1.5*iqr,wHi=q3+1.5*iqr;
+        // Clamp whiskers to actual data range
+        var whiskerLo=mn,whiskerHi=mx;
+        for(var wj=0;wj<rets.length;wj++){if(rets[wj]>=wLo){whiskerLo=rets[wj];break}}
+        for(var wj=rets.length-1;wj>=0;wj--){if(rets[wj]<=wHi){whiskerHi=rets[wj];break}}
         ctx.strokeStyle=isCur?SA.COLORS.accent:'rgba(255,255,255,.3)';ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(cx,yPos(mn));ctx.lineTo(cx,yPos(q1));ctx.stroke();
-        ctx.beginPath();ctx.moveTo(cx,yPos(q3));ctx.lineTo(cx,yPos(mx));ctx.stroke();
-        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mn));ctx.lineTo(cx+bw*.3,yPos(mn));ctx.stroke();
-        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mx));ctx.lineTo(cx+bw*.3,yPos(mx));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx,yPos(whiskerLo));ctx.lineTo(cx,yPos(q1));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx,yPos(q3));ctx.lineTo(cx,yPos(whiskerHi));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(whiskerLo));ctx.lineTo(cx+bw*.3,yPos(whiskerLo));ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(whiskerHi));ctx.lineTo(cx+bw*.3,yPos(whiskerHi));ctx.stroke();
         ctx.fillStyle=isCur?'rgba(232,168,32,.3)':'rgba(77,159,255,.2)';
         ctx.fillRect(cx-bw/2,yPos(q3),bw,yPos(q1)-yPos(q3));
         ctx.strokeStyle=isCur?SA.COLORS.accent:'#4d9fff';ctx.lineWidth=isCur?2:1;
@@ -745,8 +760,9 @@
 
       var dc=D.decades[D.current_digit];
       var curDD=D.current_year_dd&&D.current_year_dd.length>0?D.current_year_dd[D.current_year_dd.length-1]:0;
+      var ddWorstVal=(dc&&isFinite(dc.dd_worst))?dc.dd_worst:0;
       document.getElementById('kpi-dd').innerHTML=
-        kpi('\u00D8 Max DD (x'+D.current_digit+')',(dc?dc.dd_worst.toFixed(1):'0')+'%','red')+
+        kpi('\u00D8 Max DD (x'+D.current_digit+')',ddWorstVal.toFixed(1)+'%','red')+
         kpi('Aktueller DD '+D.current_year,curDD.toFixed(1)+'%',curDD<-1?'red':'green');
     }
 
@@ -755,25 +771,20 @@
       var rows=D.worst_dd_table;
       if(!rows||!rows.length){document.getElementById('content-worst-dd').innerHTML='<p style="color:var(--muted)">Keine Extremjahre gefunden.</p>';return}
       var hasDates=rows[0].peak_date&&rows[0].peak_date.length>0;
-      var hasRecovery=rows[0].recovery_str!==undefined;
-      var html='<table class="worst-table"><tr><th>Dekade</th><th>Jahr</th><th>Max DD</th><th>Peak</th><th>Tief</th>';
-      if(hasRecovery)html+='<th>Recovery</th>';
-      html+='</tr>';
+      var html='<table class="worst-table"><tr><th>Dekadenjahr</th><th>Jahr</th><th>Max DD</th><th>Peak</th><th>Tief</th><th>Recovery</th></tr>';
       for(var i=0;i<rows.length;i++){
         var r=rows[i];
         var intensity=Math.min(Math.abs(r.max_dd)/60,1);
         var red=Math.round(200+55*intensity);
         var green=Math.round(100*(1-intensity));
-        // Datum: entweder aus JSON (DD.MM.YYYY) oder aus Handelstag-Index approximieren
         var peakStr=hasDates?r.peak_date:approxDate(r.year,r.peak_day);
         var troughStr=hasDates?r.trough_date:approxDate(r.year,r.trough_day);
+        var recStr=r.recovery_str||'\u2014';
+        var recClr=(r.recovered===true)?'var(--green)':(r.recovered===false&&r.recovery_str)?'var(--red)':'var(--muted)';
         html+='<tr><td>x'+r.digit+'</td><td>'+r.year+'</td>';
         html+='<td class="dd-val" style="color:rgb('+red+','+green+','+green+')">'+r.max_dd.toFixed(1)+'%</td>';
         html+='<td>'+peakStr+'</td><td>'+troughStr+'</td>';
-        if(hasRecovery){
-          var recClr=r.recovered?'var(--green)':'var(--red)';
-          html+='<td style="color:'+recClr+'">'+(r.recovery_str||'\u2014')+'</td>';
-        }
+        html+='<td style="color:'+recClr+'">'+recStr+'</td>';
         html+='</tr>';
       }
       html+='</table>';

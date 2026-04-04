@@ -94,7 +94,7 @@ SA.decadeCompute = {
       // Drawdown pro Jahr -> Durchschnitt
       var ddCurves = curves.map(function(c) { return SA.decadeCompute.computeDrawdown(c, 100); });
       var ddAvg = SA.decadeCompute._meanAxis0(ddCurves);
-      var ddWorst = -Infinity;
+      var ddWorst = 0;
       for (var di = 0; di < ddCurves.length; di++) {
         var minDD = Math.min.apply(null, ddCurves[di]);
         if (minDD < ddWorst) ddWorst = minDD;
@@ -225,12 +225,30 @@ SA.decadeCompute = {
           for (var pi = 0; pi <= troughIdx; pi++) {
             if (wCurve[pi] > peakVal) { peakVal = wCurve[pi]; peakIdx = pi; }
           }
+          // Recovery: Wie viele Handelstage bis Peak wieder erreicht?
+          var recoveryDays = 0;
+          var recovered = false;
+          var peakVal = wCurve[peakIdx];
+          for (var ri = troughIdx + 1; ri < wCurve.length; ri++) {
+            recoveryDays++;
+            if (wCurve[ri] >= peakVal) { recovered = true; break; }
+          }
+          var recStr = '';
+          if (!recovered) {
+            recStr = 'nicht erholt (>' + Math.floor(recoveryDays / 21) + ' Mon)';
+          } else {
+            var mon = Math.floor(recoveryDays / 21);
+            var rest = recoveryDays % 21;
+            recStr = mon > 0 ? (mon + ' Mon' + (rest > 0 ? ' + ' + rest + 'd' : '')) : (rest + ' Tage');
+          }
           worstDDTable.push({
             digit: digit,
             year: d.years[wi],
             max_dd: Math.round(maxDD * 10) / 10,
             peak_day: peakIdx,
-            trough_day: troughIdx
+            trough_day: troughIdx,
+            recovery_str: recStr,
+            recovered: recovered
           });
         }
       }
