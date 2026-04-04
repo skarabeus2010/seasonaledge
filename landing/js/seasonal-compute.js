@@ -269,8 +269,7 @@ SA.seasonal = {
       matrix.push(row);
     }
     return { matrix: matrix, bestBefore: bestBefore, bestAfter: bestAfter, bestReturn: Math.round(bestReturn * 100) / 100 };
-  }
-};
+  },
 
   // ── Mondphasen (Port von shared/central_banks.py) ──
 
