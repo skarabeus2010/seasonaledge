@@ -26,6 +26,7 @@
     .war-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
     .war-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
     .war-table tr:hover td{background:rgba(232,168,32,.04)}
+    .apexcharts-xaxis text title{display:none}
     .war-tag{display:inline-block;font-size:.625rem;padding:1px 6px;border-radius:3px;font-weight:600;letter-spacing:.04em}
     .war-tag.active{background:rgba(232,168,32,.15);color:var(--accent)}
     .war-tag.ended{background:rgba(255,255,255,.06);color:var(--muted)}
@@ -359,11 +360,12 @@
        CHART: Krieg vs. Frieden (Saisonalkurven)
        ══════════════════════════════════════════════════════ */
     function renderMainChart(warAvg,peaceAvg,totalAvg,warYears,peaceYears,years){
-      var xDays=Array.from({length:365},function(_,i){return i+1});
+      // Serien als x/y-Paare (numerische x-Achse, keine Kategorien)
+      function toPairs(arr){return arr.map(function(v,i){return{x:i+1,y:v}})}
       var series=[];
-      if(warAvg.length) series.push({name:'Kriegsjahre ('+warYears.length+')',data:warAvg,color:'#ff4757'});
-      if(peaceAvg.length) series.push({name:'Friedensjahre ('+peaceYears.length+')',data:peaceAvg,color:'#00d4aa'});
-      if(totalAvg.length) series.push({name:'Gesamt ('+years.length+')',data:totalAvg,color:'#4d9fff'});
+      if(warAvg.length) series.push({name:'Kriegsjahre ('+warYears.length+')',data:toPairs(warAvg),color:'#ff4757'});
+      if(peaceAvg.length) series.push({name:'Friedensjahre ('+peaceYears.length+')',data:toPairs(peaceAvg),color:'#00d4aa'});
+      if(totalAvg.length) series.push({name:'Gesamt ('+years.length+')',data:toPairs(totalAvg),color:'#4d9fff'});
 
       if(charts.main) charts.main.destroy();
       charts.main=new ApexCharts(document.getElementById('chart-main'),{
@@ -372,7 +374,18 @@
         stroke:{width:[3,3,2],curve:'smooth',dashArray:[0,0,5]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:100,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
-        xaxis:{categories:xDays,tickAmount:12,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){var idx=MONTH_STARTS.findIndex(function(s,i){return i<11&&v>=s&&v<MONTH_STARTS[i+1]});if(idx<0)idx=11;return v===MONTH_STARTS[idx]?MN[idx]:''}}},
+        xaxis:{type:'numeric',min:1,max:365,
+          tickAmount:12,
+          axisTicks:{show:false},
+          labels:{style:{colors:'#a89878',fontSize:'11px'},rotate:0,
+            formatter:function(v){
+              v=Math.round(v);
+              // Naechsten Monatsanfang finden
+              for(var mi=11;mi>=0;mi--){
+                if(v>=MONTH_STARTS[mi]&&v<=MONTH_STARTS[mi]+3) return MN[mi];
+              }
+              return '';
+            }}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
         legend:SA.chartTheme.legend,
         title:{text:currentTicker+' \u2014 Krieg vs. Frieden (normalisiert, Start=100)',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
