@@ -366,31 +366,34 @@
        CHART: Krieg vs. Frieden (Saisonalkurven)
        ══════════════════════════════════════════════════════ */
     function renderMainChart(warAvg,peaceAvg,totalAvg,warYears,peaceYears,years){
-      // Serien als x/y-Paare (numerische x-Achse, keine Kategorien)
       function toPairs(arr){return arr.map(function(v,i){return{x:i+1,y:v}})}
       var series=[];
-      if(warAvg.length) series.push({name:'Kriegsjahre ('+warYears.length+')',data:toPairs(warAvg),color:'#ff4757'});
-      if(peaceAvg.length) series.push({name:'Friedensjahre ('+peaceYears.length+')',data:toPairs(peaceAvg),color:'#00d4aa'});
-      if(totalAvg.length) series.push({name:'Gesamt ('+years.length+')',data:toPairs(totalAvg),color:'#4d9fff'});
+      var widths=[],dashes=[];
+      if(warAvg.length){series.push({name:'Kriegsjahre ('+warYears.length+')',data:toPairs(warAvg),color:'#ff4757'});widths.push(3);dashes.push(0)}
+      if(peaceAvg.length){series.push({name:'Friedensjahre ('+peaceYears.length+')',data:toPairs(peaceAvg),color:'#00d4aa'});widths.push(3);dashes.push(0)}
+      if(totalAvg.length){series.push({name:'Gesamt ('+years.length+')',data:toPairs(totalAvg),color:'#4d9fff'});widths.push(2);dashes.push(5)}
+
+      if(series.length===0){
+        document.getElementById('chart-main').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Keine ausreichenden Jahresdaten f\u00FCr die saisonale Analyse.</p>';
+        return;
+      }
 
       if(charts.main) charts.main.destroy();
       charts.main=new ApexCharts(document.getElementById('chart-main'),{
         series:series,
         chart:Object.assign({type:'line',height:480},SA.chartTheme.chart),
-        stroke:{width:[3,3,2],curve:'smooth',dashArray:[0,0,5]},
+        stroke:{width:widths,curve:'smooth',dashArray:dashes},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:100,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
         xaxis:{type:'numeric',min:1,max:365,
-          tickAmount:12,
           axisTicks:{show:false},
+          tickAmount:12,
           labels:{style:{colors:'#a89878',fontSize:'11px'},rotate:0,
             formatter:function(v){
               v=Math.round(v);
-              // Naechsten Monatsanfang finden
-              for(var mi=11;mi>=0;mi--){
-                if(v>=MONTH_STARTS[mi]&&v<=MONTH_STARTS[mi]+3) return MN[mi];
-              }
-              return '';
+              var best=-1,bestDist=999;
+              for(var mi=0;mi<12;mi++){var d=Math.abs(v-MONTH_STARTS[mi]);if(d<bestDist){bestDist=d;best=mi}}
+              return bestDist<=5?MN[best]:'';
             }}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
         legend:SA.chartTheme.legend,
