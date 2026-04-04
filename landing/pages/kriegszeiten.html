@@ -45,8 +45,8 @@
       <datalist id="ticker-list"></datalist>
       <hr>
       <h3>Event-Window</h3>
-      <label>Handelstage vor T=0<br><input type="range" id="rng-before" min="21" max="504" value="252" step="21"><span id="lbl-before">252</span></label>
-      <label>Handelstage nach T=0<br><input type="range" id="rng-after" min="21" max="504" value="252" step="21"><span id="lbl-after">252</span></label>
+      <label>Handelstage vor T=0<br><input type="range" id="rng-before" min="10" max="250" value="250" step="10"><span id="lbl-before">250</span></label>
+      <label>Handelstage nach T=0<br><input type="range" id="rng-after" min="10" max="250" value="250" step="10"><span id="lbl-after">250</span></label>
       <hr>
       <h3>Gl&auml;ttung</h3>
       <label><input type="range" id="rng-smooth" min="1" max="21" value="1" step="2"><span id="lbl-smooth">1</span> Tage</label>
@@ -138,6 +138,7 @@
       {id:'gulf',  name:'Golfkrieg',                         start:1990,end:1991, startDate:'1990-08-02', color:'#c8aa3c'},
       {id:'afgh',  name:'Krieg in Afghanistan',              start:2001,end:2021, startDate:'2001-10-07', color:'#9664b4'},
       {id:'iraq',  name:'Irakkrieg',                         start:2003,end:2011, startDate:'2003-03-19', color:'#c8783c'},
+      {id:'ukr',   name:'Ukraine-Krieg (laufend)',           start:2022,end:2026, startDate:'2022-02-24', color:'#0057b7', active:true},
       {id:'iran',  name:'Iran-Krieg (laufend)',              start:2026,end:2026, startDate:'2026-02-28', color:'#e8a820', active:true}
     ];
 
@@ -229,40 +230,52 @@
       var target=war.startDate;
       var lo=0,hi=rawRows.length-1,t0=-1;
       while(lo<=hi){var mid=(lo+hi)>>1;if(rawRows[mid].date<target)lo=mid+1;else{t0=mid;hi=mid-1}}
-      if(t0<0||t0-daysBefore<0||t0+daysAfter>=rawRows.length) return null;
+      if(t0<0||t0-daysBefore<0) return null;
+
+      // Laufende Kriege: Kurve endet bei letztem verfuegbaren Datenpunkt
+      var maxAfter=rawRows.length-1-t0;
+      var actualAfter=war.active?Math.min(daysAfter,maxAfter):daysAfter;
+      if(!war.active&&t0+daysAfter>=rawRows.length) return null;
 
       var startIdx=t0-daysBefore;
-      var endIdx=t0+daysAfter+1;
-      var window=rawRows.slice(startIdx,endIdx);
+      var endIdx=t0+actualAfter+1;
+      var wnd=rawRows.slice(startIdx,endIdx);
 
       // Normalisieren auf 100 bei T=0
       var t0Close=rawRows[t0].close;
       if(t0Close<=0) return null;
 
       var curve=[];
-      for(var i=0;i<window.length;i++){
-        curve.push(window[i].close/t0Close*100);
+      for(var i=0;i<wnd.length;i++){
+        curve.push(wnd[i].close/t0Close*100);
       }
 
-      // Labels: t-N .. t0 .. t+N
+      // Labels: t-N .. t0 .. t+actualAfter
+      // Fuer den Chart muessen alle Serien gleich lang sein → auffuellen mit null
+      var fullLen=daysBefore+1+daysAfter;
       var labels=[];
       for(var d=-daysBefore;d<=daysAfter;d++){
         labels.push(d===0?'T=0':(d<0?'T'+d:'T+'+d));
       }
+      // Curve auf volle Laenge padden (null = Luecke im Chart)
+      while(curve.length<fullLen) curve.push(null);
 
-      // Drawdown nach T=0 (nur die rechte Haelfte)
+      // Drawdown nach T=0 (nur vorhandene Daten)
       var drawdown=[];
       var peak=curve[daysBefore]; // T=0
       for(var j=daysBefore;j<curve.length;j++){
+        if(curve[j]===null) break;
         if(curve[j]>peak) peak=curve[j];
         drawdown.push((curve[j]-peak)/peak*100);
       }
-      var maxDD=Math.min.apply(null,drawdown);
+      var maxDD=drawdown.length>0?Math.min.apply(null,drawdown):0;
 
-      // Return bei T+daysAfter relativ zu T=0
-      var t0Return=curve[curve.length-1]-100;
+      // Return: letzter realer Wert relativ zu T=0
+      var lastReal=curve[daysBefore+actualAfter];
+      var t0Return=lastReal!==null?lastReal-100:0;
+      var actualDays=actualAfter; // wie viele Tage nach T=0 tatsaechlich vorhanden
 
-      return {curve:curve, drawdown:drawdown, labels:labels, t0Return:t0Return, maxDD:maxDD, t0Date:rawRows[t0].date};
+      return {curve:curve, drawdown:drawdown, labels:labels, t0Return:t0Return, maxDD:maxDD, t0Date:rawRows[t0].date, actualDays:actualDays, isActive:!!war.active};
     }
 
     /* ══════════════════════════════════════════════════════
@@ -370,14 +383,20 @@
       selectedWars.forEach(function(w){
         var result=computeEventWindow(w,daysBefore,daysAfter);
         if(!result) return;
-        var curveSmooth=smooth(result.curve,smoothW);
+        // Smooth nur reale Daten (nicht die null-Padding-Werte)
+        var realLen=daysBefore+1+result.actualDays;
+        var realPart=result.curve.slice(0,realLen);
+        var smoothed=smooth(realPart,smoothW);
+        var curveSmooth=smoothed.slice();
+        while(curveSmooth.length<result.curve.length) curveSmooth.push(null);
         series.push({
-          name:w.name+(w.active?' (laufend)':''),
+          name:w.name+(w.active?' \u2605 laufend':''),
           data:curveSmooth,
           color:w.color
         });
         eventResults.push({war:w, result:result});
-        legendHtml+='<span style="color:'+w.color+'"><span style="background:'+w.color+';width:16px;height:3px;display:inline-block;border-radius:2px;margin-right:4px"></span>'+w.name+'</span> ';
+        var tagHtml=w.active?' <span style="background:'+w.color+';color:#000;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">LIVE</span>':'';
+        legendHtml+='<span style="color:'+w.color+'"><span style="background:'+w.color+';width:16px;height:'+(w.active?'4':'3')+'px;display:inline-block;border-radius:2px;margin-right:4px"></span>'+w.name+tagHtml+'</span> ';
       });
 
       document.getElementById('event-legend').innerHTML=legendHtml;
@@ -393,9 +412,9 @@
       // Labels
       var labels=eventResults[0].result.labels;
 
-      // Widths: thicker for active war
-      var widths=selectedWars.map(function(w){return w.active?4:2.5});
-      var dashes=selectedWars.map(function(w){return w.active?0:0});
+      // Widths: laufende Kriege = dick + durchgehend, historische = duenner
+      var widths=eventResults.map(function(e){return e.war.active?4:2});
+      var dashes=eventResults.map(function(e){return e.war.active?0:0});
 
       if(charts.event) charts.event.destroy();
       charts.event=new ApexCharts(document.getElementById('chart-event'),{
@@ -423,14 +442,22 @@
       });
       charts.event.render();
 
-      // KPIs: bester/schlechtester Krieg
+      // KPIs: bester/schlechtester Krieg + laufende Kriege Status
       if(eventResults.length>0){
-        eventResults.sort(function(a,b){return b.result.t0Return-a.result.t0Return});
-        var best=eventResults[0], worst=eventResults[eventResults.length-1];
-        document.getElementById('kpi-event').innerHTML=
+        var sorted=eventResults.slice().sort(function(a,b){return b.result.t0Return-a.result.t0Return});
+        var best=sorted[0], worst=sorted[sorted.length-1];
+        var worstDD=eventResults.reduce(function(w,e){return e.result.maxDD<w.result.maxDD?e:w});
+        var kpiHtml=
           kpi('Bester (T+'+daysAfter+')',best.war.name.split('(')[0].trim()+': '+fmtPct(best.result.t0Return),'green')+
           kpi('Schlechtester',worst.war.name.split('(')[0].trim()+': '+fmtPct(worst.result.t0Return),'red')+
-          kpi('Tiefster DD',eventResults.reduce(function(w,e){return e.result.maxDD<w.result.maxDD?e:w}).war.name.split('(')[0].trim()+': '+eventResults.reduce(function(w,e){return e.result.maxDD<w.result.maxDD?e:w}).result.maxDD.toFixed(1)+'%','red');
+          kpi('Tiefster DD',worstDD.war.name.split('(')[0].trim()+': '+worstDD.result.maxDD.toFixed(1)+'%','red');
+        // Laufende Kriege einzeln anzeigen
+        eventResults.forEach(function(e){
+          if(e.war.active){
+            kpiHtml+=kpi('\u2605 '+e.war.name.split('(')[0].trim(),'T+'+e.result.actualDays+': '+fmtPct(e.result.t0Return)+' | DD: '+e.result.maxDD.toFixed(1)+'%',e.result.t0Return>=0?'green':'red');
+          }
+        });
+        document.getElementById('kpi-event').innerHTML=kpiHtml;
       }
 
       renderEventBar(eventResults);
@@ -525,20 +552,21 @@
       US_WARS.forEach(function(w){
         var isSelected=selectedWars.some(function(s){return s.id===w.id});
         var wYrs=[];for(var y=w.start;y<=w.end;y++){if(yearData[y])wYrs.push(y)}
-        var tradingDays=(w.end-w.start+1)*252;
-        var statusTag=w.active?'<span class="war-tag active">laufend</span>':'<span class="war-tag ended">beendet</span>';
+        var now=new Date();var curYear=now.getFullYear();
+        var tradingDays=w.active?'\u2248 '+(Math.round((now-new Date(w.startDate))/(86400000*365.25)*252)):((w.end-w.start+1)*252);
+        var statusTag=w.active?'<span class="war-tag active">\u2605 laufend</span>':'<span class="war-tag ended">beendet</span>';
 
         html+='<tr style="opacity:'+(isSelected?'1':'.4')+'">';
         html+='<td style="color:'+(isSelected?w.color:'var(--dim)')+'">'+w.name+'</td>';
-        html+='<td>'+w.start+(w.start!==w.end?'\u2013'+w.end:'')+'</td>';
+        html+='<td>'+w.start+(w.active?'\u2013heute':(w.start!==w.end?'\u2013'+w.end:''))+'</td>';
         html+='<td style="font-family:var(--f-m)">'+w.startDate+'</td>';
-        html+='<td style="font-family:var(--f-m)">'+tradingDays.toLocaleString()+'</td>';
+        html+='<td style="font-family:var(--f-m)">'+(typeof tradingDays==='string'?tradingDays:tradingDays.toLocaleString())+'</td>';
 
-        if(wYrs.length>0&&!w.active){
+        if(wYrs.length>0){
           var wRets=wYrs.map(function(y){return yearData[y].simpleReturn});
           var avg=wRets.reduce(function(s,v){return s+v},0)/wRets.length;
           var wr=wRets.filter(function(r){return r>0}).length/wRets.length*100;
-          html+='<td>'+wYrs.length+'</td>';
+          html+='<td>'+wYrs.length+(w.active?'*':'')+'</td>';
           html+='<td style="color:'+(avg>=0?'var(--green)':'var(--red)')+'">'+fmtPct(avg)+'</td>';
           html+='<td>'+wr.toFixed(0)+'%</td>';
           html+='<td style="color:var(--green)">'+fmtPct(Math.max.apply(null,wRets))+'</td>';
@@ -549,6 +577,7 @@
         html+='<td>'+statusTag+'</td></tr>';
       });
       html+='</table>';
+      html+='<p style="color:var(--muted);font-size:.6875rem;margin-top:.5rem">* Laufende Kriege: Jahresstatistiken bisher abgeschlossener Jahre seit Kriegsbeginn.</p>';
       document.getElementById('content-war-table').innerHTML=html;
     }
 
@@ -585,9 +614,10 @@
         '<li><b>Ticker:</b> '+currentTicker+'</li>'+
         '<li><b>Zeitraum:</b> '+years[0]+'\u2013'+years[years.length-1]+' ('+years.length+' Jahre)</li></ul>'+
         '<h3>Kriegsjahre</h3><ul>'+
-        '<li>10 US-Kriege seit 1898 (Spanisch-Amerikanischer Krieg bis Iran-Krieg)</li>'+
+        '<li>11 Kriege seit 1898 (Spanisch-Amerikanischer Krieg bis Iran-Krieg)</li>'+
         '<li>Jedes Jahr in dem die USA aktiv im Krieg waren z\u00E4hlt als Kriegsjahr</li>'+
-        '<li>Iran-Krieg (ab 28.02.2026) als laufender Konflikt markiert</li></ul>'+
+        '<li>Ukraine-Krieg (ab 24.02.2022) und Iran-Krieg (ab 28.02.2026) als laufende Konflikte</li>'+
+        '<li>Laufende Kriege: Event-Window endet beim letzten verf\u00FCgbaren Handelstag</li></ul>'+
         '<h3>Saisonaler Verlauf (Hauptchart)</h3><ul>'+
         '<li>Jedes Jahr startet bei 100 (erster Handelstag)</li>'+
         '<li>Kumulative Log-Returns, interpoliert auf 365 Kalendertage</li>'+
