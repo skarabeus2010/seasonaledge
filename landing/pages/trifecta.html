@@ -56,6 +56,17 @@
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
+      <h3>Historie ab</h3>
+      <select id="sel-start">
+        <option value="1950" selected>1950</option>
+        <option value="1960">1960</option>
+        <option value="1970">1970</option>
+        <option value="1980">1980</option>
+        <option value="1990">1990</option>
+        <option value="2000">2000</option>
+        <option value="2010">2010</option>
+      </select>
+      <hr>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
     </aside>
 
@@ -200,6 +211,7 @@
 
     /* ── Init ── */
     document.getElementById('chk-current').addEventListener('change',function(){renderAll()});
+    document.getElementById('sel-start').addEventListener('change',function(){renderAll()});
 
     function initialLoad(){
       if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
@@ -227,7 +239,8 @@
 
       var current=calcTrifecta(CURRENT_YEAR);
       var firstYear=parseInt(rawRows[0].date.substring(0,4))+1;
-      var history=calcHistory(Math.max(firstYear,1950),CURRENT_YEAR-1);
+      var selStart=parseInt(document.getElementById('sel-start').value)||1950;
+      var history=calcHistory(Math.max(firstYear,selStart),CURRENT_YEAR-1);
 
       renderAmpel(current);
       renderHistStats(history);
