@@ -230,14 +230,18 @@
       var target=war.startDate;
       var lo=0,hi=rawRows.length-1,t0=-1;
       while(lo<=hi){var mid=(lo+hi)>>1;if(rawRows[mid].date<target)lo=mid+1;else{t0=mid;hi=mid-1}}
-      if(t0<0||t0-daysBefore<0) return null;
+      if(t0<0) return null;
 
-      // Laufende Kriege: Kurve endet bei letztem verfuegbaren Datenpunkt
+      // Laufende Kriege: Kurve endet beim letzten verfuegbaren Datenpunkt
       var maxAfter=rawRows.length-1-t0;
       var actualAfter=war.active?Math.min(daysAfter,maxAfter):daysAfter;
       if(!war.active&&t0+daysAfter>=rawRows.length) return null;
 
-      var startIdx=t0-daysBefore;
+      // Pre-Phase begrenzen auf verfuegbare Daten
+      var actualBefore=Math.min(daysBefore,t0);
+      if(!war.active&&actualBefore<daysBefore) return null;
+
+      var startIdx=t0-actualBefore;
       var endIdx=t0+actualAfter+1;
       var wnd=rawRows.slice(startIdx,endIdx);
 
@@ -250,32 +254,36 @@
         curve.push(wnd[i].close/t0Close*100);
       }
 
-      // Labels: t-N .. t0 .. t+actualAfter
-      // Fuer den Chart muessen alle Serien gleich lang sein → auffuellen mit null
+      // Curve auf volle Laenge padden: null vorne (wenn Pre kuerzer) + null hinten (wenn After kuerzer)
       var fullLen=daysBefore+1+daysAfter;
+      var paddedCurve=[];
+      var preNulls=daysBefore-actualBefore;
+      for(var p=0;p<preNulls;p++) paddedCurve.push(null);
+      for(var c=0;c<curve.length;c++) paddedCurve.push(curve[c]);
+      while(paddedCurve.length<fullLen) paddedCurve.push(null);
+
+      // Labels
       var labels=[];
       for(var d=-daysBefore;d<=daysAfter;d++){
         labels.push(d===0?'T=0':(d<0?'T'+d:'T+'+d));
       }
-      // Curve auf volle Laenge padden (null = Luecke im Chart)
-      while(curve.length<fullLen) curve.push(null);
 
       // Drawdown nach T=0 (nur vorhandene Daten)
       var drawdown=[];
-      var peak=curve[daysBefore]; // T=0
-      for(var j=daysBefore;j<curve.length;j++){
-        if(curve[j]===null) break;
-        if(curve[j]>peak) peak=curve[j];
-        drawdown.push((curve[j]-peak)/peak*100);
+      var peak=paddedCurve[daysBefore]; // T=0
+      for(var j=daysBefore;j<paddedCurve.length;j++){
+        if(paddedCurve[j]===null) break;
+        if(paddedCurve[j]>peak) peak=paddedCurve[j];
+        drawdown.push((paddedCurve[j]-peak)/peak*100);
       }
       var maxDD=drawdown.length>0?Math.min.apply(null,drawdown):0;
 
       // Return: letzter realer Wert relativ zu T=0
-      var lastReal=curve[daysBefore+actualAfter];
-      var t0Return=lastReal!==null?lastReal-100:0;
-      var actualDays=actualAfter; // wie viele Tage nach T=0 tatsaechlich vorhanden
+      var lastRealIdx=daysBefore+actualAfter;
+      var lastReal=paddedCurve[lastRealIdx];
+      var t0Return=lastReal!==null&&lastReal!==undefined?lastReal-100:0;
 
-      return {curve:curve, drawdown:drawdown, labels:labels, t0Return:t0Return, maxDD:maxDD, t0Date:rawRows[t0].date, actualDays:actualDays, isActive:!!war.active};
+      return {curve:paddedCurve, drawdown:drawdown, labels:labels, t0Return:t0Return, maxDD:maxDD, t0Date:rawRows[t0].date, actualDays:actualAfter, actualBefore:actualBefore, isActive:!!war.active};
     }
 
     /* ══════════════════════════════════════════════════════
@@ -384,11 +392,17 @@
         var result=computeEventWindow(w,daysBefore,daysAfter);
         if(!result) return;
         // Smooth nur reale Daten (nicht die null-Padding-Werte)
-        var realLen=daysBefore+1+result.actualDays;
-        var realPart=result.curve.slice(0,realLen);
-        var smoothed=smooth(realPart,smoothW);
-        var curveSmooth=smoothed.slice();
-        while(curveSmooth.length<result.curve.length) curveSmooth.push(null);
+        // Finde erstes und letztes non-null in der Kurve
+        var firstReal=-1,lastReal=-1;
+        for(var ri=0;ri<result.curve.length;ri++){
+          if(result.curve[ri]!==null){if(firstReal<0)firstReal=ri;lastReal=ri;}
+        }
+        var curveSmooth=result.curve.slice();
+        if(firstReal>=0&&lastReal>=0&&smoothW>1){
+          var realPart=result.curve.slice(firstReal,lastReal+1);
+          var smoothed=smooth(realPart,smoothW);
+          for(var si=0;si<smoothed.length;si++) curveSmooth[firstReal+si]=smoothed[si];
+        }
         series.push({
           name:w.name+(w.active?' \u2605 laufend':''),
           data:curveSmooth,
