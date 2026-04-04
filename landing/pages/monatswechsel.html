@@ -71,6 +71,12 @@
         <div class="content"><div class="kpi-row" id="kpi-tom"></div><p class="box-info" id="kpi-info"></p></div>
       </details>
 
+      <!-- Signifikanztest -->
+      <details>
+        <summary>Statistische Signifikanz des Monatswechsel-Effekts</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
       <!-- Best & Worst -->
       <details>
         <summary>Bester &amp; Schlechtester Monatswechsel</summary>
@@ -123,6 +129,7 @@
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/significance.js"></script>
   <script>
   !function(){
     var rawRows=null;
@@ -223,6 +230,7 @@
 
       renderTOMChart(tomResult,p);
       renderKPI(tomResult);
+      renderSignificance(tomResult);
       renderBestWorst(tomResult);
       renderMonthlyPerf();
       renderHeatmap(tomResult);
@@ -275,6 +283,20 @@
         kpi('Max Verlust',fmtPct(s.max_loss),'red');
       document.getElementById('kpi-info').textContent=
         'Basierend auf '+s.total_windows+' Fenstern \u00B7 '+s.winning+' Gewinner / '+s.losing+' Verlierer \u00B7 Std.Abw: '+s.std_dev.toFixed(2)+'%';
+    }
+
+    // ── Signifikanztest ──
+    function renderSignificance(tom){
+      // Gruppen: TOM Gesamt + pro Monat (sortiert Jan→Feb bis Dez→Jan)
+      var groups={};
+      groups['TOM Gesamt']=tom.all_curves.map(function(c){return c.total_return});
+      for(var m=1;m<=12;m++){
+        var key=MN[m-1]+' \u2192 '+MN[m%12];
+        var rets=tom.all_curves.filter(function(c){return c.month===m}).map(function(c){return c.total_return});
+        if(rets.length>=5)groups[key]=rets;
+      }
+      var results=SA.significance.runSignificanceTest(groups);
+      document.getElementById('content-significance').innerHTML=SA.significance.renderSection(results,4);
     }
 
     // ── Best & Worst ──
