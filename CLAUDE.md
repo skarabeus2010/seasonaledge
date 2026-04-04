@@ -69,10 +69,22 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
   css/
     app.css              ← Gemeinsames Design System (V3 Ultra)
   js/
-    app.js               ← Component-Loader + Supabase Client
-    charts.js            ← ApexCharts Theme + Helpers
+    app.js               ← Component-Loader + Supabase Client + Ticker-Autocomplete
+    charts.js            ← ApexCharts Theme + Helpers (curve:'straight'!)
+    seasonal-compute.js  ← Saisonale Berechnungen (buildYearData, TOM, Moon, etc.)
+    decade-compute.js    ← Dekaden-Berechnungen (Drawdown, Percentile, Vola)
+    strategy-compute.js  ← 22 Trading-Strategien + Equity + Stats + StopLoss
+    streak-analysis.js   ← Streak-Analyse (W/L-Serien, Tabelle)
+    significance.js      ← Signifikanztest (t-Test, Cohen's d, CSS Gauges)
+    indicators.js        ← Technische Indikatoren (SMA/EMA/RSI/BB/MACD/LBR)
+    outlier.js           ← Outlier-Filter (IQR, Winsorize)
   pages/
-    dekadenzyklus.html   ← Erste migrierte Page (alle 12 Sektionen)
+    dekadenzyklus.html   ← Dekaden-Analyse (12 Sektionen, Ticker-Wechsel)
+    monatswechsel.html   ← Turn of the Month (TOM, Heatmap, Streak, Signifikanz)
+    mondphasen.html      ← Mondphasen-Effekt (Voll/Neu/Supermond)
+    kriegszeiten.html    ← 11 Kriege, Event-Window, Ukraine+Iran live
+    crash-fruehwarnung.html ← Regime-Ampel + Risk-Score Backtest (IF aus DB)
+    plain-vanilla.html   ← 22 Strategien, Equity-Charts, Trade-Tabellen
     apex-demo.html       ← Chart-Demo
   data/
     DJI-decade.json      ← Vorberechnete Dekaden-Daten
@@ -95,9 +107,11 @@ blog/                    ← Blog Engine (Markdown → statisches HTML)
 .claude/
   blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
 scripts/                 ← Batch-Jobs
-  nightly_refresh.py     ← Nightly DB Refresh (Calendar + Ticker-Daten)
+  nightly_refresh.py     ← Nightly DB Refresh (5 Phasen: Calendar, Ticker, Health, Regime, Log)
   intraday_refresh.py    ← Intraday Kurs-Updates (EU/US/Asien/FX/Crypto, alle 30 Min)
+  compute_regime_scores.py ← Isolation Forest Regime-Scoring (SPY, --full / --incremental)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
+  create_regime_scores.sql ← SQL-Schema für regime_scores Tabelle
 pages/                   ← Light Live + Premium Pages
   Light Live (aktiv, 10 Pages):
     00_Home              ← Startseite (Hero, 3x3 Kacheln, Slider, Stats, Newsletter)
@@ -219,6 +233,9 @@ if _project_dir not in sys.path:
 | Overnight/Intraday: Residual-Ansatz | `overnight = total - intraday` (NICHT `Open/Close.shift(1)`) |
 | OHLC Cross-Day Berechnung verboten | `Open[t]/Close[t-1]` mischt verschiedene adj_factors → Dividend-Bias |
 | Nightly-Refresh: nur 5 Tage | Historische Daten bleiben unveraendert in Supabase |
+| Nightly-Refresh Phasen | A=Calendar, B=Ticker-Daten, C=Health-Check, E=Regime-Scores, D=Log, Z=Heartbeat |
+| Regime-Scores: Isolation Forest | `compute_regime_scores.py --full` (historisch) / Phase E (inkrementell) |
+| regime_scores Tabelle | RLS enabled, anon=SELECT only, Schreiben via GRANT ALL |
 | `log_return` Spalte in Supabase | Vorberechnet, wird von preprocess() genutzt wenn vorhanden |
 | `from shared.data import download_data` | NICHT `from shared.yahoo_downloader` (Supabase-First!) |
 | TDOM/TDOY: boersenspezifisch | `render_trading_day_header(df, ticker=ticker)` — IMMER ticker uebergeben |
