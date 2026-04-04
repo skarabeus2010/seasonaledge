@@ -250,9 +250,7 @@
       document.getElementById('page-caption').textContent=
         'Zeitreihe: '+D.data_start+'\u2013'+D.data_end+' \u00B7 '+D.total_years+' vollst\u00E4ndige Jahre \u00B7 Aktuelles Jahr: '+D.current_year+' (X'+D.current_digit+'-Dekadenjahr)';
 
-      var today=new Date();
-      document.getElementById('trading-day-header').textContent=
-        'Heute: '+today.toLocaleDateString('de-DE')+' \u00B7 '+D.ticker+' \u00B7 X'+D.current_digit+'-Dekadenjahr \u00B7 '+D.total_years+' Jahre Historie';
+      SA.renderTradingDayHeader('trading-day-header',D.ticker,rawRows);
 
       // Dekaden-Toggles generieren
       var togglesEl=document.getElementById('decade-toggles');

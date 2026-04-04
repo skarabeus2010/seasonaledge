@@ -214,4 +214,36 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
   return fetchBatch(0);
 };
 
+// ── Trading Day Header (wiederverwendbar) ──────────────────────────────────
+
+/**
+ * Rendert den gelben Trading-Day-Header mit TDOM + TDOY.
+ * Liest TDOM/TDOY aus den Supabase-Rows (letzte Zeile).
+ *
+ * @param {string} elementId - ID des Header-Containers
+ * @param {string} ticker - Aktueller Ticker
+ * @param {Array} rows - [{date, close, tdom, tdoy}] (optional, fuer TDOM/TDOY)
+ */
+SA.renderTradingDayHeader = function(elementId, ticker, rows) {
+  var el = document.getElementById(elementId);
+  if (!el) return;
+
+  var today = new Date();
+  var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var weekday = weekdays[today.getDay()];
+  var dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  var tdomStr = '\u2013';
+  var tdoyStr = '\u2013';
+
+  if (rows && rows.length > 0) {
+    var last = rows[rows.length - 1];
+    if (last.tdom != null) tdomStr = String(parseInt(last.tdom));
+    if (last.tdoy != null) tdoyStr = String(parseInt(last.tdoy));
+  }
+
+  el.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' \u00B7 ' + ticker +
+    ' \u00B7 TDOM ' + tdomStr + ' \u00B7 TDOY ' + tdoyStr;
+};
+
 window.SA = SA;

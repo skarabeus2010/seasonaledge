@@ -223,8 +223,7 @@
       // Header
       document.getElementById('title-ticker').textContent=currentTicker;
       document.getElementById('page-caption').textContent=p.years.length+' Jahre \u00B7 Fenster: t-'+p.daysBefore+' bis t+'+p.daysAfter+' \u00B7 Alle Monate';
-      var today=new Date();
-      document.getElementById('trading-day-header').textContent='Heute: '+today.toLocaleDateString('de-DE')+' \u00B7 '+currentTicker;
+      SA.renderTradingDayHeader('trading-day-header',currentTicker,rawRows);
 
       if(!tomResult){showError('Keine TOM-Daten');return}
 
@@ -261,7 +260,7 @@
         stroke:{width:sw,curve:'straight'},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{
-          xaxis:[{x:p.daysBefore,borderColor:'#e8a820',strokeDashArray:3,label:{text:'t0 (letzter HT)',style:{color:'#e8a820',fontSize:'10px',background:'rgba(0,0,0,.8)'}}}],
+          xaxis:[{x:'t0',borderColor:'#e8a820',strokeDashArray:4,label:{text:'t0 (letzter HT)',position:'top',orientation:'horizontal',offsetY:-5,style:{color:'#e8a820',fontSize:'10px',fontWeight:700,background:'rgba(0,0,0,.85)',padding:{left:6,right:6,top:3,bottom:3}}}}],
           yaxis:[{y:0,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]
         },
         xaxis:{categories:tom.labels,labels:{style:{colors:'#a89878',fontSize:'11px'}}},
@@ -403,6 +402,7 @@
 
     // ── Praesidentenzyklus TOM ──
     function renderCycleTOM(p){
+      var currentCycleName=SA.seasonal.getPresidentialCycleYear(new Date().getFullYear());
       var results=[];
       for(var ci=0;ci<CYCLE_NAMES.length;ci++){
         var cycleName=CYCLE_NAMES[ci];
@@ -410,7 +410,8 @@
         if(cycleYears.length<3)continue;
         var tom=SA.seasonal.analyzeTurnOfMonth(rawRows,p.daysBefore,p.daysAfter,p.months,cycleYears);
         if(!tom||tom.stats.total_windows<5)continue;
-        results.push({name:CYCLE_SHORT[ci],avg:tom.stats.avg_return,winRate:tom.stats.win_rate,n:tom.stats.total_windows,color:CYCLE_COLORS[ci]});
+        var isCurrent=cycleName===currentCycleName;
+        results.push({name:CYCLE_SHORT[ci],avg:tom.stats.avg_return,winRate:tom.stats.win_rate,n:tom.stats.total_windows,color:CYCLE_COLORS[ci],isCurrent:isCurrent});
       }
       if(!results.length){document.getElementById('content-cycle').innerHTML='<p style="color:var(--muted)">Nicht gen\u00FCgend Daten.</p>';return}
       var best=results[0];for(var i=1;i<results.length;i++){if(results[i].avg>best.avg)best=results[i]}
@@ -422,7 +423,9 @@
       for(var i=0;i<ranked.length;i++){
         var r=ranked[i];
         var rank=i<ranks.length?ranks[i]:'#'+(i+1);
-        html+='<div class="kpi" style="border-color:'+r.color+'"><div class="kpi-label" style="color:'+r.color+'">'+rank+' '+r.name+'</div><div class="kpi-value '+clr(r.avg)+'">'+fmtPct(r.avg)+'</div><div class="kpi-label">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
+        var curBorder=r.isCurrent?'border:2px solid #FFE600;box-shadow:0 0 12px rgba(255,230,0,.2)':'border-color:'+r.color;
+        var curTag=r.isCurrent?' <span style="color:#FFE600;font-size:.625rem">\u2B50 aktuell</span>':'';
+        html+='<div class="kpi" style="'+curBorder+'"><div class="kpi-label" style="color:'+r.color+'">'+rank+' '+r.name+curTag+'</div><div class="kpi-value '+clr(r.avg)+'">'+fmtPct(r.avg)+'</div><div class="kpi-label">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
       }
       html+='</div>';
       html+='<p style="font-size:.75rem;color:var(--muted);margin-top:.75rem"><b>Interpretation:</b> TOM-Effekt aufgesplittet nach Pr\u00E4sidentenzyklus-Jahr. Pre-Election Years zeigen typischerweise den st\u00E4rksten Monatswechsel-Effekt durch erh\u00F6hte fiskalische Stimuli.</p>';
