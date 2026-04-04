@@ -313,7 +313,13 @@
       var selectedWars=getSelectedWars();
 
       var yearData=SA.seasonal.buildYearData(rawRows);
-      var years=Object.keys(yearData).map(Number).sort(function(a,b){return a-b});
+
+      // Jahre mit zu wenig Handelstagen entfernen (Interpolation erzeugt Flat-Lines)
+      // Zaehle echte Handelstage pro Jahr
+      var yearTradingDays={};
+      rawRows.forEach(function(r){var y=parseInt(r.date.substring(0,4));yearTradingDays[y]=(yearTradingDays[y]||0)+1});
+      var years=Object.keys(yearData).map(Number).filter(function(y){return (yearTradingDays[y]||0)>=150}).sort(function(a,b){return a-b});
+
       var warYears=years.filter(function(y){return WAR_YEARS[y]});
       var peaceYears=years.filter(function(y){return !WAR_YEARS[y]});
 
