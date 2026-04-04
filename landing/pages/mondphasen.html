@@ -296,9 +296,10 @@
         series.push({name:phLabel,data:data});
       }
       if(charts.heatmap)charts.heatmap.destroy();
+      var hmCurMonth=new Date().getMonth();
       charts.heatmap=new ApexCharts(document.getElementById('chart-heatmap'),{
         series:series,
-        chart:Object.assign({type:'heatmap',height:series.length>1?250:180},SA.chartTheme.chart),
+        chart:Object.assign({type:'heatmap',height:series.length>1?250:180,events:{mounted:function(){_highlightHeatmapCell('chart-heatmap',hmCurMonth,series.length)}}},SA.chartTheme.chart),
         plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
           {from:-99,to:-0.3,color:'#6b0f0f'},{from:-0.3,to:0,color:'#6b3030'},
           {from:0,to:0.3,color:'#2a2a2a'},{from:0.3,to:99,color:'#0f6b2f'}
@@ -391,10 +392,11 @@
         }
         series.push({name:t.label,data:data});
       }
+      var curMonth=new Date().getMonth(); // 0-basiert
       if(charts.superHm)charts.superHm.destroy();
       charts.superHm=new ApexCharts(document.getElementById('chart-supermoon-heatmap'),{
         series:series,
-        chart:Object.assign({type:'heatmap',height:200},SA.chartTheme.chart),
+        chart:Object.assign({type:'heatmap',height:200,events:{mounted:function(){_highlightHeatmapCell('chart-supermoon-heatmap',curMonth,series.length)}}},SA.chartTheme.chart),
         plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
           {from:-99,to:-0.3,color:'#6b0f0f'},{from:-0.3,to:0,color:'#6b3030'},
           {from:0,to:0.3,color:'#2a2a2a'},{from:0.3,to:99,color:'#0f6b2f'}
@@ -410,7 +412,7 @@
       el.insertAdjacentHTML('beforeend',
         '<p style="font-size:.8125rem;color:var(--dim);margin-top:.75rem;line-height:1.6">'+
         '<b>Lesebeispiel:</b> Jede Zelle zeigt die \u00D8 Rendite (%) im Event-Fenster (t\u2212'+p.daysBefore+' bis t+'+p.daysAfter+') f\u00FCr den jeweiligen Kalendermonat. '+
-        '<span style="color:#0f6b2f">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#6b0f0f">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
+        '<span style="color:#30e878">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#ff4040">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
         'Vergleich: In welchen Monaten performen Supermonde besser/schlechter als normale Vollmonde?</p>');
     }
 
@@ -441,10 +443,16 @@
         }
         series.push({name:'LM '+lm,data:data});
       }
+      var curSolarMonth=new Date().getMonth(); // 0-basiert
+      var nowDeltaLc=(new Date().getTime()-knownNew)/86400000;
+      var curLunarMonth=Math.floor(nowDeltaLc/SA.seasonal._SYNODIC_MONTH)%12+1;
+      if(curLunarMonth<1)curLunarMonth+=12;
+      // In der Heatmap: Y-Achse ist reversed (LM12 oben, LM1 unten), X = Sonnenmonat
+      var lunarRowIdx=12-curLunarMonth; // Position in der reversed Series
       if(charts.lunarHm)charts.lunarHm.destroy();
       charts.lunarHm=new ApexCharts(document.getElementById('chart-lunar-heatmap'),{
         series:series,
-        chart:Object.assign({type:'heatmap',height:450},SA.chartTheme.chart),
+        chart:Object.assign({type:'heatmap',height:450,events:{mounted:function(){_highlightHeatmapCell('chart-lunar-heatmap',curSolarMonth,12,lunarRowIdx)}}},SA.chartTheme.chart),
         plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
           {from:-99,to:-0.5,color:'#6b0f0f'},{from:-0.5,to:-0.2,color:'#8b1a1a'},
           {from:-0.2,to:0,color:'#6b3030'},{from:0,to:0.2,color:'#2a3a2a'},
@@ -477,15 +485,42 @@
       var hmEl=document.getElementById('chart-lunar-heatmap');
       hmEl.insertAdjacentHTML('afterend',
         '<div style="margin-top:.75rem">'+
-        '<p style="font-size:.8125rem;color:var(--dim);line-height:1.6">'+
-        '<b>Lesebeispiel:</b> Jede Zelle zeigt die \u00D8 Rendite (%) f\u00FCr Events die in Mondmonat Y und Sonnenmonat X fallen. '+
-        '<span style="color:#0f6b2f">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#6b0f0f">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
-        'Zeigt ob bestimmte Kombinationen aus Mond- und Sonnenzyklus systematisch besser/schlechter sind.</p>'+
         '<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.5">'+
         '<b>Aktueller Mondmonat:</b> LM '+curLM+' \u00B7 Ein Mondmonat = 29.53 Tage (synodischer Zyklus). '+
         'Die 12 Mondmonate wiederholen sich unabh\u00E4ngig vom Sonnenkalender.<br>'+
         '<b>N\u00E4chste Mondmonate:</b> '+lmDates.slice(0,6).join(' \u00B7 ')+'</p>'+
         '</div>');
+    }
+
+    // ── Heatmap Zelle hervorheben (gelber Rahmen) ──
+    function _highlightHeatmapCell(chartId,colIdx,totalRows,rowIdx){
+      setTimeout(function(){
+        var el=document.getElementById(chartId);
+        if(!el)return;
+        var svg=el.querySelector('svg');
+        if(!svg)return;
+        // ApexCharts Heatmap: .apexcharts-heatmap-rect Elemente
+        var rects=svg.querySelectorAll('.apexcharts-heatmap-rect');
+        if(!rects.length)return;
+        // Rects sind zeilenweise: row0col0, row0col1, ..., row1col0, ...
+        var nCols=12; // Immer 12 Monate
+        var targetRow=rowIdx!==undefined?rowIdx:0; // Default: erste Zeile
+        var idx=targetRow*nCols+colIdx;
+        if(idx>=0&&idx<rects.length){
+          var r=rects[idx];
+          var rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+          rect.setAttribute('x',r.getAttribute('x'));
+          rect.setAttribute('y',r.getAttribute('y'));
+          rect.setAttribute('width',r.getAttribute('width'));
+          rect.setAttribute('height',r.getAttribute('height'));
+          rect.setAttribute('rx',r.getAttribute('rx')||'4');
+          rect.setAttribute('fill','none');
+          rect.setAttribute('stroke','#FFE600');
+          rect.setAttribute('stroke-width','3');
+          rect.setAttribute('class','hm-highlight');
+          r.parentNode.appendChild(rect);
+        }
+      },500);
     }
 
     // Sidebar Events
