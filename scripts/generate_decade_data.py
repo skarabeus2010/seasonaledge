@@ -88,7 +88,9 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
                 log_curve = log_curve[indices]
 
             curves.append(log_curve)
-            returns.append(round(float(log_curve[-1]), 2))
+            # Simple Return fuer Statistiken (nie < -100%, intuitiver als Log-Return)
+            simple_return = (closes[-1] / closes[0] - 1) * 100
+            returns.append(round(float(simple_return), 2))
 
         n = len(curves)
         if n == 0:

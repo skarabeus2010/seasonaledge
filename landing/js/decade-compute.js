@@ -70,7 +70,9 @@ SA.decadeCompute = {
 
         curves.push(logCurve);
         individualCurves.push(logCurve.map(function(v) { return Math.round(v * 10) / 10; }));
-        returns.push(Math.round(logCurve[251] * 100) / 100);
+        // Simple Return fuer Statistiken (nie < -100%, intuitiver als Log-Return)
+        var simpleReturn = (closes[closes.length - 1] / closes[0] - 1) * 100;
+        returns.push(Math.round(simpleReturn * 100) / 100);
       }
 
       var n = curves.length;
