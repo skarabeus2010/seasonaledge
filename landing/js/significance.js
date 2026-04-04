@@ -125,6 +125,14 @@ SA.significance = {
         return ia - ib;
       });
     }
+    // Dynamische Spaltenanzahl: gleichmaessig aufteilen (keine Einzelgaenger)
+    var n = results.length;
+    if (n <= 3) colsPerRow = n;
+    else if (n <= 6) colsPerRow = 3;
+    else if (n <= 8) colsPerRow = 4;
+    else if (n <= 10) colsPerRow = 5;
+    else if (n <= 13) colsPerRow = Math.ceil(n / 3); // 3 Reihen
+    else colsPerRow = Math.ceil(n / 3);
 
     var html = '<div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">';
     for (var i = 0; i < results.length; i++) {

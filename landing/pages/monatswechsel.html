@@ -298,14 +298,14 @@
     function renderSignificance(tom){
       // Gruppen: TOM Gesamt + pro Monat (sortiert Jan→Feb bis Dez→Jan)
       var groups={};
-      groups['TOM Gesamt']=tom.all_curves.map(function(c){return c.total_return});
+      groups['Selected TOM']=tom.all_curves.map(function(c){return c.total_return});
       for(var m=1;m<=12;m++){
         var key=MN[m-1]+' \u2192 '+MN[m%12];
         var rets=tom.all_curves.filter(function(c){return c.month===m}).map(function(c){return c.total_return});
         if(rets.length>=5)groups[key]=rets;
       }
       // Feste Reihenfolge: TOM Gesamt zuerst, dann Jan→Feb bis Dez→Jan
-      var sortOrder=['TOM Gesamt'];
+      var sortOrder=['Selected TOM'];
       for(var si=1;si<=12;si++)sortOrder.push(MN[si-1]+' \u2192 '+MN[si%12]);
       var results=SA.significance.runSignificanceTest(groups);
       document.getElementById('content-significance').innerHTML=SA.significance.renderSection(results,4,sortOrder);
