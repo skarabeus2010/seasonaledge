@@ -430,26 +430,29 @@
       var widths=eventResults.map(function(e){return e.war.active?4:2});
       var dashes=eventResults.map(function(e){return e.war.active?0:0});
 
+      // Serien als [{x:T-Wert, y:Kurs}] fuer numerische x-Achse
+      var pairedSeries=series.map(function(s){
+        var paired=[];
+        for(var pi=0;pi<s.data.length;pi++){
+          if(s.data[pi]!==null) paired.push({x:pi-daysBefore, y:s.data[pi]});
+        }
+        return {name:s.name, data:paired, color:s.color};
+      });
+
       if(charts.event) charts.event.destroy();
       charts.event=new ApexCharts(document.getElementById('chart-event'),{
-        series:series,
+        series:pairedSeries,
         chart:Object.assign({type:'line',height:480},SA.chartTheme.chart),
         stroke:{width:widths,curve:'smooth',dashArray:dashes},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{
-          xaxis:[{x:daysBefore,borderColor:'var(--accent)',strokeDashArray:3,
+          xaxis:[{x:0,borderColor:'var(--accent)',strokeDashArray:3,
             label:{text:'T=0 Kriegsbeginn',style:{color:'#000',background:'var(--accent)',fontSize:'11px',fontFamily:'DM Sans',padding:{left:6,right:6,top:3,bottom:3}}}}],
           yaxis:[{y:100,borderColor:'rgba(255,255,255,.12)',strokeDashArray:4}]
         },
-        xaxis:{categories:labels,tickAmount:Math.min(labels.length,20),labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,rotateAlways:labels.length>30,
-          formatter:function(v,i){
-            if(labels.length<=30) return v;
-            // Nur jeden N-ten Label zeigen
-            var step=Math.ceil(labels.length/20);
-            var idx=typeof i==='object'?i.dataPointIndex:i;
-            if(idx===undefined) return v;
-            return idx%step===0||v==='T=0'?v:'';
-          }}},
+        xaxis:{type:'numeric',tickAmount:20,min:-daysBefore,max:daysAfter,
+          labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,
+            formatter:function(v){v=Math.round(v);return v===0?'T=0':(v<0?'T'+v:'T+'+v)}}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)}}},
         legend:SA.chartTheme.legend,
         title:{text:currentTicker+' \u2014 Marktreaktion um Kriegsbeginn (\u00B1'+daysBefore+'/'+daysAfter+' Handelstage)',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
