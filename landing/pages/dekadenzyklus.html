@@ -447,7 +447,7 @@
           animationEnd:function(){addBandShading()},
           mounted:function(){setTimeout(addBandShading,300)}
         }},SA.chartTheme.chart),
-        stroke:{width:strokeWidths,curve:'smooth',dashArray:dashArr},
+        stroke:{width:strokeWidths,curve:'straight',dashArray:dashArr},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
         xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i}),tickAmount:12,
@@ -693,7 +693,7 @@
       charts.dd=new ApexCharts(document.getElementById('chart-dd'),{
         series:series,
         chart:Object.assign({type:'line',height:420},SA.chartTheme.chart),
-        stroke:{width:series.map(function(s){return s.name.indexOf('aktuell')>=0?3:1.5}),curve:'smooth'},
+        stroke:{width:series.map(function(s){return s.name.indexOf('aktuell')>=0?3:1.5}),curve:'straight'},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i}),tickAmount:12,
           labels:Object.assign({},SA.chartTheme.xaxis.labels,{formatter:function(v){var m=Math.floor(v/21);return SA.MONTHS[m]||''}})},SA.chartTheme.xaxis),
@@ -810,7 +810,7 @@
       charts.vola=new ApexCharts(document.getElementById('chart-vola'),{
         series:series,
         chart:Object.assign({type:'line',height:380},SA.chartTheme.chart),
-        stroke:{width:series.map(function(s){var dig=parseInt(s.name.replace('x',''));return dig===D.current_digit?3:1.5}),curve:'smooth'},
+        stroke:{width:series.map(function(s){var dig=parseInt(s.name.replace('x',''));return dig===D.current_digit?3:1.5}),curve:'straight'},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i}),tickAmount:12,
           labels:Object.assign({},SA.chartTheme.xaxis.labels,{formatter:function(v){var m=Math.floor(v/21);return SA.MONTHS[m]||''}})},SA.chartTheme.xaxis),

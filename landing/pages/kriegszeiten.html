@@ -382,7 +382,7 @@
       charts.main=new ApexCharts(document.getElementById('chart-main'),{
         series:series,
         chart:Object.assign({type:'line',height:480},SA.chartTheme.chart),
-        stroke:{width:widths,curve:'smooth',dashArray:dashes},
+        stroke:{width:widths,curve:'straight',dashArray:dashes},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:100,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
         xaxis:{type:'numeric',min:1,max:365,
@@ -465,7 +465,7 @@
       charts.event=new ApexCharts(document.getElementById('chart-event'),{
         series:pairedSeries,
         chart:Object.assign({type:'line',height:480},SA.chartTheme.chart),
-        stroke:{width:widths,curve:'smooth',dashArray:dashes},
+        stroke:{width:widths,curve:'straight',dashArray:dashes},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{
           xaxis:[{x:0,borderColor:'var(--accent)',strokeDashArray:3,
