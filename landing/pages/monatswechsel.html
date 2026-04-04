@@ -49,6 +49,10 @@
       <label>Tage vor Monatsende<br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
       <label>Tage nach Monatswechsel<br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
       <hr>
+      <h3>Monatswechsel</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
+      <hr>
       <label><input type="checkbox" id="chk-individual"> Einzelne Fenster zeigen</label>
     </aside>
 
@@ -97,6 +101,12 @@
         <div class="content"><div id="chart-window-opt"></div><p class="box-info" id="window-opt-info"></p></div>
       </details>
 
+      <!-- Praesidentenzyklus -->
+      <details open>
+        <summary>Pr&auml;sidentenzyklus &mdash; TOM-Effekt nach Zyklusjahr</summary>
+        <div class="content" id="content-cycle"></div>
+      </details>
+
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -119,6 +129,9 @@
     var currentTicker='';
     var charts={};
     var MN=SA.seasonal.MONTH_NAMES_DE;
+    var CYCLE_NAMES=['Year 1 (Post-Election)','Year 2 (Midterm Election)','Year 3 (Pre-Election)','Year 4 (Election Year)'];
+    var CYCLE_SHORT=['Post-Election','Midterm','Pre-Election','Election'];
+    var CYCLE_COLORS=['#4d9fff','#ff6b6b','#51cf66','#ffd43b'];
 
     function showLoading(msg){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(msg||'Lade...')+'</span>';el.style.display='flex'}
     function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
@@ -150,7 +163,38 @@
       }).catch(function(e){hideLoading();showError('Fehler: '+e)});
     }
 
+    // ── Monatstoggle initialisieren ──
+    function initMonthToggles(){
+      var el=document.getElementById('month-toggles');
+      el.innerHTML='';
+      for(var m=1;m<=12;m++){
+        var lbl=document.createElement('label');
+        var cb=document.createElement('input');
+        cb.type='checkbox';cb.checked=true;cb.dataset.month=m;
+        cb.addEventListener('change',function(){if(rawRows)renderAll()});
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' '+MN[m-1].substring(0,3)+'\u2192'+MN[m%12].substring(0,3)));
+        el.appendChild(lbl);
+      }
+    }
+    initMonthToggles();
+
+    // Alle/Keine Monate
+    document.getElementById('chk-all-months').addEventListener('change',function(){
+      var checked=this.checked;
+      document.querySelectorAll('#month-toggles input').forEach(function(cb){cb.checked=checked});
+      if(rawRows)renderAll();
+    });
+
     // ── Sidebar Parameter ──
+    function getSelectedMonths(){
+      var months=[];
+      document.querySelectorAll('#month-toggles input').forEach(function(cb){
+        if(cb.checked)months.push(parseInt(cb.dataset.month));
+      });
+      return months;
+    }
+
     function getParams(){
       var periodSel=document.getElementById('sel-period').value;
       var yearsBack=periodSel==='max'?999:parseInt(periodSel);
@@ -161,7 +205,8 @@
       rawRows.forEach(function(r){allYears[parseInt(r.date.substring(0,4))]=true});
       var years=Object.keys(allYears).map(Number).sort(function(a,b){return a-b});
       if(yearsBack<999)years=years.filter(function(y){return y>=currentYear-yearsBack});
-      return{daysBefore:daysBefore,daysAfter:daysAfter,years:years,months:[1,2,3,4,5,6,7,8,9,10,11,12]};
+      var months=getSelectedMonths();
+      return{daysBefore:daysBefore,daysAfter:daysAfter,years:years,months:months};
     }
 
     function renderAll(){
@@ -183,6 +228,7 @@
       renderHeatmap(tomResult);
       renderStreaks(tomResult);
       renderWindowOpt(p);
+      renderCycleTOM(p);
       renderMethodik(p);
     }
 
@@ -204,7 +250,7 @@
       charts.tom=new ApexCharts(document.getElementById('chart-tom'),{
         series:series,
         chart:Object.assign({type:'line',height:420},SA.chartTheme.chart),
-        stroke:{width:sw,curve:'smooth'},
+        stroke:{width:sw,curve:'straight'},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{
           xaxis:[{x:p.daysBefore,borderColor:'#e8a820',strokeDashArray:3,label:{text:'t0 (letzter HT)',style:{color:'#e8a820',fontSize:'10px',background:'rgba(0,0,0,.8)'}}}],
@@ -331,6 +377,34 @@
         '<h3>Turn of the Month (TOM)</h3><ul><li><b>Fenster:</b> t-'+p.daysBefore+' bis t+'+p.daysAfter+' ('+p.daysBefore+' Tage vor + '+p.daysAfter+' Tage nach Monatswechsel)</li><li><b>t0:</b> Letzter Handelstag des Monats</li><li><b>Rendite:</b> Kumulierte Log-Returns, normiert auf t0 = 0%</li></ul>'+
         '<h3>Heatmap</h3><ul><li>TOM-Rendite pro Monat \u00D7 Jahr (letzte 10 Jahre)</li></ul>'+
         '<h3>Window-Optimierung</h3><ul><li>7\u00D77 Matrix: Alle Kombinationen t-1..t-7 \u00D7 t+1..t+7</li><li>Zeigt welches Fenster historisch die beste \u00D8-Rendite hatte</li></ul>';
+    }
+
+    // ── Praesidentenzyklus TOM ──
+    function renderCycleTOM(p){
+      var results=[];
+      for(var ci=0;ci<CYCLE_NAMES.length;ci++){
+        var cycleName=CYCLE_NAMES[ci];
+        var cycleYears=p.years.filter(function(y){return SA.seasonal.getPresidentialCycleYear(y)===cycleName});
+        if(cycleYears.length<3)continue;
+        var tom=SA.seasonal.analyzeTurnOfMonth(rawRows,p.daysBefore,p.daysAfter,p.months,cycleYears);
+        if(!tom||tom.stats.total_windows<5)continue;
+        results.push({name:CYCLE_SHORT[ci],avg:tom.stats.avg_return,winRate:tom.stats.win_rate,n:tom.stats.total_windows,color:CYCLE_COLORS[ci]});
+      }
+      if(!results.length){document.getElementById('content-cycle').innerHTML='<p style="color:var(--muted)">Nicht gen\u00FCgend Daten.</p>';return}
+      var best=results[0];for(var i=1;i<results.length;i++){if(results[i].avg>best.avg)best=results[i]}
+      var ranked=results.slice().sort(function(a,b){return b.avg-a.avg});
+      var ranks=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49','#4'];
+
+      var html='<p style="text-align:center;font-size:.8125rem;margin-bottom:1rem">St\u00E4rkster TOM-Effekt: <b style="color:'+best.color+'">'+best.name+'</b> (\u00D8 '+fmtPct(best.avg)+', WR '+best.winRate.toFixed(0)+'%, n='+best.n+')</p>';
+      html+='<div class="kpi-row">';
+      for(var i=0;i<ranked.length;i++){
+        var r=ranked[i];
+        var rank=i<ranks.length?ranks[i]:'#'+(i+1);
+        html+='<div class="kpi" style="border-color:'+r.color+'"><div class="kpi-label" style="color:'+r.color+'">'+rank+' '+r.name+'</div><div class="kpi-value '+clr(r.avg)+'">'+fmtPct(r.avg)+'</div><div class="kpi-label">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
+      }
+      html+='</div>';
+      html+='<p style="font-size:.75rem;color:var(--muted);margin-top:.75rem"><b>Interpretation:</b> TOM-Effekt aufgesplittet nach Pr\u00E4sidentenzyklus-Jahr. Pre-Election Years zeigen typischerweise den st\u00E4rksten Monatswechsel-Effekt durch erh\u00F6hte fiskalische Stimuli.</p>';
+      document.getElementById('content-cycle').innerHTML=html;
     }
 
     // ── Sidebar Events ──

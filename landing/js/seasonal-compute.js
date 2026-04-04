@@ -74,27 +74,28 @@ SA.seasonal = {
       var window = pre.concat(post);
       if (window.length !== windowSize) continue;
 
-      // Log-Returns extrahieren und kumulieren
+      // Log-Returns extrahieren (1:1 wie Python: tom_window["log_return"].values)
       var logRets = [];
-      for (var wi = 1; wi < window.length; wi++) {
+      for (var wi = 0; wi < window.length; wi++) {
         var lr = window[wi].log_return != null
           ? window[wi].log_return
-          : (window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0);
+          : (wi > 0 && window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0);
         logRets.push(lr);
       }
 
-      // Kumulative Kurve (normiert auf t0 = 0%)
+      // Kumulative Kurve (1:1 wie Python: cum_log = cumsum(insert(log_rets, 0, 0)[:-1]))
+      // insert(log_rets, 0, 0) = [0, lr0, lr1, ...], dann [:-1] = [0, lr0, lr1, ..., lr_{n-2}]
       var cumLog = [0];
-      for (var ci = 0; ci < logRets.length; ci++) {
+      for (var ci = 0; ci < logRets.length - 1; ci++) {
         cumLog.push(cumLog[ci] + logRets[ci]);
       }
-      // In Prozent umrechnen: 100 * (exp(cumLog) - 1)
-      var rawCurve = cumLog.map(function(v) { return (Math.exp(v) - 1) * 100; });
+      // raw_curve = 100 * exp(cum_log)
+      var rawCurve = cumLog.map(function(v) { return 100 * Math.exp(v); });
 
-      // Normierung auf t0 (letzter Handelstag des Monats)
+      // Normierung auf t0: curve = (raw / raw[t0] - 1) * 100
       var t0Idx = daysBefore;
       var t0Val = rawCurve[t0Idx];
-      var curve = rawCurve.map(function(v) { return Math.round((v - t0Val) * 100) / 100; });
+      var curve = rawCurve.map(function(v) { return Math.round((v / t0Val - 1) * 10000) / 100; });
 
       var totalReturn = curve[curve.length - 1] - curve[0];
 
