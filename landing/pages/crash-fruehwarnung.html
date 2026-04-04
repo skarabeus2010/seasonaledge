@@ -228,7 +228,24 @@
 
       SA.renderTradingDayHeader('trading-day-header','SPY',rawRows);
 
-      var regime=computeRegime(rawRows);
+      // Regime: DB-Score (Isolation Forest) bevorzugen, Fallback JS-Composite
+      var regime, source;
+      if(regimeRows&&regimeRows.length>0){
+        var last=regimeRows[regimeRows.length-1];
+        regime={
+          traffic_light:last.traffic_light,
+          risk_score:Math.round(parseFloat(last.risk_score)),
+          features:{
+            vol_5d:parseFloat(last.vol_5d)||0,vol_10d:0,vol_20d:parseFloat(last.vol_20d)||0,
+            drawdown:parseFloat(last.drawdown)||0,
+            ret_1d:0,ret_5d:parseFloat(last.ret_5d)||0,ret_20d:parseFloat(last.ret_20d)||0
+          }
+        };
+        source='Isolation Forest';
+      } else {
+        regime=computeRegime(rawRows);
+        source='Composite (JS-Fallback)';
+      }
       var tl=TRAFFIC_LIGHT[regime.traffic_light]||TRAFFIC_LIGHT.grey;
       var f=regime.features;
 
@@ -240,7 +257,7 @@
       var lbl=document.getElementById('ampel-label');
       lbl.textContent=tl.label;
       lbl.style.color=tl.color;
-      document.getElementById('ampel-score').textContent='Risk-Score: '+regime.risk_score+'/100';
+      document.getElementById('ampel-score').textContent='Risk-Score: '+regime.risk_score+'/100 ('+source+')';
       document.getElementById('ampel-desc').innerHTML='<strong style="color:'+tl.color+'">'+tl.label+'</strong> \u2014 '+tl.desc;
 
       // ── KPI ──
