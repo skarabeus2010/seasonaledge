@@ -17,9 +17,24 @@ jobs:
           script: |
             cd /opt/seasonaledge
             git checkout -- seo/output/ 2>/dev/null || true
+            git checkout -- landing/ 2>/dev/null || true
             git pull origin master
+
+            # Supabase Credentials in Landing-HTML injizieren
+            bash deploy/inject_credentials.sh /opt/seasonaledge
+
+            # SEO + Blog generieren
             pip install -q Jinja2 PyYAML 2>/dev/null || pip3 install -q Jinja2 PyYAML 2>/dev/null
             python3 seo/programmatic_seo_builder.py
+
+            # Docker rebuild + restart
             docker compose up -d --build
             docker compose exec -T app python3 blog/blog_builder.py --build
+
+            # Dekaden-Daten generieren (131 Jahre ^DJI via Stooq)
+            docker compose exec -T app python3 scripts/generate_decade_data.py --ticker "^DJI" 2>/dev/null || echo "generate_decade_data.py uebersprungen"
+
+            # nginx config + landing HTML neu laden
+            docker compose restart nginx
+
             echo "Deploy done: $(date)"

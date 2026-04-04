@@ -1,0 +1,42 @@
+#!/bin/bash
+# ══════════════════════════════════════════════════════════════
+# inject_credentials.sh — Supabase Credentials in Landing HTML
+# ══════════════════════════════════════════════════════════════
+# Ersetzt %%SUPABASE_URL%% und %%SUPABASE_ANON_KEY%% Placeholder
+# in allen HTML-Dateien unter landing/.
+#
+# Wird im Deploy-Workflow NACH git pull, VOR docker compose aufgerufen.
+# Liest Credentials aus .env (auf dem VPS).
+#
+# Aufruf: bash deploy/inject_credentials.sh
+
+set -e
+
+REPO_DIR="${1:-/opt/seasonaledge}"
+ENV_FILE="$REPO_DIR/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "WARNUNG: $ENV_FILE nicht gefunden — Credentials nicht injiziert"
+    exit 0
+fi
+
+# .env laden (SUPABASE_URL, SUPABASE_KEY)
+source "$ENV_FILE"
+
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+    echo "WARNUNG: SUPABASE_URL oder SUPABASE_KEY leer — Credentials nicht injiziert"
+    exit 0
+fi
+
+# Placeholder in allen Landing-HTML-Dateien ersetzen
+COUNT=$(grep -rl '%%SUPABASE_URL%%\|%%SUPABASE_ANON_KEY%%' "$REPO_DIR/landing/" 2>/dev/null | wc -l)
+
+if [ "$COUNT" -eq 0 ]; then
+    echo "Keine Placeholder gefunden — bereits injiziert oder keine Landing-Dateien"
+    exit 0
+fi
+
+find "$REPO_DIR/landing" -name "*.html" -exec sed -i \
+    "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g" {} +
+
+echo "Supabase Credentials injiziert in $COUNT Datei(en)"
