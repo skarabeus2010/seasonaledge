@@ -660,9 +660,30 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
 - [x] Kriegszeiten HTML-Page: Event-Window-Analyse, 11 Kriege, Ukraine+Iran laufend (2026-04-04)
       `computeEventWindow()`, T=0 Annotation, Live-Tracking, Drawdown-Vergleich,
       Min-150-Handelstage-Filter, numerische x-Achse, Monatslabel-Formatter.
+- [x] Crash-Frühwarnung HTML-Page: Ampel + SPY-Chart + Risk-Score Backtest (2026-04-04)
+      Isolation Forest Scores aus Supabase, JS-Fallback, Stale-Warning, dynamische Y-Achse.
+- [x] Plain Vanilla Strategien HTML-Page + strategy-compute.js (2026-04-04)
+      22 Strategien, Equity-Chart mit High/Low/Aktuell Annotations, Trade-Tabelle, 6 Kategorie-Tabs.
+- [x] Regime-Scores Backend: regime_scores Tabelle + compute_regime_scores.py (2026-04-04)
+      Isolation Forest (sklearn), 8330 historische SPY-Scores, Nightly Refresh Phase E.
+- [x] curve:'smooth' → 'straight' global auf allen HTML-Pages + charts.js (2026-04-04)
 - [ ] Wochentage Heatmap: Modus-Wechsel zeigt falsche Werte
 - [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug (komprimierte Zellen)
 - [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
+
+## Tägliche Prüfungen (bei Session-Start)
+
+| Was | SQL / Befehl | Erwartung |
+|-----|-------------|-----------|
+| **Nightly Refresh** | `SELECT run_date, duration_seconds, tickers_success, tickers_missing, errors FROM refresh_log ORDER BY run_date DESC LIMIT 3;` | Letzter Run = gestern/heute, errors = `[]` |
+| **Regime-Scores** | `SELECT date, risk_score, traffic_light FROM regime_scores WHERE ticker='SPY' ORDER BY date DESC LIMIT 3;` | Letztes Datum = letzter Handelstag, Score 0–100 |
+| **Preise aktuell** | `SELECT ticker, max(date) as last_date FROM prices WHERE ticker IN ('SPY','^DJI','AAPL') GROUP BY ticker;` | Alle 3 = gestern/heute |
+| **Crash-Frühwarnung** | https://seasonalpha.ai/crash-fruehwarnung | Keine Stale-Warning, Ampel + Chart konsistent |
+
+Bei Fehlern:
+- `ssh root@178.104.75.46` → `docker logs seasonalpha-app --tail 50`
+- Manueller Refresh: `docker exec -it seasonalpha-app python3 scripts/nightly_refresh.py`
+- Regime-Scores: `docker exec -it seasonalpha-app python3 scripts/compute_regime_scores.py --full`
 
 ## Docs (bei Bedarf lesen)
 
