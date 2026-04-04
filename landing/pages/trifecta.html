@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Januar Trifecta &mdash; SeasonAlpha</title>
+  <meta name="description" content="Januar Trifecta Ampelsystem: Santa Claus Rally, First Five Days, January Barometer. Historische Trefferquote seit 1950.">
+  <meta property="og:title" content="Januar Trifecta &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/trifecta">
+  <link rel="canonical" href="https://seasonalpha.ai/trifecta">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .apexcharts-xaxis text title{display:none}
+
+    /* Ampel */
+    .tri-grid{display:grid;grid-template-columns:200px 1fr;gap:1.5rem;margin-bottom:2rem}
+    .tri-ampel{background:linear-gradient(135deg,#0d1117,#161b22);border-radius:16px;padding:28px 20px;text-align:center;position:relative;overflow:hidden}
+    .tri-ampel .glow{position:absolute;top:-40%;left:-40%;width:180%;height:180%;border-radius:50%;z-index:0;pointer-events:none}
+    .tri-ampel>*{position:relative;z-index:1}
+    .tri-emoji{font-size:48px}
+    .tri-signal{font-size:22px;font-weight:700;margin-top:8px}
+    .tri-count{font-size:13px;color:var(--muted);margin-top:6px}
+    .tri-cond{background:linear-gradient(135deg,#0d1117,#161b22);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+    .tri-cond-icon{font-size:22px}
+    .tri-cond-body{flex:1}
+    .tri-cond-label{font-size:13px;font-weight:600;color:var(--text)}
+    .tri-cond-desc{font-size:11px;color:var(--muted);margin-top:2px}
+    .tri-badge{font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap}
+    .tri-badge-green{background:rgba(46,204,113,.15);color:#2ECC71}
+    .tri-badge-red{background:rgba(231,76,60,.15);color:#E74C3C}
+    .tri-badge-gray{background:rgba(108,117,125,.15);color:#6c757d}
+    .hist-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .hist-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .hist-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Januar Trifecta</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption">Drei Signale → Jahresprognose (Yale Hirsch / Stock Trader's Almanac)</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- Ampel -->
+      <div class="tri-grid" id="tri-grid"></div>
+
+      <!-- Historische Statistik -->
+      <details open>
+        <summary>Historische Auswertung</summary>
+        <div class="content"><div class="kpi-row" id="kpi-hist"></div></div>
+      </details>
+
+      <!-- Durchschnittsverlauf -->
+      <details open>
+        <summary>Durchschnittsverlauf nach Ampelfarbe</summary>
+        <div class="content"><div id="chart-curves"></div></div>
+      </details>
+
+      <!-- Max Drawdown -->
+      <details open>
+        <summary>Max Drawdown nach Ampelfarbe</summary>
+        <div class="content"><div class="kpi-row" id="kpi-dd"></div></div>
+      </details>
+
+      <!-- Jahresrendite Bar -->
+      <details>
+        <summary>Jahresrendite (Feb&ndash;Dez) nach Signal</summary>
+        <div class="content"><div id="chart-returns"></div></div>
+      </details>
+
+      <!-- Historische Tabelle -->
+      <details>
+        <summary>Alle Jahre</summary>
+        <div class="content" id="content-table"></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Januar Trifecta</h3>
+          <p>Drei Signale kombiniert ergeben ein Jahresprognose-Signal:</p>
+          <ul>
+            <li><b>Santa Claus Rally</b>: Letzte 5 Handelstage Dez + erste 2 Jan positiv</li>
+            <li><b>First Five Days</b>: Erste 5 Handelstage im Januar positiv</li>
+            <li><b>January Barometer</b>: Gesamter Januar positiv</li>
+          </ul>
+          <h3>Ampel</h3>
+          <ul>
+            <li><span style="color:#2ECC71">&#x1F7E2; Gr&uuml;n</span> = alle 3 erf&uuml;llt &rarr; bullishes Jahressignal</li>
+            <li><span style="color:#F1C40F">&#x1F7E1; Gelb</span> = 2 von 3 &rarr; leicht bullish</li>
+            <li><span style="color:#E67E22">&#x1F7E0; Orange</span> = 1 von 3 &rarr; neutral</li>
+            <li><span style="color:#E74C3C">&#x1F534; Rot</span> = 0 von 3 &rarr; bearish</li>
+          </ul>
+          <p>Quelle: Yale Hirsch, Stock Trader's Almanac. Historische Muster garantieren keine zuk&uuml;nftigen Ergebnisse.</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script>
+  !function(){
+    var rawRows=null,currentTicker='',charts={};
+    var CURRENT_YEAR=new Date().getFullYear();
+    var AMPEL={3:{signal:'Grün',color:'#2ECC71',emoji:'\u{1F7E2}',desc:'Alle 3 Bedingungen erfüllt — starkes bullishes Jahressignal'},
+               2:{signal:'Gelb',color:'#F1C40F',emoji:'\u{1F7E1}',desc:'2 von 3 Bedingungen erfüllt — leicht bullishes Signal'},
+               1:{signal:'Orange',color:'#E67E22',emoji:'\u{1F7E0}',desc:'1 von 3 Bedingungen erfüllt — neutrales Signal'},
+               0:{signal:'Rot',color:'#E74C3C',emoji:'\u{1F534}',desc:'Keine Bedingung erfüllt — bearishes Jahressignal'}};
+
+    function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block'}
+    function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
+
+    /* ── Trifecta Berechnung (Port von januar_trifecta.py) ── */
+    function getTradingDays(year,month){
+      var prefix=year+'-'+(month<10?'0':'')+month;
+      var days=[];
+      for(var i=0;i<rawRows.length;i++){if(rawRows[i].date.substring(0,7)===prefix)days.push(i)}
+      return days;
+    }
+
+    function checkSCR(year){
+      var dez=getTradingDays(year,12),jan=getTradingDays(year+1,1);
+      if(dez.length<5||jan.length<2) return{erfuellt:null,rendite:0};
+      var startIdx=dez[dez.length-5],endIdx=jan[1];
+      var r=(rawRows[endIdx].close-rawRows[startIdx].close)/rawRows[startIdx].close*100;
+      return{erfuellt:r>0,rendite:Math.round(r*100)/100,start:rawRows[startIdx].date,end:rawRows[endIdx].date};
+    }
+    function checkFFD(year){
+      var jan=getTradingDays(year,1),dez=getTradingDays(year-1,12);
+      if(jan.length<5||dez.length<1) return{erfuellt:null,rendite:0};
+      var ref=rawRows[dez[dez.length-1]].close,end=rawRows[jan[4]].close;
+      var r=(end-ref)/ref*100;
+      return{erfuellt:r>0,rendite:Math.round(r*100)/100,start:rawRows[jan[0]].date,end:rawRows[jan[4]].date};
+    }
+    function checkJanB(year){
+      var jan=getTradingDays(year,1),dez=getTradingDays(year-1,12);
+      if(jan.length<10||dez.length<1) return{erfuellt:null,rendite:0};
+      var ref=rawRows[dez[dez.length-1]].close,end=rawRows[jan[jan.length-1]].close;
+      var r=(end-ref)/ref*100;
+      return{erfuellt:r>0,rendite:Math.round(r*100)/100,start:rawRows[jan[0]].date,end:rawRows[jan[jan.length-1]].date};
+    }
+
+    function calcTrifecta(year){
+      var scr=checkSCR(year-1),ffd=checkFFD(year),janb=checkJanB(year);
+      var count=0;
+      if(scr.erfuellt===true)count++;if(ffd.erfuellt===true)count++;if(janb.erfuellt===true)count++;
+      var a=AMPEL[count];
+      return{year:year,count:count,signal:a.signal,color:a.color,emoji:a.emoji,desc:a.desc,scr:scr,ffd:ffd,janb:janb};
+    }
+
+    function calcHistory(startYear,endYear){
+      var results=[];
+      for(var y=startYear;y<=endYear;y++){
+        var t=calcTrifecta(y);
+        // Jahresrendite Feb-Dez
+        var feb=getTradingDays(y,2),dez=getTradingDays(y,12),jan=getTradingDays(y,1);
+        var yr=null;
+        if(feb.length>0&&dez.length>0&&jan.length>0){
+          var janEnd=rawRows[jan[jan.length-1]].close,dezEnd=rawRows[dez[dez.length-1]].close;
+          yr=Math.round((dezEnd-janEnd)/janEnd*10000)/100;
+        }
+        t.yearReturn=yr;
+        results.push(t);
+      }
+      return results;
+    }
+
+    /* ── Init ── */
+    document.getElementById('chk-current').addEventListener('change',function(){renderAll()});
+
+    function initialLoad(){
+      if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0)loadTicker('^DJI');
+      else document.getElementById('page-caption').textContent='Supabase nicht konfiguriert';
+    }
+    initialLoad();
+
+    function loadTicker(ticker){
+      ticker=ticker.trim().toUpperCase();
+      if(!ticker||ticker===currentTicker)return;
+      showLoading('Lade '+ticker+'...');
+      SA.fetchAllPrices(ticker,'&date=gte.1895-01-01').then(function(rows){
+        if(!rows||rows.length<500){hideLoading();showError(ticker+': Zu wenig Daten');return}
+        rows.forEach(function(r){r.close=parseFloat(r.close)});
+        rawRows=rows;currentTicker=ticker;renderAll();hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    /* ── Render ── */
+    function renderAll(){
+      if(!rawRows)return;
+      document.getElementById('title-ticker').textContent=currentTicker;
+      SA.renderTradingDayHeader('trading-day-header',currentTicker,rawRows);
+
+      var current=calcTrifecta(CURRENT_YEAR);
+      var firstYear=parseInt(rawRows[0].date.substring(0,4))+1;
+      var history=calcHistory(Math.max(firstYear,1950),CURRENT_YEAR-1);
+
+      renderAmpel(current);
+      renderHistStats(history);
+      renderCurves(history,current);
+      renderDrawdownKPI(history);
+      renderReturnBar(history);
+      renderTable(history);
+    }
+
+    function renderAmpel(t){
+      var grid=document.getElementById('tri-grid');
+      var condHtml='';
+      var conds=[
+        {key:'scr',icon:'\uD83C\uDF85',label:'Santa Claus Rally',desc:'Letzte 5 HT Dez + erste 2 Jan'},
+        {key:'ffd',icon:'5\uFE0F\u20E3',label:'First Five Days',desc:'Erste 5 Handelstage im Januar'},
+        {key:'janb',icon:'\uD83C\uDF21\uFE0F',label:'January Barometer',desc:'Gesamte Januar-Performance'}
+      ];
+      conds.forEach(function(c){
+        var b=t[c.key];
+        var cls=b.erfuellt===null?'tri-badge-gray':b.erfuellt?'tri-badge-green':'tri-badge-red';
+        var txt=b.erfuellt===null?'N/A':(b.rendite>=0?'+':'')+b.rendite.toFixed(2)+'%';
+        condHtml+='<div class="tri-cond"><div class="tri-cond-icon">'+c.icon+'</div><div class="tri-cond-body"><div class="tri-cond-label">'+c.label+'</div><div class="tri-cond-desc">'+c.desc+'</div></div><span class="tri-badge '+cls+'">'+txt+'</span></div>';
+      });
+      grid.innerHTML='<div class="tri-ampel" style="border:1px solid '+t.color+'30"><div class="glow" style="background:radial-gradient(circle,'+t.color+'25 0%,transparent 70%)"></div><div class="tri-emoji">'+t.emoji+'</div><div class="tri-signal" style="color:'+t.color+'">'+t.signal+'</div><div class="tri-count">'+t.count+' / 3 erfüllt</div></div><div><div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px">'+t.desc+'</div>'+condHtml+'</div>';
+    }
+
+    function renderHistStats(history){
+      var el=document.getElementById('kpi-hist');
+      var counts={Grün:0,Gelb:0,Orange:0,Rot:0};
+      var avgRet={Grün:[],Gelb:[],Orange:[],Rot:[]};
+      history.forEach(function(h){counts[h.signal]++;if(h.yearReturn!==null)avgRet[h.signal].push(h.yearReturn)});
+      var n=history.length;
+      function avg(arr){return arr.length?Math.round(arr.reduce(function(s,v){return s+v},0)/arr.length*10)/10:0}
+      el.innerHTML=
+        kpi('\u{1F7E2} Grün',counts.Grün+'x ('+Math.round(counts.Grün/n*100)+'%) · Ø '+avg(avgRet.Grün)+'%','green')+
+        kpi('\u{1F7E1} Gelb',counts.Gelb+'x ('+Math.round(counts.Gelb/n*100)+'%) · Ø '+avg(avgRet.Gelb)+'%')+
+        kpi('\u{1F7E0} Orange',counts.Orange+'x ('+Math.round(counts.Orange/n*100)+'%) · Ø '+avg(avgRet.Orange)+'%')+
+        kpi('\u{1F534} Rot',counts.Rot+'x ('+Math.round(counts.Rot/n*100)+'%) · Ø '+avg(avgRet.Rot)+'%','red');
+    }
+
+    function renderCurves(history,current){
+      var yearData=SA.seasonal.buildYearData(rawRows);
+      var signalGroups={Grün:[],Gelb:[],Orange:[],Rot:[]};
+      history.forEach(function(h){if(yearData[h.year])signalGroups[h.signal].push(h.year)});
+
+      var series=[];
+      var colors={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'};
+      for(var sig in signalGroups){
+        var yrs=signalGroups[sig];
+        if(!yrs.length) continue;
+        var curves=yrs.map(function(y){return yearData[y].full_365});
+        var avg=[];
+        for(var d=0;d<365;d++){var s=0;for(var j=0;j<curves.length;j++)s+=curves[j][d];avg.push(Math.round((s/curves.length-100)*100)/100)}
+        series.push({name:sig+' (n='+yrs.length+')',data:avg.map(function(v,i){return{x:i+1,y:v}}),color:colors[sig]});
+      }
+
+      // Aktuelles Jahr
+      if(document.getElementById('chk-current').checked&&yearData[CURRENT_YEAR]){
+        var cy=yearData[CURRENT_YEAR].full_365;
+        var cyDays=[];
+        for(var i=0;i<rawRows.length;i++){if(rawRows[i].date.substring(0,4)===String(CURRENT_YEAR))cyDays.push(i)}
+        var nDays=cyDays.length;
+        var cyData=[];
+        for(var d=0;d<Math.min(nDays,365);d++) cyData.push({x:d+1,y:Math.round((cy[d]-100)*100)/100});
+        series.push({name:CURRENT_YEAR+' (aktuell)',data:cyData,color:'#FFD700'});
+      }
+
+      var MN=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      var MS=[1,32,60,91,121,152,182,213,244,274,305,335];
+
+      if(charts.curves) charts.curves.destroy();
+      charts.curves=new ApexCharts(document.getElementById('chart-curves'),{
+        series:series,
+        chart:Object.assign({type:'line',height:450},SA.chartTheme.chart),
+        stroke:{width:series.map(function(s){return s.name.indexOf('aktuell')>=0?3:2.5}),curve:'straight',dashArray:series.map(function(s){return s.name.indexOf('aktuell')>=0?5:0})},
+        dataLabels:{enabled:false},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
+        xaxis:{type:'numeric',min:1,max:365,tickAmount:12,axisTicks:{show:false},labels:{style:{colors:'#a89878',fontSize:'11px'},rotate:0,formatter:function(v){v=Math.round(v);var best=-1,bd=999;for(var i=0;i<12;i++){var d=Math.abs(v-MS[i]);if(d<bd){bd=d;best=i}}return bd<=5?MN[best]:''}}},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return(v>=0?'+':'')+v.toFixed(1)+'%'}}},
+        legend:SA.chartTheme.legend,
+        title:{text:currentTicker+' — Ø Jahresverlauf nach Trifecta-Signal',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.curves.render();
+    }
+
+    function renderDrawdownKPI(history){
+      var yearData=SA.seasonal.buildYearData(rawRows);
+      var el=document.getElementById('kpi-dd');
+      var colors={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'};
+      var html='';
+      for(var sig in colors){
+        var yrs=history.filter(function(h){return h.signal===sig}).map(function(h){return h.year});
+        if(!yrs.length){html+=kpi(sig,'—','');continue}
+        var dds=[];
+        yrs.forEach(function(y){
+          if(!yearData[y])return;
+          var c=yearData[y].full_365;var peak=c[0],worst=0;
+          for(var d=0;d<365;d++){if(c[d]>peak)peak=c[d];var dd=(c[d]-peak)/peak*100;if(dd<worst)worst=dd}
+          dds.push(worst);
+        });
+        var avgDD=Math.round(dds.reduce(function(s,v){return s+v},0)/dds.length*10)/10;
+        var worstDD=Math.round(Math.min.apply(null,dds)*10)/10;
+        html+=kpi(sig+' (n='+yrs.length+')','Ø DD: '+avgDD+'% · Worst: '+worstDD+'%',sig==='Rot'?'red':sig==='Grün'?'green':'');
+      }
+      el.innerHTML=html;
+    }
+
+    function renderReturnBar(history){
+      var valid=history.filter(function(h){return h.yearReturn!==null});
+      var colors={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'};
+      var series=[];
+      for(var sig in colors){
+        var sub=valid.filter(function(h){return h.signal===sig});
+        if(!sub.length)continue;
+        series.push({name:sig,data:sub.map(function(h){return{x:h.year,y:h.yearReturn}}),color:colors[sig]});
+      }
+      if(charts.returns)charts.returns.destroy();
+      charts.returns=new ApexCharts(document.getElementById('chart-returns'),{
+        series:series,
+        chart:Object.assign({type:'bar',height:380},SA.chartTheme.chart),
+        plotOptions:{bar:{columnWidth:'80%',borderRadius:2}},
+        dataLabels:{enabled:false},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
+        xaxis:{type:'numeric',labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return Math.round(v)}}},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
+        legend:SA.chartTheme.legend,
+        title:{text:currentTicker+' — Jahresrendite (Feb–Dez) nach Trifecta-Signal',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.returns.render();
+    }
+
+    function renderTable(history){
+      var html='<table class="hist-table"><tr><th>Jahr</th><th>Signal</th><th>Erfüllt</th><th>SCR %</th><th>FFD %</th><th>JanB %</th><th>Feb-Dez %</th></tr>';
+      for(var i=history.length-1;i>=0;i--){
+        var h=history[i];
+        var clr={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'}[h.signal];
+        function fv(v){if(v===null||v===undefined)return'—';var c=v>=0?'var(--green)':'var(--red)';return'<span style="color:'+c+'">'+(v>=0?'+':'')+v.toFixed(2)+'%</span>'}
+        html+='<tr><td>'+h.year+'</td><td style="color:'+clr+'">'+h.emoji+' '+h.signal+'</td><td>'+h.count+'/3</td>';
+        html+='<td>'+fv(h.scr.rendite)+'</td><td>'+fv(h.ffd.rendite)+'</td><td>'+fv(h.janb.rendite)+'</td>';
+        html+='<td>'+fv(h.yearReturn)+'</td></tr>';
+      }
+      html+='</table>';
+      document.getElementById('content-table').innerHTML=html;
+    }
+
+    SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+  }();
+  </script>
+</body>
+</html>
