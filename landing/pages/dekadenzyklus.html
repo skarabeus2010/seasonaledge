@@ -260,7 +260,7 @@
       showLoading('Lade '+ticker+' aus Datenbank...');
 
       fetchAllPrices(ticker).then(function(rows){
-        if(!rows||rows.length<500){hideLoading();showError(ticker+': Zu wenig Daten ('+((rows&&rows.length)||0)+' Zeilen, min. 500 noetig)');return}
+        if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten ('+((rows&&rows.length)||0)+' Zeilen, min. 200 noetig)');return}
 
         // Numerische Werte sicherstellen
         rows.forEach(function(r){
@@ -418,9 +418,13 @@
     }
 
     // ── Chart 1: Hauptchart ──
+    // Speichert Band-Daten fuer SVG-Shading nach dem Render
+    var _bandPairs=[];
+
     function renderMainChart(){
       var active=getActiveDigits();
       var series=[];
+      _bandPairs=[];
       var showBands=document.getElementById('chk-bands').checked;
       var showPercentile=document.getElementById('chk-percentile').checked;
 
@@ -433,55 +437,68 @@
         // Einzeljahre
         if(document.getElementById('chk-individual').checked&&d.individual_curves){
           for(var j=0;j<d.individual_curves.length;j++){
-            series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i],_band:false});
+            series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i]});
           }
         }
 
-        // Konfidenzband (±1σ) als gestrichelte Linien
+        // Konfidenzband (±1σ)
         if(showBands&&isCur&&d.std_curve&&d.std_curve.length===252){
           var upper=[],lower=[];
           for(var k=0;k<252;k++){
             upper.push(Math.round((d.avg_curve[k]+d.std_curve[k])*100)/100);
             lower.push(Math.round((d.avg_curve[k]-d.std_curve[k])*100)/100);
           }
-          series.push({name:'+1\u03C3 (x'+i+')',data:upper,color:SA.DECADE_COLORS[i],_band:true});
-          series.push({name:'-1\u03C3 (x'+i+')',data:lower,color:SA.DECADE_COLORS[i],_band:true});
+          var hiIdx=series.length;
+          series.push({name:'+1\u03C3',data:upper,color:SA.DECADE_COLORS[i]});
+          var loIdx=series.length;
+          series.push({name:'-1\u03C3',data:lower,color:SA.DECADE_COLORS[i]});
+          _bandPairs.push({hiIdx:hiIdx,loIdx:loIdx,color:SA.DECADE_COLORS[i],opacity:0.12});
         }
 
         // Perzentil-Baender (25./75.)
         if(showPercentile&&isCur&&d.individual_curves&&d.individual_curves.length>=3){
           var pBands=computePercentileCurves(d.individual_curves,25,75);
           if(pBands){
-            series.push({name:'75. %ile (x'+i+')',data:pBands.hi,color:'#e8a820',_band:true});
-            series.push({name:'25. %ile (x'+i+')',data:pBands.lo,color:'#e8a820',_band:true});
+            var phIdx=series.length;
+            series.push({name:'75. %ile',data:pBands.hi,color:'#e8a820'});
+            var plIdx=series.length;
+            series.push({name:'25. %ile',data:pBands.lo,color:'#e8a820'});
+            _bandPairs.push({hiIdx:phIdx,loIdx:plIdx,color:'#e8a820',opacity:0.10});
           }
         }
 
         // Avg-Kurve
         series.push({
           name:(isCur?'\u2728 ':'')+'x'+i+' \u00B7 n='+d.n+' \u00B7 '+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(1)+'%',
-          data:d.avg_curve,color:SA.DECADE_COLORS[i],_band:false
+          data:d.avg_curve,color:SA.DECADE_COLORS[i]
         });
       }
 
       // Aktuelles Jahr
       if(document.getElementById('chk-current').checked&&D.current_year_curve&&D.current_year_curve.length>0){
-        series.push({name:D.current_year+' (aktuell)',data:D.current_year_curve,color:'#FFE600',_band:false});
+        series.push({name:D.current_year+' (aktuell)',data:D.current_year_curve,color:'#FFE600'});
       }
 
       if(charts.lines)charts.lines.destroy();
       var strokeWidths=series.map(function(s){
-        if(s._band)return 1;
+        if(s.name==='+1\u03C3'||s.name==='-1\u03C3')return 0.8;
+        if(s.name==='75. %ile'||s.name==='25. %ile')return 0.8;
         if(s.name.indexOf('aktuell')>=0)return 3;
         if(s.name.indexOf('\u2728')>=0)return 2.5;
         if(/^x\d \d{4}$/.test(s.name))return 0.6;
         return 1.5;
       });
-      var dashArr=series.map(function(s){return s._band?5:0});
+      var dashArr=series.map(function(s){
+        if(s.name==='+1\u03C3'||s.name==='-1\u03C3'||s.name==='75. %ile'||s.name==='25. %ile')return 4;
+        return 0;
+      });
 
       charts.lines=new ApexCharts(document.getElementById('chart-lines'),{
-        series:series.map(function(s){return{name:s.name,data:s.data,color:s.color}}),
-        chart:Object.assign({type:'line',height:500},SA.chartTheme.chart),
+        series:series,
+        chart:Object.assign({type:'line',height:500,events:{
+          mounted:function(){addBandShading()},
+          updated:function(){addBandShading()}
+        }},SA.chartTheme.chart),
         stroke:{width:strokeWidths,curve:'smooth',dashArray:dashArr},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
@@ -492,6 +509,56 @@
         title:{text:D.ticker+' \u2014 \u00D8-Jahresverlauf nach Dekaden-Endziffer',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.lines.render();
+    }
+
+    // ── SVG Shading: Polygon zwischen oberer+unterer Band-Linie ──
+    function addBandShading(){
+      if(!_bandPairs.length)return;
+      var el=document.getElementById('chart-lines');
+      var svg=el.querySelector('svg');
+      if(!svg)return;
+      // Entferne alte Shadings
+      svg.querySelectorAll('.band-shade').forEach(function(e){e.remove()});
+      var paths=svg.querySelectorAll('.apexcharts-line-series path');
+      if(!paths.length)return;
+      _bandPairs.forEach(function(bp){
+        var hiPath=paths[bp.hiIdx];
+        var loPath=paths[bp.loIdx];
+        if(!hiPath||!loPath)return;
+        try{
+          // Punkte aus den SVG-Pfaden extrahieren
+          var hiPts=extractPathPoints(hiPath);
+          var loPts=extractPathPoints(loPath);
+          if(hiPts.length<2||loPts.length<2)return;
+          // Polygon: hi vorwaerts + lo rueckwaerts
+          var polyPts=[];
+          for(var i=0;i<hiPts.length;i++)polyPts.push(hiPts[i].x+','+hiPts[i].y);
+          for(var i=loPts.length-1;i>=0;i--)polyPts.push(loPts[i].x+','+loPts[i].y);
+          var polygon=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+          polygon.setAttribute('points',polyPts.join(' '));
+          polygon.setAttribute('fill',bp.color);
+          polygon.setAttribute('fill-opacity',bp.opacity);
+          polygon.setAttribute('stroke','none');
+          polygon.setAttribute('class','band-shade');
+          // Einfuegen VOR den Linien (dahinter)
+          var plotArea=svg.querySelector('.apexcharts-plot-area');
+          if(plotArea)plotArea.insertBefore(polygon,plotArea.firstChild);
+          else svg.insertBefore(polygon,svg.firstChild);
+        }catch(e){}
+      });
+    }
+
+    function extractPathPoints(pathEl){
+      var pts=[];
+      try{
+        var len=pathEl.getTotalLength();
+        var step=Math.max(1,Math.floor(len/200));
+        for(var i=0;i<=len;i+=step){
+          var p=pathEl.getPointAtLength(i);
+          pts.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10});
+        }
+      }catch(e){}
+      return pts;
     }
 
     // ── Anomalie-Radar ──
@@ -566,7 +633,7 @@
       charts.heatmap=new ApexCharts(document.getElementById('chart-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
-        colorScale:{ranges:[
+        plotOptions:{heatmap:{radius:4,useFillColorAsStroke:false,colorScale:{ranges:[
           {from:-10,to:-3,color:'#6b0f0f',name:'stark negativ'},
           {from:-3,to:-2,color:'#8b1a1a',name:'negativ'},
           {from:-2,to:-1,color:'#a52a2a',name:'m\u00E4\u00DFig negativ'},
@@ -576,10 +643,9 @@
           {from:1,to:2,color:'#1a6b35',name:'m\u00E4\u00DFig positiv'},
           {from:2,to:3,color:'#1a8a45',name:'positiv'},
           {from:3,to:10,color:'#0f6b2f',name:'stark positiv'}
-        ]},
+        ]}}},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)}},
-        plotOptions:{heatmap:{radius:4,enableShades:false}}
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)}}
       });
       charts.heatmap.render();
     }
@@ -727,7 +793,7 @@
       charts.ddHm=new ApexCharts(document.getElementById('chart-dd-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart,{selection:{enabled:false},zoom:{enabled:false}}),
-        colorScale:{ranges:[
+        plotOptions:{heatmap:{radius:4,useFillColorAsStroke:false,colorScale:{ranges:[
           {from:-25,to:-15,color:'#8b0000',name:'extrem'},
           {from:-15,to:-10,color:'#a52222',name:'sehr stark'},
           {from:-10,to:-7,color:'#b83333',name:'stark'},
@@ -736,10 +802,9 @@
           {from:-3,to:-2,color:'#dd7777',name:'leicht-moderat'},
           {from:-2,to:-1,color:'#e09999',name:'leicht'},
           {from:-1,to:0,color:'#e8bbbb',name:'minimal'}
-        ]},
+        ]}}},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
         dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)+'%'}},
-        plotOptions:{heatmap:{radius:4,enableShades:false}},
         title:{text:'\u00D8 Max Drawdown pro Monat \u00D7 Dekade \u2014 '+D.ticker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.ddHm.render();
