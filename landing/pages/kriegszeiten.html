@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Im Schatten des Krieges &mdash; SeasonAlpha</title>
+  <title>War Times &mdash; SeasonAlpha</title>
   <meta name="description" content="Saisonaler B&ouml;rsenverlauf in Kriegsjahren vs. Friedensjahren. US-Kriege seit 1898 mit historischen Renditen.">
   <link rel="canonical" href="https://seasonalpha.ai/kriegszeiten">
   <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
@@ -34,17 +34,11 @@
       <h3>Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
-      <hr>
-      <h3>Gl&auml;ttung</h3>
-      <label>Tage: <input type="range" id="rng-smooth" min="1" max="21" value="5" step="2"><span id="lbl-smooth">5</span></label>
-      <hr>
-      <h3>Outlier-Filter</h3>
-      <div id="outlier-filter"></div>
     </aside>
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Im Schatten des Krieges</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <h1 class="page-title"><b>War Times</b> &mdash; <span id="title-ticker">^DJI</span></h1>
       <p class="page-caption" id="page-caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
@@ -76,7 +70,6 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
-  <script src="/landing/js/outlier.js"></script>
   <script>
   !function(){
     var rawRows=null,currentTicker='',charts={};
@@ -119,7 +112,7 @@
       ticker=ticker.trim().toUpperCase();
       if(!ticker||ticker===currentTicker)return;
       showLoading('Lade '+ticker+'...');
-      SA.fetchAllPrices(ticker).then(function(rows){
+      SA.fetchAllPrices(ticker,'&date=gte.1895-01-01').then(function(rows){
         if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten');return}
         rows.forEach(function(r){r.close=parseFloat(r.close);if(r.log_return!=null)r.log_return=parseFloat(r.log_return)});
         rawRows=rows;currentTicker=ticker;renderAll();hideLoading();
@@ -127,29 +120,8 @@
     }
 
     function renderAll(){
-      var smoothing=parseInt(document.getElementById('rng-smooth').value)||5;
       var yearData=SA.seasonal.buildYearData(rawRows);
       var years=Object.keys(yearData).map(Number).sort(function(a,b){return a-b});
-
-      // Outlier-Filter
-      var outlierMethod=typeof getOutlierMethod==='function'?getOutlierMethod():'off';
-      if(outlierMethod!=='off'){
-        var rets=years.map(function(y){return yearData[y].simpleReturn});
-        if(outlierMethod==='winsorize'){
-          var clipped=SA.outlier.winsorize(rets,3.0);
-          // Winsorize aendert nur Renditen, nicht Kurven — skip fuer Kriegszeiten
-        } else {
-          var factor=outlierMethod==='iqr_strict'?3.0:1.5;
-          var mask=SA.outlier.detectIQR(rets,factor);
-          var filteredYears=years.filter(function(_,i){return !mask[i]});
-          var removed=years.length-filteredYears.length;
-          years=filteredYears;
-          var badge=document.getElementById('outlier-badge');
-          if(badge&&removed>0)badge.textContent=removed+' Outlier entfernt';
-          else if(badge)badge.textContent='';
-        }
-      }
-
       var warYears=years.filter(function(y){return WAR_YEARS[y]});
       var peaceYears=years.filter(function(y){return !WAR_YEARS[y]});
 
@@ -166,17 +138,6 @@
         for(var d=0;d<365;d++){
           var sum=0;for(var j=0;j<curves.length;j++)sum+=curves[j][d];
           avg.push(sum/curves.length);
-        }
-        // Glaettung
-        if(smoothing>1){
-          var half=Math.floor(smoothing/2);
-          var smoothed=[];
-          for(var i=0;i<365;i++){
-            var s=Math.max(0,i-half),e=Math.min(365,i+half+1);
-            var sum=0;for(var j=s;j<e;j++)sum+=avg[j];
-            smoothed.push(sum/(e-s));
-          }
-          return smoothed;
         }
         return avg;
       }
@@ -261,15 +222,10 @@
       document.getElementById('content-methodik').innerHTML=
         '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Zeitraum:</b> '+years[0]+'\u2013'+years[years.length-1]+' ('+years.length+' Jahre)</li></ul>'+
         '<h3>Kriegsjahre</h3><ul><li>9 US-Kriege seit 1898 (Spanisch-Amerikanischer Krieg bis Afghanistan)</li><li>Jedes Jahr in dem die USA aktiv im Krieg waren z\u00E4hlt als Kriegsjahr</li></ul>'+
-        '<h3>Normalisierung</h3><ul><li>Jedes Jahr startet bei 100 (erster Handelstag)</li><li>Kumulative Log-Returns, interpoliert auf 365 Kalendertage</li><li>Gl\u00E4ttung: '+document.getElementById('rng-smooth').value+'-Tage Moving Average (einstellbar)</li></ul>';
+        '<h3>Normalisierung</h3><ul><li>Jedes Jahr startet bei 100 (erster Handelstag)</li><li>Kumulative Log-Returns, interpoliert auf 365 Kalendertage</li></ul>';
     }
 
-    // Sidebar Events
-    document.getElementById('rng-smooth').addEventListener('input',function(){document.getElementById('lbl-smooth').textContent=this.value});
-    document.getElementById('rng-smooth').addEventListener('change',function(){if(rawRows)renderAll()});
-
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
-    var getOutlierMethod=SA.outlier.renderFilterUI('outlier-filter',function(){if(rawRows)renderAll()});
   }();
   </script>
 </body>
