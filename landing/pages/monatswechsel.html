@@ -54,6 +54,9 @@
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <hr>
       <label><input type="checkbox" id="chk-individual"> Einzelne Fenster zeigen</label>
+      <hr>
+      <h3>Technische Filter</h3>
+      <div id="indicator-filters"></div>
     </aside>
 
     <main>
@@ -130,6 +133,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/indicators.js"></script>
   <script>
   !function(){
     var rawRows=null;
@@ -218,7 +222,20 @@
 
     function renderAll(){
       var p=getParams();
-      var tomResult=SA.seasonal.analyzeTurnOfMonth(rawRows,p.daysBefore,p.daysAfter,p.months,p.years);
+
+      // Indikator-Filter anwenden
+      var filteredRows=rawRows;
+      var indFilters=typeof getIndicatorFilters==='function'?getIndicatorFilters():[];
+      if(indFilters.length>0){
+        var closes=rawRows.map(function(r){return r.close});
+        var mask=SA.indicators.applyFilter(closes,indFilters);
+        filteredRows=rawRows.filter(function(_,i){return mask[i]});
+        // Badge anzeigen
+        var badge=document.getElementById('ind_badge');
+        if(badge)badge.textContent=indFilters.length+' Filter aktiv: '+filteredRows.length+'/'+rawRows.length+' Tage ('+Math.round(filteredRows.length/rawRows.length*100)+'%)';
+      }
+
+      var tomResult=SA.seasonal.analyzeTurnOfMonth(filteredRows,p.daysBefore,p.daysAfter,p.months,p.years);
 
       // Header
       document.getElementById('title-ticker').textContent=currentTicker;
@@ -441,6 +458,9 @@
     document.getElementById('chk-individual').addEventListener('change',function(){if(rawRows)renderAll()});
 
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+
+    // Indikator-Filter UI
+    var getIndicatorFilters=SA.indicators.renderFilterUI('indicator-filters',function(){if(rawRows)renderAll()});
   }();
   </script>
 </body>
