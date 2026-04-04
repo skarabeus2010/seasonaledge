@@ -382,19 +382,30 @@
         el.innerHTML=kpi('Status','Keine DB-Scores \u2014 JS-Fallback aktiv','');
         return;
       }
+      // Prüfe ob Scores aktuell sind (max 3 Tage alt)
+      var lastDate=regimeRows[regimeRows.length-1].date;
+      var daysSince=Math.floor((new Date()-new Date(lastDate))/(86400000));
+      var staleWarning='';
+      if(daysSince>3){
+        staleWarning='<div style="background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:.75rem;font-size:.8125rem">\u26A0\uFE0F Scores veraltet: letzter Datenpunkt '+lastDate+' ('+daysSince+' Tage alt). Nightly Refresh pr\u00FCfen!</div>';
+      }
+
       var scores=regimeRows.map(function(r){return parseFloat(r.risk_score)});
       var red=regimeRows.filter(function(r){return r.traffic_light==='red'}).length;
       var yellow=regimeRows.filter(function(r){return r.traffic_light==='yellow'}).length;
       var green=regimeRows.filter(function(r){return r.traffic_light==='green'}).length;
       var avg=scores.reduce(function(s,v){return s+v},0)/scores.length;
       var maxScore=Math.max.apply(null,scores);
-      el.innerHTML=
+      el.innerHTML=staleWarning+
+        '<div class="kpi-row">'+
         kpi('Datenpunkte',regimeRows.length.toLocaleString())+
+        kpi('Zeitraum',regimeRows[0].date+' \u2013 '+lastDate)+
         kpi('\u00D8 Score',avg.toFixed(1))+
         kpi('Max Score',maxScore.toFixed(0),'red')+
         kpi('\uD83D\uDFE2 Ruhig',green+' ('+Math.round(green/regimeRows.length*100)+'%)','green')+
         kpi('\uD83D\uDFE1 Vorsicht',yellow+' ('+Math.round(yellow/regimeRows.length*100)+'%)')+
-        kpi('\uD83D\uDD34 Stress',red+' ('+Math.round(red/regimeRows.length*100)+'%)','red');
+        kpi('\uD83D\uDD34 Stress',red+' ('+Math.round(red/regimeRows.length*100)+'%)','red')+
+        '</div>';
     }
 
   }();

@@ -288,9 +288,11 @@ def main():
         print(f"Health-Check failed: {e}")
 
     # Phase E: Regime-Scores (Isolation Forest)
+    regime_status = {"ok": False, "tickers": [], "scores": 0, "error": None}
     try:
-        from scripts.compute_regime_scores import compute_regime_scores, upsert_regime_scores
+        from scripts.compute_regime_scores import compute_regime_scores, upsert_regime_scores, get_last_score_date
         from shared.data import download_data as _dl_regime, preprocess as _pp_regime
+        from datetime import timedelta as _td
         _regime_tickers = ["SPY"]
         for _rt in _regime_tickers:
             _raw = _dl_regime(_rt)
@@ -298,13 +300,29 @@ def main():
                 _df_r = _pp_regime(_raw)
                 _scores = compute_regime_scores(_df_r)
                 if not _scores.empty:
-                    # Nur letzte 5 Tage upserten (historische aendern sich minimal)
-                    _cutoff = (date.today() - __import__('datetime').timedelta(days=7)).strftime("%Y-%m-%d")
+                    _cutoff = (date.today() - _td(days=7)).strftime("%Y-%m-%d")
                     _recent = _scores[_scores["date"] >= _cutoff]
                     if not _recent.empty:
                         upsert_regime_scores(_rt, _recent)
+                        regime_status["tickers"].append(_rt)
+                        regime_status["scores"] += len(_recent)
                         print(f"Regime-Scores {_rt}: {len(_recent)} Tage aktualisiert ✓")
+
+        # Health-Check: letzter Score darf max 3 Tage alt sein
+        for _rt in _regime_tickers:
+            _last = get_last_score_date(_rt)
+            _max_age = date.today() - _td(days=3)
+            if _last is None or _last.date() < _max_age:
+                _msg = f"Regime-Score {_rt}: letzter Score veraltet ({_last})"
+                app_logger.warning(_msg)
+                print(f"⚠️ {_msg}")
+                regime_status["error"] = _msg
+            else:
+                print(f"Regime-Score {_rt}: aktuell bis {_last.strftime('%Y-%m-%d')} ✓")
+
+        regime_status["ok"] = regime_status["error"] is None and regime_status["scores"] > 0
     except Exception as e:
+        regime_status["error"] = str(e)
         app_logger.error(f"nightly_refresh: Regime-Scores fehlgeschlagen: {e}")
         print(f"Regime-Scores failed: {e}")
 
@@ -313,7 +331,7 @@ def main():
         from shared.supabase_client import get_client
         _log_client = get_client()
         import json
-        _log_client.table("refresh_log").insert({
+        _log_entry = {
             "run_date": date.today().strftime("%Y-%m-%d"),
             "run_type": "nightly",
             "tickers_total": len(tickers),
@@ -322,8 +340,14 @@ def main():
             "missing_details": json.dumps(missing_details),
             "auto_fixed": auto_fixed,
             "duration_seconds": round(time.time() - t_start, 1),
-            "errors": json.dumps(health_errors[:20]),  # Max 20 Fehler loggen
-        }).execute()
+            "errors": json.dumps(health_errors[:20]),
+        }
+        # Regime-Status ergaenzen (in errors-Feld, da kein eigenes Feld)
+        if not regime_status["ok"]:
+            _errs = json.loads(_log_entry["errors"])
+            _errs.append(f"REGIME: {regime_status.get('error', 'unknown')}")
+            _log_entry["errors"] = json.dumps(_errs)
+        _log_client.table("refresh_log").insert(_log_entry).execute()
         print("Refresh-Log: geschrieben ✓")
     except Exception as e:
         print(f"Refresh-Log failed: {e}")
