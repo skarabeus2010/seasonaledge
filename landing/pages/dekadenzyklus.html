@@ -29,6 +29,27 @@
     .worst-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.08em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
     .worst-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim)}
     .worst-table .dd-val{font-weight:700;font-variant-numeric:tabular-nums}
+    /* Percentile Bar */
+    .pbar{display:flex;align-items:center;gap:1rem;padding:.625rem 1rem;margin-bottom:1.5rem;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:.8125rem;flex-wrap:wrap}
+    .pbar__val{font-family:var(--f-d);font-size:1.125rem;font-weight:700}
+    .pbar__val.green{color:var(--green)}.pbar__val.red{color:var(--red)}
+    .pbar__label{color:var(--muted);font-size:.6875rem}
+    .pbar__delta{font-size:.6875rem;padding:.125rem .375rem;border-radius:4px;font-weight:600}
+    .pbar__delta.pos{background:rgba(48,232,120,.12);color:var(--green)}
+    .pbar__delta.neg{background:rgba(255,64,64,.12);color:var(--red)}
+    .pbar__gauge{flex:1;min-width:120px;height:8px;background:rgba(255,255,255,.06);border-radius:4px;position:relative}
+    .pbar__fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--red),#444 50%,var(--green))}
+    .pbar__marker{position:absolute;top:-3px;width:3px;height:14px;background:var(--accent);border-radius:2px;transform:translateX(-50%)}
+    .pbar__stat{color:var(--muted);font-size:.6875rem;font-family:var(--f-m);white-space:nowrap}
+    .pbar__stat b{color:var(--dim);font-weight:600}
+    /* Loading Overlay */
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    /* Error Banner */
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
   </style>
 </head>
 <body>
@@ -44,10 +65,12 @@
       <hr>
       <h3>Darstellung</h3>
       <label><input type="checkbox" id="chk-bands"> &plusmn;1&sigma; Konfidenzband</label>
+      <label><input type="checkbox" id="chk-percentile"> 25./75. Perzentil-B&auml;nder</label>
       <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <hr>
       <h3>Kohorten ein/ausblenden</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades" checked> Alle / Keine</label>
       <div id="decade-toggles"></div>
       <hr>
       <h3>Rolling-Vola Fenster</h3>
@@ -56,6 +79,7 @@
 
     <!-- ═══ MAIN CONTENT ═══ -->
     <main>
+      <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Intra-Decade Seasonality</b> &mdash; <span id="title-ticker">^DJI</span></h1>
       <p class="page-caption" id="page-caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
@@ -89,7 +113,7 @@
 
       <!-- Expander: Tabelle -->
       <details>
-        <summary>&Uuml;bersicht nach Kohorte</summary>
+        <summary>&Uuml;bersicht nach Dekadenjahr</summary>
         <div class="content" id="content-table"></div>
       </details>
 
@@ -154,23 +178,108 @@
 
   <div id="footer-container"></div>
 
+  <script>window.__SA_SB_URL='https://dkrebzobcwxyagximuxy.supabase.co';window.__SA_SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrcmViem9iY3d4eWFneGltdXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDE3NDAsImV4cCI6MjA4OTQxNzc0MH0.-jbtzizuuY6WiNmCF77P1fJMLb4mespy5AiT7nKULTs';</script>
   <script src="/landing/js/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
   <script>
   !function(){
     var D = null; // Dekaden-Daten
     var charts = {}; // Chart-Instanzen
+    var rawRows = null; // Rohe Supabase-Rows (fuer Vola-Neuberechnung)
+    var currentTicker = '';
 
-    // ── Daten laden ──
-    fetch('/landing/data/DJI-decade.json')
-      .then(function(r){return r.json()})
-      .then(function(data){D=data;init()})
-      .catch(function(e){document.getElementById('page-caption').textContent='Fehler beim Laden: '+e});
+    // ── Helpers ──
+    function showLoading(msg){
+      var el=document.getElementById('loading-overlay');
+      if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}
+      el.innerHTML='<div class="spinner"></div><span>'+(msg||'Lade Daten...')+'</span>';
+      el.style.display='flex';
+    }
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(msg){var el=document.getElementById('error-banner');el.textContent=msg;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
+
+    // ── Daten laden: Supabase-First, JSON-Fallback ──
+    function initialLoad(){
+      // Warten bis SA.supabase von app.js gesetzt wurde
+      if(typeof SA==='undefined'||!SA.supabase){
+        setTimeout(initialLoad,50);return;
+      }
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')< 0){
+        loadTicker('^DJI');
+      } else {
+        // Fallback: pre-computed JSON wenn kein Supabase
+        fetch('/landing/data/DJI-decade.json')
+          .then(function(r){return r.json()})
+          .then(function(data){D=data;init()})
+          .catch(function(e){document.getElementById('page-caption').textContent='Fehler beim Laden: '+e});
+      }
+    }
+    initialLoad();
+
+    // ── Supabase Pagination: Alle Rows laden ──
+    function fetchAllPrices(ticker){
+      var allRows=[];
+      var batchSize=1000;
+      function fetchBatch(offset){
+        var q='ticker=eq.'+encodeURIComponent(ticker)+'&select=date,close,log_return,tdom,tdoy&order=date';
+        return fetch(SA.supabase.url+'/rest/v1/prices?'+q,{
+          headers:{
+            'apikey':SA.supabase.key,
+            'Authorization':'Bearer '+SA.supabase.key,
+            'Range':offset+'-'+(offset+batchSize-1),
+            'Prefer':'count=exact'
+          }
+        }).then(function(r){
+          var contentRange=r.headers.get('content-range'); // e.g. "0-999/5432"
+          return r.json().then(function(rows){
+            allRows=allRows.concat(rows);
+            // Pruefen ob es noch mehr Rows gibt
+            if(contentRange){
+              var parts=contentRange.split('/');
+              var total=parseInt(parts[1]);
+              if(allRows.length<total) return fetchBatch(allRows.length);
+            } else if(rows.length===batchSize){
+              return fetchBatch(allRows.length);
+            }
+            return allRows;
+          });
+        });
+      }
+      return fetchBatch(0);
+    }
+
+    // ── Ticker wechseln ──
+    function loadTicker(ticker){
+      ticker=ticker.trim().toUpperCase();
+      if(!ticker)return;
+      if(ticker===currentTicker&&D)return; // Bereits geladen
+
+      if(!SA.supabase.url){showError('Supabase nicht konfiguriert');return}
+      showLoading('Lade '+ticker+' aus Datenbank...');
+
+      fetchAllPrices(ticker).then(function(rows){
+        if(!rows||rows.length<500){hideLoading();showError(ticker+': Zu wenig Daten ('+((rows&&rows.length)||0)+' Zeilen, min. 500 noetig)');return}
+
+        // Numerische Werte sicherstellen
+        rows.forEach(function(r){
+          r.close=parseFloat(r.close);
+          if(r.log_return!=null)r.log_return=parseFloat(r.log_return);
+        });
+
+        var volaWin=parseInt(document.getElementById('vola-window').value)||20;
+        D=SA.decadeCompute.fromPrices(rows,ticker,volaWin);
+        rawRows=rows;
+        currentTicker=ticker;
+        init();
+        hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
 
     function init(){
-      // Ticker-Liste laden (Supabase)
-      if(SA.supabase.url){
+      // Ticker-Liste laden (Supabase) — nur einmal
+      if(SA.supabase.url&&!document.getElementById('ticker-list').children.length){
         SA.supabase.get('tickers','select=ticker,name&aktiv=eq.true&order=ticker').then(function(tickers){
           var dl=document.getElementById('ticker-list');
           if(dl&&tickers&&tickers.length){
@@ -186,6 +295,7 @@
 
       // Header
       document.getElementById('title-ticker').textContent=D.ticker;
+      document.getElementById('ticker-input').value=D.ticker;
       document.getElementById('page-caption').textContent=
         'Zeitreihe: '+D.data_start+'\u2013'+D.data_end+' \u00B7 '+D.total_years+' vollst\u00E4ndige Jahre \u00B7 Aktuelles Jahr: '+D.current_year+' (X'+D.current_digit+'-Kohorte)';
 
@@ -207,16 +317,18 @@
       }
 
       // Drawdown Header
+      var dcYears=D.decades[D.current_digit]&&D.decades[D.current_digit].years?D.decades[D.current_digit].years.join(', '):'';
       document.getElementById('dd-header-text').innerHTML=
-        'Der Drawdown misst den maximalen R\u00FCckgang vom Jahreshoch in Prozent. Jede Linie zeigt den <u>Durchschnitt aller Jahre mit derselben Dekaden-Endziffer</u> (z.B. x'+D.current_digit+' = '+D.decades[D.current_digit].years.join(', ')+'). Das aktuelle Jahr '+D.current_year+' ist als goldene Linie hervorgehoben.';
+        'Der Drawdown misst den maximalen R\u00FCckgang vom Jahreshoch in Prozent. Jede Linie zeigt den <u>Durchschnitt aller Jahre mit derselben Dekaden-Endziffer</u> (z.B. x'+D.current_digit+' = '+dcYears+'). Das aktuelle Jahr '+D.current_year+' ist als goldene Linie hervorgehoben.';
 
       // Methodik
+      var volaWin=parseInt(document.getElementById('vola-window').value)||D.vola_window||20;
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+D.ticker+'</li><li><b>Datenzeitraum:</b> '+D.data_start+'\u2013'+D.data_end+' ('+D.total_years+' vollst\u00E4ndige Jahre)</li><li><b>Datenquellen:</b> Yahoo Finance + Stooq.com (historisch)</li><li><b>Mindestl\u00E4nge:</b> Jahre mit &lt;200 Handelstagen werden ausgeschlossen</li></ul>'+
+        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+D.ticker+'</li><li><b>Datenzeitraum:</b> '+D.data_start+'\u2013'+D.data_end+' ('+D.total_years+' vollst\u00E4ndige Jahre)</li><li><b>Datenquellen:</b> Yahoo Finance + Stooq.com (historisch) + Supabase</li><li><b>Mindestl\u00E4nge:</b> Jahre mit &lt;200 Handelstagen werden ausgeschlossen</li></ul>'+
         '<h3>Rendite-Analyse</h3><ul><li><b>Normierung:</b> Erster Handelstag jedes Jahres = 0% (logarithmische Returns)</li><li><b>Interpolation:</b> Jede Jahreskurve auf 252 Handelstage normiert</li><li><b>Kohorten:</b> Gruppierung nach letzter Ziffer (x0 = 1900, 1910, \u2026)</li><li><b>Gl\u00E4ttung:</b> 5-Tage zentrierter Moving Average</li></ul>'+
         '<h3>Drawdown-Analyse</h3><ul><li><b>Definition:</b> DD = (Kurs \u2013 H\u00F6chstkurs seit Jahresbeginn) / H\u00F6chstkurs \u00D7 100</li><li><b>\u00D8 Drawdown-Verlauf:</b> Pro Kohorte gemittelt</li><li><b>Worst-DD-Tabelle:</b> Top 25 schlimmste Drawdown-Jahre</li></ul>'+
-        '<h3>Volatilit\u00E4ts-Analyse</h3><ul><li><b>Rolling Volatilit\u00E4t:</b> \u03C3_annualisiert = \u03C3_t\u00E4glich \u00D7 \u221A252 \u00D7 100</li><li><b>Fenster:</b> '+D.vola_window+' Tage (einstellbar in Sidebar)</li></ul>'+
-        '<h3>Anomalie-Radar</h3><ul><li><b>Methode:</b> Isolation Forest (ML)</li><li><b>Score:</b> 0\u2013100 (ab 40 = leicht anomal, ab 70 = stark anomal)</li></ul>';
+        '<h3>Volatilit\u00E4ts-Analyse</h3><ul><li><b>Rolling Volatilit\u00E4t:</b> \u03C3_annualisiert = \u03C3_t\u00E4glich \u00D7 \u221A252 \u00D7 100</li><li><b>Fenster:</b> '+volaWin+' Tage (einstellbar in Sidebar)</li></ul>'+
+        '<h3>Anomalie-Radar</h3><ul><li><b>Methode:</b> '+(rawRows?'Z-Score Vergleich':'Isolation Forest (ML)')+'</li><li><b>Score:</b> 0\u2013100 (ab 40 = leicht anomal, ab 70 = stark anomal)</li></ul>';
 
       renderAll();
     }
@@ -232,6 +344,7 @@
     function renderAll(){
       renderKPI();
       renderMainChart();
+      renderPercentileBar();
       renderAnomalieRadar();
       renderBarChart();
       renderTable();
@@ -246,6 +359,7 @@
     // ── KPI Cards ──
     function renderKPI(){
       var d=D.decades[D.current_digit];
+      if(!d||d.n===0){document.getElementById('kpi-kohorte').innerHTML='<p style="color:var(--muted)">Keine Daten fuer x'+D.current_digit+'</p>';return}
       var avgClr=d.avg_return>=0?'green':'red';
       var medClr=d.median_return>=0?'green':'red';
       document.getElementById('kpi-kohorte').innerHTML=
@@ -255,7 +369,6 @@
         kpi('Win-Rate',d.win_rate.toFixed(0)+'%','')+
         kpi('Volatilit\u00E4t (\u03C3)',d.volatility.toFixed(2)+'%','');
       document.getElementById('sum-kohorte').textContent='\uD83C\uDFAF X'+D.current_digit+'-Kohorte \u2014 Einordnung '+D.current_year;
-      // Kohorte Details
       var best=Math.max.apply(null,d.returns);
       var worst=Math.min.apply(null,d.returns);
       document.getElementById('content-kohorte').innerHTML=
@@ -268,10 +381,49 @@
       return '<div class="kpi"><div class="kpi-label">'+label+'</div><div class="'+cls+'">'+value+'</div></div>';
     }
 
+    // ── Percentile Bar ──
+    function renderPercentileBar(){
+      var el=document.getElementById('percentile-bar');
+      var d=D.decades[D.current_digit];
+      if(!d||d.n<3||!D.current_year_curve||D.current_year_curve.length<5){el.innerHTML='';return}
+      var curVal=D.current_year_curve[D.current_year_curve.length-1];
+      var p=SA.decadeCompute.computePercentile(curVal,d.returns);
+      var valClr=curVal>=0?'green':'red';
+      var deltaClr=p.delta>=0?'pos':'neg';
+      el.innerHTML=
+        '<div class="pbar">'+
+          '<div><div class="pbar__label">YTD '+D.current_year+'</div><div class="pbar__val '+valClr+'">'+(curVal>=0?'+':'')+curVal.toFixed(2)+'%</div></div>'+
+          '<div><div class="pbar__label">\u00D8 x'+D.current_digit+'</div><div class="pbar__val">'+(p.mean>=0?'+':'')+p.mean.toFixed(2)+'%</div></div>'+
+          '<div class="pbar__delta '+deltaClr+'">'+(p.delta>=0?'+':'')+p.delta.toFixed(2)+'%</div>'+
+          '<div class="pbar__gauge"><div class="pbar__fill"></div><div class="pbar__marker" style="left:'+Math.max(2,Math.min(98,p.rank))+'%"></div></div>'+
+          '<div class="pbar__stat"><b>'+p.rank+'</b>%ile</div>'+
+          '<div class="pbar__stat">z=<b>'+p.zscore.toFixed(1)+'</b></div>'+
+          '<div class="pbar__stat">n=<b>'+p.n+'</b></div>'+
+        '</div>';
+    }
+
+    // ── Perzentil-Kurven berechnen (25./75. ueber individual_curves) ──
+    function computePercentileCurves(curves,pLow,pHigh){
+      if(!curves||curves.length<3)return null;
+      var len=curves[0].length;
+      var lo=[],hi=[];
+      for(var i=0;i<len;i++){
+        var vals=[];
+        for(var j=0;j<curves.length;j++)vals.push(curves[j][i]);
+        vals.sort(function(a,b){return a-b});
+        lo.push(vals[Math.floor(vals.length*pLow/100)]);
+        hi.push(vals[Math.floor(vals.length*pHigh/100)]);
+      }
+      return{lo:lo,hi:hi};
+    }
+
     // ── Chart 1: Hauptchart ──
     function renderMainChart(){
       var active=getActiveDigits();
       var series=[];
+      var showBands=document.getElementById('chk-bands').checked;
+      var showPercentile=document.getElementById('chk-percentile').checked;
+
       for(var i=0;i<10;i++){
         if(active.indexOf(i)<0)continue;
         var d=D.decades[i];
@@ -281,33 +433,56 @@
         // Einzeljahre
         if(document.getElementById('chk-individual').checked&&d.individual_curves){
           for(var j=0;j<d.individual_curves.length;j++){
-            series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i],type:'line'});
+            series.push({name:'x'+i+' '+d.years[j],data:d.individual_curves[j],color:SA.DECADE_COLORS[i],_band:false});
           }
         }
 
+        // Konfidenzband (±1σ) als gestrichelte Linien
+        if(showBands&&isCur&&d.std_curve&&d.std_curve.length===252){
+          var upper=[],lower=[];
+          for(var k=0;k<252;k++){
+            upper.push(Math.round((d.avg_curve[k]+d.std_curve[k])*100)/100);
+            lower.push(Math.round((d.avg_curve[k]-d.std_curve[k])*100)/100);
+          }
+          series.push({name:'+1\u03C3 (x'+i+')',data:upper,color:SA.DECADE_COLORS[i],_band:true});
+          series.push({name:'-1\u03C3 (x'+i+')',data:lower,color:SA.DECADE_COLORS[i],_band:true});
+        }
+
+        // Perzentil-Baender (25./75.)
+        if(showPercentile&&isCur&&d.individual_curves&&d.individual_curves.length>=3){
+          var pBands=computePercentileCurves(d.individual_curves,25,75);
+          if(pBands){
+            series.push({name:'75. %ile (x'+i+')',data:pBands.hi,color:'#e8a820',_band:true});
+            series.push({name:'25. %ile (x'+i+')',data:pBands.lo,color:'#e8a820',_band:true});
+          }
+        }
+
+        // Avg-Kurve
         series.push({
           name:(isCur?'\u2728 ':'')+'x'+i+' \u00B7 n='+d.n+' \u00B7 '+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(1)+'%',
-          data:d.avg_curve,color:SA.DECADE_COLORS[i]
+          data:d.avg_curve,color:SA.DECADE_COLORS[i],_band:false
         });
       }
 
       // Aktuelles Jahr
-      if(document.getElementById('chk-current').checked&&D.current_year_curve.length>0){
-        series.push({name:D.current_year+' (aktuell)',data:D.current_year_curve,color:'#FFE600'});
+      if(document.getElementById('chk-current').checked&&D.current_year_curve&&D.current_year_curve.length>0){
+        series.push({name:D.current_year+' (aktuell)',data:D.current_year_curve,color:'#FFE600',_band:false});
       }
 
       if(charts.lines)charts.lines.destroy();
       var strokeWidths=series.map(function(s){
+        if(s._band)return 1;
         if(s.name.indexOf('aktuell')>=0)return 3;
         if(s.name.indexOf('\u2728')>=0)return 2.5;
-        if(s.name.indexOf('x')===0&&s.name.length<6)return 0.6; // Einzeljahre
+        if(/^x\d \d{4}$/.test(s.name))return 0.6;
         return 1.5;
       });
+      var dashArr=series.map(function(s){return s._band?5:0});
 
       charts.lines=new ApexCharts(document.getElementById('chart-lines'),{
-        series:series,
+        series:series.map(function(s){return{name:s.name,data:s.data,color:s.color}}),
         chart:Object.assign({type:'line',height:500},SA.chartTheme.chart),
-        stroke:{width:strokeWidths,curve:'smooth'},
+        stroke:{width:strokeWidths,curve:'smooth',dashArray:dashArr},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
         xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i}),tickAmount:12,
@@ -333,7 +508,7 @@
         kpi('Aktuelle 10d-Rendite',(a.return_10d>=0?'+':'')+a.return_10d.toFixed(2)+'%',retClr)+
         kpi('Historischer \u00D8',(a.avg_10d>=0?'+':'')+a.avg_10d.toFixed(2)+'%','')+
         '</div>'+
-        '<p style="font-size:.6875rem;color:var(--muted);text-align:center;margin-top:.5rem">Isolation Forest vergleicht die letzten 10 Handelstage mit '+a.n_comparisons+' historischen Fenstern am gleichen Kalenderzeitpunkt.</p>';
+        '<p style="font-size:.6875rem;color:var(--muted);text-align:center;margin-top:.5rem">'+(rawRows?'Z-Score':'Isolation Forest')+' vergleicht die letzten 10 Handelstage mit '+a.n_comparisons+' historischen Fenstern am gleichen Kalenderzeitpunkt.</p>';
     }
 
     // ── Chart 2: Bar ──
@@ -342,33 +517,39 @@
       for(var i=0;i<10;i++){
         cats.push('x'+i);
         var v=D.decades[i].avg_return;
-        vals.push(v);colors.push(v>=0?'#2ECC71':SA.COLORS.red);
+        vals.push(v);
+        // Dunklere Gruen-Toene passend zum Dark Theme
+        colors.push(v>=0?'#1a9a5a':SA.COLORS.red);
       }
       if(charts.bar)charts.bar.destroy();
       charts.bar=new ApexCharts(document.getElementById('chart-bar'),{
         series:[{name:'\u00D8 Return',data:vals}],
         chart:Object.assign({type:'bar',height:350},SA.chartTheme.chart),
         colors:colors,
-        plotOptions:{bar:{borderRadius:4,distributed:true,columnWidth:'60%'}},
-        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
-        xaxis:Object.assign({categories:cats},SA.chartTheme.xaxis),
-        yaxis:SA.chartTheme.yaxis,legend:{show:false},
+        plotOptions:{bar:{borderRadius:6,distributed:true,columnWidth:'55%',
+          background:{enabled:true,foreColor:'rgba(255,255,255,.03)',borderRadius:6}}},
+        grid:Object.assign({},SA.chartTheme.grid,{padding:{left:10,right:10}}),
+        tooltip:SA.chartTheme.tooltip,
+        xaxis:Object.assign({categories:cats},SA.chartTheme.xaxis,{labels:{style:{colors:cats.map(function(_,i){return i===D.current_digit?'#e8a820':'#a89878'}),fontSize:'12px',fontWeight:cats.map(function(_,i){return i===D.current_digit?700:400})}}}),
+        yaxis:Object.assign({},SA.chartTheme.yaxis,{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%'}}}),
+        legend:{show:false},
         annotations:{points:[{x:'x'+D.current_digit,y:D.decades[D.current_digit].avg_return,marker:{size:0},label:{text:'\u2B50 We are here!',offsetY:-30,style:{color:'#FFE600',fontSize:'11px',fontWeight:700,background:'rgba(0,0,0,.85)',padding:{left:8,right:8,top:4,bottom:4}}}}]},
-        dataLabels:{enabled:true,style:{fontSize:'11px',colors:['#fff']},formatter:function(v){return v.toFixed(1)+'%'}}
+        dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:600,colors:['#fff']},formatter:function(v){return (v>=0?'+':'')+v.toFixed(1)+'%'},offsetY:-2}
       });
       charts.bar.render();
     }
 
     // ── Tabelle ──
     function renderTable(){
-      var html='<table class="worst-table"><tr><th>Kohorte</th><th>n</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Volatilit\u00E4t</th><th>Jahre</th></tr>';
+      var html='<table class="worst-table"><tr><th>Kohorte</th><th>n</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Avg. DD</th><th>Jahre</th></tr>';
       for(var i=0;i<10;i++){
         var d=D.decades[i];
         var bg=i===D.current_digit?'background:rgba(232,168,32,.08)':'';
         html+='<tr style="'+bg+'"><td>x'+i+'</td><td>'+d.n+'</td>';
         html+='<td class="dd-val" style="color:'+(d.avg_return>=0?'var(--green)':'var(--red)')+'">'+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(2)+'%</td>';
         html+='<td class="dd-val" style="color:'+(d.median_return>=0?'var(--green)':'var(--red)')+'">'+(d.median_return>=0?'+':'')+d.median_return.toFixed(2)+'%</td>';
-        html+='<td>'+d.win_rate.toFixed(0)+'%</td><td>'+d.volatility.toFixed(2)+'%</td>';
+        html+='<td>'+d.win_rate.toFixed(0)+'%</td>';
+        html+='<td class="dd-val" style="color:var(--red)">'+d.dd_worst.toFixed(1)+'%</td>';
         html+='<td style="font-size:.75rem;color:var(--muted)">'+d.years.join(', ')+'</td></tr>';
       }
       html+='</table>';
@@ -386,15 +567,15 @@
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
         colorScale:{ranges:[
-          {from:-10,to:-3,color:'#922b21',name:'stark negativ'},
-          {from:-3,to:-2,color:'#c0392b',name:'negativ'},
-          {from:-2,to:-1,color:'#d4736b',name:'m\u00E4\u00DFig negativ'},
-          {from:-1,to:-0.3,color:'#dba8a0',name:'leicht negativ'},
-          {from:-0.3,to:0.3,color:'#444',name:'neutral'},
-          {from:0.3,to:1,color:'#82c991',name:'leicht positiv'},
-          {from:1,to:2,color:'#27ae60',name:'m\u00E4\u00DFig positiv'},
-          {from:2,to:3,color:'#1e8449',name:'positiv'},
-          {from:3,to:10,color:'#145a32',name:'stark positiv'}
+          {from:-10,to:-3,color:'#6b0f0f',name:'stark negativ'},
+          {from:-3,to:-2,color:'#8b1a1a',name:'negativ'},
+          {from:-2,to:-1,color:'#a52a2a',name:'m\u00E4\u00DFig negativ'},
+          {from:-1,to:-0.3,color:'#6b3030',name:'leicht negativ'},
+          {from:-0.3,to:0.3,color:'#2a2a2a',name:'neutral'},
+          {from:0.3,to:1,color:'#1a4a2a',name:'leicht positiv'},
+          {from:1,to:2,color:'#1a6b35',name:'m\u00E4\u00DFig positiv'},
+          {from:2,to:3,color:'#1a8a45',name:'positiv'},
+          {from:3,to:10,color:'#0f6b2f',name:'stark positiv'}
         ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
         dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)}},
@@ -403,7 +584,7 @@
       charts.heatmap.render();
     }
 
-    // ── Chart 4: Box-Plot (HTML Canvas, kein ApexCharts) ──
+    // ── Chart 4: Box-Plot (HTML Canvas) ──
     function renderBoxPlot(){
       var el=document.getElementById('chart-box');
       var canvas=el.querySelector('canvas');
@@ -416,7 +597,6 @@
       var pad={l:50,r:20,t:30,b:40};
       var cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
 
-      // Y-Range berechnen
       var yMin=Infinity,yMax=-Infinity;
       for(var i=0;i<10;i++){
         var rets=D.decades[i].returns;
@@ -426,7 +606,6 @@
       function yPos(v){return pad.t+ch-(v-yMin)/(yMax-yMin)*ch}
 
       ctx.clearRect(0,0,w,h);
-      // Nulllinie
       ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
       ctx.beginPath();ctx.moveTo(pad.l,yPos(0));ctx.lineTo(pad.l+cw,yPos(0));ctx.stroke();ctx.setLineDash([]);
 
@@ -438,38 +617,31 @@
         var mn=rets[0],q1=rets[Math.floor(n*.25)],med=rets[Math.floor(n*.5)],q3=rets[Math.floor(n*.75)],mx=rets[n-1];
         var cx=pad.l+cw/10*(i+.5);
         var isCur=i===D.current_digit;
-        // Whiskers
         ctx.strokeStyle=isCur?SA.COLORS.accent:'rgba(255,255,255,.3)';ctx.lineWidth=1;
         ctx.beginPath();ctx.moveTo(cx,yPos(mn));ctx.lineTo(cx,yPos(q1));ctx.stroke();
         ctx.beginPath();ctx.moveTo(cx,yPos(q3));ctx.lineTo(cx,yPos(mx));ctx.stroke();
         ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mn));ctx.lineTo(cx+bw*.3,yPos(mn));ctx.stroke();
         ctx.beginPath();ctx.moveTo(cx-bw*.3,yPos(mx));ctx.lineTo(cx+bw*.3,yPos(mx));ctx.stroke();
-        // Box
         ctx.fillStyle=isCur?'rgba(232,168,32,.3)':'rgba(77,159,255,.2)';
         ctx.fillRect(cx-bw/2,yPos(q3),bw,yPos(q1)-yPos(q3));
         ctx.strokeStyle=isCur?SA.COLORS.accent:'#4d9fff';ctx.lineWidth=isCur?2:1;
         ctx.strokeRect(cx-bw/2,yPos(q3),bw,yPos(q1)-yPos(q3));
-        // Median
         ctx.strokeStyle=isCur?'#FFE600':'#fff';ctx.lineWidth=2;
         ctx.beginPath();ctx.moveTo(cx-bw/2,yPos(med));ctx.lineTo(cx+bw/2,yPos(med));ctx.stroke();
-        // Outliers
         for(var j=0;j<rets.length;j++){
           if(rets[j]<q1-1.5*(q3-q1)||rets[j]>q3+1.5*(q3-q1)){
             ctx.fillStyle=isCur?SA.COLORS.accent:'#4d9fff';
             ctx.beginPath();ctx.arc(cx,yPos(rets[j]),3,0,Math.PI*2);ctx.fill();
           }
         }
-        // Label
         ctx.fillStyle=SA.COLORS.muted;ctx.font='11px DM Sans,sans-serif';ctx.textAlign='center';
         ctx.fillText('x'+i,cx,h-pad.b+16);
       }
-      // Y-Achse
       ctx.fillStyle=SA.COLORS.muted;ctx.font='11px DM Sans,sans-serif';ctx.textAlign='right';
       for(var t=0;t<=5;t++){
         var val=yMin+(yMax-yMin)*(1-t/5);
         ctx.fillText(val.toFixed(0)+'%',pad.l-8,pad.t+ch*t/5+4);
       }
-      // Titel
       ctx.fillStyle='#fff';ctx.font='bold 14px Sora,sans-serif';ctx.textAlign='left';
       ctx.fillText('Jahresrenditen nach Dekaden-Endziffer',pad.l,pad.t-10);
     }
@@ -481,10 +653,10 @@
       for(var i=0;i<10;i++){
         if(active.indexOf(i)<0)continue;
         var d=D.decades[i];
-        if(!d||d.n===0||!d.dd_avg_curve.length)continue;
+        if(!d||d.n===0||!d.dd_avg_curve||!d.dd_avg_curve.length)continue;
         series.push({name:'x'+i+' ('+d.n+'J)',data:d.dd_avg_curve,color:SA.DECADE_COLORS[i]});
       }
-      if(document.getElementById('chk-current').checked&&D.current_year_dd.length>0){
+      if(document.getElementById('chk-current').checked&&D.current_year_dd&&D.current_year_dd.length>0){
         series.push({name:D.current_year+' (aktuell)',data:D.current_year_dd,color:'#FFE600'});
       }
       if(charts.dd)charts.dd.destroy();
@@ -501,30 +673,48 @@
       });
       charts.dd.render();
 
-      // DD KPI Cards
       var dc=D.decades[D.current_digit];
-      var curDD=D.current_year_dd.length>0?D.current_year_dd[D.current_year_dd.length-1]:0;
+      var curDD=D.current_year_dd&&D.current_year_dd.length>0?D.current_year_dd[D.current_year_dd.length-1]:0;
       document.getElementById('kpi-dd').innerHTML=
-        kpi('\u00D8 Max DD (x'+D.current_digit+')',dc.dd_worst.toFixed(1)+'%','red')+
+        kpi('\u00D8 Max DD (x'+D.current_digit+')',(dc?dc.dd_worst.toFixed(1):'0')+'%','red')+
         kpi('Aktueller DD '+D.current_year,curDD.toFixed(1)+'%',curDD<-1?'red':'green');
     }
 
     // ── Worst-DD-Tabelle ──
     function renderWorstDD(){
       var rows=D.worst_dd_table;
-      if(!rows.length){document.getElementById('content-worst-dd').innerHTML='<p style="color:var(--muted)">Keine Extremjahre gefunden.</p>';return}
-      var html='<table class="worst-table"><tr><th>Dekade</th><th>Jahr</th><th>Max DD</th><th>Peak Tag</th><th>Tief Tag</th></tr>';
+      if(!rows||!rows.length){document.getElementById('content-worst-dd').innerHTML='<p style="color:var(--muted)">Keine Extremjahre gefunden.</p>';return}
+      var hasDates=rows[0].peak_date&&rows[0].peak_date.length>0;
+      var hasRecovery=rows[0].recovery_str!==undefined;
+      var html='<table class="worst-table"><tr><th>Dekade</th><th>Jahr</th><th>Max DD</th><th>Peak</th><th>Tief</th>';
+      if(hasRecovery)html+='<th>Recovery</th>';
+      html+='</tr>';
       for(var i=0;i<rows.length;i++){
         var r=rows[i];
         var intensity=Math.min(Math.abs(r.max_dd)/60,1);
         var red=Math.round(200+55*intensity);
         var green=Math.round(100*(1-intensity));
+        // Datum: entweder aus JSON (DD.MM.YYYY) oder aus Handelstag-Index approximieren
+        var peakStr=hasDates?r.peak_date:approxDate(r.year,r.peak_day);
+        var troughStr=hasDates?r.trough_date:approxDate(r.year,r.trough_day);
         html+='<tr><td>x'+r.digit+'</td><td>'+r.year+'</td>';
         html+='<td class="dd-val" style="color:rgb('+red+','+green+','+green+')">'+r.max_dd.toFixed(1)+'%</td>';
-        html+='<td>'+r.peak_day+'</td><td>'+r.trough_day+'</td></tr>';
+        html+='<td>'+peakStr+'</td><td>'+troughStr+'</td>';
+        if(hasRecovery){
+          var recClr=r.recovered?'var(--green)':'var(--red)';
+          html+='<td style="color:'+recClr+'">'+(r.recovery_str||'\u2014')+'</td>';
+        }
+        html+='</tr>';
       }
       html+='</table>';
       document.getElementById('content-worst-dd').innerHTML=html;
+    }
+
+    // Approximiert ein Datum aus Handelstag-Index (0-251)
+    function approxDate(year,dayIdx){
+      var d=new Date(year,0,2); // ~1. Handelstag
+      d.setDate(d.getDate()+Math.round(dayIdx*365/252));
+      return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
     }
 
     // ── Chart 6: DD-Heatmap ──
@@ -538,50 +728,105 @@
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart,{selection:{enabled:false},zoom:{enabled:false}}),
         colorScale:{ranges:[
-          {from:-20,to:-8,color:'#4a0e0e',name:'extrem'},
-          {from:-8,to:-5,color:'#7b241c',name:'sehr stark'},
-          {from:-5,to:-3,color:'#a93226',name:'stark'},
-          {from:-3,to:-2,color:'#c0392b',name:'moderat'},
-          {from:-2,to:-1,color:'#cd6155',name:'leicht'},
-          {from:-1,to:0,color:'#d4978f',name:'minimal'}
+          {from:-25,to:-15,color:'#8b0000',name:'extrem'},
+          {from:-15,to:-10,color:'#a52222',name:'sehr stark'},
+          {from:-10,to:-7,color:'#b83333',name:'stark'},
+          {from:-7,to:-5,color:'#cc4444',name:'moderat-stark'},
+          {from:-5,to:-3,color:'#d45555',name:'moderat'},
+          {from:-3,to:-2,color:'#dd7777',name:'leicht-moderat'},
+          {from:-2,to:-1,color:'#e09999',name:'leicht'},
+          {from:-1,to:0,color:'#e8bbbb',name:'minimal'}
         ]},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
-        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(0)+'%'}},
-        plotOptions:{heatmap:{radius:4,enableShades:false}}
+        dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)+'%'}},
+        plotOptions:{heatmap:{radius:4,enableShades:false}},
+        title:{text:'\u00D8 Max Drawdown pro Monat \u00D7 Dekade \u2014 '+D.ticker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.ddHm.render();
     }
 
-    // ── Chart 7: Volatilität ──
+    // ── Chart 7: Volatilitaet ──
     function renderVola(){
       var active=getActiveDigits();
+      var volaWin=parseInt(document.getElementById('vola-window').value)||20;
       var series=[];
-      for(var i=0;i<10;i++){
-        if(active.indexOf(i)<0)continue;
-        var d=D.decades[i];
-        if(!d||!d.vola_avg_curve||!d.vola_avg_curve.length)continue;
-        series.push({name:'x'+i,data:d.vola_avg_curve,color:SA.DECADE_COLORS[i]});
+
+      // Wenn rawRows vorhanden (Supabase-Ticker) und volaWin != D.vola_window → Neuberechnung
+      if(rawRows&&volaWin!==D.vola_window){
+        var yearGroups={};
+        rawRows.forEach(function(r){var y=parseInt(r.date.substring(0,4));if(!yearGroups[y])yearGroups[y]=[];yearGroups[y].push(r)});
+        for(var i=0;i<10;i++){
+          if(active.indexOf(i)<0)continue;
+          var d=D.decades[i];
+          if(!d||d.n===0)continue;
+          var volaCurves=[];
+          d.years.forEach(function(year){
+            var yRows=yearGroups[year];
+            if(!yRows||yRows.length<volaWin+10)return;
+            var vc=SA.decadeCompute.computeRollingVola(yRows,volaWin);
+            if(vc.length>0)volaCurves.push(vc);
+          });
+          if(volaCurves.length>0){
+            var avg=SA.decadeCompute._meanAxis0(volaCurves);
+            series.push({name:'x'+i,data:avg.map(function(v){return Math.round(v*10)/10}),color:SA.DECADE_COLORS[i]});
+          }
+        }
+      } else {
+        for(var i=0;i<10;i++){
+          if(active.indexOf(i)<0)continue;
+          var d=D.decades[i];
+          if(!d||!d.vola_avg_curve||!d.vola_avg_curve.length)continue;
+          series.push({name:'x'+i,data:d.vola_avg_curve,color:SA.DECADE_COLORS[i]});
+        }
       }
+
       if(!series.length)return;
       if(charts.vola)charts.vola.destroy();
       charts.vola=new ApexCharts(document.getElementById('chart-vola'),{
         series:series,
         chart:Object.assign({type:'line',height:380},SA.chartTheme.chart),
-        stroke:{width:series.map(function(s,i){var dig=parseInt(s.name.replace('x',''));return dig===D.current_digit?3:1.5}),curve:'smooth'},
+        stroke:{width:series.map(function(s){var dig=parseInt(s.name.replace('x',''));return dig===D.current_digit?3:1.5}),curve:'smooth'},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         xaxis:Object.assign({categories:Array.from({length:252},function(_,i){return i}),tickAmount:12,
           labels:Object.assign({},SA.chartTheme.xaxis.labels,{formatter:function(v){var m=Math.floor(v/21);return SA.MONTHS[m]||''}})},SA.chartTheme.xaxis),
         yaxis:{labels:{style:{colors:SA.COLORS.muted,fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
         legend:SA.chartTheme.legend,
-        title:{text:'\u00D8 Rolling '+D.vola_window+'d Volatilit\u00E4t nach Dekade \u2014 '+D.ticker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+        title:{text:'\u00D8 Rolling '+volaWin+'d Volatilit\u00E4t nach Dekade \u2014 '+D.ticker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.vola.render();
+
+      // Vola KPI
+      var dc=D.decades[D.current_digit];
+      if(dc&&dc.vola_avg_curve&&dc.vola_avg_curve.length>0){
+        var avgVola=dc.vola_avg_curve.reduce(function(s,v){return s+v},0)/dc.vola_avg_curve.length;
+        document.getElementById('kpi-vola').innerHTML=
+          kpi('\u00D8 Vola (x'+D.current_digit+')',avgVola.toFixed(1)+'%','')+
+          kpi('Fenster',volaWin+' Tage','');
+      }
     }
 
     // ── Sidebar Events ──
     document.getElementById('chk-bands').addEventListener('change',renderAll);
+    document.getElementById('chk-percentile').addEventListener('change',renderAll);
     document.getElementById('chk-individual').addEventListener('change',renderAll);
     document.getElementById('chk-current').addEventListener('change',renderAll);
+
+    // Alle/Keine Toggle
+    document.getElementById('chk-all-decades').addEventListener('change',function(){
+      var checked=this.checked;
+      document.querySelectorAll('#decade-toggles input').forEach(function(cb){cb.checked=checked});
+      renderAll();
+    });
+
+    // Vola-Window Sync
+    document.getElementById('vola-window').addEventListener('change',function(){renderVola()});
+
+    // Ticker-Wechsel (Enter oder Auswahl aus Datalist)
+    var tickerInput=document.getElementById('ticker-input');
+    tickerInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();loadTicker(tickerInput.value)}
+    });
+    tickerInput.addEventListener('change',function(){loadTicker(tickerInput.value)});
   }();
   </script>
 </body>

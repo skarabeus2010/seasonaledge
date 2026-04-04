@@ -21,7 +21,17 @@ if _project_dir not in sys.path:
 
 import numpy as np
 import pandas as pd
-from shared.data import download_data, preprocess
+from shared.yahoo_downloader import download_data as _yahoo_download, preprocess
+from shared.data import download_data as _supabase_download
+
+
+def _approx_date(year, trading_day_idx):
+    """Approximiert ein Datum aus dem Handelstag-Index (0-251)."""
+    from datetime import timedelta
+    jan1 = datetime(year, 1, 2)  # Erster Handelstag ~ 2. Januar
+    cal_days = int(trading_day_idx * 365 / 252)
+    d = jan1 + timedelta(days=cal_days)
+    return d.strftime("%d.%m.%Y")
 
 
 def compute_drawdown_series(curve, base=100.0):
@@ -39,7 +49,10 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Generiere Dekaden-Daten fuer {ticker} ...")
-    raw_df = download_data(ticker, period="max")
+
+    # Yahoo+Stooq direkt aufrufen (NICHT Supabase) um maximale Historie zu erhalten.
+    # Supabase hat nur ~30 Jahre (Bulk-Load), Stooq hat bis zu 131 Jahre fuer Indizes.
+    raw_df = _yahoo_download(ticker, period="max")
     if raw_df is None or raw_df.empty:
         print("FEHLER: Keine Daten!")
         return
@@ -179,25 +192,49 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
             month_dd.append(round(float(min(dd_avg[start:end])), 1))
         dd_monthly_heatmap[str(digit)] = month_dd
 
-    # ── Worst-DD-Tabelle ──
+    # ── Worst-DD-Tabelle (mit echten Daten + Recovery) ──
     worst_dd_table = []
+    try:
+        from shared.drawdown_analysis import compute_real_recovery
+        has_recovery = True
+    except ImportError:
+        has_recovery = False
+
     for digit in range(10):
         d = decades[str(digit)]
         for i, year in enumerate(d.get("years", [])):
             if i < len(d.get("individual_curves", [])):
                 curve = d["individual_curves"][i]
-                dd = compute_drawdown_series(np.array(curve))
-                max_dd = float(np.min(dd))
+                dd_curve = compute_drawdown_series(np.array(curve))
+                max_dd = float(np.min(dd_curve))
                 if max_dd < -10:
-                    trough_idx = int(np.argmin(dd))
-                    peak_idx = int(np.argmax(np.array(curve)[:trough_idx + 1])) if trough_idx > 0 else 0
-                    worst_dd_table.append({
+                    entry = {
                         "digit": digit,
                         "year": year,
                         "max_dd": round(max_dd, 1),
-                        "peak_day": peak_idx,
-                        "trough_day": trough_idx,
-                    })
+                        "peak_date": "",
+                        "trough_date": "",
+                        "recovery_str": "",
+                        "recovered": False,
+                    }
+
+                    # Echte Daten + Recovery wenn moeglich
+                    if has_recovery:
+                        try:
+                            rec = compute_real_recovery(df, year)
+                            if rec:
+                                entry["peak_date"] = rec["peak_date"].strftime("%d.%m.%Y")
+                                entry["trough_date"] = rec["trough_date"].strftime("%d.%m.%Y")
+                                entry["recovery_str"] = rec["recovery_str"]
+                                entry["recovered"] = rec["recovered"]
+                        except Exception:
+                            # Fallback: Datum aus Handelstag-Index approximieren
+                            trough_idx = int(np.argmin(dd_curve))
+                            peak_idx = int(np.argmax(np.array(curve)[:trough_idx + 1])) if trough_idx > 0 else 0
+                            entry["peak_date"] = _approx_date(year, peak_idx)
+                            entry["trough_date"] = _approx_date(year, trough_idx)
+
+                    worst_dd_table.append(entry)
 
     worst_dd_table.sort(key=lambda x: x["max_dd"])
     worst_dd_table = worst_dd_table[:25]
