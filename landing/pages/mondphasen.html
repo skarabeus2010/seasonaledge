@@ -310,6 +310,11 @@
         title:{text:'\u00D8 Rendite: Monat \u00D7 Phase \u2014 '+currentTicker,style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.heatmap.render();
+      // Hinweis
+      var hmInfo=document.getElementById('chart-heatmap');
+      if(hmInfo&&!hmInfo.nextElementSibling||hmInfo.nextElementSibling&&!hmInfo.nextElementSibling.classList.contains('hm-info')){
+        hmInfo.insertAdjacentHTML('afterend','<p class="hm-info" style="font-size:.75rem;color:var(--muted);margin-top:.25rem"><span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt den aktuellen Monat.</p>');
+      }
     }
 
     function renderStreaks(mr){
@@ -413,7 +418,8 @@
         '<p style="font-size:.8125rem;color:var(--dim);margin-top:.75rem;line-height:1.6">'+
         '<b>Lesebeispiel:</b> Jede Zelle zeigt die \u00D8 Rendite (%) im Event-Fenster (t\u2212'+p.daysBefore+' bis t+'+p.daysAfter+') f\u00FCr den jeweiligen Kalendermonat. '+
         '<span style="color:#30e878">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#ff4040">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
-        'Vergleich: In welchen Monaten performen Supermonde besser/schlechter als normale Vollmonde?</p>');
+        'Vergleich: In welchen Monaten performen Supermonde besser/schlechter als normale Vollmonde?<br>'+
+        '<span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt den aktuellen Monat.</p>');
     }
 
     // ── Lunar-Kalender Heatmap ──
@@ -488,7 +494,8 @@
         '<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.5">'+
         '<b>Aktueller Mondmonat:</b> LM '+curLM+' \u00B7 Ein Mondmonat = 29.53 Tage (synodischer Zyklus). '+
         'Die 12 Mondmonate wiederholen sich unabh\u00E4ngig vom Sonnenkalender.<br>'+
-        '<b>N\u00E4chste Mondmonate:</b> '+lmDates.slice(0,6).join(' \u00B7 ')+'</p>'+
+        '<b>N\u00E4chste 6 Mondmonate:</b> '+lmDates.slice(0,6).join(' \u00B7 ')+'<br>'+
+        '<span style="color:#FFE600">\u25A0</span> Gelber Rahmen zeigt die aktuelle Position (Mondmonat \u00D7 Sonnenmonat).</p>'+
         '</div>');
     }
 
