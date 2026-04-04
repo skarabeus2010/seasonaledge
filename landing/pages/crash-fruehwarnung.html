@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Crash-Fr&uuml;hwarnung &mdash; SeasonAlpha</title>
+  <meta name="description" content="KI-basierte Crash-Fr&uuml;hwarnung: Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY). Ampelsystem mit Risk-Score.">
+  <meta property="og:title" content="Crash-Fr&uuml;hwarnung &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/crash-fruehwarnung">
+  <link rel="canonical" href="https://seasonalpha.ai/crash-fruehwarnung">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .apexcharts-xaxis text title{display:none}
+
+    /* Ampel */
+    .ampel-box{border-radius:20px;padding:2rem;text-align:center;background:#0c1420;transition:border-color .3s}
+    .ampel-emoji{font-size:4rem;line-height:1}
+    .ampel-label{font-weight:800;font-size:1.3rem;margin-top:.5rem}
+    .ampel-score{color:var(--muted);font-size:.85rem;margin-top:.3rem}
+    .ampel-desc{margin-top:1rem;font-size:.9rem;color:var(--dim);line-height:1.5}
+    .feature-table{width:100%;border-collapse:collapse;font-size:.8125rem;margin-top:1rem}
+    .feature-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .feature-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <p style="color:var(--muted);font-size:.75rem">Fixiert auf SPY (S&amp;P 500)</p>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Crash-Fr&uuml;hwarnung</b></h1>
+      <p class="page-caption" id="page-caption">Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY)</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- Ampel -->
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:1.5rem;margin-bottom:2rem" id="ampel-grid">
+        <div class="ampel-box" id="ampel-box">
+          <div class="ampel-emoji" id="ampel-emoji">&#9898;</div>
+          <div class="ampel-label" id="ampel-label" style="color:var(--muted)">Lade...</div>
+          <div class="ampel-score" id="ampel-score"></div>
+        </div>
+        <div>
+          <div class="ampel-desc" id="ampel-desc"></div>
+          <div class="kpi-row" id="kpi-regime" style="margin-top:1rem"></div>
+        </div>
+      </div>
+
+      <!-- SPY 6-Monats-Chart -->
+      <div class="chart-box"><div id="chart-spy"></div></div>
+
+      <!-- Feature-Details -->
+      <details>
+        <summary>Regime-Features (aktueller Tag)</summary>
+        <div class="content" id="content-features"></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>So funktioniert die Crash-Fr&uuml;hwarnung</summary>
+        <div class="content methodik" id="content-methodik"></div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script>
+  !function(){
+    var rawRows=null,charts={};
+
+    var TRAFFIC_LIGHT={
+      green: {emoji:'\u{1F7E2}',label:'Ruhig',color:'#00d4aa',desc:'Markt verh\u00E4lt sich normal \u2014 keine Auff\u00E4lligkeiten. Volatilit\u00E4t und Drawdown im historischen Normalbereich.'},
+      yellow:{emoji:'\u{1F7E1}',label:'Erh\u00F6hte Vorsicht',color:'#e8a425',desc:'Ungew\u00F6hnliche Muster erkannt \u2014 erh\u00F6hte Aufmerksamkeit empfohlen. Volatilit\u00E4t oder Drawdown \u00FCber dem historischen Durchschnitt.'},
+      red:   {emoji:'\u{1F534}',label:'Stress-Regime',color:'#ff4757',desc:'Stark anomales Marktverhalten \u2014 historisch selten. Hohe Volatilit\u00E4t und/oder signifikanter Drawdown.'},
+      grey:  {emoji:'\u26AA',label:'Unbekannt',color:'#5a6e85',desc:'Nicht genug Daten f\u00FCr Regime-Erkennung.'}
+    };
+
+    function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block'}
+    function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
+
+    /* ══════════════════════════════════════════════════════
+       REGIME-BERECHNUNG (Simplified — kein ML, reine Statistik)
+       Ersetzt IsolationForest durch gewichteten Score aus Features.
+       ══════════════════════════════════════════════════════ */
+    function computeRegime(rows){
+      if(!rows||rows.length<100) return {traffic_light:'grey',risk_score:0,features:{}};
+
+      var n=rows.length;
+      var closes=rows.map(function(r){return r.close});
+
+      // Returns
+      var ret1d=closes[n-1]/closes[n-2]-1;
+      var ret5d=closes[n-1]/closes[Math.max(0,n-6)]-1;
+      var ret20d=closes[n-1]/closes[Math.max(0,n-21)]-1;
+
+      // Volatilitaet (Std der Tagesrenditen)
+      function vol(window){
+        var rets=[];
+        for(var i=Math.max(1,n-window);i<n;i++) rets.push(closes[i]/closes[i-1]-1);
+        var mean=rets.reduce(function(s,v){return s+v},0)/rets.length;
+        var variance=rets.reduce(function(s,v){return s+(v-mean)*(v-mean)},0)/rets.length;
+        return Math.sqrt(variance)*100;
+      }
+      var vol5=vol(5),vol10=vol(10),vol20=vol(20);
+
+      // Drawdown vom 20d-Hoch
+      var high20=0;
+      for(var i=Math.max(0,n-20);i<n;i++){if(closes[i]>high20)high20=closes[i]}
+      var drawdown=(closes[n-1]-high20)/high20*100;
+
+      // Historische Percentile berechnen (wie anomal ist der aktuelle Tag?)
+      // Berechne gleiche Features fuer die letzten 252 Tage
+      var histScores=[];
+      for(var t=Math.max(60,n-252);t<n;t++){
+        var hv5=0,hv20=0,hdd=0;
+        // Vol5
+        var hr=[];
+        for(var j=Math.max(1,t-5);j<=t;j++) hr.push(closes[j]/closes[j-1]-1);
+        var hm=hr.reduce(function(s,v){return s+v},0)/hr.length;
+        hv5=Math.sqrt(hr.reduce(function(s,v){return s+(v-hm)*(v-hm)},0)/hr.length)*100;
+        // Vol20
+        hr=[];
+        for(var j=Math.max(1,t-20);j<=t;j++) hr.push(closes[j]/closes[j-1]-1);
+        hm=hr.reduce(function(s,v){return s+v},0)/hr.length;
+        hv20=Math.sqrt(hr.reduce(function(s,v){return s+(v-hm)*(v-hm)},0)/hr.length)*100;
+        // DD
+        var hh=0;
+        for(var j=Math.max(0,t-20);j<=t;j++){if(closes[j]>hh)hh=closes[j]}
+        hdd=(closes[t]-hh)/hh*100;
+        // Composite score (hohe Vola + tiefer DD = hoher Score)
+        histScores.push(hv5*0.3+hv20*0.3+Math.abs(hdd)*0.4);
+      }
+      var currentScore=vol5*0.3+vol20*0.3+Math.abs(drawdown)*0.4;
+
+      // Percentile: wie viele historische Tage hatten niedrigeren Score?
+      var below=histScores.filter(function(s){return s<currentScore}).length;
+      var riskScore=Math.round(below/histScores.length*100);
+
+      var traffic='green';
+      if(riskScore>=70) traffic='red';
+      else if(riskScore>=40) traffic='yellow';
+
+      return {
+        traffic_light:traffic,
+        risk_score:riskScore,
+        features:{
+          vol_5d:vol5,vol_10d:vol10,vol_20d:vol20,
+          drawdown:drawdown,
+          ret_1d:ret1d*100,ret_5d:ret5d*100,ret_20d:ret20d*100
+        }
+      };
+    }
+
+    /* ══════════════════════════════════════════════════════
+       INIT + RENDER
+       ══════════════════════════════════════════════════════ */
+    function initialLoad(){
+      if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0) loadSPY();
+      else document.getElementById('page-caption').textContent='Supabase nicht konfiguriert';
+    }
+    initialLoad();
+
+    function loadSPY(){
+      showLoading('Lade SPY...');
+      SA.fetchAllPrices('SPY','&date=gte.2020-01-01').then(function(rows){
+        if(!rows||rows.length<100){hideLoading();showError('SPY: Zu wenig Daten');return}
+        rows.forEach(function(r){r.close=parseFloat(r.close)});
+        rawRows=rows;
+        renderAll();
+        hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    function renderAll(){
+      if(!rawRows) return;
+
+      SA.renderTradingDayHeader('trading-day-header','SPY',rawRows);
+
+      var regime=computeRegime(rawRows);
+      var tl=TRAFFIC_LIGHT[regime.traffic_light]||TRAFFIC_LIGHT.grey;
+      var f=regime.features;
+
+      // ── Ampel ──
+      var box=document.getElementById('ampel-box');
+      box.style.border='3px solid '+tl.color;
+      box.style.boxShadow='0 0 30px '+tl.color+'33';
+      document.getElementById('ampel-emoji').textContent=tl.emoji;
+      var lbl=document.getElementById('ampel-label');
+      lbl.textContent=tl.label;
+      lbl.style.color=tl.color;
+      document.getElementById('ampel-score').textContent='Risk-Score: '+regime.risk_score+'/100';
+      document.getElementById('ampel-desc').innerHTML='<strong style="color:'+tl.color+'">'+tl.label+'</strong> \u2014 '+tl.desc;
+
+      // ── KPI ──
+      document.getElementById('kpi-regime').innerHTML=
+        kpi('Risk-Score',regime.risk_score+'/100',regime.risk_score>=70?'red':regime.risk_score>=40?'':'green')+
+        kpi('Volatilit\u00E4t (5d)',(f.vol_5d||0).toFixed(3)+'%')+
+        kpi('Volatilit\u00E4t (20d)',(f.vol_20d||0).toFixed(3)+'%')+
+        kpi('Drawdown',(f.drawdown||0).toFixed(1)+'%',f.drawdown<-5?'red':'')+
+        kpi('Rendite (5d)',(f.ret_5d>=0?'+':'')+(f.ret_5d||0).toFixed(2)+'%',f.ret_5d>=0?'green':'red')+
+        kpi('Rendite (20d)',(f.ret_20d>=0?'+':'')+(f.ret_20d||0).toFixed(2)+'%',f.ret_20d>=0?'green':'red');
+
+      // ── SPY Chart (6 Monate) ──
+      var recent=rawRows.slice(-126);
+      var series=[{
+        name:'SPY',
+        data:recent.map(function(r){return{x:r.date,y:r.close}})
+      }];
+
+      if(charts.spy) charts.spy.destroy();
+      charts.spy=new ApexCharts(document.getElementById('chart-spy'),{
+        series:series,
+        chart:Object.assign({type:'area',height:350},SA.chartTheme.chart),
+        stroke:{width:1.5,curve:'straight'},
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.15,opacityTo:0.02,stops:[0,100]}},
+        colors:[tl.color],
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        xaxis:{type:'datetime',labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeFormatter:{month:'MMM',day:'dd. MMM'}}},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
+        legend:{show:false},
+        title:{text:'SPY \u2014 letzte 6 Monate',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.spy.render();
+
+      // ── Feature-Tabelle ──
+      document.getElementById('content-features').innerHTML=
+        '<table class="feature-table"><tr><th>Feature</th><th>Wert</th><th>Beschreibung</th></tr>'+
+        '<tr><td>Tagesrendite</td><td style="color:'+(f.ret_1d>=0?'var(--green)':'var(--red)')+'">'+(f.ret_1d>=0?'+':'')+f.ret_1d.toFixed(3)+'%</td><td>Heutige prozentuale Ver\u00E4nderung</td></tr>'+
+        '<tr><td>Volatilit\u00E4t (5d)</td><td>'+f.vol_5d.toFixed(3)+'%</td><td>Stdabw. der letzten 5 Handelstage</td></tr>'+
+        '<tr><td>Volatilit\u00E4t (10d)</td><td>'+f.vol_10d.toFixed(3)+'%</td><td>Stdabw. der letzten 10 Handelstage</td></tr>'+
+        '<tr><td>Volatilit\u00E4t (20d)</td><td>'+f.vol_20d.toFixed(3)+'%</td><td>Stdabw. der letzten 20 Handelstage</td></tr>'+
+        '<tr><td>Rendite (5d)</td><td style="color:'+(f.ret_5d>=0?'var(--green)':'var(--red)')+'">'+(f.ret_5d>=0?'+':'')+f.ret_5d.toFixed(2)+'%</td><td>Kumulative Rendite 5 Tage</td></tr>'+
+        '<tr><td>Rendite (20d)</td><td style="color:'+(f.ret_20d>=0?'var(--green)':'var(--red)')+'">'+(f.ret_20d>=0?'+':'')+f.ret_20d.toFixed(2)+'%</td><td>Kumulative Rendite 20 Tage</td></tr>'+
+        '<tr><td>Drawdown</td><td style="color:var(--red)">'+f.drawdown.toFixed(2)+'%</td><td>Abstand vom 20-Tage-Hoch</td></tr>'+
+        '</table>';
+
+      // ── Methodik ──
+      document.getElementById('content-methodik').innerHTML=
+        '<h3>Methode: Statistisches Regime-Scoring</h3>'+
+        '<p>Die Crash-Fr\u00FChwarnung analysiert t\u00E4glich 7 Markt-Features des S&amp;P 500 (SPY):</p>'+
+        '<ul><li><b>Volatilit\u00E4t</b> (5d, 10d, 20d) \u2014 Standardabweichung der Tagesrenditen</li>'+
+        '<li><b>Renditen</b> (1d, 5d, 20d) \u2014 kumulative Performance</li>'+
+        '<li><b>Drawdown</b> \u2014 Abstand vom 20-Tage-Hoch</li></ul>'+
+        '<p>Aus diesen Features wird ein <b>Composite Score</b> berechnet (gewichtete Summe aus Volatilit\u00E4t und Drawdown). Dieser Score wird mit den letzten 252 Handelstagen verglichen (Percentile-Ranking).</p>'+
+        '<h3>Ampel-System</h3>'+
+        '<table class="feature-table"><tr><th>Ampel</th><th>Risk-Score</th><th>Bedeutung</th></tr>'+
+        '<tr><td style="color:#00d4aa">\u{1F7E2} Ruhig</td><td>0\u201339</td><td>Markt verh\u00E4lt sich normal</td></tr>'+
+        '<tr><td style="color:#e8a425">\u{1F7E1} Erh\u00F6hte Vorsicht</td><td>40\u201369</td><td>Ungew\u00F6hnliche Muster erkannt</td></tr>'+
+        '<tr><td style="color:#ff4757">\u{1F534} Stress-Regime</td><td>70\u2013100</td><td>Stark anomales Verhalten</td></tr></table>'+
+        '<p style="margin-top:1rem"><b>Wichtig:</b> Die Ampel ist ein statistisches Fr\u00FChwarnsystem, keine Handelsempfehlung. Ein rotes Signal bedeutet nicht zwingend einen Crash, sondern dass sich der Markt ungew\u00F6hnlich verh\u00E4lt.</p>';
+    }
+  }();
+  </script>
+</body>
+</html>
