@@ -405,6 +405,13 @@
         title:{text:'Supermond vs. Normal: \u00D8 Rendite pro Monat \u2014 '+currentTicker,style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.superHm.render();
+
+      // Erklaerung unter der Heatmap
+      el.insertAdjacentHTML('beforeend',
+        '<p style="font-size:.8125rem;color:var(--dim);margin-top:.75rem;line-height:1.6">'+
+        '<b>Lesebeispiel:</b> Jede Zelle zeigt die \u00D8 Rendite (%) im Event-Fenster (t\u2212'+p.daysBefore+' bis t+'+p.daysAfter+') f\u00FCr den jeweiligen Kalendermonat. '+
+        '<span style="color:#0f6b2f">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#6b0f0f">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
+        'Vergleich: In welchen Monaten performen Supermonde besser/schlechter als normale Vollmonde?</p>');
     }
 
     // ── Lunar-Kalender Heatmap ──
@@ -450,6 +457,35 @@
         title:{text:'Lunar-Kalender: Mondmonat \u00D7 Sonnenmonat \u2014 '+currentTicker,style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.lunarHm.render();
+
+      // Erklaerung + aktuelle Mondmonat-Zuordnung
+      var nowMs=new Date().getTime();
+      var nowDelta=(nowMs-knownNew)/86400000;
+      var curLM=Math.floor(nowDelta/SA.seasonal._SYNODIC_MONTH)%12+1;
+      if(curLM<1)curLM+=12;
+
+      // Naechste 12 Mondmonate mit Start-Datum berechnen
+      var lmDates=[];
+      var synMs=SA.seasonal._SYNODIC_MONTH*86400000;
+      var curCycleStart=knownNew+Math.floor(nowDelta/SA.seasonal._SYNODIC_MONTH)*synMs;
+      for(var i=0;i<12;i++){
+        var lmStart=new Date(curCycleStart+i*synMs);
+        var lmNum=(curLM-1+i)%12+1;
+        lmDates.push('LM '+lmNum+' = ab '+lmStart.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'}));
+      }
+
+      var hmEl=document.getElementById('chart-lunar-heatmap');
+      hmEl.insertAdjacentHTML('afterend',
+        '<div style="margin-top:.75rem">'+
+        '<p style="font-size:.8125rem;color:var(--dim);line-height:1.6">'+
+        '<b>Lesebeispiel:</b> Jede Zelle zeigt die \u00D8 Rendite (%) f\u00FCr Events die in Mondmonat Y und Sonnenmonat X fallen. '+
+        '<span style="color:#0f6b2f">\u25A0 Gr\u00FCn</span> = positive \u00D8-Rendite, <span style="color:#6b0f0f">\u25A0 Rot</span> = negative \u00D8-Rendite. '+
+        'Zeigt ob bestimmte Kombinationen aus Mond- und Sonnenzyklus systematisch besser/schlechter sind.</p>'+
+        '<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.5">'+
+        '<b>Aktueller Mondmonat:</b> LM '+curLM+' \u00B7 Ein Mondmonat = 29.53 Tage (synodischer Zyklus). '+
+        'Die 12 Mondmonate wiederholen sich unabh\u00E4ngig vom Sonnenkalender.<br>'+
+        '<b>N\u00E4chste Mondmonate:</b> '+lmDates.slice(0,6).join(' \u00B7 ')+'</p>'+
+        '</div>');
     }
 
     // Sidebar Events
