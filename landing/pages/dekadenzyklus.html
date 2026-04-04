@@ -898,6 +898,7 @@
 
     // Ticker-Wechsel (Enter oder Auswahl aus Datalist)
     var tickerInput=document.getElementById('ticker-input');
+    tickerInput.addEventListener('focus',function(){this.select()});
     tickerInput.addEventListener('keydown',function(e){
       if(e.key==='Enter'){e.preventDefault();loadTicker(tickerInput.value)}
     });

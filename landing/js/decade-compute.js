@@ -246,14 +246,8 @@ SA.decadeCompute = {
           if (rRows[rri].close >= peakPrice) { recovered = true; break; }
         }
       }
-      // Formatierung
-      var recMon = Math.floor(recoveryDays / 21);
-      var recRest = recoveryDays % 21;
-      var recStr;
-      if (!recovered) recStr = 'nicht erholt (>' + recMon + ' Mon)';
-      else if (recMon === 0) recStr = recRest + ' Tage';
-      else if (recRest === 0) recStr = recMon + ' Mon';
-      else recStr = recMon + ' Mon + ' + recRest + 'd';
+      // Formatierung: >12 Mon → Jahre + Monate + Tage
+      var recStr = SA.decadeCompute._formatRecovery(recoveryDays, recovered);
 
       worstDDTable.push({
         digit: wyear % 10,
@@ -466,6 +460,20 @@ SA.decadeCompute = {
       result.push(Math.sqrt(variance));
     }
     return result;
+  },
+
+  /** Recovery-Tage formatieren: "3T", "2M 5T", "1J 3M 25T", "nicht erholt (>2J 1M)" */
+  _formatRecovery: function(days, recovered) {
+    var totalMon = Math.floor(days / 21);
+    var restDays = days % 21;
+    var years = Math.floor(totalMon / 12);
+    var months = totalMon % 12;
+    var parts = [];
+    if (years > 0) parts.push(years + 'J');
+    if (months > 0) parts.push(months + 'M');
+    if (restDays > 0 || parts.length === 0) parts.push(restDays + 'T');
+    var str = parts.join(' ');
+    return recovered ? str : 'nicht erholt (>' + str + ')';
   },
 
   /** "YYYY-MM-DD" → "DD.MM.YYYY" */
