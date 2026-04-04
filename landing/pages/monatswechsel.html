@@ -54,6 +54,9 @@
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <hr>
       <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+      <hr>
       <h3>Technische Filter</h3>
       <div id="indicator-filters"></div>
     </aside>
@@ -132,6 +135,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/outlier.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script>
   !function(){
@@ -236,6 +240,35 @@
       }
 
       var tomResult=SA.seasonal.analyzeTurnOfMonth(filteredRows,p.daysBefore,p.daysAfter,p.months,p.years);
+
+      // Outlier-Filter auf Ergebnis anwenden
+      if(tomResult){
+        var outlierMethod=typeof getOutlierMethod==='function'?getOutlierMethod():'off';
+        if(outlierMethod!=='off'){
+          var outlierResult=SA.outlier.filterCurves(tomResult.all_curves,outlierMethod);
+          tomResult.all_curves=outlierResult.filtered;
+          // Stats neu berechnen
+          var rets=tomResult.all_curves.map(function(c){return c.total_return});
+          if(rets.length>0){
+            var sum=rets.reduce(function(s,v){return s+v},0);
+            var avg=sum/rets.length;var wins=rets.filter(function(r){return r>0}).length;
+            rets.sort(function(a,b){return a-b});
+            var variance=rets.reduce(function(s,v){return s+(v-avg)*(v-avg)},0)/rets.length;
+            tomResult.stats={avg_return:Math.round(avg*100)/100,median_return:Math.round(rets[Math.floor(rets.length/2)]*100)/100,
+              win_rate:Math.round(wins/rets.length*10000)/100,std_dev:Math.round(Math.sqrt(variance)*100)/100,
+              max_gain:Math.round(rets[rets.length-1]*100)/100,max_loss:Math.round(rets[0]*100)/100,
+              total_windows:rets.length,winning:wins,losing:rets.length-wins};
+            tomResult.avg_curve=[];
+            for(var ai=0;ai<tomResult.all_curves[0].curve.length;ai++){
+              var daySum=0;for(var aj=0;aj<tomResult.all_curves.length;aj++)daySum+=tomResult.all_curves[aj].curve[ai];
+              tomResult.avg_curve.push(Math.round(daySum/tomResult.all_curves.length*100)/100);
+            }
+          }
+          var badge=document.getElementById('outlier-badge');
+          if(badge&&outlierResult.removed>0)badge.textContent=outlierResult.removed+' Outlier '+(outlierMethod==='winsorize'?'geclippt':'entfernt');
+          else if(badge)badge.textContent='';
+        }
+      }
 
       // Header
       document.getElementById('title-ticker').textContent=currentTicker;
@@ -454,6 +487,7 @@
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
 
     // Indikator-Filter UI
+    var getOutlierMethod=SA.outlier.renderFilterUI('outlier-filter',function(){if(rawRows)renderAll()});
     var getIndicatorFilters=SA.indicators.renderFilterUI('indicator-filters',function(){if(rawRows)renderAll()});
   }();
   </script>

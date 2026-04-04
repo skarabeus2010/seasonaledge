@@ -354,11 +354,14 @@ SA.seasonal = {
       // t0 = Mondtag oder vorheriger Handelstag
       var t0Pos = dateIdx[moon.date];
       if (t0Pos === undefined) {
-        // Naechsten vorherigen Handelstag finden
-        for (var di = 0; di < rows.length; di++) {
-          if (rows[di].date <= moon.date) t0Pos = di;
-          else break;
+        // Binaere Suche: naechsten vorherigen Handelstag finden
+        var lo = 0, hi = rows.length - 1;
+        while (lo <= hi) {
+          var mid = (lo + hi) >> 1;
+          if (rows[mid].date <= moon.date) lo = mid + 1;
+          else hi = mid - 1;
         }
+        t0Pos = hi >= 0 ? hi : undefined;
       }
       if (t0Pos === undefined) continue;
 

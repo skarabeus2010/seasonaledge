@@ -54,6 +54,9 @@
       <label>Tage vor Mondphase<br><input type="range" id="rng-before" min="1" max="15" value="5"><span id="lbl-before">5</span></label>
       <label>Tage nach Mondphase<br><input type="range" id="rng-after" min="1" max="15" value="5"><span id="lbl-after">5</span></label>
       <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+      <hr>
       <h3>Technische Filter</h3>
       <div id="indicator-filters"></div>
     </aside>
@@ -86,6 +89,14 @@
         <div class="content" id="content-streaks"></div>
       </details>
 
+      <details><summary>Supermond vs. normaler Vollmond</summary>
+        <div class="content" id="content-supermoon"></div>
+      </details>
+
+      <details><summary>Lunar-Kalender (Mondmonat 1&ndash;12)</summary>
+        <div class="content" id="content-lunar"></div>
+      </details>
+
       <details open><summary>N&auml;chste Mondphasen</summary>
         <div class="content" id="content-next-phases"></div>
       </details>
@@ -105,6 +116,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/outlier.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script>
   !function(){
@@ -166,6 +178,30 @@
       }
 
       var moonResult=SA.seasonal.analyzeMoonEffect(filteredRows,p.moonDates,p.daysBefore,p.daysAfter);
+      // Outlier-Filter
+      if(moonResult){
+        var outlierMethod=typeof getOutlierMethod==='function'?getOutlierMethod():'off';
+        if(outlierMethod!=='off'){
+          var oRes=SA.outlier.filterCurves(moonResult.all_curves,outlierMethod);
+          moonResult.all_curves=oRes.filtered;
+          if(oRes.filtered.length>0){
+            var rets=oRes.filtered.map(function(c){return c.total_return});
+            var sum=rets.reduce(function(s,v){return s+v},0);var avg=sum/rets.length;
+            var wins=rets.filter(function(r){return r>0}).length;
+            rets.sort(function(a,b){return a-b});
+            var vari=rets.reduce(function(s,v){return s+(v-avg)*(v-avg)},0)/rets.length;
+            moonResult.stats={avg_return:Math.round(avg*100)/100,median_return:Math.round(rets[Math.floor(rets.length/2)]*100)/100,
+              win_rate:Math.round(wins/rets.length*10000)/100,std_dev:Math.round(Math.sqrt(vari)*100)/100,
+              max_gain:Math.round(rets[rets.length-1]*100)/100,max_loss:Math.round(rets[0]*100)/100,
+              total_windows:rets.length,winning:wins,losing:rets.length-wins};
+            moonResult.avg_curve=[];var ws=oRes.filtered[0].curve.length;
+            for(var ai=0;ai<ws;ai++){var ds=0;for(var aj=0;aj<oRes.filtered.length;aj++)ds+=oRes.filtered[aj].curve[ai];moonResult.avg_curve.push(Math.round(ds/oRes.filtered.length*100)/100)}
+          }
+          var badge=document.getElementById('outlier-badge');
+          if(badge&&oRes.removed>0)badge.textContent=oRes.removed+' Outlier '+(outlierMethod==='winsorize'?'geclippt':'entfernt');
+          else if(badge)badge.textContent='';
+        }
+      }
       var phaseLabel=PHASE_LABELS[p.phase]||p.phase;
 
       document.getElementById('title-ticker').textContent=currentTicker;
@@ -180,6 +216,8 @@
       renderBestWorst(moonResult);
       renderHeatmap(moonResult);
       renderStreaks(moonResult);
+      renderSupermoon(moonResult,p);
+      renderLunarCalendar(moonResult);
       renderNextPhases(p);
       renderMethodik(p,phaseLabel);
     }
@@ -297,7 +335,13 @@
         if(isSuper){emoji='\uD83C\uDF1F';label='Supermond'}
         var d=new Date(m.date);
         var dateStr=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-        html+='<div class="next-phase-card'+(isSuper?' super':'')+'"><div class="date">'+emoji+' '+dateStr+'</div><div class="phase">'+label+'</div></div>';
+        // Lunar-Monat
+        var deltaDays=(d.getTime()-SA.seasonal._KNOWN_NEW_MOON.getTime())/86400000;
+        var lunarMonth=Math.floor(deltaDays/SA.seasonal._SYNODIC_MONTH)%12+1;
+        if(lunarMonth<1)lunarMonth+=12;
+        var lunarDay=Math.round(deltaDays%SA.seasonal._SYNODIC_MONTH);
+        if(lunarDay<0)lunarDay+=30;
+        html+='<div class="next-phase-card'+(isSuper?' super':'')+'"><div class="date">'+emoji+' '+dateStr+'</div><div class="phase">'+label+' \u00B7 Mondmonat '+lunarMonth+', Tag '+lunarDay+'</div></div>';
       }
       html+='</div>';
       document.getElementById('content-next-phases').innerHTML=html;
@@ -310,6 +354,62 @@
         '<h3>Supermond</h3><ul><li>Vollmond im Perig\u00E4um (erdnahester Punkt der Mondbahn)</li><li>Klassifizierung: Anomalistische Mondphase &lt;10% vom Perig\u00E4um</li></ul>';
     }
 
+    // ── Supermond vs. normaler Vollmond ──
+    function renderSupermoon(mr,p){
+      var el=document.getElementById('content-supermoon');
+      // Nur Vollmond-Events
+      var fullMoons=mr.all_curves.filter(function(c){return c.phase==='full'});
+      if(fullMoons.length<5){el.innerHTML='<p style="color:var(--muted)">Nicht gen\u00FCgend Vollmond-Events.</p>';return}
+      var superMoons=[],normalMoons=[];
+      fullMoons.forEach(function(c){
+        if(SA.seasonal.isSupermoon(c.date))superMoons.push(c);
+        else normalMoons.push(c);
+      });
+      function avgRet(arr){if(!arr.length)return 0;return arr.reduce(function(s,c){return s+c.total_return},0)/arr.length}
+      function winRate(arr){if(!arr.length)return 0;return arr.filter(function(c){return c.total_return>0}).length/arr.length*100}
+      var sAvg=avgRet(superMoons),nAvg=avgRet(normalMoons);
+      var sWR=winRate(superMoons),nWR=winRate(normalMoons);
+      el.innerHTML=
+        '<div class="kpi-row">'+
+        kpi('Supermond \uD83C\uDF1F',fmtPct(sAvg)+' (n='+superMoons.length+')',clr(sAvg))+
+        kpi('Normaler Vollmond \uD83C\uDF15',fmtPct(nAvg)+' (n='+normalMoons.length+')',clr(nAvg))+
+        kpi('WR Super',sWR.toFixed(0)+'%',sWR>=50?'green':'red')+
+        kpi('WR Normal',nWR.toFixed(0)+'%',nWR>=50?'green':'red')+
+        '</div>'+
+        '<p style="font-size:.8125rem;color:var(--dim);margin-top:.75rem">'+(sAvg>nAvg?'\uD83C\uDF1F Supermonde performen besser':'\uD83C\uDF15 Normale Vollmonde performen besser')+
+        ' (\u0394 '+fmtPct(sAvg-nAvg)+'). Supermond = Vollmond im Perig\u00E4um (erdnahester Punkt).</p>';
+    }
+
+    // ── Lunar-Kalender ──
+    function renderLunarCalendar(mr){
+      var el=document.getElementById('content-lunar');
+      var knownNew=SA.seasonal._KNOWN_NEW_MOON.getTime();
+      var syn=SA.seasonal._SYNODIC_MONTH*86400000;
+      // Mondmonat 1-12 berechnen
+      var lunarMonths={};
+      for(var lm=1;lm<=12;lm++)lunarMonths[lm]=[];
+      mr.all_curves.forEach(function(c){
+        var dMs=new Date(c.date).getTime();
+        var deltaDays=(dMs-knownNew)/86400000;
+        var lunarMonth=Math.floor(deltaDays/SA.seasonal._SYNODIC_MONTH)%12+1;
+        if(lunarMonth<1)lunarMonth+=12;
+        lunarMonths[lunarMonth].push(c.total_return);
+      });
+      var html='<table style="width:100%;border-collapse:collapse;font-size:.8125rem"><tr><th style="text-align:left;padding:.4rem;color:var(--muted)">Mondmonat</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>n</th></tr>';
+      for(var lm=1;lm<=12;lm++){
+        var rets=lunarMonths[lm];
+        if(rets.length===0){html+='<tr><td>'+lm+'</td><td>\u2013</td><td>\u2013</td><td>0</td></tr>';continue}
+        var avg=rets.reduce(function(s,v){return s+v},0)/rets.length;
+        var wr=rets.filter(function(r){return r>0}).length/rets.length*100;
+        html+='<tr><td style="padding:.4rem;color:var(--dim)">Mondmonat '+lm+'</td>';
+        html+='<td style="color:'+(avg>=0?'var(--green)':'var(--red)')+'">'+fmtPct(avg)+'</td>';
+        html+='<td>'+wr.toFixed(0)+'%</td><td>'+rets.length+'</td></tr>';
+      }
+      html+='</table>';
+      html+='<p style="font-size:.75rem;color:var(--muted);margin-top:.5rem">Mondmonate basieren auf dem synodischen Zyklus (29.53 Tage), unabh\u00E4ngig vom Sonnenkalender.</p>';
+      el.innerHTML=html;
+    }
+
     // Sidebar Events
     document.getElementById('rng-before').addEventListener('input',function(){document.getElementById('lbl-before').textContent=this.value});
     document.getElementById('rng-after').addEventListener('input',function(){document.getElementById('lbl-after').textContent=this.value});
@@ -318,6 +418,7 @@
     });
 
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+    var getOutlierMethod=SA.outlier.renderFilterUI('outlier-filter',function(){if(rawRows)renderAll()});
     var getIndicatorFilters=SA.indicators.renderFilterUI('indicator-filters',function(){if(rawRows)renderAll()});
   }();
   </script>
