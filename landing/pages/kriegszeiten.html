@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Im Schatten des Krieges &mdash; SeasonAlpha</title>
+  <meta name="description" content="Saisonaler B&ouml;rsenverlauf in Kriegsjahren vs. Friedensjahren. US-Kriege seit 1898 mit historischen Renditen.">
+  <link rel="canonical" href="https://seasonalpha.ai/kriegszeiten">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .war-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .war-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .war-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Gl&auml;ttung</h3>
+      <label>Tage: <input type="range" id="rng-smooth" min="1" max="21" value="5" step="2"><span id="lbl-smooth">5</span></label>
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Im Schatten des Krieges</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption">Lade Daten...</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <div class="kpi-row" id="kpi-war"></div>
+
+      <div class="chart-box"><div id="chart-main"></div></div>
+
+      <details open>
+        <summary>US-Kriege mit B&ouml;rseneinfluss</summary>
+        <div class="content" id="content-war-table"></div>
+      </details>
+
+      <details open>
+        <summary>Jahresrenditen &mdash; Kriegsjahre markiert</summary>
+        <div class="content"><div id="chart-bar"></div></div>
+      </details>
+
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik" id="content-methodik"></div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/outlier.js"></script>
+  <script>
+  !function(){
+    var rawRows=null,currentTicker='',charts={};
+    var MN=['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var MONTH_STARTS=[1,32,60,91,121,152,182,213,244,274,305,335];
+
+    var US_WARS=[
+      {name:'Spanisch-Amerikanischer Krieg',start:1898,end:1898},
+      {name:'Philippinisch-Amerikanischer Krieg',start:1899,end:1902},
+      {name:'Erster Weltkrieg (US)',start:1917,end:1918},
+      {name:'Zweiter Weltkrieg (US)',start:1941,end:1945},
+      {name:'Koreakrieg',start:1950,end:1953},
+      {name:'Vietnamkrieg',start:1965,end:1975},
+      {name:'Golfkrieg',start:1990,end:1991},
+      {name:'Krieg in Afghanistan',start:2001,end:2021},
+      {name:'Irakkrieg',start:2003,end:2011}
+    ];
+
+    function getWarYears(){
+      var s={};
+      US_WARS.forEach(function(w){for(var y=w.start;y<=w.end;y++)s[y]=true});
+      return s;
+    }
+    var WAR_YEARS=getWarYears();
+
+    function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
+    function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
+    function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
+    function fmtPct(v){return(v>=0?'+':'')+v.toFixed(1)+'%'}
+
+    function initialLoad(){
+      if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0)loadTicker('^DJI');
+      else document.getElementById('page-caption').textContent='Supabase nicht konfiguriert';
+    }
+    initialLoad();
+
+    function loadTicker(ticker){
+      ticker=ticker.trim().toUpperCase();
+      if(!ticker||ticker===currentTicker)return;
+      showLoading('Lade '+ticker+'...');
+      SA.fetchAllPrices(ticker).then(function(rows){
+        if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten');return}
+        rows.forEach(function(r){r.close=parseFloat(r.close);if(r.log_return!=null)r.log_return=parseFloat(r.log_return)});
+        rawRows=rows;currentTicker=ticker;renderAll();hideLoading();
+      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    function renderAll(){
+      var smoothing=parseInt(document.getElementById('rng-smooth').value)||5;
+      var yearData=SA.seasonal.buildYearData(rawRows);
+      var years=Object.keys(yearData).map(Number).sort(function(a,b){return a-b});
+
+      // Outlier-Filter
+      var outlierMethod=typeof getOutlierMethod==='function'?getOutlierMethod():'off';
+      if(outlierMethod!=='off'){
+        var rets=years.map(function(y){return yearData[y].simpleReturn});
+        if(outlierMethod==='winsorize'){
+          var clipped=SA.outlier.winsorize(rets,3.0);
+          // Winsorize aendert nur Renditen, nicht Kurven — skip fuer Kriegszeiten
+        } else {
+          var factor=outlierMethod==='iqr_strict'?3.0:1.5;
+          var mask=SA.outlier.detectIQR(rets,factor);
+          var filteredYears=years.filter(function(_,i){return !mask[i]});
+          var removed=years.length-filteredYears.length;
+          years=filteredYears;
+          var badge=document.getElementById('outlier-badge');
+          if(badge&&removed>0)badge.textContent=removed+' Outlier entfernt';
+          else if(badge)badge.textContent='';
+        }
+      }
+
+      var warYears=years.filter(function(y){return WAR_YEARS[y]});
+      var peaceYears=years.filter(function(y){return !WAR_YEARS[y]});
+
+      // Header
+      document.getElementById('title-ticker').textContent=currentTicker;
+      document.getElementById('page-caption').textContent=currentTicker+' | '+years[0]+'\u2013'+years[years.length-1]+' | '+years.length+' Jahre | Krieg: '+warYears.length+' | Frieden: '+peaceYears.length;
+      SA.renderTradingDayHeader('trading-day-header',currentTicker,rawRows);
+
+      // Durchschnittskurven berechnen
+      function avgCurve(yList){
+        if(!yList.length)return[];
+        var curves=yList.map(function(y){return yearData[y].full_365});
+        var avg=[];
+        for(var d=0;d<365;d++){
+          var sum=0;for(var j=0;j<curves.length;j++)sum+=curves[j][d];
+          avg.push(sum/curves.length);
+        }
+        // Glaettung
+        if(smoothing>1){
+          var half=Math.floor(smoothing/2);
+          var smoothed=[];
+          for(var i=0;i<365;i++){
+            var s=Math.max(0,i-half),e=Math.min(365,i+half+1);
+            var sum=0;for(var j=s;j<e;j++)sum+=avg[j];
+            smoothed.push(sum/(e-s));
+          }
+          return smoothed;
+        }
+        return avg;
+      }
+
+      var warAvg=avgCurve(warYears);
+      var peaceAvg=avgCurve(peaceYears);
+      var totalAvg=avgCurve(years);
+
+      // Renditen
+      function calcReturns(yList){return yList.map(function(y){return yearData[y].simpleReturn})}
+      var warRets=calcReturns(warYears),peaceRets=calcReturns(peaceYears);
+      var warAvgRet=warRets.length>0?warRets.reduce(function(s,v){return s+v},0)/warRets.length:0;
+      var peaceAvgRet=peaceRets.length>0?peaceRets.reduce(function(s,v){return s+v},0)/peaceRets.length:0;
+      var warWR=warRets.length>0?warRets.filter(function(r){return r>0}).length/warRets.length*100:0;
+      var peaceWR=peaceRets.length>0?peaceRets.filter(function(r){return r>0}).length/peaceRets.length*100:0;
+
+      // KPIs
+      document.getElementById('kpi-war').innerHTML=
+        kpi('Kriegsjahre',warYears.length+' \u00B7 \u00D8 '+fmtPct(warAvgRet),warAvgRet>=0?'green':'red')+
+        kpi('Friedensjahre',peaceYears.length+' \u00B7 \u00D8 '+fmtPct(peaceAvgRet),peaceAvgRet>=0?'green':'red')+
+        kpi('Win-Rate Krieg',warWR.toFixed(0)+'%',warWR>=50?'green':'red')+
+        kpi('Win-Rate Frieden',peaceWR.toFixed(0)+'%',peaceWR>=50?'green':'red');
+
+      // ── Hauptchart ──
+      var xDays=Array.from({length:365},function(_,i){return i+1});
+      var series=[];
+      if(warAvg.length)series.push({name:'Kriegsjahre ('+warYears.length+')',data:warAvg,color:'#ff4757'});
+      if(peaceAvg.length)series.push({name:'Friedensjahre ('+peaceYears.length+')',data:peaceAvg,color:'#00d4aa'});
+      if(totalAvg.length)series.push({name:'Gesamt ('+years.length+')',data:totalAvg,color:'#4d9fff'});
+
+      if(charts.main)charts.main.destroy();
+      charts.main=new ApexCharts(document.getElementById('chart-main'),{
+        series:series,
+        chart:Object.assign({type:'line',height:480},SA.chartTheme.chart),
+        stroke:{width:[3,3,2],curve:'smooth',dashArray:[0,0,5]},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        annotations:{yaxis:[{y:100,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
+        xaxis:{categories:xDays,tickAmount:12,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){var idx=MONTH_STARTS.findIndex(function(s,i){return i<11&&v>=s&&v<MONTH_STARTS[i+1]});if(idx<0)idx=11;return v===MONTH_STARTS[idx]?MN[idx]:''}}},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
+        legend:SA.chartTheme.legend,
+        title:{text:currentTicker+' \u2014 Krieg vs. Frieden (normalisiert, Start=100)',style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.main.render();
+
+      // ── Kriegstabelle ──
+      var html='<table class="war-table"><tr><th>Krieg</th><th>Zeitraum</th><th>Jahre</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Max</th><th>Min</th></tr>';
+      US_WARS.forEach(function(w){
+        var wYrs=[];for(var y=w.start;y<=w.end;y++){if(yearData[y])wYrs.push(y)}
+        if(!wYrs.length)return;
+        var wRets=wYrs.map(function(y){return yearData[y].simpleReturn});
+        var avg=wRets.reduce(function(s,v){return s+v},0)/wRets.length;
+        var wr=wRets.filter(function(r){return r>0}).length/wRets.length*100;
+        html+='<tr><td>'+w.name+'</td><td>'+w.start+'\u2013'+w.end+'</td><td>'+wYrs.length+'</td>';
+        html+='<td style="color:'+(avg>=0?'var(--green)':'var(--red)')+'">'+fmtPct(avg)+'</td>';
+        html+='<td>'+wr.toFixed(0)+'%</td>';
+        html+='<td style="color:var(--green)">'+fmtPct(Math.max.apply(null,wRets))+'</td>';
+        html+='<td style="color:var(--red)">'+fmtPct(Math.min.apply(null,wRets))+'</td></tr>';
+      });
+      html+='</table>';
+      document.getElementById('content-war-table').innerHTML=html;
+
+      // ── Bar-Chart: Jahresrenditen ──
+      var allRets=years.map(function(y){return yearData[y].simpleReturn});
+      var barColors=years.map(function(y){return WAR_YEARS[y]?'#ff4757':'#1a9a5a'});
+      if(charts.bar)charts.bar.destroy();
+      charts.bar=new ApexCharts(document.getElementById('chart-bar'),{
+        series:[{name:'Rendite',data:allRets}],
+        chart:Object.assign({type:'bar',height:350},SA.chartTheme.chart),
+        colors:barColors,
+        plotOptions:{bar:{distributed:true,columnWidth:'80%',borderRadius:2}},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        xaxis:{categories:years,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,rotateAlways:true},tickAmount:Math.min(years.length,30)},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
+        legend:{show:false},
+        dataLabels:{enabled:false},
+        annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
+        title:{text:currentTicker+' \u2014 Jahresrenditen (rot = Krieg, gr\u00FCn = Frieden)',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+      });
+      charts.bar.render();
+
+      // Methodik
+      document.getElementById('content-methodik').innerHTML=
+        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Zeitraum:</b> '+years[0]+'\u2013'+years[years.length-1]+' ('+years.length+' Jahre)</li></ul>'+
+        '<h3>Kriegsjahre</h3><ul><li>9 US-Kriege seit 1898 (Spanisch-Amerikanischer Krieg bis Afghanistan)</li><li>Jedes Jahr in dem die USA aktiv im Krieg waren z\u00E4hlt als Kriegsjahr</li></ul>'+
+        '<h3>Normalisierung</h3><ul><li>Jedes Jahr startet bei 100 (erster Handelstag)</li><li>Kumulative Log-Returns, interpoliert auf 365 Kalendertage</li><li>Gl\u00E4ttung: '+document.getElementById('rng-smooth').value+'-Tage Moving Average (einstellbar)</li></ul>';
+    }
+
+    // Sidebar Events
+    document.getElementById('rng-smooth').addEventListener('input',function(){document.getElementById('lbl-smooth').textContent=this.value});
+    document.getElementById('rng-smooth').addEventListener('change',function(){if(rawRows)renderAll()});
+
+    SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
+    var getOutlierMethod=SA.outlier.renderFilterUI('outlier-filter',function(){if(rawRows)renderAll()});
+  }();
+  </script>
+</body>
+</html>

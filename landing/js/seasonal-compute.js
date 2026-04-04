@@ -271,6 +271,91 @@ SA.seasonal = {
     return { matrix: matrix, bestBefore: bestBefore, bestAfter: bestAfter, bestReturn: Math.round(bestReturn * 100) / 100 };
   },
 
+  // ── Jahreskurven (Port von build_year_data + calculate_seasonal_average) ──
+
+  /**
+   * Normalisiert Jahreskurven: Start=100, kumulative Log-Returns, interpoliert auf 365 Tage.
+   * (Port von build_year_data + normalize_year + interpolate_to_365)
+   * @param {Array} rows - [{date, close, log_return}]
+   * @returns {Object} {year: {full_365: [365 values], simpleReturn: %}}
+   */
+  buildYearData: function(rows) {
+    var yearGroups = {};
+    for (var i = 0; i < rows.length; i++) {
+      var y = parseInt(rows[i].date.substring(0, 4));
+      if (!yearGroups[y]) yearGroups[y] = [];
+      yearGroups[y].push(rows[i]);
+    }
+    var result = {};
+    for (var year in yearGroups) {
+      var yRows = yearGroups[year];
+      if (yRows.length < 20) continue;
+      // Log-Returns kumulieren → normalisiert auf 100
+      var cumulative = [100];
+      for (var j = 1; j < yRows.length; j++) {
+        var lr = yRows[j].log_return != null ? yRows[j].log_return
+          : (yRows[j - 1].close > 0 ? Math.log(yRows[j].close / yRows[j - 1].close) : 0);
+        cumulative.push(cumulative[j - 1] * Math.exp(lr));
+      }
+      // Day-of-Year fuer jeden Eintrag
+      var days = yRows.map(function(r) {
+        var d = new Date(r.date);
+        var jan1 = new Date(d.getFullYear(), 0, 0);
+        return Math.floor((d - jan1) / 86400000);
+      });
+      // Interpolieren auf 365 Kalendertage
+      var full365 = SA.seasonal._interpolateTo365(days, cumulative);
+      var simpleReturn = full365[364] > 0 ? (full365[364] / full365[0] - 1) * 100 : 0;
+      result[parseInt(year)] = { full_365: full365, simpleReturn: Math.round(simpleReturn * 100) / 100 };
+    }
+    return result;
+  },
+
+  /**
+   * Saisonaler Durchschnitt ueber alle Jahre (Port von calculate_seasonal_average).
+   * @param {Object} yearData - von buildYearData
+   * @returns {Object} {avg: [365], std: [365]}
+   */
+  calculateSeasonalAverage: function(yearData) {
+    var years = Object.keys(yearData);
+    if (years.length === 0) return { avg: [], std: [] };
+    var curves = years.map(function(y) { return yearData[y].full_365; });
+    var avg = [], std = [];
+    for (var d = 0; d < 365; d++) {
+      var vals = curves.map(function(c) { return c[d]; });
+      var sum = vals.reduce(function(s, v) { return s + v; }, 0);
+      var mean = sum / vals.length;
+      var variance = vals.reduce(function(s, v) { return s + (v - mean) * (v - mean); }, 0) / vals.length;
+      avg.push(Math.round(mean * 100) / 100);
+      std.push(Math.round(Math.sqrt(variance) * 100) / 100);
+    }
+    return { avg: avg, std: std };
+  },
+
+  /** Interpoliert auf 365 Kalendertage (Port von interpolate_to_365). */
+  _interpolateTo365: function(days, values) {
+    var full = [];
+    for (var target = 1; target <= 365; target++) {
+      var idx = days.indexOf(target);
+      if (idx >= 0) { full.push(values[idx]); continue; }
+      if (target < days[0]) { full.push(values[0]); continue; }
+      if (target > days[days.length - 1]) { full.push(values[values.length - 1]); continue; }
+      // Interpolieren
+      var prevIdx = -1, nextIdx = -1;
+      for (var j = 0; j < days.length; j++) {
+        if (days[j] < target) prevIdx = j;
+        if (days[j] > target && nextIdx < 0) nextIdx = j;
+      }
+      if (prevIdx >= 0 && nextIdx >= 0) {
+        var w = (target - days[prevIdx]) / (days[nextIdx] - days[prevIdx]);
+        full.push(values[prevIdx] + w * (values[nextIdx] - values[prevIdx]));
+      } else {
+        full.push(values[values.length - 1]);
+      }
+    }
+    return full;
+  },
+
   // ── Mondphasen (Port von shared/central_banks.py) ──
 
   /** Bekannter Neumond + Synodischer Monat */
