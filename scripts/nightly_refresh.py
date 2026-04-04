@@ -287,6 +287,27 @@ def main():
         app_logger.error(f"nightly_refresh: Health-Check fehlgeschlagen: {e}")
         print(f"Health-Check failed: {e}")
 
+    # Phase E: Regime-Scores (Isolation Forest)
+    try:
+        from scripts.compute_regime_scores import compute_regime_scores, upsert_regime_scores
+        from shared.data import download_data as _dl_regime, preprocess as _pp_regime
+        _regime_tickers = ["SPY"]
+        for _rt in _regime_tickers:
+            _raw = _dl_regime(_rt)
+            if _raw is not None and not _raw.empty:
+                _df_r = _pp_regime(_raw)
+                _scores = compute_regime_scores(_df_r)
+                if not _scores.empty:
+                    # Nur letzte 5 Tage upserten (historische aendern sich minimal)
+                    _cutoff = (date.today() - __import__('datetime').timedelta(days=7)).strftime("%Y-%m-%d")
+                    _recent = _scores[_scores["date"] >= _cutoff]
+                    if not _recent.empty:
+                        upsert_regime_scores(_rt, _recent)
+                        print(f"Regime-Scores {_rt}: {len(_recent)} Tage aktualisiert ✓")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Regime-Scores fehlgeschlagen: {e}")
+        print(f"Regime-Scores failed: {e}")
+
     # Phase D: refresh_log schreiben
     try:
         from shared.supabase_client import get_client

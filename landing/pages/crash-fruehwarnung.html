@@ -64,8 +64,18 @@
         </div>
       </div>
 
-      <!-- SPY 6-Monats-Chart -->
+      <!-- SPY Chart + Risk-Score Backtest (Synced) -->
       <div class="chart-box"><div id="chart-spy"></div></div>
+      <div class="chart-box" style="margin-top:-1rem"><div id="chart-risk"></div></div>
+
+      <!-- Historischer Backtest -->
+      <details open>
+        <summary>Regime-Backtest &mdash; historische Phasen</summary>
+        <div class="content">
+          <p class="box-info">Risk-Score (0&ndash;100) f&uuml;r jeden Handelstag. Gr&uuml;n &lt;40, Gelb 40&ndash;69, Rot &ge;70. Berechnet via Isolation Forest (sklearn).</p>
+          <div class="kpi-row" id="kpi-backtest"></div>
+        </div>
+      </details>
 
       <!-- Feature-Details -->
       <details>
@@ -186,15 +196,31 @@
     }
     initialLoad();
 
+    var regimeRows=null; // Aus Supabase regime_scores
+
     function loadSPY(){
       showLoading('Lade SPY...');
-      SA.fetchAllPrices('SPY','&date=gte.2020-01-01').then(function(rows){
+      // Parallel: Preise + Regime-Scores laden
+      var p1=SA.fetchAllPrices('SPY','&date=gte.2020-01-01');
+      var p2=fetchRegimeScores();
+      Promise.all([p1,p2]).then(function(results){
+        var rows=results[0];
+        regimeRows=results[1];
         if(!rows||rows.length<100){hideLoading();showError('SPY: Zu wenig Daten');return}
         rows.forEach(function(r){r.close=parseFloat(r.close)});
         rawRows=rows;
         renderAll();
         hideLoading();
       }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+    }
+
+    function fetchRegimeScores(){
+      // Supabase REST: regime_scores fuer SPY
+      if(!SA.supabase||!SA.supabase.url) return Promise.resolve([]);
+      var url=SA.supabase.url+'/rest/v1/regime_scores?ticker=eq.SPY&order=date.asc&select=date,risk_score,traffic_light,vol_5d,vol_20d,drawdown,ret_5d,ret_20d';
+      return fetch(url,{headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}})
+        .then(function(r){return r.ok?r.json():[]})
+        .catch(function(){return[]});
     }
 
     function renderAll(){
@@ -226,8 +252,9 @@
         kpi('Rendite (5d)',(f.ret_5d>=0?'+':'')+(f.ret_5d||0).toFixed(2)+'%',f.ret_5d>=0?'green':'red')+
         kpi('Rendite (20d)',(f.ret_20d>=0?'+':'')+(f.ret_20d||0).toFixed(2)+'%',f.ret_20d>=0?'green':'red');
 
-      // ── SPY Chart (6 Monate) ──
-      var recent=rawRows.slice(-126);
+      // ── SPY Chart (letzte 252 HT = 1 Jahr) ──
+      var nDays=regimeRows&&regimeRows.length>126?252:126;
+      var recent=rawRows.slice(-nDays);
       var series=[{
         name:'SPY',
         data:recent.map(function(r){return{x:new Date(r.date).getTime(),y:r.close}})
@@ -236,18 +263,21 @@
       if(charts.spy) charts.spy.destroy();
       charts.spy=new ApexCharts(document.getElementById('chart-spy'),{
         series:series,
-        chart:Object.assign({type:'area',height:350},SA.chartTheme.chart),
+        chart:Object.assign({type:'area',height:300,id:'spy-chart',group:'regime'},SA.chartTheme.chart),
         stroke:{width:1.5,curve:'straight'},
-        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.15,opacityTo:0.02,stops:[0,100]}},
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.12,opacityTo:0.01,stops:[0,100]}},
         colors:[tl.color],
         dataLabels:{enabled:false},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
-        xaxis:{type:'datetime',tickAmount:8,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
+        xaxis:{type:'datetime',tickAmount:10,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)}}},
         legend:{show:false},
-        title:{text:'SPY \u2014 letzte 6 Monate',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+        title:{text:'SPY \u2014 Kursverlauf',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.spy.render();
+
+      // ── Risk-Score Backtest-Chart (synced x-Achse) ──
+      renderRiskChart(recent, tl);
 
       // ── Feature-Tabelle ──
       document.getElementById('content-features').innerHTML=
@@ -261,14 +291,17 @@
         '<tr><td>Drawdown</td><td style="color:var(--red)">'+f.drawdown.toFixed(2)+'%</td><td>Abstand vom 20-Tage-Hoch</td></tr>'+
         '</table>';
 
+      renderBacktestKPIs();
+
       // ── Methodik ──
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Methode: Statistisches Regime-Scoring</h3>'+
-        '<p>Die Crash-Frühwarnung analysiert t\u00E4glich 7 Markt-Features des S&amp;P 500 (SPY):</p>'+
+        '<h3>Methode: Isolation Forest (Machine Learning)</h3>'+
+        '<p>Die Crash-Frühwarnung analysiert t\u00E4glich 7 Markt-Features des S&amp;P 500 (SPY) mit einem <b>Isolation Forest</b> (scikit-learn):</p>'+
         '<ul><li><b>Volatilit\u00E4t</b> (5d, 10d, 20d) \u2014 Standardabweichung der Tagesrenditen</li>'+
         '<li><b>Renditen</b> (1d, 5d, 20d) \u2014 kumulative Performance</li>'+
         '<li><b>Drawdown</b> \u2014 Abstand vom 20-Tage-Hoch</li></ul>'+
-        '<p>Aus diesen Features wird ein <b>Composite Score</b> berechnet (gewichtete Summe aus Volatilit\u00E4t und Drawdown). Dieser Score wird mit den letzten 252 Handelstagen verglichen (Percentile-Ranking).</p>'+
+        '<p>Der <b>Isolation Forest</b> lernt aus der gesamten Historie was normales Marktverhalten ist. Tage die stark abweichen erhalten einen hohen Anomalie-Score. Dieser wird als Percentile-Ranking (0\u2013100) dargestellt.</p>'+
+        '<p>Die historischen Scores werden t\u00E4glich vom Server berechnet (Python/sklearn) und in der Datenbank gespeichert. Die Ampel basiert auf dem aktuellen Score.</p>'+
         '<h3>Ampel-System</h3>'+
         '<table class="feature-table"><tr><th>Ampel</th><th>Risk-Score</th><th>Bedeutung</th></tr>'+
         '<tr><td style="color:#00d4aa">\u{1F7E2} Ruhig</td><td>0\u201339</td><td>Markt verh\u00E4lt sich normal</td></tr>'+
@@ -276,6 +309,94 @@
         '<tr><td style="color:#ff4757">\u{1F534} Stress-Regime</td><td>70\u2013100</td><td>Stark anomales Verhalten</td></tr></table>'+
         '<p style="margin-top:1rem"><b>Wichtig:</b> Die Ampel ist ein statistisches Fr\u00FChwarnsystem, keine Handelsempfehlung. Ein rotes Signal bedeutet nicht zwingend einen Crash, sondern dass sich der Markt ungew\u00F6hnlich verh\u00E4lt.</p>';
     }
+    /* ══════════════════════════════════════════════════════
+       RISK-SCORE BACKTEST CHART
+       ══════════════════════════════════════════════════════ */
+    function renderRiskChart(recentPrices, tl){
+      // Datenquelle: regime_scores aus Supabase, Fallback: JS-berechnete Scores
+      var riskData=[];
+      var dateSet={};
+      recentPrices.forEach(function(r){dateSet[r.date]=true});
+
+      if(regimeRows&&regimeRows.length>0){
+        // DB-Scores verwenden (Isolation Forest)
+        regimeRows.forEach(function(r){
+          if(dateSet[r.date]){
+            riskData.push({x:new Date(r.date).getTime(),y:parseFloat(r.risk_score)});
+          }
+        });
+      }
+
+      // Fallback: JS-berechnete Scores (wenn DB leer)
+      if(riskData.length===0){
+        var closes=recentPrices.map(function(r){return r.close});
+        for(var i=20;i<closes.length;i++){
+          var rets=[];for(var j=Math.max(1,i-5);j<=i;j++)rets.push(closes[j]/closes[j-1]-1);
+          var mean=rets.reduce(function(s,v){return s+v},0)/rets.length;
+          var v5=Math.sqrt(rets.reduce(function(s,v){return s+(v-mean)*(v-mean)},0)/rets.length)*100;
+          var rets20=[];for(var j=Math.max(1,i-20);j<=i;j++)rets20.push(closes[j]/closes[j-1]-1);
+          var m20=rets20.reduce(function(s,v){return s+v},0)/rets20.length;
+          var v20=Math.sqrt(rets20.reduce(function(s,v){return s+(v-m20)*(v-m20)},0)/rets20.length)*100;
+          var hi=0;for(var j=Math.max(0,i-20);j<=i;j++){if(closes[j]>hi)hi=closes[j]}
+          var dd=Math.abs((closes[i]-hi)/hi*100);
+          riskData.push({x:new Date(recentPrices[i].date).getTime(),y:Math.round((v5*0.3+v20*0.3+dd*0.4)*10)});
+        }
+      }
+
+      if(riskData.length===0) return;
+
+      // Farben pro Punkt: gruen/gelb/rot
+      var colors=riskData.map(function(p){
+        if(p.y>=70)return'#ff4757';if(p.y>=40)return'#e8a425';return'#00d4aa';
+      });
+
+      if(charts.risk) charts.risk.destroy();
+      charts.risk=new ApexCharts(document.getElementById('chart-risk'),{
+        series:[{name:'Risk-Score',data:riskData}],
+        chart:Object.assign({type:'area',height:160,id:'risk-chart',group:'regime'},SA.chartTheme.chart),
+        stroke:{width:1.5,curve:'straight'},
+        fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.2,opacityTo:0.02,stops:[0,100]}},
+        colors:[tl.color],
+        dataLabels:{enabled:false},
+        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        annotations:{
+          yaxis:[
+            {y:40,y2:0,fillColor:'#00d4aa',opacity:0.04},
+            {y:70,y2:40,fillColor:'#e8a425',opacity:0.04},
+            {y:100,y2:70,fillColor:'#ff4757',opacity:0.06},
+            {y:40,borderColor:'rgba(0,212,170,.3)',strokeDashArray:3},
+            {y:70,borderColor:'rgba(255,71,87,.3)',strokeDashArray:3}
+          ]
+        },
+        xaxis:{type:'datetime',tickAmount:10,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
+        yaxis:{min:0,max:100,tickAmount:4,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(0)}}},
+        legend:{show:false},
+        title:{text:'Risk-Score (0\u2013100)'+(regimeRows&&regimeRows.length>0?' \u2014 Isolation Forest':' \u2014 Composite'),style:{color:'#fff',fontSize:'11px',fontFamily:'Sora,sans-serif',fontWeight:600}}
+      });
+      charts.risk.render();
+    }
+
+    function renderBacktestKPIs(){
+      var el=document.getElementById('kpi-backtest');
+      if(!regimeRows||regimeRows.length===0){
+        el.innerHTML=kpi('Status','Keine DB-Scores \u2014 JS-Fallback aktiv','');
+        return;
+      }
+      var scores=regimeRows.map(function(r){return parseFloat(r.risk_score)});
+      var red=regimeRows.filter(function(r){return r.traffic_light==='red'}).length;
+      var yellow=regimeRows.filter(function(r){return r.traffic_light==='yellow'}).length;
+      var green=regimeRows.filter(function(r){return r.traffic_light==='green'}).length;
+      var avg=scores.reduce(function(s,v){return s+v},0)/scores.length;
+      var maxScore=Math.max.apply(null,scores);
+      el.innerHTML=
+        kpi('Datenpunkte',regimeRows.length.toLocaleString())+
+        kpi('\u00D8 Score',avg.toFixed(1))+
+        kpi('Max Score',maxScore.toFixed(0),'red')+
+        kpi('\uD83D\uDFE2 Ruhig',green+' ('+Math.round(green/regimeRows.length*100)+'%)','green')+
+        kpi('\uD83D\uDFE1 Vorsicht',yellow+' ('+Math.round(yellow/regimeRows.length*100)+'%)')+
+        kpi('\uD83D\uDD34 Stress',red+' ('+Math.round(red/regimeRows.length*100)+'%)','red');
+    }
+
   }();
   </script>
 </body>
