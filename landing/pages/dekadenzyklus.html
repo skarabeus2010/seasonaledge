@@ -278,19 +278,21 @@
     }
 
     function init(){
-      // Ticker-Liste laden (Supabase) — nur einmal
-      if(SA.supabase.url&&!document.getElementById('ticker-list').children.length){
-        SA.supabase.get('tickers','select=ticker,name&aktiv=eq.true&order=ticker').then(function(tickers){
-          var dl=document.getElementById('ticker-list');
-          if(dl&&tickers&&tickers.length){
-            tickers.forEach(function(t){
-              var opt=document.createElement('option');
-              opt.value=t.ticker;
-              opt.textContent=t.name;
-              dl.appendChild(opt);
-            });
-          }
-        }).catch(function(){});
+      // Ticker-Liste laden (statisches JSON) — nur einmal
+      if(!document.getElementById('ticker-list').children.length){
+        fetch('/landing/data/tickers.json')
+          .then(function(r){return r.json()})
+          .then(function(tickers){
+            var dl=document.getElementById('ticker-list');
+            if(dl&&tickers&&tickers.length){
+              tickers.forEach(function(t){
+                var opt=document.createElement('option');
+                opt.value=t.t;
+                opt.textContent=t.n+' ('+t.t+')';
+                dl.appendChild(opt);
+              });
+            }
+          }).catch(function(){});
       }
 
       // Header
@@ -496,8 +498,8 @@
       charts.lines=new ApexCharts(document.getElementById('chart-lines'),{
         series:series,
         chart:Object.assign({type:'line',height:500,events:{
-          mounted:function(){addBandShading()},
-          updated:function(){addBandShading()}
+          animationEnd:function(){addBandShading()},
+          mounted:function(){setTimeout(addBandShading,300)}
         }},SA.chartTheme.chart),
         stroke:{width:strokeWidths,curve:'smooth',dashArray:dashArr},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
@@ -519,17 +521,20 @@
       if(!svg)return;
       // Entferne alte Shadings
       svg.querySelectorAll('.band-shade').forEach(function(e){e.remove()});
-      var paths=svg.querySelectorAll('.apexcharts-line-series path');
-      if(!paths.length)return;
+      // ApexCharts: jede Serie hat ihre eigene <g> mit einem <path> drin
+      var seriesGroups=svg.querySelectorAll('.apexcharts-line-series .apexcharts-series');
+      if(!seriesGroups.length)return;
       _bandPairs.forEach(function(bp){
-        var hiPath=paths[bp.hiIdx];
-        var loPath=paths[bp.loIdx];
+        var hiGroup=seriesGroups[bp.hiIdx];
+        var loGroup=seriesGroups[bp.loIdx];
+        if(!hiGroup||!loGroup)return;
+        var hiPath=hiGroup.querySelector('path');
+        var loPath=loGroup.querySelector('path');
         if(!hiPath||!loPath)return;
         try{
-          // Punkte aus den SVG-Pfaden extrahieren
           var hiPts=extractPathPoints(hiPath);
           var loPts=extractPathPoints(loPath);
-          if(hiPts.length<2||loPts.length<2)return;
+          if(hiPts.length<10||loPts.length<10)return;
           // Polygon: hi vorwaerts + lo rueckwaerts
           var polyPts=[];
           for(var i=0;i<hiPts.length;i++)polyPts.push(hiPts[i].x+','+hiPts[i].y);
@@ -540,11 +545,9 @@
           polygon.setAttribute('fill-opacity',bp.opacity);
           polygon.setAttribute('stroke','none');
           polygon.setAttribute('class','band-shade');
-          // Einfuegen VOR den Linien (dahinter)
           var plotArea=svg.querySelector('.apexcharts-plot-area');
           if(plotArea)plotArea.insertBefore(polygon,plotArea.firstChild);
-          else svg.insertBefore(polygon,svg.firstChild);
-        }catch(e){}
+        }catch(e){console.warn('Band shading error:',e)}
       });
     }
 
@@ -552,9 +555,10 @@
       var pts=[];
       try{
         var len=pathEl.getTotalLength();
-        var step=Math.max(1,Math.floor(len/200));
-        for(var i=0;i<=len;i+=step){
-          var p=pathEl.getPointAtLength(i);
+        if(len<1)return pts;
+        var numPts=Math.min(250,Math.max(50,Math.round(len/3)));
+        for(var i=0;i<=numPts;i++){
+          var p=pathEl.getPointAtLength(i/numPts*len);
           pts.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10});
         }
       }catch(e){}
@@ -633,8 +637,8 @@
       charts.heatmap=new ApexCharts(document.getElementById('chart-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart),
-        plotOptions:{heatmap:{radius:4,useFillColorAsStroke:false,colorScale:{ranges:[
-          {from:-10,to:-3,color:'#6b0f0f',name:'stark negativ'},
+        plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
+          {from:-99,to:-3,color:'#6b0f0f',name:'stark negativ'},
           {from:-3,to:-2,color:'#8b1a1a',name:'negativ'},
           {from:-2,to:-1,color:'#a52a2a',name:'m\u00E4\u00DFig negativ'},
           {from:-1,to:-0.3,color:'#6b3030',name:'leicht negativ'},
@@ -642,7 +646,7 @@
           {from:0.3,to:1,color:'#1a4a2a',name:'leicht positiv'},
           {from:1,to:2,color:'#1a6b35',name:'m\u00E4\u00DFig positiv'},
           {from:2,to:3,color:'#1a8a45',name:'positiv'},
-          {from:3,to:10,color:'#0f6b2f',name:'stark positiv'}
+          {from:3,to:99,color:'#0f6b2f',name:'stark positiv'}
         ]}}},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,xaxis:SA.chartTheme.xaxis,
         dataLabels:{enabled:true,style:{fontSize:'10px',colors:['#e0e0e0']},formatter:function(v){return v.toFixed(1)}}
@@ -793,8 +797,8 @@
       charts.ddHm=new ApexCharts(document.getElementById('chart-dd-heatmap'),{
         series:series,
         chart:Object.assign({type:'heatmap',height:400},SA.chartTheme.chart,{selection:{enabled:false},zoom:{enabled:false}}),
-        plotOptions:{heatmap:{radius:4,useFillColorAsStroke:false,colorScale:{ranges:[
-          {from:-25,to:-15,color:'#8b0000',name:'extrem'},
+        plotOptions:{heatmap:{radius:4,enableShades:false,colorScale:{ranges:[
+          {from:-99,to:-15,color:'#8b0000',name:'extrem'},
           {from:-15,to:-10,color:'#a52222',name:'sehr stark'},
           {from:-10,to:-7,color:'#b83333',name:'stark'},
           {from:-7,to:-5,color:'#cc4444',name:'moderat-stark'},
