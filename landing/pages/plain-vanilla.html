@@ -282,19 +282,41 @@
       // Equity Chart
       if(data&&data.trades&&data.trades.length>0){
         var equity=SA.strategy.buildEquityCurve(data.trades,1000);
-        var series=[{name:'Portfolio',data:equity.map(function(e){return{x:e.date,y:e.value}})}];
+        var eqData=equity.map(function(e){return{x:new Date(e.date).getTime(),y:e.value}});
+
+        // High / Low / Last finden fuer Annotations
+        var highPt=eqData[0],lowPt=eqData[0],lastPt=eqData[eqData.length-1];
+        eqData.forEach(function(p){if(p.y>highPt.y)highPt=p;if(p.y<lowPt.y)lowPt=p});
+        var fmtVal=function(v){return'$'+Math.round(v).toLocaleString()};
+        var pointAnnotations=[];
+        // High
+        pointAnnotations.push({x:highPt.x,y:highPt.y,marker:{size:5,fillColor:'#00d4aa',strokeColor:'#fff',strokeWidth:2},
+          label:{text:'High: '+fmtVal(highPt.y),borderColor:'#00d4aa',style:{color:'#000',background:'#00d4aa',fontSize:'11px',fontFamily:'DM Sans',padding:{left:6,right:6,top:3,bottom:3}},offsetY:-10}});
+        // Low
+        pointAnnotations.push({x:lowPt.x,y:lowPt.y,marker:{size:5,fillColor:'#ff4757',strokeColor:'#fff',strokeWidth:2},
+          label:{text:'Low: '+fmtVal(lowPt.y),borderColor:'#ff4757',style:{color:'#fff',background:'#ff4757',fontSize:'11px',fontFamily:'DM Sans',padding:{left:6,right:6,top:3,bottom:3}},offsetY:16}});
+        // Last (nur wenn nicht = High oder Low)
+        if(lastPt.x!==highPt.x&&lastPt.x!==lowPt.x){
+          var lastClr=lastPt.y>=1000?'#e8a820':'#ff4757';
+          pointAnnotations.push({x:lastPt.x,y:lastPt.y,marker:{size:5,fillColor:lastClr,strokeColor:'#fff',strokeWidth:2},
+            label:{text:'Aktuell: '+fmtVal(lastPt.y),borderColor:lastClr,style:{color:'#000',background:lastClr,fontSize:'11px',fontFamily:'DM Sans',padding:{left:6,right:6,top:3,bottom:3}},offsetY:-10}});
+        }
 
         if(charts.equity) charts.equity.destroy();
         charts.equity=new ApexCharts(document.getElementById('chart-equity'),{
-          series:series,
+          series:[{name:'Portfolio',data:eqData}],
           chart:Object.assign({type:'area',height:420},SA.chartTheme.chart),
           stroke:{width:2.5,curve:'straight'},
           fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.15,opacityTo:0.02,stops:[0,100]}},
           colors:['#00d4aa'],
+          dataLabels:{enabled:false},
           grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
-          annotations:{yaxis:[{y:1000,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}]},
-          xaxis:{type:'datetime',labels:{style:{colors:'#a89878',fontSize:'10px'}}},
-          yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return'$'+v.toLocaleString(undefined,{maximumFractionDigits:0})}}},
+          annotations:{
+            yaxis:[{y:1000,borderColor:'rgba(255,255,255,.15)',strokeDashArray:4}],
+            points:pointAnnotations
+          },
+          xaxis:{type:'datetime',tickAmount:10,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return'$'+Math.round(v).toLocaleString()}}},
           legend:{show:false},
           title:{text:s.icon+' '+s.name+' \u2014 '+currentTicker+' \u00B7 $1.000 Portfolio',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
         });
