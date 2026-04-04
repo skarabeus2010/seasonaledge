@@ -215,9 +215,11 @@
     }
 
     function fetchRegimeScores(){
-      // Supabase REST: regime_scores fuer SPY
+      // Supabase REST: letzte 2 Jahre (max ~500 Zeilen, unter 1000-Limit)
       if(!SA.supabase||!SA.supabase.url) return Promise.resolve([]);
-      var url=SA.supabase.url+'/rest/v1/regime_scores?ticker=eq.SPY&order=date.asc&select=date,risk_score,traffic_light,vol_5d,vol_20d,drawdown,ret_5d,ret_20d';
+      var cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-2);
+      var cutoffStr=cutoff.toISOString().substring(0,10);
+      var url=SA.supabase.url+'/rest/v1/regime_scores?ticker=eq.SPY&date=gte.'+cutoffStr+'&order=date.asc&select=date,risk_score,traffic_light,vol_5d,vol_20d,drawdown,ret_5d,ret_20d';
       return fetch(url,{headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}})
         .then(function(r){return r.ok?r.json():[]})
         .catch(function(){return[]});
@@ -362,33 +364,38 @@
 
       if(riskData.length===0) return;
 
-      // Farben pro Punkt: gruen/gelb/rot
-      var colors=riskData.map(function(p){
-        if(p.y>=70)return'#ff4757';if(p.y>=40)return'#e8a425';return'#00d4aa';
-      });
+      // Dynamische Y-Achse: max = hoechster sichtbarer Wert + 20%, mindestens bis 40 (Gelb-Grenze)
+      var maxVisible=0;
+      riskData.forEach(function(p){if(p.y>maxVisible)maxVisible=p.y});
+      var yMax=Math.max(50, Math.min(100, Math.ceil(maxVisible*1.3/10)*10));
+
+      // Annotations: nur Grenzen zeigen die im sichtbaren Bereich liegen
+      var yAnnos=[
+        {y:40,y2:0,fillColor:'#00d4aa',opacity:0.04},
+        {y:40,borderColor:'rgba(0,212,170,.3)',strokeDashArray:3,label:{text:'Gelb',style:{color:'#e8a425',fontSize:'9px',background:'transparent'},position:'front',offsetX:-5}}
+      ];
+      if(yMax>40){
+        yAnnos.push({y:Math.min(70,yMax),y2:40,fillColor:'#e8a425',opacity:0.04});
+      }
+      if(yMax>=70){
+        yAnnos.push({y:yMax,y2:70,fillColor:'#ff4757',opacity:0.06});
+        yAnnos.push({y:70,borderColor:'rgba(255,71,87,.3)',strokeDashArray:3,label:{text:'Rot',style:{color:'#ff4757',fontSize:'9px',background:'transparent'},position:'front',offsetX:-5}});
+      }
 
       if(charts.risk) charts.risk.destroy();
       charts.risk=new ApexCharts(document.getElementById('chart-risk'),{
         series:[{name:'Risk-Score',data:riskData}],
-        chart:Object.assign({type:'area',height:160,id:'risk-chart',group:'regime'},SA.chartTheme.chart),
+        chart:Object.assign({type:'area',height:180,id:'risk-chart',group:'regime'},SA.chartTheme.chart),
         stroke:{width:1.5,curve:'straight'},
         fill:{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.2,opacityTo:0.02,stops:[0,100]}},
         colors:[tl.color],
         dataLabels:{enabled:false},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
-        annotations:{
-          yaxis:[
-            {y:40,y2:0,fillColor:'#00d4aa',opacity:0.04},
-            {y:70,y2:40,fillColor:'#e8a425',opacity:0.04},
-            {y:100,y2:70,fillColor:'#ff4757',opacity:0.06},
-            {y:40,borderColor:'rgba(0,212,170,.3)',strokeDashArray:3},
-            {y:70,borderColor:'rgba(255,71,87,.3)',strokeDashArray:3}
-          ]
-        },
+        annotations:{yaxis:yAnnos},
         xaxis:{type:'datetime',tickAmount:10,labels:{style:{colors:'#a89878',fontSize:'10px'},datetimeUTC:false}},
-        yaxis:{min:0,max:100,tickAmount:4,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(0)}}},
+        yaxis:{min:0,max:yMax,tickAmount:5,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(0)}}},
         legend:{show:false},
-        title:{text:'Risk-Score (0\u2013100)'+(regimeRows&&regimeRows.length>0?' \u2014 Isolation Forest':' \u2014 Composite'),style:{color:'#fff',fontSize:'11px',fontFamily:'Sora,sans-serif',fontWeight:600}}
+        title:{text:'Risk-Score (0\u2013'+yMax+')'+(regimeRows&&regimeRows.length>0?' \u2014 Isolation Forest':' \u2014 Composite'),style:{color:'#fff',fontSize:'11px',fontFamily:'Sora,sans-serif',fontWeight:600}}
       });
       charts.risk.render();
     }
