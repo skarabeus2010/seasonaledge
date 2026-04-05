@@ -137,6 +137,7 @@
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
 
   <script>
   (function() {
@@ -341,29 +342,19 @@
     }
 
     // ── Render: Streak ───────────────────────────────────────────────────
-    function renderStreak(result) {
-      var returns = result.returns;
-      var streak = 0, st = '';
-      for (var j = returns.length - 1; j >= 0; j--) {
-        var w = returns[j] > 0;
-        if (!streak) { st = w ? 'W' : 'L'; streak = 1; }
-        else if ((w && st === 'W') || (!w && st === 'L')) streak++;
-        else break;
-      }
-      var streakLabel = streak ? streak + ' ' + (st === 'W' ? 'Winner' : 'Loser') : '\u2014';
-      var streakColor = st === 'W' ? 'var(--green)' : st === 'L' ? 'var(--red)' : 'var(--muted)';
+    function renderStreak(result, bankKey) {
+      // Baue Daten fuer SA.streaks (gruppiert nach Jahr)
+      var data = result.allCurves.map(function(c) {
+        return { year: parseInt(c.date.substring(0, 4)), date: c.date, total_return: c.totalReturn };
+      });
 
-      // Letzte 10 Events als Tabelle
-      var html = '<div style="margin-bottom:1rem"><b>Current Streak:</b> <span style="color:' + streakColor + ';font-weight:700;font-size:1rem">' + streakLabel + '</span></div>';
-      html += '<table class="cb-table"><thead><tr><th>Datum</th><th>Rendite</th><th>W/L</th></tr></thead><tbody>';
-      var recent = result.allCurves.slice(-10).reverse();
-      for (var i = 0; i < recent.length; i++) {
-        var r = recent[i];
-        var cls = r.totalReturn >= 0 ? 'pos' : 'neg';
-        html += '<tr><td>' + r.date + '</td><td class="' + cls + '">' + fmtPct(r.totalReturn, 2) + '</td>';
-        html += '<td class="' + cls + '">' + (r.totalReturn >= 0 ? 'W' : 'L') + '</td></tr>';
-      }
-      html += '</tbody></table>';
+      // Gruppiere nach Jahr (jedes Event einzeln, Label = Datum)
+      var entries = data.map(function(d) { return { date: d.date, ret: d.total_return }; });
+      // Sortiere: neueste zuerst (fuer currentStreak)
+      entries.sort(function(a, b) { return b.date > a.date ? 1 : -1; });
+
+      var groups = [{ label: CB_LABELS[bankKey], entries: entries }];
+      var html = SA.streaks.renderStreakTable(groups, 'Notenbank', 20);
       document.getElementById('content-streak').innerHTML = html;
     }
 
@@ -402,7 +393,7 @@
       renderChart(result, bankKey);
       renderNext(bankKey);
       renderSignificance(result, bankKey);
-      renderStreak(result);
+      renderStreak(result, bankKey);
       showSections(true);
     }
 
