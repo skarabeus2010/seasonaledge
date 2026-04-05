@@ -120,6 +120,12 @@
         <div class="content" id="content-stats"></div>
       </details>
 
+      <!-- Signifikanztest -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -160,6 +166,7 @@
   <script src="/landing/js/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/significance.js"></script>
 
   <script>
   (function() {
@@ -177,7 +184,7 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-month','sec-weekday','sec-cumulative','sec-heatmap','sec-stats'].forEach(function(id) {
+      ['sec-month','sec-weekday','sec-cumulative','sec-heatmap','sec-stats','sec-significance'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
@@ -195,7 +202,7 @@
       var allRows = [];
       var batchSize = 1000;
       function batch(offset) {
-        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close&order=date' + (dateFilter || '');
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close,tdom,tdoy&order=date' + (dateFilter || '');
         return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
           headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
         }).then(function(r) {
@@ -219,12 +226,17 @@
         var open = parseFloat(rows[i].open);
         var close = parseFloat(rows[i].close);
         if (!prevClose || !open || !close) continue;
-        var d = new Date(rows[i].date);
+        // UTC-safe Date Parsing (verhindert Timezone-Shift)
+        var parts = rows[i].date.split('-');
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), day = parseInt(parts[2]);
+        var d = new Date(y, m - 1, day);
+        var dow = d.getDay(); // 0=So, 1=Mo..5=Fr, 6=Sa
+        if (dow === 0 || dow === 6) continue; // Wochenende skippen
         data.push({
           date: rows[i].date,
-          month: d.getMonth() + 1,
-          weekday: d.getDay() - 1, // 0=Mo..4=Fr
-          doy: Math.floor((d - new Date(d.getFullYear(),0,1)) / 86400000) + 1,
+          month: m,
+          weekday: dow - 1, // 0=Mo..4=Fr
+          doy: Math.floor((d - new Date(y, 0, 1)) / 86400000) + 1,
           overnight: (open / prevClose - 1) * 100,
           intraday: (close / open - 1) * 100,
           total: (close / prevClose - 1) * 100
@@ -259,10 +271,10 @@
       var onAvg = data.reduce(function(s,d){return s+d.overnight;},0)/data.length;
       var idAvg = data.reduce(function(s,d){return s+d.intraday;},0)/data.length;
       $kpi.innerHTML =
-        kpi('Handelstage', data.length) +
-        kpi('Overnight Anteil', onPct + '%', onPct > 50 ? 'kpi__value--green' : '') +
-        kpi('\u00D8 Overnight/Tag', fmtPct(onAvg, 4), onAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
-        kpi('\u00D8 Intraday/Tag', fmtPct(idAvg, 4), idAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red');
+        kpi('Handelstage', data.length.toLocaleString()) +
+        kpi('Overnight-Anteil', onPct + ' %', onPct > 50 ? 'kpi__value--green' : '') +
+        kpi('\u00D8 Overnight / Tag', fmtPct(onAvg, 4), onAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('\u00D8 Intraday / Tag', fmtPct(idAvg, 4), idAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red');
     }
 
     // ── Render: Monatschart (grouped bar) ─────────────────────────────────────
@@ -364,7 +376,10 @@
         xaxis: {
           type: 'numeric', tickAmount: 12,
           labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) {
-            var m = Math.floor((v - 1) / 21); return MONTHS[m] || '';
+            // DOY → Monatsname (1=Jan1, 32=Feb1, 60=Mar1, ...)
+            var doyStarts = [1,32,60,91,121,152,182,213,244,274,305,335];
+            for (var i = 11; i >= 0; i--) { if (v >= doyStarts[i]) return MONTHS[i]; }
+            return '';
           } }
         },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(1) + '%'; } }, title: { text: 'Kum. \u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
@@ -403,7 +418,7 @@
         ] } } },
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
         xaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' } } },
-        dataLabels: { enabled: true, style: { fontSize: '9px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(3) + '%' : ''; } },
+        dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(3) + '%' : ''; } },
         legend: { show: false },
         title: { text: type.charAt(0).toUpperCase() + type.slice(1) + ' \u2014 Monat \u00D7 Wochentag', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
       });
@@ -460,6 +475,51 @@
       document.getElementById('content-stats').innerHTML = html;
     }
 
+    // ── Render: Signifikanztest ───────────────────────────────────────────────
+    function renderSignificance(data) {
+      var el = document.getElementById('content-significance');
+      if (!SA.significance || data.length < 50) { document.getElementById('sec-significance').style.display = 'none'; return; }
+
+      // 1. Gesamt: Overnight vs Intraday vs Total (jeweils gegen 0)
+      var groups = {
+        'Overnight': data.map(function(d){return d.overnight;}),
+        'Intraday': data.map(function(d){return d.intraday;}),
+        'Total': data.map(function(d){return d.total;})
+      };
+      var overallResult = SA.significance.runSignificanceTest(groups);
+
+      // 2. Overnight nach Wochentag
+      var wdGroups = {};
+      for (var w = 0; w < 5; w++) {
+        wdGroups[WEEKDAYS[w]] = data.filter(function(d){return d.weekday === w;}).map(function(d){return d.overnight;});
+      }
+      var wdResult = SA.significance.runSignificanceTest(wdGroups);
+
+      // 3. Overnight nach Monat
+      var mGroups = {};
+      for (var m = 1; m <= 12; m++) {
+        var vals = data.filter(function(d){return d.month === m;}).map(function(d){return d.overnight;});
+        if (vals.length >= 10) mGroups[MONTHS[m-1]] = vals;
+      }
+      var mResult = SA.significance.runSignificanceTest(mGroups);
+
+      var html = '<h3>Overnight-Effekt: Statistisch signifikant?</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test gegen 0: Sind die Overnight-Returns systematisch von Null verschieden?</p>';
+      html += SA.significance.renderSection(overallResult, 3, ['Overnight','Intraday','Total']);
+
+      html += '<h3 style="margin-top:1.5rem">Overnight-Signifikanz nach Wochentag</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">An welchen Wochentagen ist der Overnight-Effekt am st\u00E4rksten?</p>';
+      html += SA.significance.renderSection(wdResult, 5, WEEKDAYS);
+
+      if (mResult.length > 0) {
+        html += '<h3 style="margin-top:1.5rem">Overnight-Signifikanz nach Monat</h3>';
+        html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">In welchen Monaten ist der Overnight-Effekt signifikant?</p>';
+        html += SA.significance.renderSection(mResult, 4, MONTHS);
+      }
+
+      el.innerHTML = html;
+    }
+
     // ── Main ──────────────────────────────────────────────────────────────────
     var _cachedData = null;
 
@@ -503,6 +563,7 @@
         renderCumulative(data);
         renderHeatmap(data);
         renderStats(data);
+        renderSignificance(data);
         showSections(true);
         $loading.style.display = 'none';
       }).catch(function(err) {
