@@ -73,18 +73,20 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
     charts.js            ← ApexCharts Theme + Helpers (curve:'straight'!)
     seasonal-compute.js  ← Saisonale Berechnungen (buildYearData, TOM, Moon, etc.)
     decade-compute.js    ← Dekaden-Berechnungen (Drawdown, Percentile, Vola)
-    strategy-compute.js  ← 22 Trading-Strategien + Equity + Stats + StopLoss
+    strategy-compute.js  ← 22 Trading-Strategien + Equity + Stats + StopLoss + TrailingStop
     streak-analysis.js   ← Streak-Analyse (W/L-Serien, Tabelle)
     significance.js      ← Signifikanztest (t-Test, Cohen's d, CSS Gauges)
     indicators.js        ← Technische Indikatoren (SMA/EMA/RSI/BB/MACD/LBR)
     outlier.js           ← Outlier-Filter (IQR, Winsorize)
+    holidays.js          ← Globaler Feiertags-Kalender (NYSE/XETRA/LSE, Gauss-Ostern)
   pages/
     dekadenzyklus.html   ← Dekaden-Analyse (12 Sektionen, Ticker-Wechsel)
     monatswechsel.html   ← Turn of the Month (TOM, Heatmap, Streak, Signifikanz)
     mondphasen.html      ← Mondphasen-Effekt (Voll/Neu/Supermond)
     kriegszeiten.html    ← 11 Kriege, Event-Window, Ukraine+Iran live
     crash-fruehwarnung.html ← Regime-Ampel + Risk-Score Backtest (IF aus DB)
-    plain-vanilla.html   ← 22 Strategien, Equity-Charts, Trade-Tabellen
+    plain-vanilla.html   ← 22 Strategien, Equity, Signale, Signifikanz, Trailing Stop
+    intermarket-shocks.html ← Intermarket Shock-Analyse (Trigger→Target, Scatter+Regression)
     apex-demo.html       ← Chart-Demo
   data/
     DJI-decade.json      ← Vorberechnete Dekaden-Daten
@@ -244,6 +246,9 @@ if _project_dir not in sys.path:
 | Intraday Refresh: Zeitfenster | Boerse offen → laden. KEINE festen Zeitslots mehr |
 | FOREX Exchange: `is_trading_day()` | Mo-Fr, keine Feiertage (Karfreitag = offen) |
 | CRYPTO Exchange: `is_trading_day()` | Immer True (24/7 inkl. Wochenende) |
+| Frontend Feiertage: `holidays.js` | `SA.holidays.detect(ticker)` → NYSE/XETRA/LSE/NONE |
+| Karfreitag: Gauss-Algorithmus | `SA.holidays.goodFriday(year)` / `SA.holidays.easter(year)` |
+| Feiertags-Signale: Exchange-aware | Nur NYSE-Feiertage fuer US-Ticker, XETRA fuer DE-Ticker |
 | Landing Page: statisches HTML | `landing/`, nginx liefert direkt aus |
 | Streamlit App: unter `/app/` | nginx proxy_pass mit trailing slash |
 | Neue HTML-Pages: `landing/pages/` | Nutzen `app.css` + `app.js` + `charts.js` |
@@ -361,7 +366,7 @@ UPPER_CASE        → Konstanten
 
 Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 
-### Fertige JS-Module (8 Module)
+### Fertige JS-Module (9 Module)
 
 | Modul | Zeilen | Python-Quelle | Kern-Funktionen | Genutzt von |
 |-------|--------|---------------|-----------------|-------------|
@@ -373,7 +378,8 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | `significance.js` | 243 | `significance_gauge.py` | `runSignificanceTest` (t-Test, Cohen's d, Relevanz), `renderSection` (CSS Gauges), `scoreToColor` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `indicators.js` | 306 | `indicators.py` + `indicator_filter_ui.py` | `calcSMA/EMA/RSI/Bollinger/MACD/LBR`, `applyFilter`, `renderFilterUI`, `REGISTRY` | Monatswechsel, Mondphasen, *+3 Pages* |
 | `outlier.js` | 123 | `outlier_manager.py` | `detectIQR`, `winsorize`, `filterCurves`, `renderFilterUI` | Monatswechsel, Mondphasen, *+3 Pages* |
-| `strategy-compute.js` | 672 | `strategies/plain_vanilla.py` | 22 Strategie-Funktionen, `buildEquityCurve`, `computeStats`, `applyStopLoss`, `STRATEGIES` Registry | Plain Vanilla, *Trifecta* |
+| `strategy-compute.js` | 700 | `strategies/plain_vanilla.py` | 22 Strategie-Funktionen, `buildEquityCurve`, `computeStats`, `applyStopLoss`, `applyTrailingStop`, `STRATEGIES` Registry | Plain Vanilla, *Trifecta* |
+| `holidays.js` | 240 | `exchange_holidays.py` + `nyse_holidays.py` | `easter`, `goodFriday`, `thanksgiving`, `get(year,exchange)`, `isTradingDay`, `nthTradingDay`, `lastTradingDay`, `nextTradingDay`, `detect(ticker)` | **Alle Pages** (NYSE/XETRA/LSE/NONE) |
 
 ### Wiederverwendbare Patterns aus Kriegszeiten (inline, nicht als Modul)
 
@@ -404,8 +410,9 @@ Diese Funktionen sind aktuell inline in `kriegszeiten.html`, aber wiederverwendb
 | Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
 | Kriegszeiten | `/kriegszeiten` | app, charts, seasonal-compute | `computeEventWindow`, `smooth`, `toPairs`, Monatslabel-Formatter, Min-HT-Filter |
 | Crash-Frühwarnung | `/crash-fruehwarnung` | app, charts | Regime-Scores aus Supabase (IF), JS-Fallback, Risk-Score Backtest-Chart |
-| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, strategy-compute | 22 Strategien, Equity mit High/Low/Aktuell Annotations, Trade-Tabelle |
+| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, holidays, strategy-compute, significance | Naechste Signale (24 Strategien), Signifikanztest, Trailing Stop, Profit Factor |
 | Trifecta | `/trifecta` | app, charts, seasonal-compute | Ampel (SCR+FFD+JanB), Durchschnittsverlauf, DD-KPIs, Jahresrendite-Bar |
+| Intermarket Shocks | `/intermarket-shocks` | app, charts | Trigger→Target Analyse, Scatter+Regression, Saisonaler Breakdown, T=0 |
 
 ### Migrations-Reihenfolge (naechste Pages)
 | # | Page | Zeilen | Charts | Neue Module noetig | Status |

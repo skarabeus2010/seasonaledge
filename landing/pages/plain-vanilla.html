@@ -143,6 +143,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script>
@@ -427,119 +428,12 @@
         if (fn) tradeCache[k] = fn.call(S, rows) || [];
       }
 
-      // ── Future Trading Day Estimator ──
-      // NYSE-Feiertage (feste + variable, inkl. Karfreitag via Gauss)
-      function _usHolidays(y) {
-        var h = {};
-        h[y+'-01-01'] = 1; // Neujahr
-        h[y+'-07-04'] = 1; // Independence Day
-        h[y+'-12-25'] = 1; // Weihnachten
-        h[S._dateStr(y,6,19)] = 1; // Juneteenth
-        // MLK: 3. Mo Jan
-        var jan1dow = new Date(y,0,1).getDay();
-        h[S._dateStr(y,1, 1+((1-jan1dow+7)%7)+14)] = 1;
-        // Presidents Day: 3. Mo Feb
-        var feb1dow = new Date(y,1,1).getDay();
-        h[S._dateStr(y,2, 1+((1-feb1dow+7)%7)+14)] = 1;
-        // Karfreitag (Gauss Oster-Algorithmus)
-        var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
-        var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d-g+15)%30;
-        var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-hh-k)%7;
-        var m=Math.floor((a+11*hh+22*l)/451),eM=Math.floor((hh+l-7*m+114)/31),eD=((hh+l-7*m+114)%31)+1;
-        var gf=new Date(y,eM-1,eD); gf.setDate(gf.getDate()-2);
-        h[S._dateStr(gf.getFullYear(),gf.getMonth()+1,gf.getDate())] = 1;
-        // Memorial Day: letzter Mo Mai
-        var may31dow = new Date(y,4,31).getDay();
-        h[S._dateStr(y,5, 31-((may31dow-1+7)%7))] = 1;
-        // Labor Day: 1. Mo Sep
-        var sep1dow = new Date(y,8,1).getDay();
-        h[S._dateStr(y,9, 1+((1-sep1dow+7)%7))] = 1;
-        // Thanksgiving: 4. Do Nov
-        h[S._thanksgiving(y)] = 1;
-        return h;
-      }
-      // XETRA-Feiertage (Deutschland)
-      function _xetraHolidays(y) {
-        var h = {};
-        h[y+'-01-01'] = 1; // Neujahr
-        h[y+'-05-01'] = 1; // Tag der Arbeit
-        h[y+'-12-24'] = 1; // Heiligabend
-        h[y+'-12-25'] = 1; // 1. Weihnachtstag
-        h[y+'-12-26'] = 1; // 2. Weihnachtstag
-        h[y+'-12-31'] = 1; // Silvester
-        // Karfreitag + Ostermontag (Gauss)
-        var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
-        var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d-g+15)%30;
-        var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-hh-k)%7;
-        var m=Math.floor((a+11*hh+22*l)/451),eM=Math.floor((hh+l-7*m+114)/31),eD=((hh+l-7*m+114)%31)+1;
-        var easter=new Date(y,eM-1,eD);
-        var gf=new Date(easter); gf.setDate(gf.getDate()-2);
-        h[S._dateStr(gf.getFullYear(),gf.getMonth()+1,gf.getDate())] = 1;
-        var em=new Date(easter); em.setDate(em.getDate()+1);
-        h[S._dateStr(em.getFullYear(),em.getMonth()+1,em.getDate())] = 1;
-        return h;
-      }
+      // ── Holiday-aware Trading Day Helpers (nutzt SA.holidays) ──
+      var _exchange = SA.holidays.detect(currentTicker);
 
-      // Exchange-Erkennung: DE wenn Ticker auf .DE endet oder ^GDAXI/^SDAXI/^MDAXI/^TECDAX
-      var isDE = /\.DE$/i.test(currentTicker) || /\^(GDAXI|SDAXI|MDAXI|TECDAX)/i.test(currentTicker);
-
-      var _holidays = isDE
-        ? Object.assign({}, _xetraHolidays(Y), _xetraHolidays(Y+1))
-        : Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
-
-      function _isTradingDay(dateStr) {
-        var d = new Date(dateStr);
-        var dow = d.getDay();
-        if (dow === 0 || dow === 6) return false;
-        return !_holidays[dateStr];
-      }
-
-      // n-ter Handelstag eines Monats (1-basiert), geschaetzt
-      function _futureNthTD(y, m, n) {
-        var count = 0;
-        for (var d = 1; d <= 31; d++) {
-          var ds = S._dateStr(y, m, d);
-          var dt = new Date(y, m-1, d);
-          if (dt.getMonth() !== m-1) break; // naechster Monat
-          if (_isTradingDay(ds)) {
-            count++;
-            if (count === n) return ds;
-          }
-        }
-        return null;
-      }
-
-      // Letzter (oder n-ter von hinten) Handelstag eines Monats
-      function _futureLastTD(y, m, nFromEnd) {
-        nFromEnd = nFromEnd || 1;
-        var lastDay = new Date(y, m, 0).getDate();
-        var found = [];
-        for (var d = 1; d <= lastDay; d++) {
-          var ds = S._dateStr(y, m, d);
-          if (_isTradingDay(ds)) found.push(ds);
-        }
-        return found.length >= nFromEnd ? found[found.length - nFromEnd] : null;
-      }
-
-      // Versuche erst echte Daten, dann Schaetzung
-      // WICHTIG: Auch echte Rows gegen Feiertagskalender pruefen
-      // (Yahoo liefert z.B. DAX-Daten am 1. Mai obwohl XETRA geschlossen)
-      function _nthTD(y, m, n) {
-        // Immer den Estimator nutzen — der kennt die Feiertage
-        return _futureNthTD(y, m, n);
-      }
-      function _lastTD(y, m, nFromEnd) {
-        return _futureLastTD(y, m, nFromEnd || 1);
-      }
-      function _nearFwd(y, m, d) {
-        // Naechster Handelstag ab Datum (Feiertags-aware)
-        for (var i = 0; i < 10; i++) {
-          var dt = new Date(y, m-1, d+i);
-          var cs = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
-          if (_isTradingDay(cs)) return cs;
-        }
-        return S._dateStr(y, m, d);
-      }
+      function _nthTD(y, m, n) { return SA.holidays.nthTradingDay(y, m, n, _exchange); }
+      function _lastTD(y, m, nFromEnd) { return SA.holidays.lastTradingDay(y, m, nFromEnd || 1, _exchange); }
+      function _nearFwd(y, m, d) { return SA.holidays.nextTradingDay(y, m, d, _exchange); }
 
       function getStreak(key) {
         var trades = tradeCache[key] || [];
@@ -615,62 +509,26 @@
         // 3 HT vor Thanksgiving schaetzen
         var dt = new Date(thxDate);
         var count = 0;
-        while (count < 3) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
+        while (count < 3) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (SA.holidays.isTradingDay(ds, _exchange)) count++; }
         return sigD('entry','santa_claus', S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()));
       }));
       add(best('exit','santa_claus', function(y){ return sigD('exit','santa_claus', _nthTD(y,1,5)); }));
 
-      // Ein-Tages-Feiertag + UHTS: nur fuer US-Ticker (NYSE)
-      // Feiertags-Strategien sind NYSE-basiert → nur US-Indizes/Aktien
-      var isUS = /^\^(DJI|GSPC|IXIC|RUT|VIX|TNX|TYX)|^(SPY|QQQ|DIA|IWM|AAPL|MSFT|AMZN|GOOGL|META|TSLA|NVDA|JPM|V|JNJ|WMT|PG|UNH|HD|MA|BAC|XOM|CVX|PFE|ABBV|KO|PEP|TMO|COST|MRK|LLY|AVGO|ADBE|CRM|ACN|NFLX|AMD|INTC|CSCO|QCOM|TXN|HON|UNP|UPS|CAT|DE|GE|BA|RTX|LMT|GD|MMM|IBM|GS|MS|BLK|SCHW|AXP|C|WFC|USB|BK|MET|AIG|PRU|TRV|ALL|CB|CME|ICE|SPGI|MCO|MSCI)/.test(currentTicker) || /^(CL|GC|SI|NG|HG|ZC|ZS|ZW)=F$/.test(currentTicker);
-
-      if (isUS) {
-        // NYSE-Feiertage dynamisch berechnen
-        function _nyseHolidays(y) {
-          var hols = [];
-          hols.push(S._dateStr(y,1,1)); // Neujahr
-          // MLK: 3. Mo Jan
-          var jan1d = new Date(y,0,1).getDay(); hols.push(S._dateStr(y,1, 1+((1-jan1d+7)%7)+14));
-          // Presidents Day: 3. Mo Feb
-          var feb1d = new Date(y,1,1).getDay(); hols.push(S._dateStr(y,2, 1+((1-feb1d+7)%7)+14));
-          // Karfreitag: Ostersonntag - 2 (Gauss Algorithmus)
-          var a=y%19, b=Math.floor(y/100), c=y%100, d=Math.floor(b/4), e=b%4;
-          var f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
-          var i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
-          var m=Math.floor((a+11*h+22*l)/451), eMonth=Math.floor((h+l-7*m+114)/31), eDay=((h+l-7*m+114)%31)+1;
-          // Karfreitag = Ostersonntag - 2
-          var easter = new Date(y, eMonth-1, eDay);
-          var gf = new Date(easter); gf.setDate(gf.getDate()-2);
-          hols.push(S._dateStr(gf.getFullYear(), gf.getMonth()+1, gf.getDate()));
-          // Memorial Day: letzter Mo Mai
-          var may31d = new Date(y,4,31).getDay(); hols.push(S._dateStr(y,5, 31-((may31d-1+7)%7)));
-          // Juneteenth
-          hols.push(S._dateStr(y,6,19));
-          // Independence Day
-          hols.push(S._dateStr(y,7,4));
-          // Labor Day: 1. Mo Sep
-          var sep1d = new Date(y,8,1).getDay(); hols.push(S._dateStr(y,9, 1+((1-sep1d+7)%7)));
-          // Thanksgiving: 4. Do Nov
-          hols.push(S._thanksgiving(y));
-          // Weihnachten
-          hols.push(S._dateStr(y,12,25));
-          return hols;
-        }
-
-        var futureHols = _nyseHolidays(Y).concat(_nyseHolidays(Y+1)).filter(function(d){return d >= todayStr}).sort();
+      // Ein-Tages-Feiertag + UHTS: nur fuer NYSE-Ticker
+      if (_exchange === 'NYSE') {
+        var futureHols = SA.holidays.get(Y, 'NYSE').concat(SA.holidays.get(Y+1, 'NYSE')).filter(function(d){return d >= todayStr}).sort();
         for (var hi = 0; hi < futureHols.length && hi < 6; hi++) {
           (function(holStr) {
             // 2 HT vor Feiertag (Ein-Tages-Feiertag Entry)
-            var dt = new Date(holStr);
+            var dt = new Date(holStr.substring(0,4) + '/' + holStr.substring(5,7) + '/' + holStr.substring(8,10));
             var count = 0;
-            while (count < 2) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
-            var entry2 = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
-            add(sigD('entry','one_day_holiday', entry2));
+            while (count < 2) { dt.setDate(dt.getDate() - 1); var ds = SA.holidays._ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (SA.holidays.isTradingDay(ds, 'NYSE')) count++; }
+            add(sigD('entry','one_day_holiday', SA.holidays._ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate())));
             // 3 HT vor (UHTS Entry)
-            dt2 = new Date(entry2);
+            var dt2 = new Date(dt);
             dt2.setDate(dt2.getDate() - 1);
-            while (!_isTradingDay(S._dateStr(dt2.getFullYear(), dt2.getMonth()+1, dt2.getDate()))) dt2.setDate(dt2.getDate() - 1);
-            add(sigD('entry','uhts', S._dateStr(dt2.getFullYear(), dt2.getMonth()+1, dt2.getDate())));
+            while (!SA.holidays.isTradingDay(SA.holidays._ds(dt2.getFullYear(), dt2.getMonth()+1, dt2.getDate()), 'NYSE')) dt2.setDate(dt2.getDate() - 1);
+            add(sigD('entry','uhts', SA.holidays._ds(dt2.getFullYear(), dt2.getMonth()+1, dt2.getDate())));
           })(futureHols[hi]);
         }
       }
@@ -705,7 +563,7 @@
         var elDate = S._electionDay(Y);
         var dt = new Date(elDate);
         var count = 0;
-        while (count < 5) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
+        while (count < 5) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (SA.holidays.isTradingDay(ds, _exchange)) count++; }
         add(sigD('entry','midterm_election', S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate())));
       }
       // UECS

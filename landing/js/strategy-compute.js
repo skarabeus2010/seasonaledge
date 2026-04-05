@@ -115,50 +115,14 @@ SA.strategy = {
     return 3; // Pre-Election
   },
 
-  /** Karfreitag per Gauss Oster-Algorithmus */
-  _goodFriday: function(y) {
-    var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
-    var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
-    var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
-    var m=Math.floor((a+11*h+22*l)/451),eM=Math.floor((h+l-7*m+114)/31),eD=((h+l-7*m+114)%31)+1;
-    var gf=new Date(y,eM-1,eD); gf.setDate(gf.getDate()-2);
-    return this._dateStr(gf.getFullYear(),gf.getMonth()+1,gf.getDate());
-  },
+  /** Karfreitag — delegiert an SA.holidays */
+  _goodFriday: function(y) { return SA.holidays.goodFriday(y); },
 
-  /** NYSE-Feiertage fuer ein Jahr (dynamisch berechnet) */
-  _nyseHolidays: function(y) {
-    var self = this;
-    var hols = [];
-    hols.push(self._dateStr(y,1,1)); // Neujahr
-    // MLK: 3. Montag Januar
-    var jan1d=new Date(y,0,1).getDay(); hols.push(self._dateStr(y,1, 1+((1-jan1d+7)%7)+14));
-    // Presidents Day: 3. Montag Februar
-    var feb1d=new Date(y,1,1).getDay(); hols.push(self._dateStr(y,2, 1+((1-feb1d+7)%7)+14));
-    // Karfreitag
-    hols.push(self._goodFriday(y));
-    // Memorial Day: letzter Montag Mai
-    var may31d=new Date(y,4,31).getDay(); hols.push(self._dateStr(y,5, 31-((may31d-1+7)%7)));
-    // Juneteenth
-    hols.push(self._dateStr(y,6,19));
-    // Independence Day
-    hols.push(self._dateStr(y,7,4));
-    // Labor Day: 1. Montag September
-    var sep1d=new Date(y,8,1).getDay(); hols.push(self._dateStr(y,9, 1+((1-sep1d+7)%7)));
-    // Thanksgiving
-    hols.push(self._thanksgiving(y));
-    // Weihnachten
-    hols.push(self._dateStr(y,12,25));
-    return hols;
-  },
+  /** NYSE-Feiertage — delegiert an SA.holidays */
+  _nyseHolidays: function(y) { return SA.holidays.get(y, 'NYSE'); },
 
-  /** Thanksgiving: 4. Donnerstag im November */
-  _thanksgiving: function(year) {
-    var nov1 = new Date(year, 10, 1); // Nov = 10
-    var dow = nov1.getDay(); // 0=Sun
-    var firstThu = 1 + ((4 - dow + 7) % 7);
-    var fourthThu = firstThu + 21;
-    return this._dateStr(year, 11, fourthThu);
-  },
+  /** Thanksgiving — delegiert an SA.holidays */
+  _thanksgiving: function(y) { return SA.holidays.thanksgiving(y); },
 
   /** Election Day: 1. Dienstag nach 1. Montag im November */
   _electionDay: function(year) {
