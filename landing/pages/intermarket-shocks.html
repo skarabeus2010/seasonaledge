@@ -491,26 +491,24 @@
 
       var config = {
         series: series,
-        chart: Object.assign({ type: 'heatmap', height: 280 }, SA.chartTheme.chart),
-        colorScale: {
-          ranges: [
-            { from: -100, to: -0.01, color: SA.COLORS.red, name: 'Negativ' },
-            { from: 0, to: 0, color: '#333', name: 'Neutral' },
-            { from: 0.01, to: 100, color: SA.COLORS.green, name: 'Positiv' }
-          ]
-        },
+        chart: Object.assign({ type: 'heatmap', height: 320 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -2, color: '#6b0f0f', name: '< -2%' },
+          { from: -2, to: -1, color: '#8b1a1a', name: '-2% \u2013 -1%' },
+          { from: -1, to: -0.3, color: '#6b3030', name: '-1% \u2013 -0.3%' },
+          { from: -0.3, to: 0.3, color: '#2a2a2a', name: '\u00B10.3%' },
+          { from: 0.3, to: 1, color: '#1a4a2a', name: '0.3% \u2013 1%' },
+          { from: 1, to: 2, color: '#1a6b35', name: '1% \u2013 2%' },
+          { from: 2, to: 99, color: '#0f6b2f', name: '> 2%' }
+        ] } } },
         grid: SA.chartTheme.grid,
-        tooltip: {
-          theme: 'dark',
-          y: { formatter: function(v) { return fmtPct(v); } }
-        },
-        xaxis: SA.chartTheme.xaxis,
+        tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '10px' } } },
         dataLabels: {
           enabled: true,
-          style: { fontSize: '10px', colors: ['#fff'] },
-          formatter: function(v) { return v === 0 ? '\u2014' : fmtPct(v, 1); }
+          style: { fontSize: '9px', colors: ['#e0e0e0'] },
+          formatter: function(v) { return v !== 0 ? fmtPct(v, 1) : ''; }
         },
-        plotOptions: { heatmap: { radius: 4, enableShades: false } },
         legend: { show: false }
       };
 
