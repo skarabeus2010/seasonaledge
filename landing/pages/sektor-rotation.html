@@ -86,7 +86,10 @@
       <!-- Win-Rate Heatmap -->
       <details id="sec-winrate" style="display:none">
         <summary>Win-Rate Heatmap</summary>
-        <div class="content"><div id="chart-winrate"></div></div>
+        <div class="content">
+          <div id="chart-winrate"></div>
+          <div id="content-winrate-topflop" style="margin-top:1.5rem"></div>
+        </div>
       </details>
 
       <!-- Methodik -->
@@ -453,6 +456,56 @@
         legend: { show: false }
       });
       charts.winrate.render();
+
+      // Win-Rate Top 10 / Flop 10
+      renderWinRateTopFlop(sectorData, tickers);
+    }
+
+    function renderWinRateTopFlop(sectorData, tickers) {
+      // Sammle alle Ticker×Monat Kombinationen
+      var all = [];
+      for (var i = 0; i < tickers.length; i++) {
+        var sd = sectorData[tickers[i]];
+        if (!sd) continue;
+        var s = SECTORS.filter(function(x){return x.ticker === tickers[i];})[0];
+        var name = s ? s.name : tickers[i];
+        for (var m = 1; m <= 12; m++) {
+          var wr = sd.winRate[m];
+          if (wr != null) {
+            all.push({ ticker: tickers[i], name: name, month: m, winRate: wr });
+          }
+        }
+      }
+
+      // Top 10 (höchste Win-Rate)
+      var top10 = all.slice().sort(function(a,b){ return b.winRate - a.winRate; }).slice(0, 10);
+      // Flop 10 (niedrigste Win-Rate)
+      var flop10 = all.slice().sort(function(a,b){ return a.winRate - b.winRate; }).slice(0, 10);
+
+      var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">';
+
+      // Top 10
+      html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 10 Win-Rate (Sektor × Monat)</h4>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th></tr></thead><tbody>';
+      for (var i = 0; i < top10.length; i++) {
+        var r = top10[i];
+        html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';
+        html += '<td>' + MONTHS[r.month-1] + '</td><td class="pos">' + r.winRate.toFixed(0) + '%</td></tr>';
+      }
+      html += '</tbody></table></div>';
+
+      // Flop 10
+      html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 10 Win-Rate (Sektor × Monat)</h4>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th></tr></thead><tbody>';
+      for (var i = 0; i < flop10.length; i++) {
+        var r = flop10[i];
+        html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';
+        html += '<td>' + MONTHS[r.month-1] + '</td><td class="neg">' + r.winRate.toFixed(0) + '%</td></tr>';
+      }
+      html += '</tbody></table></div>';
+
+      html += '</div>';
+      document.getElementById('content-winrate-topflop').innerHTML = html;
     }
 
     // ── Main: runAnalysis ─────────────────────────────────────────────────────
