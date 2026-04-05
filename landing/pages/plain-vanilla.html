@@ -408,6 +408,40 @@
     }
 
     // ── Naechste Signale ─────────────────────────────────────────────────────
+    // Kalender-Regeln fuer alle 24 Strategien: Wann ist der naechste Entry/Exit?
+
+    var SIGNAL_CALENDAR = [
+      // Saisonal
+      { key:'sell_in_may',       name:'Sell in May',       icon:'\uD83D\uDCC5', signals:[{type:'exit',m:5,rule:'nth',n:3},{type:'entry',m:10,rule:'last'}] },
+      { key:'lbr_november_mai',  name:'LBR Nov-Mai',       icon:'\uD83D\uDCCA', signals:[{type:'exit',m:4,rule:'last'},{type:'entry',m:10,rule:'last'}] },
+      { key:'nasdaq_trend',      name:'Nasdaq-Trend',      icon:'\uD83D\uDCC8', signals:[{type:'exit',m:6,rule:'last'},{type:'entry',m:10,rule:'last'}] },
+      { key:'september_avoid',   name:'Sep-Vermeidung',    icon:'\uD83D\uDEAB', signals:[{type:'exit',m:8,rule:'last'},{type:'entry',m:10,rule:'1st'}] },
+      { key:'election_7months',  name:'Wahljahr 7 Mon',    icon:'\uD83D\uDDF3\uFE0F', signals:[{type:'entry',m:5,rule:'last',elect:true},{type:'exit',m:12,rule:'last',elect:true}] },
+      // Januar
+      { key:'first_five_days',   name:'First Five Days',   icon:'5\uFE0F\u20E3', signals:[{type:'entry',m:1,rule:'1st'},{type:'exit',m:1,rule:'nth',n:5}] },
+      { key:'last_five_days',    name:'Last Five Days',    icon:'\uD83D\uDD1A', signals:[{type:'entry',m:1,rule:'nlast',n:5},{type:'exit',m:1,rule:'last'}] },
+      { key:'january_barometer', name:'Jan-Barometer',     icon:'\uD83C\uDF21\uFE0F', signals:[{type:'entry',m:2,rule:'1st'},{type:'exit',m:12,rule:'last'}] },
+      // Feiertag
+      { key:'santa_claus',       name:'Santa Claus',       icon:'\uD83C\uDF85', signals:[{type:'entry',m:11,rule:'thx'},{type:'exit',m:1,rule:'nth',n:5}] },
+      { key:'post_christmas',    name:'Nach Weihnachten',  icon:'\uD83C\uDF84', signals:[{type:'entry',m:12,rule:'26'},{type:'exit',m:12,rule:'last'}] },
+      // Monat
+      { key:'month_end',         name:'Month-End',         icon:'\uD83D\uDD04', signals:[{type:'entry',m:'*',rule:'nlast',n:2},{type:'exit',m:'*+1',rule:'nth',n:4}] },
+      { key:'second_trading_day',name:'2. Handelstag',     icon:'2\uFE0F\u20E3', signals:[{type:'entry',m:'*',rule:'1st'},{type:'exit',m:'*',rule:'nth',n:2}] },
+      // Zyklus
+      { key:'mid_decade',        name:'Mid-Decade',        icon:'\uD83D\uDCC6', signals:[{type:'entry',m:10,rule:'1st',decade:'x4'},{type:'exit',m:3,rule:'last',decade:'x6'}] },
+    ];
+
+    function _nextDate(rule, year, month, rows) {
+      // Berechnet das naechste Datum gemaess Regel
+      var p = SA.strategy._pad2;
+      if (rule.rule === '1st') return year+'-'+p(month)+'-01';
+      if (rule.rule === 'last') return year+'-'+p(month)+'-28'; // Approx, wird per _nearestBackward korrigiert
+      if (rule.rule === 'nth') return year+'-'+p(month)+'-'+p(Math.min(rule.n * 2, 28)); // Approx
+      if (rule.rule === 'nlast') return year+'-'+p(month)+'-20'; // Approx
+      if (rule.rule === '26') return year+'-'+p(month)+'-26';
+      if (rule.rule === 'thx') return year+'-11-20'; // Approx Thanksgiving
+      return year+'-'+p(month)+'-15';
+    }
 
     function renderSignals(rows) {
       var el = document.getElementById('content-signals');
@@ -416,20 +450,27 @@
       var today = new Date();
       var todayStr = today.getFullYear() + '-' + SA.strategy._pad2(today.getMonth()+1) + '-' + SA.strategy._pad2(today.getDate());
       var MONTHS_DE = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      var curYear = today.getFullYear();
 
-      // Berechne alle Trades fuer jede Strategie
-      var signals = [];
+      // Berechne Trades fuer Streak-Berechnung
+      var tradeCache = {};
       for (var k in SA.STRATEGIES) {
         var s = SA.STRATEGIES[k];
         var fn = SA.strategy[s.func];
         if (!fn) continue;
-        var trades = fn.call(SA.strategy, rows);
-        if (!trades || !trades.length) continue;
+        tradeCache[k] = fn.call(SA.strategy, rows) || [];
+      }
 
-        // Current Streak berechnen (vom letzten abgeschlossenen Trade rueckwaerts)
+      var signals = [];
+
+      for (var ci = 0; ci < SIGNAL_CALENDAR.length; ci++) {
+        var cal = SIGNAL_CALENDAR[ci];
+
+        // Streak aus historischen Trades
+        var trades = tradeCache[cal.key] || [];
         var streak = 0, streakType = '';
         for (var j = trades.length - 1; j >= 0; j--) {
-          if (trades[j].exit_date > todayStr) continue; // noch nicht abgeschlossen
+          if (trades[j].exit_date > todayStr) continue;
           var win = trades[j].return_pct > 0;
           if (streak === 0) { streakType = win ? 'W' : 'L'; streak = 1; }
           else if ((win && streakType === 'W') || (!win && streakType === 'L')) streak++;
@@ -438,34 +479,102 @@
         var streakLabel = streak > 0 ? streak + ' ' + (streakType === 'W' ? 'Winner' : 'Loser') : '\u2014';
         var streakColor = streakType === 'W' ? 'var(--green)' : streakType === 'L' ? 'var(--red)' : 'var(--muted)';
 
-        // Finde naechsten Entry ab heute
-        for (var i = 0; i < trades.length; i++) {
-          if (trades[i].entry_date >= todayStr) {
-            var d = new Date(trades[i].entry_date);
-            var diff = Math.ceil((d - today) / 86400000);
-            signals.push({
-              type: 'entry', icon: s.icon, name: s.name, key: k,
-              date: trades[i].entry_date, daysAway: diff,
-              dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
-              streak: streakLabel, streakColor: streakColor
-            });
-            break;
+        // Generiere Signale fuer aktuelles + naechstes Jahr
+        for (var si = 0; si < cal.signals.length; si++) {
+          var rule = cal.signals[si];
+
+          // Skip Wahljahr-Strategien wenn kein Wahljahr
+          if (rule.elect && curYear % 4 !== 0 && (curYear+1) % 4 !== 0) continue;
+
+          // Skip Dekaden-Strategien wenn falsche Endziffer
+          if (rule.decade) {
+            var validDigit = parseInt(rule.decade.charAt(1));
+            if (curYear % 10 !== validDigit && (curYear+1) % 10 !== validDigit) continue;
           }
-        }
-        // Finde naechsten Exit ab heute
-        for (var i = 0; i < trades.length; i++) {
-          if (trades[i].exit_date >= todayStr) {
-            var d = new Date(trades[i].exit_date);
-            var diff = Math.ceil((d - today) / 86400000);
-            // Nur wenn nicht identisch mit dem Entry oben
-            if (signals.length === 0 || signals[signals.length-1].date !== trades[i].exit_date || signals[signals.length-1].type !== 'entry') {
-              signals.push({
-                type: 'exit', icon: s.icon, name: s.name, key: k,
-                date: trades[i].exit_date, daysAway: diff,
-                dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
-                streak: streakLabel, streakColor: streakColor
-              });
+
+          // Monatliche Strategien: naechsten Monat berechnen
+          var months = [];
+          if (rule.m === '*') {
+            for (var mi = today.getMonth() + 1; mi <= 12; mi++) months.push({y:curYear, m:mi});
+            months.push({y:curYear+1, m:1});
+          } else if (rule.m === '*+1') {
+            var nm = today.getMonth() + 2; // naechster Monat
+            if (nm > 12) { months.push({y:curYear+1, m:nm-12}); } else { months.push({y:curYear, m:nm}); }
+            nm++;
+            if (nm > 12) { months.push({y:curYear+1, m:nm-12}); } else { months.push({y:curYear, m:nm}); }
+          } else {
+            var rm = rule.m;
+            // Dieses Jahr und naechstes Jahr versuchen
+            months.push({y:curYear, m:rm});
+            months.push({y:curYear+1, m:rm});
+            if (rule.elect) {
+              // Nur Wahljahre
+              months = months.filter(function(ym){return ym.y % 4 === 0});
             }
+            if (rule.decade) {
+              var dig = parseInt(rule.decade.charAt(1));
+              months = months.filter(function(ym){return ym.y % 10 === dig});
+            }
+          }
+
+          // Finde das naechste Datum >= heute
+          for (var mi = 0; mi < months.length; mi++) {
+            var ym = months[mi];
+            // Approximiertes Datum berechnen
+            var approxDate = _nextDate(rule, ym.y, ym.m, rows);
+            // Korrigiere auf echten Handelstag
+            var idx;
+            if (rule.rule === 'last' || rule.rule === 'nlast') {
+              // Letzter HT des Monats (oder n-ter von hinten)
+              var daysList = SA.strategy._getTradingDays(rows, ym.y, ym.m);
+              if (daysList.length === 0) {
+                // Kein Handelstag in DB → schaetze Datum
+                var lastDay = new Date(ym.y, ym.m, 0).getDate(); // letzter Kalendertag
+                var offset = rule.rule === 'nlast' ? (rule.n || 1) : 0;
+                approxDate = ym.y + '-' + SA.strategy._pad2(ym.m) + '-' + SA.strategy._pad2(Math.max(1, lastDay - offset - 1));
+                if (approxDate >= todayStr) {
+                  var d = new Date(approxDate);
+                  signals.push({
+                    type: rule.type, key: cal.key, icon: cal.icon, name: cal.name,
+                    date: approxDate, daysAway: Math.ceil((d - today) / 86400000),
+                    dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
+                    streak: streakLabel, streakColor: streakColor, approx: true
+                  });
+                  break;
+                }
+                continue;
+              }
+              idx = rule.rule === 'nlast' ? daysList[Math.max(0, daysList.length - (rule.n || 1))] : daysList[daysList.length - 1];
+            } else if (rule.rule === 'nth') {
+              var daysList = SA.strategy._getTradingDays(rows, ym.y, ym.m);
+              if (daysList.length === 0) continue;
+              idx = daysList.length >= rule.n ? daysList[rule.n - 1] : daysList[daysList.length - 1];
+            } else if (rule.rule === '1st') {
+              var daysList = SA.strategy._getTradingDays(rows, ym.y, ym.m);
+              idx = daysList.length > 0 ? daysList[0] : -1;
+            } else if (rule.rule === '26') {
+              idx = SA.strategy._nearestForward(rows, ym.y + '-' + SA.strategy._pad2(ym.m) + '-26');
+            } else if (rule.rule === 'thx') {
+              // Thanksgiving: 4. Donnerstag im November
+              var thxDate = SA.strategy._thanksgiving(ym.y);
+              idx = SA.strategy._nearestBackward(rows, thxDate);
+              // 3 HT vor Thanksgiving
+              if (idx >= 3) idx = idx - 3;
+            } else {
+              idx = SA.strategy._nearestForward(rows, approxDate);
+            }
+
+            if (idx < 0 || idx >= rows.length) continue;
+            var realDate = rows[idx].date;
+            if (realDate < todayStr) continue;
+
+            var d = new Date(realDate);
+            signals.push({
+              type: rule.type, key: cal.key, icon: cal.icon, name: cal.name,
+              date: realDate, daysAway: Math.ceil((d - today) / 86400000),
+              dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
+              streak: streakLabel, streakColor: streakColor, approx: false
+            });
             break;
           }
         }
@@ -492,7 +601,7 @@
         var daysLabel = sig.daysAway === 0 ? 'Heute' : sig.daysAway === 1 ? '1 Tag' : sig.daysAway + ' Tage';
 
         html += '<tr style="cursor:pointer" onclick="document.querySelectorAll(\'.strat-card\').forEach(function(c){if(c.dataset.key===\'' + sig.key + '\')c.click()})">';
-        html += '<td style="white-space:nowrap">' + sig.dateLabel + '</td>';
+        html += '<td style="white-space:nowrap">' + sig.dateLabel + (sig.approx ? ' ~' : '') + '</td>';
         html += '<td style="color:var(--muted)">' + daysLabel + '</td>';
         html += '<td style="color:' + typeColor + ';font-weight:600">' + typeLabel + '</td>';
         html += '<td>' + sig.icon + ' ' + sig.name + '</td>';
