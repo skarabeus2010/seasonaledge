@@ -498,7 +498,7 @@
       function _futureNthTD(y, m, n) {
         var count = 0;
         for (var d = 1; d <= 31; d++) {
-          var ds = S._dateStr(y, m, S._pad2(d));
+          var ds = S._dateStr(y, m, d);
           var dt = new Date(y, m-1, d);
           if (dt.getMonth() !== m-1) break; // naechster Monat
           if (_isTradingDay(ds)) {
@@ -515,7 +515,7 @@
         var lastDay = new Date(y, m, 0).getDate();
         var found = [];
         for (var d = 1; d <= lastDay; d++) {
-          var ds = S._dateStr(y, m, S._pad2(d));
+          var ds = S._dateStr(y, m, d);
           if (_isTradingDay(ds)) found.push(ds);
         }
         return found.length >= nFromEnd ? found[found.length - nFromEnd] : null;
