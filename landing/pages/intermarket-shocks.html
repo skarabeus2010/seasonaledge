@@ -218,7 +218,7 @@
 
     function parseHorizons() {
       try {
-        return $horizons.value.split(',').map(function(s) { return parseInt(s.trim()); }).filter(function(n) { return n > 0 && !isNaN(n); });
+        return $horizons.value.split(',').map(function(s) { return parseInt(s.trim()); }).filter(function(n) { return n >= 0 && !isNaN(n); });
       } catch(e) {
         return [1, 5, 10, 20, 60];
       }
@@ -380,7 +380,7 @@
         var impact = analyzeImpact(shocks, targetRows, horizons);
         var row = { threshold: thresholds[t] + '%' };
         for (var h = 0; h < horizons.length; h++) {
-          var key = horizons[h] + 'T';
+          var key = horizons[h] === 0 ? 'T=0' : horizons[h] + 'T';
           var found = impact.summary.filter(function(s){return s.horizon === horizons[h];})[0];
           row[key] = found ? found.avg : null;
         }
@@ -550,7 +550,7 @@
     function renderHeatmap(triggerRows, targetRows, horizons, direction, triggerTicker, targetTicker) {
       var thresholds = [2, 3, 5, 7, 10];
       var hmData = shockHeatmapData(triggerRows, targetRows, thresholds, horizons, direction);
-      var hCats = horizons.map(function(h){return h + 'T';});
+      var hCats = horizons.map(function(h){return h === 0 ? 'T=0' : h + 'T';});
 
       // Build series (reversed so highest threshold on top)
       var series = [];
