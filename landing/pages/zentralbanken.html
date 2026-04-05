@@ -331,14 +331,17 @@
 
     // ── Render: Signifikanztest ───────────────────────────────────────────
     function renderSignificance(result, bankKey) {
+      var el = document.getElementById('content-significance');
       if (!SA.significance || result.returns.length < 10) { document.getElementById('sec-significance').style.display = 'none'; return; }
+      var yearsVal = document.getElementById('sel-years').value;
+      var periodLabel = yearsVal === 'max' ? 'Max' : yearsVal + ' Jahre';
       var groups = {};
-      groups[CB_LABELS[bankKey]] = result.returns;
+      groups[CB_LABELS[bankKey] + ' (' + result.stats.nEvents + ' Events, ' + periodLabel + ')'] = result.returns;
       var res = SA.significance.runSignificanceTest(groups);
       var html = '<h3>Ist der ' + CB_LABELS[bankKey] + '-Effekt signifikant?</h3>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test: Ist die Rendite rund um ' + CB_LABELS[bankKey] + '-Sitzungen statistisch von Null verschieden?</p>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test gegen 0: Rendite rund um ' + CB_LABELS[bankKey] + '-Sitzungen (' + result.stats.nEvents + ' Events, ' + periodLabel + ')</p>';
       html += SA.significance.renderSection(res, 1);
-      document.getElementById('content-significance').innerHTML = html;
+      el.innerHTML = html;
     }
 
     // ── Render: Streak ───────────────────────────────────────────────────
