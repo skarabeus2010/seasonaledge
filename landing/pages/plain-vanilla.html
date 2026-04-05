@@ -104,13 +104,10 @@
         <div class="content" id="content-trades"></div>
       </details>
 
-      <!-- Vergleich -->
-      <details>
-        <summary>Alle Strategien vergleichen</summary>
-        <div class="content">
-          <div id="chart-compare"></div>
-          <div id="content-ranking"></div>
-        </div>
+      <!-- Signifikanztest -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest</summary>
+        <div class="content" id="content-significance"></div>
       </details>
 
       <!-- Methodik -->
@@ -141,6 +138,7 @@
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
+  <script src="/landing/js/significance.js"></script>
   <script>
   !function(){
     var rawRows=null,currentTicker='',charts={},cachedResults={};
@@ -338,7 +336,60 @@
 
       // Trade Table
       renderTradeTable(data);
+
+      // Signifikanztest
+      renderSignificance(data, s);
+
       buildCards();
+    }
+
+    function renderSignificance(data, strategy) {
+      var el = document.getElementById('content-significance');
+      var sec = document.getElementById('sec-significance');
+      if (!data || !data.trades || data.trades.length < 10) {
+        sec.style.display = 'none';
+        return;
+      }
+      sec.style.display = '';
+
+      // Gruppe 1: Alle Trade-Returns → t-Test gegen 0
+      var allReturns = data.trades.map(function(t) { return t.return_pct; });
+
+      // Gruppe 2: Gewinner vs. Verlierer Monate (Saisonalitaet)
+      var byMonth = {};
+      var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      for (var i = 0; i < data.trades.length; i++) {
+        var t = data.trades[i];
+        var d = new Date(t.entry_date);
+        if (isNaN(d)) continue;
+        var mKey = MONTHS[d.getMonth()];
+        if (!byMonth[mKey]) byMonth[mKey] = [];
+        byMonth[mKey].push(t.return_pct);
+      }
+
+      // Gesamt-Test
+      var groups = {};
+      groups[strategy.name] = allReturns;
+      var overallResult = SA.significance.runSignificanceTest(groups);
+
+      // Monats-Tests (nur Monate mit >=3 Trades)
+      var monthGroups = {};
+      for (var m in byMonth) {
+        if (byMonth[m].length >= 3) monthGroups[m] = byMonth[m];
+      }
+      var monthResults = SA.significance.runSignificanceTest(monthGroups);
+
+      var html = '<h3>Strategie-Signifikanz</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">Sind die Renditen der Strategie statistisch von Null verschieden oder nur Zufall?</p>';
+      html += SA.significance.renderSection(overallResult, 1);
+
+      if (monthResults.length > 0) {
+        html += '<h3 style="margin-top:1.5rem">Signifikanz nach Einstiegsmonat</h3>';
+        html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">In welchen Monaten ist die Strategie statistisch am st\u00E4rksten?</p>';
+        html += SA.significance.renderSection(monthResults, 4, MONTHS);
+      }
+
+      el.innerHTML = html;
     }
 
     function renderTradeTable(data){
