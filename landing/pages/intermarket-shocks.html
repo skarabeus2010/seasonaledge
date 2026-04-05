@@ -140,17 +140,31 @@
       <details>
         <summary>Methodik</summary>
         <div class="content methodik">
-          <p class="box-info">
-            <b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist.<br>
-            <b>Richtung:</b> &bdquo;Kurseinbruch&rdquo; filtert nur negative Renditen &le; &minus;X%, &bdquo;Kurssprung&rdquo; nur positive &ge; +X%, &bdquo;Beides&rdquo; beides &ge; |X%|.<br>
-            <b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion).<br>
-            <b>Horizonte:</b> F&uuml;r jedes Shock-Event wird die Rendite des Ziel-Assets (B) nach N Handelstagen berechnet (Close-to-Close).<br>
-            <b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset.<br>
-            <b>Heatmap:</b> Zeigt die Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte.<br>
-            <b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Trigger-Shocks zu st&auml;rkeren Reaktionen f&uuml;hren.<br>
-            <b>Saisonaler Breakdown:</b> Heatmap Monat &times; Horizont &mdash; in welchen Monaten treffen Shocks am h&auml;rtesten?<br>
-            <b>Datenquelle:</b> Supabase (263 Basiswerte, t&auml;glich aktualisiert).
-          </p>
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq), 263 Basiswerte</li>
+            <li><b>Aktualisierung:</b> T&auml;glich via Nightly Refresh</li>
+            <li><b>Zeitraum:</b> W&auml;hlbar 1&ndash;50 Jahre</li>
+          </ul>
+          <h3>Shock-Definition</h3>
+          <ul>
+            <li><b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist</li>
+            <li><b>Kurseinbruch:</b> Filtert nur negative Renditen &le; &minus;X%</li>
+            <li><b>Kurssprung:</b> Filtert nur positive Renditen &ge; +X%</li>
+            <li><b>Beides:</b> Filtert absolute Renditen &ge; |X%|</li>
+          </ul>
+          <h3>Horizonte</h3>
+          <ul>
+            <li><b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion)</li>
+            <li><b>1T&ndash;60T:</b> Kumulative Rendite des Ziel-Assets (B) nach N Handelstagen (Close-to-Close ab Shock-Tag)</li>
+            <li><b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset</li>
+          </ul>
+          <h3>Visualisierungen</h3>
+          <ul>
+            <li><b>Heatmap (Schwelle &times; Horizont):</b> Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte</li>
+            <li><b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Shocks zu st&auml;rkeren Reaktionen f&uuml;hren. Extreme Ausrei&szlig;er (IQR-Filter) werden ausgeblendet.</li>
+            <li><b>Saisonaler Breakdown:</b> Heatmap Monat &times; Horizont &mdash; in welchen Monaten treffen Shocks am h&auml;rtesten?</li>
+          </ul>
         </div>
       </details>
 
