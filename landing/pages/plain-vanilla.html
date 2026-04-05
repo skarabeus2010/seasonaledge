@@ -69,6 +69,10 @@
       <h3>Stop-Loss</h3>
       <label><input type="checkbox" id="chk-stop"> Aktivieren</label>
       <div id="stop-controls" style="display:none;margin-top:.5rem">
+        <select id="sel-stop-type" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;margin-bottom:.5rem">
+          <option value="fixed" selected>Fixed Stop-Loss</option>
+          <option value="trailing">Trailing Stop-Loss</option>
+        </select>
         <label>Stop %<br><input type="range" id="rng-stop" min="1" max="20" value="8" step="0.5"><span id="lbl-stop">8</span>%</label>
       </div>
     </aside>
@@ -156,6 +160,9 @@
       document.getElementById('lbl-stop').textContent=this.value;
       cachedResults={};renderSelected();
     });
+    document.getElementById('sel-stop-type').addEventListener('change',function(){
+      cachedResults={};renderSelected();
+    });
     document.getElementById('sel-period').addEventListener('change',function(){
       cachedResults={};renderAll();
     });
@@ -208,7 +215,10 @@
         // Stop-Loss
         if(document.getElementById('chk-stop').checked){
           var stopPct=parseFloat(document.getElementById('rng-stop').value)||8;
-          trades=SA.strategy.applyStopLoss(rows,trades,stopPct);
+          var stopType=document.getElementById('sel-stop-type').value;
+          trades=stopType==='trailing'
+            ? SA.strategy.applyTrailingStop(rows,trades,stopPct)
+            : SA.strategy.applyStopLoss(rows,trades,stopPct);
         }
         var stats=SA.strategy.computeStats(trades);
         cachedResults[key]={trades:trades,stats:stats};
@@ -276,7 +286,8 @@
           kpi('Win-Rate',st.win_rate.toFixed(0)+'%',st.win_rate>=50?'green':'')+
           kpi('Trades',st.n_trades)+
           kpi('$1.000 Endwert','$'+st.final_equity.toLocaleString(undefined,{maximumFractionDigits:0}),st.final_equity>=1000?'green':'red')+
-          kpi('Sharpe',st.sharpe.toFixed(2));
+          kpi('Sharpe',st.sharpe.toFixed(2))+
+          kpi('Profit Factor',st.profit_factor>=999?'\u221E':st.profit_factor.toFixed(2),st.profit_factor>=1.5?'green':st.profit_factor>=1?'':'red');
       } else kpiEl.innerHTML=kpi('Status','Keine Trades','red');
 
       // Equity Chart

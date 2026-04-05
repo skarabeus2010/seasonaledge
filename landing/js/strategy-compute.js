@@ -603,7 +603,7 @@ SA.strategy = {
     };
   },
 
-  /** Stop-Loss anwenden (vereinfacht — nur fixed, kein trailing da kein High/Low) */
+  /** Fixed Stop-Loss anwenden */
   applyStopLoss: function(rows, trades, stopPct) {
     if (stopPct <= 0) return trades;
     var self = this;
@@ -618,6 +618,32 @@ SA.strategy = {
             entry_date: t.entry_date, exit_date: rows[i].date,
             entry_price: t.entry_price, exit_price: Math.round(stopPrice * 100) / 100,
             return_pct: -Math.round(stopPct * 100) / 100,
+            stopped: true
+          };
+        }
+      }
+      return t;
+    });
+  },
+
+  /** Trailing Stop-Loss — Stop folgt dem Kurs nach oben */
+  applyTrailingStop: function(rows, trades, stopPct) {
+    if (stopPct <= 0) return trades;
+    var self = this;
+    return trades.map(function(t) {
+      var entryIdx = self._nearestForward(rows, t.entry_date);
+      var exitIdx = self._nearestForward(rows, t.exit_date);
+      if (entryIdx < 0 || exitIdx < 0) return t;
+      var peak = t.entry_price;
+      for (var i = entryIdx + 1; i <= exitIdx; i++) {
+        var c = parseFloat(rows[i].close);
+        if (c > peak) peak = c;
+        var stopPrice = peak * (1 - stopPct / 100);
+        if (c <= stopPrice) {
+          return {
+            entry_date: t.entry_date, exit_date: rows[i].date,
+            entry_price: t.entry_price, exit_price: Math.round(c * 100) / 100,
+            return_pct: Math.round((c / t.entry_price - 1) * 10000) / 100,
             stopped: true
           };
         }
