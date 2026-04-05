@@ -49,6 +49,20 @@
     .trade-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
     .trade-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
     .trade-table tr:hover td{background:rgba(232,168,32,.03)}
+
+    /* Signal Cards */
+    .signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem}
+    .signal-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.875rem 1rem;display:flex;align-items:flex-start;gap:.75rem}
+    .signal-card.entry{border-left:3px solid #30e878}
+    .signal-card.exit{border-left:3px solid #ff4040}
+    .signal-card .sig-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+    .signal-card .sig-body{flex:1;min-width:0}
+    .signal-card .sig-name{color:var(--text);font-weight:700;font-size:.8125rem}
+    .signal-card .sig-desc{color:var(--muted);font-size:.6875rem;margin-top:2px}
+    .signal-card .sig-date{font-family:var(--f-m);font-size:.875rem;font-weight:700;margin-top:4px}
+    .signal-card .sig-date.entry{color:#30e878}
+    .signal-card .sig-date.exit{color:#ff4040}
+    .signal-card .sig-days{color:var(--muted);font-size:.6875rem;margin-top:2px}
   </style>
 </head>
 <body>
@@ -83,6 +97,12 @@
       <p class="page-caption" id="page-caption">24 saisonale Trading-Strategien mit fixen Regeln</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- Naechste Signale -->
+      <details open id="sec-signals">
+        <summary>N&auml;chste Signale</summary>
+        <div class="content" id="content-signals" style="font-size:.8125rem"></div>
+      </details>
+
       <!-- Category Tabs -->
       <div class="cat-tabs" id="cat-tabs"></div>
 
@@ -98,16 +118,16 @@
       <!-- Equity Chart -->
       <div class="chart-box"><div id="chart-equity"></div></div>
 
-      <!-- Trade Table -->
-      <details>
-        <summary>Alle Trades</summary>
-        <div class="content" id="content-trades"></div>
-      </details>
-
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
         <summary>Signifikanztest</summary>
         <div class="content" id="content-significance"></div>
+      </details>
+
+      <!-- Trade Table -->
+      <details>
+        <summary>Alle Trades</summary>
+        <div class="content" id="content-trades"></div>
       </details>
 
       <!-- Methodik -->
@@ -258,6 +278,7 @@
       if(!rawRows) return;
       document.getElementById('title-ticker').textContent=currentTicker;
       SA.renderTradingDayHeader('trading-day-header',currentTicker,rawRows);
+      renderSignals(rawRows);
       calcStrategy(selectedKey);
       buildCards();
       renderSelected();
@@ -404,6 +425,98 @@
       });
       html+='</table>';
       el.innerHTML=html;
+    }
+
+    // ── Naechste Signale ─────────────────────────────────────────────────────
+    // Definiert fuer jede Strategie die fixen Ein-/Ausstiegs-Regeln
+    var SIGNAL_RULES = [
+      { key:'sell_in_may',      entry:{m:10,rule:'last'},   exit:{m:5,rule:'nth',n:3},    label:'Sell in May' },
+      { key:'nasdaq_trend',     entry:{m:10,rule:'last'},   exit:{m:6,rule:'last'},        label:'Nasdaq-Trend' },
+      { key:'september_avoid',  entry:{m:10,rule:'1st'},    exit:{m:8,rule:'last'},        label:'Sep-Vermeidung' },
+      { key:'santa_claus',      entry:{m:11,rule:'thx-3'},  exit:{m:1,rule:'nth',n:5,ny:true}, label:'Santa Claus' },
+      { key:'post_christmas',   entry:{m:12,rule:'26'},     exit:{m:12,rule:'last'},       label:'Nach Weihnachten' },
+      { key:'month_end',        entry:{m:'*',rule:'nlast',n:2}, exit:{m:'+1',rule:'nth',n:4}, label:'Month-End' },
+      { key:'first_five_days',  entry:{m:1,rule:'1st'},     exit:{m:1,rule:'nth',n:5},     label:'First Five Days' },
+      { key:'january_barometer',entry:{m:1,rule:'1st'},     exit:{m:12,rule:'last'},       label:'Jan-Barometer' },
+      { key:'mid_decade',       entry:{m:10,rule:'1st',dy:'x4'}, exit:{m:3,rule:'last',dy:'x6'}, label:'Mid-Decade' }
+    ];
+
+    function renderSignals(rows) {
+      var el = document.getElementById('content-signals');
+      if (!rows || rows.length < 50) { el.innerHTML = '<p style="color:var(--muted)">Nicht gen\u00FCgend Daten.</p>'; return; }
+
+      var today = new Date();
+      var todayStr = today.getFullYear() + '-' + SA.strategy._pad2(today.getMonth()+1) + '-' + SA.strategy._pad2(today.getDate());
+      var MONTHS_DE = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+      // Berechne naechste Signale fuer alle Strategien
+      var signals = [];
+      for (var k in SA.STRATEGIES) {
+        var s = SA.STRATEGIES[k];
+        var fn = SA.strategy[s.func];
+        if (!fn) continue;
+        var trades = fn.call(SA.strategy, rows);
+        if (!trades || !trades.length) continue;
+
+        // Finde naechsten Entry und Exit ab heute
+        var nextEntry = null, nextExit = null;
+        for (var i = 0; i < trades.length; i++) {
+          if (!nextEntry && trades[i].entry_date >= todayStr) nextEntry = trades[i];
+          if (!nextExit && trades[i].exit_date >= todayStr) nextExit = trades[i];
+          if (nextEntry && nextExit) break;
+        }
+
+        if (nextEntry) {
+          var dEntry = new Date(nextEntry.entry_date);
+          var diffEntry = Math.ceil((dEntry - today) / 86400000);
+          signals.push({
+            type: 'entry', key: k, icon: s.icon, name: s.name,
+            desc: s.desc, date: nextEntry.entry_date,
+            daysAway: diffEntry,
+            dateLabel: dEntry.getDate() + '. ' + MONTHS_DE[dEntry.getMonth()] + ' ' + dEntry.getFullYear()
+          });
+        }
+        if (nextExit && (!nextEntry || nextExit.exit_date !== nextEntry.entry_date)) {
+          var dExit = new Date(nextExit.exit_date);
+          var diffExit = Math.ceil((dExit - today) / 86400000);
+          signals.push({
+            type: 'exit', key: k, icon: s.icon, name: s.name,
+            desc: s.desc, date: nextExit.exit_date,
+            daysAway: diffExit,
+            dateLabel: dExit.getDate() + '. ' + MONTHS_DE[dExit.getMonth()] + ' ' + dExit.getFullYear()
+          });
+        }
+      }
+
+      // Sortiere nach Datum (naechste zuerst)
+      signals.sort(function(a, b) { return a.date > b.date ? 1 : a.date < b.date ? -1 : 0; });
+
+      // Nur die naechsten 12 anzeigen
+      signals = signals.slice(0, 12);
+
+      if (!signals.length) {
+        el.innerHTML = '<p style="color:var(--muted)">Keine kommenden Signale gefunden.</p>';
+        return;
+      }
+
+      var html = '<div class="signal-grid">';
+      for (var i = 0; i < signals.length; i++) {
+        var sig = signals[i];
+        var typeLabel = sig.type === 'entry' ? 'Einstieg' : 'Ausstieg';
+        var daysLabel = sig.daysAway === 0 ? 'Heute' : sig.daysAway === 1 ? 'Morgen' : 'in ' + sig.daysAway + ' Tagen';
+        if (sig.daysAway < 0) daysLabel = 'vor ' + Math.abs(sig.daysAway) + ' Tagen';
+
+        html += '<div class="signal-card ' + sig.type + '">';
+        html += '<div class="sig-icon">' + sig.icon + '</div>';
+        html += '<div class="sig-body">';
+        html += '<div class="sig-name">' + sig.name + ' \u2014 ' + typeLabel + '</div>';
+        html += '<div class="sig-desc">' + sig.desc + '</div>';
+        html += '<div class="sig-date ' + sig.type + '">' + sig.dateLabel + '</div>';
+        html += '<div class="sig-days">' + daysLabel + '</div>';
+        html += '</div></div>';
+      }
+      html += '</div>';
+      el.innerHTML = html;
     }
 
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
