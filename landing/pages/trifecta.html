@@ -121,7 +121,6 @@
             <li><span style="color:#E67E22">&#x1F7E0; Orange</span> = 1 von 3 &rarr; neutral</li>
             <li><span style="color:#E74C3C">&#x1F534; Rot</span> = 0 von 3 &rarr; bearish</li>
           </ul>
-          <p>Quelle: Yale Hirsch, Stock Trader's Almanac. Historische Muster garantieren keine zuk&uuml;nftigen Ergebnisse.</p>
         </div>
       </details>
     </main>
@@ -361,7 +360,7 @@
         dataLabels:{enabled:false},
         grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
-        xaxis:{type:'numeric',labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return Math.round(v)}}},
+        xaxis:{type:'category',labels:{style:{colors:'#a89878',fontSize:'9px'}}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
         legend:SA.chartTheme.legend,
         title:{text:currentTicker+' — Jahresrendite (Feb–Dez) nach Trifecta-Signal',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
