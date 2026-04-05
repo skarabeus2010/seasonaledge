@@ -458,7 +458,34 @@
         h[S._thanksgiving(y)] = 1;
         return h;
       }
-      var _holidays = Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
+      // XETRA-Feiertage (Deutschland)
+      function _xetraHolidays(y) {
+        var h = {};
+        h[y+'-01-01'] = 1; // Neujahr
+        h[y+'-05-01'] = 1; // Tag der Arbeit
+        h[y+'-12-24'] = 1; // Heiligabend
+        h[y+'-12-25'] = 1; // 1. Weihnachtstag
+        h[y+'-12-26'] = 1; // 2. Weihnachtstag
+        h[y+'-12-31'] = 1; // Silvester
+        // Karfreitag + Ostermontag (Gauss)
+        var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
+        var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d-g+15)%30;
+        var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-hh-k)%7;
+        var m=Math.floor((a+11*hh+22*l)/451),eM=Math.floor((hh+l-7*m+114)/31),eD=((hh+l-7*m+114)%31)+1;
+        var easter=new Date(y,eM-1,eD);
+        var gf=new Date(easter); gf.setDate(gf.getDate()-2);
+        h[S._dateStr(gf.getFullYear(),gf.getMonth()+1,gf.getDate())] = 1;
+        var em=new Date(easter); em.setDate(em.getDate()+1);
+        h[S._dateStr(em.getFullYear(),em.getMonth()+1,em.getDate())] = 1;
+        return h;
+      }
+
+      // Exchange-Erkennung
+      var isDE = /^\^GDAXI|^(SIE|SAP|ALV|BAS|BAY|DTE|MBG|BMW|IFX|ADS|HEN3|MRK|FRE|VOW3|RWE|EON|HEI|FME|MTX|DBK|LIN|MUV2|CON|VNA|SRT3|BNR|PUM|ZAL|LEG|TKA|HNR1|ENR|AIR|DHL)\.DE$/.test(currentTicker);
+
+      var _holidays = isDE
+        ? Object.assign({}, _xetraHolidays(Y), _xetraHolidays(Y+1))
+        : Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
 
       function _isTradingDay(dateStr) {
         var d = new Date(dateStr);
@@ -727,7 +754,7 @@
       html += '</tr></thead><tbody>';
       for (var i = 0; i < signals.length; i++) {
         var s = signals[i];
-        var typeLabel = s.type === 'entry' ? 'Einstieg' : 'Ausstieg';
+        var typeLabel = s.type === 'entry' ? 'Einstieg (Close)' : 'Ausstieg (Close)';
         var typeColor = s.type === 'entry' ? 'var(--green)' : 'var(--red)';
         var daysLabel = s.daysAway === 0 ? 'Heute' : s.daysAway === 1 ? '1 Tag' : s.daysAway + ' Tage';
 
