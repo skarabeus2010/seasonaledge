@@ -719,13 +719,13 @@
       var cur40 = ref40; while (cur40 < today.getTime()) cur40 += cyc40 * msPerDay;
       for (var ci = 0; ci < 2; ci++) {
         var d40 = new Date(cur40 + ci * cyc40 * msPerDay);
-        add(sigD('entry','cycle_40_week', S._dateStr(d40.getFullYear(), d40.getMonth()+1, d40.getDate())));
+        add(sigD('entry','cycle_40_week', _nearFwd(d40.getFullYear(), d40.getMonth()+1, d40.getDate())));
       }
       // 212-Wochen
       var ref212 = new Date(1938,4,16).getTime(), cyc212 = 1484;
       var cur212 = ref212; while (cur212 < today.getTime()) cur212 += cyc212 * msPerDay;
       var d212 = new Date(cur212);
-      add(sigD('entry','cycle_212_week', S._dateStr(d212.getFullYear(), d212.getMonth()+1, d212.getDate())));
+      add(sigD('entry','cycle_212_week', _nearFwd(d212.getFullYear(), d212.getMonth()+1, d212.getDate())));
 
       // Deduplizieren (gleiche Strategie + gleicher Typ + gleiches Datum)
       var seen = {};
