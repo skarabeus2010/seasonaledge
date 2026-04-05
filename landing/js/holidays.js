@@ -83,6 +83,14 @@ SA.holidays = {
     return this._ds(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
   },
 
+  /** Pfingstmontag (Ostersonntag + 50) */
+  whitMonday: function(y) {
+    var e = this.easter(y);
+    var dt = new Date(y, e[0] - 1, e[1]);
+    dt.setDate(dt.getDate() + 50);
+    return this._ds(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+  },
+
   /** Thanksgiving: 4. Donnerstag im November */
   thanksgiving: function(y) {
     return this._ds(y, 11, this._nthDow(y, 11, 4, 4));
@@ -121,6 +129,8 @@ SA.holidays = {
       this.goodFriday(y),                                    // Karfreitag
       this.easterMonday(y),                                  // Ostermontag
       this._ds(y, 5, 1),                                    // Tag der Arbeit
+      this.whitMonday(y),                                    // Pfingstmontag
+      this._ds(y, 10, 3),                                   // Tag der Deutschen Einheit
       this._ds(y, 12, 24),                                  // Heiligabend
       this._ds(y, 12, 25),                                  // 1. Weihnachtstag
       this._ds(y, 12, 26),                                  // 2. Weihnachtstag
