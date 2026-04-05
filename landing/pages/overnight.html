@@ -58,6 +58,9 @@
         <option value="max">Max</option>
       </select>
       <hr>
+      <h3>Technischer Filter</h3>
+      <div id="indicator-filter"></div>
+      <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
         <b style="color:#60a5fa">Overnight</b> = Close[t&minus;1] &rarr; Open[t]<br>
         <b style="color:#f97316">Intraday</b> = Open[t] &rarr; Close[t]<br>
@@ -93,10 +96,22 @@
         </div>
       </details>
 
+      <!-- Signifikanztest -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
       <!-- Kumulierter Jahresverlauf -->
       <details open id="sec-cumulative" style="display:none">
         <summary>Kumulierter Jahresverlauf</summary>
         <div class="content"><div id="chart-cumulative"></div></div>
+      </details>
+
+      <!-- Top/Flop Monate -->
+      <details open id="sec-topflop" style="display:none">
+        <summary>Top &amp; Flop Monate</summary>
+        <div class="content"><div id="chart-topflop"></div></div>
       </details>
 
       <!-- Heatmap -->
@@ -116,14 +131,8 @@
 
       <!-- Statistik -->
       <details id="sec-stats" style="display:none">
-        <summary>Statistik &amp; Top/Flop Monate</summary>
+        <summary>Gesamtstatistik</summary>
         <div class="content" id="content-stats"></div>
-      </details>
-
-      <!-- Signifikanztest -->
-      <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest</summary>
-        <div class="content" id="content-significance"></div>
       </details>
 
       <!-- Methodik -->
@@ -167,6 +176,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/indicators.js"></script>
 
   <script>
   (function() {
@@ -184,12 +194,12 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-month','sec-weekday','sec-cumulative','sec-heatmap','sec-stats','sec-significance'].forEach(function(id) {
+      ['sec-month','sec-weekday','sec-significance','sec-cumulative','sec-topflop','sec-heatmap','sec-stats'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
     function destroyAll() {
-      ['month','weekday','cumulative','heatmap'].forEach(function(k) {
+      ['month','weekday','cumulative','heatmap','topflop'].forEach(function(k) {
         if (charts[k]) { charts[k].destroy(); charts[k] = null; }
       });
     }
@@ -425,7 +435,36 @@
       charts.heatmap.render();
     }
 
-    // ── Render: Statistik + Top/Flop ──────────────────────────────────────────
+    // ── Render: Top/Flop Monate (Bar-Chart) ─────────────────────────────────
+    function renderTopFlop(data) {
+      // Overnight Ø pro Monat
+      var onData = [], idData = [];
+      for (var m = 1; m <= 12; m++) {
+        var mData = data.filter(function(d){return d.month === m;});
+        onData.push(mData.length ? parseFloat((mData.reduce(function(s,d){return s+d.overnight;},0)/mData.length).toFixed(4)) : 0);
+        idData.push(mData.length ? parseFloat((mData.reduce(function(s,d){return s+d.intraday;},0)/mData.length).toFixed(4)) : 0);
+      }
+      if (charts.topflop) charts.topflop.destroy();
+      charts.topflop = new ApexCharts(document.getElementById('chart-topflop'), {
+        series: [
+          { name: 'Overnight', data: onData },
+          { name: 'Intraday', data: idData }
+        ],
+        chart: Object.assign({ type: 'bar', height: 340 }, SA.chartTheme.chart),
+        colors: [COL_ON, COL_ID],
+        plotOptions: { bar: { columnWidth: '70%', borderRadius: 2 } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: MONTHS, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: Object.assign({}, SA.chartTheme.legend, { position: 'top' }),
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Overnight vs. Intraday nach Monat (Top/Flop)', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.topflop.render();
+    }
+
+    // ── Render: Statistik ─────────────────────────────────────────────────────
     function renderStats(data) {
       var types = [
         { key: 'overnight', label: 'Overnight (C\u2192O)', color: COL_ON },
@@ -433,8 +472,7 @@
         { key: 'total', label: 'Total (C\u2192C)', color: COL_TOT }
       ];
 
-      var html = '<h3>Gesamtstatistik</h3>';
-      html += '<table class="on-table"><thead><tr><th>Typ</th><th>\u00D8 Return</th><th>Win-Rate</th><th>Std.Abw.</th><th>Summe</th><th>Tage</th></tr></thead><tbody>';
+      var html = '<table class="on-table"><thead><tr><th>Typ</th><th>\u00D8 Return</th><th>Win-Rate</th><th>Std.Abw.</th><th>Summe</th><th>Tage</th></tr></thead><tbody>';
       for (var t = 0; t < types.length; t++) {
         var vals = data.map(function(d) { return d[types[t].key]; });
         var avg = vals.reduce(function(s,v){return s+v;},0) / vals.length;
@@ -451,27 +489,6 @@
         html += '<td>' + vals.length + '</td></tr>';
       }
       html += '</tbody></table>';
-
-      // Top/Flop Monate
-      html += '<h3 style="margin-top:1.5rem">Top &amp; Flop Monate</h3>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">';
-      for (var t = 0; t < types.length; t++) {
-        var monthly = {};
-        for (var m = 1; m <= 12; m++) {
-          var vals = data.filter(function(d){return d.month===m;}).map(function(d){return d[types[t].key];});
-          monthly[m] = vals.length ? vals.reduce(function(s,v){return s+v;},0)/vals.length : 0;
-        }
-        var best = 1, worst = 1;
-        for (var m = 2; m <= 12; m++) {
-          if (monthly[m] > monthly[best]) best = m;
-          if (monthly[m] < monthly[worst]) worst = m;
-        }
-        html += '<div style="text-align:center"><div style="color:' + types[t].color + ';font-weight:700;font-size:.875rem;margin-bottom:.5rem">' + types[t].label + '</div>';
-        html += '<div style="color:var(--green);font-size:.8125rem">Best: <b>' + MONTHS[best-1] + '</b> ' + fmtPct(monthly[best]) + '</div>';
-        html += '<div style="color:var(--red);font-size:.8125rem">Worst: <b>' + MONTHS[worst-1] + '</b> ' + fmtPct(monthly[worst]) + '</div></div>';
-      }
-      html += '</div>';
-
       document.getElementById('content-stats').innerHTML = html;
     }
 
@@ -488,20 +505,13 @@
       };
       var overallResult = SA.significance.runSignificanceTest(groups);
 
-      // 2. Overnight nach Wochentag
+      // 2. Overnight nach Wochentag + Gesamt (= 6 Tachos: Mo-Fr + Gesamt)
       var wdGroups = {};
       for (var w = 0; w < 5; w++) {
         wdGroups[WEEKDAYS[w]] = data.filter(function(d){return d.weekday === w;}).map(function(d){return d.overnight;});
       }
+      wdGroups['Gesamt'] = data.map(function(d){return d.overnight;});
       var wdResult = SA.significance.runSignificanceTest(wdGroups);
-
-      // 3. Overnight nach Monat
-      var mGroups = {};
-      for (var m = 1; m <= 12; m++) {
-        var vals = data.filter(function(d){return d.month === m;}).map(function(d){return d.overnight;});
-        if (vals.length >= 10) mGroups[MONTHS[m-1]] = vals;
-      }
-      var mResult = SA.significance.runSignificanceTest(mGroups);
 
       var html = '<h3>Overnight-Effekt: Statistisch signifikant?</h3>';
       html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test gegen 0: Sind die Overnight-Returns systematisch von Null verschieden?</p>';
@@ -509,19 +519,41 @@
 
       html += '<h3 style="margin-top:1.5rem">Overnight-Signifikanz nach Wochentag</h3>';
       html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">An welchen Wochentagen ist der Overnight-Effekt am st\u00E4rksten?</p>';
-      html += SA.significance.renderSection(wdResult, 5, WEEKDAYS);
+      html += SA.significance.renderSection(wdResult, 3, ['Mo','Di','Mi','Do','Fr','Gesamt']);
 
-      if (mResult.length > 0) {
-        html += '<h3 style="margin-top:1.5rem">Overnight-Signifikanz nach Monat</h3>';
-        html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">In welchen Monaten ist der Overnight-Effekt signifikant?</p>';
-        html += SA.significance.renderSection(mResult, 4, MONTHS);
-      }
 
       el.innerHTML = html;
     }
 
+    // ── Indicator Filter ────────────────────────────────────────────────────
+    var _getFilters = SA.indicators.renderFilterUI('indicator-filter', function() { rerender(); });
+
     // ── Main ──────────────────────────────────────────────────────────────────
+    var _cachedRows = null;
     var _cachedData = null;
+
+    function rerender() {
+      if (!_cachedRows) return;
+      // Indikator-Filter auf Close-Kurse anwenden
+      var closes = _cachedRows.map(function(r) { return parseFloat(r.close); });
+      var filters = _getFilters();
+      var mask = SA.indicators.applyFilter(closes, filters);
+      var filteredRows = _cachedRows.filter(function(r, i) { return mask[i]; });
+      if (filteredRows.length < 50) { showError('Zu wenig Daten nach Filter (' + filteredRows.length + ' Tage)'); return; }
+
+      var data = compute(filteredRows);
+      _cachedData = data;
+      destroyAll();
+      renderKPIs(data);
+      renderMonthChart(data);
+      renderWeekdayChart(data);
+      renderSignificance(data);
+      renderCumulative(data);
+      renderTopFlop(data);
+      renderHeatmap(data);
+      renderStats(data);
+      showSections(true);
+    }
 
     function loadTicker(ticker) {
       currentTicker = ticker;
@@ -545,7 +577,6 @@
           $loading.style.display = 'none';
           return;
         }
-        // Filter: nur Rows mit open
         rows = rows.filter(function(r) { return r.open != null && r.open > 0; });
         if (rows.length < 50) {
           showError(ticker + ': Nicht gen\u00FCgend OHLC-Daten (Open-Kurse fehlen).');
@@ -553,18 +584,9 @@
           return;
         }
 
-        var data = compute(rows);
-        _cachedData = data;
-
+        _cachedRows = rows;
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
-        renderKPIs(data);
-        renderMonthChart(data);
-        renderWeekdayChart(data);
-        renderCumulative(data);
-        renderHeatmap(data);
-        renderStats(data);
-        renderSignificance(data);
-        showSections(true);
+        rerender();
         $loading.style.display = 'none';
       }).catch(function(err) {
         showError('Fehler: ' + err.message);
