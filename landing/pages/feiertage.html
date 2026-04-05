@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Feiertags-Effekt &mdash; SeasonAlpha</title>
+  <meta name="description" content="Feiertags-Effekt: Rendite rund um B&ouml;rsenfeiertage (NYSE, XETRA, LSE). Event-Window-Analyse, Ranking, Streak.">
+  <meta property="og:title" content="Feiertags-Effekt &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/feiertage">
+  <link rel="canonical" href="https://seasonalpha.ai/feiertage">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .hol-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .hol-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .hol-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .hol-table tr:hover td{background:rgba(232,168,32,.04)}
+    .hol-table td.pos{color:var(--green)}
+    .hol-table td.neg{color:var(--red)}
+    .apexcharts-xaxis text title{display:none}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10">10 Jahre</option>
+        <option value="15">15 Jahre</option>
+        <option value="20" selected>20 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>Event-Window</h3>
+      <label>Tage vor Feiertag<br><input type="range" id="rng-before" min="1" max="10" value="3" step="1"><span id="lbl-before">3</span></label>
+      <label>Tage nach Feiertag<br><input type="range" id="rng-after" min="1" max="10" value="3" step="1"><span id="lbl-after">3</span></label>
+      <hr>
+      <h3>Feiertage</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-hol" checked> Alle / Keine</label>
+      <div id="holiday-toggles" style="font-size:.8125rem"></div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Feiertags-Effekt</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption">Rendite rund um B&ouml;rsenfeiertage &mdash; Exchange-spezifisch (NYSE/XETRA/LSE)</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- Rendite-Chart -->
+      <details open id="sec-chart" style="display:none">
+        <summary>Kumulierte Rendite rund um Feiertage</summary>
+        <div class="content"><div id="chart-event"></div></div>
+      </details>
+
+      <!-- Best/Worst Ranking -->
+      <details open id="sec-ranking" style="display:none">
+        <summary>Feiertags-Ranking (Best &amp; Worst)</summary>
+        <div class="content">
+          <div id="chart-ranking"></div>
+          <div id="content-ranking" style="margin-top:1rem"></div>
+        </div>
+      </details>
+
+      <!-- Signifikanztest -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
+      <!-- Streak -->
+      <details open id="sec-streak" style="display:none">
+        <summary>Streak-Analyse</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Exchange-Erkennung:</b> Automatisch per Ticker (NYSE, XETRA, LSE, Crypto/FX=keine)</li>
+            <li><b>Feiertage:</b> Dynamisch berechnet via <code>holidays.js</code> (Gauss-Ostern, variable Feiertage)</li>
+            <li><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+          </ul>
+          <h3>NYSE-Feiertage (10)</h3>
+          <ul>
+            <li>New Year, MLK Day, Presidents Day, Good Friday, Memorial Day, Juneteenth, Independence Day, Labor Day, Thanksgiving, Christmas</li>
+          </ul>
+          <h3>XETRA-Feiertage (8)</h3>
+          <ul>
+            <li>Neujahr, Karfreitag, Ostermontag, Tag der Arbeit, Heiligabend, 1.+2. Weihnachtstag, Silvester</li>
+          </ul>
+          <h3>LSE-Feiertage (8)</h3>
+          <ul>
+            <li>New Year, Good Friday, Easter Monday, Early May BH, Spring BH, Summer BH, Christmas, Boxing Day</li>
+          </ul>
+          <h3>Berechnung</h3>
+          <ul>
+            <li><b>t0:</b> Erster Handelstag am/nach dem Feiertag</li>
+            <li><b>Basis:</b> Close bei t&minus;N = 0% (Normierung)</li>
+            <li><b>Fenster:</b> t&minus;N bis t+N Handelstage</li>
+            <li><b>Backtest:</b> Siehe &bdquo;Plain Vanilla Strategien&rdquo; &rarr; UHTS (Kaeppel System)</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var COLORS_LINE = ['#42a5f5','#26a69a','#ffa726','#ef5350','#ab47bc','#66bb6a','#26c6da','#ff7043','#ec407a','#8d6e63','#78909c','#d4e157'];
+    var charts = {};
+    var currentTicker = 'SPY';
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
+    function showSections(show) {
+      ['sec-chart','sec-ranking','sec-significance','sec-streak'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function destroyAll() {
+      ['event','ranking'].forEach(function(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+    }
+    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
+
+    // Slider labels
+    ['rng-before','rng-after'].forEach(function(id) {
+      var el = document.getElementById(id);
+      var lbl = document.getElementById(id.replace('rng-','lbl-'));
+      el.addEventListener('input', function() { lbl.textContent = el.value; });
+    });
+
+    // ── Feiertags-Namen pro Exchange ──────────────────────────────────────────
+    var HOL_NAMES = {
+      NYSE: ['New Year','MLK Day','Presidents Day','Good Friday','Memorial Day','Juneteenth','Independence Day','Labor Day','Thanksgiving','Christmas'],
+      XETRA: ['Neujahr','Karfreitag','Ostermontag','Tag der Arbeit','Heiligabend','1. Weihnachtstag','2. Weihnachtstag','Silvester'],
+      LSE: ['New Year','Good Friday','Easter Monday','Early May BH','Spring BH','Summer BH','Christmas','Boxing Day'],
+      NONE: []
+    };
+
+    // ── Feiertags-Daten generieren (nutzt holidays.js) ───────────────────────
+    function getHolidayDates(exchange, startYear, endYear) {
+      // holidays.js gibt Arrays von Datum-Strings pro Jahr
+      // Wir muessen die einzelnen Feiertage identifizieren
+      var result = {};
+      var names = HOL_NAMES[exchange] || HOL_NAMES.NYSE;
+      for (var i = 0; i < names.length; i++) result[names[i]] = [];
+
+      for (var y = startYear; y <= endYear; y++) {
+        var yearHols = SA.holidays.get(y, exchange);
+        // holidays.get gibt sortierte Daten — wir matchen per Index
+        for (var hi = 0; hi < yearHols.length && hi < names.length; hi++) {
+          result[names[hi]].push(yearHols[hi]);
+        }
+      }
+      return result;
+    }
+
+    // ── Event-Window Berechnung ───────────────────────────────────────────────
+    function analyzeHoliday(rows, holidayDates, daysBefore, daysAfter) {
+      var dateIdx = {};
+      for (var i = 0; i < rows.length; i++) dateIdx[rows[i].date] = i;
+
+      var windowSize = daysBefore + 1 + daysAfter;
+      var allCurves = [];
+
+      for (var e = 0; e < holidayDates.length; e++) {
+        var evDate = holidayDates[e];
+        // t0 = erster Handelstag am/nach Feiertag
+        var t0 = null;
+        for (var j = 0; j < rows.length; j++) {
+          if (rows[j].date >= evDate) { t0 = j; break; }
+        }
+        if (t0 == null) continue;
+
+        var start = t0 - daysBefore;
+        var end = t0 + daysAfter + 1;
+        if (start < 0 || end > rows.length) continue;
+
+        // Normalisierung: Close bei start = 0%
+        var baseClose = parseFloat(rows[start].close);
+        if (!baseClose) continue;
+        var curve = [];
+        for (var i = start; i < end; i++) {
+          curve.push((parseFloat(rows[i].close) / baseClose - 1) * 100);
+        }
+        if (curve.length !== windowSize) continue;
+
+        var totalReturn = curve[curve.length - 1] - curve[0];
+        allCurves.push({ date: evDate, year: parseInt(evDate.substring(0,4)), curve: curve, totalReturn: totalReturn });
+      }
+
+      if (!allCurves.length) return null;
+
+      var avgCurve = [];
+      for (var i = 0; i < windowSize; i++) {
+        var sum = 0;
+        for (var c = 0; c < allCurves.length; c++) sum += allCurves[c].curve[i];
+        avgCurve.push(sum / allCurves.length);
+      }
+
+      var returns = allCurves.map(function(c) { return c.totalReturn; });
+      var wins = returns.filter(function(r) { return r > 0; });
+      var avg = returns.reduce(function(s,v){return s+v;},0) / returns.length;
+
+      return {
+        avgCurve: avgCurve, allCurves: allCurves,
+        avg: avg, winRate: wins.length / returns.length * 100,
+        nEvents: allCurves.length, returns: returns
+      };
+    }
+
+    // ── Sidebar: Holiday Checkboxes ──────────────────────────────────────────
+    var togglesEl = document.getElementById('holiday-toggles');
+    var _currentExchange = 'NYSE';
+
+    function buildCheckboxes(exchange) {
+      _currentExchange = exchange;
+      var names = HOL_NAMES[exchange] || [];
+      togglesEl.innerHTML = '';
+      for (var i = 0; i < names.length; i++) {
+        var lbl = document.createElement('label');
+        lbl.style.display = 'block';
+        lbl.style.marginBottom = '2px';
+        lbl.innerHTML = '<input type="checkbox" data-hol="' + names[i] + '" checked> ' + names[i];
+        togglesEl.appendChild(lbl);
+      }
+    }
+
+    function getSelectedHolidays() {
+      var selected = [];
+      togglesEl.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb) {
+        selected.push(cb.dataset.hol);
+      });
+      return selected;
+    }
+
+    document.getElementById('chk-all-hol').addEventListener('change', function() {
+      var checked = this.checked;
+      togglesEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = checked; });
+      rerender();
+    });
+    togglesEl.addEventListener('change', rerender);
+
+    // ── Render: Event-Chart ──────────────────────────────────────────────────
+    function renderChart(allResults, daysBefore) {
+      var labels = [];
+      var windowSize = daysBefore + 1 + parseInt(document.getElementById('rng-after').value);
+      for (var i = 0; i < windowSize; i++) {
+        var off = i - daysBefore;
+        labels.push(off < 0 ? 't' + off : off === 0 ? 't0' : 't+' + off);
+      }
+
+      var series = [];
+      var names = Object.keys(allResults);
+      for (var n = 0; n < names.length; n++) {
+        var r = allResults[names[n]];
+        if (!r) continue;
+        series.push({
+          name: names[n] + ' (n=' + r.nEvents + ')',
+          data: r.avgCurve.map(function(v) { return parseFloat(v.toFixed(3)); })
+        });
+      }
+
+      if (charts.event) charts.event.destroy();
+      charts.event = new ApexCharts(document.getElementById('chart-event'), {
+        series: series,
+        chart: Object.assign({ type: 'line', height: 420 }, SA.chartTheme.chart),
+        stroke: { width: 2.5, curve: 'straight' },
+        colors: COLORS_LINE.slice(0, series.length),
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: labels, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } }, title: { text: 'Kum. Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: {
+          xaxis: [{ x: labels[daysBefore], borderColor: 'rgba(255,215,0,.5)', strokeDashArray: 4, label: { text: 'Feiertag', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }],
+          yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.2)', strokeDashArray: 3 }]
+        },
+        legend: Object.assign({}, SA.chartTheme.legend, { position: 'bottom', horizontalAlign: 'center' }),
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Feiertags-Effekt', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.event.render();
+    }
+
+    // ── Render: Ranking ──────────────────────────────────────────────────────
+    function renderRanking(allResults) {
+      var ranking = [];
+      for (var name in allResults) {
+        var r = allResults[name];
+        if (!r) continue;
+        var rets = r.returns;
+        var std = 0;
+        if (rets.length > 1) {
+          var mean = r.avg;
+          var sq = rets.reduce(function(s,v){return s+(v-mean)*(v-mean);},0)/(rets.length-1);
+          std = Math.sqrt(sq);
+        }
+        ranking.push({ name: name, avg: r.avg, winRate: r.winRate, n: r.nEvents, std: std,
+          max: Math.max.apply(null, rets), min: Math.min.apply(null, rets) });
+      }
+      ranking.sort(function(a,b) { return b.avg - a.avg; });
+
+      // Bar Chart
+      var cats = ranking.map(function(r) { return r.name; });
+      var vals = ranking.map(function(r) { return parseFloat(r.avg.toFixed(3)); });
+
+      if (charts.ranking) charts.ranking.destroy();
+      charts.ranking = new ApexCharts(document.getElementById('chart-ranking'), {
+        series: [{ name: '\u00D8 Rendite', data: vals }],
+        chart: Object.assign({ type: 'bar', height: 340 }, SA.chartTheme.chart),
+        colors: vals.map(function(v) { return v >= 0 ? SA.COLORS.green : SA.COLORS.red; }),
+        plotOptions: { bar: { borderRadius: 4, distributed: true, columnWidth: '60%' } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '10px' }, rotate: -45, rotateAlways: true } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: { show: false },
+        dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#fff'] }, formatter: function(v) { return (v>=0?'+':'') + v.toFixed(2) + '%'; } },
+        title: { text: 'Feiertags-Ranking nach \u00D8 Rendite', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.ranking.render();
+
+      // Tabelle
+      var html = '<table class="hol-table"><thead><tr><th>Feiertag</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Std.Abw.</th><th>Best</th><th>Worst</th><th>n</th></tr></thead><tbody>';
+      for (var i = 0; i < ranking.length; i++) {
+        var r = ranking[i];
+        var cls = r.avg >= 0 ? 'pos' : 'neg';
+        html += '<tr><td><b>' + r.name + '</b></td>';
+        html += '<td class="' + cls + '">' + fmtPct(r.avg) + '</td>';
+        html += '<td>' + r.winRate.toFixed(0) + ' %</td>';
+        html += '<td>' + r.std.toFixed(3) + ' %</td>';
+        html += '<td class="pos">' + fmtPct(r.max, 2) + '</td>';
+        html += '<td class="neg">' + fmtPct(r.min, 2) + '</td>';
+        html += '<td>' + r.n + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-ranking').innerHTML = html;
+    }
+
+    // ── Render: Signifikanztest ───────────────────────────────────────────────
+    function renderSignificance(allResults) {
+      if (!SA.significance) { document.getElementById('sec-significance').style.display = 'none'; return; }
+      var groups = {};
+      for (var name in allResults) {
+        var r = allResults[name];
+        if (r && r.returns.length >= 5) groups[name] = r.returns;
+      }
+      if (!Object.keys(groups).length) { document.getElementById('sec-significance').style.display = 'none'; return; }
+      var res = SA.significance.runSignificanceTest(groups);
+      var html = '<h3>Welche Feiertage haben einen signifikanten Effekt?</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test gegen 0: Ist die Fenster-Rendite statistisch von Null verschieden?</p>';
+      html += SA.significance.renderSection(res, 4);
+      document.getElementById('content-significance').innerHTML = html;
+    }
+
+    // ── Render: Streak ───────────────────────────────────────────────────────
+    function renderStreak(allResults) {
+      var groups = [];
+      for (var name in allResults) {
+        var r = allResults[name];
+        if (!r) continue;
+        var entries = r.allCurves.map(function(c) { return { date: c.year, ret: c.totalReturn }; });
+        entries.sort(function(a,b) { return b.date - a.date; }); // neueste zuerst
+        groups.push({ label: name, entries: entries });
+      }
+      var html = SA.streaks.renderStreakTable(groups, 'Feiertag', 15);
+      document.getElementById('content-streak').innerHTML = html;
+    }
+
+    // ── Main ──────────────────────────────────────────────────────────────────
+    var _cachedRows = null;
+
+    function rerender() {
+      if (!_cachedRows) return;
+      var daysBefore = parseInt(document.getElementById('rng-before').value);
+      var daysAfter = parseInt(document.getElementById('rng-after').value);
+      var yearsVal = document.getElementById('sel-years').value;
+      var curYear = new Date().getFullYear();
+      var startYear = yearsVal === 'max' ? 1990 : curYear - parseInt(yearsVal);
+
+      var exchange = SA.holidays.detect(currentTicker);
+      if (exchange !== _currentExchange) buildCheckboxes(exchange);
+
+      var selectedHols = getSelectedHolidays();
+      if (!selectedHols.length) { showError('Bitte mindestens einen Feiertag ausw\u00E4hlen.'); showSections(false); $kpi.innerHTML = ''; return; }
+
+      var holDates = getHolidayDates(exchange, startYear, curYear);
+
+      // Analyse pro Feiertag
+      var allResults = {};
+      var totalEvents = 0, totalWins = 0, totalReturns = [];
+      for (var i = 0; i < selectedHols.length; i++) {
+        var name = selectedHols[i];
+        if (!holDates[name] || !holDates[name].length) continue;
+        var result = analyzeHoliday(_cachedRows, holDates[name], daysBefore, daysAfter);
+        if (result) {
+          allResults[name] = result;
+          totalEvents += result.nEvents;
+          totalWins += result.returns.filter(function(r){return r>0;}).length;
+          totalReturns = totalReturns.concat(result.returns);
+        }
+      }
+
+      if (!Object.keys(allResults).length) {
+        showError('Keine auswertbaren Daten f\u00FCr die gew\u00E4hlten Feiertage.');
+        showSections(false); $kpi.innerHTML = '';
+        return;
+      }
+
+      var avgRet = totalReturns.reduce(function(s,v){return s+v;},0) / totalReturns.length;
+      var totalWR = totalEvents > 0 ? totalWins / totalEvents * 100 : 0;
+
+      destroyAll();
+      $kpi.innerHTML =
+        kpi('Feiertage', ' ' + Object.keys(allResults).length) +
+        kpi('Events', ' ' + totalEvents) +
+        kpi('Win-Rate', totalWR.toFixed(0) + ' %', totalWR >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('\u00D8 Rendite', fmtPct(avgRet), avgRet >= 0 ? 'kpi__value--green' : 'kpi__value--red');
+
+      renderChart(allResults, daysBefore);
+      renderRanking(allResults);
+      renderSignificance(allResults);
+      renderStreak(allResults);
+      showSections(true);
+    }
+
+    function loadTicker(ticker) {
+      currentTicker = ticker;
+      document.getElementById('title-ticker').textContent = ticker;
+      var exchange = SA.holidays.detect(ticker);
+      buildCheckboxes(exchange);
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      $kpi.innerHTML = '';
+
+      SA.fetchAllPrices(ticker).then(function(rows) {
+        if (!rows || rows.length < 100) {
+          showError('Zu wenig Daten f\u00FCr ' + ticker);
+          $loading.style.display = 'none';
+          return;
+        }
+        _cachedRows = rows;
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        rerender();
+        $loading.style.display = 'none';
+      }).catch(function(err) {
+        showError('Fehler: ' + err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t) { loadTicker(t); });
+    document.getElementById('sel-years').addEventListener('change', rerender);
+    document.getElementById('rng-before').addEventListener('change', rerender);
+    document.getElementById('rng-after').addEventListener('change', rerender);
+
+    // Auto-Load
+    loadTicker('SPY');
+
+  })();
+  </script>
+
+</body>
+</html>
