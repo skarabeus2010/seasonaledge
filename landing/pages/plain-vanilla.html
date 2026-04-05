@@ -427,6 +427,95 @@
         if (fn) tradeCache[k] = fn.call(S, rows) || [];
       }
 
+      // ── Future Trading Day Estimator ──
+      // US-Feiertage (feste + geschaetzte variable)
+      function _usHolidays(y) {
+        var h = {};
+        h[y+'-01-01'] = 1; // Neujahr
+        h[y+'-07-04'] = 1; // Independence Day
+        h[y+'-12-25'] = 1; // Weihnachten
+        // MLK: 3. Mo Jan
+        var jan1dow = new Date(y,0,1).getDay();
+        var mlk = 1 + ((1 - jan1dow + 7) % 7) + 14;
+        h[S._dateStr(y,1,mlk)] = 1;
+        // Presidents Day: 3. Mo Feb
+        var feb1dow = new Date(y,1,1).getDay();
+        var pres = 1 + ((1 - feb1dow + 7) % 7) + 14;
+        h[S._dateStr(y,2,pres)] = 1;
+        // Memorial Day: letzter Mo Mai
+        var may31dow = new Date(y,4,31).getDay();
+        var mem = 31 - ((may31dow - 1 + 7) % 7);
+        h[S._dateStr(y,5,mem)] = 1;
+        // Labor Day: 1. Mo Sep
+        var sep1dow = new Date(y,8,1).getDay();
+        var lab = 1 + ((1 - sep1dow + 7) % 7);
+        h[S._dateStr(y,9,lab)] = 1;
+        // Thanksgiving: 4. Do Nov
+        var nov1dow = new Date(y,10,1).getDay();
+        var thx = 1 + ((4 - nov1dow + 7) % 7) + 21;
+        h[S._dateStr(y,11,thx)] = 1;
+        return h;
+      }
+      var _holidays = Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
+
+      function _isTradingDay(dateStr) {
+        var d = new Date(dateStr);
+        var dow = d.getDay();
+        if (dow === 0 || dow === 6) return false;
+        return !_holidays[dateStr];
+      }
+
+      // n-ter Handelstag eines Monats (1-basiert), geschaetzt
+      function _futureNthTD(y, m, n) {
+        var count = 0;
+        for (var d = 1; d <= 31; d++) {
+          var ds = S._dateStr(y, m, S._pad2(d));
+          var dt = new Date(y, m-1, d);
+          if (dt.getMonth() !== m-1) break; // naechster Monat
+          if (_isTradingDay(ds)) {
+            count++;
+            if (count === n) return ds;
+          }
+        }
+        return null;
+      }
+
+      // Letzter (oder n-ter von hinten) Handelstag eines Monats
+      function _futureLastTD(y, m, nFromEnd) {
+        nFromEnd = nFromEnd || 1;
+        var lastDay = new Date(y, m, 0).getDate();
+        var found = [];
+        for (var d = 1; d <= lastDay; d++) {
+          var ds = S._dateStr(y, m, S._pad2(d));
+          if (_isTradingDay(ds)) found.push(ds);
+        }
+        return found.length >= nFromEnd ? found[found.length - nFromEnd] : null;
+      }
+
+      // Versuche erst echte Daten, dann Schaetzung
+      function _nthTD(y, m, n) {
+        var idx = S._nthTradingDay(rows, y, m, n);
+        if (idx >= 0) return rows[idx].date;
+        return _futureNthTD(y, m, n);
+      }
+      function _lastTD(y, m, nFromEnd) {
+        var idx = nFromEnd ? S._nthLastTradingDay(rows, y, m, nFromEnd) : S._lastTradingDay(rows, y, m);
+        if (idx >= 0) return rows[idx].date;
+        return _futureLastTD(y, m, nFromEnd || 1);
+      }
+      function _nearFwd(y, m, d) {
+        var ds = S._dateStr(y, m, d);
+        var idx = S._nearestForward(rows, ds);
+        if (idx >= 0) return rows[idx].date;
+        // Schaetze: naechster Mo-Fr ab Datum
+        for (var i = 0; i < 10; i++) {
+          var dt = new Date(y, m-1, d+i);
+          var cs = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+          if (_isTradingDay(cs)) return cs;
+        }
+        return ds;
+      }
+
       function getStreak(key) {
         var trades = tradeCache[key] || [];
         var streak = 0, st = '';
@@ -441,171 +530,145 @@
                  color: st === 'W' ? 'var(--green)' : st === 'L' ? 'var(--red)' : 'var(--muted)' };
       }
 
-      // Helper: Index → Signal-Objekt (nur wenn >= heute)
-      function sig(type, key, idx) {
-        if (idx < 0 || idx >= rows.length) return null;
-        if (rows[idx].date < todayStr) return null;
-        var d = new Date(rows[idx].date);
-        var sk = getStreak(key);
-        var meta = SA.STRATEGIES[key];
-        return {
-          type: type, key: key, icon: meta.icon, name: meta.name,
-          date: rows[idx].date, daysAway: Math.ceil((d - today) / 86400000),
-          dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
-          streak: sk.label, streakColor: sk.color
-        };
-      }
-
-      // Helper: geschaetztes Datum (wenn nicht in Daten)
-      function sigEst(type, key, dateStr) {
-        if (dateStr < todayStr) return null;
+      // Helper: Datum-String → Signal-Objekt (nur wenn >= heute)
+      function sigD(type, key, dateStr) {
+        if (!dateStr || dateStr < todayStr) return null;
         var d = new Date(dateStr);
         var sk = getStreak(key);
         var meta = SA.STRATEGIES[key];
+        if (!meta) return null;
         return {
           type: type, key: key, icon: meta.icon, name: meta.name,
           date: dateStr, daysAway: Math.ceil((d - today) / 86400000),
-          dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear() + ' ~',
+          dateLabel: d.getDate() + '. ' + MONTHS_DE[d.getMonth()] + ' ' + d.getFullYear(),
           streak: sk.label, streakColor: sk.color
         };
       }
 
       // Helper: bestes Signal aus 2 Jahren
       function best(type, key, fn) {
-        var r = fn(Y);
-        if (r) return r;
-        return fn(Y + 1);
+        return fn(Y) || fn(Y + 1);
       }
 
       var signals = [];
       function add(s) { if (s) signals.push(s); }
 
       // ── Saisonal ──
-      // Sell in May: Entry=letzter HT Okt, Exit=3. HT Mai
-      add(best('entry','sell_in_may', function(y){ return sig('entry','sell_in_may', S._lastTradingDay(rows,y,10)); }));
-      add(best('exit','sell_in_may', function(y){ var i=S._nthTradingDay(rows,y,5,3); return i>=0 ? sig('exit','sell_in_may',i) : sigEst('exit','sell_in_may',y+'-05-05'); }));
+      add(best('entry','sell_in_may', function(y){ return sigD('entry','sell_in_may', _lastTD(y,10)); }));
+      add(best('exit','sell_in_may', function(y){ return sigD('exit','sell_in_may', _nthTD(y,5,3)); }));
 
-      // LBR Nov-Mai: Entry=letzter HT Okt, Exit=letzter HT Apr
-      add(best('entry','lbr_november_mai', function(y){ return sig('entry','lbr_november_mai', S._lastTradingDay(rows,y,10)); }));
-      add(best('exit','lbr_november_mai', function(y){ var i=S._lastTradingDay(rows,y,4); return i>=0 ? sig('exit','lbr_november_mai',i) : sigEst('exit','lbr_november_mai',y+'-04-28'); }));
+      add(best('entry','lbr_november_mai', function(y){ return sigD('entry','lbr_november_mai', _lastTD(y,10)); }));
+      add(best('exit','lbr_november_mai', function(y){ return sigD('exit','lbr_november_mai', _lastTD(y,4)); }));
 
-      // Nasdaq-Trend: Entry=letzter HT Okt, Exit=letzter HT Jun
-      add(best('entry','nasdaq_trend', function(y){ return sig('entry','nasdaq_trend', S._lastTradingDay(rows,y,10)); }));
-      add(best('exit','nasdaq_trend', function(y){ var i=S._lastTradingDay(rows,y,6); return i>=0 ? sig('exit','nasdaq_trend',i) : sigEst('exit','nasdaq_trend',y+'-06-28'); }));
+      add(best('entry','nasdaq_trend', function(y){ return sigD('entry','nasdaq_trend', _lastTD(y,10)); }));
+      add(best('exit','nasdaq_trend', function(y){ return sigD('exit','nasdaq_trend', _lastTD(y,6)); }));
 
-      // Sep-Vermeidung: Entry=30.Sep, Exit=letzter HT Aug
-      add(best('entry','september_avoid', function(y){ return sig('entry','september_avoid', S._nearestForward(rows,S._dateStr(y,9,30))); }));
-      add(best('exit','september_avoid', function(y){ var i=S._lastTradingDay(rows,y,8); return i>=0 ? sig('exit','september_avoid',i) : sigEst('exit','september_avoid',y+'-08-29'); }));
+      add(best('entry','september_avoid', function(y){ return sigD('entry','september_avoid', _nearFwd(y,9,30)); }));
+      add(best('exit','september_avoid', function(y){ return sigD('exit','september_avoid', _lastTD(y,8)); }));
 
-      // Wahljahr 7 Mon (nur Wahljahre)
+      // Wahljahr 7 Mon
       if (Y % 4 === 0 || (Y+1) % 4 === 0) {
         var ey = Y % 4 === 0 ? Y : Y + 1;
-        add(sig('entry','election_7months', S._nearestForward(rows,S._dateStr(ey,5,31))));
-        var ei=S._lastTradingDay(rows,ey,12); add(ei>=0 ? sig('exit','election_7months',ei) : sigEst('exit','election_7months',ey+'-12-30'));
+        add(sigD('entry','election_7months', _nearFwd(ey,5,31)));
+        add(sigD('exit','election_7months', _lastTD(ey,12)));
       }
 
       // ── Januar ──
-      // First Five Days: Entry=1. HT Jan, Exit=5. HT Jan (Signal-Phase)
-      add(best('entry','first_five_days', function(y){ return sig('entry','first_five_days', S._nthTradingDay(rows,y,1,1)); }));
-      add(best('exit','first_five_days', function(y){ return sig('exit','first_five_days', S._nthTradingDay(rows,y,1,5)); }));
+      add(best('entry','first_five_days', function(y){ return sigD('entry','first_five_days', _nthTD(y,1,1)); }));
+      add(best('exit','first_five_days', function(y){ return sigD('exit','first_five_days', _nthTD(y,1,5)); }));
 
-      // Last Five Days: Entry=nlast 5 HT Jan, Exit=letzter HT Jan
-      add(best('entry','last_five_days', function(y){ return sig('entry','last_five_days', S._nthLastTradingDay(rows,y,1,5)); }));
-      add(best('exit','last_five_days', function(y){ return sig('exit','last_five_days', S._lastTradingDay(rows,y,1)); }));
+      add(best('entry','last_five_days', function(y){ return sigD('entry','last_five_days', _lastTD(y,1,5)); }));
+      add(best('exit','last_five_days', function(y){ return sigD('exit','last_five_days', _lastTD(y,1)); }));
 
-      // Jan-Barometer: Entry=1. HT Feb, Exit=letzter HT Dez
-      add(best('entry','january_barometer', function(y){ return sig('entry','january_barometer', S._nthTradingDay(rows,y,2,1)); }));
-      add(best('exit','january_barometer', function(y){ var i=S._lastTradingDay(rows,y,12); return i>=0 ? sig('exit','january_barometer',i) : sigEst('exit','january_barometer',y+'-12-30'); }));
+      add(best('entry','january_barometer', function(y){ return sigD('entry','january_barometer', _nthTD(y,2,1)); }));
+      add(best('exit','january_barometer', function(y){ return sigD('exit','january_barometer', _lastTD(y,12)); }));
 
       // ── Feiertag ──
-      // Santa Claus: Entry=3 HT vor Thanksgiving, Exit=5. HT Jan
+      // Santa Claus: 3 HT vor Thanksgiving → 5. HT Jan
       add(best('entry','santa_claus', function(y){
-        var thxIdx = S._nearestBackward(rows, S._thanksgiving(y));
-        return thxIdx >= 3 ? sig('entry','santa_claus', thxIdx - 3) : null;
+        var thxDate = S._thanksgiving(y);
+        // 3 HT vor Thanksgiving schaetzen
+        var dt = new Date(thxDate);
+        var count = 0;
+        while (count < 3) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
+        return sigD('entry','santa_claus', S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()));
       }));
-      add(best('exit','santa_claus', function(y){ return sig('exit','santa_claus', S._nthTradingDay(rows,y,1,5)); }));
+      add(best('exit','santa_claus', function(y){ return sigD('exit','santa_claus', _nthTD(y,1,5)); }));
 
-      // Ein-Tages-Feiertag: Entry=2 HT vor, Exit=1 HT vor Feiertag
-      var holidays = [[1,1,'Neujahr'],[2,15,'Presidents Day'],[4,10,'Karfreitag'],[5,25,'Memorial Day'],[7,4,'Independence Day'],[9,1,'Labor Day'],[11,25,'Thanksgiving'],[12,25,'Weihnachten']];
-      for (var hi = 0; hi < holidays.length; hi++) {
-        (function(h) {
-          add(best('entry','one_day_holiday', function(y){
-            var holIdx = S._nearestForward(rows, S._dateStr(y, h[0], h[1]));
-            return holIdx >= 2 ? sig('entry','one_day_holiday', holIdx - 2) : null;
-          }));
-        })(holidays[hi]);
+      // Ein-Tages-Feiertag + UHTS: fuer alle 8 US-Feiertage
+      var holDates = [[1,1],[2,17],[4,18],[5,26],[7,4],[9,1],[11,27],[12,25]];
+      for (var hi = 0; hi < holDates.length; hi++) {
+        (function(hm,hd) {
+          for (var yi = 0; yi < 2; yi++) {
+            var y = Y + yi;
+            var holStr = _nearFwd(y, hm, hd);
+            if (!holStr || holStr < todayStr) continue;
+            // 2 HT vor Feiertag (Ein-Tages-Feiertag Entry)
+            var dt = new Date(holStr);
+            var count = 0;
+            while (count < 2) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
+            var entry2 = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+            add(sigD('entry','one_day_holiday', entry2));
+            // 3 HT vor (UHTS Entry)
+            dt.setDate(dt.getDate() - 1);
+            while (!_isTradingDay(S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()))) dt.setDate(dt.getDate() - 1);
+            add(sigD('entry','uhts', S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate())));
+            break;
+          }
+        })(holDates[hi][0], holDates[hi][1]);
       }
 
-      // UHTS: Entry=3 HT vor, Exit=3 HT nach Feiertag
-      for (var hi = 0; hi < holidays.length; hi++) {
-        (function(h) {
-          add(best('entry','uhts', function(y){
-            var holIdx = S._nearestForward(rows, S._dateStr(y, h[0], h[1]));
-            return holIdx >= 3 ? sig('entry','uhts', holIdx - 3) : null;
-          }));
-        })(holidays[hi]);
-      }
+      // Post-Christmas
+      add(best('entry','post_christmas', function(y){ return sigD('entry','post_christmas', _nearFwd(y,12,26)); }));
+      add(best('exit','post_christmas', function(y){ return sigD('exit','post_christmas', _lastTD(y,12)); }));
 
-      // Post-Christmas: Entry=26. Dez, Exit=letzter HT Dez
-      add(best('entry','post_christmas', function(y){ return sig('entry','post_christmas', S._nearestForward(rows,S._dateStr(y,12,26))); }));
-      add(best('exit','post_christmas', function(y){ var i=S._lastTradingDay(rows,y,12); return i>=0 ? sig('exit','post_christmas',i) : null; }));
-
-      // ── Monat ──
-      // Month-End: Entry=vorletzter HT, Exit=4. HT Folgemonat (jeden Monat!)
-      for (var m = today.getMonth() + 1; m <= today.getMonth() + 3; m++) {
-        var mm = ((m - 1) % 12) + 1, yy = Y + Math.floor((m - 1) / 12);
-        add(sig('entry','month_end', S._nthLastTradingDay(rows,yy,mm,2)));
+      // ── Monat (naechste 3 Monate) ──
+      for (var mi = 0; mi < 3; mi++) {
+        var futM = today.getMonth() + 1 + mi; // 1-basiert
+        var mm = ((futM - 1) % 12) + 1;
+        var yy = Y + Math.floor((futM - 1) / 12);
+        // Month-End
+        add(sigD('entry','month_end', _lastTD(yy, mm, 2)));
         var nm = mm === 12 ? 1 : mm + 1, ny = mm === 12 ? yy + 1 : yy;
-        add(sig('exit','month_end', S._nthTradingDay(rows,ny,nm,4)));
-      }
-
-      // 2. Handelstag: Entry=1. HT, Exit=2. HT (jeden Monat!)
-      for (var m = today.getMonth() + 1; m <= today.getMonth() + 3; m++) {
-        var mm = ((m - 1) % 12) + 1, yy = Y + Math.floor((m - 1) / 12);
-        add(sig('entry','second_trading_day', S._nthTradingDay(rows,yy,mm,1)));
-        add(sig('exit','second_trading_day', S._nthTradingDay(rows,yy,mm,2)));
-      }
-
-      // Monthly 10: Entry=1. HT, Exit=4. HT + Entry=9. HT, Exit=12. HT (jeden Monat)
-      for (var m = today.getMonth() + 1; m <= today.getMonth() + 3; m++) {
-        var mm = ((m - 1) % 12) + 1, yy = Y + Math.floor((m - 1) / 12);
-        add(sig('entry','monthly_10', S._nthTradingDay(rows,yy,mm,1)));
-        add(sig('entry','monthly_10', S._nthTradingDay(rows,yy,mm,9)));
+        add(sigD('exit','month_end', _nthTD(ny, nm, 4)));
+        // 2. Handelstag
+        add(sigD('entry','second_trading_day', _nthTD(yy, mm, 1)));
+        add(sigD('exit','second_trading_day', _nthTD(yy, mm, 2)));
+        // Monthly 10
+        add(sigD('entry','monthly_10', _nthTD(yy, mm, 1)));
+        add(sigD('entry','monthly_10', _nthTD(yy, mm, 9)));
+        add(sigD('exit','monthly_10', _nthTD(yy, mm, 4)));
+        add(sigD('exit','monthly_10', _nthTD(yy, mm, 12)));
       }
 
       // ── Zyklus ──
-      // Midterm Election (nur Midterm-Jahre)
       var cyc = S._presidentialCycle(Y);
+      // Midterm Election
       if (cyc === 2) {
         var elDate = S._electionDay(Y);
-        var elIdx = S._nearestBackward(rows, elDate);
-        if (elIdx >= 5) add(sig('entry','midterm_election', elIdx - 5));
+        var dt = new Date(elDate);
+        var count = 0;
+        while (count < 5) { dt.setDate(dt.getDate() - 1); var ds = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (_isTradingDay(ds)) count++; }
+        add(sigD('entry','midterm_election', S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate())));
       }
-
-      // UECS: diverse Phasen
-      if (cyc === 3) { add(sig('entry','uecs', S._nthTradingDay(rows,Y,3,1))); add(sig('entry','uecs', S._nthTradingDay(rows,Y,11,1))); }
-      if (cyc === 4) { add(sig('entry','uecs', S._nthTradingDay(rows,Y,6,1))); }
-
-      // Mid-Decade (nur x4 Jahre)
-      if (Y % 10 === 4) add(sig('entry','mid_decade', S._nearestForward(rows,S._dateStr(Y,9,30))));
-      if (Y % 10 === 6) { var i=S._lastTradingDay(rows,Y,3); add(i>=0 ? sig('exit','mid_decade',i) : sigEst('exit','mid_decade',Y+'-03-30')); }
-
-      // 40-Wochen + 212-Wochen Zyklen
-      var msPerDay = 86400000;
+      // UECS
+      if (cyc === 3) { add(sigD('entry','uecs', _nthTD(Y,3,1))); add(sigD('entry','uecs', _nthTD(Y,11,1))); }
+      if (cyc === 4) { add(sigD('entry','uecs', _nthTD(Y,6,1))); }
+      // Mid-Decade
+      if (Y % 10 === 4) add(sigD('entry','mid_decade', _nearFwd(Y,9,30)));
+      if (Y % 10 === 6) add(sigD('exit','mid_decade', _lastTD(Y,3)));
       // 40-Wochen
-      var ref40 = new Date(1967, 3, 21).getTime(), cyc40 = 280;
-      var cur40 = ref40; while (cur40 < today.getTime() - cyc40 * msPerDay) cur40 += cyc40 * msPerDay;
-      for (var ci = 0; ci < 3; ci++) {
+      var msPerDay = 86400000, ref40 = new Date(1967,3,21).getTime(), cyc40 = 280;
+      var cur40 = ref40; while (cur40 < today.getTime()) cur40 += cyc40 * msPerDay;
+      for (var ci = 0; ci < 2; ci++) {
         var d40 = new Date(cur40 + ci * cyc40 * msPerDay);
-        var ds40 = S._dateStr(d40.getFullYear(), d40.getMonth()+1, d40.getDate());
-        add(sig('entry','cycle_40_week', S._nearestForward(rows, ds40)));
+        add(sigD('entry','cycle_40_week', S._dateStr(d40.getFullYear(), d40.getMonth()+1, d40.getDate())));
       }
       // 212-Wochen
-      var ref212 = new Date(1938, 4, 16).getTime(), cyc212 = 1484;
-      var cur212 = ref212; while (cur212 < today.getTime() - cyc212 * msPerDay) cur212 += cyc212 * msPerDay;
+      var ref212 = new Date(1938,4,16).getTime(), cyc212 = 1484;
+      var cur212 = ref212; while (cur212 < today.getTime()) cur212 += cyc212 * msPerDay;
       var d212 = new Date(cur212);
-      var ds212 = S._dateStr(d212.getFullYear(), d212.getMonth()+1, d212.getDate());
-      add(sig('entry','cycle_212_week', S._nearestForward(rows, ds212)));
+      add(sigD('entry','cycle_212_week', S._dateStr(d212.getFullYear(), d212.getMonth()+1, d212.getDate())));
 
       // Deduplizieren (gleiche Strategie + gleicher Typ + gleiches Datum)
       var seen = {};
