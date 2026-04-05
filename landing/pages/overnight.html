@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Overnight vs. Intraday &mdash; SeasonAlpha</title>
+  <meta name="description" content="Overnight vs. Intraday Saisonalit&auml;t: Wo entsteht die Performance &mdash; nachts oder tags&uuml;ber? Monats- und Wochentag-Analyse.">
+  <meta property="og:title" content="Overnight vs. Intraday &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/overnight">
+  <link rel="canonical" href="https://seasonalpha.ai/overnight">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .on-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .on-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .on-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .on-table tr:hover td{background:rgba(232,168,32,.04)}
+    .on-table td.pos{color:var(--green)}
+    .on-table td.neg{color:var(--red)}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+    .apexcharts-xaxis text title{display:none}
+    .legend-row{display:flex;gap:1.5rem;margin-bottom:1rem;font-size:.75rem;color:var(--dim)}
+    .legend-row span::before{content:'';display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+    .legend-row .l-on::before{background:#60a5fa}
+    .legend-row .l-id::before{background:#f97316}
+    .legend-row .l-tot::before{background:#a3e635}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10" selected>10 Jahre</option>
+        <option value="15">15 Jahre</option>
+        <option value="20">20 Jahre</option>
+        <option value="25">25 Jahre</option>
+        <option value="30">30 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
+        <b style="color:#60a5fa">Overnight</b> = Close[t&minus;1] &rarr; Open[t]<br>
+        <b style="color:#f97316">Intraday</b> = Open[t] &rarr; Close[t]<br>
+        <b style="color:#a3e635">Total</b> = Close[t&minus;1] &rarr; Close[t]
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Overnight vs. Intraday</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- Monats-Chart -->
+      <details open id="sec-month" style="display:none">
+        <summary>&Oslash; Rendite nach Monat</summary>
+        <div class="content">
+          <div class="legend-row"><span class="l-on">Overnight</span><span class="l-id">Intraday</span><span class="l-tot">Total</span></div>
+          <div id="chart-month"></div>
+        </div>
+      </details>
+
+      <!-- Wochentag-Chart -->
+      <details open id="sec-weekday" style="display:none">
+        <summary>&Oslash; Rendite nach Wochentag</summary>
+        <div class="content">
+          <div class="legend-row"><span class="l-on">Overnight</span><span class="l-id">Intraday</span><span class="l-tot">Total</span></div>
+          <div id="chart-weekday"></div>
+        </div>
+      </details>
+
+      <!-- Kumulierter Jahresverlauf -->
+      <details open id="sec-cumulative" style="display:none">
+        <summary>Kumulierter Jahresverlauf</summary>
+        <div class="content"><div id="chart-cumulative"></div></div>
+      </details>
+
+      <!-- Heatmap -->
+      <details id="sec-heatmap" style="display:none">
+        <summary>Heatmap: Monat &times; Wochentag</summary>
+        <div class="content">
+          <label style="font-size:.75rem;color:var(--muted)">Return-Typ:
+            <select id="sel-heatmap-type" style="padding:.25rem .4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem">
+              <option value="overnight">Overnight</option>
+              <option value="intraday">Intraday</option>
+              <option value="total" selected>Total</option>
+            </select>
+          </label>
+          <div id="chart-heatmap"></div>
+        </div>
+      </details>
+
+      <!-- Statistik -->
+      <details id="sec-stats" style="display:none">
+        <summary>Statistik &amp; Top/Flop Monate</summary>
+        <div class="content" id="content-stats"></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
+            <li><b>Ben&ouml;tigt:</b> Open + Close Kurse (OHLC)</li>
+            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
+          </ul>
+          <h3>Berechnung</h3>
+          <ul>
+            <li><b>Overnight:</b> (Open[t] / Close[t&minus;1] &minus; 1) &times; 100 &mdash; Return &uuml;ber Nacht (Gap)</li>
+            <li><b>Intraday:</b> (Close[t] / Open[t] &minus; 1) &times; 100 &mdash; Return w&auml;hrend der Handelssession</li>
+            <li><b>Total:</b> Overnight + Intraday (Residual-Ansatz, kein cross-day OHLC)</li>
+            <li><b>Kumuliert:</b> Produkt der t&auml;glichen (1 + r/100), gruppiert nach Tag des Jahres</li>
+          </ul>
+          <h3>Interpretation</h3>
+          <ul>
+            <li>Viele Indizes (SPY, QQQ) generieren den Gro&szlig;teil ihres Returns <b>overnight</b></li>
+            <li>Intraday-Trader verpassen diesen strukturellen Vorteil</li>
+            <li>Saisonale Muster k&ouml;nnen sich zwischen Overnight und Intraday unterscheiden</li>
+          </ul>
+          <h3>Hinweis</h3>
+          <ul>
+            <li>Open-Kurse bei Yahoo Finance sind nicht immer perfekt split-adjustiert</li>
+            <li>Die Trends sind dennoch statistisch aussagekr&auml;ftig &uuml;ber l&auml;ngere Zeitr&auml;ume</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var WEEKDAYS = ['Mo','Di','Mi','Do','Fr'];
+    var COL_ON = '#60a5fa', COL_ID = '#f97316', COL_TOT = '#a3e635';
+    var charts = {};
+    var currentTicker = 'SPY';
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
+    function showSections(show) {
+      ['sec-month','sec-weekday','sec-cumulative','sec-heatmap','sec-stats'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function destroyAll() {
+      ['month','weekday','cumulative','heatmap'].forEach(function(k) {
+        if (charts[k]) { charts[k].destroy(); charts[k] = null; }
+      });
+    }
+    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
+    function cc(v) { return v>=0?'pos':'neg'; }
+
+    // ── Fetch mit Open ────────────────────────────────────────────────────────
+    function fetchOHLC(ticker, dateFilter) {
+      var allRows = [];
+      var batchSize = 1000;
+      function batch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close&order=date' + (dateFilter || '');
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
+        }).then(function(r) {
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows) {
+            allRows = allRows.concat(rows);
+            if (cr) { var t = parseInt(cr.split('/')[1]); if (allRows.length < t) return batch(allRows.length); }
+            else if (rows.length === batchSize) return batch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+      return batch(0);
+    }
+
+    // ── Berechnung ────────────────────────────────────────────────────────────
+    function compute(rows) {
+      var data = [];
+      for (var i = 1; i < rows.length; i++) {
+        var prevClose = parseFloat(rows[i-1].close);
+        var open = parseFloat(rows[i].open);
+        var close = parseFloat(rows[i].close);
+        if (!prevClose || !open || !close) continue;
+        var d = new Date(rows[i].date);
+        data.push({
+          date: rows[i].date,
+          month: d.getMonth() + 1,
+          weekday: d.getDay() - 1, // 0=Mo..4=Fr
+          doy: Math.floor((d - new Date(d.getFullYear(),0,1)) / 86400000) + 1,
+          overnight: (open / prevClose - 1) * 100,
+          intraday: (close / open - 1) * 100,
+          total: (close / prevClose - 1) * 100
+        });
+      }
+      return data.filter(function(d) { return d.weekday >= 0 && d.weekday <= 4; });
+    }
+
+    function groupStats(data, key, vals) {
+      var result = {};
+      for (var v = 0; v < vals.length; v++) {
+        var filtered = data.filter(function(d) { return d[key] === vals[v]; });
+        result[vals[v]] = {
+          on_avg: filtered.length ? filtered.reduce(function(s,d){return s+d.overnight;},0)/filtered.length : 0,
+          id_avg: filtered.length ? filtered.reduce(function(s,d){return s+d.intraday;},0)/filtered.length : 0,
+          tot_avg: filtered.length ? filtered.reduce(function(s,d){return s+d.total;},0)/filtered.length : 0,
+          on_wr: filtered.length ? filtered.filter(function(d){return d.overnight>0;}).length/filtered.length*100 : 50,
+          id_wr: filtered.length ? filtered.filter(function(d){return d.intraday>0;}).length/filtered.length*100 : 50,
+          tot_wr: filtered.length ? filtered.filter(function(d){return d.total>0;}).length/filtered.length*100 : 50,
+          n: filtered.length
+        };
+      }
+      return result;
+    }
+
+    // ── Render: KPIs ──────────────────────────────────────────────────────────
+    function renderKPIs(data) {
+      var onSum = data.reduce(function(s,d){return s+d.overnight;},0);
+      var idSum = data.reduce(function(s,d){return s+d.intraday;},0);
+      var totSum = onSum + idSum;
+      var onPct = totSum !== 0 ? Math.round(onSum / totSum * 100) : 0;
+      var onAvg = data.reduce(function(s,d){return s+d.overnight;},0)/data.length;
+      var idAvg = data.reduce(function(s,d){return s+d.intraday;},0)/data.length;
+      $kpi.innerHTML =
+        kpi('Handelstage', data.length) +
+        kpi('Overnight Anteil', onPct + '%', onPct > 50 ? 'kpi__value--green' : '') +
+        kpi('\u00D8 Overnight/Tag', fmtPct(onAvg, 4), onAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('\u00D8 Intraday/Tag', fmtPct(idAvg, 4), idAvg >= 0 ? 'kpi__value--green' : 'kpi__value--red');
+    }
+
+    // ── Render: Monatschart (grouped bar) ─────────────────────────────────────
+    function renderMonthChart(data) {
+      var stats = groupStats(data, 'month', [1,2,3,4,5,6,7,8,9,10,11,12]);
+      var onData = [], idData = [], totData = [];
+      for (var m = 1; m <= 12; m++) {
+        onData.push(parseFloat(stats[m].on_avg.toFixed(4)));
+        idData.push(parseFloat(stats[m].id_avg.toFixed(4)));
+        totData.push(parseFloat(stats[m].tot_avg.toFixed(4)));
+      }
+      if (charts.month) charts.month.destroy();
+      charts.month = new ApexCharts(document.getElementById('chart-month'), {
+        series: [
+          { name: 'Overnight', data: onData },
+          { name: 'Intraday', data: idData },
+          { name: 'Total', data: totData }
+        ],
+        chart: Object.assign({ type: 'bar', height: 380 }, SA.chartTheme.chart),
+        colors: [COL_ON, COL_ID, COL_TOT],
+        plotOptions: { bar: { columnWidth: '80%', borderRadius: 2 } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: MONTHS, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Overnight vs. Intraday nach Monat', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.month.render();
+    }
+
+    // ── Render: Wochentag-Chart ───────────────────────────────────────────────
+    function renderWeekdayChart(data) {
+      var stats = groupStats(data, 'weekday', [0,1,2,3,4]);
+      var onData = [], idData = [], totData = [];
+      for (var w = 0; w < 5; w++) {
+        onData.push(parseFloat(stats[w].on_avg.toFixed(4)));
+        idData.push(parseFloat(stats[w].id_avg.toFixed(4)));
+        totData.push(parseFloat(stats[w].tot_avg.toFixed(4)));
+      }
+      if (charts.weekday) charts.weekday.destroy();
+      charts.weekday = new ApexCharts(document.getElementById('chart-weekday'), {
+        series: [
+          { name: 'Overnight', data: onData },
+          { name: 'Intraday', data: idData },
+          { name: 'Total', data: totData }
+        ],
+        chart: Object.assign({ type: 'bar', height: 340 }, SA.chartTheme.chart),
+        colors: [COL_ON, COL_ID, COL_TOT],
+        plotOptions: { bar: { columnWidth: '70%', borderRadius: 2 } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: WEEKDAYS, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Overnight vs. Intraday nach Wochentag', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.weekday.render();
+    }
+
+    // ── Render: Kumulierter Jahresverlauf ──────────────────────────────────────
+    function renderCumulative(data) {
+      // Gruppiere nach DOY, berechne Ø
+      var doyMap = {};
+      for (var i = 0; i < data.length; i++) {
+        var d = data[i].doy;
+        if (!doyMap[d]) doyMap[d] = { on: [], id: [], tot: [] };
+        doyMap[d].on.push(data[i].overnight);
+        doyMap[d].id.push(data[i].intraday);
+        doyMap[d].tot.push(data[i].total);
+      }
+      var doys = Object.keys(doyMap).map(Number).sort(function(a,b){return a-b;});
+      var onCum = 0, idCum = 0, totCum = 0;
+      var onSeries = [0], idSeries = [0], totSeries = [0], labels = [0];
+      for (var i = 0; i < doys.length; i++) {
+        var d = doyMap[doys[i]];
+        var onAvg = d.on.reduce(function(s,v){return s+v;},0) / d.on.length;
+        var idAvg = d.id.reduce(function(s,v){return s+v;},0) / d.id.length;
+        var totAvg = d.tot.reduce(function(s,v){return s+v;},0) / d.tot.length;
+        onCum += onAvg; idCum += idAvg; totCum += totAvg;
+        onSeries.push(parseFloat(onCum.toFixed(3)));
+        idSeries.push(parseFloat(idCum.toFixed(3)));
+        totSeries.push(parseFloat(totCum.toFixed(3)));
+        labels.push(doys[i]);
+      }
+      if (charts.cumulative) charts.cumulative.destroy();
+      charts.cumulative = new ApexCharts(document.getElementById('chart-cumulative'), {
+        series: [
+          { name: 'Overnight', data: onSeries },
+          { name: 'Intraday', data: idSeries },
+          { name: 'Total', data: totSeries }
+        ],
+        chart: Object.assign({ type: 'line', height: 400 }, SA.chartTheme.chart),
+        stroke: { width: 2.5, curve: 'straight' },
+        colors: [COL_ON, COL_ID, COL_TOT],
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: {
+          type: 'numeric', tickAmount: 12,
+          labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) {
+            var m = Math.floor((v - 1) / 21); return MONTHS[m] || '';
+          } }
+        },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(1) + '%'; } }, title: { text: 'Kum. \u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: Object.assign({}, SA.chartTheme.legend, { position: 'top' }),
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Kumuliert: Overnight vs. Intraday', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.cumulative.render();
+    }
+
+    // ── Render: Heatmap ───────────────────────────────────────────────────────
+    function renderHeatmap(data) {
+      var type = document.getElementById('sel-heatmap-type').value;
+      var key = type === 'overnight' ? 'overnight' : type === 'intraday' ? 'intraday' : 'total';
+      var series = [];
+      for (var w = 4; w >= 0; w--) {
+        var row = [];
+        for (var m = 1; m <= 12; m++) {
+          var filtered = data.filter(function(d) { return d.weekday === w && d.month === m; });
+          var avg = filtered.length ? filtered.reduce(function(s,d){return s+d[key];},0)/filtered.length : 0;
+          row.push({ x: MONTHS[m-1], y: parseFloat(avg.toFixed(3)) });
+        }
+        series.push({ name: WEEKDAYS[w], data: row });
+      }
+      if (charts.heatmap) charts.heatmap.destroy();
+      charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: 280 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -0.1, color: '#6b0f0f', name: 'Negativ' },
+          { from: -0.1, to: -0.03, color: '#6b3030', name: 'Leicht neg.' },
+          { from: -0.03, to: 0.03, color: '#2a2a2a', name: 'Neutral' },
+          { from: 0.03, to: 0.1, color: '#1a4a2a', name: 'Leicht pos.' },
+          { from: 0.1, to: 99, color: '#0f6b2f', name: 'Positiv' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        dataLabels: { enabled: true, style: { fontSize: '9px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(3) + '%' : ''; } },
+        legend: { show: false },
+        title: { text: type.charAt(0).toUpperCase() + type.slice(1) + ' \u2014 Monat \u00D7 Wochentag', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.heatmap.render();
+    }
+
+    // ── Render: Statistik + Top/Flop ──────────────────────────────────────────
+    function renderStats(data) {
+      var types = [
+        { key: 'overnight', label: 'Overnight (C\u2192O)', color: COL_ON },
+        { key: 'intraday', label: 'Intraday (O\u2192C)', color: COL_ID },
+        { key: 'total', label: 'Total (C\u2192C)', color: COL_TOT }
+      ];
+
+      var html = '<h3>Gesamtstatistik</h3>';
+      html += '<table class="on-table"><thead><tr><th>Typ</th><th>\u00D8 Return</th><th>Win-Rate</th><th>Std.Abw.</th><th>Summe</th><th>Tage</th></tr></thead><tbody>';
+      for (var t = 0; t < types.length; t++) {
+        var vals = data.map(function(d) { return d[types[t].key]; });
+        var avg = vals.reduce(function(s,v){return s+v;},0) / vals.length;
+        var sum = vals.reduce(function(s,v){return s+v;},0);
+        var wins = vals.filter(function(v){return v>0;}).length;
+        var mean = avg;
+        var sq = vals.reduce(function(s,v){return s+(v-mean)*(v-mean);},0)/(vals.length-1);
+        var std = Math.sqrt(sq);
+        html += '<tr><td style="color:' + types[t].color + ';font-weight:600">' + types[t].label + '</td>';
+        html += '<td class="' + cc(avg) + '">' + fmtPct(avg, 4) + '</td>';
+        html += '<td>' + (wins/vals.length*100).toFixed(1) + '%</td>';
+        html += '<td>' + std.toFixed(3) + '%</td>';
+        html += '<td class="' + cc(sum) + '">' + fmtPct(sum, 1) + '</td>';
+        html += '<td>' + vals.length + '</td></tr>';
+      }
+      html += '</tbody></table>';
+
+      // Top/Flop Monate
+      html += '<h3 style="margin-top:1.5rem">Top &amp; Flop Monate</h3>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">';
+      for (var t = 0; t < types.length; t++) {
+        var monthly = {};
+        for (var m = 1; m <= 12; m++) {
+          var vals = data.filter(function(d){return d.month===m;}).map(function(d){return d[types[t].key];});
+          monthly[m] = vals.length ? vals.reduce(function(s,v){return s+v;},0)/vals.length : 0;
+        }
+        var best = 1, worst = 1;
+        for (var m = 2; m <= 12; m++) {
+          if (monthly[m] > monthly[best]) best = m;
+          if (monthly[m] < monthly[worst]) worst = m;
+        }
+        html += '<div style="text-align:center"><div style="color:' + types[t].color + ';font-weight:700;font-size:.875rem;margin-bottom:.5rem">' + types[t].label + '</div>';
+        html += '<div style="color:var(--green);font-size:.8125rem">Best: <b>' + MONTHS[best-1] + '</b> ' + fmtPct(monthly[best]) + '</div>';
+        html += '<div style="color:var(--red);font-size:.8125rem">Worst: <b>' + MONTHS[worst-1] + '</b> ' + fmtPct(monthly[worst]) + '</div></div>';
+      }
+      html += '</div>';
+
+      document.getElementById('content-stats').innerHTML = html;
+    }
+
+    // ── Main ──────────────────────────────────────────────────────────────────
+    var _cachedData = null;
+
+    function loadTicker(ticker) {
+      currentTicker = ticker;
+      document.getElementById('title-ticker').textContent = ticker;
+      var yearsVal = document.getElementById('sel-years').value;
+      var dateFilter = '';
+      if (yearsVal !== 'max') {
+        var minYear = new Date().getFullYear() - parseInt(yearsVal);
+        dateFilter = '&date=gte.' + minYear + '-01-01';
+      }
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      destroyAll();
+      $kpi.innerHTML = '';
+
+      fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!rows || rows.length < 50) {
+          showError('Zu wenig Daten f\u00FCr ' + ticker + ' (' + (rows ? rows.length : 0) + ' Zeilen). Open-Kurse vorhanden?');
+          $loading.style.display = 'none';
+          return;
+        }
+        // Filter: nur Rows mit open
+        rows = rows.filter(function(r) { return r.open != null && r.open > 0; });
+        if (rows.length < 50) {
+          showError(ticker + ': Nicht gen\u00FCgend OHLC-Daten (Open-Kurse fehlen).');
+          $loading.style.display = 'none';
+          return;
+        }
+
+        var data = compute(rows);
+        _cachedData = data;
+
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        renderKPIs(data);
+        renderMonthChart(data);
+        renderWeekdayChart(data);
+        renderCumulative(data);
+        renderHeatmap(data);
+        renderStats(data);
+        showSections(true);
+        $loading.style.display = 'none';
+      }).catch(function(err) {
+        showError('Fehler: ' + err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t) { loadTicker(t); });
+    document.getElementById('sel-years').addEventListener('change', function() { loadTicker(currentTicker); });
+    document.getElementById('sel-heatmap-type').addEventListener('change', function() { if (_cachedData) renderHeatmap(_cachedData); });
+
+    // Auto-Load
+    loadTicker('SPY');
+
+  })();
+  </script>
+
+</body>
+</html>
