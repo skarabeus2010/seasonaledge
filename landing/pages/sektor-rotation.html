@@ -181,7 +181,9 @@
     ];
 
     var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var MONTHS_FULL = ['Januar','Februar','M\u00E4rz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
     var charts = {};
+    var _cachedSectorData = null; // Cache fuer geladene Daten
 
     // ── DOM ───────────────────────────────────────────────────────────────────
     var $loading = document.getElementById('loading');
@@ -215,11 +217,6 @@
       lbl.style.marginBottom = '2px';
       lbl.innerHTML = '<input type="checkbox" data-ticker="' + s.ticker + '" checked> ' + s.ticker + ' <span style="color:var(--muted)">(' + s.name + ')</span>';
       togglesEl.appendChild(lbl);
-    });
-
-    document.getElementById('chk-all').addEventListener('change', function() {
-      var checked = this.checked;
-      togglesEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = checked; });
     });
 
     function getSelectedTickers() {
@@ -283,10 +280,12 @@
     }
 
     // ── Render: Rotationssignal KPIs ──────────────────────────────────────────
-    function renderRotation(sectorData) {
+    function renderRotation(sectorData, tickers) {
       var currentMonth = new Date().getMonth() + 1;
       var ranking = [];
-      for (var ticker in sectorData) {
+      for (var i = 0; i < tickers.length; i++) {
+        var ticker = tickers[i];
+        if (!sectorData[ticker]) continue;
         var avg = sectorData[ticker].seasonality[currentMonth];
         if (avg != null) ranking.push({ ticker: ticker, avg: avg });
       }
@@ -300,7 +299,8 @@
         var cls = top4[i].avg >= 0 ? 'kpi__value--green' : 'kpi__value--red';
         html += kpi('#' + (i+1) + ' ' + top4[i].ticker, fmtPct(top4[i].avg), cls);
       }
-      $kpi.innerHTML = '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem;text-align:left">Rotationssignal <b style="color:var(--accent)">' + MONTHS[currentMonth-1] + '</b>: Historisch st\u00E4rkste Sektoren</div>' + html;
+      $kpi.style.justifyContent = 'flex-start';
+      $kpi.innerHTML = '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem;width:100%">Rotationssignal <b style="color:var(--accent)">' + MONTHS_FULL[currentMonth-1] + '</b>: Historisch st\u00E4rkste Sektoren</div>' + html;
     }
 
     // ── Render: Heatmap ───────────────────────────────────────────────────────
@@ -341,7 +341,7 @@
     // ── Render: Top & Flop ────────────────────────────────────────────────────
     function renderTopFlop(sectorData, tickers) {
       var curM = new Date().getMonth() + 1;
-      document.getElementById('topflop-title').innerHTML = 'Top &amp; Flop Sektoren &mdash; <b>' + MONTHS[curM-1] + '</b> hervorgehoben';
+      document.getElementById('topflop-title').innerHTML = 'Top &amp; Flop Sektoren &mdash; ' + MONTHS_FULL[curM-1];
       var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">';
 
       // Top 3
@@ -354,7 +354,7 @@
           if (v != null) ranking.push({ ticker: tickers[i], avg: v });
         }
         ranking.sort(function(a,b){ return b.avg - a.avg; });
-        var hl = m === curM ? ' style="background:rgba(232,168,32,.08)"' : '';
+        var hl = m === curM ? ' style="background:rgba(232,168,32,.1);font-weight:700"' : '';
         html += '<tr' + hl + '><td><b>' + MONTHS[m-1] + '</b></td>';
         for (var r = 0; r < 3; r++) {
           if (ranking[r]) {
@@ -375,7 +375,7 @@
           if (v != null) ranking.push({ ticker: tickers[i], avg: v });
         }
         ranking.sort(function(a,b){ return a.avg - b.avg; });
-        var hl = m === curM ? ' style="background:rgba(232,168,32,.08)"' : '';
+        var hl = m === curM ? ' style="background:rgba(232,168,32,.1);font-weight:700"' : '';
         html += '<tr' + hl + '><td><b>' + MONTHS[m-1] + '</b></td>';
         for (var r = 0; r < 3; r++) {
           if (ranking[r]) {
@@ -521,16 +521,10 @@
         var firstTicker = Object.keys(sectorData)[0];
         SA.renderTradingDayHeader('trading-day-header', loadedCount + ' Sektoren', sectorData[firstTicker].rows);
 
-        // Nur geladene Ticker in Reihenfolge
-        var loadedTickers = tickers.filter(function(t) { return sectorData[t]; });
+        // Cache speichern
+        _cachedSectorData = sectorData;
 
-        renderRotation(sectorData);
-        renderHeatmap(sectorData, loadedTickers);
-        renderTopFlop(sectorData, loadedTickers);
-        renderLine(sectorData, loadedTickers);
-        renderWinRate(sectorData, loadedTickers);
-
-        showSections(true);
+        rerender();
         $loading.style.display = 'none';
       }).catch(function(err) {
         showError('Fehler: ' + err.message);
@@ -538,9 +532,33 @@
       });
     }
 
+    // ── Re-Render (nutzt Cache, reagiert auf Checkbox-Änderungen) ─────────
+    function rerender() {
+      if (!_cachedSectorData) return;
+      var selected = getSelectedTickers();
+      var loadedTickers = selected.filter(function(t) { return _cachedSectorData[t]; });
+      if (loadedTickers.length < 1) { showSections(false); $kpi.innerHTML = ''; return; }
+
+      destroyAll();
+      renderRotation(_cachedSectorData, loadedTickers);
+      renderHeatmap(_cachedSectorData, loadedTickers);
+      renderTopFlop(_cachedSectorData, loadedTickers);
+      renderLine(_cachedSectorData, loadedTickers);
+      renderWinRate(_cachedSectorData, loadedTickers);
+      showSections(true);
+    }
+
     // ── Events ────────────────────────────────────────────────────────────────
     document.getElementById('btn-analyze').addEventListener('click', runAnalysis);
     document.getElementById('sel-years').addEventListener('change', runAnalysis);
+
+    // Checkboxen → sofort re-rendern (ohne Neuladen)
+    togglesEl.addEventListener('change', rerender);
+    document.getElementById('chk-all').addEventListener('change', function() {
+      var checked = this.checked;
+      togglesEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = checked; });
+      rerender();
+    });
 
     // Auto-Load
     runAnalysis();
