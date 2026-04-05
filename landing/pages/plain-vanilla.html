@@ -480,12 +480,13 @@
         return h;
       }
 
-      // Exchange-Erkennung
-      var isDE = /^\^GDAXI|^(SIE|SAP|ALV|BAS|BAY|DTE|MBG|BMW|IFX|ADS|HEN3|MRK|FRE|VOW3|RWE|EON|HEI|FME|MTX|DBK|LIN|MUV2|CON|VNA|SRT3|BNR|PUM|ZAL|LEG|TKA|HNR1|ENR|AIR|DHL)\.DE$/.test(currentTicker);
+      // Exchange-Erkennung: DE wenn Ticker auf .DE endet oder ^GDAXI/^SDAXI/^MDAXI/^TECDAX
+      var isDE = /\.DE$/i.test(currentTicker) || /\^(GDAXI|SDAXI|MDAXI|TECDAX)/i.test(currentTicker);
 
       var _holidays = isDE
         ? Object.assign({}, _xetraHolidays(Y), _xetraHolidays(Y+1))
         : Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
+      console.log('[Signale] Ticker:', currentTicker, 'isDE:', isDE, '1. Mai Holiday:', !!_holidays['2026-05-01']);
 
       function _isTradingDay(dateStr) {
         var d = new Date(dateStr);
