@@ -71,7 +71,7 @@
       </select>
 
       <h3>Horizonte (Tage)</h3>
-      <input type="text" id="inp-horizons" value="1, 5, 10, 20, 60" style="font-family:var(--f-m);font-size:.75rem;width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px">
+      <input type="text" id="inp-horizons" value="0, 1, 5, 10, 20, 60" style="font-family:var(--f-m);font-size:.75rem;width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px">
 
       <hr>
       <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze">Analysieren</button>
@@ -121,6 +121,15 @@
         </div>
       </details>
 
+      <!-- Seasonal Breakdown -->
+      <details open id="sec-seasonal" style="display:none">
+        <summary>Saisonaler Breakdown: Monat &times; Horizont</summary>
+        <div class="content">
+          <p class="box-info">In welchen Monaten treffen Shocks am h&auml;rtesten? Durchschnittliche Ziel-Rendite nach Monat des Shock-Events.</p>
+          <div id="chart-seasonal"></div>
+        </div>
+      </details>
+
       <!-- Event List -->
       <details id="sec-events" style="display:none">
         <summary id="event-summary">Alle Shock-Events anzeigen</summary>
@@ -134,10 +143,12 @@
           <p class="box-info">
             <b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist.<br>
             <b>Richtung:</b> &bdquo;Kurseinbruch&rdquo; filtert nur negative Renditen &le; &minus;X%, &bdquo;Kurssprung&rdquo; nur positive &ge; +X%, &bdquo;Beides&rdquo; beides &ge; |X%|.<br>
+            <b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion).<br>
             <b>Horizonte:</b> F&uuml;r jedes Shock-Event wird die Rendite des Ziel-Assets (B) nach N Handelstagen berechnet (Close-to-Close).<br>
             <b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset.<br>
             <b>Heatmap:</b> Zeigt die Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte.<br>
-            <b>Scatter:</b> Jeder Punkt = ein Shock-Event. X-Achse = Trigger-Tagesrendite, Y-Achse = Ziel-Rendite nach N Tagen.<br>
+            <b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Trigger-Shocks zu st&auml;rkeren Reaktionen f&uuml;hren.<br>
+            <b>Saisonaler Breakdown:</b> Heatmap Monat &times; Horizont &mdash; in welchen Monaten treffen Shocks am h&auml;rtesten?<br>
             <b>Datenquelle:</b> Supabase (263 Basiswerte, t&auml;glich aktualisiert).
           </p>
         </div>
@@ -193,14 +204,14 @@
     }
 
     function showSections(show) {
-      ['sec-summary','sec-bar','sec-scatter','sec-heatmap','sec-events'].forEach(function(id) {
+      ['sec-summary','sec-bar','sec-scatter','sec-heatmap','sec-seasonal','sec-events'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       $subtitle.style.display = show ? '' : 'none';
     }
 
     function destroyAll() {
-      ['bar','scatter','heatmap'].forEach(function(k) {
+      ['bar','scatter','heatmap','seasonal'].forEach(function(k) {
         if (charts[k]) { charts[k].destroy(); charts[k] = null; }
       });
     }
@@ -241,6 +252,32 @@
       var mean = arr.reduce(function(a,b){return a+b;},0) / arr.length;
       var sq = arr.reduce(function(a,v){return a + (v-mean)*(v-mean);},0) / (arr.length - 1);
       return Math.sqrt(sq);
+    }
+
+    // ── Linear Regression ──────────────────────────────────────────────────────
+    function linReg(points) {
+      var n = points.length;
+      if (n < 2) return null;
+      var sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
+      for (var i = 0; i < n; i++) {
+        sx += points[i].x; sy += points[i].y;
+        sxx += points[i].x * points[i].x;
+        sxy += points[i].x * points[i].y;
+        syy += points[i].y * points[i].y;
+      }
+      var denom = n * sxx - sx * sx;
+      if (denom === 0) return null;
+      var slope = (n * sxy - sx * sy) / denom;
+      var intercept = (sy - slope * sx) / n;
+      // R²
+      var ssRes = 0, ssTot = 0, meanY = sy / n;
+      for (var i = 0; i < n; i++) {
+        var pred = slope * points[i].x + intercept;
+        ssRes += (points[i].y - pred) * (points[i].y - pred);
+        ssTot += (points[i].y - meanY) * (points[i].y - meanY);
+      }
+      var r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+      return { slope: slope, intercept: intercept, r2: r2 };
     }
 
     // ── Core: findShocks ───────────────────────────────────────────────────────
@@ -291,12 +328,22 @@
           triggerReturnPct: shock.dailyReturnPct
         };
         for (var h = 0; h < horizons.length; h++) {
-          var futureIdx = idx + horizons[h];
-          if (futureIdx < targetRows.length) {
-            var futurePrice = parseFloat(targetRows[futureIdx].close);
-            ev['return_' + horizons[h] + 'd'] = (futurePrice / basePrice - 1) * 100;
+          if (horizons[h] === 0) {
+            // T=0: Tagesrendite des Targets am Shock-Tag
+            if (idx > 0) {
+              var prevClose = parseFloat(targetRows[idx - 1].close);
+              ev['return_0d'] = prevClose ? (basePrice / prevClose - 1) * 100 : null;
+            } else {
+              ev['return_0d'] = null;
+            }
           } else {
-            ev['return_' + horizons[h] + 'd'] = null;
+            var futureIdx = idx + horizons[h];
+            if (futureIdx < targetRows.length) {
+              var futurePrice = parseFloat(targetRows[futureIdx].close);
+              ev['return_' + horizons[h] + 'd'] = (futurePrice / basePrice - 1) * 100;
+            } else {
+              ev['return_' + horizons[h] + 'd'] = null;
+            }
           }
         }
         events.push(ev);
@@ -363,7 +410,7 @@
       for (var i = 0; i < result.summary.length; i++) {
         var s = result.summary[i];
         html += '<tr>';
-        html += '<td>' + s.horizon + ' Tage</td>';
+        html += '<td>' + (s.horizon === 0 ? 'T=0' : s.horizon + ' Tage') + '</td>';
         html += '<td class="' + colorClass(s.avg) + '">' + fmtPct(s.avg) + '</td>';
         html += '<td class="' + colorClass(s.med) + '">' + fmtPct(s.med) + '</td>';
         html += '<td>' + s.std.toFixed(2) + '%</td>';
@@ -379,7 +426,7 @@
 
     // ── Render: Bar chart ──────────────────────────────────────────────────────
     function renderBarChart(result, targetTicker) {
-      var cats = result.summary.map(function(s){return s.horizon + 'T';});
+      var cats = result.summary.map(function(s){return s.horizon === 0 ? 'T=0' : s.horizon + 'T';});
       var vals = result.summary.map(function(s){return parseFloat(s.avg.toFixed(2));});
 
       var config = {
@@ -408,7 +455,7 @@
       for (var i = 0; i < horizons.length; i++) {
         var opt = document.createElement('option');
         opt.value = horizons[i];
-        opt.textContent = horizons[i] + ' Tage';
+        opt.textContent = horizons[i] === 0 ? 'T=0' : horizons[i] + ' Tage';
         if (horizons[i] === 20 || i === Math.min(3, horizons.length - 1)) opt.selected = true;
         $scatterH.appendChild(opt);
       }
@@ -426,11 +473,25 @@
           }
         }
 
+        // Regression line
+        var reg = linReg(data);
+        var regSeries = [];
+        if (reg && data.length >= 5) {
+          var xs = data.map(function(d){return d.x;});
+          var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+          regSeries = [{ x: xMin, y: parseFloat((reg.slope * xMin + reg.intercept).toFixed(2)) },
+                       { x: xMax, y: parseFloat((reg.slope * xMax + reg.intercept).toFixed(2)) }];
+        }
+
         var config = {
-          series: [{ name: 'Reaktion', data: data }],
-          chart: Object.assign({ type: 'scatter', height: 400 }, SA.chartTheme.chart),
-          colors: [SA.COLORS.accent],
-          markers: { size: 5, strokeWidth: 0 },
+          series: [
+            { name: 'Reaktion', type: 'scatter', data: data },
+            { name: 'Regression (R\u00B2=' + (reg ? reg.r2.toFixed(3) : '—') + ')', type: 'line', data: regSeries }
+          ],
+          chart: Object.assign({ type: 'line', height: 400 }, SA.chartTheme.chart),
+          colors: [SA.COLORS.accent, SA.COLORS.red],
+          stroke: { width: [0, 2.5], curve: 'straight', dashArray: [0, 6] },
+          markers: { size: [5, 0], strokeWidth: 0 },
           grid: SA.chartTheme.grid,
           tooltip: {
             theme: 'dark',
@@ -518,6 +579,60 @@
       charts.heatmap.render();
     }
 
+    // ── Render: Seasonal Breakdown ───────────────────────────────────────────
+    function renderSeasonal(result, horizons, targetTicker) {
+      var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      // Group events by month
+      var byMonth = {};
+      for (var m = 0; m < 12; m++) byMonth[m] = [];
+      for (var i = 0; i < result.events.length; i++) {
+        var ev = result.events[i];
+        var d = new Date(ev.shockDate);
+        if (!isNaN(d)) byMonth[d.getMonth()].push(ev);
+      }
+      // Build series: rows = months (reversed), cols = horizons
+      var series = [];
+      for (var m = 11; m >= 0; m--) {
+        var data = [];
+        for (var h = 0; h < horizons.length; h++) {
+          var key = 'return_' + horizons[h] + 'd';
+          var vals = byMonth[m].map(function(e){return e[key];}).filter(function(v){return v != null && !isNaN(v);});
+          var avg = vals.length >= 2 ? vals.reduce(function(a,b){return a+b;},0) / vals.length : null;
+          data.push({ x: (horizons[h] === 0 ? 'T=0' : horizons[h] + 'T'), y: avg != null ? parseFloat(avg.toFixed(2)) : 0 });
+        }
+        series.push({ name: MONTHS[m] + ' (' + byMonth[m].length + ')', data: data });
+      }
+
+      var config = {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -2, color: '#6b0f0f', name: '< -2%' },
+          { from: -2, to: -1, color: '#8b1a1a', name: '-2% \u2013 -1%' },
+          { from: -1, to: -0.3, color: '#6b3030', name: '-1% \u2013 -0.3%' },
+          { from: -0.3, to: 0.3, color: '#2a2a2a', name: '\u00B10.3%' },
+          { from: 0.3, to: 1, color: '#1a4a2a', name: '0.3% \u2013 1%' },
+          { from: 1, to: 2, color: '#1a6b35', name: '1% \u2013 2%' },
+          { from: 2, to: 99, color: '#0f6b2f', name: '> 2%' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '10px' } } },
+        dataLabels: {
+          enabled: true,
+          style: { fontSize: '9px', colors: ['#e0e0e0'] },
+          formatter: function(v) { return v !== 0 ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : ''; }
+        },
+        title: { text: targetTicker + ' Reaktion nach Monat des Shocks', style: { color: '#fff', fontSize: '14px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        legend: { show: false }
+      };
+
+      var el = document.getElementById('chart-seasonal');
+      el.innerHTML = '';
+      if (charts.seasonal) charts.seasonal.destroy();
+      charts.seasonal = new ApexCharts(el, config);
+      charts.seasonal.render();
+    }
+
     // ── Render: Event list ─────────────────────────────────────────────────────
     function renderEventList(result, horizons, triggerTicker, targetTicker) {
       document.getElementById('event-summary').textContent = 'Alle ' + result.nEvents + ' Shock-Events anzeigen';
@@ -525,7 +640,7 @@
       var html = '<div style="max-height:400px;overflow-y:auto"><table class="shock-table"><thead><tr>';
       html += '<th>Datum</th><th>' + triggerTicker + ' %</th>';
       for (var h = 0; h < horizons.length; h++) {
-        html += '<th>' + targetTicker + ' +' + horizons[h] + 'T</th>';
+        html += '<th>' + targetTicker + ' ' + (horizons[h] === 0 ? 'T=0' : '+' + horizons[h] + 'T') + '</th>';
       }
       html += '</tr></thead><tbody>';
 
@@ -613,6 +728,7 @@
         renderBarChart(result, targetTicker);
         renderScatter(result, horizons, triggerTicker, targetTicker);
         renderHeatmap(triggerRows, targetRows, horizons, direction, triggerTicker, targetTicker);
+        renderSeasonal(result, horizons, targetTicker);
         renderEventList(result, horizons, triggerTicker, targetTicker);
 
         showSections(true);
