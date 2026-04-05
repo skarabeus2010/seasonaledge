@@ -470,16 +470,30 @@
       destroyAll();
       $kpi.innerHTML = '';
 
-      // Parallel alle Ticker laden
-      var promises = tickers.map(function(t) {
-        return SA.fetchAllPrices(t, dateFilter).then(function(rows) {
-          return { ticker: t, rows: rows };
-        }).catch(function() {
-          return { ticker: t, rows: [] };
-        });
-      });
+      // Sequenziell laden (3er-Batches, Supabase Free-Tier vertraegt kein 24x parallel)
+      var batchSize = 3;
+      var allResults = [];
 
-      Promise.all(promises).then(function(results) {
+      function loadBatch(startIdx) {
+        var batch = tickers.slice(startIdx, startIdx + batchSize);
+        if (!batch.length) return Promise.resolve();
+        var promises = batch.map(function(t) {
+          return SA.fetchAllPrices(t, dateFilter).then(function(rows) {
+            return { ticker: t, rows: rows };
+          }).catch(function() {
+            return { ticker: t, rows: [] };
+          });
+        });
+        return Promise.all(promises).then(function(results) {
+          allResults = allResults.concat(results);
+          if (startIdx + batchSize < tickers.length) {
+            return loadBatch(startIdx + batchSize);
+          }
+        });
+      }
+
+      loadBatch(0).then(function() {
+        var results = allResults;
         var sectorData = {};
         var loadedCount = 0;
 
