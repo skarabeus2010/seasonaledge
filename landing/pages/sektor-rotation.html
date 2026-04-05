@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sektor-Rotation &mdash; SeasonAlpha</title>
+  <meta name="description" content="Saisonale Sektor-Rotation: Welche US-Sektoren performen in welchem Monat am besten? Heatmap, Ranking, Jahresverlauf &mdash; 23 ETFs.">
+  <meta property="og:title" content="Sektor-Rotation &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/sektor-rotation">
+  <link rel="canonical" href="https://seasonalpha.ai/sektor-rotation">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .sector-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .sector-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .sector-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .sector-table tr:hover td{background:rgba(232,168,32,.04)}
+    .sector-table td.pos{color:var(--green)}
+    .sector-table td.neg{color:var(--red)}
+    .apexcharts-xaxis text title{display:none}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10">10 Jahre</option>
+        <option value="15" selected>15 Jahre</option>
+        <option value="20">20 Jahre</option>
+        <option value="25">25 Jahre</option>
+        <option value="30">30 Jahre</option>
+      </select>
+      <hr>
+      <h3>Sektoren</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all" checked> Alle / Keine</label>
+      <div id="sector-toggles" style="font-size:.8125rem;max-height:400px;overflow-y:auto"></div>
+      <hr>
+      <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze">Aktualisieren</button>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Sektor-Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Sektor-Rotation</b></h1>
+      <p class="page-caption">Welche US-Sektoren performen historisch in welchem Monat am besten?</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- Rotationssignal -->
+      <div class="kpi-row" id="kpi-rotation"></div>
+
+      <!-- Heatmap Rendite -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>Saisonale Heatmap &mdash; Monat &times; Sektor</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
+
+      <!-- Top & Flop -->
+      <details open id="sec-topflop" style="display:none">
+        <summary>Top &amp; Flop Sektoren pro Monat</summary>
+        <div class="content" id="content-topflop"></div>
+      </details>
+
+      <!-- Jahresverlauf -->
+      <details open id="sec-line" style="display:none">
+        <summary>Saisonaler Jahresverlauf (kumuliert)</summary>
+        <div class="content"><div id="chart-line"></div></div>
+      </details>
+
+      <!-- Win-Rate Heatmap -->
+      <details id="sec-winrate" style="display:none">
+        <summary>Win-Rate Heatmap</summary>
+        <div class="content"><div id="chart-winrate"></div></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li><b>23 US-Sektor-ETFs</b> &mdash; SPDR Select Sector + Spezial-ETFs</li>
+            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre, min. 5 Jahre f&uuml;r valide Berechnung</li>
+          </ul>
+          <h3>Ticker-&Uuml;bersicht</h3>
+          <table class="sector-table" style="margin-bottom:1rem">
+            <thead><tr><th>Ticker</th><th>Sektor / Branche</th><th>Typ</th></tr></thead>
+            <tbody>
+              <tr><td>XLK</td><td>Technology</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLF</td><td>Financials</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLE</td><td>Energy</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLV</td><td>Health Care</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLY</td><td>Consumer Discretionary</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLP</td><td>Consumer Staples</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLI</td><td>Industrials</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLB</td><td>Materials</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLU</td><td>Utilities</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLRE</td><td>Real Estate</td><td>SPDR Select Sector</td></tr>
+              <tr><td>XLC</td><td>Communication Services</td><td>SPDR Select Sector</td></tr>
+              <tr><td>SMH</td><td>Semiconductors</td><td>VanEck</td></tr>
+              <tr><td>SOXX</td><td>Semiconductors</td><td>iShares</td></tr>
+              <tr><td>XSD</td><td>Semiconductor (Equal Weight)</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>XBI</td><td>Biotech</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>XHB</td><td>Homebuilders</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>XME</td><td>Metals &amp; Mining</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>XOP</td><td>Oil &amp; Gas Exploration</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>XRT</td><td>Retail</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>KRE</td><td>Regional Banks</td><td>SPDR S&amp;P</td></tr>
+              <tr><td>IYT</td><td>Transportation</td><td>iShares</td></tr>
+              <tr><td>ITB</td><td>Home Construction</td><td>iShares</td></tr>
+              <tr><td>GDX</td><td>Gold Miners</td><td>VanEck</td></tr>
+              <tr><td>TAN</td><td>Solar Energy</td><td>Invesco</td></tr>
+            </tbody>
+          </table>
+          <h3>Berechnung</h3>
+          <ul>
+            <li><b>Monatsrendite:</b> Letzter Schlusskurs pro Monat &rarr; prozentuale Ver&auml;nderung zum Vormonat</li>
+            <li><b>Saisonalit&auml;t:</b> Durchschnittliche Monatsrendite &uuml;ber alle verf&uuml;gbaren Jahre (min. 5)</li>
+            <li><b>Rotationssignal:</b> Ranking der Sektoren nach &Oslash;-Rendite im aktuellen Monat</li>
+            <li><b>Win-Rate:</b> Anteil der Jahre mit positiver Rendite im jeweiligen Monat</li>
+            <li><b>Jahresverlauf:</b> Kumulierte monatliche Durchschnittsrenditen (Jan&ndash;Dez)</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ── Sektor-Definitionen ───────────────────────────────────────────────────
+    var SECTORS = [
+      { ticker:'XLK',  name:'Technology',           cat:'SPDR' },
+      { ticker:'XLF',  name:'Financials',           cat:'SPDR' },
+      { ticker:'XLE',  name:'Energy',               cat:'SPDR' },
+      { ticker:'XLV',  name:'Health Care',           cat:'SPDR' },
+      { ticker:'XLY',  name:'Consumer Discr.',       cat:'SPDR' },
+      { ticker:'XLP',  name:'Consumer Staples',      cat:'SPDR' },
+      { ticker:'XLI',  name:'Industrials',           cat:'SPDR' },
+      { ticker:'XLB',  name:'Materials',             cat:'SPDR' },
+      { ticker:'XLU',  name:'Utilities',             cat:'SPDR' },
+      { ticker:'XLRE', name:'Real Estate',           cat:'SPDR' },
+      { ticker:'XLC',  name:'Communication',         cat:'SPDR' },
+      { ticker:'SMH',  name:'Semiconductors',        cat:'Spezial' },
+      { ticker:'SOXX', name:'Semiconductors (iS)',   cat:'Spezial' },
+      { ticker:'XSD',  name:'Semiconductor (EW)',    cat:'Spezial' },
+      { ticker:'XBI',  name:'Biotech',              cat:'Spezial' },
+      { ticker:'XHB',  name:'Homebuilders',          cat:'Spezial' },
+      { ticker:'XME',  name:'Metals & Mining',       cat:'Spezial' },
+      { ticker:'XOP',  name:'Oil & Gas Expl.',       cat:'Spezial' },
+      { ticker:'XRT',  name:'Retail',               cat:'Spezial' },
+      { ticker:'KRE',  name:'Regional Banks',        cat:'Spezial' },
+      { ticker:'IYT',  name:'Transportation',        cat:'Spezial' },
+      { ticker:'ITB',  name:'Home Construction',     cat:'Spezial' },
+      { ticker:'GDX',  name:'Gold Miners',           cat:'Spezial' },
+      { ticker:'TAN',  name:'Solar Energy',          cat:'Spezial' }
+    ];
+
+    var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var charts = {};
+
+    // ── DOM ───────────────────────────────────────────────────────────────────
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-rotation');
+
+    function showError(msg) {
+      $error.textContent = msg; $error.style.display = 'block';
+      setTimeout(function(){ $error.style.display = 'none'; }, 8000);
+    }
+    function showSections(show) {
+      ['sec-heatmap','sec-topflop','sec-line','sec-winrate'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function destroyAll() {
+      ['heatmap','line','winrate'].forEach(function(k) {
+        if (charts[k]) { charts[k].destroy(); charts[k] = null; }
+      });
+    }
+    function kpi(label, value, cls) {
+      return '<div class="kpi"><span class="kpi__label">' + label + '</span><span class="kpi__value ' + (cls||'') + '">' + value + '</span></div>';
+    }
+    function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+
+    // ── Sidebar: Checkboxes ───────────────────────────────────────────────────
+    var togglesEl = document.getElementById('sector-toggles');
+    SECTORS.forEach(function(s) {
+      var lbl = document.createElement('label');
+      lbl.style.display = 'block';
+      lbl.style.marginBottom = '2px';
+      lbl.innerHTML = '<input type="checkbox" data-ticker="' + s.ticker + '" checked> ' + s.ticker + ' <span style="color:var(--muted)">(' + s.name + ')</span>';
+      togglesEl.appendChild(lbl);
+    });
+
+    document.getElementById('chk-all').addEventListener('change', function() {
+      var checked = this.checked;
+      togglesEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = checked; });
+    });
+
+    function getSelectedTickers() {
+      var tickers = [];
+      togglesEl.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb) {
+        tickers.push(cb.dataset.ticker);
+      });
+      return tickers;
+    }
+
+    // ── Core: Monatsrenditen berechnen ─────────────────────────────────────────
+    function calcMonthlyReturns(rows) {
+      // rows = [{date, close}] sortiert
+      // → {month: [return1, return2, ...]}
+      var byYearMonth = {};
+      for (var i = 0; i < rows.length; i++) {
+        var d = rows[i].date;
+        var ym = d.substring(0, 7); // YYYY-MM
+        byYearMonth[ym] = parseFloat(rows[i].close);
+      }
+      // Sortierte Keys
+      var keys = Object.keys(byYearMonth).sort();
+      var monthReturns = {};
+      for (var m = 1; m <= 12; m++) monthReturns[m] = [];
+      for (var i = 1; i < keys.length; i++) {
+        var prev = byYearMonth[keys[i-1]];
+        var cur  = byYearMonth[keys[i]];
+        if (!prev || !cur) continue;
+        var month = parseInt(keys[i].substring(5, 7));
+        var ret = (cur / prev - 1) * 100;
+        monthReturns[month].push(ret);
+      }
+      return monthReturns;
+    }
+
+    function calcSeasonality(monthReturns, minYears) {
+      var result = {};
+      for (var m = 1; m <= 12; m++) {
+        var vals = monthReturns[m];
+        if (vals.length >= minYears) {
+          result[m] = vals.reduce(function(a,b){return a+b;},0) / vals.length;
+        } else {
+          result[m] = null;
+        }
+      }
+      return result;
+    }
+
+    function calcWinRate(monthReturns, minYears) {
+      var result = {};
+      for (var m = 1; m <= 12; m++) {
+        var vals = monthReturns[m];
+        if (vals.length >= minYears) {
+          var wins = vals.filter(function(v){return v > 0;}).length;
+          result[m] = (wins / vals.length) * 100;
+        } else {
+          result[m] = null;
+        }
+      }
+      return result;
+    }
+
+    // ── Render: Rotationssignal KPIs ──────────────────────────────────────────
+    function renderRotation(sectorData) {
+      var currentMonth = new Date().getMonth() + 1;
+      var ranking = [];
+      for (var ticker in sectorData) {
+        var avg = sectorData[ticker].seasonality[currentMonth];
+        if (avg != null) ranking.push({ ticker: ticker, avg: avg });
+      }
+      ranking.sort(function(a,b){ return b.avg - a.avg; });
+
+      var html = '';
+      var top4 = ranking.slice(0, 4);
+      for (var i = 0; i < top4.length; i++) {
+        var s = SECTORS.filter(function(x){return x.ticker === top4[i].ticker;})[0];
+        var name = s ? s.name : top4[i].ticker;
+        var cls = top4[i].avg >= 0 ? 'kpi__value--green' : 'kpi__value--red';
+        html += kpi('#' + (i+1) + ' ' + top4[i].ticker, fmtPct(top4[i].avg), cls);
+      }
+      $kpi.innerHTML = '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Rotationssignal ' + MONTHS[currentMonth-1] + ': Historisch st\u00E4rkste Sektoren</div>' + html;
+    }
+
+    // ── Render: Heatmap ───────────────────────────────────────────────────────
+    function renderHeatmap(sectorData, tickers) {
+      // Series: reversed months, data = [{x: ticker, y: value}]
+      var series = [];
+      for (var m = 12; m >= 1; m--) {
+        var data = [];
+        for (var i = 0; i < tickers.length; i++) {
+          var v = sectorData[tickers[i]] ? sectorData[tickers[i]].seasonality[m] : null;
+          data.push({ x: tickers[i], y: v != null ? parseFloat(v.toFixed(2)) : 0 });
+        }
+        series.push({ name: MONTHS[m-1], data: data });
+      }
+
+      if (charts.heatmap) charts.heatmap.destroy();
+      charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -2, color: '#6b0f0f', name: '< -2%' },
+          { from: -2, to: -1, color: '#8b1a1a', name: '-2% \u2013 -1%' },
+          { from: -1, to: -0.3, color: '#6b3030', name: '-1% \u2013 -0.3%' },
+          { from: -0.3, to: 0.3, color: '#2a2a2a', name: '\u00B10.3%' },
+          { from: 0.3, to: 1, color: '#1a4a2a', name: '0.3% \u2013 1%' },
+          { from: 1, to: 2, color: '#1a6b35', name: '1% \u2013 2%' },
+          { from: 2, to: 99, color: '#0f6b2f', name: '> 2%' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '9px' }, rotate: -45, rotateAlways: true } },
+        dataLabels: { enabled: true, style: { fontSize: '8px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(1) : ''; } },
+        title: { text: '\u00D8 Monatsrendite pro Sektor', style: { color: '#fff', fontSize: '14px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        legend: { show: false }
+      });
+      charts.heatmap.render();
+    }
+
+    // ── Render: Top & Flop ────────────────────────────────────────────────────
+    function renderTopFlop(sectorData, tickers) {
+      var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">';
+
+      // Top 3
+      html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 3 pro Monat</h4>';
+      html += '<table class="sector-table"><thead><tr><th>Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
+      for (var m = 1; m <= 12; m++) {
+        var ranking = [];
+        for (var i = 0; i < tickers.length; i++) {
+          var v = sectorData[tickers[i]] ? sectorData[tickers[i]].seasonality[m] : null;
+          if (v != null) ranking.push({ ticker: tickers[i], avg: v });
+        }
+        ranking.sort(function(a,b){ return b.avg - a.avg; });
+        html += '<tr><td><b>' + MONTHS[m-1] + '</b></td>';
+        for (var r = 0; r < 3; r++) {
+          if (ranking[r]) {
+            html += '<td class="pos">' + ranking[r].ticker + ' ' + fmtPct(ranking[r].avg) + '</td>';
+          } else html += '<td>\u2014</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+
+      // Flop 3
+      html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 3 pro Monat</h4>';
+      html += '<table class="sector-table"><thead><tr><th>Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
+      for (var m = 1; m <= 12; m++) {
+        var ranking = [];
+        for (var i = 0; i < tickers.length; i++) {
+          var v = sectorData[tickers[i]] ? sectorData[tickers[i]].seasonality[m] : null;
+          if (v != null) ranking.push({ ticker: tickers[i], avg: v });
+        }
+        ranking.sort(function(a,b){ return a.avg - b.avg; });
+        html += '<tr><td><b>' + MONTHS[m-1] + '</b></td>';
+        for (var r = 0; r < 3; r++) {
+          if (ranking[r]) {
+            html += '<td class="neg">' + ranking[r].ticker + ' ' + fmtPct(ranking[r].avg) + '</td>';
+          } else html += '<td>\u2014</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+
+      html += '</div>';
+      document.getElementById('content-topflop').innerHTML = html;
+    }
+
+    // ── Render: Jahresverlauf ─────────────────────────────────────────────────
+    function renderLine(sectorData, tickers) {
+      var colors = ['#e8a820','#4d9fff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff922b','#20c997','#e64980','#748ffc','#f06595','#868e96'];
+      var series = [];
+      for (var i = 0; i < Math.min(tickers.length, 12); i++) {
+        var sd = sectorData[tickers[i]];
+        if (!sd) continue;
+        var cum = 0;
+        var data = [];
+        for (var m = 1; m <= 12; m++) {
+          cum += (sd.seasonality[m] || 0);
+          data.push(parseFloat(cum.toFixed(2)));
+        }
+        var s = SECTORS.filter(function(x){return x.ticker === tickers[i];})[0];
+        series.push({ name: tickers[i] + (s ? ' (' + s.name + ')' : ''), data: data });
+      }
+
+      if (charts.line) charts.line.destroy();
+      charts.line = new ApexCharts(document.getElementById('chart-line'), {
+        series: series,
+        chart: Object.assign({ type: 'line', height: 420 }, SA.chartTheme.chart),
+        stroke: { width: 2, curve: 'straight' },
+        colors: colors.slice(0, series.length),
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories: MONTHS, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(1) + '%'; } }, title: { text: 'Kum. \u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        legend: Object.assign({}, SA.chartTheme.legend, { position: 'bottom', horizontalAlign: 'center' }),
+        dataLabels: { enabled: false },
+        title: { text: 'Kumulierte saisonale Rendite', style: { color: '#fff', fontSize: '14px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.line.render();
+    }
+
+    // ── Render: Win-Rate Heatmap ──────────────────────────────────────────────
+    function renderWinRate(sectorData, tickers) {
+      var series = [];
+      for (var m = 12; m >= 1; m--) {
+        var data = [];
+        for (var i = 0; i < tickers.length; i++) {
+          var v = sectorData[tickers[i]] ? sectorData[tickers[i]].winRate[m] : null;
+          data.push({ x: tickers[i], y: v != null ? parseFloat(v.toFixed(0)) : 50 });
+        }
+        series.push({ name: MONTHS[m-1], data: data });
+      }
+
+      if (charts.winrate) charts.winrate.destroy();
+      charts.winrate = new ApexCharts(document.getElementById('chart-winrate'), {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: 0, to: 35, color: '#6b0f0f', name: '< 35%' },
+          { from: 35, to: 45, color: '#6b3030', name: '35-45%' },
+          { from: 45, to: 55, color: '#2a2a2a', name: '45-55%' },
+          { from: 55, to: 65, color: '#1a4a2a', name: '55-65%' },
+          { from: 65, to: 100, color: '#0f6b2f', name: '> 65%' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '9px' }, rotate: -45, rotateAlways: true } },
+        dataLabels: { enabled: true, style: { fontSize: '8px', colors: ['#e0e0e0'] }, formatter: function(v) { return v + '%'; } },
+        title: { text: 'Win-Rate pro Sektor und Monat', style: { color: '#fff', fontSize: '14px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        legend: { show: false }
+      });
+      charts.winrate.render();
+    }
+
+    // ── Main: runAnalysis ─────────────────────────────────────────────────────
+    function runAnalysis() {
+      var tickers = getSelectedTickers();
+      if (tickers.length < 2) { showError('Bitte mindestens 2 Sektoren ausw\u00E4hlen.'); return; }
+
+      var yearsBack = parseInt(document.getElementById('sel-years').value);
+      var now = new Date();
+      var minYear = now.getFullYear() - yearsBack;
+      var dateFilter = '&date=gte.' + minYear + '-01-01';
+      var minYears = Math.max(3, Math.floor(yearsBack / 3));
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      destroyAll();
+      $kpi.innerHTML = '';
+
+      // Parallel alle Ticker laden
+      var promises = tickers.map(function(t) {
+        return SA.fetchAllPrices(t, dateFilter).then(function(rows) {
+          return { ticker: t, rows: rows };
+        }).catch(function() {
+          return { ticker: t, rows: [] };
+        });
+      });
+
+      Promise.all(promises).then(function(results) {
+        var sectorData = {};
+        var loadedCount = 0;
+
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          if (!r.rows || r.rows.length < 50) continue;
+          var monthReturns = calcMonthlyReturns(r.rows);
+          sectorData[r.ticker] = {
+            seasonality: calcSeasonality(monthReturns, minYears),
+            winRate: calcWinRate(monthReturns, minYears),
+            rows: r.rows
+          };
+          loadedCount++;
+        }
+
+        if (loadedCount < 2) {
+          showError('Zu wenig Daten — nur ' + loadedCount + ' Sektoren geladen.');
+          $loading.style.display = 'none';
+          return;
+        }
+
+        // Trading Day Header (erster geladener Ticker)
+        var firstTicker = Object.keys(sectorData)[0];
+        SA.renderTradingDayHeader('trading-day-header', loadedCount + ' Sektoren', sectorData[firstTicker].rows);
+
+        // Nur geladene Ticker in Reihenfolge
+        var loadedTickers = tickers.filter(function(t) { return sectorData[t]; });
+
+        renderRotation(sectorData);
+        renderHeatmap(sectorData, loadedTickers);
+        renderTopFlop(sectorData, loadedTickers);
+        renderLine(sectorData, loadedTickers);
+        renderWinRate(sectorData, loadedTickers);
+
+        showSections(true);
+        $loading.style.display = 'none';
+      }).catch(function(err) {
+        showError('Fehler: ' + err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    document.getElementById('btn-analyze').addEventListener('click', runAnalysis);
+    document.getElementById('sel-years').addEventListener('change', runAnalysis);
+
+    // Auto-Load
+    runAnalysis();
+
+  })();
+  </script>
+
+</body>
+</html>
