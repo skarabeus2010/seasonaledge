@@ -401,13 +401,15 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Zentralbanken | `/zentralbanken` | app, charts, significance, indicators, streak | Fed/EZB/BoE/BoJ Event-Window, Streak, Termine aus Supabase |
 | Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
 
-### Offene HTML-Migrationen
+### Offene HTML-Migrationen (6 von 18)
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 13 | Disabled Pages (Shock✅, Sektor✅, Overnight✅, Zentralbanken✅, Feiertage✅, Rest: OPEX) | 741 | 5 | naechste |
-| 12 | Jahreszyklus | 1595 | 20 | |
-| 13 | Monatszyklus | 1412 | 26 | |
-| 14 | Wochentage | 1670 | 29 | |
+| 13 | TDOM Analyse | 507 | 4 | naechste |
+| 14 | Spot-Vol Beta | 516 | 4 | |
+| 15 | OPEX | 741 | 5 | |
+| 16 | Jahreszyklus | 1595 | 20 | |
+| 17 | Monatszyklus | 1412 | 26 | |
+| 18 | Wochentage | 1670 | 29 | |
 
 ## Tägliche Prüfungen (bei Session-Start)
 
