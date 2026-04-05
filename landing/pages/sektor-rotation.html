@@ -462,6 +462,41 @@
     }
 
     function renderWinRateTopFlop(sectorData, tickers) {
+      // Monatsrenditen pro Ticker×Monat berechnen (fuer Streak)
+      function getMonthlyReturns(ticker, month) {
+        var sd = sectorData[ticker];
+        if (!sd || !sd.rows) return [];
+        var byYM = {};
+        for (var i = 0; i < sd.rows.length; i++) {
+          var ym = sd.rows[i].date.substring(0, 7);
+          byYM[ym] = parseFloat(sd.rows[i].close);
+        }
+        var keys = Object.keys(byYM).sort();
+        var rets = [];
+        for (var i = 1; i < keys.length; i++) {
+          var m = parseInt(keys[i].substring(5, 7));
+          if (m === month && byYM[keys[i-1]] > 0) {
+            rets.push((byYM[keys[i]] / byYM[keys[i-1]] - 1) * 100);
+          }
+        }
+        return rets;
+      }
+
+      function calcStreak(rets) {
+        if (!rets.length) return { label: '\u2014', color: 'var(--muted)' };
+        var streak = 0, st = '';
+        for (var j = rets.length - 1; j >= 0; j--) {
+          var w = rets[j] > 0;
+          if (!streak) { st = w ? 'W' : 'L'; streak = 1; }
+          else if ((w && st === 'W') || (!w && st === 'L')) streak++;
+          else break;
+        }
+        return {
+          label: streak + ' ' + (st === 'W' ? 'Winner' : 'Loser'),
+          color: st === 'W' ? 'var(--green)' : 'var(--red)'
+        };
+      }
+
       // Sammle alle Ticker×Monat Kombinationen
       var all = [];
       for (var i = 0; i < tickers.length; i++) {
@@ -472,35 +507,35 @@
         for (var m = 1; m <= 12; m++) {
           var wr = sd.winRate[m];
           if (wr != null) {
-            all.push({ ticker: tickers[i], name: name, month: m, winRate: wr });
+            var rets = getMonthlyReturns(tickers[i], m);
+            var sk = calcStreak(rets);
+            all.push({ ticker: tickers[i], name: name, month: m, winRate: wr, streak: sk.label, streakColor: sk.color });
           }
         }
       }
 
-      // Top 10 (höchste Win-Rate)
       var top10 = all.slice().sort(function(a,b){ return b.winRate - a.winRate; }).slice(0, 10);
-      // Flop 10 (niedrigste Win-Rate)
       var flop10 = all.slice().sort(function(a,b){ return a.winRate - b.winRate; }).slice(0, 10);
 
       var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">';
 
-      // Top 10
-      html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 10 Win-Rate (Sektor × Monat)</h4>';
-      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th></tr></thead><tbody>';
+      html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 10 Win-Rate (Sektor \u00D7 Monat)</h4>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th><th>Streak</th></tr></thead><tbody>';
       for (var i = 0; i < top10.length; i++) {
         var r = top10[i];
         html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';
-        html += '<td>' + MONTHS[r.month-1] + '</td><td class="pos">' + r.winRate.toFixed(0) + '%</td></tr>';
+        html += '<td>' + MONTHS[r.month-1] + '</td><td class="pos">' + r.winRate.toFixed(0) + '%</td>';
+        html += '<td style="color:' + r.streakColor + ';font-weight:600">' + r.streak + '</td></tr>';
       }
       html += '</tbody></table></div>';
 
-      // Flop 10
-      html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 10 Win-Rate (Sektor × Monat)</h4>';
-      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th></tr></thead><tbody>';
+      html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 10 Win-Rate (Sektor \u00D7 Monat)</h4>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th><th>Streak</th></tr></thead><tbody>';
       for (var i = 0; i < flop10.length; i++) {
         var r = flop10[i];
         html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';
-        html += '<td>' + MONTHS[r.month-1] + '</td><td class="neg">' + r.winRate.toFixed(0) + '%</td></tr>';
+        html += '<td>' + MONTHS[r.month-1] + '</td><td class="neg">' + r.winRate.toFixed(0) + '%</td>';
+        html += '<td style="color:' + r.streakColor + ';font-weight:600">' + r.streak + '</td></tr>';
       }
       html += '</tbody></table></div>';
 
