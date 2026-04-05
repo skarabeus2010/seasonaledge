@@ -344,26 +344,25 @@
     }
 
     function renderReturnBar(history){
-      var valid=history.filter(function(h){return h.yearReturn!==null});
-      var colors={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'};
-      var series=[];
-      for(var sig in colors){
-        var sub=valid.filter(function(h){return h.signal===sig});
-        if(!sub.length)continue;
-        series.push({name:sig,data:sub.map(function(h){return{x:h.year,y:h.yearReturn}}),color:colors[sig]});
-      }
+      var valid=history.filter(function(h){return h.yearReturn!==null}).sort(function(a,b){return a.year-b.year});
+      var sigColors={Grün:'#2ECC71',Gelb:'#F1C40F',Orange:'#E67E22',Rot:'#E74C3C'};
+      var cats=valid.map(function(h){return String(h.year)});
+      var vals=valid.map(function(h){return parseFloat(h.yearReturn.toFixed(1))});
+      var barColors=valid.map(function(h){return sigColors[h.signal]||'#888'});
       if(charts.returns)charts.returns.destroy();
       charts.returns=new ApexCharts(document.getElementById('chart-returns'),{
-        series:series,
+        series:[{name:'Rendite',data:vals}],
         chart:Object.assign({type:'bar',height:380},SA.chartTheme.chart),
-        plotOptions:{bar:{columnWidth:'80%',borderRadius:2}},
+        plotOptions:{bar:{columnWidth:'70%',borderRadius:2,distributed:true}},
+        colors:barColors,
         dataLabels:{enabled:false},
-        grid:SA.chartTheme.grid,tooltip:SA.chartTheme.tooltip,
+        grid:SA.chartTheme.grid,
+        tooltip:{theme:'dark',y:{formatter:function(v){return(v>=0?'+':'')+v.toFixed(1)+'%'}}},
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:4}]},
-        xaxis:{type:'category',labels:{style:{colors:'#a89878',fontSize:'9px'}}},
+        xaxis:{categories:cats,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,rotateAlways:false}},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0)+'%'}}},
-        legend:SA.chartTheme.legend,
-        title:{text:currentTicker+' — Jahresrendite (Feb–Dez) nach Trifecta-Signal',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
+        legend:{show:false},
+        title:{text:currentTicker+' \u2014 Jahresrendite (Feb\u2013Dez) nach Trifecta-Signal',style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700}}
       });
       charts.returns.render();
     }
