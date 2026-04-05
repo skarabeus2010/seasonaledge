@@ -89,6 +89,8 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
     intermarket-shocks.html ← Intermarket Shock-Analyse (Trigger→Target, Scatter+Regression)
     sektor-rotation.html ← Sektor-Rotation (23 US-ETFs, Heatmap, Top/Flop, Win-Rate)
     overnight.html       ← Overnight vs. Intraday (OHLC, Signifikanz, Indikator-Filter)
+    zentralbanken.html   ← Zentralbank-Effekt (Fed/EZB/BoE/BoJ, Event-Window, Streak)
+    feiertage.html       ← Feiertags-Effekt (Exchange-aware, Ranking, Heatmap, Streak)
     apex-demo.html       ← Chart-Demo
   data/
     DJI-decade.json      ← Vorberechnete Dekaden-Daten
@@ -396,11 +398,13 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Intermarket Shocks | `/intermarket-shocks` | app, charts | Trigger→Target Analyse, Scatter+Regression, Saisonaler Breakdown, T=0 |
 | Sektor-Rotation | `/sektor-rotation` | app, charts | 23 US-ETFs, Heatmap, Top/Flop, Jahresverlauf, Win-Rate + Streak |
 | Overnight vs. Intraday | `/overnight` | app, charts, significance, indicators | OHLC-Analyse, Signifikanz (6 Tachos), Indikator-Filter |
+| Zentralbanken | `/zentralbanken` | app, charts, significance, indicators, streak | Fed/EZB/BoE/BoJ Event-Window, Streak, Termine aus Supabase |
+| Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
 
 ### Offene HTML-Migrationen
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 11 | Disabled Pages (Shock✅, Sektor✅, Overnight✅, Rest offen) | 300-500 | 6-8 | naechste |
+| 13 | Disabled Pages (Shock✅, Sektor✅, Overnight✅, Zentralbanken✅, Feiertage✅, Rest: OPEX) | 741 | 5 | naechste |
 | 12 | Jahreszyklus | 1595 | 20 | |
 | 13 | Monatszyklus | 1412 | 26 | |
 | 14 | Wochentage | 1670 | 29 | |
