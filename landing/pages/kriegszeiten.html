@@ -187,7 +187,8 @@
     ['rng-before','rng-after','rng-smooth'].forEach(function(id){
       var el=document.getElementById(id);
       var lbl=document.getElementById(id.replace('rng-','lbl-'));
-      el.addEventListener('input',function(){lbl.textContent=el.value;renderAll()});
+      el.addEventListener('input',function(){lbl.textContent=el.value});
+      el.addEventListener('change',function(){renderAll()});
     });
 
     /* ── Selected wars ── */

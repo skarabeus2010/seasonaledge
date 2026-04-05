@@ -145,7 +145,7 @@
 
     function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
     function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
-    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
     function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
 
     /* ── Trifecta Berechnung (Port von januar_trifecta.py) ── */

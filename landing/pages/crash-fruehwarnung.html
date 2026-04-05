@@ -110,7 +110,7 @@
 
     function showLoading(m){var el=document.getElementById('loading-overlay');if(!el){el=document.createElement('div');el.id='loading-overlay';el.className='loading-overlay';document.querySelector('main').appendChild(el)}el.innerHTML='<div class="spinner"></div><span>'+(m||'Lade...')+'</span>';el.style.display='flex'}
     function hideLoading(){var el=document.getElementById('loading-overlay');if(el)el.style.display='none'}
-    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block'}
+    function showError(m){var el=document.getElementById('error-banner');el.textContent=m;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
     function kpi(l,v,c){return'<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+(c||'')+'">'+v+'</div></div>'}
 
     /* ══════════════════════════════════════════════════════
@@ -410,7 +410,7 @@
       var lastDate=regimeRows[regimeRows.length-1].date;
       var daysSince=Math.floor((new Date()-new Date(lastDate))/(86400000));
       var staleWarning='';
-      if(daysSince>3){
+      if(daysSince>4){
         staleWarning='<div style="background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:.75rem;font-size:.8125rem">\u26A0\uFE0F Scores veraltet: letzter Datenpunkt '+lastDate+' ('+daysSince+' Tage alt). Nightly Refresh pr\u00FCfen!</div>';
       }
 
