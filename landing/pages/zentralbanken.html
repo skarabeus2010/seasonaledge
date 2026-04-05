@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Zentralbank-Effekt &mdash; SeasonAlpha</title>
+  <meta name="description" content="Marktreaktion rund um Notenbank-Sitzungen: Fed (FOMC), EZB, Bank of England, Bank of Japan. Event-Window-Analyse t-5 bis t+5.">
+  <meta property="og:title" content="Zentralbank-Effekt &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/zentralbanken">
+  <link rel="canonical" href="https://seasonalpha.ai/zentralbanken">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .cb-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .cb-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .cb-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .cb-table tr:hover td{background:rgba(232,168,32,.04)}
+    .cb-table td.pos{color:var(--green)}
+    .cb-table td.neg{color:var(--red)}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+    .apexcharts-xaxis text title{display:none}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zentralbank</h3>
+      <select id="sel-bank" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="fomc" selected>Fed (FOMC)</option>
+        <option value="ecb">EZB</option>
+        <option value="boe">Bank of England</option>
+        <option value="boj">Bank of Japan</option>
+      </select>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10" selected>10 Jahre</option>
+        <option value="15">15 Jahre</option>
+        <option value="20">20 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>Event-Window</h3>
+      <label>Tage vor t0<br><input type="range" id="rng-before" min="1" max="15" value="5" step="1"><span id="lbl-before">5</span></label>
+      <label>Tage nach t0<br><input type="range" id="rng-after" min="1" max="15" value="5" step="1"><span id="lbl-after">5</span></label>
+      <hr>
+      <label><input type="checkbox" id="chk-individual"> Einzelne Events zeigen</label>
+      <hr>
+      <h3>Technischer Filter</h3>
+      <div id="indicator-filter"></div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Zentralbank-Effekt</b> &mdash; <span id="title-ticker">^GSPC</span></h1>
+      <p class="page-caption">Marktreaktion rund um Notenbank-Sitzungen (t0 = Entscheidungstag)</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- Event-Window Chart -->
+      <details open id="sec-chart" style="display:none">
+        <summary>Event-Window</summary>
+        <div class="content"><div id="chart-event"></div></div>
+      </details>
+
+      <!-- Nächste Termine -->
+      <details open id="sec-next" style="display:none">
+        <summary>N&auml;chste Termine</summary>
+        <div class="content" id="content-next"></div>
+      </details>
+
+      <!-- Signifikanztest -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
+      <!-- Streak -->
+      <details id="sec-streak" style="display:none">
+        <summary>Streak-Analyse</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Fed (FOMC):</b> 224 Sitzungstermine (2000&ndash;2026)</li>
+            <li><b>EZB:</b> 96 Ratssitzungen (2015&ndash;2026)</li>
+            <li><b>Bank of England:</b> 58 MPC-Sitzungen (2020&ndash;2026)</li>
+            <li><b>Bank of Japan:</b> 40 Sitzungen (2022&ndash;2026)</li>
+            <li><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+          </ul>
+          <h3>Berechnung</h3>
+          <ul>
+            <li><b>t0:</b> Entscheidungstag der Notenbank (oder n&auml;chster Handelstag)</li>
+            <li><b>Normierung:</b> Kursverlauf auf t0 = 0% normiert</li>
+            <li><b>Fenster:</b> t&minus;N bis t+N Handelstage um den Entscheidungstag</li>
+            <li><b>Durchschnittskurve:</b> Mittelwert &uuml;ber alle Events im Zeitraum</li>
+            <li><b>Win-Rate:</b> Anteil der Events mit positivem Return (t&minus;N bis t+N)</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ── Zentralbank-Termine (hardcodiert) ─────────────────────────────────────
+    var CB_DATES = {
+      fomc: ["2000-02-02","2000-03-21","2000-05-16","2000-06-28","2000-08-22","2000-10-03","2000-11-15","2000-12-19","2001-01-03","2001-01-31","2001-03-20","2001-04-18","2001-05-15","2001-06-27","2001-08-21","2001-09-17","2001-10-02","2001-11-06","2001-12-11","2002-01-30","2002-03-19","2002-05-07","2002-06-26","2002-08-13","2002-09-24","2002-11-06","2002-12-10","2003-01-29","2003-03-18","2003-05-06","2003-06-25","2003-08-12","2003-09-16","2003-10-28","2003-12-09","2004-01-28","2004-03-16","2004-05-04","2004-06-30","2004-08-10","2004-09-21","2004-11-10","2004-12-14","2005-02-02","2005-03-22","2005-05-03","2005-06-30","2005-08-09","2005-09-20","2005-11-01","2005-12-13","2006-01-31","2006-03-28","2006-05-10","2006-06-29","2006-08-08","2006-09-20","2006-10-25","2006-12-12","2007-01-31","2007-03-21","2007-05-09","2007-06-28","2007-08-07","2007-08-17","2007-09-18","2007-10-31","2007-12-11","2008-01-22","2008-01-30","2008-03-11","2008-03-18","2008-04-30","2008-06-25","2008-08-05","2008-09-16","2008-10-08","2008-10-29","2008-12-16","2009-01-28","2009-03-18","2009-04-29","2009-06-24","2009-08-12","2009-09-23","2009-11-04","2009-12-16","2010-01-27","2010-03-16","2010-04-28","2010-06-23","2010-08-10","2010-09-21","2010-11-03","2010-12-14","2011-01-26","2011-03-15","2011-04-27","2011-06-22","2011-08-09","2011-09-21","2011-11-02","2011-12-13","2012-01-25","2012-03-13","2012-04-25","2012-06-20","2012-08-01","2012-09-13","2012-10-24","2012-12-12","2013-01-30","2013-03-20","2013-05-01","2013-06-19","2013-07-31","2013-09-18","2013-10-30","2013-12-18","2014-01-29","2014-03-19","2014-04-30","2014-06-18","2014-07-30","2014-09-17","2014-10-29","2014-12-17","2015-01-28","2015-03-18","2015-04-29","2015-06-17","2015-07-29","2015-09-17","2015-10-28","2015-12-16","2016-01-27","2016-03-16","2016-04-27","2016-06-15","2016-07-27","2016-09-21","2016-11-02","2016-12-14","2017-02-01","2017-03-15","2017-05-03","2017-06-14","2017-07-26","2017-09-20","2017-11-01","2017-12-13","2018-01-31","2018-03-21","2018-05-02","2018-06-13","2018-08-01","2018-09-26","2018-11-08","2018-12-19","2019-01-30","2019-03-20","2019-05-01","2019-06-19","2019-07-31","2019-09-18","2019-10-30","2019-12-11","2020-01-29","2020-03-03","2020-03-15","2020-04-29","2020-06-10","2020-07-29","2020-09-16","2020-11-05","2020-12-16","2021-01-27","2021-03-17","2021-04-28","2021-06-16","2021-07-28","2021-09-22","2021-11-03","2021-12-15","2022-01-26","2022-03-16","2022-05-04","2022-06-15","2022-07-27","2022-09-21","2022-11-02","2022-12-14","2023-02-01","2023-03-22","2023-05-03","2023-06-14","2023-07-26","2023-09-20","2023-11-01","2023-12-13","2024-01-31","2024-03-20","2024-05-01","2024-06-12","2024-07-31","2024-09-18","2024-11-07","2024-12-18","2025-01-29","2025-03-19","2025-05-07","2025-06-18","2025-07-30","2025-09-17","2025-10-29","2025-12-17","2026-01-28","2026-03-18","2026-05-06","2026-06-17","2026-07-29","2026-09-16","2026-10-28","2026-12-16"],
+      ecb: ["2015-01-22","2015-03-05","2015-04-15","2015-06-03","2015-07-16","2015-09-03","2015-10-22","2015-12-03","2016-01-21","2016-03-10","2016-04-21","2016-06-02","2016-07-21","2016-09-08","2016-10-20","2016-12-08","2017-01-19","2017-03-09","2017-04-27","2017-06-08","2017-07-20","2017-09-07","2017-10-26","2017-12-14","2018-01-25","2018-03-08","2018-04-26","2018-06-14","2018-07-26","2018-09-13","2018-10-25","2018-12-13","2019-01-24","2019-03-07","2019-04-10","2019-06-06","2019-07-25","2019-09-12","2019-10-24","2019-12-12","2020-01-23","2020-03-12","2020-04-30","2020-06-04","2020-07-16","2020-09-10","2020-10-29","2020-12-10","2021-01-21","2021-03-11","2021-04-22","2021-06-10","2021-07-22","2021-09-09","2021-10-28","2021-12-16","2022-02-03","2022-03-10","2022-04-14","2022-06-09","2022-07-21","2022-09-08","2022-10-27","2022-12-15","2023-02-02","2023-03-16","2023-04-27","2023-06-15","2023-07-27","2023-09-14","2023-10-26","2023-12-14","2024-01-25","2024-03-07","2024-04-11","2024-06-06","2024-07-18","2024-09-12","2024-10-17","2024-12-12","2025-01-30","2025-03-06","2025-04-17","2025-06-05","2025-07-24","2025-09-11","2025-10-30","2025-12-18","2026-01-22","2026-03-05","2026-04-16","2026-06-04","2026-07-16","2026-09-10","2026-10-29","2026-12-17"],
+      boe: ["2020-01-30","2020-03-11","2020-03-19","2020-03-26","2020-05-07","2020-06-18","2020-08-06","2020-09-17","2020-11-05","2020-12-17","2021-02-04","2021-03-18","2021-05-06","2021-06-24","2021-08-05","2021-09-23","2021-11-04","2021-12-16","2022-02-03","2022-03-17","2022-05-05","2022-06-16","2022-08-04","2022-09-22","2022-11-03","2022-12-15","2023-02-02","2023-03-23","2023-05-11","2023-06-22","2023-08-03","2023-09-21","2023-11-02","2023-12-14","2024-02-01","2024-03-21","2024-05-09","2024-06-20","2024-08-01","2024-09-19","2024-11-07","2024-12-19","2025-02-06","2025-03-20","2025-05-08","2025-06-19","2025-08-07","2025-09-18","2025-11-06","2025-12-18","2026-02-05","2026-03-19","2026-05-07","2026-06-18","2026-08-06","2026-09-17","2026-11-05","2026-12-17"],
+      boj: ["2022-01-18","2022-03-18","2022-04-28","2022-06-17","2022-07-21","2022-09-22","2022-10-28","2022-12-20","2023-01-18","2023-03-10","2023-04-28","2023-06-16","2023-07-28","2023-09-22","2023-10-31","2023-12-19","2024-01-23","2024-03-19","2024-04-26","2024-06-14","2024-07-31","2024-09-20","2024-10-31","2024-12-19","2025-01-24","2025-03-14","2025-05-01","2025-06-17","2025-07-31","2025-09-19","2025-10-30","2025-12-19","2026-01-22","2026-03-13","2026-04-28","2026-06-16","2026-07-17","2026-09-17","2026-10-29","2026-12-18"]
+    };
+    var CB_LABELS = { fomc: 'Fed (FOMC)', ecb: 'EZB', boe: 'Bank of England', boj: 'Bank of Japan' };
+    var CB_COLORS = { fomc: '#4d9fff', ecb: '#ffd43b', boe: '#ff6b6b', boj: '#51cf66' };
+
+    var charts = {};
+    var currentTicker = '^GSPC';
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
+    function showSections(show) {
+      ['sec-chart','sec-next','sec-significance','sec-streak'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
+
+    // Slider labels
+    ['rng-before','rng-after'].forEach(function(id) {
+      var el = document.getElementById(id);
+      var lbl = document.getElementById(id.replace('rng-','lbl-'));
+      el.addEventListener('input', function() { lbl.textContent = el.value; });
+    });
+
+    // Indicator Filter
+    var _getFilters = SA.indicators.renderFilterUI('indicator-filter', function() { if (_cachedRows) rerender(); });
+
+    // ── Event-Window Berechnung ────────────────────────────────────────────
+    function analyzeEvents(rows, eventDates, daysBefore, daysAfter) {
+      // Build date→index map
+      var dateIdx = {};
+      for (var i = 0; i < rows.length; i++) dateIdx[rows[i].date] = i;
+
+      var windowSize = daysBefore + 1 + daysAfter;
+      var allCurves = [];
+
+      for (var e = 0; e < eventDates.length; e++) {
+        var evDate = eventDates[e];
+        // Find t0 (exact date or nearest backward)
+        var t0 = dateIdx[evDate];
+        if (t0 == null) {
+          for (var j = 0; j < rows.length; j++) {
+            if (rows[j].date <= evDate) t0 = j;
+            if (rows[j].date >= evDate) break;
+          }
+        }
+        if (t0 == null) continue;
+
+        var start = t0 - daysBefore;
+        var end = t0 + daysAfter + 1;
+        if (start < 0 || end > rows.length) continue;
+
+        // Normalisierung: t0 Close = 0%
+        var t0Close = parseFloat(rows[t0].close);
+        if (!t0Close) continue;
+        var curve = [];
+        for (var i = start; i < end; i++) {
+          curve.push((parseFloat(rows[i].close) / t0Close - 1) * 100);
+        }
+        if (curve.length !== windowSize) continue;
+
+        var totalReturn = curve[curve.length - 1] - curve[0];
+        allCurves.push({ date: evDate, curve: curve, totalReturn: totalReturn });
+      }
+
+      if (!allCurves.length) return null;
+
+      // Avg curve
+      var avgCurve = [];
+      for (var i = 0; i < windowSize; i++) {
+        var sum = 0;
+        for (var c = 0; c < allCurves.length; c++) sum += allCurves[c].curve[i];
+        avgCurve.push(sum / allCurves.length);
+      }
+
+      // Labels
+      var labels = [];
+      for (var i = 0; i < windowSize; i++) {
+        var off = i - daysBefore;
+        labels.push(off < 0 ? 't' + off : off === 0 ? 't0' : 't+' + off);
+      }
+
+      // Stats
+      var returns = allCurves.map(function(c) { return c.totalReturn; });
+      var wins = returns.filter(function(r) { return r > 0; });
+      var avg = returns.reduce(function(s,v){return s+v;},0) / returns.length;
+
+      return {
+        avgCurve: avgCurve, allCurves: allCurves, labels: labels,
+        stats: {
+          avgReturn: avg,
+          winRate: wins.length / returns.length * 100,
+          nEvents: allCurves.length,
+          maxGain: Math.max.apply(null, returns),
+          maxLoss: Math.min.apply(null, returns)
+        },
+        returns: returns
+      };
+    }
+
+    // ── Render: Event Chart ───────────────────────────────────────────────
+    function renderChart(result, bankKey) {
+      var showIndiv = document.getElementById('chk-individual').checked;
+      var series = [];
+      var t0idx = parseInt(document.getElementById('rng-before').value);
+
+      if (showIndiv) {
+        for (var i = 0; i < result.allCurves.length; i++) {
+          series.push({ name: result.allCurves[i].date, data: result.allCurves[i].curve.map(function(v){return parseFloat(v.toFixed(3));}), type: 'line' });
+        }
+      }
+      series.push({
+        name: '\u00D8 ' + CB_LABELS[bankKey] + ' (' + result.stats.nEvents + ' Events)',
+        data: result.avgCurve.map(function(v){return parseFloat(v.toFixed(3));}),
+        type: 'line'
+      });
+
+      var colors = showIndiv ? result.allCurves.map(function(){return 'rgba(150,150,150,0.12)';}).concat([CB_COLORS[bankKey]]) : [CB_COLORS[bankKey]];
+      var widths = showIndiv ? result.allCurves.map(function(){return 0.6;}).concat([3]) : [3];
+
+      if (charts.event) charts.event.destroy();
+      charts.event = new ApexCharts(document.getElementById('chart-event'), {
+        series: series,
+        chart: Object.assign({ type: 'line', height: 420 }, SA.chartTheme.chart),
+        stroke: { width: widths, curve: 'straight' },
+        colors: colors,
+        grid: SA.chartTheme.grid,
+        tooltip: { theme: 'dark', y: { formatter: function(v) { return fmtPct(v); } } },
+        xaxis: { categories: result.labels, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } }, title: { text: 'Rendite vs. t0 %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: {
+          xaxis: [{ x: result.labels[t0idx], borderColor: 'rgba(255,215,0,.5)', strokeDashArray: 4, label: { text: 't0', style: { color: '#FFD700', background: 'transparent', fontSize: '11px' } } }],
+          yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.2)', strokeDashArray: 3 }]
+        },
+        legend: { show: !showIndiv, position: 'top', labels: { colors: '#a89878' } },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 ' + CB_LABELS[bankKey] + ' Event-Effekt', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.event.render();
+    }
+
+    // ── Render: Nächste Termine ───────────────────────────────────────────
+    function renderNext(bankKey) {
+      var today = new Date().toISOString().substring(0, 10);
+      var future = CB_DATES[bankKey].filter(function(d) { return d >= today; }).slice(0, 8);
+      var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var html = '<table class="cb-table"><thead><tr><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+      for (var i = 0; i < future.length; i++) {
+        var d = new Date(future[i].replace(/-/g, '/'));
+        var diff = Math.ceil((d - new Date()) / 86400000);
+        html += '<tr><td>' + future[i] + '</td><td>' + WDAYS[d.getDay()] + '</td><td>' + diff + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-next').innerHTML = html;
+    }
+
+    // ── Render: Signifikanztest ───────────────────────────────────────────
+    function renderSignificance(result, bankKey) {
+      if (!SA.significance || result.returns.length < 10) { document.getElementById('sec-significance').style.display = 'none'; return; }
+      var groups = {};
+      groups[CB_LABELS[bankKey]] = result.returns;
+      var res = SA.significance.runSignificanceTest(groups);
+      var html = '<h3>Ist der ' + CB_LABELS[bankKey] + '-Effekt signifikant?</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">t-Test: Ist die Rendite rund um ' + CB_LABELS[bankKey] + '-Sitzungen statistisch von Null verschieden?</p>';
+      html += SA.significance.renderSection(res, 1);
+      document.getElementById('content-significance').innerHTML = html;
+    }
+
+    // ── Render: Streak ───────────────────────────────────────────────────
+    function renderStreak(result) {
+      var returns = result.returns;
+      var streak = 0, st = '';
+      for (var j = returns.length - 1; j >= 0; j--) {
+        var w = returns[j] > 0;
+        if (!streak) { st = w ? 'W' : 'L'; streak = 1; }
+        else if ((w && st === 'W') || (!w && st === 'L')) streak++;
+        else break;
+      }
+      var streakLabel = streak ? streak + ' ' + (st === 'W' ? 'Winner' : 'Loser') : '\u2014';
+      var streakColor = st === 'W' ? 'var(--green)' : st === 'L' ? 'var(--red)' : 'var(--muted)';
+
+      // Letzte 10 Events als Tabelle
+      var html = '<div style="margin-bottom:1rem"><b>Current Streak:</b> <span style="color:' + streakColor + ';font-weight:700;font-size:1rem">' + streakLabel + '</span></div>';
+      html += '<table class="cb-table"><thead><tr><th>Datum</th><th>Rendite</th><th>W/L</th></tr></thead><tbody>';
+      var recent = result.allCurves.slice(-10).reverse();
+      for (var i = 0; i < recent.length; i++) {
+        var r = recent[i];
+        var cls = r.totalReturn >= 0 ? 'pos' : 'neg';
+        html += '<tr><td>' + r.date + '</td><td class="' + cls + '">' + fmtPct(r.totalReturn, 2) + '</td>';
+        html += '<td class="' + cls + '">' + (r.totalReturn >= 0 ? 'W' : 'L') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-streak').innerHTML = html;
+    }
+
+    // ── Main ──────────────────────────────────────────────────────────────
+    var _cachedRows = null;
+
+    function rerender() {
+      if (!_cachedRows) return;
+      var bankKey = document.getElementById('sel-bank').value;
+      var daysBefore = parseInt(document.getElementById('rng-before').value);
+      var daysAfter = parseInt(document.getElementById('rng-after').value);
+      var yearsVal = document.getElementById('sel-years').value;
+
+      // Filter events by year
+      var minYear = yearsVal === 'max' ? 0 : new Date().getFullYear() - parseInt(yearsVal);
+      var eventDates = CB_DATES[bankKey].filter(function(d) { return parseInt(d.substring(0, 4)) >= minYear; });
+
+      // Indicator filter
+      var closes = _cachedRows.map(function(r) { return parseFloat(r.close); });
+      var filters = _getFilters();
+      var mask = SA.indicators.applyFilter(closes, filters);
+      var filteredRows = _cachedRows.filter(function(r, i) { return mask[i]; });
+
+      var result = analyzeEvents(filteredRows, eventDates, daysBefore, daysAfter);
+      if (!result) { showError('Keine Events gefunden im gew\u00E4hlten Zeitraum.'); showSections(false); $kpi.innerHTML = ''; return; }
+
+      // KPIs
+      var s = result.stats;
+      $kpi.innerHTML =
+        kpi('Events', s.nEvents) +
+        kpi('Win-Rate', s.winRate.toFixed(0) + ' %', s.winRate >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('\u00D8 Rendite', fmtPct(s.avgReturn), s.avgReturn >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('Max Gewinn', fmtPct(s.maxGain, 2), 'kpi__value--green') +
+        kpi('Max Verlust', fmtPct(s.maxLoss, 2), 'kpi__value--red');
+
+      renderChart(result, bankKey);
+      renderNext(bankKey);
+      renderSignificance(result, bankKey);
+      renderStreak(result);
+      showSections(true);
+    }
+
+    function loadTicker(ticker) {
+      currentTicker = ticker;
+      document.getElementById('title-ticker').textContent = ticker;
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      $kpi.innerHTML = '';
+
+      SA.fetchAllPrices(ticker).then(function(rows) {
+        if (!rows || rows.length < 100) {
+          showError('Zu wenig Daten f\u00FCr ' + ticker);
+          $loading.style.display = 'none';
+          return;
+        }
+        _cachedRows = rows;
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        rerender();
+        $loading.style.display = 'none';
+      }).catch(function(err) {
+        showError('Fehler: ' + err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t) { loadTicker(t); });
+    document.getElementById('sel-bank').addEventListener('change', rerender);
+    document.getElementById('sel-years').addEventListener('change', rerender);
+    document.getElementById('rng-before').addEventListener('change', rerender);
+    document.getElementById('rng-after').addEventListener('change', rerender);
+    document.getElementById('chk-individual').addEventListener('change', rerender);
+
+    // Auto-Load
+    loadTicker('^GSPC');
+
+  })();
+  </script>
+
+</body>
+</html>
