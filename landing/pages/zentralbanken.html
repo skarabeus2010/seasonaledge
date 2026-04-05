@@ -188,7 +188,7 @@
       });
     }
     function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
-    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
 
     // Slider labels
     ['rng-before','rng-after'].forEach(function(id) {
@@ -387,7 +387,7 @@
       // KPIs
       var s = result.stats;
       $kpi.innerHTML =
-        kpi('Events', s.nEvents) +
+        kpi('Events', ' ' + s.nEvents) +
         kpi('Win-Rate', s.winRate.toFixed(0) + ' %', s.winRate >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
         kpi('\u00D8 Rendite', fmtPct(s.avgReturn), s.avgReturn >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
         kpi('Max Gewinn', fmtPct(s.maxGain, 2), 'kpi__value--green') +
