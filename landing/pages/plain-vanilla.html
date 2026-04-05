@@ -486,7 +486,6 @@
       var _holidays = isDE
         ? Object.assign({}, _xetraHolidays(Y), _xetraHolidays(Y+1))
         : Object.assign({}, _usHolidays(Y), _usHolidays(Y+1));
-      console.log('[Signale] Ticker:', currentTicker, 'isDE:', isDE, '1. Mai Holiday:', !!_holidays['2026-05-01']);
 
       function _isTradingDay(dateStr) {
         var d = new Date(dateStr);
@@ -523,27 +522,23 @@
       }
 
       // Versuche erst echte Daten, dann Schaetzung
+      // WICHTIG: Auch echte Rows gegen Feiertagskalender pruefen
+      // (Yahoo liefert z.B. DAX-Daten am 1. Mai obwohl XETRA geschlossen)
       function _nthTD(y, m, n) {
-        var idx = S._nthTradingDay(rows, y, m, n);
-        if (idx >= 0) return rows[idx].date;
+        // Immer den Estimator nutzen — der kennt die Feiertage
         return _futureNthTD(y, m, n);
       }
       function _lastTD(y, m, nFromEnd) {
-        var idx = nFromEnd ? S._nthLastTradingDay(rows, y, m, nFromEnd) : S._lastTradingDay(rows, y, m);
-        if (idx >= 0) return rows[idx].date;
         return _futureLastTD(y, m, nFromEnd || 1);
       }
       function _nearFwd(y, m, d) {
-        var ds = S._dateStr(y, m, d);
-        var idx = S._nearestForward(rows, ds);
-        if (idx >= 0) return rows[idx].date;
-        // Schaetze: naechster Mo-Fr ab Datum
+        // Naechster Handelstag ab Datum (Feiertags-aware)
         for (var i = 0; i < 10; i++) {
           var dt = new Date(y, m-1, d+i);
           var cs = S._dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
           if (_isTradingDay(cs)) return cs;
         }
-        return ds;
+        return S._dateStr(y, m, d);
       }
 
       function getStreak(key) {
