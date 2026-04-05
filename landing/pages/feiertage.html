@@ -85,6 +85,18 @@
         </div>
       </details>
 
+      <!-- Nächste Feiertage -->
+      <details open id="sec-next" style="display:none">
+        <summary>N&auml;chste Feiertage</summary>
+        <div class="content" id="content-next"></div>
+      </details>
+
+      <!-- Heatmap -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>Heatmap: Feiertag &times; Monat</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
+
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
         <summary>Signifikanztest</summary>
@@ -156,12 +168,12 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-chart','sec-ranking','sec-significance','sec-streak'].forEach(function(id) {
+      ['sec-chart','sec-ranking','sec-next','sec-heatmap','sec-significance','sec-streak'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
     function destroyAll() {
-      ['event','ranking'].forEach(function(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+      ['event','ranking','heatmap'].forEach(function(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
     }
     function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
     function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
@@ -351,10 +363,10 @@
       charts.ranking = new ApexCharts(document.getElementById('chart-ranking'), {
         series: [{ name: '\u00D8 Rendite', data: vals }],
         chart: Object.assign({ type: 'bar', height: 340 }, SA.chartTheme.chart),
-        colors: vals.map(function(v) { return v >= 0 ? SA.COLORS.green : SA.COLORS.red; }),
+        colors: vals.map(function(v) { return v >= 0 ? '#1a8a45' : '#c0392b'; }),
         plotOptions: { bar: { borderRadius: 4, distributed: true, columnWidth: '60%' } },
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '10px' }, rotate: -45, rotateAlways: true } },
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '12px' }, rotate: -45, rotateAlways: true } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(2) + '%'; } } },
         annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
         legend: { show: false },
@@ -410,6 +422,86 @@
       document.getElementById('content-streak').innerHTML = html;
     }
 
+    // ── Render: Nächste Feiertage ────────────────────────────────────────────
+    function renderNext(exchange) {
+      var today = new Date().toISOString().substring(0, 10);
+      var curYear = new Date().getFullYear();
+      var names = HOL_NAMES[exchange] || [];
+      var allDates = [];
+      for (var y = curYear; y <= curYear + 1; y++) {
+        var yearHols = SA.holidays.get(y, exchange);
+        for (var i = 0; i < yearHols.length && i < names.length; i++) {
+          if (yearHols[i] >= today) allDates.push({ name: names[i], date: yearHols[i] });
+        }
+      }
+      allDates.sort(function(a,b) { return a.date > b.date ? 1 : -1; });
+      var next5 = allDates.slice(0, 5);
+
+      var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var html = '<table class="hol-table"><thead><tr><th>Feiertag</th><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+      for (var i = 0; i < next5.length; i++) {
+        var d = new Date(next5[i].date.replace(/-/g, '/'));
+        var diff = Math.ceil((d - new Date()) / 86400000);
+        html += '<tr><td><b>' + next5[i].name + '</b></td><td>' + next5[i].date + '</td>';
+        html += '<td>' + WDAYS[d.getDay()] + '</td><td>' + diff + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-next').innerHTML = html;
+    }
+
+    // ── Render: Heatmap (Feiertag × Monat) ───────────────────────────────────
+    function renderHeatmap(allResults, exchange) {
+      var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      var names = Object.keys(allResults);
+      var curYear = new Date().getFullYear();
+
+      // Finde den typischen Monat jedes Feiertags
+      var holMonths = {};
+      for (var n = 0; n < names.length; n++) {
+        var r = allResults[names[n]];
+        if (!r || !r.allCurves.length) continue;
+        // Monat aus dem Datum des letzten Events
+        var lastDate = r.allCurves[r.allCurves.length - 1].date;
+        holMonths[names[n]] = parseInt(lastDate.substring(5, 7));
+      }
+
+      // Series: Zeilen = Feiertage (reversed), Spalten = Monate
+      var series = [];
+      for (var n = names.length - 1; n >= 0; n--) {
+        var name = names[n];
+        var r = allResults[name];
+        if (!r) continue;
+        var data = [];
+        for (var m = 1; m <= 12; m++) {
+          if (holMonths[name] === m) {
+            data.push({ x: MONTHS[m-1], y: parseFloat(r.avg.toFixed(3)) });
+          } else {
+            data.push({ x: MONTHS[m-1], y: 0 });
+          }
+        }
+        series.push({ name: name, data: data });
+      }
+
+      if (charts.heatmap) charts.heatmap.destroy();
+      charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: Math.max(280, names.length * 32) }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -0.1, color: '#6b0f0f', name: 'Negativ' },
+          { from: -0.1, to: 0, color: '#2a2a2a', name: 'Neutral' },
+          { from: 0, to: 0.001, color: '#111', name: '\u2014' },
+          { from: 0.001, to: 0.2, color: '#1a4a2a', name: 'Leicht pos.' },
+          { from: 0.2, to: 99, color: '#0f6b2f', name: 'Positiv' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(2) + '%' : ''; } },
+        title: { text: 'Feiertags-Rendite nach Monat', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        legend: { show: false }
+      });
+      charts.heatmap.render();
+    }
+
     // ── Main ──────────────────────────────────────────────────────────────────
     var _cachedRows = null;
 
@@ -457,11 +549,13 @@
       $kpi.innerHTML =
         kpi('Feiertage', ' ' + Object.keys(allResults).length) +
         kpi('Events', ' ' + totalEvents) +
-        kpi('Win-Rate', totalWR.toFixed(0) + ' %', totalWR >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
-        kpi('\u00D8 Rendite', fmtPct(avgRet), avgRet >= 0 ? 'kpi__value--green' : 'kpi__value--red');
+        kpi('Win-Rate', ' ' + totalWR.toFixed(0) + ' %', totalWR >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('\u00D8 Rendite', ' ' + fmtPct(avgRet), avgRet >= 0 ? 'kpi__value--green' : 'kpi__value--red');
 
       renderChart(allResults, daysBefore);
       renderRanking(allResults);
+      renderNext(exchange);
+      renderHeatmap(allResults, exchange);
       renderSignificance(allResults);
       renderStreak(allResults);
       showSections(true);
