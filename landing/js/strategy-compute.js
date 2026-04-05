@@ -85,6 +85,18 @@ SA.strategy = {
     };
   },
 
+  /** Signal-only Version: gibt auch Entry/Exit zurueck wenn der andere fehlt */
+  _makeSignalPair: function(rows, entryIdx, exitIdx) {
+    var result = [];
+    if (entryIdx >= 0 && entryIdx < rows.length) {
+      result.push({ type: 'entry', date: rows[entryIdx].date, idx: entryIdx });
+    }
+    if (exitIdx >= 0 && exitIdx < rows.length) {
+      result.push({ type: 'exit', date: rows[exitIdx].date, idx: exitIdx });
+    }
+    return result;
+  },
+
   _pad2: function(n) { return n < 10 ? '0' + n : '' + n; },
   _dateStr: function(y, m, d) { return y + '-' + this._pad2(m) + '-' + this._pad2(d); },
 
