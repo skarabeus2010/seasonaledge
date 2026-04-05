@@ -398,7 +398,7 @@
         var sd = sectorData[tickers[i]];
         if (!sd) continue;
         var cum = 0;
-        var data = [];
+        var data = [0]; // Start bei 0
         for (var m = 1; m <= 12; m++) {
           cum += (sd.seasonality[m] || 0);
           data.push(parseFloat(cum.toFixed(2)));
@@ -414,7 +414,7 @@
         stroke: { width: 2, curve: 'straight' },
         colors: colors.slice(0, series.length),
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { categories: MONTHS, labels: { style: { colors: '#a89878', fontSize: '11px' } } },
+        xaxis: { categories: ['Start'].concat(MONTHS), labels: { style: { colors: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(1) + '%'; } }, title: { text: 'Kum. \u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
         legend: Object.assign({}, SA.chartTheme.legend, { position: 'bottom', horizontalAlign: 'center' }),
         dataLabels: { enabled: false },
