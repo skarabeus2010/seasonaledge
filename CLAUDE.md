@@ -87,6 +87,7 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
     crash-fruehwarnung.html ← Regime-Ampel + Risk-Score Backtest (IF aus DB)
     plain-vanilla.html   ← 22 Strategien, Equity, Signale, Signifikanz, Trailing Stop
     intermarket-shocks.html ← Intermarket Shock-Analyse (Trigger→Target, Scatter+Regression)
+    sektor-rotation.html ← Sektor-Rotation (23 US-ETFs, Heatmap, Top/Flop, Win-Rate)
     apex-demo.html       ← Chart-Demo
   data/
     DJI-decade.json      ← Vorberechnete Dekaden-Daten
@@ -392,33 +393,15 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Plain Vanilla | `/plain-vanilla` | app, charts, indicators, holidays, strategy-compute, significance | Naechste Signale (24 Strategien), Signifikanztest, Trailing Stop, Profit Factor |
 | Trifecta | `/trifecta` | app, charts, seasonal-compute | Ampel (SCR+FFD+JanB), Durchschnittsverlauf, DD-KPIs, Jahresrendite-Bar |
 | Intermarket Shocks | `/intermarket-shocks` | app, charts | Trigger→Target Analyse, Scatter+Regression, Saisonaler Breakdown, T=0 |
+| Sektor-Rotation | `/sektor-rotation` | app, charts | 23 US-ETFs, Heatmap, Top/Flop, Jahresverlauf, Win-Rate + Streak |
 
 ### Offene HTML-Migrationen
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 8 | Disabled Pages (Shock✅, Rest offen) | 300-500 | 6-8 | naechste |
+| 10 | Disabled Pages (Shock✅, Sektor✅, Rest offen) | 300-500 | 6-8 | naechste |
 | 12 | Jahreszyklus | 1595 | 20 | |
 | 13 | Monatszyklus | 1412 | 26 | |
 | 14 | Wochentage | 1670 | 29 | |
-
-## Offene TODOs
-
-- [ ] Premium Dashboard: TDOY Sektion freischalten
-- [ ] AI Chat Page (Kunde fragt: "Was geht morgen bei TSLA?")
-- [ ] Split-Slider: Ticker-Auswahl (aktuell nur ^DJI)
-- [ ] Outlier Manager in alle Pages integrieren
-- [ ] KI-Zusammenfassung in weitere Pages integrieren
-- [ ] Stripe Freemium/Abo-Integration
-- [ ] Supabase User-Auth
-- [ ] Anthropic API-Key einrichten (KI-Zusammenfassung)
-- [ ] SEO Landingpages: Echte Berechnungen + Charts statt Platzhalter
-- [ ] Blog: Claude API Integration + OG-Image + YouTube Thumbnails
-- [ ] Saisonalitaets-Stabilitaet (Rolling 10J-Fenster)
-- [ ] Bull/Bear Regime-Split (VIX >25 vs <25)
-- [ ] Landing Page: OG-Image + Inter Font self-hosted
-- [ ] Wochentage Heatmap: Modus-Wechsel Bug
-- [ ] Weekend-Effekt + TOM Heatmap: Rendering-Bug
-- [ ] Tickers-Tabelle in Supabase (holiday_cal, exchange, kategorie)
 
 ## Tägliche Prüfungen (bei Session-Start)
 
