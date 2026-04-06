@@ -168,6 +168,7 @@
           <div class="kpi-row" id="vrp-kpis" style="margin-bottom:1rem"></div>
           <div id="chart-vrp-iv"></div>
           <div id="chart-vrp-diff"></div>
+          <div id="vrp-percentile-ribbon" style="margin-top:1rem"></div>
           <p class="box-info"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
         </div>
       </details>
@@ -756,6 +757,56 @@
     }
 
     // ── 1. Vol-Percentile-Ribbon ────────────────────────────────────────────
+    // Generischer Percentile-Ribbon Builder
+    // opts: { label, current, values (sorted), decimals, regimeLabels: [veryLow, low, mid, high, extreme], signed }
+    function buildRibbonHtml(opts) {
+      var values = opts.values;
+      if (!values || values.length < 10) return '';
+      var current = opts.current;
+      var dec = opts.decimals != null ? opts.decimals : 2;
+      var vMin = values[0], vMax = values[values.length - 1];
+      var p25 = percentile(values, 0.25);
+      var p50 = percentile(values, 0.50);
+      var p75 = percentile(values, 0.75);
+      var p95 = percentile(values, 0.95);
+
+      var rank = 0;
+      for (var i=0;i<values.length;i++) { if (values[i] <= current) rank = i + 1; }
+      var pctRank = (rank / values.length) * 100;
+
+      var pos = Math.max(0, Math.min(100, ((current - vMin) / (vMax - vMin)) * 100));
+
+      var regimes = opts.regimeLabels || ['Sehr Niedrig', 'Niedrig', 'Erh&ouml;ht', 'Hoch', 'Extrem'];
+      var regimeLabel = regimes[0];
+      if (current > p95) regimeLabel = regimes[4];
+      else if (current > p75) regimeLabel = regimes[3];
+      else if (current > p50) regimeLabel = regimes[2];
+      else if (current > p25) regimeLabel = regimes[1];
+
+      var fmt = function(v) {
+        var s = v.toFixed(dec);
+        return opts.signed && v >= 0 ? '+' + s : s;
+      };
+      var curStr = fmt(current);
+
+      var html = '<div class="vol-ribbon">';
+      html += '<div class="vol-ribbon__label">' + opts.label + '<b>' + curStr + '</b></div>';
+      html += '<div style="position:relative;padding-top:14px;padding-bottom:14px">';
+      html += '<div class="vol-ribbon__bar"></div>';
+      html += '<div class="vol-ribbon__marker" style="left:calc(' + pos.toFixed(1) + '% - 1.5px)" data-label="HEUTE"></div>';
+      html += '<div class="vol-ribbon__ticks">';
+      html += '<span>Min ' + fmt(vMin) + '</span>';
+      html += '<span>p25 ' + fmt(p25) + '</span>';
+      html += '<span>Median ' + fmt(p50) + '</span>';
+      html += '<span>p75 ' + fmt(p75) + '</span>';
+      html += '<span>p95 ' + fmt(p95) + '</span>';
+      html += '<span>Max ' + fmt(vMax) + '</span>';
+      html += '</div></div>';
+      html += '<div class="vol-ribbon__pct">Perzentil<b>' + pctRank.toFixed(0) + '%</b><span style="color:var(--accent)">' + regimeLabel + '</span></div>';
+      html += '</div>';
+      return html;
+    }
+
     function renderVolRibbon(df) {
       var el = document.getElementById('vol-percentile-ribbon');
       if (!df || !df.length) { el.style.display = 'none'; return; }
@@ -764,45 +815,15 @@
       if (vols.length < 10) { el.style.display = 'none'; return; }
 
       var current = df[df.length - 1].vol;
-      var vMin = vols[0], vMax = vols[vols.length - 1];
-      var p25 = percentile(vols, 0.25);
-      var p50 = percentile(vols, 0.50);
-      var p75 = percentile(vols, 0.75);
-      var p95 = percentile(vols, 0.95);
-
-      // Aktuelle Position im Quantil (0-1)
-      var rank = 0;
-      for (var i=0;i<vols.length;i++) { if (vols[i] <= current) rank = i + 1; }
-      var pctRank = (rank / vols.length) * 100;
-
-      // Position auf der Bar (0-100%)
-      var pos = Math.max(0, Math.min(100, ((current - vMin) / (vMax - vMin)) * 100));
-
       var volLabel = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
-      var lastDate = df[df.length - 1].date;
 
-      var regimeLabel = 'Sehr Niedrig';
-      if (current > p95) regimeLabel = 'Panik';
-      else if (current > p75) regimeLabel = 'Hoch';
-      else if (current > p50) regimeLabel = 'Erh&ouml;ht';
-      else if (current > p25) regimeLabel = 'Niedrig';
-
-      var html = '<div class="vol-ribbon">';
-      html += '<div class="vol-ribbon__label">' + volLabel + ' heute<b>' + current.toFixed(2) + '</b></div>';
-      html += '<div style="position:relative;padding-top:14px;padding-bottom:14px">';
-      html += '<div class="vol-ribbon__bar"></div>';
-      html += '<div class="vol-ribbon__marker" style="left:calc(' + pos.toFixed(1) + '% - 1.5px)" data-label="HEUTE"></div>';
-      html += '<div class="vol-ribbon__ticks">';
-      html += '<span>Min ' + vMin.toFixed(1) + '</span>';
-      html += '<span>p25 ' + p25.toFixed(1) + '</span>';
-      html += '<span>Median ' + p50.toFixed(1) + '</span>';
-      html += '<span>p75 ' + p75.toFixed(1) + '</span>';
-      html += '<span>p95 ' + p95.toFixed(1) + '</span>';
-      html += '<span>Max ' + vMax.toFixed(1) + '</span>';
-      html += '</div></div>';
-      html += '<div class="vol-ribbon__pct">Perzentil<b>' + pctRank.toFixed(0) + '%</b><span style="color:var(--accent)">' + regimeLabel + '</span></div>';
-      html += '</div>';
-      el.innerHTML = html;
+      el.innerHTML = buildRibbonHtml({
+        label: volLabel + ' heute',
+        current: current,
+        values: vols,
+        decimals: 2,
+        regimeLabels: ['Sehr Niedrig', 'Niedrig', 'Erh&ouml;ht', 'Hoch', 'Panik']
+      });
       el.style.display = '';
     }
 
@@ -1031,6 +1052,17 @@
       charts.vrpIV.render();
       charts.vrpDiff = new ApexCharts(document.getElementById('chart-vrp-diff'), cfgDiff);
       charts.vrpDiff.render();
+
+      // VRP Percentile Ribbon (wie in der Kopfzeile, aber für VRP)
+      var vrpRibbon = document.getElementById('vrp-percentile-ribbon');
+      vrpRibbon.innerHTML = buildRibbonHtml({
+        label: 'VRP heute',
+        current: curVRP,
+        values: vrpSorted,
+        decimals: 2,
+        signed: true,
+        regimeLabels: ['Vola stark unterbew.', 'Vola unterbewertet', 'Normal', 'Fear Premium', 'Extremes Premium']
+      });
     }
 
     // ── Main Load ────────────────────────────────────────────────────────────
