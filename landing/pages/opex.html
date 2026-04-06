@@ -53,6 +53,8 @@
     .vix-months input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
     .btn-mini{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);padding:.3rem;border-radius:5px;font-size:.75rem;cursor:pointer;font-family:var(--f-m)}
     .btn-mini:hover{border-color:var(--accent);color:var(--accent)}
+    #outlier-filter select{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m);cursor:pointer}
+    #outlier-filter select:focus{outline:none;border-color:var(--accent)}
     .chart-grid-12{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
     @media(max-width:1100px){.chart-grid-12{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:750px){.chart-grid-12{grid-template-columns:repeat(2,1fr)}}
@@ -143,6 +145,9 @@
         </div>
       </div>
 
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
       <hr>
       <h3>Technischer Filter</h3>
       <div id="indicator-filter"></div>
@@ -307,6 +312,7 @@
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
+  <script src="/landing/js/outlier.js"></script>
 
   <script>
   (function() {
@@ -1018,6 +1024,50 @@
     // ── Indicator Filter ──────────────────────────────────────────────────────
     var _getFilters = SA.indicators.renderFilterUI('indicator-filter', function(){ rerender(); });
 
+    // ── Outlier Filter ────────────────────────────────────────────────────────
+    var _getOutlierMethod = SA.outlier ?
+      SA.outlier.renderFilterUI('outlier-filter', function(){ rerender(); }) :
+      function(){ return 'off'; };
+
+    /**
+     * Wendet Outlier-Filter auf ein Event-Window-Array an.
+     * Nutzt cumReturn (Summe der Tagesrenditen im Fenster) als Kennzahl.
+     * IQR-Modi entfernen Ausreisser-Events komplett, Winsorize clippt cumReturn.
+     */
+    function applyOutlierFilter(windows, method) {
+      if (!method || method === 'off' || !SA.outlier || windows.length < 4) return windows;
+      var rets = windows.map(function(w){ return w.cumReturn || 0; });
+
+      if (method === 'winsorize') {
+        var clipped = SA.outlier.winsorize(rets, 3.0);
+        return windows.map(function(w, i) {
+          var copy = {};
+          for (var k in w) copy[k] = w[k];
+          copy.cumReturn = clipped[i];
+          return copy;
+        });
+      }
+      // IQR oder IQR-strict: Events komplett entfernen
+      var factor = method === 'iqr_strict' ? 3.0 : 1.5;
+      var isOut = SA.outlier.detectIQR(rets, factor);
+      return windows.filter(function(_, i) { return !isOut[i]; });
+    }
+
+    /** Badge-Anzeige: entfernte/geclippte Events. */
+    function updateOutlierBadge(before, after, method) {
+      var badge = document.getElementById('outlier-badge');
+      if (!badge) return;
+      if (!method || method === 'off') { badge.textContent = ''; return; }
+      var diff = before - after;
+      if (method === 'winsorize') {
+        badge.textContent = 'Winsorized (cumReturn geclippt auf 3\u03C3)';
+      } else if (diff > 0) {
+        badge.textContent = diff+' Event'+(diff===1?'':'s')+' entfernt ('+before+' \u2192 '+after+')';
+      } else {
+        badge.textContent = 'Keine Ausreisser gefunden';
+      }
+    }
+
     // ── Haupt-Logik ───────────────────────────────────────────────────────────
     function buildOpexDates(rows) {
       if (!rows || rows.length === 0) return [];
@@ -1065,6 +1115,24 @@
         return { date:e.vixDate, year:e.year, month:e.month, isTriple:e.isTriple };
       });
       var windowsVix = computeEventWindows(returns, vixEventsInput, daysBefore, daysAfter);
+
+      // Outlier-Filter anwenden (wirkt auf cumReturn)
+      var outlierMethod = _getOutlierMethod();
+      var beforeCount = 0, afterCount = 0;
+      if (currentMode === 'opex') {
+        beforeCount = opexView === 'triple' ? windowsTriple.length : windowsAll.length;
+      } else {
+        beforeCount = windowsVix.length;
+      }
+      windowsAll    = applyOutlierFilter(windowsAll,    outlierMethod);
+      windowsTriple = applyOutlierFilter(windowsTriple, outlierMethod);
+      windowsVix    = applyOutlierFilter(windowsVix,    outlierMethod);
+      if (currentMode === 'opex') {
+        afterCount = opexView === 'triple' ? windowsTriple.length : windowsAll.length;
+      } else {
+        afterCount = windowsVix.length;
+      }
+      updateOutlierBadge(beforeCount, afterCount, outlierMethod);
 
       _cachedData = { windowsAll:windowsAll, windowsTriple:windowsTriple, windowsVix:windowsVix, opexDates:eventsAll };
 
