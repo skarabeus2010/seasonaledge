@@ -84,7 +84,7 @@
       <div id="range-controls" style="display:none">
         <div class="range-controls">
           <label>Entry TDoM<input type="number" id="inp-entry-tdom" value="1" min="-23" max="23"></label>
-          <label>Exit TDoM<input type="number" id="inp-exit-tdom" value="-1" min="-23" max="23"></label>
+          <label>Exit TDoM<input type="number" id="inp-exit-tdom" value="5" min="-23" max="23"></label>
           <label>Entry Preis<select id="sel-entry-price"><option value="Open" selected>Open</option><option value="Close">Close</option></select></label>
           <label>Exit Preis<select id="sel-exit-price"><option value="Open">Open</option><option value="Close" selected>Close</option></select></label>
         </div>
@@ -983,7 +983,9 @@
         html += '<td>' + s.count + '</td></tr>';
       }
       html += '</tbody></table>';
-      document.getElementById('content-stats').innerHTML = html;
+      var statsEl = document.getElementById('content-stats');
+      statsEl.innerHTML = html;
+      if (SA.makeSortable) SA.makeSortable(statsEl.querySelector('table'));
     }
 
     // ── Render: Range Strategy ────────────────────────────────────────────────
@@ -1054,7 +1056,7 @@
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0); } }, title: { text: 'Equity (Start = 100)', style: { color: '#a89878', fontSize: '11px' } } },
         annotations: { yaxis: [{ y: 100, borderColor: 'rgba(255,255,255,.2)', strokeDashArray: 3 }] },
         dataLabels: { enabled: false },
-        title: { text: currentTicker + ' \u2014 Range: TDoM ' + entryTdom + ' \u2192 ' + exitTdom + ' (Equity)', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+        title: { text: currentTicker + ' \u2014 TDOM-Strategie: TDoM ' + entryTdom + ' \u2192 ' + exitTdom + ' (Equity)', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
       });
       charts.range.render();
 
@@ -1081,7 +1083,9 @@
         html += '<td class="' + cc(t.return_pct) + '">' + fmtPct(t.return_pct, 3) + '</td></tr>';
       }
       html += '</tbody></table>';
-      document.getElementById('range-trades').innerHTML = html;
+      var tradesEl = document.getElementById('range-trades');
+      tradesEl.innerHTML = html;
+      if (SA.makeSortable) SA.makeSortable(tradesEl.querySelector('table'));
     }
 
     // ── Outlier Filter + Indikator Filter ────────────────────────────────────

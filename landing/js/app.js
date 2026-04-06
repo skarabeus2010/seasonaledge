@@ -277,4 +277,72 @@ SA.renderTradingDayHeader = function(elementId, ticker, rows) {
     ' \u00B7 TDOM ' + tdomStr + ' \u00B7 TDOY ' + tdoyStr;
 };
 
+// ── Sortable Tables (wiederverwendbar) ──────────────────────────────────────
+
+/**
+ * Macht eine Tabelle sortierbar durch Klick auf <th>.
+ * - Erkennt Zahlen automatisch (inkl. %, $, Komma, -)
+ * - Click toggelt asc/desc, Pfeil wird angehaengt
+ * - Idempotent: doppelter Aufruf bricht nicht
+ *
+ * @param {HTMLElement|string} tableOrId - <table> Element oder dessen ID
+ */
+SA.makeSortable = function(tableOrId) {
+  var table = typeof tableOrId === 'string' ? document.getElementById(tableOrId) : tableOrId;
+  if (!table || table.dataset.sortableInit === '1') return;
+  table.dataset.sortableInit = '1';
+
+  var parseCell = function(txt) {
+    if (txt == null) return '';
+    txt = String(txt).replace(/[▲▼⚠]/g, '').trim();
+    // Zahl aus String extrahieren: erlaubt "-", ".", "," → Float
+    var m = txt.match(/-?[\d.,]+/);
+    if (m) {
+      var n = parseFloat(m[0].replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(n)) {
+        // Wenn Punkte als Dezimal: zweiter Versuch
+        var n2 = parseFloat(m[0].replace(/,/g, ''));
+        return !isNaN(n2) && Math.abs(n2) >= Math.abs(n) * 0.99 ? n2 : n;
+      }
+    }
+    return txt.toLowerCase();
+  };
+
+  var ths = table.querySelectorAll('thead th');
+  var state = { col: -1, dir: 'asc' };
+
+  ths.forEach(function(th, idx) {
+    th.style.cursor = 'pointer';
+    th.style.userSelect = 'none';
+    th.addEventListener('click', function() {
+      if (state.col === idx) {
+        state.dir = state.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.col = idx;
+        state.dir = 'asc';
+      }
+
+      // Pfeile entfernen und am aktiven Header setzen
+      ths.forEach(function(h) {
+        h.innerHTML = h.innerHTML.replace(/\s*[\u25B2\u25BC]$/, '');
+      });
+      th.innerHTML = th.innerHTML + (state.dir === 'asc' ? ' \u25B2' : ' \u25BC');
+
+      var tbody = table.querySelector('tbody');
+      if (!tbody) return;
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      rows.sort(function(a, b) {
+        var ca = a.cells[idx] ? parseCell(a.cells[idx].textContent) : '';
+        var cb = b.cells[idx] ? parseCell(b.cells[idx].textContent) : '';
+        var na = typeof ca === 'number', nb = typeof cb === 'number';
+        if (na && nb) return state.dir === 'asc' ? ca - cb : cb - ca;
+        if (na) return state.dir === 'asc' ? -1 : 1;
+        if (nb) return state.dir === 'asc' ? 1 : -1;
+        return state.dir === 'asc' ? String(ca).localeCompare(cb) : String(cb).localeCompare(ca);
+      });
+      rows.forEach(function(r) { tbody.appendChild(r); });
+    });
+  });
+};
+
 window.SA = SA;
