@@ -517,15 +517,18 @@
     }
 
     // ── Render: TDoM Bar Chart ────────────────────────────────────────────────
+    var MIN_N = 10; // Mindest-Anzahl pro TDoM für "stabile" Werte
+
     function renderBars(stats, direction) {
-      var cats = stats.map(function(s) { return String(s.tdom); });
+      var cats = stats.map(function(s) { return String(s.tdom) + (s.count < MIN_N ? ' \u26A0' : ''); });
       var vals = stats.map(function(s) { return parseFloat(s.avg_return.toFixed(4)); });
       var curTdom = getCurrentTdom(direction);
       var curIdx = curTdom != null ? stats.findIndex(function(s) { return s.tdom === curTdom; }) : -1;
 
-      // Bar-Farben: aktueller TDoM in Gold
+      // Bar-Farben: aktueller TDoM = Gold, n<MIN_N = transparent/orange, sonst grün/rot
       var barColors = vals.map(function(v, i) {
         if (i === curIdx) return '#FFD700';
+        if (stats[i].count < MIN_N) return v >= 0 ? 'rgba(26,138,69,0.4)' : 'rgba(192,57,43,0.4)';
         return v >= 0 ? '#1a8a45' : '#c0392b';
       });
 
@@ -548,8 +551,12 @@
         colors: barColors,
         plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
         grid: SA.chartTheme.grid,
-        tooltip: { theme: 'dark', y: { formatter: function(v) { return fmtPct(v, 4); } } },
-        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
+        tooltip: { theme: 'dark', custom: function(opts) {
+          var s = stats[opts.dataPointIndex];
+          var warn = s.count < MIN_N ? '<br><span style="color:#FFA726">\u26A0 Wenig Daten (n<' + MIN_N + ')</span>' : '';
+          return '<div style="padding:6px 10px;font-size:12px"><b>TDoM ' + s.tdom + '</b><br>\u00D8 Rendite: ' + fmtPct(s.avg_return, 4) + '<br>n=' + s.count + warn + '</div>';
+        } },
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month (\u26A0 = unsicher, n<' + MIN_N + ')', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(3) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
         annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }], xaxis: xAnnots },
         legend: { show: false },
@@ -561,14 +568,15 @@
 
     // ── Render: Win-Rate Chart ────────────────────────────────────────────────
     function renderWinRate(stats, direction) {
-      var cats = stats.map(function(s) { return String(s.tdom); });
+      var cats = stats.map(function(s) { return String(s.tdom) + (s.count < MIN_N ? ' \u26A0' : ''); });
       var vals = stats.map(function(s) { return parseFloat(s.win_rate.toFixed(1)); });
       var curTdom = getCurrentTdom(direction);
       var curIdx = curTdom != null ? stats.findIndex(function(s) { return s.tdom === curTdom; }) : -1;
 
-      // Bar-Farben: aktueller TDoM in Gold
+      // Bar-Farben: aktueller TDoM = Gold, n<MIN_N = transparent
       var barColors = vals.map(function(v, i) {
         if (i === curIdx) return '#FFD700';
+        if (stats[i].count < MIN_N) return v >= 50 ? 'rgba(26,138,69,0.4)' : 'rgba(192,57,43,0.4)';
         return v >= 50 ? '#1a8a45' : '#c0392b';
       });
 
@@ -591,8 +599,12 @@
         colors: barColors,
         plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
         grid: SA.chartTheme.grid,
-        tooltip: { theme: 'dark', y: { formatter: function(v) { return v.toFixed(1) + ' %'; } } },
-        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
+        tooltip: { theme: 'dark', custom: function(opts) {
+          var s = stats[opts.dataPointIndex];
+          var warn = s.count < MIN_N ? '<br><span style="color:#FFA726">\u26A0 Wenig Daten (n<' + MIN_N + ')</span>' : '';
+          return '<div style="padding:6px 10px;font-size:12px"><b>TDoM ' + s.tdom + '</b><br>Win-Rate: ' + s.win_rate.toFixed(1) + ' %<br>n=' + s.count + warn + '</div>';
+        } },
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month (\u26A0 = unsicher, n<' + MIN_N + ')', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0) + ' %'; } }, max: 100, min: 0, title: { text: 'Win-Rate %', style: { color: '#a89878', fontSize: '11px' } } },
         annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }], xaxis: xAnnots },
         legend: { show: false },
@@ -696,10 +708,13 @@
 
     // ── Render: Statistik-Tabelle ─────────────────────────────────────────────
     function renderStats(stats) {
-      var html = '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Median</th><th>Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
+      var html = '<p class="box-info" style="margin-bottom:.5rem">\u26A0 = Wenig Daten (n&lt;' + MIN_N + '), Werte unsicher.</p>';
+      html += '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Median</th><th>Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
       for (var i = 0; i < stats.length; i++) {
         var s = stats[i];
-        html += '<tr><td><b>' + s.tdom + '</b></td>';
+        var warn = s.count < MIN_N ? ' <span style="color:#FFA726" title="n<' + MIN_N + '">\u26A0</span>' : '';
+        var rowStyle = s.count < MIN_N ? ' style="opacity:.6"' : '';
+        html += '<tr' + rowStyle + '><td><b>' + s.tdom + '</b>' + warn + '</td>';
         html += '<td class="' + cc(s.avg_return) + '">' + fmtPct(s.avg_return, 4) + '</td>';
         html += '<td class="' + (s.win_rate >= 50 ? 'pos' : 'neg') + '">' + s.win_rate.toFixed(1) + ' %</td>';
         html += '<td class="' + cc(s.median) + '">' + fmtPct(s.median, 4) + '</td>';
