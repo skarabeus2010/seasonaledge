@@ -470,28 +470,58 @@
 
     // ── Multi-Day Range Berechnung ────────────────────────────────────────────
     function calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice, selectedMonths) {
+      // Validierung: 0 nicht erlaubt, NaN nicht erlaubt
+      if (!entryTdom || !exitTdom || isNaN(entryTdom) || isNaN(exitTdom)) return [];
+
       var entryCol = entryTdom > 0 ? 'tdom' : 'tdom_reverse';
       var exitCol = exitTdom > 0 ? 'tdom' : 'tdom_reverse';
 
-      // Group by year-month, filter by selectedMonths
+      // Cross-Month-Modus: Entry negativ (von hinten) + Exit positiv (von vorn)
+      // → Turn of the Month: Entry in Monat M, Exit in Monat M+1
+      var crossMonth = (entryTdom < 0 && exitTdom > 0);
+
+      // Group by year-month (alle rows, filter selectedMonths kommt später am Entry)
       var groups = {};
+      var sortedKeys = [];
       for (var i = 0; i < rows.length; i++) {
-        if (selectedMonths && selectedMonths.indexOf(rows[i].month) < 0) continue;
-        var key = rows[i].year + '-' + rows[i].month;
-        if (!groups[key]) groups[key] = [];
+        var key = rows[i].year + '-' + (rows[i].month < 10 ? '0' + rows[i].month : rows[i].month);
+        if (!groups[key]) { groups[key] = []; sortedKeys.push(key); }
         groups[key].push(rows[i]);
       }
+      sortedKeys.sort();
 
       var trades = [];
-      for (var key in groups) {
+      for (var ki = 0; ki < sortedKeys.length; ki++) {
+        var key = sortedKeys[ki];
         var grp = groups[key];
-        var entryRow = null, exitRow = null;
+        // Monatsfilter greift auf ENTRY-Monat
+        if (selectedMonths && selectedMonths.indexOf(grp[0].month) < 0) continue;
+
+        // Entry in grp suchen
+        var entryRow = null;
         for (var k = 0; k < grp.length; k++) {
-          if (grp[k][entryCol] === entryTdom && !entryRow) entryRow = grp[k];
-          if (grp[k][exitCol] === exitTdom) exitRow = grp[k];
+          if (grp[k][entryCol] === entryTdom) { entryRow = grp[k]; break; }
         }
-        if (!entryRow || !exitRow) continue;
+        if (!entryRow) continue;
+
+        // Exit: je nach Modus
+        var exitRow = null;
+        if (crossMonth) {
+          // Exit im nächsten Monat suchen
+          if (ki + 1 >= sortedKeys.length) continue;
+          var nextGrp = groups[sortedKeys[ki + 1]];
+          for (var k = 0; k < nextGrp.length; k++) {
+            if (nextGrp[k][exitCol] === exitTdom) { exitRow = nextGrp[k]; break; }
+          }
+        } else {
+          // Exit im gleichen Monat
+          for (var k = 0; k < grp.length; k++) {
+            if (grp[k][exitCol] === exitTdom) { exitRow = grp[k]; break; }
+          }
+        }
+        if (!exitRow) continue;
         if (exitRow.date <= entryRow.date) continue;
+
         var pe = entryPrice === 'Open' ? entryRow.open : entryRow.close;
         var px = exitPrice === 'Open' ? exitRow.open : exitRow.close;
         if (pe <= 0) continue;
