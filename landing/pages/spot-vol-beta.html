@@ -122,23 +122,23 @@
       <!-- KPIs -->
       <div class="kpi-row" id="kpi-row"></div>
 
-      <!-- Chart 1: SPX + Daily Beta + VIX (3 stacked) -->
-      <details open id="sec-triple" style="display:none">
-        <summary>Spot, Daily Spot-Vol Beta &amp; Vol</summary>
-        <div class="content">
-          <div id="chart-spx" style="margin-bottom:-1.4rem"></div>
-          <div id="chart-daily-beta" style="margin:-1.4rem 0"></div>
-          <div id="chart-vix" style="margin-top:-1.4rem"></div>
-          <p class="box-info">Gr&uuml;ne Balken = normales inverses Verhalten (Spot-Rendite &times; Vol-&Auml;nderung &lt; 0). Rote Balken = beide in gleiche Richtung (anomal).</p>
-        </div>
-      </details>
-
-      <!-- Chart 2: Scatter + Regression -->
+      <!-- Scatter + Regression (oben, Hauptergebnis) -->
       <details open id="sec-scatter" style="display:none">
         <summary>Scatter &amp; Regression</summary>
         <div class="content">
           <div id="chart-scatter"></div>
           <div id="beta-hint"></div>
+        </div>
+      </details>
+
+      <!-- Spot + Daily Beta + Vol (3 synchronisierte Charts) -->
+      <details open id="sec-triple" style="display:none">
+        <summary>Spot, Daily Spot-Vol Beta &amp; Vol</summary>
+        <div class="content">
+          <div id="chart-spx"></div>
+          <div id="chart-daily-beta"></div>
+          <div id="chart-vix"></div>
+          <p class="box-info">Gr&uuml;ne Balken = normales inverses Verhalten (Spot-Rendite &times; Vol-&Auml;nderung &lt; 0). Rote Balken = beide in gleiche Richtung (anomal).</p>
         </div>
       </details>
 
@@ -482,10 +482,10 @@
         })
       };
 
-      // Chart 1: Spot
+      // Chart 1: Spot (area, damit Gradient rendert)
       var cfg1 = {
         series: [{ name: _spotTicker, data: spotData }],
-        chart: { type: 'line', height: 220, group: group, id: 'spx', toolbar: { show: false }, zoom: { enabled: true }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        chart: { type: 'area', height: 240, group: group, id: 'spx', toolbar: { show: false }, zoom: { enabled: true }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
         colors: [COL_SPOT],
         stroke: { width: 1.5, curve: 'straight' },
         fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.15, opacityTo: 0, stops: [0, 100] } },
