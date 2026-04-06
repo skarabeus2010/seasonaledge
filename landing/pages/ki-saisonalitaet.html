@@ -26,8 +26,8 @@
     /* Hero */
     .hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:1rem;margin-bottom:1.5rem}
     @media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
-    .hero-score{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;overflow:hidden}
-    .hero-score::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 30%, rgba(232,168,32,.08), transparent 60%);pointer-events:none}
+    .hero-score{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative}
+    .hero-score::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 30%, rgba(232,168,32,.08), transparent 60%);border-radius:inherit;pointer-events:none}
     .score-label{font-family:var(--f-m);font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
     .score-value{font-family:var(--f-d);font-size:4.5rem;font-weight:800;line-height:1;margin-bottom:.5rem;font-variant-numeric:tabular-nums}
     .score-value .of-ten{font-size:1.75rem;color:var(--muted);font-weight:600}
@@ -36,7 +36,14 @@
     .score-signal.bearish{background:rgba(248,113,113,.35);color:#fff;border:1px solid rgba(248,113,113,.7)}
     .score-signal.neutral{background:rgba(232,168,32,.35);color:#fff;border:1px solid rgba(232,168,32,.7)}
     .score-meta{font-size:.75rem;color:var(--muted);margin-top:.6rem;text-align:center}
-    .hero-radar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
+    .hero-radar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;position:relative}
+
+    /* Info-Badge + Tooltip */
+    .info-badge{position:absolute;top:.75rem;right:.75rem;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--f-d);font-size:.75rem;font-weight:700;font-style:italic;cursor:help;z-index:5;transition:all .2s;user-select:none}
+    .info-badge:hover{background:rgba(232,168,32,.2);border-color:var(--accent);color:var(--accent)}
+    .info-tooltip{position:absolute;top:2.65rem;right:.75rem;width:340px;max-width:calc(100vw - 4rem);background:rgba(10,10,14,.98);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-size:.75rem;color:var(--dim);line-height:1.6;box-shadow:0 10px 30px rgba(0,0,0,.65);z-index:100;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .2s, transform .2s, visibility .2s;pointer-events:none;text-align:left}
+    .info-badge:hover ~ .info-tooltip,.info-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+    .info-tooltip b{color:var(--text)}
 
     /* Sub-Scores */
     .sub-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem}
@@ -155,31 +162,33 @@
       <!-- Hero: Score + Radar -->
       <div class="hero-grid">
         <div class="hero-score">
+          <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum KI Score">i</div>
+          <div class="info-tooltip">
+            <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 4 unabh&auml;ngige
+            Sub-Scores &agrave; 0&ndash;2.5 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
+            <span style="color:#34d399;font-weight:600">Bullish &ge; 6.5</span> &middot;
+            <span style="color:var(--accent);font-weight:600">Neutral 3.5&ndash;6.5</span> &middot;
+            <span style="color:#f87171;font-weight:600">Bearish &le; 3.5</span><br><br>
+            Je h&ouml;her der Score, desto st&auml;rker deuten die historische Saisonalit&auml;t, der Muster-Match
+            und der aktuelle Verlauf in die gleiche Richtung. Der Score ist keine Handelsempfehlung,
+            sondern ein Wahrscheinlichkeits-Indikator f&uuml;r das saisonale Setup in den n&auml;chsten Wochen.
+          </div>
           <div class="score-label">KI Seasonal Score</div>
           <div class="score-value" id="score-value">&ndash;<span class="of-ten"> / 10</span></div>
           <div class="score-signal neutral" id="score-signal">&ndash;</div>
           <div class="score-meta" id="score-meta">Composite aus 4 Sub-Scores</div>
-          <p style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-top:1rem;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.06);text-align:left;max-width:420px">
-            <b style="color:var(--dim)">So liest du den Score:</b> Der KI Seasonal Score aggregiert 4 unabh&auml;ngige
-            Sub-Scores &agrave; 0&ndash;2.5 Punkte zu einer Gesamtnote von 0&ndash;10.
-            <span style="color:#34d399;font-weight:600">Bullish ≥ 6.5</span> &middot;
-            <span style="color:var(--accent);font-weight:600">Neutral 3.5&ndash;6.5</span> &middot;
-            <span style="color:#f87171;font-weight:600">Bearish ≤ 3.5</span>.
-            Je h&ouml;her der Score, desto st&auml;rker deuten die historische Saisonalit&auml;t, der Muster-Match
-            und der aktuelle Verlauf in die gleiche Richtung. Der Score ist keine Handelsempfehlung,
-            sondern ein Wahrscheinlichkeits-Indikator f&uuml;r das saisonale Setup in den n&auml;chsten Wochen.
-          </p>
         </div>
         <div class="hero-radar">
-          <div id="chart-radar"></div>
-          <p style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-top:.5rem;padding-top:.6rem;border-top:1px solid rgba(255,255,255,.06)">
-            <b style="color:var(--dim)">So liest du den Radar:</b> Jede Achse zeigt einen der 4 Sub-Scores
-            (0&ndash;2.5&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.
+          <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Radar">i</div>
+          <div class="info-tooltip">
+            <b>So liest du den Radar:</b> Jede Achse zeigt einen der 4 Sub-Scores
+            (0&ndash;2.5&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
             Ist der Radar einseitig &mdash; z.B. stark bei <b>Musterpfad</b> und <b>Trend</b>, aber schwach bei
             <b>Tracking</b> &mdash; folgt das aktuelle Jahr noch nicht dem erwarteten Muster: das Signal ist
             theoretisch bullish, aber noch nicht best&auml;tigt. Ein ausgewogener, voller Radar bedeutet, dass
             alle vier Indikatoren in die gleiche Richtung zeigen und das Gesamt-Signal besonders belastbar ist.
-          </p>
+          </div>
+          <div id="chart-radar"></div>
         </div>
       </div>
 
