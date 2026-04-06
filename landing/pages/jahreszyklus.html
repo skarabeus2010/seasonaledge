@@ -331,11 +331,19 @@
       });
     }
 
-    // ── Statistik-Helpers ────────────────────────────────────────────────────
-    function mean(arr) { if(!arr.length)return 0; var s=0; for(var i=0;i<arr.length;i++)s+=arr[i]; return s/arr.length; }
-    function median(arr) { if(!arr.length)return 0; var s=arr.slice().sort(function(a,b){return a-b;}); var m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
-    function stdev(arr) { if(arr.length<2)return 0; var m=mean(arr),sq=0; for(var i=0;i<arr.length;i++)sq+=(arr[i]-m)*(arr[i]-m); return Math.sqrt(sq/arr.length); }
-    function percentileOf(arr, val) { var c=0; for(var i=0;i<arr.length;i++)if(arr[i]<=val)c++; return arr.length?c/arr.length*100:0; }
+    // ── Statistik-Helpers (NaN-safe) ─────────────────────────────────────────
+    function _clean(arr) {
+      var out = [];
+      for (var i=0;i<arr.length;i++) {
+        var v = arr[i];
+        if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) out.push(v);
+      }
+      return out;
+    }
+    function mean(arr) { var v=_clean(arr); if(!v.length)return 0; var s=0; for(var i=0;i<v.length;i++)s+=v[i]; return s/v.length; }
+    function median(arr) { var v=_clean(arr); if(!v.length)return 0; var s=v.sort(function(a,b){return a-b;}); var m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+    function stdev(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/v.length); }
+    function percentileOf(arr, val) { var v=_clean(arr); var c=0; for(var i=0;i<v.length;i++)if(v[i]<=val)c++; return v.length?c/v.length*100:0; }
     function rollingMean(arr, w) {
       if (w <= 1) return arr.slice();
       var out=[]; var half=Math.floor(w/2);
@@ -672,16 +680,40 @@
     var COL_POS=JZ.COL_POS, COL_NEG=JZ.COL_NEG;
 
     function pad365(arr) {
-      var out = arr.slice(0,365);
-      while (out.length<365) out.push(null);
-      return out.map(function(v){ return v==null ? null : Math.round(v*100)/100; });
+      var out = [];
+      for (var i=0;i<365;i++) {
+        var v = arr[i];
+        if (v == null || typeof v !== 'number' || isNaN(v) || !isFinite(v)) out.push(null);
+        else out.push(Math.round(v*100)/100);
+      }
+      return out;
     }
     function fmtPct(v,d) { d=d||2; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
-    function cats365() { var c=[]; for(var i=1;i<=365;i++)c.push(String(i)); return c; }
+    /** Numeric x-axis formatter: bekommt Float-Position 0..364, mappt auf Monatsnamen. */
     function monthLabelFormatter(v) {
-      var d=parseInt(v); if(!d) return '';
-      var idx = MONTH_STARTS_DOY.indexOf(d);
-      return idx>=0 ? MONTHS_DE[idx] : '';
+      // v ist 0-basiert (Array-Index). Konvertiere zu DOY 1-basiert.
+      var doy = Math.round(parseFloat(v)) + 1;
+      for (var mi=11; mi>=0; mi--) {
+        if (doy >= MONTH_STARTS_DOY[mi]) return MONTHS_DE[mi];
+      }
+      return '';
+    }
+    /** Gemeinsame xaxis-Konfiguration für alle 365-Tag-Charts. */
+    function xaxisDoy() {
+      return {
+        type: 'numeric',
+        min: 0, max: 364,
+        tickAmount: 11,
+        labels: {
+          style:{colors:'#a89878',fontSize:'11px'},
+          formatter: monthLabelFormatter,
+          rotate: 0,
+          showDuplicates: false,
+          hideOverlappingLabels: true
+        },
+        axisTicks: { show: false },
+        tooltip: { enabled: false }
+      };
     }
 
     // ── Render: Hauptchart (Saisonalverlauf) ────────────────────────────────
@@ -809,25 +841,13 @@
             return 'Tag '+d;
           }}
         }),
-        xaxis: {
-          type:'category', categories:cats365(),
-          tickAmount: 12,
-          labels: {
-            style:{colors:'#a89878',fontSize:'11px'},
-            formatter: monthLabelFormatter,
-            hideOverlappingLabels: true,
-            rotate: 0,
-            showDuplicates: false
-          },
-          tooltip: { enabled:false },
-          axisTicks: { show:false }
-        },
+        xaxis: xaxisDoy(),
         yaxis: {
           labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
           title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
         },
         annotations: {
-          xaxis: [{ x: String(JZ.todayDoy()), borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
+          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
                     label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
@@ -880,14 +900,10 @@
         fill: { type:'gradient', gradient:{opacityFrom:.25, opacityTo:.02} },
         colors: ['#ff6b6b'],
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: {
-          type:'category', categories:cats365(), tickAmount:12,
-          labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:monthLabelFormatter,hideOverlappingLabels:true,rotate:0},
-          tooltip:{enabled:false}
-        },
+        xaxis: xaxisDoy(),
         yaxis: { min:0, max:100, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
         annotations: {
-          xaxis: [{ x: String(JZ.todayDoy()), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4,
+          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.6)', strokeDashArray:4,
                     label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.8)',fontSize:'10px'}} }],
           yaxis: [{ y:50, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }]
         },
@@ -1182,9 +1198,7 @@
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { type:'category', categories:cats365(), tickAmount:12,
-                 labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:monthLabelFormatter,hideOverlappingLabels:true,rotate:0},
-                 tooltip:{enabled:false} },
+        xaxis: xaxisDoy(),
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
@@ -1256,9 +1270,7 @@
         stroke: { width:widths, curve:'smooth' },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { type:'category', categories:cats365(), tickAmount:12,
-                 labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:monthLabelFormatter,hideOverlappingLabels:true,rotate:0},
-                 tooltip:{enabled:false} },
+        xaxis: xaxisDoy(),
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
         legend: { show:true, position:'top', fontSize:'11px' },
@@ -1332,9 +1344,7 @@
         stroke: { width:widths, curve:'straight' },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { type:'category', categories:cats365(), tickAmount:12,
-                 labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:monthLabelFormatter,hideOverlappingLabels:true,rotate:0},
-                 tooltip:{enabled:false} },
+        xaxis: xaxisDoy(),
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
@@ -1446,18 +1456,22 @@
         years.length + ' Jahre · Glättung: ' + smoothing + 'd';
 
       JZ.destroyAll();
-      JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure);
-      JZ.renderDetrend(avg, ticker, years.length);
-      JZ.renderMonthly(yearData, ticker);
-      JZ.renderSignificance(yearData, 'month');
-      JZ.renderQuarterly(yearData, ticker);
-      JZ.renderSignificance(yearData, 'quarter');
-      JZ.renderSignificance(yearData, 'cycle');
-      JZ.renderCycleMatch(yearData);
-      JZ.renderHeatmap(yearData, ticker);
-      JZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual);
-      JZ.renderVolatility(yearData, ticker, volaWindow, showCurrent);
-      JZ.renderDrawdownCycle(yearData, ticker);
+      // Try/catch um jede Render-Funktion, damit ein Fehler nicht alles bricht
+      function safeRender(name, fn) {
+        try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
+      }
+      safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
+      safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length); });
+      safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
+      safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
+      safeRender('quarterly',     function(){ JZ.renderQuarterly(yearData, ticker); });
+      safeRender('quarterly-sig', function(){ JZ.renderSignificance(yearData, 'quarter'); });
+      safeRender('cycle-sig',     function(){ JZ.renderSignificance(yearData, 'cycle'); });
+      safeRender('cycle-match',   function(){ JZ.renderCycleMatch(yearData); });
+      safeRender('heatmap',       function(){ JZ.renderHeatmap(yearData, ticker); });
+      safeRender('drawdown',      function(){ JZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
+      safeRender('volatility',    function(){ JZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
+      safeRender('dd-cycle',      function(){ JZ.renderDrawdownCycle(yearData, ticker); });
       JZ.showSections(true);
     }
 
