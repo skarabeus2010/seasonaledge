@@ -268,12 +268,30 @@
 
     // ── OPEX-Datum Berechnung ────────────────────────────────────────────────
     function getOpexDay(y, m) {
-      // 3. Freitag im Monat (Freitag = 5 per JS getDay())
+      // 3. Freitag im Monat (Kalender, Freitag = 5 per JS getDay())
       return SA.holidays._nthDow(y, m, 5, 3);
     }
 
-    function getOpexDateStr(y, m) {
+    /**
+     * Kalender-3.Freitag als String (ohne Feiertag-Anpassung).
+     * Wird als Basis fuer die VIXpiration-Berechnung verwendet (CBOE-Regel).
+     */
+    function getOpexCalendarStr(y, m) {
       return ds(y, m, getOpexDay(y, m));
+    }
+
+    /**
+     * EFFEKTIVES OPEX-Datum: der Handelstag, an dem der Verfall stattfindet.
+     * CBOE-Regel: Faellt der 3. Freitag auf einen NYSE-Feiertag,
+     * wird der Verfall auf den VORHERIGEN Handelstag (meist Donnerstag) vorgezogen.
+     */
+    function getOpexDateStr(y, m) {
+      var opexDay = getOpexDay(y, m);
+      var calStr  = ds(y, m, opexDay);
+      if (SA.holidays.isTradingDay(calStr, 'NYSE')) return calStr;
+      // Feiertag → vorheriger HT (meist Do bei Good Friday, oder Do bei Juneteenth-Fr)
+      var dt = new Date(y, m - 1, opexDay);
+      return _prevTradingDate(dt).str;
     }
 
     /**
@@ -298,15 +316,17 @@
     }
 
     function getVixpirationDateStr(y, m) {
-      var opexDay = getOpexDay(y, m);
-      var opexStr = ds(y, m, opexDay);
-      var vixDt   = new Date(y, m - 1, opexDay);
+      // CBOE verwendet den KALENDER-3.Freitag (nicht den adjustierten OPEX-Tag!)
+      // als Basis fuer "minus 30 Kalendertage"
+      var opexDay     = getOpexDay(y, m);
+      var calFridayStr = ds(y, m, opexDay);
+      var vixDt        = new Date(y, m - 1, opexDay);
       vixDt.setDate(vixDt.getDate() - 30);
-      var vixStr  = ds(vixDt.getFullYear(), vixDt.getMonth()+1, vixDt.getDate());
+      var vixStr       = ds(vixDt.getFullYear(), vixDt.getMonth()+1, vixDt.getDate());
 
       // CBOE-Regel: Wenn Basis-Freitag ODER Mittwoch ein Feiertag ist → -1 HT
-      var fridayHoliday    = !SA.holidays.isTradingDay(opexStr, 'NYSE');
-      var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,  'NYSE');
+      var fridayHoliday    = !SA.holidays.isTradingDay(calFridayStr, 'NYSE');
+      var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,       'NYSE');
       if (fridayHoliday || wednesdayHoliday) {
         var prev = _prevTradingDate(vixDt);
         vixStr = prev.str;
