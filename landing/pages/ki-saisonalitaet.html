@@ -73,7 +73,7 @@
     .legend-row .l-truepath::before{background:#e8a820;height:4px}
     .legend-row .l-current::before{background:#facc15;height:4px}
     .legend-row .l-match::before{background:#60a5fa}
-    .legend-row .l-proj::before{background:rgba(52,211,153,.6)}
+    .legend-row .l-proj::before{background:#10b981;height:5px}
   </style>
 </head>
 <body>
@@ -625,7 +625,7 @@
         strokeDashes.push(0);
       }
 
-      // 5. Projektion (grüne gestrichelte Linie, nur ab heute)
+      // 5. Projektion (fette solide grüne Linie, nur ab heute)
       if (projection) {
         var projData = new Array(365).fill(null);
         for (var k = 0; k < projection.days.length; k++) {
@@ -633,9 +633,9 @@
           if (di >= 0 && di < 365) projData[di] = round2(projection.values[k]);
         }
         series.push({ name: 'Projektion', data: projData });
-        colors.push(COL_POS);
-        strokeWidths.push(3);
-        strokeDashes.push(6);
+        colors.push('#10b981');
+        strokeWidths.push(5);
+        strokeDashes.push(0);
       }
 
       // Kategorien 1..365 als Strings (zwingt ApexCharts auf category axis, robust)
