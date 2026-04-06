@@ -722,25 +722,28 @@
       var avgSmooth = JZ.rollingMean(avg, smoothing);
       var nYears = Object.keys(yearData).length;
 
-      var series = [];
-      var colors = [];
-      var strokeWidths = [];
-      var strokeDashes = [];
+      // Sammle Serien-Daten + Metadaten
+      // axisGroup: 'left' (default), 'right_individual', 'right_pressure'
+      var seriesDef = [];
 
-      // 1. Einzeljahre (dünne graue Linien) — zuerst, damit sie hinten liegen
+      // 1. Einzeljahre → rechte Y-Achse (dynamischer Range)
+      var individualNames = [];
       if (showIndividual) {
         var yrKeys = Object.keys(yearData).map(Number).sort();
         for (var i=0;i<yrKeys.length;i++) {
           var y = yrKeys[i];
-          if (y === currentYear) continue; // Aktuelles Jahr wird separat gezeichnet
-          series.push({ name: String(y), data: pad365(yearData[y].full_365) });
-          colors.push('rgba(180,200,230,.22)');
-          strokeWidths.push(1);
-          strokeDashes.push(0);
+          if (y === currentYear) continue;
+          var nm = String(y);
+          individualNames.push(nm);
+          seriesDef.push({
+            name: nm, data: pad365(yearData[y].full_365),
+            color: 'rgba(180,200,230,.30)', width: 1, dash: 0,
+            axis: 'right_individual'
+          });
         }
       }
 
-      // 2. Perzentil-Bänder (25./75.) als zwei sichtbare dünne Linien
+      // 2. Perzentil-Bänder → linke Achse
       if (showPercentile && Object.keys(yearData).length>=5) {
         var allCurves = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
         var p25 = [], p75 = [];
@@ -750,38 +753,26 @@
           p75.push(vals[Math.floor(vals.length*0.75)]);
         }
         if (smoothing>1) { p25 = JZ.rollingMean(p25, smoothing); p75 = JZ.rollingMean(p75, smoothing); }
-        series.push({ name:'75. Perzentil', data: pad365(p75) });
-        colors.push('rgba(52,211,153,.55)');
-        strokeWidths.push(1.8);
-        strokeDashes.push(0);
-        series.push({ name:'25. Perzentil', data: pad365(p25) });
-        colors.push('rgba(52,211,153,.55)');
-        strokeWidths.push(1.8);
-        strokeDashes.push(0);
+        seriesDef.push({ name:'75. Perzentil', data: pad365(p75), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
+        seriesDef.push({ name:'25. Perzentil', data: pad365(p25), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
       }
 
-      // 3. Konfidenzband (±1σ) als zwei sichtbare dünne gestrichelte Linien
+      // 3. Konfidenzband (±1σ) → linke Achse
       if (showBands && std && std.length===365) {
         var upper = avg.map(function(a,i){ return a+std[i]; });
         var lower = avg.map(function(a,i){ return a-std[i]; });
         if (smoothing>1) { upper = JZ.rollingMean(upper, smoothing); lower = JZ.rollingMean(lower, smoothing); }
-        series.push({ name:'+1σ', data: pad365(upper) });
-        colors.push('rgba(77,159,255,.6)');
-        strokeWidths.push(1.5);
-        strokeDashes.push(4);
-        series.push({ name:'−1σ', data: pad365(lower) });
-        colors.push('rgba(77,159,255,.6)');
-        strokeWidths.push(1.5);
-        strokeDashes.push(4);
+        seriesDef.push({ name:'+1σ', data: pad365(upper), color:'rgba(77,159,255,.6)', width:1.5, dash:4, axis:'left' });
+        seriesDef.push({ name:'−1σ', data: pad365(lower), color:'rgba(77,159,255,.6)', width:1.5, dash:4, axis:'left' });
       }
 
-      // 4. Saisonaler Ø (prominent, dick)
-      series.push({ name:'Saisonaler Ø ('+nYears+'J)', data: pad365(avgSmooth) });
-      colors.push(COL_AVG);
-      strokeWidths.push(3.5);
-      strokeDashes.push(0);
+      // 4. Saisonaler Ø → linke Achse
+      seriesDef.push({
+        name:'Saisonaler Ø ('+nYears+'J)', data: pad365(avgSmooth),
+        color:COL_AVG, width:3.5, dash:0, axis:'left'
+      });
 
-      // 5. Präsidentenzyklus-Overlays (für jeden aktiven Zyklus)
+      // 5. Präsidentenzyklus-Overlays → linke Achse (NaN-safe via mean helper)
       for (var c=1;c<=4;c++) {
         if (!cycleOverlay[c]) continue;
         var cycleYears = [];
@@ -789,40 +780,77 @@
         if (cycleYears.length<2) continue;
         var cycleAvg = [];
         for (var d=0;d<365;d++) {
-          var s=0;
-          for (var i=0;i<cycleYears.length;i++) s+=yearData[cycleYears[i]].full_365[d];
-          cycleAvg.push(s/cycleYears.length);
+          var dvals = [];
+          for (var i=0;i<cycleYears.length;i++) {
+            var v = yearData[cycleYears[i]].full_365[d];
+            if (v != null && !isNaN(v) && isFinite(v)) dvals.push(v);
+          }
+          cycleAvg.push(dvals.length ? JZ.mean(dvals) : null);
         }
         if (smoothing>1) cycleAvg = JZ.rollingMean(cycleAvg, smoothing);
-        series.push({ name: CYCLE_LABELS[c]+' ('+cycleYears.length+'y)', data: pad365(cycleAvg) });
-        colors.push(CYCLE_COLORS[c]);
-        strokeWidths.push(2);
-        strokeDashes.push(5);
+        seriesDef.push({
+          name: CYCLE_LABELS[c]+' ('+cycleYears.length+'y)',
+          data: pad365(cycleAvg), color: CYCLE_COLORS[c], width: 2.5, dash: 5, axis: 'left'
+        });
       }
 
-      // 6. Aktuelles Jahr (gold, dick)
+      // 6. Aktuelles Jahr → linke Achse (gold, dick)
       if (showCurrent && yearData[currentYear]) {
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
         var cc = yearData[currentYear].full_365;
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = cc[i];
-        series.push({ name: currentYear+' (aktuell)', data: pad365(curArr) });
-        colors.push(COL_CURRENT);
-        strokeWidths.push(3);
-        strokeDashes.push(0);
+        seriesDef.push({
+          name: currentYear+' (aktuell)', data: pad365(curArr),
+          color: COL_CURRENT, width: 3, dash: 0, axis: 'left'
+        });
       }
 
-      // 7. Pressure Chart (separate Y-Achse)
+      // 7. Pressure → eigene rechte Y-Achse
       var pressureInfo = null;
       if (showPressure) {
         var pres = JZ.computePressureCurve(yearData, smoothing);
         if (pres.curve) {
-          series.push({ name:'Pressure', data: pad365(pres.curve) });
-          colors.push(COL_PRESSURE);
-          strokeWidths.push(2);
-          strokeDashes.push(0);
+          seriesDef.push({
+            name:'Pressure', data: pad365(pres.curve),
+            color: COL_PRESSURE, width: 2, dash: 0, axis: 'right_pressure'
+          });
           pressureInfo = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
         }
+      }
+
+      // Arrays für ApexCharts aufbereiten
+      var series = seriesDef.map(function(s){ return { name:s.name, data:s.data }; });
+      var colors = seriesDef.map(function(s){ return s.color; });
+      var strokeWidths = seriesDef.map(function(s){ return s.width; });
+      var strokeDashes = seriesDef.map(function(s){ return s.dash; });
+
+      // Y-Axes aufbauen: links default, rechts nach Bedarf
+      // ApexCharts: seriesName als Array bindet mehrere Serien an eine Achse.
+      // Default-Achse (ohne seriesName) muss IMMER existieren.
+      var yaxes = [];
+      // Linke Hauptachse — fängt alles ohne seriesName-Match ab
+      yaxes.push({
+        labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+        title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+      });
+      // Rechte Achse für Einzeljahre (auto-scaling, gedämpfte Farbe)
+      if (individualNames.length > 0) {
+        yaxes.push({
+          seriesName: individualNames,  // Array von Jahres-Namen
+          opposite: true, show: true,
+          labels: { style:{colors:'#7a8a9a',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          title: { text:'Einzeljahre', style:{color:'#7a8a9a',fontSize:'10px'} }
+        });
+      }
+      // Rechte Achse für Pressure
+      if (pressureInfo) {
+        yaxes.push({
+          seriesName: 'Pressure',
+          opposite: true, show: true,
+          labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
+          title: { text:'Pressure', style:{color:COL_PRESSURE,fontSize:'11px'} }
+        });
       }
 
       var opts = {
@@ -842,10 +870,7 @@
           }}
         }),
         xaxis: xaxisDoy(),
-        yaxis: {
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        },
+        yaxis: yaxes.length === 1 ? yaxes[0] : yaxes,
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
                     label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
@@ -855,21 +880,6 @@
         dataLabels: { enabled:false },
         title: { text: ticker+' — Saisonaler Jahresverlauf ('+nYears+' Jahre)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
-
-      // Pressure separate y-Achse: Wenn aktiv, beide Achsen explizit als Array,
-      // links für alle Serien außer Pressure, rechts nur für Pressure.
-      if (showPressure && pressureInfo) {
-        var leftAxis = {
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        };
-        var rightAxis = { seriesName:'Pressure', opposite:true, show:true,
-          labels:{style:{colors:COL_PRESSURE,fontSize:'11px'},formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';}},
-          title:{text:'Pressure',style:{color:COL_PRESSURE,fontSize:'11px'}} };
-        // ApexCharts: jede Serie braucht ein yaxis-Eintrag (eigentliches Pflichtfeld) oder
-        // der erste Eintrag ohne seriesName fängt alle nicht-explizit-zugewiesenen ab.
-        opts.yaxis = [leftAxis, rightAxis];
-      }
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
       JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
