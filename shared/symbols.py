@@ -140,13 +140,6 @@ SYMBOLS = {
         "exchange":     "CBOE",
         "beschreibung": "CBOE Crude Oil Volatility Index — WTI Fear Gauge",
     },
-    "BVOL-USD": {
-        "name":         "BVOL Bitcoin Volatilität",
-        "kategorie":    "Volatility",
-        "währung":      "USD",
-        "exchange":     "CRYPTO",
-        "beschreibung": "Volmex 1x Long Bitcoin Implied Volatility Token — BTC Fear Gauge",
-    },
     "IBIT": {
         "name":         "iShares Bitcoin Trust ETF",
         "kategorie":    "US-ETF",

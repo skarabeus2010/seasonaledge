@@ -69,7 +69,6 @@
         <option value="^VIX" selected>VIX &mdash; S&amp;P 500 Vol</option>
         <option value="^VXN">VXN &mdash; Nasdaq 100 Vol</option>
         <option value="^OVX">OVX &mdash; Crude Oil Vol</option>
-        <option value="BVOL-USD">BVOL &mdash; Bitcoin Vol</option>
       </select>
 
       <h3 style="margin-top:.75rem">Spot-Ticker</h3>
@@ -109,7 +108,7 @@
         <b>Spot-Vol Beta</b> misst die Korrelation zwischen Spot-Rendite und Vol-&Auml;nderung.
         Negatives Beta = klassisches &bdquo;Fear Gauge&ldquo;.<br><br>
         <b>Paare:</b> Jeder Vol-Index wird nur gegen den passenden Spot gerechnet.
-        VXN misst Nasdaq-Vol, OVX misst &Ouml;l-Vol, BVOL misst Bitcoin-Vol.
+        VXN misst Nasdaq-Vol, OVX misst &Ouml;l-Vol.
       </div>
     </aside>
 
@@ -174,11 +173,10 @@
           <h3>Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li><b>4 feste Paare</b> (nur sinnvolle Kombinationen):</li>
+            <li><b>3 feste Paare</b> (nur sinnvolle Kombinationen):</li>
             <li style="margin-left:1rem">&bull; <b>VIX</b> &rarr; ^GSPC oder SPY (S&amp;P 500)</li>
             <li style="margin-left:1rem">&bull; <b>VXN</b> &rarr; ^NDX oder QQQ (Nasdaq 100)</li>
             <li style="margin-left:1rem">&bull; <b>OVX</b> &rarr; CL=F oder USO (WTI Crude)</li>
-            <li style="margin-left:1rem">&bull; <b>BVOL</b> &rarr; BTC-USD oder IBIT (Bitcoin)</li>
             <li><b>Zeitraum:</b> 3&ndash;20 Jahre oder Max (ab 1990)</li>
           </ul>
           <h3>Berechnung</h3>
@@ -234,14 +232,12 @@
 
     // Fixed pairs: nur sinnvolle Kombinationen (Vol-Index hat Spot-Basis)
     var PAIRS = {
-      '^VIX':     { label: 'VIX',  name: 'CBOE S&P 500 Vol',     spots: [{t:'^GSPC',n:'S&P 500'}, {t:'SPY',n:'SPDR S&P 500 ETF'}],
-                    spike: 30, low: 15 },
-      '^VXN':     { label: 'VXN',  name: 'CBOE Nasdaq 100 Vol',  spots: [{t:'^NDX',n:'Nasdaq 100'}, {t:'QQQ',n:'Invesco Nasdaq 100 ETF'}],
-                    spike: 35, low: 18 },
-      '^OVX':     { label: 'OVX',  name: 'CBOE Crude Oil Vol',   spots: [{t:'CL=F',n:'WTI Crude Futures'}, {t:'USO',n:'US Oil Fund ETF'}],
-                    spike: 55, low: 25 },
-      'BVOL-USD': { label: 'BVOL', name: 'Bitcoin Implied Vol',  spots: [{t:'BTC-USD',n:'Bitcoin'}, {t:'IBIT',n:'iShares Bitcoin Trust'}],
-                    spike: 80, low: 40 }
+      '^VIX': { label: 'VIX', name: 'CBOE S&P 500 Vol',    spots: [{t:'^GSPC',n:'S&P 500'}, {t:'SPY',n:'SPDR S&P 500 ETF'}],
+                spike: 30, low: 15 },
+      '^VXN': { label: 'VXN', name: 'CBOE Nasdaq 100 Vol', spots: [{t:'^NDX',n:'Nasdaq 100'}, {t:'QQQ',n:'Invesco Nasdaq 100 ETF'}],
+                spike: 35, low: 18 },
+      '^OVX': { label: 'OVX', name: 'CBOE Crude Oil Vol',  spots: [{t:'CL=F',n:'WTI Crude Futures'}, {t:'USO',n:'US Oil Fund ETF'}],
+                spike: 55, low: 25 }
     };
 
     var charts = {};
