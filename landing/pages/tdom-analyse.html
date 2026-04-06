@@ -73,6 +73,9 @@
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent);font-size:.75rem"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" class="month-grid"></div>
       <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+      <hr>
       <h3>Range-Strategie</h3>
       <label style="font-size:.75rem"><input type="checkbox" id="chk-range"> Aktivieren</label>
       <div id="range-controls" style="display:none">
@@ -168,6 +171,7 @@
   <script src="/landing/js/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/outlier.js"></script>
 
   <script>
   (function() {
@@ -304,7 +308,7 @@
     }
 
     // ── Build TDoM Stats ──────────────────────────────────────────────────────
-    function buildTdomStats(rows, strategy, direction, selectedMonths) {
+    function buildTdomStats(rows, strategy, direction, selectedMonths, outlierMethod) {
       var withRet = calcStrategyReturn(rows, strategy);
       var tdomCol = direction === 'forward' ? 'tdom' : 'tdom_reverse';
       var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
@@ -323,6 +327,21 @@
         var t = filtered[i][tdomCol];
         if (!byTdom[t]) byTdom[t] = [];
         byTdom[t].push(filtered[i].strat_return);
+      }
+
+      // Outlier-Filter pro TDoM-Gruppe anwenden
+      if (outlierMethod && outlierMethod !== 'off' && SA.outlier) {
+        for (var t in byTdom) {
+          var vals = byTdom[t];
+          if (vals.length < 4) continue;
+          if (outlierMethod === 'winsorize') {
+            byTdom[t] = SA.outlier.winsorize(vals, 3.0);
+          } else {
+            var factor = outlierMethod === 'iqr_strict' ? 3.0 : 1.5;
+            var isOut = SA.outlier.detectIQR(vals, factor);
+            byTdom[t] = vals.filter(function(_, i) { return !isOut[i]; });
+          }
+        }
       }
 
       var stats = [];
@@ -351,7 +370,7 @@
     }
 
     // ── Build Month × TDoM Matrix ─────────────────────────────────────────────
-    function buildTdomMonthMatrix(rows, strategy, direction) {
+    function buildTdomMonthMatrix(rows, strategy, direction, outlierMethod) {
       var withRet = calcStrategyReturn(rows, strategy);
       var tdomCol = direction === 'forward' ? 'tdom' : 'tdom_reverse';
       var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
@@ -367,12 +386,29 @@
         matrix[r.month][t].push(r.strat_return);
       }
 
+      // Outlier-Filter pro Zelle
+      if (outlierMethod && outlierMethod !== 'off' && SA.outlier) {
+        for (var m in matrix) {
+          for (var t in matrix[m]) {
+            var vals = matrix[m][t];
+            if (vals.length < 4) continue;
+            if (outlierMethod === 'winsorize') {
+              matrix[m][t] = SA.outlier.winsorize(vals, 3.0);
+            } else {
+              var factor = outlierMethod === 'iqr_strict' ? 3.0 : 1.5;
+              var isOut = SA.outlier.detectIQR(vals, factor);
+              matrix[m][t] = vals.filter(function(_, i) { return !isOut[i]; });
+            }
+          }
+        }
+      }
+
       // Compute averages
       var result = {};
       for (var m = 1; m <= 12; m++) {
         result[m] = {};
         for (var t = validRange[0]; t <= validRange[1]; t++) {
-          if (matrix[m] && matrix[m][t]) {
+          if (matrix[m] && matrix[m][t] && matrix[m][t].length > 0) {
             var vals = matrix[m][t];
             result[m][t] = vals.reduce(function(s,v){return s+v;},0) / vals.length;
           }
@@ -607,6 +643,9 @@
       document.getElementById('range-trades').innerHTML = html;
     }
 
+    // ── Outlier Filter ────────────────────────────────────────────────────────
+    var _getOutlierMethod = SA.outlier ? SA.outlier.renderFilterUI('outlier-filter', function() { rerender(); }) : function() { return 'off'; };
+
     // ── Main ──────────────────────────────────────────────────────────────────
     var _cachedRows = null;
 
@@ -616,15 +655,16 @@
       var direction = document.getElementById('sel-direction').value;
       var selectedMonths = getSelectedMonths();
       var useRange = document.getElementById('chk-range').checked;
+      var outlierMethod = _getOutlierMethod ? _getOutlierMethod() : 'off';
 
       if (!selectedMonths.length) { showError('Bitte mindestens einen Monat ausw\u00E4hlen.'); return; }
 
       destroyAll();
 
-      var stats = buildTdomStats(_cachedRows, strategy, direction, selectedMonths);
+      var stats = buildTdomStats(_cachedRows, strategy, direction, selectedMonths, outlierMethod);
       if (!stats.length) { showError('Keine TDoM-Daten f\u00FCr die gew\u00E4hlten Filter.'); showSections(false); return; }
 
-      var matrix = buildTdomMonthMatrix(_cachedRows, strategy, direction);
+      var matrix = buildTdomMonthMatrix(_cachedRows, strategy, direction, outlierMethod);
 
       renderKPIs(stats);
       renderBars(stats);
