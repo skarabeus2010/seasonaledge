@@ -238,67 +238,39 @@ SA.renderTradingDayHeader = function(elementId, ticker, rows) {
   var tdomStr = '\u2013';
   var tdoyStr = '\u2013';
 
-  if (rows && rows.length > 0) {
-    var last = rows[rows.length - 1];
-    var lastTdom = last.tdom != null ? parseInt(last.tdom) : null;
-    var lastTdoy = last.tdoy != null ? parseInt(last.tdoy) : null;
-    var lastDate = last.date;
+  var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker) : 'NYSE';
+  var isTD = function(ds) {
+    if (window.SA && SA.holidays) return SA.holidays.isTradingDay(ds, exchange);
+    var d = new Date(ds.substring(0,4) + '/' + ds.substring(5,7) + '/' + ds.substring(8,10));
+    var dow = d.getDay();
+    return dow >= 1 && dow <= 5;
+  };
 
-    // Wenn heute ein Handelstag ist UND > letzter DB-Datum: +1 zaehlen
-    var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker) : 'NYSE';
-    var todayIsTradingDay = (window.SA && SA.holidays) ? SA.holidays.isTradingDay(todayStr, exchange) : (today.getDay() >= 1 && today.getDay() <= 5);
-
-    if (todayIsTradingDay && lastDate && todayStr > lastDate) {
-      // Zähle Handelstage zwischen lastDate und heute
-      var d = new Date(lastDate.substring(0,4) + '/' + lastDate.substring(5,7) + '/' + lastDate.substring(8,10));
-      var addDays = 0;
-      while (true) {
-        d.setDate(d.getDate() + 1);
-        var ds = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
-        if (ds > todayStr) break;
-        var isTD = (window.SA && SA.holidays) ? SA.holidays.isTradingDay(ds, exchange) : (d.getDay() >= 1 && d.getDay() <= 5);
-        if (isTD) addDays++;
-      }
-      if (lastTdom != null) {
-        // Wenn neuer Monat begonnen hat: TDoM zurücksetzen
-        var lastMonth = parseInt(lastDate.substring(5, 7));
-        var todayMonth = today.getMonth() + 1;
-        if (lastMonth === todayMonth) lastTdom += addDays;
-        else {
-          // Neuer Monat → zähle Handelstage seit Monatsanfang
-          var newTdom = 0;
-          var d2 = new Date(today.getFullYear(), today.getMonth(), 1);
-          while (true) {
-            var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
-            if (ds2 > todayStr) break;
-            var isTD2 = (window.SA && SA.holidays) ? SA.holidays.isTradingDay(ds2, exchange) : (d2.getDay() >= 1 && d2.getDay() <= 5);
-            if (isTD2) newTdom++;
-            d2.setDate(d2.getDate() + 1);
-          }
-          lastTdom = newTdom;
-        }
-      }
-      if (lastTdoy != null) {
-        // Wenn neues Jahr: zurücksetzen
-        var lastYear = parseInt(lastDate.substring(0, 4));
-        if (lastYear === today.getFullYear()) lastTdoy += addDays;
-        else {
-          var newTdoy = 0;
-          var d3 = new Date(today.getFullYear(), 0, 1);
-          while (true) {
-            var ds3 = d3.getFullYear() + '-' + pad(d3.getMonth()+1) + '-' + pad(d3.getDate());
-            if (ds3 > todayStr) break;
-            var isTD3 = (window.SA && SA.holidays) ? SA.holidays.isTradingDay(ds3, exchange) : (d3.getDay() >= 1 && d3.getDay() <= 5);
-            if (isTD3) newTdoy++;
-            d3.setDate(d3.getDate() + 1);
-          }
-          lastTdoy = newTdoy;
-        }
-      }
+  if (isTD(todayStr)) {
+    // Heute ist ein Handelstag → TDoM/TDoY frisch berechnen vom Monats-/Jahresanfang
+    var tdomCount = 0;
+    var d1 = new Date(today.getFullYear(), today.getMonth(), 1);
+    while (true) {
+      var ds1 = d1.getFullYear() + '-' + pad(d1.getMonth()+1) + '-' + pad(d1.getDate());
+      if (ds1 > todayStr) break;
+      if (isTD(ds1)) tdomCount++;
+      d1.setDate(d1.getDate() + 1);
     }
-
-    if (lastTdom != null) tdomStr = String(lastTdom);
-    if (lastTdoy != null) tdoyStr = String(lastTdoy);
+    var tdoyCount = 0;
+    var d2 = new Date(today.getFullYear(), 0, 1);
+    while (true) {
+      var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
+      if (ds2 > todayStr) break;
+      if (isTD(ds2)) tdoyCount++;
+      d2.setDate(d2.getDate() + 1);
+    }
+    tdomStr = String(tdomCount);
+    tdoyStr = String(tdoyCount);
+  } else if (rows && rows.length > 0) {
+    // Heute kein HT → letzten DB-Wert nehmen
+    var last = rows[rows.length - 1];
+    if (last.tdom != null) tdomStr = String(parseInt(last.tdom));
+    if (last.tdoy != null) tdoyStr = String(parseInt(last.tdoy));
   }
 
   el.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' \u00B7 ' + ticker +

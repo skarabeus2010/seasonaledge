@@ -239,9 +239,9 @@ SA.indicators = {
       el.innerHTML = html;
 
       // Events binden
-      document.getElementById('ind_add_btn').addEventListener('click', function() { filterCount++; rebuild(); });
+      document.getElementById('ind_add_btn').addEventListener('click', function() { filterCount++; rebuild(); if (onChange) onChange(); });
       el.querySelectorAll('button[data-rm]').forEach(function(btn) {
-        btn.addEventListener('click', function() { filterCount--; rebuild(); });
+        btn.addEventListener('click', function() { filterCount--; rebuild(); if (onChange) onChange(); });
       });
       el.querySelectorAll('select[data-field="type"]').forEach(function(sel) {
         sel.addEventListener('change', function() { updateConditions(parseInt(sel.dataset.idx)); if (onChange) onChange(); });
