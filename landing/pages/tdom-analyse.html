@@ -521,32 +521,37 @@
       var cats = stats.map(function(s) { return String(s.tdom); });
       var vals = stats.map(function(s) { return parseFloat(s.avg_return.toFixed(4)); });
       var curTdom = getCurrentTdom(direction);
+      var curIdx = curTdom != null ? stats.findIndex(function(s) { return s.tdom === curTdom; }) : -1;
 
-      // Annotations: We are here
-      var pointAnnots = [];
-      if (curTdom != null) {
-        var idx = stats.findIndex(function(s) { return s.tdom === curTdom; });
-        if (idx >= 0) {
-          pointAnnots.push({
-            x: String(curTdom),
-            y: vals[idx],
-            marker: { size: 8, fillColor: '#FFD700', strokeColor: '#fff', strokeWidth: 2 },
-            label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, offsetY: -5 }
-          });
-        }
+      // Bar-Farben: aktueller TDoM in Gold
+      var barColors = vals.map(function(v, i) {
+        if (i === curIdx) return '#FFD700';
+        return v >= 0 ? '#1a8a45' : '#c0392b';
+      });
+
+      // xaxis Annotation: vertikale Linie + Label am aktuellen TDoM
+      var xAnnots = [];
+      if (curIdx >= 0) {
+        xAnnots.push({
+          x: String(curTdom),
+          strokeDashArray: 0,
+          borderColor: '#FFD700',
+          borderWidth: 2,
+          label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, orientation: 'horizontal', offsetY: -5 }
+        });
       }
 
       if (charts.bars) charts.bars.destroy();
       charts.bars = new ApexCharts(document.getElementById('chart-bars'), {
         series: [{ name: '\u00D8 Rendite', data: vals }],
         chart: Object.assign({ type: 'bar', height: 380 }, SA.chartTheme.chart),
-        colors: vals.map(function(v) { return v >= 0 ? '#1a8a45' : '#c0392b'; }),
+        colors: barColors,
         plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
         grid: SA.chartTheme.grid,
         tooltip: { theme: 'dark', y: { formatter: function(v) { return fmtPct(v, 4); } } },
         xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(3) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
-        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }], points: pointAnnots },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }], xaxis: xAnnots },
         legend: { show: false },
         dataLabels: { enabled: false },
         title: { text: currentTicker + ' \u2014 \u00D8 Rendite pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
@@ -559,32 +564,37 @@
       var cats = stats.map(function(s) { return String(s.tdom); });
       var vals = stats.map(function(s) { return parseFloat(s.win_rate.toFixed(1)); });
       var curTdom = getCurrentTdom(direction);
+      var curIdx = curTdom != null ? stats.findIndex(function(s) { return s.tdom === curTdom; }) : -1;
 
-      // We are here Annotation
-      var pointAnnots = [];
-      if (curTdom != null) {
-        var idx = stats.findIndex(function(s) { return s.tdom === curTdom; });
-        if (idx >= 0) {
-          pointAnnots.push({
-            x: String(curTdom),
-            y: vals[idx],
-            marker: { size: 8, fillColor: '#FFD700', strokeColor: '#fff', strokeWidth: 2 },
-            label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, offsetY: -5 }
-          });
-        }
+      // Bar-Farben: aktueller TDoM in Gold
+      var barColors = vals.map(function(v, i) {
+        if (i === curIdx) return '#FFD700';
+        return v >= 50 ? '#1a8a45' : '#c0392b';
+      });
+
+      // xaxis Annotation
+      var xAnnots = [];
+      if (curIdx >= 0) {
+        xAnnots.push({
+          x: String(curTdom),
+          strokeDashArray: 0,
+          borderColor: '#FFD700',
+          borderWidth: 2,
+          label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, orientation: 'horizontal', offsetY: -5 }
+        });
       }
 
       if (charts.winrate) charts.winrate.destroy();
       charts.winrate = new ApexCharts(document.getElementById('chart-winrate'), {
         series: [{ name: 'Win-Rate', data: vals }],
         chart: Object.assign({ type: 'bar', height: 320 }, SA.chartTheme.chart),
-        colors: vals.map(function(v) { return v >= 50 ? '#1a8a45' : '#c0392b'; }),
+        colors: barColors,
         plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
         grid: SA.chartTheme.grid,
         tooltip: { theme: 'dark', y: { formatter: function(v) { return v.toFixed(1) + ' %'; } } },
         xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0) + ' %'; } }, max: 100, min: 0, title: { text: 'Win-Rate %', style: { color: '#a89878', fontSize: '11px' } } },
-        annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }], points: pointAnnots },
+        annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }], xaxis: xAnnots },
         legend: { show: false },
         dataLabels: { enabled: false },
         title: { text: currentTicker + ' \u2014 Win-Rate pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
