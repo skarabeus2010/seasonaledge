@@ -260,6 +260,10 @@ if _project_dir not in sys.path:
 | Frontend-Charts: ApexCharts (CDN) | Theme in `charts.js`, kein Plotly.js im Frontend |
 | Daten: Pre-computed JSON | `landing/data/`, Generator-Scripts in `scripts/` |
 | Docker JSON-Transfer | Im Container generieren, `docker cp` auf Host fuer nginx |
+| Sortierbare Tabellen | `SA.makeSortable(table)` + MutationObserver Auto-Init in app.js — alle `<table>` mit `<thead>` oder erster Zeile mit `<th>` sind automatisch sortierbar. Opt-out: `<table data-no-sort="1">` |
+| Frontend Trading Day Header | `SA.renderTradingDayHeader(el, ticker, rows)` — wenn heute Handelstag → frisch vom Monats-/Jahresanfang berechnen (via SA.holidays), NICHT aus DB-Rows lesen |
+| TDOM-Strategie Cross-Month | Entry negativ + Exit positiv → Exit im nächsten Monat suchen (Turn-of-the-Month-Muster) |
+| MIN_N = 10 Threshold | TDoM/TDoY-Statistiken mit n<10 mit ⚠ + 40% Opacity markieren (aus `03_Monatszyklus.py`) |
 
 ## Architektur-Prinzipien
 
@@ -374,7 +378,7 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 
 | Modul | Zeilen | Python-Quelle | Kern-Funktionen | Genutzt von |
 |-------|--------|---------------|-----------------|-------------|
-| `app.js` | 249 | — (original) | `initTickerInput`, `fetchAllPrices`, `renderTradingDayHeader`, Supabase REST | **Alle Pages** |
+| `app.js` | 360 | — (original) | `initTickerInput`, `fetchAllPrices`, `renderTradingDayHeader`, `makeSortable` (Auto-Sort aller Tabellen via MutationObserver), Supabase REST | **Alle Pages** |
 | `charts.js` | 166 | — (original) | `lineChart`, `barChart`, `heatmapChart`, `boxPlotChart`, Theme | **Alle Pages** |
 | `decade-compute.js` | 495 | `calculations_decade.py` + `generate_decade_data.py` | `fromPrices`, `computeDrawdown`, `computePercentile`, `computeRollingVola` | Dekadenzyklus |
 | `seasonal-compute.js` | 531 | `calculations.py` + `central_banks.py` | `buildYearData`, `calculateSeasonalAverage`, `analyzeTurnOfMonth`, `analyzeMoonEffect`, `getMoonDates`, `isSupermoon`, `buildMonthlyStats`, `buildTOMHeatmap`, `calcWindowOptimization`, `getPresidentialCycleYear` | Monatswechsel, Mondphasen, Kriegszeiten, *+4 Pages* |
@@ -400,12 +404,12 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Overnight vs. Intraday | `/overnight` | app, charts, significance, indicators | OHLC-Analyse, Signifikanz (6 Tachos), Indikator-Filter |
 | Zentralbanken | `/zentralbanken` | app, charts, significance, indicators, streak | Fed/EZB/BoE/BoJ Event-Window, Streak, Termine aus Supabase |
 | Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
+| TDOM Analyse | `/tdom-analyse` | app, charts, holidays, outlier, indicators, streak, strategy-compute | 3 Strategien (Intraday/Overnight/C2C), Vorwärts/Rückwärts, Heatmap Monat×TDoM, TDOM-Strategie Tester (Entry/Exit mit Cross-Month Support, Stop-Loss, CAGR/Sharpe/MaxDD/PF), TDoY Top 25 mit Datum 2026 (sortierbar), Streak pro TDoM, MIN_N=10 Warnung, "We are here" Marker |
 
-### Offene HTML-Migrationen (6 von 18)
+### Offene HTML-Migrationen (5 von 18)
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 13 | TDOM Analyse | 507 | 4 | naechste |
-| 14 | Spot-Vol Beta | 516 | 4 | |
+| 14 | Spot-Vol Beta | 516 | 4 | naechste |
 | 15 | OPEX | 741 | 5 | |
 | 16 | Jahreszyklus | 1595 | 20 | |
 | 17 | Monatszyklus | 1412 | 26 | |
