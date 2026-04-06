@@ -276,22 +276,54 @@
       return ds(y, m, getOpexDay(y, m));
     }
 
-    function getVixpirationDateStr(y, m) {
-      // VIXpiration (Settlement) = 3. Freitag von Monat M - 30 Kalendertage
-      // Ergibt fast immer einen Mittwoch ca. 4 Wochen vor dem OPEX-Freitag.
-      // Letzter Handelstag der VIX-Optionen = Dienstag VOR diesem Mittwoch.
-      var opexDay = getOpexDay(y, m);
-      var opexDt  = new Date(y, m - 1, opexDay);
-      opexDt.setDate(opexDt.getDate() - 30);
-      return ds(opexDt.getFullYear(), opexDt.getMonth()+1, opexDt.getDate());
+    /**
+     * VIXpiration Settlement (CBOE-Regel):
+     * 1. Basis = 3. Freitag von Monat M (Kalender)
+     * 2. Settlement = Basis - 30 Kalendertage (ergibt typischerweise Mittwoch)
+     * 3. Ist ENTWEDER der Basis-Freitag ODER der Settlement-Mittwoch
+     *    ein NYSE-Feiertag, wird das Settlement um 1 HT zurueckverlegt.
+     * 4. Rekursiv: falls der neue Tag auch Feiertag, weiter zurueck.
+     */
+    function _prevTradingDate(dt) {
+      dt.setDate(dt.getDate() - 1);
+      var s = ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+      // Wochenende ueberspringen
+      var dow = dt.getDay();
+      while (dow === 0 || dow === 6 || !SA.holidays.isTradingDay(s, 'NYSE')) {
+        dt.setDate(dt.getDate() - 1);
+        s = ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+        dow = dt.getDay();
+      }
+      return { dt: dt, str: s };
     }
 
-    function getVixLastTradingDayStr(y, m) {
-      // Letzter Handelstag = Dienstag vor dem Settlement-Mittwoch
+    function getVixpirationDateStr(y, m) {
       var opexDay = getOpexDay(y, m);
-      var opexDt  = new Date(y, m - 1, opexDay);
-      opexDt.setDate(opexDt.getDate() - 31); // Mittwoch - 1 Tag = Dienstag
-      return ds(opexDt.getFullYear(), opexDt.getMonth()+1, opexDt.getDate());
+      var opexStr = ds(y, m, opexDay);
+      var vixDt   = new Date(y, m - 1, opexDay);
+      vixDt.setDate(vixDt.getDate() - 30);
+      var vixStr  = ds(vixDt.getFullYear(), vixDt.getMonth()+1, vixDt.getDate());
+
+      // CBOE-Regel: Wenn Basis-Freitag ODER Mittwoch ein Feiertag ist → -1 HT
+      var fridayHoliday    = !SA.holidays.isTradingDay(opexStr, 'NYSE');
+      var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,  'NYSE');
+      if (fridayHoliday || wednesdayHoliday) {
+        var prev = _prevTradingDate(vixDt);
+        vixStr = prev.str;
+      }
+      return vixStr;
+    }
+
+    /**
+     * Letzter Handelstag der VIX-Optionen = 1 HT VOR dem Settlement-Tag.
+     * Typischerweise Dienstag. Bei Feiertagen entsprechend verschoben.
+     */
+    function getVixLastTradingDayStr(y, m) {
+      var settleStr = getVixpirationDateStr(y, m);
+      var parts = settleStr.split('-');
+      var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      var prev = _prevTradingDate(dt);
+      return prev.str;
     }
 
     /**
