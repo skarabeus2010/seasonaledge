@@ -22,29 +22,41 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     main{position:relative}
     .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
-    .opex-table{width:100%;border-collapse:collapse;font-size:.8125rem}
-    .opex-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
-    .opex-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
-    .opex-table tr:hover td{background:rgba(232,168,32,.04)}
+    .opex-table{width:100%;border-collapse:collapse;font-size:.9375rem}
+    .opex-table th{color:var(--dim);font-size:.8125rem;text-transform:uppercase;letter-spacing:.06em;padding:.55rem .5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .opex-table td{padding:.5rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text);font-variant-numeric:tabular-nums}
+    .opex-table tr:hover td{background:rgba(232,168,32,.05)}
     .opex-table td.pos{color:var(--green)}
     .opex-table td.neg{color:var(--red)}
     .opex-table td.triple{color:#fb923c;font-weight:600}
     .badge-triple{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
     .badge-standard{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.2)}
     .badge-vix{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
-    .calendar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.75rem}
+    .calendar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
     @media(max-width:700px){.calendar-grid{grid-template-columns:repeat(2,1fr)}}
-    .cal-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;font-size:.8125rem}
-    .cal-card.is-next{border-color:rgba(232,168,32,.4);background:rgba(232,168,32,.06)}
-    .cal-card.is-triple{border-color:rgba(251,146,60,.3)}
-    .cal-card .cal-date{font-weight:700;color:var(--text);font-size:.9rem;font-family:var(--f-m)}
-    .cal-card .cal-type{color:var(--muted);font-size:.6875rem;margin-top:.2rem}
-    .cal-card .cal-days{font-size:.75rem;color:var(--accent);margin-top:.3rem}
+    .cal-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;font-size:.9375rem}
+    .cal-card.is-next{border-color:rgba(232,168,32,.5);background:rgba(232,168,32,.08)}
+    .cal-card.is-triple{border-color:rgba(251,146,60,.4)}
+    .cal-card .cal-date{font-weight:700;color:var(--text);font-size:1.0625rem;font-family:var(--f-m);letter-spacing:.01em}
+    .cal-card .cal-type{color:var(--dim);font-size:.8125rem;margin-top:.3rem}
+    .cal-card .cal-days{font-size:.875rem;color:var(--accent);margin-top:.35rem;font-weight:600}
     .range-wrap{margin-top:.5rem}
     .range-wrap label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
     .range-wrap input{width:100%;margin-top:.25rem;accent-color:var(--accent)}
     .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem}
     .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+    .mode-radio{display:flex;flex-direction:column;gap:.4rem}
+    .mode-radio label{display:flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--dim);cursor:pointer}
+    .mode-radio input[type=radio]{accent-color:var(--accent);cursor:pointer}
+    .vix-months{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;font-size:.75rem;margin-top:.25rem}
+    .vix-months label{display:flex;align-items:center;gap:.3rem;cursor:pointer;color:var(--dim)}
+    .vix-months input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+    .btn-mini{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);padding:.3rem;border-radius:5px;font-size:.75rem;cursor:pointer;font-family:var(--f-m)}
+    .btn-mini:hover{border-color:var(--accent);color:var(--accent)}
+    .chart-grid-12{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+    @media(max-width:1100px){.chart-grid-12{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:750px){.chart-grid-12{grid-template-columns:repeat(2,1fr)}}
+    .mini-chart{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
   </style>
 </head>
 <body>
@@ -77,23 +89,54 @@
         <input type="range" id="sl-after" min="1" max="10" value="3">
       </div>
       <hr>
-      <h3>Optionen</h3>
-      <div class="toggle-row">
-        <input type="checkbox" id="chk-vix">
-        <label for="chk-vix" style="cursor:pointer">VIXpiration anzeigen</label>
+      <h3>Analyse-Modus</h3>
+      <div class="mode-radio">
+        <label><input type="radio" name="mode" value="opex" checked> OPEX (Aktien/Index)</label>
+        <label><input type="radio" name="mode" value="vix"> VIXpiration</label>
       </div>
-      <div class="toggle-row">
-        <input type="checkbox" id="chk-triple" checked>
-        <label for="chk-triple" style="cursor:pointer">Nur Triple Witching</label>
+
+      <!-- OPEX-spezifisch -->
+      <div id="opts-opex">
+        <hr>
+        <h3>OPEX-Ansicht</h3>
+        <div class="mode-radio">
+          <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching (1 Chart)</label>
+          <label><input type="radio" name="opex-view" value="monthly"> Monatlich (12 Charts)</label>
+        </div>
       </div>
+
+      <!-- VIX-spezifisch -->
+      <div id="opts-vix" style="display:none">
+        <hr>
+        <h3>VIX-Monate (An/Aus)</h3>
+        <div class="vix-months" id="vix-months-checkboxes">
+          <label><input type="checkbox" data-month="1" checked> Jan</label>
+          <label><input type="checkbox" data-month="2" checked> Feb</label>
+          <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+          <label><input type="checkbox" data-month="4" checked> Apr</label>
+          <label><input type="checkbox" data-month="5" checked> Mai</label>
+          <label><input type="checkbox" data-month="6" checked> Jun</label>
+          <label><input type="checkbox" data-month="7" checked> Jul</label>
+          <label><input type="checkbox" data-month="8" checked> Aug</label>
+          <label><input type="checkbox" data-month="9" checked> Sep</label>
+          <label><input type="checkbox" data-month="10" checked> Okt</label>
+          <label><input type="checkbox" data-month="11" checked> Nov</label>
+          <label><input type="checkbox" data-month="12" checked> Dez</label>
+        </div>
+        <div style="display:flex;gap:.25rem;margin-top:.4rem">
+          <button type="button" id="btn-vix-all" class="btn-mini">Alle</button>
+          <button type="button" id="btn-vix-none" class="btn-mini">Keine</button>
+        </div>
+      </div>
+
       <hr>
       <h3>Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
         <b>OPEX</b> = 3. Freitag im Monat<br>
-        <b>Triple Witching</b> = März, Jun, Sep, Dez<br>
-        <b>VIXpiration</b> = n&auml;chster OPEX&minus;30 Tage
+        <b>Triple Witching</b> = M&auml;r, Jun, Sep, Dez<br>
+        <b>VIXpiration</b> = Kalender-3.Fr &minus; 30 Tage
       </div>
     </aside>
 
@@ -107,43 +150,66 @@
       <!-- KPIs -->
       <div class="kpi-row" id="kpi-row"></div>
 
-      <!-- Event-Window -->
-      <details open id="sec-window" style="display:none">
-        <summary>Event-Window: &Oslash; Rendite rund um OPEX</summary>
+      <!-- OPEX Triple Witching (Default) -->
+      <details open id="sec-opex-triple" style="display:none">
+        <summary>Triple Witching &mdash; Verlauf rund um den Verfallstag</summary>
         <div class="content">
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
-            <span class="badge-standard">Standard OPEX</span>
+          <div style="margin-bottom:.75rem">
             <span class="badge-triple">Triple Witching</span>
-            <span style="font-size:.75rem;color:var(--muted);align-self:center">t=0 = OPEX-Freitag</span>
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">
+              4 Termine/Jahr: M&auml;r, Jun, Sep, Dez &middot; t=0 = OPEX-Tag
+            </span>
           </div>
-          <div id="chart-window-all"></div>
-          <div style="margin-top:1rem" id="chart-window-triple" ></div>
+          <div id="chart-opex-triple"></div>
         </div>
       </details>
 
-      <!-- VIXpiration -->
+      <!-- OPEX Monthly Grid -->
+      <details open id="sec-opex-monthly" style="display:none">
+        <summary>Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            Jeder Chart zeigt den kumulierten Verlauf rund um den 3. Freitag des jeweiligen Monats.
+          </p>
+          <div id="chart-opex-monthly-grid" class="chart-grid-12"></div>
+        </div>
+      </details>
+
+      <!-- VIXpiration Multi-Month Overlay -->
       <details open id="sec-vix" style="display:none">
-        <summary>VIXpiration &mdash; Mittwoch vor OPEX</summary>
+        <summary>VIXpiration &mdash; 12 Monate im Vergleich</summary>
         <div class="content">
           <div style="margin-bottom:.5rem">
             <span class="badge-vix">VIXpiration</span>
-            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">t=0 = n&auml;chster OPEX-Freitag &minus; 30 Tage</span>
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">
+              t=0 = VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage)
+            </span>
           </div>
-          <div id="chart-vix-window"></div>
+          <div id="chart-vix-overlay"></div>
           <p class="box-info" style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
-            VIX-Optionen laufen genau <b>30 Kalendertage</b> vor dem n&auml;chsten OPEX-Freitag ab.
-            Das ist fast immer ein Mittwoch, kann bei Feiertagen aber auch auf Di/Do fallen.
-            Typisch: steigende implizie Volatilit&auml;t in den Tagen davor, VRP-Normalisierung danach.
+            Jede Kurve = ein Kalender-Monat. Im Sidebar einzelne Monate ein-/ausschalten.
+            VIX-Optionen laufen genau <b>30 Kalendertage</b> vor dem Kalender-3.Freitag ab &mdash; typisch Mittwoch.
           </p>
+        </div>
+      </details>
+
+      <!-- Heatmap Monat × Offset -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>Heatmap: Monat &times; Offset</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
+          </p>
+          <div id="chart-heatmap"></div>
         </div>
       </details>
 
       <!-- Backtest -->
       <details open id="sec-backtest" style="display:none">
-        <summary>Backtest: Long in OPEX-Woche</summary>
+        <summary id="bt-summary">Backtest</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
-            Strategie: Kauf t<span id="bt-entry">-3</span> (Close) &middot; Verkauf t<span id="bt-exit">+3</span> (Close)
+            <span id="bt-desc">Strategie</span>: Kauf t<span id="bt-entry">-3</span> (Close) &middot; Verkauf t<span id="bt-exit">+3</span> (Close)
           </p>
           <div class="kpi-row" id="bt-kpis"></div>
           <div id="chart-equity" style="margin-top:1rem"></div>
@@ -151,16 +217,16 @@
         </div>
       </details>
 
-      <!-- OPEX-Kalender -->
+      <!-- Kalender -->
       <details id="sec-calendar" style="display:none">
-        <summary>OPEX-Kalender 2026</summary>
+        <summary id="cal-summary">Kalender</summary>
         <div class="content">
-          <h3 style="font-size:.875rem;margin-bottom:.75rem">N&auml;chste 8 OPEX-Termine</h3>
+          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)" id="cal-upcoming-title">N&auml;chste 8 Termine</h3>
           <div id="calendar-upcoming"></div>
-          <h3 style="font-size:.875rem;margin-top:1.25rem;margin-bottom:.5rem">Alle OPEX-Termine im Analyse-Zeitraum</h3>
-          <div style="max-height:320px;overflow-y:auto">
+          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)" id="cal-all-title">Alle Termine im Analyse-Zeitraum</h3>
+          <div style="max-height:360px;overflow-y:auto">
             <table class="opex-table" id="tbl-all-opex">
-              <thead><tr><th>OPEX-Datum</th><th>Tag</th><th>Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr></thead>
+              <thead id="thead-all-opex"></thead>
               <tbody id="tbody-all-opex"></tbody>
             </table>
           </div>
@@ -234,9 +300,16 @@
     var COL_VIX    = '#a78bfa';
     var COL_POS    = '#34d399';
     var COL_NEG    = '#f87171';
+    // 12-Monats-Palette (Regenbogen) fuer VIX-Overlay
+    var MONTH_COLORS = ['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e',
+                        '#10b981','#14b8a6','#06b6d4','#3b82f6','#8b5cf6','#d946ef'];
 
     var charts = {};
+    var miniCharts = []; // Array fuer die 12 Monatscharts
     var currentTicker = 'SPY';
+    var currentMode = 'opex';       // 'opex' oder 'vix'
+    var opexView    = 'triple';     // 'triple' oder 'monthly'
+    var vixMonthsMask = [true,true,true,true,true,true,true,true,true,true,true,true];
     var _cachedRows = null;
     var _cachedData = null;
 
@@ -252,18 +325,39 @@
     function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
 
     function showSections(show) {
-      ['sec-window','sec-backtest','sec-calendar','sec-streak'].forEach(function(id) {
+      // Sektionen die immer sichtbar sein koennen
+      ['sec-backtest','sec-calendar','sec-streak','sec-heatmap'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
-      // VIXpiration nur wenn toggle aktiv
-      var showVix = show && document.getElementById('chk-vix').checked;
-      document.getElementById('sec-vix').style.display = showVix ? '' : 'none';
+      // Modus-abhaengige Sektionen
+      var secOpexTriple  = document.getElementById('sec-opex-triple');
+      var secOpexMonthly = document.getElementById('sec-opex-monthly');
+      var secVix         = document.getElementById('sec-vix');
+      if (!show) {
+        secOpexTriple.style.display  = 'none';
+        secOpexMonthly.style.display = 'none';
+        secVix.style.display         = 'none';
+        return;
+      }
+      if (currentMode === 'opex') {
+        secOpexTriple.style.display  = opexView === 'triple'  ? '' : 'none';
+        secOpexMonthly.style.display = opexView === 'monthly' ? '' : 'none';
+        secVix.style.display         = 'none';
+      } else {
+        secOpexTriple.style.display  = 'none';
+        secOpexMonthly.style.display = 'none';
+        secVix.style.display         = '';
+      }
     }
 
     function destroyAll() {
-      ['window-all','window-triple','vix-window','equity','bt-bar'].forEach(function(k) {
-        if (charts[k]) { charts[k].destroy(); charts[k]=null; }
+      ['opex-triple','vix-overlay','heatmap','equity','bt-bar'].forEach(function(k) {
+        if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k]=null; }
       });
+      for (var i = 0; i < miniCharts.length; i++) {
+        try { miniCharts[i].destroy(); } catch(e) {}
+      }
+      miniCharts = [];
     }
 
     // ── OPEX-Datum Berechnung ────────────────────────────────────────────────
@@ -427,88 +521,220 @@
       return offsets.map(function(o){ return o===0 ? 't=0\n(OPEX)' : (o>0?'t+':'t')+o; });
     }
 
-    // ── Render: Event-Window Chart ────────────────────────────────────────────
-    function renderWindowChart(elId, windows, daysBefore, daysAfter, color, chartKey, titleSuffix) {
-      var agg = aggregateByOffset(windows, daysBefore, daysAfter);
-      var labels = makeOffsetLabels(agg.offsets);
-      var barColors = agg.means.map(function(v,i) {
-        return i === daysBefore ? color : (v>=0?COL_POS:COL_NEG);
-      });
-
-      var optBar = {
-        series: [{ name: '\u00D8 Rendite', data: agg.means.map(function(v){ return parseFloat(v.toFixed(4)); }) }],
-        chart: Object.assign({ type:'bar', height:260, id:chartKey+'-ret' }, SA.chartTheme.chart),
-        colors: barColors,
-        plotOptions: { bar: { distributed:true, columnWidth:'72%', borderRadius:2 } },
-        dataLabels: { enabled:true, formatter:function(v){ return v>=0?'+'+v.toFixed(2)+'%':v.toFixed(2)+'%'; }, style:{fontSize:'10px',colors:['#ccc']} },
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'10px'}} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
-        annotations: {
-          xaxis:[{ x:labels[daysBefore], borderColor:'rgba(255,255,255,.4)', strokeDashArray:4, label:{text:'OPEX',style:{color:'#fff',background:'rgba(0,0,0,.6)',fontSize:'10px'}} }],
-          yaxis:[{ y:0, borderColor:'rgba(255,255,255,.15)', strokeDashArray:2 }]
-        },
-        legend: { show:false },
-        title: { text:currentTicker + ' \u2014 Event-Window ' + titleSuffix + ' (n=' + (windows.length||0) + ')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      };
-
-      var optWr = {
-        series: [{ name:'Win-Rate', data: agg.winRates.map(function(v){ return parseFloat(v.toFixed(1)); }) }],
-        chart: Object.assign({ type:'bar', height:160, id:chartKey+'-wr' }, SA.chartTheme.chart),
-        colors: agg.winRates.map(function(v){ return v>=50?COL_POS:COL_NEG; }),
-        plotOptions: { bar: { distributed:true, columnWidth:'72%', borderRadius:2 } },
-        dataLabels: { enabled:true, formatter:function(v){ return v.toFixed(0)+'%'; }, style:{fontSize:'10px',colors:['#ccc']} },
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'10px'}} },
-        yaxis: { min:0, max:100, labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v+'%';}} },
-        annotations: {
-          xaxis:[{ x:labels[daysBefore], borderColor:'rgba(255,255,255,.3)', strokeDashArray:4 }],
-          yaxis:[{ y:50, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
-        },
-        legend: { show:false },
-        title: { text:'Win-Rate (%)', style:{color:'#a89878',fontSize:'11px',fontFamily:'Sora,sans-serif'} }
-      };
-
-      var el = document.getElementById(elId);
-      el.innerHTML = '';
-      var d1 = document.createElement('div');
-      var d2 = document.createElement('div');
-      el.appendChild(d1); el.appendChild(d2);
-
-      if (charts[chartKey+'-ret']) { charts[chartKey+'-ret'].destroy(); }
-      if (charts[chartKey+'-wr'])  { charts[chartKey+'-wr'].destroy(); }
-      charts[chartKey+'-ret'] = new ApexCharts(d1, optBar);
-      charts[chartKey+'-wr']  = new ApexCharts(d2, optWr);
-      charts[chartKey+'-ret'].render();
-      charts[chartKey+'-wr'].render();
+    /** Kumulierte Serie aus einem aggregierten means-Array (startet bei 0) */
+    function toCumSeries(means) {
+      var out = [0];
+      var cum = 0;
+      for (var i = 0; i < means.length; i++) {
+        cum += means[i];
+        out.push(parseFloat(cum.toFixed(4)));
+      }
+      return out;
     }
 
-    // ── Render: KPIs ──────────────────────────────────────────────────────────
-    function renderKPIs(windows, windowsTriple) {
-      var t0all = windows.map(function(w){ return w.t0; }).filter(function(v){ return v!==undefined; });
-      var t0tri = windowsTriple.map(function(w){ return w.t0; }).filter(function(v){ return v!==undefined; });
-      var avgAll = t0all.length ? t0all.reduce(function(s,v){return s+v;},0)/t0all.length : 0;
-      var avgTri = t0tri.length ? t0tri.reduce(function(s,v){return s+v;},0)/t0tri.length : 0;
-      var wrAll  = t0all.length ? t0all.filter(function(v){return v>0;}).length/t0all.length*100 : 50;
+    /** Labels mit "Start" Position vor t-N (passend zu toCumSeries) */
+    function makeCumLabels(daysBefore, daysAfter) {
+      var out = ['Start'];
+      for (var o = -daysBefore; o <= daysAfter; o++) {
+        out.push(o === 0 ? 't=0' : (o > 0 ? 't+' + o : 't' + o));
+      }
+      return out;
+    }
 
-      // Best/worst offset across all
+    // ── Render: OPEX Triple Witching (1 Chart, kumulierter Verlauf) ──────────
+    function renderOpexTriple(windows, daysBefore, daysAfter) {
+      var agg = aggregateByOffset(windows, daysBefore, daysAfter);
+      var cumSeries = toCumSeries(agg.means);
+      var labels = makeCumLabels(daysBefore, daysAfter);
+
+      if (charts['opex-triple']) { charts['opex-triple'].destroy(); charts['opex-triple']=null; }
+      charts['opex-triple'] = new ApexCharts(document.getElementById('chart-opex-triple'), {
+        series: [{ name: 'Kumul. \u00D8 Rendite', data: cumSeries }],
+        chart: Object.assign({ type:'area', height:340 }, SA.chartTheme.chart),
+        stroke: { width:3, curve:'straight' },
+        fill: { type:'gradient', gradient:{opacityFrom:.3, opacityTo:.02} },
+        colors: [COL_TRIPLE],
+        markers: { size:5, colors:[COL_TRIPLE], strokeColors:'#000', strokeWidth:2 },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}}, title:{text:'Kumul. Rendite (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: {
+          xaxis:[{ x:'t=0', borderColor:'rgba(251,146,60,.5)', strokeDashArray:4, label:{text:'Verfall',style:{color:'#fff',background:'rgba(251,146,60,.7)',fontSize:'10px'}} }],
+          yaxis:[{ y:0, borderColor:'rgba(255,255,255,.15)', strokeDashArray:2 }]
+        },
+        dataLabels: { enabled:false },
+        title: { text:currentTicker+' \u2014 Triple Witching Verlauf (n='+windows.length+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['opex-triple'].render();
+    }
+
+    // ── Render: OPEX Monatlich Grid (12 kleine Charts, einer pro Monat) ──────
+    function renderOpexMonthlyGrid(allWindows, daysBefore, daysAfter) {
+      var container = document.getElementById('chart-opex-monthly-grid');
+      container.innerHTML = '';
+      var labels = makeCumLabels(daysBefore, daysAfter);
+
+      for (var m = 1; m <= 12; m++) {
+        (function(month) {
+          var mWindows = allWindows.filter(function(w){ return w.month === month; });
+          var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
+          var cum = toCumSeries(agg.means);
+          var isTriple = TRIPLE_MONTHS.indexOf(month) >= 0;
+          var col = isTriple ? COL_TRIPLE : COL_ALL;
+
+          var wrap = document.createElement('div');
+          wrap.className = 'mini-chart';
+          container.appendChild(wrap);
+
+          var chart = new ApexCharts(wrap, {
+            series: [{ name:'Kum.', data:cum }],
+            chart: Object.assign({ type:'area', height:180, sparkline:{enabled:false}, toolbar:{show:false} }, SA.chartTheme.chart),
+            stroke: { width:2, curve:'straight' },
+            fill: { type:'gradient', gradient:{opacityFrom:.35, opacityTo:.02} },
+            colors: [col],
+            grid: { borderColor:'rgba(255,255,255,.05)', strokeDashArray:0, padding:{left:6,right:6,top:4,bottom:0} },
+            tooltip: SA.chartTheme.tooltip,
+            xaxis: { categories:labels, labels:{show:true, style:{colors:'#7a6858',fontSize:'9px'}, rotate:0, hideOverlappingLabels:true} },
+            yaxis: { labels:{show:true, style:{colors:'#7a6858',fontSize:'9px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
+            annotations: {
+              xaxis:[{ x:'t=0', borderColor:'rgba(255,255,255,.25)', strokeDashArray:3 }],
+              yaxis:[{ y:0, borderColor:'rgba(255,255,255,.1)', strokeDashArray:2 }]
+            },
+            dataLabels: { enabled:false },
+            title: { text:MONTHS_FULL[month-1]+(isTriple?' \u2605':'')+' (n='+mWindows.length+')',
+                     align:'left',
+                     style:{color:isTriple?COL_TRIPLE:'#ddd',fontSize:'11px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+          });
+          chart.render();
+          miniCharts.push(chart);
+        })(m);
+      }
+    }
+
+    // ── Render: VIX Multi-Month Overlay (12 Linien in einem Chart) ───────────
+    function renderVixOverlay(allWindows, daysBefore, daysAfter) {
+      var labels = makeCumLabels(daysBefore, daysAfter);
+      var series = [];
+      var colors = [];
+      var totalN = 0;
+
+      for (var m = 1; m <= 12; m++) {
+        if (!vixMonthsMask[m-1]) continue;
+        var mWindows = allWindows.filter(function(w){ return w.month === m; });
+        if (mWindows.length === 0) continue;
+        var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
+        var cum = toCumSeries(agg.means);
+        series.push({ name: MONTHS_DE[m-1]+' (n='+mWindows.length+')', data: cum });
+        colors.push(MONTH_COLORS[m-1]);
+        totalN += mWindows.length;
+      }
+
+      if (charts['vix-overlay']) { charts['vix-overlay'].destroy(); charts['vix-overlay']=null; }
+
+      if (series.length === 0) {
+        document.getElementById('chart-vix-overlay').innerHTML =
+          '<div style="padding:2rem;text-align:center;color:var(--muted);font-size:.8125rem">Keine Monate ausgew\u00E4hlt</div>';
+        return;
+      }
+
+      charts['vix-overlay'] = new ApexCharts(document.getElementById('chart-vix-overlay'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:440 }, SA.chartTheme.chart),
+        stroke: { width:2, curve:'straight' },
+        colors: colors,
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}}, title:{text:'Kumul. Rendite (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: {
+          xaxis:[{ x:'t=0', borderColor:'rgba(167,139,250,.5)', strokeDashArray:4, label:{text:'VIXpiration',style:{color:'#fff',background:'rgba(167,139,250,.7)',fontSize:'10px'}} }],
+          yaxis:[{ y:0, borderColor:'rgba(255,255,255,.15)', strokeDashArray:2 }]
+        },
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:10,height:10,radius:5} }),
+        dataLabels: { enabled:false },
+        title: { text:currentTicker+' \u2014 VIXpiration Verlauf pro Monat (gesamt n='+totalN+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['vix-overlay'].render();
+    }
+
+    // ── Render: Heatmap Monat x Offset ───────────────────────────────────────
+    function renderHeatmap(allWindows, daysBefore, daysAfter, titleSuffix) {
+      var series = [];
+      for (var m = 12; m >= 1; m--) {
+        var mWindows = allWindows.filter(function(w){ return w.month === m; });
+        var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
+        var row = [];
+        for (var i = 0; i < agg.offsets.length; i++) {
+          var off = agg.offsets[i];
+          var label = off === 0 ? 't=0' : (off > 0 ? 't+'+off : 't'+off);
+          row.push({ x: label, y: mWindows.length === 0 ? null : parseFloat(agg.means[i].toFixed(4)) });
+        }
+        series.push({ name: MONTHS_DE[m-1], data: row });
+      }
+
+      if (charts['heatmap']) { charts['heatmap'].destroy(); charts['heatmap']=null; }
+      charts['heatmap'] = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: 360 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3,
+            enableShades: false,
+            colorScale: {
+              ranges: [
+                { from:-99, to:-0.30, color:'#7f1d1d', name:'stark negativ' },
+                { from:-0.30, to:-0.10, color:'#991b1b', name:'negativ' },
+                { from:-0.10, to:-0.02, color:'#7f1d1d', name:'leicht neg.' },
+                { from:-0.02, to:0.02,  color:'#1f2937', name:'neutral' },
+                { from:0.02, to:0.10,   color:'#166534', name:'leicht pos.' },
+                { from:0.10, to:0.30,   color:'#15803d', name:'positiv' },
+                { from:0.30, to:99,     color:'#14532d', name:'stark pos.' }
+              ]
+            }
+          }
+        },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v) { return v === null ? '' : (v>=0?'+':'')+v.toFixed(2); },
+          style: { fontSize:'10px', colors:['#e5e5e5'] }
+        },
+        legend: { show:false },
+        title: { text:currentTicker+' \u2014 '+titleSuffix+': \u00D8 Tagesrendite Monat \u00D7 Offset', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['heatmap'].render();
+    }
+
+    // ── Render: KPIs (Modus-abhaengig) ────────────────────────────────────────
+    function renderKPIs(windows, label) {
+      var t0vals = windows.map(function(w){ return w.t0; }).filter(function(v){ return v!==undefined; });
+      var avg = t0vals.length ? t0vals.reduce(function(s,v){return s+v;},0)/t0vals.length : 0;
+      var wr  = t0vals.length ? t0vals.filter(function(v){return v>0;}).length/t0vals.length*100 : 50;
+
       var daysBefore = parseInt(document.getElementById('sl-before').value);
       var daysAfter  = parseInt(document.getElementById('sl-after').value);
       var agg = aggregateByOffset(windows, daysBefore, daysAfter);
-      var bestIdx  = agg.means.indexOf(Math.max.apply(null, agg.means));
-      var worstIdx = agg.means.indexOf(Math.min.apply(null, agg.means));
-      var bestLabel  = agg.offsets[bestIdx] === 0 ? 't=0' : (agg.offsets[bestIdx]>0?'t+':'t')+agg.offsets[bestIdx];
+      var bestIdx = 0, worstIdx = 0;
+      for (var i = 0; i < agg.means.length; i++) {
+        if (agg.means[i] > agg.means[bestIdx])  bestIdx = i;
+        if (agg.means[i] < agg.means[worstIdx]) worstIdx = i;
+      }
+      var bestLabel  = agg.offsets[bestIdx]  === 0 ? 't=0' : (agg.offsets[bestIdx] >0?'t+':'t')+agg.offsets[bestIdx];
       var worstLabel = agg.offsets[worstIdx] === 0 ? 't=0' : (agg.offsets[worstIdx]>0?'t+':'t')+agg.offsets[worstIdx];
 
       $kpi.innerHTML =
-        kpi('OPEX-Tag \u00D8 Rendite', fmtPct(avgAll,3), avgAll>=0?'kpi__value--green':'kpi__value--red') +
-        kpi('Win-Rate OPEX-Tag', wrAll.toFixed(1)+' %', wrAll>=50?'kpi__value--green':'kpi__value--red') +
-        kpi('Bester Tag im Fenster', bestLabel + ' (' + fmtPct(agg.means[bestIdx],3) + ')', 'kpi__value--green') +
-        kpi('OPEX-Tag Triple Witching', fmtPct(avgTri,3), avgTri>=0?'kpi__value--green':'kpi__value--red');
+        kpi('Events', windows.length.toLocaleString()) +
+        kpi(label+'-Tag \u00D8 Rendite', fmtPct(avg,3), avg>=0?'kpi__value--green':'kpi__value--red') +
+        kpi('Win-Rate '+label+'-Tag', wr.toFixed(1)+' %', wr>=50?'kpi__value--green':'kpi__value--red') +
+        kpi('Bester Tag', bestLabel+' ('+fmtPct(agg.means[bestIdx],3)+')', 'kpi__value--green');
     }
 
     // ── Render: Backtest ──────────────────────────────────────────────────────
-    function renderBacktest(windows) {
+    function renderBacktest(windows, btLabel) {
+      // Backtest-Titel dynamisch setzen
+      document.getElementById('bt-summary').textContent = 'Backtest: '+btLabel;
+      document.getElementById('bt-desc').textContent = btLabel;
+
       var sorted = windows.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
       var rets = sorted.map(function(w){ return w.cumReturn || 0; });
       var equity = [];
@@ -551,7 +777,7 @@
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1)+'%';}} },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
         dataLabels: { enabled:false },
-        title: { text:currentTicker + ' \u2014 Kumulierte Backtest-Rendite (OPEX-Wochen)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text:currentTicker + ' \u2014 Kumulierte Backtest-Rendite ('+btLabel+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts.equity.render();
 
@@ -576,51 +802,101 @@
       charts['bt-bar'].render();
     }
 
-    // ── Render: Kalender ──────────────────────────────────────────────────────
+    // ── Render: Kalender (Modus-abhaengig) ───────────────────────────────────
+    function fmtDate(d) { return d.substring(8,10)+'.'+d.substring(5,7)+'.'+d.substring(0,4); }
+    function fmtDayMonth(d) { return d.substring(8,10)+'.'+d.substring(5,7); }
+
     function renderCalendar(opexDates) {
       var today = new Date().toISOString().substring(0,10);
-      var upcoming = opexDates.filter(function(ev){ return ev.date >= today; }).slice(0,8);
+      var isVix = currentMode === 'vix';
+
+      // Kopfzeilen dynamisch
+      document.getElementById('cal-summary').textContent = isVix ? 'VIX-Kalender' : 'OPEX-Kalender';
+      document.getElementById('cal-upcoming-title').textContent = 'N\u00E4chste 8 '+(isVix?'VIX-Verfall':'OPEX')+'-Termine';
+      document.getElementById('cal-all-title').textContent = 'Alle Termine im Analyse-Zeitraum';
+
+      // Build upcoming cards based on mode
+      var events = opexDates.slice();
+      if (isVix) {
+        // Use VIX settlement dates as primary
+        events.sort(function(a,b){ return a.vixDate < b.vixDate ? -1 : 1; });
+      } else {
+        events.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+      }
+
+      var upcoming = events.filter(function(ev){
+        var key = isVix ? ev.vixDate : ev.date;
+        return key >= today;
+      }).slice(0, 8);
+
       var html = '<div class="calendar-grid">';
       for (var i = 0; i < upcoming.length; i++) {
         var ev = upcoming[i];
-        var dt = new Date(ev.date.substring(0,4)+'/'+ev.date.substring(5,7)+'/'+ev.date.substring(8,10));
+        var primary = isVix ? ev.vixDate : ev.date;
+        var secondary = isVix ? ev.date : ev.vixDate;
+        var dt = new Date(primary.substring(0,4)+'/'+primary.substring(5,7)+'/'+primary.substring(8,10));
         var days = Math.round((dt - new Date())/86400000);
-        var cls = 'cal-card' + (i===0?' is-next':'') + (ev.isTriple?' is-triple':'');
+        var cls = 'cal-card'+(i===0?' is-next':'')+(ev.isTriple?' is-triple':'');
         html += '<div class="'+cls+'">';
-        html += '<div class="cal-date">'+ev.date.substring(8,10)+'.'+ev.date.substring(5,7)+'.'+ev.date.substring(0,4)+'</div>';
-        html += '<div class="cal-type">' + (ev.isTriple?'<span class="badge-triple">Triple Witching</span>':'<span class="badge-standard">Standard OPEX</span>') + '</div>';
-        html += '<div class="cal-days">' + (days===0?'Heute':(days===1?'Morgen':'in '+days+' Tagen')) + '</div>';
+        html += '<div class="cal-date">'+fmtDate(primary)+'</div>';
+        if (isVix) {
+          html += '<div class="cal-type"><span class="badge-vix">VIX Settlement</span></div>';
+          html += '<div style="font-size:.75rem;color:var(--muted);margin-top:.35rem">Letzter HT: '+fmtDayMonth(ev.vixLtd)+' &middot; OPEX-Fr: '+fmtDayMonth(secondary)+'</div>';
+        } else {
+          html += '<div class="cal-type">'+(ev.isTriple?'<span class="badge-triple">Triple Witching</span>':'<span class="badge-standard">Standard OPEX</span>')+'</div>';
+          html += '<div style="font-size:.75rem;color:var(--muted);margin-top:.35rem">VIXpiration: '+fmtDayMonth(secondary)+' (Mi)</div>';
+        }
+        html += '<div class="cal-days">'+(days<=0?'Heute':(days===1?'Morgen':'in '+days+' Tagen'))+'</div>';
         html += '</div>';
       }
       html += '</div>';
       document.getElementById('calendar-upcoming').innerHTML = html;
 
-      // All OPEX table (last 2 years + next year)
+      // Table header
+      var thead = isVix ?
+        '<tr><th>VIX-Verfall</th><th>Tag</th><th>Monat</th><th>Letzter VIX-HT</th><th>Zugeh&ouml;riger OPEX-Fr</th><th>Typ</th></tr>' :
+        '<tr><th>OPEX-Datum</th><th>Tag</th><th>Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr>';
+      document.getElementById('thead-all-opex').innerHTML = thead;
+
+      // Table body: last ~2 years + upcoming
       var cutFrom = String(new Date().getFullYear()-1);
-      var recentAll = opexDates.filter(function(ev){ return ev.date.substring(0,4) >= cutFrom; });
+      var recent = opexDates.filter(function(ev){
+        var key = isVix ? ev.vixDate : ev.date;
+        return key.substring(0,4) >= cutFrom;
+      });
+      if (isVix) recent.sort(function(a,b){ return a.vixDate < b.vixDate ? -1 : 1; });
+
       var tbody = '';
-      for (var j = 0; j < recentAll.length; j++) {
-        var e2 = recentAll[j];
-        var d2 = new Date(e2.date.substring(0,4)+'/'+e2.date.substring(5,7)+'/'+e2.date.substring(8,10));
+      for (var j = 0; j < recent.length; j++) {
+        var e2 = recent[j];
+        var primaryDate = isVix ? e2.vixDate : e2.date;
+        var secondaryDate = isVix ? e2.date : e2.vixDate;
+        var d2 = new Date(primaryDate.substring(0,4)+'/'+primaryDate.substring(5,7)+'/'+primaryDate.substring(8,10));
         var dow = WEEKDAYS_DE[d2.getDay()];
-        var isPast = e2.date < today;
-        var typeHtml = e2.isTriple ?
-          '<span class="badge-triple">Triple Witching</span>' :
-          '<span class="badge-standard">Standard</span>';
-        tbody += '<tr style="'+(isPast?'opacity:.5':'')+(e2.date===today?';background:rgba(232,168,32,.08)':'')+'">';
-        tbody += '<td><b>'+(e2.date===today?'&#9733; ':'')+e2.date.substring(8,10)+'.'+e2.date.substring(5,7)+'.'+e2.date.substring(0,4)+'</b></td>';
+        var isPast = primaryDate < today;
+        var rowStyle = (isPast?'opacity:.55':'')+(primaryDate===today?';background:rgba(232,168,32,.08)':'');
+        var typeHtml = e2.isTriple ? '<span class="badge-triple">Triple Witching</span>' : '<span class="badge-standard">Standard</span>';
+
+        tbody += '<tr style="'+rowStyle+'">';
+        tbody += '<td><b>'+(primaryDate===today?'&#9733; ':'')+fmtDate(primaryDate)+'</b></td>';
         tbody += '<td>'+dow+'</td>';
         tbody += '<td>'+MONTHS_DE[parseInt(e2.month)-1]+'</td>';
-        tbody += '<td>'+typeHtml+'</td>';
-        tbody += '<td><span class="badge-vix">'+e2.vixDate.substring(8,10)+'.'+e2.vixDate.substring(5,7)+'</span></td>';
-        tbody += '<td style="color:var(--muted)">'+e2.vixLtd.substring(8,10)+'.'+e2.vixLtd.substring(5,7)+'</td>';
+        if (isVix) {
+          tbody += '<td style="color:var(--muted)">'+fmtDayMonth(e2.vixLtd)+'</td>';
+          tbody += '<td>'+fmtDayMonth(e2.date)+'</td>';
+          tbody += '<td>'+typeHtml+'</td>';
+        } else {
+          tbody += '<td>'+typeHtml+'</td>';
+          tbody += '<td><span class="badge-vix">'+fmtDayMonth(e2.vixDate)+'</span></td>';
+          tbody += '<td style="color:var(--muted)">'+fmtDayMonth(e2.vixLtd)+'</td>';
+        }
         tbody += '</tr>';
       }
       document.getElementById('tbody-all-opex').innerHTML = tbody;
     }
 
-    // ── Render: Streak ────────────────────────────────────────────────────────
-    function renderStreak(windows) {
+    // ── Render: Streak (grafisch, Modus-abhaengig) ───────────────────────────
+    function renderStreak(windows, label) {
       if (!SA.streaks) { document.getElementById('sec-streak').style.display='none'; return; }
       var sorted = windows.slice().sort(function(a,b){ return a.date<b.date?-1:1; });
       var groups = [];
@@ -628,10 +904,12 @@
         var mWindows = sorted.filter(function(w){ return parseInt(w.month)===m; });
         if (mWindows.length === 0) continue;
         var entries = mWindows.map(function(w){ return { date:parseInt(w.year), ret:w.cumReturn||0 }; }).reverse();
-        groups.push({ label: MONTHS_DE[m-1]+' OPEX', entries: entries });
+        groups.push({ label: MONTHS_DE[m-1]+' '+label, entries: entries });
       }
-      var html = SA.streaks.renderStreakTable(groups, 'OPEX-Monat',
-        'Aktuelle Gewinn-/Verlust-Serien pro OPEX-Monat. Triple Witching (Mrz/Jun/Sep/Dez) hat oft st\u00E4rkere Effekte.');
+      var subtitle = label === 'VIX' ?
+        'Aktuelle Gewinn-/Verlust-Serien pro VIX-Verfall-Monat (Kalender-3.Fr \u2212 30 Tage).' :
+        'Aktuelle Gewinn-/Verlust-Serien pro OPEX-Monat. Triple Witching (Mrz/Jun/Sep/Dez) hat oft st\u00E4rkere Effekte.';
+      var html = SA.streaks.renderStreakTable(groups, label+'-Monat', subtitle);
       document.getElementById('content-streak').innerHTML = html;
     }
 
@@ -668,47 +946,54 @@
       var filteredRows = _cachedRows.filter(function(r,i){ return mask[i]; });
       if (filteredRows.length < 100) { showError('Zu wenig Daten nach Filter ('+filteredRows.length+' Tage)'); return; }
 
-      var returns  = buildReturns(filteredRows);
+      var returns   = buildReturns(filteredRows);
       var opexDates = buildOpexDates(filteredRows);
       var daysBefore = parseInt(document.getElementById('sl-before').value);
       var daysAfter  = parseInt(document.getElementById('sl-after').value);
-      var onlyTriple = document.getElementById('chk-triple').checked;
 
-      var eventsAll    = opexDates.filter(function(e){ return e.date <= filteredRows[filteredRows.length-1].date; });
+      var lastDate = filteredRows[filteredRows.length-1].date;
+      var eventsAll    = opexDates.filter(function(e){ return e.date <= lastDate; });
       var eventsTriple = eventsAll.filter(function(e){ return e.isTriple; });
-      var eventsStd    = eventsAll.filter(function(e){ return !e.isTriple; });
 
       var windowsAll    = computeEventWindows(returns, eventsAll, daysBefore, daysAfter);
       var windowsTriple = computeEventWindows(returns, eventsTriple, daysBefore, daysAfter);
-      var windowsStd    = computeEventWindows(returns, eventsStd, daysBefore, daysAfter);
 
-      // VIXpiration: use VIXpiration dates as t=0
-      var vixEvents = opexDates.filter(function(e){ return e.vixDate <= filteredRows[filteredRows.length-1].date; }).map(function(e){
+      // VIXpiration events
+      var vixEventsInput = opexDates.filter(function(e){ return e.vixDate <= lastDate; }).map(function(e){
         return { date:e.vixDate, year:e.year, month:e.month, isTriple:e.isTriple };
       });
-      var windowsVix = computeEventWindows(returns, vixEvents, daysBefore, daysAfter);
+      var windowsVix = computeEventWindows(returns, vixEventsInput, daysBefore, daysAfter);
 
-      _cachedData = { windowsAll:windowsAll, windowsTriple:windowsTriple, windowsStd:windowsStd, windowsVix:windowsVix, opexDates:eventsAll };
+      _cachedData = { windowsAll:windowsAll, windowsTriple:windowsTriple, windowsVix:windowsVix, opexDates:eventsAll };
 
       destroyAll();
-      renderKPIs(windowsAll, windowsTriple);
+      document.getElementById('bt-entry').textContent = '-' + daysBefore;
+      document.getElementById('bt-exit').textContent  = '+' + daysAfter;
 
-      // Event-Window Charts
-      renderWindowChart('chart-window-all',    windowsAll,    daysBefore, daysAfter, COL_ALL,    'window-all',    'Alle OPEX');
-      renderWindowChart('chart-window-triple', windowsTriple, daysBefore, daysAfter, COL_TRIPLE, 'window-triple', 'Triple Witching');
-
-      // VIXpiration
-      if (document.getElementById('chk-vix').checked) {
-        renderWindowChart('chart-vix-window', windowsVix, daysBefore, daysAfter, COL_VIX, 'vix-window', 'VIXpiration');
-        document.getElementById('sec-vix').style.display = '';
+      if (currentMode === 'opex') {
+        if (opexView === 'triple') {
+          renderKPIs(windowsTriple, 'OPEX');
+          renderOpexTriple(windowsTriple, daysBefore, daysAfter);
+          renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
+          renderBacktest(windowsTriple, 'Triple Witching');
+          renderStreak(windowsTriple, 'OPEX');
+        } else {
+          renderKPIs(windowsAll, 'OPEX');
+          renderOpexMonthlyGrid(windowsAll, daysBefore, daysAfter);
+          renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
+          renderBacktest(windowsAll, 'Monatlicher Verfall');
+          renderStreak(windowsAll, 'OPEX');
+        }
       } else {
-        document.getElementById('sec-vix').style.display = 'none';
+        // VIX-Modus
+        var filteredVix = windowsVix.filter(function(w){ return vixMonthsMask[parseInt(w.month)-1]; });
+        renderKPIs(filteredVix, 'VIX');
+        renderVixOverlay(windowsVix, daysBefore, daysAfter);
+        renderHeatmap(filteredVix, daysBefore, daysAfter, 'VIXpiration');
+        renderBacktest(filteredVix, 'VIXpiration');
+        renderStreak(filteredVix, 'VIX');
       }
-
-      // Backtest (alle oder nur Triple je nach Toggle)
-      renderBacktest(onlyTriple ? windowsTriple : windowsAll);
       renderCalendar(eventsAll);
-      renderStreak(windowsAll);
 
       showSections(true);
     }
@@ -776,8 +1061,46 @@
     });
     document.getElementById('sl-before').addEventListener('change', function(){ if(_cachedRows) rerender(); });
     document.getElementById('sl-after').addEventListener('change',  function(){ if(_cachedRows) rerender(); });
-    document.getElementById('chk-vix').addEventListener('change',    function(){ if(_cachedRows) rerender(); });
-    document.getElementById('chk-triple').addEventListener('change', function(){ if(_cachedRows) rerender(); });
+
+    // Modus-Radio
+    var modeRadios = document.querySelectorAll('input[name="mode"]');
+    for (var i = 0; i < modeRadios.length; i++) {
+      modeRadios[i].addEventListener('change', function() {
+        if (!this.checked) return;
+        currentMode = this.value;
+        document.getElementById('opts-opex').style.display = currentMode === 'opex' ? '' : 'none';
+        document.getElementById('opts-vix').style.display  = currentMode === 'vix'  ? '' : 'none';
+        if (_cachedRows) rerender();
+      });
+    }
+
+    // OPEX-Ansicht Radio
+    var viewRadios = document.querySelectorAll('input[name="opex-view"]');
+    for (var i = 0; i < viewRadios.length; i++) {
+      viewRadios[i].addEventListener('change', function() {
+        if (!this.checked) return;
+        opexView = this.value;
+        if (_cachedRows) rerender();
+      });
+    }
+
+    // VIX-Monats-Checkboxen
+    var vixMonthChecks = document.querySelectorAll('#vix-months-checkboxes input[type=checkbox]');
+    for (var i = 0; i < vixMonthChecks.length; i++) {
+      vixMonthChecks[i].addEventListener('change', function() {
+        var m = parseInt(this.getAttribute('data-month'));
+        vixMonthsMask[m-1] = this.checked;
+        if (_cachedRows && currentMode === 'vix') rerender();
+      });
+    }
+    document.getElementById('btn-vix-all').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { vixMonthsMask[i] = true; vixMonthChecks[i].checked = true; }
+      if (_cachedRows && currentMode === 'vix') rerender();
+    });
+    document.getElementById('btn-vix-none').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { vixMonthsMask[i] = false; vixMonthChecks[i].checked = false; }
+      if (_cachedRows && currentMode === 'vix') rerender();
+    });
 
     // Auto-Load
     loadTicker('SPY');
