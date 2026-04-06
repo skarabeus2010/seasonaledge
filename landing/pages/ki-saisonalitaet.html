@@ -240,14 +240,6 @@
             <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.5): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
           </ul>
           <p>Signal: <b>Bullish</b> &ge; 6.5 &middot; <b>Neutral</b> 3.5&ndash;6.5 &middot; <b>Bearish</b> &le; 3.5</p>
-          <h3>Abweichungen vom Streamlit-Original</h3>
-          <ul>
-            <li>Die Python-Version nutzt <code>Prophet</code> (Meta/Facebook Zeitreihen-Modell) f&uuml;r die Trend-Projektion.
-                Hier wird stattdessen der <b>Musterpfad selbst</b> als Projektion verwendet &mdash; in der Praxis
-                liefert das sehr &auml;hnliche Ergebnisse, ohne die Prophet-Abh&auml;ngigkeit.</li>
-            <li>DTW ist durch Pearson-Korrelation ersetzt &mdash; beide messen &Auml;hnlichkeit zwischen Jahren,
-                Korrelation ist schneller und f&uuml;r den Anwendungsfall gleichwertig.</li>
-          </ul>
         </div>
       </details>
 
