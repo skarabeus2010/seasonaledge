@@ -402,39 +402,48 @@
           logRets.push(lr);
         }
         // Interpoliere cumulative auf 365 Kalendertage
+        // WICHTIG: Tage NACH dem letzten echten Handelstag werden mit null gefüllt
+        // (statt konstantem letzten Wert), damit unvollständige Jahre (z.B. das aktuelle)
+        // nicht die Perzentil-/Mittelwert-Berechnungen verfälschen.
+        var lastActualDay = days[days.length-1];
         var full365=[];
         for (var t=1;t<=365;t++) {
+          if (t > lastActualDay) { full365.push(null); continue; }
           var idx=days.indexOf(t);
           if (idx>=0) { full365.push(cumulative[idx]); continue; }
           if (t<days[0]) { full365.push(cumulative[0]); continue; }
-          if (t>days[days.length-1]) { full365.push(cumulative[cumulative.length-1]); continue; }
           var prev=-1,next=-1;
           for (var k=0;k<days.length;k++) { if(days[k]<t)prev=k; if(days[k]>t&&next<0)next=k; }
           if (prev>=0&&next>=0) {
             var w=(t-days[prev])/(days[next]-days[prev]);
             full365.push(cumulative[prev]+w*(cumulative[next]-cumulative[prev]));
           } else {
-            full365.push(cumulative[cumulative.length-1]);
+            full365.push(null);
           }
         }
+        // simpleReturn vom letzten echten Wert (nicht von null)
+        var lastReal = cumulative[cumulative.length-1];
         result[parseInt(yr)] = {
           full_365: full365,
           days: days,
           log_returns: logRets,
           cumulative: cumulative,
-          simpleReturn: full365[364]>0 ? (full365[364]/full365[0]-1)*100 : 0
+          last_actual_day: lastActualDay,
+          simpleReturn: lastReal>0 ? (lastReal/cumulative[0]-1)*100 : 0
         };
       }
       return result;
     }
 
-    // ── Period Stats (periodStats) ───────────────────────────────────────────
+    // ── Period Stats (periodStats, null-safe) ───────────────────────────────
     function periodStats(yearData, startDoy, endDoy) {
       var rets=[];
       for (var y in yearData) {
         var c=yearData[y].full_365;
         var sv=c[startDoy-1], ev=c[Math.min(endDoy-1,364)];
-        if (sv!==0) rets.push((ev-sv)/sv*100);
+        // Beide Werte müssen echte Zahlen sein, sonst überspringen
+        if (sv == null || ev == null || isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) continue;
+        rets.push((ev-sv)/sv*100);
       }
       if (!rets.length) return null;
       var wins=rets.filter(function(r){return r>0;}).length;
@@ -505,12 +514,14 @@
       return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number) };
     }
 
-    // ── Drawdown Berechnungen ────────────────────────────────────────────────
+    // ── Drawdown Berechnungen (null-safe) ────────────────────────────────────
     function drawdownSeries(curve, base) {
       base = base || 0;
       var dd=[], peak=-Infinity;
       for (var i=0;i<curve.length;i++) {
-        var v = curve[i] + base;
+        var v = curve[i];
+        if (v == null || isNaN(v) || !isFinite(v)) { dd.push(null); continue; }
+        v = v + base;
         if (v > peak) peak = v;
         dd.push(peak>0 ? (v - peak) / peak * 100 : 0);
       }
@@ -518,11 +529,12 @@
     }
     function avgDrawdownCurve(curves, base) {
       if (!curves.length) return { avg:[], std:[] };
-      var n = curves[0].length;
+      var n = 365;
       var ddSeries = curves.map(function(c){ return drawdownSeries(c, base); });
       var avg=[], std=[];
       for (var i=0;i<n;i++) {
         var vals = ddSeries.map(function(s){ return s[i]; });
+        // mean/stdev sind via _clean NaN/null-safe
         avg.push(mean(vals));
         std.push(stdev(vals));
       }
@@ -530,14 +542,18 @@
     }
     function drawdownStats(curve, base) {
       var dd = drawdownSeries(curve, base);
-      return { max_drawdown: Math.min.apply(null, dd), max_dd_day: dd.indexOf(Math.min.apply(null, dd)) };
+      var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+      if (!clean.length) return { max_drawdown: 0, max_dd_day: 0 };
+      var minV = Math.min.apply(null, clean);
+      return { max_drawdown: minV, max_dd_day: dd.indexOf(minV) };
     }
     function drawdownKpi(curves, base) {
       if (!curves.length) return null;
       var maxDds = curves.map(function(c){ return drawdownStats(c, base).max_drawdown; });
+      var clean = maxDds.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
       return {
         avg_max_dd: mean(maxDds),
-        worst_max_dd: Math.min.apply(null, maxDds),
+        worst_max_dd: clean.length ? Math.min.apply(null, clean) : 0,
         n: curves.length
       };
     }
@@ -627,7 +643,7 @@
       };
     }
 
-    // ── Month × Offset Heatmap Data ──────────────────────────────────────────
+    // ── Month × Offset Heatmap Data (null-safe) ─────────────────────────────
     function buildMonthlyHeatmap(yearData) {
       var years = Object.keys(yearData).map(Number).sort(function(a,b){return b-a;});
       var last10 = years.slice(0,10);
@@ -639,8 +655,14 @@
           var b = MONTH_BOUNDS[m-1];
           var c = yearData[y].full_365;
           var sv = c[b[0]-1], ev = c[Math.min(b[1]-1,364)];
-          var ret = sv!==0 ? (ev-sv)/sv*100 : 0;
-          row.push({ x: MONTHS_DE[m-1], y: parseFloat(ret.toFixed(2)) });
+          // Wenn Monat unvollständig (z.B. aktuelles Jahr nach lastActualDay) → null
+          var cellVal;
+          if (sv == null || ev == null || isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
+            cellVal = null;
+          } else {
+            cellVal = parseFloat(((ev-sv)/sv*100).toFixed(2));
+          }
+          row.push({ x: MONTHS_DE[m-1], y: cellVal });
         }
         series.push({ name: String(y), data: row });
       }
@@ -743,12 +765,18 @@
         }
       }
 
-      // 2. Perzentil-Bänder → linke Achse
+      // 2. Perzentil-Bänder → linke Achse (NaN-safe: nulls vor sort entfernen)
       if (showPercentile && Object.keys(yearData).length>=5) {
         var allCurves = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
         var p25 = [], p75 = [];
         for (var d=0;d<365;d++) {
-          var vals = allCurves.map(function(c){ return c[d]; }).sort(function(a,b){return a-b;});
+          var vals = [];
+          for (var ci=0;ci<allCurves.length;ci++) {
+            var v = allCurves[ci][d];
+            if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) vals.push(v);
+          }
+          if (vals.length < 4) { p25.push(null); p75.push(null); continue; }
+          vals.sort(function(a,b){return a-b;});
           p25.push(vals[Math.floor(vals.length*0.25)]);
           p75.push(vals[Math.floor(vals.length*0.75)]);
         }
