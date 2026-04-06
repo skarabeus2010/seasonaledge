@@ -261,6 +261,8 @@ if _project_dir not in sys.path:
 | Daten: Pre-computed JSON | `landing/data/`, Generator-Scripts in `scripts/` |
 | Docker JSON-Transfer | Im Container generieren, `docker cp` auf Host fuer nginx |
 | Sortierbare Tabellen | `SA.makeSortable(table)` + MutationObserver Auto-Init in app.js — alle `<table>` mit `<thead>` oder erster Zeile mit `<th>` sind automatisch sortierbar. Opt-out: `<table data-no-sort="1">` |
+| OPEX-Datum (Aktien/Index) | `SA.holidays._nthDow(y, m, 5, 3)` = Kalender-3.Fr. Bei NYSE-Feiertag (Good Friday, Juneteenth, ...) auf **vorherigen Handelstag** vorverlegt (meist Do). Pro Jahr ~1 Verschiebung. Triple Witching = Mar/Jun/Sep/Dez (`TRIPLE_MONTHS=[3,6,9,12]`) |
+| VIXpiration (CBOE-Regel) | Settlement = **Kalender-3.Freitag − 30 Kalendertage** (ergibt Mi). Ist ENTWEDER Basis-Freitag ODER Settlement-Mittwoch ein Feiertag → Settlement −1 HT (→ Di). Letzter VIX-HT = Settlement −1 HT. Wichtige Faelle: 04/2025 (Good Friday) → VIX 18.03 Di, 06/2026 (Juneteenth) → VIX 19.05 Di |
 | Frontend Trading Day Header | `SA.renderTradingDayHeader(el, ticker, rows)` — wenn heute Handelstag → frisch vom Monats-/Jahresanfang berechnen (via SA.holidays), NICHT aus DB-Rows lesen |
 | TDOM-Strategie Cross-Month | Entry negativ + Exit positiv → Exit im nächsten Monat suchen (Turn-of-the-Month-Muster) |
 | MIN_N = 10 Threshold | TDoM/TDoY-Statistiken mit n<10 mit ⚠ + 40% Opacity markieren (aus `03_Monatszyklus.py`) |
@@ -406,12 +408,12 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
 | TDOM Analyse | `/tdom-analyse` | app, charts, holidays, outlier, indicators, streak, strategy-compute | 3 Strategien (Intraday/Overnight/C2C), Vorwärts/Rückwärts, Heatmap Monat×TDoM, TDOM-Strategie Tester (Entry/Exit mit Cross-Month Support, Stop-Loss, CAGR/Sharpe/MaxDD/PF), TDoY Top 25 mit Datum 2026 (sortierbar), Streak pro TDoM, MIN_N=10 Warnung, "We are here" Marker |
 | Spot-Vol Beta | `/spot-vol-beta` | app, charts, holidays | 3 Subplots (Spot + Daily Beta + Vol, synchronisiert), Scatter + OLS-Regression + "We are here", Rolling Beta mit Gesamt-Beta Referenz, Regime-Wendepunkte (VIX Spikes / Complacency / Beta Stress) mit Forward Returns 5/10/20/60d, historischer Spot-Chart |
+| OPEX Analyse | `/opex` | app, charts, holidays, indicators, streak | Event-Window (t-N...t+N) fuer Standard + Triple Witching, VIXpiration (CBOE-konform), Backtest mit Equity-Kurve, OPEX-Kalender naechste 8 + Tabelle, Streak pro OPEX-Monat, Feiertags-Adjustierung (Good Friday, Juneteenth) |
 
-### Offene HTML-Migrationen (4 von 18)
+### Offene HTML-Migrationen (3 von 18)
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 15 | OPEX (mit VIXpiration) | 741 | 5 | naechste |
-| 16 | Jahreszyklus | 1595 | 20 | |
+| 16 | Jahreszyklus | 1595 | 20 | naechste |
 | 17 | Monatszyklus | 1412 | 26 | |
 | 18 | Wochentage | 1670 | 29 | |
 
