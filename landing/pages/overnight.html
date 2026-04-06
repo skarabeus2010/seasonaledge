@@ -387,8 +387,10 @@
           type: 'numeric', tickAmount: 12,
           labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) {
             // DOY → Monatsname (1=Jan1, 32=Feb1, 60=Mar1, ...)
+            // Math.ceil() verhindert Floating-Point-Fehler bei Apr/Jul/Okt
             var doyStarts = [1,32,60,91,121,152,182,213,244,274,305,335];
-            for (var i = 11; i >= 0; i--) { if (v >= doyStarts[i]) return MONTHS[i]; }
+            var cv = Math.ceil(v);
+            for (var i = 11; i >= 0; i--) { if (cv >= doyStarts[i]) return MONTHS[i]; }
             return '';
           } }
         },
@@ -521,6 +523,17 @@
       html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">An welchen Wochentagen ist der Overnight-Effekt am st\u00E4rksten?</p>';
       html += SA.significance.renderSection(wdResult, 3, ['Mo','Di','Mi','Do','Fr','Gesamt']);
 
+      // 3. Overnight nach Monat (KI-Feature)
+      var moGroups = {};
+      for (var mo = 0; mo < 12; mo++) {
+        (function(month) {
+          moGroups[MONTHS[month]] = data.filter(function(d){return d.month === month+1;}).map(function(d){return d.overnight;});
+        })(mo);
+      }
+      var moResult = SA.significance.runSignificanceTest(moGroups);
+      html += '<h3 style="margin-top:1.5rem">Overnight-Signifikanz nach Monat</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">In welchen Monaten ist der Overnight-Effekt statistisch bedeutsam?</p>';
+      html += SA.significance.renderSection(moResult, 3, MONTHS);
 
       el.innerHTML = html;
     }
