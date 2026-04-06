@@ -100,8 +100,22 @@
         <hr>
         <h3>OPEX-Ansicht</h3>
         <div class="mode-radio">
-          <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching (1 Chart)</label>
+          <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching</label>
           <label><input type="radio" name="opex-view" value="monthly"> Monatlich (12 Charts)</label>
+        </div>
+        <!-- Triple Witching Monate (nur wenn opex-view=triple) -->
+        <div id="triple-months-block" style="margin-top:.6rem">
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em">Quartale w&auml;hlen</div>
+          <div class="vix-months" id="triple-months-checkboxes" style="grid-template-columns:repeat(4,1fr)">
+            <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+            <label><input type="checkbox" data-month="6" checked> Jun</label>
+            <label><input type="checkbox" data-month="9" checked> Sep</label>
+            <label><input type="checkbox" data-month="12" checked> Dez</label>
+          </div>
+          <div style="display:flex;gap:.25rem;margin-top:.4rem">
+            <button type="button" id="btn-triple-all" class="btn-mini">Alle</button>
+            <button type="button" id="btn-triple-none" class="btn-mini">Keine</button>
+          </div>
         </div>
       </div>
 
@@ -204,6 +218,12 @@
         </div>
       </details>
 
+      <!-- Signifikanz -->
+      <details open id="sec-significance" style="display:none">
+        <summary>Signifikanztest &mdash; Ist der Effekt statistisch bedeutsam?</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
       <!-- Backtest -->
       <details open id="sec-backtest" style="display:none">
         <summary id="bt-summary">Backtest</summary>
@@ -286,6 +306,7 @@
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/strategy-compute.js"></script>
 
   <script>
   (function() {
@@ -309,6 +330,7 @@
     var currentTicker = 'SPY';
     var currentMode = 'opex';       // 'opex' oder 'vix'
     var opexView    = 'triple';     // 'triple' oder 'monthly'
+    var tripleMonthsMask = { 3:true, 6:true, 9:true, 12:true };
     var vixMonthsMask = [true,true,true,true,true,true,true,true,true,true,true,true];
     var _cachedRows = null;
     var _cachedData = null;
@@ -321,12 +343,16 @@
     function ds(y,m,d) { return y+'-'+pad2(m)+'-'+pad2(d); }
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function cc(v) { return v>=0?'pos':'neg'; }
-    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
-    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
+    /** KPI-Karte im globalen Stil (app.css .kpi/.kpi-label/.kpi-value). */
+    function kpi(l, v, c) {
+      var cls = (c || '').replace(/kpi__value--/g, '').replace(/kpi__value/g, '');
+      return '<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+cls+'">'+v+'</div></div>';
+    }
 
     function showSections(show) {
       // Sektionen die immer sichtbar sein koennen
-      ['sec-backtest','sec-calendar','sec-streak','sec-heatmap'].forEach(function(id) {
+      ['sec-backtest','sec-calendar','sec-streak','sec-heatmap','sec-significance'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       // Modus-abhaengige Sektionen
@@ -481,7 +507,9 @@
 
         var rec = {
           date: ev.date, year: ev.year, month: ev.month,
-          isTriple: ev.isTriple, vixDate: ev.vixDate
+          isTriple: ev.isTriple, vixDate: ev.vixDate,
+          entryDate: returns[t0 - daysBefore].date,
+          exitDate:  returns[t0 + daysAfter].date
         };
         for (var offset = -daysBefore; offset <= daysAfter; offset++) {
           var idx = t0 + offset;
@@ -489,10 +517,9 @@
             rec['t' + offset] = returns[idx].returnPct;
           }
         }
-        // Cumulative return for backtest: product from t-daysBefore to t+daysAfter
+        // Summe der Tagesrenditen im Fenster (als Naeherung fuer den Trade-Return)
         var cumReturn = 0;
         if (rec['t' + (-daysBefore)] !== undefined) {
-          // Simple sum approximation (consistent with Python page)
           for (var off = -daysBefore; off <= daysAfter; off++) {
             if (rec['t' + off] !== undefined) cumReturn += rec['t' + off];
           }
@@ -588,22 +615,22 @@
 
           var chart = new ApexCharts(wrap, {
             series: [{ name:'Kum.', data:cum }],
-            chart: Object.assign({ type:'area', height:180, sparkline:{enabled:false}, toolbar:{show:false} }, SA.chartTheme.chart),
+            chart: Object.assign({ type:'area', height:190, sparkline:{enabled:false}, toolbar:{show:false} }, SA.chartTheme.chart),
             stroke: { width:2, curve:'straight' },
             fill: { type:'gradient', gradient:{opacityFrom:.35, opacityTo:.02} },
             colors: [col],
-            grid: { borderColor:'rgba(255,255,255,.05)', strokeDashArray:0, padding:{left:6,right:6,top:4,bottom:0} },
+            grid: { borderColor:'rgba(255,255,255,.08)', strokeDashArray:0, padding:{left:6,right:6,top:4,bottom:0} },
             tooltip: SA.chartTheme.tooltip,
-            xaxis: { categories:labels, labels:{show:true, style:{colors:'#7a6858',fontSize:'9px'}, rotate:0, hideOverlappingLabels:true} },
-            yaxis: { labels:{show:true, style:{colors:'#7a6858',fontSize:'9px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
+            xaxis: { categories:labels, labels:{show:true, style:{colors:'#d4c5a0',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true} },
+            yaxis: { labels:{show:true, style:{colors:'#d4c5a0',fontSize:'10px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
             annotations: {
-              xaxis:[{ x:'t=0', borderColor:'rgba(255,255,255,.25)', strokeDashArray:3 }],
-              yaxis:[{ y:0, borderColor:'rgba(255,255,255,.1)', strokeDashArray:2 }]
+              xaxis:[{ x:'t=0', borderColor:'#ffffff', strokeDashArray:0, opacity:1, label:{text:'',borderWidth:0} }],
+              yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:2 }]
             },
             dataLabels: { enabled:false },
             title: { text:MONTHS_FULL[month-1]+(isTriple?' \u2605':'')+' (n='+mWindows.length+')',
                      align:'left',
-                     style:{color:isTriple?COL_TRIPLE:'#ddd',fontSize:'11px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+                     style:{color:isTriple?COL_TRIPLE:'#f5f5f5',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
           });
           chart.render();
           miniCharts.push(chart);
@@ -674,7 +701,7 @@
       if (charts['heatmap']) { charts['heatmap'].destroy(); charts['heatmap']=null; }
       charts['heatmap'] = new ApexCharts(document.getElementById('chart-heatmap'), {
         series: series,
-        chart: Object.assign({ type:'heatmap', height: 360 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'heatmap', height: 420 }, SA.chartTheme.chart),
         plotOptions: {
           heatmap: {
             radius: 3,
@@ -693,14 +720,15 @@
           }
         },
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        xaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
         dataLabels: {
           enabled: true,
           formatter: function(v) { return v === null ? '' : (v>=0?'+':'')+v.toFixed(2); },
-          style: { fontSize:'10px', colors:['#e5e5e5'] }
+          style: { fontSize:'13px', fontWeight:600, colors:['#f5f5f5'] }
         },
         legend: { show:false },
-        title: { text:currentTicker+' \u2014 '+titleSuffix+': \u00D8 Tagesrendite Monat \u00D7 Offset', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text:currentTicker+' \u2014 '+titleSuffix+': \u00D8 Tagesrendite Monat \u00D7 Offset', style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts['heatmap'].render();
     }
@@ -735,69 +763,99 @@
       document.getElementById('bt-summary').textContent = 'Backtest: '+btLabel;
       document.getElementById('bt-desc').textContent = btLabel;
 
+      // In Trade-Objekte fuer SA.strategy.computeStats umwandeln
       var sorted = windows.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
-      var rets = sorted.map(function(w){ return w.cumReturn || 0; });
-      var equity = [];
-      var cum = 0;
-      for (var i = 0; i < rets.length; i++) { cum += rets[i]; equity.push(parseFloat(cum.toFixed(3))); }
-
-      var wins   = rets.filter(function(v){ return v>0; }).length;
-      var winRate = rets.length ? wins/rets.length*100 : 0;
-      var avgRet  = rets.length ? rets.reduce(function(s,v){return s+v;},0)/rets.length : 0;
-      var sumRet  = rets.reduce(function(s,v){return s+v;},0);
-      var std     = rets.length > 1 ? Math.sqrt(rets.reduce(function(s,v){return s+(v-avgRet)*(v-avgRet);},0)/(rets.length-1)) : 1;
-      var sharpe  = std > 0 ? avgRet/std : 0;
+      var trades = sorted
+        .filter(function(w){ return w.entryDate && w.exitDate; })
+        .map(function(w){
+          return {
+            entry_date: w.entryDate,
+            exit_date:  w.exitDate,
+            entry_price: 100,
+            exit_price:  100 * (1 + (w.cumReturn||0)/100),
+            return_pct:  w.cumReturn || 0
+          };
+        });
 
       var daysBefore = parseInt(document.getElementById('sl-before').value);
       var daysAfter  = parseInt(document.getElementById('sl-after').value);
       document.getElementById('bt-entry').textContent = '-' + daysBefore;
       document.getElementById('bt-exit').textContent  = '+' + daysAfter;
 
-      document.getElementById('bt-kpis').innerHTML =
-        kpi('Events', rets.length.toLocaleString()) +
-        kpi('Win-Rate', winRate.toFixed(1)+' %', winRate>=50?'kpi__value--green':'kpi__value--red') +
-        kpi('\u00D8 Trade-Rendite', fmtPct(avgRet,3), avgRet>=0?'kpi__value--green':'kpi__value--red') +
-        kpi('Sharpe (\u00D8/\u03C3)', sharpe.toFixed(2), sharpe>=0.3?'kpi__value--green':'');
+      if (trades.length === 0) {
+        document.getElementById('bt-kpis').innerHTML = '<div style="color:var(--muted);font-size:.8125rem">Keine Trades</div>';
+        ['equity','bt-bar'].forEach(function(k){ if(charts[k]){charts[k].destroy();charts[k]=null;} });
+        return;
+      }
 
-      // Equity-Kurve
-      var eqDates = sorted.map(function(w){ return w.date; });
-      var eqColor = equity.length && equity[equity.length-1] >= 0 ? COL_POS : COL_NEG;
+      var stats = SA.strategy ? SA.strategy.computeStats(trades, 1000) : null;
+      if (!stats) {
+        var rr = trades.map(function(t){ return t.return_pct; });
+        var avgR = rr.reduce(function(s,v){return s+v;},0)/rr.length;
+        stats = { cagr:0, max_drawdown:0, win_rate:rr.filter(function(v){return v>0;}).length/rr.length*100,
+                  sharpe:0, profit_factor:0, n_trades:trades.length, final_equity:1000, avg_return:avgR };
+      }
+
+      document.getElementById('bt-kpis').innerHTML =
+        kpi('CAGR', (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'green' : 'red') +
+        kpi('Max Drawdown', stats.max_drawdown.toFixed(1) + ' %', 'red') +
+        kpi('Win-Rate', stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'green' : '') +
+        kpi('\u00D8 Trade', (stats.avg_return >= 0 ? '+' : '') + stats.avg_return.toFixed(2) + ' %', stats.avg_return >= 0 ? 'green' : 'red') +
+        kpi('Sharpe', stats.sharpe.toFixed(2), stats.sharpe >= 1 ? 'green' : stats.sharpe >= 0.3 ? '' : 'red') +
+        kpi('Profit Factor', (stats.profit_factor >= 999 ? '\u221E' : stats.profit_factor.toFixed(2)),
+            stats.profit_factor >= 1.5 ? 'green' : stats.profit_factor >= 1 ? '' : 'red') +
+        kpi('Trades', stats.n_trades) +
+        kpi('$1.000 Endwert', '$' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}),
+            stats.final_equity >= 1000 ? 'green' : 'red');
+
+      // Equity-Kurve (Compounding, startet bei 1000)
+      var equity = [1000];
+      for (var i = 0; i < trades.length; i++) {
+        equity.push(equity[equity.length-1] * (1 + trades[i].return_pct / 100));
+      }
+      var eqDates = [trades.length ? trades[0].entry_date : ''].concat(trades.map(function(t){ return t.exit_date; }));
+      var eqColor = equity[equity.length-1] >= 1000 ? COL_POS : COL_NEG;
 
       if (charts.equity) { charts.equity.destroy(); charts.equity=null; }
       charts.equity = new ApexCharts(document.getElementById('chart-equity'), {
-        series: [{ name:'Equity', data: equity }],
-        chart: Object.assign({ type:'area', height:220 }, SA.chartTheme.chart),
+        series: [{ name:'Equity ($)', data: equity.map(function(v){ return parseFloat(v.toFixed(2)); }) }],
+        chart: Object.assign({ type:'area', height:260 }, SA.chartTheme.chart),
         stroke: { width:2, curve:'straight' },
-        fill: { type:'gradient', gradient:{opacityFrom:.25,opacityTo:.03} },
+        fill: { type:'gradient', gradient:{opacityFrom:.28,opacityTo:.03} },
         colors: [eqColor],
         grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
-          x: { formatter:function(v,opts){ return eqDates[opts.dataPointIndex]||''; } }
+          x: { formatter:function(v,opts){ return eqDates[opts.dataPointIndex]||''; } },
+          y: { formatter:function(v){ return '$'+v.toLocaleString(undefined,{maximumFractionDigits:0}); } }
         }),
-        xaxis: { categories:eqDates, tickAmount:8, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1)+'%';}} },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
+        xaxis: { categories:eqDates, tickAmount:8, labels:{style:{colors:'#d4c5a0',fontSize:'11px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return '$'+v.toFixed(0);}} },
+        annotations: { yaxis:[{ y:1000, borderColor:'rgba(255,255,255,.25)', strokeDashArray:3, label:{text:'Start',style:{color:'#ddd',background:'rgba(0,0,0,.5)',fontSize:'10px'}} }] },
         dataLabels: { enabled:false },
-        title: { text:currentTicker + ' \u2014 Kumulierte Backtest-Rendite ('+btLabel+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text:currentTicker + ' \u2014 Equity-Kurve $1.000 Compounding ('+btLabel+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts.equity.render();
+
+      // Uebergabe der Daten fuer den Bar-Chart (muss direkt nach Equity kommen)
+      var rets = trades.map(function(t){ return t.return_pct; });
+      var eqDatesBar = trades.map(function(t){ return t.exit_date; });
 
       // Rendite pro Event
       var barCols = rets.map(function(v){ return v>=0?COL_POS:COL_NEG; });
       if (charts['bt-bar']) { charts['bt-bar'].destroy(); charts['bt-bar']=null; }
       charts['bt-bar'] = new ApexCharts(document.getElementById('chart-bt-bar'), {
         series: [{ name:'Trade-Rendite', data: rets.map(function(v){ return parseFloat(v.toFixed(3)); }) }],
-        chart: Object.assign({ type:'bar', height:160 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'bar', height:180 }, SA.chartTheme.chart),
         colors: barCols,
         plotOptions: { bar:{ distributed:true, columnWidth:'90%', borderRadius:0 } },
         grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
-          x: { formatter:function(v,opts){ return eqDates[opts.dataPointIndex]||''; } }
+          x: { formatter:function(v,opts){ return eqDatesBar[opts.dataPointIndex]||''; } }
         }),
-        xaxis: { categories:eqDates, tickAmount:8, labels:{style:{colors:'#a89878',fontSize:'9px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1)+'%';}} },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }] },
+        xaxis: { categories:eqDatesBar, tickAmount:8, labels:{style:{colors:'#d4c5a0',fontSize:'10px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+' %';}} },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.25)', strokeDashArray:2 }] },
         dataLabels: { enabled:false },
         legend: { show:false },
-        title: { text:'Rendite pro Event (%)', style:{color:'#a89878',fontSize:'11px',fontFamily:'Sora,sans-serif'} }
+        title: { text:'Rendite pro Event (%)', style:{color:'#d4c5a0',fontSize:'12px',fontFamily:'Sora,sans-serif'} }
       });
       charts['bt-bar'].render();
     }
@@ -895,6 +953,50 @@
       document.getElementById('tbody-all-opex').innerHTML = tbody;
     }
 
+    // ── Render: Signifikanztest ──────────────────────────────────────────────
+    function renderSignificance(windows, label) {
+      var el = document.getElementById('content-significance');
+      if (!SA.significance || windows.length < 10) {
+        document.getElementById('sec-significance').style.display = 'none';
+        return;
+      }
+      // 1) Rendite am Verfalltag (t=0) getestet gegen 0 - gesamt + pro Monat
+      var overall = { };
+      overall[label+' t=0 (gesamt)'] = windows.map(function(w){ return w.t0; }).filter(function(v){return v!==undefined;});
+      var overallResult = SA.significance.runSignificanceTest(overall);
+
+      // 2) Pro Monat (t=0 Rendite)
+      var byMonth = {};
+      for (var m = 1; m <= 12; m++) {
+        var arr = windows.filter(function(w){ return parseInt(w.month)===m; })
+                         .map(function(w){ return w.t0; }).filter(function(v){return v!==undefined;});
+        if (arr.length >= 5) byMonth[MONTHS_DE[m-1]] = arr;
+      }
+      var monthResult = SA.significance.runSignificanceTest(byMonth);
+
+      // 3) Ganzes Fenster (kumulierte Rendite gegen 0)
+      var cumGroups = {};
+      cumGroups[label+' Fenster (kum.)'] = windows.map(function(w){ return w.cumReturn; }).filter(function(v){return v!==undefined && !isNaN(v);});
+      var cumResult = SA.significance.runSignificanceTest(cumGroups);
+
+      var html = '';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-Tag (t=0) vs. Null</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">t-Test: Ist die durchschnittliche Tagesrendite am Verfalltag systematisch von Null verschieden?</p>';
+      html += SA.significance.renderSection(overallResult, 2, [label+' t=0 (gesamt)']);
+
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">Kumuliertes Fenster (t'+parseInt(document.getElementById('sl-before').value)*-1+' bis t+'+document.getElementById('sl-after').value+')</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.</p>';
+      html += SA.significance.renderSection(cumResult, 2, [label+' Fenster (kum.)']);
+
+      if (Object.keys(byMonth).length >= 3) {
+        html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">'+label+'-Tag nach Monat</h3>';
+        html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">In welchen Monaten ist der '+label+'-Effekt statistisch signifikant? (Mindestens 5 Events pro Monat)</p>';
+        html += SA.significance.renderSection(monthResult, 3, Object.keys(byMonth));
+      }
+
+      el.innerHTML = html;
+    }
+
     // ── Render: Streak (grafisch, Modus-abhaengig) ───────────────────────────
     function renderStreak(windows, label) {
       if (!SA.streaks) { document.getElementById('sec-streak').style.display='none'; return; }
@@ -953,7 +1055,7 @@
 
       var lastDate = filteredRows[filteredRows.length-1].date;
       var eventsAll    = opexDates.filter(function(e){ return e.date <= lastDate; });
-      var eventsTriple = eventsAll.filter(function(e){ return e.isTriple; });
+      var eventsTriple = eventsAll.filter(function(e){ return e.isTriple && tripleMonthsMask[parseInt(e.month)]; });
 
       var windowsAll    = computeEventWindows(returns, eventsAll, daysBefore, daysAfter);
       var windowsTriple = computeEventWindows(returns, eventsTriple, daysBefore, daysAfter);
@@ -975,12 +1077,14 @@
           renderKPIs(windowsTriple, 'OPEX');
           renderOpexTriple(windowsTriple, daysBefore, daysAfter);
           renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
+          renderSignificance(windowsTriple, 'OPEX');
           renderBacktest(windowsTriple, 'Triple Witching');
           renderStreak(windowsTriple, 'OPEX');
         } else {
           renderKPIs(windowsAll, 'OPEX');
           renderOpexMonthlyGrid(windowsAll, daysBefore, daysAfter);
           renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
+          renderSignificance(windowsAll, 'OPEX');
           renderBacktest(windowsAll, 'Monatlicher Verfall');
           renderStreak(windowsAll, 'OPEX');
         }
@@ -990,6 +1094,7 @@
         renderKPIs(filteredVix, 'VIX');
         renderVixOverlay(windowsVix, daysBefore, daysAfter);
         renderHeatmap(filteredVix, daysBefore, daysAfter, 'VIXpiration');
+        renderSignificance(filteredVix, 'VIX');
         renderBacktest(filteredVix, 'VIXpiration');
         renderStreak(filteredVix, 'VIX');
       }
@@ -1080,9 +1185,29 @@
       viewRadios[i].addEventListener('change', function() {
         if (!this.checked) return;
         opexView = this.value;
+        document.getElementById('triple-months-block').style.display =
+          opexView === 'triple' ? '' : 'none';
         if (_cachedRows) rerender();
       });
     }
+
+    // Triple Witching Monats-Checkboxen
+    var tripleMonthChecks = document.querySelectorAll('#triple-months-checkboxes input[type=checkbox]');
+    for (var i = 0; i < tripleMonthChecks.length; i++) {
+      tripleMonthChecks[i].addEventListener('change', function() {
+        var m = parseInt(this.getAttribute('data-month'));
+        tripleMonthsMask[m] = this.checked;
+        if (_cachedRows && currentMode === 'opex' && opexView === 'triple') rerender();
+      });
+    }
+    document.getElementById('btn-triple-all').addEventListener('click', function() {
+      [3,6,9,12].forEach(function(m,i) { tripleMonthsMask[m] = true; tripleMonthChecks[i].checked = true; });
+      if (_cachedRows && currentMode === 'opex' && opexView === 'triple') rerender();
+    });
+    document.getElementById('btn-triple-none').addEventListener('click', function() {
+      [3,6,9,12].forEach(function(m,i) { tripleMonthsMask[m] = false; tripleMonthChecks[i].checked = false; });
+      if (_cachedRows && currentMode === 'opex' && opexView === 'triple') rerender();
+    });
 
     // VIX-Monats-Checkboxen
     var vixMonthChecks = document.querySelectorAll('#vix-months-checkboxes input[type=checkbox]');
