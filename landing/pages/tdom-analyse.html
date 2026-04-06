@@ -134,12 +134,18 @@
         <div class="content" id="content-stats"></div>
       </details>
 
+      <!-- Streak pro TDoM -->
+      <details id="sec-streak-tdom" style="display:none">
+        <summary>Streak-Analyse pro TDoM</summary>
+        <div class="content" id="content-streak-tdom"></div>
+      </details>
+
       <!-- Range Strategy -->
       <details open id="sec-range" style="display:none">
-        <summary>Multi-Day Range Strategie</summary>
+        <summary>TDOM-Strategie Tester</summary>
         <div class="content">
           <p class="box-info" style="margin-bottom:1rem">
-            <b>Wie funktioniert es?</b> Die Range-Strategie ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.
+            <b>Wie funktioniert es?</b> Der TDOM-Strategie Tester ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.
             <b>Beispiel:</b> Entry TDoM 1 (Open) &rarr; Exit TDoM -1 (Close) bedeutet: Kauf am Open des 1. Handelstages,
             Verkauf am Close des letzten Handelstages. Pro Monat 1 Trade. Negative TDoM = von hinten gez&auml;hlt
             (-1 = letzter Handelstag, -3 = drittletzter).
@@ -151,6 +157,7 @@
           </p>
           <div id="range-kpi" class="kpi-row" style="margin-bottom:1rem"></div>
           <div id="chart-range"></div>
+          <div id="range-streak" style="margin-top:1.5rem"></div>
           <div id="range-trades" style="margin-top:1rem;max-height:300px;overflow-y:auto"></div>
         </div>
       </details>
@@ -197,6 +204,7 @@
   <script src="/landing/js/outlier.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
 
   <script>
   (function() {
@@ -212,7 +220,7 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-bars','sec-winrate','sec-heatmap','sec-stats'].forEach(function(id) {
+      ['sec-bars','sec-winrate','sec-heatmap','sec-stats','sec-streak-tdom'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
@@ -641,6 +649,41 @@
       charts.heatmap.render();
     }
 
+    // ── Render: Streak pro TDoM ───────────────────────────────────────────────
+    function renderStreakPerTdom(rows, strategy, direction, selectedMonths) {
+      var withRet = calcStrategyReturn(rows, strategy);
+      var tdomCol = direction === 'forward' ? 'tdom' : 'tdom_reverse';
+      var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
+
+      var filtered = withRet.filter(function(r) {
+        if (r.strat_return == null || isNaN(r.strat_return)) return false;
+        if (selectedMonths.indexOf(r.month) < 0) return false;
+        var t = r[tdomCol];
+        return t >= validRange[0] && t <= validRange[1];
+      });
+
+      // Group by TDoM, dann sortiert
+      var byTdom = {};
+      for (var i = 0; i < filtered.length; i++) {
+        var t = filtered[i][tdomCol];
+        if (!byTdom[t]) byTdom[t] = [];
+        byTdom[t].push({ date: filtered[i].date, ret: filtered[i].strat_return });
+      }
+
+      // Build groups fuer SA.streaks (sortiert: neueste zuerst)
+      var groups = [];
+      var keys = Object.keys(byTdom).map(Number).sort(function(a,b){return direction === 'forward' ? a-b : b-a;});
+      for (var k = 0; k < keys.length; k++) {
+        var tdom = keys[k];
+        var entries = byTdom[tdom].slice().sort(function(a,b){return b.date > a.date ? 1 : -1;});
+        groups.push({ label: 'TDoM ' + (tdom > 0 ? '+' + tdom : tdom), entries: entries });
+      }
+
+      var html = '<p class="box-info" style="margin-bottom:.75rem">Aktuelle Gewinn-/Verlust-Serie pro TDoM. Zeigt die letzten 15 Trades chronologisch (\u00E4lteste links, neueste rechts).</p>';
+      html += SA.streaks.renderStreakTable(groups, 'TDoM', 15);
+      document.getElementById('content-streak-tdom').innerHTML = html;
+    }
+
     // ── Render: Statistik-Tabelle ─────────────────────────────────────────────
     function renderStats(stats) {
       var html = '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Median</th><th>Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
@@ -730,6 +773,17 @@
       });
       charts.range.render();
 
+      // Streak-Analyse fuer die Range-Strategie
+      if (SA.streaks) {
+        var entries = trades.map(function(t) { return { date: t.entry_date, ret: t.return_pct }; });
+        entries.sort(function(a,b){return b.date > a.date ? 1 : -1;});
+        var rangeLabel = 'TDoM ' + entryTdom + ' \u2192 ' + exitTdom;
+        var streakHtml = '<h4 style="font-size:.875rem;margin-bottom:.5rem">Streak-Analyse</h4>';
+        streakHtml += '<p class="box-info" style="margin-bottom:.75rem">Aktuelle Gewinn-/Verlust-Serie der Strategie. Zeigt die letzten 20 Trades chronologisch (\u00E4lteste links, neueste rechts).</p>';
+        streakHtml += SA.streaks.renderStreakTable([{ label: rangeLabel, entries: entries }], 'Strategie', 20);
+        document.getElementById('range-streak').innerHTML = streakHtml;
+      }
+
       // Trades table (last 20)
       var sorted = trades.slice().sort(function(a,b) { return b.entry_date > a.entry_date ? 1 : -1; });
       var html = '<h4 style="font-size:.875rem;margin-bottom:.5rem">Letzte 20 Trades</h4>';
@@ -795,6 +849,7 @@
       renderWinRate(stats, direction);
       renderHeatmap(matrix, direction);
       renderStats(stats);
+      renderStreakPerTdom(workingRows, strategy, direction, selectedMonths);
       showSections(true);
 
       // Range (nutzt workingRows = mit Indikator-Filter)
