@@ -161,7 +161,7 @@
             <span class="l-truepath">Musterpfad</span>
             <span class="l-current">Aktuelles Jahr</span>
             <span class="l-match">Match-Jahre</span>
-            <span class="l-proj">Projektion (Cone)</span>
+            <span class="l-proj">Projektion</span>
           </div>
           <div id="chart-truepath"></div>
           <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
@@ -532,83 +532,86 @@
 
     // ── Render: Main Chart (Musterpfad) ──────────────────────────────────────
     function renderTruePathChart(yearData, avg, truepath, matches, currentYear, projection, smoothing) {
-      var xDays = [];
-      for (var d = 1; d <= 365; d++) xDays.push(d);
-      var monthCats = MONTH_START_DOY; // Tick positions
-
       var classicSmooth = rollingMean(avg, smoothing);
       var todayDoy = Math.min(365, Math.floor((new Date() - new Date(new Date().getFullYear(),0,0))/86400000));
 
+      // Alle Serien als plain Array (365 Werte, null fuer fehlende Daten)
+      function round2(v) { return v == null ? null : Math.round(v*100)/100; }
+      function pad365(arr) {
+        var out = arr.slice(0, 365).map(round2);
+        while (out.length < 365) out.push(null);
+        return out;
+      }
+
       var series = [];
+      var colors = [];
+      var strokeWidths = [];
+      var strokeDashes = [];
 
-      // Klassischer Ø
-      series.push({
-        name: 'Klassischer \u00D8',
-        type: 'line',
-        data: classicSmooth.map(function(v,i){ return { x:i+1, y:parseFloat(v.toFixed(2)) }; })
-      });
+      // 1. Klassischer Ø (grau, dünn, gestrichelt)
+      series.push({ name: 'Klassischer \u00D8', data: pad365(classicSmooth) });
+      colors.push(COL_CLASSIC);
+      strokeWidths.push(2);
+      strokeDashes.push(5);
 
-      // Match-Jahre (dünne Linien, verblasst)
+      // 2. Match-Jahre (blaue dünne Linien)
       for (var i = 0; i < matches.length; i++) {
         var mSmooth = rollingMean(matches[i].full365, smoothing);
         series.push({
           name: matches[i].year + ' (' + matches[i].similarity.toFixed(0) + '%)',
-          type: 'line',
-          data: mSmooth.map(function(v,j){ return { x:j+1, y:parseFloat(v.toFixed(2)) }; })
+          data: pad365(mSmooth)
         });
-      }
-
-      // Musterpfad (prominent)
-      series.push({
-        name: 'Musterpfad',
-        type: 'line',
-        data: truepath.map(function(v,i){ return { x:i+1, y:parseFloat(v.toFixed(2)) }; })
-      });
-
-      // Aktuelles Jahr (bis heute)
-      if (yearData[currentYear]) {
-        var cur = yearData[currentYear].full_365.slice(0, todayDoy);
-        series.push({
-          name: currentYear + ' (aktuell)',
-          type: 'line',
-          data: cur.map(function(v,i){ return { x:i+1, y:parseFloat(v.toFixed(2)) }; })
-        });
-      }
-
-      // Projektion als Area-Cone
-      if (projection) {
-        // Obere Grenze und untere Grenze als separate Serien
-        series.push({
-          name: 'Projektion (Cone)',
-          type: 'area',
-          data: projection.days.map(function(d,i){ return { x:d, y:parseFloat(projection.upper[i].toFixed(2)) }; })
-        });
-      }
-
-      // Farben + Stroke Widths
-      var colors = [COL_CLASSIC];
-      var strokeWidths = [2];
-      var strokeDashes = [6];
-      for (var i = 0; i < matches.length; i++) {
         colors.push(COL_MATCH);
-        strokeWidths.push(1);
+        strokeWidths.push(1.5);
         strokeDashes.push(0);
       }
-      colors.push(COL_TRUEPATH);  strokeWidths.push(4); strokeDashes.push(0);
-      colors.push(COL_CURRENT);   strokeWidths.push(4); strokeDashes.push(0);
-      if (projection) { colors.push('rgba(52,211,153,.6)'); strokeWidths.push(1); strokeDashes.push(3); }
+
+      // 3. Musterpfad (gold, dick)
+      series.push({ name: 'Musterpfad', data: pad365(truepath) });
+      colors.push(COL_TRUEPATH);
+      strokeWidths.push(4);
+      strokeDashes.push(0);
+
+      // 4. Aktuelles Jahr (gelb, dick, nur bis heute, danach null)
+      if (yearData[currentYear]) {
+        var curData = new Array(365).fill(null);
+        var cur = yearData[currentYear].full_365;
+        for (var j = 0; j < Math.min(todayDoy, 365); j++) curData[j] = round2(cur[j]);
+        series.push({ name: currentYear + ' (aktuell)', data: curData });
+        colors.push(COL_CURRENT);
+        strokeWidths.push(4);
+        strokeDashes.push(0);
+      }
+
+      // 5. Projektion (grüne gestrichelte Linie, nur ab heute)
+      if (projection) {
+        var projData = new Array(365).fill(null);
+        for (var k = 0; k < projection.days.length; k++) {
+          var di = projection.days[k] - 1;
+          if (di >= 0 && di < 365) projData[di] = round2(projection.values[k]);
+        }
+        series.push({ name: 'Projektion', data: projData });
+        colors.push(COL_POS);
+        strokeWidths.push(3);
+        strokeDashes.push(6);
+      }
+
+      // Kategorien 1..365 als Strings (zwingt ApexCharts auf category axis, robust)
+      var categories = [];
+      for (var c = 1; c <= 365; c++) categories.push(String(c));
 
       if (charts.truepath) { charts.truepath.destroy(); charts.truepath = null; }
       charts.truepath = new ApexCharts(document.getElementById('chart-truepath'), {
         series: series,
-        chart: Object.assign({ type:'line', height:500, animations:{enabled:false} }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'line', height:500 }, SA.chartTheme.chart),
         stroke: { width: strokeWidths, curve:'straight', dashArray: strokeDashes },
         colors: colors,
-        fill: { type:'solid', opacity: series.map(function(s){ return s.name === 'Projektion (Cone)' ? 0.18 : 0; }) },
         grid: SA.chartTheme.grid,
+        markers: { size: 0 },
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
-          x: { formatter: function(v) {
-            var d = parseInt(v);
+          shared: true, intersect: false,
+          x: { formatter: function(v, opts) {
+            var d = (opts && opts.dataPointIndex != null) ? opts.dataPointIndex + 1 : parseInt(v);
             for (var mi = 11; mi >= 0; mi--) {
               if (d >= MONTH_START_DOY[mi]) {
                 var dayInMonth = d - MONTH_START_DOY[mi] + 1;
@@ -619,24 +622,34 @@
           }}
         }),
         xaxis: {
-          type: 'numeric', min: 1, max: 365,
+          type: 'category',
+          categories: categories,
           tickAmount: 12,
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter: function(v) {
-            var d = Math.ceil(v);
-            for (var mi = 11; mi >= 0; mi--) if (d >= MONTH_START_DOY[mi]) return MONTHS_DE[mi];
-            return '';
-          }}
+          labels: {
+            style:{colors:'#a89878',fontSize:'11px'},
+            hideOverlappingLabels: true,
+            rotate: 0,
+            formatter: function(v) {
+              var d = parseInt(v);
+              if (!d) return '';
+              // Nur beim Monats-Ersten ein Label anzeigen
+              var idx = MONTH_START_DOY.indexOf(d);
+              return idx >= 0 ? MONTHS_DE[idx] : '';
+            }
+          },
+          axisTicks: { show: true },
+          tooltip: { enabled: false }
         },
         yaxis: {
-          labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(0);}},
+          labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v != null ? v.toFixed(0) : '';}},
           title:{text:'Normiert (Start=100)',style:{color:'#a89878',fontSize:'11px'}}
         },
         annotations: {
-          xaxis: [{ x: todayDoy, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
-                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
-          yaxis: [{ y: 100, borderColor:'rgba(255,255,255,.15)', strokeDashArray:2 }]
+          xaxis: [{ x: String(todayDoy), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4,
+                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.8)',fontSize:'10px'}} }],
+          yaxis: [{ y: 100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
-        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:10,height:10} }),
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
         dataLabels: { enabled:false },
         title: { text: currentTicker + ' \u2014 Musterpfad vs. aktueller Verlauf (' + matches.length + ' Match-Jahre)',
                  style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
