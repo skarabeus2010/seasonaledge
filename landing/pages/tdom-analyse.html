@@ -76,6 +76,9 @@
       <h3>Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
+      <h3>Technischer Filter</h3>
+      <div id="indicator-filter"></div>
+      <hr>
       <h3>Range-Strategie</h3>
       <label style="font-size:.75rem"><input type="checkbox" id="chk-range"> Aktivieren</label>
       <div id="range-controls" style="display:none">
@@ -84,6 +87,15 @@
           <label>Exit TDoM<input type="number" id="inp-exit-tdom" value="-1" min="-23" max="23"></label>
           <label>Entry Preis<select id="sel-entry-price"><option value="Open" selected>Open</option><option value="Close">Close</option></select></label>
           <label>Exit Preis<select id="sel-exit-price"><option value="Open">Open</option><option value="Close" selected>Close</option></select></label>
+        </div>
+        <hr style="margin-top:.5rem;margin-bottom:.5rem">
+        <label style="font-size:.75rem"><input type="checkbox" id="chk-stop"> Stop-Loss aktivieren</label>
+        <div id="stop-controls" style="display:none;margin-top:.5rem">
+          <select id="sel-stop-type" style="width:100%;padding:.3rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem;margin-bottom:.4rem">
+            <option value="fixed" selected>Fixed Stop-Loss</option>
+            <option value="trailing">Trailing Stop-Loss</option>
+          </select>
+          <label style="font-size:.75rem">Stop %<br><input type="range" id="rng-stop" min="1" max="20" value="5" step="0.5"><span id="lbl-stop">5</span> %</label>
         </div>
       </div>
     </aside>
@@ -126,6 +138,17 @@
       <details open id="sec-range" style="display:none">
         <summary>Multi-Day Range Strategie</summary>
         <div class="content">
+          <p class="box-info" style="margin-bottom:1rem">
+            <b>Wie funktioniert es?</b> Die Range-Strategie ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.
+            <b>Beispiel:</b> Entry TDoM 1 (Open) &rarr; Exit TDoM -1 (Close) bedeutet: Kauf am Open des 1. Handelstages,
+            Verkauf am Close des letzten Handelstages. Pro Monat 1 Trade. Negative TDoM = von hinten gez&auml;hlt
+            (-1 = letzter Handelstag, -3 = drittletzter).
+            <br><br>
+            <b>Klassische Setups:</b> TDoM 1 &rarr; -1 (ganzer Monat) &middot; TDoM -3 &rarr; 3 (Turn of the Month)
+            &middot; TDoM 5 &rarr; 15 (Mid-Month) &middot; TDoM -5 &rarr; -1 (letzte Woche).
+            <br><br>
+            <b>Stop-Loss:</b> Optional. Fixed = fester Stop unter Entry. Trailing = Stop folgt dem Hoch nach.
+          </p>
           <div id="range-kpi" class="kpi-row" style="margin-bottom:1rem"></div>
           <div id="chart-range"></div>
           <div id="range-trades" style="margin-top:1rem;max-height:300px;overflow-y:auto"></div>
@@ -172,6 +195,8 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/outlier.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/strategy-compute.js"></script>
 
   <script>
   (function() {
@@ -453,6 +478,18 @@
       return trades;
     }
 
+    // ── Helper: aktueller TDoM ────────────────────────────────────────────────
+    function getCurrentTdom(direction) {
+      if (!_cachedRows || !_cachedRows.length) return null;
+      // Letzte Zeile = letzter Handelstag
+      var last = _cachedRows[_cachedRows.length - 1];
+      return direction === 'forward' ? last.tdom : last.tdom_reverse;
+    }
+    function getCurrentMonth() {
+      if (!_cachedRows || !_cachedRows.length) return null;
+      return _cachedRows[_cachedRows.length - 1].month;
+    }
+
     // ── Render: KPIs ──────────────────────────────────────────────────────────
     function renderKPIs(stats) {
       if (!stats.length) { $kpi.innerHTML = ''; return; }
@@ -472,9 +509,24 @@
     }
 
     // ── Render: TDoM Bar Chart ────────────────────────────────────────────────
-    function renderBars(stats) {
+    function renderBars(stats, direction) {
       var cats = stats.map(function(s) { return String(s.tdom); });
       var vals = stats.map(function(s) { return parseFloat(s.avg_return.toFixed(4)); });
+      var curTdom = getCurrentTdom(direction);
+
+      // Annotations: We are here
+      var pointAnnots = [];
+      if (curTdom != null) {
+        var idx = stats.findIndex(function(s) { return s.tdom === curTdom; });
+        if (idx >= 0) {
+          pointAnnots.push({
+            x: String(curTdom),
+            y: vals[idx],
+            marker: { size: 8, fillColor: '#FFD700', strokeColor: '#fff', strokeWidth: 2 },
+            label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, offsetY: -5 }
+          });
+        }
+      }
 
       if (charts.bars) charts.bars.destroy();
       charts.bars = new ApexCharts(document.getElementById('chart-bars'), {
@@ -486,7 +538,7 @@
         tooltip: { theme: 'dark', y: { formatter: function(v) { return fmtPct(v, 4); } } },
         xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(3) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
-        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }], points: pointAnnots },
         legend: { show: false },
         dataLabels: { enabled: false },
         title: { text: currentTicker + ' \u2014 \u00D8 Rendite pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
@@ -495,9 +547,24 @@
     }
 
     // ── Render: Win-Rate Chart ────────────────────────────────────────────────
-    function renderWinRate(stats) {
+    function renderWinRate(stats, direction) {
       var cats = stats.map(function(s) { return String(s.tdom); });
       var vals = stats.map(function(s) { return parseFloat(s.win_rate.toFixed(1)); });
+      var curTdom = getCurrentTdom(direction);
+
+      // We are here Annotation
+      var pointAnnots = [];
+      if (curTdom != null) {
+        var idx = stats.findIndex(function(s) { return s.tdom === curTdom; });
+        if (idx >= 0) {
+          pointAnnots.push({
+            x: String(curTdom),
+            y: vals[idx],
+            marker: { size: 8, fillColor: '#FFD700', strokeColor: '#fff', strokeWidth: 2 },
+            label: { text: 'We are here!', borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } }, offsetY: -5 }
+          });
+        }
+      }
 
       if (charts.winrate) charts.winrate.destroy();
       charts.winrate = new ApexCharts(document.getElementById('chart-winrate'), {
@@ -509,7 +576,7 @@
         tooltip: { theme: 'dark', y: { formatter: function(v) { return v.toFixed(1) + ' %'; } } },
         xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
         yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0) + ' %'; } }, max: 100, min: 0, title: { text: 'Win-Rate %', style: { color: '#a89878', fontSize: '11px' } } },
-        annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }] },
+        annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }], points: pointAnnots },
         legend: { show: false },
         dataLabels: { enabled: false },
         title: { text: currentTicker + ' \u2014 Win-Rate pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
@@ -523,6 +590,10 @@
       var tdoms = [];
       for (var t = validRange[0]; t <= validRange[1]; t++) tdoms.push(t);
 
+      var curTdom = getCurrentTdom(direction);
+      var curMonth = getCurrentMonth();
+      var curMonthName = curMonth ? MONTHS[curMonth - 1] : null;
+
       // Series: Zeilen = Monate (reversed)
       var series = [];
       for (var m = 12; m >= 1; m--) {
@@ -535,10 +606,23 @@
         series.push({ name: MONTHS[m-1], data: data });
       }
 
+      // Annotation: gelber Rahmen um die aktuelle Zelle (Monat × TDoM)
+      var xAnnots = [];
+      if (curTdom != null) {
+        xAnnots.push({
+          x: String(curTdom),
+          strokeDashArray: 0,
+          borderColor: '#FFD700',
+          borderWidth: 2,
+          label: { text: 'We are here \u2192 TDoM ' + curTdom + (curMonthName ? ' / ' + curMonthName : ''), borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } } }
+        });
+      }
+
       if (charts.heatmap) charts.heatmap.destroy();
       charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
         series: series,
         chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
+        annotations: { xaxis: xAnnots },
         plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
           { from: -99, to: -0.3, color: '#6b0f0f', name: '< -0.3%' },
           { from: -0.3, to: -0.1, color: '#8b1a1a', name: '-0.3% to -0.1%' },
@@ -590,20 +674,38 @@
         return;
       }
 
-      // KPIs
-      var rets = trades.map(function(t) { return t.return_pct; });
-      var avg = rets.reduce(function(s,v){return s+v;},0) / rets.length;
-      var wins = rets.filter(function(v){return v>0;}).length;
-      var winRate = wins / rets.length * 100;
-      var maxGain = Math.max.apply(null, rets);
-      var maxLoss = Math.min.apply(null, rets);
+      // Stop-Loss anwenden (nutzt SA.strategy)
+      if (document.getElementById('chk-stop').checked && SA.strategy) {
+        var stopPct = parseFloat(document.getElementById('rng-stop').value) || 5;
+        var stopType = document.getElementById('sel-stop-type').value;
+        // Rows fuer SA.strategy in passendes Format bringen
+        var sortedRows = rows.slice().sort(function(a,b) { return a.date > b.date ? 1 : -1; });
+        // SA.strategy erwartet rows mit close
+        if (stopType === 'trailing') {
+          trades = SA.strategy.applyTrailingStop(sortedRows, trades, stopPct);
+        } else {
+          trades = SA.strategy.applyStopLoss(sortedRows, trades, stopPct);
+        }
+      }
+
+      // Pro-KPIs via SA.strategy.computeStats
+      var stats = SA.strategy ? SA.strategy.computeStats(trades, 1000) : null;
+      if (!stats) {
+        // Fallback: einfache KPIs
+        var rets = trades.map(function(t) { return t.return_pct; });
+        var avg = rets.reduce(function(s,v){return s+v;},0) / rets.length;
+        var winsF = rets.filter(function(v){return v>0;}).length;
+        stats = { cagr:0, max_drawdown:0, win_rate: winsF/rets.length*100, sharpe:0, profit_factor:0, n_trades:trades.length, final_equity:0, avg_return:avg };
+      }
 
       document.getElementById('range-kpi').innerHTML =
-        kpi('\u00D8 Rendite', ' ' + fmtPct(avg, 3), avg >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
-        kpi('Win-Rate', ' ' + winRate.toFixed(1) + ' %', winRate >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
-        kpi('Trades', ' ' + trades.length) +
-        kpi('Max Gewinn', ' ' + fmtPct(maxGain, 2), 'kpi__value--green') +
-        kpi('Max Verlust', ' ' + fmtPct(maxLoss, 2), 'kpi__value--red');
+        kpi('CAGR', ' ' + (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('Max Drawdown', ' ' + stats.max_drawdown.toFixed(1) + ' %', 'kpi__value--red') +
+        kpi('Win-Rate', ' ' + stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'kpi__value--green' : '') +
+        kpi('Sharpe', ' ' + stats.sharpe.toFixed(2)) +
+        kpi('Profit Factor', ' ' + (stats.profit_factor >= 999 ? '\u221E' : stats.profit_factor.toFixed(2)), stats.profit_factor >= 1.5 ? 'kpi__value--green' : stats.profit_factor >= 1 ? '' : 'kpi__value--red') +
+        kpi('Trades', ' ' + stats.n_trades) +
+        kpi('$1.000 Endwert', ' $' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}), stats.final_equity >= 1000 ? 'kpi__value--green' : 'kpi__value--red');
 
       // Equity Curve
       trades.sort(function(a,b) { return a.entry_date > b.entry_date ? 1 : -1; });
@@ -643,8 +745,20 @@
       document.getElementById('range-trades').innerHTML = html;
     }
 
-    // ── Outlier Filter ────────────────────────────────────────────────────────
+    // ── Outlier Filter + Indikator Filter ────────────────────────────────────
     var _getOutlierMethod = SA.outlier ? SA.outlier.renderFilterUI('outlier-filter', function() { rerender(); }) : function() { return 'off'; };
+    var _getIndicatorFilters = SA.indicators ? SA.indicators.renderFilterUI('indicator-filter', function() { rerender(); }) : function() { return []; };
+
+    // Stop-Loss Slider Label
+    document.getElementById('rng-stop').addEventListener('input', function() {
+      document.getElementById('lbl-stop').textContent = this.value;
+    });
+    document.getElementById('chk-stop').addEventListener('change', function() {
+      document.getElementById('stop-controls').style.display = this.checked ? '' : 'none';
+      rerender();
+    });
+    document.getElementById('rng-stop').addEventListener('change', rerender);
+    document.getElementById('sel-stop-type').addEventListener('change', rerender);
 
     // ── Main ──────────────────────────────────────────────────────────────────
     var _cachedRows = null;
@@ -656,28 +770,38 @@
       var selectedMonths = getSelectedMonths();
       var useRange = document.getElementById('chk-range').checked;
       var outlierMethod = _getOutlierMethod ? _getOutlierMethod() : 'off';
+      var indFilters = _getIndicatorFilters ? _getIndicatorFilters() : [];
 
       if (!selectedMonths.length) { showError('Bitte mindestens einen Monat ausw\u00E4hlen.'); return; }
 
+      // Indikator-Filter auf rows anwenden
+      var workingRows = _cachedRows;
+      if (indFilters && indFilters.length > 0 && SA.indicators) {
+        var closes = _cachedRows.map(function(r) { return parseFloat(r.close); });
+        var mask = SA.indicators.applyFilter(closes, indFilters);
+        workingRows = _cachedRows.filter(function(r, i) { return mask[i]; });
+        if (workingRows.length < 50) { showError('Zu wenig Daten nach Indikator-Filter (' + workingRows.length + ' Tage)'); return; }
+      }
+
       destroyAll();
 
-      var stats = buildTdomStats(_cachedRows, strategy, direction, selectedMonths, outlierMethod);
+      var stats = buildTdomStats(workingRows, strategy, direction, selectedMonths, outlierMethod);
       if (!stats.length) { showError('Keine TDoM-Daten f\u00FCr die gew\u00E4hlten Filter.'); showSections(false); return; }
 
-      var matrix = buildTdomMonthMatrix(_cachedRows, strategy, direction, outlierMethod);
+      var matrix = buildTdomMonthMatrix(workingRows, strategy, direction, outlierMethod);
 
       renderKPIs(stats);
-      renderBars(stats);
-      renderWinRate(stats);
+      renderBars(stats, direction);
+      renderWinRate(stats, direction);
       renderHeatmap(matrix, direction);
       renderStats(stats);
       showSections(true);
 
-      // Range
+      // Range (nutzt workingRows = mit Indikator-Filter)
       var rangeSec = document.getElementById('sec-range');
       if (useRange) {
         rangeSec.style.display = '';
-        renderRange(_cachedRows);
+        renderRange(workingRows);
       } else {
         rangeSec.style.display = 'none';
       }
