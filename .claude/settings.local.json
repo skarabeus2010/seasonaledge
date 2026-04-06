@@ -56,7 +56,8 @@
       "Bash(curl -s -b /tmp/stooq_cookies.txt \"https://stooq.com/q/d/l/?s=^vdax&i=d\")",
       "Bash(head -5 echo \"---\" curl -s -b /tmp/stooq_cookies.txt \"https://stooq.com/q/d/l/?s=vdax&i=d\")",
       "Bash(curl -s \"https://query2.finance.yahoo.com/v8/finance/chart/V1X.DE?period1=946684800&period2=1764374400&interval=1d&events=history\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0\\) AppleWebKit/537.36\")",
-      "Bash(curl -s -L -c /tmp/c.txt -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H 'Accept: text/html,application/xhtml+xml' \"https://stooq.com/q/d/?s=%5Evdax&i=d\" curl -s -L -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://stooq.com/q/d/?s=%5Evdax&i=d\" \"https://stooq.com/q/d/l/?s=%5Evdax&i=d\")"
+      "Bash(curl -s -L -c /tmp/c.txt -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H 'Accept: text/html,application/xhtml+xml' \"https://stooq.com/q/d/?s=%5Evdax&i=d\" curl -s -L -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://stooq.com/q/d/?s=%5Evdax&i=d\" \"https://stooq.com/q/d/l/?s=%5Evdax&i=d\")",
+      "Bash(head -20 echo \"---\" grep -n \"SYMBOLS\\\\|symbols\\\\|tickers\\\\|VIX\\\\|VXN\\\\|OVX\\\\|^ticker\" C:/dev/SeasonalEdge/.claude/worktrees/peaceful-agnesi/scripts/intraday_refresh.py)"
     ]
   }
 }

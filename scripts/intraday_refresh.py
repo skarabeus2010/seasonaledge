@@ -36,7 +36,7 @@ from shared.symbols import SYMBOLS
 
 EU_CATEGORIES = {"EU-Index", "EU-Aktie"}
 US_CATEGORIES = {"US-Index", "US-ETF", "US-Aktie", "Rohstoff", "Futures",
-                 "Anleihen", "Emerging Markets"}
+                 "Anleihen", "Emerging Markets", "Volatility"}
 ASIA_CATEGORIES = {"Asien-Index"}
 FX_CATEGORIES = {"FX"}
 CRYPTO_CATEGORIES = {"Krypto"}
