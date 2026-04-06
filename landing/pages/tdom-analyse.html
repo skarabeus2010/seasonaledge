@@ -684,24 +684,30 @@
         series.push({ name: MONTHS[m-1], data: data });
       }
 
-      // Annotation: schmaler Rahmen + Label nur am oberen Rand
-      var xAnnots = [];
-      if (curTdom != null) {
-        xAnnots.push({
-          x: String(curTdom),
-          strokeDashArray: 4,
-          borderColor: '#FFD700',
-          borderWidth: 1,
-          opacity: 0.6,
-          label: { text: '\u25BC ' + (curMonthName || '') + ' TDoM ' + curTdom, borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '9px', fontFamily: 'DM Sans', padding: { left: 4, right: 4, top: 2, bottom: 2 } }, position: 'top', offsetY: -8 }
-        });
+      // Label mit Ticker und Hinweis wo "We are here" ist (statt Overlay-Linie)
+      var titleText = currentTicker + ' \u2014 \u00D8 Rendite Monat \u00D7 TDoM';
+      if (curTdom != null && curMonthName) {
+        titleText += '   \u2605 Heute: ' + curMonthName + ' / TDoM ' + curTdom;
       }
+
+      // Daten-Labels: die aktuelle Zelle bekommt einen Stern-Marker statt Wert
+      var dataLabelsFormatter = function(v, opts) {
+        // opts.seriesIndex: 0=Dez, 11=Jan (reversed)
+        // opts.dataPointIndex: TDoM-Position im tdoms Array
+        if (curTdom != null && curMonth != null) {
+          var seriesMonth = 12 - opts.seriesIndex;
+          var pointTdom = tdoms[opts.dataPointIndex];
+          if (seriesMonth === curMonth && pointTdom === curTdom) {
+            return v !== 0 ? '\u2605 ' + (v>=0?'+':'') + v.toFixed(2) : '\u2605';
+          }
+        }
+        return v !== 0 ? (v>=0?'+':'') + v.toFixed(2) : '';
+      };
 
       if (charts.heatmap) charts.heatmap.destroy();
       charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
         series: series,
         chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
-        annotations: { xaxis: xAnnots },
         plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
           { from: -99, to: -0.3, color: '#6b0f0f', name: '< -0.3%' },
           { from: -0.3, to: -0.1, color: '#8b1a1a', name: '-0.3% to -0.1%' },
@@ -713,8 +719,8 @@
         ] } } },
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
         xaxis: { labels: { style: { colors: '#a89878', fontSize: '10px' } }, title: { text: 'TDoM', style: { color: '#a89878', fontSize: '11px' } } },
-        dataLabels: { enabled: true, style: { fontSize: '8px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(2) : ''; } },
-        title: { text: currentTicker + ' \u2014 \u00D8 Rendite Monat \u00D7 TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        dataLabels: { enabled: true, style: { fontSize: '9px', colors: ['#e0e0e0'] }, formatter: dataLabelsFormatter },
+        title: { text: titleText, style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
         legend: { show: false }
       });
       charts.heatmap.render();
