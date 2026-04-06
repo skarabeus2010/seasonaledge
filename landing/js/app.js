@@ -290,59 +290,137 @@ SA.renderTradingDayHeader = function(elementId, ticker, rows) {
 SA.makeSortable = function(tableOrId) {
   var table = typeof tableOrId === 'string' ? document.getElementById(tableOrId) : tableOrId;
   if (!table || table.dataset.sortableInit === '1') return;
+
+  // Header-Zellen finden: entweder <thead th> oder erste Zeile mit <th>
+  var ths = table.querySelectorAll('thead th');
+  var headerRow = null;
+  if (!ths.length) {
+    var firstRow = table.querySelector('tr');
+    if (firstRow && firstRow.querySelector('th')) {
+      ths = firstRow.querySelectorAll('th');
+      headerRow = firstRow;
+    }
+  }
+  if (!ths.length) return;
   table.dataset.sortableInit = '1';
 
   var parseCell = function(txt) {
     if (txt == null) return '';
-    txt = String(txt).replace(/[▲▼⚠]/g, '').trim();
-    // Zahl aus String extrahieren: erlaubt "-", ".", "," → Float
+    txt = String(txt).replace(/[\u25B2\u25BC\u26A0]/g, '').trim();
+    if (!txt || txt === '\u2013' || txt === '-' || txt === '\u2014') return null;
+    // Datum YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(txt)) return txt; // lexikografisch = chronologisch
+    // Zahl aus String extrahieren
     var m = txt.match(/-?[\d.,]+/);
     if (m) {
-      var n = parseFloat(m[0].replace(/\./g, '').replace(',', '.'));
-      if (!isNaN(n)) {
-        // Wenn Punkte als Dezimal: zweiter Versuch
-        var n2 = parseFloat(m[0].replace(/,/g, ''));
-        return !isNaN(n2) && Math.abs(n2) >= Math.abs(n) * 0.99 ? n2 : n;
+      var s = m[0];
+      // Heuristik: wenn ein Komma und danach 1-3 Ziffern → deutsche Zahl
+      var n;
+      if (/,\d{1,3}$/.test(s) && !/\.\d/.test(s)) {
+        n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+      } else {
+        n = parseFloat(s.replace(/,/g, ''));
       }
+      if (!isNaN(n)) return n;
     }
     return txt.toLowerCase();
   };
 
-  var ths = table.querySelectorAll('thead th');
   var state = { col: -1, dir: 'asc' };
+
+  // Sortierbare Rows bestimmen: alles in tbody, oder alle tr's ausser headerRow
+  var getRows = function() {
+    var tbody = table.querySelector('tbody');
+    if (tbody) return Array.prototype.slice.call(tbody.querySelectorAll(':scope > tr'));
+    // Keine tbody: alle tr's direkt im table (ausser Header)
+    var all = Array.prototype.slice.call(table.querySelectorAll(':scope > tr'));
+    return all.filter(function(r) { return r !== headerRow; });
+  };
+
+  // Container (tbody oder table) fuer appendChild
+  var getContainer = function() {
+    return table.querySelector('tbody') || table;
+  };
 
   ths.forEach(function(th, idx) {
     th.style.cursor = 'pointer';
     th.style.userSelect = 'none';
+    if (!th.title) th.title = 'Klicken zum Sortieren';
     th.addEventListener('click', function() {
       if (state.col === idx) {
         state.dir = state.dir === 'asc' ? 'desc' : 'asc';
       } else {
         state.col = idx;
-        state.dir = 'asc';
+        state.dir = 'desc'; // Erstklick meist interessanter absteigend
       }
 
-      // Pfeile entfernen und am aktiven Header setzen
       ths.forEach(function(h) {
         h.innerHTML = h.innerHTML.replace(/\s*[\u25B2\u25BC]$/, '');
       });
       th.innerHTML = th.innerHTML + (state.dir === 'asc' ? ' \u25B2' : ' \u25BC');
 
-      var tbody = table.querySelector('tbody');
-      if (!tbody) return;
-      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      var rows = getRows();
       rows.sort(function(a, b) {
-        var ca = a.cells[idx] ? parseCell(a.cells[idx].textContent) : '';
-        var cb = b.cells[idx] ? parseCell(b.cells[idx].textContent) : '';
+        var ca = a.cells[idx] ? parseCell(a.cells[idx].textContent) : null;
+        var cb = b.cells[idx] ? parseCell(b.cells[idx].textContent) : null;
+        if (ca == null && cb == null) return 0;
+        if (ca == null) return 1;  // Null immer hinten
+        if (cb == null) return -1;
         var na = typeof ca === 'number', nb = typeof cb === 'number';
         if (na && nb) return state.dir === 'asc' ? ca - cb : cb - ca;
         if (na) return state.dir === 'asc' ? -1 : 1;
         if (nb) return state.dir === 'asc' ? 1 : -1;
         return state.dir === 'asc' ? String(ca).localeCompare(cb) : String(cb).localeCompare(ca);
       });
-      rows.forEach(function(r) { tbody.appendChild(r); });
+      var container = getContainer();
+      rows.forEach(function(r) { container.appendChild(r); });
     });
   });
 };
+
+/**
+ * Auto-init: beobachtet DOM und macht jede neu eingefuegte <table> mit <thead>
+ * automatisch sortierbar. Zero-Touch fuer alle Pages.
+ *
+ * Opt-out: <table data-no-sort="1"> wird ignoriert.
+ */
+SA._hasHeader = function(t) {
+  if (t.querySelector('thead th')) return true;
+  var firstRow = t.querySelector('tr');
+  return !!(firstRow && firstRow.querySelector('th'));
+};
+
+SA._autoSortInit = function() {
+  // Initialer Scan
+  document.querySelectorAll('table').forEach(function(t) {
+    if (SA._hasHeader(t) && !t.dataset.noSort) SA.makeSortable(t);
+  });
+
+  if (!window.MutationObserver) return;
+  var obs = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      var added = mutations[i].addedNodes;
+      for (var j = 0; j < added.length; j++) {
+        var n = added[j];
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === 'TABLE' && SA._hasHeader(n) && !n.dataset.noSort) {
+          SA.makeSortable(n);
+        }
+        if (n.querySelectorAll) {
+          n.querySelectorAll('table').forEach(function(t) {
+            if (SA._hasHeader(t) && !t.dataset.noSort) SA.makeSortable(t);
+          });
+        }
+      }
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', SA._autoSortInit);
+} else {
+  SA._autoSortInit();
+}
 
 window.SA = SA;

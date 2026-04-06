@@ -45,7 +45,9 @@
       "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/04_Wochentage.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
       "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/06_Mondphasen.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
       "Bash(py -c \"import ast; ast.parse\\(open\\(''pages/03_Monatszyklus.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(wc -l C:/dev/SeasonalEdge/pages/_disabled/*.py)",
+      "Bash(ssh root@178.104.75.46 \"cd /opt/seasonaledge && git pull && docker compose restart nginx\")"
     ]
   }
 }

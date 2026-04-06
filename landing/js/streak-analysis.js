@@ -77,7 +77,7 @@ SA.streaks = {
     nBlocks = nBlocks || 10;
     var C = SA.COLORS || { green: '#00d4aa', red: '#ff4757' };
 
-    var html = '<table style="width:100%;border-collapse:collapse;font-size:.8125rem">';
+    var html = '<table data-no-sort="1" style="width:100%;border-collapse:collapse;font-size:.8125rem">';
     html += '<tr><th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">' + colHeader + '</th>';
     html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">Aktuelle Serie</th>';
     html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">Letzte ' + nBlocks + '</th></tr>';

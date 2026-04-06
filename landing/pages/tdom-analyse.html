@@ -876,7 +876,7 @@
       var arrow = function(c) { return _tdoySort.col === c ? (_tdoySort.dir === 'asc' ? ' \u25B2' : ' \u25BC') : ''; };
 
       var html = '<p class="box-info" style="margin-bottom:.75rem">Top 25 Handelstage des Jahres mit der h\u00F6chsten historischen \u00D8 Rendite. Datum f\u00FCr <b>' + year + '</b> berechnet (auch in der Zukunft). Min. n=10 Trades f\u00FCr Stabilit\u00E4t. <b>Spalten sind sortierbar</b> (anklicken).</p>';
-      html += '<table class="tdom-table"><thead><tr>';
+      html += '<table class="tdom-table" data-no-sort="1"><thead><tr>';
       html += '<th data-col="rank" style="cursor:pointer">#' + arrow('rank') + '</th>';
       html += '<th data-col="tdoy" style="cursor:pointer">TDoY' + arrow('tdoy') + '</th>';
       html += '<th data-col="dateSort" style="cursor:pointer">Datum ' + year + arrow('dateSort') + '</th>';
