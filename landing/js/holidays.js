@@ -260,6 +260,26 @@ SA.holidays = {
   },
 
   /**
+   * N-ter Handelstag eines Jahres (TDoY).
+   * @param {number} y - Jahr
+   * @param {number} n - TDoY-Nummer (1 = 1. HT des Jahres, ...)
+   * @returns {string|null} 'YYYY-MM-DD'
+   */
+  nthTradingDayOfYear: function(y, n, exchange) {
+    var count = 0;
+    var dt = new Date(y, 0, 1);
+    while (dt.getFullYear() === y) {
+      var ds = this._ds(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+      if (this.isTradingDay(ds, exchange)) {
+        count++;
+        if (count === n) return ds;
+      }
+      dt.setDate(dt.getDate() + 1);
+    }
+    return null;
+  },
+
+  /**
    * Naechster Handelstag ab einem Datum.
    * @returns {string}
    */

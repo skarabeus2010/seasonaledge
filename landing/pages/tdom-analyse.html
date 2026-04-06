@@ -146,6 +146,12 @@
         <div class="content" id="content-streak-tdom"></div>
       </details>
 
+      <!-- TDoY Top 25 -->
+      <details id="sec-tdoy" style="display:none">
+        <summary>TDoY Top 25 &mdash; Beste Handelstage des Jahres</summary>
+        <div class="content" id="content-tdoy"></div>
+      </details>
+
       <!-- Range Strategy -->
       <details open id="sec-range" style="display:none">
         <summary>TDOM-Strategie Tester</summary>
@@ -228,7 +234,7 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-bars','sec-winrate','sec-heatmap','sec-stats','sec-streak-tdom'].forEach(function(id) {
+      ['sec-bars','sec-winrate','sec-heatmap','sec-stats','sec-streak-tdom','sec-tdoy'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
@@ -710,6 +716,113 @@
       charts.heatmap.render();
     }
 
+    // ── Build: TDoY Stats ─────────────────────────────────────────────────────
+    function buildTdoyStats(rows, strategy, outlierMethod) {
+      // rows haben tdoy-Spalte aus addTdomColumns NICHT — wir muessen sie hier berechnen
+      // Eigentlich: rows haben tdoy aus DB. Wir nutzen direkt rows[i].tdoy wenn vorhanden,
+      // sonst zaehlen wir per Jahr.
+      var withRet = calcStrategyReturn(rows, strategy);
+
+      // tdoy berechnen (Gruppe nach Jahr)
+      var byYear = {};
+      for (var i = 0; i < withRet.length; i++) {
+        var y = withRet[i].year;
+        if (!byYear[y]) byYear[y] = 0;
+        byYear[y]++;
+        withRet[i].tdoy_calc = byYear[y];
+      }
+
+      // Group by tdoy
+      var byTdoy = {};
+      for (var i = 0; i < withRet.length; i++) {
+        var r = withRet[i];
+        if (r.strat_return == null || isNaN(r.strat_return)) continue;
+        var t = r.tdoy_calc;
+        if (t < 1 || t > 260) continue;
+        if (!byTdoy[t]) byTdoy[t] = [];
+        byTdoy[t].push(r.strat_return);
+      }
+
+      // Outlier Filter
+      if (outlierMethod && outlierMethod !== 'off' && SA.outlier) {
+        for (var t in byTdoy) {
+          var vals = byTdoy[t];
+          if (vals.length < 4) continue;
+          if (outlierMethod === 'winsorize') {
+            byTdoy[t] = SA.outlier.winsorize(vals, 3.0);
+          } else {
+            var factor = outlierMethod === 'iqr_strict' ? 3.0 : 1.5;
+            var isOut = SA.outlier.detectIQR(vals, factor);
+            byTdoy[t] = vals.filter(function(_, i) { return !isOut[i]; });
+          }
+        }
+      }
+
+      var stats = [];
+      var keys = Object.keys(byTdoy).map(Number).sort(function(a,b){return a-b;});
+      for (var k = 0; k < keys.length; k++) {
+        var tdoy = keys[k];
+        var vals = byTdoy[tdoy];
+        if (!vals.length) continue;
+        var sum = vals.reduce(function(s,v){return s+v;},0);
+        var avg = sum / vals.length;
+        var wins = vals.filter(function(v){return v>0;}).length;
+        stats.push({
+          tdoy: tdoy,
+          avg_return: avg,
+          win_rate: wins / vals.length * 100,
+          count: vals.length
+        });
+      }
+      return stats;
+    }
+
+    // ── Render: TDoY Top 25 ───────────────────────────────────────────────────
+    function renderTdoyTop25(rows, strategy, outlierMethod) {
+      var stats = buildTdoyStats(rows, strategy, outlierMethod);
+      // Filter: min n=10 fuer Stabilitaet
+      stats = stats.filter(function(s) { return s.count >= 10; });
+      stats.sort(function(a,b) { return b.avg_return - a.avg_return; });
+      var top25 = stats.slice(0, 25);
+
+      var year = new Date().getFullYear();
+      var todayStr = year + '-' + (new Date().getMonth()+1 < 10 ? '0' : '') + (new Date().getMonth()+1) + '-' + (new Date().getDate() < 10 ? '0' : '') + new Date().getDate();
+      var exchange = SA.holidays ? SA.holidays.detect(currentTicker) : 'NYSE';
+      var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+      var html = '<p class="box-info" style="margin-bottom:.75rem">Top 25 Handelstage des Jahres mit der h\u00F6chsten historischen \u00D8 Rendite. Datum f\u00FCr <b>' + year + '</b> berechnet (auch in der Zukunft). Min. n=10 Trades f\u00FCr Stabilit\u00E4t.</p>';
+      html += '<table class="tdom-table"><thead><tr><th>#</th><th>TDoY</th><th>Datum ' + year + '</th><th>Wochentag</th><th>In Tagen</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Trades</th></tr></thead><tbody>';
+      for (var i = 0; i < top25.length; i++) {
+        var s = top25[i];
+        var dateStr = SA.holidays ? SA.holidays.nthTradingDayOfYear(year, s.tdoy, exchange) : null;
+        var wdLabel = '\u2014', daysLabel = '\u2014', rowStyle = '';
+        if (dateStr) {
+          var d = new Date(dateStr.substring(0,4) + '/' + dateStr.substring(5,7) + '/' + dateStr.substring(8,10));
+          wdLabel = WDAYS[d.getDay()];
+          var diff = Math.ceil((d - new Date()) / 86400000);
+          if (diff < 0) {
+            daysLabel = '<span style="color:var(--muted)">vorbei</span>';
+            rowStyle = ' style="opacity:.5"';
+          } else if (diff === 0) {
+            daysLabel = '<b style="color:var(--accent)">Heute</b>';
+            rowStyle = ' style="background:rgba(232,168,32,.08)"';
+          } else {
+            daysLabel = diff + ' Tage';
+          }
+        }
+        html += '<tr' + rowStyle + '><td>' + (i+1) + '</td>';
+        html += '<td><b>' + s.tdoy + '</b></td>';
+        html += '<td style="white-space:nowrap">' + (dateStr || '\u2014') + '</td>';
+        html += '<td>' + wdLabel + '</td>';
+        html += '<td>' + daysLabel + '</td>';
+        html += '<td class="pos">' + fmtPct(s.avg_return, 4) + '</td>';
+        html += '<td>' + s.win_rate.toFixed(0) + ' %</td>';
+        html += '<td>' + s.count + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-tdoy').innerHTML = html;
+    }
+
     // ── Render: Streak pro TDoM ───────────────────────────────────────────────
     function renderStreakPerTdom(rows, strategy, direction, selectedMonths) {
       var withRet = calcStrategyReturn(rows, strategy);
@@ -915,6 +1028,7 @@
       renderHeatmap(matrix, direction);
       renderStats(stats);
       renderStreakPerTdom(workingRows, strategy, direction, selectedMonths);
+      renderTdoyTop25(workingRows, strategy, outlierMethod);
       showSections(true);
 
       // Range (nutzt workingRows = mit Indikator-Filter)
