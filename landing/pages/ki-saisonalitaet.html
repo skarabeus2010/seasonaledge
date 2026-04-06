@@ -122,6 +122,22 @@
         <input type="range" id="sl-proj" min="0" max="120" step="10" value="60" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
       <hr>
+      <h3>Chart-Anzeige</h3>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="chk-current" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          Aktuelles Jahr
+        </label>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="chk-truepath" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          Musterpfad
+        </label>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
+          <input type="checkbox" id="chk-matches" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          Einzel-Jahre (Matches)
+        </label>
+      </div>
+      <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
         <b>Musterpfad</b> = gewichteter &Oslash; der &auml;hnlichsten Jahre<br>
         <b>KI-Score</b> = 1&ndash;10 aus 4 Sub-Scores<br>
@@ -532,6 +548,9 @@
 
     // ── Render: Main Chart (Musterpfad) ──────────────────────────────────────
     function renderTruePathChart(yearData, avg, truepath, matches, currentYear, projection, smoothing) {
+      var showCurrent  = document.getElementById('chk-current').checked;
+      var showTruepath = document.getElementById('chk-truepath').checked;
+      var showMatches  = document.getElementById('chk-matches').checked;
       var classicSmooth = rollingMean(avg, smoothing);
       var todayDoy = Math.min(365, Math.floor((new Date() - new Date(new Date().getFullYear(),0,0))/86400000));
 
@@ -554,26 +573,30 @@
       strokeWidths.push(2);
       strokeDashes.push(5);
 
-      // 2. Match-Jahre (blaue dünne Linien)
-      for (var i = 0; i < matches.length; i++) {
-        var mSmooth = rollingMean(matches[i].full365, smoothing);
-        series.push({
-          name: matches[i].year + ' (' + matches[i].similarity.toFixed(0) + '%)',
-          data: pad365(mSmooth)
-        });
-        colors.push(COL_MATCH);
-        strokeWidths.push(1.5);
+      // 2. Match-Jahre (blaue dünne Linien) - nur wenn showMatches
+      if (showMatches) {
+        for (var i = 0; i < matches.length; i++) {
+          var mSmooth = rollingMean(matches[i].full365, smoothing);
+          series.push({
+            name: matches[i].year + ' (' + matches[i].similarity.toFixed(0) + '%)',
+            data: pad365(mSmooth)
+          });
+          colors.push(COL_MATCH);
+          strokeWidths.push(1.5);
+          strokeDashes.push(0);
+        }
+      }
+
+      // 3. Musterpfad (gold, dick) - nur wenn showTruepath
+      if (showTruepath) {
+        series.push({ name: 'Musterpfad', data: pad365(truepath) });
+        colors.push(COL_TRUEPATH);
+        strokeWidths.push(4);
         strokeDashes.push(0);
       }
 
-      // 3. Musterpfad (gold, dick)
-      series.push({ name: 'Musterpfad', data: pad365(truepath) });
-      colors.push(COL_TRUEPATH);
-      strokeWidths.push(4);
-      strokeDashes.push(0);
-
-      // 4. Aktuelles Jahr (gelb, dick, nur bis heute, danach null)
-      if (yearData[currentYear]) {
+      // 4. Aktuelles Jahr (gelb, dick, nur bis heute, danach null) - nur wenn showCurrent
+      if (showCurrent && yearData[currentYear]) {
         var curData = new Array(365).fill(null);
         var cur = yearData[currentYear].full_365;
         for (var j = 0; j < Math.min(todayDoy, 365); j++) curData[j] = round2(cur[j]);
@@ -768,6 +791,9 @@
     for (var i = 0; i < methodRadios.length; i++) {
       methodRadios[i].addEventListener('change', function(){ if(this.checked && _cachedRows) rerender(); });
     }
+    ['chk-current','chk-truepath','chk-matches'].forEach(function(id) {
+      document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    });
 
     // Auto-Load
     loadTicker('SPY');
