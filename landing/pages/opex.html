@@ -29,9 +29,9 @@
     .opex-table td.pos{color:var(--green)}
     .opex-table td.neg{color:var(--red)}
     .opex-table td.triple{color:#fb923c;font-weight:600}
-    .badge-triple{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
-    .badge-standard{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.2)}
-    .badge-vix{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.6875rem;font-weight:600;background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+    .badge-triple{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(251,146,60,.35);color:#ffffff;border:1px solid rgba(251,146,60,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .badge-standard{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(96,165,250,.35);color:#ffffff;border:1px solid rgba(96,165,250,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .badge-vix{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(167,139,250,.35);color:#ffffff;border:1px solid rgba(167,139,250,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
     .calendar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
     @media(max-width:700px){.calendar-grid{grid-template-columns:repeat(2,1fr)}}
     .cal-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;font-size:.9375rem}
@@ -119,6 +119,28 @@
             <button type="button" id="btn-triple-none" class="btn-mini">Keine</button>
           </div>
         </div>
+        <!-- Monatliche Verfall Monate (nur wenn opex-view=monthly) -->
+        <div id="opex-monthly-block" style="margin-top:.6rem;display:none">
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em">Monate w&auml;hlen</div>
+          <div class="vix-months" id="opex-months-checkboxes">
+            <label><input type="checkbox" data-month="1" checked> Jan</label>
+            <label><input type="checkbox" data-month="2" checked> Feb</label>
+            <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+            <label><input type="checkbox" data-month="4" checked> Apr</label>
+            <label><input type="checkbox" data-month="5" checked> Mai</label>
+            <label><input type="checkbox" data-month="6" checked> Jun</label>
+            <label><input type="checkbox" data-month="7" checked> Jul</label>
+            <label><input type="checkbox" data-month="8" checked> Aug</label>
+            <label><input type="checkbox" data-month="9" checked> Sep</label>
+            <label><input type="checkbox" data-month="10" checked> Okt</label>
+            <label><input type="checkbox" data-month="11" checked> Nov</label>
+            <label><input type="checkbox" data-month="12" checked> Dez</label>
+          </div>
+          <div style="display:flex;gap:.25rem;margin-top:.4rem">
+            <button type="button" id="btn-opex-all" class="btn-mini">Alle</button>
+            <button type="button" id="btn-opex-none" class="btn-mini">Keine</button>
+          </div>
+        </div>
       </div>
 
       <!-- VIX-spezifisch -->
@@ -146,11 +168,11 @@
       </div>
 
       <hr>
-      <h3>Outlier-Filter</h3>
-      <div id="outlier-filter"></div>
-      <hr>
       <h3>Technischer Filter</h3>
       <div id="indicator-filter"></div>
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
         <b>OPEX</b> = 3. Freitag im Monat<br>
@@ -223,6 +245,12 @@
         </div>
       </details>
 
+      <!-- Streak (grafisch, direkt unter Heatmap) -->
+      <details open id="sec-streak" style="display:none">
+        <summary>Streak-Analyse nach Monat</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
       <!-- Signifikanz -->
       <details open id="sec-significance" style="display:none">
         <summary>Signifikanztest &mdash; Ist der Effekt statistisch bedeutsam?</summary>
@@ -256,12 +284,6 @@
             </table>
           </div>
         </div>
-      </details>
-
-      <!-- Streak -->
-      <details id="sec-streak" style="display:none">
-        <summary>Streak-Analyse nach Monat</summary>
-        <div class="content" id="content-streak"></div>
       </details>
 
       <!-- Methodik -->
@@ -337,7 +359,8 @@
     var currentMode = 'opex';       // 'opex' oder 'vix'
     var opexView    = 'triple';     // 'triple' oder 'monthly'
     var tripleMonthsMask = { 3:true, 6:true, 9:true, 12:true };
-    var vixMonthsMask = [true,true,true,true,true,true,true,true,true,true,true,true];
+    var opexMonthsMask = [true,true,true,true,true,true,true,true,true,true,true,true];
+    var vixMonthsMask  = [true,true,true,true,true,true,true,true,true,true,true,true];
     var _cachedRows = null;
     var _cachedData = null;
 
@@ -607,7 +630,10 @@
       container.innerHTML = '';
       var labels = makeCumLabels(daysBefore, daysAfter);
 
+      var anyVisible = false;
       for (var m = 1; m <= 12; m++) {
+        if (!opexMonthsMask[m-1]) continue;
+        anyVisible = true;
         (function(month) {
           var mWindows = allWindows.filter(function(w){ return w.month === month; });
           var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
@@ -764,7 +790,8 @@
         kpi('Events', windows.length.toLocaleString()) +
         kpi(label+'-Tag \u00D8 Rendite', fmtPct(avg,3), avg>=0?'kpi__value--green':'kpi__value--red') +
         kpi('Win-Rate '+label+'-Tag', wr.toFixed(1)+' %', wr>=50?'kpi__value--green':'kpi__value--red') +
-        kpi('Bester Tag', bestLabel+' ('+fmtPct(agg.means[bestIdx],3)+')', 'kpi__value--green');
+        kpi('Bester Tag', bestLabel+' ('+fmtPct(agg.means[bestIdx],3)+')', 'kpi__value--green') +
+        kpi('Schlechtester Tag', worstLabel+' ('+fmtPct(agg.means[worstIdx],3)+')', 'kpi__value--red');
     }
 
     // ── Render: Backtest ──────────────────────────────────────────────────────
@@ -851,18 +878,31 @@
 
       // Rendite pro Event
       var barCols = rets.map(function(v){ return v>=0?COL_POS:COL_NEG; });
+      // Dynamische Y-Achse: symmetrisches Padding von ~10% um die Extremwerte
+      var yMin = 0, yMax = 0;
+      if (rets.length > 0) {
+        yMin = Math.min.apply(null, rets);
+        yMax = Math.max.apply(null, rets);
+        var range = Math.max(yMax - yMin, 0.5);
+        var pad = range * 0.12;
+        yMin = parseFloat((yMin - pad).toFixed(2));
+        yMax = parseFloat((yMax + pad).toFixed(2));
+      }
       if (charts['bt-bar']) { charts['bt-bar'].destroy(); charts['bt-bar']=null; }
       charts['bt-bar'] = new ApexCharts(document.getElementById('chart-bt-bar'), {
         series: [{ name:'Trade-Rendite', data: rets.map(function(v){ return parseFloat(v.toFixed(3)); }) }],
-        chart: Object.assign({ type:'bar', height:180 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'bar', height:200 }, SA.chartTheme.chart),
         colors: barCols,
         plotOptions: { bar:{ distributed:true, columnWidth:'90%', borderRadius:0 } },
         grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           x: { formatter:function(v,opts){ return eqDatesBar[opts.dataPointIndex]||''; } }
         }),
         xaxis: { categories:eqDatesBar, tickAmount:8, labels:{style:{colors:'#d4c5a0',fontSize:'10px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
-        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+' %';}} },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.25)', strokeDashArray:2 }] },
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return v.toFixed(2)+' %';}}
+        },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:2 }] },
         dataLabels: { enabled:false },
         legend: { show:false },
         title: { text:'Rendite pro Event (%)', style:{color:'#d4c5a0',fontSize:'12px',fontFamily:'Sora,sans-serif'} }
@@ -973,9 +1013,11 @@
 
       // Ziel-Monate ermitteln je Kontext
       var monthsToShow = [];
-      if (viewContext === 'triple')       monthsToShow = [3, 6, 9, 12];
-      else if (viewContext === 'monthly') monthsToShow = [1,2,3,4,5,6,7,8,9,10,11,12];
-      else if (viewContext === 'vix') {
+      if (viewContext === 'triple') {
+        [3, 6, 9, 12].forEach(function(m) { if (tripleMonthsMask[m]) monthsToShow.push(m); });
+      } else if (viewContext === 'monthly') {
+        for (var mi = 1; mi <= 12; mi++) if (opexMonthsMask[mi-1]) monthsToShow.push(mi);
+      } else if (viewContext === 'vix') {
         for (var mi = 1; mi <= 12; mi++) if (vixMonthsMask[mi-1]) monthsToShow.push(mi);
       }
 
@@ -1030,11 +1072,11 @@
       var after  = parseInt(document.getElementById('sl-after').value);
 
       var html = '';
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-Tag (t=0) vs. Null</h3>';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-Tage (t0)</h3>';
       html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">t-Test: Ist die durchschnittliche Tagesrendite am Verfalltag systematisch von Null verschieden?</p>';
       html += SA.significance.renderSection(t0Result, colsPerRow, orderT0);
 
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">Kumuliertes Fenster (t-'+before+' bis t+'+after+') vs. Null</h3>';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">Kumuliertes Fenster (t-'+before+' bis t+'+after+')</h3>';
       html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.</p>';
       html += SA.significance.renderSection(cumResult, colsPerRow, orderCum);
 
@@ -1196,12 +1238,14 @@
           renderBacktest(windowsTriple, 'Triple Witching');
           renderStreak(windowsTriple, 'OPEX');
         } else {
-          renderKPIs(windowsAll, 'OPEX');
-          renderOpexMonthlyGrid(windowsAll, daysBefore, daysAfter);
-          renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
-          renderSignificance(windowsAll, 'OPEX', 'monthly');
-          renderBacktest(windowsAll, 'Monatlicher Verfall');
-          renderStreak(windowsAll, 'OPEX');
+          // Monatlich: Auf ausgewaehlte Monate filtern
+          var windowsOpexFiltered = windowsAll.filter(function(w){ return opexMonthsMask[parseInt(w.month)-1]; });
+          renderKPIs(windowsOpexFiltered, 'OPEX');
+          renderOpexMonthlyGrid(windowsAll, daysBefore, daysAfter); // Grid nutzt eigenes Mask-Filtering
+          renderHeatmap(windowsOpexFiltered, daysBefore, daysAfter, 'OPEX');
+          renderSignificance(windowsOpexFiltered, 'OPEX', 'monthly');
+          renderBacktest(windowsOpexFiltered, 'Monatlicher Verfall');
+          renderStreak(windowsOpexFiltered, 'OPEX');
         }
       } else {
         // VIX-Modus
@@ -1302,6 +1346,8 @@
         opexView = this.value;
         document.getElementById('triple-months-block').style.display =
           opexView === 'triple' ? '' : 'none';
+        document.getElementById('opex-monthly-block').style.display =
+          opexView === 'monthly' ? '' : 'none';
         if (_cachedRows) rerender();
       });
     }
@@ -1322,6 +1368,24 @@
     document.getElementById('btn-triple-none').addEventListener('click', function() {
       [3,6,9,12].forEach(function(m,i) { tripleMonthsMask[m] = false; tripleMonthChecks[i].checked = false; });
       if (_cachedRows && currentMode === 'opex' && opexView === 'triple') rerender();
+    });
+
+    // OPEX Monatlich: Monats-Checkboxen
+    var opexMonthChecks = document.querySelectorAll('#opex-months-checkboxes input[type=checkbox]');
+    for (var i = 0; i < opexMonthChecks.length; i++) {
+      opexMonthChecks[i].addEventListener('change', function() {
+        var m = parseInt(this.getAttribute('data-month'));
+        opexMonthsMask[m-1] = this.checked;
+        if (_cachedRows && currentMode === 'opex' && opexView === 'monthly') rerender();
+      });
+    }
+    document.getElementById('btn-opex-all').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { opexMonthsMask[i] = true; opexMonthChecks[i].checked = true; }
+      if (_cachedRows && currentMode === 'opex' && opexView === 'monthly') rerender();
+    });
+    document.getElementById('btn-opex-none').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { opexMonthsMask[i] = false; opexMonthChecks[i].checked = false; }
+      if (_cachedRows && currentMode === 'opex' && opexView === 'monthly') rerender();
     });
 
     // VIX-Monats-Checkboxen
