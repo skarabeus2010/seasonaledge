@@ -181,12 +181,6 @@
         </div>
       </details>
 
-      <!-- Historischer Spot-Chart -->
-      <details id="sec-history" style="display:none">
-        <summary>Historischer <span id="history-label">Spot</span> Chart</summary>
-        <div class="content"><div id="chart-history"></div></div>
-      </details>
-
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -274,7 +268,7 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display='none'; }, 8000); }
     function showSections(show) {
-      ['sec-triple','sec-scatter','sec-buckets','sec-vrp','sec-extremes','sec-history'].forEach(function(id) {
+      ['sec-triple','sec-scatter','sec-buckets','sec-vrp','sec-extremes'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       if (!show) document.getElementById('vol-percentile-ribbon').style.display = 'none';
@@ -1039,28 +1033,6 @@
       charts.vrpDiff.render();
     }
 
-    function renderHistory(df) {
-      var data = [];
-      for (var i=0;i<df.length;i++) data.push({ x: new Date(df[i].date).getTime(), y: +df[i].spot.toFixed(2) });
-      var cfg = {
-        series: [{ name: _spotTicker, data: data }],
-        chart: { type: 'area', height: 320, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
-        colors: [COL_SPOT],
-        stroke: { width: 1.2, curve: 'straight' },
-        fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.15, opacityTo: 0, stops: [0, 100] } },
-        grid: SA.chartTheme.grid,
-        xaxis: Object.assign({}, SA.chartTheme.xaxis, { type: 'datetime', labels: Object.assign({}, SA.chartTheme.xaxis.labels, { datetimeUTC: false, format: 'MMM \'yy' }) }),
-        yaxis: Object.assign({}, SA.chartTheme.yaxis, { labels: { formatter: function(v){return v.toFixed(0);} } }),
-        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' } },
-        legend: { show: false },
-        dataLabels: { enabled: false }
-      };
-      if (charts.history) charts.history.destroy();
-      charts.history = new ApexCharts(document.getElementById('chart-history'), cfg);
-      charts.history.render();
-      document.getElementById('history-label').textContent = _spotTicker;
-    }
-
     // ── Main Load ────────────────────────────────────────────────────────────
     function yearsFilter() {
       var y = document.getElementById('sel-years').value;
@@ -1144,7 +1116,6 @@
         renderBuckets(_df);
         renderVRP(_df);
         renderExtremes(_extremes);
-        renderHistory(_df);
 
         $loading.style.display = 'none';
       }).catch(function(e) {
