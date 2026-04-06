@@ -405,12 +405,12 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Zentralbanken | `/zentralbanken` | app, charts, significance, indicators, streak | Fed/EZB/BoE/BoJ Event-Window, Streak, Termine aus Supabase |
 | Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
 | TDOM Analyse | `/tdom-analyse` | app, charts, holidays, outlier, indicators, streak, strategy-compute | 3 Strategien (Intraday/Overnight/C2C), Vorwärts/Rückwärts, Heatmap Monat×TDoM, TDOM-Strategie Tester (Entry/Exit mit Cross-Month Support, Stop-Loss, CAGR/Sharpe/MaxDD/PF), TDoY Top 25 mit Datum 2026 (sortierbar), Streak pro TDoM, MIN_N=10 Warnung, "We are here" Marker |
+| Spot-Vol Beta | `/spot-vol-beta` | app, charts, holidays | 3 Subplots (Spot + Daily Beta + Vol, synchronisiert), Scatter + OLS-Regression + "We are here", Rolling Beta mit Gesamt-Beta Referenz, Regime-Wendepunkte (VIX Spikes / Complacency / Beta Stress) mit Forward Returns 5/10/20/60d, historischer Spot-Chart |
 
-### Offene HTML-Migrationen (5 von 18)
+### Offene HTML-Migrationen (4 von 18)
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 14 | Spot-Vol Beta | 516 | 4 | naechste |
-| 15 | OPEX | 741 | 5 | |
+| 15 | OPEX (mit VIXpiration) | 741 | 5 | naechste |
 | 16 | Jahreszyklus | 1595 | 20 | |
 | 17 | Monatszyklus | 1412 | 26 | |
 | 18 | Wochentage | 1670 | 29 | |
