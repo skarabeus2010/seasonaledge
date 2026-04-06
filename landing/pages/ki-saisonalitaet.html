@@ -324,7 +324,7 @@
       // 1 = Wahljahr, 2 = Nachwahl, 3 = Mitte, 4 = Vorwahl
       return ((year - 2020) % 4 + 4) % 4 + 1;
     }
-    var CYCLE_LABELS = {1:'Wahljahr', 2:'Nachwahl', 3:'Mitte', 4:'Vorwahl'};
+    var CYCLE_LABELS = {1:'Wahljahr', 2:'Nachwahljahr', 3:'Zwischenwahljahr', 4:'Vorwahljahr'};
 
     // ── Core: Match-Jahre finden ─────────────────────────────────────────────
     function findMatchingYears(yearData, currentYear, method, topN) {
