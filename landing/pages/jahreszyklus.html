@@ -692,56 +692,60 @@
       var colors = [];
       var strokeWidths = [];
       var strokeDashes = [];
-      var fillTypes = [];
-      var opacities = [];
 
-      // 1. Einzeljahre (dünne graue Linien)
+      // 1. Einzeljahre (dünne graue Linien) — zuerst, damit sie hinten liegen
       if (showIndividual) {
-        for (var y in yearData) {
-          series.push({ name: String(y), data: pad365(yearData[y].full_365), type: 'line' });
-          colors.push('rgba(200,220,255,.15)');
-          strokeWidths.push(0.8);
+        var yrKeys = Object.keys(yearData).map(Number).sort();
+        for (var i=0;i<yrKeys.length;i++) {
+          var y = yrKeys[i];
+          if (y === currentYear) continue; // Aktuelles Jahr wird separat gezeichnet
+          series.push({ name: String(y), data: pad365(yearData[y].full_365) });
+          colors.push('rgba(180,200,230,.22)');
+          strokeWidths.push(1);
           strokeDashes.push(0);
-          fillTypes.push('solid');
-          opacities.push(0);
         }
       }
 
-      // 2. Perzentil-Bänder (25./75.)
+      // 2. Perzentil-Bänder (25./75.) als zwei sichtbare dünne Linien
       if (showPercentile && Object.keys(yearData).length>=5) {
-        var all = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
+        var allCurves = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
         var p25 = [], p75 = [];
         for (var d=0;d<365;d++) {
-          var vals = all.map(function(c){ return c[d]; }).sort(function(a,b){return a-b;});
+          var vals = allCurves.map(function(c){ return c[d]; }).sort(function(a,b){return a-b;});
           p25.push(vals[Math.floor(vals.length*0.25)]);
           p75.push(vals[Math.floor(vals.length*0.75)]);
         }
-        series.push({ name:'25./75. Perzentil', data: pad365(p75), type:'line' });
-        colors.push('rgba(52,211,153,.3)');
-        strokeWidths.push(0);
+        if (smoothing>1) { p25 = JZ.rollingMean(p25, smoothing); p75 = JZ.rollingMean(p75, smoothing); }
+        series.push({ name:'75. Perzentil', data: pad365(p75) });
+        colors.push('rgba(52,211,153,.55)');
+        strokeWidths.push(1.8);
         strokeDashes.push(0);
-        fillTypes.push('solid');
-        opacities.push(0);
+        series.push({ name:'25. Perzentil', data: pad365(p25) });
+        colors.push('rgba(52,211,153,.55)');
+        strokeWidths.push(1.8);
+        strokeDashes.push(0);
       }
 
-      // 3. Konfidenzband (±1σ) — nur obere Linie, visuell
+      // 3. Konfidenzband (±1σ) als zwei sichtbare dünne gestrichelte Linien
       if (showBands && std && std.length===365) {
         var upper = avg.map(function(a,i){ return a+std[i]; });
-        series.push({ name:'±1σ', data: pad365(upper), type:'line' });
-        colors.push('rgba(77,159,255,.25)');
-        strokeWidths.push(0.5);
-        strokeDashes.push(3);
-        fillTypes.push('solid');
-        opacities.push(0);
+        var lower = avg.map(function(a,i){ return a-std[i]; });
+        if (smoothing>1) { upper = JZ.rollingMean(upper, smoothing); lower = JZ.rollingMean(lower, smoothing); }
+        series.push({ name:'+1σ', data: pad365(upper) });
+        colors.push('rgba(77,159,255,.6)');
+        strokeWidths.push(1.5);
+        strokeDashes.push(4);
+        series.push({ name:'−1σ', data: pad365(lower) });
+        colors.push('rgba(77,159,255,.6)');
+        strokeWidths.push(1.5);
+        strokeDashes.push(4);
       }
 
-      // 4. Saisonaler Ø
-      series.push({ name:'Saisonaler Ø ('+nYears+'J)', data: pad365(avgSmooth), type:'line' });
+      // 4. Saisonaler Ø (prominent, dick)
+      series.push({ name:'Saisonaler Ø ('+nYears+'J)', data: pad365(avgSmooth) });
       colors.push(COL_AVG);
-      strokeWidths.push(3);
+      strokeWidths.push(3.5);
       strokeDashes.push(0);
-      fillTypes.push('solid');
-      opacities.push(0);
 
       // 5. Präsidentenzyklus-Overlays (für jeden aktiven Zyklus)
       for (var c=1;c<=4;c++) {
@@ -756,26 +760,22 @@
           cycleAvg.push(s/cycleYears.length);
         }
         if (smoothing>1) cycleAvg = JZ.rollingMean(cycleAvg, smoothing);
-        series.push({ name: CYCLE_LABELS[c]+' ('+cycleYears.length+'y)', data: pad365(cycleAvg), type:'line' });
+        series.push({ name: CYCLE_LABELS[c]+' ('+cycleYears.length+'y)', data: pad365(cycleAvg) });
         colors.push(CYCLE_COLORS[c]);
         strokeWidths.push(2);
         strokeDashes.push(5);
-        fillTypes.push('solid');
-        opacities.push(0);
       }
 
-      // 6. Aktuelles Jahr (gold)
+      // 6. Aktuelles Jahr (gold, dick)
       if (showCurrent && yearData[currentYear]) {
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
         var cc = yearData[currentYear].full_365;
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = cc[i];
-        series.push({ name: currentYear+' (aktuell)', data: pad365(curArr), type:'line' });
+        series.push({ name: currentYear+' (aktuell)', data: pad365(curArr) });
         colors.push(COL_CURRENT);
-        strokeWidths.push(2.5);
+        strokeWidths.push(3);
         strokeDashes.push(0);
-        fillTypes.push('solid');
-        opacities.push(0);
       }
 
       // 7. Pressure Chart (separate Y-Achse)
@@ -783,12 +783,10 @@
       if (showPressure) {
         var pres = JZ.computePressureCurve(yearData, smoothing);
         if (pres.curve) {
-          series.push({ name:'Pressure', data: pad365(pres.curve), type:'line' });
+          series.push({ name:'Pressure', data: pad365(pres.curve) });
           colors.push(COL_PRESSURE);
           strokeWidths.push(2);
           strokeDashes.push(0);
-          fillTypes.push('solid');
-          opacities.push(0);
           pressureInfo = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
         }
       }
@@ -810,11 +808,20 @@
           }}
         }),
         xaxis: {
-          type:'category', categories:cats365(), tickAmount:12,
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter: monthLabelFormatter, hideOverlappingLabels:true, rotate:0 },
-          tooltip: { enabled:false }
+          type:'category', categories:cats365(),
+          tickAmount: 12,
+          labels: {
+            style:{colors:'#a89878',fontSize:'11px'},
+            formatter: monthLabelFormatter,
+            hideOverlappingLabels: true,
+            rotate: 0,
+            showDuplicates: false
+          },
+          tooltip: { enabled:false },
+          axisTicks: { show:false }
         },
         yaxis: [{
+          seriesName: 'Saisonaler Ø ('+nYears+'J)',
           labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
           title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
         }],
@@ -832,7 +839,7 @@
       if (showPressure && pressureInfo) {
         opts.yaxis = [
           opts.yaxis[0],
-          { opposite:true, seriesName:'Pressure',
+          { seriesName: 'Pressure', opposite:true, show:true,
             labels:{style:{colors:COL_PRESSURE,fontSize:'11px'},formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';}},
             title:{text:'Pressure',style:{color:COL_PRESSURE,fontSize:'11px'}} }
         ];
