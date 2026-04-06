@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TDoM Analyse &mdash; SeasonAlpha</title>
+  <meta name="description" content="Trading Day of the Month Analyse: 3 Strategien (Intraday, Overnight, Close-to-Close), Vorw&auml;rts/R&uuml;ckw&auml;rts, Heatmap, Multi-Day Range.">
+  <meta property="og:title" content="TDoM Analyse &mdash; SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/tdom-analyse">
+  <link rel="canonical" href="https://seasonalpha.ai/tdom-analyse">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .tdom-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .tdom-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .tdom-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .tdom-table tr:hover td{background:rgba(232,168,32,.04)}
+    .tdom-table td.pos{color:var(--green)}
+    .tdom-table td.neg{color:var(--red)}
+    .apexcharts-xaxis text title{display:none}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+    .month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font-size:.6875rem}
+    .month-grid label{display:flex;align-items:center;gap:4px;cursor:pointer}
+    .range-controls{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem}
+    .range-controls label{font-size:.6875rem;color:var(--muted)}
+    .range-controls input,.range-controls select{width:100%;padding:.3rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10">10 Jahre</option>
+        <option value="15">15 Jahre</option>
+        <option value="20" selected>20 Jahre</option>
+        <option value="30">30 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>Strategie</h3>
+      <select id="sel-strategy" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="open_to_close" selected>Intraday (Open &rarr; Close)</option>
+        <option value="open_to_next_open">Overnight (Open &rarr; n&auml;chster Open)</option>
+        <option value="close_to_next_close">Close &rarr; n&auml;chster Close</option>
+      </select>
+      <h3>Richtung</h3>
+      <select id="sel-direction" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="forward" selected>Vorw&auml;rts (TDoM 1, 2, 3...)</option>
+        <option value="backward">R&uuml;ckw&auml;rts (TDoM -1, -2, -3...)</option>
+      </select>
+      <hr>
+      <h3>Monate filtern</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent);font-size:.75rem"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <div id="month-toggles" class="month-grid"></div>
+      <hr>
+      <h3>Range-Strategie</h3>
+      <label style="font-size:.75rem"><input type="checkbox" id="chk-range"> Aktivieren</label>
+      <div id="range-controls" style="display:none">
+        <div class="range-controls">
+          <label>Entry TDoM<input type="number" id="inp-entry-tdom" value="1" min="-23" max="23"></label>
+          <label>Exit TDoM<input type="number" id="inp-exit-tdom" value="-1" min="-23" max="23"></label>
+          <label>Entry Preis<select id="sel-entry-price"><option value="Open" selected>Open</option><option value="Close">Close</option></select></label>
+          <label>Exit Preis<select id="sel-exit-price"><option value="Open">Open</option><option value="Close" selected>Close</option></select></label>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>TDoM Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption">Trading Day of the Month: 3 Strategien &times; 2 Richtungen &times; Monatsfilter &times; Multi-Day Ranges</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- TDoM Bar Chart -->
+      <details open id="sec-bars" style="display:none">
+        <summary>&Oslash; Rendite pro TDoM</summary>
+        <div class="content"><div id="chart-bars"></div></div>
+      </details>
+
+      <!-- Win-Rate Chart -->
+      <details open id="sec-winrate" style="display:none">
+        <summary>Win-Rate pro TDoM</summary>
+        <div class="content"><div id="chart-winrate"></div></div>
+      </details>
+
+      <!-- Heatmap -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>Heatmap: Monat &times; TDoM</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
+
+      <!-- Statistik-Tabelle -->
+      <details id="sec-stats" style="display:none">
+        <summary>TDoM Statistik-Tabelle</summary>
+        <div class="content" id="content-stats"></div>
+      </details>
+
+      <!-- Range Strategy -->
+      <details open id="sec-range" style="display:none">
+        <summary>Multi-Day Range Strategie</summary>
+        <div class="content">
+          <div id="range-kpi" class="kpi-row" style="margin-bottom:1rem"></div>
+          <div id="chart-range"></div>
+          <div id="range-trades" style="margin-top:1rem;max-height:300px;overflow-y:auto"></div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Datengrundlage</h3>
+          <ul>
+            <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
+            <li><b>Ben&ouml;tigt:</b> Open + Close Kurse</li>
+            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
+          </ul>
+          <h3>Strategien</h3>
+          <ul>
+            <li><b>Intraday (Open &rarr; Close):</b> Tagesrendite w&auml;hrend der Handelssession</li>
+            <li><b>Overnight (Open &rarr; n&auml;chster Open):</b> Inkl. &uuml;bernacht Gap</li>
+            <li><b>Close &rarr; n&auml;chster Close:</b> Standard Close-to-Close (24h)</li>
+          </ul>
+          <h3>TDoM-Z&auml;hlung</h3>
+          <ul>
+            <li><b>Vorw&auml;rts:</b> TDoM 1 = erster Handelstag des Monats, 2 = zweiter, ... bis ~23</li>
+            <li><b>R&uuml;ckw&auml;rts:</b> TDoM -1 = letzter Handelstag, -2 = vorletzter, ... bis ~-23</li>
+          </ul>
+          <h3>Multi-Day Range</h3>
+          <ul>
+            <li>Entry an TDoM X (Open oder Close), Exit an TDoM Y</li>
+            <li>Beispiel: TDoM 1 Open &rarr; TDoM -1 Close = "Buy 1st day, sell last day"</li>
+            <li>Equity-Kurve zeigt kumulative Performance &uuml;ber alle Monate</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var charts = {};
+    var currentTicker = 'SPY';
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
+    function showSections(show) {
+      ['sec-bars','sec-winrate','sec-heatmap','sec-stats'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function destroyAll() {
+      ['bars','winrate','heatmap','range'].forEach(function(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
+    }
+    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
+    function cc(v) { return v >= 0 ? 'pos' : 'neg'; }
+
+    // ── Sidebar Setup ─────────────────────────────────────────────────────────
+    var monthsEl = document.getElementById('month-toggles');
+    for (var m = 1; m <= 12; m++) {
+      var lbl = document.createElement('label');
+      lbl.innerHTML = '<input type="checkbox" data-m="' + m + '" checked> ' + MONTHS[m-1];
+      monthsEl.appendChild(lbl);
+    }
+    document.getElementById('chk-all-months').addEventListener('change', function() {
+      var checked = this.checked;
+      monthsEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = checked; });
+      rerender();
+    });
+    monthsEl.addEventListener('change', rerender);
+
+    document.getElementById('chk-range').addEventListener('change', function() {
+      document.getElementById('range-controls').style.display = this.checked ? '' : 'none';
+      rerender();
+    });
+    ['inp-entry-tdom','inp-exit-tdom','sel-entry-price','sel-exit-price'].forEach(function(id) {
+      document.getElementById(id).addEventListener('change', rerender);
+    });
+
+    function getSelectedMonths() {
+      var months = [];
+      monthsEl.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb) {
+        months.push(parseInt(cb.dataset.m));
+      });
+      return months;
+    }
+
+    // ── Slider labels ─────────────────────────────────────────────────────────
+    // Slider gibts hier nicht, aber Range-Controls
+
+    // ── Fetch OHLC ────────────────────────────────────────────────────────────
+    function fetchOHLC(ticker, dateFilter) {
+      var allRows = [];
+      var batchSize = 1000;
+      function batch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close,tdom,tdoy&order=date' + (dateFilter || '');
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
+        }).then(function(r) {
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows) {
+            allRows = allRows.concat(rows);
+            if (cr) { var t = parseInt(cr.split('/')[1]); if (allRows.length < t) return batch(allRows.length); }
+            else if (rows.length === batchSize) return batch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+      return batch(0);
+    }
+
+    // ── Add TDoM Columns (vorwaerts + rueckwaerts) ────────────────────────────
+    function addTdomColumns(rows) {
+      // Group by year-month
+      var groups = {};
+      for (var i = 0; i < rows.length; i++) {
+        var d = rows[i].date;
+        var ym = d.substring(0, 7);
+        if (!groups[ym]) groups[ym] = [];
+        groups[ym].push(i);
+      }
+      var enriched = [];
+      for (var ym in groups) {
+        var idxs = groups[ym];
+        var n = idxs.length;
+        for (var k = 0; k < n; k++) {
+          var r = rows[idxs[k]];
+          var parts = r.date.split('-');
+          enriched.push({
+            date: r.date,
+            year: parseInt(parts[0]),
+            month: parseInt(parts[1]),
+            open: parseFloat(r.open),
+            close: parseFloat(r.close),
+            tdom: k + 1,
+            tdom_reverse: -(n - k)
+          });
+        }
+      }
+      // Re-sort by date
+      enriched.sort(function(a, b) { return a.date > b.date ? 1 : -1; });
+      return enriched;
+    }
+
+    // ── Strategie-Renditen berechnen ──────────────────────────────────────────
+    function calcStrategyReturn(rows, strategy) {
+      var result = [];
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        var ret = null;
+        if (strategy === 'open_to_close') {
+          if (r.open > 0) ret = (r.close - r.open) / r.open * 100;
+        } else if (strategy === 'open_to_next_open') {
+          if (i + 1 < rows.length && r.open > 0) {
+            ret = (rows[i+1].open - r.open) / r.open * 100;
+          }
+        } else if (strategy === 'close_to_next_close') {
+          if (i + 1 < rows.length && r.close > 0) {
+            ret = (rows[i+1].close - r.close) / r.close * 100;
+          }
+        }
+        result.push(Object.assign({}, r, { strat_return: ret }));
+      }
+      return result;
+    }
+
+    // ── Build TDoM Stats ──────────────────────────────────────────────────────
+    function buildTdomStats(rows, strategy, direction, selectedMonths) {
+      var withRet = calcStrategyReturn(rows, strategy);
+      var tdomCol = direction === 'forward' ? 'tdom' : 'tdom_reverse';
+      var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
+
+      // Filter
+      var filtered = withRet.filter(function(r) {
+        if (r.strat_return == null || isNaN(r.strat_return)) return false;
+        if (selectedMonths.indexOf(r.month) < 0) return false;
+        var t = r[tdomCol];
+        return t >= validRange[0] && t <= validRange[1];
+      });
+
+      // Group by tdom
+      var byTdom = {};
+      for (var i = 0; i < filtered.length; i++) {
+        var t = filtered[i][tdomCol];
+        if (!byTdom[t]) byTdom[t] = [];
+        byTdom[t].push(filtered[i].strat_return);
+      }
+
+      var stats = [];
+      var keys = Object.keys(byTdom).map(Number).sort(function(a,b){return direction === 'forward' ? a-b : a-b;});
+      for (var k = 0; k < keys.length; k++) {
+        var tdom = keys[k];
+        var vals = byTdom[tdom];
+        var sum = vals.reduce(function(s,v){return s+v;},0);
+        var avg = sum / vals.length;
+        var wins = vals.filter(function(v){return v>0;}).length;
+        var sorted = vals.slice().sort(function(a,b){return a-b;});
+        var median = sorted.length % 2 ? sorted[Math.floor(sorted.length/2)] : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2;
+        var sq = vals.reduce(function(s,v){return s+(v-avg)*(v-avg);},0) / Math.max(1, vals.length-1);
+        stats.push({
+          tdom: tdom,
+          avg_return: avg,
+          win_rate: wins / vals.length * 100,
+          count: vals.length,
+          median: median,
+          std: Math.sqrt(sq),
+          max: Math.max.apply(null, vals),
+          min: Math.min.apply(null, vals)
+        });
+      }
+      return stats;
+    }
+
+    // ── Build Month × TDoM Matrix ─────────────────────────────────────────────
+    function buildTdomMonthMatrix(rows, strategy, direction) {
+      var withRet = calcStrategyReturn(rows, strategy);
+      var tdomCol = direction === 'forward' ? 'tdom' : 'tdom_reverse';
+      var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
+
+      var matrix = {}; // matrix[month][tdom] = [returns]
+      for (var i = 0; i < withRet.length; i++) {
+        var r = withRet[i];
+        if (r.strat_return == null || isNaN(r.strat_return)) continue;
+        var t = r[tdomCol];
+        if (t < validRange[0] || t > validRange[1]) continue;
+        if (!matrix[r.month]) matrix[r.month] = {};
+        if (!matrix[r.month][t]) matrix[r.month][t] = [];
+        matrix[r.month][t].push(r.strat_return);
+      }
+
+      // Compute averages
+      var result = {};
+      for (var m = 1; m <= 12; m++) {
+        result[m] = {};
+        for (var t = validRange[0]; t <= validRange[1]; t++) {
+          if (matrix[m] && matrix[m][t]) {
+            var vals = matrix[m][t];
+            result[m][t] = vals.reduce(function(s,v){return s+v;},0) / vals.length;
+          }
+        }
+      }
+      return result;
+    }
+
+    // ── Multi-Day Range Berechnung ────────────────────────────────────────────
+    function calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice) {
+      var entryCol = entryTdom > 0 ? 'tdom' : 'tdom_reverse';
+      var exitCol = exitTdom > 0 ? 'tdom' : 'tdom_reverse';
+
+      // Group by year-month
+      var groups = {};
+      for (var i = 0; i < rows.length; i++) {
+        var key = rows[i].year + '-' + rows[i].month;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(rows[i]);
+      }
+
+      var trades = [];
+      for (var key in groups) {
+        var grp = groups[key];
+        var entryRow = null, exitRow = null;
+        for (var k = 0; k < grp.length; k++) {
+          if (grp[k][entryCol] === entryTdom && !entryRow) entryRow = grp[k];
+          if (grp[k][exitCol] === exitTdom) exitRow = grp[k];
+        }
+        if (!entryRow || !exitRow) continue;
+        if (exitRow.date <= entryRow.date) continue;
+        var pe = entryPrice === 'Open' ? entryRow.open : entryRow.close;
+        var px = exitPrice === 'Open' ? exitRow.open : exitRow.close;
+        if (pe <= 0) continue;
+        var ret = (px - pe) / pe * 100;
+        trades.push({
+          year: entryRow.year, month: entryRow.month,
+          entry_date: entryRow.date, exit_date: exitRow.date,
+          entry_price: pe, exit_price: px, return_pct: ret
+        });
+      }
+      return trades;
+    }
+
+    // ── Render: KPIs ──────────────────────────────────────────────────────────
+    function renderKPIs(stats) {
+      if (!stats.length) { $kpi.innerHTML = ''; return; }
+      var best = stats[0], worst = stats[0], bestWR = stats[0];
+      var totalTrades = 0;
+      for (var i = 0; i < stats.length; i++) {
+        if (stats[i].avg_return > best.avg_return) best = stats[i];
+        if (stats[i].avg_return < worst.avg_return) worst = stats[i];
+        if (stats[i].win_rate > bestWR.win_rate) bestWR = stats[i];
+        totalTrades += stats[i].count;
+      }
+      $kpi.innerHTML =
+        kpi('Bester TDoM', ' ' + best.tdom + ' (' + fmtPct(best.avg_return, 3) + ')', 'kpi__value--green') +
+        kpi('Schlechtester TDoM', ' ' + worst.tdom + ' (' + fmtPct(worst.avg_return, 3) + ')', 'kpi__value--red') +
+        kpi('H\u00F6chste Win-Rate', ' TDoM ' + bestWR.tdom + ' (' + bestWR.win_rate.toFixed(0) + ' %)', bestWR.win_rate >= 50 ? 'kpi__value--green' : '') +
+        kpi('Trades gesamt', ' ' + totalTrades.toLocaleString());
+    }
+
+    // ── Render: TDoM Bar Chart ────────────────────────────────────────────────
+    function renderBars(stats) {
+      var cats = stats.map(function(s) { return String(s.tdom); });
+      var vals = stats.map(function(s) { return parseFloat(s.avg_return.toFixed(4)); });
+
+      if (charts.bars) charts.bars.destroy();
+      charts.bars = new ApexCharts(document.getElementById('chart-bars'), {
+        series: [{ name: '\u00D8 Rendite', data: vals }],
+        chart: Object.assign({ type: 'bar', height: 380 }, SA.chartTheme.chart),
+        colors: vals.map(function(v) { return v >= 0 ? '#1a8a45' : '#c0392b'; }),
+        plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
+        grid: SA.chartTheme.grid,
+        tooltip: { theme: 'dark', y: { formatter: function(v) { return fmtPct(v, 4); } } },
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(3) + '%'; } }, title: { text: '\u00D8 Rendite %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.15)', strokeDashArray: 3 }] },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 \u00D8 Rendite pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.bars.render();
+    }
+
+    // ── Render: Win-Rate Chart ────────────────────────────────────────────────
+    function renderWinRate(stats) {
+      var cats = stats.map(function(s) { return String(s.tdom); });
+      var vals = stats.map(function(s) { return parseFloat(s.win_rate.toFixed(1)); });
+
+      if (charts.winrate) charts.winrate.destroy();
+      charts.winrate = new ApexCharts(document.getElementById('chart-winrate'), {
+        series: [{ name: 'Win-Rate', data: vals }],
+        chart: Object.assign({ type: 'bar', height: 320 }, SA.chartTheme.chart),
+        colors: vals.map(function(v) { return v >= 50 ? '#1a8a45' : '#c0392b'; }),
+        plotOptions: { bar: { borderRadius: 2, distributed: true, columnWidth: '70%' } },
+        grid: SA.chartTheme.grid,
+        tooltip: { theme: 'dark', y: { formatter: function(v) { return v.toFixed(1) + ' %'; } } },
+        xaxis: { categories: cats, labels: { style: { colors: '#a89878', fontSize: '11px' } }, title: { text: 'Trading Day of Month', style: { color: '#a89878', fontSize: '11px' } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0) + ' %'; } }, max: 100, min: 0, title: { text: 'Win-Rate %', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 50, borderColor: 'rgba(255,215,0,.4)', strokeDashArray: 4, label: { text: '50%', style: { color: '#FFD700', background: 'transparent', fontSize: '10px' } } }] },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Win-Rate pro TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.winrate.render();
+    }
+
+    // ── Render: Heatmap (Monat × TDoM) ───────────────────────────────────────
+    function renderHeatmap(matrix, direction) {
+      var validRange = direction === 'forward' ? [1, 23] : [-23, -1];
+      var tdoms = [];
+      for (var t = validRange[0]; t <= validRange[1]; t++) tdoms.push(t);
+
+      // Series: Zeilen = Monate (reversed)
+      var series = [];
+      for (var m = 12; m >= 1; m--) {
+        var data = [];
+        for (var k = 0; k < tdoms.length; k++) {
+          var t = tdoms[k];
+          var v = matrix[m] && matrix[m][t] != null ? matrix[m][t] : null;
+          data.push({ x: String(t), y: v != null ? parseFloat(v.toFixed(3)) : 0 });
+        }
+        series.push({ name: MONTHS[m-1], data: data });
+      }
+
+      if (charts.heatmap) charts.heatmap.destroy();
+      charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type: 'heatmap', height: 420 }, SA.chartTheme.chart),
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+          { from: -99, to: -0.3, color: '#6b0f0f', name: '< -0.3%' },
+          { from: -0.3, to: -0.1, color: '#8b1a1a', name: '-0.3% to -0.1%' },
+          { from: -0.1, to: -0.02, color: '#6b3030', name: '-0.1% to -0.02%' },
+          { from: -0.02, to: 0.02, color: '#2a2a2a', name: '\u00B10.02%' },
+          { from: 0.02, to: 0.1, color: '#1a4a2a', name: '0.02% to 0.1%' },
+          { from: 0.1, to: 0.3, color: '#1a6b35', name: '0.1% to 0.3%' },
+          { from: 0.3, to: 99, color: '#0f6b2f', name: '> 0.3%' }
+        ] } } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels: { style: { colors: '#a89878', fontSize: '10px' } }, title: { text: 'TDoM', style: { color: '#a89878', fontSize: '11px' } } },
+        dataLabels: { enabled: true, style: { fontSize: '8px', colors: ['#e0e0e0'] }, formatter: function(v) { return v !== 0 ? (v>=0?'+':'') + v.toFixed(2) : ''; } },
+        title: { text: currentTicker + ' \u2014 \u00D8 Rendite Monat \u00D7 TDoM', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } },
+        legend: { show: false }
+      });
+      charts.heatmap.render();
+    }
+
+    // ── Render: Statistik-Tabelle ─────────────────────────────────────────────
+    function renderStats(stats) {
+      var html = '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Median</th><th>Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
+      for (var i = 0; i < stats.length; i++) {
+        var s = stats[i];
+        html += '<tr><td><b>' + s.tdom + '</b></td>';
+        html += '<td class="' + cc(s.avg_return) + '">' + fmtPct(s.avg_return, 4) + '</td>';
+        html += '<td class="' + (s.win_rate >= 50 ? 'pos' : 'neg') + '">' + s.win_rate.toFixed(1) + ' %</td>';
+        html += '<td class="' + cc(s.median) + '">' + fmtPct(s.median, 4) + '</td>';
+        html += '<td>' + s.std.toFixed(4) + ' %</td>';
+        html += '<td class="pos">' + fmtPct(s.max, 3) + '</td>';
+        html += '<td class="neg">' + fmtPct(s.min, 3) + '</td>';
+        html += '<td>' + s.count + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('content-stats').innerHTML = html;
+    }
+
+    // ── Render: Range Strategy ────────────────────────────────────────────────
+    function renderRange(rows) {
+      var entryTdom = parseInt(document.getElementById('inp-entry-tdom').value);
+      var exitTdom = parseInt(document.getElementById('inp-exit-tdom').value);
+      var entryPrice = document.getElementById('sel-entry-price').value;
+      var exitPrice = document.getElementById('sel-exit-price').value;
+
+      var trades = calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice);
+      if (!trades.length) {
+        document.getElementById('range-kpi').innerHTML = '<p style="color:var(--muted)">Keine Trades f\u00FCr diese Kombination.</p>';
+        document.getElementById('range-trades').innerHTML = '';
+        if (charts.range) { charts.range.destroy(); charts.range = null; }
+        return;
+      }
+
+      // KPIs
+      var rets = trades.map(function(t) { return t.return_pct; });
+      var avg = rets.reduce(function(s,v){return s+v;},0) / rets.length;
+      var wins = rets.filter(function(v){return v>0;}).length;
+      var winRate = wins / rets.length * 100;
+      var maxGain = Math.max.apply(null, rets);
+      var maxLoss = Math.min.apply(null, rets);
+
+      document.getElementById('range-kpi').innerHTML =
+        kpi('\u00D8 Rendite', ' ' + fmtPct(avg, 3), avg >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('Win-Rate', ' ' + winRate.toFixed(1) + ' %', winRate >= 50 ? 'kpi__value--green' : 'kpi__value--red') +
+        kpi('Trades', ' ' + trades.length) +
+        kpi('Max Gewinn', ' ' + fmtPct(maxGain, 2), 'kpi__value--green') +
+        kpi('Max Verlust', ' ' + fmtPct(maxLoss, 2), 'kpi__value--red');
+
+      // Equity Curve
+      trades.sort(function(a,b) { return a.entry_date > b.entry_date ? 1 : -1; });
+      var equity = [100];
+      for (var i = 0; i < trades.length; i++) {
+        equity.push(equity[equity.length-1] * (1 + trades[i].return_pct / 100));
+      }
+
+      if (charts.range) charts.range.destroy();
+      charts.range = new ApexCharts(document.getElementById('chart-range'), {
+        series: [{ name: 'Equity', data: equity.map(function(v) { return parseFloat(v.toFixed(2)); }) }],
+        chart: Object.assign({ type: 'area', height: 320 }, SA.chartTheme.chart),
+        stroke: { width: 2, curve: 'straight' },
+        colors: [SA.COLORS.accent],
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { type: 'numeric', tickAmount: 10, labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return 'Trade ' + Math.round(v); } } },
+        yaxis: { labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v.toFixed(0); } }, title: { text: 'Equity (Start = 100)', style: { color: '#a89878', fontSize: '11px' } } },
+        annotations: { yaxis: [{ y: 100, borderColor: 'rgba(255,255,255,.2)', strokeDashArray: 3 }] },
+        dataLabels: { enabled: false },
+        title: { text: currentTicker + ' \u2014 Range: TDoM ' + entryTdom + ' \u2192 ' + exitTdom + ' (Equity)', style: { color: '#fff', fontSize: '13px', fontFamily: 'Sora,sans-serif', fontWeight: 700 } }
+      });
+      charts.range.render();
+
+      // Trades table (last 20)
+      var sorted = trades.slice().sort(function(a,b) { return b.entry_date > a.entry_date ? 1 : -1; });
+      var html = '<h4 style="font-size:.875rem;margin-bottom:.5rem">Letzte 20 Trades</h4>';
+      html += '<table class="tdom-table"><thead><tr><th>Jahr</th><th>Monat</th><th>Entry</th><th>Exit</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr></thead><tbody>';
+      for (var i = 0; i < Math.min(20, sorted.length); i++) {
+        var t = sorted[i];
+        html += '<tr><td>' + t.year + '</td><td>' + MONTHS[t.month-1] + '</td>';
+        html += '<td>' + t.entry_date + '</td><td>' + t.exit_date + '</td>';
+        html += '<td>' + t.entry_price.toFixed(2) + '</td><td>' + t.exit_price.toFixed(2) + '</td>';
+        html += '<td class="' + cc(t.return_pct) + '">' + fmtPct(t.return_pct, 3) + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('range-trades').innerHTML = html;
+    }
+
+    // ── Main ──────────────────────────────────────────────────────────────────
+    var _cachedRows = null;
+
+    function rerender() {
+      if (!_cachedRows) return;
+      var strategy = document.getElementById('sel-strategy').value;
+      var direction = document.getElementById('sel-direction').value;
+      var selectedMonths = getSelectedMonths();
+      var useRange = document.getElementById('chk-range').checked;
+
+      if (!selectedMonths.length) { showError('Bitte mindestens einen Monat ausw\u00E4hlen.'); return; }
+
+      destroyAll();
+
+      var stats = buildTdomStats(_cachedRows, strategy, direction, selectedMonths);
+      if (!stats.length) { showError('Keine TDoM-Daten f\u00FCr die gew\u00E4hlten Filter.'); showSections(false); return; }
+
+      var matrix = buildTdomMonthMatrix(_cachedRows, strategy, direction);
+
+      renderKPIs(stats);
+      renderBars(stats);
+      renderWinRate(stats);
+      renderHeatmap(matrix, direction);
+      renderStats(stats);
+      showSections(true);
+
+      // Range
+      var rangeSec = document.getElementById('sec-range');
+      if (useRange) {
+        rangeSec.style.display = '';
+        renderRange(_cachedRows);
+      } else {
+        rangeSec.style.display = 'none';
+      }
+    }
+
+    function loadTicker(ticker) {
+      currentTicker = ticker;
+      document.getElementById('title-ticker').textContent = ticker;
+      var yearsVal = document.getElementById('sel-years').value;
+      var dateFilter = '';
+      if (yearsVal !== 'max') {
+        var minYear = new Date().getFullYear() - parseInt(yearsVal);
+        dateFilter = '&date=gte.' + minYear + '-01-01';
+      }
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      destroyAll();
+      $kpi.innerHTML = '';
+
+      fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!rows || rows.length < 100) {
+          showError('Zu wenig Daten f\u00FCr ' + ticker);
+          $loading.style.display = 'none';
+          return;
+        }
+        rows = rows.filter(function(r) { return r.open != null && r.open > 0 && r.close > 0; });
+        if (rows.length < 100) {
+          showError(ticker + ': Nicht gen\u00FCgend OHLC-Daten (Open-Kurse fehlen).');
+          $loading.style.display = 'none';
+          return;
+        }
+        _cachedRows = addTdomColumns(rows);
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        rerender();
+        $loading.style.display = 'none';
+      }).catch(function(err) {
+        showError('Fehler: ' + err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t) { loadTicker(t); });
+    document.getElementById('sel-years').addEventListener('change', function() { loadTicker(currentTicker); });
+    document.getElementById('sel-strategy').addEventListener('change', rerender);
+    document.getElementById('sel-direction').addEventListener('change', rerender);
+
+    // Auto-Load
+    loadTicker('SPY');
+
+  })();
+  </script>
+
+</body>
+</html>
