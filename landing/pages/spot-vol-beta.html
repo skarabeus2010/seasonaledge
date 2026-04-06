@@ -64,12 +64,16 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Spot-Index</h3>
-      <input type="text" id="inp-spot" value="^GSPC" list="ticker-list">
-      <datalist id="ticker-list"></datalist>
+      <h3>Vol-Index</h3>
+      <select id="sel-vol">
+        <option value="^VIX" selected>VIX &mdash; S&amp;P 500 Vol</option>
+        <option value="^VXN">VXN &mdash; Nasdaq 100 Vol</option>
+        <option value="^OVX">OVX &mdash; Crude Oil Vol</option>
+        <option value="BVOL-USD">BVOL &mdash; Bitcoin Vol</option>
+      </select>
 
-      <h3 style="margin-top:.75rem">Vol-Index</h3>
-      <input type="text" id="inp-vol" value="^VIX" list="ticker-list">
+      <h3 style="margin-top:.75rem">Spot-Ticker</h3>
+      <select id="sel-spot"></select>
 
       <hr>
       <h3>Zeitraum</h3>
@@ -93,17 +97,19 @@
 
       <hr>
       <h3>Schwellen</h3>
-      <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem">VIX Spike</label>
-      <input type="number" id="inp-spike" value="30" min="20" max="80" step="1">
-      <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem">VIX Complacency</label>
-      <input type="number" id="inp-low" value="15" min="8" max="20" step="0.5">
+      <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem">Vol Spike</label>
+      <input type="number" id="inp-spike" value="30" min="5" max="200" step="1">
+      <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem">Vol Complacency</label>
+      <input type="number" id="inp-low" value="15" min="1" max="100" step="0.5">
       <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem">Beta Stress</label>
       <input type="number" id="inp-bstress" value="-1.0" min="-3" max="0" step="0.1">
 
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
-        <b>Spot-Vol Beta</b> misst die Korrelation zwischen Index-Rendite und Vol-&Auml;nderung.
-        Negatives Beta = klassisches &bdquo;Fear Gauge&ldquo;.
+        <b>Spot-Vol Beta</b> misst die Korrelation zwischen Spot-Rendite und Vol-&Auml;nderung.
+        Negatives Beta = klassisches &bdquo;Fear Gauge&ldquo;.<br><br>
+        <b>Paare:</b> Jeder Vol-Index wird nur gegen den passenden Spot gerechnet.
+        VXN misst Nasdaq-Vol, OVX misst &Ouml;l-Vol, BVOL misst Bitcoin-Vol.
       </div>
     </aside>
 
@@ -168,7 +174,11 @@
           <h3>Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li><b>Standard-Paar:</b> ^GSPC (S&amp;P 500) vs. ^VIX (CBOE Volatility Index)</li>
+            <li><b>4 feste Paare</b> (nur sinnvolle Kombinationen):</li>
+            <li style="margin-left:1rem">&bull; <b>VIX</b> &rarr; ^GSPC oder SPY (S&amp;P 500)</li>
+            <li style="margin-left:1rem">&bull; <b>VXN</b> &rarr; ^NDX oder QQQ (Nasdaq 100)</li>
+            <li style="margin-left:1rem">&bull; <b>OVX</b> &rarr; CL=F oder USO (WTI Crude)</li>
+            <li style="margin-left:1rem">&bull; <b>BVOL</b> &rarr; BTC-USD oder IBIT (Bitcoin)</li>
             <li><b>Zeitraum:</b> 3&ndash;20 Jahre oder Max (ab 1990)</li>
           </ul>
           <h3>Berechnung</h3>
@@ -221,6 +231,18 @@
     var COL_BETA = '#e8a820';
     var COL_POS  = '#00d4aa';
     var COL_NEG  = '#ff4757';
+
+    // Fixed pairs: nur sinnvolle Kombinationen (Vol-Index hat Spot-Basis)
+    var PAIRS = {
+      '^VIX':     { label: 'VIX',  name: 'CBOE S&P 500 Vol',     spots: [{t:'^GSPC',n:'S&P 500'}, {t:'SPY',n:'SPDR S&P 500 ETF'}],
+                    spike: 30, low: 15 },
+      '^VXN':     { label: 'VXN',  name: 'CBOE Nasdaq 100 Vol',  spots: [{t:'^NDX',n:'Nasdaq 100'}, {t:'QQQ',n:'Invesco Nasdaq 100 ETF'}],
+                    spike: 35, low: 18 },
+      '^OVX':     { label: 'OVX',  name: 'CBOE Crude Oil Vol',   spots: [{t:'CL=F',n:'WTI Crude Futures'}, {t:'USO',n:'US Oil Fund ETF'}],
+                    spike: 55, low: 25 },
+      'BVOL-USD': { label: 'BVOL', name: 'Bitcoin Implied Vol',  spots: [{t:'BTC-USD',n:'Bitcoin'}, {t:'IBIT',n:'iShares Bitcoin Trust'}],
+                    spike: 80, low: 40 }
+    };
 
     var charts = {};
     var _df = null;          // berechnete Reihe
@@ -602,13 +624,14 @@
       // Beta-Hinweis
       var hintEl = document.getElementById('beta-hint');
       var beta = metrics.beta;
+      var volLbl = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
       var html = '';
       if (beta < -0.3) {
-        html = '<div class="beta-hint ok"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Typisches &bdquo;Fear Gauge&ldquo; Verhalten: wenn '+_spotTicker+' f&auml;llt, steigt '+_volTicker+' &uuml;berproportional. Korrelation '+metrics.corr.toFixed(3)+'.</div>';
+        html = '<div class="beta-hint ok"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Typisches &bdquo;Fear Gauge&ldquo; Verhalten: wenn '+_spotTicker+' f&auml;llt, steigt '+volLbl+' &uuml;berproportional. Korrelation '+metrics.corr.toFixed(3)+'.</div>';
       } else if (beta < 0.3) {
         html = '<div class="beta-hint warn"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Schwache Spot-Vol Korrelation. Das ist ungew&ouml;hnlich und kann auf einen Regimewechsel hindeuten.</div>';
       } else {
-        html = '<div class="beta-hint err"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Positives Spot-Vol Beta! Sehr selten &mdash; Vol steigt trotz steigender Kurse.</div>';
+        html = '<div class="beta-hint err"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Positives Spot-Vol Beta! Sehr selten &mdash; '+volLbl+' steigt trotz steigender Kurse.</div>';
       }
       hintEl.innerHTML = html;
     }
@@ -796,10 +819,31 @@
       return '&date=gte.' + d.toISOString().slice(0, 10);
     }
 
+    // Spot-Select anhand des Vol-Index neu befuellen
+    function populateSpots(volKey, preselectSpot) {
+      var sel = document.getElementById('sel-spot');
+      var pair = PAIRS[volKey];
+      if (!pair) return;
+      sel.innerHTML = '';
+      for (var i = 0; i < pair.spots.length; i++) {
+        var o = document.createElement('option');
+        o.value = pair.spots[i].t;
+        o.textContent = pair.spots[i].t + ' — ' + pair.spots[i].n;
+        sel.appendChild(o);
+      }
+      if (preselectSpot && pair.spots.some(function(s){return s.t === preselectSpot;})) {
+        sel.value = preselectSpot;
+      }
+      // Schwellen auf typische Werte des Vol-Index setzen
+      document.getElementById('inp-spike').value = pair.spike;
+      document.getElementById('inp-low').value = pair.low;
+    }
+
     function load() {
-      _spotTicker = document.getElementById('inp-spot').value.trim().toUpperCase() || '^GSPC';
-      _volTicker  = document.getElementById('inp-vol').value.trim().toUpperCase() || '^VIX';
-      document.getElementById('title-pair').textContent = _spotTicker + ' vs. ' + _volTicker;
+      _volTicker  = document.getElementById('sel-vol').value || '^VIX';
+      _spotTicker = document.getElementById('sel-spot').value || PAIRS[_volTicker].spots[0].t;
+      var volLabel = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
+      document.getElementById('title-pair').textContent = _spotTicker + ' vs. ' + volLabel;
 
       var windowSize = parseInt(document.getElementById('inp-window').value) || 60;
       var useLog = document.getElementById('chk-log').checked;
@@ -867,9 +911,11 @@
     }
 
     // Events
-    SA.initTickerInput('inp-spot', 'ticker-list', function(){ load(); });
-    document.getElementById('inp-vol').addEventListener('change', load);
-    document.getElementById('inp-vol').addEventListener('keydown', function(e){ if (e.key === 'Enter') load(); });
+    document.getElementById('sel-vol').addEventListener('change', function() {
+      populateSpots(this.value);
+      load();
+    });
+    document.getElementById('sel-spot').addEventListener('change', load);
     document.getElementById('sel-years').addEventListener('change', load);
     document.getElementById('inp-window').addEventListener('change', load);
     document.getElementById('chk-log').addEventListener('change', load);
@@ -877,6 +923,8 @@
     document.getElementById('inp-low').addEventListener('change', recomputeExtremes);
     document.getElementById('inp-bstress').addEventListener('change', recomputeExtremes);
 
+    // Initial-State
+    populateSpots('^VIX', '^GSPC');
     load();
   })();
   </script>

@@ -121,10 +121,38 @@ SYMBOLS = {
     },
     "^VIX": {
         "name":         "VIX Volatilitätsindex",
-        "kategorie":    "US-Index",
+        "kategorie":    "Volatility",
         "währung":      "USD",
         "exchange":     "CBOE",
-        "beschreibung": "CBOE Volatility Index — Angst-Barometer",
+        "beschreibung": "CBOE Volatility Index — S&P 500 Fear Gauge (30d implizite Vol)",
+    },
+    "^VXN": {
+        "name":         "VXN Nasdaq Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "CBOE Nasdaq-100 Volatility Index — Tech Fear Gauge",
+    },
+    "^OVX": {
+        "name":         "OVX Oil Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "CBOE Crude Oil Volatility Index — WTI Fear Gauge",
+    },
+    "BVOL-USD": {
+        "name":         "BVOL Bitcoin Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CRYPTO",
+        "beschreibung": "Volmex 1x Long Bitcoin Implied Volatility Token — BTC Fear Gauge",
+    },
+    "IBIT": {
+        "name":         "iShares Bitcoin Trust ETF",
+        "kategorie":    "US-ETF",
+        "währung":      "USD",
+        "exchange":     "NYSE",
+        "beschreibung": "iShares Bitcoin Trust ETF — Spot-Bitcoin ETF (BlackRock)",
     },
 
     # ── US-ETFs ────────────────────────────────────────────────────────────────

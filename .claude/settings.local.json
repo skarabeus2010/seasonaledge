@@ -48,7 +48,15 @@
       "Bash(grep -v \"^$\")",
       "Bash(wc -l C:/dev/SeasonalEdge/pages/_disabled/*.py)",
       "Bash(ssh root@178.104.75.46 \"cd /opt/seasonaledge && git pull && docker compose restart nginx\")",
-      "Bash(find C:/dev/SeasonalEdge -name *spot_vol* -o -name *SpotVol*)"
+      "Bash(find C:/dev/SeasonalEdge -name *spot_vol* -o -name *SpotVol*)",
+      "WebFetch(domain:finance.yahoo.com)",
+      "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/V1X.DE?range=10y&interval=1d\" -H \"User-Agent: Mozilla/5.0\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/%5EVDAX?range=10y&interval=1d\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(curl -s -c /tmp/stooq_cookies.txt https://stooq.com/)",
+      "Bash(curl -s -b /tmp/stooq_cookies.txt \"https://stooq.com/q/d/l/?s=^vdax&i=d\")",
+      "Bash(head -5 echo \"---\" curl -s -b /tmp/stooq_cookies.txt \"https://stooq.com/q/d/l/?s=vdax&i=d\")",
+      "Bash(curl -s \"https://query2.finance.yahoo.com/v8/finance/chart/V1X.DE?period1=946684800&period2=1764374400&interval=1d&events=history\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0\\) AppleWebKit/537.36\")",
+      "Bash(curl -s -L -c /tmp/c.txt -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H 'Accept: text/html,application/xhtml+xml' \"https://stooq.com/q/d/?s=%5Evdax&i=d\" curl -s -L -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://stooq.com/q/d/?s=%5Evdax&i=d\" \"https://stooq.com/q/d/l/?s=%5Evdax&i=d\")"
     ]
   }
 }
