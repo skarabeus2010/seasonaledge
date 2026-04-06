@@ -97,11 +97,6 @@
       </select>
 
       <hr>
-      <h3>Rolling Window</h3>
-      <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem">Fenster (Handelstage)</label>
-      <input type="number" id="inp-window" value="60" min="20" max="252" step="10">
-
-      <hr>
       <h3>Returns</h3>
       <label class="check"><input type="checkbox" id="chk-log"> Log-Returns verwenden</label>
 
@@ -166,21 +161,13 @@
         </div>
       </details>
 
-      <!-- Chart 3: Rolling Beta -->
-      <details open id="sec-rolling" style="display:none">
-        <summary>Rolling Spot-Vol Beta</summary>
-        <div class="content">
-          <div id="chart-rolling"></div>
-          <div class="kpi-row" id="rolling-kpis" style="margin-top:.75rem"></div>
-        </div>
-      </details>
-
-      <!-- NEU: Volatility Risk Premium -->
+      <!-- Volatility Risk Premium -->
       <details open id="sec-vrp" style="display:none">
         <summary>Volatility Risk Premium: Ist Vol gerade teuer oder billig?</summary>
         <div class="content">
           <div class="kpi-row" id="vrp-kpis" style="margin-bottom:1rem"></div>
-          <div id="chart-vrp"></div>
+          <div id="chart-vrp-iv"></div>
+          <div id="chart-vrp-diff"></div>
           <p class="box-info"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
         </div>
       </details>
@@ -287,7 +274,7 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display='none'; }, 8000); }
     function showSections(show) {
-      ['sec-triple','sec-scatter','sec-buckets','sec-rolling','sec-vrp','sec-extremes','sec-history'].forEach(function(id) {
+      ['sec-triple','sec-scatter','sec-buckets','sec-vrp','sec-extremes','sec-history'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       if (!show) document.getElementById('vol-percentile-ribbon').style.display = 'none';
@@ -667,59 +654,6 @@
       hintEl.innerHTML = html;
     }
 
-    function renderRolling(df, metrics, windowSize) {
-      var data = [];
-      for (var i=0;i<df.length;i++) {
-        if (df[i].rolling_beta != null && !isNaN(df[i].rolling_beta)) {
-          data.push({ x: new Date(df[i].date).getTime(), y: +df[i].rolling_beta.toFixed(4) });
-        }
-      }
-
-      var cfg = {
-        series: [{ name: windowSize + 'd Rolling Beta', data: data }],
-        chart: { type: 'line', height: 380, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
-        colors: [COL_BETA],
-        stroke: { width: 1.8, curve: 'straight' },
-        fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.15, opacityTo: 0, stops: [0, 100] } },
-        grid: SA.chartTheme.grid,
-        xaxis: Object.assign({}, SA.chartTheme.xaxis, { type: 'datetime', labels: Object.assign({}, SA.chartTheme.xaxis.labels, { datetimeUTC: false, format: 'MMM \'yy' }) }),
-        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
-          title: { text: 'Beta', style: { color: SA.COLORS.muted, fontSize: '11px' } },
-          labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(2);} }
-        }),
-        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v.toFixed(4);} } },
-        legend: { show: false },
-        dataLabels: { enabled: false },
-        annotations: {
-          yaxis: [
-            { y: metrics.beta, borderColor: COL_SPOT, strokeDashArray: 5, label: { text: 'Gesamt-Beta ' + metrics.beta.toFixed(3), style: { color: COL_SPOT, background: 'transparent', fontSize: '10px' } } },
-            { y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 },
-            { y: -0.8, strokeDashArray: 2, borderColor: COL_NEG, borderWidth: 0.8 },
-            { y: -0.3, strokeDashArray: 2, borderColor: COL_BETA, borderWidth: 0.8 }
-          ]
-        }
-      };
-
-      if (charts.rolling) charts.rolling.destroy();
-      charts.rolling = new ApexCharts(document.getElementById('chart-rolling'), cfg);
-      charts.rolling.render();
-
-      // Aktuelles Rolling-Beta
-      var cur = null;
-      for (var k = df.length - 1; k >= 0; k--) {
-        if (df[k].rolling_beta != null && !isNaN(df[k].rolling_beta)) { cur = df[k].rolling_beta; break; }
-      }
-      var rk = document.getElementById('rolling-kpis');
-      if (cur == null) { rk.innerHTML = ''; return; }
-      var curRegime = classifyBeta(cur);
-      var delta = cur - metrics.beta;
-      var html = '';
-      html += kpi('Aktuelles Rolling Beta', fmtNum(cur, 3), cur < 0 ? 'pos' : 'neg');
-      html += kpi('Aktuelles Regime', regimeBadge(curRegime));
-      html += kpi('vs. Gesamt-Beta', (delta>=0?'+':'') + delta.toFixed(3), delta < 0 ? 'pos' : 'neg');
-      rk.innerHTML = html;
-    }
-
     function renderExtremes(extremes) {
       var tabs = [
         { key: 'vix_spikes', label: 'Vol Spikes', color: COL_NEG },
@@ -1052,32 +986,57 @@
       document.getElementById('vrp-kpis').innerHTML = kpiHtml;
 
       var volLbl = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
-      var cfg = {
-        series: [
-          { name: volLbl + ' (implizit)', type: 'line', data: volData },
-          { name: 'Realized Vol 30d',      type: 'line', data: rvData },
-          { name: 'VRP',                    type: 'area', data: vrpData }
-        ],
-        chart: { type: 'line', height: 400, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
-        colors: [COL_VOL, '#9aa7ba', COL_BETA],
-        stroke: { width: [1.5, 1.3, 1.2], curve: 'straight', dashArray: [0, 5, 0] },
-        fill: { type: ['solid','solid','gradient'], gradient: { shadeIntensity: 0.4, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 100] } },
-        grid: SA.chartTheme.grid,
-        xaxis: Object.assign({}, SA.chartTheme.xaxis, { type: 'datetime', labels: Object.assign({}, SA.chartTheme.xaxis.labels, { datetimeUTC: false, format: 'MMM \'yy' }) }),
-        yaxis: [
-          Object.assign({}, SA.chartTheme.yaxis, { seriesName: volLbl + ' (implizit)', title: { text: 'Vol (%)', style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} } }),
-          { show: false, seriesName: volLbl + ' (implizit)' },
-          Object.assign({}, SA.chartTheme.yaxis, { opposite: true, seriesName: 'VRP', title: { text: 'VRP (%)', style: { color: COL_BETA, fontSize: '10px' } }, labels: { style: { colors: COL_BETA, fontSize: '10px' }, formatter: function(v){return (v>=0?'+':'')+v.toFixed(1);} } })
-        ],
-        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v != null ? v.toFixed(2) : '\u2013';} } },
-        legend: { show: true, position: 'top', labels: { colors: SA.COLORS.muted }, fontSize: '11px' },
-        dataLabels: { enabled: false },
-        annotations: { yaxis: [{ y: 0, yAxisIndex: 2, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }] }
+      var group = 'svb-vrp';
+      var commonX = {
+        type: 'datetime',
+        labels: Object.assign({}, SA.chartTheme.xaxis.labels, { datetimeUTC: false, format: 'MMM \'yy' })
       };
 
-      if (charts.vrp) charts.vrp.destroy();
-      charts.vrp = new ApexCharts(document.getElementById('chart-vrp'), cfg);
-      charts.vrp.render();
+      // Chart 1 (oben): Implied Vol + Realized Vol 30d
+      var cfgIV = {
+        series: [
+          { name: volLbl + ' (implizit)', data: volData },
+          { name: 'Realized Vol 30d',     data: rvData }
+        ],
+        chart: { type: 'line', height: 280, group: group, id: 'vrp-iv', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_VOL, '#9aa7ba'],
+        stroke: { width: [1.5, 1.3], curve: 'straight', dashArray: [0, 5] },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          title: { text: 'Vol (%)', style: { color: SA.COLORS.muted, fontSize: '10px' } },
+          labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} }
+        }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v != null ? v.toFixed(2) + '%' : '\u2013';} } },
+        legend: { show: true, position: 'top', labels: { colors: SA.COLORS.muted }, fontSize: '11px' },
+        dataLabels: { enabled: false }
+      };
+
+      // Chart 2 (unten): VRP (Differenz) als Area
+      var cfgDiff = {
+        series: [{ name: 'VRP (IV \u2212 RV30)', data: vrpData }],
+        chart: { type: 'area', height: 200, group: group, id: 'vrp-diff', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_BETA],
+        stroke: { width: 1.2, curve: 'straight' },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 0.4, opacityFrom: 0.3, opacityTo: 0.02, stops: [0, 100] } },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          title: { text: 'VRP (%)', style: { color: COL_BETA, fontSize: '10px' } },
+          labels: { style: { colors: COL_BETA, fontSize: '10px' }, formatter: function(v){return (v>=0?'+':'')+v.toFixed(1);} }
+        }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v != null ? (v>=0?'+':'')+v.toFixed(2) : '\u2013';} } },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        annotations: { yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }] }
+      };
+
+      if (charts.vrpIV) charts.vrpIV.destroy();
+      if (charts.vrpDiff) charts.vrpDiff.destroy();
+      charts.vrpIV = new ApexCharts(document.getElementById('chart-vrp-iv'), cfgIV);
+      charts.vrpIV.render();
+      charts.vrpDiff = new ApexCharts(document.getElementById('chart-vrp-diff'), cfgDiff);
+      charts.vrpDiff.render();
     }
 
     function renderHistory(df) {
@@ -1138,7 +1097,7 @@
       var volLabel = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
       document.getElementById('title-pair').textContent = _spotTicker + ' vs. ' + volLabel;
 
-      var windowSize = parseInt(document.getElementById('inp-window').value) || 60;
+      var windowSize = 60; // fix, wird nur intern fuer beta_stress verwendet
       var useLog = document.getElementById('chk-log').checked;
       var filter = yearsFilter();
 
@@ -1183,7 +1142,6 @@
         renderScatter(_df, _metrics);
         renderTriple(_df);
         renderBuckets(_df);
-        renderRolling(_df, _metrics, windowSize);
         renderVRP(_df);
         renderExtremes(_extremes);
         renderHistory(_df);
@@ -1213,7 +1171,6 @@
     });
     document.getElementById('sel-spot').addEventListener('change', load);
     document.getElementById('sel-years').addEventListener('change', load);
-    document.getElementById('inp-window').addEventListener('change', load);
     document.getElementById('chk-log').addEventListener('change', load);
     document.getElementById('inp-spike').addEventListener('change', recomputeExtremes);
     document.getElementById('inp-low').addEventListener('change', recomputeExtremes);
