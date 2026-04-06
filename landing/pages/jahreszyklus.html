@@ -358,7 +358,9 @@
     function todayDoy() { var n=new Date(); return Math.floor((n - new Date(n.getFullYear(),0,0))/86400000); }
 
     // ── Präsidentenzyklus ────────────────────────────────────────────────────
-    function cycleOf(year) { return ((year - 2020) % 4 + 4) % 4 + 1; }
+    // 1=Post-Election, 2=Midterm, 3=Pre-Election, 4=Election Year
+    // 2020/2024 = Election Year (4), 2021/2025 = Post-Election (1), etc.
+    function cycleOf(year) { return ((year - 1) % 4 + 4) % 4 + 1; }
 
     // ── Build year data mit days + log_returns für Pressure ─────────────────
     /**
@@ -820,11 +822,10 @@
           tooltip: { enabled:false },
           axisTicks: { show:false }
         },
-        yaxis: [{
-          seriesName: 'Saisonaler Ø ('+nYears+'J)',
+        yaxis: {
           labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
           title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        }],
+        },
         annotations: {
           xaxis: [{ x: String(JZ.todayDoy()), borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
                     label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
@@ -835,14 +836,19 @@
         title: { text: ticker+' — Saisonaler Jahresverlauf ('+nYears+' Jahre)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
 
-      // Pressure separate y-Achse
+      // Pressure separate y-Achse: Wenn aktiv, beide Achsen explizit als Array,
+      // links für alle Serien außer Pressure, rechts nur für Pressure.
       if (showPressure && pressureInfo) {
-        opts.yaxis = [
-          opts.yaxis[0],
-          { seriesName: 'Pressure', opposite:true, show:true,
-            labels:{style:{colors:COL_PRESSURE,fontSize:'11px'},formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';}},
-            title:{text:'Pressure',style:{color:COL_PRESSURE,fontSize:'11px'}} }
-        ];
+        var leftAxis = {
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+        };
+        var rightAxis = { seriesName:'Pressure', opposite:true, show:true,
+          labels:{style:{colors:COL_PRESSURE,fontSize:'11px'},formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';}},
+          title:{text:'Pressure',style:{color:COL_PRESSURE,fontSize:'11px'}} };
+        // ApexCharts: jede Serie braucht ein yaxis-Eintrag (eigentliches Pflichtfeld) oder
+        // der erste Eintrag ohne seriesName fängt alle nicht-explizit-zugewiesenen ab.
+        opts.yaxis = [leftAxis, rightAxis];
       }
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
