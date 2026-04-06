@@ -242,7 +242,10 @@
     function destroyAll() {
       ['bars','winrate','heatmap','range'].forEach(function(k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
     }
-    function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+    function kpi(l,v,c) {
+      var cls = (c || '').replace('kpi__value--', '').replace('kpi__value', '');
+      return '<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+cls+'">'+v+'</div></div>';
+    }
     function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
     function cc(v) { return v >= 0 ? 'pos' : 'neg'; }
 
@@ -555,10 +558,10 @@
         totalTrades += stats[i].count;
       }
       $kpi.innerHTML =
-        kpi('Bester TDoM', ' ' + best.tdom + ' (' + fmtPct(best.avg_return, 3) + ')', 'kpi__value--green') +
-        kpi('Schlechtester TDoM', ' ' + worst.tdom + ' (' + fmtPct(worst.avg_return, 3) + ')', 'kpi__value--red') +
-        kpi('H\u00F6chste Win-Rate', ' TDoM ' + bestWR.tdom + ' (' + bestWR.win_rate.toFixed(0) + ' %)', bestWR.win_rate >= 50 ? 'kpi__value--green' : '') +
-        kpi('Trades gesamt', ' ' + totalTrades.toLocaleString());
+        kpi('Bester TDoM', best.tdom + ' (' + fmtPct(best.avg_return, 3) + ')', 'green') +
+        kpi('Schlechtester TDoM', worst.tdom + ' (' + fmtPct(worst.avg_return, 3) + ')', 'red') +
+        kpi('H\u00F6chste Win-Rate', 'TDoM ' + bestWR.tdom + ' (' + bestWR.win_rate.toFixed(0) + ' %)', bestWR.win_rate >= 50 ? 'green' : '') +
+        kpi('Trades gesamt', totalTrades.toLocaleString());
     }
 
     // ── Render: TDoM Bar Chart ────────────────────────────────────────────────
@@ -988,13 +991,13 @@
       }
 
       document.getElementById('range-kpi').innerHTML =
-        kpi('CAGR', ' ' + (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'kpi__value--green' : 'kpi__value--red') +
-        kpi('Max Drawdown', ' ' + stats.max_drawdown.toFixed(1) + ' %', 'kpi__value--red') +
-        kpi('Win-Rate', ' ' + stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'kpi__value--green' : '') +
-        kpi('Sharpe', ' ' + stats.sharpe.toFixed(2)) +
-        kpi('Profit Factor', ' ' + (stats.profit_factor >= 999 ? '\u221E' : stats.profit_factor.toFixed(2)), stats.profit_factor >= 1.5 ? 'kpi__value--green' : stats.profit_factor >= 1 ? '' : 'kpi__value--red') +
-        kpi('Trades', ' ' + stats.n_trades) +
-        kpi('$1.000 Endwert', ' $' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}), stats.final_equity >= 1000 ? 'kpi__value--green' : 'kpi__value--red');
+        kpi('CAGR', (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'green' : 'red') +
+        kpi('Max Drawdown', stats.max_drawdown.toFixed(1) + ' %', 'red') +
+        kpi('Win-Rate', stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'green' : '') +
+        kpi('Sharpe', stats.sharpe.toFixed(2)) +
+        kpi('Profit Factor', (stats.profit_factor >= 999 ? '\u221E' : stats.profit_factor.toFixed(2)), stats.profit_factor >= 1.5 ? 'green' : stats.profit_factor >= 1 ? '' : 'red') +
+        kpi('Trades', stats.n_trades) +
+        kpi('$1.000 Endwert', '$' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}), stats.final_equity >= 1000 ? 'green' : 'red');
 
       // Equity Curve
       trades.sort(function(a,b) { return a.entry_date > b.entry_date ? 1 : -1; });
