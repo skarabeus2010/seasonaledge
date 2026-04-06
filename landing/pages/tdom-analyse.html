@@ -79,7 +79,7 @@
       <h3>Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
-      <h3>Range-Strategie</h3>
+      <h3>TDOM-Strategie Tester</h3>
       <label style="font-size:.75rem"><input type="checkbox" id="chk-range"> Aktivieren</label>
       <div id="range-controls" style="display:none">
         <div class="range-controls">
@@ -113,13 +113,19 @@
       <!-- TDoM Bar Chart -->
       <details open id="sec-bars" style="display:none">
         <summary>&Oslash; Rendite pro TDoM</summary>
-        <div class="content"><div id="chart-bars"></div></div>
+        <div class="content">
+          <div id="chart-bars"></div>
+          <p class="box-info"><b>\u26A0 Markierung:</b> TDoMs mit weniger als 10 Datenpunkten (n&lt;10) sind transparent dargestellt. Die Statistik ist hier unsicher, weil zu wenige Monate diesen TDoM &uuml;berhaupt enthalten (z.B. wegen Feiertagen oder kurzer Monate). Beispiel: TDoM 23 existiert nur in Monaten mit 23+ Handelstagen &mdash; das gibt es selten.</p>
+        </div>
       </details>
 
       <!-- Win-Rate Chart -->
       <details open id="sec-winrate" style="display:none">
         <summary>Win-Rate pro TDoM</summary>
-        <div class="content"><div id="chart-winrate"></div></div>
+        <div class="content">
+          <div id="chart-winrate"></div>
+          <p class="box-info"><b>\u26A0 Markierung:</b> Wie oben &mdash; TDoMs mit n&lt;10 sind transparent. Win-Rate auf wenigen Trades ist statistisch nicht aussagekr&auml;ftig.</p>
+        </div>
       </details>
 
       <!-- Heatmap -->
@@ -154,6 +160,8 @@
             &middot; TDoM 5 &rarr; 15 (Mid-Month) &middot; TDoM -5 &rarr; -1 (letzte Woche).
             <br><br>
             <b>Stop-Loss:</b> Optional. Fixed = fester Stop unter Entry. Trailing = Stop folgt dem Hoch nach.
+            <br><br>
+            <b>Monatsfilter:</b> Der Monatsfilter aus der Sidebar wirkt auch auf den Tester &mdash; nur Trades in den ausgew&auml;hlten Monaten werden gez&auml;hlt.
           </p>
           <div id="range-kpi" class="kpi-row" style="margin-bottom:1rem"></div>
           <div id="chart-range"></div>
@@ -451,13 +459,14 @@
     }
 
     // ── Multi-Day Range Berechnung ────────────────────────────────────────────
-    function calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice) {
+    function calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice, selectedMonths) {
       var entryCol = entryTdom > 0 ? 'tdom' : 'tdom_reverse';
       var exitCol = exitTdom > 0 ? 'tdom' : 'tdom_reverse';
 
-      // Group by year-month
+      // Group by year-month, filter by selectedMonths
       var groups = {};
       for (var i = 0; i < rows.length; i++) {
+        if (selectedMonths && selectedMonths.indexOf(rows[i].month) < 0) continue;
         var key = rows[i].year + '-' + rows[i].month;
         if (!groups[key]) groups[key] = [];
         groups[key].push(rows[i]);
@@ -636,15 +645,16 @@
         series.push({ name: MONTHS[m-1], data: data });
       }
 
-      // Annotation: gelber Rahmen um die aktuelle Zelle (Monat × TDoM)
+      // Annotation: schmaler Rahmen + Label nur am oberen Rand
       var xAnnots = [];
       if (curTdom != null) {
         xAnnots.push({
           x: String(curTdom),
-          strokeDashArray: 0,
+          strokeDashArray: 4,
           borderColor: '#FFD700',
-          borderWidth: 2,
-          label: { text: 'We are here \u2192 TDoM ' + curTdom + (curMonthName ? ' / ' + curMonthName : ''), borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '10px', fontFamily: 'DM Sans', padding: { left: 6, right: 6, top: 3, bottom: 3 } } }
+          borderWidth: 1,
+          opacity: 0.6,
+          label: { text: '\u25BC ' + (curMonthName || '') + ' TDoM ' + curTdom, borderColor: '#FFD700', style: { color: '#000', background: '#FFD700', fontSize: '9px', fontFamily: 'DM Sans', padding: { left: 4, right: 4, top: 2, bottom: 2 } }, position: 'top', offsetY: -8 }
         });
       }
 
@@ -734,7 +744,8 @@
       var entryPrice = document.getElementById('sel-entry-price').value;
       var exitPrice = document.getElementById('sel-exit-price').value;
 
-      var trades = calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice);
+      var selectedMonths = getSelectedMonths();
+      var trades = calcRangeReturns(rows, entryTdom, exitTdom, entryPrice, exitPrice, selectedMonths);
       if (!trades.length) {
         document.getElementById('range-kpi').innerHTML = '<p style="color:var(--muted)">Keine Trades f\u00FCr diese Kombination.</p>';
         document.getElementById('range-trades').innerHTML = '';
