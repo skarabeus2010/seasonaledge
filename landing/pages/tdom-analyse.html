@@ -779,49 +779,116 @@
     }
 
     // ── Render: TDoY Top 25 ───────────────────────────────────────────────────
+    var _tdoyData = null;  // Cache fuer Sortierung
+    var _tdoySort = { col: 'avg_return', dir: 'desc' };
+
     function renderTdoyTop25(rows, strategy, outlierMethod) {
       var stats = buildTdoyStats(rows, strategy, outlierMethod);
-      // Filter: min n=10 fuer Stabilitaet
       stats = stats.filter(function(s) { return s.count >= 10; });
+      // Initial sort nach avg_return desc, dann top 25
       stats.sort(function(a,b) { return b.avg_return - a.avg_return; });
       var top25 = stats.slice(0, 25);
 
       var year = new Date().getFullYear();
-      var todayStr = year + '-' + (new Date().getMonth()+1 < 10 ? '0' : '') + (new Date().getMonth()+1) + '-' + (new Date().getDate() < 10 ? '0' : '') + new Date().getDate();
       var exchange = SA.holidays ? SA.holidays.detect(currentTicker) : 'NYSE';
       var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var nowTime = new Date().getTime();
 
-      var html = '<p class="box-info" style="margin-bottom:.75rem">Top 25 Handelstage des Jahres mit der h\u00F6chsten historischen \u00D8 Rendite. Datum f\u00FCr <b>' + year + '</b> berechnet (auch in der Zukunft). Min. n=10 Trades f\u00FCr Stabilit\u00E4t.</p>';
-      html += '<table class="tdom-table"><thead><tr><th>#</th><th>TDoY</th><th>Datum ' + year + '</th><th>Wochentag</th><th>In Tagen</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Trades</th></tr></thead><tbody>';
-      for (var i = 0; i < top25.length; i++) {
-        var s = top25[i];
+      // Enrich mit Datum + daysUntil fuer Sortierung
+      var enriched = top25.map(function(s, i) {
         var dateStr = SA.holidays ? SA.holidays.nthTradingDayOfYear(year, s.tdoy, exchange) : null;
-        var wdLabel = '\u2014', daysLabel = '\u2014', rowStyle = '';
+        var wdLabel = '\u2014', daysUntil = null, dateSort = '';
         if (dateStr) {
           var d = new Date(dateStr.substring(0,4) + '/' + dateStr.substring(5,7) + '/' + dateStr.substring(8,10));
           wdLabel = WDAYS[d.getDay()];
-          var diff = Math.ceil((d - new Date()) / 86400000);
-          if (diff < 0) {
+          daysUntil = Math.ceil((d.getTime() - nowTime) / 86400000);
+          dateSort = dateStr;
+        }
+        return {
+          rank: i + 1,
+          tdoy: s.tdoy,
+          dateStr: dateStr || '\u2014',
+          dateSort: dateSort,
+          wdLabel: wdLabel,
+          daysUntil: daysUntil,
+          avg_return: s.avg_return,
+          win_rate: s.win_rate,
+          count: s.count
+        };
+      });
+
+      _tdoyData = enriched;
+      _renderTdoyTable();
+    }
+
+    function _renderTdoyTable() {
+      if (!_tdoyData) return;
+      var data = _tdoyData.slice();
+      var col = _tdoySort.col, dir = _tdoySort.dir;
+      data.sort(function(a,b) {
+        var va = a[col], vb = b[col];
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return dir === 'asc' ? va - vb : vb - va;
+      });
+
+      var year = new Date().getFullYear();
+      var arrow = function(c) { return _tdoySort.col === c ? (_tdoySort.dir === 'asc' ? ' \u25B2' : ' \u25BC') : ''; };
+
+      var html = '<p class="box-info" style="margin-bottom:.75rem">Top 25 Handelstage des Jahres mit der h\u00F6chsten historischen \u00D8 Rendite. Datum f\u00FCr <b>' + year + '</b> berechnet (auch in der Zukunft). Min. n=10 Trades f\u00FCr Stabilit\u00E4t. <b>Spalten sind sortierbar</b> (anklicken).</p>';
+      html += '<table class="tdom-table"><thead><tr>';
+      html += '<th data-col="rank" style="cursor:pointer">#' + arrow('rank') + '</th>';
+      html += '<th data-col="tdoy" style="cursor:pointer">TDoY' + arrow('tdoy') + '</th>';
+      html += '<th data-col="dateSort" style="cursor:pointer">Datum ' + year + arrow('dateSort') + '</th>';
+      html += '<th data-col="wdLabel" style="cursor:pointer">Wochentag' + arrow('wdLabel') + '</th>';
+      html += '<th data-col="daysUntil" style="cursor:pointer">In Tagen' + arrow('daysUntil') + '</th>';
+      html += '<th data-col="avg_return" style="cursor:pointer">\u00D8 Rendite' + arrow('avg_return') + '</th>';
+      html += '<th data-col="win_rate" style="cursor:pointer">Win-Rate' + arrow('win_rate') + '</th>';
+      html += '<th data-col="count" style="cursor:pointer">Trades' + arrow('count') + '</th>';
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < data.length; i++) {
+        var r = data[i];
+        var rowStyle = '';
+        var daysLabel = '\u2014';
+        if (r.daysUntil != null) {
+          if (r.daysUntil < 0) {
             daysLabel = '<span style="color:var(--muted)">vorbei</span>';
             rowStyle = ' style="opacity:.5"';
-          } else if (diff === 0) {
+          } else if (r.daysUntil === 0) {
             daysLabel = '<b style="color:var(--accent)">Heute</b>';
             rowStyle = ' style="background:rgba(232,168,32,.08)"';
           } else {
-            daysLabel = diff + ' Tage';
+            daysLabel = r.daysUntil + ' Tage';
           }
         }
-        html += '<tr' + rowStyle + '><td>' + (i+1) + '</td>';
-        html += '<td><b>' + s.tdoy + '</b></td>';
-        html += '<td style="white-space:nowrap">' + (dateStr || '\u2014') + '</td>';
-        html += '<td>' + wdLabel + '</td>';
+        html += '<tr' + rowStyle + '><td>' + r.rank + '</td>';
+        html += '<td><b>' + r.tdoy + '</b></td>';
+        html += '<td style="white-space:nowrap">' + r.dateStr + '</td>';
+        html += '<td>' + r.wdLabel + '</td>';
         html += '<td>' + daysLabel + '</td>';
-        html += '<td class="pos">' + fmtPct(s.avg_return, 4) + '</td>';
-        html += '<td>' + s.win_rate.toFixed(0) + ' %</td>';
-        html += '<td>' + s.count + '</td></tr>';
+        html += '<td class="' + (r.avg_return >= 0 ? 'pos' : 'neg') + '">' + fmtPct(r.avg_return, 4) + '</td>';
+        html += '<td>' + r.win_rate.toFixed(0) + ' %</td>';
+        html += '<td>' + r.count + '</td></tr>';
       }
       html += '</tbody></table>';
+      html += '<p class="box-info" style="margin-top:.75rem"><b>Grau markierte Zeilen</b> = TDoY-Daten, die im aktuellen Jahr bereits in der Vergangenheit liegen (&bdquo;vorbei&ldquo;). Der n\u00E4chste TDoY mit positiver Rendite ist der n\u00E4chste schwarze Eintrag.</p>';
       document.getElementById('content-tdoy').innerHTML = html;
+
+      // Sort-Handler
+      document.querySelectorAll('#content-tdoy th[data-col]').forEach(function(th) {
+        th.addEventListener('click', function() {
+          var col = th.dataset.col;
+          if (_tdoySort.col === col) {
+            _tdoySort.dir = _tdoySort.dir === 'asc' ? 'desc' : 'asc';
+          } else {
+            _tdoySort.col = col;
+            _tdoySort.dir = 'desc';
+          }
+          _renderTdoyTable();
+        });
+      });
     }
 
     // ── Render: Streak pro TDoM ───────────────────────────────────────────────
