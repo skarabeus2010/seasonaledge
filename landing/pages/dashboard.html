@@ -40,24 +40,27 @@
     .bento-card.empty{opacity:.4}
 
     /* Card-Spans */
-    .bento-ki{grid-column:span 6;min-height:240px}
-    .bento-crash{grid-column:span 3;min-height:240px}
-    .bento-anomaly{grid-column:span 3;min-height:240px}
-    .bento-year{grid-column:span 8;min-height:280px}
-    .bento-trifecta{grid-column:span 4;min-height:280px}
+    .bento-ki{grid-column:span 4;min-height:200px}
+    .bento-crash{grid-column:span 3;min-height:200px}
+    .bento-anomaly{grid-column:span 2;min-height:200px}
+    .bento-trifecta{grid-column:span 3;min-height:200px}
+    .bento-year{grid-column:span 6;min-height:300px}
+    .bento-drawdown{grid-column:span 6;min-height:300px}
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
     .bento-mini{grid-column:span 3;min-height:190px}
+    .bento-twoweek{grid-column:span 12;min-height:240px}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
 
     @media (max-width:1100px){
-      .bento-ki{grid-column:span 12}
+      .bento-ki{grid-column:span 6}
       .bento-crash{grid-column:span 6}
       .bento-anomaly{grid-column:span 6}
+      .bento-trifecta{grid-column:span 6}
       .bento-year{grid-column:span 12}
-      .bento-trifecta{grid-column:span 12;min-height:200px}
+      .bento-drawdown{grid-column:span 12}
       .bento-month{grid-column:span 12}
       .bento-truepath{grid-column:span 12}
       .bento-mini{grid-column:span 6}
@@ -68,15 +71,15 @@
     }
 
     /* ── KI-Score Hero ── */
-    .ki-hero{display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem}
-    .ki-score-big{font-size:4rem;font-weight:800;font-family:var(--f-m);line-height:1;color:#fff}
-    .ki-signal{font-size:1.125rem;font-weight:700;padding:.35rem .8rem;border-radius:8px;text-transform:uppercase;letter-spacing:.05em}
+    .ki-hero{display:flex;align-items:center;gap:1rem;margin-bottom:.65rem}
+    .ki-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;color:#fff}
+    .ki-signal{font-size:.875rem;font-weight:700;padding:.3rem .65rem;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
     .ki-signal.bullish{background:rgba(52,211,153,.18);color:#34d399}
     .ki-signal.bearish{background:rgba(248,113,113,.18);color:#f87171}
     .ki-signal.neutral{background:rgba(232,168,32,.18);color:#e8a820}
-    .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem}
-    .ki-sub{font-size:.75rem;color:#cbd5e1}
-    .ki-sub-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.25rem;overflow:hidden}
+    .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
+    .ki-sub{font-size:.6875rem;color:#cbd5e1;line-height:1.3}
+    .ki-sub-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.2rem;overflow:hidden}
     .ki-sub-bar > div{height:100%;background:linear-gradient(90deg,#e8a820,#34d399);transition:width .3s ease}
 
     /* ── Crash-Ampel ── */
@@ -181,22 +184,28 @@
           <div id="crash-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
-        <!-- Anomalie-Radar (3 cols) -->
+        <!-- Anomalie-Radar (2 cols) -->
         <div class="bento-card bento-anomaly" id="card-anomaly">
-          <div class="ttl"><span class="ico">📡</span> Anomalie-Radar</div>
+          <div class="ttl"><span class="ico">📡</span> Anomalie</div>
           <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
-        <!-- Saisonaler Jahres-Chart (8 cols) -->
+        <!-- Trifecta (3 cols, in oberster Zeile) -->
+        <div class="bento-card bento-trifecta" id="card-trifecta">
+          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
+          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- Saisonaler Jahres-Chart (6 cols) -->
         <div class="bento-card bento-year" id="card-year">
           <div class="ttl"><span class="ico">📈</span> Saisonaler Jahresverlauf</div>
           <div id="chart-year"></div>
         </div>
 
-        <!-- Trifecta (4 cols, neben Year-Chart) -->
-        <div class="bento-card bento-trifecta" id="card-trifecta">
-          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
-          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        <!-- Drawdown-Chart (6 cols, neben Year-Chart) -->
+        <div class="bento-card bento-drawdown" id="card-drawdown">
+          <div class="ttl"><span class="ico">📉</span> Saisonaler Drawdown · Ø vs. aktuelles Jahr</div>
+          <div id="chart-drawdown"></div>
         </div>
 
         <!-- Intra-Monat Chart (6 cols) -->
@@ -211,16 +220,16 @@
           <div id="chart-truepath"></div>
         </div>
 
+        <!-- Wochentag (3 cols, ganz links) -->
+        <div class="bento-card bento-mini" id="card-weekday">
+          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag</div>
+          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
         <!-- TDOM Heute (3 cols) -->
         <div class="bento-card bento-mini" id="card-tdom-today">
           <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
           <div id="tdom-today-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- Wochentag (3 cols) -->
-        <div class="bento-card bento-mini" id="card-weekday">
-          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag</div>
-          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- TDOM Morgen (3 cols) -->
@@ -233,6 +242,12 @@
         <div class="bento-card bento-mini" id="card-tdom-day-after">
           <div class="ttl"><span class="ico">⏩</span> TDOM Übermorgen</div>
           <div id="tdom-day-after-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- Two-Week Phase (12 cols) -->
+        <div class="bento-card bento-twoweek" id="card-twoweek">
+          <div class="ttl"><span class="ico">📊</span> Two-Week Phase · Wo stehen wir im 2-Wochen-Zyklus</div>
+          <div id="twoweek-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
@@ -691,6 +706,93 @@
       var below=sorted.filter(function(v){return v<current;}).length;
       var pct=below/sorted.length*100;
       return {current_vola:current,avg_vola:avgV,delta:current-avgV,percentile:pct,n_years:histVolas.length,is_elevated:current>avgV+stdV,is_low:current<avgV-stdV};
+    }
+
+    /**
+     * Saisonaler Drawdown: pro DOY den Ø DD ueber alle vergangenen Jahre +
+     * den DD-Verlauf des aktuellen Jahres bis heute.
+     */
+    function computeAvgDrawdownCurve(yearData, currentYear) {
+      var ddByDoy = [];
+      for (var d = 0; d < 365; d++) ddByDoy.push([]);
+      var lastDayMap = {}; // year -> last_actual_day
+      for (var y in yearData) {
+        if (parseInt(y) === currentYear) continue;
+        var curve = yearData[y].full_365;
+        var dd = drawdownSeries(curve, 0);
+        var lad = yearData[y].last_actual_day || 365;
+        lastDayMap[y] = lad;
+        for (var d = 0; d < 365; d++) {
+          if ((d+1) > lad) continue;
+          if (dd[d] != null && !isNaN(dd[d]) && isFinite(dd[d])) ddByDoy[d].push(dd[d]);
+        }
+      }
+      var minN = Math.max(3, Math.floor(Object.keys(yearData).length * 0.5));
+      var avgDd = ddByDoy.map(function(arr){ return arr.length >= minN ? mean(arr) : null; });
+      // Aktuelles Jahr: nur bis heute
+      var curDd = new Array(365).fill(null);
+      if (yearData[currentYear]) {
+        var cdd = drawdownSeries(yearData[currentYear].full_365, 0);
+        var td = todayDoy();
+        var ladCur = yearData[currentYear].last_actual_day || td;
+        for (var d = 0; d < Math.min(td, ladCur, 365); d++) {
+          if (cdd[d] != null && !isNaN(cdd[d])) curDd[d] = cdd[d];
+        }
+      }
+      return { avg: avgDd, current: curDd };
+    }
+
+    /**
+     * Two-Week Phase Stats: 24 Phasen (H1/H2 pro Monat), Ø Return je Phase.
+     * Liefert Liste + currentIdx + Rang.
+     */
+    function computeTwoWeekPhases(yearData, currentYear) {
+      var periods = [];
+      for (var m = 0; m < 12; m++) {
+        var monStart = MONTH_START_DOY[m] - 1;
+        var monEnd = m < 11 ? MONTH_START_DOY[m+1] - 1 : 365;
+        var mid = Math.floor((monStart + monEnd) / 2);
+        periods.push({ name: MONTHS_DE_SHORT[m]+' H1', start: monStart, end: mid });
+        periods.push({ name: MONTHS_DE_SHORT[m]+' H2', start: mid, end: monEnd });
+      }
+      var stats = periods.map(function(p) {
+        var rets = [];
+        for (var y in yearData) {
+          if (parseInt(y) === currentYear) continue;
+          var c = yearData[y].full_365;
+          var lad = yearData[y].last_actual_day || 365;
+          if (p.end > lad) return { name:p.name, avg:null, n:0, start:p.start, end:p.end };
+          var s = c[p.start], e = c[p.end-1];
+          if (s != null && e != null && s > 0) rets.push((e/s - 1) * 100);
+        }
+        return {
+          name: p.name,
+          avg: rets.length ? mean(rets) : null,
+          n: rets.length,
+          start: p.start,
+          end: p.end
+        };
+      });
+      // Aktuelle Phase via DOY
+      var td = todayDoy();
+      var curIdx = -1;
+      for (var i = 0; i < periods.length; i++) {
+        if (td >= periods[i].start && td < periods[i].end) { curIdx = i; break; }
+      }
+      // Rank: 1 = best
+      var withVal = stats.filter(function(s){return s.avg != null;});
+      var sorted = withVal.slice().sort(function(a,b){return b.avg - a.avg;});
+      var rank = null;
+      if (curIdx >= 0 && stats[curIdx].avg != null) {
+        rank = sorted.indexOf(stats[curIdx]) + 1;
+      }
+      return {
+        periods: stats,
+        currentIdx: curIdx,
+        current: curIdx >= 0 ? stats[curIdx] : null,
+        rank: rank,
+        total: withVal.length
+      };
     }
 
     /** Aktueller DD des laufenden Jahres + Ø Max DD ueber alle Jahre */
@@ -1182,41 +1284,27 @@
           if (doy <= todayDoyVal && doy <= 365) curArr[i] = parseFloat(c[doy-1].toFixed(2));
         }
       }
-      // Avg + Perzentile im Fenster
-      var avgArr = [], p25 = [], p75 = [];
+      // Avg im Fenster (KEINE Perzentilbaender — verzerren Skalierung)
+      var avgArr = [];
       for (var i = 0; i < winLen; i++) {
         var doy = startDoy + i;
         avgArr.push(parseFloat(avg[doy-1].toFixed(2)));
-        var vals = [];
-        for (var y in yearData) {
-          if (parseInt(y) === currentYear) continue;
-          var v = yearData[y].full_365[doy-1];
-          if (v != null && !isNaN(v) && isFinite(v)) vals.push(v);
-        }
-        if (vals.length < 5) { p25.push(null); p75.push(null); continue; }
-        vals.sort(function(a,b){return a-b;});
-        var pos25 = 0.25 * (vals.length-1), lo25 = Math.floor(pos25), hi25 = Math.ceil(pos25);
-        var pos75 = 0.75 * (vals.length-1), lo75 = Math.floor(pos75), hi75 = Math.ceil(pos75);
-        p25.push(parseFloat((vals[lo25] + (pos25-lo25)*(vals[hi25]-vals[lo25])).toFixed(2)));
-        p75.push(parseFloat((vals[lo75] + (pos75-lo75)*(vals[hi75]-vals[lo75])).toFixed(2)));
       }
 
       var nYears = Object.keys(yearData).length;
       var todayLabelIdx = todayDoyVal - startDoy;
 
-      // Dynamische Y-Achse: Min/Max aus allen sichtbaren Werten + Padding
+      // Dynamische Y-Achse: Min/Max aus avg + current
       var allVals = [];
       for (var i = 0; i < winLen; i++) {
         if (avgArr[i] != null) allVals.push(avgArr[i]);
         if (curArr[i] != null) allVals.push(curArr[i]);
-        if (p25[i] != null) allVals.push(p25[i]);
-        if (p75[i] != null) allVals.push(p75[i]);
       }
       var yMin = null, yMax = null;
       if (allVals.length) {
         var lo = Math.min.apply(null, allVals);
         var hi = Math.max.apply(null, allVals);
-        var pad = Math.max((hi - lo) * 0.10, 0.5);
+        var pad = Math.max((hi - lo) * 0.12, 0.5);
         yMin = lo - pad;
         yMax = hi + pad;
       }
@@ -1224,14 +1312,12 @@
       if (charts.year) { try { charts.year.destroy(); } catch(e){} }
       charts.year = new ApexCharts(document.getElementById('chart-year'), {
         series: [
-          { name: '75. Perzentil', data: p75 },
-          { name: '25. Perzentil', data: p25 },
           { name: 'Ø Saisonal (' + nYears + 'J)', data: avgArr },
           { name: currentYear + ' (aktuell)', data: curArr }
         ],
-        chart: Object.assign({ type:'line', height:240 }, SA.chartTheme.chart),
-        stroke: { width:[1.5,1.5,3,3], curve:'straight', dashArray:[0,0,0,0] },
-        colors: ['rgba(52,211,153,.5)','rgba(52,211,153,.5)', COL_AVG, COL_CURRENT],
+        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        stroke: { width:[3,3], curve:'straight' },
+        colors: [COL_AVG, COL_CURRENT],
         markers: { size: 0, hover:{size:5} },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
@@ -1256,6 +1342,79 @@
         title: { text: ticker + ' · -1 / +3 Monate', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts.year.render();
+    }
+
+    // ── 4b. Drawdown-Chart (Ø vs. aktuelles Jahr, gleiches Fenster) ──
+    function renderDrawdownChart(ddData, ticker) {
+      if (!ddData) return;
+      var currentYear = new Date().getFullYear();
+      var todayDoyVal = todayDoy();
+      var startDoy = Math.max(1, todayDoyVal - 30);
+      var endDoy = Math.min(365, todayDoyVal + 90);
+      var winLen = endDoy - startDoy + 1;
+      var year = currentYear;
+
+      var labels = [];
+      for (var i = 0; i < winLen; i++) {
+        var d = new Date(year, 0, startDoy + i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
+      }
+
+      var avgArr = [], curArr = [];
+      for (var i = 0; i < winLen; i++) {
+        var doy = startDoy + i - 1;
+        avgArr.push(ddData.avg[doy] != null ? parseFloat(ddData.avg[doy].toFixed(2)) : null);
+        curArr.push(ddData.current[doy] != null ? parseFloat(ddData.current[doy].toFixed(2)) : null);
+      }
+      var todayLabelIdx = todayDoyVal - startDoy;
+
+      // Dynamische Y-Achse
+      var allVals = [];
+      for (var i = 0; i < winLen; i++) {
+        if (avgArr[i] != null) allVals.push(avgArr[i]);
+        if (curArr[i] != null) allVals.push(curArr[i]);
+      }
+      var yMin = null, yMax = 0.5;
+      if (allVals.length) {
+        var lo = Math.min.apply(null, allVals);
+        yMin = lo - Math.max(Math.abs(lo) * 0.15, 0.5);
+      }
+
+      if (charts.drawdown) { try { charts.drawdown.destroy(); } catch(e){} }
+      charts.drawdown = new ApexCharts(document.getElementById('chart-drawdown'), {
+        series: [
+          { name: 'Ø Saisonaler DD', data: avgArr },
+          { name: currentYear + ' (aktuell)', data: curArr }
+        ],
+        chart: Object.assign({ type:'area', height:260 }, SA.chartTheme.chart),
+        stroke: { width:[2.5,3], curve:'straight' },
+        colors: ['#f87171', COL_CURRENT],
+        fill: { type:'gradient', gradient:{ shade:'dark', type:'vertical', opacityFrom:0.35, opacityTo:0.05 } },
+        markers: { size: 0, hover:{size:5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          y: { formatter: function(v){return v != null ? v.toFixed(2)+'%' : '–';} }
+        }),
+        xaxis: {
+          categories: labels,
+          tickAmount: 8,
+          labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true }
+        },
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1)+'%';}},
+          title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'10px'}}
+        },
+        annotations: {
+          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : [],
+          yaxis: [{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        },
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'}, markers:{width:10,height:10} },
+        dataLabels: { enabled: false },
+        title: { text: ticker + ' · -1 / +3 Monate', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts.drawdown.render();
     }
 
     // ── 5. Month-Chart (mit Solid/Weak Split bei n<10) ───────────
@@ -1528,6 +1687,67 @@
       el.innerHTML = html;
     }
 
+    // ── 11b. Two-Week Phase Card ─────────────────────────────────
+    function renderTwoWeekPhase(tw, ticker) {
+      var el = document.getElementById('twoweek-content');
+      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) {
+        el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten</p>';
+        return;
+      }
+      var cur = tw.current;
+      var avg = cur.avg;
+      var status, statusCls;
+      if (avg >= 0.5) { status = 'Bullish'; statusCls = 'green'; }
+      else if (avg <= -0.5) { status = 'Bearish'; statusCls = 'red'; }
+      else { status = 'Neutral'; statusCls = 'gold'; }
+      var avgCls = avg >= 0 ? 'green' : 'red';
+      var rankLabel = tw.rank + ' / ' + tw.total;
+      var rankCls = tw.rank <= 8 ? 'green' : (tw.rank >= 17 ? 'red' : 'gold');
+
+      var html = '<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.25rem;align-items:center">';
+      // Linke Seite: KPIs
+      html += '<div>';
+      html += '<div class="card-headline" style="font-size:1.625rem;margin-bottom:.15rem">' + cur.name + '</div>';
+      html += '<div class="card-sub">Aktuelle 2-Wochen-Phase · ' + cur.n + 'J Daten</div>';
+      html += '<div class="kpi-row-mini" style="grid-template-columns:1fr 1fr 1fr;margin-top:.5rem">' +
+        '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(avg, 2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + statusCls + '">' + status + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Rang</div><div class="kpi-value ' + rankCls + '">' + rankLabel + '</div></div>' +
+      '</div>';
+      html += '</div>';
+      // Rechte Seite: Bar-Chart 24 Phasen
+      html += '<div id="twoweek-chart" style="min-height:180px"></div>';
+      html += '</div>';
+      el.innerHTML = html;
+
+      // Bar Chart
+      var labels = tw.periods.map(function(p){return p.name;});
+      var values = tw.periods.map(function(p){return p.avg != null ? parseFloat(p.avg.toFixed(2)) : null;});
+      var colors = tw.periods.map(function(p, i) {
+        if (i === tw.currentIdx) return COL_CURRENT;
+        if (p.avg == null) return '#475569';
+        return p.avg >= 0 ? '#34d399' : '#f87171';
+      });
+
+      if (charts.twoweek) { try { charts.twoweek.destroy(); } catch(e){} }
+      charts.twoweek = new ApexCharts(document.getElementById('twoweek-chart'), {
+        series: [{ name: 'Ø Return', data: values }],
+        chart: Object.assign({ type:'bar', height:200, toolbar:{show:false} }, SA.chartTheme.chart),
+        plotOptions: { bar: { borderRadius:3, columnWidth:'72%', distributed:true, dataLabels:{position:'top'} } },
+        colors: colors,
+        dataLabels: { enabled: false },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){return v != null ? fmtPct(v,2) : '–';} }
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,rotateAlways:true} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v != null ? v.toFixed(1)+'%' : '';}} },
+        legend: { show:false },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }] }
+      });
+      charts.twoweek.render();
+    }
+
     // ── 12. Nächste Events Cards ─────────────────────────────────
     function renderEventsGrid(events) {
       var el = document.getElementById('events-content');
@@ -1611,6 +1831,18 @@
 
       // 4. Year-Chart
       renderYearChart(yearData, avg, currentTicker);
+
+      // 4b. Drawdown-Chart
+      try {
+        var ddData = computeAvgDrawdownCurve(yearData, currentYear);
+        renderDrawdownChart(ddData, currentTicker);
+      } catch(e) { console.warn('Drawdown chart:', e); }
+
+      // 4c. Two-Week Phase
+      try {
+        var tw = computeTwoWeekPhases(yearData, currentYear);
+        renderTwoWeekPhase(tw, currentTicker);
+      } catch(e) { console.warn('Two-Week:', e); }
 
       // 5. + 8. Month + TDOM-Mini-Cards (heute / morgen / uebermorgen)
       var tdomRows = assignTdom(filteredRows);
