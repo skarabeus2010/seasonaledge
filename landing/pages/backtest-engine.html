@@ -40,11 +40,16 @@
     .action-btn:active{transform:scale(.98)}
     .action-btn:disabled{opacity:.5;cursor:not-allowed}
     /* Slider grid */
-    .slider-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+    .slider-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1rem}
     @media(max-width:900px){.slider-grid{grid-template-columns:1fr}}
-    .slider-grid label{display:block;font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem;font-weight:600}
+    .slider-grid label{display:block;font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem;font-weight:600}
     .slider-grid input[type=range]{width:100%}
-    .slider-grid select{width:100%;padding:.4rem .6rem}
+    .slider-grid input[type=number]{width:100%;padding:.55rem .8rem;font-size:.9375rem;font-weight:600;font-family:var(--f-m);background:#0a0a0e;border:1px solid rgba(232,168,32,.18);border-radius:6px;color:#e2e8f0;text-align:center}
+    .slider-grid input[type=number]:focus{border-color:rgba(232,168,32,.5);outline:none}
+    .slider-grid select{width:100%;padding:.55rem .8rem;font-size:.875rem;font-weight:600;background:#0a0a0e;border:1px solid rgba(232,168,32,.18);border-radius:6px;color:#e2e8f0}
+    .slider-grid select:focus{border-color:rgba(232,168,32,.5);outline:none}
+    .range-pair{display:flex;gap:.5rem;align-items:center}
+    .range-pair span{color:#a89878;font-size:.875rem}
     /* Match-Cards (fuer Tachos) */
     .match-cards{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
     .match-card{flex:1 1 0;min-width:140px;background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 8px;text-align:center}
@@ -108,6 +113,10 @@
       <hr>
       <h3>Outlier-Filter</h3>
       <div id="outlier-filter"></div>
+      <hr>
+      <h3>Technische Filter</h3>
+      <div id="indicator-filters"></div>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" id="ind_badge"></p>
     </aside>
 
     <main>
@@ -170,17 +179,19 @@
           <div class="content">
             <div class="slider-grid">
               <div>
-                <label>days_before Range</label>
-                <div style="display:flex;gap:.5rem">
-                  <input type="number" id="opt-before-min" min="1" max="15" value="1" style="width:50%">
-                  <input type="number" id="opt-before-max" min="1" max="15" value="10" style="width:50%">
+                <label>days_before — Min &nbsp;↔&nbsp; Max</label>
+                <div class="range-pair">
+                  <input type="number" id="opt-before-min" min="1" max="15" value="1">
+                  <span>↔</span>
+                  <input type="number" id="opt-before-max" min="1" max="15" value="10">
                 </div>
               </div>
               <div>
-                <label>days_after Range</label>
-                <div style="display:flex;gap:.5rem">
-                  <input type="number" id="opt-after-min" min="1" max="15" value="1" style="width:50%">
-                  <input type="number" id="opt-after-max" min="1" max="15" value="10" style="width:50%">
+                <label>days_after — Min &nbsp;↔&nbsp; Max</label>
+                <div class="range-pair">
+                  <input type="number" id="opt-after-min" min="1" max="15" value="1">
+                  <span>↔</span>
+                  <input type="number" id="opt-after-max" min="1" max="15" value="10">
                 </div>
               </div>
               <div>
@@ -352,6 +363,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/outlier.js"></script>
+  <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/fomc-dates.js"></script>
 
   <script>
@@ -629,6 +641,7 @@
       var selectedYears = params.selectedYears;
       var excludeYears = params.excludeYears || [];
       var minGapDays = params.minGapDays || 5;
+      var filterMask = params.filterMask || null; // boolean[] same length as rows
 
       if (!rows.length) return computeStats([], params);
 
@@ -675,6 +688,10 @@
           if (entryIdx < 0 || exitIdx >= rows.length) continue;
           var entryDate = rows[entryIdx].date;
           var exitDate = rows[exitIdx].date;
+
+          // Technischer Filter — Trade nur wenn Filter am Vortag (entryIdx-1) passt
+          // Vortag verwendet (nicht entryIdx selbst), damit Filter look-ahead-bias-frei ist
+          if (filterMask && entryIdx > 0 && !filterMask[entryIdx - 1]) continue;
 
           // Mindestabstand
           if (lastExitDateStr) {
@@ -1249,6 +1266,22 @@
       return sel ? sel.value : 'off';
     }
 
+    // Technische Filter UI — re-run automatisch bei Filter-Aenderung
+    var getIndicatorFilters = function(){return [];};
+    if (typeof SA !== 'undefined' && SA.indicators && SA.indicators.renderFilterUI) {
+      getIndicatorFilters = SA.indicators.renderFilterUI('indicator-filters', function(){
+        if (BT.getRawRows().length) {
+          // Re-run aktiver Tab
+          var activeTab = document.querySelector('#tab-nav button.active');
+          if (activeTab) {
+            var tab = activeTab.dataset.tab;
+            if (tab === 'single') document.getElementById('btn-run-single').click();
+            // Andere Tabs nur on-demand re-run lassen
+          }
+        }
+      });
+    }
+
     // ── Get Sidebar Params ───────────────────────────────────────
     function getBaseParams() {
       var yearsBack = parseInt(document.getElementById('sl-years').value);
@@ -1271,13 +1304,36 @@
       var outlierMethod = getOutlierMethod();
       var excludeYears = BT.detectOutlierYears(rawRows, outlierMethod);
 
+      // Technische Filter — Mask berechnen
+      var indFilters = getIndicatorFilters();
+      var filterMask = null;
+      var filterStats = null;
+      if (indFilters && indFilters.length > 0) {
+        try {
+          var closes = rawRows.map(function(r){return parseFloat(r.close);});
+          filterMask = SA.indicators.applyFilter(closes, indFilters);
+          var passCount = 0;
+          for (var i=0;i<filterMask.length;i++) if (filterMask[i]) passCount++;
+          filterStats = {
+            n_filters: indFilters.length,
+            pass: passCount,
+            total: rawRows.length,
+            pct: Math.round(passCount/rawRows.length*100)
+          };
+        } catch(e) {
+          console.warn('Filter error:', e);
+        }
+      }
+
       return {
         entryCol: entryCol,
         exitCol: exitCol,
         stopPct: stopPct,
         stopType: stopType,
         selectedYears: selectedYears,
-        excludeYears: excludeYears
+        excludeYears: excludeYears,
+        filterMask: filterMask,
+        _filterStats: filterStats
       };
     }
 
@@ -1305,6 +1361,7 @@
       var rawRows = BT.getRawRows();
       if (!rawRows.length) { showError('Erst Ticker laden'); return; }
       var base = getBaseParams();
+      updateFilterInfo(base);
       var events = getEvents();
       var params = Object.assign({}, base, {
         daysBefore: parseInt(document.getElementById('sl-before').value),
@@ -1314,6 +1371,31 @@
       BT.setLastResult(result);
       BT.renderSingle(result, BT.getCurrentTicker());
     });
+
+    // ── Filter-Info-Box update ───────────────────────────────────
+    function updateFilterInfo(base) {
+      var fInfo = document.getElementById('filter-info');
+      var badge = document.getElementById('ind_badge');
+      var parts = [];
+      if (base._filterStats) {
+        parts.push('<b>Technische Filter:</b> ' + base._filterStats.n_filters +
+                   ' aktiv · ' + base._filterStats.pass + '/' + base._filterStats.total +
+                   ' Tage (' + base._filterStats.pct + '%) erlauben Trades');
+        if (badge) badge.textContent = base._filterStats.n_filters + ' Filter aktiv: ' +
+                   base._filterStats.pass + '/' + base._filterStats.total + ' Tage (' + base._filterStats.pct + '%)';
+      } else {
+        if (badge) badge.textContent = '';
+      }
+      if (base.excludeYears && base.excludeYears.length) {
+        parts.push('<b>Outlier-Jahre ausgeschlossen:</b> ' + base.excludeYears.join(', '));
+      }
+      if (parts.length) {
+        fInfo.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+        fInfo.style.display = '';
+      } else {
+        fInfo.style.display = 'none';
+      }
+    }
 
     // ── Tab 2: Run Optimization ──────────────────────────────────
     document.getElementById('btn-run-opt').addEventListener('click', function() {
