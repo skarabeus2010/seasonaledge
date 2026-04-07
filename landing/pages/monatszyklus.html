@@ -1372,10 +1372,8 @@
       if (!weeklyStats || !weeklyStats.length) return;
       var labels = weeklyStats.map(function(w){return w.label;});
       var avgs = weeklyStats.map(function(w){return parseFloat(w.avg.toFixed(3));});
-      var colors = weeklyStats.map(function(w){
-        if (w.n < MIN_N) return 'rgba(128,128,128,0.4)';
-        return w.avg >= 0 ? COL_POS : COL_NEG;
-      });
+      // Immer nach Vorzeichen faerben — n<10 Warnung kommt im Tooltip
+      var colors = weeklyStats.map(function(w){ return w.avg >= 0 ? COL_POS : COL_NEG; });
       var ymax = Math.max.apply(null, avgs);
       var ymin = Math.min.apply(null, avgs);
       var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.30 || 0.5;
@@ -1484,10 +1482,8 @@
       var sorted = valid.slice().sort(function(a,b){return b.avg - a.avg;});
       var labels = sorted.map(function(t){return t.label;});
       var avgs = sorted.map(function(t){return parseFloat(t.avg.toFixed(3));});
-      var colors = sorted.map(function(t){
-        if (t.n < MIN_N) return 'rgba(128,128,128,0.4)';
-        return t.avg >= 0 ? COL_POS : COL_NEG;
-      });
+      // Immer nach Vorzeichen faerben — n<10 Warnung kommt im Tooltip
+      var colors = sorted.map(function(t){ return t.avg >= 0 ? COL_POS : COL_NEG; });
       var ymax = Math.max.apply(null, avgs);
       var ymin = Math.min.apply(null, avgs);
       var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.25 || 0.5;
