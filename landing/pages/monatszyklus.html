@@ -1610,8 +1610,6 @@
       for (var i=0;i<twCurrent.length;i++) curMap[twCurrent[i].label] = parseFloat(twCurrent[i].avg.toFixed(3));
       var curVals = labels.map(function(l){ return curMap[l] != null ? curMap[l] : null; });
 
-      var colors = histAvgs.map(function(v){return v >= 0 ? COL_POS : COL_NEG;});
-
       if (MZ.charts['tw-overlay']) { try { MZ.charts['tw-overlay'].destroy(); } catch(e){} }
       MZ.charts['tw-overlay'] = new ApexCharts(document.getElementById('chart-tw-overlay'), {
         series: [
@@ -1619,8 +1617,18 @@
           { name: new Date().getFullYear()+' (aktuell)', type: 'line', data: curVals }
         ],
         chart: Object.assign({ type:'line', height:380 }, SA.chartTheme.chart),
-        colors: ['rgba(0,206,209,0.35)', COL_CURRENT],
-        plotOptions: { bar:{ columnWidth:'65%', borderRadius:2 } },
+        colors: [COL_POS, COL_CURRENT],
+        plotOptions: {
+          bar: {
+            columnWidth: '65%', borderRadius: 2,
+            colors: {
+              ranges: [
+                { from: -10000, to: -0.0001, color: COL_NEG },
+                { from: 0, to: 10000, color: COL_POS }
+              ]
+            }
+          }
+        },
         stroke: { width:[0, 3], curve:'straight' },
         markers: { size:[0,7], colors:[COL_CURRENT], strokeColors:'#fff', strokeWidth:1 },
         grid: SA.chartTheme.grid,
@@ -1665,8 +1673,8 @@
             return fmtPct(v, 3) + ' · WR '+t.win_rate.toFixed(0)+'% · n='+t.n;
           }}
         }),
-        xaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'}} },
+        xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'13px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
         annotations: { xaxis:[{ x:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] },
         legend: { show: false },
         title: { text: ticker+' — Best Two-Weeks Ranking (Split TDOM '+splitDay+')', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
