@@ -42,9 +42,11 @@
       <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zentralbank</h3>
+      <h3>Zentralbank / Event</h3>
       <select id="sel-bank" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="fomc" selected>Fed (FOMC)</option>
+        <option value="fomc" selected>Fed (FOMC) — alle Sitzungen</option>
+        <option value="fomc_hike">Fed — Zinserhöhungen</option>
+        <option value="fomc_cut">Fed — Zinssenkungen</option>
         <option value="ecb">EZB</option>
         <option value="boe">Bank of England</option>
         <option value="boj">Bank of Japan</option>
@@ -110,11 +112,15 @@
           <h3>Datengrundlage</h3>
           <ul>
             <li><b>Fed (FOMC):</b> 224 Sitzungstermine (2000&ndash;2026)</li>
+            <li><b>Fed Zinserh&ouml;hungen:</b> 40 Hike-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins erh&ouml;ht hat</li>
+            <li><b>Fed Zinssenkungen:</b> 31 Cut-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins gesenkt hat</li>
             <li><b>EZB:</b> 96 Ratssitzungen (2015&ndash;2026)</li>
             <li><b>Bank of England:</b> 58 MPC-Sitzungen (2020&ndash;2026)</li>
             <li><b>Bank of Japan:</b> 40 Sitzungen (2022&ndash;2026)</li>
             <li><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
           </ul>
+          <h3>Hike vs. Cut Analyse</h3>
+          <p>Mit den Optionen <b>Fed Zinserh&ouml;hungen</b> und <b>Fed Zinssenkungen</b> kannst du gezielt untersuchen wie der Markt auf die <i>Richtung</i> der geldpolitischen Entscheidung reagiert &mdash; statt auf alle Sitzungen pauschal. Klassische These: nach Zinssenkungen steigen Aktien (expansive Geldpolitik), nach Zinserh&ouml;hungen fallen sie (restriktiv). Ein Backtest zeigt ob das stimmt.</p>
           <h3>Berechnung</h3>
           <ul>
             <li><b>t0:</b> Entscheidungstag der Notenbank (oder n&auml;chster Handelstag)</li>
@@ -147,8 +153,67 @@
     // ── Zentralbank-Termine (aus Supabase, Fallback hardcodiert) ─────────────
     var CB_DATES = { fomc: [], ecb: [], boe: [], boj: [] };
     var CB_DATES_LOADED = false;
-    var CB_LABELS = { fomc: 'Fed (FOMC)', ecb: 'EZB', boe: 'Bank of England', boj: 'Bank of Japan' };
-    var CB_COLORS = { fomc: '#4d9fff', ecb: '#ffd43b', boe: '#ff6b6b', boj: '#51cf66' };
+    var CB_LABELS = {
+      fomc: 'Fed (FOMC)',
+      fomc_hike: 'Fed Zinserhöhungen',
+      fomc_cut: 'Fed Zinssenkungen',
+      ecb: 'EZB',
+      boe: 'Bank of England',
+      boj: 'Bank of Japan'
+    };
+    var CB_COLORS = {
+      fomc: '#4d9fff',
+      fomc_hike: '#ff6b6b',  // Hike = rot (restriktiv)
+      fomc_cut: '#34d399',   // Cut = grün (expansiv)
+      ecb: '#ffd43b',
+      boe: '#ff6b6b',
+      boj: '#51cf66'
+    };
+
+    // ── Fed Rate Changes (aus shared/central_banks.py FED_RATE_CHANGES) ──
+    // Format: {date, bps, rate}. Positive bps = Hike, negative = Cut.
+    var FED_RATE_CHANGES = [
+      {date:"2000-02-02", bps:25, rate:5.75}, {date:"2000-03-21", bps:25, rate:6.0}, {date:"2000-05-16", bps:50, rate:6.5},
+      {date:"2001-01-03", bps:-50, rate:6.0}, {date:"2001-01-31", bps:-50, rate:5.5}, {date:"2001-03-20", bps:-50, rate:5.0},
+      {date:"2001-04-18", bps:-50, rate:4.5}, {date:"2001-05-15", bps:-50, rate:4.0}, {date:"2001-06-27", bps:-25, rate:3.75},
+      {date:"2001-08-21", bps:-25, rate:3.5}, {date:"2001-09-17", bps:-50, rate:3.0}, {date:"2001-10-02", bps:-50, rate:2.5},
+      {date:"2001-11-06", bps:-50, rate:2.0}, {date:"2001-12-11", bps:-25, rate:1.75},
+      {date:"2002-11-06", bps:-50, rate:1.25},
+      {date:"2003-06-25", bps:-25, rate:1.0},
+      {date:"2004-06-30", bps:25, rate:1.25}, {date:"2004-08-10", bps:25, rate:1.5}, {date:"2004-09-21", bps:25, rate:1.75},
+      {date:"2004-11-10", bps:25, rate:2.0}, {date:"2004-12-14", bps:25, rate:2.25},
+      {date:"2005-02-02", bps:25, rate:2.5}, {date:"2005-03-22", bps:25, rate:2.75}, {date:"2005-05-03", bps:25, rate:3.0},
+      {date:"2005-06-30", bps:25, rate:3.25}, {date:"2005-08-09", bps:25, rate:3.5}, {date:"2005-09-20", bps:25, rate:3.75},
+      {date:"2005-11-01", bps:25, rate:4.0}, {date:"2005-12-13", bps:25, rate:4.25},
+      {date:"2006-01-31", bps:25, rate:4.5}, {date:"2006-03-28", bps:25, rate:4.75}, {date:"2006-05-10", bps:25, rate:5.0},
+      {date:"2006-06-29", bps:25, rate:5.25},
+      {date:"2007-09-18", bps:-50, rate:4.75}, {date:"2007-10-31", bps:-25, rate:4.5}, {date:"2007-12-11", bps:-25, rate:4.25},
+      {date:"2008-01-22", bps:-75, rate:3.5}, {date:"2008-01-30", bps:-50, rate:3.0}, {date:"2008-03-18", bps:-75, rate:2.25},
+      {date:"2008-04-30", bps:-25, rate:2.0}, {date:"2008-10-08", bps:-50, rate:1.5}, {date:"2008-10-29", bps:-50, rate:1.0},
+      {date:"2008-12-16", bps:-100, rate:0.25},
+      {date:"2015-12-16", bps:25, rate:0.5},
+      {date:"2016-12-14", bps:25, rate:0.75},
+      {date:"2017-03-15", bps:25, rate:1.0}, {date:"2017-06-14", bps:25, rate:1.25}, {date:"2017-12-13", bps:25, rate:1.5},
+      {date:"2018-03-21", bps:25, rate:1.75}, {date:"2018-06-13", bps:25, rate:2.0}, {date:"2018-09-26", bps:25, rate:2.25},
+      {date:"2018-12-19", bps:25, rate:2.5},
+      {date:"2019-07-31", bps:-25, rate:2.25}, {date:"2019-09-18", bps:-25, rate:2.0}, {date:"2019-10-30", bps:-25, rate:1.75},
+      {date:"2020-03-03", bps:-50, rate:1.25}, {date:"2020-03-15", bps:-100, rate:0.25},
+      {date:"2022-03-16", bps:25, rate:0.5}, {date:"2022-05-04", bps:50, rate:1.0}, {date:"2022-06-15", bps:75, rate:1.75},
+      {date:"2022-07-27", bps:75, rate:2.5}, {date:"2022-09-21", bps:75, rate:3.25}, {date:"2022-11-02", bps:75, rate:4.0},
+      {date:"2022-12-14", bps:50, rate:4.5},
+      {date:"2023-02-01", bps:25, rate:4.75}, {date:"2023-03-22", bps:25, rate:5.0}, {date:"2023-05-03", bps:25, rate:5.25},
+      {date:"2023-07-26", bps:25, rate:5.5},
+      {date:"2024-09-18", bps:-50, rate:5.0}, {date:"2024-11-07", bps:-25, rate:4.75}, {date:"2024-12-18", bps:-25, rate:4.5}
+    ];
+
+    // Helper: gibt FOMC-Daten für hike/cut zurück (mit bps für Tooltip)
+    function getFedRateChanges(type) {
+      return FED_RATE_CHANGES.filter(function(r){
+        if (type === 'hike') return r.bps > 0;
+        if (type === 'cut') return r.bps < 0;
+        return true;
+      });
+    }
 
     // Lade Termine aus Supabase (Tabelle central_bank_dates)
     function loadCBDates() {
@@ -318,7 +383,23 @@
     // ── Render: Nächste Termine ───────────────────────────────────────────
     function renderNext(bankKey) {
       var today = new Date().toISOString().substring(0, 10);
-      var future = CB_DATES[bankKey].filter(function(d) { return d >= today; }).slice(0, 8);
+      // Hike/Cut: keine Vorhersage moeglich — nutze stattdessen die naechsten FOMC-Sitzungen
+      // mit Hinweis dass dort entweder Hike, Cut oder unchanged kommt
+      if (bankKey === 'fomc_hike' || bankKey === 'fomc_cut') {
+        var futureFomc = (CB_DATES['fomc'] || []).filter(function(d){return d >= today;}).slice(0, 8);
+        var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+        var html = '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.5rem">Hike/Cut sind nicht vorhersagbar — hier die nächsten <b>FOMC-Sitzungen</b>, an denen die Fed entscheiden könnte:</p>';
+        html += '<table class="cb-table"><thead><tr><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+        for (var i = 0; i < futureFomc.length; i++) {
+          var d = new Date(futureFomc[i].replace(/-/g, '/'));
+          var diff = Math.ceil((d - new Date()) / 86400000);
+          html += '<tr><td>' + futureFomc[i] + '</td><td>' + WDAYS[d.getDay()] + '</td><td>' + diff + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        document.getElementById('content-next').innerHTML = html;
+        return;
+      }
+      var future = (CB_DATES[bankKey] || []).filter(function(d) { return d >= today; }).slice(0, 8);
       var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
       var html = '<table class="cb-table"><thead><tr><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
       for (var i = 0; i < future.length; i++) {
@@ -374,7 +455,18 @@
 
       // Filter events by year
       var minYear = yearsVal === 'max' ? 0 : new Date().getFullYear() - parseInt(yearsVal);
-      var eventDates = CB_DATES[bankKey].filter(function(d) { return parseInt(d.substring(0, 4)) >= minYear; });
+
+      // Event-Datum-Quelle: fomc_hike/fomc_cut nutzen FED_RATE_CHANGES,
+      // alle anderen nutzen CB_DATES (aus Supabase)
+      var eventDates;
+      if (bankKey === 'fomc_hike') {
+        eventDates = getFedRateChanges('hike').map(function(r){return r.date;});
+      } else if (bankKey === 'fomc_cut') {
+        eventDates = getFedRateChanges('cut').map(function(r){return r.date;});
+      } else {
+        eventDates = CB_DATES[bankKey] || [];
+      }
+      eventDates = eventDates.filter(function(d) { return parseInt(d.substring(0, 4)) >= minYear; });
 
       // Indicator filter
       var closes = _cachedRows.map(function(r) { return parseFloat(r.close); });
