@@ -12,13 +12,24 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing/css/app.css">
   <style>
-    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    /* Dashboard ist Full-Width — keine Sidebar */
+    .app{grid-template-columns:1fr!important;max-width:1500px}
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin:0}
     .page-title b{color:var(--accent)}
     .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
     .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1rem;font-family:var(--f-m)}
     .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
     .loading{color:var(--muted);font-size:.875rem;text-align:center;padding:2rem}
     main{position:relative}
+
+    /* Toolbar neben dem Titel */
+    .dash-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:.5rem}
+    .dash-head__title{display:flex;flex-direction:column;gap:.15rem}
+    .dash-toolbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .dash-toolbar label{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:.35rem}
+    .dash-toolbar input,.dash-toolbar select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;color:var(--text);font-family:var(--f-m);font-size:.875rem;min-width:140px}
+    .dash-toolbar input:focus,.dash-toolbar select:focus{border-color:var(--accent);outline:none}
+    .dash-toolbar select{min-width:120px;cursor:pointer}
 
     /* ── Bento-Grid ── */
     .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
@@ -71,41 +82,41 @@
 
     /* ── Crash-Ampel ── */
     .crash-light{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem}
-    .crash-circle{width:60px;height:60px;border-radius:50%;flex-shrink:0;box-shadow:0 0 24px rgba(0,0,0,.4)}
+    .crash-circle{width:54px;height:54px;border-radius:50%;flex-shrink:0;box-shadow:0 0 24px rgba(0,0,0,.4)}
     .crash-circle.green{background:radial-gradient(circle at 30% 30%,#5ee5b0,#16a34a);box-shadow:0 0 24px rgba(52,211,153,.4)}
     .crash-circle.yellow{background:radial-gradient(circle at 30% 30%,#fcd34d,#d97706);box-shadow:0 0 24px rgba(232,168,32,.4)}
     .crash-circle.red{background:radial-gradient(circle at 30% 30%,#fca5a5,#dc2626);box-shadow:0 0 24px rgba(248,113,113,.4)}
     .crash-circle.grey{background:radial-gradient(circle at 30% 30%,#9ca3af,#4b5563)}
-    .crash-score{font-size:1.625rem;font-weight:800;font-family:var(--f-m);color:#fff;line-height:1}
-    .crash-label{font-size:.75rem;color:#a89878;margin-top:.25rem}
-    .crash-feats{font-size:.75rem;color:#cbd5e1;line-height:1.6}
-    .crash-feats span{display:inline-block;margin-right:.75rem}
+    .crash-headline{font-size:1.75rem;font-weight:800;font-family:var(--f-m);color:#fff;line-height:1}
+    .crash-headline small{font-size:.875rem;color:#8899aa;font-weight:500}
+    .crash-status{font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
 
     /* ── Anomalie-Radar ── */
-    .anomaly-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;text-align:center;margin:.5rem 0}
-    .anomaly-status{text-align:center;font-size:.9375rem;font-weight:700;margin-bottom:.5rem}
-    .anomaly-stats{font-size:.75rem;color:#cbd5e1;line-height:1.6;text-align:center}
+    .anomaly-score-big{font-size:2.25rem;font-weight:800;font-family:var(--f-m);line-height:1;text-align:center;margin:.4rem 0 .15rem}
+    .anomaly-status{text-align:center;font-size:.875rem;font-weight:700;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
 
-    /* ── Wochentag/TDOM Cards ── */
-    .wd-headline{font-size:1.5rem;font-weight:800;color:#e2e8f0;margin-bottom:.25rem}
-    .wd-sub{font-size:.75rem;color:#a89878;margin-bottom:.5rem}
-    .wd-stats{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;font-size:.8125rem}
-    .wd-stat .lbl{font-size:.6875rem;color:#8899aa;text-transform:uppercase}
-    .wd-stat .val{font-size:1rem;font-weight:700;font-family:var(--f-m);color:#e2e8f0}
-    .wd-stat .val.pos{color:#34d399}
-    .wd-stat .val.neg{color:#f87171}
+    /* ── Wochentag/TDOM Headlines ── */
+    .card-headline{font-size:1.375rem;font-weight:800;color:#e2e8f0;margin-bottom:.15rem;font-family:var(--f-d)}
+    .card-sub{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+
+    /* ── Mini KPI-Row in Cards (nutzt globale .kpi Klasse) ── */
+    .kpi-row-mini{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
+    .kpi-row-mini .kpi{padding:.55rem .65rem;min-width:0}
+    .kpi-row-mini .kpi-label{font-size:.625rem}
+    .kpi-row-mini .kpi-value{font-size:1rem}
 
     /* ── Trifecta ── */
-    .tri-emoji{font-size:3rem;text-align:center;line-height:1}
-    .tri-signal{text-align:center;font-size:1.25rem;font-weight:700;margin-top:.25rem}
-    .tri-count{text-align:center;font-size:.75rem;color:#a89878;margin-bottom:.5rem}
-    .tri-conditions{font-size:.75rem;color:#cbd5e1;line-height:1.7}
+    .tri-head{display:flex;align-items:center;gap:.85rem;margin-bottom:.5rem}
+    .tri-emoji{font-size:2.25rem;line-height:1}
+    .tri-signal{font-size:1.125rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .tri-count{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-top:.1rem}
+    .tri-conditions{font-size:.75rem;color:#cbd5e1;line-height:1.65}
     .tri-cond{display:flex;align-items:center;gap:.4rem}
     .tri-cond .check{font-weight:700}
     .tri-cond .check.ok{color:#34d399}
     .tri-cond .check.no{color:#f87171}
 
-    /* ── KPI-Row für Risiko ── */
+    /* ── KPI-Row für Risiko (4 Cards nutzen globale .kpi) ── */
     .risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
     @media (max-width:768px){.risk-grid{grid-template-columns:1fr 1fr}}
 
@@ -135,32 +146,25 @@
   <div id="nav-container"></div>
 
   <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
-      <input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list">
-      <datalist id="ticker-list"></datalist>
-      <hr>
-      <h3>Analysezeitraum</h3>
-      <select id="sel-years">
-        <option value="5">5 Jahre</option>
-        <option value="10">10 Jahre</option>
-        <option value="15" selected>15 Jahre</option>
-        <option value="20">20 Jahre</option>
-        <option value="30">30 Jahre</option>
-      </select>
-      <hr>
-      <p style="font-size:.75rem;color:var(--muted);line-height:1.5">
-        Das Dashboard zeigt die wichtigsten Saisonal-Signale, Strategien und nächsten Events für <b id="sb-ticker">^GSPC</b> auf einen Blick.
-      </p>
-      <p style="font-size:.6875rem;color:var(--muted);margin-top:.75rem">
-        Drilldown in die einzelnen Analysen über das Hauptmenü.
-      </p>
-    </aside>
-
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Dashboard</b> — <span id="title-ticker">^GSPC</span></h1>
-      <p class="page-caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
+      <div class="dash-head">
+        <div class="dash-head__title">
+          <h1 class="page-title"><b>Dashboard</b> — <span id="title-ticker">^GSPC</span></h1>
+          <p class="page-caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
+        </div>
+        <div class="dash-toolbar">
+          <div><label for="ticker-input">Ticker</label><input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list"></div>
+          <datalist id="ticker-list"></datalist>
+          <div><label for="sel-years">Zeitraum</label><select id="sel-years">
+            <option value="5">5 Jahre</option>
+            <option value="10">10 Jahre</option>
+            <option value="15" selected>15 Jahre</option>
+            <option value="20">20 Jahre</option>
+            <option value="30">30 Jahre</option>
+          </select></div>
+        </div>
+      </div>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div id="loading-msg" class="loading">Lade Daten...</div>
@@ -202,10 +206,10 @@
           <div id="chart-truepath"></div>
         </div>
 
-        <!-- Wochentag-Check (4 cols) -->
-        <div class="bento-card bento-weekday" id="card-weekday">
-          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag-Check</div>
-          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        <!-- Trifecta (4 cols) -->
+        <div class="bento-card bento-trifecta" id="card-trifecta">
+          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta</div>
+          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- TDOM-Position (4 cols) -->
@@ -214,10 +218,10 @@
           <div id="tdom-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
-        <!-- Trifecta (4 cols) -->
-        <div class="bento-card bento-trifecta" id="card-trifecta">
-          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta</div>
-          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        <!-- Wochentag-Check (4 cols) -->
+        <div class="bento-card bento-weekday" id="card-weekday">
+          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag-Check</div>
+          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
@@ -1045,15 +1049,17 @@
       var html = '<div class="crash-light">' +
         '<div class="crash-circle ' + regime.traffic_light + '"></div>' +
         '<div>' +
-          '<div class="crash-score">' + regime.risk_score + '<span style="font-size:1rem;color:#8899aa">/100</span></div>' +
-          '<div class="crash-label">' + labels[regime.traffic_light] + '</div>' +
+          '<div class="crash-headline">' + regime.risk_score + '<small> / 100</small></div>' +
+          '<div class="crash-status">' + labels[regime.traffic_light] + '</div>' +
         '</div>' +
       '</div>';
       var f = regime.features;
-      html += '<div class="crash-feats">' +
-        '<span>Vol 20d: <b style="color:#fff">' + f.vol_20d.toFixed(2) + '%</b></span>' +
-        '<span>DD 20d: <b class="' + (f.drawdown<0?'neg':'pos') + '" style="color:' + (f.drawdown<-1?'#f87171':'#34d399') + '">' + f.drawdown.toFixed(1) + '%</b></span>' +
-        '<span>Ret 20d: <b style="color:' + (f.ret_20d>=0?'#34d399':'#f87171') + '">' + fmtPct(f.ret_20d,1) + '</b></span>' +
+      var ddCls = f.drawdown < -1 ? 'red' : 'green';
+      var retCls = f.ret_20d >= 0 ? 'green' : 'red';
+      html += '<div class="kpi-row-mini" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="kpi"><div class="kpi-label">Vol 20d</div><div class="kpi-value">' + f.vol_20d.toFixed(2) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">DD 20d</div><div class="kpi-value ' + ddCls + '">' + f.drawdown.toFixed(1) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ret 20d</div><div class="kpi-value ' + retCls + '">' + fmtPct(f.ret_20d,1) + '</div></div>' +
       '</div>';
       el.innerHTML = html;
     }
@@ -1065,37 +1071,54 @@
       var col = anom.score >= 70 ? '#f87171' : anom.score >= 40 ? '#fbbf24' : '#34d399';
       var icon = anom.score >= 70 ? '🔴' : anom.score >= 40 ? '🟡' : '🟢';
       var label = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
-      var html = '<div class="anomaly-score-big" style="color:' + col + '">' + anom.score + '<span style="font-size:1rem;color:#8899aa">/100</span></div>';
+      var retCls = anom.return_10d >= 0 ? 'green' : 'red';
+      var html = '<div class="anomaly-score-big" style="color:' + col + '">' + anom.score + '<span style="font-size:1rem;color:#8899aa"> / 100</span></div>';
       html += '<div class="anomaly-status" style="color:' + col + '">' + icon + ' ' + label + '</div>';
-      html += '<div class="anomaly-stats">' +
-        'Aktuelle 10d-Rendite: <b style="color:' + (anom.return_10d>=0?'#34d399':'#f87171') + '">' + fmtPct(anom.return_10d,2) + '</b><br>' +
-        'Historischer Ø: <b>' + fmtPct(anom.avg_10d,2) + '</b><br>' +
-        '<span style="color:#8899aa;font-size:.6875rem">Basis: ' + anom.n_comparisons + ' Vergleichsfenster</span>' +
+      html += '<div class="kpi-row-mini">' +
+        '<div class="kpi"><div class="kpi-label">10d-Rendite</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d,2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Historisch Ø</div><div class="kpi-value">' + fmtPct(anom.avg_10d,2) + '</div></div>' +
       '</div>';
+      html += '<p style="color:#8899aa;font-size:.6875rem;text-align:center;margin-top:.5rem">Basis: ' + anom.n_comparisons + ' Vergleichsfenster</p>';
       el.innerHTML = html;
     }
 
-    // ── 4. Year-Chart ────────────────────────────────────────────
+    // ── 4. Year-Chart (Fokus: heute -1 Monat bis +3 Monate) ──────
     function renderYearChart(yearData, avg, ticker) {
       var currentYear = new Date().getFullYear();
-      var x = [];
-      for (var i = 1; i <= 365; i++) x.push(String(i));
-      // Aktuelles Jahr
-      var curArr = new Array(365).fill(null);
-      if (yearData[currentYear]) {
-        var td = todayDoy();
-        var c = yearData[currentYear].full_365;
-        for (var i = 0; i < Math.min(td, 365); i++) curArr[i] = parseFloat(c[i].toFixed(2));
-      }
-      var avgArr = avg.map(function(v){return parseFloat(v.toFixed(2));});
+      var todayDoyVal = todayDoy();
 
-      // Perzentil 25/75
-      var p25 = [], p75 = [];
-      for (var d = 0; d < 365; d++) {
+      // Fenster: 30 Tage zurueck bis 90 Tage voraus (insgesamt ~4 Monate)
+      var startDoy = Math.max(1, todayDoyVal - 30);
+      var endDoy = Math.min(365, todayDoyVal + 90);
+      var winLen = endDoy - startDoy + 1;
+
+      // Date-Labels statt DOY (von startDoy bis endDoy)
+      var year = new Date().getFullYear();
+      var startDate = new Date(year, 0, startDoy);
+      var labels = [];
+      for (var i = 0; i < winLen; i++) {
+        var d = new Date(year, 0, startDoy + i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
+      }
+
+      // Aktuelles Jahr im Fenster
+      var curArr = new Array(winLen).fill(null);
+      if (yearData[currentYear]) {
+        var c = yearData[currentYear].full_365;
+        for (var i = 0; i < winLen; i++) {
+          var doy = startDoy + i;
+          if (doy <= todayDoyVal && doy <= 365) curArr[i] = parseFloat(c[doy-1].toFixed(2));
+        }
+      }
+      // Avg + Perzentile im Fenster
+      var avgArr = [], p25 = [], p75 = [];
+      for (var i = 0; i < winLen; i++) {
+        var doy = startDoy + i;
+        avgArr.push(parseFloat(avg[doy-1].toFixed(2)));
         var vals = [];
         for (var y in yearData) {
           if (parseInt(y) === currentYear) continue;
-          var v = yearData[y].full_365[d];
+          var v = yearData[y].full_365[doy-1];
           if (v != null && !isNaN(v) && isFinite(v)) vals.push(v);
         }
         if (vals.length < 5) { p25.push(null); p75.push(null); continue; }
@@ -1107,7 +1130,7 @@
       }
 
       var nYears = Object.keys(yearData).length;
-      var todayDoyVal = todayDoy();
+      var todayLabelIdx = todayDoyVal - startDoy;
 
       if (charts.year) { try { charts.year.destroy(); } catch(e){} }
       charts.year = new ApexCharts(document.getElementById('chart-year'), {
@@ -1127,37 +1150,50 @@
           y: { formatter: function(v){return v != null ? v.toFixed(1) : '–';} }
         }),
         xaxis: {
-          categories: x,
-          tickAmount: 11,
-          labels: { style:{colors:'#a89878',fontSize:'10px'}, formatter: function(v){
-            var d = parseInt(v);
-            if (d === 1) return 'Jan';
-            for (var mi = 1; mi < 12; mi++) if (d === MONTH_START_DOY[mi]) return MONTHS_DE_SHORT[mi];
-            return '';
-          }}
+          categories: labels,
+          tickAmount: 8,
+          labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true }
         },
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0);}}, title:{text:'Normiert (Start=100)',style:{color:'#a89878',fontSize:'10px'}} },
         annotations: {
-          xaxis: [{ x: String(todayDoyVal), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
+          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : [],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
         legend: { position:'top', fontSize:'11px', labels:{colors:'#a89878'}, markers:{width:12,height:12} },
         dataLabels: { enabled: false },
-        title: { text: ticker + ' — Saisonaler Jahresverlauf', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text: ticker + ' — Saisonaler Verlauf · -1 / +3 Monate', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts.year.render();
     }
 
-    // ── 5. Month-Chart ───────────────────────────────────────────
+    // ── 5. Month-Chart (mit Solid/Weak Split bei n<10) ───────────
     function renderMonthChart(intramonth, currentMonthCurve, ticker, currentTdom) {
       if (!intramonth || !intramonth.tdomStats) return;
+      var MIN_N = 10;
       var stats = intramonth.tdomStats;
       var tdoms = Object.keys(stats).map(Number).sort(function(a,b){return a-b;});
-      var avgCurve = tdoms.map(function(t){return parseFloat(stats[t].avg.toFixed(3));});
       var allXVals = [0].concat(tdoms);
 
-      // Avg-Linie startet bei 0
-      var avgData = [0].concat(avgCurve);
+      // Solid (n>=10) und Weak (n<10) Split — Bridge-Punkt am Uebergang
+      var solidData = [0];   // Start TDOM 0 = 0%
+      var weakData = [null];
+      for (var i = 0; i < tdoms.length; i++) {
+        var t = tdoms[i], n = stats[t].n;
+        var v = parseFloat(stats[t].avg.toFixed(3));
+        if (n >= MIN_N) {
+          solidData.push(v);
+          weakData.push(null);
+        } else {
+          // Bridge: ersten Weak-Punkt mit letztem Solid verbinden
+          if (weakData[weakData.length-1] === null && solidData[solidData.length-1] !== null) {
+            weakData[weakData.length-1] = solidData[solidData.length-1];
+          }
+          solidData.push(null);
+          weakData.push(v);
+        }
+      }
+      var hasWeak = weakData.some(function(v){return v !== null;});
+
       // Aktuelles Jahr
       var curData = [0];
       for (var i = 0; i < tdoms.length; i++) {
@@ -1177,15 +1213,27 @@
         annotations.xaxis = [{ x: String(currentTdom), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'TDOM '+currentTdom,style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }];
       }
 
+      var series = [{ name:'Ø '+monthName+' ('+nYears+'J)', data:solidData }];
+      var colors = [COL_AVG];
+      var widths = [3];
+      var dashes = [0];
+      if (hasWeak) {
+        series.push({ name:'⚠ n<'+MIN_N+' (unsicher)', data:weakData });
+        colors.push('#f1c40f');
+        widths.push(2);
+        dashes.push(5);
+      }
+      series.push({ name: new Date().getFullYear()+' (aktuell)', data:curData });
+      colors.push(COL_CURRENT);
+      widths.push(3);
+      dashes.push(0);
+
       if (charts.month) { try { charts.month.destroy(); } catch(e){} }
       charts.month = new ApexCharts(document.getElementById('chart-month'), {
-        series: [
-          { name: 'Ø ' + monthName + ' (' + nYears + 'J)', data: avgData },
-          { name: new Date().getFullYear() + ' (aktuell)', data: curData }
-        ],
+        series: series,
         chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
-        stroke: { width:[3,3], curve:'straight' },
-        colors: [COL_AVG, COL_CURRENT],
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
         markers: { size: 0, hover:{size:5} },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
@@ -1202,47 +1250,64 @@
       charts.month.render();
     }
 
-    // ── 6. TruePath Chart ────────────────────────────────────────
+    // ── 6. TruePath Chart (Vergangenheit + Prognose farbig) ──────
     function renderTruePathChart(yearData, truepath, currentYear, ticker) {
       if (!truepath) return;
-      var x = [];
-      for (var i = 1; i <= 365; i++) x.push(String(i));
-      var tpArr = truepath.map(function(v){return parseFloat(v.toFixed(2));});
+      var todayDoyVal = todayDoy();
 
-      // Aktuelles Jahr
-      var curArr = new Array(365).fill(null);
-      if (yearData[currentYear]) {
-        var td = todayDoy();
-        var c = yearData[currentYear].full_365;
-        for (var i = 0; i < Math.min(td, 365); i++) curArr[i] = parseFloat(c[i].toFixed(2));
+      // Date-Labels (1.1. bis 31.12.)
+      var labels = [];
+      for (var i = 1; i <= 365; i++) {
+        var d = new Date(currentYear, 0, i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
       }
 
-      var todayDoyVal = todayDoy();
+      // TruePath split: vor heute = solid, ab heute = dashed (Prognose)
+      var tpPast = new Array(365).fill(null);
+      var tpFuture = new Array(365).fill(null);
+      for (var i = 0; i < 365; i++) {
+        var v = parseFloat(truepath[i].toFixed(2));
+        if (i < todayDoyVal) tpPast[i] = v;
+        else tpFuture[i] = v;
+      }
+      // Bridge: erster Future-Punkt = letzter Past-Punkt fuer durchgehende Linie
+      if (todayDoyVal > 0 && todayDoyVal < 365) tpFuture[todayDoyVal-1] = tpPast[todayDoyVal-1];
+
+      // Aktuelles Jahr (nur bis heute)
+      var curArr = new Array(365).fill(null);
+      if (yearData[currentYear]) {
+        var c = yearData[currentYear].full_365;
+        for (var i = 0; i < Math.min(todayDoyVal, 365); i++) curArr[i] = parseFloat(c[i].toFixed(2));
+      }
 
       if (charts.truepath) { try { charts.truepath.destroy(); } catch(e){} }
       charts.truepath = new ApexCharts(document.getElementById('chart-truepath'), {
         series: [
-          { name: 'TruePath (gewichteter Ø Top-5)', data: tpArr },
+          { name: 'TruePath bis Heute', data: tpPast },
+          { name: 'TruePath Prognose', data: tpFuture },
           { name: currentYear + ' (aktuell)', data: curArr }
         ],
         chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
-        stroke: { width:[3,3], curve:'straight' },
-        colors: [COL_TRUEPATH, COL_CURRENT],
+        stroke: { width:[3,3,3], curve:'straight', dashArray:[0,6,0] },
+        colors: [COL_TRUEPATH, '#a78bfa', COL_CURRENT],
         markers: { size: 0, hover:{size:5} },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           shared:true, intersect:false,
           y: { formatter: function(v){return v != null ? v.toFixed(1) : '–';} }
         }),
-        xaxis: { categories: x, tickAmount: 11, labels: { style:{colors:'#a89878',fontSize:'10px'}, formatter: function(v){
-          var d = parseInt(v);
-          if (d === 1) return 'Jan';
-          for (var mi = 1; mi < 12; mi++) if (d === MONTH_START_DOY[mi]) return MONTHS_DE_SHORT[mi];
-          return '';
-        }} },
+        xaxis: { categories: labels, tickAmount: 11, labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true } },
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(0);}} },
         annotations: {
-          xaxis: [{ x: String(todayDoyVal), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4 }],
+          xaxis: [
+            // Prognose-Bereich farbig hinterlegen
+            { x: labels[Math.max(0,todayDoyVal-1)], x2: labels[364],
+              fillColor: 'rgba(167,139,250,.10)', borderColor: 'transparent',
+              label:{text:'Prognose',style:{color:'#a78bfa',background:'rgba(167,139,250,.15)',fontSize:'10px',fontWeight:700},position:'top',offsetY:8} },
+            // Heute-Linie
+            { x: labels[Math.max(0,todayDoyVal-1)], borderColor:'rgba(232,168,32,.7)', strokeDashArray:4,
+              label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }
+          ],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
         legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'} },
@@ -1257,21 +1322,22 @@
       var today = new Date();
       var wd = today.getDay(); wd = wd === 0 ? 6 : wd - 1;
       var wdName = WEEKDAYS_DE[wd === 6 ? 0 : wd + 1];
-      // Wenn Wochenende, zeige Hinweis
       if (wd > 4) {
-        el.innerHTML = '<div class="wd-headline">' + wdName + '</div><p style="color:#a89878;font-size:.8125rem">Wochenende — keine Trading-Statistik</p>';
+        el.innerHTML = '<div class="card-headline">' + wdName + '</div><div class="card-sub">Wochenende</div><p style="color:#a89878;font-size:.8125rem">Keine Trading-Statistik</p>';
         return;
       }
       if (!stats) {
-        el.innerHTML = '<div class="wd-headline">' + wdName + '</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
+        el.innerHTML = '<div class="card-headline">' + wdName + '</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
         return;
       }
-      var html = '<div class="wd-headline">' + wdName + '</div>';
-      html += '<div class="wd-sub">Historische Performance · ' + stats.n + ' Beobachtungen</div>';
-      html += '<div class="wd-stats">';
-      html += '<div class="wd-stat"><div class="lbl">Win-Rate</div><div class="val ' + (stats.win_rate >= 50 ? 'pos' : 'neg') + '">' + stats.win_rate.toFixed(0) + '%</div></div>';
-      html += '<div class="wd-stat"><div class="lbl">Ø Rendite</div><div class="val ' + (stats.avg >= 0 ? 'pos' : 'neg') + '">' + fmtPct(stats.avg,2) + '</div></div>';
-      html += '</div>';
+      var winCls = stats.win_rate >= 50 ? 'green' : 'red';
+      var avgCls = stats.avg >= 0 ? 'green' : 'red';
+      var html = '<div class="card-headline">' + wdName + '</div>';
+      html += '<div class="card-sub">' + stats.n + ' Beobachtungen</div>';
+      html += '<div class="kpi-row-mini">' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ø Rendite</div><div class="kpi-value ' + avgCls + '">' + fmtPct(stats.avg,2) + '</div></div>' +
+      '</div>';
       el.innerHTML = html;
     }
 
@@ -1280,17 +1346,16 @@
       var el = document.getElementById('tdom-content');
       var monthName = MONTHS_DE[new Date().getMonth()];
       if (!intramonth || !intramonth.tdomStats || currentTdom == null) {
-        el.innerHTML = '<div class="wd-headline">TDOM ?</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
+        el.innerHTML = '<div class="card-headline">TDOM ?</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
         return;
       }
       var stats = intramonth.tdomStats;
       var maxTdom = Math.max.apply(null, Object.keys(stats).map(Number));
       var ts = stats[currentTdom];
       if (!ts) {
-        el.innerHTML = '<div class="wd-headline">TDOM ' + currentTdom + '/' + maxTdom + '</div><p style="color:#a89878;font-size:.8125rem">Keine Daten für diesen TDOM</p>';
+        el.innerHTML = '<div class="card-headline">TDOM ' + currentTdom + '/' + maxTdom + '</div><p style="color:#a89878;font-size:.8125rem">Keine Daten für diesen TDOM</p>';
         return;
       }
-      // Win-Rate aus allCurves: wie oft war Cumulativ-Return an TDOM positiv?
       var posAtTdom = 0, totalAtTdom = 0;
       for (var i = 0; i < intramonth.allCurves.length; i++) {
         var c = intramonth.allCurves[i];
@@ -1301,12 +1366,14 @@
         }
       }
       var winRate = totalAtTdom > 0 ? posAtTdom / totalAtTdom * 100 : 0;
-      var html = '<div class="wd-headline">TDOM ' + currentTdom + '/' + maxTdom + '</div>';
-      html += '<div class="wd-sub">' + monthName + ' · ' + ts.n + 'J Daten</div>';
-      html += '<div class="wd-stats">';
-      html += '<div class="wd-stat"><div class="lbl">Win-Rate</div><div class="val ' + (winRate >= 50 ? 'pos' : 'neg') + '">' + winRate.toFixed(0) + '%</div></div>';
-      html += '<div class="wd-stat"><div class="lbl">Ø Cum-Ret</div><div class="val ' + (ts.avg >= 0 ? 'pos' : 'neg') + '">' + fmtPct(ts.avg,2) + '</div></div>';
-      html += '</div>';
+      var winCls = winRate >= 50 ? 'green' : 'red';
+      var avgCls = ts.avg >= 0 ? 'green' : 'red';
+      var html = '<div class="card-headline">TDOM ' + currentTdom + ' / ' + maxTdom + '</div>';
+      html += '<div class="card-sub">' + monthName + ' · ' + ts.n + 'J Daten</div>';
+      html += '<div class="kpi-row-mini">' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + winRate.toFixed(0) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + avgCls + '">' + fmtPct(ts.avg,2) + '</div></div>' +
+      '</div>';
       el.innerHTML = html;
     }
 
@@ -1314,9 +1381,11 @@
     function renderTrifectaCard(trifecta) {
       var el = document.getElementById('trifecta-content');
       if (!trifecta) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten</p>'; return; }
-      var html = '<div class="tri-emoji">' + trifecta.emoji + '</div>';
-      html += '<div class="tri-signal" style="color:' + trifecta.color + '">' + trifecta.signal + '</div>';
-      html += '<div class="tri-count">' + trifecta.count + ' / 3 Bedingungen erfüllt</div>';
+      var html = '<div class="tri-head">';
+      html += '<div class="tri-emoji">' + trifecta.emoji + '</div>';
+      html += '<div><div class="tri-signal" style="color:' + trifecta.color + '">' + trifecta.signal + '</div>';
+      html += '<div class="tri-count">' + trifecta.count + ' / 3 Bedingungen</div></div>';
+      html += '</div>';
       html += '<div class="tri-conditions">';
       html += '<div class="tri-cond"><span class="check ' + (trifecta.scr.erfuellt ? 'ok' : 'no') + '">' + (trifecta.scr.erfuellt ? '✓' : '✗') + '</span> Santa Claus Rally <span style="color:#8899aa">(' + fmtPct(trifecta.scr.rendite, 1) + ')</span></div>';
       html += '<div class="tri-cond"><span class="check ' + (trifecta.ffd.erfuellt ? 'ok' : 'no') + '">' + (trifecta.ffd.erfuellt ? '✓' : '✗') + '</span> First Five Days <span style="color:#8899aa">(' + fmtPct(trifecta.ffd.rendite, 1) + ')</span></div>';
@@ -1433,7 +1502,6 @@
     function renderAll() {
       if (!rawRows.length || !currentTicker) return;
       document.getElementById('title-ticker').textContent = currentTicker;
-      document.getElementById('sb-ticker').textContent = currentTicker;
 
       // Trading Day Header
       try { SA.renderTradingDayHeader('trading-day-header', currentTicker, rawRows); } catch(e) { console.warn(e); }
