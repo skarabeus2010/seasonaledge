@@ -43,12 +43,11 @@
     .bento-ki{grid-column:span 6;min-height:240px}
     .bento-crash{grid-column:span 3;min-height:240px}
     .bento-anomaly{grid-column:span 3;min-height:240px}
-    .bento-year{grid-column:span 12;min-height:340px}
+    .bento-year{grid-column:span 8;min-height:280px}
+    .bento-trifecta{grid-column:span 4;min-height:280px}
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
-    .bento-weekday{grid-column:span 4;min-height:200px}
-    .bento-tdom{grid-column:span 4;min-height:200px}
-    .bento-trifecta{grid-column:span 4;min-height:200px}
+    .bento-mini{grid-column:span 3;min-height:190px}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
@@ -57,11 +56,11 @@
       .bento-ki{grid-column:span 12}
       .bento-crash{grid-column:span 6}
       .bento-anomaly{grid-column:span 6}
+      .bento-year{grid-column:span 12}
+      .bento-trifecta{grid-column:span 12;min-height:200px}
       .bento-month{grid-column:span 12}
       .bento-truepath{grid-column:span 12}
-      .bento-weekday{grid-column:span 6}
-      .bento-tdom{grid-column:span 6}
-      .bento-trifecta{grid-column:span 12}
+      .bento-mini{grid-column:span 6}
     }
     @media (max-width:768px){
       .bento{grid-template-columns:1fr}
@@ -188,10 +187,16 @@
           <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
-        <!-- Saisonaler Jahres-Chart (12 cols) -->
+        <!-- Saisonaler Jahres-Chart (8 cols) -->
         <div class="bento-card bento-year" id="card-year">
           <div class="ttl"><span class="ico">📈</span> Saisonaler Jahresverlauf</div>
           <div id="chart-year"></div>
+        </div>
+
+        <!-- Trifecta (4 cols, neben Year-Chart) -->
+        <div class="bento-card bento-trifecta" id="card-trifecta">
+          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
+          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- Intra-Monat Chart (6 cols) -->
@@ -206,22 +211,28 @@
           <div id="chart-truepath"></div>
         </div>
 
-        <!-- Trifecta (4 cols) -->
-        <div class="bento-card bento-trifecta" id="card-trifecta">
-          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta</div>
-          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        <!-- TDOM Heute (3 cols) -->
+        <div class="bento-card bento-mini" id="card-tdom-today">
+          <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
+          <div id="tdom-today-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
-        <!-- TDOM-Position (4 cols) -->
-        <div class="bento-card bento-tdom" id="card-tdom">
-          <div class="ttl"><span class="ico">📌</span> TDOM-Saisonal-Match</div>
-          <div id="tdom-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- Wochentag-Check (4 cols) -->
-        <div class="bento-card bento-weekday" id="card-weekday">
-          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag-Check</div>
+        <!-- Wochentag (3 cols) -->
+        <div class="bento-card bento-mini" id="card-weekday">
+          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag</div>
           <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- TDOM Morgen (3 cols) -->
+        <div class="bento-card bento-mini" id="card-tdom-tomorrow">
+          <div class="ttl"><span class="ico">⏭️</span> TDOM Morgen</div>
+          <div id="tdom-tomorrow-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- TDOM Übermorgen (3 cols) -->
+        <div class="bento-card bento-mini" id="card-tdom-day-after">
+          <div class="ttl"><span class="ico">⏩</span> TDOM Übermorgen</div>
+          <div id="tdom-day-after-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
@@ -376,6 +387,67 @@
       var cum=[],sum=0;
       for(var k=0;k<logRets.length;k++){sum+=logRets[k];cum.push((Math.exp(sum)-1)*100);}
       return {tdoms:monthRows.map(function(r){return r.tdom;}),curve:cum};
+    }
+
+    /**
+     * Liefert TDOM-Mini-Stats fuer einen beliebigen Datum.
+     * Berechnet TDOM-Position via Holiday-Kalender, lädt Intramonth-Stats fuer den Monat,
+     * gibt Win-Rate + Ø Cum-Ret + n + monthName zurueck.
+     * Cache-Map vermeidet doppelte Berechnung wenn mehrere Daten im selben Monat liegen.
+     */
+    function getTdomMiniStats(tdomRows, dateObj, allYearsList, intramonthCache){
+      var year = dateObj.getFullYear(), month = dateObj.getMonth()+1, day = dateObj.getDate();
+      var ds = year+'-'+pad2(month)+'-'+pad2(day);
+      var ex;
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      // Wenn Boerse zu (Wochenende/Feiertag): kein TDOM
+      if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;
+      // TDOM = Anzahl Handelstage von Monatsanfang bis dateObj inklusive
+      var tdom = 0;
+      for (var d = 1; d <= day; d++) {
+        var dStr = year+'-'+pad2(month)+'-'+pad2(d);
+        if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;
+      }
+      if (!tdom) return null;
+      // Intramonth Stats fuer diesen Monat (mit Cache)
+      var im = intramonthCache[month];
+      if (!im) {
+        im = calcIntramonthCurve(tdomRows, month, allYearsList);
+        intramonthCache[month] = im;
+      }
+      if (!im || !im.tdomStats || !im.tdomStats[tdom]) return null;
+      var ts = im.tdomStats[tdom];
+      var maxTdom = Math.max.apply(null, Object.keys(im.tdomStats).map(Number));
+      // Win-Rate an diesem TDOM ueber alle Curves
+      var pos = 0, total = 0;
+      for (var i = 0; i < im.allCurves.length; i++) {
+        var idx = im.allCurves[i].tdoms.indexOf(tdom);
+        if (idx >= 0) { total++; if (im.allCurves[i].curve[idx] > 0) pos++; }
+      }
+      return {
+        date: ds,
+        tdom: tdom,
+        maxTdom: maxTdom,
+        month: month,
+        monthName: MONTHS_DE[month-1],
+        avg: ts.avg,
+        n: ts.n,
+        winRate: total > 0 ? pos/total*100 : 0,
+        weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())]
+      };
+    }
+
+    /** Naechster Handelstag nach gegebenem Datum (returns Date) */
+    function nextTradingDate(fromDate){
+      var ex;
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      var d = new Date(fromDate);
+      for (var i = 0; i < 14; i++) {
+        d.setDate(d.getDate()+1);
+        var ds = d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+        if (ex === 'NONE' || SA.holidays.isTradingDay(ds, ex)) return new Date(d);
+      }
+      return null;
     }
 
     function getCurrentTdom(tdomRows,ticker){
@@ -1132,6 +1204,23 @@
       var nYears = Object.keys(yearData).length;
       var todayLabelIdx = todayDoyVal - startDoy;
 
+      // Dynamische Y-Achse: Min/Max aus allen sichtbaren Werten + Padding
+      var allVals = [];
+      for (var i = 0; i < winLen; i++) {
+        if (avgArr[i] != null) allVals.push(avgArr[i]);
+        if (curArr[i] != null) allVals.push(curArr[i]);
+        if (p25[i] != null) allVals.push(p25[i]);
+        if (p75[i] != null) allVals.push(p75[i]);
+      }
+      var yMin = null, yMax = null;
+      if (allVals.length) {
+        var lo = Math.min.apply(null, allVals);
+        var hi = Math.max.apply(null, allVals);
+        var pad = Math.max((hi - lo) * 0.10, 0.5);
+        yMin = lo - pad;
+        yMax = hi + pad;
+      }
+
       if (charts.year) { try { charts.year.destroy(); } catch(e){} }
       charts.year = new ApexCharts(document.getElementById('chart-year'), {
         series: [
@@ -1140,7 +1229,7 @@
           { name: 'Ø Saisonal (' + nYears + 'J)', data: avgArr },
           { name: currentYear + ' (aktuell)', data: curArr }
         ],
-        chart: Object.assign({ type:'line', height:300 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'line', height:240 }, SA.chartTheme.chart),
         stroke: { width:[1.5,1.5,3,3], curve:'straight', dashArray:[0,0,0,0] },
         colors: ['rgba(52,211,153,.5)','rgba(52,211,153,.5)', COL_AVG, COL_CURRENT],
         markers: { size: 0, hover:{size:5} },
@@ -1154,14 +1243,17 @@
           tickAmount: 8,
           labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true }
         },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(0);}}, title:{text:'Normiert (Start=100)',style:{color:'#a89878',fontSize:'10px'}} },
-        annotations: {
-          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : [],
-          yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1);}},
+          title:{text:'Normiert (Start=100)',style:{color:'#a89878',fontSize:'10px'}}
         },
-        legend: { position:'top', fontSize:'11px', labels:{colors:'#a89878'}, markers:{width:12,height:12} },
+        annotations: {
+          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : []
+        },
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'}, markers:{width:10,height:10} },
         dataLabels: { enabled: false },
-        title: { text: ticker + ' — Saisonaler Verlauf · -1 / +3 Monate', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text: ticker + ' · -1 / +3 Monate', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts.year.render();
     }
@@ -1341,38 +1433,21 @@
       el.innerHTML = html;
     }
 
-    // ── 8. TDOM-Saisonal-Match Card ──────────────────────────────
-    function renderTdomCard(intramonth, currentTdom) {
-      var el = document.getElementById('tdom-content');
-      var monthName = MONTHS_DE[new Date().getMonth()];
-      if (!intramonth || !intramonth.tdomStats || currentTdom == null) {
-        el.innerHTML = '<div class="card-headline">TDOM ?</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
+    // ── 8. TDOM-Mini Card (generisch fuer heute/morgen/uebermorgen) ──
+    function renderTdomMiniCard(elementId, dateLabel, mini) {
+      var el = document.getElementById(elementId);
+      if (!mini) {
+        el.innerHTML = '<div class="card-sub">' + dateLabel + '</div><div class="card-headline">–</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
         return;
       }
-      var stats = intramonth.tdomStats;
-      var maxTdom = Math.max.apply(null, Object.keys(stats).map(Number));
-      var ts = stats[currentTdom];
-      if (!ts) {
-        el.innerHTML = '<div class="card-headline">TDOM ' + currentTdom + '/' + maxTdom + '</div><p style="color:#a89878;font-size:.8125rem">Keine Daten für diesen TDOM</p>';
-        return;
-      }
-      var posAtTdom = 0, totalAtTdom = 0;
-      for (var i = 0; i < intramonth.allCurves.length; i++) {
-        var c = intramonth.allCurves[i];
-        var idx = c.tdoms.indexOf(currentTdom);
-        if (idx >= 0) {
-          totalAtTdom++;
-          if (c.curve[idx] > 0) posAtTdom++;
-        }
-      }
-      var winRate = totalAtTdom > 0 ? posAtTdom / totalAtTdom * 100 : 0;
-      var winCls = winRate >= 50 ? 'green' : 'red';
-      var avgCls = ts.avg >= 0 ? 'green' : 'red';
-      var html = '<div class="card-headline">TDOM ' + currentTdom + ' / ' + maxTdom + '</div>';
-      html += '<div class="card-sub">' + monthName + ' · ' + ts.n + 'J Daten</div>';
+      var winCls = mini.winRate >= 50 ? 'green' : 'red';
+      var avgCls = mini.avg >= 0 ? 'green' : 'red';
+      var html = '<div class="card-sub">' + dateLabel + '</div>';
+      html += '<div class="card-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + '</div>';
+      html += '<div class="card-sub" style="margin-top:-.35rem;text-transform:none">' + mini.monthName + ' · ' + mini.n + 'J</div>';
       html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + winRate.toFixed(0) + '%</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + avgCls + '">' + fmtPct(ts.avg,2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + mini.winRate.toFixed(0) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + avgCls + '">' + fmtPct(mini.avg,2) + '</div></div>' +
       '</div>';
       el.innerHTML = html;
     }
@@ -1537,15 +1612,39 @@
       // 4. Year-Chart
       renderYearChart(yearData, avg, currentTicker);
 
-      // 5. + 8. Month + TDOM (gemeinsam aus tdomRows)
+      // 5. + 8. Month + TDOM-Mini-Cards (heute / morgen / uebermorgen)
       var tdomRows = assignTdom(filteredRows);
       var currentMonth = new Date().getMonth() + 1;
       var allYearsList = Object.keys(yearData).map(Number);
+      var intramonthCache = {};
       var intramonth = calcIntramonthCurve(tdomRows, currentMonth, allYearsList);
+      intramonthCache[currentMonth] = intramonth;
       var currentMonthCurve = calcCurrentMonthCurve(tdomRows, currentMonth);
       var currentTdom = getCurrentTdom(tdomRows, currentTicker);
       renderMonthChart(intramonth, currentMonthCurve, currentTicker, currentTdom);
-      renderTdomCard(intramonth, currentTdom);
+
+      // TDOM Heute / Morgen / Uebermorgen via Holiday-Kalender
+      var todayD = new Date(); todayD.setHours(0,0,0,0);
+      var dayLbl = function(d){ return WEEKDAYS_SHORT[d.getDay()] + ' ' + pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.'; };
+      // Heute (oder naechster Handelstag wenn Wochenende)
+      var miniToday = getTdomMiniStats(tdomRows, todayD, allYearsList, intramonthCache);
+      var todayLabel;
+      if (miniToday) { todayLabel = 'Heute · ' + dayLbl(todayD); }
+      else {
+        var nextTd = nextTradingDate(todayD);
+        if (nextTd) { miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache); todayLabel = 'Naechster HT · ' + dayLbl(nextTd); }
+        else todayLabel = 'Heute';
+      }
+      renderTdomMiniCard('tdom-today-content', todayLabel, miniToday);
+      // Morgen = naechster Handelstag nach heute (oder nach miniToday.date)
+      var fromDate = miniToday ? new Date(miniToday.date) : todayD;
+      var d1 = nextTradingDate(fromDate);
+      var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache) : null;
+      renderTdomMiniCard('tdom-tomorrow-content', d1 ? 'Morgen · ' + dayLbl(d1) : 'Morgen', mini1);
+      // Uebermorgen
+      var d2 = d1 ? nextTradingDate(d1) : null;
+      var mini2 = d2 ? getTdomMiniStats(tdomRows, d2, allYearsList, intramonthCache) : null;
+      renderTdomMiniCard('tdom-day-after-content', d2 ? 'Übermorgen · ' + dayLbl(d2) : 'Übermorgen', mini2);
 
       // 6. TruePath
       renderTruePathChart(yearData, truepath, currentYear, currentTicker);
