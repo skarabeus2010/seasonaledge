@@ -68,6 +68,7 @@
       <label class="toggle-row" style="margin-top:.5rem"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
       <label class="toggle-row"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
       <label class="toggle-row"><input type="checkbox" id="chk-bands"> Konfidenzband (±1σ)</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-percentile"> Perzentil-Bänder (25./75.)</label>
       <hr>
       <h3>Präsidentenzyklus-Filter</h3>
       <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
@@ -97,6 +98,8 @@
         <summary>Intra-Monat Verlauf</summary>
         <div class="content">
           <div id="chart-main"></div>
+          <!-- Sub-Chart fuer Einzeljahre, eigene Y-Achse, x-Achse synchron -->
+          <div id="chart-individual-years" style="display:none;margin-top:.5rem"></div>
           <p class="box-info" id="info-main"></p>
         </div>
       </details>
@@ -1002,8 +1005,19 @@
 
     function fmtPct(v, d) { d = d == null ? 2 : d; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
 
+    // ── Lineares Quantil (numpy-default Interpolation) ───────────
+    function quantile(sortedVals, q) {
+      var n = sortedVals.length;
+      if (n === 0) return null;
+      if (n === 1) return sortedVals[0];
+      var pos = q * (n - 1);
+      var lo = Math.floor(pos), hi = Math.ceil(pos);
+      if (lo === hi) return sortedVals[lo];
+      return sortedVals[lo] + (pos - lo) * (sortedVals[hi] - sortedVals[lo]);
+    }
+
     // ── 1. Hauptchart Intra-Monat ────────────────────────────────
-    MZ.renderMain = function(intramonth, ticker, monthName, showIndividual, showBands, showCurrent, currentMonthCurve, currentTdom) {
+    MZ.renderMain = function(intramonth, ticker, monthName, showBands, showPercentile, showCurrent, currentMonthCurve, currentTdom) {
       var stats = intramonth.tdomStats;
       if (!stats) return;
       var tdoms = Object.keys(stats).map(Number).sort(function(a,b){return a-b;});
@@ -1014,24 +1028,29 @@
       var seriesDef = [];
       var allXVals = [0].concat(tdoms);
 
-      // Einzeljahre
-      if (showIndividual) {
-        for (var i=0;i<intramonth.allCurves.length;i++) {
-          var c = intramonth.allCurves[i];
-          var xs = [0].concat(c.tdoms);
-          var ys = [0].concat(c.curve);
-          // Map auf gemeinsame X-Achse
-          var data = allXVals.map(function(x){
-            var idx = xs.indexOf(x);
-            return idx >= 0 ? Math.round(ys[idx]*1000)/1000 : null;
-          });
-          seriesDef.push({
-            name: String(c.year),
-            data: data,
-            color: INDIVIDUAL_COLORS[i % INDIVIDUAL_COLORS.length],
-            width: 1.2, dash: 0
-          });
+      // Perzentil-Bänder (25./75.) — pro TDOM ueber alle Jahre
+      if (showPercentile && intramonth.allCurves && intramonth.allCurves.length >= 5) {
+        var minN = Math.max(5, Math.ceil(intramonth.allCurves.length * 0.5));
+        var p25 = [0], p75 = [0]; // TDOM 0 = 0
+        for (var ti=0;ti<tdoms.length;ti++) {
+          var t = tdoms[ti];
+          var vals = [];
+          for (var ci=0;ci<intramonth.allCurves.length;ci++) {
+            var c = intramonth.allCurves[ci];
+            var idx = c.tdoms.indexOf(t);
+            if (idx >= 0) vals.push(c.curve[idx]);
+          }
+          if (vals.length < minN) {
+            p25.push(null);
+            p75.push(null);
+          } else {
+            vals.sort(function(a,b){return a-b;});
+            p25.push(Math.round(quantile(vals, 0.25)*1000)/1000);
+            p75.push(Math.round(quantile(vals, 0.75)*1000)/1000);
+          }
         }
+        seriesDef.push({ name:'75. Perzentil', data:p75, color:'rgba(52,211,153,.55)', width:1.6, dash:0 });
+        seriesDef.push({ name:'25. Perzentil', data:p25, color:'rgba(52,211,153,.55)', width:1.6, dash:0 });
       }
 
       // Konfidenzband
@@ -1052,7 +1071,6 @@
           solidData.push(v);
           weakData.push(null);
         } else {
-          // Bridge: kopiere letzten solide Wert in weak
           if (weakData[weakData.length-1] === null && solidData[solidData.length-1] !== null) {
             weakData[weakData.length-1] = solidData[solidData.length-1];
           }
@@ -1061,7 +1079,6 @@
         }
       }
       seriesDef.push({ name:'Ø '+monthName+' ('+nYears+'J)', data:solidData, color:COL_AVG, width:3, dash:0 });
-      // Nur weak-trace wenn überhaupt weak-Werte da sind
       var hasWeak = weakData.some(function(v){return v!==null;});
       if (hasWeak) {
         seriesDef.push({ name:'⚠ n<'+MIN_N+' (unsicher)', data:weakData, color:COL_WEAK, width:2, dash:3 });
@@ -1098,7 +1115,7 @@
         chart: Object.assign({ type:'line', height:480, group:'mz-sync', id:'mz-main' }, SA.chartTheme.chart),
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
-        markers: { size: 4 },
+        markers: { size: 0, hover: { size: 5 } },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           shared: true, intersect: false,
@@ -1123,6 +1140,79 @@
         hint += ' <span style="color:#ff6b6b">⚠ Gestrichelte Linie ab TDOM ' + weakTdoms[0] + ': weniger als ' + MIN_N + ' Datenpunkte — statistisch unsicher.</span>';
       }
       if (info) info.innerHTML = hint;
+    };
+
+    // ── 1b. Einzeljahre Sub-Chart (synchron via chart.group) ─────
+    MZ.renderIndividualYears = function(intramonth, ticker, monthName, showIndividual, currentTdom) {
+      var container = document.getElementById('chart-individual-years');
+      if (!showIndividual || !intramonth.allCurves || !intramonth.allCurves.length) {
+        container.style.display = 'none';
+        if (MZ.charts.individuals) { try { MZ.charts.individuals.destroy(); } catch(e){} MZ.charts.individuals = null; }
+        return;
+      }
+      container.style.display = '';
+
+      var stats = intramonth.tdomStats;
+      var tdoms = Object.keys(stats).map(Number).sort(function(a,b){return a-b;});
+      var allXVals = [0].concat(tdoms);
+      var xCategories = allXVals.map(String);
+
+      var seriesDef = [];
+      // Sortiere Jahre chronologisch
+      var sortedCurves = intramonth.allCurves.slice().sort(function(a,b){return a.year-b.year;});
+      for (var i=0;i<sortedCurves.length;i++) {
+        var c = sortedCurves[i];
+        var data = allXVals.map(function(x){
+          if (x === 0) return 0;
+          var idx = c.tdoms.indexOf(x);
+          return idx >= 0 ? Math.round(c.curve[idx]*1000)/1000 : null;
+        });
+        seriesDef.push({
+          name: String(c.year),
+          data: data,
+          color: INDIVIDUAL_COLORS[i % INDIVIDUAL_COLORS.length]
+        });
+      }
+
+      var annotations = {};
+      if (currentTdom != null && tdoms.indexOf(currentTdom) >= 0) {
+        annotations.xaxis = [{
+          x: String(currentTdom),
+          borderColor: 'rgba(232,168,32,.5)', strokeDashArray: 4
+        }];
+      }
+      annotations.yaxis = [{ y:0, borderColor:'rgba(255,255,255,0.2)', strokeDashArray:3 }];
+
+      if (MZ.charts.individuals) { try { MZ.charts.individuals.destroy(); } catch(e){} }
+      MZ.charts.individuals = new ApexCharts(container, {
+        series: seriesDef.map(function(s){return {name:s.name, data:s.data};}),
+        chart: Object.assign({
+          type:'line',
+          height: 360,
+          group: 'mz-sync',
+          id: 'mz-individuals'
+        }, SA.chartTheme.chart),
+        stroke: { width: 1.5, curve:'straight' },
+        colors: seriesDef.map(function(s){return s.color;}),
+        markers: { size: 0, hover: { size: 4 } },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          x: { formatter: function(v) { return v === '0' ? 'Basis (Vormonat)' : 'TDOM '+v; } },
+          y: { formatter: function(v) { return v != null ? fmtPct(v, 3) : '–'; } }
+        }),
+        xaxis: { categories: xCategories, labels: { style:{colors:'#a89878', fontSize:'11px'} } },
+        yaxis: {
+          forceNiceScale: true,
+          labels: { style:{colors:'#a89878', fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(1)+'%':'';} },
+          title: { text:'Einzeljahre — eigene Y-Skala', style:{color:'#a89878', fontSize:'11px'} }
+        },
+        annotations: annotations,
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'10px', markers:{width:10,height:10} }),
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — '+monthName+' Einzeljahre ('+seriesDef.length+' Jahre, eigene Y-Achse)', style:{color:'#fff', fontSize:'12px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.individuals.render();
     };
 
     // ── 2. Detrend Chart ─────────────────────────────────────────
@@ -1176,7 +1266,7 @@
         chart: Object.assign({ type:'line', height:280 }, SA.chartTheme.chart),
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
-        markers: { size: 4 },
+        markers: { size: 0, hover: { size: 4 } },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           y: { formatter:function(v){return v!=null?v.toFixed(1):'–';} }
@@ -1306,7 +1396,7 @@
       if (MZ.charts.weekly) { try { MZ.charts.weekly.destroy(); } catch(e){} }
       MZ.charts.weekly = new ApexCharts(document.getElementById('chart-weekly'), {
         series: [{ name:'Ø Rendite', data: avgs }],
-        chart: Object.assign({ type:'bar', height:340 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'bar', height:340, animations:{enabled:false} }, SA.chartTheme.chart),
         colors: colors,
         plotOptions: { bar:{ distributed:true, columnWidth:'60%', borderRadius:3, dataLabels:{position:'top'} } },
         dataLabels: {
@@ -1717,7 +1807,7 @@
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){$error.style.display='none';}, 8000); }
     function showSections(show) { SECTION_IDS.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; }); }
     function destroyAll() {
-      var keys = ['main','detrend','weekly','monthly','twoweek','tw-heatmap','tw-overlay','tw-ranking','heatmap'];
+      var keys = ['main','individuals','detrend','weekly','monthly','twoweek','tw-heatmap','tw-overlay','tw-ranking','heatmap'];
       keys.forEach(function(k){ if (MZ.charts[k]) { try { MZ.charts[k].destroy(); } catch(e){} MZ.charts[k] = null; } });
     }
 
@@ -1754,7 +1844,7 @@
     });
 
     // ── Sidebar Listener ─────────────────────────────────────────
-    ['sel-period','sel-month','chk-current','chk-individual','chk-bands'].forEach(function(id){
+    ['sel-period','sel-month','chk-current','chk-individual','chk-bands','chk-percentile'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if (MZ.getRawRows().length) renderAll(); });
     });
 
@@ -1798,6 +1888,7 @@
       var showCurrent = document.getElementById('chk-current').checked;
       var showIndividual = document.getElementById('chk-individual').checked;
       var showBands = document.getElementById('chk-bands').checked;
+      var showPercentile = document.getElementById('chk-percentile').checked;
       var splitDay = parseInt(sl.value);
 
       // Current TDOM (nur wenn ausgewählter Monat = aktueller Monat)
@@ -1832,8 +1923,9 @@
         return;
       }
 
-      // Render
-      MZ.renderMain(intramonth, ticker, monthName, showIndividual, showBands, showCurrent, currentMonthCurve, currentTdom);
+      // Render — Hauptchart (ohne Einzeljahre, die kommen ins Sub-Chart)
+      MZ.renderMain(intramonth, ticker, monthName, showBands, showPercentile, showCurrent, currentMonthCurve, currentTdom);
+      MZ.renderIndividualYears(intramonth, ticker, monthName, showIndividual, currentTdom);
       MZ.renderDetrend(intramonth, ticker, monthName, currentTdom);
 
       // Match (nur wenn current month curve da)
