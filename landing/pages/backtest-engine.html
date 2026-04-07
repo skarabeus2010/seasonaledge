@@ -197,6 +197,7 @@
                   <option value="sharpe">Sharpe Ratio</option>
                   <option value="calmar" selected>Calmar Ratio</option>
                   <option value="win_rate">Win Rate</option>
+                  <option value="profit_factor">Profit Factor</option>
                 </select>
               </div>
             </div>
@@ -217,7 +218,7 @@
           <summary>Top 10 Kombinationen</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
+              <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Profit Factor</th><th>Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
               <tbody id="tbody-opt-top"></tbody>
             </table>
           </div>
@@ -246,6 +247,7 @@
                   <option value="sharpe">Sharpe Ratio</option>
                   <option value="calmar" selected>Calmar Ratio</option>
                   <option value="win_rate">Win Rate</option>
+                  <option value="profit_factor">Profit Factor</option>
                 </select>
               </div>
             </div>
@@ -738,7 +740,8 @@
       'total_return': function(r) { return r.total_return_pct; },
       'sharpe': function(r) { return r.sharpe_ratio; },
       'calmar': function(r) { return r.calmar_ratio; },
-      'win_rate': function(r) { return r.win_rate_pct; }
+      'win_rate': function(r) { return r.win_rate_pct; },
+      'profit_factor': function(r) { return r.profit_factor; }
     };
 
     function optimizeParameters(rows, events, paramGrid, objective, baseParams, progressCallback) {
@@ -953,10 +956,12 @@
 
       // KPI Cards
       var trCol = result.total_return_pct >= 0 ? 'pos' : 'neg';
+      var pfCol = result.profit_factor >= 1 ? 'pos' : 'neg';
       kpisEl.innerHTML =
         kpiCard('Total Return', fmtPct(result.total_return_pct, 1), trCol) +
         kpiCard('Sharpe', fmtNum(result.sharpe_ratio, 2)) +
         kpiCard('Calmar', fmtNum(result.calmar_ratio, 2)) +
+        kpiCard('Profit Factor', fmtNum(result.profit_factor, 2), pfCol) +
         kpiCard('Win-Rate', fmtNum(result.win_rate_pct, 0) + '%') +
         kpiCard('Max DD', fmtNum(result.max_drawdown_pct, 1) + '%', 'neg') +
         kpiCard('# Trades', String(result.n_trades));
@@ -964,21 +969,33 @@
       // Equity Curve
       document.getElementById('sec-equity').style.display = '';
       if (BT.charts.equity) { try { BT.charts.equity.destroy(); } catch(e){} }
+      // Plain array + categories als Trade-Nummern (robuster als numeric tuples)
+      var equityData = result.equity_curve.map(function(v){return parseFloat(v.toFixed(2));});
+      var categories = result.equity_curve.map(function(_,i){return String(i);});
       BT.charts.equity = new ApexCharts(document.getElementById('chart-equity'), {
-        series: [{ name: 'Equity', data: result.equity_curve.map(function(v,i){return [i, parseFloat(v.toFixed(2))];}) }],
-        chart: Object.assign({ type:'line', height:380 }, SA.chartTheme.chart),
+        series: [{ name: 'Equity', data: equityData }],
+        chart: Object.assign({ type:'area', height:380 }, SA.chartTheme.chart),
         stroke: { width: 2.5, curve: 'straight' },
         colors: ['#4d9fff'],
-        fill: { type:'gradient', gradient:{ shadeIntensity:1, opacityFrom:.25, opacityTo:.02 } },
+        fill: { type:'gradient', gradient:{ shadeIntensity:1, opacityFrom:.35, opacityTo:.05 } },
         markers: { size: 0, hover:{size: 5} },
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
-          y: { formatter: function(v){ return v.toFixed(2); } },
+          y: { formatter: function(v){ return v != null ? v.toFixed(2) : '–'; } },
           x: { formatter: function(v){ return 'Trade #' + v; } }
         }),
-        xaxis: { type:'numeric', title:{text:'Trade #', style:{color:'#a89878'}}, labels:{style:{colors:'#e2e8f0'}} },
-        yaxis: { title:{text:'Equity (Start = 100)', style:{color:'#a89878'}}, labels:{style:{colors:'#e2e8f0'}, formatter:function(v){return v.toFixed(0);}} },
-        annotations: { yaxis:[{ y:100, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }] },
+        xaxis: {
+          categories: categories,
+          tickAmount: Math.min(10, categories.length-1),
+          title: { text:'Trade #', style:{color:'#a89878', fontSize:'11px'} },
+          labels: { style:{colors:'#e2e8f0', fontSize:'11px'} }
+        },
+        yaxis: {
+          title: { text:'Equity (Start = 100)', style:{color:'#a89878', fontSize:'11px'} },
+          labels: { style:{colors:'#e2e8f0', fontSize:'11px'}, formatter: function(v){return v.toFixed(0);} }
+        },
+        annotations: { yaxis:[{ y:100, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3,
+                                label:{text:'Start', style:{color:'#fff',background:'rgba(255,255,255,.2)',fontSize:'10px'}} }] },
         legend: { show:false },
         dataLabels: { enabled: false },
         title: { text: ticker+' — Equity-Kurve ('+result.n_trades+' Trades)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
@@ -1075,6 +1092,7 @@
           '<td class="'+(r.total_return_pct>=0?'pos':'neg')+'">'+fmtPct(r.total_return_pct,1)+'</td>' +
           '<td>'+fmtNum(r.sharpe_ratio,2)+'</td>' +
           '<td>'+fmtNum(r.calmar_ratio,2)+'</td>' +
+          '<td>'+fmtNum(r.profit_factor,2)+'</td>' +
           '<td>'+fmtNum(r.win_rate_pct,0)+'%</td>' +
           '<td class="neg">'+fmtNum(r.max_drawdown_pct,1)+'%</td>' +
           '<td>'+r.n_trades+'</td>' +
