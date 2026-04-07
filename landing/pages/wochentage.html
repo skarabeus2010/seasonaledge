@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wochentagseffekt — SeasonAlpha</title>
+  <meta name="description" content="Wochentag-Performance: Kumulierter Wochenverlauf, Win-Rate, Overnight vs Intraday, Weekend-Effekt, Konsekutiv-Analyse, Streak, Quartals-Heatmaps.">
+  <meta property="og:title" content="Wochentage — SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/wochentage">
+  <link rel="canonical" href="https://seasonalpha.ai/wochentage">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1rem;font-family:var(--f-m)}
+    .info-box{background:rgba(0,206,209,.08);border:1px solid rgba(0,206,209,.2);color:#5be0e3;padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    main{position:relative}
+    .charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:900px){.charts-2col{grid-template-columns:1fr}}
+    .kpi-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem}
+    .kpi-card{flex:1 1 0;min-width:130px;background:#0f1923;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.6rem .9rem}
+    .kpi-card .lbl{font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.5px}
+    .kpi-card .val{font-size:1.05rem;font-weight:700;font-family:var(--f-m);font-variant-numeric:tabular-nums}
+    .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .perf-table th{color:#cbd5e1;font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .perf-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:#e2e8f0;font-variant-numeric:tabular-nums}
+    .perf-table td.pos{color:#34d399}
+    .perf-table td.neg{color:#f87171}
+    /* Match-Cards (fuer Tachos) */
+    .match-cards{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
+    .match-card{flex:1 1 0;min-width:130px;background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 8px;text-align:center}
+    .mc-name{font-size:14px;font-weight:700;margin-bottom:8px;color:#e2e8f0}
+    .mc-details{font-size:12px;color:#cbd5e1;line-height:1.6;margin-top:.25rem}
+    /* Top/Flop tables */
+    .topflop-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:900px){.topflop-grid{grid-template-columns:1fr}}
+    .topflop-title{font-size:14px;font-weight:700;margin:.5rem 0 .3rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Analysezeitraum</h3>
+      <label>Jahre <span id="lbl-years">10</span></label>
+      <input type="range" id="sl-years" min="1" max="30" step="1" value="10">
+      <hr>
+      <h3>Rendite-Berechnung</h3>
+      <select id="sel-mode">
+        <option value="cc" selected>Close → Close (t0 → t1)</option>
+        <option value="co">Close → Open (Overnight)</option>
+        <option value="oc">Open → Close (Intraday)</option>
+        <option value="oc1">Open → Close (t0 → t1)</option>
+      </select>
+      <p class="box-info" id="mode-desc" style="font-size:.6875rem;margin-top:.25rem">Schlusskurs heute vs. Schlusskurs morgen</p>
+      <hr>
+      <h3>Präsidentenzyklus-Filter</h3>
+      <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
+        <label><input type="checkbox" data-cycle="1"> Wahljahr</label>
+        <label><input type="checkbox" data-cycle="2"> Nachwahljahr</label>
+        <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr</label>
+        <label><input type="checkbox" data-cycle="4"> Vorwahljahr</label>
+      </div>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
+      <hr>
+      <h3>Anzeige</h3>
+      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelle Woche einblenden</label>
+      <hr>
+      <h3>Technische Filter</h3>
+      <div id="indicator-filters"></div>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" id="ind_badge"></p>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Wochentage</b> — <span id="title-ticker">^GSPC</span></h1>
+      <p class="page-caption" id="page-caption">Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+      <div class="info-box" id="filter-info" style="display:none"></div>
+
+      <!-- 1. Kumulierter Wochenverlauf -->
+      <details open id="sec-cum" style="display:none">
+        <summary>Kumulierter Wochenverlauf Mo→Fr</summary>
+        <div class="content">
+          <div id="chart-cum"></div>
+          <p class="box-info">Zeigt, wie sich die Wochenrendite von Montag bis Freitag aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. Steigt die Kurve vor allem am Anfang der Woche, spricht das für frühen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>
+        </div>
+      </details>
+
+      <!-- 2. Ø Rendite + Win-Rate -->
+      <details open id="sec-bars" style="display:none">
+        <summary>Durchschnittsrendite & Win-Rate pro Wochentag</summary>
+        <div class="content">
+          <div class="charts-2col">
+            <div id="chart-avg"></div>
+            <div id="chart-wr"></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- 3. Signifikanztest pro Wochentag -->
+      <details open id="sec-sig" style="display:none">
+        <summary>Statistische Signifikanz der Wochentags-Effekte</summary>
+        <div class="content" id="content-sig"></div>
+      </details>
+
+      <!-- 4. Detailtabelle -->
+      <details id="sec-table" style="display:none">
+        <summary>Statistik pro Wochentag</summary>
+        <div class="content">
+          <table class="perf-table">
+            <thead><tr><th>Wochentag</th><th>Ø Rendite</th><th>Median</th><th>Std.Abw.</th><th>Win-Rate</th><th>Anzahl</th></tr></thead>
+            <tbody id="tbody-wd"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 5. Overnight vs Intraday -->
+      <details open id="sec-oi" style="display:none">
+        <summary>Overnight vs. Intraday Split</summary>
+        <div class="content">
+          <div id="chart-oi"></div>
+          <p class="box-info">Zerlegt die Tagesrendite in <b style="color:#a78bfa">Overnight</b> (Schlusskurs gestern → Eröffnung heute) und <b style="color:#22d3ee">Intraday</b> (Eröffnung → Schluss). Wenn die Rendite überwiegend overnight entsteht, profitieren Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>
+        </div>
+      </details>
+
+      <!-- 6. Weekend-Effekt -->
+      <details open id="sec-weekend" style="display:none">
+        <summary>Weekend-Effekt (Fr Close → Mo Open)</summary>
+        <div class="content">
+          <div class="kpi-row" id="weekend-kpis"></div>
+          <div id="chart-weekend-bar"></div>
+          <div id="content-weekend-sig" style="margin-top:1rem"></div>
+          <div id="chart-weekend-heatmap" style="margin-top:1rem"></div>
+          <div id="chart-weekend-cycle" style="margin-top:1rem"></div>
+          <p class="box-info" style="margin-top:.75rem">Der Weekend-Effekt misst die Rendite über das Wochenende (Freitag Schluss → Montag Eröffnung, Residual-Methode). Historisch zeigt sich oft ein negativer Weekend-Effekt bei Aktien — Montage eröffnen unter dem Freitags-Schluss.</p>
+        </div>
+      </details>
+
+      <!-- 7. Konsekutiv-Analyse -->
+      <details open id="sec-consec" style="display:none">
+        <summary>Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)</summary>
+        <div class="content">
+          <div id="chart-consec"></div>
+          <p class="box-info">Wahrscheinlichkeit, dass der Folgetag positiv ist, abhängig davon ob der Vortag positiv (↑) oder negativ (↓) war. Werte über 55% deuten auf Trendkontinuation hin, unter 45% auf Mean Reversion.</p>
+        </div>
+      </details>
+
+      <!-- 8. Streak-Analyse -->
+      <details open id="sec-streak" style="display:none">
+        <summary>Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- 9. Quartals-Heatmaps -->
+      <details open id="sec-quarterly" style="display:none">
+        <summary>Wochentag-Performance nach Quartal</summary>
+        <div class="content">
+          <div id="chart-quarterly"></div>
+          <p class="box-info">Zeigt ob Wochentags-Effekte saisonal variieren. Z.B. könnte der Montagseffekt nur in Q4 (Window Dressing, Jahresend-Rallye) signifikant sein, während er in Q2/Q3 verschwindet.</p>
+        </div>
+      </details>
+
+      <!-- 10. Monat × Wochentag Heatmap -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>Monat × Wochentag Heatmap</summary>
+        <div class="content">
+          <div id="chart-heatmap"></div>
+        </div>
+      </details>
+
+      <!-- 11. Top / Flop Kombinationen -->
+      <details open id="sec-topflop" style="display:none">
+        <summary>Top / Flop Monat×Wochentag Kombinationen</summary>
+        <div class="content">
+          <div class="topflop-grid">
+            <div>
+              <p class="topflop-title" style="color:#34d399">🟢 Top 10 beste Kombinationen</p>
+              <table class="perf-table">
+                <thead><tr><th>Monat</th><th>Wochentag</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <tbody id="tbody-top"></tbody>
+              </table>
+            </div>
+            <div>
+              <p class="topflop-title" style="color:#ff6b6b">🔴 Top 10 schlechteste Kombinationen</p>
+              <table class="perf-table">
+                <thead><tr><th>Monat</th><th>Wochentag</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <tbody id="tbody-flop"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details id="sec-methodik">
+        <summary>📚 Methodik</summary>
+        <div class="content">
+          <ul>
+            <li><b>Wochentag-Rendite</b>: Für jeden Handelstag wird die Rendite gemäß dem gewählten Modus berechnet.</li>
+            <li><b>Kumulierter Wochenverlauf</b>: Pro Woche werden die log-Returns kumuliert, dann über alle Wochen pro Wochentag-Position gemittelt.</li>
+            <li><b>Overnight vs. Intraday</b>: Residual-Methode (overnight = total - intraday). Vermeidet Verzerrung durch unterschiedliche Dividend-Adjustierung zwischen Open[t] und Close[t-1].</li>
+            <li><b>Weekend-Effekt</b>: (Mo Close / Fr Close - 1) × 100 minus Mo Intraday — Residual-Methode.</li>
+            <li><b>Konsekutiv-Analyse</b>: P(Folgetag↑ | Vortag↑) und P(Folgetag↑ | Vortag↓). Bedingte Wahrscheinlichkeit.</li>
+            <li><b>Streak</b>: Aktuelle Gewinn-/Verlust-Serie pro Wochentag (W = Close > Vortag, L = Verlust).</li>
+            <li><b>Trendfilter (SMA)</b>: Nur Tage zählen, an denen Close[t-1] > SMA[t-1].</li>
+            <li><b>OBOS-Filter (RSI)</b>: Nur Tage zählen, an denen RSI[t-1] &lt; Schwelle (Oversold-Bedingung).</li>
+            <li><b>Crypto-Erkennung</b>: Wenn Wochenend-Daten vorhanden sind, werden Sa+So mit aufgenommen (sonst Mo-Fr).</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.7.0/dist/apexcharts.min.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // WOCHENTAGE — Math/Compute Helpers (Port von 04_Wochentage.py)
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    var WD_LABELS_5 = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
+    var WD_LABELS_7 = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+    var WD_SHORT_5 = ['Mo','Di','Mi','Do','Fr'];
+    var WD_SHORT_7 = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+    var MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    var MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var COL_POS = '#34d399';
+    var COL_NEG = '#f87171';
+    var COL_CURRENT = '#F1C40F';
+    var COL_AVG = '#00CED1';
+    var COL_OVERNIGHT = '#a78bfa';
+    var COL_INTRADAY = '#22d3ee';
+    var CYCLE_LABELS = { 1:'Wahljahr', 2:'Nachwahljahr', 3:'Zwischenwahljahr', 4:'Vorwahljahr' };
+    var CYCLE_COLORS = { 1:'#e8a425', 2:'#4d9fff', 3:'#ff6b6b', 4:'#34d399' };
+
+    var charts = {};
+    var currentTicker = '';
+    var rawRows = [];      // OHLC rows from DB
+    var enrichedRows = []; // mit weekday, year, month, quarter
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function _clean(arr) {
+      var out = [];
+      for (var i=0;i<arr.length;i++) {
+        var v = arr[i];
+        if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) out.push(v);
+      }
+      return out;
+    }
+    function mean(arr) { var v=_clean(arr); if(!v.length)return 0; var s=0; for(var i=0;i<v.length;i++)s+=v[i]; return s/v.length; }
+    function median(arr) { var v=_clean(arr).slice().sort(function(a,b){return a-b;}); if(!v.length)return 0; var m=Math.floor(v.length/2); return v.length%2?v[m]:(v[m-1]+v[m])/2; }
+    function stdev(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/v.length); }
+    function cycleOf(year) { return ((year - 2020) % 4 + 4) % 4 + 1; }
+    function todayDoy() { var n = new Date(); return Math.floor((n - new Date(n.getFullYear(),0,0))/86400000); }
+
+    // ── Rows Enrichen: weekday, year, month, quarter, daily_ret ──
+    function enrichRows(rows) {
+      var out = [];
+      for (var i=0;i<rows.length;i++) {
+        var r = rows[i];
+        var d = new Date(r.date);
+        var wd = d.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+        wd = wd === 0 ? 6 : wd - 1; // 0=Mo, 6=So
+        var open = parseFloat(r.open);
+        var close = parseFloat(r.close);
+        out.push({
+          date: r.date,
+          open: open,
+          close: close,
+          year: d.getFullYear(),
+          month: d.getMonth() + 1,
+          quarter: Math.floor(d.getMonth()/3) + 1,
+          weekday: wd,
+        });
+      }
+      return out;
+    }
+
+    // ── SMA + RSI fuer Filter (Trend-Filter aus Sidebar) ─────────
+    function calcSMA(closes, period) {
+      var out = new Array(closes.length).fill(NaN);
+      var sum = 0;
+      for (var i=0;i<closes.length;i++) {
+        sum += closes[i];
+        if (i >= period) sum -= closes[i-period];
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    }
+    function calcRSI(closes, period) {
+      var out = new Array(closes.length).fill(NaN);
+      var gains = 0, losses = 0;
+      for (var i=1;i<=period;i++) {
+        var d = closes[i] - closes[i-1];
+        if (d > 0) gains += d; else losses -= d;
+      }
+      var avgG = gains / period, avgL = losses / period;
+      out[period] = avgL === 0 ? 100 : 100 - (100 / (1 + avgG/avgL));
+      for (var i=period+1;i<closes.length;i++) {
+        var d = closes[i] - closes[i-1];
+        var g = d > 0 ? d : 0, l = d < 0 ? -d : 0;
+        avgG = (avgG * (period-1) + g) / period;
+        avgL = (avgL * (period-1) + l) / period;
+        out[i] = avgL === 0 ? 100 : 100 - (100 / (1 + avgG/avgL));
+      }
+      return out;
+    }
+
+    // ── Rendite-Modi ─────────────────────────────────────────────
+    // cc: Close[t+1]/Close[t] - 1 (heute → morgen Close)
+    // co: Open[t+1]/Close[t] - 1 (heute Close → morgen Open, Overnight)
+    // oc: Close[t]/Open[t] - 1   (heute Open → heute Close, Intraday)
+    // oc1: Close[t+1]/Open[t] - 1 (heute Open → morgen Close)
+    function calcReturn(rows, mode, idx) {
+      var r = rows[idx];
+      if (mode === 'oc') {
+        if (!r || !r.open || !r.close || r.open <= 0) return null;
+        return (r.close / r.open - 1) * 100;
+      }
+      var rNext = rows[idx + 1];
+      if (!rNext) return null;
+      if (mode === 'cc') {
+        if (!r.close || !rNext.close || r.close <= 0) return null;
+        return (rNext.close / r.close - 1) * 100;
+      }
+      if (mode === 'co') {
+        if (!r.close || !rNext.open || r.close <= 0) return null;
+        return (rNext.open / r.close - 1) * 100;
+      }
+      if (mode === 'oc1') {
+        if (!r.open || !rNext.close || r.open <= 0) return null;
+        return (rNext.close / r.open - 1) * 100;
+      }
+      return null;
+    }
+
+    // ── Weekday-Stats Hauptberechnung ────────────────────────────
+    function calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter) {
+      // Cutoff
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){ return r.date >= cutoffStr; });
+
+      // Cycle filter
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){ return cycleFilter.indexOf(cycleOf(r.year)) >= 0; });
+      }
+      if (rows.length < 20) return null;
+
+      // Crypto-Detection
+      var hasWeekend = rows.some(function(r){ return r.weekday >= 5; });
+      var nWd = hasWeekend ? 7 : 5;
+
+      // SMA / RSI vorberechnen falls nötig
+      var sma = null, rsi = null;
+      if (filterMode === 'sma') {
+        sma = calcSMA(rows.map(function(r){return r.close;}), smaDays);
+      } else if (filterMode === 'rsi') {
+        rsi = calcRSI(rows.map(function(r){return r.close;}), rsiDays);
+      }
+
+      // Returns + Filter anwenden
+      var validReturns = []; // {wd, month, ret}
+      var totalCount = 0;
+      var passCount = 0;
+      for (var i=0;i<rows.length;i++) {
+        var ret = calcReturn(rows, mode, i);
+        if (ret == null || isNaN(ret) || !isFinite(ret)) continue;
+        var r = rows[i];
+        // Wochenende ueberspringen wenn nicht Crypto
+        if (!hasWeekend && r.weekday > 4) continue;
+        totalCount++;
+        // Filter pruefen (auf t-1)
+        var pass = true;
+        if (filterMode === 'sma') {
+          if (i === 0 || isNaN(sma[i-1])) pass = false;
+          else pass = rows[i-1].close > sma[i-1];
+        } else if (filterMode === 'rsi') {
+          if (i === 0 || isNaN(rsi[i-1])) pass = false;
+          else pass = rsi[i-1] < rsiThreshold;
+        }
+        if (!pass) continue;
+        passCount++;
+        validReturns.push({ weekday: r.weekday, month: r.month, ret: ret });
+      }
+
+      if (passCount < 10) return null;
+
+      // by_weekday
+      var byWeekday = {};
+      for (var wd=0;wd<nWd;wd++) {
+        var rets = validReturns.filter(function(v){return v.weekday===wd;}).map(function(v){return v.ret;});
+        if (!rets.length) {
+          byWeekday[wd] = { avg:0, median:0, std:0, count:0, win_rate:0, returns:[] };
+          continue;
+        }
+        var wins = rets.filter(function(r){return r>0;}).length;
+        byWeekday[wd] = {
+          avg: mean(rets),
+          median: median(rets),
+          std: stdev(rets),
+          count: rets.length,
+          win_rate: wins/rets.length*100,
+          returns: rets
+        };
+      }
+
+      // by_month_weekday
+      var byMonthWeekday = {};
+      for (var m=1;m<=12;m++) {
+        for (var wd=0;wd<nWd;wd++) {
+          var rs = validReturns.filter(function(v){return v.month===m && v.weekday===wd;}).map(function(v){return v.ret;});
+          if (!rs.length) {
+            byMonthWeekday[m+'_'+wd] = { avg:0, count:0, win_rate:0 };
+            continue;
+          }
+          var w = rs.filter(function(r){return r>0;}).length;
+          byMonthWeekday[m+'_'+wd] = {
+            avg: mean(rs),
+            count: rs.length,
+            win_rate: w/rs.length*100
+          };
+        }
+      }
+
+      return {
+        by_weekday: byWeekday,
+        by_month_weekday: byMonthWeekday,
+        filtered_count: passCount,
+        total_count: totalCount,
+        n_weekdays: nWd,
+        is_crypto: hasWeekend,
+        wd_labels: hasWeekend ? WD_LABELS_7 : WD_LABELS_5,
+        wd_short: hasWeekend ? WD_SHORT_7 : WD_SHORT_5
+      };
+    }
+
+    // ── Kumulierter Wochenverlauf Mo→Fr ──────────────────────────
+    function calcWeeklyCumulative(enriched, yearsBack, cycleFilter) {
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){ return r.date >= cutoffStr; });
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){ return cycleFilter.indexOf(cycleOf(r.year)) >= 0; });
+      }
+
+      var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
+      var nWd = hasWeekend ? 7 : 5;
+      if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
+
+      // log_returns
+      var withLR = [];
+      for (var i=1;i<rows.length;i++) {
+        var prev = rows[i-1], cur = rows[i];
+        if (prev.close > 0 && cur.close > 0) {
+          withLR.push({
+            date: cur.date,
+            weekday: cur.weekday,
+            log_ret: Math.log(cur.close / prev.close)
+          });
+        }
+      }
+
+      // Wochen gruppieren via ISO-Woche
+      function isoWeek(dateStr) {
+        var d = new Date(dateStr);
+        var dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        return d.getUTCFullYear() + '_' + (weekNo<10?'0':'') + weekNo;
+      }
+
+      var byWeek = {};
+      for (var i=0;i<withLR.length;i++) {
+        var wid = isoWeek(withLR[i].date);
+        if (!byWeek[wid]) byWeek[wid] = [];
+        byWeek[wid].push(withLR[i]);
+      }
+
+      var minDays = hasWeekend ? 5 : 4;
+      var allCurves = [];
+      for (var wid in byWeek) {
+        var w = byWeek[wid].slice().sort(function(a,b){return a.date<b.date?-1:1;});
+        if (w.length < minDays) continue;
+        var sum = 0;
+        var weekdays = [], curve = [];
+        for (var k=0;k<w.length;k++) {
+          sum += w[k].log_ret;
+          weekdays.push(w[k].weekday);
+          curve.push((Math.exp(sum) - 1) * 100);
+        }
+        allCurves.push({ weekdays: weekdays, curve: curve });
+      }
+
+      if (!allCurves.length) return null;
+
+      var wdStats = {};
+      for (var wd=0;wd<nWd;wd++) {
+        var vals = [];
+        for (var i=0;i<allCurves.length;i++) {
+          var idx = allCurves[i].weekdays.indexOf(wd);
+          if (idx >= 0) vals.push(allCurves[i].curve[idx]);
+        }
+        if (vals.length) wdStats[wd] = { avg: mean(vals), std: stdev(vals), n: vals.length };
+      }
+      return wdStats;
+    }
+
+    // ── Aktuelle Woche Mo→Fr ─────────────────────────────────────
+    function calcCurrentWeekCurve(enriched) {
+      if (!enriched.length) return null;
+      var today = new Date();
+      var todayStr = today.toISOString().substring(0,10);
+      var todayWd = today.getDay();
+      todayWd = todayWd === 0 ? 6 : todayWd - 1;
+      // Letzten Montag finden
+      var monday = new Date(today);
+      monday.setDate(monday.getDate() - todayWd);
+      var mondayStr = monday.toISOString().substring(0,10);
+      // Daten dieser Woche
+      var thisWeek = enriched.filter(function(r){
+        return r.date >= mondayStr && r.date <= todayStr && r.weekday <= 4;
+      });
+      if (!thisWeek.length) return null;
+      // Basis = Close des Vor-Freitags
+      var prevRows = enriched.filter(function(r){return r.date < mondayStr;});
+      var base = prevRows.length ? prevRows[prevRows.length-1].close : thisWeek[0].open;
+      if (!base || base <= 0) return null;
+      var labels = thisWeek.map(function(r){return WD_LABELS_5[r.weekday];});
+      var vals = thisWeek.map(function(r){return (r.close / base - 1) * 100;});
+      return { labels: labels, values: vals };
+    }
+
+    // ── Overnight vs Intraday (Residual-Methode) ─────────────────
+    function calcOvernightIntraday(enriched, yearsBack, cycleFilter) {
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
+      if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
+      var nWd = hasWeekend ? 7 : 5;
+
+      var byWd = {};
+      for (var wd=0;wd<nWd;wd++) byWd[wd] = { overnight:[], intraday:[] };
+      for (var i=1;i<rows.length;i++) {
+        var prev = rows[i-1], cur = rows[i];
+        if (prev.close <= 0 || cur.close <= 0 || cur.open <= 0) continue;
+        var total = (cur.close / prev.close - 1) * 100;
+        var intraday = (cur.close / cur.open - 1) * 100;
+        var overnight = total - intraday;
+        if (byWd[cur.weekday]) {
+          byWd[cur.weekday].overnight.push(overnight);
+          byWd[cur.weekday].intraday.push(intraday);
+        }
+      }
+      var result = {};
+      for (var wd=0;wd<nWd;wd++) {
+        var o = byWd[wd].overnight, ic = byWd[wd].intraday;
+        if (o.length < 10) {
+          result[wd] = { overnight:0, intraday:0, n:0 };
+          continue;
+        }
+        result[wd] = { overnight: mean(o), intraday: mean(ic), n: o.length };
+      }
+      return { stats: result, n_weekdays: nWd };
+    }
+
+    // ── Konsekutiv-Analyse ───────────────────────────────────────
+    function calcConsecutiveProbs(enriched, yearsBack, cycleFilter) {
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
+      if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
+
+      // daily_ret
+      var withRet = [];
+      for (var i=1;i<rows.length;i++) {
+        var prev = rows[i-1], cur = rows[i];
+        if (prev.close <= 0 || cur.close <= 0) continue;
+        withRet.push({
+          weekday: cur.weekday,
+          ret: (cur.close / prev.close - 1) * 100,
+          date: cur.date
+        });
+      }
+
+      var maxWd = hasWeekend ? 6 : 4;
+      var matrix = {};
+      for (var fromWd=0;fromWd<=maxWd;fromWd++) {
+        var toWd = (fromWd + 1) % (hasWeekend ? 7 : 5);
+        // pos / neg
+        for (var ci=0;ci<2;ci++) {
+          var cond = ci === 0 ? 'pos' : 'neg';
+          var pos = 0, neg = 0, total = 0;
+          for (var i=0;i<withRet.length;i++) {
+            if (withRet[i].weekday !== fromWd) continue;
+            if (cond === 'pos' && withRet[i].ret <= 0) continue;
+            if (cond === 'neg' && withRet[i].ret > 0) continue;
+            // Naechster Eintrag
+            if (i+1 >= withRet.length) continue;
+            total++;
+            if (withRet[i+1].ret > 0) pos++;
+            else neg++;
+          }
+          matrix[fromWd+'_'+toWd+'_'+cond] = { pos_next: pos, neg_next: neg, total: total };
+        }
+      }
+      return { matrix: matrix, n_weekdays: hasWeekend ? 7 : 5 };
+    }
+
+    // ── Quarterly Weekday ────────────────────────────────────────
+    function calcQuarterlyWeekday(enriched, yearsBack, cycleFilter) {
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      rows = rows.filter(function(r){return r.weekday <= 4;});
+
+      var withRet = [];
+      for (var i=1;i<rows.length;i++) {
+        var prev = rows[i-1], cur = rows[i];
+        if (prev.close <= 0 || cur.close <= 0) continue;
+        withRet.push({
+          weekday: cur.weekday,
+          quarter: cur.quarter,
+          ret: (cur.close / prev.close - 1) * 100
+        });
+      }
+      var result = {};
+      for (var q=1;q<=4;q++) {
+        for (var wd=0;wd<5;wd++) {
+          var rs = withRet.filter(function(v){return v.quarter===q && v.weekday===wd;}).map(function(v){return v.ret;});
+          if (!rs.length) {
+            result[q+'_'+wd] = { avg:0, n:0, win_rate:0 };
+            continue;
+          }
+          var wins = rs.filter(function(r){return r>0;}).length;
+          result[q+'_'+wd] = { avg: mean(rs), n: rs.length, win_rate: wins/rs.length*100 };
+        }
+      }
+      return result;
+    }
+
+    // ── Streak Helper (pro Wochentag) ────────────────────────────
+    function calcStreaksByWeekday(enriched, yearsBack, cycleFilter) {
+      if (!enriched.length) return [];
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
+      if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
+      var nWd = hasWeekend ? 7 : 5;
+      var labels = hasWeekend ? WD_LABELS_7 : WD_LABELS_5;
+
+      // Pro Wochentag eine Liste von {date, ret}
+      var byWd = {};
+      for (var wd=0;wd<nWd;wd++) byWd[wd] = [];
+      for (var i=1;i<rows.length;i++) {
+        var prev = rows[i-1], cur = rows[i];
+        if (prev.close <= 0 || cur.close <= 0) continue;
+        var ret = (cur.close / prev.close - 1) * 100;
+        if (byWd[cur.weekday]) byWd[cur.weekday].push({ date: cur.date, ret: ret });
+      }
+
+      // In Format fuer SA.streaks.computeStreaksFromList
+      var allEntries = [];
+      for (var wd=0;wd<nWd;wd++) {
+        for (var k=0;k<byWd[wd].length;k++) {
+          allEntries.push({
+            group: labels[wd],
+            year: parseInt(byWd[wd][k].date.substring(0,4)),
+            ret: byWd[wd][k].ret,
+            date: byWd[wd][k].date
+          });
+        }
+      }
+      // Sort chronologisch
+      allEntries.sort(function(a,b){return a.date<b.date?-1:1;});
+      var labelMap = {};
+      for (var wd=0;wd<nWd;wd++) labelMap[labels[wd]] = labels[wd];
+      return SA.streaks.computeStreaksFromList(allEntries, 'group', 'ret', 'year', labelMap);
+    }
+
+    // ── Weekend-Effekt ───────────────────────────────────────────
+    function calcWeekendEffect(enriched, yearsBack, cycleFilter, filterMode, smaDays, rsiDays, rsiThreshold) {
+      if (!enriched.length) return null;
+      var lastDate = new Date(enriched[enriched.length-1].date);
+      var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0,10);
+      var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
+      if (cycleFilter && cycleFilter.length) {
+        rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      if (rows.length < 20) return null;
+
+      // SMA / RSI auf Closes
+      var sma = null, rsi = null;
+      if (filterMode === 'sma') sma = calcSMA(rows.map(function(r){return r.close;}), smaDays);
+      else if (filterMode === 'rsi') rsi = calcRSI(rows.map(function(r){return r.close;}), rsiDays);
+
+      // Freitage finden + naechsten Montag
+      var weekendReturns = [];
+      var totalCount = 0;
+      for (var i=0;i<rows.length;i++) {
+        if (rows[i].weekday !== 4) continue; // 4 = Fr
+        totalCount++;
+        // Filter pruefen (auf Freitag selbst)
+        if (filterMode === 'sma') {
+          if (isNaN(sma[i]) || rows[i].close <= sma[i]) continue;
+        } else if (filterMode === 'rsi') {
+          if (isNaN(rsi[i]) || rsi[i] >= rsiThreshold) continue;
+        }
+        // Naechsten Montag finden (innerhalb 5 Trading Days)
+        var monday = null;
+        for (var k=i+1;k<Math.min(i+6,rows.length);k++) {
+          if (rows[k].weekday === 0) { monday = rows[k]; break; }
+        }
+        if (!monday || rows[i].close <= 0 || monday.open <= 0 || monday.close <= 0) continue;
+        // Residual: total(Fr→Mo) - intraday(Mo)
+        var totalRet = (monday.close / rows[i].close - 1) * 100;
+        var intradayMon = (monday.close / monday.open - 1) * 100;
+        var ret = totalRet - intradayMon;
+        weekendReturns.push({
+          friday: rows[i].date,
+          monday: monday.date,
+          month: rows[i].month,
+          year: rows[i].year,
+          cycle: cycleOf(rows[i].year),
+          ret: ret
+        });
+      }
+
+      if (!weekendReturns.length) return null;
+      var rets = weekendReturns.map(function(w){return w.ret;});
+      var wins = rets.filter(function(r){return r>0;}).length;
+      var overall = {
+        avg: mean(rets),
+        median: median(rets),
+        std: stdev(rets),
+        win_rate: wins/rets.length*100,
+        count: rets.length
+      };
+
+      // by_month
+      var byMonth = {};
+      for (var m=1;m<=12;m++) {
+        var rs = weekendReturns.filter(function(w){return w.month===m;}).map(function(w){return w.ret;});
+        if (!rs.length) {
+          byMonth[m] = { avg:0, win_rate:0, count:0, returns:[] };
+          continue;
+        }
+        var w2 = rs.filter(function(r){return r>0;}).length;
+        byMonth[m] = { avg: mean(rs), win_rate: w2/rs.length*100, count: rs.length, returns: rs };
+      }
+
+      // by_month_year (for heatmap)
+      var byMY = {};
+      var yearsSet = {};
+      for (var i=0;i<weekendReturns.length;i++) {
+        var w = weekendReturns[i];
+        yearsSet[w.year] = true;
+        var k = w.month + '_' + w.year;
+        if (!byMY[k]) byMY[k] = { rets: [] };
+        byMY[k].rets.push(w.ret);
+      }
+      for (var k in byMY) byMY[k] = { avg: mean(byMY[k].rets), count: byMY[k].rets.length };
+
+      // by_cycle
+      var byCycle = {};
+      for (var c=1;c<=4;c++) {
+        var rs = weekendReturns.filter(function(w){return w.cycle===c;}).map(function(w){return w.ret;});
+        if (!rs.length) continue;
+        byCycle[c] = { avg: mean(rs), count: rs.length };
+      }
+
+      return {
+        overall: overall,
+        by_month: byMonth,
+        by_month_year: byMY,
+        by_cycle: byCycle,
+        years: Object.keys(yearsSet).map(Number).sort(),
+        filtered_count: weekendReturns.length,
+        total_count: totalCount
+      };
+    }
+
+    // ── Top/Flop Combinations ────────────────────────────────────
+    function calcTopFlop(stats, minN) {
+      minN = minN || 3;
+      var combos = [];
+      for (var m=1;m<=12;m++) {
+        for (var wd=0;wd<stats.n_weekdays;wd++) {
+          var d = stats.by_month_weekday[m+'_'+wd];
+          if (!d || d.count < minN) continue;
+          combos.push({
+            month: m,
+            weekday: wd,
+            month_label: MONTHS_DE[m-1],
+            wd_label: stats.wd_labels[wd],
+            avg: d.avg,
+            win_rate: d.win_rate,
+            n: d.count
+          });
+        }
+      }
+      combos.sort(function(a,b){return b.avg - a.avg;});
+      return { top: combos.slice(0, 10), flop: combos.slice(-10).reverse() };
+    }
+
+    // ── Export ───────────────────────────────────────────────────
+    window._SA_WD = {
+      WD_LABELS_5: WD_LABELS_5, WD_LABELS_7: WD_LABELS_7,
+      WD_SHORT_5: WD_SHORT_5, WD_SHORT_7: WD_SHORT_7,
+      MONTHS_DE: MONTHS_DE, MONTHS_DE_SHORT: MONTHS_DE_SHORT,
+      COL_POS: COL_POS, COL_NEG: COL_NEG, COL_CURRENT: COL_CURRENT, COL_AVG: COL_AVG,
+      COL_OVERNIGHT: COL_OVERNIGHT, COL_INTRADAY: COL_INTRADAY,
+      CYCLE_LABELS: CYCLE_LABELS, CYCLE_COLORS: CYCLE_COLORS,
+      charts: charts,
+      mean: mean, median: median, stdev: stdev, cycleOf: cycleOf,
+      enrichRows: enrichRows,
+      calculateWeekdayStats: calculateWeekdayStats,
+      calcWeeklyCumulative: calcWeeklyCumulative,
+      calcCurrentWeekCurve: calcCurrentWeekCurve,
+      calcOvernightIntraday: calcOvernightIntraday,
+      calcConsecutiveProbs: calcConsecutiveProbs,
+      calcQuarterlyWeekday: calcQuarterlyWeekday,
+      calcStreaksByWeekday: calcStreaksByWeekday,
+      calcWeekendEffect: calcWeekendEffect,
+      calcTopFlop: calcTopFlop,
+      getCurrentTicker: function(){return currentTicker;},
+      setCurrentTicker: function(t){currentTicker=t;},
+      getRawRows: function(){return rawRows;},
+      setRawRows: function(r){rawRows=r;},
+      getEnrichedRows: function(){return enrichedRows;},
+      setEnrichedRows: function(r){enrichedRows=r;}
+    };
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var WD = window._SA_WD;
+    var MONTHS_DE = WD.MONTHS_DE, MONTHS_DE_SHORT = WD.MONTHS_DE_SHORT;
+    var COL_POS = WD.COL_POS, COL_NEG = WD.COL_NEG, COL_CURRENT = WD.COL_CURRENT;
+    var COL_AVG = WD.COL_AVG, COL_OVERNIGHT = WD.COL_OVERNIGHT, COL_INTRADAY = WD.COL_INTRADAY;
+    var CYCLE_LABELS = WD.CYCLE_LABELS, CYCLE_COLORS = WD.CYCLE_COLORS;
+
+    function fmtPct(v, d) { d = d == null ? 2 : d; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
+
+    // ── 1. Kumulierter Wochenverlauf ─────────────────────────────
+    WD.renderCumulative = function(wdStats, ticker, currentWeek) {
+      if (!wdStats) return;
+      var wds = Object.keys(wdStats).map(Number).sort(function(a,b){return a-b;});
+      var labels = wds.map(function(w){return wdStats[w] && WD.WD_LABELS_5[w] ? WD.WD_LABELS_5[w] : (WD.WD_LABELS_7[w] || ('Tag '+(w+1)));});
+      // Build series
+      var avgCurve = wds.map(function(w){return parseFloat(wdStats[w].avg.toFixed(3));});
+      var nYears = wdStats[0] ? wdStats[0].n : 0;
+
+      var series = [{ name: 'Ø Wochenverlauf ('+nYears+' Wochen)', data: avgCurve }];
+      var colors = [COL_AVG];
+      var widths = [3];
+      var dashes = [0];
+
+      // Aktuelle Woche overlay (eigene Y-Achse)
+      var hasCurrent = currentWeek && currentWeek.values && currentWeek.values.length;
+      if (hasCurrent) {
+        // Map current to common labels
+        var curData = labels.map(function(l){
+          var idx = currentWeek.labels.indexOf(l);
+          return idx >= 0 ? parseFloat(currentWeek.values[idx].toFixed(3)) : null;
+        });
+        series.push({ name: 'Aktuelle Woche', data: curData });
+        colors.push(COL_CURRENT);
+        widths.push(2.5);
+        dashes.push(0);
+      }
+
+      var todayWd = (function(){var d=new Date().getDay(); return d===0?6:d-1;})();
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (todayWd >= 0 && todayWd < labels.length) {
+        annotations.xaxis = [{
+          x: labels[todayWd],
+          borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 4,
+          label: { text: 'Heute', style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'} }
+        }];
+      }
+
+      if (WD.charts.cum) { try { WD.charts.cum.destroy(); } catch(e){} }
+      WD.charts.cum = new ApexCharts(document.getElementById('chart-cum'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:380 }, SA.chartTheme.chart),
+        stroke: { width: widths, curve:'straight', dashArray: dashes },
+        colors: colors,
+        markers: { size: 0, hover: { size: 6 } },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          y: { formatter: function(v){ return v != null ? fmtPct(v, 3) : '–'; } }
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: {
+          labels: { style:{colors:'#e2e8f0',fontSize:'12px'}, formatter:function(v){return v.toFixed(2)+'%';} },
+          title: { text:'Kumulierte Rendite (%)', style:{color:'#a89878',fontSize:'11px'} }
+        },
+        annotations: annotations,
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px' }),
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — Kumulierter Wochenverlauf Mo→Fr ('+nYears+' Wochen)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.cum.render();
+    };
+
+    // ── 2. Ø Rendite + Win Rate Bars ─────────────────────────────
+    WD.renderBars = function(stats, ticker, modeLabel) {
+      var wd = stats.by_weekday;
+      var labels = stats.wd_labels;
+      var avgs = labels.map(function(_, i){return parseFloat(wd[i].avg.toFixed(3));});
+      var wrs = labels.map(function(_, i){return parseFloat(wd[i].win_rate.toFixed(1));});
+      var counts = labels.map(function(_, i){return wd[i].count;});
+
+      var avgColors = avgs.map(function(v){return v>=0 ? COL_POS : COL_NEG;});
+      var wrColors = wrs.map(function(v){return v>=50 ? COL_POS : COL_NEG;});
+
+      var ymaxA = Math.max.apply(null, avgs);
+      var yminA = Math.min.apply(null, avgs);
+      var padA = Math.max(Math.abs(ymaxA), Math.abs(yminA)) * 0.30 || 0.1;
+
+      var todayWd = (function(){var d=new Date().getDay(); return d===0?6:d-1;})();
+      var annotationA = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      var annotationW = { yaxis:[{ y:50, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (todayWd >= 0 && todayWd < labels.length) {
+        annotationA.xaxis = [{ x: labels[todayWd], borderColor:'rgba(232,168,32,.7)', strokeDashArray:4,
+                                label:{text:'Heute', style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'}} }];
+        annotationW.xaxis = annotationA.xaxis;
+      }
+
+      // Avg chart
+      if (WD.charts.avg) { try { WD.charts.avg.destroy(); } catch(e){} }
+      WD.charts.avg = new ApexCharts(document.getElementById('chart-avg'), {
+        series: [{ name:'Ø Rendite', data: avgs }],
+        chart: Object.assign({ type:'bar', height:340 }, SA.chartTheme.chart),
+        colors: avgColors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'65%', borderRadius:3, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetY: -18,
+          style: { fontSize:'11px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            return fmtPct(v, 3) + ' · n='+counts[opts.dataPointIndex];
+          }}
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { min: yminA-padA, max: ymaxA+padA, labels:{style:{colors:'#e2e8f0',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        annotations: annotationA,
+        legend: { show: false },
+        title: { text: ticker+' — Ø Tagesrendite · '+modeLabel, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.avg.render();
+
+      // WR chart
+      if (WD.charts.wr) { try { WD.charts.wr.destroy(); } catch(e){} }
+      WD.charts.wr = new ApexCharts(document.getElementById('chart-wr'), {
+        series: [{ name:'Win Rate', data: wrs }],
+        chart: Object.assign({ type:'bar', height:340 }, SA.chartTheme.chart),
+        colors: wrColors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'65%', borderRadius:3, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return v.toFixed(0)+'%'; },
+          offsetY: -18,
+          style: { fontSize:'11px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            return v.toFixed(1) + '% · n='+counts[opts.dataPointIndex];
+          }}
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { min: 0, max: 100, labels:{style:{colors:'#e2e8f0',fontSize:'11px'}, formatter:function(v){return v.toFixed(0)+'%';}} },
+        annotations: annotationW,
+        legend: { show: false },
+        title: { text: ticker+' — Win Rate', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.wr.render();
+    };
+
+    // ── 3. Signifikanztest pro Wochentag ─────────────────────────
+    WD.renderSignificance = function(stats) {
+      var container = document.getElementById('content-sig');
+      var groups = {};
+      var order = [];
+      for (var wd=0; wd<stats.n_weekdays; wd++) {
+        var rets = stats.by_weekday[wd].returns;
+        if (rets && rets.length) {
+          groups[stats.wd_labels[wd]] = rets;
+          order.push(stats.wd_labels[wd]);
+        }
+      }
+      if (!Object.keys(groups).length) {
+        container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Sorry, zu wenig Daten!</p>';
+        return;
+      }
+      var results = SA.significance.runSignificanceTest(groups);
+      container.innerHTML = SA.significance.renderSection(results, stats.n_weekdays, order);
+    };
+
+    // ── 4. Detailtabelle ─────────────────────────────────────────
+    WD.renderTable = function(stats) {
+      var tbody = '';
+      for (var wd=0; wd<stats.n_weekdays; wd++) {
+        var d = stats.by_weekday[wd];
+        if (d.count === 0) continue;
+        tbody += '<tr>' +
+          '<td><b>'+stats.wd_labels[wd]+'</b></td>' +
+          '<td class="'+(d.avg>=0?'pos':'neg')+'">'+fmtPct(d.avg,3)+'</td>' +
+          '<td class="'+(d.median>=0?'pos':'neg')+'">'+fmtPct(d.median,3)+'</td>' +
+          '<td>'+d.std.toFixed(3)+'%</td>' +
+          '<td>'+d.win_rate.toFixed(1)+'%</td>' +
+          '<td>'+d.count+'</td>' +
+        '</tr>';
+      }
+      document.getElementById('tbody-wd').innerHTML = tbody;
+    };
+
+    // ── 5. Overnight vs Intraday ─────────────────────────────────
+    WD.renderOvernight = function(oiResult, ticker, isCrypto) {
+      var sec = document.getElementById('sec-oi');
+      if (isCrypto || !oiResult) { sec.style.display = 'none'; return; }
+      sec.style.display = '';
+
+      var stats = oiResult.stats;
+      var labels = WD.WD_LABELS_5;
+      var overnight = labels.map(function(_,i){return parseFloat(stats[i].overnight.toFixed(3));});
+      var intraday = labels.map(function(_,i){return parseFloat(stats[i].intraday.toFixed(3));});
+
+      var todayWd = (function(){var d=new Date().getDay(); return d===0?6:d-1;})();
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (todayWd >= 0 && todayWd < 5) {
+        annotations.xaxis = [{ x: labels[todayWd], borderColor:'rgba(232,168,32,.7)', strokeDashArray:4,
+                                label:{text:'Heute', style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'}} }];
+      }
+
+      if (WD.charts.oi) { try { WD.charts.oi.destroy(); } catch(e){} }
+      WD.charts.oi = new ApexCharts(document.getElementById('chart-oi'), {
+        series: [
+          { name:'Overnight (Close→Open)', data: overnight },
+          { name:'Intraday (Open→Close)', data: intraday }
+        ],
+        chart: Object.assign({ type:'bar', height:380, stacked: true }, SA.chartTheme.chart),
+        colors: [COL_OVERNIGHT, COL_INTRADAY],
+        plotOptions: { bar:{ columnWidth:'55%', borderRadius:2 } },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          y: { formatter: function(v){ return fmtPct(v, 3); } }
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        annotations: annotations,
+        legend: { position:'top', fontSize:'11px', labels:{colors:'#e2e8f0'} },
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — Overnight vs. Intraday pro Wochentag', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.oi.render();
+    };
+
+    // ── 6. Weekend-Effekt ────────────────────────────────────────
+    WD.renderWeekend = function(weStats, ticker, isCrypto) {
+      var sec = document.getElementById('sec-weekend');
+      if (isCrypto || !weStats) { sec.style.display = 'none'; return; }
+      sec.style.display = '';
+
+      // KPIs
+      var ov = weStats.overall;
+      var avgCol = ov.avg >= 0 ? COL_POS : COL_NEG;
+      var wrCol = ov.win_rate >= 50 ? COL_POS : COL_NEG;
+      document.getElementById('weekend-kpis').innerHTML =
+        '<div class="kpi-card"><div class="lbl">Ø Weekend</div><div class="val" style="color:'+avgCol+'">'+fmtPct(ov.avg,3)+'</div></div>' +
+        '<div class="kpi-card"><div class="lbl">Median</div><div class="val">'+fmtPct(ov.median,3)+'</div></div>' +
+        '<div class="kpi-card"><div class="lbl">Win Rate</div><div class="val" style="color:'+wrCol+'">'+ov.win_rate.toFixed(1)+'%</div></div>' +
+        '<div class="kpi-card"><div class="lbl">Std.Abw.</div><div class="val">'+ov.std.toFixed(3)+'%</div></div>' +
+        '<div class="kpi-card"><div class="lbl">Wochenenden</div><div class="val">'+ov.count+'</div></div>';
+
+      // Bar chart pro Monat
+      var months = [];
+      var avgs = [];
+      var counts = [];
+      for (var m=1;m<=12;m++) {
+        months.push(MONTHS_DE_SHORT[m-1]);
+        avgs.push(parseFloat(weStats.by_month[m].avg.toFixed(3)));
+        counts.push(weStats.by_month[m].count);
+      }
+      var colors = avgs.map(function(v){return v>=0 ? COL_POS : COL_NEG;});
+      var ymax = Math.max.apply(null, avgs);
+      var ymin = Math.min.apply(null, avgs);
+      var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.30 || 0.05;
+
+      var currentMonth = new Date().getMonth() + 1;
+      if (WD.charts['weekend-bar']) { try { WD.charts['weekend-bar'].destroy(); } catch(e){} }
+      WD.charts['weekend-bar'] = new ApexCharts(document.getElementById('chart-weekend-bar'), {
+        series: [{ name:'Ø Weekend', data: avgs }],
+        chart: Object.assign({ type:'bar', height:360 }, SA.chartTheme.chart),
+        colors: colors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'70%', borderRadius:2, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetY: -16,
+          style: { fontSize:'10px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts){ return fmtPct(v,3) + ' · n='+counts[opts.dataPointIndex]; } }
+        }),
+        xaxis: { categories: months, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { min: ymin-pad, max: ymax+pad, labels:{style:{colors:'#e2e8f0',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        annotations: {
+          yaxis:[
+            { y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 },
+            { y: ov.avg, borderColor:'#F1C40F', strokeDashArray:2, label:{text:'Ø '+fmtPct(ov.avg,3), style:{color:'#000', background:'#F1C40F', fontSize:'10px'}} }
+          ],
+          xaxis:[{ x: MONTHS_DE_SHORT[currentMonth-1], borderColor:'rgba(232,168,32,.7)', strokeDashArray:4 }]
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Weekend-Effekt: Fr Close → Mo Open ('+ov.count+' Wochenenden)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts['weekend-bar'].render();
+
+      // Significance pro Monat
+      var sigGroups = {};
+      var sigOrder = [];
+      for (var m=1;m<=12;m++) {
+        if (weStats.by_month[m].returns && weStats.by_month[m].returns.length) {
+          sigGroups[MONTHS_DE[m-1]] = weStats.by_month[m].returns;
+          sigOrder.push(MONTHS_DE[m-1]);
+        }
+      }
+      if (Object.keys(sigGroups).length) {
+        var sigResults = SA.significance.runSignificanceTest(sigGroups);
+        document.getElementById('content-weekend-sig').innerHTML =
+          '<details><summary>Signifikanz Weekend-Effekt pro Monat</summary><div class="content">' +
+          SA.significance.renderSection(sigResults, 6, sigOrder) +
+          '</div></details>';
+      }
+
+      // Heatmap Monat × Jahr
+      var years = weStats.years;
+      if (years.length) {
+        var heatmapSeries = [];
+        for (var m=1;m<=12;m++) {
+          var row = [];
+          for (var yi=0;yi<years.length;yi++) {
+            var k = m + '_' + years[yi];
+            var d = weStats.by_month_year[k];
+            row.push({ x: String(years[yi]), y: d ? parseFloat(d.avg.toFixed(3)) : null });
+          }
+          heatmapSeries.push({ name: MONTHS_DE_SHORT[m-1], data: row });
+        }
+        var SENTINEL = -9999;
+        for (var s=0;s<heatmapSeries.length;s++) {
+          for (var i=0;i<heatmapSeries[s].data.length;i++) {
+            if (heatmapSeries[s].data[i].y == null) heatmapSeries[s].data[i].y = SENTINEL;
+          }
+        }
+        if (WD.charts['weekend-heatmap']) { try { WD.charts['weekend-heatmap'].destroy(); } catch(e){} }
+        WD.charts['weekend-heatmap'] = new ApexCharts(document.getElementById('chart-weekend-heatmap'), {
+          series: heatmapSeries,
+          chart: Object.assign({ type:'heatmap', height: 460 }, SA.chartTheme.chart),
+          plotOptions: {
+            heatmap: {
+              radius: 3, enableShades: false,
+              colorScale: { ranges: [
+                { from: SENTINEL, to: SENTINEL+1, color:'#0a0a0a' },
+                { from:-99, to:-1, color:'#7f1d1d' },
+                { from:-1, to:-0.3, color:'#991b1b' },
+                { from:-0.3, to:0.3, color:'#1f2937' },
+                { from:0.3, to:1, color:'#166534' },
+                { from:1, to:99, color:'#15803d' }
+              ]}
+            }
+          },
+          grid: SA.chartTheme.grid,
+          tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+            y: { formatter: function(v){ return v === SENTINEL ? 'keine Daten' : fmtPct(v,3); } }
+          }),
+          xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}} },
+          yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}}, reversed: false },
+          dataLabels: {
+            enabled: true,
+            formatter: function(v){ return v === SENTINEL ? '' : (v>=0?'+':'')+v.toFixed(2); },
+            style: { fontSize:'9px', colors:['#f5f5f5'] }
+          },
+          legend: { show: false },
+          title: { text: ticker+' — Weekend-Effekt Heatmap (Monat × Jahr)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        });
+        WD.charts['weekend-heatmap'].render();
+      }
+
+      // Cycle Bars
+      var cycleData = [];
+      var cycleLabels = [];
+      var cycleColors = [];
+      for (var c=1;c<=4;c++) {
+        if (weStats.by_cycle[c]) {
+          cycleData.push(parseFloat(weStats.by_cycle[c].avg.toFixed(3)));
+          cycleLabels.push(CYCLE_LABELS[c]);
+          cycleColors.push(CYCLE_COLORS[c]);
+        }
+      }
+      if (cycleData.length) {
+        if (WD.charts['weekend-cycle']) { try { WD.charts['weekend-cycle'].destroy(); } catch(e){} }
+        WD.charts['weekend-cycle'] = new ApexCharts(document.getElementById('chart-weekend-cycle'), {
+          series: [{ name:'Ø Weekend', data: cycleData }],
+          chart: Object.assign({ type:'bar', height:300 }, SA.chartTheme.chart),
+          colors: cycleColors,
+          plotOptions: { bar:{ distributed:true, columnWidth:'50%', borderRadius:3, dataLabels:{position:'top'} } },
+          dataLabels: {
+            enabled: true,
+            formatter: function(v){ return fmtPct(v, 3); },
+            offsetY: -18,
+            style: { fontSize:'12px', colors:['#e2e8f0'], fontWeight:600 }
+          },
+          grid: SA.chartTheme.grid,
+          tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+            y: { formatter: function(v){ return fmtPct(v,3); } }
+          }),
+          xaxis: { categories: cycleLabels, labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+          yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+          annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] },
+          legend: { show: false },
+          title: { text: ticker+' — Weekend-Effekt nach Präsidentenzyklus', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        });
+        WD.charts['weekend-cycle'].render();
+      }
+    };
+
+    // ── 7. Konsekutiv-Analyse Heatmap ────────────────────────────
+    WD.renderConsecutive = function(consecResult) {
+      if (!consecResult) return;
+      var matrix = consecResult.matrix;
+      var nWd = consecResult.n_weekdays;
+      var labels = nWd === 7 ? WD.WD_SHORT_7 : WD.WD_SHORT_5;
+      var pairs = [];
+      var pairLabels = [];
+      var maxFrom = nWd === 7 ? 6 : 3; // Crypto Mo-So all, Aktien Mo-Do
+      for (var i=0;i<=maxFrom;i++) {
+        var to = (i+1) % nWd;
+        pairs.push([i, to]);
+        pairLabels.push(labels[i] + '→' + labels[to]);
+      }
+
+      var posRow = []; // After Up
+      var negRow = []; // After Down
+      for (var p=0;p<pairs.length;p++) {
+        var fromWd = pairs[p][0], toWd = pairs[p][1];
+        var posData = matrix[fromWd+'_'+toWd+'_pos'] || { pos_next:0, total:0 };
+        var negData = matrix[fromWd+'_'+toWd+'_neg'] || { pos_next:0, total:0 };
+        var posPct = posData.total > 0 ? posData.pos_next / posData.total * 100 : 50;
+        var negPct = negData.total > 0 ? negData.pos_next / negData.total * 100 : 50;
+        posRow.push({ x: pairLabels[p], y: parseFloat(posPct.toFixed(1)) });
+        negRow.push({ x: pairLabels[p], y: parseFloat(negPct.toFixed(1)) });
+      }
+
+      var todayWd = (function(){var d=new Date().getDay(); return d===0?6:d-1;})();
+
+      if (WD.charts.consec) { try { WD.charts.consec.destroy(); } catch(e){} }
+      WD.charts.consec = new ApexCharts(document.getElementById('chart-consec'), {
+        series: [
+          { name: 'Nach ↑ Tag', data: posRow },
+          { name: 'Nach ↓ Tag', data: negRow }
+        ],
+        chart: Object.assign({ type:'heatmap', height: 240 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from:0, to:40, color:'#7f1d1d' },
+              { from:40, to:48, color:'#991b1b' },
+              { from:48, to:52, color:'#1f2937' },
+              { from:52, to:60, color:'#166534' },
+              { from:60, to:100, color:'#15803d' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){ return v.toFixed(0)+'%'; } }
+        }),
+        xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}}, reversed: false },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return v.toFixed(0)+'%'; },
+          style: { fontSize:'12px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: 'P(Folgetag positiv)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.consec.render();
+    };
+
+    // ── 8. Streak-Analyse ────────────────────────────────────────
+    WD.renderStreaks = function(groups) {
+      var html = SA.streaks.renderStreakTable(groups, 'Wochentag', 10);
+      html += '<p class="box-info" style="margin-top:.75rem">Zeigt die aktuelle Gewinn-/Verlust-Serie pro Wochentag. Lange Serien deuten auf einen persistenten Wochentag-Effekt hin. W = Gewinn (Close > Vortag), L = Verlust.</p>';
+      document.getElementById('content-streak').innerHTML = html;
+    };
+
+    // ── 9. Quartals-Heatmaps ─────────────────────────────────────
+    WD.renderQuarterly = function(qStats, ticker) {
+      var labels = WD.WD_SHORT_5;
+      var series = [];
+      for (var q=4;q>=1;q--) {
+        var row = [];
+        for (var wd=0;wd<5;wd++) {
+          var d = qStats[q+'_'+wd];
+          row.push({ x: labels[wd], y: d ? parseFloat(d.avg.toFixed(3)) : null });
+        }
+        series.push({ name:'Q'+q, data: row });
+      }
+      if (WD.charts.quarterly) { try { WD.charts.quarterly.destroy(); } catch(e){} }
+      WD.charts.quarterly = new ApexCharts(document.getElementById('chart-quarterly'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: 280 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from:-99, to:-0.3, color:'#7f1d1d' },
+              { from:-0.3, to:-0.1, color:'#991b1b' },
+              { from:-0.1, to:0.1, color:'#1f2937' },
+              { from:0.1, to:0.3, color:'#166534' },
+              { from:0.3, to:99, color:'#15803d' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){ return v != null ? fmtPct(v,3) : '–'; } }
+        }),
+        xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}}, reversed: false },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return v != null ? fmtPct(v,2) : ''; },
+          style: { fontSize:'11px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Wochentag-Performance nach Quartal', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.quarterly.render();
+    };
+
+    // ── 10. Monat × Wochentag Heatmap ────────────────────────────
+    WD.renderHeatmap = function(stats, ticker) {
+      var labels = stats.wd_short;
+      var series = [];
+      for (var m=12;m>=1;m--) {
+        var row = [];
+        for (var wd=0;wd<stats.n_weekdays;wd++) {
+          var d = stats.by_month_weekday[m+'_'+wd];
+          row.push({ x: labels[wd], y: d && d.count > 0 ? parseFloat(d.avg.toFixed(3)) : null });
+        }
+        series.push({ name: MONTHS_DE_SHORT[m-1], data: row });
+      }
+      var SENTINEL = -9999;
+      for (var s=0;s<series.length;s++) {
+        for (var i=0;i<series[s].data.length;i++) {
+          if (series[s].data[i].y == null) series[s].data[i].y = SENTINEL;
+        }
+      }
+
+      if (WD.charts.heatmap) { try { WD.charts.heatmap.destroy(); } catch(e){} }
+      WD.charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: 480 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from: SENTINEL, to: SENTINEL+1, color:'#0a0a0a' },
+              { from:-99, to:-0.2, color:'#7f1d1d' },
+              { from:-0.2, to:-0.05, color:'#991b1b' },
+              { from:-0.05, to:0.05, color:'#1f2937' },
+              { from:0.05, to:0.2, color:'#166534' },
+              { from:0.2, to:99, color:'#15803d' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){ return v === SENTINEL ? 'keine Daten' : fmtPct(v,3); } }
+        }),
+        xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}}, reversed: false },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return v === SENTINEL ? '' : (v>=0?'+':'')+v.toFixed(2); },
+          style: { fontSize:'10px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Monat × Wochentag Heatmap', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      WD.charts.heatmap.render();
+    };
+
+    // ── 11. Top/Flop Tabellen ────────────────────────────────────
+    WD.renderTopFlop = function(topflop) {
+      var renderRow = function(c) {
+        return '<tr>' +
+          '<td>'+c.month_label+'</td>' +
+          '<td>'+c.wd_label+'</td>' +
+          '<td class="'+(c.avg>=0?'pos':'neg')+'">'+fmtPct(c.avg,3)+'</td>' +
+          '<td>'+c.win_rate.toFixed(0)+'%</td>' +
+          '<td>'+c.n+'</td>' +
+        '</tr>';
+      };
+      document.getElementById('tbody-top').innerHTML = topflop.top.map(renderRow).join('');
+      document.getElementById('tbody-flop').innerHTML = topflop.flop.map(renderRow).join('');
+    };
+
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // PAGE LIFECYCLE
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var WD = window._SA_WD;
+    var $error = document.getElementById('error-banner');
+    var SECTION_IDS = ['sec-cum','sec-bars','sec-sig','sec-table','sec-oi','sec-weekend','sec-consec','sec-streak','sec-quarterly','sec-heatmap','sec-topflop'];
+
+    var MODE_DESC = {
+      'cc': 'Schlusskurs heute vs. Schlusskurs morgen',
+      'co': 'Schlusskurs heute vs. Eröffnung morgen (Overnight)',
+      'oc': 'Eröffnung vs. Schluss am selben Tag (Intraday)',
+      'oc1': 'Eröffnung heute vs. Schluss morgen'
+    };
+    var MODE_LABELS = {
+      'cc': 'Close→Close',
+      'co': 'Close→Open',
+      'oc': 'Open→Close (Intraday)',
+      'oc1': 'Open→Close (t0→t1)'
+    };
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){$error.style.display='none';}, 8000); }
+    function showSections(show) { SECTION_IDS.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; }); }
+    function destroyAll() {
+      Object.keys(WD.charts).forEach(function(k){
+        if (WD.charts[k]) { try { WD.charts[k].destroy(); } catch(e){} WD.charts[k] = null; }
+      });
+    }
+
+    // ── Sidebar UI Listener ──────────────────────────────────────
+    document.getElementById('sl-years').addEventListener('input', function(){
+      document.getElementById('lbl-years').textContent = this.value;
+    });
+    document.getElementById('sl-years').addEventListener('change', function(){ if (WD.getRawRows().length) renderAll(); });
+    document.getElementById('sel-mode').addEventListener('change', function(){
+      document.getElementById('mode-desc').textContent = MODE_DESC[this.value] || '';
+      if (WD.getRawRows().length) renderAll();
+    });
+    document.querySelectorAll('#cycle-filter input').forEach(function(cb){
+      cb.addEventListener('change', function(){ if (WD.getRawRows().length) renderAll(); });
+    });
+    document.getElementById('chk-current').addEventListener('change', function(){ if (WD.getRawRows().length) renderAll(); });
+
+    // Indikator-Filter (Technische Filter)
+    var getIndicatorFilters = SA.indicators.renderFilterUI('indicator-filters', function(){ if (WD.getRawRows().length) renderAll(); });
+
+    // ── fetchOHLC ────────────────────────────────────────────────
+    function fetchOHLC(ticker, dateFilter) {
+      var allRows = [];
+      var batchSize = 1000;
+      function batch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close&order=date' + (dateFilter || '');
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
+        }).then(function(r) {
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows) {
+            allRows = allRows.concat(rows);
+            if (cr) { var t = parseInt(cr.split('/')[1]); if (allRows.length < t) return batch(allRows.length); }
+            else if (rows.length === batchSize) return batch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+      return batch(0);
+    }
+
+    // ── Render All ───────────────────────────────────────────────
+    function renderAll() {
+      var rawRows = WD.getRawRows();
+      var ticker = WD.getCurrentTicker();
+      if (!rawRows.length || !ticker) return;
+      document.getElementById('title-ticker').textContent = ticker;
+
+      // Indikator-Filter (vor Enrichment)
+      var indFilters = typeof getIndicatorFilters === 'function' ? getIndicatorFilters() : [];
+      var filteredRaw = rawRows;
+      var badge = document.getElementById('ind_badge');
+      if (indFilters && indFilters.length > 0) {
+        try {
+          var closes = rawRows.map(function(r){return parseFloat(r.close);});
+          var mask = SA.indicators.applyFilter(closes, indFilters);
+          filteredRaw = rawRows.filter(function(_, i){return mask[i];});
+          if (badge) badge.textContent = indFilters.length + ' Filter aktiv: ' + filteredRaw.length + '/' + rawRows.length + ' Tage (' + Math.round(filteredRaw.length/rawRows.length*100) + '%)';
+        } catch (e) {
+          if (badge) badge.textContent = 'Filter-Fehler: ' + e;
+        }
+      } else if (badge) {
+        badge.textContent = '';
+      }
+
+      var enriched = WD.enrichRows(filteredRaw);
+      WD.setEnrichedRows(enriched);
+
+      // Sidebar params
+      var yearsBack = parseInt(document.getElementById('sl-years').value);
+      var mode = document.getElementById('sel-mode').value;
+      var modeLabel = MODE_LABELS[mode];
+      // SMA/RSI Filter haben wir hier nicht — dafuer ist das Technische Filter Modul da
+      var filterMode = 'none', smaDays = 200, rsiDays = 14, rsiThreshold = 30;
+      var showCurrent = document.getElementById('chk-current').checked;
+      var cycleFilter = [];
+      document.querySelectorAll('#cycle-filter input:checked').forEach(function(cb){ cycleFilter.push(parseInt(cb.dataset.cycle)); });
+
+      // Trading Day Header
+      try {
+        SA.renderTradingDayHeader(document.getElementById('trading-day-header'), ticker, rawRows);
+      } catch (e) {
+        var hdr = document.getElementById('trading-day-header');
+        hdr.textContent = 'Heute: ' + new Date().toLocaleDateString('de-DE');
+      }
+
+      destroyAll();
+
+      // Compute
+      var stats = WD.calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter);
+      if (!stats) {
+        showError('Nicht genügend Daten für die Analyse');
+        return;
+      }
+
+      // Filter-Info (Cycle)
+      var fInfo = document.getElementById('filter-info');
+      if (cycleFilter.length) {
+        fInfo.innerHTML = '<b>Zyklusfilter aktiv:</b> ' + cycleFilter.map(function(c){return WD.CYCLE_LABELS[c];}).join(', ');
+        fInfo.style.display = '';
+      } else {
+        fInfo.style.display = 'none';
+      }
+
+      // Render
+      var wdCum = WD.calcWeeklyCumulative(enriched, yearsBack, cycleFilter);
+      var currentWeek = showCurrent ? WD.calcCurrentWeekCurve(enriched) : null;
+      WD.renderCumulative(wdCum, ticker, currentWeek);
+      WD.renderBars(stats, ticker, modeLabel);
+      WD.renderSignificance(stats);
+      WD.renderTable(stats);
+
+      var oiResult = WD.calcOvernightIntraday(enriched, yearsBack, cycleFilter);
+      WD.renderOvernight(oiResult, ticker, stats.is_crypto);
+
+      var weStats = WD.calcWeekendEffect(enriched, yearsBack, cycleFilter, filterMode, smaDays, rsiDays, rsiThreshold);
+      WD.renderWeekend(weStats, ticker, stats.is_crypto);
+
+      var consec = WD.calcConsecutiveProbs(enriched, yearsBack, cycleFilter);
+      WD.renderConsecutive(consec);
+
+      var streaks = WD.calcStreaksByWeekday(enriched, yearsBack, cycleFilter);
+      WD.renderStreaks(streaks);
+
+      if (!stats.is_crypto) {
+        var qStats = WD.calcQuarterlyWeekday(enriched, yearsBack, cycleFilter);
+        WD.renderQuarterly(qStats, ticker);
+        document.getElementById('sec-quarterly').style.display = '';
+      } else {
+        document.getElementById('sec-quarterly').style.display = 'none';
+      }
+
+      WD.renderHeatmap(stats, ticker);
+      var topflop = WD.calcTopFlop(stats);
+      WD.renderTopFlop(topflop);
+
+      showSections(true);
+      // Crypto-spezifische Sektionen ausblenden
+      if (stats.is_crypto) {
+        document.getElementById('sec-oi').style.display = 'none';
+        document.getElementById('sec-weekend').style.display = 'none';
+      }
+    }
+
+    // ── Ticker laden ─────────────────────────────────────────────
+    function loadTicker(ticker) {
+      ticker = ticker.trim().toUpperCase();
+      if (!ticker || ticker === WD.getCurrentTicker()) return;
+      document.getElementById('page-caption').textContent = 'Lade ' + ticker + '...';
+      var startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 30);
+      var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
+      fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!rows || rows.length < 200) { showError(ticker + ': Zu wenig Daten'); return; }
+        WD.setRawRows(rows);
+        WD.setCurrentTicker(ticker);
+        document.getElementById('page-caption').textContent = 'Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt';
+        renderAll();
+      }).catch(function(e){
+        showError('Fehler: ' + (e && e.message ? e.message : e));
+      });
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    function initialLoad() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
+        SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+        loadTicker('^GSPC');
+      } else {
+        document.getElementById('page-caption').textContent = 'Supabase nicht konfiguriert';
+      }
+    }
+    initialLoad();
+  })();
+  </script>
+
+  <script>
+  // Nav + Footer Loader
+  fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html;});
+  fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  </script>
+</body>
+</html>
