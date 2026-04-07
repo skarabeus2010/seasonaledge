@@ -495,35 +495,34 @@
           days.push(Math.floor((dj-new Date(dj.getFullYear(),0,0))/86400000));
           logRets.push(lr);
         }
-        // Interpoliere cumulative auf 365 Kalendertage
-        // WICHTIG: Tage NACH dem letzten echten Handelstag werden mit null gefüllt
-        // (statt konstantem letzten Wert), damit unvollständige Jahre (z.B. das aktuelle)
-        // nicht die Perzentil-/Mittelwert-Berechnungen verfälschen.
+        // Interpoliere cumulative auf 365 Kalendertage — KONSTANT-FILL nach
+        // letztem echten Handelstag (Python-kompatibel via shared/calculations.py
+        // interpolate_to_365). Damit bleibt die avg-Kurve auch für unvollständige
+        // Jahre smooth — Funktionen die NUR echte Werte brauchen (Perzentil,
+        // Drawdown, Heatmap) nutzen das last_actual_day Feld zum Filtern.
         var lastActualDay = days[days.length-1];
         var full365=[];
         for (var t=1;t<=365;t++) {
-          if (t > lastActualDay) { full365.push(null); continue; }
           var idx=days.indexOf(t);
           if (idx>=0) { full365.push(cumulative[idx]); continue; }
           if (t<days[0]) { full365.push(cumulative[0]); continue; }
+          if (t>lastActualDay) { full365.push(cumulative[cumulative.length-1]); continue; } // CONSTANT FILL
           var prev=-1,next=-1;
           for (var k=0;k<days.length;k++) { if(days[k]<t)prev=k; if(days[k]>t&&next<0)next=k; }
           if (prev>=0&&next>=0) {
             var w=(t-days[prev])/(days[next]-days[prev]);
             full365.push(cumulative[prev]+w*(cumulative[next]-cumulative[prev]));
           } else {
-            full365.push(null);
+            full365.push(cumulative[cumulative.length-1]);
           }
         }
-        // simpleReturn vom letzten echten Wert (nicht von null)
-        var lastReal = cumulative[cumulative.length-1];
         result[parseInt(yr)] = {
           full_365: full365,
           days: days,
           log_returns: logRets,
           cumulative: cumulative,
           last_actual_day: lastActualDay,
-          simpleReturn: lastReal>0 ? (lastReal/cumulative[0]-1)*100 : 0
+          simpleReturn: full365[364]>0 ? (full365[364]/full365[0]-1)*100 : 0
         };
       }
       return result;
@@ -608,11 +607,18 @@
       return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number) };
     }
 
-    // ── Drawdown Berechnungen (null-safe) ────────────────────────────────────
-    function drawdownSeries(curve, base) {
+    // ── Drawdown Berechnungen (null-safe + last_actual_day-aware) ───────────
+    /**
+     * @param {Array} curve - normierte Kurve (constant-filled nach lastActualDay)
+     * @param {number} base - Offset (0 fuer Jahreszyklus)
+     * @param {number} [lastActualDay] - 1-basierter letzter echter Handelstag.
+     *   Tage > lastActualDay werden mit null markiert (keine extrapolierte DD).
+     */
+    function drawdownSeries(curve, base, lastActualDay) {
       base = base || 0;
       var dd=[], peak=-Infinity;
       for (var i=0;i<curve.length;i++) {
+        if (lastActualDay && (i+1) > lastActualDay) { dd.push(null); continue; }
         var v = curve[i];
         if (v == null || isNaN(v) || !isFinite(v)) { dd.push(null); continue; }
         v = v + base;
@@ -621,10 +627,16 @@
       }
       return dd;
     }
-    function avgDrawdownCurve(curves, base) {
-      if (!curves.length) return { avg:[], std:[] };
+    /**
+     * @param {Array} curveSpecs - Array von {curve, lastActualDay} ODER plain curves
+     */
+    function avgDrawdownCurve(curveSpecs, base) {
+      if (!curveSpecs.length) return { avg:[], std:[] };
       var n = 365;
-      var ddSeries = curves.map(function(c){ return drawdownSeries(c, base); });
+      var ddSeries = curveSpecs.map(function(s){
+        if (s && s.curve) return drawdownSeries(s.curve, base, s.lastActualDay);
+        return drawdownSeries(s, base);
+      });
       var avg=[], std=[];
       for (var i=0;i<n;i++) {
         var vals = ddSeries.map(function(s){ return s[i]; });
@@ -641,14 +653,22 @@
       var minV = Math.min.apply(null, clean);
       return { max_drawdown: minV, max_dd_day: dd.indexOf(minV) };
     }
-    function drawdownKpi(curves, base) {
-      if (!curves.length) return null;
-      var maxDds = curves.map(function(c){ return drawdownStats(c, base).max_drawdown; });
+    function drawdownKpi(curveSpecs, base) {
+      if (!curveSpecs.length) return null;
+      var maxDds = curveSpecs.map(function(s){
+        if (s && s.curve) {
+          // last_actual_day-aware via drawdownSeries → min des bereinigten Arrays
+          var dd = drawdownSeries(s.curve, base, s.lastActualDay);
+          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+          return clean.length ? Math.min.apply(null, clean) : 0;
+        }
+        return drawdownStats(s, base).max_drawdown;
+      });
       var clean = maxDds.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
       return {
         avg_max_dd: mean(maxDds),
         worst_max_dd: clean.length ? Math.min.apply(null, clean) : 0,
-        n: curves.length
+        n: curveSpecs.length
       };
     }
 
@@ -737,21 +757,23 @@
       };
     }
 
-    // ── Month × Offset Heatmap Data (null-safe) ─────────────────────────────
+    // ── Month × Offset Heatmap Data (null-safe + last_actual_day-aware) ────
     function buildMonthlyHeatmap(yearData) {
       var years = Object.keys(yearData).map(Number).sort(function(a,b){return b-a;});
       var last10 = years.slice(0,10);
       var series = [];
       for (var yi=0;yi<last10.length;yi++) {
         var y = last10[yi];
+        var yo = yearData[y];
         var row = [];
         for (var m=1;m<=12;m++) {
           var b = MONTH_BOUNDS[m-1];
-          var c = yearData[y].full_365;
+          var c = yo.full_365;
           var sv = c[b[0]-1], ev = c[Math.min(b[1]-1,364)];
-          // Wenn Monat unvollständig (z.B. aktuelles Jahr nach lastActualDay) → null
           var cellVal;
-          if (sv == null || ev == null || isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
+          // Skip wenn Monat-ENDE über last_actual_day liegt (Monat unvollständig)
+          if (b[1] > yo.last_actual_day || sv == null || ev == null ||
+              isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
             cellVal = null;
           } else {
             cellVal = parseFloat(((ev-sv)/sv*100).toFixed(2));
@@ -847,14 +869,18 @@
       // (kommen in eigenem Sub-Chart unten via renderIndividualYears)
       var individualNames = [];
 
-      // 2. Perzentil-Bänder → linke Achse (NaN-safe: nulls vor sort entfernen)
+      // 2. Perzentil-Bänder → linke Achse
+      // NUR echte (nicht extrapolierte) Werte: Jahre wo d > last_actual_day
+      // werden ausgeschlossen — sonst würde 2026's Konstant-Fill (96) das p25
+      // verzerren.
       if (showPercentile && Object.keys(yearData).length>=5) {
-        var allCurves = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
         var p25 = [], p75 = [];
         for (var d=0;d<365;d++) {
           var vals = [];
-          for (var ci=0;ci<allCurves.length;ci++) {
-            var v = allCurves[ci][d];
+          for (var y in yearData) {
+            var yo = yearData[y];
+            if (d >= yo.last_actual_day) continue; // extrapolierter Wert → skip
+            var v = yo.full_365[d];
             if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) vals.push(v);
           }
           if (vals.length < 4) { p25.push(null); p75.push(null); continue; }
@@ -1415,10 +1441,16 @@
 
     // ── Render: Drawdown-Verlauf + KPIs ─────────────────────────────────────
     JZ.renderDrawdown = function(yearData, ticker, showCurrent, showIndividual) {
-      var curves = [];
-      for (var y in yearData) curves.push(yearData[y].full_365.slice());
-      var dd = JZ.avgDrawdownCurve(curves, 0);
-      var kpi = JZ.drawdownKpi(curves, 0);
+      // CurveSpecs mit last_actual_day für last_actual_day-aware DD-Berechnung
+      var curveSpecs = [];
+      for (var y in yearData) {
+        curveSpecs.push({
+          curve: yearData[y].full_365.slice(),
+          lastActualDay: yearData[y].last_actual_day
+        });
+      }
+      var dd = JZ.avgDrawdownCurve(curveSpecs, 0);
+      var kpi = JZ.drawdownKpi(curveSpecs, 0);
       var currentYear = new Date().getFullYear();
 
       var series = [];
@@ -1429,7 +1461,8 @@
       // Einzeljahre (dünne Linien)
       if (showIndividual) {
         for (var y in yearData) {
-          var cDd = JZ.drawdownSeries(yearData[y].full_365, 0);
+          var yo = yearData[y];
+          var cDd = JZ.drawdownSeries(yo.full_365, 0, yo.last_actual_day);
           series.push({ name:String(y), data: pad365(cDd) });
           colors.push('rgba(200,220,255,.1)');
           widths.push(0.5);
@@ -1445,8 +1478,8 @@
 
       // Aktuelles Jahr
       if (showCurrent && yearData[currentYear]) {
-        var cur = yearData[currentYear].full_365;
-        var curDd = JZ.drawdownSeries(cur, 0);
+        var curObj = yearData[currentYear];
+        var curDd = JZ.drawdownSeries(curObj.full_365, 0, curObj.last_actual_day);
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = curDd[i];
@@ -1575,14 +1608,20 @@
       for (var c=1;c<=4;c++) {
         var years = cycleGroups[c];
         if (!years.length) continue;
-        var curves = years.map(function(y){ return yearData[y].full_365.slice(); });
-        var r = JZ.avgDrawdownCurve(curves, 0);
+        var curveSpecs = years.map(function(y){
+          return { curve: yearData[y].full_365.slice(), lastActualDay: yearData[y].last_actual_day };
+        });
+        var r = JZ.avgDrawdownCurve(curveSpecs, 0);
         series.push({ name:CYCLE_LABELS[c]+' ('+years.length+'J)', data: pad365(r.avg) });
         colors.push(CYCLE_COLORS[c]);
         widths.push(c===currentCycle ? 3 : 1.8);
 
-        // Stats pro Zyklus
-        var ddsVals = curves.map(function(c){ return JZ.drawdownStats(c, 0).max_drawdown; });
+        // Stats pro Zyklus (mit last_actual_day-aware drawdownSeries)
+        var ddsVals = curveSpecs.map(function(s){
+          var dd = JZ.drawdownSeries(s.curve, 0, s.lastActualDay);
+          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+          return clean.length ? Math.min.apply(null, clean) : 0;
+        });
         var bestIdx=0, worstIdx=0;
         for (var i=0;i<ddsVals.length;i++) {
           if (Math.abs(ddsVals[i]) < Math.abs(ddsVals[bestIdx])) bestIdx=i;
