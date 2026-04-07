@@ -1705,7 +1705,7 @@
       var monthFilter = getSelectedMonths();
 
       // Trading Day Header — zentrales Modul aus app.js
-      try { SA.renderTradingDayHeader('trading-day-header', ticker, rawRows); } catch(e){}
+      SA.renderTradingDayHeader('trading-day-header', ticker, rawRows);
 
       destroyAll();
 

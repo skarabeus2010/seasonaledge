@@ -1903,14 +1903,8 @@
       // Current TDOM (nur wenn ausgewählter Monat = aktueller Monat)
       var currentTdom = (selectedMonth === currentMonth) ? MZ.getCurrentTdom(tdomRows, ticker) : null;
 
-      // Trading Day Header
-      try {
-        SA.renderTradingDayHeader(document.getElementById('trading-day-header'), ticker, rawRows);
-      } catch(e) {
-        var hdr = document.getElementById('trading-day-header');
-        var today = new Date();
-        hdr.textContent = 'Heute: ' + today.toLocaleDateString('de-DE') + (currentTdom != null ? ' · TDOM ' + currentTdom : '');
-      }
+      // Trading Day Header — zentrales Modul aus app.js
+      SA.renderTradingDayHeader('trading-day-header', ticker, rawRows);
 
       destroyAll();
 
