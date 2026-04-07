@@ -373,22 +373,32 @@
     // ── Day Counts: wie viele Jahre haben echte Daten pro Kalendertag ────────
     // Port von Python (Zeilen 127-142 in pages/02_Jahreszyklus.py).
     // Schwellwert MIN_N = max(n_years * 50%, 3). Tage darunter = "unsicher".
+    // WICHTIG: zählt ECHTE Handelstage (yearData[y].days array), nicht
+    // interpolierte full_365 Werte — entspricht damit dem Python-Original.
     function computeDayCounts(yearData) {
       var nYears = 0;
       for (var _ in yearData) nYears++;
       var minN = Math.max(Math.floor(nYears * 0.5), 3);
       var counts = new Array(365).fill(0);
       for (var y in yearData) {
-        var c = yearData[y].full_365;
-        for (var d=0; d<365; d++) {
-          var v = c[d];
-          if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) counts[d]++;
+        var dArr = yearData[y].days;
+        if (!dArr) continue;
+        for (var i=0; i<dArr.length; i++) {
+          var d = dArr[i];
+          if (d >= 1 && d <= 365) counts[d-1]++;
         }
       }
       // last_solid_day: groesster Tag wo count >= minN (1-basiert)
       var lastSolid = 0;
       for (var d=364; d>=0; d--) {
         if (counts[d] >= minN) { lastSolid = d + 1; break; }
+      }
+      // Diagnose-Log fuer User-Verifizierung
+      if (typeof console !== 'undefined' && console.log) {
+        var tail = [];
+        for (var d=355; d<365; d++) tail.push('Tag'+(d+1)+'='+counts[d]);
+        console.log('[jahreszyklus] dayCounts: nYears='+nYears+', minN='+minN+', lastSolid='+lastSolid+(lastSolid===365?' (keine gelbe Linie)':' (gelb ab Tag '+(lastSolid+1)+')'));
+        console.log('[jahreszyklus] Letzte 10 Tage: '+tail.join(', '));
       }
       return { counts: counts, minN: minN, nYears: nYears, lastSolid: lastSolid };
     }
