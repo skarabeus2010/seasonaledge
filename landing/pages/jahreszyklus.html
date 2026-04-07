@@ -425,6 +425,45 @@
       return { solid: solid, weak: weak };
     }
 
+    /**
+     * Erkennt vertikale Sprünge am rechten Rand einer Kurve.
+     * Berechnet 95-Perzentil der Day-to-Day Deltas im Mittelteil (Tag 30-330)
+     * als "normalen" Bereich, dann scannt vom Ende rückwärts und findet den
+     * letzten anomalen Sprung. Returns 1-basiertes lastStableDay.
+     *
+     * Beispiel: Wenn Tag 365 von 115 auf 125 springt (+10), und im Mittelteil
+     * sind die typischen Deltas ~0.3, dann gilt 10 > 4*0.3 = 1.2 → Anomalie.
+     * Day 364 ist der letzte stabile Tag → return 364.
+     */
+    function detectAnomalyEnd(arr) {
+      if (!arr || arr.length < 100) return 365;
+      // Sammle Deltas aus dem Mittelteil (Tag 30-330) für robuste Baseline
+      var deltas = [];
+      for (var i=30; i<330; i++) {
+        var a = arr[i], b = arr[i-1];
+        if (a != null && b != null && !isNaN(a) && !isNaN(b)) {
+          deltas.push(Math.abs(a - b));
+        }
+      }
+      if (deltas.length < 50) return 365;
+      deltas.sort(function(a,b){return a-b;});
+      var p95 = deltas[Math.floor(deltas.length * 0.95)];
+      // Anomalie-Schwellwert: 4x das 95-Perzentil, mindestens 0.5
+      var threshold = Math.max(p95 * 4, 0.5);
+
+      // Scanne vom Ende rückwärts: finde ersten anomalen Sprung
+      // Beim Treffer ist arr[idx] der erste BAD Tag, arr[idx-1] der letzte GOOD
+      // 1-basiert: lastStable = idx (weil arr[idx-1] = Tag idx 1-basiert)
+      for (var idx = arr.length - 1; idx >= 1; idx--) {
+        var a = arr[idx], b = arr[idx-1];
+        if (a == null || b == null || isNaN(a) || isNaN(b)) continue;
+        if (Math.abs(a - b) > threshold) {
+          return idx; // 1-basiert
+        }
+      }
+      return 365;
+    }
+
     // ── Build year data mit days + log_returns für Pressure ─────────────────
     /**
      * Erweiterter Year-Data-Builder: zusätzlich zu full_365 auch log_returns und days.
@@ -737,7 +776,7 @@
       currentVolaStats:currentVolaStats, buildMonthlyHeatmap:buildMonthlyHeatmap,
       rollingMean:rollingMean, corrcoef:corrcoef, mean:mean, stdev:stdev, median:median,
       percentileOf:percentileOf, todayDoy:todayDoy, cycleOf:cycleOf,
-      computeDayCounts:computeDayCounts, splitSolidWeak:splitSolidWeak,
+      computeDayCounts:computeDayCounts, splitSolidWeak:splitSolidWeak, detectAnomalyEnd:detectAnomalyEnd,
       showError:showError, showSections:showSections, destroyAll:destroyAll,
       getCurrentTicker:function(){return currentTicker;}, setCurrentTicker:function(t){currentTicker=t;},
       getCachedRows:function(){return _cachedRows;}, setCachedRows:function(r){_cachedRows=r;}
@@ -838,16 +877,24 @@
       }
 
       // 4. Saisonaler Ø → linke Achse, gesplittet in solid + weak
-      // (weak = "unsicher" Bereich wo n_jahre < 50% am rechten Rand)
+      // Zwei Erkennungsmechanismen kombiniert:
+      //  (a) computeDayCounts: < 50% Jahre haben Daten
+      //  (b) detectAnomalyEnd: vertikaler Sprung am Rand (4x das 95-Perzentil)
+      // Es gewinnt der STRENGERE Wert (kleineres lastSolid)
       var dc = JZ.computeDayCounts(yearData);
-      var split = JZ.splitSolidWeak(avgSmooth, dc.lastSolid);
+      var anomalyEnd = JZ.detectAnomalyEnd(avgSmooth);
+      var effectiveLastSolid = Math.min(dc.lastSolid, anomalyEnd);
+      var split = JZ.splitSolidWeak(avgSmooth, effectiveLastSolid);
       seriesDef.push({
         name: 'Saisonaler Ø ('+nYears+'J)', data: pad365(split.solid),
         color: COL_AVG, width: 3.5, dash: 0, axis: 'left'
       });
-      if (dc.lastSolid < 365) {
+      if (effectiveLastSolid < 365) {
+        var weakLabel = (anomalyEnd < dc.lastSolid)
+          ? '⚠ wenige Daten (unsicher)'
+          : '⚠ n<'+dc.minN+' (unsicher)';
         seriesDef.push({
-          name: '⚠ n<'+dc.minN+' (unsicher)', data: pad365(split.weak),
+          name: weakLabel, data: pad365(split.weak),
           color: '#facc15', width: 1.5, dash: 3, axis: 'left'
         });
       }
@@ -1064,16 +1111,21 @@
       var range = rMax - rMin;
       var detrended = raw.map(function(v){ return range>0 ? (v-rMin)/range*100 : 50; });
 
-      // Solid/Weak Split (gleiche Logik wie Hauptchart)
+      // Solid/Weak Split: Count-Threshold + Anomaly-Detection (kleinster gewinnt)
       var dc = yearData ? JZ.computeDayCounts(yearData) : { lastSolid: 365, minN: 0 };
-      var split = JZ.splitSolidWeak(detrended, dc.lastSolid);
+      var anomalyEnd = JZ.detectAnomalyEnd(detrended);
+      var effectiveLastSolid = Math.min(dc.lastSolid, anomalyEnd);
+      var split = JZ.splitSolidWeak(detrended, effectiveLastSolid);
 
       var series = [{ name:'Saisonaler Druck', data: pad365(split.solid) }];
       var colors = ['#ff6b6b'];
       var widths = [2.5];
       var dashes = [0];
-      if (dc.lastSolid < 365) {
-        series.push({ name:'⚠ n<'+dc.minN+' (unsicher)', data: pad365(split.weak) });
+      if (effectiveLastSolid < 365) {
+        var wlabel = (anomalyEnd < dc.lastSolid)
+          ? '⚠ wenige Daten (unsicher)'
+          : '⚠ n<'+dc.minN+' (unsicher)';
+        series.push({ name: wlabel, data: pad365(split.weak) });
         colors.push('#facc15');
         widths.push(1.5);
         dashes.push(3);
