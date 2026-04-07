@@ -370,6 +370,49 @@
     // 2020/2024 = Election Year (4), 2021/2025 = Post-Election (1), etc.
     function cycleOf(year) { return ((year - 1) % 4 + 4) % 4 + 1; }
 
+    // ── Day Counts: wie viele Jahre haben echte Daten pro Kalendertag ────────
+    // Port von Python (Zeilen 127-142 in pages/02_Jahreszyklus.py).
+    // Schwellwert MIN_N = max(n_years * 50%, 3). Tage darunter = "unsicher".
+    function computeDayCounts(yearData) {
+      var nYears = 0;
+      for (var _ in yearData) nYears++;
+      var minN = Math.max(Math.floor(nYears * 0.5), 3);
+      var counts = new Array(365).fill(0);
+      for (var y in yearData) {
+        var c = yearData[y].full_365;
+        for (var d=0; d<365; d++) {
+          var v = c[d];
+          if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) counts[d]++;
+        }
+      }
+      // last_solid_day: groesster Tag wo count >= minN (1-basiert)
+      var lastSolid = 0;
+      for (var d=364; d>=0; d--) {
+        if (counts[d] >= minN) { lastSolid = d + 1; break; }
+      }
+      return { counts: counts, minN: minN, nYears: nYears, lastSolid: lastSolid };
+    }
+
+    /**
+     * Splittet eine 365-Tag-Serie in zwei Teile: solid (Tag <= lastSolid) und
+     * weak (Tag > lastSolid). Beide Teile haben 365 Punkte mit nulls in den
+     * inverse-Bereichen. Der letzte solide Punkt wird zusätzlich in der weak
+     * Serie gehalten, damit die Linien visuell verbunden sind.
+     */
+    function splitSolidWeak(arr, lastSolid) {
+      var solid = new Array(365).fill(null);
+      var weak  = new Array(365).fill(null);
+      for (var i=0; i<365; i++) {
+        if (i+1 <= lastSolid) solid[i] = arr[i];
+        else weak[i] = arr[i];
+      }
+      // Bridge: letzter solide Punkt auch in weak einsetzen für visuelle Verbindung
+      if (lastSolid > 0 && lastSolid < 365) {
+        weak[lastSolid - 1] = arr[lastSolid - 1];
+      }
+      return { solid: solid, weak: weak };
+    }
+
     // ── Build year data mit days + log_returns für Pressure ─────────────────
     /**
      * Erweiterter Year-Data-Builder: zusätzlich zu full_365 auch log_returns und days.
@@ -682,6 +725,7 @@
       currentVolaStats:currentVolaStats, buildMonthlyHeatmap:buildMonthlyHeatmap,
       rollingMean:rollingMean, corrcoef:corrcoef, mean:mean, stdev:stdev, median:median,
       percentileOf:percentileOf, todayDoy:todayDoy, cycleOf:cycleOf,
+      computeDayCounts:computeDayCounts, splitSolidWeak:splitSolidWeak,
       showError:showError, showSections:showSections, destroyAll:destroyAll,
       getCurrentTicker:function(){return currentTicker;}, setCurrentTicker:function(t){currentTicker=t;},
       getCachedRows:function(){return _cachedRows;}, setCachedRows:function(r){_cachedRows=r;}
@@ -794,11 +838,20 @@
         seriesDef.push({ name:'−1σ', data: pad365(lower), color:'rgba(77,159,255,.6)', width:1.5, dash:4, axis:'left' });
       }
 
-      // 4. Saisonaler Ø → linke Achse
+      // 4. Saisonaler Ø → linke Achse, gesplittet in solid + weak
+      // (weak = "unsicher" Bereich wo n_jahre < 50% am rechten Rand)
+      var dc = JZ.computeDayCounts(yearData);
+      var split = JZ.splitSolidWeak(avgSmooth, dc.lastSolid);
       seriesDef.push({
-        name:'Saisonaler Ø ('+nYears+'J)', data: pad365(avgSmooth),
-        color:COL_AVG, width:3.5, dash:0, axis:'left'
+        name: 'Saisonaler Ø ('+nYears+'J)', data: pad365(split.solid),
+        color: COL_AVG, width: 3.5, dash: 0, axis: 'left'
       });
+      if (dc.lastSolid < 365) {
+        seriesDef.push({
+          name: '⚠ n<'+dc.minN+' (unsicher)', data: pad365(split.weak),
+          color: '#facc15', width: 1.5, dash: 3, axis: 'left'
+        });
+      }
 
       // 5. Präsidentenzyklus-Overlays → linke Achse (NaN-safe via mean helper)
       for (var c=1;c<=4;c++) {
@@ -920,7 +973,7 @@
     };
 
     // ── Render: Detrend-Indikator ────────────────────────────────────────────
-    JZ.renderDetrend = function(avg, ticker, nYears) {
+    JZ.renderDetrend = function(avg, ticker, nYears, yearData) {
       if (avg.length<10) return;
       var endVal = avg[avg.length-1] - avg[0];
       var drift = endVal / avg.length;
@@ -930,13 +983,27 @@
       var range = rMax - rMin;
       var detrended = raw.map(function(v){ return range>0 ? (v-rMin)/range*100 : 50; });
 
+      // Solid/Weak Split (gleiche Logik wie Hauptchart)
+      var dc = yearData ? JZ.computeDayCounts(yearData) : { lastSolid: 365, minN: 0 };
+      var split = JZ.splitSolidWeak(detrended, dc.lastSolid);
+
+      var series = [{ name:'Saisonaler Druck', data: pad365(split.solid) }];
+      var colors = ['#ff6b6b'];
+      var widths = [2.5];
+      var dashes = [0];
+      if (dc.lastSolid < 365) {
+        series.push({ name:'⚠ n<'+dc.minN+' (unsicher)', data: pad365(split.weak) });
+        colors.push('#facc15');
+        widths.push(1.5);
+        dashes.push(3);
+      }
+
       if (JZ.charts.detrend) { JZ.charts.detrend.destroy(); JZ.charts.detrend=null; }
       JZ.charts.detrend = new ApexCharts(document.getElementById('chart-detrend'), {
-        series: [{ name:'Saisonaler Druck', data: pad365(detrended) }],
-        chart: Object.assign({ type:'area', height:260 }, SA.chartTheme.chart),
-        stroke: { width:2.5, curve:'straight' },
-        fill: { type:'gradient', gradient:{opacityFrom:.25, opacityTo:.02} },
-        colors: ['#ff6b6b'],
+        series: series,
+        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
         xaxis: xaxisDoy(),
         yaxis: { min:0, max:100, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
@@ -946,7 +1013,7 @@
           yaxis: [{ y:50, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }]
         },
         dataLabels: { enabled:false },
-        legend: { show:false },
+        legend: { show: dc.lastSolid<365, position:'top', fontSize:'10px' },
         title: { text: ticker+' — Detrend-Indikator ('+nYears+'J)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       JZ.charts.detrend.render();
@@ -1499,7 +1566,7 @@
         try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
       }
       safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
-      safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length); });
+      safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
       safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
       safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
       safeRender('quarterly',     function(){ JZ.renderQuarterly(yearData, ticker); });
