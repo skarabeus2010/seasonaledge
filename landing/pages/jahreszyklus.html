@@ -1001,14 +1001,16 @@
       var individualNames = [];
 
       // 2. Perzentil-Bänder → linke Achse
-      // Strikte Filterung gegen Spikes am Rand:
-      //  - Jahre wo d >= last_actual_day werden ausgeschlossen (kein Constant-Fill)
-      //  - Mindestens MAX(5, 50% der Jahre) muessen echte Daten haben
-      //  - Lineare Interpolation statt Floor-Indexing fuer korrekte Quantile
+      // STRIKTE Filterung gegen Spikes am Rand:
+      //  - last_actual_day-Filter (kein Constant-Fill in der Stichprobe)
+      //  - min 80% der Jahre muessen echte Daten haben (verhindert Sample-Sprünge)
+      //  - Lineare Interpolation des Quantils (Numpy-default)
+      //  - "Stable Range" Trim: nach Berechnung wird der Rand abgeschnitten
+      //    bis zum ersten/letzten Tag wo die Sample-Groesse ihr Maximum erreicht.
+      //    Das eliminiert Spikes durch wechselnde Sample-Sets.
       if (showPercentile && Object.keys(yearData).length>=5) {
         var nYearsTotal = Object.keys(yearData).length;
-        var minNeeded = Math.max(5, Math.floor(nYearsTotal * 0.5));
-        // Lineare Interpolation des Quantils (Numpy-default)
+        var minNeeded = Math.max(5, Math.ceil(nYearsTotal * 0.80));
         var quantile = function(sortedVals, q) {
           var n = sortedVals.length;
           if (n === 0) return null;
@@ -1018,21 +1020,39 @@
           if (lo === hi) return sortedVals[lo];
           return sortedVals[lo] + (pos - lo) * (sortedVals[hi] - sortedVals[lo]);
         };
-        var p25 = [], p75 = [];
+        var p25 = new Array(365).fill(null);
+        var p75 = new Array(365).fill(null);
+        var sampleCounts = new Array(365).fill(0);
         for (var d=0;d<365;d++) {
           var vals = [];
           for (var y in yearData) {
             var yo = yearData[y];
-            // 1-basierter last_actual_day Vergleich (d ist 0-basiert)
-            if ((d+1) > yo.last_actual_day) continue; // extrapolierter Wert → skip
+            if ((d+1) > yo.last_actual_day) continue;
             var v = yo.full_365[d];
             if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) vals.push(v);
           }
-          if (vals.length < minNeeded) { p25.push(null); p75.push(null); continue; }
+          sampleCounts[d] = vals.length;
+          if (vals.length < minNeeded) continue;
           vals.sort(function(a,b){return a-b;});
-          p25.push(quantile(vals, 0.25));
-          p75.push(quantile(vals, 0.75));
+          p25[d] = quantile(vals, 0.25);
+          p75[d] = quantile(vals, 0.75);
         }
+
+        // Stable Range Trim: maximale Sample-Groesse finden, dann
+        // alle Tage am Rand verwerfen wo Sample < 90% des Maximums
+        var maxSample = 0;
+        for (var d=0;d<365;d++) if (sampleCounts[d] > maxSample) maxSample = sampleCounts[d];
+        var stableThreshold = Math.ceil(maxSample * 0.90);
+        // Erster und letzter "stabiler" Tag
+        var firstStable = -1, lastStable = -1;
+        for (var d=0;d<365;d++) if (sampleCounts[d] >= stableThreshold) { firstStable = d; break; }
+        for (var d=364;d>=0;d--) if (sampleCounts[d] >= stableThreshold) { lastStable = d; break; }
+        if (firstStable >= 0 && lastStable >= firstStable) {
+          for (var d=0;d<365;d++) {
+            if (d < firstStable || d > lastStable) { p25[d] = null; p75[d] = null; }
+          }
+        }
+
         if (smoothing>1) { p25 = JZ.rollingMean(p25, smoothing); p75 = JZ.rollingMean(p75, smoothing); }
         seriesDef.push({ name:'75. Perzentil', data: pad365(p75), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
         seriesDef.push({ name:'25. Perzentil', data: pad365(p25), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
@@ -1158,7 +1178,7 @@
     };
 
     // ── Render: Pressure Sub-Chart (synchron via chart.group) ───────────────
-    JZ.renderPressure = function(yearData, ticker, smoothing, showPressure) {
+    JZ.renderPressure = function(yearData, ticker, smoothing, showPressure, showCurrent) {
       var container = document.getElementById('chart-pressure');
       var pInfo = document.getElementById('pressure-info');
       if (!showPressure) {
@@ -1198,24 +1218,62 @@
 
       container.style.display = '';
 
-      // Daten clean fuer Plotly: null statt NaN/Infinity
+      // Pressure-Kurve fuer historische Lookback-Perioden
       var pData = pres.curve.map(function(v){ return (v != null && isFinite(v)) ? Math.round(v*100)/100 : null; });
+
+      // Aktueller Jahresverlauf — Pressure fuer NUR das current year als
+      // einzelne Lookback-Periode mit nur diesem Jahr in der Stichprobe.
+      // Berechnung: kumulative Tagesrenditen in % bis heute.
+      var series = [{ name:'Pressure (Ø Lookback)', data: pData }];
+      var seriesColors = [COL_PRESSURE];
+      var seriesWidths = [2.5];
+      var seriesDashes = [0];
+
+      var currentYear = new Date().getFullYear();
+      if (showCurrent && yearData[currentYear]) {
+        var curObj = yearData[currentYear];
+        if (curObj.log_returns && curObj.days) {
+          var td = JZ.todayDoy();
+          var curArr = new Array(365).fill(null);
+          var cum = 0;
+          var nMin = Math.min(curObj.log_returns.length, curObj.days.length);
+          for (var k=0;k<nMin;k++) {
+            var lr = parseFloat(curObj.log_returns[k]);
+            if (isNaN(lr) || !isFinite(lr)) lr = 0;
+            cum += lr * 100;
+            var d = curObj.days[k];
+            if (d >= 1 && d <= 365 && d <= td) {
+              curArr[d-1] = Math.round(cum*100)/100;
+            }
+          }
+          // Lueckentage fuellen
+          var lv = null;
+          for (var i=0;i<365;i++) {
+            if (curArr[i] != null) lv = curArr[i];
+            else if (lv != null && i < td) curArr[i] = lv;
+          }
+          series.push({ name: currentYear+' (aktuell)', data: curArr });
+          seriesColors.push(COL_CURRENT);
+          seriesWidths.push(3);
+          seriesDashes.push(0);
+        }
+      }
 
       if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
       JZ.charts.pressure = new ApexCharts(container, {
-        series: [{ name:'Pressure', data: pData }],
+        series: series,
         chart: Object.assign({
           type:'line',
-          height: 220,
+          height: 540,                      // Same as main chart
           group: 'jzklus-sync',
           id: 'jzklus-pressure'
         }, SA.chartTheme.chart),
-        stroke: { width:2, curve:'straight' },
-        colors: [COL_PRESSURE],
+        stroke: { width:seriesWidths, curve:'straight', dashArray:seriesDashes },
+        colors: seriesColors,
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           shared: true, intersect: false,
-          y: { formatter: function(v) { return v != null ? (v>=0?'+':'')+v.toFixed(2) : '–'; } },
+          y: { formatter: function(v) { return v != null ? (v>=0?'+':'')+v.toFixed(2)+'%' : '–'; } },
           x: { formatter: function(v, opts) {
             var d = opts.dataPointIndex + 1;
             for (var mi=11;mi>=0;mi--) {
@@ -1226,16 +1284,17 @@
         }),
         xaxis: xaxisDoy(),
         yaxis: {
-          labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
-          title: { text:'Pressure (Σ Lookback)', style:{color:COL_PRESSURE,fontSize:'11px'} }
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1)+'%':'';} },
+          title: { text:'Kumulierte Rendite (%)', style:{color:'#a89878',fontSize:'11px'} }
         },
         annotations: {
-          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4 }],
+          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
+                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
           yaxis: [{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
-        legend: { show:false },
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
         dataLabels: { enabled:false },
-        title: { text: ticker+' — Pressure Chart (Lookback '+pres.periods.join('/')+'J)', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text: ticker+' — Pressure Chart (Lookback '+pres.periods.join('/')+' Jahre)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       JZ.charts.pressure.render();
 
@@ -1977,7 +2036,7 @@
       }
       safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
       safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
-      safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure); });
+      safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure, showCurrent); });
       safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
       safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
       safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
