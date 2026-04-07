@@ -127,6 +127,8 @@
         <summary>Saisonaler Jahresverlauf</summary>
         <div class="content">
           <div id="chart-main"></div>
+          <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
+          <div id="chart-individuals" style="display:none;margin-top:.5rem"></div>
           <p id="pressure-info" style="font-size:.75rem;color:var(--accent);margin-top:.5rem;display:none"></p>
         </div>
       </details>
@@ -326,7 +328,7 @@
       document.getElementById('dd-header').style.display = show ? '' : 'none';
     }
     function destroyAll() {
-      ['main','detrend','monthly-bars','quarterly-bars','heatmap','drawdown','vola','dd-cycle'].forEach(function(k){
+      ['main','individuals','detrend','monthly-bars','quarterly-bars','heatmap','drawdown','vola','dd-cycle'].forEach(function(k){
         if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
       });
     }
@@ -802,22 +804,9 @@
       // axisGroup: 'left' (default), 'right_individual', 'right_pressure'
       var seriesDef = [];
 
-      // 1. Einzeljahre → gleiche Y-Achse, sehr transparent damit Avg dominiert
+      // 1. Einzeljahre werden NICHT mehr im Hauptchart gerendert
+      // (kommen in eigenem Sub-Chart unten via renderIndividualYears)
       var individualNames = [];
-      if (showIndividual) {
-        var yrKeys = Object.keys(yearData).map(Number).sort();
-        for (var i=0;i<yrKeys.length;i++) {
-          var y = yrKeys[i];
-          if (y === currentYear) continue;
-          var nm = String(y);
-          individualNames.push(nm);
-          seriesDef.push({
-            name: nm, data: pad365(yearData[y].full_365),
-            color: 'rgba(160,180,210,.18)', width: 0.8, dash: 0,
-            axis: 'left'
-          });
-        }
-      }
 
       // 2. Perzentil-Bänder → linke Achse (NaN-safe: nulls vor sort entfernen)
       if (showPercentile && Object.keys(yearData).length>=5) {
@@ -947,7 +936,7 @@
 
       var opts = {
         series: series,
-        chart: Object.assign({ type:'line', height:540 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'line', height:540, group:'jzklus-sync', id:'jzklus-main' }, SA.chartTheme.chart),
         stroke: { width:strokeWidths, curve:'straight', dashArray:strokeDashes },
         colors: colors,
         grid: SA.chartTheme.grid,
@@ -981,6 +970,87 @@
       var pInfo = document.getElementById('pressure-info');
       if (pressureInfo) { pInfo.textContent = pressureInfo; pInfo.style.display=''; }
       else pInfo.style.display='none';
+    };
+
+    // ── Render: Einzeljahre Sub-Chart (synchronisiert via chart.group) ──────
+    JZ.renderIndividualYears = function(yearData, ticker, showIndividual) {
+      var container = document.getElementById('chart-individuals');
+      if (!showIndividual) {
+        container.style.display = 'none';
+        if (JZ.charts.individuals) { try { JZ.charts.individuals.destroy(); } catch(e){} JZ.charts.individuals = null; }
+        return;
+      }
+      container.style.display = '';
+
+      var currentYear = new Date().getFullYear();
+      var yrKeys = Object.keys(yearData).map(Number).sort();
+      var series = [];
+      var colors = [];
+      var widths = [];
+      var dashes = [];
+
+      // 12-Monats-Palette für Jahre (zyklisch)
+      var YEAR_COLORS = ['#60a5fa','#34d399','#fbbf24','#f472b6','#a78bfa','#f87171',
+                         '#22d3ee','#facc15','#4ade80','#fb923c','#c084fc','#e879f9'];
+
+      for (var i=0;i<yrKeys.length;i++) {
+        var y = yrKeys[i];
+        if (y === currentYear) continue;
+        series.push({ name:String(y), data: pad365(yearData[y].full_365) });
+        colors.push(YEAR_COLORS[i % YEAR_COLORS.length]);
+        widths.push(1.5);
+        dashes.push(0);
+      }
+      // Aktuelles Jahr (gold, dick) auch im Sub-Chart
+      if (yearData[currentYear]) {
+        var td = JZ.todayDoy();
+        var curArr = new Array(365).fill(null);
+        for (var k=0;k<Math.min(td,365);k++) curArr[k] = yearData[currentYear].full_365[k];
+        series.push({ name: currentYear+' (aktuell)', data: pad365(curArr) });
+        colors.push('#F1C40F');
+        widths.push(2.5);
+        dashes.push(0);
+      }
+
+      if (!series.length) { container.style.display='none'; return; }
+
+      if (JZ.charts.individuals) { try { JZ.charts.individuals.destroy(); } catch(e){} JZ.charts.individuals = null; }
+      JZ.charts.individuals = new ApexCharts(container, {
+        series: series,
+        chart: Object.assign({
+          type:'line',
+          height: 320,
+          group: 'jzklus-sync',  // SYNC mit Hauptchart über chart.group
+          id: 'jzklus-individuals'
+        }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          x: { formatter: function(v, opts) {
+            var d = opts.dataPointIndex + 1;
+            for (var mi=11;mi>=0;mi--) {
+              if (d >= MONTH_STARTS_DOY[mi]) return (d-MONTH_STARTS_DOY[mi]+1)+'. '+MONTHS_DE[mi];
+            }
+            return 'Tag '+d;
+          }}
+        }),
+        xaxis: xaxisDoy(),
+        yaxis: {
+          forceNiceScale: true,
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          title: { text:'Einzeljahre — Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+        },
+        annotations: {
+          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4 }],
+          yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        },
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'10px', markers:{width:10,height:10} }),
+        dataLabels: { enabled:false },
+        title: { text: ticker+' — Einzeljahre (eigene Y-Skala)', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      JZ.charts.individuals.render();
     };
 
     // ── Render: Detrend-Indikator ────────────────────────────────────────────
@@ -1604,6 +1674,7 @@
         try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
       }
       safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
+      safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
       safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
       safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
       safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
