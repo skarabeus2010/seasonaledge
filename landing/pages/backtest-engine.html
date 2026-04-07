@@ -27,14 +27,7 @@
     .tab-nav button.active{background:rgba(232,168,32,.18);color:#FFD700;box-shadow:0 1px 3px rgba(232,168,32,.15)}
     .tab-content{display:none}
     .tab-content.active{display:block}
-    /* KPI Cards */
-    .kpi-row{display:flex;gap:.875rem;flex-wrap:wrap;margin-bottom:1rem}
-    .kpi-card{flex:1 1 0;min-width:140px;background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(232,168,32,.12);border-radius:12px;padding:.85rem 1.1rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease}
-    .kpi-card:hover{border-color:rgba(232,168,32,.3)}
-    .kpi-card .lbl{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.35rem}
-    .kpi-card .val{font-size:1.25rem;font-weight:800;font-family:var(--f-m);font-variant-numeric:tabular-nums;line-height:1.2;color:#e2e8f0}
-    .kpi-card .val.pos{color:#34d399}
-    .kpi-card .val.neg{color:#f87171}
+    /* KPI Cards: nutzt .kpi / .kpi-label / .kpi-value aus app.css */
     /* Tables */
     .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
     .perf-table th{color:#cbd5e1;font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
@@ -938,10 +931,15 @@
     function fmtPct(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '–'; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
     function fmtNum(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '–'; return v.toFixed(d); }
 
-    // ── KPI Cards Helper ─────────────────────────────────────────
+    // ── KPI Cards Helper — nutzt .kpi/.kpi-label/.kpi-value aus app.css ──
+    // Color classes: 'green' | 'red' | 'gold'
     function kpiCard(label, value, colorClass) {
-      return '<div class="kpi-card"><div class="lbl">' + label + '</div>' +
-             '<div class="val' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
+      // Map alte Namen auf Standard
+      var cls = colorClass;
+      if (cls === 'pos') cls = 'green';
+      else if (cls === 'neg') cls = 'red';
+      return '<div class="kpi"><div class="kpi-label">' + label + '</div>' +
+             '<div class="kpi-value' + (cls ? ' '+cls : '') + '">' + value + '</div></div>';
     }
 
     // ── TAB 1: Single Backtest ───────────────────────────────────
