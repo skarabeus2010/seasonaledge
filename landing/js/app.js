@@ -217,28 +217,32 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
 // ── Trading Day Header (wiederverwendbar) ──────────────────────────────────
 
 /**
- * Rendert den gelben Trading-Day-Header mit TDOM + TDOY.
- * Liest TDOM/TDOY aus den Supabase-Rows (letzte Zeile).
+ * Rendert den gelben Trading-Day-Header.
  *
- * @param {string} elementId - ID des Header-Containers
+ * Format: Heute: Mo 07.04.2026 · ^GSPC · TDOM 4/21 · TWOY 15/53 · TDOY 65/252 · Q2 · MidTerm
+ *
+ * Berechnet TDOM/TDOY/TWOY frisch vom Monats-/Jahresanfang und nutzt
+ * SA.holidays.isTradingDay() um boersenspezifische Feiertage zu beruecksichtigen.
+ *
+ * @param {string|HTMLElement} elementOrId - ID des Header-Containers ODER das Element selbst
  * @param {string} ticker - Aktueller Ticker
- * @param {Array} rows - [{date, close, tdom, tdoy}] (optional, fuer TDOM/TDOY)
+ * @param {Array} [rows] - optional, fallback fuer Nicht-Handelstage
  */
-SA.renderTradingDayHeader = function(elementId, ticker, rows) {
-  var el = document.getElementById(elementId);
+SA.renderTradingDayHeader = function(elementOrId, ticker, rows) {
+  var el = (typeof elementOrId === 'string')
+    ? document.getElementById(elementOrId)
+    : elementOrId;
   if (!el) return;
 
-  var today = new Date();
   var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+  var today = new Date();
   var weekday = weekdays[today.getDay()];
   var dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
   var todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
 
-  var tdomStr = '\u2013';
-  var tdoyStr = '\u2013';
-
-  var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker) : 'NYSE';
+  // Boerse via Ticker-Mapping
+  var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker || '') : 'NYSE';
   var isTD = function(ds) {
     if (window.SA && SA.holidays) return SA.holidays.isTradingDay(ds, exchange);
     var d = new Date(ds.substring(0,4) + '/' + ds.substring(5,7) + '/' + ds.substring(8,10));
@@ -246,35 +250,63 @@ SA.renderTradingDayHeader = function(elementId, ticker, rows) {
     return dow >= 1 && dow <= 5;
   };
 
-  if (isTD(todayStr)) {
-    // Heute ist ein Handelstag → TDoM/TDoY frisch berechnen vom Monats-/Jahresanfang
-    var tdomCount = 0;
-    var d1 = new Date(today.getFullYear(), today.getMonth(), 1);
-    while (true) {
-      var ds1 = d1.getFullYear() + '-' + pad(d1.getMonth()+1) + '-' + pad(d1.getDate());
-      if (ds1 > todayStr) break;
-      if (isTD(ds1)) tdomCount++;
-      d1.setDate(d1.getDate() + 1);
+  // TDOM (current/total) — iteriere durch den aktuellen Monat
+  var tdomCount = 0, tdomTotal = 0;
+  var d1 = new Date(today.getFullYear(), today.getMonth(), 1);
+  while (d1.getMonth() === today.getMonth()) {
+    var ds1 = d1.getFullYear() + '-' + pad(d1.getMonth()+1) + '-' + pad(d1.getDate());
+    if (isTD(ds1)) {
+      tdomTotal++;
+      if (ds1 <= todayStr) tdomCount++;
     }
-    var tdoyCount = 0;
-    var d2 = new Date(today.getFullYear(), 0, 1);
-    while (true) {
-      var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
-      if (ds2 > todayStr) break;
-      if (isTD(ds2)) tdoyCount++;
-      d2.setDate(d2.getDate() + 1);
-    }
-    tdomStr = String(tdomCount);
-    tdoyStr = String(tdoyCount);
-  } else if (rows && rows.length > 0) {
-    // Heute kein HT → letzten DB-Wert nehmen
-    var last = rows[rows.length - 1];
-    if (last.tdom != null) tdomStr = String(parseInt(last.tdom));
-    if (last.tdoy != null) tdoyStr = String(parseInt(last.tdoy));
+    d1.setDate(d1.getDate() + 1);
   }
 
-  el.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' \u00B7 ' + ticker +
-    ' \u00B7 TDOM ' + tdomStr + ' \u00B7 TDOY ' + tdoyStr;
+  // TDOY (current/total) — iteriere durch das aktuelle Jahr
+  var tdoyCount = 0, tdoyTotal = 0;
+  var d2 = new Date(today.getFullYear(), 0, 1);
+  while (d2.getFullYear() === today.getFullYear()) {
+    var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
+    if (isTD(ds2)) {
+      tdoyTotal++;
+      if (ds2 <= todayStr) tdoyCount++;
+    }
+    d2.setDate(d2.getDate() + 1);
+  }
+
+  // Fallback: wenn heute kein HT und rows mit tdom/tdoy vorhanden, nutze die
+  if (!isTD(todayStr) && rows && rows.length > 0) {
+    var last = rows[rows.length - 1];
+    if (last.tdom != null) tdomCount = parseInt(last.tdom);
+    if (last.tdoy != null) tdoyCount = parseInt(last.tdoy);
+  }
+
+  // TWOY (ISO-Wochenzahl, current/total)
+  var isoWeek = function(date) {
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    var dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart)/86400000) + 1)/7);
+  };
+  var twoyCount = isoWeek(today);
+  var twoyTotal = isoWeek(new Date(today.getFullYear(), 11, 28)); // 28. Dez liegt immer in der letzten ISO-Woche
+
+  // Quartal
+  var quarter = Math.floor(today.getMonth()/3) + 1;
+
+  // Cycle Year: 1=Election (Wahljahr), 2=Post-Election, 3=MidTerm, 4=Pre-Election
+  // Formel: ((year - 2020) % 4 + 4) % 4 + 1, da 2020 = Election Year (Trump)
+  var cycle = ((today.getFullYear() - 2020) % 4 + 4) % 4 + 1;
+  var cycleNames = { 1: 'Election', 2: 'Post-Election', 3: 'MidTerm', 4: 'Pre-Election' };
+
+  // Header-Zeile zusammenbauen — neue Reihenfolge: TDOM · TWOY · TDOY · Q · Cycle
+  el.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' \u00B7 ' + (ticker || '') +
+    ' \u00B7 TDOM ' + tdomCount + '/' + tdomTotal +
+    ' \u00B7 TWOY ' + twoyCount + '/' + twoyTotal +
+    ' \u00B7 TDOY ' + tdoyCount + '/' + tdoyTotal +
+    ' \u00B7 Q' + quarter +
+    ' \u00B7 ' + cycleNames[cycle];
 };
 
 // ── Sortable Tables (wiederverwendbar) ──────────────────────────────────────
