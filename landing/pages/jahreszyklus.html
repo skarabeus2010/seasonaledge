@@ -1225,28 +1225,55 @@
     JZ.renderHeatmap = function(yearData, ticker) {
       var series = JZ.buildMonthlyHeatmap(yearData);
       if (!series.length) return;
+      // Sentinel-Wert für unvollständige Monate (außerhalb der colorScale ranges
+      // damit die Zelle neutral/transparent dargestellt wird).
+      // ApexCharts heatmap mag null in y nicht — wir nutzen einen Sentinel
+      // und filtern ihn im dataLabels-Formatter raus.
+      var SENTINEL = -9999;
+      for (var si=0; si<series.length; si++) {
+        for (var di=0; di<series[si].data.length; di++) {
+          if (series[si].data[di].y == null || isNaN(series[si].data[di].y)) {
+            series[si].data[di].y = SENTINEL;
+          }
+        }
+      }
       if (JZ.charts.heatmap) { JZ.charts.heatmap.destroy(); JZ.charts.heatmap=null; }
       JZ.charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
         series: series,
-        chart: Object.assign({ type:'heatmap', height: Math.max(300, series.length*32+80) }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'heatmap', height: Math.max(320, series.length*36+100) }, SA.chartTheme.chart),
         plotOptions: {
           heatmap: {
             radius: 3, enableShades: false,
             colorScale: { ranges: [
-              { from:-99, to:-5, color:'#7f1d1d', name:'stark negativ' },
-              { from:-5, to:-2, color:'#991b1b', name:'negativ' },
-              { from:-2, to:-0.5, color:'#7f1d1d', name:'leicht neg.' },
-              { from:-0.5, to:0.5, color:'#1f2937', name:'neutral' },
-              { from:0.5, to:2, color:'#166534', name:'leicht pos.' },
-              { from:2, to:5, color:'#15803d', name:'positiv' },
-              { from:5, to:99, color:'#14532d', name:'stark pos.' }
+              { from: SENTINEL, to: SENTINEL+1, color:'#0a0a0a', name:'keine Daten' },
+              { from:-99, to:-5,    color:'#7f1d1d', name:'stark negativ' },
+              { from:-5, to:-2,     color:'#991b1b', name:'negativ' },
+              { from:-2, to:-0.5,   color:'#7f1d1d', name:'leicht neg.' },
+              { from:-0.5, to:0.5,  color:'#1f2937', name:'neutral' },
+              { from:0.5, to:2,     color:'#166534', name:'leicht pos.' },
+              { from:2, to:5,       color:'#15803d', name:'positiv' },
+              { from:5, to:99,      color:'#14532d', name:'stark pos.' }
             ]}
           }
         },
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v) {
+            if (v === SENTINEL || v == null || isNaN(v)) return 'keine Daten';
+            return (v>=0?'+':'') + v.toFixed(2) + '%';
+          } }
+        }),
         xaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
-        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
-        dataLabels: { enabled:true, formatter:function(v){return (v>=0?'+':'')+v.toFixed(1);}, style:{fontSize:'12px',colors:['#f5f5f5']} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}}, reversed: false },
+        dataLabels: {
+          enabled: true,
+          // NULL-safe Formatter: leerer String für Sentinel/null/NaN
+          formatter: function(v) {
+            if (v === SENTINEL || v == null || isNaN(v)) return '';
+            return (v>=0?'+':'') + v.toFixed(1);
+          },
+          style:{fontSize:'12px',colors:['#f5f5f5']}
+        },
         legend: { show:false },
         title: { text: ticker+' — Monats-Renditen (Jahr × Monat)', style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
