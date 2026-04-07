@@ -99,7 +99,7 @@
       </div>
       <hr>
       <h3>Pressure Chart</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-pressure"> Pressure im Hauptchart</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-pressure"> Gann Pressurechart</label>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.3rem;line-height:1.4">
         Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden (10/20/30/40/60/80 Jahre) auf sekund&auml;rer Y-Achse
       </p>
@@ -1593,10 +1593,22 @@
           if (rets.length) { groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]); }
         }
       }
-      if (!Object.keys(groups).length) return;
+      var id = kind==='month' ? 'content-monthly-sig' : (kind==='quarter' ? 'content-quarterly-sig' : 'content-cycle-sig');
+      // Cycle braucht alle 4 Zyklus-Jahre fuer einen aussagekraeftigen Test
+      if (kind==='cycle' && Object.keys(groups).length < 4) {
+        document.getElementById(id).innerHTML =
+          '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">' +
+          'Sorry, zu wenig Daten!</p>';
+        return;
+      }
+      if (!Object.keys(groups).length) {
+        document.getElementById(id).innerHTML =
+          '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">' +
+          'Sorry, zu wenig Daten!</p>';
+        return;
+      }
       var res = SA.significance.runSignificanceTest(groups);
       var colsPerRow = kind==='month' ? 4 : 4;
-      var id = kind==='month' ? 'content-monthly-sig' : (kind==='quarter' ? 'content-quarterly-sig' : 'content-cycle-sig');
       document.getElementById(id).innerHTML = SA.significance.renderSection(res, colsPerRow, order);
     };
 
