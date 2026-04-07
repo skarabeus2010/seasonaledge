@@ -73,6 +73,11 @@
       </div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
       <hr>
+      <h3>Monats-Filter</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Wirkt auf alle Wochentag-Sektionen außer Heatmaps</p>
+      <hr>
       <h3>Anzeige</h3>
       <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelle Woche einblenden</label>
       <hr>
@@ -358,7 +363,7 @@
     }
 
     // ── Weekday-Stats Hauptberechnung ────────────────────────────
-    function calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter) {
+    function calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter, monthFilter) {
       // Cutoff
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
@@ -369,6 +374,10 @@
       // Cycle filter
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){ return cycleFilter.indexOf(cycleOf(r.year)) >= 0; });
+      }
+      // Monats-Filter
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
       if (rows.length < 20) return null;
 
@@ -462,7 +471,7 @@
 
     // ── Kumulierter Wochenverlauf Mo→Fr ──────────────────────────
     // Mode-aware: nutzt den gewaehlten Rendite-Modus statt fix log_returns
-    function calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode) {
+    function calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode, monthFilter) {
       mode = mode || 'cc';
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
@@ -471,6 +480,9 @@
       var rows = enriched.filter(function(r){ return r.date >= cutoffStr; });
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){ return cycleFilter.indexOf(cycleOf(r.year)) >= 0; });
+      }
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
 
       var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
@@ -608,7 +620,7 @@
     }
 
     // ── Overnight vs Intraday (Residual-Methode) ─────────────────
-    function calcOvernightIntraday(enriched, yearsBack, cycleFilter) {
+    function calcOvernightIntraday(enriched, yearsBack, cycleFilter, monthFilter) {
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
       var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -616,6 +628,9 @@
       var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
       var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
       if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
@@ -647,7 +662,7 @@
     }
 
     // ── Konsekutiv-Analyse ───────────────────────────────────────
-    function calcConsecutiveProbs(enriched, yearsBack, cycleFilter) {
+    function calcConsecutiveProbs(enriched, yearsBack, cycleFilter, monthFilter) {
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
       var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -655,6 +670,9 @@
       var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
       var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
       if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
@@ -696,7 +714,7 @@
     }
 
     // ── Quarterly Weekday ────────────────────────────────────────
-    function calcQuarterlyWeekday(enriched, yearsBack, cycleFilter) {
+    function calcQuarterlyWeekday(enriched, yearsBack, cycleFilter, monthFilter) {
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
       var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -704,6 +722,9 @@
       var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
       rows = rows.filter(function(r){return r.weekday <= 4;});
 
@@ -733,7 +754,7 @@
     }
 
     // ── Streak Helper (pro Wochentag) ────────────────────────────
-    function calcStreaksByWeekday(enriched, yearsBack, cycleFilter) {
+    function calcStreaksByWeekday(enriched, yearsBack, cycleFilter, monthFilter) {
       if (!enriched.length) return [];
       var lastDate = new Date(enriched[enriched.length-1].date);
       var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -741,6 +762,9 @@
       var rows = enriched.filter(function(r){return r.date >= cutoffStr;});
       if (cycleFilter && cycleFilter.length) {
         rows = rows.filter(function(r){return cycleFilter.indexOf(cycleOf(r.year)) >= 0;});
+      }
+      if (monthFilter && monthFilter.length && monthFilter.length < 12) {
+        rows = rows.filter(function(r){ return monthFilter.indexOf(r.month) >= 0; });
       }
       var hasWeekend = rows.some(function(r){return r.weekday >= 5;});
       if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
@@ -1587,6 +1611,37 @@
     });
     document.getElementById('chk-current').addEventListener('change', function(){ if (WD.getRawRows().length) renderAll(); });
 
+    // ── Monats-Checkboxen initialisieren ─────────────────────────
+    var MONTHS_ABBR = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    (function initMonthToggles() {
+      var el = document.getElementById('month-toggles');
+      if (!el) return;
+      el.innerHTML = '';
+      for (var m=1;m<=12;m++) {
+        var lbl = document.createElement('label');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.dataset.month = m;
+        cb.addEventListener('change', function(){ if (WD.getRawRows().length) renderAll(); });
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + MONTHS_ABBR[m-1]));
+        el.appendChild(lbl);
+      }
+    })();
+    document.getElementById('chk-all-months').addEventListener('change', function(){
+      var checked = this.checked;
+      document.querySelectorAll('#month-toggles input').forEach(function(cb){ cb.checked = checked; });
+      if (WD.getRawRows().length) renderAll();
+    });
+    function getSelectedMonths() {
+      var months = [];
+      document.querySelectorAll('#month-toggles input:checked').forEach(function(cb){
+        months.push(parseInt(cb.dataset.month));
+      });
+      return months;
+    }
+
     // Indikator-Filter (Technische Filter)
     var getIndicatorFilters = SA.indicators.renderFilterUI('indicator-filters', function(){ if (WD.getRawRows().length) renderAll(); });
 
@@ -1647,6 +1702,7 @@
       var showCurrent = document.getElementById('chk-current').checked;
       var cycleFilter = [];
       document.querySelectorAll('#cycle-filter input:checked').forEach(function(cb){ cycleFilter.push(parseInt(cb.dataset.cycle)); });
+      var monthFilter = getSelectedMonths();
 
       // Trading Day Header
       try {
@@ -1659,43 +1715,49 @@
       destroyAll();
 
       // Compute
-      var stats = WD.calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter);
+      var stats = WD.calculateWeekdayStats(enriched, mode, yearsBack, filterMode, smaDays, rsiDays, rsiThreshold, cycleFilter, monthFilter);
       if (!stats) {
         showError('Nicht genügend Daten für die Analyse');
         return;
       }
 
-      // Filter-Info (Cycle)
+      // Filter-Info (Cycle + Monat)
       var fInfo = document.getElementById('filter-info');
-      if (cycleFilter.length) {
-        fInfo.innerHTML = '<b>Zyklusfilter aktiv:</b> ' + cycleFilter.map(function(c){return WD.CYCLE_LABELS[c];}).join(', ');
+      var fParts = [];
+      if (cycleFilter.length) fParts.push('<b>Zyklusfilter:</b> ' + cycleFilter.map(function(c){return WD.CYCLE_LABELS[c];}).join(', '));
+      if (monthFilter.length && monthFilter.length < 12) {
+        fParts.push('<b>Monate:</b> ' + monthFilter.map(function(m){return MONTHS_ABBR[m-1];}).join(', '));
+      }
+      if (fParts.length) {
+        fInfo.innerHTML = fParts.join(' &nbsp;·&nbsp; ');
         fInfo.style.display = '';
       } else {
         fInfo.style.display = 'none';
       }
 
       // Render
-      var wdCum = WD.calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode);
+      var wdCum = WD.calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode, monthFilter);
       var currentWeek = showCurrent ? WD.calcCurrentWeekCurve(enriched, mode) : null;
       WD.renderCumulative(wdCum, ticker, currentWeek, modeLabel);
       WD.renderBars(stats, ticker, modeLabel);
       WD.renderSignificance(stats);
       WD.renderTable(stats);
 
-      var oiResult = WD.calcOvernightIntraday(enriched, yearsBack, cycleFilter);
+      var oiResult = WD.calcOvernightIntraday(enriched, yearsBack, cycleFilter, monthFilter);
       WD.renderOvernight(oiResult, ticker, stats.is_crypto);
 
+      // Weekend-Effekt: NICHT monatlich filtern (eigene Aufschluesselung)
       var weStats = WD.calcWeekendEffect(enriched, yearsBack, cycleFilter, filterMode, smaDays, rsiDays, rsiThreshold);
       WD.renderWeekend(weStats, ticker, stats.is_crypto);
 
-      var consec = WD.calcConsecutiveProbs(enriched, yearsBack, cycleFilter);
+      var consec = WD.calcConsecutiveProbs(enriched, yearsBack, cycleFilter, monthFilter);
       WD.renderConsecutive(consec);
 
-      var streaks = WD.calcStreaksByWeekday(enriched, yearsBack, cycleFilter);
+      var streaks = WD.calcStreaksByWeekday(enriched, yearsBack, cycleFilter, monthFilter);
       WD.renderStreaks(streaks);
 
       if (!stats.is_crypto) {
-        var qStats = WD.calcQuarterlyWeekday(enriched, yearsBack, cycleFilter);
+        var qStats = WD.calcQuarterlyWeekday(enriched, yearsBack, cycleFilter, monthFilter);
         WD.renderQuarterly(qStats, ticker);
         document.getElementById('sec-quarterly').style.display = '';
       } else {
