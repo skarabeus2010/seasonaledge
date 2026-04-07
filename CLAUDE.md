@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.1 | 2026-04-07 | Details → `docs/`
+> Version 27.2 | 2026-04-07 | Details → `docs/`
 
 
 ## Projekt
@@ -293,6 +293,10 @@ if _project_dir not in sys.path:
 | Frontend Trading Day Header | `SA.renderTradingDayHeader(el, ticker, rows)` — wenn heute Handelstag → frisch vom Monats-/Jahresanfang berechnen (via SA.holidays), NICHT aus DB-Rows lesen |
 | TDOM-Strategie Cross-Month | Entry negativ + Exit positiv → Exit im nächsten Monat suchen (Turn-of-the-Month-Muster) |
 | MIN_N = 10 Threshold | TDoM/TDoY-Statistiken mit n<10 mit ⚠ + 40% Opacity markieren (aus `03_Monatszyklus.py`) |
+| MIN_N nur fuer per-Punkt-Filterung | MIN_N=10 macht nur Sinn wo Punkte UNTERSCHIEDLICHE n haben (TDOM-Charts mit Solid/Weak Split). Bei Aggregat-Bars (Wochen/Monats/Two-Week-Performance) hat JEDER Balken die GLEICHE n — Filter fuehrt zu "alle grau" bei kurzem Zeitraum. Loesung: Immer nach Vorzeichen rot/gruen, n im Tooltip. |
+| ApexCharts Mixed Bar+Line Coloring | `colors:[seriesColorBar, seriesColorLine]` faerbt nur Serien-weise. Fuer per-Wert Bar-Coloring (rot/gruen nach Vorzeichen) in Mixed Bar+Line Charts: `plotOptions.bar.colors.ranges:[{from:-Inf,to:-0.0001,color:RED},{from:0,to:Inf,color:GREEN}]`. Linie behaelt ihre Serien-Farbe. |
+| ApexCharts Marker Hover-only | `markers:{size:0, hover:{size:4-5}}` zeigt Marker nur beim Hover. Sauberer fuer Linien-Charts mit vielen Punkten. Statt `size:4` was permanent Punkte zeichnet. |
+| Tacho-Karten Schrift-Standards | `.mc-name` 14px font-weight:700 #e2e8f0 (Tacho-Titel). `.mc-details` 12px #cbd5e1 (Stats unter Tacho — NICHT #64748b, das ist zu dunkel auf dunklem BG). Numerischer Wert IM Tacho (1.2rem #fff), Status-Label UNTER dem Tacho mit `text-align:center;font-size:.875rem;font-weight:700` in Status-Farbe. Niemals lange Text-Strings wie "Signifikant abweichend" im Tacho — die ueberlagern den Halbkreis. |
 
 ## Architektur-Prinzipien
 
@@ -438,12 +442,12 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | OPEX Analyse | `/opex` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | **Modus-basiert** OPEX/VIX exklusiv. OPEX-Ansichten: Triple Witching (kumul. Linie + 4 Q-Monats-Checkboxen) / Monatlich (12 Mini-Charts + 12 Monats-Checkboxen). VIXpiration: 12 Mini-Charts Grid (Kalender-3.Fr−30d, CBOE-konform, Feiertags-Adjustierung) + 12 Monats-Checkboxen. Heatmap Monat×Offset, Streak (W/L-Kacheln) direkt unter Heatmap, Signifikanztest mode-aware (Alle+Monate in passender Spaltenzahl), Backtest via `SA.strategy.computeStats` (8 KPIs inkl. Profit Factor, dynamische Y-Achse, $1000 Compounding Equity-Kurve), Outlier-Filter (IQR/Winsorize auf cumReturn), Kalender mit hellen Badges (Standard/Triple Witching/VIX Settlement) |
 | KI-Saisonalität | `/ki-saisonalitaet` | app, charts, seasonal-compute | **Musterpfad** (rekalibrierte Saisonalität via Top-N ähnlichster Jahre, gewichteter Ø) + **KI Composite Score 1–10** aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking-Qualität). Hero-Bereich: Score + farbcodiertes Signal-Badge (Bullish≥6.5/Neutral/Bearish≤3.5) links, Radar-Chart mit 4 Sub-Scores rechts. Main-Chart: Klassischer Ø + Match-Jahre (togglebar) + Musterpfad + aktuelles Jahr + fette grüne Solid-Projektion ab "Heute". Sidebar: Ähnlichkeitsmethode (Korrelation/Euklid), Top-N (3-10), Glättung (1-21), Projektion (0-120d), Chart-Anzeige-Toggles. Match-Jahre-Tabelle mit Ähnlichkeits-Bar + Jahres-Rendite + Präsidentenzyklus-Badge. Info-Badges mit Hover-Tooltip für Score- und Radar-Erklärung. |
 | Jahreszyklus | `/jahreszyklus` | app, charts, holidays, significance, outlier | **13 Sektionen** Port von `pages/02_Jahreszyklus.py` (1595 Zeilen). Hauptchart Saisonal-Ø + 25./75. Perzentil + ±1σ + Cycles + Aktuelles Jahr (Single-Y-Axis, KISS). **Einzeljahre + Gann Pressurechart** als separate Sub-Charts unten via `chart.group:'jzklus-sync'` (ApexCharts v4 Multi-Axis Workaround). Pressurechart: Σ-Lookback Ø-Kurven + aktueller Jahresverlauf (kumulierte Tagesrenditen %), gleiche Höhe wie Hauptchart. Perzentil-Bänder mit **Stable-Range-Trim** (≥80% Sample, Spike-frei). Rolling Vola **jahresgrenzen-übergreifend** (rollt über konkatenierte log_returns aller Jahre → korrekte Januar-Werte inkl. Vorjahres-Daten). Detrend-Indikator, Monats/Quartals-Performance + Tabellen + Signifikanz (Bar-Labels nur `%` außerhalb), Quartals-/Cycle-Tachos in 1 Reihe (Empty-State "Sorry, zu wenig Daten!" bei <4 Cycles), 10-Jahres Heatmap (last_actual_day-Filter NUR für current year), Drawdown-Verlauf + KPIs, Rolling-Volatilität + KPIs, Drawdown nach Zyklus. **Alle Helper modular im `window._SA_JZ` Modul** (computeDetrend, computeDayCounts, splitSolidWeak, detectAnomalyEnd, drawdownSeries, avgRollingVolatility, computePressureCurve, etc.) — Math/Render strikt getrennt. |
+| Monatszyklus | `/monatszyklus` | app, charts, seasonal-compute, significance, outlier, holidays | **14 Sektionen** Port von `pages/03_Monatszyklus.py` (1412 Zeilen). Intra-Monat-Hauptchart (TDOM-Verlauf, TDOM 0 = 0% Vormonatsschluss-Basis, Solid/Weak Split bei n<10, Konfidenzband ±1σ, Perzentil-Bänder 25./75. optional, aktuelles Jahr in gold). **Einzeljahre als separates Sub-Chart** unter dem Hauptchart via `chart.group:'mz-sync'` (eigene Y-Achse, vermeidet Y-Skala-Verzerrung). Marker auf allen Linien-Charts `size:0` mit `hover:size:4-5` (saubere Linien, Punkte nur beim Hover). Detrend-Indikator (0-100, Midline 50). **Saisonal Match** (3 Tachos: Korrelation, DTW Shape, Abweichungstest mit numerischem Wert im Tacho + Label darunter). **Präsidentenzyklus Best-Match** (5 Tachos mit Medaillen). Wochen-Performance (5 Bars). Monats-Performance (12 Bars + Tabelle). Two-Week Performance (24 Bars sortiert). Two-Week Heatmap (12×2). Two-Week Aktuelles Jahr Overlay (Bar+Line, **Bars per `plotOptions.bar.colors.ranges` rot/grün** statt einheitlich). Best Two-Weeks Ranking (horizontal Top 24, helle/große Achsen-Labels). Momentum-Check (1st→2nd Wahrscheinlichkeiten). Two-Week Signifikanztest (2 Tachos, Label unter Tacho). 10-Jahres Monats-Heatmap. Sidebar: Ticker, Zeitraum 3-30/Max, Monat-Selektor, 4 Toggles (current/individual/bands/percentile), Cycle-Filter, Two-Week Slider, Outlier-Filter. **Alle Helper modular im `window._SA_MZ` Modul** — Math/Render strikt getrennt. |
 
-### Offene HTML-Migrationen (2 von 18)
+### Offene HTML-Migrationen (1 von 18)
 | # | Page | Zeilen | Charts | Status |
 |---|------|--------|--------|--------|
-| 17 | Monatszyklus | 1412 | 26 | naechste |
-| 18 | Wochentage | 1670 | 29 | |
+| 18 | Wochentage | 1670 | 29 | naechste |
 
 ## Tägliche Prüfungen (bei Session-Start)
 
