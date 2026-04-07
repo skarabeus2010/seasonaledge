@@ -461,7 +461,9 @@
     }
 
     // ── Kumulierter Wochenverlauf Mo→Fr ──────────────────────────
-    function calcWeeklyCumulative(enriched, yearsBack, cycleFilter) {
+    // Mode-aware: nutzt den gewaehlten Rendite-Modus statt fix log_returns
+    function calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode) {
+      mode = mode || 'cc';
       if (!enriched.length) return null;
       var lastDate = new Date(enriched[enriched.length-1].date);
       var cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -475,15 +477,28 @@
       var nWd = hasWeekend ? 7 : 5;
       if (!hasWeekend) rows = rows.filter(function(r){return r.weekday <= 4;});
 
-      // log_returns
+      // Returns gemaess Mode (in log-space fuer Aufkumulierung)
+      // cc: log(close[t+1]/close[t])
+      // co: log(open[t+1]/close[t])
+      // oc: log(close[t]/open[t])
+      // oc1: log(close[t+1]/open[t])
       var withLR = [];
-      for (var i=1;i<rows.length;i++) {
-        var prev = rows[i-1], cur = rows[i];
-        if (prev.close > 0 && cur.close > 0) {
+      for (var i=0;i<rows.length;i++) {
+        var cur = rows[i];
+        var nxt = rows[i+1];
+        var logRet = NaN;
+        if (mode === 'oc') {
+          if (cur.open > 0 && cur.close > 0) logRet = Math.log(cur.close / cur.open);
+        } else if (nxt) {
+          if (mode === 'cc' && cur.close > 0 && nxt.close > 0) logRet = Math.log(nxt.close / cur.close);
+          else if (mode === 'co' && cur.close > 0 && nxt.open > 0) logRet = Math.log(nxt.open / cur.close);
+          else if (mode === 'oc1' && cur.open > 0 && nxt.close > 0) logRet = Math.log(nxt.close / cur.open);
+        }
+        if (!isNaN(logRet) && isFinite(logRet)) {
           withLR.push({
             date: cur.date,
             weekday: cur.weekday,
-            log_ret: Math.log(cur.close / prev.close)
+            log_ret: logRet
           });
         }
       }
@@ -534,29 +549,62 @@
       return wdStats;
     }
 
-    // ── Aktuelle Woche Mo→Fr ─────────────────────────────────────
-    function calcCurrentWeekCurve(enriched) {
+    // ── Aktuelle Woche Mo→Fr (mode-aware, Wochenende-tolerant) ──
+    function calcCurrentWeekCurve(enriched, mode) {
+      mode = mode || 'cc';
       if (!enriched.length) return null;
       var today = new Date();
-      var todayStr = today.toISOString().substring(0,10);
       var todayWd = today.getDay();
       todayWd = todayWd === 0 ? 6 : todayWd - 1;
-      // Letzten Montag finden
+      // Letzten Montag finden (auch wenn heute Wochenende ist)
       var monday = new Date(today);
       monday.setDate(monday.getDate() - todayWd);
+      monday.setHours(0,0,0,0);
       var mondayStr = monday.toISOString().substring(0,10);
-      // Daten dieser Woche
+      var todayStr = today.toISOString().substring(0,10);
+      // Wenn Wochenende: zeige bis Freitag der aktuellen Woche
+      var endStr = todayStr;
+      if (todayWd >= 5) {
+        var friday = new Date(monday);
+        friday.setDate(friday.getDate() + 4);
+        endStr = friday.toISOString().substring(0,10);
+      }
+      // Daten dieser Woche (Mo-Fr)
       var thisWeek = enriched.filter(function(r){
-        return r.date >= mondayStr && r.date <= todayStr && r.weekday <= 4;
+        return r.date >= mondayStr && r.date <= endStr && r.weekday <= 4;
       });
       if (!thisWeek.length) return null;
-      // Basis = Close des Vor-Freitags
+      // Basis = Close des Vor-Freitags (oder erstes Open der Woche als Fallback)
       var prevRows = enriched.filter(function(r){return r.date < mondayStr;});
-      var base = prevRows.length ? prevRows[prevRows.length-1].close : thisWeek[0].open;
-      if (!base || base <= 0) return null;
-      var labels = thisWeek.map(function(r){return WD_LABELS_5[r.weekday];});
-      var vals = thisWeek.map(function(r){return (r.close / base - 1) * 100;});
-      return { labels: labels, values: vals };
+      var prevClose = prevRows.length ? prevRows[prevRows.length-1].close : null;
+
+      // Kumulieren in log-space gemaess mode
+      var labels = [];
+      var values = [];
+      var sumLog = 0;
+      for (var i=0;i<thisWeek.length;i++) {
+        var cur = thisWeek[i];
+        var prev = i === 0 ? { close: prevClose } : thisWeek[i-1];
+        var logRet = NaN;
+        if (mode === 'oc') {
+          if (cur.open > 0 && cur.close > 0) logRet = Math.log(cur.close / cur.open);
+        } else if (mode === 'cc') {
+          if (prev.close && prev.close > 0 && cur.close > 0) logRet = Math.log(cur.close / prev.close);
+        } else if (mode === 'co') {
+          if (prev.close && prev.close > 0 && cur.open > 0) logRet = Math.log(cur.open / prev.close);
+        } else if (mode === 'oc1') {
+          // Open[t-1] -> Close[t]
+          if (prev.open && prev.open > 0 && cur.close > 0) logRet = Math.log(cur.close / prev.open);
+          else if (cur.open > 0 && cur.close > 0) logRet = Math.log(cur.close / cur.open);
+        }
+        if (!isNaN(logRet) && isFinite(logRet)) {
+          sumLog += logRet;
+          labels.push(WD_LABELS_5[cur.weekday]);
+          values.push((Math.exp(sumLog) - 1) * 100);
+        }
+      }
+      if (!labels.length) return null;
+      return { labels: labels, values: values };
     }
 
     // ── Overnight vs Intraday (Residual-Methode) ─────────────────
@@ -800,24 +848,31 @@
         byMonth[m] = { avg: mean(rs), win_rate: w2/rs.length*100, count: rs.length, returns: rs };
       }
 
-      // by_month_year (for heatmap)
+      // by_month_year (for heatmap) — alle Jahre im Range, auch ohne Daten
       var byMY = {};
-      var yearsSet = {};
+      var minYear = Infinity, maxYear = -Infinity;
       for (var i=0;i<weekendReturns.length;i++) {
         var w = weekendReturns[i];
-        yearsSet[w.year] = true;
+        if (w.year < minYear) minYear = w.year;
+        if (w.year > maxYear) maxYear = w.year;
         var k = w.month + '_' + w.year;
         if (!byMY[k]) byMY[k] = { rets: [] };
         byMY[k].rets.push(w.ret);
       }
       for (var k in byMY) byMY[k] = { avg: mean(byMY[k].rets), count: byMY[k].rets.length };
+      // Years als kontinuierlicher Range, damit Heatmap luckenlos
+      var years = [];
+      if (isFinite(minYear) && isFinite(maxYear)) {
+        for (var y=minYear;y<=maxYear;y++) years.push(y);
+      }
 
-      // by_cycle
+      // by_cycle — alle 4 Cycles vorinitialisieren (auch wenn leer)
       var byCycle = {};
       for (var c=1;c<=4;c++) {
         var rs = weekendReturns.filter(function(w){return w.cycle===c;}).map(function(w){return w.ret;});
-        if (!rs.length) continue;
-        byCycle[c] = { avg: mean(rs), count: rs.length };
+        byCycle[c] = rs.length
+          ? { avg: mean(rs), count: rs.length }
+          : { avg: 0, count: 0 };
       }
 
       return {
@@ -825,7 +880,7 @@
         by_month: byMonth,
         by_month_year: byMY,
         by_cycle: byCycle,
-        years: Object.keys(yearsSet).map(Number).sort(),
+        years: years,
         filtered_count: weekendReturns.length,
         total_count: totalCount
       };
@@ -899,7 +954,7 @@
     function fmtPct(v, d) { d = d == null ? 2 : d; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
 
     // ── 1. Kumulierter Wochenverlauf ─────────────────────────────
-    WD.renderCumulative = function(wdStats, ticker, currentWeek) {
+    WD.renderCumulative = function(wdStats, ticker, currentWeek, modeLabel) {
       if (!wdStats) return;
       var wds = Object.keys(wdStats).map(Number).sort(function(a,b){return a-b;});
       var labels = wds.map(function(w){return wdStats[w] && WD.WD_LABELS_5[w] ? WD.WD_LABELS_5[w] : (WD.WD_LABELS_7[w] || ('Tag '+(w+1)));});
@@ -956,7 +1011,7 @@
         annotations: annotations,
         legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px' }),
         dataLabels: { enabled: false },
-        title: { text: ticker+' — Kumulierter Wochenverlauf Mo→Fr ('+nYears+' Wochen)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text: ticker+' — Kumulierter Wochenverlauf Mo→Fr · '+(modeLabel||'Close→Close')+' ('+nYears+' Wochen)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       WD.charts.cum.render();
     };
@@ -1040,24 +1095,31 @@
       WD.charts.wr.render();
     };
 
-    // ── 3. Signifikanztest pro Wochentag ─────────────────────────
+    // ── 3. Signifikanztest pro Wochentag (+ Gesamt) ──────────────
     WD.renderSignificance = function(stats) {
       var container = document.getElementById('content-sig');
       var groups = {};
       var order = [];
+      var allReturns = [];
       for (var wd=0; wd<stats.n_weekdays; wd++) {
         var rets = stats.by_weekday[wd].returns;
         if (rets && rets.length) {
           groups[stats.wd_labels[wd]] = rets;
           order.push(stats.wd_labels[wd]);
+          allReturns = allReturns.concat(rets);
         }
       }
       if (!Object.keys(groups).length) {
         container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Sorry, zu wenig Daten!</p>';
         return;
       }
+      // Gesamt-Tacho: alle Returns kombiniert
+      if (allReturns.length >= 10) {
+        groups['Gesamt'] = allReturns;
+        order.push('Gesamt');
+      }
       var results = SA.significance.runSignificanceTest(groups);
-      container.innerHTML = SA.significance.renderSection(results, stats.n_weekdays, order);
+      container.innerHTML = SA.significance.renderSection(results, stats.n_weekdays + 1, order);
     };
 
     // ── 4. Detailtabelle ─────────────────────────────────────────
@@ -1240,7 +1302,7 @@
             y: { formatter: function(v){ return v === SENTINEL ? 'keine Daten' : fmtPct(v,3); } }
           }),
           xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}} },
-          yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}}, reversed: false },
+          yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}}, reversed: true },
           dataLabels: {
             enabled: true,
             formatter: function(v){ return v === SENTINEL ? '' : (v>=0?'+':'')+v.toFixed(2); },
@@ -1252,16 +1314,17 @@
         WD.charts['weekend-heatmap'].render();
       }
 
-      // Cycle Bars
+      // Cycle Bars — alle 4 Cycles (auch wenn count=0)
       var cycleData = [];
       var cycleLabels = [];
       var cycleColors = [];
+      var cycleCounts = [];
       for (var c=1;c<=4;c++) {
-        if (weStats.by_cycle[c]) {
-          cycleData.push(parseFloat(weStats.by_cycle[c].avg.toFixed(3)));
-          cycleLabels.push(CYCLE_LABELS[c]);
-          cycleColors.push(CYCLE_COLORS[c]);
-        }
+        var d = weStats.by_cycle[c] || { avg:0, count:0 };
+        cycleData.push(parseFloat(d.avg.toFixed(3)));
+        cycleLabels.push(CYCLE_LABELS[c] + (d.count===0 ? ' (n=0)' : ''));
+        cycleColors.push(CYCLE_COLORS[c]);
+        cycleCounts.push(d.count);
       }
       if (cycleData.length) {
         if (WD.charts['weekend-cycle']) { try { WD.charts['weekend-cycle'].destroy(); } catch(e){} }
@@ -1411,7 +1474,8 @@
     WD.renderHeatmap = function(stats, ticker) {
       var labels = stats.wd_short;
       var series = [];
-      for (var m=12;m>=1;m--) {
+      // Jan→Dez damit reversed:true Jan oben anzeigt
+      for (var m=1;m<=12;m++) {
         var row = [];
         for (var wd=0;wd<stats.n_weekdays;wd++) {
           var d = stats.by_month_weekday[m+'_'+wd];
@@ -1448,7 +1512,7 @@
           y: { formatter: function(v){ return v === SENTINEL ? 'keine Daten' : fmtPct(v,3); } }
         }),
         xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}} },
-        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}}, reversed: false },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'12px'}}, reversed: true },
         dataLabels: {
           enabled: true,
           formatter: function(v){ return v === SENTINEL ? '' : (v>=0?'+':'')+v.toFixed(2); },
@@ -1611,9 +1675,9 @@
       }
 
       // Render
-      var wdCum = WD.calcWeeklyCumulative(enriched, yearsBack, cycleFilter);
-      var currentWeek = showCurrent ? WD.calcCurrentWeekCurve(enriched) : null;
-      WD.renderCumulative(wdCum, ticker, currentWeek);
+      var wdCum = WD.calcWeeklyCumulative(enriched, yearsBack, cycleFilter, mode);
+      var currentWeek = showCurrent ? WD.calcCurrentWeekCurve(enriched, mode) : null;
+      WD.renderCumulative(wdCum, ticker, currentWeek, modeLabel);
       WD.renderBars(stats, ticker, modeLabel);
       WD.renderSignificance(stats);
       WD.renderTable(stats);
