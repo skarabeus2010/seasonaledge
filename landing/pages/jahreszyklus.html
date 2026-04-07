@@ -129,6 +129,8 @@
           <div id="chart-main"></div>
           <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
           <div id="chart-individuals" style="display:none;margin-top:.5rem"></div>
+          <!-- Sub-Chart für Pressure, eigene Y-Achse, x-Achse synchron -->
+          <div id="chart-pressure" style="display:none;margin-top:.5rem"></div>
           <p id="pressure-info" style="font-size:.75rem;color:var(--accent);margin-top:.5rem;display:none"></p>
         </div>
       </details>
@@ -328,7 +330,7 @@
       document.getElementById('dd-header').style.display = show ? '' : 'none';
     }
     function destroyAll() {
-      ['main','individuals','detrend','monthly-bars','quarterly-bars','heatmap','drawdown','vola','dd-cycle'].forEach(function(k){
+      ['main','individuals','pressure','detrend','monthly-bars','quarterly-bars','heatmap','drawdown','vola','dd-cycle'].forEach(function(k){
         if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
       });
     }
@@ -747,47 +749,68 @@
     }
     /**
      * Vola pro Kalendertag (1..365), gemittelt ueber alle Jahre.
-     * Mapping erfolgt anhand des ECHTEN day_of_year jedes Jahres
-     * (kein Stretching). Aktuelle Jahre werden niemals ueber today
-     * extrapoliert. NaN-aware Mittelung.
+     *
+     * KORREKTE Behandlung der Jahresgrenze: rollt ueber die KONKATENIERTE
+     * log_returns-Serie ALLER Jahre, sodass z.B. die 20d-Vola am 5. Januar
+     * korrekt die letzten 20 Trading Days inklusive Dezember-Vorjahr nutzt.
+     * Anschliessend werden die Vola-Werte pro (year, day_of_year) extrahiert
+     * und ueber Jahre per Kalendertag gemittelt.
      */
     function avgRollingVolatility(yearData, window) {
       var currentYear = new Date().getFullYear();
       var todayD = todayDoy();
-      // 365-Spalten-Matrix mit NaN initialisieren
-      var matrix = [];
-      var nYears = 0;
-      for (var y in yearData) {
+      // Jahre chronologisch sortieren
+      var sortedYears = Object.keys(yearData).map(Number).sort(function(a,b){return a-b;});
+      if (sortedYears.length === 0) return null;
+
+      // Konkatenierte log_returns + Mapping auf (year_idx, doy)
+      var allRets = [];
+      var meta = []; // {year, doy} pro Eintrag in allRets
+      for (var i=0;i<sortedYears.length;i++) {
+        var y = sortedYears[i];
         var yo = yearData[y];
-        var v = rollingVolForYear(yo, window);
-        if (!v) continue;
-        // Backfill der Warmup-NaN am Jahresanfang mit erstem gueltigen Wert
-        var firstValid = NaN;
-        for (var k=0;k<v.length;k++) {
-          if (!isNaN(v[k])) { firstValid = v[k]; break; }
+        if (!yo.log_returns || !yo.days) continue;
+        var n = Math.min(yo.log_returns.length, yo.days.length);
+        for (var k=0;k<n;k++) {
+          var lr = parseFloat(yo.log_returns[k]);
+          if (isNaN(lr) || !isFinite(lr)) lr = 0;
+          allRets.push(lr);
+          meta.push({ year: y, doy: yo.days[k] });
         }
-        if (isNaN(firstValid)) continue;
-        var cleaned = v.slice();
-        for (var k=0;k<cleaned.length;k++) {
-          if (isNaN(cleaned[k])) cleaned[k] = firstValid;
-          else break;
+      }
+      if (allRets.length < window + 5) return null;
+
+      // Rollende Std ueber GESAMTE Serie (Jahresgrenzen-uebergreifend)
+      // Annualisiert mit sqrt(252) — Standard fuer Aktien
+      var ann = Math.sqrt(252);
+      var volaSeries = new Array(allRets.length).fill(NaN);
+      for (var i=window-1;i<allRets.length;i++) {
+        var s=0;
+        for (var j=i-window+1;j<=i;j++) s+=allRets[j];
+        var m=s/window;
+        var sq=0;
+        for (var j=i-window+1;j<=i;j++) sq+=(allRets[j]-m)*(allRets[j]-m);
+        volaSeries[i] = Math.sqrt(sq/window) * ann * 100;
+      }
+
+      // Pro Jahr: Vola-Werte nach DOY in Matrix einsortieren
+      // matrix[i][d] = vola fuer year_i an Kalendertag d+1
+      var yearVolaMap = {}; // year -> array(365) of NaN
+      for (var i=0;i<sortedYears.length;i++) yearVolaMap[sortedYears[i]] = new Array(365).fill(NaN);
+      for (var i=0;i<volaSeries.length;i++) {
+        if (isNaN(volaSeries[i])) continue;
+        var m = meta[i];
+        if (m.doy >= 1 && m.doy <= 365) {
+          // Aktuelles Jahr: nicht ueber today extrapolieren
+          if (m.year === currentYear && m.doy > todayD) continue;
+          yearVolaMap[m.year][m.doy-1] = volaSeries[i];
         }
-        // Forward-fill restliche NaN (falls Luecken)
-        var lastV = firstValid;
-        for (var k=0;k<cleaned.length;k++) {
-          if (!isNaN(cleaned[k])) lastV = cleaned[k];
-          else cleaned[k] = lastV;
-        }
-        // Mapping ueber day_of_year statt Stretching
-        var doys = yo.days || [];
-        var row = new Array(365).fill(NaN);
-        var nMin = Math.min(doys.length, cleaned.length);
-        var lastDoy = (parseInt(y) === currentYear) ? todayD : 365;
-        for (var k=0;k<nMin;k++) {
-          var d = doys[k];
-          if (d >= 1 && d <= 365 && d <= lastDoy) row[d-1] = cleaned[k];
-        }
-        // Lueckentage zwischen Trading-Tagen mit letztem Wert fuellen
+      }
+
+      // Lueckentage zwischen Trading-Tagen mit letztem Wert fuellen
+      // (innerhalb jedes Jahres, nicht jahresuebergreifend)
+      for (var i=0;i<sortedYears.length;i++) {
+        var row = yearVolaMap[sortedYears[i]];
         var firstD = -1, lastD = -1;
         for (var d=0;d<365;d++) if (!isNaN(row[d])) { firstD = d; break; }
         for (var d=364;d>=0;d--) if (!isNaN(row[d])) { lastD = d; break; }
@@ -797,39 +820,49 @@
           if (!isNaN(row[d])) lv = row[d];
           else row[d] = lv;
         }
-        matrix.push(row);
-        nYears++;
       }
-      if (nYears < 2) return null;
+
+      // Pro Kalendertag: NaN-aware Mittelung ueber alle Jahre
       var avg=[], std=[];
       for (var d=0;d<365;d++) {
         var vals = [];
-        for (var i=0;i<matrix.length;i++) {
-          if (!isNaN(matrix[i][d])) vals.push(matrix[i][d]);
+        for (var i=0;i<sortedYears.length;i++) {
+          var v = yearVolaMap[sortedYears[i]][d];
+          if (!isNaN(v)) vals.push(v);
         }
         if (vals.length < 2) { avg.push(null); std.push(null); continue; }
         avg.push(mean(vals));
         std.push(stdev(vals));
       }
-      return { avg:avg, std:std };
+      return { avg:avg, std:std, _yearVolaMap: yearVolaMap };
     }
+    /**
+     * Stats fuer das aktuelle Jahr — nutzt jahresgrenzen-uebergreifende
+     * Vola via avgRollingVolatility (yearVolaMap), damit Januar-Werte
+     * korrekt sind (rolling Window inkl. Vorjahres-Daten).
+     */
     function currentVolaStats(yearData, window, currentYear) {
       var cur = yearData[currentYear];
       if (!cur) return null;
-      var curVola = rollingVolForYear(cur, window);
-      if (!curVola) return null;
-      var validValues = curVola.filter(function(v){return !isNaN(v);});
-      if (!validValues.length) return null;
-      var currentVola = validValues[validValues.length-1];
-      var curTdoyIdx = cur.log_returns.length-1;
+      var result = avgRollingVolatility(yearData, window);
+      if (!result || !result._yearVolaMap || !result._yearVolaMap[currentYear]) return null;
 
+      var curRow = result._yearVolaMap[currentYear];
+      // Aktueller Wert = letzter gueltiger Eintrag im currentYear-Row (heute oder davor)
+      var td = todayDoy();
+      var currentVola = NaN;
+      for (var d = Math.min(td-1, 364); d >= 0; d--) {
+        if (!isNaN(curRow[d])) { currentVola = curRow[d]; break; }
+      }
+      if (isNaN(currentVola)) return null;
+
+      // Historische Werte: alle anderen Jahre, gleicher DOY (heute)
+      var refDoy = Math.min(td-1, 364);
       var histVolas = [];
-      for (var y in yearData) {
-        if (parseInt(y)===currentYear) continue;
-        var v = rollingVolForYear(yearData[y], window);
-        if (!v) continue;
-        var idx = Math.min(curTdoyIdx, v.length-1);
-        if (!isNaN(v[idx])) histVolas.push(v[idx]);
+      for (var y in result._yearVolaMap) {
+        if (parseInt(y) === currentYear) continue;
+        var v = result._yearVolaMap[y][refDoy];
+        if (!isNaN(v)) histVolas.push(v);
       }
       if (histVolas.length<3) return null;
       var avgV = mean(histVolas);
@@ -968,23 +1001,37 @@
       var individualNames = [];
 
       // 2. Perzentil-Bänder → linke Achse
-      // NUR echte (nicht extrapolierte) Werte: Jahre wo d > last_actual_day
-      // werden ausgeschlossen — sonst würde 2026's Konstant-Fill (96) das p25
-      // verzerren.
+      // Strikte Filterung gegen Spikes am Rand:
+      //  - Jahre wo d >= last_actual_day werden ausgeschlossen (kein Constant-Fill)
+      //  - Mindestens MAX(5, 50% der Jahre) muessen echte Daten haben
+      //  - Lineare Interpolation statt Floor-Indexing fuer korrekte Quantile
       if (showPercentile && Object.keys(yearData).length>=5) {
+        var nYearsTotal = Object.keys(yearData).length;
+        var minNeeded = Math.max(5, Math.floor(nYearsTotal * 0.5));
+        // Lineare Interpolation des Quantils (Numpy-default)
+        var quantile = function(sortedVals, q) {
+          var n = sortedVals.length;
+          if (n === 0) return null;
+          if (n === 1) return sortedVals[0];
+          var pos = q * (n - 1);
+          var lo = Math.floor(pos), hi = Math.ceil(pos);
+          if (lo === hi) return sortedVals[lo];
+          return sortedVals[lo] + (pos - lo) * (sortedVals[hi] - sortedVals[lo]);
+        };
         var p25 = [], p75 = [];
         for (var d=0;d<365;d++) {
           var vals = [];
           for (var y in yearData) {
             var yo = yearData[y];
-            if (d >= yo.last_actual_day) continue; // extrapolierter Wert → skip
+            // 1-basierter last_actual_day Vergleich (d ist 0-basiert)
+            if ((d+1) > yo.last_actual_day) continue; // extrapolierter Wert → skip
             var v = yo.full_365[d];
             if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) vals.push(v);
           }
-          if (vals.length < 4) { p25.push(null); p75.push(null); continue; }
+          if (vals.length < minNeeded) { p25.push(null); p75.push(null); continue; }
           vals.sort(function(a,b){return a-b;});
-          p25.push(vals[Math.floor(vals.length*0.25)]);
-          p75.push(vals[Math.floor(vals.length*0.75)]);
+          p25.push(quantile(vals, 0.25));
+          p75.push(quantile(vals, 0.75));
         }
         if (smoothing>1) { p25 = JZ.rollingMean(p25, smoothing); p75 = JZ.rollingMean(p75, smoothing); }
         seriesDef.push({ name:'75. Perzentil', data: pad365(p75), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
@@ -1057,35 +1104,9 @@
         });
       }
 
-      // 7. Pressure → eigene rechte Y-Achse — crash-safe
-      var pressureInfo = null;
-      var pressureError = null;
-      if (showPressure) {
-        try {
-          var pres = JZ.computePressureCurve(yearData, smoothing);
-          if (pres && pres.curve && pres.periods && pres.periods.length) {
-            // Validate: at least one finite value
-            var hasFinite = false;
-            for (var pi=0;pi<pres.curve.length;pi++) {
-              if (pres.curve[pi] != null && isFinite(pres.curve[pi])) { hasFinite = true; break; }
-            }
-            if (hasFinite) {
-              seriesDef.push({
-                name:'Pressure', data: pad365(pres.curve),
-                color: COL_PRESSURE, width: 2, dash: 0, axis: 'right_pressure'
-              });
-              pressureInfo = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
-            } else {
-              pressureError = 'Pressure Chart: keine gültigen Werte berechenbar';
-            }
-          } else {
-            pressureError = 'Pressure Chart: zu wenig historische Daten';
-          }
-        } catch (_e) {
-          pressureError = 'Pressure Chart Fehler: ' + (_e && _e.message ? _e.message : _e);
-          pressureInfo = null;
-        }
-      }
+      // 7. Pressure wird in eigenem Sub-Chart unter dem Hauptchart gerendert
+      // (renderPressure), nicht mehr als zweite Y-Achse hier — vermeidet
+      // ApexCharts v4 Multi-Axis-Bugs.
 
       // Arrays für ApexCharts aufbereiten
       var series = seriesDef.map(function(s){ return { name:s.name, data:s.data }; });
@@ -1093,34 +1114,11 @@
       var strokeWidths = seriesDef.map(function(s){ return s.width; });
       var strokeDashes = seriesDef.map(function(s){ return s.dash; });
 
-      // ── Y-Achsen aufbauen ─────────────────────────────────────────────────
-      // SIMPLE Strategie: EINE Y-Achse mit Auto-Scale.
-      // ApexCharts v4 hat zu viele Bugs mit Multi-Axis Line-Charts, deshalb
-      // jetzt KISS: alles auf eine Achse, Auto-Scaling fittet alle Serien.
-      // Bei aktivierten Einzeljahren wird der Avg-Bereich kompakter, aber
-      // immer noch klar erkennbar (Avg ist mit width:3.5 prominent).
-      //
-      // Pressure bleibt auf eigener rechter Achse (das funktioniert mit
-      // einem einzelnen seriesName=String reproduzierbar).
-      var yaxes;
-      if (pressureInfo) {
-        yaxes = [
-          { // [0] LINKE Achse — alle Serien außer Pressure
-            labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-            title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-          },
-          { // [1] RECHTE Achse — nur Pressure
-            seriesName: 'Pressure', opposite: true, show: true,
-            labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
-            title: { text:'Pressure', style:{color:COL_PRESSURE,fontSize:'11px'} }
-          }
-        ];
-      } else {
-        yaxes = {
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        };
-      }
+      // ── Single Y-Axis (KISS) ──────────────────────────────────────────────
+      var yaxes = {
+        labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+        title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+      };
 
       var opts = {
         series: series,
@@ -1151,51 +1149,100 @@
       };
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
-      try {
-        JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
-        JZ.charts.main.render();
-      } catch (_renderErr) {
-        // ApexCharts v4 Multi-Axis Bug — Fallback ohne Pressure-Achse
-        console.warn('Main chart render failed, retrying without pressure axis:', _renderErr);
-        // Pressure-Serie raus
-        var filteredSeries = [], filteredColors = [], filteredWidths = [], filteredDashes = [];
-        for (var fi=0; fi<seriesDef.length; fi++) {
-          if (seriesDef[fi].axis === 'right_pressure') continue;
-          filteredSeries.push({ name: seriesDef[fi].name, data: seriesDef[fi].data });
-          filteredColors.push(seriesDef[fi].color);
-          filteredWidths.push(seriesDef[fi].width);
-          filteredDashes.push(seriesDef[fi].dash);
-        }
-        opts.series = filteredSeries;
-        opts.colors = filteredColors;
-        opts.stroke.width = filteredWidths;
-        opts.stroke.dashArray = filteredDashes;
-        opts.yaxis = {
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        };
-        pressureError = 'Pressure Chart konnte nicht dargestellt werden (Multi-Achsen Inkompatibilität)';
-        pressureInfo = null;
-        try {
-          JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
-          JZ.charts.main.render();
-        } catch (_e2) {
-          console.error('Fallback chart also failed:', _e2);
-        }
+      JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
+      JZ.charts.main.render();
+
+      // Pressure-Info wird von renderPressure gesetzt
+      var pInfo = document.getElementById('pressure-info');
+      if (pInfo) pInfo.style.display='none';
+    };
+
+    // ── Render: Pressure Sub-Chart (synchron via chart.group) ───────────────
+    JZ.renderPressure = function(yearData, ticker, smoothing, showPressure) {
+      var container = document.getElementById('chart-pressure');
+      var pInfo = document.getElementById('pressure-info');
+      if (!showPressure) {
+        container.style.display = 'none';
+        if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
+        if (pInfo) pInfo.style.display='none';
+        return;
       }
 
-      // Pressure info / error
-      var pInfo = document.getElementById('pressure-info');
+      var pres = null, pressureError = null;
+      try {
+        pres = JZ.computePressureCurve(yearData, smoothing);
+      } catch (_e) {
+        pressureError = 'Pressure Chart Fehler: ' + (_e && _e.message ? _e.message : _e);
+      }
+
+      if (!pres || !pres.curve || !pres.periods || !pres.periods.length) {
+        if (!pressureError) pressureError = 'Pressure Chart: zu wenig historische Daten';
+      } else {
+        var hasFinite = false;
+        for (var pi=0;pi<pres.curve.length;pi++) {
+          if (pres.curve[pi] != null && isFinite(pres.curve[pi])) { hasFinite = true; break; }
+        }
+        if (!hasFinite) pressureError = 'Pressure Chart: keine gültigen Werte';
+      }
+
       if (pressureError) {
-        pInfo.textContent = '⚠ ' + pressureError;
-        pInfo.style.color = '#f87171';
-        pInfo.style.display = '';
-      } else if (pressureInfo) {
-        pInfo.textContent = pressureInfo;
+        container.style.display = 'none';
+        if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
+        if (pInfo) {
+          pInfo.textContent = '⚠ ' + pressureError;
+          pInfo.style.color = '#f87171';
+          pInfo.style.display = '';
+        }
+        return;
+      }
+
+      container.style.display = '';
+
+      // Daten clean fuer Plotly: null statt NaN/Infinity
+      var pData = pres.curve.map(function(v){ return (v != null && isFinite(v)) ? Math.round(v*100)/100 : null; });
+
+      if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
+      JZ.charts.pressure = new ApexCharts(container, {
+        series: [{ name:'Pressure', data: pData }],
+        chart: Object.assign({
+          type:'line',
+          height: 220,
+          group: 'jzklus-sync',
+          id: 'jzklus-pressure'
+        }, SA.chartTheme.chart),
+        stroke: { width:2, curve:'straight' },
+        colors: [COL_PRESSURE],
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          y: { formatter: function(v) { return v != null ? (v>=0?'+':'')+v.toFixed(2) : '–'; } },
+          x: { formatter: function(v, opts) {
+            var d = opts.dataPointIndex + 1;
+            for (var mi=11;mi>=0;mi--) {
+              if (d >= MONTH_STARTS_DOY[mi]) return (d-MONTH_STARTS_DOY[mi]+1)+'. '+MONTHS_DE[mi];
+            }
+            return 'Tag '+d;
+          }}
+        }),
+        xaxis: xaxisDoy(),
+        yaxis: {
+          labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
+          title: { text:'Pressure (Σ Lookback)', style:{color:COL_PRESSURE,fontSize:'11px'} }
+        },
+        annotations: {
+          xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4 }],
+          yaxis: [{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        },
+        legend: { show:false },
+        dataLabels: { enabled:false },
+        title: { text: ticker+' — Pressure Chart (Lookback '+pres.periods.join('/')+'J)', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      JZ.charts.pressure.render();
+
+      if (pInfo) {
+        pInfo.textContent = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
         pInfo.style.color = 'var(--accent)';
         pInfo.style.display = '';
-      } else {
-        pInfo.style.display='none';
       }
     };
 
@@ -1712,53 +1759,17 @@
       colors.push('#e8a820');
       widths.push(2.5);
 
-      if (showCurrent && yearData[currentYear]) {
-        var curObj = yearData[currentYear];
-        var curVola = JZ.rollingVolForYear(curObj, window);
-        if (curVola && curObj.days) {
-          // Backfill: ersten gueltigen Wert finden, leading NaN damit fuellen
-          var firstValid = NaN;
-          for (var k=0;k<curVola.length;k++) {
-            if (!isNaN(curVola[k])) { firstValid = curVola[k]; break; }
-          }
-          if (!isNaN(firstValid)) {
-            var cleaned = curVola.slice();
-            for (var k=0;k<cleaned.length;k++) {
-              if (isNaN(cleaned[k])) cleaned[k] = firstValid;
-              else break;
-            }
-            // Forward-fill restliche NaN
-            var lastV = firstValid;
-            for (var k=0;k<cleaned.length;k++) {
-              if (!isNaN(cleaned[k])) lastV = cleaned[k];
-              else cleaned[k] = lastV;
-            }
-            // Echtes day_of_year-Mapping (kein Stretching!)
-            var curArr = new Array(365).fill(null);
-            var td = JZ.todayDoy();
-            var doys = curObj.days;
-            var nMin = Math.min(doys.length, cleaned.length);
-            // Lueckentage fuellen
-            var lastValOnDay = NaN;
-            var lastDoy = 0;
-            for (var k=0;k<nMin;k++) {
-              var d = doys[k];
-              if (d < 1 || d > 365 || d > td) continue;
-              // Fuelle zwischen letztem DOY und diesem mit letztem Wert
-              if (lastDoy > 0 && d > lastDoy + 1) {
-                for (var dg = lastDoy; dg < d; dg++) {
-                  if (dg >= 1 && dg <= 365) curArr[dg-1] = lastValOnDay;
-                }
-              }
-              curArr[d-1] = cleaned[k];
-              lastValOnDay = cleaned[k];
-              lastDoy = d;
-            }
-            series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
-            colors.push(COL_CURRENT);
-            widths.push(2.5);
-          }
+      // Aktuelles Jahr direkt aus result._yearVolaMap nehmen
+      // (jahresgrenzen-uebergreifend berechnet, korrekte Januar-Werte)
+      if (showCurrent && result._yearVolaMap && result._yearVolaMap[currentYear]) {
+        var curRow = result._yearVolaMap[currentYear];
+        var curArr = new Array(365).fill(null);
+        for (var d=0;d<365;d++) {
+          if (!isNaN(curRow[d])) curArr[d] = curRow[d];
         }
+        series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
+        colors.push(COL_CURRENT);
+        widths.push(2.5);
       }
 
       if (JZ.charts.vola) { JZ.charts.vola.destroy(); JZ.charts.vola=null; }
@@ -1966,6 +1977,7 @@
       }
       safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
       safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
+      safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure); });
       safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
       safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
       safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
