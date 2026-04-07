@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Monatszyklus — SeasonAlpha</title>
+  <meta name="description" content="Intra-Monat Saisonalität: TDOM-Verlauf, Wochen-Performance, Two-Week-Analyse, Detrend-Indikator, Präsidentenzyklus, Heatmap.">
+  <meta property="og:title" content="Monatszyklus — SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/monatszyklus">
+  <link rel="canonical" href="https://seasonalpha.ai/monatszyklus">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    /* Match-Cards */
+    .match-cards{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
+    .match-card{flex:1 1 0;min-width:130px;background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 8px;text-align:center}
+    .match-card.is-best{border-width:2px}
+    .mc-name{font-size:11px;font-weight:600;margin-bottom:6px}
+    .mc-r{font-size:26px;font-weight:800;letter-spacing:-1px;margin:4px 0;font-family:var(--f-m)}
+    .mc-details{font-size:10px;color:#64748b;line-height:1.5}
+    /* Momentum Cards */
+    .momentum-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.5rem 0}
+    .momentum-card{border-radius:12px;padding:16px;text-align:center}
+    .momentum-card.pos{background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.3)}
+    .momentum-card.neg{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.3)}
+    .mom-label{color:#fff;font-size:13px;margin:0 0 8px 0}
+    .mom-value{font-size:28px;font-weight:800;margin:0;font-family:var(--f-m)}
+    .mom-detail{color:#8899aa;font-size:11px;margin:4px 0 0 0}
+    /* Detail-Tables */
+    .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .perf-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .perf-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .perf-table td.pos{color:#34d399}
+    .perf-table td.neg{color:#f87171}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Analysezeitraum</h3>
+      <select id="sel-period">
+        <option value="3">3</option><option value="5">5</option><option value="7">7</option>
+        <option value="10">10</option><option value="15" selected>15</option><option value="20">20</option>
+        <option value="25">25</option><option value="30">30</option><option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>Monats-Saisonalchart</h3>
+      <label>Monat auswählen</label>
+      <select id="sel-month"></select>
+      <label class="toggle-row" style="margin-top:.5rem"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-bands"> Konfidenzband (±1σ)</label>
+      <hr>
+      <h3>Präsidentenzyklus-Filter</h3>
+      <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
+        <label><input type="checkbox" data-cycle="1"> Wahljahr (1)</label>
+        <label><input type="checkbox" data-cycle="2"> Nachwahljahr (2)</label>
+        <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr (3)</label>
+        <label><input type="checkbox" data-cycle="4"> Vorwahljahr (4)</label>
+      </div>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
+      <hr>
+      <h3>Two-Week Split</h3>
+      <label>Split nach TDOM <span id="lbl-split">10</span></label>
+      <input type="range" id="sl-split" min="5" max="15" step="1" value="10">
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Monatszyklus</b> — <span id="title-ticker">^GSPC</span></h1>
+      <p class="page-caption" id="page-caption">Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- 1. Hauptchart Intra-Monat -->
+      <details open id="sec-main" style="display:none">
+        <summary>Intra-Monat Verlauf</summary>
+        <div class="content">
+          <div id="chart-main"></div>
+          <p class="box-info" id="info-main"></p>
+        </div>
+      </details>
+
+      <!-- 2. Detrend-Indikator -->
+      <details open id="sec-detrend" style="display:none">
+        <summary>Detrend-Indikator / Saisonaler Druck</summary>
+        <div class="content">
+          <div id="chart-detrend"></div>
+          <p class="box-info">Saisonaler Intra-Monat-Verlauf ohne Trendkomponente. Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase.</p>
+        </div>
+      </details>
+
+      <!-- 3. Saisonal Match -->
+      <details open id="sec-match" style="display:none">
+        <summary>📊 Saisonaler Match — Aktuell vs. Durchschnitt</summary>
+        <div class="content" id="content-match"></div>
+      </details>
+
+      <!-- 4. Präsidentenzyklus Best Match -->
+      <details open id="sec-cycle-match" style="display:none">
+        <summary>🏛️ Präsidentenzyklus — Best Match</summary>
+        <div class="content" id="content-cycle-match"></div>
+      </details>
+
+      <!-- 5. Wochen-Performance -->
+      <details open id="sec-weekly" style="display:none">
+        <summary>📅 Wochen-Performance (5 Wochen)</summary>
+        <div class="content"><div id="chart-weekly"></div></div>
+      </details>
+
+      <!-- 6. Monats-Performance Übersicht -->
+      <details open id="sec-monthly" style="display:none">
+        <summary>📊 Monats-Performance (alle 12 Monate)</summary>
+        <div class="content">
+          <div id="chart-monthly"></div>
+          <details>
+            <summary style="font-size:.8125rem">Monats-Detailtabelle</summary>
+            <div class="content">
+              <table class="perf-table">
+                <thead><tr><th>Monat</th><th>Ø Rendite</th><th>Median</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <tbody id="tbody-monthly"></tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <!-- 7. Two-Week Performance Bars -->
+      <details open id="sec-twoweek" style="display:none">
+        <summary>📅 Two-Week Performance</summary>
+        <div class="content"><div id="chart-twoweek"></div></div>
+      </details>
+
+      <!-- 8. Two-Week Heatmap -->
+      <details open id="sec-tw-heatmap" style="display:none">
+        <summary>🗓️ Two-Week Heatmap (12 Monate × 2 Hälften)</summary>
+        <div class="content"><div id="chart-tw-heatmap"></div></div>
+      </details>
+
+      <!-- 9. Two-Week Aktuelles Jahr Overlay -->
+      <details open id="sec-tw-overlay" style="display:none">
+        <summary>📈 Two-Week: Aktuelles Jahr vs. Durchschnitt</summary>
+        <div class="content"><div id="chart-tw-overlay"></div></div>
+      </details>
+
+      <!-- 10. Best Two-Weeks Ranking -->
+      <details id="sec-tw-ranking" style="display:none">
+        <summary>🏆 Best Two-Weeks Ranking (Top 24)</summary>
+        <div class="content"><div id="chart-tw-ranking"></div></div>
+      </details>
+
+      <!-- 11. Momentum-Check -->
+      <details open id="sec-momentum" style="display:none">
+        <summary>⚡ Momentum-Check (1st → 2nd Half)</summary>
+        <div class="content" id="content-momentum"></div>
+      </details>
+
+      <!-- 12. Signifikanztest pro Monatshälfte -->
+      <details id="sec-tw-sig" style="display:none">
+        <summary>📊 Signifikanztest pro Monatshälfte</summary>
+        <div class="content" id="content-tw-sig"></div>
+      </details>
+
+      <!-- 13. Two-Week Detailtabelle -->
+      <details id="sec-tw-table" style="display:none">
+        <summary>Two-Week Detailtabelle</summary>
+        <div class="content">
+          <table class="perf-table">
+            <thead><tr><th>Periode</th><th>Monat</th><th>Hälfte</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+            <tbody id="tbody-tw"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 14. 10-Jahres Monats-Heatmap -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary>10 Jahres Monats-Heatmap</summary>
+        <div class="content"><div id="chart-heatmap"></div></div>
+      </details>
+
+      <!-- Methodik -->
+      <details id="sec-methodik">
+        <summary>📚 Methodik</summary>
+        <div class="content">
+          <h3>Berechnungen</h3>
+          <ul>
+            <li><b>TDOM</b> (Trading Day of Month) = laufende Nummer des Handelstags innerhalb des Monats (1, 2, 3, ...). Entkoppelt von Kalendertagen — Wochenenden und Feiertage werden übersprungen.</li>
+            <li><b>Intra-Monat-Kurve</b>: kumulierte log-Returns ab letztem Handelstag des Vormonats (TDOM 0 = 0%). Pro Jahr eine Kurve, dann gemittelt.</li>
+            <li><b>Solid/Weak Split</b>: TDOMs mit n&lt;10 Beobachtungen werden als gestrichelte rote Linie markiert (statistisch unsicher).</li>
+            <li><b>Detrend-Indikator</b>: Linearer Trend wird subtrahiert, Skalierung auf 0–100, Midline=50. Über 50 = saisonal stark, unter 50 = saisonal schwach.</li>
+            <li><b>Two-Week Split</b>: Monat in zwei Hälften geteilt nach gewähltem TDOM (Slider 5–15). 1st = TDOM 1..X, 2nd = TDOM X+1..Ende.</li>
+            <li><b>Saisonal Match</b>: Pearson-Korrelation + DTW (Dynamic Time Warping) + t-Test zwischen aktuellem Monatsverlauf und historischem Ø.</li>
+            <li><b>Präsidentenzyklus</b>: Wahljahr / Nachwahljahr / Zwischenwahljahr / Vorwahljahr nach Formel <code>((year-2020)%4+4)%4+1</code>.</li>
+            <li><b>Momentum-Check</b>: bedingte Wahrscheinlichkeit dass die zweite Hälfte das Vorzeichen der ersten fortsetzt.</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.7.0/dist/apexcharts.min.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/outlier.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // MONATSZYKLUS — Math/Compute Helpers (Port von 03_Monatszyklus.py)
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    var MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    var MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var COL_AVG = '#00CED1';
+    var COL_CURRENT = '#F1C40F';
+    var COL_POS = '#00d4aa';
+    var COL_NEG = '#ff4757';
+    var COL_WEAK = '#ff6b6b';
+    var INDIVIDUAL_COLORS = [
+      '#FF6B6B','#00CEC9','#FFE66D','#A29BFE','#FF9FF3',
+      '#1ABC9C','#F39C12','#3498DB','#E74C3C','#2ECC71',
+      '#E84393','#00B894','#FDCB6E','#6C5CE7','#FD79A8',
+      '#0984E3','#D63031','#00D2D3','#EE5A24','#C8D6E5'
+    ];
+    var CYCLE_LABELS = { 1:'Wahljahr', 2:'Nachwahljahr', 3:'Zwischenwahljahr', 4:'Vorwahljahr' };
+    var CYCLE_COLORS = { 1:'#e8a425', 2:'#4d9fff', 3:'#ff6b6b', 4:'#34d399' };
+    var MIN_N = 10;
+
+    var charts = {};
+    var currentTicker = '';
+    var rawRows = [];
+    var rowsByDate = {}; // date -> row index lookup
+
+    // ── Statistik-Helpers (NaN-safe) ─────────────────────────────
+    function _clean(arr) {
+      var out = [];
+      for (var i=0;i<arr.length;i++) {
+        var v = arr[i];
+        if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) out.push(v);
+      }
+      return out;
+    }
+    function mean(arr) { var v=_clean(arr); if(!v.length)return 0; var s=0; for(var i=0;i<v.length;i++)s+=v[i]; return s/v.length; }
+    function median(arr) { var v=_clean(arr).slice().sort(function(a,b){return a-b}); if(!v.length)return 0; var m=Math.floor(v.length/2); return v.length%2?v[m]:(v[m-1]+v[m])/2; }
+    function stdev(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/v.length); }
+    function stdevS(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/(v.length-1)); }
+    function corrcoef(a,b) {
+      var n=Math.min(a.length,b.length);
+      if (n<2) return 0;
+      var ma=mean(a.slice(0,n)), mb=mean(b.slice(0,n));
+      var cov=0, va=0, vb=0;
+      for (var i=0;i<n;i++) { cov+=(a[i]-ma)*(b[i]-mb); va+=(a[i]-ma)*(a[i]-ma); vb+=(b[i]-mb)*(b[i]-mb); }
+      if (va===0||vb===0) return 0;
+      return cov/Math.sqrt(va*vb);
+    }
+    function tCdf(t, df) {
+      // Wilson-Hilferty approx for two-tailed t test
+      var x = df / (df + t*t);
+      var a = df/2;
+      // Regularized incomplete beta via continued fraction
+      return 1 - 0.5 * _regBeta(x, a, 0.5);
+    }
+    function _regBeta(x, a, b) {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      var lnBeta = _lnGamma(a) + _lnGamma(b) - _lnGamma(a+b);
+      var front = Math.exp(Math.log(x)*a + Math.log(1-x)*b - lnBeta) / a;
+      // Continued fraction
+      var f = 1, c = 1, d = 0;
+      for (var i=0;i<200;i++) {
+        var m = i / 2;
+        var num;
+        if (i === 0) num = 1;
+        else if (i % 2 === 0) num = (m*(b-m)*x) / ((a+2*m-1)*(a+2*m));
+        else num = -((a+m)*(a+b+m)*x) / ((a+2*m)*(a+2*m+1));
+        d = 1 + num*d; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1/d;
+        c = 1 + num/c; if (Math.abs(c) < 1e-30) c = 1e-30;
+        f *= d*c;
+        if (Math.abs(d*c - 1) < 1e-8) break;
+      }
+      return front * (f - 1);
+    }
+    function _lnGamma(x) {
+      var c = [76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+      var ser = 1.000000000190015;
+      var y = x, tmp = x + 5.5;
+      tmp -= (x+0.5)*Math.log(tmp);
+      for (var j=0;j<6;j++) { y++; ser += c[j]/y; }
+      return -tmp + Math.log(2.5066282746310005*ser/x);
+    }
+    function tTest1Samp(values, mu) {
+      mu = mu || 0;
+      var n = values.length;
+      if (n < 2) return { t:0, p:1 };
+      var m = mean(values);
+      var s = stdevS(values);
+      if (s === 0) return { t:0, p:1 };
+      var t = (m - mu) / (s / Math.sqrt(n));
+      var p = 2 * (1 - tCdf(Math.abs(t), n-1));
+      return { t:t, p:Math.max(0, Math.min(1, p)) };
+    }
+
+    // ── TDOM-Berechnung ──────────────────────────────────────────
+    /**
+     * Weist jedem Row ein TDOM (Trading Day of Month) zu.
+     * @param {Array} rows - sortierte rows mit .date
+     * @returns {Array} rows mit zusaetzlichem .tdom Feld
+     */
+    function assignTdom(rows) {
+      var lastKey = null;
+      var counter = 0;
+      var out = [];
+      for (var i=0;i<rows.length;i++) {
+        var r = rows[i];
+        var key = r.date.substring(0,7); // YYYY-MM
+        if (key !== lastKey) {
+          counter = 0;
+          lastKey = key;
+        }
+        counter++;
+        out.push({ date: r.date, close: r.close, log_return: r.log_return,
+                   year: parseInt(r.date.substring(0,4)),
+                   month: parseInt(r.date.substring(5,7)),
+                   day: parseInt(r.date.substring(8,10)),
+                   tdom: counter });
+      }
+      return out;
+    }
+
+    /**
+     * Aktueller TDOM. Sucht heutigen Eintrag in rows; falls fehlend
+     * +1 wenn heute Handelstag.
+     */
+    function getCurrentTdom(tdomRows, ticker) {
+      var today = new Date();
+      var ty = today.getFullYear();
+      var tm = today.getMonth() + 1;
+      var todayStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (today.getDate()<10?'0':'') + today.getDate();
+      var monthRows = tdomRows.filter(function(r){ return r.year===ty && r.month===tm; });
+      if (!monthRows.length) {
+        // Heute ist erster Tag des Monats und noch nicht in DB
+        try {
+          var exch = SA.holidays.detect(ticker || '');
+          if (exch !== 'NONE' && SA.holidays.isTradingDay(todayStr, exch)) return 1;
+        } catch(e) {}
+        return null;
+      }
+      var lastRow = monthRows[monthRows.length-1];
+      var lastTdom = lastRow.tdom;
+      // Wenn letzter Eintrag vor heute UND heute Handelstag → +1
+      if (lastRow.date < todayStr) {
+        try {
+          var exch2 = SA.holidays.detect(ticker || '');
+          if (exch2 !== 'NONE' && SA.holidays.isTradingDay(todayStr, exch2)) return lastTdom + 1;
+        } catch(e) {}
+      }
+      return lastTdom;
+    }
+
+    // ── Intra-Monat Kurve ────────────────────────────────────────
+    /**
+     * Berechnet kumulierte log-Return Kurve fuer einen Monat ueber alle Jahre.
+     * @returns {Object} { tdomStats: { tdom: {avg, std, n} }, allCurves: [{year, tdoms, curve, total_return}] }
+     */
+    function calcIntramonthCurve(tdomRows, targetMonth, selectedYears) {
+      var allCurves = [];
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      // Group by year
+      var byYear = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        if (r.month !== targetMonth) continue;
+        if (!byYear[r.year]) byYear[r.year] = [];
+        byYear[r.year].push(r);
+      }
+      for (var y in byYear) {
+        var rows = byYear[y];
+        if (rows.length < 10) continue;
+        var logRets = rows.map(function(r){ var lr = parseFloat(r.log_return); return (isNaN(lr)||!isFinite(lr))?0:lr; });
+        var cum = [];
+        var sum = 0;
+        for (var k=0;k<logRets.length;k++) {
+          sum += logRets[k];
+          cum.push((Math.exp(sum) - 1) * 100);
+        }
+        allCurves.push({
+          year: parseInt(y),
+          tdoms: rows.map(function(r){ return r.tdom; }),
+          curve: cum,
+          total_return: cum.length ? cum[cum.length-1] : 0
+        });
+      }
+      if (!allCurves.length) return { tdomStats: null, allCurves: [] };
+      var maxTdom = 0;
+      for (var i=0;i<allCurves.length;i++) {
+        for (var j=0;j<allCurves[i].tdoms.length;j++) {
+          if (allCurves[i].tdoms[j] > maxTdom) maxTdom = allCurves[i].tdoms[j];
+        }
+      }
+      var tdomStats = {};
+      for (var t=1;t<=maxTdom;t++) {
+        var vals = [];
+        for (var i=0;i<allCurves.length;i++) {
+          var idx = allCurves[i].tdoms.indexOf(t);
+          if (idx >= 0) vals.push(allCurves[i].curve[idx]);
+        }
+        if (vals.length) {
+          tdomStats[t] = { avg: mean(vals), std: stdev(vals), n: vals.length };
+        }
+      }
+      return { tdomStats: tdomStats, allCurves: allCurves };
+    }
+
+    /**
+     * Berechnet die kumulierte Kurve des aktuellen Monats (bis heute).
+     */
+    function calcCurrentMonthCurve(tdomRows, targetMonth) {
+      var ty = new Date().getFullYear();
+      var monthRows = tdomRows.filter(function(r){ return r.year===ty && r.month===targetMonth; });
+      if (!monthRows.length) return null;
+      var logRets = monthRows.map(function(r){ var lr=parseFloat(r.log_return); return (isNaN(lr)||!isFinite(lr))?0:lr; });
+      var cum = [];
+      var sum = 0;
+      for (var k=0;k<logRets.length;k++) {
+        sum += logRets[k];
+        cum.push((Math.exp(sum) - 1) * 100);
+      }
+      return { tdoms: monthRows.map(function(r){return r.tdom;}), curve: cum };
+    }
+
+    // ── Wochen-Performance ───────────────────────────────────────
+    function calcWeeklyPerformance(tdomRows, targetMonth, selectedYears) {
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      var weekReturns = { 1:[], 2:[], 3:[], 4:[], 5:[] };
+      // Group by year+month
+      var byYear = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        if (r.month !== targetMonth) continue;
+        if (!byYear[r.year]) byYear[r.year] = [];
+        byYear[r.year].push(r);
+      }
+      for (var y in byYear) {
+        var rows = byYear[y];
+        if (rows.length < 10) continue;
+        for (var w=1;w<=5;w++) {
+          var s = (w-1)*5+1, e = w*5;
+          var wrows = rows.filter(function(r){ return r.tdom>=s && r.tdom<=e; });
+          if (wrows.length >= 2) {
+            // Use close-to-close: (last_close / first_close - 1)
+            // Approximation since we don't have Open
+            var first = wrows[0].close, last = wrows[wrows.length-1].close;
+            // Better: rebuild from log_returns within week
+            var sumLR = 0;
+            for (var k=0;k<wrows.length;k++) {
+              var lr = parseFloat(wrows[k].log_return);
+              if (!isNaN(lr) && isFinite(lr)) sumLR += lr;
+            }
+            var ret = (Math.exp(sumLR) - 1) * 100;
+            weekReturns[w].push(ret);
+          }
+        }
+      }
+      var results = [];
+      for (var w=1;w<=5;w++) {
+        var rets = weekReturns[w];
+        if (rets.length < 2) continue;
+        var wins = rets.filter(function(r){return r>0;}).length;
+        results.push({
+          week: w,
+          label: 'W'+w+' (TDOM '+((w-1)*5+1)+'-'+(w*5)+')',
+          avg: mean(rets),
+          median: median(rets),
+          win_rate: wins/rets.length*100,
+          n: rets.length
+        });
+      }
+      return results;
+    }
+
+    // ── Monats-Performance ───────────────────────────────────────
+    function calcMonthlyPerformance(tdomRows, selectedYears) {
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      var byYM = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        var k = r.year + '-' + r.month;
+        if (!byYM[k]) byYM[k] = [];
+        byYM[k].push(r);
+      }
+      var results = [];
+      for (var month=1;month<=12;month++) {
+        var rets = [];
+        for (var y in yearSet) {
+          var k = y + '-' + month;
+          var rows = byYM[k];
+          if (!rows || rows.length < 10) continue;
+          var sumLR = 0;
+          for (var j=0;j<rows.length;j++) {
+            var lr = parseFloat(rows[j].log_return);
+            if (!isNaN(lr) && isFinite(lr)) sumLR += lr;
+          }
+          rets.push((Math.exp(sumLR) - 1) * 100);
+        }
+        if (rets.length < 2) {
+          results.push({ month:month, avg:0, median:0, win_rate:0, n:0 });
+          continue;
+        }
+        var wins = rets.filter(function(r){return r>0;}).length;
+        results.push({
+          month: month,
+          avg: mean(rets),
+          median: median(rets),
+          win_rate: wins/rets.length*100,
+          n: rets.length
+        });
+      }
+      return results;
+    }
+
+    // ── Two-Week Performance ─────────────────────────────────────
+    function calcTwoWeekPerformance(tdomRows, selectedYears, splitDay) {
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      var byYM = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        var k = r.year + '-' + r.month;
+        if (!byYM[k]) byYM[k] = [];
+        byYM[k].push(r);
+      }
+      var results = [];
+      for (var month=1;month<=12;month++) {
+        for (var half=1;half<=2;half++) {
+          var rets = [];
+          for (var y in yearSet) {
+            var k = y + '-' + month;
+            var rows = byYM[k];
+            if (!rows || rows.length < 10) continue;
+            var hrows = half===1
+              ? rows.filter(function(r){return r.tdom<=splitDay;})
+              : rows.filter(function(r){return r.tdom>splitDay;});
+            if (hrows.length >= 3) {
+              var sumLR = 0;
+              for (var j=0;j<hrows.length;j++) {
+                var lr = parseFloat(hrows[j].log_return);
+                if (!isNaN(lr) && isFinite(lr)) sumLR += lr;
+              }
+              rets.push((Math.exp(sumLR) - 1) * 100);
+            }
+          }
+          var suffix = half===1 ? '1st' : '2nd';
+          var label = (month<10?'0':'') + month + '/' + suffix;
+          if (rets.length < 2) {
+            results.push({ label:label, month:month, half:half, avg:0, median:0, win_rate:0, n:0 });
+            continue;
+          }
+          var wins = rets.filter(function(r){return r>0;}).length;
+          results.push({
+            label: label, month: month, half: half,
+            avg: mean(rets), median: median(rets),
+            win_rate: wins/rets.length*100, n: rets.length
+          });
+        }
+      }
+      return results;
+    }
+
+    function calcTwoWeekCurrentYear(tdomRows, splitDay) {
+      var ty = new Date().getFullYear();
+      var byMonth = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (r.year !== ty) continue;
+        if (!byMonth[r.month]) byMonth[r.month] = [];
+        byMonth[r.month].push(r);
+      }
+      var results = [];
+      for (var month=1;month<=12;month++) {
+        var rows = byMonth[month];
+        if (!rows || rows.length < 3) continue;
+        for (var half=1;half<=2;half++) {
+          var hrows = half===1
+            ? rows.filter(function(r){return r.tdom<=splitDay;})
+            : rows.filter(function(r){return r.tdom>splitDay;});
+          if (hrows.length >= 2) {
+            var sumLR = 0;
+            for (var j=0;j<hrows.length;j++) {
+              var lr = parseFloat(hrows[j].log_return);
+              if (!isNaN(lr) && isFinite(lr)) sumLR += lr;
+            }
+            var ret = (Math.exp(sumLR) - 1) * 100;
+            var suffix = half===1 ? '1st' : '2nd';
+            results.push({
+              label: (month<10?'0':'') + month + '/' + suffix,
+              month: month, half: half, avg: ret
+            });
+          }
+        }
+      }
+      return results;
+    }
+
+    // ── Detrend-Indikator ────────────────────────────────────────
+    function computeDetrend(tdomStats) {
+      var tdoms = Object.keys(tdomStats).map(Number).sort(function(a,b){return a-b;});
+      if (tdoms.length < 3) return null;
+      var avgCurve = tdoms.map(function(t){ return tdomStats[t].avg; });
+      var n = avgCurve.length;
+      var endVal = avgCurve[n-1];
+      var dailyDrift = endVal / n;
+      var raw = [];
+      for (var i=0;i<n;i++) raw.push(avgCurve[i] - (i+1)*dailyDrift);
+      var rMin = Math.min.apply(null, raw);
+      var rMax = Math.max.apply(null, raw);
+      var rRange = rMax - rMin;
+      var detrended;
+      if (rRange === 0) {
+        detrended = raw.map(function(){return 50;});
+      } else {
+        detrended = raw.map(function(v){ return ((v - rMin) / rRange) * 100; });
+      }
+      return { tdoms: tdoms, detrended: detrended };
+    }
+
+    // ── Saisonal Match (Korr + DTW + t-Test) ─────────────────────
+    function calcSeasonalMatch(tdomStats, currentMonthCurve, allCurves) {
+      if (!currentMonthCurve || !currentMonthCurve.tdoms || currentMonthCurve.tdoms.length < 3) return null;
+      var cmTdoms = currentMonthCurve.tdoms;
+      var cmCurve = currentMonthCurve.curve;
+      var common = cmTdoms.filter(function(t){ return tdomStats[t]; });
+      if (common.length < 3) return null;
+      var avgVals = common.map(function(t){ return tdomStats[t].avg; });
+      var curVals = common.map(function(t){ return cmCurve[cmTdoms.indexOf(t)]; });
+      // 1. Korrelation
+      var correlation = corrcoef(curVals, avgVals);
+      // 2. DTW-Score (vereinfacht ueber Korrelation, da kein fastdtw in JS)
+      var amplitude = Math.max(Math.max.apply(null, avgVals) - Math.min.apply(null, avgVals), 0.1);
+      var diffs = 0;
+      for (var i=0;i<common.length;i++) diffs += Math.abs(curVals[i] - avgVals[i]);
+      var dtwScore = Math.max(0, 1 - diffs / (amplitude * common.length));
+      // 3. t-Test: aktueller Return vs historische Verteilung
+      var histReturns = allCurves.map(function(c){ return c.total_return; });
+      var currentReturn = cmCurve.length ? cmCurve[cmCurve.length-1] : 0;
+      var nYears = histReturns.length;
+      var avgReturn = 0, cohensD = 0, tStat = 0, pValue = 1;
+      if (nYears >= 5) {
+        var stdR = stdevS(histReturns);
+        avgReturn = mean(histReturns);
+        if (stdR > 0) {
+          cohensD = Math.abs(currentReturn - avgReturn) / stdR;
+          tStat = (currentReturn - avgReturn) / (stdR / Math.sqrt(nYears));
+          pValue = 2 * (1 - tCdf(Math.abs(tStat), nYears-1));
+        }
+      } else if (histReturns.length) {
+        avgReturn = mean(histReturns);
+      }
+      return {
+        correlation: correlation,
+        dtw_score: dtwScore,
+        t_stat: tStat,
+        p_value: Math.max(0, Math.min(1, pValue)),
+        cohens_d: cohensD,
+        current_return: currentReturn,
+        avg_return: avgReturn,
+        n_years: nYears
+      };
+    }
+
+    // ── Cycle Match: pro Praesidentenzyklus ──────────────────────
+    function calcCycleMatch(tdomRows, targetMonth, selectedYears, currentMonthCurve) {
+      if (!currentMonthCurve || !currentMonthCurve.tdoms || currentMonthCurve.tdoms.length < 3) return null;
+      var cmTdoms = currentMonthCurve.tdoms;
+      var cmCurve = currentMonthCurve.curve;
+      // Cycle of year: 1=Wahljahr (Election), 2=Post, 3=Mid, 4=Pre — siehe seasonal-compute.js
+      var cycleOf = function(y) { return ((y - 2020) % 4 + 4) % 4 + 1; };
+      var groups = { 1:[], 2:[], 3:[], 4:[] };
+      for (var i=0;i<selectedYears.length;i++) {
+        var y = selectedYears[i];
+        groups[cycleOf(y)].push(y);
+      }
+      groups['all'] = selectedYears.slice();
+      var results = [];
+      var groupKeys = ['1','2','3','4','all'];
+      for (var gi=0;gi<groupKeys.length;gi++) {
+        var gk = groupKeys[gi];
+        var years = groups[gk];
+        if (!years || years.length < 3) continue;
+        // Build per-year curves for this cycle group
+        var curves = [];
+        var ySet = {};
+        for (var i=0;i<years.length;i++) ySet[years[i]] = true;
+        var byY = {};
+        for (var i=0;i<tdomRows.length;i++) {
+          var r = tdomRows[i];
+          if (!ySet[r.year]) continue;
+          if (r.month !== targetMonth) continue;
+          if (!byY[r.year]) byY[r.year] = [];
+          byY[r.year].push(r);
+        }
+        for (var y in byY) {
+          var rs = byY[y];
+          if (rs.length < 10) continue;
+          var sumLR = 0;
+          var ts = [], cv = [];
+          for (var k=0;k<rs.length;k++) {
+            var lr = parseFloat(rs[k].log_return);
+            if (isNaN(lr) || !isFinite(lr)) lr = 0;
+            sumLR += lr;
+            ts.push(rs[k].tdom);
+            cv.push((Math.exp(sumLR) - 1) * 100);
+          }
+          curves.push({ tdoms: ts, curve: cv });
+        }
+        if (curves.length < 3) continue;
+        // Common TDOMs
+        var commonT = cmTdoms.filter(function(t){
+          for (var i=0;i<curves.length;i++) if (curves[i].tdoms.indexOf(t) < 0) return false;
+          return true;
+        });
+        if (commonT.length < 3) continue;
+        var avgVals = commonT.map(function(t){
+          var vals = curves.map(function(c){ return c.curve[c.tdoms.indexOf(t)]; });
+          return mean(vals);
+        });
+        var curVals = commonT.map(function(t){ return cmCurve[cmTdoms.indexOf(t)]; });
+        var corr = corrcoef(curVals, avgVals);
+        var amplitude = Math.max(Math.max.apply(null, avgVals) - Math.min.apply(null, avgVals), 0.1);
+        var diffs = 0;
+        for (var i=0;i<commonT.length;i++) diffs += Math.abs(curVals[i] - avgVals[i]);
+        var dtwScore = Math.max(0, 1 - diffs / (amplitude * commonT.length));
+        var matchScore = 0.6 * Math.max(0, (corr+1)/2) + 0.4 * dtwScore;
+        results.push({
+          name: gk === 'all' ? 'Alle Jahre' : CYCLE_LABELS[parseInt(gk)],
+          correlation: corr,
+          dtw_score: dtwScore,
+          match_score: matchScore,
+          n_years: curves.length,
+          color: gk === 'all' ? '#94a3b8' : CYCLE_COLORS[parseInt(gk)]
+        });
+      }
+      // Sort: Wahljahr, Nachwahljahr, Zwischenwahljahr, Vorwahljahr, Alle
+      var order = { 'Wahljahr':0, 'Nachwahljahr':1, 'Zwischenwahljahr':2, 'Vorwahljahr':3, 'Alle Jahre':4 };
+      results.sort(function(a,b){ return order[a.name] - order[b.name]; });
+      return results;
+    }
+
+    // ── Momentum Check ───────────────────────────────────────────
+    function calcMomentumCheck(tdomRows, selectedYears, splitDay) {
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      var posPos=0, posNeg=0, negPos=0, negNeg=0, total=0;
+      var byYM = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        var k = r.year + '-' + r.month;
+        if (!byYM[k]) byYM[k] = [];
+        byYM[k].push(r);
+      }
+      for (var k in byYM) {
+        var rows = byYM[k];
+        if (rows.length < 10) continue;
+        var h1 = rows.filter(function(r){return r.tdom<=splitDay;});
+        var h2 = rows.filter(function(r){return r.tdom>splitDay;});
+        if (h1.length < 3 || h2.length < 3) continue;
+        var sumH1=0, sumH2=0;
+        for (var j=0;j<h1.length;j++) { var lr=parseFloat(h1[j].log_return); if(!isNaN(lr)) sumH1+=lr; }
+        for (var j=0;j<h2.length;j++) { var lr=parseFloat(h2[j].log_return); if(!isNaN(lr)) sumH2+=lr; }
+        var r1 = (Math.exp(sumH1)-1)*100;
+        var r2 = (Math.exp(sumH2)-1)*100;
+        total++;
+        if (r1>0 && r2>0) posPos++;
+        else if (r1>0 && r2<=0) posNeg++;
+        else if (r1<=0 && r2>0) negPos++;
+        else negNeg++;
+      }
+      return { posPos:posPos, posNeg:posNeg, negPos:negPos, negNeg:negNeg, total:total };
+    }
+
+    // ── Two-Week Significance ────────────────────────────────────
+    function calcTwoWeekSignificance(tdomRows, selectedYears, splitDay) {
+      var yearSet = {};
+      for (var i=0;i<selectedYears.length;i++) yearSet[selectedYears[i]] = true;
+      var byYM = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        if (!yearSet[r.year]) continue;
+        var k = r.year + '-' + r.month;
+        if (!byYM[k]) byYM[k] = [];
+        byYM[k].push(r);
+      }
+      var rets1 = [], rets2 = [];
+      for (var k in byYM) {
+        var rows = byYM[k];
+        if (rows.length < 10) continue;
+        var h1 = rows.filter(function(r){return r.tdom<=splitDay;});
+        var h2 = rows.filter(function(r){return r.tdom>splitDay;});
+        if (h1.length >= 3) {
+          var s=0; for (var j=0;j<h1.length;j++) { var lr=parseFloat(h1[j].log_return); if(!isNaN(lr)) s+=lr; }
+          rets1.push((Math.exp(s)-1)*100);
+        }
+        if (h2.length >= 3) {
+          var s=0; for (var j=0;j<h2.length;j++) { var lr=parseFloat(h2[j].log_return); if(!isNaN(lr)) s+=lr; }
+          rets2.push((Math.exp(s)-1)*100);
+        }
+      }
+      var statFor = function(rets, name, desc) {
+        if (rets.length < 10) return null;
+        var test = tTest1Samp(rets, 0);
+        var avgR = mean(rets);
+        var stdR = stdevS(rets);
+        var d = stdR > 0 ? Math.abs(avgR) / stdR : 0;
+        return { name:name, desc:desc, n:rets.length, avg:avgR, t:test.t, p:test.p, d:d };
+      };
+      return [
+        statFor(rets1, '1st Half', 'TDOM 1-'+splitDay),
+        statFor(rets2, '2nd Half', 'TDOM '+(splitDay+1)+'+')
+      ].filter(function(s){return s;});
+    }
+
+    // ── 10-Jahres Heatmap ────────────────────────────────────────
+    function buildMonthlyHeatmap(tdomRows, selectedYears) {
+      var sorted = selectedYears.slice().sort(function(a,b){return b-a;});
+      var last10 = sorted.slice(0,10);
+      var byYM = {};
+      for (var i=0;i<tdomRows.length;i++) {
+        var r = tdomRows[i];
+        var k = r.year + '-' + r.month;
+        if (!byYM[k]) byYM[k] = [];
+        byYM[k].push(r);
+      }
+      var series = [];
+      var currentYear = new Date().getFullYear();
+      for (var yi=0;yi<last10.length;yi++) {
+        var y = last10[yi];
+        var row = [];
+        // Bestimme last_actual month für current year
+        var lastActualMonth = 12;
+        if (y === currentYear) {
+          var maxM = 0;
+          for (var i=0;i<tdomRows.length;i++) {
+            if (tdomRows[i].year === y && tdomRows[i].month > maxM) maxM = tdomRows[i].month;
+          }
+          lastActualMonth = maxM;
+        }
+        for (var m=1;m<=12;m++) {
+          var rows = byYM[y+'-'+m];
+          var v = null;
+          if (rows && rows.length >= 5 && (y !== currentYear || m <= lastActualMonth)) {
+            var sumLR = 0;
+            for (var j=0;j<rows.length;j++) {
+              var lr = parseFloat(rows[j].log_return);
+              if (!isNaN(lr) && isFinite(lr)) sumLR += lr;
+            }
+            v = parseFloat(((Math.exp(sumLR)-1)*100).toFixed(2));
+          }
+          row.push({ x: MONTHS_DE_SHORT[m-1], y: v });
+        }
+        series.push({ name: String(y), data: row });
+      }
+      return series;
+    }
+
+    // ── Outlier-Filter Anwendung ─────────────────────────────────
+    /**
+     * Filtert allCurves anhand outlier-Methode (analog zu shared/outlier.js).
+     * Gibt gefilterte Curves zurueck und re-berechnet tdomStats.
+     */
+    function applyOutlierFilter(intramonth, method) {
+      if (!method || method === 'off' || method === 'none') return intramonth;
+      var allCurves = intramonth.allCurves;
+      if (!allCurves.length) return intramonth;
+      // Use total_return als Grundlage
+      var returns = allCurves.map(function(c){ return c.total_return; });
+      var keep = new Array(allCurves.length).fill(true);
+      if (method === 'iqr') {
+        var sorted = returns.slice().sort(function(a,b){return a-b;});
+        var q1 = sorted[Math.floor(sorted.length*0.25)];
+        var q3 = sorted[Math.floor(sorted.length*0.75)];
+        var iqr = q3 - q1;
+        var lo = q1 - 1.5*iqr, hi = q3 + 1.5*iqr;
+        for (var i=0;i<returns.length;i++) {
+          if (returns[i] < lo || returns[i] > hi) keep[i] = false;
+        }
+      } else if (method === 'winsor' || method === 'winsorize') {
+        // Winsorize: clip auf Mittelwert ± 3 Sigma — KEIN Drop
+        var m = mean(returns), s = stdev(returns);
+        // Wir filtern nicht, sondern lassen alle drin
+        return intramonth;
+      } else if (method === 'isolation' || method === 'iso') {
+        // Vereinfacht: 2.5 Sigma als Outlier
+        var m = mean(returns), s = stdev(returns);
+        for (var i=0;i<returns.length;i++) {
+          if (Math.abs(returns[i] - m) > 2.5 * s) keep[i] = false;
+        }
+      }
+      var filtered = [];
+      for (var i=0;i<allCurves.length;i++) if (keep[i]) filtered.push(allCurves[i]);
+      if (filtered.length < 2) return intramonth;
+      // Recompute tdomStats
+      var maxTdom = 0;
+      for (var i=0;i<filtered.length;i++) {
+        for (var j=0;j<filtered[i].tdoms.length;j++) {
+          if (filtered[i].tdoms[j] > maxTdom) maxTdom = filtered[i].tdoms[j];
+        }
+      }
+      var newStats = {};
+      for (var t=1;t<=maxTdom;t++) {
+        var vals = [];
+        for (var i=0;i<filtered.length;i++) {
+          var idx = filtered[i].tdoms.indexOf(t);
+          if (idx >= 0) vals.push(filtered[i].curve[idx]);
+        }
+        if (vals.length) newStats[t] = { avg: mean(vals), std: stdev(vals), n: vals.length };
+      }
+      return { tdomStats: newStats, allCurves: filtered, _filtered_count: allCurves.length - filtered.length };
+    }
+
+    // ── Export Math/Compute Modul ────────────────────────────────
+    window._SA_MZ = {
+      MONTHS_DE: MONTHS_DE,
+      MONTHS_DE_SHORT: MONTHS_DE_SHORT,
+      COL_AVG: COL_AVG, COL_CURRENT: COL_CURRENT,
+      COL_POS: COL_POS, COL_NEG: COL_NEG, COL_WEAK: COL_WEAK,
+      INDIVIDUAL_COLORS: INDIVIDUAL_COLORS,
+      CYCLE_LABELS: CYCLE_LABELS, CYCLE_COLORS: CYCLE_COLORS,
+      MIN_N: MIN_N,
+      charts: charts,
+      mean: mean, median: median, stdev: stdev, stdevS: stdevS,
+      corrcoef: corrcoef, tTest1Samp: tTest1Samp,
+      assignTdom: assignTdom, getCurrentTdom: getCurrentTdom,
+      calcIntramonthCurve: calcIntramonthCurve,
+      calcCurrentMonthCurve: calcCurrentMonthCurve,
+      calcWeeklyPerformance: calcWeeklyPerformance,
+      calcMonthlyPerformance: calcMonthlyPerformance,
+      calcTwoWeekPerformance: calcTwoWeekPerformance,
+      calcTwoWeekCurrentYear: calcTwoWeekCurrentYear,
+      computeDetrend: computeDetrend,
+      calcSeasonalMatch: calcSeasonalMatch,
+      calcCycleMatch: calcCycleMatch,
+      calcMomentumCheck: calcMomentumCheck,
+      calcTwoWeekSignificance: calcTwoWeekSignificance,
+      buildMonthlyHeatmap: buildMonthlyHeatmap,
+      applyOutlierFilter: applyOutlierFilter,
+      getCurrentTicker: function(){return currentTicker;},
+      setCurrentTicker: function(t){currentTicker=t;},
+      getRawRows: function(){return rawRows;},
+      setRawRows: function(r){rawRows=r;}
+    };
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var MZ = window._SA_MZ;
+    var MONTHS_DE = MZ.MONTHS_DE;
+    var MONTHS_DE_SHORT = MZ.MONTHS_DE_SHORT;
+    var COL_AVG = MZ.COL_AVG, COL_CURRENT = MZ.COL_CURRENT;
+    var COL_POS = MZ.COL_POS, COL_NEG = MZ.COL_NEG, COL_WEAK = MZ.COL_WEAK;
+    var MIN_N = MZ.MIN_N;
+    var INDIVIDUAL_COLORS = MZ.INDIVIDUAL_COLORS;
+    var CYCLE_LABELS = MZ.CYCLE_LABELS;
+
+    function fmtPct(v, d) { d = d == null ? 2 : d; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
+
+    // ── 1. Hauptchart Intra-Monat ────────────────────────────────
+    MZ.renderMain = function(intramonth, ticker, monthName, showIndividual, showBands, showCurrent, currentMonthCurve, currentTdom) {
+      var stats = intramonth.tdomStats;
+      if (!stats) return;
+      var tdoms = Object.keys(stats).map(Number).sort(function(a,b){return a-b;});
+      var avgCurve = tdoms.map(function(t){ return stats[t].avg; });
+      var nYears = stats[1] ? stats[1].n : 0;
+
+      // Series builder: TDOM 0 = 0% (Vormonatsschluss)
+      var seriesDef = [];
+      var allXVals = [0].concat(tdoms);
+
+      // Einzeljahre
+      if (showIndividual) {
+        for (var i=0;i<intramonth.allCurves.length;i++) {
+          var c = intramonth.allCurves[i];
+          var xs = [0].concat(c.tdoms);
+          var ys = [0].concat(c.curve);
+          // Map auf gemeinsame X-Achse
+          var data = allXVals.map(function(x){
+            var idx = xs.indexOf(x);
+            return idx >= 0 ? Math.round(ys[idx]*1000)/1000 : null;
+          });
+          seriesDef.push({
+            name: String(c.year),
+            data: data,
+            color: INDIVIDUAL_COLORS[i % INDIVIDUAL_COLORS.length],
+            width: 1.2, dash: 0
+          });
+        }
+      }
+
+      // Konfidenzband
+      if (showBands) {
+        var upper = [0].concat(tdoms.map(function(t){ return stats[t].avg + stats[t].std; }));
+        var lower = [0].concat(tdoms.map(function(t){ return stats[t].avg - stats[t].std; }));
+        seriesDef.push({ name:'+1σ', data:upper.map(function(v){return Math.round(v*1000)/1000;}), color:'rgba(0,206,209,0.4)', width:1.5, dash:4 });
+        seriesDef.push({ name:'−1σ', data:lower.map(function(v){return Math.round(v*1000)/1000;}), color:'rgba(0,206,209,0.4)', width:1.5, dash:4 });
+      }
+
+      // Saisonaler Ø — Solid (n>=10) vs Weak (n<10)
+      var solidData = [0]; // Start at TDOM 0
+      var weakData = [null];
+      for (var i=0;i<tdoms.length;i++) {
+        var t = tdoms[i], n = stats[t].n;
+        var v = Math.round(avgCurve[i]*1000)/1000;
+        if (n >= MIN_N) {
+          solidData.push(v);
+          weakData.push(null);
+        } else {
+          // Bridge: kopiere letzten solide Wert in weak
+          if (weakData[weakData.length-1] === null && solidData[solidData.length-1] !== null) {
+            weakData[weakData.length-1] = solidData[solidData.length-1];
+          }
+          solidData.push(null);
+          weakData.push(v);
+        }
+      }
+      seriesDef.push({ name:'Ø '+monthName+' ('+nYears+'J)', data:solidData, color:COL_AVG, width:3, dash:0 });
+      // Nur weak-trace wenn überhaupt weak-Werte da sind
+      var hasWeak = weakData.some(function(v){return v!==null;});
+      if (hasWeak) {
+        seriesDef.push({ name:'⚠ n<'+MIN_N+' (unsicher)', data:weakData, color:COL_WEAK, width:2, dash:3 });
+      }
+
+      // Aktuelles Jahr
+      if (showCurrent && currentMonthCurve && currentMonthCurve.tdoms && currentMonthCurve.tdoms.length) {
+        var curData = allXVals.map(function(x){
+          if (x === 0) return 0;
+          var idx = currentMonthCurve.tdoms.indexOf(x);
+          return idx >= 0 ? Math.round(currentMonthCurve.curve[idx]*1000)/1000 : null;
+        });
+        seriesDef.push({ name: new Date().getFullYear()+' (aktuell)', data:curData, color:COL_CURRENT, width:3, dash:0 });
+      }
+
+      var series = seriesDef.map(function(s){return {name:s.name, data:s.data};});
+      var colors = seriesDef.map(function(s){return s.color;});
+      var widths = seriesDef.map(function(s){return s.width;});
+      var dashes = seriesDef.map(function(s){return s.dash;});
+      var xCategories = allXVals.map(String);
+
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (currentTdom != null && tdoms.indexOf(currentTdom) >= 0) {
+        annotations.xaxis = [{
+          x: String(currentTdom),
+          borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 4,
+          label: { text: 'TDOM '+currentTdom, style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'} }
+        }];
+      }
+
+      if (MZ.charts.main) { try { MZ.charts.main.destroy(); } catch(e){} }
+      MZ.charts.main = new ApexCharts(document.getElementById('chart-main'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:480, group:'mz-sync', id:'mz-main' }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
+        markers: { size: 4 },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared: true, intersect: false,
+          x: { formatter: function(v) { return v === '0' ? 'Basis (Vormonat)' : 'TDOM '+v; } },
+          y: { formatter: function(v) { return v != null ? fmtPct(v, 3) : '–'; } }
+        }),
+        xaxis: { categories: xCategories, labels: { style:{colors:'#a89878', fontSize:'11px'} } },
+        yaxis: { labels: { style:{colors:'#a89878', fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(2)+'%':'';} },
+                 title: { text:'Kumulierte Rendite (%)', style:{color:'#a89878', fontSize:'11px'} } },
+        annotations: annotations,
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — '+monthName+' Intra-Monat Verlauf ('+nYears+' Jahre)', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.main.render();
+
+      // Info-Hint
+      var info = document.getElementById('info-main');
+      var weakTdoms = tdoms.filter(function(t){ return stats[t].n < MIN_N; });
+      var hint = 'Kumulierte Rendite ab Vormonatsschluss (Basis = 0%). Zeigt, wie sich der ' + monthName + ' typisch entwickelt. Die gelbe Linie zeigt den aktuellen Verlauf.';
+      if (weakTdoms.length) {
+        hint += ' <span style="color:#ff6b6b">⚠ Gestrichelte Linie ab TDOM ' + weakTdoms[0] + ': weniger als ' + MIN_N + ' Datenpunkte — statistisch unsicher.</span>';
+      }
+      if (info) info.innerHTML = hint;
+    };
+
+    // ── 2. Detrend Chart ─────────────────────────────────────────
+    MZ.renderDetrend = function(intramonth, ticker, monthName, currentTdom) {
+      var det = MZ.computeDetrend(intramonth.tdomStats);
+      if (!det) return;
+      var stats = intramonth.tdomStats;
+
+      // Solid (n>=10) vs Weak
+      var solidData = [], weakData = [];
+      for (var i=0;i<det.tdoms.length;i++) {
+        var t = det.tdoms[i], n = stats[t].n;
+        var v = Math.round(det.detrended[i]*100)/100;
+        if (n >= MIN_N) {
+          solidData.push(v);
+          weakData.push(null);
+        } else {
+          if (weakData.length > 0 && weakData[weakData.length-1] === null && solidData[solidData.length-1] !== null) {
+            weakData[weakData.length-1] = solidData[solidData.length-1];
+          }
+          solidData.push(null);
+          weakData.push(v);
+        }
+      }
+
+      var series = [{ name:'Saisonaler Druck', data: solidData }];
+      var colors = [COL_WEAK];
+      var widths = [2.5];
+      var dashes = [0];
+      var hasWeak = weakData.some(function(v){return v!==null;});
+      if (hasWeak) {
+        series.push({ name:'⚠ n<'+MIN_N, data:weakData });
+        colors.push(COL_WEAK);
+        widths.push(2);
+        dashes.push(3);
+      }
+
+      var nYears = stats[1] ? stats[1].n : 0;
+      var annotations = { yaxis:[{ y:50, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (currentTdom != null && det.tdoms.indexOf(currentTdom) >= 0) {
+        annotations.xaxis = [{
+          x: String(currentTdom),
+          borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 4,
+          label: { text: 'TDOM '+currentTdom, style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'} }
+        }];
+      }
+
+      if (MZ.charts.detrend) { try { MZ.charts.detrend.destroy(); } catch(e){} }
+      MZ.charts.detrend = new ApexCharts(document.getElementById('chart-detrend'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:280 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
+        markers: { size: 4 },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter:function(v){return v!=null?v.toFixed(1):'–';} }
+        }),
+        xaxis: { categories: det.tdoms.map(String), labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { min:0, max:100, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        annotations: annotations,
+        dataLabels: { enabled: false },
+        legend: { show: hasWeak, position:'top', fontSize:'10px' },
+        title: { text: ticker+' — '+monthName+' Detrend ('+nYears+' Jahre)', style:{color:'#fff', fontSize:'12px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.detrend.render();
+    };
+
+    // ── 3. Saisonal Match (3 Tachos) ─────────────────────────────
+    MZ.renderMatch = function(match) {
+      var container = document.getElementById('content-match');
+      if (!match) {
+        container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Aktuelles Jahr nicht verfügbar oder zu wenig Daten</p>';
+        return;
+      }
+      var corrScore = Math.max(0, (match.correlation + 1) / 2);
+      var sigScore = Math.max(0, 1 - match.p_value);
+      var corrCol = match.correlation > 0.5 ? '#34d399' : (match.correlation > 0 ? '#fbbf24' : '#f87171');
+      var dtwCol = match.dtw_score > 0.7 ? '#34d399' : (match.dtw_score > 0.4 ? '#fbbf24' : '#f87171');
+      var sigLabel, sigCol;
+      if (match.p_value < 0.05) { sigLabel = 'Signifikant abweichend'; sigCol = '#f87171'; }
+      else if (match.p_value < 0.10) { sigLabel = 'Grenzwertig'; sigCol = '#fbbf24'; }
+      else { sigLabel = 'Im Normalbereich'; sigCol = '#34d399'; }
+      var gauge = function(name, score, valText, valColor, sub) {
+        var deg = Math.round(score * 180);
+        var color = SA.significance.scoreToColor(score);
+        return '<div class="match-card">' +
+          '<div class="mc-name" style="color:#c8d6e5">'+name+'</div>' +
+          '<div style="position:relative;width:130px;height:70px;margin:0 auto;overflow:hidden">' +
+            '<div style="width:130px;height:130px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
+            '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:90px;height:45px;border-radius:0 0 90px 90px;background:var(--card,#0a0a0e)"></div>' +
+            '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1.2rem;font-weight:700;color:'+valColor+';font-family:var(--f-m)">'+valText+'</div>' +
+          '</div>' +
+          '<div class="mc-details">'+sub+'</div>' +
+        '</div>';
+      };
+      var sign = match.current_return >= 0 ? '+' : '';
+      var signA = match.avg_return >= 0 ? '+' : '';
+      container.innerHTML =
+        '<div class="match-cards">' +
+          gauge('Korrelation', corrScore, (match.correlation>=0?'+':'')+match.correlation.toFixed(2), corrCol, 'r-Wert (Verlauf)') +
+          gauge('Shape-Match (DTW)', match.dtw_score, Math.round(match.dtw_score*100)+'%', dtwCol, 'Form-Ähnlichkeit') +
+          gauge('Abweichungstest', sigScore, sigLabel.split(' ')[0], sigCol, 'p='+match.p_value.toFixed(3)+' · d='+match.cohens_d.toFixed(2)) +
+        '</div>' +
+        '<p style="color:#c8d6e5;font-size:12px;text-align:center;margin-top:8px">' +
+          'Aktuell: <b style="color:#F1C40F">'+sign+match.current_return.toFixed(2)+'%</b> · ' +
+          'Saisonaler Ø: <b style="color:#00CED1">'+signA+match.avg_return.toFixed(2)+'%</b> · ' +
+          'Basis: <b>'+match.n_years+'</b> Jahre' +
+        '</p>' +
+        '<p class="box-info" style="margin-top:.75rem">' +
+          '<b>Korrelation</b>: misst ob aktueller Verlauf in gleiche Richtung wie Saisonal-Ø geht (+1 = perfekt, 0 = unkorreliert, -1 = gegenläufig). ' +
+          '<b>Shape-Match</b>: Ähnlichkeit der Verlaufsform. ' +
+          '<b>Abweichungstest</b>: t-Test ob aktueller Return im historischen Normalbereich liegt (p&lt;0.05 = signifikant anders).' +
+        '</p>';
+    };
+
+    // ── 4. Cycle Match ───────────────────────────────────────────
+    MZ.renderCycleMatch = function(cycleResults) {
+      var container = document.getElementById('content-cycle-match');
+      if (!cycleResults || cycleResults.length === 0) {
+        container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Sorry, zu wenig Daten!</p>';
+        return;
+      }
+      // Best: hoechster match_score
+      var best = cycleResults.reduce(function(a,b){return b.match_score>a.match_score?b:a;});
+      var ranked = cycleResults.slice().sort(function(a,b){return b.match_score-a.match_score;});
+      var rankMap = {};
+      for (var i=0;i<ranked.length;i++) rankMap[ranked[i].name] = i;
+      var html = '<p style="color:#fff;font-size:14px;text-align:center;margin-bottom:12px">' +
+        'Bester Match: <b style="color:'+best.color+'">'+best.name+'</b> ' +
+        '(r='+(best.correlation>=0?'+':'')+best.correlation.toFixed(2)+', DTW '+Math.round(best.dtw_score*100)+'%, n='+best.n_years+' Jahre)</p>';
+      html += '<div class="match-cards">';
+      for (var i=0;i<cycleResults.length;i++) {
+        var r = cycleResults[i];
+        var rank = rankMap[r.name];
+        var medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : '#'+(rank+1);
+        var corrCol = r.correlation > 0.5 ? '#34d399' : (r.correlation > 0 ? '#fbbf24' : '#f87171');
+        var deg = Math.round(r.match_score * 180);
+        var color = SA.significance.scoreToColor(r.match_score);
+        html += '<div class="match-card' + (r.name === best.name ? ' is-best' : '') + '" style="border-color:'+(r.name===best.name?r.color:'rgba(255,255,255,.07)')+'">' +
+          '<div class="mc-name" style="color:'+r.color+'">'+medal+' '+r.name+'</div>' +
+          '<div style="position:relative;width:120px;height:65px;margin:0 auto;overflow:hidden">' +
+            '<div style="width:120px;height:120px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
+            '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:85px;height:42px;border-radius:0 0 85px 85px;background:var(--card,#0a0a0e)"></div>' +
+            '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1.1rem;font-weight:700;color:#fff;font-family:var(--f-m)">'+r.match_score.toFixed(2)+'</div>' +
+          '</div>' +
+          '<div class="mc-details"><span style="color:'+corrCol+'">r='+(r.correlation>=0?'+':'')+r.correlation.toFixed(2)+'</span> · DTW '+Math.round(r.dtw_score*100)+'%<br>n='+r.n_years+'</div>' +
+        '</div>';
+      }
+      html += '</div>';
+      html += '<p class="box-info" style="margin-top:.75rem">Match-Score = 60% Korrelation + 40% Shape-Match (DTW). Höchster Score zeigt, welchem Zyklusjahr-Muster der aktuelle Monat am stärksten folgt.</p>';
+      container.innerHTML = html;
+    };
+
+    // ── 5. Wochen-Performance Bars ───────────────────────────────
+    MZ.renderWeekly = function(weeklyStats, ticker, monthName, currentTdom) {
+      if (!weeklyStats || !weeklyStats.length) return;
+      var labels = weeklyStats.map(function(w){return w.label;});
+      var avgs = weeklyStats.map(function(w){return parseFloat(w.avg.toFixed(3));});
+      var colors = weeklyStats.map(function(w){
+        if (w.n < MIN_N) return 'rgba(128,128,128,0.4)';
+        return w.avg >= 0 ? COL_POS : COL_NEG;
+      });
+      var ymax = Math.max.apply(null, avgs);
+      var ymin = Math.min.apply(null, avgs);
+      var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.30 || 0.5;
+
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (currentTdom != null) {
+        var currentWeek = Math.min(Math.floor((currentTdom - 1) / 5) + 1, 5);
+        var currentLabel = 'W'+currentWeek+' (TDOM '+((currentWeek-1)*5+1)+'-'+(currentWeek*5)+')';
+        if (labels.indexOf(currentLabel) >= 0) {
+          annotations.xaxis = [{
+            x: currentLabel,
+            borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 4,
+            label: { text: 'TDOM '+currentTdom, style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'} }
+          }];
+        }
+      }
+
+      if (MZ.charts.weekly) { try { MZ.charts.weekly.destroy(); } catch(e){} }
+      MZ.charts.weekly = new ApexCharts(document.getElementById('chart-weekly'), {
+        series: [{ name:'Ø Rendite', data: avgs }],
+        chart: Object.assign({ type:'bar', height:340 }, SA.chartTheme.chart),
+        colors: colors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'60%', borderRadius:3, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetY: -18,
+          style: { fontSize:'11px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            var w = weeklyStats[opts.dataPointIndex];
+            return fmtPct(v, 3) + ' · WR '+w.win_rate.toFixed(0)+'% · n='+w.n;
+          }}
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { min:ymin-pad, max:ymax+pad, labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
+        annotations: annotations,
+        legend: { show: false },
+        title: { text: ticker+' — '+monthName+' Wochen-Performance', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.weekly.render();
+    };
+
+    // ── 6. Monats-Performance ────────────────────────────────────
+    MZ.renderMonthly = function(monthlyStats, ticker) {
+      var avgs = monthlyStats.map(function(m){return parseFloat(m.avg.toFixed(2));});
+      var colors = monthlyStats.map(function(m){return m.avg >= 0 ? COL_POS : COL_NEG;});
+      var ymax = Math.max.apply(null, avgs);
+      var ymin = Math.min.apply(null, avgs);
+      var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.30 || 0.5;
+      var currentMonth = new Date().getMonth() + 1;
+
+      if (MZ.charts.monthly) { try { MZ.charts.monthly.destroy(); } catch(e){} }
+      MZ.charts.monthly = new ApexCharts(document.getElementById('chart-monthly'), {
+        series: [{ name:'Ø Rendite', data: avgs }],
+        chart: Object.assign({ type:'bar', height:380 }, SA.chartTheme.chart),
+        colors: colors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'72%', borderRadius:3, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetY: -18,
+          style: { fontSize:'11px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            var m = monthlyStats[opts.dataPointIndex];
+            return fmtPct(v, 3) + ' · WR '+m.win_rate.toFixed(0)+'% · n='+m.n;
+          }}
+        }),
+        xaxis: { categories: MONTHS_DE_SHORT, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { min:ymin-pad, max:ymax+pad, labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
+        annotations: {
+          yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }],
+          xaxis:[{ x: MONTHS_DE_SHORT[currentMonth-1], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4,
+                   label:{text:'Heute', style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'}} }]
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Monats-Performance (Jahresübersicht)', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.monthly.render();
+
+      // Tabelle
+      var tbody = '';
+      for (var i=0;i<monthlyStats.length;i++) {
+        var m = monthlyStats[i];
+        if (m.n === 0) continue;
+        tbody += '<tr>' +
+          '<td><b>'+MONTHS_DE[m.month-1]+'</b></td>' +
+          '<td class="'+(m.avg>=0?'pos':'neg')+'">'+fmtPct(m.avg,3)+'</td>' +
+          '<td class="'+(m.median>=0?'pos':'neg')+'">'+fmtPct(m.median,3)+'</td>' +
+          '<td>'+m.win_rate.toFixed(0)+'%</td>' +
+          '<td>'+m.n+'</td>' +
+        '</tr>';
+      }
+      document.getElementById('tbody-monthly').innerHTML = tbody;
+    };
+
+    // ── 7. Two-Week Bars (sortiert) ──────────────────────────────
+    MZ.renderTwoWeek = function(twStats, ticker, splitDay, currentTdom) {
+      if (!twStats || !twStats.length) return;
+      var valid = twStats.filter(function(t){return t.n >= 2;});
+      var sorted = valid.slice().sort(function(a,b){return b.avg - a.avg;});
+      var labels = sorted.map(function(t){return t.label;});
+      var avgs = sorted.map(function(t){return parseFloat(t.avg.toFixed(3));});
+      var colors = sorted.map(function(t){
+        if (t.n < MIN_N) return 'rgba(128,128,128,0.4)';
+        return t.avg >= 0 ? COL_POS : COL_NEG;
+      });
+      var ymax = Math.max.apply(null, avgs);
+      var ymin = Math.min.apply(null, avgs);
+      var pad = Math.max(Math.abs(ymax), Math.abs(ymin)) * 0.25 || 0.5;
+
+      var today = new Date();
+      var currentMonth = today.getMonth() + 1;
+      var currentHalf = (currentTdom || 1) <= splitDay ? '1st' : '2nd';
+      var currentLabel = (currentMonth<10?'0':'') + currentMonth + '/' + currentHalf;
+
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] };
+      if (labels.indexOf(currentLabel) >= 0) {
+        annotations.xaxis = [{
+          x: currentLabel,
+          borderColor: 'rgba(232,168,32,.7)', strokeDashArray: 4,
+          label: { text: 'Heute', style:{color:'#fff', background:'rgba(232,168,32,.8)', fontSize:'10px'} }
+        }];
+      }
+
+      if (MZ.charts.twoweek) { try { MZ.charts.twoweek.destroy(); } catch(e){} }
+      MZ.charts.twoweek = new ApexCharts(document.getElementById('chart-twoweek'), {
+        series: [{ name:'Ø Rendite', data: avgs }],
+        chart: Object.assign({ type:'bar', height:460 }, SA.chartTheme.chart),
+        colors: colors,
+        plotOptions: { bar:{ distributed:true, columnWidth:'70%', borderRadius:2, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetY: -16,
+          style: { fontSize:'9px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            var t = sorted[opts.dataPointIndex];
+            return fmtPct(v, 3) + ' · WR '+t.win_rate.toFixed(0)+'% · n='+t.n;
+          }}
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'10px'}, rotate:-45} },
+        yaxis: { min:ymin-pad, max:ymax+pad, labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        annotations: annotations,
+        legend: { show: false },
+        title: { text: ticker+' — Two-Week Performance (Split TDOM '+splitDay+')', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.twoweek.render();
+
+      // Tabelle
+      var tbody = '';
+      for (var i=0;i<sorted.length;i++) {
+        var t = sorted[i];
+        tbody += '<tr>' +
+          '<td><b>'+t.label+'</b></td>' +
+          '<td>'+MONTHS_DE_SHORT[t.month-1]+'</td>' +
+          '<td>'+(t.half===1?'1st':'2nd')+'</td>' +
+          '<td class="'+(t.avg>=0?'pos':'neg')+'">'+fmtPct(t.avg,3)+'</td>' +
+          '<td>'+t.win_rate.toFixed(0)+'%</td>' +
+          '<td>'+t.n+'</td>' +
+        '</tr>';
+      }
+      document.getElementById('tbody-tw').innerHTML = tbody;
+    };
+
+    // ── 8. Two-Week Heatmap ──────────────────────────────────────
+    MZ.renderTwHeatmap = function(twStats, ticker, splitDay, currentTdom) {
+      var z = [[],[]];
+      for (var m=1;m<=12;m++) {
+        for (var h=0;h<2;h++) {
+          var match = twStats.filter(function(t){return t.month===m && t.half===h+1;});
+          z[h].push(match.length ? { x: MONTHS_DE_SHORT[m-1], y: parseFloat(match[0].avg.toFixed(3)) } : { x: MONTHS_DE_SHORT[m-1], y: null });
+        }
+      }
+      var series = [
+        { name: '1st (TDOM 1-'+splitDay+')', data: z[0] },
+        { name: '2nd (TDOM '+(splitDay+1)+'+)', data: z[1] }
+      ];
+
+      if (MZ.charts['tw-heatmap']) { try { MZ.charts['tw-heatmap'].destroy(); } catch(e){} }
+      MZ.charts['tw-heatmap'] = new ApexCharts(document.getElementById('chart-tw-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height:240 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from:-99, to:-1, color:'#7f1d1d', name:'negativ' },
+              { from:-1, to:-0.3, color:'#991b1b', name:'leicht neg.' },
+              { from:-0.3, to:0.3, color:'#1f2937', name:'neutral' },
+              { from:0.3, to:1, color:'#166534', name:'leicht pos.' },
+              { from:1, to:99, color:'#15803d', name:'positiv' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v) { return v != null ? fmtPct(v,3) : '–'; } }
+        }),
+        xaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v) { return v != null ? fmtPct(v,2) : ''; },
+          style: { fontSize:'11px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Two-Week Heatmap (Ø Rendite je Monatshälfte)', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts['tw-heatmap'].render();
+    };
+
+    // ── 9. Two-Week Aktuelles Jahr Overlay ───────────────────────
+    MZ.renderTwOverlay = function(twStats, twCurrent, ticker, splitDay) {
+      if (!twCurrent || !twCurrent.length) {
+        document.getElementById('sec-tw-overlay').style.display = 'none';
+        return;
+      }
+      // Chronologisch sortiert
+      var chrono = twStats.slice().sort(function(a,b){
+        if (a.month !== b.month) return a.month - b.month;
+        return a.half - b.half;
+      });
+      var labels = chrono.map(function(t){return t.label;});
+      var histAvgs = chrono.map(function(t){return parseFloat(t.avg.toFixed(3));});
+      // Map current year auf gleiche Labels
+      var curMap = {};
+      for (var i=0;i<twCurrent.length;i++) curMap[twCurrent[i].label] = parseFloat(twCurrent[i].avg.toFixed(3));
+      var curVals = labels.map(function(l){ return curMap[l] != null ? curMap[l] : null; });
+
+      var colors = histAvgs.map(function(v){return v >= 0 ? COL_POS : COL_NEG;});
+
+      if (MZ.charts['tw-overlay']) { try { MZ.charts['tw-overlay'].destroy(); } catch(e){} }
+      MZ.charts['tw-overlay'] = new ApexCharts(document.getElementById('chart-tw-overlay'), {
+        series: [
+          { name: 'Historisch Ø', type: 'bar', data: histAvgs },
+          { name: new Date().getFullYear()+' (aktuell)', type: 'line', data: curVals }
+        ],
+        chart: Object.assign({ type:'line', height:380 }, SA.chartTheme.chart),
+        colors: ['rgba(0,206,209,0.35)', COL_CURRENT],
+        plotOptions: { bar:{ columnWidth:'65%', borderRadius:2 } },
+        stroke: { width:[0, 3], curve:'straight' },
+        markers: { size:[0,7], colors:[COL_CURRENT], strokeColors:'#fff', strokeWidth:1 },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          y: { formatter: function(v){ return v != null ? fmtPct(v,3) : '–'; } }
+        }),
+        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'10px'}, rotate:-45} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}},
+                 title:{text:'Ø Rendite (%)', style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] },
+        legend: { position:'top', fontSize:'11px' },
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — Two-Week: '+new Date().getFullYear()+' vs. Historisch', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts['tw-overlay'].render();
+    };
+
+    // ── 10. Best Two-Weeks Ranking ───────────────────────────────
+    MZ.renderTwRanking = function(twStats, ticker, splitDay) {
+      var sorted = twStats.slice().sort(function(a,b){return b.avg - a.avg;});
+      var labels = sorted.map(function(t){return MONTHS_DE_SHORT[t.month-1]+' '+(t.half===1?'1st':'2nd');});
+      var avgs = sorted.map(function(t){return parseFloat(t.avg.toFixed(3));});
+      var colors = sorted.map(function(t){return t.avg >= 0 ? COL_POS : COL_NEG;});
+
+      if (MZ.charts['tw-ranking']) { try { MZ.charts['tw-ranking'].destroy(); } catch(e){} }
+      MZ.charts['tw-ranking'] = new ApexCharts(document.getElementById('chart-tw-ranking'), {
+        series: [{ name:'Ø Rendite', data: avgs }],
+        chart: Object.assign({ type:'bar', height: Math.max(500, labels.length*22+100) }, SA.chartTheme.chart),
+        colors: colors,
+        plotOptions: { bar:{ distributed:true, horizontal:true, borderRadius:2, dataLabels:{position:'top'} } },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return fmtPct(v, 2); },
+          offsetX: 30,
+          style: { fontSize:'10px', colors:['#e2e8f0'], fontWeight:600 }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            var t = sorted[opts.dataPointIndex];
+            return fmtPct(v, 3) + ' · WR '+t.win_rate.toFixed(0)+'% · n='+t.n;
+          }}
+        }),
+        xaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v.toFixed(2)+'%';}} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'}} },
+        annotations: { xaxis:[{ x:0, borderColor:'rgba(255,255,255,0.3)', strokeDashArray:3 }] },
+        legend: { show: false },
+        title: { text: ticker+' — Best Two-Weeks Ranking (Split TDOM '+splitDay+')', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts['tw-ranking'].render();
+    };
+
+    // ── 11. Momentum Check ───────────────────────────────────────
+    MZ.renderMomentum = function(momentum) {
+      var container = document.getElementById('content-momentum');
+      if (!momentum || momentum.total < 10) {
+        container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Sorry, zu wenig Daten!</p>';
+        return;
+      }
+      var posTotal = momentum.posPos + momentum.posNeg;
+      var negTotal = momentum.negPos + momentum.negNeg;
+      var posPct = posTotal > 0 ? momentum.posPos / posTotal * 100 : 0;
+      var negPct = negTotal > 0 ? momentum.negNeg / negTotal * 100 : 0;
+      var posCol = posPct >= 55 ? '#34d399' : (posPct >= 45 ? '#fbbf24' : '#f87171');
+      var negCol = negPct >= 55 ? '#f87171' : (negPct >= 45 ? '#fbbf24' : '#34d399');
+      container.innerHTML =
+        '<div class="momentum-grid">' +
+          '<div class="momentum-card pos">' +
+            '<p class="mom-label">Wenn 1st Half <b style="color:#34d399">positiv</b></p>' +
+            '<p class="mom-value" style="color:'+posCol+'">'+posPct.toFixed(0)+'%</p>' +
+            '<p class="mom-detail">dann auch 2nd Half positiv ('+momentum.posPos+'/'+posTotal+')</p>' +
+          '</div>' +
+          '<div class="momentum-card neg">' +
+            '<p class="mom-label">Wenn 1st Half <b style="color:#f87171">negativ</b></p>' +
+            '<p class="mom-value" style="color:'+negCol+'">'+negPct.toFixed(0)+'%</p>' +
+            '<p class="mom-detail">dann auch 2nd Half negativ ('+momentum.negNeg+'/'+negTotal+')</p>' +
+          '</div>' +
+        '</div>' +
+        '<p class="box-info"><b>Interpretation:</b> Werte über 55% deuten auf Trendkontinuation hin — eine positive erste Hälfte zieht oft eine positive zweite nach sich. Basis: '+momentum.total+' Monatshälften.</p>';
+    };
+
+    // ── 12. Two-Week Significance ────────────────────────────────
+    MZ.renderTwSignificance = function(twSig) {
+      var container = document.getElementById('content-tw-sig');
+      if (!twSig || twSig.length < 2) {
+        container.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">Sorry, zu wenig Daten!</p>';
+        return;
+      }
+      var html = '<div class="match-cards">';
+      for (var i=0;i<twSig.length;i++) {
+        var s = twSig[i];
+        var sigScore = Math.max(0, 1 - s.p);
+        var label, lblCol;
+        if (s.p < 0.05) { label = 'Signifikant'; lblCol = '#34d399'; }
+        else if (s.p < 0.10) { label = 'Grenzwertig'; lblCol = '#fbbf24'; }
+        else { label = 'Nicht signifikant'; lblCol = '#f87171'; }
+        var avgCol = s.avg > 0 ? '#34d399' : '#f87171';
+        var deg = Math.round(sigScore * 180);
+        var color = SA.significance.scoreToColor(sigScore);
+        html += '<div class="match-card">' +
+          '<div class="mc-name" style="color:#fff">'+s.name+' ('+s.desc+')</div>' +
+          '<div style="position:relative;width:130px;height:70px;margin:0 auto;overflow:hidden">' +
+            '<div style="width:130px;height:130px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
+            '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:90px;height:45px;border-radius:0 0 90px 90px;background:var(--card,#0a0a0e)"></div>' +
+            '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1.1rem;font-weight:700;color:'+lblCol+';font-family:var(--f-m)">'+label.split(' ')[0]+'</div>' +
+          '</div>' +
+          '<div class="mc-details">' +
+            '<span style="color:'+avgCol+'">Ø '+(s.avg>=0?'+':'')+s.avg.toFixed(3)+'%</span><br>' +
+            'p='+s.p.toFixed(3)+' · d='+s.d.toFixed(2)+' · n='+s.n +
+          '</div>' +
+        '</div>';
+      }
+      html += '</div>';
+      html += '<p class="box-info"><b>t-Test</b>: prüft ob die durchschnittliche Rendite einer Monatshälfte signifikant von Null abweicht. p&lt;0.05 = statistisch nachweisbarer Bias. Cohen\'s d misst die Effektstärke (d&gt;0.2 klein, d&gt;0.5 mittel, d&gt;0.8 groß).</p>';
+      container.innerHTML = html;
+    };
+
+    // ── 13. 10J Heatmap ──────────────────────────────────────────
+    MZ.renderHeatmap = function(tdomRows, selectedYears, ticker) {
+      var series = MZ.buildMonthlyHeatmap(tdomRows, selectedYears);
+      // Sentinel fuer null
+      var SENTINEL = -9999;
+      for (var s=0;s<series.length;s++) {
+        for (var i=0;i<series[s].data.length;i++) {
+          if (series[s].data[i].y == null || isNaN(series[s].data[i].y)) {
+            series[s].data[i].y = SENTINEL;
+          }
+        }
+      }
+      if (MZ.charts.heatmap) { try { MZ.charts.heatmap.destroy(); } catch(e){} }
+      MZ.charts.heatmap = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: Math.max(320, series.length*36+100) }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from: SENTINEL, to: SENTINEL+1, color:'#0a0a0a', name:'keine Daten' },
+              { from:-99, to:-5, color:'#7f1d1d', name:'stark negativ' },
+              { from:-5, to:-2, color:'#991b1b', name:'negativ' },
+              { from:-2, to:-0.5, color:'#7f1d1d', name:'leicht neg.' },
+              { from:-0.5, to:0.5, color:'#1f2937', name:'neutral' },
+              { from:0.5, to:2, color:'#166534', name:'leicht pos.' },
+              { from:2, to:5, color:'#15803d', name:'positiv' },
+              { from:5, to:99, color:'#14532d', name:'stark pos.' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v) { return v === SENTINEL || v == null ? 'keine Daten' : fmtPct(v, 2); } }
+        }),
+        xaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}}, reversed: false },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v) { return v === SENTINEL || v == null ? '' : (v>=0?'+':'')+v.toFixed(1); },
+          style: { fontSize:'11px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: ticker+' — 10 Jahres Monats-Heatmap', style:{color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700} }
+      });
+      MZ.charts.heatmap.render();
+    };
+
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // PAGE LIFECYCLE & EVENT HANDLERS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var MZ = window._SA_MZ;
+    var $error = document.getElementById('error-banner');
+    var SECTION_IDS = ['sec-main','sec-detrend','sec-match','sec-cycle-match','sec-weekly','sec-monthly','sec-twoweek','sec-tw-heatmap','sec-tw-overlay','sec-tw-ranking','sec-momentum','sec-tw-sig','sec-tw-table','sec-heatmap'];
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){$error.style.display='none';}, 8000); }
+    function showSections(show) { SECTION_IDS.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; }); }
+    function destroyAll() {
+      var keys = ['main','detrend','weekly','monthly','twoweek','tw-heatmap','tw-overlay','tw-ranking','heatmap'];
+      keys.forEach(function(k){ if (MZ.charts[k]) { try { MZ.charts[k].destroy(); } catch(e){} MZ.charts[k] = null; } });
+    }
+
+    // ── Monat-Selektor füllen ────────────────────────────────────
+    var monthSel = document.getElementById('sel-month');
+    var currentMonth = new Date().getMonth() + 1;
+    for (var m=1;m<=12;m++) {
+      var opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = MZ.MONTHS_DE[m-1] + (m === currentMonth ? ' ← aktuell' : '');
+      if (m === currentMonth) opt.selected = true;
+      monthSel.appendChild(opt);
+    }
+
+    // ── Outlier-Filter UI ────────────────────────────────────────
+    if (typeof SA !== 'undefined' && SA.outlier && SA.outlier.renderFilterUI) {
+      SA.outlier.renderFilterUI('outlier-filter', function(){ if (MZ.getRawRows().length) renderAll(); });
+    } else {
+      document.getElementById('outlier-filter').innerHTML = '<select id="outlier-select"><option value="off">Keine</option></select>';
+    }
+    function getOutlierMethod() {
+      var sel = document.getElementById('outlier-select');
+      return sel ? sel.value : 'off';
+    }
+
+    // ── Two-Week Slider Label ────────────────────────────────────
+    var sl = document.getElementById('sl-split');
+    sl.addEventListener('input', function(){ document.getElementById('lbl-split').textContent = sl.value; });
+    sl.addEventListener('change', function(){ if (MZ.getRawRows().length) renderAll(); });
+
+    // ── Cycle-Filter Listener ────────────────────────────────────
+    document.querySelectorAll('#cycle-filter input').forEach(function(cb){
+      cb.addEventListener('change', function(){ if (MZ.getRawRows().length) renderAll(); });
+    });
+
+    // ── Sidebar Listener ─────────────────────────────────────────
+    ['sel-period','sel-month','chk-current','chk-individual','chk-bands'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', function(){ if (MZ.getRawRows().length) renderAll(); });
+    });
+
+    // ── Render All ───────────────────────────────────────────────
+    function renderAll() {
+      var rawRows = MZ.getRawRows();
+      if (!rawRows.length) return;
+      var ticker = MZ.getCurrentTicker();
+      document.getElementById('title-ticker').textContent = ticker;
+
+      // Selected period
+      var periodSel = document.getElementById('sel-period').value;
+      var yearsBack = periodSel === 'max' ? 999 : parseInt(periodSel);
+      var currentYear = new Date().getFullYear();
+
+      // TDOM-Rows aufbauen
+      var tdomRows = MZ.assignTdom(rawRows);
+
+      // Selected years
+      var allYears = {};
+      tdomRows.forEach(function(r){ allYears[r.year] = true; });
+      var selectedYears = Object.keys(allYears).map(Number).sort(function(a,b){return a-b;});
+      if (yearsBack < 999) selectedYears = selectedYears.filter(function(y){return y >= currentYear - yearsBack;});
+
+      // Cycle filter
+      var cycleFilter = [];
+      document.querySelectorAll('#cycle-filter input:checked').forEach(function(cb){ cycleFilter.push(parseInt(cb.dataset.cycle)); });
+      if (cycleFilter.length) {
+        var cycleOf = function(y) { return ((y - 2020) % 4 + 4) % 4 + 1; };
+        selectedYears = selectedYears.filter(function(y){ return cycleFilter.indexOf(cycleOf(y)) >= 0; });
+      }
+
+      if (selectedYears.length < 2) {
+        showError('Nach Filter zu wenig Jahre übrig.');
+        return;
+      }
+
+      // Sidebar params
+      var selectedMonth = parseInt(document.getElementById('sel-month').value);
+      var monthName = MZ.MONTHS_DE[selectedMonth-1];
+      var showCurrent = document.getElementById('chk-current').checked;
+      var showIndividual = document.getElementById('chk-individual').checked;
+      var showBands = document.getElementById('chk-bands').checked;
+      var splitDay = parseInt(sl.value);
+
+      // Current TDOM (nur wenn ausgewählter Monat = aktueller Monat)
+      var currentTdom = (selectedMonth === currentMonth) ? MZ.getCurrentTdom(tdomRows, ticker) : null;
+
+      // Trading Day Header
+      try {
+        SA.renderTradingDayHeader(document.getElementById('trading-day-header'), ticker, rawRows);
+      } catch(e) {
+        var hdr = document.getElementById('trading-day-header');
+        var today = new Date();
+        hdr.textContent = 'Heute: ' + today.toLocaleDateString('de-DE') + (currentTdom != null ? ' · TDOM ' + currentTdom : '');
+      }
+
+      destroyAll();
+
+      // 1. Intra-Monat Compute + Outlier
+      var intramonth = MZ.calcIntramonthCurve(tdomRows, selectedMonth, selectedYears);
+      var outlierMethod = getOutlierMethod();
+      if (outlierMethod && outlierMethod !== 'off') {
+        intramonth = MZ.applyOutlierFilter(intramonth, outlierMethod);
+      }
+
+      // Current month curve
+      var currentMonthCurve = null;
+      if (showCurrent && selectedMonth === currentMonth) {
+        currentMonthCurve = MZ.calcCurrentMonthCurve(tdomRows, selectedMonth);
+      }
+
+      if (!intramonth.tdomStats) {
+        showError('Zu wenig Daten für ' + monthName);
+        return;
+      }
+
+      // Render
+      MZ.renderMain(intramonth, ticker, monthName, showIndividual, showBands, showCurrent, currentMonthCurve, currentTdom);
+      MZ.renderDetrend(intramonth, ticker, monthName, currentTdom);
+
+      // Match (nur wenn current month curve da)
+      if (currentMonthCurve) {
+        var match = MZ.calcSeasonalMatch(intramonth.tdomStats, currentMonthCurve, intramonth.allCurves);
+        MZ.renderMatch(match);
+        var cycleResults = MZ.calcCycleMatch(tdomRows, selectedMonth, selectedYears, currentMonthCurve);
+        MZ.renderCycleMatch(cycleResults);
+        document.getElementById('sec-match').style.display = '';
+        document.getElementById('sec-cycle-match').style.display = '';
+      } else {
+        document.getElementById('sec-match').style.display = 'none';
+        document.getElementById('sec-cycle-match').style.display = 'none';
+      }
+
+      // Weekly
+      var weekly = MZ.calcWeeklyPerformance(tdomRows, selectedMonth, selectedYears);
+      MZ.renderWeekly(weekly, ticker, monthName, currentTdom);
+
+      // Monthly
+      var monthly = MZ.calcMonthlyPerformance(tdomRows, selectedYears);
+      MZ.renderMonthly(monthly, ticker);
+
+      // Two-Week
+      var tw = MZ.calcTwoWeekPerformance(tdomRows, selectedYears, splitDay);
+      var twValid = tw.filter(function(t){return t.n >= 2;});
+      MZ.renderTwoWeek(tw, ticker, splitDay, currentTdom);
+      MZ.renderTwHeatmap(twValid, ticker, splitDay, currentTdom);
+      var twCurrent = MZ.calcTwoWeekCurrentYear(tdomRows, splitDay);
+      MZ.renderTwOverlay(twValid, twCurrent, ticker, splitDay);
+      MZ.renderTwRanking(twValid, ticker, splitDay);
+
+      // Momentum
+      var momentum = MZ.calcMomentumCheck(tdomRows, selectedYears, splitDay);
+      MZ.renderMomentum(momentum);
+
+      // Two-Week Significance
+      var twSig = MZ.calcTwoWeekSignificance(tdomRows, selectedYears, splitDay);
+      MZ.renderTwSignificance(twSig);
+
+      // Heatmap
+      MZ.renderHeatmap(tdomRows, selectedYears, ticker);
+
+      // Show all
+      showSections(true);
+      // Re-show match sections falls deaktiviert
+      if (currentMonthCurve) {
+        document.getElementById('sec-match').style.display = '';
+        document.getElementById('sec-cycle-match').style.display = '';
+      }
+    }
+
+    // ── Ticker laden ─────────────────────────────────────────────
+    function loadTicker(ticker) {
+      ticker = ticker.trim().toUpperCase();
+      if (!ticker || ticker === MZ.getCurrentTicker()) return;
+      document.getElementById('page-caption').textContent = 'Lade ' + ticker + '...';
+      // Letzte 30 Jahre laden (reicht fuer Monatszyklus)
+      var startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 30);
+      var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
+      SA.fetchAllPrices(ticker, dateFilter).then(function(rows) {
+        if (!rows || rows.length < 200) { showError(ticker + ': Zu wenig Daten'); return; }
+        rows.forEach(function(r){ r.close = parseFloat(r.close); if (r.log_return != null) r.log_return = parseFloat(r.log_return); });
+        MZ.setRawRows(rows);
+        MZ.setCurrentTicker(ticker);
+        document.getElementById('page-caption').textContent = 'Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap';
+        renderAll();
+      }).catch(function(e){
+        showError('Fehler: ' + (e && e.message ? e.message : e));
+        document.getElementById('page-caption').textContent = 'Fehler beim Laden';
+      });
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+    function initialLoad() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
+        SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+        loadTicker('^GSPC');
+      } else {
+        document.getElementById('page-caption').textContent = 'Supabase nicht konfiguriert';
+      }
+    }
+    initialLoad();
+  })();
+  </script>
+
+  <script>
+  // Nav + Footer Loader
+  fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html;});
+  fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  </script>
+</body>
+</html>
