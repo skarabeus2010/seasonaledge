@@ -88,19 +88,38 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
                 showlegend=False, hoverinfo="skip",
             ))
 
-    # Perzentil-Baender (25./75.)
+    # Perzentil-Baender (25./75.) — nur ueber ECHTE Daten, keine Padding-Werte
     if show_percentile_bands and len(year_data) >= 5:
-        all_curves = np.array([yd["full_365"] for yd in year_data.values()])
-        p25 = np.percentile(all_curves, 25, axis=0).tolist()
-        p75 = np.percentile(all_curves, 75, axis=0).tolist()
+        # Maskierte Matrix: NaN fuer Tage ausserhalb der realen Trading-Range jedes Jahres
+        n_years = len(year_data)
+        masked = np.full((n_years, 365), np.nan, dtype=float)
+        for i, yd in enumerate(year_data.values()):
+            ydays = yd.get("days", [])
+            if not ydays:
+                continue
+            d_min, d_max = min(ydays), min(max(ydays), 365)
+            curve = yd["full_365"]
+            for d in range(d_min, d_max + 1):
+                if 1 <= d <= 365:
+                    masked[i, d - 1] = curve[d - 1]
+        # Mindestens 50% der Jahre muessen echte Daten haben (sonst NaN)
+        valid_counts = np.sum(~np.isnan(masked), axis=0)
+        min_n = max(int(n_years * 0.5), 3)
+        with np.errstate(all="ignore"):
+            p25_arr = np.nanpercentile(masked, 25, axis=0)
+            p75_arr = np.nanpercentile(masked, 75, axis=0)
+        p25_arr[valid_counts < min_n] = np.nan
+        p75_arr[valid_counts < min_n] = np.nan
+        p25 = [None if np.isnan(v) else float(v) for v in p25_arr]
+        p75 = [None if np.isnan(v) else float(v) for v in p75_arr]
         fig.add_trace(go.Scatter(
             x=x_days, y=p75, mode="lines", line=dict(width=0),
-            showlegend=False, hoverinfo="skip",
+            showlegend=False, hoverinfo="skip", connectgaps=False,
         ))
         fig.add_trace(go.Scatter(
             x=x_days, y=p25, mode="lines", line=dict(width=0),
             fill="tonexty", fillcolor="rgba(52,211,153,0.07)",
-            name="25.–75. Perzentil", hoverinfo="skip",
+            name="25.–75. Perzentil", hoverinfo="skip", connectgaps=False,
         ))
 
     # Konfidenzband
