@@ -802,7 +802,7 @@
       // axisGroup: 'left' (default), 'right_individual', 'right_pressure'
       var seriesDef = [];
 
-      // 1. Einzeljahre → rechte Y-Achse (dynamischer Range)
+      // 1. Einzeljahre → gleiche Y-Achse, sehr transparent damit Avg dominiert
       var individualNames = [];
       if (showIndividual) {
         var yrKeys = Object.keys(yearData).map(Number).sort();
@@ -813,8 +813,8 @@
           individualNames.push(nm);
           seriesDef.push({
             name: nm, data: pad365(yearData[y].full_365),
-            color: 'rgba(180,200,230,.30)', width: 1, dash: 0,
-            axis: 'right_individual'
+            color: 'rgba(160,180,210,.18)', width: 0.8, dash: 0,
+            axis: 'left'
           });
         }
       }
@@ -917,81 +917,32 @@
       var strokeDashes = seriesDef.map(function(s){ return s.dash; });
 
       // ── Y-Achsen aufbauen ─────────────────────────────────────────────────
-      // STRATEGIE: Beide Achsen werden symmetrisch um 100 zentriert.
-      // So liegt der "100-Tick" auf BEIDEN Achsen auf derselben visuellen
-      // Höhe (Mittelpunkt). Linke Achse wird aus avg + bands berechnet
-      // (engerer Range), rechte aus Einzeljahren (wiederer Range).
+      // SIMPLE Strategie: EINE Y-Achse mit Auto-Scale.
+      // ApexCharts v4 hat zu viele Bugs mit Multi-Axis Line-Charts, deshalb
+      // jetzt KISS: alles auf eine Achse, Auto-Scaling fittet alle Serien.
+      // Bei aktivierten Einzeljahren wird der Avg-Bereich kompakter, aber
+      // immer noch klar erkennbar (Avg ist mit width:3.5 prominent).
       //
-      // ApexCharts seriesName-Array für Y-Achsen-Binding ist in v4 unzuverlässig.
-      // Workaround: explizite Min/Max auf jeder Achse + seriesName-Array
-      // versuchen + falls binding scheitert, ist die linke Achse trotzdem
-      // korrekt skaliert (Einzeljahre können dann visuell überlaufen).
-
-      function symmetricRange(values, minDist) {
-        // Berechnet [100-d, 100+d] mit d = max(|val-100|) über alle values,
-        // mindestens minDist. NaN/null werden ignoriert.
-        var d = minDist || 5;
-        for (var i=0; i<values.length; i++) {
-          var v = values[i];
-          if (v == null || isNaN(v) || !isFinite(v)) continue;
-          var dist = Math.abs(v - 100);
-          if (dist > d) d = dist;
-        }
-        // Etwas Padding (10%)
-        d = d * 1.10;
-        return { min: Math.floor(100 - d), max: Math.ceil(100 + d) };
-      }
-
-      // LINKE Achse: aus avg + ggf. bands + cycles + current (NICHT Einzeljahre)
-      var leftValues = avgSmooth.slice();
-      if (showBands && std && std.length === 365) {
-        for (var i=0; i<365; i++) { leftValues.push(avgSmooth[i]+std[i]); leftValues.push(avgSmooth[i]-std[i]); }
-      }
-      if (showCurrent && yearData[currentYear]) {
-        var td = JZ.todayDoy();
-        for (var i=0; i<Math.min(td,365); i++) leftValues.push(yearData[currentYear].full_365[i]);
-      }
-      var leftRange = symmetricRange(leftValues, 8);
-
-      // RECHTE Achse: aus den Einzeljahren (alle full_365 Werte)
-      var rightRange = null;
-      if (individualNames.length > 0) {
-        var rightValues = [];
-        for (var i=0; i<individualNames.length; i++) {
-          var yKey = parseInt(individualNames[i]);
-          var c = yearData[yKey] && yearData[yKey].full_365;
-          if (c) for (var d=0; d<365; d++) rightValues.push(c[d]);
-        }
-        rightRange = symmetricRange(rightValues, 15);
-      }
-
-      var yaxes = [];
-      // [0] LINKE Hauptachse
-      yaxes.push({
-        min: leftRange.min, max: leftRange.max,
-        forceNiceScale: true,
-        labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-        title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-      });
-      // [1] RECHTE Achse für Einzeljahre (eigene dynamische Skala)
-      if (individualNames.length > 0 && rightRange) {
-        yaxes.push({
-          seriesName: individualNames,
-          opposite: true, show: true,
-          min: rightRange.min, max: rightRange.max,
-          forceNiceScale: true,
-          labels: { style:{colors:'#7a8a9a',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-          title: { text:'Einzeljahre', style:{color:'#7a8a9a',fontSize:'10px'} }
-        });
-      }
-      // [2] RECHTE Achse für Pressure
+      // Pressure bleibt auf eigener rechter Achse (das funktioniert mit
+      // einem einzelnen seriesName=String reproduzierbar).
+      var yaxes;
       if (pressureInfo) {
-        yaxes.push({
-          seriesName: 'Pressure',
-          opposite: true, show: true,
-          labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
-          title: { text:'Pressure', style:{color:COL_PRESSURE,fontSize:'11px'} }
-        });
+        yaxes = [
+          { // [0] LINKE Achse — alle Serien außer Pressure
+            labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+            title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+          },
+          { // [1] RECHTE Achse — nur Pressure
+            seriesName: 'Pressure', opposite: true, show: true,
+            labels: { style:{colors:COL_PRESSURE,fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1):'';} },
+            title: { text:'Pressure', style:{color:COL_PRESSURE,fontSize:'11px'} }
+          }
+        ];
+      } else {
+        yaxes = {
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+        };
       }
 
       var opts = {
@@ -1011,7 +962,7 @@
           }}
         }),
         xaxis: xaxisDoy(),
-        yaxis: yaxes.length === 1 ? yaxes[0] : yaxes,
+        yaxis: yaxes,
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
                     label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
