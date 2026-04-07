@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Backtest Engine — SeasonAlpha</title>
+  <meta name="description" content="Generischer Event-Backtester: Feiertage, FOMC, OPEX, Mondphasen. Grid-Search Optimierung, Walk-Forward Validierung, KI Event-Relevanz.">
+  <meta property="og:title" content="Backtest Engine — SeasonAlpha">
+  <meta property="og:url" content="https://seasonalpha.ai/backtest-engine">
+  <link rel="canonical" href="https://seasonalpha.ai/backtest-engine">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1rem;font-family:var(--f-m)}
+    .info-box{background:rgba(0,206,209,.08);border:1px solid rgba(0,206,209,.2);color:#5be0e3;padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .success-banner{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:#5ee5b0;padding:.6rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.875rem}
+    main{position:relative}
+    /* Tab Navigation */
+    .tab-nav{display:flex;gap:.25rem;margin-bottom:1rem;padding:.4rem;background:#0a0a0e;border:1px solid rgba(255,255,255,.06);border-radius:10px}
+    .tab-nav button{flex:1;background:transparent;border:none;color:#a89878;padding:.6rem 1rem;border-radius:7px;font-size:.875rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s ease}
+    .tab-nav button:hover{color:#e2e8f0;background:rgba(232,168,32,.05)}
+    .tab-nav button.active{background:rgba(232,168,32,.18);color:#FFD700;box-shadow:0 1px 3px rgba(232,168,32,.15)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    /* KPI Cards */
+    .kpi-row{display:flex;gap:.875rem;flex-wrap:wrap;margin-bottom:1rem}
+    .kpi-card{flex:1 1 0;min-width:140px;background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(232,168,32,.12);border-radius:12px;padding:.85rem 1.1rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease}
+    .kpi-card:hover{border-color:rgba(232,168,32,.3)}
+    .kpi-card .lbl{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.35rem}
+    .kpi-card .val{font-size:1.25rem;font-weight:800;font-family:var(--f-m);font-variant-numeric:tabular-nums;line-height:1.2;color:#e2e8f0}
+    .kpi-card .val.pos{color:#34d399}
+    .kpi-card .val.neg{color:#f87171}
+    /* Tables */
+    .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .perf-table th{color:#cbd5e1;font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .perf-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:#e2e8f0;font-variant-numeric:tabular-nums}
+    .perf-table td.pos{color:#34d399}
+    .perf-table td.neg{color:#f87171}
+    /* Action button */
+    .action-btn{background:linear-gradient(135deg,#e8a420,#d99315);border:none;color:#000;padding:.6rem 1.5rem;border-radius:8px;font-weight:700;cursor:pointer;font-size:.875rem;font-family:inherit;transition:transform .1s,box-shadow .15s}
+    .action-btn:hover{box-shadow:0 4px 12px rgba(232,164,32,.35)}
+    .action-btn:active{transform:scale(.98)}
+    .action-btn:disabled{opacity:.5;cursor:not-allowed}
+    /* Slider grid */
+    .slider-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+    @media(max-width:900px){.slider-grid{grid-template-columns:1fr}}
+    .slider-grid label{display:block;font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem;font-weight:600}
+    .slider-grid input[type=range]{width:100%}
+    .slider-grid select{width:100%;padding:.4rem .6rem}
+    /* Match-Cards (fuer Tachos) */
+    .match-cards{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
+    .match-card{flex:1 1 0;min-width:140px;background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 8px;text-align:center}
+    .mc-name{font-size:14px;font-weight:700;margin-bottom:8px;color:#e2e8f0}
+    .mc-details{font-size:12px;color:#cbd5e1;line-height:1.6;margin-top:.25rem}
+    /* Progress bar */
+    .progress-wrap{margin:.75rem 0}
+    .progress-wrap .lbl{font-size:.75rem;color:#a89878;margin-bottom:.25rem}
+    .progress-bar{width:100%;height:8px;background:#0a0a0e;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+    .progress-bar > div{height:100%;background:linear-gradient(90deg,#e8a420,#34d399);transition:width .1s ease}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Analysezeitraum</h3>
+      <label>Jahre zurück <span id="lbl-years">20</span></label>
+      <input type="range" id="sl-years" min="5" max="50" step="1" value="20">
+      <hr>
+      <h3>Event-Typ</h3>
+      <select id="sel-event">
+        <option value="holidays" selected>Feiertage (NYSE)</option>
+        <option value="fomc">FOMC</option>
+        <option value="opex">OPEX</option>
+        <option value="triple">Triple Witching</option>
+        <option value="full_moon">Vollmond</option>
+        <option value="new_moon">Neumond</option>
+      </select>
+      <hr>
+      <h3>Entry / Exit</h3>
+      <label>Entry-Preis</label>
+      <div style="display:flex;gap:.5rem;font-size:.8125rem">
+        <label><input type="radio" name="entry-col" value="Close" checked> Close</label>
+        <label><input type="radio" name="entry-col" value="Open"> Open</label>
+      </div>
+      <label style="margin-top:.5rem">Exit-Preis</label>
+      <div style="display:flex;gap:.5rem;font-size:.8125rem">
+        <label><input type="radio" name="exit-col" value="Close" checked> Close</label>
+        <label><input type="radio" name="exit-col" value="Open"> Open</label>
+      </div>
+      <hr>
+      <h3>Stop-Loss</h3>
+      <label class="toggle-row"><input type="checkbox" id="chk-stop"> Stop-Loss aktivieren</label>
+      <div id="stop-opts" style="display:none;margin-top:.5rem">
+        <label>Stop % <span id="lbl-stop">3.0</span></label>
+        <input type="range" id="sl-stop" min="0.5" max="10.0" step="0.5" value="3.0">
+        <label style="margin-top:.5rem">Typ</label>
+        <div style="display:flex;gap:.5rem;font-size:.8125rem">
+          <label><input type="radio" name="stop-type" value="fixed" checked> Fixed</label>
+          <label><input type="radio" name="stop-type" value="trailing"> Trailing</label>
+        </div>
+        <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Stop close-basiert (kein intraday Low)</p>
+      </div>
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Backtest Engine</b> — <span id="title-ticker">^GSPC</span></h1>
+      <p class="page-caption" id="page-caption">Generischer Event-Backtester · Grid-Search · Walk-Forward · KI-Relevanz</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+      <div class="info-box" id="filter-info" style="display:none"></div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-nav" id="tab-nav" style="display:none">
+        <button data-tab="single" class="active">Einzelner Backtest</button>
+        <button data-tab="opt">Parameter-Optimierung</button>
+        <button data-tab="wf">Walk-Forward</button>
+        <button data-tab="rel">Event-Relevanz (KI)</button>
+      </div>
+
+      <!-- TAB 1: Einzelner Backtest -->
+      <div class="tab-content active" id="tab-single">
+        <details open>
+          <summary>Backtest-Parameter</summary>
+          <div class="content">
+            <div class="slider-grid">
+              <div>
+                <label>Tage VOR Event (Entry) <span id="lbl-before">3</span></label>
+                <input type="range" id="sl-before" min="1" max="15" step="1" value="3">
+              </div>
+              <div>
+                <label>Tage NACH Event (Exit) <span id="lbl-after">3</span></label>
+                <input type="range" id="sl-after" min="1" max="15" step="1" value="3">
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <button class="action-btn" id="btn-run-single" style="width:100%">Backtest starten</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="kpi-row" id="single-kpis"></div>
+        <details open id="sec-equity" style="display:none">
+          <summary>Equity-Kurve</summary>
+          <div class="content"><div id="chart-equity"></div></div>
+        </details>
+        <details id="sec-trades" style="display:none">
+          <summary>Alle Trades</summary>
+          <div class="content">
+            <table class="perf-table">
+              <thead><tr><th>Event</th><th>Entry</th><th>Exit</th><th>Rendite</th><th>Haltetage</th><th>Stop</th><th>Jahr</th></tr></thead>
+              <tbody id="tbody-trades"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- TAB 2: Parameter-Optimierung -->
+      <div class="tab-content" id="tab-opt">
+        <details open>
+          <summary>Grid-Search Parameter</summary>
+          <div class="content">
+            <div class="slider-grid">
+              <div>
+                <label>days_before Range</label>
+                <div style="display:flex;gap:.5rem">
+                  <input type="number" id="opt-before-min" min="1" max="15" value="1" style="width:50%">
+                  <input type="number" id="opt-before-max" min="1" max="15" value="10" style="width:50%">
+                </div>
+              </div>
+              <div>
+                <label>days_after Range</label>
+                <div style="display:flex;gap:.5rem">
+                  <input type="number" id="opt-after-min" min="1" max="15" value="1" style="width:50%">
+                  <input type="number" id="opt-after-max" min="1" max="15" value="10" style="width:50%">
+                </div>
+              </div>
+              <div>
+                <label>Zielvariable</label>
+                <select id="sel-objective">
+                  <option value="total_return">Total Return</option>
+                  <option value="sharpe">Sharpe Ratio</option>
+                  <option value="calmar" selected>Calmar Ratio</option>
+                  <option value="win_rate">Win Rate</option>
+                </select>
+              </div>
+            </div>
+            <button class="action-btn" id="btn-run-opt">Optimierung starten</button>
+            <div class="progress-wrap" id="opt-progress" style="display:none">
+              <div class="lbl" id="opt-progress-lbl">0 / 0 Kombinationen...</div>
+              <div class="progress-bar"><div id="opt-progress-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </details>
+
+        <div id="opt-success" class="success-banner" style="display:none"></div>
+        <details open id="sec-opt-heatmap" style="display:none">
+          <summary>Heatmap: Objective × Parameter</summary>
+          <div class="content"><div id="chart-opt-heatmap"></div></div>
+        </details>
+        <details open id="sec-opt-top" style="display:none">
+          <summary>Top 10 Kombinationen</summary>
+          <div class="content">
+            <table class="perf-table">
+              <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
+              <tbody id="tbody-opt-top"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- TAB 3: Walk-Forward -->
+      <div class="tab-content" id="tab-wf">
+        <details open>
+          <summary>Walk-Forward Konfiguration</summary>
+          <div class="content">
+            <p class="box-info">Optimiert auf In-Sample, testet auf Out-of-Sample → realistische Performance ohne Overfitting.</p>
+            <div class="slider-grid">
+              <div>
+                <label>Anzahl Folds <span id="lbl-folds">5</span></label>
+                <input type="range" id="sl-folds" min="3" max="10" step="1" value="5">
+              </div>
+              <div>
+                <label>In-Sample Ratio <span id="lbl-ratio">0.70</span></label>
+                <input type="range" id="sl-ratio" min="0.5" max="0.8" step="0.05" value="0.7">
+              </div>
+              <div>
+                <label>Zielvariable</label>
+                <select id="sel-wf-objective">
+                  <option value="total_return">Total Return</option>
+                  <option value="sharpe">Sharpe Ratio</option>
+                  <option value="calmar" selected>Calmar Ratio</option>
+                  <option value="win_rate">Win Rate</option>
+                </select>
+              </div>
+            </div>
+            <button class="action-btn" id="btn-run-wf">Walk-Forward starten</button>
+            <div class="progress-wrap" id="wf-progress" style="display:none">
+              <div class="lbl" id="wf-progress-lbl">Fold 0 / 0...</div>
+              <div class="progress-bar"><div id="wf-progress-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+        </details>
+
+        <div id="wf-kpis-wrap" style="display:none">
+          <h3 style="font-size:.875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;margin:1.25rem 0 .5rem">Out-of-Sample Aggregat</h3>
+          <div class="kpi-row" id="wf-kpis"></div>
+        </div>
+        <details open id="sec-wf-folds" style="display:none">
+          <summary>Fold-Details</summary>
+          <div class="content">
+            <table class="perf-table">
+              <thead><tr><th>Fold</th><th>Trades</th><th>Return</th><th>Win-Rate</th><th>Sharpe</th><th>Best Params</th></tr></thead>
+              <tbody id="tbody-wf-folds"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+
+      <!-- TAB 4: Event-Relevanz (KI) -->
+      <div class="tab-content" id="tab-rel">
+        <details open>
+          <summary>Relevanz-Berechnung</summary>
+          <div class="content">
+            <p class="box-info">Welche Events sind statistisch signifikant? t-Test + Effect Size (Cohen's d) + Win-Rate → Relevanz-Score.</p>
+            <div class="slider-grid">
+              <div>
+                <label>Tage VOR Event <span id="lbl-rel-before">3</span></label>
+                <input type="range" id="sl-rel-before" min="1" max="10" step="1" value="3">
+              </div>
+              <div>
+                <label>Tage NACH Event <span id="lbl-rel-after">3</span></label>
+                <input type="range" id="sl-rel-after" min="1" max="10" step="1" value="3">
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <button class="action-btn" id="btn-run-rel" style="width:100%">Relevanz berechnen</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div id="rel-top-banner" class="success-banner" style="display:none"></div>
+        <details open id="sec-rel-table" style="display:none">
+          <summary>Relevanz-Ranking</summary>
+          <div class="content">
+            <table class="perf-table">
+              <thead><tr><th>Event</th><th>Kategorie</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th><th>t-Stat</th><th>p-Wert</th><th>Relevanz</th></tr></thead>
+              <tbody id="tbody-rel"></tbody>
+            </table>
+          </div>
+        </details>
+        <details open id="sec-rel-gauges" style="display:none">
+          <summary>Event-Relevanz Tachos</summary>
+          <div class="content" id="content-rel-gauges"></div>
+        </details>
+        <details>
+          <summary>📖 So lesen Sie den Relevanz-Score</summary>
+          <div class="content">
+            <p>Der Relevanz-Score kombiniert drei Dimensionen zu einem Gesamtwert zwischen 0 und 1:</p>
+            <ul>
+              <li><b>Signifikanz</b> (50%): 1 - p-Wert</li>
+              <li><b>Win-Rate</b> (30%): Anteil der Trades > 0</li>
+              <li><b>Effect Size</b> (20%): Cohen's d, gecappt bei 1.0</li>
+            </ul>
+            <p><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
+          </div>
+        </details>
+      </div>
+
+      <details>
+        <summary>📚 Methodik</summary>
+        <div class="content">
+          <h3>Backtest-Logik</h3>
+          <p>Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
+          <h3>Kennzahlen</h3>
+          <ul>
+            <li><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>
+            <li><b>Sharpe Ratio</b>: Ø Return / Std × √(Trades pro Jahr). Risk-free = 0.</li>
+            <li><b>Calmar Ratio</b>: Annualisierte Rendite / Max Drawdown.</li>
+            <li><b>Max Drawdown</b>: Maximaler Equity-Rücksetzer in %.</li>
+            <li><b>Profit Factor</b>: Σ Wins / |Σ Losses|.</li>
+          </ul>
+          <h3>Stop-Loss</h3>
+          <p>Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
+          <h3>Walk-Forward</h3>
+          <p>Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>
+          <h3>Event-Relevanz Score</h3>
+          <p>Pro Event ein t-Test (H0: mean = 0). Score = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen's d, gecappt 1.0).</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.7.0/dist/apexcharts.min.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/outlier.js"></script>
+  <script src="/landing/js/fomc-dates.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // BACKTEST ENGINE — Math/Compute Modul (Port von shared/backtest_engine.py)
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    var charts = {};
+    var currentTicker = '';
+    var rawRows = [];
+    var lastResult = null;
+    var lastOptResult = null;
+    var lastWfResult = null;
+    var lastRelResult = null;
+
+    // ── Statistik-Helpers ────────────────────────────────────────
+    function _clean(arr) {
+      var out = [];
+      for (var i=0;i<arr.length;i++) {
+        var v = arr[i];
+        if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) out.push(v);
+      }
+      return out;
+    }
+    function mean(arr) { var v=_clean(arr); if(!v.length)return 0; var s=0; for(var i=0;i<v.length;i++)s+=v[i]; return s/v.length; }
+    function median(arr) { var v=_clean(arr).slice().sort(function(a,b){return a-b;}); if(!v.length)return 0; var m=Math.floor(v.length/2); return v.length%2?v[m]:(v[m-1]+v[m])/2; }
+    function stdev(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/v.length); }
+
+    // t-Distribution CDF (Wilson-Hilferty / Regularized Beta)
+    function tCdf(t, df) {
+      var x = df / (df + t*t);
+      return 1 - 0.5 * _regBeta(x, df/2, 0.5);
+    }
+    function _regBeta(x, a, b) {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      var lnBeta = _lnGamma(a) + _lnGamma(b) - _lnGamma(a+b);
+      var front = Math.exp(Math.log(x)*a + Math.log(1-x)*b - lnBeta) / a;
+      var f = 1, c = 1, d = 0;
+      for (var i=0;i<200;i++) {
+        var m = i / 2;
+        var num;
+        if (i === 0) num = 1;
+        else if (i % 2 === 0) num = (m*(b-m)*x) / ((a+2*m-1)*(a+2*m));
+        else num = -((a+m)*(a+b+m)*x) / ((a+2*m)*(a+2*m+1));
+        d = 1 + num*d; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1/d;
+        c = 1 + num/c; if (Math.abs(c) < 1e-30) c = 1e-30;
+        f *= d*c;
+        if (Math.abs(d*c - 1) < 1e-8) break;
+      }
+      return front * (f - 1);
+    }
+    function _lnGamma(x) {
+      var c = [76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+      var ser = 1.000000000190015;
+      var y = x, tmp = x + 5.5;
+      tmp -= (x+0.5)*Math.log(tmp);
+      for (var j=0;j<6;j++) { y++; ser += c[j]/y; }
+      return -tmp + Math.log(2.5066282746310005*ser/x);
+    }
+    function tTest1Samp(values, mu) {
+      mu = mu || 0;
+      var n = values.length;
+      if (n < 2) return { t:0, p:1 };
+      var m = mean(values);
+      var s = stdev(values) * Math.sqrt(n/(n-1)); // sample std
+      if (s === 0) return { t:0, p:1 };
+      var t = (m - mu) / (s / Math.sqrt(n));
+      var p = 2 * (1 - tCdf(Math.abs(t), n-1));
+      return { t:t, p:Math.max(0, Math.min(1, p)) };
+    }
+
+    // ── Date Helpers ─────────────────────────────────────────────
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+    function dateToStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+    function tupleToStr(y, m, d) { return y + '-' + pad2(m) + '-' + pad2(d); }
+
+    // ── Event Generators ─────────────────────────────────────────
+    /**
+     * Generiert Holiday Events fuer NYSE.
+     * Returns: [{ name, category, dates_func: (year)->[dateStr] }]
+     */
+    function makeHolidayEvents() {
+      // Nutze SA.holidays.get(year, 'NYSE') und mappe via Heuristik auf Namen
+      // Einfacher: nehme die Holiday-Liste und labele sie nach Position im Jahr
+      // Da SA.holidays.get nur Daten zurueckgibt (nicht Namen), nutzen wir die
+      // bekannten NYSE-Holidays-Namen + Datum-Berechnung pro Jahr.
+      var holidays = [
+        { name: "New Year's Day", calc: function(y) { var d = new Date(y,0,1); var dow = d.getDay();
+          if (dow === 0) return tupleToStr(y, 1, 2); // Sunday observed Mon
+          if (dow === 6) return tupleToStr(y, 1, 1); // Saturday: Friday before? NYSE keeps as Sat
+          return tupleToStr(y, 1, 1); } },
+        { name: "MLK Day", calc: function(y) { return tupleToStr(y, 1, SA.holidays._nthDow(y, 1, 1, 3)); } }, // 3. Mo Jan
+        { name: "Presidents' Day", calc: function(y) { return tupleToStr(y, 2, SA.holidays._nthDow(y, 2, 1, 3)); } }, // 3. Mo Feb
+        { name: "Good Friday", calc: function(y) { return SA.holidays.goodFriday(y); } },
+        { name: "Memorial Day", calc: function(y) { return tupleToStr(y, 5, SA.holidays._lastDow(y, 5, 1)); } }, // letzter Mo Mai
+        { name: "Juneteenth", calc: function(y) { if (y < 2022) return null; var d = new Date(y,5,19); var dow = d.getDay();
+          if (dow === 6) return tupleToStr(y, 6, 18); if (dow === 0) return tupleToStr(y, 6, 20); return tupleToStr(y, 6, 19); } },
+        { name: "Independence Day", calc: function(y) { var d = new Date(y,6,4); var dow = d.getDay();
+          if (dow === 6) return tupleToStr(y, 7, 3); if (dow === 0) return tupleToStr(y, 7, 5); return tupleToStr(y, 7, 4); } },
+        { name: "Labor Day", calc: function(y) { return tupleToStr(y, 9, SA.holidays._nthDow(y, 9, 1, 1)); } }, // 1. Mo Sep
+        { name: "Thanksgiving", calc: function(y) { return tupleToStr(y, 11, SA.holidays._nthDow(y, 11, 4, 4)); } }, // 4. Do Nov
+        { name: "Christmas Day", calc: function(y) { var d = new Date(y,11,25); var dow = d.getDay();
+          if (dow === 6) return tupleToStr(y, 12, 24); if (dow === 0) return tupleToStr(y, 12, 26); return tupleToStr(y, 12, 25); } },
+      ];
+      var events = [];
+      holidays.forEach(function(h) {
+        events.push({
+          name: h.name,
+          category: 'holiday',
+          dates_func: function(year) {
+            try { var d = h.calc(year); return d ? [d] : []; }
+            catch(e) { return []; }
+          }
+        });
+      });
+      return events;
+    }
+
+    function makeFomcEvents() {
+      return [{
+        name: 'FOMC',
+        category: 'fomc',
+        dates_func: function(year) {
+          if (typeof window.SA_FOMC_DATES === 'undefined') return [];
+          return window.SA_FOMC_DATES
+            .filter(function(d){ return d[0] === year; })
+            .map(function(d){ return tupleToStr(d[0], d[1], d[2]); });
+        }
+      }];
+    }
+
+    function makeOpexEvents(tripleOnly) {
+      var TRIPLE_MONTHS = [3, 6, 9, 12];
+      return [{
+        name: tripleOnly ? 'Triple Witching' : 'OPEX',
+        category: 'opex',
+        dates_func: function(year) {
+          var dates = [];
+          for (var m=1;m<=12;m++) {
+            if (tripleOnly && TRIPLE_MONTHS.indexOf(m) < 0) continue;
+            // 3. Freitag des Monats
+            var day = SA.holidays._nthDow(year, m, 5, 3); // dow=5 (Friday)
+            dates.push(tupleToStr(year, m, day));
+          }
+          return dates;
+        }
+      }];
+    }
+
+    function makeMoonEvents(phase) {
+      return [{
+        name: phase === 'full' ? 'Vollmond' : 'Neumond',
+        category: 'moon',
+        dates_func: function(year) {
+          if (!SA.seasonal || !SA.seasonal.getMoonDates) return [];
+          var entries = SA.seasonal.getMoonDates(year, year, phase === 'full' ? 'full' : 'new');
+          return entries.map(function(e) {
+            var d = e.date instanceof Date ? e.date : new Date(e.date);
+            return dateToStr(d);
+          });
+        }
+      }];
+    }
+
+    // ── Stop-Loss (close-basiert, da kein high/low) ──────────────
+    function applyStopLoss(rows, entryIdx, exitIdx, entryPrice, stopPct, stopType) {
+      if (stopPct <= 0) {
+        return { exitPrice: rows[exitIdx].close, exitIdx: exitIdx, stopped: false, maxDd: 0 };
+      }
+      var highWatermark = entryPrice;
+      var maxDd = 0;
+      for (var i=entryIdx+1; i<=exitIdx; i++) {
+        var close = rows[i].close;
+        if (close > highWatermark) highWatermark = close;
+        var stopLevel;
+        if (stopType === 'trailing') stopLevel = highWatermark * (1 - stopPct/100);
+        else stopLevel = entryPrice * (1 - stopPct/100);
+        var dd = (close - highWatermark) / highWatermark * 100;
+        if (dd < maxDd) maxDd = dd;
+        if (close <= stopLevel) {
+          return { exitPrice: stopLevel, exitIdx: i, stopped: true, maxDd: Math.abs(maxDd) };
+        }
+      }
+      return { exitPrice: rows[exitIdx].close, exitIdx: exitIdx, stopped: false, maxDd: Math.abs(maxDd) };
+    }
+
+    // ── Compute Stats from Trades ────────────────────────────────
+    function computeStats(trades, params) {
+      var result = {
+        trades: trades,
+        params: params || {},
+        n_trades: 0,
+        total_return_pct: 0,
+        annualized_return_pct: 0,
+        max_drawdown_pct: 0,
+        calmar_ratio: 0,
+        sharpe_ratio: 0,
+        win_rate_pct: 0,
+        avg_return_pct: 0,
+        median_return_pct: 0,
+        profit_factor: 0,
+        avg_holding_days: 0,
+        equity_curve: [100]
+      };
+      if (!trades.length) return result;
+
+      var returns = trades.map(function(t){return t.return_pct;});
+      result.n_trades = trades.length;
+      result.avg_return_pct = mean(returns);
+      result.median_return_pct = median(returns);
+      result.avg_holding_days = mean(trades.map(function(t){return t.holding_days;}));
+
+      var wins = returns.filter(function(r){return r > 0;});
+      var losses = returns.filter(function(r){return r <= 0;});
+      result.win_rate_pct = wins.length / returns.length * 100;
+
+      var sumWins = wins.reduce(function(s,v){return s+v;}, 0);
+      var sumLosses = Math.abs(losses.reduce(function(s,v){return s+v;}, 0)) || 0.001;
+      result.profit_factor = sumWins / sumLosses;
+
+      // Equity curve
+      var equity = [100];
+      for (var i=0;i<returns.length;i++) {
+        equity.push(equity[equity.length-1] * (1 + returns[i]/100));
+      }
+      result.equity_curve = equity;
+      result.total_return_pct = equity[equity.length-1] - 100;
+
+      // Max DD
+      var peak = equity[0], maxDd = 0;
+      for (var i=0;i<equity.length;i++) {
+        if (equity[i] > peak) peak = equity[i];
+        var dd = (equity[i] - peak) / peak * 100;
+        if (dd < maxDd) maxDd = dd;
+      }
+      result.max_drawdown_pct = Math.abs(maxDd);
+
+      // Annualized
+      var years = {};
+      trades.forEach(function(t){ years[t.year] = true; });
+      var yearsSpan = Object.keys(years).length;
+      if (yearsSpan > 0) {
+        var totalFactor = equity[equity.length-1] / 100;
+        result.annualized_return_pct = (Math.pow(totalFactor, 1/yearsSpan) - 1) * 100;
+      }
+
+      // Calmar
+      if (result.max_drawdown_pct > 0) {
+        result.calmar_ratio = result.annualized_return_pct / result.max_drawdown_pct;
+      }
+
+      // Sharpe (simplified)
+      if (returns.length > 1) {
+        var std = stdev(returns);
+        if (std > 0) {
+          var tradesPerYear = result.n_trades / Math.max(yearsSpan, 1);
+          result.sharpe_ratio = (mean(returns) / std) * Math.sqrt(tradesPerYear);
+        }
+      }
+      return result;
+    }
+
+    // ── Run Backtest ─────────────────────────────────────────────
+    function runBacktest(rows, events, params) {
+      params = params || {};
+      var daysBefore = params.daysBefore || 3;
+      var daysAfter = params.daysAfter || 3;
+      var entryCol = params.entryCol || 'close';
+      var exitCol = params.exitCol || 'close';
+      var stopPct = params.stopPct || 0;
+      var stopType = params.stopType || 'fixed';
+      var selectedYears = params.selectedYears;
+      var excludeYears = params.excludeYears || [];
+      var minGapDays = params.minGapDays || 5;
+
+      if (!rows.length) return computeStats([], params);
+
+      // Build year-set from rows
+      if (!selectedYears) {
+        var yearSet = {};
+        rows.forEach(function(r){ yearSet[parseInt(r.date.substring(0,4))] = true; });
+        selectedYears = Object.keys(yearSet).map(Number).sort();
+      }
+      selectedYears = selectedYears.filter(function(y){ return excludeYears.indexOf(y) < 0; });
+
+      // Build date->index lookup
+      var dateToIdx = {};
+      for (var i=0;i<rows.length;i++) dateToIdx[rows[i].date] = i;
+
+      // Pre-sort rows by date
+      var trades = [];
+      var lastExitDateStr = null;
+
+      for (var yi=0;yi<selectedYears.length;yi++) {
+        var year = selectedYears[yi];
+        // Collect events for this year
+        var yearEvents = [];
+        for (var ei=0;ei<events.length;ei++) {
+          try {
+            var dates = events[ei].dates_func(year);
+            for (var di=0;di<dates.length;di++) {
+              if (dates[di]) yearEvents.push({ name: events[ei].name, date: dates[di] });
+            }
+          } catch(e) { /* skip */ }
+        }
+        yearEvents.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+
+        for (var ei2=0;ei2<yearEvents.length;ei2++) {
+          var ev = yearEvents[ei2];
+          // Find next trading day on/after event date
+          var t0Idx = -1;
+          for (var k=0;k<rows.length;k++) {
+            if (rows[k].date >= ev.date) { t0Idx = k; break; }
+          }
+          if (t0Idx < 0) continue;
+          var entryIdx = t0Idx - daysBefore;
+          var exitIdx = t0Idx + daysAfter;
+          if (entryIdx < 0 || exitIdx >= rows.length) continue;
+          var entryDate = rows[entryIdx].date;
+          var exitDate = rows[exitIdx].date;
+
+          // Mindestabstand
+          if (lastExitDateStr) {
+            var dl = (new Date(entryDate) - new Date(lastExitDateStr)) / 86400000;
+            if (dl < minGapDays) continue;
+          }
+
+          var entryPrice = entryCol === 'open' ? rows[entryIdx].open : rows[entryIdx].close;
+          if (entryPrice <= 0) continue;
+
+          // Stop-Loss check (close-based)
+          var stopResult = applyStopLoss(rows, entryIdx, exitIdx, entryPrice, stopPct, stopType);
+          var actualExitPrice, actualExitIdx, stopped, maxDd;
+          if (stopResult.stopped) {
+            actualExitPrice = stopResult.exitPrice;
+            actualExitIdx = stopResult.exitIdx;
+            stopped = true;
+            maxDd = stopResult.maxDd;
+          } else {
+            actualExitPrice = exitCol === 'open' ? rows[exitIdx].open : rows[exitIdx].close;
+            actualExitIdx = exitIdx;
+            stopped = false;
+            maxDd = stopResult.maxDd;
+          }
+
+          var ret = (actualExitPrice - entryPrice) / entryPrice * 100;
+          trades.push({
+            event_name: ev.name,
+            event_date: ev.date,
+            entry_date: entryDate,
+            exit_date: rows[actualExitIdx].date,
+            entry_price: Math.round(entryPrice*100)/100,
+            exit_price: Math.round(actualExitPrice*100)/100,
+            return_pct: Math.round(ret*10000)/10000,
+            holding_days: actualExitIdx - entryIdx,
+            year: year,
+            stopped_out: stopped,
+            max_drawdown_pct: Math.round(maxDd*100)/100
+          });
+          lastExitDateStr = rows[actualExitIdx].date;
+        }
+      }
+
+      trades.sort(function(a,b){ return a.entry_date < b.entry_date ? -1 : 1; });
+      return computeStats(trades, {
+        days_before: daysBefore,
+        days_after: daysAfter,
+        stop_loss_pct: stopPct,
+        stop_loss_type: stopType,
+        n_events: events.length
+      });
+    }
+
+    // ── Optimize Parameters (Grid-Search) ────────────────────────
+    var OBJECTIVES = {
+      'total_return': function(r) { return r.total_return_pct; },
+      'sharpe': function(r) { return r.sharpe_ratio; },
+      'calmar': function(r) { return r.calmar_ratio; },
+      'win_rate': function(r) { return r.win_rate_pct; }
+    };
+
+    function optimizeParameters(rows, events, paramGrid, objective, baseParams, progressCallback) {
+      var beforeRange = paramGrid.daysBefore;
+      var afterRange = paramGrid.daysAfter;
+      var combos = [];
+      for (var b=0;b<beforeRange.length;b++) {
+        for (var a=0;a<afterRange.length;a++) {
+          combos.push({ daysBefore: beforeRange[b], daysAfter: afterRange[a] });
+        }
+      }
+
+      var results = [];
+      for (var i=0;i<combos.length;i++) {
+        if (progressCallback) progressCallback(i, combos.length);
+        var p = Object.assign({}, baseParams || {}, combos[i]);
+        var r = runBacktest(rows, events, p);
+        results.push(r);
+      }
+      if (progressCallback) progressCallback(combos.length, combos.length);
+
+      var objFn = OBJECTIVES[objective] || OBJECTIVES['calmar'];
+      // Best per objective
+      var bestBy = {};
+      Object.keys(OBJECTIVES).forEach(function(name) {
+        var fn = OBJECTIVES[name];
+        var sorted = results.slice().sort(function(a,b){ return fn(b) - fn(a); });
+        if (sorted.length) bestBy[name] = sorted[0];
+      });
+
+      results.sort(function(a,b){ return objFn(b) - objFn(a); });
+      return {
+        results: results,
+        best_by_objective: bestBy,
+        param_grid: paramGrid,
+        objective_used: objective
+      };
+    }
+
+    // ── Walk-Forward Validation ──────────────────────────────────
+    function walkForward(rows, events, paramGrid, objective, nFolds, inSampleRatio, baseParams, progressCallback) {
+      var yearSet = {};
+      rows.forEach(function(r){ yearSet[parseInt(r.date.substring(0,4))] = true; });
+      var allYears = Object.keys(yearSet).map(Number).sort();
+      var nTotal = allYears.length;
+      var foldResults = [];
+
+      for (var fold=0;fold<nFolds;fold++) {
+        var isEnd = Math.floor(nTotal * (inSampleRatio + fold * (1 - inSampleRatio) / nFolds));
+        var oosEnd = Math.floor(isEnd + nTotal * (1 - inSampleRatio) / nFolds);
+        isEnd = Math.min(isEnd, nTotal);
+        oosEnd = Math.min(oosEnd, nTotal);
+        if (isEnd >= nTotal || isEnd === oosEnd) break;
+        var isYears = allYears.slice(0, isEnd);
+        var oosYears = allYears.slice(isEnd, oosEnd);
+        if (isYears.length < 5 || oosYears.length < 2) continue;
+
+        if (progressCallback) progressCallback(fold, nFolds);
+
+        // Optimize on in-sample
+        var isParams = Object.assign({}, baseParams, { selectedYears: isYears });
+        var optResult = optimizeParameters(rows, events, paramGrid, objective, isParams);
+        if (!optResult.results.length) continue;
+        var best = optResult.best_by_objective[objective] || optResult.results[0];
+        var bestParams = best.params;
+
+        // Test on out-of-sample
+        var oosParams = Object.assign({}, baseParams, {
+          selectedYears: oosYears,
+          daysBefore: bestParams.days_before,
+          daysAfter: bestParams.days_after
+        });
+        var oosResult = runBacktest(rows, events, oosParams);
+        oosResult.is_oos = true;
+        oosResult.fold = fold + 1;
+        foldResults.push(oosResult);
+      }
+      if (progressCallback) progressCallback(nFolds, nFolds);
+      return foldResults;
+    }
+
+    // ── Score Event Relevance ────────────────────────────────────
+    function scoreEventRelevance(rows, events, daysBefore, daysAfter, baseParams) {
+      var rows_out = [];
+      for (var ei=0;ei<events.length;ei++) {
+        var event = events[ei];
+        var p = Object.assign({}, baseParams || {}, {
+          daysBefore: daysBefore,
+          daysAfter: daysAfter
+        });
+        var result = runBacktest(rows, [event], p);
+        if (result.n_trades < 5) continue;
+        var returns = result.trades.map(function(t){return t.return_pct;});
+        var test = tTest1Samp(returns, 0);
+        var std = stdev(returns);
+        var cohensD = std > 0 ? Math.abs(mean(returns)) / std : 0;
+        var significance = Math.max(0, 1 - test.p);
+        var winComp = result.win_rate_pct / 100;
+        var effectComp = Math.min(cohensD, 1.0);
+        var relevance = 0.5 * significance + 0.3 * winComp + 0.2 * effectComp;
+
+        rows_out.push({
+          event: event.name,
+          category: event.category,
+          avg_return: result.avg_return_pct,
+          win_rate: result.win_rate_pct,
+          n_trades: result.n_trades,
+          t_stat: test.t,
+          p_value: test.p,
+          cohens_d: cohensD,
+          relevance: relevance
+        });
+      }
+      rows_out.sort(function(a,b){ return b.relevance - a.relevance; });
+      return rows_out;
+    }
+
+    // ── Outlier Detection (Year-based) ───────────────────────────
+    function detectOutlierYears(rows, method) {
+      if (!method || method === 'off' || method === 'none') return [];
+      // Compute per-year return
+      var byYear = {};
+      rows.forEach(function(r){
+        var y = parseInt(r.date.substring(0,4));
+        if (!byYear[y]) byYear[y] = [];
+        byYear[y].push(r);
+      });
+      var yearReturns = [];
+      Object.keys(byYear).forEach(function(y) {
+        var yr = byYear[y];
+        if (yr.length < 20) return;
+        var first = yr[0].close, last = yr[yr.length-1].close;
+        if (first > 0) yearReturns.push({ year: parseInt(y), ret: (last/first-1)*100 });
+      });
+      var rets = yearReturns.map(function(yr){return yr.ret;});
+      var excludeYears = [];
+      if (method === 'iqr') {
+        var sorted = rets.slice().sort(function(a,b){return a-b;});
+        var q1 = sorted[Math.floor(sorted.length*0.25)];
+        var q3 = sorted[Math.floor(sorted.length*0.75)];
+        var iqr = q3 - q1;
+        var lo = q1 - 1.5*iqr, hi = q3 + 1.5*iqr;
+        yearReturns.forEach(function(yr){
+          if (yr.ret < lo || yr.ret > hi) excludeYears.push(yr.year);
+        });
+      } else if (method === 'isolation' || method === 'iso') {
+        var m = mean(rets), s = stdev(rets);
+        yearReturns.forEach(function(yr){
+          if (Math.abs(yr.ret - m) > 2.5 * s) excludeYears.push(yr.year);
+        });
+      }
+      return excludeYears;
+    }
+
+    // ── Export Module ────────────────────────────────────────────
+    window._SA_BT = {
+      charts: charts,
+      OBJECTIVES: OBJECTIVES,
+      mean: mean, median: median, stdev: stdev,
+      tTest1Samp: tTest1Samp,
+      makeHolidayEvents: makeHolidayEvents,
+      makeFomcEvents: makeFomcEvents,
+      makeOpexEvents: makeOpexEvents,
+      makeMoonEvents: makeMoonEvents,
+      runBacktest: runBacktest,
+      computeStats: computeStats,
+      optimizeParameters: optimizeParameters,
+      walkForward: walkForward,
+      scoreEventRelevance: scoreEventRelevance,
+      detectOutlierYears: detectOutlierYears,
+      getCurrentTicker: function(){return currentTicker;},
+      setCurrentTicker: function(t){currentTicker=t;},
+      getRawRows: function(){return rawRows;},
+      setRawRows: function(r){rawRows=r;},
+      getLastResult: function(){return lastResult;},
+      setLastResult: function(r){lastResult=r;},
+      getLastOptResult: function(){return lastOptResult;},
+      setLastOptResult: function(r){lastOptResult=r;},
+      getLastWfResult: function(){return lastWfResult;},
+      setLastWfResult: function(r){lastWfResult=r;},
+      getLastRelResult: function(){return lastRelResult;},
+      setLastRelResult: function(r){lastRelResult=r;}
+    };
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var BT = window._SA_BT;
+    function fmtPct(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '–'; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
+    function fmtNum(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '–'; return v.toFixed(d); }
+
+    // ── KPI Cards Helper ─────────────────────────────────────────
+    function kpiCard(label, value, colorClass) {
+      return '<div class="kpi-card"><div class="lbl">' + label + '</div>' +
+             '<div class="val' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
+    }
+
+    // ── TAB 1: Single Backtest ───────────────────────────────────
+    BT.renderSingle = function(result, ticker) {
+      var kpisEl = document.getElementById('single-kpis');
+      if (!result || result.n_trades === 0) {
+        kpisEl.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;width:100%">Keine Trades im gewählten Zeitraum.</p>';
+        document.getElementById('sec-equity').style.display = 'none';
+        document.getElementById('sec-trades').style.display = 'none';
+        return;
+      }
+
+      // KPI Cards
+      var trCol = result.total_return_pct >= 0 ? 'pos' : 'neg';
+      kpisEl.innerHTML =
+        kpiCard('Total Return', fmtPct(result.total_return_pct, 1), trCol) +
+        kpiCard('Sharpe', fmtNum(result.sharpe_ratio, 2)) +
+        kpiCard('Calmar', fmtNum(result.calmar_ratio, 2)) +
+        kpiCard('Win-Rate', fmtNum(result.win_rate_pct, 0) + '%') +
+        kpiCard('Max DD', fmtNum(result.max_drawdown_pct, 1) + '%', 'neg') +
+        kpiCard('# Trades', String(result.n_trades));
+
+      // Equity Curve
+      document.getElementById('sec-equity').style.display = '';
+      if (BT.charts.equity) { try { BT.charts.equity.destroy(); } catch(e){} }
+      BT.charts.equity = new ApexCharts(document.getElementById('chart-equity'), {
+        series: [{ name: 'Equity', data: result.equity_curve.map(function(v,i){return [i, parseFloat(v.toFixed(2))];}) }],
+        chart: Object.assign({ type:'line', height:380 }, SA.chartTheme.chart),
+        stroke: { width: 2.5, curve: 'straight' },
+        colors: ['#4d9fff'],
+        fill: { type:'gradient', gradient:{ shadeIntensity:1, opacityFrom:.25, opacityTo:.02 } },
+        markers: { size: 0, hover:{size: 5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){ return v.toFixed(2); } },
+          x: { formatter: function(v){ return 'Trade #' + v; } }
+        }),
+        xaxis: { type:'numeric', title:{text:'Trade #', style:{color:'#a89878'}}, labels:{style:{colors:'#e2e8f0'}} },
+        yaxis: { title:{text:'Equity (Start = 100)', style:{color:'#a89878'}}, labels:{style:{colors:'#e2e8f0'}, formatter:function(v){return v.toFixed(0);}} },
+        annotations: { yaxis:[{ y:100, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }] },
+        legend: { show:false },
+        dataLabels: { enabled: false },
+        title: { text: ticker+' — Equity-Kurve ('+result.n_trades+' Trades)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      BT.charts.equity.render();
+
+      // Trade Table
+      document.getElementById('sec-trades').style.display = '';
+      var tbody = '';
+      result.trades.forEach(function(t) {
+        tbody += '<tr>' +
+          '<td>'+t.event_name+'</td>' +
+          '<td>'+t.entry_date+'</td>' +
+          '<td>'+t.exit_date+'</td>' +
+          '<td class="'+(t.return_pct>=0?'pos':'neg')+'">'+fmtPct(t.return_pct,2)+'</td>' +
+          '<td>'+t.holding_days+'</td>' +
+          '<td>'+(t.stopped_out?'⚠':'')+'</td>' +
+          '<td>'+t.year+'</td>' +
+        '</tr>';
+      });
+      document.getElementById('tbody-trades').innerHTML = tbody;
+    };
+
+    // ── TAB 2: Optimization ──────────────────────────────────────
+    BT.renderOpt = function(optResult, ticker, objective) {
+      if (!optResult || !optResult.results.length) return;
+      var best = optResult.best_by_objective[objective] || optResult.results[0];
+      var objVal = BT.OBJECTIVES[objective](best);
+
+      // Success banner
+      var banner = document.getElementById('opt-success');
+      banner.innerHTML = '<b>Beste Parameter:</b> days_before = <b>' + best.params.days_before + '</b>, ' +
+                         'days_after = <b>' + best.params.days_after + '</b> → ' +
+                         '<b>' + objective + ': ' + objVal.toFixed(2) + '</b>';
+      banner.style.display = '';
+
+      // Heatmap data
+      var beforeVals = optResult.param_grid.daysBefore;
+      var afterVals = optResult.param_grid.daysAfter;
+      var objFn = BT.OBJECTIVES[objective];
+      // Apex heatmap series: one series per row (after value), data = list of {x: before, y: value}
+      var series = [];
+      for (var ai=afterVals.length-1; ai>=0; ai--) {
+        var row = [];
+        for (var bi=0; bi<beforeVals.length; bi++) {
+          var match = optResult.results.filter(function(r) {
+            return r.params.days_before === beforeVals[bi] && r.params.days_after === afterVals[ai];
+          });
+          var val = match.length ? parseFloat(objFn(match[0]).toFixed(2)) : 0;
+          row.push({ x: 'b='+beforeVals[bi], y: val });
+        }
+        series.push({ name: 'a='+afterVals[ai], data: row });
+      }
+
+      document.getElementById('sec-opt-heatmap').style.display = '';
+      if (BT.charts.optHeatmap) { try { BT.charts.optHeatmap.destroy(); } catch(e){} }
+      BT.charts.optHeatmap = new ApexCharts(document.getElementById('chart-opt-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: Math.max(360, afterVals.length*32+100) }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3, enableShades: false,
+            colorScale: { ranges: [
+              { from: -1000, to: -0.0001, color: '#7f1d1d' },
+              { from: 0, to: 0.5, color: '#1f2937' },
+              { from: 0.5, to: 2, color: '#166534' },
+              { from: 2, to: 1000, color: '#15803d' }
+            ]}
+          }
+        },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v){ return v.toFixed(2); } }
+        }),
+        xaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}} },
+        yaxis: { labels:{style:{colors:'#e2e8f0',fontSize:'11px'}} },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v){ return v.toFixed(2); },
+          style: { fontSize:'10px', colors:['#f5f5f5'] }
+        },
+        legend: { show: false },
+        title: { text: ticker+' — Optimierung: '+objective, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      BT.charts.optHeatmap.render();
+
+      // Top 10 Tabelle
+      document.getElementById('sec-opt-top').style.display = '';
+      var tbody = '';
+      optResult.results.slice(0, 10).forEach(function(r) {
+        tbody += '<tr>' +
+          '<td>'+r.params.days_before+'</td>' +
+          '<td>'+r.params.days_after+'</td>' +
+          '<td class="'+(r.total_return_pct>=0?'pos':'neg')+'">'+fmtPct(r.total_return_pct,1)+'</td>' +
+          '<td>'+fmtNum(r.sharpe_ratio,2)+'</td>' +
+          '<td>'+fmtNum(r.calmar_ratio,2)+'</td>' +
+          '<td>'+fmtNum(r.win_rate_pct,0)+'%</td>' +
+          '<td class="neg">'+fmtNum(r.max_drawdown_pct,1)+'%</td>' +
+          '<td>'+r.n_trades+'</td>' +
+        '</tr>';
+      });
+      document.getElementById('tbody-opt-top').innerHTML = tbody;
+    };
+
+    // ── TAB 3: Walk-Forward ──────────────────────────────────────
+    BT.renderWf = function(wfResults, ticker) {
+      if (!wfResults || !wfResults.length) {
+        document.getElementById('wf-kpis-wrap').style.display = 'none';
+        document.getElementById('sec-wf-folds').style.display = 'none';
+        return;
+      }
+
+      // Aggregate all OOS trades
+      var allOosTrades = [];
+      wfResults.forEach(function(r){ allOosTrades = allOosTrades.concat(r.trades); });
+      var agg = BT.computeStats(allOosTrades, { type: 'walk-forward OOS' });
+
+      // KPIs
+      document.getElementById('wf-kpis-wrap').style.display = '';
+      var trCol = agg.total_return_pct >= 0 ? 'pos' : 'neg';
+      document.getElementById('wf-kpis').innerHTML =
+        kpiCard('OOS Return', fmtPct(agg.total_return_pct, 1), trCol) +
+        kpiCard('OOS Sharpe', fmtNum(agg.sharpe_ratio, 2)) +
+        kpiCard('OOS Win-Rate', fmtNum(agg.win_rate_pct, 0) + '%') +
+        kpiCard('OOS Trades', String(agg.n_trades));
+
+      // Fold Details
+      document.getElementById('sec-wf-folds').style.display = '';
+      var tbody = '';
+      wfResults.forEach(function(r) {
+        var p = r.params || {};
+        tbody += '<tr>' +
+          '<td>Fold '+r.fold+'</td>' +
+          '<td>'+r.n_trades+'</td>' +
+          '<td class="'+(r.total_return_pct>=0?'pos':'neg')+'">'+fmtPct(r.total_return_pct,1)+'</td>' +
+          '<td>'+fmtNum(r.win_rate_pct,0)+'%</td>' +
+          '<td>'+fmtNum(r.sharpe_ratio,2)+'</td>' +
+          '<td>b='+(p.days_before||'?')+', a='+(p.days_after||'?')+'</td>' +
+        '</tr>';
+      });
+      document.getElementById('tbody-wf-folds').innerHTML = tbody;
+    };
+
+    // ── TAB 4: Event Relevance ───────────────────────────────────
+    BT.renderRel = function(relResults, ticker) {
+      if (!relResults || !relResults.length) {
+        document.getElementById('rel-top-banner').style.display = 'none';
+        document.getElementById('sec-rel-table').style.display = 'none';
+        document.getElementById('sec-rel-gauges').style.display = 'none';
+        return;
+      }
+
+      // Top event banner
+      var top = relResults[0];
+      var banner = document.getElementById('rel-top-banner');
+      var lvl;
+      if (top.relevance >= 0.6) lvl = 'STARK';
+      else if (top.relevance >= 0.4) lvl = 'MODERAT';
+      else lvl = 'SCHWACH';
+      banner.innerHTML = '<b>Relevantestes Event: ' + top.event + '</b> · Score: ' + top.relevance.toFixed(3) +
+                         ' · ' + lvl + ' · p = ' + top.p_value.toFixed(4) +
+                         ' · Ø Rendite: ' + fmtPct(top.avg_return,2) + ' · WR: ' + fmtNum(top.win_rate,0) + '%';
+      banner.style.display = '';
+
+      // Tabelle
+      document.getElementById('sec-rel-table').style.display = '';
+      var tbody = '';
+      relResults.forEach(function(r) {
+        tbody += '<tr>' +
+          '<td><b>'+r.event+'</b></td>' +
+          '<td>'+r.category+'</td>' +
+          '<td class="'+(r.avg_return>=0?'pos':'neg')+'">'+fmtPct(r.avg_return,2)+'</td>' +
+          '<td>'+fmtNum(r.win_rate,0)+'%</td>' +
+          '<td>'+r.n_trades+'</td>' +
+          '<td>'+fmtNum(r.t_stat,2)+'</td>' +
+          '<td>'+r.p_value.toFixed(4)+'</td>' +
+          '<td><b>'+r.relevance.toFixed(3)+'</b></td>' +
+        '</tr>';
+      });
+      document.getElementById('tbody-rel').innerHTML = tbody;
+
+      // Gauges
+      document.getElementById('sec-rel-gauges').style.display = '';
+      var html = '<div class="match-cards">';
+      relResults.forEach(function(r) {
+        var deg = Math.round(r.relevance * 180);
+        var color = SA.significance.scoreToColor(r.relevance);
+        var label, lblCol;
+        if (r.p_value < 0.01) { label = 'Hochsignifikant'; lblCol = '#34d399'; }
+        else if (r.p_value < 0.05) { label = 'Signifikant'; lblCol = '#34d399'; }
+        else if (r.p_value < 0.10) { label = 'Grenzwertig'; lblCol = '#fbbf24'; }
+        else { label = 'Nicht signifikant'; lblCol = '#f87171'; }
+        html += '<div class="match-card">' +
+          '<div class="mc-name">'+r.event+'</div>' +
+          '<div style="position:relative;width:130px;height:70px;margin:0 auto;overflow:hidden">' +
+            '<div style="width:130px;height:130px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
+            '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:90px;height:45px;border-radius:0 0 90px 90px;background:var(--card,#0a0a0e)"></div>' +
+            '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1.2rem;font-weight:700;color:#fff;font-family:var(--f-m)">'+r.relevance.toFixed(2)+'</div>' +
+          '</div>' +
+          '<div style="text-align:center;font-size:.875rem;font-weight:700;margin-top:.5rem;color:'+lblCol+'">'+label+'</div>' +
+          '<div class="mc-details">t='+fmtNum(r.t_stat,2)+' · p='+r.p_value.toFixed(4)+'<br>n='+r.n_trades+' · WR '+fmtNum(r.win_rate,0)+'%</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      document.getElementById('content-rel-gauges').innerHTML = html;
+    };
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // PAGE LIFECYCLE
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var BT = window._SA_BT;
+    var $error = document.getElementById('error-banner');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){$error.style.display='none';}, 8000); }
+
+    // ── Tab Navigation ───────────────────────────────────────────
+    document.querySelectorAll('#tab-nav button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tab = this.dataset.tab;
+        document.querySelectorAll('#tab-nav button').forEach(function(b){ b.classList.remove('active'); });
+        this.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
+        document.getElementById('tab-'+tab).classList.add('active');
+      });
+    });
+
+    // ── Sidebar Slider Labels ────────────────────────────────────
+    [['sl-years','lbl-years'], ['sl-stop','lbl-stop'], ['sl-before','lbl-before'], ['sl-after','lbl-after'],
+     ['sl-folds','lbl-folds'], ['sl-rel-before','lbl-rel-before'], ['sl-rel-after','lbl-rel-after']].forEach(function(pair) {
+      var sl = document.getElementById(pair[0]);
+      if (sl) sl.addEventListener('input', function(){ document.getElementById(pair[1]).textContent = this.value; });
+    });
+    var slRatio = document.getElementById('sl-ratio');
+    if (slRatio) slRatio.addEventListener('input', function(){ document.getElementById('lbl-ratio').textContent = parseFloat(this.value).toFixed(2); });
+
+    // Stop-Loss Toggle
+    document.getElementById('chk-stop').addEventListener('change', function(){
+      document.getElementById('stop-opts').style.display = this.checked ? '' : 'none';
+    });
+
+    // Outlier-Filter UI
+    if (typeof SA !== 'undefined' && SA.outlier && SA.outlier.renderFilterUI) {
+      SA.outlier.renderFilterUI('outlier-filter', function(){});
+    }
+    function getOutlierMethod() {
+      var sel = document.getElementById('outlier-select');
+      return sel ? sel.value : 'off';
+    }
+
+    // ── Get Sidebar Params ───────────────────────────────────────
+    function getBaseParams() {
+      var yearsBack = parseInt(document.getElementById('sl-years').value);
+      var entryCol = document.querySelector('input[name="entry-col"]:checked').value.toLowerCase();
+      var exitCol = document.querySelector('input[name="exit-col"]:checked').value.toLowerCase();
+      var stopOn = document.getElementById('chk-stop').checked;
+      var stopPct = stopOn ? parseFloat(document.getElementById('sl-stop').value) : 0;
+      var stopType = document.querySelector('input[name="stop-type"]:checked').value;
+      var rawRows = BT.getRawRows();
+
+      // Selected years
+      var yearSet = {};
+      rawRows.forEach(function(r){ yearSet[parseInt(r.date.substring(0,4))] = true; });
+      var allYears = Object.keys(yearSet).map(Number).sort();
+      var currentYear = new Date().getFullYear();
+      var startYear = currentYear - yearsBack;
+      var selectedYears = allYears.filter(function(y){ return y >= startYear && y <= currentYear; });
+
+      // Outlier
+      var outlierMethod = getOutlierMethod();
+      var excludeYears = BT.detectOutlierYears(rawRows, outlierMethod);
+
+      return {
+        entryCol: entryCol,
+        exitCol: exitCol,
+        stopPct: stopPct,
+        stopType: stopType,
+        selectedYears: selectedYears,
+        excludeYears: excludeYears
+      };
+    }
+
+    function getEvents() {
+      var t = document.getElementById('sel-event').value;
+      switch (t) {
+        case 'holidays': return BT.makeHolidayEvents();
+        case 'fomc': return BT.makeFomcEvents();
+        case 'opex': return BT.makeOpexEvents(false);
+        case 'triple': return BT.makeOpexEvents(true);
+        case 'full_moon': return BT.makeMoonEvents('full');
+        case 'new_moon': return BT.makeMoonEvents('new');
+        default: return BT.makeHolidayEvents();
+      }
+    }
+
+    function eventLabel() {
+      var t = document.getElementById('sel-event').value;
+      var labels = { 'holidays':'Feiertage (NYSE)', 'fomc':'FOMC', 'opex':'OPEX', 'triple':'Triple Witching', 'full_moon':'Vollmond', 'new_moon':'Neumond' };
+      return labels[t] || t;
+    }
+
+    // ── Tab 1: Run Single Backtest ───────────────────────────────
+    document.getElementById('btn-run-single').addEventListener('click', function() {
+      var rawRows = BT.getRawRows();
+      if (!rawRows.length) { showError('Erst Ticker laden'); return; }
+      var base = getBaseParams();
+      var events = getEvents();
+      var params = Object.assign({}, base, {
+        daysBefore: parseInt(document.getElementById('sl-before').value),
+        daysAfter: parseInt(document.getElementById('sl-after').value)
+      });
+      var result = BT.runBacktest(rawRows, events, params);
+      BT.setLastResult(result);
+      BT.renderSingle(result, BT.getCurrentTicker());
+    });
+
+    // ── Tab 2: Run Optimization ──────────────────────────────────
+    document.getElementById('btn-run-opt').addEventListener('click', function() {
+      var rawRows = BT.getRawRows();
+      if (!rawRows.length) { showError('Erst Ticker laden'); return; }
+      var bMin = parseInt(document.getElementById('opt-before-min').value);
+      var bMax = parseInt(document.getElementById('opt-before-max').value);
+      var aMin = parseInt(document.getElementById('opt-after-min').value);
+      var aMax = parseInt(document.getElementById('opt-after-max').value);
+      if (bMin > bMax || aMin > aMax) { showError('Min muss kleiner als Max sein'); return; }
+      var beforeRange = []; for (var i=bMin;i<=bMax;i++) beforeRange.push(i);
+      var afterRange = []; for (var i=aMin;i<=aMax;i++) afterRange.push(i);
+      var paramGrid = { daysBefore: beforeRange, daysAfter: afterRange };
+      var objective = document.getElementById('sel-objective').value;
+      var base = getBaseParams();
+      var events = getEvents();
+
+      var btn = this;
+      btn.disabled = true;
+      var pw = document.getElementById('opt-progress');
+      var pb = document.getElementById('opt-progress-bar');
+      var pl = document.getElementById('opt-progress-lbl');
+      pw.style.display = '';
+      var nCombos = beforeRange.length * afterRange.length;
+
+      // Async via setTimeout damit UI nicht freezt
+      setTimeout(function() {
+        try {
+          var result = BT.optimizeParameters(rawRows, events, paramGrid, objective, base, function(i, total) {
+            // Note: synchron, kein UI-Update moeglich mid-loop
+          });
+          pb.style.width = '100%';
+          pl.textContent = nCombos + ' / ' + nCombos + ' Kombinationen ✓';
+          BT.setLastOptResult(result);
+          BT.renderOpt(result, BT.getCurrentTicker(), objective);
+        } catch (e) {
+          showError('Optimierung fehlgeschlagen: ' + e.message);
+        } finally {
+          btn.disabled = false;
+          setTimeout(function(){ pw.style.display = 'none'; pb.style.width = '0%'; }, 2000);
+        }
+      }, 50);
+    });
+
+    // ── Tab 3: Run Walk-Forward ──────────────────────────────────
+    document.getElementById('btn-run-wf').addEventListener('click', function() {
+      var rawRows = BT.getRawRows();
+      if (!rawRows.length) { showError('Erst Ticker laden'); return; }
+      var nFolds = parseInt(document.getElementById('sl-folds').value);
+      var inSampleRatio = parseFloat(document.getElementById('sl-ratio').value);
+      var objective = document.getElementById('sel-wf-objective').value;
+      var paramGrid = { daysBefore: [1,2,3,4,5,6,7,8,9,10], daysAfter: [1,2,3,4,5,6,7,8,9,10] };
+      var base = getBaseParams();
+      var events = getEvents();
+
+      var btn = this;
+      btn.disabled = true;
+      var pw = document.getElementById('wf-progress');
+      var pb = document.getElementById('wf-progress-bar');
+      var pl = document.getElementById('wf-progress-lbl');
+      pw.style.display = '';
+
+      setTimeout(function() {
+        try {
+          var results = BT.walkForward(rawRows, events, paramGrid, objective, nFolds, inSampleRatio, base);
+          pb.style.width = '100%';
+          pl.textContent = 'Walk-Forward abgeschlossen ✓';
+          BT.setLastWfResult(results);
+          BT.renderWf(results, BT.getCurrentTicker());
+        } catch (e) {
+          showError('Walk-Forward fehlgeschlagen: ' + e.message);
+        } finally {
+          btn.disabled = false;
+          setTimeout(function(){ pw.style.display = 'none'; pb.style.width = '0%'; }, 2000);
+        }
+      }, 50);
+    });
+
+    // ── Tab 4: Run Event Relevance ───────────────────────────────
+    document.getElementById('btn-run-rel').addEventListener('click', function() {
+      var rawRows = BT.getRawRows();
+      if (!rawRows.length) { showError('Erst Ticker laden'); return; }
+      var dBefore = parseInt(document.getElementById('sl-rel-before').value);
+      var dAfter = parseInt(document.getElementById('sl-rel-after').value);
+      var base = getBaseParams();
+      var events = getEvents();
+      var results = BT.scoreEventRelevance(rawRows, events, dBefore, dAfter, base);
+      BT.setLastRelResult(results);
+      BT.renderRel(results, BT.getCurrentTicker());
+    });
+
+    // ── fetchOHLC ────────────────────────────────────────────────
+    function fetchOHLC(ticker, dateFilter) {
+      var allRows = [];
+      var batchSize = 1000;
+      function batch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close&order=date' + (dateFilter || '');
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
+        }).then(function(r) {
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows) {
+            allRows = allRows.concat(rows);
+            if (cr) { var t = parseInt(cr.split('/')[1]); if (allRows.length < t) return batch(allRows.length); }
+            else if (rows.length === batchSize) return batch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+      return batch(0);
+    }
+
+    // ── Load Ticker ──────────────────────────────────────────────
+    function loadTicker(ticker) {
+      ticker = ticker.trim().toUpperCase();
+      if (!ticker || ticker === BT.getCurrentTicker()) return;
+      document.getElementById('page-caption').textContent = 'Lade ' + ticker + '...';
+      var startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 50);
+      var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
+      fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!rows || rows.length < 200) { showError(ticker + ': Zu wenig Daten'); return; }
+        rows.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
+        BT.setRawRows(rows);
+        BT.setCurrentTicker(ticker);
+        document.getElementById('title-ticker').textContent = ticker;
+        document.getElementById('page-caption').textContent = 'Generischer Event-Backtester · Grid-Search · Walk-Forward · KI-Relevanz';
+        document.getElementById('tab-nav').style.display = '';
+        // Trading Day Header
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        // Auto-run single backtest
+        document.getElementById('btn-run-single').click();
+      }).catch(function(e) {
+        showError('Fehler: ' + (e && e.message ? e.message : e));
+      });
+    }
+
+    // Re-run on event-type or other base param change
+    document.getElementById('sel-event').addEventListener('change', function() {
+      if (BT.getRawRows().length) document.getElementById('btn-run-single').click();
+    });
+
+    // ── Init ─────────────────────────────────────────────────────
+    function initialLoad() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
+        SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+        loadTicker('^GSPC');
+      } else {
+        document.getElementById('page-caption').textContent = 'Supabase nicht konfiguriert';
+      }
+    }
+    initialLoad();
+  })();
+  </script>
+
+  <script>
+  // Nav + Footer Loader
+  fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html;});
+  fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  </script>
+</body>
+</html>
