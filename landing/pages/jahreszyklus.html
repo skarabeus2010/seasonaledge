@@ -426,6 +426,52 @@
     }
 
     /**
+     * Detrend-Indikator (modular, Port von shared/calculations.py-Logik).
+     *
+     * Subtrahiert den linearen Jahrestrend von der saisonalen Ø-Kurve und
+     * skaliert das Residuum auf 0-100 (Midline 50). Über 50 = saisonal
+     * typisch starke Phase, unter 50 = saisonal typisch schwache Phase.
+     *
+     * Formel (identisch zu Python build_detrend_chart in 02_Jahreszyklus.py):
+     *   end_val      = avg[-1] - avg[0]
+     *   daily_drift  = end_val / len(avg)
+     *   raw[i]       = (avg[i] - avg[0]) - (i+1) * daily_drift
+     *   detrended[i] = ((raw[i] - rMin) / rRange) * 100
+     *
+     * @param {Array<number>} avg - Saisonaler Durchschnitt (typischerweise 365 Werte)
+     * @returns {Array<number>|null} Detrended Array (gleiche Länge), oder null wenn zu wenig Daten
+     */
+    function computeDetrend(avg) {
+      if (!avg || avg.length < 10) return null;
+      var n = avg.length;
+      var endVal = avg[n-1] - avg[0];
+      var drift = endVal / n;
+      var raw = new Array(n);
+      for (var i=0; i<n; i++) raw[i] = (avg[i] - avg[0]) - ((i+1) * drift);
+
+      // Min/Max NaN-safe ermitteln
+      var rMin = Infinity, rMax = -Infinity;
+      for (var i=0; i<n; i++) {
+        var v = raw[i];
+        if (v == null || isNaN(v) || !isFinite(v)) continue;
+        if (v < rMin) rMin = v;
+        if (v > rMax) rMax = v;
+      }
+      var range = rMax - rMin;
+      var detrended = new Array(n);
+      if (!isFinite(range) || range === 0) {
+        for (var i=0; i<n; i++) detrended[i] = 50;
+      } else {
+        for (var i=0; i<n; i++) {
+          var v = raw[i];
+          if (v == null || isNaN(v) || !isFinite(v)) detrended[i] = null;
+          else detrended[i] = ((v - rMin) / range) * 100;
+        }
+      }
+      return detrended;
+    }
+
+    /**
      * Erkennt vertikale Sprünge am rechten Rand einer Kurve.
      * Berechnet 95-Perzentil der Day-to-Day Deltas im Mittelteil (Tag 30-330)
      * als "normalen" Bereich, dann scannt vom Ende rückwärts und findet den
@@ -799,6 +845,7 @@
       rollingMean:rollingMean, corrcoef:corrcoef, mean:mean, stdev:stdev, median:median,
       percentileOf:percentileOf, todayDoy:todayDoy, cycleOf:cycleOf,
       computeDayCounts:computeDayCounts, splitSolidWeak:splitSolidWeak, detectAnomalyEnd:detectAnomalyEnd,
+      computeDetrend:computeDetrend,
       showError:showError, showSections:showSections, destroyAll:destroyAll,
       getCurrentTicker:function(){return currentTicker;}, setCurrentTicker:function(t){currentTicker=t;},
       getCachedRows:function(){return _cachedRows;}, setCachedRows:function(r){_cachedRows=r;}
@@ -1127,15 +1174,11 @@
     };
 
     // ── Render: Detrend-Indikator ────────────────────────────────────────────
+    // Nutzt JZ.computeDetrend (modular, Python-kompatibel) zur Berechnung,
+    // dann Solid/Weak-Split via Count-Threshold + Anomaly-Detection.
     JZ.renderDetrend = function(avg, ticker, nYears, yearData) {
-      if (avg.length<10) return;
-      var endVal = avg[avg.length-1] - avg[0];
-      var drift = endVal / avg.length;
-      var raw = avg.map(function(a,i){ return (a-avg[0]) - (i+1)*drift; });
-      var rMin = Math.min.apply(null, raw);
-      var rMax = Math.max.apply(null, raw);
-      var range = rMax - rMin;
-      var detrended = raw.map(function(v){ return range>0 ? (v-rMin)/range*100 : 50; });
+      var detrended = JZ.computeDetrend(avg);
+      if (!detrended) return;
 
       // Solid/Weak Split: Count-Threshold + Anomaly-Detection (kleinster gewinnt)
       var dc = yearData ? JZ.computeDayCounts(yearData) : { lastSolid: 365, minN: 0 };
