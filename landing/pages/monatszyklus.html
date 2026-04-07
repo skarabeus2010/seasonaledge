@@ -26,9 +26,9 @@
     .match-cards{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem}
     .match-card{flex:1 1 0;min-width:130px;background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 8px;text-align:center}
     .match-card.is-best{border-width:2px}
-    .mc-name{font-size:11px;font-weight:600;margin-bottom:6px}
+    .mc-name{font-size:14px;font-weight:700;margin-bottom:8px}
     .mc-r{font-size:26px;font-weight:800;letter-spacing:-1px;margin:4px 0;font-family:var(--f-m)}
-    .mc-details{font-size:10px;color:#64748b;line-height:1.5}
+    .mc-details{font-size:12px;color:#cbd5e1;line-height:1.6}
     /* Momentum Cards */
     .momentum-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.5rem 0}
     .momentum-card{border-radius:12px;padding:16px;text-align:center}
@@ -1296,26 +1296,30 @@
       if (match.p_value < 0.05) { sigLabel = 'Signifikant abweichend'; sigCol = '#f87171'; }
       else if (match.p_value < 0.10) { sigLabel = 'Grenzwertig'; sigCol = '#fbbf24'; }
       else { sigLabel = 'Im Normalbereich'; sigCol = '#34d399'; }
-      var gauge = function(name, score, valText, valColor, sub) {
+      var gauge = function(name, score, valText, valColor, belowLabel, belowCol, sub) {
         var deg = Math.round(score * 180);
         var color = SA.significance.scoreToColor(score);
+        var belowHtml = belowLabel
+          ? '<div style="text-align:center;font-size:.875rem;font-weight:700;margin-top:.5rem;color:'+belowCol+'">'+belowLabel+'</div>'
+          : '';
         return '<div class="match-card">' +
-          '<div class="mc-name" style="color:#c8d6e5">'+name+'</div>' +
+          '<div class="mc-name" style="color:#e2e8f0">'+name+'</div>' +
           '<div style="position:relative;width:130px;height:70px;margin:0 auto;overflow:hidden">' +
             '<div style="width:130px;height:130px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
             '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:90px;height:45px;border-radius:0 0 90px 90px;background:var(--card,#0a0a0e)"></div>' +
             '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:1.2rem;font-weight:700;color:'+valColor+';font-family:var(--f-m)">'+valText+'</div>' +
           '</div>' +
-          '<div class="mc-details">'+sub+'</div>' +
+          belowHtml +
+          '<div class="mc-details" style="margin-top:.25rem">'+sub+'</div>' +
         '</div>';
       };
       var sign = match.current_return >= 0 ? '+' : '';
       var signA = match.avg_return >= 0 ? '+' : '';
       container.innerHTML =
         '<div class="match-cards">' +
-          gauge('Korrelation', corrScore, (match.correlation>=0?'+':'')+match.correlation.toFixed(2), corrCol, 'r-Wert (Verlauf)') +
-          gauge('Shape-Match (DTW)', match.dtw_score, Math.round(match.dtw_score*100)+'%', dtwCol, 'Form-Ähnlichkeit') +
-          gauge('Abweichungstest', sigScore, sigLabel.split(' ')[0], sigCol, 'p='+match.p_value.toFixed(3)+' · d='+match.cohens_d.toFixed(2)) +
+          gauge('Korrelation', corrScore, (match.correlation>=0?'+':'')+match.correlation.toFixed(2), corrCol, '', '', 'r-Wert (Verlauf)') +
+          gauge('Shape-Match (DTW)', match.dtw_score, Math.round(match.dtw_score*100)+'%', dtwCol, '', '', 'Form-Ähnlichkeit') +
+          gauge('Abweichungstest', sigScore, sigScore.toFixed(2), '#fff', sigLabel, sigCol, 'p='+match.p_value.toFixed(3)+' · d='+match.cohens_d.toFixed(2)) +
         '</div>' +
         '<p style="color:#c8d6e5;font-size:12px;text-align:center;margin-top:8px">' +
           'Aktuell: <b style="color:#F1C40F">'+sign+match.current_return.toFixed(2)+'%</b> · ' +
