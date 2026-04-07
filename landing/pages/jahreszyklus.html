@@ -598,14 +598,20 @@
     }
 
     // ── Pressure Curve (Port von calculate_pressure_curve) ──────────────────
+    // NaN-safe: jede log_return-Quelle wird durch sanitize() geprueft.
     function computePressureCurve(yearData, smoothing) {
       var currentYear = new Date().getFullYear();
       var allYears = Object.keys(yearData).map(Number).sort(function(a,b){return a-b;});
+      if (!allYears.length) return { curve:null, maxYears:0, periods:[] };
       var maxYearsAvail = currentYear - Math.min.apply(null, allYears);
       var availablePeriods = PRESSURE_PERIODS.filter(function(p){return p<=maxYearsAvail;});
       if (!availablePeriods.length) return { curve:null, maxYears:0, periods:[] };
 
-      // Für jede Periode: durchschnittliche log_return pro Kalendertag (0 wenn kein Handel)
+      var sanitize = function(x) {
+        var v = parseFloat(x);
+        return (isNaN(v) || !isFinite(v)) ? 0 : v;
+      };
+
       var periodDaily = {};
       for (var pi=0;pi<availablePeriods.length;pi++) {
         var period=availablePeriods[pi];
@@ -616,12 +622,12 @@
         var yearFullRets=[];
         for (var yi=0;yi<periodYears.length;yi++) {
           var y=periodYears[yi], yd=yearData[y];
-          if (!yd || !yd.days) continue;
+          if (!yd || !yd.days || !yd.log_returns) continue;
           var daysArr=yd.days, rets=yd.log_returns;
           var fullRets=new Array(365).fill(0);
           for (var j=0;j<daysArr.length;j++) {
             var d=daysArr[j];
-            if (d>=1 && d<=365) fullRets[d-1]=rets[j];
+            if (d>=1 && d<=365) fullRets[d-1]=sanitize(rets[j]);
           }
           yearFullRets.push(fullRets);
         }
@@ -638,19 +644,21 @@
 
       if (!Object.keys(periodDaily).length) return { curve:null, maxYears:maxYearsAvail, periods:[] };
 
-      // Summen
       var summed=new Array(365).fill(0);
       for (var p in periodDaily) {
-        for (var dd=0;dd<365;dd++) summed[dd]+=periodDaily[p][dd];
+        for (var dd=0;dd<365;dd++) summed[dd]+=sanitize(periodDaily[p][dd]);
       }
 
-      // Cumulative sum
       var curve=[]; var cum=0;
-      for (var i=0;i<365;i++) { cum+=summed[i]; curve.push(cum); }
+      for (var i=0;i<365;i++) {
+        cum+=sanitize(summed[i]);
+        curve.push(cum);
+      }
 
-      // Glätten
       if (smoothing>1) curve=rollingMean(curve, smoothing);
-      return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number) };
+      // Final-Cleanup: alle NaN/Infinity rauswerfen
+      curve = curve.map(function(v){ return (v != null && isFinite(v)) ? v : null; });
+      return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number).sort(function(a,b){return a-b;}) };
     }
 
     // ── Drawdown Berechnungen (null-safe + last_actual_day-aware) ───────────
@@ -737,34 +745,69 @@
       }
       return out;
     }
+    /**
+     * Vola pro Kalendertag (1..365), gemittelt ueber alle Jahre.
+     * Mapping erfolgt anhand des ECHTEN day_of_year jedes Jahres
+     * (kein Stretching). Aktuelle Jahre werden niemals ueber today
+     * extrapoliert. NaN-aware Mittelung.
+     */
     function avgRollingVolatility(yearData, window) {
-      var allVolas = [];
+      var currentYear = new Date().getFullYear();
+      var todayD = todayDoy();
+      // 365-Spalten-Matrix mit NaN initialisieren
+      var matrix = [];
+      var nYears = 0;
       for (var y in yearData) {
-        var v = rollingVolForYear(yearData[y], window);
+        var yo = yearData[y];
+        var v = rollingVolForYear(yo, window);
         if (!v) continue;
-        // Forward-fill NaN
+        // Backfill der Warmup-NaN am Jahresanfang mit erstem gueltigen Wert
+        var firstValid = NaN;
+        for (var k=0;k<v.length;k++) {
+          if (!isNaN(v[k])) { firstValid = v[k]; break; }
+        }
+        if (isNaN(firstValid)) continue;
         var cleaned = v.slice();
-        var lastValid = 0;
-        for (var i=0;i<cleaned.length;i++) {
-          if (!isNaN(cleaned[i])) lastValid = cleaned[i];
-          else cleaned[i] = lastValid;
+        for (var k=0;k<cleaned.length;k++) {
+          if (isNaN(cleaned[k])) cleaned[k] = firstValid;
+          else break;
         }
-        // Interpolate to 365 points
-        var nOrig = cleaned.length;
-        if (nOrig<10) continue;
-        var interp = [];
-        for (var j=0;j<365;j++) {
-          var pos = j * (nOrig-1) / 364;
-          var lo = Math.floor(pos), hi = Math.ceil(pos);
-          if (lo===hi) interp.push(cleaned[lo]);
-          else interp.push(cleaned[lo] + (pos-lo)*(cleaned[hi]-cleaned[lo]));
+        // Forward-fill restliche NaN (falls Luecken)
+        var lastV = firstValid;
+        for (var k=0;k<cleaned.length;k++) {
+          if (!isNaN(cleaned[k])) lastV = cleaned[k];
+          else cleaned[k] = lastV;
         }
-        allVolas.push(interp);
+        // Mapping ueber day_of_year statt Stretching
+        var doys = yo.days || [];
+        var row = new Array(365).fill(NaN);
+        var nMin = Math.min(doys.length, cleaned.length);
+        var lastDoy = (parseInt(y) === currentYear) ? todayD : 365;
+        for (var k=0;k<nMin;k++) {
+          var d = doys[k];
+          if (d >= 1 && d <= 365 && d <= lastDoy) row[d-1] = cleaned[k];
+        }
+        // Lueckentage zwischen Trading-Tagen mit letztem Wert fuellen
+        var firstD = -1, lastD = -1;
+        for (var d=0;d<365;d++) if (!isNaN(row[d])) { firstD = d; break; }
+        for (var d=364;d>=0;d--) if (!isNaN(row[d])) { lastD = d; break; }
+        if (firstD < 0) continue;
+        var lv = row[firstD];
+        for (var d=firstD;d<=lastD;d++) {
+          if (!isNaN(row[d])) lv = row[d];
+          else row[d] = lv;
+        }
+        matrix.push(row);
+        nYears++;
       }
-      if (allVolas.length<2) return null;
+      if (nYears < 2) return null;
       var avg=[], std=[];
       for (var d=0;d<365;d++) {
-        var vals = allVolas.map(function(a){ return a[d]; });
+        var vals = [];
+        for (var i=0;i<matrix.length;i++) {
+          if (!isNaN(matrix[i][d])) vals.push(matrix[i][d]);
+        }
+        if (vals.length < 2) { avg.push(null); std.push(null); continue; }
         avg.push(mean(vals));
         std.push(stdev(vals));
       }
@@ -804,21 +847,29 @@
     }
 
     // ── Month × Offset Heatmap Data (null-safe + last_actual_day-aware) ────
+    // FIX: nur fuer das CURRENT year wird last_actual_day-Filter angewandt.
+    // Fuer vergangene Jahre haben wir oft keinen 31.12. (Wochenende/Feiertag),
+    // last_actual_day wird dann 363/364 — December darf trotzdem berechnet
+    // werden, da der Monat real durchgehandelt wurde.
     function buildMonthlyHeatmap(yearData) {
       var years = Object.keys(yearData).map(Number).sort(function(a,b){return b-a;});
       var last10 = years.slice(0,10);
+      var currentYear = new Date().getFullYear();
       var series = [];
       for (var yi=0;yi<last10.length;yi++) {
         var y = last10[yi];
         var yo = yearData[y];
+        var isCurrentYear = (y === currentYear);
         var row = [];
         for (var m=1;m<=12;m++) {
           var b = MONTH_BOUNDS[m-1];
           var c = yo.full_365;
           var sv = c[b[0]-1], ev = c[Math.min(b[1]-1,364)];
           var cellVal;
-          // Skip wenn Monat-ENDE über last_actual_day liegt (Monat unvollständig)
-          if (b[1] > yo.last_actual_day || sv == null || ev == null ||
+          // Aktuelles Jahr: Monate die noch nicht angefangen haben oder mid-month
+          // sind werden ausgeblendet. Vergangene Jahre: nur NaN/Infinity-Schutz.
+          var monthInFuture = isCurrentYear && b[0] > yo.last_actual_day;
+          if (monthInFuture || sv == null || ev == null ||
               isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
             cellVal = null;
           } else {
@@ -1006,16 +1057,33 @@
         });
       }
 
-      // 7. Pressure → eigene rechte Y-Achse
+      // 7. Pressure → eigene rechte Y-Achse — crash-safe
       var pressureInfo = null;
+      var pressureError = null;
       if (showPressure) {
-        var pres = JZ.computePressureCurve(yearData, smoothing);
-        if (pres.curve) {
-          seriesDef.push({
-            name:'Pressure', data: pad365(pres.curve),
-            color: COL_PRESSURE, width: 2, dash: 0, axis: 'right_pressure'
-          });
-          pressureInfo = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
+        try {
+          var pres = JZ.computePressureCurve(yearData, smoothing);
+          if (pres && pres.curve && pres.periods && pres.periods.length) {
+            // Validate: at least one finite value
+            var hasFinite = false;
+            for (var pi=0;pi<pres.curve.length;pi++) {
+              if (pres.curve[pi] != null && isFinite(pres.curve[pi])) { hasFinite = true; break; }
+            }
+            if (hasFinite) {
+              seriesDef.push({
+                name:'Pressure', data: pad365(pres.curve),
+                color: COL_PRESSURE, width: 2, dash: 0, axis: 'right_pressure'
+              });
+              pressureInfo = 'Pressure Chart über Lookback-Perioden: '+pres.periods.join('/')+' Jahre';
+            } else {
+              pressureError = 'Pressure Chart: keine gültigen Werte berechenbar';
+            }
+          } else {
+            pressureError = 'Pressure Chart: zu wenig historische Daten';
+          }
+        } catch (_e) {
+          pressureError = 'Pressure Chart Fehler: ' + (_e && _e.message ? _e.message : _e);
+          pressureInfo = null;
         }
       }
 
@@ -1083,13 +1151,52 @@
       };
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
-      JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
-      JZ.charts.main.render();
+      try {
+        JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
+        JZ.charts.main.render();
+      } catch (_renderErr) {
+        // ApexCharts v4 Multi-Axis Bug — Fallback ohne Pressure-Achse
+        console.warn('Main chart render failed, retrying without pressure axis:', _renderErr);
+        // Pressure-Serie raus
+        var filteredSeries = [], filteredColors = [], filteredWidths = [], filteredDashes = [];
+        for (var fi=0; fi<seriesDef.length; fi++) {
+          if (seriesDef[fi].axis === 'right_pressure') continue;
+          filteredSeries.push({ name: seriesDef[fi].name, data: seriesDef[fi].data });
+          filteredColors.push(seriesDef[fi].color);
+          filteredWidths.push(seriesDef[fi].width);
+          filteredDashes.push(seriesDef[fi].dash);
+        }
+        opts.series = filteredSeries;
+        opts.colors = filteredColors;
+        opts.stroke.width = filteredWidths;
+        opts.stroke.dashArray = filteredDashes;
+        opts.yaxis = {
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+        };
+        pressureError = 'Pressure Chart konnte nicht dargestellt werden (Multi-Achsen Inkompatibilität)';
+        pressureInfo = null;
+        try {
+          JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
+          JZ.charts.main.render();
+        } catch (_e2) {
+          console.error('Fallback chart also failed:', _e2);
+        }
+      }
 
-      // Pressure info
+      // Pressure info / error
       var pInfo = document.getElementById('pressure-info');
-      if (pressureInfo) { pInfo.textContent = pressureInfo; pInfo.style.display=''; }
-      else pInfo.style.display='none';
+      if (pressureError) {
+        pInfo.textContent = '⚠ ' + pressureError;
+        pInfo.style.color = '#f87171';
+        pInfo.style.display = '';
+      } else if (pressureInfo) {
+        pInfo.textContent = pressureInfo;
+        pInfo.style.color = 'var(--accent)';
+        pInfo.style.display = '';
+      } else {
+        pInfo.style.display='none';
+      }
     };
 
     // ── Render: Einzeljahre Sub-Chart (synchronisiert via chart.group) ──────
@@ -1235,20 +1342,30 @@
       var colors = avgs.map(function(v,i){ return i+1===currentMonth ? COL_CURRENT : (v>=0?COL_POS:COL_NEG); });
 
       if (JZ.charts['monthly-bars']) { JZ.charts['monthly-bars'].destroy(); JZ.charts['monthly-bars']=null; }
+      // Y-Range mit Padding damit Outside-Labels nicht abgeschnitten werden
+      var _ymax = Math.max.apply(null, avgs);
+      var _ymin = Math.min.apply(null, avgs);
+      var _pad = Math.max(Math.abs(_ymax), Math.abs(_ymin)) * 0.30 || 1;
       JZ.charts['monthly-bars'] = new ApexCharts(document.getElementById('chart-monthly-bars'), {
         series: [{ name:'Ø Rendite', data: avgs.map(function(v){return parseFloat(v.toFixed(2));}) }],
-        chart: Object.assign({ type:'bar', height:360 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'bar', height:380 }, SA.chartTheme.chart),
         colors: colors,
-        plotOptions: { bar:{ distributed:true, columnWidth:'72%', borderRadius:3 } },
-        dataLabels: { enabled:true, formatter:function(v,opts){ return fmtPct(v,1)+' · WR '+wrs[opts.dataPointIndex].toFixed(0)+'%'; }, style:{fontSize:'10px',colors:['#ccc']}, offsetY:-22 },
+        plotOptions: { bar:{ distributed:true, columnWidth:'72%', borderRadius:3, dataLabels:{ position:'top' } } },
+        dataLabels: {
+          enabled:true,
+          // Nur Prozentwert, einzeilig, AUSSERHALB
+          formatter:function(v){ return fmtPct(v,2); },
+          offsetY: -18,
+          style:{fontSize:'11px',colors:['#e2e8f0'],fontWeight:600}
+        },
         grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           y: { formatter: function(v, opts) {
             var i = opts.dataPointIndex;
-            return fmtPct(v,2)+' · n='+ns[i];
+            return fmtPct(v,2)+' · WR '+wrs[i].toFixed(0)+'% · n='+ns[i];
           }}
         }),
         xaxis: { categories: MONTHS_DE, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%';}} },
+        yaxis: { min:_ymin-_pad, max:_ymax+_pad, labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%';}} },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }] },
         legend: { show:false },
         title: { text: ticker+' — Monats-Performance', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
@@ -1288,15 +1405,28 @@
       var colors = avgs.map(function(v,i){ return i+1===currentQ ? COL_CURRENT : (v>=0?COL_POS:COL_NEG); });
 
       if (JZ.charts['quarterly-bars']) { JZ.charts['quarterly-bars'].destroy(); JZ.charts['quarterly-bars']=null; }
+      var _qymax = Math.max.apply(null, avgs);
+      var _qymin = Math.min.apply(null, avgs);
+      var _qpad = Math.max(Math.abs(_qymax), Math.abs(_qymin)) * 0.30 || 1;
       JZ.charts['quarterly-bars'] = new ApexCharts(document.getElementById('chart-quarterly-bars'), {
         series: [{ name:'Ø Rendite', data: avgs.map(function(v){return parseFloat(v.toFixed(2));}) }],
-        chart: Object.assign({ type:'bar', height:320 }, SA.chartTheme.chart),
+        chart: Object.assign({ type:'bar', height:340 }, SA.chartTheme.chart),
         colors: colors,
-        plotOptions: { bar:{ distributed:true, columnWidth:'55%', borderRadius:4 } },
-        dataLabels: { enabled:true, formatter:function(v,opts){ var i=opts.dataPointIndex; return fmtPct(v,2)+' · WR '+wrs[i].toFixed(0)+'% · n='+ns[i]; }, style:{fontSize:'11px',colors:['#ddd']}, offsetY:-22 },
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        plotOptions: { bar:{ distributed:true, columnWidth:'55%', borderRadius:4, dataLabels:{ position:'top' } } },
+        dataLabels: {
+          enabled:true,
+          formatter:function(v){ return fmtPct(v,2); },
+          offsetY: -20,
+          style:{fontSize:'13px',colors:['#e2e8f0'],fontWeight:600}
+        },
+        grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          y: { formatter: function(v, opts) {
+            var i = opts.dataPointIndex;
+            return fmtPct(v,2)+' · WR '+wrs[i].toFixed(0)+'% · n='+ns[i];
+          }}
+        }),
         xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'12px'}} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%';}} },
+        yaxis: { min:_qymin-_qpad, max:_qymax+_qpad, labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v.toFixed(1)+'%';}} },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }] },
         legend: { show:false },
         title: { text: ticker+' — Quartals-Performance', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
@@ -1583,24 +1713,51 @@
       widths.push(2.5);
 
       if (showCurrent && yearData[currentYear]) {
-        var curVola = JZ.rollingVolForYear(yearData[currentYear], window);
-        if (curVola) {
-          // Forward-fill
-          var last = 0;
-          var cleaned = curVola.slice().map(function(v){ if(!isNaN(v)){last=v;return v;} return last; });
-          var nOrig = cleaned.length;
-          var interp = [];
-          for (var j=0;j<365;j++) {
-            var pos = j * (nOrig-1) / 364;
-            var lo = Math.floor(pos), hi = Math.ceil(pos);
-            interp.push(lo===hi ? cleaned[lo] : cleaned[lo]+(pos-lo)*(cleaned[hi]-cleaned[lo]));
+        var curObj = yearData[currentYear];
+        var curVola = JZ.rollingVolForYear(curObj, window);
+        if (curVola && curObj.days) {
+          // Backfill: ersten gueltigen Wert finden, leading NaN damit fuellen
+          var firstValid = NaN;
+          for (var k=0;k<curVola.length;k++) {
+            if (!isNaN(curVola[k])) { firstValid = curVola[k]; break; }
           }
-          var td = JZ.todayDoy();
-          var curArr = new Array(365).fill(null);
-          for (var i=0;i<Math.min(td,365);i++) curArr[i] = interp[i];
-          series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
-          colors.push(COL_CURRENT);
-          widths.push(2.5);
+          if (!isNaN(firstValid)) {
+            var cleaned = curVola.slice();
+            for (var k=0;k<cleaned.length;k++) {
+              if (isNaN(cleaned[k])) cleaned[k] = firstValid;
+              else break;
+            }
+            // Forward-fill restliche NaN
+            var lastV = firstValid;
+            for (var k=0;k<cleaned.length;k++) {
+              if (!isNaN(cleaned[k])) lastV = cleaned[k];
+              else cleaned[k] = lastV;
+            }
+            // Echtes day_of_year-Mapping (kein Stretching!)
+            var curArr = new Array(365).fill(null);
+            var td = JZ.todayDoy();
+            var doys = curObj.days;
+            var nMin = Math.min(doys.length, cleaned.length);
+            // Lueckentage fuellen
+            var lastValOnDay = NaN;
+            var lastDoy = 0;
+            for (var k=0;k<nMin;k++) {
+              var d = doys[k];
+              if (d < 1 || d > 365 || d > td) continue;
+              // Fuelle zwischen letztem DOY und diesem mit letztem Wert
+              if (lastDoy > 0 && d > lastDoy + 1) {
+                for (var dg = lastDoy; dg < d; dg++) {
+                  if (dg >= 1 && dg <= 365) curArr[dg-1] = lastValOnDay;
+                }
+              }
+              curArr[d-1] = cleaned[k];
+              lastValOnDay = cleaned[k];
+              lastDoy = d;
+            }
+            series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
+            colors.push(COL_CURRENT);
+            widths.push(2.5);
+          }
         }
       }
 

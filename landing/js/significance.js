@@ -125,13 +125,13 @@ SA.significance = {
         return ia - ib;
       });
     }
-    // Dynamische Spaltenanzahl: gleichmaessig aufteilen (keine Einzelgaenger)
+    // Dynamische Spaltenanzahl: bei <=4 Items immer EINE Reihe (keine Wraps)
     var n = results.length;
-    if (n <= 3) colsPerRow = n;
+    if (n <= 4) colsPerRow = n;            // 4 Quartale/Cycles -> 1 Reihe a 4
     else if (n <= 6) colsPerRow = 3;
     else if (n <= 8) colsPerRow = 4;
     else if (n <= 10) colsPerRow = 5;
-    else if (n <= 13) colsPerRow = Math.ceil(n / 3); // 3 Reihen
+    else if (n <= 13) colsPerRow = 4;     // 12 Monate -> 3 Reihen a 4
     else colsPerRow = Math.ceil(n / 3);
 
     var html = '<div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">';
