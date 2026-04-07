@@ -916,25 +916,75 @@
       var strokeWidths = seriesDef.map(function(s){ return s.width; });
       var strokeDashes = seriesDef.map(function(s){ return s.dash; });
 
-      // Y-Axes aufbauen: links default, rechts nach Bedarf
-      // ApexCharts: seriesName als Array bindet mehrere Serien an eine Achse.
-      // Default-Achse (ohne seriesName) muss IMMER existieren.
+      // ── Y-Achsen aufbauen ─────────────────────────────────────────────────
+      // STRATEGIE: Beide Achsen werden symmetrisch um 100 zentriert.
+      // So liegt der "100-Tick" auf BEIDEN Achsen auf derselben visuellen
+      // Höhe (Mittelpunkt). Linke Achse wird aus avg + bands berechnet
+      // (engerer Range), rechte aus Einzeljahren (wiederer Range).
+      //
+      // ApexCharts seriesName-Array für Y-Achsen-Binding ist in v4 unzuverlässig.
+      // Workaround: explizite Min/Max auf jeder Achse + seriesName-Array
+      // versuchen + falls binding scheitert, ist die linke Achse trotzdem
+      // korrekt skaliert (Einzeljahre können dann visuell überlaufen).
+
+      function symmetricRange(values, minDist) {
+        // Berechnet [100-d, 100+d] mit d = max(|val-100|) über alle values,
+        // mindestens minDist. NaN/null werden ignoriert.
+        var d = minDist || 5;
+        for (var i=0; i<values.length; i++) {
+          var v = values[i];
+          if (v == null || isNaN(v) || !isFinite(v)) continue;
+          var dist = Math.abs(v - 100);
+          if (dist > d) d = dist;
+        }
+        // Etwas Padding (10%)
+        d = d * 1.10;
+        return { min: Math.floor(100 - d), max: Math.ceil(100 + d) };
+      }
+
+      // LINKE Achse: aus avg + ggf. bands + cycles + current (NICHT Einzeljahre)
+      var leftValues = avgSmooth.slice();
+      if (showBands && std && std.length === 365) {
+        for (var i=0; i<365; i++) { leftValues.push(avgSmooth[i]+std[i]); leftValues.push(avgSmooth[i]-std[i]); }
+      }
+      if (showCurrent && yearData[currentYear]) {
+        var td = JZ.todayDoy();
+        for (var i=0; i<Math.min(td,365); i++) leftValues.push(yearData[currentYear].full_365[i]);
+      }
+      var leftRange = symmetricRange(leftValues, 8);
+
+      // RECHTE Achse: aus den Einzeljahren (alle full_365 Werte)
+      var rightRange = null;
+      if (individualNames.length > 0) {
+        var rightValues = [];
+        for (var i=0; i<individualNames.length; i++) {
+          var yKey = parseInt(individualNames[i]);
+          var c = yearData[yKey] && yearData[yKey].full_365;
+          if (c) for (var d=0; d<365; d++) rightValues.push(c[d]);
+        }
+        rightRange = symmetricRange(rightValues, 15);
+      }
+
       var yaxes = [];
-      // Linke Hauptachse — fängt alles ohne seriesName-Match ab
+      // [0] LINKE Hauptachse
       yaxes.push({
+        min: leftRange.min, max: leftRange.max,
+        forceNiceScale: true,
         labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
         title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
       });
-      // Rechte Achse für Einzeljahre (auto-scaling, gedämpfte Farbe)
-      if (individualNames.length > 0) {
+      // [1] RECHTE Achse für Einzeljahre (eigene dynamische Skala)
+      if (individualNames.length > 0 && rightRange) {
         yaxes.push({
-          seriesName: individualNames,  // Array von Jahres-Namen
+          seriesName: individualNames,
           opposite: true, show: true,
+          min: rightRange.min, max: rightRange.max,
+          forceNiceScale: true,
           labels: { style:{colors:'#7a8a9a',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
           title: { text:'Einzeljahre', style:{color:'#7a8a9a',fontSize:'10px'} }
         });
       }
-      // Rechte Achse für Pressure
+      // [2] RECHTE Achse für Pressure
       if (pressureInfo) {
         yaxes.push({
           seriesName: 'Pressure',
