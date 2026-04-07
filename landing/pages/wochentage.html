@@ -21,10 +21,11 @@
     main{position:relative}
     .charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
     @media(max-width:900px){.charts-2col{grid-template-columns:1fr}}
-    .kpi-row{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem}
-    .kpi-card{flex:1 1 0;min-width:130px;background:#0f1923;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.6rem .9rem}
-    .kpi-card .lbl{font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.5px}
-    .kpi-card .val{font-size:1.05rem;font-weight:700;font-family:var(--f-m);font-variant-numeric:tabular-nums}
+    .kpi-row{display:flex;gap:.875rem;flex-wrap:wrap;margin-bottom:1rem}
+    .kpi-card{flex:1 1 0;min-width:140px;background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(232,168,32,.12);border-radius:12px;padding:.85rem 1.1rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease}
+    .kpi-card:hover{border-color:rgba(232,168,32,.3)}
+    .kpi-card .lbl{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.35rem}
+    .kpi-card .val{font-size:1.25rem;font-weight:800;font-family:var(--f-m);font-variant-numeric:tabular-nums;line-height:1.2;color:#e2e8f0}
     .perf-table{width:100%;border-collapse:collapse;font-size:.8125rem}
     .perf-table th{color:#cbd5e1;font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
     .perf-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:#e2e8f0;font-variant-numeric:tabular-nums}
@@ -130,25 +131,18 @@
         </div>
       </details>
 
-      <!-- 5. Overnight vs Intraday -->
+      <!-- 5. Streak-Analyse (hochgezogen unter Statistik pro Wochentag) -->
+      <details open id="sec-streak" style="display:none">
+        <summary>Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- 6. Overnight vs Intraday -->
       <details open id="sec-oi" style="display:none">
         <summary>Overnight vs. Intraday Split</summary>
         <div class="content">
           <div id="chart-oi"></div>
           <p class="box-info">Zerlegt die Tagesrendite in <b style="color:#a78bfa">Overnight</b> (Schlusskurs gestern → Eröffnung heute) und <b style="color:#22d3ee">Intraday</b> (Eröffnung → Schluss). Wenn die Rendite überwiegend overnight entsteht, profitieren Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>
-        </div>
-      </details>
-
-      <!-- 6. Weekend-Effekt -->
-      <details open id="sec-weekend" style="display:none">
-        <summary>Weekend-Effekt (Fr Close → Mo Open)</summary>
-        <div class="content">
-          <div class="kpi-row" id="weekend-kpis"></div>
-          <div id="chart-weekend-bar"></div>
-          <div id="content-weekend-sig" style="margin-top:1rem"></div>
-          <div id="chart-weekend-heatmap" style="margin-top:1rem"></div>
-          <div id="chart-weekend-cycle" style="margin-top:1rem"></div>
-          <p class="box-info" style="margin-top:.75rem">Der Weekend-Effekt misst die Rendite über das Wochenende (Freitag Schluss → Montag Eröffnung, Residual-Methode). Historisch zeigt sich oft ein negativer Weekend-Effekt bei Aktien — Montage eröffnen unter dem Freitags-Schluss.</p>
         </div>
       </details>
 
@@ -161,13 +155,7 @@
         </div>
       </details>
 
-      <!-- 8. Streak-Analyse -->
-      <details open id="sec-streak" style="display:none">
-        <summary>Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)</summary>
-        <div class="content" id="content-streak"></div>
-      </details>
-
-      <!-- 9. Quartals-Heatmaps -->
+      <!-- 8. Quartals-Heatmaps -->
       <details open id="sec-quarterly" style="display:none">
         <summary>Wochentag-Performance nach Quartal</summary>
         <div class="content">
@@ -176,7 +164,7 @@
         </div>
       </details>
 
-      <!-- 10. Monat × Wochentag Heatmap -->
+      <!-- 9. Monat × Wochentag Heatmap -->
       <details open id="sec-heatmap" style="display:none">
         <summary>Monat × Wochentag Heatmap</summary>
         <div class="content">
@@ -184,7 +172,7 @@
         </div>
       </details>
 
-      <!-- 11. Top / Flop Kombinationen -->
+      <!-- 10. Top / Flop Kombinationen -->
       <details open id="sec-topflop" style="display:none">
         <summary>Top / Flop Monat×Wochentag Kombinationen</summary>
         <div class="content">
@@ -204,6 +192,19 @@
               </table>
             </div>
           </div>
+        </div>
+      </details>
+
+      <!-- 11. Weekend-Effekt (runter, vor Methodik) -->
+      <details open id="sec-weekend" style="display:none">
+        <summary>Weekend-Effekt (Fr Close → Mo Open)</summary>
+        <div class="content">
+          <div class="kpi-row" id="weekend-kpis"></div>
+          <div id="chart-weekend-bar"></div>
+          <div id="content-weekend-sig" style="margin-top:1rem"></div>
+          <div id="chart-weekend-heatmap" style="margin-top:1rem"></div>
+          <div id="chart-weekend-cycle" style="margin-top:1rem"></div>
+          <p class="box-info" style="margin-top:.75rem">Der Weekend-Effekt misst die Rendite über das Wochenende (Freitag Schluss → Montag Eröffnung, Residual-Methode). Historisch zeigt sich oft ein negativer Weekend-Effekt bei Aktien — Montage eröffnen unter dem Freitags-Schluss.</p>
         </div>
       </details>
 
