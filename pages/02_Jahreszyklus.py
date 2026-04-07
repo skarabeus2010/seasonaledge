@@ -105,7 +105,9 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
         # Mindestens 50% der Jahre muessen echte Daten haben (sonst NaN)
         valid_counts = np.sum(~np.isnan(masked), axis=0)
         min_n = max(int(n_years * 0.5), 3)
-        with np.errstate(all="ignore"):
+        import warnings as _w
+        with _w.catch_warnings(), np.errstate(all="ignore"):
+            _w.simplefilter("ignore", category=RuntimeWarning)
             p25_arr = np.nanpercentile(masked, 25, axis=0)
             p75_arr = np.nanpercentile(masked, 75, axis=0)
         p25_arr[valid_counts < min_n] = np.nan
@@ -221,23 +223,30 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
 
     fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
 
-    # Pressure als sekundaere Y-Achse
+    # Pressure als sekundaere Y-Achse — Crash-safe
     pressure_info = None
+    pressure_added = False
     if show_pressure:
-        p_curve, max_years, avail_periods = calculate_pressure_curve(df, smoothing_window=smoothing)
-        if p_curve:
-            fig.add_trace(go.Scatter(
-                x=x_days, y=p_curve, mode="lines",
-                line=dict(color=COLOR_PRESSURE, width=2),
-                name="Pressure", yaxis="y2",
-                hovertemplate="Pressure: %{y:+.2f}<extra></extra>",
-            ))
-            unavailable = [p for p in PRESSURE_PERIODS if p > max_years]
-            if unavailable and avail_periods:
+        try:
+            p_curve, max_years, avail_periods = calculate_pressure_curve(df, smoothing_window=smoothing)
+            if p_curve and len(p_curve) == 365 and avail_periods:
+                # NaN/None aus Curve entfernen damit Plotly nicht crasht
+                p_curve_clean = [float(v) if v is not None and not (isinstance(v, float) and np.isnan(v)) else None
+                                 for v in p_curve]
+                fig.add_trace(go.Scatter(
+                    x=x_days, y=p_curve_clean, mode="lines",
+                    line=dict(color=COLOR_PRESSURE, width=2),
+                    name="Pressure", yaxis="y2",
+                    hovertemplate="Pressure: %{y:+.2f}<extra></extra>",
+                    connectgaps=False,
+                ))
+                pressure_added = True
                 pressure_info = (
                     f"Pressure Chart über die letzten **{max(avail_periods)} Jahre** "
-                    f"(Datenreihe: {max_years} Jahre)."
+                    f"(Datenreihe: {max_years} Jahre, Lookback-Fenster: {avail_periods})."
                 )
+        except Exception as _e:
+            pressure_info = f"Pressure Chart konnte nicht berechnet werden: {_e}"
 
     fig = apply_se_theme(
         fig,
@@ -250,7 +259,7 @@ def build_yearly_chart(year_data, avg, std, df, ticker, smoothing,
     )
     fig.update_yaxes(title="Normalisiert (Start = 100)")
 
-    if show_pressure:
+    if show_pressure and pressure_added:
         fig.update_layout(
             yaxis2=dict(
                 title=dict(text="Pressure", font=dict(color=COLOR_PRESSURE, size=11)),
@@ -563,10 +572,12 @@ def build_monthly_bars(year_data, ticker):
     fig.add_trace(go.Bar(
         x=MONTH_NAMES_DE, y=avgs,
         marker=dict(color=colors),
-        text=[f"{v:+.2f}%<br>WR {wr:.0f}%" for v, wr in zip(avgs, win_rates)],
-        textposition="outside", textfont=dict(size=11, color="#c8d6e5"),
-        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<br>n=%{customdata}<extra></extra>",
-        customdata=ns,
+        text=[f"{v:+.2f}%" for v in avgs],
+        textposition="outside",
+        textfont=dict(size=11, color="#e2e8f0"),
+        cliponaxis=False,
+        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<br>WR: %{customdata[0]:.0f}%<br>n=%{customdata[1]}<extra></extra>",
+        customdata=list(zip(win_rates, ns)),
     ))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
@@ -576,7 +587,12 @@ def build_monthly_bars(year_data, ticker):
     ))
 
     fig = apply_se_theme(fig, title=f"{ticker} — Monats-Performance", height=420, show_legend=False)
-    fig.update_layout(hovermode="x unified")
+    # Y-Range erweitern damit Outside-Labels nicht abgeschnitten werden
+    _ymax = max(avgs) if avgs else 1
+    _ymin = min(avgs) if avgs else -1
+    _pad = (max(abs(_ymax), abs(_ymin)) * 0.25) or 1
+    fig.update_yaxes(range=[_ymin - _pad, _ymax + _pad])
+    fig.update_layout(hovermode="x unified", uniformtext=dict(mode="show", minsize=10))
     return fig
 
 
@@ -597,9 +613,12 @@ def build_quarterly_bars(year_data, ticker):
     fig = go.Figure()
     fig.add_trace(go.Bar(
         x=q_labels, y=avgs, marker=dict(color=colors),
-        text=[f"{v:+.2f}%<br>WR {wr:.0f}% · n={n}" for v, wr, n in zip(avgs, win_rates, ns)],
-        textposition="outside", textfont=dict(size=12, color="#c8d6e5"),
-        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<extra></extra>",
+        text=[f"{v:+.2f}%" for v in avgs],
+        textposition="outside",
+        textfont=dict(size=13, color="#e2e8f0"),
+        cliponaxis=False,
+        hovertemplate="<b>%{x}</b><br>Ø: %{y:+.2f}%<br>WR: %{customdata[0]:.0f}%<br>n=%{customdata[1]}<extra></extra>",
+        customdata=list(zip(win_rates, ns)),
     ))
     fig.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
 
@@ -609,7 +628,11 @@ def build_quarterly_bars(year_data, ticker):
     ))
 
     fig = apply_se_theme(fig, title=f"{ticker} — Quartals-Performance", height=360, show_legend=False)
-    fig.update_layout(hovermode="x unified")
+    _ymax = max(avgs) if avgs else 1
+    _ymin = min(avgs) if avgs else -1
+    _pad = (max(abs(_ymax), abs(_ymin)) * 0.25) or 1
+    fig.update_yaxes(range=[_ymin - _pad, _ymax + _pad])
+    fig.update_layout(hovermode="x unified", uniformtext=dict(mode="show", minsize=11))
     return fig
 
 
@@ -624,16 +647,32 @@ def build_monthly_heatmap(year_data, ticker):
 
     z_data = []
     y_labels = []
+    text_data = []
+    today_doy = datetime.now().timetuple().tm_yday
     for year in years:
         row = []
+        text_row = []
+        yd = year_data[year]
+        # Echte letzte Trading-Day-DOY dieses Jahres (kein Padding!)
+        ydays = yd.get("days", [])
+        last_real_doy = max(ydays) if ydays else 0
         for m in range(1, 13):
             s, e = MONTH_DOY[m]
-            yd = year_data[year]
+            # Aktuelles Jahr: Monate die noch komplett vor uns liegen -> NaN
+            # Plus: Monat in dem wir aktuell stehen oder der nach last_real_doy beginnt
+            if year == current_year and s > last_real_doy:
+                row.append(None)
+                text_row.append("")
+                continue
             start_val = yd["full_365"][s - 1]
             end_val = yd["full_365"][min(e - 1, 364)]
             ret = (end_val - start_val) / start_val * 100 if start_val != 0 else 0
+            # Aktueller Monat: nur wenn echte Daten vorhanden, mit "*" markieren
+            is_partial = (year == current_year and last_real_doy < e)
             row.append(round(ret, 2))
+            text_row.append(f"{ret:+.1f}%*" if is_partial else f"{ret:+.1f}%")
         z_data.append(row)
+        text_data.append(text_row)
         y_labels.append(str(year))
 
     from shared.constants import SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
@@ -645,7 +684,7 @@ def build_monthly_heatmap(year_data, ticker):
         y=y_labels,
         colorscale=colorscale,
         zmid=0,
-        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
+        text=text_data,
         texttemplate="%{text}",
         textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
@@ -1365,33 +1404,46 @@ def main():
             avg_v, std_v = vola_result
             fig_vol = go.Figure()
 
-            x_range = list(range(365))
+            # x = Kalendertag (1-basiert, passt zu MONTH_STARTS)
+            x_range = list(range(1, 366))
+
+            # Sigma-Band — NaN-tolerant: Plotly zeichnet Luecken via None
+            _upper = np.where(np.isnan(avg_v), np.nan, avg_v + std_v)
+            _lower = np.where(np.isnan(avg_v), np.nan, avg_v - std_v)
+            _band_y = (
+                [None if np.isnan(v) else float(v) for v in _upper]
+                + [None if np.isnan(v) else float(v) for v in _lower[::-1]]
+            )
             fig_vol.add_trace(go.Scatter(
                 x=x_range + x_range[::-1],
-                y=(avg_v + std_v).tolist() + (avg_v - std_v).tolist()[::-1],
+                y=_band_y,
                 fill="toself", fillcolor="rgba(0,212,170,0.08)",
                 line=dict(width=0), showlegend=False, hoverinfo="skip",
             ))
 
+            _avg_y = [None if np.isnan(v) else float(v) for v in avg_v]
             fig_vol.add_trace(go.Scatter(
-                x=x_range, y=avg_v.tolist(),
+                x=x_range, y=_avg_y,
                 name=f"Ø {vola_window}d Vola",
                 line=dict(color=SE_COLORS["accent"], width=2.5),
                 hovertemplate="Tag %{x}: %{y:.1f}%<extra></extra>",
+                connectgaps=False,
             ))
 
+            # Aktuelles Jahr — KEIN Stretching, echte day_of_year nutzen
             if show_current and _cur_year in year_data:
                 _cur_vola = compute_rolling_volatility(df, _cur_year, window=vola_window)
-                if _cur_vola is not None:
-                    _today_doy = min(datetime.now().timetuple().tm_yday, 365)
-                    _n = len(_cur_vola)
-                    _x_orig = np.linspace(0, 364, _n)
-                    _interp = np.interp(np.arange(365), _x_orig, pd.Series(_cur_vola).ffill().bfill().values)
+                _cur_year_df = df[df["year"] == _cur_year] if "year" in df.columns else None
+                if _cur_vola is not None and _cur_year_df is not None and len(_cur_year_df) >= vola_window + 5:
+                    _doys_cur = _cur_year_df["day_of_year"].values
+                    _vola_clean = pd.Series(_cur_vola).ffill().bfill().values
+                    _n_min = min(len(_doys_cur), len(_vola_clean))
                     fig_vol.add_trace(go.Scatter(
-                        x=list(range(min(_today_doy, 365))),
-                        y=_interp[:_today_doy].tolist(),
+                        x=_doys_cur[:_n_min].tolist(),
+                        y=_vola_clean[:_n_min].tolist(),
                         name=f"{_cur_year} (aktuell)",
                         line=dict(color=SE_COLORS["current_year"], width=2.5),
+                        hovertemplate=f"{_cur_year} Tag %{{x}}: %{{y:.1f}}%<extra></extra>",
                     ))
 
             fig_vol.update_xaxes(tickvals=MONTH_STARTS, ticktext=MONTH_LABELS)

@@ -167,8 +167,8 @@ def build_gauge(score, p_value=None):
     fig.update_layout(
         paper_bgcolor=SE_COLORS["bg"],
         plot_bgcolor=SE_COLORS["bg"],
-        height=160,
-        margin=dict(l=16, r=16, t=24, b=6),
+        height=140,
+        margin=dict(l=8, r=8, t=18, b=4),
     )
 
     return fig
@@ -207,11 +207,12 @@ def render_significance_section(results, expander_title="📊 Statistische Signi
 
     with st.expander(expander_title, expanded=expanded):
         n = len(results)
-        cpr = min(cols_per_row, n)
+        # cpr strikt: bei <= cols_per_row Items immer EINE Reihe mit n Spalten
+        cpr = max(1, min(int(cols_per_row), n))
 
         for row_start in range(0, n, cpr):
             row_end = min(row_start + cpr, n)
-            cols = st.columns(cpr)
+            cols = st.columns(cpr, gap="small")
 
             for idx, col in zip(range(row_start, row_end), cols):
                 r = results[idx]

@@ -373,35 +373,77 @@ def compute_avg_rolling_volatility(
     n_points: int = 365,
 ) -> Optional[tuple[np.ndarray, np.ndarray]]:
     """
-    Mehrere Jahre → (Ø Vola, Std), interpoliert auf n_points.
+    Mehrere Jahre → (Ø Vola, Std) je Kalendertag (1..n_points).
+
+    Mapped vola anhand des echten day_of_year (kein Stretching!) und mittelt
+    NaN-aware ueber alle Jahre. Aktuelle (unvollstaendige) Jahre werden nur
+    bis zu ihrem letzten Trading Tag verwendet.
 
     Returns:
-        (avg_vola, std_vola) oder None bei zu wenig Daten
+        (avg_vola, std_vola) — beide np.array(n_points,) — oder None
     """
-    all_volas = []
+    from datetime import datetime as _dt
+    cur_year = _dt.now().year
 
-    for year in years:
-        vola = compute_rolling_volatility(df, year, window)
-        if vola is None:
+    matrix = np.full((len(years), n_points), np.nan, dtype=float)
+
+    for i, year in enumerate(years):
+        year_df = (df[df["year"] == year]
+                   if "year" in df.columns
+                   else df[df.index.year == year]).copy()
+        if len(year_df) < window + 5:
             continue
 
-        # Auf n_points interpolieren
-        n_orig = len(vola)
-        if n_orig < 10:
-            continue
+        log_ret = (year_df["log_return"]
+                   if "log_return" in year_df.columns
+                   else year_df["return"])
+        rolling_std = log_ret.rolling(
+            window=window, min_periods=max(window // 2, 5)
+        ).std()
+        ann = np.sqrt(len(year_df))
+        # Backfill der Warmup-NaN am Jahresanfang mit erstem gueltigen Wert
+        vola = (rolling_std * ann * 100).bfill().values
 
-        x_orig = np.linspace(0, n_points - 1, n_orig)
-        x_new = np.arange(n_points)
-        # NaN am Anfang (Rolling Warmup) durch erste gültige Werte ersetzen
-        vola_clean = pd.Series(vola).ffill().bfill().values
-        interp = np.interp(x_new, x_orig, vola_clean)
-        all_volas.append(interp)
+        # day_of_year aus Index oder Spalte
+        if "day_of_year" in year_df.columns:
+            doys = year_df["day_of_year"].values
+        else:
+            doys = pd.to_datetime(year_df.index).dayofyear.values
 
-    if len(all_volas) < 2:
+        # Aktuelles Jahr: niemals ueber today extrapolieren
+        if year == cur_year:
+            today_doy = _dt.now().timetuple().tm_yday
+            mask_valid = doys <= today_doy
+            doys = doys[mask_valid]
+            vola = vola[mask_valid]
+
+        for d, v in zip(doys, vola):
+            if 1 <= d <= n_points and not np.isnan(v):
+                matrix[i, d - 1] = v
+
+        # Forward-fill innerhalb des Jahres (nur ueber existierende Tage)
+        # damit Lueckentage zwischen zwei Trading-Tagen den letzten Wert tragen
+        last = np.nan
+        first_day = int(doys.min()) - 1 if len(doys) else 0
+        last_day = (int(doys.max()) - 1) if len(doys) else -1
+        for d in range(first_day, min(last_day + 1, n_points)):
+            if not np.isnan(matrix[i, d]):
+                last = matrix[i, d]
+            elif not np.isnan(last):
+                matrix[i, d] = last
+
+    valid_counts = np.sum(~np.isnan(matrix), axis=0)
+    if np.max(valid_counts) < 2:
         return None
 
-    vola_matrix = np.array(all_volas)
-    avg_vola = np.mean(vola_matrix, axis=0)
-    std_vola = np.std(vola_matrix, axis=0)
+    import warnings
+    with warnings.catch_warnings(), np.errstate(all="ignore"):
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        avg_vola = np.nanmean(matrix, axis=0)
+        std_vola = np.nanstd(matrix, axis=0)
+
+    # Tage mit weniger als 2 gueltigen Jahren -> NaN (statt 0)
+    avg_vola[valid_counts < 2] = np.nan
+    std_vola[valid_counts < 2] = np.nan
 
     return avg_vola, std_vola
