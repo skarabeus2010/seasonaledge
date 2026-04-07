@@ -91,6 +91,7 @@
       <h1 class="page-title"><b>Wochentage</b> — <span id="title-ticker">^GSPC</span></h1>
       <p class="page-caption" id="page-caption">Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt</p>
       <div class="trading-day-header" id="trading-day-header"></div>
+      <div class="kpi-row" id="trading-day-overview" style="margin-bottom:1rem"></div>
       <div class="info-box" id="filter-info" style="display:none"></div>
 
       <!-- 1. Kumulierter Wochenverlauf -->
@@ -1645,6 +1646,101 @@
     // Indikator-Filter (Technische Filter)
     var getIndicatorFilters = SA.indicators.renderFilterUI('indicator-filters', function(){ if (WD.getRawRows().length) renderAll(); });
 
+    // ── Trading Day Header + Übersicht (mit TWOY) ────────────────
+    function renderHeaderAndOverview(ticker, rows) {
+      var headerEl = document.getElementById('trading-day-header');
+      var overviewEl = document.getElementById('trading-day-overview');
+      if (!headerEl || !overviewEl) return;
+
+      var weekdays = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var weekdaysFull = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+      var pad = function(n){return n<10?'0'+n:''+n;};
+      var today = new Date();
+      var weekday = weekdays[today.getDay()];
+      var weekdayFull = weekdaysFull[today.getDay()];
+      var dateStr = today.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+      var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
+
+      // Exchange detection
+      var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker) : 'NYSE';
+      var isTD = function(ds) {
+        if (window.SA && SA.holidays) return SA.holidays.isTradingDay(ds, exchange);
+        var d = new Date(ds.substring(0,4)+'/'+ds.substring(5,7)+'/'+ds.substring(8,10));
+        var dow = d.getDay();
+        return dow >= 1 && dow <= 5;
+      };
+
+      // TDOM = Anzahl Trading Days seit Monatsanfang inkl. heute (wenn HT)
+      // TDOY = Anzahl Trading Days seit Jahresanfang inkl. heute
+      // TDOM_TOTAL = totale Trading Days im aktuellen Monat
+      // TDOY_TOTAL = totale Trading Days im aktuellen Jahr
+      var tdomCount = 0, tdomTotal = 0, tdoyCount = 0, tdoyTotal = 0;
+
+      // Iteriere Tag fuer Tag durch den aktuellen Monat
+      var d = new Date(today.getFullYear(), today.getMonth(), 1);
+      while (d.getMonth() === today.getMonth()) {
+        var ds = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+        if (isTD(ds)) {
+          tdomTotal++;
+          if (ds <= todayStr) tdomCount++;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      // Iteriere Tag fuer Tag durch das aktuelle Jahr
+      var dy = new Date(today.getFullYear(), 0, 1);
+      while (dy.getFullYear() === today.getFullYear()) {
+        var dys = dy.getFullYear() + '-' + pad(dy.getMonth()+1) + '-' + pad(dy.getDate());
+        if (isTD(dys)) {
+          tdoyTotal++;
+          if (dys <= todayStr) tdoyCount++;
+        }
+        dy.setDate(dy.getDate() + 1);
+      }
+
+      // TWOY = ISO-Wochenzahl, gezaehlt nur bis heute
+      // Plus: TWOY_TOTAL = Gesamtzahl ISO-Wochen die mind. 1 HT haben in diesem Jahr
+      var isoWeek = function(date) {
+        var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        var dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart)/86400000) + 1)/7);
+      };
+      var twoyCount = isoWeek(today);
+      // ISO-Wochen im Jahr: 52 oder 53 — pruefe via 28. Dezember
+      var dec28 = new Date(today.getFullYear(), 11, 28);
+      var twoyTotal = isoWeek(dec28);
+
+      // Quartal
+      var quarter = Math.floor(today.getMonth()/3) + 1;
+      // Cycle Year (Wahljahr=1, Nachwahl=2, Zwischenwahl=3, Vorwahl=4)
+      var cycle = ((today.getFullYear() - 2020) % 4 + 4) % 4 + 1;
+      var cycleNames = { 1:'Wahljahr', 2:'Nachwahljahr', 3:'Zwischenwahljahr', 4:'Vorwahljahr' };
+
+      // ── Header-Zeile ──
+      headerEl.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' · ' + ticker +
+        ' · TDOM ' + tdomCount + '/' + tdomTotal +
+        ' · TDOY ' + tdoyCount + '/' + tdoyTotal +
+        ' · TWOY ' + twoyCount + '/' + twoyTotal;
+
+      // ── Übersicht-Karten ──
+      var card = function(label, value, color) {
+        var clr = color || '#e2e8f0';
+        return '<div class="kpi-card">' +
+          '<div class="lbl">'+label+'</div>' +
+          '<div class="val" style="color:'+clr+'">'+value+'</div>' +
+        '</div>';
+      };
+      overviewEl.innerHTML =
+        card('Datum', weekdayFull + ' ' + dateStr) +
+        card('Ticker · Börse', ticker + ' · ' + exchange) +
+        card('TDOM', tdomCount + ' <span style="font-size:.65rem;color:#8899aa">/ ' + tdomTotal + '</span>', '#F1C40F') +
+        card('TDOY', tdoyCount + ' <span style="font-size:.65rem;color:#8899aa">/ ' + tdoyTotal + '</span>', '#F1C40F') +
+        card('TWOY', twoyCount + ' <span style="font-size:.65rem;color:#8899aa">/ ' + twoyTotal + '</span>', '#F1C40F') +
+        card('Quartal', 'Q' + quarter) +
+        card('Cycle ' + today.getFullYear(), cycleNames[cycle], WD.CYCLE_COLORS[cycle]);
+    }
+
     // ── fetchOHLC ────────────────────────────────────────────────
     function fetchOHLC(ticker, dateFilter) {
       var allRows = [];
@@ -1704,13 +1800,8 @@
       document.querySelectorAll('#cycle-filter input:checked').forEach(function(cb){ cycleFilter.push(parseInt(cb.dataset.cycle)); });
       var monthFilter = getSelectedMonths();
 
-      // Trading Day Header
-      try {
-        SA.renderTradingDayHeader(document.getElementById('trading-day-header'), ticker, rawRows);
-      } catch (e) {
-        var hdr = document.getElementById('trading-day-header');
-        hdr.textContent = 'Heute: ' + new Date().toLocaleDateString('de-DE');
-      }
+      // Trading Day Header + Übersicht (lokal mit TWOY)
+      renderHeaderAndOverview(ticker, rawRows);
 
       destroyAll();
 
