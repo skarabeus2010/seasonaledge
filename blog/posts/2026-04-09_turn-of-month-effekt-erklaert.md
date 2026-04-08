@@ -43,6 +43,14 @@ Anders gesagt: **Die TOM-Tage machen praktisch den gesamten Marktertrag** — di
 
 Im Chart siehst du das Muster sofort: Die Kurve fällt im letzten Drittel des Monats ab, dreht in den letzten 3 Tagen scharf nach oben und setzt diesen Aufschwung in den ersten 3 Tagen des Folgemonats fort. Genau diese 6 Tage bilden den TOM-Effekt.
 
+## Heatmap: Welche Monate haben den stärksten TOM-Effekt?
+
+Der Durchschnitt verschleiert, dass der TOM-Effekt nicht in jedem Monat gleich stark ist. Die folgende Heatmap zeigt für jede Monat-×-TDOM-Kombination den durchschnittlichen Tagesreturn:
+
+![Turn-of-Month Heatmap S&P 500 — Monat × TDOM-Position](turn-of-month-heatmap.png)
+
+Auffällig: Die TOM-Tage sind in **fast jedem Monat positiv** (grüne Felder am rechten und linken Rand jeder Zeile), aber besonders ausgeprägt in **November, Dezember und April**. Im September — dem statistisch schwächsten Monat — ist der Effekt am schwächsten und teilweise sogar negativ. Der TOM-Effekt wird also durch die saisonale Gesamtlage moduliert.
+
 ## Warum existiert der Effekt?
 
 Es gibt drei plausible Erklärungen, die sich gegenseitig nicht ausschließen:
