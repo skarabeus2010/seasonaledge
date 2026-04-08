@@ -122,6 +122,12 @@
       <p class="page-caption" id="page-caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Drawdown &amp; Volatilit&auml;t</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- 0. Anomalie-Radar (KI Quick-Check) -->
+      <details open id="sec-anomaly" style="display:none">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
       <!-- 1. Hauptchart -->
       <details open id="sec-main" style="display:none">
         <summary>Saisonaler Jahresverlauf</summary>
@@ -292,6 +298,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/outlier.js"></script>
 
@@ -324,7 +331,7 @@
 
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function showSections(show) {
-      ['sec-main','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap','sec-drawdown','sec-vola','sec-dd-cycle'].forEach(function(id){
+      ['sec-anomaly','sec-main','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap','sec-drawdown','sec-vola','sec-dd-cycle'].forEach(function(id){
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       document.getElementById('dd-header').style.display = show ? '' : 'none';
@@ -985,6 +992,50 @@
         tooltip: { enabled: false }
       };
     }
+
+    // ── Render: Anomalie-Radar (KI Quick-Check) ─────────────────────────────
+    // Nutzt SA.decadeCompute.fromPrices() — Z-Score der letzten 10d-Rendite
+    // vs historische 10d-Returns am gleichen Kalenderzeitpunkt.
+    JZ.renderAnomaly = function(rows, ticker) {
+      var el = document.getElementById('content-anomaly');
+      if (!el) return;
+      var anom = null;
+      try {
+        if (window.SA && SA.decadeCompute && rows && rows.length >= 200) {
+          var dec = SA.decadeCompute.fromPrices(rows.slice(), ticker);
+          anom = dec ? dec.anomaly : null;
+        }
+      } catch (e) { console.warn('[jahreszyklus] anomaly compute failed:', e); }
+
+      if (!anom || anom.n_comparisons === 0) {
+        el.innerHTML = '<p style="color:var(--muted);font-size:.875rem">Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).</p>';
+        return;
+      }
+
+      var col = anom.score >= 70 ? 'var(--red)' : anom.score >= 40 ? '#fbbf24' : 'var(--green)';
+      var icon = anom.score >= 70 ? '🔴' : anom.score >= 40 ? '🟡' : '🟢';
+      var label = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
+      var fmtPct = function(v, dp){ if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(dp || 2) + '%'; };
+      var retCls = anom.return_10d >= 0 ? 'green' : 'red';
+
+      var html = '<div style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:center">';
+      // Linke Seite: Score Hero
+      html += '<div style="text-align:center;min-width:140px">';
+      html += '<div style="font-size:2.75rem;font-weight:800;font-family:var(--f-m);line-height:1;color:'+col+'">'+anom.score+'<span style="font-size:1.1rem;color:var(--muted)"> / 100</span></div>';
+      html += '<div style="font-size:.875rem;font-weight:700;margin-top:.35rem;text-transform:uppercase;letter-spacing:.06em;color:'+col+'">'+icon+' '+label+'</div>';
+      html += '</div>';
+      // Rechte Seite: KPIs + Erklaerung
+      html += '<div>';
+      html += '<div class="kpi-row" style="margin-bottom:.6rem">';
+      html += '<div class="kpi"><div class="kpi-label">10d-Rendite '+ticker+'</div><div class="kpi-value '+retCls+'">'+fmtPct(anom.return_10d,2)+'</div></div>';
+      html += '<div class="kpi"><div class="kpi-label">Historisch &Oslash; (gleiche Kalenderzeit)</div><div class="kpi-value">'+fmtPct(anom.avg_10d,2)+'</div></div>';
+      html += '<div class="kpi"><div class="kpi-label">Vergleichsfenster</div><div class="kpi-value">'+anom.n_comparisons+'</div></div>';
+      html += '</div>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin:0;line-height:1.5">Z-Score-Vergleich: Wie weit weicht die letzte 10-Tages-Rendite vom historischen Schnitt am gleichen Kalenderzeitpunkt ab? <b>Score &ge;40</b> = leicht anomal, <b>&ge;70</b> = stark anomal. Hoher Score bedeutet nicht zwingend bullish oder bearish &mdash; nur, dass der aktuelle Verlauf ungew&ouml;hnlich ist und einen Blick wert.</p>';
+      html += '</div>';
+      html += '</div>';
+      el.innerHTML = html;
+    };
 
     // ── Render: Hauptchart (Saisonalverlauf) ────────────────────────────────
     JZ.renderMain = function(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure) {
@@ -2046,6 +2097,7 @@
       function safeRender(name, fn) {
         try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
       }
+      safeRender('anomaly',       function(){ JZ.renderAnomaly(_cachedRows, ticker); });
       safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
       safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
       safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure, showCurrent); });
