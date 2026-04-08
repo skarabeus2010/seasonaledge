@@ -1,7 +1,7 @@
 /**
  * SeasonAlpha Guided Tour — Step-Definitionen
  *
- * 22 Schritte über 11 Pages. Multi-Page-Navigation via ?tour=step:N
+ * 23 Schritte über 11 Pages. Multi-Page-Navigation via ?tour=step:N
  * Der tour.js Resume-Handler liest diesen Query-Param beim Page-Load und
  * startet die Tour ab dem passenden Step.
  *
@@ -21,7 +21,7 @@ SA.TOUR_STEPS = [
     element: '.hero__content',
     popover: {
       title: 'Willkommen bei SeasonAlpha',
-      description: 'Datengetriebene Börsenanalyse mit 131 Jahren saisonaler Marktdaten. In 22 Schritten zeigen wir dir die wichtigsten Features.',
+      description: 'Datengetriebene Börsenanalyse mit 131 Jahren saisonaler Marktdaten. In 23 Schritten zeigen wir dir die wichtigsten Features.',
       side: 'bottom',
       align: 'center'
     }
@@ -47,6 +47,16 @@ SA.TOUR_STEPS = [
       description: 'Wähle einen beliebigen Ticker: SPY, AAPL, ^GSPC, BTC-USD, TSLA, ^DJI, … Alle Karten aktualisieren sich automatisch.',
       side: 'right',
       align: 'start'
+    }
+  },
+  {
+    page: '/dashboard',
+    element: '#trading-day-header',
+    popover: {
+      title: 'Wo bist du im Zyklus?',
+      description: 'Der Header zeigt alle saisonalen Koordinaten: <b>TDOM</b> = Trading Day of Month (Handelstag im Monat, z. B. 6/21), <b>TWOY</b> = Trading Week of Year, <b>TDOY</b> = Trading Day of Year, <b>Q</b> = Quartal, <b>MidTerm</b> = Präsidentenzyklus-Phase (Wahljahr, Nachwahl-, Midterm-, Vorwahljahr). Börsen-spezifisch berechnet (NYSE, XETRA, LSE).',
+      side: 'bottom',
+      align: 'center'
     }
   },
   {
@@ -88,7 +98,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'end'
     },
-    navigateAfter: { url: '/dekadenzyklus', step: 7 }
+    navigateAfter: { url: '/dekadenzyklus', step: 8 }
   },
 
   // ── Phase 3: Dekadenzyklus ───────────────────────────────────────────
@@ -101,7 +111,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/jahreszyklus', step: 8 },
+    navigateAfter: { url: '/jahreszyklus', step: 9 },
     optional: true
   },
 
@@ -135,7 +145,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/zentralbanken', step: 11 },
+    navigateAfter: { url: '/zentralbanken', step: 12 },
     optional: true
   },
 
@@ -149,7 +159,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/feiertage', step: 12 },
+    navigateAfter: { url: '/feiertage', step: 13 },
     optional: true
   },
 
@@ -163,7 +173,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/trifecta', step: 13 },
+    navigateAfter: { url: '/trifecta', step: 14 },
     optional: true
   },
 
@@ -177,7 +187,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/spot-vol-beta', step: 14 },
+    navigateAfter: { url: '/spot-vol-beta', step: 15 },
     optional: true
   },
 
@@ -191,7 +201,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/plain-vanilla', step: 15 },
+    navigateAfter: { url: '/plain-vanilla', step: 16 },
     optional: true
   },
 
@@ -205,7 +215,7 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/ki-saisonalitaet', step: 16 },
+    navigateAfter: { url: '/ki-saisonalitaet', step: 17 },
     optional: true
   },
 
@@ -219,7 +229,7 @@ SA.TOUR_STEPS = [
       side: 'bottom',
       align: 'start'
     },
-    navigateAfter: { url: '/backtest-engine', step: 17 },
+    navigateAfter: { url: '/backtest-engine', step: 18 },
     optional: true
   },
 
@@ -263,7 +273,7 @@ SA.TOUR_STEPS = [
       side: 'bottom',
       align: 'center'
     },
-    navigateAfter: { url: '/dashboard?tour=done', step: 21 },
+    navigateAfter: { url: '/dashboard?tour=done', step: 22 },
     optional: true
   },
 
