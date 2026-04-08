@@ -73,16 +73,24 @@ SA.strategy = {
   },
 
   _makeTrade: function(rows, entryIdx, exitIdx) {
-    if (entryIdx < 0 || exitIdx < 0 || exitIdx <= entryIdx) return null;
-    if (entryIdx >= rows.length || exitIdx >= rows.length) return null;
+    if (entryIdx < 0 || entryIdx >= rows.length) return null;
+    // Exit in der Zukunft → offener Trade, Mark-to-Market mit letztem verfuegbaren Kurs
+    var open = false;
+    if (exitIdx < 0 || exitIdx >= rows.length) {
+      exitIdx = rows.length - 1;
+      open = true;
+    }
+    if (exitIdx <= entryIdx) return null;
     var pe = rows[entryIdx].close, px = rows[exitIdx].close;
     if (pe <= 0) return null;
-    return {
+    var trade = {
       entry_date: rows[entryIdx].date, exit_date: rows[exitIdx].date,
       entry_price: Math.round(pe * 100) / 100,
       exit_price: Math.round(px * 100) / 100,
       return_pct: Math.round((px - pe) / pe * 10000) / 100
     };
+    if (open) trade.open = true;
+    return trade;
   },
 
   /** Signal-only Version: gibt auch Entry/Exit zurueck wenn der andere fehlt */
@@ -552,7 +560,10 @@ SA.strategy = {
   buildEquityCurve: function(trades, startCapital) {
     startCapital = startCapital || 1000;
     if (!trades || !trades.length) return [];
-    var sorted = trades.slice().sort(function(a, b) { return a.entry_date < b.entry_date ? -1 : 1; });
+    // Offene Trades fliessen NICHT in die Equity-Kurve ein (mark-to-market wuerde verzerren)
+    var closed = trades.filter(function(t) { return !t.open; });
+    if (!closed.length) return [];
+    var sorted = closed.slice().sort(function(a, b) { return a.entry_date < b.entry_date ? -1 : 1; });
     var equity = startCapital;
     var curve = [{ date: sorted[0].entry_date, value: equity }];
     sorted.forEach(function(t) {
@@ -566,6 +577,9 @@ SA.strategy = {
   computeStats: function(trades, startCapital) {
     startCapital = startCapital || 1000;
     if (!trades || !trades.length) return null;
+    // Offene Trades aus Statistik ausschliessen (CAGR/Sharpe/PF nur fuer geschlossene Trades)
+    trades = trades.filter(function(t) { return !t.open; });
+    if (!trades.length) return null;
     var returns = trades.map(function(t) { return t.return_pct; });
     var n = returns.length;
     var wins = returns.filter(function(r) { return r > 0; }).length;

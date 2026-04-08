@@ -354,20 +354,22 @@
     function renderSignificance(data, strategy) {
       var el = document.getElementById('content-significance');
       var sec = document.getElementById('sec-significance');
-      if (!data || !data.trades || data.trades.length < 10) {
+      // Offene Trades aus Signifikanz-Test ausschliessen (nur geschlossene haben realisierte Returns)
+      var closedTrades = (data && data.trades) ? data.trades.filter(function(t){return !t.open}) : [];
+      if (closedTrades.length < 10) {
         sec.style.display = 'none';
         return;
       }
       sec.style.display = '';
 
       // Gruppe 1: Alle Trade-Returns → t-Test gegen 0
-      var allReturns = data.trades.map(function(t) { return t.return_pct; });
+      var allReturns = closedTrades.map(function(t) { return t.return_pct; });
 
       // Gruppe 2: Gewinner vs. Verlierer Monate (Saisonalitaet)
       var byMonth = {};
       var MONTHS = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-      for (var i = 0; i < data.trades.length; i++) {
-        var t = data.trades[i];
+      for (var i = 0; i < closedTrades.length; i++) {
+        var t = closedTrades[i];
         var d = new Date(t.entry_date);
         if (isNaN(d)) continue;
         var mKey = MONTHS[d.getMonth()];
@@ -400,9 +402,13 @@
       var html='<table class="trade-table"><tr><th>Einstieg</th><th>Ausstieg</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr>';
       data.trades.forEach(function(t){
         var clr=t.return_pct>=0?'var(--green)':'var(--red)';
-        html+='<tr><td>'+t.entry_date+'</td><td>'+t.exit_date+'</td>';
+        var rowAttr=t.open?' style="background:rgba(232,168,32,.06)"':'';
+        var openBadge=t.open?' <span style="color:var(--accent);font-size:.65rem;font-weight:700;letter-spacing:.04em;padding:.05rem .35rem;border:1px solid rgba(232,168,32,.4);border-radius:4px;margin-left:.35rem">OFFEN</span>':'';
+        var exitLabel=t.open?(t.exit_date+' \u00b7 mark-to-market'):t.exit_date;
+        var rendLabel=(t.return_pct>=0?'+':'')+t.return_pct.toFixed(2)+'%'+(t.open?' \u00b7 unrealisiert':'')+(t.stopped?' \u26D4':'');
+        html+='<tr'+rowAttr+'><td>'+t.entry_date+openBadge+'</td><td>'+exitLabel+'</td>';
         html+='<td>'+t.entry_price.toFixed(2)+'</td><td>'+t.exit_price.toFixed(2)+'</td>';
-        html+='<td style="color:'+clr+'">'+(t.return_pct>=0?'+':'')+t.return_pct.toFixed(2)+'%'+(t.stopped?' \u26D4':'')+'</td></tr>';
+        html+='<td style="color:'+clr+'">'+rendLabel+'</td></tr>';
       });
       html+='</table>';
       el.innerHTML=html;
