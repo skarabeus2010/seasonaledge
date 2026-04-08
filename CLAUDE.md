@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.5 | 2026-04-08 | Details → `docs/`
+> Version 27.6 | 2026-04-08 (Nachmittag) | Details → `docs/`
 
 
 ## Projekt
@@ -311,6 +311,12 @@ if _project_dir not in sys.path:
 | Plain Vanilla offene Trades | `_makeTrade` in `strategy-compute.js` erkennt offene Trades: Wenn Entry existiert aber Exit in Zukunft liegt → letzter verfügbarer Kurs als Mark-to-Market-Exit + `trade.open = true`. `computeStats` + `buildEquityCurve` + Significance-Test filtern offene Trades (keine verzerrten KPIs durch unrealisierte Returns). `renderTradeTable` zeigt "OFFEN"-Badge + gold Background + "· mark-to-market"/"· unrealisiert" Suffixe. Beispiel Sell-in-May 2025: Entry 31.10.2025, Exit 3.HT Mai 2026 → sichtbar im Trade-Table, aber NICHT in den Stats. |
 | Dashboard-Card Style V3 Ultra | Alle Cards nutzen `background:var(--card)` (#0a0a0e), `border:1px solid var(--border)`, `padding:1rem` (symmetrisch). KEIN `linear-gradient(135deg,#0f1923,#131d2a)` — das ist "Streamlit-Style". Alle Texte via `var(--text)/var(--dim)/var(--muted)`, alle Farben via `var(--green)/var(--red)/var(--accent)`. Hover-Border: `var(--accent-g)`. Ausnahme: Crash-Ampel Radial-Gradients (plastische Ampel-Optik bleibt). |
 | Two-Week Phase Badge-Pattern | Bei Cards wo ein Chart-Element (z.B. gelber Balken) hervorgehoben ist: Kleines gelbes Quadrat + Label "im Chart" neben dem Headline-Text. `<span style="display:inline-flex;gap:.35rem;font-size:.6875rem;text-transform:uppercase"><span style="width:14px;height:10px;background:{COL};border-radius:2px"></span>im Chart</span>`. Schafft visuelle Verbindung ohne Text. |
+| Sidebar Collapse System | `landing/css/app.css` + `landing/js/app.js` `initSidebarToggle()`. **Wide ≥1280px Push-Modus**: Toggle togglet `body.sa-sidebar-collapsed` → Grid schrumpft auf `0 1fr`, Sidebar fadet weg. **Narrow <1280px Overlay-Modus**: Sidebar default versteckt (`translateX(-100%)`), per Toggle als `position:fixed` Drawer von links rein, Backdrop dimmt, ESC/Backdrop schliessen. State per `localStorage('sa-sidebar-collapsed')` persistent ueber Page-Wechsel. Toggle wird via JS dynamisch ins DOM injiziert (`<button class="sa-sb-toggle">`), keine HTML-Aenderung an Pages noetig. Dashboard ohne `<aside class="sidebar">` → `initSidebarToggle()` returnt early. |
+| Glaettung an Render-Zeit (Dekadenzyklus) | Hardcoded `_movingAvg(avgCurve, 5)` aus `decade-compute.js` ENTFERNT. Stattdessen: Slider in der Sidebar `id="sl-smooth"` (1-15 step 2 default 1), `renderMainChart()` glaettet die `d.avg_curve` zur Renderzeit via `SA.decadeCompute._movingAvg(arr, smoothWin)`. Konfidenzband (`±1σ`) wird AUF die geglaettete Linie gelegt damit Sigma und Avg konsistent. User kann Glaettung live aendern ohne Recompute. |
+| Year-Chart Rebase auf Fenster-Anfang | Im Dashboard `renderYearChart()`: Beide Serien (Avg + Current Year) werden am Fenster-Start auf 100 rebased: `100 * raw / value_at_windowstart`. Vorher zeigte das `-1/+3 Monate` Fenster Werte ab Jan 1 = 100 (irrefuehrend, Linien starten irgendwo). Neu: beide Linien starten sichtbar bei 100, Y-Achse zoomt enger, Avg-Trend (~+7%) wird sichtbar. Y-Achsen-Titel: `'Fenster-Anfang = 100'`. Tooltip zeigt absoluten Wert + Delta-%: `'103.4 (+3.40%)'`. DD-Chart bleibt unveraendert (DD ist konzeptionell schon relativ). |
+| Performance-Pattern: Staged Initial-Render | Bei Pages mit vielen Charts (z.B. dekadenzyklus.html mit 6+): `renderAllStaged()` splittet Initial-Render in Phasen via `setTimeout`: Phase 1 sync (Above-Fold), Phase 2 +40ms, Phase 3 +140ms, Phase 4 +280ms (Below-Fold). `_stagedTimers[]` Array fuer Cancel-Unterstuetzung — Event-getriebene `renderAll()` (synchron) cleart laufende Timer via `_clearStaged()`, damit Phase 4 nicht mit veraltetem State rendert. Page wird nach ~150ms interaktiv statt nach ~800ms. |
+| Performance-Pattern: Ticker-Cache In-Memory | `var tickerCache = {}` lokal pro Page. Beim erfolgreichen Laden: `tickerCache[ticker] = {D, rawRows}`. In `loadTicker()` direkt nach Trim: `if(tickerCache[ticker]){var c=tickerCache[ticker]; D=c.D; rawRows=c.rawRows; init(); return;}`. Spart bei Rueckwechsel zu schon geladenem Ticker den kompletten Fetch + `fromPrices` (~500-800ms bei ^DJI). |
+| Performance-Pattern: Default minimal sichtbar | Wenn ein Chart viele Default-Linien zeigen kann (z.B. 10 Dekaden im Dekadenzyklus): Default nur die aktuelle Kohorte aktivieren (`cb.checked = (i === D.current_digit)`), Master-Toggle "Alle/Keine" startet unchecked. User kann instant alle aktivieren. Spart Initial-Render-Zeit + reduziert Visual Clutter. |
 
 ## Architektur-Prinzipien
 
@@ -528,6 +534,14 @@ Bei Fehlern:
 - [x] **2026-04-08** 5 neue Blog-Posts: Dashboard-Launch, Sell-in-May 2026, TOM erklärt, Tesla vs Apple Mai, Präsidentenzyklus Tutorial, Anomalie-Radar erklärt
 - [x] **2026-04-08** 7 neue Screenshots in `blog/posts/images/` (Dashboard-Hero/Twoweek + 6 Aprilpost-Bilder + SAP-Anomaly-Beispiel)
 - [x] **2026-04-08** Präsidentenzyklus-Tutorial: Schritt 1 (Cycle-Position) klarer formuliert (`Jahr mod 4` statt verwirrender Formel)
+- [x] **2026-04-08** Sidebar Collapse System (globales CSS + JS `initSidebarToggle`, 1280px Breakpoint, localStorage-Persistenz, Toggle-Button dynamisch injiziert, Dashboard-safe)
+- [x] **2026-04-08** Dekadenzyklus: Anomalie-Radar nach oben verschoben (via Shared-Renderer) + Glättungs-Slider statt hardcoded 5-Tage MA
+- [x] **2026-04-08** Dekadenzyklus: 4 KPI-Kacheln unter Drawdown-Chart (Aktueller DD, Max DD {year}, Ø DD in x{digit}, Max DD in x{digit}) mit dynamischem Year/Digit
+- [x] **2026-04-08** Dekadenzyklus: Performance-Optimierung (Default nur aktuelle Dekade + Ticker-Cache in-memory + Staged Initial-Render in 4 Phasen)
+- [x] **2026-04-08** Dashboard: Year-Chart rebased auf Fenster-Anfang = 100 (fixt "Linien starten nicht bei 100"-Bug + macht Avg-Linie sichtbar dynamisch)
+
+### ⚠️ OFFEN — Als nächstes (Sidebar-Plan bereit zur Abholung)
+- [ ] **Mobile Responsiveness Fix** — Plan liegt in `C:\Users\HeikoSeibel\.claude\plans\humming-juggling-hinton.md`. 6 kritische Bugs + 4 high-prio Issues auf ≤768px identifiziert. Fix betrifft 4 Dateien (`app.css`, `decade-compute.js`, `dashboard.html`, `backtest-engine.html`), ~80 Zeilen CSS + 15 Zeilen JS. **Direkt umsetzbar nach Exit Plan Mode — vom Home Office weitermachen.**
 
 ### Marketing-Pipeline (manuell durch User)
 - [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln (Tweet-Texte in `blog/output/{slug}/social/`)
@@ -543,3 +557,4 @@ Bei Fehlern:
 - [ ] EN-Übersetzung der HTML-Pages
 - [ ] Stripe Freemium/Abo-Integration
 - [ ] Anomalie-Radar in Dashboard-Bento-Card auf neue Compute-Felder umstellen (nutzt aktuell nur `score`/`return_10d`/`avg_10d`, könnte `percentile_rank` mit nutzen)
+- [ ] WCAG Touch-Targets (44×44px) auf Footer-Links + Nav-Dropdown-Items (nicht im Mobile-Fix-Scope enthalten)
