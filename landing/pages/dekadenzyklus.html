@@ -74,7 +74,7 @@
       </div>
       <hr>
       <h3>Dekadenjahre ein/ausblenden</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades" checked> Alle / Keine</label>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades"> Alle / Keine</label>
       <div id="decade-toggles"></div>
       <hr>
       <h3>Rolling-Vola Fenster</h3>
@@ -191,6 +191,9 @@
     var charts = {}; // Chart-Instanzen
     var rawRows = null; // Rohe Supabase-Rows (fuer Vola-Neuberechnung)
     var currentTicker = '';
+    // In-Memory Ticker-Cache: vermeidet Refetch + Recompute beim Zurueckwechseln
+    // zu einem schon geladenen Ticker. Schluessel = Ticker, Wert = {D, rawRows}.
+    var tickerCache = {};
 
     // ── Helpers ──
     function showLoading(msg){
@@ -226,6 +229,16 @@
       if(!ticker)return;
       if(ticker===currentTicker&&D)return; // Bereits geladen
 
+      // Cache-Hit: sofort aus Memory nutzen, kein Netzwerk, kein Recompute
+      if(tickerCache[ticker]){
+        var c=tickerCache[ticker];
+        D=c.D;
+        rawRows=c.rawRows;
+        currentTicker=ticker;
+        init();
+        return;
+      }
+
       if(!SA.supabase.url){showError('Supabase nicht konfiguriert');return}
       showLoading('Lade '+ticker+' aus Datenbank...');
 
@@ -242,6 +255,8 @@
         D=SA.decadeCompute.fromPrices(rows,ticker,volaWin);
         rawRows=rows;
         currentTicker=ticker;
+        // In Cache ablegen fuer spaeteren Rueckwechsel
+        tickerCache[ticker]={D:D,rawRows:rawRows};
         init();
         hideLoading();
       }).catch(function(e){hideLoading();showError('Fehler: '+e)});
@@ -257,18 +272,22 @@
 
       SA.renderTradingDayHeader('trading-day-header',D.ticker,rawRows);
 
-      // Dekaden-Toggles generieren
+      // Dekaden-Toggles generieren — Default: nur aktuelle Dekade aktiv
+      // (weniger Linien = schnellerer Initial-Render + weniger Visual Clutter;
+      // User kann via "Alle/Keine"-Toggle alle aktivieren)
       var togglesEl=document.getElementById('decade-toggles');
       togglesEl.innerHTML='';
       for(var i=0;i<10;i++){
         var lbl=document.createElement('label');
         var cb=document.createElement('input');
-        cb.type='checkbox';cb.checked=true;cb.dataset.digit=i;
+        cb.type='checkbox';cb.checked=(i===D.current_digit);cb.dataset.digit=i;
         cb.addEventListener('change',renderAll);
         lbl.appendChild(cb);
         lbl.appendChild(document.createTextNode(' x'+i+(i===D.current_digit?' (aktuell)':'')));
         togglesEl.appendChild(lbl);
       }
+      // Master-Toggle synchronisieren: startet unchecked, da nur 1 von 10 aktiv
+      document.getElementById('chk-all-decades').checked=false;
 
       // Drawdown Header
       var dcYears=D.decades[D.current_digit]&&D.decades[D.current_digit].years?D.decades[D.current_digit].years.join(', '):'';
@@ -284,7 +303,7 @@
         '<h3>Volatilit\u00E4ts-Analyse</h3><ul><li><b>Rolling Volatilit\u00E4t:</b> \u03C3_annualisiert = \u03C3_t\u00E4glich \u00D7 \u221A252 \u00D7 100</li><li><b>Fenster:</b> '+volaWin+' Tage (einstellbar in Sidebar)</li></ul>'+
         '<h3>Anomalie-Radar</h3><ul><li><b>Methode:</b> '+(rawRows?'Z-Score Vergleich':'Isolation Forest (ML)')+'</li><li><b>Score:</b> 0\u2013100 (ab 40 = leicht anomal, ab 70 = stark anomal)</li></ul>';
 
-      renderAll();
+      renderAllStaged();
     }
 
     function getActiveDigits(){
@@ -295,7 +314,18 @@
       return active;
     }
 
+    // Timer-IDs der laufenden Staged-Renders, damit Event-getriebene
+    // Re-Renders die noch laufenden Phasen canceln koennen.
+    var _stagedTimers=[];
+    function _clearStaged(){
+      for(var i=0;i<_stagedTimers.length;i++)clearTimeout(_stagedTimers[i]);
+      _stagedTimers=[];
+    }
+
+    // Synchroner Full-Render (fuer Event-getriebene Re-Renders: Checkbox-Toggle,
+    // Slider, etc.). Schnell genug, da alle Charts sofort neu aufgebaut werden.
     function renderAll(){
+      _clearStaged();
       renderKohorteExpander();
       renderMainChart();
       renderPercentileBar();
@@ -308,6 +338,35 @@
       renderWorstDD();
       renderDDHeatmap();
       renderVola();
+    }
+
+    // Staged Initial-Render: Above-fold sofort, Rest in gestaffelten
+    // setTimeout-Phasen → Page ist in ~300ms interaktiv statt blockiert zu sein,
+    // waehrend nachrangige Charts im Hintergrund aufgebaut werden.
+    function renderAllStaged(){
+      _clearStaged();
+      // Phase 1 (immediate): Above-the-fold essenzielle Elemente
+      renderAnomalieRadar();
+      renderKohorteExpander();
+      renderPercentileBar();
+      renderMainChart();
+      // Phase 2 (~40ms): Main-Chart-Nachbarn (Bar, Tabelle)
+      _stagedTimers.push(setTimeout(function(){
+        renderBarChart();
+        renderTable();
+      },40));
+      // Phase 3 (~140ms): Mittlere Sektion (Heatmap, Drawdown-Chart)
+      _stagedTimers.push(setTimeout(function(){
+        renderHeatmap();
+        renderDrawdown();
+      },140));
+      // Phase 4 (~280ms): Below-fold (Box-Plot, Worst-DD, DD-Heatmap, Vola)
+      _stagedTimers.push(setTimeout(function(){
+        renderBoxPlot();
+        renderWorstDD();
+        renderDDHeatmap();
+        renderVola();
+      },280));
     }
 
     // ── Expander: Dekadenjahr-Einordnung ──
