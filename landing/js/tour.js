@@ -144,9 +144,9 @@
         var d = driverFn({
           showProgress: true,
           allowClose: true,
-          overlayOpacity: 0.72,
-          stagePadding: 6,
-          stageRadius: 8,
+          overlayOpacity: 0.45,
+          stagePadding: 10,
+          stageRadius: 10,
           smoothScroll: true,
           animate: true,
           progressText: 'Schritt {{current}} von ' + SA.TOUR_STEPS.length,
