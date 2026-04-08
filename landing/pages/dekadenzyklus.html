@@ -708,12 +708,23 @@
       });
       charts.dd.render();
 
+      // KPIs unter dem Drawdown-Chart (4 Kacheln):
+      // 1. Aktueller DD (letzter Wert der Current-Year-DD-Kurve)
+      // 2. Max DD <current_year> (tiefster Punkt der Current-Year-DD-Kurve)
+      // 3. Avg. DD in x<digit> (tiefster Punkt der AVG-DD-Kurve der aktuellen Dekade)
+      // 4. Max. DD in x<digit> (absolut schlimmster DD der aktuellen Dekaden-Kohorte)
       var dc=D.decades[D.current_digit];
-      var curDD=D.current_year_dd&&D.current_year_dd.length>0?D.current_year_dd[D.current_year_dd.length-1]:0;
-      var ddWorstVal=(dc&&isFinite(dc.dd_worst))?dc.dd_worst:0;
+      var cyDd=(D.current_year_dd&&D.current_year_dd.length>0)?D.current_year_dd:null;
+      var curDD=cyDd?cyDd[cyDd.length-1]:0;
+      var maxDDcur=cyDd?Math.min.apply(null,cyDd):0;
+      var avgDDdec=(dc&&dc.dd_avg_curve&&dc.dd_avg_curve.length)?Math.min.apply(null,dc.dd_avg_curve):0;
+      var maxDDdec=(dc&&isFinite(dc.dd_worst))?dc.dd_worst:0;
+      function ddCls(v){return v<-1?'red':'green'}
       document.getElementById('kpi-dd').innerHTML=
-        kpi('\u00D8 Max DD (x'+D.current_digit+')',ddWorstVal.toFixed(1)+'%','red')+
-        kpi('Aktueller DD '+D.current_year,curDD.toFixed(1)+'%',curDD<-1?'red':'green');
+        kpi('Aktueller DD',curDD.toFixed(1)+'%',ddCls(curDD))+
+        kpi('Max DD '+D.current_year,maxDDcur.toFixed(1)+'%',ddCls(maxDDcur))+
+        kpi('\u00D8 DD in x'+D.current_digit,avgDDdec.toFixed(1)+'%','gold')+
+        kpi('Max DD in x'+D.current_digit,maxDDdec.toFixed(1)+'%','red');
     }
 
     // ── Worst-DD-Tabelle ──
