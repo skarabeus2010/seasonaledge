@@ -33,9 +33,9 @@
 
     /* ── Bento-Grid ── */
     .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
-    .bento-card{background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(232,168,32,.12);border-radius:12px;padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease;min-height:120px;position:relative}
-    .bento-card:hover{border-color:rgba(232,168,32,.3)}
-    .bento-card .ttl{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+    .bento-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease;min-height:120px;position:relative}
+    .bento-card:hover{border-color:var(--accent-g)}
+    .bento-card .ttl{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
     .bento-card .ttl .ico{font-size:1rem}
     .bento-card.empty{opacity:.4}
 
@@ -72,13 +72,13 @@
 
     /* ── KI-Score Hero ── */
     .ki-hero{display:flex;align-items:center;gap:1rem;margin-bottom:.65rem}
-    .ki-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;color:#fff}
+    .ki-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;color:var(--text)}
     .ki-signal{font-size:.875rem;font-weight:700;padding:.3rem .65rem;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
-    .ki-signal.bullish{background:rgba(52,211,153,.18);color:#34d399}
-    .ki-signal.bearish{background:rgba(248,113,113,.18);color:#f87171}
-    .ki-signal.neutral{background:rgba(232,168,32,.18);color:#e8a820}
+    .ki-signal.bullish{background:rgba(48,232,120,.18);color:var(--green)}
+    .ki-signal.bearish{background:rgba(255,64,64,.18);color:var(--red)}
+    .ki-signal.neutral{background:rgba(232,168,32,.18);color:var(--accent)}
     .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
-    .ki-sub{font-size:.6875rem;color:#cbd5e1;line-height:1.3}
+    .ki-sub{font-size:.6875rem;color:var(--dim);line-height:1.3}
     .ki-sub-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.2rem;overflow:hidden}
     .ki-sub-bar > div{height:100%;background:linear-gradient(90deg,#e8a820,#34d399);transition:width .3s ease}
 
@@ -89,17 +89,17 @@
     .crash-circle.yellow{background:radial-gradient(circle at 30% 30%,#fcd34d,#d97706);box-shadow:0 0 24px rgba(232,168,32,.4)}
     .crash-circle.red{background:radial-gradient(circle at 30% 30%,#fca5a5,#dc2626);box-shadow:0 0 24px rgba(248,113,113,.4)}
     .crash-circle.grey{background:radial-gradient(circle at 30% 30%,#9ca3af,#4b5563)}
-    .crash-headline{font-size:1.75rem;font-weight:800;font-family:var(--f-m);color:#fff;line-height:1}
-    .crash-headline small{font-size:.875rem;color:#8899aa;font-weight:500}
-    .crash-status{font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
+    .crash-headline{font-size:1.75rem;font-weight:800;font-family:var(--f-m);color:var(--text);line-height:1}
+    .crash-headline small{font-size:.875rem;color:var(--muted);font-weight:500}
+    .crash-status{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
 
     /* ── Anomalie-Radar ── */
     .anomaly-score-big{font-size:2.25rem;font-weight:800;font-family:var(--f-m);line-height:1;text-align:center;margin:.4rem 0 .15rem}
     .anomaly-status{text-align:center;font-size:.875rem;font-weight:700;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
 
     /* ── Wochentag/TDOM Headlines ── */
-    .card-headline{font-size:1.375rem;font-weight:800;color:#e2e8f0;margin-bottom:.15rem;font-family:var(--f-d)}
-    .card-sub{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+    .card-headline{font-size:1.375rem;font-weight:800;color:var(--text);margin-bottom:.15rem;font-family:var(--f-d)}
+    .card-sub{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
 
     /* ── Mini KPI-Row in Cards (nutzt globale .kpi Klasse) ── */
     .kpi-row-mini{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
@@ -111,12 +111,12 @@
     .tri-head{display:flex;align-items:center;gap:.85rem;margin-bottom:.5rem}
     .tri-emoji{font-size:2.25rem;line-height:1}
     .tri-signal{font-size:1.125rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-    .tri-count{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;margin-top:.1rem}
-    .tri-conditions{font-size:.75rem;color:#cbd5e1;line-height:1.65}
+    .tri-count{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.1rem}
+    .tri-conditions{font-size:.75rem;color:var(--dim);line-height:1.65}
     .tri-cond{display:flex;align-items:center;gap:.4rem}
     .tri-cond .check{font-weight:700}
-    .tri-cond .check.ok{color:#34d399}
-    .tri-cond .check.no{color:#f87171}
+    .tri-cond .check.ok{color:var(--green)}
+    .tri-cond .check.no{color:var(--red)}
 
     /* ── KPI-Row für Risiko (4 Cards nutzen globale .kpi) ── */
     .risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
@@ -124,23 +124,23 @@
 
     /* ── Strategien-Tabelle ── */
     .strategies-table{width:100%;border-collapse:collapse;font-size:.8125rem}
-    .strategies-table th{color:#a89878;font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
-    .strategies-table td{padding:.45rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:#e2e8f0;font-variant-numeric:tabular-nums}
+    .strategies-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .strategies-table td{padding:.45rem .5rem;border-bottom:1px solid var(--border);color:var(--dim);font-variant-numeric:tabular-nums}
     .streak-badge{display:inline-block;padding:.15rem .5rem;border-radius:5px;font-size:.6875rem;font-weight:700}
-    .streak-badge.win{background:rgba(52,211,153,.2);color:#34d399;border:1px solid rgba(52,211,153,.3)}
-    .streak-badge.loss{background:rgba(248,113,113,.2);color:#f87171;border:1px solid rgba(248,113,113,.3)}
+    .streak-badge.win{background:rgba(48,232,120,.2);color:var(--green);border:1px solid rgba(48,232,120,.3)}
+    .streak-badge.loss{background:rgba(255,64,64,.2);color:var(--red);border:1px solid rgba(255,64,64,.3)}
 
     /* ── Events ── */
     .events-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
     @media (max-width:1100px){.events-grid{grid-template-columns:1fr 1fr}}
     @media (max-width:768px){.events-grid{grid-template-columns:1fr}}
-    .event-card{background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.85rem .9rem;font-size:.75rem;line-height:1.5}
-    .event-card .ev-name{font-size:.9375rem;font-weight:700;color:#e2e8f0;margin-bottom:.25rem}
-    .event-card .ev-date{color:#a89878;font-size:.75rem;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:1px solid rgba(255,255,255,.05)}
-    .event-card .ev-stats{color:#cbd5e1}
+    .event-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem .9rem;font-size:.75rem;line-height:1.5}
+    .event-card .ev-name{font-size:.9375rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+    .event-card .ev-date{color:var(--muted);font-size:.75rem;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .event-card .ev-stats{color:var(--dim)}
     .event-card .ev-stats > div{margin-top:.2rem}
-    .event-card .ev-stats .pos{color:#34d399}
-    .event-card .ev-stats .neg{color:#f87171}
+    .event-card .ev-stats .pos{color:var(--green)}
+    .event-card .ev-stats .neg{color:var(--red)}
   </style>
 </head>
 <body>
