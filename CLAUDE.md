@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.4 | 2026-04-07 | Details → `docs/`
+> Version 27.5 | 2026-04-08 | Details → `docs/`
 
 
 ## Projekt
@@ -304,6 +304,13 @@ if _project_dir not in sys.path:
 | ApexCharts Mixed Bar+Line Coloring | `colors:[seriesColorBar, seriesColorLine]` faerbt nur Serien-weise. Fuer per-Wert Bar-Coloring (rot/gruen nach Vorzeichen) in Mixed Bar+Line Charts: `plotOptions.bar.colors.ranges:[{from:-Inf,to:-0.0001,color:RED},{from:0,to:Inf,color:GREEN}]`. Linie behaelt ihre Serien-Farbe. |
 | ApexCharts Marker Hover-only | `markers:{size:0, hover:{size:4-5}}` zeigt Marker nur beim Hover. Sauberer fuer Linien-Charts mit vielen Punkten. Statt `size:4` was permanent Punkte zeichnet. |
 | Tacho-Karten Schrift-Standards | `.mc-name` 14px font-weight:700 #e2e8f0 (Tacho-Titel). `.mc-details` 12px #cbd5e1 (Stats unter Tacho — NICHT #64748b, das ist zu dunkel auf dunklem BG). Numerischer Wert IM Tacho (1.2rem #fff), Status-Label UNTER dem Tacho mit `text-align:center;font-size:.875rem;font-weight:700` in Status-Farbe. Niemals lange Text-Strings wie "Signifikant abweichend" im Tacho — die ueberlagern den Halbkreis. |
+| Anomalie-Radar Shared-Renderer | `SA.decadeCompute.renderAnomalyInto(containerId, rows, ticker)` in `landing/js/decade-compute.js`. Einmal bauen, 4× nutzen (jahreszyklus, monatszyklus, tdom-analyse, overnight). Enthält: `_ensureAnomalyCss()` (CSS-Injection idempotent in `<head>`), `_injectAnomalySummaryBadge()` (fügt ⓘ-Badge automatisch ins umgebende `<summary>` ein), `fromPrices()` Compute + KPI-Row-Render. Rollout auf neue Page = 1 Script-Tag + 1 `<details id="sec-anomaly">` + 1 Funktionsaufruf nach Datenladung. KEIN Kopieren von Rendercode, KEIN lokales CSS. |
+| Perzentil-Rang im Anomalie-Objekt | `anomaly.percentile_rank` (0–100) = Position der aktuellen 10d-Rendite in der sortierten Verteilung aller historischen 10d-Returns am gleichen Kalenderzeitpunkt. Berechnung in `fromPrices()` direkt nach dem Z-Score. Fallback bei `histReturns.length < 5` → `null`. Komplementär zum Z-Score: Score sagt "wie viele σ daneben", Perzentil sagt "wo im Ranking". |
+| Perzentil-Slider Farbzonen | Grün im Normalbereich 20–80, Gold im Randbereich 10–20/80–90, Rot bei Extremen <10/>90. Gradient-Bar `linear-gradient(90deg,#ff4040 0%,#ff4040 10%,#e8a820 20%,#30e878 30%,#30e878 70%,#e8a820 80%,#ff4040 90%,#ff4040 100%)` mit weißer Marker-Linie (`left:{percentile}%`), 8px hoch. Label darüber (groß, farbcodiert), Mini-Skala 0/50/100 darunter. |
+| Anomalie-Radar Misst 10 Tage | Der Score vergleicht NUR die letzten 10 Handelstage vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. **Nicht** Year-to-Date, nicht Drawdown, nicht Gesamt-Performance. Ein Ticker kann im YTD-Chart −28% aussehen und trotzdem Score "Normal" haben, wenn die letzten 2 Wochen ruhig verliefen. Siehe Blog `/blog/anomalie-radar-erklaert/` für Fallbeispiel SAP. |
+| Plain Vanilla offene Trades | `_makeTrade` in `strategy-compute.js` erkennt offene Trades: Wenn Entry existiert aber Exit in Zukunft liegt → letzter verfügbarer Kurs als Mark-to-Market-Exit + `trade.open = true`. `computeStats` + `buildEquityCurve` + Significance-Test filtern offene Trades (keine verzerrten KPIs durch unrealisierte Returns). `renderTradeTable` zeigt "OFFEN"-Badge + gold Background + "· mark-to-market"/"· unrealisiert" Suffixe. Beispiel Sell-in-May 2025: Entry 31.10.2025, Exit 3.HT Mai 2026 → sichtbar im Trade-Table, aber NICHT in den Stats. |
+| Dashboard-Card Style V3 Ultra | Alle Cards nutzen `background:var(--card)` (#0a0a0e), `border:1px solid var(--border)`, `padding:1rem` (symmetrisch). KEIN `linear-gradient(135deg,#0f1923,#131d2a)` — das ist "Streamlit-Style". Alle Texte via `var(--text)/var(--dim)/var(--muted)`, alle Farben via `var(--green)/var(--red)/var(--accent)`. Hover-Border: `var(--accent-g)`. Ausnahme: Crash-Ampel Radial-Gradients (plastische Ampel-Optik bleibt). |
+| Two-Week Phase Badge-Pattern | Bei Cards wo ein Chart-Element (z.B. gelber Balken) hervorgehoben ist: Kleines gelbes Quadrat + Label "im Chart" neben dem Headline-Text. `<span style="display:inline-flex;gap:.35rem;font-size:.6875rem;text-transform:uppercase"><span style="width:14px;height:10px;background:{COL};border-radius:2px"></span>im Chart</span>`. Schafft visuelle Verbindung ohne Text. |
 
 ## Architektur-Prinzipien
 
@@ -459,6 +466,15 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 
 Streamlit-App `/app/` ist Legacy. Bug-Reports IMMER auf landing/pages/*.html.
 
+### Anomalie-Radar Sektion (Stand 08.04.2026)
+**Vorhanden auf 4 Pages** via Shared-Renderer `SA.decadeCompute.renderAnomalyInto()`:
+- `/jahreszyklus`, `/monatszyklus`, `/tdom-analyse`, `/overnight`
+- 5 KPI-Cards: Score, Status, 10d-Rendite, Historisch Ø, Perzentil-Rang (mit Slider)
+- Info-Badge ⓘ im Summary mit CSS-only Hover-Tooltip (Methodik-Text)
+- Dashboard hat eigene Bento-Card-Variante (kompakter), nutzt nur das `anomaly`-Datenobjekt
+
+**Nicht eingebaut (bewusst):** wochentage, monatswechsel, mondphasen, trifecta, plain-vanilla, backtest-engine, ki-saisonalitaet, spot-vol-beta, alle Event-Pages, crash-fruehwarnung (hat eigenen Risk-Score).
+
 ### Landing-Struktur (Stand 07.04.2026)
 **Nav (1 Top-Link + 4 Dropdowns):**
 - **Dashboard** (Top-Link, ganz links) — Ticker-Uebersicht mit allen wichtigsten Signalen
@@ -497,3 +513,33 @@ Bei Fehlern:
 - `docs/REFRESH_MONITORING.md` — Kurs-Ueberwachung, Health-Check, Troubleshooting
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel schreiben (DE, SeasonAlpha-Kontext)
+
+## TODO / Offene Punkte
+
+### Erledigt diese Woche
+- [x] **2026-04-07** Dashboard `/dashboard` Page neu (Bento-Grid mit 11 Cards)
+- [x] **2026-04-08** Dashboard Card-Style auf V3 Ultra (var(--card) statt Gradient)
+- [x] **2026-04-08** Top-Right Nav-Badge "Zur Analyse" → "Dashboard" (verlinkt auf `/dashboard`)
+- [x] **2026-04-08** Dashboard Two-Week Phase: gelbes Badge "im Chart" + X-Achse 9px→11px
+- [x] **2026-04-08** Plain Vanilla: Offene Trades sichtbar machen (Sell-in-May 2025 Fix)
+- [x] **2026-04-08** Anomalie-Radar in Jahreszyklus eingebaut, dann redesigned (5-KPI-Row + Info-Badge + Tooltip + Perzentil-Slider)
+- [x] **2026-04-08** Anomalie-Radar Shared-Renderer in `decade-compute.js` (modular, einmal bauen)
+- [x] **2026-04-08** Anomalie-Radar Rollout auf monatszyklus, tdom-analyse, overnight
+- [x] **2026-04-08** 5 neue Blog-Posts: Dashboard-Launch, Sell-in-May 2026, TOM erklärt, Tesla vs Apple Mai, Präsidentenzyklus Tutorial, Anomalie-Radar erklärt
+- [x] **2026-04-08** 7 neue Screenshots in `blog/posts/images/` (Dashboard-Hero/Twoweek + 6 Aprilpost-Bilder + SAP-Anomaly-Beispiel)
+- [x] **2026-04-08** Präsidentenzyklus-Tutorial: Schritt 1 (Cycle-Position) klarer formuliert (`Jahr mod 4` statt verwirrender Formel)
+
+### Marketing-Pipeline (manuell durch User)
+- [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln (Tweet-Texte in `blog/output/{slug}/social/`)
+- [ ] Newsletter-Mail an Brevo-Liste: "Dashboard ist live + 5 neue Artikel"
+- [ ] Plausible/Umami Analytics einbauen (DSGVO-konform)
+- [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026" (Email-Gate)
+- [ ] Reddit-Post in r/Finanzen + r/mauerstrassenwetten
+
+### Technische Roadmap (offen)
+- [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
+- [ ] Custom Watchlists mit gespeichertem Dashboard-View
+- [ ] Alerts: Push wenn KI-Score, Crash-Ampel oder Strategie-Signale eine Schwelle überschreiten
+- [ ] EN-Übersetzung der HTML-Pages
+- [ ] Stripe Freemium/Abo-Integration
+- [ ] Anomalie-Radar in Dashboard-Bento-Card auf neue Compute-Felder umstellen (nutzt aktuell nur `score`/`return_10d`/`avg_10d`, könnte `percentile_rank` mit nutzen)
