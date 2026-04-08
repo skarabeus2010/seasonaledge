@@ -43,8 +43,6 @@ Ganz oben siehst du vier Karten, die zusammen einen ehrlichen Health-Check für 
 
 Direkt darunter siehst du vier Charts in zwei Reihen:
 
-{{chart:seasonal_yearly:^GSPC:15}}
-
 - **Saisonaler Jahresverlauf** — der durchschnittliche Verlauf der letzten 15 Jahre, das aktuelle Jahr in Gold daneben, Heute-Marker eingezeichnet. Du siehst sofort, ob das Jahr saisonal nach Plan läuft oder davon abweicht.
 - **Saisonaler Drawdown** — die andere Seite der Medaille: wo lag historisch das maximale Risiko zu jeder Phase des Jahres, und wie tief ist der aktuelle Drawdown im Vergleich.
 - **Aktueller Monat (TDOM-Verlauf)** — Zoom auf den aktuellen Monat: durchschnittliche Performance pro Handelstag, dazu der laufende Monat und ein „Heute"-Marker.
