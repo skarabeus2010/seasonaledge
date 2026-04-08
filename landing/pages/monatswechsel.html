@@ -49,6 +49,9 @@
       <label>Tage vor Monatsende<br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
       <label>Tage nach Monatswechsel<br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
       <hr>
+      <h3>Chart-Anzeige</h3>
+      <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr</label>
+      <hr>
       <h3>Monatswechsel</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
@@ -295,8 +298,28 @@
       // Durchschnitt
       series.push({name:'\u00D8 TOM ('+tom.stats.total_windows+' Fenster)',data:tom.avg_curve,color:'#00CED1'});
 
+      // Aktuelles Jahr als Overlay
+      var showCurrent = document.getElementById('chk-current') && document.getElementById('chk-current').checked;
+      if (showCurrent) {
+        var currentYear = new Date().getFullYear();
+        var currentCurves = tom.all_curves.filter(function(c){ return c.year === currentYear; });
+        if (currentCurves.length > 0) {
+          var curveLen = tom.avg_curve.length;
+          var currentAvg = new Array(curveLen).fill(0);
+          for (var i = 0; i < curveLen; i++) {
+            var sum = 0, cnt = 0;
+            for (var j = 0; j < currentCurves.length; j++) {
+              var v = currentCurves[j].curve[i];
+              if (v != null && !isNaN(v)) { sum += v; cnt++; }
+            }
+            currentAvg[i] = cnt > 0 ? Math.round(sum/cnt*100)/100 : null;
+          }
+          series.push({name:'Aktuelles Jahr '+currentYear+' ('+currentCurves.length+' Fenster)',data:currentAvg,color:'#e8a820'});
+        }
+      }
+
       if(charts.tom)charts.tom.destroy();
-      var sw=series.map(function(s){return s.name.indexOf('\u00D8')>=0?3:0.5});
+      var sw=series.map(function(s){return s.name.indexOf('Aktuelles Jahr')>=0?3.5:(s.name.indexOf('\u00D8')>=0?3:0.5)});
       charts.tom=new ApexCharts(document.getElementById('chart-tom'),{
         series:series,
         chart:Object.assign({type:'line',height:420},SA.chartTheme.chart),
@@ -484,6 +507,7 @@
     document.getElementById('rng-before').addEventListener('change',function(){if(rawRows)renderAll()});
     document.getElementById('rng-after').addEventListener('change',function(){if(rawRows)renderAll()});
     document.getElementById('sel-period').addEventListener('change',function(){if(rawRows)renderAll()});
+    document.getElementById('chk-current').addEventListener('change',function(){if(rawRows)renderAll()});
     SA.initTickerInput('ticker-input','ticker-list',function(t){loadTicker(t)});
 
     // Indikator-Filter UI

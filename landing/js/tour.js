@@ -23,9 +23,28 @@
 
   var _loadPromise = null;
 
+  function _showErrorBanner(msg) {
+    var existing = document.getElementById('sa-tour-error-banner');
+    if (existing) existing.remove();
+    var el = document.createElement('div');
+    el.id = 'sa-tour-error-banner';
+    el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a0a0a;border:1px solid #ff4040;color:#ffdddd;padding:14px 22px;border-radius:8px;font-family:sans-serif;font-size:14px;z-index:99999;max-width:560px;box-shadow:0 10px 40px rgba(0,0,0,.5)';
+    el.innerHTML = msg + ' <button style="background:none;border:none;color:#ff8080;cursor:pointer;margin-left:12px;font-size:16px" onclick="this.parentNode.remove()">×</button>';
+    document.body.appendChild(el);
+    setTimeout(function(){ if (el.parentNode) el.remove(); }, 12000);
+  }
+
+  function _resolveDriverGlobal() {
+    if (typeof window.driver === 'function') return window.driver;
+    if (window.driver && window.driver.js && typeof window.driver.js.driver === 'function') return window.driver.js.driver;
+    if (window.driver && typeof window.driver.driver === 'function') return window.driver.driver;
+    return null;
+  }
+
   function _loadDriverJS() {
     if (_loadPromise) return _loadPromise;
     _loadPromise = new Promise(function(resolve, reject) {
+      console.log('[SA.tour] Loading Driver.js...');
       // CSS
       if (!document.querySelector('link[data-sa-tour-css]')) {
         var link = document.createElement('link');
@@ -34,22 +53,27 @@
         link.setAttribute('data-sa-tour-css', '1');
         document.head.appendChild(link);
       }
-      // JS
-      if (window.driver && window.driver.js && window.driver.js.driver) {
-        resolve(window.driver.js.driver);
-        return;
-      }
+      // Check if already loaded
+      var existing = _resolveDriverGlobal();
+      if (existing) { console.log('[SA.tour] Driver.js already loaded'); resolve(existing); return; }
+      // Load script
       var s = document.createElement('script');
       s.src = DRIVER_JS_URL;
       s.async = true;
       s.onload = function() {
-        if (window.driver && window.driver.js && window.driver.js.driver) {
-          resolve(window.driver.js.driver);
+        var fn = _resolveDriverGlobal();
+        if (fn) {
+          console.log('[SA.tour] Driver.js loaded successfully');
+          resolve(fn);
         } else {
-          reject(new Error('Driver.js loaded but global driver missing'));
+          console.error('[SA.tour] Driver.js script loaded but global "driver" not found. window.driver =', window.driver);
+          reject(new Error('Driver.js loaded but global driver function not resolvable'));
         }
       };
-      s.onerror = function() { reject(new Error('Failed to load Driver.js from CDN')); };
+      s.onerror = function(e) {
+        console.error('[SA.tour] Failed to load Driver.js from CDN:', DRIVER_JS_URL, e);
+        reject(new Error('Failed to load Driver.js from CDN: ' + DRIVER_JS_URL));
+      };
       document.head.appendChild(s);
     });
     return _loadPromise;
@@ -165,7 +189,7 @@
         d.drive(page.startIndex);
       }).catch(function(err) {
         console.error('[SA.tour] Failed to start tour:', err);
-        alert('Tour konnte nicht geladen werden. Pruefe die Internetverbindung.');
+        _showErrorBanner('Tour konnte nicht geladen werden: ' + (err && err.message ? err.message : 'Unbekannter Fehler') + '. Öffne die DevTools-Console für Details.');
       });
     },
 
