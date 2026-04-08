@@ -292,20 +292,99 @@
       renderMethodik(p);
     }
 
+    // ── Aktuelles Jahr: TOM-Fenster inkl. unvollständigem laufendem Fenster ──
+    // Baut Kurven genau wie SA.seasonal.analyzeTurnOfMonth, lässt aber
+    // das letzte Fenster auch dann zu wenn post.length < daysAfter (in-progress).
+    // Fehlende Tage werden mit null gepaddet → Chart bricht ab am aktuellen TDOM.
+    function buildCurrentYearTOMCurves(rows, daysBefore, daysAfter, selectedMonths) {
+      if (!rows || rows.length === 0) return [];
+      var currentYear = new Date().getFullYear();
+      var windowSize = daysBefore + 1 + daysAfter;
+
+      // Nach Jahr+Monat gruppieren (nur aktuelles Jahr + Dezember Vorjahr für Jan-Transition)
+      var ymGroups = {};
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        var y = parseInt(r.date.substring(0, 4));
+        var m = parseInt(r.date.substring(5, 7));
+        if (y !== currentYear && !(y === currentYear - 1 && m === 12)) continue;
+        var key = y + '-' + m;
+        if (!ymGroups[key]) ymGroups[key] = { year: y, month: m, rows: [] };
+        ymGroups[key].rows.push(r);
+      }
+
+      var keys = Object.keys(ymGroups).sort();
+      var result = [];
+
+      for (var ki = 0; ki < keys.length - 1; ki++) {
+        var cur = ymGroups[keys[ki]];
+        var nxt = ymGroups[keys[ki + 1]];
+        // Nur Transitions aus dem aktuellen Jahr (cur.year === currentYear),
+        // oder Dez Vorjahr → Jan aktuelles Jahr
+        var transitionYear = nxt.year;
+        if (transitionYear !== currentYear) continue;
+        if (selectedMonths && selectedMonths.indexOf(cur.month) < 0) continue;
+
+        // Pre-Window: letzte daysBefore+1 Tage des aktuellen Monats
+        if (cur.rows.length < daysBefore + 1) continue;
+        var pre = cur.rows.slice(-(daysBefore + 1));
+
+        // Post-Window: erste min(daysAfter, verfügbar) Tage des nächsten Monats
+        var post = nxt.rows.slice(0, daysAfter);
+        var actualPost = post.length;
+        if (actualPost === 0 && ki < keys.length - 1) continue; // keine Nachkrise-Daten = skip
+
+        var window = pre.concat(post);
+
+        // Log-Returns (identisch zu analyzeTurnOfMonth)
+        var logRets = [];
+        for (var wi = 0; wi < window.length; wi++) {
+          var lr = window[wi].log_return != null
+            ? window[wi].log_return
+            : (wi > 0 && window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0);
+          logRets.push(lr);
+        }
+
+        // Kumulative Kurve
+        var cumLog = [0];
+        for (var ci = 0; ci < logRets.length - 1; ci++) cumLog.push(cumLog[ci] + logRets[ci]);
+        var rawCurve = cumLog.map(function(v) { return 100 * Math.exp(v); });
+
+        // Normierung auf t0
+        var t0Idx = daysBefore;
+        if (rawCurve.length <= t0Idx) continue;
+        var t0Val = rawCurve[t0Idx];
+        var curve = rawCurve.map(function(v) { return Math.round((v / t0Val - 1) * 10000) / 100; });
+
+        // Auf windowSize padden mit null für fehlende Post-Tage
+        while (curve.length < windowSize) curve.push(null);
+
+        result.push({
+          year: cur.year,
+          month: cur.month,
+          curve: curve,
+          partial: actualPost < daysAfter
+        });
+      }
+
+      return result;
+    }
+
     // ── TOM Hauptchart ──
     function renderTOMChart(tom,p){
       var series=[];
       // Durchschnitt
       series.push({name:'\u00D8 TOM ('+tom.stats.total_windows+' Fenster)',data:tom.avg_curve,color:'#00CED1'});
 
-      // Aktuelles Jahr als Overlay
+      // Aktuelles Jahr als Overlay — baut die aktuelle (ggf. unvollständige)
+      // TOM-Kurve direkt aus rawRows auf, damit sie auch angezeigt wird wenn
+      // daysAfter > aktueller TDOM (Fenster noch nicht vollständig).
       var showCurrent = document.getElementById('chk-current') && document.getElementById('chk-current').checked;
       if (showCurrent) {
-        var currentYear = new Date().getFullYear();
-        var currentCurves = tom.all_curves.filter(function(c){ return c.year === currentYear; });
+        var currentCurves = buildCurrentYearTOMCurves(rawRows, p.daysBefore, p.daysAfter, p.months);
         if (currentCurves.length > 0) {
           var curveLen = tom.avg_curve.length;
-          var currentAvg = new Array(curveLen).fill(0);
+          var currentAvg = new Array(curveLen).fill(null);
           for (var i = 0; i < curveLen; i++) {
             var sum = 0, cnt = 0;
             for (var j = 0; j < currentCurves.length; j++) {
@@ -314,6 +393,7 @@
             }
             currentAvg[i] = cnt > 0 ? Math.round(sum/cnt*100)/100 : null;
           }
+          var currentYear = new Date().getFullYear();
           series.push({name:'Aktuelles Jahr '+currentYear+' ('+currentCurves.length+' Fenster)',data:currentAvg,color:'#e8a820'});
         }
       }
