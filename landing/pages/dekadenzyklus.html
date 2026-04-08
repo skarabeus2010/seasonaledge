@@ -68,6 +68,10 @@
       <label><input type="checkbox" id="chk-percentile"> 25./75. Perzentil-B&auml;nder</label>
       <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <div style="margin-top:.75rem">
+        <label style="display:flex;justify-content:space-between;padding:.25rem 0"><span>Gl&auml;ttung (Tage)</span><span id="lbl-smooth" style="color:var(--accent);font-family:var(--f-m);font-weight:700">1</span></label>
+        <input type="range" id="sl-smooth" min="1" max="15" step="2" value="1" style="width:100%;accent-color:var(--accent)">
+      </div>
       <hr>
       <h3>Dekadenjahre ein/ausblenden</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades" checked> Alle / Keine</label>
@@ -84,6 +88,12 @@
       <p class="page-caption" id="page-caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- Anomalie-Radar (KI Quick-Check) — ganz oben wie im Jahreszyklus -->
+      <details open id="sec-anomaly">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
       <!-- Chart 1: Hauptchart (Dekaden-Linien) -->
       <div class="chart-box"><div id="chart-lines"></div></div>
 
@@ -94,12 +104,6 @@
       <details open id="exp-kohorte">
         <summary id="sum-kohorte">Kohorte &mdash; Einordnung</summary>
         <div class="content" id="content-kohorte"></div>
-      </details>
-
-      <!-- Expander: Anomalie-Radar -->
-      <details open>
-        <summary>Anomalie-Radar (KI)</summary>
-        <div class="content" id="content-anomalie"></div>
       </details>
 
       <!-- Expander: Bar-Chart -->
@@ -371,8 +375,15 @@
       _bandPairs=[];
       var showBands=document.getElementById('chk-bands').checked;
       var showPercentile=document.getElementById('chk-percentile').checked;
+      var smoothWin=parseInt(document.getElementById('sl-smooth').value)||1;
 
       var bandsActive=showBands||showPercentile;
+
+      // Helper: Glaettung via zentriertem Moving Average (window=1 -> unchanged)
+      function smooth(arr){
+        if(smoothWin<=1||!arr||!arr.length)return arr;
+        return SA.decadeCompute._movingAvg(arr,smoothWin).map(function(v){return Math.round(v*100)/100});
+      }
 
       for(var i=0;i<10;i++){
         if(active.indexOf(i)<0)continue;
@@ -390,12 +401,15 @@
         // Wenn Bands aktiv: nur aktuelle Dekade anzeigen, Rest ausblenden
         if(bandsActive&&!isCur)continue;
 
+        // Glaettung der Avg-Kurve anwenden
+        var smoothedAvg=smooth(d.avg_curve);
+
         // Konfidenzband (±1σ)
         if(showBands&&isCur&&d.std_curve&&d.std_curve.length===252){
           var upper=[],lower=[];
           for(var k=0;k<252;k++){
-            upper.push(Math.round((d.avg_curve[k]+d.std_curve[k])*100)/100);
-            lower.push(Math.round((d.avg_curve[k]-d.std_curve[k])*100)/100);
+            upper.push(Math.round((smoothedAvg[k]+d.std_curve[k])*100)/100);
+            lower.push(Math.round((smoothedAvg[k]-d.std_curve[k])*100)/100);
           }
           var hiIdx=series.length;
           series.push({name:'+1\u03C3',data:upper,color:SA.DECADE_COLORS[i]});
@@ -416,10 +430,10 @@
           }
         }
 
-        // Avg-Kurve
+        // Avg-Kurve (geglaettet nach Slider-Wert)
         series.push({
           name:(isCur?'\u2728 ':'')+'x'+i+' \u00B7 n='+d.n+' \u00B7 '+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(1)+'%',
-          data:d.avg_curve,color:SA.DECADE_COLORS[i]
+          data:smoothedAvg,color:SA.DECADE_COLORS[i]
         });
       }
 
@@ -512,21 +526,11 @@
       return pts;
     }
 
-    // ── Anomalie-Radar ──
+    // ── Anomalie-Radar (via Shared-Renderer, identisch zu Jahreszyklus/Monatszyklus/...) ──
     function renderAnomalieRadar(){
-      var a=D.anomaly;
-      var sClr=a.score>=70?'red':a.score>=40?'gold':'green';
-      var sIcon=a.score>=70?'\uD83D\uDD34':a.score>=40?'\uD83D\uDFE1':'\uD83D\uDFE2';
-      var sLabel=a.score>=70?'Stark anomal':a.score>=40?'Leicht anomal':'Normal';
-      var retClr=a.return_10d>=0?'green':'red';
-      document.getElementById('content-anomalie').innerHTML=
-        '<div class="kpi-row">'+
-        kpi('Anomalie-Score',a.score+'/100',sClr)+
-        kpi('Status',sIcon+' '+sLabel,sClr)+
-        kpi('Aktuelle 10d-Rendite',(a.return_10d>=0?'+':'')+a.return_10d.toFixed(2)+'%',retClr)+
-        kpi('Historischer \u00D8',(a.avg_10d>=0?'+':'')+a.avg_10d.toFixed(2)+'%','')+
-        '</div>'+
-        '<p style="font-size:.6875rem;color:var(--muted);text-align:center;margin-top:.5rem">'+(rawRows?'Z-Score':'Isolation Forest')+' vergleicht die letzten 10 Handelstage mit '+a.n_comparisons+' historischen Fenstern am gleichen Kalenderzeitpunkt.</p>';
+      if (SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+        SA.decadeCompute.renderAnomalyInto('content-anomaly', rawRows, D.ticker);
+      }
     }
 
     // ── Chart 2: Bar ──
@@ -836,6 +840,14 @@
     document.getElementById('chk-percentile').addEventListener('change',renderAll);
     document.getElementById('chk-individual').addEventListener('change',renderAll);
     document.getElementById('chk-current').addEventListener('change',renderAll);
+
+    // Glaettungs-Slider: Label updaten + Main-Chart neu rendern
+    (function(){
+      var sl=document.getElementById('sl-smooth');
+      var lbl=document.getElementById('lbl-smooth');
+      sl.addEventListener('input',function(){lbl.textContent=sl.value});
+      sl.addEventListener('change',function(){if(D)renderMainChart()});
+    })();
 
     // Alle/Keine Toggle
     document.getElementById('chk-all-decades').addEventListener('change',function(){

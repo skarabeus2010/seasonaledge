@@ -90,8 +90,8 @@ SA.decadeCompute = {
       var avgCurve = SA.decadeCompute._meanAxis0(curves);
       var stdCurve = SA.decadeCompute._stdAxis0(curves);
 
-      // Smoothing (5-Tage MA)
-      var avgSmooth = SA.decadeCompute._movingAvg(avgCurve, 5);
+      // Kein Hardcoded-Smoothing mehr — Smoothing ist UI-gesteuert (Sidebar-Slider in dekadenzyklus.html)
+      var avgSmooth = avgCurve;
 
       // Drawdown pro Jahr -> Durchschnitt
       var ddCurves = curves.map(function(c) { return SA.decadeCompute.computeDrawdown(c, 100); });
