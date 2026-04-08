@@ -75,6 +75,12 @@
       <p class="page-caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- Anomalie-Radar (KI Quick-Check) -->
+      <details open id="sec-anomaly" style="display:none">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
       <!-- KPIs -->
       <div class="kpi-row" id="kpi-row"></div>
 
@@ -178,6 +184,7 @@
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
 
   <script>
   (function() {
@@ -195,8 +202,8 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-month','sec-weekday','sec-significance','sec-cumulative','sec-topflop','sec-heatmap','sec-stats'].forEach(function(id) {
-        document.getElementById(id).style.display = show ? '' : 'none';
+      ['sec-anomaly','sec-month','sec-weekday','sec-significance','sec-cumulative','sec-topflop','sec-heatmap','sec-stats'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none';
       });
     }
     function destroyAll() {
@@ -600,6 +607,9 @@
 
         _cachedRows = rows;
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        if (SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+          SA.decadeCompute.renderAnomalyInto('content-anomaly', rows, ticker);
+        }
         rerender();
         $loading.style.display = 'none';
       }).catch(function(err) {

@@ -93,6 +93,12 @@
       <p class="page-caption" id="page-caption">Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- 0. Anomalie-Radar (KI Quick-Check) -->
+      <details open id="sec-anomaly" style="display:none">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
       <!-- 1. Hauptchart Intra-Monat -->
       <details open id="sec-main" style="display:none">
         <summary>Intra-Monat Verlauf</summary>
@@ -231,6 +237,7 @@
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/outlier.js"></script>
   <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
 
   <script>
   // ══════════════════════════════════════════════════════════════
@@ -1811,7 +1818,7 @@
     'use strict';
     var MZ = window._SA_MZ;
     var $error = document.getElementById('error-banner');
-    var SECTION_IDS = ['sec-main','sec-detrend','sec-match','sec-cycle-match','sec-weekly','sec-monthly','sec-twoweek','sec-tw-heatmap','sec-tw-overlay','sec-tw-ranking','sec-momentum','sec-tw-sig','sec-tw-table','sec-heatmap'];
+    var SECTION_IDS = ['sec-anomaly','sec-main','sec-detrend','sec-match','sec-cycle-match','sec-weekly','sec-monthly','sec-twoweek','sec-tw-heatmap','sec-tw-overlay','sec-tw-ranking','sec-momentum','sec-tw-sig','sec-tw-table','sec-heatmap'];
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){$error.style.display='none';}, 8000); }
     function showSections(show) { SECTION_IDS.forEach(function(id){ var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; }); }
@@ -1905,6 +1912,9 @@
 
       // Trading Day Header — zentrales Modul aus app.js
       SA.renderTradingDayHeader('trading-day-header', ticker, rawRows);
+      if (SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+        SA.decadeCompute.renderAnomalyInto('content-anomaly', rawRows, ticker);
+      }
 
       destroyAll();
 

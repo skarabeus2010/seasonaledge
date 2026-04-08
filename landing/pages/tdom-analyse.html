@@ -107,6 +107,12 @@
       <p class="page-caption">Trading Day of the Month: 3 Strategien &times; 2 Richtungen &times; Monatsfilter &times; Multi-Day Ranges</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <!-- Anomalie-Radar (KI Quick-Check) -->
+      <details open id="sec-anomaly" style="display:none">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
       <!-- KPIs -->
       <div class="kpi-row" id="kpi-row"></div>
 
@@ -220,6 +226,7 @@
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
 
   <script>
   (function() {
@@ -235,8 +242,8 @@
 
     function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display = 'none'; }, 8000); }
     function showSections(show) {
-      ['sec-bars','sec-winrate','sec-heatmap','sec-stats','sec-streak-tdom','sec-tdoy'].forEach(function(id) {
-        document.getElementById(id).style.display = show ? '' : 'none';
+      ['sec-anomaly','sec-bars','sec-winrate','sec-heatmap','sec-stats','sec-streak-tdom','sec-tdoy'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none';
       });
     }
     function destroyAll() {
@@ -1182,6 +1189,9 @@
         }
         _cachedRows = addTdomColumns(rows);
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        if (SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+          SA.decadeCompute.renderAnomalyInto('content-anomaly', rows, ticker);
+        }
         rerender();
         $loading.style.display = 'none';
       }).catch(function(err) {
