@@ -1275,20 +1275,29 @@
         labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
       }
 
-      // Aktuelles Jahr im Fenster
-      var curArr = new Array(winLen).fill(null);
-      if (yearData[currentYear]) {
-        var c = yearData[currentYear].full_365;
-        for (var i = 0; i < winLen; i++) {
-          var doy = startDoy + i;
-          if (doy <= todayDoyVal && doy <= 365) curArr[i] = parseFloat(c[doy-1].toFixed(2));
-        }
-      }
-      // Avg im Fenster (KEINE Perzentilbaender — verzerren Skalierung)
+      // Rebase zu 100 am Fenster-Anfang: beide Linien starten zusammen bei 100,
+      // zeigen relative Performance seit Fenster-Start. Fixt (a) die irrefuehrende
+      // Y-Achsen-Beschriftung "Normiert (Start=100)" — jetzt stimmt 100 wirklich am
+      // Chart-Anfang — und (b) das Flatliner-Problem, weil die Y-Achse enger zoomt.
+      var avgBase = avg[startDoy - 1];
+      var cBaseRaw = yearData[currentYear] ? yearData[currentYear].full_365 : null;
+      var cBase = cBaseRaw ? cBaseRaw[startDoy - 1] : null;
+
+      // Avg im Fenster, rebased
       var avgArr = [];
       for (var i = 0; i < winLen; i++) {
         var doy = startDoy + i;
-        avgArr.push(parseFloat(avg[doy-1].toFixed(2)));
+        var raw = avg[doy - 1];
+        avgArr.push(avgBase > 0 ? parseFloat((100 * raw / avgBase).toFixed(2)) : parseFloat(raw.toFixed(2)));
+      }
+
+      // Aktuelles Jahr im Fenster, rebased auf denselben Startpunkt
+      var curArr = new Array(winLen).fill(null);
+      if (cBaseRaw && cBase > 0) {
+        for (var i = 0; i < winLen; i++) {
+          var doy = startDoy + i;
+          if (doy <= todayDoyVal && doy <= 365) curArr[i] = parseFloat((100 * cBaseRaw[doy - 1] / cBase).toFixed(2));
+        }
       }
 
       var nYears = Object.keys(yearData).length;
@@ -1322,7 +1331,11 @@
         grid: SA.chartTheme.grid,
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           shared:true, intersect:false,
-          y: { formatter: function(v){return v != null ? v.toFixed(1) : '–';} }
+          y: { formatter: function(v){
+            if (v == null) return '–';
+            var delta = v - 100;
+            return v.toFixed(1) + ' (' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%)';
+          } }
         }),
         xaxis: {
           categories: labels,
@@ -1332,7 +1345,7 @@
         yaxis: {
           min: yMin, max: yMax, forceNiceScale: true,
           labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1);}},
-          title:{text:'Normiert (Start=100)',style:{color:'#a89878',fontSize:'10px'}}
+          title:{text:'Fenster-Anfang = 100',style:{color:'#a89878',fontSize:'10px'}}
         },
         annotations: {
           xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : []
