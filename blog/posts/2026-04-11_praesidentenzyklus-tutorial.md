@@ -70,27 +70,18 @@ Viele professionelle Anleger kennen das Muster und positionieren entsprechend. D
 
 ### Schritt 1: Cycle-Position bestimmen
 
-Die einfache Formel:
+Die Position eines Jahres im Präsidentenzyklus lässt sich direkt aus dem **Rest der Division durch 4** ablesen — also `Jahr mod 4`:
 
-```
-cycle_year = ((current_year - 2020) % 4) + 1
-```
+| `Jahr mod 4` | Position | Bedeutung | Beispieljahre |
+|:---:|---|---|---|
+| **0** | Election Year | Wahljahr (US-Präsidentschaftswahl im November) | 2020, 2024, 2028 |
+| **1** | Post-Election Year | 1. Amtsjahr des neuen Präsidenten | 2021, 2025, 2029 |
+| **2** | **Midterm Year** | 2. Amtsjahr — Zwischenwahlen zum Kongress | 2022, **2026**, 2030 |
+| **3** | Pre-Election Year | 3. Amtsjahr — Vorbereitung auf die nächste Wahl | 2023, 2027, 2031 |
 
-Beispiele:
-- 2026: `((2026 - 2020) % 4) + 1 = 3` → **Wait, das ergibt 3?**
+**Beispiel 2026:** `2026 ÷ 4 = 506 Rest 2` → **Midterm Year**. Es ist das zweite Amtsjahr des im November 2024 gewählten Präsidenten, und im November 2026 finden die Zwischenwahlen zum US-Kongress statt.
 
-Korrekter: Die Position hängt davon ab, ob Wahljahr oder nicht. Die saubere Mapping-Tabelle:
-
-| Modulo (year - 2020) | Cycle | Name |
-|---|---|---|
-| 0 | 1 | Election Year (2020, 2024, 2028) |
-| 1 | 2 | Post-Election (2021, 2025, 2029) |
-| 2 | **3** | **Midterm (2022, 2026, 2030)** |
-| 3 | 4 | Pre-Election (2023, 2027, 2031) |
-
-Also: **2026 ist Midterm Year** (Jahr 2 nach Einleitung der neuen Präsidentschaft, mathematisch Modulo 2 nach 2020).
-
-> ⚠️ **Konvention:** In der Literatur wird oft „Jahr 1 = Post-Election" gezählt, manchmal aber auch „Jahr 1 = Election". Achte darauf, wenn du Quellen vergleichst.
+> ⚠️ **Konvention beachten:** In manchen Quellen wird das Election Year als „Jahr 4" gezählt (am Ende der Amtszeit), in anderen als „Jahr 1" (Beginn der neuen Wahlperiode). Wir verwenden hier die historisch gebräuchliche Reihenfolge **Post-Election → Midterm → Pre-Election → Election** und rechnen direkt über `Jahr mod 4`, was eindeutig ist.
 
 ### Schritt 2: Cycle-Filter in SeasonAlpha aktivieren
 
