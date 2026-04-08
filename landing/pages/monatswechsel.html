@@ -378,14 +378,26 @@
 
       // Aktuelles Jahr als Overlay — baut die aktuelle (ggf. unvollständige)
       // TOM-Kurve direkt aus rawRows auf, damit sie auch angezeigt wird wenn
-      // daysAfter > aktueller TDOM (Fenster noch nicht vollständig).
+      // daysAfter > aktueller TDOM. Die Linie wird am letzten gültigen Tag
+      // des aktuellsten (laufenden) Fensters gekappt — nach diesem Tag
+      // wird null gesetzt, damit keine Zukunftstage aus bereits abgeschlossenen
+      // Fenstern als "aktuell" erscheinen.
       var showCurrent = document.getElementById('chk-current') && document.getElementById('chk-current').checked;
       if (showCurrent) {
         var currentCurves = buildCurrentYearTOMCurves(rawRows, p.daysBefore, p.daysAfter, p.months);
         if (currentCurves.length > 0) {
           var curveLen = tom.avg_curve.length;
+
+          // Finde das zeitlich aktuellste Fenster (letztes nach Jahr+Monat sortiert)
+          // und bestimme dessen letzten gültigen Tag = Cutoff für die gesamte Gold-Linie
+          var latest = currentCurves[currentCurves.length - 1];
+          var cutoff = -1;
+          for (var li = 0; li < latest.curve.length; li++) {
+            if (latest.curve[li] != null && !isNaN(latest.curve[li])) cutoff = li;
+          }
+
           var currentAvg = new Array(curveLen).fill(null);
-          for (var i = 0; i < curveLen; i++) {
+          for (var i = 0; i <= cutoff && i < curveLen; i++) {
             var sum = 0, cnt = 0;
             for (var j = 0; j < currentCurves.length; j++) {
               var v = currentCurves[j].curve[i];
@@ -393,6 +405,7 @@
             }
             currentAvg[i] = cnt > 0 ? Math.round(sum/cnt*100)/100 : null;
           }
+
           var currentYear = new Date().getFullYear();
           series.push({name:'Aktuelles Jahr '+currentYear+' ('+currentCurves.length+' Fenster)',data:currentAvg,color:'#e8a820'});
         }
