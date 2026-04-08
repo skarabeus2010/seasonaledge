@@ -994,47 +994,11 @@
     }
 
     // ── Render: Anomalie-Radar (KI Quick-Check) ─────────────────────────────
-    // Nutzt SA.decadeCompute.fromPrices() — Z-Score der letzten 10d-Rendite
-    // vs historische 10d-Returns am gleichen Kalenderzeitpunkt.
+    // Wrapper um den Shared-Renderer aus decade-compute.js — einmal bauen, 4x nutzen.
     JZ.renderAnomaly = function(rows, ticker) {
-      var el = document.getElementById('content-anomaly');
-      if (!el) return;
-      var anom = null;
-      try {
-        if (window.SA && SA.decadeCompute && rows && rows.length >= 200) {
-          var dec = SA.decadeCompute.fromPrices(rows.slice(), ticker);
-          anom = dec ? dec.anomaly : null;
-        }
-      } catch (e) { console.warn('[jahreszyklus] anomaly compute failed:', e); }
-
-      if (!anom || anom.n_comparisons === 0) {
-        el.innerHTML = '<p style="color:var(--muted);font-size:.875rem">Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).</p>';
-        return;
+      if (window.SA && SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+        SA.decadeCompute.renderAnomalyInto('content-anomaly', rows, ticker);
       }
-
-      var col = anom.score >= 70 ? 'var(--red)' : anom.score >= 40 ? '#fbbf24' : 'var(--green)';
-      var icon = anom.score >= 70 ? '🔴' : anom.score >= 40 ? '🟡' : '🟢';
-      var label = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
-      var fmtPct = function(v, dp){ if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(dp || 2) + '%'; };
-      var retCls = anom.return_10d >= 0 ? 'green' : 'red';
-
-      var html = '<div style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:center">';
-      // Linke Seite: Score Hero
-      html += '<div style="text-align:center;min-width:140px">';
-      html += '<div style="font-size:2.75rem;font-weight:800;font-family:var(--f-m);line-height:1;color:'+col+'">'+anom.score+'<span style="font-size:1.1rem;color:var(--muted)"> / 100</span></div>';
-      html += '<div style="font-size:.875rem;font-weight:700;margin-top:.35rem;text-transform:uppercase;letter-spacing:.06em;color:'+col+'">'+icon+' '+label+'</div>';
-      html += '</div>';
-      // Rechte Seite: KPIs + Erklaerung
-      html += '<div>';
-      html += '<div class="kpi-row" style="margin-bottom:.6rem">';
-      html += '<div class="kpi"><div class="kpi-label">10d-Rendite '+ticker+'</div><div class="kpi-value '+retCls+'">'+fmtPct(anom.return_10d,2)+'</div></div>';
-      html += '<div class="kpi"><div class="kpi-label">Historisch &Oslash; (gleiche Kalenderzeit)</div><div class="kpi-value">'+fmtPct(anom.avg_10d,2)+'</div></div>';
-      html += '<div class="kpi"><div class="kpi-label">Vergleichsfenster</div><div class="kpi-value">'+anom.n_comparisons+'</div></div>';
-      html += '</div>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin:0;line-height:1.5">Z-Score-Vergleich: Wie weit weicht die letzte 10-Tages-Rendite vom historischen Schnitt am gleichen Kalenderzeitpunkt ab? <b>Score &ge;40</b> = leicht anomal, <b>&ge;70</b> = stark anomal. Hoher Score bedeutet nicht zwingend bullish oder bearish &mdash; nur, dass der aktuelle Verlauf ungew&ouml;hnlich ist und einen Blick wert.</p>';
-      html += '</div>';
-      html += '</div>';
-      el.innerHTML = html;
     };
 
     // ── Render: Hauptchart (Saisonalverlauf) ────────────────────────────────

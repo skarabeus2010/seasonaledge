@@ -299,12 +299,18 @@ SA.decadeCompute = {
         var hStd = Math.sqrt(hVar) || 1;
         var zScore = Math.abs((ret10d - hMean) / hStd);
         var score = Math.min(Math.round(zScore * 30), 100);
+        // Perzentil-Rang der aktuellen 10d-Rendite in der Verteilung historischer 10d-Returns
+        var sortedHist = histReturns.slice().sort(function(a, b) { return a - b; });
+        var rankCount = 0;
+        for (var ri = 0; ri < sortedHist.length; ri++) { if (sortedHist[ri] <= ret10d) rankCount = ri + 1; }
+        var percentileRank = Math.round(rankCount / sortedHist.length * 100);
         anomaly = {
           score: score,
           status: score >= 40 ? 'anomal' : 'normal',
           return_10d: Math.round(ret10d * 100) / 100,
           avg_10d: Math.round(hMean * 100) / 100,
-          n_comparisons: histReturns.length
+          n_comparisons: histReturns.length,
+          percentile_rank: percentileRank
         };
       }
     }
@@ -489,6 +495,108 @@ SA.decadeCompute = {
     var d = new Date(dateStr);
     var start = new Date(d.getFullYear(), 0, 0);
     return Math.floor((d - start) / 86400000);
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Shared Anomalie-Radar Renderer (wiederverwendbar auf allen Pages)
+  // ═══════════════════════════════════════════════════════════════════
+
+  /** CSS fuer Anomalie-Sektion einmalig in den Head injizieren. Idempotent. */
+  _ensureAnomalyCss: function() {
+    if (document.getElementById('sa-anomaly-css')) return;
+    var css = [
+      '.sa-anom-row{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:.75rem;margin-bottom:0}',
+      '@media(max-width:900px){.sa-anom-row{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}',
+      '.sa-anom-sum{position:relative}',
+      '.sa-anom-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(232,168,32,.15);border:1px solid rgba(232,168,32,.5);color:var(--accent);font-size:.75rem;font-weight:700;font-family:var(--f-d);margin-left:.5rem;cursor:help;vertical-align:middle;line-height:1;user-select:none}',
+      '.sa-anom-badge:hover{background:rgba(232,168,32,.28);border-color:var(--accent)}',
+      '.sa-anom-tooltip{position:absolute;top:calc(100% + .4rem);left:0;width:min(420px,calc(100vw - 3rem));background:var(--elevated,#111115);border:1px solid rgba(232,168,32,.35);border-radius:10px;padding:.85rem 1rem;font-size:.75rem;line-height:1.55;color:var(--dim,#e8e0d0);box-shadow:0 12px 32px rgba(0,0,0,.6);z-index:50;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s ease,transform .15s ease,visibility .15s ease;pointer-events:none;font-weight:400;text-transform:none;letter-spacing:normal}',
+      '.sa-anom-badge:hover ~ .sa-anom-tooltip,.sa-anom-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}',
+      '.sa-anom-tooltip b{color:var(--text,#fff);font-weight:700}',
+      '.sa-anom-tooltip p{margin:0 0 .5rem 0}',
+      '.sa-anom-tooltip p:last-child{margin-bottom:0}'
+    ].join('\n');
+    var style = document.createElement('style');
+    style.id = 'sa-anomaly-css';
+    style.textContent = css;
+    document.head.appendChild(style);
+  },
+
+  /** Info-Badge ins <summary> des umgebenden <details> einfuegen (idempotent). */
+  _injectAnomalySummaryBadge: function(containerEl) {
+    if (!containerEl || !containerEl.closest) return;
+    var details = containerEl.closest('details');
+    if (!details) return;
+    var summary = details.querySelector('summary');
+    if (!summary) return;
+    if (summary.querySelector('.sa-anom-badge')) return; // schon drin → idempotent
+    summary.classList.add('sa-anom-sum');
+    var tooltipHtml = '<p><b>Methodik:</b> Z-Score-Vergleich der letzten 10-Tages-Rendite gegen alle historischen 10d-Returns am gleichen Kalenderzeitpunkt.</p>' +
+      '<p>Der <b>Score</b> misst wie viele Standardabweichungen der aktuelle Verlauf vom historischen Mittel entfernt ist (&ge;40 = leicht anomal, &ge;70 = stark anomal).</p>' +
+      '<p>Der <b>Perzentil-Rang</b> zeigt komplementär, wo die aktuelle 10d-Rendite in der historischen Verteilung steht &mdash; das 90. Perzentil bedeutet: höher als 90&nbsp;% aller vergleichbaren historischen Fenster.</p>' +
+      '<p>Ein hoher Score oder extremer Perzentil bedeutet nicht bullish oder bearish, sondern nur &bdquo;der Verlauf ist ungewöhnlich".</p>';
+    var badge = document.createElement('span');
+    badge.className = 'sa-anom-badge';
+    badge.setAttribute('aria-label', 'Methodik des Anomalie-Radars');
+    badge.textContent = '\u24D8'; // ⓘ
+    var tooltip = document.createElement('span');
+    tooltip.className = 'sa-anom-tooltip';
+    tooltip.innerHTML = tooltipHtml;
+    summary.appendChild(badge);
+    summary.appendChild(tooltip);
+  },
+
+  /**
+   * Haupt-Entry-Point: Rendert den kompletten Anomalie-Radar (5 KPI-Cards +
+   * Info-Badge im Summary des umgebenden <details>) in das angegebene Container-Element.
+   * @param {string} containerId - ID des Ziel-divs (z.B. 'content-anomaly')
+   * @param {Array} rows - Preisrows [{date, close, log_return?}, ...]
+   * @param {string} ticker - Ticker fuer KPI-Label
+   */
+  renderAnomalyInto: function(containerId, rows, ticker) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    this._ensureAnomalyCss();
+    this._injectAnomalySummaryBadge(el);
+
+    var anom = null;
+    try {
+      if (rows && rows.length >= 200) {
+        var dec = this.fromPrices(rows.slice(), ticker);
+        anom = dec ? dec.anomaly : null;
+      }
+    } catch (e) { console.warn('[anomaly] compute failed:', e); }
+
+    if (!anom || anom.n_comparisons === 0) {
+      el.innerHTML = '<p style="color:var(--muted);font-size:.875rem;margin:0">Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).</p>';
+      return;
+    }
+
+    var fmtPct = function(v) { if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
+    var scoreCls = anom.score >= 70 ? 'red' : anom.score >= 40 ? 'gold' : 'green';
+    var statusLabel = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
+    var retCls = anom.return_10d >= 0 ? 'green' : 'red';
+
+    var pRank = anom.percentile_rank;
+    var pRankLabel, pRankCls;
+    if (pRank == null) {
+      pRankLabel = '–';
+      pRankCls = '';
+    } else {
+      pRankLabel = pRank + '. Perzentil';
+      if (pRank < 10 || pRank > 90) pRankCls = 'red';
+      else if (pRank < 20 || pRank > 80) pRankCls = 'gold';
+      else pRankCls = 'green';
+    }
+
+    var html = '<div class="sa-anom-row">' +
+      '<div class="kpi"><div class="kpi-label">Score</div><div class="kpi-value ' + scoreCls + '">' + anom.score + ' / 100</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + scoreCls + '">' + statusLabel + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">10d-Rendite ' + (ticker || '') + '</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d) + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Historisch &Oslash;</div><div class="kpi-value">' + fmtPct(anom.avg_10d) + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div><div class="kpi-value ' + pRankCls + '">' + pRankLabel + '</div></div>' +
+    '</div>';
+    el.innerHTML = html;
   }
 };
 
