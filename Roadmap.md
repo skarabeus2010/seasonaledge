@@ -1,6 +1,6 @@
 # SeasonAlpha — Feature-Roadmap
 
-> Stand: 2026-04-08 | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**.
+> Stand: 2026-04-09 | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Feature #1 Guided Tour ist live.**
 
 ## Kontext
 
@@ -17,20 +17,20 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 
 ## 5 geplante Features
 
-| # | Feature | Backend | Frontend | Aufwand | Abhängigkeiten |
-|---|---------|--------:|---------:|--------:|----------------|
-| 1 | **Guided Tour** | N/A | 0 % | **3–4 Tage** | Keine |
-| 2 | **Email-Alerts / Weekly Report** | ~70 % (`shared/email_brevo.py`) | 20 % (Newsletter-Form) | **3–4 Tage** | Brevo API-Key, Cron |
-| 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Keine (Daten sind da) |
-| 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Supabase Auth + RLS |
-| 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Keine (Engine existiert) |
+| # | Feature | Backend | Frontend | Aufwand | Status |
+|---|---------|--------:|---------:|--------:|--------|
+| 1 | **Guided Tour** | N/A | 100 % | **1 Tag** | ✅ **Live seit 2026-04-09** |
+| 2 | **Email-Alerts / Weekly Report** | ~70 % (`shared/email_brevo.py`) | 20 % (Newsletter-Form) | **3–4 Tage** | Nächstes Feature |
+| 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Welle 2 |
+| 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Welle 2 |
+| 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Welle 3 |
 
 ## Entwicklungs-Wellen
 
 ### Welle 1 — Quick Wins (Woche 1–2)
 
-1. **Guided Tour** — Hoher UX-Impact, niedriger Aufwand, keine Dependencies. ✅ **In Umsetzung.**
-2. **Email-Alerts / Weekly Report** — Brevo-Integration zu 70 % da, primär Template-Generator + Cron-Job.
+1. **Guided Tour** — Hoher UX-Impact, niedriger Aufwand, keine Dependencies. ✅ **Live seit 2026-04-09** (1 Tag Implementierung inkl. Post-Launch-Fixes).
+2. **Email-Alerts / Weekly Report** — Brevo-Integration zu 70 % da, primär Template-Generator + Cron-Job. **Nächstes Feature.**
 
 ### Welle 2 — Core Features (Woche 3–4)
 
@@ -43,25 +43,36 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 
 ## Kritische Dateien pro Feature
 
-### Feature #1 — Guided Tour ✅ in Umsetzung
+### Feature #1 — Guided Tour ✅ LIVE seit 2026-04-09
 
-**Neu:**
-- `landing/js/tour-config.js` — 13 Tour-Steps als Daten-Array
-- `landing/js/tour.js` — SA.tour Wrapper (Lazy-Load Driver.js + Multi-Page Resume via `?tour=step:N`)
+**Neu (implementiert):**
+- `landing/js/tour-config.js` — **23 Tour-Steps** als Daten-Array (erweitert von ursprünglich 13)
+- `landing/js/tour.js` — SA.tour Wrapper mit Lazy-Load Driver.js v1.3.1 via CDN, Multi-Page-Resume via `?tour=step:N`, `_resolveDriverGlobal()` mit mehreren Fallback-Export-Pfaden, sichtbares Error-Banner statt alert
 
 **Erweitert:**
-- `landing/css/app.css` — Driver.js Popover-Theming (V3 Ultra Dark + Gold) + `.nav__tour-btn`
-- `landing/components/nav.html` — "Tour"-Button vor `.nav__cta`
-- `landing/index.html`, `dashboard.html`, `jahreszyklus.html`, `backtest-engine.html` — Script-Einbindung
+- `landing/css/app.css` — Driver.js Popover-Theming (V3 Ultra Dark + Gold) + `.nav__tour-btn` Klasse
+- `landing/index.html` — **Inline** Nav-Button + inline CSS-Theming (diese Page lädt app.css nicht!)
+- `landing/components/nav.html` — Tour-Button für alle Sub-Pages
+- Script-Einbindung mit Cache-Busting `?v=20260409` auf: index, dashboard, jahreszyklus, backtest-engine, dekadenzyklus, zentralbanken, feiertage, trifecta, spot-vol-beta, plain-vanilla, ki-saisonalitaet = **11 Pages**
 
-**Tech-Stack:** Driver.js v1.3.1 via CDN (~25 KB, MIT, vanilla JS, smooth-scroll). Lazy-Load bei Tour-Start. Multi-Page-Tour über URL-Query-Param `?tour=step:N`.
+**Tour-Flow (23 Steps über 11 Pages):**
+1. **Landing** — Welcome + Dashboard-CTA
+2. **Dashboard** — Ticker-Input, Trading-Day-Header (TDOM/TWOY/TDOY/Q/Cycle), KI-Score, Crash-Ampel, Jahreschart, Events (6 Steps)
+3. **Dekadenzyklus** — 131 Jahre DJI Kohorten-Chart
+4. **Jahreszyklus** — Hauptchart, Sidebar-Controls, **Detrend-Indikator** (3 Steps)
+5. **Zentralbanken** — Fed/EZB/BoE/BoJ Event-Window
+6. **Feiertage** — Börsen-spezifisches Ranking
+7. **Januar Trifecta** — SCR + FFD + JanB Ampelsystem
+8. **Spot-Vol Beta** — SPX vs VIX Regression + Regimes
+9. **Plain Vanilla** — 24 Strategien mit Equity-Kurve
+10. **KI-Saisonalität** — Composite Score + Musterpfad
+11. **Backtest Engine** — **Outlier Manager**, **Technische Filter**, Event-Typ, Tab-Nav (4 Steps)
+12. **Finale** (zurück auf Dashboard)
 
-**Tour-Scope:** 13 Schritte über 5 Pages:
-- Phase 1 (Landing): Welcome + Dashboard-CTA
-- Phase 2 (Dashboard): Ticker-Input + 4 Bento-Cards (KI, Crash, Year, Events)
-- Phase 3 (Jahreszyklus): Sidebar + Hauptchart + Drawdown-Sektion
-- Phase 4 (Backtest-Engine): Event-Dropdown + Tab-Nav
-- Phase 5 (zurück auf Dashboard): Finale
+**Post-Launch Fixes:**
+- CDN-Load robuster: `_resolveDriverGlobal()` probiert `window.driver`, `window.driver.js.driver`, `window.driver.driver`
+- Cache-Busting, weil nginx `/landing/` mit max-age=86400 liefert
+- Landing-Page hatte EIGENE Inline-Nav (nicht components/nav.html) — musste an 2 Stellen patchen
 
 ### Feature #2 — Email-Alerts / Weekly Report
 

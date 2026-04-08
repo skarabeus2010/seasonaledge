@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.6 | 2026-04-08 (Nachmittag) | Details → `docs/`
+> Version 27.7 | 2026-04-09 (Abend) | Details → `docs/`
 
 
 ## Projekt
@@ -79,6 +79,8 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
     indicators.js        ← Technische Indikatoren (SMA/EMA/RSI/BB/MACD/LBR)
     outlier.js           ← Outlier-Filter (IQR, Winsorize)
     holidays.js          ← Globaler Feiertags-Kalender (NYSE/XETRA/LSE, Gauss-Ostern)
+    tour.js              ← Guided Tour Wrapper: Lazy-Load Driver.js CDN, Multi-Page-Resume via ?tour=step:N, Error-Banner
+    tour-config.js       ← 23 Tour-Steps über 11 Pages (Landing → Dashboard → Dekadenzyklus → Jahreszyklus → Fed → Feiertage → Trifecta → Spot-Vol → Plain Vanilla → KI → Backtest → Finale)
   pages/
     dekadenzyklus.html   ← Dekaden-Analyse (12 Sektionen, Ticker-Wechsel)
     monatswechsel.html   ← Turn of the Month (TOM, Heatmap, Streak, Signifikanz)
@@ -399,6 +401,11 @@ UPPER_CASE        → Konstanten
 # ── Abschnitt ──  → Section Headers
 ```
 
+### Sprache & Zeichen (PFLICHT)
+
+- **Immer echte Umlaute** in deutschsprachigen Inhalten: **ä ö ü**, nicht ae/oe/ue. Gilt für UI-Strings, Tour-Popover, Blog, Commit-Messages, Kommentare. HTML-Entities (`&auml;`, `&ouml;`, `&uuml;`) sind als Alternative ok. Dateinamen und Pfade bleiben ASCII.
+- Vom User am 2026-04-09 explizit festgelegt. Vorher wurde teilweise Ersatzschreibung benutzt → unprofessioneller Eindruck in Tour/Blog/UI.
+
 ## Arbeitsprotokoll & Kontinuität
 
 > GEHE DAVON AUS, DASS EINE UNTERBRECHUNG JEDERZEIT PASSIEREN KANN.
@@ -539,6 +546,12 @@ Bei Fehlern:
 - [x] **2026-04-08** Dekadenzyklus: 4 KPI-Kacheln unter Drawdown-Chart (Aktueller DD, Max DD {year}, Ø DD in x{digit}, Max DD in x{digit}) mit dynamischem Year/Digit
 - [x] **2026-04-08** Dekadenzyklus: Performance-Optimierung (Default nur aktuelle Dekade + Ticker-Cache in-memory + Staged Initial-Render in 4 Phasen)
 - [x] **2026-04-08** Dashboard: Year-Chart rebased auf Fenster-Anfang = 100 (fixt "Linien starten nicht bei 100"-Bug + macht Avg-Linie sichtbar dynamisch)
+- [x] **2026-04-09** **Guided Tour** mit Driver.js v1.3.1 (23 Steps über 11 Pages) — neue Module `landing/js/tour.js` + `landing/js/tour-config.js`, Lazy-CDN-Load, Multi-Page-Resume via `?tour=step:N`, V3-Ultra-Theming für Popover, Nav-Button auf allen Pages (inline Landing + components/nav.html), Driver.js globaler Export via `_resolveDriverGlobal()` (mehrere Fallback-Pfade), sichtbares Error-Banner statt alert, Cache-Busting `?v=20260409`
+- [x] **2026-04-09** Tour-Scope: Landing → Dashboard (Ticker, Trading-Day-Header, KI-Score, Crash, Year, Events) → Dekadenzyklus → Jahreszyklus (Main, Sidebar, **Detrend**) → Zentralbanken → Feiertage → Trifecta → Spot-Vol → Plain Vanilla → KI-Saisonalität → Backtest (**Outlier**, **Filter**, Event, Tabs) → Dashboard-Finale
+- [x] **2026-04-09** `Roadmap.md` im Repo-Root (5-Feature-Plan: Tour, Email-Alerts, Scanner, Auth+Watchlists, Portfolio-Combo mit Backend/Frontend-Status + Wellen)
+- [x] **2026-04-09** Performance: Default-Zeiträume reduziert von 20 J → 10 J auf `jahreszyklus`, `ki-saisonalitaet`, `feiertage`, `tdom-analyse`, `intermarket-shocks`. Auf `plain-vanilla` von "Max" → 10 J (größter Bottleneck). Initial-Load ~50–70% schneller
+- [x] **2026-04-09** Monatswechsel: Sidebar-Checkbox "Aktuelles Jahr" + Gold-Overlay der aktuellen (ggf. unvollständigen) TOM-Fenster des laufenden Jahres. Neuer Helper `buildCurrentYearTOMCurves()` in monatswechsel.html der laufende Fenster zulässt und fehlende Post-Tage mit null paddet. Cutoff-Logik: Gemittelte Gold-Linie wird strikt am letzten gültigen Tag des zeitlich aktuellsten Fensters gekappt (verhindert "Zukunftstage" aus abgeschlossenen Fenstern)
+- [x] **2026-04-09** **Umlaute-Regel** in CLAUDE.md + MEMORY fixiert: Immer ä/ö/ü statt ae/oe/ue in allen deutschsprachigen Inhalten (UI, Tour-Popover, Blog, Commit-Messages)
 
 ### ⚠️ OFFEN — Als nächstes (Sidebar-Plan bereit zur Abholung)
 - [ ] **Mobile Responsiveness Fix** — Plan liegt in `C:\Users\HeikoSeibel\.claude\plans\humming-juggling-hinton.md`. 6 kritische Bugs + 4 high-prio Issues auf ≤768px identifiziert. Fix betrifft 4 Dateien (`app.css`, `decade-compute.js`, `dashboard.html`, `backtest-engine.html`), ~80 Zeilen CSS + 15 Zeilen JS. **Direkt umsetzbar nach Exit Plan Mode — vom Home Office weitermachen.**
