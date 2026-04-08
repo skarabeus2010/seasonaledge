@@ -7,6 +7,7 @@ category: tutorials
 tags: [dashboard, ki-score, crash-ampel, saisonalitaet, strategien, neu]
 description: "Das neue SeasonAlpha Dashboard zeigt für jeden Ticker KI-Score, Crash-Ampel, Saisonalität, Risiko, Top-Strategien und nächste Events auf einer einzigen Seite. So nutzt du es."
 ticker: ^GSPC
+screenshot: dashboard-hero.png
 status: published
 ---
 
@@ -26,6 +27,8 @@ Genau das ändert das neue **Dashboard** unter [seasonalpha.ai/dashboard](https:
 ## Was du auf einer Seite bekommst
 
 Das Dashboard ist als **Bento-Grid** aufgebaut: elf kompakte Karten, jede mit einer eigenen Aussage. Du musst nichts aufklappen, nichts filtern — alles ist sofort sichtbar.
+
+![Das SeasonAlpha Dashboard für ^GSPC: Hero-Zeile mit KI-Score, Crash-Ampel, Anomalie-Radar und Januar Trifecta, darunter vier Saisonalitäts-Charts](dashboard-hero.png)
 
 ### Die Hero-Zeile: vier Signale, eine Sekunde
 
@@ -61,6 +64,10 @@ Damit weisst du nicht nur, wo du saisonal stehst, sondern auch, was die nächste
 Eine breite Karte zeigt alle 24 Halbmonats-Phasen (Jan H1, Jan H2, …, Dez H2) als Bar-Chart, und die aktuelle Phase ist gelb markiert. Daneben Status (Bullish / Neutral / Bearish), Ø Return und Rang innerhalb der 24 Phasen.
 
 Beispiel S&P 500 für **Apr H1**: Ø +0,24 %, Status Neutral, Rang 17/24 — also ein eher unauffälliger Halbmonat.
+
+![Two-Week Phase Card mit dem aktuellen Halbmonat Apr H1 (gelb hervorgehobener Balken), Risiko-Metriken, Top-Strategien und nächsten Events für den S&P 500](dashboard-twoweek.png)
+
+Direkt darunter siehst du auf demselben Bild die anderen Karten, die im Beispiel-Screenshot mitgeführt sind: die vier Risiko-KPIs, die Top-Strategien-Tabelle mit Streak-Badges und die vier Event-Karten — die wir uns gleich im Detail ansehen.
 
 ### Risiko: vier KPIs, eine Wahrheit
 
