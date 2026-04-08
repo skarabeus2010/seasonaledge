@@ -514,7 +514,13 @@ SA.decadeCompute = {
       '.sa-anom-badge:hover ~ .sa-anom-tooltip,.sa-anom-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}',
       '.sa-anom-tooltip b{color:var(--text,#fff);font-weight:700}',
       '.sa-anom-tooltip p{margin:0 0 .5rem 0}',
-      '.sa-anom-tooltip p:last-child{margin-bottom:0}'
+      '.sa-anom-tooltip p:last-child{margin-bottom:0}',
+      // Perzentil-Slider (rot → gold → grün → gold → rot)
+      '.sa-anom-prank{display:flex;flex-direction:column;align-items:stretch;gap:.35rem;margin-top:.15rem}',
+      '.sa-anom-prank-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,#ff4040 0%,#ff4040 10%,#e8a820 20%,#30e878 30%,#30e878 70%,#e8a820 80%,#ff4040 90%,#ff4040 100%);box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}',
+      '.sa-anom-prank-mark{position:absolute;top:-3px;width:3px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 6px rgba(255,255,255,.5);transform:translateX(-50%);transition:left .3s ease}',
+      '.sa-anom-prank-label{font-family:var(--f-d,sans-serif);font-size:1rem;font-weight:700;text-align:center;line-height:1}',
+      '.sa-anom-prank-scale{display:flex;justify-content:space-between;font-size:.625rem;color:var(--muted,#a89878);font-family:var(--f-m,monospace);margin-top:.1rem}'
     ].join('\n');
     var style = document.createElement('style');
     style.id = 'sa-anomaly-css';
@@ -578,15 +584,20 @@ SA.decadeCompute = {
     var retCls = anom.return_10d >= 0 ? 'green' : 'red';
 
     var pRank = anom.percentile_rank;
-    var pRankLabel, pRankCls;
+    var pRankCell;
     if (pRank == null) {
-      pRankLabel = '–';
-      pRankCls = '';
+      pRankCell = '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div><div class="kpi-value">&ndash;</div></div>';
     } else {
-      pRankLabel = pRank + '. Perzentil';
-      if (pRank < 10 || pRank > 90) pRankCls = 'red';
-      else if (pRank < 20 || pRank > 80) pRankCls = 'gold';
-      else pRankCls = 'green';
+      var pRankCls = (pRank < 10 || pRank > 90) ? 'red' : (pRank < 20 || pRank > 80) ? 'gold' : 'green';
+      pRankCell = '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div>' +
+        '<div class="sa-anom-prank">' +
+          '<div class="sa-anom-prank-label ' + pRankCls + '">' + pRank + '. Perzentil</div>' +
+          '<div class="sa-anom-prank-bar" title="' + pRank + '. Perzentil">' +
+            '<div class="sa-anom-prank-mark" style="left:' + pRank + '%"></div>' +
+          '</div>' +
+          '<div class="sa-anom-prank-scale"><span>0</span><span>50</span><span>100</span></div>' +
+        '</div>' +
+      '</div>';
     }
 
     var html = '<div class="sa-anom-row">' +
@@ -594,7 +605,7 @@ SA.decadeCompute = {
       '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + scoreCls + '">' + statusLabel + '</div></div>' +
       '<div class="kpi"><div class="kpi-label">10d-Rendite ' + (ticker || '') + '</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d) + '</div></div>' +
       '<div class="kpi"><div class="kpi-label">Historisch &Oslash;</div><div class="kpi-value">' + fmtPct(anom.avg_10d) + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div><div class="kpi-value ' + pRankCls + '">' + pRankLabel + '</div></div>' +
+      pRankCell +
     '</div>';
     el.innerHTML = html;
   }
