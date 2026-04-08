@@ -1707,7 +1707,12 @@
       var html = '<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.25rem;align-items:center">';
       // Linke Seite: KPIs
       html += '<div>';
-      html += '<div class="card-headline" style="font-size:1.625rem;margin-bottom:.15rem">' + cur.name + '</div>';
+      html += '<div class="card-headline" style="font-size:1.625rem;margin-bottom:.15rem;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">' + cur.name +
+        '<span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.6875rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">' +
+        '<span style="display:inline-block;width:14px;height:10px;background:' + COL_CURRENT + ';border-radius:2px"></span>' +
+        'im Chart' +
+        '</span>' +
+        '</div>';
       html += '<div class="card-sub">Aktuelle 2-Wochen-Phase · ' + cur.n + 'J Daten</div>';
       html += '<div class="kpi-row-mini" style="grid-template-columns:1fr 1fr 1fr;margin-top:.5rem">' +
         '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(avg, 2) + '</div></div>' +
@@ -1740,7 +1745,7 @@
         tooltip: Object.assign({}, SA.chartTheme.tooltip, {
           y: { formatter: function(v){return v != null ? fmtPct(v,2) : '–';} }
         }),
-        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,rotateAlways:true} },
+        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'11px'},rotate:-45,rotateAlways:true} },
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v != null ? v.toFixed(1)+'%' : '';}} },
         legend: { show:false },
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }] }
