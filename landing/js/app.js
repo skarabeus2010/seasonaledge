@@ -26,6 +26,7 @@ function loadComponent(containerId, url) {
 document.addEventListener('DOMContentLoaded', function() {
   loadComponent('nav-container', '/landing/components/nav.html');
   loadComponent('footer-container', '/landing/components/footer.html');
+  initSidebarToggle();
 });
 
 
@@ -57,6 +58,63 @@ function initNav() {
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.nav__dd')) {
       document.querySelectorAll('.nav__dd').forEach(function(d) { d.classList.remove('open'); });
+    }
+  });
+}
+
+
+// ── Sidebar Collapse Toggle ─────────────────────────────────────────────────
+// Fuegt einen einklappbaren Sidebar-Toggle auf allen Pages mit <aside class="sidebar"> ein.
+// - Wide (>=1280px): Push-Modus. Collapsed -> Grid schrumpft auf 0 1fr, Content expandiert.
+// - Narrow (<1280px): Overlay-Modus. Sidebar slidet von links rein, Backdrop dahinter.
+// - State via localStorage ('sa-sidebar-collapsed'), persistiert ueber Page-Wechsel.
+// - Default-State: >=1280px sichtbar, <1280px versteckt (Breakpoint-basiert wenn kein LS-Wert).
+function initSidebarToggle() {
+  var sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return; // Dashboard & Co haben keine Sidebar -> kein Toggle
+
+  var STORAGE_KEY = 'sa-sidebar-collapsed';
+  var BREAKPOINT = 1280;
+
+  // Initial-State bestimmen
+  var stored = null;
+  try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  var initialCollapsed;
+  if (stored === 'true') initialCollapsed = true;
+  else if (stored === 'false') initialCollapsed = false;
+  else initialCollapsed = window.innerWidth < BREAKPOINT;
+
+  if (initialCollapsed) document.body.classList.add('sa-sidebar-collapsed');
+
+  // Toggle-Button
+  var btn = document.createElement('button');
+  btn.className = 'sa-sb-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Sidebar ein- oder ausblenden');
+  btn.setAttribute('title', 'Sidebar ein-/ausblenden');
+  document.body.appendChild(btn);
+
+  // Backdrop (nur auf Narrow Screens via CSS sichtbar)
+  var backdrop = document.createElement('div');
+  backdrop.className = 'sa-sb-backdrop';
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(backdrop);
+
+  function setCollapsed(collapsed) {
+    document.body.classList.toggle('sa-sidebar-collapsed', collapsed);
+    try { localStorage.setItem(STORAGE_KEY, String(collapsed)); } catch (e) {}
+  }
+  function toggle() {
+    setCollapsed(!document.body.classList.contains('sa-sidebar-collapsed'));
+  }
+
+  btn.addEventListener('click', toggle);
+  backdrop.addEventListener('click', function() {
+    if (window.innerWidth < BREAKPOINT) setCollapsed(true);
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && window.innerWidth < BREAKPOINT) {
+      if (!document.body.classList.contains('sa-sidebar-collapsed')) setCollapsed(true);
     }
   });
 }
