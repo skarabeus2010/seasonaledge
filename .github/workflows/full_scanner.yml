@@ -1,0 +1,64 @@
+name: Full Scanner Run (Weekly)
+
+on:
+  schedule:
+    # Sonntags um 03:00 UTC (05:00 MESZ) — wenn keine anderen Jobs laufen
+    # und Supabase-Latency am niedrigsten ist
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      quick:
+        description: 'Quick-Mode (schneller, weniger akkurat)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      limit:
+        description: 'Nur erste N Ticker (optional, leer = alle)'
+        required: false
+        default: ''
+        type: string
+      resume:
+        description: 'Resume: Ticker ueberspringen die heute schon gescannt sind'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  full-scan:
+    runs-on: ubuntu-latest
+    # 90 Minuten Gesamt-Timeout: reicht fuer ~270 Ticker im Full-Mode
+    # (erfahrungsgemaess ~15-30s pro Ticker je nach Download + Compute)
+    timeout-minutes: 90
+    steps:
+      - name: Run full scanner on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # 85 Minuten SSH-Command-Timeout (5 Min Buffer zu Job-Timeout)
+          command_timeout: 85m
+          script: |
+            ARGS=""
+            if [ "${{ github.event.inputs.quick }}" = "true" ]; then
+              ARGS="$ARGS --quick"
+            fi
+            if [ "${{ github.event.inputs.resume }}" = "true" ]; then
+              ARGS="$ARGS --resume"
+            fi
+            if [ -n "${{ github.event.inputs.limit }}" ]; then
+              ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+            fi
+
+            echo "[full_scanner] Starting with args: $ARGS"
+            docker exec seasonalpha-app python3 scripts/full_scanner_run.py $ARGS 2>&1 | tail -300
+            RC=${PIPESTATUS[0]}
+            echo "[full_scanner] Exit code: $RC"
+            echo "[full_scanner] Finished: $(date)"
+            exit $RC

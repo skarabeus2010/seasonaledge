@@ -44,10 +44,12 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
         get_or_compute_tdoy_stats,
         store_scanner_results,
     )
+    from shared.supabase_client import upsert_scanner_results as _upsert_scanner_one
 
     current_year = date.today().year
     start_year = current_year - years_back
     scanner_results = []
+    today_str = date.today().strftime("%Y-%m-%d")
 
     for i, ticker in enumerate(tickers):
         try:
@@ -125,6 +127,22 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                             1 - tracking_details.get("correlation", 0), 3
                         )
                         scanner_results.append(result)
+
+                        # Pro-Ticker-Upsert (resume-safe bei Timeouts)
+                        try:
+                            _upsert_scanner_one([{
+                                "ticker": result["ticker"],
+                                "score": result["score"],
+                                "signal": result["signal"],
+                                "win_rate": result.get("win_rate", 0),
+                                "avg_return": result.get("avg_return", 0),
+                                "deviation": result.get("deviation", 0),
+                                "scan_date": today_str,
+                            }])
+                        except Exception as _up_e:
+                            app_logger.debug(
+                                f"nightly_refresh: scanner upsert {ticker}: {_up_e}"
+                            )
 
             # TDoM Stats (alle 3 Strategien, forward)
             for strategy in ["open_to_close", "open_to_next_open", "close_to_next_close"]:

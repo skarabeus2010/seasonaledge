@@ -9,7 +9,10 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 60 Minuten total (vorher 15) — der Ticker-Loop braucht fuer ~270 Ticker
+    # im quick-mode ~20-40 Min. Alte 10m Timeout hat dazu gefuehrt dass
+    # nur ~94 von 270 Tickern in scanner_results landeten.
+    timeout-minutes: 60
     steps:
       - name: Run nightly refresh on VPS
         uses: appleboy/ssh-action@v1
@@ -17,7 +20,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 10m
+          command_timeout: 55m
           script: |
-            docker exec seasonalpha-app python3 scripts/nightly_refresh.py 2>&1 | tail -30
+            docker exec seasonalpha-app python3 scripts/nightly_refresh.py 2>&1 | tail -80
             echo "Nightly refresh done: $(date)"
