@@ -36,7 +36,7 @@ PAGES_DIR = REPO / "landing" / "pages"
 BASE_URL = "https://seasonalpha.ai"
 TWITTER_HANDLE = "@SeasonAlph4882"
 OG_IMAGE = f"{BASE_URL}/landing/assets/images/og-image.png"
-MARKER = "<!-- SA_META_V3 -->"  # V3 = + BreadcrumbList JSON-LD
+MARKER = "<!-- SA_META_V4 -->"  # V4 = 2-Level Breadcrumbs (Google-valid, jedes Item mit item-URL)
 
 # Slug -> { slug, type, category } pro Page.
 # category = Nav-Gruppe fuer Breadcrumb (Zyklen / Events / Strategien / Mehr)
@@ -94,21 +94,18 @@ def build_meta_block(slug: str, title: str, description: str, og_type: str, cate
     if short_title:
         og_title = f"{short_title} &mdash; SeasonAlpha"
 
-    # BreadcrumbList: Home -> (Category) -> Page
-    # Da die Nav-Kategorien keine eigenen URLs haben, zeigen wir sie nur als
-    # zusaetzlichen name-only Schritt. Google akzeptiert das. Ohne Kategorie
-    # (z.B. dashboard) nur 2 Levels: Home -> Page.
-    if category:
-        breadcrumb_items = [
-            f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
-            f'{{"@type":"ListItem","position":2,"name":"{category}"}}',
-            f'{{"@type":"ListItem","position":3,"name":"{short_title}","item":"{url}"}}',
-        ]
-    else:
-        breadcrumb_items = [
-            f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
-            f'{{"@type":"ListItem","position":2,"name":"{short_title}","item":"{url}"}}',
-        ]
+    # BreadcrumbList: Home -> Page (2-Level)
+    # Die Nav-Kategorien (Zyklen/Events/Strategien/Mehr) haben keine eigenen URLs
+    # (sind nur Dropdown-Gruppen). Google's Validator verlangt fuer jedes ListItem
+    # eine item-URL. name-only Zwischenschritte loesen "kritisches Problem" aus.
+    # Loesung: Kategorie weglassen, nur Home -> Page.
+    # (category-Parameter bleibt im API-Vertrag fuer spaetere Erweiterung, wird hier
+    #  aktuell nicht genutzt.)
+    _ = category
+    breadcrumb_items = [
+        f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
+        f'{{"@type":"ListItem","position":2,"name":"{short_title}","item":"{url}"}}',
+    ]
     breadcrumb_json = (
         '{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":['
         + ",".join(breadcrumb_items)
