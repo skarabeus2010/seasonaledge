@@ -28,6 +28,10 @@ PAGE_SEO = {
         "title": "Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | SeasonAlpha",
         "description": "Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Crash-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.",
     },
+    "scanner.html": {
+        "title": "Saisonal-Scanner &mdash; Alle Ticker nach KI-Score | SeasonAlpha",
+        "description": "Saisonal-Scanner: alle Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal (Bullish/Bearish/Neutral), Win-Rate. Screening f&uuml;r saisonale Trading-Chancen.",
+    },
     "jahreszyklus.html": {
         "title": "Jahreszyklus &mdash; Saisonale Jahresmuster am Markt | SeasonAlpha",
         "description": "Saisonaler Jahresverlauf, Pressure Chart, Detrend, Pr&auml;sidentenzyklus, Monats- & Quartals-Performance. Erkenne wiederkehrende Muster mit bis zu 131 Jahren Daten.",

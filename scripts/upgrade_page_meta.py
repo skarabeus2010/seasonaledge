@@ -43,6 +43,7 @@ MARKER = "<!-- SA_META_V5 -->"  # V5 = SEO-optimierte Titles eingetragen (nach o
 # Dashboard ist top-level ohne Kategorie.
 PAGE_META = {
     "dashboard.html":           {"slug": "dashboard",          "type": "website", "cat": None},
+    "scanner.html":             {"slug": "scanner",            "type": "website", "cat": "Strategien"},
     # Zyklen
     "dekadenzyklus.html":       {"slug": "dekadenzyklus",      "type": "website", "cat": "Zyklen"},
     "jahreszyklus.html":        {"slug": "jahreszyklus",       "type": "website", "cat": "Zyklen"},

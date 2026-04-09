@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Saisonal-Scanner &mdash; Alle Ticker nach KI-Score | SeasonAlpha</title>
+  <meta name="description" content="Saisonal-Scanner: alle Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal (Bullish/Bearish/Neutral), Win-Rate. Screening f&uuml;r saisonale Trading-Chancen.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/scanner">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/scanner">
+  <meta property="og:title" content="Saisonal-Scanner &mdash; SeasonAlpha">
+  <meta property="og:description" content="Alle analysierten Ticker nach KI-Saisonalit&auml;ts-Score sortiert. Filter nach Kategorie, Signal, Win-Rate.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Saisonal-Scanner &mdash; SeasonAlpha">
+  <meta name="twitter:description" content="Alle analysierten Ticker nach KI-Saisonalit&auml;ts-Score sortiert.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Saisonal-Scanner","url":"https://seasonalpha.ai/scanner","description":"Saisonal-Scanner: Alle analysierten Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal, Win-Rate.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai/"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai/","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <!-- Structured Data: BreadcrumbList -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Saisonal-Scanner","item":"https://seasonalpha.ai/scanner"}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.75rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative;min-height:60vh}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+
+    /* Scan-Header mit Distribution-Karten */
+    .scan-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.25rem}
+    @media(max-width:640px){.scan-summary{grid-template-columns:repeat(2,1fr);gap:.5rem}}
+    .scan-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.75rem .9rem}
+    .scan-card .lbl{font-size:.625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem}
+    .scan-card .val{font-family:var(--f-d);font-size:1.35rem;font-weight:800;color:var(--text);line-height:1.1}
+    .scan-card .sub{font-size:.6875rem;color:var(--dim);margin-top:.2rem;font-variant-numeric:tabular-nums}
+    .scan-card.bullish .val{color:var(--green)}
+    .scan-card.bearish .val{color:var(--red)}
+    .scan-card.neutral .val{color:var(--accent)}
+
+    /* Sidebar Filter Controls */
+    .sidebar .filter-group{margin-bottom:.9rem}
+    .sidebar .filter-group h4{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem}
+    .sidebar .filter-row{display:flex;align-items:center;gap:.5rem;padding:.2rem 0;font-size:.8125rem;color:var(--dim);cursor:pointer}
+    .sidebar .filter-row input[type="checkbox"]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0}
+    .sidebar .filter-row .chk-count{margin-left:auto;font-size:.6875rem;color:var(--muted);font-variant-numeric:tabular-nums}
+    .sidebar .range-display{font-size:.6875rem;color:var(--accent);font-family:var(--f-m);margin-top:.25rem;text-align:right}
+    .sidebar .chk-master{color:var(--accent);font-weight:700;border-bottom:1px solid var(--border);padding-bottom:.35rem;margin-bottom:.35rem}
+    .sidebar .signal-row .badge{padding:.1rem .4rem;border-radius:4px;font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+    .sidebar .signal-row.bullish .badge{background:rgba(48,232,120,.15);color:var(--green)}
+    .sidebar .signal-row.bearish .badge{background:rgba(255,64,64,.15);color:var(--red)}
+    .sidebar .signal-row.neutral .badge{background:rgba(232,168,32,.15);color:var(--accent)}
+    .sidebar button.btn-reset{width:100%;margin-top:.5rem;padding:.45rem;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.75rem;font-family:var(--f-b);cursor:pointer;transition:all .15s}
+    .sidebar button.btn-reset:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* Ergebnis-Tabelle */
+    .results-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem}
+    .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;gap:.75rem;flex-wrap:wrap}
+    .results-header h2{font-family:var(--f-d);font-size:1.05rem;font-weight:700;color:var(--text)}
+    .results-count{font-size:.75rem;color:var(--muted);font-family:var(--f-m)}
+    .results-count b{color:var(--accent)}
+    .scanner-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .scanner-table th{color:var(--muted);font-size:.625rem;text-transform:uppercase;letter-spacing:.08em;padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card);z-index:1}
+    .scanner-table th:hover{color:var(--accent)}
+    .scanner-table th.num{text-align:right}
+    .scanner-table th .sort-ind{opacity:.4;font-size:.625rem;margin-left:.2rem}
+    .scanner-table th.sorted .sort-ind{opacity:1;color:var(--accent)}
+    .scanner-table td{padding:.55rem .5rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim);font-variant-numeric:tabular-nums;vertical-align:middle}
+    .scanner-table tr:hover td{background:rgba(232,168,32,.04)}
+    .scanner-table td.rank{color:var(--muted);font-family:var(--f-m);font-size:.75rem;width:40px}
+    .scanner-table td.ticker{color:var(--text);font-weight:700;font-family:var(--f-m)}
+    .scanner-table td.ticker a{color:var(--text);text-decoration:none}
+    .scanner-table td.ticker a:hover{color:var(--accent)}
+    .scanner-table td.name{color:var(--dim);font-size:.8125rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .scanner-table td.cat{color:var(--muted);font-size:.6875rem}
+    .scanner-table td.num{text-align:right;font-family:var(--f-m);font-size:.8125rem}
+    .scanner-table td.score-val{font-weight:700;font-size:.875rem}
+    .scanner-table td.pos{color:var(--green)}
+    .scanner-table td.neg{color:var(--red)}
+    .scanner-table td .sig-badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-family:var(--f-m)}
+    .scanner-table td .sig-badge.bullish{background:rgba(48,232,120,.15);color:var(--green);border:1px solid rgba(48,232,120,.3)}
+    .scanner-table td .sig-badge.bearish{background:rgba(255,64,64,.15);color:var(--red);border:1px solid rgba(255,64,64,.3)}
+    .scanner-table td .sig-badge.neutral{background:rgba(232,168,32,.12);color:var(--accent);border:1px solid rgba(232,168,32,.25)}
+    .scanner-table td.actions a{color:var(--accent);text-decoration:none;font-size:.75rem;padding:.2rem .45rem;border:1px solid rgba(232,168,32,.3);border-radius:4px;transition:all .15s}
+    .scanner-table td.actions a:hover{background:rgba(232,168,32,.1);border-color:var(--accent)}
+
+    /* Empty State */
+    .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+    .empty-state strong{color:var(--text);font-weight:700;display:block;margin-bottom:.5rem;font-size:1rem}
+
+    /* Score-Bar im Sidebar */
+    .range-slider{width:100%;accent-color:var(--accent);margin:.25rem 0}
+
+    /* Table horizontal scroll wrapper fuer Mobile */
+    @media (max-width: 768px) {
+      .results-wrap { padding:.75rem; overflow-x:auto; -webkit-overflow-scrolling:touch }
+      .scanner-table { min-width: 720px }
+      .scanner-table td.name { max-width: 140px }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Suche</h3>
+      <input type="text" id="sel-search" placeholder="Ticker oder Name &hellip;" autocomplete="off">
+
+      <hr>
+      <div class="filter-group">
+        <h4>Signal</h4>
+        <label class="filter-row signal-row bullish"><input type="checkbox" class="chk-signal" value="Bullish" checked> <span class="badge">Bullish</span><span class="chk-count" id="cnt-bullish">0</span></label>
+        <label class="filter-row signal-row neutral"><input type="checkbox" class="chk-signal" value="Neutral" checked> <span class="badge">Neutral</span><span class="chk-count" id="cnt-neutral">0</span></label>
+        <label class="filter-row signal-row bearish"><input type="checkbox" class="chk-signal" value="Bearish" checked> <span class="badge">Bearish</span><span class="chk-count" id="cnt-bearish">0</span></label>
+      </div>
+
+      <hr>
+      <div class="filter-group">
+        <h4>Score-Range</h4>
+        <label class="filter-row"><span>Min:</span><input type="range" class="range-slider" id="sel-min-score" min="0" max="10" step="0.1" value="0"></label>
+        <div class="range-display"><span id="lbl-min-score">0.0</span> &ndash; 10.0</div>
+      </div>
+
+      <hr>
+      <div class="filter-group">
+        <h4>Min Win-Rate</h4>
+        <label class="filter-row"><input type="range" class="range-slider" id="sel-min-wr" min="0" max="100" step="1" value="0"></label>
+        <div class="range-display"><span id="lbl-min-wr">0</span>%</div>
+      </div>
+
+      <hr>
+      <div class="filter-group">
+        <h4>Kategorie</h4>
+        <label class="filter-row chk-master"><input type="checkbox" id="chk-cat-all" checked> Alle / Keine</label>
+        <div id="cat-filters" style="max-height:240px;overflow-y:auto"></div>
+      </div>
+
+      <button type="button" class="btn-reset" id="btn-reset">Filter zur&uuml;cksetzen</button>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading"><div class="spinner"></div><span>Lade Scanner-Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+
+      <h1 class="page-title"><b>Saisonal-Scanner</b></h1>
+      <p class="page-caption" id="page-caption">Alle analysierten Ticker nach KI-Score sortiert &middot; Filter nach Kategorie, Signal und Win-Rate</p>
+      <div class="trading-day-header" id="scan-date-header"></div>
+
+      <!-- Scan-Summary Cards -->
+      <div class="scan-summary" id="scan-summary" style="display:none">
+        <div class="scan-card">
+          <div class="lbl">Ticker gescannt</div>
+          <div class="val" id="sm-total">&ndash;</div>
+          <div class="sub" id="sm-date">&ndash;</div>
+        </div>
+        <div class="scan-card bullish">
+          <div class="lbl">Bullish</div>
+          <div class="val" id="sm-bullish">&ndash;</div>
+          <div class="sub" id="sm-bullish-pct">&ndash;</div>
+        </div>
+        <div class="scan-card neutral">
+          <div class="lbl">Neutral</div>
+          <div class="val" id="sm-neutral">&ndash;</div>
+          <div class="sub" id="sm-neutral-pct">&ndash;</div>
+        </div>
+        <div class="scan-card bearish">
+          <div class="lbl">Bearish</div>
+          <div class="val" id="sm-bearish">&ndash;</div>
+          <div class="sub" id="sm-bearish-pct">&ndash;</div>
+        </div>
+      </div>
+
+      <!-- Ergebnis-Tabelle -->
+      <div class="results-wrap">
+        <div class="results-header">
+          <h2>Screening-Ergebnisse</h2>
+          <div class="results-count"><b id="rc-visible">0</b> von <b id="rc-total">0</b> Ticker</div>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table class="scanner-table" id="scanner-table">
+            <thead>
+              <tr>
+                <th data-sort="rank" class="num">#</th>
+                <th data-sort="ticker">Ticker <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="name">Name <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="kategorie">Kategorie <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="signal">Signal <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="score" class="num sorted">Score <span class="sort-ind">&#x25BE;</span></th>
+                <th data-sort="win_rate" class="num">Win-Rate <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="avg_return" class="num">&Oslash; Return <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th class="num">Aktion</th>
+              </tr>
+            </thead>
+            <tbody id="scanner-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <strong>Keine Ticker passen zum Filter</strong>
+          Lockere die Filter oder setze sie zur&uuml;ck.
+        </div>
+      </div>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik &amp; Daten</summary>
+        <div class="content">
+          <p><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
+          <p><b>Signal-Ableitung:</b></p>
+          <ul style="margin-left:1.25rem;color:var(--dim);font-size:.8125rem">
+            <li><span style="color:var(--green);font-weight:700">Bullish</span>: Score &ge; 6.5</li>
+            <li><span style="color:var(--accent);font-weight:700">Neutral</span>: 3.5 &lt; Score &lt; 6.5</li>
+            <li><span style="color:var(--red);font-weight:700">Bearish</span>: Score &le; 3.5</li>
+          </ul>
+          <p><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
+          <p><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
+          <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">Hinweis: Der Scanner aktualisiert alle Ticker nur bei voll-Durchl&auml;ufen (je nach Serverlast mehrmals pro Woche, nicht zwingend t&auml;glich). Das Scan-Datum oben zeigt den tats&auml;chlichen Stand der Daten.</p>
+          <p><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script src="/landing/js/app.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    var state = {
+      raw: [],        // Kombinierte Scanner + Metadata Rows
+      tickersMap: {}, // { ticker: { n, k } }
+      sortKey: 'score',
+      sortDir: -1,    // -1 = desc, +1 = asc
+      filters: {
+        search: '',
+        signals: new Set(['Bullish', 'Neutral', 'Bearish']),
+        categories: new Set(),  // leer = alle
+        minScore: 0,
+        minWinRate: 0,
+      },
+    };
+
+    function qs(id) { return document.getElementById(id); }
+
+    function showError(msg) {
+      var el = qs('error-banner');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function hideLoading() {
+      qs('loading').style.display = 'none';
+    }
+
+    function formatDate(isoDate) {
+      if (!isoDate) return '';
+      var d = new Date(isoDate);
+      var days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+      var pad = function(n){return n<10?'0'+n:''+n};
+      return days[d.getDay()] + ' ' + pad(d.getDate()) + '.' + pad(d.getMonth()+1) + '.' + d.getFullYear();
+    }
+
+    function loadTickersMetadata() {
+      return fetch('/landing/data/tickers.json')
+        .then(function(r) { return r.json(); })
+        .then(function(list) {
+          var map = {};
+          list.forEach(function(entry) {
+            map[entry.t] = { n: entry.n, k: entry.k };
+          });
+          return map;
+        });
+    }
+
+    function loadScannerResults() {
+      if (!window.SA || !SA.supabase || !SA.supabase.url || SA.supabase.url.indexOf('%%') >= 0) {
+        return Promise.reject(new Error('Supabase nicht konfiguriert'));
+      }
+      // Lade alle Scanner-Results (PostgREST limit default 1000, reicht fuer ~300 Ticker)
+      return SA.supabase.get('scanner_results', 'select=*&order=score.desc&limit=5000');
+    }
+
+    function enrichAndStore(scannerRows, tickersMap) {
+      state.tickersMap = tickersMap;
+      // Neuestes scan_date ermitteln
+      var latestDate = null;
+      scannerRows.forEach(function(r) {
+        if (!latestDate || r.scan_date > latestDate) latestDate = r.scan_date;
+      });
+      // Nur Rows vom neuesten Datum behalten
+      var rows = scannerRows.filter(function(r) { return r.scan_date === latestDate; });
+      // Mit Metadata mergen
+      state.raw = rows.map(function(r) {
+        var meta = tickersMap[r.ticker] || {};
+        return {
+          ticker: r.ticker,
+          name: meta.n || r.ticker,
+          kategorie: meta.k || 'Sonstige',
+          signal: r.signal,
+          score: parseFloat(r.score) || 0,
+          win_rate: parseFloat(r.win_rate) || 0,
+          avg_return: parseFloat(r.avg_return) || 0,
+          deviation: parseFloat(r.deviation) || 0,
+          scan_date: r.scan_date,
+        };
+      });
+      state.latestDate = latestDate;
+    }
+
+    function buildCategoryFilters() {
+      // Alle einzigartigen Kategorien aus den Rows sammeln, mit Count
+      var catCounts = {};
+      state.raw.forEach(function(r) {
+        catCounts[r.kategorie] = (catCounts[r.kategorie] || 0) + 1;
+      });
+      var cats = Object.keys(catCounts).sort();
+      // Default: alle aktiviert
+      state.filters.categories = new Set(cats);
+
+      var html = cats.map(function(cat) {
+        var id = 'cat-' + cat.replace(/[^A-Za-z0-9]/g, '_');
+        return '<label class="filter-row"><input type="checkbox" class="chk-cat" value="' + cat + '" checked> ' +
+               cat + '<span class="chk-count">' + catCounts[cat] + '</span></label>';
+      }).join('');
+      qs('cat-filters').innerHTML = html;
+
+      // Handler
+      Array.prototype.forEach.call(document.querySelectorAll('.chk-cat'), function(cb) {
+        cb.addEventListener('change', function() {
+          if (this.checked) state.filters.categories.add(this.value);
+          else state.filters.categories.delete(this.value);
+          syncMasterCheckbox();
+          applyFilters();
+        });
+      });
+
+      qs('chk-cat-all').addEventListener('change', function() {
+        var checked = this.checked;
+        Array.prototype.forEach.call(document.querySelectorAll('.chk-cat'), function(cb) {
+          cb.checked = checked;
+          if (checked) state.filters.categories.add(cb.value);
+          else state.filters.categories.delete(cb.value);
+        });
+        applyFilters();
+      });
+    }
+
+    function syncMasterCheckbox() {
+      var all = document.querySelectorAll('.chk-cat');
+      var checked = document.querySelectorAll('.chk-cat:checked');
+      qs('chk-cat-all').checked = all.length === checked.length;
+      qs('chk-cat-all').indeterminate = checked.length > 0 && checked.length < all.length;
+    }
+
+    function updateSummary() {
+      var total = state.raw.length;
+      var bullish = 0, neutral = 0, bearish = 0;
+      state.raw.forEach(function(r) {
+        if (r.signal === 'Bullish') bullish++;
+        else if (r.signal === 'Bearish') bearish++;
+        else neutral++;
+      });
+      qs('sm-total').textContent = total;
+      qs('sm-date').textContent = 'Scan: ' + formatDate(state.latestDate);
+      qs('sm-bullish').textContent = bullish;
+      qs('sm-bullish-pct').textContent = total > 0 ? (bullish * 100 / total).toFixed(0) + '%' : '';
+      qs('sm-neutral').textContent = neutral;
+      qs('sm-neutral-pct').textContent = total > 0 ? (neutral * 100 / total).toFixed(0) + '%' : '';
+      qs('sm-bearish').textContent = bearish;
+      qs('sm-bearish-pct').textContent = total > 0 ? (bearish * 100 / total).toFixed(0) + '%' : '';
+      qs('scan-summary').style.display = '';
+
+      // Sidebar counts (vor Filter)
+      qs('cnt-bullish').textContent = bullish;
+      qs('cnt-neutral').textContent = neutral;
+      qs('cnt-bearish').textContent = bearish;
+
+      // Scan-Date Header
+      qs('scan-date-header').textContent = 'Scan-Datum: ' + formatDate(state.latestDate) + ' \u00B7 ' + total + ' Ticker analysiert';
+      qs('rc-total').textContent = total;
+    }
+
+    function applyFilters() {
+      var q = state.filters.search.trim().toLowerCase();
+      var minScore = state.filters.minScore;
+      var minWR = state.filters.minWinRate;
+
+      var filtered = state.raw.filter(function(r) {
+        if (!state.filters.signals.has(r.signal)) return false;
+        if (state.filters.categories.size > 0 && !state.filters.categories.has(r.kategorie)) return false;
+        if (r.score < minScore) return false;
+        if (r.win_rate < minWR) return false;
+        if (q) {
+          var haystack = (r.ticker + ' ' + r.name).toLowerCase();
+          if (haystack.indexOf(q) === -1) return false;
+        }
+        return true;
+      });
+
+      // Sortierung
+      var key = state.sortKey;
+      var dir = state.sortDir;
+      filtered.sort(function(a, b) {
+        var av = a[key], bv = b[key];
+        if (typeof av === 'string') {
+          return av.localeCompare(bv) * dir;
+        }
+        return (av - bv) * dir;
+      });
+
+      renderTable(filtered);
+      qs('rc-visible').textContent = filtered.length;
+    }
+
+    function renderTable(rows) {
+      var tbody = qs('scanner-tbody');
+      if (rows.length === 0) {
+        tbody.innerHTML = '';
+        qs('empty-state').style.display = '';
+        return;
+      }
+      qs('empty-state').style.display = 'none';
+
+      var html = rows.map(function(r, i) {
+        var sigClass = r.signal.toLowerCase();
+        var wrClass = r.win_rate >= 50 ? 'pos' : 'neg';
+        var arClass = r.avg_return >= 0 ? 'pos' : 'neg';
+        var dashHref = '/dashboard?t=' + encodeURIComponent(r.ticker);
+        var scoreColor = r.score >= 6.5 ? 'pos' : (r.score <= 3.5 ? 'neg' : '');
+        var escName = (r.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
+        return '<tr>' +
+          '<td class="rank">' + (i + 1) + '</td>' +
+          '<td class="ticker"><a href="' + dashHref + '" title="Im Dashboard &ouml;ffnen">' + r.ticker + '</a></td>' +
+          '<td class="name" title="' + escName + '">' + escName + '</td>' +
+          '<td class="cat">' + r.kategorie + '</td>' +
+          '<td><span class="sig-badge ' + sigClass + '">' + r.signal + '</span></td>' +
+          '<td class="num score-val ' + scoreColor + '">' + r.score.toFixed(1) + '</td>' +
+          '<td class="num ' + wrClass + '">' + r.win_rate.toFixed(0) + '%</td>' +
+          '<td class="num ' + arClass + '">' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</td>' +
+          '<td class="actions"><a href="' + dashHref + '">Dashboard &rsaquo;</a></td>' +
+        '</tr>';
+      }).join('');
+      tbody.innerHTML = html;
+    }
+
+    function initSorting() {
+      var ths = document.querySelectorAll('.scanner-table th[data-sort]');
+      Array.prototype.forEach.call(ths, function(th) {
+        th.addEventListener('click', function() {
+          var key = th.getAttribute('data-sort');
+          if (key === 'rank') return;
+          if (state.sortKey === key) {
+            state.sortDir = -state.sortDir;
+          } else {
+            state.sortKey = key;
+            // Default: text-columns asc, numeric desc
+            var numeric = ['score', 'win_rate', 'avg_return'].indexOf(key) >= 0;
+            state.sortDir = numeric ? -1 : 1;
+          }
+          // Visuelles Feedback
+          Array.prototype.forEach.call(ths, function(t) { t.classList.remove('sorted'); });
+          th.classList.add('sorted');
+          applyFilters();
+        });
+      });
+    }
+
+    function initFilterHandlers() {
+      qs('sel-search').addEventListener('input', function() {
+        state.filters.search = this.value;
+        applyFilters();
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll('.chk-signal'), function(cb) {
+        cb.addEventListener('change', function() {
+          if (this.checked) state.filters.signals.add(this.value);
+          else state.filters.signals.delete(this.value);
+          applyFilters();
+        });
+      });
+
+      qs('sel-min-score').addEventListener('input', function() {
+        state.filters.minScore = parseFloat(this.value);
+        qs('lbl-min-score').textContent = this.value;
+        applyFilters();
+      });
+
+      qs('sel-min-wr').addEventListener('input', function() {
+        state.filters.minWinRate = parseFloat(this.value);
+        qs('lbl-min-wr').textContent = this.value;
+        applyFilters();
+      });
+
+      qs('btn-reset').addEventListener('click', function() {
+        qs('sel-search').value = '';
+        state.filters.search = '';
+        Array.prototype.forEach.call(document.querySelectorAll('.chk-signal'), function(cb) {
+          cb.checked = true;
+        });
+        state.filters.signals = new Set(['Bullish', 'Neutral', 'Bearish']);
+        qs('sel-min-score').value = 0;
+        qs('lbl-min-score').textContent = '0.0';
+        state.filters.minScore = 0;
+        qs('sel-min-wr').value = 0;
+        qs('lbl-min-wr').textContent = '0';
+        state.filters.minWinRate = 0;
+        Array.prototype.forEach.call(document.querySelectorAll('.chk-cat'), function(cb) {
+          cb.checked = true;
+          state.filters.categories.add(cb.value);
+        });
+        qs('chk-cat-all').checked = true;
+        qs('chk-cat-all').indeterminate = false;
+        // Sort zuruecksetzen
+        state.sortKey = 'score';
+        state.sortDir = -1;
+        var ths = document.querySelectorAll('.scanner-table th[data-sort]');
+        Array.prototype.forEach.call(ths, function(t) { t.classList.remove('sorted'); });
+        document.querySelector('.scanner-table th[data-sort="score"]').classList.add('sorted');
+        applyFilters();
+      });
+    }
+
+    function initialLoad() {
+      // Supabase noch nicht initialisiert? kurz warten
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
+      if (!SA.supabase.url || SA.supabase.url.indexOf('%%') >= 0) {
+        hideLoading();
+        showError('Supabase nicht konfiguriert');
+        return;
+      }
+
+      Promise.all([loadScannerResults(), loadTickersMetadata()])
+        .then(function(results) {
+          var scannerRows = results[0];
+          var tickersMap = results[1];
+          if (!Array.isArray(scannerRows) || scannerRows.length === 0) {
+            hideLoading();
+            showError('Keine Scanner-Daten verf\u00fcgbar. Der n\u00e4chtliche Scan-Job hat noch keine Ergebnisse geschrieben.');
+            return;
+          }
+          enrichAndStore(scannerRows, tickersMap);
+          buildCategoryFilters();
+          updateSummary();
+          initSorting();
+          initFilterHandlers();
+          applyFilters();
+          hideLoading();
+        })
+        .catch(function(err) {
+          hideLoading();
+          showError('Fehler beim Laden: ' + (err && err.message ? err.message : err));
+          console.error('[scanner]', err);
+        });
+    }
+
+    initialLoad();
+  })();
+  </script>
+</body>
+</html>
