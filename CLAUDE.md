@@ -531,7 +531,8 @@ Bei Fehlern:
 - `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
 - `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
 - `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
-- `docs/SEO_ENGINE.md` — Programmatic SEO + Blog Engine
+- `docs/SEO_ENGINE.md` — Programmatic SEO Generator (technische Architektur + Templates)
+- `docs/SEO_MARKETING.md` — **Living Doc**: SEO-Status, Google-Search-Console-Workflow, Monitoring, offene Tasks (alle 1-2 Wochen reviewen)
 - `docs/BLOG_WORKFLOW.md` — Blog + Social Media + YouTube Workflow-Anleitung
 - `docs/REFRESH_MONITORING.md` — Kurs-Ueberwachung, Health-Check, Troubleshooting
 - `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad
