@@ -18,7 +18,7 @@
 | **JSON-LD Blog-Posts** | ✅ BlogPosting (Google-News-eligible) + BreadcrumbList | 2026-04-10 |
 | **Twitter Card** | ✅ `@SeasonAlph4882` überall | 2026-04-10 |
 | **Google Search Console** | ⚠️ Sitemap-Re-Submission nach Update nötig | offen |
-| **Bing Webmaster Tools** | ⚠️ Import aus GSC + 10 URLs submitten ausstehend | offen |
+| **Bing Webmaster Tools** | ✅ Setup + 10 URLs manuell submitted | 2026-04-10 |
 | **IndexNow** | ✅ Key live + 26 URLs erste Submission erfolgreich | 2026-04-10 |
 | **www → non-www Redirect** | ✅ 301 Canonicalization live | 2026-04-10 |
 | **Analytics** | 🟠 Scaffold in `landing/components/analytics.html`, noch nicht aktiv | bewusst offen |
@@ -60,23 +60,8 @@ curl -s https://seasonalpha.ai/jahreszyklus | grep -oE 'app\.css\?v=[a-z0-9]+' |
 - [ ] **Google Rich Results Test**: https://search.google.com/test/rich-results → eine Blog-URL (z.B. `https://seasonalpha.ai/blog/anomalie-radar-erklaert/`) → muss `Article` + `BreadcrumbList` validieren
 
 ### 🟠 DIESE WOCHE (15-30 Min)
-- [ ] **Bing Webmaster Tools** Setup + erste 10 URLs submitten:
-  1. https://www.bing.com/webmasters → Microsoft-Konto → „Import from Google Search Console" (Zero-Effort Import, 4% der DE-Suchen)
-  2. Property `seasonalpha.ai` → linkes Menü „URL Submission" → alle 10 URLs auf einmal einpasten:
-     ```
-     https://seasonalpha.ai/
-     https://seasonalpha.ai/dashboard
-     https://seasonalpha.ai/jahreszyklus
-     https://seasonalpha.ai/plain-vanilla
-     https://seasonalpha.ai/backtest-engine
-     https://seasonalpha.ai/ki-saisonalitaet
-     https://seasonalpha.ai/monatswechsel
-     https://seasonalpha.ai/trifecta
-     https://seasonalpha.ai/blog/
-     https://seasonalpha.ai/wochentage
-     ```
-  3. Nach 24-72h in „Search Performance → Top pages" prüfen ob sie auftauchen.
-  4. Bing-Tageslimit ~10 URLs/Tag, IndexNow-Submissions (bereits 26 URLs live) sind unabhängig davon und zusätzlich aktiv.
+- [x] **Bing Webmaster Tools Setup + 10 URLs submitted** (2026-04-10)
+  Die 10 Kern-URLs (Landing, Dashboard, Jahreszyklus, Plain Vanilla, Backtest, KI-Saisonalität, Monatswechsel, Trifecta, Blog, Wochentage) wurden manuell im Bing Webmaster Tool via „URL Submission" eingereicht. Follow-up: in 24-72h in „Search Performance → Top pages" prüfen ob sie auftauchen.
 - [ ] **GSC Coverage-Check** nach 3-7 Tagen: Linkes Menü → Seiten → „Indexiert" sollte von ~30 auf ~300 steigen. „Nicht indexiert" Gründe checken
 - [ ] **GSC Rich-Results-Check** nach 1-2 Wochen: Linkes Menü → Verbesserungen → Article / FAQ / Breadcrumbs / WebPage — Fehler prüfen und fixen
 
