@@ -95,14 +95,14 @@ body.sa-sidebar-collapsed .app { grid-template-columns: 0 1fr; }
 body.sa-sidebar-collapsed .sidebar { opacity: 0; visibility: hidden; transform: translateX(-20px); transition: opacity .2s ease, transform .25s ease, visibility 0s linear .25s; }
 
 /* Toggle-Button: schmaler vertikaler Streifen am linken Content-Rand */
-.sa-sb-toggle { position: fixed; top: calc(var(--nav-h) + 1.5rem); left: calc((100vw - var(--max-w)) / 2 + 1.5rem + 260px + 1.5rem - 24px); width: 24px; height: 56px; background: var(--card); border: 1px solid var(--border); border-left: none; border-radius: 0 8px 8px 0; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; z-index: 50; transition: left .25s ease, background .15s, border-color .15s; padding: 0; font-family: var(--f-d); }
+.sa-sb-toggle { position: fixed; top: calc(var(--nav-h) + 1.5rem); left: max(1.5rem, calc((100vw - var(--max-w)) / 2 + 1.5rem + 260px + 1.5rem - 24px)); width: 24px; height: 56px; background: var(--card); border: 1px solid var(--border); border-left: none; border-radius: 0 8px 8px 0; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; z-index: 50; transition: left .25s ease, background .15s, border-color .15s; padding: 0; font-family: var(--f-d); }
 .sa-sb-toggle:hover { background: var(--elevated); border-color: var(--accent-g); }
 .sa-sb-toggle::before { content: '\2039'; }
 body.sa-sidebar-collapsed .sa-sb-toggle::before { content: '\203A'; }
-body.sa-sidebar-collapsed .sa-sb-toggle { left: calc((100vw - var(--max-w)) / 2 + 1.5rem); }
+body.sa-sidebar-collapsed .sa-sb-toggle { left: max(1.5rem, calc((100vw - var(--max-w)) / 2 + 1.5rem)); }
 /* Wenn viewport kleiner als max-w: Toggle linksbuendig am Content */
 @media (max-width: 1648px) {
-  .sa-sb-toggle { left: calc(1.5rem + 260px + 1.5rem - 24px); }
+  .sa-sb-toggle { left: max(1.5rem, calc(1.5rem + 260px + 1.5rem - 24px)); }
   body.sa-sidebar-collapsed .sa-sb-toggle { left: 1.5rem; }
 }
 
@@ -208,3 +208,42 @@ details .content { padding: 0 1.25rem 1.25rem; }
 .driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: var(--accent) !important; }
 .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--accent) !important; }
 .driver-active-element { box-shadow: 0 0 0 3px var(--accent), 0 0 28px rgba(232,168,32,.55) !important; border-radius: 8px !important; }
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* Mobile Global Fixes (2026-04-10)                                   */
+/* ══════════════════════════════════════════════════════════════════ */
+
+/* iOS Auto-Zoom verhindern: Inputs auf ≥16px auf Mobile */
+@media (max-width: 768px) {
+  .sidebar select,
+  .sidebar input[type="text"],
+  .sidebar input[type="number"] { font-size: 16px; }
+}
+
+/* Tabellen bekommen auf Mobile horizontalen Scroll statt gequetschter Spalten */
+@media (max-width: 768px) {
+  .chart-box table,
+  .content table,
+  .app main table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+}
+
+/* KPI-Row: saubere 2-spaltige Darstellung bei ≤640px, 1-spaltig bei sehr schmalen Viewports */
+@media (max-width: 640px) {
+  .kpi-row { gap: .5rem; }
+  .kpi {
+    min-width: 0;
+    flex: 1 1 calc(50% - .25rem);
+    padding: .6rem .75rem;
+  }
+  .kpi-label { font-size: .5625rem; }
+  .kpi-value { font-size: 1rem; }
+}
+@media (max-width: 380px) {
+  .kpi { flex-basis: 100%; }
+}

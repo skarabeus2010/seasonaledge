@@ -505,13 +505,16 @@ SA.decadeCompute = {
   _ensureAnomalyCss: function() {
     if (document.getElementById('sa-anomaly-css')) return;
     var css = [
-      '.sa-anom-row{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:.75rem;margin-bottom:0}',
-      '@media(max-width:900px){.sa-anom-row{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}',
+      '.sa-anom-row{display:grid;grid-template-columns:repeat(5,minmax(min(140px,100%),1fr));gap:.75rem;margin-bottom:0}',
+      '@media(max-width:900px){.sa-anom-row{grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr))}}',
+      '@media(max-width:640px){.sa-anom-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}}',
+      '@media(max-width:380px){.sa-anom-row{grid-template-columns:1fr}}',
       '.sa-anom-sum{position:relative}',
       '.sa-anom-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(232,168,32,.15);border:1px solid rgba(232,168,32,.5);color:var(--accent);font-size:.75rem;font-weight:700;font-family:var(--f-d);margin-left:.5rem;cursor:help;vertical-align:middle;line-height:1;user-select:none}',
-      '.sa-anom-badge:hover{background:rgba(232,168,32,.28);border-color:var(--accent)}',
-      '.sa-anom-tooltip{position:absolute;top:calc(100% + .4rem);left:0;width:min(420px,calc(100vw - 3rem));background:var(--elevated,#111115);border:1px solid rgba(232,168,32,.35);border-radius:10px;padding:.85rem 1rem;font-size:.75rem;line-height:1.55;color:var(--dim,#e8e0d0);box-shadow:0 12px 32px rgba(0,0,0,.6);z-index:50;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s ease,transform .15s ease,visibility .15s ease;pointer-events:none;font-weight:400;text-transform:none;letter-spacing:normal}',
+      '.sa-anom-badge:hover,.sa-anom-badge:focus,.sa-anom-badge:focus-visible{background:rgba(232,168,32,.28);border-color:var(--accent);outline:none}',
+      '.sa-anom-tooltip{position:absolute;top:calc(100% + .4rem);right:1rem;left:auto;width:min(420px,calc(100vw - 2rem));max-width:calc(100vw - 2rem);background:var(--elevated,#111115);border:1px solid rgba(232,168,32,.35);border-radius:10px;padding:.85rem 1rem;font-size:.75rem;line-height:1.55;color:var(--dim,#e8e0d0);box-shadow:0 12px 32px rgba(0,0,0,.6);z-index:50;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .15s ease,transform .15s ease,visibility .15s ease;pointer-events:none;font-weight:400;text-transform:none;letter-spacing:normal}',
       '.sa-anom-badge:hover ~ .sa-anom-tooltip,.sa-anom-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}',
+      '@media(hover:none){.sa-anom-badge:focus ~ .sa-anom-tooltip,.sa-anom-badge:focus-visible ~ .sa-anom-tooltip{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}}',
       '.sa-anom-tooltip b{color:var(--text,#fff);font-weight:700}',
       '.sa-anom-tooltip p{margin:0 0 .5rem 0}',
       '.sa-anom-tooltip p:last-child{margin-bottom:0}',
@@ -544,6 +547,8 @@ SA.decadeCompute = {
     var badge = document.createElement('span');
     badge.className = 'sa-anom-badge';
     badge.setAttribute('aria-label', 'Methodik des Anomalie-Radars');
+    badge.setAttribute('tabindex', '0'); // Touch-Focus für Mobile
+    badge.setAttribute('role', 'button');
     badge.textContent = '\u24D8'; // ⓘ
     var tooltip = document.createElement('span');
     tooltip.className = 'sa-anom-tooltip';

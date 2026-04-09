@@ -65,9 +65,17 @@
       .bento-truepath{grid-column:span 12}
       .bento-mini{grid-column:span 6}
     }
+    @media (max-width:900px){
+      .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12;min-height:180px}
+      .bento-mini{grid-column:span 6;min-height:160px}
+    }
     @media (max-width:768px){
       .bento{grid-template-columns:1fr}
       .bento-card{grid-column:span 1!important}
+    }
+    @media (max-width:600px){
+      .bento-card{min-height:auto;padding:.875rem}
+      .bento-mini{grid-column:span 12}
     }
 
     /* ── KI-Score Hero ── */
