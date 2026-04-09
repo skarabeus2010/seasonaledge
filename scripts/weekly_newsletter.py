@@ -129,7 +129,7 @@ def main() -> int:
         recipients = [args.to.strip().lower()]
         mode = "single"
     elif args.test:
-        admin = os.environ.get("ADMIN_EMAIL", "heiko@seasonaledge.app")
+        admin = os.environ.get("ADMIN_EMAIL", "heiko@seasonalpha.ai")
         recipients = [admin]
         mode = "test (admin)"
     else:

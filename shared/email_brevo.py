@@ -13,7 +13,14 @@ import requests
 from shared.logger import app_logger, error_logger
 
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
-SENDER = {"name": "SeasonAlpha", "email": "noreply@seasonaledge.app"}
+
+# Sender per Env-Var überschreibbar — Default ist die Produktiv-Domain.
+# In Brevo muss dieser Sender (oder die Domain) authentifiziert sein,
+# sonst blockt Brevo den Versand mit "sender not valid".
+SENDER = {
+    "name": os.environ.get("SENDER_NAME", "SeasonAlpha"),
+    "email": os.environ.get("SENDER_EMAIL", "info@seasonalpha.ai"),
+}
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
@@ -133,7 +140,7 @@ def send_premium_confirmation(to_email: str, plan: str = "Premium") -> bool:
 
 def send_admin_alert(message: str) -> bool:
     """Admin-Alert bei Systemfehler (an Admin-Adresse)."""
-    admin_email = os.environ.get("ADMIN_EMAIL", "heiko@seasonaledge.app")
+    admin_email = os.environ.get("ADMIN_EMAIL", "heiko@seasonalpha.ai")
     return send_transactional(admin_email, 5, {"error_message": message})
 
 
