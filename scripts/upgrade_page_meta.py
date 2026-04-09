@@ -36,32 +36,37 @@ PAGES_DIR = REPO / "landing" / "pages"
 BASE_URL = "https://seasonalpha.ai"
 TWITTER_HANDLE = "@SeasonAlph4882"
 OG_IMAGE = f"{BASE_URL}/landing/assets/images/og-image.png"
-MARKER = "<!-- SA_META_V2 -->"
+MARKER = "<!-- SA_META_V3 -->"  # V3 = + BreadcrumbList JSON-LD
 
-# Slug -> (Titel, Description fuer og:description falls anders als meta description)
-# Wenn Title/Description None, wird der bestehende uebernommen
+# Slug -> { slug, type, category } pro Page.
+# category = Nav-Gruppe fuer Breadcrumb (Zyklen / Events / Strategien / Mehr)
+# Dashboard ist top-level ohne Kategorie.
 PAGE_META = {
-    "dashboard.html":           {"slug": "dashboard",          "type": "website"},
-    "dekadenzyklus.html":       {"slug": "dekadenzyklus",      "type": "website"},
-    "jahreszyklus.html":        {"slug": "jahreszyklus",       "type": "website"},
-    "monatszyklus.html":        {"slug": "monatszyklus",       "type": "website"},
-    "wochentage.html":          {"slug": "wochentage",         "type": "website"},
-    "monatswechsel.html":       {"slug": "monatswechsel",      "type": "website"},
-    "mondphasen.html":          {"slug": "mondphasen",         "type": "website"},
-    "zentralbanken.html":       {"slug": "zentralbanken",      "type": "website"},
-    "feiertage.html":           {"slug": "feiertage",          "type": "website"},
-    "opex.html":                {"slug": "opex",               "type": "website"},
-    "intermarket-shocks.html":  {"slug": "intermarket-shocks", "type": "website"},
-    "trifecta.html":            {"slug": "trifecta",           "type": "website"},
-    "plain-vanilla.html":       {"slug": "plain-vanilla",      "type": "website"},
-    "backtest-engine.html":     {"slug": "backtest-engine",    "type": "website"},
-    "ki-saisonalitaet.html":    {"slug": "ki-saisonalitaet",   "type": "website"},
-    "crash-fruehwarnung.html":  {"slug": "crash-fruehwarnung", "type": "website"},
-    "spot-vol-beta.html":       {"slug": "spot-vol-beta",      "type": "website"},
-    "tdom-analyse.html":        {"slug": "tdom-analyse",       "type": "website"},
-    "overnight.html":           {"slug": "overnight",          "type": "website"},
-    "sektor-rotation.html":     {"slug": "sektor-rotation",    "type": "website"},
-    "kriegszeiten.html":        {"slug": "kriegszeiten",       "type": "website"},
+    "dashboard.html":           {"slug": "dashboard",          "type": "website", "cat": None},
+    # Zyklen
+    "dekadenzyklus.html":       {"slug": "dekadenzyklus",      "type": "website", "cat": "Zyklen"},
+    "jahreszyklus.html":        {"slug": "jahreszyklus",       "type": "website", "cat": "Zyklen"},
+    "monatszyklus.html":        {"slug": "monatszyklus",       "type": "website", "cat": "Zyklen"},
+    "wochentage.html":          {"slug": "wochentage",         "type": "website", "cat": "Zyklen"},
+    "monatswechsel.html":       {"slug": "monatswechsel",      "type": "website", "cat": "Zyklen"},
+    "mondphasen.html":          {"slug": "mondphasen",         "type": "website", "cat": "Zyklen"},
+    # Events
+    "zentralbanken.html":       {"slug": "zentralbanken",      "type": "website", "cat": "Events"},
+    "feiertage.html":           {"slug": "feiertage",          "type": "website", "cat": "Events"},
+    "opex.html":                {"slug": "opex",               "type": "website", "cat": "Events"},
+    "intermarket-shocks.html":  {"slug": "intermarket-shocks", "type": "website", "cat": "Events"},
+    # Strategien
+    "trifecta.html":            {"slug": "trifecta",           "type": "website", "cat": "Strategien"},
+    "plain-vanilla.html":       {"slug": "plain-vanilla",      "type": "website", "cat": "Strategien"},
+    "backtest-engine.html":     {"slug": "backtest-engine",    "type": "website", "cat": "Strategien"},
+    # Mehr / Advanced
+    "ki-saisonalitaet.html":    {"slug": "ki-saisonalitaet",   "type": "website", "cat": "Mehr"},
+    "crash-fruehwarnung.html":  {"slug": "crash-fruehwarnung", "type": "website", "cat": "Mehr"},
+    "spot-vol-beta.html":       {"slug": "spot-vol-beta",      "type": "website", "cat": "Mehr"},
+    "tdom-analyse.html":        {"slug": "tdom-analyse",       "type": "website", "cat": "Mehr"},
+    "overnight.html":           {"slug": "overnight",          "type": "website", "cat": "Mehr"},
+    "sektor-rotation.html":     {"slug": "sektor-rotation",    "type": "website", "cat": "Mehr"},
+    "kriegszeiten.html":        {"slug": "kriegszeiten",       "type": "website", "cat": "Mehr"},
 }
 
 
@@ -80,14 +85,43 @@ def extract_existing(html: str) -> dict:
     return out
 
 
-def build_meta_block(slug: str, title: str, description: str, og_type: str) -> str:
-    """Generiert den vollen Meta-Tag-Block."""
+def build_meta_block(slug: str, title: str, description: str, og_type: str, category: str | None) -> str:
+    """Generiert den vollen Meta-Tag-Block inkl. WebPage + BreadcrumbList JSON-LD."""
     url = f"{BASE_URL}/{slug}"
     og_title = title
     # Shortened title fuer OG (ohne "— SeasonAlpha" suffix)
     short_title = re.sub(r"\s*(?:&mdash;|—|-)?\s*SeasonAlpha\s*$", "", title).strip()
     if short_title:
         og_title = f"{short_title} &mdash; SeasonAlpha"
+
+    # BreadcrumbList: Home -> (Category) -> Page
+    # Da die Nav-Kategorien keine eigenen URLs haben, zeigen wir sie nur als
+    # zusaetzlichen name-only Schritt. Google akzeptiert das. Ohne Kategorie
+    # (z.B. dashboard) nur 2 Levels: Home -> Page.
+    if category:
+        breadcrumb_items = [
+            f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
+            f'{{"@type":"ListItem","position":2,"name":"{category}"}}',
+            f'{{"@type":"ListItem","position":3,"name":"{short_title}","item":"{url}"}}',
+        ]
+    else:
+        breadcrumb_items = [
+            f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
+            f'{{"@type":"ListItem","position":2,"name":"{short_title}","item":"{url}"}}',
+        ]
+    breadcrumb_json = (
+        '{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":['
+        + ",".join(breadcrumb_items)
+        + "]}"
+    )
+
+    webpage_json = (
+        '{"@context":"https://schema.org","@type":"WebPage","name":"'
+        + short_title + '","url":"' + url + '","description":"' + description + '",'
+        '"isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"' + BASE_URL + '"},'
+        '"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"' + BASE_URL + '",'
+        '"logo":{"@type":"ImageObject","url":"' + OG_IMAGE + '"}}}'
+    )
 
     return f"""  {MARKER}
   <meta charset="utf-8">
@@ -124,8 +158,10 @@ def build_meta_block(slug: str, title: str, description: str, og_type: str) -> s
   <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
 
-  <!-- Structured Data (JSON-LD) -->
-  <script type="application/ld+json">{{"@context":"https://schema.org","@type":"WebPage","name":"{short_title}","url":"{url}","description":"{description}","isPartOf":{{"@type":"WebSite","name":"SeasonAlpha","url":"{BASE_URL}"}},"publisher":{{"@type":"Organization","name":"SeasonAlpha","url":"{BASE_URL}","logo":{{"@type":"ImageObject","url":"{OG_IMAGE}"}}}}}}</script>
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{webpage_json}</script>
+  <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
+  <script type="application/ld+json">{breadcrumb_json}</script>
 """
 
 
@@ -159,6 +195,7 @@ def upgrade_file(path: Path, *, write: bool) -> tuple[bool, str]:
         title=existing["title"],
         description=existing["description"],
         og_type=meta["type"],
+        category=meta.get("cat"),
     )
 
     # Neue Head-Section: unser Block + Fonts + app.css Link

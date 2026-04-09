@@ -155,38 +155,57 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         )
 
     # Core-Feature-Pages (HOCH priorisiert — das sind die Haupt-Features)
-    landing_pages = [
-        # Dashboard + Haupt-Zyklen (Kernstuecke)
-        {"slug": "dashboard",          "priority": "1.0",  "changefreq": "daily"},
-        {"slug": "jahreszyklus",       "priority": "0.95", "changefreq": "daily"},
-        {"slug": "monatszyklus",       "priority": "0.95", "changefreq": "daily"},
-        {"slug": "dekadenzyklus",      "priority": "0.9",  "changefreq": "weekly"},
-        {"slug": "wochentage",         "priority": "0.9",  "changefreq": "weekly"},
-        {"slug": "monatswechsel",      "priority": "0.9",  "changefreq": "weekly"},
-        {"slug": "mondphasen",         "priority": "0.85", "changefreq": "weekly"},
-        # Events
-        {"slug": "zentralbanken",      "priority": "0.9",  "changefreq": "weekly"},
-        {"slug": "feiertage",          "priority": "0.85", "changefreq": "weekly"},
-        {"slug": "opex",               "priority": "0.85", "changefreq": "weekly"},
-        {"slug": "intermarket-shocks", "priority": "0.85", "changefreq": "weekly"},
+    # Priority-Overrides per Slug. Default = 0.85 / weekly. Nur Abweichungen listen.
+    PRIORITY_OVERRIDES = {
+        # Kernstuecke
+        "dashboard":          ("1.0",  "daily"),
+        "jahreszyklus":       ("0.95", "daily"),
+        "monatszyklus":       ("0.95", "daily"),
+        "dekadenzyklus":      ("0.9",  "weekly"),
+        "wochentage":         ("0.9",  "weekly"),
+        "monatswechsel":      ("0.9",  "weekly"),
+        "zentralbanken":      ("0.9",  "weekly"),
         # Strategien
-        {"slug": "trifecta",           "priority": "0.9",  "changefreq": "weekly"},
-        {"slug": "plain-vanilla",      "priority": "0.95", "changefreq": "weekly"},
-        {"slug": "backtest-engine",    "priority": "0.95", "changefreq": "weekly"},
+        "trifecta":           ("0.9",  "weekly"),
+        "plain-vanilla":      ("0.95", "weekly"),
+        "backtest-engine":    ("0.95", "weekly"),
         # Advanced
-        {"slug": "ki-saisonalitaet",   "priority": "0.9",  "changefreq": "daily"},
-        {"slug": "crash-fruehwarnung", "priority": "0.9",  "changefreq": "daily"},
-        {"slug": "spot-vol-beta",      "priority": "0.85", "changefreq": "weekly"},
-        {"slug": "tdom-analyse",       "priority": "0.85", "changefreq": "weekly"},
-        {"slug": "overnight",          "priority": "0.8",  "changefreq": "weekly"},
-        {"slug": "sektor-rotation",    "priority": "0.85", "changefreq": "weekly"},
-        {"slug": "kriegszeiten",       "priority": "0.7",  "changefreq": "monthly"},
-        # Blog-Index + Kategorien
+        "ki-saisonalitaet":   ("0.9",  "daily"),
+        "crash-fruehwarnung": ("0.9",  "daily"),
+        # Rand
+        "kriegszeiten":       ("0.7",  "monthly"),
+        "overnight":          ("0.8",  "weekly"),
+    }
+    PAGE_EXCLUDES = {
+        "_disabled", "404", "index",
+        "apex-demo",    # Dev/Demo-Chart, nicht produktiv
+        "unsubscribe",  # Newsletter-Abmeldung, kein SEO-Ziel (noindex)
+    }
+
+    # ── Auto-Discovery: alle *.html aus landing/pages/ ─────────────────────
+    from pathlib import Path
+    pages_dir = Path(__file__).resolve().parent.parent / "landing" / "pages"
+    landing_pages = []
+    if pages_dir.exists():
+        for html_file in sorted(pages_dir.glob("*.html")):
+            slug = html_file.stem  # Dateiname ohne .html
+            if slug in PAGE_EXCLUDES:
+                continue
+            # _disabled/ Unterordner ausschliessen (ueberpruefung ueber relative_to)
+            if "_disabled" in html_file.parts:
+                continue
+            priority, changefreq = PRIORITY_OVERRIDES.get(slug, ("0.85", "weekly"))
+            landing_pages.append({"slug": slug, "priority": priority, "changefreq": changefreq})
+        print(f"  [INFO] {len(landing_pages)} Pages auto-discovered aus landing/pages/")
+
+    # Blog-Indizes (manuell, weil sie auf Unterordnern liegen)
+    landing_pages.extend([
         {"slug": "blog/",              "priority": "0.9",  "changefreq": "daily"},
         {"slug": "blog/education/",    "priority": "0.8",  "changefreq": "weekly"},
         {"slug": "blog/marktausblick/","priority": "0.8",  "changefreq": "weekly"},
         {"slug": "blog/tutorials/",    "priority": "0.8",  "changefreq": "weekly"},
-    ]
+    ])
+
     for page in landing_pages:
         urls.append(
             f'  <url>\n'
@@ -251,21 +270,97 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
 # ── robots.txt Generator ────────────────────────────────────────────────────
 
 def build_robots_txt(output_ordner: str):
-    """Generiert robots.txt mit Sitemap-Verweis."""
+    """Generiert robots.txt mit Sitemap-Verweis und expliziter AI-Crawler-Policy."""
     content = (
+        "# SeasonAlpha — robots.txt\n"
+        "# ==========================\n"
+        "\n"
+        "# Standard-Suchmaschinen (Google, Bing, DuckDuckGo, etc.)\n"
         "User-agent: *\n"
         "Allow: /\n"
         "\n"
-        "# Streamlit-App nicht crawlen (dynamische Inhalte)\n"
+        "# Streamlit-App nicht crawlen (dynamische Inhalte, Authenticated)\n"
         "Disallow: /_stcore/\n"
         "Disallow: /static/\n"
+        "Disallow: /app/\n"
+        "\n"
+        "# ── AI-Crawler Policy ──────────────────────────────────────────────\n"
+        "# Entscheidung 2026-04-10: AI-Crawler DUERFEN unsere Inhalte indexieren.\n"
+        "# Begruendung: SeasonAlpha ist ein freies Tool das von Sichtbarkeit lebt.\n"
+        "# Erwaehnung in ChatGPT / Claude / Perplexity Antworten = Brand Awareness.\n"
+        "# Um AI-Crawler zu BLOCKIEREN: 'Allow: /' unten jeweils durch 'Disallow: /' ersetzen.\n"
+        "\n"
+        "# OpenAI (GPT-4, ChatGPT Browse, SearchGPT)\n"
+        "User-agent: GPTBot\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: OAI-SearchBot\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: ChatGPT-User\n"
+        "Allow: /\n"
+        "\n"
+        "# Anthropic (Claude, Claude.ai)\n"
+        "User-agent: ClaudeBot\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: Claude-Web\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: anthropic-ai\n"
+        "Allow: /\n"
+        "\n"
+        "# Perplexity\n"
+        "User-agent: PerplexityBot\n"
+        "Allow: /\n"
+        "\n"
+        "# Google Bard / Gemini (separater Crawler vom Google-Such-Bot)\n"
+        "User-agent: Google-Extended\n"
+        "Allow: /\n"
+        "\n"
+        "# Common Crawl (Datenquelle fuer viele LLM-Trainings)\n"
+        "User-agent: CCBot\n"
+        "Allow: /\n"
+        "\n"
+        "# Cohere\n"
+        "User-agent: cohere-ai\n"
+        "Allow: /\n"
+        "\n"
+        "# Meta AI\n"
+        "User-agent: Meta-ExternalAgent\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: FacebookBot\n"
+        "Allow: /\n"
+        "\n"
+        "# Apple Intelligence\n"
+        "User-agent: Applebot-Extended\n"
+        "Allow: /\n"
+        "\n"
+        "# ByteDance (TikTok, Doubao)\n"
+        "User-agent: Bytespider\n"
+        "Allow: /\n"
+        "\n"
+        "# Mistral\n"
+        "User-agent: MistralAI-User\n"
+        "Allow: /\n"
+        "\n"
+        "# Crawl-delay fuer aggressive Crawler (10 Sekunden)\n"
+        "User-agent: SemrushBot\n"
+        "Crawl-delay: 10\n"
+        "\n"
+        "User-agent: AhrefsBot\n"
+        "Crawl-delay: 10\n"
+        "\n"
+        "User-agent: MJ12bot\n"
+        "Crawl-delay: 10\n"
         "\n"
         f"Sitemap: {BASE_URL}/sitemap.xml\n"
     )
     path = os.path.join(output_ordner, "robots.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"  [OK] robots.txt")
+    print(f"  [OK] robots.txt (mit AI-Crawler Policy)")
 
 
 # ── Disclaimer Generator ────────────────────────────────────────────────────
