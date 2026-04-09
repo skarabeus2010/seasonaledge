@@ -187,8 +187,35 @@ def send_html(
             timeout=15,
         )
         resp.raise_for_status()
-        app_logger.info(f"HTML-E-Mail gesendet: to={to_email} subject={subject[:60]}")
+        # Brevo liefert messageId zurück — wichtig für Tracking in Brevo Logs
+        msg_id = ""
+        try:
+            msg_id = resp.json().get("messageId", "")
+        except Exception:
+            pass
+        app_logger.info(
+            f"HTML-E-Mail gesendet: to={to_email} subject={subject[:60]} "
+            f"sender={SENDER.get('email')} status={resp.status_code} messageId={msg_id}"
+        )
+        print(
+            f"[brevo] to={to_email} status={resp.status_code} "
+            f"messageId={msg_id} sender={SENDER.get('email')}"
+        )
         return True
+    except requests.HTTPError as e:
+        # Bei 4xx/5xx versuchen wir die Brevo-Fehler-Response zu loggen
+        body = ""
+        try:
+            body = resp.text[:500]
+        except Exception:
+            pass
+        error_logger.error(
+            f"HTML-E-Mail HTTP-Fehler: to={to_email} "
+            f"status={resp.status_code if 'resp' in dir() else '?'} body={body} error={e}"
+        )
+        print(f"[brevo] HTTP ERROR: status={getattr(resp, 'status_code', '?')} body={body[:200]}")
+        return False
     except requests.RequestException as e:
         error_logger.error(f"HTML-E-Mail fehlgeschlagen: to={to_email} error={e}")
+        print(f"[brevo] REQUEST ERROR: {e}")
         return False
