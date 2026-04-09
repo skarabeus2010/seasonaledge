@@ -1,59 +1,72 @@
 # SEO & Marketing — SeasonAlpha
 
-> Living Document | Stand 2026-04-10 | Ergänzt `SEO_ENGINE.md` (Generator) um Status, Checklisten, Google-Search-Console-Workflow, Monitoring.
+> Living Document | Stand 2026-04-10 (Abend) | Ergänzt `SEO_ENGINE.md` (Generator) um Status, Checklisten, Google-Search-Console-Workflow, Monitoring.
 
 ## Schnellstatus
 
 | Bereich | Status | Datum |
 |---|---|---|
-| **Landing-Page Meta-Tags** | ✅ Voll ausgestattet | 2026-04-10 |
-| **21 Feature-Pages Meta-Tags** | ✅ Via `scripts/upgrade_page_meta.py` aufgestockt | 2026-04-10 |
+| **Landing-Page Meta-Tags** | ✅ Voll ausgestattet inkl. WebSite + SearchAction JSON-LD | 2026-04-10 |
+| **21 Feature-Pages Meta-Tags** | ✅ V5 via `scripts/upgrade_page_meta.py` (SEO-optimierte Titles + Breadcrumbs) | 2026-04-10 |
 | **OG-Image (1200×630)** | ✅ V3 Ultra Design, via `scripts/generate_og_images.py` | 2026-04-10 |
-| **Apple-Touch-Icon (180×180)** | ✅ | 2026-04-10 |
-| **PNG-Favicons (16/32)** | ✅ | 2026-04-10 |
-| **Sitemap** | ✅ **319 URLs** (21 Features + 4 Blog-Indizes + 18 Blog-Posts + 270 programmatische Analyse-Pages + 6 statische) | 2026-04-10 |
-| **robots.txt** | ✅ Sitemap referenziert, `/app/` blockiert | vorher |
-| **JSON-LD Landing** | ✅ Organization + SoftwareApplication + FAQPage | vorher |
-| **JSON-LD Feature-Pages** | ✅ WebPage-Schema mit publisher + logo | 2026-04-10 |
-| **JSON-LD Blog-Posts** | ✅ BlogPosting (Google-News-eligible) + BreadcrumbList | 2026-04-10 |
-| **Twitter Card** | ✅ `@SeasonAlph4882` überall | 2026-04-10 |
-| **Google Search Console** | ⚠️ Sitemap-Re-Submission nach Update nötig | offen |
+| **Apple-Touch-Icon + PNG-Favicons** | ✅ | 2026-04-10 |
+| **Hero-Titles SEO-optimiert** | ✅ 21 Pages via `scripts/optimize_page_titles.py`, alle <62 Chars mit Ziel-Keywords | 2026-04-10 |
+| **Sitemap** | ✅ **49 URLs** (Landing + 21 Features + 4 Blog-Indizes + 18 Blog-Posts + 6 statische). 270 programmatische `/analyse/*` wegen Thin-Content deaktiviert | 2026-04-10 |
+| **Sitemap Auto-Discovery** | ✅ `glob('landing/pages/*.html')` in `programmatic_seo_builder.py`, neue Pages fliessen automatisch rein | 2026-04-10 |
+| **robots.txt** | ✅ Sitemap referenziert, `/app/` blockiert, AI-Crawler explizit ALLOW (15 Bots) | 2026-04-10 |
+| **JSON-LD Landing** | ✅ WebSite + SearchAction + SoftwareApplication + Organization (mit sameAs Twitter) + FAQPage | 2026-04-10 |
+| **JSON-LD Feature-Pages** | ✅ WebPage + BreadcrumbList (2-Level, Google-Validator-konform) | 2026-04-10 |
+| **JSON-LD Blog-Posts** | ✅ BlogPosting (Google-News-eligible) + BreadcrumbList (3-Level) | 2026-04-10 |
+| **Twitter Card** | ✅ `@SeasonAlph4882` auf Landing + 21 Pages + Blog-Template + im Footer sichtbar | 2026-04-10 |
 | **Bing Webmaster Tools** | ✅ Setup + 10 URLs manuell submitted | 2026-04-10 |
-| **IndexNow** | ✅ Key live + 26 URLs erste Submission erfolgreich | 2026-04-10 |
-| **www → non-www Redirect** | ✅ 301 Canonicalization live | 2026-04-10 |
-| **Analytics** | 🟠 Scaffold in `landing/components/analytics.html`, noch nicht aktiv | bewusst offen |
-| **Rich Results Validierung** | ⚠️ Nach erstem Crawl (1-2 Wochen) prüfen | offen |
+| **IndexNow** | ✅ Key am Host-Root + 26 Core-URLs gepingt (HTTP 200) + Auto-Ping im Deploy-Step | 2026-04-10 |
+| **www → non-www Redirect** | ✅ 301 Canonicalization für HTTP + HTTPS live | 2026-04-10 |
+| **Programmatische /analyse/* Pages** | ⚠️ Auf noindex, aus Sitemap raus (Thin-Content, Weg A). Re-Aktivierung via Weg B wenn echter Content (Monats-Perf-Tabelle aus Supabase, SVG-Chart, Dekaden-Split) | 2026-04-10 |
+| **Google Search Console** | 🟠 Sitemap neu eingereicht, 10+ URLs manuell (Tageslimit erreicht), Rest morgen | 2026-04-10 |
+| **Analytics** | 🟠 Scaffold in `landing/components/analytics.html`, bewusst nicht aktiviert | offen |
+| **Rich Results Validierung** | 🟠 Nach erstem Crawl (1-2 Wochen) prüfen | offen |
 
 **Live-Check-Kommandos:**
 ```bash
 # OG-Image erreichbar?
 curl -sI https://seasonalpha.ai/landing/assets/images/og-image.png | head -3
 
-# Sitemap-URL-Count
+# Sitemap-URL-Count (Erwartung: 49)
 curl -s https://seasonalpha.ai/sitemap.xml | grep -c "<loc>"
 
-# Meta-Marker in Feature-Page?
-curl -s https://seasonalpha.ai/jahreszyklus | grep -c "SA_META_V2"
+# /analyse/* in Sitemap (Erwartung: 0 wegen Thin-Content-noindex)
+curl -s https://seasonalpha.ai/sitemap.xml | grep -c "/analyse/"
+
+# Meta-Marker in Feature-Page (aktuell V5 = SEO-optimierte Titles)
+curl -s https://seasonalpha.ai/jahreszyklus | grep -c "SA_META_V5"
+
+# noindex auf programmatischer Page?
+curl -s https://seasonalpha.ai/analyse/apple-saisonalitaet | grep -i 'robots.*noindex'
+
+# www → non-www Redirect?
+curl -sI https://www.seasonalpha.ai/dashboard | grep -E "^(HTTP|Location)"
+
+# IndexNow Key am Host-Root?
+curl -sI https://seasonalpha.ai/c0d4540dc5a10d464d473960f4d20be3.txt | head -3
 
 # Cache-Bust per Deploy?
 curl -s https://seasonalpha.ai/jahreszyklus | grep -oE 'app\.css\?v=[a-z0-9]+' | head -1
+
+# WebSite + SearchAction JSON-LD auf Landing?
+curl -s https://seasonalpha.ai/ | grep -oE '"@type":"WebSite"[^<]*' | head -1
+
+# robots.txt AI-Crawler Policy?
+curl -s https://seasonalpha.ai/robots.txt | grep -c "GPTBot\|ClaudeBot\|PerplexityBot"
 ```
 
 ## Offene Tasks (in Reihenfolge)
 
-### 🔴 SOFORT (5-10 Min, vom User selbst zu machen)
-- [ ] **Google Search Console** → `https://search.google.com/search-console/`
-  1. Property `seasonalpha.ai` prüfen (Domain-Property, nicht URL-Prefix)
-  2. Linkes Menü → Indexierung → Sitemaps → `sitemap.xml` erneut einreichen (falls schon drin: Drei-Punkte-Menü → „Aktualisieren")
-  3. URL-Prüfung für 7 Haupt-Pages manuell triggern:
-     - `/`
-     - `/dashboard`
-     - `/jahreszyklus`
-     - `/plain-vanilla`
-     - `/backtest-engine`
-     - `/ki-saisonalitaet`
-     - `/blog/`
-     - Pro URL: eingeben → Enter → „Indexierung beantragen". Limit ~10 Requests/Tag pro Property.
+### 🔴 SOFORT (vom User selbst zu machen)
+- [x] **GSC Sitemap neu eingereicht** nach der 319→49 URL Verschlankung (2026-04-10)
+- [x] **GSC URL-Inspection für Feature-Pages** — 10 Requests bis zum Tageslimit gemacht (2026-04-10). Morgen ab ~9 Uhr lokal wieder ~10 Requests verfügbar.
+- [x] **GSC Live-URL-Check auf `/analyse/apple-saisonalitaet`** bestätigt: `<meta name=robots content=noindex>` wirkt sofort (2026-04-10).
+- [ ] **Morgen (2026-04-11)** GSC URL-Inspection für die Rest-Feature-Pages nachziehen die gestern das Tageslimit gesprengt haben:
+  - `/plain-vanilla`, `/backtest-engine`, `/ki-saisonalitaet`, `/monatswechsel`, `/trifecta`, `/wochentage` je einzeln → „Indexierung beantragen"
 - [ ] **Twitter Card Validator** testen: https://cards-dev.twitter.com/validator → `https://seasonalpha.ai/jahreszyklus` → muss OG-Image zeigen
 - [ ] **LinkedIn Post Inspector**: https://www.linkedin.com/post-inspector/ → gleiche URL → muss Preview generieren (dabei auch den LinkedIn-Cache invalidieren)
 - [ ] **Facebook Sharing Debugger**: https://developers.facebook.com/tools/debug/ → gleiche URL → „Scrape Again" drücken (Facebook cached OG-Images 30 Tage)
@@ -62,14 +75,18 @@ curl -s https://seasonalpha.ai/jahreszyklus | grep -oE 'app\.css\?v=[a-z0-9]+' |
 ### 🟠 DIESE WOCHE (15-30 Min)
 - [x] **Bing Webmaster Tools Setup + 10 URLs submitted** (2026-04-10)
   Die 10 Kern-URLs (Landing, Dashboard, Jahreszyklus, Plain Vanilla, Backtest, KI-Saisonalität, Monatswechsel, Trifecta, Blog, Wochentage) wurden manuell im Bing Webmaster Tool via „URL Submission" eingereicht. Follow-up: in 24-72h in „Search Performance → Top pages" prüfen ob sie auftauchen.
-- [ ] **GSC Coverage-Check** nach 3-7 Tagen: Linkes Menü → Seiten → „Indexiert" sollte von ~30 auf ~300 steigen. „Nicht indexiert" Gründe checken
-- [ ] **GSC Rich-Results-Check** nach 1-2 Wochen: Linkes Menü → Verbesserungen → Article / FAQ / Breadcrumbs / WebPage — Fehler prüfen und fixen
+- [ ] **GSC Coverage-Check** ab 2026-04-17: Linkes Menü → Seiten → „Gefunden – zurzeit nicht indexiert" Bucket sollte von **72** auf **~0** fallen (270 `/analyse/*` sollten in „Durch noindex-Tag ausgeschlossen" wandern — das ist OK). „Indexiert" sollte von ~30 auf ~49 ansteigen (Landing + 21 Features + Blog).
+- [ ] **GSC Rich-Results-Check** ab 2026-04-17 bis 2026-04-24: Linkes Menü → Verbesserungen → Article / FAQ / Breadcrumbs / WebPage — Fehler prüfen und fixen
+- [ ] **Bing Follow-Up** ab 2026-04-12: Bing Webmaster → Search Performance → Top pages: schauen ob die 10 manuell submitted URLs + die 26 IndexNow-URLs Impressions bekommen
+- [ ] **Domain-Quality-Score-Recovery** ab 2026-04-24: GSC Leistung → Klicks/Impressions vs. 14-Tages-Vergleich — die 21 Feature-Pages sollten nach der /analyse/ Noindex-Aktion bessere Rankings kriegen (Quality-Signal nicht mehr durch Thin-Content verwässert)
 
 ### 🟢 MITTELFRISTIG (wenn sich was bewegt)
+- [ ] **Weg B: Programmatische /analyse/* Pages inhaltlich aufwerten** (aktuell auf noindex). Pro Page braucht's: echte Monats-Performance-Tabelle (12 Zeilen aus Supabase, alle unterschiedlich), SVG-Inline Chart Jahresverlauf normiert, Dekaden-Aufschlüsselung (letzte 3 Dekaden), historische Extreme (bestes Jahr, schlechtestes Jahr, max DD), CTAs auf `/dashboard?t={ticker}` + `/jahreszyklus?t={ticker}`, Fake-KI-Blur komplett entfernen, Asset-Klassen-spezifische Intros (Aktie/ETF/Crypto/FX), Schema.org `Dataset` + `Table`. Dann `seo_template.html` noindex raus + `ENABLE_PROGRAMMATIC_IN_SITEMAP = True` in `programmatic_seo_builder.py`. Aufwand: 2-4 Stunden Template-Rebuild + Supabase-Queries.
+- [x] **Breadcrumb-JSON-LD** auf die 21 Feature-Pages — ✅ 2026-04-10 (2-Level, Validator-konform)
 - [ ] **Analytics aktivieren** — Entscheidung zwischen Plausible Cloud (9 €/Monat, zero-config) und self-hosted Umami (kostenlos, Docker-Container). Scaffold in `landing/components/analytics.html`. Sobald aktiv: Loader-Mechanik in `app.js` einbauen oder Snippet inline in allen HTMLs
-- [ ] **Breadcrumb-JSON-LD** auf die 21 Feature-Pages (aktuell nur Blog hat Breadcrumbs)
 - [ ] **OG-Image pro Page** — aktuell 1 globales OG-Image für alle. Besser: 21 individuelle Banner mit Feature-spezifischem Headline („Jahreszyklus", „Dashboard" etc.). Template-Logic in `scripts/generate_og_images.py` erweitern
-- [ ] **Sitemap-Index** bei >500 URLs (aktuell 319, erst relevant wenn sich das verdoppelt)
+- [ ] **Font-Preloading** auf Landing + 21 Pages für LCP-Boost (Core Web Vitals)
+- [ ] **Sitemap-Index** bei >500 URLs (aktuell 49, erst relevant wenn Weg B die 270 /analyse/* re-aktiviert)
 - [ ] **hreflang-Tags** wenn EN-Version kommt
 - [ ] **Image-Alt-Text-Audit** auf Blog-Bilder
 
