@@ -237,10 +237,15 @@
 
     /* ── FOOTER ── */
     .foot{border-top:1px solid var(--border);padding:3rem 0 2rem;font-size:.8125rem}
-    .foot__grid{display:grid;grid-template-columns:1.6fr repeat(5,1fr);gap:2rem;margin-bottom:2rem}
-    @media(max-width:1300px){.foot__grid{grid-template-columns:1.4fr repeat(3,1fr);gap:1.5rem}.foot__brand{grid-column:1/-1}}
-    @media(max-width:900px){.foot__grid{grid-template-columns:1fr 1fr 1fr}.foot__brand{grid-column:1/-1}}
-    @media(max-width:600px){.foot__grid{grid-template-columns:1fr 1fr}}
+    /* Default: Brand + 5 Feature-Cols alle in einer Reihe (sehr breite Viewports) */
+    .foot__grid{display:grid;grid-template-columns:1.3fr repeat(5,1fr);gap:1.25rem 1.5rem;margin-bottom:2rem}
+    /* Medium-Wide: Brand full-width oben, 5 Feature-Cols in einer Reihe darunter */
+    @media(max-width:1400px){.foot__grid{grid-template-columns:repeat(5,1fr);gap:1rem 1.25rem}.foot__brand{grid-column:1/-1;margin-bottom:.5rem}}
+    /* Tablet: 3 Cols, Brand full-width */
+    @media(max-width:900px){.foot__grid{grid-template-columns:repeat(3,1fr);gap:1rem}.foot__brand{grid-column:1/-1}}
+    /* Mobile: 2 Cols */
+    @media(max-width:600px){.foot__grid{grid-template-columns:1fr 1fr;gap:.75rem}}
+    /* Schmal: 1 Col */
     @media(max-width:380px){.foot__grid{grid-template-columns:1fr}}
     .foot__brand p{color:var(--muted);margin-top:.5rem;font-size:.75rem}
     .foot__social{display:flex;gap:.5rem;margin-top:1rem;align-items:center;flex-wrap:wrap}
