@@ -1,6 +1,6 @@
 # SeasonAlpha — Feature-Roadmap
 
-> Stand: 2026-04-10 | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Features #1 (Guided Tour) und #2 (Weekly Newsletter) sind implementiert.**
+> Stand: 2026-04-10 (Vormittag) | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Feature #1 (Guided Tour) live · Feature #2 (Weekly Newsletter) erster Live-Test erfolgreich zugestellt.**
 
 ## Kontext
 
@@ -20,7 +20,7 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 | # | Feature | Backend | Frontend | Aufwand | Status |
 |---|---------|--------:|---------:|--------:|--------|
 | 1 | **Guided Tour** | N/A | 100 % | **1 Tag** | ✅ **Live seit 2026-04-09** |
-| 2 | **Email-Alerts / Weekly Report** | 100 % | 100 % | **1 Tag** | ✅ **Implementiert 2026-04-10** — Deploy + Test-Send ausstehend |
+| 2 | **Email-Alerts / Weekly Report** | 100 % | 100 % | **1 Tag** | ✅ **Live-Test erfolgreich 2026-04-10** — Nginx-Reload + Phase-F-Aktivierung ausstehend |
 | 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Nächstes Feature |
 | 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Welle 2 |
 | 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Welle 3 |
@@ -30,7 +30,7 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 ### Welle 1 — Quick Wins (Woche 1–2)
 
 1. **Guided Tour** — Hoher UX-Impact, niedriger Aufwand, keine Dependencies. ✅ **Live seit 2026-04-09** (1 Tag Implementierung inkl. Post-Launch-Fixes).
-2. **Email-Alerts / Weekly Report** — Brevo-Integration zu 70 % da, primär Template-Generator + Cron-Job. **Nächstes Feature.**
+2. **Email-Alerts / Weekly Report** — ✅ **Live-Test erfolgreich am 2026-04-10.** Brevo Domain-Auth (SPF/DKIM/DMARC) für `seasonalpha.ai` komplett eingerichtet, erster Newsletter mit `noreply@seasonalpha.ai` zugestellt. Offen: Nginx-Reload auf Server + Phase F Aktivierung für nächsten Sonntag + Content-Iteration.
 
 ### Welle 2 — Core Features (Woche 3–4)
 
@@ -42,6 +42,37 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 5. **Portfolio-Backtest Combo** — Aufwendigstes Feature, aber hoher USP-Wert (Multi-Strategy-Allocation + Rebalancing).
 
 ## Kritische Dateien pro Feature
+
+### Feature #2 — Weekly Newsletter ✅ LIVE-TEST ERFOLGREICH 2026-04-10
+
+**Implementiert (Commits b343de9 → 14e4087 → e80c818):**
+- `shared/weekly_report.py` — 4 Aggregations-Funktionen (`top_ki_scores`, `regime_status`, `upcoming_events`, `tdom_bias_for_week`) + `build_report_context()` Haupt-Aggregator. Pure Funktionen, nur Supabase-Reads.
+- `shared/unsubscribe_token.py` — HMAC-Token `SHA-256(lower(email)+secret)[:16]`, 1:1 kompatibel mit der SQL-RPC.
+- `scripts/weekly_newsletter.py` — CLI mit `--dry-run` / `--test` / `--to` / `--top-n`, Rate-Limiting 0.35s, Admin-Alert bei >10% Fehlerrate.
+- `scripts/templates/weekly_report.html.j2` — Dark-Mode Jinja2-Template, 4 Sektionen, table-based, inline CSS für Cross-Client-Kompatibilität.
+- `scripts/create_unsubscribe_rpc.sql` — Postgres `unsubscribe_with_token(email, token)` mit `SECURITY DEFINER`, nutzt `extensions.digest()` (pgcrypto im extensions-Schema) und validiert Token server-side.
+- `landing/pages/unsubscribe.html` — statische Page mit vanilla JS, ruft Supabase `/rpc/unsubscribe_with_token`, zeigt success/error/missing Views mit V3 Ultra Styling.
+- `shared/email_brevo.py::send_html()` — neue Funktion für beliebigen HTML-Body ohne Brevo-Template, Logging mit `messageId` + HTTPError-Body für Debug.
+- `scripts/nightly_refresh.py` Phase F — feuert Sonntags ≥17 UTC automatisch das `weekly_newsletter.py` Subprocess, 30 min Timeout.
+- `deploy/nginx.conf` — `location = /unsubscribe` mit Rewrite auf `/landing/pages/unsubscribe.html`, `Cache-Control: no-store`.
+
+**Post-Launch Fixes:**
+- Brevo API-Key TOML-Fallback in `_get_api_key()` für Cron-Kontext ohne Streamlit-Runtime.
+- `SENDER` konfigurierbar via `SENDER_EMAIL` / `SENDER_NAME` Env-Vars.
+- `seasonaledge.app` → `seasonalpha.ai` in Sender-Addresses (war nur der alte Repo-Name).
+- `create_unsubscribe_rpc.sql` pgcrypto aus `extensions`-Schema.
+- Brevo Domain-Authentifizierung für `seasonalpha.ai` (SPF + DKIM + DMARC + Brevo-Code im DNS).
+
+**Erster Live-Test:** Sender `noreply@seasonalpha.ai` → `heiko.seibel@gmail.com`, Brevo-Status „Zugestellt", Mail im Gmail-Posteingang korrekt angekommen.
+
+**Offene Restarbeiten:**
+1. Nginx-Reload auf dem Server (`docker exec seasonalpha-nginx nginx -s reload`)
+2. End-to-End-Test des Unsubscribe-Links (Inkognito-Tab)
+3. Phase F Aktivierung — prüfen ob `nightly_refresh` Sonntags läuft
+4. Content-Iteration des Reports basierend auf User-Feedback
+5. Launch-Blog-Post
+
+---
 
 ### Feature #1 — Guided Tour ✅ LIVE seit 2026-04-09
 

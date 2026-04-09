@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.8 | 2026-04-10 (Morgen) | Details → `docs/`
+> Version 27.9 | 2026-04-10 (Morgen) | Details → `docs/`
 
 
 ## Projekt
@@ -117,7 +117,7 @@ blog/                    ← Blog Engine (Markdown → statisches HTML)
 .claude/
   blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
 scripts/                 ← Batch-Jobs
-  nightly_refresh.py     ← Nightly DB Refresh (6 Phasen: Calendar, Ticker, Health, Regime, Log, Weekly-Newsletter)
+  nightly_refresh.py     ← Nightly DB Refresh (6 Phasen: A=Calendar, B=Ticker, C=Health, E=Regime, D=Log, F=Weekly-Newsletter Sonntags, Z=Heartbeat)
   intraday_refresh.py    ← Intraday Kurs-Updates (EU/US/Asien/FX/Crypto, alle 30 Min)
   weekly_newsletter.py   ← SeasonAlpha Weekly Report Sender (CLI mit --dry-run/--test/--to, Sonntags ab 17 UTC via Phase F)
   create_unsubscribe_rpc.sql ← Postgres RPC-Funktion für Token-basierten Unsubscribe
@@ -558,9 +558,19 @@ Bei Fehlern:
 - [x] **2026-04-09** Monatswechsel: Sidebar-Checkbox "Aktuelles Jahr" + Gold-Overlay der aktuellen (ggf. unvollständigen) TOM-Fenster des laufenden Jahres. Neuer Helper `buildCurrentYearTOMCurves()` in monatswechsel.html der laufende Fenster zulässt und fehlende Post-Tage mit null paddet. Cutoff-Logik: Gemittelte Gold-Linie wird strikt am letzten gültigen Tag des zeitlich aktuellsten Fensters gekappt (verhindert "Zukunftstage" aus abgeschlossenen Fenstern)
 - [x] **2026-04-09** **Umlaute-Regel** in CLAUDE.md + MEMORY fixiert: Immer ä/ö/ü statt ae/oe/ue in allen deutschsprachigen Inhalten (UI, Tour-Popover, Blog, Commit-Messages)
 - [x] **2026-04-10** **Weekly Newsletter** (Feature #2 der Roadmap) — komplette Pipeline: `shared/weekly_report.py` (4 Aggregations-Funktionen: top_ki_scores, regime_status, upcoming_events, tdom_bias_for_week), `shared/unsubscribe_token.py` (HMAC SHA-256, 16-Hex-Chars Token), `scripts/weekly_newsletter.py` (CLI mit --dry-run / --test / --to, Jinja2-Rendering, Brevo-Send mit Rate-Limiting 0.35s, Admin-Alert bei >10% Fehlerrate), `scripts/templates/weekly_report.html.j2` (Dark-Mode-Email, table-based, inline CSS, 4 Sektionen: Top 10 KI-Scores, Events, Wochenbias, Regime-Status), `scripts/create_unsubscribe_rpc.sql` (Postgres-Funktion `unsubscribe_with_token` für server-side Token-Validierung), `landing/pages/unsubscribe.html` (statische Page mit vanilla JS → Supabase RPC-Call), `send_html()` Funktion in `shared/email_brevo.py` für beliebigen HTML-Body. Cron: Phase F in `nightly_refresh.py` feuert Sonntags ab 17 UTC. Python-Token ↔ SQL-Token validiert (SHA-256(lower(email)+secret)[:16] identisch).
+- [x] **2026-04-10** **Weekly Newsletter Deploy-Fixes** nach erstem Live-Test: (a) `create_unsubscribe_rpc.sql` — pgcrypto kommt in Supabase aus `extensions`-Schema, daher `CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions` + `search_path=public,extensions,pg_temp` + expliziter `extensions.digest()`-Aufruf. (b) `shared/email_brevo.py::_get_api_key()` — neuer TOML-Fallback liest `.streamlit/secrets.toml` direkt via `tomllib` (Py 3.11+) ohne Streamlit-Runtime, sonst findet der Cron-Kontext den BREVO_API_KEY nicht. (c) `SENDER` konfigurierbar via Env-Var `SENDER_EMAIL` / `SENDER_NAME`, Default auf `noreply@seasonalpha.ai` (Produktiv-Domain, nicht `seasonaledge.app` — das war nur der alte Repo-Name). (d) `ADMIN_EMAIL` Default auf `heiko@seasonalpha.ai`. (e) Brevo-Response-Logging mit `messageId` + HTTPError-Body für Debug. (f) `landing/pages/unsubscribe.html` mailto-Links auf `info@seasonalpha.ai`.
+- [x] **2026-04-10** **Brevo Domain-Authentifizierung seasonalpha.ai** komplett eingerichtet (SPF + DKIM + DMARC + Brevo-Code im DNS-Provider). Damit ist jede `@seasonalpha.ai` Adresse als Sender nutzbar ohne Single-Sender-Verifikation. Erster voll authentifizierter Newsletter an `heiko.seibel@gmail.com` erfolgreich zugestellt (Brevo-Status „Zugestellt"). Feature #2 ist funktional abgenommen.
+- [x] **2026-04-10** **Nginx-Route `/unsubscribe`** in `deploy/nginx.conf` eingetragen (`rewrite → /landing/pages/unsubscribe.html`, `Cache-Control: no-store`). Reload auf dem Server noch ausstehend.
 
-### ⚠️ OFFEN — Als nächstes (Sidebar-Plan bereit zur Abholung)
-- [ ] **Mobile Responsiveness Fix** — Plan liegt in `C:\Users\HeikoSeibel\.claude\plans\humming-juggling-hinton.md`. 6 kritische Bugs + 4 high-prio Issues auf ≤768px identifiziert. Fix betrifft 4 Dateien (`app.css`, `decade-compute.js`, `dashboard.html`, `backtest-engine.html`), ~80 Zeilen CSS + 15 Zeilen JS. **Direkt umsetzbar nach Exit Plan Mode — vom Home Office weitermachen.**
+### ⚠️ OFFEN — Weekly Newsletter Restarbeiten (nach dem Büro-Wechsel weitermachen)
+- [ ] **Nginx reload auf dem Server** — `cd /opt/seasonaledge && git pull && docker exec seasonalpha-nginx nginx -t && docker exec seasonalpha-nginx nginx -s reload`
+- [ ] **Unsubscribe-Link End-to-End testen** — Inkognito-Tab → `https://seasonalpha.ai/unsubscribe?email=test@example.com&token=64f0ba2b0c093da7` → „Ja, abmelden" → sollte `not_found` zeigen (weil test@example.com nicht in DB). Damit ist Nginx → Static Page → JS → Supabase RPC komplett validiert.
+- [ ] **Phase F Aktivierungs-Entscheidung** — Phase F im Code (`scripts/nightly_refresh.py`) ist bereits aktiv und feuert automatisch wenn nightly_refresh sonntags ≥17 UTC läuft. Zu klären: Läuft der aktuelle Cron auch Sonntags? Falls nur wochentags → Sonntags-Eintrag im Cron ergänzen. Nächster potentieller Versand: Sonntag 12.04.2026 18:00 Berlin.
+- [ ] **Content-Iteration des Weekly Reports** — User hat Feedback angekündigt ("über den Inhalt sprechen wir noch"). Template liegt in `scripts/templates/weekly_report.html.j2`, Helper in `shared/weekly_report.py`. Live-Preview jederzeit via `docker exec seasonalpha-app python3 scripts/weekly_newsletter.py --to heiko.seibel@gmail.com`.
+- [ ] **Blog-Post zum Launch** — "Der erste SeasonAlpha Weekly Report ist raus" mit Screenshot, Erklärung der 4 Sektionen, Opt-In-CTA.
+
+### ⚠️ OFFEN — Mobile Responsiveness Fix (davor geplant)
+- [ ] **Mobile Responsiveness Fix** — Plan liegt in `C:\Users\HeikoSeibel\.claude\plans\humming-juggling-hinton.md`. 6 kritische Bugs + 4 high-prio Issues auf ≤768px identifiziert. Fix betrifft 4 Dateien (`app.css`, `decade-compute.js`, `dashboard.html`, `backtest-engine.html`), ~80 Zeilen CSS + 15 Zeilen JS.
 
 ### Marketing-Pipeline (manuell durch User)
 - [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln (Tweet-Texte in `blog/output/{slug}/social/`)
