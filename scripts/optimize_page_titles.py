@@ -32,6 +32,10 @@ PAGE_SEO = {
         "title": "Saisonal-Scanner &mdash; Alle Ticker nach KI-Score | SeasonAlpha",
         "description": "Saisonal-Scanner: alle Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal (Bullish/Bearish/Neutral), Win-Rate. Screening f&uuml;r saisonale Trading-Chancen.",
     },
+    "watchlist.html": {
+        "title": "Meine Watchlist &mdash; KI-Score & Signale deiner Ticker | SeasonAlpha",
+        "description": "Pers&ouml;nliche Watchlist mit KI-Score, Crash-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.",
+    },
     "jahreszyklus.html": {
         "title": "Jahreszyklus &mdash; Saisonale Jahresmuster am Markt | SeasonAlpha",
         "description": "Saisonaler Jahresverlauf, Pressure Chart, Detrend, Pr&auml;sidentenzyklus, Monats- & Quartals-Performance. Erkenne wiederkehrende Muster mit bis zu 131 Jahren Daten.",

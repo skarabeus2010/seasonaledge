@@ -67,6 +67,19 @@
     .dash-toolbar input:focus,.dash-toolbar select:focus{border-color:var(--accent);outline:none}
     .dash-toolbar select{min-width:120px;cursor:pointer}
 
+    /* ── Watchlist-Toolbar im Dashboard-Header ── */
+    .wl-toolbar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .btn-wl-toggle{display:inline-flex;align-items:center;gap:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);padding:.5rem .85rem;border-radius:8px;font-family:var(--f-b);font-size:.8125rem;font-weight:600;cursor:pointer;transition:all .15s;min-height:40px}
+    .btn-wl-toggle:hover{border-color:var(--accent);color:var(--text)}
+    .btn-wl-toggle .icon-star{transition:fill .15s,stroke .15s}
+    .btn-wl-toggle.active{background:rgba(232,168,32,.12);border-color:var(--accent);color:var(--accent)}
+    .btn-wl-toggle.active .icon-star{fill:var(--accent);stroke:var(--accent)}
+    .btn-wl-count{display:inline-flex;align-items:center;gap:.5rem;background:transparent;border:1px solid var(--border);color:var(--dim);padding:.5rem .85rem;border-radius:8px;font-size:.8125rem;font-weight:500;text-decoration:none;transition:all .15s;min-height:40px}
+    .btn-wl-count:hover{border-color:var(--accent);color:var(--text);text-decoration:none}
+    #wl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;background:var(--accent);color:#000;border-radius:11px;font-weight:800;font-size:.75rem;font-family:var(--f-m);line-height:1}
+    #wl-badge.empty{background:var(--border);color:var(--muted)}
+    @media (max-width:768px){.wl-toolbar{width:100%;justify-content:flex-start}.btn-wl-count{flex:1;justify-content:space-between}}
+
     /* ── Bento-Grid ── */
     .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
     .bento-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease;min-height:120px;position:relative}
@@ -209,6 +222,17 @@
             <option value="20">20 Jahre</option>
             <option value="30">30 Jahre</option>
           </select></div>
+          <div class="wl-toolbar">
+            <button id="btn-wl-toggle" type="button" class="btn-wl-toggle" title="Diesen Ticker zur Watchlist hinzufügen oder entfernen">
+              <svg class="icon-star" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span id="btn-wl-label">Zur Watchlist</span>
+            </button>
+            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen">
+              Meine Watchlist <span id="wl-badge">0</span>
+            </a>
+          </div>
         </div>
       </div>
       <div class="trading-day-header" id="trading-day-header"></div>
@@ -348,6 +372,7 @@
   <script src="/landing/js/decade-compute.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/fomc-dates.js"></script>
+  <script src="/landing/js/watchlist.js"></script>
 
   <script>
   // ══════════════════════════════════════════════════════════════
@@ -2019,11 +2044,49 @@
         document.getElementById('loading-msg').style.display = 'none';
         document.getElementById('bento').style.display = '';
         renderAll();
+        updateWatchlistButton();
       }).catch(function(e) {
         showError('Fehler: ' + (e && e.message ? e.message : e));
         document.getElementById('loading-msg').textContent = 'Fehler beim Laden';
       });
     }
+
+    // ── Watchlist-Button-Logik ─────────────────────────────────
+    function updateWatchlistButton() {
+      if (typeof SA === 'undefined' || !SA.watchlist || !currentTicker) return;
+      var btn = document.getElementById('btn-wl-toggle');
+      var label = document.getElementById('btn-wl-label');
+      var badge = document.getElementById('wl-badge');
+      if (!btn || !label || !badge) return;
+      var inWL = SA.watchlist.has(currentTicker);
+      btn.classList.toggle('active', inWL);
+      label.textContent = inWL ? 'In Watchlist' : 'Zur Watchlist';
+      btn.title = inWL ? currentTicker + ' aus Watchlist entfernen' : currentTicker + ' zur Watchlist hinzufügen';
+      var count = SA.watchlist.count();
+      badge.textContent = String(count);
+      badge.classList.toggle('empty', count === 0);
+    }
+
+    function onWatchlistToggleClick() {
+      if (!currentTicker || !SA.watchlist) return;
+      var res = SA.watchlist.toggle(currentTicker);
+      if (res.added === false && res.removed === false) {
+        // Limit erreicht
+        showError('Watchlist-Limit erreicht (max ' + SA.watchlist._maxItems + ' Ticker).');
+        setTimeout(function(){ document.getElementById('error-banner').style.display='none'; }, 4000);
+        return;
+      }
+      updateWatchlistButton();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('btn-wl-toggle');
+      if (btn) btn.addEventListener('click', onWatchlistToggleClick);
+      if (window.SA && SA.watchlist) {
+        SA.watchlist.on('changed', updateWatchlistButton);
+        updateWatchlistButton();
+      }
+    });
 
     // Listener: Year-Slider
     document.getElementById('sel-years').addEventListener('change', function() {

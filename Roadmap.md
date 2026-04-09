@@ -1,6 +1,6 @@
 # SeasonAlpha — Feature-Roadmap
 
-> Stand: 2026-04-10 (Spät-Abend) | Core-Analyse abgeschlossen (21/18 HTML-Pages inkl. Scanner). **3 von 5 Roadmap-Features LIVE.** Feature #1 (Guided Tour), Feature #2 (Weekly Newsletter), Feature #3 (Saisonal-Scanner) live. Welle 2 (Auth + Watchlists) und Welle 3 (Portfolio-Combo) offen.
+> Stand: 2026-04-10 (Abend 2) | Core-Analyse abgeschlossen (22/18 HTML-Pages inkl. Scanner + Watchlist). **4 von 5 Roadmap-Features LIVE** (Phase 1). Feature #1 (Guided Tour), #2 (Weekly Newsletter), #3 (Saisonal-Scanner), #4 (Watchlist Local-First MVP) live. Auth-Upgrade für Watchlist + Premium-Gate kommt mit Feature #4 Phase 2. Welle 3 (Portfolio-Combo) offen.
 
 ## Kontext
 
@@ -22,7 +22,7 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 | 1 | **Guided Tour** | N/A | 100 % | **1 Tag** | ✅ **Live seit 2026-04-09** |
 | 2 | **Email-Alerts / Weekly Report** | 100 % | 100 % | **1 Tag** | ✅ **Live-Test erfolgreich 2026-04-10** — Nginx-Reload + Phase-F-Aktivierung ausstehend |
 | 3 | **Saisonal-Scanner** | 100 % | 100 % | **1 Tag** | ✅ **Live seit 2026-04-10 (Spät-Abend)** |
-| 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Welle 2 |
+| 4 | **Watchlist** (Local-First MVP) + Auth (Phase 2) | Phase 1: 100 % / Phase 2: 20 % | Phase 1: 100 % | Phase 1: 1 Tag / Phase 2: 8–10 Tage | ✅ **Phase 1 Live 2026-04-10** — Auth-Upgrade + Cloud-Sync kommt mit Premium-Gate |
 | 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Welle 3 |
 
 ## Entwicklungs-Wellen

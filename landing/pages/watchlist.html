@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meine Watchlist &mdash; KI-Score & Signale deiner Ticker | SeasonAlpha</title>
+  <meta name="description" content="Deine pers&ouml;nliche Watchlist mit KI-Score, Crash-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/watchlist">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/watchlist">
+  <meta property="og:title" content="Meine Watchlist &mdash; SeasonAlpha">
+  <meta property="og:description" content="Pers&ouml;nliche Watchlist mit KI-Score, Crash-Ampel und saisonalen Signalen.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Meine Watchlist &mdash; SeasonAlpha">
+  <meta name="twitter:description" content="Pers&ouml;nliche Watchlist mit KI-Score und saisonalen Signalen.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/landing/css/app.css">
+
+  <style>
+    /* ── Watchlist-spezifisches CSS ── */
+    .wl-header-stats{display:flex;align-items:center;gap:1rem;margin-bottom:.5rem}
+    .wl-header-stats .pill{font-size:.75rem;color:var(--dim);background:var(--surface);border:1px solid var(--border);padding:.3rem .7rem;border-radius:20px;font-family:var(--f-m)}
+    .wl-header-stats .pill.gold{border-color:var(--accent);color:var(--accent)}
+
+    /* Empty State */
+    .wl-empty{text-align:center;padding:4rem 1.5rem;background:var(--card);border:1px dashed var(--border);border-radius:12px;margin:2rem 0}
+    .wl-empty__icon{font-size:3rem;margin-bottom:1rem;opacity:.5}
+    .wl-empty h2{font-family:var(--f-d);font-size:1.25rem;color:var(--text);margin:0 0 .5rem}
+    .wl-empty p{color:var(--dim);font-size:.9375rem;line-height:1.6;margin:.5rem 0;max-width:500px;margin-left:auto;margin-right:auto}
+    .wl-empty .btn{display:inline-flex;align-items:center;gap:.5rem;margin-top:1.25rem;padding:.75rem 1.5rem;background:var(--accent);color:#000;border-radius:8px;text-decoration:none;font-weight:700;transition:all .15s}
+    .wl-empty .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,168,32,.3)}
+
+    /* Compact-Card-Grid */
+    .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1.5rem}
+
+    /* Einzelne Compact-Card */
+    .wl-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem;transition:all .2s;position:relative;display:flex;flex-direction:column;gap:.85rem}
+    .wl-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,168,32,.12)}
+    .wl-card.loading{opacity:.5}
+    .wl-card.error{border-color:rgba(255,64,64,.3)}
+
+    .wl-card__head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+    .wl-card__ticker{font-family:var(--f-m);font-size:1.3rem;font-weight:800;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+    .wl-card__ticker:hover{color:var(--accent)}
+    .wl-card__name{font-size:.75rem;color:var(--muted);margin-top:.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+    .wl-card__remove{background:transparent;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+    .wl-card__remove:hover{border-color:var(--red);color:var(--red)}
+
+    .wl-card__ki{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.7rem .85rem;background:var(--surface);border-radius:8px}
+    .wl-card__ki-score{display:flex;align-items:baseline;gap:.25rem}
+    .wl-card__ki-num{font-family:var(--f-m);font-size:1.75rem;font-weight:800;line-height:1;color:var(--accent)}
+    .wl-card__ki-max{font-size:.75rem;color:var(--muted)}
+    .wl-card__ki-sig{font-size:.6875rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:.3rem .6rem;border-radius:5px}
+    .wl-card__ki-sig.bullish{background:rgba(48,232,120,.15);color:var(--green);border:1px solid rgba(48,232,120,.3)}
+    .wl-card__ki-sig.bearish{background:rgba(255,64,64,.15);color:var(--red);border:1px solid rgba(255,64,64,.3)}
+    .wl-card__ki-sig.neutral{background:rgba(232,168,32,.12);color:var(--accent);border:1px solid rgba(232,168,32,.25)}
+
+    .wl-card__crash{display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;border-radius:6px;font-size:.8125rem;border:1px solid var(--border)}
+    .wl-card__crash-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.05)}
+    .wl-card__crash.green{border-color:rgba(48,232,120,.3)}
+    .wl-card__crash.green .wl-card__crash-dot{background:var(--green);box-shadow:0 0 12px rgba(48,232,120,.5)}
+    .wl-card__crash.yellow{border-color:rgba(232,168,32,.3)}
+    .wl-card__crash.yellow .wl-card__crash-dot{background:var(--accent);box-shadow:0 0 12px rgba(232,168,32,.5)}
+    .wl-card__crash.red{border-color:rgba(255,64,64,.3)}
+    .wl-card__crash.red .wl-card__crash-dot{background:var(--red);box-shadow:0 0 12px rgba(255,64,64,.5)}
+    .wl-card__crash-label{flex:1;color:var(--dim);font-weight:600}
+    .wl-card__crash-score{font-family:var(--f-m);font-size:.75rem;color:var(--muted)}
+
+    .wl-card__stats{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+    .wl-card__stat{padding:.5rem .65rem;background:var(--surface);border-radius:6px}
+    .wl-card__stat-lbl{font-size:.625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.15rem}
+    .wl-card__stat-val{font-family:var(--f-m);font-size:.9375rem;font-weight:700}
+    .wl-card__stat-val.pos{color:var(--green)}
+    .wl-card__stat-val.neg{color:var(--red)}
+    .wl-card__stat-val.neutral{color:var(--text)}
+
+    .wl-card__cta{display:block;text-align:center;padding:.65rem;margin-top:auto;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:.8125rem;font-weight:600;text-decoration:none;transition:all .15s}
+    .wl-card__cta:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+
+    /* Summary-Stats unten */
+    .wl-summary{margin-top:2rem;padding:1.25rem;background:var(--card);border:1px solid var(--border);border-radius:12px}
+    .wl-summary h2{font-family:var(--f-d);font-size:1rem;color:var(--text);margin:0 0 1rem;font-weight:700}
+    .wl-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+    @media (max-width:640px){.wl-summary-grid{grid-template-columns:1fr 1fr}}
+
+    /* Sidebar-Elements */
+    .sidebar h3{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:.5rem 0 .5rem}
+    .sidebar .hint{font-size:.6875rem;color:var(--muted);margin-top:.35rem}
+    .sidebar .wl-add-row{display:flex;gap:.4rem;align-items:stretch}
+    .sidebar .wl-add-row input{flex:1}
+    .btn-primary{background:var(--accent);color:#000;border:1px solid var(--accent);padding:.5rem .85rem;border-radius:6px;font-weight:700;cursor:pointer;font-size:.8125rem;transition:all .15s}
+    .btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+    .btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--border);padding:.5rem .85rem;border-radius:6px;cursor:pointer;font-size:.8125rem;transition:all .15s}
+    .btn-ghost:hover{color:var(--red);border-color:var(--red)}
+    .sidebar label.filter-lbl{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);padding:.25rem 0;cursor:pointer}
+
+    /* Loading overlay */
+    .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);border-radius:12px;font-size:.8125rem;color:var(--muted)}
+
+    /* Toast */
+    #wl-toast{position:fixed;top:80px;right:20px;z-index:1000;background:var(--card);border:1px solid var(--accent);color:var(--text);padding:.85rem 1.25rem;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5);font-size:.875rem;display:none;max-width:320px}
+    #wl-toast.show{display:block;animation:slideIn .25s ease-out}
+    #wl-toast.error{border-color:var(--red);color:var(--red)}
+    @keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker hinzufügen</h3>
+      <div class="wl-add-row">
+        <input type="text" id="wl-add-input" placeholder="z.B. TSLA" list="ticker-list">
+        <datalist id="ticker-list"></datalist>
+        <button type="button" class="btn-primary" id="wl-add-btn" title="Ticker hinzufügen">+</button>
+      </div>
+      <p class="hint">Max. 50 Ticker. Enter oder "+" drücken.</p>
+
+      <hr>
+
+      <h3>Sortierung</h3>
+      <select id="wl-sort">
+        <option value="added_at_desc">Zuletzt hinzugefügt</option>
+        <option value="added_at_asc">Zuerst hinzugefügt</option>
+        <option value="score_desc">KI-Score (höchster zuerst)</option>
+        <option value="score_asc">KI-Score (niedrigster zuerst)</option>
+        <option value="ticker_asc">Ticker (A–Z)</option>
+      </select>
+
+      <hr>
+
+      <h3>Filter nach Signal</h3>
+      <label class="filter-lbl"><input type="checkbox" id="f-bull" checked> 🟢 Bullish</label>
+      <label class="filter-lbl"><input type="checkbox" id="f-neut" checked> ⚪ Neutral</label>
+      <label class="filter-lbl"><input type="checkbox" id="f-bear" checked> 🔴 Bearish</label>
+
+      <hr>
+
+      <h3>Aktionen</h3>
+      <button type="button" class="btn-ghost" id="wl-clear" style="width:100%">Alle entfernen</button>
+    </aside>
+
+    <main>
+      <div class="error-banner" id="error-banner" style="display:none"></div>
+
+      <h1 class="page-title">Meine <b>Watchlist</b></h1>
+      <p class="page-caption" id="wl-caption">Lädt …</p>
+
+      <div class="wl-header-stats">
+        <span class="pill gold" id="wl-count-pill">0 Ticker</span>
+        <span class="pill" id="wl-bull-pill" style="display:none">0 Bullish</span>
+        <span class="pill" id="wl-bear-pill" style="display:none">0 Bearish</span>
+      </div>
+
+      <div id="wl-empty" class="wl-empty" style="display:none">
+        <div class="wl-empty__icon">⭐</div>
+        <h2>Deine Watchlist ist noch leer</h2>
+        <p>Füge Ticker links in der Sidebar hinzu oder gehe zum <a href="/scanner" style="color:var(--accent);text-decoration:underline">Saisonal-Scanner</a> und klicke auf den Stern bei interessanten Tickern.</p>
+        <p>Die Watchlist wird lokal in deinem Browser gespeichert. Kein Login nötig.</p>
+        <a href="/scanner" class="btn">→ Zum Scanner</a>
+      </div>
+
+      <div id="wl-grid" class="wl-grid"></div>
+
+      <div id="wl-summary" class="wl-summary" style="display:none">
+        <h2>Zusammenfassung</h2>
+        <div class="wl-summary-grid">
+          <div class="kpi"><div class="kpi-label">Ø KI-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
+          <div class="kpi"><div class="kpi-label">Bullish</div><div class="kpi-value green" id="sum-bulls">–</div></div>
+          <div class="kpi"><div class="kpi-label">Bearish</div><div class="kpi-value red" id="sum-bears">–</div></div>
+          <div class="kpi"><div class="kpi-label">Im grünen Regime</div><div class="kpi-value" id="sum-green">–</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+  <div id="wl-toast"></div>
+
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/dash-compute.js"></script>
+  <script src="/landing/js/watchlist.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+    var qs = function(id) { return document.getElementById(id); };
+    var currentRender = []; // Cache aller Card-Objekte für Re-Filter/Sort ohne Refetch
+
+    // ── Toast ─────────────────────────────────────────────────
+    function toast(msg, isError) {
+      var t = qs('wl-toast');
+      t.textContent = msg;
+      t.className = isError ? 'show error' : 'show';
+      setTimeout(function() { t.className = ''; }, 3000);
+    }
+
+    // ── Empty State ───────────────────────────────────────────
+    function showEmpty() {
+      qs('wl-empty').style.display = '';
+      qs('wl-grid').innerHTML = '';
+      qs('wl-summary').style.display = 'none';
+      qs('wl-caption').textContent = 'Noch keine Ticker gespeichert';
+      qs('wl-bull-pill').style.display = 'none';
+      qs('wl-bear-pill').style.display = 'none';
+    }
+
+    function hideEmpty() {
+      qs('wl-empty').style.display = 'none';
+    }
+
+    // ── Ticker-Metadata (Name aus tickers.json) ───────────────
+    var tickersMeta = {};
+    function loadTickersMeta() {
+      return fetch('/landing/data/tickers.json')
+        .then(function(r) { return r.json(); })
+        .then(function(list) {
+          (list || []).forEach(function(t) { tickersMeta[t.t] = t; });
+        })
+        .catch(function(e) { console.warn('[wl] tickers.json load failed', e); });
+    }
+
+    // ── Compute + Fetch für einen Ticker ──────────────────────
+    function computeForTicker(ticker) {
+      return SA.fetchAllPrices(ticker).then(function(rows) {
+        if (!rows || rows.length < 200) {
+          return { ticker: ticker, error: 'Zu wenig Daten', rows: null };
+        }
+        rows.forEach(function(r) {
+          r.close = parseFloat(r.close);
+          if (r.log_return != null) r.log_return = parseFloat(r.log_return);
+        });
+
+        var yearData = SA.seasonal.buildYearData(rows);
+        var avg = SA.seasonal.calculateSeasonalAverage(yearData).avg || [];
+        var currentYear = new Date().getFullYear();
+
+        var matches = SA.dashCompute.findMatchingYears(yearData, currentYear, 'correlation', 5);
+        var truepath = SA.dashCompute.computeTruePath(matches, 5);
+        var ki = SA.dashCompute.computeKiScore(yearData, matches, currentYear, avg, truepath);
+        var regime = SA.dashCompute.computeRegime(rows);
+
+        return {
+          ticker: ticker,
+          error: null,
+          rows: rows,
+          ki: ki,
+          regime: regime,
+          meta: tickersMeta[ticker] || null
+        };
+      }).catch(function(e) {
+        return { ticker: ticker, error: e.message || 'Fetch-Fehler', rows: null };
+      });
+    }
+
+    // ── Card-HTML ─────────────────────────────────────────────
+    function renderCard(card) {
+      var t = card.ticker;
+      var dashHref = '/dashboard?t=' + encodeURIComponent(t);
+      var name = (card.meta && card.meta.n) || '';
+      var escName = name.replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
+
+      if (card.error) {
+        return '<div class="wl-card error" data-ticker="' + t + '">' +
+          '<div class="wl-card__head">' +
+            '<div><a href="' + dashHref + '" class="wl-card__ticker">' + t + '</a><div class="wl-card__name">' + escName + '</div></div>' +
+            '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
+          '</div>' +
+          '<div style="color:var(--red);font-size:.8125rem;padding:.5rem">⚠ ' + card.error + '</div>' +
+          '<a href="' + dashHref + '" class="wl-card__cta">Trotzdem öffnen →</a>' +
+        '</div>';
+      }
+
+      var ki = card.ki;
+      var regime = card.regime;
+      var sigClass = ki.signal.toLowerCase();
+      var ret5 = regime.features.ret_5d;
+      var ret5Class = ret5 > 0.1 ? 'pos' : (ret5 < -0.1 ? 'neg' : 'neutral');
+      var ret5Display = (ret5 >= 0 ? '+' : '') + ret5.toFixed(2) + '%';
+      var winRate = ki.subs.winRate.score * 100;
+      var trafficLabels = { green: 'Normal', yellow: 'Erhöht', red: 'Risiko', grey: 'Unbekannt' };
+      var trafficLabel = trafficLabels[regime.traffic_light] || regime.traffic_light;
+
+      return '<div class="wl-card" data-ticker="' + t + '">' +
+        '<div class="wl-card__head">' +
+          '<div style="min-width:0"><a href="' + dashHref + '" class="wl-card__ticker">' + t + '</a>' +
+          (escName ? '<div class="wl-card__name">' + escName + '</div>' : '') +
+          '</div>' +
+          '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
+        '</div>' +
+
+        '<div class="wl-card__ki">' +
+          '<div class="wl-card__ki-score">' +
+            '<span class="wl-card__ki-num">' + ki.score.toFixed(1) + '</span>' +
+            '<span class="wl-card__ki-max">/10</span>' +
+          '</div>' +
+          '<span class="wl-card__ki-sig ' + sigClass + '">' + ki.signal + '</span>' +
+        '</div>' +
+
+        '<div class="wl-card__crash ' + regime.traffic_light + '">' +
+          '<span class="wl-card__crash-dot"></span>' +
+          '<span class="wl-card__crash-label">Crash-Ampel: ' + trafficLabel + '</span>' +
+          '<span class="wl-card__crash-score">' + regime.risk_score + '/100</span>' +
+        '</div>' +
+
+        '<div class="wl-card__stats">' +
+          '<div class="wl-card__stat">' +
+            '<div class="wl-card__stat-lbl">Win-Rate Monat</div>' +
+            '<div class="wl-card__stat-val ' + (winRate >= 50 ? 'pos' : 'neg') + '">' + winRate.toFixed(0) + '%</div>' +
+          '</div>' +
+          '<div class="wl-card__stat">' +
+            '<div class="wl-card__stat-lbl">Return 5d</div>' +
+            '<div class="wl-card__stat-val ' + ret5Class + '">' + ret5Display + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<a href="' + dashHref + '" class="wl-card__cta">Zum Dashboard →</a>' +
+      '</div>';
+    }
+
+    // ── Filter + Sort anwenden ────────────────────────────────
+    function getFilteredSorted() {
+      // Filter nach Signal
+      var fBull = qs('f-bull').checked;
+      var fNeut = qs('f-neut').checked;
+      var fBear = qs('f-bear').checked;
+
+      var filtered = currentRender.filter(function(c) {
+        if (c.error) return true; // Errors immer zeigen
+        var sig = c.ki.signal;
+        if (sig === 'Bullish' && !fBull) return false;
+        if (sig === 'Neutral' && !fNeut) return false;
+        if (sig === 'Bearish' && !fBear) return false;
+        return true;
+      });
+
+      // Sort
+      var sortVal = qs('wl-sort').value;
+      var items = SA.watchlist.get();
+      var addedAtMap = {};
+      items.forEach(function(it) { addedAtMap[it.ticker] = it.added_at; });
+
+      filtered.sort(function(a, b) {
+        if (sortVal === 'ticker_asc') return a.ticker.localeCompare(b.ticker);
+        if (sortVal === 'added_at_asc') return (addedAtMap[a.ticker] || '').localeCompare(addedAtMap[b.ticker] || '');
+        if (sortVal === 'added_at_desc') return (addedAtMap[b.ticker] || '').localeCompare(addedAtMap[a.ticker] || '');
+        // Score-basiert — Errors ans Ende
+        var ascore = a.error ? -1 : (a.ki ? a.ki.score : 0);
+        var bscore = b.error ? -1 : (b.ki ? b.ki.score : 0);
+        if (sortVal === 'score_desc') return bscore - ascore;
+        if (sortVal === 'score_asc') return ascore - bscore;
+        return 0;
+      });
+
+      return filtered;
+    }
+
+    // ── Grid rendern (ohne Refetch) ───────────────────────────
+    function renderGrid() {
+      var filtered = getFilteredSorted();
+      qs('wl-grid').innerHTML = filtered.map(renderCard).join('');
+      updateStats();
+    }
+
+    // ── Summary-Stats berechnen + anzeigen ────────────────────
+    function updateStats() {
+      var valid = currentRender.filter(function(c) { return !c.error; });
+      var total = currentRender.length;
+
+      qs('wl-count-pill').textContent = total + ' Ticker';
+      qs('wl-caption').textContent = total === 1 ? '1 Ticker in deiner Watchlist' : total + ' Ticker in deiner Watchlist';
+
+      if (valid.length === 0) {
+        qs('wl-summary').style.display = 'none';
+        qs('wl-bull-pill').style.display = 'none';
+        qs('wl-bear-pill').style.display = 'none';
+        return;
+      }
+
+      var avgKi = valid.reduce(function(s, c) { return s + c.ki.score; }, 0) / valid.length;
+      var bulls = valid.filter(function(c) { return c.ki.signal === 'Bullish'; }).length;
+      var bears = valid.filter(function(c) { return c.ki.signal === 'Bearish'; }).length;
+      var greens = valid.filter(function(c) { return c.regime.traffic_light === 'green'; }).length;
+
+      qs('sum-avg-ki').textContent = avgKi.toFixed(1);
+      qs('sum-bulls').textContent = bulls + ' / ' + valid.length;
+      qs('sum-bears').textContent = bears + ' / ' + valid.length;
+      qs('sum-green').textContent = greens + ' / ' + valid.length;
+      qs('wl-summary').style.display = '';
+
+      qs('wl-bull-pill').textContent = bulls + ' Bullish';
+      qs('wl-bull-pill').style.display = bulls > 0 ? '' : 'none';
+      qs('wl-bear-pill').textContent = bears + ' Bearish';
+      qs('wl-bear-pill').style.display = bears > 0 ? '' : 'none';
+    }
+
+    // ── Load + Render alle Watchlist-Ticker ───────────────────
+    function loadAll() {
+      var items = SA.watchlist.get();
+      if (items.length === 0) { showEmpty(); return; }
+      hideEmpty();
+
+      qs('wl-caption').textContent = 'Lade Daten für ' + items.length + ' Ticker …';
+      qs('wl-grid').innerHTML = items.map(function(item) {
+        return '<div class="wl-card loading" data-ticker="' + item.ticker + '">' +
+          '<div class="wl-card__head"><a class="wl-card__ticker">' + item.ticker + '</a></div>' +
+          '<div style="color:var(--muted);font-size:.8125rem;padding:1rem;text-align:center">Lade …</div>' +
+        '</div>';
+      }).join('');
+
+      // Parallel alle Ticker laden
+      var promises = items.map(function(item) { return computeForTicker(item.ticker); });
+      Promise.all(promises).then(function(results) {
+        currentRender = results;
+        renderGrid();
+      });
+    }
+
+    // ── Handlers ──────────────────────────────────────────────
+    function onAdd() {
+      var input = qs('wl-add-input');
+      var ticker = (input.value || '').trim().toUpperCase();
+      if (!ticker) return;
+      if (SA.watchlist.has(ticker)) {
+        toast(ticker + ' ist bereits in deiner Watchlist', true);
+        return;
+      }
+      var added = SA.watchlist.add(ticker);
+      if (!added) {
+        toast('Max 50 Ticker — Limit erreicht', true);
+        return;
+      }
+      input.value = '';
+      toast('✓ ' + ticker + ' hinzugefügt');
+      loadAll();
+    }
+
+    function onRemove(ticker) {
+      SA.watchlist.remove(ticker);
+      toast(ticker + ' entfernt');
+      loadAll();
+    }
+
+    function onClear() {
+      if (!confirm('Wirklich alle ' + SA.watchlist.count() + ' Ticker aus der Watchlist entfernen?')) return;
+      SA.watchlist.clear();
+      loadAll();
+    }
+
+    // ── Init ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+      // Nav + Footer laden
+      if (window.loadComponent) {
+        loadComponent('nav-container', '/landing/components/nav.html');
+        loadComponent('footer-container', '/landing/components/footer.html');
+      } else {
+        // Fallback
+        fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(h){qs('nav-container').innerHTML=h;if(window.initNav)initNav();});
+        fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(h){qs('footer-container').innerHTML=h;});
+      }
+
+      // Ticker-Autocomplete + Enter-Handler
+      loadTickersMeta().then(function() {
+        if (window.SA && SA.initTickerInput) {
+          SA.initTickerInput('wl-add-input', 'ticker-list', onAdd);
+        }
+        loadAll();
+      });
+
+      // Buttons
+      qs('wl-add-btn').addEventListener('click', onAdd);
+      qs('wl-clear').addEventListener('click', onClear);
+
+      // Enter im Input
+      qs('wl-add-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); onAdd(); }
+      });
+
+      // Sort + Filter
+      qs('wl-sort').addEventListener('change', renderGrid);
+      qs('f-bull').addEventListener('change', renderGrid);
+      qs('f-neut').addEventListener('change', renderGrid);
+      qs('f-bear').addEventListener('change', renderGrid);
+
+      // Event-Delegation für Remove-Buttons
+      qs('wl-grid').addEventListener('click', function(e) {
+        var btn = e.target.closest && e.target.closest('.wl-card__remove');
+        if (!btn) return;
+        e.preventDefault();
+        var t = btn.getAttribute('data-ticker');
+        if (t) onRemove(t);
+      });
+
+      // Cross-Tab-Sync: wenn anderer Tab Watchlist ändert, neu laden
+      if (window.SA && SA.watchlist) {
+        SA.watchlist.on('changed', function(detail) {
+          if (detail && detail.action === 'cross-tab') loadAll();
+        });
+      }
+    });
+  })();
+  </script>
+  <script src="/landing/js/tour-config.js?v=20260409"></script>
+  <script src="/landing/js/tour.js?v=20260409"></script>
+</body>
+</html>

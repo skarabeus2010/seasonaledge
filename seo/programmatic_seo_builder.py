@@ -181,6 +181,7 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         "_disabled", "404", "index",
         "apex-demo",    # Dev/Demo-Chart, nicht produktiv
         "unsubscribe",  # Newsletter-Abmeldung, kein SEO-Ziel (noindex)
+        "watchlist",    # Personalisiert, localStorage, kein SEO-Ziel (noindex)
     }
 
     # ── Auto-Discovery: alle *.html aus landing/pages/ ─────────────────────

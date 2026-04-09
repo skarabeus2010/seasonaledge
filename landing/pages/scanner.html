@@ -110,8 +110,15 @@
     .scanner-table td .sig-badge.bullish{background:rgba(48,232,120,.15);color:var(--green);border:1px solid rgba(48,232,120,.3)}
     .scanner-table td .sig-badge.bearish{background:rgba(255,64,64,.15);color:var(--red);border:1px solid rgba(255,64,64,.3)}
     .scanner-table td .sig-badge.neutral{background:rgba(232,168,32,.12);color:var(--accent);border:1px solid rgba(232,168,32,.25)}
+    .scanner-table td.actions{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;padding-right:.75rem}
     .scanner-table td.actions a{color:var(--accent);text-decoration:none;font-size:.75rem;padding:.2rem .45rem;border:1px solid rgba(232,168,32,.3);border-radius:4px;transition:all .15s}
     .scanner-table td.actions a:hover{background:rgba(232,168,32,.1);border-color:var(--accent)}
+    .btn-wl-row{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:5px;cursor:pointer;transition:all .15s;padding:0;min-width:28px}
+    .btn-wl-row:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-wl-row svg{display:block}
+    .btn-wl-row.active{background:rgba(232,168,32,.15);border-color:var(--accent);color:var(--accent)}
+    .btn-wl-row.active svg{fill:var(--accent);stroke:var(--accent)}
+    @media (max-width:640px){.scanner-table td.actions{flex-direction:column;gap:.25rem;align-items:flex-end}}
 
     /* Empty State */
     .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
@@ -255,6 +262,7 @@
 
   <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
   <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/watchlist.js"></script>
   <script>
   (function() {
     'use strict';
@@ -454,6 +462,7 @@
       }
       qs('empty-state').style.display = 'none';
 
+      var hasWL = !!(window.SA && SA.watchlist);
       var html = rows.map(function(r, i) {
         var sigClass = r.signal.toLowerCase();
         var wrClass = r.win_rate >= 50 ? 'pos' : 'neg';
@@ -461,7 +470,10 @@
         var dashHref = '/dashboard?t=' + encodeURIComponent(r.ticker);
         var scoreColor = r.score >= 6.5 ? 'pos' : (r.score <= 3.5 ? 'neg' : '');
         var escName = (r.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
-        return '<tr>' +
+        var inWL = hasWL && SA.watchlist.has(r.ticker);
+        var wlClass = inWL ? 'btn-wl-row active' : 'btn-wl-row';
+        var wlTitle = inWL ? r.ticker + ' aus Watchlist entfernen' : r.ticker + ' zur Watchlist hinzufügen';
+        return '<tr data-ticker="' + r.ticker + '">' +
           '<td class="rank">' + (i + 1) + '</td>' +
           '<td class="ticker"><a href="' + dashHref + '" title="Im Dashboard &ouml;ffnen">' + r.ticker + '</a></td>' +
           '<td class="name" title="' + escName + '">' + escName + '</td>' +
@@ -470,10 +482,57 @@
           '<td class="num score-val ' + scoreColor + '">' + r.score.toFixed(1) + '</td>' +
           '<td class="num ' + wrClass + '">' + r.win_rate.toFixed(0) + '%</td>' +
           '<td class="num ' + arClass + '">' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</td>' +
-          '<td class="actions"><a href="' + dashHref + '">Dashboard &rsaquo;</a></td>' +
+          '<td class="actions">' +
+            '<button type="button" class="' + wlClass + '" data-ticker="' + r.ticker + '" title="' + wlTitle + '" aria-label="Watchlist-Toggle">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>' +
+              '</svg>' +
+            '</button>' +
+            '<a href="' + dashHref + '">Dashboard &rsaquo;</a>' +
+          '</td>' +
         '</tr>';
       }).join('');
       tbody.innerHTML = html;
+    }
+
+    // Event-Delegation für Watchlist-Buttons in der Tabelle
+    function initWatchlistDelegation() {
+      var tbody = qs('scanner-tbody');
+      if (!tbody || !window.SA || !SA.watchlist) return;
+      tbody.addEventListener('click', function(e) {
+        var btn = e.target.closest && e.target.closest('.btn-wl-row');
+        if (!btn) return;
+        e.preventDefault();
+        var ticker = btn.getAttribute('data-ticker');
+        if (!ticker) return;
+        var res = SA.watchlist.toggle(ticker);
+        var nowIn = res.added;
+        btn.classList.toggle('active', nowIn);
+        btn.title = nowIn ? ticker + ' aus Watchlist entfernen' : ticker + ' zur Watchlist hinzufügen';
+        // Sidebar-Badge updaten (falls vorhanden, s.u.)
+        updateScannerWatchlistBadge();
+      });
+      // Initial-Update + Listener für Cross-Tab-Changes
+      SA.watchlist.on('changed', function() {
+        // Re-Render ist overkill — wir updaten nur die .active-Klassen
+        var buttons = tbody.querySelectorAll('.btn-wl-row');
+        Array.prototype.forEach.call(buttons, function(b) {
+          var t = b.getAttribute('data-ticker');
+          var inWL = SA.watchlist.has(t);
+          b.classList.toggle('active', inWL);
+          b.title = inWL ? t + ' aus Watchlist entfernen' : t + ' zur Watchlist hinzufügen';
+        });
+        updateScannerWatchlistBadge();
+      });
+      updateScannerWatchlistBadge();
+    }
+
+    function updateScannerWatchlistBadge() {
+      var badge = document.getElementById('scanner-wl-badge');
+      if (!badge || !window.SA || !SA.watchlist) return;
+      var count = SA.watchlist.count();
+      badge.textContent = String(count);
+      badge.classList.toggle('empty', count === 0);
     }
 
     function initSorting() {
@@ -577,6 +636,7 @@
           initSorting();
           initFilterHandlers();
           applyFilters();
+          initWatchlistDelegation();
           hideLoading();
         })
         .catch(function(err) {
