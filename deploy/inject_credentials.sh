@@ -33,10 +33,20 @@ COUNT=$(grep -rl '%%SUPABASE_URL%%\|%%SUPABASE_ANON_KEY%%' "$REPO_DIR/landing/" 
 
 if [ "$COUNT" -eq 0 ]; then
     echo "Keine Placeholder gefunden — bereits injiziert oder keine Landing-Dateien"
-    exit 0
+else
+    find "$REPO_DIR/landing" -name "*.html" -exec sed -i \
+        "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g" {} +
+    echo "Supabase Credentials injiziert in $COUNT Datei(en)"
 fi
 
-find "$REPO_DIR/landing" -name "*.html" -exec sed -i \
-    "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g" {} +
+# ── Cache-Busting fuer CSS und JS ────────────────────────────
+# Haengt ?v=<git-sha> an alle /landing/css/*.css und /landing/js/*.js Refs
+# in HTML, damit Browser bei jedem Deploy zwingend neu laden (egal welcher
+# Cache-Header). Wirkt auch wenn Mobile Safari auf altem max-age=86400 haengt.
+GIT_SHA=$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || date +%s)
+echo "Cache-Busting Version: $GIT_SHA"
 
-echo "Supabase Credentials injiziert in $COUNT Datei(en)"
+find "$REPO_DIR/landing" -name "*.html" -exec sed -i -E \
+    "s#(/landing/(css|js)/[a-zA-Z0-9_./-]+\.(css|js))(\?v=[a-zA-Z0-9]+)?#\1?v=${GIT_SHA}#g" {} +
+
+echo "Cache-Busting auf alle CSS/JS-Refs angewendet"
