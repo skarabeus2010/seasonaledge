@@ -237,12 +237,25 @@
 
     /* ── FOOTER ── */
     .foot{border-top:1px solid var(--border);padding:3rem 0 2rem;font-size:.8125rem}
-    .foot__grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:2rem}
-    @media(max-width:768px){.foot__grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.foot__grid{grid-template-columns:1fr}}
+    .foot__grid{display:grid;grid-template-columns:1.6fr repeat(5,1fr);gap:2rem;margin-bottom:2rem}
+    @media(max-width:1300px){.foot__grid{grid-template-columns:1.4fr repeat(3,1fr);gap:1.5rem}.foot__brand{grid-column:1/-1}}
+    @media(max-width:900px){.foot__grid{grid-template-columns:1fr 1fr 1fr}.foot__brand{grid-column:1/-1}}
+    @media(max-width:600px){.foot__grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:380px){.foot__grid{grid-template-columns:1fr}}
     .foot__brand p{color:var(--muted);margin-top:.5rem;font-size:.75rem}
+    .foot__social{display:flex;gap:.5rem;margin-top:1rem;align-items:center;flex-wrap:wrap}
+    .foot__social a{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:36px;padding:0 .75rem;border:1px solid var(--border);border-radius:8px;color:var(--dim);transition:all .15s ease;text-decoration:none}
+    .foot__social a:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+    .foot__social a svg{width:16px;height:16px}
+    .foot__social-label{font-size:.75rem;color:var(--muted);margin-left:.25rem;font-family:var(--f-m)}
+    .foot__social a:hover .foot__social-label{color:var(--accent)}
     .foot__col h4{font-family:var(--f-m);font-size:.5625rem;font-weight:400;color:var(--dim);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.15em}
     .foot__col a{display:block;color:var(--muted);padding:.2rem 0;font-size:.8125rem}.foot__col a:hover{color:var(--text)}
     .foot__btm{border-top:1px solid var(--border);padding-top:1.5rem;text-align:center;color:var(--muted);font-size:.6875rem}
+    .foot__disclaimer{border-top:1px solid var(--border);padding:1.5rem 1.5rem 0;font-size:.75rem;line-height:1.65;color:var(--muted);opacity:.55;text-align:justify}
+    .foot__disclaimer p{margin:0 0 .75rem 0;max-width:none}
+    .foot__disclaimer p:last-child{margin-bottom:0}
+    .foot__disclaimer b{color:var(--dim);font-weight:700}
 
     /* ── SCROLL REVEAL ── */
     .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
@@ -404,7 +417,16 @@
   <!-- ═══════ FOOTER ═══════ -->
   <footer class="foot" id="site-footer"><div class="wrap">
     <div class="foot__grid">
-      <div class="foot__brand"><span style="font-family:var(--f-d);font-size:1.0625rem;font-weight:800"><b style="color:var(--accent)">Season</b>Alpha</span><p>Datengetriebene B&ouml;rsenanalyse.</p></div>
+      <div class="foot__brand">
+        <span style="font-family:var(--f-d);font-size:1.0625rem;font-weight:800"><b style="color:var(--accent)">Season</b>Alpha</span>
+        <p>Datengetriebene B&ouml;rsenanalyse.</p>
+        <div class="foot__social">
+          <a href="https://twitter.com/SeasonAlph4882" target="_blank" rel="noopener" aria-label="SeasonAlpha auf X / Twitter" title="Folge uns auf X: @SeasonAlph4882">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span class="foot__social-label">@SeasonAlph4882</span>
+          </a>
+        </div>
+      </div>
       <div class="foot__col"><h4>Zyklen</h4><a href="/dekadenzyklus">Dekadenzyklus</a><a href="/jahreszyklus">Jahreszyklus</a><a href="/monatszyklus">Monatszyklus</a><a href="/wochentage">Wochentage</a><a href="/monatswechsel">Monatswechsel</a><a href="/mondphasen">Mondphasen</a></div>
       <div class="foot__col"><h4>Events</h4><a href="/zentralbanken">Notenbanken</a><a href="/opex">OPEX</a><a href="/feiertage">Feiertage</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
       <div class="foot__col"><h4>Strategien</h4><a href="/trifecta">Januar Trifecta</a><a href="/plain-vanilla">Plain Vanilla Strategien</a><a href="/backtest-engine">Backtest Engine</a></div>
@@ -420,12 +442,13 @@
 
     <div class="foot__btm">
       <p>&copy; 2026 SeasonAlpha. All rights reserved.</p>
-      <p style="margin-top:.75rem;font-size:.75rem;opacity:.5;line-height:1.7;max-width:1100px;margin-left:auto;margin-right:auto;text-align:justify">
-        <b>Risikohinweis:</b> Vergangene Ergebnisse sowie fr&uuml;here saisonale Muster bieten keinerlei Anhaltspunkt f&uuml;r k&uuml;nftige Ertr&auml;ge, insbesondere nicht f&uuml;r zuk&uuml;nftige Markttrends. SeasonAlpha empfiehlt noch billigt weder ein bestimmtes Finanzinstrument, eine Gruppe von Wertpapieren, einen Branchensegment, ein Analyseintervall noch eine bestimmte Idee, Herangehensweise, Strategie oder Haltung und erbringt weder Beratungs- noch Brokerage- noch Asset-Management-Dienstleistungen. SeasonAlpha schlie&szlig;t hiermit jegliche ausdr&uuml;ckliche oder implizite Handelsempfehlung aus, insbesondere jegliches Versprechen, jegliche Andeutung oder Garantie, dass Gewinne erzielt und Verluste ausgeschlossen werden. S&auml;mtliche bereitgestellten Informationen d&uuml;rfen nicht als irgendeine Form von Garantie, Gew&auml;hrleistung oder Zusicherung ausgelegt werden. Jeder Nutzer tr&auml;gt allein die Verantwortung f&uuml;r die Ergebnisse oder die Handelsstrategie, die er erstellt, entwickelt oder anwendet. Der Handel mit Futures und Devisen birgt erhebliche Risiken und ist nicht f&uuml;r jeden Anleger geeignet. Nur Risikokapital sollte f&uuml;r den Handel verwendet werden. Die vergangene Performance ist nicht notwendigerweise ein Hinweis auf zuk&uuml;nftige Ergebnisse.<br>
-        <b>Risk Disclosure:</b> Past results and past seasonal patterns provide no indication whatsoever of future performance. SeasonAlpha neither recommends nor endorses any particular financial instrument, strategy or attitude, nor does it provide consulting, brokerage or asset management services. Any user is solely responsible for the results or the trading strategy that is created, developed or applied. Futures and forex trading involves substantial risk and is not suitable for every investor. Only risk capital should be used for trading. Past performance is not necessarily indicative of future results.
-      </p>
     </div>
-  </div></footer>
+  </div>
+  <div class="foot__disclaimer">
+    <p><b>Risikohinweis:</b> Vergangene Ergebnisse sowie fr&uuml;here saisonale Muster bieten keinerlei Anhaltspunkt f&uuml;r k&uuml;nftige Ertr&auml;ge, insbesondere nicht f&uuml;r zuk&uuml;nftige Markttrends. SeasonAlpha empfiehlt noch billigt weder ein bestimmtes Finanzinstrument, eine Gruppe von Wertpapieren, einen Branchensegment, ein Analyseintervall noch eine bestimmte Idee, Herangehensweise, Strategie oder Haltung und erbringt weder Beratungs- noch Brokerage- noch Asset-Management-Dienstleistungen. SeasonAlpha schlie&szlig;t hiermit jegliche ausdr&uuml;ckliche oder implizite Handelsempfehlung aus, insbesondere jegliches Versprechen, jegliche Andeutung oder Garantie, dass Gewinne erzielt und Verluste ausgeschlossen werden. S&auml;mtliche bereitgestellten Informationen d&uuml;rfen nicht als irgendeine Form von Garantie, Gew&auml;hrleistung oder Zusicherung ausgelegt werden. Jeder Nutzer tr&auml;gt allein die Verantwortung f&uuml;r die Ergebnisse oder die Handelsstrategie, die er erstellt, entwickelt oder anwendet. Der Handel mit Futures und Devisen birgt erhebliche Risiken und ist nicht f&uuml;r jeden Anleger geeignet. Nur Risikokapital sollte f&uuml;r den Handel verwendet werden. Die vergangene Performance ist nicht notwendigerweise ein Hinweis auf zuk&uuml;nftige Ergebnisse.</p>
+    <p><b>Risk Disclosure:</b> Past results and past seasonal patterns provide no indication whatsoever of future performance. SeasonAlpha neither recommends nor endorses any particular financial instrument, strategy or attitude, nor does it provide consulting, brokerage or asset management services. Any user is solely responsible for the results or the trading strategy that is created, developed or applied. Futures and forex trading involves substantial risk and is not suitable for every investor. Only risk capital should be used for trading. Past performance is not necessarily indicative of future results.</p>
+  </div>
+</footer>
 
   <script>
     // ── Burger toggle ──
