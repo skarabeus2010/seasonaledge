@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 27.7 | 2026-04-09 (Abend) | Details → `docs/`
+> Version 27.8 | 2026-04-10 (Morgen) | Details → `docs/`
 
 
 ## Projekt
@@ -55,6 +55,8 @@ shared/                  ← Berechnungen, Daten, Utilities
   tdoy_analysis.py       ← TDoY Berechnungen (9 Funktionen, dynamisch Aktien ~252 / Crypto ~365)
   trading_day_header.py  ← Trading Day Header (TDOM/TDOY Anzeige) + Converter Widget
   drawdown_analysis.py   ← Saisonaler Drawdown + Rolling Volatilitaet (DD-Serie, KPI, Heatmap, Recovery)
+  weekly_report.py       ← Weekly Newsletter Daten-Aggregation (top_ki, regime, events, tdom_bias)
+  unsubscribe_token.py   ← HMAC SHA-256 Token-Generator für Unsubscribe-Links
   strategies/            ← Strategie-Module
     plain_vanilla.py     ← 24 Plain Vanilla Strategien (Sell in May, KTI, UECS etc.)
     definitions.py       ← Strategie-Metadaten (65+ Eintraege)
@@ -115,8 +117,11 @@ blog/                    ← Blog Engine (Markdown → statisches HTML)
 .claude/
   blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
 scripts/                 ← Batch-Jobs
-  nightly_refresh.py     ← Nightly DB Refresh (5 Phasen: Calendar, Ticker, Health, Regime, Log)
+  nightly_refresh.py     ← Nightly DB Refresh (6 Phasen: Calendar, Ticker, Health, Regime, Log, Weekly-Newsletter)
   intraday_refresh.py    ← Intraday Kurs-Updates (EU/US/Asien/FX/Crypto, alle 30 Min)
+  weekly_newsletter.py   ← SeasonAlpha Weekly Report Sender (CLI mit --dry-run/--test/--to, Sonntags ab 17 UTC via Phase F)
+  create_unsubscribe_rpc.sql ← Postgres RPC-Funktion für Token-basierten Unsubscribe
+  templates/weekly_report.html.j2 ← Jinja2 Email-Template (Dark Mode, 4 Sektionen, table-based, inline CSS)
   compute_regime_scores.py ← Isolation Forest Regime-Scoring (SPY, --full / --incremental)
   create_market_tables.sql ← SQL-Schema für Cache-Tabellen
   create_regime_scores.sql ← SQL-Schema für regime_scores Tabelle
@@ -552,6 +557,7 @@ Bei Fehlern:
 - [x] **2026-04-09** Performance: Default-Zeiträume reduziert von 20 J → 10 J auf `jahreszyklus`, `ki-saisonalitaet`, `feiertage`, `tdom-analyse`, `intermarket-shocks`. Auf `plain-vanilla` von "Max" → 10 J (größter Bottleneck). Initial-Load ~50–70% schneller
 - [x] **2026-04-09** Monatswechsel: Sidebar-Checkbox "Aktuelles Jahr" + Gold-Overlay der aktuellen (ggf. unvollständigen) TOM-Fenster des laufenden Jahres. Neuer Helper `buildCurrentYearTOMCurves()` in monatswechsel.html der laufende Fenster zulässt und fehlende Post-Tage mit null paddet. Cutoff-Logik: Gemittelte Gold-Linie wird strikt am letzten gültigen Tag des zeitlich aktuellsten Fensters gekappt (verhindert "Zukunftstage" aus abgeschlossenen Fenstern)
 - [x] **2026-04-09** **Umlaute-Regel** in CLAUDE.md + MEMORY fixiert: Immer ä/ö/ü statt ae/oe/ue in allen deutschsprachigen Inhalten (UI, Tour-Popover, Blog, Commit-Messages)
+- [x] **2026-04-10** **Weekly Newsletter** (Feature #2 der Roadmap) — komplette Pipeline: `shared/weekly_report.py` (4 Aggregations-Funktionen: top_ki_scores, regime_status, upcoming_events, tdom_bias_for_week), `shared/unsubscribe_token.py` (HMAC SHA-256, 16-Hex-Chars Token), `scripts/weekly_newsletter.py` (CLI mit --dry-run / --test / --to, Jinja2-Rendering, Brevo-Send mit Rate-Limiting 0.35s, Admin-Alert bei >10% Fehlerrate), `scripts/templates/weekly_report.html.j2` (Dark-Mode-Email, table-based, inline CSS, 4 Sektionen: Top 10 KI-Scores, Events, Wochenbias, Regime-Status), `scripts/create_unsubscribe_rpc.sql` (Postgres-Funktion `unsubscribe_with_token` für server-side Token-Validierung), `landing/pages/unsubscribe.html` (statische Page mit vanilla JS → Supabase RPC-Call), `send_html()` Funktion in `shared/email_brevo.py` für beliebigen HTML-Body. Cron: Phase F in `nightly_refresh.py` feuert Sonntags ab 17 UTC. Python-Token ↔ SQL-Token validiert (SHA-256(lower(email)+secret)[:16] identisch).
 
 ### ⚠️ OFFEN — Als nächstes (Sidebar-Plan bereit zur Abholung)
 - [ ] **Mobile Responsiveness Fix** — Plan liegt in `C:\Users\HeikoSeibel\.claude\plans\humming-juggling-hinton.md`. 6 kritische Bugs + 4 high-prio Issues auf ≤768px identifiziert. Fix betrifft 4 Dateien (`app.css`, `decade-compute.js`, `dashboard.html`, `backtest-engine.html`), ~80 Zeilen CSS + 15 Zeilen JS. **Direkt umsetzbar nach Exit Plan Mode — vom Home Office weitermachen.**

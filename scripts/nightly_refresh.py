@@ -352,6 +352,34 @@ def main():
     except Exception as e:
         print(f"Refresh-Log failed: {e}")
 
+    # Phase F: Weekly Newsletter (nur Sonntags ab 17:00 UTC = 18:00 Berlin-Winter / 19:00 Berlin-Sommer)
+    try:
+        from datetime import datetime as _dt, timezone as _tz
+        _now = _dt.now(_tz.utc)
+        if _now.weekday() == 6 and _now.hour >= 17:  # 6 = Sonntag
+            app_logger.info("[phase-f] Sonntag ≥17 UTC → starte Weekly Newsletter")
+            print("Weekly Newsletter: Sonntag erkannt, starte Versand...")
+            import subprocess as _sp
+            _res = _sp.run(
+                [sys.executable, "scripts/weekly_newsletter.py"],
+                cwd=_project_dir,
+                capture_output=True,
+                text=True,
+                timeout=1800,  # 30 Min max
+            )
+            if _res.returncode == 0:
+                print("Weekly Newsletter: versendet ✓")
+                if _res.stdout:
+                    print(_res.stdout[-500:])  # letzte Zeilen
+            else:
+                app_logger.error(f"[phase-f] weekly_newsletter exit {_res.returncode}: {_res.stderr[:500]}")
+                print(f"Weekly Newsletter failed (exit {_res.returncode}): {_res.stderr[:200]}")
+        else:
+            print(f"Weekly Newsletter: skip (weekday={_now.weekday()}, hour={_now.hour} UTC, Sonntag ≥17 UTC gefordert)")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Weekly Newsletter fehlgeschlagen: {e}")
+        print(f"Weekly Newsletter: exception {e}")
+
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
         heartbeat()

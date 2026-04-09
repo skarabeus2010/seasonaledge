@@ -1,0 +1,234 @@
+{#
+  scripts/templates/weekly_report.html.j2
+
+  SeasonAlpha Weekly Newsletter — Jinja2-Template.
+
+  WICHTIG FÜR HTML-EMAILS:
+  - Table-based Layout (div/flex werden in Outlook schlecht gerendert)
+  - Inline CSS auf jedem Element (Gmail strippt <style>-Blöcke bei Clipping)
+  - Keine externen Bilder (Tracking-Schutz + CORS in manchen Clients)
+  - Max 600px Breite
+  - Dark Mode: #000 bg, #e8a820 accent, #e2e8f0 text (V3 Ultra Palette)
+
+  Kontext (aus shared/weekly_report.build_report_context):
+    report_date          "2026-04-09"
+    report_date_display  "09.04.2026"
+    week_number          15
+    year                 2026
+    top_ki               list[dict]  ← Sektion 1
+    regimes              dict[ticker, dict]
+    events               list[dict]  ← Sektion 2
+    tdom_bias            dict[ticker, dict]  ← Sektion 3
+    subscriber_count     int
+    unsubscribe_url      str  (pro Recipient injected)
+#}<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title>SeasonAlpha Weekly — KW {{ week_number }}</title>
+</head>
+<body style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;-webkit-font-smoothing:antialiased;">
+
+<!-- Preheader (Gmail-Vorschau) -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+  Top {{ top_ki|length }} saisonale Signale, {{ events|length }} Events & Wochenbias für KW {{ week_number }} — {{ report_date_display }}
+</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#000000;">
+<tr><td align="center" style="padding:32px 16px;">
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#0a0a0e;border:1px solid rgba(232,168,32,0.15);border-radius:12px;overflow:hidden;">
+
+    <!-- ══════════════════════ HEADER ══════════════════════ -->
+    <tr><td style="padding:28px 32px 20px;border-bottom:1px solid rgba(232,168,32,0.12);">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="vertical-align:middle;">
+            <div style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">
+              Season<span style="color:#e8a820;">Alpha</span>
+            </div>
+            <div style="font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">
+              Weekly Report
+            </div>
+          </td>
+          <td align="right" style="vertical-align:middle;">
+            <div style="font-size:12px;color:#a89878;">KW {{ week_number }} · {{ year }}</div>
+            <div style="font-size:14px;color:#e2e8f0;font-weight:600;margin-top:2px;">{{ report_date_display }}</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- ══════════════════════ INTRO ══════════════════════ -->
+    <tr><td style="padding:22px 32px 8px;">
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#cbd5e1;">
+        Hier sind die wichtigsten saisonalen Signale für die <strong style="color:#e8a820;">kommende Handelswoche</strong> — basierend auf 131 Jahren historischen Marktdaten und 15 KI-Modellen.
+      </p>
+    </td></tr>
+
+    <!-- ══════════════════════ SEKTION 1: TOP KI-SCORES ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        📊 Top {{ top_ki|length }} KI-Scores
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Composite Score 0–10 · vier Sub-Scores (Musterpfad, Trend, Win-Rate, Tracking)
+      </div>
+      {% if top_ki %}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+          <tr>
+            <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">#</th>
+            <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Ticker</th>
+            <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Score</th>
+            <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Signal</th>
+            <th align="center" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Regime</th>
+          </tr>
+          {% for r in top_ki %}
+          {% set sig = (r.signal or '')|lower %}
+          {% set sig_color = '#30e878' if 'bull' in sig else ('#ff4040' if 'bear' in sig else '#a89878') %}
+          {% set sig_emoji = '🟢' if 'bull' in sig else ('🔴' if 'bear' in sig else '⚪') %}
+          {% set reg = regimes.get(r.ticker, {}) %}
+          {% set light = (reg.get('traffic_light') or 'grey')|lower %}
+          {% set light_emoji = {'green':'🟢','yellow':'🟡','red':'🔴','grey':'⚫'}.get(light, '⚫') %}
+          <tr>
+            <td align="left"  style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#64748b;border-bottom:1px solid rgba(255,255,255,0.04);">{{ loop.index }}</td>
+            <td align="left"  style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ r.ticker }}</td>
+            <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#e8a820;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ '%.1f' % (r.score or 0) }}/10</td>
+            <td align="left"  style="padding:10px;font-size:12px;color:{{ sig_color }};font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ sig_emoji }} {{ r.signal or '–' }}</td>
+            <td align="center" style="padding:10px;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.04);">{{ light_emoji }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p style="color:#64748b;font-size:13px;margin:0;">Keine Scanner-Ergebnisse verfügbar.</p>
+      {% endif %}
+    </td></tr>
+
+    <!-- ══════════════════════ SEKTION 2: EVENTS ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        📅 Events nächste Woche
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        FOMC-Meetings, OPEX-Termine und Feiertage der nächsten 7 Tage
+      </div>
+      {% if events %}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+          {% for e in events %}
+          <tr>
+            <td width="40" style="padding:10px 8px 10px 0;font-size:18px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ e.emoji }}</td>
+            <td width="90" style="padding:10px 0;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#e8a820;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ e.weekday }} {{ e.date[8:10] }}.{{ e.date[5:7] }}.</td>
+            <td style="padding:10px 0;font-size:13px;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ e.name }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p style="color:#64748b;font-size:13px;margin:0;">Keine planbaren Events in den nächsten 7 Tagen.</p>
+      {% endif %}
+    </td></tr>
+
+    <!-- ══════════════════════ SEKTION 3: TDoM-BIAS ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        📈 Saisonaler Wochenbias
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Historischer Durchschnitt der nächsten 5 Handelstage (TDoM-Statistik)
+      </div>
+      {% if tdom_bias %}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+          <tr>
+            <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Ticker</th>
+            <th align="center" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">TDoM</th>
+            <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Ø Rendite</th>
+            <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Win-Rate</th>
+            <th align="center" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Bias</th>
+          </tr>
+          {% for r in top_ki %}
+          {% set b = tdom_bias.get(r.ticker) %}
+          {% if b %}
+          {% set avg = b.avg_return_5d or 0 %}
+          {% set avg_color = '#30e878' if avg > 0.05 else ('#ff4040' if avg < -0.05 else '#cbd5e1') %}
+          {% set verdict = b.verdict %}
+          {% set verdict_bg = {'stark':'rgba(48,232,120,0.15)','neutral':'rgba(168,152,120,0.15)','schwach':'rgba(255,64,64,0.15)'}.get(verdict, 'rgba(168,152,120,0.15)') %}
+          {% set verdict_color = {'stark':'#30e878','neutral':'#a89878','schwach':'#ff4040'}.get(verdict, '#a89878') %}
+          <tr>
+            <td align="left"  style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ r.ticker }}</td>
+            <td align="center" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,0.04);">{{ b.current_tdom }}</td>
+            <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:{{ avg_color }};font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{% if avg >= 0 %}+{% endif %}{{ '%.2f' % avg }}%</td>
+            <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,0.04);">{{ '%.0f' % (b.win_rate_5d or 0) }}%</td>
+            <td align="center" style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <span style="display:inline-block;padding:3px 8px;background:{{ verdict_bg }};color:{{ verdict_color }};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;border-radius:4px;">{{ verdict }}</span>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </table>
+      {% else %}
+        <p style="color:#64748b;font-size:13px;margin:0;">Keine TDoM-Statistiken verfügbar.</p>
+      {% endif %}
+    </td></tr>
+
+    <!-- ══════════════════════ SEKTION 4: REGIME-STATUS ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        🚨 Regime-Status
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Isolation-Forest Risk-Score pro Ticker · Grün = normal, Rot = erhöhte Volatilität
+      </div>
+      {% set risky = [] %}
+      {% for r in top_ki %}
+        {% set reg = regimes.get(r.ticker, {}) %}
+        {% set light = (reg.get('traffic_light') or '')|lower %}
+        {% if light in ['yellow', 'red'] %}{% set _ = risky.append((r.ticker, reg, light)) %}{% endif %}
+      {% endfor %}
+      {% if risky %}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+          {% for ticker, reg, light in risky %}
+          {% set light_emoji = {'yellow':'🟡','red':'🔴'}.get(light, '⚫') %}
+          {% set light_color = {'yellow':'#e8a820','red':'#ff4040'}.get(light, '#a89878') %}
+          <tr>
+            <td width="36" style="padding:10px 8px 10px 0;font-size:16px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ light_emoji }}</td>
+            <td width="80" style="padding:10px 0;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ ticker }}</td>
+            <td style="padding:10px 0;font-size:12px;color:{{ light_color }};border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">
+              Vol 20d: {{ '%.1f' % ((reg.vol_20d or 0) * 100) }}%
+              {% if reg.drawdown %} · DD: {{ '%.1f' % ((reg.drawdown or 0) * 100) }}%{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p style="color:#30e878;font-size:13px;margin:0;">✓ Alle Top-Ticker im grünen Bereich.</p>
+      {% endif %}
+    </td></tr>
+
+    <!-- ══════════════════════ CTA ══════════════════════ -->
+    <tr><td align="center" style="padding:28px 32px 24px;">
+      <a href="https://seasonalpha.ai/dashboard" style="display:inline-block;background:#e8a820;color:#000000;font-weight:700;font-size:14px;padding:14px 28px;border-radius:8px;text-decoration:none;letter-spacing:0.02em;">Zum Dashboard →</a>
+      <div style="font-size:12px;color:#a89878;margin-top:10px;">Alle Signale + Drill-Downs + Backtest-Engine auf seasonalpha.ai</div>
+    </td></tr>
+
+    <!-- ══════════════════════ FOOTER ══════════════════════ -->
+    <tr><td style="padding:20px 32px 28px;border-top:1px solid rgba(232,168,32,0.12);background:#08080c;">
+      <p style="margin:0 0 10px;font-size:11px;color:#64748b;line-height:1.5;">
+        Dieser Report ist <strong style="color:#a89878;">keine Anlageempfehlung</strong>. SeasonAlpha liefert statistische Analysen historischer Marktdaten. Vergangene Performance garantiert keine zukünftigen Ergebnisse.
+      </p>
+      <p style="margin:0;font-size:11px;color:#64748b;text-align:center;">
+        <a href="https://seasonalpha.ai" style="color:#a89878;text-decoration:none;">seasonalpha.ai</a> ·
+        <a href="https://seasonalpha.ai/rechtliches" style="color:#a89878;text-decoration:none;">Impressum</a> ·
+        <a href="https://seasonalpha.ai/rechtliches" style="color:#a89878;text-decoration:none;">Datenschutz</a> ·
+        <a href="{{ unsubscribe_url }}" style="color:#e8a820;text-decoration:none;">Abmelden</a>
+      </p>
+    </td></tr>
+
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

@@ -95,3 +95,60 @@ def send_admin_alert(message: str) -> bool:
     """Admin-Alert bei Systemfehler (an Admin-Adresse)."""
     admin_email = os.environ.get("ADMIN_EMAIL", "heiko@seasonaledge.app")
     return send_transactional(admin_email, 5, {"error_message": message})
+
+
+def send_html(
+    to_email: str,
+    subject: str,
+    html_content: str,
+    text_content: str = None,
+    reply_to: str = None,
+) -> bool:
+    """
+    Beliebigen HTML-Body via Brevo API senden (kein Template).
+
+    Verwendung: Weekly Newsletter, ad-hoc Broadcasts, manuell gerenderte Mails
+    die nicht zu einem Brevo-Template passen.
+
+    Args:
+        to_email: Empfänger-Adresse
+        subject: Betreff
+        html_content: HTML-Body (inline CSS empfohlen)
+        text_content: Optional Plaintext-Fallback (für Clients ohne HTML)
+        reply_to: Optional Reply-To Header
+
+    Returns:
+        True bei Erfolg, False bei Fehler
+    """
+    api_key = _get_api_key()
+    if not api_key:
+        error_logger.error("BREVO_API_KEY nicht gesetzt!")
+        return False
+
+    payload = {
+        "sender": SENDER,
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content,
+    }
+    if text_content:
+        payload["textContent"] = text_content
+    if reply_to:
+        payload["replyTo"] = {"email": reply_to}
+
+    try:
+        resp = requests.post(
+            BREVO_API_URL,
+            headers={
+                "api-key": api_key,
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        app_logger.info(f"HTML-E-Mail gesendet: to={to_email} subject={subject[:60]}")
+        return True
+    except requests.RequestException as e:
+        error_logger.error(f"HTML-E-Mail fehlgeschlagen: to={to_email} error={e}")
+        return False

@@ -1,6 +1,6 @@
 # SeasonAlpha — Feature-Roadmap
 
-> Stand: 2026-04-09 | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Feature #1 Guided Tour ist live.**
+> Stand: 2026-04-10 | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Features #1 (Guided Tour) und #2 (Weekly Newsletter) sind implementiert.**
 
 ## Kontext
 
@@ -20,8 +20,8 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 | # | Feature | Backend | Frontend | Aufwand | Status |
 |---|---------|--------:|---------:|--------:|--------|
 | 1 | **Guided Tour** | N/A | 100 % | **1 Tag** | ✅ **Live seit 2026-04-09** |
-| 2 | **Email-Alerts / Weekly Report** | ~70 % (`shared/email_brevo.py`) | 20 % (Newsletter-Form) | **3–4 Tage** | Nächstes Feature |
-| 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Welle 2 |
+| 2 | **Email-Alerts / Weekly Report** | 100 % | 100 % | **1 Tag** | ✅ **Implementiert 2026-04-10** — Deploy + Test-Send ausstehend |
+| 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Nächstes Feature |
 | 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Welle 2 |
 | 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Welle 3 |
 
