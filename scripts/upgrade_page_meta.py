@@ -36,7 +36,7 @@ PAGES_DIR = REPO / "landing" / "pages"
 BASE_URL = "https://seasonalpha.ai"
 TWITTER_HANDLE = "@SeasonAlph4882"
 OG_IMAGE = f"{BASE_URL}/landing/assets/images/og-image.png"
-MARKER = "<!-- SA_META_V4 -->"  # V4 = 2-Level Breadcrumbs (Google-valid, jedes Item mit item-URL)
+MARKER = "<!-- SA_META_V5 -->"  # V5 = SEO-optimierte Titles eingetragen (nach optimize_page_titles.py)
 
 # Slug -> { slug, type, category } pro Page.
 # category = Nav-Gruppe fuer Breadcrumb (Zyklen / Events / Strategien / Mehr)

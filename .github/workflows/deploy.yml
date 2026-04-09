@@ -37,4 +37,8 @@ jobs:
             # nginx config + landing HTML neu laden
             docker compose restart nginx
 
+            # IndexNow: Bing/Yandex/Seznam ueber die neuen URLs informieren
+            # Non-blocking: Fehler werden geloggt aber brechen den Deploy nicht
+            python3 scripts/submit_indexnow.py 2>&1 | sed 's/^/  [IndexNow] /' || echo "  [IndexNow] submission failed (non-fatal)"
+
             echo "Deploy done: $(date)"
