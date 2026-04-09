@@ -25,6 +25,15 @@
     <!-- Google Search Console Verifizierung -->
     <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
 
+    <!-- noindex: Pages sind aktuell zu thin (templated content, ~300 Woerter,
+         fake KI-Prognose mit Dummy-Daten auf allen Seiten identisch).
+         Google hat 72 als "Gefunden -- zurzeit nicht indexiert" markiert (2026-04).
+         Wird auf 'index' geflippt sobald die Pages echten Content haben
+         (Monats-Performance-Tabelle, SVG-Chart, Dekaden-Aufschluesselung).
+         Bis dahin: noindex damit sie nicht den Quality-Score der Domain druecken.
+         follow bleibt, damit Google interne Links zur Haupt-App folgen kann. -->
+    <meta name="robots" content="noindex, follow">
+
     <!-- KEIN Tracking, KEINE Cookies, KEINE externen Skripte (Legal-Tech Vorgabe) -->
 
     <style>

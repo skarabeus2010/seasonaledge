@@ -243,16 +243,29 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
     except ImportError:
         print("  [WARN] PyYAML fehlt, Blog-Posts werden nicht in sitemap aufgenommen")
 
-    # SEO-Landingpages (mittlere Prioritaet)
-    for titel in titel_daten:
-        urls.append(
-            f'  <url>\n'
-            f'    <loc>{BASE_URL}/analyse/{titel["slug"]}</loc>\n'
-            f'    <lastmod>{heute_iso}</lastmod>\n'
-            f'    <changefreq>weekly</changefreq>\n'
-            f'    <priority>0.7</priority>\n'
-            f'  </url>'
-        )
+    # SEO-Landingpages: 2026-04-10 DEAKTIVIERT.
+    # Begruendung: Google hat 72 dieser Pages als "Gefunden -- zurzeit nicht
+    # indexiert" markiert (thin content, templated, fake KI-Prognose-Dummies).
+    # Pages tragen noindex-Meta (siehe seo_template.html) und kommen erst
+    # zurueck wenn sie echten Content haben (Monats-Perf, SVG-Chart, Dekaden,
+    # etc.). Aktiv lassen: generierte HTML-Files existieren weiterhin und sind
+    # direkt aufrufbar, werden aber von Google nicht mehr indexiert (noindex)
+    # und nicht mehr via Sitemap beworben.
+    #
+    # ENABLE_PROGRAMMATIC_IN_SITEMAP auf True setzen wenn Pages aufgewertet wurden.
+    ENABLE_PROGRAMMATIC_IN_SITEMAP = False
+    if ENABLE_PROGRAMMATIC_IN_SITEMAP:
+        for titel in titel_daten:
+            urls.append(
+                f'  <url>\n'
+                f'    <loc>{BASE_URL}/analyse/{titel["slug"]}</loc>\n'
+                f'    <lastmod>{heute_iso}</lastmod>\n'
+                f'    <changefreq>weekly</changefreq>\n'
+                f'    <priority>0.7</priority>\n'
+                f'  </url>'
+            )
+    else:
+        print(f"  [INFO] {len(titel_daten)} programmatische /analyse/ Pages NICHT in Sitemap (noindex aktiv)")
 
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
