@@ -21,6 +21,10 @@
 --   3. Der Default hier in dieser Funktion
 -- ============================================================
 
+-- pgcrypto wird für digest() benötigt. In Supabase liegt die Extension
+-- im dedizierten 'extensions'-Schema (nicht in 'public').
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 CREATE OR REPLACE FUNCTION unsubscribe_with_token(
     p_email TEXT,
     p_token TEXT
@@ -28,7 +32,8 @@ CREATE OR REPLACE FUNCTION unsubscribe_with_token(
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+-- extensions im search_path, damit digest() ohne Prefix gefunden wird
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_secret TEXT := 'seasonaledge-unsub-2026';
@@ -44,8 +49,9 @@ BEGIN
     v_normalized := LOWER(TRIM(p_email));
 
     -- 2. Erwarteten Token berechnen (erste 16 Hex-Zeichen von SHA-256)
+    -- digest() kommt aus pgcrypto (extensions-Schema, via search_path)
     v_expected := SUBSTRING(
-        ENCODE(DIGEST(v_normalized || v_secret, 'sha256'), 'hex'),
+        ENCODE(extensions.digest(v_normalized || v_secret, 'sha256'), 'hex'),
         1, 16
     );
 
