@@ -154,6 +154,76 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
             f'  </url>'
         )
 
+    # Core-Feature-Pages (HOCH priorisiert — das sind die Haupt-Features)
+    landing_pages = [
+        # Dashboard + Haupt-Zyklen (Kernstuecke)
+        {"slug": "dashboard",          "priority": "1.0",  "changefreq": "daily"},
+        {"slug": "jahreszyklus",       "priority": "0.95", "changefreq": "daily"},
+        {"slug": "monatszyklus",       "priority": "0.95", "changefreq": "daily"},
+        {"slug": "dekadenzyklus",      "priority": "0.9",  "changefreq": "weekly"},
+        {"slug": "wochentage",         "priority": "0.9",  "changefreq": "weekly"},
+        {"slug": "monatswechsel",      "priority": "0.9",  "changefreq": "weekly"},
+        {"slug": "mondphasen",         "priority": "0.85", "changefreq": "weekly"},
+        # Events
+        {"slug": "zentralbanken",      "priority": "0.9",  "changefreq": "weekly"},
+        {"slug": "feiertage",          "priority": "0.85", "changefreq": "weekly"},
+        {"slug": "opex",               "priority": "0.85", "changefreq": "weekly"},
+        {"slug": "intermarket-shocks", "priority": "0.85", "changefreq": "weekly"},
+        # Strategien
+        {"slug": "trifecta",           "priority": "0.9",  "changefreq": "weekly"},
+        {"slug": "plain-vanilla",      "priority": "0.95", "changefreq": "weekly"},
+        {"slug": "backtest-engine",    "priority": "0.95", "changefreq": "weekly"},
+        # Advanced
+        {"slug": "ki-saisonalitaet",   "priority": "0.9",  "changefreq": "daily"},
+        {"slug": "crash-fruehwarnung", "priority": "0.9",  "changefreq": "daily"},
+        {"slug": "spot-vol-beta",      "priority": "0.85", "changefreq": "weekly"},
+        {"slug": "tdom-analyse",       "priority": "0.85", "changefreq": "weekly"},
+        {"slug": "overnight",          "priority": "0.8",  "changefreq": "weekly"},
+        {"slug": "sektor-rotation",    "priority": "0.85", "changefreq": "weekly"},
+        {"slug": "kriegszeiten",       "priority": "0.7",  "changefreq": "monthly"},
+        # Blog-Index + Kategorien
+        {"slug": "blog/",              "priority": "0.9",  "changefreq": "daily"},
+        {"slug": "blog/education/",    "priority": "0.8",  "changefreq": "weekly"},
+        {"slug": "blog/marktausblick/","priority": "0.8",  "changefreq": "weekly"},
+        {"slug": "blog/tutorials/",    "priority": "0.8",  "changefreq": "weekly"},
+    ]
+    for page in landing_pages:
+        urls.append(
+            f'  <url>\n'
+            f'    <loc>{BASE_URL}/{page["slug"]}</loc>\n'
+            f'    <lastmod>{heute_iso}</lastmod>\n'
+            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+            f'    <priority>{page["priority"]}</priority>\n'
+            f'  </url>'
+        )
+
+    # Blog-Posts (aus blog/posts/ Markdown-Frontmatter lesen)
+    try:
+        import yaml
+        from pathlib import Path
+        posts_dir = Path(__file__).resolve().parent.parent / "blog" / "posts"
+        if posts_dir.exists():
+            for md in sorted(posts_dir.glob("*.md")):
+                try:
+                    raw = md.read_text(encoding="utf-8")
+                    if raw.startswith("---"):
+                        _, fm, _ = raw.split("---", 2)
+                        meta = yaml.safe_load(fm) or {}
+                        slug = meta.get("slug")
+                        if slug and meta.get("status", "published") == "published":
+                            urls.append(
+                                f'  <url>\n'
+                                f'    <loc>{BASE_URL}/blog/{slug}/</loc>\n'
+                                f'    <lastmod>{heute_iso}</lastmod>\n'
+                                f'    <changefreq>monthly</changefreq>\n'
+                                f'    <priority>0.75</priority>\n'
+                                f'  </url>'
+                            )
+                except Exception as e:
+                    print(f"  [WARN] Blog-Post {md.name}: {e}")
+    except ImportError:
+        print("  [WARN] PyYAML fehlt, Blog-Posts werden nicht in sitemap aufgenommen")
+
     # SEO-Landingpages (mittlere Prioritaet)
     for titel in titel_daten:
         urls.append(

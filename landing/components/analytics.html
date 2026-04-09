@@ -1,0 +1,30 @@
+<!--
+  SeasonAlpha Analytics Snippet
+  =============================
+  Dieser Snippet wird von allen Pages via fetch() in <head> eingebunden.
+  Aktuell LEER (Analytics bewusst noch nicht aktiv).
+
+  Zum Aktivieren (z.B. Plausible Cloud, 9 EUR/Monat):
+    <script defer data-domain="seasonalpha.ai" src="https://plausible.io/js/script.js"></script>
+
+  Alternative (self-hosted Umami, kostenlos, DSGVO-freundlich):
+    1. Umami via Docker-Compose starten (umami-software/umami Image)
+    2. Neues Website in Umami anlegen, Website-ID kopieren
+    3. Hier einfuegen:
+       <script defer src="https://umami.seasonalpha.ai/script.js"
+               data-website-id="DEINE-WEBSITE-ID"></script>
+
+  Alternative (Google Analytics 4, erfordert Cookie-Banner + DSGVO-Consent):
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX', { anonymize_ip: true });
+    </script>
+
+  Nach dem Aktivieren:
+  - Pruefen ob nginx das Script-File durchlaesst
+  - Browser DevTools Network-Tab: Request auf Plausible/Umami muss 200 sein
+  - Dashboard im jeweiligen Tool checken ob Pageviews reinkommen
+-->
