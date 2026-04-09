@@ -2014,8 +2014,15 @@
 
   <script>
   // Nav + Footer Loader
-  fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html;});
-  fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  // loadComponent() ruft initNav() automatisch auf nachdem die nav.html geladen ist
+  // → Burger-Button bekommt seinen Click-Handler. Manueller fetch() umging das.
+  if (window.loadComponent) {
+    loadComponent('nav-container', '/landing/components/nav.html');
+    loadComponent('footer-container', '/landing/components/footer.html');
+  } else {
+    fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html; if (window.initNav) initNav();});
+    fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  }
   </script>
   <script src="/landing/js/tour-config.js?v=20260409"></script>
   <script src="/landing/js/tour.js?v=20260409"></script>

@@ -1806,9 +1806,14 @@
   </script>
 
   <script>
-  // Nav + Footer Loader
-  fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html;});
-  fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  // Nav + Footer Loader (loadComponent ruft initNav() automatisch auf → Burger-Handler)
+  if (window.loadComponent) {
+    loadComponent('nav-container', '/landing/components/nav.html');
+    loadComponent('footer-container', '/landing/components/footer.html');
+  } else {
+    fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html; if (window.initNav) initNav();});
+    fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  }
   </script>
 </body>
 </html>
