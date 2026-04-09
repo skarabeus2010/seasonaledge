@@ -32,7 +32,9 @@ import urllib.error
 REPO = Path(__file__).resolve().parent.parent
 BASE_URL = "https://seasonalpha.ai"
 KEY_FILE = REPO / "landing" / "assets" / "indexnow-key.txt"
-KEY_URL = f"{BASE_URL}/landing/assets/indexnow-key.txt"
+# IndexNow verlangt den Key-Verification-Pfad als {key}.txt im Root des Hosts.
+# nginx Route: deploy/nginx.conf routet /{key}.txt -> landing/assets/indexnow-key.txt
+KEY_URL_TEMPLATE = "{base}/{key}.txt"
 INDEXNOW_ENDPOINT = "https://api.indexnow.org/IndexNow"
 
 # Core-URLs die bei jedem Deploy gepingt werden (hochpriorisierte Pages)
@@ -102,10 +104,11 @@ def submit(urls: list[str], key: str, *, dry_run: bool = False) -> bool:
     # Deduplizieren
     urls = sorted(set(urls))
 
+    key_url = KEY_URL_TEMPLATE.format(base=BASE_URL, key=key)
     payload = {
         "host": "seasonalpha.ai",
         "key": key,
-        "keyLocation": KEY_URL,
+        "keyLocation": key_url,
         "urlList": urls,
     }
 
@@ -113,7 +116,7 @@ def submit(urls: list[str], key: str, *, dry_run: bool = False) -> bool:
     print(f"  Endpoint:    {INDEXNOW_ENDPOINT}")
     print(f"  Host:        seasonalpha.ai")
     print(f"  Key:         {key[:8]}... ({len(key)} chars)")
-    print(f"  KeyLocation: {KEY_URL}")
+    print(f"  KeyLocation: {key_url}")
     print(f"  URLs:        {len(urls)}")
     if len(urls) <= 10:
         for u in urls:
