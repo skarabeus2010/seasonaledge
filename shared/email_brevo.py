@@ -19,7 +19,7 @@ BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 # sonst blockt Brevo den Versand mit "sender not valid".
 SENDER = {
     "name": os.environ.get("SENDER_NAME", "SeasonAlpha"),
-    "email": os.environ.get("SENDER_EMAIL", "info@seasonalpha.ai"),
+    "email": os.environ.get("SENDER_EMAIL", "heiko.seibel@gmail.com"),
 }
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
