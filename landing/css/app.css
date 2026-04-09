@@ -149,10 +149,9 @@ body.sa-sidebar-collapsed .sa-sb-toggle::before { content: '\203A'; }
   .sa-sb-toggle { top: calc(var(--nav-h) + .5rem); height: 40px; }
   .sidebar { width: 260px; }
   /* Main-Content bekommt oben Luft, damit Toggle nicht ueber Page-Title liegt */
-  .app main > .page-title:first-child,
-  .app main > h1:first-child,
-  .app main > .error-banner:first-child + .page-title {
-    margin-top: 2.75rem;
+  .app main .page-title,
+  .app main > h1:first-of-type {
+    margin-top: 2.5rem;
   }
 }
 
