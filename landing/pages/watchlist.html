@@ -98,6 +98,52 @@
     .wl-card__stat-val.neg{color:var(--red)}
     .wl-card__stat-val.neutral{color:var(--text)}
 
+    /* ── Preis + Tages-Change ── */
+    .wl-card__price{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;padding:.15rem 0 .2rem;border-bottom:1px solid rgba(255,255,255,.04)}
+    .wl-card__price-val{font-family:var(--f-m);font-size:1.15rem;font-weight:800;color:var(--text);letter-spacing:-.02em}
+    .wl-card__price-change{font-family:var(--f-m);font-size:.8125rem;font-weight:700}
+    .wl-card__price-change.pos{color:var(--green)}
+    .wl-card__price-change.neg{color:var(--red)}
+    .wl-card__price-change.neutral{color:var(--muted)}
+
+    /* ── 4-KPI-Grid (statt 2) ── */
+    .wl-card__kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+    .wl-card__kpi{padding:.45rem .35rem;background:var(--surface);border-radius:5px;text-align:center}
+    .wl-card__kpi-lbl{font-size:.5625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.1rem;font-weight:600}
+    .wl-card__kpi-val{font-family:var(--f-m);font-size:.8125rem;font-weight:700;color:var(--text);line-height:1.1}
+    .wl-card__kpi-val.pos{color:var(--green)}
+    .wl-card__kpi-val.neg{color:var(--red)}
+    .wl-card__kpi-val.muted{color:#a89878}
+    .wl-card__kpi-val.neutral{color:var(--dim)}
+    .wl-card__kpi-val.gold{color:var(--accent)}
+
+    /* ── Sektionen (2W + Nächstes Signal) ── */
+    .wl-card__section{padding:.6rem .75rem;background:var(--surface);border-radius:6px;border-left:2px solid var(--border)}
+    .wl-card__section-lbl{font-size:.625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:.35rem}
+
+    /* 2W Saisonal */
+    .wl-card__twoweek{border-left-color:var(--accent)}
+    .wl-card__twoweek-body{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+    .wl-card__twoweek-val{font-family:var(--f-m);font-size:1rem;font-weight:800;letter-spacing:-.01em}
+    .wl-card__twoweek-verdict{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .wl-card__twoweek-val.pos,.wl-card__twoweek-verdict.pos{color:var(--green)}
+    .wl-card__twoweek-val.neg,.wl-card__twoweek-verdict.neg{color:var(--red)}
+    .wl-card__twoweek-val.pos-light,.wl-card__twoweek-verdict.pos-light{color:#6eceaa}
+    .wl-card__twoweek-val.neg-light,.wl-card__twoweek-verdict.neg-light{color:#d68484}
+    .wl-card__twoweek-val.muted,.wl-card__twoweek-verdict.muted{color:#a89878}
+
+    /* Nächstes Strategie-Signal */
+    .wl-card__signal{border-left-color:#6eceaa}
+    .wl-card__signal--none{border-left-color:var(--border);opacity:.65}
+    .wl-card__signal-body{display:flex;flex-direction:column;gap:.25rem}
+    .wl-card__signal-name{font-size:.8125rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+    .wl-card__signal-meta{display:flex;align-items:center;gap:.5rem;font-size:.6875rem}
+    .wl-card__signal-type{padding:.1rem .4rem;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .wl-card__signal-type.entry{background:rgba(48,232,120,.12);color:var(--green)}
+    .wl-card__signal-type.exit{background:rgba(232,168,32,.12);color:var(--accent)}
+    .wl-card__signal-date{color:var(--muted);font-family:var(--f-m)}
+    .wl-card__signal-empty{font-size:.75rem;color:var(--muted);font-style:italic}
+
     .wl-card__cta{display:block;text-align:center;padding:.65rem;margin-top:auto;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:.8125rem;font-weight:600;text-decoration:none;transition:all .15s}
     .wl-card__cta:hover{background:var(--accent);color:#000;border-color:var(--accent)}
 
@@ -250,6 +296,139 @@
         .catch(function(e) { console.warn('[wl] tickers.json load failed', e); });
     }
 
+    // ── Helpers für Plain-Vanilla Strategie-Signale ───────────
+    var MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+    function todayStr() {
+      var d = new Date();
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function exchangeFor(ticker) {
+      try {
+        var ex = SA.holidays.detect(ticker || '') || 'NYSE';
+        return ex === 'NONE' ? 'NYSE' : ex;
+      } catch (e) { return 'NYSE'; }
+    }
+    function _lastTradingDay(ticker, year, month, nFromEnd) {
+      try { return SA.holidays.lastTradingDay(year, month, nFromEnd || 1, exchangeFor(ticker)); }
+      catch (e) { return null; }
+    }
+    function _nthTradingDay(ticker, year, month, n) {
+      try { return SA.holidays.nthTradingDay(year, month, n, exchangeFor(ticker)); }
+      catch (e) { return null; }
+    }
+    function _nearForward(ticker, year, month, day) {
+      try { return SA.holidays.nextTradingDay(year, month, day, exchangeFor(ticker)); }
+      catch (e) { return null; }
+    }
+
+    /**
+     * Findet das nächste Plain-Vanilla-Strategie-Signal (Entry) in den
+     * nächsten 30 Tagen. Ported + simplified from dashboard.html
+     * getNextStrategySignals(). Gibt null zurück wenn kein Signal in Reichweite.
+     */
+    function computeNextStrategySignal(ticker) {
+      if (!window.SA || !SA.STRATEGIES || !SA.holidays) return null;
+      var todayD = new Date();
+      todayD.setHours(0, 0, 0, 0);
+      var todayS = todayStr();
+      var Y = todayD.getFullYear();
+      var signals = [];
+
+      function add(key, type, dateStr) {
+        if (!dateStr || dateStr < todayS) return;
+        var meta = SA.STRATEGIES[key];
+        if (!meta) return;
+        var d = new Date(dateStr);
+        var daysAway = Math.ceil((d - todayD) / 86400000);
+        if (daysAway > 30) return;
+        signals.push({
+          key: key,
+          name: meta.name,
+          icon: meta.icon || '📊',
+          type: type,
+          date: dateStr,
+          daysAway: daysAway
+        });
+      }
+
+      // Saisonal-Strategien
+      add('sell_in_may', 'entry', _lastTradingDay(ticker, Y, 10));
+      add('sell_in_may', 'entry', _lastTradingDay(ticker, Y + 1, 10));
+      add('sell_in_may', 'exit', _nthTradingDay(ticker, Y, 5, 15));
+      add('sell_in_may', 'exit', _nthTradingDay(ticker, Y + 1, 5, 15));
+      add('lbr_november_mai', 'entry', _lastTradingDay(ticker, Y, 10));
+      add('lbr_november_mai', 'exit', _lastTradingDay(ticker, Y, 4));
+      add('nasdaq_trend', 'entry', _lastTradingDay(ticker, Y, 10));
+      add('nasdaq_trend', 'exit', _lastTradingDay(ticker, Y, 6));
+      add('september_avoid', 'entry', _nearForward(ticker, Y, 9, 30));
+      add('september_avoid', 'exit', _lastTradingDay(ticker, Y, 8));
+
+      // Januar-Strategien
+      add('first_five_days', 'entry', _nthTradingDay(ticker, Y, 1, 1));
+      add('first_five_days', 'exit', _nthTradingDay(ticker, Y, 1, 5));
+      add('first_five_days', 'entry', _nthTradingDay(ticker, Y + 1, 1, 1));
+      add('first_five_days', 'exit', _nthTradingDay(ticker, Y + 1, 1, 5));
+      add('last_five_days', 'entry', _lastTradingDay(ticker, Y, 1, 5));
+      add('last_five_days', 'exit', _lastTradingDay(ticker, Y, 1));
+      add('last_five_days', 'entry', _lastTradingDay(ticker, Y + 1, 1, 5));
+      add('last_five_days', 'exit', _lastTradingDay(ticker, Y + 1, 1));
+      add('january_barometer', 'entry', _nthTradingDay(ticker, Y, 2, 1));
+      add('january_barometer', 'exit', _lastTradingDay(ticker, Y, 12));
+      add('january_barometer', 'entry', _nthTradingDay(ticker, Y + 1, 2, 1));
+      add('january_barometer', 'exit', _lastTradingDay(ticker, Y + 1, 12));
+
+      // Wahljahr 7-Monats-Regel
+      if (Y % 4 === 0 || (Y + 1) % 4 === 0) {
+        var ey = Y % 4 === 0 ? Y : Y + 1;
+        add('election_7months', 'entry', _nearForward(ticker, ey, 5, 31));
+        add('election_7months', 'exit', _lastTradingDay(ticker, ey, 12));
+      }
+
+      // Feiertags-Strategien (nur wenn Exchange nicht 24/7 ist)
+      try {
+        var ex = SA.holidays.detect(ticker || 'NYSE');
+        if (ex !== 'NONE') {
+          var thx = SA.holidays.thanksgiving(Y);
+          if (thx) {
+            // Santa-Claus-Rally Entry: 3 HT vor Thanksgiving
+            var dt = new Date(thx);
+            var c = 0;
+            while (c < 3) {
+              dt.setDate(dt.getDate() - 1);
+              var dss = dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+              if (SA.holidays.isTradingDay(dss, ex)) c++;
+            }
+            add('santa_claus', 'entry', dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()));
+            add('santa_claus', 'exit', _nthTradingDay(ticker, Y + 1, 1, 5));
+          }
+          add('post_christmas', 'entry', _nearForward(ticker, Y, 12, 26));
+          add('post_christmas', 'exit', _lastTradingDay(ticker, Y, 12));
+        }
+      } catch (e) {}
+
+      // Monatsende-/Anfang Strategien (nächste 3 Monate)
+      for (var mi = 0; mi < 3; mi++) {
+        var futM = todayD.getMonth() + 1 + mi;
+        var mm = ((futM - 1) % 12) + 1;
+        var yy = Y + Math.floor((futM - 1) / 12);
+        add('month_end', 'entry', _lastTradingDay(ticker, yy, mm, 2));
+        var nm = mm === 12 ? 1 : mm + 1, ny = mm === 12 ? yy + 1 : yy;
+        add('month_end', 'exit', _nthTradingDay(ticker, ny, nm, 4));
+        add('second_trading_day', 'entry', _nthTradingDay(ticker, yy, mm, 1));
+        add('second_trading_day', 'exit', _nthTradingDay(ticker, yy, mm, 2));
+        add('monthly_10', 'entry', _nthTradingDay(ticker, yy, mm, 1));
+        add('monthly_10', 'exit', _nthTradingDay(ticker, yy, mm, 4));
+      }
+
+      // Sortieren nach daysAway → nimm das früheste Entry-Signal
+      signals.sort(function(a, b) { return a.daysAway - b.daysAway; });
+      // Bevorzugt Entry vor Exit (für Watchlist-Card) — aber wenn ein Exit
+      // zeitlich viel näher ist, zeig den.
+      var nextEntry = signals.find(function(s) { return s.type === 'entry'; });
+      return nextEntry || signals[0] || null;
+    }
+
     // ── Compute + Fetch für einen Ticker ──────────────────────
     function computeForTicker(ticker) {
       return SA.fetchAllPrices(ticker).then(function(rows) {
@@ -270,13 +449,46 @@
         var ki = SA.dashCompute.computeKiScore(yearData, matches, currentYear, avg, truepath);
         var regime = SA.dashCompute.computeRegime(rows);
 
+        // ── Zusätzliche KPIs für die erweiterte Card ───────────
+        var n = rows.length;
+        var lastClose = rows[n - 1].close;
+        var prevClose = rows[n - 2].close;
+        var dayChange = (lastClose / prevClose - 1) * 100;
+
+        // 252d-Drawdown (1-Jahres-Hoch). Repräsentativer als 20d und
+        // näher an dem was Trader mit "Drawdown" meinen. Schneller als
+        // ATH über komplette Historie.
+        var lookback = Math.min(252, n);
+        var high252 = 0;
+        for (var ai = n - lookback; ai < n; ai++) {
+          if (rows[ai].close > high252) high252 = rows[ai].close;
+        }
+        var dd252 = high252 > 0 ? (lastClose - high252) / high252 * 100 : 0;
+
+        // 2W-Saisonalität: Ø Return der nächsten 10 Handelstage aus avg[]
+        var td = SA.dashCompute.todayDoy();
+        var twoWeekRet = null;
+        if (avg.length >= td + 15) {
+          var base = avg[td];
+          var future = avg[Math.min(364, td + 14)];  // 14 Kalendertage ≈ 10 HT
+          if (base > 0) twoWeekRet = (future / base - 1) * 100;
+        }
+
+        // Nächstes Strategie-Signal (Plain Vanilla)
+        var nextSignal = computeNextStrategySignal(ticker);
+
         return {
           ticker: ticker,
           error: null,
           rows: rows,
           ki: ki,
           regime: regime,
-          meta: tickersMeta[ticker] || null
+          meta: tickersMeta[ticker] || null,
+          lastClose: lastClose,
+          dayChange: dayChange,
+          dd252: dd252,
+          twoWeekRet: twoWeekRet,
+          nextSignal: nextSignal
         };
       }).catch(function(e) {
         return { ticker: ticker, error: e.message || 'Fetch-Fehler', rows: null };
@@ -304,12 +516,80 @@
       var ki = card.ki;
       var regime = card.regime;
       var sigClass = ki.signal.toLowerCase();
+
+      // Tages-Change
+      var dayChange = card.dayChange;
+      var dayChangeClass = dayChange > 0.05 ? 'pos' : (dayChange < -0.05 ? 'neg' : 'neutral');
+      var dayChangeDisplay = (dayChange >= 0 ? '+' : '') + dayChange.toFixed(2) + '%';
+
+      // Preis-Formatierung (US Dollar mit Komma-Tausendertrenner)
+      var priceDisplay = '$' + card.lastClose.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // 4 KPIs
+      var winRate = ki.subs.winRate.score * 100;
       var ret5 = regime.features.ret_5d;
       var ret5Class = ret5 > 0.1 ? 'pos' : (ret5 < -0.1 ? 'neg' : 'neutral');
-      var ret5Display = (ret5 >= 0 ? '+' : '') + ret5.toFixed(2) + '%';
-      var winRate = ki.subs.winRate.score * 100;
+      var dd252 = card.dd252;
+      // Drawdown ist immer ≤ 0 — Farb-Intensität nach Tiefe: >-5% neutral, -5 bis -15 muted, <-15 rot
+      var ddClass = dd252 > -5 ? 'neutral' : (dd252 > -15 ? 'muted' : 'neg');
+      var vol20 = regime.features.vol_20d;
+      // Vol: <15% ruhig (dim), 15-30 normal (weiß), >30 hoch (gold)
+      var volClass = vol20 < 15 ? 'neutral' : (vol20 < 30 ? '' : 'gold');
+
+      // Crash-Ampel
       var trafficLabels = { green: 'Normal', yellow: 'Erhöht', red: 'Risiko', grey: 'Unbekannt' };
       var trafficLabel = trafficLabels[regime.traffic_light] || regime.traffic_light;
+
+      // 2W-Saisonalität mit Bewertung
+      var twoWeekHtml = '';
+      if (card.twoWeekRet != null) {
+        var tw = card.twoWeekRet;
+        var twVerdict, twColor, twIcon;
+        if (tw >= 0.8) { twVerdict = 'stark'; twColor = 'pos'; twIcon = '▲'; }
+        else if (tw >= 0.3) { twVerdict = 'leicht pos.'; twColor = 'pos-light'; twIcon = '▲'; }
+        else if (tw <= -0.8) { twVerdict = 'schwach'; twColor = 'neg'; twIcon = '▼'; }
+        else if (tw <= -0.3) { twVerdict = 'leicht neg.'; twColor = 'neg-light'; twIcon = '▼'; }
+        else { twVerdict = 'neutral'; twColor = 'muted'; twIcon = '•'; }
+        var twDisplay = (tw >= 0 ? '+' : '') + tw.toFixed(2) + '%';
+        twoWeekHtml =
+          '<div class="wl-card__section wl-card__twoweek">' +
+            '<div class="wl-card__section-lbl">📅 2W Saisonal</div>' +
+            '<div class="wl-card__twoweek-body">' +
+              '<span class="wl-card__twoweek-val ' + twColor + '">' + twDisplay + '</span>' +
+              '<span class="wl-card__twoweek-verdict ' + twColor + '">' + twIcon + ' ' + twVerdict + '</span>' +
+            '</div>' +
+          '</div>';
+      }
+
+      // Nächstes Strategie-Signal
+      var signalHtml = '';
+      if (card.nextSignal) {
+        var sig = card.nextSignal;
+        var sigIcon = sig.icon || '📊';
+        var sigName = (sig.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
+        var sigDate = new Date(sig.date);
+        var sigDateLabel = sigDate.getDate() + '. ' + MONTHS_DE_SHORT[sigDate.getMonth()];
+        var sigTypeLabel = sig.type === 'entry' ? 'Entry' : 'Exit';
+        var sigTypeClass = sig.type === 'entry' ? 'entry' : 'exit';
+        var sigDaysLabel = sig.daysAway === 0 ? 'heute' : (sig.daysAway === 1 ? 'morgen' : 'in ' + sig.daysAway + ' Tagen');
+        signalHtml =
+          '<div class="wl-card__section wl-card__signal">' +
+            '<div class="wl-card__section-lbl">' + sigIcon + ' Nächstes Signal</div>' +
+            '<div class="wl-card__signal-body">' +
+              '<div class="wl-card__signal-name" title="' + sigName + '">' + sigName + '</div>' +
+              '<div class="wl-card__signal-meta">' +
+                '<span class="wl-card__signal-type ' + sigTypeClass + '">' + sigTypeLabel + '</span>' +
+                '<span class="wl-card__signal-date">' + sigDateLabel + ' · ' + sigDaysLabel + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      } else {
+        signalHtml =
+          '<div class="wl-card__section wl-card__signal wl-card__signal--none">' +
+            '<div class="wl-card__section-lbl">📊 Nächstes Signal</div>' +
+            '<div class="wl-card__signal-empty">Kein Signal in 30 Tagen</div>' +
+          '</div>';
+      }
 
       return '<div class="wl-card" data-ticker="' + t + '">' +
         '<div class="wl-card__head">' +
@@ -317,6 +597,11 @@
           (escName ? '<div class="wl-card__name">' + escName + '</div>' : '') +
           '</div>' +
           '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
+        '</div>' +
+
+        '<div class="wl-card__price">' +
+          '<span class="wl-card__price-val">' + priceDisplay + '</span>' +
+          '<span class="wl-card__price-change ' + dayChangeClass + '">' + dayChangeDisplay + ' heute</span>' +
         '</div>' +
 
         '<div class="wl-card__ki">' +
@@ -333,16 +618,27 @@
           '<span class="wl-card__crash-score">' + regime.risk_score + '/100</span>' +
         '</div>' +
 
-        '<div class="wl-card__stats">' +
-          '<div class="wl-card__stat">' +
-            '<div class="wl-card__stat-lbl">Win-Rate Monat</div>' +
-            '<div class="wl-card__stat-val ' + (winRate >= 50 ? 'pos' : 'neg') + '">' + winRate.toFixed(0) + '%</div>' +
+        '<div class="wl-card__kpi-grid">' +
+          '<div class="wl-card__kpi">' +
+            '<div class="wl-card__kpi-lbl">WR</div>' +
+            '<div class="wl-card__kpi-val ' + (winRate >= 50 ? 'pos' : 'neg') + '">' + winRate.toFixed(0) + '%</div>' +
           '</div>' +
-          '<div class="wl-card__stat">' +
-            '<div class="wl-card__stat-lbl">Return 5d</div>' +
-            '<div class="wl-card__stat-val ' + ret5Class + '">' + ret5Display + '</div>' +
+          '<div class="wl-card__kpi">' +
+            '<div class="wl-card__kpi-lbl">Ret 5d</div>' +
+            '<div class="wl-card__kpi-val ' + ret5Class + '">' + (ret5 >= 0 ? '+' : '') + ret5.toFixed(1) + '%</div>' +
+          '</div>' +
+          '<div class="wl-card__kpi">' +
+            '<div class="wl-card__kpi-lbl">DD 1Y</div>' +
+            '<div class="wl-card__kpi-val ' + ddClass + '">' + dd252.toFixed(1) + '%</div>' +
+          '</div>' +
+          '<div class="wl-card__kpi">' +
+            '<div class="wl-card__kpi-lbl">Vol 20d</div>' +
+            '<div class="wl-card__kpi-val ' + volClass + '">' + vol20.toFixed(0) + '%</div>' +
           '</div>' +
         '</div>' +
+
+        twoWeekHtml +
+        signalHtml +
 
         '<a href="' + dashHref + '" class="wl-card__cta">Zum Dashboard →</a>' +
       '</div>';
