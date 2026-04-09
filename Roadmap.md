@@ -1,6 +1,6 @@
 # SeasonAlpha — Feature-Roadmap
 
-> Stand: 2026-04-10 (Vormittag) | Core-Analyse abgeschlossen (20/18 HTML-Pages). Nächste Phase: **Engagement, Retention, Onboarding + Growth-Features**. **Feature #1 (Guided Tour) live · Feature #2 (Weekly Newsletter) erster Live-Test erfolgreich zugestellt.**
+> Stand: 2026-04-10 (Spät-Abend) | Core-Analyse abgeschlossen (21/18 HTML-Pages inkl. Scanner). **3 von 5 Roadmap-Features LIVE.** Feature #1 (Guided Tour), Feature #2 (Weekly Newsletter), Feature #3 (Saisonal-Scanner) live. Welle 2 (Auth + Watchlists) und Welle 3 (Portfolio-Combo) offen.
 
 ## Kontext
 
@@ -21,7 +21,7 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 |---|---------|--------:|---------:|--------:|--------|
 | 1 | **Guided Tour** | N/A | 100 % | **1 Tag** | ✅ **Live seit 2026-04-09** |
 | 2 | **Email-Alerts / Weekly Report** | 100 % | 100 % | **1 Tag** | ✅ **Live-Test erfolgreich 2026-04-10** — Nginx-Reload + Phase-F-Aktivierung ausstehend |
-| 3 | **Saisonal-Scanner** | ~60 % (`scanner_results` Tabelle + nightly_refresh) | 0 % | **4–5 Tage** | Nächstes Feature |
+| 3 | **Saisonal-Scanner** | 100 % | 100 % | **1 Tag** | ✅ **Live seit 2026-04-10 (Spät-Abend)** |
 | 4 | **Auth + Custom Watchlists** | 20 % (Subscriber-Tabelle, kein User-System) | 0 % | **8–10 Tage** | Welle 2 |
 | 5 | **Portfolio-Backtest Combo** | ~80 % (`strategy-compute.js`, 24 Strategien) | 0 % | **6–8 Tage** | Welle 3 |
 
@@ -34,7 +34,7 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 
 ### Welle 2 — Core Features (Woche 3–4)
 
-3. **Saisonal-Scanner** — Daten laufen nightly in `scanner_results`, es fehlt nur die Frontend-Page `/scanner` mit Filter-UI.
+3. **Saisonal-Scanner** — ✅ **LIVE seit 2026-04-10.** Frontend `/scanner` mit Sidebar-Filter (Signal, Score, Win-Rate, Kategorie), sortierbare Tabelle mit 269 Tickern aus `scanner_results`, Dashboard-Link pro Ticker. Backend-Refactor: Pro-Ticker-Upsert im `nightly_refresh` (vorher Batch am Ende → Timeouts verloren alles) + neuer `scripts/full_scanner_run.py` als dedicated Weekly-Cron (`full_scanner.yml`, Sonntag 03:00 UTC, 90 min timeout). Erster Full-Run erfolgreich: 269/270 Ticker processed (nur 1 ohne ausreichende Historie).
 4. **Auth + Watchlists** — Längster Aufwand, aber Enabler für alle personalisierten Features (Alerts, Scanner-Save, Portfolio).
 
 ### Welle 3 — Polish (Woche 5–6)
@@ -116,17 +116,28 @@ Die Exploration hat gezeigt, dass **vieles bereits zu 60–80 % vorhanden ist** 
 - `scripts/create_alerts_table.sql` — `user_alerts` DB-Tabelle
 - `landing/pages/alerts.html` — User-Alerts-Management UI
 
-### Feature #3 — Saisonal-Scanner
+### Feature #3 — Saisonal-Scanner ✅ LIVE seit 2026-04-10
 
-**Reuse:**
-- `supabase_client.fetch_scanner_results()` — liefert bereits sortierte Top-Scores
-- `landing/data/tickers.json` — 300+ Tickers mit Metadaten
-- `shared/symbols.py` `SYMBOLS` — Kategorien
+**Commits:** `632e5d6` (MVP Frontend), `4da4e3a` (Supabase-Credential Injection-Fix), `606fd40` (Full-Scanner Cron + Pro-Ticker-Upsert)
 
-**Neu:**
-- `landing/pages/scanner.html` — Haupt-UI mit Filter (Kategorie, Score-Range, Richtung)
-- `landing/js/scanner-compute.js` — Client-seitiges Filtering
-- `deploy/nginx.conf` — neue Route `/scanner`
+**Implementiert:**
+- `landing/pages/scanner.html` (~450 Zeilen) — Standard SA-Layout mit Sidebar + Main, 4 Summary-Cards (Total/Bullish/Neutral/Bearish), sortierbare Ergebnis-Tabelle (Rang/Ticker/Name/Kategorie/Signal/Score/WR/Ø Return), Click auf Ticker → `/dashboard?t={ticker}`, Methodik-Expander, Empty-State. **Sidebar-Filter**: Such-Input, Signal-Checkboxen mit Live-Count, Score-Range-Slider 0-10, Win-Rate-Slider 0-100%, Kategorie-Multi-Select mit Master-Toggle, Reset-Button. Alle Filter client-side, instant, kein API-Reload nötig.
+- `scripts/generate_tickers_json.py` (neu) — Regeneriert `landing/data/tickers.json` aus `shared/symbols.py` mit UTF-8 + `kategorie`-Feld (vorher war's latin-1 ohne Kategorie). 270 Ticker, 12.5 KB.
+- `scripts/full_scanner_run.py` (neu, ~280 Zeilen) — Dedicated Weekly-Scanner mit **Pro-Ticker-Upsert** (resume-safe: bei Abbruch bleibt jeder berechnete Score in DB). Options: `--resume` (skip heute bereits gescannte), `--limit N`, `--only T1,T2`, `--quick/--full`, `--progress-every N` mit ETA.
+- `.github/workflows/full_scanner.yml` (neu) — Weekly Cron **Sonntag 03:00 UTC** mit 90 Min Timeout + `workflow_dispatch` mit quick/limit/resume Dropdowns.
+- `scripts/nightly_refresh.py` bekommt den Pro-Ticker-Upsert auch nachgerüstet (5 Zeilen Diff).
+- `.github/workflows/nightly_refresh.yml` Timeout 15/10m → 60/55m.
+- Integration in Nav (Top-Level-Link + Strategien-Dropdown), Footer, Sitemap (Priority 0.95 daily), `upgrade_page_meta.py`, `optimize_page_titles.py`.
+
+**Root-Cause vor dem Fix:** `scanner_results` hatte nur 94 von 270 Ticker mit scan_date 2026-03-31 (9 Tage alt) weil SSH-Command nach 10 Min gekappt wurde + `store_scanner_results` nur am Ende lief.
+
+**Nach dem Fix (live 2026-04-10):** 269/270 Ticker aktualisiert. Neue Top-5 Bullish: NESN.SW (Nestlé 7.5, WR 95.2%), INVE-B.ST, EQIX, SU.PA, XLE.
+
+**Nicht in diesem MVP (spätere Iterationen):**
+- Historischer Scan-Date-Vergleich („Was ist diese Woche neu bullish?")
+- Watchlist-Integration (braucht Feature #4 Auth)
+- CSV-Export-Button
+- Scanner-Preview-Card auf der Landing (Top-5 live)
 
 ### Feature #4 — Auth + Custom Watchlists
 

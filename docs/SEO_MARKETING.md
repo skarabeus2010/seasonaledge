@@ -11,7 +11,8 @@
 | **OG-Image (1200×630)** | ✅ V3 Ultra Design, via `scripts/generate_og_images.py` | 2026-04-10 |
 | **Apple-Touch-Icon + PNG-Favicons** | ✅ | 2026-04-10 |
 | **Hero-Titles SEO-optimiert** | ✅ 21 Pages via `scripts/optimize_page_titles.py`, alle <62 Chars mit Ziel-Keywords | 2026-04-10 |
-| **Sitemap** | ✅ **49 URLs** (Landing + 21 Features + 4 Blog-Indizes + 18 Blog-Posts + 6 statische). 270 programmatische `/analyse/*` wegen Thin-Content deaktiviert | 2026-04-10 |
+| **Sitemap** | ✅ **50 URLs** (Landing + 22 Features inkl. neue `/scanner` + 4 Blog-Indizes + 18 Blog-Posts + 6 statische). 270 programmatische `/analyse/*` wegen Thin-Content deaktiviert | 2026-04-10 |
+| **Feature #3 Saisonal-Scanner** | ✅ Live: `/scanner` mit 269/270 Tickern, Sidebar-Filter, Weekly Full-Scan Sonntag 03:00 UTC | 2026-04-10 |
 | **Sitemap Auto-Discovery** | ✅ `glob('landing/pages/*.html')` in `programmatic_seo_builder.py`, neue Pages fliessen automatisch rein | 2026-04-10 |
 | **robots.txt** | ✅ Sitemap referenziert, `/app/` blockiert, AI-Crawler explizit ALLOW (15 Bots) | 2026-04-10 |
 | **JSON-LD Landing** | ✅ WebSite + SearchAction + SoftwareApplication + Organization (mit sameAs Twitter) + FAQPage | 2026-04-10 |
