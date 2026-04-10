@@ -1,6 +1,8 @@
 # CLAUDE.md — SeasonAlpha
 
 > Version 31.0 | 2026-04-10 (Abend 2) | **Watchlist Local-First MVP LIVE** (Feature #4 Phase 1) + Feature #3 Saisonal-Scanner LIVE + SEO-Foundation-Layer komplett | Details → `docs/SEO_MARKETING.md` | Roadmap: 4/5 Features live (Auth-Upgrade für Watchlist kommt mit Premium-Gate)
+>
+> Version 31.1 | 2026-04-11 (Vormittag) | Watchlist Compact-Cards V2 (Preis/4-KPI/2W-Saisonal/PlainVanilla-Signal) + TDOM-Fix Kalender-basiert
 
 
 ## Projekt
@@ -605,6 +607,8 @@ Bei Fehlern:
   - `scripts/upgrade_page_meta.py` + `scripts/optimize_page_titles.py`: Neue `watchlist.html` Einträge.
   - `seo/programmatic_seo_builder.py` PAGE_EXCLUDES: `watchlist` hinzugefügt (noindex, raus aus Sitemap).
   - **Entscheidungen**: Watchlist + Scanner + Dashboard werden zusammen Premium-Features wenn Auth + Stripe kommen. Jetzt noch frei für Habit-Building. Phase 2 (Cloud-Sync + Premium-Gate) folgt mit Feature #4 Welle 2.
+- [x] **2026-04-11** **Watchlist Compact-Cards V2** — erweiterte Cards mit 6 neuen Elementen: (1) Preis + Tages-Change (Last Close + dayChange%), (2) 4-KPI-Grid statt 2 (WR, Ret5d, DD 1Y = 252d-Drawdown, Vol 20d mit Farb-Skalierung), (3) 2W-Saisonalität (avg[heute+14]-avg[heute] aus saisonalem Ø, 5 Verdicts: stark/leicht pos/neutral/leicht neg/schwach mit ▲/•/▼), (4) Nächstes Strategie-Signal (Plain Vanilla: ported `getNextStrategySignals()` aus dashboard.html, zeigt Entry/Exit-Badge + Datum + Countdown). Neue Helper: `computeNextStrategySignal(ticker)`, `_lastTradingDay/_nthTradingDay/_nearForward` mit explizitem Ticker-Param, ATH→252d DD-Switch.
+- [x] **2026-04-11** **TDOM-Fix: Kalender-basiert statt DB-Rows** — `getCurrentTdom()` auf dashboard.html + monatszyklus.html berechnete TDOM aus dem letzten DB-Eintrag (`lastRow.tdom`). Wenn der nightly/intraday-refresh noch nicht gelaufen war (z.B. morgens vor Börsenöffnung), stand der TDOM-Marker einen Tag zu niedrig. Fix: zählt jetzt alle Handelstage von Monatsanfang bis heute via `SA.holidays.isTradingDay()`. Identische Logik wie `getTdomMiniStats()` und `tdom-analyse.html` (die das schon korrekt machten). Verifiziert: ^GDAXI am 10.04.2026 = TDOM 6 (nicht 7, weil XETRA Karfreitag + Ostermontag geschlossen hat, NYSE nur Karfreitag).
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten (nach dem Büro-Wechsel weitermachen)
 - [ ] **Nginx reload auf dem Server** — `cd /opt/seasonaledge && git pull && docker exec seasonalpha-nginx nginx -t && docker exec seasonalpha-nginx nginx -s reload`
