@@ -97,8 +97,8 @@
     .bento-drawdown{grid-column:span 6;min-height:300px}
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
-    .bento-mini{grid-column:span 3;min-height:190px}
-    .bento-twoweek{grid-column:span 12;min-height:240px}
+    .bento-stat{grid-column:span 3;min-height:180px}
+    .bento-stat-sm{grid-column:span 2;min-height:180px}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
@@ -112,11 +112,13 @@
       .bento-drawdown{grid-column:span 12}
       .bento-month{grid-column:span 12}
       .bento-truepath{grid-column:span 12}
-      .bento-mini{grid-column:span 6}
+      .bento-stat{grid-column:span 6}
+      .bento-stat-sm{grid-column:span 4}
     }
     @media (max-width:900px){
       .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12;min-height:180px}
-      .bento-mini{grid-column:span 6;min-height:160px}
+      .bento-stat{grid-column:span 6}
+      .bento-stat-sm{grid-column:span 6}
     }
     @media (max-width:768px){
       .bento{grid-template-columns:1fr}
@@ -124,7 +126,6 @@
     }
     @media (max-width:600px){
       .bento-card{min-height:auto;padding:.875rem}
-      .bento-mini{grid-column:span 12}
     }
 
     /* ── KI-Score Hero ── */
@@ -288,34 +289,34 @@
           <div id="chart-truepath"></div>
         </div>
 
-        <!-- Wochentag (3 cols, ganz links) -->
-        <div class="bento-card bento-mini" id="card-weekday">
-          <div class="ttl"><span class="ico">📆</span> Heute — Wochentag</div>
-          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        <!-- Historische Monatsperformance (3 cols) -->
+        <div class="bento-card bento-stat" id="card-month-perf">
+          <div class="ttl"><span class="ico">📅</span> Monatsperformance</div>
+          <div id="month-perf-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
-        <!-- TDOM Heute (3 cols) -->
-        <div class="bento-card bento-mini" id="card-tdom-today">
+        <!-- Two-Week Phase kompakt (3 cols) -->
+        <div class="bento-card bento-stat" id="card-twoweek">
+          <div class="ttl"><span class="ico">📊</span> 2-Wochen-Phase</div>
+          <div id="twoweek-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- TDOM Heute (2 cols) -->
+        <div class="bento-card bento-stat-sm" id="card-tdom-today">
           <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
           <div id="tdom-today-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
-        <!-- TDOM Morgen (3 cols) -->
-        <div class="bento-card bento-mini" id="card-tdom-tomorrow">
+        <!-- TDOM Morgen (2 cols) -->
+        <div class="bento-card bento-stat-sm" id="card-tdom-tomorrow">
           <div class="ttl"><span class="ico">⏭️</span> TDOM Morgen</div>
           <div id="tdom-tomorrow-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
-        <!-- TDOM Übermorgen (3 cols) -->
-        <div class="bento-card bento-mini" id="card-tdom-day-after">
-          <div class="ttl"><span class="ico">⏩</span> TDOM Übermorgen</div>
-          <div id="tdom-day-after-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- Two-Week Phase (12 cols) -->
-        <div class="bento-card bento-twoweek" id="card-twoweek">
-          <div class="ttl"><span class="ico">📊</span> Two-Week Phase · Wo stehen wir im 2-Wochen-Zyklus</div>
-          <div id="twoweek-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
+        <!-- Wochentag + Streak (2 cols) -->
+        <div class="bento-card bento-stat-sm" id="card-weekday">
+          <div class="ttl"><span class="ico">📆</span> Wochentag</div>
+          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
@@ -348,8 +349,10 @@
             <li><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
             <li><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
             <li><b>TruePath</b>: Gewichteter Ø der Top-5 ähnlichsten historischen Jahre (Pearson-Korrelation auf den Verlauf bis heute) + 30d-Forward-Projektion.</li>
-            <li><b>Wochentag-Check</b>: Win-Rate und Ø Rendite des heutigen Wochentags über N Jahre.</li>
-            <li><b>TDOM-Saisonal-Match</b>: Win-Rate und Ø Rendite an der heutigen TDOM-Position über N Jahre.</li>
+            <li><b>Monatsperformance</b>: Historische Ø Rendite, Win-Rate, Best/Worst des aktuellen Monats über N Jahre.</li>
+            <li><b>2-Wochen-Phase</b>: Aktuelle H1/H2-Phase im Monat mit Ø Return, Rang (1-24) und Status.</li>
+            <li><b>TDOM Heute/Morgen</b>: Win-Rate und Ø Rendite an der heutigen/morgigen TDOM-Position über N Jahre.</li>
+            <li><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak des heutigen Wochentags.</li>
             <li><b>Trifecta</b>: SCR + FFD + JanB Bedingungen für das aktuelle Jahr — auf den eingegebenen Ticker angewendet (Original-Konzept ist für Indizes).</li>
             <li><b>Risiko-Metriken</b>: Aktueller DD vs. historischer Ø Max DD, aktuelle 20d-Vola annualisiert + Perzentilrang.</li>
             <li><b>Strategien</b>: Alle 22 Plain Vanilla Strategien werden auf den Ticker angewendet. Gefiltert nach "nächstes Signal in den nächsten 30 Tagen". Aktuelle Streak (letzte W oder L in Folge) als Badge.</li>
@@ -839,9 +842,11 @@
           var s = c[p.start], e = c[p.end-1];
           if (s != null && e != null && s > 0) rets.push((e/s - 1) * 100);
         }
+        var wins = rets.filter(function(r){return r > 0;}).length;
         return {
           name: p.name,
           avg: rets.length ? mean(rets) : null,
+          winRate: rets.length ? wins / rets.length * 100 : null,
           n: rets.length,
           start: p.start,
           end: p.end
@@ -960,6 +965,74 @@
       if(rets.length<5)return null;
       var wins=rets.filter(function(r){return r>0;}).length;
       return {n:rets.length,win_rate:wins/rets.length*100,avg:mean(rets)};
+    }
+
+    // ── Monatsperformance fuer aktuellen Monat (historisch) ──
+    function calcCurrentMonthPerf(rows, yearsBack) {
+      var currentMonth = new Date().getMonth() + 1;
+      var lastDate = new Date(rows[rows.length - 1].date);
+      var cutoff = new Date(lastDate);
+      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0, 10);
+      var currentYear = new Date().getFullYear();
+
+      var ymGroups = {};
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].date < cutoffStr) continue;
+        var y = parseInt(rows[i].date.substring(0, 4));
+        var m = parseInt(rows[i].date.substring(5, 7));
+        if (m !== currentMonth) continue;
+        if (y === currentYear) continue; // aktuelles Jahr ausschließen
+        var key = y + '-' + m;
+        if (!ymGroups[key]) ymGroups[key] = [];
+        ymGroups[key].push(rows[i]);
+      }
+      var rets = [];
+      for (var k in ymGroups) {
+        var g = ymGroups[k];
+        if (g.length < 5) continue;
+        var first = g[0].close, last = g[g.length - 1].close;
+        if (first > 0) rets.push((last / first - 1) * 100);
+      }
+      if (!rets.length) return null;
+      var wins = rets.filter(function(r) { return r > 0; }).length;
+      rets.sort(function(a, b) { return a - b; });
+      return {
+        month: currentMonth,
+        monthName: MONTHS_DE_SHORT[currentMonth - 1],
+        avg: mean(rets),
+        winRate: wins / rets.length * 100,
+        median: rets[Math.floor(rets.length / 2)],
+        best: rets[rets.length - 1],
+        worst: rets[0],
+        n: rets.length
+      };
+    }
+
+    // ── Wochentag Win-Streak (aktuelle Serie gleicher Vorzeichen) ──
+    function calcWeekdayStreak(rows, weekday) {
+      // Sammle alle Returns des Wochentags chronologisch
+      var rets = [];
+      for (var i = 1; i < rows.length; i++) {
+        var d = new Date(rows[i].date);
+        var wd = d.getDay(); wd = wd === 0 ? 6 : wd - 1;
+        if (wd !== weekday) continue;
+        var prev = rows[i - 1];
+        if (prev.close > 0 && rows[i].close > 0) {
+          rets.push((rows[i].close / prev.close - 1) * 100);
+        }
+      }
+      if (!rets.length) return { type: 'none', count: 0 };
+      // Vom Ende rückwärts zählen
+      var last = rets[rets.length - 1];
+      var type = last > 0 ? 'win' : 'loss';
+      var count = 1;
+      for (var j = rets.length - 2; j >= 0; j--) {
+        var isWin = rets[j] > 0;
+        if ((type === 'win' && isWin) || (type === 'loss' && !isWin)) count++;
+        else break;
+      }
+      return { type: type, count: count };
     }
 
     // ── Strategie-Streak (aus trades-Liste die letzten N nach Vorzeichen) ──
@@ -1654,8 +1727,8 @@
       charts.truepath.render();
     }
 
-    // ── 7. Wochentag-Check Card ──────────────────────────────────
-    function renderWeekdayCard(stats) {
+    // ── 7. Wochentag-Check Card (mit Streak) ──────────────────────
+    function renderWeekdayCard(stats, streak) {
       var el = document.getElementById('weekday-content');
       var today = new Date();
       var wd = today.getDay(); wd = wd === 0 ? 6 : wd - 1;
@@ -1670,7 +1743,13 @@
       }
       var winCls = stats.win_rate >= 50 ? 'green' : 'red';
       var avgCls = stats.avg >= 0 ? 'green' : 'red';
-      var html = '<div class="card-headline">' + wdName + '</div>';
+      // Streak badge
+      var streakHtml = '';
+      if (streak && streak.count > 0) {
+        var sCls = streak.type === 'win' ? 'win' : 'loss';
+        streakHtml = ' <span class="streak-badge ' + sCls + '">' + streak.count + (streak.type === 'win' ? ' W' : ' L') + '</span>';
+      }
+      var html = '<div class="card-headline" style="font-size:1.25rem">' + wdName + streakHtml + '</div>';
       html += '<div class="card-sub">' + stats.n + ' Beobachtungen</div>';
       html += '<div class="kpi-row-mini">' +
         '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
@@ -1774,8 +1853,30 @@
       el.innerHTML = html;
     }
 
-    // ── 11b. Two-Week Phase Card ─────────────────────────────────
-    function renderTwoWeekPhase(tw, ticker) {
+    // ── 6b. Monatsperformance Card ─────────────────────────────────
+    function renderMonthlyPerfCard(mp) {
+      var el = document.getElementById('month-perf-content');
+      if (!mp) {
+        el.innerHTML = '<p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
+        return;
+      }
+      var avgCls = mp.avg >= 0 ? 'green' : 'red';
+      var winCls = mp.winRate >= 50 ? 'green' : 'red';
+      var html = '<div class="card-headline" style="font-size:1.25rem">' + mp.monthName + '</div>';
+      html += '<div class="card-sub">' + mp.n + ' Jahre historisch</div>';
+      html += '<div class="kpi-row-mini">' +
+        '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(mp.avg, 2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + mp.winRate.toFixed(0) + '%</div></div>' +
+      '</div>';
+      html += '<div class="kpi-row-mini" style="margin-top:.35rem">' +
+        '<div class="kpi"><div class="kpi-label">Bester</div><div class="kpi-value green" style="font-size:.875rem">' + fmtPct(mp.best, 1) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Schlechtester</div><div class="kpi-value red" style="font-size:.875rem">' + fmtPct(mp.worst, 1) + '</div></div>' +
+      '</div>';
+      el.innerHTML = html;
+    }
+
+    // ── 11b. Two-Week Phase Card (kompakt, nur Daten) ────────────
+    function renderTwoWeekPhase(tw) {
       var el = document.getElementById('twoweek-content');
       if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) {
         el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten</p>';
@@ -1791,53 +1892,17 @@
       var rankLabel = tw.rank + ' / ' + tw.total;
       var rankCls = tw.rank <= 8 ? 'green' : (tw.rank >= 17 ? 'red' : 'gold');
 
-      var html = '<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.25rem;align-items:center">';
-      // Linke Seite: KPIs
-      html += '<div>';
-      html += '<div class="card-headline" style="font-size:1.625rem;margin-bottom:.15rem;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">' + cur.name +
-        '<span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.6875rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">' +
-        '<span style="display:inline-block;width:14px;height:10px;background:' + COL_CURRENT + ';border-radius:2px"></span>' +
-        'im Chart' +
-        '</span>' +
-        '</div>';
-      html += '<div class="card-sub">Aktuelle 2-Wochen-Phase · ' + cur.n + 'J Daten</div>';
-      html += '<div class="kpi-row-mini" style="grid-template-columns:1fr 1fr 1fr;margin-top:.5rem">' +
+      var html = '<div class="card-headline" style="font-size:1.25rem">' + cur.name + '</div>';
+      html += '<div class="card-sub">' + cur.n + 'J Daten</div>';
+      html += '<div class="kpi-row-mini">' +
         '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(avg, 2) + '</div></div>' +
         '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + statusCls + '">' + status + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Rang</div><div class="kpi-value ' + rankCls + '">' + rankLabel + '</div></div>' +
       '</div>';
-      html += '</div>';
-      // Rechte Seite: Bar-Chart 24 Phasen
-      html += '<div id="twoweek-chart" style="min-height:180px"></div>';
-      html += '</div>';
+      html += '<div class="kpi-row-mini" style="margin-top:.35rem">' +
+        '<div class="kpi"><div class="kpi-label">Rang</div><div class="kpi-value ' + rankCls + '">' + rankLabel + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (cur.winRate >= 50 ? 'green' : 'red') + '">' + (cur.winRate != null ? cur.winRate.toFixed(0) + '%' : '–') + '</div></div>' +
+      '</div>';
       el.innerHTML = html;
-
-      // Bar Chart
-      var labels = tw.periods.map(function(p){return p.name;});
-      var values = tw.periods.map(function(p){return p.avg != null ? parseFloat(p.avg.toFixed(2)) : null;});
-      var colors = tw.periods.map(function(p, i) {
-        if (i === tw.currentIdx) return COL_CURRENT;
-        if (p.avg == null) return '#475569';
-        return p.avg >= 0 ? '#34d399' : '#f87171';
-      });
-
-      if (charts.twoweek) { try { charts.twoweek.destroy(); } catch(e){} }
-      charts.twoweek = new ApexCharts(document.getElementById('twoweek-chart'), {
-        series: [{ name: 'Ø Return', data: values }],
-        chart: Object.assign({ type:'bar', height:200, toolbar:{show:false} }, SA.chartTheme.chart),
-        plotOptions: { bar: { borderRadius:3, columnWidth:'72%', distributed:true, dataLabels:{position:'top'} } },
-        colors: colors,
-        dataLabels: { enabled: false },
-        grid: SA.chartTheme.grid,
-        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
-          y: { formatter: function(v){return v != null ? fmtPct(v,2) : '–';} }
-        }),
-        xaxis: { categories: labels, labels:{style:{colors:'#a89878',fontSize:'11px'},rotate:-45,rotateAlways:true} },
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v != null ? v.toFixed(1)+'%' : '';}} },
-        legend: { show:false },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }] }
-      });
-      charts.twoweek.render();
     }
 
     // ── 12. Nächste Events Cards ─────────────────────────────────
@@ -1930,11 +1995,17 @@
         renderDrawdownChart(ddData, currentTicker);
       } catch(e) { console.warn('Drawdown chart:', e); }
 
-      // 4c. Two-Week Phase
+      // 4c. Two-Week Phase (kompakt)
       try {
         var tw = computeTwoWeekPhases(yearData, currentYear);
-        renderTwoWeekPhase(tw, currentTicker);
+        renderTwoWeekPhase(tw);
       } catch(e) { console.warn('Two-Week:', e); }
+
+      // 4d. Historische Monatsperformance
+      try {
+        var mp = calcCurrentMonthPerf(filteredRows, yearsBack);
+        renderMonthlyPerfCard(mp);
+      } catch(e) { console.warn('MonthPerf:', e); }
 
       // 5. + 8. Month + TDOM-Mini-Cards (heute / morgen / uebermorgen)
       var tdomRows = assignTdom(filteredRows);
@@ -1965,18 +2036,15 @@
       var d1 = nextTradingDate(fromDate);
       var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache) : null;
       renderTdomMiniCard('tdom-tomorrow-content', d1 ? 'Morgen · ' + dayLbl(d1) : 'Morgen', mini1);
-      // Uebermorgen
-      var d2 = d1 ? nextTradingDate(d1) : null;
-      var mini2 = d2 ? getTdomMiniStats(tdomRows, d2, allYearsList, intramonthCache) : null;
-      renderTdomMiniCard('tdom-day-after-content', d2 ? 'Übermorgen · ' + dayLbl(d2) : 'Übermorgen', mini2);
 
       // 6. TruePath
       renderTruePathChart(yearData, truepath, currentYear, currentTicker);
 
-      // 7. Wochentag
+      // 7. Wochentag + Streak
       var todayWd = new Date().getDay(); todayWd = todayWd === 0 ? 6 : todayWd - 1;
       var wdStats = todayWd <= 4 ? calcWeekdayStatsSingle(filteredRows, todayWd, yearsBack) : null;
-      renderWeekdayCard(wdStats);
+      var wdStreak = todayWd <= 4 ? calcWeekdayStreak(filteredRows, todayWd) : null;
+      renderWeekdayCard(wdStats, wdStreak);
 
       // 9. Trifecta
       try {
