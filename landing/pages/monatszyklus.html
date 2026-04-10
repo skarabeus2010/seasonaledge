@@ -405,29 +405,25 @@
      * +1 wenn heute Handelstag.
      */
     function getCurrentTdom(tdomRows, ticker) {
+      // Berechne TDOM direkt aus dem Holiday-Kalender — nicht aus DB-Rows,
+      // weil die DB ggf. den heutigen Tag noch nicht enthält (nightly-refresh
+      // lief gestern, intraday-refresh läuft erst wenn Börse offen ist).
       var today = new Date();
       var ty = today.getFullYear();
       var tm = today.getMonth() + 1;
-      var todayStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (today.getDate()<10?'0':'') + today.getDate();
-      var monthRows = tdomRows.filter(function(r){ return r.year===ty && r.month===tm; });
-      if (!monthRows.length) {
-        // Heute ist erster Tag des Monats und noch nicht in DB
-        try {
-          var exch = SA.holidays.detect(ticker || '');
-          if (exch !== 'NONE' && SA.holidays.isTradingDay(todayStr, exch)) return 1;
-        } catch(e) {}
-        return null;
+      var td = today.getDate();
+      var todayStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (td<10?'0':'') + td;
+      var ex;
+      try { ex = SA.holidays.detect(ticker || ''); } catch(e) { ex = 'NONE'; }
+      // Wenn heute kein Handelstag: null (kein Marker)
+      if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) return null;
+      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive
+      var tdom = 0;
+      for (var d = 1; d <= td; d++) {
+        var dStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (d<10?'0':'') + d;
+        if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;
       }
-      var lastRow = monthRows[monthRows.length-1];
-      var lastTdom = lastRow.tdom;
-      // Wenn letzter Eintrag vor heute UND heute Handelstag → +1
-      if (lastRow.date < todayStr) {
-        try {
-          var exch2 = SA.holidays.detect(ticker || '');
-          if (exch2 !== 'NONE' && SA.holidays.isTradingDay(todayStr, exch2)) return lastTdom + 1;
-        } catch(e) {}
-      }
-      return lastTdom;
+      return tdom || null;
     }
 
     // ── Intra-Monat Kurve ────────────────────────────────────────

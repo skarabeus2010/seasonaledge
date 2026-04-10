@@ -535,18 +535,23 @@
     }
 
     function getCurrentTdom(tdomRows,ticker){
-      var t=new Date(),ty=t.getFullYear(),tm=t.getMonth()+1;
-      var ts=ty+'-'+pad2(tm)+'-'+pad2(t.getDate());
-      var monthRows=tdomRows.filter(function(r){return r.year===ty&&r.month===tm;});
-      if(!monthRows.length){
-        try{var ex=SA.holidays.detect(ticker||'');if(ex!=='NONE'&&SA.holidays.isTradingDay(ts,ex))return 1;}catch(e){}
-        return null;
+      // Berechne TDOM direkt aus dem Holiday-Kalender — nicht aus DB-Rows,
+      // weil die DB ggf. den heutigen Tag noch nicht enthält (nightly-refresh
+      // lief gestern, intraday-refresh läuft erst wenn Börse offen ist).
+      // Selbe Logik wie getTdomMiniStats() Zeile 490–494.
+      var t=new Date(),ty=t.getFullYear(),tm=t.getMonth()+1,td=t.getDate();
+      var ts=ty+'-'+pad2(tm)+'-'+pad2(td);
+      var ex;
+      try{ex=SA.holidays.detect(ticker||'');}catch(e){ex='NONE';}
+      // Wenn heute kein Handelstag: null (kein Marker)
+      if(ex!=='NONE'&&!SA.holidays.isTradingDay(ts,ex))return null;
+      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive
+      var tdom=0;
+      for(var d=1;d<=td;d++){
+        var dStr=ty+'-'+pad2(tm)+'-'+pad2(d);
+        if(ex==='NONE'||SA.holidays.isTradingDay(dStr,ex))tdom++;
       }
-      var lastRow=monthRows[monthRows.length-1];
-      if(lastRow.date<ts){
-        try{var ex2=SA.holidays.detect(ticker||'');if(ex2!=='NONE'&&SA.holidays.isTradingDay(ts,ex2))return lastRow.tdom+1;}catch(e){}
-      }
-      return lastRow.tdom;
+      return tdom||null;
     }
 
     // ── KI Composite Score (Port von ki-saisonalitaet.html) ──────
