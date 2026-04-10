@@ -525,6 +525,25 @@
         var idx = im.allCurves[i].tdoms.indexOf(tdom);
         if (idx >= 0) { total++; if (im.allCurves[i].curve[idx] > 0) pos++; }
       }
+      // Streak: aufeinanderfolgende Jahre (neueste zuerst) mit gleichem Vorzeichen
+      var streakVals = [];
+      for (var si = 0; si < im.allCurves.length; si++) {
+        var sc = im.allCurves[si];
+        var sIdx = sc.tdoms.indexOf(tdom);
+        if (sIdx >= 0) streakVals.push({ year: sc.year, val: sc.curve[sIdx] });
+      }
+      streakVals.sort(function(a,b){ return b.year - a.year; });
+      var streak = { type: 'none', count: 0 };
+      if (streakVals.length) {
+        var sType = streakVals[0].val > 0 ? 'win' : 'loss';
+        var sCount = 1;
+        for (var sj = 1; sj < streakVals.length; sj++) {
+          var sWin = streakVals[sj].val > 0;
+          if ((sType === 'win' && sWin) || (sType === 'loss' && !sWin)) sCount++;
+          else break;
+        }
+        streak = { type: sType, count: sCount };
+      }
       return {
         date: ds,
         tdom: tdom,
@@ -534,7 +553,8 @@
         avg: ts.avg,
         n: ts.n,
         winRate: total > 0 ? pos/total*100 : 0,
-        weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())]
+        weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())],
+        streak: streak
       };
     }
 
@@ -1827,14 +1847,20 @@
         el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
         return;
       }
-      el.innerHTML = stat6(
-        'TDOM ' + mini.tdom + ' / ' + mini.maxTdom,
-        mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel,
-        [
-          ['Win-Rate', mini.winRate.toFixed(0)+'%', mini.winRate >= 50 ? 'green' : 'red'],
-          ['Ø Cum-Ret', fmtPct(mini.avg,2), mini.avg >= 0 ? 'green' : 'red']
-        ]
-      );
+      // Streak badge
+      var streakBadge = '';
+      if (mini.streak && mini.streak.count > 0) {
+        var sCls = mini.streak.type === 'win' ? 'win' : 'loss';
+        var sLbl = mini.streak.count + (mini.streak.type === 'win' ? ' W' : ' L');
+        streakBadge = ' <span class="streak-badge ' + sCls + '" style="font-size:.6rem;vertical-align:middle">' + sLbl + '</span>';
+      }
+      var html = '<div class="s6-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + streakBadge + '</div>';
+      html += '<div class="s6-sub">' + mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel + '</div>';
+      html += '<div class="s6-kpis">';
+      html += '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (mini.winRate >= 50 ? 'green' : 'red') + '">' + mini.winRate.toFixed(0) + '%</div></div>';
+      html += '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + (mini.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(mini.avg,2) + '</div></div>';
+      html += '</div>';
+      el.innerHTML = html;
     }
 
     // ── 9. Trifecta Card ─────────────────────────────────────────
