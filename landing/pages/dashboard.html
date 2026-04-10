@@ -97,8 +97,7 @@
     .bento-drawdown{grid-column:span 6;min-height:300px}
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
-    .bento-stat{grid-column:span 3;min-height:180px}
-    .bento-stat-sm{grid-column:span 2;min-height:180px}
+    .bento-stat6{grid-column:span 2;min-height:180px}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
@@ -112,13 +111,11 @@
       .bento-drawdown{grid-column:span 12}
       .bento-month{grid-column:span 12}
       .bento-truepath{grid-column:span 12}
-      .bento-stat{grid-column:span 6}
-      .bento-stat-sm{grid-column:span 4}
+      .bento-stat6{grid-column:span 4}
     }
     @media (max-width:900px){
       .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12;min-height:180px}
-      .bento-stat{grid-column:span 6}
-      .bento-stat-sm{grid-column:span 6}
+      .bento-stat6{grid-column:span 6}
     }
     @media (max-width:768px){
       .bento{grid-template-columns:1fr}
@@ -158,6 +155,21 @@
     /* ── Wochentag/TDOM Headlines ── */
     .card-headline{font-size:1.375rem;font-weight:800;color:var(--text);margin-bottom:.15rem;font-family:var(--f-d)}
     .card-sub{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+
+    /* ── Stat6 Cards: einheitliche innere Struktur ── */
+    .stat6-body .s6-headline{font-size:1.2rem;font-weight:800;color:var(--text);font-family:var(--f-d);line-height:1.2;margin-bottom:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stat6-body .s6-sub{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem}
+    .stat6-body .s6-kpis{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+    .stat6-body .s6-kpis .kpi{padding:.45rem .55rem;min-width:0}
+    .stat6-body .s6-kpis .kpi-label{font-size:.6rem}
+    .stat6-body .s6-kpis .kpi-value{font-size:.9375rem}
+
+    /* ── Weekday Streak Mini-Blocks ── */
+    .wd-streak-row{display:flex;gap:3px;margin-top:.45rem}
+    .wd-streak-row .wd-blk{flex:1;text-align:center;padding:3px 0;border-radius:4px;font-size:.625rem;font-weight:700;letter-spacing:.02em;line-height:1.2}
+    .wd-blk.w{background:rgba(48,232,120,.2);color:var(--green);border:1px solid rgba(48,232,120,.25)}
+    .wd-blk.l{background:rgba(255,64,64,.2);color:var(--red);border:1px solid rgba(255,64,64,.25)}
+    .wd-blk.today{box-shadow:0 0 0 2px var(--accent);position:relative}
 
     /* ── Mini KPI-Row in Cards (nutzt globale .kpi Klasse) ── */
     .kpi-row-mini{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
@@ -289,34 +301,35 @@
           <div id="chart-truepath"></div>
         </div>
 
-        <!-- Historische Monatsperformance (3 cols) -->
-        <div class="bento-card bento-stat" id="card-month-perf">
+        <!-- 6 Stat-Cards: je 2 cols = 12 -->
+        <div class="bento-card bento-stat6" id="card-month-perf">
           <div class="ttl"><span class="ico">📅</span> Monatsperformance</div>
-          <div id="month-perf-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+          <div id="month-perf-content" class="stat6-body"></div>
         </div>
 
-        <!-- Two-Week Phase kompakt (3 cols) -->
-        <div class="bento-card bento-stat" id="card-twoweek">
+        <div class="bento-card bento-stat6" id="card-twoweek">
           <div class="ttl"><span class="ico">📊</span> 2-Wochen-Phase</div>
-          <div id="twoweek-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+          <div id="twoweek-content" class="stat6-body"></div>
         </div>
 
-        <!-- TDOM Heute (2 cols) -->
-        <div class="bento-card bento-stat-sm" id="card-tdom-today">
-          <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
-          <div id="tdom-today-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- TDOM Morgen (2 cols) -->
-        <div class="bento-card bento-stat-sm" id="card-tdom-tomorrow">
-          <div class="ttl"><span class="ico">⏭️</span> TDOM Morgen</div>
-          <div id="tdom-tomorrow-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- Wochentag + Streak (2 cols) -->
-        <div class="bento-card bento-stat-sm" id="card-weekday">
+        <div class="bento-card bento-stat6" id="card-weekday">
           <div class="ttl"><span class="ico">📆</span> Wochentag</div>
-          <div id="weekday-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+          <div id="weekday-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-tdom-today">
+          <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
+          <div id="tdom-today-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-overnight">
+          <div class="ttl"><span class="ico">🌙</span> Overnight</div>
+          <div id="overnight-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-tdom-tomorrow">
+          <div class="ttl"><span class="ico">⏭️</span> TDOM Morgen</div>
+          <div id="tdom-tomorrow-content" class="stat6-body"></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
@@ -352,7 +365,8 @@
             <li><b>Monatsperformance</b>: Historische Ø Rendite, Win-Rate, Best/Worst des aktuellen Monats über N Jahre.</li>
             <li><b>2-Wochen-Phase</b>: Aktuelle H1/H2-Phase im Monat mit Ø Return, Rang (1-24) und Status.</li>
             <li><b>TDOM Heute/Morgen</b>: Win-Rate und Ø Rendite an der heutigen/morgigen TDOM-Position über N Jahre.</li>
-            <li><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak des heutigen Wochentags.</li>
+            <li><b>Overnight</b>: Ø Overnight-Rendite (Close→Open) des aktuellen Wochentags vs. Intraday (Open→Close). Residual-Ansatz.</li>
+            <li><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak aller 5 Wochentage (Mo-Fr).</li>
             <li><b>Trifecta</b>: SCR + FFD + JanB Bedingungen für das aktuelle Jahr — auf den eingegebenen Ticker angewendet (Original-Konzept ist für Indizes).</li>
             <li><b>Risiko-Metriken</b>: Aktueller DD vs. historischer Ø Max DD, aktuelle 20d-Vola annualisiert + Perzentilrang.</li>
             <li><b>Strategien</b>: Alle 22 Plain Vanilla Strategien werden auf den Ticker angewendet. Gefiltert nach "nächstes Signal in den nächsten 30 Tagen". Aktuelle Streak (letzte W oder L in Folge) als Badge.</li>
@@ -1033,6 +1047,47 @@
         else break;
       }
       return { type: type, count: count };
+    }
+
+    // ── Overnight Performance (heute→morgen) aus OHLC ──
+    /** Berechnet Overnight-Stats fuer den aktuellen Wochentag (close→open+1).
+     *  Residual-Ansatz: overnight = total - intraday */
+    function calcOvernightStats(ohlcRows, yearsBack) {
+      if (!ohlcRows || ohlcRows.length < 50) return null;
+      var today = new Date();
+      var wd = today.getDay(); // 0=So..6=Sa
+      if (wd === 0 || wd === 6) return null; // Wochenende
+      var lastDate = new Date(ohlcRows[ohlcRows.length - 1].date);
+      var cutoff = new Date(lastDate);
+      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0, 10);
+
+      var onRets = [], idRets = [];
+      for (var i = 1; i < ohlcRows.length; i++) {
+        var r = ohlcRows[i], prev = ohlcRows[i - 1];
+        if (r.date < cutoffStr) continue;
+        var d = new Date(r.date);
+        if (d.getDay() !== wd) continue; // gleicher Wochentag
+        if (!prev.close || !r.open || !r.close || prev.close <= 0 || r.open <= 0) continue;
+        var total = (r.close / prev.close - 1) * 100;
+        var intraday = (r.close / r.open - 1) * 100;
+        var overnight = total - intraday; // Residual
+        onRets.push(overnight);
+        idRets.push(intraday);
+      }
+      if (onRets.length < 5) return null;
+      var onWins = onRets.filter(function(r) { return r > 0; }).length;
+      var wdName = WEEKDAYS_DE[wd];
+      var avgOn = mean(onRets), avgId = mean(idRets);
+      var ratio = Math.abs(avgId) > 0.0001 ? (avgOn / avgId).toFixed(1) + 'x' : '–';
+      return {
+        label: wdName + ' → ' + WEEKDAYS_DE[wd < 5 ? wd + 1 : 1],
+        avg: avgOn,
+        avgIntraday: avgId,
+        winRate: onWins / onRets.length * 100,
+        ratio: ratio,
+        n: onRets.length
+      };
     }
 
     // ── Strategie-Streak (aus trades-Liste die letzten N nach Vorzeichen) ──
@@ -1727,54 +1782,59 @@
       charts.truepath.render();
     }
 
-    // ── 7. Wochentag-Check Card (mit Streak) ──────────────────────
-    function renderWeekdayCard(stats, streak) {
+    // ── 7. Wochentag Card (mit 5 Streak-Blöcken Mo-Fr) ─────────
+    function renderWeekdayCard(stats, streak, allWdStreaks) {
       var el = document.getElementById('weekday-content');
       var today = new Date();
-      var wd = today.getDay(); wd = wd === 0 ? 6 : wd - 1;
+      var wd = today.getDay(); wd = wd === 0 ? 6 : wd - 1; // 0=Mo..4=Fr
       var wdName = WEEKDAYS_DE[wd === 6 ? 0 : wd + 1];
       if (wd > 4) {
-        el.innerHTML = '<div class="card-headline">' + wdName + '</div><div class="card-sub">Wochenende</div><p style="color:#a89878;font-size:.8125rem">Keine Trading-Statistik</p>';
+        el.innerHTML = '<div class="s6-headline">' + wdName + '</div><div class="s6-sub">Wochenende</div>';
         return;
       }
-      if (!stats) {
-        el.innerHTML = '<div class="card-headline">' + wdName + '</div><p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
-        return;
-      }
-      var winCls = stats.win_rate >= 50 ? 'green' : 'red';
-      var avgCls = stats.avg >= 0 ? 'green' : 'red';
-      // Streak badge
+      if (!stats) { el.innerHTML = '<div class="s6-headline">' + wdName + '</div>' + STAT6_EMPTY; return; }
+      // Streak badge inline
       var streakHtml = '';
       if (streak && streak.count > 0) {
         var sCls = streak.type === 'win' ? 'win' : 'loss';
-        streakHtml = ' <span class="streak-badge ' + sCls + '">' + streak.count + (streak.type === 'win' ? ' W' : ' L') + '</span>';
+        streakHtml = ' <span class="streak-badge ' + sCls + '" style="font-size:.65rem;vertical-align:middle">' + streak.count + (streak.type === 'win' ? ' W' : ' L') + '</span>';
       }
-      var html = '<div class="card-headline" style="font-size:1.25rem">' + wdName + streakHtml + '</div>';
-      html += '<div class="card-sub">' + stats.n + ' Beobachtungen</div>';
-      html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Ø Rendite</div><div class="kpi-value ' + avgCls + '">' + fmtPct(stats.avg,2) + '</div></div>' +
+      var html = '<div class="s6-headline">' + wdName + streakHtml + '</div>';
+      html += '<div class="s6-sub">' + stats.n + ' Beobachtungen</div>';
+      html += '<div class="s6-kpis">' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (stats.win_rate >= 50 ? 'green' : 'red') + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ø Rendite</div><div class="kpi-value ' + (stats.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(stats.avg,2) + '</div></div>' +
       '</div>';
+      // 5 Mini-Blocks Mo-Fr: aktuelle Streak jedes Wochentags
+      if (allWdStreaks) {
+        var WD_SHORT = ['Mo','Di','Mi','Do','Fr'];
+        html += '<div class="wd-streak-row">';
+        for (var i = 0; i < 5; i++) {
+          var s = allWdStreaks[i];
+          var cls = (!s || s.count === 0) ? 'w' : (s.type === 'win' ? 'w' : 'l');
+          var lbl = (!s || s.count === 0) ? '–' : s.count + (s.type === 'win' ? 'W' : 'L');
+          html += '<div class="wd-blk ' + cls + (i === wd ? ' today' : '') + '">' + WD_SHORT[i] + '<br>' + lbl + '</div>';
+        }
+        html += '</div>';
+      }
       el.innerHTML = html;
     }
 
-    // ── 8. TDOM-Mini Card (generisch fuer heute/morgen/uebermorgen) ──
+    // ── 8. TDOM-Mini Card (generisch fuer heute/morgen) ──
     function renderTdomMiniCard(elementId, dateLabel, mini) {
       var el = document.getElementById(elementId);
       if (!mini) {
-        el.innerHTML = '<div class="card-sub">' + dateLabel + '</div><div class="card-headline">–</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
+        el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
         return;
       }
-      var winCls = mini.winRate >= 50 ? 'green' : 'red';
-      var avgCls = mini.avg >= 0 ? 'green' : 'red';
-      var html = '<div class="card-sub">' + dateLabel + '</div>';
-      html += '<div class="card-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + '</div>';
-      html += '<div class="card-sub" style="margin-top:-.35rem;text-transform:none">' + mini.monthName + ' · ' + mini.n + 'J</div>';
-      html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + mini.winRate.toFixed(0) + '%</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + avgCls + '">' + fmtPct(mini.avg,2) + '</div></div>' +
-      '</div>';
-      el.innerHTML = html;
+      el.innerHTML = stat6(
+        'TDOM ' + mini.tdom + ' / ' + mini.maxTdom,
+        mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel,
+        [
+          ['Win-Rate', mini.winRate.toFixed(0)+'%', mini.winRate >= 50 ? 'green' : 'red'],
+          ['Ø Cum-Ret', fmtPct(mini.avg,2), mini.avg >= 0 ? 'green' : 'red']
+        ]
+      );
     }
 
     // ── 9. Trifecta Card ─────────────────────────────────────────
@@ -1853,56 +1913,61 @@
       el.innerHTML = html;
     }
 
+    // ── Stat6 Helper: einheitliches Card-Markup ──
+    function stat6(headline, sub, kpis) {
+      var html = '<div class="s6-headline">' + headline + '</div>';
+      html += '<div class="s6-sub">' + sub + '</div>';
+      html += '<div class="s6-kpis">';
+      for (var i = 0; i < kpis.length; i++) {
+        var k = kpis[i];
+        html += '<div class="kpi"><div class="kpi-label">' + k[0] + '</div><div class="kpi-value ' + (k[2]||'') + '">' + k[1] + '</div></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+    var STAT6_EMPTY = '<p style="color:#a89878;font-size:.8125rem;padding:.5rem 0">Nicht genug Daten</p>';
+
     // ── 6b. Monatsperformance Card ─────────────────────────────────
     function renderMonthlyPerfCard(mp) {
       var el = document.getElementById('month-perf-content');
-      if (!mp) {
-        el.innerHTML = '<p style="color:#a89878;font-size:.8125rem">Nicht genug Daten</p>';
-        return;
-      }
-      var avgCls = mp.avg >= 0 ? 'green' : 'red';
-      var winCls = mp.winRate >= 50 ? 'green' : 'red';
-      var html = '<div class="card-headline" style="font-size:1.25rem">' + mp.monthName + '</div>';
-      html += '<div class="card-sub">' + mp.n + ' Jahre historisch</div>';
-      html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(mp.avg, 2) + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + winCls + '">' + mp.winRate.toFixed(0) + '%</div></div>' +
-      '</div>';
-      html += '<div class="kpi-row-mini" style="margin-top:.35rem">' +
-        '<div class="kpi"><div class="kpi-label">Bester</div><div class="kpi-value green" style="font-size:.875rem">' + fmtPct(mp.best, 1) + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Schlechtester</div><div class="kpi-value red" style="font-size:.875rem">' + fmtPct(mp.worst, 1) + '</div></div>' +
-      '</div>';
-      el.innerHTML = html;
+      if (!mp) { el.innerHTML = STAT6_EMPTY; return; }
+      el.innerHTML = stat6(mp.monthName, mp.n + ' Jahre historisch', [
+        ['Ø Return', fmtPct(mp.avg,2), mp.avg >= 0 ? 'green' : 'red'],
+        ['Win-Rate', mp.winRate.toFixed(0)+'%', mp.winRate >= 50 ? 'green' : 'red'],
+        ['Bester', fmtPct(mp.best,1), 'green'],
+        ['Schlechtester', fmtPct(mp.worst,1), 'red']
+      ]);
     }
 
-    // ── 11b. Two-Week Phase Card (kompakt, nur Daten) ────────────
+    // ── 11b. Two-Week Phase Card (kompakt) ───────────────────────
     function renderTwoWeekPhase(tw) {
       var el = document.getElementById('twoweek-content');
-      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) {
-        el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten</p>';
-        return;
-      }
-      var cur = tw.current;
-      var avg = cur.avg;
+      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) { el.innerHTML = STAT6_EMPTY; return; }
+      var cur = tw.current, avg = cur.avg;
       var status, statusCls;
       if (avg >= 0.5) { status = 'Bullish'; statusCls = 'green'; }
       else if (avg <= -0.5) { status = 'Bearish'; statusCls = 'red'; }
       else { status = 'Neutral'; statusCls = 'gold'; }
-      var avgCls = avg >= 0 ? 'green' : 'red';
-      var rankLabel = tw.rank + ' / ' + tw.total;
       var rankCls = tw.rank <= 8 ? 'green' : (tw.rank >= 17 ? 'red' : 'gold');
+      el.innerHTML = stat6(cur.name, cur.n + 'J Daten', [
+        ['Ø Return', fmtPct(avg,2), avg >= 0 ? 'green' : 'red'],
+        ['Status', status, statusCls],
+        ['Rang', tw.rank + ' / ' + tw.total, rankCls],
+        ['Win-Rate', cur.winRate != null ? cur.winRate.toFixed(0)+'%' : '–', cur.winRate >= 50 ? 'green' : 'red']
+      ]);
+    }
 
-      var html = '<div class="card-headline" style="font-size:1.25rem">' + cur.name + '</div>';
-      html += '<div class="card-sub">' + cur.n + 'J Daten</div>';
-      html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">Ø Return</div><div class="kpi-value ' + avgCls + '">' + fmtPct(avg, 2) + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + statusCls + '">' + status + '</div></div>' +
-      '</div>';
-      html += '<div class="kpi-row-mini" style="margin-top:.35rem">' +
-        '<div class="kpi"><div class="kpi-label">Rang</div><div class="kpi-value ' + rankCls + '">' + rankLabel + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (cur.winRate >= 50 ? 'green' : 'red') + '">' + (cur.winRate != null ? cur.winRate.toFixed(0) + '%' : '–') + '</div></div>' +
-      '</div>';
-      el.innerHTML = html;
+    // ── Overnight Card ───────────────────────────────────────────
+    function renderOvernightCard(overnightStats) {
+      var el = document.getElementById('overnight-content');
+      if (!overnightStats) { el.innerHTML = STAT6_EMPTY; return; }
+      var o = overnightStats;
+      el.innerHTML = stat6(o.label, o.n + ' Beobachtungen', [
+        ['Ø Overnight', fmtPct(o.avg,3), o.avg >= 0 ? 'green' : 'red'],
+        ['Win-Rate', o.winRate.toFixed(0)+'%', o.winRate >= 50 ? 'green' : 'red'],
+        ['Ø Intraday', fmtPct(o.avgIntraday,3), o.avgIntraday >= 0 ? 'green' : 'red'],
+        ['ON/ID Ratio', o.ratio, 'gold']
+      ]);
     }
 
     // ── 12. Nächste Events Cards ─────────────────────────────────
@@ -2040,11 +2105,13 @@
       // 6. TruePath
       renderTruePathChart(yearData, truepath, currentYear, currentTicker);
 
-      // 7. Wochentag + Streak
+      // 7. Wochentag + Streak (alle 5 Wochentage)
       var todayWd = new Date().getDay(); todayWd = todayWd === 0 ? 6 : todayWd - 1;
       var wdStats = todayWd <= 4 ? calcWeekdayStatsSingle(filteredRows, todayWd, yearsBack) : null;
       var wdStreak = todayWd <= 4 ? calcWeekdayStreak(filteredRows, todayWd) : null;
-      renderWeekdayCard(wdStats, wdStreak);
+      var allWdStreaks = [];
+      for (var wi = 0; wi < 5; wi++) allWdStreaks.push(calcWeekdayStreak(filteredRows, wi));
+      renderWeekdayCard(wdStats, wdStreak, allWdStreaks);
 
       // 9. Trifecta
       try {
@@ -2056,6 +2123,22 @@
       var riskKpis = computeRiskKpis(filteredRows, yearData);
       var volaStats = currentVolaStats(filteredRows, 20);
       renderRiskKpis(riskKpis, volaStats);
+
+      // 10b. Overnight (separater OHLC-Fetch, lazy)
+      (function() {
+        var wd = new Date().getDay();
+        if (wd === 0 || wd === 6) { renderOvernightCard(null); return; }
+        var oStart = new Date(); oStart.setFullYear(oStart.getFullYear() - yearsBack);
+        var oFilter = '&date=gte.' + oStart.toISOString().substring(0,10);
+        var q = 'ticker=eq.' + encodeURIComponent(currentTicker) + '&select=date,open,close&order=date' + oFilter;
+        fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
+        }).then(function(r){ return r.json(); }).then(function(ohlc){
+          ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
+          var onStats = calcOvernightStats(ohlc, yearsBack);
+          renderOvernightCard(onStats);
+        }).catch(function(e){ console.warn('Overnight:', e); renderOvernightCard(null); });
+      })();
 
       // 11. Strategien (lazy via setTimeout — teuerster Block)
       setTimeout(function() {
