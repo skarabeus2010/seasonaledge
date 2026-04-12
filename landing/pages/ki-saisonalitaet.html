@@ -266,10 +266,26 @@
       <!-- ML-Sektionen (aus Supabase ml_forecasts) -->
       <details id="sec-chronos" style="display:none">
         <summary>📈 Probabilistischer Forecast (Chronos-Bolt)</summary>
-        <div class="content">
-          <div id="chronos-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+        <div class="content" style="position:relative">
+          <!-- Info-Badge -->
+          <div class="info-badge" tabindex="0">i</div>
+          <div class="info-tooltip">
+            <b>Was zeigt dieser Chart?</b><br>
+            Die <b style="color:#e8a820">goldene Linie</b> ist die wahrscheinlichste Kursentwicklung der nächsten 30 Handelstage, berechnet vom KI-Modell Chronos-Bolt (Amazon, 9M Parameter).<br><br>
+            Das <b style="color:rgba(232,168,32,.5)">Konfidenzband</b> (gestrichelt) zeigt die Unsicherheit: 90% aller Szenarien liegen innerhalb dieser Grenzen. Je breiter das Band, desto unsicherer die Prognose.<br><br>
+            <b>KPIs erklärt:</b><br>
+            • <b>Erwartete Rendite</b>: Prognostizierte Kursänderung in 30 Tagen<br>
+            • <b>P(positiv)</b>: In wie viel % der 100 Simulationen der Kurs steigt<br>
+            • <b>Konfidenzbreite</b>: Spread zwischen 5. und 95. Perzentil am Tag 30 (in Preiseinheiten)<br><br>
+            <span style="color:var(--muted);font-size:.65rem">Modell: Amazon Chronos-Bolt-Tiny, zero-shot, 100 Samples. Kein Fine-Tuning.</span>
+          </div>
+          <div id="chronos-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem"></div>
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem">
+            <label style="font-size:.75rem;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:.35rem">
+              <input type="checkbox" id="chk-chronos-band" checked style="accent-color:#e8a820"> Konfidenzband anzeigen
+            </label>
+          </div>
           <div id="chart-chronos"></div>
-          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">30-Tage-Prognose via Amazon Chronos-Bolt-Tiny (9M Parameter). Konfidenzband: 5.–95. Perzentil aus 100 Samples.</p>
         </div>
       </details>
 
@@ -816,7 +832,9 @@
       }).catch(function(e){ console.warn('ML forecasts:', e); });
     }
 
+    var _chronosData = null;
     function renderChronosSection(data) {
+      _chronosData = data;
       document.getElementById('sec-chronos').style.display = '';
       // KPIs
       var retCol = data.expected_return >= 0 ? 'green' : 'red';
@@ -824,31 +842,72 @@
       var spread = data.forecast && data.forecast.length ? (data.forecast[data.forecast.length-1].yhat_upper - data.forecast[data.forecast.length-1].yhat_lower).toFixed(1) : '–';
       document.getElementById('chronos-kpis').innerHTML =
         kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
-        kpiHtml('Wahrscheinlichkeit positiv', data.p_positive+'%', probCol) +
-        kpiHtml('Konfidenzbreite', spread, 'gold');
-      // Chart
+        kpiHtml('P(positiv)', data.p_positive+'%', probCol) +
+        kpiHtml('Konfidenzbreite', spread + ' Punkte', 'gold');
+      renderChronosChart(data, document.getElementById('chk-chronos-band').checked);
+    }
+
+    function renderChronosChart(data, showBand) {
       if (!data.forecast || !data.forecast.length) return;
-      var cats = data.forecast.map(function(f){return f.ds;});
-      var yhat = data.forecast.map(function(f){return f.yhat;});
-      var lo = data.forecast.map(function(f){return f.yhat_lower;});
-      var hi = data.forecast.map(function(f){return f.yhat_upper;});
-      var c = new ApexCharts(document.getElementById('chart-chronos'), {
-        series: [
-          {name:'Prognose', data:yhat, type:'line'},
-          {name:'5. Perzentil', data:lo, type:'line'},
-          {name:'95. Perzentil', data:hi, type:'line'}
-        ],
-        chart: Object.assign({type:'line', height:300}, SA.chartTheme.chart),
-        stroke:{width:[3,1,1], dashArray:[0,5,5], curve:'smooth'},
-        colors:['#e8a820','rgba(232,168,32,.3)','rgba(232,168,32,.3)'],
-        fill:{type:['solid','none','none'], opacity:[1,.15,.15]},
+      // Letzten echten Close als Startpunkt einfügen
+      var lastClose = data.last_close;
+      var fc = data.forecast;
+
+      // Serien: Prognose + Range-Area für gefülltes Band
+      var cats = fc.map(function(f){ return f.ds.substring(5); }); // MM-DD Format
+      var yhat = fc.map(function(f){ return parseFloat(f.yhat.toFixed(2)); });
+
+      var series = [{name:'Prognose (Median)', data:yhat, type:'line'}];
+      var colors = ['#e8a820'];
+      var strokes = [3];
+      var dashes = [0];
+
+      if (showBand) {
+        // Range-Area: [lower, upper] pro Punkt
+        var rangeData = fc.map(function(f){ return [parseFloat(f.yhat_lower.toFixed(2)), parseFloat(f.yhat_upper.toFixed(2))]; });
+        series.push({name:'90% Konfidenzband', data:rangeData, type:'rangeArea'});
+        colors.push('rgba(232,168,32,.15)');
+        strokes.push(0);
+        dashes.push(0);
+      }
+
+      // We-are-here: Tag 0 = heute
+      var todayAnnotation = {
+        x: cats[0],
+        borderColor: '#e8a820',
+        strokeDashArray: 0,
+        label: {text: 'Heute', style: {color:'#fff', background:'#e8a820', fontSize:'10px', padding:{left:6,right:6,top:2,bottom:2}}}
+      };
+
+      // Letzter-Close Linie
+      var lastCloseAnnotation = {
+        y: lastClose,
+        borderColor: 'rgba(255,255,255,.2)',
+        strokeDashArray: 4,
+        label: {text: 'Letzter Close: ' + lastClose.toFixed(2), position:'front', style:{color:'#a89878',background:'transparent',fontSize:'9px'}}
+      };
+
+      // Alten Chart zerstören
+      var container = document.getElementById('chart-chronos');
+      container.innerHTML = '';
+
+      var c = new ApexCharts(container, {
+        series: series,
+        chart: Object.assign({type:'rangeArea', height:400}, SA.chartTheme.chart),
+        stroke:{width:strokes, dashArray:dashes, curve:'smooth'},
+        colors:colors,
+        fill:{opacity: showBand ? [1, 0.12] : [1]},
         dataLabels:{enabled:false},
         grid: SA.chartTheme.grid,
-        xaxis:{categories:cats, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, rotateAlways:true, hideOverlappingLabels:true, maxHeight:60},tickAmount:8},
+        annotations:{xaxis:[todayAnnotation], yaxis:[lastCloseAnnotation]},
+        xaxis:{categories:cats, labels:{style:{colors:'#e2e8f0',fontSize:'10px'}, rotate:-45, hideOverlappingLabels:true},tickAmount:10},
         yaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
-        markers:{size:0,hover:{size:4}},
-        legend:{show:false}
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,y:{formatter:function(v){
+          if (Array.isArray(v)) return v[0].toFixed(2)+' – '+v[1].toFixed(2);
+          return v?v.toFixed(2):'–';
+        }}}),
+        markers:{size:0,hover:{size:5}},
+        legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:12}}
       });
       c.render(); mlCharts.push(c);
     }
@@ -1038,6 +1097,11 @@
     }
     ['chk-current','chk-truepath','chk-matches'].forEach(function(id) {
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    });
+
+    // Chronos Konfidenzband Toggle
+    document.getElementById('chk-chronos-band').addEventListener('change', function(){
+      if (_chronosData) renderChronosChart(_chronosData, this.checked);
     });
 
     // Auto-Load
