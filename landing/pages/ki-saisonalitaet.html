@@ -291,24 +291,43 @@
 
       <details id="sec-mstl" style="display:none">
         <summary>🔬 Saisonale Dekomposition (MSTL)</summary>
-        <div class="content">
-          <p style="font-size:.8rem;color:var(--dim);margin-bottom:.75rem;line-height:1.6">
-            Die MSTL-Zerlegung zerlegt den Kursverlauf in <b>Trend</b> (langfristige Richtung) und <b>Saisonalität</b> (wiederkehrendes Jahresmuster).
-            Die <b>Saisonale Stärke</b> zeigt, wie viel der Kursbewegung durch das saisonale Muster erklärt wird — je höher, desto zuverlässiger ist die Saisonalität für diesen Ticker.
-          </p>
+        <div class="content" style="position:relative">
+          <div class="info-badge" tabindex="0">i</div>
+          <div class="info-tooltip">
+            <b>Was zeigt dieser Chart?</b><br>
+            Die MSTL-Zerlegung isoliert das <b style="color:#e8a820">wiederkehrende Jahresmuster</b> aus dem Kursverlauf, indem Trend und Rauschen entfernt werden.<br><br>
+            <b>Wie liest man den Chart?</b><br>
+            • <b>Über der Nulllinie</b>: Kurs ist saisonal <span style="color:#34d399">stärker als der Trend</span> (typisch bullische Phase)<br>
+            • <b>Unter der Nulllinie</b>: Kurs ist saisonal <span style="color:#f87171">schwächer als der Trend</span> (typisch bearische Phase)<br><br>
+            <b>KPIs erklärt:</b><br>
+            • <b>Saisonale Stärke</b>: Wie viel % der Gesamtbewegung durch das Jahresmuster erklärt wird. &gt;10% = stark saisonal, &lt;3% = kaum saisonal<br>
+            • <b>Bewertung</b>: Stark/Mäßig/Schwach basierend auf der Stärke<br><br>
+            <span style="color:var(--muted);font-size:.65rem">Methode: MSTL (Multiple Seasonal-Trend via LOESS), Periode 252 Handelstage.</span>
+          </div>
           <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
           <div id="chart-mstl-yearly"></div>
-          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">MSTL (Multiple Seasonal-Trend via LOESS): Isoliert das 252-Handelstage Jahresmuster aus dem Kursverlauf. Positive Werte = Kurs über Trend, negative = unter Trend.</p>
         </div>
       </details>
 
       <details id="sec-neuralprophet" style="display:none">
         <summary>🧠 Saisonalitäts-Komponenten (NeuralProphet)</summary>
-        <div class="content">
+        <div class="content" style="position:relative">
+          <div class="info-badge" tabindex="0">i</div>
+          <div class="info-tooltip">
+            <b>Was zeigt dieser Chart?</b><br>
+            NeuralProphet ist ein <b>KI-Modell</b> (PyTorch) das eigenständig lernt, welche saisonalen Muster im Kursverlauf existieren.<br><br>
+            <b>Jahres-Saisonalität</b> (oberer Chart):<br>
+            Zeigt das gelernte 12-Monats-Muster. Peaks = saisonal starke Phasen, Täler = schwache Phasen. Vergleiche mit dem statistischen Ø auf dem Hauptchart oben.<br><br>
+            <b>Wochen-Saisonalität</b> (unterer Chart):<br>
+            Zeigt ob bestimmte Wochentage systematisch stärker/schwächer sind. <span style="color:#34d399">Grün</span> = überdurchschnittlich, <span style="color:#f87171">Rot</span> = unterdurchschnittlich.<br><br>
+            <b>KPIs erklärt:</b><br>
+            • <b>Erwartete Rendite 30d</b>: NeuralProphet-Prognose für die nächsten 30 Tage<br>
+            • <b>Letzter Close</b>: Referenzkurs für die Prognose<br><br>
+            <span style="color:var(--muted);font-size:.65rem">Modell: NeuralProphet (Meta/Facebook), 50 Epochen, PyTorch-basiert.</span>
+          </div>
           <div id="np-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
           <div id="chart-np-yearly"></div>
-          <div id="chart-np-weekly" style="margin-top:.5rem"></div>
-          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">NeuralProphet (PyTorch): Gelernte Jahres- und Wochen-Saisonalität. Zeigt ob das saisonale Muster aus ML-Sicht robust ist.</p>
+          <div id="chart-np-weekly" style="margin-top:1rem"></div>
         </div>
       </details>
 
@@ -927,23 +946,27 @@
         kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '% der Varianz', strengthCol) +
         kpiHtml('Bewertung', verdict, strengthCol);
 
-      // Nur Jahres-Saisonalität Chart (Wochen+Trend weglassen — kein Mehrwert bei Daily Close)
+      // Nur Jahres-Saisonalität Chart
       if (!data.seasonal_yearly) return;
       var dates = data.dates || [];
       var vals = data.seasonal_yearly;
 
-      // Positive/negative Bereiche farblich unterscheiden
+      // Dynamische Y-Achse: eng um Daten
+      var mstlMin = Math.min.apply(null, vals.filter(function(v){return v!=null&&isFinite(v);}));
+      var mstlMax = Math.max.apply(null, vals.filter(function(v){return v!=null&&isFinite(v);}));
+      var mstlPad = (mstlMax - mstlMin) * 0.15;
+
       var c1 = new ApexCharts(document.getElementById('chart-mstl-yearly'), {
         series:[{name:'Saisonale Komponente', data:vals}],
-        chart:Object.assign({type:'area', height:220}, SA.chartTheme.chart),
-        stroke:{width:2, curve:'smooth'},
+        chart:Object.assign({type:'area', height:350}, SA.chartTheme.chart),
+        stroke:{width:2.5, curve:'smooth'},
         colors:['#e8a820'],
         fill:{type:'gradient', gradient:{opacityFrom:.25,opacityTo:.02}},
         dataLabels:{enabled:false},
         grid:SA.chartTheme.grid,
-        annotations:{yaxis:[{y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3}]},
+        annotations:{yaxis:[{y:0, borderColor:'rgba(255,255,255,.25)', strokeDashArray:3, label:{text:'Trend-Niveau',position:'front',style:{color:'#a89878',background:'transparent',fontSize:'9px'}}}]},
         xaxis:{categories:dates, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
-        yaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';}}, title:{text:'Abweichung vom Trend',style:{color:'#a89878',fontSize:'10px'}}},
+        yaxis:{min:Math.floor(mstlMin-mstlPad), max:Math.ceil(mstlMax+mstlPad), labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';}}, title:{text:'Abweichung vom Trend',style:{color:'#a89878',fontSize:'10px'}}},
         title:{text:'Isoliertes Jahresmuster (252 Handelstage)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
         tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2)+' (über/unter Trend)':'–';}}}),
         markers:{size:0,hover:{size:4}}
@@ -962,17 +985,21 @@
       if (data.yearly_seasonality && data.yearly_seasonality.length) {
         var yCats = data.yearly_seasonality.map(function(p){return p.ds;});
         var yVals = data.yearly_seasonality.map(function(p){return p.value;});
+        // Dynamische Y-Achse
+        var npYMin = Math.min.apply(null, yVals), npYMax = Math.max.apply(null, yVals);
+        var npYPad = (npYMax - npYMin) * 0.15;
         var c1 = new ApexCharts(document.getElementById('chart-np-yearly'), {
           series:[{name:'Jahres-Saisonalität',data:yVals}],
-          chart:Object.assign({type:'area',height:200},SA.chartTheme.chart),
-          stroke:{width:2,curve:'smooth'},colors:['#e8a820'],
-          fill:{type:'gradient',gradient:{opacityFrom:.3,opacityTo:.05}},
+          chart:Object.assign({type:'area',height:350},SA.chartTheme.chart),
+          stroke:{width:2.5,curve:'smooth'},colors:['#e8a820'],
+          fill:{type:'gradient',gradient:{opacityFrom:.25,opacityTo:.03}},
           grid:SA.chartTheme.grid,
           dataLabels:{enabled:false},
+          annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]},
           xaxis:{categories:yCats,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,hideOverlappingLabels:true},tickAmount:12},
-          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(2):'';}}},
+          yaxis:{min:Math.floor(npYMin-npYPad),max:Math.ceil(npYMax+npYPad),labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v!=null?v.toFixed(1):'';}}},
           title:{text:'Gelernte Jahres-Saisonalität',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip),
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true}}),
           markers:{size:0,hover:{size:4}}
         });
         c1.render(); mlCharts.push(c1);
@@ -991,7 +1018,7 @@
         var barColors = wVals.map(function(v){ return v >= 0 ? '#34d399' : '#f87171'; });
         var c2 = new ApexCharts(document.getElementById('chart-np-weekly'), {
           series:[{name:'Wochen-Saisonalität',data:wVals}],
-          chart:Object.assign({type:'bar',height:180},SA.chartTheme.chart),
+          chart:Object.assign({type:'bar',height:250},SA.chartTheme.chart),
           stroke:{width:0},
           colors:['#60a5fa'],
           plotOptions:{bar:{borderRadius:6,columnWidth:'55%',colors:{ranges:[{from:-999,to:-0.0001,color:'#f87171'},{from:0,to:999,color:'#34d399'}]}}},
