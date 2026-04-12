@@ -490,12 +490,18 @@
       return {tdoms:monthRows.map(function(r){return r.tdom;}),curve:cum};
     }
 
-    /** Streak fuer eine bestimmte TDOM-Position (aus allCurves) */
+    /** Streak fuer eine bestimmte TDOM-Position (aus allCurves).
+     *  Nutzt die TAGES-Rendite (Differenz zum Vortag), nicht die kumulierte Rendite. */
     function calcTdomPositionStreak(allCurves, tdom) {
       var vals = [];
       for (var i = 0; i < allCurves.length; i++) {
         var idx = allCurves[i].tdoms.indexOf(tdom);
-        if (idx >= 0) vals.push({ year: allCurves[i].year, val: allCurves[i].curve[idx] });
+        if (idx >= 0) {
+          var cumVal = allCurves[i].curve[idx];
+          var prevVal = idx > 0 ? allCurves[i].curve[idx - 1] : 0;
+          var dayReturn = cumVal - prevVal; // Tagesrendite, nicht kumuliert
+          vals.push({ year: allCurves[i].year, val: dayReturn });
+        }
       }
       vals.sort(function(a,b){ return b.year - a.year; });
       if (!vals.length) return { type: 'none', count: 0 };
