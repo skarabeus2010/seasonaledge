@@ -562,26 +562,28 @@ Bei Fehlern:
 - [x] **2026-04-12** fix: Wochentage `toISOString()` Timezone-Bug (MESZ→UTC verschluckte Freitag)
 
 ### ⚠️ OFFEN — ML-Pipeline (Chronos + MSTL + NeuralProphet)
-**Stand 2026-04-12**: Script + DB + Cron fertig, lokal getestet. Server-Upgrade nötig.
+**Stand 2026-04-12**: Backend + Frontend + Server live. Erster SPY-Testlauf OK (11s). Full-Run 270 Ticker läuft/gelaufen.
 
-- [x] `scripts/compute_ml_forecasts.py` geschrieben + lokal mit SPY getestet (alle 3 Modelle OK)
-- [x] Supabase-Tabelle `ml_forecasts` angelegt (SQL in `scripts/create_ml_forecasts.sql`)
+- [x] `scripts/compute_ml_forecasts.py` geschrieben + lokal getestet + auf Server getestet (SPY: 11s, alle 3 OK)
+- [x] Supabase-Tabelle `ml_forecasts` angelegt + RLS + anon write Policy
 - [x] GitHub Actions Workflow `.github/workflows/ml_forecasts.yml` (täglich Mo-Fr 21:30 UTC)
-- [ ] **Server-Upgrade Hetzner CPX22 → CPX32** (4→8 GB RAM, nötig für PyTorch ~2GB)
-- [ ] **Docker: PyTorch + Chronos + NeuralProphet in requirements.txt** eintragen:
-  ```
-  torch>=2.0 --index-url https://download.pytorch.org/whl/cpu
-  chronos-forecasting
-  neuralprophet
-  ```
-- [ ] **Docker-Image rebuilden** nach requirements.txt-Änderung (`docker compose up -d --build`)
-- [ ] **Erster Testlauf auf Server**: `docker exec seasonalpha-app python3 scripts/compute_ml_forecasts.py --ticker SPY`
-- [ ] **Frontend: KI-Saisonalität** — 3 neue Sektionen (Chronos-Chart, MSTL-Dekomposition, NP-Komponenten)
+- [x] **Server-Upgrade Hetzner CPX22 → CPX32** (8 GB RAM) — erledigt 2026-04-12
+- [x] **Docker: PyTorch CPU + Chronos + NeuralProphet** in requirements.txt + Dockerfile
+- [x] **Erster Testlauf auf Server**: SPY alle 3 Modelle OK (Chronos 5.8s, MSTL 0.4s, NP 3.7s)
+- [x] **Frontend: KI-Saisonalität** — 3 Sektionen komplett:
+  - Chronos: Historisch+Forecast+3 Szenarien (Optim/Baseline/Pessim), Band-Toggle, Forecast-Tabelle, Info-Badge
+  - MSTL: Saisonalität+Residual Dropdown, Monats-Heatmap, We-are-here, Info-Badge
+  - NeuralProphet: Jahres-Saisonalität, Wochen-Bars (Mo-Fr/Mo-So Crypto), Forecast vs Naiv, 4 Fehler-KPIs, Info-Badge
+- [x] **Frontend: Dashboard** — KI-Forecast Bento-Card (Mini-Chart + 2 KPIs, hidden wenn keine Daten)
+- [x] **Frontend: Scanner** — 2 neue Spalten (Forecast, Sais. Stärke), async nachgeladen, sortierbar
+- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Debug-Log eingebaut, Container vorhanden, Daten OK. Vermutlich ApexCharts Rendering-Timing in `<details>`
+- [ ] **Full-Run alle 270 Ticker** mit erweitertem Backend (5 Quantile + History + NP Metrics) — alter Run hatte nur 3 Quantile
+- [ ] **Daily Cron ml_forecasts.yml prüfen** — erster automatischer Lauf Mo 21:30 UTC
 - [ ] **Frontend: KI-Score auf 5 Sub-Scores** erweitern (+ MSTL Saisonale Stärke)
-- [ ] **Frontend: Dashboard** — KI-Forecast Bento-Card + Radar 5 Achsen
-- [ ] **Frontend: Scanner** — 2 neue Spalten (Forecast, Saisonale Stärke)
+- [ ] **Frontend: Dashboard Radar** 5 Achsen
 - [ ] **Frontend: Watchlist** — Forecast-KPI in Compact-Cards
 - [ ] **Frontend: Newsletter** — Top-5 Forecast Sektion
+- [ ] `datetime.utcnow()` Deprecation Warning fixen
 
 **Plan-Datei**: `.claude/plans/curried-floating-treasure.md`
 
