@@ -263,6 +263,37 @@
         </div>
       </details>
 
+      <!-- ML-Sektionen (aus Supabase ml_forecasts) -->
+      <details id="sec-chronos" style="display:none">
+        <summary>📈 Probabilistischer Forecast (Chronos-Bolt)</summary>
+        <div class="content">
+          <div id="chronos-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+          <div id="chart-chronos"></div>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">30-Tage-Prognose via Amazon Chronos-Bolt-Tiny (9M Parameter). Konfidenzband: 5.–95. Perzentil aus 100 Samples.</p>
+        </div>
+      </details>
+
+      <details id="sec-mstl" style="display:none">
+        <summary>🔬 Saisonale Dekomposition (MSTL)</summary>
+        <div class="content">
+          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+          <div id="chart-mstl-yearly"></div>
+          <div id="chart-mstl-weekly" style="margin-top:.5rem"></div>
+          <div id="chart-mstl-trend" style="margin-top:.5rem"></div>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">MSTL-Zerlegung (Multiple Seasonal-Trend via LOESS): Trend + 5d-Wochen-Zyklus + 252d-Jahres-Zyklus + Residual.</p>
+        </div>
+      </details>
+
+      <details id="sec-neuralprophet" style="display:none">
+        <summary>🧠 Saisonalitäts-Komponenten (NeuralProphet)</summary>
+        <div class="content">
+          <div id="np-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
+          <div id="chart-np-yearly"></div>
+          <div id="chart-np-weekly" style="margin-top:.5rem"></div>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">NeuralProphet (PyTorch): Gelernte Jahres- und Wochen-Saisonalität. Zeigt ob das saisonale Muster aus ML-Sicht robust ist.</p>
+        </div>
+      </details>
+
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -324,6 +355,7 @@
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function destroyAll() {
       ['radar','truepath'].forEach(function(k){ if(charts[k]){ try{charts[k].destroy();}catch(e){} charts[k]=null; } });
+      destroyMLCharts();
     }
 
     // ── Statistik-Helpers ────────────────────────────────────────────────────
@@ -754,6 +786,153 @@
     }
 
     // ── Haupt-Logik ──────────────────────────────────────────────────────────
+    // ── ML Forecasts (aus Supabase ml_forecasts) ──────────────────────
+    var mlCharts = [];
+    function destroyMLCharts() { mlCharts.forEach(function(c){ try{c.destroy();}catch(e){} }); mlCharts=[]; }
+
+    function kpiHtml(label, value, cls) {
+      return '<div class="kpi"><div class="kpi-label">'+label+'</div><div class="kpi-value '+(cls||'')+'">'+value+'</div></div>';
+    }
+
+    function fetchMLForecasts(ticker) {
+      if (!SA.supabase || !SA.supabase.url) return;
+      destroyMLCharts();
+      // Hide sections initially
+      ['sec-chronos','sec-mstl','sec-neuralprophet'].forEach(function(id){
+        document.getElementById(id).style.display='none';
+      });
+      var q = 'ticker=eq.'+encodeURIComponent(ticker)+'&select=model,data,computed_at';
+      fetch(SA.supabase.url+'/rest/v1/ml_forecasts?'+q, {
+        headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}
+      }).then(function(r){return r.json();}).then(function(rows){
+        if (!rows || !rows.length) return;
+        var byModel = {};
+        rows.forEach(function(r){ byModel[r.model] = r.data; });
+        if (byModel.chronos) renderChronosSection(byModel.chronos);
+        if (byModel.mstl) renderMSTLSection(byModel.mstl);
+        if (byModel.neuralprophet) renderNPSection(byModel.neuralprophet);
+      }).catch(function(e){ console.warn('ML forecasts:', e); });
+    }
+
+    function renderChronosSection(data) {
+      document.getElementById('sec-chronos').style.display = '';
+      // KPIs
+      var retCol = data.expected_return >= 0 ? 'green' : 'red';
+      var probCol = data.p_positive >= 60 ? 'green' : data.p_positive <= 40 ? 'red' : 'gold';
+      var spread = data.forecast && data.forecast.length ? (data.forecast[data.forecast.length-1].yhat_upper - data.forecast[data.forecast.length-1].yhat_lower).toFixed(1) : '–';
+      document.getElementById('chronos-kpis').innerHTML =
+        kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
+        kpiHtml('Wahrscheinlichkeit positiv', data.p_positive+'%', probCol) +
+        kpiHtml('Konfidenzbreite', spread, 'gold');
+      // Chart
+      if (!data.forecast || !data.forecast.length) return;
+      var cats = data.forecast.map(function(f){return f.ds;});
+      var yhat = data.forecast.map(function(f){return f.yhat;});
+      var lo = data.forecast.map(function(f){return f.yhat_lower;});
+      var hi = data.forecast.map(function(f){return f.yhat_upper;});
+      var c = new ApexCharts(document.getElementById('chart-chronos'), {
+        series: [
+          {name:'Prognose', data:yhat, type:'line'},
+          {name:'5. Perzentil', data:lo, type:'line'},
+          {name:'95. Perzentil', data:hi, type:'line'}
+        ],
+        chart: Object.assign({type:'line', height:300}, SA.chartTheme.chart),
+        stroke:{width:[3,1,1], dashArray:[0,5,5], curve:'smooth'},
+        colors:['#e8a820','rgba(232,168,32,.3)','rgba(232,168,32,.3)'],
+        fill:{type:['solid','none','none'], opacity:[1,.15,.15]},
+        grid: SA.chartTheme.grid,
+        xaxis:{categories:cats, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, rotateAlways:true, hideOverlappingLabels:true, maxHeight:60},tickAmount:8},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
+        markers:{size:0,hover:{size:4}},
+        legend:{show:false}
+      });
+      c.render(); mlCharts.push(c);
+    }
+
+    function renderMSTLSection(data) {
+      document.getElementById('sec-mstl').style.display = '';
+      // KPIs
+      document.getElementById('mstl-kpis').innerHTML =
+        kpiHtml('Jahres-Saisonalität', data.strength_yearly+'%', data.strength_yearly>5?'green':'gold') +
+        kpiHtml('Wochen-Zyklus', data.strength_weekly+'%', 'gold') +
+        kpiHtml('Trend-Anteil', data.strength_trend+'%', 'gold');
+      // Charts — 3 Subplots
+      var dates = data.dates || [];
+      var cats = dates.map(function(d){return d;});
+      var chartCfg = function(title, vals, color, height) {
+        return {
+          series:[{name:title, data:vals}],
+          chart:Object.assign({type:'area', height:height||160, group:'mstl-sync'}, SA.chartTheme.chart),
+          stroke:{width:1.5, curve:'smooth'},
+          colors:[color],
+          fill:{type:'gradient', gradient:{opacityFrom:.3,opacityTo:.05}},
+          grid:SA.chartTheme.grid,
+          xaxis:{categories:cats, labels:{show:false}, axisBorder:{show:false}},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'}, formatter:function(v){return v?v.toFixed(1):'';}}},
+          title:{text:title, style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true}}),
+          markers:{size:0}
+        };
+      };
+      if (data.seasonal_yearly) {
+        var c1 = new ApexCharts(document.getElementById('chart-mstl-yearly'), chartCfg('Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 160));
+        c1.render(); mlCharts.push(c1);
+      }
+      if (data.seasonal_weekly) {
+        var c2 = new ApexCharts(document.getElementById('chart-mstl-weekly'), chartCfg('Wochen-Zyklus (5d)', data.seasonal_weekly, '#60a5fa', 120));
+        c2.render(); mlCharts.push(c2);
+      }
+      if (data.trend) {
+        var c3 = new ApexCharts(document.getElementById('chart-mstl-trend'), chartCfg('Trend', data.trend, '#34d399', 140));
+        c3.render(); mlCharts.push(c3);
+      }
+    }
+
+    function renderNPSection(data) {
+      document.getElementById('sec-neuralprophet').style.display = '';
+      // KPIs
+      var retCol = data.expected_return >= 0 ? 'green' : 'red';
+      document.getElementById('np-kpis').innerHTML =
+        kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
+        kpiHtml('Letzter Close', data.last_close, 'gold');
+      // Yearly seasonality chart
+      if (data.yearly_seasonality && data.yearly_seasonality.length) {
+        var yCats = data.yearly_seasonality.map(function(p){return p.ds;});
+        var yVals = data.yearly_seasonality.map(function(p){return p.value;});
+        var c1 = new ApexCharts(document.getElementById('chart-np-yearly'), {
+          series:[{name:'Jahres-Saisonalität',data:yVals}],
+          chart:Object.assign({type:'area',height:200},SA.chartTheme.chart),
+          stroke:{width:2,curve:'smooth'},colors:['#e8a820'],
+          fill:{type:'gradient',gradient:{opacityFrom:.3,opacityTo:.05}},
+          grid:SA.chartTheme.grid,
+          xaxis:{categories:yCats,labels:{show:false}},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v?v.toFixed(2):'';}}},
+          title:{text:'Gelernte Jahres-Saisonalität',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip),
+          markers:{size:0,hover:{size:4}}
+        });
+        c1.render(); mlCharts.push(c1);
+      }
+      // Weekly seasonality chart
+      if (data.weekly_seasonality && data.weekly_seasonality.length) {
+        var wCats = data.weekly_seasonality.map(function(p){return p.ds;});
+        var wVals = data.weekly_seasonality.map(function(p){return p.value;});
+        var c2 = new ApexCharts(document.getElementById('chart-np-weekly'), {
+          series:[{name:'Wochen-Saisonalität',data:wVals}],
+          chart:Object.assign({type:'bar',height:160},SA.chartTheme.chart),
+          stroke:{width:0},colors:['#60a5fa'],
+          plotOptions:{bar:{borderRadius:3,columnWidth:'60%'}},
+          grid:SA.chartTheme.grid,
+          xaxis:{categories:wCats,labels:{show:false}},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v?v.toFixed(3):'';}}},
+          title:{text:'Gelernte Wochen-Saisonalität',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip),
+        });
+        c2.render(); mlCharts.push(c2);
+      }
+    }
+
     function rerender() {
       if (!_cachedRows) return;
       var method    = document.querySelector('input[name="method"]:checked').value;
@@ -786,6 +965,8 @@
       renderRadar(ki);
       renderTruePathChart(yearData, avg, truepath, matches, currentYear, projection, smoothing);
       renderMatchTable(matches);
+      // ML-Sektionen (async, unabhängig von der Hauptberechnung)
+      fetchMLForecasts(currentTicker);
     }
 
     function loadTicker(ticker) {

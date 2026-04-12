@@ -226,6 +226,8 @@
                 <th data-sort="score" class="num sorted">Score <span class="sort-ind">&#x25BE;</span></th>
                 <th data-sort="win_rate" class="num">Win-Rate <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
                 <th data-sort="avg_return" class="num">&Oslash; Return <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="forecast" class="num">Forecast <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="seasonal_strength" class="num">Sais.&nbsp;St&auml;rke <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
                 <th class="num">Aktion</th>
               </tr>
             </thead>
@@ -450,6 +452,7 @@
       });
 
       renderTable(filtered);
+      updateMLCells();
       qs('rc-visible').textContent = filtered.length;
     }
 
@@ -482,6 +485,8 @@
           '<td class="num score-val ' + scoreColor + '">' + r.score.toFixed(1) + '</td>' +
           '<td class="num ' + wrClass + '">' + r.win_rate.toFixed(0) + '%</td>' +
           '<td class="num ' + arClass + '">' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</td>' +
+          '<td class="num ml-forecast" data-ticker="' + r.ticker + '"><span style="color:var(--muted)">–</span></td>' +
+          '<td class="num ml-strength" data-ticker="' + r.ticker + '"><span style="color:var(--muted)">–</span></td>' +
           '<td class="actions">' +
             '<button type="button" class="' + wlClass + '" data-ticker="' + r.ticker + '" title="' + wlTitle + '" aria-label="Watchlist-Toggle">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -612,6 +617,59 @@
       });
     }
 
+    // ── ML-Forecast Spalten async nachladen ────────────────────────
+    var mlDataMap = {}; // ticker → {forecast, strength}
+    function loadMLForecastColumns() {
+      if (!SA.supabase || !SA.supabase.url) return;
+      // Alle ml_forecasts laden (chronos + mstl)
+      var q = 'select=ticker,model,data&model=in.(chronos,mstl)';
+      fetch(SA.supabase.url + '/rest/v1/ml_forecasts?' + q, {
+        headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
+      }).then(function(r) { return r.json(); }).then(function(rows) {
+        if (!rows || !rows.length) return;
+        rows.forEach(function(r) {
+          if (!mlDataMap[r.ticker]) mlDataMap[r.ticker] = {};
+          if (r.model === 'chronos' && r.data) {
+            mlDataMap[r.ticker].forecast = r.data.expected_return;
+          }
+          if (r.model === 'mstl' && r.data) {
+            mlDataMap[r.ticker].strength = r.data.strength_yearly;
+          }
+        });
+        // Auch in state.data enrichen (für Sortierung)
+        state.data.forEach(function(d) {
+          var ml = mlDataMap[d.ticker];
+          if (ml) {
+            d.forecast = ml.forecast != null ? ml.forecast : null;
+            d.seasonal_strength = ml.strength != null ? ml.strength : null;
+          }
+        });
+        // Zellen befüllen
+        updateMLCells();
+      }).catch(function(e) { console.warn('ML columns:', e); });
+    }
+
+    function updateMLCells() {
+      var fCells = document.querySelectorAll('.ml-forecast');
+      Array.prototype.forEach.call(fCells, function(td) {
+        var t = td.getAttribute('data-ticker');
+        var ml = mlDataMap[t];
+        if (ml && ml.forecast != null) {
+          var cls = ml.forecast >= 0 ? 'pos' : 'neg';
+          td.innerHTML = '<span class="' + cls + '">' + (ml.forecast >= 0 ? '+' : '') + ml.forecast.toFixed(1) + '%</span>';
+          td.classList.add(cls);
+        }
+      });
+      var sCells = document.querySelectorAll('.ml-strength');
+      Array.prototype.forEach.call(sCells, function(td) {
+        var t = td.getAttribute('data-ticker');
+        var ml = mlDataMap[t];
+        if (ml && ml.strength != null) {
+          td.innerHTML = ml.strength.toFixed(1) + '%';
+        }
+      });
+    }
+
     function initialLoad() {
       // Supabase noch nicht initialisiert? kurz warten
       if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
@@ -638,6 +696,8 @@
           applyFilters();
           initWatchlistDelegation();
           hideLoading();
+          // ML-Forecast-Daten async nachladen (Forecast + Saisonale Stärke)
+          loadMLForecastColumns();
         })
         .catch(function(err) {
           hideLoading();

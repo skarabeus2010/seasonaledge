@@ -301,6 +301,13 @@
           <div id="chart-truepath"></div>
         </div>
 
+        <!-- KI-Forecast (6 cols, aus ml_forecasts) -->
+        <div class="bento-card bento-truepath" id="card-ml-forecast" style="display:none">
+          <div class="ttl"><span class="ico">📈</span> KI-Forecast (Chronos 30d)</div>
+          <div id="ml-forecast-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.5rem"></div>
+          <div id="chart-ml-forecast"></div>
+        </div>
+
         <!-- 6 Stat-Cards: je 2 cols = 12 -->
         <div class="bento-card bento-stat6" id="card-month-perf">
           <div class="ttl"><span class="ico">📅</span> Monatsperformance</div>
@@ -2141,6 +2148,47 @@
     // PHASE 3: Page Lifecycle
     // ══════════════════════════════════════════════════════════════
 
+    // ── ML-Forecast Bento-Card (aus ml_forecasts) ─────────────────
+    var mlForecastChart = null;
+    function fetchDashboardMLForecast(ticker) {
+      var card = document.getElementById('card-ml-forecast');
+      if (!SA.supabase || !SA.supabase.url) { card.style.display='none'; return; }
+      var q = 'ticker=eq.'+encodeURIComponent(ticker)+'&model=eq.chronos&select=data';
+      fetch(SA.supabase.url+'/rest/v1/ml_forecasts?'+q, {
+        headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}
+      }).then(function(r){return r.json();}).then(function(rows){
+        if (!rows || !rows.length || !rows[0].data || !rows[0].data.forecast) { card.style.display='none'; return; }
+        var data = rows[0].data;
+        card.style.display = '';
+        // KPIs
+        var retCol = data.expected_return >= 0 ? 'green' : 'red';
+        var probCol = data.p_positive >= 60 ? 'green' : data.p_positive <= 40 ? 'red' : 'gold';
+        document.getElementById('ml-forecast-kpis').innerHTML =
+          '<div class="kpi"><div class="kpi-label">Erwartete Rendite</div><div class="kpi-value '+retCol+'">'+(data.expected_return>=0?'+':'')+data.expected_return+'%</div></div>' +
+          '<div class="kpi"><div class="kpi-label">P(positiv)</div><div class="kpi-value '+probCol+'">'+data.p_positive+'%</div></div>';
+        // Mini-Chart
+        if (mlForecastChart) { try{mlForecastChart.destroy();}catch(e){} }
+        var fc = data.forecast;
+        var cats = fc.map(function(f){return f.ds.substring(5);});
+        var c = new ApexCharts(document.getElementById('chart-ml-forecast'), {
+          series:[
+            {name:'Prognose',data:fc.map(function(f){return f.yhat;}),type:'line'},
+            {name:'Konfidenz',data:fc.map(function(f){return f.yhat_upper;}),type:'line'},
+            {name:'Konfidenz',data:fc.map(function(f){return f.yhat_lower;}),type:'line'}
+          ],
+          chart:Object.assign({type:'line',height:180},SA.chartTheme.chart),
+          stroke:{width:[2.5,1,1],dashArray:[0,4,4],curve:'smooth'},
+          colors:['#e8a820','rgba(232,168,32,.25)','rgba(232,168,32,.25)'],
+          grid:SA.chartTheme.grid,
+          xaxis:{categories:cats,labels:{style:{colors:'#a89878',fontSize:'8px'},rotate:-45,hideOverlappingLabels:true},tickAmount:6},
+          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v?v.toFixed(0):'';}}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
+          markers:{size:0},legend:{show:false}
+        });
+        c.render(); mlForecastChart = c;
+      }).catch(function(e){ console.warn('ML forecast:', e); card.style.display='none'; });
+    }
+
     function renderAll() {
       if (!rawRows.length || !currentTicker) return;
       document.getElementById('title-ticker').textContent = currentTicker;
@@ -2345,6 +2393,9 @@
           document.getElementById('events-content').innerHTML = '<p style="color:#a89878">Events konnten nicht berechnet werden</p>';
         }
       }, 100);
+
+      // 13. ML-Forecast Card (async, aus Supabase)
+      fetchDashboardMLForecast(currentTicker);
     }
 
     function loadTicker(ticker) {
