@@ -857,19 +857,29 @@
       var cats = fc.map(function(f){ return f.ds.substring(5); }); // MM-DD Format
       var yhat = fc.map(function(f){ return parseFloat(f.yhat.toFixed(2)); });
 
-      var series = [{name:'Prognose (Median)', data:yhat, type:'line'}];
+      var lo = fc.map(function(f){ return parseFloat(f.yhat_lower.toFixed(2)); });
+      var hi = fc.map(function(f){ return parseFloat(f.yhat_upper.toFixed(2)); });
+
+      var series = [{name:'Prognose (Median)', data:yhat}];
       var colors = ['#e8a820'];
       var strokes = [3];
       var dashes = [0];
 
       if (showBand) {
-        // Range-Area: [lower, upper] pro Punkt
-        var rangeData = fc.map(function(f){ return [parseFloat(f.yhat_lower.toFixed(2)), parseFloat(f.yhat_upper.toFixed(2))]; });
-        series.push({name:'90% Konfidenzband', data:rangeData, type:'rangeArea'});
-        colors.push('rgba(232,168,32,.15)');
-        strokes.push(0);
-        dashes.push(0);
+        series.push({name:'95. Perzentil', data:hi});
+        series.push({name:'5. Perzentil', data:lo});
+        colors.push('rgba(232,168,32,.35)', 'rgba(232,168,32,.35)');
+        strokes.push(1, 1);
+        dashes.push(5, 5);
       }
+
+      // Y-Achse auf Datenbereich zoomen
+      var allVals = yhat.concat(lo).concat(hi);
+      var yMin = Math.min.apply(null, allVals);
+      var yMax = Math.max.apply(null, allVals);
+      var yPad = (yMax - yMin) * 0.1;
+      yMin = Math.floor(yMin - yPad);
+      yMax = Math.ceil(yMax + yPad);
 
       // We-are-here: Tag 0 = heute
       var todayAnnotation = {
@@ -893,19 +903,15 @@
 
       var c = new ApexCharts(container, {
         series: series,
-        chart: Object.assign({type:'rangeArea', height:400}, SA.chartTheme.chart),
+        chart: Object.assign({type:'line', height:400}, SA.chartTheme.chart),
         stroke:{width:strokes, dashArray:dashes, curve:'smooth'},
         colors:colors,
-        fill:{opacity: showBand ? [1, 0.12] : [1]},
         dataLabels:{enabled:false},
         grid: SA.chartTheme.grid,
         annotations:{xaxis:[todayAnnotation], yaxis:[lastCloseAnnotation]},
         xaxis:{categories:cats, labels:{style:{colors:'#e2e8f0',fontSize:'10px'}, rotate:-45, hideOverlappingLabels:true},tickAmount:10},
-        yaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,y:{formatter:function(v){
-          if (Array.isArray(v)) return v[0].toFixed(2)+' – '+v[1].toFixed(2);
-          return v?v.toFixed(2):'–';
-        }}}),
+        yaxis:{min:yMin, max:yMax, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
         markers:{size:0,hover:{size:5}},
         legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:12}}
       });
