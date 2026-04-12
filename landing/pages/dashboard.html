@@ -951,7 +951,31 @@
       }
       var avgMaxDd=mean(allMaxDds);
       worstDd=allMaxDds.length?Math.min.apply(null,allMaxDds):NaN;
-      return {dd_now:ddNow,avg_max_dd:avgMaxDd,worst_max_dd:worstDd,n:allMaxDds.length};
+      // DD-Perzentil: wie viel % der historischen Max-DDs waren schlimmer
+      var ddPercentile=NaN;
+      if(!isNaN(ddNow)&&allMaxDds.length>2){
+        var worse=allMaxDds.filter(function(v){return v<ddNow;}).length;
+        ddPercentile=worse/allMaxDds.length*100;
+      }
+      // Tage im DD: seit wann unter Peak (aktuelles Jahr)
+      var daysInDd=0;
+      if(!isNaN(ddNow)&&ddNow<-0.01&&yearData[currentYear]){
+        var cy=yearData[currentYear].full_365;
+        var peak=cy[0]||100,td2=todayDoy();
+        for(var di=0;di<Math.min(td2,cy.length);di++){
+          if(cy[di]!=null&&cy[di]>=peak){peak=cy[di];daysInDd=0;}
+          else daysInDd++;
+        }
+      }
+      // YTD Return
+      var ytdReturn=NaN;
+      if(yearData[currentYear]){
+        var cyc=yearData[currentYear].full_365;
+        var tdIdx=Math.min(todayDoy()-1,cyc.length-1);
+        while(tdIdx>0&&(cyc[tdIdx]==null||isNaN(cyc[tdIdx])))tdIdx--;
+        if(tdIdx>0&&cyc[0])ytdReturn=cyc[tdIdx]/cyc[0]*100-100;
+      }
+      return {dd_now:ddNow,avg_max_dd:avgMaxDd,worst_max_dd:worstDd,n:allMaxDds.length,dd_percentile:ddPercentile,days_in_dd:daysInDd,ytd_return:ytdReturn};
     }
 
     // ── Trifecta (Port von trifecta.html) ────────────────────────
@@ -1901,11 +1925,12 @@
     }
 
     // ── 10. Risiko-KPIs ──────────────────────────────────────────
-    function renderRiskKpis(riskKpis, volaStats) {
+    function renderRiskKpis(riskKpis, volaStats, volaStats5) {
       var el = document.getElementById('risk-content');
       function kpi(label, value, colorClass) {
         return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
       }
+      // Zeile 1: bestehende 4 KPIs
       var html = '';
       if (riskKpis) {
         var ddNowCol = riskKpis.dd_now != null && riskKpis.dd_now < -1 ? 'red' : 'green';
@@ -1923,6 +1948,30 @@
       } else {
         html += kpi('Aktuelle Vola', '–', '');
         html += kpi('Vola-Perzentil', '–', '');
+      }
+      // Zeile 2: YTD Return, Tage im DD, DD-Perzentil, Vola-Trend
+      html += '<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:.15rem 0"></div>';
+      if (riskKpis) {
+        var ytdCol = !isNaN(riskKpis.ytd_return) ? (riskKpis.ytd_return >= 0 ? 'green' : 'red') : '';
+        html += kpi('YTD Return', !isNaN(riskKpis.ytd_return) ? fmtPct(riskKpis.ytd_return,1) : '–', ytdCol);
+        html += kpi('Tage im DD', riskKpis.days_in_dd > 0 ? riskKpis.days_in_dd + 'd' : '–', riskKpis.days_in_dd > 20 ? 'red' : riskKpis.days_in_dd > 0 ? 'gold' : 'green');
+        var ddPctCol = !isNaN(riskKpis.dd_percentile) ? (riskKpis.dd_percentile > 70 ? 'red' : riskKpis.dd_percentile > 30 ? 'gold' : 'green') : '';
+        html += kpi('DD-Perzentil', !isNaN(riskKpis.dd_percentile) ? riskKpis.dd_percentile.toFixed(0) + '%' : '–', ddPctCol);
+      } else {
+        html += kpi('YTD Return', '–', '');
+        html += kpi('Tage im DD', '–', '');
+        html += kpi('DD-Perzentil', '–', '');
+      }
+      // Vola-Trend: 5d vs 20d
+      if (volaStats && volaStats5) {
+        var ratio = volaStats5.current_vola / volaStats.current_vola;
+        var trendLabel, trendCol;
+        if (ratio > 1.15) { trendLabel = '↑ steigend'; trendCol = 'red'; }
+        else if (ratio < 0.85) { trendLabel = '↓ fallend'; trendCol = 'green'; }
+        else { trendLabel = '→ stabil'; trendCol = 'gold'; }
+        html += kpi('Vola-Trend 5d/20d', trendLabel, trendCol);
+      } else {
+        html += kpi('Vola-Trend', '–', '');
       }
       el.innerHTML = html;
     }
@@ -2200,7 +2249,8 @@
       // 10. Risiko-KPIs
       var riskKpis = computeRiskKpis(filteredRows, yearData);
       var volaStats = currentVolaStats(filteredRows, 20);
-      renderRiskKpis(riskKpis, volaStats);
+      var volaStats5 = currentVolaStats(filteredRows, 5);
+      renderRiskKpis(riskKpis, volaStats, volaStats5);
 
       // 10b. Overnight (separater OHLC-Fetch, lazy)
       (function() {
