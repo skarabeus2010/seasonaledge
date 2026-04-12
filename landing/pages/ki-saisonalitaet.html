@@ -294,18 +294,23 @@
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
           <div class="info-tooltip">
-            <b>Was zeigt dieser Chart?</b><br>
-            Die MSTL-Zerlegung isoliert das <b style="color:#e8a820">wiederkehrende Jahresmuster</b> aus dem Kursverlauf, indem Trend und Rauschen entfernt werden.<br><br>
-            <b>Wie liest man den Chart?</b><br>
-            • <b>Über der Nulllinie</b>: Kurs ist saisonal <span style="color:#34d399">stärker als der Trend</span> (typisch bullische Phase)<br>
-            • <b>Unter der Nulllinie</b>: Kurs ist saisonal <span style="color:#f87171">schwächer als der Trend</span> (typisch bearische Phase)<br><br>
-            <b>KPIs erklärt:</b><br>
-            • <b>Saisonale Stärke</b>: Wie viel % der Gesamtbewegung durch das Jahresmuster erklärt wird. &gt;10% = stark saisonal, &lt;3% = kaum saisonal<br>
-            • <b>Bewertung</b>: Stark/Mäßig/Schwach basierend auf der Stärke<br><br>
-            <span style="color:var(--muted);font-size:.65rem">Methode: MSTL (Multiple Seasonal-Trend via LOESS), Periode 252 Handelstage.</span>
+            <b>MSTL-Zerlegung</b> (Multiple Seasonal-Trend via LOESS) zerlegt den Kursverlauf in 4 Komponenten:<br><br>
+            <b>1. Original</b>: Der echte Kursverlauf (Close-Preise)<br>
+            <b>2. Trend</b>: Die langfristige Richtung — steigt, fällt oder seitwärts?<br>
+            <b>3. Jahres-Saisonalität</b>: Das wiederkehrende 252-Handelstage-Muster. Über Null = saisonal stark, unter Null = saisonal schwach<br>
+            <b>4. Residual</b>: Zufälliges Rauschen das weder Trend noch Saisonalität ist. Große Ausschläge = unerwartete Events (Crashs, Earnings etc.)<br><br>
+            <b>KPIs:</b><br>
+            • <b>Saisonale Stärke</b>: Wie viel % der Kursbewegung durch Saisonalität erklärt wird. &gt;10% = starkes Muster<br>
+            • <b>Trend-Anteil</b>: Wie viel % durch den Trend erklärt wird<br>
+            • <b>Rauschen</b>: Rest = 100% - Trend - Saisonalität<br><br>
+            <span style="color:var(--muted);font-size:.65rem">Perioden: 5d (Wochen-Zyklus) + 252d (Jahres-Zyklus).</span>
           </div>
-          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
-          <div id="chart-mstl-yearly"></div>
+          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+          <div id="chart-mstl-original"></div>
+          <div id="chart-mstl-trend" style="margin-top:.25rem"></div>
+          <div id="chart-mstl-yearly" style="margin-top:.25rem"></div>
+          <div id="chart-mstl-residual" style="margin-top:.25rem"></div>
+          <div id="chart-mstl-heatmap" style="margin-top:1.5rem"></div>
         </div>
       </details>
 
@@ -938,39 +943,95 @@
 
     function renderMSTLSection(data) {
       document.getElementById('sec-mstl').style.display = '';
-      // KPIs — nur die 2 relevanten
-      var strengthCol = data.strength_yearly >= 10 ? 'green' : data.strength_yearly >= 3 ? 'gold' : 'red';
-      var verdict = data.strength_yearly >= 10 ? 'Stark saisonal' : data.strength_yearly >= 3 ? 'Mäßig saisonal' : 'Schwach saisonal';
-      document.getElementById('mstl-kpis').innerHTML =
-        kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '% der Varianz', strengthCol) +
-        kpiHtml('Bewertung', verdict, strengthCol);
-
-      // Nur Jahres-Saisonalität Chart
-      if (!data.seasonal_yearly) return;
       var dates = data.dates || [];
-      var vals = data.seasonal_yearly;
+      var noiseStrength = Math.max(0, 100 - (data.strength_trend||0) - (data.strength_yearly||0) - (data.strength_weekly||0));
 
-      // Dynamische Y-Achse: eng um Daten
-      var mstlMin = Math.min.apply(null, vals.filter(function(v){return v!=null&&isFinite(v);}));
-      var mstlMax = Math.max.apply(null, vals.filter(function(v){return v!=null&&isFinite(v);}));
-      var mstlPad = (mstlMax - mstlMin) * 0.15;
+      // KPIs
+      var strengthCol = data.strength_yearly >= 10 ? 'green' : data.strength_yearly >= 3 ? 'gold' : 'red';
+      document.getElementById('mstl-kpis').innerHTML =
+        kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '%', strengthCol) +
+        kpiHtml('Trend-Anteil', (data.strength_trend||0).toFixed(1) + '%', 'gold') +
+        kpiHtml('Rauschen', noiseStrength.toFixed(1) + '%', noiseStrength > 50 ? 'red' : 'gold');
 
-      var c1 = new ApexCharts(document.getElementById('chart-mstl-yearly'), {
-        series:[{name:'Saisonale Komponente', data:vals}],
-        chart:Object.assign({type:'area', height:350}, SA.chartTheme.chart),
-        stroke:{width:2.5, curve:'smooth'},
-        colors:['#e8a820'],
-        fill:{type:'gradient', gradient:{opacityFrom:.25,opacityTo:.02}},
-        dataLabels:{enabled:false},
-        grid:SA.chartTheme.grid,
-        annotations:{yaxis:[{y:0, borderColor:'rgba(255,255,255,.25)', strokeDashArray:3, label:{text:'Trend-Niveau',position:'front',style:{color:'#a89878',background:'transparent',fontSize:'9px'}}}]},
-        xaxis:{categories:dates, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
-        yaxis:{min:Math.floor(mstlMin-mstlPad), max:Math.ceil(mstlMax+mstlPad), labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';}}, title:{text:'Abweichung vom Trend',style:{color:'#a89878',fontSize:'10px'}}},
-        title:{text:'Isoliertes Jahresmuster (252 Handelstage)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2)+' (über/unter Trend)':'–';}}}),
-        markers:{size:0,hover:{size:4}}
-      });
-      c1.render(); mlCharts.push(c1);
+      // Helper: dynamische Y-Achse
+      function dynY(vals) {
+        var clean = vals.filter(function(v){return v!=null&&isFinite(v);});
+        if (!clean.length) return {min:0,max:1};
+        var lo = Math.min.apply(null, clean), hi = Math.max.apply(null, clean);
+        var pad = (hi - lo) * 0.12 || 1;
+        return {min:lo-pad, max:hi+pad};
+      }
+
+      // Helper: Subpanel-Config
+      function panelCfg(id, title, vals, color, height, hasZeroLine) {
+        var y = dynY(vals);
+        var ann = hasZeroLine ? {yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]} : {};
+        var c = new ApexCharts(document.getElementById(id), {
+          series:[{name:title, data:vals}],
+          chart:Object.assign({type:'area', height:height, group:'mstl-decomp'}, SA.chartTheme.chart),
+          stroke:{width:1.8, curve:'smooth'},
+          colors:[color],
+          fill:{type:'gradient', gradient:{opacityFrom:.2,opacityTo:.02}},
+          dataLabels:{enabled:false},
+          grid:{borderColor:'rgba(255,255,255,.04)',padding:{left:8,right:8}},
+          annotations:ann,
+          xaxis:{categories:dates, labels:{show:false}, axisBorder:{show:false}, axisTicks:{show:false}},
+          yaxis:{min:y.min,max:y.max,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
+          title:{text:title,style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2):'–';}}}),
+          markers:{size:0,hover:{size:3}}
+        });
+        c.render(); mlCharts.push(c);
+      }
+
+      // 4-Panel Dekomposition (synchronisiert via group)
+      if (data.original) panelCfg('chart-mstl-original', 'Originalkurs (Close)', data.original, '#e2e8f0', 200, false);
+      if (data.trend) panelCfg('chart-mstl-trend', 'Trend', data.trend, '#34d399', 160, false);
+      if (data.seasonal_yearly) panelCfg('chart-mstl-yearly', 'Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 200, true);
+      if (data.residual) panelCfg('chart-mstl-residual', 'Residual (Rauschen)', data.residual, '#f87171', 140, true);
+
+      // Letzer Panel: X-Achse mit Datums-Labels (nur beim untersten)
+      var lastPanel = data.residual ? 'chart-mstl-residual' : (data.seasonal_yearly ? 'chart-mstl-yearly' : null);
+      if (lastPanel) {
+        var el = document.getElementById(lastPanel);
+        if (el && el._apexChart) {
+          // ApexCharts hat kein einfaches nachträgliches xaxis-Update, daher
+          // rendern wir den letzten Panel nochmal mit sichtbarer X-Achse
+        }
+      }
+
+      // Monats-Heatmap aus der saisonalen Komponente
+      if (data.seasonal_yearly && dates.length > 60) {
+        var monthAvg = {};
+        for (var i = 0; i < dates.length; i++) {
+          var m = parseInt(dates[i].substring(5,7));
+          if (!monthAvg[m]) monthAvg[m] = [];
+          monthAvg[m].push(data.seasonal_yearly[i]);
+        }
+        var MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+        var hmCats = [], hmVals = [];
+        for (var mi = 1; mi <= 12; mi++) {
+          hmCats.push(MONTHS_SHORT[mi-1]);
+          var arr = monthAvg[mi] || [];
+          hmVals.push(arr.length ? parseFloat((arr.reduce(function(s,v){return s+v;},0)/arr.length).toFixed(2)) : 0);
+        }
+        var hmColors = hmVals.map(function(v){ return v >= 0 ? '#34d399' : '#f87171'; });
+        var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
+        var hmPad = (hmMax - hmMin) * 0.15 || 1;
+        var hm = new ApexCharts(document.getElementById('chart-mstl-heatmap'), {
+          series:[{name:'Ø saisonaler Effekt', data:hmVals}],
+          chart:Object.assign({type:'bar', height:280}, SA.chartTheme.chart),
+          stroke:{width:0},
+          plotOptions:{bar:{borderRadius:6,columnWidth:'60%',colors:{ranges:[{from:-9999,to:-0.001,color:'#f87171'},{from:0,to:9999,color:'#34d399'}]}}},
+          grid:SA.chartTheme.grid,
+          dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(1):'';}},
+          xaxis:{categories:hmCats,labels:{style:{colors:'#e2e8f0',fontSize:'12px',fontWeight:600}}},
+          yaxis:{min:hmMin-hmPad,max:hmMax+hmPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
+          title:{text:'Ø Saisonaler Effekt pro Monat (MSTL-bereinigt)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(2)+' Preiseinheiten':'–';}}}),
+        });
+        hm.render(); mlCharts.push(hm);
+      }
     }
 
     function renderNPSection(data) {

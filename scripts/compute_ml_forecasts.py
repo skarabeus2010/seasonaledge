@@ -152,8 +152,12 @@ def run_mstl(df: pd.DataFrame, ticker: str) -> dict | None:
         n = min(252, len(result["trend"]))
         dates = [d.strftime("%Y-%m-%d") for d in result["index"][-n:]]
 
+        # Originalkurse für Dekompositions-Dashboard
+        original = df["Close"].values[-n:]
+
         data = {
             "dates": dates,
+            "original": [round(float(v), 2) for v in original],
             "trend": [round(float(v), 2) for v in result["trend"].values[-n:]],
             "residual": [round(float(v), 4) for v in result["residual"].values[-n:]],
             "strength_weekly": result.get("strength_weekly", 0),
