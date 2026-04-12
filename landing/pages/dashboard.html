@@ -2116,7 +2116,7 @@
           html += '<div class="ev-stats">';
           html += '<div class="wd-streak-row" style="max-width:140px;margin-bottom:.4rem">';
           for (var ei = 0; ei < last5.length; ei++) {
-            var ew = last5[ei].ret > 0;
+            var ew = last5[ei].totalReturn > 0;
             html += '<div class="wd-blk ' + (ew ? 'w' : 'l') + '" style="flex:0 0 24px;font-size:.55rem">' + (ew ? 'W' : 'L') + '</div>';
           }
           html += '</div>';
