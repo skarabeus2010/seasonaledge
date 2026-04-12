@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential curl && \
     rm -rf /var/lib/apt/lists/*
 
+# PyTorch CPU-only (spart ~1.5GB vs CUDA-Version)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 # Python-Pakete installieren
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

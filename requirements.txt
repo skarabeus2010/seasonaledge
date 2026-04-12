@@ -10,3 +10,7 @@ pyyaml>=6.0
 scikit-learn>=1.3.0
 statsmodels>=0.14.0
 scipy>=1.11.0
+# ML-Modelle (Chronos, MSTL, NeuralProphet)
+# torch wird CPU-only im Dockerfile installiert (spart ~1.5GB vs CUDA)
+chronos-forecasting>=1.0
+neuralprophet>=0.8.0
