@@ -2111,10 +2111,15 @@
           var sorted = hist.allCurves.slice().sort(function(a,b){return a.date<b.date?1:-1;});
           var entries = sorted.map(function(c){return {ret: c.totalReturn};});
           var streak = SA.streaks ? SA.streaks.currentStreak(entries) : { type: entries[0].ret>0?'win':'loss', count: 1 };
-          var streakCls = streak.type === 'win' ? 'win' : 'loss';
-          var streakLbl = streak.count + (streak.type === 'win' ? ' Winner' : ' Loser') + ' in Folge';
+          // Letzte 5 Events als W/L Einzel-Kacheln (ältester links)
+          var last5 = sorted.slice(0, 5).reverse();
           html += '<div class="ev-stats">';
-          html += '<div><span class="streak-badge ' + streakCls + '">' + streakLbl + '</span></div>';
+          html += '<div class="wd-streak-row" style="max-width:140px;margin-bottom:.4rem">';
+          for (var ei = 0; ei < last5.length; ei++) {
+            var ew = last5[ei].ret > 0;
+            html += '<div class="wd-blk ' + (ew ? 'w' : 'l') + '" style="flex:0 0 24px;font-size:.55rem">' + (ew ? 'W' : 'L') + '</div>';
+          }
+          html += '</div>';
           html += '<div>Win-Rate (' + hist.nEvents + ' Events): <b>' + hist.winRate.toFixed(0) + '%</b></div>';
           html += '<div>Ø Return: <b class="' + (hist.avgReturn>=0?'pos':'neg') + '">' + fmtPct(hist.avgReturn,2) + '</b></div>';
           html += '</div>';
