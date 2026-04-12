@@ -1031,6 +1031,7 @@
         kpiHtml('Rauschen', noiseStrength.toFixed(1) + '%', noiseStrength > 50 ? 'red' : 'gold');
 
       renderMSTLCharts(data, document.getElementById('sel-mstl-view').value);
+      renderMSTLHeatmap(data);
     }
 
     function renderMSTLCharts(data, view) {
@@ -1086,38 +1087,41 @@
         renderPanel('chart-mstl-residual', 'Residual (Rauschen)', data.residual, '#f87171', 240, true);
       }
 
-      // Monats-Heatmap
-      document.getElementById('chart-mstl-heatmap').innerHTML = '';
-      if (data.seasonal_yearly && dates.length > 60) {
-        var monthAvg = {};
-        for (var i = 0; i < dates.length; i++) {
-          var m = parseInt(dates[i].substring(5,7));
-          if (!monthAvg[m]) monthAvg[m] = [];
-          monthAvg[m].push(data.seasonal_yearly[i]);
-        }
-        var MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-        var hmCats = [], hmVals = [];
-        for (var mi = 1; mi <= 12; mi++) {
-          hmCats.push(MONTHS_SHORT[mi-1]);
-          var arr = monthAvg[mi] || [];
-          hmVals.push(arr.length ? parseFloat((arr.reduce(function(s,v){return s+v;},0)/arr.length).toFixed(2)) : 0);
-        }
-        var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
-        var hmPad = (hmMax - hmMin) * 0.15 || 1;
-        var hm = new ApexCharts(document.getElementById('chart-mstl-heatmap'), {
-          series:[{name:'Ø saisonaler Effekt', data:hmVals}],
-          chart:Object.assign({type:'bar', height:280}, SA.chartTheme.chart),
-          stroke:{width:0},
-          plotOptions:{bar:{borderRadius:6,columnWidth:'60%',colors:{ranges:[{from:-9999,to:-0.001,color:'#f87171'},{from:0,to:9999,color:'#34d399'}]}}},
-          grid:SA.chartTheme.grid,
-          dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(1):'';}},
-          xaxis:{categories:hmCats,labels:{style:{colors:'#e2e8f0',fontSize:'12px',fontWeight:600}}},
-          yaxis:{min:hmMin-hmPad,max:hmMax+hmPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
-          title:{text:'Ø Saisonaler Effekt pro Monat (MSTL-bereinigt)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(2)+' Preiseinheiten':'–';}}}),
-        });
-        hm.render(); mlCharts.push(hm);
+    }
+
+    function renderMSTLHeatmap(data) {
+      var el = document.getElementById('chart-mstl-heatmap');
+      el.innerHTML = '';
+      var dates = data.dates || [];
+      if (!data.seasonal_yearly || dates.length < 60) return;
+      var monthAvg = {};
+      for (var i = 0; i < dates.length; i++) {
+        var m = parseInt(dates[i].substring(5,7));
+        if (!monthAvg[m]) monthAvg[m] = [];
+        monthAvg[m].push(data.seasonal_yearly[i]);
       }
+      var MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+      var hmCats = [], hmVals = [];
+      for (var mi = 1; mi <= 12; mi++) {
+        hmCats.push(MONTHS_SHORT[mi-1]);
+        var arr = monthAvg[mi] || [];
+        hmVals.push(arr.length ? parseFloat((arr.reduce(function(s,v){return s+v;},0)/arr.length).toFixed(2)) : 0);
+      }
+      var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
+      var hmPad = (hmMax - hmMin) * 0.15 || 1;
+      var hm = new ApexCharts(el, {
+        series:[{name:'Ø saisonaler Effekt', data:hmVals}],
+        chart:Object.assign({type:'bar', height:280}, SA.chartTheme.chart),
+        stroke:{width:0},
+        plotOptions:{bar:{borderRadius:6,columnWidth:'60%',colors:{ranges:[{from:-9999,to:-0.001,color:'#f87171'},{from:0,to:9999,color:'#34d399'}]}}},
+        grid:SA.chartTheme.grid,
+        dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(1):'';}},
+        xaxis:{categories:hmCats,labels:{style:{colors:'#e2e8f0',fontSize:'12px',fontWeight:600}}},
+        yaxis:{min:hmMin-hmPad,max:hmMax+hmPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
+        title:{text:'Ø Saisonaler Effekt pro Monat (MSTL-bereinigt)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(2)+' Preiseinheiten':'–';}}}),
+      });
+      hm.render(); mlCharts.push(hm);
     }
 
     function renderNPSection(data) {
