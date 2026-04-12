@@ -490,10 +490,29 @@
       return {tdoms:monthRows.map(function(r){return r.tdom;}),curve:cum};
     }
 
+    /** Streak fuer eine bestimmte TDOM-Position (aus allCurves) */
+    function calcTdomPositionStreak(allCurves, tdom) {
+      var vals = [];
+      for (var i = 0; i < allCurves.length; i++) {
+        var idx = allCurves[i].tdoms.indexOf(tdom);
+        if (idx >= 0) vals.push({ year: allCurves[i].year, val: allCurves[i].curve[idx] });
+      }
+      vals.sort(function(a,b){ return b.year - a.year; });
+      if (!vals.length) return { type: 'none', count: 0 };
+      var sType = vals[0].val > 0 ? 'win' : 'loss';
+      var sCount = 1;
+      for (var j = 1; j < vals.length; j++) {
+        var w = vals[j].val > 0;
+        if ((sType === 'win' && w) || (sType === 'loss' && !w)) sCount++;
+        else break;
+      }
+      return { type: sType, count: sCount };
+    }
+
     /**
      * Liefert TDOM-Mini-Stats fuer einen beliebigen Datum.
      * Berechnet TDOM-Position via Holiday-Kalender, lädt Intramonth-Stats fuer den Monat,
-     * gibt Win-Rate + Ø Cum-Ret + n + monthName zurueck.
+     * gibt Win-Rate + Ø Cum-Ret + n + monthName + neighborStreaks zurueck.
      * Cache-Map vermeidet doppelte Berechnung wenn mehrere Daten im selben Monat liegen.
      */
     function getTdomMiniStats(tdomRows, dateObj, allYearsList, intramonthCache){
@@ -525,24 +544,23 @@
         var idx = im.allCurves[i].tdoms.indexOf(tdom);
         if (idx >= 0) { total++; if (im.allCurves[i].curve[idx] > 0) pos++; }
       }
-      // Streak: aufeinanderfolgende Jahre (neueste zuerst) mit gleichem Vorzeichen
-      var streakVals = [];
-      for (var si = 0; si < im.allCurves.length; si++) {
-        var sc = im.allCurves[si];
-        var sIdx = sc.tdoms.indexOf(tdom);
-        if (sIdx >= 0) streakVals.push({ year: sc.year, val: sc.curve[sIdx] });
-      }
-      streakVals.sort(function(a,b){ return b.year - a.year; });
-      var streak = { type: 'none', count: 0 };
-      if (streakVals.length) {
-        var sType = streakVals[0].val > 0 ? 'win' : 'loss';
-        var sCount = 1;
-        for (var sj = 1; sj < streakVals.length; sj++) {
-          var sWin = streakVals[sj].val > 0;
-          if ((sType === 'win' && sWin) || (sType === 'loss' && !sWin)) sCount++;
-          else break;
+      // Streak fuer diesen TDOM
+      var streak = calcTdomPositionStreak(im.allCurves, tdom);
+      // Nachbar-TDOMs: 5 Positionen zentriert auf aktuellen TDOM (wie Mo-Fr bei Wochentag)
+      var allTdoms = Object.keys(im.tdomStats).map(Number).sort(function(a,b){return a-b;});
+      var centerIdx = allTdoms.indexOf(tdom);
+      var neighborStreaks = [];
+      if (centerIdx >= 0) {
+        var start = Math.max(0, centerIdx - 2);
+        var end = Math.min(allTdoms.length - 1, start + 4);
+        start = Math.max(0, end - 4); // Anpassung wenn am rechten Rand
+        for (var ni = start; ni <= end; ni++) {
+          neighborStreaks.push({
+            tdom: allTdoms[ni],
+            streak: calcTdomPositionStreak(im.allCurves, allTdoms[ni]),
+            isCurrent: allTdoms[ni] === tdom
+          });
         }
-        streak = { type: sType, count: sCount };
       }
       return {
         date: ds,
@@ -554,7 +572,8 @@
         n: ts.n,
         winRate: total > 0 ? pos/total*100 : 0,
         weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())],
-        streak: streak
+        streak: streak,
+        neighborStreaks: neighborStreaks
       };
     }
 
@@ -1072,11 +1091,10 @@
     // ── Overnight Performance (heute→morgen) aus OHLC ──
     /** Berechnet Overnight-Stats fuer den aktuellen Wochentag (close→open+1).
      *  Residual-Ansatz: overnight = total - intraday */
-    function calcOvernightStats(ohlcRows, yearsBack) {
+    function calcOvernightStats(ohlcRows, yearsBack, targetWd) {
       if (!ohlcRows || ohlcRows.length < 50) return null;
-      var today = new Date();
-      var wd = today.getDay(); // 0=So..6=Sa
-      if (wd === 0 || wd === 6) return null; // Wochenende
+      var wd = targetWd != null ? targetWd : new Date().getDay(); // 0=So..6=Sa
+      if (wd === 0 || wd === 6) return null;
       var lastDate = new Date(ohlcRows[ohlcRows.length - 1].date);
       var cutoff = new Date(lastDate);
       cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -1803,15 +1821,10 @@
     }
 
     // ── 7. Wochentag Card (mit 5 Streak-Blöcken Mo-Fr) ─────────
-    function renderWeekdayCard(stats, streak, allWdStreaks) {
+    function renderWeekdayCard(stats, streak, allWdStreaks, displayWd, closedHint) {
       var el = document.getElementById('weekday-content');
-      var today = new Date();
-      var wd = today.getDay(); wd = wd === 0 ? 6 : wd - 1; // 0=Mo..4=Fr
+      var wd = displayWd != null ? displayWd : (function(){ var w = new Date().getDay(); return w === 0 ? 6 : w - 1; })();
       var wdName = WEEKDAYS_DE[wd === 6 ? 0 : wd + 1];
-      if (wd > 4) {
-        el.innerHTML = '<div class="s6-headline">' + wdName + '</div><div class="s6-sub">Wochenende</div>';
-        return;
-      }
       if (!stats) { el.innerHTML = '<div class="s6-headline">' + wdName + '</div>' + STAT6_EMPTY; return; }
       // Streak badge inline
       var streakHtml = '';
@@ -1821,6 +1834,7 @@
       }
       var html = '<div class="s6-headline">' + wdName + streakHtml + '</div>';
       html += '<div class="s6-sub">' + stats.n + ' Beobachtungen</div>';
+      if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
       html += '<div class="s6-kpis">' +
         '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (stats.win_rate >= 50 ? 'green' : 'red') + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
         '<div class="kpi"><div class="kpi-label">Ø Rendite</div><div class="kpi-value ' + (stats.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(stats.avg,2) + '</div></div>' +
@@ -1841,25 +1855,31 @@
     }
 
     // ── 8. TDOM-Mini Card (generisch fuer heute/morgen) ──
-    function renderTdomMiniCard(elementId, dateLabel, mini) {
+    function renderTdomMiniCard(elementId, dateLabel, mini, closedHint) {
       var el = document.getElementById(elementId);
       if (!mini) {
         el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
         return;
       }
-      // Streak badge
-      var streakBadge = '';
-      if (mini.streak && mini.streak.count > 0) {
-        var sCls = mini.streak.type === 'win' ? 'win' : 'loss';
-        var sLbl = mini.streak.count + (mini.streak.type === 'win' ? ' W' : ' L');
-        streakBadge = ' <span class="streak-badge ' + sCls + '" style="font-size:.6rem;vertical-align:middle">' + sLbl + '</span>';
-      }
-      var html = '<div class="s6-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + streakBadge + '</div>';
+      var html = '<div class="s6-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + '</div>';
       html += '<div class="s6-sub">' + mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel + '</div>';
+      if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
       html += '<div class="s6-kpis">';
       html += '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (mini.winRate >= 50 ? 'green' : 'red') + '">' + mini.winRate.toFixed(0) + '%</div></div>';
       html += '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + (mini.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(mini.avg,2) + '</div></div>';
       html += '</div>';
+      // Streak-Kacheln: 5 benachbarte TDOM-Positionen (wie Mo-Fr bei Wochentag)
+      if (mini.neighborStreaks && mini.neighborStreaks.length > 0) {
+        html += '<div class="wd-streak-row">';
+        for (var ri = 0; ri < mini.neighborStreaks.length; ri++) {
+          var nb = mini.neighborStreaks[ri];
+          var s = nb.streak;
+          var cls = (!s || s.count === 0) ? 'w' : (s.type === 'win' ? 'w' : 'l');
+          var lbl = (!s || s.count === 0) ? '–' : s.count + (s.type === 'win' ? 'W' : 'L');
+          html += '<div class="wd-blk ' + cls + (nb.isCurrent ? ' today' : '') + '">T' + nb.tdom + '<br>' + lbl + '</div>';
+        }
+        html += '</div>';
+      }
       el.innerHTML = html;
     }
 
@@ -1984,16 +2004,18 @@
     }
 
     // ── Overnight Card ───────────────────────────────────────────
-    function renderOvernightCard(overnightStats) {
+    function renderOvernightCard(overnightStats, closedHint) {
       var el = document.getElementById('overnight-content');
       if (!overnightStats) { el.innerHTML = STAT6_EMPTY; return; }
       var o = overnightStats;
+      var hintHtml = closedHint ? '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>' : '';
       el.innerHTML = stat6(o.label, o.n + ' Beobachtungen', [
         ['Ø Overnight', fmtPct(o.avg,3), o.avg >= 0 ? 'green' : 'red'],
         ['Win-Rate', o.winRate.toFixed(0)+'%', o.winRate >= 50 ? 'green' : 'red'],
         ['Ø Intraday', fmtPct(o.avgIntraday,3), o.avgIntraday >= 0 ? 'green' : 'red'],
         ['ON/ID Ratio', o.ratio, 'gold']
       ]);
+      if (hintHtml) el.querySelector('.s6-sub').insertAdjacentHTML('afterend', hintHtml);
     }
 
     // ── 12. Nächste Events Cards ─────────────────────────────────
@@ -2112,32 +2134,62 @@
       // TDOM Heute / Morgen / Uebermorgen via Holiday-Kalender
       var todayD = new Date(); todayD.setHours(0,0,0,0);
       var dayLbl = function(d){ return WEEKDAYS_SHORT[d.getDay()] + ' ' + pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.'; };
-      // Heute (oder naechster Handelstag wenn Wochenende)
+      // Heute (oder nächster Handelstag wenn WE/Feiertag)
       var miniToday = getTdomMiniStats(tdomRows, todayD, allYearsList, intramonthCache);
-      var todayLabel;
+      var todayLabel, tdomClosedHint = null;
       if (miniToday) { todayLabel = 'Heute · ' + dayLbl(todayD); }
       else {
         var nextTd = nextTradingDate(todayD);
-        if (nextTd) { miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache); todayLabel = 'Naechster HT · ' + dayLbl(nextTd); }
+        if (nextTd) {
+          miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache);
+          todayLabel = dayLbl(nextTd);
+          var todayWdRaw = new Date().getDay();
+          tdomClosedHint = (todayWdRaw === 0 || todayWdRaw === 6)
+            ? 'Börse geschlossen · nächster HT ' + dayLbl(nextTd)
+            : 'Feiertag · nächster HT ' + dayLbl(nextTd);
+        }
         else todayLabel = 'Heute';
       }
-      renderTdomMiniCard('tdom-today-content', todayLabel, miniToday);
-      // Morgen = naechster Handelstag nach heute (oder nach miniToday.date)
+      renderTdomMiniCard('tdom-today-content', todayLabel, miniToday, tdomClosedHint);
+      // Morgen = nächster Handelstag nach heute (oder nach miniToday.date)
       var fromDate = miniToday ? new Date(miniToday.date) : todayD;
       var d1 = nextTradingDate(fromDate);
       var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache) : null;
-      renderTdomMiniCard('tdom-tomorrow-content', d1 ? 'Morgen · ' + dayLbl(d1) : 'Morgen', mini1);
+      renderTdomMiniCard('tdom-tomorrow-content', d1 ? dayLbl(d1) : 'Morgen', mini1);
 
       // 6. TruePath
       renderTruePathChart(yearData, truepath, currentYear, currentTicker);
 
       // 7. Wochentag + Streak (alle 5 Wochentage)
       var todayWd = new Date().getDay(); todayWd = todayWd === 0 ? 6 : todayWd - 1;
-      var wdStats = todayWd <= 4 ? calcWeekdayStatsSingle(filteredRows, todayWd, yearsBack) : null;
-      var wdStreak = todayWd <= 4 ? calcWeekdayStreak(filteredRows, todayWd) : null;
+      var wdClosedHint = null;
+      var wdTarget = todayWd; // 0=Mo..4=Fr
+      if (todayWd > 4) {
+        // Wochenende: nächsten Handelstag ermitteln
+        var nextHt = nextTradingDate(new Date());
+        if (nextHt) {
+          var nwd = nextHt.getDay(); nwd = nwd === 0 ? 6 : nwd - 1;
+          wdTarget = nwd;
+          wdClosedHint = 'Börse geschlossen · nächster HT ' + dayLbl(nextHt);
+        }
+      } else {
+        // Werktag aber ggf. Feiertag prüfen
+        var todayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
+        var ex; try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+        if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) {
+          var nextHt2 = nextTradingDate(new Date());
+          if (nextHt2) {
+            var nwd2 = nextHt2.getDay(); nwd2 = nwd2 === 0 ? 6 : nwd2 - 1;
+            wdTarget = nwd2;
+            wdClosedHint = 'Feiertag · nächster HT ' + dayLbl(nextHt2);
+          }
+        }
+      }
+      var wdStats = calcWeekdayStatsSingle(filteredRows, wdTarget, yearsBack);
+      var wdStreak = calcWeekdayStreak(filteredRows, wdTarget);
       var allWdStreaks = [];
       for (var wi = 0; wi < 5; wi++) allWdStreaks.push(calcWeekdayStreak(filteredRows, wi));
-      renderWeekdayCard(wdStats, wdStreak, allWdStreaks);
+      renderWeekdayCard(wdStats, wdStreak, allWdStreaks, wdTarget, wdClosedHint);
 
       // 9. Trifecta
       try {
@@ -2152,8 +2204,21 @@
 
       // 10b. Overnight (separater OHLC-Fetch, lazy)
       (function() {
-        var wd = new Date().getDay();
-        if (wd === 0 || wd === 6) { renderOvernightCard(null); return; }
+        // Ziel-Wochentag ermitteln (bei WE/Feiertag → nächster HT)
+        var onTargetWd = new Date().getDay();
+        var onClosedHint = null;
+        if (onTargetWd === 0 || onTargetWd === 6) {
+          var onNext = nextTradingDate(new Date());
+          if (onNext) { onTargetWd = onNext.getDay(); onClosedHint = 'Börse geschlossen · nächster HT ' + dayLbl(onNext); }
+          else { renderOvernightCard(null); return; }
+        } else {
+          var onTodayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
+          var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ onEx='NONE'; }
+          if (onEx !== 'NONE' && !SA.holidays.isTradingDay(onTodayStr, onEx)) {
+            var onNext2 = nextTradingDate(new Date());
+            if (onNext2) { onTargetWd = onNext2.getDay(); onClosedHint = 'Feiertag · nächster HT ' + dayLbl(onNext2); }
+          }
+        }
         var oStart = new Date(); oStart.setFullYear(oStart.getFullYear() - yearsBack);
         var oFilter = '&date=gte.' + oStart.toISOString().substring(0,10);
         var q = 'ticker=eq.' + encodeURIComponent(currentTicker) + '&select=date,open,close&order=date' + oFilter;
@@ -2161,8 +2226,8 @@
           headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
         }).then(function(r){ return r.json(); }).then(function(ohlc){
           ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
-          var onStats = calcOvernightStats(ohlc, yearsBack);
-          renderOvernightCard(onStats);
+          var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd);
+          renderOvernightCard(onStats, onClosedHint);
         }).catch(function(e){ console.warn('Overnight:', e); renderOvernightCard(null); });
       })();
 
