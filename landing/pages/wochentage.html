@@ -821,23 +821,13 @@
         if (byWd[cur.weekday]) byWd[cur.weekday].push({ date: cur.date, ret: ret });
       }
 
-      // In Format fuer SA.streaks.computeStreaksFromList
-      var allEntries = [];
+      // Direkt als groups-Array fuer SA.streaks.renderStreakTable (Mo→Fr sortiert)
+      var groups = [];
       for (var wd=0;wd<nWd;wd++) {
-        for (var k=0;k<byWd[wd].length;k++) {
-          allEntries.push({
-            group: labels[wd],
-            year: parseInt(byWd[wd][k].date.substring(0,4)),
-            ret: byWd[wd][k].ret,
-            date: byWd[wd][k].date
-          });
-        }
+        var entries = byWd[wd].slice().sort(function(a,b){ return b.date > a.date ? 1 : (b.date < a.date ? -1 : 0); }); // neueste zuerst
+        groups.push({ label: labels[wd], entries: entries });
       }
-      // Sort chronologisch
-      allEntries.sort(function(a,b){return a.date<b.date?-1:1;});
-      var labelMap = {};
-      for (var wd=0;wd<nWd;wd++) labelMap[labels[wd]] = labels[wd];
-      return SA.streaks.computeStreaksFromList(allEntries, 'group', 'ret', 'year', labelMap);
+      return groups;
     }
 
     // ── Weekend-Effekt ───────────────────────────────────────────
