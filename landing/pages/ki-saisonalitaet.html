@@ -303,21 +303,30 @@
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
           <div class="info-tooltip">
-            <b>MSTL-Zerlegung</b> (Multiple Seasonal-Trend via LOESS) zerlegt den Kursverlauf in 4 Komponenten:<br><br>
-            <b>1. Original</b>: Der echte Kursverlauf (Close-Preise)<br>
-            <b>2. Trend</b>: Die langfristige Richtung — steigt, fällt oder seitwärts?<br>
-            <b>3. Jahres-Saisonalität</b>: Das wiederkehrende 252-Handelstage-Muster. Über Null = saisonal stark, unter Null = saisonal schwach<br>
-            <b>4. Residual</b>: Zufälliges Rauschen das weder Trend noch Saisonalität ist. Große Ausschläge = unerwartete Events (Crashs, Earnings etc.)<br><br>
+            <b>MSTL</b> (Multiple Seasonal-Trend via LOESS) zerlegt den Kursverlauf mathematisch in einzelne Komponenten.<br><br>
+            <b>Jahres-Saisonalität (252d)</b>:<br>
+            Das isolierte wiederkehrende Jahresmuster. <span style="color:#34d399">Über Null</span> = Kurs ist saisonal stärker als der Trend (bullische Phase). <span style="color:#f87171">Unter Null</span> = schwächer (bearische Phase).<br><br>
+            <b>Residual (Rauschen)</b>:<br>
+            Alles was weder Trend noch Saisonalität ist — Earnings-Überraschungen, Crashs, geopolitische Events. Große Ausschläge zeigen unvorhergesehene Bewegungen.<br><br>
+            <b>Monats-Heatmap</b>:<br>
+            Durchschnittlicher saisonaler Effekt pro Monat (aus der MSTL-Komponente). <span style="color:#34d399">Grüne Balken</span> = saisonal starke Monate, <span style="color:#f87171">rote</span> = schwache. Das ist der MSTL-bereinigte Blick auf die Monatsmuster — ohne Trend und Rauschen.<br><br>
             <b>KPIs:</b><br>
-            • <b>Saisonale Stärke</b>: Wie viel % der Kursbewegung durch Saisonalität erklärt wird. &gt;10% = starkes Muster<br>
-            • <b>Trend-Anteil</b>: Wie viel % durch den Trend erklärt wird<br>
-            • <b>Rauschen</b>: Rest = 100% - Trend - Saisonalität<br><br>
-            <span style="color:var(--muted);font-size:.65rem">Perioden: 5d (Wochen-Zyklus) + 252d (Jahres-Zyklus).</span>
+            • <b>Saisonale Stärke</b>: % der Varianz durch das 252d-Muster. &gt;10% = starkes Muster<br>
+            • <b>Trend-Anteil</b>: % durch langfristigen Trend<br>
+            • <b>Rauschen</b>: Rest = nicht erklärte Varianz<br><br>
+            <span style="color:var(--muted);font-size:.65rem">LOESS-basiert, Perioden: 5d + 252d. Letzte 252 Handelstage.</span>
           </div>
-          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
-          <div id="chart-mstl-original"></div>
-          <div id="chart-mstl-trend" style="margin-top:.25rem"></div>
-          <div id="chart-mstl-yearly" style="margin-top:.25rem"></div>
+          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem"></div>
+          <div style="margin-bottom:.75rem">
+            <label style="font-size:.75rem;color:var(--dim)">Komponente:
+              <select id="sel-mstl-view" style="margin-left:.5rem;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;font-size:.75rem">
+                <option value="yearly" selected>Jahres-Saisonalität</option>
+                <option value="residual">Residual (Rauschen)</option>
+                <option value="both">Beide übereinander</option>
+              </select>
+            </label>
+          </div>
+          <div id="chart-mstl-yearly"></div>
           <div id="chart-mstl-residual" style="margin-top:.25rem"></div>
           <div id="chart-mstl-heatmap" style="margin-top:1.5rem"></div>
         </div>
@@ -1008,9 +1017,10 @@
       document.getElementById('chronos-table').innerHTML = html;
     }
 
+    var _mstlData = null;
     function renderMSTLSection(data) {
+      _mstlData = data;
       document.getElementById('sec-mstl').style.display = '';
-      var dates = data.dates || [];
       var noiseStrength = Math.max(0, 100 - (data.strength_trend||0) - (data.strength_yearly||0) - (data.strength_weekly||0));
 
       // KPIs
@@ -1019,6 +1029,12 @@
         kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '%', strengthCol) +
         kpiHtml('Trend-Anteil', (data.strength_trend||0).toFixed(1) + '%', 'gold') +
         kpiHtml('Rauschen', noiseStrength.toFixed(1) + '%', noiseStrength > 50 ? 'red' : 'gold');
+
+      renderMSTLCharts(data, document.getElementById('sel-mstl-view').value);
+    }
+
+    function renderMSTLCharts(data, view) {
+      var dates = data.dates || [];
 
       // Helper: dynamische Y-Achse
       function dynY(vals) {
@@ -1029,45 +1045,49 @@
         return {min:lo-pad, max:hi+pad};
       }
 
-      // Helper: Subpanel-Config
-      function panelCfg(id, title, vals, color, height, hasZeroLine) {
+      // Alte Charts zerstören (nur MSTL-spezifische)
+      ['chart-mstl-yearly','chart-mstl-residual'].forEach(function(id){
+        document.getElementById(id).innerHTML = '';
+      });
+
+      // Panel-Renderer
+      function renderPanel(id, title, vals, color, height, showXLabels) {
         var y = dynY(vals);
-        var ann = hasZeroLine ? {yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]} : {};
         var c = new ApexCharts(document.getElementById(id), {
           series:[{name:title, data:vals}],
-          chart:Object.assign({type:'area', height:height, group:'mstl-decomp'}, SA.chartTheme.chart),
-          stroke:{width:1.8, curve:'smooth'},
+          chart:Object.assign({type:'area', height:height}, SA.chartTheme.chart),
+          stroke:{width:2, curve:'smooth'},
           colors:[color],
           fill:{type:'gradient', gradient:{opacityFrom:.2,opacityTo:.02}},
           dataLabels:{enabled:false},
-          grid:{borderColor:'rgba(255,255,255,.04)',padding:{left:8,right:8}},
-          annotations:ann,
-          xaxis:{categories:dates, labels:{show:false}, axisBorder:{show:false}, axisTicks:{show:false}},
-          yaxis:{min:y.min,max:y.max,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
+          grid:SA.chartTheme.grid,
+          annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]},
+          xaxis:{categories:dates, labels:{show:showXLabels, style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
+          yaxis:{min:y.min,max:y.max,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v!=null?v.toFixed(1):'';}}},
           title:{text:title,style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
           tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2):'–';}}}),
-          markers:{size:0,hover:{size:3}}
+          markers:{size:0,hover:{size:4}}
         });
         c.render(); mlCharts.push(c);
       }
 
-      // 4-Panel Dekomposition (synchronisiert via group)
-      if (data.original) panelCfg('chart-mstl-original', 'Originalkurs (Close)', data.original, '#e2e8f0', 200, false);
-      if (data.trend) panelCfg('chart-mstl-trend', 'Trend', data.trend, '#34d399', 160, false);
-      if (data.seasonal_yearly) panelCfg('chart-mstl-yearly', 'Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 200, true);
-      if (data.residual) panelCfg('chart-mstl-residual', 'Residual (Rauschen)', data.residual, '#f87171', 140, true);
+      // Charts je nach Auswahl
+      var showYearly = view === 'yearly' || view === 'both';
+      var showResidual = view === 'residual' || view === 'both';
 
-      // Letzer Panel: X-Achse mit Datums-Labels (nur beim untersten)
-      var lastPanel = data.residual ? 'chart-mstl-residual' : (data.seasonal_yearly ? 'chart-mstl-yearly' : null);
-      if (lastPanel) {
-        var el = document.getElementById(lastPanel);
-        if (el && el._apexChart) {
-          // ApexCharts hat kein einfaches nachträgliches xaxis-Update, daher
-          // rendern wir den letzten Panel nochmal mit sichtbarer X-Achse
-        }
+      document.getElementById('chart-mstl-yearly').style.display = showYearly ? '' : 'none';
+      document.getElementById('chart-mstl-residual').style.display = showResidual ? '' : 'none';
+
+      if (showYearly && data.seasonal_yearly) {
+        var isLast = !showResidual;
+        renderPanel('chart-mstl-yearly', 'Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 320, isLast);
+      }
+      if (showResidual && data.residual) {
+        renderPanel('chart-mstl-residual', 'Residual (Rauschen)', data.residual, '#f87171', 240, true);
       }
 
-      // Monats-Heatmap aus der saisonalen Komponente
+      // Monats-Heatmap
+      document.getElementById('chart-mstl-heatmap').innerHTML = '';
       if (data.seasonal_yearly && dates.length > 60) {
         var monthAvg = {};
         for (var i = 0; i < dates.length; i++) {
@@ -1082,7 +1102,6 @@
           var arr = monthAvg[mi] || [];
           hmVals.push(arr.length ? parseFloat((arr.reduce(function(s,v){return s+v;},0)/arr.length).toFixed(2)) : 0);
         }
-        var hmColors = hmVals.map(function(v){ return v >= 0 ? '#34d399' : '#f87171'; });
         var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
         var hmPad = (hmMax - hmMin) * 0.15 || 1;
         var hm = new ApexCharts(document.getElementById('chart-mstl-heatmap'), {
@@ -1317,6 +1336,11 @@
     }
     ['chk-current','chk-truepath','chk-matches'].forEach(function(id) {
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    });
+
+    // MSTL Komponenten-Dropdown
+    document.getElementById('sel-mstl-view').addEventListener('change', function(){
+      if (_mstlData) renderMSTLCharts(_mstlData, this.value);
     });
 
     // Chronos Toggles
