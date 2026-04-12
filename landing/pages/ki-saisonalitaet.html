@@ -1030,8 +1030,9 @@
         kpiHtml('Trend-Anteil', (data.strength_trend||0).toFixed(1) + '%', 'gold') +
         kpiHtml('Rauschen', noiseStrength.toFixed(1) + '%', noiseStrength > 50 ? 'red' : 'gold');
 
+      // Heatmap verzögert rendern — ApexCharts braucht sichtbaren Container
       renderMSTLCharts(data, document.getElementById('sel-mstl-view').value);
-      renderMSTLHeatmap(data);
+      setTimeout(function(){ renderMSTLHeatmap(data); }, 100);
     }
 
     function renderMSTLCharts(data, view) {
@@ -1051,9 +1052,17 @@
         document.getElementById(id).innerHTML = '';
       });
 
+      // We-are-here: letztes Datum in der Reihe
+      var todayStr = dates.length ? dates[dates.length - 1].substring(5) : null;
+
       // Panel-Renderer
       function renderPanel(id, title, vals, color, height, showXLabels) {
         var y = dynY(vals);
+        var ann = {yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]};
+        if (todayStr) {
+          ann.xaxis = [{x:dates[dates.length-1], borderColor:'#e8a820', strokeDashArray:0,
+            label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}];
+        }
         var c = new ApexCharts(document.getElementById(id), {
           series:[{name:title, data:vals}],
           chart:Object.assign({type:'area', height:height}, SA.chartTheme.chart),
@@ -1062,7 +1071,7 @@
           fill:{type:'gradient', gradient:{opacityFrom:.2,opacityTo:.02}},
           dataLabels:{enabled:false},
           grid:SA.chartTheme.grid,
-          annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]},
+          annotations:ann,
           xaxis:{categories:dates, labels:{show:showXLabels, style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
           yaxis:{min:y.min,max:y.max,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v!=null?v.toFixed(1):'';}}},
           title:{text:title,style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
@@ -1091,9 +1100,11 @@
 
     function renderMSTLHeatmap(data) {
       var el = document.getElementById('chart-mstl-heatmap');
+      if (!el) { console.error('MSTL Heatmap: Container nicht gefunden'); return; }
       el.innerHTML = '';
       var dates = data.dates || [];
-      if (!data.seasonal_yearly || dates.length < 60) return;
+      console.log('MSTL Heatmap: dates=' + dates.length + ', seasonal_yearly=' + (data.seasonal_yearly ? data.seasonal_yearly.length : 'null'));
+      if (!data.seasonal_yearly || dates.length < 60) { console.warn('MSTL Heatmap: nicht genug Daten'); return; }
       var monthAvg = {};
       for (var i = 0; i < dates.length; i++) {
         var m = parseInt(dates[i].substring(5,7));
@@ -1109,6 +1120,7 @@
       }
       var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
       var hmPad = (hmMax - hmMin) * 0.15 || 1;
+      var currentMonth = MONTHS_SHORT[new Date().getMonth()];
       var hm = new ApexCharts(el, {
         series:[{name:'Ø saisonaler Effekt', data:hmVals}],
         chart:Object.assign({type:'bar', height:280}, SA.chartTheme.chart),
@@ -1120,6 +1132,8 @@
         yaxis:{min:hmMin-hmPad,max:hmMax+hmPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
         title:{text:'Ø Saisonaler Effekt pro Monat (MSTL-bereinigt)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
         tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(2)+' Preiseinheiten':'–';}}}),
+        annotations:{xaxis:[{x:currentMonth, borderColor:'#e8a820', strokeDashArray:0,
+          label:{text:'Aktueller Monat',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}]},
       });
       hm.render(); mlCharts.push(hm);
     }
