@@ -276,11 +276,13 @@
       <details id="sec-mstl" style="display:none">
         <summary>🔬 Saisonale Dekomposition (MSTL)</summary>
         <div class="content">
-          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem"></div>
+          <p style="font-size:.8rem;color:var(--dim);margin-bottom:.75rem;line-height:1.6">
+            Die MSTL-Zerlegung zerlegt den Kursverlauf in <b>Trend</b> (langfristige Richtung) und <b>Saisonalität</b> (wiederkehrendes Jahresmuster).
+            Die <b>Saisonale Stärke</b> zeigt, wie viel der Kursbewegung durch das saisonale Muster erklärt wird — je höher, desto zuverlässiger ist die Saisonalität für diesen Ticker.
+          </p>
+          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
           <div id="chart-mstl-yearly"></div>
-          <div id="chart-mstl-weekly" style="margin-top:.5rem"></div>
-          <div id="chart-mstl-trend" style="margin-top:.5rem"></div>
-          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">MSTL-Zerlegung (Multiple Seasonal-Trend via LOESS): Trend + 5d-Wochen-Zyklus + 252d-Jahres-Zyklus + Residual.</p>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem">MSTL (Multiple Seasonal-Trend via LOESS): Isoliert das 252-Handelstage Jahresmuster aus dem Kursverlauf. Positive Werte = Kurs über Trend, negative = unter Trend.</p>
         </div>
       </details>
 
@@ -853,44 +855,35 @@
 
     function renderMSTLSection(data) {
       document.getElementById('sec-mstl').style.display = '';
-      // KPIs
+      // KPIs — nur die 2 relevanten
+      var strengthCol = data.strength_yearly >= 10 ? 'green' : data.strength_yearly >= 3 ? 'gold' : 'red';
+      var verdict = data.strength_yearly >= 10 ? 'Stark saisonal' : data.strength_yearly >= 3 ? 'Mäßig saisonal' : 'Schwach saisonal';
       document.getElementById('mstl-kpis').innerHTML =
-        kpiHtml('Jahres-Saisonalität', data.strength_yearly+'%', data.strength_yearly>5?'green':'gold') +
-        kpiHtml('Wochen-Zyklus', data.strength_weekly+'%', 'gold') +
-        kpiHtml('Trend-Anteil', data.strength_trend+'%', 'gold');
-      // Charts — 3 Subplots
+        kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '% der Varianz', strengthCol) +
+        kpiHtml('Bewertung', verdict, strengthCol);
+
+      // Nur Jahres-Saisonalität Chart (Wochen+Trend weglassen — kein Mehrwert bei Daily Close)
+      if (!data.seasonal_yearly) return;
       var dates = data.dates || [];
-      var cats = dates.map(function(d){return d;});
-      // X-Achse: nur jeden 20. Tag als Label zeigen
-      var xLabels = cats.map(function(d,i){ return i % 20 === 0 ? d.substring(5) : ''; });
-      var chartCfg = function(title, vals, color, height) {
-        return {
-          series:[{name:title, data:vals}],
-          chart:Object.assign({type:'area', height:height||160, group:'mstl-sync'}, SA.chartTheme.chart),
-          stroke:{width:1.5, curve:'smooth'},
-          colors:[color],
-          fill:{type:'gradient', gradient:{opacityFrom:.3,opacityTo:.05}},
-          grid:SA.chartTheme.grid,
-          dataLabels:{enabled:false},
-          xaxis:{categories:cats, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:10},
-          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'}, formatter:function(v){return v!=null?v.toFixed(1):'';}}},
-          title:{text:title, style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true}}),
-          markers:{size:0,hover:{size:4}}
-        };
-      };
-      if (data.seasonal_yearly) {
-        var c1 = new ApexCharts(document.getElementById('chart-mstl-yearly'), chartCfg('Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 160));
-        c1.render(); mlCharts.push(c1);
-      }
-      if (data.seasonal_weekly) {
-        var c2 = new ApexCharts(document.getElementById('chart-mstl-weekly'), chartCfg('Wochen-Zyklus (5d)', data.seasonal_weekly, '#60a5fa', 120));
-        c2.render(); mlCharts.push(c2);
-      }
-      if (data.trend) {
-        var c3 = new ApexCharts(document.getElementById('chart-mstl-trend'), chartCfg('Trend', data.trend, '#34d399', 140));
-        c3.render(); mlCharts.push(c3);
-      }
+      var vals = data.seasonal_yearly;
+
+      // Positive/negative Bereiche farblich unterscheiden
+      var c1 = new ApexCharts(document.getElementById('chart-mstl-yearly'), {
+        series:[{name:'Saisonale Komponente', data:vals}],
+        chart:Object.assign({type:'area', height:220}, SA.chartTheme.chart),
+        stroke:{width:2, curve:'smooth'},
+        colors:['#e8a820'],
+        fill:{type:'gradient', gradient:{opacityFrom:.25,opacityTo:.02}},
+        dataLabels:{enabled:false},
+        grid:SA.chartTheme.grid,
+        annotations:{yaxis:[{y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3}]},
+        xaxis:{categories:dates, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
+        yaxis:{labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v!=null?v.toFixed(0):'';}}, title:{text:'Abweichung vom Trend',style:{color:'#a89878',fontSize:'10px'}}},
+        title:{text:'Isoliertes Jahresmuster (252 Handelstage)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2)+' (über/unter Trend)':'–';}}}),
+        markers:{size:0,hover:{size:4}}
+      });
+      c1.render(); mlCharts.push(c1);
     }
 
     function renderNPSection(data) {
