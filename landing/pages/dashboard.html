@@ -951,11 +951,24 @@
       }
       var avgMaxDd=mean(allMaxDds);
       worstDd=allMaxDds.length?Math.min.apply(null,allMaxDds):NaN;
-      // DD-Perzentil: wie viel % der historischen Max-DDs waren schlimmer
+      // DD-Perzentil: Vergleicht aktuellen DD mit DD am gleichen DOY in vergangenen Jahren
+      // 0%=harmlos (wenig DD), 100%=extrem (schlimmer DD als fast alle Jahre zum selben Zeitpunkt)
       var ddPercentile=NaN;
-      if(!isNaN(ddNow)&&allMaxDds.length>2){
-        var worse=allMaxDds.filter(function(v){return v<ddNow;}).length;
-        ddPercentile=worse/allMaxDds.length*100;
+      var td3=todayDoy();
+      if(!isNaN(ddNow)){
+        var histDdAtDoy=[];
+        for(var yp in yearData){
+          if(parseInt(yp)===currentYear)continue;
+          var cP=yearData[yp].full_365;
+          var ddP=drawdownSeries(cP,0);
+          var doyIdx=Math.min(td3-1,ddP.length-1);
+          while(doyIdx>0&&(ddP[doyIdx]==null||isNaN(ddP[doyIdx])))doyIdx--;
+          if(doyIdx>=0&&ddP[doyIdx]!=null&&!isNaN(ddP[doyIdx]))histDdAtDoy.push(ddP[doyIdx]);
+        }
+        if(histDdAtDoy.length>2){
+          var betterYears=histDdAtDoy.filter(function(v){return v>ddNow;}).length;
+          ddPercentile=betterYears/histDdAtDoy.length*100;
+        }
       }
       // Tage im DD: seit wann unter Peak (aktuelles Jahr)
       var daysInDd=0;
