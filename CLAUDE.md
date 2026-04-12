@@ -561,6 +561,30 @@ Bei Fehlern:
 - [x] **2026-04-12** fix: Wochentage Streak-Sortierung Mo→Fr + korrekte chronologische Sortierung
 - [x] **2026-04-12** fix: Wochentage `toISOString()` Timezone-Bug (MESZ→UTC verschluckte Freitag)
 
+### ⚠️ OFFEN — ML-Pipeline (Chronos + MSTL + NeuralProphet)
+**Stand 2026-04-12**: Script + DB + Cron fertig, lokal getestet. Server-Upgrade nötig.
+
+- [x] `scripts/compute_ml_forecasts.py` geschrieben + lokal mit SPY getestet (alle 3 Modelle OK)
+- [x] Supabase-Tabelle `ml_forecasts` angelegt (SQL in `scripts/create_ml_forecasts.sql`)
+- [x] GitHub Actions Workflow `.github/workflows/ml_forecasts.yml` (täglich Mo-Fr 21:30 UTC)
+- [ ] **Server-Upgrade Hetzner CPX22 → CPX32** (4→8 GB RAM, nötig für PyTorch ~2GB)
+- [ ] **Docker: PyTorch + Chronos + NeuralProphet in requirements.txt** eintragen:
+  ```
+  torch>=2.0 --index-url https://download.pytorch.org/whl/cpu
+  chronos-forecasting
+  neuralprophet
+  ```
+- [ ] **Docker-Image rebuilden** nach requirements.txt-Änderung (`docker compose up -d --build`)
+- [ ] **Erster Testlauf auf Server**: `docker exec seasonalpha-app python3 scripts/compute_ml_forecasts.py --ticker SPY`
+- [ ] **Frontend: KI-Saisonalität** — 3 neue Sektionen (Chronos-Chart, MSTL-Dekomposition, NP-Komponenten)
+- [ ] **Frontend: KI-Score auf 5 Sub-Scores** erweitern (+ MSTL Saisonale Stärke)
+- [ ] **Frontend: Dashboard** — KI-Forecast Bento-Card + Radar 5 Achsen
+- [ ] **Frontend: Scanner** — 2 neue Spalten (Forecast, Saisonale Stärke)
+- [ ] **Frontend: Watchlist** — Forecast-KPI in Compact-Cards
+- [ ] **Frontend: Newsletter** — Top-5 Forecast Sektion
+
+**Plan-Datei**: `.claude/plans/curried-floating-treasure.md`
+
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
 - [ ] Phase F: Läuft Nightly auch Sonntags? Falls nicht → Cron ergänzen
@@ -568,17 +592,14 @@ Bei Fehlern:
 - [ ] Blog-Post zum Newsletter-Launch
 
 ### Marketing-Pipeline (manuell durch User)
-- [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln (Tweet-Texte in `blog/output/{slug}/social/`)
-- [ ] Newsletter-Mail an Brevo-Liste: "Dashboard ist live + 5 neue Artikel"
+- [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln
+- [ ] Newsletter-Mail an Brevo-Liste
 - [ ] Plausible/Umami Analytics einbauen (DSGVO-konform)
-- [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026" (Email-Gate)
-- [ ] Reddit-Post in r/Finanzen + r/mauerstrassenwetten
+- [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 
 ### Technische Roadmap (offen)
 - [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
 - [ ] Custom Watchlists mit gespeichertem Dashboard-View
-- [ ] Alerts: Push wenn KI-Score, Crash-Ampel oder Strategie-Signale eine Schwelle überschreiten
+- [ ] Alerts: Push bei KI-Score/Crash-Ampel/Strategie-Schwellen
 - [ ] EN-Übersetzung der HTML-Pages
 - [ ] Stripe Freemium/Abo-Integration
-- [ ] Anomalie-Radar in Dashboard-Bento-Card auf neue Compute-Felder umstellen (nutzt aktuell nur `score`/`return_10d`/`avg_10d`, könnte `percentile_rank` mit nutzen)
-- [ ] WCAG Touch-Targets (44×44px) auf Footer-Links + Nav-Dropdown-Items (nicht im Mobile-Fix-Scope enthalten)
