@@ -36,16 +36,24 @@ import pandas as pd
 
 # ── Helpers ──────────────────────────────────────────────────
 
-def get_top_tickers(n: int) -> list[str]:
-    """Top-N Ticker aus scanner_results nach Score."""
+def get_all_tickers() -> list[str]:
+    """Alle Ticker aus scanner_results (sortiert nach Score)."""
     from shared.supabase_client import get_client
     sb = get_client()
-    res = sb.table("scanner_results") \
-        .select("ticker") \
-        .order("score", desc=True) \
-        .limit(n) \
-        .execute()
-    return [r["ticker"] for r in res.data]
+    all_rows = []
+    batch = 1000
+    offset = 0
+    while True:
+        res = sb.table("scanner_results") \
+            .select("ticker") \
+            .order("score", desc=True) \
+            .range(offset, offset + batch - 1) \
+            .execute()
+        all_rows.extend(res.data)
+        if len(res.data) < batch:
+            break
+        offset += batch
+    return [r["ticker"] for r in all_rows]
 
 
 def load_prices(ticker: str) -> pd.DataFrame | None:
@@ -206,8 +214,7 @@ MODELS = {
 
 def main():
     parser = argparse.ArgumentParser(description="ML Forecast Pre-Compute")
-    parser.add_argument("--top", type=int, default=50, help="Top-N Ticker aus Scanner")
-    parser.add_argument("--ticker", type=str, help="Einzelner Ticker")
+    parser.add_argument("--ticker", type=str, help="Einzelner Ticker (sonst alle aus Scanner)")
     parser.add_argument("--models", type=str, default="chronos,mstl,neuralprophet",
                         help="Komma-separierte Modell-Liste")
     parser.add_argument("--dry-run", action="store_true", help="Nur berechnen, nicht speichern")
@@ -223,7 +230,7 @@ def main():
     if args.ticker:
         tickers = [args.ticker.upper()]
     else:
-        tickers = get_top_tickers(args.top)
+        tickers = get_all_tickers()
 
     print(f"ML Forecasts: {len(tickers)} Ticker × {len(selected_models)} Modelle")
     print(f"Modelle: {selected_models}")
