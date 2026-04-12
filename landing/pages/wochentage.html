@@ -599,6 +599,10 @@
     }
 
     // ── Aktuelle Woche Mo→Fr (mode-aware, Wochenende-tolerant) ──
+    // Hilfsfunktion: lokales Datum als YYYY-MM-DD (ohne UTC-Shift durch toISOString)
+    function localDateStr(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
     function calcCurrentWeekCurve(enriched, mode) {
       mode = mode || 'cc';
       if (!enriched.length) return null;
@@ -608,15 +612,14 @@
       // Letzten Montag finden (auch wenn heute Wochenende ist)
       var monday = new Date(today);
       monday.setDate(monday.getDate() - todayWd);
-      monday.setHours(0,0,0,0);
-      var mondayStr = monday.toISOString().substring(0,10);
-      var todayStr = today.toISOString().substring(0,10);
+      var mondayStr = localDateStr(monday);
+      var todayStr = localDateStr(today);
       // Wenn Wochenende: zeige bis Freitag der aktuellen Woche
       var endStr = todayStr;
       if (todayWd >= 5) {
         var friday = new Date(monday);
         friday.setDate(friday.getDate() + 4);
-        endStr = friday.toISOString().substring(0,10);
+        endStr = localDateStr(friday);
       }
       // Daten dieser Woche (Mo-Fr)
       var thisWeek = enriched.filter(function(r){
