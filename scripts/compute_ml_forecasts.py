@@ -172,17 +172,26 @@ def run_mstl(df: pd.DataFrame, ticker: str) -> dict | None:
         return None
 
 
+def _is_crypto(ticker: str) -> bool:
+    """Prüft ob ein Ticker Crypto ist (7d-Handel)."""
+    crypto_suffixes = ["-USD", "-EUR", "-GBP", "-BTC"]
+    return any(ticker.upper().endswith(s) for s in crypto_suffixes)
+
+
 def run_neuralprophet(df: pd.DataFrame, ticker: str) -> dict | None:
-    """NeuralProphet Saisonalitäts-Komponenten."""
+    """NeuralProphet: Saisonalität + Forecast + Naive-Vergleich + Metriken."""
     try:
         from shared.neural_prophet_forecast import forecast_neural_prophet
         result = forecast_neural_prophet(df, periods=30)
         if result is None:
             return None
 
+        is_crypto = _is_crypto(ticker)
+
         data = {
             "expected_return": result.get("expected_return", 0),
             "last_close": result.get("last_close", 0),
+            "is_crypto": is_crypto,
         }
 
         # Komponenten extrahieren
@@ -194,9 +203,67 @@ def run_neuralprophet(df: pd.DataFrame, ticker: str) -> dict | None:
                     {"ds": row["ds"].strftime("%Y-%m-%d"), "value": round(float(row[key]), 4)}
                     for _, row in comp_df.iterrows()
                     if not pd.isna(row[key])
-                ][-365:]  # Letzte 365 Punkte max
+                ][-365:]
 
-        # Model nicht serialisierbar → entfernen
+        # Forecast-Daten (30d Prognose)
+        forecast_df = result.get("forecast_df")
+        if forecast_df is not None:
+            yhat_col = [c for c in forecast_df.columns if c.startswith("yhat")]
+            if yhat_col:
+                fc_vals = forecast_df[yhat_col[0]].values
+                fc_dates = forecast_df["ds"].values
+                data["forecast"] = [
+                    {"ds": pd.Timestamp(d).strftime("%Y-%m-%d"), "yhat": round(float(v), 2)}
+                    for d, v in zip(fc_dates, fc_vals)
+                    if not np.isnan(v)
+                ]
+
+        # Naive-Forecast: letzte 30 Tage als Prognose (Benchmark)
+        close_vals = df["Close"].values
+        if len(close_vals) >= 60:
+            last_30 = close_vals[-30:]
+            prev_30 = close_vals[-60:-30]
+            # Naive = Kurs bleibt beim letzten Close
+            naive_forecast = float(close_vals[-1])
+            data["naive_forecast_30d"] = round(naive_forecast, 2)
+
+            # In-Sample Fehler-Metriken (letzte 90 Tage)
+            # NP-Forecast vs. Actual auf historischen Daten
+            in_sample_n = min(90, len(close_vals) - 1)
+            actuals = close_vals[-in_sample_n:]
+            # Naive: jeder Tag = Vortag
+            naive_preds = close_vals[-(in_sample_n + 1):-1]
+            naive_errors = np.abs(actuals - naive_preds)
+            naive_mae = float(np.mean(naive_errors))
+            naive_mape = float(np.mean(naive_errors / np.maximum(np.abs(actuals), 1e-8)) * 100)
+
+            data["metrics"] = {
+                "naive_mae": round(naive_mae, 2),
+                "naive_mape": round(naive_mape, 2),
+            }
+
+            # NP In-Sample Fehler (wenn Trend-Komponente vorhanden)
+            if "trend" in components:
+                trend_df = components["trend"]
+                trend_vals = trend_df["trend"].values
+                if len(trend_vals) >= in_sample_n:
+                    # Rekonstruktion = trend + yearly + weekly
+                    recon = trend_vals[-in_sample_n:].copy()
+                    if "yearly" in components:
+                        y_vals = components["yearly"]["yearly"].values
+                        if len(y_vals) >= in_sample_n:
+                            recon = recon + y_vals[-in_sample_n:]
+                    if "weekly" in components:
+                        w_vals = components["weekly"]["weekly"].values
+                        if len(w_vals) >= in_sample_n:
+                            recon = recon + w_vals[-in_sample_n:]
+
+                    np_errors = np.abs(actuals - recon)
+                    np_mae = float(np.mean(np_errors))
+                    np_mape = float(np.mean(np_errors / np.maximum(np.abs(actuals), 1e-8)) * 100)
+                    data["metrics"]["np_mae"] = round(np_mae, 2)
+                    data["metrics"]["np_mape"] = round(np_mape, 2)
+
         return data
     except Exception as e:
         print(f"  [WARN] NeuralProphet {ticker}: {e}")

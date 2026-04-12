@@ -310,24 +310,23 @@
       </details>
 
       <details id="sec-neuralprophet" style="display:none">
-        <summary>🧠 Saisonalitäts-Komponenten (NeuralProphet)</summary>
+        <summary>🧠 NeuralProphet — KI-Saisonalitäts-Analyse</summary>
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
           <div class="info-tooltip">
-            <b>Was zeigt dieser Chart?</b><br>
-            NeuralProphet ist ein <b>KI-Modell</b> (PyTorch) das eigenständig lernt, welche saisonalen Muster im Kursverlauf existieren.<br><br>
-            <b>Jahres-Saisonalität</b> (oberer Chart):<br>
-            Zeigt das gelernte 12-Monats-Muster. Peaks = saisonal starke Phasen, Täler = schwache Phasen. Vergleiche mit dem statistischen Ø auf dem Hauptchart oben.<br><br>
-            <b>Wochen-Saisonalität</b> (unterer Chart):<br>
-            Zeigt ob bestimmte Wochentage systematisch stärker/schwächer sind. <span style="color:#34d399">Grün</span> = überdurchschnittlich, <span style="color:#f87171">Rot</span> = unterdurchschnittlich.<br><br>
-            <b>KPIs erklärt:</b><br>
-            • <b>Erwartete Rendite 30d</b>: NeuralProphet-Prognose für die nächsten 30 Tage<br>
-            • <b>Letzter Close</b>: Referenzkurs für die Prognose<br><br>
-            <span style="color:var(--muted);font-size:.65rem">Modell: NeuralProphet (Meta/Facebook), 50 Epochen, PyTorch-basiert.</span>
+            <b>NeuralProphet</b> (Meta/Facebook) ist eine KI-Erweiterung von Prophet mit neuronalen Netzen.<br><br>
+            <b>Jahres-Saisonalität</b>: Das vom Modell <em>gelernte</em> 12-Monats-Muster. Peaks = saisonal starke Phasen. Vergleiche mit dem statistischen Ø oben — stimmen die Muster überein, ist die Saisonalität robust.<br><br>
+            <b>Wochen-Saisonalität</b>: Zeigt den gelernten Effekt pro Wochentag. Die Zahl im Balken ist der <b>saisonale Beitrag in Preiseinheiten</b> — positive Werte bedeuten, dass dieser Tag den Kurs überdurchschnittlich hebt.<br>
+            Aktien: Mo–Fr. Crypto: Mo–So (7/7 Handel).<br><br>
+            <b>Forecast vs. Naiv</b>: Vergleicht die NP-Prognose mit einer "naiven" Methode (Kurs bleibt gleich). Ist NP besser, hat das Modell echten Mehrwert.<br><br>
+            <b>Fehler-Metriken</b>: MAE = mittlerer absoluter Fehler in Preiseinheiten. MAPE = prozentualer Fehler. Kleiner = besser.<br><br>
+            <span style="color:var(--muted);font-size:.65rem">50 Epochen, Learning Rate 0.1, PyTorch-basiert.</span>
           </div>
           <div id="np-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
           <div id="chart-np-yearly"></div>
-          <div id="chart-np-weekly" style="margin-top:1rem"></div>
+          <div id="chart-np-weekly" style="margin-top:1.5rem"></div>
+          <div id="chart-np-forecast" style="margin-top:1.5rem"></div>
+          <div id="np-metrics" style="margin-top:1rem"></div>
         </div>
       </details>
 
@@ -976,16 +975,18 @@
 
     function renderNPSection(data) {
       document.getElementById('sec-neuralprophet').style.display = '';
+      var isCrypto = data.is_crypto || false;
+
       // KPIs
       var retCol = data.expected_return >= 0 ? 'green' : 'red';
-      document.getElementById('np-kpis').innerHTML =
-        kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
+      var kpisHtml = kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
         kpiHtml('Letzter Close', data.last_close, 'gold');
-      // Yearly seasonality chart
+      document.getElementById('np-kpis').innerHTML = kpisHtml;
+
+      // ── 1. Jahres-Saisonalität ──
       if (data.yearly_seasonality && data.yearly_seasonality.length) {
         var yCats = data.yearly_seasonality.map(function(p){return p.ds;});
         var yVals = data.yearly_seasonality.map(function(p){return p.value;});
-        // Dynamische Y-Achse
         var npYMin = Math.min.apply(null, yVals), npYMax = Math.max.apply(null, yVals);
         var npYPad = (npYMax - npYMin) * 0.15;
         var c1 = new ApexCharts(document.getElementById('chart-np-yearly'), {
@@ -1004,32 +1005,90 @@
         });
         c1.render(); mlCharts.push(c1);
       }
-      // Weekly seasonality chart — auf 7 Tage aggregieren (Mo-So Durchschnitt)
+
+      // ── 2. Wochen-Saisonalität (Aktien Mo-Fr, Crypto Mo-So) ──
       if (data.weekly_seasonality && data.weekly_seasonality.length) {
-        var WD_NAMES = ['Mo','Di','Mi','Do','Fr','Sa','So'];
-        var wdSums = [0,0,0,0,0,0,0], wdCounts = [0,0,0,0,0,0,0];
+        var WD_ALL = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+        var nDays = isCrypto ? 7 : 5;
+        var wdSums = new Array(7).fill(0), wdCounts = new Array(7).fill(0);
         data.weekly_seasonality.forEach(function(p) {
           var d = new Date(p.ds);
-          var wd = d.getDay(); wd = wd === 0 ? 6 : wd - 1; // 0=Mo..6=So
+          var wd = d.getDay(); wd = wd === 0 ? 6 : wd - 1;
           wdSums[wd] += p.value;
           wdCounts[wd]++;
         });
-        var wVals = WD_NAMES.map(function(_,i){ return wdCounts[i] > 0 ? parseFloat((wdSums[i]/wdCounts[i]).toFixed(4)) : 0; });
-        var barColors = wVals.map(function(v){ return v >= 0 ? '#34d399' : '#f87171'; });
+        var wdNames = WD_ALL.slice(0, nDays);
+        var wVals = wdNames.map(function(_,i){ return wdCounts[i] > 0 ? parseFloat((wdSums[i]/wdCounts[i]).toFixed(4)) : 0; });
+        // Dynamische Y-Achse für Bars
+        var wMin = Math.min.apply(null, wVals), wMax = Math.max.apply(null, wVals);
+        var wPad = Math.max((wMax - wMin) * 0.2, 0.01);
         var c2 = new ApexCharts(document.getElementById('chart-np-weekly'), {
-          series:[{name:'Wochen-Saisonalität',data:wVals}],
-          chart:Object.assign({type:'bar',height:250},SA.chartTheme.chart),
+          series:[{name:'Saisonaler Beitrag',data:wVals}],
+          chart:Object.assign({type:'bar',height:280},SA.chartTheme.chart),
           stroke:{width:0},
-          colors:['#60a5fa'],
           plotOptions:{bar:{borderRadius:6,columnWidth:'55%',colors:{ranges:[{from:-999,to:-0.0001,color:'#f87171'},{from:0,to:999,color:'#34d399'}]}}},
           grid:SA.chartTheme.grid,
-          dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(2):'';}},
-          xaxis:{categories:WD_NAMES,labels:{style:{colors:'#e2e8f0',fontSize:'12px',fontWeight:600}}},
-          yaxis:{labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(2):'';}}},
-          title:{text:'Gelernte Wochen-Saisonalität (Ø pro Wochentag)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip),
+          dataLabels:{enabled:true,style:{fontSize:'12px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(2):'';}},
+          xaxis:{categories:wdNames,labels:{style:{colors:'#e2e8f0',fontSize:'13px',fontWeight:700}}},
+          yaxis:{min:wMin-wPad,max:wMax+wPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(2):'';}}},
+          title:{text:'Gelernte Wochen-Saisonalität' + (isCrypto ? ' (7/7 Handel)' : ' (Mo–Fr)'),style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(4)+' Preiseinheiten':'–';}}}),
         });
         c2.render(); mlCharts.push(c2);
+      }
+
+      // ── 3. Forecast vs. Naiv ──
+      if (data.forecast && data.forecast.length) {
+        var fcCats = data.forecast.map(function(f){return f.ds.substring(5);});
+        var fcYhat = data.forecast.map(function(f){return f.yhat;});
+        var naiveVal = data.naive_forecast_30d || data.last_close;
+        var naiveLine = fcCats.map(function(){return naiveVal;});
+        // Dynamische Y-Achse
+        var allFcVals = fcYhat.concat([naiveVal]);
+        var fcMin = Math.min.apply(null, allFcVals), fcMax = Math.max.apply(null, allFcVals);
+        var fcPad = (fcMax - fcMin) * 0.15 || 1;
+        var c3 = new ApexCharts(document.getElementById('chart-np-forecast'), {
+          series:[
+            {name:'NeuralProphet Forecast',data:fcYhat},
+            {name:'Naiv (letzter Close)',data:naiveLine}
+          ],
+          chart:Object.assign({type:'line',height:320},SA.chartTheme.chart),
+          stroke:{width:[3,2],dashArray:[0,6],curve:'smooth'},
+          colors:['#e8a820','#64748b'],
+          dataLabels:{enabled:false},
+          grid:SA.chartTheme.grid,
+          annotations:{xaxis:[{x:fcCats[0],borderColor:'#e8a820',label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px'}}}]},
+          xaxis:{categories:fcCats,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,hideOverlappingLabels:true},tickAmount:8},
+          yaxis:{min:Math.floor(fcMin-fcPad),max:Math.ceil(fcMax+fcPad),labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v?v.toFixed(0):'';}}},
+          title:{text:'30d Forecast: NeuralProphet vs. Naiv',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
+          tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
+          markers:{size:0,hover:{size:5}},
+          legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:12}}
+        });
+        c3.render(); mlCharts.push(c3);
+      }
+
+      // ── 4. Fehler-Metriken ──
+      var metricsEl = document.getElementById('np-metrics');
+      if (data.metrics) {
+        var m = data.metrics;
+        var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem">';
+        html += kpiHtml('Naiv MAE', m.naive_mae != null ? m.naive_mae.toFixed(2) : '–', 'red');
+        html += kpiHtml('Naiv MAPE', m.naive_mape != null ? m.naive_mape.toFixed(2) + '%' : '–', 'red');
+        if (m.np_mae != null) {
+          var maeCol = m.np_mae < m.naive_mae ? 'green' : 'red';
+          var mapeCol = m.np_mape < m.naive_mape ? 'green' : 'red';
+          html += kpiHtml('NP MAE', m.np_mae.toFixed(2), maeCol);
+          html += kpiHtml('NP MAPE', m.np_mape.toFixed(2) + '%', mapeCol);
+        } else {
+          html += kpiHtml('NP MAE', '–', '');
+          html += kpiHtml('NP MAPE', '–', '');
+        }
+        html += '</div>';
+        html += '<p style="font-size:.65rem;color:var(--muted);margin-top:.4rem">MAE = mittlerer absoluter Fehler (Preiseinheiten). MAPE = mittlerer prozentualer Fehler. Grün = NP schlägt die naive Methode.</p>';
+        metricsEl.innerHTML = html;
+      } else {
+        metricsEl.innerHTML = '';
       }
     }
 
