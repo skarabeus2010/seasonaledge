@@ -267,25 +267,34 @@
       <details id="sec-chronos" style="display:none">
         <summary>📈 Probabilistischer Forecast (Chronos-Bolt)</summary>
         <div class="content" style="position:relative">
-          <!-- Info-Badge -->
           <div class="info-badge" tabindex="0">i</div>
           <div class="info-tooltip">
-            <b>Was zeigt dieser Chart?</b><br>
-            Die <b style="color:#e8a820">goldene Linie</b> ist die wahrscheinlichste Kursentwicklung der nächsten 30 Handelstage, berechnet vom KI-Modell Chronos-Bolt (Amazon, 9M Parameter).<br><br>
-            Das <b style="color:rgba(232,168,32,.5)">Konfidenzband</b> (gestrichelt) zeigt die Unsicherheit: 90% aller Szenarien liegen innerhalb dieser Grenzen. Je breiter das Band, desto unsicherer die Prognose.<br><br>
-            <b>KPIs erklärt:</b><br>
-            • <b>Erwartete Rendite</b>: Prognostizierte Kursänderung in 30 Tagen<br>
-            • <b>P(positiv)</b>: In wie viel % der 100 Simulationen der Kurs steigt<br>
-            • <b>Konfidenzbreite</b>: Spread zwischen 5. und 95. Perzentil am Tag 30 (in Preiseinheiten)<br><br>
-            <span style="color:var(--muted);font-size:.65rem">Modell: Amazon Chronos-Bolt-Tiny, zero-shot, 100 Samples. Kein Fine-Tuning.</span>
+            <b>Chronos-Bolt</b> (Amazon, 9M Parameter) erzeugt 100 mögliche Kursverläufe und fasst sie als Quantile zusammen:<br><br>
+            <b>3 Szenarien:</b><br>
+            • <span style="color:#34d399">Optimistisch</span> (75. Perzentil): 75% der Simulationen lagen darunter<br>
+            • <span style="color:#e8a820">Baseline</span> (Median): Die wahrscheinlichste Entwicklung<br>
+            • <span style="color:#f87171">Pessimistisch</span> (25. Perzentil): Nur 25% waren schlechter<br><br>
+            Das <b>äußere Band</b> (10.–90. Perzentil, schattiert) zeigt die Gesamt-Unsicherheit. <b>Historische Kurse</b> (grau) geben Kontext.<br><br>
+            <b>KPIs:</b><br>
+            • <b>Erwartete Rendite</b>: Median-Prognose in 30 Tagen vs. letzter Close<br>
+            • <b>P(positiv)</b>: Anteil der 100 Simulationen mit Kursgewinn<br>
+            • <b>Spanne Tag 30</b>: Differenz 10.–90. Perzentil am letzten Prognosetag<br><br>
+            <span style="color:var(--muted);font-size:.65rem">Zero-shot (kein Training auf diesem Ticker). 100 Samples, CPU-Inferenz.</span>
           </div>
           <div id="chronos-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem"></div>
-          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem">
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap">
             <label style="font-size:.75rem;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:.35rem">
-              <input type="checkbox" id="chk-chronos-band" checked style="accent-color:#e8a820"> Konfidenzband anzeigen
+              <input type="checkbox" id="chk-chronos-band" checked style="accent-color:#e8a820"> Konfidenzband (10%–90%)
+            </label>
+            <label style="font-size:.75rem;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:.35rem">
+              <input type="checkbox" id="chk-chronos-scenarios" checked style="accent-color:#34d399"> Szenarien (25%/75%)
             </label>
           </div>
           <div id="chart-chronos"></div>
+          <details style="margin-top:1rem">
+            <summary style="font-size:.8rem;color:var(--dim);cursor:pointer">Forecast-Tabelle (Werte)</summary>
+            <div id="chronos-table" style="margin-top:.5rem"></div>
+          </details>
         </div>
       </details>
 
@@ -862,83 +871,141 @@
       // KPIs
       var retCol = data.expected_return >= 0 ? 'green' : 'red';
       var probCol = data.p_positive >= 60 ? 'green' : data.p_positive <= 40 ? 'red' : 'gold';
-      var spread = data.forecast && data.forecast.length ? (data.forecast[data.forecast.length-1].yhat_upper - data.forecast[data.forecast.length-1].yhat_lower).toFixed(1) : '–';
+      var lastFc = data.forecast && data.forecast.length ? data.forecast[data.forecast.length-1] : null;
+      var spread = lastFc && lastFc.q90 != null ? (lastFc.q90 - lastFc.q10).toFixed(1) :
+                   (lastFc ? (lastFc.yhat_upper - lastFc.yhat_lower).toFixed(1) : '–');
       document.getElementById('chronos-kpis').innerHTML =
         kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
         kpiHtml('P(positiv)', data.p_positive+'%', probCol) +
-        kpiHtml('Konfidenzbreite', spread + ' Punkte', 'gold');
-      renderChronosChart(data, document.getElementById('chk-chronos-band').checked);
+        kpiHtml('Spanne Tag 30', spread + ' Punkte', 'gold');
+      var showBand = document.getElementById('chk-chronos-band').checked;
+      var showScen = document.getElementById('chk-chronos-scenarios').checked;
+      renderChronosChart(data, showBand, showScen);
+      renderChronosTable(data);
     }
 
-    function renderChronosChart(data, showBand) {
+    function renderChronosChart(data, showBand, showScenarios) {
       if (!data.forecast || !data.forecast.length) return;
-      // Letzten echten Close als Startpunkt einfügen
-      var lastClose = data.last_close;
       var fc = data.forecast;
+      var hist = data.history || [];
+      var lastClose = data.last_close;
 
-      // Serien: Prognose + Range-Area für gefülltes Band
-      var cats = fc.map(function(f){ return f.ds.substring(5); }); // MM-DD Format
-      var yhat = fc.map(function(f){ return parseFloat(f.yhat.toFixed(2)); });
+      // Kombinierten Zeitstrahl bauen: Historie + Forecast
+      var allCats = [];
+      var histClose = [], fcMedian = [], fcQ10 = [], fcQ25 = [], fcQ75 = [], fcQ90 = [];
 
-      var lo = fc.map(function(f){ return parseFloat(f.yhat_lower.toFixed(2)); });
-      var hi = fc.map(function(f){ return parseFloat(f.yhat_upper.toFixed(2)); });
-
-      var series = [{name:'Prognose (Median)', data:yhat}];
-      var colors = ['#e8a820'];
-      var strokes = [3];
-      var dashes = [0];
-
-      if (showBand) {
-        series.push({name:'95. Perzentil', data:hi});
-        series.push({name:'5. Perzentil', data:lo});
-        colors.push('rgba(232,168,32,.35)', 'rgba(232,168,32,.35)');
-        strokes.push(1, 1);
-        dashes.push(5, 5);
+      // Historische Punkte
+      for (var hi = 0; hi < hist.length; hi++) {
+        allCats.push(hist[hi].ds.substring(5));
+        histClose.push(hist[hi].close);
+        fcMedian.push(null); fcQ10.push(null); fcQ25.push(null); fcQ75.push(null); fcQ90.push(null);
       }
 
-      // Y-Achse auf Datenbereich zoomen
-      var allVals = yhat.concat(lo).concat(hi);
-      var yMin = Math.min.apply(null, allVals);
-      var yMax = Math.max.apply(null, allVals);
-      var yPad = (yMax - yMin) * 0.1;
-      yMin = Math.floor(yMin - yPad);
-      yMax = Math.ceil(yMax + yPad);
+      // Brücke: letzter historischer Punkt = erster Forecast-Punkt
+      var bridgeIdx = allCats.length - 1;
 
-      // We-are-here: Tag 0 = heute
-      var todayAnnotation = {
-        x: cats[0],
-        borderColor: '#e8a820',
-        strokeDashArray: 0,
-        label: {text: 'Heute', style: {color:'#fff', background:'#e8a820', fontSize:'10px', padding:{left:6,right:6,top:2,bottom:2}}}
-      };
+      // Forecast-Punkte
+      for (var fi = 0; fi < fc.length; fi++) {
+        allCats.push(fc[fi].ds.substring(5));
+        histClose.push(null);
+        fcMedian.push(fc[fi].yhat);
+        fcQ10.push(fc[fi].q10 != null ? fc[fi].q10 : (fc[fi].yhat_lower || null));
+        fcQ25.push(fc[fi].q25 != null ? fc[fi].q25 : null);
+        fcQ75.push(fc[fi].q75 != null ? fc[fi].q75 : null);
+        fcQ90.push(fc[fi].q90 != null ? fc[fi].q90 : (fc[fi].yhat_upper || null));
+      }
 
-      // Letzter-Close Linie
-      var lastCloseAnnotation = {
-        y: lastClose,
-        borderColor: 'rgba(255,255,255,.2)',
-        strokeDashArray: 4,
-        label: {text: 'Letzter Close: ' + lastClose.toFixed(2), position:'front', style:{color:'#a89878',background:'transparent',fontSize:'9px'}}
-      };
+      // Brücke: Median startet bei letztem Close
+      if (bridgeIdx >= 0) fcMedian[bridgeIdx] = lastClose;
 
-      // Alten Chart zerstören
+      // Serien aufbauen
+      var series = [
+        {name:'Historisch', data:histClose},
+        {name:'Baseline (Median)', data:fcMedian}
+      ];
+      var colors = ['#64748b', '#e8a820'];
+      var strokes = [2, 3];
+      var dashes = [0, 0];
+
+      if (showScenarios) {
+        series.push({name:'Optimistisch (75%)', data:fcQ75});
+        series.push({name:'Pessimistisch (25%)', data:fcQ25});
+        colors.push('#34d399', '#f87171');
+        strokes.push(1.5, 1.5);
+        dashes.push(4, 4);
+      }
+      if (showBand) {
+        series.push({name:'90. Perzentil', data:fcQ90});
+        series.push({name:'10. Perzentil', data:fcQ10});
+        colors.push('rgba(232,168,32,.25)', 'rgba(232,168,32,.25)');
+        strokes.push(1, 1);
+        dashes.push(6, 6);
+      }
+
+      // Y-Achse dynamisch
+      var allVals = [];
+      series.forEach(function(s){ s.data.forEach(function(v){ if(v!=null) allVals.push(v); }); });
+      var yMin = Math.min.apply(null, allVals), yMax = Math.max.apply(null, allVals);
+      var yPad = (yMax - yMin) * 0.08;
+
+      // Heute-Marker
+      var todayCat = hist.length > 0 ? allCats[hist.length - 1] : allCats[0];
+
       var container = document.getElementById('chart-chronos');
       container.innerHTML = '';
 
       var c = new ApexCharts(container, {
         series: series,
-        chart: Object.assign({type:'line', height:400}, SA.chartTheme.chart),
+        chart: Object.assign({type:'line', height:420}, SA.chartTheme.chart),
         stroke:{width:strokes, dashArray:dashes, curve:'smooth'},
         colors:colors,
         dataLabels:{enabled:false},
         grid: SA.chartTheme.grid,
-        annotations:{xaxis:[todayAnnotation], yaxis:[lastCloseAnnotation]},
-        xaxis:{categories:cats, labels:{style:{colors:'#e2e8f0',fontSize:'10px'}, rotate:-45, hideOverlappingLabels:true},tickAmount:10},
-        yaxis:{min:yMin, max:yMax, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
+        annotations:{
+          xaxis:[{x:todayCat, borderColor:'#e8a820', strokeDashArray:0,
+            label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}],
+          yaxis:[{y:lastClose, borderColor:'rgba(255,255,255,.15)', strokeDashArray:4,
+            label:{text:'Close: '+lastClose.toFixed(2),position:'front',style:{color:'#a89878',background:'transparent',fontSize:'9px'}}}]
+        },
+        xaxis:{categories:allCats, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
+        yaxis:{min:Math.floor(yMin-yPad), max:Math.ceil(yMax+yPad),
+          labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
+        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,
+          y:{formatter:function(v){return v!=null?v.toFixed(2):'–';}}}),
         markers:{size:0,hover:{size:5}},
-        legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:12}}
+        legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:10}}
       });
       c.render(); mlCharts.push(c);
+    }
+
+    function renderChronosTable(data) {
+      if (!data.forecast || !data.forecast.length) return;
+      var fc = data.forecast;
+      var lastClose = data.last_close;
+      var html = '<table data-no-sort="1" style="width:100%;border-collapse:collapse;font-size:.75rem">';
+      html += '<thead><tr style="border-bottom:1px solid var(--border)">';
+      html += '<th style="text-align:left;padding:.4rem;color:var(--muted)">Datum</th>';
+      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Pessim.</th>';
+      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Baseline</th>';
+      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Optim.</th>';
+      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Rendite</th>';
+      html += '</tr></thead><tbody>';
+      for (var i = 0; i < fc.length; i++) {
+        var f = fc[i];
+        var ret = (f.yhat - lastClose) / lastClose * 100;
+        var retCol = ret >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+        var q25 = f.q25 != null ? f.q25.toFixed(2) : (f.yhat_lower || f.yhat).toFixed(2);
+        var q75 = f.q75 != null ? f.q75.toFixed(2) : (f.yhat_upper || f.yhat).toFixed(2);
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,.03)">';
+        html += '<td style="padding:.3rem .4rem;color:var(--dim)">' + f.ds + '</td>';
+        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--red);font-family:var(--f-m)">' + q25 + '</td>';
+        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--text);font-weight:700;font-family:var(--f-m)">' + f.yhat.toFixed(2) + '</td>';
+        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--green);font-family:var(--f-m)">' + q75 + '</td>';
+        html += '<td style="padding:.3rem .4rem;text-align:right;font-family:var(--f-m);' + retCol + '">' + (ret>=0?'+':'') + ret.toFixed(2) + '%</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('chronos-table').innerHTML = html;
     }
 
     function renderMSTLSection(data) {
@@ -1252,9 +1319,12 @@
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
     });
 
-    // Chronos Konfidenzband Toggle
+    // Chronos Toggles
     document.getElementById('chk-chronos-band').addEventListener('change', function(){
-      if (_chronosData) renderChronosChart(_chronosData, this.checked);
+      if (_chronosData) renderChronosChart(_chronosData, this.checked, document.getElementById('chk-chronos-scenarios').checked);
+    });
+    document.getElementById('chk-chronos-scenarios').addEventListener('change', function(){
+      if (_chronosData) renderChronosChart(_chronosData, document.getElementById('chk-chronos-band').checked, this.checked);
     });
 
     // Auto-Load

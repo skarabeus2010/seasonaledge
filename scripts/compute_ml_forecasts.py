@@ -111,28 +111,66 @@ def store_result(ticker: str, model: str, data: dict, dry_run: bool = False):
 # ── Modell-Runner ────────────────────────────────────────────
 
 def run_chronos(df: pd.DataFrame, ticker: str) -> dict | None:
-    """Chronos-Bolt-Tiny 30d Forecast."""
+    """Chronos-Bolt-Tiny 30d Forecast mit Szenarien + historischem Kontext."""
     try:
-        from shared.chronos_forecast import forecast_chronos
-        result = forecast_chronos(df, periods=30)
-        if result is None:
+        import torch
+        from shared.chronos_forecast import _get_pipeline
+
+        pipeline = _get_pipeline()
+        if pipeline is None:
             return None
 
-        # DataFrame → JSON-serialisierbar
+        close_col = "Close"
+        series = df[close_col].dropna().values
+        if len(series) < 30:
+            return None
+
+        context = torch.tensor(series, dtype=torch.float32).unsqueeze(0)
+        forecast = pipeline.predict(context, prediction_length=30, num_samples=100,
+                                     limit_prediction_length=False)
+        samples = forecast[0].numpy()  # (100, 30)
+
+        # 5 Quantile für Szenarien
+        q10 = np.quantile(samples, 0.10, axis=0)
+        q25 = np.quantile(samples, 0.25, axis=0)
+        q50 = np.quantile(samples, 0.50, axis=0)
+        q75 = np.quantile(samples, 0.75, axis=0)
+        q90 = np.quantile(samples, 0.90, axis=0)
+
+        last_close = float(series[-1])
+        p_positive = float((samples[:, -1] > last_close).mean() * 100)
+        expected_return = float((q50[-1] - last_close) / last_close * 100)
+
+        # Forecast-Datumsindex
+        last_date = df.index[-1]
+        future_dates = pd.bdate_range(start=last_date + pd.Timedelta(days=1), periods=30)
+
+        # Forecast mit allen Quantilen
         forecast_list = []
-        for _, row in result.iterrows():
+        for i in range(min(30, len(future_dates))):
             forecast_list.append({
-                "ds": row["ds"].strftime("%Y-%m-%d"),
-                "yhat": round(float(row["yhat"]), 2),
-                "yhat_lower": round(float(row["yhat_lower"]), 2),
-                "yhat_upper": round(float(row["yhat_upper"]), 2),
+                "ds": future_dates[i].strftime("%Y-%m-%d"),
+                "yhat": round(float(q50[i]), 2),
+                "q10": round(float(q10[i]), 2),
+                "q25": round(float(q25[i]), 2),
+                "q75": round(float(q75[i]), 2),
+                "q90": round(float(q90[i]), 2),
             })
+
+        # Historische Preise (letzte 30 Tage als Kontext)
+        hist_n = min(30, len(series))
+        hist_dates = df.index[-hist_n:]
+        history = [
+            {"ds": d.strftime("%Y-%m-%d"), "close": round(float(v), 2)}
+            for d, v in zip(hist_dates, series[-hist_n:])
+        ]
 
         return {
             "forecast": forecast_list,
-            "expected_return": result.attrs.get("expected_return", 0),
-            "p_positive": result.attrs.get("p_positive", 50),
-            "last_close": result.attrs.get("last_close", 0),
+            "history": history,
+            "expected_return": round(expected_return, 2),
+            "p_positive": round(p_positive, 1),
+            "last_close": round(last_close, 2),
             "periods": 30,
         }
     except Exception as e:
