@@ -2002,12 +2002,16 @@
         var s = signals[i];
         var typeLabel = s.type === 'entry' ? 'Einstieg' : 'Ausstieg';
         var typeCol = s.type === 'entry' ? '#34d399' : '#f87171';
-        var streak = strategiesStreaks[s.key];
+        var sData = strategiesStreaks[s.key];
         var streakBadge = '<span style="color:#8899aa">–</span>';
-        if (streak && streak.count > 0) {
-          var cls = streak.type === 'win' ? 'win' : 'loss';
-          var lbl = streak.count + (streak.type === 'win' ? ' W' : ' L');
-          streakBadge = '<span class="streak-badge ' + cls + '">' + lbl + '</span>';
+        if (sData && sData.lastTrades && sData.lastTrades.length) {
+          // Letzte 5 Trades als Einzel-Kacheln (ältester links, neuester rechts)
+          streakBadge = '<div class="wd-streak-row" style="justify-content:flex-end;max-width:140px">';
+          for (var ti = 0; ti < sData.lastTrades.length; ti++) {
+            var tw = sData.lastTrades[ti] > 0;
+            streakBadge += '<div class="wd-blk ' + (tw ? 'w' : 'l') + '" style="flex:0 0 24px;font-size:.55rem">' + (tw ? 'W' : 'L') + '</div>';
+          }
+          streakBadge += '</div>';
         }
         html += '<tr>';
         html += '<td>' + s.icon + ' <b>' + s.name + '</b></td>';
@@ -2307,7 +2311,9 @@
               var meta = SA.STRATEGIES[key];
               if (meta && SA.strategy[meta.func]) {
                 var trades = SA.strategy[meta.func](rawRows);
-                streaks[key] = calcStrategyStreak(trades);
+                var closedTrades = trades.filter(function(t){ return !t.open; });
+                var last5 = closedTrades.slice(-5).map(function(t){ return t.return_pct; });
+                streaks[key] = { streak: calcStrategyStreak(trades), lastTrades: last5 };
               }
             } catch(e) { console.warn('Strategy', key, e); }
           }
