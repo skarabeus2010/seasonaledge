@@ -601,6 +601,19 @@ Bei Fehlern:
 - [x] **2026-04-13** refactor(opex): VIX-Code + Mode-Toggle entfernt, nur noch OPEX-Fokus
 - [x] **2026-04-13** refactor(jahreszyklus): DD/Vola-Sektionen entfernt, nur noch Rendite-Fokus
 - [x] **2026-04-13** Nav + Footer + Landing: Risikozyklus unter Zyklen, VIXpiration unter Events
+- [x] **2026-04-13** fix(blog): app.css einbinden für Nav/Footer Styling (ohne = unstyled Nav)
+- [x] **2026-04-13** fix(blog): VIXpiration Screenshot Bild-Pfad (doppeltes images/images/)
+- [x] **2026-04-13** seo(blog): Keywords aller 18 Posts auf 10-12 Tags erweitert + seo_titles ergänzt
+- [x] **2026-04-13** blog: VIXpiration April 2026 Post + Screenshot
+- [x] **2026-04-13** feat(risikozyklus): Einzeljahre 12-Farben-Palette statt grau
+- [x] **2026-04-13** feat(risikozyklus): OPEX/Triple/VIX Annotations im Vola-Chart (Sidebar-Checkboxen)
+- [x] **2026-04-13** fix(risikozyklus): Annotations try-catch + DOY 0-basiert + sec-dd-cycle open
+
+### ⚠️ OFFEN — Bugs für morgen (14.04.2026)
+- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — `<details open>` Fix versucht (2026-04-13), rendert trotzdem nicht. Nächster Debug-Schritt: ApexCharts Heatmap-Instanz im Browser inspizieren (DOM vorhanden? Breite 0?)
+- [ ] **BUG: Risikozyklus Vola-Chart prüfen** — Annotations + Chart-Rendering nach 3 Fixes (try-catch, DOY 0-basiert, sec-dd-cycle open) verifizieren. Wenn immer noch kaputt → Annotations komplett deaktivieren und Schritt für Schritt wieder einschalten
+- [ ] **ML-Forecast Cron prüfen** — erster automatischer Lauf heute Mo 21:30 UTC, morgen früh Status checken
+- [ ] **Full-Run alle 270 Ticker** mit erweitertem Backend (5 Quantile + History + NP Metrics)
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
