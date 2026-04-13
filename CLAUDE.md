@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 32.0 | 2026-04-12 | Dashboard Risiko-KPIs erweitert + WE/Feiertag-Kacheln + Streak-Bugs gefixt + Wochentage Timezone-Fix | Roadmap: 4/5 Features live
+> Version 32.1 | 2026-04-13 | Blog V3 Ultra Migration + Newsletter Sonntags-Cron Fix + OPEX-Kalender Zukunfts-Termine | Roadmap: 4/5 Features live
 
 
 ## Projekt
@@ -587,9 +587,14 @@ Bei Fehlern:
 
 **Plan-Datei**: `.claude/plans/curried-floating-treasure.md`
 
+### Erledigt (KW 16, 13.04.2026)
+- [x] **2026-04-13** Blog V3 Ultra Design Migration (Templates + app.css + Shared Nav/Footer + Sora/DM Sans)
+- [x] **2026-04-13** fix(cron): Sonntags-Trigger für Weekly Newsletter (Phase F wurde nie erreicht weil Nightly nur Mo-Fr lief)
+- [x] **2026-04-13** fix(opex): Kalender zeigt nächste 10 Zukunfts-Termine statt Vergangenheit (renderCalendar bekam gefilterte eventsAll statt opexDates)
+
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
-- [ ] Phase F: Läuft Nightly auch Sonntags? Falls nicht → Cron ergänzen
+- [x] ~~Phase F: Läuft Nightly auch Sonntags?~~ → Cron `30 17 * * 0` hinzugefügt (2026-04-13)
 - [ ] Content-Iteration basierend auf User-Feedback
 - [ ] Blog-Post zum Newsletter-Launch
 
