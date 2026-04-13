@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 32.1 | 2026-04-13 | Blog V3 Ultra Migration + Newsletter Sonntags-Cron Fix + OPEX-Kalender Zukunfts-Termine | Roadmap: 4/5 Features live
+> Version 32.2 | 2026-04-13 | Page-Split VIXpiration + Risikozyklus + Blog V3 Ultra + OPEX Vola-Chart + 4 Bug-Fixes | Roadmap: 4/5 Features live
 
 
 ## Projekt
@@ -478,16 +478,18 @@ Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
 | Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
 | TDOM Analyse | `/tdom-analyse` | app, charts, holidays, outlier, indicators, streak, strategy-compute | 3 Strategien, Heatmap Monat×TDoM, Strategie-Tester, TDoY Top 25, Streak, We-are-here |
 | Spot-Vol Beta | `/spot-vol-beta` | app, charts, holidays | 3 sync. Subplots, Scatter+OLS, Rolling Beta, Regime-Wendepunkte mit Forward Returns |
-| OPEX Analyse | `/opex` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | Mode-basiert OPEX/VIX, Triple Witching, 12 Mini-Charts, Heatmap, Streak, Backtest, Kalender |
+| OPEX Analyse | `/opex` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | OPEX-Fokus: Triple Witching, 12 Mini-Charts, Vola 1d/5d, Heatmap, Backtest, Kalender (VIX ausgelagert) |
+| VIXpiration | `/vixpiration` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | VIX-Settlement: Hauptchart, Vola, 12 Mini-Charts, Heatmap, Backtest, Kalender. Eigene Page seit 2026-04-13 |
 | KI-Saisonalität | `/ki-saisonalitaet` | app, charts, seasonal-compute | Musterpfad (Top-N Match), KI Composite Score 0-10, Radar-Chart, Projektion, Match-Tabelle |
-| Jahreszyklus | `/jahreszyklus` | app, charts, holidays, significance, outlier | 13 Sektionen: Saisonal-Ø, Perzentil, Pressurechart, Detrend, Heatmap, DD, Vola. `_SA_JZ` Modul |
+| Jahreszyklus | `/jahreszyklus` | app, charts, holidays, significance, outlier | Rendite-Fokus: Saisonal-Ø, Perzentil, Pressurechart, Detrend, Heatmap (DD/Vola ausgelagert). `_SA_JZ` Modul |
+| Risikozyklus | `/risikozyklus` | app, charts, holidays, seasonal-compute, decade-compute, significance, outlier | DD-Verlauf, Rolling Vola, DD nach Präsidentenzyklus, Anomalie-Radar. Eigene Page seit 2026-04-13 |
 | Monatszyklus | `/monatszyklus` | app, charts, seasonal-compute, significance, outlier, holidays | 14 Sektionen: TDOM-Verlauf, Detrend, Match, Two-Week, Heatmap, Streak, Cycle. `_SA_MZ` Modul |
 | Wochentage | `/wochentage` | app, charts, seasonal-compute, significance, streak, indicators, holidays | 12 Sektionen: 4 Modi, Wochenverlauf, Signifikanz, Streak, Overnight, Heatmaps, Weekend. `_SA_WD` |
 | Backtest Engine | `/backtest-engine` | app, charts, holidays, seasonal-compute, significance, outlier, indicators, fomc-dates | 4 Tabs: Single, Optimierung, Walk-Forward, Event-Relevanz. Stop-Loss, Outlier, Filter. `_SA_BT` |
 
 | Dashboard | `/dashboard` | app, charts, holidays, seasonal-compute, decade-compute, strategy-compute, streak, fomc-dates, dash-compute, watchlist | Bento-Grid: KI-Score, Crash-Ampel, Anomalie, Year/Month-Charts, TruePath, Wochentag+TDOM (5-Kacheln-Streak), Risiko (8 KPIs in 2 Zeilen), Trifecta, Strategien (5-Kacheln), Events (5-Kacheln). WE/Feiertag-Fallback auf nächsten HT. |
 
-### HTML-Migration komplett (20 von 18) ✓ — Backtest Engine + Dashboard als Bonus
+### HTML-Migration komplett (22 von 18) ✓ — Backtest Engine + Dashboard + VIXpiration + Risikozyklus
 
 Streamlit-App `/app/` ist Legacy. Bug-Reports IMMER auf landing/pages/*.html.
 
@@ -503,8 +505,8 @@ Streamlit-App `/app/` ist Legacy. Bug-Reports IMMER auf landing/pages/*.html.
 ### Landing-Struktur (Stand 07.04.2026)
 **Nav (1 Top-Link + 4 Dropdowns):**
 - **Dashboard** (Top-Link, ganz links) — Ticker-Uebersicht mit allen wichtigsten Signalen
-- **Zyklen**: Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen
-- **Events**: Notenbanken (Zentralbanken), OPEX, Feiertage, Shock-Analyser (Intermarket Shocks)
+- **Zyklen**: Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Risikozyklus
+- **Events**: Notenbanken (Zentralbanken), OPEX, VIXpiration, Feiertage, Shock-Analyser (Intermarket Shocks)
 - **Strategien**: Januar Trifecta, Plain Vanilla, Backtest Engine
 - **Mehr**: Kriegszeiten, Crash-Frühwarnung, Sektor-Rotation, Overnight, TDoM, Spot-Vol, KI-Saisonalität
 
@@ -576,14 +578,14 @@ Bei Fehlern:
   - NeuralProphet: Jahres-Saisonalität, Wochen-Bars (Mo-Fr/Mo-So Crypto), Forecast vs Naiv, 4 Fehler-KPIs, Info-Badge
 - [x] **Frontend: Dashboard** — KI-Forecast Bento-Card (Mini-Chart + 2 KPIs, hidden wenn keine Daten)
 - [x] **Frontend: Scanner** — 2 neue Spalten (Forecast, Sais. Stärke), async nachgeladen, sortierbar
-- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Debug-Log eingebaut, Container vorhanden, Daten OK. Vermutlich ApexCharts Rendering-Timing in `<details>`
+- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — `<details open>` Fix versucht (2026-04-13), rendert trotzdem nicht. Nächster Debug-Schritt: ApexCharts Heatmap-Instanz im Browser inspizieren (DOM vorhanden? Breite 0?)
 - [ ] **Full-Run alle 270 Ticker** mit erweitertem Backend (5 Quantile + History + NP Metrics) — alter Run hatte nur 3 Quantile
 - [ ] **Daily Cron ml_forecasts.yml prüfen** — erster automatischer Lauf Mo 21:30 UTC
 - [ ] **Frontend: KI-Score auf 5 Sub-Scores** erweitern (+ MSTL Saisonale Stärke)
 - [ ] **Frontend: Dashboard Radar** 5 Achsen
 - [ ] **Frontend: Watchlist** — Forecast-KPI in Compact-Cards
 - [ ] **Frontend: Newsletter** — Top-5 Forecast Sektion
-- [ ] `datetime.utcnow()` Deprecation Warning fixen
+- [x] `datetime.utcnow()` Deprecation Warning fixen (2026-04-13, 3 Stellen in 2 Dateien)
 
 **Plan-Datei**: `.claude/plans/curried-floating-treasure.md`
 
@@ -591,6 +593,14 @@ Bei Fehlern:
 - [x] **2026-04-13** Blog V3 Ultra Design Migration (Templates + app.css + Shared Nav/Footer + Sora/DM Sans)
 - [x] **2026-04-13** fix(cron): Sonntags-Trigger für Weekly Newsletter (Phase F wurde nie erreicht weil Nightly nur Mo-Fr lief)
 - [x] **2026-04-13** fix(opex): Kalender zeigt nächste 10 Zukunfts-Termine statt Vergangenheit (renderCalendar bekam gefilterte eventsAll statt opexDates)
+- [x] **2026-04-13** fix: datetime.utcnow() → datetime.now(timezone.utc) in 2 Scripts
+- [x] **2026-04-13** fix(ki-saisonalitaet): `<details open>` auf alle 3 ML-Sektionen (Chronos/MSTL/NeuralProphet)
+- [x] **2026-04-13** feat(opex): Volatilitäts-Chart 1d vs 5d rund um den Verfall (Bar+Line, mode-aware)
+- [x] **2026-04-13** feat: Page-Split VIXpiration → eigene Page `/vixpiration` unter Events (1182 Zeilen)
+- [x] **2026-04-13** feat: Page-Split Risikozyklus → eigene Page `/risikozyklus` unter Zyklen (903 Zeilen)
+- [x] **2026-04-13** refactor(opex): VIX-Code + Mode-Toggle entfernt, nur noch OPEX-Fokus
+- [x] **2026-04-13** refactor(jahreszyklus): DD/Vola-Sektionen entfernt, nur noch Rendite-Fokus
+- [x] **2026-04-13** Nav + Footer + Landing: Risikozyklus unter Zyklen, VIXpiration unter Events
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
