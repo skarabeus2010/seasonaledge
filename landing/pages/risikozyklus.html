@@ -109,6 +109,11 @@
       <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
       <hr>
+      <h3>Verfalls-Termine im Vola-Chart</h3>
+      <label class="toggle-row"><input type="checkbox" id="chk-opex"> OPEX (3. Freitag)</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-triple" checked> Triple Witching (Mär/Jun/Sep/Dez)</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-vix"> VIXpiration (Settlement)</label>
+      <hr>
       <h3>Outlier-Filter</h3>
       <div id="outlier-filter"></div>
     </aside>
@@ -209,8 +214,57 @@
     var MONTH_STARTS_DOY = [1,32,60,91,121,152,182,213,244,274,305,335];
     var CYCLE_LABELS = { 1:'Post-Election', 2:'Midterm', 3:'Pre-Election', 4:'Election Year' };
     var CYCLE_COLORS = { 1:'#4d9fff', 2:'#ff6b6b', 3:'#34d399', 4:'#e8a425' };
+    var TRIPLE_MONTHS = [3,6,9,12];
 
     var COL_CURRENT = '#F1C40F';
+
+    // ── Verfalltermine → Day-of-Year Annotations ────────────────────────────
+    function _opexDoy(year, month) {
+      var day = SA.holidays._nthDow(year, month, 5, 3);
+      var dt = new Date(year, month-1, day);
+      var s = year+'-'+('0'+month).slice(-2)+'-'+('0'+day).slice(-2);
+      if (!SA.holidays.isTradingDay(s, 'NYSE')) {
+        dt.setDate(dt.getDate()-1);
+        while (dt.getDay()===0||dt.getDay()===6||!SA.holidays.isTradingDay(dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2),'NYSE'))
+          dt.setDate(dt.getDate()-1);
+      }
+      return Math.floor((dt - new Date(year,0,1)) / 86400000) + 1;
+    }
+    function _vixDoy(year, month) {
+      var opexDay = SA.holidays._nthDow(year, month, 5, 3);
+      var dt = new Date(year, month-1, opexDay);
+      dt.setDate(dt.getDate() - 30);
+      var calStr = year+'-'+('0'+month).slice(-2)+'-'+('0'+opexDay).slice(-2);
+      var s = dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
+      if (!SA.holidays.isTradingDay(calStr,'NYSE') || !SA.holidays.isTradingDay(s,'NYSE')) {
+        dt.setDate(dt.getDate()-1);
+        while (dt.getDay()===0||dt.getDay()===6) dt.setDate(dt.getDate()-1);
+      }
+      return Math.floor((dt - new Date(dt.getFullYear(),0,1)) / 86400000) + 1;
+    }
+    function buildExpiryAnnotations() {
+      var year = new Date().getFullYear();
+      var ann = [];
+      var showOpex   = document.getElementById('chk-opex').checked;
+      var showTriple = document.getElementById('chk-triple').checked;
+      var showVix    = document.getElementById('chk-vix').checked;
+      for (var m = 1; m <= 12; m++) {
+        var isTriple = TRIPLE_MONTHS.indexOf(m) >= 0;
+        if (showOpex && !isTriple) {
+          ann.push({ x:_opexDoy(year,m), borderColor:'rgba(232,168,32,.35)', strokeDashArray:3,
+            label:{text:MONTHS_DE[m-1]+' OPEX', orientation:'vertical', style:{color:'#e8a820',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
+        }
+        if (showTriple && isTriple) {
+          ann.push({ x:_opexDoy(year,m), borderColor:'rgba(251,146,60,.55)', strokeDashArray:0,
+            label:{text:MONTHS_DE[m-1]+' Triple', orientation:'vertical', style:{color:'#fb923c',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
+        }
+        if (showVix) {
+          ann.push({ x:_vixDoy(year,m), borderColor:'rgba(167,139,250,.35)', strokeDashArray:4,
+            label:{text:MONTHS_DE[m-1]+' VIX', orientation:'vertical', style:{color:'#a78bfa',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
+        }
+      }
+      return ann;
+    }
 
     var charts = {};
     var currentTicker = 'SPY';
@@ -661,6 +715,7 @@
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
         legend: { show:true, position:'top', fontSize:'11px' },
+        annotations: { xaxis: buildExpiryAnnotations() },
         dataLabels: { enabled:false },
         title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
@@ -893,7 +948,7 @@
     document.getElementById('sl-vola').addEventListener('change', function(){ if(_cachedRows) rerender(); });
 
     // Checkboxes
-    ['chk-current','chk-dd-individual'].forEach(function(id){
+    ['chk-current','chk-dd-individual','chk-opex','chk-triple','chk-vix'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
     });
 
