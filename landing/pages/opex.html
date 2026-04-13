@@ -1293,7 +1293,7 @@
         renderBacktest(filteredVix, 'VIXpiration');
         renderStreak(filteredVix, 'VIX');
       }
-      renderCalendar(eventsAll);
+      renderCalendar(opexDates);  // ungefiltert — enthält auch zukünftige Termine
 
       showSections(true);
     }
