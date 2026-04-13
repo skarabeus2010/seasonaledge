@@ -150,7 +150,7 @@
       </details>
 
       <!-- 3. Drawdown nach Zyklus -->
-      <details id="sec-dd-cycle" style="display:none">
+      <details open id="sec-dd-cycle" style="display:none">
         <summary>Drawdown nach Pr&auml;sidentenzyklus</summary>
         <div class="content">
           <div id="chart-dd-cycle"></div>
@@ -221,7 +221,7 @@
     // ── Verfalltermine → Day-of-Year Annotations ────────────────────────────
     function _dateToDoy(dt) {
       var jan1 = new Date(dt.getFullYear(), 0, 1);
-      return Math.floor((dt - jan1) / 86400000) + 1;
+      return Math.floor((dt - jan1) / 86400000);  // 0-basiert (passend zu xaxis min:0 max:364)
     }
     function _fmtD(dt) {
       return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
