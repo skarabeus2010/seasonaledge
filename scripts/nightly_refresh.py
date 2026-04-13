@@ -173,7 +173,7 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
 def heartbeat():
     """Phase Z: Supabase Heartbeat — verhindert Free-Tier Pausing."""
     from shared.supabase_client import get_client
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     client = get_client()
 
@@ -185,10 +185,11 @@ def heartbeat():
 
     # 2) Heartbeat-Eintrag in app_logs schreiben (echte Write-Aktivität)
     try:
+        _now_utc = datetime.now(timezone.utc).isoformat()
         client.table("app_logs").insert({
             "level": "info",
-            "message": f"nightly_heartbeat: alive — {datetime.utcnow().isoformat()}",
-            "created_at": datetime.utcnow().isoformat(),
+            "message": f"nightly_heartbeat: alive — {_now_utc}",
+            "created_at": _now_utc,
         }).execute()
         app_logger.info("nightly_refresh: Supabase heartbeat OK")
         print("Heartbeat: Supabase pinged")

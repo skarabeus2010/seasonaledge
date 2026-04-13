@@ -20,7 +20,7 @@ import json
 import argparse
 import time
 import gc
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ── Projekt-Root ──
 try:
@@ -103,7 +103,7 @@ def store_result(ticker: str, model: str, data: dict, dry_run: bool = False):
     sb.table("ml_forecasts").upsert({
         "ticker": ticker,
         "model": model,
-        "computed_at": datetime.utcnow().isoformat(),
+        "computed_at": datetime.now(timezone.utc).isoformat(),
         "data": data,
     }).execute()
 
