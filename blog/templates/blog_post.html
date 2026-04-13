@@ -96,68 +96,68 @@
     <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/blog/{{ slug }}/">
     <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
 
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+    <!-- Fonts (V3 Ultra) -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
     <style>
+        /* ── V3 Ultra Blog Post ── */
+        :root {
+            --bg: #000;
+            --surface: #050505;
+            --card: #0a0a0e;
+            --elevated: #111115;
+            --border: rgba(232,168,32,.1);
+            --border-strong: rgba(232,168,32,.25);
+            --accent: #e8a820;
+            --accent-bg: rgba(232,168,32,.08);
+            --green: #30e878;
+            --red: #ff4040;
+            --text: #fff;
+            --dim: #e8e0d0;
+            --muted: #a89878;
+            --faint: #6a6050;
+            --f-d: 'Sora', sans-serif;
+            --f-b: 'DM Sans', sans-serif;
+            --f-m: 'JetBrains Mono', monospace;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', -apple-system, sans-serif;
-            background: #080c12;
-            color: #c8d6e5;
+            font-family: var(--f-b);
+            background: var(--bg);
+            color: var(--dim);
             line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
         }
-
-        /* Header */
-        .site-header {
-            background: #0f1923;
-            border-bottom: 1px solid #1c2a3e;
-            padding: 1rem 0;
-        }
-        .header-inner {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .logo {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #e8edf5;
-            text-decoration: none;
-        }
-        .logo span { color: #00d4aa; }
-        nav a {
-            color: #5a6e85;
-            text-decoration: none;
-            margin-left: 1.5rem;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-        nav a:hover { color: #4d9fff; }
-        nav a.active { color: #4d9fff; }
 
         /* Container */
-        .container {
+        .blog-container {
             max-width: 800px;
             margin: 0 auto;
             padding: 2rem 1.5rem;
+            padding-top: calc(60px + 2rem); /* nav height + spacing */
         }
 
         /* Breadcrumb */
         .breadcrumb {
             font-size: 0.85rem;
-            color: #5a6e85;
+            color: var(--muted);
             margin-bottom: 1.5rem;
         }
-        .breadcrumb a { color: #4d9fff; text-decoration: none; }
+        .breadcrumb a { color: var(--accent); text-decoration: none; }
         .breadcrumb a:hover { text-decoration: underline; }
 
         /* Category Badge */
         .category-badge {
             display: inline-block;
-            background: rgba(77,159,255,0.12);
-            color: #4d9fff;
-            font-size: 0.75rem;
+            background: var(--accent-bg);
+            color: var(--accent);
+            font-family: var(--f-d);
+            font-size: 0.7rem;
             font-weight: 700;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -168,59 +168,63 @@
 
         /* Title */
         h1 {
+            font-family: var(--f-d);
             font-size: 2.2rem;
             font-weight: 800;
-            color: #e8edf5;
+            color: var(--text);
             margin-bottom: 0.5rem;
             line-height: 1.25;
         }
         .post-meta {
-            color: #5a6e85;
+            color: var(--muted);
             font-size: 0.9rem;
             margin-bottom: 2.5rem;
         }
 
         /* Content */
         .post-content h2 {
+            font-family: var(--f-d);
             font-size: 1.4rem;
             font-weight: 700;
-            color: #e8edf5;
+            color: var(--text);
             margin: 2.5rem 0 1rem;
             padding-top: 1.5rem;
-            border-top: 1px solid #1c2a3e;
+            border-top: 1px solid var(--border);
         }
         .post-content h3 {
+            font-family: var(--f-d);
             font-size: 1.15rem;
             font-weight: 600;
-            color: #e8edf5;
+            color: var(--text);
             margin: 1.5rem 0 0.75rem;
         }
         .post-content p {
             margin-bottom: 1.2rem;
-            color: #a0b0c5;
+            color: var(--dim);
         }
-        .post-content strong { color: #e8edf5; }
-        .post-content a { color: #4d9fff; text-decoration: none; }
+        .post-content strong { color: var(--text); }
+        .post-content a { color: var(--accent); text-decoration: none; }
         .post-content a:hover { text-decoration: underline; }
         .post-content ul, .post-content ol {
             margin: 0.5rem 0 1.2rem 1.5rem;
-            color: #a0b0c5;
+            color: var(--dim);
         }
         .post-content li { margin-bottom: 0.4rem; }
         .post-content blockquote {
-            border-left: 3px solid #4d9fff;
+            border-left: 3px solid var(--accent);
             padding: 0.75rem 1.2rem;
             margin: 1.2rem 0;
-            background: rgba(77,159,255,0.05);
-            color: #a0b0c5;
+            background: var(--accent-bg);
+            color: var(--dim);
             font-style: italic;
         }
         .post-content code {
-            background: #131d2a;
+            font-family: var(--f-m);
+            background: var(--elevated);
             padding: 0.15rem 0.4rem;
             border-radius: 4px;
-            font-size: 0.9em;
-            color: #00d4aa;
+            font-size: 0.88em;
+            color: var(--green);
         }
 
         /* Tables */
@@ -231,20 +235,20 @@
             font-size: 0.9rem;
         }
         .post-content th {
-            background: #131d2a;
-            color: #e8edf5;
+            background: var(--elevated);
+            color: var(--text);
             font-weight: 700;
             text-align: left;
             padding: 0.6rem 0.8rem;
-            border-bottom: 2px solid #4d9fff;
+            border-bottom: 2px solid var(--accent);
         }
         .post-content td {
             padding: 0.5rem 0.8rem;
-            border-bottom: 1px solid #1c2a3e;
-            color: #a0b0c5;
+            border-bottom: 1px solid var(--border);
+            color: var(--dim);
         }
         .post-content tr:hover td {
-            background: rgba(77,159,255,0.04);
+            background: var(--accent-bg);
         }
         .post-content tr:last-child td {
             border-bottom: none;
@@ -259,7 +263,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 12px;
-            border: 1px solid #1c2a3e;
+            border: 1px solid var(--border);
             margin: 0.5rem 0;
             display: block;
         }
@@ -268,7 +272,7 @@
             padding: 0;
         }
         .post-content figcaption {
-            color: #5a6e85;
+            color: var(--muted);
             font-size: 0.85rem;
             text-align: center;
             margin-top: 0.5rem;
@@ -279,42 +283,43 @@
             margin: 1.5rem 0;
             border-radius: 12px;
             overflow: hidden;
-            background: #0f1923;
-            border: 1px solid #1c2a3e;
+            background: var(--card);
+            border: 1px solid var(--border);
         }
 
         /* CTA Box */
         .cta-box {
-            background: linear-gradient(135deg, rgba(77,159,255,0.08), rgba(0,212,170,0.08));
-            border: 1px solid rgba(77,159,255,0.2);
+            background: var(--card);
+            border: 1px solid var(--border-strong);
             border-radius: 12px;
             padding: 2rem;
             text-align: center;
             margin: 2.5rem 0;
         }
         .cta-box h3 {
-            color: #e8edf5;
+            font-family: var(--f-d);
+            color: var(--text);
             margin-bottom: 0.5rem;
             border: none;
             padding: 0;
         }
-        .cta-box p { color: #a0b0c5; margin-bottom: 1.2rem; }
+        .cta-box p { color: var(--muted); margin-bottom: 1.2rem; }
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #4d9fff, #00d4aa);
-            color: white;
+            background: var(--accent);
+            color: #000;
+            font-family: var(--f-d);
             font-weight: 700;
-            font-size: 1rem;
-            padding: 0.8rem 2rem;
-            border-radius: 50px;
+            font-size: 0.95rem;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
             text-decoration: none;
-            box-shadow: 0 4px 20px rgba(77,159,255,0.3);
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .cta-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(77,159,255,0.5);
-            color: white;
+            box-shadow: 0 6px 25px rgba(232,168,32,.35);
+            color: #000;
         }
 
         /* Tags */
@@ -325,24 +330,26 @@
             gap: 0.5rem;
         }
         .post-tags a {
-            background: #131d2a;
-            color: #5a6e85;
+            background: var(--card);
+            color: var(--muted);
             padding: 0.3rem 0.75rem;
             border-radius: 20px;
             font-size: 0.8rem;
             text-decoration: none;
-            border: 1px solid #1c2a3e;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
         }
-        .post-tags a:hover { color: #4d9fff; border-color: #4d9fff; }
+        .post-tags a:hover { color: var(--accent); border-color: var(--accent); }
 
         /* Related Posts */
         .related-posts {
             margin-top: 3rem;
             padding-top: 2rem;
-            border-top: 1px solid #1c2a3e;
+            border-top: 1px solid var(--border);
         }
         .related-posts h3 {
-            color: #e8edf5;
+            font-family: var(--f-d);
+            color: var(--text);
             margin-bottom: 1rem;
         }
         .related-grid {
@@ -351,28 +358,28 @@
             gap: 1rem;
         }
         .related-card {
-            background: #0f1923;
-            border: 1px solid #1c2a3e;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 10px;
             padding: 1.2rem;
             text-decoration: none;
             transition: border-color 0.2s;
         }
-        .related-card:hover { border-color: #4d9fff; }
+        .related-card:hover { border-color: var(--accent); }
         .related-card .r-cat {
             font-size: 0.7rem;
-            color: #4d9fff;
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .related-card .r-title {
-            color: #e8edf5;
+            color: var(--text);
             font-weight: 600;
             font-size: 0.95rem;
             margin-top: 0.3rem;
         }
         .related-card .r-date {
-            color: #3a4a5e;
+            color: var(--faint);
             font-size: 0.8rem;
             margin-top: 0.3rem;
         }
@@ -383,12 +390,12 @@
             padding: 1.2rem 1.5rem;
             font-size: 0.75rem;
             line-height: 1.6;
-            color: #5a6e85;
-            border-top: 1px solid #1c2a3e;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
         }
         .disclaimer-short p {
             margin-bottom: 0.5rem;
-            color: #5a6e85;
+            color: var(--muted);
         }
         .disclaimer-short p:last-child { margin-bottom: 0; }
 
@@ -397,12 +404,12 @@
             margin: 1rem 0 2rem;
             padding: 0 1.5rem;
             font-size: 0.8rem;
-            color: #5a6e85;
+            color: var(--muted);
             line-height: 1.7;
         }
         .disclaimer-long summary {
             cursor: pointer;
-            color: #4d9fff;
+            color: var(--accent);
             font-size: 0.8rem;
             font-weight: 600;
             padding: 0.5rem 0;
@@ -410,59 +417,29 @@
         }
         .disclaimer-long summary:hover { text-decoration: underline; }
         .disclaimer-long h3 {
-            color: #a0b0c5;
+            color: var(--dim);
             font-size: 0.95rem;
             margin: 1rem 0 0.75rem;
         }
         .disclaimer-long p {
             margin-bottom: 0.6rem;
-            color: #5a6e85;
+            color: var(--muted);
         }
-        .disclaimer-long strong { color: #a0b0c5; }
-
-        /* Footer */
-        .site-footer {
-            margin-top: 3rem;
-            padding: 2rem 0;
-            border-top: 1px solid #1c2a3e;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #3a4a5e;
-        }
-        .site-footer a { color: #4d9fff; text-decoration: none; }
-        .site-footer .risk {
-            max-width: 700px;
-            margin: 1rem auto 0;
-            font-size: 0.7rem;
-            color: #2a3a4e;
-            line-height: 1.5;
-        }
+        .disclaimer-long strong { color: var(--dim); }
 
         /* Responsive */
         @media (max-width: 600px) {
             h1 { font-size: 1.6rem; }
-            .header-inner { flex-direction: column; gap: 0.75rem; }
-            nav a { margin-left: 0.75rem; }
+            .blog-container { padding: 1rem; padding-top: calc(60px + 1rem); }
             .related-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-<header class="site-header">
-    <div class="header-inner">
-        <a href="https://seasonalpha.ai" class="logo">Season<span>Alpha</span></a>
-        <nav>
-            <a href="https://seasonalpha.ai">App</a>
-            <a href="/blog/" class="active">Blog</a>
-            <a href="/blog/education/">Education</a>
-            <a href="/blog/marktausblick/">Marktausblick</a>
-            <a href="/blog/tutorials/">Tutorials</a>
-        </nav>
-    </div>
-</header>
+<div id="nav-container"></div>
 
-<div class="container">
+<div class="blog-container">
 
     <nav class="breadcrumb">
         <a href="https://seasonalpha.ai">Home</a> &rsaquo;
@@ -482,8 +459,8 @@
     <!-- CTA -->
     <div class="cta-box">
         <h3>Analysiere es selbst auf SeasonAlpha</h3>
-        <p>Interaktive Charts, KI-Prognosen und technische Filter fuer 94 Ticker.</p>
-        <a href="https://seasonalpha.ai" class="cta-button">Kostenlos starten</a>
+        <p>Interaktive Charts, KI-Prognosen und technische Filter f&uuml;r 270+ Ticker.</p>
+        <a href="https://seasonalpha.ai/dashboard" class="cta-button">Kostenlos starten</a>
     </div>
 
     <!-- Disclaimer Kurz -->
@@ -496,7 +473,7 @@
     <!-- Disclaimer Lang (Expander) -->
     {% if disclaimer_long %}
     <details class="disclaimer-long">
-        <summary>Vollständiger rechtlicher Hinweis</summary>
+        <summary>Vollst&auml;ndiger rechtlicher Hinweis</summary>
         {{ disclaimer_long }}
     </details>
     {% endif %}
@@ -511,7 +488,7 @@
 
     {% if related_posts %}
     <div class="related-posts">
-        <h3>Weitere Beitraege</h3>
+        <h3>Weitere Beitr&auml;ge</h3>
         <div class="related-grid">
             {% for rp in related_posts %}
             <a href="/blog/{{ rp.slug }}/" class="related-card">
@@ -526,16 +503,9 @@
 
 </div>
 
-<footer class="site-footer">
-    &copy; 2026 SeasonAlpha &middot;
-    <a href="/disclaimer">Impressum</a> &middot;
-    <a href="/disclaimer">Datenschutz</a> &middot;
-    <a href="/disclaimer">Risk Disclosure</a>
-    <div class="risk">
-        Vergangene Ergebnisse sowie fruehere saisonale Muster bieten keinerlei Anhaltspunkt
-        fuer kuenftige Ertraege. SeasonAlpha erbringt keine Anlageberatung.
-    </div>
-</footer>
+<div id="footer-container"></div>
+
+<script src="/landing/js/app.js"></script>
 
 </body>
 </html>
