@@ -956,8 +956,8 @@
 
       // Kopfzeilen dynamisch
       document.getElementById('cal-summary').textContent = isVix ? 'VIX-Kalender' : 'OPEX-Kalender';
-      document.getElementById('cal-upcoming-title').textContent = 'N\u00E4chste 8 '+(isVix?'VIX-Verfall':'OPEX')+'-Termine';
-      document.getElementById('cal-all-title').textContent = 'Alle Termine im Analyse-Zeitraum';
+      document.getElementById('cal-upcoming-title').textContent = 'N\u00E4chste 10 '+(isVix?'VIX-Verfall':'OPEX')+'-Termine';
+      document.getElementById('cal-all-title').textContent = 'N\u00E4chste 10 Termine';
 
       // Build upcoming cards based on mode
       var events = opexDates.slice();
@@ -971,7 +971,7 @@
       var upcoming = events.filter(function(ev){
         var key = isVix ? ev.vixDate : ev.date;
         return key >= today;
-      }).slice(0, 8);
+      }).slice(0, 10);
 
       var html = '<div class="calendar-grid">';
       for (var i = 0; i < upcoming.length; i++) {
@@ -1002,13 +1002,13 @@
         '<tr><th>OPEX-Datum</th><th>Tag</th><th>Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr>';
       document.getElementById('thead-all-opex').innerHTML = thead;
 
-      // Table body: last ~2 years + upcoming
-      var cutFrom = String(new Date().getFullYear()-1);
-      var recent = opexDates.filter(function(ev){
+      // Table body: nächste 10 zukünftige Termine (scrollt automatisch weiter wenn Termine vorbei sind)
+      var futureAll = opexDates.filter(function(ev){
         var key = isVix ? ev.vixDate : ev.date;
-        return key.substring(0,4) >= cutFrom;
+        return key >= today;
       });
-      if (isVix) recent.sort(function(a,b){ return a.vixDate < b.vixDate ? -1 : 1; });
+      if (isVix) futureAll.sort(function(a,b){ return a.vixDate < b.vixDate ? -1 : 1; });
+      var recent = futureAll.slice(0, 10);
 
       var tbody = '';
       for (var j = 0; j < recent.length; j++) {
@@ -1198,7 +1198,7 @@
       if (!rows || rows.length === 0) return [];
       var yearsVal = document.getElementById('sel-years').value;
       var minYear  = yearsVal === 'max' ? 1990 : new Date().getFullYear() - parseInt(yearsVal);
-      var maxYear  = new Date().getFullYear() + 1;
+      var maxYear  = new Date().getFullYear() + 2;  // +2 damit immer 10 zukuenftige Termine verfuegbar
       var firstRow = rows[0].date.substring(0,4);
       if (parseInt(firstRow) > minYear) minYear = parseInt(firstRow);
 
