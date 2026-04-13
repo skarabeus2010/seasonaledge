@@ -264,7 +264,7 @@
       </details>
 
       <!-- ML-Sektionen (aus Supabase ml_forecasts) -->
-      <details id="sec-chronos" style="display:none">
+      <details open id="sec-chronos" style="display:none">
         <summary>📈 Probabilistischer Forecast (Chronos-Bolt)</summary>
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
@@ -298,7 +298,7 @@
         </div>
       </details>
 
-      <details id="sec-mstl" style="display:none">
+      <details open id="sec-mstl" style="display:none">
         <summary>🔬 Saisonale Dekomposition (MSTL)</summary>
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
@@ -332,7 +332,7 @@
         </div>
       </details>
 
-      <details id="sec-neuralprophet" style="display:none">
+      <details open id="sec-neuralprophet" style="display:none">
         <summary>🧠 NeuralProphet — KI-Saisonalitäts-Analyse</summary>
         <div class="content" style="position:relative">
           <div class="info-badge" tabindex="0">i</div>
@@ -1103,8 +1103,7 @@
       if (!el) { console.error('MSTL Heatmap: Container nicht gefunden'); return; }
       el.innerHTML = '';
       var dates = data.dates || [];
-      console.log('MSTL Heatmap: dates=' + dates.length + ', seasonal_yearly=' + (data.seasonal_yearly ? data.seasonal_yearly.length : 'null'));
-      if (!data.seasonal_yearly || dates.length < 60) { console.warn('MSTL Heatmap: nicht genug Daten'); return; }
+      if (!data.seasonal_yearly || dates.length < 60) return;
       var monthAvg = {};
       for (var i = 0; i < dates.length; i++) {
         var m = parseInt(dates[i].substring(5,7));
