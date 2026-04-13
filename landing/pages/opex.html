@@ -241,6 +241,20 @@
         </div>
       </details>
 
+      <!-- Volatilität rund um den Verfall -->
+      <details open id="sec-vola" style="display:none">
+        <summary>Volatilit&auml;t rund um den Verfall &mdash; 1d vs. 5d</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
+            <b style="color:var(--accent)">1d Vola</b> = Streuung an genau diesem Tag,
+            <b style="color:var(--green)">5d Vola</b> = gegl&auml;ttete Streuung &uuml;ber &plusmn;2 Tage.
+            Ein R&uuml;ckgang um t=0 signalisiert Vola-Kompression vor dem Verfall.
+          </p>
+          <div id="chart-vola" style="min-height:260px"></div>
+        </div>
+      </details>
+
       <!-- OPEX Monthly Grid -->
       <details open id="sec-opex-monthly" style="display:none">
         <summary>Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
@@ -417,7 +431,7 @@
 
     function showSections(show) {
       // Sektionen die immer sichtbar sein koennen
-      ['sec-backtest','sec-calendar','sec-streak','sec-heatmap','sec-significance'].forEach(function(id) {
+      ['sec-vola','sec-backtest','sec-calendar','sec-streak','sec-heatmap','sec-significance'].forEach(function(id) {
         document.getElementById(id).style.display = show ? '' : 'none';
       });
       // Modus-abhaengige Sektionen
@@ -609,6 +623,40 @@
       return { offsets: offsets, means: means, winRates: winRates, counts: counts };
     }
 
+    /** Std-Abweichung (Population) */
+    function _std(arr) {
+      if (arr.length < 2) return 0;
+      var m = arr.reduce(function(s,v){return s+v;},0) / arr.length;
+      var v = arr.reduce(function(s,v){return s + (v-m)*(v-m);},0) / arr.length;
+      return Math.sqrt(v);
+    }
+
+    /** Volatilität pro Offset: 1d (Cross-Section) vs 5d (Pooled ±2 Tage) */
+    function computeVolaByOffset(windows, daysBefore, daysAfter) {
+      var offsets = [];
+      for (var o = -daysBefore; o <= daysAfter; o++) offsets.push(o);
+      var vola1d = [], vola5d = [];
+      var ANN = Math.sqrt(252);
+
+      for (var oi = 0; oi < offsets.length; oi++) {
+        var key = 't' + offsets[oi];
+        // 1d Vola: Streuung der Returns aller Events an dieser Position
+        var vals = windows.filter(function(w){return w[key]!==undefined;}).map(function(w){return w[key];});
+        vola1d.push(vals.length > 2 ? parseFloat((_std(vals) * ANN).toFixed(2)) : null);
+
+        // 5d Vola: Pooled Returns aus [o-2..o+2]
+        var pooled = [];
+        for (var d = -2; d <= 2; d++) {
+          var k2 = 't' + (offsets[oi] + d);
+          for (var wi = 0; wi < windows.length; wi++) {
+            if (windows[wi][k2] !== undefined) pooled.push(windows[wi][k2]);
+          }
+        }
+        vola5d.push(pooled.length > 5 ? parseFloat((_std(pooled) * ANN).toFixed(2)) : null);
+      }
+      return { offsets: offsets, vola1d: vola1d, vola5d: vola5d };
+    }
+
     function makeOffsetLabels(offsets) {
       return offsets.map(function(o){ return o===0 ? 't=0\n(OPEX)' : (o>0?'t+':'t')+o; });
     }
@@ -658,6 +706,39 @@
         title: { text:currentTicker+' \u2014 Triple Witching Verlauf (n='+windows.length+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
       charts['opex-triple'].render();
+    }
+
+    // ── Render: Volatilität 1d vs 5d ──────────────────────────────────────────
+    function renderVolaChart(windows, daysBefore, daysAfter, nEvents, modeLabel) {
+      var vd = computeVolaByOffset(windows, daysBefore, daysAfter);
+      var labels = vd.offsets.map(function(o){ return o===0 ? 't=0\n(Verfall)' : (o>0?'t+':'t')+o; });
+
+      if (charts['vola']) { charts['vola'].destroy(); charts['vola']=null; }
+      charts['vola'] = new ApexCharts(document.getElementById('chart-vola'), {
+        series: [
+          { name: '1d Vola', type:'bar', data: vd.vola1d },
+          { name: '5d Vola', type:'line', data: vd.vola5d }
+        ],
+        chart: Object.assign({ type:'line', height:280 }, SA.chartTheme.chart),
+        stroke: { width:[0, 3], curve:'straight' },
+        colors: ['#e8a820', '#30e878'],
+        fill: { opacity:[0.85, 1] },
+        plotOptions: { bar:{ columnWidth:'55%', borderRadius:3 } },
+        markers: { size:[0,5], hover:{size:6} },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: {
+          labels:{ style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){ return v!=null ? v.toFixed(1)+'%' : ''; } },
+          title:{ text:'Vola (% ann.)', style:{color:'#a89878',fontSize:'11px'} }
+        },
+        legend: { labels:{colors:'#a89878'}, fontSize:'11px', position:'top', horizontalAlign:'right' },
+        annotations: {
+          xaxis:[{ x:'t=0\n(Verfall)', borderColor:'rgba(251,146,60,.5)', strokeDashArray:4, label:{text:'Verfall',style:{color:'#fff',background:'rgba(251,146,60,.7)',fontSize:'10px'}} }]
+        },
+        dataLabels: { enabled:false },
+        title: { text:currentTicker+' \u2014 Volatilit\u00E4t rund um '+modeLabel+' (n='+nEvents+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['vola'].render();
     }
 
     // ── Render: OPEX Monatlich Grid (12 kleine Charts, einer pro Monat) ──────
@@ -1293,6 +1374,15 @@
         renderBacktest(filteredVix, 'VIXpiration');
         renderStreak(filteredVix, 'VIX');
       }
+      // Vola-Chart: mode-aware
+      if (currentMode === 'opex') {
+        var volaWindows = opexView === 'triple' ? windowsTriple : windowsAll.filter(function(w){ return opexMonthsMask[parseInt(w.month)-1]; });
+        renderVolaChart(volaWindows, daysBefore, daysAfter, volaWindows.length, opexView === 'triple' ? 'Triple Witching' : 'OPEX');
+      } else {
+        var filtVix = windowsVix.filter(function(w){ return vixMonthsMask[parseInt(w.month)-1]; });
+        renderVolaChart(filtVix, daysBefore, daysAfter, filtVix.length, 'VIXpiration');
+      }
+
       renderCalendar(opexDates);  // ungefiltert — enthält auch zukünftige Termine
 
       showSections(true);
