@@ -4,8 +4,8 @@ seo_title: "VIXpiration April 2026: VIX-Verfall Auswirkung auf S&P 500"
 slug: vixpiration-april-2026
 date: 2026-04-13
 category: marktausblick
-tags: [vixpiration, vix, opex, verfall, volatilitaet, sp500]
-description: "VIXpiration am 15. April 2026: Wie sich der VIX-Optionsverfall historisch auf den S&P 500 auswirkt — mit Daten aus 21 Jahren."
+tags: [vixpiration, vix-verfall, vix-settlement, vix-optionen, opex, volatilitaet, sp500, cboe, verfallstag, optionsverfall, vola-kompression, april-2026]
+description: "VIXpiration am 15. April 2026: Wie sich der VIX-Optionsverfall historisch auf den S&P 500 auswirkt. 21 Jahre Daten zeigen klare Muster bei Rendite und Volatilität."
 ticker: SPY
 screenshot: vixpiration-spy-april-2026.png
 status: published
@@ -14,8 +14,10 @@ status: published
 <!--
 Keyword-Plan:
 - Haupt-Keyword: VIXpiration April 2026
-- Neben-Keywords: VIX-Verfall, VIX-Settlement, VIX-Optionen Verfall, Volatilitäts-Index
-- LSI: CBOE, VIX Futures, Options Expiration, Verfallswoche Volatilität, Vola-Kompression
+- Neben-Keywords: VIX-Verfall, VIX-Settlement, VIX-Optionen Verfall, VIX Verfallstag, Volatilitäts-Index
+- Long-Tail: VIX Optionen Verfall April 2026, wann verfallen VIX Optionen, VIX Settlement Datum, VIX Futures Verfall Kalender
+- LSI: CBOE, VIX Futures, Options Expiration, Verfallswoche Volatilität, Vola-Kompression, Gamma Exposure, Market Maker Hedging, S&P 500 Volatilität
+- Suchintention: Trader suchen vor dem Verfallstag nach konkreten Terminen + historischen Mustern
 -->
 
 ## Was ist die VIXpiration?
