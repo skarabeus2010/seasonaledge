@@ -4,8 +4,8 @@ seo_title: "Tesla vs Apple Mai-Saisonalität: Wer trotzt dem Sell in May?"
 slug: tesla-apple-mai-saisonalitaet
 date: 2026-04-10
 category: marktausblick
-tags: [tesla, apple, sell-in-may, mai, einzelaktien, saisonalitaet]
-description: "Tesla vs Apple im Mai: Welche Aktie trotzt der klassischen Sell-in-May Schwäche und welche kapituliert? 10 Jahre Daten im direkten Vergleich."
+tags: [tesla, apple, sell-in-may, mai, einzelaktien, saisonalitaet, tech-aktien, earnings-drift, q2-saisonalitaet, aktienvergleich]
+description: "Tesla vs Apple im Mai: Welche Aktie trotzt Sell-in-May und welche kapituliert? 10 Jahre Daten im direkten Vergleich gegen den S&P 500."
 ticker: TSLA
 screenshot: tesla-apple-mai-vergleich.png
 status: published

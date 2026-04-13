@@ -1,10 +1,11 @@
 ---
 title: "Outlier-Filter: Warum Crash-Jahre deine Analyse verzerren"
+seo_title: "Outlier-Filter: Crash-Jahre aus Saisonalitaet filtern"
 slug: outlier-filter-saisonalitaet
 date: 2026-03-30
 category: tutorials
-tags: [outlier, ausreisser, saisonalitaet, iqr, winsorize, isolation-forest, statistik, tutorial]
-description: "Crash-Jahre wie 2008 oder 2020 verzerren saisonale Muster. Der Outlier-Filter in SeasonAlpha zeigt dir, wie die Börse ohne Extremjahre wirklich tickt."
+tags: [outlier, ausreisser, saisonalitaet, iqr, winsorize, isolation-forest, statistik, tutorial, datenbereinigung, robuste-statistik, iqr-methode]
+description: "Crash-Jahre wie 2008 oder 2020 verzerren saisonale Muster. Der Outlier-Filter (IQR, Winsorize, Isolation Forest) zeigt die Boerse ohne Extremjahre."
 ticker: ^GSPC
 status: published
 ---

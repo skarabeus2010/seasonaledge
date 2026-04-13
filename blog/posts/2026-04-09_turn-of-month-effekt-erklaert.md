@@ -4,8 +4,8 @@ seo_title: "Turn-of-Month Effekt: Warum Monatswechsel an der Börse besonders si
 slug: turn-of-month-effekt-erklaert
 date: 2026-04-09
 category: education
-tags: [turn-of-month, tom, saisonalitaet, education, sp500]
-description: "Der Turn-of-Month Effekt: Warum die letzten 3 und ersten 3 Handelstage eines Monats statistisch deutlich besser laufen als der Rest. Mit Daten und Erklärung."
+tags: [turn-of-month, tom, saisonalitaet, education, sp500, pension-fund-effekt, monatsultimo, liquidity-zyklus, intramonth, window-dressing]
+description: "Der Turn-of-Month Effekt: Warum die letzten 3 und ersten 3 Handelstage statistisch besser laufen — mit 30 Jahren S&P 500 Daten und Erklaerung."
 ticker: ^GSPC
 screenshot: turn-of-month-tom-chart.png
 status: published

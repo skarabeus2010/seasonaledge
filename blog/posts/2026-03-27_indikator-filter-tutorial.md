@@ -1,10 +1,11 @@
 ---
 title: "Tutorial: So nutzt du Indikator-Filter in SeasonAlpha"
+seo_title: "Indikator-Filter Tutorial: RSI, SMA & MACD kombinieren"
 slug: indikator-filter-tutorial
 date: 2026-03-27
 category: tutorials
-tags: [tutorial, indikator, filter, rsi, sma, trading]
-description: "Schritt-fuer-Schritt Anleitung: Kombiniere Saisonalitaet mit technischen Indikatoren (RSI, SMA, MACD) in SeasonAlpha."
+tags: [tutorial, indikator, filter, rsi, sma, trading, technische-analyse, bollinger-bands, macd, ema, trading-signale]
+description: "Schritt-fuer-Schritt: Kombiniere Saisonalitaet mit technischen Indikatoren (RSI, SMA, MACD, Bollinger) in SeasonAlpha fuer praezisere Signale."
 ticker: AAPL
 status: published
 ---

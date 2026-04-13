@@ -1,10 +1,11 @@
 ---
 title: "Wann verdienst Du mit Google wirklich Geld — nachts oder tagsüber?"
+seo_title: "Google Overnight vs Intraday: Wann entsteht die Rendite?"
 slug: overnight-intraday-split-google
 date: 2026-03-28
 category: tutorials
-tags: [overnight, intraday, wochentage, google, googl, split, rendite, tutorial]
-description: "Overnight vs. Intraday Split erklärt: Wann entsteht die Rendite bei Google? Analyse nach Wochentagen mit SeasonAlpha."
+tags: [overnight, intraday, wochentage, google, googl, split, rendite, tutorial, daytrading, buy-and-hold, marktdynamik]
+description: "Overnight vs. Intraday Split bei Google erklaert: Wann entsteht die Rendite — nachts oder tagsueber? Wochentag-Analyse mit SeasonAlpha zeigt klare Muster."
 ticker: GOOGL
 screenshot: overnight-intraday-split-googl.png
 status: published

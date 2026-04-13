@@ -4,8 +4,8 @@ seo_title: "Midterm Drawdown 2026: Historisch riskantestes Zyklusjahr"
 slug: drawdown-midterm-election-2026
 date: 2026-04-01
 category: marktausblick
-tags: [drawdown, praesidentenzyklus, midterm, risiko, dow-jones, 2026]
-description: "Midterm-Jahre zeigen den tiefsten Ø Drawdown im Präsidentenzyklus. 130 Jahre DJI: Was 2026 als Midterm-Jahr erwarten lässt."
+tags: [drawdown, praesidentenzyklus, midterm, risiko, dow-jones, 2026, wahlzyklus, baerenmarkt, marktrisiko, us-politik]
+description: "Midterm-Jahre zeigen den tiefsten Drawdown im Praesidentenzyklus. 130 Jahre Dow Jones: Was 2026 als Midterm-Jahr fuer Anleger bedeutet."
 ticker: ^DJI
 screenshot: praesidentenzyklus-drawdown-midterm-dji.png
 status: published

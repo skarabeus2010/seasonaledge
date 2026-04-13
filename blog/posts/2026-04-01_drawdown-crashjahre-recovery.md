@@ -4,8 +4,8 @@ seo_title: "Drawdown Börse erklärt: Crash-Jahre & Recovery (130 Jahre)"
 slug: drawdown-crashjahre-recovery
 date: 2026-04-01
 category: education
-tags: [drawdown, crash, recovery, risiko, saisonalitaet, dow-jones]
-description: "Was ist ein Drawdown? 130 Jahre Dow Jones zeigen: Wie tief fallen Märkte wirklich — und wie lange dauert die Erholung? Mit Daten und Analyse."
+tags: [drawdown, crash, recovery, risiko, saisonalitaet, dow-jones, maximum-drawdown, recovery-zeit, risikomanagement, boerse-crash, jahreshoch]
+description: "Was ist ein Drawdown? 130 Jahre Dow Jones zeigen: Wie tief fallen Maerkte wirklich, wie lange dauert die Erholung — und welche Crashjahre waren die schlimmsten?"
 ticker: ^DJI
 status: published
 ---

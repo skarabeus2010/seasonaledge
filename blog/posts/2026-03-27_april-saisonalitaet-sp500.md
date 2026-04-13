@@ -1,10 +1,11 @@
 ---
 title: "April 2026: Was sagt die Saisonalitaet fuer den S&P 500?"
+seo_title: "S&P 500 April Saisonalitaet 2026: Historische Analyse"
 slug: april-saisonalitaet-sp500-2026
 date: 2026-03-27
 category: marktausblick
-tags: [sp500, april, saisonalitaet, marktausblick, 2026]
-description: "Saisonaler Ausblick April 2026 fuer den S&P 500. Historische Win-Rate, Durchschnittsrendite und was Trader beachten sollten."
+tags: [sp500, april, saisonalitaet, marktausblick, 2026, dow-jones, april-performance, saisonale-muster, rendite, mehrjahresanalyse]
+description: "Saisonaler Ausblick April 2026 fuer den S&P 500: Historische Win-Rate, Durchschnittsrendite und Praesidentenzyklus-Einfluss — 20 Jahre Daten im Check."
 ticker: ^GSPC
 status: published
 ---

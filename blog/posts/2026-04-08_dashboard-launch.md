@@ -4,8 +4,8 @@ seo_title: "SeasonAlpha Dashboard: Saisonalität, KI-Score und Strategien für j
 slug: dashboard-launch
 date: 2026-04-08
 category: tutorials
-tags: [dashboard, ki-score, crash-ampel, saisonalitaet, strategien, neu]
-description: "Das neue SeasonAlpha Dashboard zeigt für jeden Ticker KI-Score, Crash-Ampel, Saisonalität, Risiko, Top-Strategien und nächste Events auf einer einzigen Seite. So nutzt du es."
+tags: [dashboard, ki-score, crash-ampel, saisonalitaet, strategien, neu, echtzeit-analyse, backtest-engine, renditeanalyse, watchlist]
+description: "Das neue SeasonAlpha Dashboard: KI-Score, Crash-Ampel, Saisonalitaet, Risiko, Strategien und Events fuer jeden Ticker auf einer Seite — so nutzt du es."
 ticker: ^GSPC
 screenshot: dashboard-hero.png
 status: published

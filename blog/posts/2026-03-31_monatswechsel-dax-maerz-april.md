@@ -4,8 +4,8 @@ seo_title: "DAX Monatswechsel März April 2026 – Saisonale Analyse"
 slug: monatswechsel-dax-maerz-april-2026
 date: 2026-03-31
 category: marktausblick
-tags: [dax, monatswechsel, turn-of-month, april, saisonalitaet, 2026]
-description: "Der Monatswechsel März → April zeigt im DAX eine Win-Rate von 75 % bei +1,37 % Rendite. Statistische Analyse mit Signifikanztest."
+tags: [dax, monatswechsel, turn-of-month, april, saisonalitaet, 2026, monatsultimo, dax-performance, maerz-april, pension-fund]
+description: "Der Monatswechsel Maerz zu April zeigt im DAX eine Win-Rate von 75 % bei +1,37 % Rendite. Statistische Analyse mit Signifikanztest und 20 Jahren Daten."
 ticker: ^GDAXI
 screenshot: monatswechsel-dax-maerz-april.png
 status: published

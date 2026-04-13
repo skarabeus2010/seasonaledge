@@ -1,10 +1,11 @@
 ---
 title: "Ist der Dienstag wirklich der beste Börsentag? Statistik trifft Praxis"
+seo_title: "Wochentag-Signifikanztest Siemens: t-Test einfach erklaert"
 slug: wochentag-signifikanztest-siemens
 date: 2026-03-28
 category: tutorials
-tags: [signifikanz, wochentage, t-test, p-wert, siemens, statistik, tutorial]
-description: "Welcher Wochentag bringt bei Siemens die höchste Rendite? Wir erklären statistische Signifikanztests einfach und zeigen, wie du sie in SeasonAlpha nutzt."
+tags: [signifikanz, wochentage, t-test, p-wert, siemens, statistik, tutorial, montag-effekt, dienstag-boerse, statistischer-test, dax-aktie]
+description: "Welcher Wochentag bringt bei Siemens die hoechste Rendite? Wir erklaeren t-Test und p-Wert einfach und zeigen, ob der Effekt statistisch belastbar ist."
 ticker: SIE.DE
 screenshot: wochentag-signifikanz-siemens.png
 status: published

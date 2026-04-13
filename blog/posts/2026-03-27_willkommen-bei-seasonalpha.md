@@ -1,10 +1,11 @@
 ---
 title: "Willkommen bei SeasonAlpha.ai — Dein unfairer Vorteil an der Börse"
+seo_title: "SeasonAlpha.ai: KI-gestuetzte saisonale Marktanalyse"
 slug: willkommen-bei-seasonalpha.ai
 date: 2026-03-27
 category: education
-tags: [seasonalpha, launch, saisonalität, plattform, vorstellung, ai, ki]
-description: "SeasonAlpha.ai ist live! Entdecke die Plattform für datenbasierte saisonale Marktanalyse — mit bis zu 130 Jahren Historie, KI-Modellen und interaktiven Charts."
+tags: [seasonalpha, launch, saisonalitaet, plattform, vorstellung, ai, ki, finanzdaten, machine-learning, anomalie-erkennung, chartanalyse]
+description: "SeasonAlpha.ai ist live! Entdecke die Plattform fuer datenbasierte saisonale Marktanalyse — mit 130 Jahren Historie, KI-Modellen und interaktiven Charts."
 ticker: ^DJI
 status: published
 ---

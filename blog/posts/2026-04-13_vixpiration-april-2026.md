@@ -44,7 +44,7 @@ Wir haben auf der neuen [VIXpiration-Seite](/vixpiration) alle VIX-Settlement-Te
 
 ## Was zeigen die Daten?
 
-![VIXpiration-Verlauf SPY — Kumulierte Rendite und Volatilität rund um den VIX-Verfall](images/vixpiration-spy-april-2026.png)
+![VIXpiration-Verlauf SPY — Kumulierte Rendite und Volatilität rund um den VIX-Verfall](vixpiration-spy-april-2026.png)
 
 Der Chart zeigt den durchschnittlichen kumulierten Renditeverlauf des SPY rund um die VIXpiration (t=0). Einige Beobachtungen:
 

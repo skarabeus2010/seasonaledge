@@ -4,8 +4,8 @@ seo_title: "Anomalie-Radar SeasonAlpha: Z-Score + Perzentil richtig lesen"
 slug: anomalie-radar-erklaert
 date: 2026-04-08
 category: education
-tags: [anomalie-radar, ki-score, perzentil, z-score, sap, education]
-description: "Der SeasonAlpha Anomalie-Radar zeigt für SAP Score 24/100 (Normal) — obwohl der Kurs visuell 28 % unter dem saisonalen Schnitt liegt. Wie das zusammenpasst und warum genau das die richtige Antwort ist."
+tags: [anomalie-radar, ki-score, perzentil, z-score, sap, education, statistische-anomalie, ki-analyse, abweichung, saisonalitaet]
+description: "Der Anomalie-Radar zeigt fuer SAP Score 24/100 (Normal) — obwohl der Kurs 28 % unter dem Schnitt liegt. Warum Z-Score und Perzentil das richtig bewerten."
 ticker: SAP
 screenshot: anomalie-radar-sap-beispiel.png
 status: published

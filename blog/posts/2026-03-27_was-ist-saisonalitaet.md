@@ -1,10 +1,11 @@
 ---
 title: "Was ist Saisonalitaet? Ein Leitfaden fuer Trader und Anleger"
+seo_title: "Was ist Saisonalitaet? Boersenmuster erklaert (130 Jahre)"
 slug: was-ist-saisonalitaet
 date: 2026-03-27
 category: education
-tags: [saisonalitaet, grundlagen, statistik, trading]
-description: "Saisonalitaet erklaert: Warum sich Boersenmuster wiederholen und wie Trader davon profitieren. Datenbasierte Analyse mit 130 Jahren Historie."
+tags: [saisonalitaet, grundlagen, statistik, trading, boersenkalender, window-dressing, tax-loss-selling, monatseffekte, quartalseffekte, wiederkehrende-muster]
+description: "Saisonalitaet an der Boerse erklaert: Warum sich Muster wie Sell in May oder der Januar-Effekt wiederholen — mit 130 Jahren Daten und konkreten Beispielen."
 ticker: ^DJI
 status: published
 ---

@@ -4,8 +4,8 @@ seo_title: "Präsidentenzyklus Tutorial: 4-Jahres-Zyklus an der Börse nutzen"
 slug: praesidentenzyklus-tutorial
 date: 2026-04-11
 category: tutorials
-tags: [praesidentenzyklus, election-cycle, tutorial, dow-jones, midterm, sp500]
-description: "Schritt-für-Schritt Tutorial: Wie der US-Präsidentenzyklus die Börse beeinflusst und wie du das Muster mit SeasonAlpha selbst auswerten kannst."
+tags: [praesidentenzyklus, election-cycle, tutorial, dow-jones, midterm, sp500, election-year, pre-election-rally, four-year-cycle, politische-zyklen]
+description: "Schritt-fuer-Schritt Tutorial: Wie der US-Praesidentenzyklus die Boerse beeinflusst — mit 130 Jahren Daten und SeasonAlpha-Auswertung."
 ticker: ^DJI
 screenshot: praesidentenzyklus-4-cycles.png
 status: published

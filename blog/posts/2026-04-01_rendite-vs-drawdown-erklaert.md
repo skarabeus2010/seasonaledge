@@ -4,8 +4,8 @@ seo_title: "Rendite vs Drawdown erklärt: Warum beides stimmt (2026)"
 slug: rendite-vs-drawdown-erklaert
 date: 2026-04-01
 category: education
-tags: [drawdown, rendite, saisonalitaet, dekadenzyklus, risiko, dow-jones]
-description: "Rendite steigt, Drawdown fällt — ein Widerspruch? Wir erklären anhand von 130 Jahren Dow Jones, warum beides gleichzeitig stimmt."
+tags: [drawdown, rendite, saisonalitaet, dekadenzyklus, risiko, dow-jones, risikokennzahl, verlustphase, renditeanalyse, marktmuster]
+description: "Rendite steigt, Drawdown faellt — ein Widerspruch? 130 Jahre Dow Jones zeigen, warum beides gleichzeitig stimmt und was es fuer Anleger bedeutet."
 ticker: ^DJI
 screenshot: dekadenzyklus-rendite-x6-dji.png
 status: published
