@@ -554,14 +554,18 @@
       var widths = [];
       var dashes = [];
 
-      // Einzeljahre (dünne Linien)
+      // Einzeljahre (farbige Linien, 12-Farben-Palette zyklisch)
+      var YEAR_COLORS = ['#60a5fa','#34d399','#fbbf24','#f472b6','#a78bfa','#f87171',
+                         '#22d3ee','#facc15','#4ade80','#fb923c','#c084fc','#e879f9'];
       if (showIndividual) {
-        for (var y in yearData) {
+        var yrKeys = Object.keys(yearData).sort();
+        for (var yi = 0; yi < yrKeys.length; yi++) {
+          var y = yrKeys[yi];
           var yo = yearData[y];
           var cDd = RZ.drawdownSeries(yo.full_365, 0, yo.last_actual_day);
           series.push({ name:String(y), data: pad365(cDd) });
-          colors.push('rgba(200,220,255,.1)');
-          widths.push(0.5);
+          colors.push(YEAR_COLORS[yi % YEAR_COLORS.length]);
+          widths.push(1.2);
           dashes.push(0);
         }
       }
