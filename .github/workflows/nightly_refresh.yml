@@ -4,6 +4,8 @@ on:
   schedule:
     # Mo-Fr um 20:30 UTC (22:30 MESZ) — 30 Min nach US-Boersenschluss fuer amtliche Schlusskurse
     - cron: '30 20 * * 1-5'
+    # Sonntag 17:30 UTC (19:30 MESZ) — Weekly Newsletter via Phase F
+    - cron: '30 17 * * 0'
   workflow_dispatch:  # Manueller Trigger
 
 jobs:
