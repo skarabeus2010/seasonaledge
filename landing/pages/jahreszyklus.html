@@ -76,17 +76,6 @@
     .js-table td.pos{color:var(--green)}
     .js-table td.neg{color:var(--red)}
 
-    .kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.75rem}
-    .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
-    @media(max-width:700px){.kpi-grid-3,.kpi-grid-4{grid-template-columns:repeat(2,1fr)}}
-    .dd-card{background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.75rem 1rem;text-align:center}
-    .dd-card.is-current{border-color:var(--accent)}
-    .dd-card .dd-lbl{color:#8899aa;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em}
-    .dd-card .dd-val{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;margin:.25rem 0;color:var(--text)}
-    .dd-card .dd-val.red{color:#ff4444}
-    .dd-card .dd-val.worse{color:#ff2222}
-    .dd-card .dd-val.green{color:#34d399}
-
     .match-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem;margin-top:.75rem}
     .match-card{background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.75rem .5rem;text-align:center}
     .match-card.is-best{border-width:2px}
@@ -141,13 +130,6 @@
         Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden (10/20/30/40/60/80 Jahre) auf sekund&auml;rer Y-Achse
       </p>
       <hr>
-      <h3>Risiko-Analyse</h3>
-      <div class="range-wrap">
-        <label>Rolling-Vola Fenster (Tage) <span id="lbl-vola">20</span></label>
-        <input type="range" id="sl-vola" min="10" max="60" step="5" value="20">
-      </div>
-      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
-      <hr>
       <h3>Outlier-Filter</h3>
       <div id="outlier-filter"></div>
     </aside>
@@ -156,7 +138,7 @@
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption" id="page-caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Drawdown &amp; Volatilit&auml;t</p>
+      <p class="page-caption" id="page-caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
@@ -255,39 +237,6 @@
         </div>
       </details>
 
-      <!-- ── Drawdown & Risiko Header ── -->
-      <div id="dd-header" style="display:none;text-align:center;margin:2.5rem 0 1rem 0;padding-top:1rem;border-top:2px solid rgba(255,68,68,.2)">
-        <span style="color:#ff4444;font-size:1.3rem;font-weight:700">&#128201; Drawdown &amp; Risiko</span>
-        <p style="color:var(--muted);font-size:.9rem;margin-top:.3rem" id="dd-header-caption">Wann im Jahr passieren die gr&ouml;&szlig;ten R&uuml;cksetzer?</p>
-      </div>
-
-      <!-- 10. Drawdown-Verlauf -->
-      <details open id="sec-drawdown" style="display:none">
-        <summary>Saisonaler Drawdown-Verlauf</summary>
-        <div class="content">
-          <div id="chart-drawdown"></div>
-          <div class="kpi-grid-3" id="dd-kpis"></div>
-        </div>
-      </details>
-
-      <!-- 11. Rolling-Volatilität -->
-      <details id="sec-vola" style="display:none">
-        <summary>Saisonale Volatilit&auml;t (Rolling)</summary>
-        <div class="content">
-          <div id="chart-vola"></div>
-          <div class="kpi-grid-4" id="vola-kpis"></div>
-        </div>
-      </details>
-
-      <!-- 12. Drawdown nach Zyklus -->
-      <details id="sec-dd-cycle" style="display:none">
-        <summary>Drawdown nach Pr&auml;sidentenzyklus</summary>
-        <div class="content">
-          <div id="chart-dd-cycle"></div>
-          <div class="match-cards" id="dd-cycle-cards" style="margin-top:1rem"></div>
-        </div>
-      </details>
-
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -309,18 +258,8 @@
             <li><b>Signifikanz-Tachos:</b> t-Test pro Monat/Quartal. p&lt;0.05 = statistisch signifikant (gr&uuml;n)</li>
             <li><b>Best Match:</b> Pearson-Korrelation zwischen aktuellem Jahr (bis heute) und den 4 Zyklus-&Oslash;-Kurven + "Alle Jahre"</li>
           </ul>
-          <h3>Drawdown-Analyse</h3>
-          <ul>
-            <li><b>Definition:</b> DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</li>
-            <li><b>&Oslash; Drawdown-Verlauf:</b> Pro Jahr DD berechnet, dann gemittelt &uuml;ber alle Jahre</li>
-            <li><b>KPIs:</b> &Oslash; Max DD, Worst DD, Aktueller DD</li>
-          </ul>
-          <h3>Volatilit&auml;ts-Analyse</h3>
-          <ul>
-            <li><b>Rolling Vola:</b> Annualisierte Std der log-Returns &uuml;ber rollendes Fenster</li>
-            <li><b>Perzentil:</b> "In wie viel % der Jahre war die Vola am gleichen Tag niedriger als heute?"</li>
-            <li><b>Farbcodierung:</b> Rot &gt; &Oslash; + 1&sigma; (erh&ouml;ht), Gr&uuml;n &lt; &Oslash; &minus; 1&sigma; (niedrig)</li>
-          </ul>
+          <h3>Drawdown &amp; Volatilit&auml;t</h3>
+          <p>Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
         </div>
       </details>
 
@@ -368,13 +307,12 @@
 
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function showSections(show) {
-      ['sec-anomaly','sec-main','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap','sec-drawdown','sec-vola','sec-dd-cycle'].forEach(function(id){
+      ['sec-anomaly','sec-main','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap'].forEach(function(id){
         document.getElementById(id).style.display = show ? '' : 'none';
       });
-      document.getElementById('dd-header').style.display = show ? '' : 'none';
     }
     function destroyAll() {
-      ['main','individuals','pressure','detrend','monthly-bars','quarterly-bars','heatmap','drawdown','vola','dd-cycle'].forEach(function(k){
+      ['main','individuals','pressure','detrend','monthly-bars','quarterly-bars','heatmap'].forEach(function(k){
         if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
       });
     }
@@ -591,7 +529,7 @@
         // letztem echten Handelstag (Python-kompatibel via shared/calculations.py
         // interpolate_to_365). Damit bleibt die avg-Kurve auch für unvollständige
         // Jahre smooth — Funktionen die NUR echte Werte brauchen (Perzentil,
-        // Drawdown, Heatmap) nutzen das last_actual_day Feld zum Filtern.
+        // Heatmap) nutzen das last_actual_day Feld zum Filtern.
         var lastActualDay = days[days.length-1];
         var full365=[];
         for (var t=1;t<=365;t++) {
@@ -707,222 +645,6 @@
       return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number).sort(function(a,b){return a-b;}) };
     }
 
-    // ── Drawdown Berechnungen (null-safe + last_actual_day-aware) ───────────
-    /**
-     * @param {Array} curve - normierte Kurve (constant-filled nach lastActualDay)
-     * @param {number} base - Offset (0 fuer Jahreszyklus)
-     * @param {number} [lastActualDay] - 1-basierter letzter echter Handelstag.
-     *   Tage > lastActualDay werden mit null markiert (keine extrapolierte DD).
-     */
-    function drawdownSeries(curve, base, lastActualDay) {
-      base = base || 0;
-      var dd=[], peak=-Infinity;
-      for (var i=0;i<curve.length;i++) {
-        if (lastActualDay && (i+1) > lastActualDay) { dd.push(null); continue; }
-        var v = curve[i];
-        if (v == null || isNaN(v) || !isFinite(v)) { dd.push(null); continue; }
-        v = v + base;
-        if (v > peak) peak = v;
-        dd.push(peak>0 ? (v - peak) / peak * 100 : 0);
-      }
-      return dd;
-    }
-    /**
-     * @param {Array} curveSpecs - Array von {curve, lastActualDay} ODER plain curves
-     */
-    function avgDrawdownCurve(curveSpecs, base) {
-      if (!curveSpecs.length) return { avg:[], std:[] };
-      var n = 365;
-      var ddSeries = curveSpecs.map(function(s){
-        if (s && s.curve) return drawdownSeries(s.curve, base, s.lastActualDay);
-        return drawdownSeries(s, base);
-      });
-      var avg=[], std=[];
-      for (var i=0;i<n;i++) {
-        var vals = ddSeries.map(function(s){ return s[i]; });
-        // mean/stdev sind via _clean NaN/null-safe
-        avg.push(mean(vals));
-        std.push(stdev(vals));
-      }
-      return { avg:avg, std:std };
-    }
-    function drawdownStats(curve, base) {
-      var dd = drawdownSeries(curve, base);
-      var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
-      if (!clean.length) return { max_drawdown: 0, max_dd_day: 0 };
-      var minV = Math.min.apply(null, clean);
-      return { max_drawdown: minV, max_dd_day: dd.indexOf(minV) };
-    }
-    function drawdownKpi(curveSpecs, base) {
-      if (!curveSpecs.length) return null;
-      var maxDds = curveSpecs.map(function(s){
-        if (s && s.curve) {
-          // last_actual_day-aware via drawdownSeries → min des bereinigten Arrays
-          var dd = drawdownSeries(s.curve, base, s.lastActualDay);
-          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
-          return clean.length ? Math.min.apply(null, clean) : 0;
-        }
-        return drawdownStats(s, base).max_drawdown;
-      });
-      var clean = maxDds.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
-      return {
-        avg_max_dd: mean(maxDds),
-        worst_max_dd: clean.length ? Math.min.apply(null, clean) : 0,
-        n: curveSpecs.length
-      };
-    }
-
-    // ── Rolling Volatilität pro Jahr ─────────────────────────────────────────
-    /** Pro Jahr: annualisierte Rolling-Std der log_returns */
-    function rollingVolForYear(yearEntry, window) {
-      var rets = yearEntry.log_returns;
-      if (!rets || rets.length < window+5) return null;
-      var out = new Array(rets.length).fill(NaN);
-      var n = rets.length;
-      var annualization = Math.sqrt(n);
-      for (var i=window-1;i<n;i++) {
-        var s=0;
-        for (var j=i-window+1;j<=i;j++) s+=rets[j];
-        var m=s/window;
-        var sq=0;
-        for (var j=i-window+1;j<=i;j++) sq+=(rets[j]-m)*(rets[j]-m);
-        var std=Math.sqrt(sq/window);
-        out[i] = std*annualization*100;
-      }
-      return out;
-    }
-    /**
-     * Vola pro Kalendertag (1..365), gemittelt ueber alle Jahre.
-     *
-     * KORREKTE Behandlung der Jahresgrenze: rollt ueber die KONKATENIERTE
-     * log_returns-Serie ALLER Jahre, sodass z.B. die 20d-Vola am 5. Januar
-     * korrekt die letzten 20 Trading Days inklusive Dezember-Vorjahr nutzt.
-     * Anschliessend werden die Vola-Werte pro (year, day_of_year) extrahiert
-     * und ueber Jahre per Kalendertag gemittelt.
-     */
-    function avgRollingVolatility(yearData, window) {
-      var currentYear = new Date().getFullYear();
-      var todayD = todayDoy();
-      // Jahre chronologisch sortieren
-      var sortedYears = Object.keys(yearData).map(Number).sort(function(a,b){return a-b;});
-      if (sortedYears.length === 0) return null;
-
-      // Konkatenierte log_returns + Mapping auf (year_idx, doy)
-      var allRets = [];
-      var meta = []; // {year, doy} pro Eintrag in allRets
-      for (var i=0;i<sortedYears.length;i++) {
-        var y = sortedYears[i];
-        var yo = yearData[y];
-        if (!yo.log_returns || !yo.days) continue;
-        var n = Math.min(yo.log_returns.length, yo.days.length);
-        for (var k=0;k<n;k++) {
-          var lr = parseFloat(yo.log_returns[k]);
-          if (isNaN(lr) || !isFinite(lr)) lr = 0;
-          allRets.push(lr);
-          meta.push({ year: y, doy: yo.days[k] });
-        }
-      }
-      if (allRets.length < window + 5) return null;
-
-      // Rollende Std ueber GESAMTE Serie (Jahresgrenzen-uebergreifend)
-      // Annualisiert mit sqrt(252) — Standard fuer Aktien
-      var ann = Math.sqrt(252);
-      var volaSeries = new Array(allRets.length).fill(NaN);
-      for (var i=window-1;i<allRets.length;i++) {
-        var s=0;
-        for (var j=i-window+1;j<=i;j++) s+=allRets[j];
-        var m=s/window;
-        var sq=0;
-        for (var j=i-window+1;j<=i;j++) sq+=(allRets[j]-m)*(allRets[j]-m);
-        volaSeries[i] = Math.sqrt(sq/window) * ann * 100;
-      }
-
-      // Pro Jahr: Vola-Werte nach DOY in Matrix einsortieren
-      // matrix[i][d] = vola fuer year_i an Kalendertag d+1
-      var yearVolaMap = {}; // year -> array(365) of NaN
-      for (var i=0;i<sortedYears.length;i++) yearVolaMap[sortedYears[i]] = new Array(365).fill(NaN);
-      for (var i=0;i<volaSeries.length;i++) {
-        if (isNaN(volaSeries[i])) continue;
-        var m = meta[i];
-        if (m.doy >= 1 && m.doy <= 365) {
-          // Aktuelles Jahr: nicht ueber today extrapolieren
-          if (m.year === currentYear && m.doy > todayD) continue;
-          yearVolaMap[m.year][m.doy-1] = volaSeries[i];
-        }
-      }
-
-      // Lueckentage zwischen Trading-Tagen mit letztem Wert fuellen
-      // (innerhalb jedes Jahres, nicht jahresuebergreifend)
-      for (var i=0;i<sortedYears.length;i++) {
-        var row = yearVolaMap[sortedYears[i]];
-        var firstD = -1, lastD = -1;
-        for (var d=0;d<365;d++) if (!isNaN(row[d])) { firstD = d; break; }
-        for (var d=364;d>=0;d--) if (!isNaN(row[d])) { lastD = d; break; }
-        if (firstD < 0) continue;
-        var lv = row[firstD];
-        for (var d=firstD;d<=lastD;d++) {
-          if (!isNaN(row[d])) lv = row[d];
-          else row[d] = lv;
-        }
-      }
-
-      // Pro Kalendertag: NaN-aware Mittelung ueber alle Jahre
-      var avg=[], std=[];
-      for (var d=0;d<365;d++) {
-        var vals = [];
-        for (var i=0;i<sortedYears.length;i++) {
-          var v = yearVolaMap[sortedYears[i]][d];
-          if (!isNaN(v)) vals.push(v);
-        }
-        if (vals.length < 2) { avg.push(null); std.push(null); continue; }
-        avg.push(mean(vals));
-        std.push(stdev(vals));
-      }
-      return { avg:avg, std:std, _yearVolaMap: yearVolaMap };
-    }
-    /**
-     * Stats fuer das aktuelle Jahr — nutzt jahresgrenzen-uebergreifende
-     * Vola via avgRollingVolatility (yearVolaMap), damit Januar-Werte
-     * korrekt sind (rolling Window inkl. Vorjahres-Daten).
-     */
-    function currentVolaStats(yearData, window, currentYear) {
-      var cur = yearData[currentYear];
-      if (!cur) return null;
-      var result = avgRollingVolatility(yearData, window);
-      if (!result || !result._yearVolaMap || !result._yearVolaMap[currentYear]) return null;
-
-      var curRow = result._yearVolaMap[currentYear];
-      // Aktueller Wert = letzter gueltiger Eintrag im currentYear-Row (heute oder davor)
-      var td = todayDoy();
-      var currentVola = NaN;
-      for (var d = Math.min(td-1, 364); d >= 0; d--) {
-        if (!isNaN(curRow[d])) { currentVola = curRow[d]; break; }
-      }
-      if (isNaN(currentVola)) return null;
-
-      // Historische Werte: alle anderen Jahre, gleicher DOY (heute)
-      var refDoy = Math.min(td-1, 364);
-      var histVolas = [];
-      for (var y in result._yearVolaMap) {
-        if (parseInt(y) === currentYear) continue;
-        var v = result._yearVolaMap[y][refDoy];
-        if (!isNaN(v)) histVolas.push(v);
-      }
-      if (histVolas.length<3) return null;
-      var avgV = mean(histVolas);
-      var stdV = stdev(histVolas);
-      var pct = percentileOf(histVolas, currentVola);
-      return {
-        current_vola: currentVola,
-        avg_vola: avgV,
-        delta: currentVola - avgV,
-        percentile: pct,
-        n_years: histVolas.length,
-        is_elevated: currentVola > avgV + stdV,
-        is_low: currentVola < avgV - stdV
-      };
-    }
-
     // ── Month × Offset Heatmap Data (null-safe + last_actual_day-aware) ────
     // FIX: nur fuer das CURRENT year wird last_actual_day-Filter angewandt.
     // Fuer vergangene Jahre haben wir oft keinen 31.12. (Wochenende/Feiertag),
@@ -966,10 +688,7 @@
       charts:charts, cycleMask:cycleMask,
       buildExtendedYearData:buildExtendedYearData, periodStats:periodStats,
       computePressureCurve:computePressureCurve,
-      drawdownSeries:drawdownSeries, avgDrawdownCurve:avgDrawdownCurve,
-      drawdownStats:drawdownStats, drawdownKpi:drawdownKpi,
-      rollingVolForYear:rollingVolForYear, avgRollingVolatility:avgRollingVolatility,
-      currentVolaStats:currentVolaStats, buildMonthlyHeatmap:buildMonthlyHeatmap,
+      buildMonthlyHeatmap:buildMonthlyHeatmap,
       rollingMean:rollingMean, corrcoef:corrcoef, mean:mean, stdev:stdev, median:median,
       percentileOf:percentileOf, todayDoy:todayDoy, cycleOf:cycleOf,
       computeDayCounts:computeDayCounts, splitSolidWeak:splitSolidWeak, detectAnomalyEnd:detectAnomalyEnd,
@@ -1782,234 +1501,6 @@
       JZ.charts.heatmap.render();
     };
 
-    // ── Render: Drawdown-Verlauf + KPIs ─────────────────────────────────────
-    JZ.renderDrawdown = function(yearData, ticker, showCurrent, showIndividual) {
-      // CurveSpecs mit last_actual_day für last_actual_day-aware DD-Berechnung
-      var curveSpecs = [];
-      for (var y in yearData) {
-        curveSpecs.push({
-          curve: yearData[y].full_365.slice(),
-          lastActualDay: yearData[y].last_actual_day
-        });
-      }
-      var dd = JZ.avgDrawdownCurve(curveSpecs, 0);
-      var kpi = JZ.drawdownKpi(curveSpecs, 0);
-      var currentYear = new Date().getFullYear();
-
-      var series = [];
-      var colors = [];
-      var widths = [];
-      var dashes = [];
-
-      // Einzeljahre (dünne Linien)
-      if (showIndividual) {
-        for (var y in yearData) {
-          var yo = yearData[y];
-          var cDd = JZ.drawdownSeries(yo.full_365, 0, yo.last_actual_day);
-          series.push({ name:String(y), data: pad365(cDd) });
-          colors.push('rgba(200,220,255,.1)');
-          widths.push(0.5);
-          dashes.push(0);
-        }
-      }
-
-      // Ø Drawdown
-      series.push({ name:'Ø Drawdown', data: pad365(dd.avg) });
-      colors.push('#ff4444');
-      widths.push(2.5);
-      dashes.push(0);
-
-      // Aktuelles Jahr
-      if (showCurrent && yearData[currentYear]) {
-        var curObj = yearData[currentYear];
-        var curDd = JZ.drawdownSeries(curObj.full_365, 0, curObj.last_actual_day);
-        var td = JZ.todayDoy();
-        var curArr = new Array(365).fill(null);
-        for (var i=0;i<Math.min(td,365);i++) curArr[i] = curDd[i];
-        series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
-        colors.push(COL_CURRENT);
-        widths.push(2.5);
-        dashes.push(0);
-      }
-
-      if (JZ.charts.drawdown) { JZ.charts.drawdown.destroy(); JZ.charts.drawdown=null; }
-      JZ.charts.drawdown = new ApexCharts(document.getElementById('chart-drawdown'), {
-        series: series,
-        chart: Object.assign({ type:'line', height:420 }, SA.chartTheme.chart),
-        stroke: { width:widths, curve:'straight', dashArray:dashes },
-        colors: colors,
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: xaxisDoy(),
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
-                 title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
-        legend: { show: series.length<=5, position:'top', fontSize:'11px' },
-        dataLabels: { enabled:false },
-        title: { text:'Ø Saisonaler Drawdown — '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
-      JZ.charts.drawdown.render();
-
-      // KPIs
-      var curDdNow = '–';
-      var curDdCls = '';
-      if (showCurrent && yearData[currentYear]) {
-        var cDd = JZ.drawdownSeries(yearData[currentYear].full_365, 0);
-        var ti = Math.min(JZ.todayDoy()-1, cDd.length-1);
-        var now = cDd[ti];
-        curDdNow = now.toFixed(1)+'%';
-        curDdCls = now<-1 ? 'red' : 'green';
-      }
-      document.getElementById('dd-kpis').innerHTML =
-        '<div class="dd-card"><div class="dd-lbl">Ø Max DD ('+kpi.n+'J)</div><div class="dd-val red">'+kpi.avg_max_dd.toFixed(1)+'%</div></div>'+
-        '<div class="dd-card"><div class="dd-lbl">Worst DD</div><div class="dd-val worse">'+kpi.worst_max_dd.toFixed(1)+'%</div></div>'+
-        '<div class="dd-card is-current"><div class="dd-lbl">Aktueller DD '+currentYear+'</div><div class="dd-val '+curDdCls+'">'+curDdNow+'</div></div>';
-    };
-
-    // ── Render: Rolling-Volatilität + KPIs ──────────────────────────────────
-    JZ.renderVolatility = function(yearData, ticker, window, showCurrent) {
-      var result = JZ.avgRollingVolatility(yearData, window);
-      if (!result) {
-        document.getElementById('sec-vola').style.display='none';
-        return;
-      }
-      var currentYear = new Date().getFullYear();
-
-      var series = [];
-      var colors = [];
-      var widths = [];
-
-      series.push({ name:'Ø '+window+'d Vola', data: pad365(result.avg) });
-      colors.push('#e8a820');
-      widths.push(2.5);
-
-      // Aktuelles Jahr direkt aus result._yearVolaMap nehmen
-      // (jahresgrenzen-uebergreifend berechnet, korrekte Januar-Werte)
-      if (showCurrent && result._yearVolaMap && result._yearVolaMap[currentYear]) {
-        var curRow = result._yearVolaMap[currentYear];
-        var curArr = new Array(365).fill(null);
-        for (var d=0;d<365;d++) {
-          if (!isNaN(curRow[d])) curArr[d] = curRow[d];
-        }
-        series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
-        colors.push(COL_CURRENT);
-        widths.push(2.5);
-      }
-
-      if (JZ.charts.vola) { JZ.charts.vola.destroy(); JZ.charts.vola=null; }
-      JZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), {
-        series: series,
-        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
-        stroke: { width:widths, curve:'smooth' },
-        colors: colors,
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: xaxisDoy(),
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
-                 title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
-        legend: { show:true, position:'top', fontSize:'11px' },
-        dataLabels: { enabled:false },
-        title: { text:'Ø Rolling '+window+'d Volatilität — '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
-      JZ.charts.vola.render();
-
-      // KPIs
-      var stats = JZ.currentVolaStats(yearData, window, currentYear);
-      if (stats) {
-        var statusColor, statusLbl;
-        if (stats.is_elevated) { statusColor='red'; statusLbl='Erhöht'; }
-        else if (stats.is_low) { statusColor='green'; statusLbl='Niedrig'; }
-        else { statusColor=''; statusLbl='Normal'; }
-        var deltaCls = stats.delta>0 ? 'red' : 'green';
-        var deltaSign = stats.delta>0 ? '+' : '';
-        document.getElementById('vola-kpis').innerHTML =
-          '<div class="dd-card"><div class="dd-lbl">Aktuelle '+window+'d Vola</div><div class="dd-val '+statusColor+'">'+stats.current_vola.toFixed(1)+'%</div></div>'+
-          '<div class="dd-card"><div class="dd-lbl">Historischer Ø</div><div class="dd-val">'+stats.avg_vola.toFixed(1)+'%</div></div>'+
-          '<div class="dd-card"><div class="dd-lbl">Delta zum Ø</div><div class="dd-val '+deltaCls+'">'+deltaSign+stats.delta.toFixed(1)+'%</div></div>'+
-          '<div class="dd-card"><div class="dd-lbl">Perzentil ('+stats.n_years+'J)</div><div class="dd-val '+statusColor+'">'+stats.percentile.toFixed(0)+'% · '+statusLbl+'</div></div>';
-      }
-    };
-
-    // ── Render: Drawdown nach Zyklus ────────────────────────────────────────
-    JZ.renderDrawdownCycle = function(yearData, ticker) {
-      var cycleGroups = { 1:[], 2:[], 3:[], 4:[] };
-      for (var y in yearData) cycleGroups[JZ.cycleOf(parseInt(y))].push(parseInt(y));
-      var currentCycle = JZ.cycleOf(new Date().getFullYear());
-
-      var series = [];
-      var colors = [];
-      var widths = [];
-      var rows = [];
-
-      for (var c=1;c<=4;c++) {
-        var years = cycleGroups[c];
-        if (!years.length) continue;
-        var curveSpecs = years.map(function(y){
-          return { curve: yearData[y].full_365.slice(), lastActualDay: yearData[y].last_actual_day };
-        });
-        var r = JZ.avgDrawdownCurve(curveSpecs, 0);
-        series.push({ name:CYCLE_LABELS[c]+' ('+years.length+'J)', data: pad365(r.avg) });
-        colors.push(CYCLE_COLORS[c]);
-        widths.push(c===currentCycle ? 3 : 1.8);
-
-        // Stats pro Zyklus (mit last_actual_day-aware drawdownSeries)
-        var ddsVals = curveSpecs.map(function(s){
-          var dd = JZ.drawdownSeries(s.curve, 0, s.lastActualDay);
-          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
-          return clean.length ? Math.min.apply(null, clean) : 0;
-        });
-        var bestIdx=0, worstIdx=0;
-        for (var i=0;i<ddsVals.length;i++) {
-          if (Math.abs(ddsVals[i]) < Math.abs(ddsVals[bestIdx])) bestIdx=i;
-          if (ddsVals[i] < ddsVals[worstIdx]) worstIdx=i;
-        }
-        rows.push({
-          cycle:c, label:CYCLE_LABELS[c], color:CYCLE_COLORS[c],
-          n:years.length,
-          avg_dd: JZ.mean(ddsVals),
-          best_dd: ddsVals[bestIdx], best_year: years[bestIdx],
-          worst_dd: ddsVals[worstIdx], worst_year: years[worstIdx]
-        });
-      }
-
-      if (!series.length) {
-        document.getElementById('sec-dd-cycle').style.display='none';
-        return;
-      }
-
-      if (JZ.charts['dd-cycle']) { JZ.charts['dd-cycle'].destroy(); JZ.charts['dd-cycle']=null; }
-      JZ.charts['dd-cycle'] = new ApexCharts(document.getElementById('chart-dd-cycle'), {
-        series: series,
-        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
-        stroke: { width:widths, curve:'straight' },
-        colors: colors,
-        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
-        xaxis: xaxisDoy(),
-        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
-                 title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
-        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
-        legend: { show:true, position:'top', fontSize:'11px' },
-        dataLabels: { enabled:false },
-        title: { text:'Ø Drawdown nach Präsidentenzyklus — '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
-      JZ.charts['dd-cycle'].render();
-
-      // Karten
-      var html='';
-      for (var i=0;i<rows.length;i++) {
-        var r = rows[i];
-        var isCur = r.cycle===currentCycle;
-        html += '<div class="match-card'+(isCur?' is-best':'')+'" style="border-color:'+(isCur?r.color:'rgba(255,255,255,.07)')+'">';
-        html += '<div class="mc-name" style="color:'+r.color+';font-size:.75rem">'+r.label+'</div>';
-        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">Ø Max DD ('+r.n+'J)</div>';
-        html += '<div style="color:#ff4444;font-weight:700;font-size:1rem">'+r.avg_dd.toFixed(1)+'%</div>';
-        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">Best</div>';
-        html += '<div style="color:#34d399;font-weight:700;font-size:.875rem">'+r.best_dd.toFixed(1)+'% ('+r.best_year+')</div>';
-        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">Worst</div>';
-        html += '<div style="color:#ff2222;font-weight:700;font-size:.875rem">'+r.worst_dd.toFixed(1)+'% ('+r.worst_year+')</div>';
-        html += '</div>';
-      }
-      document.getElementById('dd-cycle-cards').innerHTML = html;
-    };
-
   })();
   </script>
 
@@ -2054,8 +1545,6 @@
       var showPercentile = document.getElementById('chk-percentile').checked;
       var showCurrent = document.getElementById('chk-current').checked;
       var showPressure = document.getElementById('chk-pressure').checked;
-      var ddIndividual = document.getElementById('chk-dd-individual').checked;
-      var volaWindow = parseInt(document.getElementById('sl-vola').value);
 
       var cycleOverlay = {};
       var cycleChecks = document.querySelectorAll('.cycle-checkboxes input[type=checkbox]');
@@ -2110,9 +1599,6 @@
       safeRender('cycle-sig',     function(){ JZ.renderSignificance(yearData, 'cycle'); });
       safeRender('cycle-match',   function(){ JZ.renderCycleMatch(yearData); });
       safeRender('heatmap',       function(){ JZ.renderHeatmap(yearData, ticker); });
-      safeRender('drawdown',      function(){ JZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
-      safeRender('volatility',    function(){ JZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
-      safeRender('dd-cycle',      function(){ JZ.renderDrawdownCycle(yearData, ticker); });
       JZ.showSections(true);
     }
 
@@ -2171,11 +1657,8 @@
     // Slider
     document.getElementById('sl-smooth').addEventListener('input', function(){ document.getElementById('lbl-smooth').textContent = this.value; });
     document.getElementById('sl-smooth').addEventListener('change', function(){ if(_cachedRows) rerender(); });
-    document.getElementById('sl-vola').addEventListener('input', function(){ document.getElementById('lbl-vola').textContent = this.value; });
-    document.getElementById('sl-vola').addEventListener('change', function(){ if(_cachedRows) rerender(); });
-
     // Checkboxes
-    ['chk-individual','chk-bands','chk-percentile','chk-current','chk-pressure','chk-dd-individual'].forEach(function(id){
+    ['chk-individual','chk-bands','chk-percentile','chk-current','chk-pressure'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
     });
     var cycleChecks = document.querySelectorAll('.cycle-checkboxes input[type=checkbox]');

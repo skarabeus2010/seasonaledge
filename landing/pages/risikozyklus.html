@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Risikozyklus &mdash; Drawdown &amp; Volatilit&auml;t | SeasonAlpha</title>
+  <meta name="description" content="Saisonale Risikomuster: Drawdown-Verlauf, Rolling Volatilit&auml;t, Pr&auml;sidentenzyklus-Risiko. Erkenne, wann im Jahr die gr&ouml;&szlig;ten R&uuml;cksetzer typischerweise auftreten.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/risikozyklus">
+
+  <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/risikozyklus">
+  <meta property="og:title" content="Risikozyklus &mdash; Drawdown &amp; Volatilit&auml;t | SeasonAlpha">
+  <meta property="og:description" content="Saisonale Risikomuster: Drawdown-Verlauf, Rolling Volatilit&auml;t, Pr&auml;sidentenzyklus-Risiko. Erkenne, wann im Jahr die gr&ouml;&szlig;ten R&uuml;cksetzer typischerweise auftreten.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Risikozyklus &mdash; Drawdown &amp; Volatilit&auml;t | SeasonAlpha">
+  <meta name="twitter:description" content="Saisonale Risikomuster: Drawdown-Verlauf, Rolling Volatilit&auml;t, Pr&auml;sidentenzyklus-Risiko. Erkenne, wann im Jahr die gr&ouml;&szlig;ten R&uuml;cksetzer typischerweise auftreten.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Risikozyklus — Drawdown & Volatilität","url":"https://seasonalpha.ai/risikozyklus","description":"Saisonale Risikomuster: Drawdown-Verlauf, Rolling Volatilität, Präsidentenzyklus-Risiko. Erkenne, wann im Jahr die größten Rücksetzer typischerweise auftreten.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Risikozyklus — Drawdown & Volatilität","item":"https://seasonalpha.ai/risikozyklus"}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+
+    .range-wrap{margin-top:.5rem}
+    .range-wrap label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
+    .range-wrap input{width:100%;margin-top:.25rem;accent-color:var(--accent)}
+    .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem;cursor:pointer}
+    .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+    #outlier-filter select{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m);cursor:pointer}
+
+    .kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.75rem}
+    .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
+    @media(max-width:700px){.kpi-grid-3,.kpi-grid-4{grid-template-columns:repeat(2,1fr)}}
+    .dd-card{background:linear-gradient(135deg,#0f1923,#131d2a);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.75rem 1rem;text-align:center}
+    .dd-card.is-current{border-color:var(--accent)}
+    .dd-card .dd-lbl{color:#8899aa;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em}
+    .dd-card .dd-val{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;margin:.25rem 0;color:var(--text)}
+    .dd-card .dd-val.red{color:#ff4444}
+    .dd-card .dd-val.worse{color:#ff2222}
+    .dd-card .dd-val.green{color:#34d399}
+
+    .match-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem;margin-top:.75rem}
+    .match-card{background:rgba(15,19,24,.6);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.75rem .5rem;text-align:center}
+    .match-card.is-best{border-width:2px}
+    .match-card .mc-name{font-size:.6875rem;font-weight:700;margin-bottom:.4rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3>Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3>Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="5">5 Jahre</option>
+        <option value="10" selected>10 Jahre</option>
+        <option value="15">15 Jahre</option>
+        <option value="20">20 Jahre</option>
+        <option value="25">25 Jahre</option>
+        <option value="30">30 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <h3>Risiko-Analyse</h3>
+      <div class="range-wrap">
+        <label>Rolling-Vola Fenster (Tage) <span id="lbl-vola">20</span></label>
+        <input type="range" id="sl-vola" min="5" max="60" step="5" value="20">
+      </div>
+      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
+      <hr>
+      <h3>Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b>Risikozyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" id="page-caption">Drawdown &amp; Volatilit&auml;t &middot; Saisonale Risikomuster &middot; Pr&auml;sidentenzyklus-Risiko</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <!-- 0. Anomalie-Radar (KI Quick-Check) -->
+      <details open id="sec-anomaly" style="display:none">
+        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <div class="content" id="content-anomaly"></div>
+      </details>
+
+      <!-- 1. Drawdown-Verlauf -->
+      <details open id="sec-drawdown" style="display:none">
+        <summary>Saisonaler Drawdown-Verlauf</summary>
+        <div class="content">
+          <div id="chart-drawdown"></div>
+          <div class="kpi-grid-3" id="dd-kpis"></div>
+        </div>
+      </details>
+
+      <!-- 2. Rolling-Volatilität -->
+      <details open id="sec-vola" style="display:none">
+        <summary>Saisonale Volatilit&auml;t (Rolling)</summary>
+        <div class="content">
+          <div id="chart-vola"></div>
+          <div class="kpi-grid-4" id="vola-kpis"></div>
+        </div>
+      </details>
+
+      <!-- 3. Drawdown nach Zyklus -->
+      <details id="sec-dd-cycle" style="display:none">
+        <summary>Drawdown nach Pr&auml;sidentenzyklus</summary>
+        <div class="content">
+          <div id="chart-dd-cycle"></div>
+          <div class="match-cards" id="dd-cycle-cards" style="margin-top:1rem"></div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary>Methodik</summary>
+        <div class="content methodik">
+          <h3>Drawdown-Analyse</h3>
+          <ul>
+            <li><b>Normierung:</b> Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</li>
+            <li><b>Interpolation:</b> Jede Jahreskurve wird auf 365 Kalendertage interpoliert</li>
+            <li><b>Definition:</b> DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</li>
+            <li><b>&Oslash; Drawdown-Verlauf:</b> Pro Jahr DD berechnet, dann gemittelt &uuml;ber alle Jahre</li>
+            <li><b>KPIs:</b> &Oslash; Max DD, Worst DD, Aktueller DD</li>
+          </ul>
+          <h3>Volatilit&auml;ts-Analyse</h3>
+          <ul>
+            <li><b>Rolling Vola:</b> Annualisierte Std der log-Returns &uuml;ber rollendes Fenster (&radic;252 Annualisierung)</li>
+            <li><b>Jahresgrenzen&uuml;bergreifend:</b> Die Rolling-Berechnung konkateniert alle Jahre, damit Januar-Werte korrekt auf Dezember-Vorjahres-Daten zugreifen k&ouml;nnen</li>
+            <li><b>Perzentil:</b> &ldquo;In wie viel % der Jahre war die Vola am gleichen Tag niedriger als heute?&rdquo;</li>
+            <li><b>Farbcodierung:</b> Rot &gt; &Oslash; + 1&sigma; (erh&ouml;ht), Gr&uuml;n &lt; &Oslash; &minus; 1&sigma; (niedrig)</li>
+          </ul>
+          <h3>Pr&auml;sidentenzyklus</h3>
+          <ul>
+            <li><b>Mapping:</b> 1 = Post-Election, 2 = Midterm, 3 = Pre-Election, 4 = Election Year</li>
+            <li><b>Formel:</b> ((year &minus; 1) % 4 + 4) % 4 + 1</li>
+            <li><b>Pro Zyklusphase:</b> &Oslash; Max DD, bestes und schlechtestes Jahr</li>
+          </ul>
+          <h3>Datenquelle</h3>
+          <ul>
+            <li>Supabase (Yahoo Finance / Stooq)</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/outlier.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ── Konstanten ───────────────────────────────────────────────────────────
+    var MONTHS_DE = ['Jan','Feb','M\u00e4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var MONTH_STARTS_DOY = [1,32,60,91,121,152,182,213,244,274,305,335];
+    var CYCLE_LABELS = { 1:'Post-Election', 2:'Midterm', 3:'Pre-Election', 4:'Election Year' };
+    var CYCLE_COLORS = { 1:'#4d9fff', 2:'#ff6b6b', 3:'#34d399', 4:'#e8a425' };
+
+    var COL_CURRENT = '#F1C40F';
+
+    var charts = {};
+    var currentTicker = 'SPY';
+    var _cachedRows = null;
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+
+    function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
+    function showSections(show) {
+      ['sec-anomaly','sec-drawdown','sec-vola','sec-dd-cycle'].forEach(function(id){
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+    }
+    function destroyAll() {
+      ['drawdown','vola','dd-cycle'].forEach(function(k){
+        if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
+      });
+    }
+
+    // ── Statistik-Helpers (NaN-safe) ─────────────────────────────────────────
+    function _clean(arr) {
+      var out = [];
+      for (var i=0;i<arr.length;i++) {
+        var v = arr[i];
+        if (v != null && typeof v === 'number' && !isNaN(v) && isFinite(v)) out.push(v);
+      }
+      return out;
+    }
+    function mean(arr) { var v=_clean(arr); if(!v.length)return 0; var s=0; for(var i=0;i<v.length;i++)s+=v[i]; return s/v.length; }
+    function stdev(arr) { var v=_clean(arr); if(v.length<2)return 0; var m=mean(v),sq=0; for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m); return Math.sqrt(sq/v.length); }
+    function percentileOf(arr, val) { var v=_clean(arr); var c=0; for(var i=0;i<v.length;i++)if(v[i]<=val)c++; return v.length?c/v.length*100:0; }
+    function todayDoy() { var n=new Date(); return Math.floor((n - new Date(n.getFullYear(),0,0))/86400000); }
+
+    // ── Präsidentenzyklus ────────────────────────────────────────────────────
+    function cycleOf(year) { return ((year - 1) % 4 + 4) % 4 + 1; }
+
+    // ── Build year data mit days + log_returns ──────────────────────────────
+    function buildExtendedYearData(rows) {
+      var yearGroups = {};
+      for (var i=0;i<rows.length;i++) {
+        var y=parseInt(rows[i].date.substring(0,4));
+        if (!yearGroups[y]) yearGroups[y]=[];
+        yearGroups[y].push(rows[i]);
+      }
+      var result={};
+      for (var yr in yearGroups) {
+        var yRows=yearGroups[yr];
+        if (yRows.length<20) continue;
+        var cumulative=[100];
+        var days=[];
+        var logRets=[];
+        var d0=new Date(yRows[0].date); var jan1=new Date(d0.getFullYear(),0,0);
+        days.push(Math.floor((d0-jan1)/86400000));
+        logRets.push(0);
+        for (var j=1;j<yRows.length;j++) {
+          var lr = yRows[j].log_return != null ? parseFloat(yRows[j].log_return) :
+            (yRows[j-1].close>0 ? Math.log(parseFloat(yRows[j].close)/parseFloat(yRows[j-1].close)) : 0);
+          cumulative.push(cumulative[j-1]*Math.exp(lr));
+          var dj=new Date(yRows[j].date);
+          days.push(Math.floor((dj-new Date(dj.getFullYear(),0,0))/86400000));
+          logRets.push(lr);
+        }
+        // Interpoliere cumulative auf 365 Kalendertage — KONSTANT-FILL nach
+        // letztem echten Handelstag (Python-kompatibel)
+        var lastActualDay = days[days.length-1];
+        var full365=[];
+        for (var t=1;t<=365;t++) {
+          var idx=days.indexOf(t);
+          if (idx>=0) { full365.push(cumulative[idx]); continue; }
+          if (t<days[0]) { full365.push(cumulative[0]); continue; }
+          if (t>lastActualDay) { full365.push(cumulative[cumulative.length-1]); continue; }
+          var prev=-1,next=-1;
+          for (var k=0;k<days.length;k++) { if(days[k]<t)prev=k; if(days[k]>t&&next<0)next=k; }
+          if (prev>=0&&next>=0) {
+            var w=(t-days[prev])/(days[next]-days[prev]);
+            full365.push(cumulative[prev]+w*(cumulative[next]-cumulative[prev]));
+          } else {
+            full365.push(cumulative[cumulative.length-1]);
+          }
+        }
+        result[parseInt(yr)] = {
+          full_365: full365,
+          days: days,
+          log_returns: logRets,
+          cumulative: cumulative,
+          last_actual_day: lastActualDay,
+          simpleReturn: full365[364]>0 ? (full365[364]/full365[0]-1)*100 : 0
+        };
+      }
+      return result;
+    }
+
+    // ── Drawdown Berechnungen (null-safe + last_actual_day-aware) ───────────
+    function drawdownSeries(curve, base, lastActualDay) {
+      base = base || 0;
+      var dd=[], peak=-Infinity;
+      for (var i=0;i<curve.length;i++) {
+        if (lastActualDay && (i+1) > lastActualDay) { dd.push(null); continue; }
+        var v = curve[i];
+        if (v == null || isNaN(v) || !isFinite(v)) { dd.push(null); continue; }
+        v = v + base;
+        if (v > peak) peak = v;
+        dd.push(peak>0 ? (v - peak) / peak * 100 : 0);
+      }
+      return dd;
+    }
+    function avgDrawdownCurve(curveSpecs, base) {
+      if (!curveSpecs.length) return { avg:[], std:[] };
+      var n = 365;
+      var ddSeries = curveSpecs.map(function(s){
+        if (s && s.curve) return drawdownSeries(s.curve, base, s.lastActualDay);
+        return drawdownSeries(s, base);
+      });
+      var avg=[], std=[];
+      for (var i=0;i<n;i++) {
+        var vals = ddSeries.map(function(s){ return s[i]; });
+        avg.push(mean(vals));
+        std.push(stdev(vals));
+      }
+      return { avg:avg, std:std };
+    }
+    function drawdownKpi(curveSpecs, base) {
+      if (!curveSpecs.length) return null;
+      var maxDds = curveSpecs.map(function(s){
+        if (s && s.curve) {
+          var dd = drawdownSeries(s.curve, base, s.lastActualDay);
+          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+          return clean.length ? Math.min.apply(null, clean) : 0;
+        }
+        var dd2 = drawdownSeries(s, base);
+        var clean2 = dd2.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+        return clean2.length ? Math.min.apply(null, clean2) : 0;
+      });
+      return {
+        avg_max_dd: mean(maxDds),
+        worst_max_dd: _clean(maxDds).length ? Math.min.apply(null, _clean(maxDds)) : 0,
+        n: curveSpecs.length
+      };
+    }
+
+    // ── Rolling Volatilität (jahresgrenzenübergreifend) ─────────────────────
+    function avgRollingVolatility(yearData, window) {
+      var currentYear = new Date().getFullYear();
+      var todayD = todayDoy();
+      var sortedYears = Object.keys(yearData).map(Number).sort(function(a,b){return a-b;});
+      if (sortedYears.length === 0) return null;
+
+      var allRets = [];
+      var meta = [];
+      for (var i=0;i<sortedYears.length;i++) {
+        var y = sortedYears[i];
+        var yo = yearData[y];
+        if (!yo.log_returns || !yo.days) continue;
+        var n = Math.min(yo.log_returns.length, yo.days.length);
+        for (var k=0;k<n;k++) {
+          var lr = parseFloat(yo.log_returns[k]);
+          if (isNaN(lr) || !isFinite(lr)) lr = 0;
+          allRets.push(lr);
+          meta.push({ year: y, doy: yo.days[k] });
+        }
+      }
+      if (allRets.length < window + 5) return null;
+
+      var ann = Math.sqrt(252);
+      var volaSeries = new Array(allRets.length).fill(NaN);
+      for (var i=window-1;i<allRets.length;i++) {
+        var s=0;
+        for (var j=i-window+1;j<=i;j++) s+=allRets[j];
+        var m=s/window;
+        var sq=0;
+        for (var j=i-window+1;j<=i;j++) sq+=(allRets[j]-m)*(allRets[j]-m);
+        volaSeries[i] = Math.sqrt(sq/window) * ann * 100;
+      }
+
+      var yearVolaMap = {};
+      for (var i=0;i<sortedYears.length;i++) yearVolaMap[sortedYears[i]] = new Array(365).fill(NaN);
+      for (var i=0;i<volaSeries.length;i++) {
+        if (isNaN(volaSeries[i])) continue;
+        var m = meta[i];
+        if (m.doy >= 1 && m.doy <= 365) {
+          if (m.year === currentYear && m.doy > todayD) continue;
+          yearVolaMap[m.year][m.doy-1] = volaSeries[i];
+        }
+      }
+
+      // Fill gaps within each year
+      for (var i=0;i<sortedYears.length;i++) {
+        var row = yearVolaMap[sortedYears[i]];
+        var firstD = -1, lastD = -1;
+        for (var d=0;d<365;d++) if (!isNaN(row[d])) { firstD = d; break; }
+        for (var d=364;d>=0;d--) if (!isNaN(row[d])) { lastD = d; break; }
+        if (firstD < 0) continue;
+        var lv = row[firstD];
+        for (var d=firstD;d<=lastD;d++) {
+          if (!isNaN(row[d])) lv = row[d];
+          else row[d] = lv;
+        }
+      }
+
+      var avg=[], std=[];
+      for (var d=0;d<365;d++) {
+        var vals = [];
+        for (var i=0;i<sortedYears.length;i++) {
+          var v = yearVolaMap[sortedYears[i]][d];
+          if (!isNaN(v)) vals.push(v);
+        }
+        if (vals.length < 2) { avg.push(null); std.push(null); continue; }
+        avg.push(mean(vals));
+        std.push(stdev(vals));
+      }
+      return { avg:avg, std:std, _yearVolaMap: yearVolaMap };
+    }
+
+    function currentVolaStats(yearData, window, currentYear) {
+      var cur = yearData[currentYear];
+      if (!cur) return null;
+      var result = avgRollingVolatility(yearData, window);
+      if (!result || !result._yearVolaMap || !result._yearVolaMap[currentYear]) return null;
+
+      var curRow = result._yearVolaMap[currentYear];
+      var td = todayDoy();
+      var currentVola = NaN;
+      for (var d = Math.min(td-1, 364); d >= 0; d--) {
+        if (!isNaN(curRow[d])) { currentVola = curRow[d]; break; }
+      }
+      if (isNaN(currentVola)) return null;
+
+      var refDoy = Math.min(td-1, 364);
+      var histVolas = [];
+      for (var y in result._yearVolaMap) {
+        if (parseInt(y) === currentYear) continue;
+        var v = result._yearVolaMap[y][refDoy];
+        if (!isNaN(v)) histVolas.push(v);
+      }
+      if (histVolas.length<3) return null;
+      var avgV = mean(histVolas);
+      var stdV = stdev(histVolas);
+      var pct = percentileOf(histVolas, currentVola);
+      return {
+        current_vola: currentVola,
+        avg_vola: avgV,
+        delta: currentVola - avgV,
+        percentile: pct,
+        n_years: histVolas.length,
+        is_elevated: currentVola > avgV + stdV,
+        is_low: currentVola < avgV - stdV
+      };
+    }
+
+    // ── Expose as page module ────────────────────────────────────────────────
+    var RZ = window._SA_RZ = {
+      charts: charts,
+      buildExtendedYearData: buildExtendedYearData,
+      drawdownSeries: drawdownSeries,
+      avgDrawdownCurve: avgDrawdownCurve,
+      drawdownKpi: drawdownKpi,
+      avgRollingVolatility: avgRollingVolatility,
+      currentVolaStats: currentVolaStats,
+      mean: mean, stdev: stdev, percentileOf: percentileOf,
+      todayDoy: todayDoy, cycleOf: cycleOf,
+      showError: showError, showSections: showSections, destroyAll: destroyAll,
+      getCurrentTicker: function(){ return currentTicker; },
+      setCurrentTicker: function(t){ currentTicker = t; },
+      getCachedRows: function(){ return _cachedRows; },
+      setCachedRows: function(r){ _cachedRows = r; }
+    };
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var RZ = window._SA_RZ;
+    var MONTHS_DE = ['Jan','Feb','M\u00e4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var MONTH_STARTS_DOY = [1,32,60,91,121,152,182,213,244,274,305,335];
+    var CYCLE_LABELS = { 1:'Post-Election', 2:'Midterm', 3:'Pre-Election', 4:'Election Year' };
+    var CYCLE_COLORS = { 1:'#4d9fff', 2:'#ff6b6b', 3:'#34d399', 4:'#e8a425' };
+    var COL_CURRENT = '#F1C40F';
+
+    function pad365(arr) {
+      var out = [];
+      for (var i=0;i<365;i++) {
+        var v = arr[i];
+        if (v == null || typeof v !== 'number' || isNaN(v) || !isFinite(v)) out.push(null);
+        else out.push(Math.round(v*100)/100);
+      }
+      return out;
+    }
+
+    function monthLabelFormatter(v) {
+      var doy = Math.round(parseFloat(v)) + 1;
+      for (var mi=11; mi>=0; mi--) {
+        if (doy >= MONTH_STARTS_DOY[mi]) return MONTHS_DE[mi];
+      }
+      return '';
+    }
+
+    function xaxisDoy() {
+      return {
+        type: 'numeric',
+        min: 0, max: 364,
+        tickAmount: 11,
+        labels: {
+          style:{colors:'#a89878',fontSize:'11px'},
+          formatter: monthLabelFormatter,
+          rotate: 0,
+          showDuplicates: false,
+          hideOverlappingLabels: true
+        },
+        axisTicks: { show: false },
+        tooltip: { enabled: false }
+      };
+    }
+
+    // ── Render: Anomalie-Radar ──────────────────────────────────────────────
+    RZ.renderAnomaly = function(rows, ticker) {
+      if (window.SA && SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {
+        SA.decadeCompute.renderAnomalyInto('content-anomaly', rows, ticker);
+      }
+    };
+
+    // ── Render: Drawdown-Verlauf + KPIs ─────────────────────────────────────
+    RZ.renderDrawdown = function(yearData, ticker, showCurrent, showIndividual) {
+      var curveSpecs = [];
+      for (var y in yearData) {
+        curveSpecs.push({
+          curve: yearData[y].full_365.slice(),
+          lastActualDay: yearData[y].last_actual_day
+        });
+      }
+      var dd = RZ.avgDrawdownCurve(curveSpecs, 0);
+      var kpi = RZ.drawdownKpi(curveSpecs, 0);
+      var currentYear = new Date().getFullYear();
+
+      var series = [];
+      var colors = [];
+      var widths = [];
+      var dashes = [];
+
+      // Einzeljahre (dünne Linien)
+      if (showIndividual) {
+        for (var y in yearData) {
+          var yo = yearData[y];
+          var cDd = RZ.drawdownSeries(yo.full_365, 0, yo.last_actual_day);
+          series.push({ name:String(y), data: pad365(cDd) });
+          colors.push('rgba(200,220,255,.1)');
+          widths.push(0.5);
+          dashes.push(0);
+        }
+      }
+
+      // Ø Drawdown
+      series.push({ name:'\u00d8 Drawdown', data: pad365(dd.avg) });
+      colors.push('#ff4444');
+      widths.push(2.5);
+      dashes.push(0);
+
+      // Aktuelles Jahr
+      if (showCurrent && yearData[currentYear]) {
+        var curObj = yearData[currentYear];
+        var curDd = RZ.drawdownSeries(curObj.full_365, 0, curObj.last_actual_day);
+        var td = RZ.todayDoy();
+        var curArr = new Array(365).fill(null);
+        for (var i=0;i<Math.min(td,365);i++) curArr[i] = curDd[i];
+        series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
+        colors.push(COL_CURRENT);
+        widths.push(2.5);
+        dashes.push(0);
+      }
+
+      if (RZ.charts.drawdown) { RZ.charts.drawdown.destroy(); RZ.charts.drawdown=null; }
+      RZ.charts.drawdown = new ApexCharts(document.getElementById('chart-drawdown'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:420 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: xaxisDoy(),
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
+                 title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
+        legend: { show: series.length<=5, position:'top', fontSize:'11px' },
+        dataLabels: { enabled:false },
+        title: { text:'\u00d8 Saisonaler Drawdown \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      RZ.charts.drawdown.render();
+
+      // KPIs
+      var curDdNow = '\u2013';
+      var curDdCls = '';
+      if (showCurrent && yearData[currentYear]) {
+        var cDd2 = RZ.drawdownSeries(yearData[currentYear].full_365, 0);
+        var ti = Math.min(RZ.todayDoy()-1, cDd2.length-1);
+        var now = cDd2[ti];
+        curDdNow = now.toFixed(1)+'%';
+        curDdCls = now<-1 ? 'red' : 'green';
+      }
+      document.getElementById('dd-kpis').innerHTML =
+        '<div class="dd-card"><div class="dd-lbl">\u00d8 Max DD ('+kpi.n+'J)</div><div class="dd-val red">'+kpi.avg_max_dd.toFixed(1)+'%</div></div>'+
+        '<div class="dd-card"><div class="dd-lbl">Worst DD</div><div class="dd-val worse">'+kpi.worst_max_dd.toFixed(1)+'%</div></div>'+
+        '<div class="dd-card is-current"><div class="dd-lbl">Aktueller DD '+currentYear+'</div><div class="dd-val '+curDdCls+'">'+curDdNow+'</div></div>';
+    };
+
+    // ── Render: Rolling-Volatilität + KPIs ──────────────────────────────────
+    RZ.renderVolatility = function(yearData, ticker, window, showCurrent) {
+      var result = RZ.avgRollingVolatility(yearData, window);
+      if (!result) {
+        document.getElementById('sec-vola').style.display='none';
+        return;
+      }
+      var currentYear = new Date().getFullYear();
+
+      var series = [];
+      var colors = [];
+      var widths = [];
+
+      series.push({ name:'\u00d8 '+window+'d Vola', data: pad365(result.avg) });
+      colors.push('#e8a820');
+      widths.push(2.5);
+
+      if (showCurrent && result._yearVolaMap && result._yearVolaMap[currentYear]) {
+        var curRow = result._yearVolaMap[currentYear];
+        var curArr = new Array(365).fill(null);
+        for (var d=0;d<365;d++) {
+          if (!isNaN(curRow[d])) curArr[d] = curRow[d];
+        }
+        series.push({ name:currentYear+' (aktuell)', data: pad365(curArr) });
+        colors.push(COL_CURRENT);
+        widths.push(2.5);
+      }
+
+      if (RZ.charts.vola) { RZ.charts.vola.destroy(); RZ.charts.vola=null; }
+      RZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'smooth' },
+        colors: colors,
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: xaxisDoy(),
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
+                 title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        legend: { show:true, position:'top', fontSize:'11px' },
+        dataLabels: { enabled:false },
+        title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      RZ.charts.vola.render();
+
+      // KPIs
+      var stats = RZ.currentVolaStats(yearData, window, currentYear);
+      if (stats) {
+        var statusColor, statusLbl;
+        if (stats.is_elevated) { statusColor='red'; statusLbl='Erh\u00f6ht'; }
+        else if (stats.is_low) { statusColor='green'; statusLbl='Niedrig'; }
+        else { statusColor=''; statusLbl='Normal'; }
+        var deltaCls = stats.delta>0 ? 'red' : 'green';
+        var deltaSign = stats.delta>0 ? '+' : '';
+        document.getElementById('vola-kpis').innerHTML =
+          '<div class="dd-card"><div class="dd-lbl">Aktuelle '+window+'d Vola</div><div class="dd-val '+statusColor+'">'+stats.current_vola.toFixed(1)+'%</div></div>'+
+          '<div class="dd-card"><div class="dd-lbl">Historischer \u00d8</div><div class="dd-val">'+stats.avg_vola.toFixed(1)+'%</div></div>'+
+          '<div class="dd-card"><div class="dd-lbl">Delta zum \u00d8</div><div class="dd-val '+deltaCls+'">'+deltaSign+stats.delta.toFixed(1)+'%</div></div>'+
+          '<div class="dd-card"><div class="dd-lbl">Perzentil ('+stats.n_years+'J)</div><div class="dd-val '+statusColor+'">'+stats.percentile.toFixed(0)+'% \u00b7 '+statusLbl+'</div></div>';
+      }
+    };
+
+    // ── Render: Drawdown nach Zyklus ────────────────────────────────────────
+    RZ.renderDrawdownCycle = function(yearData, ticker) {
+      var cycleGroups = { 1:[], 2:[], 3:[], 4:[] };
+      for (var y in yearData) cycleGroups[RZ.cycleOf(parseInt(y))].push(parseInt(y));
+      var currentCycle = RZ.cycleOf(new Date().getFullYear());
+
+      var series = [];
+      var colors = [];
+      var widths = [];
+      var rows = [];
+
+      for (var c=1;c<=4;c++) {
+        var years = cycleGroups[c];
+        if (!years.length) continue;
+        var curveSpecs = years.map(function(y){
+          return { curve: yearData[y].full_365.slice(), lastActualDay: yearData[y].last_actual_day };
+        });
+        var r = RZ.avgDrawdownCurve(curveSpecs, 0);
+        series.push({ name:CYCLE_LABELS[c]+' ('+years.length+'J)', data: pad365(r.avg) });
+        colors.push(CYCLE_COLORS[c]);
+        widths.push(c===currentCycle ? 3 : 1.8);
+
+        var ddsVals = curveSpecs.map(function(s){
+          var dd = RZ.drawdownSeries(s.curve, 0, s.lastActualDay);
+          var clean = dd.filter(function(v){ return v != null && !isNaN(v) && isFinite(v); });
+          return clean.length ? Math.min.apply(null, clean) : 0;
+        });
+        var bestIdx=0, worstIdx=0;
+        for (var i=0;i<ddsVals.length;i++) {
+          if (Math.abs(ddsVals[i]) < Math.abs(ddsVals[bestIdx])) bestIdx=i;
+          if (ddsVals[i] < ddsVals[worstIdx]) worstIdx=i;
+        }
+        rows.push({
+          cycle:c, label:CYCLE_LABELS[c], color:CYCLE_COLORS[c],
+          n:years.length,
+          avg_dd: RZ.mean(ddsVals),
+          best_dd: ddsVals[bestIdx], best_year: years[bestIdx],
+          worst_dd: ddsVals[worstIdx], worst_year: years[worstIdx]
+        });
+      }
+
+      if (!series.length) {
+        document.getElementById('sec-dd-cycle').style.display='none';
+        return;
+      }
+
+      if (RZ.charts['dd-cycle']) { RZ.charts['dd-cycle'].destroy(); RZ.charts['dd-cycle']=null; }
+      RZ.charts['dd-cycle'] = new ApexCharts(document.getElementById('chart-dd-cycle'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight' },
+        colors: colors,
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: xaxisDoy(),
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
+                 title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:3 }] },
+        legend: { show:true, position:'top', fontSize:'11px' },
+        dataLabels: { enabled:false },
+        title: { text:'\u00d8 Drawdown nach Pr\u00e4sidentenzyklus \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      RZ.charts['dd-cycle'].render();
+
+      // Karten
+      var html='';
+      for (var i=0;i<rows.length;i++) {
+        var r = rows[i];
+        var isCur = r.cycle===currentCycle;
+        html += '<div class="match-card'+(isCur?' is-best':'')+'" style="border-color:'+(isCur?r.color:'rgba(255,255,255,.07)')+'">';
+        html += '<div class="mc-name" style="color:'+r.color+';font-size:.75rem">'+r.label+'</div>';
+        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">\u00d8 Max DD ('+r.n+'J)</div>';
+        html += '<div style="color:#ff4444;font-weight:700;font-size:1rem">'+r.avg_dd.toFixed(1)+'%</div>';
+        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">Best</div>';
+        html += '<div style="color:#34d399;font-weight:700;font-size:.875rem">'+r.best_dd.toFixed(1)+'% ('+r.best_year+')</div>';
+        html += '<div style="font-size:.65rem;color:#8899aa;text-transform:uppercase;letter-spacing:.06em;margin-top:.5rem">Worst</div>';
+        html += '<div style="color:#ff2222;font-weight:700;font-size:.875rem">'+r.worst_dd.toFixed(1)+'% ('+r.worst_year+')</div>';
+        html += '</div>';
+      }
+      document.getElementById('dd-cycle-cards').innerHTML = html;
+    };
+
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // MAIN LOGIC + EVENTS
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var RZ = window._SA_RZ;
+    var _cachedRows = null;
+
+    var $loading = document.getElementById('loading');
+
+    // Outlier-Filter
+    var _getOutlierMethod = SA.outlier ?
+      SA.outlier.renderFilterUI('outlier-filter', function(){ rerender(); }) :
+      function(){ return 'off'; };
+
+    function applyOutlierFilter(yearData, method) {
+      if (!method || method === 'off' || !SA.outlier) return yearData;
+      var years = Object.keys(yearData).map(Number);
+      var rets = years.map(function(y){ return yearData[y].simpleReturn; });
+      if (years.length<4) return yearData;
+      if (method === 'winsorize') return yearData;
+      var factor = method === 'iqr_strict' ? 3.0 : 1.5;
+      var isOut = SA.outlier.detectIQR(rets, factor);
+      var filtered = {};
+      for (var i=0;i<years.length;i++) if (!isOut[i]) filtered[years[i]] = yearData[years[i]];
+      return filtered;
+    }
+
+    function rerender() {
+      if (!_cachedRows) return;
+      var ticker = RZ.getCurrentTicker();
+
+      // Settings lesen
+      var showCurrent = document.getElementById('chk-current').checked;
+      var ddIndividual = document.getElementById('chk-dd-individual').checked;
+      var volaWindow = parseInt(document.getElementById('sl-vola').value);
+
+      // Jahre filtern
+      var yearsVal = document.getElementById('sel-years').value;
+      var minYear = yearsVal==='max' ? 1900 : new Date().getFullYear() - parseInt(yearsVal);
+      var filteredRows = _cachedRows.filter(function(r){ return parseInt(r.date.substring(0,4)) >= minYear; });
+
+      // Year-Data aufbauen
+      var yearData = RZ.buildExtendedYearData(filteredRows);
+      yearData = applyOutlierFilter(yearData, _getOutlierMethod());
+
+      if (Object.keys(yearData).length < 2) {
+        RZ.showError('Zu wenig Jahre f\u00fcr Analyse');
+        return;
+      }
+
+      var years = Object.keys(yearData).map(Number).sort();
+      document.getElementById('page-caption').textContent =
+        ticker + ' \u00b7 ' + Math.min.apply(null,years) + '\u2013' + Math.max.apply(null,years) + ' \u00b7 ' +
+        years.length + ' Jahre \u00b7 Vola-Fenster: ' + volaWindow + 'd';
+
+      RZ.destroyAll();
+
+      function safeRender(name, fn) {
+        try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
+      }
+      safeRender('anomaly',    function(){ RZ.renderAnomaly(_cachedRows, ticker); });
+      safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
+      safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
+      safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
+      RZ.showSections(true);
+    }
+
+    function loadTicker(ticker) {
+      RZ.setCurrentTicker(ticker);
+      document.getElementById('title-ticker').textContent = ticker;
+      var yearsVal = document.getElementById('sel-years').value;
+      var dateFilter = '';
+      if (yearsVal !== 'max') {
+        var minY = new Date().getFullYear() - parseInt(yearsVal) - 1;
+        dateFilter = '&date=gte.' + minY + '-01-01';
+      }
+
+      $loading.style.display = 'flex';
+      RZ.showSections(false);
+      RZ.destroyAll();
+
+      var allRows = [];
+      function fetchBatch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return&order=date' + dateFilter;
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers:{ 'apikey':SA.supabase.key, 'Authorization':'Bearer '+SA.supabase.key,
+                    'Range':offset+'-'+(offset+999), 'Prefer':'count=exact' }
+        }).then(function(r){
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows){
+            allRows = allRows.concat(rows);
+            if (cr) { var t=parseInt(cr.split('/')[1]); if(allRows.length<t) return fetchBatch(allRows.length); }
+            else if (rows.length===1000) return fetchBatch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+
+      fetchBatch(0).then(function(rows) {
+        if (!rows || rows.length < 500) {
+          RZ.showError('Zu wenig Daten f\u00fcr '+ticker+' ('+((rows||[]).length)+' Zeilen)');
+          $loading.style.display = 'none';
+          return;
+        }
+        _cachedRows = rows;
+        RZ.setCachedRows(rows);
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        rerender();
+        $loading.style.display = 'none';
+      }).catch(function(err){
+        RZ.showError('Fehler: '+err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+    document.getElementById('sel-years').addEventListener('change', function(){ loadTicker(RZ.getCurrentTicker()); });
+
+    // Slider
+    document.getElementById('sl-vola').addEventListener('input', function(){ document.getElementById('lbl-vola').textContent = this.value; });
+    document.getElementById('sl-vola').addEventListener('change', function(){ if(_cachedRows) rerender(); });
+
+    // Checkboxes
+    ['chk-current','chk-dd-individual'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    });
+
+    // Auto-Load
+    loadTicker('SPY');
+
+  })();
+  </script>
+
+</body>
+</html>
