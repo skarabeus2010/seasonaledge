@@ -331,7 +331,6 @@
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function destroyAll() {
       ['radar','truepath'].forEach(function(k){ if(charts[k]){ try{charts[k].destroy();}catch(e){} charts[k]=null; } });
-      destroyMLCharts();
     }
 
     // ── Statistik-Helpers ────────────────────────────────────────────────────
