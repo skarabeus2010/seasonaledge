@@ -61,7 +61,7 @@
     .range-wrap input{width:100%;margin-top:.25rem;accent-color:var(--accent)}
     .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem;cursor:pointer}
     .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-    #outlier-filter select{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m);cursor:pointer}
+
 
     .kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.75rem}
     .kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
@@ -101,21 +101,15 @@
         <option value="max">Max</option>
       </select>
       <hr>
+      <h3>Darstellung</h3>
+      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
+      <hr>
       <h3>Risiko-Analyse</h3>
       <div class="range-wrap">
         <label>Rolling-Vola Fenster (Tage) <span id="lbl-vola">20</span></label>
         <input type="range" id="sl-vola" min="5" max="60" step="5" value="20">
       </div>
-      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
-      <hr>
-      <h3>Verfalls-Termine im Vola-Chart</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-opex"> OPEX (3. Freitag)</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-triple" checked> Triple Witching (Mär/Jun/Sep/Dez)</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-vix"> VIXpiration (Settlement)</label>
-      <hr>
-      <h3>Outlier-Filter</h3>
-      <div id="outlier-filter"></div>
     </aside>
 
     <main>
@@ -141,11 +135,13 @@
       </details>
 
       <!-- 2. Rolling-Volatilität -->
-      <div id="sec-vola" style="display:none">
-        <h3 style="color:#fff;font-family:Sora,sans-serif;font-size:1rem;font-weight:700;margin:1.5rem 0 .75rem">Saisonale Volatilit&auml;t (Rolling)</h3>
-        <div id="chart-vola"></div>
-        <div class="kpi-grid-4" id="vola-kpis"></div>
-      </div>
+      <details open id="sec-vola" style="display:none">
+        <summary>Saisonale Volatilit&auml;t (Rolling)</summary>
+        <div class="content">
+          <div id="chart-vola"></div>
+          <div class="kpi-grid-4" id="vola-kpis"></div>
+        </div>
+      </details>
 
       <!-- 3. Drawdown nach Zyklus -->
       <details open id="sec-dd-cycle" style="display:none">
@@ -201,7 +197,6 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/decade-compute.js"></script>
   <script src="/landing/js/significance.js"></script>
-  <script src="/landing/js/outlier.js"></script>
 
   <script>
   (function() {
@@ -212,72 +207,11 @@
     var MONTH_STARTS_DOY = [1,32,60,91,121,152,182,213,244,274,305,335];
     var CYCLE_LABELS = { 1:'Post-Election', 2:'Midterm', 3:'Pre-Election', 4:'Election Year' };
     var CYCLE_COLORS = { 1:'#4d9fff', 2:'#ff6b6b', 3:'#34d399', 4:'#e8a425' };
-    var TRIPLE_MONTHS = [3,6,9,12];
+
 
     var COL_CURRENT = '#F1C40F';
 
     // ── Verfalltermine → Day-of-Year Annotations ────────────────────────────
-    function _dateToDoy(dt) {
-      var jan1 = new Date(dt.getFullYear(), 0, 1);
-      return Math.floor((dt - jan1) / 86400000);  // 0-basiert (passend zu xaxis min:0 max:364)
-    }
-    function _fmtD(dt) {
-      return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
-    }
-    function _prevHT(dt) {
-      dt.setDate(dt.getDate()-1);
-      var safety = 10;
-      while ((dt.getDay()===0||dt.getDay()===6||!SA.holidays.isTradingDay(_fmtD(dt),'NYSE')) && safety-->0)
-        dt.setDate(dt.getDate()-1);
-      return dt;
-    }
-    function _opexDoy(year, month) {
-      var day = SA.holidays._nthDow(year, month, 5, 3);
-      var dt = new Date(year, month-1, day);
-      if (!SA.holidays.isTradingDay(_fmtD(dt), 'NYSE')) dt = _prevHT(dt);
-      return _dateToDoy(dt);
-    }
-    function _vixDoy(year, month) {
-      var opexDay = SA.holidays._nthDow(year, month, 5, 3);
-      var dt = new Date(year, month-1, opexDay);
-      dt.setDate(dt.getDate() - 30);
-      var calStr = year+'-'+('0'+month).slice(-2)+'-'+('0'+opexDay).slice(-2);
-      if (!SA.holidays.isTradingDay(calStr,'NYSE') || !SA.holidays.isTradingDay(_fmtD(dt),'NYSE'))
-        dt = _prevHT(dt);
-      // VIX Jan kann in Vorjahr rutschen → nur anzeigen wenn gleiches Jahr
-      if (dt.getFullYear() !== year) return -1;
-      return _dateToDoy(dt);
-    }
-    function buildExpiryAnnotations() {
-      try {
-        var year = new Date().getFullYear();
-        var ann = [];
-        var showOpex   = document.getElementById('chk-opex').checked;
-        var showTriple = document.getElementById('chk-triple').checked;
-        var showVix    = document.getElementById('chk-vix').checked;
-        if (!showOpex && !showTriple && !showVix) return ann;
-        for (var m = 1; m <= 12; m++) {
-          var isTriple = TRIPLE_MONTHS.indexOf(m) >= 0;
-          if (showOpex && !isTriple) {
-            ann.push({ x:_opexDoy(year,m), borderColor:'rgba(232,168,32,.35)', strokeDashArray:3,
-              label:{text:MONTHS_DE[m-1]+' OPEX', orientation:'vertical', style:{color:'#e8a820',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
-          }
-          if (showTriple && isTriple) {
-            ann.push({ x:_opexDoy(year,m), borderColor:'rgba(251,146,60,.55)', strokeDashArray:0,
-              label:{text:MONTHS_DE[m-1]+' Triple', orientation:'vertical', style:{color:'#fb923c',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
-          }
-          if (showVix) {
-            var vd = _vixDoy(year,m);
-            if (vd > 0) {
-              ann.push({ x:vd, borderColor:'rgba(167,139,250,.35)', strokeDashArray:4,
-                label:{text:MONTHS_DE[m-1]+' VIX', orientation:'vertical', style:{color:'#a78bfa',background:'transparent',fontSize:'8px',padding:{left:1,right:1,top:0,bottom:0}}} });
-            }
-          }
-        }
-        return ann;
-      } catch(e) { return []; }
-    }
-
     var charts = {};
     var currentTicker = 'SPY';
     var _cachedRows = null;
@@ -731,13 +665,7 @@
         title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
       RZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), volaOpts);
-      RZ.charts.vola.render().then(function() {
-        // Annotations erst nach komplettem Render hinzufügen
-        try {
-          var ann = buildExpiryAnnotations();
-          for (var a=0;a<ann.length;a++) RZ.charts.vola.addXaxisAnnotation(ann[a]);
-        } catch(e) { /* ignore */ }
-      });
+      RZ.charts.vola.render();
 
       // KPIs
       var stats = RZ.currentVolaStats(yearData, window, currentYear);
@@ -851,24 +779,6 @@
 
     var $loading = document.getElementById('loading');
 
-    // Outlier-Filter
-    var _getOutlierMethod = SA.outlier ?
-      SA.outlier.renderFilterUI('outlier-filter', function(){ rerender(); }) :
-      function(){ return 'off'; };
-
-    function applyOutlierFilter(yearData, method) {
-      if (!method || method === 'off' || !SA.outlier) return yearData;
-      var years = Object.keys(yearData).map(Number);
-      var rets = years.map(function(y){ return yearData[y].simpleReturn; });
-      if (years.length<4) return yearData;
-      if (method === 'winsorize') return yearData;
-      var factor = method === 'iqr_strict' ? 3.0 : 1.5;
-      var isOut = SA.outlier.detectIQR(rets, factor);
-      var filtered = {};
-      for (var i=0;i<years.length;i++) if (!isOut[i]) filtered[years[i]] = yearData[years[i]];
-      return filtered;
-    }
-
     function rerender() {
       if (!_cachedRows) return;
       var ticker = RZ.getCurrentTicker();
@@ -885,7 +795,6 @@
 
       // Year-Data aufbauen
       var yearData = RZ.buildExtendedYearData(filteredRows);
-      yearData = applyOutlierFilter(yearData, _getOutlierMethod());
 
       if (Object.keys(yearData).length < 2) {
         RZ.showError('Zu wenig Jahre f\u00fcr Analyse');
@@ -969,14 +878,12 @@
     ['chk-current','chk-dd-individual'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
     });
-    // OPEX/Triple/VIX Checkboxen → nur Vola-Chart Annotations updaten
-    ['chk-opex','chk-triple','chk-vix'].forEach(function(id){
-      document.getElementById(id).addEventListener('change', function(){
-        if (!RZ.charts.vola) return;
-        RZ.charts.vola.clearAnnotations();
-        var ann = buildExpiryAnnotations();
-        for (var i=0;i<ann.length;i++) RZ.charts.vola.addXaxisAnnotation(ann[i]);
-      });
+
+    // Vola-Expander: Chart resizen beim Öffnen (war collapsed → 0 Breite)
+    document.getElementById('sec-vola').addEventListener('toggle', function(){
+      if (this.open && RZ.charts.vola) {
+        setTimeout(function(){ RZ.charts.vola.updateOptions({}); }, 50);
+      }
     });
 
     // Auto-Load
