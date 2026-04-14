@@ -7,7 +7,7 @@ jobs:
   reset:
     runs-on: ubuntu-latest
     steps:
-      - name: Reset admin password
+      - name: Full DB reset and fresh init
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -16,45 +16,37 @@ jobs:
           script: |
             cd /opt/seasonaledge
 
-            echo "=== Check current admin user ==="
-            docker compose exec -T umami-db psql -U umami -d umami -c "SELECT user_id, username, role FROM umami_user LIMIT 5;" 2>&1 || \
-            docker compose exec -T umami-db psql -U umami -d umami -c "SELECT id, username, role FROM \"user\" LIMIT 5;" 2>&1
+            echo "=== 1. Stop + remove Umami + DB ==="
+            docker compose stop umami umami-db
+            docker compose rm -f umami umami-db
+            for v in $(docker volume ls -q | grep umami); do
+              echo "  Removing volume: $v"
+              docker volume rm "$v" 2>/dev/null || true
+            done
+
+            echo "=== 2. Fresh start ==="
+            docker compose up -d umami-db
+            sleep 8
+            docker compose up -d umami
+            sleep 20
+
+            echo "=== 3. Check ==="
+            docker compose ps umami umami-db
+            docker compose logs umami --tail 5 2>&1
 
             echo ""
-            echo "=== Reset password to 'SeasonAlpha2026!' ==="
-            # Generate bcrypt hash inside the Umami container (has bcrypt available)
-            HASH=$(docker compose exec -T umami node -e "
-              const { hashPassword } = require('./src/lib/crypto.js');
-              hashPassword('SeasonAlpha2026!').then(h => console.log(h));
-            " 2>&1 | tail -1)
-
-            # Fallback: generate with Node crypto if above fails
-            if [ -z "$HASH" ] || echo "$HASH" | grep -qi "error"; then
-              echo "  Fallback: using inline bcrypt..."
-              HASH=$(docker compose exec -T umami node -e "
-                const crypto = require('crypto');
-                const salt = crypto.randomBytes(16).toString('hex');
-                crypto.scrypt('SeasonAlpha2026!', salt, 64, (err, buf) => {
-                  console.log(salt + ':' + buf.toString('hex'));
-                });
-              " 2>&1 | tail -1)
-            fi
-            echo "  Hash: ${HASH:0:20}..."
-
-            # Update via Umami's own API: delete and recreate
-            # Simpler: just update the DB directly
-            docker compose exec -T umami-db psql -U umami -d umami -c \
-              "UPDATE \"user\" SET password='${HASH}' WHERE username='admin';" 2>&1
-
-            echo ""
-            echo "=== Verify user exists ==="
-            docker compose exec -T umami-db psql -U umami -d umami -c \
-              "SELECT id, username, role, created_at FROM \"user\";" 2>&1
-
-            echo ""
-            echo "=== Try login via API ==="
-            curl -sf -X POST http://localhost:3000/api/auth/login \
+            echo "=== 4. Test default login: admin / umami ==="
+            RESP=$(curl -sf -X POST http://localhost:3000/api/auth/login \
               -H 'Content-Type: application/json' \
-              -d '{"username":"admin","password":"SeasonAlpha2026!"}' 2>&1 | head -c 200
+              -d '{"username":"admin","password":"umami"}' 2>&1)
+            echo "$RESP" | head -c 300
             echo ""
-            echo "=== Done ==="
+            if echo "$RESP" | grep -q "token"; then
+              echo "LOGIN OK! Default: admin / umami"
+            else
+              echo "Default pw failed, trying empty..."
+              curl -sf -X POST http://localhost:3000/api/auth/login \
+                -H 'Content-Type: application/json' \
+                -d '{"username":"admin","password":""}' 2>&1 | head -c 200
+              echo ""
+            fi
