@@ -141,13 +141,11 @@
       </details>
 
       <!-- 2. Rolling-Volatilität -->
-      <details open id="sec-vola" style="display:none">
-        <summary>Saisonale Volatilit&auml;t (Rolling)</summary>
-        <div class="content">
-          <div id="chart-vola"></div>
-          <div class="kpi-grid-4" id="vola-kpis"></div>
-        </div>
-      </details>
+      <div id="sec-vola" style="display:none">
+        <h3 style="color:#fff;font-family:Sora,sans-serif;font-size:1rem;font-weight:700;margin:1.5rem 0 .75rem">Saisonale Volatilit&auml;t (Rolling)</h3>
+        <div id="chart-vola"></div>
+        <div class="kpi-grid-4" id="vola-kpis"></div>
+      </div>
 
       <!-- 3. Drawdown nach Zyklus -->
       <details open id="sec-dd-cycle" style="display:none">
@@ -729,7 +727,7 @@
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
         legend: { show:true, position:'top', fontSize:'11px' },
-        annotations: { xaxis: buildExpiryAnnotations() },
+        // annotations: { xaxis: buildExpiryAnnotations() },
         dataLabels: { enabled:false },
         title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       });
@@ -896,16 +894,13 @@
       RZ.destroyAll();
       RZ.showSections(true);
 
-      // rAF damit Browser Reflow abschliesst bevor ApexCharts Container-Breite misst
-      requestAnimationFrame(function() {
-        function safeRender(name, fn) {
-          try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
-        }
-        safeRender('anomaly',    function(){ RZ.renderAnomaly(_cachedRows, ticker); });
-        safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
-        safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
-        safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
-      });
+      function safeRender(name, fn) {
+        try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
+      }
+      safeRender('anomaly',    function(){ RZ.renderAnomaly(_cachedRows, ticker); });
+      safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
+      safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
+      safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
     }
 
     function loadTicker(ticker) {
