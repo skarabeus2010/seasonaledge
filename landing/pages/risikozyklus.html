@@ -717,20 +717,22 @@
       }
 
       if (RZ.charts.vola) { RZ.charts.vola.destroy(); RZ.charts.vola=null; }
-      RZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), {
+      var volaOpts = {
         series: series,
         chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
-        stroke: { width:widths, curve:'smooth' },
+        stroke: { width:widths, curve:'straight' },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
         xaxis: xaxisDoy(),
         yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'},formatter:function(v){return v!=null?v.toFixed(1)+'%':'';}},
                  title:{text:'Annualisierte Vola (%)',style:{color:'#a89878',fontSize:'11px'}} },
         legend: { show:true, position:'top', fontSize:'11px' },
-        // annotations: { xaxis: buildExpiryAnnotations() },
         dataLabels: { enabled:false },
         title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
+      };
+      var ann = buildExpiryAnnotations();
+      if (ann.length) volaOpts.annotations = { xaxis: ann };
+      RZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), volaOpts);
       RZ.charts.vola.render();
 
       // KPIs
@@ -959,9 +961,18 @@
     document.getElementById('sl-vola').addEventListener('input', function(){ document.getElementById('lbl-vola').textContent = this.value; });
     document.getElementById('sl-vola').addEventListener('change', function(){ if(_cachedRows) rerender(); });
 
-    // Checkboxes
-    ['chk-current','chk-dd-individual','chk-opex','chk-triple','chk-vix'].forEach(function(id){
+    // Checkboxes: Darstellungs-Optionen → voller Rerender
+    ['chk-current','chk-dd-individual'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    });
+    // OPEX/Triple/VIX Checkboxen → nur Vola-Chart Annotations updaten
+    ['chk-opex','chk-triple','chk-vix'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', function(){
+        if (!RZ.charts.vola) return;
+        RZ.charts.vola.clearAnnotations();
+        var ann = buildExpiryAnnotations();
+        for (var i=0;i<ann.length;i++) RZ.charts.vola.addXaxisAnnotation(ann[i]);
+      });
     });
 
     // Auto-Load
