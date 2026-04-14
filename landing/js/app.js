@@ -23,10 +23,32 @@ function loadComponent(containerId, url) {
     .catch(function(e) { console.warn('Component load failed:', url, e); });
 }
 
+function loadAnalytics() {
+  fetch('/landing/components/analytics.html')
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html.trim();
+      var scripts = tmp.querySelectorAll('script');
+      for (var i = 0; i < scripts.length; i++) {
+        var s = document.createElement('script');
+        if (scripts[i].src) { s.src = scripts[i].src; s.defer = true; }
+        for (var j = 0; j < scripts[i].attributes.length; j++) {
+          var a = scripts[i].attributes[j];
+          if (a.name !== 'src') s.setAttribute(a.name, a.value);
+        }
+        if (!scripts[i].src && scripts[i].textContent) s.textContent = scripts[i].textContent;
+        document.head.appendChild(s);
+      }
+    })
+    .catch(function() { /* analytics optional */ });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadComponent('nav-container', '/landing/components/nav.html');
   loadComponent('footer-container', '/landing/components/footer.html');
   initSidebarToggle();
+  loadAnalytics();
 });
 
 

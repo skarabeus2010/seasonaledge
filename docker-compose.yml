@@ -51,3 +51,36 @@ services:
       - ./deploy/certbot/conf:/etc/letsencrypt
       - ./deploy/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # ── Umami Analytics (DSGVO-konform) ───────────────
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: seasonalpha-umami
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD:-umami_secret}@umami-db:5432/umami
+      - APP_SECRET=${UMAMI_APP_SECRET:-replace_me_with_random_string}
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  umami-db:
+    image: postgres:15-alpine
+    container_name: seasonalpha-umami-db
+    restart: always
+    environment:
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=${UMAMI_DB_PASSWORD:-umami_secret}
+      - POSTGRES_DB=umami
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  umami-db-data:

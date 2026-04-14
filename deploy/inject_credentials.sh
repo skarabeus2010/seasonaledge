@@ -29,14 +29,16 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
 fi
 
 # Placeholder in allen Landing-HTML-Dateien ersetzen
-COUNT=$(grep -rl '%%SUPABASE_URL%%\|%%SUPABASE_ANON_KEY%%' "$REPO_DIR/landing/" 2>/dev/null | wc -l)
+COUNT=$(grep -rl '%%SUPABASE_URL%%\|%%SUPABASE_ANON_KEY%%\|%%UMAMI_WEBSITE_ID%%' "$REPO_DIR/landing/" 2>/dev/null | wc -l)
 
 if [ "$COUNT" -eq 0 ]; then
     echo "Keine Placeholder gefunden — bereits injiziert oder keine Landing-Dateien"
 else
+    # Umami Website-ID (optional, Fallback auf leeren String)
+    UMAMI_ID="${UMAMI_WEBSITE_ID:-}"
     find "$REPO_DIR/landing" -name "*.html" -exec sed -i \
-        "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g" {} +
-    echo "Supabase Credentials injiziert in $COUNT Datei(en)"
+        "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g; s|%%UMAMI_WEBSITE_ID%%|${UMAMI_ID}|g" {} +
+    echo "Credentials injiziert in $COUNT Datei(en) (Supabase + Umami)"
 fi
 
 # ── Cache-Busting fuer CSS und JS ────────────────────────────
