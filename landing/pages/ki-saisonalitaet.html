@@ -200,7 +200,7 @@
         <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
         Die KI-Saisonalit&auml;t kombiniert klassische Saisonalanalyse mit Machine Learning. Der <b>Musterpfad</b> findet die historisch &auml;hnlichsten Jahre (Korrelation/DTW) und projiziert deren gewichteten Verlauf in die Zukunft.
         Der <b>KI Composite Score</b> (0&ndash;10) fasst vier Sub-Scores zu einem Gesamtsignal zusammen: Match-Qualit&auml;t, Forward-Return, Monats-Win-Rate und Tracking-G&uuml;te.
-        Zus&auml;tzlich: Chronos-Forecast, MSTL-Zerlegung und NeuralProphet-Saisonkomponenten (wenn ML-Daten verf&uuml;gbar).
+        Der 5.&nbsp;Sub-Score &bdquo;Saisonale St&auml;rke&ldquo; misst per MSTL-Zerlegung, wie stark das saisonale Muster dieses Tickers ausgepr&auml;gt ist.
       </div>
 
       <!-- Hero: Score + Radar -->
@@ -270,96 +270,6 @@
         </div>
       </details>
 
-      <!-- ML-Sektionen (aus Supabase ml_forecasts) -->
-      <details open id="sec-chronos" style="display:none">
-        <summary>📈 Probabilistischer Forecast (Chronos-Bolt)</summary>
-        <div class="content" style="position:relative">
-          <div class="info-badge" tabindex="0">i</div>
-          <div class="info-tooltip">
-            <b>Chronos-Bolt</b> (Amazon, 9M Parameter) erzeugt 100 mögliche Kursverläufe und fasst sie als Quantile zusammen:<br><br>
-            <b>3 Szenarien:</b><br>
-            • <span style="color:#34d399">Optimistisch</span> (75. Perzentil): 75% der Simulationen lagen darunter<br>
-            • <span style="color:#e8a820">Baseline</span> (Median): Die wahrscheinlichste Entwicklung<br>
-            • <span style="color:#f87171">Pessimistisch</span> (25. Perzentil): Nur 25% waren schlechter<br><br>
-            Das <b>äußere Band</b> (10.–90. Perzentil, schattiert) zeigt die Gesamt-Unsicherheit. <b>Historische Kurse</b> (grau) geben Kontext.<br><br>
-            <b>KPIs:</b><br>
-            • <b>Erwartete Rendite</b>: Median-Prognose in 30 Tagen vs. letzter Close<br>
-            • <b>P(positiv)</b>: Anteil der 100 Simulationen mit Kursgewinn<br>
-            • <b>Spanne Tag 30</b>: Differenz 10.–90. Perzentil am letzten Prognosetag<br><br>
-            <span style="color:var(--muted);font-size:.65rem">Zero-shot (kein Training auf diesem Ticker). 100 Samples, CPU-Inferenz.</span>
-          </div>
-          <div id="chronos-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem"></div>
-          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap">
-            <label style="font-size:.75rem;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:.35rem">
-              <input type="checkbox" id="chk-chronos-band" checked style="accent-color:#e8a820"> Konfidenzband (10%–90%)
-            </label>
-            <label style="font-size:.75rem;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:.35rem">
-              <input type="checkbox" id="chk-chronos-scenarios" checked style="accent-color:#34d399"> Szenarien (25%/75%)
-            </label>
-          </div>
-          <div id="chart-chronos"></div>
-          <details style="margin-top:1rem">
-            <summary style="font-size:.8rem;color:var(--dim);cursor:pointer">Forecast-Tabelle (Werte)</summary>
-            <div id="chronos-table" style="margin-top:.5rem"></div>
-          </details>
-        </div>
-      </details>
-
-      <details open id="sec-mstl" style="display:none">
-        <summary>🔬 Saisonale Dekomposition (MSTL)</summary>
-        <div class="content" style="position:relative">
-          <div class="info-badge" tabindex="0">i</div>
-          <div class="info-tooltip">
-            <b>MSTL</b> (Multiple Seasonal-Trend via LOESS) zerlegt den Kursverlauf mathematisch in einzelne Komponenten.<br><br>
-            <b>Jahres-Saisonalität (252d)</b>:<br>
-            Das isolierte wiederkehrende Jahresmuster. <span style="color:#34d399">Über Null</span> = Kurs ist saisonal stärker als der Trend (bullische Phase). <span style="color:#f87171">Unter Null</span> = schwächer (bearische Phase).<br><br>
-            <b>Residual (Rauschen)</b>:<br>
-            Alles was weder Trend noch Saisonalität ist — Earnings-Überraschungen, Crashs, geopolitische Events. Große Ausschläge zeigen unvorhergesehene Bewegungen.<br><br>
-            <b>Monats-Heatmap</b>:<br>
-            Durchschnittlicher saisonaler Effekt pro Monat (aus der MSTL-Komponente). <span style="color:#34d399">Grüne Balken</span> = saisonal starke Monate, <span style="color:#f87171">rote</span> = schwache. Das ist der MSTL-bereinigte Blick auf die Monatsmuster — ohne Trend und Rauschen.<br><br>
-            <b>KPIs:</b><br>
-            • <b>Saisonale Stärke</b>: % der Varianz durch das 252d-Muster. &gt;10% = starkes Muster<br>
-            • <b>Trend-Anteil</b>: % durch langfristigen Trend<br>
-            • <b>Rauschen</b>: Rest = nicht erklärte Varianz<br><br>
-            <span style="color:var(--muted);font-size:.65rem">LOESS-basiert, Perioden: 5d + 252d. Letzte 252 Handelstage.</span>
-          </div>
-          <div id="mstl-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.75rem"></div>
-          <div style="margin-bottom:.75rem">
-            <label style="font-size:.75rem;color:var(--dim)">Komponente:
-              <select id="sel-mstl-view" style="margin-left:.5rem;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:.25rem .5rem;font-size:.75rem">
-                <option value="yearly" selected>Jahres-Saisonalität</option>
-                <option value="residual">Residual (Rauschen)</option>
-                <option value="both">Beide übereinander</option>
-              </select>
-            </label>
-          </div>
-          <div id="chart-mstl-yearly"></div>
-          <div id="chart-mstl-residual" style="margin-top:.25rem"></div>
-          <div id="chart-mstl-heatmap" style="margin-top:1.5rem"></div>
-        </div>
-      </details>
-
-      <details open id="sec-neuralprophet" style="display:none">
-        <summary>🧠 NeuralProphet — KI-Saisonalitäts-Analyse</summary>
-        <div class="content" style="position:relative">
-          <div class="info-badge" tabindex="0">i</div>
-          <div class="info-tooltip">
-            <b>NeuralProphet</b> (Meta/Facebook) ist eine KI-Erweiterung von Prophet mit neuronalen Netzen.<br><br>
-            <b>Jahres-Saisonalität</b>: Das vom Modell <em>gelernte</em> 12-Monats-Muster. Peaks = saisonal starke Phasen. Vergleiche mit dem statistischen Ø oben — stimmen die Muster überein, ist die Saisonalität robust.<br><br>
-            <b>Wochen-Saisonalität</b>: Zeigt den gelernten Effekt pro Wochentag. Die Zahl im Balken ist der <b>saisonale Beitrag in Preiseinheiten</b> — positive Werte bedeuten, dass dieser Tag den Kurs überdurchschnittlich hebt.<br>
-            Aktien: Mo–Fr. Crypto: Mo–So (7/7 Handel).<br><br>
-            <b>Forecast vs. Naiv</b>: Vergleicht die NP-Prognose mit einer "naiven" Methode (Kurs bleibt gleich). Ist NP besser, hat das Modell echten Mehrwert.<br><br>
-            <b>Fehler-Metriken</b>: MAE = mittlerer absoluter Fehler in Preiseinheiten. MAPE = prozentualer Fehler. Kleiner = besser.<br><br>
-            <span style="color:var(--muted);font-size:.65rem">50 Epochen, Learning Rate 0.1, PyTorch-basiert.</span>
-          </div>
-          <div id="np-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:1rem"></div>
-          <div id="chart-np-yearly"></div>
-          <div id="chart-np-weekly" style="margin-top:1.5rem"></div>
-          <div id="chart-np-forecast" style="margin-top:1.5rem"></div>
-          <div id="np-metrics" style="margin-top:1rem"></div>
-        </div>
-      </details>
-
       <!-- Methodik -->
       <details>
         <summary>Methodik</summary>
@@ -375,12 +285,13 @@
             <li>Gl&auml;tte das Ergebnis mit einem Rolling-Fenster</li>
           </ul>
           <h3>KI Seasonal Score (1&ndash;10)</h3>
-          <p>Composite aus 4 Sub-Scores &agrave; 0&ndash;2.5 Punkte:</p>
+          <p>Composite aus 5 Sub-Scores &agrave; 0&ndash;2.0 Punkte:</p>
           <ul>
-            <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.5): Wie viele der &auml;hnlichsten Jahre waren positiv? (DTW-&Auml;quivalent)</li>
-            <li><b>Trend-Projektion</b> (0&ndash;2.5): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
-            <li><b>Win-Rate</b> (0&ndash;2.5): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
-            <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.5): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
+            <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.0): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>
+            <li><b>Trend-Projektion</b> (0&ndash;2.0): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
+            <li><b>Win-Rate</b> (0&ndash;2.0): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
+            <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.0): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
+            <li><b>Saisonale St&auml;rke</b> (0&ndash;2.0): MSTL-Varianzanteil des 252d-Musters. &gt;10% = starkes Muster</li>
           </ul>
           <p>Signal: <b>Bullish</b> &ge; 6.5 &middot; <b>Neutral</b> 3.5&ndash;6.5 &middot; <b>Bearish</b> &le; 3.5</p>
         </div>
@@ -547,18 +458,19 @@
       return { days: days, values: values, upper: upper, lower: lower };
     }
 
-    // ── KI-Score: 4 Sub-Scores ───────────────────────────────────────────────
-    function computeKiScore(yearData, matches, currentYear, avg, truepath) {
+    // ── KI-Score: 5 Sub-Scores (je 0-2.0, Summe 0-10) ────────────────────────
+    function computeKiScore(yearData, matches, currentYear, avg, truepath, mstlStrength) {
       var now = new Date();
       var currentMonth = now.getMonth() + 1;
       var todayDoy = Math.min(365, Math.floor((now - new Date(now.getFullYear(),0,0))/86400000));
       var currentCurve = yearData[currentYear] ? yearData[currentYear].full_365 : [];
+      var W = 2.0; // Gewicht pro Sub-Score (5 × 2.0 = 10)
 
-      // 1) Musterpfad-Qualitaet (DTW-Ersatz): Anteil positiver Match-Jahre
+      // 1) Musterpfad-Qualitaet: Anteil positiver Match-Jahre
       var posMatches = matches.filter(function(m){ return m.returnPct > 0; }).length;
       var subMusterpfad = matches.length ? posMatches / matches.length : 0.5;
 
-      // 2) Trend-Projektion: Ist der Musterpfad in den nächsten 30 Tagen bullish?
+      // 2) Trend-Projektion: Ist der Musterpfad in den naechsten 30 Tagen bullish?
       var subTrend = 0.5;
       var trendRet = 0;
       if (truepath && todayDoy > 0 && todayDoy + 30 < 365) {
@@ -596,7 +508,6 @@
         var c2 = avg.slice(0, n);
         trackingCorr = corrcoef(c1, c2);
         var corrScore = Math.max(0, trackingCorr);
-        // Normalisierter MAE
         var avgRange = Math.max.apply(null, c2) - Math.min.apply(null, c2);
         var mae = 0;
         if (avgRange > 0) {
@@ -607,8 +518,16 @@
         subTracking = Math.max(0, Math.min(1, 0.7 * corrScore + 0.3 * (1 - normMae)));
       }
 
-      // Composite: 4 x 2.5
-      var composite = (subMusterpfad + subTrend + subWinRate + subTracking) * 2.5;
+      // 5) Saisonale Staerke (MSTL): % der Varianz durch 252d-Muster
+      // Normalisierung: 0% → 0, 20%+ → 1.0 (linear)
+      var subSeasonal = 0.5;
+      var seasonalPct = mstlStrength != null ? mstlStrength : null;
+      if (seasonalPct != null) {
+        subSeasonal = Math.max(0, Math.min(1, seasonalPct / 20));
+      }
+
+      // Composite: 5 × 2.0
+      var composite = (subMusterpfad + subTrend + subWinRate + subTracking + subSeasonal) * W;
       composite = Math.round(composite * 10) / 10;
       composite = Math.max(0, Math.min(10, composite));
 
@@ -618,10 +537,11 @@
         score: composite,
         signal: signal,
         subs: {
-          musterpfad: { score: subMusterpfad, weighted: subMusterpfad * 2.5, posCount: posMatches, total: matches.length },
-          trend:      { score: subTrend,      weighted: subTrend * 2.5,      returnPct: trendRet },
-          winRate:    { score: subWinRate,    weighted: subWinRate * 2.5,    wins: wins, total: total, avgReturn: avgMonthRet },
-          tracking:   { score: subTracking,   weighted: subTracking * 2.5,   correlation: trackingCorr }
+          musterpfad: { score: subMusterpfad, weighted: subMusterpfad * W, posCount: posMatches, total: matches.length },
+          trend:      { score: subTrend,      weighted: subTrend * W,      returnPct: trendRet },
+          winRate:    { score: subWinRate,    weighted: subWinRate * W,    wins: wins, total: total, avgReturn: avgMonthRet },
+          tracking:   { score: subTracking,   weighted: subTracking * W,   correlation: trackingCorr },
+          seasonal:   { score: subSeasonal,   weighted: subSeasonal * W,   strengthPct: seasonalPct }
         }
       };
     }
@@ -639,24 +559,28 @@
       signalEl.textContent = ki.signal;
       signalEl.className = 'score-signal ' + ki.signal.toLowerCase();
 
-      metaEl.textContent = 'DTW ' + ki.subs.musterpfad.weighted.toFixed(1) +
+      metaEl.textContent = 'Match ' + ki.subs.musterpfad.weighted.toFixed(1) +
                            ' + Trend ' + ki.subs.trend.weighted.toFixed(1) +
-                           ' + Win-Rate ' + ki.subs.winRate.weighted.toFixed(1) +
-                           ' + Tracking ' + ki.subs.tracking.weighted.toFixed(1);
+                           ' + WR ' + ki.subs.winRate.weighted.toFixed(1) +
+                           ' + Track ' + ki.subs.tracking.weighted.toFixed(1) +
+                           ' + Sais ' + ki.subs.seasonal.weighted.toFixed(1);
     }
 
     function renderSubScores(ki) {
       var s = ki.subs;
       var el = document.getElementById('sub-scores');
       function sub(title, w, desc) {
-        var pct = Math.min(100, Math.max(0, (w / 2.5) * 100));
+        var pct = Math.min(100, Math.max(0, (w / 2.0) * 100));
         return '<div class="sub">' +
           '<div class="sub-title">' + title + '</div>' +
-          '<div class="sub-val">' + w.toFixed(1) + '<span class="sub-max"> / 2.5</span></div>' +
+          '<div class="sub-val">' + w.toFixed(1) + '<span class="sub-max"> / 2.0</span></div>' +
           '<div class="sub-desc">' + desc + '</div>' +
           '<div class="sub-bar" style="width:' + pct + '%"></div>' +
         '</div>';
       }
+      var seasonalDesc = s.seasonal.strengthPct != null
+        ? 'MSTL: ' + s.seasonal.strengthPct.toFixed(1) + '% saisonale Varianz'
+        : 'Keine MSTL-Daten verf&uuml;gbar';
       el.innerHTML =
         sub('Musterpfad-Qualit&auml;t', s.musterpfad.weighted,
             s.musterpfad.posCount + '/' + s.musterpfad.total + ' Match-Jahre positiv') +
@@ -666,21 +590,23 @@
             s.winRate.wins + '/' + s.winRate.total + ' Jahre positiv (&Oslash; ' +
             (s.winRate.avgReturn >= 0 ? '+' : '') + s.winRate.avgReturn.toFixed(2) + '%)') +
         sub('Tracking-Qualit&auml;t',   s.tracking.weighted,
-            'Korrelation ' + s.tracking.correlation.toFixed(3) + ' zu Saisonal-&Oslash;');
+            'Korrelation ' + s.tracking.correlation.toFixed(3) + ' zu Saisonal-&Oslash;') +
+        sub('Saisonale St&auml;rke',    s.seasonal.weighted, seasonalDesc);
     }
 
-    // ── Render: Radar-Chart (4 Sub-Scores) ───────────────────────────────────
+    // ── Render: Radar-Chart (5 Sub-Scores) ───────────────────────────────────
     function renderRadar(ki) {
       var s = ki.subs;
-      var data = [s.musterpfad.weighted, s.trend.weighted, s.winRate.weighted, s.tracking.weighted];
-      var labels = ['Musterpfad', 'Trend', 'Win-Rate', 'Tracking'];
+      var data = [s.musterpfad.weighted, s.trend.weighted, s.winRate.weighted, s.tracking.weighted, s.seasonal.weighted];
+      var labels = ['Musterpfad', 'Trend', 'Win-Rate', 'Tracking', 'Saisonale St\u00e4rke'];
+      var labelColors = ['#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0'];
 
       if (charts.radar) { charts.radar.destroy(); charts.radar = null; }
       charts.radar = new ApexCharts(document.getElementById('chart-radar'), {
         series: [{ name: 'Sub-Score', data: data.map(function(v){ return parseFloat(v.toFixed(2)); }) }],
-        chart: { type:'radar', height:260, toolbar:{show:false}, background:'transparent' },
-        xaxis: { categories: labels, labels:{style:{colors:['#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0'],fontSize:'11px',fontWeight:600}} },
-        yaxis: { min:0, max:2.5, tickAmount:5, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v.toFixed(1);}} },
+        chart: { type:'radar', height:280, toolbar:{show:false}, background:'transparent' },
+        xaxis: { categories: labels, labels:{style:{colors:labelColors,fontSize:'11px',fontWeight:600}} },
+        yaxis: { min:0, max:2.0, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v.toFixed(1);}} },
         colors: ['#e8a820'],
         fill: { opacity:0.35 },
         stroke: { width:2, colors:['#e8a820'] },
@@ -695,7 +621,7 @@
           }
         },
         dataLabels: { enabled:true, background:{enabled:true,foreColor:'#000',borderColor:'#e8a820',padding:3}, style:{fontSize:'10px',colors:['#000']}, formatter:function(v){return v.toFixed(1);} },
-        tooltip: { theme:'dark', y:{ formatter:function(v){return v.toFixed(2)+' / 2.5';}} }
+        tooltip: { theme:'dark', y:{ formatter:function(v){return v.toFixed(2)+' / 2.0';}} }
       });
       charts.radar.render();
     }
@@ -851,417 +777,23 @@
       document.getElementById('tbody-matches').innerHTML = tbody;
     }
 
-    // ── Haupt-Logik ──────────────────────────────────────────────────────────
-    // ── ML Forecasts (aus Supabase ml_forecasts) ──────────────────────
-    var mlCharts = [];
-    function destroyMLCharts() { mlCharts.forEach(function(c){ try{c.destroy();}catch(e){} }); mlCharts=[]; }
+    // ── MSTL Saisonale Stärke (aus Supabase ml_forecasts) ──────────────────
+    var _mstlStrength = null; // cached per ticker
 
-    function kpiHtml(label, value, cls) {
-      return '<div class="kpi"><div class="kpi-label">'+label+'</div><div class="kpi-value '+(cls||'')+'">'+value+'</div></div>';
-    }
-
-    function fetchMLForecasts(ticker) {
-      if (!SA.supabase || !SA.supabase.url) return;
-      destroyMLCharts();
-      // Hide sections initially
-      ['sec-chronos','sec-mstl','sec-neuralprophet'].forEach(function(id){
-        document.getElementById(id).style.display='none';
-      });
-      var q = 'ticker=eq.'+encodeURIComponent(ticker)+'&select=model,data,computed_at';
+    function fetchMSTLStrength(ticker, callback) {
+      _mstlStrength = null;
+      if (!SA.supabase || !SA.supabase.url) { callback(null); return; }
+      var q = 'ticker=eq.'+encodeURIComponent(ticker)+'&model=eq.mstl&select=data';
       fetch(SA.supabase.url+'/rest/v1/ml_forecasts?'+q, {
         headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}
       }).then(function(r){return r.json();}).then(function(rows){
-        if (!rows || !rows.length) return;
-        var byModel = {};
-        rows.forEach(function(r){ byModel[r.model] = r.data; });
-        if (byModel.chronos) renderChronosSection(byModel.chronos);
-        if (byModel.mstl) renderMSTLSection(byModel.mstl);
-        if (byModel.neuralprophet) renderNPSection(byModel.neuralprophet);
-      }).catch(function(e){ console.warn('ML forecasts:', e); });
-    }
-
-    var _chronosData = null;
-    function renderChronosSection(data) {
-      _chronosData = data;
-      document.getElementById('sec-chronos').style.display = '';
-      // KPIs
-      var retCol = data.expected_return >= 0 ? 'green' : 'red';
-      var probCol = data.p_positive >= 60 ? 'green' : data.p_positive <= 40 ? 'red' : 'gold';
-      var lastFc = data.forecast && data.forecast.length ? data.forecast[data.forecast.length-1] : null;
-      var spread = lastFc && lastFc.q90 != null ? (lastFc.q90 - lastFc.q10).toFixed(1) :
-                   (lastFc ? (lastFc.yhat_upper - lastFc.yhat_lower).toFixed(1) : '–');
-      document.getElementById('chronos-kpis').innerHTML =
-        kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
-        kpiHtml('P(positiv)', data.p_positive+'%', probCol) +
-        kpiHtml('Spanne Tag 30', spread + ' Punkte', 'gold');
-      var showBand = document.getElementById('chk-chronos-band').checked;
-      var showScen = document.getElementById('chk-chronos-scenarios').checked;
-      renderChronosChart(data, showBand, showScen);
-      renderChronosTable(data);
-    }
-
-    function renderChronosChart(data, showBand, showScenarios) {
-      if (!data.forecast || !data.forecast.length) return;
-      var fc = data.forecast;
-      var hist = data.history || [];
-      var lastClose = data.last_close;
-
-      // Kombinierten Zeitstrahl bauen: Historie + Forecast
-      var allCats = [];
-      var histClose = [], fcMedian = [], fcQ10 = [], fcQ25 = [], fcQ75 = [], fcQ90 = [];
-
-      // Historische Punkte
-      for (var hi = 0; hi < hist.length; hi++) {
-        allCats.push(hist[hi].ds.substring(5));
-        histClose.push(hist[hi].close);
-        fcMedian.push(null); fcQ10.push(null); fcQ25.push(null); fcQ75.push(null); fcQ90.push(null);
-      }
-
-      // Brücke: letzter historischer Punkt = erster Forecast-Punkt
-      var bridgeIdx = allCats.length - 1;
-
-      // Forecast-Punkte
-      for (var fi = 0; fi < fc.length; fi++) {
-        allCats.push(fc[fi].ds.substring(5));
-        histClose.push(null);
-        fcMedian.push(fc[fi].yhat);
-        fcQ10.push(fc[fi].q10 != null ? fc[fi].q10 : (fc[fi].yhat_lower || null));
-        fcQ25.push(fc[fi].q25 != null ? fc[fi].q25 : null);
-        fcQ75.push(fc[fi].q75 != null ? fc[fi].q75 : null);
-        fcQ90.push(fc[fi].q90 != null ? fc[fi].q90 : (fc[fi].yhat_upper || null));
-      }
-
-      // Brücke: Median startet bei letztem Close
-      if (bridgeIdx >= 0) fcMedian[bridgeIdx] = lastClose;
-
-      // Serien aufbauen
-      var series = [
-        {name:'Historisch', data:histClose},
-        {name:'Baseline (Median)', data:fcMedian}
-      ];
-      var colors = ['#64748b', '#e8a820'];
-      var strokes = [2, 3];
-      var dashes = [0, 0];
-
-      if (showScenarios) {
-        series.push({name:'Optimistisch (75%)', data:fcQ75});
-        series.push({name:'Pessimistisch (25%)', data:fcQ25});
-        colors.push('#34d399', '#f87171');
-        strokes.push(1.5, 1.5);
-        dashes.push(4, 4);
-      }
-      if (showBand) {
-        series.push({name:'90. Perzentil', data:fcQ90});
-        series.push({name:'10. Perzentil', data:fcQ10});
-        colors.push('rgba(232,168,32,.25)', 'rgba(232,168,32,.25)');
-        strokes.push(1, 1);
-        dashes.push(6, 6);
-      }
-
-      // Y-Achse dynamisch
-      var allVals = [];
-      series.forEach(function(s){ s.data.forEach(function(v){ if(v!=null) allVals.push(v); }); });
-      var yMin = Math.min.apply(null, allVals), yMax = Math.max.apply(null, allVals);
-      var yPad = (yMax - yMin) * 0.08;
-
-      // Heute-Marker
-      var todayCat = hist.length > 0 ? allCats[hist.length - 1] : allCats[0];
-
-      var container = document.getElementById('chart-chronos');
-      container.innerHTML = '';
-
-      var c = new ApexCharts(container, {
-        series: series,
-        chart: Object.assign({type:'line', height:420}, SA.chartTheme.chart),
-        stroke:{width:strokes, dashArray:dashes, curve:'smooth'},
-        colors:colors,
-        dataLabels:{enabled:false},
-        grid: SA.chartTheme.grid,
-        annotations:{
-          xaxis:[{x:todayCat, borderColor:'#e8a820', strokeDashArray:0,
-            label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}],
-          yaxis:[{y:lastClose, borderColor:'rgba(255,255,255,.15)', strokeDashArray:4,
-            label:{text:'Close: '+lastClose.toFixed(2),position:'front',style:{color:'#a89878',background:'transparent',fontSize:'9px'}}}]
-        },
-        xaxis:{categories:allCats, labels:{style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
-        yaxis:{min:Math.floor(yMin-yPad), max:Math.ceil(yMax+yPad),
-          labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v?v.toFixed(0):'';}}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,intersect:false,
-          y:{formatter:function(v){return v!=null?v.toFixed(2):'–';}}}),
-        markers:{size:0,hover:{size:5}},
-        legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:10}}
-      });
-      c.render(); mlCharts.push(c);
-    }
-
-    function renderChronosTable(data) {
-      if (!data.forecast || !data.forecast.length) return;
-      var fc = data.forecast;
-      var lastClose = data.last_close;
-      var html = '<table data-no-sort="1" style="width:100%;border-collapse:collapse;font-size:.75rem">';
-      html += '<thead><tr style="border-bottom:1px solid var(--border)">';
-      html += '<th style="text-align:left;padding:.4rem;color:var(--muted)">Datum</th>';
-      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Pessim.</th>';
-      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Baseline</th>';
-      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Optim.</th>';
-      html += '<th style="text-align:right;padding:.4rem;color:var(--muted)">Rendite</th>';
-      html += '</tr></thead><tbody>';
-      for (var i = 0; i < fc.length; i++) {
-        var f = fc[i];
-        var ret = (f.yhat - lastClose) / lastClose * 100;
-        var retCol = ret >= 0 ? 'color:var(--green)' : 'color:var(--red)';
-        var q25 = f.q25 != null ? f.q25.toFixed(2) : (f.yhat_lower || f.yhat).toFixed(2);
-        var q75 = f.q75 != null ? f.q75.toFixed(2) : (f.yhat_upper || f.yhat).toFixed(2);
-        html += '<tr style="border-bottom:1px solid rgba(255,255,255,.03)">';
-        html += '<td style="padding:.3rem .4rem;color:var(--dim)">' + f.ds + '</td>';
-        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--red);font-family:var(--f-m)">' + q25 + '</td>';
-        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--text);font-weight:700;font-family:var(--f-m)">' + f.yhat.toFixed(2) + '</td>';
-        html += '<td style="padding:.3rem .4rem;text-align:right;color:var(--green);font-family:var(--f-m)">' + q75 + '</td>';
-        html += '<td style="padding:.3rem .4rem;text-align:right;font-family:var(--f-m);' + retCol + '">' + (ret>=0?'+':'') + ret.toFixed(2) + '%</td>';
-        html += '</tr>';
-      }
-      html += '</tbody></table>';
-      document.getElementById('chronos-table').innerHTML = html;
-    }
-
-    var _mstlData = null;
-    function renderMSTLSection(data) {
-      _mstlData = data;
-      document.getElementById('sec-mstl').style.display = '';
-      var noiseStrength = Math.max(0, 100 - (data.strength_trend||0) - (data.strength_yearly||0) - (data.strength_weekly||0));
-
-      // KPIs
-      var strengthCol = data.strength_yearly >= 10 ? 'green' : data.strength_yearly >= 3 ? 'gold' : 'red';
-      document.getElementById('mstl-kpis').innerHTML =
-        kpiHtml('Saisonale Stärke', data.strength_yearly.toFixed(1) + '%', strengthCol) +
-        kpiHtml('Trend-Anteil', (data.strength_trend||0).toFixed(1) + '%', 'gold') +
-        kpiHtml('Rauschen', noiseStrength.toFixed(1) + '%', noiseStrength > 50 ? 'red' : 'gold');
-
-      // Heatmap verzögert rendern — ApexCharts braucht sichtbaren Container
-      renderMSTLCharts(data, document.getElementById('sel-mstl-view').value);
-      setTimeout(function(){ renderMSTLHeatmap(data); }, 100);
-    }
-
-    function renderMSTLCharts(data, view) {
-      var dates = data.dates || [];
-
-      // Helper: dynamische Y-Achse
-      function dynY(vals) {
-        var clean = vals.filter(function(v){return v!=null&&isFinite(v);});
-        if (!clean.length) return {min:0,max:1};
-        var lo = Math.min.apply(null, clean), hi = Math.max.apply(null, clean);
-        var pad = (hi - lo) * 0.12 || 1;
-        return {min:lo-pad, max:hi+pad};
-      }
-
-      // Alte Charts zerstören (nur MSTL-spezifische)
-      ['chart-mstl-yearly','chart-mstl-residual'].forEach(function(id){
-        document.getElementById(id).innerHTML = '';
-      });
-
-      // We-are-here: letztes Datum in der Reihe
-      var todayStr = dates.length ? dates[dates.length - 1].substring(5) : null;
-
-      // Panel-Renderer
-      function renderPanel(id, title, vals, color, height, showXLabels) {
-        var y = dynY(vals);
-        var ann = {yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]};
-        if (todayStr) {
-          ann.xaxis = [{x:dates[dates.length-1], borderColor:'#e8a820', strokeDashArray:0,
-            label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}];
+        if (rows && rows.length && rows[0].data && rows[0].data.strength_yearly != null) {
+          _mstlStrength = rows[0].data.strength_yearly;
         }
-        var c = new ApexCharts(document.getElementById(id), {
-          series:[{name:title, data:vals}],
-          chart:Object.assign({type:'area', height:height}, SA.chartTheme.chart),
-          stroke:{width:2, curve:'smooth'},
-          colors:[color],
-          fill:{type:'gradient', gradient:{opacityFrom:.2,opacityTo:.02}},
-          dataLabels:{enabled:false},
-          grid:SA.chartTheme.grid,
-          annotations:ann,
-          xaxis:{categories:dates, labels:{show:showXLabels, style:{colors:'#a89878',fontSize:'9px'}, rotate:-45, hideOverlappingLabels:true}, tickAmount:12},
-          yaxis:{min:y.min,max:y.max,labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v!=null?v.toFixed(1):'';}}},
-          title:{text:title,style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true},y:{formatter:function(v){return v!=null?v.toFixed(2):'–';}}}),
-          markers:{size:0,hover:{size:4}}
-        });
-        c.render(); mlCharts.push(c);
-      }
-
-      // Charts je nach Auswahl
-      var showYearly = view === 'yearly' || view === 'both';
-      var showResidual = view === 'residual' || view === 'both';
-
-      document.getElementById('chart-mstl-yearly').style.display = showYearly ? '' : 'none';
-      document.getElementById('chart-mstl-residual').style.display = showResidual ? '' : 'none';
-
-      if (showYearly && data.seasonal_yearly) {
-        var isLast = !showResidual;
-        renderPanel('chart-mstl-yearly', 'Jahres-Saisonalität (252d)', data.seasonal_yearly, '#e8a820', 320, isLast);
-      }
-      if (showResidual && data.residual) {
-        renderPanel('chart-mstl-residual', 'Residual (Rauschen)', data.residual, '#f87171', 240, true);
-      }
-
+        callback(_mstlStrength);
+      }).catch(function(e){ console.warn('MSTL fetch:', e); callback(null); });
     }
 
-    function renderMSTLHeatmap(data) {
-      var el = document.getElementById('chart-mstl-heatmap');
-      if (!el) { console.error('MSTL Heatmap: Container nicht gefunden'); return; }
-      el.innerHTML = '';
-      var dates = data.dates || [];
-      if (!data.seasonal_yearly || dates.length < 60) return;
-      var monthAvg = {};
-      for (var i = 0; i < dates.length; i++) {
-        var m = parseInt(dates[i].substring(5,7));
-        if (!monthAvg[m]) monthAvg[m] = [];
-        monthAvg[m].push(data.seasonal_yearly[i]);
-      }
-      var MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-      var hmCats = [], hmVals = [];
-      for (var mi = 1; mi <= 12; mi++) {
-        hmCats.push(MONTHS_SHORT[mi-1]);
-        var arr = monthAvg[mi] || [];
-        hmVals.push(arr.length ? parseFloat((arr.reduce(function(s,v){return s+v;},0)/arr.length).toFixed(2)) : 0);
-      }
-      var hmMin = Math.min.apply(null, hmVals), hmMax = Math.max.apply(null, hmVals);
-      var hmPad = (hmMax - hmMin) * 0.15 || 1;
-      var currentMonth = MONTHS_SHORT[new Date().getMonth()];
-      var hm = new ApexCharts(el, {
-        series:[{name:'Ø saisonaler Effekt', data:hmVals}],
-        chart:Object.assign({type:'bar', height:280}, SA.chartTheme.chart),
-        stroke:{width:0},
-        plotOptions:{bar:{borderRadius:6,columnWidth:'60%',colors:{ranges:[{from:-9999,to:-0.001,color:'#f87171'},{from:0,to:9999,color:'#34d399'}]}}},
-        grid:SA.chartTheme.grid,
-        dataLabels:{enabled:true,style:{fontSize:'11px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(1):'';}},
-        xaxis:{categories:hmCats,labels:{style:{colors:'#e2e8f0',fontSize:'12px',fontWeight:600}}},
-        yaxis:{min:hmMin-hmPad,max:hmMax+hmPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(0):'';}}},
-        title:{text:'Ø Saisonaler Effekt pro Monat (MSTL-bereinigt)',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-        tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(2)+' Preiseinheiten':'–';}}}),
-        annotations:{xaxis:[{x:currentMonth, borderColor:'#e8a820', strokeDashArray:0,
-          label:{text:'Aktueller Monat',style:{color:'#fff',background:'#e8a820',fontSize:'10px',padding:{left:6,right:6,top:2,bottom:2}}}}]},
-      });
-      hm.render(); mlCharts.push(hm);
-    }
-
-    function renderNPSection(data) {
-      document.getElementById('sec-neuralprophet').style.display = '';
-      var isCrypto = data.is_crypto || false;
-
-      // KPIs
-      var retCol = data.expected_return >= 0 ? 'green' : 'red';
-      var kpisHtml = kpiHtml('Erwartete Rendite 30d', (data.expected_return>=0?'+':'')+data.expected_return+'%', retCol) +
-        kpiHtml('Letzter Close', data.last_close, 'gold');
-      document.getElementById('np-kpis').innerHTML = kpisHtml;
-
-      // ── 1. Jahres-Saisonalität ──
-      if (data.yearly_seasonality && data.yearly_seasonality.length) {
-        var yCats = data.yearly_seasonality.map(function(p){return p.ds;});
-        var yVals = data.yearly_seasonality.map(function(p){return p.value;});
-        var npYMin = Math.min.apply(null, yVals), npYMax = Math.max.apply(null, yVals);
-        var npYPad = (npYMax - npYMin) * 0.15;
-        var c1 = new ApexCharts(document.getElementById('chart-np-yearly'), {
-          series:[{name:'Jahres-Saisonalität',data:yVals}],
-          chart:Object.assign({type:'area',height:350},SA.chartTheme.chart),
-          stroke:{width:2.5,curve:'smooth'},colors:['#e8a820'],
-          fill:{type:'gradient',gradient:{opacityFrom:.25,opacityTo:.03}},
-          grid:SA.chartTheme.grid,
-          dataLabels:{enabled:false},
-          annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.2)',strokeDashArray:3}]},
-          xaxis:{categories:yCats,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,hideOverlappingLabels:true},tickAmount:12},
-          yaxis:{min:Math.floor(npYMin-npYPad),max:Math.ceil(npYMax+npYPad),labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v!=null?v.toFixed(1):'';}}},
-          title:{text:'Gelernte Jahres-Saisonalität',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{x:{show:true}}),
-          markers:{size:0,hover:{size:4}}
-        });
-        c1.render(); mlCharts.push(c1);
-      }
-
-      // ── 2. Wochen-Saisonalität (Aktien Mo-Fr, Crypto Mo-So) ──
-      if (data.weekly_seasonality && data.weekly_seasonality.length) {
-        var WD_ALL = ['Mo','Di','Mi','Do','Fr','Sa','So'];
-        var nDays = isCrypto ? 7 : 5;
-        var wdSums = new Array(7).fill(0), wdCounts = new Array(7).fill(0);
-        data.weekly_seasonality.forEach(function(p) {
-          var d = new Date(p.ds);
-          var wd = d.getDay(); wd = wd === 0 ? 6 : wd - 1;
-          wdSums[wd] += p.value;
-          wdCounts[wd]++;
-        });
-        var wdNames = WD_ALL.slice(0, nDays);
-        var wVals = wdNames.map(function(_,i){ return wdCounts[i] > 0 ? parseFloat((wdSums[i]/wdCounts[i]).toFixed(4)) : 0; });
-        // Dynamische Y-Achse für Bars
-        var wMin = Math.min.apply(null, wVals), wMax = Math.max.apply(null, wVals);
-        var wPad = Math.max((wMax - wMin) * 0.2, 0.01);
-        var c2 = new ApexCharts(document.getElementById('chart-np-weekly'), {
-          series:[{name:'Saisonaler Beitrag',data:wVals}],
-          chart:Object.assign({type:'bar',height:280},SA.chartTheme.chart),
-          stroke:{width:0},
-          plotOptions:{bar:{borderRadius:6,columnWidth:'55%',colors:{ranges:[{from:-999,to:-0.0001,color:'#f87171'},{from:0,to:999,color:'#34d399'}]}}},
-          grid:SA.chartTheme.grid,
-          dataLabels:{enabled:true,style:{fontSize:'12px',fontWeight:700,colors:['#fff']},formatter:function(v){return v!=null?v.toFixed(2):'';}},
-          xaxis:{categories:wdNames,labels:{style:{colors:'#e2e8f0',fontSize:'13px',fontWeight:700}}},
-          yaxis:{min:wMin-wPad,max:wMax+wPad,labels:{style:{colors:'#a89878',fontSize:'9px'},formatter:function(v){return v!=null?v.toFixed(2):'';}}},
-          title:{text:'Gelernte Wochen-Saisonalität' + (isCrypto ? ' (7/7 Handel)' : ' (Mo–Fr)'),style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{y:{formatter:function(v){return v!=null?v.toFixed(4)+' Preiseinheiten':'–';}}}),
-        });
-        c2.render(); mlCharts.push(c2);
-      }
-
-      // ── 3. Forecast vs. Naiv ──
-      if (data.forecast && data.forecast.length) {
-        var fcCats = data.forecast.map(function(f){return f.ds.substring(5);});
-        var fcYhat = data.forecast.map(function(f){return f.yhat;});
-        var naiveVal = data.naive_forecast_30d || data.last_close;
-        var naiveLine = fcCats.map(function(){return naiveVal;});
-        // Dynamische Y-Achse
-        var allFcVals = fcYhat.concat([naiveVal]);
-        var fcMin = Math.min.apply(null, allFcVals), fcMax = Math.max.apply(null, allFcVals);
-        var fcPad = (fcMax - fcMin) * 0.15 || 1;
-        var c3 = new ApexCharts(document.getElementById('chart-np-forecast'), {
-          series:[
-            {name:'NeuralProphet Forecast',data:fcYhat},
-            {name:'Naiv (letzter Close)',data:naiveLine}
-          ],
-          chart:Object.assign({type:'line',height:320},SA.chartTheme.chart),
-          stroke:{width:[3,2],dashArray:[0,6],curve:'smooth'},
-          colors:['#e8a820','#64748b'],
-          dataLabels:{enabled:false},
-          grid:SA.chartTheme.grid,
-          annotations:{xaxis:[{x:fcCats[0],borderColor:'#e8a820',label:{text:'Heute',style:{color:'#fff',background:'#e8a820',fontSize:'10px'}}}]},
-          xaxis:{categories:fcCats,labels:{style:{colors:'#a89878',fontSize:'9px'},rotate:-45,hideOverlappingLabels:true},tickAmount:8},
-          yaxis:{min:Math.floor(fcMin-fcPad),max:Math.ceil(fcMax+fcPad),labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v?v.toFixed(0):'';}}},
-          title:{text:'30d Forecast: NeuralProphet vs. Naiv',style:{color:'#a89878',fontSize:'11px',fontWeight:600}},
-          tooltip:Object.assign({},SA.chartTheme.tooltip,{shared:true,y:{formatter:function(v){return v?v.toFixed(2):'–';}}}),
-          markers:{size:0,hover:{size:5}},
-          legend:{show:true,position:'top',horizontalAlign:'left',labels:{colors:'#a89878'},markers:{size:8},itemMargin:{horizontal:12}}
-        });
-        c3.render(); mlCharts.push(c3);
-      }
-
-      // ── 4. Fehler-Metriken ──
-      var metricsEl = document.getElementById('np-metrics');
-      if (data.metrics) {
-        var m = data.metrics;
-        var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem">';
-        html += kpiHtml('Naiv MAE', m.naive_mae != null ? m.naive_mae.toFixed(2) : '–', 'red');
-        html += kpiHtml('Naiv MAPE', m.naive_mape != null ? m.naive_mape.toFixed(2) + '%' : '–', 'red');
-        if (m.np_mae != null) {
-          var maeCol = m.np_mae < m.naive_mae ? 'green' : 'red';
-          var mapeCol = m.np_mape < m.naive_mape ? 'green' : 'red';
-          html += kpiHtml('NP MAE', m.np_mae.toFixed(2), maeCol);
-          html += kpiHtml('NP MAPE', m.np_mape.toFixed(2) + '%', mapeCol);
-        } else {
-          html += kpiHtml('NP MAE', '–', '');
-          html += kpiHtml('NP MAPE', '–', '');
-        }
-        html += '</div>';
-        html += '<p style="font-size:.65rem;color:var(--muted);margin-top:.4rem">MAE = mittlerer absoluter Fehler (Preiseinheiten). MAPE = mittlerer prozentualer Fehler. Grün = NP schlägt die naive Methode.</p>';
-        metricsEl.innerHTML = html;
-      } else {
-        metricsEl.innerHTML = '';
-      }
-    }
 
     function rerender() {
       if (!_cachedRows) return;
@@ -1287,7 +819,7 @@
       var todayDoy = Math.min(365, Math.floor((new Date() - new Date(new Date().getFullYear(),0,0))/86400000));
       var projection = projDays > 0 ? computeProjection(matches, todayDoy, projDays) : null;
 
-      var ki = computeKiScore(yearData, matches, currentYear, avg, truepath);
+      var ki = computeKiScore(yearData, matches, currentYear, avg, truepath, _mstlStrength);
 
       destroyAll();
       renderScore(ki);
@@ -1295,8 +827,6 @@
       renderRadar(ki);
       renderTruePathChart(yearData, avg, truepath, matches, currentYear, projection, smoothing);
       renderMatchTable(matches);
-      // ML-Sektionen (async, unabhängig von der Hauptberechnung)
-      fetchMLForecasts(currentTicker);
     }
 
     function loadTicker(ticker) {
@@ -1337,7 +867,8 @@
         }
         _cachedRows = rows;
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
-        rerender();
+        // MSTL-Staerke async holen, dann Score mit 5. Sub-Score berechnen
+        fetchMSTLStrength(ticker, function() { rerender(); });
         $loading.style.display = 'none';
       }).catch(function(err){
         showError('Fehler: '+err.message);
@@ -1360,19 +891,6 @@
     }
     ['chk-current','chk-truepath','chk-matches'].forEach(function(id) {
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
-    });
-
-    // MSTL Komponenten-Dropdown
-    document.getElementById('sel-mstl-view').addEventListener('change', function(){
-      if (_mstlData) renderMSTLCharts(_mstlData, this.value);
-    });
-
-    // Chronos Toggles
-    document.getElementById('chk-chronos-band').addEventListener('change', function(){
-      if (_chronosData) renderChronosChart(_chronosData, this.checked, document.getElementById('chk-chronos-scenarios').checked);
-    });
-    document.getElementById('chk-chronos-scenarios').addEventListener('change', function(){
-      if (_chronosData) renderChronosChart(_chronosData, document.getElementById('chk-chronos-band').checked, this.checked);
     });
 
     // Auto-Load
