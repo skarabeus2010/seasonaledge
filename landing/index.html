@@ -746,6 +746,16 @@
   <script>
     window.__SA_SB_URL='%%SUPABASE_URL%%';
     window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';
+    window.SA = window.SA || {};
+    SA.supabase = { url: window.__SA_SB_URL, key: window.__SA_SB_KEY };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script>
+    // Auth init nach Nav geladen ist
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() { if (SA.auth && SA.auth.init) SA.auth.init(); }, 500);
+    });
   </script>
   <!-- Guided Tour -->
   <script src="/landing/js/tour-config.js?v=20260409"></script>

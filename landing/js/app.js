@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadComponent('footer-container', '/landing/components/footer.html');
   initSidebarToggle();
   loadAnalytics();
+  // Auth nach Nav-Load initialisieren (Nav-Elemente muessen im DOM sein)
+  setTimeout(function() { if (SA.auth && SA.auth.init) SA.auth.init(); }, 300);
 });
 
 

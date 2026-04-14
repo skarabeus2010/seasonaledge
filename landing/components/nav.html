@@ -29,6 +29,14 @@
       Tour
     </button>
     <a href="/dashboard" class="btn btn--p nav__cta">Dashboard</a>
+    <button id="nav-login-btn" class="btn nav__login" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.login()">Anmelden</button>
+    <div id="nav-user-area" class="nav__user" style="display:none">
+      <img class="nav__avatar" src="" alt="" width="28" height="28">
+      <span class="nav__username"></span>
+      <button class="nav__logout" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.logout()" title="Abmelden">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
     <button class="nav__burger" id="nav-burger" aria-label="Navigation &ouml;ffnen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
     </button>
