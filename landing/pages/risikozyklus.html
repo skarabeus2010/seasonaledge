@@ -730,10 +730,13 @@
         dataLabels: { enabled:false },
         title: { text:'\u00d8 Rolling '+window+'d Volatilit\u00e4t \u2014 '+ticker, style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
-      var ann = buildExpiryAnnotations();
-      if (ann.length) volaOpts.annotations = { xaxis: ann };
       RZ.charts.vola = new ApexCharts(document.getElementById('chart-vola'), volaOpts);
       RZ.charts.vola.render();
+      // Annotations nachträglich hinzufügen (im Options-Objekt crashen sie den Chart)
+      try {
+        var ann = buildExpiryAnnotations();
+        for (var a=0;a<ann.length;a++) RZ.charts.vola.addXaxisAnnotation(ann[a]);
+      } catch(e) { /* ignore */ }
 
       // KPIs
       var stats = RZ.currentVolaStats(yearData, window, currentYear);
