@@ -22,18 +22,39 @@ jobs:
 
             echo ""
             echo "=== Reset password to 'SeasonAlpha2026!' ==="
-            # Umami v3 uses bcrypt. Generate hash and update directly.
+            # Generate bcrypt hash inside the Umami container (has bcrypt available)
             HASH=$(docker compose exec -T umami node -e "
-              const bcrypt = require('bcryptjs');
-              console.log(bcrypt.hashSync('SeasonAlpha2026!', 10));
-            " 2>&1)
-            echo "  Hash generated: ${HASH:0:10}..."
+              const { hashPassword } = require('./src/lib/crypto.js');
+              hashPassword('SeasonAlpha2026!').then(h => console.log(h));
+            " 2>&1 | tail -1)
 
-            # Try both table schemas (v2 vs v3)
+            # Fallback: generate with Node crypto if above fails
+            if [ -z "$HASH" ] || echo "$HASH" | grep -qi "error"; then
+              echo "  Fallback: using inline bcrypt..."
+              HASH=$(docker compose exec -T umami node -e "
+                const crypto = require('crypto');
+                const salt = crypto.randomBytes(16).toString('hex');
+                crypto.scrypt('SeasonAlpha2026!', salt, 64, (err, buf) => {
+                  console.log(salt + ':' + buf.toString('hex'));
+                });
+              " 2>&1 | tail -1)
+            fi
+            echo "  Hash: ${HASH:0:20}..."
+
+            # Update via Umami's own API: delete and recreate
+            # Simpler: just update the DB directly
             docker compose exec -T umami-db psql -U umami -d umami -c \
-              "UPDATE \"user\" SET password='${HASH}' WHERE username='admin';" 2>&1 || \
-            docker compose exec -T umami-db psql -U umami -d umami -c \
-              "UPDATE umami_user SET password='${HASH}' WHERE username='admin';" 2>&1
+              "UPDATE \"user\" SET password='${HASH}' WHERE username='admin';" 2>&1
 
             echo ""
-            echo "=== Done! Login: admin / SeasonAlpha2026! ==="
+            echo "=== Verify user exists ==="
+            docker compose exec -T umami-db psql -U umami -d umami -c \
+              "SELECT id, username, role, created_at FROM \"user\";" 2>&1
+
+            echo ""
+            echo "=== Try login via API ==="
+            curl -sf -X POST http://localhost:3000/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"username":"admin","password":"SeasonAlpha2026!"}' 2>&1 | head -c 200
+            echo ""
+            echo "=== Done ==="
