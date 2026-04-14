@@ -85,6 +85,7 @@ landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
     tour-config.js       ← 23 Tour-Steps über 11 Pages (Landing → Dashboard → Dekadenzyklus → Jahreszyklus → Fed → Feiertage → Trifecta → Spot-Vol → Plain Vanilla → KI → Backtest → Finale)
     dash-compute.js      ← Dashboard Compute-Kern extrahiert (findMatchingYears, computeTruePath, computeKiScore, computeRegime, math/time helpers). Reusable by /watchlist
     watchlist.js         ← SA.watchlist Storage + Events API (localStorage-backed, Schema v1, max 50, Cross-Tab-Sync via storage-Event, Migration-ready für späteren Cloud-Sync)
+    auth.js              ← SA.auth Modul: Supabase Auth SDK (Google OAuth), Login/Logout, Session-Persistenz, Nav-UI-Update
   pages/
     dekadenzyklus.html   ← Dekaden-Analyse (12 Sektionen, Ticker-Wechsel)
     monatswechsel.html   ← Turn of the Month (TOM, Heatmap, Streak, Signifikanz)
@@ -609,11 +610,31 @@ Bei Fehlern:
 - [x] **2026-04-13** feat(risikozyklus): OPEX/Triple/VIX Annotations im Vola-Chart (Sidebar-Checkboxen)
 - [x] **2026-04-13** fix(risikozyklus): Annotations try-catch + DOY 0-basiert + sec-dd-cycle open
 
-### ⚠️ OFFEN — Bugs für morgen (14.04.2026)
-- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — `<details open>` Fix versucht (2026-04-13), rendert trotzdem nicht. Nächster Debug-Schritt: ApexCharts Heatmap-Instanz im Browser inspizieren (DOM vorhanden? Breite 0?)
-- [ ] **BUG: Risikozyklus Vola-Chart prüfen** — Annotations + Chart-Rendering nach 3 Fixes (try-catch, DOY 0-basiert, sec-dd-cycle open) verifizieren. Wenn immer noch kaputt → Annotations komplett deaktivieren und Schritt für Schritt wieder einschalten
-- [ ] **ML-Forecast Cron prüfen** — erster automatischer Lauf heute Mo 21:30 UTC, morgen früh Status checken
-- [ ] **Full-Run alle 270 Ticker** mit erweitertem Backend (5 Quantile + History + NP Metrics)
+### Erledigt (KW 16, 14.04.2026)
+- [x] **2026-04-14** Risikozyklus Vola-Chart Fix (showSections, Annotations raus, Outlier raus)
+- [x] **2026-04-14** VIXpiration: Signifikanz-Split (t=0 + Periode), Heatmap nach unten
+- [x] **2026-04-14** Intro-Boxen auf 8 komplexen Pages (Gold-Akzent)
+- [x] **2026-04-14** KI-Saisonalität: Chronos + NeuralProphet entfernt, 5 Sub-Scores, 5-Achsen-Radar
+- [x] **2026-04-14** Landing Page Marketing-Rewrite (22 Tools, 8 KI-Features, 12+8 Cards)
+- [x] **2026-04-14** Umami Analytics self-hosted (Docker, Nginx, Tracking live)
+- [x] **2026-04-14** Auth Phase 1: auth.js + Nav Login-Button + Supabase SDK auf 26 Pages
+
+### ⚠️ OFFEN — Auth fertigstellen (durch User)
+- [ ] **Google OAuth konfigurieren** — 2 Schritte:
+  1. Google Cloud Console (https://console.cloud.google.com/apis/credentials):
+     - "Create Credentials" → "OAuth 2.0 Client ID" → Web application
+     - Authorized redirect URI: `https://DEIN-SUPABASE-PROJEKT.supabase.co/auth/v1/callback`
+     - Client-ID + Client-Secret kopieren
+  2. Supabase Dashboard (Authentication → Providers → Google):
+     - Google Provider aktivieren
+     - Client-ID + Client-Secret eintragen → Save
+- [ ] **Watchlist Cloud-Sync** (Phase 2: Supabase-Tabelle + watchlist.js Sync-Adapter)
+
+### ⚠️ OFFEN — Aufräumen
+- [ ] **Temporäre GitHub Actions Workflows löschen** (debug-umami, fix-umami, reset-umami-pw, restart-nginx, restart-umami, set-umami-id)
+- [ ] **Umami Port 3000 absichern** (Firewall: nur via Nginx `/umami/` erreichbar)
+- [ ] **ML-Forecast Cron anpassen** (Chronos + NP entfernt → nur noch MSTL strength_yearly)
+- [ ] **Server downgrade CPX32→CPX22** prüfen (PyTorch nicht mehr nötig)
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
@@ -624,7 +645,7 @@ Bei Fehlern:
 ### Marketing-Pipeline (manuell durch User)
 - [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln
 - [ ] Newsletter-Mail an Brevo-Liste
-- [ ] Plausible/Umami Analytics einbauen (DSGVO-konform)
+- [x] ~~Plausible/Umami Analytics einbauen (DSGVO-konform)~~ → Umami self-hosted live (2026-04-14)
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 
 ### Technische Roadmap (offen)
