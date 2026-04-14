@@ -894,6 +894,7 @@
         years.length + ' Jahre \u00b7 Vola-Fenster: ' + volaWindow + 'd';
 
       RZ.destroyAll();
+      RZ.showSections(true);
 
       function safeRender(name, fn) {
         try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
@@ -902,7 +903,6 @@
       safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
       safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
       safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
-      RZ.showSections(true);
     }
 
     function loadTicker(ticker) {
