@@ -87,6 +87,13 @@
       <p class="page-caption" id="page-caption">Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY)</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
+      <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
+        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
+        Die Crash-Fr&uuml;hwarnung erkennt Markt-Regime anhand eines <b>Isolation-Forest-Modells</b> (Machine Learning), das auf dem S&amp;P&nbsp;500 trainiert wird.
+        Die <b>Ampel</b> zeigt das aktuelle Regime (Gr&uuml;n/Gelb/Rot), der <b>Risk-Score</b> (0&ndash;100) quantifiziert die Anomalie-St&auml;rke.
+        Darunter siehst du den historischen Score-Verlauf mit farbcodierten Regimephasen und einen Backtest, der zeigt, wie der Markt nach hohen Scores typischerweise performt.
+      </div>
+
       <!-- Ampel -->
       <div style="display:grid;grid-template-columns:200px 1fr;gap:1.5rem;margin-bottom:2rem" id="ampel-grid">
         <div class="ampel-box" id="ampel-box">
