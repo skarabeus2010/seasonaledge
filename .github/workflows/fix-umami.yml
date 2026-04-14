@@ -1,0 +1,45 @@
+name: Fix Umami DB Password
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset Umami DB
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/seasonaledge
+
+            echo "=== 1. Stop Umami containers ==="
+            docker compose stop umami umami-db
+
+            echo "=== 2. Remove containers + volume ==="
+            docker compose rm -f umami umami-db
+            docker volume rm seasonaledge_umami-db-data 2>/dev/null || docker volume rm opt_seasonaledge_umami-db-data 2>/dev/null || true
+            # Find the actual volume name
+            VOLNAME=$(docker volume ls -q | grep umami)
+            if [ -n "$VOLNAME" ]; then
+              echo "  Removing volume: $VOLNAME"
+              docker volume rm "$VOLNAME"
+            fi
+
+            echo "=== 3. Restart with correct password from .env ==="
+            docker compose up -d umami-db
+            echo "  Waiting 10s for Postgres init..."
+            sleep 10
+            docker compose up -d umami
+            echo "  Waiting 15s for Umami startup..."
+            sleep 15
+
+            echo "=== 4. Check status ==="
+            docker compose ps umami umami-db
+            echo ""
+            docker compose logs umami --tail 10 2>&1
+            echo ""
+            curl -sf http://localhost:3000/api/heartbeat && echo "Umami OK!" || echo "Umami still not responding"
