@@ -1,0 +1,39 @@
+name: Reset Umami Admin Password
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset admin password
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/seasonaledge
+
+            echo "=== Check current admin user ==="
+            docker compose exec -T umami-db psql -U umami -d umami -c "SELECT user_id, username, role FROM umami_user LIMIT 5;" 2>&1 || \
+            docker compose exec -T umami-db psql -U umami -d umami -c "SELECT id, username, role FROM \"user\" LIMIT 5;" 2>&1
+
+            echo ""
+            echo "=== Reset password to 'SeasonAlpha2026!' ==="
+            # Umami v3 uses bcrypt. Generate hash and update directly.
+            HASH=$(docker compose exec -T umami node -e "
+              const bcrypt = require('bcryptjs');
+              console.log(bcrypt.hashSync('SeasonAlpha2026!', 10));
+            " 2>&1)
+            echo "  Hash generated: ${HASH:0:10}..."
+
+            # Try both table schemas (v2 vs v3)
+            docker compose exec -T umami-db psql -U umami -d umami -c \
+              "UPDATE \"user\" SET password='${HASH}' WHERE username='admin';" 2>&1 || \
+            docker compose exec -T umami-db psql -U umami -d umami -c \
+              "UPDATE umami_user SET password='${HASH}' WHERE username='admin';" 2>&1
+
+            echo ""
+            echo "=== Done! Login: admin / SeasonAlpha2026! ==="
