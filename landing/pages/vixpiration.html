@@ -211,21 +211,16 @@
         </div>
       </details>
 
-      <!-- Heatmap Monat x Offset -->
-      <details open id="sec-heatmap">
-        <summary>Heatmap: Monat &times; Offset</summary>
-        <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
-            &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
-          </p>
-          <div id="chart-heatmap"></div>
-        </div>
+      <!-- Signifikanz t=0 -->
+      <details open id="sec-sig-t0">
+        <summary>Signifikanztest &mdash; Verfallstag (t=0)</summary>
+        <div class="content" id="content-sig-t0"></div>
       </details>
 
-      <!-- Signifikanz -->
-      <details open id="sec-significance">
-        <summary>Signifikanztest &mdash; Ist der VIX-Effekt statistisch bedeutsam?</summary>
-        <div class="content" id="content-significance"></div>
+      <!-- Signifikanz Fenster -->
+      <details open id="sec-sig-window">
+        <summary>Signifikanztest &mdash; Eingestellte Periode</summary>
+        <div class="content" id="content-sig-window"></div>
       </details>
 
       <!-- Backtest -->
@@ -245,6 +240,17 @@
       <details open id="sec-streak">
         <summary>Streak-Analyse nach Monat</summary>
         <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- Heatmap Monat x Offset -->
+      <details open id="sec-heatmap">
+        <summary>Heatmap: Monat &times; Offset</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
+          </p>
+          <div id="chart-heatmap"></div>
+        </div>
       </details>
 
       <!-- Kalender -->
@@ -349,7 +355,7 @@
     }
 
     function showSections(show) {
-      ['sec-vix-main','sec-vola','sec-vix-grid','sec-heatmap','sec-significance','sec-backtest','sec-streak','sec-calendar'].forEach(function(id) {
+      ['sec-vix-main','sec-vola','sec-vix-grid','sec-sig-t0','sec-sig-window','sec-heatmap','sec-backtest','sec-streak','sec-calendar'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = show ? '' : 'none';
       });
@@ -896,9 +902,11 @@
 
     // ── Render: Signifikanztest ──────────────────────────────────────────────
     function renderSignificance(windows) {
-      var el = document.getElementById('content-significance');
+      var elT0  = document.getElementById('content-sig-t0');
+      var elWin = document.getElementById('content-sig-window');
       if (!SA.significance || windows.length < 3) {
-        document.getElementById('sec-significance').style.display = 'none';
+        document.getElementById('sec-sig-t0').style.display = 'none';
+        document.getElementById('sec-sig-window').style.display = 'none';
         return;
       }
 
@@ -947,16 +955,17 @@
       var before = parseInt(document.getElementById('sl-before').value);
       var after  = parseInt(document.getElementById('sl-after').value);
 
-      var html = '';
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">VIX-Verfalltag (t0)</h3>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">t-Test: Ist die durchschnittliche Tagesrendite am VIX-Settlement-Tag systematisch von Null verschieden?</p>';
-      html += SA.significance.renderSection(t0Result, colsPerRow, orderT0);
+      // Expander 1: Verfallstag t=0
+      var htmlT0 = '';
+      htmlT0 += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">t-Test: Ist die durchschnittliche Tagesrendite am VIX-Settlement-Tag systematisch von Null verschieden?</p>';
+      htmlT0 += SA.significance.renderSection(t0Result, colsPerRow, orderT0);
+      elT0.innerHTML = htmlT0;
 
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">Kumuliertes Fenster (t-'+before+' bis t+'+after+')</h3>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.</p>';
-      html += SA.significance.renderSection(cumResult, colsPerRow, orderCum);
-
-      el.innerHTML = html;
+      // Expander 2: Eingestellte Periode
+      var htmlWin = '';
+      htmlWin += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">Kumulierte Rendite im Event-Fenster (t\u2212'+before+' bis t+'+after+') gegen Null.</p>';
+      htmlWin += SA.significance.renderSection(cumResult, colsPerRow, orderCum);
+      elWin.innerHTML = htmlWin;
     }
 
     // ── Render: Streak ───────────────────────────────────────────────────────
