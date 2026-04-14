@@ -896,13 +896,16 @@
       RZ.destroyAll();
       RZ.showSections(true);
 
-      function safeRender(name, fn) {
-        try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
-      }
-      safeRender('anomaly',    function(){ RZ.renderAnomaly(_cachedRows, ticker); });
-      safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
-      safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
-      safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
+      // rAF damit Browser Reflow abschliesst bevor ApexCharts Container-Breite misst
+      requestAnimationFrame(function() {
+        function safeRender(name, fn) {
+          try { fn(); } catch(e) { console.error('[risikozyklus] '+name+' failed:', e); }
+        }
+        safeRender('anomaly',    function(){ RZ.renderAnomaly(_cachedRows, ticker); });
+        safeRender('drawdown',   function(){ RZ.renderDrawdown(yearData, ticker, showCurrent, ddIndividual); });
+        safeRender('volatility', function(){ RZ.renderVolatility(yearData, ticker, volaWindow, showCurrent); });
+        safeRender('dd-cycle',   function(){ RZ.renderDrawdownCycle(yearData, ticker); });
+      });
     }
 
     function loadTicker(ticker) {
