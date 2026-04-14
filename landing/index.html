@@ -60,9 +60,9 @@
     .eyebrow{font-family:var(--f-m);font-size:.6875rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
     .sec-title{font-family:var(--f-d);font-size:clamp(1.5rem,3.2vw,2.25rem);font-weight:800;line-height:1.15;margin-bottom:.5rem}
     .sec-sub{font-size:1.0625rem;color:var(--dim);max-width:580px;margin-bottom:3rem}
-    .g{display:grid;gap:1.25rem}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
-    @media(max-width:1024px){.g3{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.g2,.g3{grid-template-columns:1fr}}
+    .g{display:grid;gap:1.25rem}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+    @media(max-width:1024px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
 
     /* ── BUTTONS ── */
     .btn{display:inline-flex;align-items:center;justify-content:center;padding:.75rem 1.75rem;border-radius:var(--r);font-family:var(--f-d);font-weight:600;font-size:.9375rem;border:none;cursor:pointer;transition:all .25s var(--ease);text-decoration:none;min-height:48px}
@@ -352,7 +352,7 @@
           <div class="hs"><div class="hs-num">Max</div><div class="hs-lbl">Markthistorie</div></div>
           <div class="hs"><div class="hs-num">&gt;500</div><div class="hs-lbl">Basiswerte</div></div>
           <div class="hs"><div class="hs-num">22</div><div class="hs-lbl">Analyse-Tools</div></div>
-          <div class="hs"><div class="hs-num">7</div><div class="hs-lbl">KI-Features</div></div>
+          <div class="hs"><div class="hs-num">8</div><div class="hs-lbl">KI-Features</div></div>
         </div>
 
         <div class="hero__actions" style="justify-content:center;gap:.75rem">
@@ -407,16 +407,17 @@
     <!-- ═══════ KI-FEATURES ═══════ -->
     <section class="sec sec--alt" id="ai-features"><div class="wrap">
       <p class="eyebrow reveal">KI-powered</p>
-      <h2 class="sec-title reveal reveal-d1">7 KI-Features f&uuml;r belastbare Signale</h2>
+      <h2 class="sec-title reveal reveal-d1">KI-powered Analyse</h2>
       <p class="sec-sub reveal reveal-d2">Statistische Pr&uuml;fung, Muster-Erkennung und Machine Learning &mdash; jedes Feature bringt echten analytischen Mehrwert.</p>
-      <div class="g g3">
+      <div class="g g4">
         <div class="card card--t reveal"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h3>KI Composite Score</h3><p>5 Sub-Scores &rarr; eine Gesamtnote 0&ndash;10. Musterpfad, Trend, Win-Rate, Tracking und saisonale St&auml;rke &mdash; auf einen Blick.</p></div>
         <div class="card card--t reveal reveal-d1"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>Musterpfad (TruePath)</h3><p>Findet die &auml;hnlichsten historischen Jahre per Korrelation und projiziert deren gewichteten Verlauf in die Zukunft.</p></div>
         <div class="card card--t reveal reveal-d2"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v3"/><circle cx="18" cy="18" r="3"/><path d="m22 22-1.5-1.5"/></svg></div><h3>Anomalie-Radar</h3><p>Z-Score + Perzentil-Rang der letzten 10 Handelstage. Erkennt Abweichungen vom saisonalen Muster in Echtzeit.</p></div>
-        <div class="card card--t reveal reveal-d3"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><h3>Crash-Fr&uuml;hwarnung</h3><p>Isolation Forest Regime-Scoring auf dem S&amp;P 500. Risk-Score 0&ndash;100, Ampel-System und historischer Backtest.</p></div>
-        <div class="card card--t reveal reveal-d4"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><h3>Backtest Engine</h3><p>Grid-Search und Walk-Forward f&uuml;r 24 Strategien. Out-of-Sample-Validierung sch&uuml;tzt vor Overfitting.</p></div>
-        <div class="card card--t reveal reveal-d5"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Signifikanztests</h3><p>t-Test und Cohen's d f&uuml;r jedes Ergebnis. Radiale Tachos zeigen auf einen Blick, ob ein Muster statistisch belastbar ist.</p></div>
-        <div class="card card--t reveal reveal-d6"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><h3>Outlier Manager</h3><p>IQR-Detektion, Winsorize und Isolation Forest. Filtere Extremjahre aus der Analyse &mdash; konfigurierbarer Schwellenwert auf jeder Page.</p></div>
+        <div class="card card--t reveal reveal-d3"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><h3>Backtest Engine</h3><p>Grid-Search und Walk-Forward f&uuml;r 24 Strategien. Out-of-Sample-Validierung sch&uuml;tzt vor Overfitting.</p></div>
+        <div class="card card--t reveal reveal-d4"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Signifikanztests</h3><p>t-Test und Cohen's d f&uuml;r jedes Ergebnis. Radiale Tachos zeigen auf einen Blick, ob ein Muster statistisch belastbar ist.</p></div>
+        <div class="card card--t reveal reveal-d5"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div><h3>Outlier Manager</h3><p>IQR-Detektion, Winsorize und Isolation Forest. Filtere Extremjahre &mdash; konfigurierbarer Schwellenwert auf jeder Page.</p></div>
+        <div class="card card--t reveal reveal-d6"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h3>Indikator-Filter</h3><p>SMA, EMA, RSI, Bollinger, MACD und LBR als UND-Verkn&uuml;pfung. Saisonalit&auml;t trifft technische Analyse.</p></div>
+        <div class="card card--t reveal reveal-d7"><div class="card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg></div><h3>Saisonal-Scanner</h3><p>270+ Ticker automatisch gescannt. W&ouml;chentlicher Cron-Job liefert KI-Scores, Win-Rates und saisonale Signale auf einen Blick.</p></div>
       </div>
     </div></section>
 
