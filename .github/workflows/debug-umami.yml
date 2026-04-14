@@ -29,3 +29,9 @@ jobs:
             echo ""
             echo "=== Test DB connection ==="
             docker compose exec -T umami-db pg_isready -U umami 2>&1 || echo "DB not ready"
+            echo ""
+            echo "=== Test login admin/umami ==="
+            curl -sf -X POST http://localhost:3000/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"username":"admin","password":"umami"}' 2>&1 | head -c 100
+            echo ""
