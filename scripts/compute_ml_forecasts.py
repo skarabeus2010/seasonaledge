@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-scripts/compute_ml_forecasts.py — ML Forecast Pre-Compute
-===========================================================
-Berechnet Chronos, MSTL und NeuralProphet Ergebnisse für die Top-N
-Ticker und speichert sie in Supabase `ml_forecasts`.
+scripts/compute_ml_forecasts.py — MSTL Saisonale Stärke Pre-Compute
+=====================================================================
+Berechnet MSTL-Dekomposition (statsmodels) für die Top-N Ticker
+und speichert strength_yearly in Supabase `ml_forecasts`.
+
+Chronos + NeuralProphet wurden am 2026-04-14 entfernt (kein Mehrwert
+auf Finanzdaten, hoher operativer Aufwand mit PyTorch).
 
 Usage:
-    python3 scripts/compute_ml_forecasts.py                  # Top 50 aus Scanner
-    python3 scripts/compute_ml_forecasts.py --top 20         # Top 20
+    python3 scripts/compute_ml_forecasts.py                  # Alle aus Scanner
     python3 scripts/compute_ml_forecasts.py --ticker SPY     # Einzelner Ticker
     python3 scripts/compute_ml_forecasts.py --ticker SPY --dry-run  # Nur anzeigen
-    python3 scripts/compute_ml_forecasts.py --models chronos,mstl   # Nur bestimmte Modelle
 """
 
 import sys
@@ -61,7 +62,7 @@ def load_prices(ticker: str) -> pd.DataFrame | None:
     from shared.supabase_client import get_client
     sb = get_client()
 
-    # Letzte 3 Jahre (reicht für MSTL + Chronos)
+    # Letzte 3 Jahre (reicht fuer MSTL)
     cutoff = (datetime.now().year - 3)
     cutoff_str = f"{cutoff}-01-01"
 
@@ -108,103 +109,27 @@ def store_result(ticker: str, model: str, data: dict, dry_run: bool = False):
     }).execute()
 
 
-# ── Modell-Runner ────────────────────────────────────────────
-
-def run_chronos(df: pd.DataFrame, ticker: str) -> dict | None:
-    """Chronos-Bolt-Tiny 30d Forecast mit Szenarien + historischem Kontext."""
-    try:
-        import torch
-        from shared.chronos_forecast import _get_pipeline
-
-        pipeline = _get_pipeline()
-        if pipeline is None:
-            return None
-
-        close_col = "Close"
-        series = df[close_col].dropna().values
-        if len(series) < 30:
-            return None
-
-        context = torch.tensor(series, dtype=torch.float32).unsqueeze(0)
-        forecast = pipeline.predict(context, prediction_length=30, num_samples=100,
-                                     limit_prediction_length=False)
-        samples = forecast[0].numpy()  # (100, 30)
-
-        # 5 Quantile für Szenarien
-        q10 = np.quantile(samples, 0.10, axis=0)
-        q25 = np.quantile(samples, 0.25, axis=0)
-        q50 = np.quantile(samples, 0.50, axis=0)
-        q75 = np.quantile(samples, 0.75, axis=0)
-        q90 = np.quantile(samples, 0.90, axis=0)
-
-        last_close = float(series[-1])
-        p_positive = float((samples[:, -1] > last_close).mean() * 100)
-        expected_return = float((q50[-1] - last_close) / last_close * 100)
-
-        # Forecast-Datumsindex
-        last_date = df.index[-1]
-        future_dates = pd.bdate_range(start=last_date + pd.Timedelta(days=1), periods=30)
-
-        # Forecast mit allen Quantilen
-        forecast_list = []
-        for i in range(min(30, len(future_dates))):
-            forecast_list.append({
-                "ds": future_dates[i].strftime("%Y-%m-%d"),
-                "yhat": round(float(q50[i]), 2),
-                "q10": round(float(q10[i]), 2),
-                "q25": round(float(q25[i]), 2),
-                "q75": round(float(q75[i]), 2),
-                "q90": round(float(q90[i]), 2),
-            })
-
-        # Historische Preise (letzte 30 Tage als Kontext)
-        hist_n = min(30, len(series))
-        hist_dates = df.index[-hist_n:]
-        history = [
-            {"ds": d.strftime("%Y-%m-%d"), "close": round(float(v), 2)}
-            for d, v in zip(hist_dates, series[-hist_n:])
-        ]
-
-        return {
-            "forecast": forecast_list,
-            "history": history,
-            "expected_return": round(expected_return, 2),
-            "p_positive": round(p_positive, 1),
-            "last_close": round(last_close, 2),
-            "periods": 30,
-        }
-    except Exception as e:
-        print(f"  [WARN] Chronos {ticker}: {e}")
-        return None
-
+# ── MSTL Runner ─────────────────────────────────────────────
 
 def run_mstl(df: pd.DataFrame, ticker: str) -> dict | None:
-    """MSTL Dekomposition."""
+    """MSTL Dekomposition — liefert saisonale Staerke + Zerlegung."""
     try:
         from shared.mstl_decomposition import decompose_mstl
         result = decompose_mstl(df, periods=[5, 252])
         if result is None:
             return None
 
-        # Nur letzte 252 Tage für JSON (sonst zu groß)
+        # Nur letzte 252 Tage fuer JSON (sonst zu gross)
         n = min(252, len(result["trend"]))
         dates = [d.strftime("%Y-%m-%d") for d in result["index"][-n:]]
 
-        # Originalkurse für Dekompositions-Dashboard
-        original = df["Close"].values[-n:]
-
         data = {
             "dates": dates,
-            "original": [round(float(v), 2) for v in original],
-            "trend": [round(float(v), 2) for v in result["trend"].values[-n:]],
-            "residual": [round(float(v), 4) for v in result["residual"].values[-n:]],
             "strength_weekly": result.get("strength_weekly", 0),
             "strength_yearly": result.get("strength_yearly", 0),
             "strength_trend": result.get("strength_trend", 0),
         }
 
-        if "seasonal_weekly" in result:
-            data["seasonal_weekly"] = [round(float(v), 4) for v in result["seasonal_weekly"].values[-n:]]
         if "seasonal_yearly" in result:
             data["seasonal_yearly"] = [round(float(v), 4) for v in result["seasonal_yearly"].values[-n:]]
 
@@ -214,126 +139,16 @@ def run_mstl(df: pd.DataFrame, ticker: str) -> dict | None:
         return None
 
 
-def _is_crypto(ticker: str) -> bool:
-    """Prüft ob ein Ticker Crypto ist (7d-Handel)."""
-    crypto_suffixes = ["-USD", "-EUR", "-GBP", "-BTC"]
-    return any(ticker.upper().endswith(s) for s in crypto_suffixes)
-
-
-def run_neuralprophet(df: pd.DataFrame, ticker: str) -> dict | None:
-    """NeuralProphet: Saisonalität + Forecast + Naive-Vergleich + Metriken."""
-    try:
-        from shared.neural_prophet_forecast import forecast_neural_prophet
-        result = forecast_neural_prophet(df, periods=30)
-        if result is None:
-            return None
-
-        is_crypto = _is_crypto(ticker)
-
-        data = {
-            "expected_return": result.get("expected_return", 0),
-            "last_close": result.get("last_close", 0),
-            "is_crypto": is_crypto,
-        }
-
-        # Komponenten extrahieren
-        components = result.get("components", {})
-        for key in ["yearly", "weekly", "trend"]:
-            if key in components:
-                comp_df = components[key]
-                data[f"{key}_seasonality"] = [
-                    {"ds": row["ds"].strftime("%Y-%m-%d"), "value": round(float(row[key]), 4)}
-                    for _, row in comp_df.iterrows()
-                    if not pd.isna(row[key])
-                ][-365:]
-
-        # Forecast-Daten (30d Prognose)
-        forecast_df = result.get("forecast_df")
-        if forecast_df is not None:
-            yhat_col = [c for c in forecast_df.columns if c.startswith("yhat")]
-            if yhat_col:
-                fc_vals = forecast_df[yhat_col[0]].values
-                fc_dates = forecast_df["ds"].values
-                data["forecast"] = [
-                    {"ds": pd.Timestamp(d).strftime("%Y-%m-%d"), "yhat": round(float(v), 2)}
-                    for d, v in zip(fc_dates, fc_vals)
-                    if not np.isnan(v)
-                ]
-
-        # Naive-Forecast: letzte 30 Tage als Prognose (Benchmark)
-        close_vals = df["Close"].values
-        if len(close_vals) >= 60:
-            last_30 = close_vals[-30:]
-            prev_30 = close_vals[-60:-30]
-            # Naive = Kurs bleibt beim letzten Close
-            naive_forecast = float(close_vals[-1])
-            data["naive_forecast_30d"] = round(naive_forecast, 2)
-
-            # In-Sample Fehler-Metriken (letzte 90 Tage)
-            # NP-Forecast vs. Actual auf historischen Daten
-            in_sample_n = min(90, len(close_vals) - 1)
-            actuals = close_vals[-in_sample_n:]
-            # Naive: jeder Tag = Vortag
-            naive_preds = close_vals[-(in_sample_n + 1):-1]
-            naive_errors = np.abs(actuals - naive_preds)
-            naive_mae = float(np.mean(naive_errors))
-            naive_mape = float(np.mean(naive_errors / np.maximum(np.abs(actuals), 1e-8)) * 100)
-
-            data["metrics"] = {
-                "naive_mae": round(naive_mae, 2),
-                "naive_mape": round(naive_mape, 2),
-            }
-
-            # NP In-Sample Fehler (wenn Trend-Komponente vorhanden)
-            if "trend" in components:
-                trend_df = components["trend"]
-                trend_vals = trend_df["trend"].values
-                if len(trend_vals) >= in_sample_n:
-                    # Rekonstruktion = trend + yearly + weekly
-                    recon = trend_vals[-in_sample_n:].copy()
-                    if "yearly" in components:
-                        y_vals = components["yearly"]["yearly"].values
-                        if len(y_vals) >= in_sample_n:
-                            recon = recon + y_vals[-in_sample_n:]
-                    if "weekly" in components:
-                        w_vals = components["weekly"]["weekly"].values
-                        if len(w_vals) >= in_sample_n:
-                            recon = recon + w_vals[-in_sample_n:]
-
-                    np_errors = np.abs(actuals - recon)
-                    np_mae = float(np.mean(np_errors))
-                    np_mape = float(np.mean(np_errors / np.maximum(np.abs(actuals), 1e-8)) * 100)
-                    data["metrics"]["np_mae"] = round(np_mae, 2)
-                    data["metrics"]["np_mape"] = round(np_mape, 2)
-
-        return data
-    except Exception as e:
-        print(f"  [WARN] NeuralProphet {ticker}: {e}")
-        return None
-
-
 # ── Main ─────────────────────────────────────────────────────
 
-MODELS = {
-    "chronos": run_chronos,
-    "mstl": run_mstl,
-    "neuralprophet": run_neuralprophet,
-}
-
-
 def main():
-    parser = argparse.ArgumentParser(description="ML Forecast Pre-Compute")
+    parser = argparse.ArgumentParser(description="MSTL Saisonale Staerke Pre-Compute")
     parser.add_argument("--ticker", type=str, help="Einzelner Ticker (sonst alle aus Scanner)")
-    parser.add_argument("--models", type=str, default="chronos,mstl,neuralprophet",
-                        help="Komma-separierte Modell-Liste")
+    parser.add_argument("--models", type=str, default="mstl",
+                        help="Komma-separiert (nur mstl verfuegbar)")
     parser.add_argument("--dry-run", action="store_true", help="Nur berechnen, nicht speichern")
-    parser.add_argument("--progress-every", type=int, default=5, help="Progress alle N Ticker")
+    parser.add_argument("--progress-every", type=int, default=10, help="Progress alle N Ticker")
     args = parser.parse_args()
-
-    selected_models = [m.strip() for m in args.models.split(",") if m.strip() in MODELS]
-    if not selected_models:
-        print("Keine gültigen Modelle angegeben. Verfügbar:", list(MODELS.keys()))
-        sys.exit(1)
 
     # Ticker-Liste
     if args.ticker:
@@ -341,8 +156,7 @@ def main():
     else:
         tickers = get_all_tickers()
 
-    print(f"ML Forecasts: {len(tickers)} Ticker × {len(selected_models)} Modelle")
-    print(f"Modelle: {selected_models}")
+    print(f"MSTL Strength: {len(tickers)} Ticker")
     if args.dry_run:
         print("DRY-RUN: Keine Daten werden gespeichert")
     print()
@@ -358,29 +172,26 @@ def main():
             eta = (len(tickers) - idx) / rate if rate > 0 else 0
             print(f"  [{idx}/{len(tickers)}] {elapsed:.0f}s elapsed, ETA {eta:.0f}s")
 
-        # Preise laden
         df = load_prices(ticker)
         if df is None:
-            print(f"  [{ticker}] Zu wenig Daten, übersprungen")
+            print(f"  [{ticker}] Zu wenig Daten, uebersprungen")
             errors += 1
             continue
 
-        for model_name in selected_models:
-            t0 = time.time()
-            runner = MODELS[model_name]
-            result = runner(df, ticker)
+        t0 = time.time()
+        result = run_mstl(df, ticker)
 
-            if result is not None:
-                store_result(ticker, model_name, result, dry_run=args.dry_run)
-                dt = time.time() - t0
-                print(f"  [{ticker}] {model_name}: OK ({dt:.1f}s)")
-                success += 1
-            else:
-                print(f"  [{ticker}] {model_name}: SKIP (kein Ergebnis)")
-                errors += 1
+        if result is not None:
+            store_result(ticker, "mstl", result, dry_run=args.dry_run)
+            dt = time.time() - t0
+            strength = result.get("strength_yearly", 0)
+            print(f"  [{ticker}] MSTL: {strength:.1f}% saisonale Staerke ({dt:.1f}s)")
+            success += 1
+        else:
+            print(f"  [{ticker}] MSTL: SKIP (kein Ergebnis)")
+            errors += 1
 
-            # RAM freigeben nach jedem Modell
-            gc.collect()
+        gc.collect()
 
     elapsed = time.time() - t_start
     print(f"\nFertig: {success} OK, {errors} Fehler in {elapsed:.0f}s")
