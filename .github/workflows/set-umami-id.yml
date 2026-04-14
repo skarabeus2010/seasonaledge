@@ -1,0 +1,37 @@
+name: Set Umami Website ID
+
+on:
+  workflow_dispatch:
+
+jobs:
+  set-id:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Website ID and activate tracking
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/seasonaledge
+
+            echo "=== 1. Set UMAMI_WEBSITE_ID in .env ==="
+            sed -i 's/UMAMI_WEBSITE_ID=.*/UMAMI_WEBSITE_ID=ea666a1c-fdf4-41c8-884b-3d634744ad1b/' .env
+            grep UMAMI .env | sed 's/PASSWORD=.*/PASSWORD=***/' | sed 's/SECRET=.*/SECRET=***/'
+
+            echo "=== 2. Re-inject credentials ==="
+            git checkout -- landing/ 2>/dev/null || true
+            git pull origin master
+            bash deploy/inject_credentials.sh /opt/seasonaledge
+
+            echo "=== 3. Verify analytics.html has the ID ==="
+            cat landing/components/analytics.html
+
+            echo "=== 4. Restart Nginx ==="
+            docker compose restart nginx
+            sleep 2
+
+            echo "=== 5. Test tracking script ==="
+            curl -sf -o /dev/null -w "script.js: HTTP %{http_code}\n" https://seasonalpha.ai/umami/script.js
+            echo "Done!"
