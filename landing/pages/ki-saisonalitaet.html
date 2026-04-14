@@ -208,8 +208,8 @@
         <div class="hero-score">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum KI Score">i</div>
           <div class="info-tooltip">
-            <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 4 unabh&auml;ngige
-            Sub-Scores &agrave; 0&ndash;2.5 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
+            <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 5 unabh&auml;ngige
+            Sub-Scores &agrave; 0&ndash;2.0 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
             <span style="color:#34d399;font-weight:600">Bullish &ge; 6.5</span> &middot;
             <span style="color:var(--accent);font-weight:600">Neutral 3.5&ndash;6.5</span> &middot;
             <span style="color:#f87171;font-weight:600">Bearish &le; 3.5</span><br><br>
@@ -220,17 +220,16 @@
           <div class="score-label">KI Seasonal Score</div>
           <div class="score-value" id="score-value">&ndash;<span class="of-ten"> / 10</span></div>
           <div class="score-signal neutral" id="score-signal">&ndash;</div>
-          <div class="score-meta" id="score-meta">Composite aus 4 Sub-Scores</div>
+          <div class="score-meta" id="score-meta">Composite aus 5 Sub-Scores</div>
         </div>
         <div class="hero-radar">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Radar">i</div>
           <div class="info-tooltip">
-            <b>So liest du den Radar:</b> Jede Achse zeigt einen der 4 Sub-Scores
-            (0&ndash;2.5&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
+            <b>So liest du den Radar:</b> Jede Achse zeigt einen der 5 Sub-Scores
+            (0&ndash;2.0&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
             Ist der Radar einseitig &mdash; z.B. stark bei <b>Musterpfad</b> und <b>Trend</b>, aber schwach bei
-            <b>Tracking</b> &mdash; folgt das aktuelle Jahr noch nicht dem erwarteten Muster: das Signal ist
-            theoretisch bullish, aber noch nicht best&auml;tigt. Ein ausgewogener, voller Radar bedeutet, dass
-            alle vier Indikatoren in die gleiche Richtung zeigen und das Gesamt-Signal besonders belastbar ist.
+            <b>Tracking</b> &mdash; folgt das aktuelle Jahr noch nicht dem erwarteten Muster. Ein ausgewogener,
+            voller Radar bedeutet, dass alle f&uuml;nf Indikatoren in die gleiche Richtung zeigen.
           </div>
           <div id="chart-radar"></div>
         </div>
@@ -867,8 +866,11 @@
         }
         _cachedRows = rows;
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
-        // MSTL-Staerke async holen, dann Score mit 5. Sub-Score berechnen
-        fetchMSTLStrength(ticker, function() { rerender(); });
+        // Sofort rendern (ohne MSTL), dann async MSTL nachladen und Score updaten
+        rerender();
+        fetchMSTLStrength(ticker, function(strength) {
+          if (strength != null) rerender(); // Re-render mit 5. Sub-Score
+        });
         $loading.style.display = 'none';
       }).catch(function(err){
         showError('Fehler: '+err.message);
