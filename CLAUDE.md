@@ -1,12 +1,11 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 32.3 | 2026-04-15 | Aufräum-Check: Temp-Workflows weg, ML-Cron MSTL-only, Server-Downgrade erledigt | Roadmap: 4/5 Features live
-
+> Version 33.0 | 2026-04-15 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
 
 ## Projekt
 
 **SeasonAlpha** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
-Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe.
+Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe. Domain: `seasonalpha.ai`.
 
 ## Entwicklung
 
@@ -14,186 +13,45 @@ Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe.
 Pfad:   C:\Dev\Seasonaledge\
 Start:  py -m streamlit run seasonal_app.py
 Python: PowerShell → immer `py -m` (nicht `python`)
+Server: ssh root@178.104.75.46  (Docker: seasonalpha-app / seasonalpha-nginx / seasonalpha-certbot)
+Host-Pfad: /opt/seasonaledge
 ```
 
-## Projektstruktur
+## Projektstruktur (High-Level)
 
 ```
-seasonal_app.py          ← Startseite
-shared/                  ← Berechnungen, Daten, Utilities
-  yahoo_downloader.py    ← HTTP-Downloader + Stooq-Fallback + OHLC Split+Dividend-Adjustierung (einziger Cache!)
-  data.py                ← Supabase-First Daten-Layer + OHLC-Konsistenzcheck (Split+Dividend)
-  calculations.py        ← Kern-Berechnungen
-  charts.py              ← Plotly Theme (apply_se_theme)
-  ki_score.py            ← KI Seasonal Score Engine (4 Sub-Scores → 0-10)
-  tdom_analysis.py       ← TDoM Berechnungen (3 Strategien, Ranges, Heatmap)
-  ai_models.py           ← DTW, Prophet, Isolation Forest, Claude API, KI-Summary, Anomalie-Heatmap
-  anomaly_engine.py      ← Anomalie-Radar, Crash-Ampel, TDoM-Anomalien, Muster-Brueche
-  mstl_decomposition.py  ← Multi-Saisonalitaets-Zerlegung (Trend/Woche/Jahr/Residual)
-  chronos_forecast.py    ← Chronos-Bolt-Tiny 30d-Forecast mit Konfidenzbaendern
-  neural_prophet_forecast.py ← NeuralProphet Saisonalitaets-Komponenten
-  spot_vol_beta.py       ← Spot-Vol Beta (SPX vs VIX, Daily + Rolling + Regime-Wendepunkte)
-  outlier_manager.py     ← Outlier-Filter (IQR, Winsorize, Isolation Forest)
-  market_calendar.py     ← Feiertage/OPEX/Zentralbank → Supabase sync
-  cache_manager.py       ← Computed Values Cache (DB → Fallback → Store)
-  split_slider.py        ← 3-Layer Split-Slider
-  supabase_client.py     ← DB-Connector + Subscriber + Market Events + Cache
-  logger.py              ← 3 Log-Kanäle (app/error/access)
-  cpi_data.py            ← CPI-Daten (BLS/FRED), Inflationsbereinigung
-  shock_analysis.py      ← Shock Analyzer (Trigger→Target)
-  sector_rotation.py     ← Sektor-Rotation Analyse
-  significance_gauge.py  ← Signifikanztest (t-Test, Cohen's d) + Radial Gauge (key_prefix Support)
-  percentile_bar.py      ← Perzentil Stat-Ribbon (Micro-Gauge, %ile, Z-Score)
-  streak_analysis.py     ← Wiederverwendbare Streak-Analyse (W/L-Serien, HTML-Tabelle)
-  footer.py              ← Footer: Blog-Links, Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk Disclosure
-  info_badge.py          ← ⓘ-Badge für Expander (DEPRECATED — nur noch in _disabled/ Pages)
-  info_texts.yaml        ← Zentrale Erklärungs-Texte DE/EN (51 Einträge) → Datenquelle für 10_Methodik
-  i18n.py                ← Internationalisierung DE/EN: t(), get_lang(), lang_toggle() (JS-basiert)
-  ticker_autocomplete.py ← Search-as-you-type Ticker-Suche (Supabase + Debounce)
-  indicators.py          ← Technische Indikatoren (SMA, EMA, RSI, BB, MACD, LBR)
-  indicator_filter_ui.py ← Sidebar UI fuer Indikator-Filter (Pulldowns, Badges)
-  tdoy_analysis.py       ← TDoY Berechnungen (9 Funktionen, dynamisch Aktien ~252 / Crypto ~365)
-  trading_day_header.py  ← Trading Day Header (TDOM/TDOY Anzeige) + Converter Widget
-  drawdown_analysis.py   ← Saisonaler Drawdown + Rolling Volatilitaet (DD-Serie, KPI, Heatmap, Recovery)
-  weekly_report.py       ← Weekly Newsletter Daten-Aggregation (top_ki, regime, events, tdom_bias)
-  unsubscribe_token.py   ← HMAC SHA-256 Token-Generator für Unsubscribe-Links
-  strategies/            ← Strategie-Module
-    plain_vanilla.py     ← 24 Plain Vanilla Strategien (Sell in May, KTI, UECS etc.)
-    definitions.py       ← Strategie-Metadaten (65+ Eintraege)
-    kaeppel.py           ← Jay Kaeppel Strategien
-landing/                 ← Professionelle Landing Page (statisches HTML/CSS)
-  index.html             ← Komplette Landing Page (inline CSS + vanilla JS)
-  content.md             ← Content-Quelle (Markdown, wie Blog-Workflow)
-  assets/                ← Fonts, Images (OG, Favicon)
-  components/            ← Shared Nav + Footer (JS-Include)
-    nav.html
-    footer.html
-  css/
-    app.css              ← Gemeinsames Design System (V3 Ultra)
-  js/
-    app.js               ← Component-Loader + Supabase Client + Ticker-Autocomplete
-    charts.js            ← ApexCharts Theme + Helpers (curve:'straight'!)
-    seasonal-compute.js  ← Saisonale Berechnungen (buildYearData, TOM, Moon, etc.)
-    decade-compute.js    ← Dekaden-Berechnungen (Drawdown, Percentile, Vola)
-    strategy-compute.js  ← 22 Trading-Strategien + Equity + Stats + StopLoss + TrailingStop
-    streak-analysis.js   ← Streak-Analyse (W/L-Serien, Tabelle)
-    significance.js      ← Signifikanztest (t-Test, Cohen's d, CSS Gauges)
-    indicators.js        ← Technische Indikatoren (SMA/EMA/RSI/BB/MACD/LBR)
-    outlier.js           ← Outlier-Filter (IQR, Winsorize)
-    holidays.js          ← Globaler Feiertags-Kalender (NYSE/XETRA/LSE, Gauss-Ostern)
-    tour.js              ← Guided Tour Wrapper: Lazy-Load Driver.js CDN, Multi-Page-Resume via ?tour=step:N, Error-Banner
-    tour-config.js       ← 23 Tour-Steps über 11 Pages (Landing → Dashboard → Dekadenzyklus → Jahreszyklus → Fed → Feiertage → Trifecta → Spot-Vol → Plain Vanilla → KI → Backtest → Finale)
-    dash-compute.js      ← Dashboard Compute-Kern extrahiert (findMatchingYears, computeTruePath, computeKiScore, computeRegime, math/time helpers). Reusable by /watchlist
-    watchlist.js         ← SA.watchlist Storage + Events API (localStorage-backed, Schema v1, max 50, Cross-Tab-Sync via storage-Event, Migration-ready für späteren Cloud-Sync)
-    auth.js              ← SA.auth Modul: Supabase Auth SDK (Google OAuth), Login/Logout, Session-Persistenz, Nav-UI-Update
-  pages/
-    dekadenzyklus.html   ← Dekaden-Analyse (12 Sektionen, Ticker-Wechsel)
-    monatswechsel.html   ← Turn of the Month (TOM, Heatmap, Streak, Signifikanz)
-    mondphasen.html      ← Mondphasen-Effekt (Voll/Neu/Supermond)
-    kriegszeiten.html    ← 11 Kriege, Event-Window, Ukraine+Iran live
-    crash-fruehwarnung.html ← Regime-Ampel + Risk-Score Backtest (IF aus DB)
-    plain-vanilla.html   ← 22 Strategien, Equity, Signale, Signifikanz, Trailing Stop
-    intermarket-shocks.html ← Intermarket Shock-Analyse (Trigger→Target, Scatter+Regression)
-    sektor-rotation.html ← Sektor-Rotation (23 US-ETFs, Heatmap, Top/Flop, Win-Rate)
-    overnight.html       ← Overnight vs. Intraday (OHLC, Signifikanz, Indikator-Filter)
-    zentralbanken.html   ← Zentralbank-Effekt (Fed/EZB/BoE/BoJ, Event-Window, Streak)
-    feiertage.html       ← Feiertags-Effekt (Exchange-aware, Ranking, Heatmap, Streak)
-    apex-demo.html       ← Chart-Demo
-  data/
-    DJI-decade.json      ← Vorberechnete Dekaden-Daten
-    chart-data.json      ← Landing-Slider Daten
-  rechtliches.html       ← Impressum + Datenschutz + Risk
-seo/                     ← Programmatic SEO Engine
-  programmatic_seo_builder.py ← Generator: 94 Pages + Sitemap + Disclaimer
-  seo_template.html        ← Jinja2 Landingpage-Template
-  output/                  ← Generierte HTML + sitemap.xml + robots.txt
-  tools/                   ← Tool-Landingpages (statisches HTML)
-    trading-day-converter.html ← SEO-Landingpage: CDOY/TDOM/TDOY Converter (JS-Client)
-blog/                    ← Blog Engine (Markdown → statisches HTML)
-  blog_builder.py          ← Generator: MD → HTML + Charts + Social + YouTube
-  templates/               ← Jinja2 Blog-Templates (Post, Index, Kategorie)
-  posts/                   ← Markdown Blog-Posts (Frontmatter + Content)
-  posts/images/            ← Blog-Screenshots (committed, wird beim Build nach output/ kopiert)
-  prompts/                 ← Claude API Prompt-Templates (6 Templates)
-  calendar.yaml            ← Redaktionsplan
-  output/                  ← Generierte HTML (.gitignore)
-.claude/
-  blog-tutorial.md         ← Blog-Skill: SEO-optimierte Tutorial-Artikel schreiben (force-committed)
-scripts/                 ← Batch-Jobs
-  nightly_refresh.py     ← Nightly DB Refresh (6 Phasen: A=Calendar, B=Ticker, C=Health, E=Regime, D=Log, F=Weekly-Newsletter Sonntags, Z=Heartbeat)
-  intraday_refresh.py    ← Intraday Kurs-Updates (EU/US/Asien/FX/Crypto, alle 30 Min)
-  weekly_newsletter.py   ← SeasonAlpha Weekly Report Sender (CLI mit --dry-run/--test/--to, Sonntags ab 17 UTC via Phase F)
-  create_unsubscribe_rpc.sql ← Postgres RPC-Funktion für Token-basierten Unsubscribe
-  templates/weekly_report.html.j2 ← Jinja2 Email-Template (Dark Mode, 4 Sektionen, table-based, inline CSS)
-  compute_regime_scores.py ← Isolation Forest Regime-Scoring (SPY, --full / --incremental)
-  create_market_tables.sql ← SQL-Schema für Cache-Tabellen
-  create_regime_scores.sql ← SQL-Schema für regime_scores Tabelle
-pages/                   ← Light Live + Premium Pages
-  Light Live (aktiv, 10 Pages):
-    00_Home              ← Startseite (Hero, 3x3 Kacheln, Slider, Stats, Newsletter)
-    01_Dekadenzyklus     ← 131 Jahre DJI, Dekaden-Kohorten, Anomalie-Radar,
-                            Perzentil-Statusbar, Kontext-Panel (kompakte Karten),
-                            Heatmap Dekade×Monat, Box-Plot (alle in Expandern)
-    02_Jahreszyklus      ← Saisonaler Jahresverlauf, Pressure Chart, Detrend,
-                            Anomalie-Radar, Praesidentenzyklus, Outlier Manager,
-                            Monats-Signifikanz (12 Tachos), Quartals-Signifikanz,
-                            Praesidentenzyklus-Signifikanz (4 Tachos),
-                            Praesidentenzyklus Best Match (DTW + Korrelation),
-                            Perzentil-Statusbar, Perzentil-Baender (25./75.),
-                            Monats-/Quartals-Perf, 10J-Heatmap, We-are-here Marker
-    03_Monatszyklus      ← Intra-Monat TDOM-Verlauf, Detrend-Indikator (Expander),
-                            Wochen-/Monats-/Two-Week-Performance, 10J-Heatmap,
-                            We-are-here TDOM-Marker, Praesidentenzyklus-Filter,
-                            Perzentil-Statusbar, Outlier, Live-Chart Overlay,
-                            Seasonal Match (Korrelation + DTW), Cycle Match,
-                            Two-Week Heatmap/Ranking/Momentum/Signifikanz
-    04_Wochentage        ← Wochentag-Renditen (Expander), Praesidentenzyklus,
-                            Heatmap (gelber Rahmen, 2 Nachkommastellen),
-                            Signifikanztest (Expander),
-                            Alle-Modi-Signifikanz (4 Rendite-Modi × 5 Tage),
-                            Kumulierter Wochenverlauf, Overnight/Intraday Split,
-                            Konsekutiv-Analyse, Quartals-Performance, Volatilitaet,
-                            Monat×Wochentag Heatmap, Top-10 Kombinationen,
-                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
-    05_Monatswechsel     ← Turn of the Month, TOM Heatmap (apply_se_heatmap_theme),
-                            Signifikanztest (Expander), Streak-Analyse,
-                            Perzentil-Statusbar, TOM Stats (kompakte Karten),
-                            Window-Optimierung, Praesidentenzyklus-TOM,
-                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
-    06_Mondphasen        ← Voll-/Neumond-/Supermond-Effekt,
-                            Signifikanztest (Expander, Default ON),
-                            Mond-Heatmap (Monat × Phase),
-                            Perzentil-Statusbar, naechste Mondphasen,
-                            Lunar-Kalender, Supermond-Vergleich,
-                            **Indikator-Filter** (SMA/EMA/RSI/BB/MACD/LBR)
-    07_Januar_Trifecta   ← Premium Ampelsystem (Glow-Karten, Badges),
-                            Ø-Verlauf je Signal + Aktuelles-Jahr-Overlay (gold),
-                            Max Drawdown (kompakte Karten),
-                            Jahresrendite nach Signal, Historische Tabelle
-    08_Kriegszeiten      ← Krieg vs. Frieden Saisonalitaet (disabled)
-    10_Methodik          ← Methodik & Erklärungen: alle Analyse-Methoden zentral
-                            (ersetzt verteiltes ⓘ-Badge-System, Quelle: info_texts.yaml)
-    11_Saisonal_Events_Kalender ← Fed/EZB/OPEX/Mond/Feiertage 12 Monate (disabled)
-  Disabled (pages/_disabled/):
-    09_Crash_Fruehwarnung← KI-Ampel: Isolation Forest Regime-Erkennung
-    91_Uebernacht_Strategien ← Overnight vs Intraday
-    98_Datenschutz       ← (jetzt im Footer-Expander)
-    99_Impressum         ← (jetzt im Footer-Expander)
-  Premium (inaktiv):
-    80-92                ← Erweiterte Analyse, Feiertag, Zentralbanken, TruePath,
-                            OPEX, Shock, Sector, KI Score, Scanner, Premium, TDOM,
-                            Spot-Vol Beta
-  unsubscribe.py         ← Newsletter-Abmeldung
-docs/                    ← Ausgelagerte Dokumentation
+seasonal_app.py          ← Streamlit-Startseite (Legacy, unter /app/)
+shared/                  ← Berechnungs-/Daten-/UI-Module (siehe Module-Liste unten)
+scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime, ML)
+pages/                   ← Streamlit Pages (Light Live + _disabled/ + Premium)
+landing/                 ← Statische HTML-App (Haupt-Frontend)
+  pages/                 ← 20 HTML-Pages (siehe HTML-Pages unten)
+  js/                    ← 10 JS-Module (shared compute + charts)
+  css/app.css            ← V3 Ultra Design System
+  components/            ← nav.html, footer.html (JS-Include)
+  data/                  ← Pre-computed JSON
+blog/                    ← Markdown-Blog-Engine
+seo/                     ← Programmatic SEO + statische Tool-Pages
+docs/                    ← Ausgelagerte Dokumentation (ARCHITECTURE, CHARTS, AI_MODELS, …)
 ```
+
+### Shared-Module Kurzübersicht
+
+`yahoo_downloader` (Stooq-Fallback + OHLC adj_factor, einziger Cache), `data` (Supabase-First), `calculations`, `charts` (`apply_se_theme`), `ki_score` (4 Sub-Scores→0-10), `tdom_analysis`, `tdoy_analysis`, `ai_models`, `anomaly_engine`, `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `spot_vol_beta`, `outlier_manager`, `market_calendar`, `cache_manager`, `supabase_client`, `logger`, `cpi_data`, `shock_analysis`, `sector_rotation`, `significance_gauge` (key_prefix!), `percentile_bar`, `streak_analysis`, `footer`, `i18n`, `ticker_autocomplete`, `indicators`, `indicator_filter_ui`, `trading_day_header`, `drawdown_analysis`, `weekly_report`, `unsubscribe_token`, `strategies/plain_vanilla` (24), `strategies/kaeppel`.
+
+### Frontend JS-Module (landing/js/)
+
+`app.js` (Ticker-Input, REST, Trading-Day-Header, `makeSortable` Auto-Init, Sidebar-Toggle, Component-Loader), `charts.js` (ApexCharts-Theme + Helpers), `holidays.js` (NYSE/XETRA/LSE, Gauss-Ostern), `seasonal-compute.js`, `decade-compute.js` (+ Shared Anomalie-Radar via `renderAnomalyInto()`), `strategy-compute.js` (22 Strategien), `streak-analysis.js`, `significance.js`, `indicators.js`, `outlier.js`, `tour.js` + `tour-config.js` (23 Steps/11 Pages), `dash-compute.js`, `watchlist.js`, `auth.js` (Supabase Auth, Google OAuth), `fomc-dates.js`.
+
+### HTML-Pages (landing/pages/)
+
+Dashboard, Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Kriegszeiten, Crash-Frühwarnung, Plain-Vanilla, Trifecta, Intermarket-Shocks, Sektor-Rotation, Overnight, Zentralbanken, Feiertage, TDOM-Analyse, Spot-Vol-Beta, OPEX, KI-Saisonalität, Backtest-Engine, Unsubscribe.
 
 ## Kern-Methodik: NORMALISIERTE RENDITEN
 
-Prozentuale Renditen normiert auf 100 — NICHT absolute Preisänderungen.
-Jedes Jahr startet bei 100, tägliche Returns kumulieren darauf.
-**Niemals** TradingView-Methode (priceChange = close - close[lookback]).
+Prozentuale Renditen normiert auf 100 — NICHT absolute Preisänderungen. Jedes Jahr startet bei 100, tägliche Returns kumulieren darauf. **Niemals** TradingView-Methode (`close - close[lookback]`).
 
-## Import-Header (PFLICHT in jeder Page)
+## Import-Header (PFLICHT in jeder Streamlit-Page)
 
 ```python
 import sys, os, pathlib
@@ -204,454 +62,190 @@ except NameError:
 if not os.path.isdir(os.path.join(_project_dir, "shared")):
     for _candidate in [os.getcwd(), os.path.dirname(os.path.abspath(sys.argv[-1])) if sys.argv else ""]:
         if os.path.isdir(os.path.join(_candidate, "shared")):
-            _project_dir = _candidate
-            break
-if _project_dir not in sys.path:
-    sys.path.insert(0, _project_dir)
+            _project_dir = _candidate; break
+if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 ```
 
-## Kritische Regeln
+## Kritische Regeln (nicht-offensichtlich, aus Incidents gelernt)
 
-| Regel | Details |
-|-------|---------|
-| `import yfinance` VERBOTEN | `from shared.yahoo_downloader import download_data` |
-| Cache NUR in `yahoo_downloader.py` | Kein `@st.cache_data` anderswo |
-| `df.index[0].strftime()` verboten | `df['Date'].iloc[0].strftime()` |
-| Plotly `titlefont` deprecated | `title=dict(text=..., font=dict(...))` |
-| Plotly `add_vline` mit Strings crasht | `add_shape` + `add_annotation` |
-| `print()` für Debug verboten | `app_logger.debug()` verwenden |
-| API-Keys niemals in Code | `os.environ["KEY"]` + Streamlit Secrets |
-| `logs/` niemals in Git | Steht in `.gitignore` |
-| Split-Slider: 3-Layer-Architektur | Achsen in eigenem Layer ohne clip-path |
-| Handelstage, nicht Kalendertage | Immer Trading Days zählen |
-| Charts: immer `apply_se_theme()` | `from shared.charts import apply_se_theme` |
-| Heatmaps: `apply_se_heatmap_theme()` | + `tickformat=None` auf Kategorie-Achsen |
-| Inline `update_layout` VERBOTEN | Nur `apply_se_theme()` + chart-spezifische Overrides |
-| `significance_gauge`: key_prefix | Bei Mehrfach-Aufruf `key_prefix` übergeben |
-| `st.metric` für kompakte Karten vermeiden | HTML-Karten (10px Label, 14px Wert) verwenden |
-| Perzentil-Bar unter Hauptcharts | `from shared.percentile_bar import render_percentile_bar` |
-| Ticker-Auswahl: `ticker_select()` | Speichert global in `session_state` → bleibt bei Page-Wechsel |
-| Indikator-Filter: `indicator_filter_sidebar()` | `from shared.indicator_filter_ui import indicator_filter_sidebar` |
-| TDOY: `from shared.tdoy_analysis import ...` | Dynamisch: Aktien ~252, Crypto ~365 Handelstage |
-| Trading Day Header: `render_trading_day_header(df)` | `from shared.trading_day_header import render_trading_day_header` |
-| Drawdown: `from shared.drawdown_analysis import ...` | base=100.0 fuer alle Kurven (auch Log-Return bei 0 startend) |
-| Drawdown-Heatmap: `SE_DRAWDOWN_COLORSCALE` | Rot-Gradient, zmin=worst, zmax=0 (NICHT symmetrisch) |
-| Recovery: `compute_real_recovery(df, year)` | Echte Tage bis Peak-Preis ueberschritten, auch ueber Jahresende |
-| SEO Tools: `seo/tools/*.html` | Statisches HTML, Nginx /tools/ Route, JS-Client |
-| Stooq: Session-Cookie erforderlich | `session.get("https://stooq.com/")` vor CSV-Download |
-| Indikator-Berechnung: `indicators.py` | SMA, EMA, RSI, Bollinger, MACD, LBR + `apply_indicator_filter()` |
-| Blog: `blog/blog_builder.py` | `--build` (HTML) oder `--generate` (KI-Entwurf) |
-| Blog-Screenshots: `blog/posts/images/` | Committed → wird beim Build nach output/ kopiert |
-| i18n: `from shared.i18n import t, lang_toggle, get_lang` | `lang_toggle()` VOR sidebar-Blöcken aufrufen |
-| Heatmap (Monatszyklus): `apply_se_theme` + `dtick=1` | Nicht `apply_se_heatmap_theme` + `type="category"` |
-| Heatmap Jahreslabels: `f" {y} "` padden | Plotly interpretiert `"2021"` als Zahl → Leerzeichen erzwingt Kategorie |
-| Heatmap Text: `text`+`texttemplate` | Statt `_add_heatmap_annotations` → bessere Positionierung |
-| Overnight/Intraday: Residual-Ansatz | `overnight = total - intraday` (NICHT `Open/Close.shift(1)`) |
-| OHLC Cross-Day Berechnung verboten | `Open[t]/Close[t-1]` mischt verschiedene adj_factors → Dividend-Bias |
-| Nightly-Refresh: nur 5 Tage | Historische Daten bleiben unveraendert in Supabase |
-| Nightly-Refresh Phasen | A=Calendar, B=Ticker-Daten, C=Health-Check, E=Regime-Scores, D=Log, Z=Heartbeat |
-| Regime-Scores: Isolation Forest | `compute_regime_scores.py --full` (historisch) / Phase E (inkrementell) |
-| regime_scores Tabelle | RLS enabled, anon=SELECT only, Schreiben via GRANT ALL |
-| `log_return` Spalte in Supabase | Vorberechnet, wird von preprocess() genutzt wenn vorhanden |
-| `from shared.data import download_data` | NICHT `from shared.yahoo_downloader` (Supabase-First!) |
-| TDOM/TDOY: boersenspezifisch | `render_trading_day_header(df, ticker=ticker)` — IMMER ticker uebergeben |
-| Holiday-Kalender: `symbols.py` | `get_exchange_for_holidays(ticker)` → NYSE/XETRA/LSE/EURONEXT/TSE |
-| TDOM/TDOY +1 Logik | `is_trading_day(today, exchange)` — NICHT `weekday < 5` |
-| Intraday Refresh: Zeitfenster | Boerse offen → laden. KEINE festen Zeitslots mehr |
-| FOREX Exchange: `is_trading_day()` | Mo-Fr, keine Feiertage (Karfreitag = offen) |
-| CRYPTO Exchange: `is_trading_day()` | Immer True (24/7 inkl. Wochenende) |
-| Frontend Feiertage: `holidays.js` | `SA.holidays.detect(ticker)` → NYSE/XETRA/LSE/NONE |
-| Karfreitag: Gauss-Algorithmus | `SA.holidays.goodFriday(year)` / `SA.holidays.easter(year)` |
-| Feiertags-Signale: Exchange-aware | Nur NYSE-Feiertage fuer US-Ticker, XETRA fuer DE-Ticker |
-| Landing Page: statisches HTML | `landing/`, nginx liefert direkt aus |
-| Streamlit App: unter `/app/` | nginx proxy_pass mit trailing slash |
-| Neue HTML-Pages: `landing/pages/` | Nutzen `app.css` + `app.js` + `charts.js` |
-| Nav + Footer: JS-Include | `/landing/components/nav.html`, `footer.html` |
-| Frontend-Charts: ApexCharts (CDN) | Theme in `charts.js`, kein Plotly.js im Frontend |
-| Daten: Pre-computed JSON | `landing/data/`, Generator-Scripts in `scripts/` |
-| Docker JSON-Transfer | Im Container generieren, `docker cp` auf Host fuer nginx |
-| Sortierbare Tabellen | `SA.makeSortable(table)` + MutationObserver Auto-Init in app.js — alle `<table>` mit `<thead>` oder erster Zeile mit `<th>` sind automatisch sortierbar. Opt-out: `<table data-no-sort="1">` |
-| OPEX-Datum (Aktien/Index) | `SA.holidays._nthDow(y, m, 5, 3)` = Kalender-3.Fr. Bei NYSE-Feiertag (Good Friday, Juneteenth, ...) auf **vorherigen Handelstag** vorverlegt (meist Do). Pro Jahr ~1 Verschiebung. Triple Witching = Mar/Jun/Sep/Dez (`TRIPLE_MONTHS=[3,6,9,12]`) |
-| VIXpiration (CBOE-Regel) | Settlement = **Kalender-3.Freitag − 30 Kalendertage** (ergibt Mi). Ist ENTWEDER Basis-Freitag ODER Settlement-Mittwoch ein Feiertag → Settlement −1 HT (→ Di). Letzter VIX-HT = Settlement −1 HT. Wichtige Faelle: 04/2025 (Good Friday) → VIX 18.03 Di, 06/2026 (Juneteenth) → VIX 19.05 Di |
-| KPI-Funktion `kpi(l,v,c)` | PFLICHT: `<div class="kpi"><div class="kpi-label">..</div><div class="kpi-value ..">..</div></div>` — NICHT `<span>`-basiert (kein Leerzeichen zwischen Label/Wert sichtbar). Classes: `green` / `red` / `gold` (in `app.css`). Regex-Auto-Reduktion: `kpi__value--green` → `green`. |
-| `SA.streaks.renderStreakTable(groups, colHeader, nBlocks)` | `nBlocks` MUSS eine Zahl sein! Wird `nBlocks` als String übergeben, liefert `slice(0, "string")` → `[]` und keine W/L-Kacheln erscheinen. IMMER `10` explizit als 3. Argument. Subtitle als separates `<p>` davor rendern. |
-| Dynamische Y-Achse (Backtest Bar) | Min/Max explizit aus Daten: `yMin=min(rets)-range*0.12, yMax=max(rets)+range*0.12, forceNiceScale:true`. ApexCharts auto-scale kann gross ausschlagen (z.B. ±10% bei ±1% Range). |
-| Monats-Checkboxen Mask-Pattern | Für Multi-Month-Filter (OPEX, VIX): 12-Bool-Array `xxxMonthsMask`, sidebar-checkboxen mit `data-month`-Attribut, `All`/`None`-Buttons. Filter wirkt auf **alle** Render-Funktionen (KPIs, Heatmap, Backtest, Signifikanz, Streak) + versteckt Charts im Grid. |
-| Mode-basiertes Layout | Exklusives Radio `<input type="radio" name="mode">` für Top-Level-Umschaltung (OPEX/VIX). Sidebar-Optionen via `#opts-xxx`-Divs mit `display:none` gesteuert. `showSections()` steuert Sichtbarkeit der `<details>`-Sektionen je Modus. |
-| Mini-Chart-Grid `chart-grid-12` | CSS-Grid 4/3/2 Spalten responsiv. Pattern: `miniCharts[]`-Array, `container.innerHTML=''` + loop mit `wrap.className='mini-chart'` + `container.appendChild(wrap)` + `new ApexCharts(wrap, {...})` + `miniCharts.push(chart)`. `destroyAll()` muss das Array durchlaufen. |
-| Kumulierte Verlaufs-Charts | Helper `toCumSeries(means)` startet bei 0, akkumuliert; `makeCumLabels(before, after)` liefert `['Start','t-3',...,'t=0',...,'t+3']`. Für Event-Windows: Verlauf statt Bar-Chart. |
-| Badge-Styles (brighter) | Für Tabellen-Badges auf dunklem BG: `background:rgba(color,.35); color:#ffffff; border:1px solid rgba(color,.7); text-shadow:0 1px 2px rgba(0,0,0,.3)`. NICHT dunkle Farbe auf transparentem BG (schlecht lesbar). |
-| Signifikanz mode-aware | `renderSignificance(windows, label, viewContext)` mit viewContext `'triple'`/`'monthly'`/`'vix'`. Liefert passende Anzahl Spalten (5/7/dynamisch) und respektiert `xxxMonthsMask`. |
-| Info-Badge + Hover-Tooltip (pure CSS) | Für Karten mit Erklärungsbedarf: `.info-badge` (22px Kreis mit "i", absolute top:.75rem right:.75rem) + `.info-tooltip` (340px Popup, position:absolute, top:2.65rem). Trigger via `.info-badge:hover ~ .info-tooltip` Sibling-Selektor, ohne JS. Parent MUSS `position:relative` haben und darf KEIN `overflow:hidden` setzen (sonst wird Tooltip geclippt); Gradient-`::before` stattdessen mit `border-radius:inherit`. Tooltip bleibt sichtbar bei `.info-tooltip:hover` → User kann Text lesen. |
-| Multi-Serie Line-Chart (robust) | IMMER plain arrays von fester Länge (365 für Jahresverläufe) mit `null` für fehlende Punkte — NICHT `{x,y}`-Objekte (bricht Rendering in ApexCharts v4). Serien-Typ durchgehend `line` (kein Mix mit `area`). Per-Serie stroke width + dashArray über parallele Arrays. x-Achse `type:'category'` mit String-Kategorien `'1'..'365'`. Tooltip-Formatter nutzt `opts.dataPointIndex` für robuste Tag-Mapping. |
-| Musterpfad / TruePath Pattern | `findMatchingYears(yearData, currentYear, method, topN)` via Pearson-Korrelation oder normalisierter Euklid-Distanz über aktueller Jahresverlauf (bis Heute). `computeTruePath(matches, smoothing)` = gewichteter Ø der Top-N Jahre (Ähnlichkeit als Gewicht) mit Rolling-Mean-Glättung. `computeProjection(matches, fromDoy, projDays)` = Forward-Projektion mit Upper/Lower Standard-Deviation-Cone. |
-| KI Composite Score Pattern | 4 Sub-Scores à 0-2.5 Punkte → Total 0-10. Signal-Thresholds: Bullish ≥6.5, Neutral, Bearish ≤3.5. Client-side pragmatische Sub-Scores: (1) Anteil positiver Match-Jahre, (2) Musterpfad 30d-Forward-Return → `clip((x+3)/6, 0, 1)`, (3) Win-Rate aktueller Monat, (4) Tracking = 0.7×corr + 0.3×(1-normMAE). Keine Python/Prophet-Abhängigkeit, rein Vanilla-JS. |
-| Radar-Chart via ApexCharts | `chart.type:'radar'`, Serien als einfaches Array mit Werten, `xaxis.categories` für Achsen-Labels, `yaxis.min/max` für feste Skala (0-2.5). `plotOptions.radar.polygons` für dezente Hintergrund-Polygone. `dataLabels.background.foreColor:'#000'` + gold Border für Kontrast auf dunklem BG. |
-| Präsidentenzyklus-Labels | Standard-Mapping: 1=Wahljahr, 2=Nachwahljahr, 3=Zwischenwahljahr (NICHT "Mitte"!), 4=Vorwahljahr. Formel: `((year - 2020) % 4 + 4) % 4 + 1`. Englisch: Election / Post-Election / Midterm / Pre-Election Year. |
-| Constant-Fill für full_365 | Python-kompatibel: Tage NACH `last_actual_day` werden mit dem letzten echten Wert konstant gefüllt (nicht null). Sonst springt avg() am Jahresende wenn unvollständige Jahre wegfallen. JEDES year-Objekt hat ein `last_actual_day` Feld, das Stats-Funktionen zum Filtern nutzen. |
-| Stats null vs constant filtering | avg/std/Detrend nutzen full_365 direkt (constant-fill, smooth wie Python). Perzentil/Drawdown/Heatmap müssen `if (d >= yo.last_actual_day) continue` filtern, sonst verzerren extrapolierte Konstanten die Verteilung (DJI percentile flat-line bug von früher). |
-| ApexCharts v4 Multi-Axis Workaround | `seriesName`-Array auf einer yaxis funktioniert in v4 für Line-Charts NICHT zuverlässig — Chart rendert leer. Stattdessen: separate ApexCharts-Instanzen mit `chart.group:'mygroup'` synchronisieren. Jede hat eigene auto-skalierte Y-Achse, x-Achse + Hover sind synchron. Beispiel: `jahreszyklus.html` rendert avg/bands im Hauptchart, Einzeljahre + Gann Pressurechart in separaten Sub-Charts darunter — 3 ApexCharts-Instanzen via `chart.group:'jzklus-sync'`. |
-| Quantile-Berechnung NIE Floor-Indexing | `vals[Math.floor(n*0.75)]` ist FALSCH — bei n=4 gibt es das Maximum statt 75%-Perzentil. IMMER lineare Interpolation wie numpy: `pos = q*(n-1); lo=floor(pos); hi=ceil(pos); return vals[lo] + (pos-lo)*(vals[hi]-vals[lo])`. Beispiel: `jahreszyklus.html` `quantile()` helper für Perzentil-Bänder. |
-| Perzentil-Bänder Stable-Range-Trim | Bei wechselnden Sample-Größen pro DOY (Wochenende/Feiertage am Jahresrand) entstehen visuelle Spikes. Fix: maximales Sample pro Tag bestimmen, dann Rand beidseits abschneiden bis zum ersten/letzten Tag wo Sample ≥ 90% des Maximums. Plus min-N ≥ 80% der Jahre. Verhindert Quantil-Sprünge durch Sample-Set-Wechsel. |
-| Rolling Vola jahresgrenzen-übergreifend | Pro-Jahr-Rolling hat Warmup-NaN am Jahresanfang → Januar-Vola unrealistisch. Fix: log_returns aller Jahre KONKATENIEREN, dann eine einzige Rolling-Std über die Gesamtserie, anschließend pro `(year, day_of_year)` in eine `yearVolaMap` einsortieren. Damit nutzt z.B. die 20d-Vola am 5. Januar automatisch Dezember-Vorjahres-Daten. Beispiel: `avgRollingVolatility` in `jahreszyklus.html`. |
-| Heatmap last_actual_day Filter | Nur für CURRENT YEAR anwenden! Vergangene Jahre haben oft last_actual_day=363 weil 31.12. ein Wochenende war — `b[1]=365 > 363` würde Dezember fälschlich als unvollständig markieren. Vergleich: `(d+1) > yo.last_actual_day` (d ist 0-basiert, last_actual_day 1-basiert). |
-| `Math.min.apply(null, arr)` ist NaN-unsicher | Wenn ein einziges Element NaN ist, gibt `Math.min.apply` NaN zurück → propagiert in alle abhängigen Berechnungen. Für robuste Min/Max immer **manuelle Loop** mit `_clean()`-Filter oder direkte NaN-Prüfung verwenden. Beispiel: `computeDetrend` in jahreszyklus. |
-| `splitSolidWeak(arr, lastSolid)` Pattern | Splittet eine 365-Tag-Serie in zwei Teile: solid (Tag ≤ lastSolid) und weak (Tag > lastSolid). Beide haben 365 Punkte mit nulls in den inverse-Bereichen. Der letzte solide Punkt wird ZUSÄTZLICH in der weak-Serie gehalten (Bridge), damit die Linien visuell verbunden sind. Wird im Jahreszyklus für die gelbe „⚠ wenige Daten" Linie genutzt. |
-| `detectAnomalyEnd(arr)` für visuelle Sprünge | Erkennt vertikale Sprünge am rechten Rand: berechnet 95-Perzentil der Day-to-Day Deltas im Mittelteil (Tag 30-330), Anomalie-Schwellwert = `max(p95 * 4, 0.5)`. Scannt vom Ende rückwärts, gibt 1-basierten letzten stabilen Tag zurück. Kombiniert mit count-based threshold via `Math.min(dc.lastSolid, anomalyEnd)`. |
-| `computeDayCounts(yearData)` Schwellwert | Python-konform: zählt **echte** Handelstage aus `days[]` (nicht interpolierte full_365). minN = max(nYears × 50%, 3). Iteriert vom Tag 365 rückwärts, findet ersten Tag mit count ≥ minN als `lastSolid`. Für SPY/^DJI mit normalen Zeiträumen typischerweise lastSolid=365 (keine gelbe Linie). |
-| Math vs Rendering Trennung | Rendering-Funktionen (`renderXxx`) sollten KEINE Math machen. Statt inline Berechnung: erst eine `compute*()`-Funktion aufrufen die ein pures Datenobjekt zurückgibt, dann das Objekt rendern. Beispiel: `JZ.computeDetrend(avg)` statt inline raw/min/max im Renderer. Erlaubt Wiederverwendung + Tests. |
-| Frontend Trading Day Header | `SA.renderTradingDayHeader(el, ticker, rows)` — wenn heute Handelstag → frisch vom Monats-/Jahresanfang berechnen (via SA.holidays), NICHT aus DB-Rows lesen |
-| TDOM-Strategie Cross-Month | Entry negativ + Exit positiv → Exit im nächsten Monat suchen (Turn-of-the-Month-Muster) |
-| MIN_N = 10 Threshold | TDoM/TDoY-Statistiken mit n<10 mit ⚠ + 40% Opacity markieren (aus `03_Monatszyklus.py`) |
-| MIN_N nur fuer per-Punkt-Filterung | MIN_N=10 macht nur Sinn wo Punkte UNTERSCHIEDLICHE n haben (TDOM-Charts mit Solid/Weak Split). Bei Aggregat-Bars (Wochen/Monats/Two-Week-Performance) hat JEDER Balken die GLEICHE n — Filter fuehrt zu "alle grau" bei kurzem Zeitraum. Loesung: Immer nach Vorzeichen rot/gruen, n im Tooltip. |
-| Trading Day Header zentrales Modul | `SA.renderTradingDayHeader(elementOrId, ticker, rows)` in `landing/js/app.js`. Akzeptiert SOWOHL String-ID als auch Element-Objekt. Format: `Heute: Di 07.04.2026 · ^GSPC · TDOM 4/21 · TWOY 15/53 · TDOY 65/252 · Q2 · MidTerm`. Reihenfolge: TDOM → TWOY → TDOY → Q → Cycle. Berechnet alles boersenspezifisch via `SA.holidays.detect()` — JEDE Page muss `holidays.js` laden! Quartal+Cycle aus `new Date()` zur Render-Zeit (dynamisch). |
-| Multi-Month-Filter Pattern | 12 Checkboxen + Master-Toggle "Alle/Keine" wie Monatswechsel/Wochentage. `getSelectedMonths()` Helper, default alle aktiv. Filter wird via `monthFilter.length < 12` aktiv (sonst no-op). Wirkt NICHT auf Sektionen die schon monatsspezifisch sind (Heatmaps, Weekend-Effekt) — Top/Flop Tabellen wuerden sonst verfaelscht. |
-| KPI-Card Standard-Style | `.kpi-card` mit `linear-gradient(135deg,#0f1923,#131d2a)`, Border `rgba(232,168,32,.12)` mit Hover `.3`, `border-radius:12px`, `padding:.85rem 1.1rem`, `text-align:center`. Label `.lbl` 10.5px #a89878 uppercase letter-spacing .08em, Value `.val` 1.25rem font-weight 800 #e2e8f0 monospace. Niemals plain dunkel ohne Akzente — gold-Border ist das Markenzeichen. |
-| KPI Standard via app.css | **PFLICHT**: nutze die zentrale `.kpi` / `.kpi-label` / `.kpi-value` Klasse aus `landing/css/app.css`. Color-Classes: `green` / `red` / `gold`. Helper-Pattern: `<div class="kpi"><div class="kpi-label">..</div><div class="kpi-value green">..</div></div>`. KEINE lokalen `.kpi-card` Definitionen — die produzieren "Streamlit-Style" der vom Standard abweicht. Backtest Engine hatte den Bug — bewusst auf die globale Klasse umgestellt. |
-| Backtest Filter look-ahead-bias-frei | Technische Filter im Backtest werden auf `filterMask[entryIdx-1]` (Vortag!) geprüft, NICHT auf `entryIdx` selbst. Sonst hätte man Look-Ahead-Bias: Filter würde Information vom Trade-Tag nutzen die eigentlich erst beim Close verfügbar wird. Pattern: `filterMask = SA.indicators.applyFilter(closes, filters); if (mask && entryIdx > 0 && !mask[entryIdx-1]) continue;` |
-| FOMC-Daten als JS-Array | FOMC-Termine sind nicht algorithmisch berechenbar (Fed entscheidet ad-hoc). Lösung: `landing/js/fomc-dates.js` mit allen Daten 2000-2026 als JS-Array eingebettet (224 Einträge, ~5KB). Per Jahr gefiltert via `window.SA_FOMC_DATES.filter(d => d[0] === year)`. Update jährlich aus `shared/fed_dates.py` regenerieren via `py -c "from shared.fed_dates import FOMC_MEETING_DATES; ..."`. |
-| Custom Tab-Navigation Pattern | Statt `<details>`-Tabs für komplexe Pages: Custom Tab-Bar mit `.tab-nav button` (gold-accent active) + `.tab-content` divs. Active-Toggle via `classList.add/remove('active')`. Beispiel: Backtest Engine mit 4 Tabs (Single, Optimization, Walk-Forward, Event-Relevance). Sauberer als nested details. |
-| ApexCharts Mixed Bar+Line Coloring | `colors:[seriesColorBar, seriesColorLine]` faerbt nur Serien-weise. Fuer per-Wert Bar-Coloring (rot/gruen nach Vorzeichen) in Mixed Bar+Line Charts: `plotOptions.bar.colors.ranges:[{from:-Inf,to:-0.0001,color:RED},{from:0,to:Inf,color:GREEN}]`. Linie behaelt ihre Serien-Farbe. |
-| ApexCharts Marker Hover-only | `markers:{size:0, hover:{size:4-5}}` zeigt Marker nur beim Hover. Sauberer fuer Linien-Charts mit vielen Punkten. Statt `size:4` was permanent Punkte zeichnet. |
-| Tacho-Karten Schrift-Standards | `.mc-name` 14px font-weight:700 #e2e8f0 (Tacho-Titel). `.mc-details` 12px #cbd5e1 (Stats unter Tacho — NICHT #64748b, das ist zu dunkel auf dunklem BG). Numerischer Wert IM Tacho (1.2rem #fff), Status-Label UNTER dem Tacho mit `text-align:center;font-size:.875rem;font-weight:700` in Status-Farbe. Niemals lange Text-Strings wie "Signifikant abweichend" im Tacho — die ueberlagern den Halbkreis. |
-| Anomalie-Radar Shared-Renderer | `SA.decadeCompute.renderAnomalyInto(containerId, rows, ticker)` in `landing/js/decade-compute.js`. Einmal bauen, 4× nutzen (jahreszyklus, monatszyklus, tdom-analyse, overnight). Enthält: `_ensureAnomalyCss()` (CSS-Injection idempotent in `<head>`), `_injectAnomalySummaryBadge()` (fügt ⓘ-Badge automatisch ins umgebende `<summary>` ein), `fromPrices()` Compute + KPI-Row-Render. Rollout auf neue Page = 1 Script-Tag + 1 `<details id="sec-anomaly">` + 1 Funktionsaufruf nach Datenladung. KEIN Kopieren von Rendercode, KEIN lokales CSS. |
-| Perzentil-Rang im Anomalie-Objekt | `anomaly.percentile_rank` (0–100) = Position der aktuellen 10d-Rendite in der sortierten Verteilung aller historischen 10d-Returns am gleichen Kalenderzeitpunkt. Berechnung in `fromPrices()` direkt nach dem Z-Score. Fallback bei `histReturns.length < 5` → `null`. Komplementär zum Z-Score: Score sagt "wie viele σ daneben", Perzentil sagt "wo im Ranking". |
-| Perzentil-Slider Farbzonen | Grün im Normalbereich 20–80, Gold im Randbereich 10–20/80–90, Rot bei Extremen <10/>90. Gradient-Bar `linear-gradient(90deg,#ff4040 0%,#ff4040 10%,#e8a820 20%,#30e878 30%,#30e878 70%,#e8a820 80%,#ff4040 90%,#ff4040 100%)` mit weißer Marker-Linie (`left:{percentile}%`), 8px hoch. Label darüber (groß, farbcodiert), Mini-Skala 0/50/100 darunter. |
-| Anomalie-Radar Misst 10 Tage | Der Score vergleicht NUR die letzten 10 Handelstage vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. **Nicht** Year-to-Date, nicht Drawdown, nicht Gesamt-Performance. Ein Ticker kann im YTD-Chart −28% aussehen und trotzdem Score "Normal" haben, wenn die letzten 2 Wochen ruhig verliefen. Siehe Blog `/blog/anomalie-radar-erklaert/` für Fallbeispiel SAP. |
-| Plain Vanilla offene Trades | `_makeTrade` in `strategy-compute.js` erkennt offene Trades: Wenn Entry existiert aber Exit in Zukunft liegt → letzter verfügbarer Kurs als Mark-to-Market-Exit + `trade.open = true`. `computeStats` + `buildEquityCurve` + Significance-Test filtern offene Trades (keine verzerrten KPIs durch unrealisierte Returns). `renderTradeTable` zeigt "OFFEN"-Badge + gold Background + "· mark-to-market"/"· unrealisiert" Suffixe. Beispiel Sell-in-May 2025: Entry 31.10.2025, Exit 3.HT Mai 2026 → sichtbar im Trade-Table, aber NICHT in den Stats. |
-| Dashboard-Card Style V3 Ultra | Alle Cards nutzen `background:var(--card)` (#0a0a0e), `border:1px solid var(--border)`, `padding:1rem` (symmetrisch). KEIN `linear-gradient(135deg,#0f1923,#131d2a)` — das ist "Streamlit-Style". Alle Texte via `var(--text)/var(--dim)/var(--muted)`, alle Farben via `var(--green)/var(--red)/var(--accent)`. Hover-Border: `var(--accent-g)`. Ausnahme: Crash-Ampel Radial-Gradients (plastische Ampel-Optik bleibt). |
-| Two-Week Phase Badge-Pattern | Bei Cards wo ein Chart-Element (z.B. gelber Balken) hervorgehoben ist: Kleines gelbes Quadrat + Label "im Chart" neben dem Headline-Text. `<span style="display:inline-flex;gap:.35rem;font-size:.6875rem;text-transform:uppercase"><span style="width:14px;height:10px;background:{COL};border-radius:2px"></span>im Chart</span>`. Schafft visuelle Verbindung ohne Text. |
-| Sidebar Collapse System | `landing/css/app.css` + `landing/js/app.js` `initSidebarToggle()`. **Wide ≥1280px Push-Modus**: Toggle togglet `body.sa-sidebar-collapsed` → Grid schrumpft auf `0 1fr`, Sidebar fadet weg. **Narrow <1280px Overlay-Modus**: Sidebar default versteckt (`translateX(-100%)`), per Toggle als `position:fixed` Drawer von links rein, Backdrop dimmt, ESC/Backdrop schliessen. State per `localStorage('sa-sidebar-collapsed')` persistent ueber Page-Wechsel. Toggle wird via JS dynamisch ins DOM injiziert (`<button class="sa-sb-toggle">`), keine HTML-Aenderung an Pages noetig. Dashboard ohne `<aside class="sidebar">` → `initSidebarToggle()` returnt early. |
-| Glaettung an Render-Zeit (Dekadenzyklus) | Hardcoded `_movingAvg(avgCurve, 5)` aus `decade-compute.js` ENTFERNT. Stattdessen: Slider in der Sidebar `id="sl-smooth"` (1-15 step 2 default 1), `renderMainChart()` glaettet die `d.avg_curve` zur Renderzeit via `SA.decadeCompute._movingAvg(arr, smoothWin)`. Konfidenzband (`±1σ`) wird AUF die geglaettete Linie gelegt damit Sigma und Avg konsistent. User kann Glaettung live aendern ohne Recompute. |
-| Year-Chart Rebase auf Fenster-Anfang | Im Dashboard `renderYearChart()`: Beide Serien (Avg + Current Year) werden am Fenster-Start auf 100 rebased: `100 * raw / value_at_windowstart`. Vorher zeigte das `-1/+3 Monate` Fenster Werte ab Jan 1 = 100 (irrefuehrend, Linien starten irgendwo). Neu: beide Linien starten sichtbar bei 100, Y-Achse zoomt enger, Avg-Trend (~+7%) wird sichtbar. Y-Achsen-Titel: `'Fenster-Anfang = 100'`. Tooltip zeigt absoluten Wert + Delta-%: `'103.4 (+3.40%)'`. DD-Chart bleibt unveraendert (DD ist konzeptionell schon relativ). |
-| Performance-Pattern: Staged Initial-Render | Bei Pages mit vielen Charts (z.B. dekadenzyklus.html mit 6+): `renderAllStaged()` splittet Initial-Render in Phasen via `setTimeout`: Phase 1 sync (Above-Fold), Phase 2 +40ms, Phase 3 +140ms, Phase 4 +280ms (Below-Fold). `_stagedTimers[]` Array fuer Cancel-Unterstuetzung — Event-getriebene `renderAll()` (synchron) cleart laufende Timer via `_clearStaged()`, damit Phase 4 nicht mit veraltetem State rendert. Page wird nach ~150ms interaktiv statt nach ~800ms. |
-| Performance-Pattern: Ticker-Cache In-Memory | `var tickerCache = {}` lokal pro Page. Beim erfolgreichen Laden: `tickerCache[ticker] = {D, rawRows}`. In `loadTicker()` direkt nach Trim: `if(tickerCache[ticker]){var c=tickerCache[ticker]; D=c.D; rawRows=c.rawRows; init(); return;}`. Spart bei Rueckwechsel zu schon geladenem Ticker den kompletten Fetch + `fromPrices` (~500-800ms bei ^DJI). |
-| Performance-Pattern: Default minimal sichtbar | Wenn ein Chart viele Default-Linien zeigen kann (z.B. 10 Dekaden im Dekadenzyklus): Default nur die aktuelle Kohorte aktivieren (`cb.checked = (i === D.current_digit)`), Master-Toggle "Alle/Keine" startet unchecked. User kann instant alle aktivieren. Spart Initial-Render-Zeit + reduziert Visual Clutter. |
-| Mobile: `body.sa-sidebar-collapsed` Regeln müssen gekapselt sein | State-abhängige Regeln wie `body.sa-sidebar-collapsed .app { grid-template-columns: 0 1fr; }` haben Spezifität (0,2,1) und überschreiben Narrow-Mode-Regeln wie `.app { grid-template-columns: 1fr; }` (0,1,0) auch wenn letztere in `@media (max-width:1279px)` stehen — Media-Queries ändern Spezifität nicht. **Fix**: Collapsed-State-Regeln in `@media (min-width: 1280px)` kapseln, damit sie auf Mobile gar nicht erst matchen. Oder mit `!important` auf die Narrow-Regel. Gilt für JEDE classe-basierte State-Regel die mit Media-Query-basierter Override kollidiert. |
-| Mobile: Nav-Loader MUSS `loadComponent()` sein | `dashboard`, `monatszyklus`, `backtest-engine`, `wochentage` hatten `fetch('/landing/components/nav.html').then(...)` statt `loadComponent('nav-container', ...)`. `loadComponent` ruft nach erfolgreichem Laden `initNav()` auf, das die Burger-Click-Handler installiert. Manueller Fetch umging das → auf Mobile reagierte der Burger nicht → Menue wurde nie `.open` → rendert wie plain Nav im Flow. Neue Pages IMMER `loadComponent()` verwenden, oder nach manuellem Fetch `if (window.initNav) initNav();` aufrufen. |
-| Mobile: `.nav__links` braucht explizite height + overflow | Browser-Quirk: `display:flex; position:fixed; top:60; bottom:0; height:auto` kollabiert auf padding-Höhe statt auf `viewport - top` zu strecken wenn Flex-Direction column ist. **Fix**: `height: calc(100dvh - var(--nav-h))` (dvh statt vh für iOS Safari) + `overflow-y:auto` + `-webkit-overflow-scrolling:touch`. Sonst rendern die Menu-Items visuell über der Page ohne Container-Background. |
-| Mobile: CSS/JS Cache-Strategie | **Nginx**: `/landing/*.css` und `/landing/*.js` bekommen `Cache-Control: public, max-age=0, must-revalidate` + ETag via Regex-Location. Bilder/Fonts/HTML behalten `max-age=86400`. **Plus** in `deploy/inject_credentials.sh` wird bei jedem Deploy `?v=<git-short-sha>` an alle CSS/JS-Refs in HTML angehängt via sed (mit `#` als Delimiter wegen `|` in Alternation). Beide Layer zusammen: existierende Browser-Caches werden sofort invalidiert, neue CSS-Changes sind binnen Sekunden auf Mobile Safari sichtbar. |
-| iOS Safari Input 16px Auto-Zoom Fix | `.sidebar select`, `.sidebar input[type=text]`, `.sidebar input[type=number]` bekommen auf `@media (max-width: 768px)` explizit `font-size: 16px`. iOS zoomt beim Fokussieren automatisch rein wenn Font <16px → Layout-Shift, keine Rückkehr zum ursprünglichen Zoom. 16px verhindert das ohne Desktop-Optik zu beeinflussen. |
+### Daten / Python
+
+- `import yfinance` VERBOTEN → `from shared.yahoo_downloader import download_data` (oder besser `shared.data`, Supabase-First)
+- Cache NUR in `yahoo_downloader.py` — kein `@st.cache_data` anderswo
+- `df['Date'].iloc[0].strftime()` statt `df.index[0].strftime()`
+- `print()` verboten → `app_logger.debug()`
+- API-Keys via `os.environ[...]` + Streamlit Secrets (in `.gitignore`), `logs/` niemals in Git
+- Stooq: Session-Cookie erforderlich (`session.get("https://stooq.com/")` vor CSV)
+- OHLC Cross-Day VERBOTEN: `Open[t]/Close[t-1]` mischt adj_factors → Dividend-Bias. Overnight/Intraday per Residual: `overnight = total - intraday`
+- Nightly Refresh: nur letzte 5 Tage. Historische Daten bleiben unverändert
+- `log_return`-Spalte in Supabase wird von `preprocess()` genutzt wenn vorhanden
+- `datetime.utcnow()` deprecated → TODO fix
+
+### Handelstage & Börsen-Awareness
+
+- Immer Trading Days zählen, nie Kalendertage
+- TDOM/TDOY sind **börsenspezifisch**: `render_trading_day_header(df, ticker=ticker)` — IMMER ticker übergeben
+- Holiday-Kalender aus `shared/symbols.py::get_exchange_for_holidays(ticker)` → NYSE/XETRA/LSE/EURONEXT/TSE
+- `is_trading_day(today, exchange)` — NICHT `weekday < 5`
+- Frontend: `SA.holidays.detect(ticker)` + `SA.holidays.isTradingDay(date)`, Gauss-Ostern via `SA.holidays.goodFriday(year)`
+- TDOM im Frontend: IMMER aus Holiday-Kalender berechnen, NICHT aus letztem DB-Row ableiten (DB kann vor Intraday-Refresh veraltet sein)
+- CRYPTO: `is_trading_day()` immer True (24/7). FOREX: Mo-Fr ohne Feiertage (Karfreitag offen)
+- OPEX = Kalender-3.Freitag, bei NYSE-Feiertag auf vorherigen HT vorverlegt. Triple Witching = Mar/Jun/Sep/Dez
+- VIXpiration = OPEX-Freitag − 30 Kalendertage (= Mi). Ist Basis-Fr ODER Settlement-Mi Feiertag → −1 HT
+- `toISOString()` NIE für lokale Datumsvergleiche (MESZ→UTC verschiebt auf Vortag) — nutze `localDateStr`
+
+### Charts & UI
+
+- Streamlit: Charts via `apply_se_theme()`, Heatmaps via `apply_se_heatmap_theme()` (+ `tickformat=None` auf Kategorie-Achsen). Inline `update_layout` VERBOTEN
+- Plotly: `title=dict(text=..., font=dict(...))` statt `titlefont`. `add_shape`+`add_annotation` statt `add_vline` (crasht mit Strings)
+- Heatmap Jahreslabels `f" {y} "` padden (erzwingt Kategorie), `text`+`texttemplate` statt Annotations
+- `st.metric` vermeiden → HTML-Flex-Karten (10px Label, 14px Wert)
+- `significance_gauge` bei Mehrfach-Aufruf: `key_prefix`
+- `percentile_bar` unter Hauptcharts
+- `ticker_select()` statt direkte Selects (global persistiert)
+- Frontend: ApexCharts (kein Plotly.js). Für Multi-Serie-Charts **plain arrays mit null**, NICHT `{x,y}`-Objekte (bricht ApexCharts v4). Kein Mix `line`+`area`
+- ApexCharts v4 Multi-Axis: `seriesName`-Array unzuverlässig → separate Chart-Instanzen mit `chart.group:'xxx'` synchronisieren
+- Mixed Bar+Line Per-Wert-Coloring: `plotOptions.bar.colors.ranges:[{from:-Inf,to:-0.0001,color:RED},{from:0,to:Inf,color:GREEN}]`
+- Info-Badge + Hover-Tooltip: pure CSS via `.info-badge:hover ~ .info-tooltip`. Parent MUSS `position:relative`, KEIN `overflow:hidden`. Gradient-`::before` mit `border-radius:inherit`
+- KPI-Standard: globale Klasse `.kpi`/`.kpi-label`/`.kpi-value` (+ `green`/`red`/`gold`) aus `landing/css/app.css`. Keine lokalen `.kpi-card`-Definitionen
+- Dashboard-Cards V3 Ultra: `background:var(--card)` (#0a0a0e), `border:1px solid var(--border)`, `padding:1rem`. KEIN `linear-gradient(135deg,#0f1923,#131d2a)`
+- Farbschema V3 Ultra: Pure Black + Signal Gold (#e8a820) + Neon Red/Green. Dark Mode First
+- Heatmap (Monatszyklus): `apply_se_theme` + `dtick=1` (nicht `apply_se_heatmap_theme` + `type="category"`)
+- Drawdown-Heatmap: `SE_DRAWDOWN_COLORSCALE` (Rot-Gradient, zmin=worst, zmax=0, NICHT symmetrisch)
+- Last-solid-Tag-Filter: `detectAnomalyEnd` + `computeDayCounts` — gelbe "wenige Daten"-Linie am Jahresrand
+- Sortierbare Tabellen: Auto via `SA.makeSortable` + MutationObserver. Opt-out: `<table data-no-sort="1">`
+- Footer: 5 Expander (Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk) via `shared/footer.py`
+
+### Statistik / Math
+
+- Quantile NIE via Floor-Indexing. Lineare Interpolation wie numpy: `pos=q*(n-1); lo=floor(pos); hi=ceil(pos); return vals[lo]+(pos-lo)*(vals[hi]-vals[lo])`
+- Perzentil-Bänder Stable-Range-Trim: max-Sample-pro-Tag bestimmen, Rand abschneiden bis Sample ≥90% des Max — verhindert Spikes durch Sample-Set-Wechsel
+- Rolling Vola: ALLE Jahre konkatenieren → 1 Rolling-Std → wieder pro `(year, doy)` einsortieren. Sonst Warmup-NaN am Jahresanfang
+- `Math.min.apply(null, arr)` ist NaN-unsafe → manuelle Loop
+- TDOM-Statistiken mit n<10: ⚠ + 40% Opacity. MIN_N nur bei UNTERSCHIEDLICHEN n pro Punkt — bei Aggregat-Bars (Woche/Monat) hat jeder Balken gleiche n → immer rot/grün nach Vorzeichen, n im Tooltip
+- Stats null vs constant-fill: `avg/std/Detrend` nutzen full_365 direkt (constant-fill). `Perzentil/Drawdown/Heatmap` müssen `if (d >= yo.last_actual_day) continue` filtern
+- Heatmap `last_actual_day`-Filter NUR für CURRENT YEAR (sonst markiert Dezember fälschlich unvollständig wenn 31.12. Wochenende)
+- Backtest-Filter look-ahead-bias-frei: `filterMask[entryIdx-1]`, NICHT `entryIdx`
+- Plain Vanilla offene Trades: Mark-to-Market mit `trade.open=true` → aus Stats/Equity/Significance filtern, in Tabelle zeigen
+- Dynamische Y-Achse: explizite yMin/yMax aus Daten + `forceNiceScale:true` (ApexCharts auto-scale kann zu groß ausschlagen)
+
+### KI / Anomalie / Patterns
+
+- Anomalie-Radar misst NUR 10 Tage (nicht YTD/Drawdown/Gesamt). Shared-Renderer `SA.decadeCompute.renderAnomalyInto(containerId, rows, ticker)` — einmal bauen, 4× nutzen
+- KI Composite 4 Sub-Scores à 0-2.5 → 0-10. Bullish ≥6.5, Bearish ≤3.5. Client-side, vanilla JS
+- Musterpfad: `findMatchingYears` (Pearson/Euklid) + `computeTruePath` (gewichteter Ø + Glättung) + `computeProjection` (± σ-Cone)
+- Präsidentenzyklus: 1=Wahl, 2=Nach, 3=Zwischen (NICHT "Mitte"!), 4=Vor. Formel `((year-2020)%4+4)%4+1`
+
+### Deployment / Mobile
+
+- Landing Page statisches HTML (nginx direkt). Streamlit unter `/app/`
+- Neue Pages: `loadComponent('nav-container', ...)` für Nav — NICHT manueller fetch (umgeht `initNav()` → Burger tot auf Mobile)
+- Supabase-Credentials Inline-Script MUSS VOR `app.js` in jeder Page: `<script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>`
+- Cache-Strategie: Nginx `/landing/*.{css,js}` → `max-age=0, must-revalidate` + ETag. `deploy/inject_credentials.sh` hängt `?v=<git-short-sha>` an alle CSS/JS-Refs
+- `body.sa-sidebar-collapsed` Regeln in `@media (min-width: 1280px)` kapseln (sonst Override auf Mobile durch Spezifität)
+- `.nav__links` Mobile: `height: calc(100dvh - var(--nav-h))` + `overflow-y:auto` (nicht vh, iOS-Bug)
+- iOS 16px Input-Fix: Sidebar-Inputs auf Mobile explizit `font-size:16px` (sonst Auto-Zoom)
+- Docker JSON-Transfer: im Container generieren, `docker cp` auf Host
+- Git-Pull + Nginx-Reload für statische Änderungen: `cd /opt/seasonaledge && git pull && docker exec seasonalpha-nginx nginx -s reload`
+
+### Email / Brevo
+
+- Brevo 201 = angenommen, NICHT zugestellt — Status im Dashboard unter "Statistics → Email Activity" checken
+- Sender-Domain MUSS Domain-Auth haben (SPF+DKIM+DMARC). Single-Sender reicht für Newsletter nicht — Gmail/Outlook blocken
+- Secrets ohne Streamlit-Runtime: TOML-Fallback via `tomllib`, sucht in `<project>/.streamlit/secrets.toml` und `~/.streamlit/secrets.toml`, beide Key-Cases
+- `messageId` aus Brevo-Response loggen für Debug
+- `pgcrypto` in Supabase im `extensions`-Schema, nicht `public` → `SET search_path=public,extensions,pg_temp` + expliziter `extensions.digest()`-Call
+
+### Sprache
+
+- **Immer echte Umlaute** (ä ö ü), nicht ae/oe/ue. Gilt für UI, Tour, Blog, Commit-Messages, Kommentare. HTML-Entities OK. Dateinamen bleiben ASCII
 
 ## Architektur-Prinzipien
 
-- Berechnungen → `shared/`, UI → `pages/`
-- Kein Copy-Paste von Logik zwischen Pages
-- Wiederverwendbare Charts → `distribution_charts.py`
-- Signifikanztests → `significance_gauge.py` (t-Test + Gauge, key_prefix bei Mehrfach-Nutzung)
-- Perzentil-Statusbar → `percentile_bar.py` (Micro-Gauge Ribbon unter Charts)
-- Chart-Styling NUR via `apply_se_theme()` — keine inline Layouts
-- Heatmaps → `apply_se_heatmap_theme()` + `tickformat=None` auf Kategorie-Achsen
-- Footer (Impressum/Datenschutz/Legal Notice/Financial Disclaimer/Risk) → `shared/footer.py` als 5 Expander
-- Mehrsprachigkeit → `shared/i18n.py`: `t("key")` für Strings, `lang_toggle()` für DE/US-Flaggen (JS-basiert, VOR sidebar)
-- Kompakte Karten statt `st.metric` → HTML-Flex-Karten (Dark Mode, farbcodiert)
-- Alle Sektionen in Expander verpacken (Default ON/OFF je nach Relevanz)
-- Ticker-Auswahl → `ticker_select()` (speichert global, bleibt bei Page-Wechsel)
-- Indikator-Filter → `indicator_filter_ui.py` (Sidebar, 0-4 Filter, UND-Verknuepfung)
-- Blog → `blog/blog_builder.py` (Markdown → HTML + Charts + Social + YouTube)
-- Methodik-Erklärungen → `pages/10_Methodik.py` (zentrale Referenz, Quelle: `info_texts.yaml`)
-- `render_info_badge()` NICHT mehr verwenden → Erklärungen gehören auf die Methodik-Page
-- TDOY-Analyse → `tdoy_analysis.py` (Handelstag des Jahres, dynamisch Aktien/Crypto)
-- Trading Day Header → `trading_day_header.py` (TDOM/TDOY Anzeige auf allen Pages)
-- Streak-Analyse → `streak_analysis.py` (W/L-Serien, wiederverwendbar fuer alle Pages)
-- Drawdown-Analyse → `drawdown_analysis.py` (DD-Kurven, Heatmaps, Recovery, Rolling Vola)
-- Drawdown-Heatmaps → `SE_DRAWDOWN_COLORSCALE` (Rot-Gradient, NICHT symmetrisch)
-- Page-Layout: Rendite-Sektionen oben, Drawdown/Risiko unten (visuell getrennt)
-- Live-Close → `append_today_if_missing()` in data.py (Yahoo-Fallback + Supabase-Write)
-- SEO-Tools → `seo/tools/` (statisches HTML mit JS-Client, Nginx /tools/ Route)
-- Secrets in `.streamlit/secrets.toml` (in `.gitignore`)
-- Daten-Layer → `shared/data.py` (Supabase-First, Yahoo-Fallback, OHLC-Konsistenzcheck)
-- OHLC-Adjustierung → `yahoo_downloader.py` adj_factor (Split+Dividend auf Open/High/Low)
-- Overnight/Intraday → Residual-Ansatz: `overnight = total - intraday` (nie cross-day OHLC mischen)
-- Heatmaps mit Jahreslabels → Leerzeichen-Padding `f" {y} "` + `categoryorder="array"`
-- Nightly-Refresh → nur letzte 5 Tage (historische Daten bleiben unveraendert)
-- HTML-Pages → `landing/pages/` mit modularem Framework (Nav/Footer JS-Include, app.css, charts.js)
-- Frontend-Charts → ApexCharts (120KB CDN) statt Plotly.js (3MB), Theme in `charts.js`
-- Pre-computed JSON → `landing/data/` fuer Default-Ticker, Generator in `scripts/`
-- Component-Loader → JS fetch+inject fuer Nav/Footer (kein Copy-Paste)
-- Docker JSON-Transfer → `docker cp` Container→Host (nginx liest vom Host-Volume)
+- Berechnungen → `shared/`, UI → `pages/` oder `landing/pages/`. Kein Copy-Paste zwischen Pages
+- Chart-Styling nur via `apply_se_theme()` / `apply_se_heatmap_theme()`
+- Alle Sektionen in Expander (Default ON/OFF je nach Relevanz)
+- `info_badge` deprecated → Erklärungen auf `pages/10_Methodik.py` (Quelle: `info_texts.yaml`)
+- Frontend-Charts: ApexCharts (120KB CDN) statt Plotly.js (3MB)
+- Math vs Rendering trennen: `compute*()` returnt pures Objekt, `renderXxx` nur Darstellung
+- Performance-Patterns: Staged Initial-Render (phasen via `setTimeout`), In-Memory Ticker-Cache, Default nur aktuelle Kohorte aktiv
 
-## Design-Regeln (PFLICHT bei allen UI-Arbeiten)
+## Design-Regeln
 
-| Regel | Details |
-|-------|---------|
-| `frontend-design` Skill nutzen | Fuer alle HTML/CSS Pages, Components, Layouts — Bold, distinctive Choices |
-| `ui-ux-pro-max` Skill nutzen | Design System Generierung: Farben, Typography, Spacing, Accessibility |
-| `21dev` fuer Component Inspiration | Moderne Component-Patterns als Referenz |
-| Keine generische AI-Aesthetics | NIEMALS: Inter/Arial/Roboto, Purple-Gradients-on-White, Cookie-Cutter Layouts |
-| Bold, distinctive Design Choices | Klare aesthetische Richtung, intentional, NICHT "safe" oder generisch |
-| Performance-optimiert | Inline Critical CSS, font-display:swap, lazy-load, keine unnuetzen Requests |
-| SVG Icons (Lucide) | Keine Emojis, keine Icon-Fonts — immer inline SVG |
-| Distinctive Typography | Sora (Display) + DM Sans (Body) fuer Landing; Plus Jakarta Sans fuer App |
-| Accessibility CRITICAL | Kontrast 4.5:1, focus-visible Rings, aria-labels, prefers-reduced-motion |
-| Touch Targets ≥ 44px | Buttons, Links, interaktive Elemente — minimum 44x44px |
-| Animation 150-300ms | transform/opacity only, ease-out enter, ease-in exit, staggered reveals |
-| Dark Mode First | V3 Ultra Palette: bg #000, card #0a0a0e, accent #e8a820 (Signal Gold) |
-| 21st.dev Magic MCP | Component Inspiration via `/ui` Prompt — generiert moderne UI-Patterns |
-| Farbschema V3 Ultra | Pure Black + Signal Gold + Neon Red/Green. Maximaler Kontrast. |
+- Skills nutzen: `frontend-design`, `ui-ux-pro-max`, `21dev` (Component Inspiration)
+- Keine generische AI-Ästhetik (kein Inter/Arial, kein Purple-on-White)
+- Bold, distinctive Design Choices. Dark Mode First (V3 Ultra Palette)
+- SVG Icons (Lucide) inline — keine Emojis/Icon-Fonts
+- Accessibility: Kontrast 4.5:1, focus-visible, aria-labels, `prefers-reduced-motion`
+- Touch-Targets ≥44px. Animation 150-300ms, transform/opacity only
 
-## UI-Komponenten (Premium Dark Mode)
+## Tägliche Prüfungen (Session-Start)
 
-| Komponente | Modul | Verwendung |
-|-----------|-------|------------|
-| Signifikanz-Tachos | `significance_gauge.py` | t-Test + Radial Gauge pro Gruppe |
-| Perzentil Stat-Ribbon | `percentile_bar.py` | Einzeilig: Wert, Ø, Delta, Micro-Gauge, %ile, σ |
-| Kompakte Karten | Inline HTML | Flex-Row, 10px Label, 14px Wert, farbcodiert |
-| Best Match | Inline HTML | DTW + Korrelation, Pokal-Icon beim besten Match |
-| Premium Ampel | Inline HTML | Glow-Effekt, Badges statt massive Farbflächen |
-| Trading Day Header | `trading_day_header.py` | Gelber Einzeiler: Datum · TDOM · TDOY |
-| Trading Day Converter | `trading_day_header.py` | Datepicker + Inline-Ergebnis auf Home |
-| Drawdown-Kurve | `drawdown_analysis.py` | Ø DD pro Tag, Fill nach unten, Gold aktuelles Jahr |
-| Drawdown-Heatmap | `drawdown_analysis.py` | Monat × Dekade/Jahr, SE_DRAWDOWN_COLORSCALE |
-| Worst-DD-Tabelle | `drawdown_analysis.py` | Top 25 Extremjahre mit Peak/Tief/Recovery |
-| Rolling Volatilität | `drawdown_analysis.py` | Einstellbares Fenster (5-60d), Kohorten-Filter |
+| Was | Query / URL | Erwartung |
+|-----|-------------|-----------|
+| Nightly Refresh | `SELECT run_date, duration_seconds, errors FROM refresh_log ORDER BY run_date DESC LIMIT 3;` | gestern/heute, errors=`[]` |
+| Regime-Scores | `SELECT date, risk_score, traffic_light FROM regime_scores WHERE ticker='SPY' ORDER BY date DESC LIMIT 3;` | letzter HT, 0–100 |
+| Preise | `SELECT ticker, max(date) FROM prices WHERE ticker IN ('SPY','^DJI','AAPL') GROUP BY ticker;` | alle = gestern/heute |
+| Crash-Frühwarnung | https://seasonalpha.ai/crash-fruehwarnung | Ampel + Chart konsistent |
 
-## Code Style
+Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasonalpha-app python3 scripts/nightly_refresh.py` · Regime: `... scripts/compute_regime_scores.py --full`
 
-```
-snake_case        → Variablen, Funktionen
-UPPER_CASE        → Konstanten
-# ── Abschnitt ──  → Section Headers
-```
-
-### Sprache & Zeichen (PFLICHT)
-
-- **Immer echte Umlaute** in deutschsprachigen Inhalten: **ä ö ü**, nicht ae/oe/ue. Gilt für UI-Strings, Tour-Popover, Blog, Commit-Messages, Kommentare. HTML-Entities (`&auml;`, `&ouml;`, `&uuml;`) sind als Alternative ok. Dateinamen und Pfade bleiben ASCII.
-- Vom User am 2026-04-09 explizit festgelegt. Vorher wurde teilweise Ersatzschreibung benutzt → unprofessioneller Eindruck in Tour/Blog/UI.
-
-## Arbeitsprotokoll & Kontinuität
-
-> GEHE DAVON AUS, DASS EINE UNTERBRECHUNG JEDERZEIT PASSIEREN KANN.
+## Arbeitsprotokoll
 
 | Regel | Wann |
 |-------|------|
-| **Auto Memory aktualisieren** | Nach jeder größeren Änderung (neues Modul, Bug-Fix, Feature) |
-| **CLAUDE.md TODOs pflegen** | Erledigte Punkte mit `[x]` + Datum markieren, neue hinzufügen |
-| **Commit-Messages aussagekräftig** | Jeder Commit beschreibt WAS und WARUM (nicht nur Dateinamen) |
-| **Nach Compaction: /memory prüfen** | Auto Memory kann veralten — kritische Infos aktualisieren |
-| **Vor Deploy: Syntax-Check** | `py -c "import ast; ast.parse(open(f).read())"` für alle geänderten Dateien |
-| **Vor Deploy: Funktionstest** | Mindestens 1 Import-Test + 1 Daten-Test pro neuem Modul |
+| Auto Memory aktualisieren | Nach größeren Änderungen |
+| CLAUDE.md TODOs pflegen | Erledigt `[x]` + Datum, Neues ergänzen |
+| Commit-Messages aussagekräftig | WAS + WARUM |
+| Vor Deploy: Syntax-Check | `py -c "import ast; ast.parse(open(f).read())"` |
+| Vor Deploy: Funktionstest | Mind. 1 Import + 1 Daten-Test |
 
-### Was in Auto Memory gehört
-- Aktuelle Architektur-Entscheidungen die nicht in CLAUDE.md stehen
-- Bekannte Bugs / Workarounds die noch nicht gefixt sind
-- User-Präferenzen (z.B. "immer Umlaute", "gelbe Farbe für Highlights")
-- Letzte Session: Was wurde gemacht, was ist offen
+## Docs
 
-### Was in CLAUDE.md gehört
-- Projektstruktur, Module, Regeln (dauerhaft gültig)
-- Erledigte + offene TODOs mit Datum
-- Kritische Regeln (Import-Verbote, Styling, Architektur)
+- `ARCHITECTURE.md`, `CHARTS.md`, `AI_MODELS.md`, `KI_FEATURES.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`
+- `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
-## HTML-Migration Plan (Landing Pages)
+## TODO
 
-Streamlit → statisches HTML. 8 wiederverwendbare JS-Module.
-
-### Fertige JS-Module (9 Module)
-
-| Modul | Zeilen | Python-Quelle | Kern-Funktionen | Genutzt von |
-|-------|--------|---------------|-----------------|-------------|
-| `app.js` | 360 | — (original) | `initTickerInput`, `fetchAllPrices`, `renderTradingDayHeader`, `makeSortable` (Auto-Sort aller Tabellen via MutationObserver), Supabase REST | **Alle Pages** |
-| `charts.js` | 166 | — (original) | `lineChart`, `barChart`, `heatmapChart`, `boxPlotChart`, Theme | **Alle Pages** |
-| `decade-compute.js` | 495 | `calculations_decade.py` + `generate_decade_data.py` | `fromPrices`, `computeDrawdown`, `computePercentile`, `computeRollingVola` | Dekadenzyklus |
-| `seasonal-compute.js` | 531 | `calculations.py` + `central_banks.py` | `buildYearData`, `calculateSeasonalAverage`, `analyzeTurnOfMonth`, `analyzeMoonEffect`, `getMoonDates`, `isSupermoon`, `buildMonthlyStats`, `buildTOMHeatmap`, `calcWindowOptimization`, `getPresidentialCycleYear` | Monatswechsel, Mondphasen, Kriegszeiten, *+4 Pages* |
-| `streak-analysis.js` | 114 | `streak_analysis.py` | `computeStreaksFromList`, `currentStreak`, `renderStreakTable` | Monatswechsel, Mondphasen, *+2 Pages* |
-| `significance.js` | 243 | `significance_gauge.py` | `runSignificanceTest` (t-Test, Cohen's d, Relevanz), `renderSection` (CSS Gauges), `scoreToColor` | Monatswechsel, Mondphasen, *+3 Pages* |
-| `indicators.js` | 306 | `indicators.py` + `indicator_filter_ui.py` | `calcSMA/EMA/RSI/Bollinger/MACD/LBR`, `applyFilter`, `renderFilterUI`, `REGISTRY` | Monatswechsel, Mondphasen, *+3 Pages* |
-| `outlier.js` | 123 | `outlier_manager.py` | `detectIQR`, `winsorize`, `filterCurves`, `renderFilterUI` | Monatswechsel, Mondphasen, *+3 Pages* |
-| `strategy-compute.js` | 700 | `strategies/plain_vanilla.py` | 22 Strategie-Funktionen, `buildEquityCurve`, `computeStats`, `applyStopLoss`, `applyTrailingStop`, `STRATEGIES` Registry | Plain Vanilla, *Trifecta* |
-| `holidays.js` | 240 | `exchange_holidays.py` + `nyse_holidays.py` | `easter`, `goodFriday`, `thanksgiving`, `get(year,exchange)`, `isTradingDay`, `nthTradingDay`, `lastTradingDay`, `nextTradingDay`, `detect(ticker)` | **Alle Pages** (NYSE/XETRA/LSE/NONE) |
-
-### Fertige HTML-Pages
-| Page | URL | Module genutzt | Inline-Funktionen |
-|------|-----|---------------|-------------------|
-| Dekadenzyklus | `/dekadenzyklus` | app, charts, decade-compute | — |
-| Monatswechsel | `/monatswechsel` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
-| Mondphasen | `/mondphasen` | app, charts, seasonal-compute, streak, significance, indicators, outlier | — |
-| Kriegszeiten | `/kriegszeiten` | app, charts, seasonal-compute | `computeEventWindow`, `smooth`, `toPairs`, Monatslabel-Formatter, Min-HT-Filter |
-| Crash-Frühwarnung | `/crash-fruehwarnung` | app, charts | Regime-Scores aus Supabase (IF), JS-Fallback, Risk-Score Backtest-Chart |
-| Plain Vanilla | `/plain-vanilla` | app, charts, indicators, holidays, strategy-compute, significance | Naechste Signale (24 Strategien), Signifikanztest, Trailing Stop, Profit Factor |
-| Trifecta | `/trifecta` | app, charts, seasonal-compute | Ampel (SCR+FFD+JanB), Durchschnittsverlauf, DD-KPIs, Jahresrendite-Bar |
-| Intermarket Shocks | `/intermarket-shocks` | app, charts | Trigger→Target Analyse, Scatter+Regression, Saisonaler Breakdown, T=0 |
-| Sektor-Rotation | `/sektor-rotation` | app, charts | 23 US-ETFs, Heatmap, Top/Flop, Jahresverlauf, Win-Rate + Streak |
-| Overnight vs. Intraday | `/overnight` | app, charts, significance, indicators | OHLC-Analyse, Signifikanz (6 Tachos), Indikator-Filter |
-| Zentralbanken | `/zentralbanken` | app, charts, significance, indicators, streak | Fed/EZB/BoE/BoJ Event-Window, Streak, Termine aus Supabase |
-| Feiertags-Effekt | `/feiertage` | app, charts, holidays, significance, streak | Exchange-aware (NYSE/XETRA/LSE), Ranking, Heatmap, Streak |
-| TDOM Analyse | `/tdom-analyse` | app, charts, holidays, outlier, indicators, streak, strategy-compute | 3 Strategien, Heatmap Monat×TDoM, Strategie-Tester, TDoY Top 25, Streak, We-are-here |
-| Spot-Vol Beta | `/spot-vol-beta` | app, charts, holidays | 3 sync. Subplots, Scatter+OLS, Rolling Beta, Regime-Wendepunkte mit Forward Returns |
-| OPEX Analyse | `/opex` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | OPEX-Fokus: Triple Witching, 12 Mini-Charts, Vola 1d/5d, Heatmap, Backtest, Kalender (VIX ausgelagert) |
-| VIXpiration | `/vixpiration` | app, charts, holidays, indicators, streak, strategy-compute, significance, outlier | VIX-Settlement: Hauptchart, Vola, 12 Mini-Charts, Heatmap, Backtest, Kalender. Eigene Page seit 2026-04-13 |
-| KI-Saisonalität | `/ki-saisonalitaet` | app, charts, seasonal-compute | Musterpfad (Top-N Match), KI Composite Score 0-10, Radar-Chart, Projektion, Match-Tabelle |
-| Jahreszyklus | `/jahreszyklus` | app, charts, holidays, significance, outlier | Rendite-Fokus: Saisonal-Ø, Perzentil, Pressurechart, Detrend, Heatmap (DD/Vola ausgelagert). `_SA_JZ` Modul |
-| Risikozyklus | `/risikozyklus` | app, charts, holidays, seasonal-compute, decade-compute, significance, outlier | DD-Verlauf, Rolling Vola, DD nach Präsidentenzyklus, Anomalie-Radar. Eigene Page seit 2026-04-13 |
-| Monatszyklus | `/monatszyklus` | app, charts, seasonal-compute, significance, outlier, holidays | 14 Sektionen: TDOM-Verlauf, Detrend, Match, Two-Week, Heatmap, Streak, Cycle. `_SA_MZ` Modul |
-| Wochentage | `/wochentage` | app, charts, seasonal-compute, significance, streak, indicators, holidays | 12 Sektionen: 4 Modi, Wochenverlauf, Signifikanz, Streak, Overnight, Heatmaps, Weekend. `_SA_WD` |
-| Backtest Engine | `/backtest-engine` | app, charts, holidays, seasonal-compute, significance, outlier, indicators, fomc-dates | 4 Tabs: Single, Optimierung, Walk-Forward, Event-Relevanz. Stop-Loss, Outlier, Filter. `_SA_BT` |
-
-| Dashboard | `/dashboard` | app, charts, holidays, seasonal-compute, decade-compute, strategy-compute, streak, fomc-dates, dash-compute, watchlist | Bento-Grid: KI-Score, Crash-Ampel, Anomalie, Year/Month-Charts, TruePath, Wochentag+TDOM (5-Kacheln-Streak), Risiko (8 KPIs in 2 Zeilen), Trifecta, Strategien (5-Kacheln), Events (5-Kacheln). WE/Feiertag-Fallback auf nächsten HT. |
-
-### HTML-Migration komplett (22 von 18) ✓ — Backtest Engine + Dashboard + VIXpiration + Risikozyklus
-
-Streamlit-App `/app/` ist Legacy. Bug-Reports IMMER auf landing/pages/*.html.
-
-### Anomalie-Radar Sektion (Stand 08.04.2026)
-**Vorhanden auf 4 Pages** via Shared-Renderer `SA.decadeCompute.renderAnomalyInto()`:
-- `/jahreszyklus`, `/monatszyklus`, `/tdom-analyse`, `/overnight`
-- 5 KPI-Cards: Score, Status, 10d-Rendite, Historisch Ø, Perzentil-Rang (mit Slider)
-- Info-Badge ⓘ im Summary mit CSS-only Hover-Tooltip (Methodik-Text)
-- Dashboard hat eigene Bento-Card-Variante (kompakter), nutzt nur das `anomaly`-Datenobjekt
-
-**Nicht eingebaut (bewusst):** wochentage, monatswechsel, mondphasen, trifecta, plain-vanilla, backtest-engine, ki-saisonalitaet, spot-vol-beta, alle Event-Pages, crash-fruehwarnung (hat eigenen Risk-Score).
-
-### Landing-Struktur (Stand 07.04.2026)
-**Nav (1 Top-Link + 4 Dropdowns):**
-- **Dashboard** (Top-Link, ganz links) — Ticker-Uebersicht mit allen wichtigsten Signalen
-- **Zyklen**: Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Risikozyklus
-- **Events**: Notenbanken (Zentralbanken), OPEX, VIXpiration, Feiertage, Shock-Analyser (Intermarket Shocks)
-- **Strategien**: Januar Trifecta, Plain Vanilla, Backtest Engine
-- **Mehr**: Kriegszeiten, Crash-Frühwarnung, Sektor-Rotation, Overnight, TDoM, Spot-Vol, KI-Saisonalität
-
-**Footer (5 Spalten + Brand):** Brand · Zyklen · Events · Strategien · Mehr · Rechtliches
-- CSS: `foot__grid: 1.4fr repeat(5, 1fr)` + `@1100px` Breakpoint (3 Spalten) damit es auf Tablets nicht zerbricht
-
-**Alle `/app/` Links entfernt:** "Zur Analyse" CTAs zeigen jetzt auf `/jahreszyklus`, "Jahres-Indikatoren" Card auf `/backtest-engine`, "Methodik" komplett entfernt (jede HTML-Page hat eigene Methodik-Section). Streamlit ist nur noch direkt via URL erreichbar.
-
-## Tägliche Prüfungen (bei Session-Start)
-
-| Was | SQL / Befehl | Erwartung |
-|-----|-------------|-----------|
-| **Nightly Refresh** | `SELECT run_date, duration_seconds, tickers_success, tickers_missing, errors FROM refresh_log ORDER BY run_date DESC LIMIT 3;` | Letzter Run = gestern/heute, errors = `[]` |
-| **Regime-Scores** | `SELECT date, risk_score, traffic_light FROM regime_scores WHERE ticker='SPY' ORDER BY date DESC LIMIT 3;` | Letztes Datum = letzter Handelstag, Score 0–100 |
-| **Preise aktuell** | `SELECT ticker, max(date) as last_date FROM prices WHERE ticker IN ('SPY','^DJI','AAPL') GROUP BY ticker;` | Alle 3 = gestern/heute |
-| **Crash-Frühwarnung** | https://seasonalpha.ai/crash-fruehwarnung | Keine Stale-Warning, Ampel + Chart konsistent |
-
-Bei Fehlern:
-- `ssh root@178.104.75.46` → `docker logs seasonalpha-app --tail 50`
-- Manueller Refresh: `docker exec -it seasonalpha-app python3 scripts/nightly_refresh.py`
-- Regime-Scores: `docker exec -it seasonalpha-app python3 scripts/compute_regime_scores.py --full`
-
-## Docs (bei Bedarf lesen)
-
-- `docs/ARCHITECTURE.md` — Datenfluss, Supabase-Schema, Module, Deployment, Blog
-- `docs/CHARTS.md` — Plotly Theme, Split-Slider, Distribution Charts
-- `docs/AI_MODELS.md` — Technische KI-Dokumentation (Code + API)
-- `docs/KI_FEATURES.md` — Alle 15 KI-Features mit Beschreibung (fuer Home Page)
-- `docs/SEO_ENGINE.md` — Programmatic SEO Generator (technische Architektur + Templates)
-- `docs/SEO_MARKETING.md` — **Living Doc**: SEO-Status, Google-Search-Console-Workflow, Monitoring, offene Tasks (alle 1-2 Wochen reviewen)
-- `docs/BLOG_WORKFLOW.md` — Blog + Social Media + YouTube Workflow-Anleitung
-- `docs/REFRESH_MONITORING.md` — Kurs-Ueberwachung, Health-Check, Troubleshooting
-- `docs/MIGRATION.md` — Next.js + FastAPI + Highcharts Migrationspfad
-- `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel schreiben (DE, SeasonAlpha-Kontext)
-
-## TODO / Offene Punkte
-
-### Erledigt (KW 15, 07.–12.04.2026)
-- [x] Dashboard Bento-Grid (11 Cards), V3 Ultra Style, Anomalie-Radar Shared-Renderer
-- [x] Guided Tour (23 Steps, 11 Pages, Driver.js v1.3.1)
+### Erledigt (KW 15, 07.–15.04.2026)
+- [x] Dashboard Bento-Grid (11 Cards) + Risiko-Card 2. Zeile + Streak-Kacheln + WE/Feiertag-Fallback
+- [x] Guided Tour (23 Steps/11 Pages, Driver.js v1.3.1)
 - [x] Weekly Newsletter Pipeline (Brevo + HMAC-Unsubscribe + Phase F Cron)
-- [x] SEO-Foundation (OG-Images, Sitemap, IndexNow, Breadcrumbs, www→non-www 301)
-- [x] Saisonal-Scanner MVP (269 Ticker, Weekly Cron, Pro-Ticker-Upsert)
-- [x] Watchlist Phase 1 (localStorage, Dashboard+Scanner Integration)
-- [x] Mobile Responsiveness (6 Commits, Sidebar-Collapse, Burger, iOS-Zoom)
-- [x] Blog-Suche, Footer-Redesign, Performance-Defaults (20→10J)
-- [x] TDOM-Fix Kalender-basiert, Watchlist Compact-Cards V2
-- [x] **2026-04-12** Dashboard: WE/Feiertag-Kacheln zeigen nächsten HT statt "Nicht genug Daten"
-- [x] **2026-04-12** Dashboard: TDOM-Streak als 5 Nachbar-Positionen (wie Mo-Fr)
-- [x] **2026-04-12** Dashboard: Risiko-Card 2. Zeile (YTD, Tage im DD, DD-Perzentil DOY-basiert, Vola-Trend 5d/20d)
-- [x] **2026-04-12** Dashboard: Strategie- + Event-Streaks als 5 Einzel-Kacheln statt Badge
-- [x] **2026-04-12** fix: TDOM-Streak nutzt Tagesrendite statt kumulierte Rendite
-- [x] **2026-04-12** fix: DD-Perzentil DOY-basiert (vergleicht DD am gleichen Tag des Jahres)
-- [x] **2026-04-12** fix: Wochentage Streak-Sortierung Mo→Fr + korrekte chronologische Sortierung
-- [x] **2026-04-12** fix: Wochentage `toISOString()` Timezone-Bug (MESZ→UTC verschluckte Freitag)
+- [x] SEO-Foundation (OG, Sitemap, IndexNow, Breadcrumbs, www→non-www 301)
+- [x] Saisonal-Scanner MVP (269 Ticker, Weekly Cron)
+- [x] Watchlist Phase 1 (localStorage + Compact-Cards V2)
+- [x] Mobile Responsiveness (Sidebar-Collapse, Burger, iOS-Zoom)
+- [x] TDOM-Fix Kalender-basiert, Timezone-Bugs, DD-Perzentil DOY-basiert
+- [x] **2026-04-15** `refresh_log` RLS + Policies (Supabase Security Warning gefixt)
 
 ### ⚠️ OFFEN — ML-Pipeline (Chronos + MSTL + NeuralProphet)
-**Stand 2026-04-12**: Backend + Frontend + Server live. Erster SPY-Testlauf OK (11s). Full-Run 270 Ticker läuft/gelaufen.
+Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
 
-- [x] `scripts/compute_ml_forecasts.py` geschrieben + lokal getestet + auf Server getestet (SPY: 11s, alle 3 OK)
-- [x] Supabase-Tabelle `ml_forecasts` angelegt + RLS + anon write Policy
-- [x] GitHub Actions Workflow `.github/workflows/ml_forecasts.yml` (täglich Mo-Fr 21:30 UTC)
-- [x] **Server-Upgrade Hetzner CPX22 → CPX32** (8 GB RAM) — erledigt 2026-04-12
-- [x] **Docker: PyTorch CPU + Chronos + NeuralProphet** in requirements.txt + Dockerfile
-- [x] **Erster Testlauf auf Server**: SPY alle 3 Modelle OK (Chronos 5.8s, MSTL 0.4s, NP 3.7s)
-- [x] **Frontend: KI-Saisonalität** — 3 Sektionen komplett:
-  - Chronos: Historisch+Forecast+3 Szenarien (Optim/Baseline/Pessim), Band-Toggle, Forecast-Tabelle, Info-Badge
-  - MSTL: Saisonalität+Residual Dropdown, Monats-Heatmap, We-are-here, Info-Badge
-  - NeuralProphet: Jahres-Saisonalität, Wochen-Bars (Mo-Fr/Mo-So Crypto), Forecast vs Naiv, 4 Fehler-KPIs, Info-Badge
-- [x] **Frontend: Dashboard** — KI-Forecast Bento-Card (Mini-Chart + 2 KPIs, hidden wenn keine Daten)
-- [x] **Frontend: Scanner** — 2 neue Spalten (Forecast, Sais. Stärke), async nachgeladen, sortierbar
-- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — `<details open>` Fix versucht (2026-04-13), rendert trotzdem nicht. Nächster Debug-Schritt: ApexCharts Heatmap-Instanz im Browser inspizieren (DOM vorhanden? Breite 0?)
-- [ ] **Full-Run alle 270 Ticker** mit erweitertem Backend (5 Quantile + History + NP Metrics) — alter Run hatte nur 3 Quantile
-- [ ] **Daily Cron ml_forecasts.yml prüfen** — erster automatischer Lauf Mo 21:30 UTC
-- [ ] **Frontend: KI-Score auf 5 Sub-Scores** erweitern (+ MSTL Saisonale Stärke)
-- [ ] **Frontend: Dashboard Radar** 5 Achsen
-- [ ] **Frontend: Watchlist** — Forecast-KPI in Compact-Cards
-- [ ] **Frontend: Newsletter** — Top-5 Forecast Sektion
-- [x] `datetime.utcnow()` Deprecation Warning fixen (2026-04-13, 3 Stellen in 2 Dateien)
+- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Container vorhanden, Daten OK, vermutlich ApexCharts Timing in `<details>`
+- [ ] Full-Run 270 Ticker mit erweitertem Backend (5 Quantile + History + NP Metrics)
+- [ ] Daily Cron `ml_forecasts.yml` prüfen (Mo 21:30 UTC)
+- [ ] KI-Score auf 5 Sub-Scores erweitern (+ MSTL Saisonale Stärke) → Dashboard Radar 5 Achsen
+- [ ] Watchlist Compact-Cards: Forecast-KPI
+- [ ] Newsletter: Top-5 Forecast Sektion
+- [ ] `datetime.utcnow()` Deprecation fixen
 
-**Plan-Datei**: `.claude/plans/curried-floating-treasure.md`
-
-### Erledigt (KW 16, 13.04.2026)
-- [x] **2026-04-13** Blog V3 Ultra Design Migration (Templates + app.css + Shared Nav/Footer + Sora/DM Sans)
-- [x] **2026-04-13** fix(cron): Sonntags-Trigger für Weekly Newsletter (Phase F wurde nie erreicht weil Nightly nur Mo-Fr lief)
-- [x] **2026-04-13** fix(opex): Kalender zeigt nächste 10 Zukunfts-Termine statt Vergangenheit (renderCalendar bekam gefilterte eventsAll statt opexDates)
-- [x] **2026-04-13** fix: datetime.utcnow() → datetime.now(timezone.utc) in 2 Scripts
-- [x] **2026-04-13** fix(ki-saisonalitaet): `<details open>` auf alle 3 ML-Sektionen (Chronos/MSTL/NeuralProphet)
-- [x] **2026-04-13** feat(opex): Volatilitäts-Chart 1d vs 5d rund um den Verfall (Bar+Line, mode-aware)
-- [x] **2026-04-13** feat: Page-Split VIXpiration → eigene Page `/vixpiration` unter Events (1182 Zeilen)
-- [x] **2026-04-13** feat: Page-Split Risikozyklus → eigene Page `/risikozyklus` unter Zyklen (903 Zeilen)
-- [x] **2026-04-13** refactor(opex): VIX-Code + Mode-Toggle entfernt, nur noch OPEX-Fokus
-- [x] **2026-04-13** refactor(jahreszyklus): DD/Vola-Sektionen entfernt, nur noch Rendite-Fokus
-- [x] **2026-04-13** Nav + Footer + Landing: Risikozyklus unter Zyklen, VIXpiration unter Events
-- [x] **2026-04-13** fix(blog): app.css einbinden für Nav/Footer Styling (ohne = unstyled Nav)
-- [x] **2026-04-13** fix(blog): VIXpiration Screenshot Bild-Pfad (doppeltes images/images/)
-- [x] **2026-04-13** seo(blog): Keywords aller 18 Posts auf 10-12 Tags erweitert + seo_titles ergänzt
-- [x] **2026-04-13** blog: VIXpiration April 2026 Post + Screenshot
-- [x] **2026-04-13** feat(risikozyklus): Einzeljahre 12-Farben-Palette statt grau
-- [x] **2026-04-13** feat(risikozyklus): OPEX/Triple/VIX Annotations im Vola-Chart (Sidebar-Checkboxen)
-- [x] **2026-04-13** fix(risikozyklus): Annotations try-catch + DOY 0-basiert + sec-dd-cycle open
-
-### Erledigt (KW 16, 14.04.2026)
-- [x] **2026-04-14** Risikozyklus Vola-Chart Fix (showSections, Annotations raus, Outlier raus)
-- [x] **2026-04-14** VIXpiration: Signifikanz-Split (t=0 + Periode), Heatmap nach unten
-- [x] **2026-04-14** Intro-Boxen auf 8 komplexen Pages (Gold-Akzent)
-- [x] **2026-04-14** KI-Saisonalität: Chronos + NeuralProphet entfernt, 5 Sub-Scores, 5-Achsen-Radar
-- [x] **2026-04-14** Landing Page Marketing-Rewrite (22 Tools, 8 KI-Features, 12+8 Cards)
-- [x] **2026-04-14** Umami Analytics self-hosted (Docker, Nginx, Tracking live)
-- [x] **2026-04-14** Auth Phase 1: auth.js + Nav Login-Button + Supabase SDK auf 26 Pages
-
-### ⚠️ OFFEN — Auth fertigstellen (durch User)
-- [ ] **Google OAuth konfigurieren** — 2 Schritte:
-  1. Google Cloud Console (https://console.cloud.google.com/apis/credentials):
-     - "Create Credentials" → "OAuth 2.0 Client ID" → Web application
-     - Authorized redirect URI: `https://DEIN-SUPABASE-PROJEKT.supabase.co/auth/v1/callback`
-     - Client-ID + Client-Secret kopieren
-  2. Supabase Dashboard (Authentication → Providers → Google):
-     - Google Provider aktivieren
-     - Client-ID + Client-Secret eintragen → Save
-- [ ] **Watchlist Cloud-Sync** (Phase 2: Supabase-Tabelle + watchlist.js Sync-Adapter)
-
-### ⚠️ OFFEN — Aufräumen
-- [x] ~~Temporäre GitHub Actions Workflows löschen~~ — nie in master gemergt, auf GitHub nicht vorhanden (2026-04-15)
-- [x] ~~Umami Port 3000 absichern~~ — `ufw deny 3000/tcp` gesetzt + Port-Mapping aus docker-compose entfernt (2026-04-15)
-- [x] ~~ML-Forecast Cron anpassen~~ — war schon MSTL-only (`--models mstl`), MSTL strength_yearly weiterhin für KI-Score Sub-Score 5 genutzt (2026-04-15)
-- [x] ~~Server downgrade CPX32→CPX22~~ — durch User erledigt (2026-04-15)
-- [x] ~~Umami Dashboard Subdomain~~ — `umami.seasonalpha.ai` live, SSL via certbot --expand, Port 3000 intern only (2026-04-15)
+Plan: `.claude/plans/curried-floating-treasure.md`
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
-- [ ] Unsubscribe-Link End-to-End testen (Inkognito)
-- [x] ~~Phase F: Läuft Nightly auch Sonntags?~~ → Cron `30 17 * * 0` hinzugefügt (2026-04-13)
-- [ ] Content-Iteration basierend auf User-Feedback
-- [ ] Blog-Post zum Newsletter-Launch
+- [ ] Unsubscribe-Link End-to-End Inkognito-Test
+- [ ] Phase F Sonntags-Lauf verifizieren
+- [ ] Content-Iteration nach User-Feedback
+- [ ] Launch-Blog-Post
 
-### Marketing-Pipeline (manuell durch User)
-- [ ] LinkedIn + X Posts der 6 neuen Blog-Posts staffeln
+### Marketing (manuell)
+- [ ] LinkedIn + X Posts der Blog-Posts staffeln
 - [ ] Newsletter-Mail an Brevo-Liste
-- [x] ~~Plausible/Umami Analytics einbauen (DSGVO-konform)~~ → Umami self-hosted live (2026-04-14)
+- [ ] Plausible/Umami Analytics (DSGVO-konform)
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 
-### Technische Roadmap (offen)
+### Technische Roadmap
 - [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
-- [ ] Custom Watchlists mit gespeichertem Dashboard-View
-- [ ] Alerts: Push bei KI-Score/Crash-Ampel/Strategie-Schwellen
+- [ ] Custom Watchlists mit gespeichertem View
+- [ ] Alerts (Push bei KI-Score/Crash-Ampel/Strategie-Schwellen)
 - [ ] EN-Übersetzung der HTML-Pages
-- [ ] Stripe Freemium/Abo-Integration
+- [ ] Stripe Freemium/Abo
