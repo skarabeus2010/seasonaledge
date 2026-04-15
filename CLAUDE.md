@@ -632,7 +632,7 @@ Bei Fehlern:
 
 ### ⚠️ OFFEN — Aufräumen
 - [x] ~~Temporäre GitHub Actions Workflows löschen~~ — nie in master gemergt, auf GitHub nicht vorhanden (2026-04-15)
-- [ ] **Umami Port 3000 absichern** — auf Server: `ufw deny 3000/tcp && ufw reload` (nur via Nginx `/umami/` erreichbar)
+- [x] ~~Umami Port 3000 absichern~~ — `ufw deny 3000/tcp` gesetzt, nur noch via Nginx `/umami/` erreichbar (2026-04-15)
 - [x] ~~ML-Forecast Cron anpassen~~ — war schon MSTL-only (`--models mstl`), MSTL strength_yearly weiterhin für KI-Score Sub-Score 5 genutzt (2026-04-15)
 - [x] ~~Server downgrade CPX32→CPX22~~ — durch User erledigt (2026-04-15)
 
