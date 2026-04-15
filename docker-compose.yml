@@ -60,12 +60,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD:-umami_secret}@umami-db:5432/umami
       - APP_SECRET=${UMAMI_APP_SECRET:-replace_me_with_random_string}
-      - BASE_PATH=/umami
     depends_on:
       umami-db:
         condition: service_healthy
-    ports:
-      - "3000:3000"
 
   umami-db:
     image: postgres:15-alpine

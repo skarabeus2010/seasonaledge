@@ -632,9 +632,21 @@ Bei Fehlern:
 
 ### ⚠️ OFFEN — Aufräumen
 - [x] ~~Temporäre GitHub Actions Workflows löschen~~ — nie in master gemergt, auf GitHub nicht vorhanden (2026-04-15)
-- [x] ~~Umami Port 3000 absichern~~ — `ufw deny 3000/tcp` gesetzt, nur noch via Nginx `/umami/` erreichbar (2026-04-15)
+- [x] ~~Umami Port 3000 absichern~~ — `ufw deny 3000/tcp` gesetzt + Port-Mapping aus docker-compose entfernt (2026-04-15)
 - [x] ~~ML-Forecast Cron anpassen~~ — war schon MSTL-only (`--models mstl`), MSTL strength_yearly weiterhin für KI-Score Sub-Score 5 genutzt (2026-04-15)
 - [x] ~~Server downgrade CPX32→CPX22~~ — durch User erledigt (2026-04-15)
+- [ ] **⚠️ DURCH DICH: DNS-Eintrag `umami.seasonalpha.ai` bei STRATO** — A-Record: `umami` → `178.104.75.46`
+- [ ] **⚠️ DURCH DICH: Certbot nach DNS-Propagation** (5-30 Min nach DNS-Eintrag) — auf Server einloggen und ausführen:
+  ```bash
+  docker run --rm \
+    -v /opt/seasonaledge/deploy/certbot/conf:/etc/letsencrypt \
+    -v /opt/seasonaledge/deploy/certbot/www:/var/www/certbot \
+    certbot/certbot certonly --webroot -w /var/www/certbot \
+    -d seasonalpha.ai -d www.seasonalpha.ai -d umami.seasonalpha.ai \
+    --expand --agree-tos --no-eff-email
+  docker restart seasonalpha-nginx
+  ```
+  Danach: `https://umami.seasonalpha.ai` zeigt das Umami-Dashboard.
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
