@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 32.2 | 2026-04-13 | Page-Split VIXpiration + Risikozyklus + Blog V3 Ultra + OPEX Vola-Chart + 4 Bug-Fixes | Roadmap: 4/5 Features live
+> Version 32.3 | 2026-04-15 | Aufräum-Check: Temp-Workflows weg, ML-Cron MSTL-only, Server-Downgrade erledigt | Roadmap: 4/5 Features live
 
 
 ## Projekt
@@ -631,10 +631,10 @@ Bei Fehlern:
 - [ ] **Watchlist Cloud-Sync** (Phase 2: Supabase-Tabelle + watchlist.js Sync-Adapter)
 
 ### ⚠️ OFFEN — Aufräumen
-- [ ] **Temporäre GitHub Actions Workflows löschen** (debug-umami, fix-umami, reset-umami-pw, restart-nginx, restart-umami, set-umami-id)
-- [ ] **Umami Port 3000 absichern** (Firewall: nur via Nginx `/umami/` erreichbar)
-- [ ] **ML-Forecast Cron anpassen** (Chronos + NP entfernt → nur noch MSTL strength_yearly)
-- [ ] **Server downgrade CPX32→CPX22** prüfen (PyTorch nicht mehr nötig)
+- [x] ~~Temporäre GitHub Actions Workflows löschen~~ — nie in master gemergt, auf GitHub nicht vorhanden (2026-04-15)
+- [ ] **Umami Port 3000 absichern** — auf Server: `ufw deny 3000/tcp && ufw reload` (nur via Nginx `/umami/` erreichbar)
+- [x] ~~ML-Forecast Cron anpassen~~ — war schon MSTL-only (`--models mstl`), MSTL strength_yearly weiterhin für KI-Score Sub-Score 5 genutzt (2026-04-15)
+- [x] ~~Server downgrade CPX32→CPX22~~ — durch User erledigt (2026-04-15)
 
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End testen (Inkognito)
