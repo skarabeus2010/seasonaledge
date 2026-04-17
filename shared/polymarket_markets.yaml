@@ -1,0 +1,206 @@
+# SeasonAlpha — Kuratiertes Polymarket-Market-Set
+# ==================================================
+# Aufbau: 5 Kategorien, ca. 30 Maerkte, versioniert im Git.
+#
+# Struktur pro Eintrag:
+#   slug          — stabiler URL-/DB-Slug (lowercase, bindestrich-separiert)
+#   category      — 'fed','macro','index','events','crypto'
+#   refresh       — 'hourly','daily'
+#   search_terms  — Keywords fuer automatische Discovery (siehe scripts/polymarket_discover.py)
+#   condition_id  — Polymarket Condition-ID (wird durch Discovery-Script gefuellt)
+#
+# Workflow:
+#   1. Neue Eintraege manuell hinzufuegen (nur slug + category + refresh + search_terms)
+#   2. py scripts/polymarket_discover.py --update-yaml ausfuehren
+#      -> fuellt automatisch condition_id + question + end_date
+#   3. py scripts/polymarket_backfill.py --slug <slug>
+#   4. Cron uebernimmt ab dann den Rest
+
+version: 1
+updated: 2026-04-17
+
+markets:
+  # ── FED-Pfad (Fed Funds Rate an den naechsten 2 FOMC-Meetings) ─────────────
+  - slug: fed-decision-next-cut
+    category: fed
+    refresh: hourly
+    search_terms: ["Fed decision", "rate cut", "FOMC"]
+    condition_id: ""
+
+  - slug: fed-decision-next-hold
+    category: fed
+    refresh: hourly
+    search_terms: ["Fed decision", "no change", "hold"]
+    condition_id: ""
+
+  - slug: fed-decision-next-hike
+    category: fed
+    refresh: hourly
+    search_terms: ["Fed decision", "rate hike", "increase"]
+    condition_id: ""
+
+  - slug: fed-decision-next2-cut
+    category: fed
+    refresh: hourly
+    search_terms: ["Fed decision", "rate cut", "second meeting"]
+    condition_id: ""
+
+  - slug: fed-decision-next2-hold
+    category: fed
+    refresh: hourly
+    search_terms: ["Fed decision", "no change"]
+    condition_id: ""
+
+  - slug: fed-dovish-stance-2026
+    category: fed
+    refresh: daily
+    search_terms: ["Fed rate", "2026", "end of year"]
+    condition_id: ""
+
+  # ── Makro-Makro (Rezession, BIP, Arbeitslosigkeit, ISM) ────────────────────
+  - slug: us-recession-2026
+    category: macro
+    refresh: daily
+    search_terms: ["US recession", "2026"]
+    condition_id: ""
+
+  - slug: us-recession-2027
+    category: macro
+    refresh: daily
+    search_terms: ["US recession", "2027"]
+    condition_id: ""
+
+  - slug: us-unemployment-above-5
+    category: macro
+    refresh: daily
+    search_terms: ["unemployment", "above 5"]
+    condition_id: ""
+
+  - slug: us-gdp-q-negative
+    category: macro
+    refresh: daily
+    search_terms: ["GDP", "negative", "quarter"]
+    condition_id: ""
+
+  - slug: us-ism-below-50
+    category: macro
+    refresh: daily
+    search_terms: ["ISM", "manufacturing", "below 50"]
+    condition_id: ""
+
+  - slug: yield-curve-inversion-2026
+    category: macro
+    refresh: daily
+    search_terms: ["yield curve", "inversion"]
+    condition_id: ""
+
+  # ── Index-Targets (SPX, NDX, DAX, VIX) ─────────────────────────────────────
+  - slug: spx-above-6000-ye-2026
+    category: index
+    refresh: daily
+    search_terms: ["S&P 500", "6000", "2026"]
+    condition_id: ""
+
+  - slug: spx-above-6500-ye-2026
+    category: index
+    refresh: daily
+    search_terms: ["S&P 500", "6500", "2026"]
+    condition_id: ""
+
+  - slug: spx-all-time-high-q3-2026
+    category: index
+    refresh: daily
+    search_terms: ["S&P 500", "all time high", "Q3"]
+    condition_id: ""
+
+  - slug: spx-10pct-correction-2026
+    category: index
+    refresh: daily
+    search_terms: ["S&P 500", "correction", "10%"]
+    condition_id: ""
+
+  - slug: spx-bear-market-2026
+    category: index
+    refresh: daily
+    search_terms: ["S&P 500", "bear market", "2026"]
+    condition_id: ""
+
+  - slug: ndx-above-22000-ye-2026
+    category: index
+    refresh: daily
+    search_terms: ["Nasdaq", "22000", "2026"]
+    condition_id: ""
+
+  - slug: dax-above-20000-ye-2026
+    category: index
+    refresh: daily
+    search_terms: ["DAX", "20000", "2026"]
+    condition_id: ""
+
+  - slug: vix-above-30-any-day-2026
+    category: index
+    refresh: daily
+    search_terms: ["VIX", "above 30", "2026"]
+    condition_id: ""
+
+  # ── Event-Prints (CPI, NFP, PPI, PCE, Retail Sales) ────────────────────────
+  - slug: cpi-yoy-above-next
+    category: events
+    refresh: hourly
+    search_terms: ["CPI", "year over year", "next month"]
+    condition_id: ""
+
+  - slug: core-cpi-above-next
+    category: events
+    refresh: hourly
+    search_terms: ["core CPI", "next month"]
+    condition_id: ""
+
+  - slug: nfp-above-consensus-next
+    category: events
+    refresh: hourly
+    search_terms: ["nonfarm payrolls", "NFP", "above"]
+    condition_id: ""
+
+  - slug: ppi-above-consensus-next
+    category: events
+    refresh: hourly
+    search_terms: ["PPI", "producer price"]
+    condition_id: ""
+
+  - slug: retail-sales-above-next
+    category: events
+    refresh: daily
+    search_terms: ["retail sales", "above"]
+    condition_id: ""
+
+  - slug: pce-above-consensus-next
+    category: events
+    refresh: hourly
+    search_terms: ["PCE", "personal consumption"]
+    condition_id: ""
+
+  # ── Crypto-Macro (BTC, ETH) ────────────────────────────────────────────────
+  - slug: btc-above-150k-2026
+    category: crypto
+    refresh: daily
+    search_terms: ["Bitcoin", "150000", "2026"]
+    condition_id: ""
+
+  - slug: btc-above-200k-2026
+    category: crypto
+    refresh: daily
+    search_terms: ["Bitcoin", "200000", "2026"]
+    condition_id: ""
+
+  - slug: eth-above-6k-2026
+    category: crypto
+    refresh: daily
+    search_terms: ["Ethereum", "6000", "2026"]
+    condition_id: ""
+
+  - slug: btc-etf-net-inflows-positive-2026
+    category: crypto
+    refresh: daily
+    search_terms: ["Bitcoin ETF", "inflows"]
+    condition_id: ""
