@@ -129,7 +129,7 @@ def main():
     ap.add_argument("--slug", default=None, help="Nur diesen Slug backfillen")
     ap.add_argument("--category", default=None,
                     help="Komma-getrennte Liste: fed,macro,index,events,crypto")
-    ap.add_argument("--interval", default="1d", choices=["1h", "6h", "1d", "1w", "max"])
+    ap.add_argument("--interval", default="max", choices=["1h", "6h", "1d", "1w", "max"])
     ap.add_argument("--fidelity", type=int, default=1440,
                     help="Minuten-Aufloesung (60=stuendlich, 1440=taeglich)")
     ap.add_argument("--dry-run", action="store_true")

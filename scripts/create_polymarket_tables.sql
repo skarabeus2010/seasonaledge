@@ -45,13 +45,27 @@ CREATE TABLE IF NOT EXISTS polymarket_prices (
 CREATE INDEX IF NOT EXISTS idx_pm_prices_cid_ts ON polymarket_prices (condition_id, ts DESC);
 CREATE INDEX IF NOT EXISTS idx_pm_prices_ts ON polymarket_prices (ts DESC);
 
--- ── Row Level Security ─────────────────────────────────────────────────────
+-- ── Row Level Security + GRANTs ───────────────────────────────────────────
 
 ALTER TABLE polymarket_markets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE polymarket_prices  ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "anon_read" ON polymarket_markets FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_read" ON polymarket_prices  FOR SELECT TO anon USING (true);
+-- Table-level GRANTs: ohne GRANT schlaegt jeder Zugriff mit
+-- "permission denied" fehl, auch wenn eine RLS-Policy passt.
+GRANT SELECT                         ON polymarket_markets TO anon, authenticated;
+GRANT SELECT                         ON polymarket_prices  TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON polymarket_markets TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON polymarket_prices  TO service_role;
+
+-- SEQUENCE-Grants fuer BIGSERIAL id (nextval)
+GRANT USAGE, SELECT ON SEQUENCE polymarket_markets_id_seq TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE polymarket_prices_id_seq  TO service_role;
+
+-- RLS: anon/authenticated lesen alles
+DROP POLICY IF EXISTS "anon_read" ON polymarket_markets;
+DROP POLICY IF EXISTS "anon_read" ON polymarket_prices;
+CREATE POLICY "anon_read" ON polymarket_markets FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "anon_read" ON polymarket_prices  FOR SELECT TO anon, authenticated USING (true);
 
 -- Hinweis: Schreib-Zugriff nur via service_role (Nightly-/Hourly-Jobs).
--- service_role bypasst RLS automatisch.
+-- service_role bypasst RLS + GRANTs automatisch.

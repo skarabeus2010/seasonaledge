@@ -78,12 +78,9 @@ def refresh_markets(
             errors.append(f"{slug}: nicht im DB-Katalog (erst 'polymarket_discover --sync-db' laufen lassen)")
             continue
 
-        yes_token = cat_entry.get("yes_token_id") or ""
-        if not yes_token:
-            errors.append(f"{slug}: yes_token_id fehlt in DB")
-            continue
-
-        snap = fetch_current_price(yes_token)
+        # fetch_current_price nimmt die conditionId (Gamma-Markets-Endpoint).
+        # yes_token_id wird nur fuer CLOB prices-history gebraucht (Backfill).
+        snap = fetch_current_price(cid)
         if not snap:
             errors.append(f"{slug}: fetch_current_price liefert None")
             print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- FEHLER: kein Preis")

@@ -1,206 +1,214 @@
 # SeasonAlpha — Kuratiertes Polymarket-Market-Set
 # ==================================================
-# Aufbau: 5 Kategorien, ca. 30 Maerkte, versioniert im Git.
+# Fokus: drei Feature-Blöcke auf Basis real existierender Polymarket-Markets
+#   1. Fed-Path-Visualizer  — 13 Outcomes aus "How many Fed rate cuts in 2026?"
+#                             + 2 Risiko-Markets (Hike 2026, Emergency Cut)
+#   2. Macro-Ampel          — US Recession 2026 + Negative GDP 2026
+#   3. Crypto-Divergenz     — BTC/ETH Preis-Target-Ladder vs. Saisonalität
 #
 # Struktur pro Eintrag:
-#   slug          — stabiler URL-/DB-Slug (lowercase, bindestrich-separiert)
-#   category      — 'fed','macro','index','events','crypto'
+#   slug          — stabiler URL-/DB-Slug
+#   category      — 'fed','macro','crypto'
 #   refresh       — 'hourly','daily'
-#   search_terms  — Keywords fuer automatische Discovery (siehe scripts/polymarket_discover.py)
-#   condition_id  — Polymarket Condition-ID (wird durch Discovery-Script gefuellt)
+#   condition_id  — Polymarket Condition-ID (direkt aus Gamma-API am 2026-04-18)
+#   question      — UI-Label (kann später aus DB überschrieben werden)
+#   event_id      — Gamma-Event-ID (für Gruppierungs-UI)
 #
 # Workflow:
-#   1. Neue Eintraege manuell hinzufuegen (nur slug + category + refresh + search_terms)
-#   2. py scripts/polymarket_discover.py --update-yaml ausfuehren
-#      -> fuellt automatisch condition_id + question + end_date
-#   3. py scripts/polymarket_backfill.py --slug <slug>
-#   4. Cron uebernimmt ab dann den Rest
+#   py scripts/polymarket_discover.py --sync-db
+#     -> schreibt Katalog in Supabase polymarket_markets (metadata-Refresh)
+#   py scripts/polymarket_backfill.py
+#     -> lädt volle Preis-Historie via CLOB prices-history
+#   py scripts/polymarket_refresh.py
+#     -> Snapshot-Refresh (Cron, stündlich/täglich je nach refresh-Feld)
 
-version: 1
-updated: 2026-04-17
+version: 2
+updated: 2026-04-18
 
 markets:
-  # ── FED-Pfad (Fed Funds Rate an den naechsten 2 FOMC-Meetings) ─────────────
-  - slug: fed-decision-next-cut
-    category: fed
-    refresh: hourly
-    search_terms: ["Fed decision", "rate cut", "FOMC"]
-    condition_id: ""
-
-  - slug: fed-decision-next-hold
-    category: fed
-    refresh: hourly
-    search_terms: ["Fed decision", "no change", "hold"]
-    condition_id: ""
-
-  - slug: fed-decision-next-hike
-    category: fed
-    refresh: hourly
-    search_terms: ["Fed decision", "rate hike", "increase"]
-    condition_id: ""
-
-  - slug: fed-decision-next2-cut
-    category: fed
-    refresh: hourly
-    search_terms: ["Fed decision", "rate cut", "second meeting"]
-    condition_id: ""
-
-  - slug: fed-decision-next2-hold
-    category: fed
-    refresh: hourly
-    search_terms: ["Fed decision", "no change"]
-    condition_id: ""
-
-  - slug: fed-dovish-stance-2026
+  # ── Fed-Path: Total Rate Cuts 2026 (Event 51456, 13 Outcomes) ──────────────
+  - slug: fed-cuts-2026-0
     category: fed
     refresh: daily
-    search_terms: ["Fed rate", "2026", "end of year"]
-    condition_id: ""
+    question: "Fed cuts 2026: 0 (0 bps)"
+    condition_id: "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527"
+    event_id: 51456
 
-  # ── Makro-Makro (Rezession, BIP, Arbeitslosigkeit, ISM) ────────────────────
+  - slug: fed-cuts-2026-1
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 1 (25 bps)"
+    condition_id: "0x5e082f0b57f47a29044aa35b4c5658393122e659d5feae521c06b57cdd7f905c"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-2
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 2 (50 bps)"
+    condition_id: "0xe0d9f508a249e0070db06eb7d1e1fb17eb23c963f6fb722c4c3f81e23240c1cd"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-3
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 3 (75 bps)"
+    condition_id: "0x8d4966e84ae80f24b2e14643fdd45364e354229e11e2c17903b4b1763cfbe67c"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-4
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 4 (100 bps)"
+    condition_id: "0xaece8d6062d3e3eb9845b32441a4ab06eb2ef332c0228bc6a36add450647c7c4"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-5
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 5 (125 bps)"
+    condition_id: "0x7ee722a07e0f84405f1267bc1c84eb95bd6348454453abf445618e778af8fd18"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-6
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 6 (150 bps)"
+    condition_id: "0x4914bfdd892a48c341b5e0f41ec10475a815f2277273110b16f95e21084bfe75"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-7
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 7 (175 bps)"
+    condition_id: "0x2368d2604c9c2b95bc98c51bd50c66e5351caebf05b9fe79d3398c387fe29a89"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-8
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 8 (200 bps)"
+    condition_id: "0xfe28cb84a714b1a964290d7fd2587e71d57e905678c8ab64488449b24be78e52"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-9
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 9 (225 bps)"
+    condition_id: "0x4ec6fcb43fe1a32163c7da09d54a99ab9bf6abdc6fd49939d7ad67d696a3248b"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-10
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 10 (250 bps)"
+    condition_id: "0x757c144993b3cb831e04c42bfcff8c18864c7da4f4688a5939d2f62e031cbc87"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-11
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 11 (275 bps)"
+    condition_id: "0x1adf074e048fa613f4ddbc0766088748a48d120a3a713b0183e219032a411ae3"
+    event_id: 51456
+
+  - slug: fed-cuts-2026-12plus
+    category: fed
+    refresh: daily
+    question: "Fed cuts 2026: 12+ (300+ bps)"
+    condition_id: "0xffa0accb74987c0dc33a70eb3780c1da160206bcfb3ef5d16c1667bc5c459c78"
+    event_id: 51456
+
+  # ── Fed-Risiko-Seite ────────────────────────────────────────────────────────
+  - slug: fed-hike-2026
+    category: fed
+    refresh: daily
+    question: "Fed rate hike in 2026?"
+    condition_id: "0x80b3af88cb991980e8da1ce86b9794a0957f96ec98c29319dd7ba65e9744d82b"
+    event_id: 101936
+
+  - slug: fed-emergency-cut-2027
+    category: fed
+    refresh: daily
+    question: "Fed emergency rate cut before 2027?"
+    condition_id: "0x93a3b80b1fb485057add882b55d12011ea011fedd9abededad86ac6cb53a2802"
+    event_id: 79124
+
+  # ── Macro-Ampel (Recession + GDP) ───────────────────────────────────────────
   - slug: us-recession-2026
     category: macro
     refresh: daily
-    search_terms: ["US recession", "2026"]
-    condition_id: ""
+    question: "US recession by end of 2026?"
+    condition_id: "0xfdc73f10edf0266756686f35b5712cffa828b0940fc015e0426c76c934c2105d"
+    event_id: 48802
 
-  - slug: us-recession-2027
+  - slug: us-gdp-negative-2026
     category: macro
     refresh: daily
-    search_terms: ["US recession", "2027"]
-    condition_id: ""
+    question: "Negative GDP growth in 2026?"
+    condition_id: "0xd8c1b0a73653b1fb4fb6e8d13d0063d25810870d7ddf83e61fffb4de4522edf1"
+    event_id: 80660
 
-  - slug: us-unemployment-above-5
-    category: macro
+  # ── BTC Price Ladder 2026 (Event 89502) ─────────────────────────────────────
+  - slug: btc-above-100k-2026
+    category: crypto
     refresh: daily
-    search_terms: ["unemployment", "above 5"]
-    condition_id: ""
+    question: "BTC above $100,000 by end of 2026"
+    condition_id: "0xdaa4866bae18be58c5a79d2aeeffd035ec78f1bb49dbd88f72993997778a990f"
+    event_id: 89502
 
-  - slug: us-gdp-q-negative
-    category: macro
+  - slug: btc-above-120k-2026
+    category: crypto
     refresh: daily
-    search_terms: ["GDP", "negative", "quarter"]
-    condition_id: ""
+    question: "BTC above $120,000 by end of 2026"
+    condition_id: "0xf9b6b5c3c6e07afe4aad6ed9ce4fa7545f9c2baa9f1dc632cd81a085c99acfe4"
+    event_id: 89502
 
-  - slug: us-ism-below-50
-    category: macro
-    refresh: daily
-    search_terms: ["ISM", "manufacturing", "below 50"]
-    condition_id: ""
-
-  - slug: yield-curve-inversion-2026
-    category: macro
-    refresh: daily
-    search_terms: ["yield curve", "inversion"]
-    condition_id: ""
-
-  # ── Index-Targets (SPX, NDX, DAX, VIX) ─────────────────────────────────────
-  - slug: spx-above-6000-ye-2026
-    category: index
-    refresh: daily
-    search_terms: ["S&P 500", "6000", "2026"]
-    condition_id: ""
-
-  - slug: spx-above-6500-ye-2026
-    category: index
-    refresh: daily
-    search_terms: ["S&P 500", "6500", "2026"]
-    condition_id: ""
-
-  - slug: spx-all-time-high-q3-2026
-    category: index
-    refresh: daily
-    search_terms: ["S&P 500", "all time high", "Q3"]
-    condition_id: ""
-
-  - slug: spx-10pct-correction-2026
-    category: index
-    refresh: daily
-    search_terms: ["S&P 500", "correction", "10%"]
-    condition_id: ""
-
-  - slug: spx-bear-market-2026
-    category: index
-    refresh: daily
-    search_terms: ["S&P 500", "bear market", "2026"]
-    condition_id: ""
-
-  - slug: ndx-above-22000-ye-2026
-    category: index
-    refresh: daily
-    search_terms: ["Nasdaq", "22000", "2026"]
-    condition_id: ""
-
-  - slug: dax-above-20000-ye-2026
-    category: index
-    refresh: daily
-    search_terms: ["DAX", "20000", "2026"]
-    condition_id: ""
-
-  - slug: vix-above-30-any-day-2026
-    category: index
-    refresh: daily
-    search_terms: ["VIX", "above 30", "2026"]
-    condition_id: ""
-
-  # ── Event-Prints (CPI, NFP, PPI, PCE, Retail Sales) ────────────────────────
-  - slug: cpi-yoy-above-next
-    category: events
-    refresh: hourly
-    search_terms: ["CPI", "year over year", "next month"]
-    condition_id: ""
-
-  - slug: core-cpi-above-next
-    category: events
-    refresh: hourly
-    search_terms: ["core CPI", "next month"]
-    condition_id: ""
-
-  - slug: nfp-above-consensus-next
-    category: events
-    refresh: hourly
-    search_terms: ["nonfarm payrolls", "NFP", "above"]
-    condition_id: ""
-
-  - slug: ppi-above-consensus-next
-    category: events
-    refresh: hourly
-    search_terms: ["PPI", "producer price"]
-    condition_id: ""
-
-  - slug: retail-sales-above-next
-    category: events
-    refresh: daily
-    search_terms: ["retail sales", "above"]
-    condition_id: ""
-
-  - slug: pce-above-consensus-next
-    category: events
-    refresh: hourly
-    search_terms: ["PCE", "personal consumption"]
-    condition_id: ""
-
-  # ── Crypto-Macro (BTC, ETH) ────────────────────────────────────────────────
   - slug: btc-above-150k-2026
     category: crypto
     refresh: daily
-    search_terms: ["Bitcoin", "150000", "2026"]
-    condition_id: ""
+    question: "BTC above $150,000 by end of 2026"
+    condition_id: "0xa7b594ae07d5c1590fa86028fcc2f8705990437237416556c05837a08b2e1cda"
+    event_id: 89502
 
   - slug: btc-above-200k-2026
     category: crypto
     refresh: daily
-    search_terms: ["Bitcoin", "200000", "2026"]
-    condition_id: ""
+    question: "BTC above $200,000 by end of 2026"
+    condition_id: "0xac32e73aa9e0dae801d88d4f81efd2ef3fa0f04b815f3a0e74426f0762e668cd"
+    event_id: 89502
+
+  - slug: btc-above-250k-2026
+    category: crypto
+    refresh: daily
+    question: "BTC above $250,000 by end of 2026"
+    condition_id: "0x6fefc0438c7598b23531457c8c60541990d0786bd4bd9dfc3eabc8d95c291092"
+    event_id: 89502
+
+  # ── ETH Price Ladder 2026 (Event 89519) ─────────────────────────────────────
+  - slug: eth-above-4k-2026
+    category: crypto
+    refresh: daily
+    question: "ETH above $4,000 by end of 2026"
+    condition_id: "0x9775cd557a3cdba4f0478070afa399c0805761dd9aa0e7ce4435a71fed32621c"
+    event_id: 89519
+
+  - slug: eth-above-5k-2026
+    category: crypto
+    refresh: daily
+    question: "ETH above $5,000 by end of 2026"
+    condition_id: "0x1c4fd67ab2a67f508672a69153559911244048b79a40cbe341d12f985ba90a13"
+    event_id: 89519
 
   - slug: eth-above-6k-2026
     category: crypto
     refresh: daily
-    search_terms: ["Ethereum", "6000", "2026"]
-    condition_id: ""
+    question: "ETH above $6,000 by end of 2026"
+    condition_id: "0x6132cc91f7a0ad656e890b9040c159f4057f4c44359b3fb68085ec97156c918a"
+    event_id: 89519
 
-  - slug: btc-etf-net-inflows-positive-2026
+  - slug: eth-above-8k-2026
     category: crypto
     refresh: daily
-    search_terms: ["Bitcoin ETF", "inflows"]
-    condition_id: ""
+    question: "ETH above $8,000 by end of 2026"
+    condition_id: "0xac0b4316113b50e0e667918aee72fa0eb006342245a52ab6371f3732af5733c8"
+    event_id: 89519
