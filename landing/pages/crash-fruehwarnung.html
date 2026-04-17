@@ -120,6 +120,19 @@
         </div>
       </details>
 
+      <!-- Polymarket Macro-Risiko -->
+      <details open id="sec-polymarket">
+        <summary>Polymarket Macro-Risiko &mdash; was der Markt einpreist</summary>
+        <div class="content">
+          <p class="box-info" style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem;padding:.5rem .75rem;background:rgba(232,168,32,.04);border-left:2px solid var(--accent);border-radius:4px">
+            Unser Isolation-Forest-Modell misst das Regime aus <b>Preisdaten</b>. Polymarket zeigt was Händler auf <b>Ereignissen</b> einpreisen &mdash; zwei unterschiedliche Signale. Wenn beide rot sind, steigt die Konfidenz im Risiko-Call. Divergenz (z.B. Risk-Score niedrig, aber Recession-Markt hoch) ist selbst ein Signal.
+          </p>
+          <div class="kpi-row" id="poly-crash-risk" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.75rem"></div>
+          <div class="chart-box"><div id="poly-crash-chart"></div></div>
+          <p class="box-info" style="margin-top:.85rem;font-size:.7rem"><a href="/polymarket" style="color:var(--accent)">&rarr; Vollst&auml;ndige Polymarket-Page</a></p>
+        </div>
+      </details>
+
       <!-- Feature-Details -->
       <details>
         <summary>Regime-Features (aktueller Tag)</summary>
@@ -479,6 +492,52 @@
     }
 
   }();
+  </script>
+
+  <!-- Polymarket Macro-Risiko Teaser -->
+  <script src="/landing/js/polymarket.js"></script>
+  <script>
+  (function() {
+    'use strict';
+    function kpi(label, value, cls) {
+      return '<div class="kpi"><span class="kpi-label">' + label + '</span>' +
+             '<span class="kpi-value ' + (cls || '') + '">' + value + '</span></div>';
+    }
+    function render() {
+      if (!window.SA || !SA.polymarket || !SA.supabase) {
+        setTimeout(render, 200);
+        return;
+      }
+      SA.polymarket.loadCatalog().then(function(catalog) {
+        var all = (catalog || []);
+        if (!all.length) { document.getElementById('sec-polymarket').style.display = 'none'; return; }
+
+        // Nur Macro-relevante Slugs
+        var slugs = ['us-recession-2026', 'us-gdp-negative-2026', 'fed-hike-2026', 'fed-emergency-cut-2027'];
+        var markets = all.filter(function(m) { return slugs.indexOf(m.slug) >= 0; });
+        if (!markets.length) { document.getElementById('sec-polymarket').style.display = 'none'; return; }
+
+        var cids = markets.map(function(m) { return m.condition_id; });
+        return Promise.all([
+          SA.polymarket.loadLatestPrices(cids),
+          SA.polymarket.loadHistory(cids, 180)
+        ]).then(function(results) {
+          var latest = results[0];
+          var history = results[1];
+
+          SA.polymarket.renderRiskGauges('poly-crash-risk', markets, latest);
+          SA.polymarket.renderHistoryMulti('poly-crash-chart', markets, history);
+        });
+      }).catch(function(err) {
+        console.error('Polymarket crash-section:', err);
+        var el = document.getElementById('sec-polymarket');
+        if (el) el.style.display = 'none';
+      });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(render, 400);
+    });
+  })();
   </script>
 </body>
 </html>

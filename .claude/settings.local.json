@@ -57,7 +57,25 @@
       "Bash(head -5 echo \"---\" curl -s -b /tmp/stooq_cookies.txt \"https://stooq.com/q/d/l/?s=vdax&i=d\")",
       "Bash(curl -s \"https://query2.finance.yahoo.com/v8/finance/chart/V1X.DE?period1=946684800&period2=1764374400&interval=1d&events=history\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0\\) AppleWebKit/537.36\")",
       "Bash(curl -s -L -c /tmp/c.txt -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H 'Accept: text/html,application/xhtml+xml' \"https://stooq.com/q/d/?s=%5Evdax&i=d\" curl -s -L -b /tmp/c.txt -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://stooq.com/q/d/?s=%5Evdax&i=d\" \"https://stooq.com/q/d/l/?s=%5Evdax&i=d\")",
-      "Bash(head -20 echo \"---\" grep -n \"SYMBOLS\\\\|symbols\\\\|tickers\\\\|VIX\\\\|VXN\\\\|OVX\\\\|^ticker\" C:/dev/SeasonalEdge/.claude/worktrees/peaceful-agnesi/scripts/intraday_refresh.py)"
+      "Bash(head -20 echo \"---\" grep -n \"SYMBOLS\\\\|symbols\\\\|tickers\\\\|VIX\\\\|VXN\\\\|OVX\\\\|^ticker\" C:/dev/SeasonalEdge/.claude/worktrees/peaceful-agnesi/scripts/intraday_refresh.py)",
+      "Bash(py -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\) for f in ['shared/polymarket_data.py', 'scripts/polymarket_discover.py', 'scripts/polymarket_refresh.py', 'scripts/polymarket_backfill.py']]; print\\('syntax ok'\\)\")",
+      "Bash(py -c \"import yaml; data = yaml.safe_load\\(open\\('shared/polymarket_markets.yaml', encoding='utf-8'\\)\\); print\\(f'markets: {len\\(data[\\\\\"markets\\\\\"]\\)}'\\); print\\(f'categories: {set\\(m[\\\\\"category\\\\\"] for m in data[\\\\\"markets\\\\\"]\\)}'\\)\")",
+      "Bash(py shared/polymarket_data.py)",
+      "Bash(py -m shared.polymarket_data)",
+      "Bash(py -0)",
+      "Bash(py -3.12 -m shared.polymarket_data)",
+      "Bash(py -3.12 -c ' *)",
+      "Bash(py -3.12 -c \"import ast; ast.parse\\(open\\('scripts/polymarket_discover.py', encoding='utf-8'\\).read\\(\\)\\); ast.parse\\(open\\('shared/polymarket_data.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
+      "Bash(py -3.12 scripts/polymarket_discover.py)",
+      "Bash(py -3.12 scripts/polymarket_discover.py --update-yaml --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_discover.py --sync-db)",
+      "Read(//c/dev/SeasonalEdge/**)",
+      "WebFetch(domain:www.seasonalpha.ai)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_backfill.py --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_backfill.py --slug fed-cuts-2026-0 --interval max --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_backfill.py)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_refresh.py --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 scripts/polymarket_refresh.py)"
     ]
   }
 }

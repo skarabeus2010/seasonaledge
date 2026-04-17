@@ -1,5 +1,9 @@
 """
 shared/supabase_client.py — Supabase DB-Connector für SeasonAlpha
+
+Credentials kommen aus os.environ (SUPABASE_URL, SUPABASE_KEY).
+Lokal: .env im Projekt-Root (automatisch geladen via shared/__init__.py).
+Server: docker-compose env-vars.
 """
 from __future__ import annotations
 import os
@@ -8,10 +12,6 @@ try:
     from supabase import create_client
 except ImportError:
     create_client = None
-
-# Keys aus Streamlit Secrets oder Environment
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 _client = None
 
@@ -25,18 +25,13 @@ def get_client():
             "Installiere es mit: pip install supabase"
         )
     if _client is None:
-        url = SUPABASE_URL
-        key = SUPABASE_KEY
-        # Streamlit Secrets Fallback
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_KEY", "")
         if not url or not key:
-            try:
-                import streamlit as st
-                url = url or st.secrets.get("SUPABASE_URL", "")
-                key = key or st.secrets.get("SUPABASE_KEY", "")
-            except Exception:
-                pass
-        if not url or not key:
-            raise ValueError("SUPABASE_URL und SUPABASE_KEY müssen gesetzt sein!")
+            raise ValueError(
+                "SUPABASE_URL und SUPABASE_KEY müssen in .env (lokal) "
+                "oder in den Docker-Env-Vars (Server) gesetzt sein."
+            )
         _client = create_client(url, key)
     return _client
 
@@ -532,3 +527,85 @@ def fetch_spot_vol_beta(
     if end_date:
         q = q.lte("event_date", end_date)
     return q.order("event_date").execute().data
+
+
+# ── Polymarket ────────────────────────────────────
+
+def upsert_polymarket_markets(records: list[dict]):
+    """Polymarket-Markt-Metadata upserten (Katalog)."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("polymarket_markets").upsert(
+            batch, on_conflict="condition_id"
+        ).execute()
+
+
+def fetch_polymarket_markets(
+    category: str | None = None,
+    active_only: bool = True,
+) -> list[dict]:
+    """Polymarket-Markt-Katalog laden."""
+    q = get_client().table("polymarket_markets").select("*")
+    if category:
+        q = q.eq("category", category)
+    if active_only:
+        q = q.eq("active", True)
+    return q.order("category").execute().data
+
+
+def upsert_polymarket_prices(records: list[dict]):
+    """Polymarket-Preis-Snapshots upserten (Zeitreihe)."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("polymarket_prices").upsert(
+            batch, on_conflict="condition_id,ts"
+        ).execute()
+
+
+def fetch_polymarket_latest_prices(condition_ids: list[str] | None = None) -> list[dict]:
+    """
+    Neueste Preis-Zeile pro Markt. Nutzt Supabase-RPC (falls definiert) oder
+    pragmatisch: alle Markets + join auf max(ts) via view. Fuer V1 reicht der
+    simple Weg: Fuer jeden condition_id das letzte Row holen.
+    """
+    client = get_client()
+    if condition_ids:
+        q = client.table("polymarket_prices").select("*").in_("condition_id", condition_ids)
+    else:
+        q = client.table("polymarket_prices").select("*")
+    # Pragmatisch: letzte 7 Tage ziehen, dann in Python reduzieren
+    # (Supabase kann kein GROUP BY direkt; fuer UI-Load ist das ok)
+    from datetime import datetime, timedelta, timezone
+    since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    rows = q.gte("ts", since).order("ts", desc=True).limit(5000).execute().data or []
+    latest: dict[str, dict] = {}
+    for r in rows:
+        cid = r.get("condition_id")
+        if cid and cid not in latest:
+            latest[cid] = r
+    return list(latest.values())
+
+
+def fetch_polymarket_price_history(
+    condition_id: str,
+    limit: int = 1000,
+) -> list[dict]:
+    """Preis-Zeitreihe fuer einen Markt (aufsteigend sortiert)."""
+    return (
+        get_client()
+        .table("polymarket_prices")
+        .select("*")
+        .eq("condition_id", condition_id)
+        .order("ts")
+        .limit(limit)
+        .execute()
+        .data
+    )

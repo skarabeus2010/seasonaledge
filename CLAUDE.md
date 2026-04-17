@@ -231,6 +231,35 @@ Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
 
 Plan: `.claude/plans/curried-floating-treasure.md`
 
+### 🟡 IN PROGRESS — Polymarket-Integration (Phase 1 Backend WIP, 2026-04-17)
+Branch: `claude/unruffled-chatelet-b61533` · Plan: `~/.claude/plans/moonlit-mapping-hinton.md`
+
+**Fertig (commit `c7c373c`):**
+- [x] SQL-Migration `scripts/create_polymarket_tables.sql` (2 Tabellen + RLS + Policies)
+- [x] `shared/polymarket_data.py` — Gamma+CLOB HTTP-Client (auf echte API-Feldnamen korrigiert: `conditionId`, `clobTokenIds`, `bestBid/Ask`, `endDateIso`)
+- [x] `shared/polymarket_markets.yaml` — 30 kuratierte Macro-Märkte (fed/macro/index/events/crypto)
+- [x] `shared/supabase_client.py` — `upsert_polymarket_markets`, `fetch_polymarket_markets`, `upsert_polymarket_prices`, `fetch_polymarket_latest_prices`, `fetch_polymarket_price_history`
+- [x] `scripts/polymarket_discover.py` — Auto-Discovery der condition_id's
+- [x] `scripts/polymarket_refresh.py` — Snapshot-CLI (--category --refresh --dry-run)
+- [x] `scripts/polymarket_backfill.py` — Voll-Historie via CLOB prices-history
+
+**Nächste Schritte (nach PC-Neustart):**
+1. [ ] `polymarket_discover.py` auf Events-API umstellen — aktuell nutzt es `fetch_markets_by_tag` (das ich durch `fetch_events_by_tag` ersetzt habe). Muss über `events[].id` → `fetch_event_detail` → `markets[]` iterieren und Kandidaten scoren.
+2. [ ] Self-Test: `py -3.12 -m shared.polymarket_data` (live API-Check)
+3. [ ] Migration in Supabase SQL Editor ausführen
+4. [ ] Discovery-Run: `py -3.12 scripts/polymarket_discover.py --update-yaml --sync-db`
+5. [ ] Backfill: `py -3.12 scripts/polymarket_backfill.py`
+6. [ ] Hourly GitHub Action + Phase G in `nightly_refresh.py`
+7. [ ] Phase 2: Frontend (eigene `/prediction-markets` Page + Dashboard-KPIs + Zentralbanken-Erweiterung + Crash-Frühwarnung-Integration)
+8. [ ] Phase 3: KI-Layer (Divergenz-Score + Brier-Score)
+
+**Wichtige Erkenntnisse (für Wiedereinstieg):**
+- Gamma API: `tag_slug=fed` auf `/events` (NICHT `tag` auf `/markets`). `search` auf Markets ignoriert.
+- Feldnamen camelCase: `conditionId`, `clobTokenIds` (JSON-String mit [YES, NO]), `endDateIso`, `liquidityNum`, `volumeNum`, `volume24hr`, `bestBid`, `bestAsk`, `lastTradePrice`
+- Snapshot braucht **keinen** CLOB-Roundtrip — `bestBid/Ask` stehen direkt im Gamma-Market-Response
+- Python-Version auf Dev-System: Nur `py -3.12` nutzen (3.9 bricht bei `X | None` Syntax)
+- Event-Struktur: z.B. „How many Fed rate cuts in 2026?" ist 1 Event mit 13 Outcome-Markets → Fed-YAML-Slugs sollten eventuell auf Outcome-Ebene liegen (0/1/2+ cuts) statt Event-Ebene
+
 ### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
 - [ ] Unsubscribe-Link End-to-End Inkognito-Test
 - [ ] Phase F Sonntags-Lauf verifizieren
