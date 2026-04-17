@@ -1,5 +1,9 @@
 """
 shared/supabase_client.py — Supabase DB-Connector für SeasonAlpha
+
+Credentials kommen aus os.environ (SUPABASE_URL, SUPABASE_KEY).
+Lokal: .env im Projekt-Root (automatisch geladen via shared/__init__.py).
+Server: docker-compose env-vars.
 """
 from __future__ import annotations
 import os
@@ -8,10 +12,6 @@ try:
     from supabase import create_client
 except ImportError:
     create_client = None
-
-# Keys aus Streamlit Secrets oder Environment
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 _client = None
 
@@ -25,18 +25,13 @@ def get_client():
             "Installiere es mit: pip install supabase"
         )
     if _client is None:
-        url = SUPABASE_URL
-        key = SUPABASE_KEY
-        # Streamlit Secrets Fallback
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_KEY", "")
         if not url or not key:
-            try:
-                import streamlit as st
-                url = url or st.secrets.get("SUPABASE_URL", "")
-                key = key or st.secrets.get("SUPABASE_KEY", "")
-            except Exception:
-                pass
-        if not url or not key:
-            raise ValueError("SUPABASE_URL und SUPABASE_KEY müssen gesetzt sein!")
+            raise ValueError(
+                "SUPABASE_URL und SUPABASE_KEY müssen in .env (lokal) "
+                "oder in den Docker-Env-Vars (Server) gesetzt sein."
+            )
         _client = create_client(url, key)
     return _client
 
