@@ -399,6 +399,45 @@ def main():
         app_logger.error(f"nightly_refresh: Weekly Newsletter fehlgeschlagen: {e}")
         print(f"Weekly Newsletter: exception {e}")
 
+    # Phase G: Polymarket Refresh (taeglich Snapshot, Sonntags zusaetzlich Backfill)
+    try:
+        from datetime import datetime as _dt, timezone as _tz
+        import subprocess as _sp
+        _now = _dt.now(_tz.utc)
+
+        # G1: taeglicher Snapshot — alle 26 Markets aktueller YES-Preis
+        app_logger.info("[phase-g] starte polymarket_refresh")
+        print("Polymarket Refresh: starte Snapshot...")
+        _res = _sp.run(
+            [sys.executable, "scripts/polymarket_refresh.py"],
+            cwd=_project_dir, capture_output=True, text=True, timeout=600,
+        )
+        if _res.returncode == 0:
+            print("Polymarket Refresh: ✓")
+            if _res.stdout:
+                print(_res.stdout[-300:])
+        else:
+            app_logger.error(f"[phase-g] polymarket_refresh exit {_res.returncode}: {_res.stderr[:500]}")
+            print(f"Polymarket Refresh failed (exit {_res.returncode}): {_res.stderr[:200]}")
+
+        # G2: wöchentlicher Backfill nur Montags (nightly läuft Mo–Fr — Montag ist der Tag
+        # nach dem 48h-Lücken-Wochenende, am meisten Sinn für Historien-Refresh)
+        if _now.weekday() == 0:
+            app_logger.info("[phase-g2] Montag → starte polymarket_backfill")
+            print("Polymarket Backfill: Montag, volle Historie...")
+            _res2 = _sp.run(
+                [sys.executable, "scripts/polymarket_backfill.py"],
+                cwd=_project_dir, capture_output=True, text=True, timeout=1800,
+            )
+            if _res2.returncode == 0:
+                print("Polymarket Backfill: ✓")
+            else:
+                app_logger.error(f"[phase-g2] polymarket_backfill exit {_res2.returncode}: {_res2.stderr[:500]}")
+                print(f"Polymarket Backfill failed: {_res2.stderr[:200]}")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Polymarket Phase G fehlgeschlagen: {e}")
+        print(f"Polymarket Phase G: exception {e}")
+
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
         heartbeat()

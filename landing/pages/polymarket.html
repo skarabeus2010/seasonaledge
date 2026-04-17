@@ -153,6 +153,17 @@
         <div class="chart-box"><div id="chart-eth-ladder"></div></div>
       </div>
 
+      <!-- ── Divergenz-Analyse ── -->
+      <h2 class="section-hdr"><b>Divergenz-Analyse</b> &mdash; Saisonalit&auml;t vs. Markt</h2>
+      <p class="section-caption">
+        F&uuml;r jedes Crypto-Target: der aus der Preis-Historie empirisch berechnete <b>Saisonal-Prior</b>
+        (Anteil vergangener Jahre mit Year-End-Return &ge; ben&ouml;tigter Performance ab heutigem Tag).
+        Vergleich zur aktuellen Polymarket-Wahrscheinlichkeit. <b style="color:#30e878">Gr&uuml;n</b>:
+        Saisonalit&auml;t h&ouml;her als Markt (Markt unterschaetzt). <b style="color:#ff4040">Rot</b>: Saisonalit&auml;t niedriger als Markt.
+      </p>
+      <div id="divergence-btc" style="margin-bottom:1.5rem"></div>
+      <div id="divergence-eth"></div>
+
       <!-- ── Historien-Explorer ── -->
       <h2 class="section-hdr"><b>Historien-Explorer</b> &mdash; frei gewaehlte Markets</h2>
       <p class="section-caption">
@@ -334,6 +345,43 @@
       destroyChart('ethLadder');
       state.charts.btcLadder = SA.polymarket.renderCryptoLadder('chart-btc-ladder', state.markets, state.latest, 'btc');
       state.charts.ethLadder = SA.polymarket.renderCryptoLadder('chart-eth-ladder', state.markets, state.latest, 'eth');
+
+      // Divergenz-Tabelle: braucht Historie aus prices-Tabelle
+      renderDivergenceFor('BTC-USD', 'btc', 'divergence-btc');
+      renderDivergenceFor('ETH-USD', 'eth', 'divergence-eth');
+    }
+
+    function renderDivergenceFor(ticker, prefix, targetId) {
+      var target = document.getElementById(targetId);
+      if (!target) return;
+      target.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:.5rem">Lade ' + ticker + ' Historie...</p>';
+
+      if (!SA.fetchAllPrices) {
+        target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">Preis-API nicht verfügbar.</p>';
+        return;
+      }
+      // Historie 10 Jahre (volle Historie reicht auch, aber 10y ist genug für den Prior)
+      SA.fetchAllPrices(ticker).then(function(rows) {
+        if (!rows || !rows.length) {
+          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">' + ticker + ' nicht in Preis-DB — Divergenz übersprungen.</p>';
+          return;
+        }
+        // fetchAllPrices liefert desc — für collectYearEndReturns brauchen wir asc
+        var asc = rows.slice().sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+        var currentPrice = asc[asc.length - 1].close || 0;
+
+        var assetMarkets = state.markets.filter(function(m) {
+          return (m.slug || '').indexOf(prefix + '-above-') === 0;
+        });
+        if (!assetMarkets.length) {
+          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">Keine ' + prefix.toUpperCase() + '-Markets aktiv.</p>';
+          return;
+        }
+        SA.polymarket.renderCryptoDivergence(targetId, ticker, assetMarkets, state.latest, asc, currentPrice);
+      }).catch(function(err) {
+        console.error('Divergenz ' + ticker + ':', err);
+        target.innerHTML = '<p style="color:var(--red);font-size:.75rem">Fehler beim Laden von ' + ticker + '.</p>';
+      });
     }
 
     function renderHistoryChart() {

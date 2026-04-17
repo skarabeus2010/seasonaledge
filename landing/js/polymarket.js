@@ -357,6 +357,150 @@ SA.polymarket = (function() {
   }
 
 
+  // ── Divergenz: Saisonale Historien-Prior vs Polymarket ───────────────────
+
+  /**
+   * Historische Wahrscheinlichkeit dass `ticker` vom `referenceDate` bis
+   * Year-End mindestens `requiredReturn` macht. Nutzt rolling windows
+   * "heutiges Tagesdatum im Vorjahr bis 31. Dezember Vorjahr" fuer jeden
+   * vergangenen Kalenderjahres, fuer den Daten vorhanden sind.
+   *
+   * @param priceRows    Array {date, close} sortiert aufsteigend
+   * @param asOfDate     Date — Referenz-Stichtag (i.d.R. today)
+   * @returns {samples: [{year, yStart, yEnd, ret}], n: int}
+   */
+  function collectYearEndReturns(priceRows, asOfDate) {
+    if (!priceRows || !priceRows.length) return { samples: [], n: 0 };
+    var ref = asOfDate || new Date();
+    var refMonth = ref.getMonth();   // 0-11
+    var refDay = ref.getDate();
+
+    // Gruppiere nach Jahr
+    var byYear = {};
+    priceRows.forEach(function(r) {
+      var d = new Date(r.date);
+      var y = d.getFullYear();
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].push({ d: d, close: r.close });
+    });
+
+    var samples = [];
+    var currentYear = ref.getFullYear();
+    Object.keys(byYear).forEach(function(y) {
+      var yearInt = parseInt(y, 10);
+      if (yearInt >= currentYear) return; // nur Vergangenheit
+      var rows = byYear[y].sort(function(a, b) { return a.d - b.d; });
+
+      // Suche Preis am oder nach (refMonth, refDay) in diesem Jahr
+      var refInYear = new Date(yearInt, refMonth, refDay);
+      var startPrice = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].d >= refInYear) { startPrice = rows[i].close; break; }
+      }
+      // Letzter Preis im Jahr (Year-End oder naehester Handelstag)
+      var endPrice = rows.length ? rows[rows.length - 1].close : null;
+      if (startPrice != null && endPrice != null && startPrice > 0) {
+        samples.push({
+          year: yearInt,
+          yStart: startPrice,
+          yEnd: endPrice,
+          ret: endPrice / startPrice - 1
+        });
+      }
+    });
+    return { samples: samples, n: samples.length };
+  }
+
+  /**
+   * Prozent der Samples mit Return >= target. Lineare Interpolation
+   * zwischen dem letzten Sample unter und dem ersten ueber target
+   * (fuer feineren Prior bei kleinem n).
+   */
+  function empiricalAboveProbability(samples, targetReturn) {
+    if (!samples.length) return null;
+    var above = samples.filter(function(s) { return s.ret >= targetReturn; }).length;
+    return above / samples.length;
+  }
+
+  /**
+   * Baut Divergenz-Tabelle fuer Crypto-Targets.
+   * @param elementId    Container
+   * @param ticker       'BTC-USD' oder 'ETH-USD'
+   * @param assetMarkets polymarket markets fuer diesen Asset
+   * @param latestPrices snapshots dict
+   * @param priceRows    Preis-Historie fuer den Ticker (aus Supabase)
+   * @param currentPrice aktueller Kurs (letzter close)
+   */
+  function renderCryptoDivergence(elementId, ticker, assetMarkets, latestPrices, priceRows, currentPrice) {
+    var today = new Date();
+    var histData = collectYearEndReturns(priceRows, today);
+
+    var rows = assetMarkets.map(function(m) {
+      var match = /^(btc|eth)-above-(\d+)k-2026$/.exec(m.slug);
+      if (!match) return null;
+      var targetK = parseInt(match[2], 10);
+      var targetPrice = targetK * 1000;
+      var requiredRet = currentPrice > 0 ? (targetPrice / currentPrice - 1) : null;
+      var priorProb = requiredRet != null ? empiricalAboveProbability(histData.samples, requiredRet) : null;
+
+      var snap = latestPrices[m.condition_id];
+      var marketProb = snap ? (snap.yes_price || 0) : 0;
+
+      return {
+        target: '$' + targetK + 'k',
+        requiredRet: requiredRet,
+        marketProb: marketProb,
+        priorProb: priorProb
+      };
+    }).filter(function(r) { return r; }).sort(function(a, b) {
+      return parseInt(a.target.replace(/\D/g, ''), 10) - parseInt(b.target.replace(/\D/g, ''), 10);
+    });
+
+    var tbody = rows.map(function(r) {
+      var mkt = (r.marketProb * 100).toFixed(1) + '%';
+      var pri = r.priorProb != null ? (r.priorProb * 100).toFixed(1) + '%' : '—';
+      var reqRet = r.requiredRet != null ? ((r.requiredRet >= 0 ? '+' : '') + (r.requiredRet * 100).toFixed(1) + '%') : '—';
+
+      var diverge = null, verdict = '—', cls = '';
+      if (r.priorProb != null) {
+        diverge = (r.priorProb - r.marketProb) * 100;
+        if (Math.abs(diverge) < 3) { verdict = 'Im Einklang'; cls = ''; }
+        else if (diverge > 0) { verdict = 'Saisonal > Markt ·  Markt unterschaetzt'; cls = 'pos'; }
+        else { verdict = 'Markt > Saisonal ·  Markt ueberschaetzt'; cls = 'neg'; }
+      }
+      var divStr = diverge == null ? '—' : ((diverge >= 0 ? '+' : '') + diverge.toFixed(1) + 'pp');
+
+      return '<tr>' +
+             '<td>' + r.target + '</td>' +
+             '<td style="text-align:right">' + reqRet + '</td>' +
+             '<td style="text-align:right;font-weight:700;color:#fff">' + mkt + '</td>' +
+             '<td style="text-align:right">' + pri + '</td>' +
+             '<td style="text-align:right" class="' + cls + '">' + divStr + '</td>' +
+             '<td class="' + cls + '" style="font-size:.75rem">' + verdict + '</td>' +
+             '</tr>';
+    }).join('');
+
+    var label = (ticker === 'BTC-USD' ? 'Bitcoin' : 'Ethereum');
+    var html =
+      '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">' +
+        '<b style="color:var(--accent)">' + label + '</b> — Historie: ' + histData.n + ' Jahre Samples · aktueller Kurs: $' +
+        (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
+        ' · Saisonal-Prior = % der Vergangenheit mit Year-End ≥ benötigter Return ab heutigem Tag.' +
+      '</div>' +
+      '<table class="perf-table" data-no-sort="1">' +
+      '<thead><tr>' +
+        '<th>Ziel 2026</th>' +
+        '<th style="text-align:right">Benötigt</th>' +
+        '<th style="text-align:right">Markt YES</th>' +
+        '<th style="text-align:right">Saisonal-Prior</th>' +
+        '<th style="text-align:right">Divergenz</th>' +
+        '<th>Bewertung</th>' +
+      '</tr></thead><tbody>' + tbody + '</tbody></table>';
+    var el = document.getElementById(elementId);
+    if (el) el.innerHTML = html;
+  }
+
+
   // ── Renderer: Tabelle aller Markets ───────────────────────────────────────
 
   function renderMarketsTable(elementId, markets, latestPrices, history7d) {
@@ -413,10 +557,13 @@ SA.polymarket = (function() {
     loadLatestPrices: loadLatestPrices,
     loadHistory: loadHistory,
     computeFedDistribution: computeFedDistribution,
+    collectYearEndReturns: collectYearEndReturns,
+    empiricalAboveProbability: empiricalAboveProbability,
     renderFedDistChart: renderFedDistChart,
     renderFedTrendChart: renderFedTrendChart,
     renderRiskGauges: renderRiskGauges,
     renderCryptoLadder: renderCryptoLadder,
+    renderCryptoDivergence: renderCryptoDivergence,
     renderHistoryMulti: renderHistoryMulti,
     renderMarketsTable: renderMarketsTable
   };
