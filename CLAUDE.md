@@ -243,13 +243,13 @@ KI-Score wieder 4 Sub-Scores (à 2.5), Scanner ohne Forecast/Sais.Stärke-Spalte
 User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
 ### 🔴 SOFORT (User-Action, klein)
-- [ ] **OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — aktuell "Testing"-Modus, nur Test-User können einloggen
-- [ ] **OAuth Client-Secret rotieren** — das in dieser Session im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
+- [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
+- [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
 - [ ] GSC Coverage-Check nach 1-2 Wochen: 329 → < 30 (410-Gone-Cleanup der /analyse/*)
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
-- [ ] **Brier-Score** auf historisch resolved Polymarket-Markets (Sample-Set aufbauen — unsere 26 resolven erst Ende 2026/Anfang 2027)
+- [x] **2026-04-18 Brier-Score-Pipeline** — separate Tabellen `polymarket_resolved_*`, Scraper für ~1500 resolved markets (6 Tags, 2024+), `shared/brier_score.py` mit Brier + Kalibrierungs-Kurve + Zeit-Buckets, Precompute als `brier_stats.json`, UI-Sektion auf `/polymarket`. Details in `docs/POLYMARKET.md#brier-score`.
 - [x] **2026-04-18 Fed/Macro-Divergenz** — historische Basisraten (Cuts-Histogramm 2000-2024 aus `FED_RATE_CHANGES`, Hike-Rate, static NBER/BEA-Basisraten für Recession/GDP/Emergency-Cut, `shared/weekly_report.py::top_fed_macro_divergences`)
 - [x] **2026-04-18 Newsletter-Sektion** mit Top-Divergenzen der Woche (Crypto BTC/ETH, `shared/weekly_report.py::top_polymarket_divergences`)
 - [x] **2026-04-18 Intraday-Refresh-Tier** nahe FOMC (±2d Fenster, `polymarket_intraday.yml` + `--near-fomc-only` Flag)

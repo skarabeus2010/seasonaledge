@@ -609,3 +609,41 @@ def fetch_polymarket_price_history(
         .execute()
         .data
     )
+
+
+# ── Polymarket Resolved (fuer Brier-Score) ────────
+
+def upsert_polymarket_resolved_markets(records: list[dict]):
+    """Resolved-Markt-Metadata upserten (Katalog historischer Aufloesungen)."""
+    if not records:
+        return
+    batch_size = 500
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("polymarket_resolved_markets").upsert(
+            batch, on_conflict="condition_id"
+        ).execute()
+
+
+def upsert_polymarket_resolved_prices(records: list[dict]):
+    """Resolved-Preis-Zeitreihe upserten (CLOB prices-history Snapshots)."""
+    if not records:
+        return
+    batch_size = 1000
+    client = get_client()
+    for i in range(0, len(records), batch_size):
+        batch = records[i:i + batch_size]
+        client.table("polymarket_resolved_prices").upsert(
+            batch, on_conflict="condition_id,ts"
+        ).execute()
+
+
+def fetch_polymarket_resolved_markets(
+    category: str | None = None,
+) -> list[dict]:
+    """Resolved-Markt-Katalog laden (fuer Precompute/Analyse)."""
+    q = get_client().table("polymarket_resolved_markets").select("*")
+    if category:
+        q = q.eq("category", category)
+    return q.order("resolution_date", desc=True).execute().data or []

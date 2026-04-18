@@ -204,6 +204,54 @@
         <b>Liquiditaet</b> = Volumen am aktiven Orderbook in USDC. <b>Markets &lt; $20k Liquiditaet</b> sind illiquide und ihre Preise k&ouml;nnen verzerrt sein &mdash; bevorzuge liquidere Markets f&uuml;r Signale. Klick auf Spaltenkopf zum Sortieren.
       </p>
 
+      <!-- ── Brier-Score / Kalibrierung ── -->
+      <h2 class="section-hdr" id="brier-section"><b>Kalibrierung</b> &mdash; Wie zuverl&auml;ssig sind Polymarket-Wahrscheinlichkeiten?</h2>
+      <p class="section-caption">
+        Brier-Score-Analyse auf historisch aufgel&ouml;sten Markets. Wenn Polymarket 70 % sagt, tritt das Ereignis dann tats&auml;chlich in ~70 % der F&auml;lle ein?
+      </p>
+
+      <div id="brier-loading" style="color:var(--muted);font-size:.8125rem;padding:1rem 0">Lade Brier-Statistiken ...</div>
+      <div id="brier-error" style="display:none;color:var(--red);font-size:.8125rem;padding:1rem 0"></div>
+
+      <div id="brier-content" style="display:none">
+        <!-- 1. Headline-KPIs -->
+        <div class="kpi-row" id="brier-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-bottom:1rem"></div>
+
+        <!-- 2. Erklaerung -->
+        <details open style="margin-bottom:1.5rem;background:rgba(232,168,32,.04);border:1px solid rgba(232,168,32,.12);border-radius:10px">
+          <summary style="padding:.75rem 1rem;cursor:pointer;font-weight:600;color:var(--accent)">Was ist der Brier-Score?</summary>
+          <div class="content" style="padding:0 1rem 1rem;font-size:.8125rem;color:var(--dim);line-height:1.65">
+            <p>Der <b>Brier-Score</b> misst wie gut ein Prognostiker kalibriert ist &mdash; also ob seine prozentualen Wahrscheinlichkeits-Aussagen &uuml;ber viele F&auml;lle hinweg der tats&auml;chlichen Trefferrate entsprechen.</p>
+            <p><b>Formel:</b> <code>Brier = Mittel((p &minus; o)<sup>2</sup>)</code>. <code>p</code> ist die prognostizierte Wahrscheinlichkeit (0&minus;1), <code>o</code> das tats&auml;chliche Outcome (1 = eingetreten, 0 = nicht). Quadrierte Abweichung, gemittelt &uuml;ber alle Prognosen.</p>
+            <p><b>Referenzwerte:</b></p>
+            <ul style="margin:.5rem 0 .5rem 1.2rem">
+              <li><b style="color:#30e878">0.00</b> &mdash; perfekter Forecaster (immer 100 % bei YES, 0 % bei NO).</li>
+              <li><b style="color:var(--accent)">0.15&minus;0.20</b> &mdash; typisch f&uuml;r gut kalibrierte liquide Prediction-Markets.</li>
+              <li><b>0.25</b> &mdash; "Immer 50&minus;50"-Baseline, null Informationsgewinn.</li>
+              <li><b style="color:#ff4040">0.50+</b> &mdash; systematisch falsch (&uuml;bersch&auml;tzt seltene Events).</li>
+            </ul>
+            <p><b>Wichtige Nuance:</b> Ein niedriger Brier-Score bedeutet nicht "meistens richtig" &mdash; er bedeutet "die angegebene Wahrscheinlichkeit trifft im Durchschnitt zu". Wenn der Markt konsequent 30 % sagt und das Ereignis in 30 % der F&auml;lle eintritt, ist der Score gut &mdash; obwohl der Markt technisch "meistens falsch" mit seinem Haupt-Outcome lag.</p>
+            <p><b>Basisrate-Baseline:</b> Als fairer Vergleichspunkt nutzen wir <code>p&middot;(1&minus;p)</code> mit <code>p</code> = Anteil der tats&auml;chlich eingetretenen Events. Ein informationsloser Forecaster erreicht diesen Wert durch konstantes Raten der Basisrate. Polymarket muss diesen Wert deutlich unterbieten um als "informativ" zu gelten.</p>
+          </div>
+        </details>
+
+        <!-- 3. Kalibrierungs-Kurve -->
+        <h3 style="font-size:.875rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:1.5rem 0 .5rem">Kalibrierungs-Kurve</h3>
+        <div class="chart-box"><div id="chart-calibration"></div></div>
+        <p class="box-info" style="margin-bottom:1rem"><b>So liest du die Kurve:</b> X = prognostizierte Wahrscheinlichkeit (gebucketed in 10 F&auml;cher). Y = tats&auml;chlich beobachtete Trefferrate in diesem Bucket. Die graue Diagonale ist der perfekte Forecaster. Punkte <b>&uuml;ber</b> der Diagonale: Markt untersch&auml;tzt &mdash; das Event tritt &ouml;fter ein als angegeben. Punkte <b>unter</b>: Markt &uuml;bersch&auml;tzt.</p>
+
+        <!-- 4. Pro Kategorie -->
+        <h3 style="font-size:.875rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:1.5rem 0 .5rem">Pro Kategorie</h3>
+        <div id="brier-categories"></div>
+
+        <!-- 5. Zeit zur Resolution -->
+        <h3 style="font-size:.875rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:1.5rem 0 .5rem">Kalibrierung je n&auml;her zur Resolution</h3>
+        <div class="chart-box"><div id="chart-time-buckets"></div></div>
+        <p class="box-info"><b>Hypothese:</b> Je n&auml;her der Resolution-Termin r&uuml;ckt, desto besser sollte der Brier-Score werden &mdash; mehr Information verf&uuml;gbar, weniger Unsicherheit. Ein flacher Verlauf bedeutet: Polymarket kennt das Outcome schon Monate vorher.</p>
+
+        <p style="font-size:.7rem;color:var(--muted);margin-top:1.5rem"><span id="brier-meta">Daten-Stand wird geladen ...</span></p>
+      </div>
+
       <!-- ── Methodik ── -->
       <details style="margin-top:2rem">
         <summary>Methodik &amp; Datenquelle</summary>
@@ -492,12 +540,182 @@
       });
     }
 
+    // ── Brier-Score Laden & Rendern ──
+    function loadBrierStats() {
+      var loading = document.getElementById('brier-loading');
+      var err = document.getElementById('brier-error');
+      var content = document.getElementById('brier-content');
+      if (!loading || !content) return;
+
+      fetch('/landing/data/brier_stats.json', { cache: 'no-store' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(stats) {
+          if (stats.error === 'no_data') {
+            loading.style.display = 'none';
+            err.style.display = 'block';
+            err.textContent = 'Noch keine Brier-Daten verfügbar. Scraper muss zuerst laufen.';
+            return;
+          }
+          loading.style.display = 'none';
+          content.style.display = 'block';
+          renderBrierKpis(stats.overall);
+          renderCalibrationChart(stats.calibration);
+          renderCategoryTable(stats.by_category);
+          renderTimeBucketsChart(stats.time_to_resolution);
+          renderBrierMeta(stats.meta);
+        })
+        .catch(function(e) {
+          console.warn('[brier] load failed:', e);
+          loading.style.display = 'none';
+          err.style.display = 'block';
+          err.textContent = 'Brier-Statistiken konnten nicht geladen werden.';
+        });
+    }
+
+    function renderBrierKpis(o) {
+      var delta = (o.baseline_brier - o.brier);
+      var verdict = delta > 0.02 ? 'informativ' : (delta > 0 ? 'schwach informativ' : 'nicht besser als Basisrate');
+      var verdictColor = delta > 0.02 ? '#30e878' : (delta > 0 ? 'var(--accent)' : '#ff4040');
+
+      var html = [
+        ['Brier-Score', o.brier.toFixed(3), 'Ø (p - o)²'],
+        ['vs. Basisrate', (delta >= 0 ? '−' : '+') + Math.abs(delta).toFixed(3), 'Abstand (niedriger = besser)'],
+        ['vs. 50-50', (o.random_50_50_brier - o.brier).toFixed(3), 'klassische Referenz 0.25'],
+        ['Basisrate YES', (o.base_rate * 100).toFixed(1) + '%', 'Anteil der YES-Resolutions']
+      ].map(function(k) {
+        return '<div class="kpi"><span class="kpi-label">' + k[0] + '</span>' +
+               '<span class="kpi-value">' + k[1] + '</span>' +
+               '<span style="font-size:.65rem;color:var(--muted);margin-top:.2rem">' + k[2] + '</span></div>';
+      }).join('');
+      html += '<div class="kpi" style="background:rgba(232,168,32,.08);border-color:var(--accent)">' +
+              '<span class="kpi-label">Einstufung</span>' +
+              '<span class="kpi-value" style="color:' + verdictColor + ';font-size:.9rem">' + verdict + '</span>' +
+              '</div>';
+      document.getElementById('brier-kpis').innerHTML = html;
+    }
+
+    function renderCalibrationChart(curve) {
+      var valid = curve.filter(function(b) { return b.count > 0; });
+      var scatterData = valid.map(function(b) { return [b.avg_prob * 100, b.observed_freq * 100]; });
+      var labels = valid.map(function(b) { return b.count; });
+
+      var cfg = {
+        series: [
+          { name: 'Beobachtet', type: 'scatter', data: scatterData },
+          { name: 'Perfekt kalibriert', type: 'line', data: [[0, 0], [100, 100]] }
+        ],
+        chart: Object.assign({ type: 'line', height: 360, toolbar: { show: false } }, SA.chartTheme.chart),
+        colors: ['#e8a820', 'rgba(168,152,120,.4)'],
+        stroke: { width: [0, 2], dashArray: [0, 5] },
+        markers: { size: [8, 0], colors: ['#e8a820'], strokeColors: '#000', strokeWidth: 2 },
+        grid: SA.chartTheme.grid,
+        xaxis: Object.assign({
+          type: 'numeric', min: 0, max: 100,
+          title: { text: 'Prognostizierte Wahrscheinlichkeit (%)', style: { color: '#a89878', fontSize: '11px' } }
+        }, SA.chartTheme.xaxis, { labels: { style: { colors: '#a89878' }, formatter: function(v) { return Math.round(v) + '%'; } } }),
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          min: 0, max: 100,
+          title: { text: 'Beobachtete Trefferrate (%)', style: { color: '#a89878', fontSize: '11px' } },
+          labels: { style: { colors: '#a89878' }, formatter: function(v) { return Math.round(v) + '%'; } }
+        }),
+        tooltip: {
+          theme: 'dark',
+          custom: function(o) {
+            var i = o.dataPointIndex;
+            var s = o.seriesIndex;
+            if (s === 1) return '<div style="padding:.4rem .6rem">Perfekte Linie</div>';
+            var p = scatterData[i];
+            var n = labels[i];
+            return '<div style="padding:.4rem .6rem;font-size:.75rem">' +
+                   'Prognose: <b>' + p[0].toFixed(1) + '%</b><br>' +
+                   'Beobachtet: <b>' + p[1].toFixed(1) + '%</b><br>' +
+                   'n=' + n + ' Forecasts</div>';
+          }
+        },
+        legend: { show: true, position: 'top', horizontalAlign: 'right', labels: { colors: '#a89878' }, fontSize: '11px' }
+      };
+      var el = document.getElementById('chart-calibration');
+      if (el) new ApexCharts(el, cfg).render();
+    }
+
+    function renderCategoryTable(cats) {
+      if (!cats || !cats.length) { document.getElementById('brier-categories').innerHTML = '<p style="color:var(--muted);font-size:.75rem">Keine Daten</p>'; return; }
+      var rows = cats.map(function(c) {
+        var delta = (c.baseline || 0) - c.brier;
+        var deltaColor = delta > 0.02 ? '#30e878' : (delta > 0 ? 'var(--accent)' : '#ff4040');
+        var deltaStr = (delta >= 0 ? '−' : '+') + Math.abs(delta).toFixed(3);
+        return '<tr>' +
+               '<td><b>' + c.category + '</b></td>' +
+               '<td class="num">' + c.markets + '</td>' +
+               '<td class="num">' + c.forecasts + '</td>' +
+               '<td class="num">' + c.brier.toFixed(3) + '</td>' +
+               '<td class="num">' + (c.baseline == null ? '—' : c.baseline.toFixed(3)) + '</td>' +
+               '<td class="num" style="color:' + deltaColor + '">' + deltaStr + '</td>' +
+               '</tr>';
+      }).join('');
+      document.getElementById('brier-categories').innerHTML =
+        '<table class="perf-table" data-no-sort="1"><thead><tr>' +
+        '<th>Kategorie</th><th class="num">Markets</th><th class="num">Forecasts</th>' +
+        '<th class="num">Brier</th><th class="num">Basisrate-Baseline</th><th class="num">Δ</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    function renderTimeBucketsChart(buckets) {
+      var valid = (buckets || []).filter(function(b) { return b.count > 0 && b.brier != null; });
+      if (!valid.length) { document.getElementById('chart-time-buckets').innerHTML = '<p style="color:var(--muted);padding:1rem">Keine Daten</p>'; return; }
+      var cats = valid.map(function(b) { return b.bucket; });
+      var data = valid.map(function(b) { return parseFloat(b.brier.toFixed(3)); });
+      var counts = valid.map(function(b) { return b.count; });
+
+      var cfg = {
+        series: [{ name: 'Brier', data: data }],
+        chart: Object.assign({ type: 'bar', height: 300, toolbar: { show: false } }, SA.chartTheme.chart),
+        colors: ['#e8a820'],
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+        grid: SA.chartTheme.grid,
+        xaxis: Object.assign({ categories: cats, title: { text: 'Abstand zur Resolution', style: { color: '#a89878', fontSize: '11px' } } }, SA.chartTheme.xaxis),
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          min: 0, title: { text: 'Brier-Score', style: { color: '#a89878', fontSize: '11px' } },
+          labels: { style: { colors: '#a89878' }, formatter: function(v) { return v.toFixed(2); } }
+        }),
+        dataLabels: { enabled: true, style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 },
+                      formatter: function(v) { return v.toFixed(3); } },
+        tooltip: {
+          theme: 'dark',
+          y: { formatter: function(v, opts) { return v.toFixed(4) + ' (n=' + counts[opts.dataPointIndex] + ')'; } }
+        },
+        annotations: {
+          yaxis: [{ y: 0.25, borderColor: 'rgba(168,152,120,.4)', strokeDashArray: 4,
+                    label: { text: '50-50 Baseline', style: { color: '#000', background: 'rgba(168,152,120,.7)', fontSize: '10px' } } }]
+        }
+      };
+      var el = document.getElementById('chart-time-buckets');
+      if (el) new ApexCharts(el, cfg).render();
+    }
+
+    function renderBrierMeta(meta) {
+      var mEl = document.getElementById('brier-meta');
+      if (!mEl || !meta) return;
+      var earliest = (meta.date_range && meta.date_range.earliest || '').substr(0, 10);
+      var latest = (meta.date_range && meta.date_range.latest || '').substr(0, 10);
+      var computed = (meta.computed_at || '').substr(0, 10);
+      mEl.textContent = meta.markets_count + ' resolved Markets · ' +
+                        meta.forecasts_count + ' Forecast-Snapshots · ' +
+                        'Resolutions ' + earliest + ' bis ' + latest + ' · ' +
+                        'Berechnet am ' + computed;
+    }
+
     // ── Event-Listener ──
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('sel-category').addEventListener('change', reload);
       document.getElementById('sel-history').addEventListener('change', reload);
       // Kurz warten damit SA.supabase initialisiert ist
       setTimeout(reload, 200);
+      // Brier-Stats async nachladen
+      setTimeout(loadBrierStats, 400);
     });
   })();
   </script>
