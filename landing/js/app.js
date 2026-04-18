@@ -250,6 +250,35 @@ SA.supabase = {
   },
 
   /**
+   * GET mit Offset-Pagination. PostgREST cappt jede Antwort auf max_rows
+   * (default 1000), unabhaengig vom limit-Query-Param. Dieser Helper
+   * paginiert via offset=N bis keine weiteren Rows mehr kommen.
+   *
+   * Die base-Query MUSS ein deterministisches order enthalten, sonst
+   * koennen Zeilen ueber Batches dupliziert/weggelassen werden.
+   *
+   * @param {string} table
+   * @param {string} query - Base-Query ohne offset/limit (order empfohlen)
+   * @param {number} pageSize - Rows pro Batch (<=1000 wegen Server-Limit)
+   * @returns {Promise<Array>}
+   */
+  getAll: function(table, query, pageSize) {
+    var self = this;
+    var PAGE = Math.min(pageSize || 1000, 1000);
+    var results = [];
+    function fetchPage(offset) {
+      var q = (query || '') + (query ? '&' : '') + 'offset=' + offset + '&limit=' + PAGE;
+      return self.get(table, q).then(function(rows) {
+        if (!Array.isArray(rows)) return results;
+        results.push.apply(results, rows);
+        if (rows.length < PAGE) return results;
+        return fetchPage(offset + PAGE);
+      });
+    }
+    return fetchPage(0);
+  },
+
+  /**
    * POST (Insert) an Supabase REST API.
    * @param {string} table - Tabellenname
    * @param {Object} data - Zu speichernde Daten

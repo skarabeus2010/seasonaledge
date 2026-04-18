@@ -44,16 +44,20 @@ SA.polymarket = (function() {
     });
   }
 
-  /** Historie ueber N Tage fuer gegebene condition_ids. */
+  /**
+   * Historie ueber N Tage fuer gegebene condition_ids.
+   * Nutzt getAll() fuer Offset-Pagination — sonst trunkiert PostgREST auf 1000 Rows
+   * und bei 26 Markets + ~200 Snapshots/Market bekommen wir nur die aeltesten Batches.
+   */
   function loadHistory(conditionIds, days) {
     if (!conditionIds || !conditionIds.length) return Promise.resolve([]);
     var since = new Date();
     since.setDate(since.getDate() - (days || 90));
     var sinceIso = since.toISOString();
     var idsParam = conditionIds.join(',');
-    return SA.supabase.get(
+    return SA.supabase.getAll(
       'polymarket_prices',
-      'condition_id=in.(' + idsParam + ')&ts=gte.' + sinceIso + '&order=ts.asc&limit=10000'
+      'condition_id=in.(' + idsParam + ')&ts=gte.' + sinceIso + '&order=ts.asc'
     );
   }
 
