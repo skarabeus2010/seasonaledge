@@ -165,6 +165,7 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         "wochentage":         ("0.9",  "weekly"),
         "monatswechsel":      ("0.9",  "weekly"),
         "zentralbanken":      ("0.9",  "weekly"),
+        "polymarket":         ("0.95", "daily"),
         # Strategien
         "scanner":            ("0.95", "daily"),
         "trifecta":           ("0.9",  "weekly"),
