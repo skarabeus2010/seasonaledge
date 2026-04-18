@@ -23,8 +23,11 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_email TEXT;
-    v_row   RECORD;
+    v_email      TEXT;
+    v_status     TEXT;
+    v_sub_at     TIMESTAMPTZ;
+    v_unsub_at   TIMESTAMPTZ;
+    v_no_emails  BOOLEAN;
 BEGIN
     v_email := LOWER(TRIM(COALESCE(auth.jwt() ->> 'email', '')));
     IF v_email = '' THEN
@@ -32,7 +35,7 @@ BEGIN
     END IF;
 
     SELECT status, subscribed_at, unsubscribed_at, no_emails
-    INTO v_row
+    INTO v_status, v_sub_at, v_unsub_at, v_no_emails
     FROM subscribers
     WHERE email = v_email
     LIMIT 1;
@@ -49,10 +52,10 @@ BEGIN
     RETURN json_build_object(
         'ok', true,
         'email', v_email,
-        'subscribed', (v_row.status = 'active' AND NOT COALESCE(v_row.no_emails, false)),
-        'status', v_row.status,
-        'subscribed_at', v_row.subscribed_at,
-        'unsubscribed_at', v_row.unsubscribed_at
+        'subscribed', (v_status = 'active' AND NOT COALESCE(v_no_emails, false)),
+        'status', v_status,
+        'subscribed_at', v_sub_at,
+        'unsubscribed_at', v_unsub_at
     );
 END;
 $$;
