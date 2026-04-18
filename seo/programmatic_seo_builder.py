@@ -246,29 +246,10 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
     except ImportError:
         print("  [WARN] PyYAML fehlt, Blog-Posts werden nicht in sitemap aufgenommen")
 
-    # SEO-Landingpages: 2026-04-10 DEAKTIVIERT.
-    # Begruendung: Google hat 72 dieser Pages als "Gefunden -- zurzeit nicht
-    # indexiert" markiert (thin content, templated, fake KI-Prognose-Dummies).
-    # Pages tragen noindex-Meta (siehe seo_template.html) und kommen erst
-    # zurueck wenn sie echten Content haben (Monats-Perf, SVG-Chart, Dekaden,
-    # etc.). Aktiv lassen: generierte HTML-Files existieren weiterhin und sind
-    # direkt aufrufbar, werden aber von Google nicht mehr indexiert (noindex)
-    # und nicht mehr via Sitemap beworben.
-    #
-    # ENABLE_PROGRAMMATIC_IN_SITEMAP auf True setzen wenn Pages aufgewertet wurden.
-    ENABLE_PROGRAMMATIC_IN_SITEMAP = False
-    if ENABLE_PROGRAMMATIC_IN_SITEMAP:
-        for titel in titel_daten:
-            urls.append(
-                f'  <url>\n'
-                f'    <loc>{BASE_URL}/analyse/{titel["slug"]}</loc>\n'
-                f'    <lastmod>{heute_iso}</lastmod>\n'
-                f'    <changefreq>weekly</changefreq>\n'
-                f'    <priority>0.7</priority>\n'
-                f'  </url>'
-            )
-    else:
-        print(f"  [INFO] {len(titel_daten)} programmatische /analyse/ Pages NICHT in Sitemap (noindex aktiv)")
+    # SEO-Landingpages /analyse/*: 2026-04-18 ENDGUELTIG ENTFERNT.
+    # Ursprung: 2026-04-10 auf noindex gesetzt (Thin-Content, fake KI-Prognose-Dummies).
+    # 2026-04-18: komplett beerdigt. Nginx liefert 410 Gone, Builder erzeugt keine
+    # Pages mehr. `titel_daten` wird nur noch fuer den Cleanup-Schritt gebraucht.
 
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -553,46 +534,49 @@ def build_disclaimer(output_ordner: str):
 # ── Hauptfunktion ────────────────────────────────────────────────────────────
 
 def build_seo_pages():
-    """Generiert alle SEO-Assets: Landingpages, Sitemap, robots.txt, Disclaimer."""
+    """
+    Generiert SEO-Assets: Sitemap, robots.txt, Disclaimer.
+
+    HINWEIS: Die 94 programmatischen /analyse/{slug}.html Landingpages wurden
+    am 2026-04-18 endgueltig entfernt (Thin-Content-Experiment beerdigt).
+    Nginx liefert fuer /analyse/* ein 410 Gone aus (siehe deploy/nginx.conf).
+    Dieser Build-Schritt loescht nun existierende /analyse/*.html-Dateien
+    aus seo/output/ statt sie neu zu erzeugen.
+    """
 
     output_ordner = os.path.join(_skript_ordner, "output")
     os.makedirs(output_ordner, exist_ok=True)
 
-    # Jinja2 Template laden
-    env = Environment(
-        loader=FileSystemLoader(_skript_ordner),
-        autoescape=True,
-    )
-    template = env.get_template("seo_template.html")
-
-    # Titel-Daten aus SYMBOLS generieren
+    # Titel-Daten weiterhin laden (wird fuer sitemap-Erzeugung + Slug-Liste gebraucht)
     titel_daten = build_titel_daten()
-
-    heute = datetime.now().strftime("%d.%m.%Y")
 
     print(f"\n{'='*60}")
     print(f"  SeasonAlpha — Programmatic SEO Builder")
-    print(f"  {len(titel_daten)} Ticker aus SYMBOLS-Datenbank")
+    print(f"  {len(titel_daten)} Ticker (Sitemap/Robots), keine Landingpages mehr")
     print(f"{'='*60}\n")
 
-    # ── 1. HTML-Landingpages ──────────────────────────────────────────────
-
-    for i, titel in enumerate(titel_daten, 1):
-        html_output = template.render(
-            **titel,
-            datum=heute,
-            ki_count=KI_COUNT,
-        )
-
-        dateiname = f'{titel["slug"]}.html'
-        dateipfad = os.path.join(output_ordner, dateiname)
-
-        with open(dateipfad, "w", encoding="utf-8") as f:
-            f.write(html_output)
-
-        print(f"  [{i:3d}/{len(titel_daten)}] {titel['name']:25s} -> {dateiname}")
+    # ── 1. Cleanup: alte /analyse/{slug}.html Files loeschen ─────────────
+    # Diese wurden bis 2026-04-18 automatisch erzeugt. Jetzt unerwuenscht.
+    # Zu loeschen sind exakt die HTML-Files mit Slugs aus titel_daten.
+    # Alles andere (disclaimer.html, google<hash>.html) bleibt.
+    slugs_to_delete = {f'{t["slug"]}.html' for t in titel_daten}
+    removed = 0
+    for fname in slugs_to_delete:
+        full = os.path.join(output_ordner, fname)
+        if os.path.exists(full):
+            try:
+                os.remove(full)
+                removed += 1
+            except OSError as e:
+                print(f"  [WARN] konnte {fname} nicht loeschen: {e}")
+    if removed:
+        print(f"  [CLEANUP] {removed} alte /analyse/*.html Files aus output/ entfernt")
+    else:
+        print(f"  [CLEANUP] keine alten /analyse/*.html Files gefunden")
 
     # ── 2. Sitemap + robots.txt + Disclaimer ─────────────────────────────
+    # titel_daten wird an build_sitemap uebergeben, landet aber nicht mehr
+    # in der Sitemap (ENABLE_PROGRAMMATIC_IN_SITEMAP = False).
 
     print()
     build_sitemap(titel_daten, output_ordner)
@@ -600,7 +584,7 @@ def build_seo_pages():
     build_disclaimer(output_ordner)
 
     print(f"\n{'='*60}")
-    print(f"  Fertig! {len(titel_daten)} Seiten + sitemap.xml + robots.txt + disclaimer.html")
+    print(f"  Fertig! sitemap.xml + robots.txt + disclaimer.html")
     print(f"  Ausgabe: {output_ordner}")
     print(f"{'='*60}\n")
 

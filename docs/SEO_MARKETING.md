@@ -22,7 +22,7 @@
 | **Bing Webmaster Tools** | ✅ Setup + 10 URLs manuell submitted | 2026-04-10 |
 | **IndexNow** | ✅ Key am Host-Root + 26 Core-URLs gepingt (HTTP 200) + Auto-Ping im Deploy-Step | 2026-04-10 |
 | **www → non-www Redirect** | ✅ 301 Canonicalization für HTTP + HTTPS live | 2026-04-10 |
-| **Programmatische /analyse/* Pages** | ⚠️ Auf noindex, aus Sitemap raus (Thin-Content, Weg A). Re-Aktivierung via Weg B wenn echter Content (Monats-Perf-Tabelle aus Supabase, SVG-Chart, Dekaden-Split) | 2026-04-10 |
+| **Programmatische /analyse/* Pages** | ✅ **Endgültig entfernt am 2026-04-18**. Nginx liefert 410 Gone, Builder erzeugt keine Pages mehr und löscht bestehende HTML-Files beim Build (Cleanup-Schritt). Google wirft die ~270 URLs innerhalb von 1–2 Wochen aus dem Index. | 2026-04-18 |
 | **Google Search Console** | 🟠 Sitemap neu eingereicht, 10+ URLs manuell (Tageslimit erreicht), Rest morgen | 2026-04-10 |
 | **Analytics** | 🟠 Scaffold in `landing/components/analytics.html`, bewusst nicht aktiviert | offen |
 | **Rich Results Validierung** | 🟠 Nach erstem Crawl (1-2 Wochen) prüfen | offen |
