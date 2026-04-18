@@ -101,14 +101,6 @@
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
-    .bento-polymarket{grid-column:span 12;min-height:240px}
-    .poly-dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-    @media (max-width:900px){.poly-dash-grid{grid-template-columns:1fr}}
-    #poly-dash-kpi{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem}
-    #poly-dash-risk{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-    #poly-dash-kpi .kpi,#poly-dash-risk .kpi{padding:.55rem .65rem}
-    #poly-dash-kpi .kpi-value,#poly-dash-risk .kpi-value{font-size:1rem}
-    #poly-dash-chart{min-height:160px}
 
     @media (max-width:1100px){
       .bento-ki{grid-column:span 6}
@@ -283,24 +275,6 @@
         <div class="bento-card bento-trifecta" id="card-trifecta">
           <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
           <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
-        </div>
-
-        <!-- Polymarket Fed-Path + Risiko (12 cols, unter Hero-Zeile) -->
-        <div class="bento-card bento-polymarket" id="card-polymarket">
-          <div class="ttl"><span class="ico">📊</span> Polymarket &mdash; Fed-Path 2026 &amp; Markt-Risiko <a href="/polymarket" style="color:var(--accent);font-size:.7rem;font-weight:600;text-transform:none;letter-spacing:0;margin-left:.5rem;text-decoration:none">&rarr; Details</a></div>
-          <div class="poly-dash-grid">
-            <div>
-              <div class="kpi-row" id="poly-dash-kpi"></div>
-              <div id="poly-dash-chart"></div>
-            </div>
-            <div>
-              <div style="font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:.5rem">Risiko-Ampel</div>
-              <div class="kpi-row" id="poly-dash-risk"></div>
-              <p style="font-size:.75rem;color:var(--muted);margin-top:.65rem;line-height:1.5">
-                Was der Prediction-Market einpreist &mdash; als zweite Meinung neben der Saisonalit&auml;t.
-              </p>
-            </div>
-          </div>
         </div>
 
         <!-- Saisonaler Jahres-Chart (6 cols) -->
@@ -2479,73 +2453,6 @@
     fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
   }
   </script>
-  <!-- Polymarket Dashboard-Card -->
-  <script src="/landing/js/polymarket.js"></script>
-  <script>
-  (function() {
-    'use strict';
-    function kpi(label, value, cls) {
-      return '<div class="kpi"><span class="kpi-label">' + label + '</span>' +
-             '<span class="kpi-value ' + (cls || '') + '">' + value + '</span></div>';
-    }
-    function render() {
-      if (!window.SA || !SA.polymarket || !SA.supabase) {
-        setTimeout(render, 200);
-        return;
-      }
-      SA.polymarket.loadCatalog().then(function(catalog) {
-        var all = (catalog || []);
-        if (!all.length) { document.getElementById('card-polymarket').style.display = 'none'; return; }
-        var cids = all.map(function(m) { return m.condition_id; });
-        return SA.polymarket.loadLatestPrices(cids).then(function(latest) {
-          // Fed-Path-Stats
-          var fedMkts = all.filter(function(m) { return /^fed-cuts-2026-/.test(m.slug); });
-          var stats = SA.polymarket.computeFedDistribution(fedMkts, latest);
-
-          // Fed-KPIs (kompakt)
-          var bySlug = {};
-          all.forEach(function(m) { bySlug[m.slug] = m; });
-          function getYes(slug) {
-            var m = bySlug[slug];
-            if (!m) return null;
-            var s = latest[m.condition_id];
-            return s ? (s.yes_price || 0) : null;
-          }
-
-          document.getElementById('poly-dash-kpi').innerHTML =
-            kpi('E[Fed Cuts 2026]', stats.expectedCuts.toFixed(2) + ' ×', '') +
-            kpi('E[Total]', stats.expectedBps.toFixed(0) + ' bps', '');
-
-          // Risiko-Ampel
-          var rec = getYes('us-recession-2026');
-          var hike = getYes('fed-hike-2026');
-          var gdp = getYes('us-gdp-negative-2026');
-          var btc150 = getYes('btc-above-150k-2026');
-
-          function pct(p) { return p == null ? '—' : (p * 100).toFixed(1) + '%'; }
-          function sevCls(p, thr) { return p == null ? '' : (p >= thr ? 'red' : (p >= thr * 0.6 ? '' : 'green')); }
-
-          document.getElementById('poly-dash-risk').innerHTML =
-            kpi('Recession 2026', pct(rec),    sevCls(rec, 0.35)) +
-            kpi('Fed Hike 2026',  pct(hike),   sevCls(hike, 0.20)) +
-            kpi('Neg. GDP 2026',  pct(gdp),    sevCls(gdp, 0.15)) +
-            kpi('BTC ≥ $150k',    pct(btc150), btc150 != null && btc150 >= 0.3 ? 'green' : '');
-
-          // Mini-Chart Fed-Path-Verteilung
-          SA.polymarket.renderFedDistChart('poly-dash-chart', stats);
-        });
-      }).catch(function(err) {
-        console.error('Polymarket dashboard card:', err);
-        var el = document.getElementById('card-polymarket');
-        if (el) el.style.display = 'none';
-      });
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(render, 400);
-    });
-  })();
-  </script>
-
   <script src="/landing/js/tour-config.js?v=20260409"></script>
   <script src="/landing/js/tour.js?v=20260409"></script>
 </body>

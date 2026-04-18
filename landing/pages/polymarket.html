@@ -107,7 +107,17 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Polymarket Prognosen</b> &mdash; Fed-Path, Crypto &amp; Risiko</h1>
-      <p class="page-caption">Prediction-Market-Daten als zweites Koordinatensystem neben Saisonalitaet. Live via Polymarket Gamma + CLOB API.</p>
+      <p class="page-caption">Prediction-Market-Daten als zweites Koordinatensystem neben Saisonalit&auml;t. Live via Polymarket Gamma + CLOB API.</p>
+
+      <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
+        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
+        <b>Polymarket</b> ist der gr&ouml;sste Prediction-Market der Welt. Trader setzen dort reales Geld (USDC) auf das Eintreten bestimmter Ereignisse &mdash; Fed-Entscheidungen, Rezession, BTC-Kurssspr&uuml;nge. Der <b>YES-Preis</b> zwischen 0 und 1 entspricht dabei direkt der <b>impliziten Marktwahrscheinlichkeit</b>: 0.34 heisst &laquo;Der Markt sieht 34 % Chance f&uuml;r das Outcome&raquo;.
+        Hier vergleichst du diese kollektiven Markterwartungen mit der historischen <b>Saisonalit&auml;t</b> &mdash; daraus entstehen drei Blickwinkel:
+        1) <b>Fed-Path 2026</b> als Verteilung &uuml;ber 0&ndash;12+ Cuts,
+        2) <b>Risiko-Ampel</b> f&uuml;r Tail-Events (Recession, Hike, Emergency-Cut),
+        3) <b>Crypto-Divergenz</b> zwischen historischem Prior und Marktpreis.
+        <b>Sidebar:</b> Kategorie filtern, Historien-Zeitraum w&auml;hlen, bis zu 10 Markets f&uuml;r den Explorer ausw&auml;hlen.
+      </div>
 
       <!-- Hero-KPIs -->
       <div class="hero-kpi" id="hero-kpi"></div>
@@ -120,12 +130,13 @@
         Erwartungswert (gruene Linie) ergibt sich aus wahrscheinlichkeitsgewichteter Summe.
       </p>
       <div class="chart-box"><div id="chart-fed-dist"></div></div>
+      <p class="box-info"><b>So liest du den Chart:</b> jeder Balken ist ein eigener Polymarket-Market &mdash; z.B. &laquo;Wird die Fed 2026 exakt 3x senken?&raquo;. Die H&ouml;he zeigt wie viel Wahrscheinlichkeit der Markt diesem Outcome gibt. Der <b>goldene Balken</b> markiert das wahrscheinlichste Szenario. Die <b>gr&uuml;ne gestrichelte Linie</b> ist der Erwartungswert &mdash; probabilit&auml;tsgewichteter Durchschnitt aller Outcomes. Beispiel: wenn sie bei 1.3 steht, rechnet der Markt im Schnitt mit etwa 1.3 Cuts = ca. 33 Basispunkten Gesamtreduktion 2026.</p>
 
       <details open style="margin-top:1rem">
         <summary>Fed-Cuts-Verteilung im Zeitverlauf</summary>
         <div class="content">
-          <p class="box-info">Wie sich die Markterwartungen pro Outcome verschoben haben. Steile Linien = schnelle Umbewertung (oft nach FOMC-Meetings oder CPI-Prints).</p>
           <div class="chart-box" style="margin-top:.5rem"><div id="chart-fed-trend"></div></div>
+          <p class="box-info"><b>So liest du den Chart:</b> jede Linie zeigt die Wahrscheinlichkeits-Historie eines Outcomes. <b>Steile Linien</b> = schnelle Umbewertung des Marktes, typischerweise nach FOMC-Meetings oder CPI-Prints. Wenn &laquo;0 Cuts&raquo; steigt w&auml;hrend &laquo;2 Cuts&raquo; f&auml;llt, preist der Markt einen Hawkish-Shift ein. Umgekehrt = Dovish-Shift.</p>
         </div>
       </details>
 
@@ -135,11 +146,13 @@
         Vier binaere Markets fuer Szenarien ausserhalb des Fed-Basispfads. Rot: historisch erhoehte Wahrscheinlichkeit. Gruen: Markt sieht das als unwahrscheinlich.
       </p>
       <div class="kpi-row" id="risk-gauges" style="grid-template-columns:repeat(4,1fr);display:grid;gap:.75rem"></div>
+      <p class="box-info"><b>So liest du die Ampel:</b> jede Kachel zeigt einen binaeren Markt (JA/NEIN). Der Prozentwert ist die aktuelle implizite Wahrscheinlichkeit fuer das <b>JA</b>-Outcome. <b>Gruen</b> = ungew&ouml;hnlich niedrig, <b>neutral</b> = Standard-Niveau, <b>rot</b> = deutlich erh&ouml;ht. Schwellen: Recession &gt; 35 % (rot), Fed-Hike &gt; 20 %, Emergency-Cut &gt; 15 %, Neg. GDP &gt; 15 %.</p>
 
       <details open style="margin-top:1rem">
         <summary>Risiko-Markets im Zeitverlauf</summary>
         <div class="content">
           <div class="chart-box" style="margin-top:.5rem"><div id="chart-risk-history"></div></div>
+          <p class="box-info"><b>So liest du den Chart:</b> Zeitverlauf der vier Risiko-Markets. Korrelierte Bewegungen (alle steigen zusammen) signalisieren ein echtes Regime-Signal. Divergenzen (z.B. Recession steigt, aber GDP-neg. bleibt flach) deuten auf market-spezifische News statt genereller Makro-Sorge.</p>
         </div>
       </details>
 
@@ -152,6 +165,7 @@
         <div class="chart-box"><div id="chart-btc-ladder"></div></div>
         <div class="chart-box"><div id="chart-eth-ladder"></div></div>
       </div>
+      <p class="box-info"><b>So liest du die Leiter:</b> jeder horizontale Balken ist ein Polymarket fuer &laquo;wird der Kurs bis Ende 2026 mindestens X erreichen?&raquo;. Je h&ouml;her das Kursziel, desto geringer die Wahrscheinlichkeit. Der Balken zeigt direkt die implizite Marktwahrscheinlichkeit in Prozent. Typischer Lesefall: <b>BTC &ge; $100k: 40 %</b> heisst der Markt sieht 40 % Chance, dass Bitcoin das Jahr &uuml;ber $100k schliesst.</p>
 
       <!-- ── Divergenz-Analyse ── -->
       <h2 class="section-hdr"><b>Divergenz-Analyse</b> &mdash; Saisonalit&auml;t vs. Markt</h2>
@@ -163,6 +177,12 @@
       </p>
       <div id="divergence-btc" style="margin-bottom:1.5rem"></div>
       <div id="divergence-eth"></div>
+      <p class="box-info"><b>So liest du die Tabelle:</b>
+        <b>Ben&ouml;tigt</b> = prozentualer Return den der aktuelle Kurs noch braucht, um das Ziel bis Jahresende zu erreichen.
+        <b>Markt YES</b> = aktuelle Polymarket-Wahrscheinlichkeit.
+        <b>Saisonal-Prior</b> = Anteil der vergangenen Jahre in denen dieser Return ab heutigem Kalendertag bis Year-End tats&auml;chlich erreicht wurde.
+        <b>Divergenz</b> = Saisonal-Prior &minus; Markt YES in Prozentpunkten. <b style="color:#30e878">Positiv (gr&uuml;n)</b>: Saisonalit&auml;t sagt h&ouml;here Chance als der Markt &mdash; m&ouml;glicher Long-Trade wenn fundamental passt. <b style="color:#ff4040">Negativ (rot)</b>: Markt preist mehr Optimismus ein als die Historie rechtfertigt &mdash; Vorsicht.
+      </p>
 
       <!-- ── Historien-Explorer ── -->
       <h2 class="section-hdr"><b>Historien-Explorer</b> &mdash; frei gewaehlte Markets</h2>
@@ -170,6 +190,7 @@
         Waehle in der Sidebar bis zu 10 Markets aus um deren Preispfade zu vergleichen. Divergenzen zwischen Markets zeigen Regime-Wechsel (z.B. "no cuts" faellt, "2 cuts" steigt = Markt preist Dovish-Shift ein).
       </p>
       <div class="chart-box"><div id="chart-history"></div></div>
+      <p class="box-info"><b>So liest du den Chart:</b> alle ausgew&auml;hlten Markets in einem Diagramm. Y-Achse = Wahrscheinlichkeit in Prozent (0&ndash;100). Zeige-Modus: alles was gleichzeitig steigt oder f&auml;llt = gemeinsames Markt-Thema (z.B. alle Cuts-Outcomes steigen = dovisher Regime-Shift). <b>Kreuzende Linien</b> zwischen verwandten Markets markieren oft wichtige Umbewertungs-Tage (CPI, FOMC, Jobs-Report).</p>
 
       <!-- ── Alle Markets ── -->
       <h2 class="section-hdr"><b>Alle Markets</b> &mdash; Katalog-Uebersicht</h2>
@@ -177,6 +198,11 @@
         26 Markets aus 7 Polymarket-Events. Klick auf Spalten zum Sortieren.
       </p>
       <div id="markets-table"></div>
+      <p class="box-info"><b>So liest du die Tabelle:</b>
+        <b>YES</b> = aktuelle implizite Wahrscheinlichkeit.
+        <b>7d &Delta;</b> = Ver&auml;nderung gegen&uuml;ber dem Preis vor 7 Tagen in Prozentpunkten &mdash; positive Werte = Markt wird bullischer f&uuml;r das Outcome, negative = bearischer.
+        <b>Liquiditaet</b> = Volumen am aktiven Orderbook in USDC. <b>Markets &lt; $20k Liquiditaet</b> sind illiquide und ihre Preise k&ouml;nnen verzerrt sein &mdash; bevorzuge liquidere Markets f&uuml;r Signale. Klick auf Spaltenkopf zum Sortieren.
+      </p>
 
       <!-- ── Methodik ── -->
       <details style="margin-top:2rem">
