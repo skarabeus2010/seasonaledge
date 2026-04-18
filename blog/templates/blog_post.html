@@ -90,6 +90,28 @@
         ]
     }
     </script>
+    {% if faq_items %}
+
+    <!-- FAQPage (Rich Results bei Google — aus Section "Häufige Fragen" extrahiert) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {% for item in faq_items -%}
+            {
+                "@type": "Question",
+                "name": {{ item.question | tojson }},
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": {{ item.answer | tojson }}
+                }
+            }{% if not loop.last %},{% endif %}
+            {% endfor -%}
+        ]
+    }
+    </script>
+    {% endif %}
 
     <meta name="robots" content="index, follow">
     <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/blog/{{ slug }}/">
