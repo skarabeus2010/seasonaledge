@@ -19,7 +19,8 @@
     regimes              dict[ticker, dict]
     events               list[dict]  ← Sektion 2
     tdom_bias            dict[ticker, dict]  ← Sektion 3
-    poly_divergences     list[dict]  ← Sektion 3b (Polymarket vs Saisonalität)
+    poly_divergences     list[dict]  ← Sektion 3b (Crypto vs Saisonalität)
+    fed_divergences      list[dict]  ← Sektion 3c (Fed/Macro vs Historie)
     subscriber_count     int
     unsubscribe_url      str  (pro Recipient injected)
 #}<!DOCTYPE html>
@@ -206,6 +207,40 @@
       </table>
       <div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.5;">
         Prior = Anteil der Vorjahre, in denen {{ poly_divergences[0].asset }}/… vom heutigen Kalendertag bis Jahresende den benötigten Return erreichte. Basis: {{ poly_divergences[0].samples }} Jahre Historie.
+      </div>
+    </td></tr>
+    {% endif %}
+
+    <!-- ══════════════════════ SEKTION 3c: FED/MACRO DIVERGENZEN ══════════════════════ -->
+    {% if fed_divergences %}
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        🏦 Fed &amp; Macro — Markt vs. Historie
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Polymarket-YES gegen historische Basisrate (FOMC 2000–2024 · NBER/BEA-Referenzen)
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+        <tr>
+          <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Event</th>
+          <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Markt YES</th>
+          <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Historie</th>
+          <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Δ pp</th>
+          <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Bewertung</th>
+        </tr>
+        {% for d in fed_divergences %}
+        {% set div_color = '#30e878' if d.divergence_pp > 0 else '#ff4040' %}
+        <tr>
+          <td align="left"  style="padding:10px;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ d.label }}</td>
+          <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,0.04);">{{ '%.1f' % (d.market_prob * 100) }}%</td>
+          <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,0.04);">{{ '%.1f' % (d.prior_prob * 100) }}%</td>
+          <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:{{ div_color }};font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{% if d.divergence_pp >= 0 %}+{% endif %}{{ '%.1f' % d.divergence_pp }}</td>
+          <td align="left"  style="padding:10px;font-size:12px;color:{{ div_color }};border-bottom:1px solid rgba(255,255,255,0.04);">{{ d.verdict }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.5;">
+        Basisraten: Fed-Cuts &amp; Hikes aus {{ fed_divergences[0].rationale if 'historisch' in fed_divergences[0].rationale.lower() else 'historischen Fed-Zinsentscheidungen 2000–2024' }}. Recession/GDP-Baselines aus langfristigen NBER/BEA-Durchschnitten.
       </div>
     </td></tr>
     {% endif %}

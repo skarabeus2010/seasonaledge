@@ -196,6 +196,18 @@ Empirischer Prior aus eigener Preis-DB gegen Polymarket-Wahrscheinlichkeit:
 3. `% der Samples mit Return ≥ required` = Saisonal-Prior.
 4. Divergenz in pp = Prior − Markt YES. Positiv (grün) = Markt unterschätzt, negativ (rot) = Markt überschätzt.
 
+### Fed/Macro-Divergenz (Phase 3b)
+
+Für Fed- und Macro-Markets funktioniert der Saisonal-Prior nicht (kein Preis-Asset). Stattdessen **historische Basisraten**:
+
+- **fed-cuts-2026-N** (13 Buckets): Histogramm über 25 Jahre FOMC-Historie (2000–2024) aus `shared.central_banks.FED_RATE_CHANGES`. Für jedes Kalenderjahr wird gezählt, wie viele Cut-Entscheidungen stattfanden; die Verteilung über alle 25 Jahre bildet den Prior pro Bucket.
+- **fed-hike-2026**: Anteil der Jahre 2000–2024 mit mindestens einem Hike.
+- **fed-emergency-cut-2027**: hartkodiert auf 12 % (3 Emergency-Events 2001/2008/2020 in 25 y).
+- **us-recession-2026**: 16 % (NBER: ~12 Recessions seit 1950).
+- **us-gdp-negative-2026**: 8 % (BEA: annualer GDP negativ 2001/2008/2009/2020 ≈ 5 %, leicht hoch korrigiert).
+
+Der Prior ist bewusst **unconditional** — kein Current-Cycle-Adjustment. Er beantwortet "was sagt die reine Vergangenheit", nicht "was ist unsere Alpha-Prognose". Divergenz zwischen Markt-YES und Basisrate ist daher als *Kontext*, nicht als *Signal* zu lesen.
+
 **Brier-Score** steht noch aus — braucht resolved markets. Die 26 kuratierten Markets resolven erst Ende 2026/Anfang 2027. Historische resolved markets (anderer Scope) sind Kandidat für Phase 4.
 
 ## Troubleshooting
@@ -213,7 +225,7 @@ Empirischer Prior aus eigener Preis-DB gegen Polymarket-Wahrscheinlichkeit:
 
 **Short-term:**
 - [ ] Phase 3b: Brier-Score auf historisch resolved Polymarket-Markets (Sample-Set aufbauen)
-- [ ] Fed/Macro-Divergenz (andere Baselines als Yearly-Return-Prior)
+- [x] **2026-04-18** Fed/Macro-Divergenz (historische Basisraten aus FED_RATE_CHANGES + static NBER/BEA)
 - [x] **2026-04-18** Newsletter-Sektion mit Top-Divergenzen der Woche (Crypto-Targets)
 - [x] **2026-04-18** Intraday-Refresh-Tier nahe FOMC (±2d Fenster)
 

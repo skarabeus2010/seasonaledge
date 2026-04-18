@@ -254,7 +254,7 @@ Plan: `.claude/plans/curried-floating-treasure.md`
 
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
 - [ ] **Brier-Score** auf historisch resolved Polymarket-Markets (Sample-Set aufbauen — unsere 26 resolven erst Ende 2026/Anfang 2027)
-- [ ] **Fed/Macro-Divergenz** — andere Baselines als Yearly-Return-Prior
+- [x] **2026-04-18 Fed/Macro-Divergenz** — historische Basisraten (Cuts-Histogramm 2000-2024 aus `FED_RATE_CHANGES`, Hike-Rate, static NBER/BEA-Basisraten für Recession/GDP/Emergency-Cut, `shared/weekly_report.py::top_fed_macro_divergences`)
 - [x] **2026-04-18 Newsletter-Sektion** mit Top-Divergenzen der Woche (Crypto BTC/ETH, `shared/weekly_report.py::top_polymarket_divergences`)
 - [x] **2026-04-18 Intraday-Refresh-Tier** nahe FOMC (±2d Fenster, `polymarket_intraday.yml` + `--near-fomc-only` Flag)
 
