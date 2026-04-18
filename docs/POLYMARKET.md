@@ -208,7 +208,32 @@ Für Fed- und Macro-Markets funktioniert der Saisonal-Prior nicht (kein Preis-As
 
 Der Prior ist bewusst **unconditional** — kein Current-Cycle-Adjustment. Er beantwortet "was sagt die reine Vergangenheit", nicht "was ist unsere Alpha-Prognose". Divergenz zwischen Markt-YES und Basisrate ist daher als *Kontext*, nicht als *Signal* zu lesen.
 
-**Brier-Score** steht noch aus — braucht resolved markets. Die 26 kuratierten Markets resolven erst Ende 2026/Anfang 2027. Historische resolved markets (anderer Scope) sind Kandidat für Phase 4.
+### Brier-Score / Kalibrierungs-Analyse (Phase 3b)
+
+Separate Pipeline auf eigenem DB-Schema, weil die Daten nie geupdated werden (historische Resolutions):
+
+| Datei | Zweck |
+|---|---|
+| [`scripts/create_polymarket_resolved_tables.sql`](../scripts/create_polymarket_resolved_tables.sql) | `polymarket_resolved_markets` + `polymarket_resolved_prices` Tabellen mit RLS + GRANTs |
+| [`scripts/polymarket_scrape_resolved.py`](../scripts/polymarket_scrape_resolved.py) | Gamma-Events mit `closed=true` + binaries + `outcomePrices` eindeutig. Default-Scope: 6 Tags (fed, economy, crypto, crypto-prices, us-politics, politics), 2024-01-01..heute, min_vol=$10k |
+| [`shared/brier_score.py`](../shared/brier_score.py) | `brier_score_mean`, `calibration_curve`, `brier_by_days_to_resolution`, `naive_baseline_brier` |
+| [`scripts/compute_brier_stats.py`](../scripts/compute_brier_stats.py) | Liest DB → berechnet Aggregate → `landing/data/brier_stats.json` (Frontend-Konsum) |
+
+**Forecast-Sampling**: Pro resolved market nehmen wir 1 Snapshot pro Tag (letzter Preis des Tages aus der CLOB-Historie). Verhindert dass Markets mit stündlicher Historie das Aggregat verzerren.
+
+**Benchmarks im Report**:
+- **Basisrate-Baseline** = `p·(1-p)` mit p = Anteil tatsächlicher YES-Resolutions. Das ist die beste konstante Prognose — Polymarket muss das unterbieten um informativ zu sein.
+- **50-50-Referenz** = 0.25 (klassischer Null-Information-Punkt).
+
+**Erster Run (einmalig, auf Server):**
+```bash
+# 1. SQL in Supabase-Editor ausführen: scripts/create_polymarket_resolved_tables.sql
+# 2. Scraper laufen lassen (30-60 min wegen CLOB-Rate-Limits)
+docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py
+# 3. Aggregate berechnen + JSON schreiben
+docker exec seasonalpha-app python3 scripts/compute_brier_stats.py
+# 4. JSON in Git committen (wird vom nginx ausgeliefert)
+```
 
 ## Troubleshooting
 
@@ -224,7 +249,7 @@ Der Prior ist bewusst **unconditional** — kein Current-Cycle-Adjustment. Er be
 ## Roadmap
 
 **Short-term:**
-- [ ] Phase 3b: Brier-Score auf historisch resolved Polymarket-Markets (Sample-Set aufbauen)
+- [x] **2026-04-18** Brier-Score auf historisch resolved Polymarket-Markets (Pipeline: Scraper + DB-Tabellen + Precompute + UI-Sektion auf `/polymarket`)
 - [x] **2026-04-18** Fed/Macro-Divergenz (historische Basisraten aus FED_RATE_CHANGES + static NBER/BEA)
 - [x] **2026-04-18** Newsletter-Sektion mit Top-Divergenzen der Woche (Crypto-Targets)
 - [x] **2026-04-18** Intraday-Refresh-Tier nahe FOMC (±2d Fenster)
