@@ -225,15 +225,55 @@ Separate Pipeline auf eigenem DB-Schema, weil die Daten nie geupdated werden (hi
 - **Basisrate-Baseline** = `p·(1-p)` mit p = Anteil tatsächlicher YES-Resolutions. Das ist die beste konstante Prognose — Polymarket muss das unterbieten um informativ zu sein.
 - **50-50-Referenz** = 0.25 (klassischer Null-Information-Punkt).
 
-**Erster Run (einmalig, auf Server):**
+### Runbook — Brier-Score erneuern
+
+**Kadenz:** Einmal pro Monat sinnvoll (neue Resolutions trudeln laufend ein, Polymarket-Kalibrierung ändert sich aber nicht dramatisch innerhalb Wochen).
+
+#### Initialer Run (einmalig nach Deployment)
+
+**1. DB-Migration in Supabase-Editor ausführen:**
+[`scripts/create_polymarket_resolved_tables.sql`](../scripts/create_polymarket_resolved_tables.sql)
+
+**2. Scraper auf dem Server starten** (dauert 30–60 min wegen CLOB-Rate-Limits):
 ```bash
-# 1. SQL in Supabase-Editor ausführen: scripts/create_polymarket_resolved_tables.sql
-# 2. Scraper laufen lassen (30-60 min wegen CLOB-Rate-Limits)
-docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py
-# 3. Aggregate berechnen + JSON schreiben
-docker exec seasonalpha-app python3 scripts/compute_brier_stats.py
-# 4. JSON in Git committen (wird vom nginx ausgeliefert)
+ssh root@178.104.75.46
+cd /opt/seasonaledge
+nohup docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py > /tmp/brier_scrape.log 2>&1 &
+tail -f /tmp/brier_scrape.log
 ```
+
+Der `nohup ... &`-Wrapper sorgt dafür dass der Prozess weiterläuft auch wenn die SSH-Session schließt. `Ctrl+C` beendet nur die Log-Anzeige, nicht den Scraper. Erfolgs-Indikator am Ende: `Fertig! <N> Markets, <M> Preis-Snapshots in Xs`.
+
+**3. Aggregate berechnen:**
+```bash
+docker exec seasonalpha-app python3 scripts/compute_brier_stats.py
+ls -la /opt/seasonaledge/landing/data/brier_stats.json
+```
+
+**4. JSON-Datei in Git committen** (vom lokalen Dev-Rechner, nicht Server — Server hat kein GitHub-Token):
+```bash
+# Lokal auf Windows (PowerShell oder Git-Bash):
+scp root@178.104.75.46:/opt/seasonaledge/landing/data/brier_stats.json C:/dev/SeasonalEdge/landing/data/brier_stats.json
+cd C:/dev/SeasonalEdge
+git add landing/data/brier_stats.json
+git commit -m "data: brier_stats.json update"
+git push
+```
+
+Der Auto-Deploy zieht die Datei dann auf den Server zurück und nginx liefert sie unter `/landing/data/brier_stats.json` aus. Die UI-Sektion auf `/polymarket` ist dann mit Daten befüllt.
+
+#### Folge-Runs (monatlich, nur neue Resolutions)
+
+Schritte 2–4 wiederholen. Der Scraper ist idempotent (UPSERT) — schon bekannte Markets werden übersprungen, neue kommen dazu. Typische Laufzeit nach initialem Fill: 5–15 min.
+
+#### Häufige Fallstricke
+
+| Symptom | Ursache | Fix |
+|---|---|---|
+| `No such file or directory /app/scripts/polymarket_scrape_resolved.py` | Container hat noch alten Code, PR nicht gemerged oder Deploy nicht durchgelaufen | `git pull` auf Server + ggf. `docker compose up -d --force-recreate app` |
+| `markets: 0` nach SQL-Migration | Erwartetes Verhalten — Migration hat nur Tabellen angelegt, keine Daten | Scraper laufen lassen (Schritt 2) |
+| Git-Push vom Server scheitert mit `Authentication failed` | Server hat kein GitHub Personal Access Token | Workflow umstellen auf "SCP → lokal committen" wie oben beschrieben |
+| Tonnenweise modified files (`scanner.html`, `tdom-analyse.html` etc.) im `git status` auf Server | `inject_credentials.sh` hat `%%SUPABASE_URL%%`-Platzhalter durch Werte ersetzt | `git checkout -- .` auf Server (die Änderungen sind Deploy-Artefakte, nicht Source) |
 
 ## Troubleshooting
 

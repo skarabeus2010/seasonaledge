@@ -257,7 +257,6 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 ### ⚠️ OFFEN — Auth-Features Follow-ups
 - [x] **2026-04-18 Profile-Seite: Newsletter-Toggle** — `scripts/create_profile_newsletter_rpc.sql` liefert `get_my_newsletter_status()` + `toggle_my_newsletter(bool)` (SECURITY DEFINER, `auth.jwt() ->> 'email'`), UI in `/profile` mit Switch + Status-Text. **User-Action:** Migration in Supabase SQL-Editor ausführen.
 - [ ] Profile-Seite: Konto-Löschung self-service (aktuell nur Placeholder → Email an info@)
-- [ ] Watchlist Compact-Cards: Forecast-KPI (wenn MSTL da ist)
 
 ### Marketing (manuell)
 - [ ] LinkedIn + X Posts der 3 Polymarket-Blog-Posts staffeln (Templates im Anhang jedes Posts)
