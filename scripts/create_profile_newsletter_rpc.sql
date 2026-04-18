@@ -23,25 +23,32 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_email      TEXT;
-    v_status     TEXT;
-    v_sub_at     TIMESTAMPTZ;
-    v_unsub_at   TIMESTAMPTZ;
-    v_no_emails  BOOLEAN;
+    v_email  TEXT;
+    v_result JSON;
 BEGIN
     v_email := LOWER(TRIM(COALESCE(auth.jwt() ->> 'email', '')));
     IF v_email = '' THEN
         RETURN json_build_object('ok', false, 'error', 'not_authenticated');
     END IF;
 
-    SELECT status, subscribed_at, unsubscribed_at, no_emails
-    INTO v_status, v_sub_at, v_unsub_at, v_no_emails
-    FROM subscribers
-    WHERE email = v_email
+    -- JSON direkt im SELECT bauen — vermeidet PL/pgSQL-Variablenreferenzen
+    -- in json_build_object, die in Supabase-Postgres als Relationen geparst
+    -- werden koennen ("relation v_xxx does not exist").
+    SELECT json_build_object(
+               'ok', true,
+               'email', v_email,
+               'subscribed', (s.status = 'active' AND NOT COALESCE(s.no_emails, false)),
+               'status', s.status,
+               'subscribed_at', s.subscribed_at,
+               'unsubscribed_at', s.unsubscribed_at
+           )
+    INTO v_result
+    FROM subscribers s
+    WHERE s.email = v_email
     LIMIT 1;
 
-    IF NOT FOUND THEN
-        RETURN json_build_object(
+    IF v_result IS NULL THEN
+        v_result := json_build_object(
             'ok', true,
             'email', v_email,
             'subscribed', false,
@@ -49,14 +56,7 @@ BEGIN
         );
     END IF;
 
-    RETURN json_build_object(
-        'ok', true,
-        'email', v_email,
-        'subscribed', (v_status = 'active' AND NOT COALESCE(v_no_emails, false)),
-        'status', v_status,
-        'subscribed_at', v_sub_at,
-        'unsubscribed_at', v_unsub_at
-    );
+    RETURN v_result;
 END;
 $$;
 
@@ -73,7 +73,7 @@ DECLARE
 BEGIN
     v_email := LOWER(TRIM(COALESCE(auth.jwt() ->> 'email', '')));
     IF v_email = '' THEN
-        RETURN json_build_object('ok', false, 'error', 'not_authenticated');
+        RETURN '{"ok":false,"error":"not_authenticated"}'::json;
     END IF;
 
     SELECT EXISTS(SELECT 1 FROM subscribers WHERE email = v_email) INTO v_exists;
@@ -90,7 +90,6 @@ BEGIN
             INSERT INTO subscribers (email, status, source, subscribed_at)
             VALUES (v_email, 'active', 'profile', NOW());
         END IF;
-        RETURN json_build_object('ok', true, 'email', v_email, 'subscribed', true);
     ELSE
         IF v_exists THEN
             UPDATE subscribers
@@ -100,8 +99,20 @@ BEGIN
                 updated_at = NOW()
             WHERE email = v_email;
         END IF;
-        RETURN json_build_object('ok', true, 'email', v_email, 'subscribed', false);
     END IF;
+
+    -- Resultat aus der Tabelle zuruecklesen (vermeidet Variablen-Referenz
+    -- in json_build_object, siehe get_my_newsletter_status).
+    RETURN (
+        SELECT json_build_object(
+                   'ok', true,
+                   'email', s.email,
+                   'subscribed', (s.status = 'active' AND NOT COALESCE(s.no_emails, false)),
+                   'status', s.status
+               )
+        FROM subscribers s
+        WHERE s.email = v_email
+    );
 END;
 $$;
 
