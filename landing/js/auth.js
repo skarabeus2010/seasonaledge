@@ -25,6 +25,9 @@
     /** Ist ein User eingeloggt? */
     get isLoggedIn() { return !!_user; },
 
+    /** Supabase-Client (nach init) fuer RPC-Calls aus Pages. */
+    get client() { return _client; },
+
     /** Initialisierung: Client erstellen, Session wiederherstellen */
     init: function() {
       if (_client) return; // bereits initialisiert

@@ -79,7 +79,7 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - OHLC Cross-Day VERBOTEN: `Open[t]/Close[t-1]` mischt adj_factors → Dividend-Bias. Overnight/Intraday per Residual: `overnight = total - intraday`
 - Nightly Refresh: nur letzte 5 Tage. Historische Daten bleiben unverändert
 - `log_return`-Spalte in Supabase wird von `preprocess()` genutzt wenn vorhanden
-- `datetime.utcnow()` deprecated → TODO fix
+- Zeitstempel UTC: `datetime.now(timezone.utc)` nutzen (nicht `datetime.utcnow()`, deprecated ab 3.12)
 
 ### Handelstage & Börsen-Awareness
 
@@ -242,7 +242,7 @@ Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
 - [ ] KI-Score auf 5 Sub-Scores erweitern (+ MSTL Saisonale Stärke) → Dashboard Radar 5 Achsen
 - [ ] Watchlist Compact-Cards: Forecast-KPI
 - [ ] Newsletter: Top-5 Forecast Sektion
-- [ ] `datetime.utcnow()` Deprecation fixen
+- [x] **2026-04-18 `datetime.utcnow()` Deprecation** — Code-Scan: keine Treffer mehr, Migration bereits durch. CLAUDE.md-Regel ergänzt.
 
 Plan: `.claude/plans/curried-floating-treasure.md`
 
@@ -258,15 +258,8 @@ Plan: `.claude/plans/curried-floating-treasure.md`
 - [x] **2026-04-18 Newsletter-Sektion** mit Top-Divergenzen der Woche (Crypto BTC/ETH, `shared/weekly_report.py::top_polymarket_divergences`)
 - [x] **2026-04-18 Intraday-Refresh-Tier** nahe FOMC (±2d Fenster, `polymarket_intraday.yml` + `--near-fomc-only` Flag)
 
-### ⚠️ OFFEN — ML-Pipeline (MSTL)
-- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Container vorhanden, Daten OK, vermutlich ApexCharts Timing in `<details>`
-- [ ] Full-Run 270 Ticker mit erweitertem Backend (5 Quantile + History)
-- [ ] Daily Cron `ml_forecasts.yml` prüfen (Mo 21:30 UTC)
-- [ ] KI-Score auf 5 Sub-Scores erweitern (+ MSTL Saisonale Stärke) → Dashboard Radar 5 Achsen
-- [ ] `datetime.utcnow()` Deprecation fixen
-
 ### ⚠️ OFFEN — Auth-Features Follow-ups
-- [ ] Profile-Seite: Newsletter-Toggle (liest aus `email_subscribers`, Toggle via RPC)
+- [x] **2026-04-18 Profile-Seite: Newsletter-Toggle** — `scripts/create_profile_newsletter_rpc.sql` liefert `get_my_newsletter_status()` + `toggle_my_newsletter(bool)` (SECURITY DEFINER, `auth.jwt() ->> 'email'`), UI in `/profile` mit Switch + Status-Text. **User-Action:** Migration in Supabase SQL-Editor ausführen.
 - [ ] Profile-Seite: Konto-Löschung self-service (aktuell nur Placeholder → Email an info@)
 - [ ] Watchlist Compact-Cards: Forecast-KPI (wenn MSTL da ist)
 
