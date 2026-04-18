@@ -16,12 +16,25 @@
   <link rel="stylesheet" href="/landing/css/app.css">
 
   <style>
-    .profile-wrap { max-width: 720px; margin: 0 auto; padding: 1rem; }
+    /* Profil ist full-width, keine Sidebar */
+    .app { grid-template-columns: 1fr !important; }
+
+    .profile-wrap { max-width: 1100px; margin: 0 auto; padding: 1rem; }
     .profile-hero {
       display: flex; align-items: center; gap: 1.5rem;
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
       padding: 1.5rem; margin-bottom: 1.5rem;
     }
+
+    /* 2-Spalten-Grid für die Cards (Desktop), stapelt auf Mobile */
+    .profile-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 768px) {
+      .profile-grid { grid-template-columns: 1fr; }
+    }
+    .profile-grid .card { margin-bottom: 0; }
     .profile-avatar {
       width: 84px; height: 84px; border-radius: 50%;
       border: 2px solid var(--accent); object-fit: cover; flex-shrink: 0;
@@ -126,46 +139,50 @@
             </div>
           </div>
 
-          <div class="card">
-            <h2><span class="ico">👤</span> Konto</h2>
-            <div class="card-row">
-              <span class="card-row-label">Anmelde-Methode</span>
-              <span class="card-row-value" id="auth-provider">—</span>
+          <div class="profile-grid">
+            <div class="card">
+              <h2><span class="ico">👤</span> Konto</h2>
+              <div class="card-row">
+                <span class="card-row-label">Anmelde-Methode</span>
+                <span class="card-row-value" id="auth-provider">—</span>
+              </div>
+              <div class="card-row">
+                <span class="card-row-label">User-ID</span>
+                <span class="card-row-value" id="user-id" style="font-size:.75rem;font-family:var(--f-m)">—</span>
+              </div>
             </div>
-            <div class="card-row">
-              <span class="card-row-label">User-ID</span>
-              <span class="card-row-value" id="user-id" style="font-size:.75rem;font-family:var(--f-m)">—</span>
+
+            <div class="card">
+              <h2><span class="ico">⭐</span> Watchlist</h2>
+              <div class="card-row">
+                <span class="card-row-label">Aktive Ticker</span>
+                <span class="card-row-value accent" id="watchlist-count">0</span>
+              </div>
+              <div class="card-row">
+                <span class="card-row-label">Sync-Status</span>
+                <span class="card-row-value" id="watchlist-sync">Cloud-Sync aktiv</span>
+              </div>
+              <div class="btn-row">
+                <a href="/watchlist" class="btn-logout" style="text-decoration:none">Zur Watchlist &rarr;</a>
+              </div>
             </div>
           </div>
 
-          <div class="card">
-            <h2><span class="ico">⭐</span> Watchlist</h2>
-            <div class="card-row">
-              <span class="card-row-label">Aktive Ticker</span>
-              <span class="card-row-value accent" id="watchlist-count">0</span>
+          <div class="profile-grid">
+            <div class="card">
+              <h2><span class="ico">🚪</span> Sitzung</h2>
+              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Abmelden beendet deine Sitzung. Deine Cloud-Watchlist bleibt erhalten und lädt beim nächsten Login wieder.</p>
+              <div class="btn-row">
+                <button class="btn-logout" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.logout()">Abmelden</button>
+              </div>
             </div>
-            <div class="card-row">
-              <span class="card-row-label">Sync-Status</span>
-              <span class="card-row-value" id="watchlist-sync">Cloud-Sync aktiv</span>
-            </div>
-            <div class="btn-row">
-              <a href="/watchlist" class="btn-logout" style="text-decoration:none">Zur Watchlist &rarr;</a>
-            </div>
-          </div>
 
-          <div class="card">
-            <h2><span class="ico">🚪</span> Sitzung</h2>
-            <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Abmelden beendet deine Sitzung. Deine Cloud-Watchlist bleibt erhalten und lädt beim nächsten Login wieder.</p>
-            <div class="btn-row">
-              <button class="btn-logout" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.logout()">Abmelden</button>
-            </div>
-          </div>
-
-          <div class="card danger-card">
-            <h2><span class="ico">⚠</span> Danger Zone</h2>
-            <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Konto dauerhaft löschen. Watchlist und verknüpfte Daten werden entfernt. <b>Nicht umkehrbar.</b></p>
-            <div class="btn-row">
-              <button class="btn-danger" id="btn-delete-account">Konto löschen</button>
+            <div class="card danger-card">
+              <h2><span class="ico">⚠</span> Danger Zone</h2>
+              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Konto dauerhaft löschen. Watchlist und verknüpfte Daten werden entfernt. <b>Nicht umkehrbar.</b></p>
+              <div class="btn-row">
+                <button class="btn-danger" id="btn-delete-account">Konto löschen</button>
+              </div>
             </div>
           </div>
         </div>
