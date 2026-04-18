@@ -75,6 +75,12 @@ img, svg { max-width: 100%; display: block; }
 .nav__burger svg { width: 22px; height: 22px; stroke: var(--dim); }
 .badge-ea { font-family: var(--f-m); font-size: .5625rem; font-weight: 400; letter-spacing: .1em; padding: .2rem .6rem; border: 1px solid var(--gold); color: var(--gold); border-radius: 100px; background: var(--gold-d); white-space: nowrap; }
 
+/* Live-Badge: pulsierender roter Dot + Label. Nutzbar als inline-span neben Nav-Links. */
+.badge-live { display: inline-flex; align-items: center; gap: .3rem; font-family: var(--f-m); font-size: .5rem; font-weight: 700; letter-spacing: .12em; padding: .1rem .4rem; border-radius: 100px; background: rgba(255,64,64,.15); color: #ff4040; white-space: nowrap; vertical-align: middle; margin-left: .35rem; text-transform: uppercase; }
+.badge-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #ff4040; box-shadow: 0 0 0 0 rgba(255,64,64,.7); animation: sa-pulse 1.8s infinite; }
+@keyframes sa-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,64,64,.7); } 70% { box-shadow: 0 0 0 6px rgba(255,64,64,0); } 100% { box-shadow: 0 0 0 0 rgba(255,64,64,0); } }
+@media (prefers-reduced-motion: reduce) { .badge-live::before { animation: none; } }
+
 /* Nav Mobile */
 @media (max-width: 768px) {
   /* Wichtig: explizit height + overflow-y, sonst kollabiert das fixed-Flex-Element

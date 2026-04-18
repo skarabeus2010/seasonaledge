@@ -79,6 +79,10 @@
     .nav__i{max-width:var(--max-w);margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;height:100%;gap:1rem}
     .nav__logo{font-family:var(--f-d);font-size:1.1875rem;font-weight:800;color:var(--text);flex-shrink:0}.nav__logo:hover{color:var(--text)}.nav__logo b{color:var(--accent)}
     .badge-ea{font-family:var(--f-m);font-size:.5625rem;font-weight:400;letter-spacing:.1em;padding:.2rem .6rem;border:1px solid var(--gold);color:var(--gold);border-radius:100px;background:var(--gold-d);white-space:nowrap}
+    .badge-live{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--f-m);font-size:.5rem;font-weight:700;letter-spacing:.12em;padding:.1rem .4rem;border-radius:100px;background:rgba(255,64,64,.15);color:#ff4040;white-space:nowrap;vertical-align:middle;margin-left:.35rem;text-transform:uppercase}
+    .badge-live::before{content:"";width:6px;height:6px;border-radius:50%;background:#ff4040;box-shadow:0 0 0 0 rgba(255,64,64,.7);animation:sa-pulse 1.8s infinite}
+    @keyframes sa-pulse{0%{box-shadow:0 0 0 0 rgba(255,64,64,.7)}70%{box-shadow:0 0 0 6px rgba(255,64,64,0)}100%{box-shadow:0 0 0 0 rgba(255,64,64,0)}}
+    @media (prefers-reduced-motion:reduce){.badge-live::before{animation:none}}
     .nav__links{display:flex;align-items:center;gap:.125rem;margin-left:auto}
     .nav__links>a,.nav__dd>button{padding:.5rem .625rem;font-size:.8125rem;font-weight:500;color:var(--dim);border-radius:6px;transition:color .2s,background .2s;background:none;border:none;cursor:pointer;font-family:var(--f-b)}
     .nav__links>a:hover,.nav__dd>button:hover{color:var(--text);background:rgba(255,255,255,.04)}
@@ -295,7 +299,7 @@
         </div>
         <div class="nav__dd">
           <button aria-haspopup="true" aria-expanded="false">Events <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="nav__dd-m"><a href="/zentralbanken">Notenbanken</a><a href="/polymarket">Polymarket Odds</a><a href="/opex">OPEX</a><a href="/vixpiration">VIXpiration</a><a href="/feiertage">Feiertage</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
+          <div class="nav__dd-m"><a href="/polymarket">Polymarket Odds<span class="badge-live">Live</span></a><a href="/zentralbanken">Notenbanken</a><a href="/opex">OPEX</a><a href="/vixpiration">VIXpiration</a><a href="/feiertage">Feiertage</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
         </div>
         <div class="nav__dd">
           <button aria-haspopup="true" aria-expanded="false">Strategien <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -449,7 +453,7 @@
         </div>
       </div>
       <div class="foot__col"><h4>Zyklen</h4><a href="/dekadenzyklus">Dekadenzyklus</a><a href="/jahreszyklus">Jahreszyklus</a><a href="/monatszyklus">Monatszyklus</a><a href="/wochentage">Wochentage</a><a href="/monatswechsel">Monatswechsel</a><a href="/mondphasen">Mondphasen</a><a href="/risikozyklus">Risikozyklus</a></div>
-      <div class="foot__col"><h4>Events</h4><a href="/zentralbanken">Notenbanken</a><a href="/polymarket">Polymarket Odds</a><a href="/opex">OPEX</a><a href="/vixpiration">VIXpiration</a><a href="/feiertage">Feiertage</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
+      <div class="foot__col"><h4>Events</h4><a href="/polymarket">Polymarket Odds<span class="badge-live">Live</span></a><a href="/zentralbanken">Notenbanken</a><a href="/opex">OPEX</a><a href="/vixpiration">VIXpiration</a><a href="/feiertage">Feiertage</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
       <div class="foot__col"><h4>Strategien</h4><a href="/scanner">Saisonal-Scanner</a><a href="/trifecta">Januar Trifecta</a><a href="/plain-vanilla">Plain Vanilla Strategien</a><a href="/backtest-engine">Backtest Engine</a></div>
       <div class="foot__col"><h4>Mehr</h4><a href="/kriegszeiten">Kriegszeiten</a><a href="/crash-fruehwarnung">Crash-Fr&uuml;hwarnung</a><a href="/sektor-rotation">Sektor-Rotation</a><a href="/overnight">Overnight vs. Intraday</a><a href="/tdom-analyse">TDoM Analyse</a><a href="/spot-vol-beta">Spot-Vol Beta</a><a href="/ki-saisonalitaet">KI-Saisonalit&auml;t</a><a href="/blog/">Blog</a><a href="/tools/trading-day-converter">Tools</a></div>
       <div class="foot__col"><h4>Rechtliches</h4>
