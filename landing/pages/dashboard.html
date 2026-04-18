@@ -191,6 +191,17 @@
     /* ── KPI-Row für Risiko (4 Cards nutzen globale .kpi) ── */
     .risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
     @media (max-width:768px){.risk-grid{grid-template-columns:1fr 1fr}}
+    .risk-grid .kpi{position:relative}
+
+    /* ── Info-Badge + Hover-Tooltip (pure CSS, übernommen aus ki-saisonalitaet) ── */
+    .info-badge{position:absolute;top:.6rem;right:.6rem;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--f-d);font-size:.6875rem;font-weight:700;font-style:italic;cursor:help;z-index:5;transition:all .2s;user-select:none}
+    .info-badge:hover{background:rgba(232,168,32,.2);border-color:var(--accent);color:var(--accent)}
+    .info-tooltip{position:absolute;top:2.25rem;right:.6rem;width:300px;max-width:calc(100vw - 4rem);background:rgba(10,10,14,.98);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;font-size:.75rem;color:var(--dim);line-height:1.55;box-shadow:0 10px 30px rgba(0,0,0,.65);z-index:100;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .2s, transform .2s, visibility .2s;pointer-events:none;text-align:left;text-transform:none;letter-spacing:0;font-weight:400}
+    .info-badge:hover ~ .info-tooltip,.info-badge:focus ~ .info-tooltip,.info-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+    .info-tooltip b{color:var(--text)}
+    /* Kleinerer Tooltip speziell für die .risk-grid .kpi-Kacheln */
+    .risk-grid .kpi .info-tooltip{width:260px}
+    .risk-grid .kpi .info-badge{top:.35rem;right:.35rem;width:18px;height:18px;font-size:.625rem}
 
     /* ── Strategien-Tabelle ── */
     .strategies-table{width:100%;border-collapse:collapse;font-size:.8125rem}
@@ -255,24 +266,32 @@
       <div class="bento" id="bento" style="display:none">
         <!-- KI-Score (gross, 6 cols) -->
         <div class="bento-card bento-ki" id="card-ki">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum KI Composite Score">i</div>
+          <div class="info-tooltip"><b>KI Composite Score</b> — Gesamtnote 0&ndash;10 aus vier unabhängigen Sub-Scores (Saisonalität, Drawdown, Volatilität, Momentum). <b>&ge; 6,5</b> = bullish, <b>&le; 3,5</b> = bearish, dazwischen neutral. Der Score ist eine aggregierte Signal-Stärke, kein Renditeversprechen.</div>
           <div class="ttl"><span class="ico">🧠</span> KI Composite Score</div>
           <div id="ki-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
         <!-- Crash-Ampel (3 cols) -->
         <div class="bento-card bento-crash" id="card-crash">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Crash-Ampel">i</div>
+          <div class="info-tooltip"><b>Crash-Ampel</b> — Isolation-Forest-Modell auf Tagesrenditen + Volatilität des Tickers. <b>Grün</b> = ruhiges Regime, <b>Gelb</b> = erhöhte Vorsicht, <b>Rot</b> = Stress-Regime. Risk-Score 0&ndash;100 quantifiziert die Anomalie-Stärke.</div>
           <div class="ttl"><span class="ico">🚦</span> Crash-Ampel</div>
           <div id="crash-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
         <!-- Anomalie-Radar (2 cols) -->
         <div class="bento-card bento-anomaly" id="card-anomaly">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar">i</div>
+          <div class="info-tooltip"><b>Anomalie-Radar</b> — Misst wie stark die Rendite der letzten 10 Handelstage vom historischen Mittel am gleichen Kalender-Fenster abweicht. <b>Grün</b> = ungewöhnlich stark, <b>Rot</b> = ungewöhnlich schwach. Nützlich als Contrarian-Hinweis bei Extremwerten.</div>
           <div class="ttl"><span class="ico">📡</span> Anomalie</div>
           <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
         </div>
 
         <!-- Trifecta (3 cols, in oberster Zeile) -->
         <div class="bento-card bento-trifecta" id="card-trifecta">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Januar Trifecta">i</div>
+          <div class="info-tooltip"><b>Januar Trifecta</b> — Klassisches Markt-Indiz: wenn (1) Santa-Rally positiv, (2) erste 5 Handelstage positiv und (3) Januar-Monat positiv zusammentreffen, war das Gesamtjahr historisch in <b>&gt; 80 %</b> der Fälle positiv. Trifft alle drei Bedingungen nicht zu, ist die Erfolgs-Wahrscheinlichkeit deutlich niedriger.</div>
           <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
           <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
@@ -297,6 +316,8 @@
 
         <!-- TruePath (6 cols) -->
         <div class="bento-card bento-truepath" id="card-truepath">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TruePath">i</div>
+          <div class="info-tooltip"><b>TruePath</b> &mdash; Pattern-Matching über die letzten N Handelstage: jedes historische Jahr wird per Pearson-Korrelation + euklidischem Abstand zum aktuellen YTD-Verlauf verglichen. Die Top-Matches werden <b>gewichtet gemittelt</b> zu einer Projektion bis Jahresende &mdash; plus &plusmn; &sigma;-Cone für die Unsicherheit. Kein Vorhersage-Modell, sondern "wie lief es in ähnlichen Jahren weiter?".</div>
           <div class="ttl"><span class="ico">🛤️</span> TruePath — Top-Match Jahre</div>
           <div id="chart-truepath"></div>
         </div>
@@ -1948,40 +1969,54 @@
     // ── 10. Risiko-KPIs ──────────────────────────────────────────
     function renderRiskKpis(riskKpis, volaStats, volaStats5) {
       var el = document.getElementById('risk-content');
-      function kpi(label, value, colorClass) {
-        return '<div class="kpi"><div class="kpi-label">' + label + '</div><div class="kpi-value' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
+      function kpi(label, value, colorClass, tooltip) {
+        var badge = '';
+        if (tooltip) {
+          badge = '<div class="info-badge" tabindex="0" aria-label="Erklärung">i</div>' +
+                  '<div class="info-tooltip">' + tooltip + '</div>';
+        }
+        return '<div class="kpi">' + badge +
+               '<div class="kpi-label">' + label + '</div>' +
+               '<div class="kpi-value' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
       }
       // Zeile 1: bestehende 4 KPIs
       var html = '';
       if (riskKpis) {
         var ddNowCol = riskKpis.dd_now != null && riskKpis.dd_now < -1 ? 'red' : 'green';
-        html += kpi('Aktueller DD ' + new Date().getFullYear(), riskKpis.dd_now != null ? fmtNum(riskKpis.dd_now,1)+'%' : '–', ddNowCol);
-        html += kpi('Ø Max DD (' + riskKpis.n + 'J)', fmtNum(riskKpis.avg_max_dd, 1) + '%', 'red');
+        html += kpi('Aktueller DD ' + new Date().getFullYear(), riskKpis.dd_now != null ? fmtNum(riskKpis.dd_now,1)+'%' : '–', ddNowCol,
+          '<b>Aktueller Drawdown</b> &mdash; prozentualer Abstand vom Jahreshoch im laufenden Jahr. <b>0&nbsp;%</b> = aktuell auf Hoch, <b>&minus;10&nbsp;%</b> = Kurs 10&nbsp;% unter dem Jahres-Peak.');
+        html += kpi('Ø Max DD (' + riskKpis.n + 'J)', fmtNum(riskKpis.avg_max_dd, 1) + '%', 'red',
+          '<b>Ø Maximaler Drawdown</b> &mdash; Durchschnitt der jährlichen Tief-Peaks der letzten N Jahre. Hilft einzuordnen, ob der aktuelle DD normal oder ungewöhnlich schlimm ist.');
       } else {
-        html += kpi('Aktueller DD', '–', '');
-        html += kpi('Ø Max DD', '–', '');
+        html += kpi('Aktueller DD', '–', '', null);
+        html += kpi('Ø Max DD', '–', '', null);
       }
       if (volaStats) {
         var volaCol = volaStats.is_elevated ? 'red' : volaStats.is_low ? 'green' : 'gold';
-        html += kpi('Aktuelle 20d-Vola', volaStats.current_vola.toFixed(1) + '%', volaCol);
+        html += kpi('Aktuelle 20d-Vola', volaStats.current_vola.toFixed(1) + '%', volaCol,
+          '<b>20-Tage-Volatilität</b> &mdash; annualisierte Standardabweichung der Tagesrenditen über 20 Handelstage (&times; &radic;252). Je höher, desto breiter die typische Kursbewegung.');
         var pctLabel = volaStats.percentile.toFixed(0) + '% (' + (volaStats.is_elevated ? 'erhöht' : volaStats.is_low ? 'niedrig' : 'normal') + ')';
-        html += kpi('Vola-Perzentil', pctLabel, volaCol);
+        html += kpi('Vola-Perzentil', pctLabel, volaCol,
+          '<b>Vola-Perzentil</b> &mdash; wo liegt die aktuelle Vola in der historischen Verteilung der letzten 5 Jahre. <b>&gt; 80&nbsp;%</b> = Stress-Phase, <b>&lt; 20&nbsp;%</b> = extrem ruhig.');
       } else {
-        html += kpi('Aktuelle Vola', '–', '');
-        html += kpi('Vola-Perzentil', '–', '');
+        html += kpi('Aktuelle Vola', '–', '', null);
+        html += kpi('Vola-Perzentil', '–', '', null);
       }
       // Zeile 2: YTD Return, Tage im DD, DD-Perzentil, Vola-Trend
       html += '<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:.15rem 0"></div>';
       if (riskKpis) {
         var ytdCol = !isNaN(riskKpis.ytd_return) ? (riskKpis.ytd_return >= 0 ? 'green' : 'red') : '';
-        html += kpi('YTD Return', !isNaN(riskKpis.ytd_return) ? fmtPct(riskKpis.ytd_return,1) : '–', ytdCol);
-        html += kpi('Tage im DD', riskKpis.days_in_dd > 0 ? riskKpis.days_in_dd + 'd' : '–', riskKpis.days_in_dd > 20 ? 'red' : riskKpis.days_in_dd > 0 ? 'gold' : 'green');
+        html += kpi('YTD Return', !isNaN(riskKpis.ytd_return) ? fmtPct(riskKpis.ytd_return,1) : '–', ytdCol,
+          '<b>Year-to-Date Return</b> &mdash; Gesamtrendite seit dem 1.&nbsp;Januar des laufenden Jahres bis heute.');
+        html += kpi('Tage im DD', riskKpis.days_in_dd > 0 ? riskKpis.days_in_dd + 'd' : '–', riskKpis.days_in_dd > 20 ? 'red' : riskKpis.days_in_dd > 0 ? 'gold' : 'green',
+          '<b>Tage im Drawdown</b> &mdash; Handelstage seit dem letzten Jahreshoch. <b>&gt; 20&nbsp;d</b> = verfestigte Korrektur, <b>0&nbsp;d</b> = Kurs auf oder an neuem Hoch.');
         var ddPctCol = !isNaN(riskKpis.dd_percentile) ? (riskKpis.dd_percentile > 70 ? 'red' : riskKpis.dd_percentile > 30 ? 'gold' : 'green') : '';
-        html += kpi('DD-Perzentil', !isNaN(riskKpis.dd_percentile) ? riskKpis.dd_percentile.toFixed(0) + '%' : '–', ddPctCol);
+        html += kpi('DD-Perzentil', !isNaN(riskKpis.dd_percentile) ? riskKpis.dd_percentile.toFixed(0) + '%' : '–', ddPctCol,
+          '<b>DD-Perzentil (saisonal)</b> &mdash; wie tief ist der aktuelle DD im Vergleich zur historischen DD-Verteilung am gleichen Kalendertag. <b>&gt; 70&nbsp;%</b> = ungewöhnlich schwacher Jahresverlauf bis hierhin.');
       } else {
-        html += kpi('YTD Return', '–', '');
-        html += kpi('Tage im DD', '–', '');
-        html += kpi('DD-Perzentil', '–', '');
+        html += kpi('YTD Return', '–', '', null);
+        html += kpi('Tage im DD', '–', '', null);
+        html += kpi('DD-Perzentil', '–', '', null);
       }
       // Vola-Trend: 5d vs 20d
       if (volaStats && volaStats5) {
@@ -1990,9 +2025,10 @@
         if (ratio > 1.15) { trendLabel = '↑ steigend'; trendCol = 'red'; }
         else if (ratio < 0.85) { trendLabel = '↓ fallend'; trendCol = 'green'; }
         else { trendLabel = '→ stabil'; trendCol = 'gold'; }
-        html += kpi('Vola-Trend 5d/20d', trendLabel, trendCol);
+        html += kpi('Vola-Trend 5d/20d', trendLabel, trendCol,
+          '<b>Vola-Trend 5d/20d</b> &mdash; Verhältnis kurzfristige (5d) zu mittelfristige (20d) Volatilität. <b>&gt; 1,15</b> = Vola steigend (Stress kommt), <b>&lt; 0,85</b> = Vola fallend (Beruhigung), dazwischen stabil.');
       } else {
-        html += kpi('Vola-Trend', '–', '');
+        html += kpi('Vola-Trend', '–', '', null);
       }
       el.innerHTML = html;
     }
