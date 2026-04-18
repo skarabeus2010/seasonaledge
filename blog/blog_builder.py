@@ -500,6 +500,64 @@ def _build_chart_placeholder(chart_type: str, ticker: str, years: int) -> str:
 
 # ── Post laden ───────────────────────────────────────────
 
+def _extract_faq_items(md_content: str) -> list[dict]:
+    """
+    Extrahiert FAQ-Items aus einer '## Häufige Fragen'-Section im Markdown.
+
+    Returns:
+        Liste von {'question': str, 'answer': str} Dicts. Leer wenn keine
+        FAQ-Section gefunden wird. Wird fuer FAQPage JSON-LD Schema genutzt.
+    """
+    # Erkenne FAQ-Section (mehrere Schreibweisen)
+    faq_heading_patterns = [
+        "## Häufige Fragen",
+        "## Haeufige Fragen",
+        "## FAQ",
+        "## Fragen und Antworten",
+    ]
+    start = -1
+    heading_len = 0
+    for pattern in faq_heading_patterns:
+        idx = md_content.find(pattern)
+        if idx >= 0:
+            start = idx + len(pattern)
+            heading_len = len(pattern)
+            break
+    if start < 0:
+        return []
+
+    # Section-Ende: naechste H2, HTML-Kommentar oder EOF
+    candidates = []
+    nh2 = md_content.find("\n## ", start)
+    if nh2 > 0:
+        candidates.append(nh2)
+    ncomment = md_content.find("<!--", start)
+    if ncomment > 0:
+        candidates.append(ncomment)
+    end = min(candidates) if candidates else len(md_content)
+    faq_section = md_content[start:end]
+
+    # Parse H3s + Antworten
+    items = []
+    parts = re.split(r"\n### ", faq_section)
+    for part in parts[1:]:  # erster Part ist vor dem ersten H3
+        lines = part.split("\n", 1)
+        question = lines[0].strip()
+        answer_md = lines[1].strip() if len(lines) > 1 else ""
+
+        # Markdown-Formatierung fuer JSON-LD entfernen (Plain Text fuer Google)
+        answer = re.sub(r"\*\*(.+?)\*\*", r"\1", answer_md)       # bold
+        answer = re.sub(r"\*(.+?)\*", r"\1", answer)              # italic
+        answer = re.sub(r"`(.+?)`", r"\1", answer)                # inline code
+        answer = re.sub(r"\[(.+?)\]\([^)]+\)", r"\1", answer)     # links
+        answer = re.sub(r"\s+", " ", answer).strip()              # whitespace normalisieren
+
+        if question and answer:
+            items.append({"question": question, "answer": answer})
+
+    return items
+
+
 def load_posts() -> list[dict]:
     """Laedt alle Markdown-Posts aus blog/posts/."""
     posts = []
@@ -535,6 +593,9 @@ def load_posts() -> list[dict]:
         # Content zu HTML (mit Chart-Generierung)
         html_content = markdown_to_html(content, post_slug=meta.get("slug", ""))
 
+        # FAQ-Items fuer FAQPage JSON-LD Schema extrahieren
+        faq_items = _extract_faq_items(content)
+
         # Reading time
         word_count = len(content.split())
         reading_time = max(1, round(word_count / 200))
@@ -568,6 +629,7 @@ def load_posts() -> list[dict]:
             "reading_time": reading_time,
             "file": md_file.name,
             "raw_md": raw,  # Rohes Markdown inkl. Kommentare (für Social-Extraktion)
+            "faq_items": faq_items,
         }
         posts.append(post)
 
