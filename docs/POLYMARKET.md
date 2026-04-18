@@ -162,6 +162,10 @@ In [`scripts/nightly_refresh.py`](../scripts/nightly_refresh.py) als **Phase G**
 
 Nightly schreibt ein Logbuch in `refresh_log`. Polymarket-Phase loggt in app.log mit `[phase-g]` / `[phase-g2]`-Präfix.
 
+### Intraday-Tier nahe FOMC
+
+Separater Workflow [`.github/workflows/polymarket_intraday.yml`](../.github/workflows/polymarket_intraday.yml) läuft stündlich :23. Das Script ruft sich mit `--near-fomc-only` auf und prüft intern [`shared.fed_dates.is_near_fomc`](../shared/fed_dates.py) — early-exit wenn heute nicht im FOMC-Fenster (FOMC-Tag −2 bis +1). So bekommen wir dichte Snapshots an den Tagen wo Polymarket-YES sich tatsächlich bewegt, ohne den Rest des Jahres unnötig API-Traffic zu erzeugen.
+
 ## Credentials
 
 Zwei getrennte Keys in `/opt/seasonaledge/.env` (und lokal `C:\dev\SeasonalEdge\.env`):
@@ -210,9 +214,9 @@ Empirischer Prior aus eigener Preis-DB gegen Polymarket-Wahrscheinlichkeit:
 **Short-term:**
 - [ ] Phase 3b: Brier-Score auf historisch resolved Polymarket-Markets (Sample-Set aufbauen)
 - [ ] Fed/Macro-Divergenz (andere Baselines als Yearly-Return-Prior)
-- [ ] Newsletter-Sektion mit Top-Divergenzen der Woche
+- [x] **2026-04-18** Newsletter-Sektion mit Top-Divergenzen der Woche (Crypto-Targets)
+- [x] **2026-04-18** Intraday-Refresh-Tier nahe FOMC (±2d Fenster)
 
 **Long-term:**
 - [ ] Weitere Event-Kategorien (Elections, Geopolitik, Sports wenn relevant)
-- [ ] Intraday-Refresh-Tier (aktuell nur daily) — sinnvoll nahe FOMC
 - [ ] Pro-Ticker Polymarket-Score via Mapping (dann auch Dashboard-Integration möglich)

@@ -9,6 +9,7 @@ Nutzung:
     py scripts/polymarket_refresh.py                    # alle aktiven Maerkte
     py scripts/polymarket_refresh.py --category fed     # nur Fed-Maerkte
     py scripts/polymarket_refresh.py --refresh hourly   # nur hourly-Tier
+    py scripts/polymarket_refresh.py --near-fomc-only   # nur wenn FOMC ±2d
     py scripts/polymarket_refresh.py --dry-run
 """
 from __future__ import annotations
@@ -120,9 +121,19 @@ def main():
                     help="Komma-getrennte Liste: fed,macro,index,events,crypto")
     ap.add_argument("--refresh", default=None, choices=["hourly", "daily"],
                     help="Nur Maerkte dieses Refresh-Tiers")
+    ap.add_argument("--near-fomc-only", action="store_true",
+                    help="Nur ausfuehren wenn heute innerhalb des FOMC-Fensters liegt "
+                         "(FOMC-Tag -2 bis +1). Sonst Early-Exit ohne Fehler.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Nichts in DB schreiben, nur logging")
     args = ap.parse_args()
+
+    if args.near_fomc_only:
+        from shared.fed_dates import is_near_fomc
+        if not is_near_fomc():
+            print(f"  [fomc-gate] Heute {datetime.now(timezone.utc).strftime('%Y-%m-%d')} "
+                  f"nicht im FOMC-Fenster (+/-2d). Early-Exit.")
+            return
 
     data = load_markets_yaml()
     entries = filter_entries(data.get("markets", []), args.category, args.refresh)

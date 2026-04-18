@@ -255,8 +255,8 @@ Plan: `.claude/plans/curried-floating-treasure.md`
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
 - [ ] **Brier-Score** auf historisch resolved Polymarket-Markets (Sample-Set aufbauen — unsere 26 resolven erst Ende 2026/Anfang 2027)
 - [ ] **Fed/Macro-Divergenz** — andere Baselines als Yearly-Return-Prior
-- [ ] **Newsletter-Sektion** mit Top-Divergenzen der Woche
-- [ ] **Intraday-Refresh-Tier** nahe FOMC (aktuell nur daily)
+- [x] **2026-04-18 Newsletter-Sektion** mit Top-Divergenzen der Woche (Crypto BTC/ETH, `shared/weekly_report.py::top_polymarket_divergences`)
+- [x] **2026-04-18 Intraday-Refresh-Tier** nahe FOMC (±2d Fenster, `polymarket_intraday.yml` + `--near-fomc-only` Flag)
 
 ### ⚠️ OFFEN — ML-Pipeline (MSTL)
 - [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Container vorhanden, Daten OK, vermutlich ApexCharts Timing in `<details>`
