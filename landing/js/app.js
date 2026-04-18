@@ -2,11 +2,91 @@
  * SeasonAlpha — App Framework (Vanilla JS)
  * =========================================
  * Gemeinsamer Code fuer alle Pages:
+ * - Cache (localStorage mit TTL)
  * - Component-Loader (Nav + Footer)
- * - Supabase REST API Client
+ * - Supabase REST API Client (mit Cache)
  * - Burger-Menu Toggle
  * - Dropdown Hover/Click
  */
+
+var SA = window.SA || (window.SA = {});
+
+// ── Client-Side Cache ──────────────────────────────────────────────────────
+// localStorage mit TTL. Spart Supabase-Fetches bei Page-Wechseln — essenziell
+// für die Guided Tour und generelle Cross-Page-Navigation. Bei stale data
+// (> TTL) wird neu gefetcht. Quota-full → purge + retry.
+
+SA.cache = (function() {
+  var PREFIX = 'sa-cache-';
+  var DEFAULT_TTL_MS = 15 * 60 * 1000;  // 15 Minuten
+
+  function keyOf(ns, k) { return PREFIX + ns + ':' + k; }
+
+  function purgeAll() {
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var kk = localStorage.key(i);
+        if (kk && kk.indexOf(PREFIX) === 0) localStorage.removeItem(kk);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function get(ns, k) {
+    try {
+      var raw = localStorage.getItem(keyOf(ns, k));
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      var ttl = obj.ttl || DEFAULT_TTL_MS;
+      if (Date.now() - obj.ts > ttl) {
+        localStorage.removeItem(keyOf(ns, k));
+        return null;
+      }
+      return obj.data;
+    } catch (e) { return null; }
+  }
+
+  function set(ns, k, data, ttlMs) {
+    try {
+      localStorage.setItem(keyOf(ns, k), JSON.stringify({
+        ts: Date.now(), ttl: ttlMs || DEFAULT_TTL_MS, data: data
+      }));
+      return true;
+    } catch (e) {
+      // Quota exceeded → purge sa-cache-* und retry einmal
+      console.warn('[SA.cache] quota full, purging');
+      purgeAll();
+      try {
+        localStorage.setItem(keyOf(ns, k), JSON.stringify({
+          ts: Date.now(), ttl: ttlMs || DEFAULT_TTL_MS, data: data
+        }));
+        return true;
+      } catch (e2) { return false; }
+    }
+  }
+
+  function invalidate(ns) {
+    try {
+      var prefix = PREFIX + ns + ':';
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var kk = localStorage.key(i);
+        if (kk && kk.indexOf(prefix) === 0) localStorage.removeItem(kk);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  return {
+    get: get, set: set, invalidate: invalidate, purge: purgeAll,
+    DEFAULT_TTL_MS: DEFAULT_TTL_MS
+  };
+})();
+
+// ── Tour-Mode Detection (für Performance-Optimierungen) ────────────────────
+// Wenn die URL `?tour=...` enthält, aktivieren wir einen Lite-Mode:
+// Chart-Animations off (charts.js), evtl. weitere Optimierungen in Zukunft.
+SA.TOUR_MODE = false;
+try {
+  SA.TOUR_MODE = /[?&]tour=/.test(location.search);
+} catch (e) { /* ignore */ }
 
 // ── Component Loader ────────────────────────────────────────────────────────
 
@@ -267,6 +347,14 @@ function _populateDatalist(dl, tickers) {
  * @param {string} extraFilter - optionaler Supabase-Filter (z.B. "&date=gte.2000-01-01")
  */
 SA.fetchAllPrices = function(ticker, extraFilter) {
+  // Cache-first: 15-min TTL reicht — Nightly Refresh aktualisiert Preisdaten
+  // ohnehin nur 1x täglich. Bei Tour-Mode oder Page-Navigation: instant Hit.
+  var cacheKey = ticker + '|' + (extraFilter || '');
+  if (SA.cache) {
+    var cached = SA.cache.get('prices', cacheKey);
+    if (cached) return Promise.resolve(cached);
+  }
+
   var allRows = [];
   var batchSize = 1000;
   function fetchBatch(offset) {
@@ -293,7 +381,10 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
       });
     });
   }
-  return fetchBatch(0);
+  return fetchBatch(0).then(function(rows) {
+    if (SA.cache && rows && rows.length) SA.cache.set('prices', cacheKey, rows);
+    return rows;
+  });
 };
 
 // ── Trading Day Header (wiederverwendbar) ──────────────────────────────────

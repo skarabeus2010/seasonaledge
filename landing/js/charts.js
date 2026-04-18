@@ -34,6 +34,9 @@ SA.DECADE_LABELS = ['x0','x1','x2','x3','x4','x5','x6','x7','x8','x9'];
 
 // ── ApexCharts Base Theme ───────────────────────────────────────────────────
 
+// Tour-Mode (aus app.js) → Animations aus, spart ~400ms pro Chart
+var _animEnabled = !(SA.TOUR_MODE);
+
 SA.chartTheme = {
   chart: {
     background: 'transparent',
@@ -42,7 +45,7 @@ SA.chartTheme = {
     toolbar: { show: false },
     zoom: { enabled: false },
     selection: { enabled: false },
-    animations: { enabled: true, easing: 'easeinout', speed: 400 }
+    animations: { enabled: _animEnabled, easing: 'easeinout', speed: _animEnabled ? 400 : 0 }
   },
   grid: {
     borderColor: 'rgba(255,255,255,.04)',
