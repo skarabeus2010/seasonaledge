@@ -1,210 +1,139 @@
 # Programmatic SEO Engine — SeasonAlpha
 
-> Stand: 2026-03-27 | 94 Landingpages + Blog Engine | Alle Ticker aus SYMBOLS
+> Stand: 2026-04-18 | Nur noch Sitemap + robots.txt + Disclaimer | **Ticker-Landingpages entfernt**
 
-## Ueberblick
+## Historie
 
-Die SEO Engine generiert automatisch suchmaschinenoptimierte HTML-Landingpages
-fuer jeden Finanztitel aus `shared/symbols.py`. Ziel: Maximale Google-Sichtbarkeit
-fuer Suchanfragen wie "Apple Saisonalitaet", "DAX saisonale Muster", "Bitcoin bester Monat".
+Die SEO Engine hat zwei Iterationen durchgemacht:
 
-**Prinzip:** Eine Seite pro Ticker. 94 Ticker = 94 Landingpages = 94 Chancen bei Google zu ranken.
+| Datum | Scope |
+|---|---|
+| 2026-03-27 | **v1** — 94 automatisch generierte Ticker-Landingpages unter `/analyse/{slug}` (Apple, DAX, BTC etc.) |
+| 2026-04-10 | **v1.5** — Pages auf `noindex` gesetzt (Thin-Content-Penalty) und aus Sitemap entfernt, physisch aber weiter erzeugt (Weg A) |
+| 2026-04-18 | **v2** — Ticker-Landingpages **endgültig entfernt**. Nginx antwortet mit `410 Gone`, Builder erzeugt sie nicht mehr und löscht bestehende Files beim Build-Cleanup |
+
+**Warum weg?** Die Pages waren reine Template-Rotation ohne echten Content (Platzhalter-Statistiken, geblurrter KI-Bereich als Lead-Magnet). Google hat sie als "Gefunden — zurzeit nicht indexiert" markiert. Das verwässert das Domain-Quality-Signal und zieht den Ranking-Schnitt echter Feature-Pages nach unten.
+
+**Back-up-Plan "Weg B"** (nicht umgesetzt): echten Content generieren (Monats-Performance-Tabelle aus Supabase, SVG-Chart, Dekaden-Split pro Ticker). Dafür müsste eine eigene Content-Pipeline gebaut werden — Aufwand zu groß für unsicheren ROI, weitere Content-Investments gehen derzeit in den Blog.
+
+## Aktueller Scope
+
+Die Engine hat heute drei Aufgaben:
+
+| Output | Zweck |
+|---|---|
+| `seo/output/sitemap.xml` | Master-Sitemap mit statischen Pages + 22 Feature-Pages + Blog-Index + Blog-Posts |
+| `seo/output/robots.txt` | Crawler-Regeln + Sitemap-Verweis + AI-Crawler Allowlist |
+| `seo/output/disclaimer.html` | YMYL-konformer Haftungsausschluss (7 Abschnitte, via `/disclaimer`-Route) |
+
+Zusätzlich ein **Cleanup-Schritt**: beim Build werden alle `seo/output/{slug}.html` gelöscht, die zu den Ticker-Slugs aus `shared/symbols.py` passen. Damit werden Alt-Files die noch vom alten Builder-Stand übrig sind entfernt. `disclaimer.html` und `google<hash>.html` bleiben explizit erhalten.
 
 ## Dateien
 
 | Datei | Beschreibung |
-|-------|-------------|
-| `seo/seo_template.html` | Jinja2 HTML-Template mit Platzhaltern |
-| `seo/programmatic_seo_builder.py` | Generator: Pages + Sitemap + robots.txt + Disclaimer |
-| `seo/output/*.html` | 94 generierte Landingpages |
-| `seo/output/sitemap.xml` | 99 URLs (5 statische + 94 Analyse-Seiten) |
-| `seo/output/robots.txt` | Crawler-Regeln + Sitemap-Verweis |
-| `seo/output/disclaimer.html` | YMYL-konformer Haftungsausschluss (7 Abschnitte) |
-| `seo/output/google*.html` | Google Search Console Verifizierungsdatei |
+|---|---|
+| `seo/programmatic_seo_builder.py` | Generator: Sitemap + robots.txt + Disclaimer + Cleanup |
+| `seo/seo_template.html` | Legacy Jinja2-Template für Ticker-Pages (nicht mehr genutzt, für Referenz erhalten) |
+| `seo/output/sitemap.xml` | 50+ URLs (Landing + Feature-Pages + Blog-Indizes + Blog-Posts) |
+| `seo/output/robots.txt` | Crawler-Regeln |
+| `seo/output/disclaimer.html` | Haftungsausschluss |
+| `seo/output/google<hash>.html` | Google Search Console Verifizierung |
 
-## Ausfuehren
+## Ausführen
 
 ```bash
-# Voraussetzung: Jinja2 installiert (pip install Jinja2)
 py seo/programmatic_seo_builder.py
 ```
 
-Ergebnis: 94 HTML-Dateien + sitemap.xml + robots.txt + disclaimer.html in `seo/output/`
+Ergebnis: `sitemap.xml` + `robots.txt` + `disclaimer.html` in `seo/output/` + Cleanup alter Ticker-Files.
 
-## Datenquelle
+## Sitemap-Quelle
 
-Ticker kommen automatisch aus `shared/symbols.py` (SYMBOLS-Dict, 94 Eintraege).
-Der Builder generiert:
-- **Slug** automatisch via `make_slug()` (z.B. "S&P 500" → "sp-500-saisonalitaet")
-- **Typ** aus Kategorie-Mapping (US-Aktie → "Aktie", Krypto → "Kryptowaehrung")
-- **Statistiken** aktuell als Platzhalter (deterministisch per Hash), spaeter aus Supabase
+Die Sitemap wird aus drei Quellen zusammengestellt:
 
-Neue Ticker hinzufuegen: Einfach in `shared/symbols.py` eintragen → naechster Build generiert die Seite.
+1. **Statische Pages** (hart in `build_sitemap()` gelistet): `/`, `/pricing`, `/disclaimer`, `/datenschutz`, `/impressum`
+2. **Tool-Pages** (hart gelistet): `/tools/trading-day-converter` etc.
+3. **Auto-Discovery** aus `landing/pages/*.html` — jede nicht-excluded HTML-Page landet mit default Priority 0.85/weekly in der Sitemap. Per-Page-Overrides via `PRIORITY_OVERRIDES`-Dict (z.B. Dashboard 1.0/daily, Polymarket 0.95/daily).
+4. **Blog-Posts** aus `blog/posts/*.md` (nur status=`published`).
 
-## SEO-Strategie
-
-### Was Google sieht (pro Seite)
-
-| Element | Beispiel |
-|---------|---------|
-| **Title** | `Apple (AAPL) Saisonalitaet & historische Muster \| SeasonAlpha` |
-| **Meta Description** | `Apple (AAPL) saisonale Analyse: Historisch bester Monat ist Oktober.` |
-| **H1** | `Apple (AAPL) – Saisonalitaet & historische Muster` |
-| **Canonical URL** | `https://seasonalpha.ai/analyse/apple-saisonalitaet` |
-| **Schema.org** | JSON-LD FinancialProduct (fuer Rich Snippets) |
-| **Open Graph** | Titel + Description (fuer Social Media Vorschau) |
-| **Google Verification** | Meta-Tag in allen Seiten |
-
-### Seitenstruktur
-
-```
-1. Breadcrumb Navigation (SeasonAlpha > Analysen > Apple)
-2. H1 mit Suchbegriff
-3. Einleitungstext (generiert aus Daten)
-4. Statistik-Karten (Bester Monat, Win-Rate, Oe Rendite)
-5. Chart-Platzhalter (oeffentlich sichtbar)
-6. Erklaerungstext (SEO-Fuellung)
-7. [GEBLURRT] KI-Prognose Bereich
-8. CTA-Button: "KI-Prognose kostenlos freischalten"
-9. Weiterer SEO-Text (Was ist Saisonalitaet?)
-10. Footer (Impressum, Datenschutz, Disclaimer)
-```
-
-### Blur-Effekt (Conversion-Mechanismus)
-
-Der KI-Prognose-Bereich ist per CSS `filter: blur(8px)` verschwommen:
-- User sieht dass es eine KI-Analyse gibt
-- Kann den Inhalt nicht lesen
-- CTA-Button liegt als Overlay darueber
-- Klick fuehrt zur Registrierung auf seasonalpha.ai
-
-### Datenschutz (Legal-Tech Vorgabe)
-
-- KEIN Google Analytics
-- KEIN Facebook Pixel
-- KEINE Cookies
-- KEINE externen Skripte
-- KEINE externen Fonts (System-Fonts)
-- Alles inline CSS (kein externes Stylesheet)
-- DSGVO-konform ohne Cookie-Banner
-
-## Deployment
-
-### Architektur (Hetzner VPS)
-
-```
-Browser → seasonalpha.ai/analyse/apple-saisonalitaet
-                ↓
-           Nginx (Port 80/443)
-                ↓
-         /app/seo/output/apple-saisonalitaet.html  ← statische HTML
-
-Browser → seasonalpha.ai/ (alles andere)
-                ↓
-         Streamlit App (Port 8501)
-```
-
-### Nginx-Routen (deploy/nginx.conf)
+## Nginx-Routen (deploy/nginx.conf)
 
 | URL | Ziel |
-|-----|------|
-| `/analyse/{slug}` | `seo/output/{slug}.html` (94 Landingpages) |
+|---|---|
+| `/analyse/*` | `return 410 Gone` (Thin-Content-Pages endgültig weg) |
 | `/disclaimer` | `seo/output/disclaimer.html` |
-| `/sitemap.xml` | `seo/output/sitemap.xml` |
-| `/robots.txt` | `seo/output/robots.txt` |
-| `/google*.html` | Google Search Console Verifizierung |
-| `/` (alles andere) | Streamlit App (Reverse Proxy) |
+| `/sitemap.xml` | `seo/output/sitemap.xml` via static-Alias |
+| `/robots.txt` | `seo/output/robots.txt` via static-Alias |
+| `/google<hash>.html` | Google Search Console Verifizierung |
+| `/dashboard`, `/jahreszyklus`, ... | `landing/pages/<name>.html` |
+| `/blog/` | `blog/output/` |
 
-### docker-compose.yml Volumes
+## Auto-Deploy (GitHub Actions)
 
-```yaml
-nginx:
-  volumes:
-    - ./seo/output:/app/seo/output:ro           # SEO-Landingpages
-    - ./seo/output/sitemap.xml:/app/static/sitemap.xml:ro
-    - ./seo/output/robots.txt:/app/static/robots.txt:ro
-```
+Bei Push auf `master` (siehe `.github/workflows/deploy.yml`):
 
-### Auto-Deploy (GitHub Actions)
-
-Bei Push auf `master`:
 1. `git pull origin master`
-2. `python3 seo/programmatic_seo_builder.py` (Seiten neu generieren)
-3. `docker compose up -d --build`
+2. `bash deploy/inject_credentials.sh` (Supabase-Creds in Landing-HTML)
+3. `python3 seo/programmatic_seo_builder.py` (Sitemap + Robots + Cleanup)
+4. `docker compose up -d --build`
+5. `docker compose exec -T app python3 blog/blog_builder.py --build`
+6. `docker compose restart nginx`
+7. `python3 scripts/submit_indexnow.py` (Bing/Yandex/Seznam-Ping)
 
 ## Disclaimer (YMYL)
 
-Die Datei `seo/output/disclaimer.html` enthaelt 7 Abschnitte:
+`seo/output/disclaimer.html` enthält 7 Abschnitte:
 1. Keine Anlageberatung (WpHG, KWG, §34f GewO)
-2. Historische Daten & Saisonalitaet
+2. Historische Daten & Saisonalität
 3. KI-Modelle & Halluzinations-Hinweis
 4. Datenquellen & Genauigkeit
-5. Haftungsbeschraenkung
+5. Haftungsbeschränkung
 6. Interessenkonflikte
 7. Anwendbares Recht
 
 ## Google Search Console
 
-- **Property:** seasonalpha.ai (URL-Praefix)
-- **Verifizierung:** DNS-TXT-Record bei STRATO + HTML-Meta-Tag in allen Seiten
-- **Sitemap:** `https://seasonalpha.ai/sitemap.xml` (99 URLs)
+- **Property:** seasonalpha.ai (URL-Präfix)
+- **Verifizierung:** DNS-TXT bei STRATO + HTML-Meta-Tag in allen Seiten
+- **Sitemap:** `https://seasonalpha.ai/sitemap.xml`
 
-## Erweiterung
+### Was in GSC zu erwarten ist (nach 2026-04-18-Cleanup)
 
-### Echte Daten aus Supabase
+Die bisherigen 263 "Alternative Seite mit kanonischem Tag" + 10 "Durch noindex ausgeschlossen" kommen fast ausschließlich aus den alten `/analyse/*`-Pages. Mit dem `410 Gone` werfen Google-Bots die URLs innerhalb von 1–2 Wochen raus. Erwartete Endzahlen in GSC:
 
-In `build_titel_daten()` die Platzhalter-Statistiken durch echte Berechnungen ersetzen:
+- **Indexiert**: ca. 50 (Landing + Feature-Pages + Blog-Posts), steigt mit jedem neuen Blog-Post
+- **Nicht indexiert**: < 30 (nur noch echte 404s, noindex-Pages wie `/watchlist`, `/unsubscribe`, und Weiterleitungen)
 
-```python
-from shared.supabase_client import fetch_monthly_stats
+## Content-Strategie ab 2026-04-18
 
-for ticker in SYMBOLS.keys():
-    stats = fetch_monthly_stats(ticker)
-    bester_monat = max(stats, key=lambda s: s["avg_return"])
-    # ... Template fuellen
-```
+Statt massenhafter Thin-Content-Pages jetzt **qualitative Content-Investments** an einem Ort: dem Blog (`blog/posts/*.md`).
 
-### Echte Charts einbetten
+| Eigenschaft | Ticker-Pages (alt, weg) | Blog-Posts (neu, Fokus) |
+|---|---|---|
+| Produktion | automatisch generiert aus Template | manuell oder KI-unterstützt, echter Content |
+| Umfang | ~300 Wörter, Platzhalter | 700–1.000 Wörter, konkrete Zahlen |
+| Struktur | starr | Hook + Analyse + Interpretation + FAQ |
+| Unique Content | niedrig | hoch (eigene Daten aus Supabase) |
+| FAQPage-Schema | nein | ja (Rich Results) |
+| Update-Frequenz | pro Build | pro Event (Fed-Meeting, CPI, etc.) |
+| ROI | negativ (Thin-Content-Penalty) | positiv (Long-Tail Keywords) |
 
-```python
-from shared.charts import build_seasonal_chart
-
-fig = build_seasonal_chart(...)
-fig.write_image(f"seo/output/charts/{slug}.png")
-```
-
-```html
-<img src="charts/{{ slug }}.png" alt="{{ name }} Saisonalitaet Chart"
-     width="800" height="400" loading="lazy">
-```
-
-## Blog Engine (blog/)
-
-Zusaetzlich zu den 94 Ticker-Landingpages gibt es eine Blog Engine fuer
-Content Marketing und organischen Traffic.
-
-| Eigenschaft | Details |
-|-------------|---------|
-| Technik | Markdown → HTML (Jinja2), gleicher Stack wie SEO-Pages |
-| URL | `/blog/`, `/blog/{slug}/` |
-| Kategorien | Education, Marktausblick, Tutorials |
-| Chart-Einbettung | `{{chart:TYPE:TICKER:YEARS}}` Tags im Markdown |
-| Social Media | 3 Tweets + LinkedIn-Post automatisch pro Post |
-| YouTube | Video-Script, Shorts-Script, Description, Tags pro Post |
-| Publishing | draft / scheduled / published Status im Frontmatter |
-| Builder | `python blog/blog_builder.py --build` |
-| Nginx | `/blog/` → `blog/output/` |
-
-Details: `docs/BLOG_WORKFLOW.md`
+Details zur Blog-Engine: [docs/BLOG_WORKFLOW.md](BLOG_WORKFLOW.md)
 
 ## Metriken & Ziele
 
-| Metrik | Ist | Ziel |
-|--------|-----|------|
-| SEO-Landingpages | 94 | 500+ (weitere Ticker hinzufuegen) |
-| Blog-Posts | 3 | 4/Monat (Education, Marktausblick, Tutorials) |
+| Metrik | Ist (2026-04-18) | Ziel |
+|---|---|---|
+| SEO-Feature-Pages | 22 in Sitemap | stabil, einzelne auf 0.95/daily priorisieren |
+| Blog-Posts | 6 | 4/Monat |
 | Core Web Vitals | LCP < 1s | LCP < 1s, CLS < 0.1 |
-| Suchbegriffe | "[Ticker] Saisonalitaet", "[Name] saisonale Muster" | Top 10 |
-| Blog Keywords | "Sell in May", "Saisonale Strategie", "Mondphasen Boerse" | Top 20 |
-| Conversion | CTA-Klick → Registrierung | >5% CTR |
-| Kosten | 0 EUR (auf bestehendem VPS) | 0 EUR |
+| Top-Keywords | noch keine Top-10-Rankings | Top 10 für Long-Tail („Fed-Cuts 2026 Prognose", „BTC 150k Polymarket") |
+| GSC „indexiert" | 25 | 50+ (nach Cleanup + neue Blog-Posts) |
+| GSC „nicht indexiert" | 329 | < 30 (nach 1–2 Wochen 410-Crawling) |
+| Kosten | 0 EUR (bestehender VPS) | 0 EUR |
+
+## Referenzen
+
+- [SEO_MARKETING.md](SEO_MARKETING.md) — laufende SEO-Marketing-Checkliste (Twitter, Bing, IndexNow etc.)
+- [BLOG_WORKFLOW.md](BLOG_WORKFLOW.md) — wie Blog-Posts entstehen und gepflegt werden
+- [POLYMARKET.md](POLYMARKET.md) — Polymarket-Integration (eigener Blog-Content-Pfeiler)
