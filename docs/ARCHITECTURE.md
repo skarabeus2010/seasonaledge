@@ -179,14 +179,6 @@ count_subscribers()                          # {"active": N, "total": N, "unsubs
 | `sector_rotation.py` | Sektor-Rotation Analyse |
 | `cpi_data.py` | CPI-Daten (BLS/FRED), Inflationsbereinigung |
 
-### Forecasting
-
-| Modul | Beschreibung |
-|-------|-------------|
-| `mstl_decomposition.py` | Multi-Saisonalitaets-Zerlegung (Trend/Woche/Jahr/Residual) |
-| `chronos_forecast.py` | Chronos-Bolt-Tiny 30d-Forecast mit Konfidenzbaendern |
-| `neural_prophet_forecast.py` | NeuralProphet Saisonalitaets-Komponenten |
-
 ### UI-Komponenten
 
 | Modul | Beschreibung |

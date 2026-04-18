@@ -200,7 +200,6 @@
         <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
         Die KI-Saisonalit&auml;t kombiniert klassische Saisonalanalyse mit Machine Learning. Der <b>Musterpfad</b> findet die historisch &auml;hnlichsten Jahre (Korrelation/DTW) und projiziert deren gewichteten Verlauf in die Zukunft.
         Der <b>KI Composite Score</b> (0&ndash;10) fasst vier Sub-Scores zu einem Gesamtsignal zusammen: Match-Qualit&auml;t, Forward-Return, Monats-Win-Rate und Tracking-G&uuml;te.
-        Der 5.&nbsp;Sub-Score &bdquo;Saisonale St&auml;rke&ldquo; misst per MSTL-Zerlegung, wie stark das saisonale Muster dieses Tickers ausgepr&auml;gt ist.
       </div>
 
       <!-- Hero: Score + Radar -->
@@ -208,8 +207,8 @@
         <div class="hero-score">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum KI Score">i</div>
           <div class="info-tooltip">
-            <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 5 unabh&auml;ngige
-            Sub-Scores &agrave; 0&ndash;2.0 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
+            <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 4 unabh&auml;ngige
+            Sub-Scores &agrave; 0&ndash;2.5 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
             <span style="color:#34d399;font-weight:600">Bullish &ge; 6.5</span> &middot;
             <span style="color:var(--accent);font-weight:600">Neutral 3.5&ndash;6.5</span> &middot;
             <span style="color:#f87171;font-weight:600">Bearish &le; 3.5</span><br><br>
@@ -220,16 +219,16 @@
           <div class="score-label">KI Seasonal Score</div>
           <div class="score-value" id="score-value">&ndash;<span class="of-ten"> / 10</span></div>
           <div class="score-signal neutral" id="score-signal">&ndash;</div>
-          <div class="score-meta" id="score-meta">Composite aus 5 Sub-Scores</div>
+          <div class="score-meta" id="score-meta">Composite aus 4 Sub-Scores</div>
         </div>
         <div class="hero-radar">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Radar">i</div>
           <div class="info-tooltip">
-            <b>So liest du den Radar:</b> Jede Achse zeigt einen der 5 Sub-Scores
-            (0&ndash;2.0&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
+            <b>So liest du den Radar:</b> Jede Achse zeigt einen der 4 Sub-Scores
+            (0&ndash;2.5&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
             Ist der Radar einseitig &mdash; z.B. stark bei <b>Musterpfad</b> und <b>Trend</b>, aber schwach bei
             <b>Tracking</b> &mdash; folgt das aktuelle Jahr noch nicht dem erwarteten Muster. Ein ausgewogener,
-            voller Radar bedeutet, dass alle f&uuml;nf Indikatoren in die gleiche Richtung zeigen.
+            voller Radar bedeutet, dass alle vier Indikatoren in die gleiche Richtung zeigen.
           </div>
           <div id="chart-radar"></div>
         </div>
@@ -284,13 +283,12 @@
             <li>Gl&auml;tte das Ergebnis mit einem Rolling-Fenster</li>
           </ul>
           <h3>KI Seasonal Score (1&ndash;10)</h3>
-          <p>Composite aus 5 Sub-Scores &agrave; 0&ndash;2.0 Punkte:</p>
+          <p>Composite aus 4 Sub-Scores &agrave; 0&ndash;2.5 Punkte:</p>
           <ul>
-            <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.0): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>
-            <li><b>Trend-Projektion</b> (0&ndash;2.0): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
-            <li><b>Win-Rate</b> (0&ndash;2.0): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
-            <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.0): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
-            <li><b>Saisonale St&auml;rke</b> (0&ndash;2.0): MSTL-Varianzanteil des 252d-Musters. &gt;10% = starkes Muster</li>
+            <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.5): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>
+            <li><b>Trend-Projektion</b> (0&ndash;2.5): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
+            <li><b>Win-Rate</b> (0&ndash;2.5): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
+            <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.5): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
           </ul>
           <p>Signal: <b>Bullish</b> &ge; 6.5 &middot; <b>Neutral</b> 3.5&ndash;6.5 &middot; <b>Bearish</b> &le; 3.5</p>
         </div>
@@ -458,13 +456,13 @@
       return { days: days, values: values, upper: upper, lower: lower };
     }
 
-    // ── KI-Score: 5 Sub-Scores (je 0-2.0, Summe 0-10) ────────────────────────
-    function computeKiScore(yearData, matches, currentYear, avg, truepath, mstlStrength) {
+    // ── KI-Score: 4 Sub-Scores (je 0-2.5, Summe 0-10) ────────────────────────
+    function computeKiScore(yearData, matches, currentYear, avg, truepath) {
       var now = new Date();
       var currentMonth = now.getMonth() + 1;
       var todayDoy = Math.min(365, Math.floor((now - new Date(now.getFullYear(),0,0))/86400000));
       var currentCurve = yearData[currentYear] ? yearData[currentYear].full_365 : [];
-      var W = 2.0; // Gewicht pro Sub-Score (5 × 2.0 = 10)
+      var W = 2.5; // Gewicht pro Sub-Score (4 × 2.5 = 10)
 
       // 1) Musterpfad-Qualitaet: Anteil positiver Match-Jahre
       var posMatches = matches.filter(function(m){ return m.returnPct > 0; }).length;
@@ -518,16 +516,8 @@
         subTracking = Math.max(0, Math.min(1, 0.7 * corrScore + 0.3 * (1 - normMae)));
       }
 
-      // 5) Saisonale Staerke (MSTL): % der Varianz durch 252d-Muster
-      // Normalisierung: 0% → 0, 20%+ → 1.0 (linear)
-      var subSeasonal = 0.5;
-      var seasonalPct = mstlStrength != null ? mstlStrength : null;
-      if (seasonalPct != null) {
-        subSeasonal = Math.max(0, Math.min(1, seasonalPct / 20));
-      }
-
-      // Composite: 5 × 2.0
-      var composite = (subMusterpfad + subTrend + subWinRate + subTracking + subSeasonal) * W;
+      // Composite: 4 × 2.5
+      var composite = (subMusterpfad + subTrend + subWinRate + subTracking) * W;
       composite = Math.round(composite * 10) / 10;
       composite = Math.max(0, Math.min(10, composite));
 
@@ -540,8 +530,7 @@
           musterpfad: { score: subMusterpfad, weighted: subMusterpfad * W, posCount: posMatches, total: matches.length },
           trend:      { score: subTrend,      weighted: subTrend * W,      returnPct: trendRet },
           winRate:    { score: subWinRate,    weighted: subWinRate * W,    wins: wins, total: total, avgReturn: avgMonthRet },
-          tracking:   { score: subTracking,   weighted: subTracking * W,   correlation: trackingCorr },
-          seasonal:   { score: subSeasonal,   weighted: subSeasonal * W,   strengthPct: seasonalPct }
+          tracking:   { score: subTracking,   weighted: subTracking * W,   correlation: trackingCorr }
         }
       };
     }
@@ -562,25 +551,21 @@
       metaEl.textContent = 'Match ' + ki.subs.musterpfad.weighted.toFixed(1) +
                            ' + Trend ' + ki.subs.trend.weighted.toFixed(1) +
                            ' + WR ' + ki.subs.winRate.weighted.toFixed(1) +
-                           ' + Track ' + ki.subs.tracking.weighted.toFixed(1) +
-                           ' + Sais ' + ki.subs.seasonal.weighted.toFixed(1);
+                           ' + Track ' + ki.subs.tracking.weighted.toFixed(1);
     }
 
     function renderSubScores(ki) {
       var s = ki.subs;
       var el = document.getElementById('sub-scores');
       function sub(title, w, desc) {
-        var pct = Math.min(100, Math.max(0, (w / 2.0) * 100));
+        var pct = Math.min(100, Math.max(0, (w / 2.5) * 100));
         return '<div class="sub">' +
           '<div class="sub-title">' + title + '</div>' +
-          '<div class="sub-val">' + w.toFixed(1) + '<span class="sub-max"> / 2.0</span></div>' +
+          '<div class="sub-val">' + w.toFixed(1) + '<span class="sub-max"> / 2.5</span></div>' +
           '<div class="sub-desc">' + desc + '</div>' +
           '<div class="sub-bar" style="width:' + pct + '%"></div>' +
         '</div>';
       }
-      var seasonalDesc = s.seasonal.strengthPct != null
-        ? 'MSTL: ' + s.seasonal.strengthPct.toFixed(1) + '% saisonale Varianz'
-        : 'Keine MSTL-Daten verf&uuml;gbar';
       el.innerHTML =
         sub('Musterpfad-Qualit&auml;t', s.musterpfad.weighted,
             s.musterpfad.posCount + '/' + s.musterpfad.total + ' Match-Jahre positiv') +
@@ -590,23 +575,22 @@
             s.winRate.wins + '/' + s.winRate.total + ' Jahre positiv (&Oslash; ' +
             (s.winRate.avgReturn >= 0 ? '+' : '') + s.winRate.avgReturn.toFixed(2) + '%)') +
         sub('Tracking-Qualit&auml;t',   s.tracking.weighted,
-            'Korrelation ' + s.tracking.correlation.toFixed(3) + ' zu Saisonal-&Oslash;') +
-        sub('Saisonale St&auml;rke',    s.seasonal.weighted, seasonalDesc);
+            'Korrelation ' + s.tracking.correlation.toFixed(3) + ' zu Saisonal-&Oslash;');
     }
 
     // ── Render: Radar-Chart (5 Sub-Scores) ───────────────────────────────────
     function renderRadar(ki) {
       var s = ki.subs;
-      var data = [s.musterpfad.weighted, s.trend.weighted, s.winRate.weighted, s.tracking.weighted, s.seasonal.weighted];
-      var labels = ['Musterpfad', 'Trend', 'Win-Rate', 'Tracking', 'Saisonale St\u00e4rke'];
-      var labelColors = ['#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0'];
+      var data = [s.musterpfad.weighted, s.trend.weighted, s.winRate.weighted, s.tracking.weighted];
+      var labels = ['Musterpfad', 'Trend', 'Win-Rate', 'Tracking'];
+      var labelColors = ['#d4c5a0','#d4c5a0','#d4c5a0','#d4c5a0'];
 
       if (charts.radar) { charts.radar.destroy(); charts.radar = null; }
       charts.radar = new ApexCharts(document.getElementById('chart-radar'), {
         series: [{ name: 'Sub-Score', data: data.map(function(v){ return parseFloat(v.toFixed(2)); }) }],
         chart: { type:'radar', height:280, toolbar:{show:false}, background:'transparent' },
         xaxis: { categories: labels, labels:{style:{colors:labelColors,fontSize:'11px',fontWeight:600}} },
-        yaxis: { min:0, max:2.0, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v.toFixed(1);}} },
+        yaxis: { min:0, max:2.5, tickAmount:5, labels:{style:{colors:'#a89878',fontSize:'10px'}, formatter:function(v){return v.toFixed(1);}} },
         colors: ['#e8a820'],
         fill: { opacity:0.35 },
         stroke: { width:2, colors:['#e8a820'] },
@@ -621,7 +605,7 @@
           }
         },
         dataLabels: { enabled:true, background:{enabled:true,foreColor:'#000',borderColor:'#e8a820',padding:3}, style:{fontSize:'10px',colors:['#000']}, formatter:function(v){return v.toFixed(1);} },
-        tooltip: { theme:'dark', y:{ formatter:function(v){return v.toFixed(2)+' / 2.0';}} }
+        tooltip: { theme:'dark', y:{ formatter:function(v){return v.toFixed(2)+' / 2.5';}} }
       });
       charts.radar.render();
     }
@@ -777,24 +761,6 @@
       document.getElementById('tbody-matches').innerHTML = tbody;
     }
 
-    // ── MSTL Saisonale Stärke (aus Supabase ml_forecasts) ──────────────────
-    var _mstlStrength = null; // cached per ticker
-
-    function fetchMSTLStrength(ticker, callback) {
-      _mstlStrength = null;
-      if (!SA.supabase || !SA.supabase.url) { callback(null); return; }
-      var q = 'ticker=eq.'+encodeURIComponent(ticker)+'&model=eq.mstl&select=data';
-      fetch(SA.supabase.url+'/rest/v1/ml_forecasts?'+q, {
-        headers:{'apikey':SA.supabase.key,'Authorization':'Bearer '+SA.supabase.key}
-      }).then(function(r){return r.json();}).then(function(rows){
-        if (rows && rows.length && rows[0].data && rows[0].data.strength_yearly != null) {
-          _mstlStrength = rows[0].data.strength_yearly;
-        }
-        callback(_mstlStrength);
-      }).catch(function(e){ console.warn('MSTL fetch:', e); callback(null); });
-    }
-
-
     function rerender() {
       if (!_cachedRows) return;
       var method    = document.querySelector('input[name="method"]:checked').value;
@@ -819,7 +785,7 @@
       var todayDoy = Math.min(365, Math.floor((new Date() - new Date(new Date().getFullYear(),0,0))/86400000));
       var projection = projDays > 0 ? computeProjection(matches, todayDoy, projDays) : null;
 
-      var ki = computeKiScore(yearData, matches, currentYear, avg, truepath, _mstlStrength);
+      var ki = computeKiScore(yearData, matches, currentYear, avg, truepath);
 
       destroyAll();
       renderScore(ki);
@@ -867,11 +833,7 @@
         }
         _cachedRows = rows;
         SA.renderTradingDayHeader('trading-day-header', ticker, rows);
-        // Sofort rendern (ohne MSTL), dann async MSTL nachladen und Score updaten
         rerender();
-        fetchMSTLStrength(ticker, function(strength) {
-          if (strength != null) rerender(); // Re-render mit 5. Sub-Score
-        });
         $loading.style.display = 'none';
       }).catch(function(err){
         showError('Fehler: '+err.message);
