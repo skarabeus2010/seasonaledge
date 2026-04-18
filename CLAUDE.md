@@ -202,7 +202,7 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ## Docs
 
-- `ARCHITECTURE.md`, `CHARTS.md`, `AI_MODELS.md`, `KI_FEATURES.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`
+- `ARCHITECTURE.md`, `CHARTS.md`, `AI_MODELS.md`, `KI_FEATURES.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
 ## TODO
