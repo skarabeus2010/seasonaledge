@@ -1,7 +1,7 @@
 /**
  * SeasonAlpha Guided Tour — Step-Definitionen
  *
- * 23 Schritte über 11 Pages. Multi-Page-Navigation via ?tour=step:N
+ * 26 Schritte über 13 Pages. Multi-Page-Navigation via ?tour=step:N
  * Der tour.js Resume-Handler liest diesen Query-Param beim Page-Load und
  * startet die Tour ab dem passenden Step.
  *
@@ -15,30 +15,59 @@
 window.SA = window.SA || {};
 
 SA.TOUR_STEPS = [
-  // ── Phase 1: Landing Page ────────────────────────────────────────────
+  // ── Phase 1: Landing Page — Willkommen + Login ───────────────────────
   {
     page: '/',
     element: '.hero__content',
     popover: {
       title: 'Willkommen bei SeasonAlpha',
-      description: 'Datengetriebene Börsenanalyse mit 131 Jahren saisonaler Marktdaten. In 23 Schritten zeigen wir dir die wichtigsten Features.',
+      description: 'Datengetriebene Börsenanalyse mit 131 Jahren saisonaler Marktdaten. In 26 Schritten zeigen wir dir die wichtigsten Features.',
       side: 'bottom',
       align: 'center'
     }
   },
   {
     page: '/',
-    element: '.nav__cta',
+    element: '#nav-login-btn',
     popover: {
-      title: 'Dashboard ist dein Startpunkt',
-      description: 'Das Dashboard bündelt alle wichtigen Signale für einen Ticker auf einer Seite — KI-Score, Crash-Ampel, Saisonalität, Events.',
+      title: 'Anmelden mit Google',
+      description: 'Optional: Mit Google-Login bekommst du eine <b>Cloud-Watchlist</b>, die zwischen deinen Geräten synchronisiert, und Zugriff auf dein persönliches Profil unter <b>/profile</b>. Ohne Login funktioniert alles auch — deine Watchlist bleibt dann nur lokal im Browser.',
       side: 'bottom',
       align: 'end'
     },
-    navigateAfter: { url: '/dashboard', step: 2 }
+    navigateAfter: { url: '/scanner', step: 2 },
+    optional: true
   },
 
-  // ── Phase 2: Dashboard ───────────────────────────────────────────────
+  // ── Phase 2: Scanner ─────────────────────────────────────────────────
+  {
+    page: '/scanner',
+    element: '#sel-search',
+    popover: {
+      title: 'Saisonal-Scanner — 269 Ticker',
+      description: 'Der wöchentlich aktualisierte Scanner zeigt dir alle Ticker mit aktuellem <b>KI-Score</b>, Signal (Bullish/Neutral/Bearish), Win-Rate und Monatsrendite. Filtere nach Signal, Kategorie oder Mindest-Score — die Tabelle aktualisiert sich live.',
+      side: 'right',
+      align: 'start'
+    },
+    navigateAfter: { url: '/watchlist', step: 3 },
+    optional: true
+  },
+
+  // ── Phase 3: Watchliste ──────────────────────────────────────────────
+  {
+    page: '/watchlist',
+    element: '#wl-add-btn',
+    popover: {
+      title: 'Watchliste — deine Favoriten-Ticker',
+      description: 'Ticker per <b>+</b> hinzufügen oder über den Stern auf jeder Analyse-Seite markieren. Jede Karte zeigt den aktuellen KI-Score, 2-Wochen-Saisonalität, Drawdown und das nächste Strategie-Signal. Eingeloggt: Cloud-Sync zwischen Geräten. Gast: rein lokal im Browser.',
+      side: 'right',
+      align: 'start'
+    },
+    navigateAfter: { url: '/dashboard', step: 4 },
+    optional: true
+  },
+
+  // ── Phase 4: Dashboard ───────────────────────────────────────────────
   {
     page: '/dashboard',
     element: '#ticker-input',
@@ -98,10 +127,10 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'end'
     },
-    navigateAfter: { url: '/dekadenzyklus', step: 8 }
+    navigateAfter: { url: '/dekadenzyklus', step: 10 }
   },
 
-  // ── Phase 3: Dekadenzyklus ───────────────────────────────────────────
+  // ── Phase 5: Dekadenzyklus ───────────────────────────────────────────
   {
     page: '/dekadenzyklus',
     element: '#chart-lines',
@@ -111,11 +140,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/jahreszyklus', step: 9 },
+    navigateAfter: { url: '/jahreszyklus', step: 11 },
     optional: true
   },
 
-  // ── Phase 4: Jahreszyklus ────────────────────────────────────────────
+  // ── Phase 6: Jahreszyklus ────────────────────────────────────────────
   {
     page: '/jahreszyklus',
     element: '#chart-main',
@@ -145,11 +174,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/zentralbanken', step: 12 },
+    navigateAfter: { url: '/zentralbanken', step: 14 },
     optional: true
   },
 
-  // ── Phase 5: Zentralbanken (Fed / EZB / BoE / BoJ) ──────────────────
+  // ── Phase 7: Zentralbanken (Fed / EZB / BoE / BoJ) ──────────────────
   {
     page: '/zentralbanken',
     element: '#chart-event',
@@ -159,11 +188,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/feiertage', step: 13 },
+    navigateAfter: { url: '/feiertage', step: 15 },
     optional: true
   },
 
-  // ── Phase 6: Feiertage ──────────────────────────────────────────────
+  // ── Phase 8: Feiertage ──────────────────────────────────────────────
   {
     page: '/feiertage',
     element: '#chart-ranking',
@@ -173,11 +202,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/trifecta', step: 14 },
+    navigateAfter: { url: '/trifecta', step: 16 },
     optional: true
   },
 
-  // ── Phase 7: Januar Trifecta ────────────────────────────────────────
+  // ── Phase 9: Januar Trifecta ────────────────────────────────────────
   {
     page: '/trifecta',
     element: '#chart-curves',
@@ -187,11 +216,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/spot-vol-beta', step: 15 },
+    navigateAfter: { url: '/spot-vol-beta', step: 17 },
     optional: true
   },
 
-  // ── Phase 8: Spot-Vol Beta ──────────────────────────────────────────
+  // ── Phase 10: Spot-Vol Beta ─────────────────────────────────────────
   {
     page: '/spot-vol-beta',
     element: '#chart-scatter',
@@ -201,11 +230,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/plain-vanilla', step: 16 },
+    navigateAfter: { url: '/plain-vanilla', step: 18 },
     optional: true
   },
 
-  // ── Phase 9: Plain Vanilla Strategien ───────────────────────────────
+  // ── Phase 11: Plain Vanilla Strategien ──────────────────────────────
   {
     page: '/plain-vanilla',
     element: '#chart-equity',
@@ -215,11 +244,11 @@ SA.TOUR_STEPS = [
       side: 'top',
       align: 'center'
     },
-    navigateAfter: { url: '/ki-saisonalitaet', step: 17 },
+    navigateAfter: { url: '/ki-saisonalitaet', step: 19 },
     optional: true
   },
 
-  // ── Phase 10: KI-Saisonalität ───────────────────────────────────────
+  // ── Phase 12: KI-Saisonalität ───────────────────────────────────────
   {
     page: '/ki-saisonalitaet',
     element: '#score-value',
@@ -229,11 +258,11 @@ SA.TOUR_STEPS = [
       side: 'bottom',
       align: 'start'
     },
-    navigateAfter: { url: '/backtest-engine', step: 18 },
+    navigateAfter: { url: '/backtest-engine', step: 20 },
     optional: true
   },
 
-  // ── Phase 11: Backtest Engine ───────────────────────────────────────
+  // ── Phase 13: Backtest Engine ───────────────────────────────────────
   {
     page: '/backtest-engine',
     element: '#outlier-filter',
@@ -273,11 +302,11 @@ SA.TOUR_STEPS = [
       side: 'bottom',
       align: 'center'
     },
-    navigateAfter: { url: '/dashboard?tour=done', step: 22 },
+    navigateAfter: { url: '/dashboard?tour=done', step: 25 },
     optional: true
   },
 
-  // ── Phase 12: Abschluss ─────────────────────────────────────────────
+  // ── Phase 14: Abschluss ─────────────────────────────────────────────
   {
     page: '/dashboard',
     element: '.nav__logo',
