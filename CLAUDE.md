@@ -233,18 +233,14 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 - [x] **Info-Badge-Security-Fix** — `inject_credentials.sh` prüft per JWT-Role dass kein service-role-Key ins Frontend-HTML leakt
 - [x] **nginx-Cache-Fix** — `/landing/components/*.html` nicht mehr 24h gecached (Nav-Änderungen wirken sofort)
 
-### ⚠️ OFFEN — ML-Pipeline (Chronos + MSTL + NeuralProphet)
-Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
-
-- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Container vorhanden, Daten OK, vermutlich ApexCharts Timing in `<details>`
-- [ ] Full-Run 270 Ticker mit erweitertem Backend (5 Quantile + History + NP Metrics)
-- [ ] Daily Cron `ml_forecasts.yml` prüfen (Mo 21:30 UTC)
-- [ ] KI-Score auf 5 Sub-Scores erweitern (+ MSTL Saisonale Stärke) → Dashboard Radar 5 Achsen
-- [ ] Watchlist Compact-Cards: Forecast-KPI
-- [ ] Newsletter: Top-5 Forecast Sektion
-- [x] **2026-04-18 `datetime.utcnow()` Deprecation** — Code-Scan: keine Treffer mehr, Migration bereits durch. CLAUDE.md-Regel ergänzt.
-
-Plan: `.claude/plans/curried-floating-treasure.md`
+### ✅ ML-Pipeline stillgelegt (2026-04-18)
+Gecancelter Scope: Chronos-Forecast, NeuralProphet, MSTL-Monats-Heatmap.
+Entfernt: `shared/mstl_decomposition.py`, `scripts/compute_ml_forecasts.py`,
+`scripts/create_ml_forecasts.sql`, `.github/workflows/ml_forecasts.yml`,
+`pages/_disabled/80_Erweiterte_Analyse.py` + `87_KI_Score.py`,
+`docs/AI_MODELS.md`, `docs/KI_FEATURES.md`.
+KI-Score wieder 4 Sub-Scores (à 2.5), Scanner ohne Forecast/Sais.Stärke-Spalte.
+User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
 ### 🔴 SOFORT (User-Action, klein)
 - [ ] **OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — aktuell "Testing"-Modus, nur Test-User können einloggen

@@ -166,23 +166,11 @@ anomalie_heatmap:
   de: "Isolation Forest bewertet monatliche Renditen im Kontext von Monat × Dekaden-Endziffer. Hohe Werte = viele historische Ausreißer in dieser Zelle. Zeigt wo die Saisonalität besonders unberechenbar ist."
   en: "Isolation Forest evaluates monthly returns in the context of month × decade ending digit. High values = many historical outliers in that cell. Shows where seasonality is particularly unpredictable."
 
-mstl_zerlegung:
-  de: "MSTL (Multiple Seasonal-Trend Decomposition) zerlegt den Kursverlauf in 4 Komponenten: Langfristiger Trend, Wochensaisonalität (5 Tage), Jahressaisonalität (252 Tage) und Residual (Rauschen)."
-  en: "MSTL (Multiple Seasonal-Trend Decomposition) breaks down the price series into 4 components: Long-term trend, weekly seasonality (5 days), annual seasonality (252 days), and residual (noise)."
-
-chronos_forecast:
-  de: "Amazon Chronos-Bolt-Tiny (9M Parameter): Probabilistische 30-Tage-Prognose mit Konfidenzintervall. Rein datengetrieben, kein Feature-Engineering nötig. Läuft auf CPU in unter 1 Sekunde."
-  en: "Amazon Chronos-Bolt-Tiny (9M parameters): Probabilistic 30-day forecast with confidence intervals. Purely data-driven, no feature engineering needed. Runs on CPU in under 1 second."
-
 # ── Disabled: 87_KI_Score ────────────────────────────────────
 
 dtw_aehnlichkeit:
   de: "Dynamic Time Warping vergleicht den bisherigen Jahresverlauf mit allen historischen Jahren. Findet die ähnlichsten Muster auch wenn sie zeitlich leicht verschoben sind — robuster als einfache Korrelation."
   en: "Dynamic Time Warping compares the current year's trajectory with all historical years. Finds the most similar patterns even when slightly time-shifted — more robust than simple correlation."
-
-prophet_prognose:
-  de: "Facebook Prophet: Zeitreihen-ML-Modell spezialisiert auf saisonale Muster. Generiert eine 30-Tage-Prognose mit Konfidenzintervall basierend auf historischer Jahres- und Wochensaisonalität."
-  en: "Facebook Prophet: Time series ML model specialized in seasonal patterns. Generates a 30-day forecast with confidence interval based on historical annual and weekly seasonality."
 
 ki_winrate:
   de: "Historische Win-Rate des aktuellen Monats: Wie oft war dieser Monat in der Vergangenheit positiv? Einfacher aber aussagekräftiger Indikator — 60%+ deutet auf eine robuste saisonale Tendenz."
