@@ -183,6 +183,7 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         "apex-demo",    # Dev/Demo-Chart, nicht produktiv
         "unsubscribe",  # Newsletter-Abmeldung, kein SEO-Ziel (noindex)
         "watchlist",    # Personalisiert, localStorage, kein SEO-Ziel (noindex)
+        "profile",      # Personalisiert, eingeloggt only, kein SEO-Ziel (noindex)
     }
 
     # ── Auto-Discovery: alle *.html aus landing/pages/ ─────────────────────

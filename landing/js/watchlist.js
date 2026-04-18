@@ -280,5 +280,128 @@
     }
   });
 
+  // ── Supabase Cloud-Sync (Phase 2, bei Login automatisch aktiv) ─────────
+  // localStorage bleibt Source-of-Truth im Client (Speed, Offline-Fähig).
+  // Bei eingeloggten Usern werden Add/Remove/Clear optimistisch auch in die
+  // Supabase-Tabelle `user_watchlists` geschrieben. Bei Login merge: Union
+  // aus local + remote, Supabase-Items werden in localStorage geladen.
+
+  function _supaClient() { return window.SA && SA.auth && SA.auth.client; }
+  function _supaUserId() { return window.SA && SA.auth && SA.auth.user && SA.auth.user.id; }
+  function _supaReady() { return !!(_supaClient() && _supaUserId()); }
+
+  function _supaLoad() {
+    if (!_supaReady()) return Promise.resolve([]);
+    return _supaClient().from('user_watchlists')
+      .select('ticker,added_at,note')
+      .order('added_at', { ascending: false })
+      .then(function(res) {
+        if (res.error) { console.warn('[SA.watchlist] supa load:', res.error); return []; }
+        return (res.data || []);
+      });
+  }
+
+  function _supaUpsert(item) {
+    if (!_supaReady() || !item || !item.ticker) return;
+    var payload = {
+      user_id: _supaUserId(),
+      ticker: item.ticker,
+      added_at: item.added_at || new Date().toISOString(),
+      note: item.note || ''
+    };
+    _supaClient().from('user_watchlists')
+      .upsert(payload, { onConflict: 'user_id,ticker' })
+      .then(function(res) {
+        if (res.error) console.warn('[SA.watchlist] supa upsert:', res.error);
+      });
+  }
+
+  function _supaDelete(ticker) {
+    if (!_supaReady() || !ticker) return;
+    _supaClient().from('user_watchlists').delete()
+      .eq('user_id', _supaUserId()).eq('ticker', ticker)
+      .then(function(res) {
+        if (res.error) console.warn('[SA.watchlist] supa delete:', res.error);
+      });
+  }
+
+  function _supaClear() {
+    if (!_supaReady()) return;
+    _supaClient().from('user_watchlists').delete()
+      .eq('user_id', _supaUserId())
+      .then(function(res) {
+        if (res.error) console.warn('[SA.watchlist] supa clear:', res.error);
+      });
+  }
+
+  // Sync beim Login: Merge Union aus local + remote. Remote wins bei Ticker-Konflikt.
+  function _syncOnLogin() {
+    _supaLoad().then(function(remote) {
+      var local = _read();
+      var remoteByTicker = {};
+      for (var i = 0; i < remote.length; i++) remoteByTicker[remote[i].ticker] = remote[i];
+
+      // Local-only Items → zu Supabase hochsyncen
+      for (var j = 0; j < local.items.length; j++) {
+        if (!remoteByTicker[local.items[j].ticker]) _supaUpsert(local.items[j]);
+      }
+
+      // Merge: Union (remote gewinnt bei Konflikt)
+      var mergedMap = {};
+      for (var k = 0; k < remote.length; k++) {
+        mergedMap[remote[k].ticker] = {
+          ticker: remote[k].ticker,
+          added_at: remote[k].added_at,
+          note: remote[k].note || ''
+        };
+      }
+      for (var l = 0; l < local.items.length; l++) {
+        if (!mergedMap[local.items[l].ticker]) mergedMap[local.items[l].ticker] = local.items[l];
+      }
+      var merged = [];
+      for (var t in mergedMap) merged.push(mergedMap[t]);
+      merged.sort(function(a, b) { return (b.added_at || '').localeCompare(a.added_at || ''); });
+
+      var data = _read();
+      data.items = merged.slice(0, MAX_ITEMS);
+      _write(data);
+      _emit('changed', { action: 'sync-login', count: data.items.length });
+    });
+  }
+
+  // Event-Listener: optimistische Writes zu Supabase nach Client-Änderungen
+  api.on('added', function(detail) {
+    if (!_supaReady()) return;
+    var items = _read().items;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].ticker === detail.ticker) { _supaUpsert(items[i]); break; }
+    }
+  });
+  api.on('removed', function(detail) {
+    if (!_supaReady()) return;
+    _supaDelete(detail.ticker);
+  });
+  api.on('changed', function(detail) {
+    if (detail && detail.action === 'clear' && _supaReady()) _supaClear();
+  });
+
+  // Auto-Init sobald SA.auth da ist — erst abwarten (auth.js wird evtl. später geladen)
+  function _initAuthSync(retries) {
+    retries = retries || 0;
+    if (!window.SA || !SA.auth || !SA.auth.onAuthChange) {
+      if (retries < 30) setTimeout(function() { _initAuthSync(retries + 1); }, 200);
+      return;
+    }
+    SA.auth.onAuthChange(function(user) {
+      if (user) _syncOnLogin();
+      // Bei Logout: localStorage bleibt (Guest-Mode).
+    });
+    // Falls bereits eingeloggt beim Seitenaufruf (Session wiederhergestellt)
+    if (SA.auth.isLoggedIn) _syncOnLogin();
+  }
+  _initAuthSync();
+
+  api._backend = 'localStorage + supabase-sync';
+
   SA.watchlist = api;
 })();
