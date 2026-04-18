@@ -54,42 +54,10 @@ _USER_AGENT = "SeasonAlpha/1.0 (+https://seasonalpha.ai; contact heiko@seasonalp
 def _get_api_key() -> str:
     """
     Polymarket-CLOB-API-Key laden (optional).
-    Reihenfolge: Env-Var -> secrets.toml -> streamlit.secrets -> leer.
-
-    Lesender Zugriff funktioniert ohne Key — Key erhoeht nur das Rate-Limit.
+    Aus Env-Var (gesetzt von shared/env_loader.py aus .env). Lesender Zugriff
+    funktioniert ohne Key — Key erhoeht nur das Rate-Limit.
     """
-    key = os.environ.get("POLYMARKET_API_KEY", "")
-    if key:
-        return key
-
-    try:
-        candidates = [
-            pathlib.Path(__file__).resolve().parent.parent / ".streamlit" / "secrets.toml",
-            pathlib.Path.home() / ".streamlit" / "secrets.toml",
-        ]
-        for path in candidates:
-            if not path.exists():
-                continue
-            try:
-                import tomllib  # type: ignore[import-not-found]
-            except ImportError:
-                try:
-                    import tomli as tomllib  # type: ignore[no-redef]
-                except ImportError:
-                    return ""
-            with open(path, "rb") as f:
-                data = tomllib.load(f)
-            for k in ("POLYMARKET_API_KEY", "polymarket_api_key"):
-                if data.get(k):
-                    return data[k]
-    except Exception:
-        pass
-
-    try:
-        import streamlit as st  # type: ignore[import-not-found]
-        return st.secrets.get("POLYMARKET_API_KEY", "") or ""
-    except Exception:
-        return ""
+    return os.environ.get("POLYMARKET_API_KEY", "")
 
 
 # ── HTTP-Core ─────────────────────────────────────────────────────────────────
