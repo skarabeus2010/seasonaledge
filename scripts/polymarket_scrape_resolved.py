@@ -300,25 +300,36 @@ def main() -> None:
     print("=" * 60)
 
     t0 = time.time()
-    all_markets: list[dict] = []
+    if not args.dry_run:
+        from shared.supabase_client import (
+            upsert_polymarket_resolved_markets,
+            upsert_polymarket_resolved_prices,
+        )
+
+    # Pro Tag: Discovery + Markets sofort in DB schreiben. Das haelt die
+    # Supabase-Connection warm (sonst httpx-Keep-Alive-Socket nach 15+ min
+    # stale -> ConnectError "Name or service not known").
+    seen_cids: set[str] = set()
+    all_unique: list[dict] = []
     for tag in tags:
         markets = scrape_tag(tag)
-        all_markets.extend(markets)
+        # Dedup gegen vorherige Tags
+        fresh = [m for m in markets if m["condition_id"] not in seen_cids]
+        for m in fresh:
+            seen_cids.add(m["condition_id"])
+        all_unique.extend(fresh)
+        if fresh and not args.dry_run:
+            upsert_polymarket_resolved_markets([strip_token(m) for m in fresh])
+            print(f"  -> {len(fresh)} frische Markets sofort in polymarket_resolved_markets geschrieben")
 
-    # Deduplizieren per condition_id
-    by_cid: dict[str, dict] = {}
-    for m in all_markets:
-        by_cid.setdefault(m["condition_id"], m)
-    unique = list(by_cid.values())
-
-    print(f"\n-- Gefunden: {len(unique)} unique resolved markets ueber alle Tags")
+    print(f"\n-- Gefunden: {len(all_unique)} unique resolved markets ueber alle Tags")
     by_cat: dict[str, int] = {}
-    for m in unique:
+    for m in all_unique:
         by_cat[m["category"]] = by_cat.get(m["category"], 0) + 1
     for cat, n in sorted(by_cat.items(), key=lambda x: -x[1]):
         print(f"    {cat:10s}: {n}")
 
-    if not unique:
+    if not all_unique:
         print("\nNichts zu speichern.")
         return
 
@@ -326,33 +337,24 @@ def main() -> None:
         print("\n(dry-run) Nichts in DB geschrieben.")
         return
 
-    # 1. Metadaten upserten
-    print("\n-- Markt-Katalog upserten ...")
-    from shared.supabase_client import (
-        upsert_polymarket_resolved_markets,
-        upsert_polymarket_resolved_prices,
-    )
-    upsert_polymarket_resolved_markets([strip_token(m) for m in unique])
-    print(f"   {len(unique)} Zeilen in polymarket_resolved_markets")
-
     if args.skip_prices:
         print("\n(skip-prices) Keine Preis-Historie gezogen.")
         return
 
-    # 2. Preis-Historie pro Markt ziehen + upserten
-    print(f"\n-- Preis-Historie ziehen (CLOB prices-history) fuer {len(unique)} Markets ...")
+    # Preis-Historie pro Markt ziehen + upserten (haeppchenweise)
+    print(f"\n-- Preis-Historie ziehen (CLOB prices-history) fuer {len(all_unique)} Markets ...")
     total_rows = 0
-    for i, m in enumerate(unique, 1):
+    for i, m in enumerate(all_unique, 1):
         rows = fetch_history_for_market(m)
         if rows:
             upsert_polymarket_resolved_prices(rows)
             total_rows += len(rows)
-        if i % 25 == 0 or i == len(unique):
-            print(f"  [{i:4d}/{len(unique)}] bisher {total_rows} Zeilen in _resolved_prices")
+        if i % 25 == 0 or i == len(all_unique):
+            print(f"  [{i:4d}/{len(all_unique)}] bisher {total_rows} Zeilen in _resolved_prices")
 
     elapsed = time.time() - t0
     print(f"\n{'=' * 60}")
-    print(f"  Fertig! {len(unique)} Markets, {total_rows} Preis-Snapshots in {elapsed:.1f}s")
+    print(f"  Fertig! {len(all_unique)} Markets, {total_rows} Preis-Snapshots in {elapsed:.1f}s")
     print("=" * 60)
 
 

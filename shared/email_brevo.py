@@ -26,54 +26,9 @@ BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 def _get_api_key() -> str:
     """
-    API-Key laden in folgender Reihenfolge:
-        1. Environment-Variable BREVO_API_KEY
-        2. .streamlit/secrets.toml (direkt geparsed, ohne Streamlit-Runtime)
-        3. streamlit.secrets (Fallback für Streamlit-Kontext)
+    API-Key aus BREVO_API_KEY Env-Var laden (aus .env via shared/env_loader.py).
     """
-    # 1. Env-Var
-    key = BREVO_API_KEY
-    if key:
-        return key
-
-    # 2. Direkter TOML-Read (funktioniert im Cron-Kontext ohne Streamlit)
-    try:
-        import pathlib
-        # Suche secrets.toml im Projekt-Root oder ~/.streamlit/
-        candidates = [
-            pathlib.Path(__file__).resolve().parent.parent / ".streamlit" / "secrets.toml",
-            pathlib.Path.home() / ".streamlit" / "secrets.toml",
-        ]
-        for path in candidates:
-            if path.exists():
-                try:
-                    import tomllib  # Python 3.11+
-                except ImportError:
-                    try:
-                        import tomli as tomllib  # Fallback
-                    except ImportError:
-                        tomllib = None
-                if tomllib:
-                    with open(path, "rb") as f:
-                        data = tomllib.load(f)
-                    # Key kann als top-level oder case-variiert drin sein
-                    for k in ("BREVO_API_KEY", "brevo_api_key"):
-                        if k in data and data[k]:
-                            return data[k]
-                    break
-    except Exception:
-        pass
-
-    # 3. Streamlit-Secrets (nur im Streamlit-Kontext sinnvoll)
-    try:
-        import streamlit as st
-        k = st.secrets.get("BREVO_API_KEY", "") or st.secrets.get("brevo_api_key", "")
-        if k:
-            return k
-    except Exception:
-        pass
-
-    return ""
+    return BREVO_API_KEY or os.environ.get("BREVO_API_KEY", "")
 
 
 def send_transactional(

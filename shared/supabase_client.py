@@ -7,6 +7,7 @@ Server: docker-compose env-vars.
 """
 from __future__ import annotations
 import os
+import time
 
 try:
     from supabase import create_client
@@ -16,14 +17,16 @@ except ImportError:
 _client = None
 
 
-def get_client():
-    """Lazy-Init des Supabase-Clients."""
+def get_client(force_new: bool = False):
+    """Lazy-Init des Supabase-Clients. force_new verwirft den gecachten Client."""
     global _client
     if create_client is None:
         raise ImportError(
             "supabase-Paket nicht installiert. "
             "Installiere es mit: pip install supabase"
         )
+    if force_new:
+        _client = None
     if _client is None:
         url = os.environ.get("SUPABASE_URL", "")
         key = os.environ.get("SUPABASE_KEY", "")
@@ -34,6 +37,31 @@ def get_client():
             )
         _client = create_client(url, key)
     return _client
+
+
+def _with_retry(fn, max_tries: int = 3, backoff_base: float = 1.5):
+    """
+    Retry-Wrapper fuer transiente Netzwerk-Fehler. Nach einem Fail wird
+    der globale _client resettet, weil httpx cachet Keep-Alive-Sockets
+    die nach 10+ min idle TIME_WAIT oder stale werden ("Name or service
+    not known" trotz funktionierendem DNS).
+    """
+    try:
+        from httpx import ConnectError, TimeoutException, RemoteProtocolError
+        retriable = (ConnectError, TimeoutException, RemoteProtocolError)
+    except ImportError:
+        retriable = (Exception,)
+    last_exc = None
+    for attempt in range(max_tries):
+        try:
+            return fn()
+        except retriable as e:
+            last_exc = e
+            global _client
+            _client = None  # Force re-create beim naechsten get_client()
+            if attempt < max_tries - 1:
+                time.sleep(backoff_base ** (attempt + 1))
+    raise last_exc
 
 
 # ── Prices ──────────────────────────────────────────
@@ -614,29 +642,35 @@ def fetch_polymarket_price_history(
 # ── Polymarket Resolved (fuer Brier-Score) ────────
 
 def upsert_polymarket_resolved_markets(records: list[dict]):
-    """Resolved-Markt-Metadata upserten (Katalog historischer Aufloesungen)."""
+    """Resolved-Markt-Metadata upserten (Katalog historischer Aufloesungen).
+    Retry bei httpx-ConnectError — Scraper haelt Supabase-Connection lange idle."""
     if not records:
         return
     batch_size = 500
-    client = get_client()
     for i in range(0, len(records), batch_size):
         batch = records[i:i + batch_size]
-        client.table("polymarket_resolved_markets").upsert(
-            batch, on_conflict="condition_id"
-        ).execute()
+        def do_upsert(_b=batch):
+            client = get_client()
+            return client.table("polymarket_resolved_markets").upsert(
+                _b, on_conflict="condition_id"
+            ).execute()
+        _with_retry(do_upsert)
 
 
 def upsert_polymarket_resolved_prices(records: list[dict]):
-    """Resolved-Preis-Zeitreihe upserten (CLOB prices-history Snapshots)."""
+    """Resolved-Preis-Zeitreihe upserten (CLOB prices-history Snapshots).
+    Retry bei httpx-ConnectError — siehe upsert_polymarket_resolved_markets."""
     if not records:
         return
     batch_size = 1000
-    client = get_client()
     for i in range(0, len(records), batch_size):
         batch = records[i:i + batch_size]
-        client.table("polymarket_resolved_prices").upsert(
-            batch, on_conflict="condition_id,ts"
-        ).execute()
+        def do_upsert(_b=batch):
+            client = get_client()
+            return client.table("polymarket_resolved_prices").upsert(
+                _b, on_conflict="condition_id,ts"
+            ).execute()
+        _with_retry(do_upsert)
 
 
 def fetch_polymarket_resolved_markets(
