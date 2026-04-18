@@ -20,12 +20,35 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 0
 fi
 
-# .env laden (SUPABASE_URL, SUPABASE_KEY)
+# .env laden (SUPABASE_URL, SUPABASE_KEY = service-role fuer Backend,
+# SUPABASE_ANON_KEY = anon fuer Frontend-Injection)
 source "$ENV_FILE"
 
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-    echo "WARNUNG: SUPABASE_URL oder SUPABASE_KEY leer — Credentials nicht injiziert"
+if [ -z "$SUPABASE_URL" ]; then
+    echo "WARNUNG: SUPABASE_URL leer — Credentials nicht injiziert"
     exit 0
+fi
+
+# Frontend-Key: NIEMALS den Service-Role-Key in HTML schreiben!
+# Bevorzugt SUPABASE_ANON_KEY (explizit). Fallback: SUPABASE_KEY nur wenn
+# per JWT-Role-Check nachweislich "anon" (Rueckwaertskompat. zum alten Setup).
+FRONTEND_KEY="${SUPABASE_ANON_KEY:-}"
+if [ -z "$FRONTEND_KEY" ]; then
+    if [ -z "$SUPABASE_KEY" ]; then
+        echo "FEHLER: Weder SUPABASE_ANON_KEY noch SUPABASE_KEY in .env gesetzt"
+        exit 1
+    fi
+    # JWT decoden: Payload-Segment (nach 1. Punkt) base64-decode, role-Feld auslesen
+    ROLE=$(echo "$SUPABASE_KEY" | awk -F'.' '{print $2}' | base64 -d 2>/dev/null | grep -o '"role":"[^"]*"' | cut -d'"' -f4 || true)
+    if [ "$ROLE" = "anon" ]; then
+        echo "Hinweis: kein SUPABASE_ANON_KEY in .env — SUPABASE_KEY ist anon, wird als Fallback genutzt"
+        FRONTEND_KEY="$SUPABASE_KEY"
+    else
+        echo "FEHLER: SUPABASE_ANON_KEY fehlt und SUPABASE_KEY ist nicht anon (role=$ROLE)"
+        echo "        => Setze in .env:  SUPABASE_ANON_KEY=<anon-jwt>"
+        echo "        NIEMALS den Service-Role-Key in Frontend-HTML schreiben!"
+        exit 1
+    fi
 fi
 
 # Placeholder in allen Landing-HTML-Dateien ersetzen
@@ -37,7 +60,7 @@ else
     # Umami Website-ID (optional, Fallback auf leeren String)
     UMAMI_ID="${UMAMI_WEBSITE_ID:-}"
     find "$REPO_DIR/landing" -name "*.html" -exec sed -i \
-        "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${SUPABASE_KEY}|g; s|%%UMAMI_WEBSITE_ID%%|${UMAMI_ID}|g" {} +
+        "s|%%SUPABASE_URL%%|${SUPABASE_URL}|g; s|%%SUPABASE_ANON_KEY%%|${FRONTEND_KEY}|g; s|%%UMAMI_WEBSITE_ID%%|${UMAMI_ID}|g" {} +
     echo "Credentials injiziert in $COUNT Datei(en) (Supabase + Umami)"
 fi
 
