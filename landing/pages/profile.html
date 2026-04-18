@@ -31,10 +31,51 @@
       display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
       margin-bottom: 1rem;
     }
-    @media (max-width: 768px) {
-      .profile-grid { grid-template-columns: 1fr; }
-    }
     .profile-grid .card { margin-bottom: 0; }
+
+    /* ── Responsive Breakpoints ─────────────────────────────────── */
+    /* iPad Landscape / Small Desktop (≤ 1024px): enger Gap */
+    @media (max-width: 1024px) {
+      .profile-wrap { padding: .75rem; }
+      .profile-hero { padding: 1.25rem; gap: 1rem; }
+      .profile-avatar, .profile-avatar-placeholder { width: 72px; height: 72px; }
+      .profile-name { font-size: 1.25rem; }
+      .profile-grid { gap: .75rem; }
+    }
+
+    /* Tablet Portrait / Large Phone (≤ 768px): Cards stapeln */
+    @media (max-width: 768px) {
+      .profile-grid { grid-template-columns: 1fr; gap: .75rem; margin-bottom: .75rem; }
+      .profile-wrap { padding: .5rem; }
+      .card { padding: 1rem; margin-bottom: .75rem; }
+      .page-title { font-size: 1.25rem; }
+      .page-caption { font-size: .75rem; margin-bottom: 1rem; }
+    }
+
+    /* Phone Portrait (≤ 480px): Hero stapelt vertikal, Buttons full-width */
+    @media (max-width: 480px) {
+      .profile-hero {
+        flex-direction: column; text-align: center; gap: 1rem; padding: 1rem;
+      }
+      .profile-avatar, .profile-avatar-placeholder {
+        margin: 0 auto; width: 80px; height: 80px;
+      }
+      .profile-avatar-placeholder { font-size: 1.75rem; }
+      .profile-name { font-size: 1.125rem; }
+      .profile-email { font-size: .8125rem; word-break: break-all; }
+      .profile-joined { font-size: .6875rem; }
+      .card h2 { font-size: .9375rem; margin-bottom: .65rem; }
+      .card-row {
+        flex-wrap: wrap; gap: .1rem .5rem; font-size: .8125rem;
+        padding: .4rem 0;
+      }
+      .card-row-value { font-size: .8125rem; word-break: break-all; max-width: 100%; }
+      .card-row-value#user-id { font-size: .6875rem !important; }
+      .btn-row { flex-direction: column; }
+      .btn-row .btn-logout, .btn-row .btn-danger {
+        width: 100%; text-align: center; padding: .75rem 1rem;
+      }
+    }
     .profile-avatar {
       width: 84px; height: 84px; border-radius: 50%;
       border: 2px solid var(--accent); object-fit: cover; flex-shrink: 0;
