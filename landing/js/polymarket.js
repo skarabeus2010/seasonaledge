@@ -341,6 +341,25 @@ SA.polymarket = (function() {
       };
     });
 
+    // Dynamische Y-Achse: Min/Max aus allen Punkten + 5pp Padding, clamp [0,100].
+    // Sonst werden z.B. Kurven im Bereich 35-80% auf 0-100 gezeichnet und sind
+    // optisch platt.
+    var yMin = Infinity, yMax = -Infinity;
+    series.forEach(function(s) {
+      (s.data || []).forEach(function(p) {
+        if (p && typeof p.y === 'number' && !isNaN(p.y)) {
+          if (p.y < yMin) yMin = p.y;
+          if (p.y > yMax) yMax = p.y;
+        }
+      });
+    });
+    if (!isFinite(yMin) || !isFinite(yMax)) { yMin = 0; yMax = 100; }
+    var range = yMax - yMin;
+    var pad = Math.max(2, range * 0.08);
+    yMin = Math.max(0, Math.floor(yMin - pad));
+    yMax = Math.min(100, Math.ceil(yMax + pad));
+    if (yMax - yMin < 5) { yMax = Math.min(100, yMin + 5); }  // Mindest-Range
+
     var cfg = {
       series: series,
       chart: Object.assign({ type: 'line', height: 380, zoom: { enabled: false } }, SA.chartTheme.chart),
@@ -350,7 +369,7 @@ SA.polymarket = (function() {
       xaxis: { type: 'datetime', labels: { style: { colors: '#a89878', fontSize: '11px' } } },
       yaxis: Object.assign({}, SA.chartTheme.yaxis, {
         labels: { style: { colors: '#a89878' }, formatter: function(v) { return v.toFixed(0) + '%'; } },
-        min: 0, max: 100
+        min: yMin, max: yMax, forceNiceScale: true
       }),
       legend: { show: true, position: 'top', horizontalAlign: 'left',
                 labels: { colors: '#a89878' }, fontSize: '11px' }
