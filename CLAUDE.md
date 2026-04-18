@@ -218,6 +218,21 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 - [x] TDOM-Fix Kalender-basiert, Timezone-Bugs, DD-Perzentil DOY-basiert
 - [x] **2026-04-15** `refresh_log` RLS + Policies (Supabase Security Warning gefixt)
 
+### Erledigt (KW 16, 2026-04-18 — Marathon-Session)
+- [x] **Polymarket Phase 1-3 live** — 26 Markets, 4.100 Historie-Punkte, Cron Phase G, neue Page `/polymarket`, Divergenz-Score für BTC/ETH, Teaser in Zentralbanken + Crash-Frühwarnung (siehe `docs/POLYMARKET.md`)
+- [x] **3 Polymarket-Blog-Posts** mit FAQPage-Schema (Fed-Cuts, BTC $150k, ETH vs BTC)
+- [x] **SEO-Cleanup** — `/analyse/*` Thin-Content-Pages endgültig weg (410 Gone + Builder-Cleanup)
+- [x] **.env-Refactor** — weg von `.streamlit/secrets.toml`, neuer `shared/env_loader.py`
+- [x] **Google OAuth Phase 2** — OAuth-Client + Supabase Provider + URL Config (Consent noch in "Testing"-Mode)
+- [x] **Cloud-Watchlist** — `user_watchlists`-Tabelle, Optimistic Sync, API-kompatibel zu bestehendem `SA.watchlist`
+- [x] **Profile-Seite `/profile`** — responsive (3 Breakpoints 1024/768/480)
+- [x] **Dashboard Info-Badges** — 13 Kacheln mit Hover-Tooltips (5 statische Cards + 8 Risk-KPIs)
+- [x] **Tour erweitert** — 23→26 Steps (Login→Scanner→Watchliste vor Dashboard)
+- [x] **Performance-Cache** — `SA.cache` (15min TTL) in app.js, `SA.TOUR_MODE` deaktiviert Chart-Animationen im Tour-Flow
+- [x] **Chronos-Card** aus Dashboard entfernt (Relikt der alten ML-Pipeline)
+- [x] **Info-Badge-Security-Fix** — `inject_credentials.sh` prüft per JWT-Role dass kein service-role-Key ins Frontend-HTML leakt
+- [x] **nginx-Cache-Fix** — `/landing/components/*.html` nicht mehr 24h gecached (Nav-Änderungen wirken sofort)
+
 ### ⚠️ OFFEN — ML-Pipeline (Chronos + MSTL + NeuralProphet)
 Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
 
@@ -231,50 +246,38 @@ Stand 2026-04-12: Backend + Frontend + Server live. SPY-Testlauf OK (11s).
 
 Plan: `.claude/plans/curried-floating-treasure.md`
 
-### 🟡 IN PROGRESS — Polymarket-Integration (Phase 1 Backend WIP, 2026-04-17)
-Branch: `claude/unruffled-chatelet-b61533` · Plan: `~/.claude/plans/moonlit-mapping-hinton.md`
+### 🔴 SOFORT (User-Action, klein)
+- [ ] **OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — aktuell "Testing"-Modus, nur Test-User können einloggen
+- [ ] **OAuth Client-Secret rotieren** — das in dieser Session im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
+- [ ] GSC Coverage-Check nach 1-2 Wochen: 329 → < 30 (410-Gone-Cleanup der /analyse/*)
+- [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 
-**Fertig (commit `c7c373c`):**
-- [x] SQL-Migration `scripts/create_polymarket_tables.sql` (2 Tabellen + RLS + Policies)
-- [x] `shared/polymarket_data.py` — Gamma+CLOB HTTP-Client (auf echte API-Feldnamen korrigiert: `conditionId`, `clobTokenIds`, `bestBid/Ask`, `endDateIso`)
-- [x] `shared/polymarket_markets.yaml` — 30 kuratierte Macro-Märkte (fed/macro/index/events/crypto)
-- [x] `shared/supabase_client.py` — `upsert_polymarket_markets`, `fetch_polymarket_markets`, `upsert_polymarket_prices`, `fetch_polymarket_latest_prices`, `fetch_polymarket_price_history`
-- [x] `scripts/polymarket_discover.py` — Auto-Discovery der condition_id's
-- [x] `scripts/polymarket_refresh.py` — Snapshot-CLI (--category --refresh --dry-run)
-- [x] `scripts/polymarket_backfill.py` — Voll-Historie via CLOB prices-history
+### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
+- [ ] **Brier-Score** auf historisch resolved Polymarket-Markets (Sample-Set aufbauen — unsere 26 resolven erst Ende 2026/Anfang 2027)
+- [ ] **Fed/Macro-Divergenz** — andere Baselines als Yearly-Return-Prior
+- [ ] **Newsletter-Sektion** mit Top-Divergenzen der Woche
+- [ ] **Intraday-Refresh-Tier** nahe FOMC (aktuell nur daily)
 
-**Nächste Schritte (nach PC-Neustart):**
-1. [ ] `polymarket_discover.py` auf Events-API umstellen — aktuell nutzt es `fetch_markets_by_tag` (das ich durch `fetch_events_by_tag` ersetzt habe). Muss über `events[].id` → `fetch_event_detail` → `markets[]` iterieren und Kandidaten scoren.
-2. [ ] Self-Test: `py -3.12 -m shared.polymarket_data` (live API-Check)
-3. [ ] Migration in Supabase SQL Editor ausführen
-4. [ ] Discovery-Run: `py -3.12 scripts/polymarket_discover.py --update-yaml --sync-db`
-5. [ ] Backfill: `py -3.12 scripts/polymarket_backfill.py`
-6. [ ] Hourly GitHub Action + Phase G in `nightly_refresh.py`
-7. [ ] Phase 2: Frontend (eigene `/prediction-markets` Page + Dashboard-KPIs + Zentralbanken-Erweiterung + Crash-Frühwarnung-Integration)
-8. [ ] Phase 3: KI-Layer (Divergenz-Score + Brier-Score)
+### ⚠️ OFFEN — ML-Pipeline (MSTL)
+- [ ] **BUG: MSTL Monats-Heatmap rendert nicht** — Container vorhanden, Daten OK, vermutlich ApexCharts Timing in `<details>`
+- [ ] Full-Run 270 Ticker mit erweitertem Backend (5 Quantile + History)
+- [ ] Daily Cron `ml_forecasts.yml` prüfen (Mo 21:30 UTC)
+- [ ] KI-Score auf 5 Sub-Scores erweitern (+ MSTL Saisonale Stärke) → Dashboard Radar 5 Achsen
+- [ ] `datetime.utcnow()` Deprecation fixen
 
-**Wichtige Erkenntnisse (für Wiedereinstieg):**
-- Gamma API: `tag_slug=fed` auf `/events` (NICHT `tag` auf `/markets`). `search` auf Markets ignoriert.
-- Feldnamen camelCase: `conditionId`, `clobTokenIds` (JSON-String mit [YES, NO]), `endDateIso`, `liquidityNum`, `volumeNum`, `volume24hr`, `bestBid`, `bestAsk`, `lastTradePrice`
-- Snapshot braucht **keinen** CLOB-Roundtrip — `bestBid/Ask` stehen direkt im Gamma-Market-Response
-- Python-Version auf Dev-System: Nur `py -3.12` nutzen (3.9 bricht bei `X | None` Syntax)
-- Event-Struktur: z.B. „How many Fed rate cuts in 2026?" ist 1 Event mit 13 Outcome-Markets → Fed-YAML-Slugs sollten eventuell auf Outcome-Ebene liegen (0/1/2+ cuts) statt Event-Ebene
-
-### ⚠️ OFFEN — Weekly Newsletter Restarbeiten
-- [ ] Unsubscribe-Link End-to-End Inkognito-Test
-- [ ] Phase F Sonntags-Lauf verifizieren
-- [ ] Content-Iteration nach User-Feedback
-- [ ] Launch-Blog-Post
+### ⚠️ OFFEN — Auth-Features Follow-ups
+- [ ] Profile-Seite: Newsletter-Toggle (liest aus `email_subscribers`, Toggle via RPC)
+- [ ] Profile-Seite: Konto-Löschung self-service (aktuell nur Placeholder → Email an info@)
+- [ ] Watchlist Compact-Cards: Forecast-KPI (wenn MSTL da ist)
 
 ### Marketing (manuell)
-- [ ] LinkedIn + X Posts der Blog-Posts staffeln
+- [ ] LinkedIn + X Posts der 3 Polymarket-Blog-Posts staffeln (Templates im Anhang jedes Posts)
 - [ ] Newsletter-Mail an Brevo-Liste
-- [ ] Plausible/Umami Analytics (DSGVO-konform)
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 
-### Technische Roadmap
+### Technische Roadmap (längerfristig)
 - [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
-- [ ] Custom Watchlists mit gespeichertem View
 - [ ] Alerts (Push bei KI-Score/Crash-Ampel/Strategie-Schwellen)
 - [ ] EN-Übersetzung der HTML-Pages
-- [ ] Stripe Freemium/Abo
+- [ ] Stripe Freemium/Abo (an Supabase-User anbinden)
+- [ ] Premium-Features gated hinter Login (erweiterte Backtest-Zeiträume, mehr Markets im Scanner)
