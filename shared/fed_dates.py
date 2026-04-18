@@ -115,3 +115,31 @@ def get_fomc_dates_for_years(start_year=2000, end_year=2026):
     from datetime import datetime
     return [datetime(y, m, d) for y, m, d in FOMC_MEETING_DATES
             if start_year <= y <= end_year]
+
+
+def is_near_fomc(as_of=None, days_before: int = 2, days_after: int = 1) -> bool:
+    """
+    Prüft ob ``as_of`` innerhalb eines FOMC-Fensters liegt.
+
+    Default-Fenster: FOMC-Tag −2 bis FOMC-Tag +1 (4 Kalendertage).
+    Deckt Dienstag (Pre-Meeting), Mittwoch (Entscheidung), Donnerstag (Reaktion)
+    für die typischen 2-Tages-Meetings ab.
+
+    Args:
+        as_of: date oder datetime. Default: heute (UTC).
+        days_before: Kalendertage VOR FOMC die als "nah" gelten.
+        days_after:  Kalendertage NACH FOMC die als "nah" gelten.
+
+    Returns:
+        bool
+    """
+    from datetime import date, datetime, timedelta, timezone
+    if as_of is None:
+        as_of = datetime.now(timezone.utc).date()
+    elif isinstance(as_of, datetime):
+        as_of = as_of.date()
+    for y, m, d in FOMC_MEETING_DATES:
+        fomc = date(y, m, d)
+        if (fomc - timedelta(days=days_before)) <= as_of <= (fomc + timedelta(days=days_after)):
+            return True
+    return False
