@@ -328,6 +328,53 @@ def collect_health_data() -> dict:
         })
         downgrade("red")
 
+    # ── Check 6b: Intraday-Coverage (letzte 24h) ──────────────────────
+    try:
+        since_iso = (now_utc - timedelta(hours=24)).isoformat()
+        resp = (
+            client.table("refresh_log")
+            .select("created_at,duration_seconds,errors")
+            .eq("run_type", "intraday")
+            .gte("created_at", since_iso)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        rows = resp.data or []
+        count = len(rows)
+        is_weekend = now_utc.weekday() >= 5
+
+        if is_weekend:
+            # Wochenende: nur Crypto aktiv, ~4 Runs im Durchschnitt
+            if count >= 3:
+                status, detail = "green", f"{count} Runs (Wochenende, erwartet 3+)"
+            elif count >= 1:
+                status, detail = "yellow", f"{count} Runs (Wochenende, erwartet 3+)"
+            else:
+                status, detail = "red", "Keine Intraday-Runs in 24h"
+        else:
+            if count >= 10:
+                status, detail = "green", f"{count} Runs in 24h"
+            elif count >= 5:
+                status, detail = "yellow", f"{count} Runs (erwartet ≥10)"
+            else:
+                status, detail = "red", f"Nur {count} Runs in 24h (erwartet ≥10)"
+
+        checks.append({
+            "name": "Intraday-Coverage (24h)",
+            "status": status,
+            "detail": detail,
+            "value": str(count),
+        })
+        downgrade(status)
+    except Exception as e:
+        checks.append({
+            "name": "Intraday-Coverage (24h)",
+            "status": "red",
+            "detail": f"Query-Fehler: {str(e)[:100]}",
+            "value": "ERR",
+        })
+        downgrade("red")
+
     # ── Check 6: Regime-Scores (Crash-Ampel) ──────────────────────────
     try:
         resp = (
