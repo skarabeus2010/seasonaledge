@@ -242,11 +242,21 @@ Entfernt: `shared/mstl_decomposition.py`, `scripts/compute_ml_forecasts.py`,
 KI-Score wieder 4 Sub-Scores (à 2.5), Scanner ohne Forecast/Sais.Stärke-Spalte.
 User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
+### Erledigt (KW 17, 2026-04-21 — GRANT-Incident + Monitoring-Mails)
+- [x] **Supabase GRANT-Loss-Fix** — service_role hatte DML auf 15+ Alt-Tabellen verloren, anon hatte ungewollte Write-Rechte. SQL-Block mit `GRANT ALL ... TO service_role` + `REVOKE ... FROM anon` + `ALTER DEFAULT PRIVILEGES`. Incident-Doku im Memory.
+- [x] **docker-compose `env_file: .env`** — BREVO_API_KEY/ADMIN_EMAIL/SENDER_* waren nach `.env`-Refactor (04-18) nicht im Container; dadurch Weekly-Newsletter 3 Tage stumm. Fix: pauschal alle `.env`-Keys durchreichen, Migration der Brevo-Werte aus `.streamlit/secrets.toml` in `.env`.
+- [x] **PR #27 — Daily Health Check** — `scripts/daily_health_check.py` + Jinja2-Template + GitHub-Action Cron 07:00 UTC + Weekly-Newsletter-Manual-Trigger (`.github/workflows/weekly_newsletter_manual.yml` mit test/dry-run/live-Dropdown). 7 Checks, Ampel-Mail an `ADMIN_EMAIL`.
+- [x] **PR #28 — Health-Mail Standing-Text** — permanente "Selbst testen"-Sektion (GH-Actions-Links, SSH-Commands, Brevo-Statistics, Doku-Link). Bug-Fix: `scanner_results.scan_date` statt falschem `run_date`.
+- [x] **PR #29 — Intraday-Run-Logging** — `intraday_refresh.py` schreibt nach jedem erfolgreichen Run einen `refresh_log`-Eintrag mit `run_type='intraday'`. Health-Check-Coverage-Counter (Wochentag green ≥10, Wochenende green ≥3).
+- [x] **docs/EMAIL_TESTING.md** — Runbook für Mail-Versand-Tests, Troubleshooting (BREVO_API_KEY fehlt, Sender rejected, permission denied), Brevo-Key-Rotation, Daten-Freshness-Check.
+
 ### 🔴 SOFORT (User-Action, klein)
 - [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
+- [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
 - [ ] GSC Coverage-Check nach 1-2 Wochen: 329 → < 30 (410-Gone-Cleanup der /analyse/*)
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
+- [ ] **nightly_refresh.py tickers_success-Metrik fixen** (optional) — zählt "heute" fälschlich als fehlend wenn manuell vor Börsenschluss gestartet; macht Mail-Anzeige präziser aber nicht dringend
 
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
 - [x] **2026-04-18 Brier-Score-Pipeline** — separate Tabellen `polymarket_resolved_*`, Scraper für ~1500 resolved markets (6 Tags, 2024+), `shared/brier_score.py` mit Brier + Kalibrierungs-Kurve + Zeit-Buckets, Precompute als `brier_stats.json`, UI-Sektion auf `/polymarket`. Details in `docs/POLYMARKET.md#brier-score`.
