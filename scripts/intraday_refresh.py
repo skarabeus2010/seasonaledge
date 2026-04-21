@@ -246,6 +246,27 @@ def main():
         print(f"  Fehler bei: {', '.join(total_errors)}")
     print("=" * 60)
 
+    # Log-Eintrag fuer Health-Monitoring (refresh_log mit run_type='intraday')
+    # Damit daily_health_check.py die Intraday-Coverage der letzten 24h zaehlen kann.
+    if not dry_run:
+        try:
+            from shared.supabase_client import get_client
+            import json as _json
+            total_tickers = sum(len(cfg["tickers"]) for cfg in active.values())
+            get_client().table("refresh_log").insert({
+                "run_date": now_utc.strftime("%Y-%m-%d"),
+                "run_type": "intraday",
+                "tickers_total": total_tickers,
+                "tickers_success": total_success,
+                "tickers_missing": len(total_errors),
+                "missing_details": "{}",
+                "auto_fixed": 0,
+                "duration_seconds": round(elapsed, 1),
+                "errors": _json.dumps(total_errors[:20]),
+            }).execute()
+        except Exception as e:
+            print(f"[intraday] refresh_log insert failed: {e}")
+
 
 if __name__ == "__main__":
     main()
