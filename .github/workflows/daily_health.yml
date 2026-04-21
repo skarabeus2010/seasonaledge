@@ -1,0 +1,24 @@
+name: Daily Health Check
+
+on:
+  schedule:
+    # Taeglich 07:00 UTC (09:00 MESZ) — nach Nightly (21:05 UTC Vortag)
+    # und vor US-Boerseneroeffnung, damit morgens klar ist ob Daten frisch sind.
+    - cron: '0 7 * * *'
+  workflow_dispatch:  # Manueller Trigger fuer Test-Mails
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run daily health check on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 3m
+          script: |
+            docker exec seasonalpha-app python3 scripts/daily_health_check.py 2>&1 | tail -30
+            echo "Health check done: $(date)"
