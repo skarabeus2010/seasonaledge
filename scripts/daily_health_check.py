@@ -245,8 +245,8 @@ def collect_health_data() -> dict:
     try:
         resp = (
             client.table("scanner_results")
-            .select("run_date")
-            .order("run_date", desc=True)
+            .select("scan_date")
+            .order("scan_date", desc=True)
             .limit(1)
             .execute()
         )
@@ -260,7 +260,7 @@ def collect_health_data() -> dict:
             })
             downgrade("red")
         else:
-            last_date_str = rows[0]["run_date"]
+            last_date_str = rows[0]["scan_date"]
             last_d = datetime.strptime(last_date_str, "%Y-%m-%d").date()
             age = (today_utc - last_d).days
             if age <= WEEKLY_SCANNER_MAX_AGE_DAYS:
