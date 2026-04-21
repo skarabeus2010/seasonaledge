@@ -1,0 +1,50 @@
+name: Weekly Newsletter (Manual Trigger)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Sende-Modus"
+        required: true
+        default: "test"
+        type: choice
+        options:
+          - test       # Nur an ADMIN_EMAIL
+          - dry-run    # HTML auf Disk rendern, kein Versand
+          - live       # An alle aktiven Subscriber
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Run weekly newsletter on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 18m
+          script: |
+            MODE="${{ github.event.inputs.mode }}"
+            ARGS=""
+            case "$MODE" in
+              test)
+                ARGS="--test"
+                echo "[weekly-manual] Test-Versand an ADMIN_EMAIL"
+                ;;
+              dry-run)
+                ARGS="--dry-run"
+                echo "[weekly-manual] Dry-Run (HTML auf Disk, kein Versand)"
+                ;;
+              live)
+                ARGS=""
+                echo "[weekly-manual] LIVE-Versand an alle Subscriber"
+                ;;
+              *)
+                echo "[weekly-manual] Unbekannter Modus: $MODE"
+                exit 1
+                ;;
+            esac
+            docker exec seasonalpha-app python3 scripts/weekly_newsletter.py $ARGS 2>&1 | tail -60
+            echo "[weekly-manual] Finished: $(date)"

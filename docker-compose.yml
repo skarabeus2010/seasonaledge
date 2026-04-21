@@ -8,6 +8,11 @@ services:
     restart: always
     ports:
       - "8501:8501"
+    # Alle Vars aus .env (BREVO_API_KEY, ADMIN_EMAIL, SENDER_*,
+    # UNSUBSCRIBE_SECRET, SUPABASE_ANON_KEY, …) werden durchgereicht.
+    # Explizite environment-Liste darunter ist nur noch Fallback-Default.
+    env_file:
+      - .env
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
