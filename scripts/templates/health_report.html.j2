@@ -116,6 +116,44 @@
         </tr>
         {% endif %}
 
+        {# ── Standing-Text: Selbst testen (immer sichtbar) ── #}
+        <tr>
+          <td style="padding:0 28px 20px;">
+            <div style="background:#0f1016;border:1px solid #1f1f29;border-radius:8px;padding:16px;">
+              <div style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">
+                Selbst testen
+              </div>
+              <div style="font-size:12px;color:#d4d4d8;line-height:1.7;">
+                <strong style="color:#e8a820;">GitHub Actions (ohne SSH):</strong><br>
+                <a href="https://github.com/skarabeus2010/seasonaledge/actions/workflows/daily_health.yml" style="color:#9ca3af;text-decoration:none;">&rsaquo; Daily Health Check</a> &mdash; Run workflow&nbsp; (diese Mail erneut ausloesen)<br>
+                <a href="https://github.com/skarabeus2010/seasonaledge/actions/workflows/weekly_newsletter_manual.yml" style="color:#9ca3af;text-decoration:none;">&rsaquo; Weekly Newsletter (Manual Trigger)</a> &mdash; Dropdown <em>test</em>/<em>dry-run</em>/<em>live</em>
+                <br><br>
+                <strong style="color:#e8a820;">Server (SSH):</strong>
+                <pre style="background:#0a0a0e;color:#d4d4d8;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;margin:6px 0;white-space:pre-wrap;">ssh root@178.104.75.46
+
+# Health-Mail erneut senden
+docker exec seasonalpha-app python3 scripts/daily_health_check.py
+
+# Weekly-Newsletter Test (nur an ADMIN_EMAIL)
+docker exec seasonalpha-app python3 scripts/weekly_newsletter.py --test
+
+# Weekly-Newsletter Preview ohne Versand
+docker exec seasonalpha-app python3 scripts/weekly_newsletter.py --dry-run
+
+# Daten-Freshness: letzter Nightly-Eintrag
+docker exec seasonalpha-app python3 -c "from shared.supabase_client import get_client; print(get_client().table('refresh_log').select('run_date,duration_seconds,errors').order('created_at',desc=True).limit(1).execute().data)"</pre>
+                <strong style="color:#e8a820;">Brevo-Zustellstatus:</strong>
+                <a href="https://app.brevo.com/statistics/email" style="color:#9ca3af;text-decoration:none;">app.brevo.com/statistics/email</a>
+                &mdash; nach <code style="font-family:monospace;font-size:11px;">messageId</code> aus dem Script-Log filtern
+                <br><br>
+                <strong style="color:#e8a820;">Doku:</strong>
+                <a href="https://github.com/skarabeus2010/seasonaledge/blob/master/docs/EMAIL_TESTING.md" style="color:#9ca3af;text-decoration:none;">docs/EMAIL_TESTING.md</a>
+                &mdash; Troubleshooting, Key-Rotation, Sender-Domain
+              </div>
+            </div>
+          </td>
+        </tr>
+
         {# ── Footer ── #}
         <tr>
           <td style="background:#0a0a0e;padding:16px 28px;border-top:1px solid #2a2a35;">
