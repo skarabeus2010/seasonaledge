@@ -1,0 +1,50 @@
+name: Polymarket Daily Refresh
+
+# Taeglicher Polymarket-Snapshot — eigenstaendig, NICHT via nightly_refresh.py
+# Phase G. Grund: Phase G via subprocess.run crasht in <1s (vermutlich
+# httpx-Socket-Leak oder DNS-Cache-State im Nightly-Parent). Manueller
+# Aufruf sowie direkter docker exec funktionieren einwandfrei in 10-15s.
+# Deshalb: eigener GitHub-Cron ruft direkt via docker exec auf — keine
+# subprocess-Ebene dazwischen.
+#
+# Montags zusaetzlich Backfill fuer volle Historie aller 26 Markets.
+
+on:
+  schedule:
+    # 21:30 UTC taeglich — NACH US-Close (20:00 UTC) + NACH dem Nightly-Peak,
+    # damit der Container nicht gleichzeitig unter Last steht.
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+    inputs:
+      include_backfill:
+        description: "Zusaetzlich Backfill laufen lassen (volle Historie)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Polymarket daily snapshot
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 40m
+          script: |
+            echo "[polymarket-daily] Step 1/2: snapshot (26 markets)"
+            docker exec seasonalpha-app python3 scripts/polymarket_refresh.py 2>&1 | tail -30
+
+            # Montags ODER workflow_dispatch mit include_backfill=true: Backfill
+            DOW=$(date -u +%u)  # 1 = Montag, 7 = Sonntag
+            if [ "$DOW" = "1" ] || [ "${{ github.event.inputs.include_backfill }}" = "true" ]; then
+              echo "[polymarket-daily] Step 2/2: backfill (volle Historie)"
+              docker exec seasonalpha-app python3 scripts/polymarket_backfill.py 2>&1 | tail -20
+            else
+              echo "[polymarket-daily] Step 2/2: skip backfill (nicht Montag)"
+            fi
+
+            echo "[polymarket-daily] Done: $(date)"

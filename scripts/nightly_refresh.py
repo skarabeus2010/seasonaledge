@@ -400,6 +400,9 @@ def main():
         print(f"Weekly Newsletter: exception {e}")
 
     # Phase G: Polymarket Refresh (taeglich Snapshot, Sonntags zusaetzlich Backfill)
+    # WICHTIG: capture_output=False — Output direkt in docker logs spiegeln,
+    # damit Ausfaelle sichtbar sind. Vorher landete alles im captured String,
+    # der bei silent-fail nie ausgewertet wurde.
     try:
         from datetime import datetime as _dt, timezone as _tz
         import subprocess as _sp
@@ -407,36 +410,59 @@ def main():
 
         # G1: taeglicher Snapshot — alle 26 Markets aktueller YES-Preis
         app_logger.info("[phase-g] starte polymarket_refresh")
-        print("Polymarket Refresh: starte Snapshot...")
+        print("Polymarket Refresh: starte Snapshot...", flush=True)
         _res = _sp.run(
             [sys.executable, "scripts/polymarket_refresh.py"],
-            cwd=_project_dir, capture_output=True, text=True, timeout=600,
+            cwd=_project_dir, timeout=600,
         )
         if _res.returncode == 0:
-            print("Polymarket Refresh: ✓")
-            if _res.stdout:
-                print(_res.stdout[-300:])
+            print("Polymarket Refresh: OK", flush=True)
+            app_logger.info("[phase-g] polymarket_refresh OK")
         else:
-            app_logger.error(f"[phase-g] polymarket_refresh exit {_res.returncode}: {_res.stderr[:500]}")
-            print(f"Polymarket Refresh failed (exit {_res.returncode}): {_res.stderr[:200]}")
+            print(f"Polymarket Refresh FAILED (exit {_res.returncode})", flush=True)
+            app_logger.error(f"[phase-g] polymarket_refresh exit {_res.returncode}")
 
         # G2: wöchentlicher Backfill nur Montags (nightly läuft Mo–Fr — Montag ist der Tag
         # nach dem 48h-Lücken-Wochenende, am meisten Sinn für Historien-Refresh)
         if _now.weekday() == 0:
-            app_logger.info("[phase-g2] Montag → starte polymarket_backfill")
-            print("Polymarket Backfill: Montag, volle Historie...")
+            app_logger.info("[phase-g2] Montag -> starte polymarket_backfill")
+            print("Polymarket Backfill: Montag, volle Historie...", flush=True)
             _res2 = _sp.run(
                 [sys.executable, "scripts/polymarket_backfill.py"],
-                cwd=_project_dir, capture_output=True, text=True, timeout=1800,
+                cwd=_project_dir, timeout=1800,
             )
             if _res2.returncode == 0:
-                print("Polymarket Backfill: ✓")
+                print("Polymarket Backfill: OK", flush=True)
+                app_logger.info("[phase-g2] polymarket_backfill OK")
             else:
-                app_logger.error(f"[phase-g2] polymarket_backfill exit {_res2.returncode}: {_res2.stderr[:500]}")
-                print(f"Polymarket Backfill failed: {_res2.stderr[:200]}")
+                print(f"Polymarket Backfill FAILED (exit {_res2.returncode})", flush=True)
+                app_logger.error(f"[phase-g2] polymarket_backfill exit {_res2.returncode}")
     except Exception as e:
         app_logger.error(f"nightly_refresh: Polymarket Phase G fehlgeschlagen: {e}")
-        print(f"Polymarket Phase G: exception {e}")
+        print(f"Polymarket Phase G: exception {e}", flush=True)
+
+    # Phase H: Brier-Score Refresh (Sonntags nachts — Kalibrierung der Polymarket-Snapshots)
+    try:
+        from datetime import datetime as _dt2, timezone as _tz2
+        import subprocess as _sp2
+        _now2 = _dt2.now(_tz2.utc)
+        # Sonntag nacht (UTC-Wochenende) — compute_brier erzeugt brier_stats.json fuer Landing
+        if _now2.weekday() == 6:
+            print("Brier-Compute: Sonntag, Kalibrierung aktualisieren...", flush=True)
+            app_logger.info("[phase-h] starte compute_brier_stats")
+            _res3 = _sp2.run(
+                [sys.executable, "scripts/compute_brier_stats.py"],
+                cwd=_project_dir, timeout=600,
+            )
+            if _res3.returncode == 0:
+                print("Brier-Compute: OK", flush=True)
+                app_logger.info("[phase-h] compute_brier_stats OK")
+            else:
+                print(f"Brier-Compute FAILED (exit {_res3.returncode})", flush=True)
+                app_logger.error(f"[phase-h] compute_brier_stats exit {_res3.returncode}")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Brier Phase H fehlgeschlagen: {e}")
+        print(f"Brier Phase H: exception {e}", flush=True)
 
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
