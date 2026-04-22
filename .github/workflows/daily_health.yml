@@ -2,9 +2,11 @@ name: Daily Health Check
 
 on:
   schedule:
-    # Taeglich 07:00 UTC (09:00 MESZ) — nach Nightly (21:05 UTC Vortag)
-    # und vor US-Boerseneroeffnung, damit morgens klar ist ob Daten frisch sind.
-    - cron: '0 7 * * *'
+    # 05:00 UTC (07:00 MESZ) — GitHub-Actions Scheduled-Crons haben oft
+    # 15-90 Min Delay, so landet die Mail meist bis 08:30 MESZ im Postfach.
+    # Liegt nach Nightly (21:05 UTC Vortag) und vor US-Boerseneroeffnung,
+    # damit morgens klar ist ob Daten frisch sind.
+    - cron: '0 5 * * *'
   workflow_dispatch:  # Manueller Trigger fuer Test-Mails
 
 jobs:
