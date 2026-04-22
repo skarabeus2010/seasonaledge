@@ -27,7 +27,7 @@ on:
 jobs:
   brier:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 150
     steps:
       - name: Scrape resolved + compute Brier
         uses: appleboy/ssh-action@v1
@@ -35,7 +35,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 40m
+          command_timeout: 140m
           script: |
             TAG_FLAG=""
             if [ "${{ github.event.inputs.tags }}" != "all" ] && [ -n "${{ github.event.inputs.tags }}" ]; then
