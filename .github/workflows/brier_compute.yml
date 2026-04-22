@@ -1,0 +1,55 @@
+name: Brier Score Compute (Weekly)
+
+# Fuehrt Scraper fuer resolved markets + Brier-Score-Berechnung aus.
+# Separat vom nightly_refresh.py Phase H, weil der Scraper 15-30 Min
+# braucht (~1500 Markets × Preis-Historie) und den Nightly blockieren
+# wuerde. Schreibt landing/data/brier_stats.json fuer die /polymarket-Page.
+
+on:
+  schedule:
+    # Sonntag 02:00 UTC (04:00 MESZ) — ausserhalb aller Handelszeiten,
+    # vor dem Nightly Phase H (der brier_stats.json neu erzeugt basierend
+    # auf der aktualisierten polymarket_resolved_markets-Tabelle).
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Tags (comma-separated), oder 'all'"
+        required: false
+        default: "all"
+        type: string
+      skip_prices:
+        description: "Nur Metadaten, keine Preis-Historie (schneller fuer Tests)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  brier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Scrape resolved + compute Brier
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 40m
+          script: |
+            TAG_FLAG=""
+            if [ "${{ github.event.inputs.tags }}" != "all" ] && [ -n "${{ github.event.inputs.tags }}" ]; then
+              TAG_FLAG="--tag ${{ github.event.inputs.tags }}"
+            fi
+            SKIP_FLAG=""
+            if [ "${{ github.event.inputs.skip_prices }}" = "true" ]; then
+              SKIP_FLAG="--skip-prices"
+            fi
+
+            echo "[brier] Step 1/2: scrape resolved markets"
+            docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py $TAG_FLAG $SKIP_FLAG 2>&1 | tail -40
+
+            echo "[brier] Step 2/2: compute brier stats -> landing/data/brier_stats.json"
+            docker exec seasonalpha-app python3 scripts/compute_brier_stats.py 2>&1 | tail -20
+
+            echo "[brier] Done: $(date)"
