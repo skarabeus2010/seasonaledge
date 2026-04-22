@@ -238,6 +238,13 @@ def main():
 
     stats = compute_stats(markets, prices)
 
+    # Guard: wenn keine Forecasts (z.B. nach --skip-prices Scrape) → sauber exitieren
+    if not stats.get("overall") or stats["overall"].get("forecasts", 0) == 0:
+        print("\n-- Ergebnisse --")
+        print(f"  {len(markets)} Markets in DB, aber 0 Forecasts (Preis-Historie fehlt).")
+        print("  Scraper ohne --skip-prices starten, dann erneut compute_brier_stats.")
+        return
+
     print("\n-- Ergebnisse --")
     print(f"  Overall Brier: {stats['overall']['brier']}")
     print(f"  vs Baseline:   {stats['overall']['baseline_brier']}")
