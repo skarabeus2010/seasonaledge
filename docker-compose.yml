@@ -20,6 +20,10 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./blog/output:/app/blog/output
+      # landing/data wird von compute_brier_stats.py beschrieben
+      # (brier_stats.json, ggf. weitere precomputed JSONs fuers Frontend).
+      # nginx liest aus dem gleichen Host-Ordner read-only.
+      - ./landing/data:/app/landing/data
       - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
