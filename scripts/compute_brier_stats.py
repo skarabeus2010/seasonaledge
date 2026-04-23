@@ -68,13 +68,24 @@ def load_data():
     from shared.supabase_client import get_client
     client = get_client()
 
-    # Markets
-    markets = (
-        client.table("polymarket_resolved_markets")
-        .select("*")
-        .execute()
-        .data or []
-    )
+    # Markets paginiert (PostgREST-Default cappt sonst bei 1000)
+    markets: list[dict] = []
+    PAGE = 1000
+    offset = 0
+    while True:
+        batch = (
+            client.table("polymarket_resolved_markets")
+            .select("*")
+            .range(offset, offset + PAGE - 1)
+            .execute()
+            .data or []
+        )
+        if not batch:
+            break
+        markets.extend(batch)
+        if len(batch) < PAGE:
+            break
+        offset += PAGE
     print(f"Markets geladen: {len(markets)}")
 
     # Preise paginiert (ueber viele tausend Zeilen)
@@ -239,7 +250,7 @@ def main():
     stats = compute_stats(markets, prices)
 
     # Guard: wenn keine Forecasts (z.B. nach --skip-prices Scrape) → sauber exitieren
-    if not stats.get("overall") or stats["overall"].get("forecasts", 0) == 0:
+    if stats.get("error") == "no_data" or stats.get("meta", {}).get("forecasts_count", 0) == 0:
         print("\n-- Ergebnisse --")
         print(f"  {len(markets)} Markets in DB, aber 0 Forecasts (Preis-Historie fehlt).")
         print("  Scraper ohne --skip-prices starten, dann erneut compute_brier_stats.")
