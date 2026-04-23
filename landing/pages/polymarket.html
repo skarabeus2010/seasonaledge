@@ -74,6 +74,14 @@
     .market-checkboxes label{display:flex;align-items:center;gap:.4rem;padding:.2rem;color:var(--dim);cursor:pointer;border-radius:3px}
     .market-checkboxes label:hover{background:rgba(232,168,32,.06);color:var(--text)}
     .market-checkboxes input[type=checkbox]{accent-color:var(--accent)}
+    /* Info-Badge (Hover-Tooltip) — Pattern analog zu ki-saisonalitaet.html */
+    .info-badge{position:absolute;top:0;right:0;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;font-style:italic;cursor:help;z-index:5;transition:all .2s;user-select:none;margin-left:.5rem}
+    .info-badge:hover{background:rgba(232,168,32,.2);border-color:var(--accent);color:var(--accent)}
+    .info-tooltip{position:absolute;top:2rem;right:0;width:380px;max-width:calc(100vw - 2rem);background:rgba(10,10,14,.98);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-size:.75rem;color:var(--dim);line-height:1.65;box-shadow:0 10px 30px rgba(0,0,0,.65);z-index:100;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .2s, transform .2s, visibility .2s;pointer-events:none;text-align:left}
+    .info-badge:hover ~ .info-tooltip,.info-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+    .info-tooltip b{color:var(--text)}
+    .info-tooltip code{background:rgba(255,255,255,.05);padding:.08rem .3rem;border-radius:3px;font-size:.72rem;color:var(--accent)}
+    .brier-header-wrap{position:relative;padding-right:2rem}
   </style>
 </head>
 <body>
@@ -205,7 +213,21 @@
       </p>
 
       <!-- ── Brier-Score / Kalibrierung ── -->
-      <h2 class="section-hdr" id="brier-section"><b>Kalibrierung</b> &mdash; Wie zuverl&auml;ssig sind Polymarket-Wahrscheinlichkeiten?</h2>
+      <div class="brier-header-wrap">
+        <h2 class="section-hdr" id="brier-section"><b>Kalibrierung</b> &mdash; Wie zuverl&auml;ssig sind Polymarket-Wahrscheinlichkeiten?</h2>
+        <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Brier-Score">i</div>
+        <div class="info-tooltip">
+          <b>Brier-Score &mdash; Kalibrierungs-Ma&szlig; f&uuml;r Wahrscheinlichkeits-Prognosen</b><br><br>
+          Formel: <code>Brier = Mittel((p &minus; o)<sup>2</sup>)</code> &mdash; Mittlere quadratische Abweichung zwischen prognostizierter Wahrscheinlichkeit <code>p</code> (0&ndash;1) und tats&auml;chlichem Outcome <code>o</code> (1 eingetreten, 0 nicht).<br><br>
+          <b>Referenzwerte:</b><br>
+          <span style="color:#30e878">0.00</span> = perfekter Forecaster &middot;
+          <span style="color:var(--accent)">0.15&ndash;0.20</span> = gut kalibriert &middot;
+          <b>0.25</b> = 50/50-Rauschen &middot;
+          <span style="color:#ff4040">0.50+</span> = systematisch falsch<br><br>
+          <b>Wichtig:</b> Niedriger Brier &ne; "meistens richtig". Wenn Markt konstant 30 % sagt und Events in 30 % der F&auml;lle eintreten, ist Brier niedrig &mdash; obwohl &laquo;meistens NO&raquo; das Hauptoutcome ist.<br><br>
+          Polymarket schl&auml;gt die <b>Basisrate-Baseline</b> (<code>p&middot;(1&minus;p)</code>) deutlich &mdash; die Markt-Prognosen sind informativ, nicht blo&szlig; Rauschen.
+        </div>
+      </div>
       <p class="section-caption">
         Brier-Score-Analyse auf historisch aufgel&ouml;sten Markets. Wenn Polymarket 70 % sagt, tritt das Ereignis dann tats&auml;chlich in ~70 % der F&auml;lle ein?
       </p>
@@ -216,24 +238,6 @@
       <div id="brier-content" style="display:none">
         <!-- 1. Headline-KPIs -->
         <div class="kpi-row" id="brier-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-bottom:1rem"></div>
-
-        <!-- 2. Erklaerung -->
-        <details open style="margin-bottom:1.5rem;background:rgba(232,168,32,.04);border:1px solid rgba(232,168,32,.12);border-radius:10px">
-          <summary style="padding:.75rem 1rem;cursor:pointer;font-weight:600;color:var(--accent)">Was ist der Brier-Score?</summary>
-          <div class="content" style="padding:0 1rem 1rem;font-size:.8125rem;color:var(--dim);line-height:1.65">
-            <p>Der <b>Brier-Score</b> misst wie gut ein Prognostiker kalibriert ist &mdash; also ob seine prozentualen Wahrscheinlichkeits-Aussagen &uuml;ber viele F&auml;lle hinweg der tats&auml;chlichen Trefferrate entsprechen.</p>
-            <p><b>Formel:</b> <code>Brier = Mittel((p &minus; o)<sup>2</sup>)</code>. <code>p</code> ist die prognostizierte Wahrscheinlichkeit (0&minus;1), <code>o</code> das tats&auml;chliche Outcome (1 = eingetreten, 0 = nicht). Quadrierte Abweichung, gemittelt &uuml;ber alle Prognosen.</p>
-            <p><b>Referenzwerte:</b></p>
-            <ul style="margin:.5rem 0 .5rem 1.2rem">
-              <li><b style="color:#30e878">0.00</b> &mdash; perfekter Forecaster (immer 100 % bei YES, 0 % bei NO).</li>
-              <li><b style="color:var(--accent)">0.15&minus;0.20</b> &mdash; typisch f&uuml;r gut kalibrierte liquide Prediction-Markets.</li>
-              <li><b>0.25</b> &mdash; "Immer 50&minus;50"-Baseline, null Informationsgewinn.</li>
-              <li><b style="color:#ff4040">0.50+</b> &mdash; systematisch falsch (&uuml;bersch&auml;tzt seltene Events).</li>
-            </ul>
-            <p><b>Wichtige Nuance:</b> Ein niedriger Brier-Score bedeutet nicht "meistens richtig" &mdash; er bedeutet "die angegebene Wahrscheinlichkeit trifft im Durchschnitt zu". Wenn der Markt konsequent 30 % sagt und das Ereignis in 30 % der F&auml;lle eintritt, ist der Score gut &mdash; obwohl der Markt technisch "meistens falsch" mit seinem Haupt-Outcome lag.</p>
-            <p><b>Basisrate-Baseline:</b> Als fairer Vergleichspunkt nutzen wir <code>p&middot;(1&minus;p)</code> mit <code>p</code> = Anteil der tats&auml;chlich eingetretenen Events. Ein informationsloser Forecaster erreicht diesen Wert durch konstantes Raten der Basisrate. Polymarket muss diesen Wert deutlich unterbieten um als "informativ" zu gelten.</p>
-          </div>
-        </details>
 
         <!-- 3. Kalibrierungs-Kurve -->
         <h3 style="font-size:.875rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:1.5rem 0 .5rem">Kalibrierungs-Kurve</h3>

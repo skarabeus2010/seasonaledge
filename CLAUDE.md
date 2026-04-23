@@ -242,6 +242,14 @@ Entfernt: `shared/mstl_decomposition.py`, `scripts/compute_ml_forecasts.py`,
 KI-Score wieder 4 Sub-Scores (à 2.5), Scanner ohne Forecast/Sais.Stärke-Spalte.
 User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
+### Erledigt (KW 17, 2026-04-23 — Polymarket-Bypass + Brier-Pipeline live)
+- [x] **Polymarket Phase G via Bypass-Cron** — Subprocess Silent-Fail in `nightly_refresh.py` Phase G seit 2026-04-19 (Traceback durch `stderr[:500]`-Truncation unsichtbar). Statt weiter zu debuggen: eigener GitHub-Cron `polymarket_daily.yml` (21:30 UTC), Phase G bleibt drin mit `capture_output=False` zum späteren Forensik.
+- [x] **Brier-Pipeline komplett automatisiert** — Scraper lief nie (kein Cron), Compute hatte mehrere Bugs: KeyError bei 0 Forecasts, 1000-Row-Cap ohne Pagination, falscher Key im Guard-Check, fehlender Volume-Mount. Alle gefixt.
+- [x] **Brier-Stats live auf /polymarket** — Overall Brier 0.0723, 197k Forecasts, 3761 Markets, Kalibrierungs-Kurve sehr nah an Diagonale (leichte Overconfidence 0.4-0.5). `landing/data/brier_stats.json` jetzt Volume-gemountet, nginx liefert aus.
+- [x] **(i)-Badge für Brier-Erklärung** auf /polymarket — Pure-CSS Hover-Tooltip analog zu ki-saisonalitaet.html, ersetzt redundanten `<details>`-Expander.
+- [x] **Health-Check 8. Indikator**: Brier-Stats-Alter (green ≤10d, yellow 11-14d, red >14d oder fehlt).
+- [x] **Automatik**: Polymarket täglich 21:30 UTC, Brier wöchentlich Sonntag 02:00 UTC, Phase H Sonntag im Nightly (Compute-only, ohne Scraper).
+
 ### Erledigt (KW 17, 2026-04-21 — GRANT-Incident + Monitoring-Mails)
 - [x] **Supabase GRANT-Loss-Fix** — service_role hatte DML auf 15+ Alt-Tabellen verloren, anon hatte ungewollte Write-Rechte. SQL-Block mit `GRANT ALL ... TO service_role` + `REVOKE ... FROM anon` + `ALTER DEFAULT PRIVILEGES`. Incident-Doku im Memory.
 - [x] **docker-compose `env_file: .env`** — BREVO_API_KEY/ADMIN_EMAIL/SENDER_* waren nach `.env`-Refactor (04-18) nicht im Container; dadurch Weekly-Newsletter 3 Tage stumm. Fix: pauschal alle `.env`-Keys durchreichen, Migration der Brevo-Werte aus `.streamlit/secrets.toml` in `.env`.
