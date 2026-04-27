@@ -10,7 +10,7 @@ Aufruf:
   py scripts/fetch_event_data.py --mode earnings      # nur Earnings
 """
 
-import sys, os, pathlib, argparse, time, json, requests
+import sys, os, pathlib, argparse, time, requests
 from datetime import datetime, timezone
 
 _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -22,55 +22,103 @@ load_env()
 
 from shared.symbols import SYMBOLS
 
-YAHOO_URL = (
+YAHOO_CHART_URL = (
     "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
     "?range=25y&interval=1d&events={events}&includeAdjustedClose=false"
 )
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "application/json",
-}
+YAHOO_SUMMARY_URL = (
+    "https://query1.finance.yahoo.com/v11/finance/quoteSummary/{ticker}"
+    "?modules=earningsHistory"
+)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")  # service-role key
 
+# ── Yahoo Finance Session ────────────────────────────────────────────────────
 
-# ── Yahoo Finance Fetch ──────────────────────────────────────────────────────
+def _make_session() -> requests.Session:
+    s = requests.Session()
+    s.headers.update({
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            "Version/17.4.1 Safari/605.1.15"
+        ),
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+    })
+    # Establish session cookie
+    try:
+        s.get("https://finance.yahoo.com/", timeout=15)
+    except Exception:
+        pass
+    return s
 
-def _yahoo_events(ticker: str, events: str) -> dict:
-    url = YAHOO_URL.format(ticker=ticker, events=events)
-    r = requests.get(url, headers=HEADERS, timeout=25)
-    r.raise_for_status()
-    data = r.json()
-    result = (data.get("chart") or {}).get("result") or []
-    if not result:
-        return {}
-    return ((result[0].get("events") or {}).get(events)) or {}
 
+_SESSION: requests.Session | None = None
+
+
+def _get_session() -> requests.Session:
+    global _SESSION
+    if _SESSION is None:
+        _SESSION = _make_session()
+    return _SESSION
+
+
+def _get_json(url: str, retries: int = 3) -> dict:
+    s = _get_session()
+    for attempt in range(retries):
+        r = s.get(url, timeout=25)
+        if r.status_code == 429:
+            wait = 30 * (attempt + 1)
+            print(f"    [rate-limit] warte {wait}s …", flush=True)
+            time.sleep(wait)
+            continue
+        if r.status_code == 404:
+            return {}
+        r.raise_for_status()
+        return r.json()
+    raise RuntimeError(f"Nach {retries} Versuchen noch immer 429 für {url}")
+
+
+# ── Dividenden ───────────────────────────────────────────────────────────────
 
 def fetch_dividends(ticker: str) -> list[dict]:
-    raw = _yahoo_events(ticker, "dividends")
+    url = YAHOO_CHART_URL.format(ticker=ticker, events="dividends")
+    data = _get_json(url)
+    result = (data.get("chart") or {}).get("result") or []
+    if not result:
+        return []
+    raw = ((result[0].get("events") or {}).get("dividends")) or {}
     rows = []
     for v in raw.values():
         dt = datetime.fromtimestamp(v["date"], tz=timezone.utc).date().isoformat()
-        rows.append({
-            "ticker":  ticker,
-            "ex_date": dt,
-            "amount":  v.get("amount"),
-        })
+        rows.append({"ticker": ticker, "ex_date": dt, "amount": v.get("amount")})
     return sorted(rows, key=lambda r: r["ex_date"])
 
 
+# ── Earnings ─────────────────────────────────────────────────────────────────
+
 def fetch_earnings(ticker: str) -> list[dict]:
-    raw = _yahoo_events(ticker, "earnings")
+    url = YAHOO_SUMMARY_URL.format(ticker=ticker)
+    data = _get_json(url)
+    if not data:
+        return []
+    results = ((data.get("quoteSummary") or {}).get("result")) or []
+    if not results:
+        return []
+    history = (results[0].get("earningsHistory") or {}).get("history") or []
     rows = []
-    for v in raw.values():
-        dt = datetime.fromtimestamp(v["date"], tz=timezone.utc).date().isoformat()
-        eps_a = v.get("epsActual")
-        eps_e = v.get("epsEstimate")
-        surprise = None
-        if eps_a is not None and eps_e is not None and eps_e != 0:
-            surprise = round((eps_a - eps_e) / abs(eps_e) * 100, 4)
+    for item in history:
+        quarter_raw = (item.get("quarter") or {}).get("raw")
+        if not quarter_raw:
+            continue
+        dt = datetime.fromtimestamp(quarter_raw, tz=timezone.utc).date().isoformat()
+        eps_a = (item.get("epsActual") or {}).get("raw")
+        eps_e = (item.get("epsEstimate") or {}).get("raw")
+        surprise_raw = (item.get("surprisePercent") or {}).get("raw")
+        # surprisePercent.raw ist z.B. 0.191 = 19.1 %
+        surprise = round(surprise_raw * 100, 4) if surprise_raw is not None else None
         rows.append({
             "ticker":       ticker,
             "report_date":  dt,
@@ -93,7 +141,6 @@ def upsert(table: str, rows: list[dict]) -> None:
         "Content-Type":  "application/json",
         "Prefer":        "resolution=merge-duplicates,return=minimal",
     }
-    # In Batches von 500 senden
     batch_size = 500
     for i in range(0, len(rows), batch_size):
         batch = rows[i:i + batch_size]
@@ -144,7 +191,7 @@ def main() -> None:
             print(f"  ERR {ticker}: {exc}", file=sys.stderr)
             err += 1
 
-        time.sleep(0.35)  # Rate-Limiting Yahoo Finance
+        time.sleep(0.5)  # Rate-Limiting Yahoo Finance
 
     print(f"\nErgebnis: {ok} OK / {err} Fehler")
     print(f"  Dividenden:  {div_total} Einträge")
