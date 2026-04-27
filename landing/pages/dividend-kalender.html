@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dividenden-Effekt &mdash; Kursverhalten rund um den Ex-Dividenden-Termin | SeasonAlpha</title>
+  <meta name="description" content="Wie verhält sich ein Aktien- oder ETF-Kurs vor und nach dem Ex-Dividenden-Termin? Event-Fenster-Analyse, Dividend-Capture-Strategie, saisonale Muster.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/dividend-kalender">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/dividend-kalender">
+  <meta property="og:title" content="Dividenden-Effekt &mdash; Kursverhalten rund um den Ex-Dividenden-Termin | SeasonAlpha">
+  <meta property="og:description" content="Wie verhält sich ein Aktien- oder ETF-Kurs vor und nach dem Ex-Dividenden-Termin? Event-Fenster-Analyse, Dividend-Capture-Strategie, saisonale Muster.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Dividenden-Effekt | SeasonAlpha">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Dividenden-Effekt","url":"https://seasonalpha.ai/dividend-kalender","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Dividenden-Effekt","item":"https://seasonalpha.ai/dividend-kalender"}]}</script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .intro-box{background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.875rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6}
+    .intro-box b{color:var(--accent)}
+    .ev-table{width:100%;border-collapse:collapse;font-size:.8125rem;margin-top:.5rem}
+    .ev-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem .6rem;text-align:left;border-bottom:1px solid var(--border)}
+    .ev-table td{padding:.4rem .6rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .ev-table tr:hover td{background:rgba(232,168,32,.04)}
+    .ev-table td.pos{color:var(--green)}
+    .ev-table td.neg{color:var(--red)}
+    .ev-table td.gold{color:var(--accent)}
+    .chk-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin:.75rem 0 .25rem}
+    .next-badge{display:inline-block;background:rgba(232,168,32,.12);border:1px solid rgba(232,168,32,.25);color:var(--accent);border-radius:6px;font-size:.75rem;padding:.15rem .55rem;font-family:var(--f-m)}
+  </style>
+</head>
+<body>
+<div id="nav-container"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <h3>Ticker</h3>
+    <input type="text" id="ticker-input" value="SPY" placeholder="z.B. SPY, AAPL, SAP.DE" list="ticker-list">
+    <datalist id="ticker-list"></datalist>
+    <hr>
+    <h3>Zeitraum</h3>
+    <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+      <option value="5">5 Jahre</option>
+      <option value="10" selected>10 Jahre</option>
+      <option value="15">15 Jahre</option>
+      <option value="20">20 Jahre</option>
+      <option value="max">Max</option>
+    </select>
+    <hr>
+    <h3>Event-Fenster</h3>
+    <label style="font-size:.8125rem;color:var(--dim)">Tage <b>vor</b> Ex-Date
+      <br><input type="range" id="rng-before" min="1" max="15" value="5" step="1">
+      <span id="lbl-before">5</span> HT
+    </label>
+    <label style="font-size:.8125rem;color:var(--dim)">Tage <b>nach</b> Ex-Date
+      <br><input type="range" id="rng-after" min="1" max="15" value="10" step="1">
+      <span id="lbl-after">10</span> HT
+    </label>
+    <hr>
+    <h3>Darstellung</h3>
+    <label class="chk-row"><input type="checkbox" id="chk-indiv"> Einzelne Events einblenden</label>
+  </aside>
+
+  <main>
+    <div class="loading-overlay" id="loading" style="display:none">
+      <div class="spinner"></div><span>Lade Daten&hellip;</span>
+    </div>
+
+    <div class="intro-box">
+      <b>Was zeigt diese Seite?</b> Analysiert das Kursverhalten rund um den <b>Ex-Dividenden-Termin</b>: Pre-Ex-Date-Drift (Dividend-Capture-Prämie), den Kursabschlag am Ex-Tag und die anschließende Erholung. Das Event-Fenster zeigt den durchschnittlichen Verlauf über alle historischen Dividendentermine.
+    </div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <p class="page-title"><b>Dividenden-Effekt</b></p>
+    <p class="page-caption" id="page-caption">Kursverhalten rund um den Ex-Dividenden-Termin</p>
+
+    <div class="kpi-row" id="kpi-row" style="margin-bottom:1.25rem"></div>
+
+    <details open id="sec-chart" style="display:none">
+      <summary>Event-Fenster um Ex-Dividenden-Termin</summary>
+      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)">
+        Normiert auf den Kurs am Ex-Datum (t0 = 0%). Positiv = über Ex-Date-Kurs.
+      </div>
+      <div id="chart-event" style="min-height:420px"></div>
+    </details>
+
+    <details open id="sec-monthly" style="display:none">
+      <summary>Dividenden-Saison &mdash; Verteilung nach Monat</summary>
+      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)">
+        Anzahl der Ex-Dividenden-Termine je Kalendermonat über den gewählten Zeitraum.
+      </div>
+      <div id="chart-monthly" style="min-height:280px"></div>
+    </details>
+
+    <details open id="sec-table" style="display:none">
+      <summary>Dividendenhistorie</summary>
+      <div id="table-container" style="margin-top:.5rem;overflow-x:auto"></div>
+    </details>
+
+    <details id="sec-methodik">
+      <summary>Methodik</summary>
+      <div style="font-size:.8125rem;color:var(--muted);line-height:1.7;padding:.5rem 0">
+        <p><b>Datenquelle:</b> Kursdaten aus der SeasonAlpha-Datenbank (Supabase, täglich aktualisiert). Dividendentermine und -beträge von Yahoo Finance.</p>
+        <p><b>t0 = Ex-Dividenden-Datum.</b> An diesem Tag notiert die Aktie bereits ohne Dividende (ex-dividend). Der Kursabschlag am Ex-Tag entspricht in effizienten Märkten annähernd der Dividendenhöhe.</p>
+        <p><b>Normierung:</b> Alle historischen Event-Fenster werden auf den Schlusskurs am Ex-Tag (t0 = 0%) normiert und gemittelt. Events mit unvollständigem Fenster (zu nah am Datenbeginn/-ende) werden ausgeschlossen.</p>
+        <p><b>Dividend Capture:</b> Die Strategie kauft kurz vor dem Ex-Date und verkauft danach. Der Pre-Ex-Drift und die Post-Ex-Erholung bestimmen die Rentabilität abzüglich Transaktionskosten.</p>
+      </div>
+    </details>
+  </main>
+</div>
+
+<div id="footer-container"></div>
+
+<script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/landing/js/auth.js?v=%%CACHE_BUST%%"></script>
+<script src="/landing/js/app.js?v=%%CACHE_BUST%%"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+<script src="/landing/js/charts.js?v=%%CACHE_BUST%%"></script>
+<script src="/landing/js/holidays.js?v=%%CACHE_BUST%%"></script>
+
+<script>
+!function(){
+  // ── State ────────────────────────────────────────────────────────────────
+  var currentTicker = 'SPY';
+  var _cachedRows = null;
+  var _cachedDivs = null;
+  var charts = {};
+  var tickerCache = {};
+
+  var MONTHS_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  var $loading  = document.getElementById('loading');
+  var $error    = document.getElementById('error-banner');
+  var $kpi      = document.getElementById('kpi-row');
+  var $caption  = document.getElementById('page-caption');
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function showLoading(v) { $loading.style.display = v ? 'flex' : 'none'; }
+  function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display='none'; }, 10000); }
+  function showSections(show) {
+    ['sec-chart','sec-monthly','sec-table'].forEach(function(id){
+      document.getElementById(id).style.display = show ? '' : 'none';
+    });
+  }
+  function kpi(l,v,c) { return '<div class="kpi"><span class="kpi__label">'+l+'</span><span class="kpi__value '+(c||'')+'">'+v+'</span></div>'; }
+  function fmtPct(v,d) { d=d==null?2:d; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
+  function fmtEur(v) { return v >= 0.01 ? v.toFixed(4) : v.toFixed(6); }
+
+  // ── Slider labels ─────────────────────────────────────────────────────────
+  ['rng-before','rng-after'].forEach(function(id){
+    var el = document.getElementById(id);
+    var lbl = document.getElementById(id.replace('rng-','lbl-'));
+    el.addEventListener('input', function(){ lbl.textContent = el.value; });
+    el.addEventListener('change', function(){ if (_cachedRows && _cachedDivs) rerender(); });
+  });
+  document.getElementById('chk-indiv').addEventListener('change', function(){ if (_cachedRows && _cachedDivs) rerender(); });
+  document.getElementById('sel-years').addEventListener('change', function(){ if (_cachedRows && _cachedDivs) rerender(); });
+
+  // ── Yahoo Finance: Dividenden holen ──────────────────────────────────────
+  function fetchDividends(ticker) {
+    return fetch(
+      'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(ticker) +
+      '?range=25y&interval=1d&events=dividends&includeAdjustedClose=true',
+      { headers: { 'Accept': 'application/json' } }
+    ).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(data){
+      var result = data.chart && data.chart.result && data.chart.result[0];
+      if (!result) throw new Error('Keine Daten');
+      var divEvents = result.events && result.events.dividends;
+      if (!divEvents) return []; // Kein Dividenden-Zahler
+      var divs = [];
+      Object.values(divEvents).forEach(function(d){
+        var dt = new Date(d.date * 1000);
+        var dateStr = dt.toISOString().substring(0, 10);
+        divs.push({ date: dateStr, amount: d.amount });
+      });
+      divs.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+      return divs;
+    });
+  }
+
+  // ── Preis-Fenster-Analyse ────────────────────────────────────────────────
+  function analyzeEvents(rows, eventDates, daysBefore, daysAfter) {
+    var dateIdx = {};
+    for (var i = 0; i < rows.length; i++) dateIdx[rows[i].date] = i;
+
+    var windowSize = daysBefore + 1 + daysAfter;
+    var allCurves = [];
+
+    for (var e = 0; e < eventDates.length; e++) {
+      var evDate = eventDates[e].date;
+      var t0 = dateIdx[evDate];
+      if (t0 == null) {
+        // Nächsten verfügbaren Handelstag suchen (vorwärts, max 3 Tage)
+        for (var k = 0; k < 3; k++) {
+          var d = new Date(evDate.replace(/-/g,'/'));
+          d.setDate(d.getDate() + k);
+          var ds = d.toISOString().substring(0,10);
+          if (dateIdx[ds] != null) { t0 = dateIdx[ds]; break; }
+        }
+      }
+      if (t0 == null) continue;
+
+      var start = t0 - daysBefore;
+      var end   = t0 + daysAfter + 1;
+      if (start < 0 || end > rows.length) continue;
+
+      var t0Close = parseFloat(rows[t0].close);
+      if (!t0Close) continue;
+
+      var curve = [];
+      for (var i = start; i < end; i++) {
+        curve.push((parseFloat(rows[i].close) / t0Close - 1) * 100);
+      }
+      if (curve.length !== windowSize) continue;
+
+      var totalReturn = curve[curve.length - 1] - curve[0];
+      allCurves.push({ date: evDate, amount: eventDates[e].amount, curve: curve, totalReturn: totalReturn });
+    }
+
+    if (!allCurves.length) return null;
+
+    var avgCurve = [];
+    for (var i = 0; i < windowSize; i++) {
+      var sum = 0;
+      for (var c = 0; c < allCurves.length; c++) sum += allCurves[c].curve[i];
+      avgCurve.push(sum / allCurves.length);
+    }
+
+    var labels = [];
+    for (var i = 0; i < windowSize; i++) {
+      var off = i - daysBefore;
+      labels.push(off < 0 ? 't' + off : off === 0 ? 't0\n(Ex)' : 't+' + off);
+    }
+
+    var returns = allCurves.map(function(c){ return c.totalReturn; });
+    var wins    = returns.filter(function(r){ return r > 0; });
+    var avg     = returns.reduce(function(s,v){return s+v;},0) / returns.length;
+    var amounts = allCurves.filter(function(c){ return c.amount; }).map(function(c){ return c.amount; });
+    var avgAmount = amounts.length ? amounts.reduce(function(s,v){return s+v;},0)/amounts.length : null;
+
+    return {
+      avgCurve: avgCurve, allCurves: allCurves, labels: labels,
+      stats: {
+        avgReturn: avg,
+        winRate: wins.length / returns.length * 100,
+        nEvents: allCurves.length,
+        maxGain: Math.max.apply(null, returns),
+        maxLoss: Math.min.apply(null, returns),
+        avgAmount: avgAmount
+      },
+      returns: returns
+    };
+  }
+
+  // ── Monats-Verteilung ────────────────────────────────────────────────────
+  function buildMonthlyDist(divs) {
+    var counts = new Array(12).fill(0);
+    var avgRet  = new Array(12).fill(null);
+    var sumRet  = new Array(12).fill(0);
+    var cntRet  = new Array(12).fill(0);
+    divs.forEach(function(d){
+      var m = parseInt(d.date.substring(5,7)) - 1;
+      counts[m]++;
+      if (d.windowReturn != null) { sumRet[m] += d.windowReturn; cntRet[m]++; }
+    });
+    for (var m = 0; m < 12; m++) {
+      avgRet[m] = cntRet[m] ? sumRet[m] / cntRet[m] : null;
+    }
+    return { counts: counts, avgRet: avgRet };
+  }
+
+  // ── Render: Event-Window Chart ───────────────────────────────────────────
+  function renderEventChart(result) {
+    var showIndiv = document.getElementById('chk-indiv').checked;
+    var t0idx     = parseInt(document.getElementById('rng-before').value);
+    var series    = [];
+
+    if (showIndiv) {
+      result.allCurves.forEach(function(c){
+        series.push({ name: c.date, data: c.curve.map(function(v){return +v.toFixed(3);}), type:'line' });
+      });
+    }
+    series.push({
+      name: 'Ø ' + currentTicker + ' (' + result.stats.nEvents + ' Events)',
+      data: result.avgCurve.map(function(v){ return +v.toFixed(3); }),
+      type: 'line'
+    });
+
+    var colors = showIndiv
+      ? result.allCurves.map(function(){ return 'rgba(120,120,120,0.10)'; }).concat(['#e8a820'])
+      : ['#e8a820'];
+    var widths = showIndiv
+      ? result.allCurves.map(function(){ return 0.6; }).concat([3])
+      : [3];
+
+    if (charts.event) { charts.event.destroy(); charts.event = null; }
+    charts.event = new ApexCharts(document.getElementById('chart-event'), {
+      series: series,
+      chart: Object.assign({ type:'line', height:420 }, SA.chartTheme.chart),
+      stroke: { width: widths, curve: 'straight' },
+      colors: colors,
+      grid: SA.chartTheme.grid,
+      tooltip: { theme:'dark', y:{ formatter: function(v){ return fmtPct(v,3); } } },
+      xaxis: {
+        categories: result.labels,
+        labels: { style:{ colors:'#a89878', fontSize:'10px' }, rotate: -30 }
+      },
+      yaxis: {
+        labels: { style:{ colors:'#a89878', fontSize:'11px' }, formatter: function(v){ return v.toFixed(2)+'%'; } },
+        title: { text:'Rendite vs. t0 (Ex-Date) %', style:{ color:'#a89878', fontSize:'11px' } }
+      },
+      annotations: {
+        xaxis: [{ x: result.labels[t0idx], borderColor:'rgba(255,215,0,.55)', strokeDashArray:4,
+                   label:{ text:'Ex-Date', style:{ color:'#FFD700', background:'transparent', fontSize:'11px' } } }],
+        yaxis: [{ y:0, borderColor:'rgba(255,255,255,.18)', strokeDashArray:3 }]
+      },
+      legend: { show: !showIndiv, position:'top', labels:{ colors:'#a89878' } },
+      dataLabels: { enabled: false },
+      title: { text: currentTicker + ' — Dividenden-Effekt', style:{ color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700 } }
+    });
+    charts.event.render();
+  }
+
+  // ── Render: Monats-Verteilung ────────────────────────────────────────────
+  function renderMonthlyChart(dist) {
+    if (charts.monthly) { charts.monthly.destroy(); charts.monthly = null; }
+    charts.monthly = new ApexCharts(document.getElementById('chart-monthly'), {
+      series: [{ name:'Anzahl Ex-Dates', data: dist.counts }],
+      chart: Object.assign({ type:'bar', height:260 }, SA.chartTheme.chart),
+      plotOptions: { bar:{ borderRadius:4, columnWidth:'60%',
+        colors:{ ranges:[{from:0,to:999,color:'#e8a820'}] } } },
+      grid: SA.chartTheme.grid,
+      xaxis: { categories: MONTHS_DE, labels:{ style:{ colors:'#a89878', fontSize:'11px' } } },
+      yaxis: { labels:{ style:{ colors:'#a89878', fontSize:'11px' }, formatter: function(v){ return Math.round(v)+'×'; } },
+               title:{ text:'Anzahl Ex-Dates', style:{ color:'#a89878', fontSize:'11px' } } },
+      tooltip: { theme:'dark', y:{ formatter: function(v){ return Math.round(v)+' Ex-Dates'; } } },
+      dataLabels: { enabled: false },
+      title: { text: currentTicker + ' — Dividenden nach Monat', style:{ color:'#fff', fontSize:'13px', fontFamily:'Sora,sans-serif', fontWeight:700 } }
+    });
+    charts.monthly.render();
+  }
+
+  // ── Render: Dividendenhistorie-Tabelle ───────────────────────────────────
+  function renderTable(allCurves, allDivs) {
+    var today = new Date().toISOString().substring(0,10);
+    var nextDiv = allDivs.filter(function(d){ return d.date > today; })[0] || null;
+
+    var html = '';
+    if (nextDiv) {
+      var daysUntil = Math.round((new Date(nextDiv.date.replace(/-/g,'/')) - new Date()) / 86400000);
+      html += '<p style="margin-bottom:.6rem;font-size:.8125rem;color:var(--dim)">Nächstes Ex-Date: <span class="next-badge">' + nextDiv.date + '</span> &mdash; in <b>' + daysUntil + ' Tagen</b>'+(nextDiv.amount?' &mdash; Betrag: <b>'+fmtEur(nextDiv.amount)+'</b>':'')+' je Anteil</p>';
+    }
+
+    html += '<table class="ev-table"><thead><tr>';
+    html += '<th>Ex-Date</th><th>Betrag</th><th>Ø vor Ex</th><th>Ø nach Ex</th><th>Gesamt '+document.getElementById('rng-before').value+'→'+document.getElementById('rng-after').value+' HT</th>';
+    html += '</tr></thead><tbody>';
+
+    var sorted = allCurves.slice().reverse();
+    sorted.forEach(function(c){
+      var daysBefore = parseInt(document.getElementById('rng-before').value);
+      var preRet  = c.curve[daysBefore - 1];   // t-1 vs t0
+      var postRet = c.totalReturn - preRet;
+      var cls = c.totalReturn >= 0 ? 'pos' : 'neg';
+      html += '<tr>';
+      html += '<td class="gold">' + c.date + '</td>';
+      html += '<td>' + (c.amount ? fmtEur(c.amount) : '—') + '</td>';
+      html += '<td class="' + (preRet >= 0 ? 'pos':'neg') + '">' + fmtPct(preRet,2) + '</td>';
+      html += '<td class="' + (postRet >= 0 ? 'pos':'neg') + '">' + fmtPct(postRet,2) + '</td>';
+      html += '<td class="' + cls + '">' + fmtPct(c.totalReturn,2) + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('table-container').innerHTML = html;
+  }
+
+  // ── KPI Row ──────────────────────────────────────────────────────────────
+  function renderKpi(stats) {
+    var html = '';
+    html += kpi('Dividenden', stats.nEvents + '×');
+    html += kpi('Zahler', stats.payFreq || '—');
+    html += kpi('Win-Rate', stats.winRate.toFixed(0)+' %', stats.winRate >= 50 ? 'green' : 'red');
+    html += kpi('Ø Rendite Fenster', fmtPct(stats.avgReturn,2), stats.avgReturn >= 0 ? 'green' : 'red');
+    html += kpi('Max Gewinn', fmtPct(stats.maxGain,2), 'green');
+    html += kpi('Max Verlust', fmtPct(stats.maxLoss,2), 'red');
+    if (stats.avgAmount) html += kpi('Ø Dividende', fmtEur(stats.avgAmount));
+    $kpi.innerHTML = html;
+  }
+
+  // ── Rerender (nach Slider-Änderung) ─────────────────────────────────────
+  function rerender() {
+    if (!_cachedRows || !_cachedDivs) return;
+
+    var years   = document.getElementById('sel-years').value;
+    var cutoff  = years === 'max' ? '1900-01-01' : (new Date().getFullYear() - parseInt(years)) + '-01-01';
+    var rows    = _cachedRows.filter(function(r){ return r.date >= cutoff; });
+    var divs    = _cachedDivs.filter(function(d){ return d.date >= cutoff; });
+
+    if (!divs.length) { showError('Keine Dividendentermine im gewählten Zeitraum.'); showSections(false); return; }
+
+    var daysBefore = parseInt(document.getElementById('rng-before').value);
+    var daysAfter  = parseInt(document.getElementById('rng-after').value);
+
+    var result = analyzeEvents(rows, divs, daysBefore, daysAfter);
+    if (!result) { showError('Zu wenig überlappende Daten für das Event-Fenster.'); showSections(false); return; }
+
+    // Monatliche Verteilung mit windowReturn anreichern
+    result.allCurves.forEach(function(c){ c.windowReturn = c.totalReturn; });
+    var enrichedDivs = divs.map(function(d){
+      var found = result.allCurves.find(function(c){ return c.date === d.date; });
+      return Object.assign({}, d, { windowReturn: found ? found.totalReturn : null });
+    });
+
+    // Zahlungsfrequenz schätzen
+    var freq = '—';
+    if (result.stats.nEvents > 0) {
+      var perYear = result.stats.nEvents / parseInt(years === 'max' ? Math.max(1, rows.length/252) : years);
+      freq = perYear <= 1.5 ? 'jährlich' : perYear <= 2.5 ? 'halbjährlich' : perYear <= 4.5 ? 'quartalsweise' : 'monatlich';
+    }
+    result.stats.payFreq = freq;
+
+    renderKpi(result.stats);
+    renderEventChart(result);
+    renderMonthlyChart(buildMonthlyDist(enrichedDivs));
+    renderTable(result.allCurves, _cachedDivs);
+    showSections(true);
+  }
+
+  // ── Ticker laden ─────────────────────────────────────────────────────────
+  function loadTicker(ticker) {
+    currentTicker = ticker.toUpperCase();
+    showLoading(true);
+    showSections(false);
+    $error.style.display = 'none';
+
+    if (tickerCache[currentTicker]) {
+      var c = tickerCache[currentTicker];
+      _cachedRows = c.rows; _cachedDivs = c.divs;
+      showLoading(false);
+      $caption.textContent = 'Kursverhalten rund um den Ex-Dividenden-Termin — ' + currentTicker;
+      rerender();
+      return;
+    }
+
+    Promise.all([
+      SA.fetchAllPrices(currentTicker),
+      fetchDividends(currentTicker)
+    ]).then(function(results){
+      var rows = results[0];
+      var divs = results[1];
+      if (!rows || rows.length < 50) throw new Error('Zu wenige Kurs-Datenpunkte für ' + currentTicker);
+      if (!divs || divs.length === 0) throw new Error(currentTicker + ' zahlt keine Dividenden (oder keine Daten verfügbar).');
+      _cachedRows = rows; _cachedDivs = divs;
+      tickerCache[currentTicker] = { rows: rows, divs: divs };
+      $caption.textContent = 'Kursverhalten rund um den Ex-Dividenden-Termin — ' + currentTicker;
+      rerender();
+    }).catch(function(err){
+      showError(err.message || 'Fehler beim Laden der Daten.');
+      showSections(false);
+    }).finally(function(){
+      showLoading(false);
+    });
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  SA.initTickerInput('ticker-input', 'ticker-list', function(ticker){ loadTicker(ticker); });
+  loadComponent('nav-container', '/landing/components/nav.html');
+  loadComponent('footer-container', '/landing/components/footer.html');
+  if (window.initSidebarToggle) initSidebarToggle();
+
+  loadTicker('SPY');
+}();
+</script>
+</body>
+</html>
