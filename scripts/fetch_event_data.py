@@ -111,7 +111,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=["both", "dividends", "earnings"], default="both")
     args = parser.parse_args()
 
-    tickers = args.tickers if args.tickers else [s["ticker"] for s in SYMBOLS]
+    tickers = args.tickers if args.tickers else list(SYMBOLS.keys())
     print(f"fetch_event_data.py — {len(tickers)} Ticker, mode={args.mode}, dry-run={args.dry_run}")
 
     ok = err = div_total = earn_total = 0
