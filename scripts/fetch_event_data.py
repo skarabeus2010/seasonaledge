@@ -28,8 +28,8 @@ YAHOO_CHART_PATH = (
     "?range=25y&interval=1d&events={events}&includeAdjustedClose=false"
 )
 YAHOO_SUMMARY_PATH = (
-    "/v11/finance/quoteSummary/{ticker}"
-    "?modules=earningsHistory"
+    "/v10/finance/quoteSummary/{ticker}"
+    "?modules=earningsHistory,earnings"
 )
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -147,11 +147,21 @@ def fetch_earnings(ticker: str) -> list[dict]:
     path = YAHOO_SUMMARY_PATH.format(ticker=ticker)
     data = _get_json(path, use_crumb=True)
     if not data:
+        print(f"    [earn-dbg] {ticker}: leere Response", flush=True)
         return []
-    results = ((data.get("quoteSummary") or {}).get("result")) or []
+    qs = data.get("quoteSummary") or {}
+    err = qs.get("error")
+    if err:
+        print(f"    [earn-dbg] {ticker}: error={err}", flush=True)
+    results = qs.get("result") or []
     if not results:
+        print(f"    [earn-dbg] {ticker}: result-Array leer, top-keys={list(data.keys())}", flush=True)
         return []
-    history = (results[0].get("earningsHistory") or {}).get("history") or []
+    res0 = results[0] or {}
+    eh = res0.get("earningsHistory") or {}
+    history = eh.get("history") or []
+    if not history:
+        print(f"    [earn-dbg] {ticker}: keine history. result[0]-keys={list(res0.keys())} eh-keys={list(eh.keys())}", flush=True)
     rows = []
     for item in history:
         quarter_raw = (item.get("quarter") or {}).get("raw")
