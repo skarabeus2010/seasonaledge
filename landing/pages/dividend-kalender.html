@@ -195,7 +195,7 @@
       if (!r.ok) throw new Error('Supabase HTTP ' + r.status);
       return r.json();
     }).then(function(rows){
-      if (!rows.length) throw new Error(ticker + ' hat noch keine Dividendendaten in der Datenbank.\nBitte das Script scripts/fetch_event_data.py ausführen.');
+      if (!rows.length) throw new Error('Für ' + ticker + ' liegen aktuell keine Dividenden-Daten vor. Entweder zahlt der Wert keine Dividenden, oder die Daten werden gerade erstmals geladen — bitte später erneut versuchen.');
       return rows.map(function(r){ return { date: r.ex_date, amount: r.amount }; });
     });
   }
