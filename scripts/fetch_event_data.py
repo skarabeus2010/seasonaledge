@@ -50,14 +50,60 @@ _HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
+# ── Crumb-Authentication für quoteSummary ──
+# v11/quoteSummary erfordert seit ~2023 einen crumb-Token. Algorithmus:
+#   1. GET https://fc.yahoo.com  → empfängt A3-Cookie
+#   2. GET https://query2.finance.yahoo.com/v1/test/getcrumb mit Cookie → crumb-String
+#   3. Alle nachfolgenden quoteSummary-Calls mit &crumb=… und der Cookie-Session
+# Cache: einmal pro Process.
 
-def _get_json(path: str, retries: int = 3) -> dict:
+_CRUMB_SESSION: requests.Session | None = None
+_CRUMB: str | None = None
+
+
+def _get_crumb() -> tuple[requests.Session, str] | tuple[None, None]:
+    global _CRUMB_SESSION, _CRUMB
+    if _CRUMB_SESSION is not None and _CRUMB is not None:
+        return _CRUMB_SESSION, _CRUMB
+    s = requests.Session()
+    s.headers.update(_HEADERS)
+    try:
+        # Schritt 1: Cookie-Set über fc.yahoo.com (kann redirecten oder 404 — Cookie wird trotzdem gesetzt)
+        s.get("https://fc.yahoo.com/", timeout=15, allow_redirects=True)
+        # Schritt 2: crumb anfragen
+        r = s.get("https://query2.finance.yahoo.com/v1/test/getcrumb", timeout=15)
+        if r.status_code == 200 and r.text and len(r.text) < 50:
+            _CRUMB_SESSION = s
+            _CRUMB = r.text.strip()
+            print(f"    [crumb] OK crumb={_CRUMB[:8]}… cookies={len(s.cookies)}", flush=True)
+            return s, _CRUMB
+        print(f"    [crumb] FAIL status={r.status_code} body='{r.text[:80]}'", flush=True)
+    except requests.RequestException as exc:
+        print(f"    [crumb] EXC {exc}", flush=True)
+    return None, None
+
+
+def _get_json(path: str, retries: int = 3, use_crumb: bool = False) -> dict:
+    """Holt JSON von Yahoo. Mit use_crumb=True für quoteSummary-Endpoints."""
+    session: requests.Session | None = None
+    full_path = path
+    if use_crumb:
+        session, crumb = _get_crumb()
+        if not crumb:
+            print(f"    [crumb] kein crumb verfügbar — überspringe {path}", flush=True)
+            return {}
+        sep = "&" if "?" in path else "?"
+        full_path = f"{path}{sep}crumb={crumb}"
+
     last_status = None
     for attempt in range(retries):
         for host in YAHOO_CHART_HOSTS:
-            url = f"https://{host}{path}"
+            url = f"https://{host}{full_path}"
             try:
-                r = requests.get(url, headers=_HEADERS, timeout=25, allow_redirects=True)
+                if session is not None:
+                    r = session.get(url, timeout=25, allow_redirects=True)
+                else:
+                    r = requests.get(url, headers=_HEADERS, timeout=25, allow_redirects=True)
             except requests.RequestException as exc:
                 last_status = f"net-error: {exc}"
                 continue
@@ -71,14 +117,12 @@ def _get_json(path: str, retries: int = 3) -> dict:
             if r.status_code == 404:
                 return {}
             if r.status_code == 429:
-                continue  # versuche den anderen Host
-            # andere 4xx/5xx: zum nächsten Host
-        # nach beiden Hosts: warten und neuen Versuch
+                continue
         if attempt < retries - 1:
             wait = 20 * (attempt + 1)
             print(f"    [rate-limit] warte {wait}s …", flush=True)
             time.sleep(wait)
-    raise RuntimeError(f"Nach {retries} Versuchen Status={last_status} für {path}")
+    raise RuntimeError(f"Nach {retries} Versuchen Status={last_status} für {full_path}")
 
 
 # ── Dividenden ───────────────────────────────────────────────────────────────
@@ -101,7 +145,7 @@ def fetch_dividends(ticker: str) -> list[dict]:
 
 def fetch_earnings(ticker: str) -> list[dict]:
     path = YAHOO_SUMMARY_PATH.format(ticker=ticker)
-    data = _get_json(path)
+    data = _get_json(path, use_crumb=True)
     if not data:
         return []
     results = ((data.get("quoteSummary") or {}).get("result")) or []
