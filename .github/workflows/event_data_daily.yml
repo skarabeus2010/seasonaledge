@@ -1,0 +1,58 @@
+name: Event Data Daily Refresh
+
+# Taeglicher Refresh fuer Dividenden + Earnings (Yahoo Finance) nach Supabase.
+# Eigenstaendiger Cron analog polymarket_daily.yml — NICHT via nightly_refresh.py,
+# damit Yahoo-Rate-Limits + Retries nicht den Nightly-Hauptlauf blockieren.
+#
+# 269 Ticker x ~0.5s sleep x 2 Endpoints (chart?events=div + quoteSummary) =>
+# Laufzeit ~5-8 min. Yahoo 429-Backoff ist im Script implementiert.
+
+on:
+  schedule:
+    # 22:15 UTC taeglich — NACH polymarket_daily (21:30) + NACH US-Close (20:00).
+    - cron: '15 22 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Welche Events ziehen?"
+        required: false
+        default: both
+        type: choice
+        options:
+          - both
+          - dividends
+          - earnings
+      tickers:
+        description: "Optional: Liste von Tickern (Space-getrennt). Leer = alle aus symbols.py."
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Fetch dividend + earnings events
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 25m
+          script: |
+            MODE="${{ github.event.inputs.mode }}"
+            MODE="${MODE:-both}"
+            TICKERS="${{ github.event.inputs.tickers }}"
+
+            echo "[event-data-daily] mode=$MODE tickers='${TICKERS:-ALL}'"
+
+            if [ -n "$TICKERS" ]; then
+              docker exec seasonalpha-app python3 scripts/fetch_event_data.py \
+                --mode "$MODE" --tickers $TICKERS 2>&1 | tail -60
+            else
+              docker exec seasonalpha-app python3 scripts/fetch_event_data.py \
+                --mode "$MODE" 2>&1 | tail -60
+            fi
+
+            echo "[event-data-daily] Done: $(date)"
