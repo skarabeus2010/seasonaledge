@@ -22,70 +22,70 @@ load_env()
 
 from shared.symbols import SYMBOLS
 
-YAHOO_CHART_URL = (
-    "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+YAHOO_CHART_HOSTS = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]
+YAHOO_CHART_PATH = (
+    "/v8/finance/chart/{ticker}"
     "?range=25y&interval=1d&events={events}&includeAdjustedClose=false"
 )
-YAHOO_SUMMARY_URL = (
-    "https://query1.finance.yahoo.com/v11/finance/quoteSummary/{ticker}"
+YAHOO_SUMMARY_PATH = (
+    "/v11/finance/quoteSummary/{ticker}"
     "?modules=earningsHistory"
 )
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")  # service-role key
 
-# ── Yahoo Finance Session ────────────────────────────────────────────────────
+# ── Yahoo Finance HTTP ───────────────────────────────────────────────────────
+# Pattern aus shared/yahoo_downloader.py: simple Browser-UA, KEIN
+# Pre-GET auf finance.yahoo.com (das triggert sonst sofort 429-Rate-Limit auf
+# GitHub-Actions-IPs). Pro Aufruf frischer Request, query1→query2-Fallback.
 
-def _make_session() -> requests.Session:
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-            "Version/17.4.1 Safari/605.1.15"
-        ),
-        "Accept": "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-    })
-    # Establish session cookie
-    try:
-        s.get("https://finance.yahoo.com/", timeout=15)
-    except Exception:
-        pass
-    return s
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
 
-_SESSION: requests.Session | None = None
-
-
-def _get_session() -> requests.Session:
-    global _SESSION
-    if _SESSION is None:
-        _SESSION = _make_session()
-    return _SESSION
-
-
-def _get_json(url: str, retries: int = 3) -> dict:
-    s = _get_session()
+def _get_json(path: str, retries: int = 3) -> dict:
+    last_status = None
     for attempt in range(retries):
-        r = s.get(url, timeout=25)
-        if r.status_code == 429:
-            wait = 30 * (attempt + 1)
+        for host in YAHOO_CHART_HOSTS:
+            url = f"https://{host}{path}"
+            try:
+                r = requests.get(url, headers=_HEADERS, timeout=25, allow_redirects=True)
+            except requests.RequestException as exc:
+                last_status = f"net-error: {exc}"
+                continue
+            last_status = r.status_code
+            if r.status_code == 200:
+                try:
+                    return r.json()
+                except ValueError:
+                    last_status = "invalid-json"
+                    continue
+            if r.status_code == 404:
+                return {}
+            if r.status_code == 429:
+                continue  # versuche den anderen Host
+            # andere 4xx/5xx: zum nächsten Host
+        # nach beiden Hosts: warten und neuen Versuch
+        if attempt < retries - 1:
+            wait = 20 * (attempt + 1)
             print(f"    [rate-limit] warte {wait}s …", flush=True)
             time.sleep(wait)
-            continue
-        if r.status_code == 404:
-            return {}
-        r.raise_for_status()
-        return r.json()
-    raise RuntimeError(f"Nach {retries} Versuchen noch immer 429 für {url}")
+    raise RuntimeError(f"Nach {retries} Versuchen Status={last_status} für {path}")
 
 
 # ── Dividenden ───────────────────────────────────────────────────────────────
 
 def fetch_dividends(ticker: str) -> list[dict]:
-    url = YAHOO_CHART_URL.format(ticker=ticker, events="dividends")
-    data = _get_json(url)
+    path = YAHOO_CHART_PATH.format(ticker=ticker, events="dividends")
+    data = _get_json(path)
     result = (data.get("chart") or {}).get("result") or []
     if not result:
         return []
@@ -100,8 +100,8 @@ def fetch_dividends(ticker: str) -> list[dict]:
 # ── Earnings ─────────────────────────────────────────────────────────────────
 
 def fetch_earnings(ticker: str) -> list[dict]:
-    url = YAHOO_SUMMARY_URL.format(ticker=ticker)
-    data = _get_json(url)
+    path = YAHOO_SUMMARY_PATH.format(ticker=ticker)
+    data = _get_json(path)
     if not data:
         return []
     results = ((data.get("quoteSummary") or {}).get("result")) or []
