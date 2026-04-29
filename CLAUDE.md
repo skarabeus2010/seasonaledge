@@ -258,9 +258,17 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **2026-04-29 PR #39 Yahoo 429-Fix** — Pre-GET auf finance.yahoo.com entfernt (triggerte Sticky-Ban auf GH-Actions-IPs). Pattern aus shared/yahoo_downloader.py: simple Browser-UA, query1→query2-Fallback pro Request.
 - [x] **2026-04-29 PR #40 Crumb-Auth** — quoteSummary erfordert seit ~2023 crumb-Token. `_get_crumb()`: GET fc.yahoo.com → A3-Cookie, GET getcrumb → Crumb, dann `&crumb=…` an Calls. Cache pro Process.
 - [x] **2026-04-29 PR #41 v10 statt v11** — v11/quoteSummary lieferte trotz Crumb leere history. v10 + zusätzlich earnings-Modul → AAPL 4 Quartale OK. Yahoo's earningsHistory ist auf **4 Quartale** limitiert; Historie wächst durch tägliche Cron-Runs (Upsert auf PK ticker+report_date).
+- [x] **2026-04-29 PR #43 Cleanup** — Diagnose-Logs aus #41 wieder entfernt (würden Cron mit hunderten earn-dbg-Zeilen für Indizes/Futures/Crypto spammen).
+- [x] **2026-04-29 PR #44 Health-Check-Integration** — `fetch_event_data.py` schreibt nach jedem Run einen `refresh_log`-Eintrag mit `run_type='event_data'` (analog Intraday in #29). `daily_health_check.py` neuer Check "Event Data (Div+Earn)" — green ≤2d alt + ≥80% Ticker-Erfolg. End-to-End verifiziert: `2026-04-29 · 2/2 Ticker · 144 div + 8 earn`.
+
+### Live-Status nach Vollrun 2026-04-29
+- Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
+- Earnings funktionieren primär für US-Aktien (4 Quartale pro Run, akkumuliert)
+- Internationale Aktien (NESN.SW, MC.PA, AZN): leere `history` — Yahoo earningsHistory ist US-fokussiert
+- Indizes/Futures/Crypto: keine Earnings (erwartet)
 
 ### 🔴 SOFORT (User-Action, klein)
-- [ ] **Event-Tabellen verifizieren** — nach Full-Run: `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events. Erwartung: Dividend-Zahler (SPY, AAPL, MSFT, KO, JNJ etc.) ~50-200 Einträge, Earnings je 4 Quartale pro Aktie
+- [ ] **Event-Tabellen verifizieren** — `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events
 - [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
