@@ -144,24 +144,21 @@ def fetch_dividends(ticker: str) -> list[dict]:
 # ── Earnings ─────────────────────────────────────────────────────────────────
 
 def fetch_earnings(ticker: str) -> list[dict]:
+    # earningsHistory liefert max 4 Quartale. Indizes/Futures/Crypto haben
+    # keine Earnings — silent return [] ist erwartet, kein Logging dafür.
     path = YAHOO_SUMMARY_PATH.format(ticker=ticker)
     data = _get_json(path, use_crumb=True)
     if not data:
-        print(f"    [earn-dbg] {ticker}: leere Response", flush=True)
         return []
     qs = data.get("quoteSummary") or {}
     err = qs.get("error")
     if err:
-        print(f"    [earn-dbg] {ticker}: error={err}", flush=True)
+        print(f"    [earn-err] {ticker}: {err}", flush=True)
     results = qs.get("result") or []
     if not results:
-        print(f"    [earn-dbg] {ticker}: result-Array leer, top-keys={list(data.keys())}", flush=True)
         return []
     res0 = results[0] or {}
-    eh = res0.get("earningsHistory") or {}
-    history = eh.get("history") or []
-    if not history:
-        print(f"    [earn-dbg] {ticker}: keine history. result[0]-keys={list(res0.keys())} eh-keys={list(eh.keys())}", flush=True)
+    history = (res0.get("earningsHistory") or {}).get("history") or []
     rows = []
     for item in history:
         quarter_raw = (item.get("quarter") or {}).get("raw")
