@@ -250,13 +250,17 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **PR #29 — Intraday-Run-Logging** — `intraday_refresh.py` schreibt nach jedem erfolgreichen Run einen `refresh_log`-Eintrag mit `run_type='intraday'`. Health-Check-Coverage-Counter (Wochentag green ≥10, Wochenende green ≥3).
 - [x] **docs/EMAIL_TESTING.md** — Runbook für Mail-Versand-Tests, Troubleshooting (BREVO_API_KEY fehlt, Sender rejected, permission denied), Brevo-Key-Rotation, Daten-Freshness-Check.
 
-### Erledigt (KW 18, 2026-04-27 — Earnings + Dividenden Pages)
+### Erledigt (KW 18, 2026-04-27 + 2026-04-29 — Earnings + Dividenden Pages)
 - [x] **2026-04-27 Dividenden-Effekt + Earnings-Effekt Pages** — `landing/pages/dividend-kalender.html` + `earnings-kalender.html`, lesen aus Supabase-Tabellen `dividend_events` / `earnings_events`. Schema in `scripts/create_event_tables.sql` (RLS+anon read+service_role write).
-- [x] **2026-04-27 `scripts/fetch_event_data.py`** — Yahoo Finance v8 chart?events=dividends + v11 quoteSummary?modules=earningsHistory, batched Supabase upsert, 0.5s rate-limit + 429-Backoff. CLI: `--mode both|dividends|earnings`, `--tickers`, `--dry-run`.
+- [x] **2026-04-27 `scripts/fetch_event_data.py`** — Yahoo Finance v8 chart?events=dividends + quoteSummary?modules=earningsHistory, batched Supabase upsert, 0.5s rate-limit + 429-Backoff. CLI: `--mode both|dividends|earnings`, `--tickers`, `--dry-run`.
 - [x] **2026-04-29 Cron-Workflow `event_data_daily.yml`** — täglich 22:15 UTC (nach Polymarket-Cron, nach US-Close), workflow_dispatch mit mode/tickers-Inputs, ssh→docker exec analog polymarket_daily.
+- [x] **2026-04-29 PR #38 Empty-State-Polish** — User-freundliche Hinweise statt Leak des internen Script-Pfads bei leeren Tabellen.
+- [x] **2026-04-29 PR #39 Yahoo 429-Fix** — Pre-GET auf finance.yahoo.com entfernt (triggerte Sticky-Ban auf GH-Actions-IPs). Pattern aus shared/yahoo_downloader.py: simple Browser-UA, query1→query2-Fallback pro Request.
+- [x] **2026-04-29 PR #40 Crumb-Auth** — quoteSummary erfordert seit ~2023 crumb-Token. `_get_crumb()`: GET fc.yahoo.com → A3-Cookie, GET getcrumb → Crumb, dann `&crumb=…` an Calls. Cache pro Process.
+- [x] **2026-04-29 PR #41 v10 statt v11** — v11/quoteSummary lieferte trotz Crumb leere history. v10 + zusätzlich earnings-Modul → AAPL 4 Quartale OK. Yahoo's earningsHistory ist auf **4 Quartale** limitiert; Historie wächst durch tägliche Cron-Runs (Upsert auf PK ticker+report_date).
 
 ### 🔴 SOFORT (User-Action, klein)
-- [ ] **Event-Tabellen prüfen** — `SELECT count(*) FROM dividend_events; SELECT count(*) FROM earnings_events;` in Supabase. Falls leer: `event_data_daily.yml` einmal manuell via workflow_dispatch triggern (oder direkt `docker exec seasonalpha-app python3 scripts/fetch_event_data.py`)
+- [ ] **Event-Tabellen verifizieren** — nach Full-Run: `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events. Erwartung: Dividend-Zahler (SPY, AAPL, MSFT, KO, JNJ etc.) ~50-200 Einträge, Earnings je 4 Quartale pro Aktie
 - [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
