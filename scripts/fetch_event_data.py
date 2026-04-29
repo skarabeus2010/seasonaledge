@@ -212,6 +212,7 @@ def main() -> None:
     tickers = args.tickers if args.tickers else list(SYMBOLS.keys())
     print(f"fetch_event_data.py — {len(tickers)} Ticker, mode={args.mode}, dry-run={args.dry_run}")
 
+    t_start = time.time()
     ok = err = div_total = earn_total = 0
 
     for ticker in tickers:
@@ -244,9 +245,31 @@ def main() -> None:
 
         time.sleep(0.5)  # Rate-Limiting Yahoo Finance
 
+    elapsed = time.time() - t_start
     print(f"\nErgebnis: {ok} OK / {err} Fehler")
     print(f"  Dividenden:  {div_total} Einträge")
     print(f"  Earnings:    {earn_total} Einträge")
+
+    # ── refresh_log: Health-Monitoring ────────────────────────────────────
+    # daily_health_check.py liest run_type='event_data' für Frische-Check.
+    if not args.dry_run:
+        try:
+            import json as _json
+            from datetime import datetime as _dt, timezone as _tz
+            from shared.supabase_client import get_client
+            get_client().table("refresh_log").insert({
+                "run_date":         _dt.now(_tz.utc).strftime("%Y-%m-%d"),
+                "run_type":         "event_data",
+                "tickers_total":    len(tickers),
+                "tickers_success":  ok,
+                "tickers_missing":  err,
+                "missing_details":  _json.dumps({"div_rows": div_total, "earn_rows": earn_total}),
+                "auto_fixed":       0,
+                "duration_seconds": round(elapsed, 1),
+                "errors":           "[]",
+            }).execute()
+        except Exception as exc:
+            print(f"[event-data] refresh_log insert failed: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

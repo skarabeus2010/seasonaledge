@@ -41,6 +41,7 @@ PRICES_MAX_AGE_WORKDAYS = 1       # SPY darf hoechstens 1 Werktag alt sein
 CRYPTO_MAX_AGE_DAYS = 1           # BTC darf hoechstens 1 Tag alt sein
 WEEKLY_SCANNER_MAX_AGE_DAYS = 8   # Scanner laeuft Sonntags, 8 Tage Puffer
 POLYMARKET_MAX_AGE_DAYS = 2       # Phase G taeglich
+EVENT_DATA_MAX_AGE_DAYS = 2       # event_data_daily.yml taeglich 22:15 UTC
 
 
 def _last_workday(ref: date) -> date:
@@ -322,6 +323,65 @@ def collect_health_data() -> dict:
     except Exception as e:
         checks.append({
             "name": "Polymarket Phase G",
+            "status": "red",
+            "detail": f"Query-Fehler: {str(e)[:100]}",
+            "value": "ERR",
+        })
+        downgrade("red")
+
+    # ── Check 5b: Event Data (Dividenden + Earnings) ──────────────────
+    try:
+        resp = (
+            client.table("refresh_log")
+            .select("run_date,duration_seconds,tickers_success,tickers_total,missing_details,created_at")
+            .eq("run_type", "event_data")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            checks.append({
+                "name": "Event Data (Div+Earn)",
+                "status": "red",
+                "detail": "Kein Eintrag in refresh_log (Cron nie gelaufen?)",
+                "value": "—",
+            })
+            downgrade("red")
+        else:
+            last = rows[0]
+            run_date = last.get("run_date")
+            run_d = datetime.strptime(run_date, "%Y-%m-%d").date() if run_date else None
+            age_days = (today_utc - run_d).days if run_d else 999
+            success = last.get("tickers_success", 0)
+            total = last.get("tickers_total", 0)
+            details_raw = last.get("missing_details") or "{}"
+            try:
+                details = json.loads(details_raw) if isinstance(details_raw, str) else details_raw
+            except Exception:
+                details = {}
+            div_n = details.get("div_rows", 0)
+            earn_n = details.get("earn_rows", 0)
+
+            if age_days > EVENT_DATA_MAX_AGE_DAYS:
+                status = "red"
+                detail = f"Letzter Run {age_days}d alt ({run_date})"
+            elif total and success < total * 0.80:
+                status = "yellow"
+                detail = f"{run_date} · {success}/{total} OK · {div_n}d/{earn_n}e"
+            else:
+                status = "green"
+                detail = f"{run_date} · {success}/{total} Ticker · {div_n} div + {earn_n} earn"
+            checks.append({
+                "name": "Event Data (Div+Earn)",
+                "status": status,
+                "detail": detail,
+                "value": run_date or "—",
+            })
+            downgrade(status)
+    except Exception as e:
+        checks.append({
+            "name": "Event Data (Div+Earn)",
             "status": "red",
             "detail": f"Query-Fehler: {str(e)[:100]}",
             "value": "ERR",
