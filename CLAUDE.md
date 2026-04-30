@@ -260,20 +260,21 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **2026-04-29 PR #41 v10 statt v11** — v11/quoteSummary lieferte trotz Crumb leere history. v10 + zusätzlich earnings-Modul → AAPL 4 Quartale OK. Yahoo's earningsHistory ist auf **4 Quartale** limitiert; Historie wächst durch tägliche Cron-Runs (Upsert auf PK ticker+report_date).
 - [x] **2026-04-29 PR #43 Cleanup** — Diagnose-Logs aus #41 wieder entfernt (würden Cron mit hunderten earn-dbg-Zeilen für Indizes/Futures/Crypto spammen).
 - [x] **2026-04-29 PR #44 Health-Check-Integration** — `fetch_event_data.py` schreibt nach jedem Run einen `refresh_log`-Eintrag mit `run_type='event_data'` (analog Intraday in #29). `daily_health_check.py` neuer Check "Event Data (Div+Earn)" — green ≤2d alt + ≥80% Ticker-Erfolg. End-to-End verifiziert: `2026-04-29 · 2/2 Ticker · 144 div + 8 earn`.
-- [x] **2026-04-30 PR #46 Earnings-Backfill via Finnhub** — Yahoo-Lücken (4-Quartal-Limit + EU/Asia leer) geschlossen. `scripts/backfill_earnings_finnhub.py` + `earnings_backfill.yml` (workflow_dispatch only). Free-tier 60 calls/min, ~10y Historie für US+EU+Asia, Upsert in dieselbe `earnings_events`-Tabelle (koexistiert mit täglichem Yahoo-Cron).
+- [x] **2026-04-30 PR #46 + #48 Finnhub-Backfill (verworfen 2026-04-30)** — Versuch, Yahoo-Lücken zu schließen. Free-Tier-Realität: `/stock/earnings` liefert hart 4 Quartale (ignoriert `?limit=80`), EU/Asia geben **403 "no access"**. Kein Vorteil über Yahoo. Script + Workflow wieder gelöscht (Commit s.u.). **Lesson:** Finnhub free tier ist US-only + 4-Q-Limit; brauchbare Alternativen nur bezahlt (Solo $50/M) oder andere Free-Tier-Quellen mit eigenen Kompromissen (FMP 250/d, Polygon 5/min).
 
 ### Live-Status nach Vollrun 2026-04-29
 - Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
-- Earnings funktionieren primär für US-Aktien (4 Quartale pro Run, akkumuliert)
-- Internationale Aktien (NESN.SW, MC.PA, AZN): leere `history` — Yahoo earningsHistory ist US-fokussiert
+- Earnings: Yahoo liefert nur 4 Quartale + nur US. Daily-Cron akkumuliert über Zeit (~16 Q nach 1 Jahr). EU/Asia bleiben mangels Free-Tier-Alternative **leer**.
 - Indizes/Futures/Crypto: keine Earnings (erwartet)
+- **Earnings-Page:** sollte einen klaren Hinweis bekommen, dass Daten nur für US-Aktien verfügbar sind (TODO unten)
 
 ### 🔴 SOFORT (User-Action, klein)
 - [ ] **Event-Tabellen verifizieren** — `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events
 - [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
-- [ ] **Finnhub-API-Key rotieren** (nach Backfill-Run) — in Session 2026-04-30 im Chat geleakt (`d7peuipr01qlb0a9om7gd7peuipr01qlb0a9om80`). Finnhub Dashboard → API Keys → revoke + neu erstellen, `.env` updaten, `docker compose up -d --force-recreate app`.
+- [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 im Chat geleakt (`d7peuipr01qlb0a9om7gd7peuipr01qlb0a9om80`). Wird **nicht mehr genutzt** (Backfill-Code wieder entfernt). Trotzdem: Finnhub Dashboard → API Keys → den Key löschen. Optional: `FINNHUB_API_KEY`-Zeile aus `.env` rausnehmen (schadet sonst nicht, kostet nichts).
+- [ ] **Earnings-Page Empty-State-Hinweis** — auf `/earnings-kalender` klar kommunizieren dass Earnings-Daten aktuell nur für US-Aktien verfügbar sind (Yahoo-Limitation). Vorschlag: Intro-Box-Ergänzung "ⓘ Aktuell unterstützt: US-Aktien. Europäische/asiatische Werte folgen sobald wir eine geeignete Datenquelle anbinden."
 - [ ] GSC Coverage-Check nach 1-2 Wochen: 329 → < 30 (410-Gone-Cleanup der /analyse/*)
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 - [ ] **nightly_refresh.py tickers_success-Metrik fixen** (optional) — zählt "heute" fälschlich als fehlend wenn manuell vor Börsenschluss gestartet; macht Mail-Anzeige präziser aber nicht dringend
