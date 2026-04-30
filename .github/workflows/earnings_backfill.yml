@@ -1,0 +1,52 @@
+name: Earnings Backfill (Finnhub)
+
+# Manueller Trigger fuer Initial-Backfill der Earnings-Historie via Finnhub.
+# Yahoo's earningsHistory liefert nur 4 Quartale + ist US-fokussiert. Finnhub
+# liefert ~10y Historie fuer US/EU/Asia in einem Endpoint.
+#
+# Cron-Pipeline (event_data_daily.yml) bleibt parallel aktiv fuer taegliche
+# Frische — dieser Workflow laeuft nur 1x zur Initial-Befuellung oder
+# gelegentlich nach API-Pausen.
+#
+# Voraussetzung: FINNHUB_API_KEY in .env auf dem VPS.
+# Free-Tier: 60 calls/min. 270 Ticker x 1.1s = ~5 min.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Optional: Liste von Tickern (Space-getrennt). Leer = alle aus symbols.py."
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Dry-Run (kein DB-Schreiben)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Run Finnhub backfill on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 25m
+          script: |
+            TICKERS="${{ github.event.inputs.tickers }}"
+            DRY="${{ github.event.inputs.dry_run }}"
+            ARGS=""
+            if [ "$DRY" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+            if [ -n "$TICKERS" ]; then
+              docker exec seasonalpha-app python3 scripts/backfill_earnings_finnhub.py \
+                $ARGS --tickers $TICKERS 2>&1 | tail -80
+            else
+              docker exec seasonalpha-app python3 scripts/backfill_earnings_finnhub.py \
+                $ARGS 2>&1 | tail -80
+            fi
+            echo "[earnings-backfill] Done: $(date)"
