@@ -48,8 +48,8 @@ def _skip(ticker: str) -> bool:
 
 
 def fetch_finnhub_earnings(ticker: str, retries: int = 3) -> list[dict]:
-    """Holt komplette Earnings-Historie. Free-Tier liefert ~10y."""
-    params = {"symbol": ticker, "token": FINNHUB_KEY}
+    """Holt komplette Earnings-Historie. limit=80 = ~20y."""
+    params = {"symbol": ticker, "limit": 80, "token": FINNHUB_KEY}
     for attempt in range(retries):
         try:
             r = requests.get(FINNHUB_URL, params=params, timeout=20)
