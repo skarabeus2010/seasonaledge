@@ -96,7 +96,7 @@
             <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ tip.name }}</td>
             <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
             <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
-            <td align="center" style="padding:10px 6px;">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% else %}🔴{% endif %}</td>
+            <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -131,7 +131,7 @@
             <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ tip.name }}</td>
             <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
             <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
-            <td align="center" style="padding:10px 6px;">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% else %}🔴{% endif %}</td>
+            <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -227,8 +227,8 @@
             <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
               <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ ticker }}</span>
               <span style="float:right;">
-                {% if r.traffic_light == 'green' %}🟢{% elif r.traffic_light == 'yellow' %}🟡{% else %}🔴{% endif %}
-                <span style="color:#a89878;font-size:11px;margin-left:4px;">{{ r.traffic_light }}</span>
+                {% if r.traffic_light == 'green' %}🟢{% elif r.traffic_light == 'yellow' %}🟡{% elif r.traffic_light == 'red' %}🔴{% else %}⚪{% endif %}
+                <span style="color:#a89878;font-size:11px;margin-left:4px;">{{ r.traffic_light or 'n/a' }}</span>
               </span>
             </div>
             {% endfor %}
