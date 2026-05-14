@@ -293,10 +293,10 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
 - [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 im Chat geleakt (`d7peuipr01qlb0a9om7gd7peuipr01qlb0a9om80`). Wird **nicht mehr genutzt** (Backfill-Code wieder entfernt). Trotzdem: Finnhub Dashboard → API Keys → den Key löschen. Optional: `FINNHUB_API_KEY`-Zeile aus `.env` rausnehmen (schadet sonst nicht, kostet nichts).
-- [ ] **Earnings-Page Empty-State-Hinweis** — auf `/earnings-kalender` klar kommunizieren dass Earnings-Daten aktuell nur für US-Aktien verfügbar sind (Yahoo-Limitation). Vorschlag: Intro-Box-Ergänzung "ⓘ Aktuell unterstützt: US-Aktien. Europäische/asiatische Werte folgen sobald wir eine geeignete Datenquelle anbinden."
+- [x] **2026-05-14** Earnings-Page Empty-State-Hinweis — war bereits implementiert (Intro-Box Zeile 110)
 - [x] **2026-05-14** GSC Coverage-Check: 383 → 32 (Removals beantragt, /landing/pages/ blockiert, Sitemap bereinigt)
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
-- [ ] **nightly_refresh.py tickers_success-Metrik fixen** (optional) — zählt "heute" fälschlich als fehlend wenn manuell vor Börsenschluss gestartet; macht Mail-Anzeige präziser aber nicht dringend
+- [x] **2026-05-14** nightly_refresh.py tickers_success-Metrik — check_end auf gestern statt heute (vor Börsenschluss hat "heute" noch keine Daten)
 - [ ] GSC Nachprüfung ~21.05.: "Nicht indexiert" < 50 erwartet, 31 "Gefunden" sollten indexiert sein
 
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
@@ -307,7 +307,7 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
 ### ⚠️ OFFEN — Auth-Features Follow-ups
 - [x] **2026-04-18 Profile-Seite: Newsletter-Toggle** — `scripts/create_profile_newsletter_rpc.sql` liefert `get_my_newsletter_status()` + `toggle_my_newsletter(bool)` (SECURITY DEFINER, `auth.jwt() ->> 'email'`), UI in `/profile` mit Switch + Status-Text. **User-Action:** Migration in Supabase SQL-Editor ausführen.
-- [ ] Profile-Seite: Konto-Löschung self-service (aktuell nur Placeholder → Email an info@)
+- [x] **2026-05-14** Profile-Seite: Konto-Löschung — Confirm-Dialog + vorausgefüllter mailto-Link (E-Mail, User-ID)
 
 ### Marketing (manuell)
 - [ ] LinkedIn + X Posts der 3 Polymarket-Blog-Posts staffeln (Templates im Anhang jedes Posts)

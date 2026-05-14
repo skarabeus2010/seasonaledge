@@ -243,7 +243,9 @@ def main():
 
         client = get_client()
         check_start = date.today() - __import__('datetime').timedelta(days=7)
-        check_end = date.today()
+        # check_end = gestern, nicht heute — "heute" hat vor Börsenschluss
+        # noch keine Daten und würde fälschlich als "missing" gezählt
+        check_end = date.today() - __import__('datetime').timedelta(days=1)
 
         for ticker in tickers:
             try:

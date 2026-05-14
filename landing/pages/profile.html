@@ -274,6 +274,15 @@
               <div class="btn-row">
                 <button class="btn-danger" id="btn-delete-account">Konto löschen</button>
               </div>
+              <!-- Bestätigungs-Dialog -->
+              <div id="delete-confirm" style="display:none;margin-top:.75rem;padding:.75rem;background:rgba(255,64,64,.08);border:1px solid rgba(255,64,64,.2);border-radius:8px">
+                <p style="font-size:.8125rem;color:var(--red);margin-bottom:.5rem;font-weight:600">Bist du sicher?</p>
+                <p style="font-size:.8125rem;color:var(--muted);margin-bottom:.75rem">Dein Konto und alle verknüpften Daten (Watchlist, Einstellungen) werden unwiderruflich gelöscht. Eine E-Mail an unser Team wird vorbereitet.</p>
+                <div class="btn-row" style="gap:.5rem">
+                  <a class="btn-danger" id="delete-mailto" href="#" style="text-decoration:none;text-align:center">Löschung per E-Mail beantragen</a>
+                  <button class="btn-secondary" id="delete-cancel" style="background:var(--card);border:1px solid var(--border);color:var(--dim);padding:.5rem 1rem;border-radius:6px;cursor:pointer;font-size:.8125rem">Abbrechen</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -442,7 +451,24 @@
       waitForAuth();
 
       $('btn-delete-account').addEventListener('click', function() {
-        alert('Konto-Löschung ist aktuell per E-Mail-Anfrage an info@seasonalpha.ai zu beantragen. Self-Service-Delete folgt in einem späteren Release.');
+        var confirmBox = $('delete-confirm');
+        if (confirmBox.style.display === 'none') {
+          confirmBox.style.display = 'block';
+          // mailto-Link mit User-Daten vorausfüllen
+          var email = ($('profile-email') || {}).textContent || '';
+          var uid = ($('user-id') || {}).textContent || '';
+          var subject = encodeURIComponent('Konto-Löschung beantragen');
+          var body = encodeURIComponent(
+            'Hiermit beantrage ich die Löschung meines SeasonAlpha-Kontos.\n\n' +
+            'E-Mail: ' + email + '\n' +
+            'User-ID: ' + uid + '\n\n' +
+            'Bitte bestätigt die Löschung per Antwort-Mail.'
+          );
+          $('delete-mailto').href = 'mailto:info@seasonalpha.ai?subject=' + subject + '&body=' + body;
+        }
+      });
+      $('delete-cancel').addEventListener('click', function() {
+        $('delete-confirm').style.display = 'none';
       });
 
       $('newsletter-toggle').addEventListener('change', handleNewsletterToggle);
