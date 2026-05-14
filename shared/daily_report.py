@@ -146,6 +146,56 @@ def compute_multi_window_tdom_score(ticker: str, tdom: int) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Aktueller Kurs + Vortagsperformance (Bulk)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def fetch_latest_prices_map(tickers: list[str]) -> dict[str, dict]:
+    """
+    Für jeden Ticker {close: float, prev_close: float, change_pct: float, date: str}.
+
+    Holt die letzten 5 Tage pro Ticker (paginiert), nimmt die zwei letzten
+    Werte. Eine Query pro Ticker ist unvermeidlich da REST kein DISTINCT ON
+    via Supabase-PostgREST kann.
+    """
+    from shared.supabase_client import get_client
+    client = get_client()
+    out: dict[str, dict] = {}
+
+    for t in tickers:
+        try:
+            rows = (
+                client.table("prices")
+                .select("date,close")
+                .eq("ticker", t)
+                .order("date", desc=True)
+                .limit(2)
+                .execute()
+                .data
+            ) or []
+            if len(rows) >= 2:
+                close = float(rows[0]["close"])
+                prev = float(rows[1]["close"])
+                change = (close / prev - 1) * 100 if prev else 0
+                out[t] = {
+                    "close":      close,
+                    "prev_close": prev,
+                    "change_pct": round(change, 2),
+                    "date":       rows[0]["date"],
+                }
+            elif len(rows) == 1:
+                out[t] = {
+                    "close":      float(rows[0]["close"]),
+                    "prev_close": None,
+                    "change_pct": None,
+                    "date":       rows[0]["date"],
+                }
+        except Exception as e:
+            error_logger.error(f"[daily_report] fetch_prices {t}: {e}")
+
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Sektion 2: Top Daily Tips (5 ETFs + 5 Aktien)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -331,6 +381,17 @@ def top_daily_tips(
     stocks = _build_tip_rows(candidates, set(stocks_meta.keys()), stocks_meta,
                              target_tdom, regimes, n_stocks)
 
+    # Aktueller Kurs + Vortagsperformance nur für die finalen Top-N (10 Queries
+    # statt 269). Wird pro Run einmal aufgerufen, nicht pro Empfänger.
+    selected_tickers = [r["ticker"] for r in etfs] + [r["ticker"] for r in stocks]
+    price_map = fetch_latest_prices_map(selected_tickers)
+    for row in etfs + stocks:
+        p = price_map.get(row["ticker"])
+        if p:
+            row["price_close"] = p.get("close")
+            row["price_date"] = p.get("date")
+            row["change_pct"] = p.get("change_pct")
+
     return {"etfs": etfs, "stocks": stocks, "tdom": target_tdom}
 
 
@@ -494,13 +555,19 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
                     "signal": s.get("signal"),
                 }
 
+    items = raw[:WATCHLIST_LIMIT]
+    # Preise im Bulk für die Watchlist-Tickers
+    wl_tickers = [item["ticker"] for item in items if item.get("ticker")]
+    price_map = fetch_latest_prices_map(wl_tickers) if wl_tickers else {}
+
     rows: list[dict] = []
-    for item in raw[:WATCHLIST_LIMIT]:
+    for item in items:
         ticker = item.get("ticker")
         if not ticker:
             continue
         meta = SYMBOLS.get(ticker, {})
         sc = score_map.get(ticker, {})
+        p = price_map.get(ticker, {})
         rows.append({
             "ticker":   ticker,
             "name":     meta.get("name", ticker),
@@ -508,6 +575,9 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "ki_score": sc.get("score"),
             "signal":   sc.get("signal"),
             "added_at": item.get("added_at"),
+            "price_close": p.get("close"),
+            "change_pct":  p.get("change_pct"),
+            "price_date":  p.get("date"),
         })
     return rows
 
