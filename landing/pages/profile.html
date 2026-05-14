@@ -223,6 +223,13 @@
                 <span class="card-row-value" id="auth-provider">—</span>
               </div>
               <div class="card-row">
+                <span class="card-row-label">Abo</span>
+                <span class="card-row-value" id="user-tier" style="display:flex;align-items:center;gap:.4rem">
+                  <span id="tier-badge" style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.15rem .5rem;border-radius:4px;background:rgba(255,255,255,.06);color:var(--muted)">Free</span>
+                  <a href="/pricing" id="tier-upgrade-link" style="font-size:.75rem;color:var(--accent);text-decoration:none">Upgrade &rarr;</a>
+                </span>
+              </div>
+              <div class="card-row">
                 <span class="card-row-label">User-ID</span>
                 <span class="card-row-value" id="user-id" style="font-size:.75rem;font-family:var(--f-m)">—</span>
               </div>
@@ -362,6 +369,24 @@
         avPh.textContent = initials(name, email);
         avImg.style.display = 'none';
         avPh.style.display = 'flex';
+      }
+
+      // Tier laden + anzeigen
+      if (window.supabase) {
+        window.supabase.rpc('get_my_tier').then(function(res) {
+          var tier = (res && res.data) || 'free';
+          var badge = $('tier-badge');
+          var link = $('tier-upgrade-link');
+          if (tier === 'premium') {
+            badge.textContent = 'Premium';
+            badge.style.background = 'rgba(232,168,32,.15)';
+            badge.style.color = 'var(--accent)';
+            if (link) link.style.display = 'none';
+          } else {
+            badge.textContent = 'Free';
+            if (link) link.style.display = '';
+          }
+        }).catch(function() { /* bleibt auf Free */ });
       }
 
       // Watchlist-Count (aktualisiert automatisch bei Änderungen)

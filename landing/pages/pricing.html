@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Preise &mdash; Free &amp; Premium Pl&auml;ne | SeasonAlpha</title>
+  <meta name="description" content="SeasonAlpha kostenlos nutzen oder mit Premium alle Features freischalten. Saisonale B&ouml;rsenanalyse mit KI, 270 Ticker, 130 Jahre Daten.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/pricing">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/pricing">
+  <meta property="og:title" content="Preise &mdash; Free &amp; Premium | SeasonAlpha">
+  <meta property="og:description" content="SeasonAlpha kostenlos nutzen oder mit Premium alle Features freischalten.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Preise &mdash; Free &amp; Premium | SeasonAlpha">
+  <meta name="twitter:description" content="SeasonAlpha kostenlos nutzen oder mit Premium alle Features freischalten.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Preise","url":"https://seasonalpha.ai/pricing","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Preise","item":"https://seasonalpha.ai/pricing"}]}</script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .pricing-wrap{max-width:900px;margin:0 auto;padding:1.5rem 1rem}
+    .pricing-subtitle{color:var(--muted);font-size:.875rem;text-align:center;margin-bottom:2rem;line-height:1.6}
+    .pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+    @media(max-width:640px){.pricing-grid{grid-template-columns:1fr}}
+
+    .plan-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column}
+    .plan-card.featured{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 4px 24px rgba(232,168,32,.12)}
+
+    .plan-badge{display:inline-block;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.2rem .6rem;border-radius:4px;margin-bottom:.75rem;width:fit-content}
+    .plan-badge.free{background:rgba(255,255,255,.06);color:var(--muted)}
+    .plan-badge.premium{background:rgba(232,168,32,.15);color:var(--accent)}
+
+    .plan-name{font-family:var(--f-d);font-size:1.25rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .plan-desc{font-size:.8125rem;color:var(--muted);margin-bottom:1rem;line-height:1.5}
+
+    .plan-price{font-family:var(--f-d);font-size:2rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .plan-price span{font-size:.875rem;font-weight:400;color:var(--muted)}
+    .plan-price-note{font-size:.75rem;color:var(--muted);margin-bottom:1.25rem}
+
+    .plan-features{list-style:none;padding:0;margin:0 0 1.5rem;flex:1}
+    .plan-features li{font-size:.8125rem;color:var(--dim);padding:.35rem 0;display:flex;align-items:flex-start;gap:.5rem;line-height:1.5}
+    .plan-features li .check{color:var(--green);flex-shrink:0;font-weight:700}
+    .plan-features li .cross{color:var(--muted);flex-shrink:0;opacity:.4}
+
+    .plan-btn{display:block;text-align:center;padding:.625rem 1.5rem;border-radius:8px;font-size:.875rem;font-weight:600;text-decoration:none;transition:opacity .15s}
+    .plan-btn:hover{opacity:.85}
+    .plan-btn.free{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+    .plan-btn.premium{background:var(--accent);color:#000;border:none}
+    .plan-btn.premium.disabled{opacity:.5;cursor:default;pointer-events:none}
+
+    .faq-section{margin-top:2rem}
+    .faq-section h2{font-family:var(--f-d);font-size:1.125rem;font-weight:700;color:var(--text);margin-bottom:1rem;text-align:center}
+    .faq-item{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem;overflow:hidden}
+    .faq-q{padding:.75rem 1rem;font-size:.8125rem;font-weight:600;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .faq-q::after{content:'+';color:var(--muted);font-size:1rem;transition:transform .2s}
+    .faq-item.open .faq-q::after{transform:rotate(45deg)}
+    .faq-a{padding:0 1rem .75rem;font-size:.8125rem;color:var(--dim);line-height:1.6;display:none}
+    .faq-item.open .faq-a{display:block}
+
+    .pricing-footer{text-align:center;margin-top:2rem;font-size:.75rem;color:var(--muted);line-height:1.6}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <main>
+      <div class="pricing-wrap">
+        <h1 style="font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);text-align:center;margin-bottom:.5rem">
+          <b style="color:var(--accent)">Preise</b>
+        </h1>
+        <p class="pricing-subtitle">
+          SeasonAlpha ist und bleibt kostenlos nutzbar.<br>
+          Premium schaltet erweiterte Analysen und Features frei.
+        </p>
+
+        <div class="pricing-grid">
+          <!-- FREE -->
+          <div class="plan-card">
+            <span class="plan-badge free">Free</span>
+            <div class="plan-name">Starter</div>
+            <div class="plan-desc">Alle Basis-Features, unbegrenzt.</div>
+            <div class="plan-price">0 &euro; <span>/ Monat</span></div>
+            <div class="plan-price-note">Keine Kreditkarte n&ouml;tig</div>
+            <ul class="plan-features">
+              <li><span class="check">&check;</span> 22 Analyse-Tools</li>
+              <li><span class="check">&check;</span> 270 Ticker (Aktien, ETFs, Futures, Crypto)</li>
+              <li><span class="check">&check;</span> Saisonaler Jahreszyklus</li>
+              <li><span class="check">&check;</span> KI-Score &amp; Crash-Fr&uuml;hwarnung</li>
+              <li><span class="check">&check;</span> Dashboard &amp; Scanner</li>
+              <li><span class="check">&check;</span> Watchlist (Cloud-Sync)</li>
+              <li><span class="check">&check;</span> T&auml;gliche Daten-Updates</li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)">Erweiterte Zeitr&auml;ume</span></li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)">E-Mail-Alerts</span></li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)">Exklusive Strategien</span></li>
+            </ul>
+            <a class="plan-btn free" href="/dashboard">Kostenlos starten</a>
+          </div>
+
+          <!-- PREMIUM -->
+          <div class="plan-card featured">
+            <span class="plan-badge premium">Premium</span>
+            <div class="plan-name">Pro</div>
+            <div class="plan-desc">Voller Zugriff auf alle Analysen und Features.</div>
+            <div class="plan-price" id="price-display">&mdash; &euro; <span>/ Monat</span></div>
+            <div class="plan-price-note">Preis wird bald bekannt gegeben</div>
+            <ul class="plan-features">
+              <li><span class="check">&check;</span> Alles aus Free, plus:</li>
+              <li><span class="check">&check;</span> Erweiterte Zeitr&auml;ume (20+ Jahre)</li>
+              <li><span class="check">&check;</span> Voller Backtest-Zeitraum</li>
+              <li><span class="check">&check;</span> E-Mail-Alerts bei Signalwechseln</li>
+              <li><span class="check">&check;</span> Exklusive Strategien</li>
+              <li><span class="check">&check;</span> Erweiterter Scanner (alle Filter)</li>
+              <li><span class="check">&check;</span> Polymarket Divergenz-Details</li>
+              <li><span class="check">&check;</span> Priority Support</li>
+              <li><span class="check">&check;</span> Werbefrei</li>
+            </ul>
+            <a class="plan-btn premium disabled" href="#" id="btn-upgrade">Bald verf&uuml;gbar</a>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-section">
+          <h2>H&auml;ufige Fragen</h2>
+
+          <div class="faq-item">
+            <div class="faq-q">Ist SeasonAlpha wirklich kostenlos?</div>
+            <div class="faq-a">Ja! Die Free-Version enth&auml;lt 22 Analyse-Tools, 270 Ticker und t&auml;gliche Updates. Kein Testzeitraum, keine versteckten Kosten. Du kannst SeasonAlpha dauerhaft kostenlos nutzen.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Was bringt mir Premium?</div>
+            <div class="faq-a">Premium erweitert die Datentiefe (20+ Jahre statt 10), schaltet exklusive Strategien und E-Mail-Alerts frei, und gibt dir vollen Zugriff auf erweiterte Backtest-Zeitr&auml;ume. Die genauen Features werden vor dem Launch finalisiert.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Wann startet Premium?</div>
+            <div class="faq-a">Wir arbeiten daran. Melde dich f&uuml;r den Newsletter an, um als Erster informiert zu werden. Fr&uuml;hbucher erhalten einen Sonderpreis.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Kann ich jederzeit k&uuml;ndigen?</div>
+            <div class="faq-a">Ja. Premium l&auml;uft monatsweise, keine Mindestlaufzeit. K&uuml;ndigung jederzeit mit einem Klick. Dein Account bleibt als Free-User bestehen.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Wie funktioniert die Bezahlung?</div>
+            <div class="faq-a">Wir nutzen Stripe — den sichersten Zahlungsanbieter weltweit. Kreditkarte, Debitkarte und SEPA-Lastschrift werden unterst&uuml;tzt. Deine Kartendaten werden nie auf unseren Servern gespeichert.</div>
+          </div>
+        </div>
+
+        <p class="pricing-footer">
+          Fragen? Schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a><br>
+          Preise inkl. MwSt. f&uuml;r Kunden in der EU.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/app.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+    // FAQ Accordion
+    var items = document.querySelectorAll('.faq-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].querySelector('.faq-q').addEventListener('click', function() {
+        this.parentElement.classList.toggle('open');
+      });
+    }
+  })();
+  </script>
+
+  <script>
+    if (window.loadComponent) {
+      loadComponent('nav-container', '/landing/components/nav.html');
+      loadComponent('footer-container', '/landing/components/footer.html');
+    } else {
+      fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html; if (window.initNav) initNav();});
+      fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+    }
+  </script>
+</body>
+</html>

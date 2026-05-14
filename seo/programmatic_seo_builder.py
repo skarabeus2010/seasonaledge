@@ -180,6 +180,8 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         "vixpiration":        ("0.85", "weekly"),
         "dividend-kalender":  ("0.85", "weekly"),
         "earnings-kalender":  ("0.85", "weekly"),
+        # Pricing
+        "pricing":            ("0.8",  "monthly"),
     }
     PAGE_EXCLUDES = {
         "_disabled", "404", "index",
