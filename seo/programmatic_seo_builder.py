@@ -125,10 +125,8 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
     # Statische Seiten (hohe Prioritaet)
     static_pages = [
         {"loc": f"{BASE_URL}/",             "priority": "1.0",  "changefreq": "weekly"},
-        {"loc": f"{BASE_URL}/pricing",      "priority": "0.8",  "changefreq": "monthly"},
         {"loc": f"{BASE_URL}/disclaimer",   "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": f"{BASE_URL}/datenschutz",  "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": f"{BASE_URL}/impressum",    "priority": "0.3",  "changefreq": "yearly"},
+        {"loc": f"{BASE_URL}/rechtliches",  "priority": "0.3",  "changefreq": "yearly"},
     ]
     for page in static_pages:
         urls.append(
@@ -529,8 +527,7 @@ def build_disclaimer(output_ordner: str):
 
     <div class="footer">
         &copy; 2026 SeasonAlpha &middot;
-        <a href="https://seasonalpha.ai/impressum">Impressum</a> &middot;
-        <a href="https://seasonalpha.ai/datenschutz">Datenschutz</a>
+        <a href="https://seasonalpha.ai/rechtliches">Impressum &amp; Datenschutz</a>
     </div>
 
 </div>
