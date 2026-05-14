@@ -140,6 +140,13 @@ def get_or_compute_ki_score(
         from shared.supabase_client import fetch_ki_score
         cached = fetch_ki_score(ticker, today)
         if cached:
+            # DB-Row hat 'details' statt 'sub_scores' — Shape angleichen, damit
+            # Aufrufer (nightly_refresh, scanner) auf result["sub_scores"]
+            # zugreifen können wie bei Live-Berechnung.
+            if "sub_scores" not in cached:
+                details = cached.get("details")
+                if details:
+                    cached["sub_scores"] = details
             return cached
     except Exception as e:
         app_logger.debug(f"cache_manager: DB-Lookup ki_score fehlgeschlagen: {e}")

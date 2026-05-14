@@ -119,11 +119,14 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                         result["name"] = sym_info.get("name", get_display_name(ticker))
                         result["kategorie"] = sym_info.get("kategorie", "Sonstige")
 
-                        wr_details = result["sub_scores"]["win_rate"]["details"]
+                        # Defensiv: alte DB-Rows können 'details' NULL haben
+                        # oder Cache hat die Shape nicht — dann sub_scores fehlt
+                        sub_scores = result.get("sub_scores") or result.get("details") or {}
+                        wr_details = (sub_scores.get("win_rate") or {}).get("details") or {}
                         result["win_rate"] = wr_details.get("win_rate", 0)
                         result["avg_return"] = wr_details.get("avg_return", 0)
 
-                        tracking_details = result["sub_scores"]["tracking"]["details"]
+                        tracking_details = (sub_scores.get("tracking") or {}).get("details") or {}
                         result["deviation"] = round(
                             1 - tracking_details.get("correlation", 0), 3
                         )
