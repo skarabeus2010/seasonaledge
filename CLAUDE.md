@@ -300,6 +300,21 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
   - Fenster 3: Open → Close(t+1) — **NEU** in `shared/tdom_analysis.py::calc_strategy_returns` (`open_to_next_close` Strategy)
   - Fenster 4: Close → Close(t+1)
   - `nightly_refresh.py` befüllt jetzt alle 4 Strategien (statt 3) — `tdom_stats`-Schema hatte bereits `strategy`-Spalte mit UNIQUE-Constraint, keine Migration nötig.
+  - **Filter ist drei-stufig kumulativ**: strict (KI ≥6.5 · Regime grün · MW ≥3) → relaxed (KI ≥5.5 · grün · MW ≥2) → fallback (KI ≥5.0 · grün/gelb · ohne MW + ohne Regime-Pflicht). Tiers füllen kumuliert auf bis Limit erreicht.
+
+### Iteration & Fixes (PRs #51–#64)
+Marathon-Session zur Daily-Pipeline. Wichtige Lessons:
+- **PR #52 ki-score Cache-Shape**: `fetch_ki_score` gibt rohes DB-Row mit `details`-Feld zurück, `nightly_refresh` erwartet `sub_scores`. Fix in `cache_manager.py`: rehydrate `cached["sub_scores"] = cached["details"]`. Trat zuerst bei IBIT auf nachdem KI-Score-Cache schon im DB war.
+- **PR #54+#55 Regime-Lücke**: `regime_scores`-Tabelle hatte initial nur SPY drin (von Diagnose: `1/19 ETFs mit Regime green`). Daily-Filter `Regime grün` killte alle Tipps. Lösungen:
+  - Fallback-Tier toleriert fehlende Regime-Scores (`require_regime=False`).
+  - Unknown Regime rendert ⚪ statt 🔴 im Template (vorher fiel `unknown` in `else`-Zweig).
+  - `compute_regime_scores.py` neuer `--all-relevant` Flag (US-ETF + US-Aktie + EU-Aktie auf einmal).
+- **PR #60+#61 Top-N kumulieren**: `_build_tip_rows` war or-Kette — sobald strict 1 Treffer hatte, wurde relaxed nicht mehr probiert. Daher 2 Aktien statt 10. Fix: kumulative Auffüllung mit `seen_tickers`-Dedup. Außerdem: CLI `default=5` überschrieb Modul-Konstante 10.
+- **PR #57 5-Tage-Event-Window**: vorher nur target_date, jetzt window_end = target + 4 Tage. Plus "❓ Was sagt mir das?"-Erklärungs-Sektion (KI/MW/Regime).
+- **PR #59 Preis-Anreicherung**: 10 Bulk-Queries pro Run für die finalen Tipps (Close + Vortagsperformance). Pro Watchlist-Item auch.
+- **PR #62 mehr Strategien**: Mai-Mitte triggerte 0 von 6 alten Strategien. Erweitert um OPEX-Woche (Pinning), Pre-Holiday-Drift (NYSE-Feiertag morgen), Memorial Day, Pre-FOMC-Drift (7 HT-Fenster), Earnings-Saison (Q1-Berichte Jan/Apr/Jul/Okt), Sell-in-May als WARNUNG (Mai-Okt schwache 6 Monate). Sektion immer sichtbar, bei leerer Liste "Ruhige Phase"-Hinweis.
+- **PR #63+#64 Status-Zeile**: `Heute: Do 14.05.2026 · TDOM 10/20 · TWOY 20/53 · TDOY 92/252 · Q2 · MidTerm` analog Dashboard-Header. Python-Port der JS-Logik aus `landing/js/app.js::renderTradingDayHeader`. Ticker-Suffix entfernt (Newsletter ist universell).
+- **Watchlist personalisiert** (PR #56): `get_watchlist_by_email(email)` RPC SECURITY DEFINER joint auth.users.email → user_watchlists. Pro Empfänger eigene Sektion mit Ticker/Name/Kurs/Δ/KI/Signal. service_role-only.
   - Filter im Daily-Newsletter: nur Tipps mit Multi-Window-Score ≥3.
 
 ### Live-Status nach Vollrun 2026-04-29
