@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 33.0 | 2026-04-15 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
+> Version 34.0 | 2026-05-14 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
 
 ## Projekt
 
@@ -270,6 +270,17 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **2026-04-29 PR #44 Health-Check-Integration** — `fetch_event_data.py` schreibt nach jedem Run einen `refresh_log`-Eintrag mit `run_type='event_data'` (analog Intraday in #29). `daily_health_check.py` neuer Check "Event Data (Div+Earn)" — green ≤2d alt + ≥80% Ticker-Erfolg. End-to-End verifiziert: `2026-04-29 · 2/2 Ticker · 144 div + 8 earn`.
 - [x] **2026-04-30 PR #46 + #48 Finnhub-Backfill (verworfen 2026-04-30)** — Versuch, Yahoo-Lücken zu schließen. Free-Tier-Realität: `/stock/earnings` liefert hart 4 Quartale (ignoriert `?limit=80`), EU/Asia geben **403 "no access"**. Kein Vorteil über Yahoo. Script + Workflow wieder gelöscht (Commit s.u.). **Lesson:** Finnhub free tier ist US-only + 4-Q-Limit; brauchbare Alternativen nur bezahlt (Solo $50/M) oder andere Free-Tier-Quellen mit eigenen Kompromissen (FMP 250/d, Polygon 5/min).
 
+### Erledigt (KW 20, 2026-05-14 — Health Check + SEO-Offensive)
+- [x] **log_return NULL Bulk-Fix** — 488 Rows (Mai 5+6) über alle ~264 Nicht-Crypto-Ticker gefixt. Root Cause: 5-Kalender-Tage-Fenster im Nightly zu kurz bei Feiertags-Konstellationen (1. Mai + Wochenende).
+- [x] **Nightly Backfill-Step (Phase D)** — `nightly_refresh.py`: Upsert-Fenster 5→7 Tage + neue Phase D prüft letzte 14 Tage auf NULL `log_return` und berechnet `ln(close_t/close_{t-1})` nach. Verhindert Wiederholung.
+- [x] **moddatetime-Trigger** auf `tdom_stats` + `tdoy_stats` — `updated_at` wurde bei UPDATEs nie aktualisiert → `_is_stale()` immer True → 30% Zeitverlust pro Nightly. SQL-Migration angewendet.
+- [x] **Sitemap-Update** 46→58 URLs — 5 neue Pages (Polymarket, Dividenden, Earnings, Risikozyklus, VIXpiration) + 4 Blog-Posts + Phantom-URLs entfernt (/impressum, /datenschutz, /pricing existierten nie)
+- [x] **Meta-Tags Fix** — `dividend-kalender.html` + `earnings-kalender.html`: og:image Dimensionen, twitter:creator/description, Publisher in WebPage JSON-LD ergänzt
+- [x] **GSC-Bereinigung** — Root Cause 274 "Alternative Seite mit kanonischem Tag": `/landing/pages/*.html` war direkt aufrufbar (jede hatte canonical → Clean-URL). Fix: nginx `location ~* ^/landing/pages/.*\.html$ { return 404; }` + `robots.txt Disallow: /landing/pages/` + `Disallow: /analyse/`
+- [x] **nginx /impressum + /datenschutz** → 301 Redirect nach `/rechtliches` (war 404, GSC-Error)
+- [x] **Blog-Post #23** — "Sell in May 2026 — die Halbzeit-Bilanz überrascht" (Trade-Deal-Rally vs. Saisonalität, DAX-Fokus, historische Mai-Starts, FAQ-Sektion)
+- [x] **GSC Removals beantragt** — `/analyse/` + `/landing/pages/` Prefix, Sitemap neu eingereicht, /impressum Fehlerbehebung validiert
+
 ### Live-Status nach Vollrun 2026-04-29
 - Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
 - Earnings: Yahoo liefert nur 4 Quartale + nur US. Daily-Cron akkumuliert über Zeit (~16 Q nach 1 Jahr). EU/Asia bleiben mangels Free-Tier-Alternative **leer**.
@@ -283,9 +294,10 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
 - [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 im Chat geleakt (`d7peuipr01qlb0a9om7gd7peuipr01qlb0a9om80`). Wird **nicht mehr genutzt** (Backfill-Code wieder entfernt). Trotzdem: Finnhub Dashboard → API Keys → den Key löschen. Optional: `FINNHUB_API_KEY`-Zeile aus `.env` rausnehmen (schadet sonst nicht, kostet nichts).
 - [ ] **Earnings-Page Empty-State-Hinweis** — auf `/earnings-kalender` klar kommunizieren dass Earnings-Daten aktuell nur für US-Aktien verfügbar sind (Yahoo-Limitation). Vorschlag: Intro-Box-Ergänzung "ⓘ Aktuell unterstützt: US-Aktien. Europäische/asiatische Werte folgen sobald wir eine geeignete Datenquelle anbinden."
-- [ ] GSC Coverage-Check nach 1-2 Wochen: 329 → < 30 (410-Gone-Cleanup der /analyse/*)
+- [x] **2026-05-14** GSC Coverage-Check: 383 → 32 (Removals beantragt, /landing/pages/ blockiert, Sitemap bereinigt)
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 - [ ] **nightly_refresh.py tickers_success-Metrik fixen** (optional) — zählt "heute" fälschlich als fehlend wenn manuell vor Börsenschluss gestartet; macht Mail-Anzeige präziser aber nicht dringend
+- [ ] GSC Nachprüfung ~21.05.: "Nicht indexiert" < 50 erwartet, 31 "Gefunden" sollten indexiert sein
 
 ### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
 - [x] **2026-04-18 Brier-Score-Pipeline** — separate Tabellen `polymarket_resolved_*`, Scraper für ~1500 resolved markets (6 Tags, 2024+), `shared/brier_score.py` mit Brier + Kalibrierungs-Kurve + Zeit-Buckets, Precompute als `brier_stats.json`, UI-Sektion auf `/polymarket`. Details in `docs/POLYMARKET.md#brier-score`.
