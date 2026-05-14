@@ -1,0 +1,67 @@
+name: Daily Morning Briefing
+
+# Taeglicher Newsletter mit Trading-Tipps fuer den anstehenden Handelstag.
+# Empfaenger sind die `daily_subscribers`-Tabelle (komplett getrennt von
+# Weekly-Subscribers). Schedule: Mo-Fr 06:00 UTC (= 08:00 Berlin Sommer,
+# vor EU-Open). Sa/So bewusst aus — kein US-Trading.
+#
+# Inhalte (gerendert via shared/daily_report.build_daily_context):
+#   1. Top-5 ETFs (US-ETF) + Top-5 Aktien (US/EU) mit KI-Score +
+#      Multi-Window-TDOM-Score (4 historische Renditefenster, je 1 wenn
+#      Ø-Return >0; max 4)
+#   2. Events heute/morgen (FOMC, OPEX, Earnings, Dividenden, Feiertage)
+#   3. Aktive Saisonal-Strategien (Santa, Sell-in-May, January Effect, ...)
+#   4. Sektor-Rotation + Crash-Ampel Marktbarometer
+#
+# Voraussetzungen:
+#   - BREVO_API_KEY in /opt/seasonaledge/.env (gemeinsam mit Weekly)
+#   - daily_subscribers-Tabelle in Supabase (scripts/create_daily_subscribers.sql)
+#   - tdom_stats mit allen 4 Strategien gefuellt (nightly_refresh.py)
+
+on:
+  schedule:
+    # 06:00 UTC, Mo-Fr (1-5). Cron-Drift bei GitHub Actions kann 15-90 min
+    # Verzoegerung bedeuten — erste Mail meist bis 07:30 UTC im Postfach.
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-Run: HTML auf Disk, kein Versand"
+        required: false
+        default: false
+        type: boolean
+      test_mode:
+        description: "Nur an ADMIN_EMAIL senden"
+        required: false
+        default: false
+        type: boolean
+      to:
+        description: "Einzelner Empfaenger (ueberschreibt test_mode)"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Daily newsletter send via VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 18m
+          script: |
+            DRY="${{ github.event.inputs.dry_run }}"
+            TEST="${{ github.event.inputs.test_mode }}"
+            TO="${{ github.event.inputs.to }}"
+            ARGS=""
+            if [ "$DRY" = "true" ];   then ARGS="$ARGS --dry-run"; fi
+            if [ "$TEST" = "true" ];  then ARGS="$ARGS --test"; fi
+            if [ -n "$TO" ];          then ARGS="$ARGS --to $TO"; fi
+
+            echo "[daily-newsletter] args:$ARGS"
+            docker exec seasonalpha-app python3 scripts/daily_newsletter.py $ARGS 2>&1 | tail -80
+            echo "[daily-newsletter] Done: $(date)"

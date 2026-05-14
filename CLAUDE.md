@@ -284,6 +284,24 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **Blog-Post #24** — "DAX vs. S&P 500: Welcher Index ist saisonaler?" (35 Jahre Vergleich, Monats-Tabelle, 3 strukturelle Gründe, FAQ + Social-Snippets)
 - [x] **Newsletter Phase F Fix** — `capture_output=True` entfernt (Output war komplett unsichtbar in docker logs), `flush=True` + Separator-Lines, Workflow `tail -80` → `tail -150`. Manueller Test bestätigt: Brevo 201, Mail zugestellt. Root Cause: Newsletter funktionierte vermutlich, war aber durch capture_output + tail-Truncation nicht sichtbar.
 
+### Erledigt (KW 22, 2026-05-25 — Daily Morning Briefing)
+- [x] **Daily Newsletter Pipeline** — Komplett-neuer Mo-Fr 06:00 UTC Cron mit eigenständigen Komponenten:
+  - `scripts/create_daily_subscribers.sql` — neue Tabelle `daily_subscribers` (komplett getrennt von `subscribers`), 3 RPCs: `daily_unsubscribe_with_token`, `get_my_daily_status`, `toggle_my_daily` (SECURITY DEFINER, JWT-Lookup).
+  - `shared/daily_report.py` — 6 Aggregations-Funktionen: `next_trading_day` (Holiday-aware), `compute_multi_window_tdom_score` (0-4), `top_daily_tips` (5 ETFs + 5 Aktien), `events_today_tomorrow`, `active_strategy_signals` (datum-basiert: Santa, Sell-in-May, January Effect, Summer Doldrums, Turn-of-Month), `sector_rotation_signal` (historisch beste Sektoren per Monat).
+  - `scripts/daily_newsletter.py` — CLI (mirror weekly_newsletter), Args `--dry-run`/`--test`/`--to`/`--n-etfs`/`--n-stocks`, refresh_log mit `run_type='daily_newsletter'`.
+  - `scripts/templates/daily_report.html.j2` — Dark-Mode Email-Template, 5 Sektionen (Top-ETFs, Top-Aktien, Events, Strategien, Rotation+Risiko).
+  - `.github/workflows/daily_newsletter.yml` — Cron `0 6 * * 1-5` + workflow_dispatch (dry_run/test_mode/to).
+  - `landing/pages/unsubscribe.html` — neuer `?type=daily|weekly` Param wählt zwischen RPCs (Rückwärts-kompatibel: Default weekly).
+  - `landing/pages/profile.html` — zweiter Toggle "Daily Morning Briefing" unter dem Weekly-Toggle.
+  - `scripts/daily_health_check.py` — neuer Check "Daily Newsletter" mit Wochenend-Awareness (am Sa/So kein Send erwartet).
+- [x] **Multi-Window-TDOM-Score (0-4)** — neues Kernsignal: vier historische Renditefenster pro TDOM, je 1 Punkt wenn Ø-Return > 0:
+  - Fenster 1: Open → Close (intraday)
+  - Fenster 2: Open → Open(t+1)
+  - Fenster 3: Open → Close(t+1) — **NEU** in `shared/tdom_analysis.py::calc_strategy_returns` (`open_to_next_close` Strategy)
+  - Fenster 4: Close → Close(t+1)
+  - `nightly_refresh.py` befüllt jetzt alle 4 Strategien (statt 3) — `tdom_stats`-Schema hatte bereits `strategy`-Spalte mit UNIQUE-Constraint, keine Migration nötig.
+  - Filter im Daily-Newsletter: nur Tipps mit Multi-Window-Score ≥3.
+
 ### Live-Status nach Vollrun 2026-04-29
 - Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
 - Earnings: Yahoo liefert nur 4 Quartale + nur US. Daily-Cron akkumuliert über Zeit (~16 Q nach 1 Jahr). EU/Asia bleiben mangels Free-Tier-Alternative **leer**.
@@ -291,6 +309,9 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - **Earnings-Page:** sollte einen klaren Hinweis bekommen, dass Daten nur für US-Aktien verfügbar sind (TODO unten)
 
 ### 🔴 SOFORT (User-Action, klein)
+- [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Erstellt Tabelle + 3 RPCs. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');` als ersten Test-Subscriber.
+- [ ] **Nightly: 4. TDOM-Strategy zurückbauen** — nach Deploy: einmalig `docker exec seasonalpha-app python3 scripts/nightly_refresh.py` (oder nächsten Nightly-Cron abwarten) damit `tdom_stats` auch für `open_to_next_close` Strategy gefüllt wird. Prüfen: `SELECT strategy, count(*) FROM tdom_stats GROUP BY strategy;` — alle 4 Strategien sollten existieren.
+- [ ] **Daily-Newsletter Smoke-Test** — GitHub Actions → "Daily Morning Briefing" → Run workflow → test_mode=true. Mail an `ADMIN_EMAIL`, alle Sektionen prüfen.
 - [ ] **Event-Tabellen verifizieren** — `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events
 - [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
 - [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
