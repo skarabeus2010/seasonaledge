@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 34.0 | 2026-05-14 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
+> Version 35.0 | 2026-05-14 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
 
 ## Projekt
 
@@ -280,6 +280,9 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 - [x] **nginx /impressum + /datenschutz** → 301 Redirect nach `/rechtliches` (war 404, GSC-Error)
 - [x] **Blog-Post #23** — "Sell in May 2026 — die Halbzeit-Bilanz überrascht" (Trade-Deal-Rally vs. Saisonalität, DAX-Fokus, historische Mai-Starts, FAQ-Sektion)
 - [x] **GSC Removals beantragt** — `/analyse/` + `/landing/pages/` Prefix, Sitemap neu eingereicht, /impressum Fehlerbehebung validiert
+- [x] **Stripe-Infrastruktur vorgebaut** — `user_subscriptions`-Tabelle (RLS), `get_my_tier()` RPC (SECURITY DEFINER, Default 'free'), Auto-Insert-Trigger auf `auth.users`, `landing/js/premium.js` (SA.premium Modul mit sessionStorage-Cache 5min TTL, `[data-premium]` Auto-Gating mit Blur-Overlay), `/pricing` Page (Free vs Premium Cards + FAQ), Profile-Seite Tier-Anzeige. Nur Stripe-Checkout + Webhook fehlen noch.
+- [x] **Blog-Post #24** — "DAX vs. S&P 500: Welcher Index ist saisonaler?" (35 Jahre Vergleich, Monats-Tabelle, 3 strukturelle Gründe, FAQ + Social-Snippets)
+- [x] **Newsletter Phase F Fix** — `capture_output=True` entfernt (Output war komplett unsichtbar in docker logs), `flush=True` + Separator-Lines, Workflow `tail -80` → `tail -150`. Manueller Test bestätigt: Brevo 201, Mail zugestellt. Root Cause: Newsletter funktionierte vermutlich, war aber durch capture_output + tail-Truncation nicht sichtbar.
 
 ### Live-Status nach Vollrun 2026-04-29
 - Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
@@ -311,12 +314,13 @@ User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
 
 ### Marketing (manuell)
 - [ ] LinkedIn + X Posts der 3 Polymarket-Blog-Posts staffeln (Templates im Anhang jedes Posts)
-- [ ] Newsletter-Mail an Brevo-Liste
+- [ ] LinkedIn + X Post Blog #23 "Sell in May Halbzeit" + #24 "DAX vs S&P 500"
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 
 ### Technische Roadmap (längerfristig)
 - [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
 - [ ] Alerts (Push bei KI-Score/Crash-Ampel/Strategie-Schwellen)
 - [ ] EN-Übersetzung der HTML-Pages
-- [ ] Stripe Freemium/Abo (an Supabase-User anbinden)
-- [ ] Premium-Features gated hinter Login (erweiterte Backtest-Zeiträume, mehr Markets im Scanner)
+- [ ] Stripe Checkout + Webhook anbinden (Infrastruktur steht: DB + RPC + premium.js + Pricing-Page)
+- [ ] Premium-Features gated hinter Login (`[data-premium]`-Attribute auf Elemente, premium.js gated automatisch)
+- [ ] Nav/Footer: Pricing-Link ergänzen
