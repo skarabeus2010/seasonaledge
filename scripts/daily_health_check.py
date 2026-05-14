@@ -42,6 +42,7 @@ CRYPTO_MAX_AGE_DAYS = 1           # BTC darf hoechstens 1 Tag alt sein
 WEEKLY_SCANNER_MAX_AGE_DAYS = 8   # Scanner laeuft Sonntags, 8 Tage Puffer
 POLYMARKET_MAX_AGE_DAYS = 2       # Phase G taeglich
 EVENT_DATA_MAX_AGE_DAYS = 2       # event_data_daily.yml taeglich 22:15 UTC
+DAILY_NL_MAX_AGE_WORKDAYS = 2     # daily_newsletter.yml Mo-Fr 06:00 UTC
 
 
 def _last_workday(ref: date) -> date:
@@ -470,6 +471,80 @@ def collect_health_data() -> dict:
             "name": "Brier-Stats",
             "status": "red",
             "detail": f"Check-Fehler: {str(e)[:100]}",
+            "value": "ERR",
+        })
+        downgrade("red")
+
+    # ── Check 5c: Daily Newsletter ─────────────────────────────────
+    # Mo-Fr 06:00 UTC. Am Wochenende gibt es keinen Run, daher Schwelle in
+    # Werktagen (ähnlich SPY-Frische): erlaubt 2 Werktage Verzug.
+    try:
+        resp = (
+            client.table("refresh_log")
+            .select("run_date,duration_seconds,tickers_success,tickers_total,missing_details,created_at")
+            .eq("run_type", "daily_newsletter")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        is_weekend_today = now_utc.weekday() >= 5
+        if not rows:
+            # Vor erstem Live-Run noch keine Daten — yellow statt red.
+            checks.append({
+                "name": "Daily Newsletter",
+                "status": "yellow",
+                "detail": "Kein Eintrag in refresh_log (noch nie gelaufen?)",
+                "value": "—",
+            })
+            downgrade("yellow")
+        else:
+            last = rows[0]
+            run_date = last.get("run_date")
+            run_d = datetime.strptime(run_date, "%Y-%m-%d").date() if run_date else None
+            # Werktage zwischen run_d und last_workday zählen
+            age_workdays = 0
+            if run_d is not None:
+                probe = last_workday
+                while probe > run_d:
+                    probe -= timedelta(days=1)
+                    while probe.weekday() >= 5:
+                        probe -= timedelta(days=1)
+                    age_workdays += 1
+            success = last.get("tickers_success", 0)
+            total = last.get("tickers_total", 0)
+
+            if is_weekend_today and age_workdays <= 1:
+                # Wochenende: kein Send erwartet, gestern's Run ist OK
+                status = "green"
+                detail = f"{run_date} · {success}/{total} (kein Send am WE)"
+            elif age_workdays == 0:
+                status = "green"
+                detail = f"{run_date} · {success}/{total} Empfänger"
+            elif age_workdays <= DAILY_NL_MAX_AGE_WORKDAYS:
+                status = "yellow"
+                detail = f"{run_date} ({age_workdays} Werktag(e) hinterher)"
+            else:
+                status = "red"
+                detail = f"{run_date} ({age_workdays} Werktage hinterher)"
+
+            # Hohe Fehlerrate → mindestens yellow
+            if total and success < total * 0.9 and status == "green":
+                status = "yellow"
+                detail = f"{run_date} · nur {success}/{total} (<90%) zugestellt"
+
+            checks.append({
+                "name": "Daily Newsletter",
+                "status": status,
+                "detail": detail,
+                "value": run_date or "—",
+            })
+            downgrade(status)
+    except Exception as e:
+        checks.append({
+            "name": "Daily Newsletter",
+            "status": "red",
+            "detail": f"Query-Fehler: {str(e)[:100]}",
             "value": "ERR",
         })
         downgrade("red")

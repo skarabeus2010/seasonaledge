@@ -50,7 +50,8 @@ def calc_strategy_returns(df: pd.DataFrame, strategy: str = "open_to_close") -> 
 
     Strategien:
         "open_to_close"       — Intraday: Open → Close (gleicher Tag)
-        "open_to_next_open"   — Overnight-inkl.: Open → nächster Open
+        "open_to_next_open"   — Overnight: Open → nächster Open
+        "open_to_next_close"  — 2-Tages-Hold: Open → Close des Folgetags
         "close_to_next_close" — Close → nächster Close
     """
     df = df.copy()
@@ -59,6 +60,8 @@ def calc_strategy_returns(df: pd.DataFrame, strategy: str = "open_to_close") -> 
         df["strat_return"] = (df["Close"] - df["Open"]) / df["Open"] * 100
     elif strategy == "open_to_next_open":
         df["strat_return"] = (df["Open"].shift(-1) - df["Open"]) / df["Open"] * 100
+    elif strategy == "open_to_next_close":
+        df["strat_return"] = (df["Close"].shift(-1) - df["Open"]) / df["Open"] * 100
     elif strategy == "close_to_next_close":
         df["strat_return"] = (df["Close"].shift(-1) - df["Close"]) / df["Close"] * 100
     else:

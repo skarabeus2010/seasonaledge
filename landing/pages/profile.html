@@ -264,6 +264,18 @@
               </label>
             </div>
             <div class="switch-status" id="newsletter-status">Lade Status...</div>
+
+            <div class="switch-row" style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem">
+              <div>
+                <span class="switch-label">🌅 Daily Morning Briefing</span>
+                <span class="switch-hint">Mo-Fr 06:00 UTC vor EU-Open: Top-5 ETFs + Top-5 Aktien mit KI-Score und Multi-Window-TDOM-Score, Events, aktive Saisonal-Strategien, Risikolage. Separat vom Weekly.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="daily-toggle" disabled>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+            <div class="switch-status" id="daily-status">Lade Status...</div>
           </div>
 
           <div class="profile-grid">
@@ -400,6 +412,7 @@
       }
 
       loadNewsletterStatus();
+      loadDailyStatus();
     }
 
     // ── Newsletter-Toggle ──────────────────────────────────────
@@ -462,6 +475,62 @@
       });
     }
 
+    // ── Daily Newsletter Toggle ───────────────────────────────
+    function dailySetStatus(text, cls) {
+      var el = $('daily-status');
+      if (!el) return;
+      el.className = 'switch-status' + (cls ? ' ' + cls : '');
+      el.textContent = text || '';
+    }
+
+    function loadDailyStatus() {
+      var sb = getSbClient();
+      var toggle = $('daily-toggle');
+      if (!sb || !toggle) { dailySetStatus('Supabase nicht verfügbar', 'err'); return; }
+      sb.rpc('get_my_daily_status').then(function(res) {
+        if (res.error) {
+          dailySetStatus('Status konnte nicht geladen werden.', 'err');
+          return;
+        }
+        var data = res.data || {};
+        if (!data.ok) {
+          dailySetStatus(data.error === 'not_authenticated'
+            ? 'Bitte erneut anmelden.'
+            : 'Status konnte nicht geladen werden.', 'err');
+          return;
+        }
+        toggle.checked = !!data.subscribed;
+        toggle.disabled = false;
+        dailySetStatus(data.subscribed
+          ? 'Abonniert. Nächste Mail: nächster Werktag 06:00 UTC.'
+          : 'Du erhältst aktuell keine Daily Briefings.');
+      }).catch(function() {
+        dailySetStatus('Netzwerkfehler.', 'err');
+      });
+    }
+
+    function handleDailyToggle() {
+      var sb = getSbClient();
+      var toggle = $('daily-toggle');
+      if (!sb || !toggle) return;
+      var wanted = toggle.checked;
+      toggle.disabled = true;
+      dailySetStatus(wanted ? 'Trage ein...' : 'Melde ab...');
+      sb.rpc('toggle_my_daily', { p_subscribe: wanted }).then(function(res) {
+        if (res.error || !(res.data && res.data.ok)) {
+          toggle.checked = !wanted;
+          dailySetStatus('Änderung fehlgeschlagen.', 'err');
+        } else {
+          dailySetStatus(wanted ? 'Abonniert.' : 'Abgemeldet.', 'ok');
+        }
+      }).catch(function() {
+        toggle.checked = !wanted;
+        dailySetStatus('Netzwerkfehler.', 'err');
+      }).finally(function() {
+        toggle.disabled = false;
+      });
+    }
+
     // Auf Auth-Änderungen reagieren (Login/Logout)
     function waitForAuth() {
       if (window.SA && SA.auth && SA.auth.onAuthChange) {
@@ -497,6 +566,8 @@
       });
 
       $('newsletter-toggle').addEventListener('change', handleNewsletterToggle);
+      var dt = $('daily-toggle');
+      if (dt) dt.addEventListener('change', handleDailyToggle);
     });
   })();
   </script>

@@ -145,12 +145,12 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                                 f"nightly_refresh: scanner upsert {ticker}: {_up_e}"
                             )
 
-            # TDoM Stats (alle 3 Strategien, forward)
-            for strategy in ["open_to_close", "open_to_next_open", "close_to_next_close"]:
+            # TDoM Stats (alle 4 Strategien, forward) — Daily-Newsletter Multi-Window-Score
+            for strategy in ["open_to_close", "open_to_next_open", "open_to_next_close", "close_to_next_close"]:
                 get_or_compute_tdom_stats(ticker, df, strategy=strategy, direction="forward")
 
-            # TDoY Stats (alle 3 Strategien, forward)
-            for strategy in ["open_to_close", "open_to_next_open", "close_to_next_close"]:
+            # TDoY Stats (alle 4 Strategien, forward)
+            for strategy in ["open_to_close", "open_to_next_open", "open_to_next_close", "close_to_next_close"]:
                 get_or_compute_tdoy_stats(ticker, df, strategy=strategy, direction="forward")
 
             elapsed = time.time() - t0

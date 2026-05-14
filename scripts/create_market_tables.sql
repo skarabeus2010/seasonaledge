@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS tdom_stats (
     ticker TEXT NOT NULL,
     tdom INT NOT NULL,
     direction TEXT NOT NULL,          -- 'forward' oder 'backward'
-    strategy TEXT NOT NULL,           -- 'open_to_close','open_to_next_open','close_to_next_close'
+    strategy TEXT NOT NULL,           -- 'open_to_close','open_to_next_open','open_to_next_close','close_to_next_close'
     avg_return FLOAT,
     median_return FLOAT,
     win_rate FLOAT,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS tdoy_stats (
     ticker TEXT NOT NULL,
     tdoy INT NOT NULL,
     direction TEXT NOT NULL,          -- 'forward' oder 'backward'
-    strategy TEXT NOT NULL,           -- 'open_to_close','open_to_next_open','close_to_next_close'
+    strategy TEXT NOT NULL,           -- 'open_to_close','open_to_next_open','open_to_next_close','close_to_next_close'
     avg_return FLOAT,
     median_return FLOAT,
     win_rate FLOAT,
