@@ -417,6 +417,105 @@ def top_daily_tips(
 EVENTS_LOOKAHEAD_DAYS = 5
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Status-Zeile: Heute: Fr 15.05.2026 · ^DJI · TDOM 11/20 · TWOY 20/53 · TDOY 93/252 · Q2 · MidTerm
+# ─────────────────────────────────────────────────────────────────────────────
+
+_WEEKDAY_SHORT_DE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+_CYCLE_NAMES = {1: "Election", 2: "Post-Election", 3: "MidTerm", 4: "Pre-Election"}
+
+
+def _iso_week(d: date) -> int:
+    return d.isocalendar()[1]
+
+
+def _total_iso_weeks(year: int) -> int:
+    # 28. Dez liegt nach ISO immer in der letzten Woche des Jahres
+    return date(year, 12, 28).isocalendar()[1]
+
+
+def _count_trading_days_in_year(today: date, exchange: str) -> tuple[int, int]:
+    """Returnt (tdoy_current_inkl_heute, tdoy_total_jahr) börsenspezifisch."""
+    try:
+        from shared.exchange_holidays import is_trading_day
+    except Exception:
+        is_trading_day = None
+
+    count_now = total = 0
+    d = date(today.year, 1, 1)
+    end = date(today.year, 12, 31)
+    while d <= end:
+        is_td = (
+            is_trading_day(d, exchange) if is_trading_day is not None
+            else d.weekday() < 5
+        )
+        if is_td:
+            total += 1
+            if d <= today:
+                count_now += 1
+        d += timedelta(days=1)
+    return count_now, total
+
+
+def _count_trading_days_in_month(today: date, exchange: str) -> tuple[int, int]:
+    try:
+        from shared.exchange_holidays import is_trading_day
+    except Exception:
+        is_trading_day = None
+
+    # Monatsende ermitteln
+    if today.month == 12:
+        first_next = date(today.year + 1, 1, 1)
+    else:
+        first_next = date(today.year, today.month + 1, 1)
+    end = first_next - timedelta(days=1)
+
+    count_now = total = 0
+    d = date(today.year, today.month, 1)
+    while d <= end:
+        is_td = (
+            is_trading_day(d, exchange) if is_trading_day is not None
+            else d.weekday() < 5
+        )
+        if is_td:
+            total += 1
+            if d <= today:
+                count_now += 1
+        d += timedelta(days=1)
+    return count_now, total
+
+
+def build_status_line(ticker: str = "^DJI") -> str:
+    """
+    'Heute: Fr 15.05.2026 · ^DJI · TDOM 11/20 · TWOY 20/53 · TDOY 93/252 · Q2 · MidTerm'
+
+    Börsenspezifische Berechnung via shared.exchange_holidays.is_trading_day.
+    """
+    try:
+        from shared.symbols import get_exchange_for_holidays
+        exchange = get_exchange_for_holidays(ticker)
+    except Exception:
+        exchange = "NYSE"
+
+    today = datetime.now(timezone.utc).date()
+    weekday = _WEEKDAY_SHORT_DE[today.weekday()]
+    date_str = today.strftime("%d.%m.%Y")
+
+    tdom_c, tdom_t = _count_trading_days_in_month(today, exchange)
+    tdoy_c, tdoy_t = _count_trading_days_in_year(today, exchange)
+    twoy_c = _iso_week(today)
+    twoy_t = _total_iso_weeks(today.year)
+    quarter = (today.month - 1) // 3 + 1
+    cycle = ((today.year - 2020) % 4 + 4) % 4 + 1
+    cycle_name = _CYCLE_NAMES.get(cycle, "")
+
+    return (
+        f"Heute: {weekday} {date_str} · {ticker} · "
+        f"TDOM {tdom_c}/{tdom_t} · TWOY {twoy_c}/{twoy_t} · "
+        f"TDOY {tdoy_c}/{tdoy_t} · Q{quarter} · {cycle_name}"
+    )
+
+
 def events_today_tomorrow(target_date: date | None = None,
                           lookahead_days: int = EVENTS_LOOKAHEAD_DAYS) -> list[dict]:
     """
@@ -840,6 +939,7 @@ def build_daily_context(
     events = events_today_tomorrow(target_date=target)
     strategies = active_strategy_signals(target_date=target)
     rotation = sector_rotation_signal(target_date=target)
+    status_line = build_status_line(ticker="^DJI")
 
     # Risikolage für Kern-Marktbarometer
     from shared.weekly_report import regime_status
@@ -850,6 +950,7 @@ def build_daily_context(
         "report_date":      target.strftime("%Y-%m-%d"),
         "target_display":   target_display,
         "target_tdom":      tips.get("tdom"),
+        "status_line":      status_line,
         "etfs":             tips.get("etfs", []),
         "stocks":           tips.get("stocks", []),
         "events":           events,
