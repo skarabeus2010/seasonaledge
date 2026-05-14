@@ -449,6 +449,63 @@ def events_today_tomorrow(target_date: date | None = None) -> list[dict]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Per-Recipient: Watchlist
+# ─────────────────────────────────────────────────────────────────────────────
+
+WATCHLIST_LIMIT = 15
+
+
+def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = None) -> list[dict]:
+    """
+    Holt die Cloud-Watchlist eines Subscribers via Email.
+
+    Returnt list[{ticker, name, ki_score, signal, added_at}] — leer wenn User
+    nicht eingeloggt ist oder keine Watchlist hat. KI-Score wird angereichert
+    sofern in scanner_results vorhanden.
+    """
+    from shared.supabase_client import get_client
+    from shared.symbols import SYMBOLS
+
+    try:
+        resp = get_client().rpc("get_watchlist_by_email", {"p_email": email}).execute()
+        raw = resp.data or []
+    except Exception as e:
+        error_logger.error(f"[daily_report] watchlist rpc failed for {email}: {e}")
+        return []
+
+    if not raw:
+        return []
+
+    # Scanner-Score je Ticker lookup
+    score_map = {}
+    if scanner_results:
+        for s in scanner_results:
+            t = s.get("ticker")
+            if t:
+                score_map[t] = {
+                    "score":  s.get("score"),
+                    "signal": s.get("signal"),
+                }
+
+    rows: list[dict] = []
+    for item in raw[:WATCHLIST_LIMIT]:
+        ticker = item.get("ticker")
+        if not ticker:
+            continue
+        meta = SYMBOLS.get(ticker, {})
+        sc = score_map.get(ticker, {})
+        rows.append({
+            "ticker":   ticker,
+            "name":     meta.get("name", ticker),
+            "kategorie": meta.get("kategorie", ""),
+            "ki_score": sc.get("score"),
+            "signal":   sc.get("signal"),
+            "added_at": item.get("added_at"),
+        })
+    return rows
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Sektion 4: Aktive Saisonal-Strategien
 # ─────────────────────────────────────────────────────────────────────────────
 

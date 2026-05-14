@@ -54,17 +54,29 @@ def _load_template():
     return env.get_template(TEMPLATE_NAME)
 
 
-def render_email(context: dict, recipient_email: str) -> tuple[str, str]:
-    """Rendert HTML + Subject. Unsubscribe-URL pro Empfänger mit type=daily."""
+def render_email(context: dict, recipient_email: str,
+                 scanner_results: list[dict] | None = None) -> tuple[str, str]:
+    """
+    Rendert HTML + Subject pro Empfänger. Personalisierte Felder:
+      - unsubscribe_url (HMAC-Token mit ?type=daily)
+      - watchlist (User-spezifisch via get_watchlist_by_email RPC)
+    """
     from shared.unsubscribe_token import generate_unsubscribe_url
+    from shared.daily_report import fetch_watchlist_for_email
 
     base = generate_unsubscribe_url(recipient_email)
-    # Pfad-spezifischer Suffix damit /unsubscribe weiß welche Tabelle
     sep = "&" if "?" in base else "?"
     unsubscribe_url = f"{base}{sep}type=daily"
 
+    watchlist = fetch_watchlist_for_email(recipient_email, scanner_results)
+
     tpl = _load_template()
-    ctx = {**context, "unsubscribe_url": unsubscribe_url}
+    ctx = {
+        **context,
+        "unsubscribe_url": unsubscribe_url,
+        "watchlist":       watchlist,
+        "recipient_email": recipient_email,
+    }
     html = tpl.render(**ctx)
     subject = f"🌅 SeasonAlpha — Morning Briefing {context['target_display']}"
     return subject, html
@@ -164,9 +176,17 @@ def main() -> int:
     print(f"[daily] Top-ETFs: {len(context.get('etfs', []))}  Top-Aktien: {len(context.get('stocks', []))}")
     print(f"[daily] Events: {len(context.get('events', []))}  Strategien aktiv: {len(context.get('strategies', []))}")
 
+    # Scanner-Results einmalig holen für Watchlist-Anreicherung (KI-Score-Lookup)
+    try:
+        from shared.supabase_client import fetch_scanner_results
+        _scanner_cache = fetch_scanner_results() or []
+    except Exception as e:
+        error_logger.error(f"[daily] fetch_scanner_results failed: {e}")
+        _scanner_cache = []
+
     # 3. Dry-Run
     if args.dry_run:
-        subject, html = render_email(context, "preview@seasonalpha.ai")
+        subject, html = render_email(context, "preview@seasonalpha.ai", _scanner_cache)
         with open(DRY_RUN_OUTPUT_FILE, "w", encoding="utf-8") as f:
             f.write(html)
         print(f"[DRY-RUN] Subject: {subject}")
@@ -182,7 +202,7 @@ def main() -> int:
 
     for i, email in enumerate(recipients, 1):
         try:
-            subject, html = render_email(context, email)
+            subject, html = render_email(context, email, _scanner_cache)
             ok = send_html(email, subject, html)
             if ok:
                 sent += 1

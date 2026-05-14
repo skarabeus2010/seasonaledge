@@ -152,6 +152,45 @@
     </td></tr>
     {% endif %}
 
+    {% if watchlist %}
+    <!-- ══════════════════════ SEKTION 1c: WATCHLIST ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        ⭐ Deine Watchlist ({{ watchlist|length }})
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Aktuelle KI-Scores deiner persönlich beobachteten Werte (zuletzt hinzugefügt zuerst).
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr>
+            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
+            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Name</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
+            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in watchlist %}
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ w.ticker }}</td>
+            <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ w.name }}</td>
+            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">
+              {% if w.ki_score is not none %}{{ '%.1f' % w.ki_score }}{% else %}—{% endif %}
+            </td>
+            <td align="center" style="padding:10px 6px;font-size:11px;color:{% if w.signal == 'Bullish' %}#30e878{% elif w.signal == 'Bearish' %}#ff6060{% else %}#a89878{% endif %};font-weight:600;">
+              {{ w.signal or '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:#a89878;text-align:right;">
+        <a href="https://seasonalpha.ai/watchlist" style="color:#e8a820;text-decoration:none;">Watchlist verwalten →</a>
+      </div>
+    </td></tr>
+    {% endif %}
+
     {% if events %}
     <!-- ══════════════════════ SEKTION 2: EVENTS ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
