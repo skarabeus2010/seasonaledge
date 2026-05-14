@@ -236,7 +236,6 @@
     </td></tr>
     {% endif %}
 
-    {% if strategies %}
     <!-- ══════════════════════ SEKTION 3: AKTIVE STRATEGIEN ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
@@ -245,6 +244,7 @@
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
         Welche Strategien befinden sich heute im Entry-/Long-Fenster
       </div>
+      {% if strategies %}
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
         {% for s in strategies %}
         <tr>
@@ -261,8 +261,12 @@
         </tr>
         {% endfor %}
       </table>
+      {% else %}
+      <div style="padding:14px;background:rgba(168,152,120,0.06);border-left:3px solid rgba(168,152,120,0.4);border-radius:0 6px 6px 0;color:#a89878;font-size:13px;line-height:1.6;">
+        Aktuell keine spezifische saisonale Strategie im Entry-Fenster. Ruhige Phase — Marktbarometer + Multi-Window-Score sind die wichtigsten Signale.
+      </div>
+      {% endif %}
     </td></tr>
-    {% endif %}
 
     <!-- ══════════════════════ SEKTION 4: ROTATION + RISIKO ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
