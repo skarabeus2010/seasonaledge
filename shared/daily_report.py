@@ -179,8 +179,15 @@ def _candidate_passes(
     regimes: dict[str, dict],
     ki_min: float,
     allow_yellow: bool,
+    require_regime: bool = True,
 ) -> tuple[bool, dict | None]:
-    """Pre-Check: passes Universum + KI + Regime? Return (passed, regime_dict)."""
+    """
+    Pre-Check: passes Universum + KI + Regime? Return (passed, regime_dict).
+
+    require_regime=False: fehlender Regime-Score wird toleriert (für fallback-Tier).
+    In der aktuellen Pipeline hat nur ein Bruchteil der Ticker regime_scores;
+    Strict-Filter würde sonst fast immer leer rauskommen.
+    """
     ticker = c.get("ticker")
     if ticker not in universe_tickers:
         return False, None
@@ -189,7 +196,10 @@ def _candidate_passes(
         return False, None
     regime = regimes.get(ticker)
     if not regime:
-        return False, None
+        if require_regime:
+            return False, None
+        # fallback-Tier: unbekanntes Regime als 'unknown' weiterführen
+        return True, {"traffic_light": "unknown"}
     light = regime.get("traffic_light")
     if light != "green" and not (allow_yellow and light == "yellow"):
         return False, None
@@ -211,9 +221,9 @@ def _build_tip_rows(
       3. Fallback:  KI ≥5.0  · Regime grün/gelb · ohne MW-Filter
     """
     tiers = [
-        ("strict",   {"ki_min": 6.5, "mw_min": 3, "allow_yellow": False}),
-        ("relaxed",  {"ki_min": 5.5, "mw_min": 2, "allow_yellow": False}),
-        ("fallback", {"ki_min": 5.0, "mw_min": 0, "allow_yellow": True}),
+        ("strict",   {"ki_min": 6.5, "mw_min": 3, "allow_yellow": False, "require_regime": True}),
+        ("relaxed",  {"ki_min": 5.5, "mw_min": 2, "allow_yellow": False, "require_regime": True}),
+        ("fallback", {"ki_min": 5.0, "mw_min": 0, "allow_yellow": True,  "require_regime": False}),
     ]
     for tier_name, p in tiers:
         rows = _try_build(candidates, universe_tickers, universe_meta,
@@ -228,7 +238,9 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
     rows: list[dict] = []
     for c in candidates:
         passed, regime = _candidate_passes(
-            c, universe_tickers, regimes, params["ki_min"], params["allow_yellow"]
+            c, universe_tickers, regimes,
+            params["ki_min"], params["allow_yellow"],
+            require_regime=params.get("require_regime", True),
         )
         if not passed:
             continue
