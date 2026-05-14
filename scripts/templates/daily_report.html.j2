@@ -195,10 +195,10 @@
     <!-- ══════════════════════ SEKTION 2: EVENTS ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
-        📅 Events
+        📅 Events der nächsten 5 Tage
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Marktrelevante Termine heute/morgen
+        Marktrelevante Termine — FOMC, OPEX, Earnings, Dividenden, Feiertage
       </div>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
         {% for ev in events %}
@@ -271,6 +271,47 @@
               </span>
             </div>
             {% endfor %}
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- ══════════════════════ ERKLÄRUNGEN ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:14px;">
+        ❓ Was sagt mir das?
+      </div>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;margin-bottom:8px;">
+            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">KI-Score (0&ndash;10)</div>
+            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
+              Composite aus vier Sub-Scores: <b>Musterpfad-Ähnlichkeit</b> (DTW vs. historische Vergleichsjahre), <b>Trend-Forecast</b>, <b>Win-Rate</b> der letzten Wochen und <b>Tracking-Qualität</b> der Saisonalitäts-Kurve. Skala 0&ndash;10:
+              <br><b style="color:#30e878;">≥6.5 bullish</b> · <b style="color:#a89878;">3.5&ndash;6.5 neutral</b> · <b style="color:#ff6060;">≤3.5 bearish</b>
+            </div>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">Multi-Window-Score (MW, 0&ndash;4)</div>
+            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
+              Vier historische Renditefenster auf dem heutigen TDOM (Trading Day of Month). Pro Fenster <b>1 Punkt wenn der historische Ø-Return positiv</b> war:
+              <br>① <b>Open → Close</b> (intraday) · ② <b>Open → Open(t+1)</b> · ③ <b>Open → Close(t+1)</b> · ④ <b>Close → Close(t+1)</b>
+              <br><b>4/4</b> = alle Fenster historisch im Plus · <b>3/4</b> robust positiv · <b>≤2</b> mehrdeutig.
+            </div>
+          </td>
+        </tr>
+        <tr><td style="height:8px;"></td></tr>
+        <tr>
+          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;">
+            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">Regime-Ampel</div>
+            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
+              Aktuelle Marktphasen-Einschätzung pro Ticker (Vola, Drawdown, 5-Tage-Return). Frühwarn-Indikator für Risiko:
+              <br>🟢 <b>green</b> ruhiger Aufwärtstrend · 🟡 <b>yellow</b> erhöhtes Risiko · 🔴 <b>red</b> Crash-Phase · ⚪ <b>n/a</b> noch nicht berechnet für diesen Ticker
+              <br>Beim Daily-Briefing filtern wir Tipps strikt auf grünes Regime — bei ⚪ wird der Tipp im Fallback-Tier dennoch gezeigt, sollte aber mit Vorsicht genossen werden.
+            </div>
           </td>
         </tr>
       </table>

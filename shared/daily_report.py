@@ -338,10 +338,16 @@ def top_daily_tips(
 # Sektion 3: Events heute/morgen
 # ─────────────────────────────────────────────────────────────────────────────
 
-def events_today_tomorrow(target_date: date | None = None) -> list[dict]:
+EVENTS_LOOKAHEAD_DAYS = 5
+
+
+def events_today_tomorrow(target_date: date | None = None,
+                          lookahead_days: int = EVENTS_LOOKAHEAD_DAYS) -> list[dict]:
     """
-    Marktrelevante Events: FOMC, OPEX/Triple Witching, Feiertage, Earnings,
-    Dividenden — alle für target_date (und Vortag wenn relevant).
+    Marktrelevante Events der nächsten ``lookahead_days`` Tage (default 5):
+    FOMC, OPEX/Triple Witching, Feiertage, Earnings, Dividenden.
+
+    Fenster: von heute (UTC) bis target_date + lookahead_days-1.
     """
     if target_date is None:
         target_date = next_trading_day()
@@ -349,7 +355,7 @@ def events_today_tomorrow(target_date: date | None = None) -> list[dict]:
     events: list[dict] = []
     today_utc = datetime.now(timezone.utc).date()
     window_start = min(today_utc, target_date)
-    window_end = target_date
+    window_end = target_date + timedelta(days=max(0, lookahead_days - 1))
 
     # FOMC
     try:
@@ -370,7 +376,7 @@ def events_today_tomorrow(target_date: date | None = None) -> list[dict]:
     # OPEX / Triple Witching (3. Freitag im Monat)
     try:
         from shared.weekly_report import upcoming_events as _ue
-        we = _ue(days=(target_date - today_utc).days + 1) or []
+        we = _ue(days=(window_end - today_utc).days + 1) or []
         for ev in we:
             if ev.get("type") in ("opex", "triple_witching"):
                 ev_d = datetime.strptime(ev["date"], "%Y-%m-%d").date()
@@ -420,13 +426,14 @@ def events_today_tomorrow(target_date: date | None = None) -> list[dict]:
     except Exception as e:
         error_logger.error(f"[daily_report] earnings_events: {e}")
 
-    # Dividenden (Ex-Date am target_date)
+    # Dividenden (Ex-Date im Window)
     try:
         rows = (
             client.table("dividend_events")
             .select("ticker,ex_date,amount,currency")
-            .eq("ex_date", target_date.strftime("%Y-%m-%d"))
-            .limit(30)
+            .gte("ex_date", window_start.strftime("%Y-%m-%d"))
+            .lte("ex_date", window_end.strftime("%Y-%m-%d"))
+            .limit(50)
             .execute()
             .data
         ) or []
