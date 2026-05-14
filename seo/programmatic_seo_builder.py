@@ -177,6 +177,11 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         # Rand
         "kriegszeiten":       ("0.7",  "monthly"),
         "overnight":          ("0.8",  "weekly"),
+        # Neue Pages (KW16-18)
+        "risikozyklus":       ("0.85", "weekly"),
+        "vixpiration":        ("0.85", "weekly"),
+        "dividend-kalender":  ("0.85", "weekly"),
+        "earnings-kalender":  ("0.85", "weekly"),
     }
     PAGE_EXCLUDES = {
         "_disabled", "404", "index",
