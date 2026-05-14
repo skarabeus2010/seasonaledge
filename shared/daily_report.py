@@ -27,7 +27,7 @@ from shared.logger import app_logger, error_logger
 # ─────────────────────────────────────────────────────────────────────────────
 
 DEFAULT_N_ETFS = 5
-DEFAULT_N_STOCKS = 5
+DEFAULT_N_STOCKS = 10
 KI_MIN_SCORE = 6.5
 MULTI_WINDOW_MIN_SCORE = 3   # mindestens 3 von 4 Fenstern positiv
 
@@ -265,22 +265,37 @@ def _build_tip_rows(
     limit: int,
 ) -> list[dict]:
     """
-    Filter + Sort. Drei-stufiger Fallback damit der Newsletter niemals leer ist:
+    Filter + Sort. Drei-stufiger Fallback — Tiers werden kumuliert bis das
+    Limit erreicht ist:
       1. Strict:    KI ≥6.5  · Regime grün     · Multi-Window ≥3
       2. Relaxed:   KI ≥5.5  · Regime grün     · Multi-Window ≥2
       3. Fallback:  KI ≥5.0  · Regime grün/gelb · ohne MW-Filter
+
+    Beispiel: limit=10, strict liefert 2 → relaxed füllt mit 5 weiteren auf
+    → fallback füllt mit 3 weiteren bis 10 voll sind.
     """
     tiers = [
         ("strict",   {"ki_min": 6.5, "mw_min": 3, "allow_yellow": False, "require_regime": True}),
         ("relaxed",  {"ki_min": 5.5, "mw_min": 2, "allow_yellow": False, "require_regime": True}),
         ("fallback", {"ki_min": 5.0, "mw_min": 0, "allow_yellow": True,  "require_regime": False}),
     ]
+    collected: list[dict] = []
+    seen_tickers: set[str] = set()
     for tier_name, p in tiers:
+        if len(collected) >= limit:
+            break
+        # Pro Tier nur die noch fehlenden Slots holen
+        needed = limit - len(collected)
         rows = _try_build(candidates, universe_tickers, universe_meta,
-                          target_tdom, regimes, limit, p, tier_name)
-        if rows:
-            return rows
-    return []
+                          target_tdom, regimes, needed * 3, p, tier_name)
+        for r in rows:
+            if r["ticker"] in seen_tickers:
+                continue
+            collected.append(r)
+            seen_tickers.add(r["ticker"])
+            if len(collected) >= limit:
+                break
+    return collected[:limit]
 
 
 def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
