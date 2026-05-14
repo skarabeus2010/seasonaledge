@@ -184,45 +184,73 @@ def get_last_score_date(ticker):
 # MAIN
 # ══════════════════════════════════════════════════════════════
 
+def _process_ticker(ticker: str, full: bool) -> tuple[int, str | None]:
+    """Returnt (Anzahl neu geschriebener Scores, Fehlertext|None)."""
+    ticker = ticker.upper()
+    try:
+        raw_df = download_data(ticker)
+        if raw_df is None or raw_df.empty:
+            return 0, "keine Daten"
+        df = preprocess(raw_df)
+        scores_df = compute_regime_scores(df)
+        if scores_df.empty:
+            return 0, "keine Scores berechnet"
+        if not full:
+            last_date = get_last_score_date(ticker)
+            if last_date is not None:
+                scores_df = scores_df[scores_df["date"] > last_date]
+                if scores_df.empty:
+                    return 0, None
+        upsert_regime_scores(ticker, scores_df)
+        return len(scores_df), None
+    except Exception as exc:
+        return 0, str(exc)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Compute Isolation Forest Regime Scores")
-    parser.add_argument("--ticker", default="SPY", help="Ticker symbol (default: SPY)")
+    parser.add_argument("--ticker", default=None, help="Einzel-Ticker (default: SPY wenn nichts anderes)")
+    parser.add_argument("--tickers", nargs="*", help="Liste mehrerer Ticker")
+    parser.add_argument("--all-relevant", action="store_true",
+                        help="Alle US-ETF + US-Aktie + EU-Aktie aus symbols.py (Daily-Newsletter-Universum)")
     parser.add_argument("--full", action="store_true", help="Recompute ALL scores from scratch")
     parser.add_argument("--incremental", action="store_true", default=True, help="Only compute new days (default)")
     args = parser.parse_args()
 
-    ticker = args.ticker.upper()
-    app_logger.info(f"=== Regime Scores: {ticker} ({'FULL' if args.full else 'INCREMENTAL'}) ===")
+    # Ticker-Liste zusammenstellen
+    if args.all_relevant:
+        from shared.symbols import get_symbols_by_category
+        tickers = sorted(set(
+            list(get_symbols_by_category("US-ETF").keys()) +
+            list(get_symbols_by_category("US-Aktie").keys()) +
+            list(get_symbols_by_category("EU-Aktie").keys())
+        ))
+    elif args.tickers:
+        tickers = [t.upper() for t in args.tickers]
+    else:
+        tickers = [(args.ticker or "SPY").upper()]
 
-    # Daten laden
-    raw_df = download_data(ticker)
-    if raw_df is None or raw_df.empty:
-        app_logger.error(f"Keine Daten fuer {ticker}")
-        return
+    app_logger.info(f"=== Regime Scores: {len(tickers)} Ticker ({'FULL' if args.full else 'INCREMENTAL'}) ===")
 
-    df = preprocess(raw_df)
-    app_logger.info(f"Daten: {df.index[0].strftime('%Y-%m-%d')} bis {df.index[-1].strftime('%Y-%m-%d')} ({len(df)} Zeilen)")
+    ok = err = skip = total_rows = 0
+    errors: list[str] = []
+    for i, ticker in enumerate(tickers, 1):
+        n, exc = _process_ticker(ticker, args.full)
+        if exc:
+            err += 1
+            errors.append(f"{ticker}: {exc}")
+            app_logger.warning(f"[{i}/{len(tickers)}] {ticker} ERR: {exc}")
+        elif n == 0:
+            skip += 1
+            app_logger.info(f"[{i}/{len(tickers)}] {ticker} skip (keine neuen Daten)")
+        else:
+            ok += 1
+            total_rows += n
+            app_logger.info(f"[{i}/{len(tickers)}] {ticker} OK ({n} Scores)")
 
-    # Immer ALLE Scores berechnen (IF braucht die volle Historie fuer Training)
-    # Aber nur neue Tage in DB schreiben wenn --incremental
-    scores_df = compute_regime_scores(df)
-    if scores_df.empty:
-        app_logger.error("Keine Scores berechnet")
-        return
-
-    if not args.full:
-        last_date = get_last_score_date(ticker)
-        if last_date is not None:
-            # Nur Scores nach dem letzten bekannten Datum
-            scores_df = scores_df[scores_df["date"] > last_date]
-            app_logger.info(f"Incremental: {len(scores_df)} neue Scores seit {last_date.strftime('%Y-%m-%d')}")
-            if scores_df.empty:
-                app_logger.info("Keine neuen Scores zu schreiben")
-                return
-
-    # In DB schreiben
-    upsert_regime_scores(ticker, scores_df)
-    app_logger.info(f"=== Fertig: {len(scores_df)} Scores geschrieben ===")
+    app_logger.info(f"=== Fertig: {ok} OK · {skip} skip · {err} err · {total_rows} Rows ===")
+    if errors:
+        app_logger.warning("Fehler-Details:\n  " + "\n  ".join(errors[:20]))
 
 
 if __name__ == "__main__":
