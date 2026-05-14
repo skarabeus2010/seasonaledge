@@ -126,8 +126,9 @@ def main() -> int:
     parser.add_argument("--test", action="store_true",
                         help="Nur an ADMIN_EMAIL senden")
     parser.add_argument("--to", type=str, help="Einzelner Test-Empfänger")
-    parser.add_argument("--n-etfs", type=int, default=5)
-    parser.add_argument("--n-stocks", type=int, default=5)
+    from shared.daily_report import DEFAULT_N_ETFS, DEFAULT_N_STOCKS
+    parser.add_argument("--n-etfs", type=int, default=DEFAULT_N_ETFS)
+    parser.add_argument("--n-stocks", type=int, default=DEFAULT_N_STOCKS)
     args = parser.parse_args()
 
     from shared.logger import app_logger, error_logger
