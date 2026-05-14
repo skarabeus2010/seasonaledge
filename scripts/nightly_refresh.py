@@ -65,10 +65,11 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             if df is None or df.empty:
                 continue
 
-            # Preise in Supabase schreiben (letzte 5 Tage — historische Daten bleiben unverändert)
+            # Preise in Supabase schreiben (letzte 7 Tage — historische Daten bleiben unverändert)
+            # 7 statt 5 Tage: Feiertags-Konstellationen (z.B. 1. Mai + Wochenende) abfangen
             try:
                 from shared.supabase_client import upsert_prices
-                _cutoff = (date.today() - __import__('datetime').timedelta(days=5)).strftime("%Y-%m-%d")
+                _cutoff = (date.today() - __import__('datetime').timedelta(days=7)).strftime("%Y-%m-%d")
                 _recent = df[df.index >= _cutoff] if hasattr(df.index, 'year') else df
                 _price_records = []
                 for _idx, _row in _recent.iterrows():
@@ -306,6 +307,64 @@ def main():
         app_logger.error(f"nightly_refresh: Health-Check fehlgeschlagen: {e}")
         print(f"Health-Check failed: {e}")
 
+    # Phase D: Backfill NULL log_return (letzte 14 Tage)
+    # Fängt Fälle ab, in denen Kurse vorhanden sind aber log_return fehlt
+    # (z.B. nach Feiertags-Lücken oder Import ohne Vortags-Close)
+    backfill_fixed = 0
+    try:
+        import math
+        from shared.supabase_client import get_client as _get_client_bf
+
+        _bf_client = _get_client_bf()
+        _bf_cutoff = (date.today() - __import__('datetime').timedelta(days=14)).strftime("%Y-%m-%d")
+
+        # Alle Rows mit NULL log_return in den letzten 14 Tagen
+        _null_rows = (_bf_client.table("prices")
+                      .select("ticker,date,close")
+                      .gte("date", _bf_cutoff)
+                      .is_("log_return", "null")
+                      .order("ticker").order("date")
+                      .execute().data)
+
+        if _null_rows:
+            app_logger.info(f"nightly_refresh: Backfill — {len(_null_rows)} Rows mit NULL log_return gefunden")
+
+            # Gruppieren nach Ticker
+            from itertools import groupby
+            _null_by_ticker = {}
+            for r in _null_rows:
+                _null_by_ticker.setdefault(r["ticker"], []).append(r)
+
+            for _bf_ticker, _bf_rows in _null_by_ticker.items():
+                for _bf_row in _bf_rows:
+                    try:
+                        # Vortag holen
+                        _prev = (_bf_client.table("prices")
+                                 .select("close")
+                                 .eq("ticker", _bf_ticker)
+                                 .lt("date", _bf_row["date"])
+                                 .order("date", desc=True)
+                                 .limit(1)
+                                 .execute().data)
+                        if _prev and _prev[0]["close"] and _prev[0]["close"] > 0:
+                            _lr = math.log(_bf_row["close"] / _prev[0]["close"])
+                            (_bf_client.table("prices")
+                             .update({"log_return": round(_lr, 8)})
+                             .eq("ticker", _bf_ticker)
+                             .eq("date", _bf_row["date"])
+                             .execute())
+                            backfill_fixed += 1
+                    except Exception:
+                        pass  # Einzelner Row-Fehler → weiter
+
+            print(f"Backfill log_return: {backfill_fixed}/{len(_null_rows)} gefixt")
+        else:
+            print("Backfill log_return: keine NULL-Rows ✓")
+
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Backfill fehlgeschlagen: {e}")
+        print(f"Backfill log_return failed: {e}")
+
     # Phase E: Regime-Scores (Isolation Forest)
     regime_status = {"ok": False, "tickers": [], "scores": 0, "error": None}
     try:
@@ -345,7 +404,7 @@ def main():
         app_logger.error(f"nightly_refresh: Regime-Scores fehlgeschlagen: {e}")
         print(f"Regime-Scores failed: {e}")
 
-    # Phase D: refresh_log schreiben
+    # Phase E2: refresh_log schreiben
     try:
         from shared.supabase_client import get_client
         _log_client = get_client()
@@ -357,7 +416,7 @@ def main():
             "tickers_success": len(tickers) - len(missing_details),
             "tickers_missing": len(missing_details),
             "missing_details": json.dumps(missing_details),
-            "auto_fixed": auto_fixed,
+            "auto_fixed": auto_fixed + backfill_fixed,
             "duration_seconds": round(time.time() - t_start, 1),
             "errors": json.dumps(health_errors[:20]),
         }
