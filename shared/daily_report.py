@@ -173,6 +173,29 @@ def _tdom_for_date(target_date: date, exchange: str = "NYSE") -> int:
     return tdom
 
 
+def _candidate_passes(
+    c: dict,
+    universe_tickers: set[str],
+    regimes: dict[str, dict],
+    ki_min: float,
+    allow_yellow: bool,
+) -> tuple[bool, dict | None]:
+    """Pre-Check: passes Universum + KI + Regime? Return (passed, regime_dict)."""
+    ticker = c.get("ticker")
+    if ticker not in universe_tickers:
+        return False, None
+    ki = c.get("score") or 0
+    if ki < ki_min:
+        return False, None
+    regime = regimes.get(ticker)
+    if not regime:
+        return False, None
+    light = regime.get("traffic_light")
+    if light != "green" and not (allow_yellow and light == "yellow"):
+        return False, None
+    return True, regime
+
+
 def _build_tip_rows(
     candidates: list[dict],
     universe_tickers: set[str],
@@ -181,30 +204,50 @@ def _build_tip_rows(
     regimes: dict[str, dict],
     limit: int,
 ) -> list[dict]:
-    """Filter + Sort der Scanner-Kandidaten für eine Universe (ETFs oder Aktien)."""
+    """
+    Filter + Sort. Drei-stufiger Fallback damit der Newsletter niemals leer ist:
+      1. Strict:    KI ≥6.5  · Regime grün     · Multi-Window ≥3
+      2. Relaxed:   KI ≥5.5  · Regime grün     · Multi-Window ≥2
+      3. Fallback:  KI ≥5.0  · Regime grün/gelb · ohne MW-Filter
+    """
+    tiers = [
+        ("strict",   {"ki_min": 6.5, "mw_min": 3, "allow_yellow": False}),
+        ("relaxed",  {"ki_min": 5.5, "mw_min": 2, "allow_yellow": False}),
+        ("fallback", {"ki_min": 5.0, "mw_min": 0, "allow_yellow": True}),
+    ]
+    for tier_name, p in tiers:
+        rows = _try_build(candidates, universe_tickers, universe_meta,
+                          target_tdom, regimes, limit, p, tier_name)
+        if rows:
+            return rows
+    return []
+
+
+def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
+               regimes, limit, params, tier_name):
     rows: list[dict] = []
     for c in candidates:
-        ticker = c.get("ticker")
-        if ticker not in universe_tickers:
+        passed, regime = _candidate_passes(
+            c, universe_tickers, regimes, params["ki_min"], params["allow_yellow"]
+        )
+        if not passed:
             continue
+        ticker = c["ticker"]
         ki = c.get("score") or 0
-        if ki < KI_MIN_SCORE:
-            continue
-        regime = regimes.get(ticker)
-        if not regime or regime.get("traffic_light") != "green":
-            continue
 
         mw = compute_multi_window_tdom_score(ticker, target_tdom)
-        if mw["score_total"] < MULTI_WINDOW_MIN_SCORE:
+        if mw["score_total"] < params["mw_min"]:
             continue
 
-        # Verdict aus KI + Multi-Window
+        # Verdict
         if mw["score_total"] == 4 and ki >= 7.5:
             verdict = "stark bullish"
         elif mw["score_total"] >= 3 and ki >= 6.5:
             verdict = "bullish"
-        else:
+        elif mw["score_total"] >= 2:
             verdict = "leicht bullish"
+        else:
+            verdict = "schwach (Fallback)"
 
         meta = universe_meta.get(ticker, {})
         w1 = mw["windows"].get("w1", {})
@@ -220,6 +263,7 @@ def _build_tip_rows(
             "win_rate": c.get("win_rate"),
             "regime_light": regime.get("traffic_light"),
             "verdict": verdict,
+            "tier": tier_name,
         })
 
     rows.sort(key=lambda r: (-r["multi_window_score"], -r["ki_score"]))
