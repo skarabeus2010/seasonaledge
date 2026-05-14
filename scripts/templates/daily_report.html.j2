@@ -83,7 +83,8 @@
         <thead>
           <tr>
             <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Name</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
             <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
             <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">MW</th>
             <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Regime</th>
@@ -92,8 +93,16 @@
         <tbody>
           {% for tip in etfs %}
           <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ tip.ticker }}</td>
-            <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ tip.name }}</td>
+            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
+              {{ tip.ticker }}
+              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ tip.name }}</div>
+            </td>
+            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
+              {% if tip.price_close is not none %}{{ '%.2f' % tip.price_close }}{% else %}—{% endif %}
+            </td>
+            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if tip.change_pct is not none and tip.change_pct > 0 %}#30e878{% elif tip.change_pct is not none and tip.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
+              {% if tip.change_pct is not none %}{{ '%+.2f' % tip.change_pct }}%{% else %}—{% endif %}
+            </td>
             <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
             <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
             <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
@@ -118,7 +127,8 @@
         <thead>
           <tr>
             <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Name</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
             <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
             <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">MW</th>
             <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Regime</th>
@@ -127,8 +137,16 @@
         <tbody>
           {% for tip in stocks %}
           <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ tip.ticker }}</td>
-            <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ tip.name }}</td>
+            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
+              {{ tip.ticker }}
+              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ tip.name }}</div>
+            </td>
+            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
+              {% if tip.price_close is not none %}{{ '%.2f' % tip.price_close }}{% else %}—{% endif %}
+            </td>
+            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if tip.change_pct is not none and tip.change_pct > 0 %}#30e878{% elif tip.change_pct is not none and tip.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
+              {% if tip.change_pct is not none %}{{ '%+.2f' % tip.change_pct }}%{% else %}—{% endif %}
+            </td>
             <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
             <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
             <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
@@ -136,11 +154,6 @@
           {% endfor %}
         </tbody>
       </table>
-
-      <div style="margin-top:12px;padding:10px 12px;background:rgba(232,168,32,0.04);border-left:2px solid rgba(232,168,32,0.4);border-radius:4px;font-size:11px;color:#a89878;line-height:1.6;">
-        <strong style="color:#e8a820;">Multi-Window-Score (MW):</strong> Anzahl der 4 historischen Renditefenster mit positivem Ø-Return am TDOM {{ target_tdom }}.<br>
-        Fenster: Open→Close · Open→Open(t+1) · Open→Close(t+1) · Close→Close(t+1)
-      </div>
     </td></tr>
     {% endif %}
 
@@ -165,7 +178,8 @@
         <thead>
           <tr>
             <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Name</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
+            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
             <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
             <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Signal</th>
           </tr>
@@ -173,8 +187,16 @@
         <tbody>
           {% for w in watchlist %}
           <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ w.ticker }}</td>
-            <td style="padding:10px 6px;color:#cbd5e1;font-size:12px;">{{ w.name }}</td>
+            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
+              {{ w.ticker }}
+              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ w.name }}</div>
+            </td>
+            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
+              {% if w.price_close is not none %}{{ '%.2f' % w.price_close }}{% else %}—{% endif %}
+            </td>
+            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if w.change_pct is not none and w.change_pct > 0 %}#30e878{% elif w.change_pct is not none and w.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
+              {% if w.change_pct is not none %}{{ '%+.2f' % w.change_pct }}%{% else %}—{% endif %}
+            </td>
             <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">
               {% if w.ki_score is not none %}{{ '%.1f' % w.ki_score }}{% else %}—{% endif %}
             </td>
