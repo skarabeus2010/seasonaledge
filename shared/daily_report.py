@@ -510,7 +510,7 @@ def build_status_line(ticker: str = "^DJI") -> str:
     cycle_name = _CYCLE_NAMES.get(cycle, "")
 
     return (
-        f"Heute: {weekday} {date_str} · {ticker} · "
+        f"Heute: {weekday} {date_str} · "
         f"TDOM {tdom_c}/{tdom_t} · TWOY {twoy_c}/{twoy_t} · "
         f"TDOY {tdoy_c}/{tdoy_t} · Q{quarter} · {cycle_name}"
     )
