@@ -614,72 +614,151 @@ def _is_in_window(d: date, m_start: int, d_start: int, m_end: int, d_end: int) -
     return start <= d <= end
 
 
+def _third_friday(year: int, month: int) -> date:
+    """3. Freitag des Monats — OPEX-Anker."""
+    d = date(year, month, 1)
+    fridays = [d + timedelta(days=i) for i in range(31)
+               if (d + timedelta(days=i)).month == month
+               and (d + timedelta(days=i)).weekday() == 4]
+    return fridays[2] if len(fridays) >= 3 else fridays[-1]
+
+
+def _last_monday(year: int, month: int) -> date:
+    """Letzter Montag eines Monats — Memorial Day, Labor Day."""
+    d = date(year, month, 1)
+    last_day = (date(year + (1 if month == 12 else 0),
+                     1 if month == 12 else month + 1, 1) - timedelta(days=1))
+    while last_day.weekday() != 0:
+        last_day -= timedelta(days=1)
+    return last_day
+
+
 def active_strategy_signals(target_date: date | None = None) -> list[dict]:
     """
-    Welche der Saison-Strategien sind am target_date aktiv (im Entry-Fenster)?
-
-    Pragmatischer Ansatz: feste Date-Range-Checks pro Strategie.
-    Kein dynamisches Backtest-Replay — das Newsletter braucht nur "ist heute
-    in der saisonal aktiven Phase ja/nein".
+    Welche Saison-Strategien sind am target_date aktiv?
+    Pragmatische Date-Range-Checks — kein dynamisches Backtest-Replay.
     """
     if target_date is None:
         target_date = next_trading_day()
 
     signals: list[dict] = []
+    y, m, day = target_date.year, target_date.month, target_date.day
 
-    # Santa Claus: 27.12 - 05.01
+    # ── Jahres-Fenster ─────────────────────────────────────────────
     if _is_in_window(target_date, 12, 27, 1, 5):
         signals.append({
-            "name": "Santa Claus Rally",
-            "ticker": "SPY",
-            "phase": "Entry-Fenster",
-            "description": "27. Dez bis 5. Jan — saisonal stark, historisch ~75% Hitrate",
+            "name": "Santa Claus Rally", "ticker": "SPY", "phase": "🎄 Entry-Fenster",
+            "description": "27. Dez bis 5. Jan — historisch ~75% Hitrate auf SPY.",
         })
 
-    # Sell in May (Long-Side ist Nov-Apr stark)
     if _is_in_window(target_date, 11, 1, 4, 30):
         signals.append({
-            "name": "Sell in May (Halloween-Indikator)",
-            "ticker": "SPY",
-            "phase": "Long-Saison aktiv",
-            "description": "1. Nov bis 30. April — historisch stärkste 6 Monate",
+            "name": "Halloween-Indikator (Sell in May)", "ticker": "SPY",
+            "phase": "📈 Long-Saison aktiv",
+            "description": "1. Nov bis 30. April — historisch stärkste 6 Monate ('Best 6 Months').",
         })
-
-    # January Effect (Small Caps)
-    if _is_in_window(target_date, 1, 1, 1, 31):
+    else:
+        # Mai bis Oktober — explizite Warnung
         signals.append({
-            "name": "January Effect",
-            "ticker": "IWM",
-            "phase": "Saisonfenster",
-            "description": "Small-Caps tendieren im Januar zu Outperformance",
+            "name": "Sell-in-May-Phase", "ticker": "SPY",
+            "phase": "⚠️ Schwache Saisonalität",
+            "description": "Mai bis Oktober — historisch schwächere 6 Monate. Position-Sizing prüfen.",
         })
 
-    # Summer Doldrums (negative Saison)
+    if m == 1:
+        signals.append({
+            "name": "January Effect", "ticker": "IWM", "phase": "🐣 Saisonfenster",
+            "description": "Small-Caps tendieren im Januar zu Outperformance vs Large-Caps.",
+        })
+
     if _is_in_window(target_date, 8, 1, 9, 30):
         signals.append({
-            "name": "Summer Doldrums",
-            "ticker": "SPY",
-            "phase": "⚠️ Schwache Saison",
-            "description": "Aug-Sep historisch schwächste 2 Monate — Vorsicht bei Long-Positionen",
+            "name": "Summer Doldrums", "ticker": "SPY", "phase": "⚠️ Schwache Saison",
+            "description": "Aug–Sep historisch schwächste 2 Monate.",
         })
 
-    # Year-End Window Dressing (letzte 5 HT im Dezember)
     if _is_in_window(target_date, 12, 20, 12, 31):
         signals.append({
-            "name": "Year-End Window Dressing",
-            "ticker": "SPY",
-            "phase": "Letzte HT des Jahres",
-            "description": "Fondsmanager kaufen Winner für Jahresabschluss-Performance",
+            "name": "Year-End Window Dressing", "ticker": "SPY",
+            "phase": "🏷️ Letzte HT des Jahres",
+            "description": "Fondsmanager kaufen Winner für Jahresabschluss-Performance.",
         })
 
-    # Turn-of-Month (letzter HT + erste 3 HT des nächsten Monats)
-    day = target_date.day
+    # ── Monats-/Wochen-Fenster ─────────────────────────────────────
     if day >= 28 or day <= 3:
         signals.append({
-            "name": "Turn-of-Month-Effekt",
-            "ticker": "SPY",
-            "phase": "Aktives Fenster",
-            "description": "Letzter HT + erste 3 HT des Monats — saisonal stark",
+            "name": "Turn-of-Month-Effekt", "ticker": "SPY",
+            "phase": "📅 Aktives Fenster",
+            "description": "Letzter HT + erste 3 HT des Monats — Inflows aus Sparplänen/401k.",
+        })
+
+    # OPEX-Woche (3. Freitag) — Volatilität steigt Mo-Do, Drift Fr
+    try:
+        opex_fri = _third_friday(y, m)
+        opex_week_start = opex_fri - timedelta(days=4)  # Montag der OPEX-Woche
+        if opex_week_start <= target_date <= opex_fri:
+            signals.append({
+                "name": "OPEX-Woche", "ticker": "SPY",
+                "phase": "🌀 Pinning-/Vola-Effekt",
+                "description": f"Bis Fr {opex_fri.strftime('%d.%m.')}: Optionen-Verfall, "
+                               f"Pinning um runde Strikes, oft erhöhte Vola am Mo-Di.",
+            })
+    except Exception:
+        pass
+
+    # Pre-Holiday-Bias (Tag vor NYSE-Feiertag = historisch bullish auf SPY)
+    try:
+        from shared.nyse_holidays import _compute_nyse_holidays
+        holidays = set(_compute_nyse_holidays(y)) | set(_compute_nyse_holidays(y + 1))
+        next_day = target_date + timedelta(days=1)
+        while next_day.weekday() >= 5:
+            next_day += timedelta(days=1)
+        if next_day in holidays:
+            signals.append({
+                "name": "Pre-Holiday-Drift", "ticker": "SPY",
+                "phase": "🇺🇸 Letzter HT vor Feiertag",
+                "description": f"NYSE morgen ({next_day.strftime('%d.%m.')}) geschlossen — "
+                               f"historisch bullish-bias am Vortag.",
+            })
+    except Exception:
+        pass
+
+    # Memorial Day (letzter Mo Mai) — typischerweise bullish Woche danach
+    if m == 5:
+        memorial = _last_monday(y, 5)
+        if memorial - timedelta(days=3) <= target_date <= memorial + timedelta(days=5):
+            signals.append({
+                "name": "Memorial Day Effekt", "ticker": "SPY",
+                "phase": "🇺🇸 Saisonfenster",
+                "description": f"Memorial Day {memorial.strftime('%d.%m.')} — historisch "
+                               f"bullisches Set-up in der Woche davor und danach.",
+            })
+
+    # FOMC-Drift (5 HT vor FOMC-Statement = bullish historisch)
+    try:
+        from shared.fed_dates import get_fomc_dates_for_years
+        for dt in get_fomc_dates_for_years(y, y + 1):
+            fomc_d = dt.date() if hasattr(dt, "date") else dt
+            delta = (fomc_d - target_date).days
+            if 0 <= delta <= 7:
+                signals.append({
+                    "name": "Pre-FOMC-Drift", "ticker": "SPY",
+                    "phase": "🏛️ Bullish-Bias",
+                    "description": f"FOMC am {fomc_d.strftime('%d.%m.')} — historisch "
+                                   f"positiver Drift in den HT davor.",
+                })
+                break
+    except Exception:
+        pass
+
+    # Earnings-Saison (jedes Quartal, ca. Mitte des Folgemonats für ~4 Wochen)
+    earnings_months = {1, 4, 7, 10}  # Hauptberichts-Monate
+    if m in earnings_months and 10 <= day <= 31:
+        signals.append({
+            "name": "Earnings-Saison aktiv", "ticker": "SPY",
+            "phase": "📊 Sektor-Rotation üblich",
+            "description": "Quartalsergebnisse — erhöhte Einzelaktien-Volatilität, "
+                           "Sektoren-Rotation häufig.",
         })
 
     return signals
