@@ -41,9 +41,9 @@ EXCHANGE_TO_HOLIDAY = {
     "TSE":               "JP",
     "HKEX":              "JP",   # Asien-Kalender (Näherung)
     "KRX":               "JP",   # Asien-Kalender (Näherung)
-    "Kopenhagen":        "FR",   # Nordeuropa ~ Euronext-Kalender
-    "Oslo":              "FR",
-    "Stockholm":         "FR",
+    "Kopenhagen":        "SE",   # Nordeuropa ~ Stockholm-Kalender
+    "Oslo":              "SE",
+    "Stockholm":         "SE",   # eigener Nordic-Kalender (Christi Himmelfahrt!)
     "Forex":             "NONE", # 24/5, keine Feiertage
     "Crypto":            "NONE", # 24/7, keine Feiertage
 }
@@ -55,8 +55,9 @@ HOLIDAY_TO_EXCHANGE = {
     "UK": "LSE",
     "FR": "EURONEXT",
     "JP": "TSE",
-    "CH": "NYSE",    # SIX nutzt NYSE-aehnlichen Kalender
-    "NONE": "NYSE",  # Fallback (wird nie Feiertag-Check brauchen)
+    "CH": "SIX",       # Schweiz — eigener Kalender mit Christi Himmelfahrt + Bundesfeier 1.8.
+    "SE": "STOCKHOLM", # Schweden/Skandinavien — Nasdaq-Stockholm-Kalender
+    "NONE": "NYSE",    # Fallback (wird nie Feiertag-Check brauchen)
 }
 
 
