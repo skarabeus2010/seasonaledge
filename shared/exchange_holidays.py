@@ -79,8 +79,8 @@ _TICKER_MAP = {
 # ── Gemeinsame Helfer ──────────────────────────────────────────────────────────
 
 def _whit_monday(year: int) -> date:
-    """Pfingstmontag = Ostersonntag + 49 Tage."""
-    return _easter_sunday(year) + timedelta(days=49)
+    """Pfingstmontag = Ostersonntag + 50 Tage (Pfingstsonntag + 1)."""
+    return _easter_sunday(year) + timedelta(days=50)
 
 def _easter_monday(year: int) -> date:
     """Ostermontag = Ostersonntag + 1."""
@@ -341,18 +341,82 @@ def _compute_tse_holidays(year: int) -> list[date]:
     return sorted(set(holidays))
 
 
+# ── SIX (Schweiz) ──────────────────────────────────────────────────────────────
+
+def _compute_six_holidays(year: int) -> list[date]:
+    """SIX Swiss Exchange Feiertage — Schweizer Bundesfeiertage."""
+    holidays = []
+    # Neujahr
+    holidays.append(_monday_if_sunday(date(year, 1, 1)))
+    # Berchtoldstag (2. Januar)
+    holidays.append(_monday_if_sunday(date(year, 1, 2)))
+    # Karfreitag
+    holidays.append(_good_friday(year))
+    # Ostermontag
+    holidays.append(_easter_monday(year))
+    # Tag der Arbeit (1. Mai)
+    holidays.append(_monday_if_sunday(date(year, 5, 1)))
+    # Christi Himmelfahrt — SIX schließt (im Unterschied zu XETRA!)
+    holidays.append(_ascension_day(year))
+    # Pfingstmontag
+    holidays.append(_whit_monday(year))
+    # Schweizer Bundesfeier (1. August)
+    holidays.append(_monday_if_sunday(date(year, 8, 1)))
+    # 1. Weihnachtstag
+    holidays.append(_observed(date(year, 12, 25)))
+    # Stephanstag (26. Dezember)
+    holidays.append(_observed(date(year, 12, 26)))
+    return sorted(set(holidays))
+
+
+# ── Nasdaq Stockholm ───────────────────────────────────────────────────────────
+
+def _compute_stockholm_holidays(year: int) -> list[date]:
+    """Nasdaq Stockholm Feiertage — Schwedische Bankenfeiertage."""
+    holidays = []
+    # Nyårsdagen — Neujahr
+    holidays.append(_monday_if_sunday(date(year, 1, 1)))
+    # Trettondedag jul — 6. Januar (Heilige Drei Könige)
+    holidays.append(_monday_if_sunday(date(year, 1, 6)))
+    # Långfredagen — Karfreitag
+    holidays.append(_good_friday(year))
+    # Annandag påsk — Ostermontag
+    holidays.append(_easter_monday(year))
+    # Första maj — Tag der Arbeit
+    holidays.append(_monday_if_sunday(date(year, 5, 1)))
+    # Kristi himmelsfärdsdag — Christi Himmelfahrt (schließt!)
+    holidays.append(_ascension_day(year))
+    # Sveriges nationaldag — 6. Juni
+    holidays.append(_monday_if_sunday(date(year, 6, 6)))
+    # Midsommarafton — Freitag zwischen 19. und 25. Juni
+    midsommar = date(year, 6, 19)
+    while midsommar.weekday() != 4:  # Freitag = 4
+        midsommar += timedelta(days=1)
+    holidays.append(midsommar)
+    # Julafton — Heiligabend (Börse zu)
+    holidays.append(date(year, 12, 24))
+    # Juldagen — 1. Weihnachtstag
+    holidays.append(_observed(date(year, 12, 25)))
+    # Annandag jul — Stephanstag
+    holidays.append(_observed(date(year, 12, 26)))
+    # Nyårsafton — Silvester (Börse zu)
+    holidays.append(date(year, 12, 31))
+    return sorted(set(holidays))
+
+
 # ── Haupt-API ──────────────────────────────────────────────────────────────────
 
 _EXCHANGE_FUNCTIONS = {
-    "NYSE":     lambda year: list(get_nyse_holidays(year, year)),
-    "NASDAQ":   lambda year: list(get_nyse_holidays(year, year)),  # gleich wie NYSE
-    "XETRA":    _compute_xetra_holidays,
-    "LSE":      _compute_lse_holidays,
-    "EURONEXT": _compute_euronext_holidays,
-    "TSE":      _compute_tse_holidays,
-    "SIX":      _compute_xetra_holidays,  # Schweiz ähnlich wie XETRA
-    "FOREX":    lambda year: [],          # Keine Feiertage (Mo-Fr 24h)
-    "CRYPTO":   lambda year: [],          # Keine Feiertage (24/7)
+    "NYSE":      lambda year: list(get_nyse_holidays(year, year)),
+    "NASDAQ":    lambda year: list(get_nyse_holidays(year, year)),  # gleich wie NYSE
+    "XETRA":     _compute_xetra_holidays,
+    "LSE":       _compute_lse_holidays,
+    "EURONEXT":  _compute_euronext_holidays,
+    "TSE":       _compute_tse_holidays,
+    "SIX":       _compute_six_holidays,         # Schweiz — eigener Kalender (Christi Himmelfahrt!)
+    "STOCKHOLM": _compute_stockholm_holidays,   # Schweden — eigener Kalender
+    "FOREX":     lambda year: [],               # Keine Feiertage (Mo-Fr 24h)
+    "CRYPTO":    lambda year: [],               # Keine Feiertage (24/7)
 }
 
 
