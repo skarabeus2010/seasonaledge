@@ -106,7 +106,7 @@
       </select>
       <hr>
       <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
-      <label><input type="checkbox" id="chk-stop"> Aktivieren</label>
+      <label><input type="checkbox" id="chk-stop"> <span data-i18n="common.activate">Aktivieren</span></label>
       <div id="stop-controls" style="display:none;margin-top:.5rem">
         <select id="sel-stop-type" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;margin-bottom:.5rem">
           <option value="fixed" selected>Fixed Stop-Loss</option>
@@ -118,13 +118,13 @@
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Plain Vanilla Strategien</b> &mdash; <span id="title-ticker">^DJI</span></h1>
-      <p class="page-caption" id="page-caption">24 saisonale Trading-Strategien mit fixen Regeln</p>
+      <h1 class="page-title"><b data-i18n="pv.page_title">Plain Vanilla Strategien</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption" data-i18n="pv.page_caption">24 saisonale Trading-Strategien mit fixen Regeln</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- Naechste Signale -->
       <details open id="sec-signals">
-        <summary>N&auml;chste Signale</summary>
+        <summary data-i18n="pv.section_next_signals">N&auml;chste Signale</summary>
         <div class="content" id="content-signals" style="font-size:.8125rem"></div>
       </details>
 
@@ -159,17 +159,17 @@
       <details>
         <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik">
-          <h3>Plain Vanilla Strategien</h3>
-          <p>Regelbasierte Handelsans&auml;tze mit fixen Ein- und Ausstiegszeitpunkten. Keine Optimierung &mdash; die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet.</p>
+          <h3 data-i18n="pv.methodik_h3">Plain Vanilla Strategien</h3>
+          <p data-i18n="pv.methodik_desc">Regelbasierte Handelsans&auml;tze mit fixen Ein- und Ausstiegszeitpunkten. Keine Optimierung &mdash; die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet.</p>
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
-            <li><b>CAGR</b>: Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</li>
-            <li><b>Max Drawdown</b>: Gr&ouml;&szlig;ter R&uuml;ckgang vom H&ouml;chststand</li>
-            <li><b>Win-Rate</b>: Anteil profitabler Trades</li>
-            <li><b>Sharpe Ratio</b>: Risikoadjustierte Rendite</li>
-            <li><b>Profit Factor</b>: Bruttogewinne / Bruttoverluste</li>
+            <li><b>CAGR</b>: <span data-i18n="pv.metric_cagr">Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</span></li>
+            <li><b>Max Drawdown</b>: <span data-i18n="pv.metric_max_dd">Gr&ouml;&szlig;ter R&uuml;ckgang vom H&ouml;chststand</span></li>
+            <li><b>Win-Rate</b>: <span data-i18n="pv.metric_win_rate">Anteil profitabler Trades</span></li>
+            <li><b>Sharpe Ratio</b>: <span data-i18n="pv.metric_sharpe">Risikoadjustierte Rendite</span></li>
+            <li><b>Profit Factor</b>: <span data-i18n="pv.metric_profit_factor">Bruttogewinne / Bruttoverluste</span></li>
           </ul>
-          <p>Ergebnisse basieren auf historischen Daten. Keine Anlageberatung.</p>
+          <p data-i18n="pv.methodik_disclaimer">Ergebnisse basieren auf historischen Daten. Keine Anlageberatung.</p>
         </div>
       </details>
     </main>

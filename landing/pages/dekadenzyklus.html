@@ -102,17 +102,17 @@
       <datalist id="ticker-list"></datalist>
       <hr>
       <h3 data-i18n="sidebar.display">Darstellung</h3>
-      <label><input type="checkbox" id="chk-bands"> &plusmn;1&sigma; Konfidenzband</label>
-      <label><input type="checkbox" id="chk-percentile"> 25./75. Perzentil-B&auml;nder</label>
-      <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
-      <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <label data-i18n="checkbox.confidence_band"><input type="checkbox" id="chk-bands"> &plusmn;1&sigma; Konfidenzband</label>
+      <label data-i18n="checkbox.percentile_bands"><input type="checkbox" id="chk-percentile"> 25./75. Perzentil-B&auml;nder</label>
+      <label data-i18n="checkbox.show_individual"><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
+      <label data-i18n="checkbox.highlight_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <div style="margin-top:.75rem">
-        <label style="display:flex;justify-content:space-between;padding:.25rem 0"><span>Gl&auml;ttung (Tage)</span><span id="lbl-smooth" style="color:var(--accent);font-family:var(--f-m);font-weight:700">1</span></label>
+        <label style="display:flex;justify-content:space-between;padding:.25rem 0"><span data-i18n="sidebar.smoothing">Gl&auml;ttung (Tage)</span><span id="lbl-smooth" style="color:var(--accent);font-family:var(--f-m);font-weight:700">1</span></label>
         <input type="range" id="sl-smooth" min="1" max="15" step="2" value="1" style="width:100%;accent-color:var(--accent)">
       </div>
       <hr>
       <h3 data-i18n="sidebar.decade_years">Dekadenjahre ein/ausblenden</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades"> Alle / Keine</label>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades"> <span data-i18n="dz.toggle_all_none">Alle / Keine</span></label>
       <div id="decade-toggles"></div>
       <hr>
       <h3 data-i18n="sidebar.rolling_vola_h3">Rolling-Vola Fenster</h3>
@@ -140,46 +140,46 @@
 
       <!-- Expander: Kohorte Einordnung -->
       <details open id="exp-kohorte">
-        <summary id="sum-kohorte">Kohorte &mdash; Einordnung</summary>
+        <summary id="sum-kohorte" data-i18n="dz.cohort_overview">Kohorte &mdash; Einordnung</summary>
         <div class="content" id="content-kohorte"></div>
       </details>
 
       <!-- Expander: Bar-Chart -->
       <details open>
-        <summary>&Oslash; Jahresrendite nach Dekaden-Endziffer</summary>
+        <summary data-i18n="dz.avg_annual_return_title">&Oslash; Jahresrendite nach Dekaden-Endziffer</summary>
         <div class="content"><div id="chart-bar"></div></div>
       </details>
 
       <!-- Expander: Tabelle -->
       <details>
-        <summary>&Uuml;bersicht nach Dekadenjahr</summary>
+        <summary data-i18n="dz.overview_by_decade_yr">&Uuml;bersicht nach Dekadenjahr</summary>
         <div class="content" id="content-table"></div>
       </details>
 
       <!-- Expander: Monats-Heatmap -->
       <details open>
-        <summary>&Oslash; Monatsrendite nach Dekade</summary>
+        <summary data-i18n="dz.monthly_return_heatmap_title">&Oslash; Monatsrendite nach Dekade</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
       <!-- Expander: Box-Plot -->
       <details>
-        <summary>Rendite-Verteilung nach Dekadenjahr (Box-Plot)</summary>
+        <summary data-i18n="dz.box_plot_title">Rendite-Verteilung nach Dekadenjahr (Box-Plot)</summary>
         <div class="content">
           <div id="chart-box"></div>
-          <div class="box-info"><b>So lesen Sie Box-Plots:</b> Kasten = mittlere 50% (25.&ndash;75. Perzentil). Linie = Median. Antennen = 1.5&times; IQR. Punkte = Ausrei&szlig;er.</div>
+          <div class="box-info"><b data-i18n="dz.box_plot_how_to_read">So lesen Sie Box-Plots:</b> <span data-i18n="dz.box_plot_desc">Kasten = mittlere 50% (25.&ndash;75. Perzentil). Linie = Median. Antennen = 1.5&times; IQR. Punkte = Ausrei&szlig;er.</span></div>
         </div>
       </details>
 
       <!-- Drawdown Header -->
       <div class="dd-header">
-        <h2>Drawdown &amp; Risiko</h2>
+        <h2 data-i18n="dz.drawdown_risk_h2">Drawdown &amp; Risiko</h2>
         <p id="dd-header-text"></p>
       </div>
 
       <!-- Expander: Drawdown-Verlauf -->
       <details open>
-        <summary>&Oslash; Drawdown-Verlauf nach Dekade</summary>
+        <summary data-i18n="dz.drawdown_chart_title">&Oslash; Drawdown-Verlauf nach Dekade</summary>
         <div class="content">
           <div id="chart-dd"></div>
           <div class="kpi-row" id="kpi-dd"></div>
@@ -188,7 +188,7 @@
 
       <!-- Expander: Worst-DD-Tabelle -->
       <details>
-        <summary>Worst Drawdown &mdash; Historische Extremjahre + Recovery</summary>
+        <summary data-i18n="dz.worst_dd_title">Worst Drawdown &mdash; Historische Extremjahre + Recovery</summary>
         <div class="content" id="content-worst-dd"></div>
       </details>
 
@@ -200,7 +200,7 @@
 
       <!-- Expander: Volatilität -->
       <details>
-        <summary>Saisonale Volatilit&auml;t nach Dekade</summary>
+        <summary data-i18n="dz.seasonal_vola_title">Saisonale Volatilit&auml;t nach Dekade</summary>
         <div class="content">
           <div id="chart-vola"></div>
           <div class="kpi-row" id="kpi-vola"></div>

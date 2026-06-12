@@ -79,23 +79,23 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Trigger-Asset (A)</h3>
+      <h3 data-i18n="shock.trigger_asset">Trigger-Asset (A)</h3>
       <input type="text" id="trigger-input" value="CL=F" placeholder="z.B. CL=F" list="trigger-list">
       <datalist id="trigger-list"></datalist>
 
-      <h3>Ziel-Asset (B)</h3>
+      <h3 data-i18n="shock.target_asset">Ziel-Asset (B)</h3>
       <input type="text" id="target-input" value="^GDAXI" placeholder="z.B. ^GDAXI" list="target-list">
       <datalist id="target-list"></datalist>
 
       <hr>
-      <h3>Shock-Richtung</h3>
+      <h3 data-i18n="shock.direction">Shock-Richtung</h3>
       <select id="sel-direction" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="down" selected>Kurseinbruch (&le; &minus;X%)</option>
-        <option value="up">Kurssprung (&ge; +X%)</option>
-        <option value="both">Beides (|X| &ge; %)</option>
+        <option value="down" selected data-i18n="shock.dir_down">Kurseinbruch (&le; &minus;X%)</option>
+        <option value="up" data-i18n="shock.dir_up">Kurssprung (&ge; +X%)</option>
+        <option value="both" data-i18n="shock.dir_both">Beides (|X| &ge; %)</option>
       </select>
 
-      <h3>Schwellenwert</h3>
+      <h3 data-i18n="shock.threshold">Schwellenwert</h3>
       <label><input type="range" id="rng-threshold" min="1" max="15" value="5" step="0.5"><span id="lbl-threshold">5.0</span>%</label>
 
       <h3 data-i18n="sidebar.period">Zeitraum</h3>
@@ -109,22 +109,22 @@
         <option value="50">50 Jahre</option>
       </select>
 
-      <h3>Horizonte (Tage)</h3>
+      <h3 data-i18n="shock.horizons">Horizonte (Tage)</h3>
       <input type="text" id="inp-horizons" value="0, 1, 5, 10, 20, 60" style="font-family:var(--f-m);font-size:.75rem;width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px">
 
       <hr>
-      <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze">Analysieren</button>
+      <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze" data-i18n="shock.btn_analyze">Analysieren</button>
     </aside>
 
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Intermarket Shocks</b></h1>
-      <p class="page-caption">Wenn Asset A um X% f&auml;llt/steigt &mdash; wie performt Asset B danach?</p>
+      <p class="page-caption" data-i18n="shock.page_caption">Wenn Asset A um X% f&auml;llt/steigt &mdash; wie performt Asset B danach?</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
+        <b style="color:var(--accent)" data-i18n="shock.intro_heading">Was zeigt diese Seite?</b> &mdash;
         Die Intermarket-Shock-Analyse untersucht, wie ein <b>Target-Asset</b> reagiert, wenn ein <b>Trigger-Asset</b> einen extremen Tagesverlust oder -gewinn verzeichnet.
         Du definierst Trigger (z.&nbsp;B. &bdquo;VIX steigt &gt;10%&ldquo;) und Target (z.&nbsp;B. SPY) und siehst: Scatter-Plot mit OLS-Regression, kumulative Forward-Renditen, saisonalen Breakdown nach Monat und Win-Rate-Statistik.
         <b>Sidebar:</b> Trigger/Target-Paar, Schwellenwert, Richtung und Zeitfenster frei konfigurierbar.
@@ -137,21 +137,21 @@
 
       <!-- Summary Table -->
       <details open id="sec-summary" style="display:none">
-        <summary>Zusammenfassung nach Horizont</summary>
+        <summary data-i18n="shock.section_summary">Zusammenfassung nach Horizont</summary>
         <div class="content" id="content-summary"></div>
       </details>
 
       <!-- Bar Chart -->
       <details open id="sec-bar" style="display:none">
-        <summary>Durchschnittliche Reaktion nach Horizont</summary>
+        <summary data-i18n="shock.section_bar">Durchschnittliche Reaktion nach Horizont</summary>
         <div class="content"><div id="chart-bar"></div></div>
       </details>
 
       <!-- Scatter -->
       <details open id="sec-scatter" style="display:none">
-        <summary>Trigger-St&auml;rke vs. Reaktion</summary>
+        <summary data-i18n="shock.section_scatter">Trigger-St&auml;rke vs. Reaktion</summary>
         <div class="content">
-          <label style="font-size:.75rem;color:var(--muted)">Horizont:
+          <label style="font-size:.75rem;color:var(--muted)"><span data-i18n="shock.horizon_label">Horizont</span>:
             <select id="sel-scatter-horizon" style="padding:.25rem .4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem"></select>
           </label>
           <div id="chart-scatter"></div>
@@ -160,25 +160,25 @@
 
       <!-- Heatmap -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>Heatmap: Shock-St&auml;rke &times; Horizont</summary>
+        <summary data-i18n="shock.section_heatmap">Heatmap: Shock-St&auml;rke &times; Horizont</summary>
         <div class="content">
-          <p class="box-info">Durchschnittliche Rendite des Ziel-Assets f&uuml;r verschiedene Schwellenwerte und Horizonte.</p>
+          <p class="box-info" data-i18n="shock.heatmap_info">Durchschnittliche Rendite des Ziel-Assets f&uuml;r verschiedene Schwellenwerte und Horizonte.</p>
           <div id="chart-heatmap"></div>
         </div>
       </details>
 
       <!-- Seasonal Breakdown -->
       <details open id="sec-seasonal" style="display:none">
-        <summary>Saisonaler Breakdown: Monat &times; Horizont</summary>
+        <summary data-i18n="shock.section_seasonal">Saisonaler Breakdown: Monat &times; Horizont</summary>
         <div class="content">
-          <p class="box-info">In welchen Monaten treffen Shocks am h&auml;rtesten? Durchschnittliche Ziel-Rendite nach Monat des Shock-Events.</p>
+          <p class="box-info" data-i18n="shock.seasonal_info">In welchen Monaten treffen Shocks am h&auml;rtesten? Durchschnittliche Ziel-Rendite nach Monat des Shock-Events.</p>
           <div id="chart-seasonal"></div>
         </div>
       </details>
 
       <!-- Event List -->
       <details id="sec-events" style="display:none">
-        <summary id="event-summary">Alle Shock-Events anzeigen</summary>
+        <summary id="event-summary" data-i18n="shock.section_events">Alle Shock-Events anzeigen</summary>
         <div class="content" id="content-events"></div>
       </details>
 
@@ -192,20 +192,20 @@
             <li><b>Aktualisierung:</b> T&auml;glich via Nightly Refresh</li>
             <li><b>Zeitraum:</b> W&auml;hlbar 1&ndash;50 Jahre</li>
           </ul>
-          <h3>Shock-Definition</h3>
+          <h3 data-i18n="shock.methodik_shock_def">Shock-Definition</h3>
           <ul>
             <li><b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist</li>
             <li><b>Kurseinbruch:</b> Filtert nur negative Renditen &le; &minus;X%</li>
             <li><b>Kurssprung:</b> Filtert nur positive Renditen &ge; +X%</li>
             <li><b>Beides:</b> Filtert absolute Renditen &ge; |X%|</li>
           </ul>
-          <h3>Horizonte</h3>
+          <h3 data-i18n="shock.methodik_horizons">Horizonte</h3>
           <ul>
             <li><b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion)</li>
             <li><b>1T&ndash;60T:</b> Kumulative Rendite des Ziel-Assets (B) nach N Handelstagen (Close-to-Close ab Shock-Tag)</li>
             <li><b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset</li>
           </ul>
-          <h3>Visualisierungen</h3>
+          <h3 data-i18n="shock.methodik_viz">Visualisierungen</h3>
           <ul>
             <li><b>Heatmap (Schwelle &times; Horizont):</b> Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte</li>
             <li><b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Shocks zu st&auml;rkeren Reaktionen f&uuml;hren. Extreme Ausrei&szlig;er (IQR-Filter) werden ausgeblendet.</li>

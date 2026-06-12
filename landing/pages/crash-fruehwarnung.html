@@ -81,20 +81,20 @@
   <div class="app">
     <aside class="sidebar">
       <h3 data-i18n="sidebar.ticker">Ticker</h3>
-      <p style="color:var(--muted);font-size:.75rem">Fixiert auf SPY (S&amp;P 500)</p>
+      <p style="color:var(--muted);font-size:.75rem" data-i18n="crash.sidebar_fixed">Fixiert auf SPY (S&amp;P 500)</p>
     </aside>
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Crash-Frühwarnung</b></h1>
-      <p class="page-caption" id="page-caption">Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY)</p>
+      <h1 class="page-title"><b data-i18n="crash.page_title">Crash-Frühwarnung</b></h1>
+      <p class="page-caption" id="page-caption" data-i18n="crash.page_caption">Markt-Regime-Erkennung auf Basis des S&amp;P 500 (SPY)</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Die Crash-Fr&uuml;hwarnung erkennt Markt-Regime anhand eines <b>Isolation-Forest-Modells</b> (Machine Learning), das auf dem S&amp;P&nbsp;500 trainiert wird.
+        <b style="color:var(--accent)" data-i18n="crash.intro_heading">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="crash.intro_desc">Die Crash-Fr&uuml;hwarnung erkennt Markt-Regime anhand eines <b>Isolation-Forest-Modells</b> (Machine Learning), das auf dem S&amp;P&nbsp;500 trainiert wird.
         Die <b>Ampel</b> zeigt das aktuelle Regime (Gr&uuml;n/Gelb/Rot), der <b>Risk-Score</b> (0&ndash;100) quantifiziert die Anomalie-St&auml;rke.
-        Darunter siehst du den historischen Score-Verlauf mit farbcodierten Regimephasen und einen Backtest, der zeigt, wie der Markt nach hohen Scores typischerweise performt.
+        Darunter siehst du den historischen Score-Verlauf mit farbcodierten Regimephasen und einen Backtest, der zeigt, wie der Markt nach hohen Scores typischerweise performt.</span>
       </div>
 
       <!-- Ampel -->
@@ -116,18 +116,18 @@
 
       <!-- Historischer Backtest -->
       <details open>
-        <summary>Regime-Backtest &mdash; historische Phasen</summary>
+        <summary data-i18n="crash.section_backtest">Regime-Backtest &mdash; historische Phasen</summary>
         <div class="content">
-          <p class="box-info">Risk-Score (0&ndash;100) f&uuml;r jeden Handelstag. Gr&uuml;n &lt;40, Gelb 40&ndash;69, Rot &ge;70. Berechnet via Isolation Forest (sklearn).</p>
+          <p class="box-info" data-i18n="crash.backtest_desc">Risk-Score (0&ndash;100) f&uuml;r jeden Handelstag. Gr&uuml;n &lt;40, Gelb 40&ndash;69, Rot &ge;70. Berechnet via Isolation Forest (sklearn).</p>
           <div class="kpi-row" id="kpi-backtest"></div>
         </div>
       </details>
 
       <!-- Polymarket Macro-Risiko -->
       <details open id="sec-polymarket">
-        <summary>Polymarket Macro-Risiko &mdash; was der Markt einpreist</summary>
+        <summary data-i18n="crash.section_polymarket">Polymarket Macro-Risiko &mdash; was der Markt einpreist</summary>
         <div class="content">
-          <p class="box-info" style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem;padding:.5rem .75rem;background:rgba(232,168,32,.04);border-left:2px solid var(--accent);border-radius:4px">
+          <p class="box-info" style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem;padding:.5rem .75rem;background:rgba(232,168,32,.04);border-left:2px solid var(--accent);border-radius:4px" data-i18n="crash.polymarket_desc">
             Unser Isolation-Forest-Modell misst das Regime aus <b>Preisdaten</b>. Polymarket zeigt was Händler auf <b>Ereignissen</b> einpreisen &mdash; zwei unterschiedliche Signale. Wenn beide rot sind, steigt die Konfidenz im Risiko-Call. Divergenz (z.B. Risk-Score niedrig, aber Recession-Markt hoch) ist selbst ein Signal.
           </p>
           <div class="kpi-row" id="poly-crash-risk" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.75rem"></div>
@@ -138,13 +138,13 @@
 
       <!-- Feature-Details -->
       <details>
-        <summary>Regime-Features (aktueller Tag)</summary>
+        <summary data-i18n="crash.section_features">Regime-Features (aktueller Tag)</summary>
         <div class="content" id="content-features"></div>
       </details>
 
       <!-- Methodik -->
       <details>
-        <summary>So funktioniert die Crash-Frühwarnung</summary>
+        <summary data-i18n="crash.section_how_it_works">So funktioniert die Crash-Frühwarnung</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>

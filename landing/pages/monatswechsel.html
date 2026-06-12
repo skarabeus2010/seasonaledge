@@ -84,15 +84,15 @@
         <option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option>
       </select>
       <hr>
-      <h3>TOM-Fenster</h3>
-      <label>Tage vor Monatsende<br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
-      <label>Tage nach Monatswechsel<br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
+      <h3 data-i18n="mw.tom_window_h3">TOM-Fenster</h3>
+      <label><span data-i18n="mw.days_before_month_end">Tage vor Monatsende</span><br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
+      <label><span data-i18n="mw.days_after_month_turn">Tage nach Monatswechsel</span><br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
       <hr>
       <h3 data-i18n="common.chart_display">Chart-Anzeige</h3>
-      <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr</label>
+      <label><input type="checkbox" id="chk-current" checked> <span data-i18n="checkbox.show_current_yr">Aktuelles Jahr</span></label>
       <hr>
-      <h3>Monatswechsel</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <h3 data-i18n="mw.month_turn_h3">Monatswechsel</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> <span data-i18n="mw.toggle_all_none">Alle / Keine</span></label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <hr>
       <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
@@ -105,7 +105,7 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Turn of the Month</b> &mdash; <span id="title-ticker">^DJI</span></h1>
-      <p class="page-caption" id="page-caption">Lade Daten...</p>
+      <p class="page-caption" id="page-caption" data-i18n="mw.page_caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- TOM Hauptchart -->
@@ -113,49 +113,49 @@
 
       <!-- KPI Cards -->
       <details open>
-        <summary>Monatswechsel-Statistik</summary>
+        <summary data-i18n="mw.stats_title">Monatswechsel-Statistik</summary>
         <div class="content"><div class="kpi-row" id="kpi-tom"></div><p class="box-info" id="kpi-info"></p></div>
       </details>
 
       <!-- Signifikanztest -->
       <details>
-        <summary>Statistische Signifikanz des Monatswechsel-Effekts</summary>
+        <summary data-i18n="mw.sig_title">Statistische Signifikanz des Monatswechsel-Effekts</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
       <!-- Best & Worst -->
       <details>
-        <summary>Bester &amp; Schlechtester Monatswechsel</summary>
+        <summary data-i18n="mw.best_worst_title">Bester &amp; Schlechtester Monatswechsel</summary>
         <div class="content" id="content-best-worst"></div>
       </details>
 
       <!-- Monats-Performance -->
       <details>
-        <summary>Performance pro Monat</summary>
+        <summary data-i18n="mw.monthly_perf_title">Performance pro Monat</summary>
         <div class="content" id="content-monthly-perf"></div>
       </details>
 
       <!-- TOM Heatmap -->
       <details open>
-        <summary>TOM Heatmap (Monat &times; Jahr)</summary>
+        <summary data-i18n="mw.heatmap_title">TOM Heatmap (Monat &times; Jahr)</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
       <!-- Streak-Analyse -->
       <details open>
-        <summary>Streak-Analyse (W/L-Serien pro Monat)</summary>
+        <summary data-i18n="mw.streak_title">Streak-Analyse (W/L-Serien pro Monat)</summary>
         <div class="content" id="content-streaks"></div>
       </details>
 
       <!-- Window-Optimierung -->
       <details>
-        <summary>Window-Optimierung (t-X bis t+Y)</summary>
+        <summary data-i18n="mw.window_opt_title">Window-Optimierung (t-X bis t+Y)</summary>
         <div class="content"><div id="chart-window-opt"></div><p class="box-info" id="window-opt-info"></p></div>
       </details>
 
       <!-- Praesidentenzyklus -->
       <details open>
-        <summary>Pr&auml;sidentenzyklus &mdash; TOM-Effekt nach Zyklusjahr</summary>
+        <summary data-i18n="mw.pres_cycle_title">Pr&auml;sidentenzyklus &mdash; TOM-Effekt nach Zyklusjahr</summary>
         <div class="content" id="content-cycle"></div>
       </details>
 

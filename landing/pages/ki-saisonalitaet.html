@@ -135,7 +135,7 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>&Auml;hnlichkeit</h3>
+      <h3 data-i18n="ki.similarity_h3">&Auml;hnlichkeit</h3>
       <div class="mode-radio" style="display:flex;flex-direction:column;gap:.4rem">
         <label style="display:flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
           <input type="radio" name="method" value="correlation" checked style="accent-color:var(--accent)"> Pearson-Korrelation
@@ -145,7 +145,7 @@
         </label>
       </div>
       <hr>
-      <h3>Top-N Matches</h3>
+      <h3 data-i18n="ki.topn_h3">Top-N Matches</h3>
       <div style="margin-top:.25rem">
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
           Anzahl &auml;hnlichster Jahre <span id="lbl-topn">5</span>
@@ -161,7 +161,7 @@
         <input type="range" id="sl-smooth" min="1" max="21" step="2" value="5" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
       <hr>
-      <h3>Projektion</h3>
+      <h3 data-i18n="ki.projection_h3">Projektion</h3>
       <div>
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
           Forecast-Tage <span id="lbl-proj">60</span>
@@ -195,14 +195,14 @@
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Analyse l&auml;uft&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>KI-Saisonalit&auml;t</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption">Rekalibrierter Saisonverlauf (Musterpfad) + KI Composite Score 1&ndash;10</p>
+      <h1 class="page-title"><b data-i18n="ki.page_title">KI-Saisonalit&auml;t</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="ki.page_caption">Rekalibrierter Saisonverlauf (Musterpfad) + KI Composite Score 1&ndash;10</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Die KI-Saisonalit&auml;t kombiniert klassische Saisonalanalyse mit Machine Learning. Der <b>Musterpfad</b> findet die historisch &auml;hnlichsten Jahre (Korrelation/DTW) und projiziert deren gewichteten Verlauf in die Zukunft.
-        Der <b>KI Composite Score</b> (0&ndash;10) fasst vier Sub-Scores zu einem Gesamtsignal zusammen: Match-Qualit&auml;t, Forward-Return, Monats-Win-Rate und Tracking-G&uuml;te.
+        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="ki.intro_desc">Die KI-Saisonalit&auml;t kombiniert klassische Saisonalanalyse mit Machine Learning. Der <b>Musterpfad</b> findet die historisch &auml;hnlichsten Jahre (Korrelation/DTW) und projiziert deren gewichteten Verlauf in die Zukunft.
+        Der <b>KI Composite Score</b> (0&ndash;10) fasst vier Sub-Scores zu einem Gesamtsignal zusammen: Match-Qualit&auml;t, Forward-Return, Monats-Win-Rate und Tracking-G&uuml;te.</span>
       </div>
 
       <!-- Hero: Score + Radar -->
@@ -219,10 +219,10 @@
             und der aktuelle Verlauf in die gleiche Richtung. Der Score ist keine Handelsempfehlung,
             sondern ein Wahrscheinlichkeits-Indikator f&uuml;r das saisonale Setup in den n&auml;chsten Wochen.
           </div>
-          <div class="score-label">KI Seasonal Score</div>
+          <div class="score-label" data-i18n="ki.score_label">KI Seasonal Score</div>
           <div class="score-value" id="score-value">&ndash;<span class="of-ten"> / 10</span></div>
           <div class="score-signal neutral" id="score-signal">&ndash;</div>
-          <div class="score-meta" id="score-meta">Composite aus 4 Sub-Scores</div>
+          <div class="score-meta" id="score-meta" data-i18n="ki.score_meta_default">Composite aus 4 Sub-Scores</div>
         </div>
         <div class="hero-radar">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Radar">i</div>
@@ -242,14 +242,14 @@
 
       <!-- Main Chart: Musterpfad / TruePath -->
       <details open id="sec-truepath">
-        <summary>Musterpfad (TruePath) vs. aktueller Verlauf</summary>
+        <summary data-i18n="ki.truepath_section">Musterpfad (TruePath) vs. aktueller Verlauf</summary>
         <div class="content">
           <div class="legend-row">
-            <span class="l-classic">Klassischer &Oslash;</span>
-            <span class="l-truepath">Musterpfad</span>
-            <span class="l-current">Aktuelles Jahr</span>
-            <span class="l-match">Match-Jahre</span>
-            <span class="l-proj">Projektion</span>
+            <span class="l-classic" data-i18n="ki.legend_classic">Klassischer &Oslash;</span>
+            <span class="l-truepath" data-i18n="ki.legend_truepath">Musterpfad</span>
+            <span class="l-current" data-i18n="ki.legend_current">Aktuelles Jahr</span>
+            <span class="l-match" data-i18n="ki.legend_match">Match-Jahre</span>
+            <span class="l-proj" data-i18n="ki.legend_proj">Projektion</span>
           </div>
           <div id="chart-truepath"></div>
           <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
@@ -262,7 +262,7 @@
 
       <!-- Match Years Tabelle -->
       <details open id="sec-matches">
-        <summary>&Auml;hnlichste Jahre (Top-N)</summary>
+        <summary data-i18n="ki.matches_section">&Auml;hnlichste Jahre (Top-N)</summary>
         <div class="content">
           <table class="match-table" id="tbl-matches">
             <thead><tr><th>Jahr</th><th>&Auml;hnlichkeit</th><th>Jahres-Rendite</th><th>Pr&auml;sidentenzyklus</th></tr></thead>
@@ -275,7 +275,7 @@
       <details>
         <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Musterpfad (TruePath)</h3>
+          <h3 data-i18n="ki.methodik_truepath_h3">Musterpfad (TruePath)</h3>
           <ul>
             <li>Normalisiere jeden Jahresverlauf auf 100 (Start) und interpoliere auf 365 Kalendertage</li>
             <li>Berechne &Auml;hnlichkeit zwischen aktuellem Jahr (bis heute) und jedem historischen Jahr</li>
@@ -285,7 +285,7 @@
             <li>Gewichte jedes Match-Jahr mit seiner &Auml;hnlichkeit und bilde den gewichteten Durchschnitt</li>
             <li>Gl&auml;tte das Ergebnis mit einem Rolling-Fenster</li>
           </ul>
-          <h3>KI Seasonal Score (1&ndash;10)</h3>
+          <h3 data-i18n="ki.methodik_score_h3">KI Seasonal Score (1&ndash;10)</h3>
           <p>Composite aus 4 Sub-Scores &agrave; 0&ndash;2.5 Punkte:</p>
           <ul>
             <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.5): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>

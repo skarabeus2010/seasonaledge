@@ -96,44 +96,44 @@
     </div>
 
     <div class="intro-box">
-      <b>Was zeigt diese Seite?</b> Analysiert das Kursverhalten rund um den <b>Ex-Dividenden-Termin</b>: Pre-Ex-Date-Drift (Dividend-Capture-Prämie), den Kursabschlag am Ex-Tag und die anschließende Erholung. Das Event-Fenster zeigt den durchschnittlichen Verlauf über alle historischen Dividendentermine.
+      <b data-i18n="common.what_shows">Was zeigt diese Seite?</b> <span data-i18n="div.intro_desc">Analysiert das Kursverhalten rund um den <b>Ex-Dividenden-Termin</b>: Pre-Ex-Date-Drift (Dividend-Capture-Prämie), den Kursabschlag am Ex-Tag und die anschließende Erholung. Das Event-Fenster zeigt den durchschnittlichen Verlauf über alle historischen Dividendentermine.</span>
     </div>
 
     <div class="error-banner" id="error-banner"></div>
 
-    <p class="page-title"><b>Dividenden-Effekt</b></p>
-    <p class="page-caption" id="page-caption">Kursverhalten rund um den Ex-Dividenden-Termin</p>
+    <p class="page-title"><b data-i18n="div.page_title">Dividenden-Effekt</b></p>
+    <p class="page-caption" id="page-caption" data-i18n="div.page_caption">Kursverhalten rund um den Ex-Dividenden-Termin</p>
 
     <div class="kpi-row" id="kpi-row" style="margin-bottom:1.25rem"></div>
 
     <details open id="sec-chart" style="display:none">
-      <summary>Event-Fenster um Ex-Dividenden-Termin</summary>
-      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)">
+      <summary data-i18n="div.event_window_title">Event-Fenster um Ex-Dividenden-Termin</summary>
+      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)" data-i18n="div.event_window_desc">
         Normiert auf den Kurs am Ex-Datum (t0 = 0%). Positiv = über Ex-Date-Kurs.
       </div>
       <div id="chart-event" style="min-height:420px"></div>
     </details>
 
     <details open id="sec-monthly" style="display:none">
-      <summary>Dividenden-Saison &mdash; Verteilung nach Monat</summary>
-      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)">
+      <summary data-i18n="div.monthly_dist_title">Dividenden-Saison &mdash; Verteilung nach Monat</summary>
+      <div style="margin:.5rem 0 .75rem;font-size:.8125rem;color:var(--muted)" data-i18n="div.monthly_dist_desc">
         Anzahl der Ex-Dividenden-Termine je Kalendermonat über den gewählten Zeitraum.
       </div>
       <div id="chart-monthly" style="min-height:280px"></div>
     </details>
 
     <details open id="sec-table" style="display:none">
-      <summary>Dividendenhistorie</summary>
+      <summary data-i18n="div.history_title">Dividendenhistorie</summary>
       <div id="table-container" style="margin-top:.5rem;overflow-x:auto"></div>
     </details>
 
     <details id="sec-methodik">
       <summary data-i18n="common.methodology">Methodik</summary>
       <div style="font-size:.8125rem;color:var(--muted);line-height:1.7;padding:.5rem 0">
-        <p><b>Datenquelle:</b> Kursdaten aus der SeasonAlpha-Datenbank (Supabase, täglich aktualisiert). Dividendentermine und -beträge von Yahoo Finance.</p>
-        <p><b>t0 = Ex-Dividenden-Datum.</b> An diesem Tag notiert die Aktie bereits ohne Dividende (ex-dividend). Der Kursabschlag am Ex-Tag entspricht in effizienten Märkten annähernd der Dividendenhöhe.</p>
-        <p><b>Normierung:</b> Alle historischen Event-Fenster werden auf den Schlusskurs am Ex-Tag (t0 = 0%) normiert und gemittelt. Events mit unvollständigem Fenster (zu nah am Datenbeginn/-ende) werden ausgeschlossen.</p>
-        <p><b>Dividend Capture:</b> Die Strategie kauft kurz vor dem Ex-Date und verkauft danach. Der Pre-Ex-Drift und die Post-Ex-Erholung bestimmen die Rentabilität abzüglich Transaktionskosten.</p>
+        <p><b data-i18n="common.data_source">Datenquelle</b>: <span data-i18n="div.methodik_source">Kursdaten aus der SeasonAlpha-Datenbank (Supabase, täglich aktualisiert). Dividendentermine und -beträge von Yahoo Finance.</span></p>
+        <p><b data-i18n="div.methodik_t0_label">t0 = Ex-Dividenden-Datum.</b> <span data-i18n="div.methodik_t0_desc">An diesem Tag notiert die Aktie bereits ohne Dividende (ex-dividend). Der Kursabschlag am Ex-Tag entspricht in effizienten Märkten annähernd der Dividendenhöhe.</span></p>
+        <p><b data-i18n="common.normalization">Normierung</b>: <span data-i18n="div.methodik_normierung">Alle historischen Event-Fenster werden auf den Schlusskurs am Ex-Tag (t0 = 0%) normiert und gemittelt. Events mit unvollständigem Fenster (zu nah am Datenbeginn/-ende) werden ausgeschlossen.</span></p>
+        <p><b data-i18n="div.dividend_capture">Dividend Capture</b>: <span data-i18n="div.methodik_capture">Die Strategie kauft kurz vor dem Ex-Date und verkauft danach. Der Pre-Ex-Drift und die Post-Ex-Erholung bestimmen die Rentabilität abzüglich Transaktionskosten.</span></p>
       </div>
     </details>
   </main>

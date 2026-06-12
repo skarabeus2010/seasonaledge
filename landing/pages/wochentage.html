@@ -104,19 +104,19 @@
       </select>
       <p class="box-info" id="mode-desc" style="font-size:.6875rem;margin-top:.25rem">Schlusskurs heute vs. Schlusskurs morgen</p>
       <hr>
-      <h3>Präsidentenzyklus-Filter</h3>
+      <h3 data-i18n="sidebar.pres_cycle_filter">Präsidentenzyklus-Filter</h3>
       <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
         <label><input type="checkbox" data-cycle="1"> Wahljahr</label>
         <label><input type="checkbox" data-cycle="2"> Nachwahljahr</label>
         <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr</label>
         <label><input type="checkbox" data-cycle="4"> Vorwahljahr</label>
       </div>
-      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="common.empty_all_years">Leer = alle Jahre</p>
       <hr>
       <h3 data-i18n="sidebar.month_filter">Monats-Filter</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> <span data-i18n="wt.toggle_all_none">Alle / Keine</span></label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
-      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Wirkt auf alle Wochentag-Sektionen außer Heatmaps</p>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="wt.month_filter_hint">Wirkt auf alle Wochentag-Sektionen außer Heatmaps</p>
       <hr>
       <h3 data-i18n="sidebar.display_opts">Anzeige</h3>
       <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelle Woche einblenden</label>
@@ -129,22 +129,22 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Wochentage</b> — <span id="title-ticker">^GSPC</span></h1>
-      <p class="page-caption" id="page-caption">Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt</p>
+      <p class="page-caption" id="page-caption" data-i18n="wt.page_caption">Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt</p>
       <div class="trading-day-header" id="trading-day-header"></div>
       <div class="info-box" id="filter-info" style="display:none"></div>
 
       <!-- 1. Kumulierter Wochenverlauf -->
       <details open id="sec-cum" style="display:none">
-        <summary>Kumulierter Wochenverlauf Mo→Fr</summary>
+        <summary data-i18n="wt.cumulative_week_title">Kumulierter Wochenverlauf Mo→Fr</summary>
         <div class="content">
           <div id="chart-cum"></div>
-          <p class="box-info">Zeigt, wie sich die Wochenrendite von Montag bis Freitag aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. Steigt die Kurve vor allem am Anfang der Woche, spricht das für frühen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>
+          <p class="box-info" data-i18n="wt.cumulative_week_desc">Zeigt, wie sich die Wochenrendite von Montag bis Freitag aufbaut. Die gelbe Linie zeigt die aktuelle Woche im Vergleich. Steigt die Kurve vor allem am Anfang der Woche, spricht das für frühen Kaufdruck (z.B. institutionelle Allokation am Montag).</p>
         </div>
       </details>
 
       <!-- 2. Ø Rendite + Win-Rate -->
       <details open id="sec-bars" style="display:none">
-        <summary>Durchschnittsrendite & Win-Rate pro Wochentag</summary>
+        <summary data-i18n="wt.avg_return_winrate_title">Durchschnittsrendite & Win-Rate pro Wochentag</summary>
         <div class="content">
           <div class="charts-2col">
             <div id="chart-avg"></div>
@@ -155,16 +155,16 @@
 
       <!-- 3. Signifikanztest pro Wochentag -->
       <details open id="sec-sig" style="display:none">
-        <summary>Statistische Signifikanz der Wochentags-Effekte</summary>
+        <summary data-i18n="wt.sig_title">Statistische Signifikanz der Wochentags-Effekte</summary>
         <div class="content" id="content-sig"></div>
       </details>
 
       <!-- 4. Detailtabelle -->
       <details id="sec-table" style="display:none">
-        <summary>Statistik pro Wochentag</summary>
+        <summary data-i18n="wt.detail_table_title">Statistik pro Wochentag</summary>
         <div class="content">
           <table class="perf-table">
-            <thead><tr><th data-i18n="table.weekday">Wochentag</th><th>Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.std_dev">Std.Abw.</th><th data-i18n="table.win_rate">Win-Rate</th><th>Anzahl</th></tr></thead>
+            <thead><tr><th data-i18n="table.weekday">Wochentag</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.std_dev">Std.Abw.</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.n">Anzahl</th></tr></thead>
             <tbody id="tbody-wd"></tbody>
           </table>
         </div>
@@ -172,40 +172,40 @@
 
       <!-- 5. Streak-Analyse (hochgezogen unter Statistik pro Wochentag) -->
       <details open id="sec-streak" style="display:none">
-        <summary>Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)</summary>
+        <summary data-i18n="wt.streak_title">Streak-Analyse (Gewinn-/Verlust-Serien pro Wochentag)</summary>
         <div class="content" id="content-streak"></div>
       </details>
 
       <!-- 6. Overnight vs Intraday -->
       <details open id="sec-oi" style="display:none">
-        <summary>Overnight vs. Intraday Split</summary>
+        <summary data-i18n="wt.overnight_intraday_title">Overnight vs. Intraday Split</summary>
         <div class="content">
           <div id="chart-oi"></div>
-          <p class="box-info">Zerlegt die Tagesrendite in <b style="color:#a78bfa">Overnight</b> (Schlusskurs gestern → Eröffnung heute) und <b style="color:#22d3ee">Intraday</b> (Eröffnung → Schluss). Wenn die Rendite überwiegend overnight entsteht, profitieren Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>
+          <p class="box-info" data-i18n="wt.overnight_intraday_desc">Zerlegt die Tagesrendite in <b style="color:#a78bfa">Overnight</b> (Schlusskurs gestern → Eröffnung heute) und <b style="color:#22d3ee">Intraday</b> (Eröffnung → Schluss). Wenn die Rendite überwiegend overnight entsteht, profitieren Buy-and-Hold-Anleger. Dominiert Intraday, ist aktives Trading relevant.</p>
         </div>
       </details>
 
       <!-- 7. Konsekutiv-Analyse -->
       <details open id="sec-consec" style="display:none">
-        <summary>Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)</summary>
+        <summary data-i18n="wt.consecutive_title">Konsekutiv-Analyse (Folgetag-Wahrscheinlichkeit)</summary>
         <div class="content">
           <div id="chart-consec"></div>
-          <p class="box-info">Wahrscheinlichkeit, dass der Folgetag positiv ist, abhängig davon ob der Vortag positiv (↑) oder negativ (↓) war. Werte über 55% deuten auf Trendkontinuation hin, unter 45% auf Mean Reversion.</p>
+          <p class="box-info" data-i18n="wt.consecutive_desc">Wahrscheinlichkeit, dass der Folgetag positiv ist, abhängig davon ob der Vortag positiv (↑) oder negativ (↓) war. Werte über 55% deuten auf Trendkontinuation hin, unter 45% auf Mean Reversion.</p>
         </div>
       </details>
 
       <!-- 8. Quartals-Heatmaps -->
       <details open id="sec-quarterly" style="display:none">
-        <summary>Wochentag-Performance nach Quartal</summary>
+        <summary data-i18n="wt.quarterly_heatmap_title">Wochentag-Performance nach Quartal</summary>
         <div class="content">
           <div id="chart-quarterly"></div>
-          <p class="box-info">Zeigt ob Wochentags-Effekte saisonal variieren. Z.B. könnte der Montagseffekt nur in Q4 (Window Dressing, Jahresend-Rallye) signifikant sein, während er in Q2/Q3 verschwindet.</p>
+          <p class="box-info" data-i18n="wt.quarterly_heatmap_desc">Zeigt ob Wochentags-Effekte saisonal variieren. Z.B. könnte der Montagseffekt nur in Q4 (Window Dressing, Jahresend-Rallye) signifikant sein, während er in Q2/Q3 verschwindet.</p>
         </div>
       </details>
 
       <!-- 9. Monat × Wochentag Heatmap -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>Monat × Wochentag Heatmap</summary>
+        <summary data-i18n="wt.month_weekday_heatmap_title">Monat × Wochentag Heatmap</summary>
         <div class="content">
           <div id="chart-heatmap"></div>
         </div>
@@ -213,7 +213,7 @@
 
       <!-- 10. Top / Flop Kombinationen -->
       <details open id="sec-topflop" style="display:none">
-        <summary>Top / Flop Monat×Wochentag Kombinationen</summary>
+        <summary data-i18n="wt.topflop_title">Top / Flop Monat×Wochentag Kombinationen</summary>
         <div class="content">
           <div class="topflop-grid">
             <div>
@@ -236,20 +236,20 @@
 
       <!-- 11. Weekend-Effekt (runter, vor Methodik) -->
       <details open id="sec-weekend" style="display:none">
-        <summary>Weekend-Effekt (Fr Close → Mo Open)</summary>
+        <summary data-i18n="wt.weekend_effect_title">Weekend-Effekt (Fr Close → Mo Open)</summary>
         <div class="content">
           <div class="kpi-row" id="weekend-kpis"></div>
           <div id="chart-weekend-bar"></div>
           <div id="content-weekend-sig" style="margin-top:1rem"></div>
           <div id="chart-weekend-heatmap" style="margin-top:1rem"></div>
           <div id="chart-weekend-cycle" style="margin-top:1rem"></div>
-          <p class="box-info" style="margin-top:.75rem">Der Weekend-Effekt misst die Rendite über das Wochenende (Freitag Schluss → Montag Eröffnung, Residual-Methode). Historisch zeigt sich oft ein negativer Weekend-Effekt bei Aktien — Montage eröffnen unter dem Freitags-Schluss.</p>
+          <p class="box-info" style="margin-top:.75rem" data-i18n="wt.weekend_effect_desc">Der Weekend-Effekt misst die Rendite über das Wochenende (Freitag Schluss → Montag Eröffnung, Residual-Methode). Historisch zeigt sich oft ein negativer Weekend-Effekt bei Aktien — Montage eröffnen unter dem Freitags-Schluss.</p>
         </div>
       </details>
 
       <!-- Methodik -->
       <details id="sec-methodik">
-        <summary>📚 Methodik</summary>
+        <summary>📚 <span data-i18n="common.methodology">Methodik</span></summary>
         <div class="content">
           <ul>
             <li><b>Wochentag-Rendite</b>: Für jeden Handelstag wird die Rendite gemäß dem gewählten Modus berechnet.</li>

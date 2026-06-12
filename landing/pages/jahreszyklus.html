@@ -111,7 +111,7 @@
       <hr>
       <h3 data-i18n="sidebar.seasonal_chart">Saisonalchart</h3>
       <div class="range-wrap">
-        <label>Gl&auml;ttung (Tage) <span id="lbl-smooth">1</span></label>
+        <label><span data-i18n="sidebar.smoothing">Gl&auml;ttung (Tage)</span> <span id="lbl-smooth">1</span></label>
         <input type="range" id="sl-smooth" min="1" max="21" step="2" value="1">
       </div>
       <label class="toggle-row" data-i18n="checkbox.show_individual"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
@@ -129,7 +129,7 @@
       <hr>
       <h3 data-i18n="sidebar.pressure_chart">Pressure Chart</h3>
       <label class="toggle-row" data-i18n="checkbox.pressure_chart"><input type="checkbox" id="chk-pressure"> Gann Pressurechart</label>
-      <p style="font-size:.6875rem;color:var(--muted);margin-top:.3rem;line-height:1.4">
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.3rem;line-height:1.4" data-i18n="jz.pressure_chart_desc">
         Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden (10/20/30/40/60/80 Jahre) auf sekund&auml;rer Y-Achse
       </p>
       <hr>
@@ -141,7 +141,7 @@
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption" id="page-caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
+      <p class="page-caption" id="page-caption" data-i18n="jz.page_caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
@@ -180,10 +180,10 @@
         <div class="content">
           <div id="chart-monthly-bars"></div>
           <details style="margin-top:.75rem">
-            <summary style="font-size:.8125rem">Monats-Detailtabelle</summary>
+            <summary style="font-size:.8125rem" data-i18n="jz.monthly_detail_table">Monats-Detailtabelle</summary>
             <div class="content">
               <table class="js-table" id="tbl-monthly">
-                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th data-i18n="table.n">n</th></tr></thead>
                 <tbody id="tbody-monthly"></tbody>
               </table>
             </div>
@@ -193,7 +193,7 @@
 
       <!-- 4. Monats-Signifikanz -->
       <details open id="sec-monthly-sig" style="display:none">
-        <summary>Statistische Signifikanz der Monats-Effekte</summary>
+        <summary data-i18n="jz.monthly_sig_title">Statistische Signifikanz der Monats-Effekte</summary>
         <div class="content" id="content-monthly-sig"></div>
       </details>
 
@@ -203,10 +203,10 @@
         <div class="content">
           <div id="chart-quarterly-bars"></div>
           <details style="margin-top:.75rem">
-            <summary style="font-size:.8125rem">Quartals-Detailtabelle</summary>
+            <summary style="font-size:.8125rem" data-i18n="jz.quarterly_detail_table">Quartals-Detailtabelle</summary>
             <div class="content">
               <table class="js-table" id="tbl-quarterly">
-                <thead><tr><th data-i18n="table.quarter">Quartal</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.quarter">Quartal</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th data-i18n="table.n">n</th></tr></thead>
                 <tbody id="tbody-quarterly"></tbody>
               </table>
             </div>
@@ -216,25 +216,25 @@
 
       <!-- 6. Quartals-Signifikanz -->
       <details id="sec-quarterly-sig" style="display:none">
-        <summary>Statistische Signifikanz der Quartals-Effekte</summary>
+        <summary data-i18n="jz.quarterly_sig_title">Statistische Signifikanz der Quartals-Effekte</summary>
         <div class="content" id="content-quarterly-sig"></div>
       </details>
 
       <!-- 7. Präsidentenzyklus-Signifikanz -->
       <details id="sec-cycle-sig" style="display:none">
-        <summary>Statistische Signifikanz der Pr&auml;sidentenzyklus-Jahre</summary>
+        <summary data-i18n="jz.cycle_sig_title">Statistische Signifikanz der Pr&auml;sidentenzyklus-Jahre</summary>
         <div class="content" id="content-cycle-sig"></div>
       </details>
 
       <!-- 8. Präsidentenzyklus Best Match -->
       <details open id="sec-cycle-match" style="display:none">
-        <summary>Pr&auml;sidentenzyklus &mdash; Best Match</summary>
+        <summary data-i18n="jz.cycle_best_match">Pr&auml;sidentenzyklus &mdash; Best Match</summary>
         <div class="content" id="content-cycle-match"></div>
       </details>
 
       <!-- 9. 10-Jahres Heatmap -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>10 Jahres Heatmap (Monat &times; Jahr)</summary>
+        <summary data-i18n="jz.heatmap_title">10 Jahres Heatmap (Monat &times; Jahr)</summary>
         <div class="content">
           <div id="chart-heatmap"></div>
         </div>
@@ -246,23 +246,23 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Normierung:</b> Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</li>
-            <li><b>Interpolation:</b> Jede Jahreskurve wird auf 365 Kalendertage interpoliert</li>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance / Stooq)</li>
+            <li><b data-i18n="jz.method_normalization_label">Normierung:</b> <span data-i18n="jz.method_normalization_desc">Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</span></li>
+            <li><b data-i18n="jz.method_interpolation_label">Interpolation:</b> <span data-i18n="jz.method_interpolation_desc">Jede Jahreskurve wird auf 365 Kalendertage interpoliert</span></li>
+            <li><b data-i18n="common.data_source">Datenquelle:</b> <span data-i18n="jz.method_data_source_desc">Supabase (Yahoo Finance / Stooq)</span></li>
           </ul>
           <h3 data-i18n="common.return_analysis">Rendite-Analyse</h3>
           <ul>
-            <li><b>Saisonalchart:</b> Durchschnitt der normalisierten Jahreskurven</li>
-            <li><b>Konfidenzband (&plusmn;1&sigma;):</b> Standardabweichung um den Durchschnitt</li>
-            <li><b>Perzentil-B&auml;nder:</b> 25./75. Perzentil (mittlere 50% aller Jahre)</li>
-            <li><b>Pr&auml;sidentenzyklus-Overlay:</b> &Oslash;-Kurve nur f&uuml;r Post-Election / Midterm / Pre-Election / Election</li>
-            <li><b>Detrend-Indikator:</b> Entfernt den linearen Jahrestrend &rarr; reine Saisonalit&auml;t auf 0&ndash;100 Skala (Midline 50)</li>
-            <li><b>Pressure Chart:</b> Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden 10/20/30/40/60/80 Jahre, kumuliert und gegl&auml;ttet</li>
-            <li><b>Signifikanz-Tachos:</b> t-Test pro Monat/Quartal. p&lt;0.05 = statistisch signifikant (gr&uuml;n)</li>
-            <li><b>Best Match:</b> Pearson-Korrelation zwischen aktuellem Jahr (bis heute) und den 4 Zyklus-&Oslash;-Kurven + "Alle Jahre"</li>
+            <li><b data-i18n="section.annual_progression">Saisonalchart:</b> <span data-i18n="jz.method_seasonal_avg">Durchschnitt der normalisierten Jahreskurven</span></li>
+            <li><b data-i18n="jz.method_confidence_band_label">Konfidenzband (&plusmn;1&sigma;):</b> <span data-i18n="jz.method_confidence_band_desc">Standardabweichung um den Durchschnitt</span></li>
+            <li><b data-i18n="jz.method_percentile_bands_label">Perzentil-B&auml;nder:</b> <span data-i18n="jz.method_percentile_bands_desc">25./75. Perzentil (mittlere 50% aller Jahre)</span></li>
+            <li><b data-i18n="jz.method_pres_cycle_overlay_label">Pr&auml;sidentenzyklus-Overlay:</b> <span data-i18n="jz.method_pres_cycle_overlay_desc">&Oslash;-Kurve nur f&uuml;r Post-Election / Midterm / Pre-Election / Election</span></li>
+            <li><b data-i18n="section.detrend">Detrend-Indikator:</b> <span data-i18n="jz.method_detrend_desc">Entfernt den linearen Jahrestrend &rarr; reine Saisonalit&auml;t auf 0&ndash;100 Skala (Midline 50)</span></li>
+            <li><b data-i18n="sidebar.pressure_chart">Pressure Chart:</b> <span data-i18n="jz.method_pressure_desc">Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden 10/20/30/40/60/80 Jahre, kumuliert und gegl&auml;ttet</span></li>
+            <li><b data-i18n="jz.method_sig_gauges_label">Signifikanz-Tachos:</b> <span data-i18n="jz.method_sig_gauges_desc">t-Test pro Monat/Quartal. p&lt;0.05 = statistisch signifikant (gr&uuml;n)</span></li>
+            <li><b data-i18n="jz.method_best_match_label">Best Match:</b> <span data-i18n="jz.method_best_match_desc">Pearson-Korrelation zwischen aktuellem Jahr (bis heute) und den 4 Zyklus-&Oslash;-Kurven + "Alle Jahre"</span></li>
           </ul>
           <h3 data-i18n="common.drawdown_vola">Drawdown &amp; Volatilit&auml;t</h3>
-          <p>Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
+          <p data-i18n="jz.method_drawdown_ref">Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
         </div>
       </details>
 

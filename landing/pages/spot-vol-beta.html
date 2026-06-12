@@ -114,14 +114,14 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Vol-Index</h3>
+      <h3 data-i18n="svb.vol_index_h3">Vol-Index</h3>
       <select id="sel-vol">
         <option value="^VIX" selected>VIX &mdash; S&amp;P 500 Vol</option>
         <option value="^VXN">VXN &mdash; Nasdaq 100 Vol</option>
         <option value="^OVX">OVX &mdash; Crude Oil Vol</option>
       </select>
 
-      <h3 style="margin-top:.75rem">Spot-Ticker</h3>
+      <h3 style="margin-top:.75rem" data-i18n="svb.spot_ticker_h3">Spot-Ticker</h3>
       <select id="sel-spot"></select>
 
       <hr>
@@ -136,11 +136,11 @@
       </select>
 
       <hr>
-      <h3>Returns</h3>
-      <label class="check"><input type="checkbox" id="chk-log"> Log-Returns verwenden</label>
+      <h3 data-i18n="svb.returns_h3">Returns</h3>
+      <label class="check"><input type="checkbox" id="chk-log"><span data-i18n="svb.use_log_returns"> Log-Returns verwenden</span></label>
 
       <hr>
-      <h3>Schwellen</h3>
+      <h3 data-i18n="svb.thresholds_h3">Schwellen</h3>
       <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem">Vol Spike</label>
       <input type="number" id="inp-spike" value="30" min="5" max="200" step="1">
       <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem">Vol Complacency</label>
@@ -160,16 +160,16 @@
     <main>
       <div class="loading-overlay" id="loading"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Spot-Vol Beta</b> &mdash; <span id="title-pair">^GSPC vs. ^VIX</span></h1>
-      <p class="page-caption">Wie stark reagiert die Volatilit&auml;t auf Kursbewegungen? OLS-Regression, Rolling Beta, Regime-Wendepunkte.</p>
+      <h1 class="page-title"><b data-i18n="svb.page_title">Spot-Vol Beta</b> &mdash; <span id="title-pair">^GSPC vs. ^VIX</span></h1>
+      <p class="page-caption" data-i18n="svb.page_caption">Wie stark reagiert die Volatilit&auml;t auf Kursbewegungen? OLS-Regression, Rolling Beta, Regime-Wendepunkte.</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Das Spot-Vol Beta misst, wie stark die Volatilit&auml;t (VIX) auf Kursbewegungen des Index reagiert.
+        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="svb.intro_desc">Das Spot-Vol Beta misst, wie stark die Volatilit&auml;t (VIX) auf Kursbewegungen des Index reagiert.
         Ein negatives Beta bedeutet: Fallende Kurse treiben die Vola &uuml;berproportional nach oben (typisches Angst-Muster).
         Hier siehst du OLS-Regression, Rolling Beta im Zeitverlauf und automatisch erkannte Regime-Wendepunkte.
-        <b>Sidebar:</b> W&auml;hle Index/VIX-Paar, Zeitraum und Rolling-Fenster.
+        <b>Sidebar:</b> W&auml;hle Index/VIX-Paar, Zeitraum und Rolling-Fenster.</span>
       </div>
 
       <!-- KPIs -->
@@ -180,7 +180,7 @@
 
       <!-- Scatter + Regression (oben, Hauptergebnis) -->
       <details open id="sec-scatter" style="display:none">
-        <summary>Scatter &amp; Regression</summary>
+        <summary data-i18n="svb.scatter_regression">Scatter &amp; Regression</summary>
         <div class="content">
           <div id="chart-scatter"></div>
           <div id="beta-hint"></div>
@@ -189,40 +189,40 @@
 
       <!-- Spot + Daily Beta + Vol (3 synchronisierte Charts) -->
       <details open id="sec-triple" style="display:none">
-        <summary>Spot, Daily Spot-Vol Beta &amp; Vol</summary>
+        <summary data-i18n="svb.spot_daily_beta_vol">Spot, Daily Spot-Vol Beta &amp; Vol</summary>
         <div class="content">
           <div id="chart-spx"></div>
           <div id="chart-daily-beta"></div>
           <div id="chart-vix"></div>
-          <p class="box-info">Gr&uuml;ne Balken = normales inverses Verhalten (Spot-Rendite &times; Vol-&Auml;nderung &lt; 0). Rote Balken = beide in gleiche Richtung (anomal).</p>
+          <p class="box-info" data-i18n="svb.daily_beta_note">Gr&uuml;ne Balken = normales inverses Verhalten (Spot-Rendite &times; Vol-&Auml;nderung &lt; 0). Rote Balken = beide in gleiche Richtung (anomal).</p>
         </div>
       </details>
 
       <!-- NEU: Vol-Regime-Buckets -->
       <details open id="sec-buckets" style="display:none">
-        <summary>Vol-Regime-Buckets: Wie performt der Spot je Vol-Niveau?</summary>
+        <summary data-i18n="svb.vol_regime_buckets">Vol-Regime-Buckets: Wie performt der Spot je Vol-Niveau?</summary>
         <div class="content">
           <div id="chart-buckets"></div>
           <div id="buckets-table"></div>
-          <p class="box-info">Tage werden in 5 Quintile nach Vol-Level aufgeteilt (p20/p40/p60/p80). Die Tabelle zeigt die durchschnittliche Spot-Rendite pro Bucket f&uuml;r verschiedene Horizonte (t+1, t+5, t+20). Historisch: niedrige Vol = beste laufende Performance, sehr hohe Vol = oft hohe Forward-Returns (Mean-Reversion).</p>
+          <p class="box-info" data-i18n="svb.vol_buckets_note">Tage werden in 5 Quintile nach Vol-Level aufgeteilt (p20/p40/p60/p80). Die Tabelle zeigt die durchschnittliche Spot-Rendite pro Bucket f&uuml;r verschiedene Horizonte (t+1, t+5, t+20). Historisch: niedrige Vol = beste laufende Performance, sehr hohe Vol = oft hohe Forward-Returns (Mean-Reversion).</p>
         </div>
       </details>
 
       <!-- Volatility Risk Premium -->
       <details open id="sec-vrp" style="display:none">
-        <summary>Volatility Risk Premium: Ist Vol gerade teuer oder billig?</summary>
+        <summary data-i18n="svb.vrp_summary">Volatility Risk Premium: Ist Vol gerade teuer oder billig?</summary>
         <div class="content">
           <div class="kpi-row" id="vrp-kpis" style="margin-bottom:1rem"></div>
           <div id="chart-vrp-iv"></div>
           <div id="chart-vrp-diff"></div>
           <div id="vrp-percentile-ribbon" style="margin-top:1rem"></div>
-          <p class="box-info"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
+          <p class="box-info" data-i18n="svb.vrp_note"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
         </div>
       </details>
 
       <!-- Regime-Wendepunkte -->
       <details open id="sec-extremes" style="display:none">
-        <summary>Regime-Wendepunkte: Was passiert nach Extremen?</summary>
+        <summary data-i18n="svb.regime_turning_points">Regime-Wendepunkte: Was passiert nach Extremen?</summary>
         <div class="content">
           <div class="svb-tabs" id="ext-tabs"></div>
           <div id="ext-content"></div>
@@ -257,7 +257,7 @@
             <li><b>&beta; nahe null</b> &mdash; schwacher Zusammenhang (Regimewechsel m&ouml;glich)</li>
             <li><b>&beta; &gt; 0</b> &mdash; sehr selten, Vol steigt trotz steigender Kurse</li>
           </ul>
-          <h3>Regime-Wendepunkte</h3>
+          <h3 data-i18n="svb.regime_turning_points_h3">Regime-Wendepunkte</h3>
           <ul>
             <li><b>VIX Spike:</b> VIX &ge; Schwelle &mdash; wie reagiert der Spot danach?</li>
             <li><b>VIX Complacency:</b> VIX &le; Schwelle &mdash; Warnsignal f&uuml;r Selbstzufriedenheit?</li>

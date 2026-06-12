@@ -182,43 +182,43 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker hinzufügen</h3>
+      <h3 data-i18n="wl.sidebar_add_ticker">Ticker hinzufügen</h3>
       <div class="wl-add-row">
         <input type="text" id="wl-add-input" placeholder="z.B. TSLA" list="ticker-list">
         <datalist id="ticker-list"></datalist>
         <button type="button" class="btn-primary" id="wl-add-btn" title="Ticker hinzufügen">+</button>
       </div>
-      <p class="hint">Max. 50 Ticker. Enter oder "+" drücken.</p>
+      <p class="hint" data-i18n="wl.sidebar_add_hint">Max. 50 Ticker. Enter oder "+" drücken.</p>
 
       <hr>
 
-      <h3>Sortierung</h3>
+      <h3 data-i18n="wl.sidebar_sort">Sortierung</h3>
       <select id="wl-sort">
-        <option value="added_at_desc">Zuletzt hinzugefügt</option>
-        <option value="added_at_asc">Zuerst hinzugefügt</option>
-        <option value="score_desc">KI-Score (höchster zuerst)</option>
-        <option value="score_asc">KI-Score (niedrigster zuerst)</option>
-        <option value="ticker_asc">Ticker (A–Z)</option>
+        <option value="added_at_desc" data-i18n="wl.sort_added_desc">Zuletzt hinzugefügt</option>
+        <option value="added_at_asc" data-i18n="wl.sort_added_asc">Zuerst hinzugefügt</option>
+        <option value="score_desc" data-i18n="wl.sort_score_desc">KI-Score (höchster zuerst)</option>
+        <option value="score_asc" data-i18n="wl.sort_score_asc">KI-Score (niedrigster zuerst)</option>
+        <option value="ticker_asc" data-i18n="wl.sort_ticker_asc">Ticker (A–Z)</option>
       </select>
 
       <hr>
 
-      <h3>Filter nach Signal</h3>
+      <h3 data-i18n="wl.sidebar_filter_signal">Filter nach Signal</h3>
       <label class="filter-lbl"><input type="checkbox" id="f-bull" checked> 🟢 Bullish</label>
       <label class="filter-lbl"><input type="checkbox" id="f-neut" checked> ⚪ Neutral</label>
       <label class="filter-lbl"><input type="checkbox" id="f-bear" checked> 🔴 Bearish</label>
 
       <hr>
 
-      <h3>Aktionen</h3>
-      <button type="button" class="btn-ghost" id="wl-clear" style="width:100%">Alle entfernen</button>
+      <h3 data-i18n="wl.sidebar_actions">Aktionen</h3>
+      <button type="button" class="btn-ghost" id="wl-clear" style="width:100%" data-i18n="wl.btn_clear_all">Alle entfernen</button>
     </aside>
 
     <main>
       <div class="error-banner" id="error-banner" style="display:none"></div>
 
-      <h1 class="page-title">Meine <b>Watchlist</b></h1>
-      <p class="page-caption" id="wl-caption">Lädt …</p>
+      <h1 class="page-title"><span data-i18n="wl.page_title_prefix">Meine </span><b>Watchlist</b></h1>
+      <p class="page-caption" id="wl-caption" data-i18n="common.loading">Lädt …</p>
 
       <div class="wl-header-stats">
         <span class="pill gold" id="wl-count-pill">0 Ticker</span>
@@ -228,21 +228,21 @@
 
       <div id="wl-empty" class="wl-empty" style="display:none">
         <div class="wl-empty__icon">⭐</div>
-        <h2>Deine Watchlist ist noch leer</h2>
-        <p>Füge Ticker links in der Sidebar hinzu oder gehe zum <a href="/scanner" style="color:var(--accent);text-decoration:underline">Saisonal-Scanner</a> und klicke auf den Stern bei interessanten Tickern.</p>
-        <p>Die Watchlist wird lokal in deinem Browser gespeichert. Kein Login nötig.</p>
-        <a href="/scanner" class="btn">→ Zum Scanner</a>
+        <h2 data-i18n="wl.empty_title">Deine Watchlist ist noch leer</h2>
+        <p data-i18n="wl.empty_hint1">Füge Ticker links in der Sidebar hinzu oder gehe zum <a href="/scanner" style="color:var(--accent);text-decoration:underline">Saisonal-Scanner</a> und klicke auf den Stern bei interessanten Tickern.</p>
+        <p data-i18n="wl.empty_hint2">Die Watchlist wird lokal in deinem Browser gespeichert. Kein Login nötig.</p>
+        <a href="/scanner" class="btn" data-i18n="wl.empty_cta">→ Zum Scanner</a>
       </div>
 
       <div id="wl-grid" class="wl-grid"></div>
 
       <div id="wl-summary" class="wl-summary" style="display:none">
-        <h2>Zusammenfassung</h2>
+        <h2 data-i18n="wl.summary_title">Zusammenfassung</h2>
         <div class="wl-summary-grid">
-          <div class="kpi"><div class="kpi-label">Ø KI-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
-          <div class="kpi"><div class="kpi-label">Bullish</div><div class="kpi-value green" id="sum-bulls">–</div></div>
-          <div class="kpi"><div class="kpi-label">Bearish</div><div class="kpi-value red" id="sum-bears">–</div></div>
-          <div class="kpi"><div class="kpi-label">Im grünen Regime</div><div class="kpi-value" id="sum-green">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_avg_ki">Ø KI-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bullish">Bullish</div><div class="kpi-value green" id="sum-bulls">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bearish">Bearish</div><div class="kpi-value red" id="sum-bears">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_green_regime">Im grünen Regime</div><div class="kpi-value" id="sum-green">–</div></div>
         </div>
       </div>
     </main>

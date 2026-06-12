@@ -132,7 +132,7 @@
       <!-- OPEX-spezifisch -->
       <div id="opts-opex">
         <hr>
-        <h3>OPEX-Ansicht</h3>
+        <h3 data-i18n="opex.opex_view_h3">OPEX-Ansicht</h3>
         <div class="mode-radio">
           <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching</label>
           <label><input type="radio" name="opex-view" value="monthly"> Monatlich (12 Charts)</label>
@@ -192,15 +192,15 @@
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>OPEX Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption">Saisonale Muster rund um den monatlichen Options-Verfalltag (3. Freitag) &amp; Triple Witching</p>
+      <h1 class="page-title"><b data-i18n="opex.page_title">OPEX Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="opex.page_caption">Saisonale Muster rund um den monatlichen Options-Verfalltag (3. Freitag) &amp; Triple Witching</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        OPEX (Options Expiration) ist der monatliche Optionsverfall am 3.&nbsp;Freitag. In den Quartalsmonaten (M&auml;rz, Juni, September, Dezember) verfallen zus&auml;tzlich Futures &mdash; das sogenannte <b>Triple Witching</b>.
+        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="opex.intro_desc">OPEX (Options Expiration) ist der monatliche Optionsverfall am 3.&nbsp;Freitag. In den Quartalsmonaten (M&auml;rz, Juni, September, Dezember) verfallen zus&auml;tzlich Futures &mdash; das sogenannte <b>Triple Witching</b>.
         Hier analysierst du, wie sich der Markt typischerweise rund um diese Termine verh&auml;lt: Renditeverlauf, Volatilit&auml;t, Monats-Breakdown und Backtest.
-        <b>Sidebar:</b> W&auml;hle Ticker, Zeitraum und Event-Fenster &mdash; alle Sektionen aktualisieren sich automatisch.
+        <b>Sidebar:</b> W&auml;hle Ticker, Zeitraum und Event-Fenster &mdash; alle Sektionen aktualisieren sich automatisch.</span>
       </div>
 
       <!-- KPIs -->
@@ -208,7 +208,7 @@
 
       <!-- OPEX Triple Witching (Default) -->
       <details open id="sec-opex-triple" style="display:none">
-        <summary>Triple Witching &mdash; Verlauf rund um den Verfallstag</summary>
+        <summary data-i18n="opex.triple_witching_section">Triple Witching &mdash; Verlauf rund um den Verfallstag</summary>
         <div class="content">
           <div style="margin-bottom:.75rem">
             <span class="badge-triple">Triple Witching</span>
@@ -222,7 +222,7 @@
 
       <!-- Volatilität rund um den Verfall -->
       <details open id="sec-vola" style="display:none">
-        <summary>Volatilit&auml;t rund um den Verfall &mdash; 1d vs. 5d</summary>
+        <summary data-i18n="opex.vola_section">Volatilit&auml;t rund um den Verfall &mdash; 1d vs. 5d</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
@@ -236,7 +236,7 @@
 
       <!-- OPEX Monthly Grid -->
       <details open id="sec-opex-monthly" style="display:none">
-        <summary>Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
+        <summary data-i18n="opex.monthly_section">Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             Jeder Chart zeigt den kumulierten Verlauf rund um den 3. Freitag des jeweiligen Monats.
@@ -264,7 +264,7 @@
 
       <!-- Signifikanz -->
       <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest &mdash; Ist der Effekt statistisch bedeutsam?</summary>
+        <summary data-i18n="opex.significance_section">Signifikanztest &mdash; Ist der Effekt statistisch bedeutsam?</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
@@ -320,8 +320,8 @@
             <li>Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
             <li>Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
           </ul>
-          <h3>VIXpiration</h3>
-          <p>Die VIXpiration-Daten werden im OPEX-Kalender als Referenz angezeigt. Ausf&uuml;hrliche VIXpiration-Analyse mit eigenen Charts, Backtest und Signifikanztest: <a href="/vixpiration" style="color:var(--accent)">VIXpiration-Seite &rarr;</a></p>
+          <h3 data-i18n="opex.vixpiration_h3">VIXpiration</h3>
+          <p data-i18n="opex.vixpiration_para">Die VIXpiration-Daten werden im OPEX-Kalender als Referenz angezeigt. Ausf&uuml;hrliche VIXpiration-Analyse mit eigenen Charts, Backtest und Signifikanztest: <a href="/vixpiration" style="color:var(--accent)">VIXpiration-Seite &rarr;</a></p>
         </div>
       </details>
 

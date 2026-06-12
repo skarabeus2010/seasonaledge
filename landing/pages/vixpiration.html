@@ -124,7 +124,7 @@
         <input type="range" id="sl-after" min="1" max="10" value="3">
       </div>
       <hr>
-      <h3>VIX-Monate (An/Aus)</h3>
+      <h3 data-i18n="vix.vix_months_h3">VIX-Monate (An/Aus)</h3>
       <div class="vix-months" id="vix-months-checkboxes">
         <label><input type="checkbox" data-month="1" checked> Jan</label>
         <label><input type="checkbox" data-month="2" checked> Feb</label>
@@ -161,16 +161,16 @@
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>VIXpiration Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption">Saisonale Muster rund um den VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage, CBOE-Regel)</p>
+      <h1 class="page-title"><b data-i18n="vix.page_title">VIXpiration Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="vix.page_caption">Saisonale Muster rund um den VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage, CBOE-Regel)</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Der VIX-Verfall (VIXpiration) findet monatlich statt &mdash; 30 Kalendertage vor dem 3.&nbsp;Freitag (CBOE-Regel).
+        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="vix.intro_desc">Der VIX-Verfall (VIXpiration) findet monatlich statt &mdash; 30 Kalendertage vor dem 3.&nbsp;Freitag (CBOE-Regel).
         Hier siehst du, wie sich der Markt typischerweise rund um diesen Termin verh&auml;lt:
         durchschnittlicher Renditeverlauf, Volatilit&auml;tsmuster, Signifikanztests und ein Backtest der VIX-Strategie.
-        <b>Sidebar:</b> Stelle Ticker, Zeitraum und Event-Fenster (t&minus;x bis t+y) ein &mdash; alle Sektionen aktualisieren sich automatisch.
+        <b>Sidebar:</b> Stelle Ticker, Zeitraum und Event-Fenster (t&minus;x bis t+y) ein &mdash; alle Sektionen aktualisieren sich automatisch.</span>
       </div>
 
       <!-- KPIs -->
@@ -178,7 +178,7 @@
 
       <!-- VIXpiration Hauptchart (kumulierter Verlauf) -->
       <details open id="sec-vix-main">
-        <summary>VIXpiration-Verlauf &mdash; Kumulierte &Oslash; Rendite</summary>
+        <summary data-i18n="vix.main_section">VIXpiration-Verlauf &mdash; Kumulierte &Oslash; Rendite</summary>
         <div class="content">
           <div style="margin-bottom:.75rem">
             <span class="badge-vix">VIXpiration</span>
@@ -192,7 +192,7 @@
 
       <!-- Volatilität rund um VIXpiration -->
       <details open id="sec-vola">
-        <summary>Volatilit&auml;t rund um VIXpiration &mdash; 1d vs. 5d</summary>
+        <summary data-i18n="vix.vola_section">Volatilit&auml;t rund um VIXpiration &mdash; 1d vs. 5d</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
@@ -206,7 +206,7 @@
 
       <!-- VIXpiration Monatliches Grid (12 Monats-Charts) -->
       <details open id="sec-vix-grid">
-        <summary>VIXpiration &mdash; Ein Chart pro Monat</summary>
+        <summary data-i18n="vix.grid_section">VIXpiration &mdash; Ein Chart pro Monat</summary>
         <div class="content">
           <div style="margin-bottom:.5rem">
             <span class="badge-vix">VIXpiration</span>
@@ -224,13 +224,13 @@
 
       <!-- Signifikanz t=0 -->
       <details open id="sec-sig-t0">
-        <summary>Signifikanztest &mdash; Verfallstag (t=0)</summary>
+        <summary data-i18n="vix.significance_t0">Signifikanztest &mdash; Verfallstag (t=0)</summary>
         <div class="content" id="content-sig-t0"></div>
       </details>
 
       <!-- Signifikanz Fenster -->
       <details open id="sec-sig-window">
-        <summary>Signifikanztest &mdash; Eingestellte Periode</summary>
+        <summary data-i18n="vix.significance_window">Signifikanztest &mdash; Eingestellte Periode</summary>
         <div class="content" id="content-sig-window"></div>
       </details>
 
@@ -266,7 +266,7 @@
 
       <!-- Kalender -->
       <details id="sec-calendar">
-        <summary>VIX-Kalender</summary>
+        <summary data-i18n="vix.calendar_section">VIX-Kalender</summary>
         <div class="content">
           <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)">N&auml;chste 10 VIX-Verfall-Termine</h3>
           <div id="calendar-upcoming"></div>
@@ -284,7 +284,7 @@
       <details>
         <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>VIXpiration (CBOE-Regel)</h3>
+          <h3 data-i18n="vix.methodik_cboe_h3">VIXpiration (CBOE-Regel)</h3>
           <ul>
             <li>VIX-Optionen laufen genau <b>30 Kalendertage</b> vor dem SPX-Monatsverfall (3. Freitag) ab</li>
             <li>Berechnungsformel: VIXpiration-Settlement = 3. Freitag (Monat M) &minus; 30 Tage = typischerweise Mittwoch in Monat M&minus;1</li>

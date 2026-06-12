@@ -96,20 +96,20 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Strategie</h3>
+      <h3 data-i18n="tdom.strategy_h3">Strategie</h3>
       <select id="sel-strategy" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="open_to_close" selected>Intraday (Open &rarr; Close)</option>
         <option value="open_to_next_open">Overnight (Open &rarr; n&auml;chster Open)</option>
         <option value="close_to_next_close">Close &rarr; n&auml;chster Close</option>
       </select>
-      <h3>Richtung</h3>
+      <h3 data-i18n="tdom.direction_h3">Richtung</h3>
       <select id="sel-direction" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="forward" selected>Vorw&auml;rts (TDoM 1, 2, 3...)</option>
         <option value="backward">R&uuml;ckw&auml;rts (TDoM -1, -2, -3...)</option>
       </select>
       <hr>
-      <h3>Monate filtern</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent);font-size:.75rem"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
+      <h3 data-i18n="tdom.filter_months_h3">Monate filtern</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent);font-size:.75rem"><input type="checkbox" id="chk-all-months" checked><span data-i18n="tdom.all_none"> Alle / Keine</span></label>
       <div id="month-toggles" class="month-grid"></div>
       <hr>
       <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
@@ -118,8 +118,8 @@
       <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
-      <h3>TDOM-Strategie Tester</h3>
-      <label style="font-size:.75rem"><input type="checkbox" id="chk-range"> Aktivieren</label>
+      <h3 data-i18n="tdom.strategy_tester_h3">TDOM-Strategie Tester</h3>
+      <label style="font-size:.75rem"><input type="checkbox" id="chk-range"><span data-i18n="tdom.activate"> Aktivieren</span></label>
       <div id="range-controls" style="display:none">
         <div class="range-controls">
           <label>Entry TDoM<input type="number" id="inp-entry-tdom" value="1" min="-23" max="23"></label>
@@ -128,7 +128,7 @@
           <label>Exit Preis<select id="sel-exit-price"><option value="Open">Open</option><option value="Close" selected>Close</option></select></label>
         </div>
         <hr style="margin-top:.5rem;margin-bottom:.5rem">
-        <label style="font-size:.75rem"><input type="checkbox" id="chk-stop"> Stop-Loss aktivieren</label>
+        <label style="font-size:.75rem"><input type="checkbox" id="chk-stop"><span data-i18n="tdom.stop_loss_activate"> Stop-Loss aktivieren</span></label>
         <div id="stop-controls" style="display:none;margin-top:.5rem">
           <select id="sel-stop-type" style="width:100%;padding:.3rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem;margin-bottom:.4rem">
             <option value="fixed" selected>Fixed Stop-Loss</option>
@@ -142,8 +142,8 @@
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>TDoM Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption">Trading Day of the Month: 3 Strategien &times; 2 Richtungen &times; Monatsfilter &times; Multi-Day Ranges</p>
+      <h1 class="page-title"><b data-i18n="tdom.page_title">TDoM Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="tdom.page_caption">Trading Day of the Month: 3 Strategien &times; 2 Richtungen &times; Monatsfilter &times; Multi-Day Ranges</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- Anomalie-Radar (KI Quick-Check) -->
@@ -157,52 +157,52 @@
 
       <!-- TDoM Bar Chart -->
       <details open id="sec-bars" style="display:none">
-        <summary>&Oslash; Rendite pro TDoM</summary>
+        <summary data-i18n="tdom.avg_return_per_tdom">&Oslash; Rendite pro TDoM</summary>
         <div class="content">
           <div id="chart-bars"></div>
-          <p class="box-info"><b>\u26A0 Markierung:</b> TDoMs mit weniger als 10 Datenpunkten (n&lt;10) sind transparent dargestellt. Die Statistik ist hier unsicher, weil zu wenige Monate diesen TDoM &uuml;berhaupt enthalten (z.B. wegen Feiertagen oder kurzer Monate). Beispiel: TDoM 23 existiert nur in Monaten mit 23+ Handelstagen &mdash; das gibt es selten.</p>
+          <p class="box-info" data-i18n="tdom.low_data_note_bars"><b>\u26A0 Markierung:</b> TDoMs mit weniger als 10 Datenpunkten (n&lt;10) sind transparent dargestellt. Die Statistik ist hier unsicher, weil zu wenige Monate diesen TDoM &uuml;berhaupt enthalten (z.B. wegen Feiertagen oder kurzer Monate). Beispiel: TDoM 23 existiert nur in Monaten mit 23+ Handelstagen &mdash; das gibt es selten.</p>
         </div>
       </details>
 
       <!-- Win-Rate Chart -->
       <details open id="sec-winrate" style="display:none">
-        <summary>Win-Rate pro TDoM</summary>
+        <summary data-i18n="tdom.winrate_per_tdom">Win-Rate pro TDoM</summary>
         <div class="content">
           <div id="chart-winrate"></div>
-          <p class="box-info"><b>\u26A0 Markierung:</b> Wie oben &mdash; TDoMs mit n&lt;10 sind transparent. Win-Rate auf wenigen Trades ist statistisch nicht aussagekr&auml;ftig.</p>
+          <p class="box-info" data-i18n="tdom.low_data_note_winrate"><b>\u26A0 Markierung:</b> Wie oben &mdash; TDoMs mit n&lt;10 sind transparent. Win-Rate auf wenigen Trades ist statistisch nicht aussagekr&auml;ftig.</p>
         </div>
       </details>
 
       <!-- Heatmap -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>Heatmap: Monat &times; TDoM</summary>
+        <summary data-i18n="tdom.heatmap_month_tdom">Heatmap: Monat &times; TDoM</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
       <!-- Statistik-Tabelle -->
       <details id="sec-stats" style="display:none">
-        <summary>TDoM Statistik-Tabelle</summary>
+        <summary data-i18n="tdom.stats_table">TDoM Statistik-Tabelle</summary>
         <div class="content" id="content-stats"></div>
       </details>
 
       <!-- Streak pro TDoM -->
       <details id="sec-streak-tdom" style="display:none">
-        <summary>Streak-Analyse pro TDoM</summary>
+        <summary data-i18n="tdom.streak_per_tdom">Streak-Analyse pro TDoM</summary>
         <div class="content" id="content-streak-tdom"></div>
       </details>
 
       <!-- TDoY Top 25 -->
       <details id="sec-tdoy" style="display:none">
-        <summary>TDoY Top 25 &mdash; Beste Handelstage des Jahres</summary>
+        <summary data-i18n="tdom.tdoy_top25">TDoY Top 25 &mdash; Beste Handelstage des Jahres</summary>
         <div class="content" id="content-tdoy"></div>
       </details>
 
       <!-- Range Strategy -->
       <details open id="sec-range" style="display:none">
-        <summary>TDOM-Strategie Tester</summary>
+        <summary data-i18n="tdom.strategy_tester_h3">TDOM-Strategie Tester</summary>
         <div class="content">
           <p class="box-info" style="margin-bottom:1rem">
-            <b>Wie funktioniert es?</b> Der TDOM-Strategie Tester ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.
+            <b data-i18n="tdom.how_it_works">Wie funktioniert es?</b> <span data-i18n="tdom.strategy_tester_desc">Der TDOM-Strategie Tester ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.</span>
             <b>Beispiel:</b> Entry TDoM 1 (Open) &rarr; Exit TDoM -1 (Close) bedeutet: Kauf am Open des 1. Handelstages,
             Verkauf am Close des letzten Handelstages. Pro Monat 1 Trade. Negative TDoM = von hinten gez&auml;hlt
             (-1 = letzter Handelstag, -3 = drittletzter).
@@ -231,18 +231,18 @@
             <li><b>Ben&ouml;tigt:</b> Open + Close Kurse</li>
             <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
           </ul>
-          <h3>Strategien</h3>
+          <h3 data-i18n="tdom.strategies_h3">Strategien</h3>
           <ul>
             <li><b>Intraday (Open &rarr; Close):</b> Tagesrendite w&auml;hrend der Handelssession</li>
             <li><b>Overnight (Open &rarr; n&auml;chster Open):</b> Inkl. &uuml;bernacht Gap</li>
             <li><b>Close &rarr; n&auml;chster Close:</b> Standard Close-to-Close (24h)</li>
           </ul>
-          <h3>TDoM-Z&auml;hlung</h3>
+          <h3 data-i18n="tdom.tdom_counting_h3">TDoM-Z&auml;hlung</h3>
           <ul>
             <li><b>Vorw&auml;rts:</b> TDoM 1 = erster Handelstag des Monats, 2 = zweiter, ... bis ~23</li>
             <li><b>R&uuml;ckw&auml;rts:</b> TDoM -1 = letzter Handelstag, -2 = vorletzter, ... bis ~-23</li>
           </ul>
-          <h3>Multi-Day Range</h3>
+          <h3 data-i18n="tdom.multi_day_range_h3">Multi-Day Range</h3>
           <ul>
             <li>Entry an TDoM X (Open oder Close), Exit an TDoM Y</li>
             <li>Beispiel: TDoM 1 Open &rarr; TDoM -1 Close = "Buy 1st day, sell last day"</li>

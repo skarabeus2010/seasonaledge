@@ -87,18 +87,18 @@
         <option value="30">30 Jahre</option>
       </select>
       <hr>
-      <h3>Sektoren</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all" checked> Alle / Keine</label>
+      <h3 data-i18n="sr.sectors_heading">Sektoren</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all" checked><span data-i18n="sr.all_none"> Alle / Keine</span></label>
       <div id="sector-toggles" style="font-size:.8125rem;max-height:400px;overflow-y:auto"></div>
       <hr>
-      <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze">Aktualisieren</button>
+      <button class="btn btn--p" style="width:100%;margin-top:.5rem" id="btn-analyze" data-i18n="sr.btn_refresh">Aktualisieren</button>
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Sektor-Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="sr.loading_sectors">Lade Sektor-Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Sektor-Rotation</b></h1>
-      <p class="page-caption">Welche US-Sektoren performen historisch in welchem Monat am besten?</p>
+      <p class="page-caption" data-i18n="sr.page_caption">Welche US-Sektoren performen historisch in welchem Monat am besten?</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- Rotationssignal -->
@@ -106,7 +106,7 @@
 
       <!-- Jahresverlauf -->
       <details open id="sec-line" style="display:none">
-        <summary>Saisonaler Jahresverlauf (kumuliert)</summary>
+        <summary data-i18n="sr.section_line">Saisonaler Jahresverlauf (kumuliert)</summary>
         <div class="content"><div id="chart-line"></div></div>
       </details>
 
@@ -118,13 +118,13 @@
 
       <!-- Heatmap Rendite -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>Saisonale Heatmap &mdash; Monat &times; Sektor</summary>
+        <summary data-i18n="sr.section_heatmap">Saisonale Heatmap &mdash; Monat &times; Sektor</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
       <!-- Win-Rate Heatmap -->
       <details id="sec-winrate" style="display:none">
-        <summary>Win-Rate Heatmap</summary>
+        <summary data-i18n="sr.section_winrate">Win-Rate Heatmap</summary>
         <div class="content">
           <div id="chart-winrate"></div>
           <div id="content-winrate-topflop" style="margin-top:1.5rem"></div>
@@ -141,7 +141,7 @@
             <li><b>23 US-Sektor-ETFs</b> &mdash; SPDR Select Sector + Spezial-ETFs</li>
             <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre, min. 5 Jahre f&uuml;r valide Berechnung</li>
           </ul>
-          <h3>Ticker-&Uuml;bersicht</h3>
+          <h3 data-i18n="sr.ticker_overview">Ticker-&Uuml;bersicht</h3>
           <table class="sector-table" style="margin-bottom:1rem">
             <thead><tr><th>Ticker</th><th>Sektor / Branche</th><th>Typ</th></tr></thead>
             <tbody>

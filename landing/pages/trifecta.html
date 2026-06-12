@@ -100,13 +100,13 @@
         <option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option>
       </select>
       <hr>
-      <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
+      <label><input type="checkbox" id="chk-current" checked> <span data-i18n="checkbox.show_current_yr">Aktuelles Jahr anzeigen</span></label>
     </aside>
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Januar Trifecta</b> &mdash; <span id="title-ticker">^DJI</span></h1>
-      <p class="page-caption" id="page-caption">Drei Signale → Jahresprognose (Yale Hirsch / Stock Trader's Almanac)</p>
+      <h1 class="page-title"><b data-i18n="tri.page_title">Januar Trifecta</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <p class="page-caption" id="page-caption" data-i18n="tri.page_caption">Drei Signale → Jahresprognose (Yale Hirsch / Stock Trader's Almanac)</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- Ampel -->
@@ -114,31 +114,31 @@
 
       <!-- Historische Statistik -->
       <details open>
-        <summary>Historische Auswertung</summary>
+        <summary data-i18n="tri.section_hist_stats">Historische Auswertung</summary>
         <div class="content"><div class="kpi-row" id="kpi-hist"></div></div>
       </details>
 
       <!-- Durchschnittsverlauf -->
       <details open>
-        <summary>Durchschnittsverlauf nach Ampelfarbe</summary>
+        <summary data-i18n="tri.section_avg_curve">Durchschnittsverlauf nach Ampelfarbe</summary>
         <div class="content"><div id="chart-curves"></div></div>
       </details>
 
       <!-- Max Drawdown -->
       <details open>
-        <summary>Max Drawdown nach Ampelfarbe</summary>
+        <summary data-i18n="tri.section_max_dd">Max Drawdown nach Ampelfarbe</summary>
         <div class="content"><div class="kpi-row" id="kpi-dd"></div></div>
       </details>
 
       <!-- Jahresrendite Bar -->
       <details>
-        <summary>Jahresrendite (Feb&ndash;Dez) nach Signal</summary>
+        <summary data-i18n="tri.section_annual_return">Jahresrendite (Feb&ndash;Dez) nach Signal</summary>
         <div class="content"><div id="chart-returns"></div></div>
       </details>
 
       <!-- Historische Tabelle -->
       <details>
-        <summary>Alle Jahre</summary>
+        <summary data-i18n="tri.section_all_years">Alle Jahre</summary>
         <div class="content" id="content-table"></div>
       </details>
 
@@ -146,19 +146,19 @@
       <details>
         <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Januar Trifecta</h3>
-          <p>Drei Signale kombiniert ergeben ein Jahresprognose-Signal:</p>
+          <h3 data-i18n="tri.methodik_h3">Januar Trifecta</h3>
+          <p data-i18n="tri.methodik_intro">Drei Signale kombiniert ergeben ein Jahresprognose-Signal:</p>
           <ul>
-            <li><b>Santa Claus Rally</b>: Letzte 5 Trading Days Dez + erste 2 Jan positiv</li>
-            <li><b>First Five Days</b>: Erste 5 Trading Days im Januar positiv</li>
-            <li><b>January Barometer</b>: Gesamter Januar positiv</li>
+            <li><b>Santa Claus Rally</b>: <span data-i18n="tri.methodik_scr">Letzte 5 Trading Days Dez + erste 2 Jan positiv</span></li>
+            <li><b>First Five Days</b>: <span data-i18n="tri.methodik_ffd">Erste 5 Trading Days im Januar positiv</span></li>
+            <li><b>January Barometer</b>: <span data-i18n="tri.methodik_janb">Gesamter Januar positiv</span></li>
           </ul>
-          <h3>Ampel</h3>
+          <h3 data-i18n="tri.methodik_signal_h3">Ampel</h3>
           <ul>
-            <li><span style="color:#2ECC71">&#x1F7E2; Gr&uuml;n</span> = alle 3 erf&uuml;llt &rarr; bullishes Jahressignal</li>
-            <li><span style="color:#F1C40F">&#x1F7E1; Gelb</span> = 2 von 3 &rarr; leicht bullish</li>
-            <li><span style="color:#E67E22">&#x1F7E0; Orange</span> = 1 von 3 &rarr; neutral</li>
-            <li><span style="color:#E74C3C">&#x1F534; Rot</span> = 0 von 3 &rarr; bearish</li>
+            <li><span style="color:#2ECC71">&#x1F7E2; Gr&uuml;n</span> <span data-i18n="tri.signal_green">= alle 3 erf&uuml;llt &rarr; bullishes Jahressignal</span></li>
+            <li><span style="color:#F1C40F">&#x1F7E1; Gelb</span> <span data-i18n="tri.signal_yellow">= 2 von 3 &rarr; leicht bullish</span></li>
+            <li><span style="color:#E67E22">&#x1F7E0; Orange</span> <span data-i18n="tri.signal_orange">= 1 von 3 &rarr; neutral</span></li>
+            <li><span style="color:#E74C3C">&#x1F534; Rot</span> <span data-i18n="tri.signal_red">= 0 von 3 &rarr; bearish</span></li>
           </ul>
         </div>
       </details>

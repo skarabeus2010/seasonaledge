@@ -149,7 +149,7 @@
 
       <hr>
       <div class="filter-group">
-        <h4>Signal</h4>
+        <h4 data-i18n="scan.filter_signal">Signal</h4>
         <label class="filter-row signal-row bullish"><input type="checkbox" class="chk-signal" value="Bullish" checked> <span class="badge">Bullish</span><span class="chk-count" id="cnt-bullish">0</span></label>
         <label class="filter-row signal-row neutral"><input type="checkbox" class="chk-signal" value="Neutral" checked> <span class="badge">Neutral</span><span class="chk-count" id="cnt-neutral">0</span></label>
         <label class="filter-row signal-row bearish"><input type="checkbox" class="chk-signal" value="Bearish" checked> <span class="badge">Bearish</span><span class="chk-count" id="cnt-bearish">0</span></label>
@@ -157,55 +157,55 @@
 
       <hr>
       <div class="filter-group">
-        <h4>Score-Range</h4>
-        <label class="filter-row"><span>Min:</span><input type="range" class="range-slider" id="sel-min-score" min="0" max="10" step="0.1" value="0"></label>
+        <h4 data-i18n="scan.filter_score_range">Score-Range</h4>
+        <label class="filter-row"><span data-i18n="scan.filter_min_label">Min:</span><input type="range" class="range-slider" id="sel-min-score" min="0" max="10" step="0.1" value="0"></label>
         <div class="range-display"><span id="lbl-min-score">0.0</span> &ndash; 10.0</div>
       </div>
 
       <hr>
       <div class="filter-group">
-        <h4>Min Win-Rate</h4>
+        <h4 data-i18n="scan.filter_min_win_rate">Min Win-Rate</h4>
         <label class="filter-row"><input type="range" class="range-slider" id="sel-min-wr" min="0" max="100" step="1" value="0"></label>
         <div class="range-display"><span id="lbl-min-wr">0</span>%</div>
       </div>
 
       <hr>
       <div class="filter-group">
-        <h4>Kategorie</h4>
-        <label class="filter-row chk-master"><input type="checkbox" id="chk-cat-all" checked> Alle / Keine</label>
+        <h4 data-i18n="scan.filter_category">Kategorie</h4>
+        <label class="filter-row chk-master"><input type="checkbox" id="chk-cat-all" checked> <span data-i18n="scan.filter_cat_all">Alle / Keine</span></label>
         <div id="cat-filters" style="max-height:240px;overflow-y:auto"></div>
       </div>
 
-      <button type="button" class="btn-reset" id="btn-reset">Filter zur&uuml;cksetzen</button>
+      <button type="button" class="btn-reset" id="btn-reset" data-i18n="scan.btn_reset_filters">Filter zur&uuml;cksetzen</button>
     </aside>
 
     <main>
       <div class="loading-overlay" id="loading"><div class="spinner"></div><span>Lade Scanner-Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
 
-      <h1 class="page-title"><b>Saisonal-Scanner</b></h1>
-      <p class="page-caption" id="page-caption">Alle analysierten Ticker nach KI-Score sortiert &middot; Filter nach Kategorie, Signal und Win-Rate</p>
+      <h1 class="page-title"><b data-i18n="scan.page_title">Saisonal-Scanner</b></h1>
+      <p class="page-caption" id="page-caption" data-i18n="scan.page_caption">Alle analysierten Ticker nach KI-Score sortiert &middot; Filter nach Kategorie, Signal und Win-Rate</p>
       <div class="trading-day-header" id="scan-date-header"></div>
 
       <!-- Scan-Summary Cards -->
       <div class="scan-summary" id="scan-summary" style="display:none">
         <div class="scan-card">
-          <div class="lbl">Ticker gescannt</div>
+          <div class="lbl" data-i18n="scan.summary_tickers_scanned">Ticker gescannt</div>
           <div class="val" id="sm-total">&ndash;</div>
           <div class="sub" id="sm-date">&ndash;</div>
         </div>
         <div class="scan-card bullish">
-          <div class="lbl">Bullish</div>
+          <div class="lbl" data-i18n="scan.summary_bullish">Bullish</div>
           <div class="val" id="sm-bullish">&ndash;</div>
           <div class="sub" id="sm-bullish-pct">&ndash;</div>
         </div>
         <div class="scan-card neutral">
-          <div class="lbl">Neutral</div>
+          <div class="lbl" data-i18n="scan.summary_neutral">Neutral</div>
           <div class="val" id="sm-neutral">&ndash;</div>
           <div class="sub" id="sm-neutral-pct">&ndash;</div>
         </div>
         <div class="scan-card bearish">
-          <div class="lbl">Bearish</div>
+          <div class="lbl" data-i18n="scan.summary_bearish">Bearish</div>
           <div class="val" id="sm-bearish">&ndash;</div>
           <div class="sub" id="sm-bearish-pct">&ndash;</div>
         </div>
@@ -214,7 +214,7 @@
       <!-- Ergebnis-Tabelle -->
       <div class="results-wrap">
         <div class="results-header">
-          <h2>Screening-Ergebnisse</h2>
+          <h2 data-i18n="scan.results_heading">Screening-Ergebnisse</h2>
           <div class="results-count"><b id="rc-visible">0</b> von <b id="rc-total">0</b> Ticker</div>
         </div>
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -222,22 +222,22 @@
             <thead>
               <tr>
                 <th data-sort="rank" class="num">#</th>
-                <th data-sort="ticker">Ticker <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="name">Name <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="kategorie">Kategorie <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="signal">Signal <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="score" class="num sorted">Score <span class="sort-ind">&#x25BE;</span></th>
-                <th data-sort="win_rate" class="num">Win-Rate <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="avg_return" class="num">&Oslash; Return <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th class="num">Aktion</th>
+                <th data-sort="ticker"><span data-i18n="scan.col_ticker">Ticker</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="name"><span data-i18n="scan.col_name">Name</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="kategorie"><span data-i18n="scan.col_category">Kategorie</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="signal"><span data-i18n="scan.col_signal">Signal</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="score" class="num sorted"><span data-i18n="scan.col_score">Score</span> <span class="sort-ind">&#x25BE;</span></th>
+                <th data-sort="win_rate" class="num"><span data-i18n="table.win_rate">Win-Rate</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="avg_return" class="num"><span data-i18n="scan.col_avg_return">&Oslash; Return</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th class="num" data-i18n="scan.col_action">Aktion</th>
               </tr>
             </thead>
             <tbody id="scanner-tbody"></tbody>
           </table>
         </div>
         <div class="empty-state" id="empty-state" style="display:none">
-          <strong>Keine Ticker passen zum Filter</strong>
-          Lockere die Filter oder setze sie zur&uuml;ck.
+          <strong data-i18n="scan.empty_state_title">Keine Ticker passen zum Filter</strong>
+          <span data-i18n="scan.empty_state_hint">Lockere die Filter oder setze sie zur&uuml;ck.</span>
         </div>
       </div>
 
@@ -245,17 +245,17 @@
       <details>
         <summary data-i18n="section.methodology_data">Methodik &amp; Daten</summary>
         <div class="content">
-          <p><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
-          <p><b>Signal-Ableitung:</b></p>
+          <p data-i18n="scan.method_data_source"><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
+          <p data-i18n="scan.method_signal_label"><b>Signal-Ableitung:</b></p>
           <ul style="margin-left:1.25rem;color:var(--dim);font-size:.8125rem">
             <li><span style="color:var(--green);font-weight:700">Bullish</span>: Score &ge; 6.5</li>
             <li><span style="color:var(--accent);font-weight:700">Neutral</span>: 3.5 &lt; Score &lt; 6.5</li>
             <li><span style="color:var(--red);font-weight:700">Bearish</span>: Score &le; 3.5</li>
           </ul>
-          <p><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
-          <p><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
-          <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)">Hinweis: Der Scanner aktualisiert alle Ticker nur bei voll-Durchl&auml;ufen (je nach Serverlast mehrmals pro Woche, nicht zwingend t&auml;glich). Das Scan-Datum oben zeigt den tats&auml;chlichen Stand der Daten.</p>
-          <p><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
+          <p data-i18n="scan.method_win_rate"><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
+          <p data-i18n="scan.method_avg_return"><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
+          <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)" data-i18n="scan.method_update_note">Hinweis: Der Scanner aktualisiert alle Ticker nur bei voll-Durchl&auml;ufen (je nach Serverlast mehrmals pro Woche, nicht zwingend t&auml;glich). Das Scan-Datum oben zeigt den tats&auml;chlichen Stand der Daten.</p>
+          <p data-i18n="scan.method_disclaimer"><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
         </div>
       </details>
     </main>

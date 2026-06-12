@@ -102,21 +102,21 @@
       </select>
       <hr>
       <h3 data-i18n="sidebar.month_seasonal_chart">Monats-Saisonalchart</h3>
-      <label>Monat auswählen</label>
+      <label data-i18n="mz.sidebar_select_month">Monat auswählen</label>
       <select id="sel-month"></select>
-      <label class="toggle-row" style="margin-top:.5rem"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
+      <label class="toggle-row" style="margin-top:.5rem" data-i18n="checkbox.show_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
       <label class="toggle-row" data-i18n="checkbox.show_individual"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-bands"> Konfidenzband (±1σ)</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-percentile"> Perzentil-Bänder (25./75.)</label>
+      <label class="toggle-row" data-i18n="checkbox.confidence_band"><input type="checkbox" id="chk-bands"> Konfidenzband (±1σ)</label>
+      <label class="toggle-row" data-i18n="checkbox.percentile_bands"><input type="checkbox" id="chk-percentile"> Perzentil-Bänder (25./75.)</label>
       <hr>
-      <h3>Präsidentenzyklus-Filter</h3>
+      <h3 data-i18n="mz.sidebar_pres_cycle_filter">Präsidentenzyklus-Filter</h3>
       <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
         <label><input type="checkbox" data-cycle="1"> Wahljahr (1)</label>
         <label><input type="checkbox" data-cycle="2"> Nachwahljahr (2)</label>
         <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr (3)</label>
         <label><input type="checkbox" data-cycle="4"> Vorwahljahr (4)</label>
       </div>
-      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
+      <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="common.empty_all_years">Leer = alle Jahre</p>
       <hr>
       <h3 data-i18n="sidebar.two_week_split">Two-Week Split</h3>
       <label>Split nach TDOM <span id="lbl-split">10</span></label>
@@ -129,7 +129,7 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Monatszyklus</b> — <span id="title-ticker">^GSPC</span></h1>
-      <p class="page-caption" id="page-caption">Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap</p>
+      <p class="page-caption" id="page-caption" data-i18n="mz.page_caption">Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
@@ -140,7 +140,7 @@
 
       <!-- 1. Hauptchart Intra-Monat -->
       <details open id="sec-main" style="display:none">
-        <summary>Intra-Monat Verlauf</summary>
+        <summary data-i18n="mz.intramonth_progression">Intra-Monat Verlauf</summary>
         <div class="content">
           <div id="chart-main"></div>
           <!-- Sub-Chart fuer Einzeljahre, eigene Y-Achse, x-Achse synchron -->
@@ -154,38 +154,38 @@
         <summary data-i18n="section.detrend">Detrend-Indikator / Saisonaler Druck</summary>
         <div class="content">
           <div id="chart-detrend"></div>
-          <p class="box-info">Saisonaler Intra-Monat-Verlauf ohne Trendkomponente. Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase.</p>
+          <p class="box-info" data-i18n="mz.detrend_desc">Saisonaler Intra-Monat-Verlauf ohne Trendkomponente. Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase.</p>
         </div>
       </details>
 
       <!-- 3. Saisonal Match -->
       <details open id="sec-match" style="display:none">
-        <summary>📊 Saisonaler Match — Aktuell vs. Durchschnitt</summary>
+        <summary>📊 <span data-i18n="mz.seasonal_match_title">Saisonaler Match — Aktuell vs. Durchschnitt</span></summary>
         <div class="content" id="content-match"></div>
       </details>
 
       <!-- 4. Präsidentenzyklus Best Match -->
       <details open id="sec-cycle-match" style="display:none">
-        <summary>🏛️ Präsidentenzyklus — Best Match</summary>
+        <summary>🏛️ <span data-i18n="jz.cycle_best_match">Präsidentenzyklus — Best Match</span></summary>
         <div class="content" id="content-cycle-match"></div>
       </details>
 
       <!-- 5. Wochen-Performance -->
       <details open id="sec-weekly" style="display:none">
-        <summary>📅 Wochen-Performance (5 Wochen)</summary>
+        <summary>📅 <span data-i18n="mz.weekly_perf_title">Wochen-Performance (5 Wochen)</span></summary>
         <div class="content"><div id="chart-weekly"></div></div>
       </details>
 
       <!-- 6. Monats-Performance Übersicht -->
       <details open id="sec-monthly" style="display:none">
-        <summary>📊 Monats-Performance (alle 12 Monate)</summary>
+        <summary>📊 <span data-i18n="mz.monthly_perf_title">Monats-Performance (alle 12 Monate)</span></summary>
         <div class="content">
           <div id="chart-monthly"></div>
           <details>
-            <summary style="font-size:.8125rem">Monats-Detailtabelle</summary>
+            <summary style="font-size:.8125rem" data-i18n="jz.monthly_detail_table">Monats-Detailtabelle</summary>
             <div class="content">
               <table class="perf-table">
-                <thead><tr><th data-i18n="table.month">Monat</th><th>Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.n">n</th></tr></thead>
                 <tbody id="tbody-monthly"></tbody>
               </table>
             </div>
@@ -195,46 +195,46 @@
 
       <!-- 7. Two-Week Performance Bars -->
       <details open id="sec-twoweek" style="display:none">
-        <summary>📅 Two-Week Performance</summary>
+        <summary>📅 <span data-i18n="mz.twoweek_perf_title">Two-Week Performance</span></summary>
         <div class="content"><div id="chart-twoweek"></div></div>
       </details>
 
       <!-- 8. Two-Week Heatmap -->
       <details open id="sec-tw-heatmap" style="display:none">
-        <summary>🗓️ Two-Week Heatmap (12 Monate × 2 Hälften)</summary>
+        <summary>🗓️ <span data-i18n="mz.twoweek_heatmap_title">Two-Week Heatmap (12 Monate × 2 Hälften)</span></summary>
         <div class="content"><div id="chart-tw-heatmap"></div></div>
       </details>
 
       <!-- 9. Two-Week Aktuelles Jahr Overlay -->
       <details open id="sec-tw-overlay" style="display:none">
-        <summary>📈 Two-Week: Aktuelles Jahr vs. Durchschnitt</summary>
+        <summary>📈 <span data-i18n="mz.twoweek_current_year_title">Two-Week: Aktuelles Jahr vs. Durchschnitt</span></summary>
         <div class="content"><div id="chart-tw-overlay"></div></div>
       </details>
 
       <!-- 10. Best Two-Weeks Ranking -->
       <details id="sec-tw-ranking" style="display:none">
-        <summary>🏆 Best Two-Weeks Ranking (Top 24)</summary>
+        <summary>🏆 <span data-i18n="mz.twoweek_ranking_title">Best Two-Weeks Ranking (Top 24)</span></summary>
         <div class="content"><div id="chart-tw-ranking"></div></div>
       </details>
 
       <!-- 11. Momentum-Check -->
       <details open id="sec-momentum" style="display:none">
-        <summary>⚡ Momentum-Check (1st → 2nd Half)</summary>
+        <summary>⚡ <span data-i18n="mz.momentum_check_title">Momentum-Check (1st → 2nd Half)</span></summary>
         <div class="content" id="content-momentum"></div>
       </details>
 
       <!-- 12. Signifikanztest pro Monatshälfte -->
       <details id="sec-tw-sig" style="display:none">
-        <summary>Signifikanztest pro Monatshälfte</summary>
+        <summary data-i18n="mz.sig_half_month_title">Signifikanztest pro Monatshälfte</summary>
         <div class="content" id="content-tw-sig"></div>
       </details>
 
       <!-- 13. Two-Week Detailtabelle -->
       <details id="sec-tw-table" style="display:none">
-        <summary>Two-Week Detailtabelle</summary>
+        <summary data-i18n="mz.twoweek_detail_table">Two-Week Detailtabelle</summary>
         <div class="content">
           <table class="perf-table">
-            <thead><tr><th>Periode</th><th data-i18n="table.month">Monat</th><th>Hälfte</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
+            <thead><tr><th data-i18n="mz.table_period">Periode</th><th data-i18n="table.month">Monat</th><th data-i18n="mz.table_half">Hälfte</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.n">n</th></tr></thead>
             <tbody id="tbody-tw"></tbody>
           </table>
         </div>
@@ -242,13 +242,13 @@
 
       <!-- 14. 10-Jahres Monats-Heatmap -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>10 Jahres Monats-Heatmap</summary>
+        <summary data-i18n="mz.monthly_heatmap_title">10 Jahres Monats-Heatmap</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
       <!-- Methodik -->
       <details id="sec-methodik">
-        <summary>📚 Methodik</summary>
+        <summary>📚 <span data-i18n="common.methodology">Methodik</span></summary>
         <div class="content">
           <h3 data-i18n="common.calculations">Berechnungen</h3>
           <ul>

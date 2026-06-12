@@ -84,7 +84,7 @@
       <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <select id="sel-period"><option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option></select>
       <hr>
-      <h3>Mondphase</h3>
+      <h3 data-i18n="moon.sidebar_phase">Mondphase</h3>
       <select id="sel-phase">
         <option value="full">&#127765; Vollmond</option>
         <option value="new">&#127761; Neumond</option>
@@ -92,8 +92,8 @@
       </select>
       <hr>
       <h3 data-i18n="common.event_window">Event-Fenster</h3>
-      <label>Tage vor Mondphase<br><input type="range" id="rng-before" min="1" max="15" value="5"><span id="lbl-before">5</span></label>
-      <label>Tage nach Mondphase<br><input type="range" id="rng-after" min="1" max="15" value="5"><span id="lbl-after">5</span></label>
+      <label><span data-i18n="moon.days_before">Tage vor Mondphase</span><br><input type="range" id="rng-before" min="1" max="15" value="5"><span id="lbl-before">5</span></label>
+      <label><span data-i18n="moon.days_after">Tage nach Mondphase</span><br><input type="range" id="rng-after" min="1" max="15" value="5"><span id="lbl-after">5</span></label>
       <hr>
       <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
@@ -110,7 +110,7 @@
 
       <div class="chart-box"><div id="chart-moon"></div></div>
 
-      <details open><summary>Mondphasen-Statistik</summary>
+      <details open><summary data-i18n="moon.section_stats">Mondphasen-Statistik</summary>
         <div class="content"><div class="kpi-row" id="kpi-moon"></div><p class="box-info" id="kpi-info"></p></div>
       </details>
 
@@ -118,28 +118,28 @@
         <div class="content" id="content-significance"></div>
       </details>
 
-      <details><summary>Bester &amp; Schlechtester Mond-Event</summary>
+      <details><summary data-i18n="moon.section_best_worst">Bester &amp; Schlechtester Mond-Event</summary>
         <div class="content" id="content-best-worst"></div>
       </details>
 
-      <details open><summary>Mond-Heatmap (Monat &times; Phase)</summary>
+      <details open><summary data-i18n="moon.section_heatmap">Mond-Heatmap (Monat &times; Phase)</summary>
         <div class="content"><div id="chart-heatmap"></div></div>
       </details>
 
-      <details open><summary>Streak-Analyse (W/L-Serien)</summary>
+      <details open><summary data-i18n="moon.section_streaks">Streak-Analyse (W/L-Serien)</summary>
         <div class="content" id="content-streaks"></div>
       </details>
 
-      <details open><summary>Supermond vs. normaler Vollmond</summary>
+      <details open><summary data-i18n="moon.section_supermoon">Supermond vs. normaler Vollmond</summary>
         <div class="content" id="content-supermoon"></div>
         <div id="chart-supermoon-heatmap"></div>
       </details>
 
-      <details open><summary>Lunar-Kalender (Mondmonat 1&ndash;12)</summary>
+      <details open><summary data-i18n="moon.section_lunar_cal">Lunar-Kalender (Mondmonat 1&ndash;12)</summary>
         <div class="content"><div id="chart-lunar-heatmap"></div></div>
       </details>
 
-      <details open><summary>N&auml;chste Mondphasen</summary>
+      <details open><summary data-i18n="moon.section_next_phases">N&auml;chste Mondphasen</summary>
         <div class="content" id="content-next-phases"></div>
       </details>
 

@@ -106,11 +106,11 @@
       <hr>
       <h3 data-i18n="sidebar.display">Darstellung</h3>
       <label class="toggle-row" data-i18n="checkbox.highlight_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> <span data-i18n="risk.individual_years">Einzeljahre im Drawdown-Chart</span></label>
       <hr>
-      <h3>Risiko-Analyse</h3>
+      <h3 data-i18n="risk.risk_analysis">Risiko-Analyse</h3>
       <div class="range-wrap">
-        <label>Rolling-Vola Fenster (Tage) <span id="lbl-vola">20</span></label>
+        <label><span data-i18n="risk.rolling_vola_window">Rolling-Vola Fenster (Tage)</span> <span id="lbl-vola">20</span></label>
         <input type="range" id="sl-vola" min="5" max="60" step="5" value="20">
       </div>
     </aside>
@@ -123,10 +123,10 @@
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Die Risikoseite des saisonalen Zyklus: Wann im Jahr treten die gr&ouml;&szlig;ten R&uuml;cksetzer (Drawdowns) typischerweise auf?
+        <b style="color:var(--accent)" data-i18n="common.what_shows">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="risk.intro_desc">Die Risikoseite des saisonalen Zyklus: Wann im Jahr treten die gr&ouml;&szlig;ten R&uuml;cksetzer (Drawdowns) typischerweise auf?
         Wie hoch ist die Rolling-Volatilit&auml;t im Jahresverlauf? Und unterscheidet sich das Risikoprofil je nach Pr&auml;sidentenzyklus-Phase?
-        <b>Sidebar:</b> Stelle Zeitraum und Vola-Fenster ein &mdash; alle Sektionen aktualisieren sich automatisch.
+        <b>Sidebar:</b> Stelle Zeitraum und Vola-Fenster ein &mdash; alle Sektionen aktualisieren sich automatisch.</span>
       </div>
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
@@ -137,7 +137,7 @@
 
       <!-- 1. Drawdown-Verlauf -->
       <details open id="sec-drawdown" style="display:none">
-        <summary>Saisonaler Drawdown-Verlauf</summary>
+        <summary data-i18n="risk.drawdown_title">Saisonaler Drawdown-Verlauf</summary>
         <div class="content">
           <div id="chart-drawdown"></div>
           <div class="kpi-grid-3" id="dd-kpis"></div>
@@ -146,7 +146,7 @@
 
       <!-- 2. Rolling-Volatilität -->
       <details open id="sec-vola" style="display:none">
-        <summary>Saisonale Volatilit&auml;t (Rolling)</summary>
+        <summary data-i18n="risk.vola_title">Saisonale Volatilit&auml;t (Rolling)</summary>
         <div class="content">
           <div id="chart-vola"></div>
           <div class="kpi-grid-4" id="vola-kpis"></div>
@@ -155,7 +155,7 @@
 
       <!-- 3. Drawdown nach Zyklus -->
       <details open id="sec-dd-cycle" style="display:none">
-        <summary>Drawdown nach Pr&auml;sidentenzyklus</summary>
+        <summary data-i18n="risk.dd_cycle_title">Drawdown nach Pr&auml;sidentenzyklus</summary>
         <div class="content">
           <div id="chart-dd-cycle"></div>
           <div class="match-cards" id="dd-cycle-cards" style="margin-top:1rem"></div>
@@ -168,18 +168,18 @@
         <div class="content methodik">
           <h3 data-i18n="common.drawdown_analysis">Drawdown-Analyse</h3>
           <ul>
-            <li><b>Normierung:</b> Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</li>
-            <li><b>Interpolation:</b> Jede Jahreskurve wird auf 365 Kalendertage interpoliert</li>
-            <li><b>Definition:</b> DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</li>
-            <li><b>&Oslash; Drawdown-Verlauf:</b> Pro Jahr DD berechnet, dann gemittelt &uuml;ber alle Jahre</li>
-            <li><b>KPIs:</b> &Oslash; Max DD, Worst DD, Aktueller DD</li>
+            <li><b data-i18n="common.normalization">Normierung</b>: <span data-i18n="risk.methodik_normierung">Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</span></li>
+            <li><b data-i18n="risk.methodik_interpolation">Interpolation</b>: <span data-i18n="risk.methodik_interpolation_desc">Jede Jahreskurve wird auf 365 Kalendertage interpoliert</span></li>
+            <li><b data-i18n="risk.methodik_definition">Definition</b>: <span>DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</span></li>
+            <li><b data-i18n="risk.methodik_avg_dd">&Oslash; Drawdown-Verlauf</b>: <span data-i18n="risk.methodik_avg_dd_desc">Pro Jahr DD berechnet, dann gemittelt &uuml;ber alle Jahre</span></li>
+            <li><b>KPIs</b>: &Oslash; Max DD, Worst DD, Aktueller DD</li>
           </ul>
-          <h3>Volatilit&auml;ts-Analyse</h3>
+          <h3 data-i18n="risk.vola_analysis">Volatilit&auml;ts-Analyse</h3>
           <ul>
-            <li><b>Rolling Vola:</b> Annualisierte Std der log-Returns &uuml;ber rollendes Fenster (&radic;252 Annualisierung)</li>
-            <li><b>Jahresgrenzen&uuml;bergreifend:</b> Die Rolling-Berechnung konkateniert alle Jahre, damit Januar-Werte korrekt auf Dezember-Vorjahres-Daten zugreifen k&ouml;nnen</li>
-            <li><b>Perzentil:</b> &ldquo;In wie viel % der Jahre war die Vola am gleichen Tag niedriger als heute?&rdquo;</li>
-            <li><b>Farbcodierung:</b> Rot &gt; &Oslash; + 1&sigma; (erh&ouml;ht), Gr&uuml;n &lt; &Oslash; &minus; 1&sigma; (niedrig)</li>
+            <li><b data-i18n="risk.methodik_rolling_vola">Rolling Vola</b>: <span data-i18n="risk.methodik_rolling_vola_desc">Annualisierte Std der log-Returns &uuml;ber rollendes Fenster (&radic;252 Annualisierung)</span></li>
+            <li><b data-i18n="risk.methodik_cross_year">Jahresgrenzen&uuml;bergreifend</b>: <span data-i18n="risk.methodik_cross_year_desc">Die Rolling-Berechnung konkateniert alle Jahre, damit Januar-Werte korrekt auf Dezember-Vorjahres-Daten zugreifen k&ouml;nnen</span></li>
+            <li><b data-i18n="risk.methodik_percentile">Perzentil</b>: <span data-i18n="risk.methodik_percentile_desc">&ldquo;In wie viel % der Jahre war die Vola am gleichen Tag niedriger als heute?&rdquo;</span></li>
+            <li><b data-i18n="risk.methodik_color">Farbcodierung</b>: <span data-i18n="risk.methodik_color_desc">Rot &gt; &Oslash; + 1&sigma; (erh&ouml;ht), Gr&uuml;n &lt; &Oslash; &minus; 1&sigma; (niedrig)</span></li>
           </ul>
           <h3 data-i18n="sidebar.pres_cycle">Pr&auml;sidentenzyklus</h3>
           <ul>

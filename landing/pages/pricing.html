@@ -85,9 +85,9 @@
     <main>
       <div class="pricing-wrap">
         <h1 style="font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);text-align:center;margin-bottom:.5rem">
-          <b style="color:var(--accent)">Preise</b>
+          <b style="color:var(--accent)" data-i18n="price.page_title">Preise</b>
         </h1>
-        <p class="pricing-subtitle">
+        <p class="pricing-subtitle" data-i18n="price.subtitle">
           SeasonAlpha ist und bleibt kostenlos nutzbar.<br>
           Premium schaltet erweiterte Analysen und Features frei.
         </p>
@@ -96,78 +96,78 @@
           <!-- FREE -->
           <div class="plan-card">
             <span class="plan-badge free">Free</span>
-            <div class="plan-name">Starter</div>
-            <div class="plan-desc">Alle Basis-Features, unbegrenzt.</div>
-            <div class="plan-price">0 &euro; <span>/ Monat</span></div>
-            <div class="plan-price-note">Keine Kreditkarte n&ouml;tig</div>
+            <div class="plan-name" data-i18n="price.free_plan_name">Starter</div>
+            <div class="plan-desc" data-i18n="price.free_plan_desc">Alle Basis-Features, unbegrenzt.</div>
+            <div class="plan-price">0 &euro; <span data-i18n="price.per_month">/ Monat</span></div>
+            <div class="plan-price-note" data-i18n="price.free_no_cc">Keine Kreditkarte n&ouml;tig</div>
             <ul class="plan-features">
-              <li><span class="check">&check;</span> 22 Analyse-Tools</li>
-              <li><span class="check">&check;</span> 270 Ticker (Aktien, ETFs, Futures, Crypto)</li>
-              <li><span class="check">&check;</span> Saisonaler Jahreszyklus</li>
-              <li><span class="check">&check;</span> KI-Score &amp; Crash-Fr&uuml;hwarnung</li>
-              <li><span class="check">&check;</span> Dashboard &amp; Scanner</li>
-              <li><span class="check">&check;</span> Watchlist (Cloud-Sync)</li>
-              <li><span class="check">&check;</span> T&auml;gliche Daten-Updates</li>
-              <li><span class="cross">&times;</span> <span style="color:var(--muted)">Erweiterte Zeitr&auml;ume</span></li>
-              <li><span class="cross">&times;</span> <span style="color:var(--muted)">E-Mail-Alerts</span></li>
-              <li><span class="cross">&times;</span> <span style="color:var(--muted)">Exklusive Strategien</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_tools">22 Analyse-Tools</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_tickers">270 Ticker (Aktien, ETFs, Futures, Crypto)</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_annual_cycle">Saisonaler Jahreszyklus</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_ki_crash">KI-Score &amp; Crash-Fr&uuml;hwarnung</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_dashboard_scanner">Dashboard &amp; Scanner</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_watchlist">Watchlist (Cloud-Sync)</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.feat_daily_updates">T&auml;gliche Daten-Updates</span></li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)" data-i18n="price.feat_extended_history">Erweiterte Zeitr&auml;ume</span></li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)" data-i18n="price.feat_email_alerts">E-Mail-Alerts</span></li>
+              <li><span class="cross">&times;</span> <span style="color:var(--muted)" data-i18n="price.feat_exclusive_strategies">Exklusive Strategien</span></li>
             </ul>
-            <a class="plan-btn free" href="/dashboard">Kostenlos starten</a>
+            <a class="plan-btn free" href="/dashboard" data-i18n="price.btn_start_free">Kostenlos starten</a>
           </div>
 
           <!-- PREMIUM -->
           <div class="plan-card featured">
             <span class="plan-badge premium">Premium</span>
-            <div class="plan-name">Pro</div>
-            <div class="plan-desc">Voller Zugriff auf alle Analysen und Features.</div>
-            <div class="plan-price" id="price-display">&mdash; &euro; <span>/ Monat</span></div>
-            <div class="plan-price-note">Preis wird bald bekannt gegeben</div>
+            <div class="plan-name" data-i18n="price.premium_plan_name">Pro</div>
+            <div class="plan-desc" data-i18n="price.premium_plan_desc">Voller Zugriff auf alle Analysen und Features.</div>
+            <div class="plan-price" id="price-display">&mdash; &euro; <span data-i18n="price.per_month">/ Monat</span></div>
+            <div class="plan-price-note" data-i18n="price.premium_price_note">Preis wird bald bekannt gegeben</div>
             <ul class="plan-features">
-              <li><span class="check">&check;</span> Alles aus Free, plus:</li>
-              <li><span class="check">&check;</span> Erweiterte Zeitr&auml;ume (20+ Jahre)</li>
-              <li><span class="check">&check;</span> Voller Backtest-Zeitraum</li>
-              <li><span class="check">&check;</span> E-Mail-Alerts bei Signalwechseln</li>
-              <li><span class="check">&check;</span> Exklusive Strategien</li>
-              <li><span class="check">&check;</span> Erweiterter Scanner (alle Filter)</li>
-              <li><span class="check">&check;</span> Polymarket Divergenz-Details</li>
-              <li><span class="check">&check;</span> Priority Support</li>
-              <li><span class="check">&check;</span> Werbefrei</li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_base">Alles aus Free, plus:</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_history">Erweiterte Zeitr&auml;ume (20+ Jahre)</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_backtest">Voller Backtest-Zeitraum</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_alerts">E-Mail-Alerts bei Signalwechseln</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_strategies">Exklusive Strategien</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_scanner">Erweiterter Scanner (alle Filter)</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_polymarket">Polymarket Divergenz-Details</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_support">Priority Support</span></li>
+              <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_adfree">Werbefrei</span></li>
             </ul>
-            <a class="plan-btn premium disabled" href="#" id="btn-upgrade">Bald verf&uuml;gbar</a>
+            <a class="plan-btn premium disabled" href="#" id="btn-upgrade" data-i18n="price.btn_coming_soon">Bald verf&uuml;gbar</a>
           </div>
         </div>
 
         <!-- FAQ -->
         <div class="faq-section">
-          <h2>H&auml;ufige Fragen</h2>
+          <h2 data-i18n="price.faq_title">H&auml;ufige Fragen</h2>
 
           <div class="faq-item">
-            <div class="faq-q">Ist SeasonAlpha wirklich kostenlos?</div>
-            <div class="faq-a">Ja! Die Free-Version enth&auml;lt 22 Analyse-Tools, 270 Ticker und t&auml;gliche Updates. Kein Testzeitraum, keine versteckten Kosten. Du kannst SeasonAlpha dauerhaft kostenlos nutzen.</div>
+            <div class="faq-q" data-i18n="price.faq1_q">Ist SeasonAlpha wirklich kostenlos?</div>
+            <div class="faq-a" data-i18n="price.faq1_a">Ja! Die Free-Version enth&auml;lt 22 Analyse-Tools, 270 Ticker und t&auml;gliche Updates. Kein Testzeitraum, keine versteckten Kosten. Du kannst SeasonAlpha dauerhaft kostenlos nutzen.</div>
           </div>
 
           <div class="faq-item">
-            <div class="faq-q">Was bringt mir Premium?</div>
-            <div class="faq-a">Premium erweitert die Datentiefe (20+ Jahre statt 10), schaltet exklusive Strategien und E-Mail-Alerts frei, und gibt dir vollen Zugriff auf erweiterte Backtest-Zeitr&auml;ume. Die genauen Features werden vor dem Launch finalisiert.</div>
+            <div class="faq-q" data-i18n="price.faq2_q">Was bringt mir Premium?</div>
+            <div class="faq-a" data-i18n="price.faq2_a">Premium erweitert die Datentiefe (20+ Jahre statt 10), schaltet exklusive Strategien und E-Mail-Alerts frei, und gibt dir vollen Zugriff auf erweiterte Backtest-Zeitr&auml;ume. Die genauen Features werden vor dem Launch finalisiert.</div>
           </div>
 
           <div class="faq-item">
-            <div class="faq-q">Wann startet Premium?</div>
-            <div class="faq-a">Wir arbeiten daran. Melde dich f&uuml;r den Newsletter an, um als Erster informiert zu werden. Fr&uuml;hbucher erhalten einen Sonderpreis.</div>
+            <div class="faq-q" data-i18n="price.faq3_q">Wann startet Premium?</div>
+            <div class="faq-a" data-i18n="price.faq3_a">Wir arbeiten daran. Melde dich f&uuml;r den Newsletter an, um als Erster informiert zu werden. Fr&uuml;hbucher erhalten einen Sonderpreis.</div>
           </div>
 
           <div class="faq-item">
-            <div class="faq-q">Kann ich jederzeit k&uuml;ndigen?</div>
-            <div class="faq-a">Ja. Premium l&auml;uft monatsweise, keine Mindestlaufzeit. K&uuml;ndigung jederzeit mit einem Klick. Dein Account bleibt als Free-User bestehen.</div>
+            <div class="faq-q" data-i18n="price.faq4_q">Kann ich jederzeit k&uuml;ndigen?</div>
+            <div class="faq-a" data-i18n="price.faq4_a">Ja. Premium l&auml;uft monatsweise, keine Mindestlaufzeit. K&uuml;ndigung jederzeit mit einem Klick. Dein Account bleibt als Free-User bestehen.</div>
           </div>
 
           <div class="faq-item">
-            <div class="faq-q">Wie funktioniert die Bezahlung?</div>
-            <div class="faq-a">Wir nutzen Stripe — den sichersten Zahlungsanbieter weltweit. Kreditkarte, Debitkarte und SEPA-Lastschrift werden unterst&uuml;tzt. Deine Kartendaten werden nie auf unseren Servern gespeichert.</div>
+            <div class="faq-q" data-i18n="price.faq5_q">Wie funktioniert die Bezahlung?</div>
+            <div class="faq-a" data-i18n="price.faq5_a">Wir nutzen Stripe — den sichersten Zahlungsanbieter weltweit. Kreditkarte, Debitkarte und SEPA-Lastschrift werden unterst&uuml;tzt. Deine Kartendaten werden nie auf unseren Servern gespeichert.</div>
           </div>
         </div>
 
-        <p class="pricing-footer">
+        <p class="pricing-footer" data-i18n="price.footer_note">
           Fragen? Schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a><br>
           Preise inkl. MwSt. f&uuml;r Kunden in der EU.
         </p>

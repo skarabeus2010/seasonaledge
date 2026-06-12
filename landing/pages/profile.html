@@ -187,20 +187,20 @@
   <div class="app">
     <main>
       <div class="profile-wrap">
-        <h1 class="page-title"><b>Mein Profil</b></h1>
-        <p class="page-caption">Kontoinformationen und Einstellungen</p>
+        <h1 class="page-title"><b data-i18n="prof.page_title">Mein Profil</b></h1>
+        <p class="page-caption" data-i18n="prof.page_caption">Kontoinformationen und Einstellungen</p>
 
         <!-- Loading / Empty State -->
         <div id="loading" class="empty-state">
           <div class="big">⏳</div>
-          <p>Lade Profil...</p>
+          <p data-i18n="prof.loading">Lade Profil...</p>
         </div>
 
         <!-- Not Logged In State -->
         <div id="not-logged-in" class="empty-state" style="display:none">
           <div class="big">🔒</div>
-          <p>Du bist nicht angemeldet.</p>
-          <p style="margin-top:1rem"><a href="#" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.login(); return false;">Mit Google anmelden</a></p>
+          <p data-i18n="prof.not_logged_in">Du bist nicht angemeldet.</p>
+          <p style="margin-top:1rem"><a href="#" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.login(); return false;" data-i18n="prof.login_with_google">Mit Google anmelden</a></p>
         </div>
 
         <!-- Profile Content -->
@@ -217,46 +217,46 @@
 
           <div class="profile-grid">
             <div class="card">
-              <h2><span class="ico">👤</span> Konto</h2>
+              <h2><span class="ico">👤</span> <span data-i18n="prof.card_account">Konto</span></h2>
               <div class="card-row">
-                <span class="card-row-label">Anmelde-Methode</span>
+                <span class="card-row-label" data-i18n="prof.label_auth_method">Anmelde-Methode</span>
                 <span class="card-row-value" id="auth-provider">—</span>
               </div>
               <div class="card-row">
-                <span class="card-row-label">Abo</span>
+                <span class="card-row-label" data-i18n="prof.label_subscription">Abo</span>
                 <span class="card-row-value" id="user-tier" style="display:flex;align-items:center;gap:.4rem">
                   <span id="tier-badge" style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.15rem .5rem;border-radius:4px;background:rgba(255,255,255,.06);color:var(--muted)">Free</span>
-                  <a href="/pricing" id="tier-upgrade-link" style="font-size:.75rem;color:var(--accent);text-decoration:none">Upgrade &rarr;</a>
+                  <a href="/pricing" id="tier-upgrade-link" style="font-size:.75rem;color:var(--accent);text-decoration:none" data-i18n="prof.upgrade_link">Upgrade &rarr;</a>
                 </span>
               </div>
               <div class="card-row">
-                <span class="card-row-label">User-ID</span>
+                <span class="card-row-label" data-i18n="prof.label_user_id">User-ID</span>
                 <span class="card-row-value" id="user-id" style="font-size:.75rem;font-family:var(--f-m)">—</span>
               </div>
             </div>
 
             <div class="card">
-              <h2><span class="ico">⭐</span> Watchlist</h2>
+              <h2><span class="ico">⭐</span> <span data-i18n="prof.card_watchlist">Watchlist</span></h2>
               <div class="card-row">
-                <span class="card-row-label">Aktive Ticker</span>
+                <span class="card-row-label" data-i18n="prof.label_active_tickers">Aktive Ticker</span>
                 <span class="card-row-value accent" id="watchlist-count">0</span>
               </div>
               <div class="card-row">
-                <span class="card-row-label">Sync-Status</span>
-                <span class="card-row-value" id="watchlist-sync">Cloud-Sync aktiv</span>
+                <span class="card-row-label" data-i18n="prof.label_sync_status">Sync-Status</span>
+                <span class="card-row-value" id="watchlist-sync" data-i18n="prof.sync_active">Cloud-Sync aktiv</span>
               </div>
               <div class="btn-row">
-                <a href="/watchlist" class="btn-logout" style="text-decoration:none">Zur Watchlist &rarr;</a>
+                <a href="/watchlist" class="btn-logout" style="text-decoration:none" data-i18n="prof.btn_to_watchlist">Zur Watchlist &rarr;</a>
               </div>
             </div>
           </div>
 
           <div class="card">
-            <h2><span class="ico">📧</span> Newsletter</h2>
+            <h2><span class="ico">📧</span> <span data-i18n="prof.card_newsletter">Newsletter</span></h2>
             <div class="switch-row">
               <div>
-                <span class="switch-label">Weekly Report per E-Mail erhalten</span>
-                <span class="switch-hint">Jeden Sonntag 18:00 Uhr: Top-KI-Scores, Events der Woche, TDoM-Bias, Polymarket-Divergenzen.</span>
+                <span class="switch-label" data-i18n="prof.weekly_toggle_label">Weekly Report per E-Mail erhalten</span>
+                <span class="switch-hint" data-i18n="prof.weekly_toggle_hint">Jeden Sonntag 18:00 Uhr: Top-KI-Scores, Events der Woche, TDoM-Bias, Polymarket-Divergenzen.</span>
               </div>
               <label class="switch">
                 <input type="checkbox" id="newsletter-toggle" disabled>
@@ -267,8 +267,8 @@
 
             <div class="switch-row" style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem">
               <div>
-                <span class="switch-label">🌅 Daily Morning Briefing</span>
-                <span class="switch-hint">Mo-Fr 06:00 UTC vor EU-Open: Top-5 ETFs + Top-5 Aktien mit KI-Score und Multi-Window-TDOM-Score, Events, aktive Saisonal-Strategien, Risikolage. Separat vom Weekly.</span>
+                <span class="switch-label" data-i18n="prof.daily_toggle_label">🌅 Daily Morning Briefing</span>
+                <span class="switch-hint" data-i18n="prof.daily_toggle_hint">Mo-Fr 06:00 UTC vor EU-Open: Top-5 ETFs + Top-5 Aktien mit KI-Score und Multi-Window-TDOM-Score, Events, aktive Saisonal-Strategien, Risikolage. Separat vom Weekly.</span>
               </div>
               <label class="switch">
                 <input type="checkbox" id="daily-toggle" disabled>
@@ -280,26 +280,26 @@
 
           <div class="profile-grid">
             <div class="card">
-              <h2><span class="ico">🚪</span> Sitzung</h2>
-              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Abmelden beendet deine Sitzung. Deine Cloud-Watchlist bleibt erhalten und lädt beim nächsten Login wieder.</p>
+              <h2><span class="ico">🚪</span> <span data-i18n="prof.card_session">Sitzung</span></h2>
+              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem" data-i18n="prof.session_desc">Abmelden beendet deine Sitzung. Deine Cloud-Watchlist bleibt erhalten und lädt beim nächsten Login wieder.</p>
               <div class="btn-row">
-                <button class="btn-logout" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.logout()">Abmelden</button>
+                <button class="btn-logout" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.logout()" data-i18n="prof.btn_logout">Abmelden</button>
               </div>
             </div>
 
             <div class="card danger-card">
-              <h2><span class="ico">⚠</span> Danger Zone</h2>
-              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem">Konto dauerhaft löschen. Watchlist und verknüpfte Daten werden entfernt. <b>Nicht umkehrbar.</b></p>
+              <h2><span class="ico">⚠</span> <span data-i18n="prof.card_danger_zone">Danger Zone</span></h2>
+              <p style="font-size:.875rem;color:var(--muted);margin-bottom:.75rem" data-i18n="prof.danger_zone_desc">Konto dauerhaft löschen. Watchlist und verknüpfte Daten werden entfernt. <b>Nicht umkehrbar.</b></p>
               <div class="btn-row">
-                <button class="btn-danger" id="btn-delete-account">Konto löschen</button>
+                <button class="btn-danger" id="btn-delete-account" data-i18n="prof.btn_delete_account">Konto löschen</button>
               </div>
               <!-- Bestätigungs-Dialog -->
               <div id="delete-confirm" style="display:none;margin-top:.75rem;padding:.75rem;background:rgba(255,64,64,.08);border:1px solid rgba(255,64,64,.2);border-radius:8px">
-                <p style="font-size:.8125rem;color:var(--red);margin-bottom:.5rem;font-weight:600">Bist du sicher?</p>
-                <p style="font-size:.8125rem;color:var(--muted);margin-bottom:.75rem">Dein Konto und alle verknüpften Daten (Watchlist, Einstellungen) werden unwiderruflich gelöscht. Eine E-Mail an unser Team wird vorbereitet.</p>
+                <p style="font-size:.8125rem;color:var(--red);margin-bottom:.5rem;font-weight:600" data-i18n="prof.delete_confirm_title">Bist du sicher?</p>
+                <p style="font-size:.8125rem;color:var(--muted);margin-bottom:.75rem" data-i18n="prof.delete_confirm_desc">Dein Konto und alle verknüpften Daten (Watchlist, Einstellungen) werden unwiderruflich gelöscht. Eine E-Mail an unser Team wird vorbereitet.</p>
                 <div class="btn-row" style="gap:.5rem">
-                  <a class="btn-danger" id="delete-mailto" href="#" style="text-decoration:none;text-align:center">Löschung per E-Mail beantragen</a>
-                  <button class="btn-secondary" id="delete-cancel" style="background:var(--card);border:1px solid var(--border);color:var(--dim);padding:.5rem 1rem;border-radius:6px;cursor:pointer;font-size:.8125rem">Abbrechen</button>
+                  <a class="btn-danger" id="delete-mailto" href="#" style="text-decoration:none;text-align:center" data-i18n="prof.btn_request_deletion">Löschung per E-Mail beantragen</a>
+                  <button class="btn-secondary" id="delete-cancel" style="background:var(--card);border:1px solid var(--border);color:var(--dim);padding:.5rem 1rem;border-radius:6px;cursor:pointer;font-size:.8125rem" data-i18n="prof.btn_cancel">Abbrechen</button>
                 </div>
               </div>
             </div>

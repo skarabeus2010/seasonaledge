@@ -118,7 +118,7 @@
       <label>Jahre zurück <span id="lbl-years">20</span></label>
       <input type="range" id="sl-years" min="5" max="50" step="1" value="20">
       <hr>
-      <h3>Event-Typ</h3>
+      <h3 data-i18n="bt.event_type">Event-Typ</h3>
       <select id="sel-event">
         <option value="holidays" selected>Feiertage (NYSE)</option>
         <option value="fomc">FOMC</option>
@@ -128,20 +128,20 @@
         <option value="new_moon">Neumond</option>
       </select>
       <hr>
-      <h3>Entry / Exit</h3>
-      <label>Entry-Preis</label>
+      <h3 data-i18n="bt.entry_exit">Entry / Exit</h3>
+      <label data-i18n="bt.entry_price">Entry-Preis</label>
       <div style="display:flex;gap:.5rem;font-size:.8125rem">
         <label><input type="radio" name="entry-col" value="Close" checked> Close</label>
         <label><input type="radio" name="entry-col" value="Open"> Open</label>
       </div>
-      <label style="margin-top:.5rem">Exit-Preis</label>
+      <label style="margin-top:.5rem" data-i18n="bt.exit_price">Exit-Preis</label>
       <div style="display:flex;gap:.5rem;font-size:.8125rem">
         <label><input type="radio" name="exit-col" value="Close" checked> Close</label>
         <label><input type="radio" name="exit-col" value="Open"> Open</label>
       </div>
       <hr>
       <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-stop"> Stop-Loss aktivieren</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-stop"> <span data-i18n="bt.stop_loss_enable">Stop-Loss aktivieren</span></label>
       <div id="stop-opts" style="display:none;margin-top:.5rem">
         <label>Stop % <span id="lbl-stop">3.0</span></label>
         <input type="range" id="sl-stop" min="0.5" max="10.0" step="0.5" value="3.0">
@@ -150,7 +150,7 @@
           <label><input type="radio" name="stop-type" value="fixed" checked> Fixed</label>
           <label><input type="radio" name="stop-type" value="trailing"> Trailing</label>
         </div>
-        <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Stop close-basiert (kein intraday Low)</p>
+        <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="bt.stop_close_based">Stop close-basiert (kein intraday Low)</p>
       </div>
       <hr>
       <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
@@ -168,39 +168,39 @@
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)">Was zeigt diese Seite?</b> &mdash;
-        Die Backtest Engine testet saisonale Handelsstrategien auf historischen Daten. W&auml;hle ein Event (FOMC, OPEX, Feiertag, Kalendertag&nbsp;&hellip;), definiere Entry/Exit-Offsets und sieh dir Equity-Kurve, Trefferquote und Signifikanz an.
+        <b style="color:var(--accent)" data-i18n="bt.intro_title">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n="bt.intro_desc">Die Backtest Engine testet saisonale Handelsstrategien auf historischen Daten. W&auml;hle ein Event (FOMC, OPEX, Feiertag, Kalendertag&nbsp;&hellip;), definiere Entry/Exit-Offsets und sieh dir Equity-Kurve, Trefferquote und Signifikanz an.
         <b>4 Tabs:</b> Einzelner Backtest, Grid-Optimierung (alle Parameterkombinationen), Walk-Forward-Analyse (Out-of-Sample) und Event-Relevanz-Ranking.
-        <b>Sidebar:</b> Ticker, Zeitraum, Event-Typ, Offsets, Stop-Loss und Indikator-Filter &mdash; alles kombinierbar.
+        <b>Sidebar:</b> Ticker, Zeitraum, Event-Typ, Offsets, Stop-Loss und Indikator-Filter &mdash; alles kombinierbar.</span>
       </div>
 
       <div class="info-box" id="filter-info" style="display:none"></div>
 
       <!-- Tab Navigation -->
       <div class="tab-nav" id="tab-nav" style="display:none">
-        <button data-tab="single" class="active">Einzelner Backtest</button>
-        <button data-tab="opt">Parameter-Optimierung</button>
-        <button data-tab="wf">Walk-Forward</button>
-        <button data-tab="rel">Event-Relevanz (KI)</button>
+        <button data-tab="single" class="active" data-i18n="bt.tab_single">Einzelner Backtest</button>
+        <button data-tab="opt" data-i18n="bt.tab_opt">Parameter-Optimierung</button>
+        <button data-tab="wf" data-i18n="bt.tab_wf">Walk-Forward</button>
+        <button data-tab="rel" data-i18n="bt.tab_rel">Event-Relevanz (KI)</button>
       </div>
 
       <!-- TAB 1: Einzelner Backtest -->
       <div class="tab-content active" id="tab-single">
         <details open>
-          <summary>Backtest-Parameter</summary>
+          <summary data-i18n="bt.backtest_params">Backtest-Parameter</summary>
           <div class="content">
             <div class="slider-grid">
               <div>
-                <label>Tage VOR Event (Entry) <span id="lbl-before">3</span></label>
+                <label><span data-i18n="bt.days_before_entry">Tage VOR Event (Entry)</span> <span id="lbl-before">3</span></label>
                 <input type="range" id="sl-before" min="1" max="15" step="1" value="3">
               </div>
               <div>
-                <label>Tage NACH Event (Exit) <span id="lbl-after">3</span></label>
+                <label><span data-i18n="bt.days_after_exit">Tage NACH Event (Exit)</span> <span id="lbl-after">3</span></label>
                 <input type="range" id="sl-after" min="1" max="15" step="1" value="3">
               </div>
               <div>
                 <label>&nbsp;</label>
-                <button class="action-btn" id="btn-run-single" style="width:100%">Backtest starten</button>
+                <button class="action-btn" id="btn-run-single" style="width:100%" data-i18n="bt.run_backtest">Backtest starten</button>
               </div>
             </div>
           </div>
@@ -215,7 +215,7 @@
           <summary data-i18n="section.all_trades">Alle Trades</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Event</th><th>Entry</th><th>Exit</th><th>Rendite</th><th>Haltetage</th><th>Stop</th><th>Jahr</th></tr></thead>
+              <thead><tr><th data-i18n="table.event">Event</th><th data-i18n="table.entry">Entry</th><th data-i18n="table.exit">Exit</th><th data-i18n="table.return">Rendite</th><th data-i18n="table.holding_days">Haltetage</th><th data-i18n="table.stop">Stop</th><th data-i18n="table.year">Jahr</th></tr></thead>
               <tbody id="tbody-trades"></tbody>
             </table>
           </div>
@@ -225,11 +225,11 @@
       <!-- TAB 2: Parameter-Optimierung -->
       <div class="tab-content" id="tab-opt">
         <details open>
-          <summary>Grid-Search Parameter</summary>
+          <summary data-i18n="bt.grid_search_params">Grid-Search Parameter</summary>
           <div class="content">
             <div class="slider-grid">
               <div>
-                <label>days_before — Min &nbsp;↔&nbsp; Max</label>
+                <label data-i18n="bt.days_before_range">days_before — Min &nbsp;↔&nbsp; Max</label>
                 <div class="range-pair">
                   <input type="number" id="opt-before-min" min="1" max="15" value="1">
                   <span>↔</span>
@@ -237,7 +237,7 @@
                 </div>
               </div>
               <div>
-                <label>days_after — Min &nbsp;↔&nbsp; Max</label>
+                <label data-i18n="bt.days_after_range">days_after — Min &nbsp;↔&nbsp; Max</label>
                 <div class="range-pair">
                   <input type="number" id="opt-after-min" min="1" max="15" value="1">
                   <span>↔</span>
@@ -245,7 +245,7 @@
                 </div>
               </div>
               <div>
-                <label>Zielvariable</label>
+                <label data-i18n="bt.objective">Zielvariable</label>
                 <select id="sel-objective">
                   <option value="total_return">Total Return</option>
                   <option value="sharpe">Sharpe Ratio</option>
@@ -255,7 +255,7 @@
                 </select>
               </div>
             </div>
-            <button class="action-btn" id="btn-run-opt">Optimierung starten</button>
+            <button class="action-btn" id="btn-run-opt" data-i18n="bt.run_optimization">Optimierung starten</button>
             <div class="progress-wrap" id="opt-progress" style="display:none">
               <div class="lbl" id="opt-progress-lbl">0 / 0 Kombinationen...</div>
               <div class="progress-bar"><div id="opt-progress-bar" style="width:0%"></div></div>
@@ -265,11 +265,11 @@
 
         <div id="opt-success" class="success-banner" style="display:none"></div>
         <details open id="sec-opt-heatmap" style="display:none">
-          <summary>Heatmap: Objective × Parameter</summary>
+          <summary data-i18n="bt.heatmap_objective">Heatmap: Objective × Parameter</summary>
           <div class="content"><div id="chart-opt-heatmap"></div></div>
         </details>
         <details open id="sec-opt-top" style="display:none">
-          <summary>Top 10 Kombinationen</summary>
+          <summary data-i18n="bt.top10_combos">Top 10 Kombinationen</summary>
           <div class="content">
             <table class="perf-table">
               <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Profit Factor</th><th data-i18n="table.win_rate">Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
@@ -282,20 +282,20 @@
       <!-- TAB 3: Walk-Forward -->
       <div class="tab-content" id="tab-wf">
         <details open>
-          <summary>Walk-Forward Konfiguration</summary>
+          <summary data-i18n="bt.wf_config">Walk-Forward Konfiguration</summary>
           <div class="content">
-            <p class="box-info">Optimiert auf In-Sample, testet auf Out-of-Sample → realistische Performance ohne Overfitting.</p>
+            <p class="box-info" data-i18n="bt.wf_desc">Optimiert auf In-Sample, testet auf Out-of-Sample → realistische Performance ohne Overfitting.</p>
             <div class="slider-grid">
               <div>
-                <label>Anzahl Folds <span id="lbl-folds">5</span></label>
+                <label><span data-i18n="bt.num_folds">Anzahl Folds</span> <span id="lbl-folds">5</span></label>
                 <input type="range" id="sl-folds" min="3" max="10" step="1" value="5">
               </div>
               <div>
-                <label>In-Sample Ratio <span id="lbl-ratio">0.70</span></label>
+                <label><span data-i18n="bt.in_sample_ratio">In-Sample Ratio</span> <span id="lbl-ratio">0.70</span></label>
                 <input type="range" id="sl-ratio" min="0.5" max="0.8" step="0.05" value="0.7">
               </div>
               <div>
-                <label>Zielvariable</label>
+                <label data-i18n="bt.objective">Zielvariable</label>
                 <select id="sel-wf-objective">
                   <option value="total_return">Total Return</option>
                   <option value="sharpe">Sharpe Ratio</option>
@@ -305,7 +305,7 @@
                 </select>
               </div>
             </div>
-            <button class="action-btn" id="btn-run-wf">Walk-Forward starten</button>
+            <button class="action-btn" id="btn-run-wf" data-i18n="bt.run_wf">Walk-Forward starten</button>
             <div class="progress-wrap" id="wf-progress" style="display:none">
               <div class="lbl" id="wf-progress-lbl">Fold 0 / 0...</div>
               <div class="progress-bar"><div id="wf-progress-bar" style="width:0%"></div></div>
@@ -314,11 +314,11 @@
         </details>
 
         <div id="wf-kpis-wrap" style="display:none">
-          <h3 style="font-size:.875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;margin:1.25rem 0 .5rem">Out-of-Sample Aggregat</h3>
+          <h3 style="font-size:.875rem;color:#a89878;text-transform:uppercase;letter-spacing:.08em;margin:1.25rem 0 .5rem" data-i18n="bt.oos_aggregate">Out-of-Sample Aggregat</h3>
           <div class="kpi-row" id="wf-kpis"></div>
         </div>
         <details open id="sec-wf-folds" style="display:none">
-          <summary>Fold-Details</summary>
+          <summary data-i18n="bt.fold_details">Fold-Details</summary>
           <div class="content">
             <table class="perf-table">
               <thead><tr><th>Fold</th><th>Trades</th><th>Return</th><th data-i18n="table.win_rate">Win-Rate</th><th>Sharpe</th><th>Best Params</th></tr></thead>
@@ -331,21 +331,21 @@
       <!-- TAB 4: Event-Relevanz (KI) -->
       <div class="tab-content" id="tab-rel">
         <details open>
-          <summary>Relevanz-Berechnung</summary>
+          <summary data-i18n="bt.relevance_calc">Relevanz-Berechnung</summary>
           <div class="content">
-            <p class="box-info">Welche Events sind statistisch signifikant? t-Test + Effect Size (Cohen's d) + Win-Rate → Relevanz-Score.</p>
+            <p class="box-info" data-i18n="bt.relevance_desc">Welche Events sind statistisch signifikant? t-Test + Effect Size (Cohen's d) + Win-Rate → Relevanz-Score.</p>
             <div class="slider-grid">
               <div>
-                <label>Tage VOR Event <span id="lbl-rel-before">3</span></label>
+                <label><span data-i18n="bt.days_before_event">Tage VOR Event</span> <span id="lbl-rel-before">3</span></label>
                 <input type="range" id="sl-rel-before" min="1" max="10" step="1" value="3">
               </div>
               <div>
-                <label>Tage NACH Event <span id="lbl-rel-after">3</span></label>
+                <label><span data-i18n="bt.days_after_event">Tage NACH Event</span> <span id="lbl-rel-after">3</span></label>
                 <input type="range" id="sl-rel-after" min="1" max="10" step="1" value="3">
               </div>
               <div>
                 <label>&nbsp;</label>
-                <button class="action-btn" id="btn-run-rel" style="width:100%">Relevanz berechnen</button>
+                <button class="action-btn" id="btn-run-rel" style="width:100%" data-i18n="bt.calc_relevance">Relevanz berechnen</button>
               </div>
             </div>
           </div>
@@ -353,37 +353,37 @@
 
         <div id="rel-top-banner" class="success-banner" style="display:none"></div>
         <details open id="sec-rel-table" style="display:none">
-          <summary>Relevanz-Ranking</summary>
+          <summary data-i18n="bt.relevance_ranking">Relevanz-Ranking</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Event</th><th>Kategorie</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th><th>t-Stat</th><th>p-Wert</th><th>Relevanz</th></tr></thead>
+              <thead><tr><th data-i18n="table.event">Event</th><th data-i18n="table.category">Kategorie</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.n">n</th><th data-i18n="table.t_stat">t-Stat</th><th data-i18n="table.p_value">p-Wert</th><th data-i18n="table.relevance">Relevanz</th></tr></thead>
               <tbody id="tbody-rel"></tbody>
             </table>
           </div>
         </details>
         <details open id="sec-rel-gauges" style="display:none">
-          <summary>Event-Relevanz Tachos</summary>
+          <summary data-i18n="bt.event_gauges">Event-Relevanz Tachos</summary>
           <div class="content" id="content-rel-gauges"></div>
         </details>
         <details>
-          <summary>📖 So lesen Sie den Relevanz-Score</summary>
+          <summary data-i18n="bt.how_to_read_score">📖 So lesen Sie den Relevanz-Score</summary>
           <div class="content">
-            <p>Der Relevanz-Score kombiniert drei Dimensionen zu einem Gesamtwert zwischen 0 und 1:</p>
+            <p data-i18n="bt.score_intro">Der Relevanz-Score kombiniert drei Dimensionen zu einem Gesamtwert zwischen 0 und 1:</p>
             <ul>
               <li><b>Signifikanz</b> (50%): 1 - p-Wert</li>
               <li><b>Win-Rate</b> (30%): Anteil der Trades > 0</li>
               <li><b>Effect Size</b> (20%): Cohen's d, gecappt bei 1.0</li>
             </ul>
-            <p><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
+            <p data-i18n="bt.score_legend"><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
           </div>
         </details>
       </div>
 
       <details>
-        <summary>📚 Methodik</summary>
+        <summary data-i18n="common.methodology">📚 Methodik</summary>
         <div class="content">
-          <h3>Backtest-Logik</h3>
-          <p>Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
+          <h3 data-i18n="bt.backtest_logic">Backtest-Logik</h3>
+          <p data-i18n="bt.backtest_logic_desc">Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>
@@ -394,10 +394,10 @@
           </ul>
           <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
           <p>Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
-          <h3>Walk-Forward</h3>
-          <p>Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>
-          <h3>Event-Relevanz Score</h3>
-          <p>Pro Event ein t-Test (H0: mean = 0). Score = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen's d, gecappt 1.0).</p>
+          <h3 data-i18n="bt.tab_wf">Walk-Forward</h3>
+          <p data-i18n="bt.wf_method_desc">Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>
+          <h3 data-i18n="bt.event_relevance_score">Event-Relevanz Score</h3>
+          <p data-i18n="bt.relevance_score_desc">Pro Event ein t-Test (H0: mean = 0). Score = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen's d, gecappt 1.0).</p>
         </div>
       </details>
     </main>

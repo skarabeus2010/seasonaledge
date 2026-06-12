@@ -111,7 +111,7 @@
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Overnight vs. Intraday</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
+      <p class="page-caption" data-i18n="ov.page_caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- Anomalie-Radar (KI Quick-Check) -->
@@ -125,7 +125,7 @@
 
       <!-- Monats-Chart -->
       <details open id="sec-month" style="display:none">
-        <summary>&Oslash; Rendite nach Monat</summary>
+        <summary data-i18n="ov.section_month">&Oslash; Rendite nach Monat</summary>
         <div class="content">
           <div class="legend-row"><span class="l-on">Overnight</span><span class="l-id">Intraday</span><span class="l-tot">Total</span></div>
           <div id="chart-month"></div>
@@ -134,7 +134,7 @@
 
       <!-- Wochentag-Chart -->
       <details open id="sec-weekday" style="display:none">
-        <summary>&Oslash; Rendite nach Wochentag</summary>
+        <summary data-i18n="ov.section_weekday">&Oslash; Rendite nach Wochentag</summary>
         <div class="content">
           <div class="legend-row"><span class="l-on">Overnight</span><span class="l-id">Intraday</span><span class="l-tot">Total</span></div>
           <div id="chart-weekday"></div>
@@ -149,21 +149,21 @@
 
       <!-- Kumulierter Jahresverlauf -->
       <details open id="sec-cumulative" style="display:none">
-        <summary>Kumulierter Jahresverlauf</summary>
+        <summary data-i18n="ov.section_cumulative">Kumulierter Jahresverlauf</summary>
         <div class="content"><div id="chart-cumulative"></div></div>
       </details>
 
       <!-- Top/Flop Monate -->
       <details open id="sec-topflop" style="display:none">
-        <summary>Top &amp; Flop Monate</summary>
+        <summary data-i18n="ov.section_topflop">Top &amp; Flop Monate</summary>
         <div class="content"><div id="chart-topflop"></div></div>
       </details>
 
       <!-- Heatmap -->
       <details id="sec-heatmap" style="display:none">
-        <summary>Heatmap: Monat &times; Wochentag</summary>
+        <summary data-i18n="ov.section_heatmap">Heatmap: Monat &times; Wochentag</summary>
         <div class="content">
-          <label style="font-size:.75rem;color:var(--muted)">Return-Typ:
+          <label style="font-size:.75rem;color:var(--muted)"><span data-i18n="ov.return_type">Return-Typ</span>:
             <select id="sel-heatmap-type" style="padding:.25rem .4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:4px;font-size:.75rem">
               <option value="overnight">Overnight</option>
               <option value="intraday">Intraday</option>
@@ -176,7 +176,7 @@
 
       <!-- Statistik -->
       <details id="sec-stats" style="display:none">
-        <summary>Gesamtstatistik</summary>
+        <summary data-i18n="ov.section_stats">Gesamtstatistik</summary>
         <div class="content" id="content-stats"></div>
       </details>
 

@@ -91,14 +91,14 @@
       <h3 data-i18n="sidebar.smoothing_h3">Gl&auml;ttung</h3>
       <label><input type="range" id="rng-smooth" min="1" max="21" value="1" step="2"><span id="lbl-smooth">1</span> Tage</label>
       <hr>
-      <h3>Kriege ausw&auml;hlen</h3>
-      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-wars" checked> Alle / Keine</label>
+      <h3 data-i18n="war.sidebar_select_wars">Kriege ausw&auml;hlen</h3>
+      <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-wars" checked> <span data-i18n="war.select_all_none">Alle / Keine</span></label>
       <div id="war-toggles" style="font-size:.8125rem"></div>
     </aside>
 
     <main>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>War Times</b> &mdash; <span id="title-ticker">^DJI</span></h1>
+      <h1 class="page-title"><b data-i18n="war.page_title">War Times</b> &mdash; <span id="title-ticker">^DJI</span></h1>
       <p class="page-caption" id="page-caption">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
@@ -110,9 +110,9 @@
 
       <!-- Event-Window Overlay -->
       <details open>
-        <summary>Event-Window &mdash; Marktreaktion um Kriegsbeginn (T=0)</summary>
+        <summary data-i18n="war.section_event_window">Event-Window &mdash; Marktreaktion um Kriegsbeginn (T=0)</summary>
         <div class="content">
-          <p class="box-info">Kumulative Rendite um das Startdatum jedes Krieges. T=0 = erster Handelstag nach Kriegsbeginn. Normalisiert auf 100.</p>
+          <p class="box-info" data-i18n="war.event_window_desc">Kumulative Rendite um das Startdatum jedes Krieges. T=0 = erster Handelstag nach Kriegsbeginn. Normalisiert auf 100.</p>
           <div class="event-legend" id="event-legend"></div>
           <div id="chart-event"></div>
           <div class="kpi-row" id="kpi-event"></div>
@@ -121,28 +121,28 @@
 
       <!-- Avg Return per War (sorted bar) -->
       <details open>
-        <summary>&Oslash;-Rendite nach Krieg &mdash; Event-Window</summary>
+        <summary data-i18n="war.section_avg_return">&Oslash;-Rendite nach Krieg &mdash; Event-Window</summary>
         <div class="content"><div id="chart-event-bar"></div></div>
       </details>
 
       <!-- Drawdown-Vergleich -->
       <details open>
-        <summary>Max Drawdown nach Kriegsbeginn</summary>
+        <summary data-i18n="war.section_max_drawdown">Max Drawdown nach Kriegsbeginn</summary>
         <div class="content">
-          <p class="box-info">Maximaler R&uuml;ckgang vom H&ouml;chststand innerhalb des Event-Windows nach T=0.</p>
+          <p class="box-info" data-i18n="war.drawdown_desc">Maximaler R&uuml;ckgang vom H&ouml;chststand innerhalb des Event-Windows nach T=0.</p>
           <div id="chart-drawdown"></div>
         </div>
       </details>
 
       <!-- Kriegstabelle -->
       <details open>
-        <summary>US-Kriege mit B&ouml;rseneinfluss</summary>
+        <summary data-i18n="war.section_war_table">US-Kriege mit B&ouml;rseneinfluss</summary>
         <div class="content" id="content-war-table"></div>
       </details>
 
       <!-- Jahresrenditen -->
       <details open>
-        <summary>Jahresrenditen &mdash; Kriegsjahre markiert</summary>
+        <summary data-i18n="war.section_annual_returns">Jahresrenditen &mdash; Kriegsjahre markiert</summary>
         <div class="content"><div id="chart-bar"></div></div>
       </details>
 
