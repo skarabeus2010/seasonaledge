@@ -67,7 +67,7 @@ SA.i18n = (function() {
       var cached = sessionStorage.getItem(cacheKey);
       if (cached) return Promise.resolve(JSON.parse(cached));
     } catch (e) {}
-    return fetch('/landing/i18n/' + lang + '.json')
+    return fetch('/landing/i18n/' + lang + '.json?v=' + _JSON_VER)
       .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
