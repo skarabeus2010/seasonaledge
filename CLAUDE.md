@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 35.0 | 2026-05-14 | Gekürzt: Detail-Patterns aus Code ableitbar, nur noch nicht-offensichtliche Regeln + Architektur
+> Version 36.0 | 2026-06-12 | Komprimiert: alte Erledigt-Blöcke zusammengefasst, Leichen entfernt, Phase 6 + Lessons Learned ergänzt
 
 ## Projekt
 
@@ -22,30 +22,37 @@ Host-Pfad: /opt/seasonaledge
 ```
 seasonal_app.py          ← Streamlit-Startseite (Legacy, unter /app/)
 shared/                  ← Berechnungs-/Daten-/UI-Module (siehe Module-Liste unten)
-scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime, ML)
-pages/                   ← Streamlit Pages (Light Live + _disabled/ + Premium)
+scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime)
+pages/                   ← Streamlit Pages (Light Live + _disabled/)
 landing/                 ← Statische HTML-App (Haupt-Frontend)
-  pages/                 ← 20 HTML-Pages (siehe HTML-Pages unten)
-  js/                    ← 10 JS-Module (shared compute + charts)
+  pages/                 ← 29 HTML-Feature-Pages
+  js/                    ← JS-Module (shared compute + charts + i18n)
+  i18n/                  ← de.json + en.json (793 Keys, seit KW24)
   css/app.css            ← V3 Ultra Design System
   components/            ← nav.html, footer.html (JS-Include)
   data/                  ← Pre-computed JSON
 blog/                    ← Markdown-Blog-Engine
+  posts/                 ← 24 DE Markdown-Posts
+  posts/en/              ← 24 EN Markdown-Posts (seit KW24)
+  templates/             ← bilinguales blog_post.html + blog_index.html
+  output/                ← Generiertes HTML (gitignored, wird serverseitig gebaut)
 seo/                     ← Programmatic SEO + statische Tool-Pages
-docs/                    ← Ausgelagerte Dokumentation (ARCHITECTURE, CHARTS, AI_MODELS, …)
+docs/                    ← Ausgelagerte Dokumentation
 ```
 
 ### Shared-Module Kurzübersicht
 
-`yahoo_downloader` (Stooq-Fallback + OHLC adj_factor, einziger Cache), `data` (Supabase-First), `calculations`, `charts` (`apply_se_theme`), `ki_score` (4 Sub-Scores→0-10), `tdom_analysis`, `tdoy_analysis`, `ai_models`, `anomaly_engine`, `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `spot_vol_beta`, `outlier_manager`, `market_calendar`, `cache_manager`, `supabase_client`, `logger`, `cpi_data`, `shock_analysis`, `sector_rotation`, `significance_gauge` (key_prefix!), `percentile_bar`, `streak_analysis`, `footer`, `i18n`, `ticker_autocomplete`, `indicators`, `indicator_filter_ui`, `trading_day_header`, `drawdown_analysis`, `weekly_report`, `unsubscribe_token`, `strategies/plain_vanilla` (24), `strategies/kaeppel`.
+`yahoo_downloader` (Stooq-Fallback + OHLC adj_factor, einziger Cache), `data` (Supabase-First), `calculations`, `charts` (`apply_se_theme`), `ki_score` (4 Sub-Scores→0-10), `tdom_analysis`, `tdoy_analysis`, `anomaly_engine`, `spot_vol_beta`, `outlier_manager`, `market_calendar`, `cache_manager`, `supabase_client`, `logger`, `cpi_data`, `shock_analysis`, `sector_rotation`, `significance_gauge` (key_prefix!), `percentile_bar`, `streak_analysis`, `footer`, `i18n`, `ticker_autocomplete`, `indicators`, `indicator_filter_ui`, `trading_day_header`, `drawdown_analysis`, `weekly_report`, `daily_report`, `unsubscribe_token`, `strategies/plain_vanilla` (24), `strategies/kaeppel`.
+
+> ⚠️ Gelöscht: `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `ai_models` (ML-Pipeline stillgelegt KW16)
 
 ### Frontend JS-Module (landing/js/)
 
-`app.js` (Ticker-Input, REST, Trading-Day-Header, `makeSortable` Auto-Init, Sidebar-Toggle, Component-Loader), `charts.js` (ApexCharts-Theme + Helpers), `holidays.js` (NYSE/XETRA/LSE, Gauss-Ostern), `seasonal-compute.js`, `decade-compute.js` (+ Shared Anomalie-Radar via `renderAnomalyInto()`), `strategy-compute.js` (22 Strategien), `streak-analysis.js`, `significance.js`, `indicators.js`, `outlier.js`, `tour.js` + `tour-config.js` (23 Steps/11 Pages), `dash-compute.js`, `watchlist.js`, `auth.js` (Supabase Auth, Google OAuth), `fomc-dates.js`.
+`app.js` (Ticker-Input, REST, Trading-Day-Header, `makeSortable` Auto-Init, Sidebar-Toggle, Component-Loader), `charts.js` (ApexCharts-Theme + Helpers), `holidays.js` (NYSE/XETRA/LSE, Gauss-Ostern), `seasonal-compute.js`, `decade-compute.js` (+ Shared Anomalie-Radar via `renderAnomalyInto()`), `strategy-compute.js` (22 Strategien), `streak-analysis.js`, `significance.js`, `indicators.js`, `outlier.js`, `tour.js` + `tour-config.js` (26 Steps/13 Pages, `SA.TOUR_STEPS_EN` für EN), `dash-compute.js`, `watchlist.js`, `auth.js` (Supabase Auth, Google OAuth), `fomc-dates.js`, **`i18n.js`** (SA.i18n IIFE, URL-Detect, JSON-Loader, _applyDOM, _applyNavLinks, switchTo).
 
 ### HTML-Pages (landing/pages/)
 
-Dashboard, Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Kriegszeiten, Crash-Frühwarnung, Plain-Vanilla, Trifecta, Intermarket-Shocks, Sektor-Rotation, Overnight, Zentralbanken, Feiertage, TDOM-Analyse, Spot-Vol-Beta, OPEX, KI-Saisonalität, Backtest-Engine, Unsubscribe.
+Dashboard, Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Kriegszeiten, Crash-Frühwarnung, Plain-Vanilla, Trifecta, Intermarket-Shocks, Sektor-Rotation, Overnight, Zentralbanken, Feiertage, TDOM-Analyse, Spot-Vol-Beta, OPEX, KI-Saisonalität, Backtest-Engine, Polymarket, Dividenden-Kalender, Earnings-Kalender, Risikozyklus, VIXpiration, Pricing, Profile, Unsubscribe.
 
 ## Kern-Methodik: NORMALISIERTE RENDITEN
 
@@ -74,10 +81,10 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - Cache NUR in `yahoo_downloader.py` — kein `@st.cache_data` anderswo
 - `df['Date'].iloc[0].strftime()` statt `df.index[0].strftime()`
 - `print()` verboten → `app_logger.debug()`
-- API-Keys via `os.environ[...]` + Streamlit Secrets (in `.gitignore`), `logs/` niemals in Git
+- API-Keys via `os.environ[...]` + `.env` (in `.gitignore`), `logs/` niemals in Git
 - Stooq: Session-Cookie erforderlich (`session.get("https://stooq.com/")` vor CSV)
 - OHLC Cross-Day VERBOTEN: `Open[t]/Close[t-1]` mischt adj_factors → Dividend-Bias. Overnight/Intraday per Residual: `overnight = total - intraday`
-- Nightly Refresh: nur letzte 5 Tage. Historische Daten bleiben unverändert
+- Nightly Refresh: letzte **7 Tage** Upsert-Fenster (seit Phase D KW20). Phase D prüft zusätzlich letzte 14 Tage auf NULL `log_return` und berechnet nach.
 - `log_return`-Spalte in Supabase wird von `preprocess()` genutzt wenn vorhanden
 - Zeitstempel UTC: `datetime.now(timezone.utc)` nutzen (nicht `datetime.utcnow()`, deprecated ab 3.12)
 
@@ -147,6 +154,7 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - iOS 16px Input-Fix: Sidebar-Inputs auf Mobile explizit `font-size:16px` (sonst Auto-Zoom)
 - Docker JSON-Transfer: im Container generieren, `docker cp` auf Host
 - Git-Pull + Nginx-Reload für statische Änderungen: `cd /opt/seasonaledge && git pull && docker exec seasonalpha-nginx nginx -s reload`
+- `blog/output/` ist gitignored — HTML wird serverseitig via `blog_builder.py --build` generiert (baut DE + EN)
 
 ### Email / Brevo
 
@@ -155,6 +163,26 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - Secrets ohne Streamlit-Runtime: TOML-Fallback via `tomllib`, sucht in `<project>/.streamlit/secrets.toml` und `~/.streamlit/secrets.toml`, beide Key-Cases
 - `messageId` aus Brevo-Response loggen für Debug
 - `pgcrypto` in Supabase im `extensions`-Schema, nicht `public` → `SET search_path=public,extensions,pg_temp` + expliziter `extensions.digest()`-Call
+- Newsletter-Subprocess: `capture_output=False` — sonst Output komplett unsichtbar in docker logs
+
+### Internationalisierung (EN-Lokalisierung)
+
+- `SA.i18n` IIFE in `landing/js/i18n.js` — `init()` in DOMContentLoaded, `switchTo(lang)` public
+- Spracherkennung via URL: `/en/*` → EN, alles andere → DE. Kein JS-Cookie, kein localStorage
+- `data-i18n="key"` auf Text-Elemente, `data-i18n-placeholder` für Input-Placeholders, `data-i18n-title` für title-Attr
+- JSON-Cache in sessionStorage mit Versionskey (`_JSON_VER='v3'`) — verhindert Stale-Cache nach Key-Änderungen
+- nginx `sub_filter` tauscht `og:locale` und `lang=de` → `lang=en` für `/en/*`-Responses
+- i18n-JSON: nginx `location /landing/i18n/ { ... no-store }` — KEIN max-age (sonst 24h gecachte alte Keys)
+- `_applyNavLinks()` rewritet alle `document.querySelectorAll('a[href]')` — NICHT nur nav/footer Container
+
+### Blog / Bilingualisierung
+
+- Blog-Templates bilingual via Template-Vars (`lang`, `og_locale`, `blog_base`, `post_url`, `str_min_read`, `str_cta_h3` etc.) — NICHT `{% if is_en %}...{% else %}...{% endif %}` überall im Template. Alle Sprachlogik im Python Builder.
+- EN-Posts in `blog/posts/en/` führen `de_slug:` Feld für hreflang-Rücklink zum DE-Original
+- Builder: `{**post, **_extra_vars_en(post), "related_posts": ..., ...}` als ctx mergen, dann `tpl.render(**ctx)` — nie `tpl.render(**post, **override_vars)` (wirft `TypeError: duplicate keyword argument` wenn Key in beiden Dicts)
+- nginx: `location ^~ /en/blog/` MUSS VOR `location ^~ /en/` stehen — nginx nimmt längsten Prefix-Match; fehlt der explizite Block, landet `/en/blog/` im generischen `/en/`-Catch-all → 404
+- Workflow-Agenten für Übersetzungen: **einen Agenten pro Datei** (nicht Batches). Große Posts füllen Kontext-Fenster, Batch-Agenten schreiben dann nur partiell oder brechen still ab.
+- Windows cp1252 console: `blog_builder.py --build` kann bei Sonderzeichen (`−`, `–`) in Post-Titeln UnicodeEncodeError werfen. Betrifft nur `print()`-Ausgabe, NICHT die HTML-Erzeugung. Auf dem Linux-Server (UTF-8) kein Problem.
 
 ### Sprache
 
@@ -202,161 +230,54 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ## Docs
 
-- `ARCHITECTURE.md`, `CHARTS.md`, `AI_MODELS.md`, `KI_FEATURES.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`
+- `ARCHITECTURE.md`, `CHARTS.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
 ## TODO
 
-### Erledigt (KW 15, 07.–15.04.2026)
-- [x] Dashboard Bento-Grid (11 Cards) + Risiko-Card 2. Zeile + Streak-Kacheln + WE/Feiertag-Fallback
-- [x] Guided Tour (23 Steps/11 Pages, Driver.js v1.3.1)
-- [x] Weekly Newsletter Pipeline (Brevo + HMAC-Unsubscribe + Phase F Cron)
-- [x] SEO-Foundation (OG, Sitemap, IndexNow, Breadcrumbs, www→non-www 301)
-- [x] Saisonal-Scanner MVP (269 Ticker, Weekly Cron)
-- [x] Watchlist Phase 1 (localStorage + Compact-Cards V2)
-- [x] Mobile Responsiveness (Sidebar-Collapse, Burger, iOS-Zoom)
-- [x] TDOM-Fix Kalender-basiert, Timezone-Bugs, DD-Perzentil DOY-basiert
-- [x] **2026-04-15** `refresh_log` RLS + Policies (Supabase Security Warning gefixt)
+### Abgeschlossene Meilensteine (Kurzübersicht)
 
-### Erledigt (KW 16, 2026-04-18 — Marathon-Session)
-- [x] **Polymarket Phase 1-3 live** — 26 Markets, 4.100 Historie-Punkte, Cron Phase G, neue Page `/polymarket`, Divergenz-Score für BTC/ETH, Teaser in Zentralbanken + Crash-Frühwarnung (siehe `docs/POLYMARKET.md`)
-- [x] **3 Polymarket-Blog-Posts** mit FAQPage-Schema (Fed-Cuts, BTC $150k, ETH vs BTC)
-- [x] **SEO-Cleanup** — `/analyse/*` Thin-Content-Pages endgültig weg (410 Gone + Builder-Cleanup)
-- [x] **.env-Refactor** — weg von `.streamlit/secrets.toml`, neuer `shared/env_loader.py`
-- [x] **Google OAuth Phase 2** — OAuth-Client + Supabase Provider + URL Config (Consent noch in "Testing"-Mode)
-- [x] **Cloud-Watchlist** — `user_watchlists`-Tabelle, Optimistic Sync, API-kompatibel zu bestehendem `SA.watchlist`
-- [x] **Profile-Seite `/profile`** — responsive (3 Breakpoints 1024/768/480)
-- [x] **Dashboard Info-Badges** — 13 Kacheln mit Hover-Tooltips (5 statische Cards + 8 Risk-KPIs)
-- [x] **Tour erweitert** — 23→26 Steps (Login→Scanner→Watchliste vor Dashboard)
-- [x] **Performance-Cache** — `SA.cache` (15min TTL) in app.js, `SA.TOUR_MODE` deaktiviert Chart-Animationen im Tour-Flow
-- [x] **Chronos-Card** aus Dashboard entfernt (Relikt der alten ML-Pipeline)
-- [x] **Info-Badge-Security-Fix** — `inject_credentials.sh` prüft per JWT-Role dass kein service-role-Key ins Frontend-HTML leakt
-- [x] **nginx-Cache-Fix** — `/landing/components/*.html` nicht mehr 24h gecached (Nav-Änderungen wirken sofort)
+| KW | Datum | Inhalt |
+|----|-------|--------|
+| KW15 | Apr 2026 | Dashboard Bento-Grid, Guided Tour (26 Steps), Weekly Newsletter, SEO-Foundation, Scanner MVP, Watchlist Phase 1, Mobile Responsiveness, TDOM-Fix |
+| KW16-17 | Apr 2026 | Polymarket Integration (3 Phasen, Brier-Pipeline), Auth+Cloud-Watchlist, Profile-Page, Health-Check-Mails, ML-Pipeline stillgelegt, Blog-Posts #1-21 |
+| KW18 | Apr 2026 | Dividenden + Earnings Pages, Event-Crons, Yahoo Crumb-Auth, Health-Check-Integration |
+| KW20 | Mai 2026 | Nightly Backfill Phase D, moddatetime-Trigger, Stripe-Infrastruktur, GSC-Bereinigung (383→32), Blog #22-24, Newsletter Phase F Fix |
+| KW22 | Mai 2026 | Daily Morning Briefing (Multi-Window-TDOM-Score 0-4, top_daily_tips, Watchlist-Personalisierung, 10 Strategie-Signale, Status-Zeile) |
+| KW24 | Jun 2026 | **EN Lokalisierung Phasen 1-6** komplett: SA.i18n, 793 Keys, 30 Pages data-i18n, Tour EN, 24 Blog-Posts EN, Sitemap 89→113 URLs, hreflang |
 
 ### ✅ ML-Pipeline stillgelegt (2026-04-18)
-Gecancelter Scope: Chronos-Forecast, NeuralProphet, MSTL-Monats-Heatmap.
-Entfernt: `shared/mstl_decomposition.py`, `scripts/compute_ml_forecasts.py`,
-`scripts/create_ml_forecasts.sql`, `.github/workflows/ml_forecasts.yml`,
-`pages/_disabled/80_Erweiterte_Analyse.py` + `87_KI_Score.py`,
-`docs/AI_MODELS.md`, `docs/KI_FEATURES.md`.
-KI-Score wieder 4 Sub-Scores (à 2.5), Scanner ohne Forecast/Sais.Stärke-Spalte.
-User-Action offen: `DROP TABLE ml_forecasts` in Supabase.
+Entfernte Module/Scripts: `mstl_decomposition.py`, `chronos_forecast.py`, `neural_prophet_forecast.py`, `compute_ml_forecasts.py`, `create_ml_forecasts.sql`, `ml_forecasts.yml`.
+KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_forecasts` in Supabase.
 
-### Erledigt (KW 17, 2026-04-23 — Polymarket-Bypass + Brier-Pipeline live)
-- [x] **Polymarket Phase G via Bypass-Cron** — Subprocess Silent-Fail in `nightly_refresh.py` Phase G seit 2026-04-19 (Traceback durch `stderr[:500]`-Truncation unsichtbar). Statt weiter zu debuggen: eigener GitHub-Cron `polymarket_daily.yml` (21:30 UTC), Phase G bleibt drin mit `capture_output=False` zum späteren Forensik.
-- [x] **Brier-Pipeline komplett automatisiert** — Scraper lief nie (kein Cron), Compute hatte mehrere Bugs: KeyError bei 0 Forecasts, 1000-Row-Cap ohne Pagination, falscher Key im Guard-Check, fehlender Volume-Mount. Alle gefixt.
-- [x] **Brier-Stats live auf /polymarket** — Overall Brier 0.0723, 197k Forecasts, 3761 Markets, Kalibrierungs-Kurve sehr nah an Diagonale (leichte Overconfidence 0.4-0.5). `landing/data/brier_stats.json` jetzt Volume-gemountet, nginx liefert aus.
-- [x] **(i)-Badge für Brier-Erklärung** auf /polymarket — Pure-CSS Hover-Tooltip analog zu ki-saisonalitaet.html, ersetzt redundanten `<details>`-Expander.
-- [x] **Health-Check 8. Indikator**: Brier-Stats-Alter (green ≤10d, yellow 11-14d, red >14d oder fehlt).
-- [x] **Automatik**: Polymarket täglich 21:30 UTC, Brier wöchentlich Sonntag 02:00 UTC, Phase H Sonntag im Nightly (Compute-only, ohne Scraper).
+### Erledigt (KW 24, 2026-06-12 — EN Blog Phase 6)
+- [x] **24 Blog-Posts EN übersetzt** — `blog/posts/en/` mit `de_slug:`-Feld für hreflang-Rücklinks
+- [x] **`blog_builder.py` erweitert** — `build_en()`, `load_posts_en()`, `_extra_vars_en()`, `_build_blog_sitemap_en()`. `main()` ruft automatisch beide (`build_all()` + `build_en()`)
+- [x] **Bilinguales Blog-Template** — alle Sprachstrings als Template-Variablen, kein `{% if is_en %}` im HTML
+- [x] **nginx `/en/blog/`** — eigener `^~`-Location-Block vor dem `/en/`-Catch-all
+- [x] **Sitemap 89→113 URLs** — 24 EN Blog-Posts + `/en/blog/` Index, alle mit hreflang
 
-### Erledigt (KW 17, 2026-04-21 — GRANT-Incident + Monitoring-Mails)
-- [x] **Supabase GRANT-Loss-Fix** — service_role hatte DML auf 15+ Alt-Tabellen verloren, anon hatte ungewollte Write-Rechte. SQL-Block mit `GRANT ALL ... TO service_role` + `REVOKE ... FROM anon` + `ALTER DEFAULT PRIVILEGES`. Incident-Doku im Memory.
-- [x] **docker-compose `env_file: .env`** — BREVO_API_KEY/ADMIN_EMAIL/SENDER_* waren nach `.env`-Refactor (04-18) nicht im Container; dadurch Weekly-Newsletter 3 Tage stumm. Fix: pauschal alle `.env`-Keys durchreichen, Migration der Brevo-Werte aus `.streamlit/secrets.toml` in `.env`.
-- [x] **PR #27 — Daily Health Check** — `scripts/daily_health_check.py` + Jinja2-Template + GitHub-Action Cron 07:00 UTC + Weekly-Newsletter-Manual-Trigger (`.github/workflows/weekly_newsletter_manual.yml` mit test/dry-run/live-Dropdown). 7 Checks, Ampel-Mail an `ADMIN_EMAIL`.
-- [x] **PR #28 — Health-Mail Standing-Text** — permanente "Selbst testen"-Sektion (GH-Actions-Links, SSH-Commands, Brevo-Statistics, Doku-Link). Bug-Fix: `scanner_results.scan_date` statt falschem `run_date`.
-- [x] **PR #29 — Intraday-Run-Logging** — `intraday_refresh.py` schreibt nach jedem erfolgreichen Run einen `refresh_log`-Eintrag mit `run_type='intraday'`. Health-Check-Coverage-Counter (Wochentag green ≥10, Wochenende green ≥3).
-- [x] **docs/EMAIL_TESTING.md** — Runbook für Mail-Versand-Tests, Troubleshooting (BREVO_API_KEY fehlt, Sender rejected, permission denied), Brevo-Key-Rotation, Daten-Freshness-Check.
+### 🔴 SOFORT — Security (User-Action erforderlich)
+- [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten
+- [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → SMTP & API → neuen Key erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
+- [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 geleakt. Nicht mehr genutzt, trotzdem: Finnhub Dashboard → API Keys → löschen
 
-### Erledigt (KW 18, 2026-04-27 + 2026-04-29 — Earnings + Dividenden Pages)
-- [x] **2026-04-27 Dividenden-Effekt + Earnings-Effekt Pages** — `landing/pages/dividend-kalender.html` + `earnings-kalender.html`, lesen aus Supabase-Tabellen `dividend_events` / `earnings_events`. Schema in `scripts/create_event_tables.sql` (RLS+anon read+service_role write).
-- [x] **2026-04-27 `scripts/fetch_event_data.py`** — Yahoo Finance v8 chart?events=dividends + quoteSummary?modules=earningsHistory, batched Supabase upsert, 0.5s rate-limit + 429-Backoff. CLI: `--mode both|dividends|earnings`, `--tickers`, `--dry-run`.
-- [x] **2026-04-29 Cron-Workflow `event_data_daily.yml`** — täglich 22:15 UTC (nach Polymarket-Cron, nach US-Close), workflow_dispatch mit mode/tickers-Inputs, ssh→docker exec analog polymarket_daily.
-- [x] **2026-04-29 PR #38 Empty-State-Polish** — User-freundliche Hinweise statt Leak des internen Script-Pfads bei leeren Tabellen.
-- [x] **2026-04-29 PR #39 Yahoo 429-Fix** — Pre-GET auf finance.yahoo.com entfernt (triggerte Sticky-Ban auf GH-Actions-IPs). Pattern aus shared/yahoo_downloader.py: simple Browser-UA, query1→query2-Fallback pro Request.
-- [x] **2026-04-29 PR #40 Crumb-Auth** — quoteSummary erfordert seit ~2023 crumb-Token. `_get_crumb()`: GET fc.yahoo.com → A3-Cookie, GET getcrumb → Crumb, dann `&crumb=…` an Calls. Cache pro Process.
-- [x] **2026-04-29 PR #41 v10 statt v11** — v11/quoteSummary lieferte trotz Crumb leere history. v10 + zusätzlich earnings-Modul → AAPL 4 Quartale OK. Yahoo's earningsHistory ist auf **4 Quartale** limitiert; Historie wächst durch tägliche Cron-Runs (Upsert auf PK ticker+report_date).
-- [x] **2026-04-29 PR #43 Cleanup** — Diagnose-Logs aus #41 wieder entfernt (würden Cron mit hunderten earn-dbg-Zeilen für Indizes/Futures/Crypto spammen).
-- [x] **2026-04-29 PR #44 Health-Check-Integration** — `fetch_event_data.py` schreibt nach jedem Run einen `refresh_log`-Eintrag mit `run_type='event_data'` (analog Intraday in #29). `daily_health_check.py` neuer Check "Event Data (Div+Earn)" — green ≤2d alt + ≥80% Ticker-Erfolg. End-to-End verifiziert: `2026-04-29 · 2/2 Ticker · 144 div + 8 earn`.
-- [x] **2026-04-30 PR #46 + #48 Finnhub-Backfill (verworfen 2026-04-30)** — Versuch, Yahoo-Lücken zu schließen. Free-Tier-Realität: `/stock/earnings` liefert hart 4 Quartale (ignoriert `?limit=80`), EU/Asia geben **403 "no access"**. Kein Vorteil über Yahoo. Script + Workflow wieder gelöscht (Commit s.u.). **Lesson:** Finnhub free tier ist US-only + 4-Q-Limit; brauchbare Alternativen nur bezahlt (Solo $50/M) oder andere Free-Tier-Quellen mit eigenen Kompromissen (FMP 250/d, Polygon 5/min).
-
-### Erledigt (KW 20, 2026-05-14 — Health Check + SEO-Offensive)
-- [x] **log_return NULL Bulk-Fix** — 488 Rows (Mai 5+6) über alle ~264 Nicht-Crypto-Ticker gefixt. Root Cause: 5-Kalender-Tage-Fenster im Nightly zu kurz bei Feiertags-Konstellationen (1. Mai + Wochenende).
-- [x] **Nightly Backfill-Step (Phase D)** — `nightly_refresh.py`: Upsert-Fenster 5→7 Tage + neue Phase D prüft letzte 14 Tage auf NULL `log_return` und berechnet `ln(close_t/close_{t-1})` nach. Verhindert Wiederholung.
-- [x] **moddatetime-Trigger** auf `tdom_stats` + `tdoy_stats` — `updated_at` wurde bei UPDATEs nie aktualisiert → `_is_stale()` immer True → 30% Zeitverlust pro Nightly. SQL-Migration angewendet.
-- [x] **Sitemap-Update** 46→58 URLs — 5 neue Pages (Polymarket, Dividenden, Earnings, Risikozyklus, VIXpiration) + 4 Blog-Posts + Phantom-URLs entfernt (/impressum, /datenschutz, /pricing existierten nie)
-- [x] **Meta-Tags Fix** — `dividend-kalender.html` + `earnings-kalender.html`: og:image Dimensionen, twitter:creator/description, Publisher in WebPage JSON-LD ergänzt
-- [x] **GSC-Bereinigung** — Root Cause 274 "Alternative Seite mit kanonischem Tag": `/landing/pages/*.html` war direkt aufrufbar (jede hatte canonical → Clean-URL). Fix: nginx `location ~* ^/landing/pages/.*\.html$ { return 404; }` + `robots.txt Disallow: /landing/pages/` + `Disallow: /analyse/`
-- [x] **nginx /impressum + /datenschutz** → 301 Redirect nach `/rechtliches` (war 404, GSC-Error)
-- [x] **Blog-Post #23** — "Sell in May 2026 — die Halbzeit-Bilanz überrascht" (Trade-Deal-Rally vs. Saisonalität, DAX-Fokus, historische Mai-Starts, FAQ-Sektion)
-- [x] **GSC Removals beantragt** — `/analyse/` + `/landing/pages/` Prefix, Sitemap neu eingereicht, /impressum Fehlerbehebung validiert
-- [x] **Stripe-Infrastruktur vorgebaut** — `user_subscriptions`-Tabelle (RLS), `get_my_tier()` RPC (SECURITY DEFINER, Default 'free'), Auto-Insert-Trigger auf `auth.users`, `landing/js/premium.js` (SA.premium Modul mit sessionStorage-Cache 5min TTL, `[data-premium]` Auto-Gating mit Blur-Overlay), `/pricing` Page (Free vs Premium Cards + FAQ), Profile-Seite Tier-Anzeige. Nur Stripe-Checkout + Webhook fehlen noch.
-- [x] **Blog-Post #24** — "DAX vs. S&P 500: Welcher Index ist saisonaler?" (35 Jahre Vergleich, Monats-Tabelle, 3 strukturelle Gründe, FAQ + Social-Snippets)
-- [x] **Newsletter Phase F Fix** — `capture_output=True` entfernt (Output war komplett unsichtbar in docker logs), `flush=True` + Separator-Lines, Workflow `tail -80` → `tail -150`. Manueller Test bestätigt: Brevo 201, Mail zugestellt. Root Cause: Newsletter funktionierte vermutlich, war aber durch capture_output + tail-Truncation nicht sichtbar.
-
-### Erledigt (KW 22, 2026-05-25 — Daily Morning Briefing)
-- [x] **Daily Newsletter Pipeline** — Komplett-neuer Mo-Fr 06:00 UTC Cron mit eigenständigen Komponenten:
-  - `scripts/create_daily_subscribers.sql` — neue Tabelle `daily_subscribers` (komplett getrennt von `subscribers`), 3 RPCs: `daily_unsubscribe_with_token`, `get_my_daily_status`, `toggle_my_daily` (SECURITY DEFINER, JWT-Lookup).
-  - `shared/daily_report.py` — 6 Aggregations-Funktionen: `next_trading_day` (Holiday-aware), `compute_multi_window_tdom_score` (0-4), `top_daily_tips` (5 ETFs + 5 Aktien), `events_today_tomorrow`, `active_strategy_signals` (datum-basiert: Santa, Sell-in-May, January Effect, Summer Doldrums, Turn-of-Month), `sector_rotation_signal` (historisch beste Sektoren per Monat).
-  - `scripts/daily_newsletter.py` — CLI (mirror weekly_newsletter), Args `--dry-run`/`--test`/`--to`/`--n-etfs`/`--n-stocks`, refresh_log mit `run_type='daily_newsletter'`.
-  - `scripts/templates/daily_report.html.j2` — Dark-Mode Email-Template, 5 Sektionen (Top-ETFs, Top-Aktien, Events, Strategien, Rotation+Risiko).
-  - `.github/workflows/daily_newsletter.yml` — Cron `0 6 * * 1-5` + workflow_dispatch (dry_run/test_mode/to).
-  - `landing/pages/unsubscribe.html` — neuer `?type=daily|weekly` Param wählt zwischen RPCs (Rückwärts-kompatibel: Default weekly).
-  - `landing/pages/profile.html` — zweiter Toggle "Daily Morning Briefing" unter dem Weekly-Toggle.
-  - `scripts/daily_health_check.py` — neuer Check "Daily Newsletter" mit Wochenend-Awareness (am Sa/So kein Send erwartet).
-- [x] **Multi-Window-TDOM-Score (0-4)** — neues Kernsignal: vier historische Renditefenster pro TDOM, je 1 Punkt wenn Ø-Return > 0:
-  - Fenster 1: Open → Close (intraday)
-  - Fenster 2: Open → Open(t+1)
-  - Fenster 3: Open → Close(t+1) — **NEU** in `shared/tdom_analysis.py::calc_strategy_returns` (`open_to_next_close` Strategy)
-  - Fenster 4: Close → Close(t+1)
-  - `nightly_refresh.py` befüllt jetzt alle 4 Strategien (statt 3) — `tdom_stats`-Schema hatte bereits `strategy`-Spalte mit UNIQUE-Constraint, keine Migration nötig.
-  - **Filter ist drei-stufig kumulativ**: strict (KI ≥6.5 · Regime grün · MW ≥3) → relaxed (KI ≥5.5 · grün · MW ≥2) → fallback (KI ≥5.0 · grün/gelb · ohne MW + ohne Regime-Pflicht). Tiers füllen kumuliert auf bis Limit erreicht.
-
-### Iteration & Fixes (PRs #51–#64)
-Marathon-Session zur Daily-Pipeline. Wichtige Lessons:
-- **PR #52 ki-score Cache-Shape**: `fetch_ki_score` gibt rohes DB-Row mit `details`-Feld zurück, `nightly_refresh` erwartet `sub_scores`. Fix in `cache_manager.py`: rehydrate `cached["sub_scores"] = cached["details"]`. Trat zuerst bei IBIT auf nachdem KI-Score-Cache schon im DB war.
-- **PR #54+#55 Regime-Lücke**: `regime_scores`-Tabelle hatte initial nur SPY drin (von Diagnose: `1/19 ETFs mit Regime green`). Daily-Filter `Regime grün` killte alle Tipps. Lösungen:
-  - Fallback-Tier toleriert fehlende Regime-Scores (`require_regime=False`).
-  - Unknown Regime rendert ⚪ statt 🔴 im Template (vorher fiel `unknown` in `else`-Zweig).
-  - `compute_regime_scores.py` neuer `--all-relevant` Flag (US-ETF + US-Aktie + EU-Aktie auf einmal).
-- **PR #60+#61 Top-N kumulieren**: `_build_tip_rows` war or-Kette — sobald strict 1 Treffer hatte, wurde relaxed nicht mehr probiert. Daher 2 Aktien statt 10. Fix: kumulative Auffüllung mit `seen_tickers`-Dedup. Außerdem: CLI `default=5` überschrieb Modul-Konstante 10.
-- **PR #57 5-Tage-Event-Window**: vorher nur target_date, jetzt window_end = target + 4 Tage. Plus "❓ Was sagt mir das?"-Erklärungs-Sektion (KI/MW/Regime).
-- **PR #59 Preis-Anreicherung**: 10 Bulk-Queries pro Run für die finalen Tipps (Close + Vortagsperformance). Pro Watchlist-Item auch.
-- **PR #62 mehr Strategien**: Mai-Mitte triggerte 0 von 6 alten Strategien. Erweitert um OPEX-Woche (Pinning), Pre-Holiday-Drift (NYSE-Feiertag morgen), Memorial Day, Pre-FOMC-Drift (7 HT-Fenster), Earnings-Saison (Q1-Berichte Jan/Apr/Jul/Okt), Sell-in-May als WARNUNG (Mai-Okt schwache 6 Monate). Sektion immer sichtbar, bei leerer Liste "Ruhige Phase"-Hinweis.
-- **PR #63+#64 Status-Zeile**: `Heute: Do 14.05.2026 · TDOM 10/20 · TWOY 20/53 · TDOY 92/252 · Q2 · MidTerm` analog Dashboard-Header. Python-Port der JS-Logik aus `landing/js/app.js::renderTradingDayHeader`. Ticker-Suffix entfernt (Newsletter ist universell).
-- **Watchlist personalisiert** (PR #56): `get_watchlist_by_email(email)` RPC SECURITY DEFINER joint auth.users.email → user_watchlists. Pro Empfänger eigene Sektion mit Ticker/Name/Kurs/Δ/KI/Signal. service_role-only.
-  - Filter im Daily-Newsletter: nur Tipps mit Multi-Window-Score ≥3.
-
-### Live-Status nach Vollrun 2026-04-29
-- Dividenden funktionieren breit (HSBC 88, SHEL 92, AAPL 55, MSFT 89 etc.)
-- Earnings: Yahoo liefert nur 4 Quartale + nur US. Daily-Cron akkumuliert über Zeit (~16 Q nach 1 Jahr). EU/Asia bleiben mangels Free-Tier-Alternative **leer**.
-- Indizes/Futures/Crypto: keine Earnings (erwartet)
-- **Earnings-Page:** sollte einen klaren Hinweis bekommen, dass Daten nur für US-Aktien verfügbar sind (TODO unten)
-
-### 🔴 SOFORT (User-Action, klein)
-- [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Erstellt Tabelle + 3 RPCs. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');` als ersten Test-Subscriber.
-- [ ] **Nightly: 4. TDOM-Strategy zurückbauen** — nach Deploy: einmalig `docker exec seasonalpha-app python3 scripts/nightly_refresh.py` (oder nächsten Nightly-Cron abwarten) damit `tdom_stats` auch für `open_to_next_close` Strategy gefüllt wird. Prüfen: `SELECT strategy, count(*) FROM tdom_stats GROUP BY strategy;` — alle 4 Strategien sollten existieren.
-- [ ] **Daily-Newsletter Smoke-Test** — GitHub Actions → "Daily Morning Briefing" → Run workflow → test_mode=true. Mail an `ADMIN_EMAIL`, alle Sektionen prüfen.
-- [ ] **Event-Tabellen verifizieren** — `SELECT ticker, count(*) FROM dividend_events GROUP BY ticker ORDER BY count DESC LIMIT 10;` und analog für earnings_events
-- [x] **2026-04-18 OAuth Consent Screen auf "Production" publishen** (Google Cloud Console) — Nicht-Tester können sich jetzt anmelden
-- [ ] **OAuth Client-Secret rotieren** — das in Session 2026-04-18 im Chat geleakte Secret entwerten, neu generieren, in Supabase updaten
-- [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 im Chat geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → Settings → SMTP & API → Keys → neuen erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
-- [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 im Chat geleakt (`d7peuipr01qlb0a9om7gd7peuipr01qlb0a9om80`). Wird **nicht mehr genutzt** (Backfill-Code wieder entfernt). Trotzdem: Finnhub Dashboard → API Keys → den Key löschen. Optional: `FINNHUB_API_KEY`-Zeile aus `.env` rausnehmen (schadet sonst nicht, kostet nichts).
-- [x] **2026-05-14** Earnings-Page Empty-State-Hinweis — war bereits implementiert (Intro-Box Zeile 110)
-- [x] **2026-05-14** GSC Coverage-Check: 383 → 32 (Removals beantragt, /landing/pages/ blockiert, Sitemap bereinigt)
-- [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
-- [x] **2026-05-14** nightly_refresh.py tickers_success-Metrik — check_end auf gestern statt heute (vor Börsenschluss hat "heute" noch keine Daten)
-- [ ] GSC Nachprüfung ~21.05.: "Nicht indexiert" < 50 erwartet, 31 "Gefunden" sollten indexiert sein
-
-### ⚠️ OFFEN — Polymarket Phase 3b (aus aktueller Arbeit)
-- [x] **2026-04-18 Brier-Score-Pipeline** — separate Tabellen `polymarket_resolved_*`, Scraper für ~1500 resolved markets (6 Tags, 2024+), `shared/brier_score.py` mit Brier + Kalibrierungs-Kurve + Zeit-Buckets, Precompute als `brier_stats.json`, UI-Sektion auf `/polymarket`. Details in `docs/POLYMARKET.md#brier-score`.
-- [x] **2026-04-18 Fed/Macro-Divergenz** — historische Basisraten (Cuts-Histogramm 2000-2024 aus `FED_RATE_CHANGES`, Hike-Rate, static NBER/BEA-Basisraten für Recession/GDP/Emergency-Cut, `shared/weekly_report.py::top_fed_macro_divergences`)
-- [x] **2026-04-18 Newsletter-Sektion** mit Top-Divergenzen der Woche (Crypto BTC/ETH, `shared/weekly_report.py::top_polymarket_divergences`)
-- [x] **2026-04-18 Intraday-Refresh-Tier** nahe FOMC (±2d Fenster, `polymarket_intraday.yml` + `--near-fomc-only` Flag)
-
-### ⚠️ OFFEN — Auth-Features Follow-ups
-- [x] **2026-04-18 Profile-Seite: Newsletter-Toggle** — `scripts/create_profile_newsletter_rpc.sql` liefert `get_my_newsletter_status()` + `toggle_my_newsletter(bool)` (SECURITY DEFINER, `auth.jwt() ->> 'email'`), UI in `/profile` mit Switch + Status-Text. **User-Action:** Migration in Supabase SQL-Editor ausführen.
-- [x] **2026-05-14** Profile-Seite: Konto-Löschung — Confirm-Dialog + vorausgefüllter mailto-Link (E-Mail, User-ID)
+### 🔴 SOFORT — Funktional (User-Action erforderlich)
+- [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');`
+- [ ] **Daily-Newsletter Smoke-Test** — GitHub Actions → "Daily Morning Briefing" → Run workflow → test_mode=true. Mail + alle Sektionen prüfen.
+- [ ] **4. TDOM-Strategy befüllen** — `docker exec seasonalpha-app python3 scripts/nightly_refresh.py` (oder nächsten Cron abwarten). Prüfen: `SELECT strategy, count(*) FROM tdom_stats GROUP BY strategy;` — alle 4 Strategien erwartet.
 
 ### Marketing (manuell)
-- [ ] LinkedIn + X Posts der 3 Polymarket-Blog-Posts staffeln (Templates im Anhang jedes Posts)
-- [ ] LinkedIn + X Post Blog #23 "Sell in May Halbzeit" + #24 "DAX vs S&P 500"
+- [ ] LinkedIn + X Posts: Blog #22-24 (Polymarket, Sell in May, DAX vs S&P) + Blog EN-Launch ankündigen
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
+- [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 
 ### Technische Roadmap (längerfristig)
-- [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
-- [ ] Alerts (Push bei KI-Score/Crash-Ampel/Strategie-Schwellen)
-- [ ] EN-Übersetzung der HTML-Pages
+- [ ] **GSC /en/ Property einrichten** + Coverage nach 2 Wochen prüfen (erste EN-Indexierung erwartet)
+- [ ] **Pretty EN slugs** (`/en/decade-cycle` statt `/en/dekadenzyklus`) — nginx rewrite map
+- [ ] **EN Blog nach Deploy prüfen** — `/en/blog/` und Category-Filter korrekt? nginx-Location-Reihenfolge beachten
 - [ ] Stripe Checkout + Webhook anbinden (Infrastruktur steht: DB + RPC + premium.js + Pricing-Page)
 - [ ] Premium-Features gated hinter Login (`[data-premium]`-Attribute auf Elemente, premium.js gated automatisch)
 - [ ] Nav/Footer: Pricing-Link ergänzen
+- [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
+- [ ] Alerts (Push bei KI-Score/Crash-Ampel/Strategie-Schwellen)
