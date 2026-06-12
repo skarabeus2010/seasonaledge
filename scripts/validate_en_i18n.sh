@@ -136,11 +136,11 @@ run_phase2() {
     fi
   done
 
-  # Language Switcher im HTML vorhanden
-  if body_contains "$BASE/en/dashboard" 'sa-lang-switch\|lang-switcher\|data-lang'; then
-    ok "Language Switcher im HTML gefunden"
+  # Language Switcher in nav.html (async-geladen, daher nicht in serviertem HTML)
+  if curl -sf --max-time 15 "$BASE/landing/components/nav.html" 2>/dev/null | grep -q 'nav__lang\|data-lang'; then
+    ok "Language Switcher in nav.html gefunden (async component)"
   else
-    fail "Language Switcher NICHT im HTML gefunden"
+    fail "Language Switcher NICHT in nav.html gefunden"
   fi
 
   # Kein hartkodierter deutscher Schlüsselwörter-Crash-Test
