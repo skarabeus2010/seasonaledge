@@ -118,11 +118,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="10" selected>10 Jahre</option>
         <option value="15">15 Jahre</option>
@@ -150,7 +150,7 @@
         <input type="range" id="sl-topn" min="3" max="10" value="5" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
       <hr>
-      <h3>Gl&auml;ttung</h3>
+      <h3 data-i18n="sidebar.smoothing_h3">Gl&auml;ttung</h3>
       <div>
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
           Rolling-Fenster (Tage) <span id="lbl-smooth">5</span>
@@ -166,7 +166,7 @@
         <input type="range" id="sl-proj" min="0" max="120" step="10" value="60" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
       <hr>
-      <h3>Chart-Anzeige</h3>
+      <h3 data-i18n="common.chart_display">Chart-Anzeige</h3>
       <div style="display:flex;flex-direction:column;gap:.4rem">
         <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="chk-current" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
@@ -270,7 +270,7 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
           <h3>Musterpfad (TruePath)</h3>
           <ul>

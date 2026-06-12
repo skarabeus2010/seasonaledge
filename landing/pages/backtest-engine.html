@@ -107,11 +107,11 @@
 
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Analysezeitraum</h3>
+      <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <label>Jahre zurück <span id="lbl-years">20</span></label>
       <input type="range" id="sl-years" min="5" max="50" step="1" value="20">
       <hr>
@@ -137,7 +137,7 @@
         <label><input type="radio" name="exit-col" value="Open"> Open</label>
       </div>
       <hr>
-      <h3>Stop-Loss</h3>
+      <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
       <label class="toggle-row"><input type="checkbox" id="chk-stop"> Stop-Loss aktivieren</label>
       <div id="stop-opts" style="display:none;margin-top:.5rem">
         <label>Stop % <span id="lbl-stop">3.0</span></label>
@@ -150,10 +150,10 @@
         <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Stop close-basiert (kein intraday Low)</p>
       </div>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
-      <h3>Technische Filter</h3>
+      <h3 data-i18n="sidebar.tech_filters">Technische Filter</h3>
       <div id="indicator-filters"></div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" id="ind_badge"></p>
     </aside>
@@ -209,7 +209,7 @@
           <div class="content"><div id="chart-equity"></div></div>
         </details>
         <details id="sec-trades" style="display:none">
-          <summary>Alle Trades</summary>
+          <summary data-i18n="section.all_trades">Alle Trades</summary>
           <div class="content">
             <table class="perf-table">
               <thead><tr><th>Event</th><th>Entry</th><th>Exit</th><th>Rendite</th><th>Haltetage</th><th>Stop</th><th>Jahr</th></tr></thead>
@@ -269,7 +269,7 @@
           <summary>Top 10 Kombinationen</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Profit Factor</th><th>Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
+              <thead><tr><th>Before</th><th>After</th><th>Return</th><th>Sharpe</th><th>Calmar</th><th>Profit Factor</th><th data-i18n="table.win_rate">Win-Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
               <tbody id="tbody-opt-top"></tbody>
             </table>
           </div>
@@ -318,7 +318,7 @@
           <summary>Fold-Details</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Fold</th><th>Trades</th><th>Return</th><th>Win-Rate</th><th>Sharpe</th><th>Best Params</th></tr></thead>
+              <thead><tr><th>Fold</th><th>Trades</th><th>Return</th><th data-i18n="table.win_rate">Win-Rate</th><th>Sharpe</th><th>Best Params</th></tr></thead>
               <tbody id="tbody-wf-folds"></tbody>
             </table>
           </div>
@@ -353,7 +353,7 @@
           <summary>Relevanz-Ranking</summary>
           <div class="content">
             <table class="perf-table">
-              <thead><tr><th>Event</th><th>Kategorie</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th><th>t-Stat</th><th>p-Wert</th><th>Relevanz</th></tr></thead>
+              <thead><tr><th>Event</th><th>Kategorie</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th><th>t-Stat</th><th>p-Wert</th><th>Relevanz</th></tr></thead>
               <tbody id="tbody-rel"></tbody>
             </table>
           </div>
@@ -381,7 +381,7 @@
         <div class="content">
           <h3>Backtest-Logik</h3>
           <p>Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
-          <h3>Kennzahlen</h3>
+          <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>
             <li><b>Sharpe Ratio</b>: Ø Return / Std × √(Trades pro Jahr). Risk-free = 0.</li>
@@ -389,7 +389,7 @@
             <li><b>Max Drawdown</b>: Maximaler Equity-Rücksetzer in %.</li>
             <li><b>Profit Factor</b>: Σ Wins / |Σ Losses|.</li>
           </ul>
-          <h3>Stop-Loss</h3>
+          <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
           <p>Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
           <h3>Walk-Forward</h3>
           <p>Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>

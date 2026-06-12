@@ -93,16 +93,16 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-period">
         <option>5</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option>
       </select>
       <hr>
-      <h3>Stop-Loss</h3>
+      <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
       <label><input type="checkbox" id="chk-stop"> Aktivieren</label>
       <div id="stop-controls" style="display:none;margin-top:.5rem">
         <select id="sel-stop-type" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;margin-bottom:.5rem">
@@ -142,23 +142,23 @@
 
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest</summary>
+        <summary data-i18n="section.significance_test">Signifikanztest</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
       <!-- Trade Table -->
       <details>
-        <summary>Alle Trades</summary>
+        <summary data-i18n="section.all_trades">Alle Trades</summary>
         <div class="content" id="content-trades"></div>
       </details>
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik">
           <h3>Plain Vanilla Strategien</h3>
           <p>Regelbasierte Handelsans&auml;tze mit fixen Ein- und Ausstiegszeitpunkten. Keine Optimierung &mdash; die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet.</p>
-          <h3>Kennzahlen</h3>
+          <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li><b>CAGR</b>: Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</li>
             <li><b>Max Drawdown</b>: Gr&ouml;&szlig;ter R&uuml;ckgang vom H&ouml;chststand</li>
@@ -649,7 +649,7 @@
       }
 
       var html = '<table class="trade-table"><thead><tr>';
-      html += '<th>Datum</th><th>In</th><th>Signal</th><th>Strategie</th><th>Current Streak</th>';
+      html += '<th data-i18n="table.date">Datum</th><th>In</th><th>Signal</th><th data-i18n="table.strategy">Strategie</th><th>Current Streak</th>';
       html += '</tr></thead><tbody>';
       for (var i = 0; i < signals.length; i++) {
         var s = signals[i];

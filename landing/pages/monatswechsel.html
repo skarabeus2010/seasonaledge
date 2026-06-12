@@ -72,11 +72,11 @@
 
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Analysezeitraum</h3>
+      <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <select id="sel-period">
         <option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option>
       </select>
@@ -85,17 +85,17 @@
       <label>Tage vor Monatsende<br><input type="range" id="rng-before" min="1" max="10" value="3"><span id="lbl-before">3</span></label>
       <label>Tage nach Monatswechsel<br><input type="range" id="rng-after" min="1" max="10" value="3"><span id="lbl-after">3</span></label>
       <hr>
-      <h3>Chart-Anzeige</h3>
+      <h3 data-i18n="common.chart_display">Chart-Anzeige</h3>
       <label><input type="checkbox" id="chk-current" checked> Aktuelles Jahr</label>
       <hr>
       <h3>Monatswechsel</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
-      <h3>Technische Filter</h3>
+      <h3 data-i18n="sidebar.tech_filters">Technische Filter</h3>
       <div id="indicator-filters"></div>
     </aside>
 
@@ -158,7 +158,7 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>
@@ -504,7 +504,7 @@
       var b=tom.best,w=tom.worst;
       var monthLabel=function(m){return MN[m-1]||'?'};
       document.getElementById('content-best-worst').innerHTML=
-        '<table class="best-worst-table"><tr><th></th><th>Jahr</th><th>Monat</th><th>Rendite</th></tr>'+
+        '<table class="best-worst-table"><tr><th></th><th>Jahr</th><th data-i18n="table.month">Monat</th><th>Rendite</th></tr>'+
         '<tr><td style="color:var(--green);font-weight:700">\uD83C\uDFC6 Bester</td><td>'+b.year+'</td><td>'+monthLabel(b.month)+' \u2192 '+monthLabel(b.month%12+1)+'</td><td style="color:var(--green);font-weight:700">'+fmtPct(b.total_return)+'</td></tr>'+
         '<tr><td style="color:var(--red);font-weight:700">\u26A0 Schlechtester</td><td>'+w.year+'</td><td>'+monthLabel(w.month)+' \u2192 '+monthLabel(w.month%12+1)+'</td><td style="color:var(--red);font-weight:700">'+fmtPct(w.total_return)+'</td></tr>'+
         '</table>';
@@ -513,7 +513,7 @@
     // ── Monats-Performance Tabelle ──
     function renderMonthlyPerf(){
       var stats=SA.seasonal.buildMonthlyStats(rawRows);
-      var html='<table class="perf-table"><tr><th>Monat</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Beste</th><th>Schlecht.</th><th>n</th></tr>';
+      var html='<table class="perf-table"><tr><th data-i18n="table.month">Monat</th><th>\u00D8 Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th>Beste</th><th>Schlecht.</th><th>n</th></tr>';
       for(var i=0;i<stats.length;i++){
         var s=stats[i];
         html+='<tr><td>'+MN[s.month-1]+'</td>';
@@ -595,7 +595,7 @@
     // ── Methodik ──
     function renderMethodik(p){
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq)</li><li><b>Zeitraum:</b> '+p.years[0]+'\u2013'+p.years[p.years.length-1]+' ('+p.years.length+' Jahre)</li></ul>'+
+        '<h3 data-i18n="common.data_basis">Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq)</li><li><b>Zeitraum:</b> '+p.years[0]+'\u2013'+p.years[p.years.length-1]+' ('+p.years.length+' Jahre)</li></ul>'+
         '<h3>Turn of the Month (TOM)</h3><ul><li><b>Fenster:</b> t-'+p.daysBefore+' bis t+'+p.daysAfter+' ('+p.daysBefore+' Tage vor + '+p.daysAfter+' Tage nach Monatswechsel)</li><li><b>t0:</b> Letzter Handelstag des Monats</li><li><b>Rendite:</b> Kumulierte Log-Returns, normiert auf t0 = 0%</li></ul>'+
         '<h3>Heatmap</h3><ul><li>TOM-Rendite pro Monat \u00D7 Jahr (letzte 10 Jahre)</li></ul>'+
         '<h3>Window-Optimierung</h3><ul><li>7\u00D77 Matrix: Alle Kombinationen t-1..t-7 \u00D7 t+1..t+7</li><li>Zeigt welches Fenster historisch die beste \u00D8-Rendite hatte</li></ul>';

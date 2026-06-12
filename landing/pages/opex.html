@@ -103,11 +103,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="10" selected>10 Jahre</option>
         <option value="15">15 Jahre</option>
@@ -117,7 +117,7 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Fenster</h3>
+      <h3 data-i18n="common.window">Fenster</h3>
       <div class="range-wrap">
         <label>Tage vor OPEX <span id="lbl-before">3</span></label>
         <input type="range" id="sl-before" min="1" max="10" value="3">
@@ -173,10 +173,10 @@
       </div>
 
       <hr>
-      <h3>Technischer Filter</h3>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
@@ -187,7 +187,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>OPEX Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption">Saisonale Muster rund um den monatlichen Options-Verfalltag (3. Freitag) &amp; Triple Witching</p>
@@ -244,7 +244,7 @@
 
       <!-- Heatmap Monat × Offset -->
       <details open id="sec-heatmap" style="display:none">
-        <summary>Heatmap: Monat &times; Offset</summary>
+        <summary data-i18n="section.heatmap_month_offset">Heatmap: Monat &times; Offset</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
@@ -255,7 +255,7 @@
 
       <!-- Streak (grafisch, direkt unter Heatmap) -->
       <details open id="sec-streak" style="display:none">
-        <summary>Streak-Analyse nach Monat</summary>
+        <summary data-i18n="section.streak_by_month">Streak-Analyse nach Monat</summary>
         <div class="content" id="content-streak"></div>
       </details>
 
@@ -296,22 +296,22 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
             <li><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
             <li><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
           </ul>
-          <h3>Event-Window</h3>
+          <h3 data-i18n="common.event_window">Event-Window</h3>
           <ul>
             <li><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
             <li><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
             <li><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
             <li><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
           </ul>
-          <h3>Backtest</h3>
+          <h3 data-i18n="common.backtest">Backtest</h3>
           <ul>
             <li>Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
             <li>Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
@@ -951,7 +951,7 @@
 
       // Table header: OPEX with VIXpiration reference columns
       document.getElementById('thead-all-opex').innerHTML =
-        '<tr><th>OPEX-Datum</th><th>Tag</th><th>Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr>';
+        '<tr><th>OPEX-Datum</th><th>Tag</th><th data-i18n="table.month">Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr>';
 
       // Table body: nächste 10 zukünftige Termine
       var futureAll = opexDates.filter(function(ev){ return ev.date >= today; });

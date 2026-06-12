@@ -74,11 +74,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Analysezeitraum</h3>
+      <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <select id="sel-period"><option>5</option><option>7</option><option selected>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option value="max">Max</option></select>
       <hr>
       <h3>Mondphase</h3>
@@ -88,14 +88,14 @@
         <option value="all">&#127765;+&#127761; Beide</option>
       </select>
       <hr>
-      <h3>Event-Fenster</h3>
+      <h3 data-i18n="common.event_window">Event-Fenster</h3>
       <label>Tage vor Mondphase<br><input type="range" id="rng-before" min="1" max="15" value="5"><span id="lbl-before">5</span></label>
       <label>Tage nach Mondphase<br><input type="range" id="rng-after" min="1" max="15" value="5"><span id="lbl-after">5</span></label>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
-      <h3>Technische Filter</h3>
+      <h3 data-i18n="sidebar.tech_filters">Technische Filter</h3>
       <div id="indicator-filters"></div>
     </aside>
 
@@ -111,7 +111,7 @@
         <div class="content"><div class="kpi-row" id="kpi-moon"></div><p class="box-info" id="kpi-info"></p></div>
       </details>
 
-      <details><summary>Statistische Signifikanz</summary>
+      <details><summary data-i18n="section.stat_significance">Statistische Signifikanz</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
@@ -140,7 +140,7 @@
         <div class="content" id="content-next-phases"></div>
       </details>
 
-      <details><summary>Methodik</summary>
+      <details><summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>
@@ -312,7 +312,7 @@
     function renderBestWorst(mr){
       var b=mr.best,w=mr.worst;
       document.getElementById('content-best-worst').innerHTML=
-        '<table style="width:100%;border-collapse:collapse;font-size:.875rem"><tr><th></th><th>Datum</th><th>Rendite</th></tr>'+
+        '<table style="width:100%;border-collapse:collapse;font-size:.875rem"><tr><th></th><th data-i18n="table.date">Datum</th><th>Rendite</th></tr>'+
         '<tr><td style="color:var(--green);font-weight:700">\uD83C\uDFC6 Bester</td><td>'+b.date+'</td><td style="color:var(--green);font-weight:700">'+fmtPct(b.total_return)+'</td></tr>'+
         '<tr><td style="color:var(--red);font-weight:700">\u26A0 Schlechtester</td><td>'+w.date+'</td><td style="color:var(--red);font-weight:700">'+fmtPct(w.total_return)+'</td></tr>'+
         '</table>';
@@ -398,8 +398,8 @@
 
     function renderMethodik(p,label){
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Zeitraum:</b> '+p.startY+'\u2013'+p.endY+' ('+p.years.length+' Jahre)</li><li><b>Mondphasen:</b> Meeus-Algorithmus (\u00B11 Tag Genauigkeit)</li></ul>'+
-        '<h3>Event-Fenster</h3><ul><li><b>t0:</b> Tag der Mondphase (oder n\u00E4chster Handelstag)</li><li><b>Fenster:</b> t-'+p.daysBefore+' bis t+'+p.daysAfter+'</li><li><b>Normierung:</b> t0 = 0% (kumulierte Log-Returns)</li></ul>'+
+        '<h3 data-i18n="common.data_basis">Datengrundlage</h3><ul><li><b>Ticker:</b> '+currentTicker+'</li><li><b>Zeitraum:</b> '+p.startY+'\u2013'+p.endY+' ('+p.years.length+' Jahre)</li><li><b>Mondphasen:</b> Meeus-Algorithmus (\u00B11 Tag Genauigkeit)</li></ul>'+
+        '<h3 data-i18n="common.event_window">Event-Fenster</h3><ul><li><b>t0:</b> Tag der Mondphase (oder n\u00E4chster Handelstag)</li><li><b>Fenster:</b> t-'+p.daysBefore+' bis t+'+p.daysAfter+'</li><li><b>Normierung:</b> t0 = 0% (kumulierte Log-Returns)</li></ul>'+
         '<h3>Supermond</h3><ul><li>Vollmond im Perig\u00E4um (erdnahester Punkt der Mondbahn)</li><li>Klassifizierung: Anomalistische Mondphase &lt;10% vom Perig\u00E4um</li></ul>';
     }
 

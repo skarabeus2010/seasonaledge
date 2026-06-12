@@ -90,11 +90,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10">10 Jahre</option>
@@ -106,17 +106,17 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Saisonalchart</h3>
+      <h3 data-i18n="sidebar.seasonal_chart">Saisonalchart</h3>
       <div class="range-wrap">
         <label>Gl&auml;ttung (Tage) <span id="lbl-smooth">1</span></label>
         <input type="range" id="sl-smooth" min="1" max="21" step="2" value="1">
       </div>
-      <label class="toggle-row"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-bands"> Konfidenzband (&plusmn;1&sigma;)</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-percentile" checked> Perzentil-B&auml;nder (25./75.)</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <label class="toggle-row" data-i18n="checkbox.show_individual"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
+      <label class="toggle-row" data-i18n="checkbox.confidence_band"><input type="checkbox" id="chk-bands"> Konfidenzband (&plusmn;1&sigma;)</label>
+      <label class="toggle-row" data-i18n="checkbox.percentile_bands"><input type="checkbox" id="chk-percentile" checked> Perzentil-B&auml;nder (25./75.)</label>
+      <label class="toggle-row" data-i18n="checkbox.highlight_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <hr>
-      <h3>Pr&auml;sidentenzyklus</h3>
+      <h3 data-i18n="sidebar.pres_cycle">Pr&auml;sidentenzyklus</h3>
       <div class="cycle-checkboxes">
         <label><input type="checkbox" data-cycle="1"> Post-Election</label>
         <label><input type="checkbox" data-cycle="2"> Midterm</label>
@@ -124,18 +124,18 @@
         <label><input type="checkbox" data-cycle="4"> Election Year</label>
       </div>
       <hr>
-      <h3>Pressure Chart</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-pressure"> Gann Pressurechart</label>
+      <h3 data-i18n="sidebar.pressure_chart">Pressure Chart</h3>
+      <label class="toggle-row" data-i18n="checkbox.pressure_chart"><input type="checkbox" id="chk-pressure"> Gann Pressurechart</label>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.3rem;line-height:1.4">
         Summe der &Oslash;-Tagesrenditen &uuml;ber Lookback-Perioden (10/20/30/40/60/80 Jahre) auf sekund&auml;rer Y-Achse
       </p>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption" id="page-caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
@@ -143,13 +143,13 @@
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
       <!-- 1. Hauptchart -->
       <details open id="sec-main" style="display:none">
-        <summary>Saisonaler Jahresverlauf</summary>
+        <summary data-i18n="section.annual_progression">Saisonaler Jahresverlauf</summary>
         <div class="content">
           <div id="chart-main"></div>
           <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
@@ -162,7 +162,7 @@
 
       <!-- 2. Detrend -->
       <details open id="sec-detrend" style="display:none">
-        <summary>Detrend-Indikator / Saisonaler Druck</summary>
+        <summary data-i18n="section.detrend">Detrend-Indikator / Saisonaler Druck</summary>
         <div class="content">
           <div id="chart-detrend"></div>
           <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
@@ -173,14 +173,14 @@
 
       <!-- 3. Monats-Performance -->
       <details open id="sec-monthly" style="display:none">
-        <summary>Monats-Performance</summary>
+        <summary data-i18n="section.monthly_perf">Monats-Performance</summary>
         <div class="content">
           <div id="chart-monthly-bars"></div>
           <details style="margin-top:.75rem">
             <summary style="font-size:.8125rem">Monats-Detailtabelle</summary>
             <div class="content">
               <table class="js-table" id="tbl-monthly">
-                <thead><tr><th>Monat</th><th>&Oslash; Rendite</th><th>Median</th><th>Win-Rate</th><th>Max Gewinn</th><th>Max Verlust</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th>n</th></tr></thead>
                 <tbody id="tbody-monthly"></tbody>
               </table>
             </div>
@@ -196,14 +196,14 @@
 
       <!-- 5. Quartals-Performance -->
       <details id="sec-quarterly" style="display:none">
-        <summary>Quartals-Performance</summary>
+        <summary data-i18n="section.quarterly_perf">Quartals-Performance</summary>
         <div class="content">
           <div id="chart-quarterly-bars"></div>
           <details style="margin-top:.75rem">
             <summary style="font-size:.8125rem">Quartals-Detailtabelle</summary>
             <div class="content">
               <table class="js-table" id="tbl-quarterly">
-                <thead><tr><th>Quartal</th><th>&Oslash; Rendite</th><th>Median</th><th>Win-Rate</th><th>Max Gewinn</th><th>Max Verlust</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.quarter">Quartal</th><th data-i18n="table.avg_return">&Oslash; Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th>n</th></tr></thead>
                 <tbody id="tbody-quarterly"></tbody>
               </table>
             </div>
@@ -239,15 +239,15 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Normierung:</b> Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</li>
             <li><b>Interpolation:</b> Jede Jahreskurve wird auf 365 Kalendertage interpoliert</li>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance / Stooq)</li>
           </ul>
-          <h3>Rendite-Analyse</h3>
+          <h3 data-i18n="common.return_analysis">Rendite-Analyse</h3>
           <ul>
             <li><b>Saisonalchart:</b> Durchschnitt der normalisierten Jahreskurven</li>
             <li><b>Konfidenzband (&plusmn;1&sigma;):</b> Standardabweichung um den Durchschnitt</li>
@@ -258,7 +258,7 @@
             <li><b>Signifikanz-Tachos:</b> t-Test pro Monat/Quartal. p&lt;0.05 = statistisch signifikant (gr&uuml;n)</li>
             <li><b>Best Match:</b> Pearson-Korrelation zwischen aktuellem Jahr (bis heute) und den 4 Zyklus-&Oslash;-Kurven + "Alle Jahre"</li>
           </ul>
-          <h3>Drawdown &amp; Volatilit&auml;t</h3>
+          <h3 data-i18n="common.drawdown_vola">Drawdown &amp; Volatilit&auml;t</h3>
           <p>Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
         </div>
       </details>

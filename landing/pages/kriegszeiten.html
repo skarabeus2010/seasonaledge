@@ -77,15 +77,15 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Event-Window</h3>
+      <h3 data-i18n="common.event_window">Event-Window</h3>
       <label>Handelstage vor T=0<br><input type="range" id="rng-before" min="10" max="250" value="250" step="10"><span id="lbl-before">250</span></label>
       <label>Handelstage nach T=0<br><input type="range" id="rng-after" min="10" max="250" value="250" step="10"><span id="lbl-after">250</span></label>
       <hr>
-      <h3>Gl&auml;ttung</h3>
+      <h3 data-i18n="sidebar.smoothing_h3">Gl&auml;ttung</h3>
       <label><input type="range" id="rng-smooth" min="1" max="21" value="1" step="2"><span id="lbl-smooth">1</span> Tage</label>
       <hr>
       <h3>Kriege ausw&auml;hlen</h3>
@@ -145,7 +145,7 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>
@@ -628,7 +628,7 @@
        TABELLE: Kriege mit Statistiken
        ══════════════════════════════════════════════════════ */
     function renderWarTable(yearData, selectedWars){
-      var html='<table class="war-table"><tr><th>Krieg</th><th>Zeitraum</th><th>Startdatum</th><th>Handelstage (ca.)</th><th>Jahre</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Max</th><th>Min</th><th>Status</th></tr>';
+      var html='<table class="war-table"><tr><th>Krieg</th><th>Zeitraum</th><th>Startdatum</th><th>Handelstage (ca.)</th><th>Jahre</th><th>\u00D8 Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>Max</th><th>Min</th><th>Status</th></tr>';
       US_WARS.forEach(function(w){
         var isSelected=selectedWars.some(function(s){return s.id===w.id});
         var wYrs=[];for(var y=w.start;y<=w.end;y++){if(yearData[y])wYrs.push(y)}
@@ -690,7 +690,7 @@
        ══════════════════════════════════════════════════════ */
     function renderMethodik(years,daysBefore,daysAfter){
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Datengrundlage</h3><ul>'+
+        '<h3 data-i18n="common.data_basis">Datengrundlage</h3><ul>'+
         '<li><b>Ticker:</b> '+currentTicker+'</li>'+
         '<li><b>Zeitraum:</b> '+years[0]+'\u2013'+years[years.length-1]+' ('+years.length+' Jahre)</li></ul>'+
         '<h3>Kriegsjahre</h3><ul>'+

@@ -79,11 +79,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10" selected>10 Jahre</option>
@@ -94,7 +94,7 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Technischer Filter</h3>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
@@ -105,7 +105,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Overnight vs. Intraday</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
@@ -113,7 +113,7 @@
 
       <!-- Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -140,7 +140,7 @@
 
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest</summary>
+        <summary data-i18n="section.significance_test">Signifikanztest</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
@@ -179,28 +179,28 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
             <li><b>Ben&ouml;tigt:</b> Open + Close Kurse (OHLC)</li>
             <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
           </ul>
-          <h3>Berechnung</h3>
+          <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
             <li><b>Overnight:</b> (Open[t] / Close[t&minus;1] &minus; 1) &times; 100 &mdash; Return &uuml;ber Nacht (Gap)</li>
             <li><b>Intraday:</b> (Close[t] / Open[t] &minus; 1) &times; 100 &mdash; Return w&auml;hrend der Handelssession</li>
             <li><b>Total:</b> Overnight + Intraday (Residual-Ansatz, kein cross-day OHLC)</li>
             <li><b>Kumuliert:</b> Produkt der t&auml;glichen (1 + r/100), gruppiert nach Tag des Jahres</li>
           </ul>
-          <h3>Interpretation</h3>
+          <h3 data-i18n="common.interpretation">Interpretation</h3>
           <ul>
             <li>Viele Indizes (SPY, QQQ) generieren den Gro&szlig;teil ihres Returns <b>overnight</b></li>
             <li>Intraday-Trader verpassen diesen strukturellen Vorteil</li>
             <li>Saisonale Muster k&ouml;nnen sich zwischen Overnight und Intraday unterscheiden</li>
           </ul>
-          <h3>Hinweis</h3>
+          <h3 data-i18n="common.hint">Hinweis</h3>
           <ul>
             <li>Open-Kurse bei Yahoo Finance sind nicht immer perfekt split-adjustiert</li>
             <li>Die Trends sind dennoch statistisch aussagekr&auml;ftig &uuml;ber l&auml;ngere Zeitr&auml;ume</li>
@@ -521,7 +521,7 @@
         { key: 'total', label: 'Total (C\u2192C)', color: COL_TOT }
       ];
 
-      var html = '<table class="on-table"><thead><tr><th>Typ</th><th>\u00D8 Return</th><th>Win-Rate</th><th>Std.Abw.</th><th>Summe</th><th>Tage</th></tr></thead><tbody>';
+      var html = '<table class="on-table"><thead><tr><th>Typ</th><th>\u00D8 Return</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.std_dev">Std.Abw.</th><th>Summe</th><th>Tage</th></tr></thead><tbody>';
       for (var t = 0; t < types.length; t++) {
         var vals = data.map(function(d) { return d[types[t].key]; });
         var avg = vals.reduce(function(s,v){return s+v;},0) / vals.length;

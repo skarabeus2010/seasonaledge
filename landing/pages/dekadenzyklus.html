@@ -94,11 +94,11 @@
   <div class="app">
     <!-- ═══ SIDEBAR ═══ -->
     <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^DJI" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Darstellung</h3>
+      <h3 data-i18n="sidebar.display">Darstellung</h3>
       <label><input type="checkbox" id="chk-bands"> &plusmn;1&sigma; Konfidenzband</label>
       <label><input type="checkbox" id="chk-percentile"> 25./75. Perzentil-B&auml;nder</label>
       <label><input type="checkbox" id="chk-individual"> Einzeljahre anzeigen</label>
@@ -108,11 +108,11 @@
         <input type="range" id="sl-smooth" min="1" max="15" step="2" value="1" style="width:100%;accent-color:var(--accent)">
       </div>
       <hr>
-      <h3>Dekadenjahre ein/ausblenden</h3>
+      <h3 data-i18n="sidebar.decade_years">Dekadenjahre ein/ausblenden</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-decades"> Alle / Keine</label>
       <div id="decade-toggles"></div>
       <hr>
-      <h3>Rolling-Vola Fenster</h3>
+      <h3 data-i18n="sidebar.rolling_vola_h3">Rolling-Vola Fenster</h3>
       <select id="vola-window"><option>5</option><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option><option>60</option></select>
     </aside>
 
@@ -125,7 +125,7 @@
 
       <!-- Anomalie-Radar (KI Quick-Check) — ganz oben wie im Jahreszyklus -->
       <details open id="sec-anomaly">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -191,7 +191,7 @@
 
       <!-- Expander: DD-Heatmap -->
       <details>
-        <summary>Max Drawdown: Dekade &times; Monat</summary>
+        <summary data-i18n="section.max_dd_decade_month">Max Drawdown: Dekade &times; Monat</summary>
         <div class="content"><div id="chart-dd-heatmap"></div></div>
       </details>
 
@@ -206,7 +206,7 @@
 
       <!-- Expander: Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik" id="content-methodik"></div>
       </details>
     </main>
@@ -335,9 +335,9 @@
       // Methodik
       var volaWin=parseInt(document.getElementById('vola-window').value)||D.vola_window||20;
       document.getElementById('content-methodik').innerHTML=
-        '<h3>Datengrundlage</h3><ul><li><b>Ticker:</b> '+D.ticker+'</li><li><b>Datenzeitraum:</b> '+D.data_start+'\u2013'+D.data_end+' ('+D.total_years+' vollst\u00E4ndige Jahre)</li><li><b>Datenquellen:</b> Yahoo Finance + Stooq.com (historisch) + Supabase</li><li><b>Mindestl\u00E4nge:</b> Jahre mit &lt;200 Handelstagen werden ausgeschlossen</li></ul>'+
-        '<h3>Rendite-Analyse</h3><ul><li><b>Normierung:</b> Erster Handelstag jedes Jahres = 0% (logarithmische Returns)</li><li><b>Interpolation:</b> Jede Jahreskurve auf 252 Handelstage normiert</li><li><b>Dekadenjahre:</b> Gruppierung nach letzter Ziffer (x0 = 1900, 1910, \u2026)</li><li><b>Gl\u00E4ttung:</b> 5-Tage zentrierter Moving Average</li></ul>'+
-        '<h3>Drawdown-Analyse</h3><ul><li><b>Definition:</b> DD = (Kurs \u2013 H\u00F6chstkurs seit Jahresbeginn) / H\u00F6chstkurs \u00D7 100</li><li><b>\u00D8 Drawdown-Verlauf:</b> Pro Dekadenjahr gemittelt</li><li><b>Worst-DD-Tabelle:</b> Top 25 schlimmste Drawdown-Jahre</li></ul>'+
+        '<h3 data-i18n="common.data_basis">Datengrundlage</h3><ul><li><b>Ticker:</b> '+D.ticker+'</li><li><b>Datenzeitraum:</b> '+D.data_start+'\u2013'+D.data_end+' ('+D.total_years+' vollst\u00E4ndige Jahre)</li><li><b>Datenquellen:</b> Yahoo Finance + Stooq.com (historisch) + Supabase</li><li><b>Mindestl\u00E4nge:</b> Jahre mit &lt;200 Handelstagen werden ausgeschlossen</li></ul>'+
+        '<h3 data-i18n="common.return_analysis">Rendite-Analyse</h3><ul><li><b>Normierung:</b> Erster Handelstag jedes Jahres = 0% (logarithmische Returns)</li><li><b>Interpolation:</b> Jede Jahreskurve auf 252 Handelstage normiert</li><li><b>Dekadenjahre:</b> Gruppierung nach letzter Ziffer (x0 = 1900, 1910, \u2026)</li><li><b>Gl\u00E4ttung:</b> 5-Tage zentrierter Moving Average</li></ul>'+
+        '<h3 data-i18n="common.drawdown_analysis">Drawdown-Analyse</h3><ul><li><b>Definition:</b> DD = (Kurs \u2013 H\u00F6chstkurs seit Jahresbeginn) / H\u00F6chstkurs \u00D7 100</li><li><b>\u00D8 Drawdown-Verlauf:</b> Pro Dekadenjahr gemittelt</li><li><b>Worst-DD-Tabelle:</b> Top 25 schlimmste Drawdown-Jahre</li></ul>'+
         '<h3>Volatilit\u00E4ts-Analyse</h3><ul><li><b>Rolling Volatilit\u00E4t:</b> \u03C3_annualisiert = \u03C3_t\u00E4glich \u00D7 \u221A252 \u00D7 100</li><li><b>Fenster:</b> '+volaWin+' Tage (einstellbar in Sidebar)</li></ul>'+
         '<h3>Anomalie-Radar</h3><ul><li><b>Methode:</b> '+(rawRows?'Z-Score Vergleich':'Isolation Forest (ML)')+'</li><li><b>Score:</b> 0\u2013100 (ab 40 = leicht anomal, ab 70 = stark anomal)</li></ul>';
 
@@ -660,7 +660,7 @@
 
     // ── Tabelle ──
     function renderTable(){
-      var html='<table class="worst-table"><tr><th>Dekadenjahr</th><th>n</th><th>\u00D8 Rendite</th><th>Median</th><th>Win-Rate</th><th>Avg. DD</th><th>Jahre</th></tr>';
+      var html='<table class="worst-table"><tr><th>Dekadenjahr</th><th>n</th><th>\u00D8 Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th>Avg. DD</th><th>Jahre</th></tr>';
       for(var i=0;i<10;i++){
         var d=D.decades[i];
         var bg=i===D.current_digit?'background:rgba(232,168,32,.08)':'';

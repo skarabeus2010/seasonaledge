@@ -74,7 +74,7 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
@@ -88,7 +88,7 @@
         <option value="boj">Bank of Japan</option>
       </select>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10" selected>10 Jahre</option>
@@ -97,18 +97,18 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Event-Window</h3>
+      <h3 data-i18n="common.event_window">Event-Window</h3>
       <label>Tage vor t0<br><input type="range" id="rng-before" min="1" max="15" value="5" step="1"><span id="lbl-before">5</span></label>
       <label>Tage nach t0<br><input type="range" id="rng-after" min="1" max="15" value="5" step="1"><span id="lbl-after">5</span></label>
       <hr>
       <label><input type="checkbox" id="chk-individual"> Einzelne Events zeigen</label>
       <hr>
-      <h3>Technischer Filter</h3>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Zentralbank-Effekt</b> &mdash; <span id="title-ticker">^GSPC</span></h1>
       <p class="page-caption">Marktreaktion rund um Notenbank-Sitzungen (t0 = Entscheidungstag)</p>
@@ -131,13 +131,13 @@
 
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest</summary>
+        <summary data-i18n="section.significance_test">Signifikanztest</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
       <!-- Streak -->
       <details id="sec-streak" style="display:none">
-        <summary>Streak-Analyse</summary>
+        <summary data-i18n="section.streak_analysis">Streak-Analyse</summary>
         <div class="content" id="content-streak"></div>
       </details>
 
@@ -156,9 +156,9 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Fed (FOMC):</b> 224 Sitzungstermine (2000&ndash;2026)</li>
             <li><b>Fed Zinserh&ouml;hungen:</b> 40 Hike-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins erh&ouml;ht hat</li>
@@ -170,7 +170,7 @@
           </ul>
           <h3>Hike vs. Cut Analyse</h3>
           <p>Mit den Optionen <b>Fed Zinserh&ouml;hungen</b> und <b>Fed Zinssenkungen</b> kannst du gezielt untersuchen wie der Markt auf die <i>Richtung</i> der geldpolitischen Entscheidung reagiert &mdash; statt auf alle Sitzungen pauschal. Klassische These: nach Zinssenkungen steigen Aktien (expansive Geldpolitik), nach Zinserh&ouml;hungen fallen sie (restriktiv). Ein Backtest zeigt ob das stimmt.</p>
-          <h3>Berechnung</h3>
+          <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
             <li><b>t0:</b> Entscheidungstag der Notenbank (oder n&auml;chster Handelstag)</li>
             <li><b>Normierung:</b> Kursverlauf auf t0 = 0% normiert</li>
@@ -441,7 +441,7 @@
         var futureFomc = (CB_DATES['fomc'] || []).filter(function(d){return d >= today;}).slice(0, 8);
         var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
         var html = '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.5rem">Hike/Cut sind nicht vorhersagbar — hier die nächsten <b>FOMC-Sitzungen</b>, an denen die Fed entscheiden könnte:</p>';
-        html += '<table class="cb-table"><thead><tr><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+        html += '<table class="cb-table"><thead><tr><th data-i18n="table.date">Datum</th><th data-i18n="table.weekday">Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
         for (var i = 0; i < futureFomc.length; i++) {
           var d = new Date(futureFomc[i].replace(/-/g, '/'));
           var diff = Math.ceil((d - new Date()) / 86400000);
@@ -453,7 +453,7 @@
       }
       var future = (CB_DATES[bankKey] || []).filter(function(d) { return d >= today; }).slice(0, 8);
       var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-      var html = '<table class="cb-table"><thead><tr><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+      var html = '<table class="cb-table"><thead><tr><th data-i18n="table.date">Datum</th><th data-i18n="table.weekday">Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
       for (var i = 0; i < future.length; i++) {
         var d = new Date(future[i].replace(/-/g, '/'));
         var diff = Math.ceil((d - new Date()) / 86400000);

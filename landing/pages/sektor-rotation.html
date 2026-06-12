@@ -74,7 +74,7 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10">10 Jahre</option>
@@ -130,9 +130,9 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
             <li><b>23 US-Sektor-ETFs</b> &mdash; SPDR Select Sector + Spezial-ETFs</li>
@@ -167,7 +167,7 @@
               <tr><td>TAN</td><td>Solar Energy</td><td>Invesco</td></tr>
             </tbody>
           </table>
-          <h3>Berechnung</h3>
+          <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
             <li><b>Monatsrendite:</b> Letzter Schlusskurs pro Monat &rarr; prozentuale Ver&auml;nderung zum Vormonat</li>
             <li><b>Saisonalit&auml;t:</b> Durchschnittliche Monatsrendite &uuml;ber alle verf&uuml;gbaren Jahre (min. 5)</li>
@@ -389,7 +389,7 @@
 
       // Top 3
       html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 3 pro Monat</h4>';
-      html += '<table class="sector-table"><thead><tr><th>Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
+      html += '<table class="sector-table"><thead><tr><th data-i18n="table.month">Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
       for (var m = 1; m <= 12; m++) {
         var ranking = [];
         for (var i = 0; i < tickers.length; i++) {
@@ -410,7 +410,7 @@
 
       // Flop 3
       html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 3 pro Monat</h4>';
-      html += '<table class="sector-table"><thead><tr><th>Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
+      html += '<table class="sector-table"><thead><tr><th data-i18n="table.month">Monat</th><th>#1</th><th>#2</th><th>#3</th></tr></thead><tbody>';
       for (var m = 1; m <= 12; m++) {
         var ranking = [];
         for (var i = 0; i < tickers.length; i++) {
@@ -560,7 +560,7 @@
       var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">';
 
       html += '<div><h4 style="color:var(--green);font-size:.875rem;margin-bottom:.5rem">Top 10 Win-Rate (Sektor \u00D7 Monat)</h4>';
-      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th><th>Streak</th></tr></thead><tbody>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th data-i18n="table.month">Monat</th><th data-i18n="table.win_rate">Win-Rate</th><th>Streak</th></tr></thead><tbody>';
       for (var i = 0; i < top10.length; i++) {
         var r = top10[i];
         html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';
@@ -570,7 +570,7 @@
       html += '</tbody></table></div>';
 
       html += '<div><h4 style="color:var(--red);font-size:.875rem;margin-bottom:.5rem">Flop 10 Win-Rate (Sektor \u00D7 Monat)</h4>';
-      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th>Monat</th><th>Win-Rate</th><th>Streak</th></tr></thead><tbody>';
+      html += '<table class="sector-table"><thead><tr><th>#</th><th>ETF</th><th>Sektor</th><th data-i18n="table.month">Monat</th><th data-i18n="table.win_rate">Win-Rate</th><th>Streak</th></tr></thead><tbody>';
       for (var i = 0; i < flop10.length; i++) {
         var r = flop10[i];
         html += '<tr><td>' + (i+1) + '</td><td><b>' + r.ticker + '</b></td><td>' + r.name + '</td>';

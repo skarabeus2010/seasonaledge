@@ -86,11 +86,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10" selected>10 Jahre</option>
@@ -101,8 +101,8 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Darstellung</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <h3 data-i18n="sidebar.display">Darstellung</h3>
+      <label class="toggle-row" data-i18n="checkbox.highlight_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
       <label class="toggle-row"><input type="checkbox" id="chk-dd-individual"> Einzeljahre im Drawdown-Chart</label>
       <hr>
       <h3>Risiko-Analyse</h3>
@@ -113,7 +113,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Risikozyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption" id="page-caption">Drawdown &amp; Volatilit&auml;t &middot; Saisonale Risikomuster &middot; Pr&auml;sidentenzyklus-Risiko</p>
@@ -128,7 +128,7 @@
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -161,9 +161,9 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Drawdown-Analyse</h3>
+          <h3 data-i18n="common.drawdown_analysis">Drawdown-Analyse</h3>
           <ul>
             <li><b>Normierung:</b> Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</li>
             <li><b>Interpolation:</b> Jede Jahreskurve wird auf 365 Kalendertage interpoliert</li>
@@ -178,13 +178,13 @@
             <li><b>Perzentil:</b> &ldquo;In wie viel % der Jahre war die Vola am gleichen Tag niedriger als heute?&rdquo;</li>
             <li><b>Farbcodierung:</b> Rot &gt; &Oslash; + 1&sigma; (erh&ouml;ht), Gr&uuml;n &lt; &Oslash; &minus; 1&sigma; (niedrig)</li>
           </ul>
-          <h3>Pr&auml;sidentenzyklus</h3>
+          <h3 data-i18n="sidebar.pres_cycle">Pr&auml;sidentenzyklus</h3>
           <ul>
             <li><b>Mapping:</b> 1 = Post-Election, 2 = Midterm, 3 = Pre-Election, 4 = Election Year</li>
             <li><b>Formel:</b> ((year &minus; 1) % 4 + 4) % 4 + 1</li>
             <li><b>Pro Zyklusphase:</b> &Oslash; Max DD, bestes und schlechtestes Jahr</li>
           </ul>
-          <h3>Datenquelle</h3>
+          <h3 data-i18n="common.data_source">Datenquelle</h3>
           <ul>
             <li>Supabase (Yahoo Finance / Stooq)</li>
           </ul>

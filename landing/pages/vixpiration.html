@@ -97,11 +97,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="10" selected>10 Jahre</option>
         <option value="15">15 Jahre</option>
@@ -111,7 +111,7 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Fenster</h3>
+      <h3 data-i18n="common.window">Fenster</h3>
       <div class="range-wrap">
         <label>Tage vor VIXpiration <span id="lbl-before">3</span></label>
         <input type="range" id="sl-before" min="1" max="10" value="3">
@@ -142,10 +142,10 @@
       </div>
 
       <hr>
-      <h3>Technischer Filter</h3>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
@@ -156,7 +156,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>VIXpiration Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption">Saisonale Muster rund um den VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage, CBOE-Regel)</p>
@@ -246,13 +246,13 @@
 
       <!-- Streak -->
       <details open id="sec-streak">
-        <summary>Streak-Analyse nach Monat</summary>
+        <summary data-i18n="section.streak_by_month">Streak-Analyse nach Monat</summary>
         <div class="content" id="content-streak"></div>
       </details>
 
       <!-- Heatmap Monat x Offset -->
       <details open id="sec-heatmap">
-        <summary>Heatmap: Monat &times; Offset</summary>
+        <summary data-i18n="section.heatmap_month_offset">Heatmap: Monat &times; Offset</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
@@ -279,7 +279,7 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
           <h3>VIXpiration (CBOE-Regel)</h3>
           <ul>
@@ -290,19 +290,19 @@
             <li>Wichtige F&auml;lle: 04/2025 (Good Friday) &rarr; VIX 18.03 Di, 06/2026 (Juneteenth) &rarr; VIX 19.05 Di</li>
             <li>VIXpiration erzeugt typisch: IV-Crush danach, Gamma-Squeeze und h&ouml;here Vola davor</li>
           </ul>
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
             <li><b>Settlement-Datum:</b> Algorithmisch berechnet (Kalender-3.Fr &minus; 30 Tage, NYSE-Feiertags-Adjustierung)</li>
           </ul>
-          <h3>Event-Window</h3>
+          <h3 data-i18n="common.event_window">Event-Window</h3>
           <ul>
             <li><b>t=0:</b> VIX-Settlement-Tag (oder n&auml;chster/vorheriger Handelstag)</li>
             <li><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
             <li><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
             <li><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
           </ul>
-          <h3>Backtest</h3>
+          <h3 data-i18n="common.backtest">Backtest</h3>
           <ul>
             <li>Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
             <li>Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
@@ -883,7 +883,7 @@
 
       // Table
       document.getElementById('thead-all-opex').innerHTML =
-        '<tr><th>VIX-Verfall</th><th>Tag</th><th>Monat</th><th>Letzter VIX-HT</th><th>Zugeh&ouml;riger OPEX-Fr</th><th>Typ</th></tr>';
+        '<tr><th>VIX-Verfall</th><th>Tag</th><th data-i18n="table.month">Monat</th><th>Letzter VIX-HT</th><th>Zugeh&ouml;riger OPEX-Fr</th><th>Typ</th></tr>';
 
       var futureAll = opexDates.filter(function(ev){ return ev.vixDate >= today; });
       futureAll.sort(function(a,b){ return a.vixDate < b.vixDate ? -1 : 1; });

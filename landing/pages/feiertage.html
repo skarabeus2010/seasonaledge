@@ -74,11 +74,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10" selected>10 Jahre</option>
@@ -87,7 +87,7 @@
         <option value="max">Max</option>
       </select>
       <hr>
-      <h3>Event-Window</h3>
+      <h3 data-i18n="common.event_window">Event-Window</h3>
       <label>Tage vor Feiertag<br><input type="range" id="rng-before" min="1" max="10" value="3" step="1"><span id="lbl-before">3</span></label>
       <label>Tage nach Feiertag<br><input type="range" id="rng-after" min="1" max="10" value="3" step="1"><span id="lbl-after">3</span></label>
       <hr>
@@ -97,7 +97,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Feiertags-Effekt</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption">Rendite rund um B&ouml;rsenfeiertage &mdash; Exchange-spezifisch (NYSE/XETRA/LSE)</p>
@@ -123,7 +123,7 @@
 
       <!-- Signifikanztest -->
       <details open id="sec-significance" style="display:none">
-        <summary>Signifikanztest</summary>
+        <summary data-i18n="section.significance_test">Signifikanztest</summary>
         <div class="content" id="content-significance"></div>
       </details>
 
@@ -141,15 +141,15 @@
 
       <!-- Streak -->
       <details open id="sec-streak" style="display:none">
-        <summary>Streak-Analyse</summary>
+        <summary data-i18n="section.streak_analysis">Streak-Analyse</summary>
         <div class="content" id="content-streak"></div>
       </details>
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Exchange-Erkennung:</b> Automatisch per Ticker (NYSE, XETRA, LSE, Crypto/FX=keine)</li>
             <li><b>Feiertage:</b> Dynamisch berechnet via <code>holidays.js</code> (Gauss-Ostern, variable Feiertage)</li>
@@ -167,7 +167,7 @@
           <ul>
             <li>New Year, Good Friday, Easter Monday, Early May BH, Spring BH, Summer BH, Christmas, Boxing Day</li>
           </ul>
-          <h3>Berechnung</h3>
+          <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
             <li><b>t0:</b> Erster Handelstag am/nach dem Feiertag</li>
             <li><b>Basis:</b> Close bei t&minus;N = 0% (Normierung)</li>
@@ -415,7 +415,7 @@
       charts.ranking.render();
 
       // Tabelle
-      var html = '<table class="hol-table"><thead><tr><th>Feiertag</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Std.Abw.</th><th>Best</th><th>Worst</th><th>n</th></tr></thead><tbody>';
+      var html = '<table class="hol-table"><thead><tr><th data-i18n="table.holiday">Feiertag</th><th>\u00D8 Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.std_dev">Std.Abw.</th><th>Best</th><th>Worst</th><th>n</th></tr></thead><tbody>';
       for (var i = 0; i < ranking.length; i++) {
         var r = ranking[i];
         var cls = r.avg >= 0 ? 'pos' : 'neg';
@@ -477,7 +477,7 @@
       var next5 = allDates.slice(0, 5);
 
       var WDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-      var html = '<table class="hol-table"><thead><tr><th>Feiertag</th><th>Datum</th><th>Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
+      var html = '<table class="hol-table"><thead><tr><th data-i18n="table.holiday">Feiertag</th><th data-i18n="table.date">Datum</th><th data-i18n="table.weekday">Wochentag</th><th>In Tagen</th></tr></thead><tbody>';
       for (var i = 0; i < next5.length; i++) {
         var d = new Date(next5[i].date.replace(/-/g, '/'));
         var diff = Math.ceil((d - new Date()) / 86400000);

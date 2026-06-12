@@ -95,7 +95,7 @@
       <h3>Schwellenwert</h3>
       <label><input type="range" id="rng-threshold" min="1" max="15" value="5" step="0.5"><span id="lbl-threshold">5.0</span>%</label>
 
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="1">1 Jahr</option>
         <option value="5">5 Jahre</option>
@@ -114,7 +114,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Intermarket Shocks</b></h1>
       <p class="page-caption">Wenn Asset A um X% f&auml;llt/steigt &mdash; wie performt Asset B danach?</p>
@@ -181,9 +181,9 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq), 263 Basiswerte</li>
             <li><b>Aktualisierung:</b> T&auml;glich via Nightly Refresh</li>
@@ -466,7 +466,7 @@
     // ── Render: Summary table ──────────────────────────────────────────────────
     function renderSummaryTable(result) {
       var html = '<table class="shock-table"><thead><tr>';
-      html += '<th>Horizont</th><th>\u00D8 Rendite</th><th>Median</th><th>Std.Abw.</th><th>Win-Rate</th><th>Max</th><th>Min</th><th>Events</th>';
+      html += '<th>Horizont</th><th>\u00D8 Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.std_dev">Std.Abw.</th><th data-i18n="table.win_rate">Win-Rate</th><th>Max</th><th>Min</th><th>Events</th>';
       html += '</tr></thead><tbody>';
       for (var i = 0; i < result.summary.length; i++) {
         var s = result.summary[i];
@@ -713,7 +713,7 @@
       document.getElementById('event-summary').textContent = 'Alle ' + result.nEvents + ' Shock-Events anzeigen';
 
       var html = '<div style="max-height:400px;overflow-y:auto"><table class="shock-table"><thead><tr>';
-      html += '<th>Datum</th><th>' + triggerTicker + ' %</th>';
+      html += '<th data-i18n="table.date">Datum</th><th>' + triggerTicker + ' %</th>';
       for (var h = 0; h < horizons.length; h++) {
         html += '<th>' + targetTicker + ' ' + (horizons[h] === 0 ? 'T=0' : '+' + horizons[h] + 'T') + '</th>';
       }

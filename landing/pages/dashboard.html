@@ -2042,7 +2042,7 @@
         return;
       }
       var html = '<table class="strategies-table">';
-      html += '<thead><tr><th>Strategie</th><th>Signal</th><th>Datum</th><th>In Tagen</th><th>Aktuelle Streak</th></tr></thead><tbody>';
+      html += '<thead><tr><th data-i18n="table.strategy">Strategie</th><th>Signal</th><th data-i18n="table.date">Datum</th><th>In Tagen</th><th>Aktuelle Streak</th></tr></thead><tbody>';
       for (var i = 0; i < signals.length; i++) {
         var s = signals[i];
         var typeLabel = s.type === 'entry' ? 'Einstieg' : 'Ausstieg';

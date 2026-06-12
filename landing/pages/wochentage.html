@@ -84,15 +84,15 @@
 
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Analysezeitraum</h3>
+      <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <label>Jahre <span id="lbl-years">10</span></label>
       <input type="range" id="sl-years" min="1" max="30" step="1" value="10">
       <hr>
-      <h3>Rendite-Berechnung</h3>
+      <h3 data-i18n="sidebar.return_calc">Rendite-Berechnung</h3>
       <select id="sel-mode">
         <option value="cc" selected>Close → Close (t0 → t1)</option>
         <option value="co">Close → Open (Overnight)</option>
@@ -110,15 +110,15 @@
       </div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
       <hr>
-      <h3>Monats-Filter</h3>
+      <h3 data-i18n="sidebar.month_filter">Monats-Filter</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:.8125rem"></div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Wirkt auf alle Wochentag-Sektionen außer Heatmaps</p>
       <hr>
-      <h3>Anzeige</h3>
+      <h3 data-i18n="sidebar.display_opts">Anzeige</h3>
       <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelle Woche einblenden</label>
       <hr>
-      <h3>Technische Filter</h3>
+      <h3 data-i18n="sidebar.tech_filters">Technische Filter</h3>
       <div id="indicator-filters"></div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" id="ind_badge"></p>
     </aside>
@@ -161,7 +161,7 @@
         <summary>Statistik pro Wochentag</summary>
         <div class="content">
           <table class="perf-table">
-            <thead><tr><th>Wochentag</th><th>Ø Rendite</th><th>Median</th><th>Std.Abw.</th><th>Win-Rate</th><th>Anzahl</th></tr></thead>
+            <thead><tr><th data-i18n="table.weekday">Wochentag</th><th>Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.std_dev">Std.Abw.</th><th data-i18n="table.win_rate">Win-Rate</th><th>Anzahl</th></tr></thead>
             <tbody id="tbody-wd"></tbody>
           </table>
         </div>
@@ -216,14 +216,14 @@
             <div>
               <p class="topflop-title" style="color:#34d399">🟢 Top 10 beste Kombinationen</p>
               <table class="perf-table">
-                <thead><tr><th>Monat</th><th>Wochentag</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.weekday">Wochentag</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
                 <tbody id="tbody-top"></tbody>
               </table>
             </div>
             <div>
               <p class="topflop-title" style="color:#ff6b6b">🔴 Top 10 schlechteste Kombinationen</p>
               <table class="perf-table">
-                <thead><tr><th>Monat</th><th>Wochentag</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.weekday">Wochentag</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
                 <tbody id="tbody-flop"></tbody>
               </table>
             </div>

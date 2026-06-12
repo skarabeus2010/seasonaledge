@@ -79,11 +79,11 @@
 
   <div class="app">
     <aside class="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Zeitraum</h3>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
         <option value="5">5 Jahre</option>
         <option value="10" selected>10 Jahre</option>
@@ -109,10 +109,10 @@
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent);font-size:.75rem"><input type="checkbox" id="chk-all-months" checked> Alle / Keine</label>
       <div id="month-toggles" class="month-grid"></div>
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
       <hr>
-      <h3>Technischer Filter</h3>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
       <div id="indicator-filter"></div>
       <hr>
       <h3>TDOM-Strategie Tester</h3>
@@ -137,7 +137,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Lade Daten&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>TDoM Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption">Trading Day of the Month: 3 Strategien &times; 2 Richtungen &times; Monatsfilter &times; Multi-Day Ranges</p>
@@ -145,7 +145,7 @@
 
       <!-- Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -220,9 +220,9 @@
 
       <!-- Methodik -->
       <details>
-        <summary>Methodik</summary>
+        <summary data-i18n="common.methodology">Methodik</summary>
         <div class="content methodik">
-          <h3>Datengrundlage</h3>
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
             <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
             <li><b>Ben&ouml;tigt:</b> Open + Close Kurse</li>
@@ -1014,7 +1014,7 @@
     // ── Render: Statistik-Tabelle ─────────────────────────────────────────────
     function renderStats(stats) {
       var html = '<p class="box-info" style="margin-bottom:.5rem">\u26A0 = Wenig Daten (n&lt;' + MIN_N + '), Werte unsicher.</p>';
-      html += '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th>Win-Rate</th><th>Median</th><th>Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
+      html += '<table class="tdom-table"><thead><tr><th>TDoM</th><th>\u00D8 Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.median">Median</th><th data-i18n="table.std_dev">Std.Abw.</th><th>Max</th><th>Min</th><th>Trades</th></tr></thead><tbody>';
       for (var i = 0; i < stats.length; i++) {
         var s = stats[i];
         var warn = s.count < MIN_N ? ' <span style="color:#FFA726" title="n<' + MIN_N + '">\u26A0</span>' : '';
@@ -1120,7 +1120,7 @@
       // Trades table (last 20)
       var sorted = trades.slice().sort(function(a,b) { return b.entry_date > a.entry_date ? 1 : -1; });
       var html = '<h4 style="font-size:.875rem;margin-bottom:.5rem">Letzte 20 Trades</h4>';
-      html += '<table class="tdom-table"><thead><tr><th>Jahr</th><th>Monat</th><th>Entry</th><th>Exit</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr></thead><tbody>';
+      html += '<table class="tdom-table"><thead><tr><th>Jahr</th><th data-i18n="table.month">Monat</th><th>Entry</th><th>Exit</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr></thead><tbody>';
       for (var i = 0; i < Math.min(20, sorted.length); i++) {
         var t = sorted[i];
         html += '<tr><td>' + t.year + '</td><td>' + MONTHS[t.month-1] + '</td>';

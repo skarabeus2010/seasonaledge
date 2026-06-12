@@ -52,7 +52,28 @@ SA.i18n = (function() {
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
       var val = t(key);
-      if (val !== key) el.textContent = val;
+      if (val === key) return;
+
+      // Check if element has child elements (e.g. <input> inside <label>, <svg> inside <button>)
+      var hasElementChild = false;
+      for (var i = 0; i < el.childNodes.length; i++) {
+        if (el.childNodes[i].nodeType === 1) { hasElementChild = true; break; }
+      }
+
+      if (!hasElementChild) {
+        el.textContent = val;
+      } else {
+        // Mixed content (e.g. <label><input> Text</label>): update last text node only,
+        // preserving leading whitespace so the visual gap after the checkbox remains.
+        for (var j = el.childNodes.length - 1; j >= 0; j--) {
+          if (el.childNodes[j].nodeType === 3) {
+            var orig = el.childNodes[j].nodeValue;
+            var lead = orig.match(/^\s+/);
+            el.childNodes[j].nodeValue = (lead ? lead[0] : '') + val;
+            break;
+          }
+        }
+      }
     });
   }
 

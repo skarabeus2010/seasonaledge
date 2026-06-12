@@ -60,11 +60,11 @@
 
 <div class="app">
   <aside class="sidebar">
-    <h3>Ticker</h3>
+    <h3 data-i18n="sidebar.ticker">Ticker</h3>
     <input type="text" id="ticker-input" value="SPY" placeholder="z.B. SPY, AAPL, SAP.DE" list="ticker-list">
     <datalist id="ticker-list"></datalist>
     <hr>
-    <h3>Zeitraum</h3>
+    <h3 data-i18n="sidebar.period">Zeitraum</h3>
     <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
       <option value="5">5 Jahre</option>
       <option value="10" selected>10 Jahre</option>
@@ -73,7 +73,7 @@
       <option value="max">Max</option>
     </select>
     <hr>
-    <h3>Event-Fenster</h3>
+    <h3 data-i18n="common.event_window">Event-Fenster</h3>
     <label style="font-size:.8125rem;color:var(--dim)">Tage <b>vor</b> Ex-Date
       <br><input type="range" id="rng-before" min="1" max="15" value="5" step="1">
       <span id="lbl-before">5</span> HT
@@ -83,13 +83,13 @@
       <span id="lbl-after">10</span> HT
     </label>
     <hr>
-    <h3>Darstellung</h3>
+    <h3 data-i18n="sidebar.display">Darstellung</h3>
     <label class="chk-row"><input type="checkbox" id="chk-indiv"> Einzelne Events einblenden</label>
   </aside>
 
   <main>
     <div class="loading-overlay" id="loading" style="display:none">
-      <div class="spinner"></div><span>Lade Daten&hellip;</span>
+      <div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span>
     </div>
 
     <div class="intro-box">
@@ -125,7 +125,7 @@
     </details>
 
     <details id="sec-methodik">
-      <summary>Methodik</summary>
+      <summary data-i18n="common.methodology">Methodik</summary>
       <div style="font-size:.8125rem;color:var(--muted);line-height:1.7;padding:.5rem 0">
         <p><b>Datenquelle:</b> Kursdaten aus der SeasonAlpha-Datenbank (Supabase, täglich aktualisiert). Dividendentermine und -beträge von Yahoo Finance.</p>
         <p><b>t0 = Ex-Dividenden-Datum.</b> An diesem Tag notiert die Aktie bereits ohne Dividende (ex-dividend). Der Kursabschlag am Ex-Tag entspricht in effizienten Märkten annähernd der Dividendenhöhe.</p>

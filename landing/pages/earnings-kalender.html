@@ -68,11 +68,11 @@
 
 <div class="app">
   <aside class="sidebar">
-    <h3>Ticker</h3>
+    <h3 data-i18n="sidebar.ticker">Ticker</h3>
     <input type="text" id="ticker-input" value="AAPL" placeholder="z.B. AAPL, MSFT, SAP.DE" list="ticker-list">
     <datalist id="ticker-list"></datalist>
     <hr>
-    <h3>Zeitraum</h3>
+    <h3 data-i18n="sidebar.period">Zeitraum</h3>
     <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
       <option value="5">5 Jahre</option>
       <option value="10" selected>10 Jahre</option>
@@ -81,7 +81,7 @@
       <option value="max">Max</option>
     </select>
     <hr>
-    <h3>Event-Fenster</h3>
+    <h3 data-i18n="common.event_window">Event-Fenster</h3>
     <label style="font-size:.8125rem;color:var(--dim)">Tage <b>vor</b> Earnings
       <br><input type="range" id="rng-before" min="1" max="20" value="10" step="1">
       <span id="lbl-before">10</span> HT
@@ -95,13 +95,13 @@
       <span id="lbl-vola">5</span> HT
     </label>
     <hr>
-    <h3>Darstellung</h3>
+    <h3 data-i18n="sidebar.display">Darstellung</h3>
     <label class="chk-row"><input type="checkbox" id="chk-indiv"> Einzelne Events einblenden</label>
   </aside>
 
   <main>
     <div class="loading-overlay" id="loading" style="display:none">
-      <div class="spinner"></div><span>Lade Daten&hellip;</span>
+      <div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span>
     </div>
 
     <div class="intro-box">
@@ -149,7 +149,7 @@
 
     <!-- ── Methodik ── -->
     <details id="sec-methodik">
-      <summary>Methodik</summary>
+      <summary data-i18n="common.methodology">Methodik</summary>
       <div style="font-size:.8125rem;color:var(--muted);line-height:1.7;padding:.5rem 0">
         <p><b>Datenquelle:</b> Kursdaten aus der SeasonAlpha-Datenbank. Earnings-Termine und EPS-Daten von Yahoo Finance (historische Quartalsergebnisse).</p>
         <p><b>t0 = Earnings-Tag</b> (Datum der Veröffentlichung der Quartalszahlen). After-Market-Berichte spiegeln sich typischerweise im Kurs des nächsten Handelstages wider — dieser Effekt ist in der t0/t+1-Bewegung sichtbar.</p>
@@ -526,7 +526,7 @@
   // ── Render: Earnings-Tabelle ──────────────────────────────────────────────
   function renderTable(allCurves) {
     var html = '<table class="ev-table"><thead><tr>';
-    html += '<th>Datum</th>';
+    html += '<th data-i18n="table.date">Datum</th>';
     var hasEps = allCurves.some(function(c){ return c.epsActual != null; });
     if (hasEps) { html += '<th>EPS actual</th><th>EPS est.</th><th>Surprise</th>'; }
     html += '<th>Earnings Move (t-1→t+1)</th><th>Rendite Fenster</th>';

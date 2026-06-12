@@ -87,22 +87,22 @@
 
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <h3>Ticker</h3>
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
       <input type="text" id="ticker-input" value="^GSPC" placeholder="Ticker" list="ticker-list">
       <datalist id="ticker-list"></datalist>
       <hr>
-      <h3>Analysezeitraum</h3>
+      <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
       <select id="sel-period">
         <option value="3">3</option><option value="5">5</option><option value="7">7</option>
         <option value="10">10</option><option value="15" selected>15</option><option value="20">20</option>
         <option value="25">25</option><option value="30">30</option><option value="max">Max</option>
       </select>
       <hr>
-      <h3>Monats-Saisonalchart</h3>
+      <h3 data-i18n="sidebar.month_seasonal_chart">Monats-Saisonalchart</h3>
       <label>Monat auswählen</label>
       <select id="sel-month"></select>
       <label class="toggle-row" style="margin-top:.5rem"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr einblenden</label>
-      <label class="toggle-row"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
+      <label class="toggle-row" data-i18n="checkbox.show_individual"><input type="checkbox" id="chk-individual"> Einzelne Jahre zeigen</label>
       <label class="toggle-row"><input type="checkbox" id="chk-bands"> Konfidenzband (±1σ)</label>
       <label class="toggle-row"><input type="checkbox" id="chk-percentile"> Perzentil-Bänder (25./75.)</label>
       <hr>
@@ -115,11 +115,11 @@
       </div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">Leer = alle Jahre</p>
       <hr>
-      <h3>Two-Week Split</h3>
+      <h3 data-i18n="sidebar.two_week_split">Two-Week Split</h3>
       <label>Split nach TDOM <span id="lbl-split">10</span></label>
       <input type="range" id="sl-split" min="5" max="15" step="1" value="10">
       <hr>
-      <h3>Outlier-Filter</h3>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
       <div id="outlier-filter"></div>
     </aside>
 
@@ -131,7 +131,7 @@
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
-        <summary>Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -148,7 +148,7 @@
 
       <!-- 2. Detrend-Indikator -->
       <details open id="sec-detrend" style="display:none">
-        <summary>Detrend-Indikator / Saisonaler Druck</summary>
+        <summary data-i18n="section.detrend">Detrend-Indikator / Saisonaler Druck</summary>
         <div class="content">
           <div id="chart-detrend"></div>
           <p class="box-info">Saisonaler Intra-Monat-Verlauf ohne Trendkomponente. Über 50 = saisonal typisch starke Phase. Unter 50 = saisonal typisch schwache Phase.</p>
@@ -182,7 +182,7 @@
             <summary style="font-size:.8125rem">Monats-Detailtabelle</summary>
             <div class="content">
               <table class="perf-table">
-                <thead><tr><th>Monat</th><th>Ø Rendite</th><th>Median</th><th>Win-Rate</th><th>n</th></tr></thead>
+                <thead><tr><th data-i18n="table.month">Monat</th><th>Ø Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
                 <tbody id="tbody-monthly"></tbody>
               </table>
             </div>
@@ -231,7 +231,7 @@
         <summary>Two-Week Detailtabelle</summary>
         <div class="content">
           <table class="perf-table">
-            <thead><tr><th>Periode</th><th>Monat</th><th>Hälfte</th><th>Ø Rendite</th><th>Win-Rate</th><th>n</th></tr></thead>
+            <thead><tr><th>Periode</th><th data-i18n="table.month">Monat</th><th>Hälfte</th><th>Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
             <tbody id="tbody-tw"></tbody>
           </table>
         </div>
@@ -247,7 +247,7 @@
       <details id="sec-methodik">
         <summary>📚 Methodik</summary>
         <div class="content">
-          <h3>Berechnungen</h3>
+          <h3 data-i18n="common.calculations">Berechnungen</h3>
           <ul>
             <li><b>TDOM</b> (Trading Day of Month) = laufende Nummer des Handelstags innerhalb des Monats (1, 2, 3, ...). Entkoppelt von Kalendertagen — Wochenenden und Feiertage werden übersprungen.</li>
             <li><b>Intra-Monat-Kurve</b>: kumulierte log-Returns ab letztem Handelstag des Vormonats (TDOM 0 = 0%). Pro Jahr eine Kurve, dann gemittelt.</li>
