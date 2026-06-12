@@ -31,7 +31,8 @@ def generate(ticker="^DJI", n_years=20, output_path=None):
         n_years: Anzahl Jahre zurueck (default: 20, None=alle)
     """
     if output_path is None:
-        output_path = os.path.join(_project_dir, "landing", "chart-data.json")
+        output_path = os.path.join(_project_dir, "landing", "data", "chart-data.json")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     print(f"Lade {ticker} (letzte {n_years or 'alle'} Jahre) ...")
     raw_df = download_data(ticker, period="max")

@@ -612,7 +612,7 @@
           ctx.stroke();
         }
 
-        // Aktuelles Jahr: nur links (mit Saisonalchart, gleiche Y-Skala)
+        // Aktuelles Jahr wird ungeclippt unter der Divider-Linie gezeichnet (immer voll sichtbar)
 
         // Y-Achse rechts (heller, lesbar)
         ctx.fillStyle='rgba(232,190,100,0.7)';
@@ -648,18 +648,6 @@
         }
         ctx.stroke();
 
-        // Aktuelles Jahr links
-        if(years[curYear]){
-          var cur=years[curYear];
-          ctx.strokeStyle='#FFE600';ctx.lineWidth=2;
-          ctx.beginPath();
-          for(var i=0;i<cur.length;i++){
-            if(i===0)ctx.moveTo(xPos(i),yPosL(cur[i]));
-            else ctx.lineTo(xPos(i),yPosL(cur[i]));
-          }
-          ctx.stroke();
-        }
-
         // Y-Achse links
         ctx.fillStyle='rgba(232,168,32,0.5)';
         ctx.font='9px JetBrains Mono,monospace';
@@ -672,6 +660,20 @@
           ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+cw,yy);ctx.stroke();
         }
         ctx.restore();
+
+        // Aktuelles Jahr: immer voll sichtbar (NICHT vom Divider-Clip abgeschnitten),
+        // sonst friert die gelbe Linie ab der Divider-Position ein und "aktualisiert" sich
+        // bei weiterer Slider-Bewegung nicht mehr. yPosL = Signal-Skala (passt zum Durchschnitt).
+        if(years[curYear]){
+          var curY=years[curYear];
+          ctx.strokeStyle='#FFE600';ctx.lineWidth=2;
+          ctx.beginPath();
+          for(var i=0;i<curY.length;i++){
+            if(i===0)ctx.moveTo(xPos(i),yPosL(curY[i]));
+            else ctx.lineTo(xPos(i),yPosL(curY[i]));
+          }
+          ctx.stroke();
+        }
 
         // ── Divider-Linie (Signal Gold) ──
         ctx.strokeStyle='rgba(232,168,32,0.6)';
@@ -700,7 +702,7 @@
       window.addEventListener('resize',resize);
 
       // Daten laden
-      fetch('/landing/chart-data.json').then(function(r){return r.json()}).then(function(d){
+      fetch('/landing/data/chart-data.json').then(function(r){return r.json()}).then(function(d){
         chartData=d;
         resize();
       }).catch(function(e){
