@@ -98,9 +98,10 @@
       <hr>
       <h3 data-i18n="tdom.strategy_h3">Strategie</h3>
       <select id="sel-strategy" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="open_to_close" selected>Intraday (Open &rarr; Close)</option>
-        <option value="open_to_next_open">Overnight (Open &rarr; n&auml;chster Open)</option>
-        <option value="close_to_next_close">Close &rarr; n&auml;chster Close</option>
+        <option value="open_to_close" selected data-i18n="tdom.opt_open_to_close">Intraday (Open &rarr; Close)</option>
+        <option value="open_to_next_open" data-i18n="tdom.opt_open_to_next_open">Overnight (Open &rarr; n&auml;chster Open)</option>
+        <option value="open_to_next_close" data-i18n="tdom.opt_open_to_next_close">Swing (Open &rarr; n&auml;chster Close)</option>
+        <option value="close_to_next_close" data-i18n="tdom.opt_close_to_next_close">Close &rarr; n&auml;chster Close</option>
       </select>
       <h3 data-i18n="tdom.direction_h3">Richtung</h3>
       <select id="sel-direction" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
@@ -396,6 +397,10 @@
         } else if (strategy === 'open_to_next_open') {
           if (i + 1 < rows.length && r.open > 0) {
             ret = (rows[i+1].open - r.open) / r.open * 100;
+          }
+        } else if (strategy === 'open_to_next_close') {
+          if (i + 1 < rows.length && r.open > 0) {
+            ret = (rows[i+1].close - r.open) / r.open * 100;
           }
         } else if (strategy === 'close_to_next_close') {
           if (i + 1 < rows.length && r.close > 0) {

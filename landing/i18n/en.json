@@ -444,6 +444,10 @@
   "sidebar.smoothing": "Smoothing (days)",
   "common.empty_all_years": "Empty = all years",
 
+  "tdom.opt_open_to_close": "Intraday (Open → Close)",
+  "tdom.opt_open_to_next_open": "Overnight (Open → next Open)",
+  "tdom.opt_open_to_next_close": "Swing (Open → next Close)",
+  "tdom.opt_close_to_next_close": "Close → next Close",
   "tdom.strategy_h3": "Strategy",
   "tdom.direction_h3": "Direction",
   "tdom.filter_months_h3": "Filter Months",
