@@ -1,24 +1,748 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Hauptseiten -->
-  <url><loc>https://seasonalpha.ai/</loc><priority>1.0</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Jahreszyklus</loc><priority>0.9</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Monatszyklus</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Wochentage</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Monatswechsel</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Mondphasen</loc><priority>0.8</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Kriegszeiten</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Dekadenzyklus</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/Januar_Trifecta</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
-  <!-- SEO Landing Pages -->
-  <url><loc>https://seasonalpha.ai/analyse/apple-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/dax-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/bmw-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/bitcoin-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/tesla-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/gold-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/oel-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/nasdaq-100-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/dow-jones-saisonalitaet</loc><priority>0.8</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://seasonalpha.ai/analyse/sap-saisonalitaet</loc><priority>0.7</priority><changefreq>weekly</changefreq></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- ── Startseite ──────────────────────────────────────────────────── -->
+  <url>
+    <loc>https://seasonalpha.ai/</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ── Feature Pages (DE + EN) ─────────────────────────────────────── -->
+  <url>
+    <loc>https://seasonalpha.ai/dashboard</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dashboard"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dashboard"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dashboard"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/dashboard</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dashboard"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dashboard"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dashboard"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/jahreszyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/jahreszyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/jahreszyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/jahreszyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/jahreszyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/jahreszyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/jahreszyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/jahreszyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/monatszyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/monatszyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/monatszyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/monatszyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/monatszyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/monatszyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/monatszyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/monatszyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/dekadenzyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dekadenzyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dekadenzyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dekadenzyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/dekadenzyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dekadenzyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dekadenzyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dekadenzyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/wochentage</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/wochentage"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/wochentage"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/wochentage"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/wochentage</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/wochentage"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/wochentage"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/wochentage"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/monatswechsel</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/monatswechsel"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/monatswechsel"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/monatswechsel"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/monatswechsel</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/monatswechsel"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/monatswechsel"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/monatswechsel"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/mondphasen</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/mondphasen"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/mondphasen"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/mondphasen"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/mondphasen</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/mondphasen"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/mondphasen"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/mondphasen"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/feiertage</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/feiertage"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/feiertage"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/feiertage"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/feiertage</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/feiertage"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/feiertage"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/feiertage"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/zentralbanken</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/zentralbanken"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/zentralbanken"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/zentralbanken"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/zentralbanken</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/zentralbanken"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/zentralbanken"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/zentralbanken"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/opex</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/opex"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/opex"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/opex"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/opex</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/opex"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/opex"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/opex"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/vixpiration</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/vixpiration"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/vixpiration"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/vixpiration"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/vixpiration</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/vixpiration"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/vixpiration"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/vixpiration"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/risikozyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/risikozyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/risikozyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/risikozyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/risikozyklus</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/risikozyklus"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/risikozyklus"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/risikozyklus"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/crash-fruehwarnung</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/crash-fruehwarnung"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/crash-fruehwarnung"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/crash-fruehwarnung"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/crash-fruehwarnung</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/crash-fruehwarnung"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/crash-fruehwarnung"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/crash-fruehwarnung"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/polymarket</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/polymarket"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/polymarket"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/polymarket"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/polymarket</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/polymarket"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/polymarket"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/polymarket"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/sektor-rotation</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/sektor-rotation"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/sektor-rotation"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/sektor-rotation"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/sektor-rotation</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/sektor-rotation"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/sektor-rotation"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/sektor-rotation"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/overnight</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/overnight"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/overnight"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/overnight"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/overnight</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/overnight"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/overnight"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/overnight"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/tdom-analyse</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/tdom-analyse"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/tdom-analyse"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/tdom-analyse"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/tdom-analyse</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/tdom-analyse"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/tdom-analyse"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/tdom-analyse"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/spot-vol-beta</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/spot-vol-beta"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/spot-vol-beta"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/spot-vol-beta"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/spot-vol-beta</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/spot-vol-beta"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/spot-vol-beta"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/spot-vol-beta"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/ki-saisonalitaet</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/ki-saisonalitaet"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/ki-saisonalitaet"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/ki-saisonalitaet"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/ki-saisonalitaet</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/ki-saisonalitaet"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/ki-saisonalitaet"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/ki-saisonalitaet"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/intermarket-shocks</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/intermarket-shocks"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/intermarket-shocks"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/intermarket-shocks"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/intermarket-shocks</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/intermarket-shocks"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/intermarket-shocks"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/intermarket-shocks"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/plain-vanilla</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/plain-vanilla"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/plain-vanilla"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/plain-vanilla"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/plain-vanilla</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/plain-vanilla"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/plain-vanilla"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/plain-vanilla"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/trifecta</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/trifecta"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/trifecta"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/trifecta"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/trifecta</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/trifecta"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/trifecta"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/trifecta"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/backtest-engine</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/backtest-engine"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/backtest-engine"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/backtest-engine"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/backtest-engine</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/backtest-engine"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/backtest-engine"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/backtest-engine"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/scanner</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/scanner"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/scanner"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/scanner"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/scanner</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/scanner"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/scanner"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/scanner"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/kriegszeiten</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/kriegszeiten"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/kriegszeiten"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/kriegszeiten"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/kriegszeiten</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/kriegszeiten"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/kriegszeiten"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/kriegszeiten"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/dividend-kalender</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dividend-kalender"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dividend-kalender"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dividend-kalender"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/dividend-kalender</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dividend-kalender"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dividend-kalender"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dividend-kalender"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/earnings-kalender</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/earnings-kalender"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/earnings-kalender"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/earnings-kalender"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/earnings-kalender</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/earnings-kalender"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/earnings-kalender"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/earnings-kalender"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://seasonalpha.ai/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/pricing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/pricing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/pricing"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/en/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/pricing"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/pricing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/pricing"/>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ── Weitere Seiten (DE only) ──────────────────────────────────────── -->
+  <url>
+    <loc>https://seasonalpha.ai/tools/trading-day-converter</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/disclaimer</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/rechtliches</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- ── Blog ──────────────────────────────────────────────────────────── -->
+  <url>
+    <loc>https://seasonalpha.ai/blog/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/education/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/marktausblick/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/tutorials/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/april-saisonalitaet-sp500-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/indikator-filter-tutorial/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/was-ist-saisonalitaet/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/willkommen-bei-seasonalpha.ai/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/boxplot-dekadenzyklus-dow-jones/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/overnight-intraday-split-google/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/wochentag-signifikanztest-siemens/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/outlier-filter-saisonalitaet/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/monatswechsel-dax-maerz-april-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/drawdown-crashjahre-recovery/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/drawdown-midterm-election-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/rendite-vs-drawdown-erklaert/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/anomalie-radar-erklaert/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/dashboard-launch/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/sell-in-may-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/turn-of-month-effekt-erklaert/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/tesla-apple-mai-saisonalitaet/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/praesidentenzyklus-tutorial/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/vixpiration-april-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/btc-150k-2026-polymarket-vs-historie/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/ethereum-2026-divergenz-kleiner-als-btc/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/fed-cuts-2026-polymarket-prognose/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/dax-vs-sp500-saisonalitaet/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://seasonalpha.ai/blog/sell-in-may-halbzeit-2026/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
 </urlset>
