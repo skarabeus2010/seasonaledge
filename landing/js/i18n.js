@@ -59,7 +59,7 @@ SA.i18n = (function() {
   }
 
   // Bump this version whenever en.json gains new keys — busts sessionStorage cache
-  var _JSON_VER = 'v3';
+  var _JSON_VER = 'v4';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
