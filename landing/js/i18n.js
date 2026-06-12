@@ -58,8 +58,11 @@ SA.i18n = (function() {
     return _lang; // 'de'
   }
 
+  // Bump this version whenever en.json gains new keys — busts sessionStorage cache
+  var _JSON_VER = 'v3';
+
   function _loadJSON(lang) {
-    var cacheKey = 'sa-i18n-' + lang;
+    var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
     try {
       var cached = sessionStorage.getItem(cacheKey);
       if (cached) return Promise.resolve(JSON.parse(cached));
@@ -114,15 +117,11 @@ SA.i18n = (function() {
 
   function _applyNavLinks() {
     if (!_isEN) return;
-    ['nav-container', 'footer-container'].forEach(function(cid) {
-      var container = document.getElementById(cid);
-      if (!container) return;
-      container.querySelectorAll('a[href]').forEach(function(a) {
-        var href = a.getAttribute('href');
-        if (!href || href.charAt(0) !== '/') return;
-        var skip = _skipPrefixes.some(function(p) { return href.indexOf(p) === 0; });
-        if (!skip) a.setAttribute('href', '/en' + href);
-      });
+    document.querySelectorAll('a[href]').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (!href || href.charAt(0) !== '/') return;
+      var skip = _skipPrefixes.some(function(p) { return href.indexOf(p) === 0; });
+      if (!skip) a.setAttribute('href', '/en' + href);
     });
   }
 
