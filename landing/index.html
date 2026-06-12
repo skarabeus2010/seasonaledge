@@ -612,7 +612,7 @@
           ctx.stroke();
         }
 
-        // Aktuelles Jahr wird ungeclippt unter der Divider-Linie gezeichnet (immer voll sichtbar)
+        // Aktuelles Jahr (gelb) wird in der linken Clip-Region gezeichnet (nur links vom Divider)
 
         // Y-Achse rechts (heller, lesbar)
         ctx.fillStyle='rgba(232,190,100,0.7)';
@@ -648,6 +648,18 @@
         }
         ctx.stroke();
 
+        // Aktuelles Jahr (gelb) — im Clip, also NUR links vom Divider sichtbar; baut sich beim Slider auf
+        if(years[curYear]){
+          var curY=years[curYear];
+          ctx.strokeStyle='#FFE600';ctx.lineWidth=2;
+          ctx.beginPath();
+          for(var i=0;i<curY.length;i++){
+            if(i===0)ctx.moveTo(xPos(i),yPosL(curY[i]));
+            else ctx.lineTo(xPos(i),yPosL(curY[i]));
+          }
+          ctx.stroke();
+        }
+
         // Y-Achse links
         ctx.fillStyle='rgba(232,168,32,0.5)';
         ctx.font='9px JetBrains Mono,monospace';
@@ -660,20 +672,6 @@
           ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+cw,yy);ctx.stroke();
         }
         ctx.restore();
-
-        // Aktuelles Jahr: immer voll sichtbar (NICHT vom Divider-Clip abgeschnitten),
-        // sonst friert die gelbe Linie ab der Divider-Position ein und "aktualisiert" sich
-        // bei weiterer Slider-Bewegung nicht mehr. yPosL = Signal-Skala (passt zum Durchschnitt).
-        if(years[curYear]){
-          var curY=years[curYear];
-          ctx.strokeStyle='#FFE600';ctx.lineWidth=2;
-          ctx.beginPath();
-          for(var i=0;i<curY.length;i++){
-            if(i===0)ctx.moveTo(xPos(i),yPosL(curY[i]));
-            else ctx.lineTo(xPos(i),yPosL(curY[i]));
-          }
-          ctx.stroke();
-        }
 
         // ── Divider-Linie (Signal Gold) ──
         ctx.strokeStyle='rgba(232,168,32,0.6)';
