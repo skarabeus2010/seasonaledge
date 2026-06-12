@@ -944,5 +944,16 @@
   "strat.cat_holiday": "Holidays",
   "strat.cat_monthly": "Monthly Patterns",
   "strat.cat_cycles": "Cycles",
-  "strat.cat_election": "Election Cycle"
+  "strat.cat_election": "Election Cycle",
+
+  "dash.tooltip_ki": "<b>AI Composite Score</b> — Overall rating 0–10 from four independent sub-scores (Seasonality, Drawdown, Volatility, Momentum). <b>≥ 6.5</b> = bullish, <b>≤ 3.5</b> = bearish, in between neutral. The score is an aggregated signal strength, not a return guarantee.",
+  "dash.tooltip_crash": "<b>Crash Early Warning</b> — Isolation Forest model on daily returns + volatility of the ticker. <b>Green</b> = calm regime, <b>Yellow</b> = elevated caution, <b>Red</b> = stress regime. Risk score 0–100 quantifies the anomaly strength.",
+  "dash.tooltip_anomaly": "<b>Anomaly Radar</b> — Measures how strongly the return of the last 10 trading days deviates from the historical average at the same calendar window. <b>Green</b> = unusually strong, <b>Red</b> = unusually weak. Useful as a contrarian signal at extremes.",
+  "dash.tooltip_trifecta": "<b>January Trifecta</b> — Classic market gauge: when (1) Santa Rally positive, (2) first 5 trading days positive and (3) January month positive all coincide, the full year was historically positive in <b>&gt; 80%</b> of cases. If all three conditions are absent, success probability is significantly lower.",
+  "dash.tooltip_truepath": "<b>TruePath</b> — Pattern matching over the last N trading days: each historical year is compared to the current YTD path via Pearson correlation + Euclidean distance. The top matches are <b>weighted averaged</b> into a year-end projection — plus ± σ-cone for uncertainty. Not a prediction model, but \"how did similar years continue?\".",
+
+  "bt.years_back": "Years back",
+  "bt.event_holidays": "Holidays (NYSE)",
+  "bt.event_full_moon": "Full Moon",
+  "bt.event_new_moon": "New Moon"
 }

@@ -115,17 +115,17 @@
       <datalist id="ticker-list"></datalist>
       <hr>
       <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
-      <label>Jahre zurück <span id="lbl-years">20</span></label>
+      <label><span data-i18n="bt.years_back">Jahre zurück</span> <span id="lbl-years">20</span></label>
       <input type="range" id="sl-years" min="5" max="50" step="1" value="20">
       <hr>
       <h3 data-i18n="bt.event_type">Event-Typ</h3>
       <select id="sel-event">
-        <option value="holidays" selected>Feiertage (NYSE)</option>
+        <option value="holidays" data-i18n="bt.event_holidays" selected>Feiertage (NYSE)</option>
         <option value="fomc">FOMC</option>
         <option value="opex">OPEX</option>
         <option value="triple">Triple Witching</option>
-        <option value="full_moon">Vollmond</option>
-        <option value="new_moon">Neumond</option>
+        <option value="full_moon" data-i18n="bt.event_full_moon">Vollmond</option>
+        <option value="new_moon" data-i18n="bt.event_new_moon">Neumond</option>
       </select>
       <hr>
       <h3 data-i18n="bt.entry_exit">Entry / Exit</h3>
@@ -1405,7 +1405,7 @@
 
     function eventLabel() {
       var t = document.getElementById('sel-event').value;
-      var labels = { 'holidays':'Feiertage (NYSE)', 'fomc':'FOMC', 'opex':'OPEX', 'triple':'Triple Witching', 'full_moon':'Vollmond', 'new_moon':'Neumond' };
+      var labels = { 'holidays':SA.i18n.t('bt.event_holidays','Feiertage (NYSE)'), 'fomc':'FOMC', 'opex':'OPEX', 'triple':'Triple Witching', 'full_moon':SA.i18n.t('bt.event_full_moon','Vollmond'), 'new_moon':SA.i18n.t('bt.event_new_moon','Neumond') };
       return labels[t] || t;
     }
 

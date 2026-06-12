@@ -78,8 +78,8 @@ SA.i18n = (function() {
       });
   }
 
-  function t(key) {
-    return (_data[key] !== undefined) ? _data[key] : key;
+  function t(key, fallback) {
+    return (_data[key] !== undefined) ? _data[key] : (fallback !== undefined ? fallback : key);
   }
 
   function _applyDOM() {
@@ -108,6 +108,12 @@ SA.i18n = (function() {
           }
         }
       }
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n-html');
+      var val = t(key);
+      if (val === key) return;
+      el.innerHTML = val;
     });
   }
 
