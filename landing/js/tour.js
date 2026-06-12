@@ -21,6 +21,11 @@
   var LS_KEY = 'sa-tour-completed';
   var RESUME_DELAY_MS = 650; // Zeit fuer Charts/Async-Renders nach DOMContentLoaded
 
+  function _isEN() {
+    var p = window.location.pathname;
+    return p === '/en' || p === '/en/' || p.indexOf('/en/') === 0;
+  }
+
   var _loadPromise = null;
 
   function _showErrorBanner(msg) {
@@ -89,6 +94,9 @@
     // Normalize trailing slash
     if (path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
 
+    // Strip /en prefix so step page paths ('/dashboard') match EN URLs ('/en/dashboard')
+    if (_isEN()) path = path.replace(/^\/en/, '') || '/';
+
     var filtered = [];
     var indexMap = []; // filteredIndex → fullIndex
     for (var i = 0; i < all.length; i++) {
@@ -113,23 +121,36 @@
   }
 
   function _mapStepToDriver(step, fullIndex) {
+    var popTitle = step.popover.title || '';
+    var popDesc = step.popover.description || '';
+    // Use EN popover text when on an EN page
+    if (_isEN() && SA.TOUR_STEPS_EN && SA.TOUR_STEPS_EN[fullIndex]) {
+      var en = SA.TOUR_STEPS_EN[fullIndex];
+      if (en.title) popTitle = en.title;
+      if (en.description) popDesc = en.description;
+    }
     var driverStep = {
       element: step.element,
       popover: {
-        title: step.popover.title || '',
-        description: step.popover.description || '',
+        title: popTitle,
+        description: popDesc,
         side: step.popover.side || 'bottom',
         align: step.popover.align || 'start'
       }
     };
     // onNextClick Handler fuer Navigation zum naechsten Page
     if (step.navigateAfter) {
-      driverStep.popover.onNextClick = function() {
-        var target = step.navigateAfter.url;
-        var stepIdx = step.navigateAfter.step;
-        var sep = target.indexOf('?') >= 0 ? '&' : '?';
-        window.location.href = target + sep + 'tour=step:' + stepIdx;
-      };
+      var navTarget = step.navigateAfter.url;
+      // Prepend /en prefix for EN pages (skip if URL already has /en or is absolute)
+      if (_isEN() && navTarget.charAt(0) === '/' && navTarget.indexOf('/en/') !== 0) {
+        navTarget = '/en' + navTarget;
+      }
+      driverStep.popover.onNextClick = (function(target, stepIdx) {
+        return function() {
+          var sep = target.indexOf('?') >= 0 ? '&' : '?';
+          window.location.href = target + sep + 'tour=step:' + stepIdx;
+        };
+      })(navTarget, step.navigateAfter.step);
     }
     return driverStep;
   }
@@ -165,6 +186,7 @@
           driverSteps.push(_mapStepToDriver(page.steps[i], page.indexMap[i]));
         }
 
+        var _en = _isEN();
         var d = driverFn({
           showProgress: true,
           allowClose: true,
@@ -173,10 +195,10 @@
           stageRadius: 10,
           smoothScroll: true,
           animate: true,
-          progressText: 'Schritt {{current}} von ' + SA.TOUR_STEPS.length,
-          nextBtnText: 'Weiter →',
-          prevBtnText: '← Zurueck',
-          doneBtnText: 'Fertig',
+          progressText: _en ? 'Step {{current}} of ' + SA.TOUR_STEPS.length : 'Schritt {{current}} von ' + SA.TOUR_STEPS.length,
+          nextBtnText: _en ? 'Next →' : 'Weiter →',
+          prevBtnText: _en ? '← Back' : '← Zurück',
+          doneBtnText: _en ? 'Done' : 'Fertig',
           onDestroyed: function() {
             try { localStorage.setItem(LS_KEY, new Date().toISOString().slice(0,10)); } catch(e){}
             // Clear ?tour= param from URL after completion
@@ -189,7 +211,10 @@
         d.drive(page.startIndex);
       }).catch(function(err) {
         console.error('[SA.tour] Failed to start tour:', err);
-        _showErrorBanner('Tour konnte nicht geladen werden: ' + (err && err.message ? err.message : 'Unbekannter Fehler') + '. Öffne die DevTools-Console für Details.');
+        var errMsg = err && err.message ? err.message : (_isEN() ? 'Unknown error' : 'Unbekannter Fehler');
+        _showErrorBanner(_isEN()
+          ? 'Tour could not be loaded: ' + errMsg + '. Open the DevTools console for details.'
+          : 'Tour konnte nicht geladen werden: ' + errMsg + '. Öffne die DevTools-Console für Details.');
       });
     },
 

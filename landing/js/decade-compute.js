@@ -540,13 +540,19 @@ SA.decadeCompute = {
     if (!summary) return;
     if (summary.querySelector('.sa-anom-badge')) return; // schon drin → idempotent
     summary.classList.add('sa-anom-sum');
-    var tooltipHtml = '<p><b>Methodik:</b> Z-Score-Vergleich der letzten 10-Tages-Rendite gegen alle historischen 10d-Returns am gleichen Kalenderzeitpunkt.</p>' +
-      '<p>Der <b>Score</b> misst wie viele Standardabweichungen der aktuelle Verlauf vom historischen Mittel entfernt ist (&ge;40 = leicht anomal, &ge;70 = stark anomal).</p>' +
-      '<p>Der <b>Perzentil-Rang</b> zeigt komplementär, wo die aktuelle 10d-Rendite in der historischen Verteilung steht &mdash; das 90. Perzentil bedeutet: höher als 90&nbsp;% aller vergleichbaren historischen Fenster.</p>' +
-      '<p>Ein hoher Score oder extremer Perzentil bedeutet nicht bullish oder bearish, sondern nur &bdquo;der Verlauf ist ungewöhnlich".</p>';
+    var _isEN = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
+    var tooltipHtml = _isEN
+      ? '<p><b>Methodology:</b> Z-score comparison of the last 10-day return vs. all historical 10d-returns at the same calendar point.</p>' +
+        '<p>The <b>Score</b> measures how many standard deviations the current trajectory is from the historical mean (&ge;40 = slightly anomalous, &ge;70 = strongly anomalous).</p>' +
+        '<p>The <b>Percentile Rank</b> shows where the current 10d-return stands in the historical distribution — the 90th percentile means: higher than 90&nbsp;% of all comparable historical windows.</p>' +
+        '<p>A high score or extreme percentile does not mean bullish or bearish — it only means &ldquo;the current trajectory is unusual&rdquo;.</p>'
+      : '<p><b>Methodik:</b> Z-Score-Vergleich der letzten 10-Tages-Rendite gegen alle historischen 10d-Returns am gleichen Kalenderzeitpunkt.</p>' +
+        '<p>Der <b>Score</b> misst wie viele Standardabweichungen der aktuelle Verlauf vom historischen Mittel entfernt ist (&ge;40 = leicht anomal, &ge;70 = stark anomal).</p>' +
+        '<p>Der <b>Perzentil-Rang</b> zeigt komplementär, wo die aktuelle 10d-Rendite in der historischen Verteilung steht &mdash; das 90. Perzentil bedeutet: höher als 90&nbsp;% aller vergleichbaren historischen Fenster.</p>' +
+        '<p>Ein hoher Score oder extremer Perzentil bedeutet nicht bullish oder bearish, sondern nur &bdquo;der Verlauf ist ungewöhnlich".</p>';
     var badge = document.createElement('span');
     badge.className = 'sa-anom-badge';
-    badge.setAttribute('aria-label', 'Methodik des Anomalie-Radars');
+    badge.setAttribute('aria-label', _isEN ? 'Anomaly Radar methodology' : 'Methodik des Anomalie-Radars');
     badge.setAttribute('tabindex', '0'); // Touch-Focus für Mobile
     badge.setAttribute('role', 'button');
     badge.textContent = '\u24D8'; // ⓘ
@@ -578,26 +584,35 @@ SA.decadeCompute = {
       }
     } catch (e) { console.warn('[anomaly] compute failed:', e); }
 
+    var _isENRender = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
     if (!anom || anom.n_comparisons === 0) {
-      el.innerHTML = '<p style="color:var(--muted);font-size:.875rem;margin:0">Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).</p>';
+      el.innerHTML = '<p style="color:var(--muted);font-size:.875rem;margin:0">' +
+        (_isENRender ? 'Anomaly score unavailable (insufficient historical comparison windows).' : 'Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).') +
+        '</p>';
       return;
     }
 
     var fmtPct = function(v) { if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var scoreCls = anom.score >= 70 ? 'red' : anom.score >= 40 ? 'gold' : 'green';
-    var statusLabel = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
+    var statusLabel = _isENRender
+      ? (anom.score >= 70 ? 'Strongly anomalous' : anom.score >= 40 ? 'Slightly anomalous' : 'Normal')
+      : (anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal');
     var retCls = anom.return_10d >= 0 ? 'green' : 'red';
 
     var pRank = anom.percentile_rank;
     var pRankCell;
+    var _pRankLabel = _isENRender ? 'Percentile Rank' : 'Perzentil-Rang';
+    var _percSuffix = _isENRender ? '' : '. Perzentil';
+    var _percPrefix = _isENRender ? '' : '';
     if (pRank == null) {
-      pRankCell = '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div><div class="kpi-value">&ndash;</div></div>';
+      pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div><div class="kpi-value">&ndash;</div></div>';
     } else {
       var pRankCls = (pRank < 10 || pRank > 90) ? 'red' : (pRank < 20 || pRank > 80) ? 'gold' : 'green';
-      pRankCell = '<div class="kpi"><div class="kpi-label">Perzentil-Rang</div>' +
+      var pRankText = _isENRender ? pRank + 'th Percentile' : pRank + '. Perzentil';
+      pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div>' +
         '<div class="sa-anom-prank">' +
-          '<div class="sa-anom-prank-label ' + pRankCls + '">' + pRank + '. Perzentil</div>' +
-          '<div class="sa-anom-prank-bar" title="' + pRank + '. Perzentil">' +
+          '<div class="sa-anom-prank-label ' + pRankCls + '">' + pRankText + '</div>' +
+          '<div class="sa-anom-prank-bar" title="' + pRankText + '">' +
             '<div class="sa-anom-prank-mark" style="left:' + pRank + '%"></div>' +
           '</div>' +
           '<div class="sa-anom-prank-scale"><span>0</span><span>50</span><span>100</span></div>' +
@@ -605,11 +620,13 @@ SA.decadeCompute = {
       '</div>';
     }
 
+    var _retLabel = _isENRender ? '10d-Return ' : '10d-Rendite ';
+    var _avgLabel = _isENRender ? 'Historical Avg' : 'Historisch &Oslash;';
     var html = '<div class="sa-anom-row">' +
       '<div class="kpi"><div class="kpi-label">Score</div><div class="kpi-value ' + scoreCls + '">' + anom.score + ' / 100</div></div>' +
       '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + scoreCls + '">' + statusLabel + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">10d-Rendite ' + (ticker || '') + '</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d) + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">Historisch &Oslash;</div><div class="kpi-value">' + fmtPct(anom.avg_10d) + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + _retLabel + (ticker || '') + '</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d) + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + _avgLabel + '</div><div class="kpi-value">' + fmtPct(anom.avg_10d) + '</div></div>' +
       pRankCell +
     '</div>';
     el.innerHTML = html;

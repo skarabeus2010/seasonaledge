@@ -318,3 +318,61 @@ SA.TOUR_STEPS = [
     }
   }
 ];
+
+/**
+ * English translations for SA.TOUR_STEPS popovers.
+ * Index-aligned with SA.TOUR_STEPS — only title + description needed.
+ * tour.js merges these when the URL starts with /en/.
+ */
+SA.TOUR_STEPS_EN = [
+  // 0 — Landing: Welcome
+  { title: 'Welcome to SeasonAlpha', description: 'Data-driven market analysis with 131 years of seasonal data. In 26 steps we\'ll show you the most important features.' },
+  // 1 — Landing: Sign In
+  { title: 'Sign In with Google', description: 'Optional: Google login gives you a <b>Cloud Watchlist</b> that syncs across your devices, plus access to your personal profile at <b>/profile</b>. Everything works without login too — your watchlist is then stored locally in the browser.' },
+  // 2 — Scanner
+  { title: 'Seasonal Scanner — 269 Tickers', description: 'The weekly-updated scanner shows all tickers with the current <b>AI Score</b>, signal (Bullish/Neutral/Bearish), win rate and monthly return. Filter by signal, category or minimum score — the table updates live.' },
+  // 3 — Watchlist
+  { title: 'Watchlist — Your Favourite Tickers', description: 'Add tickers via <b>+</b> or use the star icon on any analysis page. Each card shows the current AI Score, 2-week seasonality, drawdown and the next strategy signal. Logged in: cloud sync across devices. Guest: local browser storage only.' },
+  // 4 — Dashboard: Ticker
+  { title: 'Ticker Selection', description: 'Choose any ticker: SPY, AAPL, ^GSPC, BTC-USD, TSLA, ^DJI, … All cards update automatically.' },
+  // 5 — Dashboard: Header
+  { title: 'Where Are You in the Cycle?', description: 'The header shows all seasonal coordinates: <b>TDOM</b> = Trading Day of Month (e.g. 6/21), <b>TWOY</b> = Trading Week of Year, <b>TDOY</b> = Trading Day of Year, <b>Q</b> = Quarter, <b>MidTerm</b> = Presidential cycle phase (Election, Post-Election, Midterm, Pre-Election). Exchange-specific calculation (NYSE, XETRA, LSE).' },
+  // 6 — Dashboard: AI Score
+  { title: 'AI Score 0–10', description: 'Composite score from four sub-scores: pattern path quality, trend projection, win rate for the current month, and tracking quality. Bullish ≥ 6.5, bearish ≤ 3.5.' },
+  // 7 — Dashboard: Crash
+  { title: 'Crash Signal', description: 'Red = elevated risk according to Isolation Forest. The score 0–100 compares volatility, drawdown and returns against the 252-day percentile of the ticker.' },
+  // 8 — Dashboard: Year chart
+  { title: 'Seasonal Annual Chart', description: 'Historical average with 25th/75th percentile bands vs. the current year (gold). The "Today" marker shows your position in the annual cycle.' },
+  // 9 — Dashboard: Events
+  { title: 'Upcoming Events', description: 'FOMC meetings, OPEX, full moons and public holidays with historical returns and win rates over a t-3 to t+3 window.' },
+  // 10 — Decade cycle
+  { title: 'Decade Cycle — 131 Years DJI', description: 'Each decade (e.g. 1930s, 1990s, 2020s) is its own cohort. You can see how "years with the same final digit" statistically resemble each other — a fundamental bias that many market participants overlook.' },
+  // 11 — Jahreszyklus: chart
+  { title: 'Seasonal Annual Progression', description: 'Average of all years + confidence band + 25th/75th percentiles. Optionally: individual years below and the Gann Pressure Chart — synchronised via chart group.' },
+  // 12 — Jahreszyklus: sidebar
+  { title: 'Sidebar Controls', description: 'Ticker, period, smoothing, percentile bands, cycle overlays, outlier filter. Every change re-renders all charts live.' },
+  // 13 — Jahreszyklus: detrend
+  { title: 'Detrend Indicator', description: 'Removes the linear annual trend and shows pure seasonality on a 0–100 scale (midline 50). This lets you identify seasonal highs and lows without distortion from the long-term uptrend.' },
+  // 14 — Zentralbanken
+  { title: 'Central Bank Effect', description: 'How does your ticker behave around FOMC, ECB, BoE or BoJ decisions? Event window from t-N to t+N with historical returns and streaks.' },
+  // 15 — Feiertage
+  { title: 'Holiday Ranking', description: 'Which holiday has historically delivered the best returns? Exchange-specific (NYSE, XETRA, LSE) with ranking table, heatmap and streak analysis.' },
+  // 16 — Trifecta
+  { title: 'January Trifecta', description: 'The classic traffic-light system: Santa Claus Rally + First Five Days + January Barometer. When all three are green, the year has historically been almost always bullish.' },
+  // 17 — Spot-Vol Beta
+  { title: 'Spot-Vol Beta (SPX vs. VIX)', description: 'How strongly does VIX react to SPX moves? Scatter + OLS regression + regime turning points (spikes, complacency, beta stress) with forward returns 5/10/20/60d.' },
+  // 18 — Plain Vanilla
+  { title: 'Plain Vanilla Strategies', description: '24 classic strategies (Sell in May, KTI, UECS, TOM, …) with equity curve, stats, significance test and stop-loss / trailing stop. Open trades are marked as "OPEN".' },
+  // 19 — KI-Saisonalität
+  { title: 'AI Composite Score', description: 'Four sub-scores of 0–2.5 → total 0–10. Next to it: radar chart. Below: the pattern path — recalibrated seasonality from the most similar historical years.' },
+  // 20 — Backtest: Outlier
+  { title: 'Outlier Manager', description: 'Extreme outliers (crash years like 2008 or bubbles like 1999) can distort seasonal patterns. Filter via IQR, Winsorize or Isolation Forest — selectable for month-end, lunar phases, annual cycle, TDoM and backtest.' },
+  // 21 — Backtest: Tech filter
+  { title: 'Technical Filters', description: 'SMA, EMA, RSI, Bollinger Bands, MACD and LBR Toby Crabel as pre-filters — only trades when the condition is met. Look-ahead-bias-free: the filter is checked on the prior day, not on the entry day.' },
+  // 22 — Backtest: Event type
+  { title: 'Choose Event Type', description: 'FOMC meetings, OPEX, lunar phases, public holidays, month-start or Trifecta. The engine calculates entry/exit + KPIs fully automatically.' },
+  // 23 — Backtest: Tabs
+  { title: '4 Backtest Modes', description: 'Single backtest, parameter optimisation (grid search + heatmap), walk-forward (expanding window) and event relevance (t-test + Cohen\'s d).' },
+  // 24 — Dashboard: Done
+  { title: 'That\'s it!', description: 'Explore the 20+ pages via the menu: Cycles, Events, Strategies, Scanner, Blog. The tour can be restarted at any time via the "Tour" button in the navigation.' }
+];

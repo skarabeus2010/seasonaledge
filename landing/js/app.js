@@ -437,11 +437,16 @@ SA.renderTradingDayHeader = function(elementOrId, ticker, rows) {
     : elementOrId;
   if (!el) return;
 
-  var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var isEN = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
+  var weekdays = isEN
+    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
   var today = new Date();
   var weekday = weekdays[today.getDay()];
-  var dateStr = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  var dateStr = isEN
+    ? today.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+    : today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   var todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
 
   // Boerse via Ticker-Mapping
@@ -504,7 +509,7 @@ SA.renderTradingDayHeader = function(elementOrId, ticker, rows) {
   var cycleNames = { 1: 'Election', 2: 'Post-Election', 3: 'MidTerm', 4: 'Pre-Election' };
 
   // Header-Zeile zusammenbauen — neue Reihenfolge: TDOM · TWOY · TDOY · Q · Cycle
-  el.textContent = 'Heute: ' + weekday + ' ' + dateStr + ' \u00B7 ' + (ticker || '') +
+  el.textContent = (isEN ? 'Today: ' : 'Heute: ') + weekday + ' ' + dateStr + ' \u00B7 ' + (ticker || '') +
     ' \u00B7 TDOM ' + tdomCount + '/' + tdomTotal +
     ' \u00B7 TWOY ' + twoyCount + '/' + twoyTotal +
     ' \u00B7 TDOY ' + tdoyCount + '/' + tdoyTotal +
