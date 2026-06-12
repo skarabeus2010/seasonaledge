@@ -1,0 +1,75 @@
+name: DB Completeness Audit
+
+# Woechentlicher Tiefen-Audit der Supabase-DB ueber 4 Dimensionen
+# (freshness, coverage, gaps, events). Geht ueber den taeglichen
+# daily_health_check.py hinaus: prueft Ticker-Abdeckung in JEDER abgeleiteten
+# Tabelle, historische Datumsluecken und Event-Tabellen. Schliesst Daten-Layer-
+# Luecken automatisch (--fix) und schickt einen Brevo-Report an ADMIN_EMAIL.
+#
+# Laufzeit ~5-12 min (Coverage = per-Ticker Counts, Gap-Scan paginiert).
+# Bewusst woechentlich statt taeglich; Freshness deckt der Daily-Check taeglich ab.
+
+on:
+  schedule:
+    # So 05:00 UTC — NACH Full-Scanner (So 03:00) + Nightly (Fr 20:30).
+    - cron: '0 5 * * 0'
+  workflow_dispatch:
+    inputs:
+      dims:
+        description: "Dimensionen (Komma): freshness,coverage,gaps,events"
+        required: false
+        default: "freshness,coverage,gaps,events"
+        type: string
+      gap_years:
+        description: "Gap-Scan-Tiefe in Jahren (0 = volle Historie)"
+        required: false
+        default: "2"
+        type: string
+      fix:
+        description: "Daten-Layer-Lücken auto-backfillen (--fix)"
+        required: false
+        default: true
+        type: boolean
+      fix_derived:
+        description: "Teure Recomputes (ki/scanner/regime/events) (--fix-derived)"
+        required: false
+        default: false
+        type: boolean
+      mail:
+        description: "Brevo-Report an ADMIN_EMAIL senden"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: DB completeness audit
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 55m
+          script: |
+            DIMS="${{ github.event.inputs.dims }}"
+            DIMS="${DIMS:-freshness,coverage,gaps,events}"
+            GAP_YEARS="${{ github.event.inputs.gap_years }}"
+            GAP_YEARS="${GAP_YEARS:-2}"
+
+            # Defaults fuer scheduled run (kein inputs-Kontext): fix=on, mail=on, derived=off
+            FIX_IN="${{ github.event.inputs.fix }}"
+            DERIVED_IN="${{ github.event.inputs.fix_derived }}"
+            MAIL_IN="${{ github.event.inputs.mail }}"
+
+            FLAGS="--dim $DIMS --gap-years $GAP_YEARS"
+            if [ "$FIX_IN" != "false" ]; then FLAGS="$FLAGS --fix"; fi
+            if [ "$DERIVED_IN" = "true" ]; then FLAGS="$FLAGS --fix-derived"; fi
+            if [ "$MAIL_IN" != "false" ]; then FLAGS="$FLAGS --mail"; fi
+
+            echo "[db-completeness] flags: $FLAGS"
+            docker exec seasonalpha-app python3 scripts/check_db_completeness.py $FLAGS 2>&1 | tail -120
+
+            echo "[db-completeness] Done: $(date)"

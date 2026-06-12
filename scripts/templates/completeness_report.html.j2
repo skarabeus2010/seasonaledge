@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeasonAlpha DB-Vollständigkeit</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0e;color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0a0e;padding:24px 12px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#13131a;border:1px solid #2a2a35;border-radius:12px;overflow:hidden;">
+
+        {% set C = {'green':'#22c55e','yellow':'#eab308','red':'#ef4444'} %}
+        {% set ICON = {'green':'✓','yellow':'!','red':'✗'} %}
+
+        {# ── Header mit Ampel ── #}
+        {% set header_bg = {'green':'#0f2a1a','yellow':'#2a240f','red':'#2a0f0f'}[overall_status] %}
+        {% set header_label = {
+          'green':'DB VOLLSTÄNDIG',
+          'yellow':'WARNUNG — LÜCKEN GEFUNDEN',
+          'red':'FEHLER — DATEN FEHLEN'
+        }[overall_status] %}
+        <tr>
+          <td style="background:{{ header_bg }};padding:24px 28px;border-bottom:2px solid {{ C[overall_status] }};">
+            <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">
+              SeasonAlpha · DB-Vollständigkeits-Audit
+            </div>
+            <div style="font-size:22px;font-weight:700;color:{{ C[overall_status] }};line-height:1.2;">
+              {{ ICON[overall_status] }} {{ header_label }}
+            </div>
+            <div style="font-size:13px;color:#9ca3af;margin-top:6px;">
+              {{ report_time }} · {{ duration_seconds }}s
+              {% if fixed_count %} · {{ fixed_count }} auto-gefixt{% endif %}
+            </div>
+          </td>
+        </tr>
+
+        {# ── Dimensionen ── #}
+        {% for section in sections %}
+        <tr>
+          <td style="padding:18px 28px 4px;">
+            <div style="font-size:13px;font-weight:700;color:{{ C[section.status] }};text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1f1f29;padding-bottom:8px;">
+              {{ ICON[section.status] }} {{ section.title }}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:4px 28px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              {% for check in section.checks %}
+              <tr>
+                <td style="padding:8px 0;border-bottom:1px solid #15151c;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="22" style="vertical-align:top;">
+                        <div style="width:18px;height:18px;border-radius:50%;background:{{ C[check.status] }}22;border:1.5px solid {{ C[check.status] }};color:{{ C[check.status] }};text-align:center;line-height:15px;font-size:11px;font-weight:700;">{{ ICON[check.status] }}</div>
+                      </td>
+                      <td style="padding-left:12px;vertical-align:top;">
+                        <div style="font-size:13px;font-weight:600;color:#e8e8e8;margin-bottom:2px;">{{ check.name }}</div>
+                        <div style="font-size:12px;color:#9ca3af;line-height:1.5;">{{ check.detail }}</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endfor %}
+
+        {# ── Ausgeführte Auto-Fixes ── #}
+        {% if fix_done %}
+        <tr>
+          <td style="padding:8px 28px 4px;">
+            <div style="background:#0f2a1a;border:1px solid #1a3a24;border-radius:8px;padding:14px;">
+              <div style="font-size:12px;font-weight:600;color:#22c55e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                {{ fix_done|length }} Auto-Fix(es) ausgeführt
+              </div>
+              <pre style="background:#0a0a0e;color:#d4d4d8;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;margin:0;white-space:pre-wrap;">{% for c in fix_done %}{{ c }}
+{% endfor %}</pre>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
+        {# ── Empfohlene Fix-Befehle ── #}
+        {% if fix_recommend %}
+        <tr>
+          <td style="padding:8px 28px 16px;">
+            <div style="background:#1a1a23;border:1px solid #2a2a35;border-radius:8px;padding:14px;">
+              <div style="font-size:12px;font-weight:600;color:#e8a820;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                Empfohlene Befehle ({{ fix_recommend|length }})
+              </div>
+              <pre style="background:#0a0a0e;color:#d4d4d8;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;margin:0;white-space:pre-wrap;">{% for c in fix_recommend[:40] %}{{ c }}
+{% endfor %}</pre>
+              <div style="font-size:11px;color:#6b7280;margin-top:8px;line-height:1.5;">
+                Im Container ausführen:
+                <code style="background:#0a0a0e;color:#e8a820;padding:2px 6px;border-radius:4px;font-family:monospace;">docker exec seasonalpha-app &lt;befehl&gt;</code>
+                · oder Audit mit <code style="background:#0a0a0e;color:#e8a820;padding:2px 6px;border-radius:4px;font-family:monospace;">--fix --fix-derived</code> erneut laufen lassen.
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
+        {# ── Footer ── #}
+        <tr>
+          <td style="background:#0a0a0e;padding:16px 28px;border-top:1px solid #2a2a35;">
+            <div style="font-size:11px;color:#6b7280;line-height:1.6;text-align:center;">
+              Automatischer DB-Vollständigkeits-Check · <a href="https://seasonalpha.ai" style="color:#6b7280;text-decoration:none;">seasonalpha.ai</a><br>
+              Wöchentlich So ~05:00 UTC via GitHub Action · scripts/check_db_completeness.py
+            </div>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
