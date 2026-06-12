@@ -45,6 +45,111 @@ MONTHS_DE = ["", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
              "Juli", "August", "September", "Oktober", "November", "Dezember"]
 DISCLAIMER_FILE = _script_dir / "disclaimer_blog.md"
 
+# ── EN config ────────────────────────────────────────────
+POSTS_DIR_EN = _script_dir / "posts" / "en"
+OUTPUT_DIR_EN = _script_dir / "output" / "en"
+BASE_URL_EN = "https://seasonalpha.ai"
+
+CATEGORY_LABELS_EN = {
+    "education": "Education",
+    "marktausblick": "Market Outlook",
+    "tutorials": "Tutorials",
+}
+
+MONTHS_EN = ["", "January", "February", "March", "April", "May", "June",
+             "July", "August", "September", "October", "November", "December"]
+
+
+def _extra_vars_de(post: dict) -> dict:
+    slug = post["slug"]
+    return {
+        "lang": "de",
+        "og_locale": "de_DE",
+        "in_language": "de-DE",
+        "blog_base": "/blog/",
+        "post_url": f"{BASE_URL}/blog/{slug}/",
+        "str_min_read": "Min Lesezeit",
+        "str_cta_h3": "Analysiere es selbst auf SeasonAlpha",
+        "str_cta_p": "Interaktive Charts, KI-Prognosen und technische Filter f&uuml;r 270+ Ticker.",
+        "str_cta_btn": "Kostenlos starten",
+        "str_cta_url": f"{BASE_URL}/dashboard",
+        "str_disclaimer_summary": "Vollst&auml;ndiger rechtlicher Hinweis",
+        "str_related_header": "Weitere Beitr&auml;ge",
+        "is_en": False,
+        "de_slug": None,
+    }
+
+
+def _extra_vars_en(post: dict) -> dict:
+    slug = post["slug"]
+    de_slug = post.get("de_slug", "")
+    return {
+        "lang": "en",
+        "og_locale": "en_US",
+        "in_language": "en-US",
+        "blog_base": "/en/blog/",
+        "post_url": f"{BASE_URL_EN}/en/blog/{slug}/",
+        "str_min_read": "min read",
+        "str_cta_h3": "Analyse it yourself on SeasonAlpha",
+        "str_cta_p": "Interactive charts, AI forecasts and technical filters for 270+ tickers.",
+        "str_cta_btn": "Start for free",
+        "str_cta_url": f"{BASE_URL_EN}/en/dashboard",
+        "str_disclaimer_summary": "Full legal notice",
+        "str_related_header": "More articles",
+        "is_en": True,
+        "de_slug": de_slug,
+    }
+
+
+def _extra_index_vars_de() -> dict:
+    return {
+        "lang": "de",
+        "blog_base": "/blog/",
+        "str_search_placeholder": "Artikel durchsuchen &hellip; (Titel, Tags, Ticker)",
+        "str_search_clear": "Suche l&ouml;schen",
+        "str_focus_hint": "zum Fokussieren",
+        "str_clear_hint": "zum L&ouml;schen",
+        "str_cat_all": "Alle",
+        "str_cat_marktausblick": "Marktausblick",
+        "str_no_results": "Keine Artikel gefunden f&uuml;r",
+        "str_no_results_hint": "Versuche einen anderen Suchbegriff oder w&auml;hle eine andere Kategorie.",
+        "str_no_posts": "Noch keine Beitr&auml;ge in dieser Kategorie. Bald verf&uuml;gbar!",
+        "str_nl_h3": "Saisonale Insights direkt ins Postfach",
+        "str_nl_p": "Monatliche Analysen, neue Strategien und SeasonAlpha Updates.",
+        "str_nl_btn": "Kostenlos registrieren",
+        "str_nl_url": f"{BASE_URL}/dashboard",
+        "str_counter_of": "von",
+        "str_counter_article": "Artikel",
+        "str_counter_plural": "n",
+        "og_title": "SeasonAlpha Blog — Saisonale Analysen",
+        "og_description": "Datenbasierte Boersenanalysen, Strategien und Tutorials.",
+    }
+
+
+def _extra_index_vars_en() -> dict:
+    return {
+        "lang": "en",
+        "blog_base": "/en/blog/",
+        "str_search_placeholder": "Search articles &hellip; (title, tags, ticker)",
+        "str_search_clear": "Clear search",
+        "str_focus_hint": "to focus",
+        "str_clear_hint": "to clear",
+        "str_cat_all": "All",
+        "str_cat_marktausblick": "Market Outlook",
+        "str_no_results": "No articles found for",
+        "str_no_results_hint": "Try a different search term or choose another category.",
+        "str_no_posts": "No articles in this category yet. Coming soon!",
+        "str_nl_h3": "Seasonal insights straight to your inbox",
+        "str_nl_p": "Monthly analyses, new strategies and SeasonAlpha updates.",
+        "str_nl_btn": "Sign up free",
+        "str_nl_url": f"{BASE_URL_EN}/en/dashboard",
+        "str_counter_of": "of",
+        "str_counter_article": "article",
+        "str_counter_plural": "s",
+        "og_title": "SeasonAlpha Blog — Seasonal Market Analysis",
+        "og_description": "Data-driven seasonal analyses, trading strategies and tutorials.",
+    }
+
 
 # ── Disclaimer laden ─────────────────────────────────────
 
@@ -638,6 +743,76 @@ def load_posts() -> list[dict]:
     return posts
 
 
+def load_posts_en() -> list[dict]:
+    """Laedt alle englischen Markdown-Posts aus blog/posts/en/."""
+    posts = []
+    if not POSTS_DIR_EN.exists():
+        return posts
+
+    for md_file in sorted(POSTS_DIR_EN.glob("*.md")):
+        with open(md_file, "r", encoding="utf-8") as f:
+            raw = f.read()
+
+        meta, content = parse_frontmatter(raw)
+        if not meta.get("title") or not meta.get("slug"):
+            print(f"  [SKIP] {md_file.name} — no title/slug")
+            continue
+
+        status = meta.get("status", "draft")
+        if status == "draft":
+            print(f"  [DRAFT] {md_file.name}")
+            continue
+        if status == "scheduled":
+            pub_date = meta.get("publish_date")
+            if pub_date:
+                if isinstance(pub_date, str):
+                    pub_date = datetime.strptime(pub_date, "%Y-%m-%d").date()
+                if pub_date > date.today():
+                    print(f"  [SCHEDULED] {md_file.name} ->{pub_date}")
+                    continue
+
+        html_content = markdown_to_html(content, post_slug=meta.get("slug", ""))
+        faq_items = _extract_faq_items(content)
+        word_count = len(content.split())
+        reading_time = max(1, round(word_count / 200))
+
+        post_date = meta.get("date", date.today())
+        if isinstance(post_date, str):
+            post_date = datetime.strptime(post_date, "%Y-%m-%d").date()
+
+        date_formatted = f"{MONTHS_EN[post_date.month]} {post_date.day}, {post_date.year}"
+
+        category = meta.get("category", "education")
+        tags = meta.get("tags", [])
+
+        post = {
+            "title": meta["title"],
+            "slug": meta["slug"],
+            "de_slug": meta.get("de_slug", ""),
+            "date": str(post_date),
+            "date_obj": post_date,
+            "date_formatted": date_formatted,
+            "category": category,
+            "category_label": CATEGORY_LABELS_EN.get(category, category),
+            "tags": tags,
+            "description": meta.get("description", ""),
+            "ticker": meta.get("ticker", ""),
+            "seo_title": meta.get("seo_title", ""),
+            "canonical_url": meta.get("canonical_url", ""),
+            "og_image": meta.get("og_image", ""),
+            "status": status,
+            "content": html_content,
+            "reading_time": reading_time,
+            "file": md_file.name,
+            "raw_md": raw,
+            "faq_items": faq_items,
+        }
+        posts.append(post)
+
+    posts.sort(key=lambda p: p["date_obj"], reverse=True)
+    return posts
+
+
 # ── HTML generieren ──────────────────────────────────────
 
 def build_all():
@@ -683,6 +858,7 @@ def build_all():
         # HTML rendern
         html = post_tpl.render(
             **post,
+            **_extra_vars_de(post),
             related_posts=related_posts,
             disclaimer_short=disclaimer_short,
             disclaimer_long=disclaimer_long,
@@ -708,14 +884,16 @@ def build_all():
         print(f"  [{i+1:3d}/{len(posts)}] {post['title'][:50]:50s} ->{slug}/")
 
     # Index-Seiten
-    _build_index(index_tpl, posts, "all", OUTPUT_DIR / "index.html")
+    de_idx = _extra_index_vars_de()
+    _build_index(index_tpl, posts, "all", OUTPUT_DIR / "index.html", extra_vars=de_idx)
     for cat_slug, cat_label in CATEGORY_LABELS.items():
         cat_dir = OUTPUT_DIR / cat_slug
         cat_dir.mkdir(exist_ok=True)
         cat_posts = [p for p in posts if p["category"] == cat_slug]
         _build_index(index_tpl, cat_posts, cat_slug, cat_dir / "index.html",
                      hero_title=cat_label,
-                     hero_subtitle=_category_subtitle(cat_slug))
+                     hero_subtitle=_category_subtitle(cat_slug),
+                     extra_vars=de_idx)
 
     # Sitemap erweitern
     _build_blog_sitemap(posts)
@@ -724,14 +902,88 @@ def build_all():
     print("=" * 60)
 
 
-def _build_index(tpl, posts, active_cat, out_path, hero_title=None, hero_subtitle=None):
+def build_en():
+    """Generiert englische Blog-HTMLs aus blog/posts/en/."""
+    if not POSTS_DIR_EN.exists():
+        print("  [EN] Kein posts/en/ Verzeichnis — ueberspringe EN-Build")
+        return
+
+    print("=" * 60)
+    print("  SeasonAlpha — Blog Builder (EN)")
+    print("=" * 60)
+
+    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    post_tpl = env.get_template("blog_post.html")
+    index_tpl = env.get_template("blog_index.html")
+
+    OUTPUT_DIR_EN.mkdir(parents=True, exist_ok=True)
+
+    disclaimer_short, disclaimer_long = load_blog_disclaimer()
+
+    posts = load_posts_en()
+    print(f"\n  {len(posts)} EN Posts zum Generieren\n")
+
+    for i, post in enumerate(posts):
+        slug = post["slug"]
+        post_dir = OUTPUT_DIR_EN / slug
+        post_dir.mkdir(parents=True, exist_ok=True)
+
+        related = [p for p in posts if p["slug"] != slug]
+        same_cat = [p for p in related if p["category"] == post["category"]]
+        other = [p for p in related if p["category"] != post["category"]]
+        related_posts = (same_cat + other)[:3]
+
+        ctx = {**post, **_extra_vars_en(post),
+               "related_posts": related_posts,
+               "disclaimer_short": disclaimer_short,
+               "disclaimer_long": disclaimer_long}
+        html = post_tpl.render(**ctx)
+        out_file = post_dir / "index.html"
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write(html)
+
+        images_src = POSTS_DIR / "images"
+        if images_src.exists() and images_src.is_dir():
+            images_dst = post_dir / "images"
+            if images_dst.exists():
+                shutil.rmtree(images_dst)
+            shutil.copytree(images_src, images_dst)
+
+        print(f"  [{i+1:3d}/{len(posts)}] {post['title'][:50]:50s} ->en/{slug}/")
+
+    en_idx = _extra_index_vars_en()
+    _build_index(index_tpl, posts, "all", OUTPUT_DIR_EN / "index.html",
+                 hero_title="SeasonAlpha Blog",
+                 hero_subtitle="Data-driven seasonal analyses, trading strategies and tutorials.",
+                 extra_vars=en_idx)
+    for cat_slug in CATEGORY_LABELS_EN:
+        cat_label_en = CATEGORY_LABELS_EN[cat_slug]
+        cat_dir = OUTPUT_DIR_EN / cat_slug
+        cat_dir.mkdir(exist_ok=True)
+        cat_posts = [p for p in posts if p["category"] == cat_slug]
+        _build_index(index_tpl, cat_posts, cat_slug, cat_dir / "index.html",
+                     hero_title=cat_label_en,
+                     hero_subtitle=_category_subtitle_en(cat_slug),
+                     extra_vars=en_idx)
+
+    _build_blog_sitemap_en(posts)
+
+    print(f"\n  Fertig! {len(posts)} EN Posts + Index + Kategorie-Seiten + Sitemap")
+    print("=" * 60)
+
+
+def _build_index(tpl, posts, active_cat, out_path, hero_title=None, hero_subtitle=None,
+                 extra_vars=None):
     """Rendert eine Index-Seite (Haupt oder Kategorie)."""
-    html = tpl.render(
-        posts=posts,
-        active_category=active_cat,
-        hero_title=hero_title or "SeasonAlpha Blog",
-        hero_subtitle=hero_subtitle or "Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials.",
-    )
+    vars_ = {
+        "posts": posts,
+        "active_category": active_cat,
+        "hero_title": hero_title or "SeasonAlpha Blog",
+        "hero_subtitle": hero_subtitle or "Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials.",
+    }
+    if extra_vars:
+        vars_.update(extra_vars)
+    html = tpl.render(**vars_)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -741,6 +993,15 @@ def _category_subtitle(cat: str) -> str:
         "education": "Grundlagen, Theorie und Wissen rund um saisonale Boersenanalyse.",
         "marktausblick": "Aktuelle saisonale Analysen und datenbasierte Marktprognosen.",
         "tutorials": "Schritt-fuer-Schritt Anleitungen fuer SeasonAlpha Features.",
+    }
+    return subs.get(cat, "")
+
+
+def _category_subtitle_en(cat: str) -> str:
+    subs = {
+        "education": "Fundamentals, theory and knowledge around seasonal market analysis.",
+        "marktausblick": "Current seasonal analyses and data-driven market forecasts.",
+        "tutorials": "Step-by-step guides for SeasonAlpha features.",
     }
     return subs.get(cat, "")
 
@@ -953,6 +1214,39 @@ def _build_blog_sitemap(posts: list[dict]):
     print(f"  [OK] sitemap_blog.xml ({len(urls)} URLs)")
 
 
+def _build_blog_sitemap_en(posts: list[dict]):
+    """Generiert EN Blog-Sitemap-Eintraege."""
+    sitemap_path = OUTPUT_DIR_EN / "sitemap_blog_en.xml"
+    today = date.today().isoformat()
+
+    urls = [
+        f'  <url><loc>{BASE_URL_EN}/en/blog/</loc><lastmod>{today}</lastmod>'
+        f'<changefreq>weekly</changefreq><priority>0.8</priority></url>',
+    ]
+    for cat_slug in CATEGORY_LABELS_EN:
+        urls.append(
+            f'  <url><loc>{BASE_URL_EN}/en/blog/{cat_slug}/</loc><lastmod>{today}</lastmod>'
+            f'<changefreq>weekly</changefreq><priority>0.7</priority></url>'
+        )
+    for post in posts:
+        urls.append(
+            f'  <url><loc>{BASE_URL_EN}/en/blog/{post["slug"]}/</loc>'
+            f'<lastmod>{post["date"]}</lastmod>'
+            f'<changefreq>monthly</changefreq><priority>0.6</priority></url>'
+        )
+
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(urls) + "\n"
+        '</urlset>\n'
+    )
+    OUTPUT_DIR_EN.mkdir(parents=True, exist_ok=True)
+    with open(sitemap_path, "w", encoding="utf-8") as f:
+        f.write(xml)
+    print(f"  [OK] sitemap_blog_en.xml ({len(urls)} URLs)")
+
+
 # ── KI-Content-Generierung (--generate) ─────────────────
 
 def generate_post(title: str, ticker: str = "", category: str = "marktausblick"):
@@ -1018,6 +1312,7 @@ def main():
         generate_post(args.generate, args.ticker, args.category)
     elif args.build:
         build_all()
+        build_en()
     else:
         parser.print_help()
 

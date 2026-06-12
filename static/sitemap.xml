@@ -745,4 +745,38 @@
     <priority>0.75</priority>
   </url>
 
+  <!-- ── EN Blog ─────────────────────────────────────────────────────── -->
+  <url>
+    <loc>https://seasonalpha.ai/en/blog/</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/blog/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://seasonalpha.ai/blog/"/>
+  </url>
+  <url><loc>https://seasonalpha.ai/en/blog/what-is-seasonality/</loc><lastmod>2026-03-27</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/april-seasonality-sp500/</loc><lastmod>2026-03-27</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/indicator-filter-tutorial/</loc><lastmod>2026-03-27</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/welcome-to-seasonalpha/</loc><lastmod>2026-03-27</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/boxplot-decade-cycle-dow-jones/</loc><lastmod>2026-03-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/overnight-intraday-split-google/</loc><lastmod>2026-03-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/weekday-significance-test-siemens/</loc><lastmod>2026-03-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/outlier-filter-seasonality/</loc><lastmod>2026-03-30</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/turn-of-month-dax-march-april/</loc><lastmod>2026-03-31</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/drawdown-crash-years-recovery/</loc><lastmod>2026-04-01</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/drawdown-midterm-election-2026/</loc><lastmod>2026-04-01</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/return-vs-drawdown-explained/</loc><lastmod>2026-04-01</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/anomaly-radar-explained/</loc><lastmod>2026-04-08</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/dashboard-launch/</loc><lastmod>2026-04-08</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/sell-in-may-2026/</loc><lastmod>2026-04-08</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/turn-of-month-effect-explained/</loc><lastmod>2026-04-09</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/tesla-apple-may-comparison/</loc><lastmod>2026-04-10</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/presidential-cycle-tutorial/</loc><lastmod>2026-04-11</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/vixpiration-april-2026/</loc><lastmod>2026-04-13</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/btc-150k-2026-polymarket-vs-history/</loc><lastmod>2026-04-18</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/ethereum-2026-divergence-smaller-than-btc/</loc><lastmod>2026-04-18</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/fed-cuts-2026-polymarket-forecast/</loc><lastmod>2026-04-18</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/dax-vs-sp500-seasonality/</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://seasonalpha.ai/en/blog/sell-in-may-halftime-2026/</loc><lastmod>2026-05-14</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+
 </urlset>

@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="{{ lang | default('de') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title | default('Blog — Saisonale Analysen & Trading-Wissen') }} | SeasonAlpha</title>
     <meta name="description" content="{{ page_description | default('Saisonale Boersenanalysen, Trading-Strategien und Tutorials. Datenbasierte Insights fuer Trader und Anleger.') }}">
-    <link rel="canonical" href="https://seasonalpha.ai/blog/{{ canonical_path | default('') }}">
+    <link rel="canonical" href="https://seasonalpha.ai{{ blog_base | default('/blog/') }}{{ canonical_path | default('') }}">
 
-    <meta property="og:title" content="SeasonAlpha Blog — Saisonale Analysen">
-    <meta property="og:description" content="Datenbasierte Boersenanalysen, Strategien und Tutorials.">
+    <meta property="og:title" content="{{ og_title | default('SeasonAlpha Blog — Saisonale Analysen') }}">
+    <meta property="og:description" content="{{ og_description | default('Datenbasierte Boersenanalysen, Strategien und Tutorials.') }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://seasonalpha.ai/blog/">
+    <meta property="og:url" content="https://seasonalpha.ai{{ blog_base | default('/blog/') }}">
     <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
 
     <!-- Icons -->
@@ -303,24 +303,24 @@
 
     <div class="search-wrap" id="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="blog-search" placeholder="Artikel durchsuchen &hellip; (Titel, Tags, Ticker)" autocomplete="off" aria-label="Blog durchsuchen">
-        <button type="button" class="search-clear" id="search-clear" aria-label="Suche l&ouml;schen">&times;</button>
+        <input type="text" id="blog-search" placeholder="{{ str_search_placeholder | default('Artikel durchsuchen &hellip; (Titel, Tags, Ticker)') }}" autocomplete="off" aria-label="{{ str_search_placeholder | default('Blog durchsuchen') }}">
+        <button type="button" class="search-clear" id="search-clear" aria-label="{{ str_search_clear | default('Suche l&ouml;schen') }}">&times;</button>
     </div>
     <div class="search-hint">
-        <kbd>/</kbd> zum Fokussieren &middot; <kbd>Esc</kbd> zum L&ouml;schen
+        <kbd>/</kbd> {{ str_focus_hint | default('zum Fokussieren') }} &middot; <kbd>Esc</kbd> {{ str_clear_hint | default('zum L&ouml;schen') }}
     </div>
     <div class="search-counter" id="search-counter"></div>
 
     <div class="cat-filter">
-        <a href="/blog/" class="{{ 'active' if active_category == 'all' else '' }}">Alle</a>
-        <a href="/blog/education/" class="{{ 'active' if active_category == 'education' else '' }}">Education</a>
-        <a href="/blog/marktausblick/" class="{{ 'active' if active_category == 'marktausblick' else '' }}">Marktausblick</a>
-        <a href="/blog/tutorials/" class="{{ 'active' if active_category == 'tutorials' else '' }}">Tutorials</a>
+        <a href="{{ blog_base | default('/blog/') }}" class="{{ 'active' if active_category == 'all' else '' }}">{{ str_cat_all | default('Alle') }}</a>
+        <a href="{{ blog_base | default('/blog/') }}education/" class="{{ 'active' if active_category == 'education' else '' }}">Education</a>
+        <a href="{{ blog_base | default('/blog/') }}marktausblick/" class="{{ 'active' if active_category == 'marktausblick' else '' }}">{{ str_cat_marktausblick | default('Marktausblick') }}</a>
+        <a href="{{ blog_base | default('/blog/') }}tutorials/" class="{{ 'active' if active_category == 'tutorials' else '' }}">Tutorials</a>
     </div>
 
     <div class="post-grid" id="post-grid">
         {% for post in posts %}
-        <a href="/blog/{{ post.slug }}/" class="post-card" data-search="{{ (post.title ~ ' ' ~ post.description ~ ' ' ~ post.category_label ~ ' ' ~ (post.tags | join(' ')) ~ ' ' ~ post.ticker) | lower }}">
+        <a href="{{ blog_base | default('/blog/') }}{{ post.slug }}/" class="post-card" data-search="{{ (post.title ~ ' ' ~ post.description ~ ' ' ~ post.category_label ~ ' ' ~ (post.tags | join(' ')) ~ ' ' ~ post.ticker) | lower }}">
             <div class="pc-cat">{{ post.category_label }}</div>
             <div class="pc-title">{{ post.title }}</div>
             <div class="pc-desc">{{ post.description }}</div>
@@ -333,20 +333,20 @@
     </div>
 
     <div class="no-results" id="no-results">
-        Keine Artikel gefunden f&uuml;r <strong id="no-results-query"></strong>.<br>
-        Versuche einen anderen Suchbegriff oder w&auml;hle eine andere Kategorie.
+        {{ str_no_results | default('Keine Artikel gefunden f&uuml;r') }} <strong id="no-results-query"></strong>.<br>
+        {{ str_no_results_hint | default('Versuche einen anderen Suchbegriff oder w&auml;hle eine andere Kategorie.') }}
     </div>
 
     {% if not posts %}
     <div style="text-align:center; padding:3rem; color:var(--muted);">
-        Noch keine Beitr&auml;ge in dieser Kategorie. Bald verf&uuml;gbar!
+        {{ str_no_posts | default('Noch keine Beitr&auml;ge in dieser Kategorie. Bald verf&uuml;gbar!') }}
     </div>
     {% endif %}
 
     <div class="newsletter-box">
-        <h3>Saisonale Insights direkt ins Postfach</h3>
-        <p>Monatliche Analysen, neue Strategien und SeasonAlpha Updates.</p>
-        <a href="https://seasonalpha.ai/dashboard" class="cta-button">Kostenlos registrieren</a>
+        <h3>{{ str_nl_h3 | default('Saisonale Insights direkt ins Postfach') }}</h3>
+        <p>{{ str_nl_p | default('Monatliche Analysen, neue Strategien und SeasonAlpha Updates.') }}</p>
+        <a href="{{ str_nl_url | default('https://seasonalpha.ai/dashboard') }}" class="cta-button">{{ str_nl_btn | default('Kostenlos registrieren') }}</a>
     </div>
 
 </div>
@@ -390,7 +390,7 @@
             if (hit) visible++;
         });
 
-        counter.textContent = visible + ' von ' + totalCount + ' Artikel' + (visible === 1 ? '' : 'n');
+        counter.textContent = visible + ' {{ str_counter_of | default('von') }} ' + totalCount + ' {{ str_counter_article | default('Artikel') }}' + (visible === 1 ? '' : '{{ str_counter_plural | default('n') }}');
         counter.classList.add('active');
 
         if (visible === 0) {
