@@ -13,3 +13,4 @@ node_modules/
 __pycache__/
 seo/output/
 blog/output/
+landing/data/db_completeness.json
