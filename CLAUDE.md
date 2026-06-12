@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 36.0 | 2026-06-12 | Komprimiert: alte Erledigt-Blöcke zusammengefasst, Leichen entfernt, Phase 6 + Lessons Learned ergänzt
+> Version 37.0 | 2026-06-12 | Phase 7: Verifikations-Workflow, Blog-EN-Fix, TDOM-Fix, 1222 i18n-Keys
 
 ## Projekt
 
@@ -27,7 +27,7 @@ pages/                   ← Streamlit Pages (Light Live + _disabled/)
 landing/                 ← Statische HTML-App (Haupt-Frontend)
   pages/                 ← 29 HTML-Feature-Pages
   js/                    ← JS-Module (shared compute + charts + i18n)
-  i18n/                  ← de.json + en.json (793 Keys, seit KW24)
+  i18n/                  ← de.json + en.json (1222 Keys, seit KW24)
   css/app.css            ← V3 Ultra Design System
   components/            ← nav.html, footer.html (JS-Include)
   data/                  ← Pre-computed JSON
@@ -169,7 +169,7 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 
 - `SA.i18n` IIFE in `landing/js/i18n.js` — `init()` in DOMContentLoaded, `switchTo(lang)` public
 - Spracherkennung via URL: `/en/*` → EN, alles andere → DE. Kein JS-Cookie, kein localStorage
-- `data-i18n="key"` auf Text-Elemente, `data-i18n-placeholder` für Input-Placeholders, `data-i18n-title` für title-Attr
+- `data-i18n="key"` auf Text-Elemente, `data-i18n-placeholder` für Input-Placeholders, `data-i18n-title` für title-Attr, `data-i18n-html` für innerHTML (Elemente mit `<b>`/`<a>` Tags)
 - JSON-Cache in sessionStorage mit Versionskey (`_JSON_VER='v3'`) — verhindert Stale-Cache nach Key-Änderungen
 - nginx `sub_filter` tauscht `og:locale` und `lang=de` → `lang=en` für `/en/*`-Responses
 - i18n-JSON: nginx `location /landing/i18n/ { ... no-store }` — KEIN max-age (sonst 24h gecachte alte Keys)
@@ -183,6 +183,10 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - nginx: `location ^~ /en/blog/` MUSS VOR `location ^~ /en/` stehen — nginx nimmt längsten Prefix-Match; fehlt der explizite Block, landet `/en/blog/` im generischen `/en/`-Catch-all → 404
 - Workflow-Agenten für Übersetzungen: **einen Agenten pro Datei** (nicht Batches). Große Posts füllen Kontext-Fenster, Batch-Agenten schreiben dann nur partiell oder brechen still ab.
 - Windows cp1252 console: `blog_builder.py --build` kann bei Sonderzeichen (`−`, `–`) in Post-Titeln UnicodeEncodeError werfen. Betrifft nur `print()`-Ausgabe, NICHT die HTML-Erzeugung. Auf dem Linux-Server (UTF-8) kein Problem.
+- **Blog-Disclaimer**: `disclaimer_blog.md` gilt nur für DE. `disclaimer_blog_en.md` für EN-Posts — `load_blog_disclaimer(lang='en')` in `build_en()` aufrufen. Sonst zeigen alle EN-Posts deutschen Rechtshinweis.
+- **Blog-Chart-Labels**: `markdown_to_html()` und Chart-Builder akzeptieren `lang`-Parameter. `load_posts_en()` übergibt `lang="en"`. Sonst: deutsche Monatsnamen ("Mai"/"Okt"), deutsche Chart-Titel in EN-Posts.
+- **Blog-Index page_title/page_description**: Müssen in `_extra_index_vars_en()` stehen — NICHT nur im Template-Default. Template-Defaults sind immer Deutsch.
+- Nach Blog-Code-Änderungen auf Server neu bauen: `docker exec seasonalpha-app python3 blog/blog_builder.py --build` + `docker exec seasonalpha-nginx nginx -s reload`
 
 ### Sprache
 
@@ -244,18 +248,21 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 | KW18 | Apr 2026 | Dividenden + Earnings Pages, Event-Crons, Yahoo Crumb-Auth, Health-Check-Integration |
 | KW20 | Mai 2026 | Nightly Backfill Phase D, moddatetime-Trigger, Stripe-Infrastruktur, GSC-Bereinigung (383→32), Blog #22-24, Newsletter Phase F Fix |
 | KW22 | Mai 2026 | Daily Morning Briefing (Multi-Window-TDOM-Score 0-4, top_daily_tips, Watchlist-Personalisierung, 10 Strategie-Signale, Status-Zeile) |
-| KW24 | Jun 2026 | **EN Lokalisierung Phasen 1-6** komplett: SA.i18n, 793 Keys, 30 Pages data-i18n, Tour EN, 24 Blog-Posts EN, Sitemap 89→113 URLs, hreflang |
+| KW24 | Jun 2026 | **EN Lokalisierung Phasen 1-7** komplett: SA.i18n, 1222 Keys, 30 Pages + Verifikation aller Expander/Methodologie, Tour EN, 24 Blog-Posts EN (EN Disclaimer+Charts), Sitemap 89→113 URLs, hreflang |
 
 ### ✅ ML-Pipeline stillgelegt (2026-04-18)
 Entfernte Module/Scripts: `mstl_decomposition.py`, `chronos_forecast.py`, `neural_prophet_forecast.py`, `compute_ml_forecasts.py`, `create_ml_forecasts.sql`, `ml_forecasts.yml`.
 KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_forecasts` in Supabase.
 
-### Erledigt (KW 24, 2026-06-12 — EN Blog Phase 6)
+### Erledigt (KW 24, 2026-06-12 — EN Phase 6+7)
 - [x] **24 Blog-Posts EN übersetzt** — `blog/posts/en/` mit `de_slug:`-Feld für hreflang-Rücklinks
 - [x] **`blog_builder.py` erweitert** — `build_en()`, `load_posts_en()`, `_extra_vars_en()`, `_build_blog_sitemap_en()`. `main()` ruft automatisch beide (`build_all()` + `build_en()`)
 - [x] **Bilinguales Blog-Template** — alle Sprachstrings als Template-Variablen, kein `{% if is_en %}` im HTML
 - [x] **nginx `/en/blog/`** — eigener `^~`-Location-Block vor dem `/en/`-Catch-all
 - [x] **Sitemap 89→113 URLs** — 24 EN Blog-Posts + `/en/blog/` Index, alle mit hreflang
+- [x] **Blog EN-Fix** — `disclaimer_blog_en.md`, EN Chart-Labels, page_title/page_description in EN Index
+- [x] **Verifikations-Workflow** — 21 Pages: alle Expander/Methodologie-Texte mit data-i18n versehen, en.json 793→1222 Keys
+- [x] **TDOM 4. Strategie** — `open_to_next_close` im Frontend + DB (6210 Rows je Strategie)
 
 ### 🔴 SOFORT — Security (User-Action erforderlich)
 - [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten
@@ -265,7 +272,7 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 ### 🔴 SOFORT — Funktional (User-Action erforderlich)
 - [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');`
 - [ ] **Daily-Newsletter Smoke-Test** — GitHub Actions → "Daily Morning Briefing" → Run workflow → test_mode=true. Mail + alle Sektionen prüfen.
-- [ ] **4. TDOM-Strategy befüllen** — `docker exec seasonalpha-app python3 scripts/nightly_refresh.py` (oder nächsten Cron abwarten). Prüfen: `SELECT strategy, count(*) FROM tdom_stats GROUP BY strategy;` — alle 4 Strategien erwartet.
+- [x] **4. TDOM-Strategy befüllt** — alle 4 Strategien mit je 6210 Rows ✓
 
 ### Marketing (manuell)
 - [ ] LinkedIn + X Posts: Blog #22-24 (Polymarket, Sell in May, DAX vs S&P) + Blog EN-Launch ankündigen
