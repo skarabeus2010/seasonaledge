@@ -215,15 +215,42 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
         {"slug": "blog/tutorials/",    "priority": "0.8",  "changefreq": "weekly"},
     ])
 
+    # Slugs die KEINE EN-Version bekommen (Blog, Legal, Tools, Profile)
+    NO_EN_PREFIXES = ("blog/", "blog", "tools/", "tools")
+    NO_EN_SLUGS = {"disclaimer", "rechtliches", "profile", "unsubscribe", "watchlist"}
+
     for page in landing_pages:
+        slug = page["slug"]
+        de_url = f'{BASE_URL}/{slug}'
+        en_url = f'{BASE_URL}/en/{slug}'
+        has_en = slug not in NO_EN_SLUGS and not any(slug.startswith(p) for p in NO_EN_PREFIXES)
+        hreflang = (
+            f'    <xhtml:link rel="alternate" hreflang="de" href="{de_url}"/>\n'
+            f'    <xhtml:link rel="alternate" hreflang="en" href="{en_url}"/>\n'
+            f'    <xhtml:link rel="alternate" hreflang="x-default" href="{de_url}"/>\n'
+        ) if has_en else ''
         urls.append(
             f'  <url>\n'
-            f'    <loc>{BASE_URL}/{page["slug"]}</loc>\n'
+            f'    <loc>{de_url}</loc>\n'
+            f'{hreflang}'
             f'    <lastmod>{heute_iso}</lastmod>\n'
             f'    <changefreq>{page["changefreq"]}</changefreq>\n'
             f'    <priority>{page["priority"]}</priority>\n'
             f'  </url>'
         )
+        if has_en:
+            en_priority = str(round(float(page["priority"]) - 0.1, 2))
+            urls.append(
+                f'  <url>\n'
+                f'    <loc>{en_url}</loc>\n'
+                f'    <xhtml:link rel="alternate" hreflang="de" href="{de_url}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="en" href="{en_url}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="x-default" href="{de_url}"/>\n'
+                f'    <lastmod>{heute_iso}</lastmod>\n'
+                f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+                f'    <priority>{en_priority}</priority>\n'
+                f'  </url>'
+            )
 
     # Blog-Posts (aus blog/posts/ Markdown-Frontmatter lesen)
     try:
@@ -259,7 +286,8 @@ def build_sitemap(titel_daten: list[dict], output_ordner: str):
 
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
         + "\n".join(urls) + "\n"
         '</urlset>\n'
     )
