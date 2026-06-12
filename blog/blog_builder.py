@@ -44,6 +44,7 @@ CATEGORY_LABELS = {
 MONTHS_DE = ["", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
              "Juli", "August", "September", "Oktober", "November", "Dezember"]
 DISCLAIMER_FILE = _script_dir / "disclaimer_blog.md"
+DISCLAIMER_FILE_EN = _script_dir / "disclaimer_blog_en.md"
 
 # ── EN config ────────────────────────────────────────────
 POSTS_DIR_EN = _script_dir / "posts" / "en"
@@ -148,23 +149,28 @@ def _extra_index_vars_en() -> dict:
         "str_counter_plural": "s",
         "og_title": "SeasonAlpha Blog — Seasonal Market Analysis",
         "og_description": "Data-driven seasonal analyses, trading strategies and tutorials.",
+        "page_title": "Blog — Seasonal Analyses & Trading Knowledge",
+        "page_description": "Seasonal market analyses, trading strategies and tutorials. Data-driven insights for traders and investors.",
     }
 
 
 # ── Disclaimer laden ─────────────────────────────────────
 
-def load_blog_disclaimer() -> tuple[str, str]:
+def load_blog_disclaimer(lang: str = "de") -> tuple[str, str]:
     """
-    Laedt Kurz- und Langversion des Blog-Disclaimers aus disclaimer_blog.md.
+    Laedt Kurz- und Langversion des Blog-Disclaimers.
     Konvertiert Markdown-Inline-Formatierung zu HTML.
 
     Returns:
         (short_html, long_html)
     """
-    if not DISCLAIMER_FILE.exists():
+    disc_file = DISCLAIMER_FILE_EN if lang == "en" else DISCLAIMER_FILE
+    if not disc_file.exists():
+        disc_file = DISCLAIMER_FILE
+    if not disc_file.exists():
         return "", ""
 
-    raw = DISCLAIMER_FILE.read_text(encoding="utf-8")
+    raw = disc_file.read_text(encoding="utf-8")
 
     short_text = ""
     long_text = ""
@@ -210,7 +216,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return meta, content
 
 
-def markdown_to_html(md_text: str, post_slug: str = "") -> str:
+def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str:
     """Einfacher Markdown ->HTML Converter (kein externes Package noetig)."""
     # HTML-Kommentare entfernen (<!-- ... -->, auch mehrzeilig)
     import re as _re
@@ -353,9 +359,9 @@ def markdown_to_html(md_text: str, post_slug: str = "") -> str:
         if chart_match:
             chart_type, ticker, years = chart_match.groups()
             if post_slug:
-                html_parts.append(_build_chart_image(chart_type, ticker, int(years), post_slug))
+                html_parts.append(_build_chart_image(chart_type, ticker, int(years), post_slug, lang=lang))
             else:
-                html_parts.append(_build_chart_placeholder(chart_type, ticker, int(years)))
+                html_parts.append(_build_chart_placeholder(chart_type, ticker, int(years), lang=lang))
             continue
 
         # HTML passthrough (Tabellen etc.)
@@ -403,6 +409,8 @@ _ticker_cache: dict = {}
 _MONTH_STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
 _MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun",
                  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+_MONTH_LABELS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _MONTH_DOY = {
     1: (1, 31), 2: (32, 59), 3: (60, 90), 4: (91, 120),
     5: (121, 151), 6: (152, 181), 7: (182, 212), 8: (213, 243),
@@ -410,6 +418,8 @@ _MONTH_DOY = {
 }
 _MONTH_NAMES_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
                    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+_MONTH_NAMES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def _get_ticker_data(ticker: str):
@@ -428,7 +438,7 @@ def _get_ticker_data(ticker: str):
     return None
 
 
-def _build_seasonal_yearly_chart(ticker: str, years: int) -> "go.Figure | None":
+def _build_seasonal_yearly_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
     """Baut einen saisonalen Jahresverlauf-Chart."""
     import plotly.graph_objects as go
     from shared.calculations import build_year_data, calculate_seasonal_average
@@ -450,10 +460,20 @@ def _build_seasonal_yearly_chart(ticker: str, years: int) -> "go.Figure | None":
         return None
     avg, std = calculate_seasonal_average(year_data)
 
+    if lang == "en":
+        legend_avg = f"Seasonal Avg ({len(year_data)} years)"
+        chart_title = f"{ticker} — Seasonal Annual Progression ({len(year_data)} years)"
+        yaxis_title = "Normalized (Start = 100)"
+        month_labels = _MONTH_LABELS_EN
+    else:
+        legend_avg = f"Saisonaler Ø ({len(year_data)} Jahre)"
+        chart_title = f"{ticker} — Saisonaler Jahresverlauf ({len(year_data)} Jahre)"
+        yaxis_title = "Normalisiert (Start = 100)"
+        month_labels = _MONTH_LABELS
+
     fig = go.Figure()
     x_days = list(range(1, 366))
 
-    # Konfidenzband (±1 Sigma)
     if std:
         upper = [avg[i] + std[i] for i in range(365)]
         lower = [avg[i] - std[i] for i in range(365)]
@@ -467,29 +487,28 @@ def _build_seasonal_yearly_chart(ticker: str, years: int) -> "go.Figure | None":
             name="±1 Sigma", hoverinfo="skip",
         ))
 
-    # Saisonaler Durchschnitt
     fig.add_trace(go.Scatter(
         x=x_days, y=avg, mode="lines",
         line=dict(color=SE_COLORS["accent_blue"], width=3),
-        name=f"Saisonaler Ø ({len(year_data)} Jahre)",
+        name=legend_avg,
     ))
 
     fig.add_hline(y=100, line_dash="dash", line_color="rgba(255,255,255,0.2)", line_width=1)
 
     fig = apply_se_theme(
         fig,
-        title=f"{ticker} — Saisonaler Jahresverlauf ({len(year_data)} Jahre)",
+        title=chart_title,
         height=520, show_watermark=True,
     )
     fig.update_xaxes(
-        tickmode="array", tickvals=_MONTH_STARTS, ticktext=_MONTH_LABELS,
+        tickmode="array", tickvals=_MONTH_STARTS, ticktext=month_labels,
         range=[1, 365],
     )
-    fig.update_yaxes(title="Normalisiert (Start = 100)")
+    fig.update_yaxes(title=yaxis_title)
     return fig
 
 
-def _build_monthly_heatmap_chart(ticker: str, years: int) -> "go.Figure | None":
+def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
     """Baut eine Monats-Rendite Heatmap."""
     import plotly.graph_objects as go
     from shared.calculations import build_year_data
@@ -510,6 +529,17 @@ def _build_monthly_heatmap_chart(ticker: str, years: int) -> "go.Figure | None":
     if not year_data:
         return None
 
+    if lang == "en":
+        month_names = _MONTH_NAMES_EN
+        hover_return = "Return"
+        chart_title = f"{ticker} — Monthly Heatmap ({min(len(year_data), 10)} years)"
+        colorbar_title = "Return %"
+    else:
+        month_names = _MONTH_NAMES_DE
+        hover_return = "Rendite"
+        chart_title = f"{ticker} — Monats-Heatmap"
+        colorbar_title = "Rendite %"
+
     sorted_years = sorted(year_data.keys(), reverse=True)[:10]
     z_data = []
     y_labels = []
@@ -527,16 +557,16 @@ def _build_monthly_heatmap_chart(ticker: str, years: int) -> "go.Figure | None":
 
     fig = go.Figure(data=go.Heatmap(
         z=z_data,
-        x=_MONTH_NAMES_DE,
+        x=month_names,
         y=y_labels,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
         text=[[f"{v:+.1f}%" for v in row] for row in z_data],
         texttemplate="%{text}",
         textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
-        hovertemplate="<b>%{y} — %{x}</b><br>Rendite: %{z:+.2f}%<extra></extra>",
+        hovertemplate=f"<b>%{{y}} — %{{x}}</b><br>{hover_return}: %{{z:+.2f}}%<extra></extra>",
         colorbar=dict(
-            title=dict(text="Rendite %", font=dict(color=SE_COLORS["text_muted"], size=11)),
+            title=dict(text=colorbar_title, font=dict(color=SE_COLORS["text_muted"], size=11)),
             tickfont=dict(color=SE_COLORS["text_muted"], size=10),
             ticksuffix="%",
         ),
@@ -544,7 +574,7 @@ def _build_monthly_heatmap_chart(ticker: str, years: int) -> "go.Figure | None":
 
     fig = apply_se_heatmap_theme(
         fig,
-        title=f"{ticker} — Monats-Heatmap ({len(sorted_years)} Jahre)",
+        title=chart_title,
         height=max(300, len(sorted_years) * 28 + 100),
     )
     fig.update_yaxes(autorange="reversed", dtick=1)
@@ -556,21 +586,27 @@ _CHART_BUILDERS = {
     "monthly_heatmap": _build_monthly_heatmap_chart,
 }
 
+_CHART_PLACEHOLDERS_EN = {
+    "seasonal_yearly": "Seasonal Annual Progression",
+    "monthly_heatmap": "Monthly Return Heatmap",
+    "weekday_bars": "Weekday Performance",
+    "tom_effect": "Turn-of-Month Effect",
+}
+
 
 def _build_chart_image(chart_type: str, ticker: str, years: int,
-                       post_slug: str) -> str:
+                       post_slug: str, lang: str = "de") -> str:
     """Generiert interaktiven Plotly-Chart als HTML-Div. Fallback auf Platzhalter."""
     builder = _CHART_BUILDERS.get(chart_type)
     if not builder:
-        return _build_chart_placeholder(chart_type, ticker, years)
+        return _build_chart_placeholder(chart_type, ticker, years, lang=lang)
 
     try:
-        fig = builder(ticker, years)
+        fig = builder(ticker, years, lang=lang)
         if fig is None:
-            return _build_chart_placeholder(chart_type, ticker, years)
+            return _build_chart_placeholder(chart_type, ticker, years, lang=lang)
 
         import plotly.io as pio
-        # Interaktives HTML-Div (mit Plotly.js CDN, ohne full_html)
         chart_html = pio.to_html(
             fig, include_plotlyjs="cdn", full_html=False,
             config={"displayModeBar": False, "scrollZoom": False},
@@ -578,17 +614,24 @@ def _build_chart_image(chart_type: str, ticker: str, years: int,
         return f'<div class="chart-container">{chart_html}</div>'
     except Exception as e:
         print(f"    [WARN] Chart {chart_type}/{ticker} fehlgeschlagen: {e}")
-        return _build_chart_placeholder(chart_type, ticker, years)
+        return _build_chart_placeholder(chart_type, ticker, years, lang=lang)
 
 
-def _build_chart_placeholder(chart_type: str, ticker: str, years: int) -> str:
+def _build_chart_placeholder(chart_type: str, ticker: str, years: int, lang: str = "de") -> str:
     """Fallback-Platzhalter wenn Chart-Generierung fehlschlaegt."""
-    labels = {
-        "seasonal_yearly": "Saisonaler Jahresverlauf",
-        "monthly_heatmap": "Monats-Rendite Heatmap",
-        "weekday_bars": "Wochentag-Performance",
-        "tom_effect": "Turn-of-Month Effekt",
-    }
+    if lang == "en":
+        labels = _CHART_PLACEHOLDERS_EN
+        years_label = f"{years} years"
+        build_note = "Chart will be generated on next build"
+    else:
+        labels = {
+            "seasonal_yearly": "Saisonaler Jahresverlauf",
+            "monthly_heatmap": "Monats-Rendite Heatmap",
+            "weekday_bars": "Wochentag-Performance",
+            "tom_effect": "Turn-of-Month Effekt",
+        }
+        years_label = f"{years} Jahre"
+        build_note = "Chart wird beim naechsten Build generiert"
     label = labels.get(chart_type, chart_type)
     return (
         f'<div class="chart-container" data-chart-type="{chart_type}" '
@@ -596,9 +639,9 @@ def _build_chart_placeholder(chart_type: str, ticker: str, years: int) -> str:
         f'<div style="padding:3rem 2rem; text-align:center;">'
         f'<div style="font-size:2.5rem; margin-bottom:0.75rem;">📊</div>'
         f'<div style="color:#5a6e85; font-size:0.9rem;">'
-        f'{label} — {ticker} ({years} Jahre)</div>'
+        f'{label} — {ticker} ({years_label})</div>'
         f'<div style="color:#3a4a5e; font-size:0.8rem; margin-top:0.5rem;">'
-        f'Chart wird beim naechsten Build generiert</div>'
+        f'{build_note}</div>'
         f'</div></div>'
     )
 
@@ -771,7 +814,7 @@ def load_posts_en() -> list[dict]:
                     print(f"  [SCHEDULED] {md_file.name} ->{pub_date}")
                     continue
 
-        html_content = markdown_to_html(content, post_slug=meta.get("slug", ""))
+        html_content = markdown_to_html(content, post_slug=meta.get("slug", ""), lang="en")
         faq_items = _extract_faq_items(content)
         word_count = len(content.split())
         reading_time = max(1, round(word_count / 200))
@@ -918,7 +961,7 @@ def build_en():
 
     OUTPUT_DIR_EN.mkdir(parents=True, exist_ok=True)
 
-    disclaimer_short, disclaimer_long = load_blog_disclaimer()
+    disclaimer_short, disclaimer_long = load_blog_disclaimer(lang="en")
 
     posts = load_posts_en()
     print(f"\n  {len(posts)} EN Posts zum Generieren\n")
@@ -975,11 +1018,16 @@ def build_en():
 def _build_index(tpl, posts, active_cat, out_path, hero_title=None, hero_subtitle=None,
                  extra_vars=None):
     """Rendert eine Index-Seite (Haupt oder Kategorie)."""
+    is_en = (extra_vars or {}).get("lang") == "en"
     vars_ = {
         "posts": posts,
         "active_category": active_cat,
         "hero_title": hero_title or "SeasonAlpha Blog",
-        "hero_subtitle": hero_subtitle or "Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials.",
+        "hero_subtitle": hero_subtitle or (
+            "Data-driven seasonal analyses, trading strategies and tutorials."
+            if is_en else
+            "Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials."
+        ),
     }
     if extra_vars:
         vars_.update(extra_vars)
