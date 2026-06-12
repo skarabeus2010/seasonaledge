@@ -34,6 +34,9 @@ jobs:
             # Dekaden-Daten generieren (131 Jahre ^DJI via Stooq)
             docker compose exec -T app python3 scripts/generate_decade_data.py --ticker "^DJI" 2>/dev/null || echo "generate_decade_data.py uebersprungen"
 
+            # Landing-Chart-Daten generieren (Split-Slider ^DJI, schreibt nach landing/data/ = host-sichtbar)
+            docker compose exec -T app python3 scripts/generate_landing_chart.py 2>/dev/null || echo "generate_landing_chart.py uebersprungen"
+
             # nginx config + landing HTML neu laden
             docker compose restart nginx
 
