@@ -186,27 +186,27 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
-            <li><b>Ben&ouml;tigt:</b> Open + Close Kurse (OHLC)</li>
-            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
+            <li data-i18n-html="ov.method_data_source"><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="ov.method_data_requires"><b>Ben&ouml;tigt:</b> Open + Close Kurse (OHLC)</li>
+            <li data-i18n-html="ov.method_data_period"><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
           </ul>
           <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
-            <li><b>Overnight:</b> (Open[t] / Close[t&minus;1] &minus; 1) &times; 100 &mdash; Return &uuml;ber Nacht (Gap)</li>
-            <li><b>Intraday:</b> (Close[t] / Open[t] &minus; 1) &times; 100 &mdash; Return w&auml;hrend der Handelssession</li>
-            <li><b>Total:</b> Overnight + Intraday (Residual-Ansatz, kein cross-day OHLC)</li>
-            <li><b>Kumuliert:</b> Produkt der t&auml;glichen (1 + r/100), gruppiert nach Tag des Jahres</li>
+            <li data-i18n-html="ov.method_calc_overnight"><b>Overnight:</b> (Open[t] / Close[t&minus;1] &minus; 1) &times; 100 &mdash; Return &uuml;ber Nacht (Gap)</li>
+            <li data-i18n-html="ov.method_calc_intraday"><b>Intraday:</b> (Close[t] / Open[t] &minus; 1) &times; 100 &mdash; Return w&auml;hrend der Handelssession</li>
+            <li data-i18n-html="ov.method_calc_total"><b>Total:</b> Overnight + Intraday (Residual-Ansatz, kein cross-day OHLC)</li>
+            <li data-i18n-html="ov.method_calc_cumulative"><b>Kumuliert:</b> Produkt der t&auml;glichen (1 + r/100), gruppiert nach Tag des Jahres</li>
           </ul>
           <h3 data-i18n="common.interpretation">Interpretation</h3>
           <ul>
-            <li>Viele Indizes (SPY, QQQ) generieren den Gro&szlig;teil ihres Returns <b>overnight</b></li>
-            <li>Intraday-Trader verpassen diesen strukturellen Vorteil</li>
-            <li>Saisonale Muster k&ouml;nnen sich zwischen Overnight und Intraday unterscheiden</li>
+            <li data-i18n-html="ov.method_interp_1">Viele Indizes (SPY, QQQ) generieren den Gro&szlig;teil ihres Returns <b>overnight</b></li>
+            <li data-i18n="ov.method_interp_2">Intraday-Trader verpassen diesen strukturellen Vorteil</li>
+            <li data-i18n="ov.method_interp_3">Saisonale Muster k&ouml;nnen sich zwischen Overnight und Intraday unterscheiden</li>
           </ul>
           <h3 data-i18n="common.hint">Hinweis</h3>
           <ul>
-            <li>Open-Kurse bei Yahoo Finance sind nicht immer perfekt split-adjustiert</li>
-            <li>Die Trends sind dennoch statistisch aussagekr&auml;ftig &uuml;ber l&auml;ngere Zeitr&auml;ume</li>
+            <li data-i18n="ov.method_hint_1">Open-Kurse bei Yahoo Finance sind nicht immer perfekt split-adjustiert</li>
+            <li data-i18n="ov.method_hint_2">Die Trends sind dennoch statistisch aussagekr&auml;ftig &uuml;ber l&auml;ngere Zeitr&auml;ume</li>
           </ul>
         </div>
       </details>

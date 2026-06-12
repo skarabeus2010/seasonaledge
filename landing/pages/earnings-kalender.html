@@ -72,7 +72,7 @@
 <div class="app">
   <aside class="sidebar">
     <h3 data-i18n="sidebar.ticker">Ticker</h3>
-    <input type="text" id="ticker-input" value="AAPL" placeholder="z.B. AAPL, MSFT, SAP.DE" list="ticker-list">
+    <input type="text" id="ticker-input" value="AAPL" placeholder="z.B. AAPL, MSFT, SAP.DE" data-i18n-placeholder="earn.ticker_placeholder" list="ticker-list">
     <datalist id="ticker-list"></datalist>
     <hr>
     <h3 data-i18n="sidebar.period">Zeitraum</h3>
@@ -85,21 +85,21 @@
     </select>
     <hr>
     <h3 data-i18n="common.event_window">Event-Fenster</h3>
-    <label style="font-size:.8125rem;color:var(--dim)">Tage <b>vor</b> Earnings
+    <label style="font-size:.8125rem;color:var(--dim)"><span data-i18n-html="earn.days_before_label">Tage <b>vor</b> Earnings</span>
       <br><input type="range" id="rng-before" min="1" max="20" value="10" step="1">
       <span id="lbl-before">10</span> HT
     </label>
-    <label style="font-size:.8125rem;color:var(--dim)">Tage <b>nach</b> Earnings
+    <label style="font-size:.8125rem;color:var(--dim)"><span data-i18n-html="earn.days_after_label">Tage <b>nach</b> Earnings</span>
       <br><input type="range" id="rng-after" min="1" max="20" value="10" step="1">
       <span id="lbl-after">10</span> HT
     </label>
-    <label style="font-size:.8125rem;color:var(--dim)">Vola-Fenster (je Seite)
+    <label style="font-size:.8125rem;color:var(--dim)"><span data-i18n="earn.vola_window_label">Vola-Fenster (je Seite)</span>
       <br><input type="range" id="rng-vola" min="3" max="15" value="5" step="1">
       <span id="lbl-vola">5</span> HT
     </label>
     <hr>
     <h3 data-i18n="sidebar.display">Darstellung</h3>
-    <label class="chk-row"><input type="checkbox" id="chk-indiv"> Einzelne Events einblenden</label>
+    <label class="chk-row"><input type="checkbox" id="chk-indiv"> <span data-i18n="earn.show_individual_events">Einzelne Events einblenden</span></label>
   </aside>
 
   <main>

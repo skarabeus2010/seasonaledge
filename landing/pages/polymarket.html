@@ -95,18 +95,18 @@
     <aside class="sidebar" id="sidebar">
       <h3 data-i18n="sidebar.category">Kategorie</h3>
       <select id="sel-category">
-        <option value="all" selected>Alle Kategorien</option>
+        <option value="all" selected data-i18n="pm.cat_all">Alle Kategorien</option>
         <option value="fed">Fed-Path</option>
-        <option value="macro">Macro / Recession</option>
+        <option value="macro" data-i18n="pm.cat_macro">Macro / Recession</option>
         <option value="crypto">Crypto-Targets</option>
       </select>
       <hr>
       <h3 data-i18n="pm.history_period">Historien-Zeitraum</h3>
       <select id="sel-history">
-        <option value="30">30 Tage</option>
-        <option value="90" selected>90 Tage</option>
-        <option value="180">6 Monate</option>
-        <option value="365">1 Jahr</option>
+        <option value="30" data-i18n="common.days_30">30 Tage</option>
+        <option value="90" selected data-i18n="common.days_90">90 Tage</option>
+        <option value="180" data-i18n="common.months_6">6 Monate</option>
+        <option value="365" data-i18n="common.year_1">1 Jahr</option>
         <option value="9999">Max</option>
       </select>
       <hr>
@@ -218,8 +218,8 @@
       <!-- ── Brier-Score / Kalibrierung ── -->
       <div class="brier-header-wrap">
         <h2 class="section-hdr" id="brier-section"><b data-i18n="pm.calibration_title">Kalibrierung</b> &mdash; <span data-i18n="pm.calibration_subtitle">Wie zuverl&auml;ssig sind Polymarket-Wahrscheinlichkeiten?</span></h2>
-        <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Brier-Score">i</div>
-        <div class="info-tooltip">
+        <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Brier-Score" data-i18n-title="pm.brier_badge_aria">i</div>
+        <div class="info-tooltip" data-i18n-html="pm.brier_tooltip_html">
           <b>Brier-Score &mdash; Kalibrierungs-Ma&szlig; f&uuml;r Wahrscheinlichkeits-Prognosen</b><br><br>
           Formel: <code>Brier = Mittel((p &minus; o)<sup>2</sup>)</code> &mdash; Mittlere quadratische Abweichung zwischen prognostizierter Wahrscheinlichkeit <code>p</code> (0&ndash;1) und tats&auml;chlichem Outcome <code>o</code> (1 eingetreten, 0 nicht).<br><br>
           <b>Referenzwerte:</b><br>
@@ -263,18 +263,18 @@
       <details style="margin-top:2rem">
         <summary data-i18n="section.methodology_source">Methodik &amp; Datenquelle</summary>
         <div class="content">
-          <p class="box-info">
+          <p class="box-info" data-i18n-html="pm.method_datasource_html">
             <b>Datenquelle:</b> Polymarket Gamma API (Metadata, Snapshots) und CLOB prices-history (historische Mid-Preise).
             Snapshots werden stuendlich via <code>scripts/polymarket_refresh.py</code> aktualisiert, Backfill alle 24h.
           </p>
-          <p class="box-info">
+          <p class="box-info" data-i18n-html="pm.method_yes_price_html">
             <b>Was bedeutet YES-Preis?</b> Der Preis in USDC pro YES-Share. Da Polymarket-Markets in <code>[0, 1]</code> normiert sind (1 USDC Payout bei YES-Resolution), entspricht der Preis der <b>impliziten Marktwahrscheinlichkeit</b>.
             Beispiel: YES = 0.34 heisst der Markt preist ein 34% Wahrscheinlichkeit fuer das Outcome ein.
           </p>
-          <p class="box-info">
+          <p class="box-info" data-i18n-html="pm.method_liquidity_html">
             <b>Liquiditaet:</b> Volumen an aktivem Orderbook (USDC). Markets mit &lt;$20k Liquiditaet sind illiquide &mdash; ihre Preise koennen verzerrt sein.
           </p>
-          <p class="box-info">
+          <p class="box-info" data-i18n-html="pm.method_divergence_example_html">
             <b>Divergenz-Beispiel:</b> Saisonalitaet sagt, BTC hat in Q4 historisch +25% im Median gemacht &mdash; aber Polymarket preist nur 10% Wahrscheinlichkeit fuer BTC &gt; $150k ein. Das ist ein Crowd-vs-History-Signal: entweder die Crowd unterschaetzt die Saisonalitaet, oder aktuelle Faktoren sprechen dagegen.
           </p>
         </div>

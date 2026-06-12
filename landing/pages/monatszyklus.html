@@ -111,15 +111,15 @@
       <hr>
       <h3 data-i18n="mz.sidebar_pres_cycle_filter">Präsidentenzyklus-Filter</h3>
       <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
-        <label><input type="checkbox" data-cycle="1"> Wahljahr (1)</label>
-        <label><input type="checkbox" data-cycle="2"> Nachwahljahr (2)</label>
-        <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr (3)</label>
-        <label><input type="checkbox" data-cycle="4"> Vorwahljahr (4)</label>
+        <label><input type="checkbox" data-cycle="1"> <span data-i18n="mz.cycle_election_year">Wahljahr (1)</span></label>
+        <label><input type="checkbox" data-cycle="2"> <span data-i18n="mz.cycle_post_election_year">Nachwahljahr (2)</span></label>
+        <label><input type="checkbox" data-cycle="3"> <span data-i18n="mz.cycle_midterm_year">Zwischenwahljahr (3)</span></label>
+        <label><input type="checkbox" data-cycle="4"> <span data-i18n="mz.cycle_pre_election_year">Vorwahljahr (4)</span></label>
       </div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="common.empty_all_years">Leer = alle Jahre</p>
       <hr>
       <h3 data-i18n="sidebar.two_week_split">Two-Week Split</h3>
-      <label>Split nach TDOM <span id="lbl-split">10</span></label>
+      <label><span data-i18n="mz.sidebar_split_label">Split nach TDOM</span> <span id="lbl-split">10</span></label>
       <input type="range" id="sl-split" min="5" max="15" step="1" value="10">
       <hr>
       <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
@@ -252,14 +252,14 @@
         <div class="content">
           <h3 data-i18n="common.calculations">Berechnungen</h3>
           <ul>
-            <li><b>TDOM</b> (Trading Day of Month) = laufende Nummer des Handelstags innerhalb des Monats (1, 2, 3, ...). Entkoppelt von Kalendertagen — Wochenenden und Feiertage werden übersprungen.</li>
-            <li><b>Intra-Monat-Kurve</b>: kumulierte log-Returns ab letztem Handelstag des Vormonats (TDOM 0 = 0%). Pro Jahr eine Kurve, dann gemittelt.</li>
-            <li><b>Solid/Weak Split</b>: TDOMs mit n&lt;10 Beobachtungen werden als gestrichelte rote Linie markiert (statistisch unsicher).</li>
-            <li><b>Detrend-Indikator</b>: Linearer Trend wird subtrahiert, Skalierung auf 0–100, Midline=50. Über 50 = saisonal stark, unter 50 = saisonal schwach.</li>
-            <li><b>Two-Week Split</b>: Monat in zwei Hälften geteilt nach gewähltem TDOM (Slider 5–15). 1st = TDOM 1..X, 2nd = TDOM X+1..Ende.</li>
-            <li><b>Saisonal Match</b>: Pearson-Korrelation + DTW (Dynamic Time Warping) + t-Test zwischen aktuellem Monatsverlauf und historischem Ø.</li>
-            <li><b>Präsidentenzyklus</b>: Wahljahr / Nachwahljahr / Zwischenwahljahr / Vorwahljahr nach Formel <code>((year-2020)%4+4)%4+1</code>.</li>
-            <li><b>Momentum-Check</b>: bedingte Wahrscheinlichkeit dass die zweite Hälfte das Vorzeichen der ersten fortsetzt.</li>
+            <li data-i18n-html="mz.methodology_tdom"><b>TDOM</b> (Trading Day of Month) = laufende Nummer des Handelstags innerhalb des Monats (1, 2, 3, ...). Entkoppelt von Kalendertagen — Wochenenden und Feiertage werden übersprungen.</li>
+            <li data-i18n-html="mz.methodology_intramonth_curve"><b>Intra-Monat-Kurve</b>: kumulierte log-Returns ab letztem Handelstag des Vormonats (TDOM 0 = 0%). Pro Jahr eine Kurve, dann gemittelt.</li>
+            <li data-i18n-html="mz.methodology_solid_weak_split"><b>Solid/Weak Split</b>: TDOMs mit n&lt;10 Beobachtungen werden als gestrichelte rote Linie markiert (statistisch unsicher).</li>
+            <li data-i18n-html="mz.methodology_detrend"><b>Detrend-Indikator</b>: Linearer Trend wird subtrahiert, Skalierung auf 0–100, Midline=50. Über 50 = saisonal stark, unter 50 = saisonal schwach.</li>
+            <li data-i18n-html="mz.methodology_twoweek_split"><b>Two-Week Split</b>: Monat in zwei Hälften geteilt nach gewähltem TDOM (Slider 5–15). 1st = TDOM 1..X, 2nd = TDOM X+1..Ende.</li>
+            <li data-i18n-html="mz.methodology_seasonal_match"><b>Saisonal Match</b>: Pearson-Korrelation + DTW (Dynamic Time Warping) + t-Test zwischen aktuellem Monatsverlauf und historischem Ø.</li>
+            <li data-i18n-html="mz.methodology_pres_cycle"><b>Präsidentenzyklus</b>: Wahljahr / Nachwahljahr / Zwischenwahljahr / Vorwahljahr nach Formel <code>((year-2020)%4+4)%4+1</code>.</li>
+            <li data-i18n-html="mz.methodology_momentum_check"><b>Momentum-Check</b>: bedingte Wahrscheinlichkeit dass die zweite Hälfte das Vorzeichen der ersten fortsetzt.</li>
           </ul>
         </div>
       </details>

@@ -112,7 +112,7 @@
 
       <!-- Top & Flop -->
       <details open id="sec-topflop" style="display:none">
-        <summary id="topflop-title">Top &amp; Flop Sektoren</summary>
+        <summary id="topflop-title" data-i18n="sr.section_topflop">Top &amp; Flop Sektoren</summary>
         <div class="content" id="content-topflop"></div>
       </details>
 
@@ -137,13 +137,13 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li><b>23 US-Sektor-ETFs</b> &mdash; SPDR Select Sector + Spezial-ETFs</li>
-            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre, min. 5 Jahre f&uuml;r valide Berechnung</li>
+            <li data-i18n-html="sr.method_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="sr.method_etfs"><b>23 US-Sektor-ETFs</b> &mdash; SPDR Select Sector + Spezial-ETFs</li>
+            <li data-i18n-html="sr.method_period"><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre, min. 5 Jahre f&uuml;r valide Berechnung</li>
           </ul>
           <h3 data-i18n="sr.ticker_overview">Ticker-&Uuml;bersicht</h3>
           <table class="sector-table" style="margin-bottom:1rem">
-            <thead><tr><th>Ticker</th><th>Sektor / Branche</th><th>Typ</th></tr></thead>
+            <thead><tr><th>Ticker</th><th data-i18n="sr.col_sector_branch">Sektor / Branche</th><th data-i18n="sr.col_type">Typ</th></tr></thead>
             <tbody>
               <tr><td>XLK</td><td>Technology</td><td>SPDR Select Sector</td></tr>
               <tr><td>XLF</td><td>Financials</td><td>SPDR Select Sector</td></tr>
@@ -172,11 +172,11 @@
           </table>
           <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
-            <li><b>Monatsrendite:</b> Letzter Schlusskurs pro Monat &rarr; prozentuale Ver&auml;nderung zum Vormonat</li>
-            <li><b>Saisonalit&auml;t:</b> Durchschnittliche Monatsrendite &uuml;ber alle verf&uuml;gbaren Jahre (min. 5)</li>
-            <li><b>Rotationssignal:</b> Ranking der Sektoren nach &Oslash;-Rendite im aktuellen Monat</li>
-            <li><b>Win-Rate:</b> Anteil der Jahre mit positiver Rendite im jeweiligen Monat</li>
-            <li><b>Jahresverlauf:</b> Kumulierte monatliche Durchschnittsrenditen (Jan&ndash;Dez)</li>
+            <li data-i18n-html="sr.method_monthly_return"><b>Monatsrendite:</b> Letzter Schlusskurs pro Monat &rarr; prozentuale Ver&auml;nderung zum Vormonat</li>
+            <li data-i18n-html="sr.method_seasonality"><b>Saisonalit&auml;t:</b> Durchschnittliche Monatsrendite &uuml;ber alle verf&uuml;gbaren Jahre (min. 5)</li>
+            <li data-i18n-html="sr.method_rotation_signal"><b>Rotationssignal:</b> Ranking der Sektoren nach &Oslash;-Rendite im aktuellen Monat</li>
+            <li data-i18n-html="sr.method_winrate"><b>Win-Rate:</b> Anteil der Jahre mit positiver Rendite im jeweiligen Monat</li>
+            <li data-i18n-html="sr.method_yearly_curve"><b>Jahresverlauf:</b> Kumulierte monatliche Durchschnittsrenditen (Jan&ndash;Dez)</li>
           </ul>
         </div>
       </details>

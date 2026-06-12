@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <!-- SA_META_V5 -->
@@ -92,7 +92,7 @@
       <datalist id="ticker-list"></datalist>
       <hr>
       <h3 data-i18n="sidebar.period">Analysezeitraum</h3>
-      <label>Jahre <span id="lbl-years">10</span></label>
+      <label><span data-i18n="sidebar.years_label">Jahre</span> <span id="lbl-years">10</span></label>
       <input type="range" id="sl-years" min="1" max="30" step="1" value="10">
       <hr>
       <h3 data-i18n="sidebar.return_calc">Rendite-Berechnung</h3>
@@ -106,10 +106,10 @@
       <hr>
       <h3 data-i18n="sidebar.pres_cycle_filter">Präsidentenzyklus-Filter</h3>
       <div id="cycle-filter" style="display:flex;flex-direction:column;gap:.25rem;font-size:.8125rem">
-        <label><input type="checkbox" data-cycle="1"> Wahljahr</label>
-        <label><input type="checkbox" data-cycle="2"> Nachwahljahr</label>
-        <label><input type="checkbox" data-cycle="3"> Zwischenwahljahr</label>
-        <label><input type="checkbox" data-cycle="4"> Vorwahljahr</label>
+        <label><input type="checkbox" data-cycle="1"> <span data-i18n="common.cycle_election">Wahljahr</span></label>
+        <label><input type="checkbox" data-cycle="2"> <span data-i18n="common.cycle_post_election">Nachwahljahr</span></label>
+        <label><input type="checkbox" data-cycle="3"> <span data-i18n="common.cycle_midterm">Zwischenwahljahr</span></label>
+        <label><input type="checkbox" data-cycle="4"> <span data-i18n="common.cycle_pre_election">Vorwahljahr</span></label>
       </div>
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="common.empty_all_years">Leer = alle Jahre</p>
       <hr>
@@ -119,7 +119,7 @@
       <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem" data-i18n="wt.month_filter_hint">Wirkt auf alle Wochentag-Sektionen außer Heatmaps</p>
       <hr>
       <h3 data-i18n="sidebar.display_opts">Anzeige</h3>
-      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> Aktuelle Woche einblenden</label>
+      <label class="toggle-row"><input type="checkbox" id="chk-current" checked> <span data-i18n="wt.show_current_week">Aktuelle Woche einblenden</span></label>
       <hr>
       <h3 data-i18n="sidebar.tech_filters">Technische Filter</h3>
       <div id="indicator-filters"></div>
@@ -217,14 +217,14 @@
         <div class="content">
           <div class="topflop-grid">
             <div>
-              <p class="topflop-title" style="color:#34d399">🟢 Top 10 beste Kombinationen</p>
+              <p class="topflop-title" style="color:#34d399" data-i18n="wt.topflop_best_title">🟢 Top 10 beste Kombinationen</p>
               <table class="perf-table">
                 <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.weekday">Wochentag</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
                 <tbody id="tbody-top"></tbody>
               </table>
             </div>
             <div>
-              <p class="topflop-title" style="color:#ff6b6b">🔴 Top 10 schlechteste Kombinationen</p>
+              <p class="topflop-title" style="color:#ff6b6b" data-i18n="wt.topflop_worst_title">🔴 Top 10 schlechteste Kombinationen</p>
               <table class="perf-table">
                 <thead><tr><th data-i18n="table.month">Monat</th><th data-i18n="table.weekday">Wochentag</th><th data-i18n="table.avg_return">Ø Rendite</th><th data-i18n="table.win_rate">Win-Rate</th><th>n</th></tr></thead>
                 <tbody id="tbody-flop"></tbody>
@@ -252,15 +252,15 @@
         <summary>📚 <span data-i18n="common.methodology">Methodik</span></summary>
         <div class="content">
           <ul>
-            <li><b>Wochentag-Rendite</b>: Für jeden Handelstag wird die Rendite gemäß dem gewählten Modus berechnet.</li>
-            <li><b>Kumulierter Wochenverlauf</b>: Pro Woche werden die log-Returns kumuliert, dann über alle Wochen pro Wochentag-Position gemittelt.</li>
-            <li><b>Overnight vs. Intraday</b>: Residual-Methode (overnight = total - intraday). Vermeidet Verzerrung durch unterschiedliche Dividend-Adjustierung zwischen Open[t] und Close[t-1].</li>
-            <li><b>Weekend-Effekt</b>: (Mo Close / Fr Close - 1) × 100 minus Mo Intraday — Residual-Methode.</li>
-            <li><b>Konsekutiv-Analyse</b>: P(Folgetag↑ | Vortag↑) und P(Folgetag↑ | Vortag↓). Bedingte Wahrscheinlichkeit.</li>
-            <li><b>Streak</b>: Aktuelle Gewinn-/Verlust-Serie pro Wochentag (W = Close > Vortag, L = Verlust).</li>
-            <li><b>Trendfilter (SMA)</b>: Nur Tage zählen, an denen Close[t-1] > SMA[t-1].</li>
-            <li><b>OBOS-Filter (RSI)</b>: Nur Tage zählen, an denen RSI[t-1] &lt; Schwelle (Oversold-Bedingung).</li>
-            <li><b>Crypto-Erkennung</b>: Wenn Wochenend-Daten vorhanden sind, werden Sa+So mit aufgenommen (sonst Mo-Fr).</li>
+            <li data-i18n-html="wt.method_weekday_return"><b>Wochentag-Rendite</b>: Für jeden Handelstag wird die Rendite gemäß dem gewählten Modus berechnet.</li>
+            <li data-i18n-html="wt.method_cum_week"><b>Kumulierter Wochenverlauf</b>: Pro Woche werden die log-Returns kumuliert, dann über alle Wochen pro Wochentag-Position gemittelt.</li>
+            <li data-i18n-html="wt.method_overnight_intraday"><b>Overnight vs. Intraday</b>: Residual-Methode (overnight = total - intraday). Vermeidet Verzerrung durch unterschiedliche Dividend-Adjustierung zwischen Open[t] und Close[t-1].</li>
+            <li data-i18n-html="wt.method_weekend_effect"><b>Weekend-Effekt</b>: (Mo Close / Fr Close - 1) × 100 minus Mo Intraday — Residual-Methode.</li>
+            <li data-i18n-html="wt.method_consecutive"><b>Konsekutiv-Analyse</b>: P(Folgetag↑ | Vortag↑) und P(Folgetag↑ | Vortag↓). Bedingte Wahrscheinlichkeit.</li>
+            <li data-i18n-html="wt.method_streak"><b>Streak</b>: Aktuelle Gewinn-/Verlust-Serie pro Wochentag (W = Close > Vortag, L = Verlust).</li>
+            <li data-i18n-html="wt.method_trend_filter"><b>Trendfilter (SMA)</b>: Nur Tage zählen, an denen Close[t-1] > SMA[t-1].</li>
+            <li data-i18n-html="wt.method_obos_filter"><b>OBOS-Filter (RSI)</b>: Nur Tage zählen, an denen RSI[t-1] &lt; Schwelle (Oversold-Bedingung).</li>
+            <li data-i18n-html="wt.method_crypto_detection"><b>Crypto-Erkennung</b>: Wenn Wochenend-Daten vorhanden sind, werden Sa+So mit aufgenommen (sonst Mo-Fr).</li>
           </ul>
         </div>
       </details>

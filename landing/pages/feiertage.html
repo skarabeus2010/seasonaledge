@@ -154,9 +154,9 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Exchange-Erkennung:</b> Automatisch per Ticker (NYSE, XETRA, LSE, Crypto/FX=keine)</li>
-            <li><b>Feiertage:</b> Dynamisch berechnet via <code>holidays.js</code> (Gauss-Ostern, variable Feiertage)</li>
-            <li><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n="hol.methodik_exchange"><b>Exchange-Erkennung:</b> Automatisch per Ticker (NYSE, XETRA, LSE, Crypto/FX=keine)</li>
+            <li data-i18n-html="hol.methodik_holidays_calc"><b>Feiertage:</b> Dynamisch berechnet via <code>holidays.js</code> (Gauss-Ostern, variable Feiertage)</li>
+            <li data-i18n="hol.methodik_prices"><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
           </ul>
           <h3 data-i18n="hol.nyse_holidays">NYSE-Feiertage (10)</h3>
           <ul>
@@ -164,7 +164,7 @@
           </ul>
           <h3 data-i18n="hol.xetra_holidays">XETRA-Feiertage (10)</h3>
           <ul>
-            <li>Neujahr, Karfreitag, Ostermontag, Tag der Arbeit, Pfingstmontag, Tag der Deutschen Einheit, Heiligabend, 1.+2. Weihnachtstag, Silvester</li>
+            <li data-i18n="hol.xetra_holiday_list">Neujahr, Karfreitag, Ostermontag, Tag der Arbeit, Pfingstmontag, Tag der Deutschen Einheit, Heiligabend, 1.+2. Weihnachtstag, Silvester</li>
           </ul>
           <h3 data-i18n="hol.lse_holidays">LSE-Feiertage (8)</h3>
           <ul>
@@ -172,10 +172,10 @@
           </ul>
           <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
-            <li><b>t0:</b> Erster Handelstag am/nach dem Feiertag</li>
-            <li><b>Basis:</b> Close bei t&minus;N = 0% (Normierung)</li>
-            <li><b>Fenster:</b> t&minus;N bis t+N Handelstage</li>
-            <li><b>Backtest:</b> Siehe &bdquo;Plain Vanilla Strategien&rdquo; &rarr; UHTS (Kaeppel System)</li>
+            <li data-i18n="hol.methodik_t0"><b>t0:</b> Erster Handelstag am/nach dem Feiertag</li>
+            <li data-i18n="hol.methodik_basis"><b>Basis:</b> Close bei t&minus;N = 0% (Normierung)</li>
+            <li data-i18n="hol.methodik_window"><b>Fenster:</b> t&minus;N bis t+N Handelstage</li>
+            <li data-i18n="hol.methodik_backtest"><b>Backtest:</b> Siehe &bdquo;Plain Vanilla Strategien&rdquo; &rarr; UHTS (Kaeppel System)</li>
           </ul>
         </div>
       </details>

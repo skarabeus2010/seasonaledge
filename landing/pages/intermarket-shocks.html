@@ -100,7 +100,7 @@
 
       <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="1">1 Jahr</option>
+        <option value="1" data-i18n="dash.yr1">1 Jahr</option>
         <option value="5" data-i18n="dash.yr5">5 Jahre</option>
         <option value="10" selected data-i18n="dash.yr10">10 Jahre</option>
         <option value="15" data-i18n="dash.yr15">15 Jahre</option>
@@ -125,9 +125,9 @@
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
         <b style="color:var(--accent)" data-i18n="shock.intro_heading">Was zeigt diese Seite?</b> &mdash;
-        Die Intermarket-Shock-Analyse untersucht, wie ein <b>Target-Asset</b> reagiert, wenn ein <b>Trigger-Asset</b> einen extremen Tagesverlust oder -gewinn verzeichnet.
+        <span data-i18n-html="shock.intro_body">Die Intermarket-Shock-Analyse untersucht, wie ein <b>Target-Asset</b> reagiert, wenn ein <b>Trigger-Asset</b> einen extremen Tagesverlust oder -gewinn verzeichnet.
         Du definierst Trigger (z.&nbsp;B. &bdquo;VIX steigt &gt;10%&ldquo;) und Target (z.&nbsp;B. SPY) und siehst: Scatter-Plot mit OLS-Regression, kumulative Forward-Renditen, saisonalen Breakdown nach Monat und Win-Rate-Statistik.
-        <b>Sidebar:</b> Trigger/Target-Paar, Schwellenwert, Richtung und Zeitfenster frei konfigurierbar.
+        <b>Sidebar:</b> Trigger/Target-Paar, Schwellenwert, Richtung und Zeitfenster frei konfigurierbar.</span>
       </div>
 
       <p class="analysis-subtitle" id="analysis-subtitle"></p>
@@ -188,28 +188,28 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq), 263 Basiswerte</li>
-            <li><b>Aktualisierung:</b> T&auml;glich via Nightly Refresh</li>
-            <li><b>Zeitraum:</b> W&auml;hlbar 1&ndash;50 Jahre</li>
+            <li data-i18n-html="shock.methodik_source"><b>Datenquelle:</b> Supabase (Yahoo Finance + Stooq), 263 Basiswerte</li>
+            <li data-i18n-html="shock.methodik_update"><b>Aktualisierung:</b> T&auml;glich via Nightly Refresh</li>
+            <li data-i18n-html="shock.methodik_period"><b>Zeitraum:</b> W&auml;hlbar 1&ndash;50 Jahre</li>
           </ul>
           <h3 data-i18n="shock.methodik_shock_def">Shock-Definition</h3>
           <ul>
-            <li><b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist</li>
-            <li><b>Kurseinbruch:</b> Filtert nur negative Renditen &le; &minus;X%</li>
-            <li><b>Kurssprung:</b> Filtert nur positive Renditen &ge; +X%</li>
-            <li><b>Beides:</b> Filtert absolute Renditen &ge; |X%|</li>
+            <li data-i18n-html="shock.methodik_def_event"><b>Shock-Event:</b> Ein Tag, an dem der Trigger-Asset (A) eine Tagesrendite &ge; Schwellenwert aufweist</li>
+            <li data-i18n-html="shock.methodik_def_down"><b>Kurseinbruch:</b> Filtert nur negative Renditen &le; &minus;X%</li>
+            <li data-i18n-html="shock.methodik_def_up"><b>Kurssprung:</b> Filtert nur positive Renditen &ge; +X%</li>
+            <li data-i18n-html="shock.methodik_def_both"><b>Beides:</b> Filtert absolute Renditen &ge; |X%|</li>
           </ul>
           <h3 data-i18n="shock.methodik_horizons">Horizonte</h3>
           <ul>
-            <li><b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion)</li>
-            <li><b>1T&ndash;60T:</b> Kumulative Rendite des Ziel-Assets (B) nach N Handelstagen (Close-to-Close ab Shock-Tag)</li>
-            <li><b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset</li>
+            <li data-i18n-html="shock.methodik_h_t0"><b>T=0:</b> Tagesrendite des Ziel-Assets am Tag des Shock-Events (gleichzeitige Reaktion)</li>
+            <li data-i18n-html="shock.methodik_h_nt"><b>1T&ndash;60T:</b> Kumulative Rendite des Ziel-Assets (B) nach N Handelstagen (Close-to-Close ab Shock-Tag)</li>
+            <li data-i18n-html="shock.methodik_h_winrate"><b>Win-Rate:</b> Anteil der Events mit positiver Rendite im Ziel-Asset</li>
           </ul>
           <h3 data-i18n="shock.methodik_viz">Visualisierungen</h3>
           <ul>
-            <li><b>Heatmap (Schwelle &times; Horizont):</b> Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte</li>
-            <li><b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Shocks zu st&auml;rkeren Reaktionen f&uuml;hren. Extreme Ausrei&szlig;er (IQR-Filter) werden ausgeblendet.</li>
-            <li><b>Saisonaler Breakdown:</b> Heatmap Monat &times; Horizont &mdash; in welchen Monaten treffen Shocks am h&auml;rtesten?</li>
+            <li data-i18n-html="shock.methodik_viz_heatmap"><b>Heatmap (Schwelle &times; Horizont):</b> Durchschnittsrendite f&uuml;r verschiedene Schwellenwerte (2%, 3%, 5%, 7%, 10%) &times; alle Horizonte</li>
+            <li data-i18n-html="shock.methodik_viz_scatter"><b>Scatter + Regression:</b> Jeder Punkt = ein Shock-Event. Gestrichelte Linie = lineare Regression mit R&sup2;. Zeigt ob st&auml;rkere Shocks zu st&auml;rkeren Reaktionen f&uuml;hren. Extreme Ausrei&szlig;er (IQR-Filter) werden ausgeblendet.</li>
+            <li data-i18n-html="shock.methodik_viz_seasonal"><b>Saisonaler Breakdown:</b> Heatmap Monat &times; Horizont &mdash; in welchen Monaten treffen Shocks am h&auml;rtesten?</li>
           </ul>
         </div>
       </details>

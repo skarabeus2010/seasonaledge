@@ -105,8 +105,8 @@
       </select>
       <h3 data-i18n="tdom.direction_h3">Richtung</h3>
       <select id="sel-direction" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="forward" selected>Vorw&auml;rts (TDoM 1, 2, 3...)</option>
-        <option value="backward">R&uuml;ckw&auml;rts (TDoM -1, -2, -3...)</option>
+        <option value="forward" selected data-i18n="tdom.opt_forward">Vorw&auml;rts (TDoM 1, 2, 3...)</option>
+        <option value="backward" data-i18n="tdom.opt_backward">R&uuml;ckw&auml;rts (TDoM -1, -2, -3...)</option>
       </select>
       <hr>
       <h3 data-i18n="tdom.filter_months_h3">Monate filtern</h3>
@@ -204,16 +204,16 @@
         <div class="content">
           <p class="box-info" style="margin-bottom:1rem">
             <b data-i18n="tdom.how_it_works">Wie funktioniert es?</b> <span data-i18n="tdom.strategy_tester_desc">Der TDOM-Strategie Tester ist ein Buy-and-Hold zwischen zwei TDoM-Tagen jeden Monat.</span>
-            <b>Beispiel:</b> Entry TDoM 1 (Open) &rarr; Exit TDoM -1 (Close) bedeutet: Kauf am Open des 1. Handelstages,
+            <b data-i18n="tdom.example_label">Beispiel:</b> <span data-i18n="tdom.strategy_tester_example">Entry TDoM 1 (Open) &rarr; Exit TDoM -1 (Close) bedeutet: Kauf am Open des 1. Handelstages,
             Verkauf am Close des letzten Handelstages. Pro Monat 1 Trade. Negative TDoM = von hinten gez&auml;hlt
-            (-1 = letzter Handelstag, -3 = drittletzter).
+            (-1 = letzter Handelstag, -3 = drittletzter).</span>
             <br><br>
-            <b>Klassische Setups:</b> TDoM 1 &rarr; -1 (ganzer Monat) &middot; TDoM -3 &rarr; 3 (Turn of the Month)
-            &middot; TDoM 5 &rarr; 15 (Mid-Month) &middot; TDoM -5 &rarr; -1 (letzte Woche).
+            <b data-i18n="tdom.classic_setups_label">Klassische Setups:</b> <span data-i18n="tdom.strategy_tester_classic_setups">TDoM 1 &rarr; -1 (ganzer Monat) &middot; TDoM -3 &rarr; 3 (Turn of the Month)
+            &middot; TDoM 5 &rarr; 15 (Mid-Month) &middot; TDoM -5 &rarr; -1 (letzte Woche).</span>
             <br><br>
-            <b>Stop-Loss:</b> Optional. Fixed = fester Stop unter Entry. Trailing = Stop folgt dem Hoch nach.
+            <b data-i18n="tdom.stop_loss_label">Stop-Loss:</b> <span data-i18n="tdom.strategy_tester_stop_loss_desc">Optional. Fixed = fester Stop unter Entry. Trailing = Stop folgt dem Hoch nach.</span>
             <br><br>
-            <b>Monatsfilter:</b> Der Monatsfilter aus der Sidebar wirkt auch auf den Tester &mdash; nur Trades in den ausgew&auml;hlten Monaten werden gez&auml;hlt.
+            <b data-i18n="tdom.month_filter_label">Monatsfilter:</b> <span data-i18n="tdom.strategy_tester_month_filter_desc">Der Monatsfilter aus der Sidebar wirkt auch auf den Tester &mdash; nur Trades in den ausgew&auml;hlten Monaten werden gez&auml;hlt.</span>
           </p>
           <div id="range-kpi" class="kpi-row" style="margin-bottom:1rem"></div>
           <div id="chart-range"></div>
@@ -228,26 +228,26 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
-            <li><b>Ben&ouml;tigt:</b> Open + Close Kurse</li>
-            <li><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
+            <li data-i18n-html="tdom.methodik_source"><b>Datenquelle:</b> Supabase (Yahoo Finance OHLC), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="tdom.methodik_required"><b>Ben&ouml;tigt:</b> Open + Close Kurse</li>
+            <li data-i18n-html="tdom.methodik_period"><b>Zeitraum:</b> W&auml;hlbar 5&ndash;30 Jahre oder Max</li>
           </ul>
           <h3 data-i18n="tdom.strategies_h3">Strategien</h3>
           <ul>
-            <li><b>Intraday (Open &rarr; Close):</b> Tagesrendite w&auml;hrend der Handelssession</li>
-            <li><b>Overnight (Open &rarr; n&auml;chster Open):</b> Inkl. &uuml;bernacht Gap</li>
-            <li><b>Close &rarr; n&auml;chster Close:</b> Standard Close-to-Close (24h)</li>
+            <li data-i18n-html="tdom.methodik_strategy_intraday"><b>Intraday (Open &rarr; Close):</b> Tagesrendite w&auml;hrend der Handelssession</li>
+            <li data-i18n-html="tdom.methodik_strategy_overnight"><b>Overnight (Open &rarr; n&auml;chster Open):</b> Inkl. &uuml;bernacht Gap</li>
+            <li data-i18n-html="tdom.methodik_strategy_c2c"><b>Close &rarr; n&auml;chster Close:</b> Standard Close-to-Close (24h)</li>
           </ul>
           <h3 data-i18n="tdom.tdom_counting_h3">TDoM-Z&auml;hlung</h3>
           <ul>
-            <li><b>Vorw&auml;rts:</b> TDoM 1 = erster Handelstag des Monats, 2 = zweiter, ... bis ~23</li>
-            <li><b>R&uuml;ckw&auml;rts:</b> TDoM -1 = letzter Handelstag, -2 = vorletzter, ... bis ~-23</li>
+            <li data-i18n-html="tdom.methodik_counting_forward"><b>Vorw&auml;rts:</b> TDoM 1 = erster Handelstag des Monats, 2 = zweiter, ... bis ~23</li>
+            <li data-i18n-html="tdom.methodik_counting_backward"><b>R&uuml;ckw&auml;rts:</b> TDoM -1 = letzter Handelstag, -2 = vorletzter, ... bis ~-23</li>
           </ul>
           <h3 data-i18n="tdom.multi_day_range_h3">Multi-Day Range</h3>
           <ul>
-            <li>Entry an TDoM X (Open oder Close), Exit an TDoM Y</li>
-            <li>Beispiel: TDoM 1 Open &rarr; TDoM -1 Close = "Buy 1st day, sell last day"</li>
-            <li>Equity-Kurve zeigt kumulative Performance der ausgew&auml;hlten Monate</li>
+            <li data-i18n="tdom.methodik_range_li1">Entry an TDoM X (Open oder Close), Exit an TDoM Y</li>
+            <li data-i18n="tdom.methodik_range_li2">Beispiel: TDoM 1 Open &rarr; TDoM -1 Close = "Buy 1st day, sell last day"</li>
+            <li data-i18n="tdom.methodik_range_li3">Equity-Kurve zeigt kumulative Performance der ausgew&auml;hlten Monate</li>
           </ul>
         </div>
       </details>

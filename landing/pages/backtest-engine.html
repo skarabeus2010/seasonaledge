@@ -164,7 +164,7 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Backtest Engine</b> — <span id="title-ticker">^GSPC</span></h1>
-      <p class="page-caption" id="page-caption">Generischer Event-Backtester · Grid-Search · Walk-Forward · KI-Relevanz</p>
+      <p class="page-caption" id="page-caption" data-i18n="bt.page_caption">Generischer Event-Backtester · Grid-Search · Walk-Forward · KI-Relevanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
@@ -208,7 +208,7 @@
 
         <div class="kpi-row" id="single-kpis"></div>
         <details open id="sec-equity" style="display:none">
-          <summary>Equity-Kurve</summary>
+          <summary data-i18n="bt.equity_curve">Equity-Kurve</summary>
           <div class="content"><div id="chart-equity"></div></div>
         </details>
         <details id="sec-trades" style="display:none">
@@ -370,9 +370,9 @@
           <div class="content">
             <p data-i18n="bt.score_intro">Der Relevanz-Score kombiniert drei Dimensionen zu einem Gesamtwert zwischen 0 und 1:</p>
             <ul>
-              <li><b>Signifikanz</b> (50%): 1 - p-Wert</li>
-              <li><b>Win-Rate</b> (30%): Anteil der Trades > 0</li>
-              <li><b>Effect Size</b> (20%): Cohen's d, gecappt bei 1.0</li>
+              <li data-i18n-html="bt.score_li_significance"><b>Signifikanz</b> (50%): 1 - p-Wert</li>
+              <li data-i18n-html="bt.score_li_winrate"><b>Win-Rate</b> (30%): Anteil der Trades > 0</li>
+              <li data-i18n-html="bt.score_li_effect"><b>Effect Size</b> (20%): Cohen's d, gecappt bei 1.0</li>
             </ul>
             <p data-i18n="bt.score_legend"><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
           </div>
@@ -386,14 +386,14 @@
           <p data-i18n="bt.backtest_logic_desc">Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
-            <li><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>
-            <li><b>Sharpe Ratio</b>: Ø Return / Std × √(Trades pro Jahr). Risk-free = 0.</li>
-            <li><b>Calmar Ratio</b>: Annualisierte Rendite / Max Drawdown.</li>
-            <li><b>Max Drawdown</b>: Maximaler Equity-Rücksetzer in %.</li>
-            <li><b>Profit Factor</b>: Σ Wins / |Σ Losses|.</li>
+            <li data-i18n-html="bt.metric_total_return"><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>
+            <li data-i18n-html="bt.metric_sharpe"><b>Sharpe Ratio</b>: Ø Return / Std × √(Trades pro Jahr). Risk-free = 0.</li>
+            <li data-i18n-html="bt.metric_calmar"><b>Calmar Ratio</b>: Annualisierte Rendite / Max Drawdown.</li>
+            <li data-i18n-html="bt.metric_max_drawdown"><b>Max Drawdown</b>: Maximaler Equity-Rücksetzer in %.</li>
+            <li data-i18n-html="bt.metric_profit_factor"><b>Profit Factor</b>: Σ Wins / |Σ Losses|.</li>
           </ul>
           <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
-          <p>Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
+          <p data-i18n-html="bt.stop_method_desc">Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
           <h3 data-i18n="bt.tab_wf">Walk-Forward</h3>
           <p data-i18n="bt.wf_method_desc">Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>
           <h3 data-i18n="bt.event_relevance_score">Event-Relevanz Score</h3>

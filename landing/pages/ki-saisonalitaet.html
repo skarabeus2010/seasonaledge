@@ -138,17 +138,17 @@
       <h3 data-i18n="ki.similarity_h3">&Auml;hnlichkeit</h3>
       <div class="mode-radio" style="display:flex;flex-direction:column;gap:.4rem">
         <label style="display:flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
-          <input type="radio" name="method" value="correlation" checked style="accent-color:var(--accent)"> Pearson-Korrelation
+          <input type="radio" name="method" value="correlation" checked style="accent-color:var(--accent)"> <span data-i18n="ki.method_pearson">Pearson-Korrelation</span>
         </label>
         <label style="display:flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
-          <input type="radio" name="method" value="euclidean" style="accent-color:var(--accent)"> Euklidische Distanz
+          <input type="radio" name="method" value="euclidean" style="accent-color:var(--accent)"> <span data-i18n="ki.method_euclidean">Euklidische Distanz</span>
         </label>
       </div>
       <hr>
       <h3 data-i18n="ki.topn_h3">Top-N Matches</h3>
       <div style="margin-top:.25rem">
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
-          Anzahl &auml;hnlichster Jahre <span id="lbl-topn">5</span>
+          <span data-i18n="ki.topn_label">Anzahl &auml;hnlichster Jahre</span> <span id="lbl-topn">5</span>
         </label>
         <input type="range" id="sl-topn" min="3" max="10" value="5" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
@@ -156,7 +156,7 @@
       <h3 data-i18n="sidebar.smoothing_h3">Gl&auml;ttung</h3>
       <div>
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
-          Rolling-Fenster (Tage) <span id="lbl-smooth">5</span>
+          <span data-i18n="ki.smooth_label">Rolling-Fenster (Tage)</span> <span id="lbl-smooth">5</span>
         </label>
         <input type="range" id="sl-smooth" min="1" max="21" step="2" value="5" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
@@ -164,7 +164,7 @@
       <h3 data-i18n="ki.projection_h3">Projektion</h3>
       <div>
         <label style="font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between">
-          Forecast-Tage <span id="lbl-proj">60</span>
+          <span data-i18n="ki.proj_label">Forecast-Tage</span> <span id="lbl-proj">60</span>
         </label>
         <input type="range" id="sl-proj" min="0" max="120" step="10" value="60" style="width:100%;margin-top:.25rem;accent-color:var(--accent)">
       </div>
@@ -173,19 +173,19 @@
       <div style="display:flex;flex-direction:column;gap:.4rem">
         <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="chk-current" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
-          Aktuelles Jahr
+          <span data-i18n="ki.chk_current">Aktuelles Jahr</span>
         </label>
         <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="chk-truepath" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
-          Musterpfad
+          <span data-i18n="ki.chk_truepath">Musterpfad</span>
         </label>
         <label style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);cursor:pointer">
           <input type="checkbox" id="chk-matches" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
-          Einzel-Jahre (Matches)
+          <span data-i18n="ki.chk_matches">Einzel-Jahre (Matches)</span>
         </label>
       </div>
       <hr>
-      <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.7" data-i18n-html="ki.sidebar_legend">
         <b>Musterpfad</b> = gewichteter &Oslash; der &auml;hnlichsten Jahre<br>
         <b>KI-Score</b> = 1&ndash;10 aus 4 Sub-Scores<br>
         <b>Bullish</b> &ge; 6.5 &middot; <b>Bearish</b> &le; 3.5
@@ -193,7 +193,7 @@
     </aside>
 
     <main>
-      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Analyse l&auml;uft&hellip;</span></div>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading_analysis">Analyse l&auml;uft&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b data-i18n="ki.page_title">KI-Saisonalit&auml;t</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption" data-i18n="ki.page_caption">Rekalibrierter Saisonverlauf (Musterpfad) + KI Composite Score 1&ndash;10</p>
@@ -209,7 +209,7 @@
       <div class="hero-grid">
         <div class="hero-score">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum KI Score">i</div>
-          <div class="info-tooltip">
+          <div class="info-tooltip" data-i18n-html="ki.score_tooltip">
             <b>So liest du den Score:</b> Der KI Seasonal Score aggregiert 4 unabh&auml;ngige
             Sub-Scores &agrave; 0&ndash;2.5 Punkte zu einer Gesamtnote von 0&ndash;10.<br>
             <span style="color:#34d399;font-weight:600">Bullish &ge; 6.5</span> &middot;
@@ -226,7 +226,7 @@
         </div>
         <div class="hero-radar">
           <div class="info-badge" tabindex="0" aria-label="Erkl&auml;rung zum Radar">i</div>
-          <div class="info-tooltip">
+          <div class="info-tooltip" data-i18n-html="ki.radar_tooltip">
             <b>So liest du den Radar:</b> Jede Achse zeigt einen der 4 Sub-Scores
             (0&ndash;2.5&nbsp;Punkte). Je gr&ouml;&szlig;er die goldene Fl&auml;che, desto st&auml;rker das Gesamt-Signal.<br><br>
             Ist der Radar einseitig &mdash; z.B. stark bei <b>Musterpfad</b> und <b>Trend</b>, aber schwach bei
@@ -252,7 +252,7 @@
             <span class="l-proj" data-i18n="ki.legend_proj">Projektion</span>
           </div>
           <div id="chart-truepath"></div>
-          <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
+          <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7" data-i18n-html="ki.truepath_desc">
             Der <b>Musterpfad</b> rekalibriert die Saisonalit&auml;t, indem er nur die historisch &auml;hnlichsten
             Jahre gewichtet zusammenf&uuml;hrt &mdash; im Gegensatz zum klassischen Durchschnitt &uuml;ber alle Jahre.
             So werden "Rauschen" von strukturell unpassenden Jahren ausgeblendet.
@@ -265,7 +265,7 @@
         <summary data-i18n="ki.matches_section">&Auml;hnlichste Jahre (Top-N)</summary>
         <div class="content">
           <table class="match-table" id="tbl-matches">
-            <thead><tr><th>Jahr</th><th>&Auml;hnlichkeit</th><th>Jahres-Rendite</th><th>Pr&auml;sidentenzyklus</th></tr></thead>
+            <thead><tr><th data-i18n="common.year">Jahr</th><th data-i18n="ki.tbl_similarity">&Auml;hnlichkeit</th><th data-i18n="ki.tbl_annual_return">Jahres-Rendite</th><th data-i18n="ki.tbl_pres_cycle">Pr&auml;sidentenzyklus</th></tr></thead>
             <tbody id="tbody-matches"></tbody>
           </table>
         </div>
@@ -277,23 +277,23 @@
         <div class="content methodik">
           <h3 data-i18n="ki.methodik_truepath_h3">Musterpfad (TruePath)</h3>
           <ul>
-            <li>Normalisiere jeden Jahresverlauf auf 100 (Start) und interpoliere auf 365 Kalendertage</li>
-            <li>Berechne &Auml;hnlichkeit zwischen aktuellem Jahr (bis heute) und jedem historischen Jahr</li>
-            <li>Pearson-Korrelation: Bewertet die <em>Form</em> des Verlaufs (Auf-/Ab-Muster)</li>
-            <li>Euklidische Distanz: Bewertet die absolute <em>Abweichung</em> der Werte</li>
-            <li>W&auml;hle die Top-N &auml;hnlichsten Jahre als "Matches"</li>
-            <li>Gewichte jedes Match-Jahr mit seiner &Auml;hnlichkeit und bilde den gewichteten Durchschnitt</li>
-            <li>Gl&auml;tte das Ergebnis mit einem Rolling-Fenster</li>
+            <li data-i18n="ki.methodik_li1">Normalisiere jeden Jahresverlauf auf 100 (Start) und interpoliere auf 365 Kalendertage</li>
+            <li data-i18n="ki.methodik_li2">Berechne &Auml;hnlichkeit zwischen aktuellem Jahr (bis heute) und jedem historischen Jahr</li>
+            <li data-i18n-html="ki.methodik_li3">Pearson-Korrelation: Bewertet die <em>Form</em> des Verlaufs (Auf-/Ab-Muster)</li>
+            <li data-i18n-html="ki.methodik_li4">Euklidische Distanz: Bewertet die absolute <em>Abweichung</em> der Werte</li>
+            <li data-i18n="ki.methodik_li5">W&auml;hle die Top-N &auml;hnlichsten Jahre als "Matches"</li>
+            <li data-i18n="ki.methodik_li6">Gewichte jedes Match-Jahr mit seiner &Auml;hnlichkeit und bilde den gewichteten Durchschnitt</li>
+            <li data-i18n="ki.methodik_li7">Gl&auml;tte das Ergebnis mit einem Rolling-Fenster</li>
           </ul>
           <h3 data-i18n="ki.methodik_score_h3">KI Seasonal Score (1&ndash;10)</h3>
-          <p>Composite aus 4 Sub-Scores &agrave; 0&ndash;2.5 Punkte:</p>
+          <p data-i18n="ki.methodik_score_intro">Composite aus 4 Sub-Scores &agrave; 0&ndash;2.5 Punkte:</p>
           <ul>
-            <li><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.5): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>
-            <li><b>Trend-Projektion</b> (0&ndash;2.5): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
-            <li><b>Win-Rate</b> (0&ndash;2.5): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
-            <li><b>Tracking-Qualit&auml;t</b> (0&ndash;2.5): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
+            <li data-i18n-html="ki.methodik_score_li1"><b>Musterpfad-Qualit&auml;t</b> (0&ndash;2.5): Wie viele der &auml;hnlichsten Jahre waren positiv?</li>
+            <li data-i18n-html="ki.methodik_score_li2"><b>Trend-Projektion</b> (0&ndash;2.5): Ist die 30-Tage-Projektion des Musterpfads bullish oder bearish?</li>
+            <li data-i18n-html="ki.methodik_score_li3"><b>Win-Rate</b> (0&ndash;2.5): Historische Win-Rate des aktuellen Monats &uuml;ber alle Jahre</li>
+            <li data-i18n-html="ki.methodik_score_li4"><b>Tracking-Qualit&auml;t</b> (0&ndash;2.5): Wie genau folgt das aktuelle Jahr dem saisonalen Muster?</li>
           </ul>
-          <p>Signal: <b>Bullish</b> &ge; 6.5 &middot; <b>Neutral</b> 3.5&ndash;6.5 &middot; <b>Bearish</b> &le; 3.5</p>
+          <p data-i18n-html="ki.methodik_signal">Signal: <b>Bullish</b> &ge; 6.5 &middot; <b>Neutral</b> 3.5&ndash;6.5 &middot; <b>Bearish</b> &le; 3.5</p>
         </div>
       </details>
 

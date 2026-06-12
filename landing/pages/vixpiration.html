@@ -116,11 +116,11 @@
       <hr>
       <h3 data-i18n="common.window">Fenster</h3>
       <div class="range-wrap">
-        <label>Tage vor VIXpiration <span id="lbl-before">3</span></label>
+        <label data-i18n="vix.days_before_label">Tage vor VIXpiration <span id="lbl-before">3</span></label>
         <input type="range" id="sl-before" min="1" max="10" value="3">
       </div>
       <div class="range-wrap" style="margin-top:.5rem">
-        <label>Tage nach VIXpiration <span id="lbl-after">3</span></label>
+        <label data-i18n="vix.days_after_label">Tage nach VIXpiration <span id="lbl-after">3</span></label>
         <input type="range" id="sl-after" min="1" max="10" value="3">
       </div>
       <hr>
@@ -140,8 +140,8 @@
         <label><input type="checkbox" data-month="12" checked> Dez</label>
       </div>
       <div style="display:flex;gap:.25rem;margin-top:.4rem">
-        <button type="button" id="btn-vix-all" class="btn-mini">Alle</button>
-        <button type="button" id="btn-vix-none" class="btn-mini">Keine</button>
+        <button type="button" id="btn-vix-all" class="btn-mini" data-i18n="common.all">Alle</button>
+        <button type="button" id="btn-vix-none" class="btn-mini" data-i18n="common.none">Keine</button>
       </div>
 
       <hr>
@@ -152,9 +152,9 @@
       <div id="outlier-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
-        <b>VIXpiration</b> = Kalender-3.Fr &minus; 30 Tage<br>
-        <b>Letzter HT</b> = 1 Handelstag vor Settlement<br>
-        <b>Feiertags-Regel</b> = Settlement &minus;1 HT
+        <b>VIXpiration</b> = <span data-i18n="vix.sidebar_rule_vixpiration">Kalender-3.Fr &minus; 30 Tage</span><br>
+        <b data-i18n="vix.sidebar_rule_ltd_label">Letzter HT</b> = <span data-i18n="vix.sidebar_rule_ltd">1 Handelstag vor Settlement</span><br>
+        <b data-i18n="vix.sidebar_rule_holiday_label">Feiertags-Regel</b> = <span data-i18n="vix.sidebar_rule_holiday">Settlement &minus;1 HT</span>
       </div>
     </aside>
 
@@ -194,7 +194,7 @@
       <details open id="sec-vola">
         <summary data-i18n="vix.vola_section">Volatilit&auml;t rund um VIXpiration &mdash; 1d vs. 5d</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n-html="vix.vola_desc">
             Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
             <b style="color:var(--accent)">1d Vola</b> = Streuung an genau diesem Tag,
             <b style="color:var(--green)">5d Vola</b> = gegl&auml;ttete Streuung &uuml;ber &plusmn;2 Tage.
@@ -214,7 +214,7 @@
               t=0 = VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage)
             </span>
           </div>
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n="vix.grid_desc">
             Jeder Chart zeigt den kumulierten Verlauf rund um den VIX-Settlement-Tag des jeweiligen Monats.
             Im Sidebar einzelne Monate ein-/ausschalten.
           </p>
@@ -236,9 +236,9 @@
 
       <!-- Backtest -->
       <details open id="sec-backtest">
-        <summary id="bt-summary">Backtest: VIXpiration</summary>
+        <summary id="bt-summary" data-i18n="vix.backtest_section">Backtest: VIXpiration</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n-html="vix.backtest_desc">
             VIXpiration-Strategie: Kauf t<span id="bt-entry">-3</span> (Close) &middot; Verkauf t<span id="bt-exit">+3</span> (Close)
           </p>
           <div class="kpi-row" id="bt-kpis"></div>
@@ -257,7 +257,7 @@
       <details open id="sec-heatmap">
         <summary data-i18n="section.heatmap_month_offset">Heatmap: Monat &times; Offset</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n="vix.heatmap_desc">
             &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
           </p>
           <div id="chart-heatmap"></div>
@@ -268,9 +268,9 @@
       <details id="sec-calendar">
         <summary data-i18n="vix.calendar_section">VIX-Kalender</summary>
         <div class="content">
-          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)">N&auml;chste 10 VIX-Verfall-Termine</h3>
+          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)" data-i18n="vix.calendar_upcoming_h3">N&auml;chste 10 VIX-Verfall-Termine</h3>
           <div id="calendar-upcoming"></div>
-          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)">N&auml;chste 10 Termine (Tabelle)</h3>
+          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)" data-i18n="vix.calendar_table_h3">N&auml;chste 10 Termine (Tabelle)</h3>
           <div style="max-height:360px;overflow-y:auto">
             <table class="opex-table" id="tbl-all-opex">
               <thead id="thead-all-opex"></thead>
@@ -286,30 +286,30 @@
         <div class="content methodik">
           <h3 data-i18n="vix.methodik_cboe_h3">VIXpiration (CBOE-Regel)</h3>
           <ul>
-            <li>VIX-Optionen laufen genau <b>30 Kalendertage</b> vor dem SPX-Monatsverfall (3. Freitag) ab</li>
-            <li>Berechnungsformel: VIXpiration-Settlement = 3. Freitag (Monat M) &minus; 30 Tage = typischerweise Mittwoch in Monat M&minus;1</li>
-            <li><b>Letzter Handelstag:</b> Dienstag vor dem Settlement-Mittwoch (danach kein Handel mehr)</li>
-            <li><b>Feiertags-Regel:</b> F&auml;llt der Settlement-Mittwoch oder OPEX-Freitag auf einen B&ouml;rsenfeiertag, wird der Verfall auf den <em>vorherigen</em> Handelstag vorverlegt</li>
-            <li>Wichtige F&auml;lle: 04/2025 (Good Friday) &rarr; VIX 18.03 Di, 06/2026 (Juneteenth) &rarr; VIX 19.05 Di</li>
-            <li>VIXpiration erzeugt typisch: IV-Crush danach, Gamma-Squeeze und h&ouml;here Vola davor</li>
+            <li data-i18n-html="vix.methodik_li_1">VIX-Optionen laufen genau <b>30 Kalendertage</b> vor dem SPX-Monatsverfall (3. Freitag) ab</li>
+            <li data-i18n="vix.methodik_li_2">Berechnungsformel: VIXpiration-Settlement = 3. Freitag (Monat M) &minus; 30 Tage = typischerweise Mittwoch in Monat M&minus;1</li>
+            <li data-i18n-html="vix.methodik_li_3"><b>Letzter Handelstag:</b> Dienstag vor dem Settlement-Mittwoch (danach kein Handel mehr)</li>
+            <li data-i18n-html="vix.methodik_li_4"><b>Feiertags-Regel:</b> F&auml;llt der Settlement-Mittwoch oder OPEX-Freitag auf einen B&ouml;rsenfeiertag, wird der Verfall auf den <em>vorherigen</em> Handelstag vorverlegt</li>
+            <li data-i18n="vix.methodik_li_5">Wichtige F&auml;lle: 04/2025 (Good Friday) &rarr; VIX 18.03 Di, 06/2026 (Juneteenth) &rarr; VIX 19.05 Di</li>
+            <li data-i18n="vix.methodik_li_6">VIXpiration erzeugt typisch: IV-Crush danach, Gamma-Squeeze und h&ouml;here Vola davor</li>
           </ul>
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li><b>Settlement-Datum:</b> Algorithmisch berechnet (Kalender-3.Fr &minus; 30 Tage, NYSE-Feiertags-Adjustierung)</li>
+            <li data-i18n-html="vix.methodik_data_li_1"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="vix.methodik_data_li_2"><b>Settlement-Datum:</b> Algorithmisch berechnet (Kalender-3.Fr &minus; 30 Tage, NYSE-Feiertags-Adjustierung)</li>
           </ul>
           <h3 data-i18n="common.event_window">Event-Window</h3>
           <ul>
-            <li><b>t=0:</b> VIX-Settlement-Tag (oder n&auml;chster/vorheriger Handelstag)</li>
-            <li><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
-            <li><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
-            <li><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
+            <li data-i18n-html="vix.methodik_ew_li_1"><b>t=0:</b> VIX-Settlement-Tag (oder n&auml;chster/vorheriger Handelstag)</li>
+            <li data-i18n-html="vix.methodik_ew_li_2"><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
+            <li data-i18n-html="vix.methodik_ew_li_3"><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
+            <li data-i18n-html="vix.methodik_ew_li_4"><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
           </ul>
           <h3 data-i18n="common.backtest">Backtest</h3>
           <ul>
-            <li>Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
-            <li>Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
-            <li>Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
+            <li data-i18n="vix.methodik_bt_li_1">Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
+            <li data-i18n="vix.methodik_bt_li_2">Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
+            <li data-i18n="vix.methodik_bt_li_3">Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
           </ul>
         </div>
       </details>

@@ -119,7 +119,7 @@
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b>Risikozyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
-      <p class="page-caption" id="page-caption">Drawdown &amp; Volatilit&auml;t &middot; Saisonale Risikomuster &middot; Pr&auml;sidentenzyklus-Risiko</p>
+      <p class="page-caption" id="page-caption" data-i18n="risk.page_caption">Drawdown &amp; Volatilit&auml;t &middot; Saisonale Risikomuster &middot; Pr&auml;sidentenzyklus-Risiko</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
@@ -170,9 +170,9 @@
           <ul>
             <li><b data-i18n="common.normalization">Normierung</b>: <span data-i18n="risk.methodik_normierung">Jedes Jahr startet bei 100. T&auml;gliche Returns kumulieren: Wert = 100 &times; exp(&Sigma; log_return)</span></li>
             <li><b data-i18n="risk.methodik_interpolation">Interpolation</b>: <span data-i18n="risk.methodik_interpolation_desc">Jede Jahreskurve wird auf 365 Kalendertage interpoliert</span></li>
-            <li><b data-i18n="risk.methodik_definition">Definition</b>: <span>DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</span></li>
+            <li><b data-i18n="risk.methodik_definition">Definition</b>: <span data-i18n="risk.methodik_definition_desc">DD = (Kurs &minus; H&ouml;chstkurs seit Jahresbeginn) / H&ouml;chstkurs &times; 100</span></li>
             <li><b data-i18n="risk.methodik_avg_dd">&Oslash; Drawdown-Verlauf</b>: <span data-i18n="risk.methodik_avg_dd_desc">Pro Jahr DD berechnet, dann gemittelt &uuml;ber alle Jahre</span></li>
-            <li><b>KPIs</b>: &Oslash; Max DD, Worst DD, Aktueller DD</li>
+            <li data-i18n="risk.methodik_kpis"><b>KPIs</b>: &Oslash; Max DD, Worst DD, Aktueller DD</li>
           </ul>
           <h3 data-i18n="risk.vola_analysis">Volatilit&auml;ts-Analyse</h3>
           <ul>
@@ -183,9 +183,9 @@
           </ul>
           <h3 data-i18n="sidebar.pres_cycle">Pr&auml;sidentenzyklus</h3>
           <ul>
-            <li><b>Mapping:</b> 1 = Post-Election, 2 = Midterm, 3 = Pre-Election, 4 = Election Year</li>
-            <li><b>Formel:</b> ((year &minus; 1) % 4 + 4) % 4 + 1</li>
-            <li><b>Pro Zyklusphase:</b> &Oslash; Max DD, bestes und schlechtestes Jahr</li>
+            <li data-i18n="risk.methodik_cycle_mapping"><b>Mapping:</b> 1 = Post-Election, 2 = Midterm, 3 = Pre-Election, 4 = Election Year</li>
+            <li data-i18n="risk.methodik_cycle_formula"><b>Formel:</b> ((year &minus; 1) % 4 + 4) % 4 + 1</li>
+            <li data-i18n="risk.methodik_cycle_per_phase"><b>Pro Zyklusphase:</b> &Oslash; Max DD, bestes und schlechtestes Jahr</li>
           </ul>
           <h3 data-i18n="common.data_source">Datenquelle</h3>
           <ul>

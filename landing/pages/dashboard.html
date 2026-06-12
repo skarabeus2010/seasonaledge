@@ -240,7 +240,7 @@
           <p class="page-caption" data-i18n="dash.caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
         </div>
         <div class="dash-toolbar">
-          <div><label for="ticker-input">Ticker</label><input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list"></div>
+          <div><label for="ticker-input">Ticker</label><input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list" data-i18n-placeholder="dash.ticker_placeholder"></div>
           <datalist id="ticker-list"></datalist>
           <div><label for="sel-years" data-i18n="dash.period">Zeitraum</label><select id="sel-years">
             <option value="5" data-i18n="dash.yr5">5 Jahre</option>
@@ -250,13 +250,13 @@
             <option value="30" data-i18n="dash.yr30">30 Jahre</option>
           </select></div>
           <div class="wl-toolbar">
-            <button id="btn-wl-toggle" type="button" class="btn-wl-toggle" title="Diesen Ticker zur Watchlist hinzufügen oder entfernen">
+            <button id="btn-wl-toggle" type="button" class="btn-wl-toggle" title="Diesen Ticker zur Watchlist hinzufügen oder entfernen" data-i18n-title="dash.wl_toggle_title">
               <svg class="icon-star" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               <span id="btn-wl-label" data-i18n="dash.to_watchlist">Zur Watchlist</span>
             </button>
-            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen" data-i18n="dash.my_watchlist">
+            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen" data-i18n="dash.my_watchlist" data-i18n-title="dash.wl_link_title">
               Meine Watchlist <span id="wl-badge">0</span>
             </a>
           </div>
@@ -347,7 +347,7 @@
         </div>
 
         <div class="bento-card bento-stat6" id="card-overnight">
-          <div class="ttl"><span class="ico">🌙</span> Overnight</div>
+          <div class="ttl" data-i18n="dash.overnight_title"><span class="ico">🌙</span> Overnight</div>
           <div id="overnight-content" class="stat6-body"></div>
         </div>
 
@@ -378,23 +378,23 @@
       <details style="margin-top:1.5rem">
         <summary data-i18n="dash.methodology">📚 Methodik</summary>
         <div class="content">
-          <p>Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
+          <p data-i18n="dash.method_intro">Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
           <ul>
-            <li><b>KI Composite Score (0-10)</b>: Gewichteter Mix aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking zur Saisonalität). Bullish ≥6.5, Neutral, Bearish ≤3.5. Berechnung wie auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
-            <li><b>Crash-Ampel (0-100)</b>: Composite-Score aus Volatilität (5d/20d) + Drawdown vom 20d-Hoch. Risk-Score = Perzentilrang innerhalb der letzten 252 Tage des <b>gleichen Tickers</b>. Vollständig ticker-individuell. Schwellen: ≥70 rot, ≥40 gelb.</li>
-            <li><b>Anomalie-Radar</b>: Z-Score der letzten 10d-Rendite vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. Stark anomal ≥70.</li>
-            <li><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
-            <li><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
-            <li><b>TruePath</b>: Gewichteter Ø der Top-5 ähnlichsten historischen Jahre (Pearson-Korrelation auf den Verlauf bis heute) + 30d-Forward-Projektion.</li>
-            <li><b>Monatsperformance</b>: Historische Ø Rendite, Win-Rate, Best/Worst des aktuellen Monats über N Jahre.</li>
-            <li><b>2-Wochen-Phase</b>: Aktuelle H1/H2-Phase im Monat mit Ø Return, Rang (1-24) und Status.</li>
-            <li><b>TDOM Heute/Morgen</b>: Win-Rate und Ø Rendite an der heutigen/morgigen TDOM-Position über N Jahre.</li>
-            <li><b>Overnight</b>: Ø Overnight-Rendite (Close→Open) des aktuellen Wochentags vs. Intraday (Open→Close). Residual-Ansatz.</li>
-            <li><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak aller 5 Wochentage (Mo-Fr).</li>
-            <li><b>Trifecta</b>: SCR + FFD + JanB Bedingungen für das aktuelle Jahr — auf den eingegebenen Ticker angewendet (Original-Konzept ist für Indizes).</li>
-            <li><b>Risiko-Metriken</b>: Aktueller DD vs. historischer Ø Max DD, aktuelle 20d-Vola annualisiert + Perzentilrang.</li>
-            <li><b>Strategien</b>: Alle 22 Plain Vanilla Strategien werden auf den Ticker angewendet. Gefiltert nach "nächstes Signal in den nächsten 30 Tagen". Aktuelle Streak (letzte W oder L in Folge) als Badge.</li>
-            <li><b>Nächste Events</b>: Pro Event-Typ (FOMC, OPEX, Vollmond, NYSE-Holiday) das nächste Datum + die historische Performance des Tickers im Window t-3 bis t+3 (Vollmond/FOMC/OPEX) bzw. t-3 bis t+0 (Pre-Holiday-Effect). Mit aktueller Win-Streak.</li>
+            <li data-i18n-html="dash.method_ki"><b>KI Composite Score (0-10)</b>: Gewichteter Mix aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking zur Saisonalität). Bullish ≥6.5, Neutral, Bearish ≤3.5. Berechnung wie auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
+            <li data-i18n-html="dash.method_crash"><b>Crash-Ampel (0-100)</b>: Composite-Score aus Volatilität (5d/20d) + Drawdown vom 20d-Hoch. Risk-Score = Perzentilrang innerhalb der letzten 252 Tage des <b>gleichen Tickers</b>. Vollständig ticker-individuell. Schwellen: ≥70 rot, ≥40 gelb.</li>
+            <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: Z-Score der letzten 10d-Rendite vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. Stark anomal ≥70.</li>
+            <li data-i18n-html="dash.method_year"><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
+            <li data-i18n-html="dash.method_tdom_curve"><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
+            <li data-i18n-html="dash.method_truepath"><b>TruePath</b>: Gewichteter Ø der Top-5 ähnlichsten historischen Jahre (Pearson-Korrelation auf den Verlauf bis heute) + 30d-Forward-Projektion.</li>
+            <li data-i18n-html="dash.method_month_perf"><b>Monatsperformance</b>: Historische Ø Rendite, Win-Rate, Best/Worst des aktuellen Monats über N Jahre.</li>
+            <li data-i18n-html="dash.method_twoweek"><b>2-Wochen-Phase</b>: Aktuelle H1/H2-Phase im Monat mit Ø Return, Rang (1-24) und Status.</li>
+            <li data-i18n-html="dash.method_tdom_day"><b>TDOM Heute/Morgen</b>: Win-Rate und Ø Rendite an der heutigen/morgigen TDOM-Position über N Jahre.</li>
+            <li data-i18n-html="dash.method_overnight"><b>Overnight</b>: Ø Overnight-Rendite (Close→Open) des aktuellen Wochentags vs. Intraday (Open→Close). Residual-Ansatz.</li>
+            <li data-i18n-html="dash.method_weekday"><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak aller 5 Wochentage (Mo-Fr).</li>
+            <li data-i18n-html="dash.method_trifecta"><b>Trifecta</b>: SCR + FFD + JanB Bedingungen für das aktuelle Jahr — auf den eingegebenen Ticker angewendet (Original-Konzept ist für Indizes).</li>
+            <li data-i18n-html="dash.method_risk"><b>Risiko-Metriken</b>: Aktueller DD vs. historischer Ø Max DD, aktuelle 20d-Vola annualisiert + Perzentilrang.</li>
+            <li data-i18n-html="dash.method_strategies"><b>Strategien</b>: Alle 22 Plain Vanilla Strategien werden auf den Ticker angewendet. Gefiltert nach "nächstes Signal in den nächsten 30 Tagen". Aktuelle Streak (letzte W oder L in Folge) als Badge.</li>
+            <li data-i18n-html="dash.method_events"><b>Nächste Events</b>: Pro Event-Typ (FOMC, OPEX, Vollmond, NYSE-Holiday) das nächste Datum + die historische Performance des Tickers im Window t-3 bis t+3 (Vollmond/FOMC/OPEX) bzw. t-3 bis t+0 (Pre-Holiday-Effect). Mit aktueller Win-Streak.</li>
           </ul>
         </div>
       </details>

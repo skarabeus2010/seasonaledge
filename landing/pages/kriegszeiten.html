@@ -85,11 +85,11 @@
       <datalist id="ticker-list"></datalist>
       <hr>
       <h3 data-i18n="common.event_window">Event-Window</h3>
-      <label>Handelstage vor T=0<br><input type="range" id="rng-before" min="10" max="250" value="250" step="10"><span id="lbl-before">250</span></label>
-      <label>Handelstage nach T=0<br><input type="range" id="rng-after" min="10" max="250" value="250" step="10"><span id="lbl-after">250</span></label>
+      <label><span data-i18n="war.days_before">Handelstage vor T=0</span><br><input type="range" id="rng-before" min="10" max="250" value="250" step="10"><span id="lbl-before">250</span></label>
+      <label><span data-i18n="war.days_after">Handelstage nach T=0</span><br><input type="range" id="rng-after" min="10" max="250" value="250" step="10"><span id="lbl-after">250</span></label>
       <hr>
       <h3 data-i18n="sidebar.smoothing_h3">Gl&auml;ttung</h3>
-      <label><input type="range" id="rng-smooth" min="1" max="21" value="1" step="2"><span id="lbl-smooth">1</span> Tage</label>
+      <label><input type="range" id="rng-smooth" min="1" max="21" value="1" step="2"><span id="lbl-smooth">1</span><span data-i18n="common.days_unit"> Tage</span></label>
       <hr>
       <h3 data-i18n="war.sidebar_select_wars">Kriege ausw&auml;hlen</h3>
       <label style="margin-bottom:.25rem;font-weight:600;color:var(--accent)"><input type="checkbox" id="chk-all-wars" checked> <span data-i18n="war.select_all_none">Alle / Keine</span></label>
@@ -99,7 +99,7 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b data-i18n="war.page_title">War Times</b> &mdash; <span id="title-ticker">^DJI</span></h1>
-      <p class="page-caption" id="page-caption">Lade Daten...</p>
+      <p class="page-caption" id="page-caption" data-i18n="common.loading">Lade Daten...</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
       <!-- KPI -->
