@@ -955,5 +955,24 @@
   "bt.years_back": "Years back",
   "bt.event_holidays": "Holidays (NYSE)",
   "bt.event_full_moon": "Full Moon",
-  "bt.event_new_moon": "New Moon"
+  "bt.event_new_moon": "New Moon",
+
+  "dash.yr3": "3 Years",
+  "dash.yr7": "7 Years",
+  "dash.yr25": "25 Years",
+  "dash.yr50": "50 Years",
+
+  "moon.phase_full": "🌕 Full Moon",
+  "moon.phase_new": "🌑 New Moon",
+  "moon.phase_both": "🌕+🌑 Both",
+
+  "opex.days_before": "Days before OPEX",
+  "opex.days_after": "Days after OPEX",
+  "opex.monthly_view": "Monthly (12 Charts)",
+  "opex.select_quarters": "Select Quarters",
+  "opex.select_months": "Select Months",
+  "opex.sidebar_info": "3rd Friday of the month",
+
+  "common.all": "All",
+  "common.none": "None"
 }

@@ -112,21 +112,21 @@
       <hr>
       <h3 data-i18n="sidebar.period">Zeitraum</h3>
       <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
-        <option value="10" selected>10 Jahre</option>
-        <option value="15">15 Jahre</option>
-        <option value="20">20 Jahre</option>
-        <option value="25">25 Jahre</option>
-        <option value="30">30 Jahre</option>
+        <option value="10" selected data-i18n="dash.yr10">10 Jahre</option>
+        <option value="15" data-i18n="dash.yr15">15 Jahre</option>
+        <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+        <option value="25" data-i18n="dash.yr25">25 Jahre</option>
+        <option value="30" data-i18n="dash.yr30">30 Jahre</option>
         <option value="max">Max</option>
       </select>
       <hr>
       <h3 data-i18n="common.window">Fenster</h3>
       <div class="range-wrap">
-        <label>Tage vor OPEX <span id="lbl-before">3</span></label>
+        <label><span data-i18n="opex.days_before">Tage vor OPEX</span> <span id="lbl-before">3</span></label>
         <input type="range" id="sl-before" min="1" max="10" value="3">
       </div>
       <div class="range-wrap" style="margin-top:.5rem">
-        <label>Tage nach OPEX <span id="lbl-after">3</span></label>
+        <label><span data-i18n="opex.days_after">Tage nach OPEX</span> <span id="lbl-after">3</span></label>
         <input type="range" id="sl-after" min="1" max="10" value="3">
       </div>
       <!-- OPEX-spezifisch -->
@@ -135,11 +135,11 @@
         <h3 data-i18n="opex.opex_view_h3">OPEX-Ansicht</h3>
         <div class="mode-radio">
           <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching</label>
-          <label><input type="radio" name="opex-view" value="monthly"> Monatlich (12 Charts)</label>
+          <label><input type="radio" name="opex-view" value="monthly"> <span data-i18n="opex.monthly_view">Monatlich (12 Charts)</span></label>
         </div>
         <!-- Triple Witching Monate (nur wenn opex-view=triple) -->
         <div id="triple-months-block" style="margin-top:.6rem">
-          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em">Quartale w&auml;hlen</div>
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em" data-i18n="opex.select_quarters">Quartale w&auml;hlen</div>
           <div class="vix-months" id="triple-months-checkboxes" style="grid-template-columns:repeat(4,1fr)">
             <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
             <label><input type="checkbox" data-month="6" checked> Jun</label>
@@ -147,13 +147,13 @@
             <label><input type="checkbox" data-month="12" checked> Dez</label>
           </div>
           <div style="display:flex;gap:.25rem;margin-top:.4rem">
-            <button type="button" id="btn-triple-all" class="btn-mini">Alle</button>
-            <button type="button" id="btn-triple-none" class="btn-mini">Keine</button>
+            <button type="button" id="btn-triple-all" class="btn-mini" data-i18n="common.all">Alle</button>
+            <button type="button" id="btn-triple-none" class="btn-mini" data-i18n="common.none">Keine</button>
           </div>
         </div>
         <!-- Monatliche Verfall Monate (nur wenn opex-view=monthly) -->
         <div id="opex-monthly-block" style="margin-top:.6rem;display:none">
-          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em">Monate w&auml;hlen</div>
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em" data-i18n="opex.select_months">Monate w&auml;hlen</div>
           <div class="vix-months" id="opex-months-checkboxes">
             <label><input type="checkbox" data-month="1" checked> Jan</label>
             <label><input type="checkbox" data-month="2" checked> Feb</label>
@@ -169,8 +169,8 @@
             <label><input type="checkbox" data-month="12" checked> Dez</label>
           </div>
           <div style="display:flex;gap:.25rem;margin-top:.4rem">
-            <button type="button" id="btn-opex-all" class="btn-mini">Alle</button>
-            <button type="button" id="btn-opex-none" class="btn-mini">Keine</button>
+            <button type="button" id="btn-opex-all" class="btn-mini" data-i18n="common.all">Alle</button>
+            <button type="button" id="btn-opex-none" class="btn-mini" data-i18n="common.none">Keine</button>
           </div>
         </div>
       </div>
@@ -183,7 +183,7 @@
       <div id="outlier-filter"></div>
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
-        <b>OPEX</b> = 3. Freitag im Monat<br>
+        <b>OPEX</b> = <span data-i18n="opex.sidebar_info">3. Freitag im Monat</span><br>
         <b>Triple Witching</b> = M&auml;r, Jun, Sep, Dez<br>
         <a href="/vixpiration" style="color:var(--accent);text-decoration:none">VIXpiration-Analyse &rarr;</a>
       </div>
