@@ -148,7 +148,7 @@
       <details open id="sec-polymarket">
         <summary data-i18n="cb.section_polymarket">Polymarket Fed-Path 2026 &mdash; was der Markt einpreist</summary>
         <div class="content">
-          <p class="box-info" style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem">
+          <p class="box-info" data-i18n-html="cb.polymarket_desc" style="font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem">
             Parallel zur historischen Event-Analyse oben: die <b>implizite Wahrscheinlichkeits-Verteilung</b> aus dem Polymarket-Event &quot;How many Fed rate cuts in 2026?&quot;. 13 Outcome-Markets (0, 1, 2, ... 12+ Cuts), live via Polymarket API, gewichteter Erwartungswert als gr&uuml;ne Linie.
           </p>
           <div class="kpi-row" id="poly-fed-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.75rem"></div>
@@ -163,23 +163,23 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Fed (FOMC):</b> 224 Sitzungstermine (2000&ndash;2026)</li>
-            <li><b>Fed Zinserh&ouml;hungen:</b> 40 Hike-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins erh&ouml;ht hat</li>
-            <li><b>Fed Zinssenkungen:</b> 31 Cut-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins gesenkt hat</li>
-            <li><b>EZB:</b> 96 Ratssitzungen (2015&ndash;2026)</li>
-            <li><b>Bank of England:</b> 58 MPC-Sitzungen (2020&ndash;2026)</li>
-            <li><b>Bank of Japan:</b> 40 Sitzungen (2022&ndash;2026)</li>
-            <li><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n="cb.db_fomc"><b>Fed (FOMC):</b> 224 Sitzungstermine (2000&ndash;2026)</li>
+            <li data-i18n="cb.db_fomc_hike"><b>Fed Zinserh&ouml;hungen:</b> 40 Hike-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins erh&ouml;ht hat</li>
+            <li data-i18n="cb.db_fomc_cut"><b>Fed Zinssenkungen:</b> 31 Cut-Entscheidungen (2000&ndash;2024) &mdash; nur Sitzungen an denen die Fed den Leitzins gesenkt hat</li>
+            <li data-i18n="cb.db_ecb"><b>EZB:</b> 96 Ratssitzungen (2015&ndash;2026)</li>
+            <li data-i18n="cb.db_boe"><b>Bank of England:</b> 58 MPC-Sitzungen (2020&ndash;2026)</li>
+            <li data-i18n="cb.db_boj"><b>Bank of Japan:</b> 40 Sitzungen (2022&ndash;2026)</li>
+            <li data-i18n="cb.db_prices"><b>Preisdaten:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
           </ul>
           <h3 data-i18n="cb.hike_cut_heading">Hike vs. Cut Analyse</h3>
-          <p>Mit den Optionen <b>Fed Zinserh&ouml;hungen</b> und <b>Fed Zinssenkungen</b> kannst du gezielt untersuchen wie der Markt auf die <i>Richtung</i> der geldpolitischen Entscheidung reagiert &mdash; statt auf alle Sitzungen pauschal. Klassische These: nach Zinssenkungen steigen Aktien (expansive Geldpolitik), nach Zinserh&ouml;hungen fallen sie (restriktiv). Ein Backtest zeigt ob das stimmt.</p>
+          <p data-i18n-html="cb.hike_cut_desc">Mit den Optionen <b>Fed Zinserh&ouml;hungen</b> und <b>Fed Zinssenkungen</b> kannst du gezielt untersuchen wie der Markt auf die <i>Richtung</i> der geldpolitischen Entscheidung reagiert &mdash; statt auf alle Sitzungen pauschal. Klassische These: nach Zinssenkungen steigen Aktien (expansive Geldpolitik), nach Zinserh&ouml;hungen fallen sie (restriktiv). Ein Backtest zeigt ob das stimmt.</p>
           <h3 data-i18n="common.calculation">Berechnung</h3>
           <ul>
-            <li><b>t0:</b> Entscheidungstag der Notenbank (oder n&auml;chster Handelstag)</li>
-            <li><b>Normierung:</b> Kursverlauf auf t0 = 0% normiert</li>
-            <li><b>Fenster:</b> t&minus;N bis t+N Handelstage um den Entscheidungstag</li>
-            <li><b>Durchschnittskurve:</b> Mittelwert &uuml;ber alle Events im Zeitraum</li>
-            <li><b>Win-Rate:</b> Anteil der Events mit positivem Return (t&minus;N bis t+N)</li>
+            <li data-i18n="cb.calc_t0"><b>t0:</b> Entscheidungstag der Notenbank (oder n&auml;chster Handelstag)</li>
+            <li data-i18n="cb.calc_norm"><b>Normierung:</b> Kursverlauf auf t0 = 0% normiert</li>
+            <li data-i18n="cb.calc_window"><b>Fenster:</b> t&minus;N bis t+N Handelstage um den Entscheidungstag</li>
+            <li data-i18n="cb.calc_avg"><b>Durchschnittskurve:</b> Mittelwert &uuml;ber alle Events im Zeitraum</li>
+            <li data-i18n="cb.calc_winrate"><b>Win-Rate:</b> Anteil der Events mit positivem Return (t&minus;N bis t+N)</li>
           </ul>
         </div>
       </details>
@@ -210,9 +210,9 @@
     var CB_DATES_LOADED = false;
     var CB_LABELS = {
       fomc: 'Fed (FOMC)',
-      fomc_hike: 'Fed Zinserhöhungen',
-      fomc_cut: 'Fed Zinssenkungen',
-      ecb: 'EZB',
+      fomc_hike: SA.i18n.t('cb.fomc_hike','Fed Zinserhöhungen'),
+      fomc_cut: SA.i18n.t('cb.fomc_cut','Fed Zinssenkungen'),
+      ecb: SA.i18n.t('cb.ecb_short','EZB'),
       boe: 'Bank of England',
       boj: 'Bank of Japan'
     };

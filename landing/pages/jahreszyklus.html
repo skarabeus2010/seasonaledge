@@ -140,7 +140,7 @@
     <main>
       <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
       <div class="error-banner" id="error-banner"></div>
-      <h1 class="page-title"><b>Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <h1 class="page-title"><b data-i18n="jz.page_title_word">Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption" id="page-caption" data-i18n="jz.page_caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
@@ -168,7 +168,7 @@
         <summary data-i18n="section.detrend">Detrend-Indikator / Saisonaler Druck</summary>
         <div class="content">
           <div id="chart-detrend"></div>
-          <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
+          <p data-i18n="jz.detrend_note" style="font-size:.75rem;color:var(--muted);margin-top:.75rem;line-height:1.7">
             Saisonaler Durchschnitt ohne Trendkomponente. &Uuml;ber 50 = saisonal typisch starke Phase, unter 50 = saisonal typisch schwache Phase. Formel: (avg[i] &minus; avg[0]) &minus; i &times; daily_drift, skaliert auf 0&ndash;100.
           </p>
         </div>
@@ -262,7 +262,7 @@
             <li><b data-i18n="jz.method_best_match_label">Best Match:</b> <span data-i18n="jz.method_best_match_desc">Pearson-Korrelation zwischen aktuellem Jahr (bis heute) und den 4 Zyklus-&Oslash;-Kurven + "Alle Jahre"</span></li>
           </ul>
           <h3 data-i18n="common.drawdown_vola">Drawdown &amp; Volatilit&auml;t</h3>
-          <p data-i18n="jz.method_drawdown_ref">Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
+          <p data-i18n-html="jz.method_drawdown_ref">Saisonaler Drawdown, Rolling-Volatilit&auml;t und Drawdown nach Pr&auml;sidentenzyklus findest du auf der <a href="/risikozyklus" style="color:var(--accent)">Risikozyklus-Seite</a>.</p>
         </div>
       </details>
 
@@ -831,8 +831,8 @@
         }
 
         if (smoothing>1) { p25 = JZ.rollingMean(p25, smoothing); p75 = JZ.rollingMean(p75, smoothing); }
-        seriesDef.push({ name:'75. Perzentil', data: pad365(p75), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
-        seriesDef.push({ name:'25. Perzentil', data: pad365(p25), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
+        seriesDef.push({ name: SA.i18n.t('jz.p75','75. Perzentil'), data: pad365(p75), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
+        seriesDef.push({ name: SA.i18n.t('jz.p25','25. Perzentil'), data: pad365(p25), color:'rgba(52,211,153,.55)', width:1.8, dash:0, axis:'left' });
       }
 
       // 3. Konfidenzband (±1σ) → linke Achse
@@ -854,7 +854,7 @@
       var effectiveLastSolid = Math.min(dc.lastSolid, anomalyEnd);
       var split = JZ.splitSolidWeak(avgSmooth, effectiveLastSolid);
       seriesDef.push({
-        name: 'Saisonaler Ø ('+nYears+'J)', data: pad365(split.solid),
+        name: SA.i18n.t('jz.seasonal_avg','Saisonaler Ø') + ' (' + nYears + SA.i18n.t('jz.years_abbr','J') + ')', data: pad365(split.solid),
         color: COL_AVG, width: 3.5, dash: 0, axis: 'left'
       });
       if (effectiveLastSolid < 365) {
@@ -896,7 +896,7 @@
         var cc = yearData[currentYear].full_365;
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = cc[i];
         seriesDef.push({
-          name: currentYear+' (aktuell)', data: pad365(curArr),
+          name: currentYear + ' (' + SA.i18n.t('common.current','aktuell') + ')', data: pad365(curArr),
           color: COL_CURRENT, width: 3, dash: 0, axis: 'left'
         });
       }
@@ -914,7 +914,7 @@
       // ── Single Y-Axis (KISS) ──────────────────────────────────────────────
       var yaxes = {
         labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
-        title: { text:'Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
+        title: { text: SA.i18n.t('jz.yaxis_normalized','Normiert (Start=100)'), style:{color:'#a89878',fontSize:'11px'} }
       };
 
       var opts = {
@@ -937,12 +937,12 @@
         yaxis: yaxes,
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
-                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
+                    label:{text: SA.i18n.t('common.today','Heute'),style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
         legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
         dataLabels: { enabled:false },
-        title: { text: ticker+' — Saisonaler Jahresverlauf ('+nYears+' Jahre)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+        title: { text: ticker + ' — ' + SA.i18n.t('section.annual_progression','Saisonaler Jahresverlauf') + ' (' + nYears + ' ' + SA.i18n.t('common.years','Jahre') + ')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
@@ -1029,7 +1029,7 @@
             if (curArr[i] != null) lv = curArr[i];
             else if (lv != null && i < td) curArr[i] = lv;
           }
-          series.push({ name: currentYear+' (aktuell)', data: curArr });
+          series.push({ name: currentYear + ' (' + SA.i18n.t('common.current','aktuell') + ')', data: curArr });
           seriesColors.push(COL_CURRENT);
           seriesWidths.push(3);
           seriesDashes.push(0);
@@ -1066,7 +1066,7 @@
         },
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
-                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
+                    label:{text: SA.i18n.t('common.today','Heute'),style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
           yaxis: [{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
         legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
@@ -1116,7 +1116,7 @@
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
         for (var k=0;k<Math.min(td,365);k++) curArr[k] = yearData[currentYear].full_365[k];
-        series.push({ name: currentYear+' (aktuell)', data: pad365(curArr) });
+        series.push({ name: currentYear + ' (' + SA.i18n.t('common.current','aktuell') + ')', data: pad365(curArr) });
         colors.push('#F1C40F');
         widths.push(2.5);
         dashes.push(0);
@@ -1201,7 +1201,7 @@
         yaxis: { min:0, max:100, tickAmount:4, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.6)', strokeDashArray:4,
-                    label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.8)',fontSize:'10px'}} }],
+                    label:{text: SA.i18n.t('common.today','Heute'),style:{color:'#fff',background:'rgba(232,168,32,.8)',fontSize:'10px'}} }],
           yaxis: [{ y:50, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }]
         },
         dataLabels: { enabled:false },
@@ -1423,14 +1423,14 @@
           avgAll.push(s/allOther.length);
         }
         var rAll = JZ.corrcoef(curCurve, avgAll);
-        matchResults.push({ name:'Alle Jahre', color:'#94a3b8', r:rAll, n:allOther.length });
+        matchResults.push({ name: SA.i18n.t('jz.all_years','Alle Jahre'), color:'#94a3b8', r:rAll, n:allOther.length });
       }
       if (!matchResults.length) { document.getElementById('sec-cycle-match').style.display='none'; return; }
 
       // Best
       var best = matchResults.reduce(function(a,b){ return b.r>a.r?b:a; });
       var html = '<div style="text-align:center;margin-bottom:.75rem">' +
-        '<span style="color:var(--muted);font-size:.8125rem">Bester Match: </span>' +
+        '<span style="color:var(--muted);font-size:.8125rem">' + SA.i18n.t('jz.best_match_label','Bester Match: ') + '</span>' +
         '<span style="color:'+best.color+';font-weight:700;font-size:.9rem">'+best.name+'</span>' +
         '<span style="color:var(--muted);font-size:.75rem"> (r='+(best.r>=0?'+':'')+best.r.toFixed(2)+', n='+best.n+')</span></div>';
       html += '<div class="match-cards">';

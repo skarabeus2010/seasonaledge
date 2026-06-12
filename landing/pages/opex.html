@@ -196,12 +196,6 @@
       <p class="page-caption" data-i18n="opex.page_caption">Saisonale Muster rund um den monatlichen Options-Verfalltag (3. Freitag) &amp; Triple Witching</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
-      <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
-        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
-        <span data-i18n="opex.intro_desc">OPEX (Options Expiration) ist der monatliche Optionsverfall am 3.&nbsp;Freitag. In den Quartalsmonaten (M&auml;rz, Juni, September, Dezember) verfallen zus&auml;tzlich Futures &mdash; das sogenannte <b>Triple Witching</b>.
-        Hier analysierst du, wie sich der Markt typischerweise rund um diese Termine verh&auml;lt: Renditeverlauf, Volatilit&auml;t, Monats-Breakdown und Backtest.
-        <b>Sidebar:</b> W&auml;hle Ticker, Zeitraum und Event-Fenster &mdash; alle Sektionen aktualisieren sich automatisch.</span>
-      </div>
 
       <!-- KPIs -->
       <div class="kpi-row" id="kpi-row"></div>
@@ -224,7 +218,7 @@
       <details open id="sec-vola" style="display:none">
         <summary data-i18n="opex.vola_section">Volatilit&auml;t rund um den Verfall &mdash; 1d vs. 5d</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n-html="opex.vola_desc">
             Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
             <b style="color:var(--accent)">1d Vola</b> = Streuung an genau diesem Tag,
             <b style="color:var(--green)">5d Vola</b> = gegl&auml;ttete Streuung &uuml;ber &plusmn;2 Tage.
@@ -238,7 +232,7 @@
       <details open id="sec-opex-monthly" style="display:none">
         <summary data-i18n="opex.monthly_section">Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p data-i18n="opex.monthly_grid_desc" style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
             Jeder Chart zeigt den kumulierten Verlauf rund um den 3. Freitag des jeweiligen Monats.
           </p>
           <div id="chart-opex-monthly-grid" class="chart-grid-12"></div>
@@ -249,7 +243,7 @@
       <details open id="sec-heatmap" style="display:none">
         <summary data-i18n="section.heatmap_month_offset">Heatmap: Monat &times; Offset</summary>
         <div class="content">
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n="opex.heatmap_desc">
             &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
           </p>
           <div id="chart-heatmap"></div>
@@ -273,7 +267,7 @@
         <summary id="bt-summary">Backtest</summary>
         <div class="content">
           <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
-            <span id="bt-desc">Strategie</span>: Kauf t<span id="bt-entry">-3</span> (Close) &middot; Verkauf t<span id="bt-exit">+3</span> (Close)
+            <span id="bt-desc">Strategie</span>: <span data-i18n="common.buy">Kauf</span> t<span id="bt-entry">-3</span> (Close) &middot; <span data-i18n="common.sell">Verkauf</span> t<span id="bt-exit">+3</span> (Close)
           </p>
           <div class="kpi-row" id="bt-kpis"></div>
           <div id="chart-equity" style="margin-top:1rem"></div>
@@ -303,25 +297,25 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
-            <li><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
+            <li data-i18n="opex.method_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n="opex.method_opex_date"><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
+            <li data-i18n="opex.method_triple"><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
           </ul>
           <h3 data-i18n="common.event_window">Event-Window</h3>
           <ul>
-            <li><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
-            <li><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
-            <li><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
-            <li><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
+            <li data-i18n="opex.method_t0"><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
+            <li data-i18n="opex.method_return"><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
+            <li data-i18n="opex.method_window"><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
+            <li data-i18n="opex.method_aggregation"><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
           </ul>
           <h3 data-i18n="common.backtest">Backtest</h3>
           <ul>
-            <li>Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
-            <li>Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
-            <li>Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
+            <li data-i18n="opex.method_bt1">Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
+            <li data-i18n="opex.method_bt2">Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
+            <li data-i18n="opex.method_bt3">Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
           </ul>
           <h3 data-i18n="opex.vixpiration_h3">VIXpiration</h3>
-          <p data-i18n="opex.vixpiration_para">Die VIXpiration-Daten werden im OPEX-Kalender als Referenz angezeigt. Ausf&uuml;hrliche VIXpiration-Analyse mit eigenen Charts, Backtest und Signifikanztest: <a href="/vixpiration" style="color:var(--accent)">VIXpiration-Seite &rarr;</a></p>
+          <p data-i18n-html="opex.vixpiration_para">Die VIXpiration-Daten werden im OPEX-Kalender als Referenz angezeigt. Ausf&uuml;hrliche VIXpiration-Analyse mit eigenen Charts, Backtest und Signifikanztest: <a href="/vixpiration" style="color:var(--accent)">VIXpiration-Seite &rarr;</a></p>
         </div>
       </details>
 
@@ -915,7 +909,7 @@
         annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:2 }] },
         dataLabels: { enabled:false },
         legend: { show:false },
-        title: { text:'Rendite pro Event (%)', style:{color:'#d4c5a0',fontSize:'12px',fontFamily:'Sora,sans-serif'} }
+        title: { text: SA.i18n.t('opex.return_per_event','Rendite pro Event') + ' (%)', style:{color:'#d4c5a0',fontSize:'12px',fontFamily:'Sora,sans-serif'} }
       });
       charts['bt-bar'].render();
     }
@@ -927,9 +921,9 @@
     function renderCalendar(opexDates) {
       var today = new Date().toISOString().substring(0,10);
 
-      document.getElementById('cal-summary').textContent = 'OPEX-Kalender';
-      document.getElementById('cal-upcoming-title').textContent = 'N\u00E4chste 10 OPEX-Termine';
-      document.getElementById('cal-all-title').textContent = 'N\u00E4chste 10 Termine';
+      document.getElementById('cal-summary').textContent = SA.i18n.t('opex.calendar_title','OPEX-Kalender');
+      document.getElementById('cal-upcoming-title').textContent = SA.i18n.t('opex.next_opex_dates','N\u00E4chste 10 OPEX-Termine');
+      document.getElementById('cal-all-title').textContent = SA.i18n.t('opex.next_dates','N\u00E4chste 10 Termine');
 
       var events = opexDates.slice();
       events.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
@@ -1044,12 +1038,12 @@
       var after  = parseInt(document.getElementById('sl-after').value);
 
       var html = '';
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-Tage (t0)</h3>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">t-Test: Ist die durchschnittliche Tagesrendite am Verfalltag systematisch von Null verschieden?</p>';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-'+SA.i18n.t('opex.t0_days','Tage (t0)')+'</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">'+SA.i18n.t('opex.ttest_opex_days','t-Test: Ist die durchschnittliche Tagesrendite am Verfalltag systematisch von Null verschieden?')+'</p>';
       html += SA.significance.renderSection(t0Result, colsPerRow, orderT0);
 
-      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">Kumuliertes Fenster (t-'+before+' bis t+'+after+')</h3>';
-      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.</p>';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">'+SA.i18n.t('opex.sig_window_heading','Kumuliertes Fenster')+' (t-'+before+' '+SA.i18n.t('common.to','bis')+' t+'+after+')</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">'+SA.i18n.t('opex.ttest_window','Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.')+'</p>';
       html += SA.significance.renderSection(cumResult, colsPerRow, orderCum);
 
       el.innerHTML = html;
@@ -1072,7 +1066,7 @@
           '<div style="color:var(--muted);font-size:.8125rem;padding:1rem">Keine Events</div>';
         return;
       }
-      var subtitle = 'Aktuelle Gewinn-/Verlust-Serien pro OPEX-Monat. Triple Witching (Mrz/Jun/Sep/Dez) hat oft st\u00E4rkere Effekte.';
+      var subtitle = SA.i18n.t('opex.streak_desc', 'Aktuelle Gewinn-/Verlust-Serien pro OPEX-Monat. Triple Witching (Mrz/Jun/Sep/Dez) hat oft st\u00E4rkere Effekte.');
       // WICHTIG: renderStreakTable-Signatur = (groups, colHeader, nBlocks)
       // nBlocks MUSS eine Zahl sein, sonst werden keine W/L-Kacheln gerendert!
       var tableHtml = SA.streaks.renderStreakTable(groups, label+'-Monat', 10);
