@@ -1195,6 +1195,7 @@ def _generate_youtube(post: dict, youtube_dir: Path):
         f.write(short)
 
     # YouTube-Beschreibung
+    ticker_tag = (" #" + ticker.replace(chr(94), "")) if ticker else ""
     yt_desc = (
         f"{title}\n\n"
         f"{desc}\n\n"
@@ -1208,7 +1209,7 @@ def _generate_youtube(post: dict, youtube_dir: Path):
         f"SeasonAlpha App: {BASE_URL}\n"
         f"Blog: {BASE_URL}/blog/\n\n"
         f"#Saisonalitaet #Trading #Boerse"
-        f"{f' #{ticker.replace(chr(94),"")}' if ticker else ''}"
+        f"{ticker_tag}"
         f" #SeasonAlpha\n\n"
         f"--- Disclaimer ---\n"
         f"Keine Anlageberatung. Historische Daten garantieren keine zukuenftigen Ergebnisse."

@@ -130,9 +130,9 @@
       <h1 data-i18n="unsub.page_title">SeasonAlpha abmelden</h1>
 
       <div id="view-confirm" style="display:none">
-        <p data-i18n="unsub.confirm_question">Möchtest du <b>wirklich</b> vom <span id="confirm-type">SeasonAlpha Newsletter</span> abmelden?</p>
+        <p data-i18n-html="unsub.confirm_question">Möchtest du <b>wirklich</b> vom <span id="confirm-type">SeasonAlpha Newsletter</span> abmelden?</p>
         <div class="unsub-email" id="display-email">…</div>
-        <p style="font-size:0.85rem" id="confirm-detail" data-i18n="unsub.confirm_detail">Du erhältst dann <b>keine weiteren E-Mails</b> von uns. Du kannst dich jederzeit auf <a href="/">seasonalpha.ai</a> neu anmelden.</p>
+        <p style="font-size:0.85rem" id="confirm-detail" data-i18n-html="unsub.confirm_detail">Du erhältst dann <b>keine weiteren E-Mails</b> von uns. Du kannst dich jederzeit auf <a href="/">seasonalpha.ai</a> neu anmelden.</p>
         <div class="unsub-actions">
           <button type="button" class="unsub-btn unsub-btn--danger" id="btn-unsubscribe" data-i18n="unsub.btn_confirm">Ja, abmelden</button>
           <a href="/" class="unsub-btn unsub-btn--ghost" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none" data-i18n="unsub.btn_cancel">Abbrechen</a>
@@ -141,7 +141,7 @@
 
       <div id="view-success" style="display:none">
         <p style="color:#30e878;font-size:1.1rem;font-weight:700;margin-top:0" data-i18n="unsub.success_heading">✓ Erfolgreich abgemeldet</p>
-        <p id="success-detail" data-i18n="unsub.success_detail">Du erhältst keine weiteren E-Mails von SeasonAlpha. Schade dass du gehst — falls du es dir anders überlegst, melde dich einfach wieder auf <a href="/" style="color:var(--accent)">seasonalpha.ai</a> an.</p>
+        <p id="success-detail" data-i18n-html="unsub.success_detail">Du erhältst keine weiteren E-Mails von SeasonAlpha. Schade dass du gehst — falls du es dir anders überlegst, melde dich einfach wieder auf <a href="/" style="color:var(--accent)">seasonalpha.ai</a> an.</p>
         <div class="unsub-actions">
           <a href="/" class="unsub-btn unsub-btn--ghost" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none" data-i18n="unsub.btn_home">Zur Startseite</a>
         </div>
@@ -149,17 +149,17 @@
 
       <div id="view-error" style="display:none">
         <p id="error-message" style="color:#ff6060" data-i18n="unsub.error_generic">Fehler beim Abmelden.</p>
-        <p style="font-size:0.85rem" data-i18n="unsub.error_contact">Schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a> und wir entfernen dich manuell.</p>
+        <p style="font-size:0.85rem" data-i18n-html="unsub.error_contact">Schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a> und wir entfernen dich manuell.</p>
       </div>
 
       <div id="view-missing" style="display:none">
         <p data-i18n="unsub.missing_link">Dieser Link ist unvollständig oder abgelaufen.</p>
-        <p style="font-size:0.85rem" data-i18n="unsub.missing_detail">Um dich abzumelden, öffne bitte den Unsubscribe-Link in einer deiner letzten SeasonAlpha-E-Mails. Oder schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a>.</p>
+        <p style="font-size:0.85rem" data-i18n-html="unsub.missing_detail">Um dich abzumelden, öffne bitte den Unsubscribe-Link in einer deiner letzten SeasonAlpha-E-Mails. Oder schreib uns an <a href="mailto:info@seasonalpha.ai" style="color:var(--accent)">info@seasonalpha.ai</a>.</p>
       </div>
 
       <div class="unsub-status" id="status"></div>
 
-      <div class="unsub-footer" data-i18n="unsub.footer">
+      <div class="unsub-footer" data-i18n-html="unsub.footer">
         🇩🇪 DSGVO-konform · <a href="/rechtliches">Datenschutz</a> · <a href="/">SeasonAlpha</a>
       </div>
     </div>

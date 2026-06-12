@@ -128,16 +128,16 @@
       <div class="vix-months" id="vix-months-checkboxes">
         <label><input type="checkbox" data-month="1" checked> Jan</label>
         <label><input type="checkbox" data-month="2" checked> Feb</label>
-        <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+        <label><input type="checkbox" data-month="3" checked> <span data-i18n="common.mon_mar">M&auml;r</span></label>
         <label><input type="checkbox" data-month="4" checked> Apr</label>
-        <label><input type="checkbox" data-month="5" checked> Mai</label>
+        <label><input type="checkbox" data-month="5" checked> <span data-i18n="common.mon_may">Mai</span></label>
         <label><input type="checkbox" data-month="6" checked> Jun</label>
         <label><input type="checkbox" data-month="7" checked> Jul</label>
         <label><input type="checkbox" data-month="8" checked> Aug</label>
         <label><input type="checkbox" data-month="9" checked> Sep</label>
-        <label><input type="checkbox" data-month="10" checked> Okt</label>
+        <label><input type="checkbox" data-month="10" checked> <span data-i18n="common.mon_oct">Okt</span></label>
         <label><input type="checkbox" data-month="11" checked> Nov</label>
-        <label><input type="checkbox" data-month="12" checked> Dez</label>
+        <label><input type="checkbox" data-month="12" checked> <span data-i18n="common.mon_dec">Dez</span></label>
       </div>
       <div style="display:flex;gap:.25rem;margin-top:.4rem">
         <button type="button" id="btn-vix-all" class="btn-mini" data-i18n="common.all">Alle</button>
@@ -167,7 +167,7 @@
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
         <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
-        <span data-i18n="vix.intro_desc">Der VIX-Verfall (VIXpiration) findet monatlich statt &mdash; 30 Kalendertage vor dem 3.&nbsp;Freitag (CBOE-Regel).
+        <span data-i18n-html="vix.intro_desc">Der VIX-Verfall (VIXpiration) findet monatlich statt &mdash; 30 Kalendertage vor dem 3.&nbsp;Freitag (CBOE-Regel).
         Hier siehst du, wie sich der Markt typischerweise rund um diesen Termin verh&auml;lt:
         durchschnittlicher Renditeverlauf, Volatilit&auml;tsmuster, Signifikanztests und ein Backtest der VIX-Strategie.
         <b>Sidebar:</b> Stelle Ticker, Zeitraum und Event-Fenster (t&minus;x bis t+y) ein &mdash; alle Sektionen aktualisieren sich automatisch.</span>
@@ -182,7 +182,7 @@
         <div class="content">
           <div style="margin-bottom:.75rem">
             <span class="badge-vix">VIXpiration</span>
-            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem" data-i18n="vix.settlement_caption">
               t=0 = VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage)
             </span>
           </div>
@@ -210,7 +210,7 @@
         <div class="content">
           <div style="margin-bottom:.5rem">
             <span class="badge-vix">VIXpiration</span>
-            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem" data-i18n="vix.settlement_caption">
               t=0 = VIX-Settlement-Tag (Kalender-3.Fr &minus; 30 Tage)
             </span>
           </div>

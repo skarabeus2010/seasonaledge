@@ -23,6 +23,12 @@ jobs:
             # Supabase Credentials in Landing-HTML injizieren
             bash deploy/inject_credentials.sh /opt/seasonaledge
 
+            # EN-Landing-Pages vorrendern -> landing/en/<slug>.html (statisch).
+            # Laeuft NACH inject_credentials, damit die EN-Pages Credentials +
+            # Cache-Bust erben. Non-fatal: nginx faellt sonst auf den
+            # Laufzeit-sub_filter-Swap zurueck (@en_runtime).
+            python3 landing/build_en.py --write || echo "  [build_en] fehlgeschlagen (non-fatal)"
+
             # SEO + Blog generieren
             pip install -q Jinja2 PyYAML 2>/dev/null || pip3 install -q Jinja2 PyYAML 2>/dev/null
             python3 seo/programmatic_seo_builder.py
@@ -37,8 +43,9 @@ jobs:
             # Landing-Chart-Daten generieren (Split-Slider ^DJI, schreibt nach landing/data/ = host-sichtbar)
             docker compose exec -T app python3 scripts/generate_landing_chart.py 2>/dev/null || echo "generate_landing_chart.py uebersprungen"
 
-            # nginx config + landing HTML neu laden
-            docker compose restart nginx
+            # nginx config testen, dann GRACEFUL reloaden. Bei Syntaxfehler
+            # bleibt die alte Config aktiv (kein Downtime) — Fehler wird geloggt.
+            docker compose exec -T nginx nginx -t && docker compose exec -T nginx nginx -s reload || echo "  [nginx] config-Test fehlgeschlagen — alte Config bleibt aktiv"
 
             # IndexNow: Bing/Yandex/Seznam ueber die neuen URLs informieren
             # Non-blocking: Fehler werden geloggt aber brechen den Deploy nicht

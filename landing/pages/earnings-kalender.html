@@ -108,9 +108,9 @@
     </div>
 
     <div class="intro-box">
-      <b data-i18n="common.what_shows">Was zeigt diese Seite?</b> <span data-i18n="earn.intro_desc">Analysiert das Kursverhalten und die <b>Volatilität</b> rund um Quartalszahlen: Pre-Earnings-Drift (Kursanstieg vor Zahlen), den Earnings-Day-Move, Post-Earnings-Drift sowie den <b>Vola-Crush</b> (Rückgang der Schwankungsbreite nach Bekanntgabe). Wo vorhanden: Beat vs. Miss Aufspaltung.</span>
+      <b data-i18n="common.what_shows">Was zeigt diese Seite?</b> <span data-i18n-html="earn.intro_desc">Analysiert das Kursverhalten und die <b>Volatilität</b> rund um Quartalszahlen: Pre-Earnings-Drift (Kursanstieg vor Zahlen), den Earnings-Day-Move, Post-Earnings-Drift sowie den <b>Vola-Crush</b> (Rückgang der Schwankungsbreite nach Bekanntgabe). Wo vorhanden: Beat vs. Miss Aufspaltung.</span>
       <br><br>
-      <span style="color:var(--muted)"><b data-i18n="earn.data_availability_label">Datenverfügbarkeit</b>: <span data-i18n="earn.data_availability_desc">Aktuell unterstützt: <b>US-Aktien</b> (4 Quartale je Run, wachsen täglich auf bis zu 16 in einem Jahr). Indizes, Futures, Crypto und ETFs haben keine Earnings. Europäische und asiatische Werte folgen, sobald wir eine geeignete Datenquelle anbinden.</span></span>
+      <span style="color:var(--muted)"><b data-i18n="earn.data_availability_label">Datenverfügbarkeit</b>: <span data-i18n-html="earn.data_availability_desc">Aktuell unterstützt: <b>US-Aktien</b> (4 Quartale je Run, wachsen täglich auf bis zu 16 in einem Jahr). Indizes, Futures, Crypto und ETFs haben keine Earnings. Europäische und asiatische Werte folgen, sobald wir eine geeignete Datenquelle anbinden.</span></span>
     </div>
 
     <div class="error-banner" id="error-banner"></div>
@@ -137,7 +137,7 @@
     <!-- ── Volatilitäts-Analyse ── -->
     <details open id="sec-vola" style="display:none">
       <summary data-i18n="earn.vola_title">Volatilität vor &amp; nach Earnings &mdash; Vola-Crush</summary>
-      <div style="margin:.5rem 0 .5rem;font-size:.8125rem;color:var(--muted)" data-i18n="earn.vola_desc">
+      <div style="margin:.5rem 0 .5rem;font-size:.8125rem;color:var(--muted)" data-i18n-html="earn.vola_desc">
         Durchschnittlicher <b>absoluter Tagesertrag</b> (realisierte Vola) je Handelstag im Event-Fenster.
         Der typische Anstieg vor Earnings und der Vola-Crush danach sind deutlich sichtbar.
       </div>
@@ -157,9 +157,9 @@
         <p><b data-i18n="common.data_source">Datenquelle</b>: <span data-i18n="earn.methodik_source">Kursdaten aus der SeasonAlpha-Datenbank. Earnings-Termine und EPS-Daten von Yahoo Finance (historische Quartalsergebnisse).</span></p>
         <p><b data-i18n="earn.methodik_t0_label">t0 = Earnings-Tag</b> <span data-i18n="earn.methodik_t0_desc">(Datum der Veröffentlichung der Quartalszahlen). After-Market-Berichte spiegeln sich typischerweise im Kurs des nächsten Handelstages wider — dieser Effekt ist in der t0/t+1-Bewegung sichtbar.</span></p>
         <p><b data-i18n="common.normalization">Normierung</b>: <span data-i18n="earn.methodik_normierung">Alle Event-Fenster werden auf den t0-Schlusskurs normiert. Positive Werte bedeuten: Kurs über dem Earnings-Schlusskurs.</span></p>
-        <p><b data-i18n="earn.beat_miss">Beat / Miss</b>: <span data-i18n="earn.methodik_beat_miss">"Beat" = EPS actual &gt; EPS estimate; "Miss" = EPS actual &lt; EPS estimate. Nur verfügbar wenn Yahoo Finance EPS-Daten liefert.</span></p>
+        <p><b data-i18n="earn.beat_miss">Beat / Miss</b>: <span data-i18n-html="earn.methodik_beat_miss">"Beat" = EPS actual &gt; EPS estimate; "Miss" = EPS actual &lt; EPS estimate. Nur verfügbar wenn Yahoo Finance EPS-Daten liefert.</span></p>
         <p><b data-i18n="earn.vola_crush">Vola-Crush</b>: <span data-i18n="earn.methodik_vola_crush">Gemessen als durchschnittlicher absoluter Tagesertrag (|Δ%|) je Tag im Fenster. Der typische Anstieg vor Earnings (durch Unsicherheit) und der Rückgang danach (Vola-Crush nach Auflösung der Unsicherheit) sind ein bekanntes Muster in Optionsmärkten.</span></p>
-        <p data-i18n="earn.methodik_realized_vola"><b>Realisierte Vola vor Earnings</b> = Ø |tägliche Rendite| in den t-vor Handelstagen. <b>Realisierte Vola nach Earnings</b> = Ø |tägliche Rendite| in den t-nach Handelstagen (t0 ausgeschlossen).</p>
+        <p data-i18n-html="earn.methodik_realized_vola"><b>Realisierte Vola vor Earnings</b> = Ø |tägliche Rendite| in den t-vor Handelstagen. <b>Realisierte Vola nach Earnings</b> = Ø |tägliche Rendite| in den t-nach Handelstagen (t0 ausgeschlossen).</p>
       </div>
     </details>
   </main>

@@ -166,7 +166,7 @@
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
         <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
-        <span data-i18n="svb.intro_desc">Das Spot-Vol Beta misst, wie stark die Volatilit&auml;t (VIX) auf Kursbewegungen des Index reagiert.
+        <span data-i18n-html="svb.intro_desc">Das Spot-Vol Beta misst, wie stark die Volatilit&auml;t (VIX) auf Kursbewegungen des Index reagiert.
         Ein negatives Beta bedeutet: Fallende Kurse treiben die Vola &uuml;berproportional nach oben (typisches Angst-Muster).
         Hier siehst du OLS-Regression, Rolling Beta im Zeitverlauf und automatisch erkannte Regime-Wendepunkte.
         <b>Sidebar:</b> W&auml;hle Index/VIX-Paar, Zeitraum und Rolling-Fenster.</span>
@@ -216,7 +216,7 @@
           <div id="chart-vrp-iv"></div>
           <div id="chart-vrp-diff"></div>
           <div id="vrp-percentile-ribbon" style="margin-top:1rem"></div>
-          <p class="box-info" data-i18n="svb.vrp_note"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
+          <p class="box-info" data-i18n-html="svb.vrp_note"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
         </div>
       </details>
 
@@ -237,9 +237,9 @@
           <ul>
             <li data-i18n-html="svb.meth_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
             <li data-i18n-html="svb.meth_fixed_pairs"><b>3 feste Paare</b> (nur sinnvolle Kombinationen):</li>
-            <li style="margin-left:1rem">&bull; <b>VIX</b> &rarr; ^GSPC oder SPY (S&amp;P 500)</li>
-            <li style="margin-left:1rem">&bull; <b>VXN</b> &rarr; ^NDX oder QQQ (Nasdaq 100)</li>
-            <li style="margin-left:1rem">&bull; <b>OVX</b> &rarr; CL=F oder USO (WTI Crude)</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_vix">&bull; <b>VIX</b> &rarr; ^GSPC oder SPY (S&amp;P 500)</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_vxn">&bull; <b>VXN</b> &rarr; ^NDX oder QQQ (Nasdaq 100)</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_ovx">&bull; <b>OVX</b> &rarr; CL=F oder USO (WTI Crude)</li>
             <li data-i18n-html="svb.meth_period"><b>Zeitraum:</b> 3&ndash;20 Jahre oder Max (ab 1990)</li>
           </ul>
           <h3 data-i18n="common.calculation">Berechnung</h3>

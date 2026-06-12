@@ -269,7 +269,7 @@
       <div class="bento" id="bento" style="display:none">
         <!-- KI-Score (gross, 6 cols) -->
         <div class="bento-card bento-ki" id="card-ki">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zum KI Composite Score">i</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum KI Composite Score" data-i18n-aria="dash.aria_ki">i</div>
           <div class="info-tooltip" data-i18n-html="dash.tooltip_ki"><b>KI Composite Score</b> — Gesamtnote 0&ndash;10 aus vier unabhängigen Sub-Scores (Saisonalität, Drawdown, Volatilität, Momentum). <b>&ge; 6,5</b> = bullish, <b>&le; 3,5</b> = bearish, dazwischen neutral. Der Score ist eine aggregierte Signal-Stärke, kein Renditeversprechen.</div>
           <div class="ttl" data-i18n="dash.ki_title"><span class="ico">🧠</span> KI Composite Score</div>
           <div id="ki-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
@@ -277,7 +277,7 @@
 
         <!-- Crash-Ampel (3 cols) -->
         <div class="bento-card bento-crash" id="card-crash">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Crash-Ampel">i</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Crash-Ampel" data-i18n-aria="dash.aria_crash">i</div>
           <div class="info-tooltip" data-i18n-html="dash.tooltip_crash"><b>Crash-Ampel</b> — Isolation-Forest-Modell auf Tagesrenditen + Volatilität des Tickers. <b>Grün</b> = ruhiges Regime, <b>Gelb</b> = erhöhte Vorsicht, <b>Rot</b> = Stress-Regime. Risk-Score 0&ndash;100 quantifiziert die Anomalie-Stärke.</div>
           <div class="ttl" data-i18n="dash.crash_title"><span class="ico">🚦</span> Crash-Ampel</div>
           <div id="crash-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
@@ -285,7 +285,7 @@
 
         <!-- Anomalie-Radar (2 cols) -->
         <div class="bento-card bento-anomaly" id="card-anomaly">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar">i</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar" data-i18n-aria="dash.aria_anomaly">i</div>
           <div class="info-tooltip" data-i18n-html="dash.tooltip_anomaly"><b>Anomalie-Radar</b> — Misst wie stark die Rendite der letzten 10 Handelstage vom historischen Mittel am gleichen Kalender-Fenster abweicht. <b>Grün</b> = ungewöhnlich stark, <b>Rot</b> = ungewöhnlich schwach. Nützlich als Contrarian-Hinweis bei Extremwerten.</div>
           <div class="ttl" data-i18n="dash.anomaly_title"><span class="ico">📡</span> Anomalie</div>
           <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
@@ -293,7 +293,7 @@
 
         <!-- Trifecta (3 cols, in oberster Zeile) -->
         <div class="bento-card bento-trifecta" id="card-trifecta">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Januar Trifecta">i</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Januar Trifecta" data-i18n-aria="dash.aria_trifecta">i</div>
           <div class="info-tooltip" data-i18n-html="dash.tooltip_trifecta"><b>Januar Trifecta</b> — Klassisches Markt-Indiz: wenn (1) Santa-Rally positiv, (2) erste 5 Handelstage positiv und (3) Januar-Monat positiv zusammentreffen, war das Gesamtjahr historisch in <b>&gt; 80 %</b> der Fälle positiv. Trifft alle drei Bedingungen nicht zu, ist die Erfolgs-Wahrscheinlichkeit deutlich niedriger.</div>
           <div class="ttl" data-i18n="dash.trifecta_title"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
           <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
@@ -319,7 +319,7 @@
 
         <!-- TruePath (6 cols) -->
         <div class="bento-card bento-truepath" id="card-truepath">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TruePath">i</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TruePath" data-i18n-aria="dash.aria_truepath">i</div>
           <div class="info-tooltip" data-i18n-html="dash.tooltip_truepath"><b>TruePath</b> &mdash; Pattern-Matching über die letzten N Handelstage: jedes historische Jahr wird per Pearson-Korrelation + euklidischem Abstand zum aktuellen YTD-Verlauf verglichen. Die Top-Matches werden <b>gewichtet gemittelt</b> zu einer Projektion bis Jahresende &mdash; plus &plusmn; &sigma;-Cone für die Unsicherheit. Kein Vorhersage-Modell, sondern "wie lief es in ähnlichen Jahren weiter?".</div>
           <div class="ttl" data-i18n="dash.truepath_title"><span class="ico">🛤️</span> TruePath — Top-Match Jahre</div>
           <div id="chart-truepath"></div>
@@ -1976,7 +1976,7 @@
       function kpi(label, value, colorClass, tooltip) {
         var badge = '';
         if (tooltip) {
-          badge = '<div class="info-badge" tabindex="0" aria-label="Erklärung">i</div>' +
+          badge = '<div class="info-badge" tabindex="0" aria-label="' + SA.i18n.t('common.info_aria','Erklärung') + '">i</div>' +
                   '<div class="info-tooltip">' + tooltip + '</div>';
         }
         return '<div class="kpi">' + badge +

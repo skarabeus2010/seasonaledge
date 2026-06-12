@@ -141,10 +141,10 @@
         <div id="triple-months-block" style="margin-top:.6rem">
           <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em" data-i18n="opex.select_quarters">Quartale w&auml;hlen</div>
           <div class="vix-months" id="triple-months-checkboxes" style="grid-template-columns:repeat(4,1fr)">
-            <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+            <label><input type="checkbox" data-month="3" checked> <span data-i18n="common.mon_mar">M&auml;r</span></label>
             <label><input type="checkbox" data-month="6" checked> Jun</label>
             <label><input type="checkbox" data-month="9" checked> Sep</label>
-            <label><input type="checkbox" data-month="12" checked> Dez</label>
+            <label><input type="checkbox" data-month="12" checked> <span data-i18n="common.mon_dec">Dez</span></label>
           </div>
           <div style="display:flex;gap:.25rem;margin-top:.4rem">
             <button type="button" id="btn-triple-all" class="btn-mini" data-i18n="common.all">Alle</button>
@@ -157,16 +157,16 @@
           <div class="vix-months" id="opex-months-checkboxes">
             <label><input type="checkbox" data-month="1" checked> Jan</label>
             <label><input type="checkbox" data-month="2" checked> Feb</label>
-            <label><input type="checkbox" data-month="3" checked> M&auml;r</label>
+            <label><input type="checkbox" data-month="3" checked> <span data-i18n="common.mon_mar">M&auml;r</span></label>
             <label><input type="checkbox" data-month="4" checked> Apr</label>
-            <label><input type="checkbox" data-month="5" checked> Mai</label>
+            <label><input type="checkbox" data-month="5" checked> <span data-i18n="common.mon_may">Mai</span></label>
             <label><input type="checkbox" data-month="6" checked> Jun</label>
             <label><input type="checkbox" data-month="7" checked> Jul</label>
             <label><input type="checkbox" data-month="8" checked> Aug</label>
             <label><input type="checkbox" data-month="9" checked> Sep</label>
-            <label><input type="checkbox" data-month="10" checked> Okt</label>
+            <label><input type="checkbox" data-month="10" checked> <span data-i18n="common.mon_oct">Okt</span></label>
             <label><input type="checkbox" data-month="11" checked> Nov</label>
-            <label><input type="checkbox" data-month="12" checked> Dez</label>
+            <label><input type="checkbox" data-month="12" checked> <span data-i18n="common.mon_dec">Dez</span></label>
           </div>
           <div style="display:flex;gap:.25rem;margin-top:.4rem">
             <button type="button" id="btn-opex-all" class="btn-mini" data-i18n="common.all">Alle</button>
@@ -184,7 +184,7 @@
       <hr>
       <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
         <b>OPEX</b> = <span data-i18n="opex.sidebar_info">3. Freitag im Monat</span><br>
-        <b>Triple Witching</b> = M&auml;r, Jun, Sep, Dez<br>
+        <b>Triple Witching</b> = <span data-i18n="opex.triple_months">M&auml;r, Jun, Sep, Dez</span><br>
         <a href="/vixpiration" style="color:var(--accent);text-decoration:none">VIXpiration-Analyse &rarr;</a>
       </div>
     </aside>
@@ -206,7 +206,7 @@
         <div class="content">
           <div style="margin-bottom:.75rem">
             <span class="badge-triple">Triple Witching</span>
-            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem" data-i18n="opex.triple_caption">
               4 Termine/Jahr: M&auml;r, Jun, Sep, Dez &middot; t=0 = OPEX-Tag
             </span>
           </div>
@@ -279,9 +279,9 @@
       <details id="sec-calendar" style="display:none">
         <summary id="cal-summary">Kalender</summary>
         <div class="content">
-          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)" id="cal-upcoming-title">N&auml;chste 8 Termine</h3>
+          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)" id="cal-upcoming-title" data-i18n="opex.cal_upcoming">N&auml;chste 8 Termine</h3>
           <div id="calendar-upcoming"></div>
-          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)" id="cal-all-title">Alle Termine im Analyse-Zeitraum</h3>
+          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)" id="cal-all-title" data-i18n="opex.cal_all">Alle Termine im Analyse-Zeitraum</h3>
           <div style="max-height:360px;overflow-y:auto">
             <table class="opex-table" id="tbl-all-opex">
               <thead id="thead-all-opex"></thead>
@@ -297,16 +297,16 @@
         <div class="content methodik">
           <h3 data-i18n="common.data_basis">Datengrundlage</h3>
           <ul>
-            <li data-i18n="opex.method_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
-            <li data-i18n="opex.method_opex_date"><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
-            <li data-i18n="opex.method_triple"><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
+            <li data-i18n-html="opex.method_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="opex.method_opex_date"><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
+            <li data-i18n-html="opex.method_triple"><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
           </ul>
           <h3 data-i18n="common.event_window">Event-Window</h3>
           <ul>
-            <li data-i18n="opex.method_t0"><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
-            <li data-i18n="opex.method_return"><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
-            <li data-i18n="opex.method_window"><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
-            <li data-i18n="opex.method_aggregation"><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
+            <li data-i18n-html="opex.method_t0"><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
+            <li data-i18n-html="opex.method_return"><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
+            <li data-i18n-html="opex.method_window"><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
+            <li data-i18n-html="opex.method_aggregation"><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
           </ul>
           <h3 data-i18n="common.backtest">Backtest</h3>
           <ul>

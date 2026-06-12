@@ -169,7 +169,7 @@
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
         <b style="color:var(--accent)" data-i18n="bt.intro_title">Was zeigt diese Seite?</b> &mdash;
-        <span data-i18n="bt.intro_desc">Die Backtest Engine testet saisonale Handelsstrategien auf historischen Daten. W&auml;hle ein Event (FOMC, OPEX, Feiertag, Kalendertag&nbsp;&hellip;), definiere Entry/Exit-Offsets und sieh dir Equity-Kurve, Trefferquote und Signifikanz an.
+        <span data-i18n-html="bt.intro_desc">Die Backtest Engine testet saisonale Handelsstrategien auf historischen Daten. W&auml;hle ein Event (FOMC, OPEX, Feiertag, Kalendertag&nbsp;&hellip;), definiere Entry/Exit-Offsets und sieh dir Equity-Kurve, Trefferquote und Signifikanz an.
         <b>4 Tabs:</b> Einzelner Backtest, Grid-Optimierung (alle Parameterkombinationen), Walk-Forward-Analyse (Out-of-Sample) und Event-Relevanz-Ranking.
         <b>Sidebar:</b> Ticker, Zeitraum, Event-Typ, Offsets, Stop-Loss und Indikator-Filter &mdash; alles kombinierbar.</span>
       </div>
@@ -374,7 +374,7 @@
               <li data-i18n-html="bt.score_li_winrate"><b>Win-Rate</b> (30%): Anteil der Trades > 0</li>
               <li data-i18n-html="bt.score_li_effect"><b>Effect Size</b> (20%): Cohen's d, gecappt bei 1.0</li>
             </ul>
-            <p data-i18n="bt.score_legend"><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
+            <p data-i18n-html="bt.score_legend"><b>t-Statistik</b>: Signalstärke vs. Null. |t| > 2 = robuster Effekt. <b>p-Wert</b>: Wahrscheinlichkeit für Zufall. p &lt; 0.05 = signifikant. <b>Cohen's d</b>: Effektstärke. d &gt; 0.5 = mittel, d &gt; 0.8 = groß.</p>
           </div>
         </details>
       </div>
@@ -383,7 +383,7 @@
         <summary data-i18n="common.methodology">📚 Methodik</summary>
         <div class="content">
           <h3 data-i18n="bt.backtest_logic">Backtest-Logik</h3>
-          <p data-i18n="bt.backtest_logic_desc">Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
+          <p data-i18n-html="bt.backtest_logic_desc">Pro Event-Datum wird ein Trade definiert: <code>entry = event_date - days_before</code> Trading Days, <code>exit = event_date + days_after</code> Trading Days. Mindestabstand zwischen Trades = 5 Tage (verhindert Überlappung).</p>
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li data-i18n-html="bt.metric_total_return"><b>Total Return</b>: kumulierte Equity ab 100 (compound).</li>

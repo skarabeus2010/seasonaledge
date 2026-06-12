@@ -145,7 +145,7 @@
   <div class="app">
     <aside class="sidebar">
       <h3 data-i18n="sidebar.search">Suche</h3>
-      <input type="text" id="sel-search" placeholder="Ticker oder Name &hellip;" autocomplete="off">
+      <input type="text" id="sel-search" placeholder="Ticker oder Name &hellip;" data-i18n-placeholder="scan.search_placeholder" autocomplete="off">
 
       <hr>
       <div class="filter-group">
@@ -245,17 +245,17 @@
       <details>
         <summary data-i18n="section.methodology_data">Methodik &amp; Daten</summary>
         <div class="content">
-          <p data-i18n="scan.method_data_source"><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
-          <p data-i18n="scan.method_signal_label"><b>Signal-Ableitung:</b></p>
+          <p data-i18n-html="scan.method_data_source"><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
+          <p data-i18n-html="scan.method_signal_label"><b>Signal-Ableitung:</b></p>
           <ul style="margin-left:1.25rem;color:var(--dim);font-size:.8125rem">
             <li><span style="color:var(--green);font-weight:700">Bullish</span>: Score &ge; 6.5</li>
             <li><span style="color:var(--accent);font-weight:700">Neutral</span>: 3.5 &lt; Score &lt; 6.5</li>
             <li><span style="color:var(--red);font-weight:700">Bearish</span>: Score &le; 3.5</li>
           </ul>
-          <p data-i18n="scan.method_win_rate"><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
-          <p data-i18n="scan.method_avg_return"><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
+          <p data-i18n-html="scan.method_win_rate"><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
+          <p data-i18n-html="scan.method_avg_return"><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
           <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)" data-i18n="scan.method_update_note">Hinweis: Der Scanner aktualisiert alle Ticker nur bei voll-Durchl&auml;ufen (je nach Serverlast mehrmals pro Woche, nicht zwingend t&auml;glich). Das Scan-Datum oben zeigt den tats&auml;chlichen Stand der Daten.</p>
-          <p data-i18n="scan.method_disclaimer"><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
+          <p data-i18n-html="scan.method_disclaimer"><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
         </div>
       </details>
     </main>
@@ -478,10 +478,10 @@
         var escName = (r.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
         var inWL = hasWL && SA.watchlist.has(r.ticker);
         var wlClass = inWL ? 'btn-wl-row active' : 'btn-wl-row';
-        var wlTitle = inWL ? r.ticker + ' aus Watchlist entfernen' : r.ticker + ' zur Watchlist hinzufügen';
+        var wlTitle = inWL ? r.ticker + ' ' + SA.i18n.t('scan.wl_remove','aus Watchlist entfernen') : r.ticker + ' ' + SA.i18n.t('scan.wl_add','zur Watchlist hinzufügen');
         return '<tr data-ticker="' + r.ticker + '">' +
           '<td class="rank">' + (i + 1) + '</td>' +
-          '<td class="ticker"><a href="' + dashHref + '" title="Im Dashboard &ouml;ffnen">' + r.ticker + '</a></td>' +
+          '<td class="ticker"><a href="' + dashHref + '" title="' + SA.i18n.t('scan.open_dash','Im Dashboard öffnen') + '">' + r.ticker + '</a></td>' +
           '<td class="name" title="' + escName + '">' + escName + '</td>' +
           '<td class="cat">' + r.kategorie + '</td>' +
           '<td><span class="sig-badge ' + sigClass + '">' + r.signal + '</span></td>' +
@@ -514,7 +514,7 @@
         var res = SA.watchlist.toggle(ticker);
         var nowIn = res.added;
         btn.classList.toggle('active', nowIn);
-        btn.title = nowIn ? ticker + ' aus Watchlist entfernen' : ticker + ' zur Watchlist hinzufügen';
+        btn.title = nowIn ? ticker + ' ' + SA.i18n.t('scan.wl_remove','aus Watchlist entfernen') : ticker + ' ' + SA.i18n.t('scan.wl_add','zur Watchlist hinzufügen');
         // Sidebar-Badge updaten (falls vorhanden, s.u.)
         updateScannerWatchlistBadge();
       });
@@ -526,7 +526,7 @@
           var t = b.getAttribute('data-ticker');
           var inWL = SA.watchlist.has(t);
           b.classList.toggle('active', inWL);
-          b.title = inWL ? t + ' aus Watchlist entfernen' : t + ' zur Watchlist hinzufügen';
+          b.title = inWL ? t + ' ' + SA.i18n.t('scan.wl_remove','aus Watchlist entfernen') : t + ' ' + SA.i18n.t('scan.wl_add','zur Watchlist hinzufügen');
         });
         updateScannerWatchlistBadge();
       });
