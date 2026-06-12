@@ -18,13 +18,44 @@ SA.i18n = (function() {
   var _data = {};
   var _isEN = false;
 
+  // Paths that have no EN equivalent — never auto-redirect here
+  var _noAutoRedirect = ['/blog/', '/tools/', '/rechtliches', '/disclaimer', '/app/', '/umami/'];
+
   function _detectLang() {
     var path = window.location.pathname;
+
+    // Already on an EN URL
     if (path === '/en/' || path === '/en' || path.indexOf('/en/') === 0) {
       _isEN = true;
       _lang = 'en';
+      try { localStorage.setItem('sa_lang', 'en'); } catch (e) {}
+      return _lang;
     }
-    return _lang;
+
+    // Explicit user preference stored from a previous visit or switchTo() call
+    var stored;
+    try { stored = localStorage.getItem('sa_lang'); } catch (e) {}
+    if (stored === 'en') {
+      var canRedirect = !_noAutoRedirect.some(function(p) { return path.indexOf(p) === 0; });
+      if (canRedirect) {
+        window.location.replace('/en' + (path === '/' ? '/' : path));
+      }
+      return 'en';
+    }
+    if (stored === 'de') return 'de';
+
+    // First visit: detect browser language
+    var browserLang = ((navigator.language || navigator.userLanguage) || '').toLowerCase();
+    if (browserLang.indexOf('en') === 0) {
+      var canAutoRedirect = !_noAutoRedirect.some(function(p) { return path.indexOf(p) === 0; });
+      if (canAutoRedirect) {
+        try { localStorage.setItem('sa_lang', 'en'); } catch (e) {}
+        window.location.replace('/en' + (path === '/' ? '/' : path));
+      }
+      return 'en';
+    }
+
+    return _lang; // 'de'
   }
 
   function _loadJSON(lang) {
