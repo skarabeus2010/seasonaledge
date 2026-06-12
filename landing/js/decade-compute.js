@@ -472,16 +472,17 @@ SA.decadeCompute = {
 
   /** Recovery-Tage formatieren: "3T", "2M 5T", "1J 3M 25T", "nicht erholt (>2J 1M)" */
   _formatRecovery: function(days, recovered) {
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var totalMon = Math.floor(days / 21);
     var restDays = days % 21;
     var years = Math.floor(totalMon / 12);
     var months = totalMon % 12;
     var parts = [];
-    if (years > 0) parts.push(years + 'J');
+    if (years > 0) parts.push(years + (_en ? 'Y' : 'J'));
     if (months > 0) parts.push(months + 'M');
-    if (restDays > 0 || parts.length === 0) parts.push(restDays + 'T');
+    if (restDays > 0 || parts.length === 0) parts.push(restDays + (_en ? 'd' : 'T'));
     var str = parts.join(' ');
-    return recovered ? str : 'nicht erholt (>' + str + ')';
+    return recovered ? str : (_en ? SA.i18n.t('dc.not_recovered') : 'nicht erholt') + ' (>' + str + ')';
   },
 
   /** "YYYY-MM-DD" → "DD.MM.YYYY" */
@@ -584,31 +585,29 @@ SA.decadeCompute = {
       }
     } catch (e) { console.warn('[anomaly] compute failed:', e); }
 
-    var _isENRender = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     if (!anom || anom.n_comparisons === 0) {
       el.innerHTML = '<p style="color:var(--muted);font-size:.875rem;margin:0">' +
-        (_isENRender ? 'Anomaly score unavailable (insufficient historical comparison windows).' : 'Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).') +
+        (_en ? SA.i18n.t('dc.anomaly_unavailable') : 'Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).') +
         '</p>';
       return;
     }
 
     var fmtPct = function(v) { if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var scoreCls = anom.score >= 70 ? 'red' : anom.score >= 40 ? 'gold' : 'green';
-    var statusLabel = _isENRender
-      ? (anom.score >= 70 ? 'Strongly anomalous' : anom.score >= 40 ? 'Slightly anomalous' : 'Normal')
+    var statusLabel = _en
+      ? (anom.score >= 70 ? SA.i18n.t('dc.status_strongly_anomalous') : anom.score >= 40 ? SA.i18n.t('dc.status_slightly_anomalous') : SA.i18n.t('dc.status_normal'))
       : (anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal');
     var retCls = anom.return_10d >= 0 ? 'green' : 'red';
 
     var pRank = anom.percentile_rank;
     var pRankCell;
-    var _pRankLabel = _isENRender ? 'Percentile Rank' : 'Perzentil-Rang';
-    var _percSuffix = _isENRender ? '' : '. Perzentil';
-    var _percPrefix = _isENRender ? '' : '';
+    var _pRankLabel = _en ? SA.i18n.t('dc.percentile_rank') : 'Perzentil-Rang';
     if (pRank == null) {
       pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div><div class="kpi-value">&ndash;</div></div>';
     } else {
       var pRankCls = (pRank < 10 || pRank > 90) ? 'red' : (pRank < 20 || pRank > 80) ? 'gold' : 'green';
-      var pRankText = _isENRender ? pRank + 'th Percentile' : pRank + '. Perzentil';
+      var pRankText = _en ? pRank + SA.i18n.t('dc.percentile_suffix') : pRank + '. Perzentil';
       pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div>' +
         '<div class="sa-anom-prank">' +
           '<div class="sa-anom-prank-label ' + pRankCls + '">' + pRankText + '</div>' +
@@ -620,8 +619,8 @@ SA.decadeCompute = {
       '</div>';
     }
 
-    var _retLabel = _isENRender ? '10d-Return ' : '10d-Rendite ';
-    var _avgLabel = _isENRender ? 'Historical Avg' : 'Historisch &Oslash;';
+    var _retLabel = _en ? SA.i18n.t('dc.return_10d') + ' ' : '10d-Rendite ';
+    var _avgLabel = _en ? SA.i18n.t('dc.historical_avg') : 'Historisch &Oslash;';
     var html = '<div class="sa-anom-row">' +
       '<div class="kpi"><div class="kpi-label">Score</div><div class="kpi-value ' + scoreCls + '">' + anom.score + ' / 100</div></div>' +
       '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + scoreCls + '">' + statusLabel + '</div></div>' +

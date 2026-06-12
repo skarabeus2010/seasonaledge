@@ -192,11 +192,12 @@ function initSidebarToggle() {
   if (initialCollapsed) document.body.classList.add('sa-sidebar-collapsed');
 
   // Toggle-Button
+  var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
   var btn = document.createElement('button');
   btn.className = 'sa-sb-toggle';
   btn.type = 'button';
-  btn.setAttribute('aria-label', 'Sidebar ein- oder ausblenden');
-  btn.setAttribute('title', 'Sidebar ein-/ausblenden');
+  btn.setAttribute('aria-label', _en ? SA.i18n.t('app.sidebar_toggle_aria') : 'Sidebar ein- oder ausblenden');
+  btn.setAttribute('title', _en ? SA.i18n.t('app.sidebar_toggle_title') : 'Sidebar ein-/ausblenden');
   document.body.appendChild(btn);
 
   // Backdrop (nur auf Narrow Screens via CSS sichtbar)
@@ -585,7 +586,7 @@ SA.makeSortable = function(tableOrId) {
   ths.forEach(function(th, idx) {
     th.style.cursor = 'pointer';
     th.style.userSelect = 'none';
-    if (!th.title) th.title = 'Klicken zum Sortieren';
+    if (!th.title) { var _en2 = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN()); th.title = _en2 ? SA.i18n.t('app.sort_click') : 'Klicken zum Sortieren'; }
     th.addEventListener('click', function() {
       if (state.col === idx) {
         state.dir = state.dir === 'asc' ? 'desc' : 'asc';

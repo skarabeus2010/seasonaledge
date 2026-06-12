@@ -116,6 +116,7 @@
     if (!el || el.classList.contains('sa-premium-gate')) return;
     opts = opts || {};
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     injectCSS();
     el.classList.add('sa-premium-gate');
 
@@ -127,9 +128,9 @@
           '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
         '</svg>' +
       '</div>' +
-      '<div class="sa-gate-title">' + (opts.title || 'Premium-Feature') + '</div>' +
-      '<div class="sa-gate-desc">' + (opts.description || 'Dieses Feature ist Teil von SeasonAlpha Premium.') + '</div>' +
-      '<a class="sa-gate-btn" href="/pricing">Upgrade ansehen</a>';
+      '<div class="sa-gate-title">' + (opts.title || (_en ? SA.i18n.t('prem.gate_title') : 'Premium-Feature')) + '</div>' +
+      '<div class="sa-gate-desc">' + (opts.description || (_en ? SA.i18n.t('prem.gate_desc') : 'Dieses Feature ist Teil von SeasonAlpha Premium.')) + '</div>' +
+      '<a class="sa-gate-btn" href="/pricing">' + (_en ? SA.i18n.t('prem.gate_btn') : 'Upgrade ansehen') + '</a>';
 
     el.appendChild(overlay);
   }
@@ -140,12 +141,13 @@
   function gateAll() {
     if (_tier === 'premium') return;
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var els = document.querySelectorAll('[data-premium="true"]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       gate(el, {
-        title: el.getAttribute('data-premium-title') || 'Premium-Feature',
-        description: el.getAttribute('data-premium-desc') || 'Dieses Feature ist Teil von SeasonAlpha Premium.'
+        title: el.getAttribute('data-premium-title') || (_en ? SA.i18n.t('prem.gate_title') : 'Premium-Feature'),
+        description: el.getAttribute('data-premium-desc') || (_en ? SA.i18n.t('prem.gate_desc') : 'Dieses Feature ist Teil von SeasonAlpha Premium.')
       });
     }
   }

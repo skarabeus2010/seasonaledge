@@ -12,6 +12,16 @@ SA.seasonal = {
   MONTH_NAMES_DE: ['Januar','Februar','M\u00E4rz','April','Mai','Juni',
                    'Juli','August','September','Oktober','November','Dezember'],
 
+  MONTH_NAMES_EN: ['January','February','March','April','May','June',
+                   'July','August','September','October','November','December'],
+
+  /** Returns month names array for the current locale. */
+  getMonthNames: function() {
+    return (SA.i18n && SA.i18n.isEN && SA.i18n.isEN())
+      ? SA.seasonal.MONTH_NAMES_EN
+      : SA.seasonal.MONTH_NAMES_DE;
+  },
+
   /**
    * Praesidentenzyklus-Position (1:1 Port von get_presidential_cycle_year)
    * @param {number} year
@@ -242,7 +252,10 @@ SA.seasonal = {
       }
       matrix.push(row);
     }
-    return { years: years, months: SA.seasonal.MONTH_NAMES_DE.map(function(n) { return n.substring(0, 3); }), matrix: matrix };
+    var _monthSrc = SA.i18n && SA.i18n.isEN && SA.i18n.isEN()
+      ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      : SA.seasonal.MONTH_NAMES_DE.map(function(n) { return n.substring(0, 3); });
+    return { years: years, months: _monthSrc, matrix: matrix };
   },
 
   /**

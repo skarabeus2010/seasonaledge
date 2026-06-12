@@ -111,8 +111,9 @@ SA.polymarket = (function() {
       return p >= maxProb - 0.01 ? SA.COLORS.accent : 'rgba(232,168,32,0.35)';
     });
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var cfg = {
-      series: [{ name: 'Wahrscheinlichkeit', data: probs }],
+      series: [{ name: _en ? SA.i18n.t('pmjs.probability') : 'Wahrscheinlichkeit', data: probs }],
       chart: Object.assign({ type: 'bar', height: 360, toolbar: { show: false } }, SA.chartTheme.chart),
       colors: [SA.COLORS.accent],
       plotOptions: {
@@ -133,12 +134,12 @@ SA.polymarket = (function() {
       },
       xaxis: Object.assign({
         categories: cats,
-        title: { text: 'Anzahl Fed-Cuts 2026', style: { color: '#a89878', fontSize: '11px' } }
+        title: { text: _en ? SA.i18n.t('pmjs.fed_cuts_2026') : 'Anzahl Fed-Cuts 2026', style: { color: '#a89878', fontSize: '11px' } }
       }, SA.chartTheme.xaxis),
       yaxis: Object.assign({}, SA.chartTheme.yaxis, {
         labels: { style: { colors: '#a89878', fontSize: '11px' },
                   formatter: function(v) { return v.toFixed(0) + '%'; } },
-        title: { text: 'Implizite Wahrscheinlichkeit', style: { color: '#a89878', fontSize: '11px' } }
+        title: { text: _en ? SA.i18n.t('pmjs.implied_probability') : 'Implizite Wahrscheinlichkeit', style: { color: '#a89878', fontSize: '11px' } }
       }),
       dataLabels: {
         enabled: true, style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 },
@@ -280,9 +281,10 @@ SA.polymarket = (function() {
     var cats = entries.map(function(e) { return e.label; });
     var probs = entries.map(function(e) { return parseFloat(e.prob.toFixed(1)); });
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var color = asset === 'btc' ? '#f7931a' : '#627eea';
     var cfg = {
-      series: [{ name: 'Wahrscheinlichkeit', data: probs }],
+      series: [{ name: _en ? SA.i18n.t('pmjs.probability') : 'Wahrscheinlichkeit', data: probs }],
       chart: Object.assign({ type: 'bar', height: 280, toolbar: { show: false } }, SA.chartTheme.chart),
       colors: [color],
       plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '65%' } },
@@ -299,7 +301,7 @@ SA.polymarket = (function() {
       },
       legend: { show: false },
       title: {
-        text: (asset === 'btc' ? 'Bitcoin' : 'Ethereum') + ' — Ziel-Wahrscheinlichkeiten 2026',
+        text: (asset === 'btc' ? 'Bitcoin' : 'Ethereum') + (_en ? SA.i18n.t('pmjs.target_probs_2026') : ' — Ziel-Wahrscheinlichkeiten 2026'),
         align: 'left', style: { color: color, fontSize: '13px', fontWeight: 700 }
       }
     };
@@ -458,6 +460,7 @@ SA.polymarket = (function() {
     var today = new Date();
     var histData = collectYearEndReturns(priceRows, today);
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var rows = assetMarkets.map(function(m) {
       var match = /^(btc|eth)-above-(\d+)k-2026$/.exec(m.slug);
       if (!match) return null;
@@ -487,9 +490,9 @@ SA.polymarket = (function() {
       var diverge = null, verdict = '—', cls = '';
       if (r.priorProb != null) {
         diverge = (r.priorProb - r.marketProb) * 100;
-        if (Math.abs(diverge) < 3) { verdict = 'Im Einklang'; cls = ''; }
-        else if (diverge > 0) { verdict = 'Saisonal > Markt ·  Markt unterschaetzt'; cls = 'pos'; }
-        else { verdict = 'Markt > Saisonal ·  Markt ueberschaetzt'; cls = 'neg'; }
+        if (Math.abs(diverge) < 3) { verdict = _en ? SA.i18n.t('pmjs.verdict_aligned') : 'Im Einklang'; cls = ''; }
+        else if (diverge > 0) { verdict = _en ? SA.i18n.t('pmjs.verdict_seasonal_above') : 'Saisonal > Markt ·  Markt unterschaetzt'; cls = 'pos'; }
+        else { verdict = _en ? SA.i18n.t('pmjs.verdict_market_above') : 'Markt > Saisonal ·  Markt ueberschaetzt'; cls = 'neg'; }
       }
       var divStr = diverge == null ? '—' : ((diverge >= 0 ? '+' : '') + diverge.toFixed(1) + 'pp');
 
@@ -506,18 +509,23 @@ SA.polymarket = (function() {
     var label = (ticker === 'BTC-USD' ? 'Bitcoin' : 'Ethereum');
     var html =
       '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">' +
-        '<b style="color:var(--accent)">' + label + '</b> — Historie: ' + histData.n + ' Jahre Samples · aktueller Kurs: $' +
-        (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
-        ' · Saisonal-Prior = % der Vergangenheit mit Year-End ≥ benötigter Return ab heutigem Tag.' +
+        '<b style="color:var(--accent)">' + label + '</b> — ' +
+        (_en
+          ? (SA.i18n.t('pmjs.history_label') + ': ' + histData.n + ' ' + SA.i18n.t('pmjs.years_samples') + ' · ' + SA.i18n.t('pmjs.current_price') + ': $' +
+            (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
+            ' · ' + SA.i18n.t('pmjs.seasonal_prior_desc'))
+          : ('Historie: ' + histData.n + ' Jahre Samples · aktueller Kurs: $' +
+            (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
+            ' · Saisonal-Prior = % der Vergangenheit mit Year-End ≥ benötigter Return ab heutigem Tag.')) +
       '</div>' +
       '<table class="perf-table" data-no-sort="1">' +
       '<thead><tr>' +
-        '<th>Ziel 2026</th>' +
-        '<th style="text-align:right">Benötigt</th>' +
-        '<th style="text-align:right">Markt YES</th>' +
-        '<th style="text-align:right">Saisonal-Prior</th>' +
-        '<th style="text-align:right">Divergenz</th>' +
-        '<th>Bewertung</th>' +
+        '<th>' + (_en ? SA.i18n.t('pmjs.col_target_2026') : 'Ziel 2026') + '</th>' +
+        '<th style="text-align:right">' + (_en ? SA.i18n.t('pmjs.col_required') : 'Benötigt') + '</th>' +
+        '<th style="text-align:right">' + (_en ? SA.i18n.t('pmjs.col_market_yes') : 'Markt YES') + '</th>' +
+        '<th style="text-align:right">' + (_en ? SA.i18n.t('pmjs.col_seasonal_prior') : 'Saisonal-Prior') + '</th>' +
+        '<th style="text-align:right">' + (_en ? SA.i18n.t('pmjs.col_divergence') : 'Divergenz') + '</th>' +
+        '<th>' + (_en ? SA.i18n.t('pmjs.col_assessment') : 'Bewertung') + '</th>' +
       '</tr></thead><tbody>' + tbody + '</tbody></table>';
     var el = document.getElementById(elementId);
     if (el) el.innerHTML = html;
@@ -555,14 +563,15 @@ SA.polymarket = (function() {
              '</tr>';
     }).join('');
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var html = '<table class="perf-table" data-no-sort="0">' +
                '<thead><tr>' +
                '<th>Slug</th>' +
-               '<th>Kategorie</th>' +
-               '<th>Frage</th>' +
+               '<th>' + (_en ? SA.i18n.t('pmjs.col_category') : 'Kategorie') + '</th>' +
+               '<th>' + (_en ? SA.i18n.t('pmjs.col_question') : 'Frage') + '</th>' +
                '<th style="text-align:right">YES</th>' +
                '<th style="text-align:right">7d Δ</th>' +
-               '<th style="text-align:right">Liquiditaet</th>' +
+               '<th style="text-align:right">' + (_en ? SA.i18n.t('pmjs.col_liquidity') : 'Liquiditaet') + '</th>' +
                '</tr></thead><tbody>' + rows + '</tbody></table>';
 
     var el = document.getElementById(elementId);

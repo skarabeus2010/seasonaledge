@@ -33,6 +33,18 @@
   window.SA = window.SA || {};
 
   var MONTH_START_DOY = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+
+  function getCycleNames() {
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    return {
+      1: _en ? SA.i18n.t('dc2.cycle_election')     : 'Wahljahr',
+      2: _en ? SA.i18n.t('dc2.cycle_post_election') : 'Nachwahljahr',
+      3: _en ? SA.i18n.t('dc2.cycle_midterm')       : 'Zwischenwahljahr',
+      4: _en ? SA.i18n.t('dc2.cycle_pre_election')  : 'Vorwahljahr'
+    };
+  }
+
+  // Backward-compat static reference (resolved at access time via getter)
   var CYCLE_NAMES = { 1: 'Wahljahr', 2: 'Nachwahljahr', 3: 'Zwischenwahljahr', 4: 'Vorwahljahr' };
 
   // ── Array-Helpers (NaN-safe) ──────────────────────────────────
@@ -309,6 +321,7 @@
     presidentialCycleYear: presidentialCycleYear,
     // Konstanten
     MONTH_START_DOY: MONTH_START_DOY,
-    CYCLE_NAMES: CYCLE_NAMES
+    CYCLE_NAMES: CYCLE_NAMES,
+    getCycleNames: getCycleNames
   };
 })();

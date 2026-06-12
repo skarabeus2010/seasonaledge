@@ -74,10 +74,11 @@ SA.significance = {
    * Signifikanz-Label aus p-Wert.
    */
   sigLabel: function(pValue) {
-    if (pValue < 0.01) return { text: 'Hochsignifikant', color: '#00d4aa' };
-    if (pValue < 0.05) return { text: 'Signifikant', color: '#00d4aa' };
-    if (pValue < 0.10) return { text: 'Grenzwertig', color: '#e8a425' };
-    return { text: 'Nicht signifikant', color: '#ff4757' };
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    if (pValue < 0.01) return { text: _en ? SA.i18n.t('sig.highly_significant') : 'Hochsignifikant', color: '#00d4aa' };
+    if (pValue < 0.05) return { text: _en ? SA.i18n.t('sig.significant') : 'Signifikant', color: '#00d4aa' };
+    if (pValue < 0.10) return { text: _en ? SA.i18n.t('sig.borderline') : 'Grenzwertig', color: '#e8a425' };
+    return { text: _en ? SA.i18n.t('sig.not_significant') : 'Nicht signifikant', color: '#ff4757' };
   },
 
   /**
@@ -113,6 +114,7 @@ SA.significance = {
    * @param {Array} sortOrder - optionale feste Reihenfolge (Array von Namen)
    */
   renderSection: function(results, colsPerRow, sortOrder) {
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     colsPerRow = colsPerRow || 4;
     if (!results || results.length === 0) return '';
     // Feste Reihenfolge statt Relevanz-Sortierung
@@ -157,18 +159,26 @@ SA.significance = {
       // Stats (weiss, groesser)
       html += '<div style="color:#c8d6e5;font-size:.8125rem;margin-top:.375rem;font-family:var(--f-m,monospace);line-height:1.6">';
       html += 't=' + r.t_stat.toFixed(2) + '  p=' + r.p_value.toFixed(4);
-      html += '<br><span style="color:' + avgColor + '">\u00D8 ' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</span>  Win ' + r.win_rate.toFixed(0) + '%  n=' + r.n;
+      html += '<br><span style="color:' + avgColor + '">Ø ' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</span>  Win ' + r.win_rate.toFixed(0) + '%  n=' + r.n;
       html += '</div></div>';
     }
     html += '</div>';
 
     // Erklaertext
     html += '<p style="color:#c8d6e5;font-size:.6875rem;border-top:1px solid rgba(255,255,255,.06);padding-top:.5rem">';
-    html += '<b>Relevanz-Score</b> = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen\u2019s d). ';
-    html += '<b>t-Statistik</b>: Signalst\u00E4rke vs. Null. ';
-    html += '<b>p-Wert</b>: Wahrscheinlichkeit f\u00FCr Zufallsergebnis (p&lt;0.05 = signifikant). ';
-    html += '<span style="color:#00d4aa"><b>Gr\u00FCn</b></span> = statistisch valide, ';
-    html += '<span style="color:#ff4757"><b>Rot</b></span> = wahrscheinlich Zufall.</p>';
+    if (_en) {
+      html += '<b>' + SA.i18n.t('sig.relevance_score') + '</b> = ' + SA.i18n.t('sig.relevance_formula') + '. ';
+      html += '<b>' + SA.i18n.t('sig.t_stat_label') + '</b>: ' + SA.i18n.t('sig.t_stat_desc') + '. ';
+      html += '<b>' + SA.i18n.t('sig.p_value_label') + '</b>: ' + SA.i18n.t('sig.p_value_desc') + '. ';
+      html += '<span style="color:#00d4aa"><b>' + SA.i18n.t('sig.color_green') + '</b></span> = ' + SA.i18n.t('sig.color_green_desc') + ', ';
+      html += '<span style="color:#ff4757"><b>' + SA.i18n.t('sig.color_red') + '</b></span> = ' + SA.i18n.t('sig.color_red_desc') + '.</p>';
+    } else {
+      html += '<b>Relevanz-Score</b> = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen’s d). ';
+      html += '<b>t-Statistik</b>: Signalstärke vs. Null. ';
+      html += '<b>p-Wert</b>: Wahrscheinlichkeit für Zufallsergebnis (p&lt;0.05 = signifikant). ';
+      html += '<span style="color:#00d4aa"><b>Grün</b></span> = statistisch valide, ';
+      html += '<span style="color:#ff4757"><b>Rot</b></span> = wahrscheinlich Zufall.</p>';
+    }
     return html;
   },
 

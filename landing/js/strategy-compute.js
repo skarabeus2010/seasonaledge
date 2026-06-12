@@ -680,42 +680,46 @@ SA.strategy = {
 // STRATEGY REGISTRY
 // ══════════════════════════════════════════════════════
 
-SA.STRATEGIES = {
-  sell_in_may:       { name:'Sell in May',       icon:'\uD83D\uDCC5', cat:'saisonal',   func:'calc_sell_in_may',       desc:'Letzter HT Okt \u2192 3. HT Mai' },
-  lbr_november_mai:  { name:'LBR Nov-Mai',       icon:'\uD83D\uDCCA', cat:'saisonal',   func:'calc_lbr_november_mai',  desc:'Ab Okt LBR>0 \u2192 Ab Apr LBR<0' },
-  nasdaq_trend:      { name:'Nasdaq-Trend',      icon:'\uD83D\uDCC8', cat:'saisonal',   func:'calc_nasdaq_trend',      desc:'Letzter HT Okt \u2192 Letzter HT Jun' },
-  september_avoid:   { name:'Sep-Vermeidung',    icon:'\uD83D\uDEAB', cat:'saisonal',   func:'calc_september_avoid',   desc:'30. Sep \u2192 31. Aug (11 Mon)' },
-  election_7months:  { name:'Wahljahr 7 Mon',    icon:'\uD83D\uDDF3\uFE0F', cat:'saisonal', func:'calc_election_year_7months', desc:'31. Mai \u2192 31. Dez Wahljahr' },
+(function() {
+  var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
 
-  first_five_days:   { name:'First Five Days',   icon:'5\uFE0F\u20E3', cat:'januar',    func:'calc_first_five_days',   desc:'Erste 5 Jan-HT positiv \u2192 Long' },
-  last_five_days:    { name:'Last Five Days',    icon:'\uD83D\uDD1A', cat:'januar',     func:'calc_last_five_days',    desc:'Letzte 5 Jan-HT positiv \u2192 Long' },
-  january_barometer: { name:'Jan-Barometer',     icon:'\uD83C\uDF21\uFE0F', cat:'januar', func:'calc_january_barometer', desc:'Januar positiv \u2192 Long Feb-Dez' },
+  SA.STRATEGIES = {
+    sell_in_may:       { name:'Sell in May',       icon:'📅', cat:'saisonal',   func:'calc_sell_in_may',       desc: _en ? SA.i18n.t('strat.sell_in_may_desc')         : 'Letzter HT Okt → 3. HT Mai' },
+    lbr_november_mai:  { name:'LBR Nov-Mai',       icon:'📊', cat:'saisonal',   func:'calc_lbr_november_mai',  desc: _en ? SA.i18n.t('strat.lbr_nov_mai_desc')         : 'Ab Okt LBR>0 → Ab Apr LBR<0' },
+    nasdaq_trend:      { name:'Nasdaq-Trend',      icon:'📈', cat:'saisonal',   func:'calc_nasdaq_trend',      desc: _en ? SA.i18n.t('strat.nasdaq_trend_desc')        : 'Letzter HT Okt → Letzter HT Jun' },
+    september_avoid:   { name: _en ? SA.i18n.t('strat.sep_avoid_name')     : 'Sep-Vermeidung',    icon:'🚫', cat:'saisonal',   func:'calc_september_avoid',   desc: _en ? SA.i18n.t('strat.sep_avoid_desc')           : '30. Sep → 31. Aug (11 Mon)' },
+    election_7months:  { name: _en ? SA.i18n.t('strat.election_7m_name')   : 'Wahljahr 7 Mon',    icon:'🗳️', cat:'saisonal', func:'calc_election_year_7months', desc: _en ? SA.i18n.t('strat.election_7m_desc')     : '31. Mai → 31. Dez Wahljahr' },
 
-  santa_claus:       { name:'Santa Claus',       icon:'\uD83C\uDF85', cat:'feiertag',   func:'calc_santa_claus',       desc:'3 HT vor Thanksgiving \u2192 5. HT Jan' },
-  one_day_holiday:   { name:'Feiertag 1-Tag',    icon:'\uD83C\uDF86', cat:'feiertag',   func:'calc_one_day_holiday',   desc:'2 HT vor Feiertag \u2192 1 HT vor' },
-  uhts:              { name:'UHTS (Hebel)',       icon:'\uD83C\uDF87', cat:'feiertag',   func:'calc_uhts',              desc:'3 HT vor \u2192 3 HT nach (1.5x)' },
-  post_christmas:    { name:'Nach Weihnachten',  icon:'\uD83C\uDF84', cat:'feiertag',   func:'calc_post_christmas',    desc:'26. Dez \u2192 Silvester' },
+    first_five_days:   { name:'First Five Days',   icon:'5️⃣', cat:'januar',    func:'calc_first_five_days',   desc: _en ? SA.i18n.t('strat.first_five_days_desc')     : 'Erste 5 Jan-HT positiv → Long' },
+    last_five_days:    { name:'Last Five Days',    icon:'🔚', cat:'januar',     func:'calc_last_five_days',    desc: _en ? SA.i18n.t('strat.last_five_days_desc')      : 'Letzte 5 Jan-HT positiv → Long' },
+    january_barometer: { name: _en ? SA.i18n.t('strat.jan_barometer_name') : 'Jan-Barometer',     icon:'🌡️', cat:'januar', func:'calc_january_barometer', desc: _en ? SA.i18n.t('strat.jan_barometer_desc')   : 'Januar positiv → Long Feb-Dez' },
 
-  month_end:         { name:'Month-End',         icon:'\uD83D\uDD04', cat:'monat',      func:'calc_month_end',         desc:'Vorletzter HT \u2192 4. HT Folgemonat' },
-  monthly_10:        { name:'Monthly 10',        icon:'\uD83D\uDCC6', cat:'monat',      func:'calc_monthly_10',        desc:'TDOM 1-4, 9-12, letzte 2' },
-  second_trading_day:{ name:'2. Handelstag',     icon:'2\uFE0F\u20E3', cat:'monat',     func:'calc_second_trading_day', desc:'Close TDOM 1 \u2192 Close TDOM 2' },
+    santa_claus:       { name:'Santa Claus',       icon:'🎅', cat:'feiertag',   func:'calc_santa_claus',       desc: _en ? SA.i18n.t('strat.santa_claus_desc')         : '3 HT vor Thanksgiving → 5. HT Jan' },
+    one_day_holiday:   { name: _en ? SA.i18n.t('strat.one_day_holiday_name') : 'Feiertag 1-Tag',    icon:'🎆', cat:'feiertag',   func:'calc_one_day_holiday',   desc: _en ? SA.i18n.t('strat.one_day_holiday_desc') : '2 HT vor Feiertag → 1 HT vor' },
+    uhts:              { name:'UHTS (Hebel)',       icon:'🎇', cat:'feiertag',   func:'calc_uhts',              desc: _en ? SA.i18n.t('strat.uhts_desc')                : '3 HT vor → 3 HT nach (1.5x)' },
+    post_christmas:    { name: _en ? SA.i18n.t('strat.post_christmas_name') : 'Nach Weihnachten',  icon:'🎄', cat:'feiertag',   func:'calc_post_christmas',    desc: _en ? SA.i18n.t('strat.post_christmas_desc')  : '26. Dez → Silvester' },
 
-  cycle_40_week:     { name:'40-Wochen',         icon:'\u26A1',       cat:'zyklus',     func:'calc_40_week_cycle',     desc:'280d-Zyklus, 140d investiert' },
-  cycle_212_week:    { name:'212-Wochen',        icon:'\uD83D\uDD01', cat:'zyklus',     func:'calc_212_week_cycle',    desc:'1.484d-Zyklus, 182d investiert' },
-  mid_decade:        { name:'Mid-Decade',        icon:'\uD83D\uDCC6', cat:'zyklus',     func:'calc_mid_decade',        desc:'Okt x4 \u2192 M\u00E4r x6 (18 Mon)' },
-  cycle_20_year:     { name:'20-Jahres',         icon:'\uD83D\uDD04', cat:'zyklus',     func:'calc_20_year_cycle',     desc:'Sep x2 \u2192 Dez x5 (27 Mon)' },
+    month_end:         { name:'Month-End',         icon:'🔄', cat:'monat',      func:'calc_month_end',         desc: _en ? SA.i18n.t('strat.month_end_desc')           : 'Vorletzter HT → 4. HT Folgemonat' },
+    monthly_10:        { name:'Monthly 10',        icon:'📆', cat:'monat',      func:'calc_monthly_10',        desc: _en ? SA.i18n.t('strat.monthly_10_desc')          : 'TDOM 1-4, 9-12, letzte 2' },
+    second_trading_day:{ name: _en ? SA.i18n.t('strat.second_trading_day_name') : '2. Handelstag',     icon:'2️⃣', cat:'monat',     func:'calc_second_trading_day', desc: _en ? SA.i18n.t('strat.second_trading_day_desc') : 'Close TDOM 1 → Close TDOM 2' },
 
-  uecs:              { name:'Election Cycle',    icon:'\uD83C\uDDFA\uD83C\uDDF8', cat:'wahlzyklus', func:'calc_uecs', desc:'6 Phasen Pr\u00E4sidentenzyklus' },
-  midterm_election:  { name:'Midterm Election',  icon:'\uD83C\uDFDB\uFE0F', cat:'wahlzyklus', func:'calc_midterm_election', desc:'5 HT vor \u2192 3 HT nach Midterm' }
-};
+    cycle_40_week:     { name: _en ? SA.i18n.t('strat.cycle_40_week_name')  : '40-Wochen',         icon:'⚡',       cat:'zyklus',     func:'calc_40_week_cycle',     desc: _en ? SA.i18n.t('strat.cycle_40_week_desc')       : '280d-Zyklus, 140d investiert' },
+    cycle_212_week:    { name: _en ? SA.i18n.t('strat.cycle_212_week_name') : '212-Wochen',        icon:'🔁', cat:'zyklus',     func:'calc_212_week_cycle',    desc: _en ? SA.i18n.t('strat.cycle_212_week_desc')      : '1.484d-Zyklus, 182d investiert' },
+    mid_decade:        { name:'Mid-Decade',        icon:'📆', cat:'zyklus',     func:'calc_mid_decade',        desc: _en ? SA.i18n.t('strat.mid_decade_desc')          : 'Okt x4 → Mär x6 (18 Mon)' },
+    cycle_20_year:     { name: _en ? SA.i18n.t('strat.cycle_20_year_name')  : '20-Jahres',         icon:'🔄', cat:'zyklus',     func:'calc_20_year_cycle',     desc: _en ? SA.i18n.t('strat.cycle_20_year_desc')       : 'Sep x2 → Dez x5 (27 Mon)' },
 
-SA.STRATEGY_CATEGORIES = {
-  saisonal:   { label:'Saisonale Klassiker', order:1 },
-  januar:     { label:'Januar-Signale',      order:2 },
-  feiertag:   { label:'Feiertage',           order:3 },
-  monat:      { label:'Monatsmuster',        order:4 },
-  zyklus:     { label:'Zyklen',              order:5 },
-  wahlzyklus: { label:'Wahlzyklus',          order:6 }
-};
+    uecs:              { name:'Election Cycle',    icon:'🇺🇸', cat:'wahlzyklus', func:'calc_uecs', desc: _en ? SA.i18n.t('strat.uecs_desc')               : '6 Phasen Präsidentenzyklus' },
+    midterm_election:  { name:'Midterm Election',  icon:'🏛️', cat:'wahlzyklus', func:'calc_midterm_election', desc: _en ? SA.i18n.t('strat.midterm_election_desc') : '5 HT vor → 3 HT nach Midterm' }
+  };
+
+  SA.STRATEGY_CATEGORIES = {
+    saisonal:   { label: _en ? SA.i18n.t('strat.cat_seasonal')    : 'Saisonale Klassiker', order:1 },
+    januar:     { label: _en ? SA.i18n.t('strat.cat_january')     : 'Januar-Signale',      order:2 },
+    feiertag:   { label: _en ? SA.i18n.t('strat.cat_holiday')     : 'Feiertage',           order:3 },
+    monat:      { label: _en ? SA.i18n.t('strat.cat_monthly')     : 'Monatsmuster',        order:4 },
+    zyklus:     { label: _en ? SA.i18n.t('strat.cat_cycles')      : 'Zyklen',              order:5 },
+    wahlzyklus: { label: _en ? SA.i18n.t('strat.cat_election')    : 'Wahlzyklus',          order:6 }
+  };
+})();
 
 window.SA = SA;

@@ -129,10 +129,10 @@ SA.indicators = {
                  conditions: ['Close > EMA', 'Close < EMA'] },
     RSI:       { label: 'RSI', params: [{ name: 'period', label: 'Periode', min: 5, max: 30, def: 14 },
                                          { name: 'threshold', label: 'Schwelle', min: 0, max: 100, def: 50 }],
-                 conditions: ['RSI > Schwelle', 'RSI < Schwelle'] },
+                 conditions: ['RSI > Threshold', 'RSI < Threshold'] },
     Bollinger: { label: 'Bollinger', params: [{ name: 'period', label: 'Periode', min: 10, max: 50, def: 20 },
                                                { name: 'num_std', label: 'Std', min: 1, max: 3, def: 2, step: 0.5 }],
-                 conditions: ['Close > Upper Band', 'Close < Lower Band', 'Close innerhalb Bands'] },
+                 conditions: ['Close > Upper Band', 'Close < Lower Band', 'Close inside Bands'] },
     MACD:      { label: 'MACD', params: [{ name: 'fast', label: 'Fast', min: 5, max: 26, def: 12 },
                                           { name: 'slow', label: 'Slow', min: 12, max: 50, def: 26 },
                                           { name: 'signal', label: 'Signal', min: 5, max: 20, def: 9 }],
@@ -161,7 +161,7 @@ SA.indicators = {
     } else if (type === 'RSI') {
       var rsi = SA.indicators.calcRSI(closes, f.period || 14);
       var thr = f.threshold || 50;
-      for (var i = 1; i < n; i++) if (rsi[i - 1] !== null) mask[i] = cond === 'RSI > Schwelle' ? rsi[i - 1] > thr : rsi[i - 1] < thr;
+      for (var i = 1; i < n; i++) if (rsi[i - 1] !== null) mask[i] = cond === 'RSI > Threshold' ? rsi[i - 1] > thr : rsi[i - 1] < thr;
     } else if (type === 'Bollinger') {
       var bb = SA.indicators.calcBollinger(closes, f.period || 20, f.num_std || 2.0);
       for (var i = 1; i < n; i++) {
@@ -210,6 +210,7 @@ SA.indicators = {
     var el = document.getElementById(containerId);
     if (!el) return function() { return []; };
 
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var filterCount = 0;
     var REG = SA.indicators.REGISTRY;
     var types = Object.keys(REG);
@@ -231,7 +232,7 @@ SA.indicators = {
         html += '<div id="ind_params_' + i + '"></div>';
         html += '</div>';
       }
-      html += '<button id="ind_add_btn" style="width:100%;padding:.375rem;background:rgba(232,168,32,.1);border:1px solid rgba(232,168,32,.15);border-radius:6px;color:var(--accent);cursor:pointer;font-size:.75rem">+ Filter hinzuf\u00FCgen</button>';
+      html += '<button id="ind_add_btn" style="width:100%;padding:.375rem;background:rgba(232,168,32,.1);border:1px solid rgba(232,168,32,.15);border-radius:6px;color:var(--accent);cursor:pointer;font-size:.75rem">' + (_en ? SA.i18n.t('ind.btn_add_filter') : '+ Filter hinzuf\u00FCgen') + '</button>';
       if (filterCount > 0) {
         var closes = []; // Placeholder
         html += '<div id="ind_badge" style="margin-top:.5rem;font-size:.6875rem;color:var(--accent);text-align:center"></div>';
@@ -271,7 +272,12 @@ SA.indicators = {
       for (var p = 0; p < reg.params.length; p++) {
         var pr = reg.params[p];
         var step = pr.step || 1;
-        pHtml += '<label style="font-size:.6875rem;color:var(--muted)">' + pr.label +
+        var prLabel = pr.label;
+        if (_en) {
+          if (pr.label === 'Periode')  prLabel = SA.i18n.t('ind.param_period');
+          if (pr.label === 'Schwelle') prLabel = SA.i18n.t('ind.param_threshold');
+        }
+        pHtml += '<label style="font-size:.6875rem;color:var(--muted)">' + prLabel +
           ' <input type="number" data-idx="' + idx + '" data-param="' + pr.name + '" value="' + pr.def +
           '" min="' + pr.min + '" max="' + pr.max + '" step="' + step +
           '" style="width:60px;font-size:.75rem"></label> ';

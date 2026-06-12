@@ -14,7 +14,7 @@ SA.outlier = {
     off:        'Aus',
     iqr:        'IQR (1.5x)',
     iqr_strict: 'IQR (3x, streng)',
-    winsorize:  'Winsorize (3\u03C3)'
+    winsorize:  'Winsorize (3σ)'
   },
 
   /**
@@ -98,12 +98,20 @@ SA.outlier = {
    * @returns {function} getMethod() → "off"|"iqr"|"iqr_strict"|"winsorize"
    */
   renderFilterUI: function(containerId, onChange) {
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var el = document.getElementById(containerId);
     if (!el) return function() { return 'off'; };
 
+    var methodLabels = _en ? {
+      off:        SA.i18n.t('out.method_off'),
+      iqr:        SA.i18n.t('out.method_iqr'),
+      iqr_strict: SA.i18n.t('out.method_iqr_strict'),
+      winsorize:  SA.i18n.t('out.method_winsorize')
+    } : SA.outlier.METHODS;
+
     var html = '<select id="outlier-select" style="width:100%">';
     for (var key in SA.outlier.METHODS) {
-      html += '<option value="' + key + '">' + SA.outlier.METHODS[key] + '</option>';
+      html += '<option value="' + key + '">' + methodLabels[key] + '</option>';
     }
     html += '</select>';
     html += '<div id="outlier-badge" style="font-size:.6875rem;color:var(--accent);margin-top:.25rem"></div>';

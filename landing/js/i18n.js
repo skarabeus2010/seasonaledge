@@ -222,6 +222,7 @@ SA.i18n = (function() {
   return {
     init: init,
     t: t,
+    isEN: function() { return _isEN; },
     switchTo: switchTo,
     _onComponentLoaded: _onComponentLoaded,
     _applyDOM: _applyDOM,

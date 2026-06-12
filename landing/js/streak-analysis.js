@@ -17,7 +17,7 @@ SA.streaks = {
    * @param {string} groupKey - Feld zum Gruppieren (z.B. "month")
    * @param {string} returnKey - Feld mit Rendite (z.B. "total_return")
    * @param {string} yearKey - Feld zum Sortieren (z.B. "year")
-   * @param {Object} labelMap - {1: "Jan \u2192 Feb", ...} (optional)
+   * @param {Object} labelMap - {1: "Jan → Feb", ...} (optional)
    * @returns {Array} [{label, entries: [{date, ret}]}]
    */
   computeStreaksFromList: function(data, groupKey, returnKey, yearKey, labelMap) {
@@ -73,20 +73,23 @@ SA.streaks = {
    * @returns {string} HTML-String
    */
   renderStreakTable: function(groups, colHeader, nBlocks) {
-    colHeader = colHeader || 'Gruppe';
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    colHeader = colHeader || (_en ? SA.i18n.t('str.col_group') : 'Gruppe');
     nBlocks = nBlocks || 10;
     var C = SA.COLORS || { green: '#00d4aa', red: '#ff4757' };
 
     var html = '<table data-no-sort="1" style="width:100%;border-collapse:collapse;font-size:.8125rem">';
     html += '<tr><th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">' + colHeader + '</th>';
-    html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">Aktuelle Serie</th>';
-    html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">Letzte ' + nBlocks + '</th></tr>';
+    html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">' + (_en ? SA.i18n.t('str.current_streak') : 'Aktuelle Serie') + '</th>';
+    html += '<th style="text-align:left;padding:.5rem;color:var(--muted,#a89878);border-bottom:1px solid rgba(255,255,255,.06)">' + (_en ? SA.i18n.t('str.last_n').replace('{n}', nBlocks) : 'Letzte ' + nBlocks) + '</th></tr>';
 
     for (var gi = 0; gi < groups.length; gi++) {
       var g = groups[gi];
       var streak = SA.streaks.currentStreak(g.entries);
       var streakColor = streak.type === 'win' ? C.green : C.red;
-      var streakText = streak.count + 'x ' + (streak.type === 'win' ? 'Gewinn' : 'Verlust');
+      var streakText = streak.count + 'x ' + (streak.type === 'win'
+        ? (_en ? SA.i18n.t('str.win') : 'Gewinn')
+        : (_en ? SA.i18n.t('str.loss') : 'Verlust'));
 
       // W/L Bloecke (chronologisch: aelteste links, neueste rechts)
       var blocks = g.entries.slice(0, nBlocks).reverse();
