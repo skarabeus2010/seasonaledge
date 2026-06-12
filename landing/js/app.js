@@ -97,8 +97,8 @@ function loadComponent(containerId, url) {
     .then(function(r) { return r.text(); })
     .then(function(html) {
       el.innerHTML = html;
-      // Nav-Events nach dem Laden initialisieren
       if (containerId === 'nav-container') initNav();
+      if (SA.i18n && SA.i18n._onComponentLoaded) SA.i18n._onComponentLoaded(containerId);
     })
     .catch(function(e) { console.warn('Component load failed:', url, e); });
 }
@@ -125,6 +125,7 @@ function loadAnalytics() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  if (SA.i18n && SA.i18n.init) SA.i18n.init();
   loadComponent('nav-container', '/landing/components/nav.html');
   loadComponent('footer-container', '/landing/components/footer.html');
   initSidebarToggle();

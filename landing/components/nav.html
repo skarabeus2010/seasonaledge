@@ -3,33 +3,37 @@
     <a class="nav__logo" href="/"><b>Season</b>Alpha</a>
     <span class="badge-ea">Early Access</span>
     <nav class="nav__links" id="nav-links" aria-label="Hauptnavigation">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/scanner">Scanner</a>
-      <a href="/watchlist">Watchlist</a>
+      <a href="/dashboard" data-i18n="nav.dashboard_cta">Dashboard</a>
+      <a href="/scanner" data-i18n="nav.scanner">Scanner</a>
+      <a href="/watchlist" data-i18n="nav.watchlist">Watchlist</a>
       <div class="nav__dd">
-        <button aria-haspopup="true" aria-expanded="false">Zyklen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav__dd-m"><a href="/dekadenzyklus">Dekadenzyklus</a><a href="/jahreszyklus">Jahreszyklus</a><a href="/monatszyklus">Monatszyklus</a><a href="/wochentage">Wochentage</a><a href="/monatswechsel">Monatswechsel</a><a href="/mondphasen">Mondphasen</a><a href="/risikozyklus">Risikozyklus</a></div>
+        <button aria-haspopup="true" aria-expanded="false"><span data-i18n="nav.zyklen">Zyklen</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="nav__dd-m"><a href="/dekadenzyklus" data-i18n="nav.dekadenzyklus">Dekadenzyklus</a><a href="/jahreszyklus" data-i18n="nav.jahreszyklus">Jahreszyklus</a><a href="/monatszyklus" data-i18n="nav.monatszyklus">Monatszyklus</a><a href="/wochentage" data-i18n="nav.wochentage">Wochentage</a><a href="/monatswechsel" data-i18n="nav.monatswechsel">Monatswechsel</a><a href="/mondphasen" data-i18n="nav.mondphasen">Mondphasen</a><a href="/risikozyklus" data-i18n="nav.risikozyklus">Risikozyklus</a></div>
       </div>
       <div class="nav__dd">
-        <button aria-haspopup="true" aria-expanded="false">Events <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav__dd-m"><a href="/polymarket">Polymarket Odds<span class="badge-live">Live</span></a><a href="/zentralbanken">Notenbanken</a><a href="/opex">OPEX</a><a href="/vixpiration">VIXpiration</a><a href="/feiertage">Feiertage</a><a href="/dividend-kalender">Dividenden-Effekt</a><a href="/earnings-kalender">Earnings-Effekt</a><a href="/intermarket-shocks">Shock-Analyser</a></div>
+        <button aria-haspopup="true" aria-expanded="false"><span data-i18n="nav.events">Events</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="nav__dd-m"><a href="/polymarket"><span data-i18n="nav.polymarket">Polymarket Odds</span><span class="badge-live">Live</span></a><a href="/zentralbanken" data-i18n="nav.zentralbanken">Notenbanken</a><a href="/opex" data-i18n="nav.opex">OPEX</a><a href="/vixpiration" data-i18n="nav.vixpiration">VIXpiration</a><a href="/feiertage" data-i18n="nav.feiertage">Feiertage</a><a href="/dividend-kalender" data-i18n="nav.dividend_kalender">Dividenden-Effekt</a><a href="/earnings-kalender" data-i18n="nav.earnings_kalender">Earnings-Effekt</a><a href="/intermarket-shocks" data-i18n="nav.intermarket_shocks">Shock-Analyser</a></div>
       </div>
       <div class="nav__dd">
-        <button aria-haspopup="true" aria-expanded="false">Strategien <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav__dd-m"><a href="/scanner">Saisonal-Scanner</a><a href="/trifecta">Januar Trifecta</a><a href="/plain-vanilla">Plain Vanilla Strategien</a><a href="/backtest-engine">Backtest Engine</a></div>
+        <button aria-haspopup="true" aria-expanded="false"><span data-i18n="nav.strategien">Strategien</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="nav__dd-m"><a href="/scanner" data-i18n="nav.scanner_strategy">Saisonal-Scanner</a><a href="/trifecta" data-i18n="nav.trifecta">Januar Trifecta</a><a href="/plain-vanilla" data-i18n="nav.plain_vanilla">Plain Vanilla Strategien</a><a href="/backtest-engine" data-i18n="nav.backtest_engine">Backtest Engine</a></div>
       </div>
       <div class="nav__dd">
-        <button aria-haspopup="true" aria-expanded="false">Mehr <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav__dd-m"><a href="/kriegszeiten">Kriegszeiten</a><a href="/crash-fruehwarnung">Crash-Fr&uuml;hwarnung</a><a href="/sektor-rotation">Sektor-Rotation</a><a href="/overnight">Overnight vs. Intraday</a><a href="/tdom-analyse">TDoM Analyse</a><a href="/spot-vol-beta">Spot-Vol Beta</a><a href="/ki-saisonalitaet">KI-Saisonalit&auml;t</a></div>
+        <button aria-haspopup="true" aria-expanded="false"><span data-i18n="nav.mehr">Mehr</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="nav__dd-m"><a href="/kriegszeiten" data-i18n="nav.kriegszeiten">Kriegszeiten</a><a href="/crash-fruehwarnung" data-i18n="nav.crash_fruehwarnung">Crash-Fr&uuml;hwarnung</a><a href="/sektor-rotation" data-i18n="nav.sektor_rotation">Sektor-Rotation</a><a href="/overnight" data-i18n="nav.overnight">Overnight vs. Intraday</a><a href="/tdom-analyse" data-i18n="nav.tdom_analyse">TDoM Analyse</a><a href="/spot-vol-beta" data-i18n="nav.spot_vol_beta">Spot-Vol Beta</a><a href="/ki-saisonalitaet" data-i18n="nav.ki_saisonalitaet">KI-Saisonalit&auml;t</a></div>
       </div>
-      <a href="/blog/">Blog</a>
+      <a href="/blog/" data-i18n="nav.blog">Blog</a>
     </nav>
+    <div class="nav__lang" role="group" aria-label="Language / Sprache">
+      <button class="nav__lang-btn" data-lang="de" onclick="SA&amp;&amp;SA.i18n&amp;&amp;SA.i18n.switchTo('de')" title="Deutsch">DE</button>
+      <button class="nav__lang-btn" data-lang="en" onclick="SA&amp;&amp;SA.i18n&amp;&amp;SA.i18n.switchTo('en')" title="English">EN</button>
+    </div>
     <button type="button" class="nav__tour-btn" onclick="SA&amp;&amp;SA.tour&amp;&amp;SA.tour.start(0)" title="Geführte Tour durch SeasonAlpha starten">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 4 3 6 3s6-1 6-3v-5"/></svg>
-      Tour
+      <span data-i18n="nav.tour">Tour</span>
     </button>
-    <a href="/dashboard" class="btn btn--p nav__cta">Dashboard</a>
-    <button id="nav-login-btn" class="btn nav__login" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.login()">Anmelden</button>
+    <a href="/dashboard" class="btn btn--p nav__cta" data-i18n="nav.dashboard_cta">Dashboard</a>
+    <button id="nav-login-btn" class="btn nav__login" onclick="SA&amp;&amp;SA.auth&amp;&amp;SA.auth.login()" data-i18n="nav.login">Anmelden</button>
     <div id="nav-user-area" class="nav__user" style="display:none">
       <a href="/profile" class="nav__user-link" title="Mein Profil" style="display:flex;align-items:center;gap:.5rem;text-decoration:none;color:inherit">
         <img class="nav__avatar" src="" alt="" width="28" height="28">
