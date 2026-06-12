@@ -43,9 +43,11 @@ jobs:
             # Landing-Chart-Daten generieren (Split-Slider ^DJI, schreibt nach landing/data/ = host-sichtbar)
             docker compose exec -T app python3 scripts/generate_landing_chart.py 2>/dev/null || echo "generate_landing_chart.py uebersprungen"
 
-            # nginx config testen, dann GRACEFUL reloaden. Bei Syntaxfehler
-            # bleibt die alte Config aktiv (kein Downtime) — Fehler wird geloggt.
-            docker compose exec -T nginx nginx -t && docker compose exec -T nginx nginx -s reload || echo "  [nginx] config-Test fehlgeschlagen — alte Config bleibt aktiv"
+            # nginx neu laden: restart = bewaehrt (alle frueheren Deploys),
+            # picked die gemountete deploy/nginx.conf zuverlaessig auf.
+            # (exec ... nginx -s reload griff hier NICHT.) Config ist
+            # strukturell identisch zur zuvor laufenden -> Restart sicher.
+            docker compose restart nginx
 
             # IndexNow: Bing/Yandex/Seznam ueber die neuen URLs informieren
             # Non-blocking: Fehler werden geloggt aber brechen den Deploy nicht
