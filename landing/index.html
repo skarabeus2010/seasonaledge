@@ -383,17 +383,17 @@
     <!-- ═══════ DEMO ═══════ -->
     <section class="sec" id="demo" style="padding-top:1rem;padding-bottom:2rem">
       <div class="wrap">
-        <p class="eyebrow reveal">Interaktive Demo</p>
+        <p class="eyebrow reveal" data-i18n="home.demo_eyebrow">Interaktive Demo</p>
         <h2 class="sec-title reveal reveal-d1">From Noise to Signal</h2>
-        <p class="sec-sub reveal reveal-d2">Bewege den Slider: Die grauen Linien zeigen Dir die Einzeljahre des Dow Jones. Verschmelzen sie, entsteht der goldene Saisonalchart &mdash; der statistische Durchschnitt. Die gelbe Linie zeigt das aktuelle Jahr im Dow Jones.</p>
+        <p class="sec-sub reveal reveal-d2" data-i18n="home.demo_desc">Bewege den Slider: Die grauen Linien zeigen Dir die Einzeljahre des Dow Jones. Verschmelzen sie, entsteht der goldene Saisonalchart &mdash; der statistische Durchschnitt. Die gelbe Linie zeigt das aktuelle Jahr im Dow Jones.</p>
         <div class="demo-box reveal reveal-d3" id="hero-chart-container" data-ticker="^DJI" data-years="131">
           <canvas id="seasonal-chart" style="width:100%;height:380px;display:block"></canvas>
           <input type="range" id="demo-slider" min="0" max="100" value="0" class="demo-slider" aria-label="Noise to Signal">
-          <div class="demo-labels"><span>Saisonaler Durchschnitt</span><span>Einzeljahre</span></div>
+          <div class="demo-labels"><span data-i18n="home.demo_avg">Saisonaler Durchschnitt</span><span data-i18n="home.demo_years">Einzeljahre</span></div>
           <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;margin-top:.75rem;font-size:.75rem;color:var(--muted);font-family:var(--f-m)">
-            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:rgba(255,255,255,.25);display:inline-block"></span> Einzeljahre</span>
-            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:#e8a820;display:inline-block"></span> Saisonaler &Oslash;</span>
-            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:#F1C40F;display:inline-block"></span> 2026 (aktuell)</span>
+            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:rgba(255,255,255,.25);display:inline-block"></span> <span data-i18n="home.demo_years">Einzeljahre</span></span>
+            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:#e8a820;display:inline-block"></span> <span data-i18n="home.demo_avg_short">Saisonaler &Oslash;</span></span>
+            <span style="display:flex;align-items:center;gap:.35rem"><span style="width:18px;height:2px;background:#F1C40F;display:inline-block"></span> <span data-i18n="home.demo_current">2026 (aktuell)</span></span>
             <span style="color:var(--dim);font-style:italic">Dow Jones Industrial Average</span>
           </div>
         </div>

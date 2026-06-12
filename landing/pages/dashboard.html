@@ -237,26 +237,26 @@
       <div class="dash-head">
         <div class="dash-head__title">
           <h1 class="page-title"><b>Dashboard</b> — <span id="title-ticker">^GSPC</span></h1>
-          <p class="page-caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
+          <p class="page-caption" data-i18n="dash.caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
         </div>
         <div class="dash-toolbar">
           <div><label for="ticker-input">Ticker</label><input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list"></div>
           <datalist id="ticker-list"></datalist>
-          <div><label for="sel-years">Zeitraum</label><select id="sel-years">
-            <option value="5">5 Jahre</option>
-            <option value="10">10 Jahre</option>
-            <option value="15" selected>15 Jahre</option>
-            <option value="20">20 Jahre</option>
-            <option value="30">30 Jahre</option>
+          <div><label for="sel-years" data-i18n="dash.period">Zeitraum</label><select id="sel-years">
+            <option value="5" data-i18n="dash.yr5">5 Jahre</option>
+            <option value="10" data-i18n="dash.yr10">10 Jahre</option>
+            <option value="15" selected data-i18n="dash.yr15">15 Jahre</option>
+            <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+            <option value="30" data-i18n="dash.yr30">30 Jahre</option>
           </select></div>
           <div class="wl-toolbar">
             <button id="btn-wl-toggle" type="button" class="btn-wl-toggle" title="Diesen Ticker zur Watchlist hinzufügen oder entfernen">
               <svg class="icon-star" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
-              <span id="btn-wl-label">Zur Watchlist</span>
+              <span id="btn-wl-label" data-i18n="dash.to_watchlist">Zur Watchlist</span>
             </button>
-            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen">
+            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen" data-i18n="dash.my_watchlist">
               Meine Watchlist <span id="wl-badge">0</span>
             </a>
           </div>
@@ -264,56 +264,56 @@
       </div>
       <div class="trading-day-header" id="trading-day-header"></div>
 
-      <div id="loading-msg" class="loading">Lade Daten...</div>
+      <div id="loading-msg" class="loading" data-i18n="dash.loading">Lade Daten...</div>
 
       <div class="bento" id="bento" style="display:none">
         <!-- KI-Score (gross, 6 cols) -->
         <div class="bento-card bento-ki" id="card-ki">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zum KI Composite Score">i</div>
           <div class="info-tooltip"><b>KI Composite Score</b> — Gesamtnote 0&ndash;10 aus vier unabhängigen Sub-Scores (Saisonalität, Drawdown, Volatilität, Momentum). <b>&ge; 6,5</b> = bullish, <b>&le; 3,5</b> = bearish, dazwischen neutral. Der Score ist eine aggregierte Signal-Stärke, kein Renditeversprechen.</div>
-          <div class="ttl"><span class="ico">🧠</span> KI Composite Score</div>
-          <div id="ki-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
+          <div class="ttl" data-i18n="dash.ki_title"><span class="ico">🧠</span> KI Composite Score</div>
+          <div id="ki-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
         <!-- Crash-Ampel (3 cols) -->
         <div class="bento-card bento-crash" id="card-crash">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zur Crash-Ampel">i</div>
           <div class="info-tooltip"><b>Crash-Ampel</b> — Isolation-Forest-Modell auf Tagesrenditen + Volatilität des Tickers. <b>Grün</b> = ruhiges Regime, <b>Gelb</b> = erhöhte Vorsicht, <b>Rot</b> = Stress-Regime. Risk-Score 0&ndash;100 quantifiziert die Anomalie-Stärke.</div>
-          <div class="ttl"><span class="ico">🚦</span> Crash-Ampel</div>
-          <div id="crash-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
+          <div class="ttl" data-i18n="dash.crash_title"><span class="ico">🚦</span> Crash-Ampel</div>
+          <div id="crash-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
         <!-- Anomalie-Radar (2 cols) -->
         <div class="bento-card bento-anomaly" id="card-anomaly">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar">i</div>
           <div class="info-tooltip"><b>Anomalie-Radar</b> — Misst wie stark die Rendite der letzten 10 Handelstage vom historischen Mittel am gleichen Kalender-Fenster abweicht. <b>Grün</b> = ungewöhnlich stark, <b>Rot</b> = ungewöhnlich schwach. Nützlich als Contrarian-Hinweis bei Extremwerten.</div>
-          <div class="ttl"><span class="ico">📡</span> Anomalie</div>
-          <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
+          <div class="ttl" data-i18n="dash.anomaly_title"><span class="ico">📡</span> Anomalie</div>
+          <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
         <!-- Trifecta (3 cols, in oberster Zeile) -->
         <div class="bento-card bento-trifecta" id="card-trifecta">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zum Januar Trifecta">i</div>
           <div class="info-tooltip"><b>Januar Trifecta</b> — Klassisches Markt-Indiz: wenn (1) Santa-Rally positiv, (2) erste 5 Handelstage positiv und (3) Januar-Monat positiv zusammentreffen, war das Gesamtjahr historisch in <b>&gt; 80 %</b> der Fälle positiv. Trifft alle drei Bedingungen nicht zu, ist die Erfolgs-Wahrscheinlichkeit deutlich niedriger.</div>
-          <div class="ttl"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
+          <div class="ttl" data-i18n="dash.trifecta_title"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
           <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
         </div>
 
         <!-- Saisonaler Jahres-Chart (6 cols) -->
         <div class="bento-card bento-year" id="card-year">
-          <div class="ttl"><span class="ico">📈</span> Saisonaler Jahresverlauf</div>
+          <div class="ttl" data-i18n="dash.year_title"><span class="ico">📈</span> Saisonaler Jahresverlauf</div>
           <div id="chart-year"></div>
         </div>
 
         <!-- Drawdown-Chart (6 cols, neben Year-Chart) -->
         <div class="bento-card bento-drawdown" id="card-drawdown">
-          <div class="ttl"><span class="ico">📉</span> Saisonaler Drawdown · Ø vs. aktuelles Jahr</div>
+          <div class="ttl" data-i18n="dash.drawdown_title"><span class="ico">📉</span> Saisonaler Drawdown · Ø vs. aktuelles Jahr</div>
           <div id="chart-drawdown"></div>
         </div>
 
         <!-- Intra-Monat Chart (6 cols) -->
         <div class="bento-card bento-month" id="card-month">
-          <div class="ttl"><span class="ico">📅</span> Aktueller Monat — TDOM-Verlauf</div>
+          <div class="ttl" data-i18n="dash.month_title"><span class="ico">📅</span> Aktueller Monat — TDOM-Verlauf</div>
           <div id="chart-month"></div>
         </div>
 
@@ -321,28 +321,28 @@
         <div class="bento-card bento-truepath" id="card-truepath">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu TruePath">i</div>
           <div class="info-tooltip"><b>TruePath</b> &mdash; Pattern-Matching über die letzten N Handelstage: jedes historische Jahr wird per Pearson-Korrelation + euklidischem Abstand zum aktuellen YTD-Verlauf verglichen. Die Top-Matches werden <b>gewichtet gemittelt</b> zu einer Projektion bis Jahresende &mdash; plus &plusmn; &sigma;-Cone für die Unsicherheit. Kein Vorhersage-Modell, sondern "wie lief es in ähnlichen Jahren weiter?".</div>
-          <div class="ttl"><span class="ico">🛤️</span> TruePath — Top-Match Jahre</div>
+          <div class="ttl" data-i18n="dash.truepath_title"><span class="ico">🛤️</span> TruePath — Top-Match Jahre</div>
           <div id="chart-truepath"></div>
         </div>
 
         <!-- 6 Stat-Cards: je 2 cols = 12 -->
         <div class="bento-card bento-stat6" id="card-month-perf">
-          <div class="ttl"><span class="ico">📅</span> Monatsperformance</div>
+          <div class="ttl" data-i18n="dash.month_perf_title"><span class="ico">📅</span> Monatsperformance</div>
           <div id="month-perf-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-twoweek">
-          <div class="ttl"><span class="ico">📊</span> 2-Wochen-Phase</div>
+          <div class="ttl" data-i18n="dash.twoweek_title"><span class="ico">📊</span> 2-Wochen-Phase</div>
           <div id="twoweek-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-weekday">
-          <div class="ttl"><span class="ico">📆</span> Wochentag</div>
+          <div class="ttl" data-i18n="dash.weekday_title"><span class="ico">📆</span> Wochentag</div>
           <div id="weekday-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-today">
-          <div class="ttl"><span class="ico">📌</span> TDOM Heute</div>
+          <div class="ttl" data-i18n="dash.tdom_today_title"><span class="ico">📌</span> TDOM Heute</div>
           <div id="tdom-today-content" class="stat6-body"></div>
         </div>
 
@@ -352,31 +352,31 @@
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-tomorrow">
-          <div class="ttl"><span class="ico">⏭️</span> TDOM Morgen</div>
+          <div class="ttl" data-i18n="dash.tdom_tomorrow_title"><span class="ico">⏭️</span> TDOM Morgen</div>
           <div id="tdom-tomorrow-content" class="stat6-body"></div>
         </div>
 
         <!-- Risiko-KPIs (12 cols) -->
         <div class="bento-card bento-risk" id="card-risk">
-          <div class="ttl"><span class="ico">📉</span> Risiko-Metriken</div>
+          <div class="ttl" data-i18n="dash.risk_title"><span class="ico">📉</span> Risiko-Metriken</div>
           <div class="risk-grid" id="risk-content"></div>
         </div>
 
         <!-- Plain Vanilla Strategien (12 cols) -->
         <div class="bento-card bento-strategies" id="card-strategies">
-          <div class="ttl"><span class="ico">⚡</span> Aktuell relevante Strategien (nächste 30 Tage)</div>
-          <div id="strategies-content"><p style="color:#a89878;font-size:.875rem">Wird berechnet...</p></div>
+          <div class="ttl" data-i18n="dash.strategies_title"><span class="ico">⚡</span> Aktuell relevante Strategien (nächste 30 Tage)</div>
+          <div id="strategies-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
         <!-- Nächste Events (12 cols) -->
         <div class="bento-card bento-events" id="card-events">
-          <div class="ttl"><span class="ico">🗓️</span> Nächste Events + historische Streak</div>
+          <div class="ttl" data-i18n="dash.events_title"><span class="ico">🗓️</span> Nächste Events + historische Streak</div>
           <div class="events-grid" id="events-content"></div>
         </div>
       </div>
 
       <details style="margin-top:1.5rem">
-        <summary>📚 Methodik</summary>
+        <summary data-i18n="dash.methodology">📚 Methodik</summary>
         <div class="content">
           <p>Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
           <ul>
