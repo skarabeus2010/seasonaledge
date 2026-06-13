@@ -1,6 +1,6 @@
 # Programmatic SEO Engine — SeasonAlpha
 
-> Stand: 2026-04-18 | Nur noch Sitemap + robots.txt + Disclaimer | **Ticker-Landingpages entfernt**
+> Stand: 2026-06-13 | Sitemap (mit hreflang/EN) + robots.txt (KI-Allowlist) + **llms.txt** + Disclaimer | EN-Pre-Rendering live
 
 ## Historie
 
@@ -23,7 +23,8 @@ Die Engine hat heute drei Aufgaben:
 | Output | Zweck |
 |---|---|
 | `seo/output/sitemap.xml` | Master-Sitemap mit statischen Pages + 22 Feature-Pages + Blog-Index + Blog-Posts |
-| `seo/output/robots.txt` | Crawler-Regeln + Sitemap-Verweis + AI-Crawler Allowlist |
+| `seo/output/robots.txt` | Crawler-Regeln + Sitemap-Verweis + AI-Crawler Allowlist (18 Bots) |
+| `seo/output/llms.txt` | Kuratiertes Inhaltsverzeichnis für KI-Crawler (ChatGPT/Perplexity/Claude) — GEO, via `/llms.txt`-Route |
 | `seo/output/disclaimer.html` | YMYL-konformer Haftungsausschluss (7 Abschnitte, via `/disclaimer`-Route) |
 
 Zusätzlich ein **Cleanup-Schritt**: beim Build werden alle `seo/output/{slug}.html` gelöscht, die zu den Ticker-Slugs aus `shared/symbols.py` passen. Damit werden Alt-Files die noch vom alten Builder-Stand übrig sind entfernt. `disclaimer.html` und `google<hash>.html` bleiben explizit erhalten.
@@ -45,7 +46,7 @@ Zusätzlich ein **Cleanup-Schritt**: beim Build werden alle `seo/output/{slug}.h
 py seo/programmatic_seo_builder.py
 ```
 
-Ergebnis: `sitemap.xml` + `robots.txt` + `disclaimer.html` in `seo/output/` + Cleanup alter Ticker-Files.
+Ergebnis: `sitemap.xml` + `robots.txt` + `llms.txt` + `disclaimer.html` in `seo/output/` + Cleanup alter Ticker-Files. (Sitemap enthält hreflang de/en/x-default für alle Landing-Pages.)
 
 ## Sitemap-Quelle
 
@@ -64,6 +65,8 @@ Die Sitemap wird aus drei Quellen zusammengestellt:
 | `/disclaimer` | `seo/output/disclaimer.html` |
 | `/sitemap.xml` | `seo/output/sitemap.xml` via static-Alias |
 | `/robots.txt` | `seo/output/robots.txt` via static-Alias |
+| `/llms.txt` | `seo/output/llms.txt` via static-Alias (KI-Crawler/GEO) |
+| `/en/*` | statische `landing/en/<slug>.html` (EN-Pre-Rendering, siehe [I18N.md](I18N.md)) |
 | `/google<hash>.html` | Google Search Console Verifizierung |
 | `/dashboard`, `/jahreszyklus`, ... | `landing/pages/<name>.html` |
 | `/blog/` | `blog/output/` |

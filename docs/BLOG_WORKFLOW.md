@@ -278,3 +278,17 @@ Datei `blog/calendar.yaml` enthaelt den Plan:
     category: education
     status: draft
 ```
+
+## Bilingualisierung (EN) — Gotchas
+
+- Blog-Templates bilingual via Template-Vars (`lang`, `og_locale`, `blog_base`, `post_url`, `str_min_read`, `str_cta_h3` etc.) — NICHT `{% if is_en %}...{% else %}...{% endif %}` überall im Template. Alle Sprachlogik im Python Builder.
+- EN-Posts in `blog/posts/en/` führen `de_slug:` Feld für hreflang-Rücklink zum DE-Original.
+- Builder: `{**post, **_extra_vars_en(post), "related_posts": ..., ...}` als ctx mergen, dann `tpl.render(**ctx)` — nie `tpl.render(**post, **override_vars)` (wirft `TypeError: duplicate keyword argument`, wenn Key in beiden Dicts).
+- nginx: `location ^~ /en/blog/` MUSS VOR `location ^~ /en/` stehen — längster Prefix-Match; fehlt der explizite Block, landet `/en/blog/` im generischen `/en/`-Catch-all → 404.
+- Workflow-Agenten für Übersetzungen: **einen Agenten pro Datei** (nicht Batches). Große Posts füllen das Kontext-Fenster, Batch-Agenten schreiben dann nur partiell oder brechen still ab.
+- Windows cp1252 console: `blog_builder.py --build` kann bei Sonderzeichen (`−`, `–`) UnicodeEncodeError werfen. Betrifft nur `print()`, NICHT die HTML-Erzeugung. Auf dem Linux-Server (UTF-8) kein Problem.
+- **Blog-Disclaimer**: `disclaimer_blog.md` nur DE. `disclaimer_blog_en.md` für EN — `load_blog_disclaimer(lang='en')` in `build_en()` aufrufen. Sonst deutscher Rechtshinweis in allen EN-Posts.
+- **Blog-Chart-Labels**: `markdown_to_html()` und Chart-Builder akzeptieren `lang`-Parameter. `load_posts_en()` übergibt `lang="en"`. Sonst deutsche Monatsnamen ("Mai"/"Okt"), deutsche Chart-Titel in EN-Posts.
+- **Blog-Index page_title/page_description**: müssen in `_extra_index_vars_en()` stehen — NICHT nur im Template-Default (immer Deutsch).
+- **PEP-701-f-strings vermeiden** (verschachtelte gleiche Quotes, z.B. `f"{f'…{x.replace(a,"")}'}"`): nur Python 3.12+; brach lokal (3.9) den ganzen Build mit `SyntaxError`. Vorher in eine Variable extrahieren.
+- Nach Blog-Code-Änderungen auf Server neu bauen: `docker exec seasonalpha-app python3 blog/blog_builder.py --build` + `docker compose restart nginx`.

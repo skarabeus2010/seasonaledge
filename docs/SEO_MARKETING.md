@@ -1,6 +1,6 @@
 # SEO & Marketing — SeasonAlpha
 
-> Living Document | Stand 2026-04-10 (Abend) | Ergänzt `SEO_ENGINE.md` (Generator) um Status, Checklisten, Google-Search-Console-Workflow, Monitoring.
+> Living Document | Stand 2026-06-13 | Ergänzt `SEO_ENGINE.md` (Generator) um Status, Checklisten, Google-Search-Console-Workflow, Monitoring. **Aktueller Fokus** siehe Block direkt unter dem Schnellstatus.
 
 ## Schnellstatus
 
@@ -21,6 +21,8 @@
 | **Twitter Card** | ✅ `@SeasonAlph4882` auf Landing + 21 Pages + Blog-Template + im Footer sichtbar | 2026-04-10 |
 | **Bing Webmaster Tools** | ✅ Setup + 10 URLs manuell submitted | 2026-04-10 |
 | **IndexNow** | ✅ Key am Host-Root + 26 Core-URLs gepingt (HTTP 200) + Auto-Ping im Deploy-Step | 2026-04-10 |
+| **EN-Lokalisierung** | ✅ 31 statische `/en/`-Seiten (Pre-Rendering), SEO-Head/canonical/hreflang/JSON-LD gebacken; Sitemap mit hreflang de/en/x-default (88 URLs) | 2026-06-13 |
+| **llms.txt (GEO)** | ✅ Kuratiertes KI-Crawler-Inhaltsverzeichnis unter `/llms.txt` (Generator + nginx + Mount) | 2026-06-13 |
 | **www → non-www Redirect** | ✅ 301 Canonicalization für HTTP + HTTPS live | 2026-04-10 |
 | **Programmatische /analyse/* Pages** | ✅ **Endgültig entfernt am 2026-04-18**. Nginx liefert 410 Gone, Builder erzeugt keine Pages mehr und löscht bestehende HTML-Files beim Build (Cleanup-Schritt). Google wirft die ~270 URLs innerhalb von 1–2 Wochen aus dem Index. | 2026-04-18 |
 | **Google Search Console** | 🟠 Sitemap neu eingereicht, 10+ URLs manuell (Tageslimit erreicht), Rest morgen | 2026-04-10 |
@@ -59,6 +61,32 @@ curl -s https://seasonalpha.ai/ | grep -oE '"@type":"WebSite"[^<]*' | head -1
 # robots.txt AI-Crawler Policy?
 curl -s https://seasonalpha.ai/robots.txt | grep -c "GPTBot\|ClaudeBot\|PerplexityBot"
 ```
+
+## Aktueller Fokus (2026-06-13 — nach EN-Launch + GEO)
+
+**Heute erledigt:** EN-Pre-Rendering live (31 statische `/en/`-Seiten), Sitemap mit hreflang (de/en/x-default, 88 URLs inkl. EN), `llms.txt` für KI-Suchmaschinen.
+
+### 🔴 GSC — DU (manuell, nächste Tage)
+- [ ] **Sitemap neu einreichen** (`sitemap.xml`) — enthält jetzt /en/ + hreflang.
+- [ ] **Kein separates /en/-Property nötig** — die Domain-/Prefix-Property deckt `/en/*` automatisch ab (nur ein Pfad).
+- [ ] **URL-Inspection + „Indexierung beantragen"** für 6-8 EN-Kernseiten: `/en/`, `/en/dashboard`, `/en/dekadenzyklus`, `/en/jahreszyklus`, `/en/opex`, `/en/ki-saisonalitaet`, `/en/scanner`, `/en/blog/`.
+- [ ] **hreflang-Validierung** nach ~1 Woche (werden EN-Seiten eigenständig indexiert statt zu DE konsolidiert?).
+- [ ] **Rich Results Test** für die neue EN-FAQPage (Landing) + EN Blog-Article.
+- [ ] **Live-Check nach Deploy:** `curl -s https://seasonalpha.ai/llms.txt | head` · `curl -s https://seasonalpha.ai/sitemap.xml | grep -c hreflang`.
+
+### 🟠 GEO / KI-Suche
+- [x] `llms.txt` (Generator + nginx + Mount). robots.txt KI-Allowlist (18 Bots) seit 04-2026.
+- [ ] **FAQPage-JSON-LD auf Feature-Pages ausrollen** (aktuell nur Landing) — Q&A ist am zitierfähigsten für KI-Engines (ChatGPT/Perplexity/AI Overviews).
+- [ ] **Definitions-Absatz** ganz oben je Feature-Page („**Saisonalität** ist …").
+- [ ] **`Organization.sameAs`** erweitern (LinkedIn/Crunchbase) — echte URLs vom User nötig.
+
+### 🟠 On-Site (Code)
+- [ ] Font-Preloading (LCP), Per-Page-OG-Images, interne Verlinkung Blog↔Feature, optional Pretty EN-Slugs (`/en/decade-cycle`).
+
+### Marketing — DU
+- [ ] LinkedIn + X: EN-Launch + Blog #22-24 ankündigen. Social-Debugger re-scrape (OG-Cache). Rich Results Test für die 3 Polymarket-Posts.
+
+---
 
 ## Offene Tasks (in Reihenfolge)
 

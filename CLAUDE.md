@@ -1,6 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 37.0 | 2026-06-12 | Phase 7: Verifikations-Workflow, Blog-EN-Fix, TDOM-Fix, 1222 i18n-Keys
+> Version 38.0 | 2026-06-13 | EN Pre-Rendering (statisch `landing/en/`, deployed) + ~70 i18n-Mixed-Content-Defekte gefixt + verify_en.py + Deploy-Lessons
 
 ## Projekt
 
@@ -40,19 +40,11 @@ seo/                     ← Programmatic SEO + statische Tool-Pages
 docs/                    ← Ausgelagerte Dokumentation
 ```
 
-### Shared-Module Kurzübersicht
+### Module / Pages — Detail-Listen in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-`yahoo_downloader` (Stooq-Fallback + OHLC adj_factor, einziger Cache), `data` (Supabase-First), `calculations`, `charts` (`apply_se_theme`), `ki_score` (4 Sub-Scores→0-10), `tdom_analysis`, `tdoy_analysis`, `anomaly_engine`, `spot_vol_beta`, `outlier_manager`, `market_calendar`, `cache_manager`, `supabase_client`, `logger`, `cpi_data`, `shock_analysis`, `sector_rotation`, `significance_gauge` (key_prefix!), `percentile_bar`, `streak_analysis`, `footer`, `i18n`, `ticker_autocomplete`, `indicators`, `indicator_filter_ui`, `trading_day_header`, `drawdown_analysis`, `weekly_report`, `daily_report`, `unsubscribe_token`, `strategies/plain_vanilla` (24), `strategies/kaeppel`.
-
-> ⚠️ Gelöscht: `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `ai_models` (ML-Pipeline stillgelegt KW16)
-
-### Frontend JS-Module (landing/js/)
-
-`app.js` (Ticker-Input, REST, Trading-Day-Header, `makeSortable` Auto-Init, Sidebar-Toggle, Component-Loader), `charts.js` (ApexCharts-Theme + Helpers), `holidays.js` (NYSE/XETRA/LSE, Gauss-Ostern), `seasonal-compute.js`, `decade-compute.js` (+ Shared Anomalie-Radar via `renderAnomalyInto()`), `strategy-compute.js` (22 Strategien), `streak-analysis.js`, `significance.js`, `indicators.js`, `outlier.js`, `tour.js` + `tour-config.js` (26 Steps/13 Pages, `SA.TOUR_STEPS_EN` für EN), `dash-compute.js`, `watchlist.js`, `auth.js` (Supabase Auth, Google OAuth), `fomc-dates.js`, **`i18n.js`** (SA.i18n IIFE, URL-Detect, JSON-Loader, _applyDOM, _applyNavLinks, switchTo).
-
-### HTML-Pages (landing/pages/)
-
-Dashboard, Dekadenzyklus, Jahreszyklus, Monatszyklus, Wochentage, Monatswechsel, Mondphasen, Kriegszeiten, Crash-Frühwarnung, Plain-Vanilla, Trifecta, Intermarket-Shocks, Sektor-Rotation, Overnight, Zentralbanken, Feiertage, TDOM-Analyse, Spot-Vol-Beta, OPEX, KI-Saisonalität, Backtest-Engine, Polymarket, Dividenden-Kalender, Earnings-Kalender, Risikozyklus, VIXpiration, Pricing, Profile, Unsubscribe.
+- **Shared (`shared/`)** — Kern: `yahoo_downloader` (Stooq-Fallback, einziger Cache), `data` (Supabase-First), `charts` (`apply_se_theme`), `ki_score`, `tdom_analysis`, `anomaly_engine`, `significance_gauge` (key_prefix!), `footer`, `i18n`. ⚠️ Gelöscht (ML-Pipeline KW16): `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `ai_models`.
+- **Frontend JS (`landing/js/`)** — `app.js`, `charts.js` (ApexCharts), `holidays.js` (Gauss-Ostern), `*-compute.js`, `tour.js`, `auth.js`, **`i18n.js`** (SA.i18n IIFE).
+- **HTML-Pages (`landing/pages/`)** — 30 Feature-Pages (Dashboard, Zyklen, Events, Strategien, KI, Backtest …).
 
 ## Kern-Methodik: NORMALISIERTE RENDITEN
 
@@ -101,47 +93,16 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - VIXpiration = OPEX-Freitag − 30 Kalendertage (= Mi). Ist Basis-Fr ODER Settlement-Mi Feiertag → −1 HT
 - `toISOString()` NIE für lokale Datumsvergleiche (MESZ→UTC verschiebt auf Vortag) — nutze `localDateStr`
 
-### Charts & UI
+### Charts / UI / Statistik / KI — Detail: [docs/UI_PATTERNS.md](docs/UI_PATTERNS.md)
 
-- Streamlit: Charts via `apply_se_theme()`, Heatmaps via `apply_se_heatmap_theme()` (+ `tickformat=None` auf Kategorie-Achsen). Inline `update_layout` VERBOTEN
-- Plotly: `title=dict(text=..., font=dict(...))` statt `titlefont`. `add_shape`+`add_annotation` statt `add_vline` (crasht mit Strings)
-- Heatmap Jahreslabels `f" {y} "` padden (erzwingt Kategorie), `text`+`texttemplate` statt Annotations
-- `st.metric` vermeiden → HTML-Flex-Karten (10px Label, 14px Wert)
-- `significance_gauge` bei Mehrfach-Aufruf: `key_prefix`
-- `percentile_bar` unter Hauptcharts
-- `ticker_select()` statt direkte Selects (global persistiert)
-- Frontend: ApexCharts (kein Plotly.js). Für Multi-Serie-Charts **plain arrays mit null**, NICHT `{x,y}`-Objekte (bricht ApexCharts v4). Kein Mix `line`+`area`
-- ApexCharts v4 Multi-Axis: `seriesName`-Array unzuverlässig → separate Chart-Instanzen mit `chart.group:'xxx'` synchronisieren
-- Mixed Bar+Line Per-Wert-Coloring: `plotOptions.bar.colors.ranges:[{from:-Inf,to:-0.0001,color:RED},{from:0,to:Inf,color:GREEN}]`
-- Info-Badge + Hover-Tooltip: pure CSS via `.info-badge:hover ~ .info-tooltip`. Parent MUSS `position:relative`, KEIN `overflow:hidden`. Gradient-`::before` mit `border-radius:inherit`
-- KPI-Standard: globale Klasse `.kpi`/`.kpi-label`/`.kpi-value` (+ `green`/`red`/`gold`) aus `landing/css/app.css`. Keine lokalen `.kpi-card`-Definitionen
-- Dashboard-Cards V3 Ultra: `background:var(--card)` (#0a0a0e), `border:1px solid var(--border)`, `padding:1rem`. KEIN `linear-gradient(135deg,#0f1923,#131d2a)`
-- Farbschema V3 Ultra: Pure Black + Signal Gold (#e8a820) + Neon Red/Green. Dark Mode First
-- Heatmap (Monatszyklus): `apply_se_theme` + `dtick=1` (nicht `apply_se_heatmap_theme` + `type="category"`)
-- Drawdown-Heatmap: `SE_DRAWDOWN_COLORSCALE` (Rot-Gradient, zmin=worst, zmax=0, NICHT symmetrisch)
-- Last-solid-Tag-Filter: `detectAnomalyEnd` + `computeDayCounts` — gelbe "wenige Daten"-Linie am Jahresrand
-- Sortierbare Tabellen: Auto via `SA.makeSortable` + MutationObserver. Opt-out: `<table data-no-sort="1">`
-- Footer: 5 Expander (Impressum, Datenschutz, Legal Notice EN, Financial Disclaimer, Risk) via `shared/footer.py`
-
-### Statistik / Math
-
-- Quantile NIE via Floor-Indexing. Lineare Interpolation wie numpy: `pos=q*(n-1); lo=floor(pos); hi=ceil(pos); return vals[lo]+(pos-lo)*(vals[hi]-vals[lo])`
-- Perzentil-Bänder Stable-Range-Trim: max-Sample-pro-Tag bestimmen, Rand abschneiden bis Sample ≥90% des Max — verhindert Spikes durch Sample-Set-Wechsel
-- Rolling Vola: ALLE Jahre konkatenieren → 1 Rolling-Std → wieder pro `(year, doy)` einsortieren. Sonst Warmup-NaN am Jahresanfang
-- `Math.min.apply(null, arr)` ist NaN-unsafe → manuelle Loop
-- TDOM-Statistiken mit n<10: ⚠ + 40% Opacity. MIN_N nur bei UNTERSCHIEDLICHEN n pro Punkt — bei Aggregat-Bars (Woche/Monat) hat jeder Balken gleiche n → immer rot/grün nach Vorzeichen, n im Tooltip
-- Stats null vs constant-fill: `avg/std/Detrend` nutzen full_365 direkt (constant-fill). `Perzentil/Drawdown/Heatmap` müssen `if (d >= yo.last_actual_day) continue` filtern
-- Heatmap `last_actual_day`-Filter NUR für CURRENT YEAR (sonst markiert Dezember fälschlich unvollständig wenn 31.12. Wochenende)
-- Backtest-Filter look-ahead-bias-frei: `filterMask[entryIdx-1]`, NICHT `entryIdx`
-- Plain Vanilla offene Trades: Mark-to-Market mit `trade.open=true` → aus Stats/Equity/Significance filtern, in Tabelle zeigen
-- Dynamische Y-Achse: explizite yMin/yMax aus Daten + `forceNiceScale:true` (ApexCharts auto-scale kann zu groß ausschlagen)
-
-### KI / Anomalie / Patterns
-
-- Anomalie-Radar misst NUR 10 Tage (nicht YTD/Drawdown/Gesamt). Shared-Renderer `SA.decadeCompute.renderAnomalyInto(containerId, rows, ticker)` — einmal bauen, 4× nutzen
-- KI Composite 4 Sub-Scores à 0-2.5 → 0-10. Bullish ≥6.5, Bearish ≤3.5. Client-side, vanilla JS
-- Musterpfad: `findMatchingYears` (Pearson/Euklid) + `computeTruePath` (gewichteter Ø + Glättung) + `computeProjection` (± σ-Cone)
-- Präsidentenzyklus: 1=Wahl, 2=Nach, 3=Zwischen (NICHT "Mitte"!), 4=Vor. Formel `((year-2020)%4+4)%4+1`
+Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
+- Streamlit-Charts NUR via `apply_se_theme()`/`apply_se_heatmap_theme()`. **Inline `update_layout` VERBOTEN.** `st.metric` vermeiden → HTML-Flex-Karten.
+- Frontend = ApexCharts (kein Plotly.js): Multi-Serie als **plain arrays mit null**, NICHT `{x,y}` (bricht v4). Multi-Axis → separate Instanzen mit `chart.group`.
+- KPI-Standard: globale `.kpi`/`.kpi-label`/`.kpi-value`-Klassen aus `app.css`. Cards: `background:var(--card)`, KEIN Gradient. V3 Ultra: Pure Black + Gold (#e8a820), Dark Mode First.
+- Info-Badge-Tooltip: pure CSS, Parent `position:relative` + KEIN `overflow:hidden`.
+- **Quantile NIE Floor-Indexing** → lineare Interpolation wie numpy. **Backtest look-ahead-bias-frei: `filterMask[entryIdx-1]`, NICHT `entryIdx`.**
+- Stats null vs constant-fill: `avg/std/Detrend` nutzen full_365; `Perzentil/Drawdown/Heatmap` müssen `if (d >= yo.last_actual_day) continue` filtern.
+- KI Composite: 4 Sub-Scores à 0-2.5 → 0-10 (Bullish ≥6.5, Bearish ≤3.5). Anomalie-Radar misst NUR 10 Tage. Präsidentenzyklus 3=Zwischen (nicht „Mitte"), `((year-2020)%4+4)%4+1`.
 
 ### Deployment / Mobile
 
@@ -153,40 +114,27 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - `.nav__links` Mobile: `height: calc(100dvh - var(--nav-h))` + `overflow-y:auto` (nicht vh, iOS-Bug)
 - iOS 16px Input-Fix: Sidebar-Inputs auf Mobile explizit `font-size:16px` (sonst Auto-Zoom)
 - Docker JSON-Transfer: im Container generieren, `docker cp` auf Host
-- Git-Pull + Nginx-Reload für statische Änderungen: `cd /opt/seasonaledge && git pull && docker exec seasonalpha-nginx nginx -s reload`
-- `blog/output/` ist gitignored — HTML wird serverseitig via `blog_builder.py --build` generiert (baut DE + EN)
+- **Nginx-Config-Änderung aktivieren: `docker compose restart nginx` — NICHT `nginx -s reload`.** Single-File-Bind-Mount (`./deploy/nginx.conf:/etc/nginx/conf.d/default.conf`): `git pull` ersetzt die Datei (neuer Inode), der laufende Container hängt am alten Inode → `reload` liest STALE. `restart` re-resolved den Mount. (Symptom im Deploy 2026-06-13: `exec … nginx -s reload` blieb wirkungslos, `/en/*` zeigte trotz „Deploy success" die alte Version.)
+- nginx-Config minimal/proven halten: `nginx -t`-Fehler im Deploy wird per `|| echo` verschluckt (non-fatal) → fehlerhafte Config bleibt still inaktiv, alte läuft weiter. Neue Blöcke an bereits laufenden orientieren (lokal kein `nginx -t` ohne Docker).
+- Reine HTML/Asset-Änderungen (kein Config): `git pull` reicht (nginx serviert aus gemountetem `./landing` ro); ggf. Browser-Hard-Refresh
+- `blog/output/` UND `landing/en/` sind gitignored — serverseitig im Deploy generiert: `blog_builder.py --build` bzw. `build_en.py --write` (beide DE+EN), letzteres auf dem Host nach `inject_credentials.sh`
 
-### Email / Brevo
+### Email / Brevo — Detail: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md)
 
-- Brevo 201 = angenommen, NICHT zugestellt — Status im Dashboard unter "Statistics → Email Activity" checken
-- Sender-Domain MUSS Domain-Auth haben (SPF+DKIM+DMARC). Single-Sender reicht für Newsletter nicht — Gmail/Outlook blocken
-- Secrets ohne Streamlit-Runtime: TOML-Fallback via `tomllib`, sucht in `<project>/.streamlit/secrets.toml` und `~/.streamlit/secrets.toml`, beide Key-Cases
-- `messageId` aus Brevo-Response loggen für Debug
-- `pgcrypto` in Supabase im `extensions`-Schema, nicht `public` → `SET search_path=public,extensions,pg_temp` + expliziter `extensions.digest()`-Call
-- Newsletter-Subprocess: `capture_output=False` — sonst Output komplett unsichtbar in docker logs
+- Brevo **201 = angenommen, NICHT zugestellt** — Status im Dashboard („Statistics → Email Activity") checken.
+- Sender-Domain MUSS Domain-Auth haben (SPF+DKIM+DMARC); Single-Sender reicht für Newsletter nicht (Gmail/Outlook blocken).
 
-### Internationalisierung (EN-Lokalisierung)
+### Internationalisierung (EN) — Detail: [docs/I18N.md](docs/I18N.md)
 
-- `SA.i18n` IIFE in `landing/js/i18n.js` — `init()` in DOMContentLoaded, `switchTo(lang)` public
-- Spracherkennung via URL: `/en/*` → EN, alles andere → DE. Kein JS-Cookie, kein localStorage
-- `data-i18n="key"` auf Text-Elemente, `data-i18n-placeholder` für Input-Placeholders, `data-i18n-title` für title-Attr, `data-i18n-html` für innerHTML (Elemente mit `<b>`/`<a>` Tags)
-- JSON-Cache in sessionStorage mit Versionskey (`_JSON_VER='v3'`) — verhindert Stale-Cache nach Key-Änderungen
-- nginx `sub_filter` tauscht `og:locale` und `lang=de` → `lang=en` für `/en/*`-Responses
-- i18n-JSON: nginx `location /landing/i18n/ { ... no-store }` — KEIN max-age (sonst 24h gecachte alte Keys)
-- `_applyNavLinks()` rewritet alle `document.querySelectorAll('a[href]')` — NICHT nur nav/footer Container
+- **EN-Pages statisch vorgerendert** (`landing/build_en.py` → `landing/en/<slug>.html`), NICHT mehr Laufzeit-DOM-Swap. SEO-Head (canonical=/en/, reziprokes hreflang, og:locale, JSON-LD) **gebacken** → korrekt für Crawler OHNE JS. Deploy baut sie auf dem Host; `landing/en/` gitignored.
+- **⚠️ ANTI-PATTERN: `data-i18n` (Text) auf Element MIT Inline-Kind (`<b>`/`<a>`/`<br>`) → nur letzter Textknoten übersetzt = halb deutsch** (auch live, unbemerkt). Fix: `data-i18n-html` + EN-Wert als VOLLES HTML. `scripts/fix_i18n_html_markup.py` flippt automatisch.
+- **Verifizieren: `py landing/verify_en.py` (Ziel FAIL 0).** Dynamische JS-Strings via `SA.i18n.t('key','dt-Fallback')` (Script-Inhalt ist nicht backbar).
 
-### Blog / Bilingualisierung
+### Blog / Bilingualisierung — Detail: [docs/BLOG_WORKFLOW.md](docs/BLOG_WORKFLOW.md)
 
-- Blog-Templates bilingual via Template-Vars (`lang`, `og_locale`, `blog_base`, `post_url`, `str_min_read`, `str_cta_h3` etc.) — NICHT `{% if is_en %}...{% else %}...{% endif %}` überall im Template. Alle Sprachlogik im Python Builder.
-- EN-Posts in `blog/posts/en/` führen `de_slug:` Feld für hreflang-Rücklink zum DE-Original
-- Builder: `{**post, **_extra_vars_en(post), "related_posts": ..., ...}` als ctx mergen, dann `tpl.render(**ctx)` — nie `tpl.render(**post, **override_vars)` (wirft `TypeError: duplicate keyword argument` wenn Key in beiden Dicts)
-- nginx: `location ^~ /en/blog/` MUSS VOR `location ^~ /en/` stehen — nginx nimmt längsten Prefix-Match; fehlt der explizite Block, landet `/en/blog/` im generischen `/en/`-Catch-all → 404
-- Workflow-Agenten für Übersetzungen: **einen Agenten pro Datei** (nicht Batches). Große Posts füllen Kontext-Fenster, Batch-Agenten schreiben dann nur partiell oder brechen still ab.
-- Windows cp1252 console: `blog_builder.py --build` kann bei Sonderzeichen (`−`, `–`) in Post-Titeln UnicodeEncodeError werfen. Betrifft nur `print()`-Ausgabe, NICHT die HTML-Erzeugung. Auf dem Linux-Server (UTF-8) kein Problem.
-- **Blog-Disclaimer**: `disclaimer_blog.md` gilt nur für DE. `disclaimer_blog_en.md` für EN-Posts — `load_blog_disclaimer(lang='en')` in `build_en()` aufrufen. Sonst zeigen alle EN-Posts deutschen Rechtshinweis.
-- **Blog-Chart-Labels**: `markdown_to_html()` und Chart-Builder akzeptieren `lang`-Parameter. `load_posts_en()` übergibt `lang="en"`. Sonst: deutsche Monatsnamen ("Mai"/"Okt"), deutsche Chart-Titel in EN-Posts.
-- **Blog-Index page_title/page_description**: Müssen in `_extra_index_vars_en()` stehen — NICHT nur im Template-Default. Template-Defaults sind immer Deutsch.
-- Nach Blog-Code-Änderungen auf Server neu bauen: `docker exec seasonalpha-app python3 blog/blog_builder.py --build` + `docker exec seasonalpha-nginx nginx -s reload`
+- Sprachlogik komplett im Python-Builder (Template-Vars), kein `{% if is_en %}` im Template. EN-Posts in `blog/posts/en/` mit `de_slug:`-Feld (hreflang).
+- nginx `location ^~ /en/blog/` MUSS VOR `^~ /en/` (längster Prefix, sonst 404). Bei EN nicht vergessen: `disclaimer_blog_en.md` + Chart-Labels via `lang="en"`.
+- Nach Blog-Code-Änderung neu bauen: `docker exec seasonalpha-app python3 blog/blog_builder.py --build` + `docker compose restart nginx`.
 
 ### Sprache
 
@@ -234,35 +182,14 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ## Docs
 
-- `ARCHITECTURE.md`, `CHARTS.md`, `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`
+- `ARCHITECTURE.md`, `CHARTS.md`, `UI_PATTERNS.md` (Frontend/UI/Statistik-Gotchas), `I18N.md` (EN-Lokalisierung operativ; `I18N_ANALYSIS.md` = Planung 04-2026), `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`, `CHANGELOG.md` (History/Meilensteine)
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
 ## TODO
 
-### Abgeschlossene Meilensteine (Kurzübersicht)
+### History → [docs/CHANGELOG.md](docs/CHANGELOG.md)
 
-| KW | Datum | Inhalt |
-|----|-------|--------|
-| KW15 | Apr 2026 | Dashboard Bento-Grid, Guided Tour (26 Steps), Weekly Newsletter, SEO-Foundation, Scanner MVP, Watchlist Phase 1, Mobile Responsiveness, TDOM-Fix |
-| KW16-17 | Apr 2026 | Polymarket Integration (3 Phasen, Brier-Pipeline), Auth+Cloud-Watchlist, Profile-Page, Health-Check-Mails, ML-Pipeline stillgelegt, Blog-Posts #1-21 |
-| KW18 | Apr 2026 | Dividenden + Earnings Pages, Event-Crons, Yahoo Crumb-Auth, Health-Check-Integration |
-| KW20 | Mai 2026 | Nightly Backfill Phase D, moddatetime-Trigger, Stripe-Infrastruktur, GSC-Bereinigung (383→32), Blog #22-24, Newsletter Phase F Fix |
-| KW22 | Mai 2026 | Daily Morning Briefing (Multi-Window-TDOM-Score 0-4, top_daily_tips, Watchlist-Personalisierung, 10 Strategie-Signale, Status-Zeile) |
-| KW24 | Jun 2026 | **EN Lokalisierung Phasen 1-7** komplett: SA.i18n, 1222 Keys, 30 Pages + Verifikation aller Expander/Methodologie, Tour EN, 24 Blog-Posts EN (EN Disclaimer+Charts), Sitemap 89→113 URLs, hreflang |
-
-### ✅ ML-Pipeline stillgelegt (2026-04-18)
-Entfernte Module/Scripts: `mstl_decomposition.py`, `chronos_forecast.py`, `neural_prophet_forecast.py`, `compute_ml_forecasts.py`, `create_ml_forecasts.sql`, `ml_forecasts.yml`.
-KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_forecasts` in Supabase.
-
-### Erledigt (KW 24, 2026-06-12 — EN Phase 6+7)
-- [x] **24 Blog-Posts EN übersetzt** — `blog/posts/en/` mit `de_slug:`-Feld für hreflang-Rücklinks
-- [x] **`blog_builder.py` erweitert** — `build_en()`, `load_posts_en()`, `_extra_vars_en()`, `_build_blog_sitemap_en()`. `main()` ruft automatisch beide (`build_all()` + `build_en()`)
-- [x] **Bilinguales Blog-Template** — alle Sprachstrings als Template-Variablen, kein `{% if is_en %}` im HTML
-- [x] **nginx `/en/blog/`** — eigener `^~`-Location-Block vor dem `/en/`-Catch-all
-- [x] **Sitemap 89→113 URLs** — 24 EN Blog-Posts + `/en/blog/` Index, alle mit hreflang
-- [x] **Blog EN-Fix** — `disclaimer_blog_en.md`, EN Chart-Labels, page_title/page_description in EN Index
-- [x] **Verifikations-Workflow** — 21 Pages: alle Expander/Methodologie-Texte mit data-i18n versehen, en.json 793→1222 Keys
-- [x] **TDOM 4. Strategie** — `open_to_next_close` im Frontend + DB (6210 Rows je Strategie)
+Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Changelog. **Offene User-Action aus ML-Stilllegung:** `DROP TABLE ml_forecasts` in Supabase.
 
 ### 🔴 SOFORT — Security (User-Action erforderlich)
 - [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten

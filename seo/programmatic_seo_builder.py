@@ -392,12 +392,59 @@ def build_robots_txt(output_ordner: str):
         "User-agent: MJ12bot\n"
         "Crawl-delay: 10\n"
         "\n"
+        "# KI-/LLM-Crawler: kuratiertes Inhaltsverzeichnis unter /llms.txt\n"
         f"Sitemap: {BASE_URL}/sitemap.xml\n"
     )
     path = os.path.join(output_ordner, "robots.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"  [OK] robots.txt (mit AI-Crawler Policy)")
+
+
+# ── llms.txt Generator (GEO / KI-Suchmaschinen) ─────────────────────────────
+
+def build_llms_txt(output_ordner: str):
+    """Generiert /llms.txt — kuratiertes Inhaltsverzeichnis fuer KI-Crawler
+    (ChatGPT-Search, Perplexity, Claude, Google AI Overviews). Konvention nach
+    llmstxt.org: H1 + Blockquote-Summary + Link-Sektionen (Markdown)."""
+    b = BASE_URL
+    content = f"""# SeasonAlpha
+
+> Datengetriebene saisonale Börsenanalyse mit bis zu 131 Jahren Marktdaten,
+> 270+ Basiswerten (Aktien, ETFs, Futures, Crypto, FX) und KI-Composite-Score.
+> Kostenlos. Deutsch: {b}/ · English: {b}/en/
+
+SeasonAlpha findet wiederkehrende saisonale Muster in Finanzmärkten — Jahres-
+und Dekadenzyklus, Monatswechsel, Handelstag-Effekte (TDoM), OPEX, Zentralbank-
+Termine, Mondphasen u.v.m. Methodik: normalisierte Renditen (jedes Jahr startet
+bei 100, tägliche Returns kumulieren) — keine absoluten Preisänderungen.
+
+## Kern-Tools
+- [Dashboard]({b}/dashboard): Alle Saisonal-Signale für einen Ticker auf einen Blick — KI-Score, Crash-Ampel, Jahreschart, TruePath-Muster, Strategien, Events.
+- [Jahreszyklus]({b}/jahreszyklus): Saisonaler Jahresverlauf mit Perzentil-Bändern, Monats-/Quartals-Performance und Mustervergleich.
+- [Dekadenzyklus]({b}/dekadenzyklus): 131 Jahre Dow-Jones-Muster nach Jahresend-Ziffer + Anomalie-Radar.
+- [KI-Saisonalität]({b}/ki-saisonalitaet): Composite-Score 0-10 aus 4 Sub-Scores + TruePath-Mustervergleich mit Sigma-Cone-Projektion.
+- [Backtest-Engine]({b}/backtest-engine): Saisonale Event-Strategien testen (OPEX, FOMC, Mondphasen, Feiertage) — Equity-Kurve, Sharpe, Max DD, look-ahead-bias-frei.
+- [Saisonal-Scanner]({b}/scanner): 270+ Ticker nach KI-Composite-Score sortiert, filterbar.
+- [Polymarket]({b}/polymarket): Prognosemarkt-Wahrscheinlichkeiten (Fed-Pfad, Crypto) neben historischer Saisonalität + Brier-Score-Kalibrierung.
+
+## Themen-Tools
+- [OPEX & Triple Witching]({b}/opex), [Zentralbank-Effekt]({b}/zentralbanken), [Monatswechsel]({b}/monatswechsel), [Wochentage]({b}/wochentage), [Mondphasen]({b}/mondphasen), [Feiertage]({b}/feiertage), [TDoM-Analyse]({b}/tdom-analyse), [Spot-Vol-Beta]({b}/spot-vol-beta), [VIXpiration]({b}/vixpiration), [Sektor-Rotation]({b}/sektor-rotation), [Intermarket-Shocks]({b}/intermarket-shocks), [Risikozyklus]({b}/risikozyklus).
+
+## Blog
+- [Blog]({b}/blog/): Saisonalitäts-Analysen mit eigenen Daten (Fed, CPI, Polymarket, Sell-in-May u.a.).
+
+## English
+- [English version]({b}/en/): All tools and the blog are available in English under /en/.
+
+## Hinweis
+Keine Anlageberatung. Vergangene Ergebnisse und saisonale Muster garantieren
+keine zukünftigen Erträge. Details: [Disclaimer]({b}/disclaimer).
+"""
+    path = os.path.join(output_ordner, "llms.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"  [OK] llms.txt (KI-Crawler Inhaltsverzeichnis)")
 
 
 # ── Disclaimer Generator ────────────────────────────────────────────────────
@@ -620,10 +667,11 @@ def build_seo_pages():
     print()
     build_sitemap(titel_daten, output_ordner)
     build_robots_txt(output_ordner)
+    build_llms_txt(output_ordner)
     build_disclaimer(output_ordner)
 
     print(f"\n{'='*60}")
-    print(f"  Fertig! sitemap.xml + robots.txt + disclaimer.html")
+    print(f"  Fertig! sitemap.xml + robots.txt + llms.txt + disclaimer.html")
     print(f"  Ausgabe: {output_ordner}")
     print(f"{'='*60}\n")
 

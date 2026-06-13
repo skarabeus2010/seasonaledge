@@ -203,3 +203,10 @@ Nur bei grünem Status live senden.
 | `.github/workflows/daily_health.yml` | Cron 07:00 UTC + workflow_dispatch |
 | `.github/workflows/weekly_newsletter_manual.yml` | Manual-Trigger Weekly (test/dry-run/live) |
 | `docker-compose.yml` → `env_file: .env` | Reicht alle `.env`-Vars in den Container |
+
+## Gotchas (Quick-Ref aus CLAUDE.md)
+
+- **Secrets ohne Streamlit-Runtime:** TOML-Fallback via `tomllib`, sucht in `<project>/.streamlit/secrets.toml` und `~/.streamlit/secrets.toml`, beide Key-Cases (`BREVO_API_KEY`/`brevo_api_key`).
+- **`pgcrypto` liegt in Supabase im `extensions`-Schema, nicht `public`** → `SET search_path=public,extensions,pg_temp` + expliziter `extensions.digest()`-Call.
+- **Newsletter-Subprocess: `capture_output=False`** — sonst Output komplett unsichtbar in docker logs.
+- `messageId` aus Brevo-Response loggen für Debug.

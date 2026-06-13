@@ -49,6 +49,7 @@ services:
       - ./blog/output:/app/blog/output:ro
       - ./seo/output/sitemap.xml:/app/static/sitemap.xml:ro
       - ./seo/output/robots.txt:/app/static/robots.txt:ro
+      - ./seo/output/llms.txt:/app/static/llms.txt:ro
     depends_on:
       - app
 
