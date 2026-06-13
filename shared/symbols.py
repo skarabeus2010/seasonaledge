@@ -346,6 +346,14 @@ SYMBOLS = {
         "exchange":     "NYSE",
         "beschreibung": "Vornado Realty Trust — Gewerbe-Immobilien REIT",
     },
+    # Adoptierte Orphans (Preisdaten vorhanden, nachgetragen 2026-06-13)
+    "RSP": {"name": "Invesco S&P 500 Equal Weight ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "S&P 500 gleichgewichtet ETF"},
+    "IYT": {"name": "iShares U.S. Transportation ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Transportsektor ETF"},
+    "KRE": {"name": "SPDR S&P Regional Banking ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Regionalbanken ETF"},
+    "XOP": {"name": "SPDR S&P Oil & Gas E&P ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Öl & Gas Exploration ETF"},
+    "XRT": {"name": "SPDR S&P Retail ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Einzelhandel ETF (gleichgewichtet)"},
+    "XSD": {"name": "SPDR S&P Semiconductor ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Halbleiter ETF (gleichgewichtet)"},
+    "ETHA": {"name": "iShares Ethereum Trust ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Spot-Ethereum ETF (BlackRock)"},
 
     # ── US-EINZELAKTIEN ────────────────────────────────────────────────────────
     # Dow-Jones-30-Mitglieder (ergänzt 2026-06-13)

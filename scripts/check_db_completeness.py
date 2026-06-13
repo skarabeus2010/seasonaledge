@@ -153,6 +153,29 @@ def _tickers_with_any_row(table: str) -> set[str]:
     return out
 
 
+def _distinct_price_tickers() -> set[str]:
+    """Distinct Ticker aus prices. RPC zuerst (server-seitig, falls vorhanden),
+    sonst client-seitiger Loose-Index-Scan: springt per (ticker,date)-Index von
+    Distinct zu Distinct (je Query nur 1 Zeile) → kein prices-Full-Scan-Timeout."""
+    try:
+        r = _c().rpc("distinct_price_tickers").execute()
+        if r.data:
+            return {row["ticker"] for row in r.data}
+    except Exception:
+        pass
+    out: set[str] = set()
+    last = ""
+    while len(out) <= 5000:
+        r = (_c().table("prices").select("ticker").gt("ticker", last)
+             .order("ticker").limit(1).execute().data)
+        if not r:
+            break
+        t = r[0]["ticker"]
+        out.add(t)
+        last = t
+    return out
+
+
 # ───────────────────────── Datums-Logik ─────────────────────────
 
 def _last_trading_day(exchange: str, ref: date) -> date:
@@ -274,12 +297,11 @@ def dim_coverage(ctx: dict) -> dict:
     # (scripts/create_distinct_price_tickers_rpc.sql).
     if not ctx.get("single"):
         try:
-            rpc = _c().rpc("distinct_price_tickers").execute()
-            price_tickers = {r["ticker"] for r in (rpc.data or [])}
+            price_tickers = _distinct_price_tickers()
             orphans = sorted(price_tickers - set(universe))
             findings["orphans"] = orphans
             if not price_tickers:
-                add("orphans (Registry)", "yellow", "RPC lieferte keine Ticker")
+                add("orphans (Registry)", "yellow", "keine Ticker ermittelt")
             elif orphans:
                 add("orphans (Registry)", "red",
                     f"{len(orphans)} Ticker mit Preisdaten NICHT in symbols.py: "
@@ -288,10 +310,7 @@ def dim_coverage(ctx: dict) -> dict:
                 add("orphans (Registry)", "green",
                     "keine Orphans — alle Preis-Ticker sind in der Registry")
         except Exception as e:
-            add("orphans (Registry)", "yellow",
-                "RPC distinct_price_tickers fehlt? Einmal "
-                "scripts/create_distinct_price_tickers_rpc.sql ausführen. "
-                f"({str(e)[:45]})")
+            add("orphans (Registry)", "yellow", f"nicht ermittelbar: {str(e)[:60]}")
 
     # Latest-Snapshot-Tabellen: hat jeder Ticker eine Zeile im jüngsten Fenster?
     # (NICHT nur am Max-Datum — das kann partiell/in-progress sein.) Adaptiv:
