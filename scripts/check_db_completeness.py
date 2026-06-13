@@ -267,6 +267,32 @@ def dim_coverage(ctx: dict) -> dict:
     except Exception as e:
         add("prices", "red", f"Fehler: {str(e)[:80]}")
 
+    # Orphan-Detektor: Ticker mit Preisdaten, die NICHT in symbols.py stehen.
+    # Solche würden weder auditiert (Audit iteriert get_all_tickers()) noch vom
+    # Nightly/Intraday refreshed → sie veralten still (genau der SMH-Fall).
+    # Nur im Voll-Lauf; braucht RPC distinct_price_tickers
+    # (scripts/create_distinct_price_tickers_rpc.sql).
+    if not ctx.get("single"):
+        try:
+            rpc = _c().rpc("distinct_price_tickers").execute()
+            price_tickers = {r["ticker"] for r in (rpc.data or [])}
+            orphans = sorted(price_tickers - set(universe))
+            findings["orphans"] = orphans
+            if not price_tickers:
+                add("orphans (Registry)", "yellow", "RPC lieferte keine Ticker")
+            elif orphans:
+                add("orphans (Registry)", "red",
+                    f"{len(orphans)} Ticker mit Preisdaten NICHT in symbols.py: "
+                    + ", ".join(orphans[:12]) + ("…" if len(orphans) > 12 else ""))
+            else:
+                add("orphans (Registry)", "green",
+                    "keine Orphans — alle Preis-Ticker sind in der Registry")
+        except Exception as e:
+            add("orphans (Registry)", "yellow",
+                "RPC distinct_price_tickers fehlt? Einmal "
+                "scripts/create_distinct_price_tickers_rpc.sql ausführen. "
+                f"({str(e)[:45]})")
+
     # Latest-Snapshot-Tabellen: hat jeder Ticker eine Zeile im jüngsten Fenster?
     # (NICHT nur am Max-Datum — das kann partiell/in-progress sein.) Adaptiv:
     # sehr niedrige Abdeckung = Subset/Legacy-Tabelle (nur informativ, KEIN Auto-Fix).
@@ -516,6 +542,12 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
     # 1b) Stale Tail (Ticker steht still) → Voll-Refresh holt fehlende Tage bis heute
     for t in f.get("stale_tickers", {}):
         exec_or_recommend("backfill_new_ticker.py", [t])
+
+    # 1c) Orphans → können nicht auto-angelegt werden (symbols.py = Code). Empfehlung.
+    for t in f.get("orphans", []):
+        recommend.append(
+            f"# Orphan {t}: in shared/symbols.py eintragen, dann: "
+            f"python scripts/onboard_ticker.py {t}")
 
     # 2) Datumsluecken → fix_missing_days (+ tdoy)
     for t in sorted(f.get("price_gaps", {}), key=lambda x: -f["price_gaps"][x]):
