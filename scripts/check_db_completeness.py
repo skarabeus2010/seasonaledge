@@ -376,9 +376,10 @@ def dim_gaps(ctx: dict) -> dict:
             f"keine Lücken (Fenster {win_start.year}–{today.year})")
     else:
         worst = sorted(price_gaps.items(), key=lambda x: -x[1])[:6]
-        st = "red" if total_missing > 50 else "yellow"
-        add("prices: Datumslücken", st,
-            f"{len(price_gaps)} Ticker, {total_missing} fehlende HT gesamt — "
+        # Advisory (gelb, nicht rot): viele "Lücken" sind Kalender-Edgecases
+        # (is_trading_day vs. Yahoo-Kalender) und nicht nachladbar. --fix versucht es safe.
+        add("prices: Datumslücken", "yellow",
+            f"{len(price_gaps)} Ticker, {total_missing} fehlende HT (ggf. Kalender-Edgecases) — "
             + ", ".join(f"{t}:{n}" for t, n in worst))
 
     # NULL-Felder (fixbar via backfill_ohlc/backfill_log_return → max. gelb).
@@ -401,7 +402,8 @@ def dim_gaps(ctx: dict) -> dict:
                 f"{gtotal} Zeilen · Ticker (Stichprobe): "
                 + ", ".join(offenders[:10]) + ("…" if len(offenders) >= 10 else ""))
         except Exception as e:
-            add(f"prices: NULL {null_col}", "red", f"Fehler: {str(e)[:80]}")
+            # Statement-Timeout o.ä. auf der grossen prices-Tabelle ist kein Datenproblem.
+            add(f"prices: NULL {null_col}", "yellow", f"Count nicht ermittelbar: {str(e)[:70]}")
 
     return {"title": "Gaps", "status": status, "checks": checks}
 

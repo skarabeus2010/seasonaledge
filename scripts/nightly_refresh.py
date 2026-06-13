@@ -409,6 +409,22 @@ def main():
         app_logger.error(f"nightly_refresh: Regime-Scores fehlgeschlagen: {e}")
         print(f"Regime-Scores failed: {e}")
 
+    # Phase E1b: Spot-Vol-Beta (SPX vs VIX) — hatte bisher KEINEN Cron und stand still.
+    try:
+        from shared.spot_vol_beta import (
+            load_spot_vol_data, compute_spot_vol_beta, sync_spot_vol_to_db,
+        )
+        _svb_df = load_spot_vol_data()
+        if _svb_df is not None and not _svb_df.empty:
+            _svb_calc, _ = compute_spot_vol_beta(_svb_df)
+            _svb_n = sync_spot_vol_to_db(_svb_calc)
+            print(f"Spot-Vol-Beta: {_svb_n} Zeilen aktualisiert", flush=True)
+        else:
+            print("Spot-Vol-Beta: keine Daten geladen", flush=True)
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Spot-Vol-Beta fehlgeschlagen: {e}")
+        print(f"Spot-Vol-Beta failed: {e}", flush=True)
+
     # Phase E2: refresh_log schreiben
     try:
         from shared.supabase_client import get_client

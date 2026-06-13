@@ -21,6 +21,11 @@ except NameError:
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
+try:  # Windows: UTF-8 erzwingen (✓-Prints crashen sonst unter cp1252 bei Datei-Umleitung)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 from datetime import date, datetime, timedelta
 from shared.supabase_client import get_client
 from shared.exchange_holidays import is_trading_day

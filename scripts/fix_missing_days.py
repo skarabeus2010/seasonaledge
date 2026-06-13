@@ -26,6 +26,11 @@ except NameError:
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
+try:  # Windows-Konsole/Datei-Umleitung: UTF-8 erzwingen (✓/⚡-Prints crashen sonst unter cp1252)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 import numpy as np
 import pandas as pd
 from shared.supabase_client import get_client, upsert_prices
