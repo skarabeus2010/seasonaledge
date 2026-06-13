@@ -53,6 +53,7 @@
       created_at: now,
       updated_at: now,
       items: [],
+      tombstones: {},   // {ticker: deletedAtISO} — verhindert Resurrection beim Cloud-Sync
       sort: { key: 'added_at', dir: 'desc' }
     };
   }
@@ -67,6 +68,7 @@
         return _initial();
       }
       // Future Schema-Migration kann hier einhängen (version < SCHEMA_VERSION)
+      if (!data.tombstones || typeof data.tombstones !== 'object') data.tombstones = {};
       return data;
     } catch (e) {
       return _initial();
@@ -153,7 +155,8 @@
         _emit('changed', { action: 'limit-reached', ticker: t, count: data.items.length });
         return false;
       }
-      // Neuen Item einfügen
+      // Neuen Item einfügen (evtl. Tombstone aufheben — Ticker wird wieder gewollt)
+      if (data.tombstones) delete data.tombstones[t];
       data.items.push({
         ticker: t,
         added_at: new Date().toISOString(),
@@ -182,6 +185,9 @@
       if (idx === -1) return false;
 
       data.items.splice(idx, 1);
+      // Tombstone setzen → beim nächsten Cloud-Sync nicht zurückholen + Delete-Retry
+      data.tombstones = data.tombstones || {};
+      data.tombstones[t] = new Date().toISOString();
       if (!_write(data)) return false;
 
       _emit('removed', { ticker: t, count: data.items.length });
@@ -207,7 +213,12 @@
      * Leert die komplette Watchlist.
      */
     clear: function() {
+      var prev = _read();
       var data = _initial();
+      // Alle bisherigen Ticker tombstonen, damit ein fehlgeschlagener Cloud-Clear
+      // sie nicht beim nächsten Sync wieder einspielt.
+      var now = new Date().toISOString();
+      for (var i = 0; i < prev.items.length; i++) data.tombstones[prev.items[i].ticker] = now;
       if (!_write(data)) return false;
       _emit('changed', { action: 'clear', count: 0 });
       return true;
@@ -296,7 +307,7 @@
       .select('ticker,added_at,note')
       .order('added_at', { ascending: false })
       .then(function(res) {
-        if (res.error) { console.warn('[SA.watchlist] supa load:', res.error); return []; }
+        if (res.error) { console.error('[SA.watchlist] supa load:', res.error); return []; }
         return (res.data || []);
       });
   }
@@ -312,7 +323,7 @@
     _supaClient().from('user_watchlists')
       .upsert(payload, { onConflict: 'user_id,ticker' })
       .then(function(res) {
-        if (res.error) console.warn('[SA.watchlist] supa upsert:', res.error);
+        if (res.error) console.error('[SA.watchlist] supa upsert:', res.error);
       });
   }
 
@@ -321,7 +332,7 @@
     _supaClient().from('user_watchlists').delete()
       .eq('user_id', _supaUserId()).eq('ticker', ticker)
       .then(function(res) {
-        if (res.error) console.warn('[SA.watchlist] supa delete:', res.error);
+        if (res.error) console.error('[SA.watchlist] supa delete:', res.error);
       });
   }
 
@@ -330,40 +341,49 @@
     _supaClient().from('user_watchlists').delete()
       .eq('user_id', _supaUserId())
       .then(function(res) {
-        if (res.error) console.warn('[SA.watchlist] supa clear:', res.error);
+        if (res.error) console.error('[SA.watchlist] supa clear:', res.error);
       });
   }
 
-  // Sync beim Login: Merge Union aus local + remote. Remote wins bei Ticker-Konflikt.
+  // Sync beim Login: Cloud ist autoritativ, ABER lokale Tombstones gewinnen.
+  // Gelöschte Ticker werden NICHT aus remote zurückgeholt; ihr Cloud-Delete wird
+  // erneut versucht (robust auch wenn ein früherer Delete fehlschlug — z.B. RLS).
   function _syncOnLogin() {
     _supaLoad().then(function(remote) {
-      var local = _read();
+      var data = _read();
+      var tomb = data.tombstones || {};
       var remoteByTicker = {};
       for (var i = 0; i < remote.length; i++) remoteByTicker[remote[i].ticker] = remote[i];
 
-      // Local-only Items → zu Supabase hochsyncen
-      for (var j = 0; j < local.items.length; j++) {
-        if (!remoteByTicker[local.items[j].ticker]) _supaUpsert(local.items[j]);
+      // Local-only Items (nicht remote, nicht getombstoned) → hochsyncen
+      for (var j = 0; j < data.items.length; j++) {
+        var lt = data.items[j].ticker;
+        if (!remoteByTicker[lt] && !tomb[lt]) _supaUpsert(data.items[j]);
       }
 
-      // Merge: Union (remote gewinnt bei Konflikt)
+      // Merge: remote übernehmen, außer getombstonte Ticker (→ Delete erneut feuern)
       var mergedMap = {};
       for (var k = 0; k < remote.length; k++) {
-        mergedMap[remote[k].ticker] = {
-          ticker: remote[k].ticker,
-          added_at: remote[k].added_at,
-          note: remote[k].note || ''
-        };
+        var rt = remote[k].ticker;
+        if (tomb[rt]) { _supaDelete(rt); continue; }   // gelöscht: nicht zurückholen, Delete-Retry
+        mergedMap[rt] = { ticker: rt, added_at: remote[k].added_at, note: remote[k].note || '' };
       }
-      for (var l = 0; l < local.items.length; l++) {
-        if (!mergedMap[local.items[l].ticker]) mergedMap[local.items[l].ticker] = local.items[l];
+      // Local-only Items behalten, die remote (noch) nicht kennt
+      for (var l = 0; l < data.items.length; l++) {
+        var it = data.items[l];
+        if (!mergedMap[it.ticker] && !tomb[it.ticker]) mergedMap[it.ticker] = it;
       }
       var merged = [];
       for (var t in mergedMap) merged.push(mergedMap[t]);
       merged.sort(function(a, b) { return (b.added_at || '').localeCompare(a.added_at || ''); });
 
-      var data = _read();
+      // Tombstones aufräumen: nur behalten solange remote den Ticker noch hat
+      // (Delete noch nicht durch). Bestätigte Deletes → Tombstone weg.
+      var newTomb = {};
+      for (var tk in tomb) { if (remoteByTicker[tk]) newTomb[tk] = tomb[tk]; }
+
       data.items = merged.slice(0, MAX_ITEMS);
+      data.tombstones = newTomb;
       _write(data);
       _emit('changed', { action: 'sync-login', count: data.items.length });
     });
