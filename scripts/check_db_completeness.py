@@ -74,6 +74,10 @@ ALL_DIMS = ["freshness", "coverage", "gaps", "events"]
 # count < Median*RATIO gelten als unvollstaendig (gelb), count==0 als fehlend (rot).
 COVERAGE_STATIC = ["seasonality", "tdom_stats", "tdoy_stats", "monthly_stats"]
 INCOMPLETE_RATIO = 0.5
+
+# Stale-Tail: ein Ticker, dessen jüngstes Preis-Datum mehr als so viele Handelstage
+# hinter dem letzten HT liegt, hat aufgehört zu aktualisieren (z.B. Orphan ohne Refresh).
+STALE_TRADING_DAYS = 3
 # "Latest-Snapshot"-Tabellen: 1 Zeile/Ticker am letzten Lauf-Datum.
 COVERAGE_DAILY = {
     "ki_scores": "computed_date",
@@ -349,6 +353,7 @@ def dim_gaps(ctx: dict) -> dict:
     client = _c()
 
     price_gaps: dict[str, int] = {}
+    stale_tickers: dict[str, tuple] = {}
     total_missing = 0
     for i, t in enumerate(tickers):
         try:
@@ -365,10 +370,25 @@ def dim_gaps(ctx: dict) -> dict:
             if missing:
                 price_gaps[t] = len(missing)
                 total_missing += len(missing)
+            # Stale-Tail: jüngstes Datum vs. letztem Handelstag (echtes Problem)
+            behind = _trading_days_behind(db_max, exchange, today)
+            if behind > STALE_TRADING_DAYS:
+                stale_tickers[t] = (db_max.isoformat(), behind)
         except Exception:
             pass
         if (i + 1) % 40 == 0:
             gc.collect()
+
+    findings["stale_tickers"] = stale_tickers
+    if stale_tickers:
+        worst_s = sorted(stale_tickers.items(), key=lambda x: -x[1][1])[:8]
+        add("prices: Stale Ticker (Tail veraltet)", "red",
+            f"{len(stale_tickers)} Ticker stehen still — "
+            + ", ".join(f"{t}@{v[0]}({v[1]}HT)" for t, v in worst_s)
+            + ("…" if len(stale_tickers) > 8 else ""))
+    else:
+        add("prices: Stale Ticker (Tail veraltet)", "green",
+            f"alle Ticker aktuell (≤{STALE_TRADING_DAYS} HT hinterher)")
 
     findings["price_gaps"] = price_gaps
     if not price_gaps:
@@ -492,6 +512,10 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
     for t in f.get("missing_prices", []):
         exec_or_recommend("backfill_new_ticker.py", [t])
         exec_or_recommend("backfill_tdoy.py", ["--ticker", t])
+
+    # 1b) Stale Tail (Ticker steht still) → Voll-Refresh holt fehlende Tage bis heute
+    for t in f.get("stale_tickers", {}):
+        exec_or_recommend("backfill_new_ticker.py", [t])
 
     # 2) Datumsluecken → fix_missing_days (+ tdoy)
     for t in sorted(f.get("price_gaps", {}), key=lambda x: -f["price_gaps"][x]):
