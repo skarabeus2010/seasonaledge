@@ -322,51 +322,99 @@ SA.supabase = {
  */
 SA._tickerCache = null;
 
+// Custom-Substring-Autocomplete (ersetzt das native <datalist>, das je nach
+// Browser nur Prefix matcht / Optionen kappt). Matcht Ticker UND Name,
+// case-insensitiv, Prefix-Treffer zuerst. Signatur bleibt kompatibel.
 SA.initTickerInput = function(inputId, datalistId, onSelect) {
   var input = document.getElementById(inputId);
-  var dl = document.getElementById(datalistId);
   if (!input) return;
+  input.removeAttribute('list');            // natives datalist deaktivieren
+  input.setAttribute('autocomplete', 'off');
 
-  // Focus → Text markieren (sofort ueberschreibbar)
+  function commit(val) {
+    if (onSelect) onSelect(String(val == null ? input.value : val).trim().toUpperCase());
+  }
+
   input.addEventListener('focus', function() { this.select(); });
 
-  // Enter → Callback
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (onSelect) onSelect(input.value.trim().toUpperCase());
-    }
-  });
+  var box = document.createElement('div');
+  box.className = 'sa-ac-box';
+  box.style.cssText = 'position:absolute;z-index:99999;display:none;max-height:320px;'
+    + 'overflow-y:auto;background:#0a0a0e;border:1px solid #2a2a35;border-radius:8px;'
+    + 'margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,.5);'
+    + 'font-family:var(--f-m,ui-monospace,monospace);';
+  document.body.appendChild(box);
+  var matches = [], active = -1;
 
-  // Datalist-Auswahl → Callback
-  input.addEventListener('change', function() {
-    if (onSelect) onSelect(input.value.trim().toUpperCase());
+  function place() {
+    var r = input.getBoundingClientRect();
+    box.style.left = (window.scrollX + r.left) + 'px';
+    box.style.top = (window.scrollY + r.bottom) + 'px';
+    box.style.width = Math.max(r.width, 220) + 'px';
+  }
+  function hide() { box.style.display = 'none'; active = -1; }
+  function render() {
+    if (!matches.length) { hide(); return; }
+    var html = '';
+    for (var i = 0; i < matches.length; i++) {
+      var m = matches[i];
+      html += '<div class="sa-ac-row" data-idx="' + i + '" style="padding:7px 10px;'
+        + 'cursor:pointer;font-size:12px;white-space:nowrap;overflow:hidden;'
+        + 'text-overflow:ellipsis;border-bottom:1px solid #15151c;'
+        + (i === active ? 'background:#1a1a23;' : '') + '">'
+        + '<b style="color:#e8a820">' + m.t + '</b> '
+        + '<span style="color:#9ca3af">' + (m.n || '') + '</span></div>';
+    }
+    box.innerHTML = html;
+    place();
+    box.style.display = 'block';
+  }
+  function pick(i) {
+    var m = matches[i];
+    if (!m) return;
+    input.value = m.t;
+    hide();
+    commit(m.t);
+  }
+  function filter() {
+    var q = input.value.trim().toUpperCase();
+    var data = SA._tickerCache || [];
+    if (!q) { matches = []; hide(); return; }
+    var pre = [], sub = [];
+    for (var i = 0; i < data.length; i++) {
+      var t = (data[i].t || '').toUpperCase();
+      var n = (data[i].n || '').toUpperCase();
+      if (t.indexOf(q) === 0) pre.push(data[i]);
+      else if (t.indexOf(q) > 0 || n.indexOf(q) >= 0) sub.push(data[i]);
+    }
+    matches = pre.concat(sub).slice(0, 60);
+    active = matches.length ? 0 : -1;
+    render();
+  }
+
+  input.addEventListener('input', filter);
+  input.addEventListener('keydown', function(e) {
+    var open = box.style.display === 'block' && matches.length;
+    if (open && e.key === 'ArrowDown') { e.preventDefault(); active = (active + 1) % matches.length; render(); }
+    else if (open && e.key === 'ArrowUp') { e.preventDefault(); active = (active - 1 + matches.length) % matches.length; render(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (open && active >= 0) pick(active); else { hide(); commit(); } }
+    else if (e.key === 'Escape') { hide(); }
   });
+  box.addEventListener('mousedown', function(e) {
+    var row = e.target.closest ? e.target.closest('.sa-ac-row') : null;
+    if (row) { e.preventDefault(); pick(parseInt(row.getAttribute('data-idx'), 10)); }
+  });
+  input.addEventListener('blur', function() { setTimeout(hide, 150); });
+  window.addEventListener('scroll', function() { if (box.style.display === 'block') place(); }, true);
+  window.addEventListener('resize', function() { if (box.style.display === 'block') place(); });
 
   // Ticker-Liste laden (einmal, dann gecached)
-  if (!dl) return;
-  if (SA._tickerCache) {
-    _populateDatalist(dl, SA._tickerCache);
-    return;
-  }
+  if (SA._tickerCache) return;
   fetch('/landing/data/tickers.json')
     .then(function(r) { return r.json(); })
-    .then(function(tickers) {
-      SA._tickerCache = tickers;
-      _populateDatalist(dl, tickers);
-    })
+    .then(function(tickers) { SA._tickerCache = tickers; })
     .catch(function() {});
 };
-
-function _populateDatalist(dl, tickers) {
-  if (dl.children.length > 0) return; // bereits gefuellt
-  for (var i = 0; i < tickers.length; i++) {
-    var opt = document.createElement('option');
-    opt.value = tickers[i].t;
-    opt.textContent = tickers[i].n + ' (' + tickers[i].t + ')';
-    dl.appendChild(opt);
-  }
-}
 
 /**
  * Laedt alle Preise eines Tickers aus Supabase (paginiert, 1000er Batches).
