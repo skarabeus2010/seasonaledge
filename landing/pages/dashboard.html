@@ -629,12 +629,11 @@
       // lief gestern, intraday-refresh läuft erst wenn Börse offen ist).
       // Selbe Logik wie getTdomMiniStats() Zeile 490–494.
       var t=new Date(),ty=t.getFullYear(),tm=t.getMonth()+1,td=t.getDate();
-      var ts=ty+'-'+pad2(tm)+'-'+pad2(td);
       var ex;
       try{ex=SA.holidays.detect(ticker||'');}catch(e){ex='NONE';}
-      // Wenn heute kein Handelstag: null (kein Marker)
-      if(ex!=='NONE'&&!SA.holidays.isTradingDay(ts,ex))return null;
-      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive
+      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive.
+      // An WE/Feiertagen wird der heutige Nicht-Handelstag nicht mitgezählt →
+      // Marker landet automatisch auf dem letzten Handelstag (statt zu fehlen).
       var tdom=0;
       for(var d=1;d<=td;d++){
         var dStr=ty+'-'+pad2(tm)+'-'+pad2(d);

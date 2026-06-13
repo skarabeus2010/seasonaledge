@@ -597,33 +597,28 @@
       var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
       var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
       var exchange = SA.holidays ? SA.holidays.detect(currentTicker) : 'NYSE';
-      var todayIsTD = SA.holidays ? SA.holidays.isTradingDay(todayStr, exchange) : (today.getDay() >= 1 && today.getDay() <= 5);
-
-      if (todayIsTD) {
-        // Forward: zähle HT seit Monatsanfang inklusive heute
-        var tdomFwd = 0;
-        var d1 = new Date(today.getFullYear(), today.getMonth(), 1);
-        while (true) {
-          var ds = d1.getFullYear() + '-' + pad(d1.getMonth()+1) + '-' + pad(d1.getDate());
-          if (ds > todayStr) break;
-          if (SA.holidays.isTradingDay(ds, exchange)) tdomFwd++;
-          d1.setDate(d1.getDate() + 1);
-        }
-        if (direction === 'forward') return tdomFwd;
-        // Backward: zähle HT vom Monatsende bis heute (inkl.) → negativer Wert
-        var totalDays = 0;
-        var d2 = new Date(today.getFullYear(), today.getMonth(), 1);
-        while (d2.getMonth() === today.getMonth()) {
-          var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
-          if (SA.holidays.isTradingDay(ds2, exchange)) totalDays++;
-          d2.setDate(d2.getDate() + 1);
-        }
-        return -(totalDays - tdomFwd + 1);
+      // Forward: zähle HT seit Monatsanfang bis heute (inkl.). An WE/Feiertagen
+      // wird der heutige Nicht-Handelstag nicht mitgezählt → der Marker landet
+      // auf dem letzten Handelstag statt auf der letzten DB-Row (max TDOM).
+      var tdomFwd = 0;
+      var d1 = new Date(today.getFullYear(), today.getMonth(), 1);
+      while (true) {
+        var ds = d1.getFullYear() + '-' + pad(d1.getMonth()+1) + '-' + pad(d1.getDate());
+        if (ds > todayStr) break;
+        if (SA.holidays.isTradingDay(ds, exchange)) tdomFwd++;
+        d1.setDate(d1.getDate() + 1);
       }
-
-      // Heute kein HT → letzten Row-Wert nehmen
-      var last = _cachedRows[_cachedRows.length - 1];
-      return direction === 'forward' ? last.tdom : last.tdom_reverse;
+      if (!tdomFwd) return null;  // noch kein Handelstag im Monat → kein Marker
+      if (direction === 'forward') return tdomFwd;
+      // Backward: zähle HT vom Monatsende bis heute (inkl.) → negativer Wert
+      var totalDays = 0;
+      var d2 = new Date(today.getFullYear(), today.getMonth(), 1);
+      while (d2.getMonth() === today.getMonth()) {
+        var ds2 = d2.getFullYear() + '-' + pad(d2.getMonth()+1) + '-' + pad(d2.getDate());
+        if (SA.holidays.isTradingDay(ds2, exchange)) totalDays++;
+        d2.setDate(d2.getDate() + 1);
+      }
+      return -(totalDays - tdomFwd + 1);
     }
     function getCurrentMonth() {
       // Heute (nicht letzte Row)
