@@ -3,6 +3,7 @@ title: "New: The SeasonAlpha Dashboard — all signals for one ticker on a singl
 seo_title: "SeasonAlpha Dashboard: Seasonality, AI Score and Strategies for Every Ticker"
 slug: dashboard-launch
 de_slug: dashboard-launch
+noindex: true
 date: 2026-04-08
 category: tutorials
 tags: [dashboard, ai-score, crash-signal, seasonality, strategies, new, real-time-analysis, backtest-engine, return-analysis, watchlist]

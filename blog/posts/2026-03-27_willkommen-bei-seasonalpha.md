@@ -2,6 +2,7 @@
 title: "Willkommen bei SeasonAlpha.ai — Dein unfairer Vorteil an der Börse"
 seo_title: "SeasonAlpha.ai: KI-gestuetzte saisonale Marktanalyse"
 slug: willkommen-bei-seasonalpha.ai
+noindex: true
 date: 2026-03-27
 category: education
 tags: [seasonalpha, launch, saisonalitaet, plattform, vorstellung, ai, ki, finanzdaten, machine-learning, anomalie-erkennung, chartanalyse]

@@ -481,7 +481,7 @@
         var wlTitle = inWL ? r.ticker + ' ' + SA.i18n.t('scan.wl_remove','aus Watchlist entfernen') : r.ticker + ' ' + SA.i18n.t('scan.wl_add','zur Watchlist hinzufügen');
         return '<tr data-ticker="' + r.ticker + '">' +
           '<td class="rank">' + (i + 1) + '</td>' +
-          '<td class="ticker"><a href="' + dashHref + '" title="' + SA.i18n.t('scan.open_dash','Im Dashboard öffnen') + '">' + r.ticker + '</a></td>' +
+          '<td class="ticker"><a href="' + dashHref + '" rel="nofollow" title="' + SA.i18n.t('scan.open_dash','Im Dashboard öffnen') + '">' + r.ticker + '</a></td>' +
           '<td class="name" title="' + escName + '">' + escName + '</td>' +
           '<td class="cat">' + r.kategorie + '</td>' +
           '<td><span class="sig-badge ' + sigClass + '">' + r.signal + '</span></td>' +
@@ -494,7 +494,7 @@
                 '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>' +
               '</svg>' +
             '</button>' +
-            '<a href="' + dashHref + '">Dashboard &rsaquo;</a>' +
+            '<a href="' + dashHref + '" rel="nofollow">Dashboard &rsaquo;</a>' +
           '</td>' +
         '</tr>';
       }).join('');

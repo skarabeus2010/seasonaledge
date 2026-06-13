@@ -511,11 +511,11 @@
       if (card.error) {
         return '<div class="wl-card error" data-ticker="' + t + '">' +
           '<div class="wl-card__head">' +
-            '<div><a href="' + dashHref + '" class="wl-card__ticker">' + t + '</a><div class="wl-card__name">' + escName + '</div></div>' +
+            '<div><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + t + '</a><div class="wl-card__name">' + escName + '</div></div>' +
             '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
           '</div>' +
           '<div style="color:var(--red);font-size:.8125rem;padding:.5rem">⚠ ' + card.error + '</div>' +
-          '<a href="' + dashHref + '" class="wl-card__cta">Trotzdem öffnen →</a>' +
+          '<a href="' + dashHref + '" rel="nofollow" class="wl-card__cta">Trotzdem öffnen →</a>' +
         '</div>';
       }
 
@@ -599,7 +599,7 @@
 
       return '<div class="wl-card" data-ticker="' + t + '">' +
         '<div class="wl-card__head">' +
-          '<div style="min-width:0"><a href="' + dashHref + '" class="wl-card__ticker">' + t + '</a>' +
+          '<div style="min-width:0"><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + t + '</a>' +
           (escName ? '<div class="wl-card__name">' + escName + '</div>' : '') +
           '</div>' +
           '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
@@ -646,7 +646,7 @@
         twoWeekHtml +
         signalHtml +
 
-        '<a href="' + dashHref + '" class="wl-card__cta">Zum Dashboard →</a>' +
+        '<a href="' + dashHref + '" rel="nofollow" class="wl-card__cta">Zum Dashboard →</a>' +
       '</div>';
     }
 

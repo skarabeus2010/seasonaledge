@@ -113,7 +113,7 @@
     </script>
     {% endif %}
 
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="{{ 'noindex, follow' if noindex else 'index, follow' }}">
     {% if is_en | default(false) %}
     <link rel="alternate" hreflang="en" href="{{ post_url }}">
     {% if de_slug %}<link rel="alternate" hreflang="de" href="https://seasonalpha.ai/blog/{{ de_slug }}/">
@@ -512,7 +512,7 @@
     {% if tags %}
     <div class="post-tags">
         {% for tag in tags %}
-        <a href="{{ blog_base | default('/blog/') }}?tag={{ tag }}">#{{ tag }}</a>
+        <a rel="nofollow" href="{{ blog_base | default('/blog/') }}?tag={{ tag }}">#{{ tag }}</a>
         {% endfor %}
     </div>
     {% endif %}

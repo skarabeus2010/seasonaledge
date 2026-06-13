@@ -772,6 +772,7 @@ def load_posts() -> list[dict]:
             "seo_title": meta.get("seo_title", ""),             # Separater Meta-Title (max 60 Zeichen)
             "canonical_url": meta.get("canonical_url", ""),      # Override fuer Content Syndication
             "og_image": meta.get("og_image", ""),                # Custom OG-Image Pfad
+            "noindex": meta.get("noindex", False),               # noindex,follow fuer duenne Posts
             "status": status,
             "content": html_content,
             "reading_time": reading_time,
@@ -832,6 +833,7 @@ def load_posts_en() -> list[dict]:
             "title": meta["title"],
             "slug": meta["slug"],
             "de_slug": meta.get("de_slug", ""),
+            "noindex": meta.get("noindex", False),
             "date": str(post_date),
             "date_obj": post_date,
             "date_formatted": date_formatted,

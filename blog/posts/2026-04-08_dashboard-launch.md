@@ -2,6 +2,7 @@
 title: "Neu: Das SeasonAlpha Dashboard — alle Signale für einen Ticker auf einer Seite"
 seo_title: "SeasonAlpha Dashboard: Saisonalität, KI-Score und Strategien für jeden Ticker"
 slug: dashboard-launch
+noindex: true
 date: 2026-04-08
 category: tutorials
 tags: [dashboard, ki-score, crash-ampel, saisonalitaet, strategien, neu, echtzeit-analyse, backtest-engine, renditeanalyse, watchlist]
