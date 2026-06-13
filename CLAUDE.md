@@ -79,6 +79,9 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - Nightly Refresh: letzte **7 Tage** Upsert-Fenster (seit Phase D KW20). Phase D prüft zusätzlich letzte 14 Tage auf NULL `log_return` und berechnet nach.
 - `log_return`-Spalte in Supabase wird von `preprocess()` genutzt wenn vorhanden
 - Zeitstempel UTC: `datetime.now(timezone.utc)` nutzen (nicht `datetime.utcnow()`, deprecated ab 3.12)
+- **Neuen Ticker aufnehmen: NUR via `py scripts/onboard_ticker.py <T>`** (nach Eintrag in `symbols.py`). Macht Yahoo-Validierung + Voll-Backfill + tickers.json-Regen + DB-Upsert in einem. NIEMALS nur Preise laden ohne `symbols.py`-Eintrag → sonst „Orphan" (wird weder auditiert noch refreshed, veraltet still). `symbols.py`/`get_all_tickers()` = einzige Quelle der Wahrheit; Backfill-Skripte ihre Ticker-Liste IMMER daraus speisen, nie aus DB-Tabellen (prices-Full-Scan timeoutet, `tickers`-Tabelle kann fehlen).
+- **Lokal (Windows):** `py -3.14` nutzen (= Container-Version; Default-`py` ist 3.9 und scheitert an `X | None`-Syntax in shared-Modulen). Bei Skript-Läufen mit Datei-Umleitung `PYTHONUTF8=1` setzen (cp1252 crasht sonst an ✓/⚡-Prints).
+- Vollständigkeit prüfen: `py scripts/check_db_completeness.py` (Freshness/Coverage/Gaps/Events + Orphan- & Stale-Tail-Erkennung; wöchentl. Cron `db_completeness.yml`). Orphan-Check braucht RPC `create_distinct_price_tickers_rpc.sql`.
 
 ### Handelstage & Börsen-Awareness
 
