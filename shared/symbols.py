@@ -611,7 +611,7 @@ SYMBOLS = {
     "VOW3.DE": {"name": "Volkswagen (Vz)", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Volkswagen AG — Automobil"},
     "VNA.DE": {"name": "Vonovia", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Vonovia SE — Wohnimmobilien"},
     "ZAL.DE": {"name": "Zalando", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Zalando SE — E-Commerce (Mode)"},
-    "SAP": {"name": "SAP", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "SAP SE — Enterprise Software"},
+    "SAP.DE": {"name": "SAP", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "SAP SE — Enterprise Software (XETRA)"},
     "SIE.DE": {"name": "Siemens", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Siemens AG — Industrie & Technologie"},
     "ALV.DE": {"name": "Allianz", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Allianz SE — Versicherung"},
     "BAS.DE": {"name": "BASF", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "BASF SE — Chemie"},
