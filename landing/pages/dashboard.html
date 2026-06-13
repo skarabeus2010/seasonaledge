@@ -1414,21 +1414,31 @@
         }
       }
 
-      // OPEX (3. Freitag — naechste 2 Monate)
+      // OPEX (3. Freitag, feiertagsbereinigt — naechste 2 Monate)
+      // Faellt der 3. Freitag auf einen NYSE-Feiertag (z.B. Juneteenth 19.06.2026),
+      // wird OPEX auf den vorherigen Handelstag vorverlegt (wie auf der OPEX-Seite).
+      function _adjOpex(yy, mm) {
+        var d = SA.holidays._nthDow(yy, mm, 5, 3); // 5 = Freitag
+        var s = yy + '-' + pad2(mm) + '-' + pad2(d);
+        if (SA.holidays.isTradingDay(s, 'NYSE')) return s;
+        var dt = new Date(yy, mm - 1, d);
+        do { dt.setDate(dt.getDate() - 1); }
+        while (!SA.holidays.isTradingDay(
+          dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()), 'NYSE'));
+        return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+      }
       try {
         for (var mi = 0; mi < 2; mi++) {
           var futM = todayD.getMonth() + 1 + mi;
           var mm = ((futM - 1) % 12) + 1;
           var yy = Y + Math.floor((futM - 1) / 12);
-          var d = SA.holidays._nthDow(yy, mm, 5, 3); // 5 = Freitag
-          var ds = yy + '-' + pad2(mm) + '-' + pad2(d);
+          var ds = _adjOpex(yy, mm);
           if (ds >= todayS) {
-            // Historische OPEX (letzte 5 Jahre)
+            // Historische OPEX (letzte 15 Jahre, ebenfalls feiertagsbereinigt)
             var histOpex = [];
             for (var hy = Y - 15; hy < Y; hy++) {
               for (var hm = 1; hm <= 12; hm++) {
-                var hd = SA.holidays._nthDow(hy, hm, 5, 3);
-                histOpex.push(hy + '-' + pad2(hm) + '-' + pad2(hd));
+                histOpex.push(_adjOpex(hy, hm));
               }
             }
             events.push({ icon:'📊', name:'OPEX (3. Freitag)', date:ds, daysBefore:3, daysAfter:3, historicDates: histOpex });
@@ -1485,6 +1495,8 @@
         }
       } catch(e){}
 
+      // Chronologisch sortieren (frühestes Event zuerst). date = 'YYYY-MM-DD' → String-Vergleich = Datums-Vergleich.
+      events.sort(function(a, b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
       return events;
     }
 
