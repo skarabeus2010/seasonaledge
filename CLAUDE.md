@@ -197,7 +197,7 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 ### 🔴 SOFORT — Security (User-Action erforderlich)
 - [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten
 - [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → SMTP & API → neuen Key erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
-- [ ] **Finnhub-API-Key revoken** — in Session 2026-04-30 geleakt. Nicht mehr genutzt, trotzdem: Finnhub Dashboard → API Keys → löschen
+- [x] **Finnhub-API-Key revoken** — erledigt 2026-06-13 (war in Session 2026-04-30 geleakt; nicht mehr genutzt)
 
 ### 🔴 SOFORT — Funktional (User-Action erforderlich)
 - [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');`
