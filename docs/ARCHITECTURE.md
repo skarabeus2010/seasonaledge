@@ -1,6 +1,6 @@
 # Architektur — SeasonAlpha
 
-> Stand: 2026-03-27
+> Stand: 2026-06-13
 
 ## Datenfluss
 
@@ -162,7 +162,7 @@ count_subscribers()                          # {"active": N, "total": N, "unsubs
 | `charts.py` | Plotly Theme (`apply_se_theme`, `apply_se_heatmap_theme`) |
 | `data.py` | Daten-Wrapper (kein Cache!) |
 | `constants.py` | Globale Konstanten, Farbpaletten, Heatmap-Colorscales |
-| `symbols.py` | 94 Ticker in 12 Kategorien |
+| `symbols.py` | **324 Ticker** in 12+ Kategorien (= einzige Quelle der Wahrheit; `get_all_tickers()`). Neuaufnahme NUR via `scripts/onboard_ticker.py`. Vollständigkeit: `scripts/check_db_completeness.py` (Orphan-/Stale-Tail-Erkennung) |
 
 ### KI & Analyse
 
