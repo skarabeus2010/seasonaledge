@@ -418,12 +418,12 @@
       var ty = today.getFullYear();
       var tm = today.getMonth() + 1;
       var td = today.getDate();
-      var todayStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (td<10?'0':'') + td;
       var ex;
       try { ex = SA.holidays.detect(ticker || ''); } catch(e) { ex = 'NONE'; }
-      // Wenn heute kein Handelstag: null (kein Marker)
-      if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) return null;
-      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive
+      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive.
+      // An Wochenenden/Feiertagen wird der heutige Nicht-Handelstag nicht
+      // mitgezählt → der Marker landet automatisch auf dem letzten Handelstag
+      // (statt zu fehlen). tdom===0 (noch kein HT im Monat) ⇒ null, kein Marker.
       var tdom = 0;
       for (var d = 1; d <= td; d++) {
         var dStr = ty + '-' + (tm<10?'0':'') + tm + '-' + (d<10?'0':'') + d;
