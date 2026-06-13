@@ -2,27 +2,31 @@
 
 > Stand: 2026-06-13
 
-## Datenfluss
+## Frontend-Architektur (wichtig)
+
+**Haupt-Frontend = statische HTML-App unter `landing/`** (nginx serviert direkt),
+NICHT mehr primär Streamlit. Die Charts/Analysen werden **client-seitig in JS**
+gerechnet (`landing/js/*-compute.js`, ApexCharts), gespeist aus vorberechnetem
+JSON (`landing/data/`) + direkten Supabase-Reads (anon). Streamlit läuft nur noch
+als Legacy unter `/app/`. EN-Version statisch vorgerendert nach `landing/en/`.
+
+## Daten-Pipeline (Backend)
 
 ```
-download_manager.py  ←→  yahoo_downloader.py  ←→  Stooq-Fallback
-        ↓                          ↓
-  supabase_client.py          logger.py (app.log)
-        ↓                          ↓
-  cache_manager.py ←→ market_calendar.py ←→ nightly_refresh.py
+yahoo_downloader.py (+ Stooq-Fallback, einziger Cache)
+        ↓  download_data / preprocess (log_return, TDOM/TDOY)
+supabase_client.py  →  prices  (Quelle der Wahrheit: shared/symbols.py = 324 Ticker)
         ↓
-    data.py (Wrapper, kein Cache!)
+nightly_refresh.py (Mo–Fr) — Phasen A..Z: market_events, monthly_stats, ki_scores,
+   tdom/tdoy_stats, Health-Check (Gap-Fill), regime_scores, spot_vol_beta, refresh_log,
+   Weekly-Newsletter, Polymarket, Brier
+intraday_refresh.py (stündlich) — nur prices, gruppen-/zeitfenster-gesteuert
         ↓
-  calculations.py / calculations_decade.py
-        ↓                          ↓
-  distribution_charts.py      ai_models.py (DTW, Prophet, IF, Claude)
-        ↓                          ↓
-  outlier_manager.py      KI-Summary + Anomalie-Heatmap
-        ↓                          ↓
-  significance_gauge.py   percentile_bar.py
-        ↓                          ↓
-     pages/*.py (UI)  ←  footer.py + ticker_select.py + apply_se_theme()
+abgeleitete Tabellen  →  Frontend (landing/js, client-seitige Berechnung) + Streamlit /app/
 ```
+
+⚠️ ML-Pipeline (DTW/Prophet/NeuralProphet/Chronos) wurde KW16 stillgelegt; `ki_score.py`
+= aktuelle Engine (4 Sub-Scores → 0–10, auch client-seitig in `landing/js/ki-*`).
 
 ## Yahoo Finance & Stooq
 
@@ -140,7 +144,39 @@ CREATE TABLE tdom_stats (
 );
 ```
 
-Secrets in `.streamlit/secrets.toml` → `os.environ["SUPABASE_URL"]` / `os.environ["SUPABASE_KEY"]`
+_(Die SQL oben zeigt nur die Kern-Tabellen. Vollständige DDL: `scripts/create_*.sql`.)_
+
+### Alle Tabellen (Übersicht, Stand 2026-06-13)
+
+| Tabelle | Key | Zweck |
+|---------|-----|-------|
+| **prices** | (ticker,date) | OHLCV + `log_return` + `tdom`/`tdoy`. Quelle der Wahrheit = `symbols.py` (324) |
+| **tickers** | ticker | Stammdaten-Registry (Spiegel von `symbols.py`) |
+| **historical_cpi** | year | US-CPI Jahresmittel (Inflationsbereinigung) |
+| seasonality | (ticker,doy) | ⚠️ leer/Legacy — Saisonalität wird client-seitig gerechnet |
+| ki_scores | (ticker,computed_date) | ⚠️ dünn/Legacy — KI-Score ist client-seitig |
+| monthly_stats | (ticker,month,years_back) | Monats-Saisonalität |
+| scanner_results | (ticker,scan_date) | Full-Scanner (wöchentlich) |
+| tdom_stats | (ticker,tdom,direction,strategy) | ~92 Zeilen/Ticker |
+| tdoy_stats | (ticker,tdoy,direction,strategy) | ~1016 Zeilen/Ticker |
+| regime_scores | (ticker,date) | Crash-Ampel (Isolation Forest); täglich nur SPY + Subset |
+| spot_vol_beta | event_date | SPX vs VIX (nur SPX); Nightly-Phase E1b |
+| market_events | (event_date,event_type,event_name,exchange) | Feiertage/OPEX/Zentralbank |
+| central_bank_dates | (bank,date) | FOMC/EZB/BoE/BoJ |
+| dividend_events | (ticker,ex_date) | Aktien — Ex-Dividenden |
+| earnings_events | (ticker,report_date) | Aktien — Earnings |
+| polymarket_markets / _prices | condition_id / (condition_id,ts) | Prognosemärkte (aktiv) |
+| polymarket_resolved_markets / _prices | condition_id / (condition_id,ts) | Prognosemärkte (Archiv) |
+| subscribers | email | Weekly Newsletter |
+| daily_subscribers | email | Daily Morning Briefing |
+| user_subscriptions | user_id | Premium-Tier / Stripe |
+| user_watchlists | (user_id,ticker) | Cloud-Watchlist (RLS owner-only) |
+| refresh_log | (run_date,run_type) | Cron-Monitoring (nightly/intraday/event_data/daily_newsletter/completeness) |
+| app_logs | — | App-/Error-Logging |
+
+RPC: **`distinct_price_tickers()`** — server-seitiger Loose-Index-Scan für den Orphan-Detektor (`SELECT DISTINCT ticker` timeoutet). DDL: `scripts/create_distinct_price_tickers_rpc.sql`.
+
+Secrets in `.streamlit/secrets.toml` / `.env` → `os.environ["SUPABASE_URL"]` / `os.environ["SUPABASE_KEY"]`
 
 ### Subscriber-Management (supabase_client.py)
 ```python
@@ -168,15 +204,17 @@ count_subscribers()                          # {"active": N, "total": N, "unsubs
 
 | Modul | Beschreibung |
 |-------|-------------|
-| `ki_score.py` | KI Seasonal Score Engine (4 Sub-Scores → 0-10) |
-| `ai_models.py` | DTW, Prophet, Isolation Forest, Claude API, KI-Summary, Anomalie-Heatmap |
+| `ki_score.py` | KI Seasonal Score Engine (4 Sub-Scores → 0-10) — auch client-seitig |
+| `ai_models.py` | ⚠️ Legacy (ML-Pipeline KW16 stillgelegt) |
 | `anomaly_engine.py` | Anomalie-Radar, Crash-Ampel, TDoM-Anomalien, Muster-Brueche |
 | `outlier_manager.py` | Outlier-Filter (IQR, Winsorize, Isolation Forest) |
 | `significance_gauge.py` | Signifikanztest (t-Test, Cohen's d) + Radial Gauge |
-| `tdom_analysis.py` | TDoM Berechnungen (3 Strategien, Ranges, Heatmap) |
-| `spot_vol_beta.py` | Spot-Vol Beta (SPX vs VIX, Daily + Rolling + Regime-Wendepunkte) |
-| `shock_analysis.py` | Shock Analyzer (Trigger→Target) |
-| `sector_rotation.py` | Sektor-Rotation Analyse |
+| `tdom_analysis.py` / `tdoy_analysis.py` | TDoM/TDoY Berechnungen (3 Strategien, Ranges, Heatmap) |
+| `spot_vol_beta.py` | Spot-Vol Beta (SPX vs VIX, Daily + Rolling) — Nightly Phase E1b |
+| `backtest_engine.py` | Event-/Strategie-Backtest (Walk-Forward, Grid-Search, look-ahead-bias-frei) |
+| `drawdown_analysis.py` / `streak_analysis.py` | Drawdown/Recovery + Streak-/Konsekutiv-Analyse |
+| `shock_analysis.py` / `sector_rotation.py` | Shock Analyzer (Trigger→Target) + Sektor-Rotation |
+| `brier_score.py` / `polymarket_data.py` | Polymarket: Brier-Kalibrierung + Daten-Fetch |
 | `cpi_data.py` | CPI-Daten (BLS/FRED), Inflationsbereinigung |
 
 ### UI-Komponenten
@@ -195,12 +233,17 @@ count_subscribers()                          # {"active": N, "total": N, "unsubs
 
 | Modul | Beschreibung |
 |-------|-------------|
-| `supabase_client.py` | DB-Connector + Subscriber + Market Events + Cache |
+| `supabase_client.py` | DB-Connector + Subscriber + Market Events + Cache + Retry |
+| `env_loader.py` | lädt `.env` in `os.environ` (Auto-Import via `shared/__init__.py`) |
+| `exchange_holidays.py` / `holidays.py` / `nyse_holidays.py` | Börsen-Feiertagskalender, `is_trading_day()`, OPEX/VIXpiration |
+| `fed_dates.py` / `central_banks.py` | Zentralbank-Termine (FOMC/EZB/…) |
 | `cache_manager.py` | Computed Values Cache (DB → Fallback → Store) |
 | `market_calendar.py` | Feiertage/OPEX/Zentralbank → Supabase sync |
+| `daily_report.py` / `weekly_report.py` | Aggregation für Daily Briefing / Weekly Newsletter |
+| `email_brevo.py` / `unsubscribe_token.py` | Brevo-Versand + HMAC-Unsubscribe-Token |
+| `i18n.py` | Python-Side i18n (Streamlit) |
 | `logger.py` | 3 Log-Kanaele (app/error/access) |
 | `download_manager.py` | Batch-Downloads mit Queue + Rate Limiter |
-| `email_brevo.py` | E-Mail-Versand via Brevo API |
 
 ## Logger (shared/logger.py)
 
@@ -352,7 +395,7 @@ Details: `docs/BLOG_WORKFLOW.md`
 ## Intraday Price Updates (scripts/intraday_refresh.py)
 
 Lightweight-Script fuer untertaegige Kurs-Updates. Nur Preise, keine KI-Berechnungen.
-GitHub Actions Workflow `intraday_update.yml` triggert alle 30 Min.
+GitHub Actions Workflow `intraday_update.yml` triggert **stündlich um :17** (24/7, off-peak).
 Das Script entscheidet anhand der UTC-Zeit welche Gruppen aktiv sind.
 
 ### Zeitplan (MESZ / UTC+2)
@@ -374,6 +417,26 @@ python scripts/intraday_refresh.py --group eu   # Nur EU-Ticker
 ### GitHub Actions Budget
 ~1.370 Min/Monat von 2.000 Free Tier (Intraday + Nightly + Deploy).
 
+## Batch-Jobs & Tooling (`scripts/`)
+
+| Skript | Zweck |
+|--------|-------|
+| `nightly_refresh.py` | Voller Nightly-Lauf (Phasen A..Z) |
+| `intraday_refresh.py` | Untertägige Kurs-Updates (gruppen-/zeitfenster-gesteuert) |
+| `full_scanner_run.py` | scanner_results + ki_scores für alle Ticker (`--only`/`--resume`) |
+| **`onboard_ticker.py`** | **Neuen Ticker aufnehmen** (validieren→backfill→tickers.json→DB→verify) — Pflichtweg, verhindert Orphans |
+| **`check_db_completeness.py`** | DB-Vollständigkeits-Audit (freshness/coverage/gaps/events + Orphan-/Stale-Tail-Erkennung; `--fix`) |
+| `backfill_new_ticker.py` | Voll-Historie eines Tickers (OHLC + log_return + TDOM/TDOY) |
+| `fix_missing_days.py` / `backfill_tdoy.py` / `backfill_ohlc.py` / `backfill_log_return.py` | Gezielte Backfills (Lücken/TDOM/OHLC/log_return) |
+| `fetch_event_data.py` | Dividenden + Earnings (Yahoo Crumb-Auth) |
+| `compute_regime_scores.py` | Regime/Crash-Ampel (Isolation Forest) |
+| `generate_tickers_json.py` / `generate_landing_chart.py` / `generate_decade_data.py` | Vorberechnete JSON für `landing/data/` |
+| `daily_health_check.py` / `daily_newsletter.py` / `weekly_newsletter.py` | Health-Mail / Daily Briefing / Weekly Newsletter |
+| `polymarket_refresh.py` / `polymarket_backfill.py` / `compute_brier_stats.py` | Polymarket-Pipeline |
+| `restore_tickers_table.sql` / `create_*.sql` | Schema-DDL (Supabase SQL-Editor, idempotent) |
+
+Lokal IMMER `py -3.14` (= Container-Version; Default-`py` = 3.9 scheitert an `X | None`-Syntax) + bei Datei-Umleitung `PYTHONUTF8=1`.
+
 ## Deployment
 
 ### VPS (Hetzner CPX22)
@@ -385,12 +448,20 @@ python scripts/intraday_refresh.py --group eu   # Nur EU-Ticker
 
 Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`).
 
-| Workflow | Datei | Zeitplan | Funktion |
+| Workflow | Datei | Zeitplan (UTC) | Funktion |
 |----------|-------|----------|----------|
-| Deploy | `deploy.yml` | Push auf master | git pull + SEO + Blog + docker rebuild |
-| Intraday Update | `intraday_update.yml` | `*/30 * * * *` (24/7) | Kurs-Updates (EU/US/Asien/FX/Crypto) |
-| Nightly Refresh | `nightly_refresh.yml` | `0 20 * * 1-5` | Voller Refresh + KI-Scores + TDOM + Calendar |
-| Nightly Update | `nightly_update.yml` | `30 20 * * 1-5` | Batch-Download aller Ticker |
+| Deploy | `deploy.yml` | Push auf master | git pull + SEO + Blog + Decade- & Landing-Chart-Daten + `build_en.py` + docker rebuild |
+| Intraday Update | `intraday_update.yml` | `17 * * * *` (stündl., 24/7) | Kurs-Updates (EU/US/Asien/FX/Crypto), zeitfenster-gesteuert |
+| Nightly Refresh | `nightly_refresh.yml` | `30 20 * * 1-5` | Voller Refresh: prices, monthly/ki/tdom/tdoy/regime/spot_vol, Gap-Fill, refresh_log; So zusätzl. Newsletter/Brier |
+| Nightly Update | `nightly_update.yml` | `0 21 * * 1-5` | Batch-Download aller Ticker |
+| Event Data | `event_data_daily.yml` | `15 22 * * *` | Dividenden + Earnings (Yahoo Crumb-Auth) |
+| Daily Briefing | `daily_newsletter.yml` | `0 6 * * 1-5` | Daily Morning Briefing (Brevo) |
+| Daily Health | `daily_health.yml` | `0 5 * * *` | System-Health-Mail (refresh_log/Freshness) |
+| **DB Completeness** | `db_completeness.yml` | `0 5 * * 0` (So) | 4-Dim-Audit + Orphan-/Stale-Erkennung + Auto-Fix + Mail |
+| Full Scanner | `full_scanner.yml` | `0 3 * * 0` (So) | scanner_results + ki_scores für alle Ticker |
+| Brier Compute | `brier_compute.yml` | `0 2 * * 0` (So) | Polymarket-Brier-Kalibrierung |
+| Polymarket Daily/Intraday | `polymarket_daily.yml` / `polymarket_intraday.yml` | `30 21 * * *` / `23 * * *` | Prognosemarkt-Snapshots (Intraday FOMC-Fenster) |
+| Weekly Newsletter (manuell) | `weekly_newsletter_manual.yml` | `workflow_dispatch` | test/dry-run/live |
 
 ### Streamlit Cache
 - `yahoo_downloader.py`: `@st.cache_data(ttl=900)` — 15 Min TTL
@@ -399,13 +470,15 @@ Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`
 ### Routing (Nginx)
 | URL | Ziel |
 |-----|------|
-| `/blog/` | `blog/output/` (Blog-Index + Posts) |
-| `/blog/{slug}/` | `blog/output/{slug}/index.html` |
-| `/analyse/{slug}` | `seo/output/{slug}.html` (94 Landingpages) |
-| `/disclaimer` | `seo/output/disclaimer.html` |
-| `/sitemap.xml` | `seo/output/sitemap.xml` |
-| `/robots.txt` | `seo/output/robots.txt` |
-| `/` (alles andere) | Streamlit App (Reverse Proxy) |
+| `/` + Feature-Slugs (`/dashboard`, `/jahreszyklus`, …) | `landing/pages/*.html` (statisch, **Haupt-Frontend**) |
+| `/en/*` | dieselben Pages, statisch vorgerendert aus `landing/en/` (Deploy-Build) |
+| `/landing/*.{css,js,json}` | Assets (`max-age=0` + ETag bzw. `?v=<git-sha>` Cache-Bust) |
+| `/blog/`, `/en/blog/` | `blog/output/` (DE/EN, serverseitig gebaut) |
+| `/analyse/{slug}` | `seo/output/{slug}.html` (programmatic SEO) |
+| `/sitemap.xml`, `/robots.txt` | `seo/output/` |
+| `/app/` | Streamlit App (Legacy, Reverse Proxy) |
+
+⚠️ Nginx-Config-Änderung aktivieren: `docker compose restart nginx` (NICHT `nginx -s reload` — Single-File-Bind-Mount hängt am alten Inode). Reine HTML/Asset-Änderungen: `git pull` reicht.
 
 ## dj_data.py
 
