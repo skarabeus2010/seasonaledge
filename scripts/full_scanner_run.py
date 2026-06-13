@@ -59,17 +59,25 @@ def load_already_scanned_today() -> set:
         return set()
 
 
+def _clean_num(v, fallback=None):
+    """NaN/inf -> fallback (Postgres lehnt NaN-Token im JSON-Body ab, 22P02)."""
+    import math
+    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+        return fallback
+    return v
+
+
 def upsert_single_scanner_result(result: dict) -> None:
     """Ein einzelnes Scanner-Result nach Supabase schreiben (resume-safe)."""
     from shared.supabase_client import upsert_scanner_results
     today = date.today().strftime("%Y-%m-%d")
     record = {
         "ticker": result["ticker"],
-        "score": result["score"],
+        "score": _clean_num(result["score"], 0.0),        # NOT NULL
         "signal": result["signal"],
-        "win_rate": result.get("win_rate", 0),
-        "avg_return": result.get("avg_return", 0),
-        "deviation": result.get("deviation", 0),
+        "win_rate": _clean_num(result.get("win_rate", 0)),
+        "avg_return": _clean_num(result.get("avg_return", 0)),
+        "deviation": _clean_num(result.get("deviation", 0)),
         "scan_date": today,
     }
     upsert_scanner_results([record])

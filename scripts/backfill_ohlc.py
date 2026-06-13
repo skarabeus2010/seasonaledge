@@ -16,10 +16,16 @@ _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
+try:  # Windows: UTF-8 erzwingen (cp1252-Crash bei Datei-Umleitung vermeiden)
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 import numpy as np
 import pandas as pd
 from shared.supabase_client import get_client, fetch_prices, upsert_prices
 from shared.yahoo_downloader import download_data
+from shared.symbols import get_all_tickers
 
 
 def backfill_ticker(ticker: str) -> dict:
@@ -97,24 +103,8 @@ def main():
     print("SeasonAlpha — Backfill Open/High/Low")
     print("=" * 60)
 
-    # Alle Ticker aus prices-Tabelle (paginiert)
-    client = get_client()
-    all_tickers = set()
-    offset = 0
-    while True:
-        result = (client.table("prices")
-                  .select("ticker")
-                  .range(offset, offset + 999)
-                  .execute())
-        if not result.data:
-            break
-        for r in result.data:
-            all_tickers.add(r["ticker"])
-        if len(result.data) < 1000:
-            break
-        offset += 1000
-
-    all_tickers = sorted(all_tickers)
+    # Ticker aus symbols.py — prices-Full-Scan timeoutet auf grosser DB (57014)
+    all_tickers = get_all_tickers()
     print(f"Gefunden: {len(all_tickers)} Ticker\n")
 
     total_updated = 0

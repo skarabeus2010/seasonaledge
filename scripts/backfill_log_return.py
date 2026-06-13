@@ -18,6 +18,7 @@ if _project_dir not in sys.path:
 import numpy as np
 import pandas as pd
 from shared.supabase_client import get_client, fetch_prices, upsert_prices
+from shared.symbols import get_all_tickers
 
 
 def backfill_ticker(ticker: str) -> int:
@@ -64,10 +65,8 @@ def main():
     print("SeasonAlpha — Backfill log_return")
     print("=" * 60)
 
-    # Alle Ticker aus der tickers-Tabelle holen (statt prices — 1000-Row-Limit)
-    client = get_client()
-    result = client.table("tickers").select("ticker").eq("aktiv", True).execute()
-    all_tickers = sorted(r["ticker"] for r in result.data)
+    # Ticker aus symbols.py (robust gegen fehlende/leere tickers-Tabelle)
+    all_tickers = get_all_tickers()
 
     print(f"Gefunden: {len(all_tickers)} Ticker\n")
 
