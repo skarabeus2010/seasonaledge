@@ -132,32 +132,53 @@ Daten-Ausfälle (Datenqualität, kein Kalenderdefekt) → im Gap-Audit exemptier
 
 ---
 
-## Regel 4 — TDOM (Trading Day of Month)
+## Regel 4–6 — Zeit-Indizes: TDOM · CDOM · TDOY · CDOY
 
-Fortlaufende Nummer des Handelstags **innerhalb des Monats**. Erster Handelstag
-des Monats = **TDOM 1**, Reset zum Monatsersten. Gezählt wird nur, wenn die
-zuständige Börse offen ist (Kurs bei Yahoo vorhanden). **Ausnahme:** Feiertage
-und Wochenenden zählen nicht.
+Vier orthogonale Tages-Indizes (Handelstag **T** vs. Kalendertag **C**) × (Monat
+**M** vs. Jahr **Y**). **T-Indizes** überspringen Wochenenden + Feiertage und sind
+**börsenspezifisch**; **C-Indizes** zählen jeden Kalendertag und sind börsen-
+unabhängig.
 
-**Wichtig (Frontend):** TDOM immer aus dem **Holiday-Kalender** berechnen, nie aus
-dem letzten DB-Row ableiten (DB kann vor dem Intraday-Refresh veraltet sein).
-TDOM ist **börsenspezifisch** — am selben Datum kann `^GSPC` TDOM 7, `^GDAXI`
-TDOM 6 haben (XETRA-Feiertage abweichend).
+| Index | Voll | Definition | Bereich | Reset | börsen-spez.? | Quelle |
+|---|---|---|---|---|---|---|
+| **TDOM** | Trading Day of Month | n-ter **Handelstag** im Monat | 1 – ~23 | Monatsanfang | **ja** | `prices.tdom` |
+| **CDOM** | Calendar Day of Month | Kalendertag im Monat | 1 – 31 | Monatsanfang | nein | `date.day` |
+| **TDOY** | Trading Day of Year | n-ter **Handelstag** im Jahr | 1 – ~250–256 | Jahresanfang | **ja** | `prices.tdoy` |
+| **CDOY** | Calendar Day of Year | Kalendertag im Jahr | 1 – 365 (366) | Jahresanfang | nein | `day_of_year` / `tm_yday` |
 
----
+### Regel 4 — TDOM (Trading Day of Month)
+Fortlaufende Nummer des **Handelstags innerhalb des Monats**. Erster Handelstag =
+**TDOM 1**, Reset zum Monatsersten. Gezählt wird nur, wenn die zuständige Börse
+offen ist (= Kurs bei Yahoo). **Ausnahme:** Feiertage + Wochenenden zählen nicht.
+- **Börsenspezifisch:** am selben Datum kann `^GSPC` TDOM 7, `^GDAXI` TDOM 6 haben
+  (XETRA-Feiertage abweichend). → `render_trading_day_header(df, ticker=ticker)`.
+- **Frontend:** TDOM IMMER aus dem **Holiday-Kalender** berechnen
+  (`SA.holidays.nthTradingDay`), nie aus dem letzten DB-Row ableiten (DB kann vor
+  dem Intraday-Refresh veraltet sein → TDOM−1).
 
-## Regel 5 — CDOM (Calendar Day of Month)
+### Regel 5 — CDOM (Calendar Day of Month)
+Kalendertag des Monats (**1–31**), unabhängig von Handelstagen/Feiertagen/
+Wochenenden. Trivial (`date.day`), v.a. für Datumslabels.
 
-Kalendertag des Monats (1–31), unabhängig von Handelstagen/Feiertagen/Wochenenden.
+### Regel 6 — TDOY (Trading Day of Year)
+Fortlaufende Summierung der **Handelstage** ab dem ersten Handelstag im Januar
+(= **TDOY 1**) bis zum letzten Handelstag des Jahres (z.B. 31.12. USA, **30.12.
+XETRA** — XETRA am 31.12. geschlossen). Reset zum Jahreswechsel. Nur Handelstage,
+börsenspezifisch. (Implementierung gemeinsam mit TDOM in
+`scripts/backfill_tdoy.py::compute_tdoy_tdom`.)
 
----
+### Regel 6b — CDOY (Calendar Day of Year)
+Kalendertag des Jahres (**1–365**, im Schaltjahr 1–366; `tm_yday`). **Zentrale
+Rolle:** CDOY ist die **kanonische x-Achse der normalisierten Saisonalität** —
+jedes Jahr wird via `calculations.py::interpolate_to_365` auf ein gemeinsames
+**365-Punkte-Raster** interpoliert (Schaltjahre absorbiert, kein Stretching der
+Renditen). **TDOY und TDOM werden für Hover + „Heute"-Marker auf diese CDOY-Achse
+gemappt** (`charts.py`: `tdoy_map[cdoy]`, `tdom_map[cdoy]`). Merke: Der Saison-Chart
+läuft über **CDOY** (jeder Kalendertag hat einen Punkt), die Handelstags-Indizes
+(TDOY/TDOM) sind die **kontextuelle Überlagerung**.
 
-## Regel 6 — TDOY (Trading Day of Year)
-
-Fortlaufende Summierung der Handelstage ab dem **ersten Handelstag im Januar
-(= TDOY 1)** bis zum **letzten Handelstag des Jahres** (z.B. 31.12. USA, 30.12.
-XETRA — da XETRA am 31.12. geschlossen). Reset zum Jahreswechsel. Nur Handelstage
-(Feiertage/Wochenenden ausgenommen), börsenspezifisch.
+> **Konsistenz-Falle:** CDOY/CDOM dürfen NIE über `toISOString()` aus lokalen Daten
+> abgeleitet werden (MESZ→UTC verschiebt auf den Vortag) — `localDateStr` nutzen.
 
 ---
 
@@ -242,6 +263,69 @@ Anpassung über den **EUREX/Euronext-Kalender** statt NYSE. → kann vom VIX
 abweichen, wenn ein US-Feiertag (z.B. Juneteenth) den VIX-Referenz-Freitag
 verschiebt, den europäischen aber nicht (und umgekehrt). SeasonAlpha trackt
 VSTOXX derzeit **nicht** (kein `^V2X`-Ticker) — hier nur zur Vollständigkeit.
+
+---
+
+## Regel 9 — Events: nationale Feiertage + Notenbank-Sitzungen
+
+### 9.1 Nationale Feiertage sind **ticker-/börsenspezifisch**
+Feiertage sind **national** und gelten nur für die Börse des jeweiligen Tickers
+(= Auflösung wie Regel 1). Der DAX (`^GDAXI`, XETRA) ruht z.B. am **1. Mai** und
+**3. Oktober**, der S&P 500 (NYSE) nicht; umgekehrt handelt XETRA an Thanksgiving.
+→ In der Event-/Kalender-Anzeige eines Tickers **nur die Feiertage seiner Börse**
+zeigen (`market_calendar.populate_holidays` erzeugt pro Börse getrennte Rows mit
+`exchange`-Tag; `get_events(exchanges=[...])` filtert). Beispiel-Divergenzen siehe
+Regel-1-Kalenderliste (XETRA 1.5./3.10./Pfingstmontag/24.+31.12.; Euronext nur
+6 Tage; SIX Bundesfeier 1.8. + Christi Himmelfahrt; Stockholm Midsommar etc.).
+
+### 9.2 Notenbank-Sitzungen sind **regions-/währungsspezifisch**
+
+**Verlinkung Ticker → Notenbank** folgt dem **Handelsplatz / der Handelswährung**
+(wie der Feiertagskalender, Regel 1) — **NICHT** der Heimatwährung. Beispiel: `NVO`
+ist ein US-ADR (`SYMBOLS["währung"]="DKK"`), wird aber als USD an der NYSE gehandelt
+→ **Fed**. Implementierung: `central_banks.central_banks_for_ticker(ticker)`:
+- **FX (`=X`):** beide Paar-Währungen → beide Notenbanken (z.B. `AUDUSD=X` → RBA+Fed).
+- **Krypto (`-USD`):** keine.
+- **sonst:** `get_exchange_for_holidays(ticker)` → Börse → Notenbank.
+
+| Region / Währung | Notenbank | Quelle | Datenquelle im Code | Termine bis |
+|---|---|---|---|---|
+| USA / USD (auch ADRs, Futures) | **Fed (FOMC)** | federalreserve.gov | `fed_dates.py::FOMC_MEETING_DATES` | **2028-01** ✓ |
+| Eurozone / EUR (DE, FR, IT, ES, NL) | **EZB / ECB** | ecb.europa.eu | `ECB_MEETING_DATES` | **2027** ✓ |
+| UK / GBP (`.L`) | **BoE (MPC)** | bankofengland.co.uk | `BOE_MEETING_DATES` | **2027** ✓ |
+| Japan / JPY (`.T`, `^N225`) | **BoJ** | boj.or.jp | `BOJ_MEETING_DATES` | **2026** ✓ |
+| Schweiz / CHF (`.SW`, `^SSMI`) | **SNB** | snb.ch | `SNB_MEETING_DATES` | **2026-06** ⚠ (Sep/Dez TODO) |
+| Kanada / CAD (`USDCAD=X`) | **BoC** | bankofcanada.ca | `BOC_MEETING_DATES` | **2026** ✓ |
+| Australien / AUD (`AUDUSD=X`) | **RBA** | rba.gov.au | `RBA_MEETING_DATES` | **2026** ✓ |
+| Neuseeland / NZD (`NZDUSD=X`) | **RBNZ** | rbnz.govt.nz | `RBNZ_MEETING_DATES` | **2026** ✓ |
+| China / CNY | **PBoC** | pbc.gov.cn | — (monatl. LPR, ~20.) | **fehlt (TODO)** |
+| Schweden / SEK (`.ST`) | **Riksbank** | riksbank.se | — | **fehlt (TODO)** |
+| Norwegen / NOK | **Norges Bank** | norges-bank.no | — | **fehlt (TODO)** |
+| Dänemark / DKK | **Nationalbanken** | nationalbanken.dk | — | **fehlt (TODO)** |
+| Hongkong / HKD (`^HSI`) | **HKMA** (USD-Peg → folgt Fed) | hkma.gov.hk | — | **fehlt (TODO)** |
+| Südkorea / KRW (`^KS11`) | **BoK** | bok.or.kr | — | **fehlt (TODO)** |
+
+**Konventionen:**
+- Gespeichertes Datum = **Entscheidungs-/Bekanntgabetag** (bei zweitägigen
+  Sitzungen der **2. Tag**: FOMC/BoJ/RBA Tag 2; ECB/BoE der Donnerstag; BoC/RBNZ
+  der publizierte Termin).
+- **Italien u.a. Eurozonen-Länder haben KEINE eigene geldpolitische Notenbank
+  mehr → immer EZB.** „Banca d'Italia" macht keine eigene Zinspolitik.
+- **PBoC** hat keinen diskreten Jahres-Sitzungskalender wie die anderen, sondern
+  fixt den **LPR monatlich am ~20.** (nächster Werktag bei Feiertag) → regelbasiert,
+  daher (noch) nicht als Terminliste gepflegt.
+- Im Event-Schema sind CB-Termine mit `exchange="ALL"` + `meta={bank,currency}`
+  getaggt — die Ticker-Zuordnung erfolgt über `meta.currency` bzw.
+  `central_banks_for_ticker()`.
+- **SNB-Warnung:** Termine folgen KEINEM festen Wochentag (2025: Sep = 4. Do,
+  Dez = 2. Do) → Sep/Dez **nicht extrapolieren**, nur offiziell Publiziertes.
+
+**Pflege (`wir brauchen die Termine maximal weit in die Zukunft`):**
+Notenbanken publizieren 1–2 Jahre im Voraus. Bei Updates die **offiziellen**
+Seiten prüfen, neue Jahre anhängen — **NIE schätzen** (forward-Termine ändern sich;
+nur Publiziertes übernehmen; siehe die 2026-Korrekturen, bei denen 5 von 8
+ECB/BoJ-Terminen falsch waren). Stand 2026-06-14: Fed→2028-01, ECB/BoE→2027,
+BoJ/BoC/RBA/RBNZ→2026, SNB→2026-06.
 
 ---
 
