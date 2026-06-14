@@ -93,6 +93,8 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - Immer Trading Days zählen, nie Kalendertage
 - TDOM/TDOY sind **börsenspezifisch**: `render_trading_day_header(df, ticker=ticker)` — IMMER ticker übergeben
 - Holiday-Kalender aus `shared/symbols.py::get_exchange_for_holidays(ticker)` → NYSE/XETRA/EURONEXT/MILAN/LSE/SIX/STOCKHOLM/TSE/FOREX/CRYPTO. NYSE inkl. einmaliger Sonderschließungen (`_NYSE_SPECIAL_CLOSURES`, z.B. 09.01.2025 Staatstrauer Carter)
+- **Börsen-Feiertage ≠ Bank-Feiertage!** XETRA handelt an **Pfingstmontag + 3. Oktober** (nur 8 handelsfreie Tage); **Observed-Shift NUR bei NYSE/LSE** (EU-Börsen: kein Mo-Ersatz bei Wochenend-Feiertag). Beide Falle-Klassen produzieren *falsche* Feiertage → falsche TDOM.
+- **Kalender-Regeln prüfen: `py scripts/verify_calendar_rules.py`** (deterministischer Prüfagent, alle 9 Regeln, PASS/WARN/FAIL). Rückwärts-Check (Kurs-vorhanden-trotz-Feiertag) NUR mit Einzelaktien + Clean-Ära ≥2022 (Indizes/Stooq-Alt-Daten haben Phantome). Spec: [docs/TRADING_CALENDAR_RULES.md](docs/TRADING_CALENDAR_RULES.md)
 - `is_trading_day(today, exchange)` — NICHT `weekday < 5`
 - Frontend: `SA.holidays.detect(ticker)` + `SA.holidays.isTradingDay(date)`, Gauss-Ostern via `SA.holidays.goodFriday(year)`
 - TDOM im Frontend: IMMER aus Holiday-Kalender berechnen, NICHT aus letztem DB-Row ableiten (DB kann vor Intraday-Refresh veraltet sein)

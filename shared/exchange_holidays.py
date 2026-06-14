@@ -99,46 +99,29 @@ def _corpus_christi(year: int) -> date:
 
 def _compute_xetra_holidays(year: int) -> list[date]:
     """
-    XETRA/Frankfurt Börsenfeiertage.
-    Bundesweite Feiertage — Börse Frankfurt ist geschlossen.
+    XETRA/Frankfurt handelsfreie Tage — OFFIZIELL (Deutsche Börse Cash Market).
+
+    Xetra handelt Mo-Fr AUSSER: Neujahr, Karfreitag, Ostermontag, 1. Mai,
+    24./25./26./31. Dezember. Das ist die VOLLSTÄNDIGE Liste (8 Tage).
+
+    ⚠️ NICHT handelsfrei (Xetra HANDELT, durch Daten + offiz. Kalender bestätigt):
+       - Pfingstmontag, Christi Himmelfahrt, Fronleichnam
+       - Tag der Deutschen Einheit (3. Oktober)  ← häufiger Irrtum!
+    ⚠️ KEIN Observed-Shift: fällt ein Feiertag aufs Wochenende, gibt es KEINEN
+       Montags-Ersatz (anders als NYSE/LSE). Daher feste Daten, kein _observed.
     """
-    holidays = []
-
-    # Neujahr — 1. Januar
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
-
-    # Karfreitag
-    holidays.append(_good_friday(year))
-
-    # Ostermontag
-    holidays.append(_easter_monday(year))
-
-    # Tag der Arbeit — 1. Mai
-    holidays.append(_monday_if_sunday(date(year, 5, 1)))
-
-    # Christi Himmelfahrt (Donnerstag, 39 Tage nach Ostern)
-    # XETRA schließt an diesem Tag NICHT — daher auskommentiert
-    # holidays.append(_ascension_day(year))
-
-    # Pfingstmontag
-    holidays.append(_whit_monday(year))
-
-    # Tag der deutschen Einheit — 3. Oktober
-    holidays.append(_monday_if_sunday(date(year, 10, 3)))
-
-    # Heiligabend — 24. Dezember: XETRA seit 2011 GANZTÄGIG geschlossen
-    # (kein Handel, nicht nur Frühschluss). Davor Handelstag (Frühschluss).
+    holidays = [
+        date(year, 1, 1),       # Neujahr
+        _good_friday(year),     # Karfreitag
+        _easter_monday(year),   # Ostermontag
+        date(year, 5, 1),       # Tag der Arbeit
+        date(year, 12, 25),     # 1. Weihnachtstag
+        date(year, 12, 26),     # 2. Weihnachtstag
+    ]
+    # Heiligabend + Silvester: Xetra seit 2011 ganztägig geschlossen
+    # (davor Handelstag mit Frühschluss).
     if year >= 2011:
         holidays.append(date(year, 12, 24))
-
-    # 1. Weihnachtstag — 25. Dezember
-    holidays.append(_observed(date(year, 12, 25)))
-
-    # 2. Weihnachtstag — 26. Dezember
-    holidays.append(_observed(date(year, 12, 26)))
-
-    # Silvester — 31. Dezember: XETRA seit 2011 GANZTÄGIG geschlossen.
-    if year >= 2011:
         holidays.append(date(year, 12, 31))
 
     return sorted(set(holidays))
@@ -228,28 +211,17 @@ def _compute_euronext_holidays(year: int) -> list[date]:
     (Bastille), 15. August (Mariä Himmelfahrt), 1. November (Allerheiligen),
     11. November (Waffenstillstand). Diese fälschlich als Feiertag zu führen
     erzeugte Geister-Lücken + falsche TDOM/TDOY für alle .PA/.MI/.AS-Ticker.
+
+    KEIN Observed-Shift: fällt ein Feiertag aufs Wochenende, kein Montags-Ersatz.
     """
-    holidays = []
-
-    # Neujahr — 1. Januar
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
-
-    # Karfreitag
-    holidays.append(_good_friday(year))
-
-    # Ostermontag
-    holidays.append(_easter_monday(year))
-
-    # Tag der Arbeit — 1. Mai (einziger nationaler Feiertag, an dem Euronext schließt)
-    holidays.append(_monday_if_sunday(date(year, 5, 1)))
-
-    # 1. Weihnachtstag — 25. Dezember
-    holidays.append(_observed(date(year, 12, 25)))
-
-    # 2. Weihnachtstag — 26. Dezember
-    holidays.append(_observed(date(year, 12, 26)))
-
-    return sorted(set(holidays))
+    return sorted({
+        date(year, 1, 1),       # Neujahr
+        _good_friday(year),     # Karfreitag
+        _easter_monday(year),   # Ostermontag
+        date(year, 5, 1),       # Tag der Arbeit (einziger nat. Feiertag mit Schließung)
+        date(year, 12, 25),     # 1. Weihnachtstag
+        date(year, 12, 26),     # 2. Weihnachtstag
+    })
 
 
 # ── Borsa Italiana (Mailand) ───────────────────────────────────────────────────
@@ -352,67 +324,46 @@ def _compute_tse_holidays(year: int) -> list[date]:
 
 def _compute_six_holidays(year: int) -> list[date]:
     """SIX Swiss Exchange Feiertage — Schweizer Bundesfeiertage."""
-    holidays = []
-    # Neujahr
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
-    # Berchtoldstag (2. Januar)
-    holidays.append(_monday_if_sunday(date(year, 1, 2)))
-    # Karfreitag
-    holidays.append(_good_friday(year))
-    # Ostermontag
-    holidays.append(_easter_monday(year))
-    # Tag der Arbeit (1. Mai)
-    holidays.append(_monday_if_sunday(date(year, 5, 1)))
-    # Christi Himmelfahrt — SIX schließt (im Unterschied zu XETRA!)
-    holidays.append(_ascension_day(year))
-    # Pfingstmontag
-    holidays.append(_whit_monday(year))
-    # Schweizer Bundesfeier (1. August)
-    holidays.append(_monday_if_sunday(date(year, 8, 1)))
-    # Heiligabend — 24. Dezember (SIX ganztägig geschlossen)
-    holidays.append(date(year, 12, 24))
-    # 1. Weihnachtstag
-    holidays.append(_observed(date(year, 12, 25)))
-    # Stephanstag (26. Dezember)
-    holidays.append(_observed(date(year, 12, 26)))
-    # Silvester — 31. Dezember (SIX ganztägig geschlossen)
-    holidays.append(date(year, 12, 31))
-    return sorted(set(holidays))
+    # SIX schließt Christi Himmelfahrt + Pfingstmontag (anders als XETRA!).
+    # KEIN Observed-Shift (feste Daten, kein Montags-Ersatz am Wochenende).
+    return sorted({
+        date(year, 1, 1),       # Neujahr
+        date(year, 1, 2),       # Berchtoldstag
+        _good_friday(year),     # Karfreitag
+        _easter_monday(year),   # Ostermontag
+        date(year, 5, 1),       # Tag der Arbeit
+        _ascension_day(year),   # Christi Himmelfahrt
+        _whit_monday(year),     # Pfingstmontag
+        date(year, 8, 1),       # Schweizer Bundesfeier
+        date(year, 12, 24),     # Heiligabend
+        date(year, 12, 25),     # 1. Weihnachtstag
+        date(year, 12, 26),     # Stephanstag
+        date(year, 12, 31),     # Silvester
+    })
 
 
 # ── Nasdaq Stockholm ───────────────────────────────────────────────────────────
 
 def _compute_stockholm_holidays(year: int) -> list[date]:
-    """Nasdaq Stockholm Feiertage — Schwedische Bankenfeiertage."""
-    holidays = []
-    # Nyårsdagen — Neujahr
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
-    # Trettondedag jul — 6. Januar (Heilige Drei Könige)
-    holidays.append(_monday_if_sunday(date(year, 1, 6)))
-    # Långfredagen — Karfreitag
-    holidays.append(_good_friday(year))
-    # Annandag påsk — Ostermontag
-    holidays.append(_easter_monday(year))
-    # Första maj — Tag der Arbeit
-    holidays.append(_monday_if_sunday(date(year, 5, 1)))
-    # Kristi himmelsfärdsdag — Christi Himmelfahrt (schließt!)
-    holidays.append(_ascension_day(year))
-    # Sveriges nationaldag — 6. Juni
-    holidays.append(_monday_if_sunday(date(year, 6, 6)))
+    """Nasdaq Stockholm handelsfreie Tage — KEIN Observed-Shift (feste Daten)."""
     # Midsommarafton — Freitag zwischen 19. und 25. Juni
     midsommar = date(year, 6, 19)
     while midsommar.weekday() != 4:  # Freitag = 4
         midsommar += timedelta(days=1)
-    holidays.append(midsommar)
-    # Julafton — Heiligabend (Börse zu)
-    holidays.append(date(year, 12, 24))
-    # Juldagen — 1. Weihnachtstag
-    holidays.append(_observed(date(year, 12, 25)))
-    # Annandag jul — Stephanstag
-    holidays.append(_observed(date(year, 12, 26)))
-    # Nyårsafton — Silvester (Börse zu)
-    holidays.append(date(year, 12, 31))
-    return sorted(set(holidays))
+    return sorted({
+        date(year, 1, 1),       # Nyårsdagen
+        date(year, 1, 6),       # Trettondedag jul (Hl. Drei Könige)
+        _good_friday(year),     # Långfredagen
+        _easter_monday(year),   # Annandag påsk
+        date(year, 5, 1),       # Första maj
+        _ascension_day(year),   # Kristi himmelsfärdsdag
+        date(year, 6, 6),       # Sveriges nationaldag
+        midsommar,              # Midsommarafton
+        date(year, 12, 24),     # Julafton
+        date(year, 12, 25),     # Juldagen
+        date(year, 12, 26),     # Annandag jul
+        date(year, 12, 31),     # Nyårsafton
+    })
 
 
 # ── Haupt-API ──────────────────────────────────────────────────────────────────
