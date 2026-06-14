@@ -124,13 +124,15 @@ SA.holidays = {
    * Heiligabend, 1. Weihnachtstag, 2. Weihnachtstag, Silvester.
    */
   _xetra: function(y) {
+    // Offizielle Xetra-Handelsfreitage (Deutsche Börse): NUR diese 8 Tage.
+    // Xetra HANDELT an Pfingstmontag UND am 3. Oktober (Dt. Einheit)! Kein
+    // Observed-Shift. (Muss mit shared/exchange_holidays.py::_compute_xetra_holidays
+    // übereinstimmen.)
     return [
       this._ds(y, 1, 1),                                    // Neujahr
       this.goodFriday(y),                                    // Karfreitag
       this.easterMonday(y),                                  // Ostermontag
       this._ds(y, 5, 1),                                    // Tag der Arbeit
-      this.whitMonday(y),                                    // Pfingstmontag
-      this._ds(y, 10, 3),                                   // Tag der Deutschen Einheit
       this._ds(y, 12, 24),                                  // Heiligabend
       this._ds(y, 12, 25),                                  // 1. Weihnachtstag
       this._ds(y, 12, 26),                                  // 2. Weihnachtstag

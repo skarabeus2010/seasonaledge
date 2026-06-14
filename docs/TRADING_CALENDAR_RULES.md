@@ -73,9 +73,11 @@ Danach: Code → `HOLIDAY_TO_EXCHANGE` → Börsen-Kürzel → `is_trading_day(d
   **+ Einmalige Sonderschließungen** (`_NYSE_SPECIAL_CLOSURES`): 09.01.2025
   (Staatstrauer Carter), 05.12.2018 (Bush), 29.+30.10.2012 (Sandy), 02.01.2007
   (Ford), 11.06.2004 (Reagan), 11.–14.09.2001 (9/11).
-- **XETRA** — Neujahr, Karfreitag, Ostermontag, 1. Mai, Pfingstmontag,
-  3. Oktober, **24.12. + 31.12. (ganztägig zu, seit 2011)**, 25.+26.12.
-  *Nicht* geschlossen: Christi Himmelfahrt.
+- **XETRA** (offiziell, Deutsche Börse) — **NUR 8 Tage:** Neujahr, Karfreitag,
+  Ostermontag, 1. Mai, **24.+25.+26.+31.12.** (24./31. ganztägig zu seit 2011).
+  ⚠️ Xetra **HANDELT** an **Pfingstmontag, Christi Himmelfahrt UND 3. Oktober
+  (Tag der Deutschen Einheit)** — häufiger Irrtum! Daten + offizieller Kalender
+  bestätigt. **KEIN Observed-Shift** (Feiertag am Wochenende → kein Mo-Ersatz).
 - **EURONEXT** (Paris/Amsterdam/Brüssel/Lissabon) — **NUR 6 Tage:** Neujahr,
   Karfreitag, Ostermontag, 1. Mai, 25.+26.12. Euronext handelt **durch** an
   Pfingstmontag, Himmelfahrt, 8. Mai, 14. Juli, 15. Aug, 1. Nov, 11. Nov.
@@ -98,6 +100,12 @@ Danach: Code → `HOLIDAY_TO_EXCHANGE` → Börsen-Kürzel → `is_trading_day(d
 - **CRYPTO** — keine Feiertage, kein Wochenende (immer offen).
 - **FEHLEND (TODO):** HKEX (`^HSI`), KRX (`^KS11`) — komplexe Mondkalender-Feiertage;
   aktuell Näherung über TSE → bekannte Geister-Lücken, im Audit exemptiert.
+
+> ⚠️ **Observed-Shift NUR bei NYSE + LSE.** Die kontinentaleuropäischen Börsen
+> (XETRA, EURONEXT, MILAN, SIX, STOCKHOLM) machen **keinen** Montags-/Freitags-Ersatz,
+> wenn ein Feiertag aufs Wochenende fällt (feste Daten, kein `_observed`/
+> `_monday_if_sunday`). Falsch angewendet erzeugt das **falsche Feiertage** (z.B.
+> 01-02-2023 wenn Neujahr Sonntag). Der Prüfagent fängt das (Rückwärts-Check).
 
 ### „Keine Zählung als TDOM"
 Feiertage **und** Wochenenden sind keine Handelstage → werden in TDOM/TDOY nicht
@@ -270,13 +278,14 @@ VSTOXX derzeit **nicht** (kein `^V2X`-Ticker) — hier nur zur Vollständigkeit.
 
 ### 9.1 Nationale Feiertage sind **ticker-/börsenspezifisch**
 Feiertage sind **national** und gelten nur für die Börse des jeweiligen Tickers
-(= Auflösung wie Regel 1). Der DAX (`^GDAXI`, XETRA) ruht z.B. am **1. Mai** und
-**3. Oktober**, der S&P 500 (NYSE) nicht; umgekehrt handelt XETRA an Thanksgiving.
+(= Auflösung wie Regel 1). Der DAX (`^GDAXI`, XETRA) ruht z.B. am **1. Mai**, der
+S&P 500 (NYSE) nicht; umgekehrt handelt XETRA an Thanksgiving — und der DAX
+**handelt** am 3. Oktober/Pfingstmontag (anders als die Bank-Feiertage!).
 → In der Event-/Kalender-Anzeige eines Tickers **nur die Feiertage seiner Börse**
 zeigen (`market_calendar.populate_holidays` erzeugt pro Börse getrennte Rows mit
 `exchange`-Tag; `get_events(exchanges=[...])` filtert). Beispiel-Divergenzen siehe
-Regel-1-Kalenderliste (XETRA 1.5./3.10./Pfingstmontag/24.+31.12.; Euronext nur
-6 Tage; SIX Bundesfeier 1.8. + Christi Himmelfahrt; Stockholm Midsommar etc.).
+Regel-1-Kalenderliste (XETRA nur 8 Tage; Euronext nur 6; SIX Bundesfeier 1.8. +
+Christi Himmelfahrt + Pfingstmontag; Stockholm Midsommar/Nationaltag etc.).
 
 ### 9.2 Notenbank-Sitzungen sind **regions-/währungsspezifisch**
 
@@ -329,17 +338,24 @@ BoJ/BoC/RBA/RBNZ→2026, SNB→2026-06.
 
 ---
 
-## Verifikation (für den Prüf-Agenten)
+## Verifikation — Der Prüfagent
 
-**Methode:** Pro Ticker `is_trading_day(d, get_exchange_for_holidays(ticker))` über
-ein Zeitfenster gegen die **realen Yahoo-/DB-Handelstage** abgleichen.
+**`py scripts/verify_calendar_rules.py`** prüft alle Regeln deterministisch gegen
+Code + DB und gibt PASS/WARN/FAIL je Check (Exit 1 bei FAIL). Flags: `--no-db`
+(nur Code-Logik), `--rule N`.
 
-- **Erwartet-aber-fehlt** (Börse offen laut Kalender, aber kein Kurs) = Kalender
-  schließt zu wenig → potenziell fehlender Feiertag.
-- **Hat-aber-zu** (Kurs vorhanden, Kalender sagt geschlossen) = Kalender schließt
-  zu viel → falscher Feiertag.
+**Methode (Regel 1/9.1):** Pro Ticker `is_trading_day(d, get_exchange_for_holidays(t))`
+gegen die **realen Handelstage** (DB/Yahoo) abgleichen — **in BEIDE Richtungen**:
 
-**Referenz-Implementierung:** `scripts/check_db_completeness.py --dim gaps`.
+- **Erwartet-aber-fehlt** (Kalender offen, kein Kurs) = Feiertag fehlt → `--dim gaps`
+  in `check_db_completeness.py`.
+- **Hat-aber-zu** (Kurs vorhanden, Kalender sagt zu) = **FALSCHER Feiertag**. ⚠️ Nur
+  mit **Einzelaktien** prüfen (Indizes haben Phantom-Zeilen an Feiertagen) und nur in
+  der **Clean-Ära ≥2022** (Stooq-Alt-Daten ≤2019 haben Phantome). Diese Richtung
+  fand XETRA-3.-Oktober/Pfingstmontag + die Observed-Shift-Fehler.
+
+Beide Richtungen sind im Prüfagenten als DB-Checks implementiert
+(`rule1_gap_audit_db`, `rule1_reverse_holidays_db`).
 
 **Bekannte, akzeptierte Rest-Abweichungen (kein Defekt):**
 - `=X` (Forex) — Yahoo-Datenqualität → `_gap_exempt()`.

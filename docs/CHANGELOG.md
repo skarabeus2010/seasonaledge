@@ -21,6 +21,31 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 
 ## Detail-Logs
 
+### 2026-06-14 — Börsen-Feiertagskalender korrigiert + Prüfagent
+
+User-Hinweis „prüfe ob 3.10. wirklich Börsenfeiertag ist" → **war falsch.** Mein
+Gap-Audit hatte eine Blindstelle: prüfte nur *fehlende* (erwartet-aber-kein-Kurs),
+nicht *überzählige* Feiertage (Kurs-vorhanden-aber-Kalender-zu). Rückwärts-Audit mit
+**Einzelaktien** (Indizes haben Phantom-Feiertagszeilen; Stooq-Alt-Daten ≤2019 auch)
+in der Clean-Ära 2022-2025 deckte systematische Fehler auf:
+
+- **XETRA handelt Pfingstmontag UND 3. Oktober** (Tag der Dt. Einheit) — offizieller
+  Deutsche-Börse-Kalender hat NUR 8 handelsfreie Tage (Neujahr/Karfreitag/Ostermontag/
+  1.Mai/24.+25.+26.+31.12.). Beide fälschlich als Feiertag → falsche TDOM/TDOY Okt-Dez
+  bzw. Jun-Dez für alle ~35 .DE-Ticker + DAX-Indizes.
+- **Kein Observed-Shift bei EU-Börsen:** `_monday_if_sunday`/`_observed` fälschlich auf
+  XETRA/EURONEXT/MILAN/SIX/STOCKHOLM angewendet → falsche Feiertage wenn Neujahr/1.Mai/
+  Berchtold aufs Wochenende fielen (01-02-2023, 05-02-2022 …). Nur NYSE/LSE shiften.
+
+Fix: alle 5 EU-Kalender auf feste Daten umgestellt; XETRA Pfingstmontag+3.10. entfernt.
+Verifiziert: Reverse-Audit **0 falsche** + Forward-Audit **0 fehlende** Feiertage.
+**519k TDOM/TDOY-Zeilen über 77 Ticker** neu berechnet; `market_events`-Feiertage
+2026-28 neu gesynct; **Frontend `holidays.js::_xetra()`** gespiegelt (DAX-TDOM live).
+
+**Neu: `scripts/verify_calendar_rules.py`** — deterministischer **Prüfagent** für alle
+9 Regeln (Code + DB, PASS/WARN/FAIL, Exit-Code). Enthält beide Audit-Richtungen.
+Stand: 12 PASS / 1 WARN (Deep-Tail ^STOXX50E/^N225/RR.L) / 0 FAIL.
+
 ### 2026-06-14 — Handels-Kalender-Bereinigung (Suffix-Mapping + Feiertage) + Regel-Spec
 
 Auslöser: Wöchentlicher Vollständigkeits-Audit meldete **771 „fehlende Handelstage"**.
