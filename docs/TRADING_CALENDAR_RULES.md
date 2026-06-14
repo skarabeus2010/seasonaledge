@@ -132,32 +132,53 @@ Daten-Ausfälle (Datenqualität, kein Kalenderdefekt) → im Gap-Audit exemptier
 
 ---
 
-## Regel 4 — TDOM (Trading Day of Month)
+## Regel 4–6 — Zeit-Indizes: TDOM · CDOM · TDOY · CDOY
 
-Fortlaufende Nummer des Handelstags **innerhalb des Monats**. Erster Handelstag
-des Monats = **TDOM 1**, Reset zum Monatsersten. Gezählt wird nur, wenn die
-zuständige Börse offen ist (Kurs bei Yahoo vorhanden). **Ausnahme:** Feiertage
-und Wochenenden zählen nicht.
+Vier orthogonale Tages-Indizes (Handelstag **T** vs. Kalendertag **C**) × (Monat
+**M** vs. Jahr **Y**). **T-Indizes** überspringen Wochenenden + Feiertage und sind
+**börsenspezifisch**; **C-Indizes** zählen jeden Kalendertag und sind börsen-
+unabhängig.
 
-**Wichtig (Frontend):** TDOM immer aus dem **Holiday-Kalender** berechnen, nie aus
-dem letzten DB-Row ableiten (DB kann vor dem Intraday-Refresh veraltet sein).
-TDOM ist **börsenspezifisch** — am selben Datum kann `^GSPC` TDOM 7, `^GDAXI`
-TDOM 6 haben (XETRA-Feiertage abweichend).
+| Index | Voll | Definition | Bereich | Reset | börsen-spez.? | Quelle |
+|---|---|---|---|---|---|---|
+| **TDOM** | Trading Day of Month | n-ter **Handelstag** im Monat | 1 – ~23 | Monatsanfang | **ja** | `prices.tdom` |
+| **CDOM** | Calendar Day of Month | Kalendertag im Monat | 1 – 31 | Monatsanfang | nein | `date.day` |
+| **TDOY** | Trading Day of Year | n-ter **Handelstag** im Jahr | 1 – ~250–256 | Jahresanfang | **ja** | `prices.tdoy` |
+| **CDOY** | Calendar Day of Year | Kalendertag im Jahr | 1 – 365 (366) | Jahresanfang | nein | `day_of_year` / `tm_yday` |
 
----
+### Regel 4 — TDOM (Trading Day of Month)
+Fortlaufende Nummer des **Handelstags innerhalb des Monats**. Erster Handelstag =
+**TDOM 1**, Reset zum Monatsersten. Gezählt wird nur, wenn die zuständige Börse
+offen ist (= Kurs bei Yahoo). **Ausnahme:** Feiertage + Wochenenden zählen nicht.
+- **Börsenspezifisch:** am selben Datum kann `^GSPC` TDOM 7, `^GDAXI` TDOM 6 haben
+  (XETRA-Feiertage abweichend). → `render_trading_day_header(df, ticker=ticker)`.
+- **Frontend:** TDOM IMMER aus dem **Holiday-Kalender** berechnen
+  (`SA.holidays.nthTradingDay`), nie aus dem letzten DB-Row ableiten (DB kann vor
+  dem Intraday-Refresh veraltet sein → TDOM−1).
 
-## Regel 5 — CDOM (Calendar Day of Month)
+### Regel 5 — CDOM (Calendar Day of Month)
+Kalendertag des Monats (**1–31**), unabhängig von Handelstagen/Feiertagen/
+Wochenenden. Trivial (`date.day`), v.a. für Datumslabels.
 
-Kalendertag des Monats (1–31), unabhängig von Handelstagen/Feiertagen/Wochenenden.
+### Regel 6 — TDOY (Trading Day of Year)
+Fortlaufende Summierung der **Handelstage** ab dem ersten Handelstag im Januar
+(= **TDOY 1**) bis zum letzten Handelstag des Jahres (z.B. 31.12. USA, **30.12.
+XETRA** — XETRA am 31.12. geschlossen). Reset zum Jahreswechsel. Nur Handelstage,
+börsenspezifisch. (Implementierung gemeinsam mit TDOM in
+`scripts/backfill_tdoy.py::compute_tdoy_tdom`.)
 
----
+### Regel 6b — CDOY (Calendar Day of Year)
+Kalendertag des Jahres (**1–365**, im Schaltjahr 1–366; `tm_yday`). **Zentrale
+Rolle:** CDOY ist die **kanonische x-Achse der normalisierten Saisonalität** —
+jedes Jahr wird via `calculations.py::interpolate_to_365` auf ein gemeinsames
+**365-Punkte-Raster** interpoliert (Schaltjahre absorbiert, kein Stretching der
+Renditen). **TDOY und TDOM werden für Hover + „Heute"-Marker auf diese CDOY-Achse
+gemappt** (`charts.py`: `tdoy_map[cdoy]`, `tdom_map[cdoy]`). Merke: Der Saison-Chart
+läuft über **CDOY** (jeder Kalendertag hat einen Punkt), die Handelstags-Indizes
+(TDOY/TDOM) sind die **kontextuelle Überlagerung**.
 
-## Regel 6 — TDOY (Trading Day of Year)
-
-Fortlaufende Summierung der Handelstage ab dem **ersten Handelstag im Januar
-(= TDOY 1)** bis zum **letzten Handelstag des Jahres** (z.B. 31.12. USA, 30.12.
-XETRA — da XETRA am 31.12. geschlossen). Reset zum Jahreswechsel. Nur Handelstage
-(Feiertage/Wochenenden ausgenommen), börsenspezifisch.
+> **Konsistenz-Falle:** CDOY/CDOM dürfen NIE über `toISOString()` aus lokalen Daten
+> abgeleitet werden (MESZ→UTC verschiebt auf den Vortag) — `localDateStr` nutzen.
 
 ---
 
