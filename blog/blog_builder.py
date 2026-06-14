@@ -581,16 +581,250 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
     return fig
 
 
+def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
+    """Durchschnittliche Rendite je Kalendermonat (Balken). Aktueller Monat hervorgehoben."""
+    import numpy as np
+    import plotly.graph_objects as go
+    from shared.calculations import build_year_data
+    from shared.charts import apply_se_theme
+    from shared.constants import SE_COLORS
+
+    df = _get_ticker_data(ticker)
+    if df is None:
+        return None
+
+    current_year = date.today().year
+    all_years = sorted(df["year"].unique())
+    selected = [y for y in all_years if y >= current_year - years]
+    if not selected:
+        return None
+
+    year_data = build_year_data(df, selected)
+    if not year_data:
+        return None
+
+    month_returns = {m: [] for m in range(1, 13)}
+    for yd in year_data.values():
+        for m in range(1, 13):
+            s, e = _MONTH_DOY[m]
+            start_val = yd["full_365"][s - 1]
+            end_val = yd["full_365"][min(e - 1, 364)]
+            if start_val:
+                month_returns[m].append((end_val - start_val) / start_val * 100)
+    avg_by_month = [float(np.mean(month_returns[m])) if month_returns[m] else 0.0
+                    for m in range(1, 13)]
+
+    n_years = len(year_data)
+    current_month = date.today().month
+    month_names = _MONTH_NAMES_EN if lang == "en" else _MONTH_NAMES_DE
+    if lang == "en":
+        chart_title = f"{ticker} — Average Return per Month ({n_years} years)"
+        yaxis_title = "Avg Return %"
+        hover = "Avg Return"
+    else:
+        chart_title = f"{ticker} — Ø Rendite je Monat ({n_years} Jahre)"
+        yaxis_title = "Ø Rendite %"
+        hover = "Ø Rendite"
+
+    colors = []
+    for i, v in enumerate(avg_by_month, start=1):
+        if i == current_month:
+            colors.append(SE_COLORS["accent_warm"])
+        elif v >= 0:
+            colors.append(SE_COLORS["accent"])
+        else:
+            colors.append("#ff5b6e")
+
+    fig = go.Figure(go.Bar(
+        x=month_names, y=avg_by_month, marker_color=colors,
+        text=[f"{v:+.1f}%" for v in avg_by_month], textposition="outside",
+        hovertemplate=f"<b>%{{x}}</b><br>{hover}: %{{y:+.2f}}%<extra></extra>",
+    ))
+    fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
+    fig = apply_se_theme(fig, title=chart_title, height=480, show_watermark=True)
+    fig.update_yaxes(title=yaxis_title, ticksuffix="%")
+    return fig
+
+
+def _build_weekday_bars_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
+    """Durchschnittliche Tagesrendite je Wochentag (Mo-Fr, Balken)."""
+    import numpy as np
+    import plotly.graph_objects as go
+    from shared.charts import apply_se_theme
+    from shared.constants import SE_COLORS
+
+    df = _get_ticker_data(ticker)
+    if df is None or "return" not in df.columns:
+        return None
+
+    current_year = date.today().year
+    sub = df[df["year"] >= current_year - years]
+    if sub.empty:
+        return None
+
+    dow = np.asarray(sub.index.dayofweek)
+    rets = sub["return"].values * 100.0  # pct_change → Prozent
+    avg = []
+    for d in range(5):
+        vals = rets[dow == d]
+        vals = vals[~np.isnan(vals)]
+        avg.append(float(np.mean(vals)) if len(vals) else 0.0)
+
+    n_years = sub["year"].nunique()
+    labels = ["Mon", "Tue", "Wed", "Thu", "Fri"] if lang == "en" else ["Mo", "Di", "Mi", "Do", "Fr"]
+    if lang == "en":
+        chart_title = f"{ticker} — Average Return per Weekday ({n_years} years)"
+        yaxis_title = "Avg Daily Return %"
+        hover = "Avg Return"
+    else:
+        chart_title = f"{ticker} — Ø Rendite je Wochentag ({n_years} Jahre)"
+        yaxis_title = "Ø Tagesrendite %"
+        hover = "Ø Rendite"
+
+    colors = [SE_COLORS["accent"] if v >= 0 else "#ff5b6e" for v in avg]
+    fig = go.Figure(go.Bar(
+        x=labels, y=avg, marker_color=colors,
+        text=[f"{v:+.3f}%" for v in avg], textposition="outside",
+        hovertemplate=f"<b>%{{x}}</b><br>{hover}: %{{y:+.3f}}%<extra></extra>",
+    ))
+    fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
+    fig = apply_se_theme(fig, title=chart_title, height=460, show_watermark=True)
+    fig.update_yaxes(title=yaxis_title, ticksuffix="%")
+    return fig
+
+
+def _build_tom_effect_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
+    """Turn-of-Month Effekt: kumulierte Ø-Renditekurve um den Monatswechsel (t0 = letzter HT)."""
+    import plotly.graph_objects as go
+    from shared.calculations import analyze_turn_of_month
+    from shared.charts import apply_se_theme
+    from shared.constants import SE_COLORS
+
+    df = _get_ticker_data(ticker)
+    if df is None:
+        return None
+
+    current_year = date.today().year
+    selected_years = [y for y in sorted(df["year"].unique()) if y >= current_year - years]
+    if not selected_years:
+        return None
+
+    days_before, days_after = 3, 3
+    result = analyze_turn_of_month(df, days_before, days_after, list(range(1, 13)), selected_years)
+    if not result:
+        return None
+
+    labels = result["labels"]
+    avg_curve = result["avg_curve"]
+    x = list(range(len(labels)))
+
+    if lang == "en":
+        chart_title = f"{ticker} — Turn-of-Month Effect ({len(selected_years)} years)"
+        yaxis_title = "Cumulative Return % (t0 = 0)"
+        t0_text = "t0 (last trading day)"
+        legend = "Average"
+    else:
+        chart_title = f"{ticker} — Turn-of-Month Effekt ({len(selected_years)} Jahre)"
+        yaxis_title = "Kumulierte Rendite % (t0 = 0)"
+        t0_text = "t0 (letzter HT)"
+        legend = "Durchschnitt"
+
+    fig = go.Figure()
+    fig.add_vline(
+        x=days_before, line_dash="dash", line_color="rgba(232,164,37,0.6)", line_width=1.5,
+        annotation_text=t0_text, annotation_position="top",
+        annotation_font=dict(size=10, color=SE_COLORS["accent_warm"]),
+    )
+    fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
+    fig.add_trace(go.Scatter(
+        x=x, y=avg_curve, mode="lines+markers",
+        line=dict(color=SE_COLORS["accent_blue"], width=3), name=legend,
+    ))
+    fig = apply_se_theme(fig, title=chart_title, height=460, show_watermark=True)
+    fig.update_xaxes(tickmode="array", tickvals=x, ticktext=labels)
+    fig.update_yaxes(title=yaxis_title, ticksuffix="%")
+    return fig
+
+
+def _build_decade_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
+    """Dekadenzyklus: Ø-Jahresrendite je Ziffer des Jahrzehnts (Jahr 0-9). Aktuelle Ziffer hervorgehoben."""
+    import numpy as np
+    import plotly.graph_objects as go
+    from shared.calculations import build_year_data, get_decade_digit
+    from shared.charts import apply_se_theme
+    from shared.constants import SE_COLORS
+
+    df = _get_ticker_data(ticker)
+    if df is None:
+        return None
+
+    current_year = date.today().year
+    all_years = sorted(df["year"].unique())
+    selected = [y for y in all_years if y >= current_year - years]
+    year_data = build_year_data(df, selected)
+    if not year_data:
+        return None
+
+    digit_returns = {d: [] for d in range(10)}
+    for year, yd in year_data.items():
+        full = yd["full_365"]
+        if not full or not full[0]:
+            continue
+        year_ret = (full[364] / full[0] - 1) * 100
+        digit_returns[get_decade_digit(year)].append(year_ret)
+    avg_by_digit = [float(np.mean(digit_returns[d])) if digit_returns[d] else 0.0 for d in range(10)]
+
+    n_years = len(year_data)
+    current_digit = get_decade_digit(current_year)
+    x_labels = [str(d) for d in range(10)]
+    if lang == "en":
+        chart_title = f"{ticker} — Decade Cycle: Avg Return by Year-in-Decade ({n_years} years)"
+        xaxis_title = "Year in decade"
+        yaxis_title = "Avg Annual Return %"
+        hover = "Avg Return"
+    else:
+        chart_title = f"{ticker} — Dekadenzyklus: Ø Rendite je Jahrzehnt-Jahr ({n_years} Jahre)"
+        xaxis_title = "Jahr im Jahrzehnt"
+        yaxis_title = "Ø Jahresrendite %"
+        hover = "Ø Rendite"
+
+    colors = []
+    for d, v in enumerate(avg_by_digit):
+        if d == current_digit:
+            colors.append(SE_COLORS["accent_warm"])
+        elif v >= 0:
+            colors.append(SE_COLORS["accent"])
+        else:
+            colors.append("#ff5b6e")
+
+    fig = go.Figure(go.Bar(
+        x=x_labels, y=avg_by_digit, marker_color=colors,
+        text=[f"{v:+.1f}%" for v in avg_by_digit], textposition="outside",
+        hovertemplate=f"<b>Jahr %{{x}}</b><br>{hover}: %{{y:+.2f}}%<extra></extra>",
+    ))
+    fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.3)", line_width=1)
+    fig = apply_se_theme(fig, title=chart_title, height=460, show_watermark=True)
+    fig.update_xaxes(title=xaxis_title)
+    fig.update_yaxes(title=yaxis_title, ticksuffix="%")
+    return fig
+
+
 _CHART_BUILDERS = {
     "seasonal_yearly": _build_seasonal_yearly_chart,
     "monthly_heatmap": _build_monthly_heatmap_chart,
+    "monthly_cycle": _build_monthly_cycle_chart,
+    "weekday_bars": _build_weekday_bars_chart,
+    "tom_effect": _build_tom_effect_chart,
+    "decade_cycle": _build_decade_cycle_chart,
 }
 
 _CHART_PLACEHOLDERS_EN = {
     "seasonal_yearly": "Seasonal Annual Progression",
     "monthly_heatmap": "Monthly Return Heatmap",
+    "monthly_cycle": "Average Return per Month",
     "weekday_bars": "Weekday Performance",
     "tom_effect": "Turn-of-Month Effect",
+    "decade_cycle": "Decade Cycle",
 }
 
 
@@ -627,8 +861,10 @@ def _build_chart_placeholder(chart_type: str, ticker: str, years: int, lang: str
         labels = {
             "seasonal_yearly": "Saisonaler Jahresverlauf",
             "monthly_heatmap": "Monats-Rendite Heatmap",
+            "monthly_cycle": "Ø Rendite je Monat",
             "weekday_bars": "Wochentag-Performance",
             "tom_effect": "Turn-of-Month Effekt",
+            "decade_cycle": "Dekadenzyklus",
         }
         years_label = f"{years} Jahre"
         build_note = "Chart wird beim naechsten Build generiert"
