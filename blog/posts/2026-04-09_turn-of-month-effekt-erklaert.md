@@ -22,7 +22,7 @@ Keyword-Plan:
 
 Der **Turn-of-Month** (TOM) Effekt beschreibt eine der robustesten saisonalen Anomalien an den Aktienmärkten: Die letzten Handelstage eines Monats und die ersten Tage des Folgemonats liefern überdurchschnittliche Renditen — bei deutlich höherer Win-Rate als der Rest des Monats.
 
-Konkret: Das **6-Tage-Fenster** vom drittletzten Tag des Monats bis zum dritten Handelstag des nächsten Monats macht oft mehr Rendite als die übrigen ~15 Handelstage zusammen. Das ist nicht nur ein Kuriosum — es ist eines der am besten dokumentierten Muster in der akademischen Finanzliteratur, erstmals beschrieben von Lakonishok und Smidt 1988.
+Konkret: Das **6-Tage-Fenster** vom drittletzten Tag des Monats bis zum dritten Handelstag des nächsten Monats macht oft mehr Rendite als die übrigen ~15 Handelstage zusammen. Das ist nicht nur ein Kuriosum — es ist eines der am besten dokumentierten Muster in der akademischen Finanzliteratur, erstmals beschrieben von Lakonishok und Smidt 1988. Ob dieses Fenster auch heute noch trägt, prüfen wir mit aktueller Forschung (2026) im Artikel [Turn-of-Month-Effekt: totgesagt — und doch lebendig](/blog/turn-of-month-effekt-lebt-noch/).
 
 ## Die Daten: 30 Jahre S&P 500
 

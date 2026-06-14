@@ -23,7 +23,7 @@ Keyword-Plan:
 
 The **Turn-of-Month** (TOM) effect describes one of the most robust seasonal anomalies in equity markets: the last trading days of a month and the first days of the following month deliver above-average returns — with a significantly higher win rate than the rest of the month.
 
-Specifically: the **6-day window** from the third-to-last day of the month through the third trading day of the next month often generates more return than the remaining ~15 trading days combined. This is not merely a curiosity — it is one of the best-documented patterns in academic finance literature, first described by Lakonishok and Smidt in 1988.
+Specifically: the **6-day window** from the third-to-last day of the month through the third trading day of the next month often generates more return than the remaining ~15 trading days combined. This is not merely a curiosity — it is one of the best-documented patterns in academic finance literature, first described by Lakonishok and Smidt in 1988. Whether this window still holds today, we test against current research (2026) in our article [The Turn-of-the-Month Effect: Declared Dead — Yet Alive](/en/blog/turn-of-month-effect-still-alive/).
 
 ## The Data: 30 Years of S&P 500
 
