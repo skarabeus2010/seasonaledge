@@ -126,9 +126,10 @@ def _compute_xetra_holidays(year: int) -> list[date]:
     # Tag der deutschen Einheit — 3. Oktober
     holidays.append(_monday_if_sunday(date(year, 10, 3)))
 
-    # Heiligabend — 24. Dezember (halber Tag, aber XETRA schließt früh)
-    # Offiziell kein Feiertag, aber Börse schließt um 14:00 Uhr
-    # Für OPEX-Zwecke behandeln wir es als normalen Handelstag
+    # Heiligabend — 24. Dezember: XETRA seit 2011 GANZTÄGIG geschlossen
+    # (kein Handel, nicht nur Frühschluss). Davor Handelstag (Frühschluss).
+    if year >= 2011:
+        holidays.append(date(year, 12, 24))
 
     # 1. Weihnachtstag — 25. Dezember
     holidays.append(_observed(date(year, 12, 25)))
@@ -136,9 +137,9 @@ def _compute_xetra_holidays(year: int) -> list[date]:
     # 2. Weihnachtstag — 26. Dezember
     holidays.append(_observed(date(year, 12, 26)))
 
-    # Silvester — 31. Dezember
-    # Kein offizieller Feiertag, Börse schließt aber früh
-    # Nicht als geschlossen gewertet
+    # Silvester — 31. Dezember: XETRA seit 2011 GANZTÄGIG geschlossen.
+    if year >= 2011:
+        holidays.append(date(year, 12, 31))
 
     return sorted(set(holidays))
 
@@ -218,47 +219,53 @@ def _compute_lse_holidays(year: int) -> list[date]:
 
 def _compute_euronext_holidays(year: int) -> list[date]:
     """
-    Euronext Paris Börsenfeiertage (französische Feiertage).
+    Euronext-Handelskalender (Paris, Amsterdam, Brüssel, Lissabon, seit 2021
+    auch Mailand/Borsa Italiana).
+
+    WICHTIG: Euronext ist seit der Harmonisierung NUR an 6 Tagen geschlossen —
+    NICHT an den nationalen Feiertagen der einzelnen Länder. Insbesondere wird
+    DURCHGEHANDELT an: Pfingstmontag, Christi Himmelfahrt, 8. Mai, 14. Juli
+    (Bastille), 15. August (Mariä Himmelfahrt), 1. November (Allerheiligen),
+    11. November (Waffenstillstand). Diese fälschlich als Feiertag zu führen
+    erzeugte Geister-Lücken + falsche TDOM/TDOY für alle .PA/.MI/.AS-Ticker.
     """
     holidays = []
 
     # Neujahr — 1. Januar
     holidays.append(_monday_if_sunday(date(year, 1, 1)))
 
-    # Karfreitag (Euronext ist geschlossen)
+    # Karfreitag
     holidays.append(_good_friday(year))
 
     # Ostermontag
     holidays.append(_easter_monday(year))
 
-    # Tag der Arbeit — 1. Mai (Fête du Travail) — wichtigster fr. Feiertag
+    # Tag der Arbeit — 1. Mai (einziger nationaler Feiertag, an dem Euronext schließt)
     holidays.append(_monday_if_sunday(date(year, 5, 1)))
 
-    # Tag des Sieges 1945 — 8. Mai
-    holidays.append(_monday_if_sunday(date(year, 5, 8)))
-
-    # Himmelfahrt — Euronext Paris schließt NICHT
-    # Pfingstmontag
-    holidays.append(_whit_monday(year))
-
-    # Nationalfeiertag — 14. Juli (Bastille Day)
-    holidays.append(_monday_if_sunday(date(year, 7, 14)))
-
-    # Mariä Himmelfahrt — 15. August
-    holidays.append(_monday_if_sunday(date(year, 8, 15)))
-
-    # Allerheiligen — 1. November
-    holidays.append(_monday_if_sunday(date(year, 11, 1)))
-
-    # Waffenstillstand 1918 — 11. November
-    holidays.append(_monday_if_sunday(date(year, 11, 11)))
-
-    # Weihnachten — 25. Dezember
+    # 1. Weihnachtstag — 25. Dezember
     holidays.append(_observed(date(year, 12, 25)))
 
-    # 26. Dezember (Euronext Paris schließt auch an diesem Tag)
+    # 2. Weihnachtstag — 26. Dezember
     holidays.append(_observed(date(year, 12, 26)))
 
+    return sorted(set(holidays))
+
+
+# ── Borsa Italiana (Mailand) ───────────────────────────────────────────────────
+
+def _compute_milan_holidays(year: int) -> list[date]:
+    """
+    Borsa Italiana (Mailand) — seit 2021 Teil von Euronext, handelt daher den
+    Euronext-Kern. ABER drei italienische Besonderheiten, an denen Mailand
+    ZUSÄTZLICH schließt (datenbestätigt für .MI-Ticker): Ferragosto (15.8.),
+    Heiligabend (24.12.) und Silvester (31.12.). Andere ital. Feiertage
+    (6.1./25.4./2.6./8.12.) handelt Mailand durch (Euronext-Harmonisierung).
+    """
+    holidays = list(_compute_euronext_holidays(year))
+    holidays.append(date(year, 8, 15))   # Ferragosto
+    holidays.append(date(year, 12, 24))  # Vigilia di Natale
+    holidays.append(date(year, 12, 31))  # San Silvestro
     return sorted(set(holidays))
 
 
@@ -362,10 +369,14 @@ def _compute_six_holidays(year: int) -> list[date]:
     holidays.append(_whit_monday(year))
     # Schweizer Bundesfeier (1. August)
     holidays.append(_monday_if_sunday(date(year, 8, 1)))
+    # Heiligabend — 24. Dezember (SIX ganztägig geschlossen)
+    holidays.append(date(year, 12, 24))
     # 1. Weihnachtstag
     holidays.append(_observed(date(year, 12, 25)))
     # Stephanstag (26. Dezember)
     holidays.append(_observed(date(year, 12, 26)))
+    # Silvester — 31. Dezember (SIX ganztägig geschlossen)
+    holidays.append(date(year, 12, 31))
     return sorted(set(holidays))
 
 
@@ -414,6 +425,7 @@ _EXCHANGE_FUNCTIONS = {
     "EURONEXT":  _compute_euronext_holidays,
     "TSE":       _compute_tse_holidays,
     "SIX":       _compute_six_holidays,         # Schweiz — eigener Kalender (Christi Himmelfahrt!)
+    "MILAN":     _compute_milan_holidays,       # Borsa Italiana — Euronext + Ferragosto/24./31.12.
     "STOCKHOLM": _compute_stockholm_holidays,   # Schweden — eigener Kalender
     "FOREX":     lambda year: [],               # Keine Feiertage (Mo-Fr 24h)
     "CRYPTO":    lambda year: [],               # Keine Feiertage (24/7)

@@ -21,6 +21,35 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 
 ## Detail-Logs
 
+### 2026-06-14 — Handels-Kalender-Bereinigung (Suffix-Mapping + Feiertage) + Regel-Spec
+
+Auslöser: Wöchentlicher Vollständigkeits-Audit meldete **771 „fehlende Handelstage"**.
+Diagnose: **alle** waren Kalender-Geisterlücken (Yahoo/DB komplett, nur `is_trading_day`
+erwartete zu viele Tage). Datengetriebener Mapping-Audit (vergleicht je Ticker
+`is_trading_day(börse)` gegen reale DB-Handelstage) deckte 5 Defekt-Klassen auf:
+
+- **ADR-Falle (größter Defekt):** Kalender wurde aus der **Heimatbörse** (`SYMBOLS.exchange`)
+  abgeleitet statt aus dem **Handelsplatz**. ~23 US-gelistete ADRs (AZN/BP/SHEL/UL/NVS/UBS/
+  ASML/ING/SAN/TTE/LIN/EQNR/NVO…) bekamen LSE/Euronext/SIX/Stockholm-Kalender → 15-21 Geister-
+  Lücken **+ falsche TDOM/TDOY**. Fix: `get_holiday_calendar` jetzt **suffix-basiert** —
+  kein Suffix = US-gelistet → NYSE; `=X`→FOREX; `-USD`→CRYPTO(24/7); Suffix/Index/Future via
+  `SYMBOLS.exchange`. (Frontend `holidays.js` war bereits suffix-basiert → war nur Backend-Bug.)
+- **XETRA + SIX 24./31.12.:** beide ganztägig zu (XETRA seit 2011), fehlten im Kalender.
+- **Euronext-Kalender falsch:** enthielt französische **Nationalfeiertage** (Bastille 14.7.,
+  8. Mai, Himmelfahrt, Pfingstmontag, 15.8., 1.+11.11.), an denen Euronext **durchhandelt**.
+  Auf den harmonisierten **6-Tage-Kalender** reduziert.
+- **NYSE-Sonderschließungen:** **09.01.2025 (Staatstrauer Carter)** fehlte → 212 Geister-Lücken.
+  `_NYSE_SPECIAL_CLOSURES` ergänzt (Carter/Bush/Sandy/Ford/Reagan/9-11).
+- **Mailand (`.MI`):** eigener `MILAN`-Kalender (Euronext-Kern + Ferragosto/24./31.12.).
+
+**Ergebnis: 771 → 9 Geister-Lücken** (98,8 %; Rest: ^STOXX50E Eurex-Frühschluss, ^N225
+Substitute-Holiday, RR.L Daten-Glitch — advisory). **~930k TDOM/TDOY-Zeilen über 133 Ticker
+neu berechnet** (ADRs/XETRA/Euronext/SIX/Mailand/FX/Crypto). Verifiziert: LIN-TDOM == AAPL-TDOM,
+SAP.DE überspringt 24.-26.12. korrekt. Gap-Audit exemptiert bekannt verrauschte `=X`/`^HSI`/`^KS11`.
+- **Neu: [docs/TRADING_CALENDAR_RULES.md](TRADING_CALENDAR_RULES.md)** — verbindliche Spec aller
+  8 Regeln (Feiertags-Auflösung, Crypto, Forex, TDOM/CDOM/TDOY, OPEX, VIXpiration) als Prüf-Spec
+  für einen Verifikations-Agenten.
+
 ### 2026-06-14 — Full-Scanner OOM-Fix + Doku-Klarstellungen (PRs #81-84)
 
 - **Full-Scanner OOM (PR #84):** Weekly `full_scanner_run` brach mit **exit 137** (SIGKILL/OOM, kein Supabase-Fehler) bei Ticker 69/324 ab. Ursache: `download_data` (`@st.cache_data`) cached jede Voll-Historie im Memory, Schleife leerte nie. Fix: `finally` → `clear_cache()` + `gc.collect()` pro Ticker. Verifiziert: 324/324, 0 Fehler, 2,8 min.

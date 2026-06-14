@@ -78,6 +78,17 @@ INCOMPLETE_RATIO = 0.5
 # Stale-Tail: ein Ticker, dessen jüngstes Preis-Datum mehr als so viele Handelstage
 # hinter dem letzten HT liegt, hat aufgehört zu aktualisieren (z.B. Orphan ohne Refresh).
 STALE_TRADING_DAYS = 3
+
+# Ticker, für die die Datumslücken-Prüfung bekannt verrauscht ist und ignoriert
+# wird (Stale-Tail-Check läuft weiter — das ist das echte Signal):
+#   - Forex (=X): Yahoos =X-Reihen haben sporadisch fehlende Wochentage
+#     (Datenqualität, kein Kalender-Defekt) → FOREX-Kalender erwartet alle Mo-Fr.
+#   - ^HSI/^KS11: HKEX/KRX haben (noch) keinen eigenen Feiertagskalender in
+#     exchange_holidays → Näherung via TSE/NYSE erzeugt Geister-Lücken.
+def _gap_exempt(ticker: str) -> bool:
+    t = ticker.upper()
+    return t.endswith("=X") or t in ("^HSI", "^KS11")
+
 # "Latest-Snapshot"-Tabellen: 1 Zeile/Ticker am letzten Lauf-Datum.
 COVERAGE_DAILY = {
     "ki_scores": "computed_date",
@@ -410,11 +421,12 @@ def dim_gaps(ctx: dict) -> dict:
             db_max = _parse_d(max(db_dates))
             rstart = max(win_start, db_min)
             rend = min(today, db_max)
-            expected = get_expected_trading_days(exchange, rstart, rend)
-            missing = [d for d in expected if d.strftime("%Y-%m-%d") not in db_dates]
-            if missing:
-                price_gaps[t] = len(missing)
-                total_missing += len(missing)
+            if not _gap_exempt(t):
+                expected = get_expected_trading_days(exchange, rstart, rend)
+                missing = [d for d in expected if d.strftime("%Y-%m-%d") not in db_dates]
+                if missing:
+                    price_gaps[t] = len(missing)
+                    total_missing += len(missing)
             # Stale-Tail: jüngstes Datum vs. letztem Handelstag (echtes Problem)
             behind = _trading_days_behind(db_max, exchange, today)
             if behind > STALE_TRADING_DAYS:
