@@ -10,7 +10,7 @@ Aufruf:
   py scripts/fetch_event_data.py --mode earnings      # nur Earnings
 """
 
-import sys, os, pathlib, argparse, time, requests
+import sys, os, gc, pathlib, argparse, time, requests
 from datetime import datetime, timezone
 
 _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -243,6 +243,7 @@ def main() -> None:
             print(f"  ERR {ticker}: {exc}", file=sys.stderr)
             err += 1
 
+        gc.collect()  # Vorsorge gegen Speicher-Akkumulation im Full-Universe-Lauf
         time.sleep(0.5)  # Rate-Limiting Yahoo Finance
 
     elapsed = time.time() - t_start

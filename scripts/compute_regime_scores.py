@@ -12,6 +12,7 @@ Usage:
 
 import sys
 import os
+import gc
 import pathlib
 import argparse
 from datetime import datetime, timedelta
@@ -29,6 +30,7 @@ import pandas as pd
 
 from shared.supabase_client import get_client
 from shared.data import download_data, preprocess
+from shared.yahoo_downloader import clear_cache
 from shared.logger import app_logger
 
 
@@ -247,6 +249,13 @@ def main():
             ok += 1
             total_rows += n
             app_logger.info(f"[{i}/{len(tickers)}] {ticker} OK ({n} Scores)")
+        # OOM-Schutz: download_data cached jede Voll-Historie → pro Ticker freigeben
+        # (sonst SIGKILL/exit 137 bei Full-Universe-Lauf, siehe full_scanner_run).
+        try:
+            clear_cache()
+        except Exception:
+            pass
+        gc.collect()
 
     app_logger.info(f"=== Fertig: {ok} OK · {skip} skip · {err} err · {total_rows} Rows ===")
     if errors:
