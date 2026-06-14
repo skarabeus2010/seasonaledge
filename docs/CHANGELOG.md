@@ -21,6 +21,11 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 
 ## Detail-Logs
 
+### 2026-06-14 — Full-Scanner OOM-Fix + Doku-Klarstellungen (PRs #81-84)
+
+- **Full-Scanner OOM (PR #84):** Weekly `full_scanner_run` brach mit **exit 137** (SIGKILL/OOM, kein Supabase-Fehler) bei Ticker 69/324 ab. Ursache: `download_data` (`@st.cache_data`) cached jede Voll-Historie im Memory, Schleife leerte nie. Fix: `finally` → `clear_cache()` + `gc.collect()` pro Ticker. Verifiziert: 324/324, 0 Fehler, 2,8 min.
+- **Doku:** ARCHITECTURE.md umfassend nachgezogen (22 Tabellen, 13 Workflows, Batch-Jobs/Tooling, Stand/Ticker 324). **Klarstellung Streamlit produktseitig ungenutzt** (nur Container-Keep-alive für cron `docker exec`); `landing/` = Frontend. CLAUDE.md v39.
+
 ### 2026-06-13 — DB-Vollständigkeit, Ticker-Universum 270→324, Frontend-Fixes (PRs #70-80)
 
 **DB-Vollständigkeits-Audit + Reparaturen:**
