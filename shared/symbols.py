@@ -34,7 +34,7 @@ EXCHANGE_TO_HOLIDAY = {
     "Euronext Paris":    "FR",
     "Euronext Amsterdam": "FR",
     "Euronext Brüssel":  "FR",
-    "Borsa Italiana":    "FR",   # Euronext-Kalender
+    "Borsa Italiana":    "IT",   # Euronext-Kern + Ferragosto/24./31.12. (eigener Mailand-Kalender)
     "BME":               "FR",   # Spanien ~ Euronext-Kalender
     "BME Madrid":        "FR",
     "SIX":               "CH",
@@ -54,9 +54,12 @@ HOLIDAY_TO_EXCHANGE = {
     "DE": "XETRA",
     "UK": "LSE",
     "FR": "EURONEXT",
+    "IT": "MILAN",     # Borsa Italiana — Euronext-Kern + Ferragosto/24./31.12.
     "JP": "TSE",
     "CH": "SIX",       # Schweiz — eigener Kalender mit Christi Himmelfahrt + Bundesfeier 1.8.
     "SE": "STOCKHOLM", # Schweden/Skandinavien — Nasdaq-Stockholm-Kalender
+    "FOREX": "FOREX",  # Devisen — Mo-Fr, keine Feiertage (is_trading_day-Sonderfall)
+    "CRYPTO": "CRYPTO",# Krypto — 24/7, is_trading_day immer True (Sa/So inklusive)
     "NONE": "NYSE",    # Fallback (wird nie Feiertag-Check brauchen)
 }
 
@@ -64,11 +67,29 @@ HOLIDAY_TO_EXCHANGE = {
 def get_holiday_calendar(ticker: str) -> str:
     """Gibt den Holiday-Kalender-Code fuer einen Ticker zurueck.
 
-    Returns: "US", "DE", "UK", "FR", "JP", "CH", "NONE"
+    Der Kalender folgt dem TATSÄCHLICHEN Yahoo-Handelsplatz (= Ticker-Suffix),
+    NICHT der Heimatbörse des Unternehmens (SYMBOLS.exchange). Beispiel:
+    "AZN"/"BP"/"ASML"/"LIN" sind US-gelistete ADRs (kein Suffix) → US-Kalender,
+    obwohl das Unternehmen primär in London/Paris/Frankfurt notiert. Würde man
+    SYMBOLS.exchange nutzen, bekämen diese ~23 ADRs einen falschen Kalender →
+    falsche Datumslücken-Alarme UND falsche TDOM/TDOY-Werte.
+
+    Returns: "US", "DE", "UK", "FR", "JP", "CH", "SE", "FOREX", "NONE"
     """
-    sym = SYMBOLS.get(ticker, {})
-    exchange = sym.get("exchange", "NYSE")
-    return EXCHANGE_TO_HOLIDAY.get(exchange, "US")
+    t = ticker.upper()
+    # Krypto (24/7 inkl. Wochenende — is_trading_day immer True)
+    if t.endswith("-USD"):
+        return "CRYPTO"
+    # Devisen (Mo-Fr 24h, keine Feiertage)
+    if t.endswith("=X"):
+        return "FOREX"
+    # Index (^...), Future (=F) oder ausländische Notierung (Suffix .DE/.PA/.L/.ST
+    # /.SW/.MI/.MC) → Kalender aus SYMBOLS.exchange (der Suffix IST der Handelsplatz)
+    if t.startswith("^") or "." in t or t.endswith("=F"):
+        exchange = SYMBOLS.get(ticker, {}).get("exchange", "NYSE")
+        return EXCHANGE_TO_HOLIDAY.get(exchange, "US")
+    # Kein Suffix = US-gelistet (US-Aktie/ETF + ausländische ADRs) → NYSE-Kalender
+    return "US"
 
 
 def get_exchange_for_holidays(ticker: str) -> str:

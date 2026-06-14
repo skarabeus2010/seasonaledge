@@ -124,7 +124,27 @@ def _compute_nyse_holidays(year: int) -> list[date]:
     # 10. Christmas Day — 25. Dezember
     holidays.append(_observed(date(year, 12, 25)))
 
+    # 11. Einmalige Sonderschließungen (Staatstrauer, Naturkatastrophen).
+    # Regelbasiert nicht ableitbar → explizite Liste. Sonst meldet der
+    # Vollständigkeits-Audit Geister-Lücken (z.B. 212 Ticker am 09.01.2025).
+    holidays.extend(d for d in _NYSE_SPECIAL_CLOSURES if d.year == year)
+
     return sorted(set(holidays))  # set() entfernt theoretische Duplikate
+
+
+# Einmalige NYSE/NASDAQ-Vollschließungen (kein regelbasierter Feiertag):
+_NYSE_SPECIAL_CLOSURES = [
+    date(2025, 1, 9),    # Staatstrauer Präsident Jimmy Carter
+    date(2018, 12, 5),   # Staatstrauer Präsident George H. W. Bush
+    date(2012, 10, 29),  # Hurrikan Sandy (Tag 1)
+    date(2012, 10, 30),  # Hurrikan Sandy (Tag 2)
+    date(2007, 1, 2),    # Staatstrauer Präsident Gerald Ford
+    date(2004, 6, 11),   # Staatstrauer Präsident Ronald Reagan
+    date(2001, 9, 11),   # 9/11 (Tag 1)
+    date(2001, 9, 12),   # 9/11 (Tag 2)
+    date(2001, 9, 13),   # 9/11 (Tag 3)
+    date(2001, 9, 14),   # 9/11 (Tag 4)
+]
 
 
 # ── Haupt-API ──────────────────────────────────────────────────────────────────
