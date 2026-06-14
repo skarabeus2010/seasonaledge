@@ -21,6 +21,26 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 
 ## Detail-Logs
 
+### 2026-06-14 — Asien-Kalender (HKEX/KRX/TSE) + offene Kalender-TODOs geschlossen
+
+Restliche Kalender-Lücken aus der Spec abgearbeitet (datengetrieben verifiziert):
+
+- **TSE (^N225)** — Tagundnachtgleichen jetzt **astronomisch** (Formel, gültig
+  1980-2099) statt fix 20.3./23.9.; **Furikae Kyujitsu** (Sonntags-Feiertag-Kaskade)
+  + **Kokumin no Kyujitsu** (Werktag zwischen 2 Feiertagen) implementiert. Jahres-
+  wechsel-Schließungen (2./3.1., 31.12.) ohne falsche Substitute-Kaskade. Fixt
+  3 Geister-Lücken (21.3.2023, 6.5.2025/26). Verifiziert: 0/0 beide Richtungen.
+- **HKEX (^HSI) + KRX (^KS11)** — eigene **Mondkalender-Tabellen** (`_HKEX_HOLIDAYS`/
+  `_KRX_HOLIDAYS`, 2016-2026, datengetrieben aus den Indizes) statt TSE-Näherung.
+  Lunar New Year/Chuseok/Buddha's Birthday + Taifun-/Wahltag-Schließungen. ^HSI→HKEX,
+  ^KS11→KRX gemappt, TDOM/TDOY neu (9,7k + 7,3k Zeilen). Verifiziert 0/0; aus der
+  Gap-Audit-Exemption entfernt (nur noch `=X`/Forex exemptiert).
+- **Madrid (.MC)** — datenbestätigt **keine** Madrid-spezifischen Schließungen über
+  Euronext hinaus → `.MC=EURONEXT` ist korrekt, TODO gestrichen.
+
+Prüfagent: 12 PASS / 1 WARN (Rest ^STOXX50E:6 + RR.L:1) / 0 FAIL. Fing dabei 2
+veraltete Selbst-Annahmen (HKEX/KRX nicht in SUPPORTED) → korrigiert.
+
 ### 2026-06-14 — Börsen-Feiertagskalender korrigiert + Prüfagent
 
 User-Hinweis „prüfe ob 3.10. wirklich Börsenfeiertag ist" → **war falsch.** Mein

@@ -55,14 +55,14 @@ Danach: Code → `HOLIDAY_TO_EXCHANGE` → Börsen-Kürzel → `is_trading_day(d
 | `.DE`, `.F` | SAP.DE, RHM.F | XETRA (Frankfurt) | `XETRA` |
 | `.PA`, `.AS`, `.BR` | MC.PA, PRX.AS | Euronext (Paris/Amsterdam/Brüssel) | `EURONEXT` |
 | `.MI` | ENEL.MI | Borsa Italiana (Mailand) | `MILAN` |
-| `.MC` | IBE.MC | BME Madrid → **Euronext-Näherung** (TODO eigener Kalender) | `EURONEXT` |
+| `.MC` | IBE.MC | BME Madrid (= Euronext-Kalender, datenbestätigt) | `EURONEXT` |
 | `.L` | RR.L | LSE (London) | `LSE` |
 | `.SW` | NESN.SW | SIX (Schweiz) | `SIX` |
 | `.ST` | VOLV-A.ST | Nasdaq Stockholm | `STOCKHOLM` |
 | `=X` | EURUSD=X | Devisen | `FOREX` |
 | `-USD` | BTC-USD | Krypto | `CRYPTO` |
 | `=F` | GC=F, CL=F | Futures → US-Settlement-Kalender | `NYSE` |
-| `^…` Index | ^GDAXI→XETRA, ^FTSE→LSE, ^N225→TSE, ^FCHI→EURONEXT, ^SSMI→SIX | via `SYMBOLS.exchange` | div. |
+| `^…` Index | ^GDAXI→XETRA, ^FTSE→LSE, ^N225→TSE, ^FCHI→EURONEXT, ^SSMI→SIX, ^HSI→HKEX, ^KS11→KRX | via `SYMBOLS.exchange` | div. |
 
 ### Implementierte Börsenkalender (`exchange_holidays.py`)
 
@@ -93,13 +93,17 @@ Danach: Code → `HOLIDAY_TO_EXCHANGE` → Börsen-Kürzel → `is_trading_day(d
 - **STOCKHOLM** — Neujahr, Heilige Drei Könige (6.1.), Karfreitag, Ostermontag,
   1. Mai, Christi Himmelfahrt, Nationaltag (6.6.), Midsommarafton, Heiligabend,
   25.+26.12., Silvester.
-- **TSE** (Tokyo) — japanische Nationalfeiertage + 2./3. Jan + 31.12.,
-  Beobachtungsregel So→Mo. *Bekannte Lücke:* Substitute-Kaskade (z.B. 6.5.) nicht
-  modelliert.
+- **TSE** (Tokyo) — japanische Nationalfeiertage (Tagundnachtgleichen
+  **astronomisch** berechnet) + 2./3. Jan + 31.12. Inkl. **Furikae Kyujitsu**
+  (振替休日, Sonntags-Feiertag → nächster Werktag, mit Kaskade) + **Kokumin no
+  Kyujitsu** (国民の休日, Werktag zwischen zwei Feiertagen).
+- **HKEX** (`^HSI`, Hongkong) + **KRX** (`^KS11`, Korea) — Mondkalender-Feiertage
+  (Lunar New Year, Buddha's Birthday, Mid-Autumn/Chuseok …) + unregelmäßige
+  Schließungen (Taifune, Wahltage) → **datengetriebene Tabelle** (`_HKEX_HOLIDAYS`/
+  `_KRX_HOLIDAYS`, 2016-2026; bei neuen Jahren aus offiziellem Kalender ergänzen),
+  Fallback = fixe gregorianische Feiertage.
 - **FOREX** — keine Feiertage (nur Mo-Fr).
 - **CRYPTO** — keine Feiertage, kein Wochenende (immer offen).
-- **FEHLEND (TODO):** HKEX (`^HSI`), KRX (`^KS11`) — komplexe Mondkalender-Feiertage;
-  aktuell Näherung über TSE → bekannte Geister-Lücken, im Audit exemptiert.
 
 > ⚠️ **Observed-Shift NUR bei NYSE + LSE.** Die kontinentaleuropäischen Börsen
 > (XETRA, EURONEXT, MILAN, SIX, STOCKHOLM) machen **keinen** Montags-/Freitags-Ersatz,
@@ -359,17 +363,14 @@ Beide Richtungen sind im Prüfagenten als DB-Checks implementiert
 
 **Bekannte, akzeptierte Rest-Abweichungen (kein Defekt):**
 - `=X` (Forex) — Yahoo-Datenqualität → `_gap_exempt()`.
-- `^HSI`, `^KS11` — HKEX/KRX-Kalender fehlen (TODO) → `_gap_exempt()`.
 - `^STOXX50E` (6 Tage/2J) — Eurex-Frühschluss-Idiosynkrasien.
-- `^N225` (6.5.) — japanische Substitute-Holiday-Kaskade nicht modelliert.
 - `RR.L` (27.10.2025) — einzelner Yahoo-Daten-Glitch.
 
-**Sollzustand nach Bereinigung 2026-06-14:** 3 Ticker / 9 fehlende HT (advisory),
-0 Stale-Ticker. Alle anderen 321 Ticker: 0 Geister-Lücken.
+**Sollzustand 2026-06-14:** 2 Ticker / 7 fehlende HT (advisory), 0 Stale-Ticker.
+Alle anderen 322 Ticker: 0 Geister-Lücken. `.MC` (Madrid) = Euronext (datenbestätigt
+keine Madrid-spezifischen Schließungen). `^HSI`/`^KS11` haben echte HKEX/KRX-Kalender.
 
 ## Offene TODOs (Kalender-Präzision)
-- [ ] HKEX-Kalender (`^HSI`) — Chinesisches Neujahr (Mondkalender) etc.
-- [ ] KRX-Kalender (`^KS11`) — Seollal/Chuseok (Mondkalender).
-- [ ] BME-Madrid-Kalender (`.MC`) — aktuell Euronext-Näherung (Epiphanias 6.1. fehlt).
-- [ ] TSE Substitute-Holiday-Kaskade (振替休日) bei Feiertags-Sandwiches.
+- [ ] HKEX/KRX-Tabellen jährlich aus offiziellem Kalender fortschreiben (>2026).
 - [ ] `^STOXX50E` — eigener Eurex-Index-Kalender mit Frühschluss-Tagen.
+- [ ] SNB Sep/Dez-Termine + BoJ 2027 (sobald offiziell publiziert).

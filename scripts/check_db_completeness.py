@@ -83,11 +83,10 @@ STALE_TRADING_DAYS = 3
 # wird (Stale-Tail-Check läuft weiter — das ist das echte Signal):
 #   - Forex (=X): Yahoos =X-Reihen haben sporadisch fehlende Wochentage
 #     (Datenqualität, kein Kalender-Defekt) → FOREX-Kalender erwartet alle Mo-Fr.
-#   - ^HSI/^KS11: HKEX/KRX haben (noch) keinen eigenen Feiertagskalender in
-#     exchange_holidays → Näherung via TSE/NYSE erzeugt Geister-Lücken.
 def _gap_exempt(ticker: str) -> bool:
-    t = ticker.upper()
-    return t.endswith("=X") or t in ("^HSI", "^KS11")
+    # Nur noch Forex (Yahoo-Datenqualität). ^HSI/^KS11 haben seit 2026-06 echte
+    # HKEX/KRX-Kalender (Mondkalender-Tabelle) → werden regulär geprüft.
+    return ticker.upper().endswith("=X")
 
 # "Latest-Snapshot"-Tabellen: 1 Zeile/Ticker am letzten Lauf-Datum.
 COVERAGE_DAILY = {

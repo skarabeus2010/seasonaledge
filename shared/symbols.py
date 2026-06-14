@@ -39,8 +39,8 @@ EXCHANGE_TO_HOLIDAY = {
     "BME Madrid":        "FR",
     "SIX":               "CH",
     "TSE":               "JP",
-    "HKEX":              "JP",   # Asien-Kalender (Näherung)
-    "KRX":               "JP",   # Asien-Kalender (Näherung)
+    "HKEX":              "HK",   # Hongkong — eigener Mondkalender (Tabelle)
+    "KRX":               "KR",   # Korea — eigener Mondkalender (Tabelle)
     "Kopenhagen":        "SE",   # Nordeuropa ~ Stockholm-Kalender
     "Oslo":              "SE",
     "Stockholm":         "SE",   # eigener Nordic-Kalender (Christi Himmelfahrt!)
@@ -56,6 +56,8 @@ HOLIDAY_TO_EXCHANGE = {
     "FR": "EURONEXT",
     "IT": "MILAN",     # Borsa Italiana — Euronext-Kern + Ferragosto/24./31.12.
     "JP": "TSE",
+    "HK": "HKEX",      # Hongkong — Mondkalender-Tabelle
+    "KR": "KRX",       # Korea — Mondkalender-Tabelle
     "CH": "SIX",       # Schweiz — eigener Kalender mit Christi Himmelfahrt + Bundesfeier 1.8.
     "SE": "STOCKHOLM", # Schweden/Skandinavien — Nasdaq-Stockholm-Kalender
     "FOREX": "FOREX",  # Devisen — Mo-Fr, keine Feiertage (is_trading_day-Sonderfall)
