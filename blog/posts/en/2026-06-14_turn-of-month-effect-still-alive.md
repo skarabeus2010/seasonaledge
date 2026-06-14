@@ -26,7 +26,7 @@ Here we summarize the current research and test it against 20 years of S&P 500 d
 
 ## What Is the Turn-of-the-Month Effect?
 
-Since the late 1980s, finance research has documented that a large share of monthly equity returns is concentrated in a few days around the month-end — the last trading day of a month and the first days of the next. A widely cited study on this is by John McConnell and Wei Xu ([SSRN](https://www.ssrn.com/abstract=925589)).
+Since the late 1980s, finance research has documented that a large share of monthly equity returns is concentrated in a few days around the month-end — the last trading day of a month and the first days of the next. A widely cited study on this is by John McConnell and Wei Xu ([SSRN](https://www.ssrn.com/abstract=925589)). If you want to dig into the basics, our article [The Turn-of-the-Month Effect Explained](/en/blog/turn-of-month-effect-explained/) covers why exactly these days stand out statistically.
 
 The common explanation: at month boundaries, salaries, savings plans and institutional flows enter the market, and large funds rebalance their portfolios.
 

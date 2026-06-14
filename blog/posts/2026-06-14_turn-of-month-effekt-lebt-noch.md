@@ -25,7 +25,7 @@ Wir fassen hier die aktuelle Forschung zusammen und prüfen sie an 20 Jahren S&P
 
 ## Was ist der Turn-of-Month-Effekt?
 
-Seit den späten 1980er-Jahren dokumentiert die Finanzforschung, dass ein großer Teil der monatlichen Aktienrendite auf wenige Tage rund um den Monatsultimo entfällt — den letzten Handelstag eines Monats und die ersten Tage des Folgemonats. Eine vielzitierte Untersuchung dazu stammt von John McConnell und Wei Xu ([SSRN](https://www.ssrn.com/abstract=925589)).
+Seit den späten 1980er-Jahren dokumentiert die Finanzforschung, dass ein großer Teil der monatlichen Aktienrendite auf wenige Tage rund um den Monatsultimo entfällt — den letzten Handelstag eines Monats und die ersten Tage des Folgemonats. Eine vielzitierte Untersuchung dazu stammt von John McConnell und Wei Xu ([SSRN](https://www.ssrn.com/abstract=925589)). Wenn du die Grundlagen vertiefen willst, erklärt unser Artikel [Turn-of-Month-Effekt erklärt](/blog/turn-of-month-effekt-erklaert/), warum gerade diese Tage statistisch herausstechen.
 
 Die gängige Erklärung: An Monatswechseln fließen Gehälter, Sparpläne und institutionelle Mittel in den Markt, und große Fonds rebalancieren ihre Portfolios.
 
