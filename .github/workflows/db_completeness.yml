@@ -73,3 +73,18 @@ jobs:
             docker exec seasonalpha-app python3 scripts/check_db_completeness.py $FLAGS 2>&1 | tail -120
 
             echo "[db-completeness] Done: $(date)"
+
+      - name: Calendar rules verification (Prüfagent)
+        # Deterministischer Check aller 9 Handels-Kalender-Regeln (Code + DB,
+        # beide Audit-Richtungen). Exit 1 bei FAIL → Workflow schlägt fehl →
+        # GitHub-Notification. Fängt u.a. Kalender-Drift + zu kurze HKEX/KRX-Tabellen
+        # (neue Jahres-Daten ohne Eintrag → Gap-Residual > Soll → FAIL).
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 15m
+          script: |
+            echo "[calendar-rules] Prüfagent: $(date)"
+            docker exec seasonalpha-app python3 scripts/verify_calendar_rules.py

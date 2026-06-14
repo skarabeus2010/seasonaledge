@@ -285,9 +285,10 @@ def _client():
 def rule456_tdom_tdoy_db(client):
     """Regel 4-6: TDOM/CDOM/TDOY/CDOY-Konsistenz in prices (Stichprobe)."""
     bad = []
+    _start = f"{date.today().year - 1}-01-01"
     for t in ("SPY", "SAP.DE"):
         rows = (client.table("prices").select("date,tdom,tdoy")
-                .eq("ticker", t).gte("date", "2025-01-01").lte("date", "2026-06-13")
+                .eq("ticker", t).gte("date", _start)
                 .order("date").execute().data)
         rows = [r for r in rows if r.get("tdom") is not None]
         if len(rows) < 50:
@@ -323,7 +324,8 @@ def rule456_tdom_tdoy_db(client):
 def rule1_gap_audit_db(client):
     """Regel 1/9.1 empirisch: is_trading_day vs. reale DB-Handelstage."""
     from scripts.fix_missing_days import get_expected_trading_days, get_db_dates
-    today, win = date(2026, 6, 13), date(2025, 1, 1)
+    today = date.today()
+    win = date(today.year - 1, 1, 1)
     n_tickers, total = 0, 0
     worst = []
     for t in get_all_tickers():
@@ -383,7 +385,7 @@ def rule1_reverse_holidays_db(client):
         if not any(ds.values()):
             continue
         fn = _EXCHANGE_FUNCTIONS[ex]
-        for yr in range(2022, 2026):
+        for yr in range(2022, date.today().year + 1):
             for h in fn(yr):
                 if h.weekday() >= 5:
                     continue
