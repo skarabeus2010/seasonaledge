@@ -38,11 +38,11 @@ from shared.fed_dates import FOMC_MEETING_DATES
 
 # Vom Holiday-System unterstützte Börsen-Codes (is_trading_day kennt sie):
 SUPPORTED = {"NYSE", "NASDAQ", "XETRA", "EURONEXT", "MILAN", "LSE",
-             "SIX", "STOCKHOLM", "TSE", "FOREX", "CRYPTO"}
+             "SIX", "STOCKHOLM", "TSE", "HKEX", "KRX", "FOREX", "CRYPTO"}
 
-# Gap-Audit-Ausnahmen (bekannt verrauscht, siehe Regel-Spec Verifikation):
-GAP_EXEMPT = lambda t: t.upper().endswith("=X") or t.upper() in ("^HSI", "^KS11")
-GAP_RESIDUAL_MAX = 15   # Soll nach Bereinigung 2026-06: ~9 HT (advisory)
+# Gap-Audit-Ausnahmen (nur noch Forex — Yahoo-Datenqualität):
+GAP_EXEMPT = lambda t: t.upper().endswith("=X")
+GAP_RESIDUAL_MAX = 10   # Soll nach HKEX/KRX/TSE-Fix: ^STOXX50E:6 + RR.L:1 (advisory)
 
 # ── Reporter ──────────────────────────────────────────────────────────────────
 

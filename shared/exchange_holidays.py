@@ -250,74 +250,60 @@ def _compute_tse_holidays(year: int) -> list[date]:
     Wenn zwei Feiertage einen normalen Tag einschließen → auch dieser ist frei (国民の休日).
     """
 
-    def jp_observed(d: date) -> date:
-        """Japanische Beobachtungsregel: Sonntag → Montag."""
-        if d.weekday() == 6:
-            return d + timedelta(days=1)
-        return d
+    def equinox(month: int) -> date:
+        # Astronomische Näherung (gültig 1980-2099) — Frühlings-/Herbst-Tagundnacht-
+        # gleiche schwanken zwischen 20./21. März bzw. 22./23. September.
+        if month == 3:
+            return date(year, 3, int(20.8431 + 0.242194 * (year - 1980) - (year - 1980) // 4))
+        return date(year, 9, int(23.2488 + 0.242194 * (year - 1980) - (year - 1980) // 4))
 
-    holidays = []
-
-    # Neujahr — 1. Januar
-    holidays.append(jp_observed(date(year, 1, 1)))
-    # Börse schließt auch 2. und 3. Januar
-    holidays.append(jp_observed(date(year, 1, 2)))
-    holidays.append(jp_observed(date(year, 1, 3)))
-
-    # Erwachsenentag — 2. Montag im Januar (seit 2000)
+    # ── Nationale Feiertage (ohne Shift) ──
+    national: set[date] = {
+        date(year, 1, 1),            # Ganjitsu (Neujahr)
+        date(year, 2, 11),           # Kenkoku Kinen no Hi
+        equinox(3),                  # Shunbun no Hi (Frühlingsanfang)
+        date(year, 4, 29),           # Showa no Hi
+        date(year, 5, 3),            # Kenpo Kinenbi
+        date(year, 5, 4),            # Midori no Hi
+        date(year, 5, 5),            # Kodomo no Hi
+        _nth_weekday(year, 7, 0, 3), # Umi no Hi (Meerestag)
+        _nth_weekday(year, 9, 0, 3), # Keiro no Hi
+        equinox(9),                  # Shubun no Hi (Herbstanfang)
+        _nth_weekday(year, 10, 0, 2),# Sports no Hi
+        date(year, 11, 3),           # Bunka no Hi
+        date(year, 11, 23),          # Kinro Kansha no Hi
+    }
     if year >= 2000:
-        holidays.append(_nth_weekday(year, 1, 0, 2))
-
-    # Nationalfeiertag — 11. Februar (Staatsgründung)
-    holidays.append(jp_observed(date(year, 2, 11)))
-
-    # Kaisers Geburtstag — 23. Februar (seit 2020, Naruhito)
+        national.add(_nth_weekday(year, 1, 0, 2))   # Seijin no Hi
     if year >= 2020:
-        holidays.append(jp_observed(date(year, 2, 23)))
-    elif year >= 1990:  # Akihito: 23. Dezember
-        holidays.append(jp_observed(date(year, 12, 23)))
-
-    # Frühlingstagundnachtgleiche — ca. 20./21. März (variabel)
-    # Vereinfachung: 20. März (exakte Berechnung astronomisch komplex)
-    holidays.append(jp_observed(date(year, 3, 20)))
-
-    # Showa Day — 29. April
-    holidays.append(jp_observed(date(year, 4, 29)))
-
-    # Goldene Woche — 3./4./5. Mai
-    holidays.append(jp_observed(date(year, 5, 3)))   # Verfassungstag
-    holidays.append(jp_observed(date(year, 5, 4)))   # Grüner Tag
-    holidays.append(jp_observed(date(year, 5, 5)))   # Kindertag
-
-    # Meerestag — 3. Montag im Juli
-    holidays.append(_nth_weekday(year, 7, 0, 3))
-
-    # Berg-Tag — 11. August (seit 2016)
+        national.add(date(year, 2, 23))             # Tenno Tanjobi (Naruhito)
+    elif year >= 1990:
+        national.add(date(year, 12, 23))            # (Akihito)
     if year >= 2016:
-        holidays.append(jp_observed(date(year, 8, 11)))
+        national.add(date(year, 8, 11))             # Yama no Hi
 
-    # Börse schließt auch 14./15. August (Obon — kein offiz. Feiertag, aber Praxis)
-    # Nicht eingetragen da offiziell Handelstage
+    holidays = set(national)
 
-    # Respektstag für Senioren — 3. Montag im September
-    holidays.append(_nth_weekday(year, 9, 0, 3))
+    # ── Furikae Kyujitsu (振替休日): Sonntags-Feiertag → nächster Nicht-Feiertag ──
+    for h in sorted(national):
+        if h.weekday() == 6:
+            sub = h + timedelta(days=1)
+            while sub in national:
+                sub += timedelta(days=1)
+            holidays.add(sub)
 
-    # Herbsttagundnachtgleiche — ca. 22./23. September
-    holidays.append(jp_observed(date(year, 9, 23)))
+    # ── Kokumin no Kyujitsu (国民の休日): Werktag zwischen zwei Feiertagen ──
+    for h in sorted(national):
+        mid = h + timedelta(days=1)
+        if (h + timedelta(days=2)) in national and mid not in national and mid.weekday() < 5:
+            holidays.add(mid)
 
-    # Sporttag — 2. Montag im Oktober
-    holidays.append(_nth_weekday(year, 10, 0, 2))
+    # ── Börsen-Schließungen Jahreswechsel (keine Nationalfeiertage, kein Shift) ──
+    holidays.add(date(year, 1, 2))
+    holidays.add(date(year, 1, 3))
+    holidays.add(date(year, 12, 31))
 
-    # Kulturtag — 3. November
-    holidays.append(jp_observed(date(year, 11, 3)))
-
-    # Arbeitsdanktag — 23. November
-    holidays.append(jp_observed(date(year, 11, 23)))
-
-    # Jahresende — 31. Dezember (Börse geschlossen)
-    holidays.append(date(year, 12, 31))
-
-    return sorted(set(holidays))
+    return sorted(holidays)
 
 
 # ── SIX (Schweiz) ──────────────────────────────────────────────────────────────
@@ -366,6 +352,59 @@ def _compute_stockholm_holidays(year: int) -> list[date]:
     })
 
 
+# ── HKEX (Hongkong) + KRX (Korea) ──────────────────────────────────────────────
+# Mondkalender-Feiertage (Lunar New Year, Buddha's Birthday, Mid-Autumn, Chuseok,
+# Seollag …) + unregelmäßige Schließungen (Taifune, Wahltage) sind NICHT regel-
+# basiert berechenbar → datengetriebene Tabelle (aus ^HSI/^KS11, Clean-Ära), wie
+# _chinese_new_year. Bei neuen Jahren aus dem offiziellen HKEX/KRX-Kalender ergänzen.
+
+_HKEX_HOLIDAYS = {
+    2016: [(2,8),(2,9),(2,10),(3,25),(3,28),(4,4),(5,2),(6,9),(7,1),(8,2),(9,16),(10,10),(10,21),(12,26),(12,27)],
+    2017: [(1,2),(1,30),(1,31),(4,4),(4,14),(4,17),(5,1),(5,3),(5,30),(8,23),(10,2),(10,5),(12,25),(12,26)],
+    2018: [(1,1),(2,16),(2,19),(3,30),(4,2),(4,5),(5,1),(5,22),(6,18),(7,2),(9,25),(10,1),(10,17),(12,25),(12,26)],
+    2019: [(1,1),(2,5),(2,6),(2,7),(4,5),(4,19),(4,22),(5,1),(5,13),(6,7),(7,1),(10,1),(10,7),(12,25),(12,26)],
+    2020: [(1,1),(1,27),(1,28),(4,10),(4,13),(4,30),(5,1),(6,25),(7,1),(10,1),(10,2),(10,13),(10,26),(12,25)],
+    2021: [(1,1),(2,12),(2,15),(4,2),(4,5),(4,6),(5,19),(6,14),(7,1),(9,22),(10,1),(10,13),(10,14),(12,27)],
+    2022: [(2,1),(2,2),(2,3),(4,5),(4,15),(4,18),(5,2),(5,9),(6,3),(7,1),(9,12),(10,4),(12,26),(12,27)],
+    2023: [(1,2),(1,23),(1,24),(1,25),(4,5),(4,7),(4,10),(5,1),(5,26),(6,22),(7,17),(9,1),(9,8),(10,2),(10,23),(12,25),(12,26)],
+    2024: [(1,1),(2,12),(2,13),(3,29),(4,1),(4,4),(5,1),(5,15),(6,10),(7,1),(9,6),(9,18),(10,1),(10,11),(12,25),(12,26)],
+    2025: [(1,1),(1,29),(1,30),(1,31),(4,4),(4,18),(4,21),(5,1),(5,5),(7,1),(10,1),(10,7),(10,29),(12,25),(12,26)],
+    2026: [(1,1),(2,17),(2,18),(2,19),(4,3),(4,6),(4,7),(5,1),(5,25)],
+}
+
+_KRX_HOLIDAYS = {
+    2016: [(2,8),(2,9),(2,10),(3,1),(4,13),(5,5),(5,6),(6,6),(8,15),(9,14),(9,15),(9,16),(10,3),(12,30)],
+    2017: [(1,27),(1,30),(3,1),(5,1),(5,3),(5,5),(5,9),(6,6),(8,15),(9,22),(10,2),(10,3),(10,4),(10,5),(10,6),(10,9),(12,20),(12,25),(12,29)],
+    2018: [(1,1),(2,15),(2,16),(3,1),(5,1),(5,7),(5,22),(6,6),(6,13),(8,15),(9,24),(9,25),(9,26),(10,3),(10,9),(12,25),(12,31)],
+    2019: [(1,1),(2,4),(2,5),(2,6),(3,1),(5,1),(5,6),(6,6),(8,15),(9,12),(9,13),(10,3),(10,9),(12,25),(12,31)],
+    2020: [(1,1),(1,24),(1,27),(4,15),(4,30),(5,1),(5,5),(8,17),(9,30),(10,1),(10,2),(10,9),(12,25),(12,31)],
+    2021: [(1,1),(2,11),(2,12),(3,1),(5,5),(5,19),(8,16),(9,20),(9,21),(9,22),(10,4),(10,11),(12,31)],
+    2022: [(1,3),(1,31),(2,1),(2,2),(3,1),(3,9),(5,5),(5,9),(6,1),(6,6),(8,15),(9,9),(9,12),(10,3),(10,10),(12,30)],
+    2023: [(1,23),(1,24),(3,1),(5,1),(5,5),(5,29),(6,6),(8,15),(9,28),(9,29),(10,2),(10,3),(10,9),(12,25),(12,29)],
+    2024: [(1,1),(2,9),(2,12),(3,1),(4,10),(5,1),(5,6),(5,15),(6,6),(8,15),(9,16),(9,17),(9,18),(10,1),(10,3),(10,9),(12,25),(12,31)],
+    2025: [(1,1),(1,27),(1,28),(1,29),(1,30),(3,3),(5,1),(5,5),(5,6),(6,3),(6,6),(8,15),(10,3),(10,6),(10,7),(10,8),(10,9),(12,25),(12,31)],
+    2026: [(1,1),(2,16),(2,17),(2,18),(3,2),(5,1),(5,5),(5,25),(6,3)],
+}
+
+
+def _compute_hkex_holidays(year: int) -> list[date]:
+    """HKEX (Hongkong). Tabellengestützt; Fallback = fixe gregorianische Feiertage."""
+    if year in _HKEX_HOLIDAYS:
+        return sorted(date(year, m, d) for m, d in _HKEX_HOLIDAYS[year])
+    return sorted({date(year, 1, 1), _good_friday(year), _easter_monday(year),
+                   date(year, 5, 1), date(year, 7, 1), date(year, 10, 1),
+                   date(year, 12, 25), date(year, 12, 26)})
+
+
+def _compute_krx_holidays(year: int) -> list[date]:
+    """KRX (Korea). Tabellengestützt; Fallback = fixe gregorianische Feiertage."""
+    if year in _KRX_HOLIDAYS:
+        return sorted(date(year, m, d) for m, d in _KRX_HOLIDAYS[year])
+    return sorted({date(year, 1, 1), date(year, 3, 1), date(year, 5, 1), date(year, 5, 5),
+                   date(year, 6, 6), date(year, 8, 15), date(year, 10, 3), date(year, 10, 9),
+                   date(year, 12, 25), date(year, 12, 31)})
+
+
 # ── Haupt-API ──────────────────────────────────────────────────────────────────
 
 _EXCHANGE_FUNCTIONS = {
@@ -378,6 +417,8 @@ _EXCHANGE_FUNCTIONS = {
     "SIX":       _compute_six_holidays,         # Schweiz — eigener Kalender (Christi Himmelfahrt!)
     "MILAN":     _compute_milan_holidays,       # Borsa Italiana — Euronext + Ferragosto/24./31.12.
     "STOCKHOLM": _compute_stockholm_holidays,   # Schweden — eigener Kalender
+    "HKEX":      _compute_hkex_holidays,        # Hongkong — Mondkalender-Tabelle
+    "KRX":       _compute_krx_holidays,         # Korea — Mondkalender-Tabelle
     "FOREX":     lambda year: [],               # Keine Feiertage (Mo-Fr 24h)
     "CRYPTO":    lambda year: [],               # Keine Feiertage (24/7)
 }
