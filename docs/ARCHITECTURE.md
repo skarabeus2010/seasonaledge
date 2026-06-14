@@ -4,11 +4,15 @@
 
 ## Frontend-Architektur (wichtig)
 
-**Haupt-Frontend = statische HTML-App unter `landing/`** (nginx serviert direkt),
-NICHT mehr primär Streamlit. Die Charts/Analysen werden **client-seitig in JS**
-gerechnet (`landing/js/*-compute.js`, ApexCharts), gespeist aus vorberechnetem
-JSON (`landing/data/`) + direkten Supabase-Reads (anon). Streamlit läuft nur noch
-als Legacy unter `/app/`. EN-Version statisch vorgerendert nach `landing/en/`.
+**Das gesamte Frontend = statische HTML-App unter `landing/`** (nginx serviert direkt).
+Die Charts/Analysen werden **client-seitig in JS** gerechnet (`landing/js/*-compute.js`,
+ApexCharts), gespeist aus vorberechnetem JSON (`landing/data/`) + direkten
+Supabase-Reads (anon). EN-Version statisch vorgerendert nach `landing/en/`.
+
+**Streamlit wird produktseitig NICHT (mehr) genutzt** — `landing/` verlinkt nirgends auf
+`/app/`. `seasonal_app.py` + `pages/*.py` existieren nur noch, weil der `streamlit run`-
+Prozess der **Haupt-/Keep-alive-Prozess des `app`-Containers** ist (hält ihn am Leben,
+damit die Crons via `docker exec` reinkommen). Der nginx-`/app/`-Proxy ist vestigial.
 
 ## Daten-Pipeline (Backend)
 
@@ -22,7 +26,7 @@ nightly_refresh.py (Mo–Fr) — Phasen A..Z: market_events, monthly_stats, ki_s
    Weekly-Newsletter, Polymarket, Brier
 intraday_refresh.py (stündlich) — nur prices, gruppen-/zeitfenster-gesteuert
         ↓
-abgeleitete Tabellen  →  Frontend (landing/js, client-seitige Berechnung) + Streamlit /app/
+abgeleitete Tabellen  →  Frontend (landing/js, client-seitige Berechnung + Supabase-Reads)
 ```
 
 ⚠️ ML-Pipeline (DTW/Prophet/NeuralProphet/Chronos) wurde KW16 stillgelegt; `ki_score.py`
@@ -476,7 +480,7 @@ Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`
 | `/blog/`, `/en/blog/` | `blog/output/` (DE/EN, serverseitig gebaut) |
 | `/analyse/{slug}` | `seo/output/{slug}.html` (programmatic SEO) |
 | `/sitemap.xml`, `/robots.txt` | `seo/output/` |
-| `/app/` | Streamlit App (Legacy, Reverse Proxy) |
+| `/app/` | Streamlit (vestigial — produktseitig ungenutzt; läuft nur als Container-Keep-alive) |
 
 ⚠️ Nginx-Config-Änderung aktivieren: `docker compose restart nginx` (NICHT `nginx -s reload` — Single-File-Bind-Mount hängt am alten Inode). Reine HTML/Asset-Änderungen: `git pull` reicht.
 

@@ -1,18 +1,20 @@
 # CLAUDE.md — SeasonAlpha
 
-> Version 38.0 | 2026-06-13 | EN Pre-Rendering (statisch `landing/en/`, deployed) + ~70 i18n-Mixed-Content-Defekte gefixt + verify_en.py + Deploy-Lessons
+> Version 39.0 | 2026-06-14 | Ticker-Universum 270→324 (Dow-30/DAX-40 vollständig, Orphan-Adoption, SAP→SAP.DE) + DB-Vollständigkeits-Audit/Onboarding-Guardrails + Klarstellung: **Streamlit produktseitig ungenutzt** (nur Container-Keep-alive), `landing/` = Frontend
 
 ## Projekt
 
 **SeasonAlpha** — Web-Plattform für saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).
-Freemium + Premium. Phase 1: Streamlit + Supabase + Stripe. Domain: `seasonalpha.ai`.
+Freemium + Premium. **Frontend = statische HTML-App (`landing/`)** + Supabase + Stripe. Domain: `seasonalpha.ai`.
+**Streamlit wird produktseitig NICHT genutzt** (kein `/app/`-Link im Frontend); `seasonal_app.py` läuft nur noch als Keep-alive-Hauptprozess des `app`-Containers, damit die Crons via `docker exec` reinkommen.
 
 ## Entwicklung
 
 ```
 Pfad:   C:\Dev\Seasonaledge\
-Start:  py -m streamlit run seasonal_app.py
-Python: PowerShell → immer `py -m` (nicht `python`)
+Frontend: landing/ = statisches HTML (nginx serviert; KEIN Server-Start nötig)
+Python: lokal `py -3.14` (= Container-Version), für Skripte/Backfills
+Streamlit: legacy/ungenutzt (`py -m streamlit run seasonal_app.py` nur falls man die Alt-App wirklich braucht)
 Server: ssh root@178.104.75.46  (Docker: seasonalpha-app / seasonalpha-nginx / seasonalpha-certbot)
 Host-Pfad: /opt/seasonaledge
 ```
@@ -20,11 +22,11 @@ Host-Pfad: /opt/seasonaledge
 ## Projektstruktur (High-Level)
 
 ```
-seasonal_app.py          ← Streamlit-Startseite (Legacy, unter /app/)
+seasonal_app.py          ← Streamlit (UNGENUTZT — nur Keep-alive-Prozess des app-Containers)
 shared/                  ← Berechnungs-/Daten-/UI-Module (siehe Module-Liste unten)
-scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime)
-pages/                   ← Streamlit Pages (Light Live + _disabled/)
-landing/                 ← Statische HTML-App (Haupt-Frontend)
+scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime, Audit)
+pages/                   ← Streamlit Pages (Legacy, ungenutzt)
+landing/                 ← Statische HTML-App (= DAS Frontend)
   pages/                 ← 29 HTML-Feature-Pages
   js/                    ← JS-Module (shared compute + charts + i18n)
   i18n/                  ← de.json + en.json (1222 Keys, seit KW24)
@@ -50,7 +52,7 @@ docs/                    ← Ausgelagerte Dokumentation
 
 Prozentuale Renditen normiert auf 100 — NICHT absolute Preisänderungen. Jedes Jahr startet bei 100, tägliche Returns kumulieren darauf. **Niemals** TradingView-Methode (`close - close[lookback]`).
 
-## Import-Header (PFLICHT in jeder Streamlit-Page)
+## Import-Header (nur Streamlit-Pages — Legacy/ungenutzt)
 
 ```python
 import sys, os, pathlib
@@ -109,7 +111,7 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 
 ### Deployment / Mobile
 
-- Landing Page statisches HTML (nginx direkt). Streamlit unter `/app/`
+- Frontend = statisches HTML (`landing/`, nginx direkt). Streamlit `/app/` ist vestigial (nur Container-Keep-alive, produktseitig ungenutzt)
 - Neue Pages: `loadComponent('nav-container', ...)` für Nav — NICHT manueller fetch (umgeht `initNav()` → Burger tot auf Mobile)
 - Supabase-Credentials Inline-Script MUSS VOR `app.js` in jeder Page: `<script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>`
 - Cache-Strategie: Nginx `/landing/*.{css,js}` → `max-age=0, must-revalidate` + ETag. `deploy/inject_credentials.sh` hängt `?v=<git-short-sha>` an alle CSS/JS-Refs
@@ -145,7 +147,7 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 
 ## Architektur-Prinzipien
 
-- Berechnungen → `shared/`, UI → `pages/` oder `landing/pages/`. Kein Copy-Paste zwischen Pages
+- Berechnungen → `shared/`, UI → `landing/pages/` (statisches HTML). Kein Copy-Paste zwischen Pages
 - Chart-Styling nur via `apply_se_theme()` / `apply_se_heatmap_theme()`
 - Alle Sektionen in Expander (Default ON/OFF je nach Relevanz)
 - `info_badge` deprecated → Erklärungen auf `pages/10_Methodik.py` (Quelle: `info_texts.yaml`)
