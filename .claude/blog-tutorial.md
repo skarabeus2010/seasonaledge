@@ -263,14 +263,20 @@ Der Blog-Builder konvertiert Markdown-Tabellen automatisch in gestylte HTML-Tabe
 
 ## Verfügbare Chart-Tags
 
-| Tag | Beschreibung |
-|-----|-------------|
-| `{{chart:seasonal_yearly:TICKER:JAHRE}}` | Saisonaler Jahresverlauf |
-| `{{chart:monthly_heatmap:TICKER:JAHRE}}` | Monats-Rendite Heatmap |
-| `{{chart:weekday_bars:TICKER:JAHRE}}` | Wochentag-Performance |
-| `{{chart:tom_effect:TICKER:JAHRE}}` | Turn-of-Month Effekt |
+| Tag | Beschreibung | Passt zu Thema |
+|-----|-------------|----------------|
+| `{{chart:seasonal_yearly:TICKER:JAHRE}}` | Saisonaler Jahresverlauf (normiert, ±1σ) | Gesamtsaisonalität, „typisches Jahr" |
+| `{{chart:monthly_cycle:TICKER:JAHRE}}` | Ø-Rendite je Kalendermonat (Balken, akt. Monat hervorgehoben) | „Monat X stark/schwach", Monatszyklus |
+| `{{chart:monthly_heatmap:TICKER:JAHRE}}` | Monatsrendite je Jahr (Heatmap) | Konsistenz eines Monats über Jahre |
+| `{{chart:weekday_bars:TICKER:JAHRE}}` | Ø-Tagesrendite je Wochentag (Mo-Fr) | Wochentag-Effekte |
+| `{{chart:tom_effect:TICKER:JAHRE}}` | Turn-of-Month Kurve um den Monatswechsel | Monatswechsel / Turn-of-Month |
+| `{{chart:decade_cycle:TICKER:JAHRE}}` | Ø-Jahresrendite je Jahrzehnt-Jahr (0–9) | Dekadenzyklus |
 
 Beispiel: `{{chart:seasonal_yearly:^GSPC:20}}` → S&P 500 Jahresverlauf, 20 Jahre.
+Beispiel: `{{chart:monthly_cycle:GOOGL:15}}` → GOOGL Ø-Rendite je Monat, 15 Jahre (Juli hervorgehoben).
+
+Alle 6 Typen werden beim Build serverseitig aus den SeasonAlpha-Supabase-Daten gerendert
+(interaktives Plotly, DE/EN-Titel automatisch). Builder: `blog/blog_builder.py::_CHART_BUILDERS`.
 
 ---
 
