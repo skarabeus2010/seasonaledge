@@ -161,22 +161,87 @@ XETRA — da XETRA am 31.12. geschlossen). Reset zum Jahreswechsel. Nur Handelst
 
 ---
 
-## Regel 7 — OPEX (Options Expiration)
+## Regel 7 — OPEX (Options Expiration) — **börsenspezifisch**
 
-Jeder **3. Freitag im Monat**. Ist dieser 3. Freitag ein **Börsenfeiertag (NYSE)**,
-dann OPEX auf den **vorherigen Handelstag** (i.d.R. Donnerstag davor).
-**Triple/Quadruple Witching:** März/Juni/September/Dezember.
+### 7.1 Grundregel
+Standard-Optionsverfall = **3. Freitag des Monats**. OPEX ist **kein Kalender-,
+sondern ein Börsen-Ereignis** → der relevante Feiertagskalender ist der der
+**Options-/Terminbörse**, nicht der des Heimatlands des Basiswerts.
 
-> Beispiel 2026-06: 3. Freitag = 19.06. = Juneteenth (NYSE zu) → OPEX = 18.06.
-> (Frontend: `_adjOpex()` in `dashboard.html`.)
+### 7.2 Feiertags-Anpassung (pro Börse unterschiedlich!)
+Ist der 3. Freitag an der zuständigen Börse ein **Feiertag**, verschiebt sich der
+Verfall (= letzter Handelstag) auf den **vorherigen Handelstag** (rekursiv, falls
+auch dieser Feiertag). **Welche Feiertage gelten, hängt von der Börse ab** — und
+genau deshalb können US- und DE-OPEX am selben Monatsdritten-Freitag differieren.
+
+### 7.3 US — CBOE / OCC (NYSE-Kalender) · *implementiert*
+- Aktien-/Index-Optionen (SPX, SPY, Einzelwerte): 3. Freitag, NYSE-Kalender.
+- Im 3.-Freitag-Fenster (15.–21.) können in den USA **nur zwei** Feiertage auf
+  einen Freitag fallen: **Good Friday** und **Juneteenth (19.6., seit 2022)**.
+- Impl.: `shared/nyse_holidays.py::get_opex_date()` (generisch via
+  `is_nyse_holiday`), Frontend `landing/pages/opex.html` + `dashboard.html::_adjOpex()`.
+
+### 7.4 DE — EUREX (XETRA-Kalender) · *spezifiziert, (noch) nicht implementiert*
+- DAX-/EURO-STOXX-50-/Einzelwert-Optionen handeln an der **EUREX**; deren
+  Handelskalender = **XETRA-Kalender** (Deutsche Börse).
+- Verfall ebenfalls **3. Freitag**; Feiertags-Anpassung über den **XETRA**-Kalender.
+- DAX-Options-Schlussabrechnung: aus der **Xetra-Intraday-Auktion** (~13:00 MEZ)
+  des 3. Freitags.
+- Im 3.-Freitag-Fenster kann in DE **nur Good Friday** auf einen Freitag fallen
+  (Mai 1/Oct 3/24./31.12. liegen außerhalb des 15.–21.-Fensters, Himmelfahrt/
+  Pfingstmontag sind Do/Mo). → DE verschiebt OPEX **ausschließlich** an Good Friday.
+
+### 7.5 Divergenz US ↔ DE (Kernpunkt)
+Da **Good Friday beide** Börsen schließt (→ beide auf Do verschoben, **keine**
+Divergenz), bleibt als **einzige** Divergenzquelle **Juneteenth** (US-Feiertag,
+in DE normaler Handelstag):
+
+| Monat | 3. Freitag | US (CBOE/NYSE) | DE (EUREX/XETRA) | Divergenz? |
+|---|---|---|---|---|
+| 2025-04 | 18.04. = Good Friday | → Do **17.04.** | → Do **17.04.** | nein (beide zu) |
+| 2026-06 | 19.06. = Juneteenth | → Do **18.06.** | Fr **19.06.** (XETRA offen) | **ja** |
+| Normalmonat | z.B. 20.03.2026 | Fr 20.03. | Fr 20.03. | nein |
+
+→ US/DE-OPEX divergieren **nur**, wenn der 3. Freitag = Juneteenth ist (frühestens
+ab 2022). Sonst identisch.
+
+### 7.6 Triple / Quadruple Witching
+**März / Juni / September / Dezember** (Index-Futures + Index-Optionen +
+Aktien-Optionen + Single-Stock-Futures verfallen gleichzeitig) — gilt analog für
+CBOE und EUREX.
 
 ---
 
-## Regel 8 — VIXpiration (VIX-Optionsverfall)
+## Regel 8 — VIXpiration (Volatilitäts-Settlement) — **börsenspezifisch**
 
-VIX-Settlement = **OPEX-Freitag des Monats − 30 Kalendertage** (= i.d.R. Mittwoch).
-Ist der **Basis-OPEX-Freitag ODER der Settlement-Mittwoch** ein NYSE-Feiertag →
-**einen Handelstag früher**.
+### 8.1 VIX — CBOE (NYSE-Kalender) · *implementiert*
+CBOE-Regel (wörtlich): Final Settlement = **der Mittwoch, der 30 Kalendertage vor
+dem 3. Freitag des FOLGEMONATS liegt** (= der Mittwoch 30 Tage vor dem SPX-Verfall,
+auf den sich der VIX bezieht). In dieser Spec referenziert über den
+SPX-Verfallsfreitag: **VIX-Settlement(Referenz-Fr) = Referenz-3.-Freitag − 30
+Kalendertage** (= i.d.R. **Mittwoch im Vormonat**).
+
+### 8.2 Feiertags-Regel (NYSE)
+Ist **der Referenz-3.-Freitag ODER der Settlement-Mittwoch** ein NYSE-Feiertag →
+Settlement **einen Handelstag früher** (= Dienstag; rekursiv). **Letzter
+Handelstag** der VIX-Kontrakte = **Dienstag vor dem Settlement-Mittwoch**.
+
+> Wichtig: Es zählt auch der **Referenz-Freitag** (liegt einen Monat *nach* dem
+> Settlement). Beispiele:
+> - **04/2025** (Referenz 18.04. = Good Friday): 18.04.−30 = Mi 19.03. → da
+>   Referenz-Fr Feiertag → **Di 18.03.**
+> - **06/2026** (Referenz 19.06. = Juneteenth): 19.06.−30 = Mi 20.05. → da
+>   Referenz-Fr Feiertag → **Di 19.05.**
+>
+> Impl.: `landing/pages/vixpiration.html::getVixpirationDateStr()` (NYSE-Kalender).
+
+### 8.3 VSTOXX / V2X — EUREX (Euronext-/EUREX-Kalender) · *Analog, nicht getrackt*
+Europäisches Pendant zum VIX (Volatilität des EURO STOXX 50). Settlement-Logik
+analog: **30 Tage vor dem EURO-STOXX-50-Optionsverfall** (3. Freitag), Feiertags-
+Anpassung über den **EUREX/Euronext-Kalender** statt NYSE. → kann vom VIX
+abweichen, wenn ein US-Feiertag (z.B. Juneteenth) den VIX-Referenz-Freitag
+verschiebt, den europäischen aber nicht (und umgekehrt). SeasonAlpha trackt
+VSTOXX derzeit **nicht** (kein `^V2X`-Ticker) — hier nur zur Vollständigkeit.
 
 ---
 

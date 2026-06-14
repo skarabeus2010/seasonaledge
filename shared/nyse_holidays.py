@@ -19,9 +19,13 @@
 #   9. Thanksgiving          — 4. Donnerstag im November
 #  10. Christmas Day         — 25. Dezember (Montag wenn So, Freitag wenn Sa)
 #
-# OPEX-Relevanz:
-#   Nur Good Friday kann auf den 3. Freitag (OPEX) fallen.
-#   In diesem Fall verschiebt die NYSE den Verfall auf Donnerstag.
+# OPEX-Relevanz (siehe docs/TRADING_CALENDAR_RULES.md Regel 7):
+#   Im 3.-Freitag-Fenster (15.-21.) koennen NUR zwei US-Feiertage auf einen
+#   Freitag fallen: Good Friday und Juneteenth (19.6., seit 2022). In beiden
+#   Faellen verschiebt die NYSE den Verfall auf den vorherigen Handelstag (Do).
+#   get_opex_date() prueft generisch via is_nyse_holiday (deckt beide ab).
+#   Hinweis: An Juneteenth weicht US-OPEX von DE-OPEX (EUREX/XETRA) ab — XETRA
+#   handelt den Tag normal. Good Friday schliesst beide Boersen (keine Divergenz).
 #
 # Import-Beispiel:
 #   from shared.nyse_holidays import get_nyse_holidays, is_nyse_holiday
