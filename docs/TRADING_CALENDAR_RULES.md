@@ -266,6 +266,69 @@ VSTOXX derzeit **nicht** (kein `^V2X`-Ticker) — hier nur zur Vollständigkeit.
 
 ---
 
+## Regel 9 — Events: nationale Feiertage + Notenbank-Sitzungen
+
+### 9.1 Nationale Feiertage sind **ticker-/börsenspezifisch**
+Feiertage sind **national** und gelten nur für die Börse des jeweiligen Tickers
+(= Auflösung wie Regel 1). Der DAX (`^GDAXI`, XETRA) ruht z.B. am **1. Mai** und
+**3. Oktober**, der S&P 500 (NYSE) nicht; umgekehrt handelt XETRA an Thanksgiving.
+→ In der Event-/Kalender-Anzeige eines Tickers **nur die Feiertage seiner Börse**
+zeigen (`market_calendar.populate_holidays` erzeugt pro Börse getrennte Rows mit
+`exchange`-Tag; `get_events(exchanges=[...])` filtert). Beispiel-Divergenzen siehe
+Regel-1-Kalenderliste (XETRA 1.5./3.10./Pfingstmontag/24.+31.12.; Euronext nur
+6 Tage; SIX Bundesfeier 1.8. + Christi Himmelfahrt; Stockholm Midsommar etc.).
+
+### 9.2 Notenbank-Sitzungen sind **regions-/währungsspezifisch**
+
+**Verlinkung Ticker → Notenbank** folgt dem **Handelsplatz / der Handelswährung**
+(wie der Feiertagskalender, Regel 1) — **NICHT** der Heimatwährung. Beispiel: `NVO`
+ist ein US-ADR (`SYMBOLS["währung"]="DKK"`), wird aber als USD an der NYSE gehandelt
+→ **Fed**. Implementierung: `central_banks.central_banks_for_ticker(ticker)`:
+- **FX (`=X`):** beide Paar-Währungen → beide Notenbanken (z.B. `AUDUSD=X` → RBA+Fed).
+- **Krypto (`-USD`):** keine.
+- **sonst:** `get_exchange_for_holidays(ticker)` → Börse → Notenbank.
+
+| Region / Währung | Notenbank | Quelle | Datenquelle im Code | Termine bis |
+|---|---|---|---|---|
+| USA / USD (auch ADRs, Futures) | **Fed (FOMC)** | federalreserve.gov | `fed_dates.py::FOMC_MEETING_DATES` | **2028-01** ✓ |
+| Eurozone / EUR (DE, FR, IT, ES, NL) | **EZB / ECB** | ecb.europa.eu | `ECB_MEETING_DATES` | **2027** ✓ |
+| UK / GBP (`.L`) | **BoE (MPC)** | bankofengland.co.uk | `BOE_MEETING_DATES` | **2027** ✓ |
+| Japan / JPY (`.T`, `^N225`) | **BoJ** | boj.or.jp | `BOJ_MEETING_DATES` | **2026** ✓ |
+| Schweiz / CHF (`.SW`, `^SSMI`) | **SNB** | snb.ch | `SNB_MEETING_DATES` | **2026-06** ⚠ (Sep/Dez TODO) |
+| Kanada / CAD (`USDCAD=X`) | **BoC** | bankofcanada.ca | `BOC_MEETING_DATES` | **2026** ✓ |
+| Australien / AUD (`AUDUSD=X`) | **RBA** | rba.gov.au | `RBA_MEETING_DATES` | **2026** ✓ |
+| Neuseeland / NZD (`NZDUSD=X`) | **RBNZ** | rbnz.govt.nz | `RBNZ_MEETING_DATES` | **2026** ✓ |
+| China / CNY | **PBoC** | pbc.gov.cn | — (monatl. LPR, ~20.) | **fehlt (TODO)** |
+| Schweden / SEK (`.ST`) | **Riksbank** | riksbank.se | — | **fehlt (TODO)** |
+| Norwegen / NOK | **Norges Bank** | norges-bank.no | — | **fehlt (TODO)** |
+| Dänemark / DKK | **Nationalbanken** | nationalbanken.dk | — | **fehlt (TODO)** |
+| Hongkong / HKD (`^HSI`) | **HKMA** (USD-Peg → folgt Fed) | hkma.gov.hk | — | **fehlt (TODO)** |
+| Südkorea / KRW (`^KS11`) | **BoK** | bok.or.kr | — | **fehlt (TODO)** |
+
+**Konventionen:**
+- Gespeichertes Datum = **Entscheidungs-/Bekanntgabetag** (bei zweitägigen
+  Sitzungen der **2. Tag**: FOMC/BoJ/RBA Tag 2; ECB/BoE der Donnerstag; BoC/RBNZ
+  der publizierte Termin).
+- **Italien u.a. Eurozonen-Länder haben KEINE eigene geldpolitische Notenbank
+  mehr → immer EZB.** „Banca d'Italia" macht keine eigene Zinspolitik.
+- **PBoC** hat keinen diskreten Jahres-Sitzungskalender wie die anderen, sondern
+  fixt den **LPR monatlich am ~20.** (nächster Werktag bei Feiertag) → regelbasiert,
+  daher (noch) nicht als Terminliste gepflegt.
+- Im Event-Schema sind CB-Termine mit `exchange="ALL"` + `meta={bank,currency}`
+  getaggt — die Ticker-Zuordnung erfolgt über `meta.currency` bzw.
+  `central_banks_for_ticker()`.
+- **SNB-Warnung:** Termine folgen KEINEM festen Wochentag (2025: Sep = 4. Do,
+  Dez = 2. Do) → Sep/Dez **nicht extrapolieren**, nur offiziell Publiziertes.
+
+**Pflege (`wir brauchen die Termine maximal weit in die Zukunft`):**
+Notenbanken publizieren 1–2 Jahre im Voraus. Bei Updates die **offiziellen**
+Seiten prüfen, neue Jahre anhängen — **NIE schätzen** (forward-Termine ändern sich;
+nur Publiziertes übernehmen; siehe die 2026-Korrekturen, bei denen 5 von 8
+ECB/BoJ-Terminen falsch waren). Stand 2026-06-14: Fed→2028-01, ECB/BoE→2027,
+BoJ/BoC/RBA/RBNZ→2026, SNB→2026-06.
+
+---
+
 ## Verifikation (für den Prüf-Agenten)
 
 **Methode:** Pro Ticker `is_trading_day(d, get_exchange_for_holidays(ticker))` über

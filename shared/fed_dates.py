@@ -5,7 +5,7 @@ Alle historischen FOMC-Sitzungstermine (Statement-Datum = Entscheidungstag).
 Bei zweitägigen Meetings ist das Datum der zweite Tag (= Tag der Bekanntgabe).
 
 Quelle: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-Letzte Aktualisierung: 2026-03-08
+Letzte Aktualisierung: 2026-06-14 (2026 offiziell verifiziert + 2027 vorläufig + 2028-01)
 """
 
 # Format: (Jahr, Monat, Tag) — Datum der Zinsentscheidung/Statement
@@ -94,9 +94,14 @@ FOMC_MEETING_DATES = [
     # ── 2025 ──
     (2025, 1, 29), (2025, 3, 19), (2025, 5, 7), (2025, 6, 18),
     (2025, 7, 30), (2025, 9, 17), (2025, 10, 29), (2025, 12, 17),
-    # ── 2026 (geplant) ──
-    (2026, 1, 28), (2026, 3, 18), (2026, 5, 6), (2026, 6, 17),
-    (2026, 7, 29), (2026, 9, 16), (2026, 10, 28), (2026, 12, 16),
+    # ── 2026 (offiziell, federalreserve.gov; Entscheidungstag = 2. Sitzungstag) ──
+    (2026, 1, 28), (2026, 3, 18), (2026, 4, 29), (2026, 6, 17),
+    (2026, 7, 29), (2026, 9, 16), (2026, 10, 28), (2026, 12, 9),
+    # ── 2027 (vorläufig, federalreserve.gov) ──
+    (2027, 1, 27), (2027, 3, 17), (2027, 4, 28), (2027, 6, 9),
+    (2027, 7, 28), (2027, 9, 15), (2027, 10, 27), (2027, 12, 8),
+    # ── 2028 (erster vorläufiger Termin, federalreserve.gov) ──
+    (2028, 1, 26),
 ]
 
 
@@ -108,7 +113,7 @@ def get_fomc_dates():
     return [datetime(y, m, d) for y, m, d in FOMC_MEETING_DATES]
 
 
-def get_fomc_dates_for_years(start_year=2000, end_year=2026):
+def get_fomc_dates_for_years(start_year=2000, end_year=2028):
     """
     Gibt FOMC-Termine für einen bestimmten Jahreszeitraum zurück.
     """

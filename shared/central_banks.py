@@ -143,9 +143,12 @@ ECB_MEETING_DATES = [
     # 2025
     (2025,1,30), (2025,3,6), (2025,4,17), (2025,6,5), (2025,7,24),
     (2025,9,11), (2025,10,30), (2025,12,18),
-    # 2026
-    (2026,1,22), (2026,3,5), (2026,4,16), (2026,6,4), (2026,7,16),
+    # 2026 (offiziell, ecb.europa.eu; Entscheidungstag = Do, 2. Sitzungstag)
+    (2026,2,5), (2026,3,19), (2026,4,30), (2026,6,11), (2026,7,23),
     (2026,9,10), (2026,10,29), (2026,12,17),
+    # 2027 (offiziell, ecb.europa.eu)
+    (2027,2,4), (2027,3,18), (2027,4,29), (2027,6,10), (2027,7,22),
+    (2027,9,9), (2027,10,28), (2027,12,16),
 ]
 
 
@@ -176,9 +179,12 @@ BOE_MEETING_DATES = [
     # 2025
     (2025,2,6), (2025,3,20), (2025,5,8), (2025,6,19), (2025,8,7),
     (2025,9,18), (2025,11,6), (2025,12,18),
-    # 2026
-    (2026,2,5), (2026,3,19), (2026,5,7), (2026,6,18), (2026,8,6),
+    # 2026 (offiziell, bankofengland.co.uk; Ankündigung = Do)
+    (2026,2,5), (2026,3,19), (2026,4,30), (2026,6,18), (2026,7,30),
     (2026,9,17), (2026,11,5), (2026,12,17),
+    # 2027 (vorläufig, bankofengland.co.uk)
+    (2027,2,4), (2027,3,18), (2027,4,29), (2027,6,17), (2027,7,29),
+    (2027,9,16), (2027,11,4), (2027,12,16),
 ]
 
 
@@ -203,14 +209,123 @@ BOJ_MEETING_DATES = [
     # 2025
     (2025,1,24), (2025,3,14), (2025,5,1), (2025,6,17), (2025,7,31),
     (2025,9,19), (2025,10,30), (2025,12,19),
-    # 2026
-    (2026,1,22), (2026,3,13), (2026,4,28), (2026,6,16), (2026,7,17),
-    (2026,9,17), (2026,10,29), (2026,12,18),
+    # 2026 (offiziell, boj.or.jp; Entscheidungstag = 2. Sitzungstag)
+    (2026,1,23), (2026,3,19), (2026,4,28), (2026,6,16), (2026,7,31),
+    (2026,9,18), (2026,10,30), (2026,12,18),
+    # 2027: von der BoJ noch nicht veröffentlicht (Stand 2026-06)
 ]
 
 
 def get_boj_dates():
     return [datetime(y, m, d) for y, m, d in BOJ_MEETING_DATES]
+
+
+# ══════════════════════════════════════════════════════════════
+# SNB (Schweizerische Nationalbank) — CHF, vierteljährliche Lagebeurteilung
+# ══════════════════════════════════════════════════════════════
+# Quelle: snb.ch. Quartalsweise (Mär/Jun/Sep/Dez), Termin = Bekanntgabetag.
+# ACHTUNG: SNB-Termine folgen KEINEM festen Wochentags-Muster (2025: Sep 25 = 4.
+# Do, Dez 11 = 2. Do) → NICHT extrapolieren, nur offiziell Bestätigtes eintragen.
+SNB_MEETING_DATES = [
+    # 2026 (snb.ch; Sep + Dez noch nicht offiziell publiziert → TODO)
+    (2026, 3, 19), (2026, 6, 18),
+]
+
+
+def get_snb_dates():
+    return [datetime(y, m, d) for y, m, d in SNB_MEETING_DATES]
+
+
+# ══════════════════════════════════════════════════════════════
+# BoC (Bank of Canada) — CAD, 8 feste Termine/Jahr (Mi)
+# ══════════════════════════════════════════════════════════════
+BOC_MEETING_DATES = [
+    # 2026 (offiziell, bankofcanada.ca)
+    (2026, 1, 28), (2026, 3, 18), (2026, 4, 29), (2026, 6, 10),
+    (2026, 7, 15), (2026, 9, 2), (2026, 10, 28), (2026, 12, 9),
+]
+
+
+def get_boc_dates():
+    return [datetime(y, m, d) for y, m, d in BOC_MEETING_DATES]
+
+
+# ══════════════════════════════════════════════════════════════
+# RBA (Reserve Bank of Australia) — AUD, 8 Sitzungen/Jahr (Entscheid = 2. Tag)
+# ══════════════════════════════════════════════════════════════
+RBA_MEETING_DATES = [
+    # 2026 (offiziell, rba.gov.au; Entscheidungstag = 2. Sitzungstag)
+    (2026, 2, 3), (2026, 3, 17), (2026, 5, 5), (2026, 6, 16),
+    (2026, 8, 11), (2026, 9, 29), (2026, 11, 3), (2026, 12, 8),
+]
+
+
+def get_rba_dates():
+    return [datetime(y, m, d) for y, m, d in RBA_MEETING_DATES]
+
+
+# ══════════════════════════════════════════════════════════════
+# RBNZ (Reserve Bank of New Zealand) — NZD, 7 OCR-Entscheide/Jahr
+# ══════════════════════════════════════════════════════════════
+RBNZ_MEETING_DATES = [
+    # 2026 (offiziell, rbnz.govt.nz)
+    (2026, 2, 18), (2026, 4, 8), (2026, 5, 27), (2026, 7, 8),
+    (2026, 9, 2), (2026, 10, 28), (2026, 12, 9),
+]
+
+
+def get_rbnz_dates():
+    return [datetime(y, m, d) for y, m, d in RBNZ_MEETING_DATES]
+
+
+# ══════════════════════════════════════════════════════════════
+# TICKER → NOTENBANK-VERLINKUNG
+# ══════════════════════════════════════════════════════════════
+# Die relevante Notenbank folgt dem HANDELSPLATZ/der Handelswährung (wie der
+# Feiertagskalender, Regel 1) — NICHT der Heimatwährung (SYMBOLS["währung"] ist
+# bei ADRs die Heimatwährung, z.B. NVO=DKK, obwohl als USD-ADR an der NYSE
+# gehandelt → Fed). Daher Ableitung über get_exchange_for_holidays(ticker).
+
+EXCHANGE_TO_CENTRAL_BANK = {
+    "NYSE": "Fed", "NASDAQ": "Fed",
+    "XETRA": "ECB", "EURONEXT": "ECB", "MILAN": "ECB",
+    "LSE": "BoE", "SIX": "SNB", "STOCKHOLM": "Riksbank", "TSE": "BoJ",
+}
+
+CURRENCY_TO_CENTRAL_BANK = {
+    "USD": "Fed", "EUR": "ECB", "GBP": "BoE", "JPY": "BoJ", "CHF": "SNB",
+    "CAD": "BoC", "AUD": "RBA", "NZD": "RBNZ", "CNY": "PBoC",
+    "SEK": "Riksbank", "NOK": "Norges Bank", "DKK": "Nationalbanken",
+    "KRW": "BoK", "HKD": "HKMA",
+}
+
+# Notenbanken mit gepflegtem Sitzungskalender in diesem Modul:
+TRACKED_CENTRAL_BANKS = {"Fed", "ECB", "BoE", "BoJ", "SNB", "BoC", "RBA", "RBNZ"}
+
+
+def central_banks_for_ticker(ticker: str) -> list[str]:
+    """Relevante Notenbank(en) für einen Ticker (über Handelsplatz/Währung).
+
+    - FX (=X): beide Paar-Währungen → beide Notenbanken (z.B. AUDUSD=X → RBA+Fed).
+    - Krypto (-USD): keine.
+    - sonst: Handelsplatz (get_exchange_for_holidays) → Notenbank.
+    """
+    t = ticker.upper()
+    if t.endswith("-USD"):
+        return []
+    if t.endswith("=X"):
+        base = t[:-2]
+        if len(base) >= 6:
+            banks = {CURRENCY_TO_CENTRAL_BANK.get(base[:3]),
+                     CURRENCY_TO_CENTRAL_BANK.get(base[3:6])}
+            return sorted(b for b in banks if b)
+        return []
+    try:
+        from shared.symbols import get_exchange_for_holidays
+        bank = EXCHANGE_TO_CENTRAL_BANK.get(get_exchange_for_holidays(ticker))
+        return [bank] if bank else []
+    except Exception:
+        return []
 
 
 # ══════════════════════════════════════════════════════════════

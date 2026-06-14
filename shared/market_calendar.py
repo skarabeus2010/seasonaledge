@@ -19,6 +19,9 @@ from shared.exchange_holidays import (
     _compute_lse_holidays,
     _compute_euronext_holidays,
     _compute_tse_holidays,
+    _compute_six_holidays,
+    _compute_milan_holidays,
+    _compute_stockholm_holidays,
 )
 from shared.central_banks import (
     FED_RATE_CHANGES,
@@ -26,6 +29,10 @@ from shared.central_banks import (
     ECB_MEETING_DATES,
     BOE_MEETING_DATES,
     BOJ_MEETING_DATES,
+    SNB_MEETING_DATES,
+    BOC_MEETING_DATES,
+    RBA_MEETING_DATES,
+    RBNZ_MEETING_DATES,
 )
 
 
@@ -37,6 +44,9 @@ _EXCHANGE_COMPUTE = {
     "LSE":      _compute_lse_holidays,
     "EURONEXT": _compute_euronext_holidays,
     "TSE":      _compute_tse_holidays,
+    "SIX":        _compute_six_holidays,
+    "MILAN":      _compute_milan_holidays,
+    "STOCKHOLM":  _compute_stockholm_holidays,
 }
 
 
@@ -118,7 +128,7 @@ def populate_central_bank(year: int) -> list[dict]:
                     "event_name": "FOMC Meeting",
                     "exchange": "ALL",
                     "subtype": "rate_decision",
-                    "meta": {},
+                    "meta": {"bank": "Fed", "currency": "USD"},
                     "year": year,
                 })
     except ImportError:
@@ -150,44 +160,30 @@ def populate_central_bank(year: int) -> list[dict]:
                 "year": year,
             })
 
-    # ECB
-    for y, m, d in ECB_MEETING_DATES:
-        if y == year:
-            rows.append({
-                "event_date": date(y, m, d).isoformat(),
-                "event_type": "central_bank",
-                "event_name": "ECB Meeting",
-                "exchange": "ALL",
-                "subtype": "rate_decision",
-                "meta": {},
-                "year": year,
-            })
-
-    # BOE
-    for y, m, d in BOE_MEETING_DATES:
-        if y == year:
-            rows.append({
-                "event_date": date(y, m, d).isoformat(),
-                "event_type": "central_bank",
-                "event_name": "BOE Meeting",
-                "exchange": "ALL",
-                "subtype": "rate_decision",
-                "meta": {},
-                "year": year,
-            })
-
-    # BOJ
-    for y, m, d in BOJ_MEETING_DATES:
-        if y == year:
-            rows.append({
-                "event_date": date(y, m, d).isoformat(),
-                "event_type": "central_bank",
-                "event_name": "BOJ Meeting",
-                "exchange": "ALL",
-                "subtype": "rate_decision",
-                "meta": {},
-                "year": year,
-            })
+    # Notenbanken mit Sitzungskalender. meta.bank/meta.currency = Verlinkung zum
+    # Ticker (central_banks_for_ticker leitet die relevante Notenbank über den
+    # Handelsplatz/die Währung ab). exchange="ALL", da global einsehbar.
+    _CB_SCHEDULES = [
+        (ECB_MEETING_DATES,  "ECB Meeting",  "EUR", "ECB"),
+        (BOE_MEETING_DATES,  "BOE Meeting",  "GBP", "BoE"),
+        (BOJ_MEETING_DATES,  "BOJ Meeting",  "JPY", "BoJ"),
+        (SNB_MEETING_DATES,  "SNB Meeting",  "CHF", "SNB"),
+        (BOC_MEETING_DATES,  "BOC Meeting",  "CAD", "BoC"),
+        (RBA_MEETING_DATES,  "RBA Meeting",  "AUD", "RBA"),
+        (RBNZ_MEETING_DATES, "RBNZ Meeting", "NZD", "RBNZ"),
+    ]
+    for dates_list, name, currency, bank in _CB_SCHEDULES:
+        for y, m, d in dates_list:
+            if y == year:
+                rows.append({
+                    "event_date": date(y, m, d).isoformat(),
+                    "event_type": "central_bank",
+                    "event_name": name,
+                    "exchange": "ALL",
+                    "subtype": "rate_decision",
+                    "meta": {"bank": bank, "currency": currency},
+                    "year": year,
+                })
 
     return rows
 
