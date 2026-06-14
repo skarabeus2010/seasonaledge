@@ -346,7 +346,13 @@ BoJ/BoC/RBA/RBNZ→2026, SNB→2026-06.
 
 **`py scripts/verify_calendar_rules.py`** prüft alle Regeln deterministisch gegen
 Code + DB und gibt PASS/WARN/FAIL je Check (Exit 1 bei FAIL). Flags: `--no-db`
-(nur Code-Logik), `--rule N`.
+(nur Code-Logik), `--rule N`. DB-Fenster sind **dynamisch** (`date.today()`),
+laufen also im Cron mit.
+
+**Läuft wöchentlich** als zweiter Step im Cron `db_completeness.yml` (So 05:00 UTC)
+→ FAIL lässt den Workflow fehlschlagen (GitHub-Notification). Fängt damit
+automatisch Kalender-Drift **und** zu kurze HKEX/KRX-Tabellen (neue Jahres-Daten
+ohne Tabellen-Eintrag → Gap-Residual über Soll → FAIL).
 
 **Methode (Regel 1/9.1):** Pro Ticker `is_trading_day(d, get_exchange_for_holidays(t))`
 gegen die **realen Handelstage** (DB/Yahoo) abgleichen — **in BEIDE Richtungen**:
