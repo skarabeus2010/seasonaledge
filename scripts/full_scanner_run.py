@@ -29,6 +29,7 @@ Erwartete Laufzeit (Full Mode, 270 Ticker):
 from __future__ import annotations
 
 import argparse
+import gc
 import os
 import pathlib
 import sys
@@ -206,6 +207,10 @@ def run_full_scan(
     errors = 0
     error_details: list[tuple[str, str]] = []
 
+    # OOM-Schutz: download_data ist @st.cache_data → cached jede Voll-Historie im
+    # Memory. Bei 324 Tickern (tiefe Historien) sprengt das den Container (exit 137).
+    from shared.yahoo_downloader import clear_cache
+
     for i, ticker in enumerate(tickers, 1):
         t_ticker = time.time()
         try:
@@ -238,6 +243,13 @@ def run_full_scan(
             elapsed = time.time() - t_ticker
             print(f"  [{i:3d}/{len(tickers)}] {ticker:<14} ERROR             {elapsed:4.1f}s — {str(e)[:80]}")
             app_logger.error(f"full_scanner_run: {ticker}: {e}")
+        finally:
+            # Pro-Ticker Speicher freigeben (sonst OOM/exit 137 ab ~Ticker 69).
+            try:
+                clear_cache()
+            except Exception:
+                pass
+            gc.collect()
 
         # Progress Summary alle N Ticker
         if progress_every > 0 and i % progress_every == 0:
