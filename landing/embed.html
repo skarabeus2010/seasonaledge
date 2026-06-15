@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeasonAlpha Chart</title>
+<!-- Embed-Seite: bewusst minimal, kein Nav/Footer. Von Drittseiten einbettbar.
+     framebar via nginx-Header (CSP frame-ancestors *) — NICHT X-Frame-Options. -->
+<meta name="robots" content="noindex, follow">
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0a0a0e;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #wrap { position:relative; height:100%; box-sizing:border-box;
+    display:flex; flex-direction:column; }
+  #chart { flex:1 1 auto; min-height:0; }
+  #wm { position:absolute; top:8px; right:14px; z-index:5; pointer-events:none;
+    font-size:12px; font-weight:700; letter-spacing:.3px; color:rgba(232,168,32,.55); }
+  #foot { flex:0 0 auto; padding:6px 12px; font-size:11px; line-height:1.3;
+    color:#7a8294; background:#0a0a0e; border-top:1px solid #15151c;
+    display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  #foot a { color:#e8a820; text-decoration:none; }
+  #foot a:hover { text-decoration:underline; }
+  #err { display:none; padding:24px; text-align:center; color:#9ca3af; font-size:13px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="wm">seasonalpha.ai</div>
+  <div id="chart"></div>
+  <div id="err"></div>
+  <div id="foot">
+    <span id="foot-label"></span>
+    <a id="foot-link" href="https://seasonalpha.ai/jahreszyklus" target="_blank" rel="noopener">
+      Interaktiv auf SeasonAlpha &rarr;</a>
+  </div>
+</div>
+
+<script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+<script>
+  // Minimaler SA-Bootstrap (statt komplettem app.js — Embed braucht nur Supabase-Config)
+  window.SA = window.SA || {};
+  SA.supabase = { url: window.__SA_SB_URL || '', key: window.__SA_SB_KEY || '' };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+<script src="/landing/js/charts.js"></script>
+<script src="/landing/js/seasonal-compute.js"></script>
+<script>
+(function () {
+  var P = new URLSearchParams(location.search);
+  var ticker = (P.get('ticker') || 'SPY').trim().toUpperCase();
+  var yearsParam = (P.get('years') || '15').trim();
+  var lang = (P.get('lang') || 'de').toLowerCase() === 'en' ? 'en' : 'de';
+  // type ist aktuell nur seasonal_yearly — Param fuer spaetere Erweiterung reserviert
+  var type = (P.get('type') || 'seasonal_yearly').trim();
+
+  var MONTH_STARTS = [1,32,60,91,121,152,182,213,244,274,305,335];
+  var MONTHS = lang === 'en'
+    ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    : ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  var T = lang === 'en'
+    ? { avg:'Seasonal Avg', band:'±1σ', yaxis:'Normalized (Start = 100)',
+        title:function(t,n){ return t + ' — Seasonal Annual Progression (' + n + ' years)'; },
+        foot:function(t){ return 'Seasonality chart ' + t; }, today:'Today',
+        few:function(t,n){ return 'Not enough data for ' + t + ' (' + n + ' rows)'; } }
+    : { avg:'Saisonaler Ø', band:'±1σ', yaxis:'Normiert (Start = 100)',
+        title:function(t,n){ return t + ' — Saisonaler Jahresverlauf (' + n + ' Jahre)'; },
+        foot:function(t){ return 'Saisonalitäts-Chart ' + t; }, today:'Heute' ,
+        few:function(t,n){ return 'Zu wenig Daten für ' + t + ' (' + n + ' Zeilen)'; } };
+
+  // Footer-Link auf die passende DE/EN-Seite, mit Ticker-Param
+  var base = lang === 'en' ? 'https://seasonalpha.ai/en/jahreszyklus' : 'https://seasonalpha.ai/jahreszyklus';
+  var pageUrl = base + '?ticker=' + encodeURIComponent(ticker);
+  document.getElementById('foot-link').href = pageUrl;
+  document.getElementById('foot-label').textContent = T.foot(ticker);
+  document.documentElement.lang = lang;
+
+  function showErr(msg){
+    document.getElementById('chart').style.display = 'none';
+    var e = document.getElementById('err'); e.style.display = 'block'; e.textContent = msg;
+  }
+
+  // ── Daten laden (PostgREST, paginiert) — wie auf der Jahreszyklus-Seite ──
+  var dateFilter = '';
+  if (yearsParam !== 'max') {
+    var minY = new Date().getFullYear() - parseInt(yearsParam, 10) - 1;
+    dateFilter = '&date=gte.' + minY + '-01-01';
+  }
+  var allRows = [];
+  function fetchBatch(offset) {
+    var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return&order=date' + dateFilter;
+    return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+      headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key,
+                 'Range': offset + '-' + (offset + 999), 'Prefer': 'count=exact' }
+    }).then(function (r) {
+      var cr = r.headers.get('content-range');
+      return r.json().then(function (rows) {
+        allRows = allRows.concat(rows);
+        if (cr) { var tot = parseInt(cr.split('/')[1], 10); if (allRows.length < tot) return fetchBatch(allRows.length); }
+        else if (rows.length === 1000) return fetchBatch(allRows.length);
+        return allRows;
+      });
+    });
+  }
+
+  if (!SA.supabase.url) { showErr('Config missing'); return; }
+
+  fetchBatch(0).then(function (rows) {
+    if (!rows || rows.length < 500) { showErr(T.few(ticker, (rows || []).length)); return; }
+    var yearData = SA.seasonal.buildYearData(rows);
+    var nYears = Object.keys(yearData).length;
+    var sa = SA.seasonal.calculateSeasonalAverage(yearData);
+    if (!sa.avg.length) { showErr(T.few(ticker, rows.length)); return; }
+
+    var x = []; for (var i = 1; i <= 365; i++) x.push(i);
+    var upper = sa.avg.map(function (v, k) { return Math.round((v + sa.std[k]) * 100) / 100; });
+    var lower = sa.avg.map(function (v, k) { return Math.round((v - sa.std[k]) * 100) / 100; });
+
+    // Heute als Day-of-Year fuer den Marker
+    var now = new Date();
+    var doy = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+
+    var theme = (SA.chartTheme || {});
+    var options = {
+      chart: Object.assign({}, theme.chart || {}, { type: 'line', height: '100%', toolbar: { show: false },
+             animations: { enabled: false }, fontFamily: 'inherit', background: 'transparent' }),
+      series: [
+        { name: T.avg + ' (' + nYears + (lang === 'en' ? 'y' : 'J') + ')', type: 'line', data: sa.avg },
+        { name: '+1σ', type: 'line', data: upper },
+        { name: '-1σ', type: 'line', data: lower }
+      ],
+      colors: ['#4d9fff', 'rgba(77,159,255,.35)', 'rgba(77,159,255,.35)'],
+      stroke: { curve: 'smooth', width: [3, 1.2, 1.2], dashArray: [0, 4, 4] },
+      xaxis: {
+        type: 'numeric', min: 1, max: 365, tickAmount: 12,
+        labels: { formatter: function (val) {
+                    // Tag-im-Jahr → Monat (robust für JEDE Tick-Position, nicht nur exakte Monatsanfänge)
+                    var d = Math.round(val), idx = 0;
+                    for (var m = 11; m >= 0; m--) { if (d >= MONTH_STARTS[m]) { idx = m; break; } }
+                    return MONTHS[idx]; },
+                  style: { colors: '#7a8294', fontSize: '10px' } },
+        axisBorder: { show: false }, axisTicks: { show: false }
+      },
+      yaxis: { labels: { style: { colors: '#7a8294', fontSize: '10px' }, formatter: function (v) { return v.toFixed(0); } },
+               title: { text: T.yaxis, style: { color: '#7a8294', fontSize: '10px', fontWeight: 400 } } },
+      grid: { borderColor: 'rgba(255,255,255,.06)', strokeDashArray: 3 },
+      legend: { show: true, position: 'top', labels: { colors: '#9ca3af' }, fontSize: '11px',
+                markers: { width: 10, height: 10 }, itemMargin: { horizontal: 8 } },
+      tooltip: { theme: 'dark', x: { formatter: function (val) {
+                   var d = new Date(now.getFullYear(), 0, Math.round(val));
+                   return MONTHS[d.getMonth()] + ' ' + d.getDate(); } },
+                 y: { formatter: function (v) { return v != null ? v.toFixed(1) : ''; } } },
+      annotations: {
+        yaxis: [{ y: 100, borderColor: 'rgba(255,255,255,.18)', strokeDashArray: 4 }],
+        xaxis: [{ x: doy, borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 3,
+                  label: { text: T.today, style: { color: '#0a0a0e', background: 'rgba(232,168,32,.85)', fontSize: '9px' } } }]
+      },
+      title: { text: T.title(ticker, nYears), align: 'left',
+               style: { color: '#e6e6ea', fontSize: '13px', fontWeight: 600 } }
+    };
+    new ApexCharts(document.getElementById('chart'), options).render();
+  }).catch(function (err) { showErr('Error: ' + (err && err.message ? err.message : err)); });
+})();
+</script>
+</body>
+</html>
