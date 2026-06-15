@@ -44,23 +44,62 @@ Schreibe `docs/growth/<YYYY-MM-DD>_<slug>_distribution.md` mit:
 - **X/LinkedIn** (DE + EN): aus den `social/`-Snippets verfeinert — X knackig (≤280, Hashtags
   #Börse #DAX #Saisonalität), LinkedIn 3-5 Sätze + Frage. Optional Mastodon/Bluesky-Variante.
 - Je Plattform: empfohlener **Posting-Zeitpunkt** (Tutorial-Timing: LinkedIn Di-Do 8-10 Uhr;
-  X 8-9/12-13/17-18 Uhr) + welches **Chart-Bild** anzuhängen (aus `blog/output/<slug>/social/`).
+  X 8-9/12-13/17-18 Uhr) + welcher **Chart** als Bild anzuhängen (Screenshot aus dem Live-Post
+  `seasonalpha.ai/blog/<slug>` — statische Chart-Bilder werden noch nicht generiert).
+- **Chart-Embed-Snippet** — ein einbettbares Chart mit Pflicht-Backlink, das Ziele 1:1 übernehmen
+  können (siehe Abschnitt „Chart-Embeds als Backlink-Hebel").
 - **Klarer Hinweis oben:** „Versandfertige Entwürfe — bitte selbst posten (Accounts/Beziehungen)."
 
 ### Schritt 2 — Outreach-Zielliste + Pitches
 Per WebSearch 5-10 **konkrete Ziele** finden (DE-Finanz-Blogger, Newsletter, Redaktionen wie
 finanzen.net/boerse-online, Saisonalitäts-/Trading-Communities), die **thematisch Ähnliches**
 publiziert haben. Je Ziel: Name/URL, warum es passt (welcher Datenpunkt), und eine **kurze,
-personalisierte Pitch-Mail** (Daten-Hook + Chart-Embed-Angebot + Quellen-Verlinkung, kein
-Werbe-Spam). Anhängen ans Distributions-Paket.
+personalisierte Pitch-Mail** (Daten-Hook + **aktives Chart-Embed-Angebot mit fertigem Snippet** +
+Quellen-Verlinkung, kein Werbe-Spam). Anhängen ans Distributions-Paket. Der **Embed ist das
+stärkste Verlinkungs-Argument** — wer ihn einbettet, verlinkt automatisch und dauerhaft.
 
 ### Schritt 3 — Backlink-/Mention-Monitoring
 Pflege `docs/growth/backlinks.md`: per WebSearch nach `seasonalpha.ai`-Erwähnungen/Links suchen,
 neue Funde mit Datum + Quelle eintragen, Delta zum letzten Lauf melden. (Kein echtes Backlink-Tool
 verfügbar → Web-Such-Heuristik; sag das.)
 
+## Chart-Embeds als Backlink-Hebel
+Eure Charts sind einzigartige Daten-Visualisierungen — als **einbettbares Asset** sind sie der
+sauberste Backlink-Mechanismus: wer den Chart einbettet, übernimmt die **Quellenangabe (= Link)**
+automatisch und dauerhaft. Biete den Embed bei **jedem** Outreach aktiv an und lege ein fertiges
+Snippet ins Paket.
+
+**Pflicht in jedem Embed:** sichtbare Attribution mit Backlink auf den Quell-Post, z. B.
+„Quelle: SeasonAlpha — seasonalpha.ai/blog/<slug>" (DE + EN-Variante bereithalten).
+
+**Zwei Embed-Formen:**
+1. **Interaktiv (iframe, bevorzugt)** — Snippet nach Muster:
+   ```html
+   <iframe src="https://seasonalpha.ai/embed/<chart-typ>/<ticker>?years=<n>"
+           width="100%" height="420" style="border:0" loading="lazy"
+           title="SeasonAlpha — <Beschreibung>"></iframe>
+   <p style="font:13px sans-serif">Quelle:
+     <a href="https://seasonalpha.ai/blog/<slug>">SeasonAlpha — Saisonalitäts-Analyse</a></p>
+   ```
+   ⚠️ **Voraussetzung:** ein standalone Embed-Endpoint `seasonalpha.ai/embed/…` muss existieren
+   (rendert NUR das Plotly-Chart + Attribution, leichtgewichtig, ohne App-Shell). Existiert er
+   noch nicht → das **klar kennzeichnen** und dem User empfehlen, ihn einmalig anzulegen (kleiner
+   Dev-/`seo-seiten-bauer`-Task: Route `/embed/<typ>/<ticker>` → Chart-Builder + Attribution).
+   **Nie so tun, als wäre die URL schon live.**
+2. **Statisch (Fallback, sofort nutzbar)** — Bild-mit-Link zum manuellen Einbetten:
+   ```html
+   <a href="https://seasonalpha.ai/blog/<slug>">
+     <img src="<chart-bild-url>" alt="<Beschreibung>" width="100%"></a>
+   ```
+   Da noch keine Chart-Bilder generiert werden: den Ziel-Betreiber bitten, den Screenshot aus dem
+   Live-Post zu nehmen — oder das Bild beilegen, sobald ein Chart-Bild-Export existiert.
+
+Nenne im Pitch den Nutzen für den Empfänger: „fertig einbettbar, mit Quellenangabe — kostet euch
+10 Sekunden und gibt euren Lesern einen interaktiven Daten-Chart."
+
 ## Harte Regeln
 - **Keine erfundenen Zahlen** — nur die echten Stats aus dem Post (die liefert die Kernergebnisse-Box).
+- **Embed immer mit Attribution-Backlink** — ein Embed ohne Quellen-Link ist wertlos (kein Backlink).
 - **Echte Umlaute** ä ö ü ß im DE-Text; EN natürlich englisch.
 - **Nie selbst posten / nie behaupten, gepostet zu haben.** Du lieferst Entwürfe + Empfehlung.
 - Reddit-Regeln respektieren (self-promotion-Limits) → als Mehrwert-OC framen, Community-Frage.

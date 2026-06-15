@@ -12,7 +12,7 @@
 | **saisonalitaet-scout** | Web nach Saisonalitäts-Forschung scannen → Blog-Ideen | „was gibt's Neues zu Sell in May", „Research-Radar" | `docs/research-radar/` | sonnet |
 | **seo-experte** | SEO-Strategie/Audit (technical, E-E-A-T, Backlinks) | „SEO-Audit", „warum ranken wir nicht", „Backlink-Strategie" | Audit/Plan-Reports | opus |
 | **daten-auditor** | Supabase-Daten auf Frische/Vollständigkeit prüfen | „ist die DB aktuell", „fehlen Ticker", „Daten-Audit" | Ampel-Reports | sonnet |
-| **wachstum-distributor** ⭐neu | Content-Distribution vorbereiten (Reddit/Social/Outreach) → Backlinks | „verteile den Post", „Outreach für die DAX-Studie", „Backlink-Check" | `docs/growth/…_distribution.md` + `backlinks.md` | opus |
+| **wachstum-distributor** ⭐neu | Content-Distribution (Reddit/Social/Outreach) + **einbettbare Charts mit Backlink** anbieten → Backlinks | „verteile den Post", „Outreach für die DAX-Studie", „Chart-Embed anbieten", „Backlink-Check" | `docs/growth/…_distribution.md` + `backlinks.md` | opus |
 | **frontend-qa** ⭐neu | 30+ Pages crawlen: tote Links, i18n, hreflang, Meta, A11y | „QA das Frontend", „tote Links prüfen", „i18n-Check" | `docs/qa/…_frontend_qa.md` | sonnet |
 | **seo-seiten-bauer** ⭐neu | Daten-reiche Ticker-/Themen-Seiten für Long-Tail bauen | „SEO-Seite für AAPL", „programmatic SEO skalieren" | `seo/` / `landing/pages/` | opus |
 | **gsc-analyst** ⭐neu | GSC/GA4 auswerten → priorisierte To-dos für blogger/seo-experte | „was als Nächstes schreiben", „GSC auswerten", „Striking-Distance" | `docs/growth/…_gsc_priorities.md` | sonnet |
