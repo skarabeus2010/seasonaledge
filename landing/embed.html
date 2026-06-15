@@ -112,8 +112,6 @@
     if (!sa.avg.length) { showErr(T.few(ticker, rows.length)); return; }
 
     var x = []; for (var i = 1; i <= 365; i++) x.push(i);
-    var upper = sa.avg.map(function (v, k) { return Math.round((v + sa.std[k]) * 100) / 100; });
-    var lower = sa.avg.map(function (v, k) { return Math.round((v - sa.std[k]) * 100) / 100; });
 
     // Heute als Day-of-Year fuer den Marker
     var now = new Date();
@@ -124,12 +122,10 @@
       chart: Object.assign({}, theme.chart || {}, { type: 'line', height: '100%', toolbar: { show: false },
              animations: { enabled: false }, fontFamily: 'inherit', background: 'transparent' }),
       series: [
-        { name: T.avg + ' (' + nYears + (lang === 'en' ? 'y' : 'J') + ')', type: 'line', data: sa.avg },
-        { name: '+1σ', type: 'line', data: upper },
-        { name: '-1σ', type: 'line', data: lower }
+        { name: T.avg + ' (' + nYears + (lang === 'en' ? 'y' : 'J') + ')', type: 'line', data: sa.avg }
       ],
-      colors: ['#4d9fff', 'rgba(77,159,255,.35)', 'rgba(77,159,255,.35)'],
-      stroke: { curve: 'smooth', width: [3, 1.2, 1.2], dashArray: [0, 4, 4] },
+      colors: ['#4d9fff'],
+      stroke: { curve: 'smooth', width: 3 },
       xaxis: {
         type: 'numeric', min: 1, max: 365, tickAmount: 12,
         labels: { formatter: function (val) {
