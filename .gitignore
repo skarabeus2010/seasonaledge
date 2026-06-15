@@ -7,7 +7,12 @@ logs/
 .env
 .streamlit/secrets.toml
 *.db
-.claude/
+# .claude/ bleibt lokal — AUSSER Subagenten, Skills + deren Doku (versioniert/geteilt)
+.claude/*
+!.claude/agents/
+!.claude/skills/
+!.claude/blog-tutorial.md
+!.claude/methodik-template.md
 .streamlit/
 node_modules/
 __pycache__/
