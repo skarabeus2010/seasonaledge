@@ -10,29 +10,31 @@
 | Disziplin | Note | Befund |
 |---|---|---|
 | Technical SEO | **B+** | Canonicals, hreflang, robots.txt, Sitemap (114 URLs) korrekt. Schema solide (Organization/WebSite/FAQPage/SoftwareApplication/Breadcrumb). |
-| **E-E-A-T / YMYL** | **F 🔴** | **KEIN Impressum, KEINE Datenschutzerklärung, KEIN Über-uns, KEIN realer Autor.** Rechtlich Pflicht (DDG §5/DSGVO) + größter Trust-Blocker. |
+| **Recht / Pflichtseiten** | **B+** ✅ | **`/rechtliches` ist vollständig**: Impressum (§5 DDG, Betreiberin genannt + Anschrift), Datenschutz (14 §§, DSGVO), Risikohinweis DE+EN. Footer-verlinkt, in Sitemap. *(Korrektur: frühere „F"-Bewertung war ein Audit-Fehler — Datei liegt in `landing/` statt `landing/pages/`.)* Offen: nur EN-Version der Seite. |
+| **E-E-A-T (Expertise/Autor)** | **C** | Rechtlich ok, aber das **Vertrauens-/Expertise-Signal** fehlt: keine „Über-uns/Methodik"-Seite (wer/wie wird gerechnet), Blog-Autor = Marke „SeasonAlpha" statt Person/Redaktion mit nachvollziehbarer Kompetenz, kein Person-Schema. |
 | Content | **C** | Blog median ~1050 W (ok), aber Pillar-Seiten dünn (z.B. „was-ist-saisonalitaet" 278 W). 32 Tool-Seiten mit nur ~300 W statischem Text (Wert im JS-Chart, für Googlebot unsichtbar). |
-| **Off-Page / Authority** | **F 🔴** | 0 Backlinks, 0 externe Klicks. Der eigentliche Wachstums-Blocker. |
-| Strukturierte Daten | **B–** | Vorhanden, aber Autor = Marke statt **Person**; **`Dataset`-Schema fehlt** (großer Hebel für eine Datenplattform → Google Dataset Search + Rich Results). |
+| **Off-Page / Authority** | **F 🔴** | 0 Backlinks, 0 externe Klicks. **Der eigentliche Wachstums-Blocker.** |
+| Strukturierte Daten | **B–** | Vorhanden, aber Autor = Marke statt **Person/Redaktion**; **`Dataset`-Schema fehlt** (großer Hebel für eine Datenplattform → Google Dataset Search + Rich Results). |
 
-**Warum „crawled not indexed" (293):** Junge Domain × YMYL-Finanzthema × kein Impressum/
-Autor (Trust) × dünner statischer Content × 0 externe Signale = Google crawlt, stuft als
-„nicht vertrauenswürdig/wertvoll genug" ein und hält die Indexierung zurück. Technik ist
-NICHT die Ursache.
+**Warum „crawled not indexed" (293):** Junge Domain × YMYL-Finanzthema × **0 externe
+Signale/Backlinks** × dünner statischer Content × schwaches Expertise-Signal = Google crawlt,
+stuft als „nicht autoritativ/wertvoll genug" ein und hält die Indexierung zurück. **Rechtlich
+ist alles da** — der Engpass ist **Authority + Content-Tiefe**, nicht die Pflichtseiten.
 
 ## 90-Tage-Plan (priorisiert nach Impact × Aufwand)
 
-### Phase 1 — Fundament & Trust (Tag 1–30) · P0
-*Unblockt YMYL-Indexierung + schafft Rechtssicherheit. Höchster Hebel, kleiner Aufwand.*
-- [ ] **Impressum** (`/impressum`) — rechtlich Pflicht (DDG §5).
-- [ ] **Datenschutzerklärung** (`/datenschutz`) — DSGVO-Pflicht (Supabase/Brevo/Stripe nennen).
-- [ ] **Über-uns / Autor** (`/ueber-uns`) — **realer Mensch mit Credentials** (Trading-/
-      Daten-Hintergrund), Foto, was die Methodik seriös macht. Kern-E-E-A-T-Signal.
-- [ ] **Author-Schema** — Blog-Autor von `Organization` auf **`Person`** mit `sameAs`
-      (LinkedIn/X), in `blog_post.html` + Über-uns verlinkt.
-- [ ] **Disclaimer-Konsistenz** — „Analyse/Bildung, keine Anlageberatung" sichtbar (YMYL).
+### Phase 1 — Trust/Expertise-Signal (Tag 1–30) · P1
+*Pflichtseiten ✅ bereits vorhanden (Impressum/Datenschutz/Risikohinweis auf `/rechtliches`,
+Footer-verlinkt). Es fehlt nur noch das **Expertise-/Vertrauenssignal** + Baseline.*
+- [x] ~~Impressum / Datenschutz / Disclaimer~~ — **erledigt** (`/rechtliches`).
+- [ ] **Über-uns / Methodik-Seite** (`/ueber-uns` o. `/methodik`) — Vertrauen über
+      **transparentes Verfahren** statt Personenzwang: Datenquellen (130 J. Historie),
+      „wie wir rechnen" (normalisierte Renditen, Handelstags-Kalender), Qualitätssicherung.
+      Stärkstes E-E-A-T-Signal für eine *Daten*plattform, ohne öffentliches Gesicht.
+- [ ] **Author/Redaktion-Schema** — Blog-Autor als `Person`/`Organization` „Redaktion
+      SeasonAlpha" mit Verweis auf die Methodik-Seite (statt nacktem Marken-String).
+- [ ] **`/rechtliches` EN-Version** (`/en/rechtliches` o. Legal-Anker im EN-Build).
 - [ ] **GSC/GA4-Baseline** — aktuelle Impressions/Index-Quote als Startwert festhalten.
-- [ ] Footer + Nav: Links auf Impressum/Datenschutz/Über-uns (Trust + interne Verlinkung).
 
 ### Phase 2 — Content-Tiefe & erstes Linkable Asset (Tag 31–60) · P1
 - [ ] **Pillar-Seiten vertiefen** — „Was ist Saisonalität" 278→1500+ W, einzigartig, mit
@@ -63,5 +65,7 @@ Rankings für 3–5 Kern-Keywords tracken.
   „saisonale Aktien") in Top 50 → Top 20.
 
 ## Wichtigste Erkenntnis
-Technik weiter optimieren bringt **fast nichts**, solange Trust (P0) + Authority (P1) fehlen.
-Reihenfolge zwingend: **erst Impressum/Autor/Trust, dann Content-Tiefe, dann Backlinks.**
+Rechtliche Pflichtseiten sind **bereits da** (sauber). Technik weiter optimieren bringt
+trotzdem **fast nichts**, solange **Authority (0 Backlinks)** + Content-Tiefe + Expertise-
+Signal fehlen. Reihenfolge: **Expertise/Methodik-Seite (klein) → Content-Tiefe →
+Backlinks/Digital-PR (das eigentliche, größte Stück Arbeit).**
