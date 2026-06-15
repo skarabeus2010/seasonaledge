@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Über SeasonAlpha — Methodik, Daten &amp; Qualitätssicherung</title>
+  <meta name="description" content="Wie SeasonAlpha saisonale Börsenmuster berechnet: 130 Jahre Kurshistorie, normalisierte Renditen, börsengenaue Handelskalender und automatisierte Qualitätssicherung. Transparente Methodik statt Bauchgefühl.">
+  <link rel="canonical" href="https://seasonalpha.ai/ueber-uns">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Über SeasonAlpha — Methodik &amp; Daten">
+  <meta property="og:description" content="Transparente Methodik: 130 Jahre Daten, normalisierte Renditen, börsengenaue Handelskalender, automatisierte Qualitätssicherung.">
+  <meta property="og:url" content="https://seasonalpha.ai/ueber-uns">
+  <link rel="icon" href="/landing/assets/images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "Über SeasonAlpha — Methodik & Daten",
+    "url": "https://seasonalpha.ai/ueber-uns",
+    "inLanguage": "de",
+    "publisher": {
+      "@type": "Organization",
+      "name": "SeasonAlpha",
+      "url": "https://seasonalpha.ai",
+      "description": "Plattform für datenbasierte saisonale Finanzmarkt-Analyse (ETFs, Aktien, Futures, Crypto).",
+      "knowsAbout": ["Saisonalität an den Finanzmärkten", "Börsenzyklen", "Statistische Marktanalyse", "Handelstag-Kalender (TDOM/TDOY)", "Backtesting", "Volatilität & Risiko"],
+      "areaServed": "DE"
+    }
+  }
+  </script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#000;color:#e8e0d0;font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.8}
+    a{color:#e8a820;text-decoration:none}a:hover{text-decoration:underline}
+    .wrap{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem}
+    .back{display:inline-block;margin-bottom:2rem;color:#a89878;font-size:.875rem}
+    .back:hover{color:#e8a820}
+    h1{font-family:'Sora',sans-serif;font-size:2rem;font-weight:800;color:#fff;margin-bottom:1rem}
+    h1 b{color:#e8a820}
+    .lead{color:#c0b8a8;font-size:1.0625rem;margin-bottom:3rem;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:2rem}
+    .section{margin-bottom:3rem}
+    h2{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid rgba(232,168,32,.15)}
+    h3{font-size:1rem;font-weight:700;color:#c0b8a8;margin:1.5rem 0 .5rem}
+    p{color:#b8b0a0;margin-bottom:1rem}
+    b{color:#e8e0d0}
+    ul{padding-left:1.25rem;margin:.5rem 0 1rem}
+    li{margin-bottom:.5rem;color:#b8b0a0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin:1.5rem 0}
+    .stat{background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:12px;padding:1.25rem}
+    .stat .n{font-family:'Sora',sans-serif;font-size:1.75rem;font-weight:800;color:#e8a820;display:block}
+    .stat .l{font-size:.8125rem;color:#a89878}
+    .cta{display:inline-block;margin-top:1rem;background:#e8a820;color:#000;font-weight:700;padding:.75rem 1.5rem;border-radius:10px}
+    .cta:hover{text-decoration:none;background:#f0b830}
+    .note{background:rgba(255,255,255,.03);border-left:3px solid #e8a820;padding:1rem 1.25rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.9375rem}
+    .foot{text-align:center;padding:2rem 0;border-top:1px solid rgba(255,255,255,.06);margin-top:3rem;color:#666;font-size:.75rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="/" class="back">&larr; Zurück zu SeasonAlpha</a>
+    <h1>Über <b>Season</b>Alpha</h1>
+    <p class="lead">SeasonAlpha macht <b>saisonale Muster an den Finanzmärkten</b> sichtbar, messbar
+      und überprüfbar — auf Basis von über 130 Jahren Kursdaten, transparenter Statistik und
+      strenger Qualitätssicherung. Diese Seite erklärt offen, <b>woher unsere Daten kommen, wie
+      wir rechnen und wie wir Fehler ausschließen.</b> Denn Vertrauen entsteht durch
+      Nachvollziehbarkeit, nicht durch Versprechen.</p>
+
+    <div class="section">
+      <h2>Unsere Mission</h2>
+      <p>Saisonalität — wiederkehrende Muster wie der Jahreswechsel-Effekt, „Sell in May" oder
+        Monatsanfangs-Stärke — wird oft anekdotisch erzählt, selten sauber gemessen. Wir machen
+        daraus <b>nachprüfbare Statistik</b>: für Privatanleger verständlich aufbereitet, ohne
+        Hype, ohne Heilsversprechen. Jede Kennzahl auf SeasonAlpha lässt sich auf eine
+        konkrete, dokumentierte Berechnung zurückführen.</p>
+      <div class="grid">
+        <div class="stat"><span class="n">130+</span><span class="l">Jahre Kurshistorie</span></div>
+        <div class="stat"><span class="n">324</span><span class="l">Ticker (ETFs · Aktien · Futures · Crypto)</span></div>
+        <div class="stat"><span class="n">10+</span><span class="l">Börsenkalender exakt abgebildet</span></div>
+        <div class="stat"><span class="n">täglich</span><span class="l">automatisierte Daten-Audits</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Unsere Datenbasis</h2>
+      <p>Grundlage sind tägliche Kursdaten von <b>Yahoo Finance</b> mit <b>Stooq</b> als
+        Ausfall-Quelle, über ein breites Universum aus US- und europäischen Indizes, Einzelaktien
+        (inkl. Dow-30 und DAX-40), Rohstoff-Futures, Devisen und Kryptowährungen. Historien
+        reichen — wo verfügbar — bis ins 19. Jahrhundert zurück (z.&nbsp;B. Dow Jones).</p>
+      <p>Kurse werden dividenden- und splitbereinigt verarbeitet. Jeder Ticker ist seinem
+        <b>tatsächlichen Handelsplatz</b> zugeordnet, nicht dem Heimatland des Unternehmens —
+        ein US-gelisteter ADR folgt z.&nbsp;B. dem NYSE-Kalender, eine XETRA-Aktie dem deutschen.</p>
+    </div>
+
+    <div class="section">
+      <h2>Methodik: Wie wir rechnen</h2>
+      <h3>Normalisierte Renditen statt Preisdifferenzen</h3>
+      <p>Der Kern jeder Saisonalitäts-Auswertung: Wir vergleichen <b>nicht</b> absolute
+        Preisänderungen, sondern <b>normalisierte Renditen</b>. Jedes Jahr startet bei 100,
+        die täglichen prozentualen Renditen kumulieren darauf. So sind Jahre mit
+        unterschiedlichem Kursniveau direkt vergleichbar — ein Anstieg von 10 → 11 zählt
+        genauso wie 1000 → 1100.</p>
+      <h3>Börsengenaue Handelstage</h3>
+      <p>Saisonale Effekte hängen an <b>Handelstagen</b>, nicht an Kalendertagen. Wir zählen
+        den Handelstag des Monats (TDOM) und des Jahres (TDOY) je Börse exakt — inklusive
+        landesspezifischer Feiertage. Beispiel: XETRA handelt am 3.&nbsp;Oktober und Pfingstmontag
+        (anders als die Banken), die NYSE schließt zu Juneteenth — solche Feinheiten verschieben
+        Muster und sind bei uns korrekt abgebildet.</p>
+      <h3>Statistik &amp; KI-Score</h3>
+      <p>Aus den normalisierten Jahresverläufen berechnen wir Durchschnittsmuster, Trefferquoten,
+        Streuung und Drawdowns — mit Signifikanz-Prüfung, damit Zufall nicht als Muster
+        durchgeht. Der zusammengesetzte KI-Score bündelt mehrere Teil-Indikatoren zu einer
+        Einordnung. Backtests rechnen wir <b>look-ahead-bias-frei</b> (kein Blick in die Zukunft).</p>
+    </div>
+
+    <div class="section">
+      <h2>Qualitätssicherung</h2>
+      <p>Datenfehler sind der größte Feind statistischer Analyse. Deshalb läuft bei SeasonAlpha
+        eine mehrstufige, <b>automatisierte Kontrolle</b>:</p>
+      <ul>
+        <li><b>Tägliche &amp; wöchentliche Daten-Audits</b> auf Frische, Vollständigkeit und
+          Lücken über das gesamte Ticker-Universum.</li>
+        <li><b>Kalender-Prüfagent:</b> ein deterministischer Test, der die Börsen-Handelskalender
+          gegen die realen Handelstage abgleicht — in beide Richtungen (fehlende <i>und</i>
+          überzählige Feiertage) — und Abweichungen automatisch meldet.</li>
+        <li><b>Konsistenz-Checks</b> für abgeleitete Kennzahlen (Handelstag-Zählung,
+          Saisonalität, Regime-Scores).</li>
+      </ul>
+      <p>Gefundene Lücken werden nachgeladen und neu berechnet, bevor sie in die Auswertung
+        einfließen. Diese Disziplin ist der Grund, warum wir unseren Zahlen vertrauen — und
+        warum du es kannst.</p>
+    </div>
+
+    <div class="section">
+      <h2>Transparenz &amp; Grenzen</h2>
+      <div class="note">
+        SeasonAlpha ist <b>Analyse und Finanzbildung — keine Anlageberatung.</b> Saisonale
+        Muster beschreiben die Vergangenheit; sie sind <b>kein</b> Versprechen für die Zukunft.
+        Vergangene Performance garantiert keine künftigen Ergebnisse, und jeder Handel birgt
+        das Risiko von Verlusten.
+      </div>
+      <p>Wir legen unsere Methodik offen, weisen auf statistische Grenzen hin und vermeiden
+        bewusst Kauf-/Verkaufsempfehlungen. Vollständige rechtliche Hinweise findest du im
+        <a href="/rechtliches#risikohinweis">Risikohinweis</a> sowie im
+        <a href="/rechtliches#impressum">Impressum</a> und der
+        <a href="/rechtliches#datenschutz">Datenschutzerklärung</a>.</p>
+    </div>
+
+    <div class="section">
+      <h2>Redaktion &amp; Kontakt</h2>
+      <p>Hinter SeasonAlpha steht die <b>Redaktion SeasonAlpha</b> — mit Fokus auf quantitative
+        Finanzmarkt-Analyse, Statistik und Datenqualität. Fragen, Korrekturhinweise oder
+        Kooperationsanfragen gerne an
+        <a href="mailto:info@seasonalpha.ai">info@seasonalpha.ai</a>.</p>
+      <a href="/jahreszyklus" class="cta">Zur Saisonalitäts-Analyse &rarr;</a>
+    </div>
+
+    <div class="foot">&copy; 2026 SeasonAlpha &middot; <a href="/" style="color:#666">Startseite</a> &middot; <a href="/rechtliches" style="color:#666">Rechtliches</a></div>
+  </div>
+</body>
+</html>

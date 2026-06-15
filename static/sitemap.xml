@@ -569,6 +569,12 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://seasonalpha.ai/ueber-uns</loc>
+    <lastmod>2026-06-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://seasonalpha.ai/rechtliches</loc>
     <lastmod>2026-06-12</lastmod>
     <changefreq>yearly</changefreq>
