@@ -44,7 +44,8 @@
 
 {#
   ════════════════════════════════════════════════════════════════════
-  MAKRO: Signal-Score-Tabelle (Ticker | Kurs | Δ Vortag | LBR W | LBR D | RSI D | RSI W | Score)
+  MAKRO: Signal-Score-Tabelle
+  (Ticker | Kurs | Δ Vt | SC | LBR W | LBR D | RSI D | RSI W | TS | Gesamt)
   Wiederverwendet von Kernliste, ETFs, Aktien, Watchlist.
   ════════════════════════════════════════════════════════════════════
 #}
@@ -55,12 +56,13 @@
         <th align="left"  style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Ticker</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Kurs</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Δ&nbsp;Vt</th>
-        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.30);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#e8a820;font-weight:700;" title="Saisonal-Score (Multi-Window): wie viele von 4 historischen TDOM-Renditefenstern im Schnitt positiv waren (0–4)">MW</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.30);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#e8a820;font-weight:700;" title="Saisonal-Score (Multi-Window): wie viele von 4 historischen TDOM-Renditefenstern im Schnitt positiv waren (0–4)">SC</th>
         <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Wochenbasis">LBR&nbsp;W</th>
         <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Tagesbasis">LBR&nbsp;D</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="RSI Tagesbasis">RSI&nbsp;D</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="RSI Wochenbasis">RSI&nbsp;W</th>
-        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Score</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="Technical Score (LBR/RSI), max 4">TS</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.30);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#e8a820;font-weight:700;" title="Gesamtscore = SC + TS (0–8), Sortierschlüssel">Gesamt</th>
       </tr>
     </thead>
     <tbody>
@@ -79,7 +81,7 @@
         <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.change_pct is not none and r.change_pct > 0 %}#30e878{% elif r.change_pct is not none and r.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
           {% if r.change_pct is not none %}{{ '%+.2f' % r.change_pct }}%{% else %}—{% endif %}
         </td>
-        {# ── MW Saisonalscore (0-4): wie viele Renditefenster historisch positiv ── #}
+        {# ── SC Saisonalscore (0-4): wie viele Renditefenster historisch positiv ── #}
         <td align="center" style="padding:9px 4px;">
           {% if r.mw_score is not none %}
           <span style="display:inline-block;min-width:30px;padding:3px 7px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;{% if r.mw_score >= 4 %}background:rgba(48,232,120,0.20);color:#30e878;{% elif r.mw_score == 3 %}background:rgba(48,232,120,0.10);color:#7fe0a0;{% elif r.mw_score == 2 %}background:rgba(232,168,32,0.16);color:#e8a820;{% else %}background:rgba(168,152,120,0.12);color:#a89878;{% endif %}">{{ r.mw_score }}/4</span>
@@ -101,10 +103,16 @@
         <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.rsi_weekly is none %}#a89878{% elif r.rsi_weekly > 90 %}#ff3b3b{% elif r.rsi_weekly > 70 %}#ff8a6a{% elif r.rsi_weekly < 10 %}#2fe06a{% elif r.rsi_weekly < 30 %}#8ad6a0{% else %}#a89878{% endif %};">
           {% if r.rsi_weekly is not none %}{{ '%.0f' % r.rsi_weekly }}{% else %}—{% endif %}
         </td>
-        {# ── Score-Pill (≥3 grün · 1–2 gold · ≤0 grau/rot) ── #}
+        {# ── TS Technical-Score-Pill (≥3 grün · 1–2 gold · 0 grau · <0 rot) ── #}
         <td align="center" style="padding:9px 4px;">
-          <span style="display:inline-block;min-width:22px;padding:3px 7px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;{% if r.score >= 3 %}background:rgba(48,232,120,0.16);color:#30e878;{% elif r.score >= 1 %}background:rgba(232,168,32,0.16);color:#e8a820;{% elif r.score == 0 %}background:rgba(168,152,120,0.14);color:#a89878;{% else %}background:rgba(255,96,96,0.16);color:#ff6060;{% endif %}">
-            {{ '%+d' % r.score }}
+          <span style="display:inline-block;min-width:30px;padding:3px 7px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;{% if r.score >= 3 %}background:rgba(48,232,120,0.16);color:#30e878;{% elif r.score >= 1 %}background:rgba(232,168,32,0.16);color:#e8a820;{% elif r.score == 0 %}background:rgba(168,152,120,0.14);color:#a89878;{% else %}background:rgba(255,96,96,0.16);color:#ff6060;{% endif %}">
+            {{ '%+d' % r.score }}/4
+          </span>
+        </td>
+        {# ── Gesamt-Pill (SC+TS, 0-8): Hauptkennzahl, prominenter — ≥6 kräftig grün · 4–5 grün · 2–3 gold · 0–1 grau · <0 rot ── #}
+        <td align="center" style="padding:9px 4px;">
+          <span style="display:inline-block;min-width:38px;padding:4px 9px;border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:0.01em;{% if r.total_score >= 6 %}background:rgba(48,232,120,0.28);color:#5cff9e;{% elif r.total_score >= 4 %}background:rgba(48,232,120,0.16);color:#30e878;{% elif r.total_score >= 2 %}background:rgba(232,168,32,0.18);color:#e8a820;{% elif r.total_score >= 0 %}background:rgba(168,152,120,0.14);color:#a89878;{% else %}background:rgba(255,96,96,0.18);color:#ff6060;{% endif %}">
+            {{ '%+d' % r.total_score }}/8
           </span>
         </td>
       </tr>
@@ -164,7 +172,7 @@
         🧭 Markt-Überblick
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Leitindizes &amp; Kern-Tracker — LBR/RSI-Momentum und Score als Markt-Kontext für den Tag.
+        Leitmärkte — LBR/RSI-Momentum und Gesamtscore als Markt-Kontext für den Tag.
       </div>
       {{ signal_table(core_list) }}
     </td></tr>
@@ -204,6 +212,54 @@
     </td></tr>
     {% endif %}
 
+    {% set month_names = {1:'Januar',2:'Februar',3:'März',4:'April',5:'Mai',6:'Juni',7:'Juli',8:'August',9:'September',10:'Oktober',11:'November',12:'Dezember'} %}
+    {% if rotation and (rotation.current_top or rotation.next_top) %}
+    <!-- ══════════════════════ SEKTION: SEKTOR-ROTATION ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        🔄 Sektor-Rotation
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Saisonal stärkste Sektor-ETFs — aktueller Monat und Folgemonat im Vergleich
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+        <tr>
+          {# ── Aktueller Monat ── #}
+          <td width="50%" valign="top" style="padding:0 8px 0 0;">
+            <div style="font-size:11px;color:#e8a820;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:8px;">
+              {{ month_names.get(rotation.current_month, rotation.current_month) }}
+            </div>
+            {% for s in rotation.current_top %}
+            <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
+              <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
+              <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
+              <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
+            </div>
+            {% endfor %}
+          </td>
+          {# ── Folgemonat ── #}
+          <td width="50%" valign="top" style="padding:0 0 0 8px;border-left:1px solid rgba(232,168,32,0.10);">
+            <div style="font-size:11px;color:#e8a820;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:8px;">
+              {{ month_names.get(rotation.next_month, rotation.next_month) }} <span style="color:#a89878;font-weight:400;">(Folgemonat)</span>
+            </div>
+            {% for s in rotation.next_top %}
+            <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
+              <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
+              <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
+              <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
+            </div>
+            {% endfor %}
+          </td>
+        </tr>
+      </table>
+      {% if rotation.legend %}
+      <div style="margin-top:12px;font-size:11px;color:#a89878;line-height:1.7;">
+        {% for l in rotation.legend %}<span style="color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ l.ticker }}</span> = {{ l.name }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
+      </div>
+      {% endif %}
+    </td></tr>
+    {% endif %}
+
     {% if watchlist %}
     <!-- ══════════════════════ SEKTION 2c: WATCHLIST ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
@@ -224,11 +280,11 @@
     <tr><td style="padding:14px 32px 8px;">
       <div style="padding:12px 14px;background:rgba(168,152,120,0.05);border:1px solid rgba(168,152,120,0.14);border-radius:8px;">
         <div style="font-size:11px;color:#a89878;line-height:1.65;">
-          <strong style="color:#e8a820;">MW &mdash; Saisonal-Score (0&ndash;4)</strong>: wie viele von vier historischen Renditefenstern auf dem heutigen Handelstag des Monats (TDOM) im Schnitt positiv waren &mdash;
+          <strong style="color:#e8a820;">SC &mdash; Saisonal-Score (0&ndash;4)</strong>: wie viele von vier historischen Renditefenstern auf dem heutigen Handelstag des Monats (TDOM) im Schnitt positiv waren &mdash;
           ① Open&rarr;Close · ② Open&rarr;Open(t+1) · ③ Open&rarr;Close(t+1) · ④ Close&rarr;Close(t+1).
           <strong style="color:#cbd5e1;">4/4</strong> = alle Fenster historisch im Plus · <strong style="color:#cbd5e1;">3/4</strong> robust positiv · <strong style="color:#cbd5e1;">≤2</strong> mehrdeutig. Börsenspezifische TDOM je Ticker.
           <br><br>
-          <strong style="color:#cbd5e1;">Score</strong> (technisch) = Summe folgender Bedingungen:
+          <strong style="color:#e8a820;">TS &mdash; Technical Score (max&nbsp;4)</strong> = Summe folgender LBR/RSI-Bedingungen:
           <br>· LBR weekly &gt; 0 &rarr; +1
           <br>· LBR daily &gt; 0 &rarr; +1
           <br>· RSI weekly &gt; 50 &rarr; +1
@@ -237,6 +293,8 @@
           <br><br>
           <strong style="color:#cbd5e1;">LBR</strong> = Linda-Bradford-Raschke-Oszillator (3-10), misst Momentum/Trend &mdash; <span style="color:#30e878;">▲ &gt;0 bullish</span>, <span style="color:#ff6060;">▼ &lt;0 bearish</span>.
           <strong style="color:#cbd5e1;">RSI</strong> = Relative-Stärke-Index (0&ndash;100); &gt;70 überkauft, &lt;30 überverkauft.
+          <br><br>
+          <strong style="color:#e8a820;">Gesamt (0&ndash;8)</strong> = SC + TS &mdash; die zusammengefasste Tageskennzahl, nach der die Listen absteigend sortiert sind.
           <br><br>
           Analyse &amp; Bildung &mdash; keine Anlageberatung.
         </div>
@@ -297,23 +355,6 @@
       </div>
       {% endif %}
     </td></tr>
-
-    {% if rotation and rotation.top_sectors %}
-    <!-- ══════════════════════ SEKTION 5: SEKTOR-ROTATION ══════════════════════ -->
-    <tr><td style="padding:24px 32px 8px;">
-      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:14px;">
-        🔄 Sektor-Rotation Folgemonat
-      </div>
-      <div style="font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Top-Sektoren saisonal</div>
-      {% for s in rotation.top_sectors %}
-      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
-        <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
-        <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
-        <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
-      </div>
-      {% endfor %}
-    </td></tr>
-    {% endif %}
 
     <!-- ══════════════════════ CTA ══════════════════════ -->
     <tr><td style="padding:30px 32px 24px;text-align:center;">
