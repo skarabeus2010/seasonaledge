@@ -205,7 +205,7 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ### History → [docs/CHANGELOG.md](docs/CHANGELOG.md)
 
-Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Changelog. **Offene User-Action aus ML-Stilllegung:** `DROP TABLE ml_forecasts` in Supabase.
+Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Changelog. (ML-Stilllegung vollständig abgeschlossen — `DROP TABLE ml_forecasts` erledigt 2026-06-16.)
 
 ### 🔴 SOFORT — Security (User-Action erforderlich)
 - [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten
