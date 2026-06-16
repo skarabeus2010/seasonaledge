@@ -513,6 +513,52 @@ def _build_tip_rows(
     return collected[:limit]
 
 
+# Kompakte Fenster-Kürzel für die „Warum"-Zeile (Reihenfolge w1..w4 = die
+# vier TDOM-Strategien Open→Close, Open→Open(t+1), Open→Close(t+1), Close→Close(t+1)).
+_WHY_WIN_LABELS = ["O→C", "O→O⁺", "O→C⁺", "C→C⁺"]
+
+
+def _build_why_summary(windows: dict, ki_score, win_rate, verdict: str,
+                       score_total: int) -> dict:
+    """Kompakte, deterministische Begründung pro Top-Pick aus bereits
+    berechneten Feldern — KEINE neue Berechnung, gleiche Quelle wie die Tabelle.
+
+    Returnt: verdict (+ Farb-Klasse), hits ("3/4"), die 4 TDOM-Fenster kompakt,
+    historische Trefferquote in %, und die Stichprobengröße (kleinste Fenster-
+    Count = auf wie vielen Jahren das Muster beruht).
+    """
+    windows_compact = []
+    counts = []
+    for i in range(1, 5):
+        w = (windows or {}).get(f"w{i}") or {}
+        avg = w.get("avg_pct")
+        cnt = w.get("count")
+        if cnt:
+            counts.append(cnt)
+        windows_compact.append({
+            "label": _WHY_WIN_LABELS[i - 1],
+            "pct": (f"{avg:+.2f}%" if avg is not None else "—"),
+            "hit": bool(w.get("hit")),
+        })
+    # win_rate kann als Anteil (0–1) oder Prozent (0–100) vorliegen → auf % normieren
+    wr_pct = None
+    if win_rate is not None:
+        try:
+            wr = float(win_rate)
+            wr_pct = round(wr * 100) if wr <= 1 else round(wr)
+        except (TypeError, ValueError):
+            wr_pct = None
+    _vmap = {"stark bullish": "strong", "bullish": "bull", "leicht bullish": "bull"}
+    return {
+        "verdict": verdict,
+        "verdict_class": _vmap.get(verdict, "weak"),
+        "hits": f"{score_total}/4",
+        "windows_compact": windows_compact,
+        "win_rate_pct": wr_pct,
+        "sample_n": min(counts) if counts else None,
+    }
+
+
 def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
                limit, params, tier_name):
     rows: list[dict] = []
@@ -550,6 +596,8 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "win_rate": c.get("win_rate"),
             "verdict": verdict,
             "tier": tier_name,
+            "why": _build_why_summary(mw["windows"], ki, c.get("win_rate"),
+                                      verdict, mw["score_total"]),
         })
 
     rows.sort(key=lambda r: (-r["multi_window_score"], -r["ki_score"]))
