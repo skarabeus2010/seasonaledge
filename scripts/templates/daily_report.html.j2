@@ -10,14 +10,21 @@
     report_time         "2026-05-19 06:00 UTC"
     target_display      "Mo 19. Mai 2026"
     target_tdom         int (1-23)
-    etfs                list[dict]  ← Sektion 1a (5 Top-ETFs)
-    stocks              list[dict]  ← Sektion 1b (5 Top-Aktien)
-    events              list[dict]  ← Sektion 2 (FOMC, OPEX, Earnings, Feiertage)
-    strategies          list[dict]  ← Sektion 3 (aktive Saisonal-Strategien)
-    rotation            dict        ← Sektion 4a (Sektor-Rotation)
-    market_regime       dict        ← Sektion 4b (Risikolage)
+    core_list           list[dict]  ← Sektion 1 (Kernliste / Markt-Überblick, score-sortiert)
+    etfs                list[dict]  ← Sektion 2a (Top-ETFs, score-sortiert)
+    stocks              list[dict]  ← Sektion 2b (Top-Aktien, score-sortiert)
+    watchlist           list[dict]  ← Sektion 2c (persönliche Watchlist, score-sortiert)
+    events              list[dict]  ← Sektion 3 (FOMC, OPEX, Earnings, Feiertage)
+    strategies          list[dict]  ← Sektion 4 (aktive Saisonal-Strategien)
+    rotation            dict        ← Sektion 5 (Sektor-Rotation)
     unsubscribe_url     str (pro Recipient mit ?type=daily)
     dashboard_url       str
+
+  Signal-Row-Felder (core_list / etfs / stocks / watchlist):
+    ticker, name, price_close (float|None), change_pct (float|None), price_date,
+    lbr_daily (float|None), lbr_weekly (float|None)   # LBR-Fastline: >0 bullish, <0 bearish
+    rsi_daily (float|None), rsi_weekly (float|None)    # 0–100
+    score (int)
 #}<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -31,8 +38,72 @@
 
 <!-- Preheader -->
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-  Top {{ etfs|length }} ETFs · {{ stocks|length }} Aktien · {{ events|length }} Events für {{ target_display }} · Multi-Window-Score
+  Markt-Überblick · Top {{ etfs|length }} ETFs · {{ stocks|length }} Aktien · {{ events|length }} Events für {{ target_display }} · LBR/RSI-Score
 </div>
+
+{#
+  ════════════════════════════════════════════════════════════════════
+  MAKRO: Signal-Score-Tabelle (Ticker | Kurs | Δ Vortag | LBR W | LBR D | RSI D | RSI W | Score)
+  Wiederverwendet von Kernliste, ETFs, Aktien, Watchlist.
+  ════════════════════════════════════════════════════════════════════
+#}
+{% macro signal_table(rows) %}
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr>
+        <th align="left"  style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Ticker</th>
+        <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Kurs</th>
+        <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Δ&nbsp;Vt</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Wochenbasis">LBR&nbsp;W</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Tagesbasis">LBR&nbsp;D</th>
+        <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="RSI Tagesbasis">RSI&nbsp;D</th>
+        <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="RSI Wochenbasis">RSI&nbsp;W</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        {# ── Ticker + Name ── #}
+        <td style="padding:9px 4px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;font-size:12px;">
+          {{ r.ticker }}
+          {% if r.name %}<div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ r.name }}</div>{% endif %}
+        </td>
+        {# ── Kurs ── #}
+        <td align="right" style="padding:9px 4px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
+          {% if r.price_close is not none %}{{ '%.2f' % r.price_close }}{% else %}—{% endif %}
+        </td>
+        {# ── Δ Vortag ── #}
+        <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.change_pct is not none and r.change_pct > 0 %}#30e878{% elif r.change_pct is not none and r.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
+          {% if r.change_pct is not none %}{{ '%+.2f' % r.change_pct }}%{% else %}—{% endif %}
+        </td>
+        {# ── LBR weekly (Vorzeichen = Kern-Info) ── #}
+        <td align="center" style="padding:9px 4px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:{% if r.lbr_weekly is not none and r.lbr_weekly > 0 %}#30e878{% elif r.lbr_weekly is not none and r.lbr_weekly < 0 %}#ff6060{% else %}#a89878{% endif %};">
+          {% if r.lbr_weekly is none %}—{% elif r.lbr_weekly > 0 %}▲{% elif r.lbr_weekly < 0 %}▼{% else %}•{% endif %}
+        </td>
+        {# ── LBR daily ── #}
+        <td align="center" style="padding:9px 4px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:{% if r.lbr_daily is not none and r.lbr_daily > 0 %}#30e878{% elif r.lbr_daily is not none and r.lbr_daily < 0 %}#ff6060{% else %}#a89878{% endif %};">
+          {% if r.lbr_daily is none %}—{% elif r.lbr_daily > 0 %}▲{% elif r.lbr_daily < 0 %}▼{% else %}•{% endif %}
+        </td>
+        {# ── RSI daily (gestaffelt: >70 überkauft rötlich, <30 überverkauft grünlich, Extreme >90/<10 kräftig) ── #}
+        <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.rsi_daily is none %}#a89878{% elif r.rsi_daily > 90 %}#ff3b3b{% elif r.rsi_daily > 70 %}#ff8a6a{% elif r.rsi_daily < 10 %}#2fe06a{% elif r.rsi_daily < 30 %}#8ad6a0{% else %}#a89878{% endif %};">
+          {% if r.rsi_daily is not none %}{{ '%.0f' % r.rsi_daily }}{% else %}—{% endif %}
+        </td>
+        {# ── RSI weekly ── #}
+        <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.rsi_weekly is none %}#a89878{% elif r.rsi_weekly > 90 %}#ff3b3b{% elif r.rsi_weekly > 70 %}#ff8a6a{% elif r.rsi_weekly < 10 %}#2fe06a{% elif r.rsi_weekly < 30 %}#8ad6a0{% else %}#a89878{% endif %};">
+          {% if r.rsi_weekly is not none %}{{ '%.0f' % r.rsi_weekly }}{% else %}—{% endif %}
+        </td>
+        {# ── Score-Pill (≥3 grün · 1–2 gold · ≤0 grau/rot) ── #}
+        <td align="center" style="padding:9px 4px;">
+          <span style="display:inline-block;min-width:22px;padding:3px 7px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;{% if r.score >= 3 %}background:rgba(48,232,120,0.16);color:#30e878;{% elif r.score >= 1 %}background:rgba(232,168,32,0.16);color:#e8a820;{% elif r.score == 0 %}background:rgba(168,152,120,0.14);color:#a89878;{% else %}background:rgba(255,96,96,0.16);color:#ff6060;{% endif %}">
+            {{ '%+d' % r.score }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
 
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#000000;">
 <tr><td align="center" style="padding:32px 16px;">
@@ -74,156 +145,94 @@
     <!-- ══════════════════════ INTRO ══════════════════════ -->
     <tr><td style="padding:22px 32px 8px;">
       <p style="margin:0;font-size:14px;line-height:1.6;color:#cbd5e1;">
-        Saisonale Signale für den anstehenden Handelstag: Top-Tipps mit KI-Score + <strong style="color:#e8a820;">Multi-Window-TDOM-Score</strong> (4 historische Renditefenster), Events, aktive Strategien und Risikolage.
+        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit <strong style="color:#e8a820;">LBR/RSI-Signalen</strong> und kombiniertem <strong style="color:#e8a820;">Score</strong>, dazu Events und aktive Strategien.
       </p>
     </td></tr>
 
+    {% if core_list %}
+    <!-- ══════════════════════ SEKTION 1: KERNLISTE / MARKT-ÜBERBLICK ══════════════════════ -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        🧭 Markt-Überblick
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Leitindizes &amp; Kern-Tracker — LBR/RSI-Momentum und Score als Markt-Kontext für den Tag.
+      </div>
+      {{ signal_table(core_list) }}
+    </td></tr>
+    {% endif %}
+
     {% if etfs %}
-    <!-- ══════════════════════ SEKTION 1a: TOP-ETFs ══════════════════════ -->
+    <!-- ══════════════════════ SEKTION 2a: TOP-ETFs ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         🎯 Top {{ etfs|length }} ETFs
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        KI-Score ≥6.5 · Regime grün · Multi-Window ≥3/4 · TDOM {{ target_tdom }}
+        Score-stärkste ETFs für den anstehenden Handelstag (TDOM {{ target_tdom }}).
       </div>
-
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
-            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">MW</th>
-            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Regime</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tip in etfs %}
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
-              {{ tip.ticker }}
-              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ tip.name }}</div>
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
-              {% if tip.price_close is not none %}{{ '%.2f' % tip.price_close }}{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if tip.change_pct is not none and tip.change_pct > 0 %}#30e878{% elif tip.change_pct is not none and tip.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
-              {% if tip.change_pct is not none %}{{ '%+.2f' % tip.change_pct }}%{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
-            <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
-            <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {{ signal_table(etfs) }}
     </td></tr>
     {% endif %}
 
     {% if stocks %}
-    <!-- ══════════════════════ SEKTION 1b: TOP-AKTIEN ══════════════════════ -->
+    <!-- ══════════════════════ SEKTION 2b: TOP-AKTIEN ══════════════════════ -->
     <tr><td style="padding:18px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         💼 Top {{ stocks|length }} Aktien
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Einzelwerte aus US- und EU-Universum
+        Score-stärkste Einzelwerte aus US- und EU-Universum.
       </div>
-
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
-            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">MW</th>
-            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Regime</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tip in stocks %}
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
-              {{ tip.ticker }}
-              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ tip.name }}</div>
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
-              {% if tip.price_close is not none %}{{ '%.2f' % tip.price_close }}{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if tip.change_pct is not none and tip.change_pct > 0 %}#30e878{% elif tip.change_pct is not none and tip.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
-              {% if tip.change_pct is not none %}{{ '%+.2f' % tip.change_pct }}%{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%.1f' % tip.ki_score }}</td>
-            <td align="center" style="padding:10px 6px;color:{% if tip.multi_window_score >= 4 %}#30e878{% elif tip.multi_window_score >= 3 %}#e8a820{% else %}#a89878{% endif %};font-weight:700;font-variant-numeric:tabular-nums;">{{ tip.multi_window_score }}/4</td>
-            <td align="center" style="padding:10px 6px;" title="{{ tip.regime_light or 'n/a' }}">{% if tip.regime_light == 'green' %}🟢{% elif tip.regime_light == 'yellow' %}🟡{% elif tip.regime_light == 'red' %}🔴{% else %}⚪{% endif %}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {{ signal_table(stocks) }}
     </td></tr>
     {% endif %}
 
     {% if not etfs and not stocks %}
     <tr><td style="padding:24px 32px 8px;">
       <div style="padding:16px;background:rgba(255,64,64,0.06);border:1px solid rgba(255,64,64,0.2);border-radius:8px;color:#ff6b6b;font-size:13px;line-height:1.6;">
-        ⚠️ Keine Tipps für heute — entweder ist der Markt risikoreich (Regime ≠ grün) oder die saisonalen Signale sind nicht ausreichend stark.
+        ⚠️ Keine Top-Auswahl für heute — die saisonalen LBR/RSI-Signale sind aktuell nicht ausreichend stark.
       </div>
     </td></tr>
     {% endif %}
 
     {% if watchlist %}
-    <!-- ══════════════════════ SEKTION 1c: WATCHLIST ══════════════════════ -->
+    <!-- ══════════════════════ SEKTION 2c: WATCHLIST ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         ⭐ Deine Watchlist ({{ watchlist|length }})
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Aktuelle KI-Scores deiner persönlich beobachteten Werte (zuletzt hinzugefügt zuerst).
+        Deine persönlich beobachteten Werte — score-sortiert mit denselben LBR/RSI-Signalen.
       </div>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr>
-            <th align="left" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Ticker</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Kurs</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Δ Vortag</th>
-            <th align="right" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">KI</th>
-            <th align="center" style="padding:8px 6px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#a89878;font-weight:600;">Signal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for w in watchlist %}
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-            <td style="padding:10px 6px;font-weight:700;color:#e8a820;font-family:'JetBrains Mono',monospace;">
-              {{ w.ticker }}
-              <div style="font-size:10px;color:#a89878;font-family:inherit;font-weight:400;margin-top:2px;letter-spacing:0;">{{ w.name }}</div>
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;">
-              {% if w.price_close is not none %}{{ '%.2f' % w.price_close }}{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if w.change_pct is not none and w.change_pct > 0 %}#30e878{% elif w.change_pct is not none and w.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
-              {% if w.change_pct is not none %}{{ '%+.2f' % w.change_pct }}%{% else %}—{% endif %}
-            </td>
-            <td align="right" style="padding:10px 6px;color:#e2e8f0;font-variant-numeric:tabular-nums;font-weight:600;">
-              {% if w.ki_score is not none %}{{ '%.1f' % w.ki_score }}{% else %}—{% endif %}
-            </td>
-            <td align="center" style="padding:10px 6px;font-size:11px;color:{% if w.signal == 'Bullish' %}#30e878{% elif w.signal == 'Bearish' %}#ff6060{% else %}#a89878{% endif %};font-weight:600;">
-              {{ w.signal or '—' }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {{ signal_table(watchlist) }}
       <div style="margin-top:10px;font-size:11px;color:#a89878;text-align:right;">
         <a href="https://seasonalpha.ai/watchlist" style="color:#e8a820;text-decoration:none;">Watchlist verwalten →</a>
       </div>
     </td></tr>
     {% endif %}
 
+    <!-- ══════════════════════ SCORE-FUSSNOTE ══════════════════════ -->
+    <tr><td style="padding:14px 32px 8px;">
+      <div style="padding:12px 14px;background:rgba(168,152,120,0.05);border:1px solid rgba(168,152,120,0.14);border-radius:8px;">
+        <div style="font-size:11px;color:#a89878;line-height:1.65;">
+          <strong style="color:#cbd5e1;">Score</strong> = Summe folgender Bedingungen:
+          <br>· LBR weekly &gt; 0 &rarr; +1
+          <br>· LBR daily &gt; 0 &rarr; +1
+          <br>· RSI weekly &gt; 50 &rarr; +1
+          <br>· RSI daily &gt; 90 <em>und</em> RSI weekly &gt; 90 &rarr; &minus;1 (beide extrem überkauft)
+          <br>· RSI daily &lt; 10 <em>und</em> RSI weekly &lt; 10 &rarr; +1 (beide extrem überverkauft)
+          <br><br>
+          <strong style="color:#cbd5e1;">LBR</strong> = Linda-Bradford-Raschke-Oszillator (3-10), misst Momentum/Trend &mdash; <span style="color:#30e878;">▲ &gt;0 bullish</span>, <span style="color:#ff6060;">▼ &lt;0 bearish</span>.
+          <strong style="color:#cbd5e1;">RSI</strong> = Relative-Stärke-Index (0&ndash;100); &gt;70 überkauft, &lt;30 überverkauft.
+          <br><br>
+          Analyse &amp; Bildung &mdash; keine Anlageberatung.
+        </div>
+      </div>
+    </td></tr>
+
     {% if events %}
-    <!-- ══════════════════════ SEKTION 2: EVENTS ══════════════════════ -->
+    <!-- ══════════════════════ SEKTION 3: EVENTS ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         📅 Events der nächsten 5 Tage
@@ -245,7 +254,7 @@
     </td></tr>
     {% endif %}
 
-    <!-- ══════════════════════ SEKTION 3: AKTIVE STRATEGIEN ══════════════════════ -->
+    <!-- ══════════════════════ SEKTION 4: AKTIVE STRATEGIEN ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         ⚙️ Aktive Saisonal-Strategien
@@ -272,85 +281,27 @@
       </table>
       {% else %}
       <div style="padding:14px;background:rgba(168,152,120,0.06);border-left:3px solid rgba(168,152,120,0.4);border-radius:0 6px 6px 0;color:#a89878;font-size:13px;line-height:1.6;">
-        Aktuell keine spezifische saisonale Strategie im Entry-Fenster. Ruhige Phase — Marktbarometer + Multi-Window-Score sind die wichtigsten Signale.
+        Aktuell keine spezifische saisonale Strategie im Entry-Fenster. Ruhige Phase — Markt-Überblick und Score sind die wichtigsten Signale.
       </div>
       {% endif %}
     </td></tr>
 
-    <!-- ══════════════════════ SEKTION 4: ROTATION + RISIKO ══════════════════════ -->
+    {% if rotation and rotation.top_sectors %}
+    <!-- ══════════════════════ SEKTION 5: SEKTOR-ROTATION ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:14px;">
-        🔄 Sektor-Rotation &amp; Risikolage
+        🔄 Sektor-Rotation Folgemonat
       </div>
-
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="vertical-align:top;padding-right:8px;width:50%;">
-            <div style="font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Top-Sektoren Folgemonat</div>
-            {% for s in rotation.top_sectors %}
-            <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
-              <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
-              <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
-              <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
-            </div>
-            {% endfor %}
-          </td>
-          <td style="vertical-align:top;padding-left:8px;width:50%;">
-            <div style="font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Crash-Ampel Marktbarometer</div>
-            {% for ticker, r in market_regime.items() %}
-            <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
-              <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ ticker }}</span>
-              <span style="float:right;">
-                {% if r.traffic_light == 'green' %}🟢{% elif r.traffic_light == 'yellow' %}🟡{% elif r.traffic_light == 'red' %}🔴{% else %}⚪{% endif %}
-                <span style="color:#a89878;font-size:11px;margin-left:4px;">{{ r.traffic_light or 'n/a' }}</span>
-              </span>
-            </div>
-            {% endfor %}
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-
-    <!-- ══════════════════════ ERKLÄRUNGEN ══════════════════════ -->
-    <tr><td style="padding:24px 32px 8px;">
-      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:14px;">
-        ❓ Was sagt mir das?
+      <div style="font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Top-Sektoren saisonal</div>
+      {% for s in rotation.top_sectors %}
+      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
+        <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
+        <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
+        <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
       </div>
-
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-        <tr>
-          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;margin-bottom:8px;">
-            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">KI-Score (0&ndash;10)</div>
-            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
-              Composite aus vier Sub-Scores: <b>Musterpfad-Ähnlichkeit</b> (DTW vs. historische Vergleichsjahre), <b>Trend-Forecast</b>, <b>Win-Rate</b> der letzten Wochen und <b>Tracking-Qualität</b> der Saisonalitäts-Kurve. Skala 0&ndash;10:
-              <br><b style="color:#30e878;">≥6.5 bullish</b> · <b style="color:#a89878;">3.5&ndash;6.5 neutral</b> · <b style="color:#ff6060;">≤3.5 bearish</b>
-            </div>
-          </td>
-        </tr>
-        <tr><td style="height:8px;"></td></tr>
-        <tr>
-          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;">
-            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">Multi-Window-Score (MW, 0&ndash;4)</div>
-            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
-              Vier historische Renditefenster auf dem heutigen TDOM (Trading Day of Month). Pro Fenster <b>1 Punkt wenn der historische Ø-Return positiv</b> war:
-              <br>① <b>Open → Close</b> (intraday) · ② <b>Open → Open(t+1)</b> · ③ <b>Open → Close(t+1)</b> · ④ <b>Close → Close(t+1)</b>
-              <br><b>4/4</b> = alle Fenster historisch im Plus · <b>3/4</b> robust positiv · <b>≤2</b> mehrdeutig.
-            </div>
-          </td>
-        </tr>
-        <tr><td style="height:8px;"></td></tr>
-        <tr>
-          <td style="padding:10px 12px;border-left:3px solid #e8a820;background:rgba(232,168,32,0.04);border-radius:0 6px 6px 0;">
-            <div style="font-size:13px;color:#e8a820;font-weight:700;margin-bottom:4px;">Regime-Ampel</div>
-            <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
-              Aktuelle Marktphasen-Einschätzung pro Ticker (Vola, Drawdown, 5-Tage-Return). Frühwarn-Indikator für Risiko:
-              <br>🟢 <b>green</b> ruhiger Aufwärtstrend · 🟡 <b>yellow</b> erhöhtes Risiko · 🔴 <b>red</b> Crash-Phase · ⚪ <b>n/a</b> noch nicht berechnet für diesen Ticker
-              <br>Beim Daily-Briefing filtern wir Tipps strikt auf grünes Regime — bei ⚪ wird der Tipp im Fallback-Tier dennoch gezeigt, sollte aber mit Vorsicht genossen werden.
-            </div>
-          </td>
-        </tr>
-      </table>
+      {% endfor %}
     </td></tr>
+    {% endif %}
 
     <!-- ══════════════════════ CTA ══════════════════════ -->
     <tr><td style="padding:30px 32px 24px;text-align:center;">
