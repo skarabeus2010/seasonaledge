@@ -35,8 +35,11 @@ KI_MIN_SCORE = 6.5
 MULTI_WINDOW_MIN_SCORE = 3   # mindestens 3 von 4 Fenstern positiv
 
 # Fixe Kernliste fürs Markt-Barometer (alle in symbols.py verifiziert).
+# TLT = Zinsmarkt (20+Y Treasuries), EURUSD=X = Dollar-Proxy (^DXY existiert NICHT
+# im Universum — verifiziert).
 NEWSLETTER_CORE_LIST = [
     "SPY", "QQQ", "DIA", "^GDAXI", "^STOXX50E", "BTC-USD", "GLD", "USO",
+    "TLT", "EURUSD=X",
 ]
 
 # Strategien für Multi-Window-Score (Reihenfolge entspricht Fenster 1-4)
@@ -344,6 +347,7 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
             error_logger.error(f"[daily_report] mw_score {ticker}: {e}")
 
     meta = SYMBOLS.get(ticker, {})
+    _score = sig.get("score", 0)
     return {
         "ticker":      ticker,
         "name":        meta.get("name", ticker),
@@ -354,8 +358,9 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         "lbr_weekly":  sig.get("lbr_weekly"),
         "rsi_daily":   sig.get("rsi_daily"),
         "rsi_weekly":  sig.get("rsi_weekly"),
-        "score":       sig.get("score", 0),
+        "score":       _score,
         "mw_score":    mw_score,
+        "total_score": (mw_score or 0) + (_score or 0),
     }
 
 
@@ -386,12 +391,12 @@ def build_signal_rows(tickers: list[str], target_date: "date | None" = None) -> 
 
 
 def _signal_sort_key(r: dict):
-    """Sortier-Schlüssel: MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score,
-    dann Wochen-LBR als Feintiebreaker."""
+    """Sortier-Schlüssel: Gesamt-Score zuerst (total_score = mw_score + score),
+    dann MW-Saisonalscore, dann LBR/RSI-Score (alle desc; None → sehr klein)."""
     return (
+        r.get("total_score") if r.get("total_score") is not None else -1e9,
         r.get("mw_score") if r.get("mw_score") is not None else -1,
         r.get("score") if r.get("score") is not None else -999,
-        r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
     )
 
 
@@ -610,10 +615,12 @@ def top_daily_tips(
         else:
             row.setdefault("score", 0)
         row["mw_score"] = row.get("multi_window_score", 0)
+        row["total_score"] = (row.get("mw_score") or 0) + (row.get("score") or 0)
 
-    # MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score, dann KI.
+    # Gesamt-Score zuerst (total_score), dann MW-Saisonalscore, dann KI.
     def _sort_key(r: dict):
         return (
+            r.get("total_score", 0),
             r.get("mw_score", 0),
             r.get("score") if r.get("score") is not None else -999,
             r.get("ki_score", 0),
@@ -746,23 +753,49 @@ def events_today_tomorrow(target_date: date | None = None,
     window_start = min(today_utc, target_date)
     window_end = target_date + timedelta(days=max(0, lookahead_days - 1))
 
-    # FOMC
+    # Notenbank-Sitzungen — ALLE getrackten Notenbanken im Fenster (Fed/EZB/BoE/
+    # BoJ/SNB/BoC/RBA/RBNZ). FOMC läuft über dieselbe Quelle → keine Dubletten.
+    _y0, _y1 = target_date.year, target_date.year + 1
+    cb_sources: list[tuple[str, str, str, Any]] = []  # (name, emoji, impact, dates)
     try:
         from shared.fed_dates import get_fomc_dates_for_years
-        for dt in get_fomc_dates_for_years(target_date.year, target_date.year + 1):
-            d = dt.date() if hasattr(dt, "date") else dt
-            if window_start <= d <= window_end:
-                events.append({
-                    "date": d.strftime("%Y-%m-%d"),
-                    "type": "FOMC",
-                    "name": "FOMC-Sitzung",
-                    "emoji": "🏛️",
-                    "impact": "high",
-                })
+        cb_sources.append(("FOMC-Sitzung", "🇺🇸", "high",
+                           get_fomc_dates_for_years(_y0, _y1)))
     except Exception as e:
-        error_logger.error(f"[daily_report] FOMC events: {e}")
+        error_logger.error(f"[daily_report] FOMC dates: {e}")
+    try:
+        from shared.central_banks import (
+            get_ecb_dates, get_boe_dates, get_boj_dates, get_snb_dates,
+            get_boc_dates, get_rba_dates, get_rbnz_dates,
+        )
+        cb_sources.extend([
+            ("EZB-Sitzung",  "🇪🇺", "high",   get_ecb_dates()),
+            ("BoE-Sitzung",  "🇬🇧", "high",   get_boe_dates()),
+            ("BoJ-Sitzung",  "🇯🇵", "high",   get_boj_dates()),
+            ("SNB-Sitzung",  "🇨🇭", "medium", get_snb_dates()),
+            ("BoC-Sitzung",  "🇨🇦", "medium", get_boc_dates()),
+            ("RBA-Sitzung",  "🇦🇺", "medium", get_rba_dates()),
+            ("RBNZ-Sitzung", "🇳🇿", "medium", get_rbnz_dates()),
+        ])
+    except Exception as e:
+        error_logger.error(f"[daily_report] central bank dates: {e}")
 
-    # OPEX / Triple Witching (3. Freitag im Monat)
+    for cb_name, cb_emoji, cb_impact, dates in cb_sources:
+        try:
+            for dt in dates:
+                d = dt.date() if hasattr(dt, "date") else dt
+                if window_start <= d <= window_end:
+                    events.append({
+                        "date": d.strftime("%Y-%m-%d"),
+                        "type": "Notenbank",
+                        "name": cb_name,
+                        "emoji": cb_emoji,
+                        "impact": cb_impact,
+                    })
+        except Exception as e:
+            error_logger.error(f"[daily_report] CB event {cb_name}: {e}")
+
+    # OPEX / Triple Witching (3. Freitag im Monat) — aus weekly_report.
     try:
         from shared.weekly_report import upcoming_events as _ue
         we = _ue(days=(window_end - today_utc).days + 1) or []
@@ -777,18 +810,42 @@ def events_today_tomorrow(target_date: date | None = None,
                         "emoji": "📅",
                         "impact": "medium",
                     })
-            elif ev.get("type") == "holiday":
-                ev_d = datetime.strptime(ev["date"], "%Y-%m-%d").date()
-                if window_start <= ev_d <= window_end:
-                    events.append({
-                        "date": ev["date"],
-                        "type": "Feiertag",
-                        "name": ev.get("name", "Börsenfeiertag"),
-                        "emoji": "🏖️",
-                        "impact": "low",
-                    })
     except Exception as e:
-        error_logger.error(f"[daily_report] OPEX/Holiday: {e}")
+        error_logger.error(f"[daily_report] OPEX: {e}")
+
+    # Börsenfeiertage ALLER relevanten Handelsplätze im Fenster (NYSE/XETRA/LSE/
+    # SIX/EURONEXT/MILAN/STOCKHOLM/TSE). Pro (Datum+Börse) nur ein Event.
+    try:
+        from shared.exchange_holidays import get_holidays
+        exch_labels = {
+            "NYSE": "NYSE", "XETRA": "XETRA", "LSE": "LSE", "SIX": "SIX",
+            "EURONEXT": "Euronext", "MILAN": "Mailand",
+            "STOCKHOLM": "Stockholm", "TSE": "Tokyo",
+        }
+        seen_holidays: set[tuple[str, str]] = set()
+        for exch, label in exch_labels.items():
+            try:
+                hols = get_holidays(exch, window_start.year, window_end.year)
+            except Exception as e:
+                error_logger.error(f"[daily_report] holidays {exch}: {e}")
+                continue
+            for hd in hols:
+                if not (window_start <= hd <= window_end):
+                    continue
+                key = (hd.strftime("%Y-%m-%d"), exch)
+                if key in seen_holidays:
+                    continue
+                seen_holidays.add(key)
+                events.append({
+                    "date": hd.strftime("%Y-%m-%d"),
+                    "type": "Feiertag",
+                    "name": f"{label}-Feiertag (Börse geschlossen)",
+                    "exchange": exch,
+                    "emoji": "🏖️",
+                    "impact": "low",
+                })
+    except Exception as e:
+        error_logger.error(f"[daily_report] exchange holidays: {e}")
 
     # Earnings (US-only Limitation, siehe CLAUDE.md)
     try:
@@ -911,17 +968,21 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "rsi_weekly":  None,
             "score":       0,
             "mw_score":    None,
+            "total_score": 0,
             "price_close": None,
             "change_pct":  None,
             "price_date":  None,
         }
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
-                        "score", "mw_score", "price_close", "change_pct", "price_date"):
+                        "score", "mw_score", "total_score", "price_close",
+                        "change_pct", "price_date"):
                 row[key] = sig_row.get(key)
+        else:
+            row["total_score"] = (row.get("mw_score") or 0) + (row.get("score") or 0)
         rows.append(row)
 
-    # MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score.
+    # Gesamt-Score zuerst (total_score), dann MW-Saisonalscore, dann LBR/RSI-Score.
     rows.sort(key=_signal_sort_key, reverse=True)
     return rows
 
@@ -1097,50 +1158,125 @@ def active_strategy_signals(target_date: date | None = None) -> list[dict]:
 # Sektion 5: Sektor-Rotation
 # ─────────────────────────────────────────────────────────────────────────────
 
-def sector_rotation_signal(target_date: date | None = None, top_n: int = 3) -> dict:
+def _sector_monthly_avg_returns(lookback_days: int = 5500) -> dict[str, dict[int, float]]:
     """
-    Top-N Sektoren saisonal aktiv für den Folge-Monat.
+    Historische Ø-Kalendermonats-Rendite je Sektor-ETF und Monat (1-12).
+
+    Echte Berechnung aus der Preis-Historie: je Jahr/Monat die Rendite vom
+    ersten zum letzten Handelstag des Monats (Close/Close - 1), dann Mittelwert
+    über alle Jahre. Eine einzige History-Query (für alle Empfänger gleich).
+
+    Returns:
+        {ticker: {month(1-12): avg_return_pct}} — Monate ohne Daten fehlen.
+        Bei Fehlern/keinen Daten: leeres dict (Aufrufer fällt zurück).
+    """
+    from shared.sector_rotation import SECTOR_ETFS
+
+    history = fetch_daily_close_history(list(SECTOR_ETFS), lookback_days=lookback_days)
+    if not history:
+        return {}
+
+    out: dict[str, dict[int, float]] = {}
+    for ticker, series in history.items():
+        if series is None or len(series) == 0:
+            continue
+        try:
+            # Letzter Close je (Jahr, Monat) → Monatsrendite = pct_change innerhalb Jahr.
+            grp = series.groupby([series.index.year, series.index.month]).last()
+            month_avg: dict[int, float] = {}
+            for month in range(1, 13):
+                rets = []
+                for (yr, mo), close_end in grp.items():
+                    if mo != month:
+                        continue
+                    # Vormonat (gleiches oder Vorjahr) für Close→Close-Rendite
+                    prev_key = (yr, mo - 1) if mo > 1 else (yr - 1, 12)
+                    if prev_key in grp.index:
+                        prev_close = grp.loc[prev_key]
+                        if prev_close:
+                            rets.append((close_end / prev_close - 1) * 100)
+                if rets:
+                    month_avg[month] = round(sum(rets) / len(rets), 2)
+            if month_avg:
+                out[ticker] = month_avg
+        except Exception as e:
+            error_logger.error(f"[daily_report] sector monthly avg {ticker}: {e}")
+            continue
+    return out
+
+
+def sector_rotation_signal(target_date: date | None = None, top_n: int = 5) -> dict:
+    """
+    Top-N Sektoren saisonal: aktueller Monat UND Folge-Monat (echte Berechnung).
+
+    Berechnet je SPDR-Select-Sektor-ETF die historische Ø-Kalendermonats-Rendite
+    aus der Preis-Historie (~15 Jahre) und liefert pro Monat die Top-N (desc).
 
     Returns:
         {
-          "current_month": int,
-          "next_month": int,
-          "top_sectors": [{ticker, name, avg_return_pct}, ...]
+          "current_month": int, "next_month": int,
+          "current_top": [{ticker, name, avg_return_pct}, ...],   # Top-N aktueller Monat
+          "next_top":    [{ticker, name, avg_return_pct}, ...],   # Top-N Folgemonat
+          "legend":      [{ticker, name}, ...],                   # alle Sektor-ETFs
         }
     """
     if target_date is None:
         target_date = next_trading_day()
 
     from shared.sector_rotation import SECTOR_ETFS
-    from shared.supabase_client import get_client
 
-    # Pragmatik: avg_return per Monat aus prices-Tabelle ableiten ist teuer.
-    # Wir lesen scanner_results oder eine vorberechnete Saisonalität.
-    # Fallback: nutze deterministische historische Top-Sektoren-Liste.
+    current_month = target_date.month
+    next_month = current_month % 12 + 1
+
+    # Fallback-Tabelle (3 Einträge je Monat reichen, top_n wird notfalls gekappt),
+    # falls die echte Berechnung keine Daten liefert.
     HISTORIC_BEST = {
-        1:  [("XLK", "Technology",      1.8), ("XLY", "Consumer Discr.",   1.5), ("XLF", "Financials",  1.2)],
-        2:  [("XLK", "Technology",      1.5), ("XLI", "Industrials",       1.4), ("XLV", "Health Care", 1.1)],
-        3:  [("XLI", "Industrials",     2.1), ("XLB", "Materials",         1.9), ("XLY", "Consumer Discr.", 1.7)],
-        4:  [("XLK", "Technology",      2.4), ("XLY", "Consumer Discr.",   2.0), ("XLI", "Industrials",  1.8)],
-        5:  [("XLV", "Health Care",     1.6), ("XLP", "Consumer Staples",  1.3), ("XLU", "Utilities",   1.1)],
-        6:  [("XLE", "Energy",          1.5), ("XLF", "Financials",        1.2), ("XLV", "Health Care", 1.0)],
-        7:  [("XLK", "Technology",      2.0), ("XLY", "Consumer Discr.",   1.6), ("XLV", "Health Care", 1.4)],
-        8:  [("XLP", "Consumer Staples", 0.8), ("XLU", "Utilities",         0.7), ("XLV", "Health Care", 0.6)],
-        9:  [("XLE", "Energy",          0.5), ("XLU", "Utilities",         0.3), ("XLP", "Consumer Staples", 0.2)],
-        10: [("XLK", "Technology",      1.7), ("XLY", "Consumer Discr.",   1.5), ("XLF", "Financials",  1.3)],
-        11: [("XLY", "Consumer Discr.", 2.5), ("XLK", "Technology",        2.2), ("XLI", "Industrials", 1.9)],
-        12: [("XLK", "Technology",      2.0), ("XLY", "Consumer Discr.",   1.8), ("XLI", "Industrials", 1.6)],
+        1:  [("XLK", 1.8), ("XLY", 1.5), ("XLF", 1.2), ("XLV", 1.0), ("XLI", 0.9)],
+        2:  [("XLK", 1.5), ("XLI", 1.4), ("XLV", 1.1), ("XLY", 1.0), ("XLF", 0.8)],
+        3:  [("XLI", 2.1), ("XLB", 1.9), ("XLY", 1.7), ("XLK", 1.5), ("XLE", 1.2)],
+        4:  [("XLK", 2.4), ("XLY", 2.0), ("XLI", 1.8), ("XLB", 1.6), ("XLF", 1.3)],
+        5:  [("XLV", 1.6), ("XLP", 1.3), ("XLU", 1.1), ("XLK", 1.0), ("XLY", 0.8)],
+        6:  [("XLE", 1.5), ("XLF", 1.2), ("XLV", 1.0), ("XLK", 0.9), ("XLU", 0.7)],
+        7:  [("XLK", 2.0), ("XLY", 1.6), ("XLV", 1.4), ("XLI", 1.2), ("XLF", 1.0)],
+        8:  [("XLP", 0.8), ("XLU", 0.7), ("XLV", 0.6), ("XLK", 0.5), ("XLRE", 0.4)],
+        9:  [("XLE", 0.5), ("XLU", 0.3), ("XLP", 0.2), ("XLV", 0.1), ("XLF", 0.0)],
+        10: [("XLK", 1.7), ("XLY", 1.5), ("XLF", 1.3), ("XLI", 1.1), ("XLV", 1.0)],
+        11: [("XLY", 2.5), ("XLK", 2.2), ("XLI", 1.9), ("XLF", 1.6), ("XLB", 1.4)],
+        12: [("XLK", 2.0), ("XLY", 1.8), ("XLI", 1.6), ("XLF", 1.4), ("XLV", 1.2)],
     }
 
-    next_month = target_date.month % 12 + 1
-    sectors = HISTORIC_BEST.get(next_month, [])[:top_n]
+    try:
+        monthly = _sector_monthly_avg_returns()
+    except Exception as e:
+        error_logger.error(f"[daily_report] sector_rotation compute: {e}")
+        monthly = {}
+
+    def _top_for_month(month: int) -> list[dict]:
+        if monthly:
+            ranked = sorted(
+                (
+                    {"ticker": t, "name": SECTOR_ETFS.get(t, t),
+                     "avg_return_pct": m[month]}
+                    for t, m in monthly.items() if month in m
+                ),
+                key=lambda r: r["avg_return_pct"],
+                reverse=True,
+            )
+            if ranked:
+                return ranked[:top_n]
+        # Fallback
+        return [
+            {"ticker": t, "name": SECTOR_ETFS.get(t, t), "avg_return_pct": r}
+            for (t, r) in HISTORIC_BEST.get(month, [])[:top_n]
+        ]
 
     return {
-        "current_month": target_date.month,
+        "current_month": current_month,
         "next_month": next_month,
-        "top_sectors": [
-            {"ticker": t, "name": n, "avg_return_pct": r}
-            for (t, n, r) in sectors
+        "current_top": _top_for_month(current_month),
+        "next_top": _top_for_month(next_month),
+        "legend": [
+            {"ticker": t, "name": n} for t, n in SECTOR_ETFS.items()
         ],
     }
 
