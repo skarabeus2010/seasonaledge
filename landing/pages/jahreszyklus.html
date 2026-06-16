@@ -55,7 +55,7 @@
     .page-title b{color:var(--accent)}
     .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
     /* Einbetten-Button + Modal (Backlink-Asset) */
-    .embed-btn{display:inline-flex;align-items:center;gap:.4rem;margin:.1rem 0 1.1rem;padding:.4rem .8rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:var(--f-m)}
+    .embed-btn{display:inline-flex;align-items:center;gap:.4rem;margin:.65rem 0 .15rem;padding:.4rem .8rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:var(--f-m)}
     .embed-btn:hover{background:rgba(232,168,32,.1)}
     .embed-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;z-index:300;align-items:center;justify-content:center;padding:1rem}
     .embed-modal.open{display:flex}
@@ -159,10 +159,6 @@
       <h1 class="page-title"><b data-i18n="jz.page_title_word">Jahreszyklus</b> &mdash; <span id="title-ticker">SPY</span></h1>
       <p class="page-caption" id="page-caption" data-i18n="jz.page_caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
-      <button id="embed-btn" class="embed-btn" type="button">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-        <span data-i18n="jz.embed_button">Chart einbetten</span>
-      </button>
 
       <!-- 0. Anomalie-Radar (KI Quick-Check) -->
       <details open id="sec-anomaly" style="display:none">
@@ -180,6 +176,10 @@
           <!-- Sub-Chart für Pressure, eigene Y-Achse, x-Achse synchron -->
           <div id="chart-pressure" style="display:none;margin-top:.5rem"></div>
           <p id="pressure-info" style="font-size:.75rem;color:var(--accent);margin-top:.5rem;display:none"></p>
+          <button id="embed-btn" class="embed-btn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span data-i18n="jz.embed_button">Chart einbetten</span>
+          </button>
         </div>
       </details>
 
