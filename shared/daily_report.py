@@ -17,9 +17,12 @@ Pattern: pure functions, Supabase-Reads, kein UI. Spiegelt shared/weekly_report.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from shared.logger import app_logger, error_logger
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -30,6 +33,11 @@ DEFAULT_N_ETFS = 5
 DEFAULT_N_STOCKS = 10
 KI_MIN_SCORE = 6.5
 MULTI_WINDOW_MIN_SCORE = 3   # mindestens 3 von 4 Fenstern positiv
+
+# Fixe Kernliste fürs Markt-Barometer (alle in symbols.py verifiziert).
+NEWSLETTER_CORE_LIST = [
+    "SPY", "QQQ", "DIA", "^GDAXI", "^STOXX50E", "BTC-USD", "GLD", "USO",
+]
 
 # Strategien für Multi-Window-Score (Reihenfolge entspricht Fenster 1-4)
 TDOM_STRATEGIES = (
@@ -195,6 +203,175 @@ def fetch_latest_prices_map(tickers: list[str]) -> dict[str, dict]:
     return out
 
 
+def fetch_daily_close_history(
+    tickers: list[str], lookback_days: int = 750
+) -> dict[str, "pd.Series"]:
+    """
+    Tages-Closes der letzten ``lookback_days`` Kalendertage je Ticker als pd.Series.
+
+    Eine einzige PostgREST-Query (``in``-Filter auf ticker + ``date >= cutoff``),
+    danach lokale Gruppierung nach Ticker. Paginiert, da REST je Request max.
+    1000 Rows liefert (bei vielen Tickern × ~500 HT schnell überschritten).
+
+    Returns:
+        {ticker: pd.Series}  — Index = Datum (DatetimeIndex, aufsteigend),
+        Werte = close (float). Ticker ohne Daten werden ausgelassen.
+        Bei Fehlern: leeres dict (nie crashen).
+    """
+    import pandas as pd
+
+    if not tickers:
+        return {}
+
+    cutoff = (datetime.now(timezone.utc).date() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+    uniq = list(dict.fromkeys(tickers))  # Reihenfolge erhalten, Duplikate raus
+
+    from shared.supabase_client import get_client
+
+    rows: list[dict] = []
+    try:
+        client = get_client()
+        page_size = 1000
+        offset = 0
+        while True:
+            batch = (
+                client.table("prices")
+                .select("ticker,date,close")
+                .in_("ticker", uniq)
+                .gte("date", cutoff)
+                .order("date")
+                .range(offset, offset + page_size - 1)
+                .execute()
+                .data
+            ) or []
+            rows.extend(batch)
+            if len(batch) < page_size:
+                break
+            offset += page_size
+    except Exception as e:
+        error_logger.error(f"[daily_report] fetch_daily_close_history: {e}")
+        return {}
+
+    if not rows:
+        return {}
+
+    # Lokal nach Ticker gruppieren
+    grouped: dict[str, list[tuple[str, float]]] = {}
+    for r in rows:
+        t = r.get("ticker")
+        c = r.get("close")
+        d = r.get("date")
+        if not t or c is None or not d:
+            continue
+        try:
+            grouped.setdefault(t, []).append((d, float(c)))
+        except (TypeError, ValueError):
+            continue
+
+    out: dict[str, "pd.Series"] = {}
+    for t, pairs in grouped.items():
+        if not pairs:
+            continue
+        try:
+            pairs.sort(key=lambda x: x[0])
+            idx = pd.to_datetime([p[0] for p in pairs])
+            vals = [p[1] for p in pairs]
+            s = pd.Series(vals, index=idx, dtype=float)
+            # Doppelte Datums (z.B. Intraday-Upsert-Artefakte) → letzten behalten
+            s = s[~s.index.duplicated(keep="last")].sort_index()
+            out[t] = s
+        except Exception as e:
+            error_logger.error(f"[daily_report] build series {t}: {e}")
+            continue
+
+    return out
+
+
+def _signal_row_from_series(ticker: str, series: "pd.Series") -> dict | None:
+    """
+    Baut eine Signal-Row aus einer Close-Serie via compute_ticker_signals.
+
+    Row-Keys (verbindlicher Contract):
+        ticker, name, price_close, change_pct, price_date,
+        lbr_daily, lbr_weekly, rsi_daily, rsi_weekly, score
+
+    Returnt None wenn die Serie unbrauchbar/leer ist (Ticker wird übersprungen).
+    """
+    from shared.newsletter_indicators import compute_ticker_signals
+    from shared.symbols import SYMBOLS
+
+    if series is None or len(series) == 0:
+        return None
+
+    try:
+        sig = compute_ticker_signals(series)
+    except Exception as e:
+        error_logger.error(f"[daily_report] compute_ticker_signals {ticker}: {e}")
+        return None
+
+    try:
+        price_close = float(series.iloc[-1])
+    except (TypeError, ValueError, IndexError):
+        return None
+
+    prev = None
+    if len(series) >= 2:
+        try:
+            prev = float(series.iloc[-2])
+        except (TypeError, ValueError):
+            prev = None
+    change_pct = round((price_close / prev - 1) * 100, 2) if prev else None
+
+    try:
+        price_date = series.index[-1].strftime("%Y-%m-%d")
+    except Exception:
+        price_date = None
+
+    meta = SYMBOLS.get(ticker, {})
+    return {
+        "ticker":      ticker,
+        "name":        meta.get("name", ticker),
+        "price_close": round(price_close, 4),
+        "change_pct":  change_pct,
+        "price_date":  price_date,
+        "lbr_daily":   sig.get("lbr_daily"),
+        "lbr_weekly":  sig.get("lbr_weekly"),
+        "rsi_daily":   sig.get("rsi_daily"),
+        "rsi_weekly":  sig.get("rsi_weekly"),
+        "score":       sig.get("score", 0),
+    }
+
+
+def build_signal_rows(tickers: list[str]) -> list[dict]:
+    """
+    Holt die Close-Historie aller ``tickers`` (eine Query) und erzeugt je Ticker
+    eine Signal-Row (LBR/RSI/Score + Kurs/Vortag). Absteigend nach ``score``
+    sortiert (Tiebreaker: lbr_weekly desc). Ticker ohne Daten werden ausgelassen.
+    """
+    if not tickers:
+        return []
+
+    history = fetch_daily_close_history(tickers)
+
+    rows: list[dict] = []
+    for t in tickers:
+        series = history.get(t)
+        if series is None:
+            continue
+        row = _signal_row_from_series(t, series)
+        if row is not None:
+            rows.append(row)
+
+    rows.sort(
+        key=lambda r: (
+            r.get("score") if r.get("score") is not None else -999,
+            r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
+        ),
+        reverse=True,
+    )
+    return rows
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Sektion 2: Top Daily Tips (5 ETFs + 5 Aktien)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -226,34 +403,21 @@ def _tdom_for_date(target_date: date, exchange: str = "NYSE") -> int:
 def _candidate_passes(
     c: dict,
     universe_tickers: set[str],
-    regimes: dict[str, dict],
     ki_min: float,
-    allow_yellow: bool,
-    require_regime: bool = True,
-) -> tuple[bool, dict | None]:
+) -> bool:
     """
-    Pre-Check: passes Universum + KI + Regime? Return (passed, regime_dict).
+    Pre-Check: passt Kandidat ins Universum + erreicht KI-Mindest-Score?
 
-    require_regime=False: fehlender Regime-Score wird toleriert (für fallback-Tier).
-    In der aktuellen Pipeline hat nur ein Bruchteil der Ticker regime_scores;
-    Strict-Filter würde sonst fast immer leer rauskommen.
+    Regime spielt im Daily-Newsletter keine Rolle mehr (durch LBR/RSI-Signale
+    + Score ersetzt) — die AUSWAHL bleibt KI-Score + Multi-Window-TDOM.
     """
     ticker = c.get("ticker")
     if ticker not in universe_tickers:
-        return False, None
+        return False
     ki = c.get("score") or 0
     if ki < ki_min:
-        return False, None
-    regime = regimes.get(ticker)
-    if not regime:
-        if require_regime:
-            return False, None
-        # fallback-Tier: unbekanntes Regime als 'unknown' weiterführen
-        return True, {"traffic_light": "unknown"}
-    light = regime.get("traffic_light")
-    if light != "green" and not (allow_yellow and light == "yellow"):
-        return False, None
-    return True, regime
+        return False
+    return True
 
 
 def _build_tip_rows(
@@ -261,23 +425,23 @@ def _build_tip_rows(
     universe_tickers: set[str],
     universe_meta: dict[str, dict],
     target_tdom: int,
-    regimes: dict[str, dict],
     limit: int,
 ) -> list[dict]:
     """
     Filter + Sort. Drei-stufiger Fallback — Tiers werden kumuliert bis das
     Limit erreicht ist:
-      1. Strict:    KI ≥6.5  · Regime grün     · Multi-Window ≥3
-      2. Relaxed:   KI ≥5.5  · Regime grün     · Multi-Window ≥2
-      3. Fallback:  KI ≥5.0  · Regime grün/gelb · ohne MW-Filter
+      1. Strict:    KI ≥6.5 · Multi-Window ≥3
+      2. Relaxed:   KI ≥5.5 · Multi-Window ≥2
+      3. Fallback:  KI ≥5.0 · ohne MW-Filter
 
-    Beispiel: limit=10, strict liefert 2 → relaxed füllt mit 5 weiteren auf
-    → fallback füllt mit 3 weiteren bis 10 voll sind.
+    Regime-Bedingung wurde entfernt (Daily-Newsletter nutzt LBR/RSI-Score
+    statt ML-Regime). Beispiel: limit=10, strict liefert 2 → relaxed füllt mit
+    5 weiteren auf → fallback füllt mit 3 weiteren bis 10 voll sind.
     """
     tiers = [
-        ("strict",   {"ki_min": 6.5, "mw_min": 3, "allow_yellow": False, "require_regime": True}),
-        ("relaxed",  {"ki_min": 5.5, "mw_min": 2, "allow_yellow": False, "require_regime": True}),
-        ("fallback", {"ki_min": 5.0, "mw_min": 0, "allow_yellow": True,  "require_regime": False}),
+        ("strict",   {"ki_min": 6.5, "mw_min": 3}),
+        ("relaxed",  {"ki_min": 5.5, "mw_min": 2}),
+        ("fallback", {"ki_min": 5.0, "mw_min": 0}),
     ]
     collected: list[dict] = []
     seen_tickers: set[str] = set()
@@ -287,7 +451,7 @@ def _build_tip_rows(
         # Pro Tier nur die noch fehlenden Slots holen
         needed = limit - len(collected)
         rows = _try_build(candidates, universe_tickers, universe_meta,
-                          target_tdom, regimes, needed * 3, p, tier_name)
+                          target_tdom, needed * 3, p, tier_name)
         for r in rows:
             if r["ticker"] in seen_tickers:
                 continue
@@ -299,15 +463,10 @@ def _build_tip_rows(
 
 
 def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
-               regimes, limit, params, tier_name):
+               limit, params, tier_name):
     rows: list[dict] = []
     for c in candidates:
-        passed, regime = _candidate_passes(
-            c, universe_tickers, regimes,
-            params["ki_min"], params["allow_yellow"],
-            require_regime=params.get("require_regime", True),
-        )
-        if not passed:
+        if not _candidate_passes(c, universe_tickers, params["ki_min"]):
             continue
         ticker = c["ticker"]
         ki = c.get("score") or 0
@@ -338,7 +497,6 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "windows": mw["windows"],
             "avg_intraday_pct": w1.get("avg_pct"),
             "win_rate": c.get("win_rate"),
-            "regime_light": regime.get("traffic_light"),
             "verdict": verdict,
             "tier": tier_name,
         })
@@ -355,12 +513,11 @@ def top_daily_tips(
     """
     Zwei separate Rang-Listen: Top-N ETFs + Top-N Aktien.
 
-    Filter:
+    Auswahl-Filter (Regime entfernt — Daily-Newsletter nutzt LBR/RSI-Score):
       - kategorie='US-ETF' (ETFs) bzw. kategorie IN ('US-Aktie','EU-Aktie') (Aktien)
-      - regime green only
       - KI-Score ≥ 6.5
-      - Multi-Window-TDOM-Score ≥ 3
-    Sort: multi_window_score DESC, dann ki_score DESC.
+      - Multi-Window-TDOM-Score ≥ 3 (mit Relaxed/Fallback-Tiers)
+    Nach Auswahl: LBR/RSI/Score + Kurs/Vortag anreichern, dann **score DESC**.
     """
     if target_date is None:
         target_date = next_trading_day()
@@ -386,26 +543,33 @@ def top_daily_tips(
 
     target_tdom = _tdom_for_date(target_date)
 
-    # Regime-Status für die Vereinigungsmenge holen (1 Query)
-    all_tickers = list(etfs_meta.keys()) + list(stocks_meta.keys())
-    from shared.weekly_report import regime_status
-    regimes = regime_status(all_tickers)
-
     etfs = _build_tip_rows(candidates, set(etfs_meta.keys()), etfs_meta,
-                           target_tdom, regimes, n_etfs)
+                           target_tdom, n_etfs)
     stocks = _build_tip_rows(candidates, set(stocks_meta.keys()), stocks_meta,
-                             target_tdom, regimes, n_stocks)
+                             target_tdom, n_stocks)
 
-    # Aktueller Kurs + Vortagsperformance nur für die finalen Top-N (10 Queries
-    # statt 269). Wird pro Run einmal aufgerufen, nicht pro Empfänger.
+    # Signale (LBR/RSI/Score) + Kurs/Vortag für die finalen Top-N anreichern.
+    # Eine Historie-Query für alle selektierten Ticker (statt fetch_latest_prices_map).
     selected_tickers = [r["ticker"] for r in etfs] + [r["ticker"] for r in stocks]
-    price_map = fetch_latest_prices_map(selected_tickers)
+    history = fetch_daily_close_history(selected_tickers)
     for row in etfs + stocks:
-        p = price_map.get(row["ticker"])
-        if p:
-            row["price_close"] = p.get("close")
-            row["price_date"] = p.get("date")
-            row["change_pct"] = p.get("change_pct")
+        sig_row = _signal_row_from_series(row["ticker"], history.get(row["ticker"]))
+        if sig_row is not None:
+            for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
+                        "score", "price_close", "change_pct", "price_date"):
+                row[key] = sig_row.get(key)
+        else:
+            row.setdefault("score", 0)
+
+    # Score-Sortierung gewinnt (Product-Owner-Vorgabe), Tiebreaker multi_window.
+    def _sort_key(r: dict):
+        return (
+            r.get("score") if r.get("score") is not None else -999,
+            r.get("multi_window_score", 0),
+            r.get("ki_score", 0),
+        )
+    etfs.sort(key=_sort_key, reverse=True)
+    stocks.sort(key=_sort_key, reverse=True)
 
     return {"etfs": etfs, "stocks": stocks, "tdom": target_tdom}
 
@@ -670,9 +834,9 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
                 }
 
     items = raw[:WATCHLIST_LIMIT]
-    # Preise im Bulk für die Watchlist-Tickers
+    # Eine Historie-Query für alle Watchlist-Ticker → LBR/RSI/Score + Kurs/Vortag.
     wl_tickers = [item["ticker"] for item in items if item.get("ticker")]
-    price_map = fetch_latest_prices_map(wl_tickers) if wl_tickers else {}
+    history = fetch_daily_close_history(wl_tickers) if wl_tickers else {}
 
     rows: list[dict] = []
     for item in items:
@@ -681,18 +845,38 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             continue
         meta = SYMBOLS.get(ticker, {})
         sc = score_map.get(ticker, {})
-        p = price_map.get(ticker, {})
-        rows.append({
+        sig_row = _signal_row_from_series(ticker, history.get(ticker))
+        row = {
             "ticker":   ticker,
             "name":     meta.get("name", ticker),
             "kategorie": meta.get("kategorie", ""),
             "ki_score": sc.get("score"),
             "signal":   sc.get("signal"),
             "added_at": item.get("added_at"),
-            "price_close": p.get("close"),
-            "change_pct":  p.get("change_pct"),
-            "price_date":  p.get("date"),
-        })
+            # Signal-Felder (Default None/0, falls keine Historie vorhanden)
+            "lbr_daily":   None,
+            "lbr_weekly":  None,
+            "rsi_daily":   None,
+            "rsi_weekly":  None,
+            "score":       0,
+            "price_close": None,
+            "change_pct":  None,
+            "price_date":  None,
+        }
+        if sig_row is not None:
+            for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
+                        "score", "price_close", "change_pct", "price_date"):
+                row[key] = sig_row.get(key)
+        rows.append(row)
+
+    # Absteigend nach Score (Tiebreaker: lbr_weekly desc).
+    rows.sort(
+        key=lambda r: (
+            r.get("score") if r.get("score") is not None else -999,
+            r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
+        ),
+        reverse=True,
+    )
     return rows
 
 
@@ -941,9 +1125,9 @@ def build_daily_context(
     rotation = sector_rotation_signal(target_date=target)
     status_line = build_status_line(ticker="^DJI")
 
-    # Risikolage für Kern-Marktbarometer
-    from shared.weekly_report import regime_status
-    market_regime = regime_status(["SPY", "^GDAXI", "QQQ"])
+    # Kern-Marktbarometer: fixe Kernliste mit LBR/RSI-Signalen + Score (score DESC).
+    # ML-Regime im Newsletter entfernt → market_regime bleibt leer.
+    core_list = build_signal_rows(NEWSLETTER_CORE_LIST)
 
     return {
         "report_time":      now_utc.strftime("%Y-%m-%d %H:%M UTC"),
@@ -951,12 +1135,13 @@ def build_daily_context(
         "target_display":   target_display,
         "target_tdom":      tips.get("tdom"),
         "status_line":      status_line,
+        "core_list":        core_list,
         "etfs":             tips.get("etfs", []),
         "stocks":           tips.get("stocks", []),
         "events":           events,
         "strategies":       strategies,
         "rotation":         rotation,
-        "market_regime":    market_regime,
+        "market_regime":    {},
         # für Footer + Unsubscribe-URL
         "unsubscribe_url":  "",  # wird in daily_newsletter.py pro Recipient gesetzt
         "dashboard_url":    "https://seasonalpha.ai/dashboard",
