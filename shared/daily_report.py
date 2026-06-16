@@ -287,13 +287,19 @@ def fetch_daily_close_history(
     return out
 
 
-def _signal_row_from_series(ticker: str, series: "pd.Series") -> dict | None:
+def _signal_row_from_series(ticker: str, series: "pd.Series",
+                            target_date: "date | None" = None,
+                            with_mw: bool = True) -> dict | None:
     """
     Baut eine Signal-Row aus einer Close-Serie via compute_ticker_signals.
 
     Row-Keys (verbindlicher Contract):
         ticker, name, price_close, change_pct, price_date,
-        lbr_daily, lbr_weekly, rsi_daily, rsi_weekly, score
+        lbr_daily, lbr_weekly, rsi_daily, rsi_weekly, score, mw_score
+
+    ``mw_score`` = Multi-Window-Saisonalscore (0-4) auf der börsenspezifischen TDOM
+    des Tickers am ``target_date`` (Default: next_trading_day). Mit ``with_mw=False``
+    wird er übersprungen (z.B. wenn die Top-Auswahl ihren Selektions-MW behält).
 
     Returnt None wenn die Serie unbrauchbar/leer ist (Ticker wird übersprungen).
     """
@@ -327,6 +333,16 @@ def _signal_row_from_series(ticker: str, series: "pd.Series") -> dict | None:
     except Exception:
         price_date = None
 
+    # MW-Saisonalscore (0-4) auf börsenspezifischer TDOM des Tickers
+    mw_score = None
+    if with_mw:
+        try:
+            _td = target_date or next_trading_day()
+            _t_tdom = _tdom_for_ticker(ticker, _td)
+            mw_score = compute_multi_window_tdom_score(ticker, _t_tdom).get("score_total")
+        except Exception as e:
+            error_logger.error(f"[daily_report] mw_score {ticker}: {e}")
+
     meta = SYMBOLS.get(ticker, {})
     return {
         "ticker":      ticker,
@@ -339,18 +355,21 @@ def _signal_row_from_series(ticker: str, series: "pd.Series") -> dict | None:
         "rsi_daily":   sig.get("rsi_daily"),
         "rsi_weekly":  sig.get("rsi_weekly"),
         "score":       sig.get("score", 0),
+        "mw_score":    mw_score,
     }
 
 
-def build_signal_rows(tickers: list[str]) -> list[dict]:
+def build_signal_rows(tickers: list[str], target_date: "date | None" = None) -> list[dict]:
     """
     Holt die Close-Historie aller ``tickers`` (eine Query) und erzeugt je Ticker
-    eine Signal-Row (LBR/RSI/Score + Kurs/Vortag). Absteigend nach ``score``
-    sortiert (Tiebreaker: lbr_weekly desc). Ticker ohne Daten werden ausgelassen.
+    eine Signal-Row (MW-Saisonalscore + LBR/RSI/Score + Kurs/Vortag). Absteigend
+    nach ``mw_score`` (Saisonalität = Kern), dann ``score`` sortiert. Ticker ohne
+    Daten werden ausgelassen.
     """
     if not tickers:
         return []
 
+    td = target_date or next_trading_day()
     history = fetch_daily_close_history(tickers)
 
     rows: list[dict] = []
@@ -358,23 +377,50 @@ def build_signal_rows(tickers: list[str]) -> list[dict]:
         series = history.get(t)
         if series is None:
             continue
-        row = _signal_row_from_series(t, series)
+        row = _signal_row_from_series(t, series, target_date=td)
         if row is not None:
             rows.append(row)
 
-    rows.sort(
-        key=lambda r: (
-            r.get("score") if r.get("score") is not None else -999,
-            r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
-        ),
-        reverse=True,
-    )
+    rows.sort(key=_signal_sort_key, reverse=True)
     return rows
+
+
+def _signal_sort_key(r: dict):
+    """Sortier-Schlüssel: MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score,
+    dann Wochen-LBR als Feintiebreaker."""
+    return (
+        r.get("mw_score") if r.get("mw_score") is not None else -1,
+        r.get("score") if r.get("score") is not None else -999,
+        r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sektion 2: Top Daily Tips (5 ETFs + 5 Aktien)
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _tdom_for_ticker(ticker: str, target_date: date) -> int:
+    """TDOM (Trading Day of Month) für die HEIMATBÖRSE des Tickers — börsenspezifisch
+    (NYSE/XETRA/EURONEXT/CRYPTO/…). Wichtig, damit der Multi-Window-Lookup die richtige
+    tdom_stats-Zeile trifft: DAX/ESTX50/BTC haben andere Handelstage als NYSE."""
+    from shared.exchange_holidays import is_trading_day
+    from shared.symbols import get_exchange_for_holidays
+    try:
+        exch = get_exchange_for_holidays(ticker)
+    except Exception:
+        exch = "NYSE"
+    tdom = 0
+    d = date(target_date.year, target_date.month, 1)
+    while d <= target_date:
+        try:
+            td = is_trading_day(d, exch)
+        except Exception:
+            td = d.weekday() < 5
+        if td:
+            tdom += 1
+        d += timedelta(days=1)
+    return tdom
+
 
 def _tdom_for_date(target_date: date, exchange: str = "NYSE") -> int:
     """Berechnet die TDOM (1-23) eines spezifischen Handelstages."""
@@ -553,19 +599,23 @@ def top_daily_tips(
     selected_tickers = [r["ticker"] for r in etfs] + [r["ticker"] for r in stocks]
     history = fetch_daily_close_history(selected_tickers)
     for row in etfs + stocks:
-        sig_row = _signal_row_from_series(row["ticker"], history.get(row["ticker"]))
+        # with_mw=False: die Top-Auswahl behält ihren Selektions-MW (multi_window_score,
+        # auf NYSE-target_tdom berechnet) für Display == Selektion-Konsistenz.
+        sig_row = _signal_row_from_series(row["ticker"], history.get(row["ticker"]),
+                                          with_mw=False)
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
                         "score", "price_close", "change_pct", "price_date"):
                 row[key] = sig_row.get(key)
         else:
             row.setdefault("score", 0)
+        row["mw_score"] = row.get("multi_window_score", 0)
 
-    # Score-Sortierung gewinnt (Product-Owner-Vorgabe), Tiebreaker multi_window.
+    # MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score, dann KI.
     def _sort_key(r: dict):
         return (
+            r.get("mw_score", 0),
             r.get("score") if r.get("score") is not None else -999,
-            r.get("multi_window_score", 0),
             r.get("ki_score", 0),
         )
     etfs.sort(key=_sort_key, reverse=True)
@@ -834,9 +884,10 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
                 }
 
     items = raw[:WATCHLIST_LIMIT]
-    # Eine Historie-Query für alle Watchlist-Ticker → LBR/RSI/Score + Kurs/Vortag.
+    # Eine Historie-Query für alle Watchlist-Ticker → MW + LBR/RSI/Score + Kurs/Vortag.
     wl_tickers = [item["ticker"] for item in items if item.get("ticker")]
     history = fetch_daily_close_history(wl_tickers) if wl_tickers else {}
+    _td = next_trading_day()
 
     rows: list[dict] = []
     for item in items:
@@ -845,7 +896,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             continue
         meta = SYMBOLS.get(ticker, {})
         sc = score_map.get(ticker, {})
-        sig_row = _signal_row_from_series(ticker, history.get(ticker))
+        sig_row = _signal_row_from_series(ticker, history.get(ticker), target_date=_td)
         row = {
             "ticker":   ticker,
             "name":     meta.get("name", ticker),
@@ -859,24 +910,19 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "rsi_daily":   None,
             "rsi_weekly":  None,
             "score":       0,
+            "mw_score":    None,
             "price_close": None,
             "change_pct":  None,
             "price_date":  None,
         }
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
-                        "score", "price_close", "change_pct", "price_date"):
+                        "score", "mw_score", "price_close", "change_pct", "price_date"):
                 row[key] = sig_row.get(key)
         rows.append(row)
 
-    # Absteigend nach Score (Tiebreaker: lbr_weekly desc).
-    rows.sort(
-        key=lambda r: (
-            r.get("score") if r.get("score") is not None else -999,
-            r.get("lbr_weekly") if r.get("lbr_weekly") is not None else -1e9,
-        ),
-        reverse=True,
-    )
+    # MW-Saisonalscore zuerst (Kern), dann LBR/RSI-Score.
+    rows.sort(key=_signal_sort_key, reverse=True)
     return rows
 
 
@@ -1127,7 +1173,7 @@ def build_daily_context(
 
     # Kern-Marktbarometer: fixe Kernliste mit LBR/RSI-Signalen + Score (score DESC).
     # ML-Regime im Newsletter entfernt → market_regime bleibt leer.
-    core_list = build_signal_rows(NEWSLETTER_CORE_LIST)
+    core_list = build_signal_rows(NEWSLETTER_CORE_LIST, target_date=target)
 
     return {
         "report_time":      now_utc.strftime("%Y-%m-%d %H:%M UTC"),

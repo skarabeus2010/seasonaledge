@@ -24,7 +24,8 @@
     ticker, name, price_close (float|None), change_pct (float|None), price_date,
     lbr_daily (float|None), lbr_weekly (float|None)   # LBR-Fastline: >0 bullish, <0 bearish
     rsi_daily (float|None), rsi_weekly (float|None)    # 0–100
-    score (int)
+    score (int)        # technischer LBR/RSI-Score
+    mw_score (int|None) # Saisonal-Score 0–4 (Multi-Window-TDOM), Primär-Sortierung
 #}<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -54,6 +55,7 @@
         <th align="left"  style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Ticker</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Kurs</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;">Δ&nbsp;Vt</th>
+        <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.30);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#e8a820;font-weight:700;" title="Saisonal-Score (Multi-Window): wie viele von 4 historischen TDOM-Renditefenstern im Schnitt positiv waren (0–4)">MW</th>
         <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Wochenbasis">LBR&nbsp;W</th>
         <th align="center" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="LBR-Oszillator Tagesbasis">LBR&nbsp;D</th>
         <th align="right" style="padding:8px 4px;border-bottom:1px solid rgba(232,168,32,0.18);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#a89878;font-weight:600;" title="RSI Tagesbasis">RSI&nbsp;D</th>
@@ -76,6 +78,12 @@
         {# ── Δ Vortag ── #}
         <td align="right" style="padding:9px 4px;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:{% if r.change_pct is not none and r.change_pct > 0 %}#30e878{% elif r.change_pct is not none and r.change_pct < 0 %}#ff6060{% else %}#a89878{% endif %};">
           {% if r.change_pct is not none %}{{ '%+.2f' % r.change_pct }}%{% else %}—{% endif %}
+        </td>
+        {# ── MW Saisonalscore (0-4): wie viele Renditefenster historisch positiv ── #}
+        <td align="center" style="padding:9px 4px;">
+          {% if r.mw_score is not none %}
+          <span style="display:inline-block;min-width:30px;padding:3px 7px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;{% if r.mw_score >= 4 %}background:rgba(48,232,120,0.20);color:#30e878;{% elif r.mw_score == 3 %}background:rgba(48,232,120,0.10);color:#7fe0a0;{% elif r.mw_score == 2 %}background:rgba(232,168,32,0.16);color:#e8a820;{% else %}background:rgba(168,152,120,0.12);color:#a89878;{% endif %}">{{ r.mw_score }}/4</span>
+          {% else %}<span style="color:#a89878;">—</span>{% endif %}
         </td>
         {# ── LBR weekly (Vorzeichen = Kern-Info) ── #}
         <td align="center" style="padding:9px 4px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:{% if r.lbr_weekly is not none and r.lbr_weekly > 0 %}#30e878{% elif r.lbr_weekly is not none and r.lbr_weekly < 0 %}#ff6060{% else %}#a89878{% endif %};">
@@ -106,9 +114,9 @@
 {% endmacro %}
 
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#000000;">
-<tr><td align="center" style="padding:32px 16px;">
+<tr><td align="center" style="padding:24px 10px;">
 
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#0a0a0e;border:1px solid rgba(232,168,32,0.15);border-radius:12px;overflow:hidden;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="720" style="max-width:720px;background:#0a0a0e;border:1px solid rgba(232,168,32,0.15);border-radius:12px;overflow:hidden;">
 
     <!-- ══════════════════════ HEADER ══════════════════════ -->
     <tr><td style="padding:28px 32px 20px;border-bottom:1px solid rgba(232,168,32,0.12);">
@@ -145,7 +153,7 @@
     <!-- ══════════════════════ INTRO ══════════════════════ -->
     <tr><td style="padding:22px 32px 8px;">
       <p style="margin:0;font-size:14px;line-height:1.6;color:#cbd5e1;">
-        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit <strong style="color:#e8a820;">LBR/RSI-Signalen</strong> und kombiniertem <strong style="color:#e8a820;">Score</strong>, dazu Events und aktive Strategien.
+        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit dem <strong style="color:#e8a820;">Saisonal-Score (MW&nbsp;0–4)</strong> sowie <strong style="color:#e8a820;">LBR/RSI</strong>-Momentum und kombiniertem Score, dazu Events und aktive Strategien.
       </p>
     </td></tr>
 
@@ -216,7 +224,11 @@
     <tr><td style="padding:14px 32px 8px;">
       <div style="padding:12px 14px;background:rgba(168,152,120,0.05);border:1px solid rgba(168,152,120,0.14);border-radius:8px;">
         <div style="font-size:11px;color:#a89878;line-height:1.65;">
-          <strong style="color:#cbd5e1;">Score</strong> = Summe folgender Bedingungen:
+          <strong style="color:#e8a820;">MW &mdash; Saisonal-Score (0&ndash;4)</strong>: wie viele von vier historischen Renditefenstern auf dem heutigen Handelstag des Monats (TDOM) im Schnitt positiv waren &mdash;
+          ① Open&rarr;Close · ② Open&rarr;Open(t+1) · ③ Open&rarr;Close(t+1) · ④ Close&rarr;Close(t+1).
+          <strong style="color:#cbd5e1;">4/4</strong> = alle Fenster historisch im Plus · <strong style="color:#cbd5e1;">3/4</strong> robust positiv · <strong style="color:#cbd5e1;">≤2</strong> mehrdeutig. Börsenspezifische TDOM je Ticker.
+          <br><br>
+          <strong style="color:#cbd5e1;">Score</strong> (technisch) = Summe folgender Bedingungen:
           <br>· LBR weekly &gt; 0 &rarr; +1
           <br>· LBR daily &gt; 0 &rarr; +1
           <br>· RSI weekly &gt; 50 &rarr; +1
