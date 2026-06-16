@@ -27,8 +27,7 @@ ist alles da** — der Engpass ist **Authority + Content-Tiefe**, nicht die Pfli
 *Pflichtseiten ✅ bereits vorhanden (Impressum/Datenschutz/Risikohinweis auf `/rechtliches`,
 Footer-verlinkt). Es fehlt nur noch das **Expertise-/Vertrauenssignal** + Baseline.*
 - [x] ~~Impressum / Datenschutz / Disclaimer~~ — **erledigt** (`/rechtliches`).
-- [ ] **Über-uns / Methodik-Seite** (`/ueber-uns` o. `/methodik`) — Vertrauen über
-      **transparentes Verfahren** statt Personenzwang: Datenquellen (130 J. Historie),
+- [x] ~~**Über-uns / Methodik-Seite** (`/ueber-uns`)~~ — **erledigt** (2026-06-15): Datenquellen,
       „wie wir rechnen" (normalisierte Renditen, Handelstags-Kalender), Qualitätssicherung.
       Stärkstes E-E-A-T-Signal für eine *Daten*plattform, ohne öffentliches Gesicht.
 - [ ] **Author/Redaktion-Schema** — Blog-Autor als `Person`/`Organization` „Redaktion
@@ -42,8 +41,9 @@ Footer-verlinkt). Es fehlt nur noch das **Expertise-/Vertrauenssignal** + Baseli
 - [ ] **Tool-Seiten** (monatszyklus/opex/…): statischen Erklär-/Methodik-Text 300→800+ W
       + **FAQPage-Schema** (echte Fragen) → gegen „thin", Chance auf Rich Results.
 - [ ] **Internes Cluster-Linking** — Pillar ↔ Tool ↔ Blog kontextuell verknüpfen.
-- [ ] **1. Daten-Studie bauen** (zitierfähiges Asset, aus `shared/`+DB): z.B. „30 Jahre DAX —
-      die statistisch 5 schlechtesten Handelstage" mit Chart + Methodik + `Dataset`-Schema.
+- [x] ~~**1. Daten-Studie bauen**~~ — **erledigt** (2026-06-15): Blog „Schlechtester DAX-Monat"
+      (DAX-September seit 1988, DE+EN) als zitierfähiger Link-Hook. Embed-Backlink-Asset (`/embed`)
+      + `wachstum-distributor`-Agent für die Distribution dazu. Nächste Studien nachlegen.
 
 ### Phase 3 — Authority / Digital PR (Tag 61–90) · P1
 *Das eigentliche Defizit. Asset → Distribution → Backlinks + erste Klicks.*
