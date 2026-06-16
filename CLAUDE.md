@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 40.0 | 2026-06-15 | Kalender-Spec vervollständigt (OPEX/VIX börsenspez. + holiday-aware, Zeit-Indizes TDOM/TDOY/CDOM/CDOY, Notenbank-Termine je Region, Asien HKEX/KRX/TSE) + **Prüfagent** (`verify_calendar_rules.py`, wöchentl. Cron) · **SEO-Foundation**: `/ueber-uns` (E-E-A-T), 1. Daten-Studie (DAX-September), SEO-Audit · **8 Subagenten** (4 neue Wachstums-Agenten + `docs/AGENTS.md`) · **Embed-Backlink-Asset** (`/embed` + Einbetten-Button auf Jahreszyklus)
 > Version 39.0 | 2026-06-14 | Ticker-Universum 270→324 (Dow-30/DAX-40 vollständig, Orphan-Adoption, SAP→SAP.DE) + DB-Vollständigkeits-Audit/Onboarding-Guardrails + Klarstellung: **Streamlit produktseitig ungenutzt** (nur Container-Keep-alive), `landing/` = Frontend
 
 ## Projekt
@@ -27,7 +28,9 @@ shared/                  ← Berechnungs-/Daten-/UI-Module (siehe Module-Liste u
 scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime, Audit)
 pages/                   ← Streamlit Pages (Legacy, ungenutzt)
 landing/                 ← Statische HTML-App (= DAS Frontend)
-  pages/                 ← 29 HTML-Feature-Pages
+  pages/                 ← 30 HTML-Feature-Pages
+  ueber-uns.html         ← Methodik/About (E-E-A-T, root)
+  embed.html             ← Standalone-Seasonal-Chart zum Einbetten (Route /embed, framebar)
   js/                    ← JS-Module (shared compute + charts + i18n)
   i18n/                  ← de.json + en.json (1222 Keys, seit KW24)
   css/app.css            ← V3 Ultra Design System
@@ -40,7 +43,10 @@ blog/                    ← Markdown-Blog-Engine
   output/                ← Generiertes HTML (gitignored, wird serverseitig gebaut)
 seo/                     ← Programmatic SEO + statische Tool-Pages
 docs/                    ← Ausgelagerte Dokumentation
+.claude/agents/          ← 8 Subagenten (versioniert) — Einsatz-Anleitung: docs/AGENTS.md
 ```
+
+**Subagenten (`.claude/agents/`, Anleitung [docs/AGENTS.md](docs/AGENTS.md)):** Content (`blogger`, `saisonalitaet-scout`), Daten (`daten-auditor`), SEO/Wachstum (`seo-experte`, `wachstum-distributor`, `seo-seiten-bauer`, `gsc-analyst`, `frontend-qa`). Flywheel: scout→blogger→distributor→[posten]→gsc-analyst. Wachstums-Engpass = Off-Page (junge Domain, wenige Backlinks) → Embed-Backlink-Hebel (`/embed`).
 
 ### Module / Pages — Detail-Listen in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 

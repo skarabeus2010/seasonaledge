@@ -21,6 +21,35 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). **User-Action offen:** `DROP TABLE ml_f
 
 ## Detail-Logs
 
+### 2026-06-15 — SEO-Foundation + 8 Subagenten + Embed-Backlink-Asset (PRs #94-105)
+
+Wachstums-Schub nach Erkenntnis: Produkt/Daten stark, aber **Off-Page der Engpass**
+(junge Domain, kaum Backlinks, „Gecrawlt aber nicht indexiert" für ~293 Thin-Pages).
+
+- **SEO-Audit** ([docs/SEO_AUDIT.md](SEO_AUDIT.md)) — ehrliche Bestandsaufnahme; Korrektur:
+  Rechtliches (Impressum/Datenschutz auf `landing/rechtliches.html`) existiert, Engpass =
+  **Authority + Content/Distribution**, nicht Technik.
+- **`/ueber-uns`** (neu, E-E-A-T) — Methodik/Betreiber-Transparenz für YMYL-Vertrauen.
+- **1. Daten-Studie** — Blog „Schlechtester DAX-Monat" (DAX-September seit 1988, DE+EN) als
+  zitierbarer Link-Hook.
+- **4 neue Wachstums-Agenten** (`.claude/agents/`): `wachstum-distributor` (Distribution/
+  Outreach + Embed-Angebot), `frontend-qa` (Link/i18n/SEO-Crawler), `seo-seiten-bauer`
+  (programmatic SEO mit Anti-Thin-Content-Schwelle), `gsc-analyst` (GSC→Prioritäten).
+  Zusammen mit den 4 bestehenden = **8 Agenten**; Anleitung + Flywheel + Automatisierungs-
+  Tabelle in **[docs/AGENTS.md](AGENTS.md)** (neu). Agent-/Skill-Infra committed (`.gitignore`
+  whitelistet `.claude/agents/` + `.claude/skills/`).
+- **Embed-Backlink-Hebel** — Route **`/embed`** (`landing/embed.html`, standalone Seasonal-
+  Chart, nginx `frame-ancestors *` via CSP statt X-Frame-Options) + **„Chart einbetten"-Button**
+  unter dem Seasonal-Chart auf Jahreszyklus (DE+EN): erzeugt fertiges iframe-Snippet inkl.
+  Pflicht-**Caption-`<a>` im Host-DOM** (der eigentliche dofollow-Backlink — ein Link IM iframe
+  zählt nicht). Nur Ø-Serie, kein ±1σ-Band.
+
+**Kalender-Regel-Spec finalisiert** (begleitend, [docs/TRADING_CALENDAR_RULES.md](TRADING_CALENDAR_RULES.md)):
+OPEX/VIXpiration **börsenspezifisch + holiday-aware** (CBOE vs EUREX), Zeit-Indizes
+TDOM/TDOY/CDOM/CDOY dokumentiert, **Notenbank-Termine je Region** (Fed/EZB/BoE/BoJ +
+PBoC/SNB/BoC/RBA/RBNZ, `central_banks_for_ticker()` folgt Handelsplatz, max. weit in die
+Zukunft) — Regel 1-9 vollständig, Prüfagent deckt sie ab.
+
 ### 2026-06-14 — Asien-Kalender (HKEX/KRX/TSE) + offene Kalender-TODOs geschlossen
 
 Restliche Kalender-Lücken aus der Spec abgearbeitet (datengetrieben verifiziert):
