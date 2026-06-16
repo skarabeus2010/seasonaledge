@@ -213,8 +213,8 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 - [x] **Finnhub-API-Key revoken** — erledigt 2026-06-13 (war in Session 2026-04-30 geleakt; nicht mehr genutzt)
 
 ### 🔴 SOFORT — Funktional (User-Action erforderlich)
-- [ ] **Daily-Newsletter DB-Migration** — `scripts/create_daily_subscribers.sql` in Supabase SQL-Editor ausführen. Danach: `INSERT INTO daily_subscribers(email) VALUES ('heiko.seibel@gmail.com');`
-- [ ] **Daily-Newsletter Smoke-Test** — GitHub Actions → "Daily Morning Briefing" → Run workflow → test_mode=true. Mail + alle Sektionen prüfen.
+- [x] **Daily-Newsletter DB-Migration** — erledigt (`daily_subscribers` existiert + befüllt; bestätigt durch produktiven Briefing-Lauf 2026-06-16)
+- [x] **Daily-Newsletter Smoke-Test** — erledigt: Daily Morning Briefing läuft produktiv (Lauf 2026-06-16 erfolgreich)
 - [x] **4. TDOM-Strategy befüllt** — alle 4 Strategien mit je 6210 Rows ✓
 
 ### Marketing (manuell)
