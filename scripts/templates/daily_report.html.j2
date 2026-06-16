@@ -55,6 +55,12 @@
     .gr{background:rgba(168,152,120,0.13);color:#a89878;}
     .rd{background:rgba(255,96,96,0.16);color:#ff6060;}
     .g0{background:rgba(48,232,120,0.28);color:#5cff9e;}
+    /* „Warum"-Zeile unter Top-Picks */
+    .st tr.wr td.why{padding:0 6px 9px;font-size:10px;line-height:1.5;color:#8a8270;font-family:-apple-system,'Segoe UI',sans-serif;letter-spacing:.1px;}
+    .vd{display:inline-block;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:7px;margin-right:2px;}
+    .vd-strong{background:rgba(48,232,120,0.18);color:#30e878;}
+    .vd-bull{background:rgba(232,168,32,0.16);color:#e8a820;}
+    .vd-weak{background:rgba(168,152,120,0.14);color:#a89878;}
   </style>
 </head>
 <body style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;-webkit-font-smoothing:antialiased;">
@@ -71,7 +77,7 @@
   Wiederverwendet von Kernliste, ETFs, Aktien, Watchlist.
   ════════════════════════════════════════════════════════════════════
 #}
-{% macro signal_table(rows) %}
+{% macro signal_table(rows, show_why=false) %}
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="st">
     <thead><tr>
       <th align="left">Ticker</th>
@@ -99,6 +105,14 @@
         <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/4</span></td>
         <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/8</span></td>
       </tr>
+      {% if show_why and r.why %}
+      <tr class="wr"><td colspan="10" class="why">
+        <span class="vd vd-{{ r.why.verdict_class }}">{{ r.why.verdict }}</span> · SC {{ r.why.hits }}:
+        {% for w in r.why.windows_compact %}{{ w.label }}&nbsp;<span class="{{ 'up' if w.hit else 'nu' }}">{{ w.pct }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
+        {% if r.why.win_rate_pct is not none %} · Trefferquote {{ r.why.win_rate_pct }}%{% endif %}
+        {% if r.why.sample_n %} · n={{ r.why.sample_n }}{% endif %}
+      </td></tr>
+      {% endif %}
       {% endfor %}
     </tbody>
   </table>
@@ -170,7 +184,7 @@
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
         Score-stärkste ETFs für den anstehenden Handelstag (TDOM {{ target_tdom }}).
       </div>
-      {{ signal_table(etfs) }}
+      {{ signal_table(etfs, show_why=true) }}
     </td></tr>
     {% endif %}
 
@@ -183,7 +197,7 @@
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
         Score-stärkste Einzelwerte aus US- und EU-Universum.
       </div>
-      {{ signal_table(stocks) }}
+      {{ signal_table(stocks, show_why=true) }}
     </td></tr>
     {% endif %}
 
@@ -266,6 +280,7 @@
           <strong style="color:#e8a820;">SC &mdash; Saisonal-Score (0&ndash;4)</strong>: wie viele von vier historischen Renditefenstern auf dem heutigen Handelstag des Monats (TDOM) im Schnitt positiv waren &mdash;
           ① Open&rarr;Close · ② Open&rarr;Open(t+1) · ③ Open&rarr;Close(t+1) · ④ Close&rarr;Close(t+1).
           <strong style="color:#cbd5e1;">4/4</strong> = alle Fenster historisch im Plus · <strong style="color:#cbd5e1;">3/4</strong> robust positiv · <strong style="color:#cbd5e1;">≤2</strong> mehrdeutig. Börsenspezifische TDOM je Ticker.
+          <br>Die <strong style="color:#cbd5e1;">„Warum"-Zeile</strong> unter jedem Top-Pick zeigt die vier Fenster einzeln (O&rarr;C = Open&rarr;Close, O&rarr;O⁺/O&rarr;C⁺/C&rarr;C⁺ = bis zum Folgetag), die historische Trefferquote und <strong style="color:#cbd5e1;">n</strong> = Stichprobengröße (Anzahl historischer Vorkommen dieses TDOM).
           <br><br>
           <strong style="color:#e8a820;">TS &mdash; Technical Score (max&nbsp;4)</strong> = Summe folgender LBR/RSI-Bedingungen:
           <br>· LBR weekly &gt; 0 &rarr; +1
