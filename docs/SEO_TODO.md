@@ -23,15 +23,18 @@
 - [ ] **nginx `/landing/pages/*.html` 404 → 301** auf die Clean-URL — rettet Crawl-Budget +
       Linkjuice der 43 historischen 404. (`deploy/nginx.conf`, Restart nötig.)
 
-## 🟢 ICH — Content-Tiefe (gegen die 293) — Fortschritt
+## 🟢 ICH — Content-Tiefe (gegen die 293) — ✅ ERLEDIGT
 
 Tool-Seiten waren dünn (<300 Wörter statischer Text → Wert nur im JS-Chart, für Crawler
 unsichtbar). Lösung je Seite: ~400 Wörter statischer Unique-Content (Was zeigt das Tool ·
 Wie liest man es · Methodik · Einordnung) + 3 FAQ + FAQPage-Schema, i18n-sauber (DE+EN).
 
-**Erledigt (PR #116/#117):** crash-fruehwarnung · dekadenzyklus · monatswechsel · mondphasen · sektor-rotation
-**In Arbeit:** kriegszeiten · plain-vanilla · trifecta · feiertage · overnight · dividend-kalender ·
-scanner · risikozyklus · zentralbanken · monatszyklus · intermarket-shocks · earnings-kalender · opex
+- [x] **Alle 18 öffentlichen dünnen Tool-Seiten** versorgt (PR #116–119, via blogger-Agenten):
+      crash-fruehwarnung · dekadenzyklus · monatswechsel · mondphasen · sektor-rotation ·
+      kriegszeiten · plain-vanilla · trifecta · feiertage · overnight · dividend-kalender ·
+      scanner · risikozyklus · zentralbanken · monatszyklus · intermarket-shocks ·
+      earnings-kalender · opex. Jeweils FAQPage-Schema + EN-Keys; `verify_en` FAIL 0.
+      (Utility/Login-Seiten bewusst ausgelassen: apex-demo/unsubscribe/profile/watchlist/pricing.)
 
 ## 🟢 ICH — laufend / nächste Schritte
 
