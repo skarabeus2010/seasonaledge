@@ -21,6 +21,57 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-06-16…21 — Daily-Newsletter-Rework + DB-Audit-Entrauschung + SEO-Content-Offensive (PRs #104-120)
+
+**Embed/Doku (PRs #104-108):** Einbetten-Button unter den Jahreszyklus-Chart; Doku-Sync v40;
+veraltete TODOs geschlossen (Daily-Newsletter-Migration, `DROP TABLE ml_forecasts` — beide längst erledigt).
+
+**Daily Newsletter runderneuert (PRs #109-113):** ML-„Regime" (nur SPY, Black-Box, misst *Turbulenz*
+statt *Richtung*) im Newsletter ersetzt durch transparentes Pro-Ticker-Scoring: **SC** (Saisonal/
+Multi-Window-TDOM 0-4), **TS** (technischer LBR/RSI-Score), **Gesamt = SC+TS**. Drei Tabellen
+(Kernliste/Markt-Überblick · Top-Auswahl · Watchlist), Sektor-Rotation (echte Monatsrenditen,
+Top-5 akt.+Folgemonat), **alle Notenbanken** (Fed/EZB/BoE/BoJ/SNB/BoC/RBA/RBNZ) + Multi-Börsen-
+Feiertage in den Events. **„Warum"-Transparenzzeile** je Top-Pick (4 TDOM-Fenster + Trefferquote,
+deterministisch). Gebaut/geprüft via 4 Subagenten (Indikatoren/DB/UI/Review).
+
+**DB-Audit entrauscht (PR #114):** „Nicht melden, was legitim fehlt" auf 3 Dimensionen — NULL
+log_return nur jüngstes Fenster (Erst-Zeilen je Ticker raus), Earnings US vs. EU getrennt,
+Dividenden-Nichtzahler = info. Feiertags-Awareness der Gap-Erkennung war bereits korrekt.
+
+**SEO-Offensive (PRs #115-120):** GSC zeigte 468 nicht-indexierte Seiten → triagiert (mostly
+normal für junge YMYL-Domain). 0 tote Links; index.html-Drift gefixt; Off-Page-Distributionspaket
+(DAX-Studie) + 7 Outreach-Ziele. **Content-Tiefe: alle 18 öffentlichen dünnen Tool-Seiten** mit je
+~400 Wörtern statischem Unique-Content + 3 FAQ + FAQPage-Schema (via blogger-Agenten, i18n DE+EN,
++162 en.json-Keys, `verify_en` FAIL 0). Plan/Status: `docs/SEO_TODO.md`.
+
+#### Lessons Learned (nicht-offensichtlich)
+
+- **Gmail kappt Mails > ~102 KB** („[Nachricht gekürzt]") → Footer/Inhalt fehlt, oft mitten in einer
+  Zeile. Ursache war wiederholter Inline-Style je Tabellenzelle → in `<style>`-CSS-Klassen ausgelagert
+  (~102 KB → 47 KB). **`--dry-run` enthält die Watchlist NICHT** (wird pro Empfänger in `render_email`
+  angehängt) → echte Mailgröße nur via `render_email`-Pfad oder `--test`-Send messen.
+- **Test-Send NICHT direkt nach PR-Merge** auslösen: der Auto-Deploy startet den Container neu, `docker
+  exec` trifft ihn im Restart → **kein Output, kein Versand, Workflow zeigt trotzdem „success"** (Run
+  läuft auffällig kurz). ~1-2 Min warten. (Brevo `201` = angenommen ≠ zugestellt — Spam/Promotions prüfen.)
+- **`prices` hat PK `(ticker,date)`** → ein `date`-Filter MIT `ORDER BY`/`count=exact` erzwingt Full-Scan
+  → Supabase-Statement-Timeout. Für „jüngste NULL-Werte" o.ä. unsortierte, gebundene Stichprobe nehmen.
+- **NULL `log_return` ist by-design für die ERSTE Kurszeile je Ticker** (kein Vortag) — ~300 erwartete
+  Zeilen, kein Defekt. Nur das jüngste Fenster prüfen.
+- **Tool-Seiten-Content für SEO**: Der Wert steckt im **JS-Chart** → Google sieht ihn nicht → „gecrawlt,
+  nicht indexiert". Lösung = **statischer** Unique-Text (Crawler-sichtbar) + FAQPage-Schema. **ABER:**
+  statischer DE-Text OHNE `data-i18n`-Keys bricht den EN-Build (`verify_en` FAIL: Deutsch auf /en/).
+  Also `data-i18n(-html)` + EN-Werte in `en.json`. `build_en.py` baut EN nur für Seiten mit
+  `_EN_PAGE_META` (z.B. crash-fruehwarnung hat keine EN-Seite). en.json ist **flach** (`"prefix.key"`).
+- **Live `robots.txt`/`sitemap.xml` kommen aus `seo/output/`** (in docker-compose nach `/app/static/`
+  gemountet, vom Builder bei jedem Deploy regeneriert) — die `static/robots.txt`/`static/sitemap.xml`
+  im Repo sind **ungenutzte Leichen**. Bei robots/sitemap-Fragen IMMER die Live-Version prüfen.
+- **Multi-Agent-Muster (bewährt):** je Agent **genau eine Datei** (kein Konflikt) gegen einen festen
+  **Contract**; geteilte Dateien (`en.json`) NICHT von Agenten schreiben lassen → EN zurückgeben, zentral
+  mergen. Agenten geben HTML-Inline manchmal als Markdown `**` statt `<b>` zurück → für `data-i18n-html`
+  zu `<b>` konvertieren (Grep-Check auf `**Wort**`). `blogger`-Agent eignet sich auch für Tool-Seiten-Content.
+- **Doku-Leiche:** CLAUDE.md/CHANGELOG nannten `shared/ai_models.py` als „KW16 gelöscht" — **existiert
+  und wird genutzt** (Anthropic-Client, `ANTHROPIC_API_KEY`). Bei „gelöscht"-Notizen vor Bezug verifizieren.
+
 ### 2026-06-15 — SEO-Foundation + 8 Subagenten + Embed-Backlink-Asset (PRs #94-105)
 
 Wachstums-Schub nach Erkenntnis: Produkt/Daten stark, aber **Off-Page der Engpass**
