@@ -48,7 +48,6 @@
   "foot.disclaimer": "Disclaimer",
   "foot.contact": "Contact",
   "foot.dashboard_arrow": "→ Dashboard",
-
   "sidebar.ticker": "Ticker",
   "sidebar.period": "Period",
   "sidebar.seasonal_chart": "Seasonal Chart",
@@ -70,7 +69,6 @@
   "sidebar.two_week_split": "Two-Week Split",
   "sidebar.smoothing_h3": "Smoothing",
   "sidebar.decade_years": "Show/Hide Decade Years",
-
   "common.methodology": "Methodology",
   "common.methodology_emoji": "📚 Methodology",
   "common.data_basis": "Data Basis",
@@ -91,7 +89,6 @@
   "common.stop_loss": "Stop-Loss",
   "common.window": "Window",
   "common.loading": "Loading data…",
-
   "section.anomaly_radar": "Anomaly Radar (AI Quick-Check)",
   "section.significance_test": "Significance Test",
   "section.detrend": "Detrend Indicator / Seasonal Pressure",
@@ -108,7 +105,6 @@
   "section.annual_progression": "Seasonal Annual Projection",
   "section.drawdown_vola": "Drawdown & Volatility",
   "section.stat_significance": "Statistical Significance",
-
   "table.month": "Month",
   "table.win_rate": "Win Rate",
   "table.median": "Median",
@@ -123,14 +119,12 @@
   "table.strategy": "Strategy",
   "table.holiday": "Holiday",
   "table.n": "n",
-
   "checkbox.show_individual": "Show individual years",
   "checkbox.confidence_band": "Confidence Band (±1σ)",
   "checkbox.percentile_bands": "Percentile Bands (25th/75th)",
   "checkbox.highlight_current_yr": "Highlight current year",
   "checkbox.show_current_yr": "Show current year",
   "checkbox.pressure_chart": "Gann Pressure Chart",
-
   "dash.caption": "All key signals at a glance · Seasonality · Strategies · Risk · Events",
   "dash.period": "Period",
   "dash.yr5": "5 Years",
@@ -165,7 +159,6 @@
   "home.demo_years": "Individual Years",
   "home.demo_avg_short": "Seasonal Avg",
   "home.demo_current": "2026 (current)",
-
   "home.nav_cta": "To Dashboard",
   "home.hero_tag": "Data-Driven Market Analysis",
   "home.stat_history": "Market History",
@@ -211,9 +204,7 @@
   "home.nl_title": "Seasonal Insights Every Week",
   "home.nl_sub": "GDPR-compliant, unsubscribe at any time.",
   "home.nl_btn": "Subscribe",
-
   "common.activate": "Enable",
-
   "moon.sidebar_phase": "Moon Phase",
   "moon.days_before": "Days before moon phase",
   "moon.days_after": "Days after moon phase",
@@ -224,7 +215,6 @@
   "moon.section_supermoon": "Supermoon vs. Regular Full Moon",
   "moon.section_lunar_cal": "Lunar Calendar (Lunar Month 1–12)",
   "moon.section_next_phases": "Upcoming Moon Phases",
-
   "war.page_title": "War Times",
   "war.sidebar_select_wars": "Select Conflicts",
   "war.select_all_none": "All / None",
@@ -235,7 +225,6 @@
   "war.drawdown_desc": "Maximum decline from peak within the event window after T=0.",
   "war.section_war_table": "US Conflicts with Market Impact",
   "war.section_annual_returns": "Annual Returns — War Years Highlighted",
-
   "crash.sidebar_fixed": "Fixed to SPY (S&P 500)",
   "crash.page_title": "Crash Early Warning",
   "crash.page_caption": "Market regime detection based on the S&P 500 (SPY)",
@@ -256,7 +245,6 @@
   "crash.polymarket_desc": "Our Isolation Forest model measures the regime from <b>price data</b>. Polymarket shows what traders are pricing in based on <b>events</b> — two distinct signals. When both are red, confidence in the risk call increases. Divergence (e.g. low Risk Score but high Recession market) is itself a signal.",
   "crash.section_features": "Regime Features (Current Day)",
   "crash.section_how_it_works": "How the Crash Early Warning Works",
-
   "pv.page_title": "Plain Vanilla Strategies",
   "pv.page_caption": "24 seasonal trading strategies with fixed rules",
   "pv.section_next_signals": "Upcoming Signals",
@@ -268,7 +256,6 @@
   "pv.metric_sharpe": "Risk-adjusted return",
   "pv.metric_profit_factor": "Gross profits / gross losses",
   "pv.methodik_disclaimer": "Results are based on historical data. Not investment advice.",
-
   "tri.page_title": "January Trifecta",
   "tri.page_caption": "Three signals → full-year forecast (Yale Hirsch / Stock Trader's Almanac)",
   "tri.section_hist_stats": "Historical Analysis",
@@ -286,7 +273,6 @@
   "tri.signal_yellow": "= 2 of 3 → mildly bullish",
   "tri.signal_orange": "= 1 of 3 → neutral",
   "tri.signal_red": "= 0 of 3 → bearish full-year signal",
-
   "shock.trigger_asset": "Trigger Asset (A)",
   "shock.target_asset": "Target Asset (B)",
   "shock.direction": "Shock Direction",
@@ -310,7 +296,6 @@
   "shock.methodik_shock_def": "Shock Definition",
   "shock.methodik_horizons": "Horizons",
   "shock.methodik_viz": "Visualisations",
-
   "sr.sectors_heading": "Sectors",
   "sr.all_none": "All / None",
   "sr.btn_refresh": "Refresh",
@@ -320,7 +305,6 @@
   "sr.section_heatmap": "Seasonal Heatmap — Month × Sector",
   "sr.section_winrate": "Win-Rate Heatmap",
   "sr.ticker_overview": "Ticker Overview",
-
   "ov.page_caption": "Where does performance come from — overnight (Close→Open) or intraday (Open→Close)?",
   "ov.section_month": "Avg Return by Month",
   "ov.section_weekday": "Avg Return by Weekday",
@@ -329,7 +313,6 @@
   "ov.section_heatmap": "Heatmap: Month × Weekday",
   "ov.return_type": "Return Type",
   "ov.section_stats": "Overall Statistics",
-
   "cb.central_bank": "Central Bank / Event",
   "cb.fomc_all": "Fed (FOMC) — all meetings",
   "cb.fomc_hike": "Fed — Rate Hikes",
@@ -359,7 +342,6 @@
   "cb.hike_cut_heading": "Hike vs. Cut Analysis",
   "cb.days_before": "Days before t0",
   "cb.days_after": "Days after t0",
-
   "hol.holidays_heading": "Holidays",
   "hol.page_title": "Holiday Effect",
   "hol.page_caption": "Returns around exchange holidays — exchange-specific (NYSE/XETRA/LSE)",
@@ -372,7 +354,6 @@
   "hol.lse_holidays": "LSE Holidays (8)",
   "hol.days_before": "Days before holiday",
   "hol.days_after": "Days after holiday",
-
   "jz.pressure_chart_desc": "Sum of avg. daily returns over lookback periods (10/20/30/40/60/80 years) on secondary Y-axis",
   "jz.page_caption": "Seasonal Annual Projection · Monthly/Quarterly Performance · Significance",
   "jz.monthly_detail_table": "Monthly Detail Table",
@@ -418,7 +399,6 @@
   "common.today": "Today",
   "common.current": "current",
   "common.years": "years",
-
   "mz.sidebar_select_month": "Select month",
   "mz.sidebar_pres_cycle_filter": "Presidential Cycle Filter",
   "mz.page_caption": "Intra-Month Seasonality · Weeks · Two-Week · Heatmap",
@@ -437,7 +417,6 @@
   "mz.table_period": "Period",
   "mz.table_half": "Half",
   "mz.monthly_heatmap_title": "10-Year Monthly Heatmap",
-
   "dz.toggle_all_none": "All / None",
   "dz.cohort_overview": "Cohort — Overview",
   "dz.avg_annual_return_title": "Avg. Annual Return by Decade Digit",
@@ -450,7 +429,6 @@
   "dz.drawdown_chart_title": "Avg. Drawdown Progression by Decade",
   "dz.worst_dd_title": "Worst Drawdown — Historical Extreme Years + Recovery",
   "dz.seasonal_vola_title": "Seasonal Volatility by Decade",
-
   "wt.page_caption": "Weekday Performance · Win Rate · Overnight/Intraday · Weekend Effect",
   "wt.toggle_all_none": "All / None",
   "wt.month_filter_hint": "Applies to all weekday sections except heatmaps",
@@ -470,7 +448,6 @@
   "wt.topflop_title": "Top / Flop Month×Weekday Combinations",
   "wt.weekend_effect_title": "Weekend Effect (Fri Close → Mon Open)",
   "wt.weekend_effect_desc": "Measures the return over the weekend (Friday close → Monday open, residual method). Historically a negative weekend effect is often observed for equities — Mondays open below Friday's close.",
-
   "mw.page_caption": "Turn-of-Month Effect · Seasonality · Statistical Significance · Streaks",
   "mw.tom_window_h3": "TOM Window",
   "mw.days_before_month_end": "Days before month end",
@@ -485,10 +462,8 @@
   "mw.streak_title": "Streak Analysis (W/L Series per Month)",
   "mw.window_opt_title": "Window Optimisation (t−X to t+Y)",
   "mw.pres_cycle_title": "Presidential Cycle — TOM Effect by Cycle Year",
-
   "sidebar.smoothing": "Smoothing (days)",
   "common.empty_all_years": "Empty = all years",
-
   "tdom.opt_open_to_close": "Intraday (Open → Close)",
   "tdom.opt_open_to_next_open": "Overnight (Open → next Open)",
   "tdom.opt_open_to_next_close": "Swing (Open → next Close)",
@@ -515,7 +490,6 @@
   "tdom.strategies_h3": "Strategies",
   "tdom.tdom_counting_h3": "TDoM Counting",
   "tdom.multi_day_range_h3": "Multi-Day Range",
-
   "svb.vol_index_h3": "Vol Index",
   "svb.spot_ticker_h3": "Spot Ticker",
   "svb.returns_h3": "Returns",
@@ -533,9 +507,7 @@
   "svb.vrp_note": "<b>VRP = Implied Vol − Realized Vol (30d).</b> Positive VRP → vol is more expensive than the actually realized fluctuation (typical \"fear premium\", short-vol opportunity). Negative VRP → vol is underpriced, often a precursor to vol spikes. Realized vol = standard deviation of log returns × √252 × 100.",
   "svb.regime_turning_points": "Regime Turning Points: What Happens After Extremes?",
   "svb.regime_turning_points_h3": "Regime Turning Points",
-
   "common.what_does_page_show": "What does this page show?",
-
   "opex.page_title": "OPEX Analysis",
   "opex.page_caption": "Seasonal patterns around the monthly options expiration (3rd Friday) & Triple Witching",
   "opex.intro_desc": "OPEX (Options Expiration) is the monthly options expiration on the 3rd Friday. In quarterly months (March, June, September, December) futures also expire — the so-called Triple Witching. Here you analyze how the market typically behaves around these dates: return path, volatility, monthly breakdown and backtest. Sidebar: Choose ticker, period and event window — all sections update automatically.",
@@ -572,7 +544,6 @@
   "common.to": "to",
   "opex.vixpiration_h3": "VIXpiration",
   "opex.vixpiration_para": "VIXpiration dates are shown in the OPEX calendar for reference. Detailed VIXpiration analysis with dedicated charts, backtest and significance test: <a href=\"/en/vixpiration\" style=\"color:var(--accent)\">VIXpiration page →</a>",
-
   "vix.page_title": "VIXpiration Analysis",
   "vix.page_caption": "Seasonal patterns around the VIX settlement date (calendar 3rd Fri − 30 days, CBOE rule)",
   "vix.intro_desc": "The VIX expiration (VIXpiration) occurs monthly — 30 calendar days before the 3rd Friday (CBOE rule). Here you see how the market typically behaves around this date: average return path, volatility patterns, significance tests and a backtest of the VIX strategy. <b>Sidebar:</b> set the ticker, period and event window (t−x to t+y) — all sections update automatically.",
@@ -584,7 +555,6 @@
   "vix.significance_window": "Significance Test — Selected Period",
   "vix.calendar_section": "VIX Calendar",
   "vix.methodik_cboe_h3": "VIXpiration (CBOE Rule)",
-
   "ki.page_title": "AI Seasonality",
   "ki.page_caption": "Recalibrated seasonal path (TruePath) + AI Composite Score 1–10",
   "ki.intro_desc": "AI Seasonality combines classical seasonal analysis with machine learning. The <b>TruePath</b> finds the historically most similar years (correlation/DTW) and projects their weighted path into the future. The <b>AI Composite Score</b> (0–10) combines four sub-scores into a single signal: match quality, forward return, monthly win rate and tracking quality.",
@@ -602,9 +572,7 @@
   "ki.matches_section": "Most Similar Years (Top-N)",
   "ki.methodik_truepath_h3": "TruePath (Pattern Path)",
   "ki.methodik_score_h3": "AI Seasonal Score (1–10)",
-
   "common.what_shows": "What does this page show?",
-
   "bt.event_type": "Event Type",
   "bt.entry_exit": "Entry / Exit",
   "bt.entry_price": "Entry Price",
@@ -650,7 +618,6 @@
   "bt.wf_method_desc": "Expanding window: optimise on the past, test on the future. Each fold runs a grid search on in-sample years, then applies the best parameters to out-of-sample years. The aggregated OOS performance is the most honest estimate of live performance.",
   "bt.event_relevance_score": "Event Relevance Score",
   "bt.relevance_score_desc": "One t-test per event (H0: mean = 0). Score = 50% significance (1−p) + 30% win rate + 20% effect size (Cohen's d, capped at 1.0).",
-
   "table.event": "Event",
   "table.entry": "Entry",
   "table.exit": "Exit",
@@ -662,7 +629,6 @@
   "table.t_stat": "t-Stat",
   "table.p_value": "p-Value",
   "table.relevance": "Relevance",
-
   "pm.history_period": "History Period",
   "pm.history_compare": "History Comparison",
   "pm.max_markets": "Select up to 10 markets",
@@ -707,7 +673,6 @@
   "pm.by_category": "By Category",
   "pm.time_to_resolution": "Calibration as Resolution Approaches",
   "pm.time_resolution_hint": "<b>Hypothesis:</b> The closer the resolution date, the better the Brier score should get — more information available, less uncertainty. A flat trend means: Polymarket already knows the outcome months in advance.",
-
   "div.intro_desc": "Analyses price behaviour around the <b>ex-dividend date</b>: pre-ex-date drift (dividend capture premium), the price drop on the ex-date and the subsequent recovery. The event window shows the average pattern across all historical dividend dates.",
   "div.page_title": "Dividend Effect",
   "div.page_caption": "Price behaviour around the ex-dividend date",
@@ -722,7 +687,6 @@
   "div.methodik_normierung": "All historical event windows are normalised to the closing price on the ex-date (t0 = 0%) and averaged. Events with incomplete windows (too close to the start or end of the data) are excluded.",
   "div.dividend_capture": "Dividend Capture",
   "div.methodik_capture": "The strategy buys shortly before the ex-date and sells afterwards. The pre-ex drift and post-ex recovery determine profitability net of transaction costs.",
-
   "earn.intro_desc": "Analyses price behaviour and <b>volatility</b> around quarterly earnings: pre-earnings drift (price run-up before the release), the earnings-day move, post-earnings drift and the <b>vola crush</b> (decline in price fluctuation after the announcement). Where available: Beat vs. Miss breakdown.",
   "earn.data_availability_label": "Data Availability",
   "earn.data_availability_desc": "Currently supported: <b>US stocks</b> (4 quarters per run, growing daily to up to 16 within a year). Indices, futures, crypto and ETFs have no earnings. European and Asian equities will follow once we connect a suitable data source.",
@@ -745,7 +709,6 @@
   "earn.vola_crush": "Vola Crush",
   "earn.methodik_vola_crush": "Measured as the average absolute daily return (|Δ%|) per day in the window. The typical rise before earnings (driven by uncertainty) and the decline afterwards (vola crush once uncertainty is resolved) are a well-known pattern in options markets.",
   "earn.methodik_realized_vola": "<b>Realised vol before earnings</b> = avg |daily return| in the t-before trading days. <b>Realised vol after earnings</b> = avg |daily return| in the t-after trading days (t0 excluded).",
-
   "risk.individual_years": "Individual years in drawdown chart",
   "risk.risk_analysis": "Risk Analysis",
   "risk.rolling_vola_window": "Rolling Vol Window (Days)",
@@ -768,7 +731,6 @@
   "risk.methodik_percentile_desc": "\"In what % of years was vol lower on the same day than today?\"",
   "risk.methodik_color": "Colour Coding",
   "risk.methodik_color_desc": "Red > avg + 1σ (elevated), Green < avg − 1σ (low)",
-
   "wl.sidebar_add_ticker": "Add Ticker",
   "wl.sidebar_add_hint": "Max. 50 tickers. Press Enter or \"+\".",
   "wl.sidebar_sort": "Sort",
@@ -790,7 +752,6 @@
   "wl.summary_bullish": "Bullish",
   "wl.summary_bearish": "Bearish",
   "wl.summary_green_regime": "In green regime",
-
   "price.page_title": "Pricing",
   "price.subtitle": "SeasonAlpha is and will remain free to use.<br>Premium unlocks advanced analytics and features.",
   "price.free_plan_name": "Starter",
@@ -833,7 +794,6 @@
   "price.faq5_q": "How does payment work?",
   "price.faq5_a": "We use Stripe — the world's most trusted payment provider. Credit cards, debit cards, and SEPA direct debit are supported. Your card details are never stored on our servers.",
   "price.footer_note": "Questions? Email us at <a href=\"mailto:info@seasonalpha.ai\" style=\"color:var(--accent)\">info@seasonalpha.ai</a><br>Prices include VAT for customers in the EU.",
-
   "prof.page_title": "My Profile",
   "prof.page_caption": "Account information and settings",
   "prof.loading": "Loading profile...",
@@ -864,7 +824,6 @@
   "prof.delete_confirm_desc": "Your account and all linked data (watchlist, settings) will be permanently deleted. An email to our team will be prepared.",
   "prof.btn_request_deletion": "Request deletion by email",
   "prof.btn_cancel": "Cancel",
-
   "unsub.tag": "📧 Newsletter Management",
   "unsub.page_title": "Unsubscribe from SeasonAlpha",
   "unsub.confirm_question": "Do you really want to unsubscribe from the <span id=\"confirm-type\">SeasonAlpha Newsletter</span>?",
@@ -879,7 +838,6 @@
   "unsub.missing_link": "This link is incomplete or has expired.",
   "unsub.missing_detail": "To unsubscribe, please open the unsubscribe link from one of your recent SeasonAlpha emails. Or write to us at <a href=\"mailto:info@seasonalpha.ai\" style=\"color:var(--accent)\">info@seasonalpha.ai</a>.",
   "unsub.footer": "🇩🇪 GDPR compliant · <a href=\"/rechtliches\">Privacy Policy</a> · <a href=\"/\">SeasonAlpha</a>",
-
   "scan.page_title": "Seasonal Scanner",
   "scan.page_caption": "All analyzed tickers sorted by AI score · Filter by category, signal, and win rate",
   "scan.filter_signal": "Signal",
@@ -909,11 +867,9 @@
   "scan.method_avg_return": "<b>Avg. Return</b> = average monthly return for the current calendar month across all available years.",
   "scan.method_update_note": "Note: The scanner updates all tickers only on full runs (several times per week depending on server load, not necessarily daily). The scan date shown above reflects the actual data timestamp.",
   "scan.method_disclaimer": "<b>Not investment advice.</b> The signals shown are purely statistical-historical analyses and do not constitute a buy recommendation.",
-
   "app.sidebar_toggle_aria": "Show or hide sidebar",
   "app.sidebar_toggle_title": "Toggle sidebar",
   "app.sort_click": "Click to sort",
-
   "dc.not_recovered": "not recovered",
   "dc.anomaly_unavailable": "Anomaly score unavailable (insufficient historical comparison windows).",
   "dc.status_strongly_anomalous": "Strongly anomalous",
@@ -923,7 +879,6 @@
   "dc.percentile_suffix": "th Percentile",
   "dc.return_10d": "10d-Return",
   "dc.historical_avg": "Historical Avg",
-
   "sig.highly_significant": "Highly Significant",
   "sig.significant": "Significant",
   "sig.borderline": "Borderline",
@@ -938,27 +893,22 @@
   "sig.color_green_desc": "statistically valid",
   "sig.color_red": "Red",
   "sig.color_red_desc": "likely random",
-
   "out.method_off": "Off",
   "out.method_iqr": "IQR (1.5×)",
   "out.method_iqr_strict": "IQR (3×, strict)",
   "out.method_winsorize": "Winsorize (3σ)",
-
   "str.col_group": "Group",
   "str.current_streak": "Current Streak",
   "str.last_n": "Last {n}",
   "str.win": "Win",
   "str.loss": "Loss",
-
-  "dc2.cycle_election":      "Election Year",
+  "dc2.cycle_election": "Election Year",
   "dc2.cycle_post_election": "Post-Election Year",
-  "dc2.cycle_midterm":       "Midterm Year",
-  "dc2.cycle_pre_election":  "Pre-Election Year",
-
+  "dc2.cycle_midterm": "Midterm Year",
+  "dc2.cycle_pre_election": "Pre-Election Year",
   "ind.btn_add_filter": "+ Add Filter",
-  "ind.param_period":    "Period",
+  "ind.param_period": "Period",
   "ind.param_threshold": "Threshold",
-
   "pmjs.probability": "Probability",
   "pmjs.fed_cuts_2026": "Number of Fed Cuts 2026",
   "pmjs.implied_probability": "Implied Probability",
@@ -979,11 +929,9 @@
   "pmjs.col_category": "Category",
   "pmjs.col_question": "Question",
   "pmjs.col_liquidity": "Liquidity",
-
   "prem.gate_title": "Premium Feature",
   "prem.gate_desc": "This feature is part of SeasonAlpha Premium.",
   "prem.gate_btn": "View Upgrade",
-
   "strat.sell_in_may_desc": "Last TD Oct → 3rd TD May",
   "strat.lbr_nov_mai_desc": "From Oct LBR>0 → From Apr LBR<0",
   "strat.nasdaq_trend_desc": "Last TD Oct → Last TD Jun",
@@ -1020,39 +968,31 @@
   "strat.cat_monthly": "Monthly Patterns",
   "strat.cat_cycles": "Cycles",
   "strat.cat_election": "Election Cycle",
-
   "dash.tooltip_ki": "<b>AI Composite Score</b> — Overall rating 0–10 from four independent sub-scores (Seasonality, Drawdown, Volatility, Momentum). <b>≥ 6.5</b> = bullish, <b>≤ 3.5</b> = bearish, in between neutral. The score is an aggregated signal strength, not a return guarantee.",
   "dash.tooltip_crash": "<b>Crash Early Warning</b> — Isolation Forest model on daily returns + volatility of the ticker. <b>Green</b> = calm regime, <b>Yellow</b> = elevated caution, <b>Red</b> = stress regime. Risk score 0–100 quantifies the anomaly strength.",
   "dash.tooltip_anomaly": "<b>Anomaly Radar</b> — Measures how strongly the return of the last 10 trading days deviates from the historical average at the same calendar window. <b>Green</b> = unusually strong, <b>Red</b> = unusually weak. Useful as a contrarian signal at extremes.",
   "dash.tooltip_trifecta": "<b>January Trifecta</b> — Classic market gauge: when (1) Santa Rally positive, (2) first 5 trading days positive and (3) January month positive all coincide, the full year was historically positive in <b>&gt; 80%</b> of cases. If all three conditions are absent, success probability is significantly lower.",
   "dash.tooltip_truepath": "<b>TruePath</b> — Pattern matching over the last N trading days: each historical year is compared to the current YTD path via Pearson correlation + Euclidean distance. The top matches are <b>weighted averaged</b> into a year-end projection — plus ± σ-cone for uncertainty. Not a prediction model, but \"how did similar years continue?\".",
-
   "bt.years_back": "Years back",
   "bt.event_holidays": "Holidays (NYSE)",
   "bt.event_full_moon": "Full Moon",
   "bt.event_new_moon": "New Moon",
-
   "dash.yr3": "3 Years",
   "dash.yr7": "7 Years",
   "dash.yr25": "25 Years",
   "dash.yr50": "50 Years",
-
   "moon.phase_full": "🌕 Full Moon",
   "moon.phase_new": "🌑 New Moon",
   "moon.phase_both": "🌕+🌑 Both",
-
   "opex.days_before": "Days before OPEX",
   "opex.days_after": "Days after OPEX",
   "opex.monthly_view": "Monthly (12 Charts)",
   "opex.select_quarters": "Select Quarters",
   "opex.select_months": "Select Months",
   "opex.sidebar_info": "3rd Friday of the month",
-
   "common.all": "All",
   "common.none": "None",
-
   "dz.loading_data": "Loading data...",
-
   "mz.cycle_election_year": "Election Year (1)",
   "mz.cycle_post_election_year": "Post-Election Year (2)",
   "mz.cycle_midterm_year": "Midterm Year (3)",
@@ -1066,9 +1006,7 @@
   "mz.methodology_seasonal_match": "<b>Seasonal Match</b>: Pearson correlation + DTW (Dynamic Time Warping) + t-test between current month progression and historical average.",
   "mz.methodology_pres_cycle": "<b>Presidential Cycle</b>: Election year / Post-election year / Midterm year / Pre-election year according to formula <code>((year-2020)%4+4)%4+1</code>.",
   "mz.methodology_momentum_check": "<b>Momentum Check</b>: conditional probability that the second half continues the sign of the first.",
-
   "sidebar.years_label": "Years",
-
   "common.cycle_election": "Election Year",
   "common.cycle_post_election": "Post-Election Year",
   "common.cycle_midterm": "Midterm Year",
@@ -1080,7 +1018,6 @@
   "common.days_90": "90 Days",
   "common.months_6": "6 Months",
   "common.year_1": "1 Year",
-
   "wt.show_current_week": "Show current week",
   "wt.topflop_best_title": "🟢 Top 10 best combinations",
   "wt.topflop_worst_title": "🔴 Top 10 worst combinations",
@@ -1093,20 +1030,15 @@
   "wt.method_trend_filter": "<b>Trend Filter (SMA)</b>: Only days count where Close[t-1] > SMA[t-1].",
   "wt.method_obos_filter": "<b>OBOS Filter (RSI)</b>: Only days count where RSI[t-1] < threshold (oversold condition).",
   "wt.method_crypto_detection": "<b>Crypto Detection</b>: If weekend data is available, Sat+Sun are included (otherwise Mon–Fri).",
-
   "moon.page_title": "Lunar Phases & Market",
   "moon.page_caption": "Loading data...",
-
   "war.days_before": "Trading days before T=0",
   "war.days_after": "Trading days after T=0",
-
   "crash.polymarket_link": "→ Full Polymarket page with history and risk markets",
-
   "tri.color_green": "🟢 Green",
   "tri.color_yellow": "🟡 Yellow",
   "tri.color_orange": "🟠 Orange",
   "tri.color_red": "🔴 Red",
-
   "dash.yr1": "1 Year",
   "dash.ticker_placeholder": "e.g. TSLA, ^GSPC",
   "dash.wl_toggle_title": "Add or remove this ticker from your watchlist",
@@ -1128,7 +1060,6 @@
   "dash.method_risk": "<b>Risk Metrics</b>: Current DD vs. historical average max DD, current 20d volatility annualized + percentile rank.",
   "dash.method_strategies": "<b>Strategies</b>: All 22 Plain Vanilla strategies are applied to the ticker. Filtered by \"next signal within the next 30 days\". Current streak (last W or L in a row) as badge.",
   "dash.method_events": "<b>Next Events</b>: Per event type (FOMC, OPEX, Full Moon, NYSE Holiday) the next date + historical performance of the ticker in window t-3 to t+3 (Full Moon/FOMC/OPEX) or t-3 to t+0 (Pre-Holiday Effect). With current win streak.",
-
   "shock.intro_body": "The Intermarket Shock Analysis examines how a <b>target asset</b> reacts when a <b>trigger asset</b> experiences an extreme daily loss or gain. You define the trigger (e.g. \"VIX rises >10%\") and target (e.g. SPY) and see: scatter plot with OLS regression, cumulative forward returns, seasonal breakdown by month, and win-rate statistics. <b>Sidebar:</b> Trigger/target pair, threshold, direction, and time window freely configurable.",
   "shock.methodik_source": "<b>Data source:</b> Supabase (Yahoo Finance + Stooq), 263 instruments",
   "shock.methodik_update": "<b>Update:</b> Daily via Nightly Refresh",
@@ -1143,7 +1074,6 @@
   "shock.methodik_viz_heatmap": "<b>Heatmap (threshold × horizon):</b> Average return for different thresholds (2%, 3%, 5%, 7%, 10%) × all horizons",
   "shock.methodik_viz_scatter": "<b>Scatter + Regression:</b> Each point = one shock event. Dashed line = linear regression with R². Shows whether stronger shocks lead to stronger reactions. Extreme outliers (IQR filter) are hidden.",
   "shock.methodik_viz_seasonal": "<b>Seasonal breakdown:</b> Heatmap month × horizon — in which months do shocks hit hardest?",
-
   "sr.section_topflop": "Top & Flop Sectors",
   "sr.method_datasource": "<b>Data source:</b> Supabase (Yahoo Finance), updated daily",
   "sr.method_etfs": "<b>23 US Sector ETFs</b> &mdash; SPDR Select Sector + Specialty ETFs",
@@ -1155,7 +1085,6 @@
   "sr.method_rotation_signal": "<b>Rotation signal:</b> Ranking of sectors by avg. return in the current month",
   "sr.method_winrate": "<b>Win rate:</b> Share of years with positive return in the respective month",
   "sr.method_yearly_curve": "<b>Annual curve:</b> Cumulated monthly average returns (Jan&ndash;Dec)",
-
   "ov.method_data_source": "<b>Data source:</b> Supabase (Yahoo Finance OHLC), updated daily",
   "ov.method_data_requires": "<b>Requires:</b> Open + Close prices (OHLC)",
   "ov.method_data_period": "<b>Period:</b> Selectable 5–30 years or Max",
@@ -1168,7 +1097,6 @@
   "ov.method_interp_3": "Seasonal patterns can differ between Overnight and Intraday",
   "ov.method_hint_1": "Open prices from Yahoo Finance are not always perfectly split-adjusted",
   "ov.method_hint_2": "The trends are nonetheless statistically meaningful over longer time periods",
-
   "hol.methodik_exchange": "Exchange detection: Automatic by ticker (NYSE, XETRA, LSE, Crypto/FX=none)",
   "hol.methodik_holidays_calc": "<b>Holidays:</b> Dynamically calculated via <code>holidays.js</code> (Gaussian Easter, variable holidays)",
   "hol.methodik_prices": "Price data: Supabase (Yahoo Finance), updated daily",
@@ -1177,7 +1105,6 @@
   "hol.methodik_basis": "Base: Close at t−N = 0% (normalization)",
   "hol.methodik_window": "Window: t−N to t+N trading days",
   "hol.methodik_backtest": "Backtest: See \"Plain Vanilla Strategies\" → UHTS (Kaeppel System)",
-
   "tdom.opt_forward": "Forward (TDoM 1, 2, 3...)",
   "tdom.opt_backward": "Backward (TDoM -1, -2, -3...)",
   "tdom.example_label": "Example:",
@@ -1199,7 +1126,6 @@
   "tdom.methodik_range_li1": "Entry at TDoM X (Open or Close), Exit at TDoM Y",
   "tdom.methodik_range_li2": "Example: TDoM 1 Open &rarr; TDoM -1 Close = \"Buy 1st day, sell last day\"",
   "tdom.methodik_range_li3": "Equity curve shows cumulative performance of the selected months",
-
   "svb.sidebar_desc": "<b>Spot-Vol Beta</b> measures the correlation between spot return and vol change. Negative Beta = classic \"Fear Gauge\".<br><br><b>Pairs:</b> Each vol index is only calculated against the matching spot. VXN measures Nasdaq vol, OVX measures oil vol.",
   "svb.label_vol_spike": "Vol Spike",
   "svb.label_vol_complacency": "Vol Complacency",
@@ -1223,7 +1149,6 @@
   "svb.meth_regime_decoupling": "Events are decoupled with a minimum gap of 10 days (to avoid counting the same phase twice)",
   "svb.meth_hint_nonstationary": "The Spot-Vol relationship is <b>not stationary</b> &mdash; it can change abruptly during crisis periods",
   "svb.meth_hint_no_guarantee": "Historical regressions are no guarantee for the future",
-
   "ki.method_pearson": "Pearson Correlation",
   "ki.method_euclidean": "Euclidean Distance",
   "ki.topn_label": "Number of similar years",
@@ -1252,7 +1177,6 @@
   "ki.methodik_score_li3": "<b>Win rate</b> (0–2.5): Historical win rate of the current month across all years",
   "ki.methodik_score_li4": "<b>Tracking quality</b> (0–2.5): How closely does the current year follow the seasonal pattern?",
   "ki.methodik_signal": "Signal: <b>Bullish</b> ≥ 6.5 · <b>Neutral</b> 3.5–6.5 · <b>Bearish</b> ≤ 3.5",
-
   "bt.page_caption": "Generic Event Backtester · Grid Search · Walk-Forward · AI Relevance",
   "bt.equity_curve": "Equity Curve",
   "bt.score_li_significance": "<b>Significance</b> (50%): 1 - p-value",
@@ -1264,7 +1188,6 @@
   "bt.metric_max_drawdown": "<b>Max Drawdown</b>: Maximum equity decline in %.",
   "bt.metric_profit_factor": "<b>Profit Factor</b>: Σ Wins / |Σ Losses|.",
   "bt.stop_method_desc": "Stop is checked close-based (no intraday low/high in DB). <b>Fixed</b>: stop at <code>entry × (1 - stop%)</code>. <b>Trailing</b>: stop at <code>high_watermark × (1 - stop%)</code>, watermark tracks highest close.",
-
   "pm.cat_all": "All Categories",
   "pm.cat_macro": "Macro / Recession",
   "pm.brier_badge_aria": "Explanation of Brier Score",
@@ -1273,24 +1196,20 @@
   "pm.method_yes_price_html": "<b>What does YES price mean?</b> The price in USDC per YES share. Since Polymarket markets are normalised to <code>[0, 1]</code> (1 USDC payout on YES resolution), the price equals the <b>implied market probability</b>. Example: YES = 0.34 means the market prices in a 34% probability for the outcome.",
   "pm.method_liquidity_html": "<b>Liquidity:</b> Volume in the active order book (USDC). Markets with &lt;$20k liquidity are illiquid &mdash; their prices may be distorted.",
   "pm.method_divergence_example_html": "<b>Divergence example:</b> Seasonality says BTC has historically gained +25% median in Q4 &mdash; but Polymarket prices only a 10% probability for BTC &gt; $150k. That is a crowd-vs-history signal: either the crowd is underestimating seasonality, or current factors argue against it.",
-
   "div.sidebar_days_before": "Days <b>before</b> Ex-Date",
   "div.sidebar_days_after": "Days <b>after</b> Ex-Date",
   "div.sidebar_show_individual": "Show individual events",
-
   "earn.days_before_label": "Days <b>before</b> Earnings",
   "earn.days_after_label": "Days <b>after</b> Earnings",
   "earn.vola_window_label": "Vol Window (each side)",
   "earn.show_individual_events": "Show individual events",
   "earn.ticker_placeholder": "e.g. AAPL, MSFT, SAP.DE",
-
   "risk.page_caption": "Drawdown & Volatility · Seasonal Risk Patterns · Presidential Cycle Risk",
   "risk.methodik_definition_desc": "DD = (Price − Peak since year start) / Peak × 100",
   "risk.methodik_kpis": "KPIs: Avg Max DD, Worst DD, Current DD",
   "risk.methodik_cycle_mapping": "Mapping: 1 = Post-Election, 2 = Midterm, 3 = Pre-Election, 4 = Election Year",
   "risk.methodik_cycle_formula": "Formula: ((year − 1) % 4 + 4) % 4 + 1",
   "risk.methodik_cycle_per_phase": "Per cycle phase: Avg Max DD, best and worst year",
-
   "vix.days_before_label": "Days before VIXpiration",
   "vix.days_after_label": "Days after VIXpiration",
   "vix.sidebar_rule_vixpiration": "Calendar 3rd Fri − 30 days",
@@ -1347,5 +1266,41 @@
   "common.info_aria": "Explanation",
   "scan.wl_remove": "remove from watchlist",
   "scan.wl_add": "add to watchlist",
-  "scan.open_dash": "Open in dashboard"
+  "scan.open_dash": "Open in dashboard",
+  "dz.seo_h": "Understanding the Decade Cycle — Last-Digit Cohorts, Win Rate & Methodology",
+  "dz.seo_p1": "SeasonAlpha's <b>Decade Cycle</b> explores a single question: do stock-market years sharing the same <b>last digit of the year</b> behave similarly on average? To find out, the tool sorts every complete year of a time series into ten cohorts — from <b>x0</b> (1990, 2000, 2010 …) to <b>x9</b> (1989, 1999, 2009 …) — and averages the normalized yearly path for each group. This reveals which last digits have historically tended to perform strongly and which weakly. The default is the <b>Dow Jones (^DJI)</b> with over 130 years of history; any other ticker can be loaded from the sidebar.",
+  "dz.seo_p2": "Each line in the main chart is the <b>average yearly path of a last-digit cohort</b>, normalized to 0&nbsp;percent at the start of the year. If a line rises over the course of the year, the average return of those years was positive. The gold curve highlights the current year, letting you compare the present level directly with the typical path of its decade cohort. In addition, the <b>bar chart</b> shows the average return per last digit, and the <b>table</b> shows each cohort's <b>win rate</b> (share of positive years), median, volatility and the underlying years. A high win rate combined with a solid average return points to a historically more reliable pattern — high volatility points to large swings between individual years.",
+  "dz.seo_p3": "Methodologically, the tool uses <b>normalized returns</b>: the first trading day of each year is set to 0&nbsp;percent, and the following days accumulate on top of it as logarithmic returns. This makes years with different price levels directly comparable — what matters is the percentage path, not the absolute price. Each yearly curve is interpolated to <b>252 trading days</b> so that the cohorts can be averaged cleanly; years with fewer than 200 trading days are excluded. <b>Grouping by last digit</b> produces ten cohorts whose sample size <b>n</b> is limited: even for the Dow Jones, which spans over 130 years, only about 13&nbsp;years are available per digit.",
+  "dz.seo_p4": "The Decade Cycle is a <b>descriptive tool for putting historical patterns into context</b> — not investment advice and not a price forecast. Because the sample per last digit is small, individual extreme years (such as 2008 or 1931) can heavily skew a cohort's average, which is why win rate, median and the spread of individual years should always be viewed together. A historically strong decade year is <b>no guarantee</b> that the next year with the same last digit will behave the same way. Use the cycle as additional context alongside fundamentals and your own research, not as your sole basis for decisions. Past patterns do not guarantee future results.",
+  "dz.seo_faq_h": "Frequently Asked Questions",
+  "dz.seo_faq1": "<b>What is the decade cycle in the stock market?</b> The decade cycle groups all available years of a time series by the last digit of the year (0 to 9) and averages their price paths. This creates ten cohorts — for example all years ending in 5 (1985, 1995, 2005, 2015 …). The tool descriptively shows how the years of a given last digit performed on historical average. It is a statistical analysis of the past, not a forecast.",
+  "dz.seo_faq2": "<b>How do I read the decade path and the win rate?</b> Each line in the main chart is the averaged yearly path of a last-digit cohort, normalized to 0&nbsp;percent at the start of the year. If the line rises, the average return of those years was positive over the course of the year. The win rate states in what percentage of a cohort's years the year closed positive. The sample size n indicates how many years the respective average is based on — for long series like the Dow Jones, usually only about 13&nbsp;years per digit.",
+  "dz.seo_faq3": "<b>Can the decade cycle predict future prices?</b> No. The decade cycle is a descriptive tool for putting historical patterns into context and is not investment advice. Each last digit covers only a few years, which is why individual extreme years can heavily skew the average. A historically strong x5 year is no guarantee of a positive future x5 year. Past patterns are no guarantee of future results — use the cycle as context, not as your sole basis for decisions.",
+  "mw.seo_h": "Understanding the Turn-of-the-Month Effect — month-end window, methodology",
+  "mw.seo_p1": "SeasonAlpha's <b>turn-of-the-month tool</b> reveals the <b>turn-of-the-month effect</b> (TOM): the historical observation that gains cluster around the month boundary. On average, the <b>last trading days of a month</b> and the <b>first trading days of the next</b> were markedly stronger than the rest of the month. The tool measures this by computing, for any ticker, the <b>average return per trading day relative to month-end</b> and presenting it as a curve, heatmap and statistics. You can see at a glance whether — and how strongly — this pattern held for the chosen market.",
+  "mw.seo_p2": "The core is the <b>window around the month boundary</b>. The last trading day of a month is the reference point <b>t0</b>; before it lie <b>t-1, t-2, t-3</b> (the month's final trading days), after it <b>t+1, t+2, t+3</b> (the new month's first trading days). The TOM curve starts at t0 = 0&nbsp;percent. If it rises to both sides, the month turn was positive on average. Two sliders let you set the window freely (1 to 10 days before and after); the <b>window optimization</b> additionally shows which combination historically delivered the highest average return per month turn.",
+  "mw.seo_p3": "Methodically the tool uses <b>normalized returns</b>, not absolute price changes. For each individual month turn the daily <b>log returns</b> within the window are accumulated and normalized to the <b>last trading day of the month (t0)</b>. Crucial is the <b>indexing by trading day relative to month-end</b> — counted in exchange trading days, not calendar days, so weekends and holidays do not distort the window. These individual curves are then averaged across all selected years and months. Win rate, median, standard deviation and the significance test each refer to the distribution of total returns across all captured windows.",
+  "mw.seo_p4": "The turn-of-the-month effect is a <b>statistical pattern for context</b>, not investment advice and no guarantee of returns. Possible explanations range from liquidity inflows (salaries, savings plans, fund rebalancing) to window-dressing by institutions — none is conclusively proven, and effects can fade over time. The analysis looks strictly <b>backward</b> at price moves that already happened; individual years can deviate sharply from the average, as the heatmap and streak analysis show. Use the window as additional context to your own research. Past patterns do not guarantee future results.",
+  "mw.seo_faq_h": "Frequently asked questions",
+  "mw.seo_faq1": "<b>What is the turn-of-the-month effect?</b> The turn-of-the-month effect describes the observation that gains historically cluster around the month boundary. The last trading days of a month and the first of the next were, on average, stronger than the rest of the month. The tool measures this via the average return per trading day relative to month-end.",
+  "mw.seo_faq2": "<b>Which window counts as turn-of-the-month?</b> Typically about three trading days before to three after the turn (t-3 to t+3), with t0 being the last trading day of the month. In the tool you set the window freely (1 to 10 days). The window optimization shows which combination historically gave the highest average return per month turn.",
+  "mw.seo_faq3": "<b>How is the turn-of-the-month effect calculated?</b> On normalized returns: the daily log returns in the window are accumulated and normalized to t0 (last trading day = 0&nbsp;percent). Days are indexed relative to month-end (t-3 &hellip; t0 &hellip; t+3), not by calendar date, then averaged across all selected years and months.",
+  "moon.seo_h": "Understanding Moon Phases & the Market — the Full/New Moon Effect, Methodology & Limits",
+  "moon.seo_p1": "SeasonAlpha's <b>moon-phase analysis</b> investigates an old market question: do returns differ by <b>lunar phase</b> &mdash; are the days around the <b>full moon</b> systematically weaker than those around the <b>new moon</b>? The tool computes the average return path within a freely chosen <b>event window</b> around each lunar date and displays it as a curve, KPI row and heatmaps. You can set any ticker, any period and the window width (days before and after the event) yourself, and you see immediately whether a measurable difference exists &mdash; or not.",
+  "moon.seo_p2": "Here is how to read the <b>new-moon-versus-full-moon comparison</b>: pick a phase in the sidebar and a window, for example <b>t&minus;5 to t+5</b>. The main curve shows the normalized path around the lunar date, where <b>t0 = 0&nbsp;percent</b> is the event day itself. The KPI row summarizes <b>win rate</b>, <b>average return</b>, <b>median</b> and the <b>sample size</b> (number of events, n). What matters is the comparison of both phases and the sample: if the win rate and average return of full and new moon sit close together, there is no meaningful effect. The heatmaps additionally reveal whether an apparent pattern holds across calendar months or only shows up in individual months.",
+  "moon.seo_p3": "On <b>methodology</b>: lunar dates are derived astronomically from the <b>synodic cycle</b> of 29.53&nbsp;days (accuracy roughly one day), anchored to a known new moon; the full moon falls half a cycle later. For each date the tool measures <b>normalized returns</b> in the event window: t0 is set to 0&nbsp;percent, and the cumulative log returns before and after form the average curve across all events. If a lunar date falls on a weekend or holiday, the next <b>trading day</b> applies. As an extra, the tool classifies <b>supermoons</b> (full moons near the closest point of the lunar orbit to Earth) and maps events onto a <b>lunar calendar</b> (lunar month&nbsp;1&ndash;12) &mdash; here too the same caveat holds: small samples per cell, so interpret with caution.",
+  "moon.seo_p4": "An honest <b>assessment</b>: the moon-phase effect is one of the <b>weakest and most disputed</b> calendar effects. Individual studies found marginally lower returns around the full moon in the past, but these differences are small, frequently <b>not statistically significant</b> and <b>unstable</b> across markets and periods &mdash; fading once they become known is typical of such anomalies. There is also no plausible economic mechanism that would explain a reliable moon-market link. Treat the results as a <b>statistical curiosity for context</b>, not as a trading signal. This page is not investment advice; past patterns do not guarantee future results.",
+  "moon.seo_faq_h": "Frequently asked questions",
+  "moon.seo_faq1": "<b>Is there a real moon-phase effect in the stock market?</b> The evidence is weak and disputed. Some academic studies found slightly lower average returns around the full moon than around the new moon in the past, but the differences are small, often not statistically significant and unstable across different markets and periods. The tool makes this weakness visible: the win rate and average return of both phases usually sit very close together. No reliable trading signal can be derived from it.",
+  "moon.seo_faq2": "<b>How do you read the new-moon-versus-full-moon comparison in the tool?</b> Pick a phase in the sidebar (full moon, new moon or both) and an event window, for example five days before to five days after the event. The curve shows the normalized return path around the lunar date (t0&nbsp;=&nbsp;0&nbsp;percent), and the KPI row summarizes win rate, average return, median and sample size. What matters is the number of events (n) and the comparison of both phases: if the values sit close together, there is no meaningful effect.",
+  "moon.seo_faq3": "<b>How are the moon phases and returns computed?</b> Lunar dates are derived astronomically from the synodic cycle of 29.53&nbsp;days (accuracy roughly one day), anchored to a known new moon. For each lunar date the normalized returns in the event window are measured: t0 is set to 0&nbsp;percent, and the cumulative log returns before and after form the average curve across all events. If a lunar date falls on a weekend or holiday, the next trading day applies.",
+  "sr.seo_h": "Understanding Sector Rotation — seasonal strength of US sectors by month",
+  "sr.seo_p1": "SeasonAlpha's <b>Sector Rotation</b> shows which parts of the US equity market <b>historically outperformed</b> in each calendar month. It is built on the eleven <b>SPDR Select Sector ETFs</b> — <b>XLK</b> (Technology), <b>XLF</b> (Financials), <b>XLE</b> (Energy), <b>XLV</b> (Health Care), <b>XLY</b> (Consumer Discretionary), <b>XLP</b> (Consumer Staples), <b>XLI</b> (Industrials), <b>XLB</b> (Materials), <b>XLU</b> (Utilities), <b>XLRE</b> (Real Estate) and <b>XLC</b> (Communication Services) — plus specialty and industry ETFs such as SMH, XBI, GDX or XOP, for 23 US sector ETFs in total. For each sector the tool computes the average return per calendar month over many years and presents it as a heatmap, ranking and cumulative yearly path.",
+  "sr.seo_p2": "How to read the <b>monthly sector ranking</b>: the <b>rotation signal</b> at the top lists the four sectors that were historically strongest in the current month, sorted by average monthly return. The <b>Top &amp; Flop</b> table shows the three best and three weakest sectors for each of the twelve months, with the current month highlighted. In the <b>heatmap</b>, each column is a sector and each row a month: green cells mark historically strong, red cells weak monthly returns. The <b>win-rate heatmap</b> adds in what share of years a sector closed a given month positive — a high average return paired with a low win rate points to a few outlier years.",
+  "sr.seo_p3": "On <b>methodology</b>: for each sector ETF the last closing price per month is taken and the percentage change versus the previous month is computed (the <b>monthly return</b>). These monthly returns are averaged across all available years within the selected window — adjustable from 5 to 30 years — requiring at least five years per month for a value to count as valid. The <b>cumulative yearly path</b> adds these average monthly returns from January to December, revealing a sector's typical seasonal trajectory. All figures come from daily-updated price data (Yahoo Finance via Supabase) and are computed in the browser from the real history.",
+  "sr.seo_p4": "An important note on <b>interpretation</b>: seasonality describes <b>past averages</b>, not a forecast. A sector being historically strong in a month does not guarantee a repeat — the economy, rates, valuations and one-off events can override any pattern. Averages also hide dispersion: a good mean may stem from a few strong years, which is why the win rate sits alongside as a consistency measure. Sector Rotation is a <b>descriptive analysis tool</b> for orientation, not investment advice and not a buy or sell recommendation. Use it as additional context to your own research and risk assessment, not as a sole basis for decisions.",
+  "sr.seo_faq_h": "Frequently asked questions",
+  "sr.seo_faq1": "<b>Which sector is seasonally strongest in the current month?</b> It depends on the month and is dynamic: the tool computes each sector ETF's average historical monthly return for the current calendar month and sorts them in descending order. The rotation signal above shows the four historically strongest sectors, the Top-3 table the ranking for all twelve months. A strong past, however, is no guarantee of the future.",
+  "sr.seo_faq2": "<b>How is the seasonal sector return calculated?</b> For each sector ETF the percentage change from the previous month's last close to the month's last close is taken per calendar month. This is averaged over all available years (at least five) within the selected window of 5 to 30 years. The win rate additionally shows in what share of years a month was positive.",
+  "sr.seo_faq3": "<b>Which sectors does Sector Rotation cover?</b> The basis is the eleven SPDR Select Sector ETFs: XLK (Technology), XLF (Financials), XLE (Energy), XLV (Health Care), XLY (Consumer Discretionary), XLP (Consumer Staples), XLI (Industrials), XLB (Materials), XLU (Utilities), XLRE (Real Estate) and XLC (Communication Services). These are complemented by specialty ETFs such as SMH, XBI, GDX or XOP, for 23 US sector and industry ETFs in total."
 }
