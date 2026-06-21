@@ -88,6 +88,21 @@ def _gap_exempt(ticker: str) -> bool:
     # HKEX/KRX-Kalender (Mondkalender-Tabelle) → werden regulär geprüft.
     return ticker.upper().endswith("=X")
 
+
+def _is_us_listed(ticker: str) -> bool:
+    """US-gelistet (NYSE/Nasdaq, inkl. ADRs ohne Suffix) → Yahoo liefert Earnings
+    zuverlässig. Nicht-US (.DE/.L/.PA/.SW/.MI/…) hat bei Yahoo schlechte
+    Earnings-Coverage → fehlende Einträge sind erwartet, kein Defekt."""
+    try:
+        return get_exchange_for_holidays(ticker) == "NYSE"
+    except Exception:
+        return not any(c in ticker for c in (".", "=", "-"))
+
+
+# NULL log_return: nur das jüngste Fenster prüfen — die ERSTE Kurszeile je Ticker
+# hat naturgemäss kein log_return (kein Vortag) und ist kein Defekt.
+NULL_LOGRET_WINDOW_DAYS = 30
+
 # "Latest-Snapshot"-Tabellen: 1 Zeile/Ticker am letzten Lauf-Datum.
 COVERAGE_DAILY = {
     "ki_scores": "computed_date",
@@ -458,28 +473,50 @@ def dim_gaps(ctx: dict) -> dict:
             f"{len(price_gaps)} Ticker, {total_missing} fehlende HT (ggf. Kalender-Edgecases) — "
             + ", ".join(f"{t}:{n}" for t, n in worst))
 
-    # NULL-Felder (fixbar via backfill_ohlc/backfill_log_return → max. gelb).
-    # Im Single-Modus auf den Ticker scopen; Offender-Liste ist eine Stichprobe.
+    # NULL open: Voll-Tabelle (selten, fixbar via backfill_ohlc → max. gelb).
     single = ctx.get("single")
-    for null_col, key in (("open", "null_ohlc"), ("log_return", "null_logret")):
-        try:
-            gtotal = _count("prices", ticker=single, null_col=null_col)
-            if gtotal == 0:
-                add(f"prices: NULL {null_col}", "green", "keine NULL-Werte")
-                findings[key] = []
-                continue
-            q = client.table("prices").select("ticker").is_(null_col, "null")
+    try:
+        gtotal = _count("prices", ticker=single, null_col="open")
+        if gtotal == 0:
+            add("prices: NULL open", "green", "keine NULL-Werte")
+            findings["null_ohlc"] = []
+        else:
+            q = client.table("prices").select("ticker").is_("open", "null")
             if single:
                 q = q.eq("ticker", single)
-            r = q.limit(3000).execute()
-            offenders = sorted({row["ticker"] for row in (r.data or [])})
-            findings[key] = offenders
-            add(f"prices: NULL {null_col}", "yellow",
+            offenders = sorted({row["ticker"] for row in (q.limit(3000).execute().data or [])})
+            findings["null_ohlc"] = offenders
+            add("prices: NULL open", "yellow",
                 f"{gtotal} Zeilen · Ticker (Stichprobe): "
                 + ", ".join(offenders[:10]) + ("…" if len(offenders) >= 10 else ""))
-        except Exception as e:
-            # Statement-Timeout o.ä. auf der grossen prices-Tabelle ist kein Datenproblem.
-            add(f"prices: NULL {null_col}", "yellow", f"Count nicht ermittelbar: {str(e)[:70]}")
+    except Exception as e:
+        add("prices: NULL open", "yellow", f"Count nicht ermittelbar: {str(e)[:70]}")
+
+    # NULL log_return: NUR jüngstes Fenster prüfen. Die erste Kurszeile je Ticker hat
+    # naturgemäss kein log_return (kein Vortag) — das sind ~300 erwartete Zeilen, kein
+    # Defekt. Echte Backfill-Lücken liegen im aktuellen Fenster. Über Datum (indexiert)
+    # paginiert holen + NULL in Python filtern (vermeidet Timeout des is_null-Full-Scans).
+    # Kein order/range (PK ist (ticker,date) → date-Filter mit Sort = Full-Scan/Timeout):
+    # gebundene Stichprobe (PostgREST cappt ~1000 Zeilen) reicht, um SYSTEMATISCHE aktuelle
+    # NULL-Lücken zu erkennen; isolierte Einzelfälle sind unkritisch. try/except = graceful.
+    try:
+        cutoff = (today - timedelta(days=NULL_LOGRET_WINDOW_DAYS)).strftime("%Y-%m-%d")
+        q = client.table("prices").select("ticker,log_return").gte("date", cutoff)
+        if single:
+            q = q.eq("ticker", single)
+        rows = q.limit(4000).execute().data or []
+        n_null = sum(1 for r in rows if r.get("log_return") is None)
+        offenders = sorted({r["ticker"] for r in rows if r.get("log_return") is None})
+        findings["null_logret"] = offenders
+        if n_null == 0:
+            add("prices: NULL log_return", "green",
+                f"keine aktuellen NULL-Werte (Stichprobe seit {cutoff}; Erst-Zeilen je Ticker ausgenommen)")
+        else:
+            add("prices: NULL log_return", "yellow",
+                f"{n_null} aktuelle NULL-Zeilen (Stichprobe seit {cutoff}, ohne Erst-Zeilen) · "
+                + ", ".join(offenders[:10]) + ("…" if len(offenders) >= 10 else ""))
+    except Exception as e:
+        add("prices: NULL log_return", "yellow", f"nicht ermittelbar: {str(e)[:70]}")
 
     return {"title": "Gaps", "status": status, "checks": checks}
 
@@ -512,11 +549,27 @@ def dim_events(ctx: dict) -> dict:
                 add(table, "green", "keine Aktien-Ticker im Scope")
             elif not missing:
                 add(table, "green", f"alle {len(equities)} Aktien-Ticker haben Einträge")
-            else:
-                st = "red" if len(missing) > len(equities) * 0.5 else "yellow"
-                add(table, st,
-                    f"{len(missing)}/{len(equities)} Aktien ohne Einträge: "
+            elif key == "dividends":
+                # Null Dividenden-Einträge = Nicht-Zahler (wer zahlt, hat Dividenden-
+                # Historie bei Yahoo) ODER EU-Coverage-Lücke — beides KEIN Defekt und
+                # nicht "fixbar". Ein Pipeline-Ausfall färbt die Freshness-Dimension rot.
+                add(table, "green",
+                    f"{len(missing)}/{len(equities)} ohne Dividenden-Historie = Nicht-Zahler "
+                    f"(Growth/Tech) oder EU-Coverage, kein Defekt: "
                     + ", ".join(missing[:8]) + ("…" if len(missing) > 8 else ""))
+            else:  # earnings: US-gelistet (Yahoo zuverlässig) vs. EU/Non-US (Coverage-Lücke)
+                us_missing = [t for t in missing if _is_us_listed(t)]
+                nonus_missing = [t for t in missing if not _is_us_listed(t)]
+                nonus_note = (f" · {len(nonus_missing)} EU/Non-US = Yahoo-Coverage (erwartet)"
+                              if nonus_missing else "")
+                if us_missing:
+                    st = "red" if len(us_missing) > len(equities) * 0.5 else "yellow"
+                    add(table, st,
+                        f"{len(us_missing)} US-Aktien ohne Earnings (prüfen): "
+                        + ", ".join(us_missing[:8]) + ("…" if len(us_missing) > 8 else "")
+                        + nonus_note)
+                else:
+                    add(table, "green", f"alle US-Aktien haben Earnings{nonus_note}")
         except Exception as e:
             add(table, "red", f"Fehler: {str(e)[:80]}")
 
