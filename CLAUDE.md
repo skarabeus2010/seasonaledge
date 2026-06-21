@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 41.0 | 2026-06-21 | **Daily-Newsletter-Rework** (ML-Regime → LBR/RSI/SC/TS/Gesamt-Scoring, Kernliste, alle Notenbanken, „Warum"-Zeile, Mail-Size-Fix) · **DB-Audit entrauscht** (Feiertags-/Legitim-Absenz-Logik) · **SEO-Content-Offensive** (alle 18 dünnen Tool-Seiten: Unique-Content + FAQPage, `docs/SEO_TODO.md`) · Lessons Learned in [docs/CHANGELOG.md](docs/CHANGELOG.md) + Email/i18n-Regeln ergänzt
 > Version 40.0 | 2026-06-15 | Kalender-Spec vervollständigt (OPEX/VIX börsenspez. + holiday-aware, Zeit-Indizes TDOM/TDOY/CDOM/CDOY, Notenbank-Termine je Region, Asien HKEX/KRX/TSE) + **Prüfagent** (`verify_calendar_rules.py`, wöchentl. Cron) · **SEO-Foundation**: `/ueber-uns` (E-E-A-T), 1. Daten-Studie (DAX-September), SEO-Audit · **8 Subagenten** (4 neue Wachstums-Agenten + `docs/AGENTS.md`) · **Embed-Backlink-Asset** (`/embed` + Einbetten-Button auf Jahreszyklus)
 > Version 39.0 | 2026-06-14 | Ticker-Universum 270→324 (Dow-30/DAX-40 vollständig, Orphan-Adoption, SAP→SAP.DE) + DB-Vollständigkeits-Audit/Onboarding-Guardrails + Klarstellung: **Streamlit produktseitig ungenutzt** (nur Container-Keep-alive), `landing/` = Frontend
 
@@ -139,12 +140,16 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 
 - Brevo **201 = angenommen, NICHT zugestellt** — Status im Dashboard („Statistics → Email Activity") checken.
 - Sender-Domain MUSS Domain-Auth haben (SPF+DKIM+DMARC); Single-Sender reicht für Newsletter nicht (Gmail/Outlook blocken).
+- **Gmail kappt Mails > ~102 KB** („[Nachricht gekürzt]") → Footer/Inhalt fehlt, oft mitten in einer Zeile. Wiederkehrende Inline-Styles in `<style>`-CSS-Klassen auslagern (Daily-Newsletter: ~102 KB → 47 KB). **`daily_newsletter.py --dry-run` enthält die Watchlist NICHT** (pro Empfänger erst in `render_email` angehängt) → echte Mailgröße via `render_email`-Pfad oder `--test` messen.
+- **Test-Send NICHT direkt nach PR-Merge** (`gh workflow run daily_newsletter.yml`): Auto-Deploy startet den Container neu, `docker exec` trifft Restart → kein Output, kein Versand, Workflow trotzdem „success" (Run auffällig kurz). ~1-2 Min warten.
 
 ### Internationalisierung (EN) — Detail: [docs/I18N.md](docs/I18N.md)
 
 - **EN-Pages statisch vorgerendert** (`landing/build_en.py` → `landing/en/<slug>.html`), NICHT mehr Laufzeit-DOM-Swap. SEO-Head (canonical=/en/, reziprokes hreflang, og:locale, JSON-LD) **gebacken** → korrekt für Crawler OHNE JS. Deploy baut sie auf dem Host; `landing/en/` gitignored.
 - **⚠️ ANTI-PATTERN: `data-i18n` (Text) auf Element MIT Inline-Kind (`<b>`/`<a>`/`<br>`) → nur letzter Textknoten übersetzt = halb deutsch** (auch live, unbemerkt). Fix: `data-i18n-html` + EN-Wert als VOLLES HTML. `scripts/fix_i18n_html_markup.py` flippt automatisch.
 - **Verifizieren: `py landing/verify_en.py` (Ziel FAIL 0).** Dynamische JS-Strings via `SA.i18n.t('key','dt-Fallback')` (Script-Inhalt ist nicht backbar).
+- **Neuer statischer DE-Text auf einer Tool-Seite OHNE `data-i18n`-Keys bricht den EN-Build** (`verify_en` FAIL: Deutsch auf `/en/`). Also IMMER `data-i18n(-html)` + EN-Wert in `en.json` (flach: `"prefix.key"`). `build_en.py` rendert EN nur für Seiten mit `_EN_PAGE_META`-Eintrag (manche Tool-Seiten sind DE-only, z.B. crash-fruehwarnung — dort EN-Keys harmlos ungenutzt). SEO-Hintergrund: Tool-Wert steckt im JS-Chart → für Crawler unsichtbar → „gecrawlt, nicht indexiert"; Gegenmittel = statischer Unique-Text + FAQPage-Schema (Muster: `landing/pages/*.html` `<details open>` mit `<prefix>.seo_*`, siehe `docs/SEO_TODO.md`).
+- **Live `robots.txt`/`sitemap.xml` kommen aus `seo/output/`** (docker-compose-Mount nach `/app/static/`, Builder regeneriert bei jedem Deploy) — `static/robots.txt`/`static/sitemap.xml` im Repo sind ungenutzte Leichen. Bei robots/sitemap-Fragen die Live-Version prüfen.
 
 ### Blog / Bilingualisierung — Detail: [docs/BLOG_WORKFLOW.md](docs/BLOG_WORKFLOW.md)
 
