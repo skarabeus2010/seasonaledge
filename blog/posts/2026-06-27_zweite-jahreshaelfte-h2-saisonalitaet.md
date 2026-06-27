@@ -7,7 +7,7 @@ category: education
 tags: [saisonalitaet, zweite-jahreshaelfte, h2, q4-rally, sommer-doldrums, sp500, dax, monatszyklus]
 description: "Wie verläuft die zweite Jahreshälfte an der Börse? 56 Jahre S&P-500- und 38 Jahre DAX-Daten zeigen: schwaches Q3, dann eine der verlässlichsten Q4-Rallys."
 ticker: ^GSPC
-status: draft
+status: published
 ---
 
 <!--
