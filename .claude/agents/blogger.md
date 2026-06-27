@@ -77,10 +77,18 @@ ergänzenden — nicht überladen.
    EN zusätzlich `de_slug:`).
 2. **Keyword-Plan** als HTML-Kommentar.
 3. **Artikel** mit H2/H3-Hierarchie: Einleitung → Hintergrund → Analyse (mit Chart-Tag) →
-   Interpretation → Praxisbezug → Fazit → Häufige Fragen (FAQ). 700–1.000 Wörter.
+   Ursachen/Treiber → Grenzen/Gegenbeispiele → Praxisbezug → Fazit → Häufige Fragen (FAQ, 3–4 Q&A).
+   **Mindestens ~1.300–1.800 Wörter echter, einzigartiger Inhalt** — Tiefe statt Füllung: echte
+   Daten/Zahlen, ggf. eine kleine Tabelle oder ein zweiter ergänzender Chart, jeder Abschnitt mit
+   eigenständigem Mehrwert.
 4. **Anhang** als HTML-Kommentar: Social-Snippets, interne Verlinkung, Folgeartikel-Ideen.
 
 ## Harte Regeln
+- **KEIN Thin Content.** Zielumfang ~1.300–1.800 Wörter, mehrere substanzielle Abschnitte + FAQ-Sektion
+  (FAQPage-tauglich) + echte Daten/Zahlen. Dünne Posts (<700 W, Fülltext, Wiederholung, Wert nur im
+  Chart) werden von Google als **„gecrawlt, zurzeit nicht indexiert"** aussortiert — dasselbe Problem
+  wie bei dünnen Tool-Seiten. Lieber wenige tiefe Posts als viele dünne. Jeder Post = potenzielles
+  Linkable Asset mit zitierfähiger Kernzahl im Lead.
 - **Echte Umlaute** ä ö ü ß — NIE ae/oe/ue/ss (im DE-Text; EN-Text natürlich englisch). Slugs bleiben ASCII.
 - **Keine erfundenen Zahlen.** Nur echte App-Werte (t, p, Ø-Rendite, Win-Rate, n). Fehlt dir ein
   konkreter Wert: konservativ/qualitativ formulieren ODER den User fragen — markiere offene Stellen
