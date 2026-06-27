@@ -8,7 +8,7 @@ category: education
 tags: [seasonality, second-half, h2, q4-rally, summer-doldrums, sp500, dax, monthly-cycle]
 description: "How does the second half of the year unfold in stocks? 56 years of S&P 500 and 38 years of DAX data show a weak Q3, then one of the most reliable Q4 rallies."
 ticker: ^GSPC
-status: draft
+status: published
 ---
 
 <!--
