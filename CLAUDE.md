@@ -84,6 +84,7 @@ if _project_dir not in sys.path: sys.path.insert(0, _project_dir)
 - `print()` verboten → `app_logger.debug()`
 - API-Keys via `os.environ[...]` + `.env` (in `.gitignore`), `logs/` niemals in Git
 - Stooq: Session-Cookie erforderlich (`session.get("https://stooq.com/")` vor CSV)
+- **`download_data` ist Yahoo-primär + Stooq-Fallback → der Datenbereich kann je nach antwortender Quelle VARIIEREN.** Beispiel ^GSPC: Yahoo liefert ab **1970**, der Stooq-Fallback ab **1950** (^SPX). Für Blog-/Studien-Zahlen IMMER die reproduzierbare Yahoo-Default-Basis nutzen (`download_data.clear()` + neu laden) und **Text↔Chart konsistent** halten — der serverseitig gebaute Chart nutzt die Yahoo-Primärquelle. Bei „seit Jahr X"-Aussagen den realen Bereich verifizieren, nicht annehmen.
 - OHLC Cross-Day VERBOTEN: `Open[t]/Close[t-1]` mischt adj_factors → Dividend-Bias. Overnight/Intraday per Residual: `overnight = total - intraday`
 - Nightly Refresh: letzte **7 Tage** Upsert-Fenster (seit Phase D KW20). Phase D prüft zusätzlich letzte 14 Tage auf NULL `log_return` und berechnet nach.
 - `log_return`-Spalte in Supabase wird von `preprocess()` genutzt wenn vorhanden
