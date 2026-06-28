@@ -18,7 +18,7 @@ import requests
 _PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 _API = "https://api.elevenlabs.io/v1"
 # Stabile Premade-Stimmen (multilingual_v2 spricht damit auch Deutsch). Per .env überschreibbar.
-_DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM"  # "Rachel" (stabil); für DE eigene Stimme in .env setzen!
+_DEFAULT_VOICE = "pNInz6obpgDQGcFmaJgB"  # "Adam" (männlich, Narration); native DE-Stimme via ELEVENLABS_VOICE_ID_DE in .env
 _MODEL = "eleven_multilingual_v2"
 
 
