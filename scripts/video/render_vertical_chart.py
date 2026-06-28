@@ -73,6 +73,7 @@ _TICKER_NAMES = {
     "BTC-USD": "Bitcoin", "ETH-USD": "Ethereum", "EURUSD=X": "EUR/USD",
     "SPY": "S&P 500 (SPY)", "QQQ": "Nasdaq 100 (QQQ)", "DIA": "Dow Jones (DIA)",
     "GLD": "Gold (GLD)", "USO": "Oil (USO)", "TLT": "US Treasuries (TLT)",
+    "GOOGL": "Google", "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "Nvidia", "TSLA": "Tesla",
 }
 
 
@@ -294,12 +295,163 @@ def draw_monthly(year_data, n_years, data_date, ticker, lang):
     return frame
 
 
+def _load_intramonth(ticker, years, month):
+    """Kumulierter Intra-Monats-Verlauf (ab Vormonatsschluss = 0), Ø über `years` (distinctive/TDOM)."""
+    import pandas as pd
+    from shared.yahoo_downloader import download_data, preprocess
+    raw = download_data(ticker)
+    if raw is None or len(raw) == 0:
+        return None
+    df = preprocess(raw)
+    if "Date" not in df.columns:
+        df = df.reset_index()
+    dc = "Date" if "Date" in df.columns else df.columns[0]
+    d = pd.to_datetime(df[dc])
+    df = df.assign(_y=d.dt.year, _m=d.dt.month)
+    data_date = str(d.max())[:10]
+    prev = 12 if month == 1 else month - 1
+    cy = date.today().year
+    paths, tot = [], []
+    for y in range(cy - years, cy):
+        py = y - 1 if month == 1 else y
+        pm = df[(df["_y"] == py) & (df["_m"] == prev)]
+        cm = df[(df["_y"] == y) & (df["_m"] == month)]
+        if len(pm) == 0 or len(cm) == 0 or not pm["Close"].iloc[-1]:
+            continue
+        cum = (cm["Close"].to_numpy() / pm["Close"].iloc[-1] - 1.0) * 100.0
+        paths.append(cum)
+        tot.append(float(cum[-1]))
+    if not paths:
+        return None
+    maxlen = max(len(p) for p in paths)
+    counts = [sum(1 for p in paths if len(p) > i) for i in range(maxlen)]
+    avg = [float(np.mean([p[i] for p in paths if len(p) > i])) for i in range(maxlen)]
+    split = sum(1 for c in counts if c >= 10) or maxlen  # nur belastbare Positionen (>=10 Punkte)
+    tot = np.array(tot)
+    return {"path": avg[:split], "n": len(paths), "data_date": data_date,
+            "total_avg": float(tot.mean()), "win": float((tot > 0).mean() * 100.0)}
+
+
+def draw_intramonth(data, ticker, lang, month):
+    from matplotlib.ticker import FuncFormatter
+    path = np.asarray(data["path"], dtype=float)
+    name = _disp(ticker)
+    mon = (_MONTH_FULL_EN if lang == "en" else _MONTH_FULL_DE)[month - 1]
+    n, avg, win = data["n"], data["total_avg"], data["win"]
+    if lang == "en":
+        title = f"{name} · {mon} intra-month"
+        subtitle = f"cumulative from prev close · {n} years"
+        kpi = f"{mon}: Ø {_fmt(avg, lang)} · {win:.0f}% up"
+        xlbl = "Trading day of month"
+    else:
+        title = f"{name} · {mon} Intra-Monat"
+        subtitle = f"kumuliert ab Vormonatsschluss · {n} Jahre"
+        kpi = f"{mon}: Ø {_fmt(avg, lang)} · {win:.0f}% im Plus"
+        xlbl = "Handelstag im Monat"
+    x = np.arange(len(path))
+    ymin = min(0.0, float(path.min())); ymax = float(path.max())
+    pad = (ymax - ymin) * 0.14 + 0.15
+
+    def frame(p):
+        fig = _new_fig()
+        ax = fig.add_axes([0.14, 0.30, 0.78, 0.52])
+        _style_axes(ax)
+        k = max(2, int(_ease(p) * len(path)))
+        ax.axhline(0, color="white", alpha=0.20, ls="--", lw=1)
+        ax.fill_between(x[:k], 0, path[:k], color=ACCENT, alpha=0.10, linewidth=0)
+        ax.plot(x[:k], path[:k], color=ACCENT, lw=4, solid_capstyle="round")
+        ax.scatter([x[k - 1]], [path[k - 1]], color=ACCENT, s=70, zorder=5,
+                   edgecolors=BG, linewidths=2)
+        ax.set_xlim(0, len(path) - 1)
+        ax.set_ylim(ymin - pad, ymax + pad)
+        ax.set_xticks(list(range(0, len(path), 5)))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f}%"))
+        ax.set_xlabel(xlbl, color=MUTED, fontsize=14)
+        _chrome(fig, title, subtitle, kpi, data["data_date"], lang)
+        return fig
+
+    return frame
+
+
+def _load_tom(ticker, years):
+    """Turn-of-Month: Ø kumulierter Verlauf t-3..t+3 um den Monatswechsel (t0 = letzter HT) + Fenster-Stats."""
+    import pandas as pd
+    from shared.yahoo_downloader import download_data, preprocess
+    raw = download_data(ticker)
+    if raw is None or len(raw) == 0:
+        return None
+    df = preprocess(raw)
+    if "Date" not in df.columns:
+        df = df.reset_index()
+    dc = "Date" if "Date" in df.columns else df.columns[0]
+    d = pd.to_datetime(df[dc])
+    df = df.assign(_d=d).sort_values("_d").reset_index(drop=True)
+    closes = df["Close"].to_numpy()
+    dts = df["_d"]
+    data_date = str(dts.iloc[-1])[:10]
+    cy = date.today().year
+    last_idx = df.groupby(dts.dt.to_period("M")).apply(lambda g: g.index[-1]).tolist()
+    wins = []
+    for i0 in last_idx:
+        if dts.iloc[i0].year < cy - years or i0 - 4 < 0 or i0 + 3 >= len(closes) or not closes[i0 - 4]:
+            continue
+        base = closes[i0 - 4]
+        wins.append([(closes[i0 + j] / base - 1.0) * 100.0 for j in range(-3, 4)])
+    if not wins:
+        return None
+    arr = np.array(wins)
+    wret = arr[:, -1]
+    return {"path": arr.mean(axis=0).tolist(), "n": len(wins), "data_date": data_date,
+            "win": float((wret > 0).mean() * 100.0), "avg": float(wret.mean()),
+            "median": float(np.median(wret))}
+
+
+def draw_tom(data, ticker, lang):
+    from matplotlib.ticker import FuncFormatter
+    path = np.asarray(data["path"], dtype=float)
+    name = _disp(ticker)
+    n, win, avg = data["n"], data["win"], data["avg"]
+    labels = ["t-3", "t-2", "t-1", "t0", "t+1", "t+2", "t+3"]
+    if lang == "en":
+        title = f"{name} · Turn of the Month"
+        subtitle = f"around month end (t0) · {n} windows"
+        kpi = f"Ø {_fmt(avg, lang)} · {win:.0f}% winners"
+        t0lbl = "t0 = last day"
+    else:
+        title = f"{name} · Turn of the Month"
+        subtitle = f"um den Monatswechsel (t0) · {n} Fenster"
+        kpi = f"Ø {_fmt(avg, lang)} · {win:.0f}% Gewinner"
+        t0lbl = "t0 = letzter HT"
+    x = np.arange(7)
+    ymin = min(0.0, float(path.min())); ymax = float(path.max())
+    pad = (ymax - ymin) * 0.18 + 0.1
+
+    def frame(p):
+        fig = _new_fig()
+        ax = fig.add_axes([0.15, 0.30, 0.77, 0.52])
+        _style_axes(ax)
+        k = max(2, int(_ease(p) * 7))
+        ax.axhline(0, color="white", alpha=0.20, ls="--", lw=1)
+        ax.axvline(3, color=WARM, alpha=0.55, ls="--", lw=1.5)
+        ax.plot(x[:k], path[:k], color=ACCENT, lw=4, solid_capstyle="round",
+                marker="o", ms=9, mec=BG, mew=2)
+        ax.set_xlim(-0.2, 6.2)
+        ax.set_ylim(ymin - pad, ymax + pad)
+        ax.set_xticks(x); ax.set_xticklabels(labels)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f}%"))
+        ax.text(3, ymax + pad * 0.45, t0lbl, color=WARM, fontsize=12, ha="center")
+        _chrome(fig, title, subtitle, kpi, data["data_date"], lang)
+        return fig
+
+    return frame
+
+
 _DRAWERS = {"seasonal_yearly": draw_seasonal, "monthly_cycle": draw_monthly}
 
 
 def main():
     ap = argparse.ArgumentParser(description="SeasonAlpha vertical chart video renderer")
-    ap.add_argument("--type", required=True, choices=list(_DRAWERS), dest="ctype")
+    ap.add_argument("--type", required=True, choices=list(_DRAWERS) + ["intramonth", "tom"], dest="ctype")
     ap.add_argument("--ticker", required=True)
     ap.add_argument("--years", type=int, default=20)
     ap.add_argument("--lang", default="de", choices=["de", "en"])
@@ -311,19 +463,34 @@ def main():
                     help="Branding/Footer weglassen — Compose legt dort Untertitel/Disclaimer hin")
     ap.add_argument("--highlight-month", type=int, default=None,
                     help="Monat 1-12 hervorheben + KPI fokussieren (Default: aktueller Monat)")
+    ap.add_argument("--month", type=int, default=None,
+                    help="Monat 1-12 für intramonth (Default: aktueller Monat)")
     args = ap.parse_args()
     global _VIDEO_MODE, _HIGHLIGHT_MONTH
     _VIDEO_MODE = args.video_mode
     _HIGHLIGHT_MONTH = args.highlight_month
 
     print(f"[render] {args.ctype} {args.ticker} ({args.years}J, {args.lang}) — lade Echtdaten…")
-    year_data, n_years, data_date = _load_year_data(args.ticker, args.years)
-    if not year_data:
+    drawer = None
+    if args.ctype == "intramonth":
+        mo = args.month or date.today().month
+        data = _load_intramonth(args.ticker, args.years, mo)
+        if data:
+            drawer = draw_intramonth(data, args.ticker, args.lang, mo)
+            n_years, data_date = data["n"], data["data_date"]
+    elif args.ctype == "tom":
+        data = _load_tom(args.ticker, args.years)
+        if data:
+            drawer = draw_tom(data, args.ticker, args.lang)
+            n_years, data_date = data["n"], data["data_date"]
+    else:
+        year_data, n_years, data_date = _load_year_data(args.ticker, args.years)
+        if year_data:
+            drawer = _DRAWERS[args.ctype](year_data, n_years, data_date, args.ticker, args.lang)
+    if drawer is None:
         print(f"[render] FEHLER: keine Daten für {args.ticker}")
         sys.exit(2)
     print(f"[render] {n_years} Jahre, Datenstand {data_date}")
-
-    drawer = _DRAWERS[args.ctype](year_data, n_years, data_date, args.ticker, args.lang)
 
     out_dir = Path(__file__).resolve().parent / "out"
     out_dir.mkdir(parents=True, exist_ok=True)

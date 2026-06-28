@@ -1,0 +1,39 @@
+{
+  "slug": "spy-juli",
+  "topic": "S&P 500 (SPY) im Juli — Intra-Monats-Verlauf: stetiger Anstieg, einer der stärksten & verlässlichsten Monate (timely Ende Juni)",
+  "source": "data:intramonth SPY Juli (15 Jahre, 2011-2025): Ø +2,7 %, Trefferquote 87 %, Pfad steigt auf +2,9 % @TDOM 19",
+  "chart_spec": { "type": "intramonth", "ticker": "SPY", "years": 15, "month": 7 },
+  "key_stat": { "value": "+2,7 %", "label": "SPY Juli Ø", "note": "87 % positiv, 15 Jahre" },
+  "de": {
+    "video_title": "S&P 500 im Juli: in 87 % der Jahre im Plus – der Intra-Monats-Verlauf 📈 #Shorts",
+    "hook_onscreen": "S&P 500 im Juli: 87 % im Plus",
+    "beats": [
+      { "onscreen": "Juli: 87 % im Plus", "vo": "Der S&P 500 hatte im Juli einen der stärksten Monate des Jahres. In den letzten 15 Jahren schloss der Juli in 87 Prozent der Fälle im Plus." },
+      { "onscreen": "Ø +2,7 %", "vo": "Im Schnitt plus 2,7 Prozent. Und das nicht in einem Sprung: Der typische Juli klettert über den ganzen Monat stetig nach oben." },
+      { "onscreen": "Stetiger Anstieg", "vo": "Der Intra-Monats-Verlauf zeigt es: vom ersten Handelstag an geht es im Schnitt fast durchgehend bergauf, bis auf rund plus 2,9 Prozent um Handelstag 19." },
+      { "onscreen": "Muster, kein Versprechen", "vo": "Aber Vorsicht: 15 Jahre sind eine kurze Historie, und ein Durchschnitt ist keine Garantie. Einzelne Jahre liefen deutlich anders." },
+      { "onscreen": "seasonalpha.ai", "vo": "Den Intra-Monats-Verlauf für jeden Ticker findest du auf Season Alpha." }
+    ],
+    "cta": "Interaktiv auf seasonalpha.ai",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "S&P 500 (SPY) im Juli: in den letzten 15 Jahren in 87 % der Fälle im Plus, Ø +2,7 %. Der Intra-Monats-Verlauf steigt fast den ganzen Monat stetig an (Hoch ~+2,9 % um Handelstag 19). Voller Verlauf für jeden Ticker: https://seasonalpha.ai/tdom-analyse?utm_source=youtube&utm_medium=short&utm_campaign=spy-juli\n\n⚠️ Historische Daten – keine Anlageberatung oder -empfehlung. Saisonale Muster sind kein Indikator für zukünftige Entwicklungen. Kein Kauf- oder Verkaufssignal. Eigene Recherche erforderlich. Investitionen bergen Verlustrisiken bis zum Totalverlust.\n\n#SP500 #Börse #Saisonalität #SPY #Juli #SeasonAlpha",
+    "hashtags": ["#SP500", "#Börse", "#Saisonalität", "#SPY", "#Juli", "#SeasonAlpha"]
+  },
+  "en": {
+    "video_title": "S&P 500 in July: Positive in 87 % of Years – the Intra-Month Path 📈 #Shorts",
+    "hook_onscreen": "S&P 500 in July: 87 % positive",
+    "beats": [
+      { "onscreen": "July: positive 87% of years", "vo": "The S&P 500 had one of its strongest months in July. Over the last 15 years, July closed positive in 87 percent of cases." },
+      { "onscreen": "Avg +2.7 %", "vo": "On average, plus 2.7 percent. And not in one jump: the typical July climbs steadily higher all month long." },
+      { "onscreen": "Steady climb", "vo": "The intra-month path shows it: from the first trading day, it rises almost continuously on average, up to around plus 2.9 percent by trading day 19." },
+      { "onscreen": "A pattern, not a promise", "vo": "But caution: 15 years is a short history, and an average is not a guarantee. Individual years played out very differently." },
+      { "onscreen": "seasonalpha.ai", "vo": "Find the intra-month path for any ticker at Season Alpha." }
+    ],
+    "cta": "Explore it on seasonalpha.ai",
+    "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice",
+    "caption": "S&P 500 (SPY) in July: positive in 87 % of cases over the last 15 years, avg +2.7 %. The intra-month path rises almost steadily all month (peak ~+2.9 % around trading day 19). Full path for any ticker: https://seasonalpha.ai/tdom-analyse?utm_source=youtube&utm_medium=short&utm_campaign=spy-juli\n\n⚠️ Historical data — not investment advice or a recommendation. Seasonal patterns are not an indicator of future performance. No buy or sell signal. Do your own research. Investing carries risk of loss up to total loss of capital.\n\n#SP500 #Stocks #Seasonality #SPY #July #SeasonAlpha",
+    "hashtags": ["#SP500", "#Stocks", "#Seasonality", "#SPY", "#July", "#SeasonAlpha"]
+  },
+  "keywords": ["S&P 500 Juli", "SPY Saisonalität", "S&P 500 Saisonalität", "Börse Juli", "Intra-Monats-Verlauf", "saisonale Muster Aktien", "S&P 500 Sommer", "SPY Juli", "Aktien Saisonalität", "Trading Saisonalität"],
+  "is_crypto": false
+}

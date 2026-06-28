@@ -1,9 +1,74 @@
 [
-  {"nr": 1, "slug": "dax-juli", "topic": "DAX Juli — stärkster Sommermonat", "ticker": "^GDAXI", "chart": "monthly_cycle", "status": "ready"},
-  {"nr": 2, "slug": "dax-q4", "topic": "DAX Q4 — Jahresend-Stärke", "ticker": "^GDAXI", "chart": "monthly_cycle", "status": "ready"},
-  {"nr": 3, "slug": "turn-of-month-spy", "topic": "Turn-of-Month-Effekt", "ticker": "SPY", "chart": "tom_effect", "status": "planned"},
-  {"nr": 4, "slug": "july4-dow", "topic": "Vor-4.-Juli-Drift", "ticker": "DIA", "chart": "holiday_window", "status": "planned"},
-  {"nr": 5, "slug": "btc-uptober", "topic": "Bitcoin Uptober", "ticker": "BTC-USD", "chart": "seasonal_yearly", "status": "draft"},
-  {"nr": 6, "slug": "qqq-typical-year", "topic": "QQQ typisches Jahr", "ticker": "QQQ", "chart": "seasonal_yearly", "status": "planned"},
-  {"nr": 7, "slug": "decade-cycle-sp", "topic": "Dekadenzyklus S&P", "ticker": "^GSPC", "chart": "decade_cycle", "status": "planned"}
+  {
+    "nr": 1,
+    "slug": "dax-juli",
+    "topic": "DAX Juli — stärkster Sommermonat",
+    "ticker": "^GDAXI",
+    "chart": "monthly_cycle",
+    "status": "ready"
+  },
+  {
+    "nr": 2,
+    "slug": "dax-q4",
+    "topic": "DAX Q4 — Jahresend-Stärke",
+    "ticker": "^GDAXI",
+    "chart": "monthly_cycle",
+    "status": "ready"
+  },
+  {
+    "nr": 3,
+    "slug": "turn-of-month-spy",
+    "topic": "Turn-of-Month-Effekt",
+    "ticker": "SPY",
+    "chart": "tom_effect",
+    "status": "planned"
+  },
+  {
+    "nr": 4,
+    "slug": "july4-dow",
+    "topic": "Vor-4.-Juli-Drift",
+    "ticker": "DIA",
+    "chart": "holiday_window",
+    "status": "planned"
+  },
+  {
+    "nr": 5,
+    "slug": "btc-uptober",
+    "topic": "Bitcoin Uptober",
+    "ticker": "BTC-USD",
+    "chart": "seasonal_yearly",
+    "status": "draft"
+  },
+  {
+    "nr": 6,
+    "slug": "qqq-typical-year",
+    "topic": "QQQ typisches Jahr",
+    "ticker": "QQQ",
+    "chart": "seasonal_yearly",
+    "status": "planned"
+  },
+  {
+    "nr": 7,
+    "slug": "decade-cycle-sp",
+    "topic": "Dekadenzyklus S&P",
+    "ticker": "^GSPC",
+    "chart": "decade_cycle",
+    "status": "planned"
+  },
+  {
+    "nr": 8,
+    "slug": "spy-juli",
+    "topic": "S&P 500 (SPY) im Juli — Intra-Monats-Verlauf: stetiger Anstieg, einer der stärksten & verlässlichsten Monate (timely Ende Juni)",
+    "ticker": "SPY",
+    "chart": "intramonth",
+    "status": "draft"
+  },
+  {
+    "nr": 9,
+    "slug": "googl-tom",
+    "topic": "Google (GOOGL) Turn-of-Month-Effekt — Stärke rund um den Monatswechsel (t-3 bis t+3)",
+    "ticker": "GOOGL",
+    "chart": "tom",
+    "status": "draft"
+  }
 ]

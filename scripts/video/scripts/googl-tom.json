@@ -1,0 +1,39 @@
+{
+  "slug": "googl-tom",
+  "topic": "Google (GOOGL) Turn-of-Month-Effekt — Stärke rund um den Monatswechsel (t-3 bis t+3)",
+  "source": "data:tom GOOGL (257 Fenster, 21 Jahre): Ø +0,95 %, 62 % Gewinner, Schub v.a. t+1..t+3",
+  "chart_spec": { "type": "tom", "ticker": "GOOGL", "years": 21 },
+  "key_stat": { "value": "+0,9 %", "label": "GOOGL Turn-of-Month Ø", "note": "62 % Gewinner, 257 Fenster" },
+  "de": {
+    "video_title": "Der Turn-of-Month-Effekt bei Google: stark rund um den Monatswechsel 📈 #Shorts",
+    "hook_onscreen": "Google: stark zum Monatswechsel",
+    "beats": [
+      { "onscreen": "Turn-of-Month-Effekt", "vo": "Es gibt einen Effekt, den viele übersehen: den Turn-of-Month. Rund um den Monatswechsel häuft sich bei vielen Aktien die Stärke." },
+      { "onscreen": "Ø +0,9 % im Fenster", "vo": "Bei Google ist er deutlich: Im Fenster von drei Tagen vor bis drei Tage nach dem Monatsende legte die Aktie im Schnitt 0,9 Prozent zu." },
+      { "onscreen": "62 % Gewinner", "vo": "Und das in 62 Prozent von über 250 untersuchten Fenstern. Der stärkste Schub kommt in den ersten Tagen des neuen Monats, von t plus eins bis t plus drei." },
+      { "onscreen": "Muster, kein Versprechen", "vo": "Aber Achtung: Das ist ein historisches Muster über viele Jahre, keine Garantie. Einzelne Monate liefen deutlich anders." },
+      { "onscreen": "seasonalpha.ai", "vo": "Den Turn-of-Month für jeden Ticker findest du auf Season Alpha." }
+    ],
+    "cta": "Interaktiv auf seasonalpha.ai",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "Turn-of-Month bei Google (GOOGL): Im Fenster von 3 Tagen vor bis 3 Tage nach Monatsende legte die Aktie historisch im Schnitt +0,9 % zu — in 62 % von 257 Fenstern. Der Schub kommt v.a. in den ersten Tagen des neuen Monats. Für jeden Ticker: https://seasonalpha.ai/monatswechsel?utm_source=youtube&utm_medium=short&utm_campaign=googl-tom\n\n⚠️ Historische Daten – keine Anlageberatung oder -empfehlung. Saisonale Muster sind kein Indikator für zukünftige Entwicklungen. Kein Kauf- oder Verkaufssignal. Eigene Recherche erforderlich. Investitionen bergen Verlustrisiken bis zum Totalverlust.\n\n#Google #Aktien #Saisonalität #TurnOfMonth #GOOGL #SeasonAlpha",
+    "hashtags": ["#Google", "#Aktien", "#Saisonalität", "#TurnOfMonth", "#GOOGL", "#SeasonAlpha"]
+  },
+  "en": {
+    "video_title": "Google's Turn-of-Month Effect: Strong Around the Month Boundary 📈 #Shorts",
+    "hook_onscreen": "Google: strong at month turn",
+    "beats": [
+      { "onscreen": "Turn-of-Month effect", "vo": "There's an effect many overlook: the turn of the month. Around the month boundary, strength clusters for many stocks." },
+      { "onscreen": "Avg +0.9 % per window", "vo": "For Google it's clear: in the window from three days before to three days after month end, the stock gained 0.9 percent on average." },
+      { "onscreen": "62 % winners", "vo": "And that in 62 percent of over 250 windows examined. The strongest push comes in the first days of the new month, from t plus one to t plus three." },
+      { "onscreen": "A pattern, not a promise", "vo": "But caution: this is a historical pattern over many years, not a guarantee. Individual months played out very differently." },
+      { "onscreen": "seasonalpha.ai", "vo": "Find the turn-of-month for any ticker at Season Alpha." }
+    ],
+    "cta": "Explore it on seasonalpha.ai",
+    "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice",
+    "caption": "Turn-of-month for Google (GOOGL): in the window from 3 days before to 3 days after month end, the stock historically gained +0.9 % on average — in 62 % of 257 windows. The push comes mainly in the first days of the new month. For any ticker: https://seasonalpha.ai/monatswechsel?utm_source=youtube&utm_medium=short&utm_campaign=googl-tom\n\n⚠️ Historical data — not investment advice or a recommendation. Seasonal patterns are not an indicator of future performance. No buy or sell signal. Do your own research. Investing carries risk of loss up to total loss of capital.\n\n#Google #Stocks #Seasonality #TurnOfMonth #GOOGL #SeasonAlpha",
+    "hashtags": ["#Google", "#Stocks", "#Seasonality", "#TurnOfMonth", "#GOOGL", "#SeasonAlpha"]
+  },
+  "keywords": ["Turn of Month", "Turn-of-Month-Effekt", "Google Aktie Saisonalität", "GOOGL Saisonalität", "Monatswechsel Börse", "saisonale Muster Aktien", "Google Saisonalität", "Aktien Saisonalität", "Monatswechsel-Effekt", "Trading Saisonalität"],
+  "is_crypto": false
+}
