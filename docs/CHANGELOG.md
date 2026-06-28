@@ -21,6 +21,41 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-06-27…28 — Faceless Social-Video-Kanal (Pipeline + erste Shorts, PRs #122-133)
+
+**Aufbau:** Kompletter faceless, bilingualer Short-Video-Kanal als Traffic-/Backlink-Hebel (Plan +
+`docs/YOUTUBE_STRATEGY.md` + `docs/YOUTUBE_DISCLAIMER.md`). Pipeline in `scripts/video/`:
+`render_vertical_chart.py` (Echtdaten → animierter 9:16-Chart, matplotlib→ffmpeg, KEIN Kaleido;
+Chart-Typen seasonal_yearly/monthly_cycle/**intramonth**/**tom**; `--video-mode`, `--highlight-month`,
+`--month`), `render_brand_assets.py` (Avatar/Banner), `tts.py` (ElevenLabs), `compose.py`
+(TTS je Beat → Timeline → Chart → eingebrannte Untertitel+Disclaimer → Mux; nummerierte Ordner
+`out/<NNN>_<slug>/` + auto-SEO/Metatag-Datei via `catalog.json`), Agent `shorts-skripter`.
+DE-Kanal „Seasonalpha (de)" live. Erste Shorts: dax-juli, dax-q4, btc-uptober, **spy-juli**
+(Intra-Monat, 87 % im Plus), **googl-tom** (Turn-of-Month).
+
+**Lessons Learned (wichtig):**
+- **TIMELY schlägt alles.** Ein BTC-„Uptober"-Short Ende Juni war daneben — über November/Oktober reden,
+  wenn Juli ansteht, verschenkt Relevanz. Thema immer an den *aktuellen* Zeitpunkt koppeln.
+- **Distinctive Charts statt Excel-Histogramme.** Monatsbalken (`monthly_cycle`) kann jeder in Excel —
+  Wert zeigen mit den eigenen Funktionen: Intra-Monats-Verlauf, Turn-of-Month/TDOM, normierter
+  Jahresverlauf mit ±1σ, Dekadenzyklus.
+- **Jede Zahl gegen Echtdaten verifizieren** (wie beim Blog). Intra-Monat-SPY matchte den Site-Screenshot
+  exakt; TOM-Zahlen weichen je Fenster-Definition ab (Site 21 Fenster vs. robuste Vollhistorie 257).
+- **ElevenLabs:** Free-Tier blockt Library-Stimmen per API **und** kommerzielle Nutzung → Paid-Tier nötig
+  (war im Playbook vorhergesagt). Eingeschränkte API-Keys haben kein `voices_read` → Voice-Library nicht
+  listbar; Voll-Access-Key nötig. **Native deutsche Stimme** zwingend (englische Stimme = Akzent;
+  „Achim Hepp – German Business"). „seasonalpha.ai" im VO als „Season Alpha" schreiben (Aussprache).
+- **Disclaimer:** On-Screen = **Standard-Variante** (Teil 3), nicht Minimal. Kanonisch in
+  `docs/YOUTUBE_DISCLAIMER.md` (anwaltlich geprüft). Caption = Kurzform 2a (+ Krypto-Zusatz 2c).
+- **Faceless-Pure-AI-Risiko:** YouTube geht gegen gesichtslose reine-KI-Kanäle vor (bis Löschung) →
+  echter Daten-Mehrwert + Variation + menschliche Elemente; KI-Inhalt beim Upload deklarieren.
+- **Traffic-Mechanik:** Shorts unterdrücken Außen-Links → fester End-Frame + gesprochene Marke,
+  Lead-Magnet, UTM + Analytics (Erfolg auf der Website messen, nicht CTR/Impressionen).
+- **Kanalname** darf nicht wie eine URL aussehen („Seasonalpha.de.AI" von YT abgelehnt). **FB:** Page via
+  **Meta Business Manager** (kein neues Privatkonto). **Secrets** nur in `.env` (nie in getrackte Docs!).
+- **Render-Engine:** matplotlib→PNG-Frames→ffmpeg (yuv420p) ist robuster als Kaleido (fehlte) +
+  umlaut-sicher; ASS-Untertitel via ffmpeg in tmp-cwd (Pfad-Escaping umgehen).
+
 ### 2026-06-16…21 — Daily-Newsletter-Rework + DB-Audit-Entrauschung + SEO-Content-Offensive (PRs #104-120)
 
 **Embed/Doku (PRs #104-108):** Einbetten-Button unter den Jahreszyklus-Chart; Doku-Sync v40;
