@@ -38,6 +38,7 @@ Pipeline konsumiert. Du erzeugst KEIN Video. Halte dich exakt an dieses Schema:
     "hashtags": ["#Börse", "#Saisonalität", "#DAX"]
   },
   "en": { "video_title": "...", "hook_onscreen": "...", "beats": [...], "cta": "...", "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice", "caption": "... + 2a-EN", "hashtags": [...] },
+  "keywords": ["8-15 SEO-Keywords (YouTube-Tags-Feld), z.B. 'DAX Saisonalität', 'Börse Juli', 'saisonale Muster Aktien'"],
   "is_crypto": false
 }
 ```

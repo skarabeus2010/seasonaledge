@@ -14,6 +14,7 @@ Voraussetzung: ELEVENLABS_API_KEY in .env (siehe tts.py). ffmpeg/ffprobe auf PAT
 from __future__ import annotations
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -56,8 +57,8 @@ def _ass(events, total, lang):
         "BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
         # weiß, fett, kräftiger Rand — große Keyword-Caption (hoch im freien Band)
         "Style: Cap,Arial,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,5,1,2,70,70,250,1\n"
-        # Gold — Disclaimer-Einblender (0-4s, 1 Zeile)
-        "Style: Disc,Arial,36,&H0025A4E8,&H0025A4E8,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,0,2,80,80,140,1\n"
+        # Gold — Disclaimer-Einblender (Standard-Variante, ggf. 2 Zeilen)
+        "Style: Disc,Arial,34,&H0025A4E8,&H0025A4E8,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,0,2,70,70,126,1\n"
         # gedämpft — Dauer-Branding + Disclaimer (ganz unten)
         "Style: Foot,Arial,28,&H00857060,&H00857060,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,0,2,40,40,30,1\n\n"
         "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
@@ -70,14 +71,72 @@ def _ass(events, total, lang):
 
     # Dauer-Branding/Disclaimer (ganzes Video)
     ev("Foot", 0, total, foot)
-    # Disclaimer-Einblender (Pflicht, 1 Zeile, erste 4s) — Minimal-Variante (Teil 3)
-    disc_short = ("Historische Daten · keine Anlageberatung" if lang == "de"
-                  else "Historical data · not investment advice")
-    ev("Disc", 0.2, 4.0, disc_short)
+    # Disclaimer-Einblender (Pflicht) — STANDARD-Variante aus dem Skript (Teil 3, docs/YOUTUBE_DISCLAIMER.md)
+    ev("Disc", 0.2, 4.3, events["disclaimer_overlay"])
     # Beat-Untertitel (Keyword je Sprech-Fenster)
     for (start, end, txt) in events["beats"]:
         ev("Cap", start, end, txt)
     return "\n".join(lines) + "\n"
+
+
+_CATALOG = _HERE / "catalog.json"
+
+
+def _assign_number(slug, topic="", ticker="", chart=""):
+    """Laufnummer aus catalog.json holen (oder neu vergeben + eintragen)."""
+    cat = json.loads(_CATALOG.read_text(encoding="utf-8")) if _CATALOG.exists() else []
+    for e in cat:
+        if e.get("slug") == slug:
+            return e["nr"]
+    nr = max((e["nr"] for e in cat), default=0) + 1
+    cat.append({"nr": nr, "slug": slug, "topic": topic, "ticker": ticker, "chart": chart,
+                "status": "draft"})
+    _CATALOG.write_text(json.dumps(cat, indent=2, ensure_ascii=False), encoding="utf-8")
+    return nr
+
+
+def _write_seo(out_dir, nr, slug, spec, lang):
+    """Schreibt eine fertige Posting-/SEO-Datei (YT/TikTok/FB) je Sprache."""
+    b = spec[lang]
+    cap = b["caption"]
+    cap_tt = cap.replace("utm_source=youtube", "utm_source=tiktok")
+    cap_fb = cap.replace("utm_source=youtube", "utm_source=facebook")
+    link_yt = f"https://seasonalpha.ai/monatszyklus?utm_source=youtube&utm_medium=short&utm_campaign={slug}"
+    q = ("Welches saisonale Muster überrascht dich am meisten?" if lang == "de"
+         else "Which seasonal pattern surprises you most?")
+    ks = spec.get("key_stat", {})
+    cs = spec["chart_spec"]
+    kws = ", ".join(spec.get("keywords") or [t.lstrip("#") for t in b.get("hashtags", [])])
+    md = f"""# SEO / Posting — Video {nr:03d} · {slug} ({lang})
+
+**Thema:** {spec.get('topic','')}
+**Kernzahl:** {ks.get('label','')} {ks.get('value','')} — {ks.get('note','')}
+**Chart:** {cs.get('type')} · {cs.get('ticker')} · {cs.get('years')}J
+**Video:** {slug}_{lang}.mp4
+
+⚠️ **Beim Upload: KI-Inhalt deklarieren** ("verändert/synthetisch" — KI-Stimme).
+
+## YouTube Shorts
+**Titel:** {b['video_title']}
+
+**Beschreibung:**
+{cap}
+
+**Pinned Comment:** {q} 👇 {link_yt}
+
+## TikTok  (Link in Bio → seasonalpha.ai)
+**Caption:** {cap_tt}
+
+## Facebook (Reel)
+**Caption:** {cap_fb}
+
+## YouTube-Tags / Keywords (kommagetrennt → ins „Tags"-Feld)
+{kws}
+
+## Hashtags
+{' '.join(b.get('hashtags', []))}
+"""
+    (out_dir / f"{slug}_{lang}_seo.md").write_text(md, encoding="utf-8")
 
 
 def main():
@@ -86,6 +145,7 @@ def main():
     ap.add_argument("--lang", default="de", choices=["de", "en"])
     ap.add_argument("--music", help="optionales royalty-free Musikbett (mp3)")
     ap.add_argument("--out")
+    ap.add_argument("--seo-only", action="store_true", help="nur SEO-Datei schreiben (kein Render/TTS)")
     a = ap.parse_args()
 
     spec = json.loads(Path(a.script).read_text(encoding="utf-8"))
@@ -94,9 +154,14 @@ def main():
     slug = spec.get("slug", "short")
     beats = block["beats"]
 
-    out_dir = _HERE / "out"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out = Path(a.out) if a.out else out_dir / f"{slug}_{a.lang}.mp4"
+    nr = _assign_number(slug, spec.get("topic", ""), cs.get("ticker", ""), cs.get("type", ""))
+    out_root = _HERE / "out" / f"{nr:03d}_{slug}"
+    out_root.mkdir(parents=True, exist_ok=True)
+    _write_seo(out_root, nr, slug, spec, a.lang)
+    if a.seo_only:
+        print(f"[compose] SEO-only -> {out_root}/{slug}_{a.lang}_seo.md")
+        return
+    out = Path(a.out) if a.out else out_root / f"{slug}_{a.lang}.mp4"
     tmp = Path(tempfile.mkdtemp(prefix="compose_"))
 
     try:
@@ -167,11 +232,15 @@ def main():
         r = subprocess.run(cmd, cwd=tmp, capture_output=True, text=True)
         if r.returncode != 0:
             sys.exit("[compose] ffmpeg-Mux-Fehler:\n" + r.stderr[-1500:])
+        # Hero-Still mitspeichern
+        still_src = tmp / "chart_still.png"
+        if still_src.exists():
+            shutil.copyfile(still_src, out_root / f"{slug}_{a.lang}_still.png")
     finally:
-        import shutil
         shutil.rmtree(tmp, ignore_errors=True)
 
-    print(f"[compose] OK -> {out}")
+    print(f"[compose] OK   -> {out}")
+    print(f"[compose] SEO  -> {out_root}/{slug}_{a.lang}_seo.md")
     print(f"[compose] Titel: {block['video_title']}")
 
 
