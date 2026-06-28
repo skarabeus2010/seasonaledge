@@ -160,6 +160,10 @@ def _chrome(fig, title, subtitle, kpi, data_date, lang):
     if data_date:
         stamp = (f"Daten: {data_date}" if lang == "de" else f"Data: {data_date}")
         fig.text(0.97, 0.012, stamp, color=MUTED, fontsize=11, ha="right", va="bottom")
+    # Dauer-Disclaimer (YMYL — Pflicht-Fußzeile in jedem Frame, s. docs/YOUTUBE_DISCLAIMER.md)
+    disc = ("Historische Daten · keine Anlageberatung" if lang == "de"
+            else "Historical data · not investment advice")
+    fig.text(0.03, 0.012, disc, color=MUTED, fontsize=11, ha="left", va="bottom")
 
 
 def _style_axes(ax):

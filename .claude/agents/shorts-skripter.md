@@ -33,10 +33,12 @@ Pipeline konsumiert. Du erzeugst KEIN Video. Halte dich exakt an dieses Schema:
       { "onscreen": "<= 6 Wörter", "vo": "1-2 gesprochene Sätze" }
     ],
     "cta": "Interaktiv auf seasonalpha.ai",
-    "caption": "1-2 Sätze + Link + Hashtags (Plattform-neutrale Basis)",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "1-2 Sätze + Link + PFLICHT-Disclaimer (Kurzform 2a, ggf. + Krypto-Zusatz 2c) + Hashtags",
     "hashtags": ["#Börse", "#Saisonalität", "#DAX"]
   },
-  "en": { "video_title": "...", "hook_onscreen": "...", "beats": [...], "cta": "...", "caption": "...", "hashtags": [...] }
+  "en": { "video_title": "...", "hook_onscreen": "...", "beats": [...], "cta": "...", "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice", "caption": "... + 2a-EN", "hashtags": [...] },
+  "is_crypto": false
 }
 ```
 
@@ -64,8 +66,20 @@ Pipeline konsumiert. Du erzeugst KEIN Video. Halte dich exakt an dieses Schema:
 - **Keine erfundenen Zahlen.** Nur `key_stat` + was der Chart real aus den Daten berechnet. Bei „seit
   Jahr X" den realen Datenbereich verifizieren (Render-Helfer), nicht annehmen.
 - **YMYL / keine Anlageberatung:** deskriptiv — „historisch / Ø / Trefferquote / in X % der Jahre".
-  NIE „kaufen / verkaufen / wird steigen / Kursziel / garantiert". Eine kurze Einordnung der Grenze
-  gehört in den vorletzten Beat (Ehrlichkeit baut Vertrauen).
+  NIE „kaufen / verkaufen / wird steigen / Kursziel / garantiert / Signal" als Handlungsempfehlung.
+  Eine kurze Einordnung der Grenze gehört in den vorletzten Beat (Ehrlichkeit baut Vertrauen).
+
+## Compliance / Disclaimer (PFLICHT)
+
+Kanonische Rechtstexte: **`docs/YOUTUBE_DISCLAIMER.md`**. In jedes Skript-JSON einbauen:
+- **`disclaimer_overlay`** je Sprache setzen (DE = „Standard"-Variante Teil 3; EN = EN-Standard) — wird
+  von `compose.py` 2-3s eingebrannt.
+- **`caption`** MUSS die **Kurzform 2a** (DE) bzw. **2a-EN** enthalten (sicht-/kopierbar, plattform-neutral).
+- **Krypto-Inhalte** (BTC/ETH/-USD …): `is_crypto: true` setzen UND den **Krypto-Zusatz 2c** an die
+  Caption hängen (geringe Vorhersagekraft, MiCAR-Hinweis).
+- KEIN Kauf-/Verkaufssignal, kein Kursziel, keine Performance-Versprechen — auch nicht implizit
+  („jetzt einsteigen", „der beste Monat zum Kaufen"). Nur historische Beschreibung.
+Die SEO-/Posting-Hinweise (über `wachstum-distributor`) übernehmen den Disclaimer in jede Plattform-Caption.
 - **Echte Umlaute** (ä ö ü ß) im DE-Text; EN natürlich englisch (nicht wörtlich übersetzt). Slugs ASCII.
 - **CTA immer** → seasonalpha.ai (+ passender Tool-Deep-Link, wenn sinnvoll).
 - **Caption + 3-6 Hashtags** als plattform-neutrale Basis (der `wachstum-distributor` verfeinert je Plattform).
