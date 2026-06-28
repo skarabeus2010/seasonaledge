@@ -136,11 +136,14 @@ def main():
         # 4) Chart-Clip (Video-Mode, Dauer = total)
         hold = max(0.4, total - ANIM)
         print(f"[compose] Chart rendern ({cs['type']} {cs['ticker']})…")
-        r = subprocess.run([sys.executable, str(_HERE / "render_vertical_chart.py"),
-                            "--type", cs["type"], "--ticker", cs["ticker"],
-                            "--years", str(cs["years"]), "--lang", a.lang, "--video-mode",
-                            "--fps", str(FPS), "--seconds", f"{ANIM}", "--hold", f"{hold:.2f}",
-                            "--out", str(tmp / "chart.mp4")], capture_output=True, text=True)
+        render_cmd = [sys.executable, str(_HERE / "render_vertical_chart.py"),
+                      "--type", cs["type"], "--ticker", cs["ticker"],
+                      "--years", str(cs["years"]), "--lang", a.lang, "--video-mode",
+                      "--fps", str(FPS), "--seconds", f"{ANIM}", "--hold", f"{hold:.2f}",
+                      "--out", str(tmp / "chart.mp4")]
+        if cs.get("highlight_month"):
+            render_cmd += ["--highlight-month", str(cs["highlight_month"])]
+        r = subprocess.run(render_cmd, capture_output=True, text=True)
         if not (tmp / "chart.mp4").exists():
             sys.exit("[compose] Chart-Render fehlgeschlagen:\n" + r.stdout[-800:] + r.stderr[-800:])
 

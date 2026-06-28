@@ -57,9 +57,14 @@ _MONTH_LABELS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
                     "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 _MONTH_LABELS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_MONTH_FULL_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni",
+                  "Juli", "August", "September", "Oktober", "November", "Dezember"]
+_MONTH_FULL_EN = ["January", "February", "March", "April", "May", "June",
+                  "July", "August", "September", "October", "November", "December"]
 
 W, H, DPI = 1080, 1920, 100  # 9:16
 _VIDEO_MODE = False  # True: Branding/CTA/Footer weglassen — Compose legt dort Untertitel/Disclaimer hin
+_HIGHLIGHT_MONTH = None  # None = aktueller Monat; 1-12 = diesen Monat hervorheben + KPI darauf fokussieren
 
 # Konsumenten-freundliche Anzeigenamen statt Roh-Ticker
 _TICKER_NAMES = {
@@ -248,17 +253,20 @@ def draw_monthly(year_data, n_years, data_date, ticker, lang):
     vals = _monthly_avg(year_data)
     labels = _MONTH_LABELS_EN if lang == "en" else _MONTH_LABELS_DE
     name = _disp(ticker)
-    cur = date.today().month
+    hl = _HIGHLIGHT_MONTH or date.today().month
     best = int(np.argmax(vals)) + 1
+    full = _MONTH_FULL_EN if lang == "en" else _MONTH_FULL_DE
     if lang == "en":
         title = f"{name} · Avg Return / Month"
         subtitle = f"{n_years} years"
-        kpi = f"Best: {labels[best - 1]} {_fmt(vals[best - 1], lang)}"
+        kpi = (f"{full[hl - 1]}: avg {_fmt(vals[hl - 1], lang)}" if _HIGHLIGHT_MONTH
+               else f"Best: {labels[best - 1]} {_fmt(vals[best - 1], lang)}")
     else:
         title = f"{name} · Ø Rendite je Monat"
         subtitle = f"{n_years} Jahre"
-        kpi = f"Stärkster: {labels[best - 1]} {_fmt(vals[best - 1], lang)}"
-    cols = [WARM if (i + 1) == cur else (ACCENT if v >= 0 else NEG)
+        kpi = (f"{full[hl - 1]}: Ø {_fmt(vals[hl - 1], lang)}" if _HIGHLIGHT_MONTH
+               else f"Stärkster: {labels[best - 1]} {_fmt(vals[best - 1], lang)}")
+    cols = [WARM if (i + 1) == hl else (ACCENT if v >= 0 else NEG)
             for i, v in enumerate(vals)]
     vmax = float(max(abs(vals.min()), abs(vals.max()))) * 1.35 + 0.3
 
@@ -301,9 +309,12 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--video-mode", action="store_true",
                     help="Branding/Footer weglassen — Compose legt dort Untertitel/Disclaimer hin")
+    ap.add_argument("--highlight-month", type=int, default=None,
+                    help="Monat 1-12 hervorheben + KPI fokussieren (Default: aktueller Monat)")
     args = ap.parse_args()
-    global _VIDEO_MODE
+    global _VIDEO_MODE, _HIGHLIGHT_MONTH
     _VIDEO_MODE = args.video_mode
+    _HIGHLIGHT_MONTH = args.highlight_month
 
     print(f"[render] {args.ctype} {args.ticker} ({args.years}J, {args.lang}) — lade Echtdaten…")
     year_data, n_years, data_date = _load_year_data(args.ticker, args.years)
