@@ -47,8 +47,8 @@ def _ass_t(sec: float) -> str:
 
 def _ass(events, total, lang):
     """ASS-Datei: Beat-Untertitel + Disclaimer-Einblender + Dauer-Branding/Disclaimer."""
-    foot = ("seasonalpha.ai  ·  keine Anlageberatung" if lang == "de"
-            else "seasonalpha.ai  ·  not investment advice")
+    foot = ("seasonalpha.ai  ·  Risiko-Disclaimer beachten!" if lang == "de"
+            else "seasonalpha.ai  ·  see risk disclaimer")
     head = (
         "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 0\n\n"
         "[V4+ Styles]\n"
