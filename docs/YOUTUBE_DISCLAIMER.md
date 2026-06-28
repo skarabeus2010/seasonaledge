@@ -6,8 +6,8 @@
 (`shorts-skripter`, `wachstum-distributor`) und alle SEO-/Posting-Hinweise an den Owner MÜSSEN sich
 hierauf beziehen. Siehe Einbindung in [YOUTUBE_STRATEGY.md](YOUTUBE_STRATEGY.md#compliance--disclaimer-verbindlich).
 
-> **Hinweis:** Diese Texte ersetzen keine anwaltliche Prüfung. Vor Kanalstart durch einen auf
-> Kapitalmarkt- oder Medienrecht spezialisierten Rechtsanwalt bestätigen lassen. (Owner-Aktion.)
+> **Hinweis:** Diese Texte wurden bereits **anwaltlich erstellt/geprüft** (Stand Juni 2026) — keine
+> weitere Prüfung nötig. Bei größeren Format-/Rechtsänderungen erneut prüfen lassen.
 
 ---
 
@@ -189,7 +189,7 @@ Betreiber verantwortlich.
 - [ ] Affiliate-Links als Werbung gekennzeichnet (falls vorhanden)
 - [ ] Krypto-Zusatz (2c) bei Krypto-Inhalten aktiviert
 - [ ] Datenschutzerklärung vorhanden (bei eigenem Kontaktformular / Newsletter)
-- [ ] Rechtsanwalt hat Texte geprüft (empfohlen vor Kanalstart)
+- [x] Anwaltlich erstellt/geprüft — **erledigt** (Stand Juni 2026)
 
 ---
 

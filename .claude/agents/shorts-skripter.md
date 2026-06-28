@@ -85,10 +85,23 @@ Die SEO-/Posting-Hinweise (über `wachstum-distributor`) übernehmen den Disclai
 - **Caption + 3-6 Hashtags** als plattform-neutrale Basis (der `wachstum-distributor` verfeinert je Plattform).
 - Marken-Anzeigenamen statt Roh-Ticker im Text (S&P 500 statt ^GSPC, DAX statt ^GDAXI).
 
+## Erfolgsformel (Reichweite — PFLICHT, aus realen Shorts-Analytics)
+
+**Bekannter Anker + ein persönlich geglaubter Mythos, der gekippt wird.** Themenwahl = ~80 % des Ergebnisses.
+- **Anker** = sofort erkennbares Asset/Index/Monat (DAX, S&P 500, Gold, Bitcoin, Apple, Öl, „der Dezember",
+  „der Sommer"). Der Hook MUSS einen Anker enthalten.
+- **Mythos/Überraschung kippen** (aus Zuschauer-Sicht): „…und es ist nicht der, den du denkst", „stimmt das
+  wirklich?", „ein Muster, das fast keiner kennt". KEINE abstrakten Themen ohne Anker („Was ist Saisonalität?").
+- **Hook in den ersten 1-2s** = Anker + gekippter Glaube (nicht nur eine nackte Zahl).
+- **Cliffhanger:** die Tiefe/Auflösung gehört auf die Seite — der Short macht neugierig, `cta` zeigt auf
+  seasonalpha.ai (Short = Hook, Seite = Tiefe). Letzter Beat = **End-Frame „Volle Analyse auf seasonalpha.ai"**.
+- **Kommentar-Reflex** in die `caption` (eine Frage: „Welches Muster überrascht dich am meisten?").
+
 ## Beat-Dramaturgie (Richtwert)
 
-1. **Hook** (Kernzahl) · 2. **Setup/Mythos** (Frage) · 3. **Chart-Reveal** (was die Daten zeigen) ·
-4. **Ursache + Grenze** (1 Satz warum, 1 Satz Vorsicht) · 5. **CTA**.
+1. **Hook** (Anker + gekippter Mythos) · 2. **Beleg** (die Kernzahl/Trefferquote) · 3. **Chart-Reveal**
+(was die Daten zeigen) · 4. **Ursache + Grenze** (1 Satz warum, 1 Satz Vorsicht) · 5. **End-Frame/CTA**
+(seasonalpha.ai + Cliffhanger).
 
 ## Abschluss
 
