@@ -107,16 +107,24 @@ def _write_seo(out_dir, nr, slug, spec, lang):
     ks = spec.get("key_stat", {})
     cs = spec["chart_spec"]
     kws = ", ".join(spec.get("keywords") or [t.lstrip("#") for t in b.get("hashtags", [])])
+    tags = ' '.join(b.get('hashtags', []))
+    cat = "Bildung" if lang == "de" else "Education"
     md = f"""# SEO / Posting — Video {nr:03d} · {slug} ({lang})
 
 **Thema:** {spec.get('topic','')}
 **Kernzahl:** {ks.get('label','')} {ks.get('value','')} — {ks.get('note','')}
-**Chart:** {cs.get('type')} · {cs.get('ticker')} · {cs.get('years')}J
-**Video:** {slug}_{lang}.mp4
+**Chart:** {cs.get('type')} · {cs.get('ticker')} · {cs.get('years')}J  ·  **Datei:** {slug}_{lang}.mp4
+**Kategorie:** {cat} (Finanzen)  ·  **Sprache:** {lang}
+
+## 🏷️ META-TAGS / Keywords  →  ins YouTube-„Tags"-Feld (kommagetrennt)
+{kws}
+
+## # Hashtags  →  in Beschreibung/Caption
+{tags}
 
 ⚠️ **Beim Upload: KI-Inhalt deklarieren** ("verändert/synthetisch" — KI-Stimme).
 
-## YouTube Shorts
+## ▶️ YouTube Shorts
 **Titel:** {b['video_title']}
 
 **Beschreibung:**
@@ -129,12 +137,6 @@ def _write_seo(out_dir, nr, slug, spec, lang):
 
 ## Facebook (Reel)
 **Caption:** {cap_fb}
-
-## YouTube-Tags / Keywords (kommagetrennt → ins „Tags"-Feld)
-{kws}
-
-## Hashtags
-{' '.join(b.get('hashtags', []))}
 """
     (out_dir / f"{slug}_{lang}_seo.md").write_text(md, encoding="utf-8")
 
@@ -228,6 +230,8 @@ def main():
         cmd = (["ffmpeg", "-y", "-i", "chart.mp4", "-i", "vo.m4a"] + amix +
                ["-vf", "ass=cap.ass", "-c:v", "libx264", "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-b:a", "160k", "-shortest", "-movflags", "+faststart",
+                "-metadata", f"title={block['video_title']}",
+                "-metadata", f"comment={', '.join(spec.get('keywords', []))}",
                 str(out.resolve())])
         r = subprocess.run(cmd, cwd=tmp, capture_output=True, text=True)
         if r.returncode != 0:
