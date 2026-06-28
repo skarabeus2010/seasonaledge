@@ -23,7 +23,7 @@ _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent.parent))
 from scripts.video import tts  # noqa: E402
 
-GAP = 0.32          # Pause zwischen Beats (s)
+GAP = 0.5           # Pause zwischen Beats (s)
 ANIM = 5.5          # Chart-Animationsdauer (s), danach Standbild
 TAIL = 0.5          # Video etwas länger als Audio, -shortest trimmt
 FPS = 30
@@ -54,12 +54,12 @@ def _ass(events, total, lang):
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
         "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, "
         "BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        # weiß, fett, kräftiger Rand — große Keyword-Caption
-        "Style: Cap,Arial,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,5,1,2,60,60,200,1\n"
-        # Gold — Disclaimer-Einblender (0-3.5s)
-        "Style: Disc,Arial,38,&H0025A4E8,&H0025A4E8,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,0,2,80,80,112,1\n"
-        # gedämpft — Dauer-Branding + Disclaimer
-        "Style: Foot,Arial,30,&H00857060,&H00857060,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,0,2,40,40,34,1\n\n"
+        # weiß, fett, kräftiger Rand — große Keyword-Caption (hoch im freien Band)
+        "Style: Cap,Arial,58,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,5,1,2,70,70,250,1\n"
+        # Gold — Disclaimer-Einblender (0-4s, 1 Zeile)
+        "Style: Disc,Arial,36,&H0025A4E8,&H0025A4E8,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,0,2,80,80,140,1\n"
+        # gedämpft — Dauer-Branding + Disclaimer (ganz unten)
+        "Style: Foot,Arial,28,&H00857060,&H00857060,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,3,0,2,40,40,30,1\n\n"
         "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     )
     lines = [head]
@@ -70,8 +70,10 @@ def _ass(events, total, lang):
 
     # Dauer-Branding/Disclaimer (ganzes Video)
     ev("Foot", 0, total, foot)
-    # Disclaimer-Einblender (Pflicht, erste 3.5s)
-    ev("Disc", 0.15, 3.65, events["disclaimer_overlay"])
+    # Disclaimer-Einblender (Pflicht, 1 Zeile, erste 4s) — Minimal-Variante (Teil 3)
+    disc_short = ("Historische Daten · keine Anlageberatung" if lang == "de"
+                  else "Historical data · not investment advice")
+    ev("Disc", 0.2, 4.0, disc_short)
     # Beat-Untertitel (Keyword je Sprech-Fenster)
     for (start, end, txt) in events["beats"]:
         ev("Cap", start, end, txt)
