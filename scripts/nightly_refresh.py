@@ -545,6 +545,25 @@ def main():
         app_logger.error(f"nightly_refresh: Brier Phase H fehlgeschlagen: {e}")
         print(f"Brier Phase H: exception {e}", flush=True)
 
+    # Phase I: Landing-Hero-Chart regenerieren (chart-data.json) — taeglich, sonst friert die
+    # "aktuelles Jahr"-Kurve ein (stand bis 2026-06 still, weil kein Cron). Schreibt landing/data (rw-Mount).
+    try:
+        import subprocess as _sp3
+        app_logger.info("[phase-i] starte generate_landing_chart")
+        _resI = _sp3.run(
+            [sys.executable, "scripts/generate_landing_chart.py"],
+            cwd=_project_dir, timeout=300,
+        )
+        if _resI.returncode == 0:
+            print("Landing-Chart: OK", flush=True)
+            app_logger.info("[phase-i] generate_landing_chart OK")
+        else:
+            print(f"Landing-Chart FAILED (exit {_resI.returncode})", flush=True)
+            app_logger.error(f"[phase-i] generate_landing_chart exit {_resI.returncode}")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Landing-Chart Phase I fehlgeschlagen: {e}")
+        print(f"Landing-Chart Phase I: exception {e}", flush=True)
+
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
         heartbeat()
