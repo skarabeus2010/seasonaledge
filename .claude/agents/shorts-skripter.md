@@ -68,7 +68,10 @@ Pipeline konsumiert. Du erzeugst KEIN Video. Halte dich exakt an dieses Schema:
   Jahr X" den realen Datenbereich verifizieren (Render-Helfer), nicht annehmen.
 - **YMYL / keine Anlageberatung:** deskriptiv — „historisch / Ø / Trefferquote / in X % der Jahre".
   NIE „kaufen / verkaufen / wird steigen / Kursziel / garantiert / Signal" als Handlungsempfehlung.
-  Eine kurze Einordnung der Grenze gehört in den vorletzten Beat (Ehrlichkeit baut Vertrauen).
+- **KEINE langweiligen Endungen** wie „das ist nur ein Durchschnitt / einzelne Jahre weichen ab / keine
+  Garantie über N Jahre". Stattdessen ist der **letzte Beat IMMER** der knappe Schluss-Satz (wörtlich):
+  DE „Denk dran: historische Verläufe sind keine Garantie für die Zukunft!" · EN „Remember: past patterns
+  are no guarantee of the future!". (Voll-Disclaimer steckt zusätzlich im Einblender + Caption.)
 
 ## Compliance / Disclaimer (PFLICHT)
 
@@ -100,9 +103,9 @@ Die SEO-/Posting-Hinweise (über `wachstum-distributor`) übernehmen den Disclai
 
 ## Beat-Dramaturgie (Richtwert)
 
-1. **Hook** (Anker + gekippter Mythos) · 2. **Beleg** (die Kernzahl/Trefferquote) · 3. **Chart-Reveal**
-(was die Daten zeigen) · 4. **Ursache + Grenze** (1 Satz warum, 1 Satz Vorsicht) · 5. **End-Frame/CTA**
-(seasonalpha.ai + Cliffhanger).
+1. **Hook** (Anker + gekippter Mythos) · 2. **Beleg** (Kernzahl/Trefferquote) · 3. **Chart-Reveal**
+(was die Daten zeigen, optional 1 Satz Ursache) · 4. **End-Frame/CTA** (seasonalpha.ai + Cliffhanger) ·
+5. **Schluss-Satz (IMMER, wörtlich):** „Denk dran: historische Verläufe sind keine Garantie für die Zukunft!"
 
 ## Abschluss
 
