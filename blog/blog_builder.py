@@ -1223,6 +1223,11 @@ def build_en():
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html)
 
+        # Social-Media Vorlagen (EN) — sprachbewusst, EN-URL + EN-Snippets
+        social_dir = post_dir / "social"
+        social_dir.mkdir(exist_ok=True)
+        _generate_social(post, social_dir, lang="en")
+
         images_src = POSTS_DIR / "images"
         if images_src.exists() and images_src.is_dir():
             images_dst = post_dir / "images"
@@ -1322,14 +1327,17 @@ def _extract_social_from_comment(raw_md: str) -> dict:
     return result
 
 
-def _generate_social(post: dict, social_dir: Path):
+def _generate_social(post: dict, social_dir: Path, lang: str = "de"):
     """Generiert Social-Media Texte — aus Markdown-Kommentar oder Template-Fallback."""
 
     title = post["title"]
     desc = post["description"]
     slug = post["slug"]
     ticker = post.get("ticker", "")
-    url = f"{BASE_URL}/blog/{slug}/"
+    base_path = "/en/blog/" if lang == "en" else "/blog/"
+    url = f"{BASE_URL}{base_path}{slug}/"
+    src_label = "From article" if lang == "en" else "Aus Artikel"
+    var_label = "Variant" if lang == "en" else "Variante"
 
     # Versuche Snippets aus <!-- --> Kommentar zu extrahieren
     extracted = _extract_social_from_comment(post.get("raw_md", ""))
@@ -1337,26 +1345,49 @@ def _generate_social(post: dict, social_dir: Path):
     # ── Twitter / X ──────────────────────────────────────
     if extracted["twitter"]:
         twitter_text = extracted["twitter"]
+        char_label = "characters" if lang == "en" else "Zeichen"
         with open(social_dir / "twitter_posts.txt", "w", encoding="utf-8") as f:
-            f.write(f"=== Aus Artikel ({len(twitter_text)} Zeichen) ===\n\n")
+            f.write(f"=== {src_label} ({len(twitter_text)} {char_label}) ===\n\n")
             f.write(twitter_text)
             f.write("\n\n")
     else:
         # Fallback: Template
-        tweets = [
-            f"📊 {title}\n\n{desc}\n\n{url}\n\n#Saisonalitaet #Trading #Boerse",
-            f"🔍 Neue Analyse: {title}\n\nDatenbasierte Insights auf SeasonAlpha 👇\n{url}",
-            f"📈 {ticker + ' ' if ticker else ''}{title}\n\nMehr auf dem SeasonAlpha Blog:\n{url}\n\n#SeasonAlpha",
-        ]
+        if lang == "en":
+            tweets = [
+                f"📊 {title}\n\n{desc}\n\n{url}\n\n#Seasonality #Trading #Stocks",
+                f"🔍 New analysis: {title}\n\nData-driven insights on SeasonAlpha 👇\n{url}",
+                f"📈 {ticker + ' ' if ticker else ''}{title}\n\nMore on the SeasonAlpha blog:\n{url}\n\n#SeasonAlpha",
+            ]
+        else:
+            tweets = [
+                f"📊 {title}\n\n{desc}\n\n{url}\n\n#Saisonalitaet #Trading #Boerse",
+                f"🔍 Neue Analyse: {title}\n\nDatenbasierte Insights auf SeasonAlpha 👇\n{url}",
+                f"📈 {ticker + ' ' if ticker else ''}{title}\n\nMehr auf dem SeasonAlpha Blog:\n{url}\n\n#SeasonAlpha",
+            ]
+        char_label = "characters" if lang == "en" else "Zeichen"
         with open(social_dir / "twitter_posts.txt", "w", encoding="utf-8") as f:
             for i, tweet in enumerate(tweets):
-                f.write(f"=== Variante {i+1} ({len(tweet)} Zeichen) ===\n\n")
+                f.write(f"=== {var_label} {i+1} ({len(tweet)} {char_label}) ===\n\n")
                 f.write(tweet)
                 f.write("\n\n")
 
     # ── LinkedIn ─────────────────────────────────────────
     if extracted["linkedin"]:
         linkedin_text = extracted["linkedin"]
+    elif lang == "en":
+        linkedin_text = (
+            f"📊 {title}\n\n"
+            f"{desc}\n\n"
+            f"In our latest analysis on the SeasonAlpha blog we take a closer look at the "
+            f"historical data"
+            f"{f' — with a focus on {ticker}' if ticker else ''}.\n\n"
+            f"Key takeaways:\n"
+            f"- Data-driven seasonal patterns\n"
+            f"- Historical win rates and average returns\n"
+            f"- Interactive charts for your own analysis\n\n"
+            f"Read the full post: {url}\n\n"
+            f"#Seasonality #Trading #StockMarket #SeasonAlpha #Finance"
+        )
     else:
         # Fallback: Template
         linkedin_text = (
