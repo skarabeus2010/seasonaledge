@@ -59,6 +59,7 @@ _MONTH_LABELS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 W, H, DPI = 1080, 1920, 100  # 9:16
+_VIDEO_MODE = False  # True: Branding/CTA/Footer weglassen — Compose legt dort Untertitel/Disclaimer hin
 
 # Konsumenten-freundliche Anzeigenamen statt Roh-Ticker
 _TICKER_NAMES = {
@@ -151,19 +152,23 @@ def _chrome(fig, title, subtitle, kpi, data_date, lang):
     if kpi:
         fig.text(0.5, 0.20, kpi, color=WARM, fontsize=40, fontweight="bold",
                  ha="center", va="center")
-    # Branding + CTA
-    fig.text(0.5, 0.085, "seasonalpha.ai", color=ACCENT, fontsize=26, fontweight="bold",
-             ha="center", va="center")
-    cta = "Interaktiv für jeden Ticker" if lang == "de" else "Interactive for every ticker"
-    fig.text(0.5, 0.055, cta, color=MUTED, fontsize=16, ha="center", va="center")
-    # Datenstand-Stempel
+    if not _VIDEO_MODE:
+        # Standalone-Chart: Branding + CTA + Dauer-Disclaimer-Fußzeile
+        fig.text(0.5, 0.085, "seasonalpha.ai", color=ACCENT, fontsize=26, fontweight="bold",
+                 ha="center", va="center")
+        cta = "Interaktiv für jeden Ticker" if lang == "de" else "Interactive for every ticker"
+        fig.text(0.5, 0.055, cta, color=MUTED, fontsize=16, ha="center", va="center")
+        disc = ("Historische Daten · keine Anlageberatung" if lang == "de"
+                else "Historical data · not investment advice")
+        fig.text(0.03, 0.012, disc, color=MUTED, fontsize=11, ha="left", va="bottom")
+        stamp_y, stamp_va = 0.012, "bottom"
+    else:
+        # Video-Mode: unten freihalten (Compose legt dort Untertitel/Disclaimer/Branding)
+        stamp_y, stamp_va = 0.885, "top"
+    # Datenstand-Stempel (immer)
     if data_date:
         stamp = (f"Daten: {data_date}" if lang == "de" else f"Data: {data_date}")
-        fig.text(0.97, 0.012, stamp, color=MUTED, fontsize=11, ha="right", va="bottom")
-    # Dauer-Disclaimer (YMYL — Pflicht-Fußzeile in jedem Frame, s. docs/YOUTUBE_DISCLAIMER.md)
-    disc = ("Historische Daten · keine Anlageberatung" if lang == "de"
-            else "Historical data · not investment advice")
-    fig.text(0.03, 0.012, disc, color=MUTED, fontsize=11, ha="left", va="bottom")
+        fig.text(0.97, stamp_y, stamp, color=MUTED, fontsize=11, ha="right", va=stamp_va)
 
 
 def _style_axes(ax):
@@ -294,7 +299,11 @@ def main():
     ap.add_argument("--seconds", type=float, default=5.0, help="Animationsdauer (ohne End-Hold)")
     ap.add_argument("--hold", type=float, default=1.5, help="Standzeit am Ende (s)")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--video-mode", action="store_true",
+                    help="Branding/Footer weglassen — Compose legt dort Untertitel/Disclaimer hin")
     args = ap.parse_args()
+    global _VIDEO_MODE
+    _VIDEO_MODE = args.video_mode
 
     print(f"[render] {args.ctype} {args.ticker} ({args.years}J, {args.lang}) — lade Echtdaten…")
     year_data, n_years, data_date = _load_year_data(args.ticker, args.years)
