@@ -204,7 +204,7 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ## Docs
 
-- `ARCHITECTURE.md`, `CHARTS.md`, `UI_PATTERNS.md` (Frontend/UI/Statistik-Gotchas), `TRADING_CALENDAR_RULES.md` (Kalender/TDOM/TDOY/OPEX/VIX — Prüf-Spec), `I18N.md` (EN-Lokalisierung operativ; `I18N_ANALYSIS.md` = Planung 04-2026), `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`, `YOUTUBE_STRATEGY.md` (faceless Social-Video-Kanal, Living Doc) + `YOUTUBE_DISCLAIMER.md` (YMYL-Rechtstexte, **kanonisch** — Disclaimer in Video/Caption/SEO-Hinweise einbauen!), `CHANGELOG.md` (History/Meilensteine)
+- `ARCHITECTURE.md`, `CHARTS.md`, `UI_PATTERNS.md` (Frontend/UI/Statistik-Gotchas), `TRADING_CALENDAR_RULES.md` (Kalender/TDOM/TDOY/OPEX/VIX — Prüf-Spec), `I18N.md` (EN-Lokalisierung operativ; `I18N_ANALYSIS.md` = Planung 04-2026), `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`, `YOUTUBE_STRATEGY.md` (faceless Social-Video-Kanal, Living Doc) + `YOUTUBE_DISCLAIMER.md` (YMYL-Rechtstexte, **kanonisch** — Disclaimer in Video/Caption/SEO-Hinweise einbauen!) + `SOCIAL_API_SETUP.md` (Meta IG/FB Auto-Posting-Setup); Pipeline in `scripts/video/` (`PLAN.md`/`README.md`), `CHANGELOG.md` (History/Meilensteine)
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
 ## TODO
