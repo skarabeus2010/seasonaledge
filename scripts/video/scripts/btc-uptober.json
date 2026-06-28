@@ -1,0 +1,39 @@
+{
+  "slug": "btc-uptober",
+  "topic": "Bitcoin-Saisonalität — typischer Jahresverlauf: schwacher Sommer, starker Herbst (Oktober = Uptober)",
+  "source": "data:seasonal_yearly BTC-USD (13 Jahre): Oktober Ø +15,3 % (stärkster), September -3,5 % (schwächster), Q4 stärkste Phase",
+  "chart_spec": { "type": "seasonal_yearly", "ticker": "BTC-USD", "years": 13 },
+  "key_stat": { "value": "+15 %", "label": "BTC Oktober Ø", "note": "stärkster Monat (Uptober), 13 Jahre" },
+  "de": {
+    "video_title": "Bitcoins bester Monat? Der Oktober – der „Uptober\"-Effekt in Zahlen 📈 #Shorts",
+    "hook_onscreen": "Bitcoins bester Monat: Oktober",
+    "beats": [
+      { "onscreen": "Typisches Bitcoin-Jahr", "vo": "Der typische Bitcoin-Jahresverlauf hat ein klares Muster: ein ruhiger, eher schwacher Sommer und ein historisch starker Herbst." },
+      { "onscreen": "Sept schwach, Okt stark", "vo": "Schwächster Monat war historisch der September. Der stärkste: der Oktober, in der Szene Uptober genannt, mit im Schnitt plus 15 Prozent." },
+      { "onscreen": "Q4 = stärkste Phase", "vo": "Oktober bis Dezember waren zusammen oft die kräftigste Phase des Jahres. Im Saisonalverlauf sieht man das als deutlichen Anstieg nach dem Sommer." },
+      { "onscreen": "Hochvolatil, keine Garantie", "vo": "Aber Achtung: Bitcoin ist extrem volatil. Das ist ein Durchschnitt über wenige Jahre, kein Versprechen. Einzelne Jahre brachen komplett aus dem Muster aus." },
+      { "onscreen": "seasonalpha.ai", "vo": "Den ganzen Saisonalverlauf für jeden Coin findest du auf Season Alpha." }
+    ],
+    "cta": "Interaktiv auf seasonalpha.ai",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "Bitcoin-Saisonalität: Der typische Jahresverlauf zeigt einen schwächeren Sommer (September Ø −3,5 %) und einen starken Herbst. Oktober ist mit Ø +15 % der stärkste Monat („Uptober\"), Q4 die kräftigste Phase. Voller Saisonalverlauf: https://seasonalpha.ai/jahreszyklus?utm_source=youtube&utm_medium=short&utm_campaign=btc-uptober\n\n⚠️ Historische Daten – keine Anlageberatung oder -empfehlung. Saisonale Muster sind kein Indikator für zukünftige Entwicklungen. Kein Kauf- oder Verkaufssignal. Eigene Recherche erforderlich. Investitionen bergen Verlustrisiken bis zum Totalverlust.\n\nKryptowährungen unterliegen keiner staatlichen Einlagensicherung und sind hochvolatile, spekulative Anlagen. Vergangene Saisonalitätsmuster bei Kryptowährungen haben eine besonders geringe Vorhersagekraft. Dieser Kanal erbringt keine Krypto-Dienstleistungen im Sinne der MiCAR-Verordnung.\n\n#Bitcoin #Krypto #Saisonalität #BTC #Uptober #SeasonAlpha",
+    "hashtags": ["#Bitcoin", "#Krypto", "#Saisonalität", "#BTC", "#Uptober", "#SeasonAlpha"]
+  },
+  "en": {
+    "video_title": "Bitcoin's Best Month? October – the „Uptober\" Effect in Numbers 📈 #Shorts",
+    "hook_onscreen": "Bitcoin's best month: October",
+    "beats": [
+      { "onscreen": "A typical Bitcoin year", "vo": "The typical Bitcoin year has a clear pattern: a calm, rather weak summer and a historically strong autumn." },
+      { "onscreen": "Sept weak, Oct strong", "vo": "The weakest month historically was September. The strongest: October, known in crypto as Uptober, averaging plus 15 percent." },
+      { "onscreen": "Q4 = strongest phase", "vo": "October through December together were often the strongest phase of the year. In the seasonal path you see it as a clear rise after summer." },
+      { "onscreen": "Highly volatile, no promise", "vo": "But caution: Bitcoin is extremely volatile. This is an average over few years, not a promise. Some years broke the pattern entirely." },
+      { "onscreen": "seasonalpha.ai", "vo": "Find the full seasonal path for any coin at Season Alpha." }
+    ],
+    "cta": "Explore it on seasonalpha.ai",
+    "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice",
+    "caption": "Bitcoin seasonality: the typical year shows a weaker summer (September avg −3.5 %) and a strong autumn. October is the strongest month at avg +15 % („Uptober\"), Q4 the strongest phase. Full seasonal path: https://seasonalpha.ai/jahreszyklus?utm_source=youtube&utm_medium=short&utm_campaign=btc-uptober\n\n⚠️ Historical data — not investment advice or a recommendation. Seasonal patterns are not an indicator of future performance. No buy or sell signal. Do your own research. Investing carries risk of loss up to total loss of capital.\n\nCryptocurrencies are not covered by any deposit guarantee and are highly volatile, speculative assets. Past seasonal patterns in crypto have particularly low predictive power. This channel does not provide crypto services within the meaning of the MiCAR regulation.\n\n#Bitcoin #Crypto #Seasonality #BTC #Uptober #SeasonAlpha",
+    "hashtags": ["#Bitcoin", "#Crypto", "#Seasonality", "#BTC", "#Uptober", "#SeasonAlpha"]
+  },
+  "keywords": ["Bitcoin Saisonalität", "Uptober", "Bitcoin Oktober", "BTC Saisonalität", "Krypto Saisonalität", "Bitcoin bester Monat", "Bitcoin Jahresverlauf", "Bitcoin Q4", "saisonale Muster Krypto", "Bitcoin Herbst"],
+  "is_crypto": true
+}
