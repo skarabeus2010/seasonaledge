@@ -88,6 +88,8 @@
       <th align="center" title="LBR-Oszillator Tagesbasis">LBR&nbsp;D</th>
       <th align="right" title="RSI Tagesbasis">RSI&nbsp;D</th>
       <th align="right" title="RSI Wochenbasis">RSI&nbsp;W</th>
+      <th align="right" title="RSI(3) Tagesbasis — kurzfristig überkauft (≥80) / überverkauft (≤20)">RSI&nbsp;3</th>
+      <th align="right" title="BlastOff = |Open−Close|/(High−Low)×100 — kleine Kerze/Compression (&lt;20) = Ausbruchs-Setup">BO</th>
       <th align="center" title="Technical Score (LBR/RSI/RSI3/BlastOff), max 6">TS</th>
       <th align="center" class="hl" title="Gesamtscore = SC + TS (0–10), Sortierschlüssel">Gesamt</th>
     </tr></thead>
@@ -102,11 +104,13 @@
         <td align="center" class="{{ 'up' if r.lbr_daily is not none and r.lbr_daily > 0 else 'dn' if r.lbr_daily is not none and r.lbr_daily < 0 else 'nu' }}">{% if r.lbr_daily is none %}—{% elif r.lbr_daily > 0 %}▲{% elif r.lbr_daily < 0 %}▼{% else %}•{% endif %}</td>
         <td align="right" class="w6 {{ 'nu' if r.rsi_daily is none else 'rxh' if r.rsi_daily > 90 else 'rh' if r.rsi_daily > 70 else 'rxl' if r.rsi_daily < 10 else 'rl' if r.rsi_daily < 30 else 'nu' }}">{% if r.rsi_daily is not none %}{{ '%.0f' % r.rsi_daily }}{% else %}—{% endif %}</td>
         <td align="right" class="w6 {{ 'nu' if r.rsi_weekly is none else 'rxh' if r.rsi_weekly > 90 else 'rh' if r.rsi_weekly > 70 else 'rxl' if r.rsi_weekly < 10 else 'rl' if r.rsi_weekly < 30 else 'nu' }}">{% if r.rsi_weekly is not none %}{{ '%.0f' % r.rsi_weekly }}{% else %}—{% endif %}</td>
-        <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/4</span></td>
-        <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/8</span></td>
+        <td align="right" class="w6 {{ 'nu' if r.rsi3_daily is none else 'rxh' if r.rsi3_daily >= 80 else 'rxl' if r.rsi3_daily <= 20 else 'nu' }}">{% if r.rsi3_daily is not none %}{{ '%.0f' % r.rsi3_daily }}{% else %}—{% endif %}</td>
+        <td align="right" class="w6 {{ 'go' if r.blastoff is not none and r.blastoff < 20 else 'nu' }}">{% if r.blastoff is not none %}{{ '%.0f' % r.blastoff }}{% else %}—{% endif %}</td>
+        <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/6</span></td>
+        <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/10</span></td>
       </tr>
       {% if show_why and r.why %}
-      <tr class="wr"><td colspan="10" class="why">
+      <tr class="wr"><td colspan="12" class="why">
         <span class="vd vd-{{ r.why.verdict_class }}">{{ r.why.verdict }}</span> · SC {{ r.why.hits }}:
         {% for w in r.why.windows_compact %}{{ w.label }}&nbsp;<span class="{{ 'up' if w.hit else 'nu' }}">{{ w.pct }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
         {% if r.why.win_rate_pct is not none %} · Trefferquote {{ r.why.win_rate_pct }}%{% endif %}

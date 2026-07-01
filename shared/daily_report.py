@@ -393,6 +393,8 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         "lbr_weekly":  sig.get("lbr_weekly"),
         "rsi_daily":   sig.get("rsi_daily"),
         "rsi_weekly":  sig.get("rsi_weekly"),
+        "rsi3_daily":  sig.get("rsi3_daily"),
+        "blastoff":    sig.get("blastoff"),
         "score":       _score,
         "mw_score":    mw_score,
         "total_score": (mw_score or 0) + (_score or 0),
@@ -695,6 +697,7 @@ def top_daily_tips(
                                           with_mw=False, last_bar=ohlc_map.get(row["ticker"]))
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
+                        "rsi3_daily", "blastoff",
                         "score", "price_close", "change_pct", "price_date"):
                 row[key] = sig_row.get(key)
         else:
@@ -1053,6 +1056,8 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "lbr_weekly":  None,
             "rsi_daily":   None,
             "rsi_weekly":  None,
+            "rsi3_daily":  None,
+            "blastoff":    None,
             "score":       0,
             "mw_score":    None,
             "total_score": 0,
