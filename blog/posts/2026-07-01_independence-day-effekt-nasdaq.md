@@ -7,7 +7,7 @@ category: education
 tags: [saisonalitaet, feiertags-effekt, independence-day, 4-juli, nasdaq, qqq, pre-holiday-effekt, signifikanz]
 description: "Rund um den 4. Juli legte der Nasdaq 100 (QQQ) historisch im Schnitt +1,47 % zu — in 70 % der Jahre und statistisch signifikant. Der Feiertags-Effekt in Zahlen."
 ticker: QQQ
-status: draft
+status: published
 ---
 
 <!--
