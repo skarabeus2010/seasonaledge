@@ -70,5 +70,13 @@
     "ticker": "GOOGL",
     "chart": "tom",
     "status": "draft"
+  },
+  {
+    "nr": 10,
+    "slug": "qqq-july4",
+    "topic": "Independence-Day-Effekt (4. Juli) beim Nasdaq (QQQ) — Fenster t-3..t+3 Ø +1,47 %, 70 % positiv, statistisch signifikant (timely)",
+    "ticker": "QQQ",
+    "chart": "holiday",
+    "status": "draft"
   }
 ]
