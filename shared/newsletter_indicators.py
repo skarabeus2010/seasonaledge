@@ -44,31 +44,40 @@ def _last_valid(series: pd.Series) -> float | None:
     return float(val)
 
 
-def compute_ticker_signals(daily_closes: pd.Series) -> dict:
+def compute_ticker_signals(
+    daily_closes: pd.Series,
+    last_bar: dict | None = None,
+) -> dict:
     """Berechnet Newsletter-Signale & Score aus Tages-Schlusskursen.
 
     Parameters
     ----------
     daily_closes : pd.Series
         Index = Datum (aufsteigend sortiert), Werte = Tages-Schlusskurse (EOD).
+    last_bar : dict | None
+        Optional: letzter Bar mit OHLC für BlastOff-Berechnung.
+        Erwartete Keys: ``open``, ``high``, ``low``, ``close`` (alle float).
 
     Returns
     -------
-    dict mit EXAKT diesen Keys:
+    dict mit diesen Keys:
         lbr_daily   : LBR-Fastline (Tagesbasis), letzter Wert (float | None)
         lbr_weekly  : LBR-Fastline (Wochenbasis), letzter Wert (float | None)
         rsi_daily   : RSI(14) Tagesbasis, letzter Wert (float | None)
         rsi_weekly  : RSI(14) Wochenbasis, letzter Wert (float | None)
-        score       : int (additive Formel, siehe unten)
+        rsi3_daily  : RSI(3) Tagesbasis, letzter Wert (float | None)
+        blastoff    : |Open−Close|/(High−Low)×100, letzter Bar (float | None)
+        score       : int (additive Formel, max 6 wenn alle Bedingungen erfüllt)
     """
-    lbr_daily = lbr_weekly = rsi_daily = rsi_weekly = None
+    lbr_daily = lbr_weekly = rsi_daily = rsi_weekly = rsi3_daily = None
 
     # ── Tagesbasis ───────────────────────────────────────────
     if daily_closes is not None and len(daily_closes) >= _MIN_DAILY_BARS:
         d = pd.Series(daily_closes).dropna()
         if len(d) >= _MIN_DAILY_BARS:
-            lbr_daily = _last_valid(calc_lbr(d)["fastline"])
-            rsi_daily = _last_valid(calc_rsi(d, period=14))
+            lbr_daily  = _last_valid(calc_lbr(d)["fastline"])
+            rsi_daily  = _last_valid(calc_rsi(d, period=14))
+            rsi3_daily = _last_valid(calc_rsi(d, period=3))
 
     # ── Wochenbasis ──────────────────────────────────────────
     # Woche endet Freitag; letzter Close je Woche, NaN-Wochen entfernen.
@@ -81,14 +90,29 @@ def compute_ticker_signals(daily_closes: pd.Series) -> dict:
                 lbr_weekly = _last_valid(calc_lbr(weekly)["fastline"])
                 rsi_weekly = _last_valid(calc_rsi(weekly, period=14))
 
-    # ── Score (additiv, EXAKT nach Spec) ─────────────────────
+    # ── BlastOff = |Open−Close| / (High−Low) × 100 ──────────
+    blastoff: float | None = None
+    if last_bar is not None:
+        try:
+            o = float(last_bar["open"])
+            h = float(last_bar["high"])
+            l = float(last_bar["low"])
+            c = float(last_bar["close"])
+            hl = h - l
+            if hl > 0:
+                blastoff = round(abs(o - c) / hl * 100, 1)
+        except (KeyError, TypeError, ValueError, ZeroDivisionError):
+            blastoff = None
+
+    # ── Score (additiv) ──────────────────────────────────────
+    # Basis (0-4): LBR_W + LBR_D + RSI_W + Oversold-Bonus/Überkauft-Penalty
     score = 0
     if lbr_weekly is not None and lbr_weekly > 0:
         score += 1
     if lbr_daily is not None and lbr_daily > 0:
         score += 1
     if rsi_weekly is not None and rsi_weekly > 50:
-        score += 1  # sonst +0
+        score += 1
     if (rsi_daily is not None and rsi_weekly is not None
             and rsi_daily > 90 and rsi_weekly > 90):
         score -= 1  # beide extrem überkauft → Strafpunkt
@@ -96,12 +120,28 @@ def compute_ticker_signals(daily_closes: pd.Series) -> dict:
             and rsi_daily < 10 and rsi_weekly < 10):
         score += 1  # beide extrem überverkauft → Bonus
 
+    # RSI(3)-Bonus (±1): nur wenn LBR-Richtung übereinstimmt
+    if rsi3_daily is not None and lbr_daily is not None:
+        if rsi3_daily <= 20 and lbr_daily > 0:
+            score += 1   # überverkauft + Aufwärtstrend → +1
+        elif rsi3_daily >= 80 and lbr_daily < 0:
+            score -= 1   # überkauft + Abwärtstrend → −1
+
+    # BlastOff-Bonus (±1): Kompression + LBR-Richtung
+    if blastoff is not None and lbr_daily is not None:
+        if blastoff < 20 and lbr_daily > 0:
+            score += 1   # kleine Kerze im Aufwärtstrend → Ausbruchs-Setup
+        elif blastoff < 20 and lbr_daily < 0:
+            score -= 1   # kleine Kerze im Abwärtstrend → Zusammenbruchs-Setup
+
     return {
-        "lbr_daily": round(lbr_daily, 4) if lbr_daily is not None else None,
+        "lbr_daily":  round(lbr_daily, 4)  if lbr_daily  is not None else None,
         "lbr_weekly": round(lbr_weekly, 4) if lbr_weekly is not None else None,
-        "rsi_daily": round(rsi_daily, 1) if rsi_daily is not None else None,
+        "rsi_daily":  round(rsi_daily, 1)  if rsi_daily  is not None else None,
         "rsi_weekly": round(rsi_weekly, 1) if rsi_weekly is not None else None,
-        "score": int(score),
+        "rsi3_daily": round(rsi3_daily, 1) if rsi3_daily is not None else None,
+        "blastoff":   blastoff,
+        "score":      int(score),
     }
 
 

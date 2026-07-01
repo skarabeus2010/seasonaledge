@@ -206,6 +206,40 @@ def fetch_latest_prices_map(tickers: list[str]) -> dict[str, dict]:
     return out
 
 
+def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
+    """Letzter verfügbarer OHLC-Bar je Ticker für BlastOff-Berechnung.
+
+    Returns: {ticker: {open, high, low, close, date}} — Ticker ohne Daten ausgelassen.
+    """
+    from shared.supabase_client import get_client
+    client = get_client()
+    out: dict = {}
+    for t in tickers:
+        try:
+            rows = (
+                client.table("prices")
+                .select("date,open,high,low,close")
+                .eq("ticker", t)
+                .order("date", desc=True)
+                .limit(1)
+                .execute()
+                .data
+            ) or []
+            if rows:
+                r = rows[0]
+                if all(r.get(k) is not None for k in ("open", "high", "low", "close")):
+                    out[t] = {
+                        "open":  float(r["open"]),
+                        "high":  float(r["high"]),
+                        "low":   float(r["low"]),
+                        "close": float(r["close"]),
+                        "date":  r.get("date"),
+                    }
+        except Exception as e:
+            error_logger.error(f"[daily_report] fetch_last_bar_ohlc {t}: {e}")
+    return out
+
+
 def fetch_daily_close_history(
     tickers: list[str], lookback_days: int = 750
 ) -> dict[str, "pd.Series"]:
@@ -292,7 +326,8 @@ def fetch_daily_close_history(
 
 def _signal_row_from_series(ticker: str, series: "pd.Series",
                             target_date: "date | None" = None,
-                            with_mw: bool = True) -> dict | None:
+                            with_mw: bool = True,
+                            last_bar: "dict | None" = None) -> "dict | None":
     """
     Baut eine Signal-Row aus einer Close-Serie via compute_ticker_signals.
 
@@ -313,7 +348,7 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         return None
 
     try:
-        sig = compute_ticker_signals(series)
+        sig = compute_ticker_signals(series, last_bar=last_bar)
     except Exception as e:
         error_logger.error(f"[daily_report] compute_ticker_signals {ticker}: {e}")
         return None
@@ -376,13 +411,14 @@ def build_signal_rows(tickers: list[str], target_date: "date | None" = None) -> 
 
     td = target_date or next_trading_day()
     history = fetch_daily_close_history(tickers)
+    ohlc_map = fetch_last_bar_ohlc(tickers)
 
     rows: list[dict] = []
     for t in tickers:
         series = history.get(t)
         if series is None:
             continue
-        row = _signal_row_from_series(t, series, target_date=td)
+        row = _signal_row_from_series(t, series, target_date=td, last_bar=ohlc_map.get(t))
         if row is not None:
             rows.append(row)
 
@@ -651,11 +687,12 @@ def top_daily_tips(
     # Eine Historie-Query für alle selektierten Ticker (statt fetch_latest_prices_map).
     selected_tickers = [r["ticker"] for r in etfs] + [r["ticker"] for r in stocks]
     history = fetch_daily_close_history(selected_tickers)
+    ohlc_map = fetch_last_bar_ohlc(selected_tickers)
     for row in etfs + stocks:
         # with_mw=False: die Top-Auswahl behält ihren Selektions-MW (multi_window_score,
         # auf NYSE-target_tdom berechnet) für Display == Selektion-Konsistenz.
         sig_row = _signal_row_from_series(row["ticker"], history.get(row["ticker"]),
-                                          with_mw=False)
+                                          with_mw=False, last_bar=ohlc_map.get(row["ticker"]))
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
                         "score", "price_close", "change_pct", "price_date"):
@@ -992,6 +1029,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
     # Eine Historie-Query für alle Watchlist-Ticker → MW + LBR/RSI/Score + Kurs/Vortag.
     wl_tickers = [item["ticker"] for item in items if item.get("ticker")]
     history = fetch_daily_close_history(wl_tickers) if wl_tickers else {}
+    ohlc_map = fetch_last_bar_ohlc(wl_tickers) if wl_tickers else {}
     _td = next_trading_day()
 
     rows: list[dict] = []
@@ -1001,7 +1039,8 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             continue
         meta = SYMBOLS.get(ticker, {})
         sc = score_map.get(ticker, {})
-        sig_row = _signal_row_from_series(ticker, history.get(ticker), target_date=_td)
+        sig_row = _signal_row_from_series(ticker, history.get(ticker), target_date=_td,
+                                          last_bar=ohlc_map.get(ticker))
         row = {
             "ticker":   ticker,
             "name":     meta.get("name", ticker),
