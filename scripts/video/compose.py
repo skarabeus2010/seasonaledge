@@ -212,6 +212,8 @@ def main():
             render_cmd += ["--highlight-month", str(cs["highlight_month"])]
         if cs.get("month"):
             render_cmd += ["--month", str(cs["month"])]
+        if cs.get("holiday"):
+            render_cmd += ["--holiday", str(cs["holiday"])]
         r = subprocess.run(render_cmd, capture_output=True, text=True)
         if not (tmp / "chart.mp4").exists():
             sys.exit("[compose] Chart-Render fehlgeschlagen:\n" + r.stdout[-800:] + r.stderr[-800:])
