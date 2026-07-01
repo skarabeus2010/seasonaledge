@@ -446,12 +446,109 @@ def draw_tom(data, ticker, lang):
     return frame
 
 
+_HOLIDAYS = {"july4": (7, 4, "Independence Day"), "xmas": (12, 25, "Weihnachten"),
+             "thanksgiving": (11, 27, "Thanksgiving"), "newyear": (1, 1, "Neujahr")}
+
+
+def _load_holiday(ticker, years, month, day):
+    """Feiertags-Effekt: Ø kumulierter Verlauf t-3..t+3 um einen Feiertag (t0 = 1. HT nach Feiertag,
+    normiert auf t-3 = 0) + Signifikanz (t-Test vs 0, Cohen d, Relevance). Site-Methodik (feiertage.html)."""
+    import pandas as pd
+    from shared.yahoo_downloader import download_data, preprocess
+    raw = download_data(ticker)
+    if raw is None or len(raw) == 0:
+        return None
+    df = preprocess(raw)
+    if "Date" not in df.columns:
+        df = df.reset_index()
+    dc = "Date" if "Date" in df.columns else df.columns[0]
+    d = pd.to_datetime(df[dc])
+    df = df.assign(_d=d).sort_values("_d").reset_index(drop=True)
+    closes = df["Close"].to_numpy()
+    dts = df["_d"]
+    data_date = str(dts.iloc[-1])[:10]
+    cy = date.today().year
+    wins, paths = [], []
+    for y in range(cy - years, cy):
+        hol = pd.Timestamp(y, month, day)
+        before = [i for i in df.index[dts < hol] if dts.iloc[i].year == y]
+        after = [i for i in df.index[dts > hol] if dts.iloc[i].year == y]
+        if len(before) < 3 or len(after) < 4:
+            continue
+        idxs = before[-3:] + after[:4]  # t-3,t-2,t-1, t0(1.HT nach Feiertag), t+1,t+2,t+3
+        base = closes[idxs[0]]
+        if not base:
+            continue
+        cum = [(closes[i] / base - 1.0) * 100.0 for i in idxs]
+        paths.append(cum)
+        wins.append(cum[-1])
+    if not paths:
+        return None
+    w = np.array(wins)
+    avg = float(w.mean()); win = float((w > 0).mean() * 100.0)
+    sd = float(w.std(ddof=1)) if len(w) > 1 else 0.0
+    t = avg / (sd / np.sqrt(len(w))) if sd else 0.0
+    try:
+        from scipy import stats as _st
+        p = float(_st.ttest_1samp(w, 0).pvalue)
+    except Exception:
+        from math import erf, sqrt
+        p = 2.0 * (1.0 - 0.5 * (1.0 + erf(abs(t) / sqrt(2.0))))
+    cohen = avg / sd if sd else 0.0
+    relevance = 0.5 * max(0.0, 1.0 - p) + 0.3 * (win / 100.0) + 0.2 * min(abs(cohen), 1.0)
+    return {"path": np.array(paths).mean(axis=0).tolist(), "n": len(w), "data_date": data_date,
+            "avg": avg, "win": win, "t": float(t), "p": p, "cohen": float(cohen),
+            "relevance": float(relevance), "significant": p < 0.05}
+
+
+def draw_holiday(data, ticker, lang, hol_name):
+    from matplotlib.ticker import FuncFormatter
+    path = np.asarray(data["path"], dtype=float)
+    name = _disp(ticker)
+    labels = ["t-3", "t-2", "t-1", "t0", "t+1", "t+2", "t+3"]
+    if lang == "en":
+        sig = "significant" if data["significant"] else "not significant"
+        title = f"{name} · {hol_name}"
+        subtitle = f"around the holiday · {data['n']} yrs · {sig} (p={data['p']:.3f})"
+        kpi = f"Ø {_fmt(data['avg'], lang)} · {data['win']:.0f}% up"
+        t0lbl = "Holiday"
+    else:
+        sig = "signifikant" if data["significant"] else "nicht signifikant"
+        title = f"{name} · {hol_name}"
+        subtitle = f"um den Feiertag · {data['n']} Jahre · {sig} (p={data['p']:.3f})"
+        kpi = f"Ø {_fmt(data['avg'], lang)} · {data['win']:.0f}% im Plus"
+        t0lbl = "Feiertag"
+    x = np.arange(7)
+    ymin = min(0.0, float(path.min())); ymax = float(path.max())
+    pad = (ymax - ymin) * 0.18 + 0.1
+
+    def frame(p):
+        fig = _new_fig()
+        ax = fig.add_axes([0.15, 0.30, 0.77, 0.52])
+        _style_axes(ax)
+        k = max(2, int(_ease(p) * 7))
+        ax.axhline(0, color="white", alpha=0.20, ls="--", lw=1)
+        ax.axvline(3, color=WARM, alpha=0.55, ls="--", lw=1.5)
+        ax.fill_between(x[:k], 0, path[:k], color=ACCENT, alpha=0.10, linewidth=0)
+        ax.plot(x[:k], path[:k], color=ACCENT, lw=4, solid_capstyle="round",
+                marker="o", ms=9, mec=BG, mew=2)
+        ax.set_xlim(-0.2, 6.2)
+        ax.set_ylim(ymin - pad, ymax + pad)
+        ax.set_xticks(x); ax.set_xticklabels(labels)
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1f}%"))
+        ax.text(3, ymax + pad * 0.45, t0lbl, color=WARM, fontsize=12, ha="center")
+        _chrome(fig, title, subtitle, kpi, data["data_date"], lang)
+        return fig
+
+    return frame
+
+
 _DRAWERS = {"seasonal_yearly": draw_seasonal, "monthly_cycle": draw_monthly}
 
 
 def main():
     ap = argparse.ArgumentParser(description="SeasonAlpha vertical chart video renderer")
-    ap.add_argument("--type", required=True, choices=list(_DRAWERS) + ["intramonth", "tom"], dest="ctype")
+    ap.add_argument("--type", required=True, choices=list(_DRAWERS) + ["intramonth", "tom", "holiday"], dest="ctype")
     ap.add_argument("--ticker", required=True)
     ap.add_argument("--years", type=int, default=20)
     ap.add_argument("--lang", default="de", choices=["de", "en"])
@@ -465,6 +562,8 @@ def main():
                     help="Monat 1-12 hervorheben + KPI fokussieren (Default: aktueller Monat)")
     ap.add_argument("--month", type=int, default=None,
                     help="Monat 1-12 für intramonth (Default: aktueller Monat)")
+    ap.add_argument("--holiday", default=None,
+                    help="Feiertag-Key für type=holiday (july4/xmas/thanksgiving/newyear)")
     args = ap.parse_args()
     global _VIDEO_MODE, _HIGHLIGHT_MONTH
     _VIDEO_MODE = args.video_mode
@@ -482,6 +581,12 @@ def main():
         data = _load_tom(args.ticker, args.years)
         if data:
             drawer = draw_tom(data, args.ticker, args.lang)
+            n_years, data_date = data["n"], data["data_date"]
+    elif args.ctype == "holiday":
+        _h = _HOLIDAYS.get(args.holiday or "july4", (7, 4, "Independence Day"))
+        data = _load_holiday(args.ticker, args.years, _h[0], _h[1])
+        if data:
+            drawer = draw_holiday(data, args.ticker, args.lang, _h[2])
             n_years, data_date = data["n"], data["data_date"]
     else:
         year_data, n_years, data_date = _load_year_data(args.ticker, args.years)
