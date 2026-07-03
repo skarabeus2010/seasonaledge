@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, TYPE_CHECKING
 
 from shared.logger import app_logger, error_logger
+from shared.ticker_regimes import regime_hint
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -557,7 +558,7 @@ _WHY_WIN_LABELS = ["O→C", "O→O⁺", "O→C⁺", "C→C⁺"]
 
 
 def _build_why_summary(windows: dict, ki_score, win_rate, verdict: str,
-                       score_total: int) -> dict:
+                       score_total: int, ticker: str | None = None) -> dict:
     """Kompakte, deterministische Begründung pro Top-Pick aus bereits
     berechneten Feldern — KEINE neue Berechnung, gleiche Quelle wie die Tabelle.
 
@@ -594,6 +595,7 @@ def _build_why_summary(windows: dict, ki_score, win_rate, verdict: str,
         "windows_compact": windows_compact,
         "win_rate_pct": wr_pct,
         "sample_n": min(counts) if counts else None,
+        "regime": regime_hint(ticker) if ticker else None,
     }
 
 
@@ -635,7 +637,7 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "verdict": verdict,
             "tier": tier_name,
             "why": _build_why_summary(mw["windows"], ki, c.get("win_rate"),
-                                      verdict, mw["score_total"]),
+                                      verdict, mw["score_total"], ticker),
         })
 
     rows.sort(key=lambda r: (-r["multi_window_score"], -r["ki_score"]))

@@ -61,6 +61,9 @@
     .vd-strong{background:rgba(48,232,120,0.18);color:#30e878;}
     .vd-bull{background:rgba(232,168,32,0.16);color:#e8a820;}
     .vd-weak{background:rgba(168,152,120,0.14);color:#a89878;}
+    .rg{display:inline-block;margin-top:3px;font-size:9px;font-weight:600;letter-spacing:.02em;}
+    .rg-momentum{color:#30e878;}
+    .rg-fade{color:#e8a820;}
   </style>
 </head>
 <body style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;-webkit-font-smoothing:antialiased;">
@@ -115,6 +118,7 @@
         {% for w in r.why.windows_compact %}{{ w.label }}&nbsp;<span class="{{ 'up' if w.hit else 'nu' }}">{{ w.pct }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
         {% if r.why.win_rate_pct is not none %} · Trefferquote {{ r.why.win_rate_pct }}%{% endif %}
         {% if r.why.sample_n %} · n={{ r.why.sample_n }}{% endif %}
+        {% if r.why.regime %}<br><span class="rg rg-{{ r.why.regime.kind }}">{{ '⚠' if r.why.regime.kind == 'fade' else '↗' }} {{ r.why.regime.text }}</span>{% endif %}
       </td></tr>
       {% endif %}
       {% endfor %}
@@ -162,7 +166,7 @@
     <!-- ══════════════════════ INTRO ══════════════════════ -->
     <tr><td style="padding:22px 32px 8px;">
       <p style="margin:0;font-size:14px;line-height:1.6;color:#cbd5e1;">
-        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit dem <strong style="color:#e8a820;">Saisonal-Score (MW&nbsp;0–4)</strong> sowie <strong style="color:#e8a820;">LBR/RSI</strong>-Momentum und kombiniertem Score, dazu Events und aktive Strategien.
+        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit dem <strong style="color:#e8a820;">Saisonal-Score (SC&nbsp;0–4)</strong> und dem <strong style="color:#e8a820;">Technical-Score</strong> aus LBR/RSI-Momentum und Vola-Indikator Blast-Off <strong style="color:#e8a820;">(TS&nbsp;0–6)</strong> sowie dem <strong style="color:#e8a820;">Gesamt&nbsp;Score (0–10)</strong>, dazu Events und aktuell aktiven Strategien.
       </p>
     </td></tr>
 
