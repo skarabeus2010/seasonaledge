@@ -1,0 +1,105 @@
+{
+  "slug": "dji-vollmond-juli",
+  "topic": "Dow Jones rund um den Vollmond — gesamt nur borderline, aber der Juli-Vollmond sticht statistisch heraus (timely: Juli-Vollmond)",
+  "source": "data:lunar_event ^DJI Vollmond (Fenster t-5..t+5): 129 Events, Win 62 %, Ø +0,43 %, Median +0,63 %, sigma 2,74 %, gesamt borderline (Score 0,68, t=1,77, p=0,0789) | Monats-Split: Juli significant (Score 0,96, t=3,21, p=0,0106, Ø +0,95 %, Win 90 %, n=10); Aug significant (Ø +1,53 %, Win 82 %, n=11); Nov borderline",
+  "chart_spec": {
+    "type": "lunar_event",
+    "ticker": "^DJI",
+    "phase": "full",
+    "window": 5,
+    "events": 129,
+    "highlight_month": 7
+  },
+  "key_stat": {
+    "value": "+0,95 %",
+    "label": "Dow Juli-Vollmond Ø",
+    "note": "90 % positiv, signifikant (p=0,01), n=10"
+  },
+  "de": {
+    "video_title": "Dow Jones im Vollmond: der Juli sticht heraus – 90 % im Plus 🌕📈 #Shorts",
+    "hook_onscreen": "Dow im Vollmond?",
+    "beats": [
+      {
+        "onscreen": "Dow im Vollmond?",
+        "vo": "Vollmond und Börse? Klingt nach Aberglaube. Aber schau dir mal an, was der Dow Jones rund um den Vollmond wirklich macht."
+      },
+      {
+        "onscreen": "63 % im Plus – aber grenzwertig",
+        "vo": "Im Fenster von fünf Tagen vor bis fünf Tage nach dem Vollmond stieg der Dow in 63 Prozent von 129 Events, im Schnitt plus 0,45 Prozent. Ehrlich gesagt: über alle Monate ist das nur grenzwertig signifikant."
+      },
+      {
+        "onscreen": "Der Juli sticht heraus",
+        "vo": "Ein Monat sticht aber klar heraus: der Juli. Der Juli-Vollmond war in 90 Prozent der Fälle im Plus, im Schnitt plus 0,95 Prozent, und statistisch signifikant. Aber Achtung: nur zehn Events, also kleine Stichprobe."
+      },
+      {
+        "onscreen": "seasonalpha.ai/mondphasen",
+        "vo": "Den Vollmond- und Neumond-Effekt für jeden Ticker findest du auf Season Alpha."
+      },
+      {
+        "onscreen": "Keine Garantie für die Zukunft",
+        "vo": "Denk dran: historische Verläufe sind keine Garantie für die Zukunft!"
+      }
+    ],
+    "cta": "Interaktiv auf seasonalpha.ai/mondphasen",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "Dow Jones rund um den Vollmond: Im Fenster von 5 Tagen vor bis 5 Tage nach dem Vollmond schloss der Dow in 63 % von 129 Events im Plus (Ø +0,45 %) — über alle Monate aber nur grenzwertig signifikant (t=1,77, p=0,08). Ein Monat sticht heraus: der Juli-Vollmond war in 90 % der Fälle positiv, Ø +0,95 %, und statistisch signifikant (t=3,21, p=0,01) — allerdings kleine Stichprobe (n=10). Mond-Effekt für jeden Ticker: https://seasonalpha.ai/mondphasen?utm_source=youtube&utm_medium=short&utm_campaign=dji-vollmond-juli\n\n⚠️ Historische Daten – keine Anlageberatung oder -empfehlung. Saisonale Muster sind kein Indikator für zukünftige Entwicklungen. Kein Kauf- oder Verkaufssignal. Eigene Recherche erforderlich. Investitionen bergen Verlustrisiken bis zum Totalverlust.\n\nWelches saisonale Muster überrascht dich am meisten?\n\n#Dow #Vollmond #Saisonalität #Börse #SeasonAlpha",
+    "hashtags": [
+      "#Dow",
+      "#Vollmond",
+      "#Saisonalität",
+      "#Börse",
+      "#SeasonAlpha"
+    ]
+  },
+  "en": {
+    "video_title": "Dow Jones on the Full Moon: July Stands Out – Positive 90 % of the Time 🌕📈 #Shorts",
+    "hook_onscreen": "Dow on the full moon?",
+    "beats": [
+      {
+        "onscreen": "Dow on the full moon?",
+        "vo": "The full moon and the stock market? Sounds like superstition. But take a look at what the Dow Jones actually does around the full moon."
+      },
+      {
+        "onscreen": "Positive 63% – but borderline",
+        "vo": "In the window from five days before to five days after the full moon, the Dow closed higher in 63 percent of 129 events, averaging plus 0.45 percent. Honestly though: across all months that's only borderline significant."
+      },
+      {
+        "onscreen": "July stands out",
+        "vo": "But one month clearly stands out: July. The July full moon was positive 90 percent of the time, averaging plus 0.95 percent, and it's statistically significant. But careful: only ten events, so a small sample."
+      },
+      {
+        "onscreen": "seasonalpha.ai/mondphasen",
+        "vo": "Find the full moon and new moon effect for any ticker at Season Alpha."
+      },
+      {
+        "onscreen": "No guarantee for the future",
+        "vo": "Remember: past patterns are no guarantee of the future!"
+      }
+    ],
+    "cta": "Explore it on seasonalpha.ai/mondphasen",
+    "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice",
+    "caption": "Dow Jones around the full moon: in the window from 5 days before to 5 days after the full moon, the Dow closed positive in 63 % of 129 events (avg +0.45 %) — but across all months only borderline significant (t=1.77, p=0.08). One month stands out: the July full moon was positive 90 % of the time, avg +0.95 %, and statistically significant (t=3.21, p=0.01) — though on a small sample (n=10). Moon effect for any ticker: https://seasonalpha.ai/mondphasen?utm_source=youtube&utm_medium=short&utm_campaign=dji-vollmond-juli\n\n⚠️ Historical data — not investment advice or a recommendation. Seasonal patterns are not an indicator of future performance. No buy or sell signal. Do your own research. Investing carries risk of loss up to total loss of capital.\n\nWhich seasonal pattern surprises you the most?\n\n#DowJones #FullMoon #Seasonality #Stocks #SeasonAlpha",
+    "hashtags": [
+      "#DowJones",
+      "#FullMoon",
+      "#Seasonality",
+      "#Stocks",
+      "#SeasonAlpha"
+    ]
+  },
+  "keywords": [
+    "Vollmond Börse",
+    "Mondphasen Aktien",
+    "Dow Jones Saisonalität",
+    "Vollmond Effekt Börse",
+    "Lunar Effekt Aktien",
+    "Dow Jones Vollmond",
+    "Juli Vollmond Börse",
+    "saisonale Muster Aktien",
+    "Mondphasen Trading",
+    "Full Moon Stock Market",
+    "Dow Jones seasonality",
+    "Börsen Aberglaube"
+  ],
+  "is_crypto": false
+}

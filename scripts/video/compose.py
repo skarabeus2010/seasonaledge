@@ -146,7 +146,10 @@ def main():
     ap.add_argument("--script", required=True)
     ap.add_argument("--lang", default="de", choices=["de", "en"])
     ap.add_argument("--music", help="optionales royalty-free Musikbett (mp3)")
-    ap.add_argument("--chart-image", help="statisches Bild als Chart (PNG/JPG) statt render_vertical_chart")
+    ap.add_argument("--chart-image", help="statisches Bild als Chart (PNG/JPG) statt render_vertical_chart. "
+                                          "Zwei Bilder komma-separiert = Szenen-Wechsel (Bild1→Bild2 am Split-Beat)")
+    ap.add_argument("--chart-split-beat", type=int, help="Beat-Index, ab dem bei zwei --chart-image das 2. Bild "
+                                                         "gezeigt wird (Default: Hälfte der Beats)")
     ap.add_argument("--out")
     ap.add_argument("--seo-only", action="store_true", help="nur SEO-Datei schreiben (kein Render/TTS)")
     a = ap.parse_args()
@@ -203,21 +206,38 @@ def main():
 
         # 4) Chart-Clip (statisches Bild ODER render_vertical_chart)
         if a.chart_image:
-            img_path = Path(a.chart_image).resolve()
-            if not img_path.exists():
-                sys.exit(f"[compose] --chart-image nicht gefunden: {img_path}")
-            print(f"[compose] Chart aus Bild: {img_path.name} ({total:.1f}s)…")
-            # Bild auf 1080×1920 skalieren (schwarze Balken bei falschem Seitenverhältnis)
-            r = subprocess.run([
-                "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
-                "-t", f"{total:.2f}",
-                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,"
-                       "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30",
-                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast",
-                str(tmp / "chart.mp4")
-            ], capture_output=True, text=True)
+            imgs = [Path(p.strip()).resolve() for p in a.chart_image.split(",") if p.strip()]
+            for ip in imgs:
+                if not ip.exists():
+                    sys.exit(f"[compose] --chart-image nicht gefunden: {ip}")
+
+            def _img_clip(img: Path, dur: float, dst: Path):
+                # Bild auf 1080×1920 skalieren (schwarze Balken bei falschem Seitenverhältnis)
+                subprocess.run([
+                    "ffmpeg", "-y", "-loop", "1", "-i", str(img), "-t", f"{dur:.2f}",
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,"
+                           "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast", str(dst)
+                ], capture_output=True, text=True)
+
+            if len(imgs) == 1:
+                print(f"[compose] Chart aus Bild: {imgs[0].name} ({total:.1f}s)…")
+                _img_clip(imgs[0], total, tmp / "chart.mp4")
+            else:
+                sb = a.chart_split_beat if a.chart_split_beat else len(beats) // 2
+                sb = max(1, min(len(beats) - 1, sb))
+                split_t = timeline[sb][0]                       # Start-Zeit des Split-Beats
+                print(f"[compose] 2 Chart-Bilder: {imgs[0].name} (0–{split_t:.1f}s) → "
+                      f"{imgs[1].name} ({split_t:.1f}–{total:.1f}s)…")
+                _img_clip(imgs[0], split_t, tmp / "c0.mp4")
+                _img_clip(imgs[1], total - split_t, tmp / "c1.mp4")
+                cl = tmp / "clist.txt"
+                cl.write_text("file 'c0.mp4'\nfile 'c1.mp4'\n", encoding="utf-8")
+                subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(cl),
+                                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast",
+                                str(tmp / "chart.mp4")], capture_output=True, text=True)
             if not (tmp / "chart.mp4").exists():
-                sys.exit("[compose] Bild→Video fehlgeschlagen:\n" + r.stderr[-800:])
+                sys.exit("[compose] Bild→Video fehlgeschlagen")
         else:
             hold = max(0.4, total - ANIM)
             print(f"[compose] Chart rendern ({cs['type']} {cs['ticker']})…")
