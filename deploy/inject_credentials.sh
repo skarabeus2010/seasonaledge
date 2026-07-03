@@ -64,6 +64,11 @@ else
     echo "Credentials injiziert in $COUNT Datei(en) (Supabase + Umami)"
 fi
 
+# ── Marktkalender-Daten bauen (JSON + ICS) ───────────────────
+python3 "$REPO_DIR/scripts/build_calendar_data.py" \
+    && echo "Marktkalender-Daten generiert" \
+    || echo "WARNUNG: build_calendar_data.py fehlgeschlagen — Kalender-Daten nicht aktualisiert"
+
 # ── Cache-Busting fuer CSS und JS ────────────────────────────
 # Haengt ?v=<git-sha> an alle /landing/css/*.css und /landing/js/*.js Refs
 # in HTML, damit Browser bei jedem Deploy zwingend neu laden (egal welcher

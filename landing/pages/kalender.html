@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Marktkalender &mdash; SeasonAlpha</title>
+  <meta name="description" content="Dein persönlicher Marktkalender: FOMC, EZB, OPEX, Mondphasen, Dividenden und mehr — gefiltert nach deiner Watchlist.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#000000">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+
+  <style>
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    .kal-wrap { max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+    .kal-header-bar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+                      margin-bottom: 1.25rem; }
+    .page-title  { font-family: var(--f-d); font-size: 1.5rem; font-weight: 800;
+                   color: var(--text); margin-bottom: .15rem; }
+    .page-title b { color: var(--accent); }
+    .page-caption { color: var(--muted); font-size: .8125rem; margin-bottom: 1rem; }
+
+    /* ── Auth Gate ──────────────────────────────────────────────────── */
+    #kal-auth-gate {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1.25rem;
+      min-height: 60vh; text-align: center; padding: 2rem;
+    }
+    #kal-auth-gate .gate-icon { font-size: 3rem; }
+    #kal-auth-gate h2 { font-size: 1.375rem; font-weight: 700; color: var(--text); }
+    #kal-auth-gate p  { color: var(--muted); font-size: .9375rem; max-width: 420px; }
+
+    /* ── Year nav + Month Tabs ──────────────────────────────────────── */
+    .kal-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+               margin-bottom: 1rem; }
+    .kal-year-nav { display: flex; align-items: center; gap: .5rem;
+                    background: var(--card); border: 1px solid var(--border);
+                    border-radius: 8px; padding: .35rem .6rem; font-size: .9375rem;
+                    font-weight: 700; color: var(--text); }
+    .kal-year-nav button { background: none; border: none; color: var(--muted);
+                           cursor: pointer; padding: 0 .3rem; font-size: 1.1rem;
+                           line-height: 1; border-radius: 4px; }
+    .kal-year-nav button:hover { color: var(--accent); }
+    #kal-tabs { display: flex; flex-wrap: wrap; gap: .3rem; }
+    .kal-tab {
+      padding: .35rem .65rem; border-radius: 6px; cursor: pointer; font-size: .8125rem;
+      font-weight: 600; background: var(--card); border: 1px solid var(--border);
+      color: var(--muted); transition: all .15s;
+    }
+    .kal-tab:hover  { color: var(--text); border-color: var(--accent); }
+    .kal-tab--active { background: rgba(232,168,32,.15); border-color: var(--accent);
+                       color: var(--accent); }
+
+    /* ── Month Title ────────────────────────────────────────────────── */
+    .kal-month-row { display: flex; align-items: baseline; gap: .75rem;
+                     margin-bottom: .75rem; }
+    #kal-month-title { font-family: var(--f-d); font-size: 1.25rem;
+                       font-weight: 800; color: var(--text); }
+
+    /* ── Grid ───────────────────────────────────────────────────────── */
+    .kal-dow-header { display: grid; grid-template-columns: repeat(7,1fr);
+                      gap: 1px; margin-bottom: 1px; }
+    .kal-dow { text-align: center; font-size: .75rem; font-weight: 700;
+               color: var(--dim); text-transform: uppercase; letter-spacing: .06em;
+               padding: .4rem 0; }
+    .kal-grid { display: grid; grid-template-columns: repeat(7,1fr);
+                gap: 1px; background: var(--border); border: 1px solid var(--border);
+                border-radius: 8px; overflow: hidden; }
+    .kal-day {
+      min-height: 90px; padding: 6px 7px; background: var(--card);
+      overflow: hidden; position: relative;
+    }
+    .kal-day--other   { background: var(--surface); }
+    .kal-day--other .kal-day-num { color: var(--dim); }
+    .kal-day--today   { background: rgba(29,78,216,.18) !important;
+                        border-left: 2px solid #3b82f6; }
+    .kal-day--today .kal-day-num { color: #93c5fd; font-weight: 800; }
+    .kal-day-num { display: block; font-size: .75rem; font-weight: 700;
+                   color: var(--muted); margin-bottom: 3px; }
+
+    /* ── Chips ──────────────────────────────────────────────────────── */
+    .kal-chip {
+      display: block; font-size: 10px; font-weight: 600; line-height: 1.3;
+      padding: 2px 5px; border-radius: 3px; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: default; max-width: 100%;
+    }
+    .kal-chip--locked {
+      filter: blur(3px); user-select: none; pointer-events: none;
+      opacity: .7;
+    }
+    .kal-chip--more { background: rgba(255,255,255,.06); color: var(--dim); }
+
+    /* Farben je Typ */
+    .kal-chip--fomc   { background: rgba(232,168,32,.18); color: #e8a820; }
+    .kal-chip--opex   { background: rgba(249,115,22,.15); color: #fb923c; }
+    .kal-chip--triple { background: rgba(249,115,22,.25); color: #f97316; font-weight: 800; }
+    .kal-chip--ecb    { background: rgba(59,130,246,.15); color: #93c5fd; }
+    .kal-chip--boe    { background: rgba(99,102,241,.15); color: #a5b4fc; }
+    .kal-chip--boj    { background: rgba(239,68,68,.12); color: #fca5a5; }
+    .kal-chip--snb    { background: rgba(220,38,38,.12); color: #fca5a5; }
+    .kal-chip--boc    { background: rgba(239,68,68,.12); color: #fca5a5; }
+    .kal-chip--rba    { background: rgba(234,179,8,.12); color: #fde047; }
+    .kal-chip--rbnz   { background: rgba(234,179,8,.12); color: #fde047; }
+    .kal-chip--fullmoon { background: rgba(168,85,247,.18); color: #d8b4fe; }
+    .kal-chip--newmoon  { background: rgba(30,64,175,.18); color: #93c5fd; }
+    .kal-chip--holiday  { background: rgba(107,114,128,.15); color: #9ca3af; }
+    .kal-chip--dividend { background: rgba(34,197,94,.15); color: #86efac; }
+    .kal-chip--earnings { background: rgba(59,130,246,.15); color: #93c5fd; }
+
+    /* ── Legend ─────────────────────────────────────────────────────── */
+    .kal-legend { display: flex; flex-wrap: wrap; gap: .5rem .8rem;
+                  margin-top: 1.25rem; }
+    .kal-legend-item { display: flex; align-items: center; gap: .35rem;
+                       font-size: .75rem; color: var(--muted); }
+    .kal-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── Free Banner ─────────────────────────────────────────────────── */
+    #kal-free-banner {
+      display: none; align-items: center; gap: 1rem; flex-wrap: wrap;
+      background: rgba(232,168,32,.07); border: 1px solid rgba(232,168,32,.2);
+      border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem;
+    }
+    #kal-free-banner p { color: var(--muted); font-size: .875rem; flex: 1;
+                         min-width: 220px; margin: 0; }
+    #kal-free-banner p strong { color: var(--accent); }
+
+    /* ── Export ─────────────────────────────────────────────────────── */
+    #kal-export { display: none; margin-top: 1.25rem; }
+    .kal-export-card { background: var(--card); border: 1px solid var(--border);
+                       border-radius: 10px; padding: 1rem 1.25rem; }
+    .kal-export-card h3 { font-size: .9375rem; font-weight: 700;
+                          color: var(--text); margin-bottom: .75rem; }
+    .kal-export-row { display: flex; align-items: center; gap: .75rem;
+                      flex-wrap: wrap; margin-bottom: .6rem; }
+    .kal-export-row:last-child { margin-bottom: 0; }
+    .kal-export-label { font-size: .8125rem; color: var(--muted);
+                        min-width: 120px; }
+    .kal-export-url { font-size: .8125rem; font-family: var(--f-m);
+                      color: var(--accent); background: rgba(232,168,32,.07);
+                      border: 1px solid rgba(232,168,32,.15); border-radius: 5px;
+                      padding: .3rem .6rem; flex: 1; min-width: 0;
+                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-copy { background: rgba(232,168,32,.12); border: 1px solid rgba(232,168,32,.25);
+                color: var(--accent); border-radius: 5px; padding: .3rem .75rem;
+                font-size: .8125rem; cursor: pointer; white-space: nowrap; }
+    .btn-copy:hover { background: rgba(232,168,32,.2); }
+
+    /* ── Responsive ─────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .kal-day { min-height: 60px; padding: 4px 4px; }
+      .kal-chip { font-size: 9px; padding: 1px 3px; }
+      .kal-tab  { padding: .3rem .5rem; font-size: .75rem; }
+    }
+    @media (max-width: 420px) {
+      .kal-day { min-height: 50px; }
+      .kal-dow  { font-size: .65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="nav-container"></div>
+
+<div class="app">
+  <main>
+    <div class="kal-wrap">
+
+      <h1 class="page-title"><b data-i18n="kal.page_title">Marktkalender</b></h1>
+      <p class="page-caption" data-i18n="kal.subtitle">Deine Events auf einen Blick</p>
+
+      <!-- ── Auth Gate ─────────────────────────────────────────── -->
+      <div id="kal-auth-gate">
+        <div class="gate-icon">🔒</div>
+        <h2 data-i18n="kal.login_required">Anmelden für den Marktkalender</h2>
+        <p data-i18n="kal.login_hint">Melde dich an, um deinen personalisierten Marktkalender zu sehen.</p>
+        <button class="btn btn--p"
+                onclick="SA&&SA.auth&&SA.auth.login()"
+                data-i18n="nav.login">
+          Anmelden
+        </button>
+      </div>
+
+      <!-- ── Kalender App (eingeblendet nach Auth) ─────────────── -->
+      <div id="kal-app" style="display:none">
+
+        <!-- Free-User-Banner -->
+        <div id="kal-free-banner">
+          <p>
+            <strong data-i18n="kal.free_teaser">Free-Preview:</strong>
+            <span data-i18n="kal.free_text">
+              Du siehst FOMC- und OPEX-Termine. Alle Notenbanken, Mondphasen, Feiertage &amp; Watchlist-Dividenden sind
+            </span>
+            <strong>&nbsp;</strong>
+            <a href="/pricing" style="color:var(--accent);font-weight:700" data-i18n="kal.premium_required">Premium &rarr;</a>
+          </p>
+        </div>
+
+        <!-- Year-Nav + Monat-Tabs -->
+        <div class="kal-nav">
+          <div class="kal-year-nav" id="kal-year-nav">
+            <button onclick="SA.Kalender.changeYear(-1)" title="Vorjahr">&lsaquo;</button>
+            <span id="kal-year-display"></span>
+            <button onclick="SA.Kalender.changeYear(1)" title="Nächstes Jahr">&rsaquo;</button>
+          </div>
+          <div id="kal-tabs"></div>
+        </div>
+
+        <!-- Monats-Titel -->
+        <div class="kal-month-row">
+          <span id="kal-month-title"></span>
+        </div>
+
+        <!-- Wochentags-Header -->
+        <div class="kal-dow-header" id="kal-dow-header"></div>
+
+        <!-- Kalender-Grid -->
+        <div class="kal-grid" id="kal-grid">
+          <div style="grid-column:1/-1;padding:2rem;text-align:center;color:var(--muted);font-size:.875rem">
+            Lade Kalender&hellip;
+          </div>
+        </div>
+
+        <!-- Legende -->
+        <div class="kal-legend">
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#e8a820"></div>
+            <span>FOMC</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#f97316"></div>
+            <span>OPEX / Triple Witching</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#93c5fd"></div>
+            <span data-i18n="kal.filter_cb">EZB, BoE, BoJ &amp; Co.</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#9ca3af"></div>
+            <span data-i18n="kal.filter_holidays">Börsenfeiertage</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#d8b4fe"></div>
+            <span>Vollmond</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#60a5fa"></div>
+            <span>Neumond</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#86efac"></div>
+            <span data-i18n="kal.filter_dividends">Dividenden</span>
+          </div>
+          <div class="kal-legend-item">
+            <div class="kal-legend-dot" style="background:#38bdf8"></div>
+            <span data-i18n="kal.filter_earnings">Earnings</span>
+          </div>
+        </div>
+
+        <!-- ICS Export (nur Premium) -->
+        <div id="kal-export">
+          <div class="kal-export-card">
+            <h3 data-i18n="kal.export_title">Kalender exportieren / abonnieren</h3>
+            <div class="kal-export-row">
+              <span class="kal-export-label" data-i18n="kal.export_download">Monat herunterladen</span>
+              <button class="btn btn--p" onclick="SA.Kalender.exportICS()" style="font-size:.8125rem;padding:.4rem .9rem" data-i18n="kal.export_download_btn">
+                .ics herunterladen
+              </button>
+            </div>
+            <div class="kal-export-row">
+              <span class="kal-export-label" data-i18n="kal.export_subscribe">Dauerhaft abonnieren</span>
+              <span class="kal-export-url" id="kal-ics-url">webcal://seasonalpha.ai/data/market_calendar.ics</span>
+              <button class="btn-copy" onclick="_kalCopyIcsUrl(this)" data-i18n="kal.export_copy">Kopieren</button>
+            </div>
+            <p style="font-size:.75rem;color:var(--dim);margin-top:.5rem" data-i18n="kal.export_hint">
+              Abo-URL in Google Kalender oder Outlook eingeben — bleibt automatisch aktuell.
+            </p>
+          </div>
+        </div>
+
+      </div><!-- /kal-app -->
+
+    </div><!-- /kal-wrap -->
+  </main>
+</div>
+
+<div id="footer-container"></div>
+
+<script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/landing/js/auth.js"></script>
+<script src="/landing/js/i18n.js"></script>
+<script src="/landing/js/app.js"></script>
+<script src="/landing/js/watchlist.js"></script>
+<script src="/landing/js/kalender-compute.js"></script>
+
+<script>
+  function _kalCopyIcsUrl(btn) {
+    var url = document.getElementById('kal-ics-url').textContent;
+    navigator.clipboard.writeText(url).then(function () {
+      var orig = btn.textContent;
+      btn.textContent = '✓ Kopiert!';
+      setTimeout(function () { btn.textContent = orig; }, 2000);
+    }).catch(function () {
+      prompt('URL kopieren:', url);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.SA && SA.Kalender) {
+      SA.Kalender.init();
+    } else {
+      var t = setInterval(function () {
+        if (window.SA && SA.Kalender) {
+          clearInterval(t);
+          SA.Kalender.init();
+        }
+      }, 80);
+    }
+  });
+</script>
+
+</body>
+</html>
