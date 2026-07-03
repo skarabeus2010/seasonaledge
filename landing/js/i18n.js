@@ -119,7 +119,8 @@ SA.i18n = (function() {
 
   // These link prefixes are NOT rewritten to /en/ — external or already handled separately
   var _skipPrefixes = ['/en/', '/blog/', '/tools/', '/rechtliches', '/disclaimer',
-                       '/app/', '/umami/', 'http', 'mailto:', '#', 'javascript:'];
+                       '/app/', '/umami/', 'http', 'mailto:', '#', 'javascript:',
+                       '/kalender', '/profile', '/watchlist', '/pricing', '/unsubscribe'];
 
   function _applyNavLinks() {
     if (!_isEN) return;
