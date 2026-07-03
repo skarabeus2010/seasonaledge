@@ -21,6 +21,31 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-03 — Newsletter-Scoring RSI(3)+BlastOff + erstes TruePath-Short-Video
+
+**Newsletter-Scoring erweitert (Max-Score 8→10):** Zwei neue Signale in `shared/newsletter_indicators.py`:
+RSI(3) ≤ 20 + LBR > 0 → +1 (Bounce-Setup); RSI(3) ≥ 80 + LBR < 0 → −1 (Erschöpfung);
+BlastOff < 20 % + LBR > 0 → +1 (Compression/Ausbruch); BlastOff < 20 % + LBR < 0 → −1 (Breakdown).
+BlastOff = |Open−Close|/(High−Low)×100. OHLC per neuer `fetch_last_bar_ohlc()` aus Supabase,
+alle 3 `_signal_row_from_series()`-Aufrufstellen in `daily_report.py` aktualisiert.
+Template-Erklärung auf max 6 (TS) / max 10 (Gesamt) aktualisiert + RSI(3)/BlastOff-Definitionen ergänzt.
+
+**Erstes TruePath-Short-Video produziert:** QQQ KI-Saisonalität (TruePath vs. klassischer Ø) als DE-Short,
+58s, ElevenLabs TTS + statischer Screenshot als Chart.
+
+**Lessons Learned (wichtig):**
+- **`--chart-image`-Flag in `compose.py`:** TruePath/KI-Saisonalität ist keine Standard-Render-Pipeline-
+  Visualisierung → `compose.py` um `--chart-image <png>` erweitert (ffmpeg skaliert auf 1080×1920,
+  schwarze Balken bei falschem Seitenverhältnis). Immer fragen welchen Chart der User will — nie annehmen.
+- **Caption-Reihenfolge:** Hashtags IMMER ganz unten (nach Disclaimer), nie im Fließtext.
+  Reihenfolge: Beschreibung → Leerzeile → Disclaimer (2a) → Leerzeile → Hashtags. In `shorts-skripter.md` dokumentiert.
+- **SSH via PowerShell hängt** wenn Server Passwort/interaktive Auth erwartet (keine BatchMode-Ausgabe,
+  Task läuft ewig). Lösung: User führt server-seitige Befehle manuell aus (`ssh root@178.104.75.46 "..."`).
+- **ElevenLabs Key-Name:** `.env` muss `ELEVENLABS_API_KEY` heißen (nicht `ELEVENLABS_KEY`), sonst
+  findet `tts.py` den Key nicht → klares Fehlerbild: `[tts] FEHLER: ELEVENLABS_API_KEY fehlt`.
+- **Video-Output-Format:** 1,9 MB / 58s MP4 (libx264 yuv420p 1080×1920, AAC 160k). Liegt in
+  `scripts/video/out/<NNN>_<slug>/`.
+
 ### 2026-06-27…28 — Faceless Social-Video-Kanal (Pipeline + erste Shorts, PRs #122-133)
 
 **Aufbau:** Kompletter faceless, bilingualer Short-Video-Kanal als Traffic-/Backlink-Hebel (Plan +

@@ -1,0 +1,39 @@
+{
+  "slug": "qqq-truepath-ki-saisonalitaet",
+  "topic": "QQQ TruePath (KI-Saisonalität): Muster-Match statt Durchschnitt — die 5 zu 2026 ähnlichsten Jahre stiegen Ø +39,8 %, alle 5 positiv (100 % Trefferquote), vs. klassischer Saisonal-Durchschnitt +13 %",
+  "source": "screenshot:seasonalpha.ai/ki-saisonalitaet QQQ TruePath (5 DTW-Matches: 2007 69,1%/+18,80%, 2003 65,8%/+43,60%, 2013 63,3%/+32,40%, 2009 61,7%/+48,30%, 2023 56,4%/+55,90%; Ø +39,8 %, alle positiv). Finaler Video-Chart idealerweise Screenshot der /ki-saisonalitaet-Page mit QQQ + TruePath aktiviert (TruePath ist Custom-Visualisierung, nicht in der Standard-Render-Pipeline).",
+  "chart_spec": { "type": "seasonal_yearly", "ticker": "QQQ", "years": 25 },
+  "key_stat": { "value": "+39,8 %", "label": "Ø QQQ Match-Jahre 2026", "note": "5 ähnlichste Jahre — alle positiv, 100 % Trefferquote" },
+  "de": {
+    "video_title": "Nasdaq 2026: +13 %? KI-Saisonalität sieht +40 % 🤖 #Shorts",
+    "hook_onscreen": "Nasdaq +13 %? KI sagt +40 %",
+    "beats": [
+      { "onscreen": "Nasdaq +13 %? Von wegen.", "vo": "Der klassische Saisonal-Durchschnitt sagt für den Nasdaq dieses Jahr rund plus 13 Prozent. Aber die KI-Saisonalität von Season Alpha sieht etwas ganz anderes." },
+      { "onscreen": "Die 5 ähnlichsten Jahre", "vo": "Statt über alle Jahre zu mitteln, sucht das System die fünf historisch ähnlichsten Jahresverläufe zu 2026. Das filtert das Rauschen aus Jahren, die strukturell gar nicht passen." },
+      { "onscreen": "Alle 5 im Plus: Ø +39,8 %", "vo": "Das Ergebnis: In diesen fünf Match-Jahren stieg der Nasdaq im Schnitt fast plus 40 Prozent. 2003, 2009, 2013, 2023 — und alle fünf waren positiv. Trefferquote 100 Prozent." },
+      { "onscreen": "Volle Analyse: seasonalpha.ai", "vo": "Und 2026 läuft diesem Musterpfad bisher eng nach. Den kompletten TruePath für den Nasdaq und jeden anderen Ticker findest du auf seasonalpha.ai." },
+      { "onscreen": "Keine Garantie für die Zukunft", "vo": "Denk dran: historische Verläufe sind keine Garantie für die Zukunft!" }
+    ],
+    "cta": "Interaktiv auf seasonalpha.ai/ki-saisonalitaet",
+    "disclaimer_overlay": "Historische Daten — kein Kauf-/Verkaufssignal — keine Anlageberatung",
+    "caption": "Klassische Saisonalität projiziert für den Nasdaq (QQQ) dieses Jahr rund +13 %. Die KI-Saisonalität von SeasonAlpha (TruePath) geht anders vor: Sie kombiniert nur die 5 historisch ähnlichsten Jahresverläufe zu 2026 (DTW-Match) statt über alle Jahre zu mitteln. Diese 5 Jahre — 2003, 2007, 2009, 2013, 2023 — stiegen im Schnitt +39,8 %, und alle 5 waren positiv (100 % Trefferquote). Welches Muster überrascht dich am meisten? Musterpfad für jeden Ticker: https://seasonalpha.ai/ki-saisonalitaet?utm_source=youtube&utm_medium=short&utm_campaign=qqq-truepath\n\n⚠️ Historische Daten – keine Anlageberatung oder -empfehlung. Saisonale Muster sind kein Indikator für zukünftige Entwicklungen. Kein Kauf- oder Verkaufssignal. Eigene Recherche erforderlich. Investitionen bergen Verlustrisiken bis zum Totalverlust.\n\n#Nasdaq #KI #Saisonalität #QQQ #Börse #SeasonAlpha",
+    "hashtags": ["#Nasdaq", "#KI", "#Saisonalität", "#QQQ", "#Börse", "#SeasonAlpha"]
+  },
+  "en": {
+    "video_title": "Nasdaq 2026: +13 %? AI Seasonality Sees +40 % 🤖 #Shorts",
+    "hook_onscreen": "Nasdaq +13 %? AI says +40 %",
+    "beats": [
+      { "onscreen": "Nasdaq +13 %? Think again.", "vo": "The classic seasonal average points to roughly plus 13 percent for the Nasdaq this year. But Season Alpha's AI seasonality sees something completely different." },
+      { "onscreen": "The 5 most similar years", "vo": "Instead of averaging across all years, the system finds the five historically most similar yearly paths to 2026. That filters out the noise from years that simply don't fit structurally." },
+      { "onscreen": "All 5 up: avg +39.8 %", "vo": "The result: across those five match years the Nasdaq rose on average nearly plus 40 percent. 2003, 2009, 2013, 2023 — and all five were positive. A 100 percent hit rate." },
+      { "onscreen": "Full analysis: seasonalpha.ai", "vo": "And so far 2026 is tracking this pattern path closely. Find the full TruePath for the Nasdaq and any other ticker at Season Alpha." },
+      { "onscreen": "No guarantee for the future", "vo": "Remember: past patterns are no guarantee of the future!" }
+    ],
+    "cta": "Explore it on seasonalpha.ai/ki-saisonalitaet",
+    "disclaimer_overlay": "Historical data — no buy/sell signal — not investment advice",
+    "caption": "Classic seasonality projects roughly +13 % for the Nasdaq (QQQ) this year. SeasonAlpha's AI seasonality (TruePath) works differently: it combines only the 5 historically most similar yearly paths to 2026 (DTW match) instead of averaging across all years. Those 5 years — 2003, 2007, 2009, 2013, 2023 — rose on average +39.8 %, and all 5 were positive (100 % hit rate). Which pattern surprises you the most? Pattern path for any ticker: https://seasonalpha.ai/ki-saisonalitaet?utm_source=youtube&utm_medium=short&utm_campaign=qqq-truepath\n\n⚠️ Historical data — not investment advice or a recommendation. Seasonal patterns are not an indicator of future performance. No buy or sell signal. Do your own research. Investing carries risk of loss up to total loss of capital.\n\n#Nasdaq #AI #Seasonality #QQQ #Stocks #SeasonAlpha",
+    "hashtags": ["#Nasdaq", "#AI", "#Seasonality", "#QQQ", "#Stocks", "#SeasonAlpha"]
+  },
+  "keywords": ["KI Saisonalität", "Nasdaq Saisonalität", "QQQ Saisonalität", "TruePath Musterpfad", "Nasdaq Prognose 2026", "saisonale Muster Aktien", "Nasdaq 100 saisonal", "QQQ Prognose", "Muster-Match Börse", "DTW Ähnlichkeit Aktien", "Nasdaq beste Jahre", "Börse Saisonalität KI"],
+  "is_crypto": false
+}

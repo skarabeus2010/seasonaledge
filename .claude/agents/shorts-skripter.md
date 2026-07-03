@@ -86,6 +86,7 @@ Kanonische Rechtstexte: **`docs/YOUTUBE_DISCLAIMER.md`**. In jedes Skript-JSON e
 Die SEO-/Posting-Hinweise (über `wachstum-distributor`) übernehmen den Disclaimer in jede Plattform-Caption.
 - **Echte Umlaute** (ä ö ü ß) im DE-Text; EN natürlich englisch (nicht wörtlich übersetzt). Slugs ASCII.
 - **CTA immer** → seasonalpha.ai (+ passender Tool-Deep-Link, wenn sinnvoll).
+- **Caption-Reihenfolge (PFLICHT):** 1) Beschreibungstext + Link · 2) Leerzeile · 3) Disclaimer (Kurzform 2a/2a-EN) · 4) Leerzeile · 5) Hashtags. Hashtags IMMER ganz unten, NIEMALS im Fließtext der Beschreibung.
 - **Caption + 3-6 Hashtags** als plattform-neutrale Basis (der `wachstum-distributor` verfeinert je Plattform).
 - Marken-Anzeigenamen statt Roh-Ticker im Text (S&P 500 statt ^GSPC, DAX statt ^GDAXI).
 

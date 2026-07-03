@@ -146,6 +146,7 @@ def main():
     ap.add_argument("--script", required=True)
     ap.add_argument("--lang", default="de", choices=["de", "en"])
     ap.add_argument("--music", help="optionales royalty-free Musikbett (mp3)")
+    ap.add_argument("--chart-image", help="statisches Bild als Chart (PNG/JPG) statt render_vertical_chart")
     ap.add_argument("--out")
     ap.add_argument("--seo-only", action="store_true", help="nur SEO-Datei schreiben (kein Render/TTS)")
     a = ap.parse_args()
@@ -200,23 +201,40 @@ def main():
                         "-c:a", "aac", "-b:a", "160k", str(tmp / "vo.m4a")],
                        capture_output=True)
 
-        # 4) Chart-Clip (Video-Mode, Dauer = total)
-        hold = max(0.4, total - ANIM)
-        print(f"[compose] Chart rendern ({cs['type']} {cs['ticker']})…")
-        render_cmd = [sys.executable, str(_HERE / "render_vertical_chart.py"),
-                      "--type", cs["type"], "--ticker", cs["ticker"],
-                      "--years", str(cs["years"]), "--lang", a.lang, "--video-mode",
-                      "--fps", str(FPS), "--seconds", f"{ANIM}", "--hold", f"{hold:.2f}",
-                      "--out", str(tmp / "chart.mp4")]
-        if cs.get("highlight_month"):
-            render_cmd += ["--highlight-month", str(cs["highlight_month"])]
-        if cs.get("month"):
-            render_cmd += ["--month", str(cs["month"])]
-        if cs.get("holiday"):
-            render_cmd += ["--holiday", str(cs["holiday"])]
-        r = subprocess.run(render_cmd, capture_output=True, text=True)
-        if not (tmp / "chart.mp4").exists():
-            sys.exit("[compose] Chart-Render fehlgeschlagen:\n" + r.stdout[-800:] + r.stderr[-800:])
+        # 4) Chart-Clip (statisches Bild ODER render_vertical_chart)
+        if a.chart_image:
+            img_path = Path(a.chart_image).resolve()
+            if not img_path.exists():
+                sys.exit(f"[compose] --chart-image nicht gefunden: {img_path}")
+            print(f"[compose] Chart aus Bild: {img_path.name} ({total:.1f}s)…")
+            # Bild auf 1080×1920 skalieren (schwarze Balken bei falschem Seitenverhältnis)
+            r = subprocess.run([
+                "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
+                "-t", f"{total:.2f}",
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,"
+                       "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "fast",
+                str(tmp / "chart.mp4")
+            ], capture_output=True, text=True)
+            if not (tmp / "chart.mp4").exists():
+                sys.exit("[compose] Bild→Video fehlgeschlagen:\n" + r.stderr[-800:])
+        else:
+            hold = max(0.4, total - ANIM)
+            print(f"[compose] Chart rendern ({cs['type']} {cs['ticker']})…")
+            render_cmd = [sys.executable, str(_HERE / "render_vertical_chart.py"),
+                          "--type", cs["type"], "--ticker", cs["ticker"],
+                          "--years", str(cs["years"]), "--lang", a.lang, "--video-mode",
+                          "--fps", str(FPS), "--seconds", f"{ANIM}", "--hold", f"{hold:.2f}",
+                          "--out", str(tmp / "chart.mp4")]
+            if cs.get("highlight_month"):
+                render_cmd += ["--highlight-month", str(cs["highlight_month"])]
+            if cs.get("month"):
+                render_cmd += ["--month", str(cs["month"])]
+            if cs.get("holiday"):
+                render_cmd += ["--holiday", str(cs["holiday"])]
+            r = subprocess.run(render_cmd, capture_output=True, text=True)
+            if not (tmp / "chart.mp4").exists():
+                sys.exit("[compose] Chart-Render fehlgeschlagen:\n" + r.stdout[-800:] + r.stderr[-800:])
 
         # 5) ASS-Untertitel
         (tmp / "cap.ass").write_text(
