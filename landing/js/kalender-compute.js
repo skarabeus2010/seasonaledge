@@ -78,7 +78,7 @@
 
   // ── Static event fetch ──────────────────────────────────────────────
   function _loadStaticEvents() {
-    return fetch('/data/market_calendar.json')
+    return fetch('/landing/data/market_calendar.json')
       .then(function (r) { return r.json(); })
       .then(function (data) { _events = data || []; })
       .catch(function () { _events = []; });

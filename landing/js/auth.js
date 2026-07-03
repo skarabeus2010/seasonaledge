@@ -56,13 +56,14 @@
       });
     },
 
-    /** Google OAuth Login (Redirect-Flow) */
-    login: function() {
+    /** Google OAuth Login (Redirect-Flow), optional mit Ziel-Pfad nach Login */
+    login: function(redirectPath) {
       if (!_client) { console.warn('[auth] Nicht initialisiert'); return; }
+      var dest = (redirectPath && redirectPath.charAt(0) === '/') ? redirectPath : '/dashboard';
       _client.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: window.location.origin + dest
         }
       });
     },

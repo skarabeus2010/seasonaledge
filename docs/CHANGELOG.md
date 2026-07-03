@@ -21,6 +21,50 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-03 — Marktkalender (`/kalender`) live
+
+**Neues Feature: Persönlicher Marktkalender (Auth-Gate + Premium-Gate)**
+
+Neuer Bereich `/kalender` — nur für eingeloggte Nutzer, Outlook-Style Monatsraster mit farbcodierten Event-Chips.
+
+**Neue Dateien:**
+- `landing/pages/kalender.html` — Page mit Auth-Gate (redirect zu Login wenn nicht eingeloggt) + Premium-Gate (geblurete Chips für Free-User)
+- `landing/js/kalender-compute.js` — Grid-Renderer (Mo-Start, 7-Spalten-CSS-Grid), Tab-Navigation (Jan–Dez + Jahr-Pfeile), ICS-Client-Export, Supabase-Personalisierung für Premium (Dividenden/Earnings aus Watchlist)
+- `scripts/build_calendar_data.py` — generiert `landing/data/market_calendar.json` (109 Events, 18-Monate-Fenster) + `landing/data/market_calendar.ics` (RFC-5545 Webcal-Abo)
+- `landing/data/market_calendar.json` + `market_calendar.ics` — committed (Server kann nicht regenerieren, s. Pandas-Issue unten)
+
+**Geänderte Dateien:**
+- `landing/components/nav.html` — Kalender-Link hinzugefügt
+- `landing/pages/profile.html` — Kalender-Card mit „Zum Kalender →"-Button
+- `landing/i18n/de.json` + `en.json` — `kal.*` + `prof.card_kalender`-Keys (20+ neue Keys)
+- `deploy/nginx.conf` — `location = /kalender`, `location = /kalender/`, `location = /en/kalender`
+- `deploy/inject_credentials.sh` — `build_calendar_data.py` als Pre-Build-Step
+
+**Event-Typen:** fomc, opex, triple, ecb, boe, boj, snb, boc, rba, rbnz, fullmoon, newmoon, holiday (NYSE/XETRA/LSE), dividend, earnings (Watchlist, nur Premium).
+
+**Free vs. Premium:** FOMC + OPEX sichtbar für alle eingeloggten User; Notenbanken, Mondphasen, Feiertage, Dividenden, Earnings nur für Premium (Chips gefiltert/gebluret mit 🔒). ICS-Export (Download + Webcal-Abo-URL) nur für Premium.
+
+**Bugs gefunden + gefixt:**
+
+1. **`/en/kalender` → 404** (Haupt-Bug): `SA.i18n._applyNavLinks()` schreibt im EN-Modus alle Nav-Links zu `/en/...` um. `/kalender` fehlte in `_skipPrefixes` → `/en/kalender` → 404 (keine EN-Version). Fix: `/kalender`, `/profile`, `/watchlist`, `/pricing`, `/unsubscribe` in Skip-Liste beider Dateien (`i18n.js` + `build_en.py`) + nginx-Fallback `location = /en/kalender { return 301 /kalender; }`.
+
+2. **`/kalender/` (Trailing Slash) → 404**: nginx `location =` matcht nur exakt. Fix: `location = /kalender/ { return 301 /kalender; }`.
+
+**Pandas-Issue auf Server:** `build_calendar_data.py` in `inject_credentials.sh` via system python3 → `ModuleNotFoundError: No module named 'pandas'`. Non-fatal (Daten committed). Manuelles Update: `docker exec seasonalpha-app python3 scripts/build_calendar_data.py`.
+
+3. **Kalender zeigt keine Events** (stille 404): `fetch('/data/market_calendar.json')` → nginx hat keinen `/data/`-Location, nur `/landing/`. Datei liegt unter `/app/landing/data/` → korrekte URL: `/landing/data/market_calendar.json`. Gleiches für Webcal-ICS-URL. Fix: URL-Präfix in `kalender-compute.js` + `kalender.html` korrigiert.
+
+4. **Anmeldung klappt erst nach mehreren Versuchen (UX-Bug):** `SA.auth.login()` redirectete nach Google OAuth immer zu `/dashboard`, nicht zurück zu `/kalender`. User sah nach Login → `/dashboard` und dachte, die Anmeldung hätte nicht funktioniert. Fix: `auth.js` `login(redirectPath?)` akzeptiert jetzt optionalen Zielpfad; `kalender.html` ruft `SA.auth.login('/kalender')` auf.
+
+**Lessons Learned:**
+
+- **Auth-gated Pages ohne EN-Äquivalent → IMMER in `_skipPrefixes`** (i18n.js + build_en.py) + nginx `/en/<slug>` → 301 Redirect. Checkliste für neue persönliche Pages.
+- **WebFetch hat 15-min-Cache** — für Real-Time-HTTP-Checks immer `curl -s -o /dev/null -w "%{http_code}"` nutzen.
+- **404-Debug-Pattern:** Wenn curl 200 liefert aber User 404 sieht → URL genau prüfen (hier: `/en/kalender` statt `/kalender`). Nginx `location =` ist Exact-Match, kein Trailing-Slash-Fallback.
+- **Neues Deployment-Skript-Pattern für pandas-abhängige Scripts:** `docker exec seasonalpha-app python3 scripts/...` statt system python3 in `inject_credentials.sh`, damit pandas/alle Container-Deps verfügbar sind.
+- **`fetch('/data/...')` funktioniert NICHT** — nginx kennt keinen `/data/`-Root. Alle statischen JSON-Dateien aus `landing/data/` über `/landing/data/...` fetchen.
+- **OAuth `redirectTo` nicht vergessen:** `SA.auth.login()` immer mit Ziel-Pfad aufrufen wenn der User nach Login auf einer bestimmten Seite landen soll (nicht auf `/dashboard`).
+
 ### 2026-07-03 — Newsletter-Scoring RSI(3)+BlastOff + erstes TruePath-Short-Video
 
 **Newsletter-Scoring erweitert (Max-Score 8→10):** Zwei neue Signale in `shared/newsletter_indicators.py`:

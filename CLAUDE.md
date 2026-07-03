@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 42.0 | 2026-07-03 | **Marktkalender** (`/kalender`, Auth-Gate + Premium-Gate, ICS-Export, 109 Events 18-Monate) · **i18n EN-Skip-Fix** (auth-gated Pages aus Link-Rewrite ausgeschlossen) · Lessons Learned: `_skipPrefixes`-Pflicht, `build_calendar_data.py` pandas-Issue, `/en/<slug>` Redirect-Pattern
 > Version 41.0 | 2026-06-21 | **Daily-Newsletter-Rework** (ML-Regime → LBR/RSI/SC/TS/Gesamt-Scoring, Kernliste, alle Notenbanken, „Warum"-Zeile, Mail-Size-Fix) · **DB-Audit entrauscht** (Feiertags-/Legitim-Absenz-Logik) · **SEO-Content-Offensive** (alle 18 dünnen Tool-Seiten: Unique-Content + FAQPage, `docs/SEO_TODO.md`) · Lessons Learned in [docs/CHANGELOG.md](docs/CHANGELOG.md) + Email/i18n-Regeln ergänzt
 > Version 40.0 | 2026-06-15 | Kalender-Spec vervollständigt (OPEX/VIX börsenspez. + holiday-aware, Zeit-Indizes TDOM/TDOY/CDOM/CDOY, Notenbank-Termine je Region, Asien HKEX/KRX/TSE) + **Prüfagent** (`verify_calendar_rules.py`, wöchentl. Cron) · **SEO-Foundation**: `/ueber-uns` (E-E-A-T), 1. Daten-Studie (DAX-September), SEO-Audit · **8 Subagenten** (4 neue Wachstums-Agenten + `docs/AGENTS.md`) · **Embed-Backlink-Asset** (`/embed` + Einbetten-Button auf Jahreszyklus)
 > Version 39.0 | 2026-06-14 | Ticker-Universum 270→324 (Dow-30/DAX-40 vollständig, Orphan-Adoption, SAP→SAP.DE) + DB-Vollständigkeits-Audit/Onboarding-Guardrails + Klarstellung: **Streamlit produktseitig ungenutzt** (nur Container-Keep-alive), `landing/` = Frontend
@@ -29,14 +30,14 @@ shared/                  ← Berechnungs-/Daten-/UI-Module (siehe Module-Liste u
 scripts/                 ← Batch-Jobs (Nightly, Intraday, Newsletter, Regime, Audit)
 pages/                   ← Streamlit Pages (Legacy, ungenutzt)
 landing/                 ← Statische HTML-App (= DAS Frontend)
-  pages/                 ← 30 HTML-Feature-Pages
+  pages/                 ← 31 HTML-Feature-Pages (inkl. kalender.html — auth-only)
   ueber-uns.html         ← Methodik/About (E-E-A-T, root)
   embed.html             ← Standalone-Seasonal-Chart zum Einbetten (Route /embed, framebar)
   js/                    ← JS-Module (shared compute + charts + i18n)
-  i18n/                  ← de.json + en.json (1222 Keys, seit KW24)
+  i18n/                  ← de.json + en.json (1222+ Keys, seit KW24)
   css/app.css            ← V3 Ultra Design System
   components/            ← nav.html, footer.html (JS-Include)
-  data/                  ← Pre-computed JSON
+  data/                  ← Pre-computed JSON (inkl. market_calendar.json + .ics)
 blog/                    ← Markdown-Blog-Engine
   posts/                 ← 24 DE Markdown-Posts
   posts/en/              ← 24 EN Markdown-Posts (seit KW24)
@@ -136,6 +137,7 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 - nginx-Config minimal/proven halten: `nginx -t`-Fehler im Deploy wird per `|| echo` verschluckt (non-fatal) → fehlerhafte Config bleibt still inaktiv, alte läuft weiter. Neue Blöcke an bereits laufenden orientieren (lokal kein `nginx -t` ohne Docker).
 - Reine HTML/Asset-Änderungen (kein Config): `git pull` reicht (nginx serviert aus gemountetem `./landing` ro); ggf. Browser-Hard-Refresh
 - `blog/output/` UND `landing/en/` sind gitignored — serverseitig im Deploy generiert: `blog_builder.py --build` bzw. `build_en.py --write` (beide DE+EN), letzteres auf dem Host nach `inject_credentials.sh`
+- **`build_calendar_data.py` läuft in `inject_credentials.sh` via system python3 — auf dem Server fehlt `pandas` dort → non-fatal (JSON+ICS sind committed, Deploy geht durch).** Für echtes Live-Update manuell: `docker exec seasonalpha-app python3 scripts/build_calendar_data.py`. Langfristig: Schritt in `inject_credentials.sh` auf `docker exec` umstellen.
 
 ### Email / Brevo — Detail: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md)
 
@@ -150,6 +152,9 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 - **⚠️ ANTI-PATTERN: `data-i18n` (Text) auf Element MIT Inline-Kind (`<b>`/`<a>`/`<br>`) → nur letzter Textknoten übersetzt = halb deutsch** (auch live, unbemerkt). Fix: `data-i18n-html` + EN-Wert als VOLLES HTML. `scripts/fix_i18n_html_markup.py` flippt automatisch.
 - **Verifizieren: `py landing/verify_en.py` (Ziel FAIL 0).** Dynamische JS-Strings via `SA.i18n.t('key','dt-Fallback')` (Script-Inhalt ist nicht backbar).
 - **Neuer statischer DE-Text auf einer Tool-Seite OHNE `data-i18n`-Keys bricht den EN-Build** (`verify_en` FAIL: Deutsch auf `/en/`). Also IMMER `data-i18n(-html)` + EN-Wert in `en.json` (flach: `"prefix.key"`). `build_en.py` rendert EN nur für Seiten mit `_EN_PAGE_META`-Eintrag (manche Tool-Seiten sind DE-only, z.B. crash-fruehwarnung — dort EN-Keys harmlos ungenutzt). SEO-Hintergrund: Tool-Wert steckt im JS-Chart → für Crawler unsichtbar → „gecrawlt, nicht indexiert"; Gegenmittel = statischer Unique-Text + FAQPage-Schema (Muster: `landing/pages/*.html` `<details open>` mit `<prefix>.seo_*`, siehe `docs/SEO_TODO.md`).
+- **`fetch('/data/...')` aus JS VERBOTEN** — nginx kennt keinen `/data/`-Root. Statische JSON/ICS-Dateien aus `landing/data/` immer über `/landing/data/<datei>` fetchen. Incident: `kalender-compute.js` fetche `/data/market_calendar.json` → 404 → leerer Kalender (2026-07-03).
+- **`SA.auth.login(redirectPath?)` mit Zielpfad aufrufen** wenn der User nach OAuth zurück auf eine bestimmte Page soll (z.B. `/kalender`). Default-Redirect ist `/dashboard`. Ohne expliziten Pfad landet der User nach Login auf `/dashboard` und denkt, Login sei fehlgeschlagen.
+- **Auth-gated/persönliche Pages ohne EN-Äquivalent MÜSSEN in `_skipPrefixes` eingetragen werden** — sowohl in `landing/js/i18n.js` als auch in `landing/build_en.py`. Andernfalls schreibt `_applyNavLinks()` im EN-Modus `/kalender` → `/en/kalender` und liefert 404, da keine EN-Version existiert. Betrifft: `/kalender`, `/profile`, `/watchlist`, `/pricing`, `/unsubscribe`. Zusätzlich: nginx `location = /en/<slug> { return 301 /<slug>; }` als Fallback. Incident: 2026-07-03 — Kalender-Link auf EN-Seiten lieferte 404.
 - **Live `robots.txt`/`sitemap.xml` kommen aus `seo/output/`** (docker-compose-Mount nach `/app/static/`, Builder regeneriert bei jedem Deploy) — `static/robots.txt`/`static/sitemap.xml` im Repo sind ungenutzte Leichen. Bei robots/sitemap-Fragen die Live-Version prüfen.
 
 ### Blog / Bilingualisierung — Detail: [docs/BLOG_WORKFLOW.md](docs/BLOG_WORKFLOW.md)
@@ -229,6 +234,8 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 
 ### Technische Roadmap (längerfristig)
+- [ ] **`build_calendar_data.py` via `docker exec` in `inject_credentials.sh`** statt system python3 → pandas verfügbar → JSON+ICS bei jedem Deploy automatisch aktuell (aktuell: committed-Stand, pandas fehlt in system python3)
+- [ ] **Kalender: Dividenden + Earnings aus DB** — `dividend_events` + `earnings_events` Tabellen befüllen; kalender-compute.js `_loadPersonalized()` ist bereits vorbereitet
 - [ ] **GSC /en/ Property einrichten** + Coverage nach 2 Wochen prüfen (erste EN-Indexierung erwartet)
 - [ ] **Pretty EN slugs** (`/en/decade-cycle` statt `/en/dekadenzyklus`) — nginx rewrite map
 - [ ] **EN Blog nach Deploy prüfen** — `/en/blog/` und Category-Filter korrekt? nginx-Location-Reihenfolge beachten

@@ -180,7 +180,7 @@
         <h2 data-i18n="kal.login_required">Anmelden für den Marktkalender</h2>
         <p data-i18n="kal.login_hint">Melde dich an, um deinen personalisierten Marktkalender zu sehen.</p>
         <button class="btn btn--p"
-                onclick="SA&&SA.auth&&SA.auth.login()"
+                onclick="SA&&SA.auth&&SA.auth.login('/kalender')"
                 data-i18n="nav.login">
           Anmelden
         </button>
@@ -274,7 +274,7 @@
             </div>
             <div class="kal-export-row">
               <span class="kal-export-label" data-i18n="kal.export_subscribe">Dauerhaft abonnieren</span>
-              <span class="kal-export-url" id="kal-ics-url">webcal://seasonalpha.ai/data/market_calendar.ics</span>
+              <span class="kal-export-url" id="kal-ics-url">webcal://seasonalpha.ai/landing/data/market_calendar.ics</span>
               <button class="btn-copy" onclick="_kalCopyIcsUrl(this)" data-i18n="kal.export_copy">Kopieren</button>
             </div>
             <p style="font-size:.75rem;color:var(--dim);margin-top:.5rem" data-i18n="kal.export_hint">
