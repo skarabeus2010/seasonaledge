@@ -21,6 +21,50 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-03 — Newsletter-Score empirisch validiert + Regime-Kontext (PRs #144-146)
+
+**Frage:** „Welcher Score bringt welche Performance/welchen Drawdown?" → Backtest des Newsletter-
+Scorings (SC/TS/GESAMT) mit `scripts/backtest_newsletter_scoring.py` (look-ahead-frei: TS kausal
+vektorisiert, SC Expanding-Window pro Kalenderjahr, Entry=Close[t]).
+
+**Erst gepoolt (verworfen):** Über ALLE Ticker gebucketet zeigte GESAMT keinen positiven Rendite-
+Edge (leichte Mean-Reversion). User-Einwand — korrekt: **Pooling ist zu pauschal**, positive/negative
+Einzel-Edges heben sich auf. Analyse-Einheit = **der einzelne Ticker**.
+
+**PR #144 — Per-Ticker-Edge + Regime-Klassifikation:** je Ticker × Score × Haltedauer (1/5/10/15/20):
+Spearman ρ(Score, Forward-Rendite) + p + n + Top-minus-Bottom-Spread + Ø-Drawdown; Klassifikation
+**momentum** (ρ konsistent >0) / **fade** (konsistent <0) / **neutral**. `--reclassify` gruppiert aus
+vorhandener JSON um (rohe ρ schwellenunabhängig → kein 40-Min-Neulauf). Befund (273 Ticker): SC
+richtungslos (0/0/268); TS 11 momentum (Crypto/Semis/Growth: ENR.F/AMD/MU/BTC-USD) vs 85 fade
+(Staples/Energie/EU-Value: SHEL/TTE/LIN/XLRE); der Momentum-Score ist für die MEISTEN Ticker
+**contrarian**. `backtest-analyst`-Subagent für Auswertung.
+
+**PR #145 — Out-of-Sample-Test (`--oos-split 0.6`):** Regime aus ersten 60 % je Ticker, `TS_adj =
+sign·Score` im held-out Rest. Trick: Spearman(sign·TS,ret)=sign·Spearman → Frage = **Vorzeichen-
+Persistenz Train→Test**. Ergebnis: **Regime persistiert OOS** — TS ρ_test RAW −0.060 → ADJ +0.058
+(20d), **sign-persist 83-85 %** über 94 UNABHÄNGIGE Ticker (Binomial gegen 50 % ≈ null = kein
+Overfit). Effekt klein (ρ≈0.05, aggregiert handelbar), gilt nur für ~35 % nicht-neutrale Ticker.
+
+**PR #146 — Variante 1 live im Newsletter (ohne Score-Mathematik zu drehen):** `shared/ticker_regimes.json`
+(273 Ticker, reproduzierbar aus der committeten Backtest-CSV via `scripts/export_ticker_regimes.py`,
+jährlich neu) + Loader `shared/ticker_regimes.py::regime_hint()` → in `daily_report.py::_build_why_summary`
+→ Template rendert unter der „Warum"-Zeile: fade→„⚠ Hoher Score hier historisch eher Rücksetzer",
+momentum→„↗ Momentum trägt hier historisch", neutral→nichts. Intro zugleich auf SC(0–4)/TS(0–6)/
+Gesamt(0–10) präzisiert.
+
+**Lessons Learned:**
+- **Nie über alle Ticker pauschalisieren** — Score-Edge ist instrument-spezifisch (SPY fade, AMD momentum;
+  beides normal). Erst die Per-Ticker-Sicht macht das Signal sichtbar.
+- **In-Sample-Regime = Overfit-Falle:** Regime aus derselben Historie ableiten und dort testen gibt ρ
+  per Konstruktion positiv. Ehrlich nur via OOS-Split + Vorzeichen-Persistenz (unabhängige Ticker =
+  saubere, nicht-überlappende Stichprobe → echtes Binomial-Signifikanzsignal trotz Overlap in den Fenstern).
+- **Drawdown-Metrik gegen Artefakte härten:** nicht-positive Preise (Stooq-Alt-Daten/additive Split-Adj.)
+  erzeugen unmögliche DD < −100 % und vergiften `worst_drawdown` (min → Ausreißer dominiert) → maskieren
+  + Floor −100 %; `avg_drawdown` ist robuster als `worst_drawdown` (der bei großem n auf ~−99 % saturiert).
+- **Schwellenunabhängige Rohdaten speichern** (ρ statt nur Verdict) → Re-Klassifikation/Tuning ohne teuren Neulauf.
+- **Kleiner-aber-echter Edge → Kontext statt Eingriff:** Score-Mathematik nicht wegen ρ≈0.05 blind umstellen;
+  stattdessen den hohen Score ehrlich einordnen (Regime-Hinweis) — fängt den validierten Edge ab, ohne Risiko.
+
 ### 2026-07-03 — Marktkalender (`/kalender`) live
 
 **Neues Feature: Persönlicher Marktkalender (Auth-Gate + Premium-Gate)**
