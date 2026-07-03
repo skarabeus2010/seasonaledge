@@ -78,5 +78,13 @@
     "ticker": "QQQ",
     "chart": "holiday",
     "status": "draft"
+  },
+  {
+    "nr": 11,
+    "slug": "dji-vollmond-juli",
+    "topic": "Dow Jones rund um den Vollmond — gesamt nur borderline, aber der Juli-Vollmond sticht statistisch heraus (90 % Win, p=0,01, n=10; timely Juli-Vollmond)",
+    "ticker": "^DJI",
+    "chart": "lunar_event",
+    "status": "draft"
   }
 ]
