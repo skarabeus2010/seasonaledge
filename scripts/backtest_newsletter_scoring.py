@@ -296,6 +296,103 @@ def analyze_ticker(ticker: str, holdings: list[int], min_prior_years: int,
     return out
 
 
+# ─────────────────── Out-of-Sample: Regime aus TRAIN, TS_adj = sign·TS im TEST ───────────────────
+def _rho_sub(score: np.ndarray, ret: np.ndarray, sub: np.ndarray, min_n: int):
+    """Spearman ρ auf der Teilmenge `sub` (bool), None wenn zu wenig/konstant."""
+    m = sub & ~np.isnan(score) & ~np.isnan(ret)
+    if int(m.sum()) < min_n:
+        return None, int(m.sum())
+    s, r = score[m], ret[m]
+    if np.all(s == s[0]):
+        return None, int(m.sum())
+    rr, _ = spearmanr(s, r)
+    return _clean(rr, 4), int(m.sum())
+
+
+def analyze_ticker_oos(ticker: str, holdings: list[int], min_prior_years: int,
+                       min_n: int, split_frac: float, class_thr: float,
+                       class_holdings: list[int]) -> "dict | None":
+    df = load_history(ticker, holdings)
+    if df is None:
+        return None
+    df = add_tdom_columns(df)
+    ts = compute_ts_series(df)
+    sc = compute_sc_series(df, df["tdom"].to_numpy(), df["year"].to_numpy(), min_prior_years)
+    gesamt = np.where(~np.isnan(ts) & ~np.isnan(sc), ts + sc, np.nan)
+    fwd = forward_metrics(df, holdings)
+
+    n = len(df)
+    split_i = int(n * split_frac)
+    is_train = np.arange(n) < split_i
+    is_test = ~is_train
+
+    out = {"n_bars": int(n)}
+    for st, score in (("SC", sc), ("TS", ts), ("GESAMT", gesamt)):
+        # Regime aus TRAIN: ø ρ über class_holdings (nur Train-Bars)
+        tr = [_rho_sub(score, fwd[N][0], is_train, min_n)[0] for N in class_holdings]
+        tr = [x for x in tr if x is not None]
+        if len(tr) >= max(2, (len(class_holdings) + 1) // 2):
+            mean_train = float(np.mean(tr))
+            sign = 1 if mean_train >= class_thr else (-1 if mean_train <= -class_thr else 0)
+            regime = "momentum" if sign > 0 else ("fade" if sign < 0 else "neutral")
+        else:
+            mean_train, sign, regime = None, 0, "n/a"
+        test, adj = {}, {}
+        for N in holdings:
+            rt, nt = _rho_sub(score, fwd[N][0], is_test, min_n)
+            test[str(N)] = rt
+            adj[str(N)] = (round(sign * rt, 4) if (rt is not None and sign != 0) else None)
+        out[st] = {"regime": regime, "sign": sign, "mean_rho_train": mean_train,
+                   "test": test, "adj": adj}
+    return out
+
+
+def aggregate_oos(per: dict, holdings: list[int], class_holdings: list[int]) -> dict:
+    summ = {}
+    for st in ("SC", "TS", "GESAMT"):
+        counts = {"momentum": 0, "fade": 0, "neutral": 0, "n/a": 0}
+        for d in per.values():
+            counts[d[st]["regime"]] = counts.get(d[st]["regime"], 0) + 1
+        byN = {}
+        for N in holdings:
+            raw = [d[st]["test"][str(N)] for d in per.values() if d[st]["test"][str(N)] is not None]
+            adj = [d[st]["adj"][str(N)] for d in per.values() if d[st]["adj"][str(N)] is not None]
+            # Vorzeichen-Persistenz: unter nicht-neutralen Tickern, Anteil sign(test)==sign(train)
+            pers = [1.0 if (np.sign(d[st]["test"][str(N)]) == d[st]["sign"]) else 0.0
+                    for d in per.values()
+                    if d[st]["sign"] != 0 and d[st]["test"][str(N)] is not None]
+            byN[str(N)] = {
+                "rho_test_raw": _clean(np.mean(raw)) if raw else None,
+                "rho_test_adj": _clean(np.mean(adj)) if adj else None,
+                "sign_persist": _clean(np.mean(pers) * 100, 1) if pers else None,
+                "n_raw": len(raw), "n_adj": len(adj),
+            }
+        summ[st] = {"counts": counts, "by_holding": byN}
+    return summ
+
+
+def print_oos(summ: dict, per: dict, class_holdings: list[int], holdings: list[int],
+              split_frac: float):
+    ch = "+".join(str(h) for h in class_holdings)
+    print(f"\n{'='*74}")
+    print(f"  OUT-OF-SAMPLE REGIME-ADJUSTMENT  ·  Split {split_frac:.0%} Train → {1-split_frac:.0%} Test")
+    print(f"  Regime aus Train (ø ρ über {ch}HT) → TS_adj = sign·Score im Test  ·  {len(per)} Ticker")
+    print('='*74)
+    for st in ("SC", "TS", "GESAMT"):
+        c = summ[st]["counts"]
+        print(f"\n═══ {st} ═══   Train-Regime: ↗ {c['momentum']} mom · ↘ {c['fade']} fade · "
+              f"➖ {c['neutral']} neutral · {c.get('n/a',0)} n/a")
+        print(f"  {'N':>3} | {'ρ_test RAW':>10} | {'ρ_test ADJ':>10} | {'Δ':>7} | {'sign-persist':>12} | n_adj")
+        for N in holdings:
+            b = summ[st]["by_holding"][str(N)]
+            raw = f"{b['rho_test_raw']:+.4f}" if b["rho_test_raw"] is not None else "   n/a"
+            adj = f"{b['rho_test_adj']:+.4f}" if b["rho_test_adj"] is not None else "   n/a"
+            delta = (f"{b['rho_test_adj']-b['rho_test_raw']:+.4f}"
+                     if (b["rho_test_adj"] is not None and b["rho_test_raw"] is not None) else "   n/a")
+            sp = f"{b['sign_persist']:.1f}%" if b["sign_persist"] is not None else "  n/a"
+            print(f"  {N:>3} | {raw:>10} | {adj:>10} | {delta:>7} | {sp:>12} | {b['n_adj']:>5}")
+
+
 # ─────────────────────────────────────────────────────────────── Shortlists / Ausgabe
 def build_shortlists(per_ticker: dict, headline: int) -> dict:
     h = str(headline)
@@ -433,6 +530,9 @@ def main() -> int:
                     help="|ø ρ|-Schwelle für momentum/fade-Klassifikation (über Haltedauern >1)")
     ap.add_argument("--reclassify", metavar="JSON",
                     help="Nur neu klassifizieren aus vorhandener Ergebnis-JSON (kein Neu-Lauf)")
+    ap.add_argument("--oos-split", type=float, metavar="FRAC",
+                    help="Out-of-Sample-Test: Regime aus ersten FRAC der Historie, TS_adj im Rest "
+                         "(z.B. 0.6). Schreibt <out>_oos.{json} statt Standard-Lauf.")
     ap.add_argument("--limit", type=int, help="max. Ticker (Sanity)")
     ap.add_argument("--progress-every", type=int, default=10)
     ap.add_argument("--out", default="landing/data/score_backtest_results",
@@ -468,6 +568,47 @@ def main() -> int:
     tickers = load_universe(a.universe, a.only)
     if a.limit:
         tickers = tickers[:a.limit]
+
+    # ── Out-of-Sample-Modus: Regime aus Train, TS_adj im Test — ehrlicher Persistenz-Test ──
+    if a.oos_split:
+        class_holdings = [h for h in holdings if h != 1] or list(holdings)
+        print(f"[backtest] OOS '{a.universe}': {len(tickers)} Ticker · Split {a.oos_split:.0%} · "
+              f"Regime über {class_holdings}HT · min_n {a.min_n} · thr {a.class_threshold}")
+        per: dict = {}
+        t0 = time.time()
+        ok = fail = skip = 0
+        for i, tk in enumerate(tickers, 1):
+            try:
+                r = analyze_ticker_oos(tk, holdings, a.min_prior_years, a.min_n,
+                                       a.oos_split, a.class_threshold, class_holdings)
+                if r is None:
+                    skip += 1
+                else:
+                    per[tk] = r; ok += 1
+            except Exception as e:
+                fail += 1
+                print(f"  [WARN] {tk}: {type(e).__name__}: {e}", flush=True)
+            finally:
+                clear_cache(); gc.collect()
+            if i % a.progress_every == 0 or i == len(tickers):
+                print(f"  [{i}/{len(tickers)}] {tk} · {time.time()-t0:.0f}s", flush=True)
+        summ = aggregate_oos(per, holdings, class_holdings)
+        meta = {
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "mode": "oos", "universe": a.universe, "n_ok": ok, "n_skip": skip, "n_fail": fail,
+            "holdings": holdings, "oos_split": a.oos_split, "class_holdings": class_holdings,
+            "class_threshold": a.class_threshold, "min_n": a.min_n,
+        }
+        out_base = _ROOT / a.out if not Path(a.out).is_absolute() else Path(a.out)
+        oos_path = out_base.with_name(out_base.name + "_oos").with_suffix(".json")
+        oos_path.parent.mkdir(parents=True, exist_ok=True)
+        oos_path.write_text(json.dumps({"meta": meta, "summary": summ, "tickers": per},
+                                       indent=2, ensure_ascii=False), encoding="utf-8")
+        print_oos(summ, per, class_holdings, holdings, a.oos_split)
+        print(f"\n[backtest] OOS fertig — {ok} ok / {skip} skip / {fail} fail in {time.time()-t0:.0f}s")
+        print(f"[backtest] JSON -> {oos_path}")
+        return 0
+
     print(f"[backtest] Universum '{a.universe}': {len(tickers)} Ticker · Haltedauern {holdings} · "
           f"Headline {a.headline_holding}HT · min_n {a.min_n} · ρ_min {a.rho_min}")
 
