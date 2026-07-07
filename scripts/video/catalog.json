@@ -86,5 +86,13 @@
     "ticker": "^DJI",
     "chart": "lunar_event",
     "status": "draft"
+  },
+  {
+    "nr": 12,
+    "slug": "qqq-truepath-ki-saisonalitaet",
+    "topic": "QQQ TruePath (KI-Saisonalität): Muster-Match statt Durchschnitt — die 5 zu 2026 ähnlichsten Jahre stiegen Ø +39,8 %, alle 5 positiv (100 % Trefferquote), vs. klassischer Saisonal-Durchschnitt +13 %",
+    "ticker": "QQQ",
+    "chart": "seasonal_yearly",
+    "status": "draft"
   }
 ]
