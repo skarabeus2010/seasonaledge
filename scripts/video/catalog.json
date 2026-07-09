@@ -94,5 +94,13 @@
     "ticker": "QQQ",
     "chart": "seasonal_yearly",
     "status": "draft"
+  },
+  {
+    "nr": 13,
+    "slug": "btc-midterm-zyklus",
+    "topic": "Bitcoin & Midterm-Präsidentenzyklus — Ø-Jahr bullish, aber alle 3 Midterm-Jahre (2014/18/22) waren Bärenmärkte (Ø −56 %); 2026 trackt den schwachen Pfad (timely, Midterm-Jahr zur Jahresmitte)",
+    "ticker": "BTC-USD",
+    "chart": "cycle_projection",
+    "status": "draft"
   }
 ]
