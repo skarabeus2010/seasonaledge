@@ -206,6 +206,9 @@ SA.indicators = {
    * @param {function} onChange - Callback wenn Filter sich aendern
    * @returns {function} getFilters() — liest aktuelle Filter aus
    */
+  /** Registry für programmatisches Setzen von Filter-Presets (keyed by containerId) */
+  _presetLoaders: {},
+
   renderFilterUI: function(containerId, onChange) {
     var el = document.getElementById(containerId);
     if (!el) return function() { return []; };
@@ -289,6 +292,24 @@ SA.indicators = {
     }
 
     rebuild();
+
+    // Preset-Loader: programmatisch Filter setzen (für Strategie-Presets)
+    SA.indicators._presetLoaders[containerId] = function(filters) {
+      filterCount = filters.length;
+      rebuild();
+      filters.forEach(function(f, i) {
+        var typeSel = el.querySelector('select[data-idx="' + i + '"][data-field="type"]');
+        if (typeSel) { typeSel.value = f.type; updateConditions(i); }
+        var condSel = document.getElementById('ind_cond_' + i);
+        if (condSel) condSel.value = f.condition;
+        Object.keys(f).forEach(function(k) {
+          if (k === 'type' || k === 'condition') return;
+          var inp = el.querySelector('input[data-idx="' + i + '"][data-param="' + k + '"]');
+          if (inp) inp.value = f[k];
+        });
+      });
+      if (onChange) onChange();
+    };
 
     // Getter: aktuelle Filter auslesen
     return function getFilters() {

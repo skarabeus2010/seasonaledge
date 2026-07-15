@@ -102,6 +102,16 @@
     .progress-wrap .lbl{font-size:.75rem;color:#a89878;margin-bottom:.25rem}
     .progress-bar{width:100%;height:8px;background:#0a0a0e;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
     .progress-bar > div{height:100%;background:linear-gradient(90deg,#e8a420,#34d399);transition:width .1s ease}
+    /* Strategie-Presets */
+    .preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.625rem}
+    .preset-card{background:rgba(15,19,24,.7);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.875rem .875rem .875rem 1.1rem;position:relative;overflow:hidden}
+    .preset-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--pc,#e8a820)}
+    .preset-rank{font-size:.6875rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em}
+    .preset-name{font-size:.9375rem;font-weight:800;color:#fff;margin:.2rem 0 .1rem}
+    .preset-label{font-size:.75rem;color:#a89878;margin-bottom:.5rem}
+    .preset-metrics{font-size:.6875rem;color:#64748b;font-family:var(--f-m);line-height:1.75;margin-bottom:.625rem}
+    .preset-btn{width:100%;padding:.375rem;background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.18);border-radius:6px;color:var(--accent);cursor:pointer;font-size:.75rem;font-weight:600;font-family:inherit;transition:background .15s}
+    .preset-btn:hover{background:rgba(232,168,32,.18)}
   </style>
 </head>
 <body>
@@ -120,13 +130,23 @@
       <hr>
       <h3 data-i18n="bt.event_type">Event-Typ</h3>
       <select id="sel-event">
-        <option value="holidays" data-i18n="bt.event_holidays" selected>Feiertage (NYSE)</option>
+        <option value="tdom" selected>Turn-of-Month (TDOM)</option>
+        <option value="holidays" data-i18n="bt.event_holidays">Feiertage (NYSE)</option>
         <option value="fomc">FOMC</option>
         <option value="opex">OPEX</option>
         <option value="triple">Triple Witching</option>
         <option value="full_moon" data-i18n="bt.event_full_moon">Vollmond</option>
         <option value="new_moon" data-i18n="bt.event_new_moon">Neumond</option>
       </select>
+      <div id="tdom-range" style="margin-top:.5rem">
+        <label style="font-size:.75rem;color:#a89878;text-transform:uppercase;letter-spacing:.06em;font-weight:600">TDOM-Fenster: <span id="lbl-tdom-start">17</span>–<span id="lbl-tdom-end">22</span></label>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-top:.25rem">
+          <input type="range" id="sl-tdom-start" min="1" max="23" step="1" value="17" style="width:46%">
+          <span style="color:#a89878;font-size:.75rem">–</span>
+          <input type="range" id="sl-tdom-end" min="1" max="23" step="1" value="22" style="width:46%">
+        </div>
+        <p style="font-size:.6875rem;color:var(--muted);margin-top:.25rem">1–5 = Monatsbeginn · 17–22 = Monatsende</p>
+      </div>
       <hr>
       <h3 data-i18n="bt.entry_exit">Entry / Exit</h3>
       <label data-i18n="bt.entry_price">Entry-Preis</label>
@@ -175,6 +195,15 @@
       </div>
 
       <div class="info-box" id="filter-info" style="display:none"></div>
+
+      <!-- Vorgebaute Strategien (Research Presets) -->
+      <details open id="sec-presets">
+        <summary style="font-size:.9375rem;font-weight:700">⭐ Vorgebaute Strategien <span style="font-size:.75rem;color:#a89878;font-weight:400">(Research Runde 1+2, Walk-Forward validiert)</span></summary>
+        <div class="content">
+          <p style="font-size:.8125rem;color:#64748b;margin-bottom:.875rem">Klick auf <b style="color:var(--accent)">Laden</b> → setzt Ticker, Event, Indikator-Filter und Parameter automatisch.</p>
+          <div class="preset-grid" id="preset-grid"></div>
+        </div>
+      </details>
 
       <!-- Tab Navigation -->
       <div class="tab-nav" id="tab-nav" style="display:none">
@@ -959,6 +988,41 @@
       return excludeYears;
     }
 
+    // ── TDOM Event Generator ─────────────────────────────────────
+    // Generiert Events fuer Trading Days of Month im Bereich [tdomStart, tdomEnd]
+    // Nutzt einfache Wochentagszaehlung (±1-2 Tage Abweichung vs. vollst. Feiertagskalender, fuer Backtesting akzeptabel)
+    function makeTdomEvents(tdomStart, tdomEnd) {
+      tdomStart = tdomStart || 17;
+      tdomEnd = tdomEnd || 22;
+      var events = [];
+      for (var td = tdomStart; td <= tdomEnd; td++) {
+        (function(tdom) {
+          events.push({
+            name: 'TDOM-' + tdom,
+            category: 'tdom',
+            dates_func: function(year) {
+              var dates = [];
+              for (var m = 1; m <= 12; m++) {
+                var tradingDays = [];
+                var d = new Date(year, m - 1, 1);
+                while (d.getMonth() === m - 1) {
+                  var dow = d.getDay();
+                  if (dow >= 1 && dow <= 5) {
+                    var dd = d.getDate();
+                    tradingDays.push(year + '-' + (m < 10 ? '0' + m : '' + m) + '-' + (dd < 10 ? '0' + dd : '' + dd));
+                  }
+                  d.setDate(d.getDate() + 1);
+                }
+                if (tdom <= tradingDays.length) dates.push(tradingDays[tdom - 1]);
+              }
+              return dates;
+            }
+          });
+        })(td);
+      }
+      return events;
+    }
+
     // ── Export Module ────────────────────────────────────────────
     window._SA_BT = {
       charts: charts,
@@ -969,6 +1033,7 @@
       makeFomcEvents: makeFomcEvents,
       makeOpexEvents: makeOpexEvents,
       makeMoonEvents: makeMoonEvents,
+      makeTdomEvents: makeTdomEvents,
       runBacktest: runBacktest,
       computeStats: computeStats,
       optimizeParameters: optimizeParameters,
@@ -1305,6 +1370,29 @@
     var slRatio = document.getElementById('sl-ratio');
     if (slRatio) slRatio.addEventListener('input', function(){ document.getElementById('lbl-ratio').textContent = parseFloat(this.value).toFixed(2); });
 
+    // TDOM Range Slider Labels
+    var slTdomStart = document.getElementById('sl-tdom-start');
+    var slTdomEnd = document.getElementById('sl-tdom-end');
+    if (slTdomStart) slTdomStart.addEventListener('input', function() {
+      var end = parseInt(document.getElementById('sl-tdom-end').value);
+      if (parseInt(this.value) > end) { this.value = end; return; }
+      document.getElementById('lbl-tdom-start').textContent = this.value;
+      if (BT.getRawRows().length) document.getElementById('btn-run-single').click();
+    });
+    if (slTdomEnd) slTdomEnd.addEventListener('input', function() {
+      var start = parseInt(document.getElementById('sl-tdom-start').value);
+      if (parseInt(this.value) < start) { this.value = start; return; }
+      document.getElementById('lbl-tdom-end').textContent = this.value;
+      if (BT.getRawRows().length) document.getElementById('btn-run-single').click();
+    });
+
+    // TDOM Range anzeigen/verbergen je nach Event-Typ
+    function updateTdomVisibility() {
+      var t = document.getElementById('sel-event').value;
+      document.getElementById('tdom-range').style.display = t === 'tdom' ? '' : 'none';
+    }
+    updateTdomVisibility();
+
     // Stop-Loss Toggle
     document.getElementById('chk-stop').addEventListener('change', function(){
       document.getElementById('stop-opts').style.display = this.checked ? '' : 'none';
@@ -1393,6 +1481,10 @@
     function getEvents() {
       var t = document.getElementById('sel-event').value;
       switch (t) {
+        case 'tdom':
+          var ts = parseInt(document.getElementById('sl-tdom-start').value);
+          var te = parseInt(document.getElementById('sl-tdom-end').value);
+          return BT.makeTdomEvents(ts, te);
         case 'holidays': return BT.makeHolidayEvents();
         case 'fomc': return BT.makeFomcEvents();
         case 'opex': return BT.makeOpexEvents(false);
@@ -1405,6 +1497,11 @@
 
     function eventLabel() {
       var t = document.getElementById('sel-event').value;
+      if (t === 'tdom') {
+        var ts = document.getElementById('lbl-tdom-start').textContent;
+        var te = document.getElementById('lbl-tdom-end').textContent;
+        return 'TDOM ' + ts + '–' + te;
+      }
       var labels = { 'holidays':SA.i18n.t('bt.event_holidays','Feiertage (NYSE)'), 'fomc':'FOMC', 'opex':'OPEX', 'triple':'Triple Witching', 'full_moon':SA.i18n.t('bt.event_full_moon','Vollmond'), 'new_moon':SA.i18n.t('bt.event_new_moon','Neumond') };
       return labels[t] || t;
     }
@@ -1588,8 +1685,12 @@
 
     // Re-run on event-type or other base param change
     document.getElementById('sel-event').addEventListener('change', function() {
+      updateTdomVisibility();
       if (BT.getRawRows().length) document.getElementById('btn-run-single').click();
     });
+
+    // Expose loadTicker globally so Preset-Script can call it
+    window.loadTicker = loadTicker;
 
     // ── Init ─────────────────────────────────────────────────────
     function initialLoad() {
@@ -1602,6 +1703,164 @@
       }
     }
     initialLoad();
+  })();
+  </script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // STRATEGIE-PRESETS — Top-Findings aus Backtest Research
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+    var BT = window._SA_BT;
+
+    var PRESETS = [
+      {
+        id: 'D-GLD',
+        label: 'Bollinger Bounce',
+        ticker: 'GLD',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 5, daysAfter: 15,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'Bollinger', condition: 'Close < Lower Band', period: 20, num_std: 2.0 }],
+        metrics: 'Sharpe 2.50 · PF 4.82 · WR 76.1%\nOOS Sharpe 2.41 ✅ Walk-Forward',
+        color: '#e8a820'
+      },
+      {
+        id: 'D-SI=F',
+        label: 'Bollinger Bounce (Silber)',
+        ticker: 'SI=F',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 5, daysAfter: 15,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'Bollinger', condition: 'Close < Lower Band', period: 20, num_std: 2.0 }],
+        metrics: 'Sharpe 1.91 · PF 3.75 · WR 69.2%\nSilber repliziert Gold-Muster',
+        color: '#94a3b8'
+      },
+      {
+        id: 'A-GLD',
+        label: 'RSI<40 + 5% Trailing',
+        ticker: 'GLD',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 3, daysAfter: 10,
+        stopPct: 5.0, stopType: 'trailing',
+        filters: [{ type: 'RSI', condition: 'RSI < Threshold', period: 14, threshold: 40 }],
+        metrics: 'Sharpe 1.30 · PF 2.05 · WR 68.2%\nStop verdoppelt Total-Return',
+        color: '#4d9fff'
+      },
+      {
+        id: 'F-BTC',
+        label: 'LBR Bull',
+        ticker: 'BTC-USD',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 3, daysAfter: 10,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'LBR', condition: 'LBR > 0 (bullish)', fast: 3, slow: 10, smoothing: 16 }],
+        metrics: 'Sharpe 1.45 · LBR +1.20 vs. MACD\nBeste Variante für BTC',
+        color: '#f97316'
+      },
+      {
+        id: 'C-QQQ',
+        label: 'MACD Crossover',
+        ticker: 'QQQ',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 3, daysAfter: 10,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'MACD', condition: 'MACD > Signal (bullish)', fast: 12, slow: 26, signal: 9 }],
+        metrics: 'Sharpe 0.94 · PF 1.64 · WR 66.7%\nKonsistenteste Index-Strategie',
+        color: '#34d399'
+      }
+    ];
+
+    // Preset-Karten rendern
+    function renderPresets() {
+      var grid = document.getElementById('preset-grid');
+      if (!grid) return;
+      var html = '';
+      PRESETS.forEach(function(p, i) {
+        html += '<div class="preset-card" style="--pc:' + p.color + '">' +
+          '<div class="preset-rank">Rang ' + (i + 1) + '</div>' +
+          '<div class="preset-name">' + p.id + '</div>' +
+          '<div class="preset-label">' + p.label + '</div>' +
+          '<div class="preset-metrics">' + p.metrics.replace(/\n/g, '<br>') + '</div>' +
+          '<button class="preset-btn" data-preset="' + i + '">⚡ Laden</button>' +
+        '</div>';
+      });
+      grid.innerHTML = html;
+
+      grid.querySelectorAll('.preset-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { loadPreset(PRESETS[parseInt(this.dataset.preset)]); });
+      });
+    }
+
+    // Preset in die UI laden
+    function loadPreset(p) {
+      // 1. Ticker setzen
+      var tickerInput = document.getElementById('ticker-input');
+      if (tickerInput) tickerInput.value = p.ticker;
+
+      // 2. Event-Typ auf TDOM setzen
+      var selEvent = document.getElementById('sel-event');
+      if (selEvent) { selEvent.value = 'tdom'; }
+      document.getElementById('tdom-range').style.display = '';
+
+      // 3. TDOM-Range setzen
+      var slStart = document.getElementById('sl-tdom-start');
+      var slEnd = document.getElementById('sl-tdom-end');
+      if (slStart) { slStart.value = p.tdomStart; document.getElementById('lbl-tdom-start').textContent = p.tdomStart; }
+      if (slEnd) { slEnd.value = p.tdomEnd; document.getElementById('lbl-tdom-end').textContent = p.tdomEnd; }
+
+      // 4. days_before / days_after setzen
+      var slBefore = document.getElementById('sl-before');
+      var slAfter = document.getElementById('sl-after');
+      if (slBefore) { slBefore.value = p.daysBefore; document.getElementById('lbl-before').textContent = p.daysBefore; }
+      if (slAfter) { slAfter.value = p.daysAfter; document.getElementById('lbl-after').textContent = p.daysAfter; }
+
+      // 5. Stop-Loss setzen
+      var chkStop = document.getElementById('chk-stop');
+      if (chkStop) {
+        chkStop.checked = p.stopPct > 0;
+        document.getElementById('stop-opts').style.display = p.stopPct > 0 ? '' : 'none';
+      }
+      if (p.stopPct > 0) {
+        var slStop = document.getElementById('sl-stop');
+        if (slStop) { slStop.value = p.stopPct; document.getElementById('lbl-stop').textContent = p.stopPct.toFixed(1); }
+        var stopTypeRadios = document.querySelectorAll('input[name="stop-type"]');
+        stopTypeRadios.forEach(function(r) { r.checked = (r.value === p.stopType); });
+      }
+
+      // 6. Indikator-Filter laden
+      if (SA.indicators._presetLoaders && SA.indicators._presetLoaders['indicator-filters']) {
+        SA.indicators._presetLoaders['indicator-filters'](p.filters);
+      }
+
+      // 7. Tab 1 (Einzelner Backtest) aktivieren
+      document.querySelectorAll('#tab-nav button').forEach(function(b) { b.classList.remove('active'); });
+      var singleBtn = document.querySelector('#tab-nav button[data-tab="single"]');
+      if (singleBtn) singleBtn.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+      document.getElementById('tab-single').classList.add('active');
+
+      // 8. Ticker laden (löst Auto-Run aus)
+      if (typeof loadTicker === 'function') {
+        loadTicker(p.ticker);
+      } else {
+        // Fallback: direkt Run wenn Ticker bereits geladen
+        if (BT.getCurrentTicker() === p.ticker.toUpperCase()) {
+          document.getElementById('btn-run-single').click();
+        }
+      }
+    }
+
+    // loadTicker im globalen Scope erreichbar machen (wird unten im Lifecycle definiert)
+    window._SA_loadPreset = loadPreset;
+
+    // Beim DOM-Ready rendern
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderPresets);
+    } else {
+      renderPresets();
+    }
   })();
   </script>
 
