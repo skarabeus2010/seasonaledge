@@ -76,6 +76,10 @@
     .faq-item.open .faq-a{display:block}
 
     .pricing-footer{text-align:center;margin-top:2rem;font-size:.75rem;color:var(--muted);line-height:1.6}
+
+    .checkout-banner{padding:.75rem 1.25rem;border-radius:8px;font-size:.875rem;font-weight:500;margin-bottom:1.5rem;display:none;text-align:center}
+    .checkout-banner--success{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+    .checkout-banner--cancelled{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted)}
   </style>
 </head>
 <body>
@@ -91,6 +95,8 @@
           SeasonAlpha ist und bleibt kostenlos nutzbar.<br>
           Premium schaltet erweiterte Analysen und Features frei.
         </p>
+
+        <div id="checkout-banner" class="checkout-banner"></div>
 
         <div class="pricing-grid">
           <!-- FREE -->
@@ -120,8 +126,8 @@
             <span class="plan-badge premium">Premium</span>
             <div class="plan-name" data-i18n="price.premium_plan_name">Pro</div>
             <div class="plan-desc" data-i18n="price.premium_plan_desc">Voller Zugriff auf alle Analysen und Features.</div>
-            <div class="plan-price" id="price-display">&mdash; &euro; <span data-i18n="price.per_month">/ Monat</span></div>
-            <div class="plan-price-note" data-i18n="price.premium_price_note">Preis wird bald bekannt gegeben</div>
+            <div class="plan-price" id="price-display"><span id="price-amount">&mdash;</span> &euro; <span data-i18n="price.per_month">/ Monat</span></div>
+            <div class="plan-price-note" id="price-note" data-i18n="price.premium_price_note">Preis wird bald bekannt gegeben</div>
             <ul class="plan-features">
               <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_base">Alles aus Free, plus:</span></li>
               <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_history">Erweiterte Zeitr&auml;ume (20+ Jahre)</span></li>
@@ -133,7 +139,7 @@
               <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_support">Priority Support</span></li>
               <li><span class="check">&check;</span> <span data-i18n="price.premium_feat_adfree">Werbefrei</span></li>
             </ul>
-            <a class="plan-btn premium disabled" href="#" id="btn-upgrade" data-i18n="price.btn_coming_soon">Bald verf&uuml;gbar</a>
+            <button class="plan-btn premium" id="btn-upgrade" data-i18n="price.btn_upgrade">Jetzt upgraden</button>
           </div>
         </div>
 
@@ -180,19 +186,152 @@
   <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/premium.js"></script>
   <script src="/landing/js/i18n.js"></script>
   <script src="/landing/js/app.js"></script>
 
   <script>
   (function() {
     'use strict';
-    // FAQ Accordion
+
+    // ── FAQ Accordion ──────────────────────────────────────────────
     var items = document.querySelectorAll('.faq-item');
     for (var i = 0; i < items.length; i++) {
       items[i].querySelector('.faq-q').addEventListener('click', function() {
         this.parentElement.classList.toggle('open');
       });
     }
+
+    // ── Checkout-Status nach Stripe-Redirect ───────────────────────
+    var params = new URLSearchParams(window.location.search);
+    var checkoutResult = params.get('checkout');
+    if (checkoutResult) {
+      var banner = document.getElementById('checkout-banner');
+      var isEN = !!(window.SA && SA.i18n && SA.i18n.current === 'en');
+      if (checkoutResult === 'success') {
+        banner.className = 'checkout-banner checkout-banner--success';
+        banner.textContent = isEN
+          ? '✓ Payment successful! Your Premium access will be activated shortly.'
+          : '✓ Zahlung erfolgreich! Dein Premium-Zugang wird in Kürze aktiviert.';
+        banner.style.display = 'block';
+        try { sessionStorage.removeItem('sa_tier'); } catch(e) {}
+      } else if (checkoutResult === 'cancelled') {
+        banner.className = 'checkout-banner checkout-banner--cancelled';
+        banner.textContent = isEN
+          ? 'Checkout cancelled. You can upgrade anytime.'
+          : 'Checkout abgebrochen. Du kannst jederzeit upgraden.';
+        banner.style.display = 'block';
+        setTimeout(function() { banner.style.display = 'none'; }, 6000);
+      }
+      window.history.replaceState({}, '', '/pricing');
+    }
+
+    // ── Button-State je Tier ───────────────────────────────────────
+    var btn = document.getElementById('btn-upgrade');
+
+    function updateBtn(tier) {
+      if (!btn) return;
+      var isEN = !!(window.SA && SA.i18n && SA.i18n.current === 'en');
+      if (tier === 'premium') {
+        btn.textContent = isEN ? 'Manage subscription' : 'Abo verwalten';
+        btn.onclick = openPortal;
+      } else {
+        btn.textContent = isEN ? 'Upgrade now' : 'Jetzt upgraden';
+        btn.onclick = startCheckout;
+      }
+    }
+
+    // ── Auf Auth + Premium-Modul warten ───────────────────────────
+    function waitReady() {
+      if (!window.SA || !SA.auth || !SA.premium) { setTimeout(waitReady, 100); return; }
+      SA.premium.load(updateBtn);
+    }
+    waitReady();
+
+    // ── Stripe Checkout starten ────────────────────────────────────
+    function startCheckout() {
+      if (!window.SA || !SA.auth.isLoggedIn) {
+        SA.auth.login('/pricing');
+        return;
+      }
+      setLoading(true);
+
+      SA.auth.client.auth.getSession().then(function(res) {
+        var session = res && res.data && res.data.session;
+        if (!session) { SA.auth.login('/pricing'); return null; }
+
+        var user = SA.auth.user;
+        var fnUrl = window.__SA_SB_URL + '/functions/v1/create-checkout-session';
+
+        return fetch(fnUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token,
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            email: user.email,
+            return_url: window.location.origin + '/pricing',
+          }),
+        });
+      }).then(function(r) {
+        return r ? r.json() : null;
+      }).then(function(data) {
+        if (data && data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error((data && data.error) || 'Unbekannter Fehler');
+        }
+      }).catch(function(err) {
+        setLoading(false);
+        var isEN = !!(window.SA && SA.i18n && SA.i18n.current === 'en');
+        alert((isEN ? 'Checkout error: ' : 'Fehler beim Checkout: ') + err.message);
+      });
+    }
+
+    // ── Stripe Customer Portal öffnen ─────────────────────────────
+    function openPortal() {
+      if (!window.SA || !SA.auth.isLoggedIn) return;
+      setLoading(true);
+
+      SA.auth.client.auth.getSession().then(function(res) {
+        var session = res && res.data && res.data.session;
+        if (!session) { setLoading(false); return null; }
+
+        var fnUrl = window.__SA_SB_URL + '/functions/v1/create-portal-session';
+        return fetch(fnUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token,
+          },
+          body: JSON.stringify({
+            user_id: SA.auth.user.id,
+            return_url: window.location.origin + '/pricing',
+          }),
+        });
+      }).then(function(r) {
+        return r ? r.json() : null;
+      }).then(function(data) {
+        if (data && data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error((data && data.error) || 'Portal nicht verfügbar');
+        }
+      }).catch(function(err) {
+        setLoading(false);
+        console.error('Portal error:', err);
+      });
+    }
+
+    function setLoading(on) {
+      if (!btn) return;
+      var isEN = !!(window.SA && SA.i18n && SA.i18n.current === 'en');
+      btn.disabled = on;
+      if (on) btn.textContent = isEN ? 'Redirecting…' : 'Weiterleitung…';
+    }
+
   })();
   </script>
 

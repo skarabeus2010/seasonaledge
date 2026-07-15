@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 43.0 | 2026-07-15 | **Stripe-Integration** (3 Supabase Edge Functions: create-checkout-session + stripe-webhook + create-portal-session, Pricing-Page aktiviert, docs/STRIPE_SETUP.md) · Lessons Learned: Edge Functions via `supabase secrets set`, CORS-Header Pflicht, portal session braucht stripe_customer_id aus DB
 > Version 42.0 | 2026-07-03 | **Marktkalender** (`/kalender`, Auth-Gate + Premium-Gate, ICS-Export, 109 Events 18-Monate) · **i18n EN-Skip-Fix** (auth-gated Pages aus Link-Rewrite ausgeschlossen) · Lessons Learned: `_skipPrefixes`-Pflicht, `build_calendar_data.py` pandas-Issue, `/en/<slug>` Redirect-Pattern
 > Version 41.0 | 2026-06-21 | **Daily-Newsletter-Rework** (ML-Regime → LBR/RSI/SC/TS/Gesamt-Scoring, Kernliste, alle Notenbanken, „Warum"-Zeile, Mail-Size-Fix) · **DB-Audit entrauscht** (Feiertags-/Legitim-Absenz-Logik) · **SEO-Content-Offensive** (alle 18 dünnen Tool-Seiten: Unique-Content + FAQPage, `docs/SEO_TODO.md`) · Lessons Learned in [docs/CHANGELOG.md](docs/CHANGELOG.md) + Email/i18n-Regeln ergänzt
 > Version 40.0 | 2026-06-15 | Kalender-Spec vervollständigt (OPEX/VIX börsenspez. + holiday-aware, Zeit-Indizes TDOM/TDOY/CDOM/CDOY, Notenbank-Termine je Region, Asien HKEX/KRX/TSE) + **Prüfagent** (`verify_calendar_rules.py`, wöchentl. Cron) · **SEO-Foundation**: `/ueber-uns` (E-E-A-T), 1. Daten-Studie (DAX-September), SEO-Audit · **8 Subagenten** (4 neue Wachstums-Agenten + `docs/AGENTS.md`) · **Embed-Backlink-Asset** (`/embed` + Einbetten-Button auf Jahreszyklus)
@@ -239,7 +240,7 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 - [ ] **GSC /en/ Property einrichten** + Coverage nach 2 Wochen prüfen (erste EN-Indexierung erwartet)
 - [ ] **Pretty EN slugs** (`/en/decade-cycle` statt `/en/dekadenzyklus`) — nginx rewrite map
 - [ ] **EN Blog nach Deploy prüfen** — `/en/blog/` und Category-Filter korrekt? nginx-Location-Reihenfolge beachten
-- [ ] Stripe Checkout + Webhook anbinden (Infrastruktur steht: DB + RPC + premium.js + Pricing-Page)
+- [x] Stripe Checkout + Webhook anbinden — 3 Edge Functions fertig (2026-07-15); Aktivierung: docs/STRIPE_SETUP.md
 - [ ] Premium-Features gated hinter Login (`[data-premium]`-Attribute auf Elemente, premium.js gated automatisch)
 - [ ] Nav/Footer: Pricing-Link ergänzen
 - [ ] Ticker-Vergleich im Dashboard (2 Ticker nebeneinander)
