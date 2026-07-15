@@ -21,6 +21,86 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-15 — Backtest-Kombinations-Engine, TDOM-UI, Second Brain (v44.0)
+
+**Arbeitspaket:** Saisonale Signale (TDOM) mit technischen Indikatoren in einem Backtest kombinieren.
+Zielgrößen: Profit Factor, Sharpe, Calmar. Infrastruktur (`shared/backtest_engine.py`, `shared/indicators.py`)
+war bereits komplett — fehlte nur der saisonale Kombinationssignal-Layer.
+
+#### Strategie-Ergebnisse (2 Runden, 4 parallele Agenten)
+
+| Rang | Kombination | Sharpe IS | Sharpe OOS | Validierung |
+|------|-------------|-----------|------------|-------------|
+| 1 | GLD + Bollinger Bounce (D) | 2.50 | **2.41** | ✅ Walk-Forward robust |
+| 2 | SI=F + Bollinger Bounce (D) | 1.91 | — | Silber repliziert GLD-Muster |
+| 3 | SLV + Bollinger Bounce (D) | 1.81 | — | ETF-Proxy zu SI=F |
+| 4 | BTC + LBR Bull (F) | 1.45 | — | LBR +1.20 Sharpe vs. MACD |
+| 5 | GLD + RSI<40 +5%Trail (A) | 1.30 | — | Stop verdoppelt Total-Return |
+
+**Lessons Learned:**
+
+**1. TDOM+Technisch = deutlich stärker als reines TDOM**
+Baseline (nur TDOM, kein Filter) liefert bei GLD Sharpe 0.45 — Bollinger Bounce bringt es auf 2.50
+(+456%). Technische Filter sind keine Dekoration, sie eliminieren schlechte Entry-Zeitpunkte.
+
+**2. GLD + Bollinger Bounce ist Walk-Forward-robust (kein Overfitting)**
+OOS/IS-Sharpe-Ratio = 3.26 (Robust-Schwelle: 0.6). OOS schlägt IS auf allen Metriken.
+14/16 Rollfenster-Jahre positiv; nur 2015 (GLD-Konsolidierung) + 2022 (Fed-Zinsschock) negativ.
+
+**3. Der Edge ist ein Edelmetall-Phänomen — nicht universell**
+SI=F und SLV replizieren GLD-Muster unabhängig voneinander → erhöhte Robustheit.
+DAX kaum Edge (Sharpe 0.63 für Strategie D). Anderer Kapitalfluss-Charakter.
+
+**4. Stop-Loss-Regeln sind signaltyp-spezifisch**
+- BB Bounce: **kein Stop** — Signal ist bereits der Filter; 3% Fixed triggert 31% False-Stops
+- RSI Reversal: **5% Trailing** — schützt bei gestresstem Asset; verdoppelt Total-Return (29→69%)
+- Kein Stop-Loss rettet eine kaputte Strategie (C-MSFT: -28.9% ohne wie mit Stop)
+
+**5. LBR vs. MACD ist asset-klassen-abhängig (kein universeller Gewinner)**
+- LBR gewinnt bei: BTC (+1.20 Sharpe-Delta), QQQ (+0.18), AAPL (+0.28) — volatile/Growth-Assets
+- MACD gewinnt bei: NVDA (+1.39!), SPY (+0.70), GLD (+0.09), MSFT (+0.37) — Trend-dominante Assets
+- LBR hat besseren Calmar (8.77 vs. 3.39) — weniger Drawdowns trotz ähnlichem Sharpe
+- **Faustregel:** LBR für BTC/Growth; MACD für Trend-/Index-Assets
+
+**6. Look-Ahead-Bias-Falle bei TDOM — Strategie C-MSFT verwerfen**
+Globales TDOM-Fenster (alle 21 Jahre im Kalibrierungsfenster) → ~10-20% zu optimistische
+Bias. C-MSFT: IS-Sharpe 1.24 mit Bias → -0.16 ohne Bias. Stop-Loss-Sweep und Walk-Forward
+helfen Artefakte zu entlarven: alle C-MSFT-Varianten negativ → Strategie verwerfen.
+
+**7. TDOM in JS: Wochentagszählung ist ausreichend**
+`weekday >= 1 && weekday <= 5` liefert ±1-2 Tage Abweichung vs. vollem Feiertagskalender.
+Für Backtest-Zwecke akzeptabel — kein voller Holiday-Lookup nötig.
+Wichtig: IIFE-Closure für die Loop-Variable (`for td = tdomStart; ...; (function(tdom){...})(td)`)
+sonst liefern alle Events dasselbe TDOM (klassischer JS-Closure-Fehler in Schleifen).
+
+**8. `loadPreset()`-API-Pattern für programmatische Indikator-Filter**
+`SA.indicators._presetLoaders` (Registry keyed by containerId) erlaubt externen Aufruf.
+In `renderFilterUI()` gesetzt; externe Skripte rufen `_presetLoaders['indicator-filters'](filters)`.
+Setzt filterCount, rebuildet UI, setzt DOM-Werte, triggert onChange — vollständig.
+
+**9. Funktion global exponieren: Deklaration + separate `window`-Zuweisung**
+`window.foo = function foo() {}` — der Name `foo` ist nur im Funktionskörper sichtbar (für Rekursion),
+NICHT im umgebenden Scope. Interne Referenzen brechen. Richtig:
+`function foo() {...}; window.foo = foo;` — Deklaration hoisted lokal, Zuweisung exponiert global.
+
+**10. Second Brain: Nur der Repo-Bibliothekar-Teil des HGA-Specs passt**
+Das vollständige HGA-Second-Brain-Spec hat 5 Teile (Librarian, Knowledge Graph, Semantic Search,
+Active Memory, Proactive Synthesis). Für SeasonAlpha (statisches Repo, kein persistentes Backend)
+passt nur **Part A: Repo Librarian** — `raw/` Drop-Zone → Bibliothekar → `wiki/` synthetisiertes Wissen.
+Kein Obsidian nötig — Claude liest/schreibt direkt in Markdown-Dateien.
+`/sa-ingest`-Skill: 5-Schritt-Prozess (unverarbeitete Quellen finden → Quell-Seite → Konzept-Seiten
+→ index.md → log.md + .kb-processed.json aktualisieren).
+
+#### Neue dauerhafte Infrastruktur
+
+- `raw/` + `wiki/` + `.claude/skills/sa-ingest/` — Second Brain
+- `landing/js/indicators.js::SA.indicators._presetLoaders` — Preset-API
+- `landing/pages/backtest-engine.html` — TDOM Event-Typ, 5 Preset-Karten
+- `wiki/sources/2026-07-15_backtest-kombinations-strategien.md` — Runde 1
+- `wiki/sources/2026-07-15_backtest-runde2-walkforward-stoploss-lbr-newticker.md` — Runde 2
+
+---
+
 ### 2026-07-03 — Newsletter-Score empirisch validiert + Regime-Kontext (PRs #144-146)
 
 **Frage:** „Welcher Score bringt welche Performance/welchen Drawdown?" → Backtest des Newsletter-
