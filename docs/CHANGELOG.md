@@ -21,6 +21,52 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-28 — Supabase Pro Upgrade + DB-Recovery nach 6-Tage-Outage
+
+**Ursache:** Supabase Free-Tier DB-Größe-Quota überschritten → alle Writes seit 2026-07-22 silent blockiert.
+Der Nightly Refresh lief durch (Exit 0), schrieb aber nichts → Heartbeat-Log zeigte erst 6 Tage später Fehler.
+
+**Recovery-Schritte (in dieser Reihenfolge):**
+1. Supabase Pro Upgrade durch User → Quota-Block sofort aufgehoben
+2. Manuell: `Nightly DB Refresh` Workflow getriggert → 7-Tage-Upsert-Fenster füllt Preis-Lücken 22.–25. Juli automatisch
+3. Manuell: `Full Scanner Run` → 324/324 KI-Scores in 3 Min aktualisiert
+4. Manuell: `Polymarket Daily Refresh`, `Event Data Daily Refresh`, `Brier Score Compute`, `Daily Morning Briefing`
+
+**Lessons Learned:**
+
+**1. Supabase Free Tier schlägt still zu**
+DB-Quota-Überschreitung blockt Writes ohne lauten Fehler. `nightly_refresh.py` beendet sich mit Exit 0
+(der `| tail -150 || echo`-Pipe schluckt den Returncode). Heartbeat schreibt `SELECT` erfolgreich,
+aber `INSERT/UPSERT` schlägt lautlos fehl. Diagnose erst nach 6 Tagen durch Health-Check-Mail.
+→ **Supabase Pro** ist für produktiven Betrieb Pflicht. DB-Größe muss in `daily_health_check.py` geprüft werden.
+
+**2. "Nightly Data Update" (Workflow 247928699) ist broken — nicht triggern**
+`TypeError: DownloadManager.__init__() takes 1 positional argument but 2 were given`
+Der korrekte Workflow ist **"Nightly DB Refresh"** (248714399, `scripts/nightly_refresh.py`).
+`nightly_update.yml` = Altlast, ruft veraltetes DownloadManager-Interface auf.
+
+**3. Recovery nach DB Write-Block ist standardisiert**
+7-Tage-Upsert-Fenster füllt Preis-Lücken automatisch → kein manueller Backfill nötig.
+Full Scanner: 324/324 Ticker in ~3 Min, 0 Fehler — immer als Schritt 2 triggern.
+Regime-Scores: Nightly recomputed nur SPY; `regime_scores 1/324` ist **Design**, kein Bug.
+
+**4. `capture_stdout: false` in SSH-Workflows = Log leer**
+Die SSH-Action schreibt Ausgabe nicht ins GitHub-Actions-Log wenn `capture_stdout: false`.
+Tatsächliche Ergebnisse immer per JSON-File lesen: `https://seasonalpha.ai/landing/data/db_completeness.json`
+(nicht `/data/...` — nginx kennt nur `/landing/data/...`).
+
+**5. Completeness-Audit als Recovery-Diagnosetool**
+`DB Completeness Audit` Workflow gibt nach Recovery sofort Auskunft über Freshness/Coverage/Gaps.
+Ergebnisse unter `https://seasonalpha.ai/landing/data/db_completeness.json`.
+ki_scores/regime_scores Coverage-Warnungen nach Outage: erst nach Full Scanner Run / Nightly grün.
+
+**6. Polymarket: Nightly-Phase schlägt fehl, Standalone läuft**
+`nightly_refresh.py` Phase-G (Polymarket-Backfill) schlägt mit DNS-Fehler fehl.
+Eigenständiger `polymarket_daily.yml` Workflow läuft täglich korrekt durch.
+→ Kein Handlungsbedarf, solange Standalone-Workflow grün ist.
+
+---
+
 ### 2026-07-15 — Backtest-Kombinations-Engine, TDOM-UI, Second Brain (v44.0)
 
 **Arbeitspaket:** Saisonale Signale (TDOM) mit technischen Indikatoren in einem Backtest kombinieren.

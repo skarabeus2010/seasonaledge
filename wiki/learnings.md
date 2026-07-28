@@ -21,6 +21,14 @@
 - **Edelmetall-Phänomen**: GLD + Bollinger Bounce Edge ist kein universeller Markteffekt. SI=F + SLV replizieren ihn (→ Robustheit), DAX nicht (→ anderer Kapitalfluss). Bei neuen Tickern erst replizieren bevor produktiv einsetzen.
 - **Signalstärke-Hierarchie (Sharpe)**: D-GLD 2.50 → D-SI=F 1.91 → D-SLV 1.81 → F-BTC 1.45 → A-GLD 1.30 → C-QQQ 0.94. Unterhalb 0.6 kein robuster Edge (reines Rauschen oder Bias-Artefakt).
 
+## Infrastruktur / Betrieb
+
+- **Supabase Free Tier schlägt still zu**: DB-Quota-Überschreitung blockt Writes ohne lauten Fehler. Nightly läuft mit Exit 0, schreibt aber nichts. Erst nach 6 Tagen durch Health-Check-Mail sichtbar. → Pro-Plan ist für Produktion Pflicht.
+- **Recovery-Reihenfolge nach DB Write-Block**: 1. Nightly DB Refresh (7-Tage-Fenster füllt Preise automatisch) → 2. Full Scanner (KI-Scores alle 324 in ~3 Min) → 3. Spezial-Workflows (Brier, Polymarket, Newsletter). Regime-Scores 1/324 ist Design, kein Bug.
+- **"Nightly Data Update" ist ein Altlast-Workflow**: Der korrekte Workflow ist "Nightly DB Refresh". "Nightly Data Update" ruft ein veraltetes DownloadManager-Interface auf (TypeError) und läuft scheinbar durch, tut aber nichts.
+- **Completeness-JSON-URL**: `https://seasonalpha.ai/landing/data/db_completeness.json` — nicht `/data/` (404, nginx kennt keinen `/data/`-Root).
+- **Polymarket-Backfill in nightly_refresh.py vs. Standalone**: Nightly-interne Phase schlägt mit DNS-Fehler fehl; der eigenständige `polymarket_daily.yml` Workflow läuft korrekt. Solange Standalone grün, kein Handlungsbedarf.
+
 ## Content
 
 <!-- Learnings aus verarbeiteten Quellen werden hier ergänzt -->
