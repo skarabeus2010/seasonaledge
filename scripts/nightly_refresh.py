@@ -272,10 +272,12 @@ def main():
                     d += __import__('datetime').timedelta(days=1)
 
                 if missing_days:
-                    missing_total += len(missing_days)
-                    missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
-
-                    # Auto-Fix: Yahoo nachladen
+                    # Auto-Fix: Yahoo nachladen + Kalender-Edgecase-Erkennung
+                    # Wenn Yahoo für ALLE fehlenden Tage keine Daten hat → Börse war zu
+                    # (Feiertag der nicht in shared/exchange_holidays steht). Nur dann
+                    # zählt der Ticker nicht als echte Lücke in missing_details/tickers_success.
+                    _yahoo_confirmed_any = False
+                    _yahoo_fixed_ticker = 0
                     try:
                         fresh = yahoo_download(ticker, period="1mo")
                         if fresh is not None and not fresh.empty:
@@ -284,6 +286,7 @@ def main():
                             for md in missing_days:
                                 ts = pd.Timestamp(md)
                                 if ts in fresh.index and pd.notna(fresh.loc[ts, "Close"]):
+                                    _yahoo_confirmed_any = True
                                     rec = {
                                         "ticker": ticker,
                                         "date": md.strftime("%Y-%m-%d"),
@@ -297,8 +300,15 @@ def main():
                             if records:
                                 upsert_prices(records)
                                 auto_fixed += len(records)
+                                _yahoo_fixed_ticker = len(records)
                     except Exception:
-                        pass  # Yahoo-Fehler → beim nächsten Run erneut versuchen
+                        _yahoo_confirmed_any = True  # Bei Fehler: konservativ als echte Lücke werten
+
+                    # Echte Lücke: Yahoo hat Daten (oder Fehler), aber nicht alle fehlen konnten gefixxt werden
+                    if _yahoo_confirmed_any and (len(missing_days) - _yahoo_fixed_ticker) > 0:
+                        missing_total += len(missing_days) - _yahoo_fixed_ticker
+                        missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
+                    # Sonst: Kalender-Edgecase — Börse war zu, kein Eintrag in missing_details
 
             except Exception as te:
                 health_errors.append(f"{ticker}: {te}")
