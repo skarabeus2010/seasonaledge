@@ -272,9 +272,10 @@ def main():
                     d += __import__('datetime').timedelta(days=1)
 
                 if missing_days:
+                    missing_total += len(missing_days)
+                    missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
+
                     # Auto-Fix: Yahoo nachladen
-                    _yahoo_fixed_for_ticker = 0
-                    _yahoo_had_any_data = False
                     try:
                         fresh = yahoo_download(ticker, period="1mo")
                         if fresh is not None and not fresh.empty:
@@ -283,7 +284,6 @@ def main():
                             for md in missing_days:
                                 ts = pd.Timestamp(md)
                                 if ts in fresh.index and pd.notna(fresh.loc[ts, "Close"]):
-                                    _yahoo_had_any_data = True
                                     rec = {
                                         "ticker": ticker,
                                         "date": md.strftime("%Y-%m-%d"),
@@ -297,26 +297,14 @@ def main():
                             if records:
                                 upsert_prices(records)
                                 auto_fixed += len(records)
-                                _yahoo_fixed_for_ticker = len(records)
                     except Exception:
                         pass  # Yahoo-Fehler → beim nächsten Run erneut versuchen
-
-                    # Nur als echte Lücke zählen wenn Yahoo die Daten BESTÄTIGT hat
-                    # (aber nicht geliefert/gespeichert hat) oder wenn noch unfixte Tage übrig sind.
-                    # Wenn Yahoo gar keine Daten hat → wahrscheinlich Kalender-Edgecase (Feiertag
-                    # der nicht im Kalender steht) → NICHT als fehlend werten.
-                    _still_missing = len(missing_days) - _yahoo_fixed_for_ticker
-                    if _still_missing > 0 and _yahoo_had_any_data:
-                        missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
 
             except Exception as te:
                 health_errors.append(f"{ticker}: {te}")
 
-        missing_total = sum(len(v) for v in missing_details.values())
         if missing_total > 0:
             print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} fehlenden Tagen, {auto_fixed} auto-gefixt")
-        elif auto_fixed > 0:
-            print(f"Health-Check: {auto_fixed} Lücken auto-gefixt ✓")
         else:
             print("Health-Check: Alle Ticker vollständig ✓")
 
