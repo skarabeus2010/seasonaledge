@@ -99,23 +99,50 @@ SA.holidays = {
   // ── Exchange-spezifische Feiertage ───────────────────────────────────────
 
   /**
-   * NYSE-Feiertage (10 Stueck, USA).
+   * Observed-Shift fuer feste US-Feiertage: Samstag→Freitag, Sonntag→Montag.
+   * Jahresgrenzen werden korrekt per Date-Arithmetik aufgeloest.
+   */
+  _observed: function(y, m, d) {
+    var dt = new Date(y, m - 1, d);
+    var dow = dt.getDay();
+    if (dow === 6) dt.setDate(dt.getDate() - 1);
+    if (dow === 0) dt.setDate(dt.getDate() + 1);
+    return this._ds(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+  },
+
+  /**
+   * NYSE-Feiertage (USA) mit Observed-Shift fuer alle festen Termine.
    * Neujahr, MLK Day, Presidents Day, Karfreitag, Memorial Day,
    * Juneteenth, Independence Day, Labor Day, Thanksgiving, Weihnachten.
+   *
+   * Jahresgrenze Neujahr: Jan 1 = Samstag → observed Dec 31 (Vorjahr).
+   * isTradingDay() nutzt den Jahr-Cache des angefragten Datums, daher muss
+   * Dec 31 im _nyse(y-1)-Cache stehen. Hier wird Jan 1 Sat ausgelassen;
+   * stattdessen wird Dec 31 dieses Jahres ergaenzt wenn Jan 1 des Folgejahres
+   * auf Samstag faellt.
    */
   _nyse: function(y) {
-    return [
-      this._ds(y, 1, 1),                                    // Neujahr
+    var list = [
       this._ds(y, 1, this._nthDow(y, 1, 1, 3)),             // MLK Day: 3. Mo Jan
       this._ds(y, 2, this._nthDow(y, 2, 1, 3)),             // Presidents Day: 3. Mo Feb
       this.goodFriday(y),                                    // Karfreitag
       this._ds(y, 5, this._lastDow(y, 5, 1)),               // Memorial Day: letzter Mo Mai
-      this._ds(y, 6, 19),                                   // Juneteenth
-      this._ds(y, 7, 4),                                    // Independence Day
+      this._observed(y, 6, 19),                              // Juneteenth (Observed-Shift)
+      this._observed(y, 7, 4),                               // Independence Day (Observed-Shift)
       this._ds(y, 9, this._nthDow(y, 9, 1, 1)),             // Labor Day: 1. Mo Sep
       this.thanksgiving(y),                                  // Thanksgiving: 4. Do Nov
-      this._ds(y, 12, 25)                                   // Weihnachten
+      this._observed(y, 12, 25)                              // Weihnachten (Observed-Shift)
     ];
+    // Neujahr mit Jahresgrenze-Sonderfall
+    var jan1dow = new Date(y, 0, 1).getDay();
+    if (jan1dow === 0) {
+      list.push(this._ds(y, 1, 2));   // Jan 1 = Sonntag → observed Mo 2. Jan
+    } else if (jan1dow !== 6) {
+      list.push(this._ds(y, 1, 1));   // Normal: 1. Jan (inkl. normaler Werktag)
+    }
+    // Falls Jan 1 des Folgejahres auf Samstag faellt → Dec 31 dieses Jahres ist observed
+    if (new Date(y + 1, 0, 1).getDay() === 6) list.push(this._ds(y, 12, 31));
+    return list;
   },
 
   /**
