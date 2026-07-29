@@ -272,10 +272,9 @@ def main():
                     d += __import__('datetime').timedelta(days=1)
 
                 if missing_days:
-                    missing_total += len(missing_days)
-                    missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
-
                     # Auto-Fix: Yahoo nachladen
+                    _yahoo_fixed_for_ticker = 0
+                    _yahoo_had_any_data = False
                     try:
                         fresh = yahoo_download(ticker, period="1mo")
                         if fresh is not None and not fresh.empty:
@@ -284,6 +283,7 @@ def main():
                             for md in missing_days:
                                 ts = pd.Timestamp(md)
                                 if ts in fresh.index and pd.notna(fresh.loc[ts, "Close"]):
+                                    _yahoo_had_any_data = True
                                     rec = {
                                         "ticker": ticker,
                                         "date": md.strftime("%Y-%m-%d"),
@@ -297,14 +297,26 @@ def main():
                             if records:
                                 upsert_prices(records)
                                 auto_fixed += len(records)
+                                _yahoo_fixed_for_ticker = len(records)
                     except Exception:
                         pass  # Yahoo-Fehler → beim nächsten Run erneut versuchen
+
+                    # Nur als echte Lücke zählen wenn Yahoo die Daten BESTÄTIGT hat
+                    # (aber nicht geliefert/gespeichert hat) oder wenn noch unfixte Tage übrig sind.
+                    # Wenn Yahoo gar keine Daten hat → wahrscheinlich Kalender-Edgecase (Feiertag
+                    # der nicht im Kalender steht) → NICHT als fehlend werten.
+                    _still_missing = len(missing_days) - _yahoo_fixed_for_ticker
+                    if _still_missing > 0 and _yahoo_had_any_data:
+                        missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
 
             except Exception as te:
                 health_errors.append(f"{ticker}: {te}")
 
+        missing_total = sum(len(v) for v in missing_details.values())
         if missing_total > 0:
             print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} fehlenden Tagen, {auto_fixed} auto-gefixt")
+        elif auto_fixed > 0:
+            print(f"Health-Check: {auto_fixed} Lücken auto-gefixt ✓")
         else:
             print("Health-Check: Alle Ticker vollständig ✓")
 
@@ -315,7 +327,9 @@ def main():
     # Phase D: Backfill NULL log_return (letzte 14 Tage)
     # Fängt Fälle ab, in denen Kurse vorhanden sind aber log_return fehlt
     # (z.B. nach Feiertags-Lücken oder Import ohne Vortags-Close)
+    # Per-Ticker-Iteration statt Full-Table-Scan → vermeidet Supabase Statement-Timeout
     backfill_fixed = 0
+    backfill_null_total = 0
     try:
         import math
         from shared.supabase_client import get_client as _get_client_bf
@@ -323,27 +337,19 @@ def main():
         _bf_client = _get_client_bf()
         _bf_cutoff = (date.today() - __import__('datetime').timedelta(days=14)).strftime("%Y-%m-%d")
 
-        # Alle Rows mit NULL log_return in den letzten 14 Tagen
-        _null_rows = (_bf_client.table("prices")
-                      .select("ticker,date,close")
-                      .gte("date", _bf_cutoff)
-                      .is_("log_return", "null")
-                      .order("ticker").order("date")
-                      .execute().data)
+        for _bf_ticker in tickers:
+            try:
+                _null_rows = (_bf_client.table("prices")
+                              .select("date,close")
+                              .eq("ticker", _bf_ticker)
+                              .gte("date", _bf_cutoff)
+                              .is_("log_return", "null")
+                              .order("date")
+                              .execute().data)
 
-        if _null_rows:
-            app_logger.info(f"nightly_refresh: Backfill — {len(_null_rows)} Rows mit NULL log_return gefunden")
-
-            # Gruppieren nach Ticker
-            from itertools import groupby
-            _null_by_ticker = {}
-            for r in _null_rows:
-                _null_by_ticker.setdefault(r["ticker"], []).append(r)
-
-            for _bf_ticker, _bf_rows in _null_by_ticker.items():
-                for _bf_row in _bf_rows:
+                backfill_null_total += len(_null_rows)
+                for _bf_row in _null_rows:
                     try:
-                        # Vortag holen
                         _prev = (_bf_client.table("prices")
                                  .select("close")
                                  .eq("ticker", _bf_ticker)
@@ -360,9 +366,12 @@ def main():
                              .execute())
                             backfill_fixed += 1
                     except Exception:
-                        pass  # Einzelner Row-Fehler → weiter
+                        pass
+            except Exception:
+                pass  # Einzelner Ticker-Fehler → weiter
 
-            print(f"Backfill log_return: {backfill_fixed}/{len(_null_rows)} gefixt")
+        if backfill_fixed:
+            print(f"Backfill log_return: {backfill_fixed}/{backfill_null_total} gefixt")
         else:
             print("Backfill log_return: keine NULL-Rows ✓")
 
