@@ -649,6 +649,26 @@ SA.strategy = {
     });
   },
 
+  /** Down-Month Turn-of-Month Reversal: 21d-Rückgang vor ToM → Bounce (SPY validiert, Sharpe 0.34) */
+  calc_downmonth_tom: function(rows) {
+    var trades = [], years = this._getYears(rows);
+    var STREV = 21, ENTRY_TDOM = 14, HOLD = 13;
+    for (var i = 0; i < years.length; i++) {
+      for (var m = 1; m <= 12; m++) {
+        var entryIdx = this._nthTradingDay(rows, years[i], m, ENTRY_TDOM);
+        if (entryIdx < STREV + 1) continue;
+        var prevIdx = entryIdx - 1;
+        var revIdx  = prevIdx - STREV;
+        if (revIdx < 0 || rows[revIdx].close <= 0) continue;
+        if (rows[prevIdx].close / rows[revIdx].close >= 1) continue;
+        var exitIdx = entryIdx + HOLD;
+        var t = this._makeTrade(rows, entryIdx, exitIdx);
+        if (t) trades.push(t);
+      }
+    }
+    return trades;
+  },
+
   /** Trailing Stop-Loss — Stop folgt dem Kurs nach oben */
   applyTrailingStop: function(rows, trades, stopPct) {
     if (stopPct <= 0) return trades;
@@ -702,6 +722,7 @@ SA.strategy = {
     month_end:         { name:'Month-End',         icon:'🔄', cat:'monat',      func:'calc_month_end',         desc: _en ? SA.i18n.t('strat.month_end_desc')           : 'Vorletzter HT → 4. HT Folgemonat' },
     monthly_10:        { name:'Monthly 10',        icon:'📆', cat:'monat',      func:'calc_monthly_10',        desc: _en ? SA.i18n.t('strat.monthly_10_desc')          : 'TDOM 1-4, 9-12, letzte 2' },
     second_trading_day:{ name: _en ? SA.i18n.t('strat.second_trading_day_name') : '2. Handelstag',     icon:'2️⃣', cat:'monat',     func:'calc_second_trading_day', desc: _en ? SA.i18n.t('strat.second_trading_day_desc') : 'Close TDOM 1 → Close TDOM 2' },
+    downmonth_tom:     { name:'Down-Month ToM',    icon:'📉', cat:'monat',      func:'calc_downmonth_tom',     desc: _en ? '21d drop before ToM → reversal (SPY validated)' : '21d < 0 → ToM-Bounce (SPY validiert)' },
 
     cycle_40_week:     { name: _en ? SA.i18n.t('strat.cycle_40_week_name')  : '40-Wochen',         icon:'⚡',       cat:'zyklus',     func:'calc_40_week_cycle',     desc: _en ? SA.i18n.t('strat.cycle_40_week_desc')       : '280d-Zyklus, 140d investiert' },
     cycle_212_week:    { name: _en ? SA.i18n.t('strat.cycle_212_week_name') : '212-Wochen',        icon:'🔁', cat:'zyklus',     func:'calc_212_week_cycle',    desc: _en ? SA.i18n.t('strat.cycle_212_week_desc')      : '1.484d-Zyklus, 182d investiert' },
