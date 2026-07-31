@@ -1778,7 +1778,7 @@
         daysBefore: 3, daysAfter: 10,
         stopPct: 0, stopType: 'fixed',
         filters: [{ type: 'Momentum', condition: 'Momentum > 0 (bullisch)', long_p: 252, short_p: 21 }],
-        metrics: 'Carhart 12M-1M > 0 Filter\nNur ToM bei anhaltendem Aufwärtstrend',
+        metrics: 'Baseline Sharpe 0.07 → mit Filter 0.04\nDAX-ToM-Edge zu schwach für Momentum-Gate',
         color: '#818cf8'
       },
       {
@@ -1789,7 +1789,7 @@
         daysBefore: 3, daysAfter: 10,
         stopPct: 0, stopType: 'fixed',
         filters: [{ type: 'StRev', condition: 'StRev < 0 (Down-Monat → Reversal)', period: 21 }],
-        metrics: 'Jegadeesh 1990: ToM nach Down-Monat\nMean-Reversion verstärkt ToM-Bounce',
+        metrics: 'Sharpe 0.34 · PF 2.39 · WR 71.8%\n+1.25% ∅/Trade vs. +0.75% Baseline ✅',
         color: '#e879f9'
       }
     ];
