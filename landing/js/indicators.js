@@ -119,6 +119,55 @@ SA.indicators = {
     return { fastline: r.macd, slowline: r.signal, histogram: r.histogram };
   },
 
+  /**
+   * Markt-Regime via Percentil-Clustering → Array of 'Bull'|'Sideways'|'Bear'|null.
+   * Klassifiziert jeden Tag anhand von rolling Return (period Tage) und annualisierter Vola.
+   * Bear: niedrige Rendite (< 33. Pz.) ODER hohe Vola (> 75. Pz.)
+   * Bull: hohe Rendite (> 60. Pz.) UND moderate Vola (< 70. Pz.)
+   * Sideways: Rest.
+   * Achtung: Percentile werden auf der Gesamtserie berechnet (leichter Look-Ahead-Bias,
+   * aber konsistent mit SMA/RSI/etc. — _evalSingleFilter verwendet shift(1) als Schutz).
+   */
+  calcRegime: function(closes, period) {
+    period = period || 20;
+    var n = closes.length;
+    var retArr = new Array(n).fill(null);
+    var volArr = new Array(n).fill(null);
+    for (var i = period; i < n; i++) {
+      var ret = closes[i] / closes[i - period] - 1;
+      var drets = [];
+      for (var j = i - period + 1; j <= i; j++) {
+        if (closes[j - 1] > 0) drets.push(Math.log(closes[j] / closes[j - 1]));
+      }
+      if (drets.length < 2) continue;
+      var dm = 0;
+      for (var k = 0; k < drets.length; k++) dm += drets[k];
+      dm /= drets.length;
+      var dv = 0;
+      for (var k = 0; k < drets.length; k++) dv += (drets[k] - dm) * (drets[k] - dm);
+      retArr[i] = ret;
+      volArr[i] = Math.sqrt(dv / drets.length) * Math.sqrt(252);
+    }
+    var sRet = retArr.filter(function(v) { return v !== null; }).slice().sort(function(a, b) { return a - b; });
+    var sVol = volArr.filter(function(v) { return v !== null; }).slice().sort(function(a, b) { return a - b; });
+    if (sRet.length === 0) return new Array(n).fill(null);
+    function pr(sorted, val) {
+      var lo = 0, hi = sorted.length;
+      while (lo < hi) { var mid = (lo + hi) >> 1; if (sorted[mid] < val) lo = mid + 1; else hi = mid; }
+      return lo / sorted.length;
+    }
+    var regimes = new Array(n).fill(null);
+    for (var i = period; i < n; i++) {
+      if (retArr[i] === null) continue;
+      var rp = pr(sRet, retArr[i]);
+      var vp = pr(sVol, volArr[i]);
+      if (rp > 0.60 && vp < 0.70) regimes[i] = 'Bull';
+      else if (rp < 0.33 || vp > 0.75) regimes[i] = 'Bear';
+      else regimes[i] = 'Sideways';
+    }
+    return regimes;
+  },
+
   // ── Filter-Engine (1:1 Port von apply_indicator_filter) ──
 
   /** Registry: Indikatoren + Parameter + Bedingungen */
@@ -140,7 +189,9 @@ SA.indicators = {
     LBR:       { label: 'LBR (Raschke)', params: [{ name: 'fast', label: 'Fast', min: 2, max: 10, def: 3 },
                                                     { name: 'slow', label: 'Slow', min: 5, max: 20, def: 10 },
                                                     { name: 'smoothing', label: 'Smoothing', min: 5, max: 30, def: 16 }],
-                 conditions: ['LBR > 0 (bullish)', 'LBR < 0 (bearish)'] }
+                 conditions: ['LBR > 0 (bullish)', 'LBR < 0 (bearish)'] },
+    Regime:    { label: 'ML-Regime', params: [{ name: 'period', label: 'Periode', min: 10, max: 60, def: 20 }],
+                 conditions: ['Regime != Bear', 'Regime == Bull', 'Regime == Bear (Mean-Reversion)'] }
   },
 
   /**
@@ -176,6 +227,14 @@ SA.indicators = {
     } else if (type === 'LBR') {
       var lbr = SA.indicators.calcLBR(closes, f.fast || 3, f.slow || 10, f.smoothing || 16);
       for (var i = 1; i < n; i++) if (lbr.fastline[i - 1] !== null) mask[i] = cond.indexOf('bullish') >= 0 ? lbr.fastline[i - 1] > 0 : lbr.fastline[i - 1] < 0;
+    } else if (type === 'Regime') {
+      var regs = SA.indicators.calcRegime(closes, f.period || 20);
+      for (var i = 1; i < n; i++) {
+        if (regs[i - 1] === null) continue;
+        if (cond === 'Regime != Bear') mask[i] = regs[i - 1] !== 'Bear';
+        else if (cond === 'Regime == Bull') mask[i] = regs[i - 1] === 'Bull';
+        else mask[i] = regs[i - 1] === 'Bear';
+      }
     } else {
       mask.fill(true);
     }

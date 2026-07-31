@@ -414,6 +414,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
   <script src="/landing/js/decade-compute.js"></script>
+  <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/fomc-dates.js"></script>
   <script src="/landing/js/watchlist.js"></script>
@@ -1537,7 +1538,7 @@
     }
 
     // ── 2. Crash-Ampel Card ──────────────────────────────────────
-    function renderCrashCard(regime) {
+    function renderCrashCard(regime, kmeansRegime) {
       var el = document.getElementById('crash-content');
       if (!regime) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">...</p>'; return; }
       var labels = { green:'Niedrig', yellow:'Erhöht', red:'Hoch', grey:'Unbekannt' };
@@ -1556,6 +1557,13 @@
         '<div class="kpi"><div class="kpi-label">DD 20d</div><div class="kpi-value ' + ddCls + '">' + f.drawdown.toFixed(1) + '%</div></div>' +
         '<div class="kpi"><div class="kpi-label">Ret 20d</div><div class="kpi-value ' + retCls + '">' + fmtPct(f.ret_20d,1) + '</div></div>' +
       '</div>';
+      if (kmeansRegime) {
+        var rCol = {Bull:'#22c55e', Sideways:'#94a3b8', Bear:'#f87171'}[kmeansRegime] || '#94a3b8';
+        html += '<div style="margin-top:.5rem;display:flex;align-items:center;gap:.375rem;font-size:.6875rem">' +
+          '<span style="color:var(--dim)">ML-Regime:</span>' +
+          '<span style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:10px;font-weight:600;color:' + rCol + '">' + kmeansRegime + '</span>' +
+          '</div>';
+      }
       el.innerHTML = html;
     }
 
@@ -2219,9 +2227,12 @@
       var ki = computeKiScore(yearData, matches, currentYear, avg, truepath);
       renderKiCard(ki);
 
-      // 2. Crash-Ampel (auf rawRows, nicht gefiltert — braucht 252 Tage Lookback)
+      // 2. Crash-Ampel + ML-Regime
       var regime = computeRegime(rawRows);
-      renderCrashCard(regime);
+      var _closes = rawRows.map(function(r) { return r.close; });
+      var _kArr = (SA.indicators && SA.indicators.calcRegime) ? SA.indicators.calcRegime(_closes, 20) : null;
+      var kmeansRegime = _kArr ? (_kArr[_kArr.length - 1] || null) : null;
+      renderCrashCard(regime, kmeansRegime);
 
       // 3. Anomalie-Radar via SA.decadeCompute
       try {
