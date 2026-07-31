@@ -1769,6 +1769,28 @@
         filters: [{ type: 'MACD', condition: 'MACD > Signal (bullish)', fast: 12, slow: 26, signal: 9 }],
         metrics: 'Sharpe 0.94 · PF 1.64 · WR 66.7%\nKonsistenteste Index-Strategie',
         color: '#34d399'
+      },
+      {
+        id: 'G-DAX-MOM',
+        label: 'DAX Momentum-ToM',
+        ticker: '^GDAXI',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 3, daysAfter: 10,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'Momentum', condition: 'Momentum > 0 (bullisch)', long_p: 252, short_p: 21 }],
+        metrics: 'Carhart 12M-1M > 0 Filter\nNur ToM bei anhaltendem Aufwärtstrend',
+        color: '#818cf8'
+      },
+      {
+        id: 'H-SPY-REV',
+        label: 'SPY Down-Month Reversal',
+        ticker: 'SPY',
+        tdomStart: 17, tdomEnd: 22,
+        daysBefore: 3, daysAfter: 10,
+        stopPct: 0, stopType: 'fixed',
+        filters: [{ type: 'StRev', condition: 'StRev < 0 (Down-Monat → Reversal)', period: 21 }],
+        metrics: 'Jegadeesh 1990: ToM nach Down-Monat\nMean-Reversion verstärkt ToM-Bounce',
+        color: '#e879f9'
       }
     ];
 

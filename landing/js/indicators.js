@@ -120,6 +120,37 @@ SA.indicators = {
   },
 
   /**
+   * Carhart (1997) Momentum: 12-Monats-Return minus 1-Monats-Return (Skip-1M).
+   * Positiv = anhaltendes Aufwärts-Momentum ohne kurzfristige Reversal-Verzerrung.
+   * Quelle: Carhart 1997 + Jegadeesh/Titman 1993 (akademisches UMD-Signal).
+   */
+  calcMomentum: function(closes, longP, shortP) {
+    longP = longP || 252; shortP = shortP || 21;
+    var n = closes.length;
+    var result = new Array(n).fill(null);
+    for (var i = longP; i < n; i++) {
+      if (closes[i - longP] <= 0 || closes[i - shortP] <= 0) continue;
+      result[i] = (closes[i] / closes[i - longP] - 1) - (closes[i] / closes[i - shortP] - 1);
+    }
+    return result;
+  },
+
+  /**
+   * Short-Term Reversal (Jegadeesh 1990): 21-Tage-Return.
+   * Negatives Vorzeichen = letzter Monat war schwach → Reversal-Setup.
+   * Im Filter: 'StRev < 0' = Down-Month → Mean-Reversion-Einstieg.
+   */
+  calcStRev: function(closes, period) {
+    period = period || 21;
+    var n = closes.length;
+    var result = new Array(n).fill(null);
+    for (var i = period; i < n; i++) {
+      if (closes[i - period] > 0) result[i] = closes[i] / closes[i - period] - 1;
+    }
+    return result;
+  },
+
+  /**
    * Markt-Regime via Percentil-Clustering → Array of 'Bull'|'Sideways'|'Bear'|null.
    * Klassifiziert jeden Tag anhand von rolling Return (period Tage) und annualisierter Vola.
    * Bear: niedrige Rendite (< 33. Pz.) ODER hohe Vola (> 75. Pz.)
@@ -191,7 +222,13 @@ SA.indicators = {
                                                     { name: 'smoothing', label: 'Smoothing', min: 5, max: 30, def: 16 }],
                  conditions: ['LBR > 0 (bullish)', 'LBR < 0 (bearish)'] },
     Regime:    { label: 'ML-Regime', params: [{ name: 'period', label: 'Periode', min: 10, max: 60, def: 20 }],
-                 conditions: ['Regime != Bear', 'Regime == Bull', 'Regime == Bear (Mean-Reversion)'] }
+                 conditions: ['Regime != Bear', 'Regime == Bull', 'Regime == Bear (Mean-Reversion)'] },
+    Momentum:  { label: 'Momentum (12M-1M)', params: [
+                   { name: 'long_p', label: 'Long (Tage)', min: 200, max: 365, def: 252 },
+                   { name: 'short_p', label: 'Short (Tage)', min: 10, max: 30, def: 21 }],
+                 conditions: ['Momentum > 0 (bullisch)', 'Momentum < 0 (bärisch)'] },
+    StRev:     { label: 'Short-Rev (21d)', params: [{ name: 'period', label: 'Periode', min: 10, max: 40, def: 21 }],
+                 conditions: ['StRev < 0 (Down-Monat → Reversal)', 'StRev > 0 (Up-Monat → Trend)'] }
   },
 
   /**
@@ -235,6 +272,12 @@ SA.indicators = {
         else if (cond === 'Regime == Bull') mask[i] = regs[i - 1] === 'Bull';
         else mask[i] = regs[i - 1] === 'Bear';
       }
+    } else if (type === 'Momentum') {
+      var mom = SA.indicators.calcMomentum(closes, f.long_p || 252, f.short_p || 21);
+      for (var i = 1; i < n; i++) if (mom[i - 1] !== null) mask[i] = cond.indexOf('bullisch') >= 0 ? mom[i - 1] > 0 : mom[i - 1] < 0;
+    } else if (type === 'StRev') {
+      var strev = SA.indicators.calcStRev(closes, f.period || 21);
+      for (var i = 1; i < n; i++) if (strev[i - 1] !== null) mask[i] = cond.indexOf('Down') >= 0 ? strev[i - 1] < 0 : strev[i - 1] > 0;
     } else {
       mask.fill(true);
     }
