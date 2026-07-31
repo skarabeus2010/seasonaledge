@@ -24,10 +24,28 @@ ob er etwas davon **bestätigt, widerlegt, erweitert** oder ein **neues** Muster
 
 ## Vorgehen
 
-1. **Vorhandenes prüfen (Dedup):** Lies zuerst `docs/research-radar/*.md` (falls vorhanden), um
-   bereits erfasste Quellen NICHT erneut zu listen. Lege das Verzeichnis an, falls es fehlt.
+1. **Vorhandenes prüfen (Dedup in 2 Schritten):**
 
-2. **Breit suchen (mehrere Such-Winkel, DE + EN).** Nutze `WebSearch` mit Varianten wie:
+   a) **Quellen-Dedup:** Lies alle `docs/research-radar/*.md`-Dateien (mit `Glob` + `Read`), extrahiere
+      alle bereits erfassten URLs/DOIs/Titel. Diese Quellen werden im aktuellen Durchlauf NICHT erneut
+      gelistet. Lege das Verzeichnis an, falls es fehlt.
+
+   b) **Blog-Post-Dedup:** Lies `blog/posts/*.md` (Glob + Read der ersten 30 Zeilen), extrahiere
+      Titel und Hauptthema jedes Posts. Blog-Ideen, die ein bereits vorhandenes Post-Thema direkt
+      wiederholen, werden NICHT vorgeschlagen — nur echte neue Winkel (erweiterter Aspekt, neues
+      Ticker-Set, neuere Daten).
+
+2. **Bewährte Quellen zuerst scannen (regelmäßige Radar-Quellen):**
+   Prüfe diese Repositories immer als ersten Scan-Pass, da sie häufig aktuelle Studien aggregieren:
+   - **Quantpedia.com/blog** (saisonale Strategien, Front-Running, Sektor-Effekte)
+   - **TradeQuantiX-Newsletter** (practitioner, konditionierte Wochentags-Muster)
+   - **arXiv q-fin** (Preprints: `arxiv.org/search/?query=seasonality&searchtype=all&start=0`)
+   - **IDEAS/RePEC** (peer-reviewed, `ideas.repec.org/search.html`)
+   - **SSRN** (Working Papers: `papers.ssrn.com/sol3/results.cfm?RequestTimeout=50000`)
+   - **Jeff Hirsch / Stock Trader's Almanac Blog** (Präsidentenzyklus, Jahres-Patterns)
+   Danach erst breite Web-Suche für neue/unbekannte Quellen.
+
+3. **Breit suchen (mehrere Such-Winkel, DE + EN).** Nutze `WebSearch` mit Varianten wie:
    - akademisch: `stock market seasonality 2025..2026`, `calendar anomaly equity returns`,
      `turn-of-the-month effect`, `Halloween indicator sell in may study`, `monthly seasonality stocks`,
      `seasonality SSRN`, `arXiv q-fin seasonality`, `RePEc seasonal anomaly`
