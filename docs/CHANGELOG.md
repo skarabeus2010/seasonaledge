@@ -28,7 +28,7 @@ von HKUDS/Vibe-Trading. Ergebnis: `scripts/compute_gamma_exposure.py` (Yahoo-Opt
 rechnet je Kontrakt Black-Scholes **Gamma, Vanna, Charm** (mit Div-Rendite q) und aggregiert Dealer-Exposure:
 net-GEX (+Regime long/short-Gamma = vola-reduzierend/-forcierend), Zero-Gamma-Flip (Spot-Sweep), Call/Put/
 **Absolute**-Walls (Netto-Gamma je Strike), **Skew** (ATM-IV + 90/110), **Markt-Gamma-Index** (SPY+QQQ+IWM+DIA),
-**Per-Strike- & Per-Term-Profile** → Volland-Stil-„Exposure By Strike/Term"-Charts (`render_gex_profile.py`).
+**Per-Strike- & Per-Term-Profile** → „Exposure By Strike/Term"-Charts (Gamma/Vanna/Charm, `render_gex_profile.py`).
 Doku: `docs/OPTIONS.md`. Agenten: `options-flow-analyst` (rechnen+interpretieren) + `market-flows-scout`
 (strukturelle Flows recherchieren). Gelaufen: Index + Mag7 + Screenshot-Aktien + alle 40 SeasonAlpha-ETFs.
 
