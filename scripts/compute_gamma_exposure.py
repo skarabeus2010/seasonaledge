@@ -227,7 +227,7 @@ def _profile(spot: float, contracts: list, q: float) -> list[dict]:
 
 
 def _profile_by_term(spot: float, contracts: list, q: float) -> list[dict]:
-    """Netto-Dealer-Exposure JE VERFALL (für Gamma-/Vanna-/Charm-by-Term-Charts, Volland-Stil)."""
+    """Netto-Dealer-Exposure JE VERFALL (für Gamma-/Vanna-/Charm-by-Term-Charts)."""
     per: dict[str, dict] = {}
     for c in contracts:
         g, v, ch = bs_greeks(spot, c["K"], c["T"], c["iv"], c["type"], q=q)

@@ -1,5 +1,5 @@
 """
-scripts/render_gex_profile.py — Volland-/SpotGamma-Stil "Exposure By Strike / By Term"
+scripts/render_gex_profile.py — "Exposure By Strike / By Term" (Gamma/Vanna/Charm)
 =======================================================================================
 Zeichnet aus einem gex_<T>.json (mit --profile erzeugt) ein Balkendiagramm der Netto-Dealer-
 Exposure: grün = positiv (vola-reduzierend), rot = negativ (vola-forcierend), Spot-Linie.
