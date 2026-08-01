@@ -1,0 +1,13 @@
+{
+  "ticker": "SPY",
+  "spot": 747.03,
+  "net_gex_usd_bn": -1.101,
+  "regime": "short_gamma",
+  "zero_gamma": 748.24,
+  "call_wall": 750.0,
+  "put_wall": 750.0,
+  "n_contracts": 3451,
+  "n_expiries": 12,
+  "generated_at": "2026-08-01T17:45:44+00:00",
+  "note": "PoC · naive Dealer-Vorzeichen (long Calls/short Puts) = Heuristik, nicht echte Dealer-Bücher · EOD-OI von Yahoo"
+}
