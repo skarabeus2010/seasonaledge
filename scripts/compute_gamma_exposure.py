@@ -121,15 +121,17 @@ def _zero_gamma(spot: float, contracts: list) -> float | None:
 
 
 def _walls(spot: float, contracts: list):
-    agg = {}
+    """Call/Put-Wall = Strike mit größtem NETTO-Dealer-$-Gamma (Call +, Put −).
+    Gamma allein ist am ATM maximal → Call- und Put-Wall würden kollabieren; das Netto
+    trennt sie (Calls dominieren oberhalb, Puts unterhalb = SpotGamma-Konvention)."""
+    per_strike: dict[float, float] = {}
     for c in contracts:
         dollar = _bs_gamma(spot, c["K"], c["T"], c["iv"]) * c["oi"] * 100 * spot * spot * 0.01
-        agg.setdefault((c["type"], c["K"]), 0.0)
-        agg[(c["type"], c["K"])] += dollar
-    calls = {k[1]: v for k, v in agg.items() if k[0] == "call"}
-    puts = {k[1]: v for k, v in agg.items() if k[0] == "put"}
-    call_wall = max(calls, key=calls.get) if calls else None
-    put_wall = max(puts, key=puts.get) if puts else None
+        per_strike[c["K"]] = per_strike.get(c["K"], 0.0) + (dollar if c["type"] == "call" else -dollar)
+    if not per_strike:
+        return None, None
+    call_wall = max(per_strike, key=per_strike.get)   # größtes positives Netto-Gamma
+    put_wall = min(per_strike, key=per_strike.get)     # größtes negatives (Puts dominieren)
     return call_wall, put_wall
 
 
