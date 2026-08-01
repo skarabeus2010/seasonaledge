@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 46.0 | 2026-07-10 | **Options-/Dealer-Positioning-Engine** (`scripts/compute_gamma_exposure.py`: GEX/Gamma + **Vanna + Charm** per Black-Scholes, Finite-Differenzen-`--self-test`, Call/Put/Absolute-Walls, Zero-Gamma-Flip, **Skew**, **Markt-Gamma-Index**, Per-Strike/Per-Term-Profile → Volland-Stil-Charts `render_gex_profile.py`) · `docs/OPTIONS.md` · 2 Agenten (`options-flow-analyst`, `market-flows-scout`) · Lessons: naive Dealer-Heuristik ≠ SpotGamma-Inventory-Modell, Yahoo-Options **nur US** (DAX/`^GDAXI`/`.DE` leer → ETF-Proxy EWG/FEZ oder paid Eurex), Walls = Netto-Gamma je Strike (Call≥Spot/Put≤Spot), Charm ÷365 = daily, matplotlib `text.parse_math=False` für `$`-Labels. **Nächster PR: `/dealer-positioning`-Frontend + Nav.** Papers-Trove in `raw/papers/`.
 > Version 45.0 | 2026-07-28 | **Supabase Pro** (Free-Tier DB-Quota erschöpft → 6 Tage Write-Block → Upgrade auf Pro) · **DB Recovery** (Nightly 7d-Fenster, Full Scanner 324/324, alle Crons manuell getriggert) · Lessons Learned: Free-Tier still-schlägt-zu, "Nightly Data Update" ist Altlast (korrekt: "Nightly DB Refresh"), Completeness-JSON-URL `/landing/data/`, Polymarket-Backfill vs. Standalone, regime_scores 1/324 = Design
 > Version 44.0 | 2026-07-15 | **Backtest-Kombinations-Engine** (TDOM+Indikator, 5 Strategien × 10 Ticker, Walk-Forward, Stop-Loss-Grid, LBR vs. MACD, Neue Ticker) · **UI-Integration** (TDOM Event-Typ, Preset-Karten, `loadPreset()`-API) · **Second Brain** (`raw/`+`wiki/`+`/sa-ingest`) · Lessons Learned: GLD+Bollinger Walk-Forward robust (OOS Sharpe 2.41), Edge ist Edelmetall-Phänomen, LBR asset-klassen-abhängig, Stop-Loss-Regeln je Signaltyp
 > Version 43.0 | 2026-07-15 | **Stripe-Integration** (3 Supabase Edge Functions: create-checkout-session + stripe-webhook + create-portal-session, Pricing-Page aktiviert, docs/STRIPE_SETUP.md) · Lessons Learned: Edge Functions via `supabase secrets set`, CORS-Header Pflicht, portal session braucht stripe_customer_id aus DB
@@ -51,7 +52,7 @@ docs/                    ← Ausgelagerte Dokumentation
 .claude/agents/          ← 8 Subagenten (versioniert) — Einsatz-Anleitung: docs/AGENTS.md
 ```
 
-**Subagenten (`.claude/agents/`, Anleitung [docs/AGENTS.md](docs/AGENTS.md)):** Content (`blogger`, `saisonalitaet-scout`), Daten (`daten-auditor`), SEO/Wachstum (`seo-experte`, `wachstum-distributor`, `seo-seiten-bauer`, `gsc-analyst`, `frontend-qa`). Flywheel: scout→blogger→distributor→[posten]→gsc-analyst. Wachstums-Engpass = Off-Page (junge Domain, wenige Backlinks) → Embed-Backlink-Hebel (`/embed`).
+**Subagenten (`.claude/agents/`, Anleitung [docs/AGENTS.md](docs/AGENTS.md)):** Content (`blogger`, `saisonalitaet-scout`), Daten (`daten-auditor`), SEO/Wachstum (`seo-experte`, `wachstum-distributor`, `seo-seiten-bauer`, `gsc-analyst`, `frontend-qa`), Options/Flows (`options-flow-analyst`, `market-flows-scout`), Backtest (`backtest-analyst`). Flywheel: scout→blogger→distributor→[posten]→gsc-analyst. Wachstums-Engpass = Off-Page (junge Domain, wenige Backlinks) → Embed-Backlink-Hebel (`/embed`).
 
 ### Module / Pages — Detail-Listen in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -214,7 +215,7 @@ Bei Fehlern: `docker logs seasonalpha-app --tail 50` · `docker exec -it seasona
 
 ## Docs
 
-- `ARCHITECTURE.md`, `CHARTS.md`, `UI_PATTERNS.md` (Frontend/UI/Statistik-Gotchas), `TRADING_CALENDAR_RULES.md` (Kalender/TDOM/TDOY/OPEX/VIX — Prüf-Spec), `I18N.md` (EN-Lokalisierung operativ; `I18N_ANALYSIS.md` = Planung 04-2026), `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `EMAIL_TESTING.md`, `YOUTUBE_STRATEGY.md` (faceless Social-Video-Kanal, Living Doc) + `YOUTUBE_DISCLAIMER.md` (YMYL-Rechtstexte, **kanonisch** — Disclaimer in Video/Caption/SEO-Hinweise einbauen!) + `SOCIAL_API_SETUP.md` (Meta IG/FB Auto-Posting-Setup); Pipeline in `scripts/video/` (`PLAN.md`/`README.md`), `CHANGELOG.md` (History/Meilensteine)
+- `ARCHITECTURE.md`, `CHARTS.md`, `UI_PATTERNS.md` (Frontend/UI/Statistik-Gotchas), `TRADING_CALENDAR_RULES.md` (Kalender/TDOM/TDOY/OPEX/VIX — Prüf-Spec), `I18N.md` (EN-Lokalisierung operativ; `I18N_ANALYSIS.md` = Planung 04-2026), `SEO_ENGINE.md`, `SEO_MARKETING.md` (Living Doc), `BLOG_WORKFLOW.md`, `REFRESH_MONITORING.md`, `MIGRATION.md`, `POLYMARKET.md`, `OPTIONS.md` (Dealer-Positioning: GEX/Vanna/Charm/Skew/Walls — Formeln + Konventionen + Datenquellen), `EMAIL_TESTING.md`, `YOUTUBE_STRATEGY.md` (faceless Social-Video-Kanal, Living Doc) + `YOUTUBE_DISCLAIMER.md` (YMYL-Rechtstexte, **kanonisch** — Disclaimer in Video/Caption/SEO-Hinweise einbauen!) + `SOCIAL_API_SETUP.md` (Meta IG/FB Auto-Posting-Setup); Pipeline in `scripts/video/` (`PLAN.md`/`README.md`), `CHANGELOG.md` (History/Meilensteine)
 - `.claude/blog-tutorial.md` — Skill: SEO-Blog-Artikel (DE)
 
 ## TODO

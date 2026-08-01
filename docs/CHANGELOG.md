@@ -21,6 +21,33 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-07-10 — Options-/Dealer-Positioning-Engine (GEX / Vanna / Charm / Skew / Walls)
+
+**Neuer Baustein** aus User-Wunsch („was können wir mit Optionsdaten rechnen — Gamma, Charm …") + Analyse
+von HKUDS/Vibe-Trading. Ergebnis: `scripts/compute_gamma_exposure.py` (Yahoo-Options-Chain via Crumb-Session)
+rechnet je Kontrakt Black-Scholes **Gamma, Vanna, Charm** (mit Div-Rendite q) und aggregiert Dealer-Exposure:
+net-GEX (+Regime long/short-Gamma = vola-reduzierend/-forcierend), Zero-Gamma-Flip (Spot-Sweep), Call/Put/
+**Absolute**-Walls (Netto-Gamma je Strike), **Skew** (ATM-IV + 90/110), **Markt-Gamma-Index** (SPY+QQQ+IWM+DIA),
+**Per-Strike- & Per-Term-Profile** → Volland-Stil-„Exposure By Strike/Term"-Charts (`render_gex_profile.py`).
+Doku: `docs/OPTIONS.md`. Agenten: `options-flow-analyst` (rechnen+interpretieren) + `market-flows-scout`
+(strukturelle Flows recherchieren). Gelaufen: Index + Mag7 + Screenshot-Aktien + alle 40 SeasonAlpha-ETFs.
+
+**Lessons Learned:**
+- **Greeks IMMER per Finite-Differenzen selbst-testen** (`--self-test`): analytische Gamma/Vanna/Charm gegen
+  zentrale FD von Δ, rel. Fehler < 1e-4. Bewies u.a., dass Charm bei q=0 für Call/Put identisch ist. Ohne
+  Beweis kein Vertrauen in Second-Order-Greeks.
+- **Sign-Konvention ist eine Heuristik, kein Fakt.** Naive „Dealer long Calls / short Puts" (Call +, Put −)
+  ist eine erste Näherung; SpotGamma/SqueezeMetrics nutzen proprietäre DDOI-/Inventory-Modelle (+0DTE +Intraday).
+  Unsere Zahlen ≠ deren Zahlen → IMMER als Heuristik/EOD/kein-Signal kennzeichnen (YMYL).
+- **Call/Put-Walls: NICHT getrennt max Call- vs Put-Gamma** (kollabiert auf ATM, weil Gamma dort maximal ist) —
+  sondern **Netto-Gamma je Strike**, Call-Wall = größtes positives ≥ Spot, Put-Wall = größtes negatives ≤ Spot.
+- **Charm ÷ 365 = Tages-Charm** reicht (nur 0DTE bräuchte feiner). Vanna/Charm-Flows treiben Pre-OPEX-Drift.
+- **Yahoo-Options-Endpoint bedient nur US-gelistete Underlyings.** `^GDAXI`/`.DE` → leere Chain (live getestet) →
+  DAX-GEX nur via US-ETF-Proxy (EWG dünn/GEX≈0, FEZ) oder Bezahl-Eurex-Daten. ^SPX + SPCX gehen dagegen.
+- **`full_365`/Profil-Flags durchreichen:** `--profile` muss an `analyze(with_profile=…)` weitergegeben werden
+  (sonst leeres Profil trotz Flag). Und: matplotlib deutet `$` in Labels als LaTeX → `rcParams["text.parse_math"]=False`.
+- **Congestion:** Mehrere parallele Yahoo-Fetches (SPX = tausende Kontrakte) rate-limiten sich → sequenziell/EOD-Cron.
+
 ### 2026-07-28 — Supabase Pro Upgrade + DB-Recovery nach 6-Tage-Outage
 
 **Ursache:** Supabase Free-Tier DB-Größe-Quota überschritten → alle Writes seit 2026-07-22 silent blockiert.
