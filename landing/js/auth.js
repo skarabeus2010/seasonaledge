@@ -12,6 +12,7 @@
   var _client = null;
   var _user = null;
   var _listeners = [];
+  var _resolved = false; // true sobald Session-Restore (getSession/onAuthStateChange) einmal lief
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
@@ -47,11 +48,13 @@
       // Session wiederherstellen
       _client.auth.getSession().then(function(result) {
         var session = result.data && result.data.session;
+        _resolved = true;
         _setUser(session ? session.user : null);
       });
 
-      // Auth-State-Changes lauschen (Login, Logout, Token-Refresh)
+      // Auth-State-Changes lauschen (Login, Logout, Token-Refresh, INITIAL_SESSION)
       _client.auth.onAuthStateChange(function(event, session) {
+        _resolved = true;
         _setUser(session ? session.user : null);
       });
     },
@@ -78,7 +81,12 @@
 
     /** Callback bei Auth-Status-Aenderung */
     onAuthChange: function(cb) {
-      if (typeof cb === 'function') _listeners.push(cb);
+      if (typeof cb !== 'function') return;
+      _listeners.push(cb);
+      // Spaet registrierte Listener sofort mit aktuellem Stand versorgen — fixt die Race:
+      // Session war bereits wiederhergestellt, bevor die Page ihren Listener registrierte,
+      // sodass _setUser (feuert nur bei Aenderung) den Callback nie erreichte → Watchlist leer / „ausgeloggt".
+      if (_resolved) { try { cb(_user); } catch(e) { console.error('[auth] Listener error:', e); } }
     },
 
     /** JWT Token fuer authentifizierte API-Calls */
