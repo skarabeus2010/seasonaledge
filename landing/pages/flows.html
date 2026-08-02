@@ -108,8 +108,8 @@
     <h1 class="page-title"><b>Strukturelle</b> Markt-Flows</h1>
     <p class="page-caption" id="asof">
       Die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt &mdash; wer <i>muss</i> kaufen oder
-      verkaufen, unabhängig von einer Meinung über den fairen Wert. Vier Perspektiven: Index-Rebalancing,
-      Buyback-Blackout, CTA-Positionierung und Vol-Control-Leverage.
+      verkaufen, unabhängig von einer Meinung über den fairen Wert. Fünf Perspektiven: Index-Rebalancing,
+      Buyback-Blackout, CTA-Positionierung, Vol-Control-Leverage und Short-Volume.
     </p>
     <div class="disc">
       <b>Ehrlicher Hinweis:</b> Alle Panels zeigen <b>strukturellen, nicht-fundamentalen</b> Kontext und sind bewusst
@@ -181,6 +181,18 @@
       <p class="note" id="vc-note"></p>
     </section>
 
+    <!-- Panel F — FINRA Short-Volume -->
+    <section class="panel" id="p-shortvol">
+      <h2><span class="em">🌑</span>Short-Volume-Anteil (FINRA-Proxy)</h2>
+      <p class="sub">FINRA meldet täglich das konsolidierte Short-Volumen aller US-Aktien. Wir aggregieren marktweit
+        den Anteil Short am Gesamtvolumen. <b>Achtung:</b> der Anteil selbst ist <b>nicht richtungsweisend</b> (ein
+        Großteil ist Market-Maker-Liquidität) &mdash; aussagekräftig ist nur die Abweichung vom eigenen Schnitt.</p>
+      <p class="framing" id="sv-framing"></p>
+      <div class="kpis" id="sv-kpis"></div>
+      <div class="card"><div class="psub">Marktweiter Short-Volume-Anteil &middot; Extremzonen</div><div id="sv-chart" style="min-height:250px"></div></div>
+      <p class="note" id="sv-note"></p>
+    </section>
+
     <!-- Cross-Link zu Dealer-Gamma -->
     <div class="cta-gamma">
       <b>Der fünfte Flow: Dealer-Gamma.</b> Die Options-Absicherung der Market Maker (Gamma, Vanna, Charm) ist der
@@ -215,6 +227,11 @@
       <p>Modell-Proxy: Ziel-Vol (15&nbsp;%) / realisierte 20-Tage-Vola (annualisiert) des S&amp;P&nbsp;500, gekappt bei
       150&nbsp;%. Regime-Zonen aus der realisierten Vola. <b>Vola-Risiko-Aufschlag</b> = VIX − realisierte Vola (negativ =
       akuter Stress). Der geschätzte $-Flow ist ein <b>Szenario</b> (Annahme ~350&nbsp;Mrd&nbsp;$ AUM), keine Messung.</p>
+      <h4>Panel F — Short-Volume</h4>
+      <p>FINRA Reg-SHO konsolidiertes Tages-Short-Volumen (frei), marktweit aggregiert: Σ Short / Σ Gesamt-Volumen.
+      Der <b>Anteil selbst ist nicht richtungsweisend</b> — ein Großteil ist Market-Maker-Liquidität/Hedging, kein
+      bearischer Einsatz. Aussagekräftig ist nur die <b>Abweichung vom eigenen 60-Tage-Schnitt</b> (Perzentil/z-Score,
+      lineare Interpolation). Kein DIX (proprietär), nur freier Proxy.</p>
       <h4>Wissenschaftliche Einordnung</h4>
       <ul class="refs">
         <li>Baltussen, Terstegge &amp; Whelan (2024) &mdash; strukturelle Derivate-/Verfall-Effekte am S&amp;P&nbsp;500.</li>
@@ -416,12 +433,45 @@
       document.getElementById('vc-note').innerHTML=(vt?'VIX-Term (3M/1M): <b>'+vt.ratio_3m_1m.toFixed(2)+'</b> ('+(vt.structure==='contango'?'Contango — ruhig':'Backwardation — Stress')+', Stand '+vt.date+'). ':'')+(d.note||'');
     }
 
+    // ── Panel F: FINRA Short-Volume-Anteil ──────────────────────────────────
+    function renderShortvol(d){
+      var s=d.series||[]; if(!s.length){panelFail('sv-chart','Short-Volume-Daten folgen (Nightly-Cron).');return;}
+      var cats=s.map(function(p){return p.date});
+      var ratio=s.map(function(p){return Math.round(p.short_vol_ratio*1000)/10});
+      var ma=s.map(function(p){return Math.round(p.ma5*1000)/10});
+      var st=d.stats||{}, lt=d.latest||s[s.length-1];
+      var pctile=st.pctile_60, z=st.zscore_60, cur=Math.round((lt.short_vol_ratio||0)*1000)/10;
+      document.getElementById('sv-kpis').innerHTML=
+        '<div class="kpi kpi-gauge"><div class="k">Short-Anteil-Perzentil (60T)</div><div class="gdiv" id="sv-gauge"></div><div class="glabel" id="sv-gauge-lbl"></div></div>'+
+        kpi('Short-Volume-Anteil (heute)',cur+' %','','Ø 60T: '+(Math.round((st.mean||0)*1000)/10)+' %')+
+        kpi('z-Score (60T)',(z>=0?'+':'')+(z!=null?z.toFixed(1):'—'),Math.abs(z)>2?'gold':'',Math.abs(z)>2?'extrem':'Abweichung vom Schnitt');
+      var gcol=pctile>80?ACC:(pctile<20?BLUE:MUT);
+      var gtxt=pctile>80?'überdurchschnittlich':(pctile<20?'unterdurchschnittlich':'im Normbereich');
+      gauge('sv-gauge',pctile,gcol,(pctile!=null?Math.round(pctile):'—')+'.',gtxt);
+      document.getElementById('sv-framing').innerHTML='<b>Was heißt das?</b> Proxy — kein Signal. Der marktweite Short-Volume-Anteil liegt bei <b>'+cur+'&nbsp;%</b>, im <b>'+(pctile!=null?Math.round(pctile):'—')+'.&nbsp;Perzentil</b> der letzten 60&nbsp;Tage (z '+(z!=null?z.toFixed(1):'—')+'). Der Anteil selbst sagt nichts über die Richtung — ein Großteil ist Market-Maker-Liquidität. Nur die Abweichung vom eigenen Schnitt ist Kontext (z.&nbsp;B. ungewöhnlich hohe Hedging-/Short-Aktivität).';
+      var yann=[];
+      if(st.p80!=null) yann.push({y:st.p80*100,y2:53,fillColor:ACC,opacity:.06,borderColor:'transparent'});
+      if(st.p20!=null) yann.push({y:44,y2:st.p20*100,fillColor:BLUE,opacity:.06,borderColor:'transparent'});
+      if(st.mean!=null) yann.push({y:st.mean*100,borderColor:'rgba(255,255,255,.35)',strokeDashArray:4,label:{text:'60T-Ø',style:{background:'#000',color:MUT,fontSize:'9px'}}});
+      renderInto('sv-chart',Object.assign(baseChart(250,'line'),{
+        series:[{name:'Short-Anteil',data:ratio},{name:'5-Tage-Ø',data:ma}],
+        colors:[DIM,ACC],stroke:{width:[1.3,2.2],curve:'smooth'},
+        legend:{show:true,labels:{colors:MUT},position:'top',horizontalAlign:'right'},
+        xaxis:{type:'datetime',categories:cats,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return v.toFixed(0)+'%'}},min:44,max:53},
+        annotations:{yaxis:yann},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},shared:true,y:{formatter:function(v){return v+' %'}}}
+      }));
+      document.getElementById('sv-note').textContent=d.note||'';
+    }
+
     function load(url,fn,failId,msg){fetchJSON(url).then(fn).catch(function(e){panelFail(failId,msg);});}
     function init(){
       load('/landing/data/flows_rebalancing.json',renderRebal,'rb-body','Rebalancing-Termine folgen.');
       load('/landing/data/buyback_blackout.json',renderBuyback,'bb-chart','Blackout-Daten folgen (Nightly-Cron).');
       load('/landing/data/cot_positioning.json',renderCot,'cot-chart','COT-Daten folgen (wöchentlicher Cron).');
       load('/landing/data/volcontrol_proxy.json',renderVol,'vc-chart','Vol-Control-Daten folgen (Nightly-Cron).');
+      load('/landing/data/shortvol_proxy.json',renderShortvol,'sv-chart','Short-Volume-Daten folgen (Nightly-Cron).');
     }
     if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
   }();
