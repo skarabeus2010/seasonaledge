@@ -1,0 +1,919 @@
+{
+  "generated_at": "2026-08-02T13:46:05+00:00",
+  "today": "2026-08-02",
+  "n_universe": 151,
+  "series": [
+    {
+      "date": "2026-05-04",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-05",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-06",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-07",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-08",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-09",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-10",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-11",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-12",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-13",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-14",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-15",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-16",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-17",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-18",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-19",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-20",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-21",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-22",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-23",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-24",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-25",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-05-26",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-05-27",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-05-28",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-05-29",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-05-30",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-05-31",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-06-01",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-06-02",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-03",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-04",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-05",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-06",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-07",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-08",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-09",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-10",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-11",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-12",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-13",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-14",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-15",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-16",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-17",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-18",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-19",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-20",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-21",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-22",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-23",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-24",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-06-25",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-06-26",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-06-27",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-06-28",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-06-29",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-06-30",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-07-01",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-07-02",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-07-03",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-04",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-05",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-06",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-07",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-08",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-09",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-10",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-11",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-12",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-13",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-14",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-15",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-16",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-17",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-18",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-19",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-20",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-21",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-22",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-23",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-24",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-07-25",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-26",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-27",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-28",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-29",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-30",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-07-31",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-08-01",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-08-02",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-03",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-04",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-05",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-06",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-07",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-08",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-09",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-10",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-11",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-12",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-13",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-14",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-15",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-16",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-17",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-18",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-19",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-20",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-21",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-22",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-23",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-24",
+      "n_in_blackout": 16,
+      "pct_in_blackout": 0.106
+    },
+    {
+      "date": "2026-08-25",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-26",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-27",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-28",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-29",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-30",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-08-31",
+      "n_in_blackout": 22,
+      "pct_in_blackout": 0.1457
+    },
+    {
+      "date": "2026-09-01",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-02",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-03",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-04",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-05",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-06",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-07",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-08",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-09",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-10",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-11",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-12",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-13",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-14",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-15",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-16",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-17",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-18",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-19",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-20",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-21",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-22",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-23",
+      "n_in_blackout": 6,
+      "pct_in_blackout": 0.0397
+    },
+    {
+      "date": "2026-09-24",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-25",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-26",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-27",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-28",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-29",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-09-30",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-10-01",
+      "n_in_blackout": 135,
+      "pct_in_blackout": 0.894
+    },
+    {
+      "date": "2026-10-02",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-03",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-04",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-05",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-06",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-07",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-08",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-09",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-10",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-11",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-12",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-13",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-14",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-15",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-16",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-17",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-18",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-19",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-20",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-21",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-22",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-23",
+      "n_in_blackout": 129,
+      "pct_in_blackout": 0.8543
+    },
+    {
+      "date": "2026-10-24",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-25",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-26",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-27",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-28",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-29",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-30",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    },
+    {
+      "date": "2026-10-31",
+      "n_in_blackout": 145,
+      "pct_in_blackout": 0.9603
+    }
+  ],
+  "latest": {
+    "date": "2026-08-02",
+    "n_in_blackout": 16,
+    "pct_in_blackout": 0.106
+  },
+  "entering_this_week": [],
+  "note": "Doppel-Proxy: (1) nächste Earnings aus Quartals-Kadenz (~91 T) + ~30 T Ankündigungs-Versatz geschätzt, echte Termine variieren; (2) Blackout-Fenster = Ankündigung −35 bis +2 T (Standard-Heuristik, echte Firmen-Policy variiert). Rückkauf-Autorisierung ≠ Ausführung. Gleichgewichtet (% der US-Kern-Firmen), NICHT marktkapital-gewichtet. Zeigt saisonal fehlenden strukturellen Bid, kein Handelssignal."
+}

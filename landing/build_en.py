@@ -60,7 +60,7 @@ except Exception:
 SKIP_PREFIXES = ("/en/", "/blog/", "/tools/", "/rechtliches", "/disclaimer",
                  "/app/", "/umami/", "http", "mailto:", "#", "javascript:",
                  "/kalender", "/profile", "/watchlist", "/pricing", "/unsubscribe",
-                 "/dealer-positioning")
+                 "/dealer-positioning", "/flows")
 HREF_RE = re.compile(r'href="(/[^"]*)"')
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input",

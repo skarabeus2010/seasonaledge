@@ -121,7 +121,7 @@ SA.i18n = (function() {
   var _skipPrefixes = ['/en/', '/blog/', '/tools/', '/rechtliches', '/disclaimer',
                        '/app/', '/umami/', 'http', 'mailto:', '#', 'javascript:',
                        '/kalender', '/profile', '/watchlist', '/pricing', '/unsubscribe',
-                       '/dealer-positioning'];
+                       '/dealer-positioning', '/flows'];
 
   function _applyNavLinks() {
     if (!_isEN) return;
