@@ -1,5 +1,5 @@
 ---
-title: "Pinning erklärt: Warum Aktienkurse am Verfallstag an Strikes „kleben""
+title: 'Pinning erklärt: Warum Aktienkurse am Verfallstag an Strikes „kleben“'
 seo_title: "Pinning & Call-Wall/Put-Wall am Optionsverfall"
 slug: pinning-call-wall-put-wall
 date: 2026-08-02
