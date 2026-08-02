@@ -35,7 +35,7 @@
 
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Dealer Positioning — Gamma / Vanna / Charm","url":"https://seasonalpha.ai/dealer-positioning","description":"Dealer-Positioning aus der Options-Chain: Markt-Gamma-Index, Zero-Gamma-Flip, Call/Put-Walls, Vanna, Charm, Skew.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Dealer Positioning","item":"https://seasonalpha.ai/dealer-positioning"}]}</script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist Gamma Exposure (GEX)?","acceptedAnswer":{"@type":"Answer","text":"GEX aggregiert das Dealer-Gamma über die Options-Chain. Positives net-GEX (long Gamma) wirkt vola-reduzierend — Händler kaufen in Dips, verkaufen in Rallyes und dämpfen so Bewegungen. Negatives net-GEX (short Gamma) wirkt vola-forcierend — Händler hedgen prozyklisch und verstärken Moves. Der Zero-Gamma-Flip ist das Kursniveau, an dem das Regime kippt."}},{"@type":"Question","name":"Was sind Call-Wall und Put-Wall?","acceptedAnswer":{"@type":"Answer","text":"Die Call-Wall ist der Strike oberhalb des Kurses mit dem größten positiven Netto-Dealer-Gamma (Widerstands-/Pinning-Referenz), die Put-Wall der Strike unterhalb mit dem größten negativen (Support-Referenz). Es sind Konzentrations-Referenzen, keine garantierten Barrieren. Die Existenz von Kurs-Pinning an Verfallstagen ist wissenschaftlich belegt (Ni, Pearson & Poteshman 2005)."}},{"@type":"Question","name":"Wie zuverlässig sind diese Zahlen?","acceptedAnswer":{"@type":"Answer","text":"Wir nutzen die naive Dealer-Konvention (Händler long Calls / short Puts) auf EOD-Daten von Yahoo. Kommerzielle Anbieter wie SpotGamma schätzen die tatsächliche Dealer-Seite mit proprietären Modellen und beziehen Intraday- und 0DTE-Daten ein — unsere Werte sind eine belastbare erste Näherung, weichen aber ab. Kein Kauf- oder Verkaufssignal."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist Gamma Exposure (GEX)?","acceptedAnswer":{"@type":"Answer","text":"GEX aggregiert das Dealer-Gamma über die Options-Chain. Positives net-GEX (long Gamma) wirkt vola-reduzierend — Händler kaufen in Dips, verkaufen in Rallyes und dämpfen so Bewegungen. Negatives net-GEX (short Gamma) wirkt vola-forcierend — Händler hedgen prozyklisch und verstärken Moves. Der Zero-Gamma-Flip ist das Kursniveau, an dem das Regime kippt."}},{"@type":"Question","name":"Was sind Call-Wall und Put-Wall?","acceptedAnswer":{"@type":"Answer","text":"Die Call-Wall ist der Strike oberhalb des Kurses mit dem größten positiven Netto-Dealer-Gamma (Widerstands-/Pinning-Referenz), die Put-Wall der Strike unterhalb mit dem größten negativen (Support-Referenz). Es sind Konzentrations-Referenzen, keine garantierten Barrieren. Die Existenz von Kurs-Pinning an Verfallstagen ist wissenschaftlich belegt (Ni, Pearson & Poteshman 2005)."}},{"@type":"Question","name":"Wie zuverlässig sind diese Zahlen?","acceptedAnswer":{"@type":"Answer","text":"Wir nutzen die naive Dealer-Konvention (Händler long Calls / short Puts) auf EOD-Daten von Yahoo. Kommerzielle Anbieter schätzen die tatsächliche Dealer-Seite mit proprietären Modellen und beziehen Intraday- und 0DTE-Daten ein — unsere Werte sind eine belastbare erste Näherung, weichen aber ab. Kein Kauf- oder Verkaufssignal."}}]}</script>
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/landing/css/app.css">
@@ -85,7 +85,7 @@
     <p class="page-caption" id="asof">Dealer-Positioning aus der Options-Chain &middot; net-GEX, Zero-Gamma-Flip, Call/Put-Walls, Vanna &amp; Charm, Skew.</p>
     <div class="disc">
       <b>Ehrlicher Hinweis:</b> Naive Dealer-Konvention (Händler long Calls / short Puts) auf <b>EOD-Daten</b> (Yahoo).
-      Kommerzielle Anbieter (SpotGamma) nutzen proprietäre Inventory-Modelle inkl. Intraday/0DTE &mdash; unsere Werte
+      Kommerzielle Anbieter nutzen proprietäre Inventory-Modelle inkl. Intraday/0DTE &mdash; unsere Werte
       sind eine belastbare <b>erste Näherung</b>, keine echten Dealer-Bücher. Walls sind Konzentrations-<i>Referenzen</i>,
       keine Barrieren. <b>Kein Kauf-/Verkaufssignal, keine Anlageberatung.</b> Nur US-gelistete Underlyings.
     </div>
@@ -147,8 +147,8 @@
         <li>Baltussen, Terstegge &amp; Whelan (2024) &mdash; +18,5&nbsp;bps am 3.&nbsp;Freitag, charm-getrieben.</li>
       </ul>
       <h4>Grenzen</h4>
-      <p>Naive Dealer-Heuristik ≠ Inventory-Modell (SpotGamma/SqueezeMetrics). EOD, nicht intraday; 0DTE unterrepräsentiert.
-      Sticky-strike beim Flip-Sweep. DAX/`.DE` liefert keine Yahoo-Chain (nur US-gelistete Underlyings).</p>
+      <p>Naive Dealer-Heuristik ≠ proprietäres Inventory-Modell. EOD, nicht intraday; 0DTE unterrepräsentiert.
+      Sticky-strike beim Flip-Sweep. Abgedeckt sind US-gelistete Underlyings aus der Yahoo-Options-Chain.</p>
     </details>
   </main>
 

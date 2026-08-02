@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Strukturelle Markt-Flows &mdash; Rebalancing, Buyback-Blackout, CTA, Vol-Control | SeasonAlpha</title>
+  <meta name="description" content="Die mechanischen, nicht-fundamentalen Kapitalströme, die den Markt bewegen: Index-Rebalancing-Kalender, Buyback-Blackout-Saison, CTA-Positionierung (COT) und Vol-Control-Leverage. Ehrlich als Proxy gelabelt, kein Signal.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/flows">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/flows">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/flows">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/flows">
+  <meta property="og:title" content="Strukturelle Markt-Flows &mdash; Rebalancing, Buyback-Blackout, CTA, Vol-Control | SeasonAlpha">
+  <meta property="og:description" content="Die mechanischen Kapitalströme hinter dem Markt: Rebalancing-Kalender, Buyback-Blackout-Saison, CTA-Positionierung (COT), Vol-Control-Leverage.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Strukturelle Markt-Flows | SeasonAlpha">
+  <meta name="twitter:description" content="Rebalancing-Kalender, Buyback-Blackout-Saison, CTA-Positionierung (COT), Vol-Control-Leverage &mdash; die mechanischen Flows hinter dem Markt.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Strukturelle Markt-Flows","url":"https://seasonalpha.ai/flows","description":"Index-Rebalancing-Kalender, Buyback-Blackout-Saison, CTA-Positionierung (COT) und Vol-Control-Leverage — die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Strukturelle Markt-Flows","item":"https://seasonalpha.ai/flows"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was sind strukturelle Markt-Flows?","acceptedAnswer":{"@type":"Answer","text":"Strukturelle Flows sind mechanische, nicht-fundamentale Kauf- und Verkaufsströme, die nicht aus einer Meinung über den fairen Wert entstehen, sondern aus Regeln und Zwängen: Index-Fonds müssen zu fixen Terminen umschichten (Rebalancing), Firmen dürfen vor Earnings keine eigenen Aktien zurückkaufen (Buyback-Blackout), Trendfolge-Fonds skalieren mit dem Trend (CTAs), Vol-Control-Fonds mit der realisierten Volatilität. Diese Flows erzeugen wiederkehrende, teils saisonale Muster."}},{"@type":"Question","name":"Was ist der Buyback-Blackout?","acceptedAnswer":{"@type":"Answer","text":"Rund 4 bis 6 Wochen vor der Quartalsveröffentlichung dürfen Unternehmen aus regulatorischen Gründen typischerweise keine eigenen Aktien zurückkaufen (Blackout-Fenster). Aktienrückkäufe sind ein struktureller Dauer-Käufer am Markt; fällt dieser Bid im Blackout weg, ist der Markt dünner und potenziell fragiler. Aggregiert über viele Firmen entsteht eine Saison-Kurve, die zu Beginn jeder Earnings-Saison (Mitte Januar, April, Juli, Oktober) ihre Hochpunkte hat."}},{"@type":"Question","name":"Ist die CTA-/COT-Positionierung ein Echtzeit-Bild?","acceptedAnswer":{"@type":"Answer","text":"Nein. Die CFTC-COT-Daten (Commitments of Traders) sind eine wöchentliche Näherung mit rund drei Tagen Meldeverzug: Stichtag ist Dienstag, veröffentlicht wird am Freitag. Sie zeigen die Positionierung von Leveraged Funds und Asset-Managern im E-mini-S&P-500-Future — eine Näherung für systematische Trendfolger (CTAs), nicht deren echte Bücher. Kein Live-Signal."}},{"@type":"Question","name":"Sind diese Flows ein Kaufsignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Alle Panels zeigen strukturellen, nicht-fundamentalen Kontext und sind bewusst als Proxy gelabelt. Sie erklären, warum bestimmte Kalenderfenster mechanisch stärker oder schwächer sind — sie sind keine Kauf- oder Verkaufsempfehlung und keine Anlageberatung."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem;line-height:1.55}
+    .disc{background:rgba(232,168,32,.07);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.6rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .panel{margin-top:2.25rem}
+    .panel h2{font-family:var(--f-d);font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:.15rem}
+    .panel h2 .em{margin-right:.4rem}
+    .panel .sub{color:var(--muted);font-size:.8rem;margin-bottom:.85rem;line-height:1.55}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem}
+    .grid-hero{display:grid;grid-template-columns:1fr 1.7fr;gap:1.1rem;align-items:stretch}
+    @media(max-width:820px){.grid-hero{grid-template-columns:1fr}}
+    .hero{border-radius:16px;padding:1.4rem;background:#0c1420;border:1px solid var(--border);display:flex;flex-direction:column;justify-content:center}
+    .hero .lbl{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+    .hero .big{font-family:var(--f-d);font-weight:800;font-size:2.4rem;line-height:1.05;margin:.25rem 0;color:var(--accent)}
+    .hero .nm{font-weight:700;font-size:1rem;color:var(--text)}
+    .hero .dt{color:var(--dim);font-size:.82rem;margin-top:.35rem}
+    .kpis{display:flex;gap:.6rem;flex-wrap:wrap;margin:.2rem 0 .9rem}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;min-width:120px}
+    .kpi .k{color:var(--muted);font-size:.66rem;text-transform:uppercase;letter-spacing:.05em}
+    .kpi .v{font-family:var(--f-d);font-weight:800;font-size:1.25rem;line-height:1.2;margin-top:.15rem}
+    .ev-list{width:100%;border-collapse:collapse;font-size:.82rem}
+    .ev-list td{padding:.5rem .6rem;border-bottom:1px solid rgba(255,255,255,.05)}
+    .ev-list td:last-child{text-align:right;color:var(--muted);font-family:var(--f-m);font-size:.78rem}
+    .ev-list tr:hover td{background:rgba(255,255,255,.02)}
+    .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:.66rem;font-weight:700}
+    .b-sp{background:rgba(232,168,32,.16);color:var(--accent)}
+    .b-ru{background:rgba(91,155,213,.18);color:#7fb2e6}
+    .b-long{background:rgba(48,232,120,.16);color:#30e878}
+    .b-short{background:rgba(255,77,87,.16);color:#ff4d5e}
+    .b-neutral{background:rgba(160,160,160,.16);color:#b8b8b8}
+    .pos{color:#30e878}.neg{color:#ff4d5e}
+    .note{color:var(--dim);font-size:.74rem;line-height:1.55;margin-top:.6rem;border-top:1px solid var(--border);padding-top:.55rem}
+    .xlinks{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem}
+    .xlinks a{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.8rem;color:var(--text);text-decoration:none;transition:border-color .2s}
+    .xlinks a:hover{border-color:var(--accent)}
+    details.method{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-top:2rem}
+    details.method summary{cursor:pointer;font-weight:700;color:var(--text)}
+    details.method h4{color:var(--accent);margin:1rem 0 .35rem;font-size:.9rem}
+    details.method p,details.method li{color:var(--dim);font-size:.83rem;line-height:1.6}
+    details.method code{font-family:var(--f-m);color:var(--accent);font-size:.8rem}
+    .refs li{margin-bottom:.3rem}
+    .cta-gamma{background:linear-gradient(135deg,rgba(232,168,32,.1),rgba(232,168,32,.03));border:1px solid rgba(232,168,32,.25);border-radius:14px;padding:1.1rem 1.3rem;margin-top:2rem}
+    .cta-gamma b{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container" style="padding-top:1.5rem">
+    <div id="error-banner" class="error-banner"></div>
+    <h1 class="page-title"><b>Strukturelle</b> Markt-Flows</h1>
+    <p class="page-caption" id="asof">
+      Die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt &mdash; wer <i>muss</i> kaufen oder
+      verkaufen, unabhängig von einer Meinung über den fairen Wert. Vier Perspektiven: Index-Rebalancing,
+      Buyback-Blackout, CTA-Positionierung und Vol-Control-Leverage.
+    </p>
+    <div class="disc">
+      <b>Ehrlicher Hinweis:</b> Alle Panels zeigen <b>strukturellen, nicht-fundamentalen</b> Kontext und sind bewusst
+      als <b>Proxy</b> aus freien Datenquellen gebaut (Details je Panel unten). Sie erklären, warum manche
+      Kalenderfenster mechanisch stärker/schwächer sind &mdash; <b>kein Kauf-/Verkaufssignal, keine Anlageberatung.</b>
+    </div>
+
+    <!-- Panel A — Index-Rebalancing-Kalender -->
+    <section class="panel" id="p-rebal">
+      <h2><span class="em">⚖️</span>Index-Rebalancing-Kalender</h2>
+      <p class="sub">An fixen Terminen zwingen Index-Fonds zu mechanischem Kauf/Verkauf, um dem neuen Index-Gewicht
+        zu folgen. Der <b>S&amp;P-Quartals-Rebalance</b> fällt auf denselben 3. Freitag (Mär/Jun/Sep/Dez) wie
+        <b>Triple Witching</b>; die <b>Russell Reconstitution</b> ist das volumenstärkste Einzel-Event des Jahres.</p>
+      <div class="grid-hero">
+        <div class="hero">
+          <div class="lbl">Nächstes Rebalancing in</div>
+          <div class="big" id="rb-count">&mdash;</div>
+          <div class="nm" id="rb-name">lade&hellip;</div>
+          <div class="dt" id="rb-date"></div>
+        </div>
+        <div class="card" style="overflow:auto;max-height:320px">
+          <table class="ev-list"><tbody id="rb-body">
+            <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1.2rem">Lade Termine&hellip;</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <p class="note" id="rb-note"></p>
+    </section>
+
+    <!-- Panel B — Buyback-Blackout -->
+    <section class="panel" id="p-buyback">
+      <h2><span class="em">🔒</span>Buyback-Blackout-Saison</h2>
+      <p class="sub">Vor Earnings dürfen Firmen typischerweise keine eigenen Aktien zurückkaufen. Aktienrückkäufe
+        sind ein struktureller Dauer-Bid &mdash; fällt er im Blackout weg, ist der Markt dünner. Die Kurve zeigt den
+        Anteil des US-Kern-Universums im Blackout (Peaks zu Beginn jeder Earnings-Saison).</p>
+      <div class="kpis" id="bb-kpis"></div>
+      <div class="card"><div id="bb-chart" style="min-height:300px"></div></div>
+      <p class="note" id="bb-note"></p>
+    </section>
+
+    <!-- Panel D — COT Managed-Money -->
+    <section class="panel" id="p-cot">
+      <h2><span class="em">📈</span>CTA-Positionierung (COT-Proxy)</h2>
+      <p class="sub">Systematische Trendfolger (CTAs) sind long im Aufwärts-, short im Abwärtstrend; ihr Umschalten
+        verstärkt Bewegungen. Die freie Näherung: CFTC-COT-Netto-Position von <b>Leveraged Funds</b> und
+        <b>Asset-Managern</b> im E-mini-S&amp;P-500 &mdash; plus eine simple Trend-Ampel (50/200-Tage-SMA).</p>
+      <div class="kpis" id="cot-kpis"></div>
+      <div class="card"><div id="cot-chart" style="min-height:300px"></div></div>
+      <p class="note" id="cot-note"></p>
+    </section>
+
+    <!-- Panel E — Vol-Control-Leverage -->
+    <section class="panel" id="p-vol">
+      <h2><span class="em">🎚️</span>Vol-Control-Leverage (Modell-Proxy)</h2>
+      <p class="sub">Target-Vol- und Risk-Parity-Fonds skalieren ihr Exposure invers zur realisierten Volatilität:
+        Vola rauf &rarr; mechanisches De-Leveraging (Verkäufe verstärken den Selloff), Vola-Beruhigung &rarr;
+        Re-Leveraging (Bid). Das implizierte Leverage = Ziel-Vol (15&nbsp;%) / realisierte 20-Tage-Vola des S&amp;P&nbsp;500.</p>
+      <div class="kpis" id="vc-kpis"></div>
+      <div class="card"><div id="vc-chart" style="min-height:300px"></div></div>
+      <p class="note" id="vc-note"></p>
+    </section>
+
+    <!-- Cross-Link zu Dealer-Gamma -->
+    <div class="cta-gamma">
+      <b>Der fünfte Flow: Dealer-Gamma.</b> Die Options-Absicherung der Market Maker (Gamma, Vanna, Charm) ist der
+      am direktesten kurstreibende strukturelle Flow &mdash; er hat eine eigene Seite:
+      <a href="/dealer-positioning" style="color:var(--accent);font-weight:700">Dealer Positioning &rarr;</a>
+      <div class="xlinks">
+        <a href="/opex">OPEX &amp; Triple Witching</a>
+        <a href="/earnings-kalender">Earnings-Effekt</a>
+        <a href="/monatswechsel">Turn-of-Month</a>
+        <a href="/crash-fruehwarnung">Crash-Frühwarnung</a>
+      </div>
+    </div>
+
+    <details class="method">
+      <summary>Methodik, Datenquellen &amp; ehrliche Grenzen</summary>
+      <h4>Panel A — Index-Rebalancing</h4>
+      <p>Reine Kalender-Arithmetik. <b>S&amp;P DJI</b> rebalanciert quartalsweise am 3. Freitag (Mär/Jun/Sep/Dez) =
+      Triple Witching. <b>FTSE Russell</b> rekonstituiert einmal jährlich, wirksam nach Schluss am letzten Freitag im
+      Juni. Die <i>Größe</i> der Umschichtung schätzen wir nicht (dafür bräuchte es Index-Gewichte aus Bezahl-Feeds).</p>
+      <h4>Panel B — Buyback-Blackout</h4>
+      <p>Doppel-Proxy: nächste Earnings aus der Quartals-Kadenz (~91&nbsp;T) + typischem Ankündigungs-Versatz
+      geschätzt; Blackout-Fenster = Ankündigung −35 bis +2&nbsp;Tage (Standard-Heuristik). Gleichgewichtet über das
+      US-Kern-Universum (aus <code>earnings_events</code>), nicht marktkapital-gewichtet. <b>Autorisierung ≠ Ausführung</b>.</p>
+      <h4>Panel D — COT / CTA</h4>
+      <p>CFTC „Traders in Financial Futures", wöchentlich, freie Socrata-API. Netto = Long − Short der Leveraged Funds
+      bzw. Asset-Manager im E-mini-S&amp;P-500. <b>COT ≠ echte CTA-Position</b>, ~3&nbsp;Tage Meldeverzug. Trend-Overlay
+      = 50/200-Tage-SMA des <code>^GSPC</code>.</p>
+      <h4>Panel E — Vol-Control</h4>
+      <p>Modell-Proxy: Ziel-Vol (15&nbsp;%) / realisierte 20-Tage-Vola (annualisiert) des S&amp;P&nbsp;500, gekappt bei
+      150&nbsp;%. Zeigt die <b>Richtung</b> des De-/Re-Leveragings, nicht die $-Menge oder echte Fonds-Bücher.</p>
+      <h4>Wissenschaftliche Einordnung</h4>
+      <ul class="refs">
+        <li>Baltussen, Terstegge &amp; Whelan (2024) &mdash; strukturelle Derivate-/Verfall-Effekte am S&amp;P&nbsp;500.</li>
+        <li>Barbon &amp; Buraschi &mdash; „Gamma Fragility": Positionierung/Hedging ↔ Momentum vs. Reversal.</li>
+        <li>CFTC Commitments of Traders (TFF) &mdash; offizielle wöchentliche Positionierungs-Daten.</li>
+      </ul>
+      <h4>Übergreifend</h4>
+      <p>Alle Panels = strukturelle, nicht-fundamentale Flows. Freie Datenquellen, als Proxy gelabelt.
+      <b>Kein Kauf-/Verkaufssignal, keine Anlageberatung.</b></p>
+    </details>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script>
+  !function(){
+    var GREEN='#30e878',RED='#ff4d5e',ACC='#e8a820',MUT='#8a8270',BLUE='#7fb2e6';
+    function fetchJSON(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    function fmtInt(n){return (n>=0?'+':'')+Math.round(n).toLocaleString('de-DE')}
+    function panelFail(id,msg){var el=document.getElementById(id);if(el)el.innerHTML='<p style="color:var(--muted);padding:1.4rem;text-align:center;font-size:.85rem">'+msg+'</p>';}
+    function baseChart(h){return{chart:{height:h||300,background:'transparent',toolbar:{show:false},animations:{enabled:false},fontFamily:'DM Sans'},theme:{mode:'dark'},grid:{borderColor:'rgba(255,255,255,.06)'},dataLabels:{enabled:false},legend:{labels:{colors:MUT}},tooltip:{theme:'dark'}};}
+
+    // ── Panel A: Rebalancing ────────────────────────────────────────────────
+    function renderRebal(d){
+      var nx=d.next;
+      if(nx){
+        document.getElementById('rb-count').textContent=nx.trading_days_until+' HT';
+        document.getElementById('rb-name').textContent=nx.emoji+' '+nx.name;
+        var dd=new Date(nx.date);
+        document.getElementById('rb-date').textContent=dd.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+      }
+      var b=document.getElementById('rb-body');
+      b.innerHTML=(d.events||[]).slice(0,10).map(function(e){
+        var cls=e.type==='russell_recon'?'b-ru':'b-sp';
+        var dd=new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'});
+        return '<tr><td><span class="badge '+cls+'">'+(e.type==='russell_recon'?'Russell':'S&P')+'</span> '+e.name+'</td>'+
+               '<td>'+dd+'</td><td>in '+e.trading_days_until+' HT</td></tr>';
+      }).join('');
+      document.getElementById('rb-note').textContent=d.note||'';
+    }
+
+    // ── Panel B: Buyback-Blackout ───────────────────────────────────────────
+    function renderBuyback(d){
+      var s=d.series||[]; if(!s.length){panelFail('bb-chart','Blackout-Daten folgen (Nightly-Cron).');return;}
+      var cats=s.map(function(p){return p.date}), data=s.map(function(p){return Math.round(p.pct_in_blackout*1000)/10});
+      var lt=d.latest||s[s.length-1];
+      var peak=s.reduce(function(a,p){return p.pct_in_blackout>a.pct_in_blackout?p:a},s[0]);
+      document.getElementById('bb-kpis').innerHTML=
+        kpi('Heute im Blackout',(Math.round(lt.pct_in_blackout*100))+'%',lt.pct_in_blackout>=0.5?'neg':'')+
+        kpi('Firmen betroffen',lt.n_in_blackout+' / '+d.n_universe,'')+
+        kpi('Saison-Peak',(Math.round(peak.pct_in_blackout*100))+'%','neg');
+      var opts=Object.assign(baseChart(300),{
+        series:[{name:'% im Blackout',data:data}],
+        chart:Object.assign(baseChart(300).chart,{type:'area'}),
+        colors:[ACC],
+        fill:{type:'gradient',gradient:{shadeIntensity:.4,opacityFrom:.5,opacityTo:.05}},
+        stroke:{curve:'smooth',width:2},
+        xaxis:{type:'datetime',categories:cats,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return Math.round(v)+'%'}},max:100,min:0},
+        annotations:{xaxis:[{x:new Date(d.today).getTime(),borderColor:'#fff',label:{text:'heute',style:{background:'#000',color:'#fff',fontSize:'10px'}}}]},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},y:{formatter:function(v){return v+' %'}}}
+      });
+      var el=document.getElementById('bb-chart');el.innerHTML='';new ApexCharts(el,opts).render();
+      var ent=(d.entering_this_week||[]).map(function(e){return e.ticker});
+      document.getElementById('bb-note').innerHTML=(ent.length?('<b>Neu im Blackout diese Woche:</b> '+ent.join(', ')+'. '):'')+(d.note||'');
+    }
+
+    // ── Panel D: COT ────────────────────────────────────────────────────────
+    function renderCot(d){
+      var s=d.series||[]; if(!s.length){panelFail('cot-chart','COT-Daten folgen (wöchentlicher Cron).');return;}
+      var cats=s.map(function(p){return p.date});
+      var lev=s.map(function(p){return p.lev_funds_net}), am=s.map(function(p){return p.asset_mgr_net});
+      var lt=d.latest||s[s.length-1], bias=(d.trend&&d.trend.bias)||'neutral';
+      var biasCls=bias==='long'?'b-long':(bias==='short'?'b-short':'b-neutral');
+      document.getElementById('cot-kpis').innerHTML=
+        '<div class="kpi"><div class="k">Trend-Bias (SMA)</div><div class="v"><span class="badge '+biasCls+'" style="font-size:.9rem;padding:2px 10px">'+bias.toUpperCase()+'</span></div></div>'+
+        kpi('Leveraged Funds net',fmtInt(lt.lev_funds_net),lt.lev_funds_net>=0?'pos':'neg')+
+        kpi('Asset-Manager net',fmtInt(lt.asset_mgr_net),lt.asset_mgr_net>=0?'pos':'neg');
+      var opts=Object.assign(baseChart(300),{
+        series:[{name:'Leveraged Funds (CTA-Proxy)',data:lev},{name:'Asset-Manager',data:am}],
+        chart:Object.assign(baseChart(300).chart,{type:'line'}),
+        colors:[ACC,BLUE],
+        stroke:{curve:'straight',width:2},
+        xaxis:{type:'datetime',categories:cats,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return (v/1000).toFixed(0)+'k'}},title:{text:'Netto-Kontrakte',style:{color:MUT}}},
+        annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.25)',strokeDashArray:4}]},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},y:{formatter:function(v){return Math.round(v).toLocaleString('de-DE')+' Kontrakte'}}}
+      });
+      var el=document.getElementById('cot-chart');el.innerHTML='';new ApexCharts(el,opts).render();
+      document.getElementById('cot-note').textContent=d.note||'';
+    }
+
+    // ── Panel E: Vol-Control ────────────────────────────────────────────────
+    function renderVol(d){
+      var s=d.series||[]; if(!s.length){panelFail('vc-chart','Vol-Control-Daten folgen (Nightly-Cron).');return;}
+      var cats=s.map(function(p){return p.date}), lev=s.map(function(p){return p.implied_leverage});
+      var lt=d.latest||s[s.length-1], vt=d.vix_term;
+      var deLev=lt.implied_leverage<1;
+      document.getElementById('vc-kpis').innerHTML=
+        kpi('Impliziertes Leverage',lt.implied_leverage.toFixed(2)+'x',deLev?'neg':'pos')+
+        kpi('Realisierte Vola (20T)',(Math.round(lt.realized_vol_20d*1000)/10)+'%','')+
+        (vt?('<div class="kpi"><div class="k">VIX-Term (3M/1M)</div><div class="v">'+vt.ratio_3m_1m.toFixed(2)+' <span style="font-size:.7rem;color:var(--muted)">'+(vt.structure==='contango'?'Contango':'Backwardation')+'</span></div></div>'):'');
+      var opts=Object.assign(baseChart(300),{
+        series:[{name:'Impliziertes Leverage',data:lev.map(function(v){return Math.round(v*1000)/1000})}],
+        chart:Object.assign(baseChart(300).chart,{type:'area'}),
+        colors:[GREEN],
+        fill:{type:'gradient',gradient:{shadeIntensity:.4,opacityFrom:.35,opacityTo:.03}},
+        stroke:{curve:'smooth',width:2},
+        xaxis:{type:'datetime',categories:cats,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false},tickAmount:8},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return v.toFixed(1)+'x'}}},
+        annotations:{yaxis:[{y:1,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,label:{text:'neutral (1.0x)',style:{background:'#000',color:MUT,fontSize:'10px'}}}]},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},y:{formatter:function(v){return v.toFixed(2)+'x Leverage'}}}
+      });
+      var el=document.getElementById('vc-chart');el.innerHTML='';new ApexCharts(el,opts).render();
+      document.getElementById('vc-note').textContent=d.note||'';
+    }
+
+    function kpi(k,v,cls){return '<div class="kpi"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>';}
+
+    function load(url,fn,failId,msg){fetchJSON(url).then(fn).catch(function(){panelFail(failId,msg);});}
+    function init(){
+      load('/landing/data/flows_rebalancing.json',renderRebal,'rb-body','Rebalancing-Termine folgen.');
+      load('/landing/data/buyback_blackout.json',renderBuyback,'bb-chart','Blackout-Daten folgen (Nightly-Cron).');
+      load('/landing/data/cot_positioning.json',renderCot,'cot-chart','COT-Daten folgen (wöchentlicher Cron).');
+      load('/landing/data/volcontrol_proxy.json',renderVol,'vc-chart','Vol-Control-Daten folgen (Nightly-Cron).');
+    }
+    if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+  }();
+  </script>
+</body>
+</html>

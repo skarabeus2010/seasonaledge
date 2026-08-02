@@ -1,0 +1,29 @@
+name: Flows Update (Strukturelle Markt-Flows)
+
+on:
+  schedule:
+    # 22:40 UTC (Mo-Fr) — nach US-Boersenschluss. Rebalancing/Buyback aendern sich taeglich
+    # (Countdown/Saison-Fenster), Vol-Control aus ^GSPC EOD, COT woechentlich (Fr ~20:30 UTC,
+    # taegliches Re-Fetch ist harmlos). Schreibt landing/data/{flows_rebalancing,buyback_blackout,
+    # cot_positioning,volcontrol_proxy}.json fuer /flows.
+    - cron: '40 22 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Build flow panels on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            docker exec seasonalpha-app python3 scripts/build_flows_rebalancing.py 2>&1 | tail -3
+            docker exec seasonalpha-app python3 scripts/build_volcontrol_proxy.py 2>&1 | tail -3
+            docker exec seasonalpha-app python3 scripts/build_cot_positioning.py 2>&1 | tail -3
+            docker exec seasonalpha-app python3 scripts/build_buyback_blackout.py 2>&1 | tail -3
+            echo "Flows update done: $(date)"
