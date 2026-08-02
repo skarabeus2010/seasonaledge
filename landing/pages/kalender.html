@@ -27,7 +27,10 @@
 
     /* ── Auth Gate ──────────────────────────────────────────────────── */
     #kal-auth-gate {
-      display: none; flex-direction: column; align-items: center;
+      /* Default SICHTBAR: nie leere Seite. JS versteckt den Gate nur, wenn ein
+         eingeloggter User bestätigt ist (_onAuthed). Fällt Auth/Supabase aus,
+         bleibt so der Login-Hinweis stehen statt eines blanken Screens. */
+      display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 1.25rem;
       min-height: 60vh; text-align: center; padding: 2rem;
     }
