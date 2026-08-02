@@ -59,7 +59,8 @@ except Exception:
 # Link-Rewrite: diese Prefixe NICHT auf /en/ umschreiben
 SKIP_PREFIXES = ("/en/", "/blog/", "/tools/", "/rechtliches", "/disclaimer",
                  "/app/", "/umami/", "http", "mailto:", "#", "javascript:",
-                 "/kalender", "/profile", "/watchlist", "/pricing", "/unsubscribe")
+                 "/kalender", "/profile", "/watchlist", "/pricing", "/unsubscribe",
+                 "/dealer-positioning")
 HREF_RE = re.compile(r'href="(/[^"]*)"')
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input",
