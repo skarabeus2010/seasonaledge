@@ -7,7 +7,7 @@ category: education
 tags: [dealer-positioning, gamma-exposure, gex, vanna, charm, opex, zero-gamma, call-wall, put-wall, market-maker, saisonalitaet, optionsverfall]
 description: "Dealer Positioning einfach erklärt: Gamma, Vanna und Charm zeigen, warum der OPEX-Effekt existiert. Aus dem Saison-Muster wird der Mechanismus dahinter."
 ticker: SPY
-status: draft
+status: published
 ---
 
 <!--
