@@ -101,9 +101,9 @@
         <table class="gx-table">
           <thead><tr>
             <th>Ticker</th><th>Spot</th><th>Regime</th><th>GEX<br>Mrd/1%</th><th>Vanna<br>Mio/pt</th>
-            <th>Charm<br>Mio/Tag</th><th>Zero&#8209;&#947;</th><th>Call&#8209;W</th><th>Put&#8209;W</th><th>Skew</th>
+            <th>Charm<br>Mio/Tag</th><th>Zero&#8209;&#947;</th><th>Call&#8209;W</th><th>Put&#8209;W</th><th title="Absolute-Gamma-Strike = stärkster Pin; % = Abstand zum Spot">Pin<br>abs&#8209;&#947;</th><th>Skew</th>
           </tr></thead>
-          <tbody id="gx-tbody"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:1.5rem">Lade Daten&hellip;</td></tr></tbody>
+          <tbody id="gx-tbody"><tr><td colspan="11" style="text-align:center;color:var(--muted);padding:1.5rem">Lade Daten&hellip;</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -119,6 +119,13 @@
       </span>
     </div>
     <div class="card" style="padding:1rem"><div id="chart" style="min-height:380px"></div></div>
+    <p class="page-caption" style="margin-top:.6rem">
+      <b>Als Liquiditäts-Karte lesen:</b> grüne Balken (positives Netto-Gamma) = Dealer stabilisieren dort
+      (Support/Widerstand), rote (negatives) = sie verstärken Bewegungen. Der höchste Balken (Absolute-Gamma,
+      Spalte „Pin") ist der stärkste <b>Pinning</b>-Magnet — Kurse „kleben" an Verfallstagen oft an solchen
+      High-Gamma-Strikes (Ni, Pearson &amp; Poteshman 2005, JFE). <span style="color:var(--accent)">Gold hinterlegte
+      Pin-Werte</span> = Spot < 1&nbsp;% vom Pin entfernt (Pin-Zone). ⚠ Naive Heuristik, EOD, keine Barriere/Signal.
+    </p>
 
     <details class="method">
       <summary>Methodik, Formeln &amp; wissenschaftliche Fundierung</summary>
@@ -177,12 +184,14 @@
       b.innerHTML=rows.map(function(o){
         var lg=o.regime==='long_gamma';
         var sk=o.skew&&o.skew.skew_pts!=null?o.skew.skew_pts.toFixed(1):'&mdash;';
+        var pin=o.abs_gamma, pd=(pin!=null&&o.spot)?((pin-o.spot)/o.spot*100):null;
+        var pinCell=pin!=null?'<td'+(pd!=null&&Math.abs(pd)<1?' style="background:rgba(232,168,32,.16)" title="Pin-Zone: Spot nah am staerksten Gamma-Strike"':'')+'>'+pin+' <span style="color:var(--muted);font-size:.68rem">'+(pd!=null?(pd>=0?'+':'')+pd.toFixed(1):'')+'%</span></td>':'<td>&mdash;</td>';
         return '<tr><td><b>'+o.ticker+'</b></td><td>'+(o.spot!=null?o.spot:'')+'</td>'+
           '<td><span class="badge '+(lg?'b-long':'b-short')+'">'+(lg?'long':'short')+'</span></td>'+
           '<td class="'+(o.net_gex_usd_bn>=0?'pos':'neg')+'">'+num(o.net_gex_usd_bn,2)+'</td>'+
           '<td>'+num(o.net_vanna_usd_mn,0)+'</td><td class="'+(o.net_charm_usd_mn_per_day>=0?'pos':'neg')+'">'+num(o.net_charm_usd_mn_per_day,0)+'</td>'+
           '<td>'+(o.zero_gamma!=null?o.zero_gamma:'&mdash;')+'</td><td class="pos">'+(o.call_wall!=null?o.call_wall:'&mdash;')+'</td>'+
-          '<td class="neg">'+(o.put_wall!=null?o.put_wall:'&mdash;')+'</td><td>'+sk+'</td></tr>';
+          '<td class="neg">'+(o.put_wall!=null?o.put_wall:'&mdash;')+'</td>'+pinCell+'<td>'+sk+'</td></tr>';
       }).join('');
     }
     function renderChart(){
