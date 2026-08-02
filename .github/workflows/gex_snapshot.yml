@@ -1,0 +1,25 @@
+name: GEX Snapshot (Dealer Positioning)
+
+on:
+  schedule:
+    # 22:15 UTC (Mo-Fr) — nach US-Boersenschluss (21:00 UTC). Erfasst den Tages-Chain-Stand
+    # (Spot + IV); OI ist OCC-Settlement des Vortags. Fuettert /dealer-positioning + baut
+    # taeglich die proprietaere GEX-Historie (landing/data/gex_history/<date>.json) auf.
+    - cron: '15 22 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: GEX snapshot on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            docker exec seasonalpha-app python3 scripts/snapshot_gex.py 2>&1 | tail -30
+            echo "GEX snapshot done: $(date)"
