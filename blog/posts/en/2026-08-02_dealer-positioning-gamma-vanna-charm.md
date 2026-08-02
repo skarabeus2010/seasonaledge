@@ -47,7 +47,7 @@ The most important metric is the aggregated net gamma across all open options �
 
 The tipping point between the two regimes is the **zero-gamma flip**: the price level at which net gamma switches sign. If spot is near the flip, the regime can tip at any time — an important warning signal for heightened fragility.
 
-This two-regime logic is not our invention. The practitioner term "GEX" comes from the SqueezeMetrics white paper (2016). Academically, the sign regime is backed by **"Gamma Fragility" by Barbon & Buraschi (2021)**: they show that aggregate dealer gamma imbalances explain intraday momentum (under negative gamma) and reversal (under positive gamma) — and that the effect is strongest in illiquid conditions.
+This two-regime logic is not our invention. The practitioner term "GEX" comes from an industry white paper (2016). Academically, the sign regime is backed by **"Gamma Fragility" by Barbon & Buraschi (2021)**: they show that aggregate dealer gamma imbalances explain intraday momentum (under negative gamma) and reversal (under positive gamma) — and that the effect is strongest in illiquid conditions.
 
 ## Call wall, put wall and the strongest pin
 
@@ -82,9 +82,9 @@ There are many gamma providers, and there are many seasonality sites. **But nobo
 
 GEX providers show the flow in the now. Seasonality sites show the calendar pattern on average. SeasonAlpha has both — plus an **exchange-accurate calendar** for OPEX, triple witching, VIXpiration and the trading-day-of-month (TDOM). That lets us say *why* a seasonal pattern exists, instead of just showing it.
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — Gamma exposure by strike: green = dealers stabilise (support), red = destabilising](dealer-positioning-gamma-vanna-charm/chart-gamma-by-strike-spy.png)
 
-The chart shows the typical yearly path of the SPY over 20 years (normalized returns, each year starts at 100). That is the seasonal scaffold. Dealer positioning adds the causal layer beneath it: where the calendar marks monthly expiry dates, charm and vanna provide the mechanical explanation for the recurring pre-OPEX drift — and for the volatility spikes afterward.
+The chart shows the **gamma exposure of SPY by strike** — exactly what our dealer positioning page computes daily. Green bars mark strikes where dealer hedging is stabilising (price gets pulled in), red ones destabilising. Where the calendar marks monthly expiry dates, gamma, charm and vanna provide the mechanical explanation for the recurring pre-OPEX drift — and for the volatility spikes afterward.
 
 That is how "pattern" becomes "mechanism". For retail investors it means: you not only see *that* a phase is statistically notable, you understand the structural cause behind it — and can better judge when a pattern is robust and when macro events override it.
 
@@ -93,9 +93,8 @@ That is how "pattern" becomes "mechanism". For retail investors it means: you no
 Dealer positioning is a YMYL topic (Your Money or Your Life). So we are deliberately transparent here, rather than faking precision:
 
 - **We use a naive dealer heuristic.** Assumption: dealers are long calls and short puts. This is a proven first approximation for index gamma, but **not actual knowledge of dealer books**.
-- **We compute on EOD data from Yahoo** (open interest and implied volatility at the close). Providers like SpotGamma or SqueezeMetrics use proprietary inventory models with intraday and 0DTE data. **Our numbers differ from theirs** — they are a solid approximation, not identical.
+- **We compute on EOD data from Yahoo** (open interest and implied volatility at the close). Commercial providers use proprietary inventory models with intraday and 0DTE data. **Our numbers differ from theirs** — they are a solid approximation, not identical.
 - **Walls are references, not guarantees.** No buy or sell signal, no investment advice.
-- **US-listed underlyings only.** For the DAX, `^GDAXI` or German stocks with a `.DE` suffix, Yahoo provides no option chain — there is no gamma picture there.
 
 These limits are not a flaw but part of the method. Anyone taking dealer positioning seriously needs to know how reliable the underlying data is.
 
@@ -127,11 +126,7 @@ No. They are reference strikes with the highest hedging activity, where prices r
 
 Because dealers who are net short puts have to buy back their short hedges due to time decay (charm) and falling volatility (vanna). That creates mechanical buying pressure into the third Friday. Studies such as Baltussen et al. (2024) document the effect at around 18.5 basis points.
 
-### Can I see dealer positioning for the DAX?
-
-No. Our data source only provides an option chain for US-listed underlyings. For the DAX, `^GDAXI` or German stocks with a `.DE` suffix there is no gamma picture. Use SPY or QQQ as a liquid reference for the broad market.
-
-### Are your numbers the same as SpotGamma's?
+### Are your numbers the same as commercial providers's?
 
 No. We use a naive dealer heuristic on EOD data, not proprietary inventory models with intraday and 0DTE flows. Our values are a solid approximation for the overall picture but differ in detail.
 

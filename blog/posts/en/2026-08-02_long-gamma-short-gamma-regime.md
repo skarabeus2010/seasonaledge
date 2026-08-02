@@ -66,7 +66,7 @@ A real example from our live snapshot of 2 August 2026 makes it tangible: SPY st
 
 Cleanliness matters here, because a young finance site has to keep its sources honest.
 
-**The origin is practitioner knowledge.** The term "GEX" and the two-regime intuition come from the **SqueezeMetrics white paper (2016)**. Their much-quoted claim: at low volatility, the sign of gamma predicts market stability better than the VIX itself. That is a thought-provoking observation — but it is a **vendor source**, not a peer-reviewed result. It should be treated as such.
+**The origin is practitioner knowledge.** The term "GEX" and the two-regime intuition come from the **industry white paper (2016)**. Their much-quoted claim: at low volatility, the sign of gamma predicts market stability better than the VIX itself. That is a thought-provoking observation — but it is a **vendor source**, not a peer-reviewed result. It should be treated as such.
 
 **The academic validation** comes from **"Gamma Fragility" by Barbon & Buraschi (2021)**. Using hard data, they show that when aggregate dealer gamma is **negative**, intraday **momentum** emerges (moves persist); when it is **positive**, **reversal** dominates (moves revert). The effect is strongest in illiquid conditions. That maps precisely onto the shock-absorber-vs.-accelerant logic.
 
@@ -86,11 +86,11 @@ You will find the light live on the [Dealer Positioning](/en/dealer-positioning)
 
 Now the part no pure gamma vendor delivers. GEX pages show the state right now. Seasonality pages show the calendar pattern on average. **We own both** — and that is the real lever.
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — net gamma by expiry: the sign per maturity shows the dealer regime](long-gamma-short-gamma-regime/chart-gamma-by-term-spy.png)
 
-The chart shows SPY's typical yearly path over 20 years (normalized returns, every year starts at 100) together with the **±1σ band** — the dispersion corridor. Watch the **width of the band** more than the centre line: where it widens, historical dispersion was large; where it narrows, the year ran calmer. That seasonal dispersion is exactly where the gamma regime and the calendar meet.
+The chart shows the **net gamma of SPY by expiry**. The sign per maturity reveals the regime: positive bars (green) are **long gamma** — dealers dampen moves, the market runs calmer; negative ones (red) are **short gamma** — dealers amplify moves, the market turns fragile. This is exactly where the gamma regime and seasonality meet: in the shift of these regimes along the calendar.
 
-{{chart:monthly_cycle:SPY:20}}
+
 
 The second chart breaks it down into individual calendar months (current month highlighted). Late summer and early autumn have historically been among the bumpier windows of the year — thinner liquidity, wider dispersion. A market that happens to be **short gamma** in such a window (as in the snapshot above) stacks two fragility-boosting factors: the structural amplifier from options mechanics and the seasonally thinner liquidity. "Pattern" becomes "mechanism plus context".
 
@@ -100,11 +100,10 @@ That is the moat: we do not just show *that* a window is statistically notable �
 
 Dealer positioning is a YMYL topic (Your Money or Your Life). So we put the limits on the table instead of faking precision:
 
-- **Naive dealer heuristic.** We assume dealers are long calls and short puts. That is a proven first approximation for index gamma, but **not a real inventory model** like SpotGamma or SqueezeMetrics — and no knowledge of the actual dealer books.
+- **Naive dealer heuristic.** We assume dealers are long calls and short puts. That is a proven first approximation for index gamma, but **not a real inventory model** like commercial providers — and no knowledge of the actual dealer books.
 - **End-of-day Yahoo data.** We compute on open interest and implied vol at the close. Our values therefore differ from proprietary intraday/0DTE models.
 - **Live snapshot, not a time series.** Our gamma history only begins with the snapshot cron (from summer 2026). Statements like "how often was the market short gamma" cannot (yet) be cleanly backtested — the light is a current state, not a vetted historical statistic.
 - **Not a signal.** The regime is context, not a buy or sell signal. The academic fragility effect is intraday and transitory (one to two days) — we use only the classification.
-- **US underlyings only.** For the DAX, `^GDAXI` or `.DE` stocks, Yahoo provides no options chain — there is no gamma picture there. Use SPY or QQQ as a liquid reference.
 
 These limits are not a flaw but part of the method. Anyone who takes the regime seriously has to know how robust the data behind it is.
 
@@ -112,7 +111,7 @@ These limits are not a flaw but part of the method. Anyone who takes the regime 
 
 The gamma regime is the most memorable building block in dealer positioning: a single sign decides whether dealers dampen the market (long gamma, vol-suppressing) or stoke it (short gamma, vol-amplifying). The zero-gamma flip marks the tipping point — and how close price sits to it is a fragility barometer.
 
-Practitioner knowledge from SqueezeMetrics, backed academically by Barbon & Buraschi, honestly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/en/dealer-positioning)** yourself.
+Practitioner knowledge from the industry, backed academically by Barbon & Buraschi, honestly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/en/dealer-positioning)** yourself.
 
 ## Frequently Asked Questions
 
@@ -130,27 +129,4 @@ No. It is structural context, not a buy or sell signal. The academically documen
 
 ### Does GEX really beat the VIX?
 
-That is the claim from the SqueezeMetrics white paper — at low volatility the sign of gamma is said to indicate stability better than the VIX. It is a thought-provoking practitioner observation from a vendor source, not a peer-reviewed result. We treat it as a hypothesis, not a law.
-
-### Can I see the gamma regime for the DAX?
-
-No. Our data source provides an options chain only for US-listed underlyings. For the DAX, `^GDAXI` or German stocks with a `.DE` suffix there is no gamma picture. Use SPY or QQQ as a liquid reference for the broader market.
-
-<!--
-#### Social Media Snippet
-
-**LinkedIn:** Why are some trading days calm and others wild? The gamma regime often decides: long gamma (dealers dampen) vs. short gamma (dealers amplify). The zero-gamma flip is the tipping point between them. New article: how we turn it into a gamma light — practitioner idea (SqueezeMetrics), academically validated (Barbon & Buraschi 2021), honestly labelled: naive heuristic on EOD data, no signal. And the twist: combined with our seasonal calendar. https://seasonalpha.ai/en/dealer-positioning
-
-**Twitter/X:** Long gamma vs. short gamma — the regime that decides market volatility. 🟢 Long = dealers dampen (shock absorber). 🔴 Short = dealers amplify (accelerant). The zero-gamma flip is the tipping point. Newly explained + gamma light: seasonalpha.ai/en/dealer-positioning #Gamma #GEX #Volatility
-
-#### Internal linking
-- /en/dealer-positioning (main feature: Market Gamma Index + gamma light)
-- /crash-fruehwarnung (fragility from the broader market regime; DE-only page)
-- Blog: dealer-positioning-gamma-vanna-charm (base article — gamma/vanna/charm/walls)
-- /en/opex + /en/vixpiration (framing the vol cycle around expiry)
-
-#### Content ideas (follow-ups)
-- "Pinning & walls: does price really get pulled to the big strike?" (Ni/Pearson/Poteshman)
-- "Volatility skew explained: why OTM puts stay permanently more expensive" (Gârleanu/Pedersen/Poteshman)
-- "Post-OPEX vol: what happens after the big expiry" (triple witching)
--->
+That is the claim from the industry white paper — at low volatility the sign of gamma is said to indicate stability better than the VIX. It is a thought-provoking practitioner observation from a vendor source, not a peer-reviewed result. We treat it as a hypothesis, not a law.

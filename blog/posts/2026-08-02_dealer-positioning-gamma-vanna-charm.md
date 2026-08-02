@@ -46,7 +46,7 @@ Die wichtigste Kennzahl ist der aggregierte Netto-Gamma-Wert aller offenen Optio
 
 Der Kipppunkt zwischen beiden Regimen heißt **Zero-Gamma-Flip**: der Kursstand, an dem das Netto-Gamma sein Vorzeichen wechselt. Liegt der Spot nahe am Flip, kann das Regime jederzeit kippen — ein wichtiges Warnsignal für erhöhte Fragilität.
 
-Diese Zwei-Regime-Logik ist keine Erfindung von uns. Der Praktiker-Begriff „GEX" stammt aus dem SqueezeMetrics-White-Paper (2016). Wissenschaftlich untermauert wird das Vorzeichen-Regime durch die Arbeit **„Gamma Fragility" von Barbon & Buraschi (2021)**: Sie zeigen, dass aggregierte Dealer-Gamma-Ungleichgewichte Intraday-Momentum (bei negativem Gamma) beziehungsweise Reversal (bei positivem Gamma) erklären — und dass der Effekt in illiquiden Phasen am stärksten ist.
+Diese Zwei-Regime-Logik ist keine Erfindung von uns. Der Praktiker-Begriff „GEX" stammt aus einem Branchen-White-Paper (2016). Wissenschaftlich untermauert wird das Vorzeichen-Regime durch die Arbeit **„Gamma Fragility" von Barbon & Buraschi (2021)**: Sie zeigen, dass aggregierte Dealer-Gamma-Ungleichgewichte Intraday-Momentum (bei negativem Gamma) beziehungsweise Reversal (bei positivem Gamma) erklären — und dass der Effekt in illiquiden Phasen am stärksten ist.
 
 ## Call-Wall, Put-Wall und der stärkste Pin
 
@@ -81,9 +81,9 @@ Es gibt viele Gamma-Anbieter, und es gibt viele Saisonalitäts-Seiten. **Aber ni
 
 GEX-Anbieter zeigen den Flow im Jetzt. Saisonalitäts-Seiten zeigen das Kalendermuster im Mittel. SeasonAlpha besitzt beides — plus einen **börsengenauen Kalender** für OPEX, Triple Witching, VIXpiration und den Handelstag-im-Monat (TDOM). Damit können wir sagen, *warum* ein saisonales Muster existiert, statt es nur zu zeigen.
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — Gamma-Exposure je Strike: grün = Dealer stabilisieren (Support), rot = destabilisierend](dealer-positioning-gamma-vanna-charm/chart-gamma-by-strike-spy.png)
 
-Der Chart zeigt den typischen Jahresverlauf des SPY über 20 Jahre (normierte Renditen, jedes Jahr startet bei 100). Das ist das saisonale Grundgerüst. Dealer Positioning legt die kausale Ebene darunter: Wo der Kalender monatliche Verfallstermine markiert, liefern Charm und Vanna die mechanische Erklärung für die wiederkehrende Pre-OPEX-Drift — und für die Vola-Spitzen danach.
+Der Chart zeigt die **Gamma-Exposure des SPY je Strike** — genau das, was unsere Dealer-Positioning-Seite täglich rechnet. Grüne Balken markieren Strikes, an denen die Dealer-Absicherung stabilisierend wirkt (der Kurs wird angezogen), rote wirken destabilisierend. Wo der Kalender monatliche Verfallstermine markiert, liefern Gamma, Charm und Vanna die mechanische Erklärung für die wiederkehrende Pre-OPEX-Drift — und für die Vola-Spitzen danach.
 
 Aus „Muster" wird so „Mechanismus". Für Privatanleger heißt das: Du siehst nicht nur *dass* eine Phase statistisch auffällig ist, sondern verstehst die strukturelle Ursache dahinter — und kannst besser einordnen, wann ein Muster tragfähig ist und wann Makro-Ereignisse es überlagern.
 
@@ -92,9 +92,8 @@ Aus „Muster" wird so „Mechanismus". Für Privatanleger heißt das: Du siehst
 Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb sind wir hier bewusst transparent, statt Präzision vorzutäuschen:
 
 - **Wir nutzen eine naive Dealer-Heuristik.** Annahme: Dealer sind long Calls und short Puts. Das ist eine bewährte erste Näherung für Index-Gamma, aber **keine echte Kenntnis der Dealer-Bücher**.
-- **Wir rechnen auf EOD-Daten von Yahoo** (Open Interest und implizite Vola am Handelsende). Anbieter wie SpotGamma oder SqueezeMetrics nutzen proprietäre Inventory-Modelle mit Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab** — sie sind eine belastbare Näherung, kein Deckungsgleiches.
+- **Wir rechnen auf EOD-Daten von Yahoo** (Open Interest und implizite Vola am Handelsende). Kommerzielle Anbieter nutzen proprietäre Inventory-Modelle mit Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab** — sie sind eine belastbare Näherung, kein Deckungsgleiches.
 - **Walls sind Referenzen, keine Garantien.** Kein Kauf- oder Verkaufssignal, keine Anlageberatung.
-- **Nur US-gelistete Basiswerte.** Für den DAX, `^GDAXI` oder deutsche Aktien mit `.DE`-Endung liefert Yahoo keine Optionskette — dort gibt es kein Gamma-Bild.
 
 Diese Grenzen sind kein Makel, sondern Teil der Methode. Wer Dealer Positioning ernst nimmt, muss wissen, wie belastbar die Datenbasis ist.
 
@@ -126,11 +125,7 @@ Nein. Es sind Referenz-Strikes mit der höchsten Hedging-Aktivität, an denen Ku
 
 Weil Dealer, die netto short Puts sind, durch Zeitverfall (Charm) und fallende Volatilität (Vanna) ihre Short-Absicherungen zurückkaufen müssen. Das erzeugt einen mechanischen Kaufdruck in den dritten Freitag hinein. Studien wie Baltussen et al. (2024) belegen den Effekt mit rund 18,5 Basispunkten.
 
-### Kann ich Dealer Positioning auch für den DAX sehen?
-
-Nein. Unsere Datenquelle liefert nur für US-gelistete Basiswerte eine Optionskette. Für den DAX, `^GDAXI` oder deutsche Aktien mit `.DE`-Endung gibt es kein Gamma-Bild. Nutze SPY oder QQQ als liquide Referenz für den Gesamtmarkt.
-
-### Sind eure Zahlen dieselben wie bei SpotGamma?
+### Sind eure Zahlen dieselben wie bei kommerziellen Anbietern?
 
 Nein. Wir nutzen eine naive Dealer-Heuristik auf EOD-Daten, keine proprietären Inventory-Modelle mit Intraday- und 0DTE-Flows. Unsere Werte sind eine belastbare Näherung für das Gesamtbild, weichen aber im Detail ab.
 

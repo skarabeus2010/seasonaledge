@@ -71,9 +71,9 @@ Sie lieferten die Theorie zur Empirie: ein Feedback-Modell, in dem der Options-H
 
 Pinning ist ein Ereignis des Kalenders. Der große monatliche Optionsverfall liegt immer am dritten Freitag, und viermal im Jahr — im **März, Juni, September und Dezember** — fällt er mit dem Verfall von Index-Futures und Index-Optionen zusammen (**Triple Witching**). Dann ist das offene Interesse am größten, und genau dort sind Pinning- und Wall-Effekte tendenziell am stärksten.
 
-{{chart:monthly_cycle:SPY:20}}
+![QQQ — Gamma-Exposure je Strike: die höchsten Balken markieren Call-Wall, Put-Wall und Pin-Zonen](pinning-call-wall-put-wall/chart-gamma-by-strike-qqq.png)
 
-Der Chart zeigt **keine** Walls — die liegen live und tagesaktuell auf unserer Dealer-Positioning-Seite. Er zeigt den saisonalen Monatsrhythmus des SPY über 20 Jahre (normierte Renditen, jedes Jahr startet bei 100), in den sich der Verfallszyklus jeden Monat einbettet. Der aktuelle Monat ist hervorgehoben. So siehst du das Zusammenspiel: Der Kalender liefert das Muster, die Dealer-Positionierung liefert den Mechanismus darunter.
+Der Chart zeigt die **Gamma-Exposure des QQQ je Strike** an einem Beispieltag. Die höchsten positiven Balken (grün) oberhalb des Kurses bilden die **Call-Wall**, die tiefsten negativen (rot) unterhalb die **Put-Wall** — dazwischen liegt die Pin-Zone, in der der Kurs zum Verfall tendenziell „klebt". Live und tagesaktuell für alle Basiswerte auf unserer Dealer-Positioning-Seite. So siehst du das Zusammenspiel: Der Kalender liefert das Muster, die Dealer-Positionierung liefert den Mechanismus darunter.
 
 Für Privatanleger heißt das: Ein Wall-Strike ist keine isolierte Zahl. Er entfaltet seine größte Bedeutung rund um die vier Triple-Witching-Termine, wenn sich das meiste offene Interesse an denselben Strikes ballt.
 
@@ -84,8 +84,7 @@ Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb sind wi
 - **Walls sind Konzentrations-Referenzen, keine Barrieren.** Es gibt keine Garantie, dass der Kurs an ihnen dreht. Sie markieren nur, wo Hedging-Aktivität am dichtesten liegt — **kein Kauf- oder Verkaufssignal**.
 - **Der Effekt ist statistisch und klein.** 16,5 Basispunkte sind ein Mittelwert über tausende Fälle, kein handelbarer Einzeltag-Ausschlag. Pinning erklärt eine Tendenz, keine Einzelbewegung.
 - **Kurse können auch weggedrückt werden.** Golez und Jackwerth dokumentierten das Anti-Cross-Pinning vor Index-Verfällen. Der „Magnet" kann sich also umkehren.
-- **Wir nutzen eine naive Dealer-Heuristik** (Annahme: long Calls, short Puts) auf **EOD-Daten von Yahoo** — Open Interest und implizite Vola am Handelsende. Anbieter wie SpotGamma oder SqueezeMetrics arbeiten mit proprietären Inventory-Modellen samt Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab**; sie sind eine belastbare Näherung, kein Abbild echter Dealer-Bücher.
-- **Nur US-gelistete Basiswerte.** Für den DAX, `^GDAXI` oder deutsche Aktien mit `.DE`-Endung liefert Yahoo keine Optionskette — dort gibt es kein Wall-Bild. Nutze SPY oder QQQ als liquide Referenz für den Gesamtmarkt.
+- **Wir nutzen eine naive Dealer-Heuristik** (Annahme: long Calls, short Puts) auf **EOD-Daten von Yahoo** — Open Interest und implizite Vola am Handelsende. Kommerzielle Anbieter arbeiten mit proprietären Inventory-Modellen samt Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab**; sie sind eine belastbare Näherung, kein Abbild echter Dealer-Bücher.
 
 Diese Grenzen sind kein Makel, sondern Teil einer ehrlichen Methode. Wer Walls ernst nimmt, muss wissen, wie belastbar die Datenbasis ist.
 
@@ -116,10 +115,6 @@ Die Call-Wall ist der Strike oberhalb des Kurses mit dem größten positiven Net
 ### Sind Call-Wall und Put-Wall verlässliche Handelssignale?
 
 Nein. Es sind Konzentrations-Referenzen, keine Garantien und kein Kauf- oder Verkaufssignal. Der Pinning-Effekt ist im Mittel klein (rund 16,5 Basispunkte), und starke Nachrichten oder Makro-Ereignisse überlagern das Bild jederzeit. Nutze Walls als Orientierung, nicht als Auslöser.
-
-### Kann ich Call- und Put-Walls auch für den DAX sehen?
-
-Nein. Unsere Datenquelle liefert nur für US-gelistete Basiswerte eine Optionskette. Für den DAX, `^GDAXI` oder deutsche Aktien mit `.DE`-Endung gibt es kein Wall-Bild. SPY und QQQ sind die liquideste Referenz für den Gesamtmarkt.
 
 ### Warum sind Pinning-Effekte an Triple-Witching-Tagen stärker?
 
