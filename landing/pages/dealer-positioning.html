@@ -96,6 +96,7 @@
         <div class="gi-value" id="gi-value">&mdash;</div>
         <div class="gi-regime" id="gi-regime">lade&hellip;</div>
         <div class="gi-desc" id="gi-desc"></div>
+        <div class="gi-desc" id="gi-fragility" title="Anteil des Kern-Universums mit negativem Netto-Gamma (Barbon & Buraschi: mehr negatives Dealer-Gamma → höhere Fragilität)" style="margin-top:.55rem;border-top:1px solid var(--border);padding-top:.55rem"></div>
       </div>
       <div class="tbl-wrap">
         <table class="gx-table">
@@ -178,6 +179,11 @@
         ? 'Dealer sind netto long Gamma: sie hedgen gegenläufig und dämpfen Bewegungen (Mean-Reversion, Pinning).'
         : 'Dealer sind netto short Gamma: sie hedgen prozyklisch und verstärken Bewegungen (Trend, höhere Vola).';
       box.style.borderColor=pos?'rgba(48,232,120,.4)':'rgba(255,77,87,.4)';
+      // N2 Gamma-Fragilitäts-Breite: Anteil short-Gamma im Kern-Universum
+      var nShort=summary.tickers.filter(function(t){return t.regime==='short_gamma'}).length;
+      var pct=summary.tickers.length?Math.round(100*nShort/summary.tickers.length):0;
+      var fr=document.getElementById('gi-fragility');
+      if(fr) fr.innerHTML='Gamma-Fragilität: <b class="'+(pct>=50?'neg':'pos')+'">'+pct+'%</b> des Kern-Universums ('+nShort+'/'+summary.tickers.length+') short-Gamma';
     }
     function renderTable(){
       var b=document.getElementById('gx-tbody'),rows=summary.tickers.slice().sort(function(x,y){return x.net_gex_usd_bn-y.net_gex_usd_bn});
