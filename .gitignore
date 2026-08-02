@@ -21,3 +21,4 @@ blog/output/
 landing/en/
 landing/data/db_completeness.json
 scripts/video/out/
+landing/data/_mktcap_cache.json

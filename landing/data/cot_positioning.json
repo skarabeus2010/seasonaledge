@@ -1,1040 +1,1567 @@
 {
-  "generated_at": "2026-08-02T13:42:38+00:00",
+  "generated_at": "2026-08-02T17:58:42+00:00",
   "contract": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
   "series": [
     {
       "date": "2023-05-02",
       "lev_funds_net": -467864,
       "asset_mgr_net": 593082,
-      "open_interest": 2276183
+      "open_interest": 2276183,
+      "net_pct_oi": -20.6,
+      "lev_net_change_wk": 7202,
+      "gspc_at_report": 4119.58
     },
     {
       "date": "2023-05-09",
       "lev_funds_net": -513303,
       "asset_mgr_net": 596818,
-      "open_interest": 2296259
+      "open_interest": 2296259,
+      "net_pct_oi": -22.4,
+      "lev_net_change_wk": -45439,
+      "gspc_at_report": 4119.17
     },
     {
       "date": "2023-05-16",
       "lev_funds_net": -501276,
       "asset_mgr_net": 613038,
-      "open_interest": 2306298
+      "open_interest": 2306298,
+      "net_pct_oi": -21.8,
+      "lev_net_change_wk": 12027,
+      "gspc_at_report": 4109.9
     },
     {
       "date": "2023-05-23",
       "lev_funds_net": -517901,
       "asset_mgr_net": 627612,
-      "open_interest": 2385936
+      "open_interest": 2385936,
+      "net_pct_oi": -21.7,
+      "lev_net_change_wk": -16625,
+      "gspc_at_report": 4145.58
     },
     {
       "date": "2023-05-30",
       "lev_funds_net": -530723,
       "asset_mgr_net": 627896,
-      "open_interest": 2494943
+      "open_interest": 2494943,
+      "net_pct_oi": -21.2,
+      "lev_net_change_wk": -12822,
+      "gspc_at_report": 4205.52
     },
     {
       "date": "2023-06-06",
       "lev_funds_net": -576131,
       "asset_mgr_net": 666126,
-      "open_interest": 2500232
+      "open_interest": 2500232,
+      "net_pct_oi": -23.0,
+      "lev_net_change_wk": -45408,
+      "gspc_at_report": 4283.85
     },
     {
       "date": "2023-06-13",
       "lev_funds_net": -538565,
       "asset_mgr_net": 763619,
-      "open_interest": 2907468
+      "open_interest": 2907468,
+      "net_pct_oi": -18.5,
+      "lev_net_change_wk": 37566,
+      "gspc_at_report": 4369.01
     },
     {
       "date": "2023-06-20",
       "lev_funds_net": -380423,
       "asset_mgr_net": 798530,
-      "open_interest": 2223815
+      "open_interest": 2223815,
+      "net_pct_oi": -17.1,
+      "lev_net_change_wk": 158142,
+      "gspc_at_report": 4388.71
     },
     {
       "date": "2023-06-27",
       "lev_funds_net": -315623,
       "asset_mgr_net": 753961,
-      "open_interest": 2187114
+      "open_interest": 2187114,
+      "net_pct_oi": -14.5,
+      "lev_net_change_wk": 64800,
+      "gspc_at_report": 4378.41
     },
     {
       "date": "2023-07-03",
       "lev_funds_net": -292640,
       "asset_mgr_net": 777057,
-      "open_interest": 2211004
+      "open_interest": 2211004,
+      "net_pct_oi": -13.2,
+      "lev_net_change_wk": 22983,
+      "gspc_at_report": 4455.59
     },
     {
       "date": "2023-07-11",
       "lev_funds_net": -307136,
       "asset_mgr_net": 760123,
-      "open_interest": 2209607
+      "open_interest": 2209607,
+      "net_pct_oi": -13.9,
+      "lev_net_change_wk": -14496,
+      "gspc_at_report": 4439.26
     },
     {
       "date": "2023-07-18",
       "lev_funds_net": -385153,
       "asset_mgr_net": 819787,
-      "open_interest": 2280677
+      "open_interest": 2280677,
+      "net_pct_oi": -16.9,
+      "lev_net_change_wk": -78017,
+      "gspc_at_report": 4554.98
     },
     {
       "date": "2023-07-25",
       "lev_funds_net": -403332,
       "asset_mgr_net": 802306,
-      "open_interest": 2243361
+      "open_interest": 2243361,
+      "net_pct_oi": -18.0,
+      "lev_net_change_wk": -18179,
+      "gspc_at_report": 4567.46
     },
     {
       "date": "2023-08-01",
       "lev_funds_net": -382505,
       "asset_mgr_net": 820352,
-      "open_interest": 2241749
+      "open_interest": 2241749,
+      "net_pct_oi": -17.1,
+      "lev_net_change_wk": 20827,
+      "gspc_at_report": 4576.73
     },
     {
       "date": "2023-08-08",
       "lev_funds_net": -327526,
       "asset_mgr_net": 774350,
-      "open_interest": 2221709
+      "open_interest": 2221709,
+      "net_pct_oi": -14.7,
+      "lev_net_change_wk": 54979,
+      "gspc_at_report": 4499.38
     },
     {
       "date": "2023-08-15",
       "lev_funds_net": -296032,
       "asset_mgr_net": 779527,
-      "open_interest": 2220084
+      "open_interest": 2220084,
+      "net_pct_oi": -13.3,
+      "lev_net_change_wk": 31494,
+      "gspc_at_report": 4437.86
     },
     {
       "date": "2023-08-22",
       "lev_funds_net": -331822,
       "asset_mgr_net": 754982,
-      "open_interest": 2232226
+      "open_interest": 2232226,
+      "net_pct_oi": -14.9,
+      "lev_net_change_wk": -35790,
+      "gspc_at_report": 4387.55
     },
     {
       "date": "2023-08-29",
       "lev_funds_net": -353723,
       "asset_mgr_net": 755407,
-      "open_interest": 2267572
+      "open_interest": 2267572,
+      "net_pct_oi": -15.6,
+      "lev_net_change_wk": -21901,
+      "gspc_at_report": 4497.63
     },
     {
       "date": "2023-09-05",
       "lev_funds_net": -335302,
       "asset_mgr_net": 780139,
-      "open_interest": 2259160
+      "open_interest": 2259160,
+      "net_pct_oi": -14.8,
+      "lev_net_change_wk": 18421,
+      "gspc_at_report": 4496.83
     },
     {
       "date": "2023-09-12",
       "lev_funds_net": -250112,
       "asset_mgr_net": 781298,
-      "open_interest": 2520164
+      "open_interest": 2520164,
+      "net_pct_oi": -9.9,
+      "lev_net_change_wk": 85190,
+      "gspc_at_report": 4461.9
     },
     {
       "date": "2023-09-19",
       "lev_funds_net": -320298,
       "asset_mgr_net": 863681,
-      "open_interest": 2097946
+      "open_interest": 2097946,
+      "net_pct_oi": -15.3,
+      "lev_net_change_wk": -70186,
+      "gspc_at_report": 4443.95
     },
     {
       "date": "2023-09-26",
       "lev_funds_net": -283612,
       "asset_mgr_net": 759498,
-      "open_interest": 2137648
+      "open_interest": 2137648,
+      "net_pct_oi": -13.3,
+      "lev_net_change_wk": 36686,
+      "gspc_at_report": 4273.53
     },
     {
       "date": "2023-10-03",
       "lev_funds_net": -262969,
       "asset_mgr_net": 696137,
-      "open_interest": 2138034
+      "open_interest": 2138034,
+      "net_pct_oi": -12.3,
+      "lev_net_change_wk": 20643,
+      "gspc_at_report": 4229.45
     },
     {
       "date": "2023-10-10",
       "lev_funds_net": -284823,
       "asset_mgr_net": 666922,
-      "open_interest": 2073930
+      "open_interest": 2073930,
+      "net_pct_oi": -13.8,
+      "lev_net_change_wk": -21854,
+      "gspc_at_report": 4358.24
     },
     {
       "date": "2023-10-17",
       "lev_funds_net": -260638,
       "asset_mgr_net": 672170,
-      "open_interest": 2112419
+      "open_interest": 2112419,
+      "net_pct_oi": -12.3,
+      "lev_net_change_wk": 24185,
+      "gspc_at_report": 4373.2
     },
     {
       "date": "2023-10-24",
       "lev_funds_net": -195844,
       "asset_mgr_net": 610714,
-      "open_interest": 2158452
+      "open_interest": 2158452,
+      "net_pct_oi": -9.1,
+      "lev_net_change_wk": 64794,
+      "gspc_at_report": 4247.68
     },
     {
       "date": "2023-10-31",
       "lev_funds_net": -231153,
       "asset_mgr_net": 604196,
-      "open_interest": 2174689
+      "open_interest": 2174689,
+      "net_pct_oi": -10.7,
+      "lev_net_change_wk": -35309,
+      "gspc_at_report": 4193.8
     },
     {
       "date": "2023-11-07",
       "lev_funds_net": -272845,
       "asset_mgr_net": 669718,
-      "open_interest": 2177947
+      "open_interest": 2177947,
+      "net_pct_oi": -12.6,
+      "lev_net_change_wk": -41692,
+      "gspc_at_report": 4378.38
     },
     {
       "date": "2023-11-14",
       "lev_funds_net": -291032,
       "asset_mgr_net": 696990,
-      "open_interest": 2192899
+      "open_interest": 2192899,
+      "net_pct_oi": -13.3,
+      "lev_net_change_wk": -18187,
+      "gspc_at_report": 4495.7
     },
     {
       "date": "2023-11-21",
       "lev_funds_net": -311046,
       "asset_mgr_net": 758423,
-      "open_interest": 2240214
+      "open_interest": 2240214,
+      "net_pct_oi": -13.9,
+      "lev_net_change_wk": -20014,
+      "gspc_at_report": 4538.19
     },
     {
       "date": "2023-11-28",
       "lev_funds_net": -318644,
       "asset_mgr_net": 791257,
-      "open_interest": 2279894
+      "open_interest": 2279894,
+      "net_pct_oi": -13.9,
+      "lev_net_change_wk": -7598,
+      "gspc_at_report": 4554.89
     },
     {
       "date": "2023-12-05",
       "lev_funds_net": -353424,
       "asset_mgr_net": 815718,
-      "open_interest": 2314400
+      "open_interest": 2314400,
+      "net_pct_oi": -15.3,
+      "lev_net_change_wk": -34780,
+      "gspc_at_report": 4567.18
     },
     {
       "date": "2023-12-12",
       "lev_funds_net": -366291,
       "asset_mgr_net": 824914,
-      "open_interest": 2670454
+      "open_interest": 2670454,
+      "net_pct_oi": -13.7,
+      "lev_net_change_wk": -12867,
+      "gspc_at_report": 4643.7
     },
     {
       "date": "2023-12-19",
       "lev_funds_net": -307532,
       "asset_mgr_net": 882370,
-      "open_interest": 2156203
+      "open_interest": 2156203,
+      "net_pct_oi": -14.2,
+      "lev_net_change_wk": 58759,
+      "gspc_at_report": 4768.37
     },
     {
       "date": "2023-12-26",
       "lev_funds_net": -354995,
       "asset_mgr_net": 878373,
-      "open_interest": 2155313
+      "open_interest": 2155313,
+      "net_pct_oi": -16.5,
+      "lev_net_change_wk": -47463,
+      "gspc_at_report": 4774.75
     },
     {
       "date": "2024-01-02",
       "lev_funds_net": -389801,
       "asset_mgr_net": 954923,
-      "open_interest": 2221215
+      "open_interest": 2221215,
+      "net_pct_oi": -17.5,
+      "lev_net_change_wk": -34806,
+      "gspc_at_report": 4742.83
     },
     {
       "date": "2024-01-09",
       "lev_funds_net": -312515,
       "asset_mgr_net": 928061,
-      "open_interest": 2209328
+      "open_interest": 2209328,
+      "net_pct_oi": -14.2,
+      "lev_net_change_wk": 77286,
+      "gspc_at_report": 4756.5
     },
     {
       "date": "2024-01-16",
       "lev_funds_net": -298679,
       "asset_mgr_net": 927303,
-      "open_interest": 2217057
+      "open_interest": 2217057,
+      "net_pct_oi": -13.4,
+      "lev_net_change_wk": 13836,
+      "gspc_at_report": 4765.98
     },
     {
       "date": "2024-01-23",
       "lev_funds_net": -392623,
       "asset_mgr_net": 912254,
-      "open_interest": 2271312
+      "open_interest": 2271312,
+      "net_pct_oi": -17.2,
+      "lev_net_change_wk": -93944,
+      "gspc_at_report": 4864.6
     },
     {
       "date": "2024-01-30",
       "lev_funds_net": -429536,
       "asset_mgr_net": 969492,
-      "open_interest": 2308955
+      "open_interest": 2308955,
+      "net_pct_oi": -18.6,
+      "lev_net_change_wk": -36913,
+      "gspc_at_report": 4924.97
     },
     {
       "date": "2024-02-06",
       "lev_funds_net": -411091,
       "asset_mgr_net": 916018,
-      "open_interest": 2297385
+      "open_interest": 2297385,
+      "net_pct_oi": -17.9,
+      "lev_net_change_wk": 18445,
+      "gspc_at_report": 4954.23
     },
     {
       "date": "2024-02-13",
       "lev_funds_net": -379467,
       "asset_mgr_net": 937840,
-      "open_interest": 2338964
+      "open_interest": 2338964,
+      "net_pct_oi": -16.3,
+      "lev_net_change_wk": 31624,
+      "gspc_at_report": 4953.17
     },
     {
       "date": "2024-02-20",
       "lev_funds_net": -417264,
       "asset_mgr_net": 945299,
-      "open_interest": 2322953
+      "open_interest": 2322953,
+      "net_pct_oi": -17.9,
+      "lev_net_change_wk": -37797,
+      "gspc_at_report": 4975.51
     },
     {
       "date": "2024-02-27",
       "lev_funds_net": -434245,
       "asset_mgr_net": 940242,
-      "open_interest": 2344340
+      "open_interest": 2344340,
+      "net_pct_oi": -18.6,
+      "lev_net_change_wk": -16981,
+      "gspc_at_report": 5078.18
     },
     {
       "date": "2024-03-05",
       "lev_funds_net": -406861,
       "asset_mgr_net": 918166,
-      "open_interest": 2377697
+      "open_interest": 2377697,
+      "net_pct_oi": -17.1,
+      "lev_net_change_wk": 27384,
+      "gspc_at_report": 5078.65
     },
     {
       "date": "2024-03-12",
       "lev_funds_net": -494000,
       "asset_mgr_net": 913797,
-      "open_interest": 2678339
+      "open_interest": 2678339,
+      "net_pct_oi": -18.4,
+      "lev_net_change_wk": -87139,
+      "gspc_at_report": 5175.27
     },
     {
       "date": "2024-03-19",
       "lev_funds_net": -432870,
       "asset_mgr_net": 946828,
-      "open_interest": 2094749
+      "open_interest": 2094749,
+      "net_pct_oi": -20.7,
+      "lev_net_change_wk": 61130,
+      "gspc_at_report": 5178.51
     },
     {
       "date": "2024-03-26",
       "lev_funds_net": -456511,
       "asset_mgr_net": 952631,
-      "open_interest": 2110848
+      "open_interest": 2110848,
+      "net_pct_oi": -21.7,
+      "lev_net_change_wk": -23641,
+      "gspc_at_report": 5203.58
     },
     {
       "date": "2024-04-02",
       "lev_funds_net": -368463,
       "asset_mgr_net": 934377,
-      "open_interest": 2089222
+      "open_interest": 2089222,
+      "net_pct_oi": -17.6,
+      "lev_net_change_wk": 88048,
+      "gspc_at_report": 5205.81
     },
     {
       "date": "2024-04-09",
       "lev_funds_net": -340973,
       "asset_mgr_net": 944641,
-      "open_interest": 2091937
+      "open_interest": 2091937,
+      "net_pct_oi": -16.3,
+      "lev_net_change_wk": 27490,
+      "gspc_at_report": 5209.91
     },
     {
       "date": "2024-04-16",
       "lev_funds_net": -200928,
       "asset_mgr_net": 863024,
-      "open_interest": 2100522
+      "open_interest": 2100522,
+      "net_pct_oi": -9.6,
+      "lev_net_change_wk": 140045,
+      "gspc_at_report": 5051.41
     },
     {
       "date": "2024-04-23",
       "lev_funds_net": -206322,
       "asset_mgr_net": 841723,
-      "open_interest": 2067890
+      "open_interest": 2067890,
+      "net_pct_oi": -9.9,
+      "lev_net_change_wk": -5394,
+      "gspc_at_report": 5070.55
     },
     {
       "date": "2024-04-30",
       "lev_funds_net": -195890,
       "asset_mgr_net": 824848,
-      "open_interest": 2006204
+      "open_interest": 2006204,
+      "net_pct_oi": -9.7,
+      "lev_net_change_wk": 10432,
+      "gspc_at_report": 5035.69
     },
     {
       "date": "2024-05-07",
       "lev_funds_net": -260250,
       "asset_mgr_net": 862580,
-      "open_interest": 2030975
+      "open_interest": 2030975,
+      "net_pct_oi": -12.8,
+      "lev_net_change_wk": -64360,
+      "gspc_at_report": 5187.7
     },
     {
       "date": "2024-05-14",
       "lev_funds_net": -292476,
       "asset_mgr_net": 919252,
-      "open_interest": 2081097
+      "open_interest": 2081097,
+      "net_pct_oi": -14.0,
+      "lev_net_change_wk": -32226,
+      "gspc_at_report": 5246.68
     },
     {
       "date": "2024-05-21",
       "lev_funds_net": -334078,
       "asset_mgr_net": 943369,
-      "open_interest": 2148201
+      "open_interest": 2148201,
+      "net_pct_oi": -15.5,
+      "lev_net_change_wk": -41602,
+      "gspc_at_report": 5321.41
     },
     {
       "date": "2024-05-28",
       "lev_funds_net": -339604,
       "asset_mgr_net": 974523,
-      "open_interest": 2179731
+      "open_interest": 2179731,
+      "net_pct_oi": -15.6,
+      "lev_net_change_wk": -5526,
+      "gspc_at_report": 5306.04
     },
     {
       "date": "2024-06-04",
       "lev_funds_net": -345416,
       "asset_mgr_net": 954390,
-      "open_interest": 2160026
+      "open_interest": 2160026,
+      "net_pct_oi": -16.0,
+      "lev_net_change_wk": -5812,
+      "gspc_at_report": 5291.34
     },
     {
       "date": "2024-06-11",
       "lev_funds_net": -367530,
       "asset_mgr_net": 971145,
-      "open_interest": 2266096
+      "open_interest": 2266096,
+      "net_pct_oi": -16.2,
+      "lev_net_change_wk": -22114,
+      "gspc_at_report": 5375.32
     },
     {
       "date": "2024-06-18",
       "lev_funds_net": -371410,
       "asset_mgr_net": 967455,
-      "open_interest": 2595590
+      "open_interest": 2595590,
+      "net_pct_oi": -14.3,
+      "lev_net_change_wk": -3880,
+      "gspc_at_report": 5487.03
     },
     {
       "date": "2024-06-25",
       "lev_funds_net": -288772,
       "asset_mgr_net": 973899,
-      "open_interest": 1976080
+      "open_interest": 1976080,
+      "net_pct_oi": -14.7,
+      "lev_net_change_wk": 82638,
+      "gspc_at_report": 5469.3
     },
     {
       "date": "2024-07-02",
       "lev_funds_net": -276301,
       "asset_mgr_net": 948276,
-      "open_interest": 2037086
+      "open_interest": 2037086,
+      "net_pct_oi": -13.6,
+      "lev_net_change_wk": 12471,
+      "gspc_at_report": 5509.01
     },
     {
       "date": "2024-07-09",
       "lev_funds_net": -325183,
       "asset_mgr_net": 977419,
-      "open_interest": 2048220
+      "open_interest": 2048220,
+      "net_pct_oi": -15.8,
+      "lev_net_change_wk": -48882,
+      "gspc_at_report": 5576.98
     },
     {
       "date": "2024-07-16",
       "lev_funds_net": -352243,
       "asset_mgr_net": 1002181,
-      "open_interest": 2090007
+      "open_interest": 2090007,
+      "net_pct_oi": -16.8,
+      "lev_net_change_wk": -27060,
+      "gspc_at_report": 5667.2
     },
     {
       "date": "2024-07-23",
       "lev_funds_net": -274855,
       "asset_mgr_net": 995142,
-      "open_interest": 2047183
+      "open_interest": 2047183,
+      "net_pct_oi": -13.5,
+      "lev_net_change_wk": 77388,
+      "gspc_at_report": 5555.74
     },
     {
       "date": "2024-07-30",
       "lev_funds_net": -244217,
       "asset_mgr_net": 946819,
-      "open_interest": 2046205
+      "open_interest": 2046205,
+      "net_pct_oi": -12.0,
+      "lev_net_change_wk": 30638,
+      "gspc_at_report": 5436.44
     },
     {
       "date": "2024-08-06",
       "lev_funds_net": -209759,
       "asset_mgr_net": 888081,
-      "open_interest": 2025834
+      "open_interest": 2025834,
+      "net_pct_oi": -10.4,
+      "lev_net_change_wk": 34458,
+      "gspc_at_report": 5240.03
     },
     {
       "date": "2024-08-13",
       "lev_funds_net": -276454,
       "asset_mgr_net": 948936,
-      "open_interest": 2033008
+      "open_interest": 2033008,
+      "net_pct_oi": -13.6,
+      "lev_net_change_wk": -66695,
+      "gspc_at_report": 5434.43
     },
     {
       "date": "2024-08-20",
       "lev_funds_net": -351091,
       "asset_mgr_net": 967409,
-      "open_interest": 2050976
+      "open_interest": 2050976,
+      "net_pct_oi": -17.1,
+      "lev_net_change_wk": -74637,
+      "gspc_at_report": 5597.12
     },
     {
       "date": "2024-08-27",
       "lev_funds_net": -338826,
       "asset_mgr_net": 981923,
-      "open_interest": 2098974
+      "open_interest": 2098974,
+      "net_pct_oi": -16.1,
+      "lev_net_change_wk": 12265,
+      "gspc_at_report": 5625.8
     },
     {
       "date": "2024-09-03",
       "lev_funds_net": -267252,
       "asset_mgr_net": 988341,
-      "open_interest": 2106791
+      "open_interest": 2106791,
+      "net_pct_oi": -12.7,
+      "lev_net_change_wk": 71574,
+      "gspc_at_report": 5528.93
     },
     {
       "date": "2024-09-10",
       "lev_funds_net": -251544,
       "asset_mgr_net": 982309,
-      "open_interest": 2156591
+      "open_interest": 2156591,
+      "net_pct_oi": -11.6,
+      "lev_net_change_wk": 15708,
+      "gspc_at_report": 5495.52
     },
     {
       "date": "2024-09-17",
       "lev_funds_net": -351386,
       "asset_mgr_net": 1018535,
-      "open_interest": 2579860
+      "open_interest": 2579860,
+      "net_pct_oi": -13.7,
+      "lev_net_change_wk": -99842,
+      "gspc_at_report": 5634.58
     },
     {
       "date": "2024-09-24",
       "lev_funds_net": -319454,
       "asset_mgr_net": 1067824,
-      "open_interest": 2046032
+      "open_interest": 2046032,
+      "net_pct_oi": -15.6,
+      "lev_net_change_wk": 31932,
+      "gspc_at_report": 5732.93
     },
     {
       "date": "2024-10-01",
       "lev_funds_net": -299994,
       "asset_mgr_net": 1051400,
-      "open_interest": 2081475
+      "open_interest": 2081475,
+      "net_pct_oi": -14.4,
+      "lev_net_change_wk": 19460,
+      "gspc_at_report": 5708.75
     },
     {
       "date": "2024-10-08",
       "lev_funds_net": -326673,
       "asset_mgr_net": 1045421,
-      "open_interest": 2132773
+      "open_interest": 2132773,
+      "net_pct_oi": -15.3,
+      "lev_net_change_wk": -26679,
+      "gspc_at_report": 5751.13
     },
     {
       "date": "2024-10-15",
       "lev_funds_net": -315768,
       "asset_mgr_net": 1057716,
-      "open_interest": 2185413
+      "open_interest": 2185413,
+      "net_pct_oi": -14.5,
+      "lev_net_change_wk": 10905,
+      "gspc_at_report": 5815.26
     },
     {
       "date": "2024-10-22",
       "lev_funds_net": -296241,
       "asset_mgr_net": 1068142,
-      "open_interest": 2186686
+      "open_interest": 2186686,
+      "net_pct_oi": -13.6,
+      "lev_net_change_wk": 19527,
+      "gspc_at_report": 5851.2
     },
     {
       "date": "2024-10-29",
       "lev_funds_net": -289253,
       "asset_mgr_net": 1047689,
-      "open_interest": 2168363
+      "open_interest": 2168363,
+      "net_pct_oi": -13.4,
+      "lev_net_change_wk": 6988,
+      "gspc_at_report": 5832.92
     },
     {
       "date": "2024-11-05",
       "lev_funds_net": -189359,
       "asset_mgr_net": 994877,
-      "open_interest": 2140451
+      "open_interest": 2140451,
+      "net_pct_oi": -8.9,
+      "lev_net_change_wk": 99894,
+      "gspc_at_report": 5782.76
     },
     {
       "date": "2024-11-12",
       "lev_funds_net": -274313,
       "asset_mgr_net": 1080810,
-      "open_interest": 2235256
+      "open_interest": 2235256,
+      "net_pct_oi": -12.3,
+      "lev_net_change_wk": -84954,
+      "gspc_at_report": 5983.99
     },
     {
       "date": "2024-11-19",
       "lev_funds_net": -251531,
       "asset_mgr_net": 1081538,
-      "open_interest": 2259351
+      "open_interest": 2259351,
+      "net_pct_oi": -11.1,
+      "lev_net_change_wk": 22782,
+      "gspc_at_report": 5916.98
     },
     {
       "date": "2024-11-26",
       "lev_funds_net": -304923,
       "asset_mgr_net": 1102458,
-      "open_interest": 2272398
+      "open_interest": 2272398,
+      "net_pct_oi": -13.4,
+      "lev_net_change_wk": -53392,
+      "gspc_at_report": 6021.63
     },
     {
       "date": "2024-12-03",
       "lev_funds_net": -359412,
       "asset_mgr_net": 1096475,
-      "open_interest": 2279466
+      "open_interest": 2279466,
+      "net_pct_oi": -15.7,
+      "lev_net_change_wk": -54489,
+      "gspc_at_report": 6049.88
     },
     {
       "date": "2024-12-10",
       "lev_funds_net": -296652,
       "asset_mgr_net": 1089433,
-      "open_interest": 2324611
+      "open_interest": 2324611,
+      "net_pct_oi": -12.8,
+      "lev_net_change_wk": 62760,
+      "gspc_at_report": 6034.91
     },
     {
       "date": "2024-12-17",
       "lev_funds_net": -256167,
       "asset_mgr_net": 1040912,
-      "open_interest": 2596020
+      "open_interest": 2596020,
+      "net_pct_oi": -9.9,
+      "lev_net_change_wk": 40485,
+      "gspc_at_report": 6050.61
     },
     {
       "date": "2024-12-24",
       "lev_funds_net": -331703,
       "asset_mgr_net": 1041084,
-      "open_interest": 2083230
+      "open_interest": 2083230,
+      "net_pct_oi": -16.0,
+      "lev_net_change_wk": -75536,
+      "gspc_at_report": 6040.04
     },
     {
       "date": "2024-12-31",
       "lev_funds_net": -324607,
       "asset_mgr_net": 984063,
-      "open_interest": 2058648
+      "open_interest": 2058648,
+      "net_pct_oi": -15.7,
+      "lev_net_change_wk": 7096,
+      "gspc_at_report": 5881.63
     },
     {
       "date": "2025-01-07",
       "lev_funds_net": -338494,
       "asset_mgr_net": 991721,
-      "open_interest": 2069259
+      "open_interest": 2069259,
+      "net_pct_oi": -16.4,
+      "lev_net_change_wk": -13887,
+      "gspc_at_report": 5909.03
     },
     {
       "date": "2025-01-14",
       "lev_funds_net": -297365,
       "asset_mgr_net": 925592,
-      "open_interest": 2044090
+      "open_interest": 2044090,
+      "net_pct_oi": -14.6,
+      "lev_net_change_wk": 41129,
+      "gspc_at_report": 5842.91
     },
     {
       "date": "2025-01-21",
       "lev_funds_net": -387675,
       "asset_mgr_net": 932733,
-      "open_interest": 2036469
+      "open_interest": 2036469,
+      "net_pct_oi": -19.0,
+      "lev_net_change_wk": -90310,
+      "gspc_at_report": 6049.24
     },
     {
       "date": "2025-01-28",
       "lev_funds_net": -396658,
       "asset_mgr_net": 964564,
-      "open_interest": 2033094
+      "open_interest": 2033094,
+      "net_pct_oi": -19.5,
+      "lev_net_change_wk": -8983,
+      "gspc_at_report": 6067.7
     },
     {
       "date": "2025-02-04",
       "lev_funds_net": -324354,
       "asset_mgr_net": 926604,
-      "open_interest": 2071863
+      "open_interest": 2071863,
+      "net_pct_oi": -15.6,
+      "lev_net_change_wk": 72304,
+      "gspc_at_report": 6037.88
     },
     {
       "date": "2025-02-11",
       "lev_funds_net": -357946,
       "asset_mgr_net": 934564,
-      "open_interest": 2096517
+      "open_interest": 2096517,
+      "net_pct_oi": -17.0,
+      "lev_net_change_wk": -33592,
+      "gspc_at_report": 6068.5
     },
     {
       "date": "2025-02-18",
       "lev_funds_net": -355590,
       "asset_mgr_net": 951019,
-      "open_interest": 2120653
+      "open_interest": 2120653,
+      "net_pct_oi": -16.8,
+      "lev_net_change_wk": 2356,
+      "gspc_at_report": 6129.58
     },
     {
       "date": "2025-02-25",
       "lev_funds_net": -336018,
       "asset_mgr_net": 921140,
-      "open_interest": 2126872
+      "open_interest": 2126872,
+      "net_pct_oi": -15.8,
+      "lev_net_change_wk": 19572,
+      "gspc_at_report": 5955.25
     },
     {
       "date": "2025-03-04",
       "lev_funds_net": -287980,
       "asset_mgr_net": 911504,
-      "open_interest": 2180944
+      "open_interest": 2180944,
+      "net_pct_oi": -13.2,
+      "lev_net_change_wk": 48038,
+      "gspc_at_report": 5778.15
     },
     {
       "date": "2025-03-11",
       "lev_funds_net": -193552,
       "asset_mgr_net": 846785,
-      "open_interest": 2282648
+      "open_interest": 2282648,
+      "net_pct_oi": -8.4,
+      "lev_net_change_wk": 94428,
+      "gspc_at_report": 5572.07
     },
     {
       "date": "2025-03-18",
       "lev_funds_net": -188500,
       "asset_mgr_net": 831857,
-      "open_interest": 2560662
+      "open_interest": 2560662,
+      "net_pct_oi": -7.4,
+      "lev_net_change_wk": 5052,
+      "gspc_at_report": 5614.66
     },
     {
       "date": "2025-03-25",
       "lev_funds_net": -234607,
       "asset_mgr_net": 915326,
-      "open_interest": 2074351
+      "open_interest": 2074351,
+      "net_pct_oi": -11.3,
+      "lev_net_change_wk": -46107,
+      "gspc_at_report": 5776.65
     },
     {
       "date": "2025-04-01",
       "lev_funds_net": -261161,
       "asset_mgr_net": 885480,
-      "open_interest": 2111750
+      "open_interest": 2111750,
+      "net_pct_oi": -12.4,
+      "lev_net_change_wk": -26554,
+      "gspc_at_report": 5633.07
     },
     {
       "date": "2025-04-08",
       "lev_funds_net": -267145,
       "asset_mgr_net": 813165,
-      "open_interest": 2332802
+      "open_interest": 2332802,
+      "net_pct_oi": -11.4,
+      "lev_net_change_wk": -5984,
+      "gspc_at_report": 4982.77
     },
     {
       "date": "2025-04-15",
       "lev_funds_net": -231469,
       "asset_mgr_net": 811300,
-      "open_interest": 2181908
+      "open_interest": 2181908,
+      "net_pct_oi": -10.6,
+      "lev_net_change_wk": 35676,
+      "gspc_at_report": 5396.63
     },
     {
       "date": "2025-04-22",
       "lev_funds_net": -251833,
       "asset_mgr_net": 813119,
-      "open_interest": 2209656
+      "open_interest": 2209656,
+      "net_pct_oi": -11.4,
+      "lev_net_change_wk": -20364,
+      "gspc_at_report": 5287.76
     },
     {
       "date": "2025-04-29",
       "lev_funds_net": -249877,
       "asset_mgr_net": 829401,
-      "open_interest": 2134084
+      "open_interest": 2134084,
+      "net_pct_oi": -11.7,
+      "lev_net_change_wk": 1956,
+      "gspc_at_report": 5560.83
     },
     {
       "date": "2025-05-06",
       "lev_funds_net": -257439,
       "asset_mgr_net": 816162,
-      "open_interest": 2133652
+      "open_interest": 2133652,
+      "net_pct_oi": -12.0,
+      "lev_net_change_wk": -7562,
+      "gspc_at_report": 5606.91
     },
     {
       "date": "2025-05-13",
       "lev_funds_net": -288655,
       "asset_mgr_net": 856078,
-      "open_interest": 2125890
+      "open_interest": 2125890,
+      "net_pct_oi": -13.6,
+      "lev_net_change_wk": -31216,
+      "gspc_at_report": 5886.55
     },
     {
       "date": "2025-05-20",
       "lev_funds_net": -298562,
       "asset_mgr_net": 873442,
-      "open_interest": 2113668
+      "open_interest": 2113668,
+      "net_pct_oi": -14.1,
+      "lev_net_change_wk": -9907,
+      "gspc_at_report": 5940.46
     },
     {
       "date": "2025-05-27",
       "lev_funds_net": -258551,
       "asset_mgr_net": 856077,
-      "open_interest": 2112166
+      "open_interest": 2112166,
+      "net_pct_oi": -12.3,
+      "lev_net_change_wk": 40011,
+      "gspc_at_report": 5921.54
     },
     {
       "date": "2025-06-03",
       "lev_funds_net": -286068,
       "asset_mgr_net": 813684,
-      "open_interest": 2123862
+      "open_interest": 2123862,
+      "net_pct_oi": -13.5,
+      "lev_net_change_wk": -27517,
+      "gspc_at_report": 5970.37
     },
     {
       "date": "2025-06-10",
       "lev_funds_net": -314263,
       "asset_mgr_net": 826131,
-      "open_interest": 2223909
+      "open_interest": 2223909,
+      "net_pct_oi": -14.1,
+      "lev_net_change_wk": -28195,
+      "gspc_at_report": 6038.81
     },
     {
       "date": "2025-06-17",
       "lev_funds_net": -324886,
       "asset_mgr_net": 846710,
-      "open_interest": 2450146
+      "open_interest": 2450146,
+      "net_pct_oi": -13.3,
+      "lev_net_change_wk": -10623,
+      "gspc_at_report": 5982.72
     },
     {
       "date": "2025-06-24",
       "lev_funds_net": -274322,
       "asset_mgr_net": 841246,
-      "open_interest": 1886352
+      "open_interest": 1886352,
+      "net_pct_oi": -14.5,
+      "lev_net_change_wk": 50564,
+      "gspc_at_report": 6092.18
     },
     {
       "date": "2025-07-01",
       "lev_funds_net": -306287,
       "asset_mgr_net": 840148,
-      "open_interest": 1887354
+      "open_interest": 1887354,
+      "net_pct_oi": -16.2,
+      "lev_net_change_wk": -31965,
+      "gspc_at_report": 6198.01
     },
     {
       "date": "2025-07-08",
       "lev_funds_net": -347635,
       "asset_mgr_net": 863537,
-      "open_interest": 1899046
+      "open_interest": 1899046,
+      "net_pct_oi": -18.3,
+      "lev_net_change_wk": -41348,
+      "gspc_at_report": 6225.52
     },
     {
       "date": "2025-07-15",
       "lev_funds_net": -344810,
       "asset_mgr_net": 866319,
-      "open_interest": 1935859
+      "open_interest": 1935859,
+      "net_pct_oi": -17.8,
+      "lev_net_change_wk": 2825,
+      "gspc_at_report": 6243.76
     },
     {
       "date": "2025-07-22",
       "lev_funds_net": -341309,
       "asset_mgr_net": 852268,
-      "open_interest": 1917043
+      "open_interest": 1917043,
+      "net_pct_oi": -17.8,
+      "lev_net_change_wk": 3501,
+      "gspc_at_report": 6309.62
     },
     {
       "date": "2025-07-29",
       "lev_funds_net": -365427,
       "asset_mgr_net": 872584,
-      "open_interest": 1941931
+      "open_interest": 1941931,
+      "net_pct_oi": -18.8,
+      "lev_net_change_wk": -24118,
+      "gspc_at_report": 6370.86
     },
     {
       "date": "2025-08-05",
       "lev_funds_net": -325243,
       "asset_mgr_net": 848981,
-      "open_interest": 1909338
+      "open_interest": 1909338,
+      "net_pct_oi": -17.1,
+      "lev_net_change_wk": 40184,
+      "gspc_at_report": 6299.19
     },
     {
       "date": "2025-08-12",
       "lev_funds_net": -386752,
       "asset_mgr_net": 886359,
-      "open_interest": 1967857
+      "open_interest": 1967857,
+      "net_pct_oi": -19.7,
+      "lev_net_change_wk": -61509,
+      "gspc_at_report": 6445.76
     },
     {
       "date": "2025-08-19",
       "lev_funds_net": -365341,
       "asset_mgr_net": 870592,
-      "open_interest": 1974585
+      "open_interest": 1974585,
+      "net_pct_oi": -18.5,
+      "lev_net_change_wk": 21411,
+      "gspc_at_report": 6411.37
     },
     {
       "date": "2025-08-26",
       "lev_funds_net": -420555,
       "asset_mgr_net": 871280,
-      "open_interest": 2018365
+      "open_interest": 2018365,
+      "net_pct_oi": -20.8,
+      "lev_net_change_wk": -55214,
+      "gspc_at_report": 6465.94
     },
     {
       "date": "2025-09-02",
       "lev_funds_net": -382255,
       "asset_mgr_net": 860828,
-      "open_interest": 1997661
+      "open_interest": 1997661,
+      "net_pct_oi": -19.1,
+      "lev_net_change_wk": 38300,
+      "gspc_at_report": 6415.54
     },
     {
       "date": "2025-09-09",
       "lev_funds_net": -416601,
       "asset_mgr_net": 887422,
-      "open_interest": 2035158
+      "open_interest": 2035158,
+      "net_pct_oi": -20.5,
+      "lev_net_change_wk": -34346,
+      "gspc_at_report": 6512.61
     },
     {
       "date": "2025-09-16",
       "lev_funds_net": -474986,
       "asset_mgr_net": 896300,
-      "open_interest": 2435899
+      "open_interest": 2435899,
+      "net_pct_oi": -19.5,
+      "lev_net_change_wk": -58385,
+      "gspc_at_report": 6606.76
     },
     {
       "date": "2025-09-23",
       "lev_funds_net": -451005,
       "asset_mgr_net": 913552,
-      "open_interest": 1950977
+      "open_interest": 1950977,
+      "net_pct_oi": -23.1,
+      "lev_net_change_wk": 23981,
+      "gspc_at_report": 6656.92
     },
     {
       "date": "2025-09-30",
       "lev_funds_net": -436972,
       "asset_mgr_net": 935794,
-      "open_interest": 1942253
+      "open_interest": 1942253,
+      "net_pct_oi": -22.5,
+      "lev_net_change_wk": 14033,
+      "gspc_at_report": 6688.46
     },
     {
       "date": "2025-10-07",
       "lev_funds_net": -460173,
       "asset_mgr_net": 949105,
-      "open_interest": 1951558
+      "open_interest": 1951558,
+      "net_pct_oi": -23.5,
+      "lev_net_change_wk": -23201,
+      "gspc_at_report": 6714.59
     },
     {
       "date": "2025-10-14",
       "lev_funds_net": -416548,
       "asset_mgr_net": 921903,
-      "open_interest": 1929048
+      "open_interest": 1929048,
+      "net_pct_oi": -21.6,
+      "lev_net_change_wk": 43625,
+      "gspc_at_report": 6644.31
     },
     {
       "date": "2025-10-21",
       "lev_funds_net": -441001,
       "asset_mgr_net": 902735,
-      "open_interest": 1882544
+      "open_interest": 1882544,
+      "net_pct_oi": -23.5,
+      "lev_net_change_wk": -24453,
+      "gspc_at_report": 6735.35
     },
     {
       "date": "2025-10-28",
       "lev_funds_net": -448721,
       "asset_mgr_net": 906797,
-      "open_interest": 1929734
+      "open_interest": 1929734,
+      "net_pct_oi": -23.3,
+      "lev_net_change_wk": -7720,
+      "gspc_at_report": 6890.89
     },
     {
       "date": "2025-11-04",
       "lev_funds_net": -405386,
       "asset_mgr_net": 900657,
-      "open_interest": 1956133
+      "open_interest": 1956133,
+      "net_pct_oi": -20.8,
+      "lev_net_change_wk": 43335,
+      "gspc_at_report": 6771.55
     },
     {
       "date": "2025-11-10",
       "lev_funds_net": -423003,
       "asset_mgr_net": 903326,
-      "open_interest": 1981117
+      "open_interest": 1981117,
+      "net_pct_oi": -21.4,
+      "lev_net_change_wk": -17617,
+      "gspc_at_report": 6832.43
     },
     {
       "date": "2025-11-18",
       "lev_funds_net": -358907,
       "asset_mgr_net": 912051,
-      "open_interest": 2037320
+      "open_interest": 2037320,
+      "net_pct_oi": -17.7,
+      "lev_net_change_wk": 64096,
+      "gspc_at_report": 6617.32
     },
     {
       "date": "2025-11-25",
       "lev_funds_net": -382958,
       "asset_mgr_net": 905294,
-      "open_interest": 2070962
+      "open_interest": 2070962,
+      "net_pct_oi": -18.5,
+      "lev_net_change_wk": -24051,
+      "gspc_at_report": 6765.88
     },
     {
       "date": "2025-12-02",
       "lev_funds_net": -443224,
       "asset_mgr_net": 940497,
-      "open_interest": 2074887
+      "open_interest": 2074887,
+      "net_pct_oi": -21.3,
+      "lev_net_change_wk": -60266,
+      "gspc_at_report": 6829.37
     },
     {
       "date": "2025-12-09",
       "lev_funds_net": -450002,
       "asset_mgr_net": 960525,
-      "open_interest": 2141031
+      "open_interest": 2141031,
+      "net_pct_oi": -21.0,
+      "lev_net_change_wk": -6778,
+      "gspc_at_report": 6840.51
     },
     {
       "date": "2025-12-16",
       "lev_funds_net": -389167,
       "asset_mgr_net": 969485,
-      "open_interest": 2466313
+      "open_interest": 2466313,
+      "net_pct_oi": -15.8,
+      "lev_net_change_wk": 60835,
+      "gspc_at_report": 6800.26
     },
     {
       "date": "2025-12-23",
       "lev_funds_net": -371060,
       "asset_mgr_net": 936903,
-      "open_interest": 1911017
+      "open_interest": 1911017,
+      "net_pct_oi": -19.4,
+      "lev_net_change_wk": 18107,
+      "gspc_at_report": 6909.79
     },
     {
       "date": "2025-12-30",
       "lev_funds_net": -366841,
       "asset_mgr_net": 941968,
-      "open_interest": 1936495
+      "open_interest": 1936495,
+      "net_pct_oi": -19.0,
+      "lev_net_change_wk": 4219,
+      "gspc_at_report": 6896.24
     },
     {
       "date": "2026-01-06",
       "lev_funds_net": -415904,
       "asset_mgr_net": 961339,
-      "open_interest": 1945513
+      "open_interest": 1945513,
+      "net_pct_oi": -21.4,
+      "lev_net_change_wk": -49063,
+      "gspc_at_report": 6944.82
     },
     {
       "date": "2026-01-13",
       "lev_funds_net": -445980,
       "asset_mgr_net": 931300,
-      "open_interest": 1909351
+      "open_interest": 1909351,
+      "net_pct_oi": -23.4,
+      "lev_net_change_wk": -30076,
+      "gspc_at_report": 6963.74
     },
     {
       "date": "2026-01-20",
       "lev_funds_net": -414085,
       "asset_mgr_net": 892394,
-      "open_interest": 1926910
+      "open_interest": 1926910,
+      "net_pct_oi": -21.5,
+      "lev_net_change_wk": 31895,
+      "gspc_at_report": 6796.86
     },
     {
       "date": "2026-01-27",
       "lev_funds_net": -427002,
       "asset_mgr_net": 911628,
-      "open_interest": 1897461
+      "open_interest": 1897461,
+      "net_pct_oi": -22.5,
+      "lev_net_change_wk": -12917,
+      "gspc_at_report": 6978.6
     },
     {
       "date": "2026-02-03",
       "lev_funds_net": -448125,
       "asset_mgr_net": 933226,
-      "open_interest": 1928476
+      "open_interest": 1928476,
+      "net_pct_oi": -23.2,
+      "lev_net_change_wk": -21123,
+      "gspc_at_report": 6917.81
     },
     {
       "date": "2026-02-10",
       "lev_funds_net": -423704,
       "asset_mgr_net": 924696,
-      "open_interest": 1934958
+      "open_interest": 1934958,
+      "net_pct_oi": -21.9,
+      "lev_net_change_wk": 24421,
+      "gspc_at_report": 6941.81
     },
     {
       "date": "2026-02-17",
       "lev_funds_net": -464292,
       "asset_mgr_net": 976865,
-      "open_interest": 1966090
+      "open_interest": 1966090,
+      "net_pct_oi": -23.6,
+      "lev_net_change_wk": -40588,
+      "gspc_at_report": 6843.22
     },
     {
       "date": "2026-02-24",
       "lev_funds_net": -475380,
       "asset_mgr_net": 1013144,
-      "open_interest": 2017196
+      "open_interest": 2017196,
+      "net_pct_oi": -23.6,
+      "lev_net_change_wk": -11088,
+      "gspc_at_report": 6890.07
     },
     {
       "date": "2026-03-03",
       "lev_funds_net": -406340,
       "asset_mgr_net": 1004768,
-      "open_interest": 2060733
+      "open_interest": 2060733,
+      "net_pct_oi": -19.7,
+      "lev_net_change_wk": 69040,
+      "gspc_at_report": 6816.63
     },
     {
       "date": "2026-03-10",
       "lev_funds_net": -349989,
       "asset_mgr_net": 898852,
-      "open_interest": 1996720
+      "open_interest": 1996720,
+      "net_pct_oi": -17.6,
+      "lev_net_change_wk": 56351,
+      "gspc_at_report": 6781.48
     },
     {
       "date": "2026-03-17",
       "lev_funds_net": -340507,
       "asset_mgr_net": 886828,
-      "open_interest": 2330659
+      "open_interest": 2330659,
+      "net_pct_oi": -14.6,
+      "lev_net_change_wk": 9482,
+      "gspc_at_report": 6716.09
     },
     {
       "date": "2026-03-24",
       "lev_funds_net": -344127,
       "asset_mgr_net": 878391,
-      "open_interest": 1879423
+      "open_interest": 1879423,
+      "net_pct_oi": -18.3,
+      "lev_net_change_wk": -3620,
+      "gspc_at_report": 6556.37
     },
     {
       "date": "2026-03-31",
       "lev_funds_net": -233412,
       "asset_mgr_net": 915718,
-      "open_interest": 1947769
+      "open_interest": 1947769,
+      "net_pct_oi": -12.0,
+      "lev_net_change_wk": 110715,
+      "gspc_at_report": 6528.52
     },
     {
       "date": "2026-04-07",
       "lev_funds_net": -244483,
       "asset_mgr_net": 940435,
-      "open_interest": 1929090
+      "open_interest": 1929090,
+      "net_pct_oi": -12.7,
+      "lev_net_change_wk": -11071,
+      "gspc_at_report": 6616.85
     },
     {
       "date": "2026-04-14",
       "lev_funds_net": -420356,
       "asset_mgr_net": 1003143,
-      "open_interest": 1959076
+      "open_interest": 1959076,
+      "net_pct_oi": -21.4,
+      "lev_net_change_wk": -175873,
+      "gspc_at_report": 6967.38
     },
     {
       "date": "2026-04-21",
       "lev_funds_net": -412321,
       "asset_mgr_net": 1014927,
-      "open_interest": 1963317
+      "open_interest": 1963317,
+      "net_pct_oi": -21.0,
+      "lev_net_change_wk": 8035,
+      "gspc_at_report": 7064.01
     },
     {
       "date": "2026-04-28",
       "lev_funds_net": -407490,
       "asset_mgr_net": 994815,
-      "open_interest": 1959933
+      "open_interest": 1959933,
+      "net_pct_oi": -20.8,
+      "lev_net_change_wk": 4831,
+      "gspc_at_report": 7138.8
     },
     {
       "date": "2026-05-05",
       "lev_funds_net": -405875,
       "asset_mgr_net": 1009888,
-      "open_interest": 1987685
+      "open_interest": 1987685,
+      "net_pct_oi": -20.4,
+      "lev_net_change_wk": 1615,
+      "gspc_at_report": 7259.22
     },
     {
       "date": "2026-05-12",
       "lev_funds_net": -432438,
       "asset_mgr_net": 1054872,
-      "open_interest": 2056229
+      "open_interest": 2056229,
+      "net_pct_oi": -21.1,
+      "lev_net_change_wk": -26563,
+      "gspc_at_report": 7400.96
     },
     {
       "date": "2026-05-19",
       "lev_funds_net": -401554,
       "asset_mgr_net": 1005420,
-      "open_interest": 2068443
+      "open_interest": 2068443,
+      "net_pct_oi": -19.4,
+      "lev_net_change_wk": 30884,
+      "gspc_at_report": 7353.61
     },
     {
       "date": "2026-05-26",
       "lev_funds_net": -457780,
       "asset_mgr_net": 1003607,
-      "open_interest": 2093621
+      "open_interest": 2093621,
+      "net_pct_oi": -21.9,
+      "lev_net_change_wk": -56226,
+      "gspc_at_report": 7519.12
     },
     {
       "date": "2026-06-02",
       "lev_funds_net": -500732,
       "asset_mgr_net": 981859,
-      "open_interest": 2149231
+      "open_interest": 2149231,
+      "net_pct_oi": -23.3,
+      "lev_net_change_wk": -42952,
+      "gspc_at_report": 7609.78
     },
     {
       "date": "2026-06-09",
       "lev_funds_net": -451586,
       "asset_mgr_net": 984086,
-      "open_interest": 2203164
+      "open_interest": 2203164,
+      "net_pct_oi": -20.5,
+      "lev_net_change_wk": 49146,
+      "gspc_at_report": 7386.65
     },
     {
       "date": "2026-06-16",
       "lev_funds_net": -515520,
       "asset_mgr_net": 984009,
-      "open_interest": 2579920
+      "open_interest": 2579920,
+      "net_pct_oi": -20.0,
+      "lev_net_change_wk": -63934,
+      "gspc_at_report": 7511.35
     },
     {
       "date": "2026-06-23",
       "lev_funds_net": -373468,
       "asset_mgr_net": 992729,
-      "open_interest": 1980254
+      "open_interest": 1980254,
+      "net_pct_oi": -18.9,
+      "lev_net_change_wk": 142052,
+      "gspc_at_report": 7365.46
     },
     {
       "date": "2026-06-30",
       "lev_funds_net": -360469,
       "asset_mgr_net": 976189,
-      "open_interest": 1967167
+      "open_interest": 1967167,
+      "net_pct_oi": -18.3,
+      "lev_net_change_wk": 12999,
+      "gspc_at_report": 7499.36
     },
     {
       "date": "2026-07-07",
       "lev_funds_net": -361875,
       "asset_mgr_net": 970592,
-      "open_interest": 1969636
+      "open_interest": 1969636,
+      "net_pct_oi": -18.3,
+      "lev_net_change_wk": -1406,
+      "gspc_at_report": 7503.85
     },
     {
       "date": "2026-07-14",
       "lev_funds_net": -365002,
       "asset_mgr_net": 940472,
-      "open_interest": 1941500
+      "open_interest": 1941500,
+      "net_pct_oi": -18.8,
+      "lev_net_change_wk": -3127,
+      "gspc_at_report": 7543.59
     },
     {
       "date": "2026-07-21",
       "lev_funds_net": -322865,
       "asset_mgr_net": 929159,
-      "open_interest": 1939493
+      "open_interest": 1939493,
+      "net_pct_oi": -16.6,
+      "lev_net_change_wk": 42137,
+      "gspc_at_report": 7509.2
     },
     {
       "date": "2026-07-28",
       "lev_funds_net": -297476,
       "asset_mgr_net": 944770,
-      "open_interest": 1984408
+      "open_interest": 1984408,
+      "net_pct_oi": -15.0,
+      "lev_net_change_wk": 25389,
+      "gspc_at_report": 7428.78
     }
   ],
   "latest": {
     "date": "2026-07-28",
     "lev_funds_net": -297476,
     "asset_mgr_net": 944770,
-    "open_interest": 1984408
+    "open_interest": 1984408,
+    "net_pct_oi": -15.0,
+    "lev_net_change_wk": 25389,
+    "gspc_at_report": 7428.78
+  },
+  "stats": {
+    "lev_net_pctile_156": 58.1,
+    "lev_net_zscore_156": 0.32,
+    "mean": -16.24,
+    "std": 3.82,
+    "p80": -13.2,
+    "p20": -19.7,
+    "current": -15.0,
+    "window_weeks": 156
   },
   "trend": {
-    "sma50_above_sma200": true,
+    "trend_signal": 0.577,
     "last_close": 7489.72,
-    "sma50": 7471.51,
-    "sma200": 7024.11,
+    "flip_levels": {
+      "20": 7481.15,
+      "50": 7471.51,
+      "100": 7208.51,
+      "200": 7024.11
+    },
     "bias": "long"
   },
-  "note": "CFTC COT ≠ echte CTA-Positionierung — nur Näherung über Leveraged-Funds/Asset-Manager im E-mini S&P 500. Wöchentlich, ~3 Tage Meldeverzug (Stand Dienstag, Veröffentlichung Freitag). Kein Live-Bild, kein Handelssignal."
+  "note": "CFTC COT ≠ echte CTA-Positionierung — nur Näherung über Leveraged-Funds im E-mini S&P 500. 'Leveraged Funds' ist ein Mischtopf (u.a. Basis-Arbitrage), das rohe Vorzeichen ist irreführend → aussagekräftig ist nur die Abweichung vom eigenen 3-Jahres-Schnitt (Perzentil/z-Score) auf OI-normierter Basis. Wöchentlich, ~3 Tage Meldeverzug (Stichtag Dienstag, Veröffentlichung Freitag). Trend-Signal = Multi-Window-SMA-Proxy, KEINE proprietären $-Trigger-Level. Kein Live-Bild, kein Handelssignal."
 }
