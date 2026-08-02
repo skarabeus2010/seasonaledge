@@ -66,11 +66,11 @@ What we can show is the **Friday dimension** of the effect. The chart below show
 
 The Friday bar is a *close-to-close* average across **all** Fridays — so it isolates neither the third Friday nor the opening jump. It only frames how the weekday on which the SOQ falls behaves overall. This distinction — what we can measure and what we cannot — is the core of serious data work.
 
-To place it in the bigger picture, here is the normalized yearly path. The monthly options expiration is a recurring event within this underlying pattern:
+What mechanically drives the expiration is the **vanna exposure per expiry**. Vanna measures how dealer hedges shift as implied volatility moves — when vol falls into expiration, short-vanna dealers buy the underlying and support the price:
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — Vanna exposure by expiry: vol-driven dealer flows into the expirations](opex-effekt-sp500-third-friday-drift/chart-vanna-by-term-spy.png)
 
-Each year starts at 100 and daily returns compound onto it; the shaded band (±1 standard deviation) shows the dispersion. Twelve monthly expiration dates sit inside this frame — the calendar marks them, the mechanism explains them.
+Each bar is one expiration date; its height shows how strongly dealer hedges there react to a change in vol. These vanna and charm flows are the most plausible driver behind the calm upward drift into OPEX week — the calendar marks the dates, the mechanism explains them.
 
 ## Limits and counter-examples: not a free lunch
 

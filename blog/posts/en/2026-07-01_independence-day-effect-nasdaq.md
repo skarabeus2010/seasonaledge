@@ -27,7 +27,7 @@ This is not a random find but a well-known phenomenon with its own name: the **h
 
 The chart below shows the average cumulative return of QQQ around Independence Day over 20 years. The time axis is aligned to the holiday: `t−3`, `t−2`, `t−1` are the trading days **before** the closure, `t0` marks the **first trading day on or after the holiday**, and `t+1` to `t+3` the days after. The start of the window is normalized to 0 % so different years can be averaged fairly.
 
-![QQQ — cumulative path around Independence Day (t−3 to t+3)](images/independence-day-qqq/holiday-verlauf-en.png)
+![QQQ — cumulative path around Independence Day (t−3 to t+3)](independence-day-qqq/holiday-verlauf-en.png)
 
 The picture is clear: even **before** the holiday the index climbs — from 0 % at `t−3` to around +0.88 % by `t0`. That is the **pre-holiday effect**: on the last thin trading days before a market closure, stocks have historically drifted higher. After the holiday it continues: by `t+3` the average window return sums to **+1.47 %** — the **post-holiday drift**.
 
@@ -37,7 +37,7 @@ What stands out is the steadiness. The path climbs across almost the entire wind
 
 An average alone says little — what matters is whether it differs statistically from zero or whether we are just looking at noise. For that we run a **t-test** of the 20 window returns against zero.
 
-![Significance test QQQ Independence Day — relevance 0.80, significant](images/independence-day-qqq/signifikanz-en.png)
+![Significance test QQQ Independence Day — relevance 0.80, significant](independence-day-qqq/signifikanz-en.png)
 
 The numbers speak clearly:
 

@@ -27,7 +27,7 @@ Das ist kein Zufallsfund, sondern ein bekanntes Phänomen mit eigenem Namen: der
 
 Der folgende Verlauf zeigt die durchschnittliche, kumulierte Rendite des QQQ rund um den Independence Day über 20 Jahre. Die Zeitachse ist am Feiertag ausgerichtet: `t−3`, `t−2`, `t−1` sind die Handelstage **vor** der Schließung, `t0` markiert den **ersten Handelstag am oder nach dem Feiertag**, `t+1` bis `t+3` die Tage danach. Der Fensterbeginn ist auf 0 % normiert, damit sich verschiedene Jahre fair mitteln lassen.
 
-![QQQ — kumulierter Verlauf rund um Independence Day (t−3 bis t+3)](images/independence-day-qqq/holiday-verlauf.png)
+![QQQ — kumulierter Verlauf rund um Independence Day (t−3 bis t+3)](independence-day-qqq/holiday-verlauf.png)
 
 Man sieht ein klares Bild: Schon **vor** dem Feiertag zieht der Index an — von 0 % bei `t−3` auf rund +0,88 % bis `t0`. Das ist der **Pre-Holiday-Effekt**: An den letzten dünnen Handelstagen vor einer Börsenschließung tendierten Aktien historisch überdurchschnittlich nach oben. Nach dem Feiertag geht es weiter: Bis `t+3` summiert sich die durchschnittliche Fenster-Rendite auf **+1,47 %** — der **Post-Holiday-Drift**.
 
@@ -37,7 +37,7 @@ Bemerkenswert ist die Gleichmäßigkeit. Der Verlauf klettert über fast das ges
 
 Ein Durchschnitt allein sagt wenig — entscheidend ist, ob er sich statistisch von null unterscheidet oder ob wir nur Rauschen betrachten. Dafür rechnen wir einen **t-Test** der 20 Fenster-Renditen gegen null.
 
-![Signifikanz-Test QQQ Independence Day — Relevance 0,80, signifikant](images/independence-day-qqq/signifikanz.png)
+![Signifikanz-Test QQQ Independence Day — Relevance 0,80, signifikant](independence-day-qqq/signifikanz.png)
 
 Die Zahlen sprechen eine klare Sprache:
 

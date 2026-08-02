@@ -65,11 +65,11 @@ Was wir zeigen können, ist die **Freitags-Dimension** des Effekts. Der folgende
 
 Der Balken für den Freitag ist ein *Close-zu-Close*-Mittel über **alle** Freitage — er isoliert also nicht den dritten Freitag und erst recht nicht den Eröffnungs-Sprung. Er ordnet nur ein, wie sich der Wochentag insgesamt verhält, an dem die SOQ stattfindet. Genau diese Trennung — was wir messen können und was nicht — ist der Kern seriöser Datenarbeit.
 
-Zur Einordnung des größeren Bilds dient der normalisierte Jahresverlauf. Der monatliche Options-Verfall ist ein wiederkehrendes Ereignis innerhalb dieses Grundmusters:
+Was den Verfall mechanisch antreibt, zeigt die **Vanna-Exposure je Verfallstermin**. Vanna misst, wie sich die Dealer-Absicherung mit der impliziten Volatilität verschiebt — fällt die Vola in den Verfall hinein, kaufen short-Vanna-Dealer Basiswert nach und stützen den Kurs:
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — Vanna-Exposure je Verfall: vola-getriebene Dealer-Flows in die Optionsverfalle](opex-effekt-sp500-third-friday-drift/chart-vanna-by-term-spy.png)
 
-Jedes Jahr startet bei 100, die täglichen Renditen kumulieren darauf; das schattierte Band (±1 Standardabweichung) zeigt die Streuung. In diesem Rahmen sitzen zwölf monatliche Verfallstermine — der Kalender markiert sie, der Mechanismus erklärt sie.
+Jeder Balken steht für einen Verfallstermin; die Höhe zeigt, wie stark die Dealer-Absicherung dort auf Vola-Änderungen reagiert. Genau diese Vanna- und Charm-Flows sind der plausibelste Treiber hinter der ruhigen Aufwärtsdrift in die OPEX-Woche — der Kalender markiert die Termine, der Mechanismus erklärt sie.
 
 ## Grenzen und Gegenbeispiele: kein Freifahrtschein
 

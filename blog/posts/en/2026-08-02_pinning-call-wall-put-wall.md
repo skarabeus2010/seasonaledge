@@ -72,9 +72,9 @@ They supplied the theory to match the evidence: a feedback model in which the op
 
 Pinning is a calendar event. The big monthly options expiration always falls on the third Friday, and four times a year — in **March, June, September and December** — it coincides with the expiry of index futures and index options (**triple witching**). That is when open interest is largest, and precisely where pinning and wall effects tend to be strongest.
 
-{{chart:monthly_cycle:SPY:20}}
+![QQQ — Gamma exposure by strike: the tallest bars mark call wall, put wall and pin zones](pinning-call-wall-put-wall/chart-gamma-by-strike-qqq.png)
 
-The chart shows **no** walls — those are live and updated daily on our dealer positioning page. It shows SPY's seasonal monthly rhythm over 20 years (normalized returns, each year starts at 100), the rhythm in which the expiry cycle is embedded every month, with the current month highlighted. That is the interplay: the calendar delivers the pattern, dealer positioning delivers the mechanism beneath it.
+The chart shows the **gamma exposure of QQQ by strike** on a sample day. The tallest positive bars (green) above the price form the **call wall**, the deepest negative ones (red) below form the **put wall** — between them sits the pin zone where price tends to "cling" into expiration. Live and updated daily for every underlying on our dealer positioning page. That is the interplay: the calendar delivers the pattern, dealer positioning delivers the mechanism beneath it.
 
 For retail investors this means a wall strike is never an isolated number. It carries the most weight around the four triple-witching dates, when the bulk of open interest piles up at the same strikes.
 
@@ -85,8 +85,7 @@ Dealer positioning is a YMYL topic (Your Money or Your Life). So we are delibera
 - **Walls are concentration references, not barriers.** There is no guarantee the price turns at them. They only mark where hedging activity is densest — **not a buy or sell signal**.
 - **The effect is statistical and small.** 16.5 basis points is an average across thousands of cases, not a tradable single-day swing. Pinning explains a tendency, not an individual move.
 - **Prices can also be pushed away.** Golez and Jackwerth documented anti-cross-pinning before index expirations. The "magnet" can reverse.
-- **We use a naive dealer heuristic** (assumption: long calls, short puts) on **end-of-day Yahoo data** — open interest and implied volatility at the close. Providers like SpotGamma or SqueezeMetrics use proprietary inventory models including intraday and 0DTE data. **Our numbers differ from theirs**; they are a solid approximation, not a picture of real dealer books.
-- **US-listed underlyings only.** For the DAX, `^GDAXI` or German stocks with a `.DE` suffix, Yahoo provides no option chain — there is no wall picture there. Use SPY or QQQ as a liquid reference for the broad market.
+- **We use a naive dealer heuristic** (assumption: long calls, short puts) on **end-of-day Yahoo data** — open interest and implied volatility at the close. Commercial providers use proprietary inventory models including intraday and 0DTE data. **Our numbers differ from theirs**; they are a solid approximation, not a picture of real dealer books.
 
 These limits are not a flaw but part of an honest method. Anyone who takes walls seriously needs to know how reliable the data behind them is.
 
@@ -117,10 +116,6 @@ The call wall is the strike above the price with the largest positive net dealer
 ### Are call walls and put walls reliable trading signals?
 
 No. They are concentration references, not guarantees, and not a buy or sell signal. The pinning effect is small on average (around 16.5 basis points), and strong news or macro events can override the picture at any time. Use walls for orientation, not as a trigger.
-
-### Can I see call and put walls for the DAX?
-
-No. Our data source only provides an option chain for US-listed underlyings. For the DAX, `^GDAXI` or German stocks with a `.DE` suffix there is no wall picture. SPY and QQQ are the most liquid reference for the broad market.
 
 ### Why are pinning effects stronger on triple-witching days?
 

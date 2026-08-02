@@ -65,7 +65,7 @@ Ein reales Beispiel aus unserem Live-Snapshot vom 2. August 2026 macht das greif
 
 Hier ist Sauberkeit wichtig, denn eine junge Finanzseite muss ihre Quellen ehrlich trennen.
 
-**Der Ursprung ist Praktiker-Wissen.** Der Begriff „GEX" und die Zwei-Regime-Intuition stammen aus dem **SqueezeMetrics-White-Paper (2016)**. Deren viel zitierte These: Bei niedriger Volatilität sagt das Vorzeichen des Gamma die Marktstabilität besser vorher als der VIX selbst. Das ist eine anregende Beobachtung — aber es ist eine **Vendor-Quelle**, kein peer-reviewtes Ergebnis. So sollte man es auch behandeln.
+**Der Ursprung ist Praktiker-Wissen.** Der Begriff „GEX" und die Zwei-Regime-Intuition stammen aus einem **Branchen-White-Paper (2016)**. Deren viel zitierte These: Bei niedriger Volatilität sagt das Vorzeichen des Gamma die Marktstabilität besser vorher als der VIX selbst. Das ist eine anregende Beobachtung — aber es ist eine **Vendor-Quelle**, kein peer-reviewtes Ergebnis. So sollte man es auch behandeln.
 
 **Die akademische Validierung** liefert die Arbeit **„Gamma Fragility" von Barbon & Buraschi (2021)**. Sie zeigen mit harten Daten: Ist das aggregierte Dealer-Gamma **negativ**, entsteht Intraday-**Momentum** (Bewegungen setzen sich fort); ist es **positiv**, dominiert **Reversal** (Bewegungen kehren um). Der Effekt ist in illiquiden Phasen am stärksten. Das deckt sich exakt mit der Stoßdämpfer-vs.-Brandbeschleuniger-Logik.
 
@@ -85,11 +85,11 @@ Du findest die Ampel live auf der Seite [Dealer Positioning](/dealer-positioning
 
 Jetzt der Teil, den kein reiner Gamma-Anbieter liefert. GEX-Seiten zeigen den Zustand im Jetzt. Saisonalitäts-Seiten zeigen das Kalendermuster im Mittel. **Wir besitzen beides** — und das ist der eigentliche Hebel.
 
-{{chart:seasonal_yearly:SPY:20}}
+![SPY — net-Gamma je Verfall: das Vorzeichen je Laufzeit zeigt das Dealer-Regime](long-gamma-short-gamma-regime/chart-gamma-by-term-spy.png)
 
-Der Chart zeigt den typischen Jahresverlauf des SPY über 20 Jahre (normierte Renditen, jedes Jahr startet bei 100) samt dem **±1σ-Band** — dem Streuungskorridor. Achte weniger auf die Mittellinie als auf die **Breite des Bandes**: Wo es sich weitet, war die historische Streuung groß; wo es eng ist, verlief das Jahr ruhiger. Genau diese saisonale Streuung ist der Ort, an dem Gamma-Regime und Kalender zusammenkommen.
+Der Chart zeigt das **net-Gamma des SPY je Verfallstermin**. Das Vorzeichen je Laufzeit verrät das Regime: positive Balken (grün) stehen für **Long-Gamma** — Dealer dämpfen Bewegungen, der Markt läuft ruhiger; negative (rot) für **Short-Gamma** — Dealer verstärken Bewegungen, der Markt wird fragiler. Genau hier, im Wechsel dieser Regime entlang des Kalenders, kommen Gamma-Regime und Saisonalität zusammen.
 
-{{chart:monthly_cycle:SPY:20}}
+
 
 Die zweite Grafik bricht das auf einzelne Kalendermonate herunter (aktueller Monat hervorgehoben). Der Spätsommer und der Frühherbst gehören historisch zu den holprigeren Fenstern des Jahres — dünnere Liquidität, breitere Streuung. Ein Markt, der ausgerechnet in einem solchen Fenster **short Gamma** ist (wie im Snapshot oben), verbindet zwei fragilitäts-fördernde Faktoren: den strukturellen Verstärker aus der Options-Mechanik und die saisonal dünnere Liquidität. Aus „Muster" wird so „Mechanismus plus Kontext".
 
@@ -99,11 +99,10 @@ Das ist der Moat: Wir zeigen nicht nur, *dass* ein Fenster statistisch auffälli
 
 Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb legen wir die Grenzen offen, statt Präzision vorzutäuschen:
 
-- **Naive Dealer-Heuristik.** Wir nehmen an, Dealer sind long Calls und short Puts. Das ist eine bewährte erste Näherung für Index-Gamma, aber **kein echtes Inventory-Modell** wie bei SpotGamma oder SqueezeMetrics — und keine Kenntnis der realen Dealer-Bücher.
+- **Naive Dealer-Heuristik.** Wir nehmen an, Dealer sind long Calls und short Puts. Das ist eine bewährte erste Näherung für Index-Gamma, aber **kein echtes Inventory-Modell** wie bei kommerziellen Anbietern — und keine Kenntnis der realen Dealer-Bücher.
 - **EOD-Daten von Yahoo.** Wir rechnen auf Open Interest und impliziter Vola zum Handelsschluss. Unsere Werte weichen daher von proprietären Intraday-/0DTE-Modellen ab.
 - **Live-Snapshot, keine Zeitreihe.** Unsere Gamma-Historie beginnt erst mit dem Snapshot-Cron (ab Sommer 2026). Aussagen wie „wie oft war der Markt short Gamma" lassen sich (noch) **nicht** sauber backtesten — die Ampel ist ein aktueller Stand, keine geprüfte historische Statistik.
 - **Kein Signal.** Das Regime ist Kontext, kein Kauf- oder Verkaufssignal. Der akademische Fragilitäts-Effekt ist intraday und transitorisch (ein bis zwei Tage) — wir nutzen nur die Klassifikation.
-- **Nur US-Basiswerte.** Für den DAX, `^GDAXI` oder `.DE`-Aktien liefert Yahoo keine Optionskette — dort gibt es kein Gamma-Bild. Nutze SPY oder QQQ als liquide Referenz.
 
 Diese Grenzen sind kein Makel, sondern Teil der Methode. Wer das Regime ernst nimmt, muss wissen, wie belastbar die Datenbasis ist.
 
@@ -111,7 +110,7 @@ Diese Grenzen sind kein Makel, sondern Teil der Methode. Wer das Regime ernst ni
 
 Das Gamma-Regime ist der einprägsamste Baustein im Dealer Positioning: Ein einziges Vorzeichen entscheidet, ob Dealer den Markt dämpfen (long Gamma, vola-reduzierend) oder anheizen (short Gamma, vola-forcierend). Der Zero-Gamma-Flip markiert den Kipppunkt — und die Nähe des Kurses dazu ist ein Fragilitäts-Barometer.
 
-Praktikerwissen von SqueezeMetrics, akademisch gestützt durch Barbon & Buraschi, ehrlich gelabelt als Regime-Kontext ohne Signal-Anspruch: So wird aus einem Buzzword ein nützliches Denkwerkzeug. Und wenn du es mit unserem Saisonkalender kombinierst, siehst du nicht nur den aktuellen Zustand, sondern auch, in welchem saisonalen Umfeld er auftritt. Probiere die Gamma-Ampel auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
+Praktikerwissen aus der Branche, akademisch gestützt durch Barbon & Buraschi, ehrlich gelabelt als Regime-Kontext ohne Signal-Anspruch: So wird aus einem Buzzword ein nützliches Denkwerkzeug. Und wenn du es mit unserem Saisonkalender kombinierst, siehst du nicht nur den aktuellen Zustand, sondern auch, in welchem saisonalen Umfeld er auftritt. Probiere die Gamma-Ampel auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
 
 ## Häufige Fragen
 
@@ -129,27 +128,4 @@ Nein. Es ist ein struktureller Kontext, kein Kauf- oder Verkaufssignal. Der wiss
 
 ### Schlägt GEX wirklich den VIX?
 
-Das ist die These aus dem SqueezeMetrics-White-Paper — bei niedriger Volatilität soll das Gamma-Vorzeichen die Stabilität besser anzeigen als der VIX. Das ist eine anregende Praktiker-Beobachtung aus einer Vendor-Quelle, kein peer-reviewtes Ergebnis. Wir behandeln es als Hypothese, nicht als Gesetz.
-
-### Kann ich das Gamma-Regime für den DAX sehen?
-
-Nein. Unsere Datenquelle liefert nur für US-gelistete Basiswerte eine Optionskette. Für den DAX, `^GDAXI` oder deutsche Aktien mit `.DE`-Endung gibt es kein Gamma-Bild. Nutze SPY oder QQQ als liquide Referenz für den Gesamtmarkt.
-
-<!--
-#### Social Media Snippet
-
-**LinkedIn:** Warum sind manche Börsentage ruhig und andere wild? Oft entscheidet das Gamma-Regime: Long Gamma (Dealer dämpfen) vs. Short Gamma (Dealer verstärken). Der Zero-Gamma-Flip ist der Kipppunkt dazwischen. Neuer Artikel: Wie wir das als Gamma-Ampel sichtbar machen — Praktiker-Idee (SqueezeMetrics), akademisch validiert (Barbon & Buraschi 2021), ehrlich gelabelt: naive Heuristik auf EOD-Daten, kein Signal. Und der Clou: kombiniert mit unserem Saisonkalender. https://seasonalpha.ai/dealer-positioning
-
-**Twitter/X:** Long Gamma vs. Short Gamma — das Regime, das über Marktvolatilität entscheidet. 🟢 Long = Dealer dämpfen (Stoßdämpfer). 🔴 Short = Dealer verstärken (Brandbeschleuniger). Der Zero-Gamma-Flip ist der Kipppunkt. Neu erklärt + Gamma-Ampel: seasonalpha.ai/dealer-positioning #Gamma #GEX #Volatilität
-
-#### Interne Verlinkung
-- /dealer-positioning (Haupt-Feature: Markt-Gamma-Index + Gamma-Ampel)
-- /crash-fruehwarnung (Fragilität aus dem breiteren Marktregime)
-- Blog: dealer-positioning-gamma-vanna-charm (Basisartikel — Gamma/Vanna/Charm/Walls)
-- /opex + /vixpiration (Vola-Zyklus rund um den Verfall einordnen)
-
-#### Content-Ideen (Folgeartikel)
-- „Pinning & Walls: zieht der Kurs wirklich zum großen Strike?" (Ni/Pearson/Poteshman)
-- „Volatility Skew erklärt: warum OTM-Puts dauerhaft teurer sind" (Gârleanu/Pedersen/Poteshman)
-- „Post-OPEX-Vola: was nach dem großen Verfall passiert" (Triple Witching)
--->
+Das ist die These aus einem Branchen-White-Paper — bei niedriger Volatilität soll das Gamma-Vorzeichen die Stabilität besser anzeigen als der VIX. Das ist eine anregende Praktiker-Beobachtung aus einer Vendor-Quelle, kein peer-reviewtes Ergebnis. Wir behandeln es als Hypothese, nicht als Gesetz.
