@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-08-03T06:04:13+00:00",
+  "today": "2026-08-03",
+  "n_snapshots": 1,
+  "ready": false,
+  "sectors": [
+    {
+      "ticker": "XLK",
+      "name": "Technologie"
+    },
+    {
+      "ticker": "XLF",
+      "name": "Finanzen"
+    },
+    {
+      "ticker": "XLE",
+      "name": "Energie"
+    },
+    {
+      "ticker": "XLV",
+      "name": "Gesundheit"
+    },
+    {
+      "ticker": "XLI",
+      "name": "Industrie"
+    },
+    {
+      "ticker": "XLY",
+      "name": "Zykl. Konsum"
+    },
+    {
+      "ticker": "XLP",
+      "name": "Basiskonsum"
+    },
+    {
+      "ticker": "XLU",
+      "name": "Versorger"
+    },
+    {
+      "ticker": "XLB",
+      "name": "Rohstoffe"
+    },
+    {
+      "ticker": "XLRE",
+      "name": "Immobilien"
+    },
+    {
+      "ticker": "XLC",
+      "name": "Kommunikation"
+    }
+  ],
+  "weeks": [],
+  "flows_mn": {
+    "XLK": [],
+    "XLF": [],
+    "XLE": [],
+    "XLV": [],
+    "XLI": [],
+    "XLY": [],
+    "XLP": [],
+    "XLU": [],
+    "XLB": [],
+    "XLRE": [],
+    "XLC": []
+  },
+  "top_week": {
+    "week": null,
+    "inflows": [],
+    "outflows": []
+  },
+  "latest_snapshot": [
+    {
+      "ticker": "XLK",
+      "name": "Technologie",
+      "shares_out": 272056000,
+      "price": 175.35,
+      "aum_bn": 47.7
+    },
+    {
+      "ticker": "XLF",
+      "name": "Finanzen",
+      "shares_out": 883444992,
+      "price": 56.94,
+      "aum_bn": 50.3
+    },
+    {
+      "ticker": "XLE",
+      "name": "Energie",
+      "shares_out": 186424000,
+      "price": 59.55,
+      "aum_bn": 11.1
+    },
+    {
+      "ticker": "XLV",
+      "name": "Gesundheit",
+      "shares_out": 197415008,
+      "price": 162.55,
+      "aum_bn": 32.1
+    },
+    {
+      "ticker": "XLI",
+      "name": "Industrie",
+      "shares_out": 136626000,
+      "price": 179.84,
+      "aum_bn": 24.6
+    },
+    {
+      "ticker": "XLY",
+      "name": "Zykl. Konsum",
+      "shares_out": 120253000,
+      "price": 116.09,
+      "aum_bn": 14.0
+    },
+    {
+      "ticker": "XLP",
+      "name": "Basiskonsum",
+      "shares_out": 210172000,
+      "price": 85.05,
+      "aum_bn": 17.9
+    },
+    {
+      "ticker": "XLU",
+      "name": "Versorger",
+      "shares_out": 163274000,
+      "price": 44.35,
+      "aum_bn": 7.2
+    },
+    {
+      "ticker": "XLB",
+      "name": "Rohstoffe",
+      "shares_out": 71923696,
+      "price": 50.43,
+      "aum_bn": 3.6
+    },
+    {
+      "ticker": "XLRE",
+      "name": "Immobilien",
+      "shares_out": 179772673,
+      "price": 45.07,
+      "aum_bn": 8.1
+    },
+    {
+      "ticker": "XLC",
+      "name": "Kommunikation",
+      "shares_out": 205674657,
+      "price": 108.24,
+      "aum_bn": 22.3
+    },
+    {
+      "ticker": "SPY",
+      "name": "S&P 500",
+      "shares_out": 917782016,
+      "price": 747.03,
+      "aum_bn": 685.6
+    },
+    {
+      "ticker": "QQQ",
+      "name": "Nasdaq 100",
+      "shares_out": 393100000,
+      "price": 687.99,
+      "aum_bn": 270.4
+    },
+    {
+      "ticker": "IWM",
+      "name": "Russell 2000",
+      "shares_out": 281049984,
+      "price": 291.2,
+      "aum_bn": 81.8
+    },
+    {
+      "ticker": "TLT",
+      "name": "Langläufer-Anleihen",
+      "shares_out": 109700000,
+      "price": 82.25,
+      "aum_bn": 9.0
+    },
+    {
+      "ticker": "GLD",
+      "name": "Gold",
+      "shares_out": 260300000,
+      "price": 371.54,
+      "aum_bn": 96.7
+    }
+  ],
+  "note": "Proxy: Netto-Flow ≈ ΔShares-Outstanding × Preis (rechnet die Marktbewegung heraus). Yahoo aktualisiert Shares-Outstanding träge und liefert keinen Verlauf → Flows sind lumpig, die Historie wird ab Aktivierung täglich vorwärts aufgebaut. Positiv = Creations (Zufluss), negativ = Redemptions (Abfluss). Kein Handelssignal."
+}

@@ -108,8 +108,8 @@
     <h1 class="page-title"><b>Strukturelle</b> Markt-Flows</h1>
     <p class="page-caption" id="asof">
       Die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt &mdash; wer <i>muss</i> kaufen oder
-      verkaufen, unabhängig von einer Meinung über den fairen Wert. Fünf Perspektiven: Index-Rebalancing,
-      Buyback-Blackout, CTA-Positionierung, Vol-Control-Leverage und Short-Volume.
+      verkaufen, unabhängig von einer Meinung über den fairen Wert. Sechs Perspektiven: Index-Rebalancing,
+      Buyback-Blackout, ETF-Flows, CTA-Positionierung, Vol-Control-Leverage und Short-Volume.
     </p>
     <div class="disc">
       <b>Ehrlicher Hinweis:</b> Alle Panels zeigen <b>strukturellen, nicht-fundamentalen</b> Kontext und sind bewusst
@@ -153,6 +153,17 @@
         <div id="bb-hw"></div>
       </div>
       <p class="note" id="bb-note"></p>
+    </section>
+
+    <!-- Panel C — ETF-Flows / Sektor-Rotation -->
+    <section class="panel" id="p-etf">
+      <h2><span class="em">🔄</span>ETF-Flows &amp; Sektor-Rotation</h2>
+      <p class="sub">ETF-Zu- und Abflüsse (Creations/Redemptions &asymp; ΔShares-Outstanding &times; Preis, die
+        Marktbewegung ist herausgerechnet) zeigen, wohin Kapital rotiert &mdash; rein in einen Sektor, raus aus einem
+        anderen. Grün = Zufluss (Creation), rot = Abfluss (Redemption).</p>
+      <p class="framing" id="etf-framing"></p>
+      <div id="etf-body"></div>
+      <p class="note" id="etf-note"></p>
     </section>
 
     <!-- Panel D — COT Managed-Money -->
@@ -218,6 +229,12 @@
       Ankündigung +2&nbsp;T (Ende geschätzt aus Quartals-Kadenz). Marktkap. via Yahoo-Quote-Snapshot. $-Beträge sind
       extern zitierte Referenzen (~1&nbsp;Bio&nbsp;$/Jahr, S&amp;P&nbsp;DJI) bzw. Skalierungs-Schätzungen — <b>Autorisierung
       ≠ Ausführung</b>, und die Markt-Wirkung ist empirisch umstritten (SSGA: kein signifikanter Effekt).</p>
+      <h4>Panel C — ETF-Flows</h4>
+      <p>Netto-Flow &asymp; <b>ΔShares-Outstanding &times; Preis</b> je ETF (rechnet die Marktbewegung heraus, anders als
+      ΔAUM). Universum = 11 Select-Sector-SPDRs + breite Indizes/Risk-off (SPY/QQQ/IWM/TLT/GLD). Datenquelle Yahoo-Quote
+      (Shares-Outstanding bzw. netAssets/Preis). Yahoo aktualisiert Shares-Outstanding <b>träge</b> und liefert keinen
+      Verlauf &rarr; die Historie wird ab Aktivierung täglich <b>vorwärts</b> aufgebaut, belastbar nach ~2&nbsp;Wochen.
+      Späteres Upgrade: exaktere Issuer-CSVs.</p>
       <h4>Panel D — CTA / COT</h4>
       <p>CFTC „Traders in Financial Futures", wöchentlich, freie Socrata-API. Kernmetrik = <b>OI-normierte</b>
       Netto-Position (net&nbsp;%&nbsp;OI) der Leveraged Funds, eingeordnet als <b>Perzentil und z-Score über 3&nbsp;Jahre</b>
@@ -433,6 +450,48 @@
       document.getElementById('vc-note').innerHTML=(vt?'VIX-Term (3M/1M): <b>'+vt.ratio_3m_1m.toFixed(2)+'</b> ('+(vt.structure==='contango'?'Contango — ruhig':'Backwardation — Stress')+', Stand '+vt.date+'). ':'')+(d.note||'');
     }
 
+    // ── Panel C: ETF-Flows / Sektor-Rotation ────────────────────────────────
+    function renderEtf(d){
+      var body=document.getElementById('etf-body');
+      document.getElementById('etf-note').textContent=d.note||'';
+      if(!d.ready){
+        document.getElementById('etf-framing').innerHTML='<b>Panel neu aktiviert.</b> ETF-Flows brauchen Vorwärts-Historie — Yahoo liefert Shares-Outstanding nur als Tages-Snapshot ohne Verlauf. Aktuell erfasst: <b>'+d.n_snapshots+' Handelstag'+(d.n_snapshots===1?'':'e')+'</b>. Belastbare Wochen-Flows erscheinen ab ~2&nbsp;Wochen. Unten die aktuell getrackten ETFs &mdash; Beleg, dass die tägliche Erfassung läuft.';
+        var rows=(d.latest_snapshot||[]).map(function(e){
+          return '<tr><td><b>'+e.ticker+'</b></td><td>'+e.name+'</td><td>'+e.aum_bn.toLocaleString('de-DE')+' Mrd $</td><td>'+e.price.toLocaleString('de-DE')+'</td></tr>';
+        }).join('');
+        body.innerHTML='<div class="card" style="overflow:auto;max-height:420px"><table class="ev-list"><thead><tr>'+
+          '<th style="text-align:left;color:var(--muted);font-size:.66rem;padding:.4rem .6rem">ETF</th>'+
+          '<th style="text-align:left;color:var(--muted);font-size:.66rem;padding:.4rem .6rem">Segment</th>'+
+          '<th style="text-align:left;color:var(--muted);font-size:.66rem;padding:.4rem .6rem">AUM</th>'+
+          '<th style="text-align:left;color:var(--muted);font-size:.66rem;padding:.4rem .6rem">Kurs</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+        return;
+      }
+      // Ready: Heatmap Sektor × Woche + Top-Bewegungen
+      body.innerHTML='<div class="card"><div class="psub">Netto-Flow je Sektor &amp; Woche <span style="color:var(--muted);font-weight:400">(Mio $, grün=Zufluss / rot=Abfluss)</span></div><div id="etf-heat" style="min-height:340px"></div></div>'+
+        '<div class="card" style="margin-top:.8rem"><div class="psub">Top-Bewegungen '+((d.top_week&&d.top_week.week)||'')+'</div><div id="etf-top" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem"></div></div>';
+      var sectors=d.sectors||[], weeks=d.weeks||[];
+      var series=sectors.map(function(s){return {name:s.ticker,data:(d.flows_mn[s.ticker]||[])}}).reverse();
+      renderInto('etf-heat',{
+        chart:{type:'heatmap',height:340,background:'transparent',toolbar:{show:false},animations:{enabled:false},fontFamily:'DM Sans'},
+        theme:{mode:'dark'},series:series,dataLabels:{enabled:false},legend:{show:false},
+        stroke:{width:1,colors:['#0a0a0a']},
+        plotOptions:{heatmap:{radius:2,enableShades:false,colorScale:{ranges:[
+          {from:-1e9,to:-100,color:'#c0392b'},{from:-100,to:-1,color:'#e67e73'},
+          {from:-1,to:1,color:'#1c1c1c'},{from:1,to:100,color:'#4fd18b'},{from:100,to:1e9,color:'#1e9e5a'}
+        ]}}},
+        xaxis:{categories:weeks,labels:{style:{colors:MUT,fontSize:'10px'}}},
+        yaxis:{labels:{style:{colors:MUT,fontSize:'11px'}}},
+        tooltip:{theme:'dark',y:{formatter:function(v){return (v>=0?'+':'')+v+' Mio $'}}}
+      });
+      function movers(list,cls){return (list||[]).map(function(m){
+        return '<div class="hw-row"><span class="tk">'+m.ticker+'</span><span style="flex:1;color:var(--dim);font-size:.75rem">'+m.name+'</span><span class="'+cls+'" style="font-family:var(--f-m);font-weight:700">'+(m.flow_mn>=0?'+':'')+m.flow_mn+' Mio</span></div>';
+      }).join('')||'<div style="color:var(--muted);font-size:.8rem;padding:.4rem">—</div>';}
+      document.getElementById('etf-top').innerHTML=
+        '<div><div style="color:#30e878;font-size:.72rem;font-weight:700;margin-bottom:.3rem">Zuflüsse</div>'+movers(d.top_week&&d.top_week.inflows,'pos')+'</div>'+
+        '<div><div style="color:#ff4d5e;font-size:.72rem;font-weight:700;margin-bottom:.3rem">Abflüsse</div>'+movers(d.top_week&&d.top_week.outflows,'neg')+'</div>';
+      document.getElementById('etf-framing').innerHTML='<b>Was heißt das?</b> Proxy — kein Signal. Die Heatmap zeigt, wohin Kapital je Woche rotiert (ΔShares-Outstanding &times; Preis). Grüne Zellen = Zufluss in den Sektor, rote = Abfluss. Yahoo aktualisiert Shares-Outstanding träge → die Flows sind lumpig, aussagekräftig ist das Muster über mehrere Wochen, nicht ein einzelner Wert.';
+    }
+
     // ── Panel F: FINRA Short-Volume-Anteil ──────────────────────────────────
     function renderShortvol(d){
       var s=d.series||[]; if(!s.length){panelFail('sv-chart','Short-Volume-Daten folgen (Nightly-Cron).');return;}
@@ -469,6 +528,7 @@
     function init(){
       load('/landing/data/flows_rebalancing.json',renderRebal,'rb-body','Rebalancing-Termine folgen.');
       load('/landing/data/buyback_blackout.json',renderBuyback,'bb-chart','Blackout-Daten folgen (Nightly-Cron).');
+      load('/landing/data/etf_flows.json',renderEtf,'etf-body','ETF-Flow-Daten folgen (Nightly-Cron).');
       load('/landing/data/cot_positioning.json',renderCot,'cot-chart','COT-Daten folgen (wöchentlicher Cron).');
       load('/landing/data/volcontrol_proxy.json',renderVol,'vc-chart','Vol-Control-Daten folgen (Nightly-Cron).');
       load('/landing/data/shortvol_proxy.json',renderShortvol,'sv-chart','Short-Volume-Daten folgen (Nightly-Cron).');
