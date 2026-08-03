@@ -27,4 +27,5 @@ jobs:
             docker exec seasonalpha-app python3 scripts/build_cot_positioning.py 2>&1 | tail -3
             docker exec seasonalpha-app python3 scripts/build_buyback_blackout.py 2>&1 | tail -3
             docker exec seasonalpha-app python3 scripts/build_shortvol_proxy.py 2>&1 | tail -3
+            docker exec seasonalpha-app python3 scripts/build_etf_flows.py 2>&1 | tail -3
             echo "Flows update done: $(date)"

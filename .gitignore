@@ -23,3 +23,4 @@ landing/data/db_completeness.json
 scripts/video/out/
 landing/data/_mktcap_cache.json
 landing/data/_shortvol_history.json
+landing/data/_etf_flows_history.json
