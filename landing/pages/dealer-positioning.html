@@ -155,11 +155,13 @@
   <div id="footer-container"></div>
 
   <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/vendor/supabase-js.min.js"></script>
   <script src="/landing/js/auth.js"></script>
   <script src="/landing/js/i18n.js"></script>
   <script src="/landing/js/app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <!-- self-gehostet + defer: blockiert den Parser nicht mehr. Ein haengender Chart-Lib-Request
+       darf die Seite (Nav, KPIs, Tabelle) nicht laenger mit in den Abgrund ziehen. -->
+  <script src="/landing/vendor/apexcharts.min.js" defer></script>
   <script>
   !function(){
     var GREEN='#30e878',RED='#ff4d5e',ACC='#e8a820',MUT='#8a8270';
@@ -167,7 +169,15 @@
     var KEY={gamma:'gamma_usd_mn',vanna:'vanna_usd_mn',charm:'charm_usd_mn'};
     function err(m){var e=document.getElementById('error-banner');e.textContent=m;e.style.display='block'}
     function num(v,d){return (v==null)?'&mdash;':(v>=0?'+':'')+Number(v).toFixed(d==null?2:d)}
-    function fetchJSON(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    // Mit Timeout: ein haengender Request muss im Fehlerbanner landen, nicht in ewigem „lade…".
+    function fetchJSON(u){
+      var ctl=('AbortController' in window)?new AbortController():null;
+      var to=setTimeout(function(){if(ctl)ctl.abort()},15000);
+      var done=function(v){clearTimeout(to);return v};
+      return fetch(u,{cache:'no-store',signal:ctl?ctl.signal:undefined})
+        .then(function(r){if(!r.ok)throw new Error(u);return r.json()})
+        .then(done,function(e){done();throw e});
+    }
 
     function renderIndex(){
       var gi=summary.gamma_index, box=document.getElementById('gi-box');
@@ -223,9 +233,22 @@
         tooltip:{theme:'dark',y:{formatter:function(v){return v+' Mio $'}}},
         annotations:state.dim==='strike'&&spot?{xaxis:[{x:spot,borderColor:'#fff',label:{text:'Spot '+spot,style:{background:'#000',color:'#fff'}}}]}:{}
       };
-      document.getElementById('chart').innerHTML='';
-      if(chart)chart.destroy();
-      chart=new ApexCharts(document.getElementById('chart'),opts);chart.render();
+      var host=document.getElementById('chart');
+      withApex(function(ok){
+        if(!ok){host.innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Chart-Bibliothek konnte nicht geladen werden &mdash; Kennzahlen und Tabelle oben sind davon unberührt.</p>';return}
+        host.innerHTML='';
+        if(chart)chart.destroy();
+        chart=new ApexCharts(host,opts);chart.render();
+      });
+    }
+    // ApexCharts kommt per defer — auf Verfuegbarkeit warten statt hart darauf zuzugreifen,
+    // sonst reisst eine fehlende Chart-Lib den ganzen Renderer mit.
+    function withApex(cb){
+      if(window.ApexCharts)return cb(true);
+      var waited=0,iv=setInterval(function(){
+        if(window.ApexCharts){clearInterval(iv);cb(true)}
+        else if((waited+=100)>=10000){clearInterval(iv);cb(false)}
+      },100);
     }
     function bindSeg(id,field){document.querySelectorAll('#'+id+' button').forEach(function(btn){btn.onclick=function(){
       document.querySelectorAll('#'+id+' button').forEach(function(b){b.classList.remove('on')});btn.classList.add('on');
@@ -249,7 +272,12 @@
       if(profiles[t])return Promise.resolve();
       return fetchJSON('/landing/data/gex_profile_'+t.replace('^','')+'.json').then(function(d){profiles[t]=d.profile}).catch(function(){profiles[t]=null});
     }
-    if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+    // Start-Trigger mit Notnagel: falls DOMContentLoaded nie feuert (z.B. weil ein anderes
+    // parser-blockierendes Script haengt), startet init() trotzdem nach 3 s.
+    var _started=false;
+    function boot(){if(_started)return;_started=true;init()}
+    if(document.readyState!=='loading')boot();else document.addEventListener('DOMContentLoaded',boot);
+    setTimeout(boot,3000);
   }();
   </script>
 </body>
