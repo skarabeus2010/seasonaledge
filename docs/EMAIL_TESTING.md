@@ -157,19 +157,30 @@ Supabase-Schema aus Code und DB sind auseinandergelaufen. Entweder im Code falsc
 Wenn der Brevo-Key geleakt wurde (z. B. in Chat/Repo):
 
 ```bash
-# 1. Brevo Dashboard → Settings → SMTP & API → API Keys
-#    → Neuen Key erstellen, alten löschen
+# 1. Brevo Dashboard → SMTP & API → API Keys → "Generate a new API key"
+#    Brevo zeigt den vollen Wert NUR EINMAL direkt nach der Erzeugung.
 
-# 2. In .env austauschen (in-place, mit Backup)
-cp /opt/seasonaledge/.env /opt/seasonaledge/.env.bak-$(date +%Y%m%d-%H%M)
-sed -i 's|BREVO_API_KEY=xkeysib-.*|BREVO_API_KEY=<NEUER_KEY>|' /opt/seasonaledge/.env
+# 2. In BEIDEN .env austauschen — der Deploy überträgt .env NICHT (gitignored)!
+#    a) lokal:  c:\dev\SeasonalEdge\.env  (Zeile BREVO_API_KEY)
+#    b) Server: /opt/seasonaledge/.env
+#    Sauber vom lokalen Stand aus (der Key-Wert erscheint nicht im Klartext im Befehl):
+NEWKEY=$(grep -E '^BREVO_API_KEY=' /c/dev/SeasonalEdge/.env)
+ssh root@178.104.75.46 "cd /opt/seasonaledge && sed -i.bak 's#^BREVO_API_KEY=.*#$NEWKEY#' .env && docker compose up -d --force-recreate app"
 
-# 3. Container neu laden (env_file wird nur beim Start gelesen)
-cd /opt/seasonaledge && docker compose up -d --force-recreate app
+# 3. 1-2 Min warten (Container-Neustart), dann Test-Send VOM SERVER (nicht lokal!):
+ssh root@178.104.75.46 "docker exec seasonalpha-app python3 scripts/daily_newsletter.py --test 2>&1 | tail -5"
 
-# 4. Schnell-Test
-docker exec seasonalpha-app python3 scripts/weekly_newsletter.py --test 2>&1 | tail -5
+# 4. Kam die Mail an → alten Key im Brevo-Dashboard LÖSCHEN + Server-Backup entfernen:
+ssh root@178.104.75.46 "rm -f /opt/seasonaledge/.env.bak"
 ```
+
+**Lessons Learned (Rotation 2026-08-06):**
+
+- **⚠️ Brevo-Keys teilen den Account-Präfix.** Alter und neuer Key desselben Kontos beginnen IDENTISCH (`xkeysib-5440ec2afed4…`). **Keys NUR an der Endung (letzte ~6 Zeichen) unterscheiden, NIE am Präfix** — sonst hält man einen neuen Key fälschlich für den alten (genau das passierte hier: Präfix-Vergleich sagte fälschlich „alter Key", die Endung `…WbWkUe` vs `…lylWgh` war der echte Unterschied).
+- **Brevo „Authorised IPs" → 401 ist KEIN Key-Fehler.** Ist im Konto die IP-Whitelist aktiv (Account → Security → Authorised IPs), liefert ein API-Call von einer nicht-freigegebenen IP `401 {"message":"…unrecognised IP address…"}`. Das heißt NICHT, dass der Key ungültig ist. Ein Key lässt sich daher **nur von der freigegebenen Server-IP** testen — lokale `/v3/account`-Checks scheitern an der IP, nicht am Key.
+- **Deploy überträgt `.env` nicht** (gitignored) → Server-`.env` immer separat aktualisieren, sonst läuft die Produktion mit dem alten Key weiter.
+- **SSH aus der Claude-Umgebung = `permission denied`** (kein VPS-Key hinterlegt) → Server-Schritte macht der User; Claude liefert nur die Copy-Paste-Befehle.
+- `.env.bak` (von `sed -i.bak`) enthält den ALTEN Key → nach erfolgreicher Rotation löschen.
 
 ## Daten-Freshness prüfen (vor Weekly-Versand)
 

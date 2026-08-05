@@ -151,6 +151,7 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 - Sender-Domain MUSS Domain-Auth haben (SPF+DKIM+DMARC); Single-Sender reicht für Newsletter nicht (Gmail/Outlook blocken).
 - **Gmail kappt Mails > ~102 KB** („[Nachricht gekürzt]") → Footer/Inhalt fehlt, oft mitten in einer Zeile. Wiederkehrende Inline-Styles in `<style>`-CSS-Klassen auslagern (Daily-Newsletter: ~102 KB → 47 KB). **`daily_newsletter.py --dry-run` enthält die Watchlist NICHT** (pro Empfänger erst in `render_email` angehängt) → echte Mailgröße via `render_email`-Pfad oder `--test` messen.
 - **Test-Send NICHT direkt nach PR-Merge** (`gh workflow run daily_newsletter.yml`): Auto-Deploy startet den Container neu, `docker exec` trifft Restart → kein Output, kein Versand, Workflow trotzdem „success" (Run auffällig kurz). ~1-2 Min warten.
+- **Brevo-Key-Rotation (Lessons, docs/EMAIL_TESTING.md#security-api-key-rotieren):** (1) **Keys desselben Kontos teilen den Präfix** `xkeysib-5440ec2afed4…` → nur an der **Endung** (letzte ~6 Zeichen) unterscheiden, NIE am Präfix. (2) Brevo **Authorised-IPs**: API-Call von nicht-freigegebener IP → `401 „unrecognised IP address"` = **kein** Key-Fehler; Key nur von der **Server-IP** testbar. (3) Deploy überträgt `.env` NICHT → Server-`.env` (`/opt/seasonaledge/.env`) separat updaten + `docker compose up -d --force-recreate app`. (4) SSH aus Claude-Umgebung = permission denied → Server-Schritte macht der User.
 
 ### Internationalisierung (EN) — Detail: [docs/I18N.md](docs/I18N.md)
 
@@ -226,7 +227,7 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 
 ### 🔴 SOFORT — Security (User-Action erforderlich)
 - [ ] **OAuth Client-Secret rotieren** — in Session 2026-04-18 geleakt. Google Cloud Console → OAuth Clients → Secret neu generieren → in Supabase Auth Settings updaten
-- [ ] **Brevo-API-Key rotieren** — in Session 2026-04-21 geleakt (`xkeysib-5440ec2afed4...`). Brevo Dashboard → SMTP & API → neuen Key erstellen, alten löschen, `.env` updaten, `docker compose up -d --force-recreate app`. Anleitung: [docs/EMAIL_TESTING.md](docs/EMAIL_TESTING.md#security-api-key-rotieren)
+- [x] **Brevo-API-Key rotieren** — erledigt 2026-08-06: neuer Key aktiv in lokaler **und** Server-`.env` (`/opt/seasonaledge/.env`), App-Container neu gestartet, **Test-Mail kam an** (Endung neu `…WbWkUe`, alt `…lylWgh`). ⚠️ **NOCH offen (User-Dashboard-Aktion):** alten Key (`…lylWgh`) im Brevo-Dashboard **löschen** — er ist geleakt. **Lesson:** alter+neuer Brevo-Key teilen den Account-Präfix `xkeysib-5440ec2afed4…` → Keys NUR an der **Endung** unterscheiden, nie am Präfix. Brevo hat *Authorised-IPs* an → API-Test von nicht-freigegebener IP gibt 401 „unrecognised IP" (kein Key-Fehler); echter Test nur von Server-IP.
 - [x] **Finnhub-API-Key revoken** — erledigt 2026-06-13 (war in Session 2026-04-30 geleakt; nicht mehr genutzt)
 
 ### 🔴 SOFORT — Funktional (User-Action erforderlich)
