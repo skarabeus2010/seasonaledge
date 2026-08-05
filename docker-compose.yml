@@ -41,6 +41,9 @@ services:
       - "443:443"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # MietWatch: statische Landing-/Stadtseiten (Repo wohnungs-bot-muenchen
+      # nach /opt/mietwatch geklont). Read-only, getrennt von seasonalpha.
+      - /opt/mietwatch/website:/app/mietwatch:ro
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
       - ./deploy/certbot/www:/var/www/certbot:ro
       - ./landing:/app/landing:ro
