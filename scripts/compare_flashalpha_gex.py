@@ -115,6 +115,56 @@ def pick(obj, *aliases):
 
 
 # ─────────────────────────────────────────────────────── Vergleich
+def _from_snapshot(ticker: str, when: str) -> dict | None:
+    """Kennzahlen aus dem Nightly-Archiv (landing/data/gex_history/<datum>.json).
+
+    Der Cron laeuft 22:15 UTC — also im Zeitfenster, in dem Yahoo vollstaendiges
+    Open Interest liefert. Damit ist der Snapshot die verlaesslichere Basis als eine
+    Ad-hoc-Berechnung zur Tageszeit, und zugleich exakt das, was die Website zeigt.
+    """
+    name = f"{when}.json"
+    local = _OUT_DIR / name
+    payload = None
+    if local.exists():
+        payload = json.loads(local.read_text(encoding="utf-8"))
+    else:
+        r = requests.get(f"https://seasonalpha.ai/landing/data/gex_history/{name}", timeout=30)
+        if r.status_code == 200:
+            payload = r.json()
+    if not payload:
+        return None
+    for o in payload.get("tickers", []):
+        if o.get("ticker") == ticker:
+            return {**o, "_as_of": payload.get("date", when)}
+    return None
+
+
+def _term_from_profile(ticker: str, when: str, exp: str) -> dict | None:
+    """Unser Netto-Gamma fuer EINEN Verfall aus dem by_term-Profil des Nightly-Laufs.
+
+    Noetig, weil FlashAlphas Free-Plan nur Einzelverfaelle erlaubt — ein Vergleich
+    gegen unsere Full-Chain-Summe waere sonst ein Groessenordnungs-Vergleich von
+    Aepfeln mit Obstkoerben.
+    """
+    name = f"gex_profile_{ticker.replace('^', '')}.json"
+    local = _ROOT / "landing" / "data" / name
+    payload = None
+    if local.exists():
+        cand = json.loads(local.read_text(encoding="utf-8"))
+        if cand.get("date") == when:
+            payload = cand
+    if payload is None:
+        r = requests.get(f"https://seasonalpha.ai/landing/data/{name}", timeout=30)
+        if r.status_code == 200 and r.json().get("date") == when:
+            payload = r.json()
+    if not payload:
+        return None
+    for row in (payload.get("profile") or {}).get("by_term", []):
+        if row.get("exp") == exp:
+            return row
+    return None
+
+
 def _fmt(v, unit=""):
     if v is None:
         return "n/a"
@@ -134,20 +184,47 @@ def _delta(ours, theirs):
     return f"{(t - o) / abs(o) * 100:+.1f} %"
 
 
+def _fa_walls(fa: dict):
+    """Call-/Put-Wall aus FlashAlphas strikes-Array nach UNSERER Definition ableiten.
+
+    FlashAlpha liefert die Walls nicht als Feld, wohl aber net_gex je Strike — damit
+    sind sie nach derselben Regel bestimmbar wie bei uns (_walls in
+    compute_gamma_exposure.py): staerkstes positives Netto-Gamma bei Strike >= Spot,
+    staerkstes negatives bei Strike <= Spot. Gleiche Regel = fairer Vergleich.
+    """
+    strikes = fa.get("strikes") or []
+    spot = fa.get("underlying_price")
+    if not strikes or spot is None:
+        return None, None
+    above = [r for r in strikes if r.get("strike", 0) >= spot]
+    below = [r for r in strikes if r.get("strike", 0) <= spot]
+    cw = max(above, key=lambda r: r.get("net_gex", 0)) if above else None
+    pw = min(below, key=lambda r: r.get("net_gex", 0)) if below else None
+    return (cw or {}).get("strike"), (pw or {}).get("strike")
+
+
 def compare(ticker: str, ours: dict, fa: dict) -> list[tuple]:
     fa_spot = pick(fa, "spot", "spot_price", "underlying_price", "price", "last")
     fa_flip = pick(fa, "gamma_flip", "zero_gamma", "flip", "gamma_flip_level", "zero_gamma_level")
-    fa_cw = pick(fa, "call_wall", "callwall", "call_wall_strike", "max_call_strike")
-    fa_pw = pick(fa, "put_wall", "putwall", "put_wall_strike", "max_put_strike")
     fa_gex = pick(fa, "total_gex", "net_gex", "gex_total", "total_gamma", "net_gamma", "gex")
+    fa_cw, fa_pw = _fa_walls(fa)
+    # FlashAlpha rechnet net_gex in ROH-Dollar, wir in Mio $ — sonst steht da ein Delta
+    # von 98 Millionen Prozent und der eigentlich sehr gute Treffer bleibt unsichtbar.
+    if isinstance(fa_gex, (int, float)) and abs(fa_gex) > 1e5:
+        fa_gex = fa_gex / 1e6
 
-    return [
-        ("Spot",                 ours.get("spot"),            fa_spot),
-        ("Netto-GEX (roh)",      ours.get("net_gex_usd_bn"),  fa_gex),
+    rows = [("Spot", ours.get("spot"), fa_spot)]
+    if ours.get("_term_gamma_mn") is not None:
+        # Einzelverfall-Modus: unser by_term-Gamma gegen FlashAlphas Verfalls-GEX
+        rows.append(("Gamma Verfall (Mio $)", ours["_term_gamma_mn"], fa_gex))
+    else:
+        rows.append(("Netto-GEX (roh)", ours.get("net_gex_usd_bn"), fa_gex))
+    rows += [
         ("Zero-Gamma / Flip",    ours.get("zero_gamma"),      fa_flip),
         ("Call-Wall",            ours.get("call_wall"),       fa_cw),
         ("Put-Wall",             ours.get("put_wall"),        fa_pw),
     ]
+    return rows
 
 
 def main() -> int:
@@ -160,28 +237,53 @@ def main() -> int:
     ap.add_argument("--min-contracts", type=int, default=500,
                     help="Plausibilitätsschwelle für unsere Yahoo-Chain (Default 500)")
     ap.add_argument("--force", action="store_true", help="auch bei dünner Chain vergleichen")
+    ap.add_argument("--snapshot", metavar="YYYY-MM-DD",
+                    help="unsere Seite aus dem Nightly-Archiv statt frisch rechnen "
+                         "(umgeht Yahoos Open-Interest-Tagesfenster)")
+    ap.add_argument("--expiration", metavar="YYYY-MM-DD",
+                    help="nur EINEN Verfall vergleichen (FlashAlpha-Free erlaubt keine Full-Chain); "
+                         "unsere Seite kommt dann aus dem by_term-Profil")
     ap.add_argument("--dry-run", action="store_true", help="nur unsere Berechnung, kein FlashAlpha-Call")
     a = ap.parse_args()
     tk = a.ticker.upper()
 
-    # ── 1) unsere Berechnung (kostenlos)
-    print(f"[1/2] SeasonAlpha-GEX für {tk} (Yahoo-Chain, max {a.max_days} Tage) …", flush=True)
-    ours = analyze(tk, a.max_days)
-    if not ours:
-        print(f"  [FEHLER] keine eigene Berechnung möglich für {tk}")
-        return 1
-    print(f"      Spot {ours['spot']} · net-GEX {ours['net_gex_usd_bn']:+.3f} Mrd $/1 % "
-          f"· {ours['regime']} · {ours['n_contracts']} Kontrakte / {ours['n_expiries']} Expiries")
+    # ── 1) unsere Seite: entweder frisch rechnen oder den Nightly-Snapshot nehmen
+    if a.snapshot:
+        print(f"[1/2] SeasonAlpha-GEX für {tk} aus Nightly-Snapshot {a.snapshot} …", flush=True)
+        ours = _from_snapshot(tk, a.snapshot)
+        if not ours:
+            print(f"  [FEHLER] {tk} nicht im Snapshot {a.snapshot}")
+            return 1
+        print(f"      Spot {ours['spot']} · net-GEX {ours['net_gex_usd_bn']:+.3f} Mrd $/1 % "
+              f"· {ours['regime']} · Stand {ours['_as_of']} (EOD)")
+        if a.expiration:
+            term = _term_from_profile(tk, a.snapshot, a.expiration)
+            if not term:
+                print(f"  [FEHLER] kein by_term-Eintrag für {a.expiration} im Profil {a.snapshot}")
+                return 1
+            ours["_term_gamma_mn"] = term["gamma_usd_mn"]
+            ours["_term_vanna_mn"] = term.get("vanna_usd_mn")
+            print(f"      davon Verfall {a.expiration}: Gamma {term['gamma_usd_mn']:+.1f} Mio $/1 % "
+                  f"· Vanna {term.get('vanna_usd_mn'):+.1f} Mio $/Vol-Pkt")
+    else:
+        print(f"[1/2] SeasonAlpha-GEX für {tk} (Yahoo-Chain, max {a.max_days} Tage) …", flush=True)
+        ours = analyze(tk, a.max_days)
+        if not ours:
+            print(f"  [FEHLER] keine eigene Berechnung möglich für {tk}")
+            return 1
+        print(f"      Spot {ours['spot']} · net-GEX {ours['net_gex_usd_bn']:+.3f} Mrd $/1 % "
+              f"· {ours['regime']} · {ours['n_contracts']} Kontrakte / {ours['n_expiries']} Expiries")
 
-    # Yahoo drosselt die Per-Expiry-Abrufe gelegentlich → dann kommt eine duenne Chain zurueck
-    # und unsere Kennzahlen sind wertlos. Lieber abbrechen als einen Quota-Call verschwenden.
-    per_exp = ours["n_contracts"] / max(ours["n_expiries"], 1)
-    if ours["n_contracts"] < a.min_contracts or per_exp < 30:
-        print(f"  [ABBRUCH] Chain unplausibel duenn ({ours['n_contracts']} Kontrakte, "
-              f"{per_exp:.0f}/Expiry) — Yahoo hat vermutlich gedrosselt.")
-        print("            Spaeter erneut versuchen oder mit --force trotzdem vergleichen.")
-        if not a.force:
-            return 5
+        # Yahoo befuellt das Open Interest erst im Lauf des Tages — im Vormittagsfenster kommt
+        # die Chain mit OI=0 zurueck, unser Filter wirft alles raus und analyze() meldet
+        # trotzdem Erfolg. Lieber abbrechen als einen Quota-Call fuer Muell verbrennen.
+        per_exp = ours["n_contracts"] / max(ours["n_expiries"], 1)
+        if ours["n_contracts"] < a.min_contracts or per_exp < 30:
+            print(f"  [ABBRUCH] Chain unplausibel duenn ({ours['n_contracts']} Kontrakte, "
+                  f"{per_exp:.0f}/Expiry) — Yahoo hat vermutlich noch kein Open Interest.")
+            print("            Spaeter erneut versuchen, --snapshot <datum> nutzen oder --force.")
+            if not a.force:
+                return 5
 
     if a.dry_run:
         print("\n[dry-run] FlashAlpha übersprungen (0 Quota verbraucht).")
@@ -209,6 +311,8 @@ def main() -> int:
     args = {"symbol": tk, "apiKey": key}
     if a.min_oi is not None:
         args["min_oi"] = a.min_oi
+    if a.expiration:
+        args["expiration"] = a.expiration
     try:
         fa = mcp_call("get_gex", args)["parsed"]
     except Exception as e:  # noqa: BLE001
