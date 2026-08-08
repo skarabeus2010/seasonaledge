@@ -436,7 +436,8 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
 
   var allRows = [];
   var batchSize = 1000;
-  function fetchBatch(offset) {
+  function fetchBatch(offset, attempt) {
+    attempt = attempt || 0;
     var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date' + (extraFilter || '');
     return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
       headers: {
@@ -446,8 +447,21 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
         'Prefer': 'count=exact'
       }
     }).then(function(r) {
+      // Rate-Limit (429) / Serverfehler (5xx) → Retry mit Backoff. Seiten wie die
+      // Watchlist feuern viele parallele Batch-Requests; einzelne koennen gedrosselt
+      // werden. Ohne Retry landete frueher ein Fehler-JSON als "Zeilen" im Ergebnis.
+      if (!r.ok) {
+        if ((r.status === 429 || r.status >= 500) && attempt < 4) {
+          return new Promise(function(res) { setTimeout(res, 350 * (attempt + 1)); })
+            .then(function() { return fetchBatch(offset, attempt + 1); });
+        }
+        throw new Error('prices ' + r.status + ' (' + ticker + ')');
+      }
       var contentRange = r.headers.get('content-range');
       return r.json().then(function(rows) {
+        // Fehler-JSON (kein Array) NIEMALS als Zeilen anhaengen — sonst kommt ein
+        // kurzes/kaputtes Ergebnis raus und das UI zeigt faelschlich "Zu wenig Daten".
+        if (!Array.isArray(rows)) throw new Error('prices non-array (' + ticker + ')');
         allRows = allRows.concat(rows);
         if (contentRange) {
           var parts = contentRange.split('/');
