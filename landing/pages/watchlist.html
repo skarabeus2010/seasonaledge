@@ -740,9 +740,23 @@
         '</div>';
       }).join('');
 
-      // Parallel alle Ticker laden
-      var promises = items.map(function(item) { return computeForTicker(item.ticker); });
-      Promise.all(promises).then(function(results) {
+      // Begrenzte Parallelitaet (max. 3 gleichzeitig) statt aller Ticker auf einmal.
+      // Jeder Ticker paginiert seine Historie in 1000er-Batches — 10 Ticker parallel
+      // = Request-Sturm → Supabase-Rate-Limit/429 → einzelne Batches scheitern →
+      // faelschlich "Zu wenig Daten". Pool + per-Ticker-catch macht das robust.
+      var CONCURRENCY = 3;
+      var results = new Array(items.length);
+      var nextIdx = 0;
+      function worker() {
+        if (nextIdx >= items.length) return Promise.resolve();
+        var my = nextIdx++;
+        return computeForTicker(items[my].ticker)
+          .catch(function() { return { ticker: items[my].ticker, error: 'Zu wenig Daten', rows: null }; })
+          .then(function(res) { results[my] = res; return worker(); });
+      }
+      var pool = [];
+      for (var w = 0; w < Math.min(CONCURRENCY, items.length); w++) pool.push(worker());
+      Promise.all(pool).then(function() {
         currentRender = results;
         renderGrid();
       });
