@@ -268,6 +268,7 @@
     'use strict';
     var qs = function(id) { return document.getElementById(id); };
     var currentRender = []; // Cache aller Card-Objekte für Re-Filter/Sort ohne Refetch
+    var loadSeq = 0;        // Run-Token: nur der jüngste loadAll()-Lauf darf currentRender committen
 
     // ── Toast ─────────────────────────────────────────────────
     function toast(msg, isError) {
@@ -497,7 +498,10 @@
           nextSignal: nextSignal
         };
       }).catch(function(e) {
-        return { ticker: ticker, error: e.message || 'Fetch-Fehler', rows: null };
+        // Fängt IMMER ab und resolved (nie reject) — der Pool in loadAll() verlässt
+        // sich darauf. Sauberes Label statt roher Fehlermeldung; Details in die Konsole.
+        if (window.console && console.warn) console.warn('[watchlist] ' + ticker + ':', e && e.message);
+        return { ticker: ticker, error: 'Ladefehler — bitte neu laden', rows: null };
       });
     }
 
@@ -740,23 +744,28 @@
         '</div>';
       }).join('');
 
-      // Begrenzte Parallelitaet (max. 3 gleichzeitig) statt aller Ticker auf einmal.
+      // Begrenzte Parallelität (max. 3 gleichzeitig) statt aller Ticker auf einmal.
       // Jeder Ticker paginiert seine Historie in 1000er-Batches — 10 Ticker parallel
-      // = Request-Sturm → Supabase-Rate-Limit/429 → einzelne Batches scheitern →
-      // faelschlich "Zu wenig Daten". Pool + per-Ticker-catch macht das robust.
+      // = Request-Sturm → Supabase-Rate-Limit/429 → einzelne Batches scheitern.
+      // computeForTicker fängt intern ab und resolved IMMER, daher braucht der Pool
+      // hier kein eigenes catch.
       var CONCURRENCY = 3;
+      var myToken = ++loadSeq;
       var results = new Array(items.length);
       var nextIdx = 0;
       function worker() {
         if (nextIdx >= items.length) return Promise.resolve();
         var my = nextIdx++;
         return computeForTicker(items[my].ticker)
-          .catch(function() { return { ticker: items[my].ticker, error: 'Zu wenig Daten', rows: null }; })
           .then(function(res) { results[my] = res; return worker(); });
       }
       var pool = [];
       for (var w = 0; w < Math.min(CONCURRENCY, items.length); w++) pool.push(worker());
       Promise.all(pool).then(function() {
+        // Hat ein neuerer loadAll()-Lauf übernommen (Ticker hinzugefügt/entfernt),
+        // dieses veraltete Ergebnis verwerfen — sonst taucht ein entfernter Ticker
+        // wieder auf oder frischere Daten werden überschrieben.
+        if (myToken !== loadSeq) return;
         currentRender = results;
         renderGrid();
       });

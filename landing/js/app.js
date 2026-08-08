@@ -439,6 +439,14 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
   function fetchBatch(offset, attempt) {
     attempt = attempt || 0;
     var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date' + (extraFilter || '');
+    // Retry mit linearem Backoff + Jitter, damit parallel ladende Ticker nicht im
+    // Gleichtakt erneut anklopfen (Thundering Herd). Ein Retry-After des Servers hat Vorrang.
+    function retry(retryAfterMs) {
+      var wait = (retryAfterMs != null) ? retryAfterMs
+                                        : (350 * (attempt + 1) + Math.floor(Math.random() * 300));
+      return new Promise(function(res) { setTimeout(res, wait); })
+        .then(function() { return fetchBatch(offset, attempt + 1); });
+    }
     return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
       headers: {
         'apikey': SA.supabase.key,
@@ -447,20 +455,20 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
         'Prefer': 'count=exact'
       }
     }).then(function(r) {
-      // Rate-Limit (429) / Serverfehler (5xx) → Retry mit Backoff. Seiten wie die
-      // Watchlist feuern viele parallele Batch-Requests; einzelne koennen gedrosselt
-      // werden. Ohne Retry landete frueher ein Fehler-JSON als "Zeilen" im Ergebnis.
+      // Rate-Limit (429) / Serverfehler (5xx) → Retry. Seiten wie die Watchlist feuern
+      // viele parallele Batch-Requests; einzelne können gedrosselt werden. Ohne Retry
+      // landete früher ein Fehler-JSON als "Zeilen" im Ergebnis.
       if (!r.ok) {
         if ((r.status === 429 || r.status >= 500) && attempt < 4) {
-          return new Promise(function(res) { setTimeout(res, 350 * (attempt + 1)); })
-            .then(function() { return fetchBatch(offset, attempt + 1); });
+          var ra = parseInt(r.headers.get('retry-after'), 10);
+          return retry(isNaN(ra) ? null : ra * 1000);
         }
         throw new Error('prices ' + r.status + ' (' + ticker + ')');
       }
       var contentRange = r.headers.get('content-range');
       return r.json().then(function(rows) {
-        // Fehler-JSON (kein Array) NIEMALS als Zeilen anhaengen — sonst kommt ein
-        // kurzes/kaputtes Ergebnis raus und das UI zeigt faelschlich "Zu wenig Daten".
+        // Fehler-JSON (kein Array) NIEMALS als Zeilen anhängen — sonst kommt ein
+        // kurzes/kaputtes Ergebnis raus und das UI zeigt fälschlich "Zu wenig Daten".
         if (!Array.isArray(rows)) throw new Error('prices non-array (' + ticker + ')');
         allRows = allRows.concat(rows);
         if (contentRange) {
@@ -472,6 +480,12 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
         }
         return allRows;
       });
+    }, function(netErr) {
+      // Netzwerk-Fehler / abgebrochener Request (z.B. Tab-Ruhezustand): fetch() rejectet
+      // statt ein !r.ok zu liefern → hier ebenfalls begrenzt neu versuchen (genau der
+      // im Commit genannte Ruhezustand-Fall, der sonst durchgereicht würde).
+      if (attempt < 4) return retry(null);
+      throw netErr;
     });
   }
   return fetchBatch(0).then(function(rows) {
