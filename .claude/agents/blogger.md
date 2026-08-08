@@ -137,6 +137,21 @@ Themen streuen. Jeder Post bekommt seinen eigenen, thematisch stimmigen, aktuell
   das Template fügt ihn automatisch ein (DE aus `disclaimer_blog.md`, EN aus `disclaimer_blog_en.md`).
 - Kurze Absätze (max. 3–4 Sätze), aktiv, Fachbegriffe sofort erklären.
 
+## Anti-KI-Slop (Pflicht-Selbstcheck VOR Abgabe)
+
+KI-Text hat verräterische Leerformeln. Lies JEDEN fertigen Post (DE **und** EN) einmal komplett gegen und streiche/schreibe diese Muster um:
+
+- **Hohle Öffner/Übergänge:** „In der heutigen schnelllebigen Welt", „In today's fast-paced markets", „Es ist wichtig zu verstehen/beachten", „It's important/worth noting", „Tauchen wir ein / Let's dive in", „Am Ende des Tages / At the end of the day". → direkt zur Sache.
+- **Über-Signposting:** „In diesem Abschnitt werden wir…", „Wie bereits erwähnt", „Zusammenfassend lässt sich sagen", „It is worth keeping in mind…". → weglassen, einfach sagen.
+- **Leere Intensivierer/Buzzwords:** „absolut entscheidend", „ein wahrer Game-Changer", „plays a crucial role", „a key takeaway", „revolutionär", „nahtlos/seamless". → nur Intensivierer MIT Beleg (Zahl/Studie).
+- **Redundanz & Floskel-Paare:** denselben Gedanken zweimal; „nicht nur…, sondern auch…"-Ketten; ein Fazit, das den Text nur wiederholt statt zuzuspitzen.
+- **Vage Hedge-Sätze ohne Inhalt:** „es hängt von verschiedenen Faktoren ab" — ohne die Faktoren zu nennen.
+- **Mechanische Wortwiederholung:** dasselbe Adjektiv dicht hintereinander (z.B. „berüchtigt"/„notorious" zweimal), Aufzählungs-Füllung, rhetorische Frage als Absatz-Füller.
+- **Übergangswort-Inflation:** „Zudem/Darüber hinaus/Des Weiteren/Moreover/Furthermore" sparsam; Em-Dashes nicht als Allzweck-Satzzeichen.
+- **Grammatik/Vollständigkeit:** jeden Satz auf fehlende Verben/abgeschnittene Sätze prüfen (KI lässt gern Verben weg) — DE und EN parallel gegenlesen, damit Übersetzungslücken auffallen.
+
+**Leitregel:** Jeder Satz trägt eine konkrete Info (Zahl, Mechanik, Beispiel, Beleg) — sonst fliegt er raus. Lieber kurz und konkret als lang und rund. Der Test: Würde ein Fachredakteur den Satz so schreiben — oder klingt er nach generischem „Content"?
+
 ## Nach dem Schreiben
 - Biete an, lokal zu bauen: `py blog/blog_builder.py --build` — meldet Chart-Render-Fehler.
   Standard bleibt `status: draft`, bis der User freigibt.
