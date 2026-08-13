@@ -143,6 +143,7 @@ def _collect(ticker: str, max_days: int):
     now = time.time()
     keep = [e for e in exps if 0 <= (e - now) / 86400 <= max_days]
     contracts = []
+    n_raw = 0   # alle gelieferten Kontrakte VOR dem OI/IV-Filter — Basis fuer den Plausibilitaetscheck
     for i, e in enumerate(keep):
         node = root if (i == 0 and root.get("options")) else _fetch_options(ticker, e)
         opts = (node.get("options") or [{}])[0]
@@ -150,13 +151,15 @@ def _collect(ticker: str, max_days: int):
         exp = datetime.fromtimestamp(e, timezone.utc).strftime("%Y-%m-%d")
         for typ, arr in (("call", opts.get("calls", [])), ("put", opts.get("puts", []))):
             for o in arr:
+                n_raw += 1
                 K = o.get("strike"); oi = o.get("openInterest") or 0
                 iv = o.get("impliedVolatility") or 0.0
                 if K and oi and iv > 0:
                     contracts.append({"type": typ, "K": float(K), "oi": int(oi),
                                       "iv": float(iv), "T": T, "exp": exp})
         time.sleep(0.2)
-    return {"spot": spot, "q": float(q_yield), "contracts": contracts, "n_exp": len(keep)}
+    return {"spot": spot, "q": float(q_yield), "contracts": contracts,
+            "n_exp": len(keep), "n_raw": n_raw}
 
 
 # ─────────────────────────────────────────────────────── Aggregation
@@ -266,9 +269,25 @@ def _skew(spot: float, contracts: list) -> dict | None:
             "skew_pts": round(skew, 2) if skew is not None else None}
 
 
+# Plausibilitaet der Chain. Yahoo liefert im Vormittagsfenster (UTC) die VOLLE Chain, aber mit
+# openInterest=0 — der Filter in _collect wirft dann alles weg und analyze() meldete bisher
+# trotzdem Erfolg mit einer Handvoll Kontrakten. Solche Zahlen sehen plausibel aus (z.B.
+# „net-GEX -0.000 Mrd, short_gamma") und sind komplett wertlos. Der Check zielt bewusst auf die
+# QUOTE brauchbar/geliefert statt auf absolute Mengen, damit echte illiquide Ticker nicht
+# faelschlich als Fehlschlag gelten.
+_MIN_RAW_FOR_CHECK = 100    # darunter ist die Chain zu klein fuer eine Aussage
+_MIN_USABLE_RATIO = 0.05    # <5 % brauchbar bei voller Chain = OI-Fenster, kein Marktzustand
+
+
 def analyze(ticker: str, max_days: int, with_profile: bool = False) -> dict | None:
     data = _collect(ticker, max_days)
     if not data or not data["spot"] or not data["contracts"]:
+        return None
+    n_raw, n_use = data.get("n_raw", 0), len(data["contracts"])
+    if n_raw >= _MIN_RAW_FOR_CHECK and n_use < _MIN_USABLE_RATIO * n_raw:
+        print(f"  [SKIP] {ticker}: {n_use}/{n_raw} Kontrakte brauchbar "
+              f"({n_use/n_raw:.1%}) — Yahoo liefert kein Open Interest, kein valider Snapshot.",
+              flush=True)
         return None
     spot, contracts, q = data["spot"], data["contracts"], data["q"]
     gex, vex, cex = _exposures(spot, contracts, q)

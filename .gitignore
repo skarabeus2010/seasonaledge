@@ -24,3 +24,19 @@ scripts/video/out/
 landing/data/_mktcap_cache.json
 landing/data/_shortvol_history.json
 landing/data/_etf_flows_history.json
+
+# ── Cron-erzeugte Daten-JSONs (Snapshot/Flows) ────────────────────────────────
+# Werden auf dem Server von den Cron-Jobs geschrieben. Getrackt fuehrten sie dazu,
+# dass `git checkout -- landing/` im Deploy (deploy.yml) sie bei JEDEM Deploy auf
+# den committeten Stand zurueckwarf — die Seite zeigte dann tagealte, teils
+# invertierte Regime-Daten. Untracked bleiben sie vom Deploy unberuehrt.
+landing/data/gex_summary.json
+landing/data/gex_profile_*.json
+landing/data/gex_SPY.json
+landing/data/gex_history/
+landing/data/etf_flows.json
+landing/data/flows_rebalancing.json
+landing/data/cot_positioning.json
+landing/data/buyback_blackout.json
+landing/data/shortvol_proxy.json
+landing/data/volcontrol_proxy.json

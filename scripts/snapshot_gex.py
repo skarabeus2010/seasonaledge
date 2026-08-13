@@ -73,6 +73,14 @@ def main() -> int:
                 print(f"        Profil {PROFILE_MAX_DAYS}d: {len(prof.get('by_term', []))} Verfaelle, "
                       f"{len(prof.get('by_strike', []))} Strikes", flush=True)
 
+    # Reissleine: lieber gar nichts schreiben als die bestehenden (guten) JSONs mit einem
+    # halben Lauf ueberbuegeln. Greift z.B. wenn Yahoo im OI-Fenster steckt und die
+    # Plausibilitaetspruefung in analyze() reihenweise Ticker verwirft.
+    if len(results) < 0.6 * len(UNIVERSE):
+        print(f"[snapshot] ABBRUCH: nur {len(results)}/{len(UNIVERSE)} Ticker mit brauchbaren "
+              f"Daten (Fehlschlaege: {failed}). Bestehende JSONs bleiben unveraendert.", flush=True)
+        return 1
+
     idx = [o for o in results if o["ticker"] in _INDEX_TICKERS]
     gamma_index = None
     if idx:
