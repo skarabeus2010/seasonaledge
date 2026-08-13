@@ -11,7 +11,9 @@ on:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # 20 statt 12 Min: die Chart-Ticker bekommen seit dem Term-Struktur-Fix einen zweiten
+    # Durchlauf ueber die volle Chain (PROFILE_MAX_DAYS), das kostet ~1 Min zusaetzlich.
+    timeout-minutes: 20
     steps:
       - name: GEX snapshot on VPS
         uses: appleboy/ssh-action@v1
@@ -19,7 +21,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 10m
+          command_timeout: 18m
           script: |
             docker exec seasonalpha-app python3 scripts/snapshot_gex.py 2>&1 | tail -30
             echo "GEX snapshot done: $(date)"

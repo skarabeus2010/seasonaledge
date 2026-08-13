@@ -101,7 +101,7 @@
       <div class="tbl-wrap">
         <table class="gx-table">
           <thead><tr>
-            <th>Ticker</th><th>Spot</th><th>Regime</th><th>GEX<br>Mrd/1%</th><th>Vanna<br>Mio/pt</th>
+            <th>Ticker</th><th>Spot</th><th>Regime</th><th>GEX<br>Mrd/1%</th><th title="OI-Ungleichgewicht je Strike, gewichtet mit Vanna — KEINE Dealer-Vanna. Durch die naive Vorzeichen-Konvention strukturell fast immer positiv. Details im Hinweis unter den Greek-Schaltern.">Vanna*<br>Mio/pt</th>
             <th>Charm<br>Mio/Tag</th><th>Zero&#8209;&#947;</th><th>Call&#8209;W</th><th>Put&#8209;W</th><th title="Absolute-Gamma-Strike = stärkster Pin; % = Abstand zum Spot">Pin<br>abs&#8209;&#947;</th><th>Skew</th>
           </tr></thead>
           <tbody id="gx-tbody"><tr><td colspan="11" style="text-align:center;color:var(--muted);padding:1.5rem">Lade Daten&hellip;</td></tr></tbody>
@@ -119,7 +119,9 @@
         <button data-d="strike" class="on">by Strike</button><button data-d="term">by Term</button>
       </span>
     </div>
+    <div id="greek-note" class="disc" style="margin:.7rem 0 0"></div>
     <div class="card" style="padding:1rem"><div id="chart" style="min-height:380px"></div></div>
+    <p class="page-caption" style="margin-top:.6rem" id="chart-horizon"></p>
     <p class="page-caption" style="margin-top:.6rem">
       <b>Als Liquiditäts-Karte lesen:</b> grüne Balken (positives Netto-Gamma) = Dealer stabilisieren dort
       (Support/Widerstand), rote (negatives) = sie verstärken Bewegungen. Der höchste Balken (Absolute-Gamma,
@@ -167,6 +169,27 @@
     var GREEN='#30e878',RED='#ff4d5e',ACC='#e8a820',MUT='#8a8270';
     var summary=null,profiles={},state={ticker:null,greek:'gamma',dim:'strike'},chart=null;
     var KEY={gamma:'gamma_usd_mn',vanna:'vanna_usd_mn',charm:'charm_usd_mn'};
+    var AXIS={gamma:'Netto-Hedging ($M)',vanna:'OI-Ungleichgewicht × Vanna ($M)',charm:'Delta-Drift ($M/Tag)'};
+    // Ehrliche Einordnung je Greek. Vanna bekommt bewusst eine strengere Warnung als die
+    // anderen: bei Gamma ist die naive Konvention eine grobe, aber brauchbare Naeherung
+    // (Abgleich gegen einen kommerziellen Anbieter lag bei ~1 %), bei Vanna erzwingt sie
+    // strukturell ein positives Vorzeichen und ist damit nicht aussagekraeftig.
+    var NOTES={
+      gamma:'<b>Netto-Gamma je Strike/Verfall.</b> Naive Dealer-Konvention (long Calls / short Puts) '+
+            'auf EOD-Open-Interest. Groessenordnung und Vorzeichen decken sich gut mit kommerziellen '+
+            'Anbietern; Walls sind Konzentrations-Referenzen, keine Barrieren.',
+      vanna:'<b>⚠ Eingeschraenkt aussagekraeftig — dies ist <u>keine</u> Dealer-Vanna.</b> '+
+            'Roh-Vanna ist fuer Call und Put am selben Strike identisch, unsere Konvention dreht nur '+
+            'die Put-Seite. Gemessen wird dadurch das <b>OI-Ungleichgewicht je Strike</b>, gewichtet mit '+
+            'Vanna. Weil Index-Chains unterhalb des Spot put-lastig und oberhalb call-lastig sind, '+
+            'liefern <b>beide Seiten positive Beitraege</b> — das Ergebnis ist praktisch immer positiv, '+
+            'unabhaengig von der Marktlage. Anbieter mit echtem Inventar-Modell (z.B. Volland) zeigen fuer '+
+            'dieselben Verfaelle regelmaessig das Gegenteil. Als Struktur-/Konzentrationsbild lesbar, '+
+            'nicht als Richtungsaussage.',
+      charm:'<b>Delta-Drift pro Kalendertag</b> (Charm ÷ 365). Zeigt, wieviel Delta allein durch '+
+            'Zeitablauf nachgehedgt werden muss — relevant vor allem zum Wochenende und vor Verfall. '+
+            'Gleiche Konventions-Einschraenkung wie bei Gamma.'
+    };
     function err(m){var e=document.getElementById('error-banner');e.textContent=m;e.style.display='block'}
     function num(v,d){return (v==null)?'&mdash;':(v>=0?'+':'')+Number(v).toFixed(d==null?2:d)}
     // Mit Timeout: ein haengender Request muss im Fehlerbanner landen, nicht in ewigem „lade…".
@@ -211,7 +234,17 @@
       }).join('');
     }
     function renderChart(){
+      var note=document.getElementById('greek-note');
+      if(note)note.innerHTML=NOTES[state.greek]||'';
       var p=profiles[state.ticker];
+      var hz=document.getElementById('chart-horizon');
+      if(hz){
+        var bt=(p&&p.by_term)||[];
+        hz.innerHTML=bt.length
+          ? 'Horizont: '+bt.length+' Verfälle bis <b>'+bt[bt.length-1].exp+'</b>. '+
+            'Die by-Strike-Ansicht aggregiert über alle davon.'
+          : '';
+      }
       if(!p){document.getElementById('chart').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Kein Profil für '+state.ticker+' (nur '+Object.keys(profiles).join(', ')+').</p>';return}
       var arr=(state.dim==='strike'?p.by_strike:p.by_term)||[],key=KEY[state.greek];
       var spot=(summary.tickers.filter(function(t){return t.ticker===state.ticker})[0]||{}).spot;
@@ -228,7 +261,7 @@
         plotOptions:{bar:{colors:{ranges:[{from:-1e9,to:0,color:RED},{from:0,to:1e9,color:GREEN}]}},columnWidth:'80%'},
         dataLabels:{enabled:false},
         xaxis:{categories:cats,labels:{style:{colors:MUT,fontSize:'10px'},rotate:-90,rotateAlways:state.dim==='strike'},tickAmount:20,title:{text:state.dim==='strike'?'Strike':'Verfall',style:{color:MUT}}},
-        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return (v>=0?'+':'')+v+'M'}},title:{text:'Netto-Hedging ($M)',style:{color:MUT}}},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return (v>=0?'+':'')+v+'M'}},title:{text:AXIS[state.greek]||'Netto-Hedging ($M)',style:{color:MUT}}},
         grid:{borderColor:'rgba(255,255,255,.06)'},
         tooltip:{theme:'dark',y:{formatter:function(v){return v+' Mio $'}}},
         annotations:state.dim==='strike'&&spot?{xaxis:[{x:spot,borderColor:'#fff',label:{text:'Spot '+spot,style:{background:'#000',color:'#fff'}}}]}:{}

@@ -30,25 +30,48 @@ UNIVERSE = [
 ]
 # Für diese Ticker zusätzlich Per-Strike/Per-Term-Profile (Charts auf der Seite)
 CHART_TICKERS = ["SPY", "QQQ", "NVDA", "TSLA"]
+
+# Horizont für Summary + Archiv. BEWUSST KONSTANT: die dagestempelte GEX-Historie ist nur
+# vergleichbar, wenn jeder Tag denselben Ausschnitt der Chain misst. Wer das aendert, bricht
+# die Zeitreihe rueckwirkend.
 MAX_DAYS = 45
+
+# Horizont NUR fuer die Chart-Profile. Der Term-Chart soll die Struktur zeigen, und die
+# steckt groesstenteils jenseits von 45 Tagen: Vanna waechst mit der Restlaufzeit, die
+# grossen Dez-/Quartals-Verfaelle liegen ausserhalb. Getrennt gehalten, damit der
+# Summary-Horizont (und damit die Historie) unberuehrt bleibt.
+# 1200 Tage = praktisch die gesamte von Yahoo gelieferte Chain (SPY 30 von 31 Verfaellen,
+# letzter 2028-12-15). Laengere LEAPS existieren nur fuer SPX, nicht fuer die ETF-Chains.
+PROFILE_MAX_DAYS = 1200
 
 
 def main() -> int:
     results, charts, failed = [], {}, []
     for tk in UNIVERSE:
-        want_profile = tk in CHART_TICKERS
         try:
-            o = analyze(tk, MAX_DAYS, with_profile=want_profile)
+            o = analyze(tk, MAX_DAYS)
         except Exception as e:
             o = None
             print(f"  [WARN] {tk}: {type(e).__name__}: {e}", flush=True)
         if not o:
             failed.append(tk)
             continue
-        if want_profile:
-            charts[tk] = o.pop("profile", None)  # Profil separat, Summary schlank halten
         results.append(o)
         print(f"  [{tk}] GEX {o['net_gex_usd_bn']:+.3f}  {o['regime']}", flush=True)
+
+        # Chart-Profile mit eigenem, laengerem Horizont — zweiter Durchlauf, damit der
+        # Summary-Wert oben (und die Historie) auf MAX_DAYS bleibt.
+        if tk in CHART_TICKERS:
+            try:
+                deep = analyze(tk, PROFILE_MAX_DAYS, with_profile=True)
+            except Exception as e:
+                deep = None
+                print(f"  [WARN] {tk} Profil: {type(e).__name__}: {e}", flush=True)
+            prof = (deep or {}).get("profile")
+            charts[tk] = prof
+            if prof:
+                print(f"        Profil {PROFILE_MAX_DAYS}d: {len(prof.get('by_term', []))} Verfaelle, "
+                      f"{len(prof.get('by_strike', []))} Strikes", flush=True)
 
     idx = [o for o in results if o["ticker"] in _INDEX_TICKERS]
     gamma_index = None
@@ -69,7 +92,8 @@ def main() -> int:
     (_DATA / "gex_summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     for tk, prof in charts.items():
         (_DATA / f"gex_profile_{tk.replace('^', '')}.json").write_text(
-            json.dumps({"ticker": tk, "date": stamp, "profile": prof}, ensure_ascii=False), encoding="utf-8")
+            json.dumps({"ticker": tk, "date": stamp, "max_days": PROFILE_MAX_DAYS,
+                        "profile": prof}, ensure_ascii=False), encoding="utf-8")
 
     # Dagestempeltes Archiv (proprietäre Historie — schlank: nur die Kennzahlen, keine Profile)
     hist = _DATA / "gex_history"
