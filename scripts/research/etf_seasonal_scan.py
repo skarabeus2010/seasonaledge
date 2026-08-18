@@ -17,8 +17,11 @@ WARUM SO STRENG:
        bereinigt.
     4. Mindest-Tradezahl, sonst ist der Sharpe ohnehin bedeutungslos.
 
-Alle Indikatoren sind 1:1-Ports aus landing/js/indicators.js und greifen — wie
-dort — auf Index i-1 zu, sind also look-ahead-bias-frei.
+Alle Indikatoren sind 1:1-Ports aus landing/js/indicators.js. Die Filtermasken
+tragen den i-1-Versatz bereits in sich (m[i] entsteht aus v[i-1]); der Backtest
+greift deshalb auf mask[e] zu, NICHT auf mask[e-1] — sonst waere es ein doppelter
+Lag (Indikatorstand von e-2). Look-ahead-bias-frei ist beides, aber nur mask[e]
+entspricht dem, was die Analyse-Seiten im Frontend rechnen.
 
 Aufruf:
   SB_URL=... SB_KEY=... PYTHONUTF8=1 py -3.14 scripts/research/etf_seasonal_scan.py
@@ -614,7 +617,9 @@ def run_one(dates, closes, pairs, mask):
             continue
         if e <= last_exit:          # keine Ueberlappung
             continue
-        if e > 0 and not mask[e - 1]:
+        # filter_mask() baut m[i] BEREITS aus dem Indikatorstand von i-1.
+        # Hier nochmals e-1 zu nehmen ergaebe den Stand von e-2 (doppelter Lag).
+        if not mask[e]:
             continue
         pe, px = closes[e], closes[x]
         if pe <= 0:
@@ -639,6 +644,7 @@ def stats_of(trades):
         "pf": round(gw / gl, 2) if gl > 0 else None,
         "skew": round(sk, 3), "kurt": round(ku, 3),
         "total": round((math.prod(1 + r / 100 for r in rets) - 1) * 100, 1),
+        "ann_factor": round(_ann_factor(trades), 3),
     }
 
 
@@ -671,43 +677,75 @@ def scan_ticker(ticker, use_cache=True):
 
 
 # ══════════════════════════════════════════════════════ Auswertung + main
-def evaluate(recs, fdr_q=0.10):
-    """Bewertet ALLE Tests gemeinsam — nur so ist die Multiple-Testing-Korrektur ehrlich."""
-    # Kandidaten: genug Trades in beiden Perioden
+def _ann_factor(trades):
+    """Trades pro Jahr — noetig, um Pro-Trade-Sharpes auf eine gemeinsame Skala zu bringen.
+
+    Ohne das poolt sr_var Halteperioden von 1 Tag bis 182 Tagen in einer Kennzahl,
+    und die Deflated Sharpe Ratio vergleicht Aepfel mit Birnen (Befund A3 der Pruefung).
+    """
+    if len(trades) < 2:
+        return 1.0
+    y0 = int(trades[0][0][:4])
+    y1 = int(trades[-1][1][:4])
+    span = max(y1 - y0 + 1, 1)
+    return len(trades) / span
+
+
+def evaluate(recs, fdr_q=0.10, min_oos=15, n_tests_total=None):
+    """Bewertet ALLE Tests gemeinsam.
+
+    Aenderungen nach der adversarialen Pruefung:
+      - Sharpe wird annualisiert (SR_ann = SR_trade * sqrt(Trades pro Jahr)), damit
+        sr_var nicht unvereinbare Halteperioden mischt.
+      - Die Deflated Sharpe Ratio ist NICHT mehr Teil des Entscheidungs-Gates. Sie und
+        BH-FDR korrigieren dieselbe Multiplizitaet; als UND verkettet war das eine
+        Doppelbestrafung. Entscheidungsregel ist jetzt BH-FDR, DSR wird informativ
+        mitgefuehrt.
+      - n_trials ist die Zahl ALLER gerechneten Tests, nicht nur der auswertbaren.
+    """
     cand = [r for r in recs
             if r["is"] and r["oos"]
-            and r["is"]["n"] >= MIN_TRADES and r["oos"]["n"] >= MIN_TRADES_OOS
+            and r["is"]["n"] >= MIN_TRADES and r["oos"]["n"] >= min_oos
             and r["is"]["sd"] > 0 and r["oos"]["sd"] > 0]
+    if len(cand) < 2:
+        return {"n_tests_total": len(recs), "min_oos": min_oos,
+                "n_candidates": len(cand), "survivors": []}
 
-    n_trials = len(cand)
-    if n_trials < 2:
-        return {"n_tests_total": len(recs), "n_candidates": n_trials, "survivors": []}
+    for r in cand:
+        r["ann"] = round(r["oos"]["sharpe"] * math.sqrt(r["oos"]["ann_factor"]), 4)
 
-    # Streuung der Sharpes ueber alle Versuche — Input fuer die Deflation
-    all_sr = [r["oos"]["sharpe"] for r in cand]
-    mu_sr = sum(all_sr) / len(all_sr)
-    sr_var = sum((s - mu_sr) ** 2 for s in all_sr) / (len(all_sr) - 1)
+    srs = [r["ann"] for r in cand]
+    mu = sum(srs) / len(srs)
+    sr_var = sum((x - mu) ** 2 for x in srs) / (len(srs) - 1)
+    n_trials = n_tests_total or len(recs)
 
     for r in cand:
         o = r["oos"]
-        t = o["sharpe"] * math.sqrt(o["n"])          # t-Statistik fuer mu > 0
+        t = o["sharpe"] * math.sqrt(o["n"])          # t-Test auf mu > 0, pro Trade
         r["p_oos"] = t_sf(t, o["n"] - 1)
-        r["dsr"] = deflated_sharpe(o["sharpe"], o["n"], o["skew"], o["kurt"], n_trials, sr_var)
+        r["dsr"] = deflated_sharpe(r["ann"], o["n"], o["skew"], o["kurt"], n_trials, sr_var)
         r["consistent"] = r["is"]["avg"] > 0 and r["oos"]["avg"] > 0
 
     keep = bh_fdr([r["p_oos"] for r in cand], fdr_q)
-    surv = []
-    for i, r in enumerate(cand):
-        r["fdr_pass"] = i in keep
-        if r["fdr_pass"] and r["consistent"] and (r["dsr"] or 0) >= 0.95:
-            surv.append(r)
-    surv.sort(key=lambda r: -(r["dsr"] or 0))
+    surv = [r for i, r in enumerate(cand) if i in keep and r["consistent"]]
+    surv.sort(key=lambda r: -r["ann"])
+
+    # Abdeckung je Strategie — 2/3 des Rasters liefen im ersten Lauf leer,
+    # ohne dass die Ausgabe das auswies (Befund A7).
+    cov = {}
+    for r in recs:
+        c = cov.setdefault(r["strategy"], {"tests": 0, "auswertbar": 0})
+        c["tests"] += 1
+    for r in cand:
+        cov[r["strategy"]]["auswertbar"] += 1
+
     return {
-        "n_tests_total": len(recs), "n_candidates": n_trials,
-        "sr_var": round(sr_var, 5), "fdr_q": fdr_q,
-        "n_fdr_pass": len(keep),
+        "n_tests_total": len(recs), "min_oos": min_oos, "fdr_q": fdr_q,
+        "n_candidates": len(cand), "n_trials_deflation": n_trials,
+        "sr_var_annualisiert": round(sr_var, 5),
         "n_consistent": sum(1 for r in cand if r["consistent"]),
-        "survivors": surv, "candidates": cand,
+        "n_fdr_pass": len(keep), "n_survivors": len(surv),
+        "coverage": cov, "survivors": surv, "candidates": cand,
     }
 
 
@@ -721,10 +759,11 @@ def main():
     tickers = ([t.strip().upper() for t in a.tickers.split(",")] if a.tickers
                else [k for k, v in SYMBOLS.items() if v.get("kategorie") == "US-ETF"])
 
-    print(f"Scan: {len(tickers)} Ticker x {len(STRATEGIES)} Strategien x {len(FILTERS)} Varianten "
-          f"= {len(tickers)*len(STRATEGIES)*len(FILTERS)} Tests")
+    n_planned = len(tickers) * len(STRATEGIES) * len(FILTERS)
+    print(f"Scan: {len(tickers)} Ticker x {len(STRATEGIES)} Strategien x {len(FILTERS)} "
+          f"Varianten = {n_planned} Tests")
     print(f"Walk-Forward-Split: In-Sample < {SPLIT_DATE} <= Out-of-Sample")
-    print(f"Mindest-Trades: {MIN_TRADES} (IS) / {MIN_TRADES_OOS} (OOS)\n")
+    print("")
 
     recs = []
     for i, tk in enumerate(tickers, 1):
@@ -732,34 +771,63 @@ def main():
         recs += r
         print(f"  [{i:>2}/{len(tickers)}] {tk:<6} {len(r):>4} Tests", flush=True)
 
-    res = evaluate(recs, a.fdr)
     OUT.mkdir(parents=True, exist_ok=True)
-    slim = {k: v for k, v in res.items() if k != "candidates"}
+
+    # Sensitivitaetskurve statt eines nach Sichtung gewaehlten Einzelwerts (Befund A4).
+    print("")
+    print("=" * 78)
+    print(f"  {'min OOS-Trades':<16}{'auswertbar':>12}{'IS+OOS positiv':>16}"
+          f"{'FDR-pass':>10}{'Ueberlebende':>14}")
+    print("-" * 78)
+    curve, chosen = [], None
+    for mn in (8, 12, 15, 20, 30):
+        res = evaluate(recs, a.fdr, min_oos=mn, n_tests_total=n_planned)
+        curve.append({k: res.get(k) for k in
+                      ("min_oos", "n_candidates", "n_consistent", "n_fdr_pass", "n_survivors")})
+        print(f"  {mn:<16}{res['n_candidates']:>12}{res.get('n_consistent', 0):>16}"
+              f"{res.get('n_fdr_pass', 0):>10}{res.get('n_survivors', 0):>14}")
+        if mn == 15:
+            chosen = res
+    print("=" * 78)
+
+    print("")
+    print("  Abdeckung je Strategie (auswertbar bei min. 15 OOS-Trades):")
+    cov = chosen.get("coverage", {})
+    leer = [k for k, v in cov.items() if v["auswertbar"] == 0]
+    for k, v in sorted(cov.items(), key=lambda kv: -kv[1]["auswertbar"]):
+        if v["auswertbar"]:
+            print(f"    {k:<22}{v['auswertbar']:>4} von {v['tests']:>4} Tests")
+    if leer:
+        print(f"    OHNE einen auswertbaren Test ({len(leer)}): {', '.join(sorted(leer))}")
+        print("    -> Jahresstrategien scheitern an der IS-Mindestzahl. Sie wurden faktisch")
+        print("       NICHT getestet. Datengrenze, kein Ergebnis.")
+
+    surv = chosen.get("survivors", [])
+    if surv:
+        print("")
+        print(f"  {len(surv)} Kombinationen bestehen Walk-Forward + BH-FDR (q={a.fdr}). "
+              f"Top 25 nach annualisiertem Sharpe:")
+        print("")
+        print(f"{'Ticker':<7}{'Strategie':<20}{'Filter':<11}{'n':>5}{'WR':>7}"
+              f"{'D%':>8}{'SR/Tr':>7}{'SR ann':>8}{'p':>9}{'DSR':>7}")
+        print("-" * 89)
+        for r in surv[:25]:
+            o = r["oos"]
+            print(f"{r['ticker']:<7}{r['strategy']:<20}{r['filter']:<11}{o['n']:>5}"
+                  f"{o['win_rate']:>7.1f}{o['avg']:>8.2f}{o['sharpe']:>7.2f}{r['ann']:>8.2f}"
+                  f"{r['p_oos']:>9.4f}{(r['dsr'] or 0):>7.3f}")
+        print("")
+        print("  DSR nur informativ: sie korrigiert dieselbe Multiplizitaet wie BH-FDR;")
+        print("  als UND-Gate war das eine Doppelbestrafung (Befund A5 der Pruefung).")
+
+    slim = {k: v for k, v in chosen.items() if k != "candidates"}
+    slim["sensitivitaet"] = curve
     (OUT / "scan_result.json").write_text(
         json.dumps(slim, indent=2, ensure_ascii=False), encoding="utf-8")
     (OUT / "scan_candidates.json").write_text(
-        json.dumps(res.get("candidates", []), ensure_ascii=False), encoding="utf-8")
-
-    print("\n" + "=" * 78)
-    print(f"  Tests gesamt              {res['n_tests_total']}")
-    print(f"  davon auswertbar          {res['n_candidates']}  (genug Trades in IS und OOS)")
-    print(f"  IS und OOS beide positiv  {res.get('n_consistent', 0)}")
-    print(f"  BH-FDR bestanden (q={a.fdr})  {res.get('n_fdr_pass', 0)}")
-    print(f"  UEBERLEBENDE (zusaetzlich DSR >= 0.95)  {len(res['survivors'])}")
-    print("=" * 78)
-    if res["survivors"]:
-        print(f"\n{'Ticker':<7}{'Strategie':<20}{'Filter':<11}"
-              f"{'n_OOS':>6}{'WR':>7}{'Ø%':>8}{'SR':>7}{'p':>9}{'DSR':>7}")
-        print("-" * 82)
-        for r in res["survivors"][:40]:
-            o = r["oos"]
-            print(f"{r['ticker']:<7}{r['strategy']:<20}{r['filter']:<11}"
-                  f"{o['n']:>6}{o['win_rate']:>7.1f}{o['avg']:>8.2f}{o['sharpe']:>7.2f}"
-                  f"{r['p_oos']:>9.4f}{(r['dsr'] or 0):>7.3f}")
-    else:
-        print("\n  Kein einziger Kandidat hat alle drei Huerden ueberstanden.")
-        print("  Das ist ein Ergebnis, kein Fehler.")
-    print(f"\nGeschrieben: {(OUT / 'scan_result.json').relative_to(_ROOT)}")
+        json.dumps(chosen.get("candidates", []), ensure_ascii=False), encoding="utf-8")
+    print("")
+    print(f"Geschrieben: {(OUT / 'scan_result.json').relative_to(_ROOT)}")
     return 0
 
 
