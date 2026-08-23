@@ -37,7 +37,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Dealer Positioning","item":"https://seasonalpha.ai/dealer-positioning"}]}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist Gamma Exposure (GEX)?","acceptedAnswer":{"@type":"Answer","text":"GEX aggregiert das Dealer-Gamma über die Options-Chain. Positives net-GEX (long Gamma) wirkt vola-reduzierend — Händler kaufen in Dips, verkaufen in Rallyes und dämpfen so Bewegungen. Negatives net-GEX (short Gamma) wirkt vola-forcierend — Händler hedgen prozyklisch und verstärken Moves. Der Zero-Gamma-Flip ist das Kursniveau, an dem das Regime kippt."}},{"@type":"Question","name":"Was sind Call-Wall und Put-Wall?","acceptedAnswer":{"@type":"Answer","text":"Die Call-Wall ist der Strike oberhalb des Kurses mit dem größten positiven Netto-Dealer-Gamma (Widerstands-/Pinning-Referenz), die Put-Wall der Strike unterhalb mit dem größten negativen (Support-Referenz). Es sind Konzentrations-Referenzen, keine garantierten Barrieren. Die Existenz von Kurs-Pinning an Verfallstagen ist wissenschaftlich belegt (Ni, Pearson & Poteshman 2005)."}},{"@type":"Question","name":"Wie zuverlässig sind diese Zahlen?","acceptedAnswer":{"@type":"Answer","text":"Wir nutzen die naive Dealer-Konvention (Händler long Calls / short Puts) auf EOD-Daten von Yahoo. Kommerzielle Anbieter schätzen die tatsächliche Dealer-Seite mit proprietären Modellen und beziehen Intraday- und 0DTE-Daten ein — unsere Werte sind eine belastbare erste Näherung, weichen aber ab. Kein Kauf- oder Verkaufssignal."}}]}</script>
 
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/landing/css/app.css">
   <style>
     .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
@@ -183,7 +183,7 @@
             'die Put-Seite. Gemessen wird dadurch das <b>OI-Ungleichgewicht je Strike</b>, gewichtet mit '+
             'Vanna. Weil Index-Chains unterhalb des Spot put-lastig und oberhalb call-lastig sind, '+
             'liefern <b>beide Seiten positive Beitraege</b> — das Ergebnis ist praktisch immer positiv, '+
-            'unabhaengig von der Marktlage. Anbieter mit echtem Inventar-Modell (z.B. Volland) zeigen fuer '+
+            'unabhaengig von der Marktlage. Anbieter mit echtem Inventar-Modell zeigen fuer '+
             'dieselben Verfaelle regelmaessig das Gegenteil. Als Struktur-/Konzentrationsbild lesbar, '+
             'nicht als Richtungsaussage.',
       charm:'<b>Delta-Drift pro Kalendertag</b> (Charm ÷ 365). Zeigt, wieviel Delta allein durch '+
