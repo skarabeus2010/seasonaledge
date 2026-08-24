@@ -21,6 +21,20 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-08-08…24 — Incident-Fixes: Watchlist-Fetch, tdoy-Glitch, Fonts-Hang (PRs #171-175)
+
+Mehrere Produktions-Incidents diagnostiziert & behoben. **Lessons Learned (nicht-offensichtlich):**
+
+- **Render-blockende Fonts frieren die ganze Seite ein.** `/dealer-positioning` (und site-weit, 40 Seiten) blieb in „Lade…" stehen. Ursache: das Google-Fonts-`<link rel="stylesheet">` im `<head>` VOR den Scripts. Ein `<script>` wartet auf noch ladende Stylesheets (CSSOM-Zugriff möglich) → hängt `fonts.googleapis.com`, laufen `app.js` (Nav via `loadComponent`) UND das Inline-`init()`/`boot()` nie → ewiges „Lade…", und der 3s-Boot-Notnagel greift nicht (er steckt selbst im blockierten Script). „Inkognito geht manchmal" = zeitweise langsamer/extension-gestörter Fonts-Request. **Fix:** `media="print" onload="this.media='all'"` + `<noscript>`-Fallback. Ergänzt `b5ba5ce` (kein Dritt-CDN im kritischen JS-Pfad) → **gilt genauso für CSS/Fonts.** (PR #175)
+
+- **Viele parallele paginierte Supabase-Fetches → 429-Sturm; Fehler-JSON als „Zeilen".** Watchlist zeigte für 9/10 Ticker „Zu wenig Daten" — DB war voll & frisch (daten-auditor bestätigt). Ursache: `loadAll()` lud alle Ticker via `Promise.all` gleichzeitig, jeder paginiert in 1000er-Batches → Rate-Limit/429. `SA.fetchAllPrices` hatte KEINE Fehlerbehandlung: ein fehlgeschlagener Batch hängte das Fehler-JSON (kein Array) an `allRows` → kurzes Ergebnis (<200 Zeilen) → falsches „Zu wenig Daten" (und wurde 15 Min gecacht). **Fix:** begrenzte Parallelität (Pool 3) + Retry (429/5xx UND `fetch()`-Reject, mit Jitter + `Retry-After`) + Array-Guard + Run-Token gegen stale-Renders. **Regel:** bei paginierten Fetches immer `!r.ok` prüfen und NIE ein Nicht-Array als Daten behandeln/cachen. (PRs #171-172)
+
+- **tdoy-Konsistenz: Ground Truth ist der Kalender, nicht ein anderer Ticker.** `verify_calendar_rules` (Prüfagent) FAIL Regel 4-6: XETRA-Ticker (42 `.DE` + `^GDAXI`/`^MDAXI`/`^SDAXI`) hatten 2026-08-03…13 falsche `tdoy`/`tdom` (transienter Refresh-Glitch; seit 08-14 wieder korrekt, außerhalb des 7-Tage-Refresh-Fensters „eingefroren"). `^GDAXI` taugte NICHT als Referenz (eigener Glitch am 08-11). Ground Truth = reiner XETRA-Kalender-Zähler (`is_trading_day` ab Jan 1). Offset war NICHT uniform (−1/0/+1/+3) → pauschales `+1` wäre falsch; nur **Recompute** (`compute_tdoy_tdom`/`backfill_tdoy`) korrekt. Fix als scoped UPDATE-SQL `scripts/sql/fix_tdoy_2026_08_glitch.sql` (+ `verify_tdoy_2026_08.sql`), danach Audit grün (12 PASS · 0 FAIL). (PR #174)
+
+- **Supabase-MCP zeigt ein FREMDES Projekt.** Der verbundene Supabase-MCP hatte nur Zugriff auf das separate Projekt **„Wohnungsbot"** (läuft auf demselben VPS wie SeasonAlpha), NICHT auf SeasonAlpha (`dkrebzobcwxyagximuxy`) — dort NIE Writes ausführen. Lokale `.env` hat nur den **Anon-Key** (kein `service_role`) → keine DB-Writes aus lokalen Skripten. DB-Korrekturen daher als SQL für den SeasonAlpha-SQL-Editor generieren (oder `backfill_tdoy` via `docker exec` auf dem Server, macht der User).
+
+- **„The job was not acquired by Runner" ≠ VPS/mietwatch-Problem.** Bei Public-Repos gibt es KEIN Actions-Minuten-Limit → mass-„cancelled/failed" mit dieser Annotation = transiente GitHub-Runner-Kapazität, self-heilt. (Falls das Repo je auf **privat** gestellt wird: dann greift das Minuten-Limit → die reinen SSH-/docker-exec-Crons besser auf native VPS-crontab umziehen, nur Deploy auf Actions lassen. Server-`.env` beim Privat-Wechsel: VPS-`git pull` braucht dann Auth (Deploy-Key/PAT).)
+
 ### 2026-07-10 — Options-/Dealer-Positioning-Engine (GEX / Vanna / Charm / Skew / Walls)
 
 **Neuer Baustein** aus User-Wunsch („was können wir mit Optionsdaten rechnen — Gamma, Charm …") + Analyse
