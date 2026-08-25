@@ -34,7 +34,7 @@ The Dashboard is built as a **Bento Grid**: eleven compact cards, each with its 
 
 ### The Hero Row: four signals, one second
 
-At the very top you see four cards that together deliver an honest health check for the selected ticker:
+At the very top you see four cards that together deliver a realistic health check for the selected ticker:
 
 - **AI Composite Score (0–10)** — four sub-scores are combined into a single value: how well the historically matching years performed, what the projected 30-day trend looks like, what the win rate of the current month is, and how closely the current price path follows the seasonal norm. Above 6.5 = Bullish, below 3.5 = Bearish, in between = Neutral.
 - **Crash Signal** — three risk features (20-day volatility, 20-day drawdown, 20-day return) are percentile-ranked against the last 252 trading days of the **same ticker**. The result is a risk score 0–100 with a green/yellow/red signal.

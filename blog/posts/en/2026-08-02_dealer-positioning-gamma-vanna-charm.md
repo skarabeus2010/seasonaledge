@@ -57,7 +57,7 @@ From gamma per strike we can derive notable reference levels:
 - **Put wall** — the strike below spot with the largest negative net gamma. Often acts as a support reference.
 - **Absolute gamma** — the strike with the largest gamma magnitude overall, the most "magnetic" pin.
 
-Important, and we stress this deliberately: **these walls are references, not barriers.** There is no guarantee the price turns at them. They only show where hedging activity is densest.
+Important: **these walls are references, not barriers.** There is no guarantee the price turns at them. They only show where hedging activity is densest.
 
 The idea that prices are drawn to large strikes (pinning) is one of the best-documented observations in market microstructure. **Ni, Pearson & Poteshman (2005, Journal of Financial Economics)** showed that closing prices of optionable stocks cluster at strike prices on expiration day — an average shift of about 16.5 basis points, aggregated over roughly 9 billion dollars of market capitalization. **Golez & Jackwerth (2012, JFE)** extended this pinning finding to the S&P 500 future — precisely the index level our SPY and QQQ walls operate on.
 
@@ -88,9 +88,9 @@ The chart shows the **gamma exposure of SPY by strike** — exactly what our dea
 
 That is how "pattern" becomes "mechanism". For retail investors it means: you not only see *that* a phase is statistically notable, you understand the structural cause behind it — and can better judge when a pattern is robust and when macro events override it.
 
-## Honesty first: what our numbers are — and what they are not
+## Limits: what our numbers are — and what they are not
 
-Dealer positioning is a YMYL topic (Your Money or Your Life). So we are deliberately transparent here, rather than faking precision:
+When real money is on the line, we put the limits on the table rather than faking precision:
 
 - **We use a naive dealer heuristic.** Assumption: dealers are long calls and short puts. This is a proven first approximation for index gamma, but **not actual knowledge of dealer books**.
 - **We compute on EOD data from Yahoo** (open interest and implied volatility at the close). Commercial providers use proprietary inventory models with intraday and 0DTE data. **Our numbers differ from theirs** — they are a solid approximation, not identical.
@@ -133,9 +133,9 @@ No. We use a naive dealer heuristic on EOD data, not proprietary inventory model
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** New on SeasonAlpha: Dealer Positioning (gamma, vanna, charm). Finally the explanation for why the OPEX effect exists — turning the seasonal pattern into the mechanism. We are the only ones marrying dealer flows with an exchange-accurate seasonal calendar. Honestly labeled: naive heuristic on EOD data, no signal. How do you use gamma data in your analysis? https://seasonalpha.ai/en/dealer-positioning
+**LinkedIn:** New on SeasonAlpha: Dealer Positioning (gamma, vanna, charm). Finally the explanation for why the OPEX effect exists — turning the seasonal pattern into the mechanism. We are the only ones marrying dealer flows with an exchange-accurate seasonal calendar. Clearly labeled: naive heuristic on EOD data, no signal. How do you use gamma data in your analysis? https://seasonalpha.ai/en/dealer-positioning
 
-**Twitter/X:** New: Dealer Positioning on SeasonAlpha 📊 Gamma, vanna & charm show WHY the market often rises before options expiry. Pattern becomes mechanism. Backed by Ni/Pearson/Poteshman (JFE 2005) & Baltussen et al. (2024). No signal, honestly labeled. seasonalpha.ai/en/dealer-positioning #Gamma #OPEX #Options
+**Twitter/X:** New: Dealer Positioning on SeasonAlpha 📊 Gamma, vanna & charm show WHY the market often rises before options expiry. Pattern becomes mechanism. Backed by Ni/Pearson/Poteshman (JFE 2005) & Baltussen et al. (2024). No signal, clearly labeled. seasonalpha.ai/en/dealer-positioning #Gamma #OPEX #Options
 
 #### Internal linking
 - /dealer-positioning (main feature)

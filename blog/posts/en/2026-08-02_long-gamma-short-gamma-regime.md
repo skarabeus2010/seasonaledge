@@ -64,13 +64,13 @@ A real example from our live snapshot of 2 August 2026 makes it tangible: SPY st
 
 ## What the research says: a practitioner idea, academically validated
 
-Cleanliness matters here, because a young finance site has to keep its sources honest.
+Sourcing matters here, because a young finance site has to be precise about where its claims come from.
 
 **The origin is practitioner knowledge.** The term "GEX" and the two-regime intuition come from the **industry white paper (2016)**. Their much-quoted claim: at low volatility, the sign of gamma predicts market stability better than the VIX itself. That is a thought-provoking observation — but it is a **vendor source**, not a peer-reviewed result. It should be treated as such.
 
 **The academic validation** comes from **"Gamma Fragility" by Barbon & Buraschi (2021)**. Using hard data, they show that when aggregate dealer gamma is **negative**, intraday **momentum** emerges (moves persist); when it is **positive**, **reversal** dominates (moves revert). The effect is strongest in illiquid conditions. That maps precisely onto the shock-absorber-vs.-accelerant logic.
 
-One important caveat we deliberately stress: the effect Barbon & Buraschi measure is **intraday and very short-lived** — it usually fades within one or two trading days. It is **not** a recipe for trading daily moves. So we use only the **regime classification** (long vs. short gamma as context), **not** the short-term trading effect. And Barbon & Buraschi is a widely cited working paper, not yet a finally refereed publication — that, too, belongs to the honest framing.
+One important caveat: the effect Barbon & Buraschi measure is **intraday and very short-lived** — it usually fades within one or two trading days. It is **not** a recipe for trading daily moves. So we use only the **regime classification** (long vs. short gamma as context), **not** the short-term trading effect. And Barbon & Buraschi is a widely cited working paper, not yet a finally refereed publication — that, too, belongs in the picture.
 
 ## The gamma light at SeasonAlpha: the regime at a glance
 
@@ -96,9 +96,9 @@ The second chart breaks it down into individual calendar months (current month h
 
 That is the moat: we do not just show *that* a window is statistically notable — the gamma regime adds a structural layer that explains *why* swings might be larger or smaller right now.
 
-## Honesty first: what the gamma light can — and cannot — do
+## Limits: what the gamma light can — and cannot — do
 
-Dealer positioning is a YMYL topic (Your Money or Your Life). So we put the limits on the table instead of faking precision:
+When real money is on the line, we put the limits on the table instead of faking precision:
 
 - **Naive dealer heuristic.** We assume dealers are long calls and short puts. That is a proven first approximation for index gamma, but **not a real inventory model** like commercial providers — and no knowledge of the actual dealer books.
 - **End-of-day Yahoo data.** We compute on open interest and implied vol at the close. Our values therefore differ from proprietary intraday/0DTE models.
@@ -111,7 +111,7 @@ These limits are not a flaw but part of the method. Anyone who takes the regime 
 
 The gamma regime is the most memorable building block in dealer positioning: a single sign decides whether dealers dampen the market (long gamma, vol-suppressing) or stoke it (short gamma, vol-amplifying). The zero-gamma flip marks the tipping point — and how close price sits to it is a fragility barometer.
 
-Practitioner knowledge from the industry, backed academically by Barbon & Buraschi, honestly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/en/dealer-positioning)** yourself.
+Practitioner knowledge from the industry, backed academically by Barbon & Buraschi, clearly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/en/dealer-positioning)** yourself.
 
 ## Frequently Asked Questions
 

@@ -56,7 +56,7 @@ Aus dem Gamma je Ausübungspreis lassen sich markante Referenzstrikes ableiten:
 - **Put-Wall** — der Strike unterhalb mit dem größten negativen Netto-Gamma. Wirkt oft als Support-Referenz.
 - **Absolute-Gamma** — der Strike mit dem insgesamt stärksten Gamma-Betrag, also der „magnetischste" Pin.
 
-Wichtig, und das betonen wir bewusst: **Diese Walls sind Referenzen, keine Barrieren.** Es gibt keine Garantie, dass der Kurs an ihnen dreht. Sie zeigen nur, wo die Hedging-Aktivität am dichtesten ist.
+Wichtig: **Diese Walls sind Referenzen, keine Barrieren.** Es gibt keine Garantie, dass der Kurs an ihnen dreht. Sie zeigen nur, wo die Hedging-Aktivität am dichtesten ist.
 
 Die Idee, dass Kurse zu großen Strikes gezogen werden (Pinning), ist eine der am besten belegten Beobachtungen der Marktmikrostruktur. **Ni, Pearson & Poteshman (2005, Journal of Financial Economics)** zeigten, dass Schlusskurse optionierter Aktien am Verfallstag an den Strike-Preisen clustern — im Schnitt eine Verschiebung von rund 16,5 Basispunkten, aggregiert über etwa 9 Milliarden Dollar Marktkapitalisierung. **Golez & Jackwerth (2012, JFE)** erweiterten diesen Pinning-Befund auf den S&P-500-Future — also genau die Index-Ebene, auf der unsere SPY- und QQQ-Walls arbeiten.
 
@@ -87,9 +87,9 @@ Der Chart zeigt die **Gamma-Exposure des SPY je Strike** — genau das, was unse
 
 Aus „Muster" wird so „Mechanismus". Für Privatanleger heißt das: Du siehst nicht nur *dass* eine Phase statistisch auffällig ist, sondern verstehst die strukturelle Ursache dahinter — und kannst besser einordnen, wann ein Muster tragfähig ist und wann Makro-Ereignisse es überlagern.
 
-## Ehrlichkeit zuerst: was unsere Zahlen sind — und was nicht
+## Grenzen: was unsere Zahlen sind — und was nicht
 
-Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb sind wir hier bewusst transparent, statt Präzision vorzutäuschen:
+Bei einem Thema, an dem echtes Geld hängt, legen wir die Grenzen offen, statt Präzision vorzutäuschen:
 
 - **Wir nutzen eine naive Dealer-Heuristik.** Annahme: Dealer sind long Calls und short Puts. Das ist eine bewährte erste Näherung für Index-Gamma, aber **keine echte Kenntnis der Dealer-Bücher**.
 - **Wir rechnen auf EOD-Daten von Yahoo** (Open Interest und implizite Vola am Handelsende). Kommerzielle Anbieter nutzen proprietäre Inventory-Modelle mit Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab** — sie sind eine belastbare Näherung, kein Deckungsgleiches.
@@ -132,9 +132,9 @@ Nein. Wir nutzen eine naive Dealer-Heuristik auf EOD-Daten, keine proprietären 
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** Neues Feature auf SeasonAlpha: Dealer Positioning (Gamma, Vanna, Charm). Endlich die Erklärung, warum der OPEX-Effekt existiert — aus dem Saison-Muster wird der Mechanismus. Wir sind die Einzigen, die Dealer-Flows mit einem börsengenauen Saisonkalender verheiraten. Ehrlich gelabelt: naive Heuristik auf EOD-Daten, kein Signal. Wie nutzt du Gamma-Daten in deiner Analyse? https://seasonalpha.ai/dealer-positioning
+**LinkedIn:** Neues Feature auf SeasonAlpha: Dealer Positioning (Gamma, Vanna, Charm). Endlich die Erklärung, warum der OPEX-Effekt existiert — aus dem Saison-Muster wird der Mechanismus. Wir sind die Einzigen, die Dealer-Flows mit einem börsengenauen Saisonkalender verheiraten. Klar gekennzeichnet: naive Heuristik auf EOD-Daten, kein Signal. Wie nutzt du Gamma-Daten in deiner Analyse? https://seasonalpha.ai/dealer-positioning
 
-**Twitter/X:** Neu: Dealer Positioning auf SeasonAlpha 📊 Gamma, Vanna & Charm zeigen, WARUM der Markt vor dem Optionsverfall oft steigt. Aus Muster wird Mechanismus. Belegt durch Ni/Pearson/Poteshman (JFE 2005) & Baltussen et al. (2024). Kein Signal, ehrlich gelabelt. seasonalpha.ai/dealer-positioning #Gamma #OPEX #Optionen
+**Twitter/X:** Neu: Dealer Positioning auf SeasonAlpha 📊 Gamma, Vanna & Charm zeigen, WARUM der Markt vor dem Optionsverfall oft steigt. Aus Muster wird Mechanismus. Belegt durch Ni/Pearson/Poteshman (JFE 2005) & Baltussen et al. (2024). Kein Signal, klar gekennzeichnet. seasonalpha.ai/dealer-positioning #Gamma #OPEX #Optionen
 
 #### Interne Verlinkung
 - /dealer-positioning (Haupt-Feature)

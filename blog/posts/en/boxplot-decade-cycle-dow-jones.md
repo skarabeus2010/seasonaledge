@@ -56,7 +56,7 @@ The chart shows clear differences between the cohorts:
 
 Three insights that an average value alone cannot provide:
 
-**1. Median beats mean.** For x0 and x1, the mean is pulled downward by the extreme crash years. The median is more honest: it shows what you can expect in a "normal" x0 year.
+**1. Median beats mean.** For x0 and x1, the mean is pulled downward by the extreme crash years. The median is more telling: it shows what you can expect in a "normal" x0 year.
 
 **2. Wide box = more uncertainty.** A positive median is nice — but if the box ranges from -30% to +40%, that is not a reliable pattern. x5 is convincing because both the box **and** the median are positive.
 
@@ -74,7 +74,7 @@ The current year 2026 carries the final digit **x6** — a cohort with a positiv
 
 ## Conclusion: Distributions, Not Averages
 
-Box plots are one of the most honest tools in data analysis — especially in the stock market, where a single crash year can distort the average of an entire decade. They show you not only **what** happened historically, but **how stable** that pattern was.
+Box plots are one of the most revealing tools in data analysis — especially in the stock market, where a single crash year can distort the average of an entire decade. They show you not only **what** happened historically, but **how stable** that pattern was.
 
 For the current year 2026 (digit x6): the median is positive, dispersion is moderate. No reason for euphoria — but no warning signal either, unlike x0 or x1.
 

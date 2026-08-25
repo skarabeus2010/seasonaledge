@@ -25,7 +25,7 @@ Keyword-Plan:
 
 The stock market has a hidden metronome that most investors never see: the **OPEX cycle**. OPEX stands for *option expiration* — the monthly expiry on the third Friday of each month. Around that date the same four-phase rhythm repeats and quietly structures the trading month: first the calm build-up, then an often quiet upward drift, the pin on expiration day, and finally a more directional, more volatile window afterward.
 
-One thing up front: the OPEX cycle is **not a trading signal**, it is structural context. It explains *why* certain seasonal patterns exist in the first place. In this article we break the cycle into its four phases, use real dealer data to show where the hedging flows cluster — and we honestly name where the pattern breaks down.
+One thing up front: the OPEX cycle is **not a trading signal**, it is structural context. It explains *why* certain seasonal patterns exist in the first place. In this article we break the cycle into its four phases, use real dealer data to show where the hedging flows cluster — and we name where the pattern breaks down.
 
 ## The four phases of the options expiration cycle
 
@@ -101,7 +101,7 @@ One distinction matters: pinning and the Third-Friday jump are effects documente
 
 ## Limits and counter-examples
 
-An honest look at the cycle has to show the fault lines.
+A sober look at the cycle has to show the fault lines.
 
 **Patterns fade once everyone knows them.** The better known the pre-OPEX drift becomes, the more it gets arbitraged away. A historical average is not a forecast for next Friday.
 

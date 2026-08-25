@@ -54,7 +54,7 @@ Das Bild zeigt deutliche Unterschiede zwischen den Kohorten:
 
 Drei Erkenntnisse, die ein Durchschnittswert allein nicht liefert:
 
-**1. Median schlägt Mittelwert.** Bei x0 und x1 ist der Mittelwert durch die extremen Crashjahre nach unten verzerrt. Der Median ist ehrlicher: Er zeigt, was du in einem „normalen" x0-Jahr erwarten kannst.
+**1. Median schlägt Mittelwert.** Bei x0 und x1 ist der Mittelwert durch die extremen Crashjahre nach unten verzerrt. Der Median ist aussagekräftiger: Er zeigt, was du in einem „normalen" x0-Jahr erwarten kannst.
 
 **2. Breite Box = mehr Unsicherheit.** Ein positiver Median ist schön — aber wenn die Box von -30% bis +40% reicht, ist das kein verlässliches Muster. x5 überzeugt, weil Box **und** Median positiv sind.
 
@@ -72,7 +72,7 @@ Das aktuelle Jahr 2026 trägt die Endziffer **x6** — eine Kohorte mit positive
 
 ## Fazit: Verteilungen statt Durchschnitte
 
-Box-Plots sind eines der ehrlichsten Werkzeuge in der Datenanalyse — gerade an der Börse, wo ein einziges Crash-Jahr den Durchschnitt einer ganzen Dekade verzerrt. Sie zeigen dir nicht nur **was** historisch passiert ist, sondern **wie stabil** dieses Muster war.
+Box-Plots sind eines der aussagekräftigsten Werkzeuge in der Datenanalyse — gerade an der Börse, wo ein einziges Crash-Jahr den Durchschnitt einer ganzen Dekade verzerrt. Sie zeigen dir nicht nur **was** historisch passiert ist, sondern **wie stabil** dieses Muster war.
 
 Für das laufende Jahr 2026 (Endziffer x6): Der Median ist positiv, die Streuung moderat. Kein Grund zur Euphorie — aber auch kein Warnsignal wie bei x0 oder x1.
 

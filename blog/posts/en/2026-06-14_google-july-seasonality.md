@@ -54,7 +54,7 @@ A plausible driver: **Alphabet reports its quarterly earnings in late July.** St
 
 ## How Reliable Is the Pattern?
 
-Seasonality describes the past, not the future. Three points for an honest assessment:
+Seasonality describes the past, not the future. Three points for context:
 
 - **15 observations** are a solid but not huge sample. A 93% rate is strong, but it does not rule out weak Julys like 2024.
 - The pattern leans heavily on a **single event** — the earnings report. If Alphabet disappoints, the typical July boost can fail to materialize.

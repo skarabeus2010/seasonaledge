@@ -79,14 +79,14 @@ Für Privatanleger heißt das: Ein Wall-Strike ist keine isolierte Zahl. Er entf
 
 ## Grenzen und Gegenbeispiele: Was Walls NICHT sind
 
-Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb sind wir hier bewusst transparent, statt eine Präzision vorzutäuschen, die die Datenbasis nicht hergibt:
+Bei einem Thema, an dem echtes Geld hängt, sind wir hier bewusst transparent, statt eine Präzision vorzutäuschen, die die Datenbasis nicht hergibt:
 
 - **Walls sind Konzentrations-Referenzen, keine Barrieren.** Es gibt keine Garantie, dass der Kurs an ihnen dreht. Sie markieren nur, wo Hedging-Aktivität am dichtesten liegt — **kein Kauf- oder Verkaufssignal**.
 - **Der Effekt ist statistisch und klein.** 16,5 Basispunkte sind ein Mittelwert über tausende Fälle, kein handelbarer Einzeltag-Ausschlag. Pinning erklärt eine Tendenz, keine Einzelbewegung.
 - **Kurse können auch weggedrückt werden.** Golez und Jackwerth dokumentierten das Anti-Cross-Pinning vor Index-Verfällen. Der „Magnet" kann sich also umkehren.
 - **Wir nutzen eine naive Dealer-Heuristik** (Annahme: long Calls, short Puts) auf **EOD-Daten von Yahoo** — Open Interest und implizite Vola am Handelsende. Kommerzielle Anbieter arbeiten mit proprietären Inventory-Modellen samt Intraday- und 0DTE-Daten. **Unsere Zahlen weichen von deren Zahlen ab**; sie sind eine belastbare Näherung, kein Abbild echter Dealer-Bücher.
 
-Diese Grenzen sind kein Makel, sondern Teil einer ehrlichen Methode. Wer Walls ernst nimmt, muss wissen, wie belastbar die Datenbasis ist.
+Diese Grenzen sind kein Makel, sondern Teil einer sauberen Methode. Wer Walls ernst nimmt, muss wissen, wie belastbar die Datenbasis ist.
 
 ## So liest du Call-Wall und Put-Wall in der Praxis
 
@@ -100,7 +100,7 @@ Ein Hinweis zur Interpretation: Einzelaktien-Gamma ist deutlich verrauschter als
 
 Pinning ist kein Aberglaube, sondern eine der am besten belegten Beobachtungen der Marktmikrostruktur — von den Einzelaktien (Ni, Pearson & Poteshman) über den S&P-500-Future (Golez & Jackwerth) bis ins Modell (Avellaneda, Kasyan & Lipkin). Call-Wall und Put-Wall machen sichtbar, wo sich das offene Interesse ballt und die Dealer-Absicherung am dichtesten ist.
 
-Aber: Walls sind Referenzen, keine Barrieren. Der Effekt ist real, aber klein, und unsere Zahlen sind eine ehrliche Näherung auf EOD-Daten, kein Insiderblick in die Dealer-Bücher. Genau darin liegt der Wert — du bekommst eine fundierte Orientierung, kein falsches Versprechen. Probiere es auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
+Aber: Walls sind Referenzen, keine Barrieren. Der Effekt ist real, aber klein, und unsere Zahlen sind eine belastbare Näherung auf EOD-Daten, kein Insiderblick in die Dealer-Bücher. Genau darin liegt der Wert — du bekommst eine fundierte Orientierung, kein falsches Versprechen. Probiere es auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
 
 ## Häufige Fragen
 
@@ -123,9 +123,9 @@ Weil im März, Juni, September und Dezember der Verfall von Aktienoptionen, Inde
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** „Pinning" ist kein Börsen-Mythos: Seit Ni, Pearson & Poteshman (Journal of Financial Economics, 2005) ist belegt, dass Aktienkurse am Optionsverfall an Strikes kleben — im Schnitt ~16,5 bps, aggregiert ~9 Mrd. $. Golez & Jackwerth (2012) zeigten dasselbe für den S&P-500-Future. In unserem neuen Beitrag erklären wir den Mechanismus, wie man Call-Wall und Put-Wall liest — und wo die Grenzen liegen (Referenzen, keine Barrieren, kein Signal). Ehrlich gelabelt: naive Heuristik auf EOD-Daten, nur US-Werte. Wie nutzt du Wall-Levels in deiner Analyse? https://seasonalpha.ai/blog/pinning-call-wall-put-wall
+**LinkedIn:** „Pinning" ist kein Börsen-Mythos: Seit Ni, Pearson & Poteshman (Journal of Financial Economics, 2005) ist belegt, dass Aktienkurse am Optionsverfall an Strikes kleben — im Schnitt ~16,5 bps, aggregiert ~9 Mrd. $. Golez & Jackwerth (2012) zeigten dasselbe für den S&P-500-Future. In unserem neuen Beitrag erklären wir den Mechanismus, wie man Call-Wall und Put-Wall liest — und wo die Grenzen liegen (Referenzen, keine Barrieren, kein Signal). Klar gekennzeichnet: naive Heuristik auf EOD-Daten, nur US-Werte. Wie nutzt du Wall-Levels in deiner Analyse? https://seasonalpha.ai/blog/pinning-call-wall-put-wall
 
-**Twitter/X:** Kleben Aktienkurse am Verfallstag an Strikes? Ja — „Pinning" ist seit 2005 in Top-Journals belegt (Ni/Pearson/Poteshman, JFE: ~16,5 bps). Wir erklären Call-Wall & Put-Wall, mit dem, was die Forschung sagt — und was Walls NICHT sind. Kein Signal, ehrlich gelabelt. seasonalpha.ai/blog/pinning-call-wall-put-wall #Optionen #Pinning #OPEX
+**Twitter/X:** Kleben Aktienkurse am Verfallstag an Strikes? Ja — „Pinning" ist seit 2005 in Top-Journals belegt (Ni/Pearson/Poteshman, JFE: ~16,5 bps). Wir erklären Call-Wall & Put-Wall, mit dem, was die Forschung sagt — und was Walls NICHT sind. Kein Signal, klar gekennzeichnet. seasonalpha.ai/blog/pinning-call-wall-put-wall #Optionen #Pinning #OPEX
 
 #### Interne Verlinkung
 - /dealer-positioning (Haupt-Feature: Call/Put-Walls live)

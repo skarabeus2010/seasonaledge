@@ -89,7 +89,7 @@ September is the **only significantly negative** month. April and November are s
 
 June (−0.27%) and August (−0.24%) are also negative — but with p=0.6408 and p=0.7334 they are miles from significance. Their means could just as easily be zero; the minus is well explained by chance. September is the exception: negative **and** robust. That is exactly the distinction the test makes visible — it stops you from turning every randomly red bar into a rule.
 
-## Limits — Honestly Assessed
+## Limits — A Sober Assessment
 
 A significance test is a tool, not an oracle. Three caveats belong with it.
 

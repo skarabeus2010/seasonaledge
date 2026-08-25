@@ -53,7 +53,7 @@ Ein plausibler Treiber: **Alphabet legt Ende Juli seine Quartalszahlen vor.** St
 
 ## Wie verlässlich ist das Muster?
 
-Saisonalität beschreibt die Vergangenheit, nicht die Zukunft. Drei Punkte zur ehrlichen Einordnung:
+Saisonalität beschreibt die Vergangenheit, nicht die Zukunft. Drei Punkte zur Einordnung:
 
 - **15 Beobachtungen** sind ein solides, aber kein riesiges Sample. Eine Quote von 93 % ist stark, schließt schwache Julis wie 2024 aber nicht aus.
 - Das Muster hängt stark an einem **Einzelereignis** — den Quartalszahlen. Überrascht Alphabet negativ, kann der typische Juli-Schub ausbleiben.

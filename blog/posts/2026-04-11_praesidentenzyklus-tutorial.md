@@ -117,7 +117,7 @@ In **Pre-Election Years** (also 2027) ist der Spielraum für aggressivere Long-P
 
 ## Wie zuverlässig ist das Muster?
 
-Ehrliche Einordnung mit Daten:
+Einordnung mit Daten:
 
 - **Statistische Signifikanz:** Der Unterschied zwischen Pre-Election (+13,2 %) und Post-Election (+3,8 %) Years ist über 130 Jahre **hochsignifikant** (p < 0,001 im t-Test).
 - **Aber:** Es gibt **massive Ausreißer**. 2008 war ein Election Year (sollte solide sein) — der Markt fiel um 34 %. 2022 war ein Pre-Election Year mit weiterer Schwäche.

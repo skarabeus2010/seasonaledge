@@ -24,7 +24,7 @@ Keyword-Plan:
 
 Der Aktienmarkt hat einen versteckten Taktgeber, den die meisten Anleger nie sehen: den **OPEX-Zyklus**. OPEX steht für *option expiration* — den Optionsverfall am dritten Freitag jedes Monats. Rund um diesen Termin läuft ein immer gleicher Vier-Phasen-Rhythmus ab, der den Handelsmonat leise strukturiert: erst der ruhige Aufbau, dann eine oft geräuscharme Aufwärtsdrift, der Pin am Verfallstag und schließlich ein richtungsoffeneres, volatileres Fenster danach.
 
-Wichtig vorweg: Der OPEX-Zyklus ist **kein Handelssignal**, sondern struktureller Kontext. Er erklärt, *warum* bestimmte saisonale Muster überhaupt existieren. In diesem Artikel zerlegen wir den Zyklus in seine vier Phasen, zeigen an echten Dealer-Daten, wo die Absicherungsströme sich ballen — und benennen ehrlich, wo das Muster kippt.
+Wichtig vorweg: Der OPEX-Zyklus ist **kein Handelssignal**, sondern struktureller Kontext. Er erklärt, *warum* bestimmte saisonale Muster überhaupt existieren. In diesem Artikel zerlegen wir den Zyklus in seine vier Phasen, zeigen an echten Dealer-Daten, wo die Absicherungsströme sich ballen — und benennen, wo das Muster kippt.
 
 ## Die vier Phasen des Optionsverfall-Zyklus
 
@@ -100,7 +100,7 @@ Man sollte sauber trennen: Pinning und der Third-Friday-Sprung sind in Finanzjou
 
 ## Grenzen und Gegenbeispiele
 
-Ein ehrlicher Blick auf den Zyklus muss die Bruchstellen zeigen.
+Ein nüchterner Blick auf den Zyklus muss die Bruchstellen zeigen.
 
 **Muster verschwinden, wenn alle sie kennen.** Je bekannter die Pre-OPEX-Drift wird, desto eher wird sie weggehandelt. Ein historischer Durchschnitt ist keine Prognose für den nächsten Freitag.
 
