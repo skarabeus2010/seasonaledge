@@ -84,7 +84,7 @@
     <h1 class="page-title"><b>Dealer</b> Positioning &mdash; Gamma, Vanna, Charm</h1>
     <p class="page-caption" id="asof">Dealer-Positioning aus der Options-Chain &middot; net-GEX, Zero-Gamma-Flip, Call/Put-Walls, Vanna &amp; Charm, Skew.</p>
     <div class="disc">
-      <b>Ehrlicher Hinweis:</b> Naive Dealer-Konvention (Händler long Calls / short Puts) auf <b>EOD-Daten</b> (Yahoo).
+      <b>Wichtiger Hinweis:</b> Naive Dealer-Konvention (Händler long Calls / short Puts) auf <b>EOD-Daten</b> (Yahoo).
       Kommerzielle Anbieter nutzen proprietäre Inventory-Modelle inkl. Intraday/0DTE &mdash; unsere Werte
       sind eine belastbare <b>erste Näherung</b>, keine echten Dealer-Bücher. Walls sind Konzentrations-<i>Referenzen</i>,
       keine Barrieren. <b>Kein Kauf-/Verkaufssignal, keine Anlageberatung.</b> Nur US-gelistete Underlyings.
@@ -170,7 +170,7 @@
     var summary=null,profiles={},state={ticker:null,greek:'gamma',dim:'strike'},chart=null;
     var KEY={gamma:'gamma_usd_mn',vanna:'vanna_usd_mn',charm:'charm_usd_mn'};
     var AXIS={gamma:'Netto-Hedging ($M)',vanna:'OI-Ungleichgewicht × Vanna ($M)',charm:'Delta-Drift ($M/Tag)'};
-    // Ehrliche Einordnung je Greek. Vanna bekommt bewusst eine strengere Warnung als die
+    // Einordnung je Greek. Vanna bekommt bewusst eine strengere Warnung als die
     // anderen: bei Gamma ist die naive Konvention eine grobe, aber brauchbare Naeherung
     // (Abgleich gegen einen kommerziellen Anbieter lag bei ~1 %), bei Vanna erzwingt sie
     // strukturell ein positives Vorzeichen und ist damit nicht aussagekraeftig.

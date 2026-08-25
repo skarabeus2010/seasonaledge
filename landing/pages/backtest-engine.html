@@ -424,7 +424,7 @@
           <h3 data-i18n="common.stop_loss">Stop-Loss</h3>
           <p data-i18n-html="bt.stop_method_desc">Stop wird close-basiert geprüft (kein intraday Low/High in der DB). <b>Fixed</b>: Stop bei <code>entry × (1 - stop%)</code>. <b>Trailing</b>: Stop bei <code>high_watermark × (1 - stop%)</code>, watermark trackt höchsten Close.</p>
           <h3 data-i18n="bt.tab_wf">Walk-Forward</h3>
-          <p data-i18n="bt.wf_method_desc">Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die ehrlichere Schätzung der Live-Performance.</p>
+          <p data-i18n="bt.wf_method_desc">Expanding Window: optimize on past, test on future. Pro Fold wird Grid-Search auf In-Sample-Jahren laufen, dann mit den besten Parametern auf den Out-of-Sample-Jahren getestet. Aggregierte OOS-Performance ist die belastbarere Schätzung der Live-Performance.</p>
           <h3 data-i18n="bt.event_relevance_score">Event-Relevanz Score</h3>
           <p data-i18n="bt.relevance_score_desc">Pro Event ein t-Test (H0: mean = 0). Score = 50% Signifikanz (1-p) + 30% Win-Rate + 20% Effect Size (Cohen's d, gecappt 1.0).</p>
         </div>
