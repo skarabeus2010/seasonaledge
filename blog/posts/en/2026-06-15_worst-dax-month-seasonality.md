@@ -63,7 +63,7 @@ Two phases stand out: a **late-summer weakness** (August + September) and **year
 
 ### How reliable is the September effect?
 
-A low average alone is not enough — what matters is **consistency** across years. The heatmap shows every individual September return since 1988. Notably, September closed negative in **7 of the last 10 years**.
+A low average alone is not enough — what matters is **consistency** across years. The heatmap shows every individual September return since 1988. Notably, September closed negative in **7 of the last 10 years**. Whether the September weakness is also **statistically significant** over the maximum period (t-test, p-value, effect size) is covered in detail in [The DAX in September: the significance test explained](/en/blog/dax-september-significance/).
 
 {{chart:monthly_heatmap:^GDAXI:38}}
 

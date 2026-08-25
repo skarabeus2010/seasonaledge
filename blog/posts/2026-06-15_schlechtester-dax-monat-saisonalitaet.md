@@ -62,7 +62,7 @@ Zwei Phasen stechen heraus: eine **Spätsommer-Schwäche** (August + September) 
 
 ### Wie verlässlich ist der September-Effekt?
 
-Ein niedriger Durchschnitt allein reicht nicht — entscheidend ist die **Konsistenz** über die Jahre. Die Heatmap zeigt jede einzelne September-Rendite seit 1988. Auffällig: In **7 der letzten 10 Jahre** schloss der September negativ.
+Ein niedriger Durchschnitt allein reicht nicht — entscheidend ist die **Konsistenz** über die Jahre. Die Heatmap zeigt jede einzelne September-Rendite seit 1988. Auffällig: In **7 der letzten 10 Jahre** schloss der September negativ. Ob die September-Schwäche über den maximalen Zeitraum auch **statistisch signifikant** ist (t-Test, p-Wert, Effektstärke), zeigen wir im Detail im Beitrag [DAX im September: der Signifikanztest erklärt](/blog/dax-september-signifikanz/).
 
 {{chart:monthly_heatmap:^GDAXI:38}}
 
