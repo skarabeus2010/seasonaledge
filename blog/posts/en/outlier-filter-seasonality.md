@@ -128,7 +128,7 @@ The filter is integrated directly into the sidebar:
 
 ## Conclusion
 
-The outlier filter is not a must — but a tool that makes your analysis more honest. It shows you what the **typical** seasonal pattern is, without individual crash years distorting the view.
+The outlier filter is not a must — but a tool that makes your analysis more robust. It shows you what the **typical** seasonal pattern is, without individual crash years distorting the view.
 
 The golden rule: **Always analyze with and without the filter.** If a pattern holds in both variants, you have found a robust signal.
 

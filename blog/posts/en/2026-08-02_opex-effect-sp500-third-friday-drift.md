@@ -58,7 +58,7 @@ Both forces push in the same direction, on the same days: a **mechanical buying 
 
 ## What our data shows — and what it does not
 
-Here comes the honest framing this topic (Your Money or Your Life) demands. The 18.5 bps effect is an **overnight, or opening, jump**: measured from Thursday's close to Friday's *open*. SeasonAlpha works with **normalized daily closing prices** (close-to-close, each year rebased to 100). That means we **cannot replicate the overnight jump one-to-one** — that would require clean opening prices and intraday data. We show the seasonal frame and the weekly drift, not the SOQ jump itself.
+Now the framing a money topic calls for. The 18.5 bps effect is an **overnight, or opening, jump**: measured from Thursday's close to Friday's *open*. SeasonAlpha works with **normalized daily closing prices** (close-to-close, each year rebased to 100). That means we **cannot replicate the overnight jump one-to-one** — that would require clean opening prices and intraday data. We show the seasonal frame and the weekly drift, not the SOQ jump itself.
 
 What we can show is the **Friday dimension** of the effect. The chart below shows the average daily return of SPY by weekday over 20 years:
 
@@ -74,7 +74,7 @@ Each bar is one expiration date; its height shows how strongly dealer hedges the
 
 ## Limits and counter-examples: not a free lunch
 
-An honest data study must also show where the pattern breaks.
+A solid data study must also show where the pattern breaks.
 
 **The effect has weakened.** The Baltussen study covers 2003 to 2021. Over the last four years or so, OPEX-week outperformance has faded — the better known a pattern, the more it gets arbitraged away. A historical average is not a forecast for next Friday.
 
@@ -123,7 +123,7 @@ Yes. On the four big expiration days in March, June, September and December, ind
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** Something is different on the third Friday. Across 2003–2021, the S&P 500 opened on average 18.5 basis points above the prior close on options expiration day (Baltussen, Terstegge & Whelan 2024, t>4.5) — a wealth transfer of roughly $4bn/year in SPX alone. The reason is not sentiment but mechanics: market makers buy back their short hedges into expiration through charm (time decay) and vanna (falling vol). Important and honest: this is an overnight/opening jump (SOQ), not a close-to-close trade — untradeable with daily data, and the effect has weakened lately. Not a signal, just structural context. How do you frame expiration day? https://seasonalpha.ai/en/opex
+**LinkedIn:** Something is different on the third Friday. Across 2003–2021, the S&P 500 opened on average 18.5 basis points above the prior close on options expiration day (Baltussen, Terstegge & Whelan 2024, t>4.5) — a wealth transfer of roughly $4bn/year in SPX alone. The reason is not sentiment but mechanics: market makers buy back their short hedges into expiration through charm (time decay) and vanna (falling vol). Important: this is an overnight/opening jump (SOQ), not a close-to-close trade — untradeable with daily data, and the effect has weakened lately. Not a signal, just structural context. How do you frame expiration day? https://seasonalpha.ai/en/opex
 
 **Twitter/X:** The Third-Friday effect: across 2003–2021 the S&P 500 opened +18.5 bps above the prior close on options expiration (Baltussen 2024, t>4.5). Charm & vanna force dealers to buy back. But: overnight jump, not a close-to-close signal. seasonalpha.ai/en/opex #OPEX #SP500 #Options
 

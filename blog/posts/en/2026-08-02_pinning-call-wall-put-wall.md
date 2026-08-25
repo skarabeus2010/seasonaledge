@@ -80,14 +80,14 @@ For retail investors this means a wall strike is never an isolated number. It ca
 
 ## Limits and counterexamples: what walls are NOT
 
-Dealer positioning is a YMYL topic (Your Money or Your Life). So we are deliberately transparent here, rather than faking a precision the data cannot support:
+When real money is on the line, we are transparent here rather than faking a precision the data cannot support:
 
 - **Walls are concentration references, not barriers.** There is no guarantee the price turns at them. They only mark where hedging activity is densest — **not a buy or sell signal**.
 - **The effect is statistical and small.** 16.5 basis points is an average across thousands of cases, not a tradable single-day swing. Pinning explains a tendency, not an individual move.
 - **Prices can also be pushed away.** Golez and Jackwerth documented anti-cross-pinning before index expirations. The "magnet" can reverse.
 - **We use a naive dealer heuristic** (assumption: long calls, short puts) on **end-of-day Yahoo data** — open interest and implied volatility at the close. Commercial providers use proprietary inventory models including intraday and 0DTE data. **Our numbers differ from theirs**; they are a solid approximation, not a picture of real dealer books.
 
-These limits are not a flaw but part of an honest method. Anyone who takes walls seriously needs to know how reliable the data behind them is.
+These limits are not a flaw but part of a sound method. Anyone who takes walls seriously needs to know how reliable the data behind them is.
 
 ## How to read the call wall and put wall in practice
 
@@ -101,7 +101,7 @@ One note on interpretation: single-stock gamma is far noisier than index gamma, 
 
 Pinning is not superstition but one of the best-documented observations in market microstructure — from single stocks (Ni, Pearson & Poteshman) to the S&P 500 future (Golez & Jackwerth) to the model (Avellaneda, Kasyan & Lipkin). The call wall and put wall make visible where open interest piles up and dealer hedging is densest.
 
-But: walls are references, not barriers. The effect is real yet small, and our numbers are an honest approximation on end-of-day data, not an insider's view of dealer books. That is precisely where the value lies — you get a well-grounded orientation, not a false promise. Try it yourself at **[seasonalpha.ai/dealer-positioning](/dealer-positioning)**.
+But: walls are references, not barriers. The effect is real yet small, and our numbers are a solid approximation on end-of-day data, not an insider's view of dealer books. That is precisely where the value lies — you get a well-grounded orientation, not a false promise. Try it yourself at **[seasonalpha.ai/dealer-positioning](/dealer-positioning)**.
 
 ## Frequently Asked Questions
 
@@ -124,9 +124,9 @@ Because in March, June, September and December, the expiry of stock options, ind
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** "Pinning" is no market myth: since Ni, Pearson & Poteshman (Journal of Financial Economics, 2005) it is documented that stock prices cling to strikes at options expiry — around 16.5 bps on average, ~$9bn aggregated. Golez & Jackwerth (2012) showed the same for the S&P 500 future. In our new post we explain the mechanism, how to read the call wall and put wall — and where the limits lie (references, not barriers, no signal). Honestly labeled: naive heuristic on EOD data, US names only. How do you use wall levels in your analysis? https://seasonalpha.ai/en/blog/pinning-call-wall-put-wall
+**LinkedIn:** "Pinning" is no market myth: since Ni, Pearson & Poteshman (Journal of Financial Economics, 2005) it is documented that stock prices cling to strikes at options expiry — around 16.5 bps on average, ~$9bn aggregated. Golez & Jackwerth (2012) showed the same for the S&P 500 future. In our new post we explain the mechanism, how to read the call wall and put wall — and where the limits lie (references, not barriers, no signal). Clearly labeled: naive heuristic on EOD data, US names only. How do you use wall levels in your analysis? https://seasonalpha.ai/en/blog/pinning-call-wall-put-wall
 
-**Twitter/X:** Do stock prices cling to strikes on expiry day? Yes — "pinning" has been documented in top journals since 2005 (Ni/Pearson/Poteshman, JFE: ~16.5 bps). We explain call wall & put wall with what the research says — and what walls are NOT. No signal, honestly labeled. seasonalpha.ai/en/blog/pinning-call-wall-put-wall #Options #Pinning #OPEX
+**Twitter/X:** Do stock prices cling to strikes on expiry day? Yes — "pinning" has been documented in top journals since 2005 (Ni/Pearson/Poteshman, JFE: ~16.5 bps). We explain call wall & put wall with what the research says — and what walls are NOT. No signal, clearly labeled. seasonalpha.ai/en/blog/pinning-call-wall-put-wall #Options #Pinning #OPEX
 
 #### Interne Verlinkung
 - /dealer-positioning (main feature: call/put walls live)

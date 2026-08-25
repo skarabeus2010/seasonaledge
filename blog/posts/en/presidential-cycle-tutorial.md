@@ -118,7 +118,7 @@ In **Pre-Election Years** (i.e., 2027), there is more room for more aggressive l
 
 ## How Reliable Is the Pattern?
 
-Honest assessment with data:
+Assessment with data:
 
 - **Statistical significance:** The difference between Pre-Election (+13.2%) and Post-Election (+3.8%) Years over 130 years is **highly significant** (p < 0.001 in the t-test).
 - **But:** There are **massive outliers**. 2008 was an Election Year (should have been solid) — the market fell 34%. 2022 was a Pre-Election Year with further weakness.

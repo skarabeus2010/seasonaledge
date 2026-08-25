@@ -33,7 +33,7 @@ Das Dashboard ist als **Bento-Grid** aufgebaut: elf kompakte Karten, jede mit ei
 
 ### Die Hero-Zeile: vier Signale, eine Sekunde
 
-Ganz oben siehst du vier Karten, die zusammen einen ehrlichen Health-Check für den gewählten Ticker liefern:
+Ganz oben siehst du vier Karten, die zusammen einen nüchternen Health-Check für den gewählten Ticker liefern:
 
 - **KI Composite Score (0–10)** — vier Sub-Scores werden zu einem Gesamtwert verrechnet: wie gut die historischen Match-Jahre performt haben, wie der projizierte 30-Tage-Trend aussieht, wie die Win-Rate des aktuellen Monats ist und wie eng der aktuelle Verlauf der saisonalen Norm folgt. Über 6,5 = Bullish, unter 3,5 = Bearish, dazwischen = Neutral.
 - **Crash-Ampel** — drei Risiko-Features (20-Tage-Vola, 20-Tage-Drawdown, 20-Tage-Return) werden gegen die letzten 252 Handelstage des **gleichen Tickers** perzentiliert. Das Ergebnis ist ein Risk-Score 0–100 mit grün/gelb/rot Ampel.
@@ -95,7 +95,7 @@ Pro Event siehst du, wie der gewählte Ticker historisch in einem t-3 bis t+3 Fe
 
 ## Wofür ist das Dashboard *nicht* gedacht?
 
-Ehrliche Einordnung: Das Dashboard ist eine **Übersicht**, kein Backtest und keine Empfehlung. Wenn du ein Setup tatsächlich tradest, willst du auf die jeweilige Detail-Page wechseln (Plain Vanilla, Backtest Engine, Jahreszyklus) und dort tiefer rein. Das Dashboard sagt dir: „Hier lohnt es sich gerade hinzuschauen." Die Detail-Pages sagen dir, *wie* du hinschaust.
+Zur Einordnung: Das Dashboard ist eine **Übersicht**, kein Backtest und keine Empfehlung. Wenn du ein Setup tatsächlich tradest, willst du auf die jeweilige Detail-Page wechseln (Plain Vanilla, Backtest Engine, Jahreszyklus) und dort tiefer rein. Das Dashboard sagt dir: „Hier lohnt es sich gerade hinzuschauen." Die Detail-Pages sagen dir, *wie* du hinschaust.
 
 Wir sind auch transparent über die Grenzen:
 

@@ -57,7 +57,7 @@ Beide Kräfte wirken in dieselbe Richtung und in denselben Tagen: ein **mechanis
 
 ## Was unsere Daten zeigen — und was nicht
 
-Hier kommt die ehrliche Einordnung, die dieses Thema (Your Money or Your Life) verlangt. Der 18,5-bps-Effekt ist ein **Overnight- beziehungsweise Eröffnungs-Sprung**: gemessen vom Donnerstagsschluss zur Freitags-*Eröffnung*. SeasonAlpha rechnet mit **normalisierten Tagesschlusskursen** (Close-zu-Close, jedes Jahr auf 100 normiert). Damit lässt sich der Overnight-Sprung **nicht eins zu eins nachbauen** — dafür bräuchte man saubere Eröffnungskurse und Intraday-Daten. Wir zeigen den saisonalen Rahmen und die Wochendrift, nicht den SOQ-Sprung selbst.
+Jetzt zur Einordnung, die bei einem Geld-Thema dazugehört. Der 18,5-bps-Effekt ist ein **Overnight- beziehungsweise Eröffnungs-Sprung**: gemessen vom Donnerstagsschluss zur Freitags-*Eröffnung*. SeasonAlpha rechnet mit **normalisierten Tagesschlusskursen** (Close-zu-Close, jedes Jahr auf 100 normiert). Damit lässt sich der Overnight-Sprung **nicht eins zu eins nachbauen** — dafür bräuchte man saubere Eröffnungskurse und Intraday-Daten. Wir zeigen den saisonalen Rahmen und die Wochendrift, nicht den SOQ-Sprung selbst.
 
 Was wir zeigen können, ist die **Freitags-Dimension** des Effekts. Der folgende Chart zeigt die durchschnittliche Tagesrendite des SPY je Wochentag über 20 Jahre:
 
@@ -73,7 +73,7 @@ Jeder Balken steht für einen Verfallstermin; die Höhe zeigt, wie stark die Dea
 
 ## Grenzen und Gegenbeispiele: kein Freifahrtschein
 
-Ein ehrlicher Data-Study-Artikel muss auch zeigen, wo das Muster kippt.
+Eine belastbare Daten-Studie muss auch zeigen, wo das Muster kippt.
 
 **Der Effekt hat sich abgeschwächt.** Die Baltussen-Studie deckt 2003 bis 2021 ab. In den letzten rund vier Jahren ist die OPEX-Woche-Outperformance schwächer geworden — je bekannter ein Muster, desto eher wird es weggehandelt. Ein historischer Durchschnitt ist keine Prognose für den nächsten Freitag.
 
@@ -122,7 +122,7 @@ Ja. An den vier großen Verfallstagen im März, Juni, September und Dezember ver
 <!--
 #### Social Media Snippet
 
-**LinkedIn:** Am dritten Freitag ist etwas anders. Über 2003–2021 eröffnete der S&P 500 am Options-Verfallstag im Schnitt 18,5 Basispunkte über dem Vortagsschluss (Baltussen, Terstegge & Whelan 2024, t>4,5) — ein Vermögenstransfer von rund 4 Mrd. $/Jahr allein im SPX. Der Grund ist kein Sentiment, sondern Mechanik: Market Maker kaufen ihre Short-Absicherungen durch Charm (Zeitverfall) und Vanna (fallende Vola) in den Verfall hinein zurück. Wichtig und ehrlich: Das ist ein Overnight-/Eröffnungs-Sprung (SOQ), kein Close-zu-Close-Trade — mit Tagesdaten nicht 1:1 handelbar, und der Effekt hat sich zuletzt abgeschwächt. Kein Signal, sondern struktureller Kontext. Wie ordnet ihr den Verfallstag ein? https://seasonalpha.ai/opex
+**LinkedIn:** Am dritten Freitag ist etwas anders. Über 2003–2021 eröffnete der S&P 500 am Options-Verfallstag im Schnitt 18,5 Basispunkte über dem Vortagsschluss (Baltussen, Terstegge & Whelan 2024, t>4,5) — ein Vermögenstransfer von rund 4 Mrd. $/Jahr allein im SPX. Der Grund ist kein Sentiment, sondern Mechanik: Market Maker kaufen ihre Short-Absicherungen durch Charm (Zeitverfall) und Vanna (fallende Vola) in den Verfall hinein zurück. Wichtig: Das ist ein Overnight-/Eröffnungs-Sprung (SOQ), kein Close-zu-Close-Trade — mit Tagesdaten nicht 1:1 handelbar, und der Effekt hat sich zuletzt abgeschwächt. Kein Signal, sondern struktureller Kontext. Wie ordnet ihr den Verfallstag ein? https://seasonalpha.ai/opex
 
 **Twitter/X:** Der Third-Friday-Effekt: Über 2003–2021 eröffnete der S&P 500 am Options-Verfall im Schnitt +18,5 bps über Vortagsschluss (Baltussen 2024, t>4,5). Charm & Vanna zwingen Dealer zum Rückkauf. Aber: Overnight-Sprung, kein Close-zu-Close-Signal. seasonalpha.ai/opex #OPEX #SP500 #Optionen
 

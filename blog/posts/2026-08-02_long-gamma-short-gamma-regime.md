@@ -63,13 +63,13 @@ Ein reales Beispiel aus unserem Live-Snapshot vom 2. August 2026 macht das greif
 
 ## Was die Wissenschaft sagt: Praktiker-Idee, akademisch validiert
 
-Hier ist Sauberkeit wichtig, denn eine junge Finanzseite muss ihre Quellen ehrlich trennen.
+Hier ist Sauberkeit wichtig, denn eine junge Finanzseite muss ihre Quellen sauber trennen.
 
 **Der Ursprung ist Praktiker-Wissen.** Der Begriff „GEX" und die Zwei-Regime-Intuition stammen aus einem **Branchen-White-Paper (2016)**. Deren viel zitierte These: Bei niedriger Volatilität sagt das Vorzeichen des Gamma die Marktstabilität besser vorher als der VIX selbst. Das ist eine anregende Beobachtung — aber es ist eine **Vendor-Quelle**, kein peer-reviewtes Ergebnis. So sollte man es auch behandeln.
 
 **Die akademische Validierung** liefert die Arbeit **„Gamma Fragility" von Barbon & Buraschi (2021)**. Sie zeigen mit harten Daten: Ist das aggregierte Dealer-Gamma **negativ**, entsteht Intraday-**Momentum** (Bewegungen setzen sich fort); ist es **positiv**, dominiert **Reversal** (Bewegungen kehren um). Der Effekt ist in illiquiden Phasen am stärksten. Das deckt sich exakt mit der Stoßdämpfer-vs.-Brandbeschleuniger-Logik.
 
-Eine wichtige Einschränkung, die wir bewusst betonen: Der von Barbon & Buraschi gemessene Effekt ist **intraday und sehr kurzlebig** — er verpufft meist innerhalb von ein bis zwei Handelstagen. Er ist **kein** Rezept, um Tagesbewegungen zu traden. Wir nutzen daher ausschließlich die **Regime-Klassifikation** (long vs. short Gamma als Kontext), **nicht** den kurzfristigen Handelseffekt. Und Barbon & Buraschi ist ein breit zitiertes Working Paper, noch keine final begutachtete Publikation — auch das gehört zur ehrlichen Einordnung.
+Eine wichtige Einschränkung: Der von Barbon & Buraschi gemessene Effekt ist **intraday und sehr kurzlebig** — er verpufft meist innerhalb von ein bis zwei Handelstagen. Er ist **kein** Rezept, um Tagesbewegungen zu traden. Wir nutzen daher ausschließlich die **Regime-Klassifikation** (long vs. short Gamma als Kontext), **nicht** den kurzfristigen Handelseffekt. Und Barbon & Buraschi ist ein breit zitiertes Working Paper, noch keine final begutachtete Publikation — auch das gehört zur Einordnung.
 
 ## Die Gamma-Ampel bei SeasonAlpha: Regime auf einen Blick
 
@@ -95,9 +95,9 @@ Die zweite Grafik bricht das auf einzelne Kalendermonate herunter (aktueller Mon
 
 Das ist der Moat: Wir zeigen nicht nur, *dass* ein Fenster statistisch auffällig ist, sondern liefern mit dem Gamma-Regime eine strukturelle Ebene, die erklärt, *warum* die Ausschläge gerade jetzt größer oder kleiner ausfallen könnten.
 
-## Ehrlichkeit zuerst: was die Gamma-Ampel kann — und was nicht
+## Grenzen: was die Gamma-Ampel kann — und was nicht
 
-Dealer Positioning ist ein YMYL-Thema (Your Money or Your Life). Deshalb legen wir die Grenzen offen, statt Präzision vorzutäuschen:
+Bei einem Thema, an dem echtes Geld hängt, legen wir die Grenzen offen, statt Präzision vorzutäuschen:
 
 - **Naive Dealer-Heuristik.** Wir nehmen an, Dealer sind long Calls und short Puts. Das ist eine bewährte erste Näherung für Index-Gamma, aber **kein echtes Inventory-Modell** wie bei kommerziellen Anbietern — und keine Kenntnis der realen Dealer-Bücher.
 - **EOD-Daten von Yahoo.** Wir rechnen auf Open Interest und impliziter Vola zum Handelsschluss. Unsere Werte weichen daher von proprietären Intraday-/0DTE-Modellen ab.
@@ -110,7 +110,7 @@ Diese Grenzen sind kein Makel, sondern Teil der Methode. Wer das Regime ernst ni
 
 Das Gamma-Regime ist der einprägsamste Baustein im Dealer Positioning: Ein einziges Vorzeichen entscheidet, ob Dealer den Markt dämpfen (long Gamma, vola-reduzierend) oder anheizen (short Gamma, vola-forcierend). Der Zero-Gamma-Flip markiert den Kipppunkt — und die Nähe des Kurses dazu ist ein Fragilitäts-Barometer.
 
-Praktikerwissen aus der Branche, akademisch gestützt durch Barbon & Buraschi, ehrlich gelabelt als Regime-Kontext ohne Signal-Anspruch: So wird aus einem Buzzword ein nützliches Denkwerkzeug. Und wenn du es mit unserem Saisonkalender kombinierst, siehst du nicht nur den aktuellen Zustand, sondern auch, in welchem saisonalen Umfeld er auftritt. Probiere die Gamma-Ampel auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
+Praktikerwissen aus der Branche, akademisch gestützt durch Barbon & Buraschi, klar gekennzeichnet als Regime-Kontext ohne Signal-Anspruch: So wird aus einem Buzzword ein nützliches Denkwerkzeug. Und wenn du es mit unserem Saisonkalender kombinierst, siehst du nicht nur den aktuellen Zustand, sondern auch, in welchem saisonalen Umfeld er auftritt. Probiere die Gamma-Ampel auf **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** selbst aus.
 
 ## Häufige Fragen
 

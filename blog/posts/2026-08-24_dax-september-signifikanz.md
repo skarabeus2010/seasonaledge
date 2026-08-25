@@ -88,7 +88,7 @@ Der September ist der **einzige signifikant negative** Monat. April und November
 
 Juni (−0,27 %) und August (−0,24 %) sind ebenfalls negativ — aber mit p=0,6408 und p=0,7334 meilenweit von Signifikanz entfernt. Ihre Mittelwerte könnten genauso gut null sein; das Minus ist gut mit reinem Zufall erklärbar. Der September ist die Ausnahme: negativ **und** belastbar. Genau diesen Unterschied macht der Test sichtbar — er verhindert, dass man aus jedem zufällig roten Balken eine Regel bastelt.
 
-## Grenzen — ehrlich betrachtet
+## Grenzen — nüchtern betrachtet
 
 Ein Signifikanztest ist ein Werkzeug, kein Orakel. Drei Einschränkungen gehören zwingend dazu.
 
