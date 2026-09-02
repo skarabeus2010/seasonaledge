@@ -51,9 +51,9 @@ Wir haben für jedes Kalenderjahr seit 1970 den größten Rückgang vom Jahresho
 
 Das Midterm-Jahr ist in beiden Dimensionen das Schlusslicht: die niedrigste durchschnittliche Jahresrendite (+0,9 %) und der tiefste durchschnittliche Drawdown (–18,0 %, Median –16,6 %). Nur gut jedes zweite Zwischenwahljahr endete überhaupt im Plus. Das deckt sich mit den Referenzwerten aus der Zyklus-Literatur (Stock Trader's Almanac / Jeff Hirsch), die den Midterm-Drawdown im Schnitt bei rund –17 % ansetzt.
 
-Der saisonale Verlauf eines typischen S&P-500-Jahres zeigt, warum das Timing wichtig ist:
+Der saisonale Jahresverlauf macht das Muster sichtbar — er stellt den durchschnittlichen Zwischenwahljahr-Pfad dem Gesamtschnitt und dem laufenden Jahr 2026 gegenüber:
 
-{{chart:seasonal_yearly:^GSPC:20}}
+![SPY — saisonaler Jahresverlauf über 34 Jahre (Start = 100): Gesamtschnitt (blau), durchschnittliches Zwischenwahljahr (rot gestrichelt) und der laufende Verlauf 2026 (gold). Das Zwischenwahljahr bleibt über weite Strecken schwächer als der Schnitt und zieht erst im Schlussquartal an.](zwischenwahljahr-2026-erholung-praesidentenzyklus/spx-midterm-seasonal-projection.png)
 
 Der Chart bildet den normierten Durchschnittsverlauf der letzten 20 Jahre ab (jedes Jahr startet bei 100), inklusive der ±1σ-Schwankungsbreite. Sichtbar ist das klassische Muster: eine Sommer- bis Herbst-Delle mit dem saisonalen Tiefpunkt im Spätsommer/Frühherbst — und danach die Jahresend-Rally. In Zwischenwahljahren fällt diese Herbst-Delle historisch tiefer aus als im Durchschnitt.
 

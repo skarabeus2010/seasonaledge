@@ -52,9 +52,9 @@ For every calendar year since 1970 we computed the largest decline from the year
 
 The midterm year finishes last on both counts: the lowest average annual return (+0.9%) and the deepest average drawdown (–18.0%, median –16.6%). Barely more than one in two midterm years even closed positive. That matches the reference figures from the cycle literature (Stock Trader's Almanac / Jeff Hirsch), which put the average midterm drawdown near –17%.
 
-The seasonal path of a typical S&P 500 year shows why timing matters:
+The seasonal path makes the pattern visible — it sets the average midterm-year path against the overall average and the current 2026 track:
 
-{{chart:seasonal_yearly:^GSPC:20}}
+![SPY — seasonal path over 34 years (start = 100): overall average (blue), average midterm year (red dashed) and the current 2026 path (gold). The midterm year lags the average for most of the year and only turns up in the final quarter.](zwischenwahljahr-2026-erholung-praesidentenzyklus/spx-midterm-seasonal-projection.png)
 
 The chart shows the normalized average path over the past 20 years (each year starts at 100), including the ±1σ band. The familiar pattern is visible: a summer-to-autumn dip with the seasonal low in late summer/early autumn — followed by the year-end rally. In midterm years this autumn dip runs deeper than average.
 
