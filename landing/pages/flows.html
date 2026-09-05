@@ -215,7 +215,11 @@
       <div class="card"><div class="psub">CBOE SKEW-Index (2 Jahre) &middot; VIX zum Vergleich (rechte Achse)</div><div id="sk-chart" style="min-height:280px"></div></div>
       <div class="card" style="margin-top:.8rem"><div class="psub">25&Delta;-Skew je Ticker (Put-IV &minus; Call-IV) &middot; <span style="color:#30e878">grün = Put-Skew</span> (teure Absicherung), <span style="color:#ff4d5e">rot = Call-Skew</span></div><div id="sk-table" style="overflow-x:auto"></div></div>
       <div class="card" style="margin-top:.8rem">
-        <div class="psub"><b>Vol-Quadrant</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen 2-Jahres-Historie &middot; Fadenkreuz = 50%</div>
+        <div class="psub"><b>Vol-Quadrant</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.55rem 0 .2rem;flex-wrap:wrap">
+          <span class="psub" style="margin:0">Rank-Fenster:</span>
+          <div id="sk-win" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
+        </div>
         <div id="sk-quad" style="min-height:440px"></div>
         <div class="psub" id="sk-quad-legend" style="margin-top:.6rem;line-height:1.5"></div>
       </div>
@@ -549,6 +553,8 @@
 
     // ── Panel G: Vol- & Skew-Puls (CBOE) ────────────────────────────────────
     var SKEW_HIST=null;
+    var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365},{lbl:'2J',d:800}];
+    var SKEW_WIN=365;                                              // Default: 1 Jahr (IV-Rank-Standard)
     // Perzentil-Rang (0-100) des letzten Werts innerhalb der eigenen Historie
     function _rank(vals){
       if(vals.length<2)return null;
@@ -556,13 +562,24 @@
       if(hi<=lo)return 50;
       return Math.round((last-lo)/(hi-lo)*100);
     }
+    function buildSkewWinBtns(){
+      var box=document.getElementById('sk-win'); if(!box)return;
+      box.innerHTML=SKEW_WINS.map(function(w){var on=w.d===SKEW_WIN;
+        return '<button data-d="'+w.d+'" style="cursor:pointer;font:600 .74rem/1 DM Sans;padding:.32rem .6rem;border-radius:6px;'+
+          'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';'+
+          'color:'+(on?ACC:MUT)+'">'+w.lbl+'</button>';}).join('');
+      box.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_WIN=+b.getAttribute('data-d');buildSkewWinBtns();renderSkewQuad();};});
+    }
     function renderSkewQuad(){
       var el=document.getElementById('sk-quad'); if(!el)return;
       if(!SKEW_HIST){el.innerHTML='<div class="psub">Quadrant folgt (Historie lädt).</div>';return;}
+      buildSkewWinBtns();
+      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
       var pts=[];
       Object.keys(SKEW_HIST).forEach(function(tk){
-        var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
-        if(arr.length<6)return;                                   // zu wenig Historie → kein Rang
+        var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
+                 .filter(function(e){return e.date>=cut;});        // Rank-Fenster
+        if(arr.length<5)return;                                    // zu wenig Historie → kein Rang
         var iv=arr.map(function(e){return (e.put_iv+e.call_iv)/2;});   // IV-Level-Proxy (25Δ)
         var rr=arr.map(function(e){return e.call_iv-e.put_iv;});       // Risk-Reversal (Call−Put)
         var ivR=_rank(iv), rrR=_rank(rr);
@@ -594,13 +611,15 @@
         tooltip:{theme:'dark',custom:function(o){var p=o.w.config.series[0].data[o.dataPointIndex];
           return '<div style="padding:7px 10px"><b style="color:'+ACC+'">'+p.tk+'</b><br>IV-Rank '+p.y+'% · RR-Rank '+p.x+'%<br>IV '+(p.ivNow*100).toFixed(1)+'% · Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts</div>';}}
       }));
+      var winLbl=(SKEW_WINS.filter(function(w){return w.d===SKEW_WIN;})[0]||{}).lbl||'';
       document.getElementById('sk-quad-legend').innerHTML=
-        '<b>Lesart:</b> Jeder Punkt = ein Ticker, verortet <b>relativ zur eigenen 2-Jahres-Historie</b>. '+
+        '<b>Lesart:</b> Jeder Punkt = ein Ticker, Rang <b>relativ zur eigenen Historie (Fenster '+winLbl+')</b>. '+
         '<b>Oben</b> (IV-Rank hoch, Vol teuer) &rarr; Prämie <b>verkaufen</b>; <b>unten</b> (Vol billig) &rarr; <b>kaufen</b>. '+
         'Die Seite folgt dem Skew: <b>links</b> Puts bid (Angst), <b>rechts</b> Calls bid (Gier). Daraus die vier Spread-Ideen je Quadrant. '+
         '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind reine Struktur-Beispiele, keine Empfehlung.</span> ('+pts.length+' Ticker)';
     }
     function renderSkew(d){
+      buildSkewWinBtns();
       var s=d.series||[]; if(!s.length){panelFail('sk-chart','Skew-Daten folgen (Daily-Cron).');return;}
       var cats=s.map(function(p){return p.date});
       var skew=s.map(function(p){return p.skew});
