@@ -213,7 +213,8 @@
       <p class="framing" id="sk-framing"></p>
       <div class="kpis" id="sk-kpis"></div>
       <div class="card"><div class="psub">CBOE SKEW-Index (2 Jahre) &middot; VIX zum Vergleich (rechte Achse)</div><div id="sk-chart" style="min-height:280px"></div></div>
-      <div class="card" style="margin-top:.8rem"><div class="psub">25&Delta;-Skew je Ticker (Put-IV &minus; Call-IV) &middot; <span style="color:#30e878">grün = Put-Skew</span> (teure Absicherung), <span style="color:#ff4d5e">rot = Call-Skew</span></div><div id="sk-table" style="overflow-x:auto"></div></div>
+      <div class="card" style="margin-top:.8rem"><div class="psub">25&Delta;-Skew je Ticker (Put-IV &minus; Call-IV) &middot; <span style="color:#30e878">grün = Put-Skew</span> (teure Absicherung), <span style="color:#ff4d5e">rot = Call-Skew</span> &middot; <span style="color:var(--accent)">Zeile anklicken → Verlauf</span></div><div id="sk-table" style="overflow-x:auto"></div></div>
+      <div class="card" style="margin-top:.8rem"><div class="psub" id="sk-hist-title">25&Delta;-Skew-Historie (2 Jahre, BS-rekonstruiert) &mdash; Ticker in der Tabelle anklicken</div><div id="sk-hist-chart" style="min-height:240px"></div></div>
       <p class="note" id="sk-note"></p>
     </section>
 
@@ -543,6 +544,20 @@
     }
 
     // ── Panel G: Vol- & Skew-Puls (CBOE) ────────────────────────────────────
+    var SKEW_HIST=null;
+    function renderSkewHist(tk){
+      if(!SKEW_HIST||!SKEW_HIST[tk]||!SKEW_HIST[tk].length){document.getElementById('sk-hist-title').textContent='Keine Historie für '+tk+'.';return;}
+      var arr=SKEW_HIST[tk].slice().sort(function(a,b){return a.date<b.date?-1:1});
+      var cats=arr.map(function(e){return e.date}), vals=arr.map(function(e){return e.skew_pts});
+      document.getElementById('sk-hist-title').innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; 25Δ-Skew-Historie (Put-IV − Call-IV, BS-rekonstruiert, '+arr.length+' Punkte)';
+      renderInto('sk-hist-chart',Object.assign(baseChart(240,'line'),{
+        series:[{name:tk,data:vals}],colors:[ACC],stroke:{width:2,curve:'smooth'},
+        xaxis:{type:'datetime',categories:cats,tickAmount:8,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return (v>0?'+':'')+v.toFixed(1)}},title:{text:'Skew (Vol-Punkte)',style:{color:MUT,fontSize:'10px'}}},
+        annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,label:{text:'0',style:{background:'transparent',color:MUT,fontSize:'9px'}}}]},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},y:{formatter:function(v){return (v>0?'+':'')+v.toFixed(2)+' pts'}}}
+      }));
+    }
     function renderSkew(d){
       var s=d.series||[]; if(!s.length){panelFail('sk-chart','Skew-Daten folgen (Daily-Cron).');return;}
       var cats=s.map(function(p){return p.date});
@@ -563,14 +578,19 @@
           '<th style="padding:5px 8px">Ticker</th><th style="padding:5px 8px;text-align:right">Put-IV</th>'+
           '<th style="padding:5px 8px;text-align:right">Call-IV</th><th style="padding:5px 8px;text-align:right">25Δ-Skew</th></tr>';
         tks.forEach(function(t){var c=t.skew_pts>=0?'#30e878':'#ff4d5e';
-          h+='<tr>'+
+          h+='<tr data-tk="'+t.ticker+'" style="cursor:pointer">'+
             '<td style="padding:5px 8px;font-family:monospace;font-weight:700;color:'+ACC+'">'+t.ticker+'</td>'+
             '<td style="padding:5px 8px;text-align:right;color:var(--dim)">'+(t.put_25d.iv*100).toFixed(1)+'%</td>'+
             '<td style="padding:5px 8px;text-align:right;color:var(--dim)">'+(t.call_25d.iv*100).toFixed(1)+'%</td>'+
             '<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+c+'">'+(t.skew_pts>=0?'+':'')+t.skew_pts.toFixed(2)+' pts</td></tr>';
         });
-        document.getElementById('sk-table').innerHTML=h+'</table>';
+        var tbl=document.getElementById('sk-table'); tbl.innerHTML=h+'</table>';
+        tbl.querySelectorAll('tr[data-tk]').forEach(function(r){r.onclick=function(){renderSkewHist(r.getAttribute('data-tk'));};});
       }
+      // Per-Ticker-Skew-Historie (BS-rekonstruiert) laden + Default zeigen
+      fetchJSON('/landing/data/options_skew_history.json').then(function(hh){SKEW_HIST=hh; renderSkewHist(tks.length?tks[0].ticker:'SPY');}).catch(function(){
+        document.getElementById('sk-hist-title').textContent='Skew-Historie folgt (Backfill/Cron).';
+      });
       document.getElementById('sk-framing').innerHTML='<b>Was heißt das?</b> Der SKEW-Index steht bei <b>'+(skL!=null?skL:'—')+'</b> &mdash; Werte über ~145 zeigen, dass der Markt <b>Crash-Absicherung (OTM-Puts) teuer</b> einpreist, um 100&ndash;120 ist es entspannt. Der VIX (<b>'+(vxL!=null?vxL:'—')+'</b>) misst die erwartete Schwankung. Rückwärtsgewandter Kontext, kein Kauf-/Verkaufssignal.';
       renderInto('sk-chart',Object.assign(baseChart(280,'line'),{
         series:[{name:'SKEW',data:skew},{name:'VIX',data:vix}],
