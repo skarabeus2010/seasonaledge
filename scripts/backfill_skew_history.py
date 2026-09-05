@@ -13,9 +13,11 @@ Nutzung:
       [--symbols SPY QQQ ...] [--max-credits 8000]
 """
 from __future__ import annotations
-import argparse, json, math, os, ssl, sys, time, urllib.request
+import argparse, json, math, os, socket, ssl, sys, time, urllib.request
 from datetime import date, timedelta
 from pathlib import Path
+
+socket.setdefaulttimeout(20)   # harte Obergrenze — kein hängender urlopen
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -139,7 +141,8 @@ def main() -> int:
         except Exception: hist = {}
 
     credits = 0
-    for sym in syms:
+    for si, sym in enumerate(syms, 1):
+        print(f"[{si}/{len(syms)}] {sym} …", flush=True)
         closes = _closes(sym)
         # echte Handelstage im Fenster, jeder N-te = wöchentlich (garantiert Daten + Close)
         traded = sorted(d for d in closes if d >= cutoff)
@@ -160,7 +163,9 @@ def main() -> int:
             time.sleep(0.05)
         arr.sort(key=lambda e: e["date"])
         hist[sym] = arr[-900:]
-        print(f"  {sym:6} +{added} Punkte (gesamt {len(arr)}) · Credits bisher {credits}")
+        # inkrementell nach JEDEM Ticker persistieren → Fortschritt überlebt Abbruch
+        hp.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"  {sym:6} +{added} Punkte (gesamt {len(arr)}) · Credits bisher {credits}", flush=True)
         if credits >= a.max_credits:
             break
 
