@@ -8,7 +8,7 @@ category: education
 tags: [pre-fomc-drift, fed-decision, fomc, stock-market, event-study, spy]
 description: "Pre-FOMC drift explained: why the 24 hours before Fed decisions deliver outsized stock returns — the research, real SPY numbers, and the limits."
 ticker: SPY
-status: draft
+status: published
 ---
 
 <!--
