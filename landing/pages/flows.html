@@ -204,6 +204,18 @@
       <p class="note" id="sv-note"></p>
     </section>
 
+    <!-- Panel G — Vol- & Skew-Puls (CBOE) -->
+    <section class="panel" id="p-skew">
+      <h2><span class="em">😱</span>Vol- &amp; Skew-Puls (CBOE)</h2>
+      <p class="sub">Der <b>CBOE SKEW-Index</b> misst, wie teuer der Markt Tail-Risk in OTM-S&amp;P-Puts einpreist
+        (höher = mehr Crash-Absicherung gekauft), der <b>VIX</b> die erwartete 30-Tage-Schwankung. Zusammen ein
+        marktweiter Vol-/Skew-Puls &mdash; gratis, täglich. <b>Kein Signal.</b></p>
+      <p class="framing" id="sk-framing"></p>
+      <div class="kpis" id="sk-kpis"></div>
+      <div class="card"><div class="psub">CBOE SKEW-Index (2 Jahre) &middot; VIX zum Vergleich (rechte Achse)</div><div id="sk-chart" style="min-height:280px"></div></div>
+      <p class="note" id="sk-note"></p>
+    </section>
+
     <!-- Cross-Link zu Dealer-Gamma -->
     <div class="cta-gamma">
       <b>Der fünfte Flow: Dealer-Gamma.</b> Die Options-Absicherung der Market Maker (Gamma, Vanna, Charm) ist der
@@ -249,6 +261,11 @@
       Der <b>Anteil selbst ist nicht richtungsweisend</b> — ein Großteil ist Market-Maker-Liquidität/Hedging, kein
       bearischer Einsatz. Aussagekräftig ist nur die <b>Abweichung vom eigenen 60-Tage-Schnitt</b> (Perzentil/z-Score,
       lineare Interpolation). Kein DIX (proprietär), nur freier Proxy.</p>
+      <h4>Panel G — Vol- &amp; Skew-Puls</h4>
+      <p><b>CBOE SKEW-Index</b> (^SKEW), <b>VIX</b> (^VIX) und <b>VVIX</b> (^VVIX) — täglich, gratis via Yahoo. SKEW misst
+      die relative Preisung von OTM-S&amp;P-Puts (Tail-Risk), typ. 100&ndash;150; hoch = teure Crash-Absicherung. Zusätzlich
+      ein <b>25-Delta-Skew</b> je Einzelticker (Put-IV − Call-IV) aus der Optionskette via marketdata.app (Free-Tier).
+      Rückwärtsgewandter Kontext, <b>kein Signal</b>.</p>
       <h4>Wissenschaftliche Einordnung</h4>
       <ul class="refs">
         <li>Baltussen, Terstegge &amp; Whelan (2024) &mdash; strukturelle Derivate-/Verfall-Effekte am S&amp;P&nbsp;500.</li>
@@ -524,6 +541,36 @@
       document.getElementById('sv-note').textContent=d.note||'';
     }
 
+    // ── Panel G: Vol- & Skew-Puls (CBOE) ────────────────────────────────────
+    function renderSkew(d){
+      var s=d.series||[]; if(!s.length){panelFail('sk-chart','Skew-Daten folgen (Daily-Cron).');return;}
+      var cats=s.map(function(p){return p.date});
+      var skew=s.map(function(p){return p.skew});
+      var vix=s.map(function(p){return p.vix});
+      var idx=d.indices||{};
+      var skL=(idx.SKEW||{}).last, vxL=(idx.VIX||{}).last, vvL=(idx.VVIX||{}).last;
+      var tk=(d.tickers&&d.tickers[0])?d.tickers[0]:null;
+      var html=
+        kpi('CBOE SKEW-Index', skL!=null?skL:'—', skL>=145?'gold':'', skL>=145?'erhöhtes Tail-Risk':'im Normbereich')+
+        kpi('VIX', vxL!=null?vxL:'—', '', 'erwartete 30-Tage-Vol')+
+        kpi('VVIX', vvL!=null?vvL:'—', '', 'Vol der Vol');
+      if(tk) html+=kpi(tk.ticker+' 25Δ-Skew',(tk.skew_pts>=0?'+':'')+tk.skew_pts+' pts', tk.skew_pts>0?'gold':'', 'Put-IV − Call-IV');
+      document.getElementById('sk-kpis').innerHTML=html;
+      document.getElementById('sk-framing').innerHTML='<b>Was heißt das?</b> Der SKEW-Index steht bei <b>'+(skL!=null?skL:'—')+'</b> &mdash; Werte über ~145 zeigen, dass der Markt <b>Crash-Absicherung (OTM-Puts) teuer</b> einpreist, um 100&ndash;120 ist es entspannt. Der VIX (<b>'+(vxL!=null?vxL:'—')+'</b>) misst die erwartete Schwankung. Rückwärtsgewandter Kontext, kein Kauf-/Verkaufssignal.';
+      renderInto('sk-chart',Object.assign(baseChart(280,'line'),{
+        series:[{name:'SKEW',data:skew},{name:'VIX',data:vix}],
+        colors:[ACC,BLUE],stroke:{width:[2.2,1.4],curve:'smooth'},
+        legend:{show:true,labels:{colors:MUT},position:'top',horizontalAlign:'right'},
+        xaxis:{type:'datetime',categories:cats,tickAmount:8,labels:{style:{colors:MUT,fontSize:'10px'}},axisBorder:{show:false}},
+        yaxis:[
+          {seriesName:'SKEW',labels:{style:{colors:ACC},formatter:function(v){return v.toFixed(0)}},title:{text:'SKEW',style:{color:ACC,fontSize:'10px'}}},
+          {seriesName:'VIX',opposite:true,labels:{style:{colors:BLUE},formatter:function(v){return v.toFixed(0)}},title:{text:'VIX',style:{color:BLUE,fontSize:'10px'}}}
+        ],
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},shared:true}
+      }));
+      document.getElementById('sk-note').textContent='Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo)'+(tk?' · 25Δ-IV via marketdata.app (Free)':'')+'. Täglich.';
+    }
+
     function load(url,fn,failId,msg){fetchJSON(url).then(fn).catch(function(e){panelFail(failId,msg);});}
     function init(){
       load('/landing/data/flows_rebalancing.json',renderRebal,'rb-body','Rebalancing-Termine folgen.');
@@ -532,6 +579,7 @@
       load('/landing/data/cot_positioning.json',renderCot,'cot-chart','COT-Daten folgen (wöchentlicher Cron).');
       load('/landing/data/volcontrol_proxy.json',renderVol,'vc-chart','Vol-Control-Daten folgen (Nightly-Cron).');
       load('/landing/data/shortvol_proxy.json',renderShortvol,'sv-chart','Short-Volume-Daten folgen (Nightly-Cron).');
+      load('/landing/data/options_skew.json',renderSkew,'sk-chart','Skew-Daten folgen (Daily-Cron).');
     }
     if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
   }();

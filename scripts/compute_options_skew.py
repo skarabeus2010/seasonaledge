@@ -34,17 +34,19 @@ _MD = "https://api.marketdata.app/v1/options/chain/{sym}/?dte=30&delta=.25&token
 _DEFAULT_TICKERS = ["AAPL"]   # Sandbox-Limit; mit Live-Token: SPY QQQ NVDA … ergänzen
 
 
-def _index_last(sym: str) -> dict | None:
+def _index_series(sym: str, days: int = 504) -> dict:
+    """Letzte ~days Handelstage: {dates:[...], vals:[...]} + letzter Wert."""
     try:
         df = download_data(sym, period="max")
         clear_cache()
         if df is None or len(df) == 0:
-            return None
-        d = str(df["Date"].iloc[-1] if "Date" in df.columns else df.index[-1])[:10]
-        return {"last": round(float(df["Close"].iloc[-1]), 2), "date": d}
+            return {}
+        dts = [str(d)[:10] for d in (df["Date"] if "Date" in df.columns else df.index).tolist()][-days:]
+        vals = [None if v != v else round(float(v), 2) for v in df["Close"].to_numpy()[-days:]]
+        return {"dates": dts, "vals": vals, "last": vals[-1], "date": dts[-1]}
     except Exception as e:
         print(f"  [idx] {sym}: {e}")
-        return None
+        return {}
 
 
 def _ticker_skew(sym: str, tok: str) -> dict | None:
@@ -90,12 +92,21 @@ def _ticker_skew(sym: str, tok: str) -> dict | None:
 
 def build(tickers: list[str], write: bool = True) -> dict:
     tok = os.environ.get("MARKETDATA_API_KEY", "")
+    # Zeitreihen (für den Chart) + letzte Werte
+    skew_s = _index_series("^SKEW")
+    vix_s = _index_series("^VIX")
+    vvix_s = _index_series("^VVIX")
     indices = {}
-    for name, sym in [("SKEW", "^SKEW"), ("VIX", "^VIX"), ("VVIX", "^VVIX")]:
-        v = _index_last(sym)
-        if v:
-            indices[name] = v
-            print(f"  idx {name:5} {v['last']} ({v['date']})")
+    for name, s in [("SKEW", skew_s), ("VIX", vix_s), ("VVIX", vvix_s)]:
+        if s:
+            indices[name] = {"last": s["last"], "date": s["date"]}
+            print(f"  idx {name:5} {s['last']} ({s['date']})")
+    # Chart-Serie: ^SKEW + ^VIX auf gemeinsame Daten ausgerichtet
+    series = []
+    if skew_s:
+        vixmap = dict(zip(vix_s.get("dates", []), vix_s.get("vals", [])))
+        for dt_, sk in zip(skew_s["dates"], skew_s["vals"]):
+            series.append({"date": dt_, "skew": sk, "vix": vixmap.get(dt_)})
 
     per = []
     if not tok:
@@ -111,6 +122,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
         "generated": date.today().isoformat(),
         "source": "CBOE ^SKEW/^VIX/^VVIX (Yahoo) + marketdata.app 25Δ IV",
         "indices": indices,
+        "series": series,
         "tickers": per,
     }
     if write:
