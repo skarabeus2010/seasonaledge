@@ -7,7 +7,7 @@ category: education
 tags: [pre-fomc-drift, fed-entscheidung, fomc, aktienmarkt, event-studie, spy]
 description: "Pre-FOMC-Drift erklärt: Warum die 24 Stunden vor Fed-Entscheidungen überproportional Rendite liefern — Studienlage, echte SPY-Zahlen und die Grenzen."
 ticker: SPY
-status: draft
+status: published
 ---
 
 <!--
