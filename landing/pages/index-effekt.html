@@ -109,7 +109,7 @@
       </div>
       <div class="chart-wrap">
         <div id="agg-chart" style="min-height:340px"></div>
-        <p class="chart-hint">Normalisiert: 100 = Schlusskurs am Tag <b>vor</b> der Ankündigung (Offset&nbsp;&minus;1). X-Achse = Handelstage relativ zur Ankündigung (0). Fläche = 25.&ndash;75.-Perzentil-Streuband. <b>Klicke eine Zeile in der Tabelle</b>, um ein einzelnes Event einzublenden.</p>
+        <p class="chart-hint">Y-Achse = <b>Kursänderung in %</b> gegenüber dem Schlusskurs am Tag <b>vor</b> der Ankündigung (0&nbsp;% = Offset&nbsp;&minus;1). X-Achse = Handelstage relativ zur Ankündigung (0). Fläche = 25.&ndash;75.-Perzentil-Streuband. <b>Klicke eine Zeile in der Tabelle</b>, um ein einzelnes Event einzublenden.</p>
       </div>
     </div>
 
@@ -186,18 +186,24 @@
         kpi('Ø HT bis wirksam', d.avg_effective_offset);
     }
 
+    // Y in %-Änderung ggü. Vortag (Baseline 100 → 0%)
     function baseSeries(d){
       var off=d.offsets;
       return [
         {name:'Streuband 25–75%', type:'rangeArea',
-         data: off.map(function(o,i){return {x:o, y:[d.p25[i], d.p75[i]]}})},
+         data: off.map(function(o,i){return {x:o, y:[d.p25[i]-100, d.p75[i]-100]}})},
         {name:'Durchschnitt', type:'line',
-         data: off.map(function(o,i){return {x:o, y:d.avg_path[i]}})}
+         data: off.map(function(o,i){return {x:o, y:d.avg_path[i]-100}})}
       ];
     }
 
     function renderChart(d){
       var effOff = Math.round(d.avg_effective_offset||10);
+      // dynamische Y-Achse: eng um Streuband (in %), mit etwas Luft
+      var lo=Math.min.apply(null,d.p25)-100, hi=Math.max.apply(null,d.p75)-100;
+      var pad=Math.max(1,(hi-lo)*0.08);
+      var yMin=Math.floor(lo-pad), yMax=Math.ceil(hi+pad);
+      var pf=function(v){return (v>0?'+':'')+v.toFixed(0)+'%'};
       var opts={
         chart:{type:'rangeArea',height:360,background:'transparent',fontFamily:'DM Sans',
                toolbar:{show:false},animations:{enabled:true,speed:400},zoom:{enabled:false}},
@@ -211,15 +217,16 @@
                title:{text:'Handelstage relativ zur Ankündigung',style:{color:MUT,fontSize:'11px',fontWeight:400}},
                labels:{style:{colors:MUT},formatter:function(v){return (v>0?'+':'')+Math.round(v)}},
                axisBorder:{color:'rgba(255,255,255,.08)'},axisTicks:{color:'rgba(255,255,255,.08)'}},
-        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return v.toFixed(0)}},
-               title:{text:'Normalisiert (Vortag = 100)',style:{color:MUT,fontSize:'11px',fontWeight:400}}},
+        yaxis:{min:yMin,max:yMax,forceNiceScale:true,tickAmount:6,
+               labels:{style:{colors:MUT},formatter:pf},
+               title:{text:'Kursänderung ggü. Vortag der Ankündigung',style:{color:MUT,fontSize:'11px',fontWeight:400}}},
         grid:{borderColor:'rgba(255,255,255,.06)',strokeDashArray:3},
         tooltip:{theme:'dark',shared:true,intersect:false,
                  x:{formatter:function(v){return 'Offset '+(v>0?'+':'')+Math.round(v)+' HT'}},
-                 y:{formatter:function(v){return v==null?'–':v.toFixed(1)}}},
+                 y:{formatter:function(v){return v==null?'–':(v>0?'+':'')+v.toFixed(1)+'%'}}},
         annotations:{
-          yaxis:[{y:100,borderColor:'rgba(255,255,255,.25)',strokeDashArray:4,
-                  label:{text:'Baseline 100',style:{background:'transparent',color:DIM,fontSize:'10px'}}}],
+          yaxis:[{y:0,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,
+                  label:{text:'Vortag = 0%',style:{background:'transparent',color:DIM,fontSize:'10px'}}}],
           xaxis:[
             {x:0,borderColor:ACC,strokeDashArray:0,
              label:{text:'Ankündigung',orientation:'horizontal',position:'top',
@@ -242,7 +249,7 @@
       var off=STUDY.offsets;
       var s=baseSeries(STUDY);
       s.push({name:ev.ticker, type:'line',
-              data: off.map(function(o,i){return {x:o, y:(ev.path[i]!=null?ev.path[i]:null)}})});
+              data: off.map(function(o,i){return {x:o, y:(ev.path[i]!=null?ev.path[i]-100:null)}})});
       chart.updateSeries(s);
     }
 
