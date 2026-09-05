@@ -213,6 +213,7 @@
       <p class="framing" id="sk-framing"></p>
       <div class="kpis" id="sk-kpis"></div>
       <div class="card"><div class="psub">CBOE SKEW-Index (2 Jahre) &middot; VIX zum Vergleich (rechte Achse)</div><div id="sk-chart" style="min-height:280px"></div></div>
+      <div class="card" style="margin-top:.8rem"><div class="psub">25&Delta;-Skew je Ticker (Put-IV &minus; Call-IV) &middot; <span style="color:#30e878">grün = Put-Skew</span> (teure Absicherung), <span style="color:#ff4d5e">rot = Call-Skew</span></div><div id="sk-table" style="overflow-x:auto"></div></div>
       <p class="note" id="sk-note"></p>
     </section>
 
@@ -550,12 +551,26 @@
       var idx=d.indices||{};
       var skL=(idx.SKEW||{}).last, vxL=(idx.VIX||{}).last, vvL=(idx.VVIX||{}).last;
       var tk=(d.tickers&&d.tickers[0])?d.tickers[0]:null;
-      var html=
+      document.getElementById('sk-kpis').innerHTML=
         kpi('CBOE SKEW-Index', skL!=null?skL:'—', skL>=145?'gold':'', skL>=145?'erhöhtes Tail-Risk':'im Normbereich')+
         kpi('VIX', vxL!=null?vxL:'—', '', 'erwartete 30-Tage-Vol')+
         kpi('VVIX', vvL!=null?vvL:'—', '', 'Vol der Vol');
-      if(tk) html+=kpi(tk.ticker+' 25Δ-Skew',(tk.skew_pts>=0?'+':'')+tk.skew_pts+' pts', tk.skew_pts>0?'gold':'', 'Put-IV − Call-IV');
-      document.getElementById('sk-kpis').innerHTML=html;
+      // Per-Ticker-Skew-Tabelle (nach Skew absteigend: höchster Put-Skew oben)
+      var tks=(d.tickers||[]).slice().sort(function(a,b){return b.skew_pts-a.skew_pts});
+      if(tks.length){
+        var h='<table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:420px">'+
+          '<tr style="color:'+MUT+';text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em">'+
+          '<th style="padding:5px 8px">Ticker</th><th style="padding:5px 8px;text-align:right">Put-IV</th>'+
+          '<th style="padding:5px 8px;text-align:right">Call-IV</th><th style="padding:5px 8px;text-align:right">25Δ-Skew</th></tr>';
+        tks.forEach(function(t){var c=t.skew_pts>=0?'#30e878':'#ff4d5e';
+          h+='<tr>'+
+            '<td style="padding:5px 8px;font-family:monospace;font-weight:700;color:'+ACC+'">'+t.ticker+'</td>'+
+            '<td style="padding:5px 8px;text-align:right;color:var(--dim)">'+(t.put_25d.iv*100).toFixed(1)+'%</td>'+
+            '<td style="padding:5px 8px;text-align:right;color:var(--dim)">'+(t.call_25d.iv*100).toFixed(1)+'%</td>'+
+            '<td style="padding:5px 8px;text-align:right;font-weight:700;color:'+c+'">'+(t.skew_pts>=0?'+':'')+t.skew_pts.toFixed(2)+' pts</td></tr>';
+        });
+        document.getElementById('sk-table').innerHTML=h+'</table>';
+      }
       document.getElementById('sk-framing').innerHTML='<b>Was heißt das?</b> Der SKEW-Index steht bei <b>'+(skL!=null?skL:'—')+'</b> &mdash; Werte über ~145 zeigen, dass der Markt <b>Crash-Absicherung (OTM-Puts) teuer</b> einpreist, um 100&ndash;120 ist es entspannt. Der VIX (<b>'+(vxL!=null?vxL:'—')+'</b>) misst die erwartete Schwankung. Rückwärtsgewandter Kontext, kein Kauf-/Verkaufssignal.';
       renderInto('sk-chart',Object.assign(baseChart(280,'line'),{
         series:[{name:'SKEW',data:skew},{name:'VIX',data:vix}],
