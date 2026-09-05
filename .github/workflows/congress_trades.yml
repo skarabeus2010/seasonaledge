@@ -1,0 +1,32 @@
+name: Congress Trades Alert
+
+on:
+  schedule:
+    - cron: '0 13 * * *'      # täglich 13:00 UTC — neue PTR-Filings prüfen + Alert
+  workflow_dispatch:
+    inputs:
+      seed_only:
+        description: "Nur State seeden (keine Alerts)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Congress trades run via VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 18m
+          script: |
+            SEED="${{ github.event.inputs.seed_only }}"
+            ARGS="--run"
+            if [ "$SEED" = "true" ]; then ARGS="--seed-only"; fi
+            echo "[congress-trades] args:$ARGS"
+            docker exec seasonalpha-app python3 scripts/congress_trades.py $ARGS 2>&1 | tail -60
+            echo "[congress-trades] Done: $(date)"

@@ -40,6 +40,8 @@ landing/data/cot_positioning.json
 landing/data/buyback_blackout.json
 landing/data/shortvol_proxy.json
 landing/data/volcontrol_proxy.json
+landing/data/congress_trades.json
+landing/data/congress_trades_seen.json
 
 # Research-Scan: Kurs-Cache und Roh-Kandidaten (regenerierbar, gross)
 scripts/research/.cache/
