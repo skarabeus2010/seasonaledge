@@ -43,6 +43,7 @@ landing/data/volcontrol_proxy.json
 landing/data/congress_trades.json
 landing/data/congress_trades_seen.json
 landing/data/options_skew.json
+landing/data/options_skew_history.json
 
 # Research-Scan: Kurs-Cache und Roh-Kandidaten (regenerierbar, gross)
 scripts/research/.cache/

@@ -129,6 +129,21 @@ def build(tickers: list[str], write: bool = True) -> dict:
         p = _ROOT / "landing/data/options_skew.json"
         p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\n[OK] {len(per)} Ticker + {len(indices)} Indizes → {p}")
+        # Per-Ticker-Skew vorwärts akkumulieren (historisches IV gibt's auf dem Plan nicht)
+        hp = _ROOT / "landing/data/options_skew_history.json"
+        hist = {}
+        if hp.exists():
+            try: hist = json.loads(hp.read_text(encoding="utf-8"))
+            except Exception: hist = {}
+        today = out["generated"]
+        for t in per:
+            arr = hist.setdefault(t["ticker"], [])
+            if not any(e.get("date") == today for e in arr):
+                arr.append({"date": today, "skew_pts": t["skew_pts"],
+                            "put_iv": t["put_25d"]["iv"], "call_iv": t["call_25d"]["iv"]})
+            hist[t["ticker"]] = arr[-750:]      # ~3 Jahre Cap
+        hp.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[history] {sum(len(v) for v in hist.values())} Punkte über {len(hist)} Ticker → {hp.name}")
     return out
 
 
