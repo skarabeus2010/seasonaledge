@@ -292,11 +292,25 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--no-write", action="store_true")
     ap.add_argument("--email-test", action="store_true", help="Sample-Alert (neuestes Filing) an ADMIN_EMAIL senden")
+    ap.add_argument("--email-digest", action="store_true", help="Digest: neuestes Filing JE Politiker an ADMIN_EMAIL")
     ap.add_argument("--run", action="store_true", help="Cron: bauen + bei neuen Filings alarmieren")
     ap.add_argument("--seed-only", action="store_true", help="State seeden ohne Alerts")
     a = ap.parse_args()
     if a.run or a.seed_only:
         return run(a.years, seed_only=a.seed_only)
+    if a.email_digest:
+        from shared.email_brevo import send_html
+        data = json.loads((_ROOT / "landing/data/congress_trades.json").read_text(encoding="utf-8"))
+        latest = {}                                     # Politiker -> neuestes Filing-Datum
+        for t in data["trades"]:                        # bereits neueste zuerst sortiert
+            latest.setdefault(t["politician"], t["filing_date"])
+        sample = [t for t in data["trades"] if latest.get(t["politician"]) == t["filing_date"]]
+        npol = len(latest)
+        subject = f"🏛️ Congress-Trades Digest — {npol} Politiker, neueste Offenlegungen"
+        to = os.environ.get("ADMIN_EMAIL", "heiko.seibel@gmail.com")
+        ok = send_html(to, subject, render_alert_html(sample))
+        print(f"[email-digest] {'OK gesendet' if ok else 'FEHLGESCHLAGEN'} — {npol} Politiker, {len(sample)} Trades")
+        return 0 if ok else 1
     if a.email_test:
         data = json.loads((_ROOT / "landing/data/congress_trades.json").read_text(encoding="utf-8"))
         # neuestes Filing (politician+filing_date) als Sample-Alert
