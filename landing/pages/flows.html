@@ -584,10 +584,11 @@
           xaxis:[{x:50,borderColor:'rgba(255,255,255,.28)',strokeDashArray:5}],
           yaxis:[{y:50,borderColor:'rgba(255,255,255,.28)',strokeDashArray:5}],
           points:[
-            {x:9,y:96,marker:{size:0},label:{text:'ANGST',borderWidth:0,style:{background:'transparent',color:'#ff4d5e',fontSize:'10px',fontWeight:700}}},
-            {x:91,y:96,marker:{size:0},label:{text:'GIER',borderWidth:0,style:{background:'transparent',color:'#30e878',fontSize:'10px',fontWeight:700}}},
-            {x:9,y:5,marker:{size:0},label:{text:'RUHE / Puts',borderWidth:0,style:{background:'transparent',color:MUT,fontSize:'9px'}}},
-            {x:91,y:5,marker:{size:0},label:{text:'RUHE / Calls',borderWidth:0,style:{background:'transparent',color:MUT,fontSize:'9px'}}}
+            // Strategie-Wasserzeichen je Quadrant (halbtransparent): oben=Prämie verkaufen, unten=kaufen
+            {x:25,y:78,marker:{size:0},label:{text:'Sell Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.34)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
+            {x:75,y:78,marker:{size:0},label:{text:'Sell Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.34)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
+            {x:25,y:22,marker:{size:0},label:{text:'Buy Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
+            {x:75,y:22,marker:{size:0},label:{text:'Buy Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}}
           ]
         },
         tooltip:{theme:'dark',custom:function(o){var p=o.w.config.series[0].data[o.dataPointIndex];
@@ -595,9 +596,9 @@
       }));
       document.getElementById('sk-quad-legend').innerHTML=
         '<b>Lesart:</b> Jeder Punkt = ein Ticker, verortet <b>relativ zur eigenen 2-Jahres-Historie</b>. '+
-        '<span style="color:#ff4d5e">Oben-links = Angst</span> (Vol teuer + Puts bid) &middot; '+
-        '<span style="color:#30e878">Oben-rechts = Gier</span> (Vol teuer + Calls bid) &middot; '+
-        'unten = ruhige Vol. Rückwärtsgewandter Kontext, kein Signal. ('+pts.length+' Ticker mit Historie)';
+        '<b>Oben</b> (IV-Rank hoch, Vol teuer) &rarr; Prämie <b>verkaufen</b>; <b>unten</b> (Vol billig) &rarr; <b>kaufen</b>. '+
+        'Die Seite folgt dem Skew: <b>links</b> Puts bid (Angst), <b>rechts</b> Calls bid (Gier). Daraus die vier Spread-Ideen je Quadrant. '+
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind reine Struktur-Beispiele, keine Empfehlung.</span> ('+pts.length+' Ticker)';
     }
     function renderSkew(d){
       var s=d.series||[]; if(!s.length){panelFail('sk-chart','Skew-Daten folgen (Daily-Cron).');return;}

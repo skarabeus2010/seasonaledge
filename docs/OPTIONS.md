@@ -102,6 +102,17 @@ Output: `landing/data/gex_<T>.json` (+ `gex_summary.json` im Batch). Auswertung/
 4. **Empirie-Loop:** korreliert unser gemessener Pre-OPEX-Drift mit hohem net-GEX / Charm-Intensität?
 5. **Content/SEO/Video:** „Gamma-Exposure erklärt", „OPEX-Pinning / Max Pain", „0DTE-Gamma".
 
+## 25Δ-Skew & Vol-Quadrant (`/flows` Panel G)
+
+Getrennt von der Dealer-GEX-Engine: ein **marktweiter Vol-/Skew-Puls** auf `/flows`.
+
+- **Markt-Gauges (gratis, kein Key):** `^SKEW` / `^VIX` / `^VVIX` via `yahoo_downloader` — 2-Jahres-Chart + KPIs. Kein API-Limit.
+- **Per-Ticker 25Δ-Skew:** `scripts/compute_options_skew.py` → `landing/data/options_skew.json` (Tabelle Put-IV − Call-IV je Ticker). Live via **marketdata.app** (`chain?dte=30&delta=.25`, 2 Credits/Ticker), Key `MARKETDATA_API_KEY`. Cron `options_skew.yml` werktags 23:00 UTC, server-seitig (`docker exec`).
+- **Vol-Quadrant** (die Haupt-Grafik): X = **Risk-Reversal-Rank** (RR = 25ΔCall-IV − 25ΔPut-IV), Y = **IV-Rank** (Level (Put+Call)/2), jeweils **Perzentil-Rang des letzten Werts in der eigenen 2-Jahres-Historie** (0–100 %). Fadenkreuz bei 50 %. Strategie-Wasserzeichen je Quadrant (reine Struktur-Beispiele, **kein Signal**):
+  - oben (IV teuer) = Prämie **verkaufen**, unten (billig) = **kaufen**; Seite folgt dem Skew (links Puts bid → Put-Spread, rechts Calls bid → Call-Spread):
+  - oben-links **Sell Put Spread** · oben-rechts **Sell Call Spread** · unten-links **Buy Put Spread** · unten-rechts **Buy Call Spread**.
+- **Historie-Constraint:** marketdata liefert historisch **nur Preise, kein IV/Greeks** (`?date=` → iv=0, delta=0), und der `delta`-Filter greift historisch nicht — eine historische Chain kostet aber nur **1 Credit** (nicht pro Kontrakt). → **BS-Rekonstruktion**: `scripts/backfill_skew_history.py` holt die breite historische Chain (`strikeLimit=120`), **invertiert die IV je Kontrakt selbst per Black-Scholes-Bisektion** aus dem Mid-Preis, rechnet Delta und pickt 25Δ-Call/Put → Skew. Läuft über echte Handelstage (`traded[::every_n_td]`, 5 = wöchentl.), schreibt **inkrementell pro Ticker** in `options_skew_history.json` (Fortschritt überlebt Abbruch), `socket.setdefaulttimeout(20)` gegen hängende Requests. Der Daily-Cron akkumuliert danach vorwärts weiter. `options_skew_history.json` ist **gitignored** → nach Backfill per SSH/`docker cp` auf den Server, nicht committen.
+
 ## Quellen
 
 - SqueezeMetrics GEX+ Guide (DDOI, VEX, Einheiten): https://squeezemetrics.com/monitor/static/guide.pdf
