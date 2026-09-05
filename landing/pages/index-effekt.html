@@ -197,13 +197,23 @@
       ];
     }
 
+    // dynamische Y-Range über ALLE sichtbaren Serien (inkl. eingeblendetem Event)
+    function yRange(series){
+      var vals=[];
+      series.forEach(function(s){(s.data||[]).forEach(function(p){
+        if(!p||p.y==null)return;
+        if(Array.isArray(p.y)){ if(p.y[0]!=null)vals.push(p.y[0]); if(p.y[1]!=null)vals.push(p.y[1]); }
+        else vals.push(p.y);
+      })});
+      if(!vals.length)return{min:undefined,max:undefined};
+      var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), pad=Math.max(1,(hi-lo)*0.08);
+      return {min:Math.floor(lo-pad), max:Math.ceil(hi+pad)};
+    }
+    var pf=function(v){return (v>0?'+':'')+v.toFixed(0)+'%'};
+
     function renderChart(d){
       var effOff = Math.round(d.avg_effective_offset||10);
-      // dynamische Y-Achse: eng um Streuband (in %), mit etwas Luft
-      var lo=Math.min.apply(null,d.p25)-100, hi=Math.max.apply(null,d.p75)-100;
-      var pad=Math.max(1,(hi-lo)*0.08);
-      var yMin=Math.floor(lo-pad), yMax=Math.ceil(hi+pad);
-      var pf=function(v){return (v>0?'+':'')+v.toFixed(0)+'%'};
+      var r=yRange(baseSeries(d)), yMin=r.min, yMax=r.max;
       var opts={
         chart:{type:'rangeArea',height:360,background:'transparent',fontFamily:'DM Sans',
                toolbar:{show:false},animations:{enabled:true,speed:400},zoom:{enabled:false}},
@@ -244,13 +254,17 @@
     function toggleOverlay(ev,row){
       if(!chart)return;
       document.querySelectorAll('table.ev tr.on').forEach(function(r){r.classList.remove('on')});
-      if(overlay===ev.ticker){ overlay=null; chart.updateSeries(baseSeries(STUDY)); return; }
-      overlay=ev.ticker; row.classList.add('on');
-      var off=STUDY.offsets;
-      var s=baseSeries(STUDY);
-      s.push({name:ev.ticker, type:'line',
-              data: off.map(function(o,i){return {x:o, y:(ev.path[i]!=null?ev.path[i]-100:null)}})});
-      chart.updateSeries(s);
+      var s;
+      if(overlay===ev.ticker){ overlay=null; s=baseSeries(STUDY); }
+      else {
+        overlay=ev.ticker; row.classList.add('on');
+        var off=STUDY.offsets;
+        s=baseSeries(STUDY);
+        s.push({name:ev.ticker, type:'line',
+                data: off.map(function(o,i){return {x:o, y:(ev.path[i]!=null?ev.path[i]-100:null)}})});
+      }
+      var r=yRange(s);   // Achse neu skalieren, damit das Event nicht abgeschnitten wird
+      chart.updateOptions({series:s, yaxis:{min:r.min, max:r.max}}, false, true);
     }
 
     function renderTable(d){
