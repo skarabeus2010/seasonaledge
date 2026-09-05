@@ -1,0 +1,15 @@
+{
+  "_comment": "Roster für Congress-Trades-Alert (/congress). Config-getrieben — Namen frei tunbar. 'match' = [Last, First-Präfix] wie im House-Clerk-XML bzw. Senat-EFD. chamber: house|senate. note = kurze Einordnung fürs Panel.",
+  "roster": [
+    {"name": "Nancy Pelosi", "match": ["Pelosi", "Nancy"], "chamber": "house", "district": "CA-11", "party": "D", "note": "Klassiker, Tech/Optionen, mehrjährig stark"},
+    {"name": "Warren Davidson", "match": ["Davidson", "Warren"], "chamber": "house", "district": "OH-8", "party": "R", "note": "2025 die Nr. 1 (+78,8%)"},
+    {"name": "Ro Khanna", "match": ["Khanna", "Rohit"], "chamber": "house", "district": "CA-17", "party": "D", "note": "sehr hohes Volumen (viel über verwaltete Konten)"},
+    {"name": "Josh Gottheimer", "match": ["Gottheimer", "Josh"], "chamber": "house", "district": "NJ-5", "party": "D", "note": "sehr aktiv"},
+    {"name": "Dan Crenshaw", "match": ["Crenshaw", "Dan"], "chamber": "house", "district": "TX-2", "party": "R", "note": "aktiv, Tech/Energie"},
+    {"name": "Marjorie Taylor Greene", "match": ["Greene", "Marjorie"], "chamber": "house", "district": "GA-14", "party": "R", "note": "hoher Medien-/Signalwert"},
+    {"name": "Terri Sewell", "match": ["Sewell", "Terri"], "chamber": "house", "district": "AL-7", "party": "D", "note": "2025 +67,9%"},
+    {"name": "Michael Guest", "match": ["Guest", "Michael"], "chamber": "house", "district": "MS-3", "party": "R", "note": "2025 +52,5%"},
+    {"name": "Debbie Wasserman Schultz", "match": ["Wasserman Schultz", "Debbie"], "chamber": "house", "district": "FL-25", "party": "D", "note": "2025 +28,0%, aktive Traderin"},
+    {"name": "Tommy Tuberville", "match": ["Tuberville", "Tommy"], "chamber": "senate", "district": "AL", "party": "R", "note": "extrem aktiv (Senat — Quelle Phase 2)"}
+  ]
+}
