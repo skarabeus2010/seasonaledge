@@ -2,7 +2,7 @@ name: Congress Trades Alert
 
 on:
   schedule:
-    - cron: '0 13 * * *'      # täglich 13:00 UTC — neue PTR-Filings prüfen + Alert
+    - cron: '0 */3 * * *'     # alle 3h — neue PTR-Filings prüfen + Sofort-Alert (inkrementell)
   workflow_dispatch:
     inputs:
       seed_only:

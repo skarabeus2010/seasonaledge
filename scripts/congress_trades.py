@@ -120,6 +120,30 @@ def _parse_ptr(raw: bytes) -> tuple[list[dict], bool]:
     return txns, False
 
 
+def _filing_to_trades(f: dict, universe: set) -> tuple[list[dict], dict | None]:
+    """Ein Filing → (Trade-Dicts, unparsed-Eintrag|None). PDF-Fetch + Parse."""
+    doc, y = f["DocID"], f["year"]
+    pdf_url = _PDF_URL.format(year=y, doc=doc)
+    fdate = datetime.strptime(f["FilingDate"], "%m/%d/%Y").date().isoformat()
+    try:
+        txns, is_image = _parse_ptr(_get(pdf_url))
+    except Exception as e:
+        print(f"  [skip] {f['person']['name']} {doc}: {e}")
+        txns, is_image = [], False
+    trades = [{**t, "politician": f["person"]["name"], "party": f["person"]["party"],
+               "district": f["person"]["district"], "in_universe": t["ticker"] in universe,
+               "filing_date": fdate, "doc_id": doc, "pdf_url": pdf_url} for t in txns]
+    unparsed = None
+    if is_image or not txns:
+        unparsed = {"politician": f["person"]["name"], "party": f["person"]["party"],
+                    "district": f["person"]["district"], "filing_date": fdate, "doc_id": doc,
+                    "pdf_url": pdf_url,
+                    "reason": "Scan-PDF (Papierform)" if is_image else "keine Wertpapier-Transaktion"}
+    print(f"  ok  {f['person']['name']:24} filed {f['FilingDate']:11} DocID {doc} → "
+          f"{'Scan' if is_image else f'{len(txns)} Txns'}")
+    return trades, unparsed
+
+
 def build(years: list[int], limit: int | None, write: bool) -> dict:
     from shared.symbols import get_all_tickers
     universe = set(get_all_tickers())
@@ -141,32 +165,10 @@ def build(years: list[int], limit: int | None, write: bool) -> dict:
 
     trades, unparsed = [], []
     for f in filings:
-        doc, y = f["DocID"], f["year"]
-        pdf_url = _PDF_URL.format(year=y, doc=doc)
-        fdate = datetime.strptime(f["FilingDate"], "%m/%d/%Y").date().isoformat()
-        try:
-            txns, is_image = _parse_ptr(_get(pdf_url))
-        except Exception as e:
-            print(f"  [skip] {f['person']['name']} {doc}: {e}")
-            txns, is_image = [], False
-        for t in txns:
-            trades.append({
-                **t,
-                "politician": f["person"]["name"],
-                "party": f["person"]["party"],
-                "district": f["person"]["district"],
-                "in_universe": t["ticker"] in universe,
-                "filing_date": fdate,
-                "doc_id": doc,
-                "pdf_url": pdf_url,
-            })
-        if is_image or (not txns):
-            unparsed.append({"politician": f["person"]["name"], "party": f["person"]["party"],
-                             "district": f["person"]["district"], "filing_date": fdate,
-                             "doc_id": doc, "pdf_url": pdf_url,
-                             "reason": "Scan-PDF (Papierform)" if is_image else "keine Wertpapier-Transaktion"})
-        tag = "Scan" if is_image else f"{len(txns)} Txns"
-        print(f"  ok  {f['person']['name']:24} filed {f['FilingDate']:11} DocID {doc} → {tag}")
+        tr, un = _filing_to_trades(f, universe)
+        trades += tr
+        if un:
+            unparsed.append(un)
 
     trades.sort(key=lambda t: (t["filing_date"], t["tx_date"]), reverse=True)
     out = {
@@ -190,8 +192,9 @@ def _amt_short(n: int) -> str:
     return f"${n}"
 
 
-def render_alert_html(trades: list[dict]) -> str:
-    """HTML-Alert für eine Gruppe neuer Trades (nach Politiker+Filing gruppiert)."""
+def render_alert_html(trades: list[dict], context: list[dict] | None = None) -> str:
+    """HTML-Alert für neue Trades (nach Politiker+Filing gruppiert), optional mit
+    chronologischem Kontext-Block (Trades der übrigen Mitglieder) darunter."""
     ACC, BG, CARD, TXT, MUT = "#e8a820", "#0a0a0a", "#141414", "#f0f0f0", "#8a8270"
     from collections import OrderedDict
     groups: "OrderedDict[tuple,list]" = OrderedDict()
@@ -226,6 +229,28 @@ def render_alert_html(trades: list[dict]) -> str:
             f'<th style="padding:4px 10px">Typ</th><th style="padding:4px 10px">Betrag</th>'
             f'<th style="padding:4px 10px">Handelstag</th><th style="padding:4px 10px">Konto</th></tr>'
             f'{rows}</table></div>')
+    # Kontext-Block: Trades der übrigen Mitglieder, chronologisch (neueste zuerst)
+    ctx_html = ""
+    if context:
+        crows = ""
+        for t in context:
+            col = "#30e878" if t["is_buy"] else "#ff4d5e"
+            star = ' <span style="color:%s;font-size:9px">★</span>' % ACC if t["in_universe"] else ""
+            crows += (f'<tr>'
+                      f'<td style="padding:4px 8px;color:{MUT};white-space:nowrap">{t["filing_date"]}</td>'
+                      f'<td style="padding:4px 8px;color:{TXT}">{t["politician"]}</td>'
+                      f'<td style="padding:4px 8px;color:{col};white-space:nowrap">{t["action"]}</td>'
+                      f'<td style="padding:4px 8px;font-family:monospace;color:{TXT}">{t["ticker"]}{star}</td>'
+                      f'<td style="padding:4px 8px;color:{MUT};white-space:nowrap">{t["amount_range"]}</td></tr>')
+        ctx_html = (
+            f'<div style="margin-top:22px">'
+            f'<div style="font-size:13px;font-weight:700;color:{MUT};text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">'
+            f'Positionierungen der übrigen Mitglieder</div>'
+            f'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+            f'<tr style="color:{MUT};text-align:left;font-size:10px;text-transform:uppercase">'
+            f'<th style="padding:3px 8px">Offengelegt</th><th style="padding:3px 8px">Politiker</th>'
+            f'<th style="padding:3px 8px">Aktion</th><th style="padding:3px 8px">Ticker</th>'
+            f'<th style="padding:3px 8px">Betrag</th></tr>{crows}</table></div>')
     return (
         f'<div style="background:{BG};padding:24px;font-family:Arial,sans-serif;color:{TXT}">'
         f'<div style="max-width:640px;margin:0 auto">'
@@ -233,53 +258,108 @@ def render_alert_html(trades: list[dict]) -> str:
         f'<div style="color:{MUT};font-size:13px;margin-bottom:18px">Neue STOCK-Act-Offenlegung eines beobachteten Politikers · '
         f'<a href="https://seasonalpha.ai/congress" style="color:{ACC}">Alle Trades auf seasonalpha.ai/congress</a></div>'
         f'{"".join(blocks)}'
+        f'{ctx_html}'
         f'<div style="color:{MUT};font-size:11px;line-height:1.6;margin-top:16px;border-top:1px solid #262626;padding-top:12px">'
         f'★ = Ticker in deinem SeasonAlpha-Universum. Datenquelle: U.S. House Clerk (Pflichtoffenlegung, öffentlich). '
         f'<b>Einordnung:</b> Offenlegungsverzug 30–45 Tage (STOCK Act), rückwärtsgewandt. Kein Handelssignal, keine Anlageberatung.</div>'
         f'</div></div>')
 
 
-def send_alert(trades: list[dict], to_email: str | None = None) -> bool:
+def send_alert(trades: list[dict], context: list[dict] | None = None, to_email: str | None = None) -> bool:
     from shared.email_brevo import send_html
     pol = trades[0]["politician"]; n = len({t["ticker"] for t in trades})
     subject = f"🏛️ Congress-Trade-Alert: {pol} — {n} Ticker offengelegt"
     to = to_email or os.environ.get("ADMIN_EMAIL", "heiko.seibel@gmail.com")
-    return send_html(to, subject, render_alert_html(trades))
+    return send_html(to, subject, render_alert_html(trades, context=context))
 
 
 _STATE = "landing/data/congress_trades_seen.json"
 
 
 def run(years: list[int], seed_only: bool = False) -> int:
-    """Cron-Modus: bauen, gegen letzten Stand diffen, bei NEUEN Filings alarmieren."""
-    out = build(years, None, write=True)
+    """Cron-Modus (inkrementell): nur den XML-Index ziehen (billig), gegen State
+    diffen und AUSSCHLIESSLICH neue Filings als PDF parsen. Pro neuem Filing sofort
+    ein Alert — mit chronologischem Kontext (Trades der übrigen Mitglieder)."""
+    from shared.symbols import get_all_tickers
+    universe = set(get_all_tickers())
+    roster = _load_roster()
+    json_path = _ROOT / "landing/data/congress_trades.json"
     state_path = _ROOT / _STATE
+
+    filings = []
+    for y in years:
+        try:
+            filings += _roster_filings(_fetch_index(y), roster, y)
+        except Exception as e:
+            print(f"  [WARN] Index {y}: {e}")
+
+    def _fd(f):
+        try: return datetime.strptime(f["FilingDate"], "%m/%d/%Y").date()
+        except Exception: return date.min
+    filings.sort(key=_fd, reverse=True)
+
     first = not state_path.exists()
     seen = {}
     if not first:
-        try:
-            seen = json.loads(state_path.read_text(encoding="utf-8"))
-        except Exception:
-            seen = {}
-    current = {t["doc_id"]: t["filing_date"] for t in out["trades"]}
-    for u in out["unparsed_filings"]:
-        current.setdefault(u["doc_id"], u["filing_date"])
+        try: seen = json.loads(state_path.read_text(encoding="utf-8"))
+        except Exception: seen = {}
+    current = {f["DocID"]: _fd(f).isoformat() for f in filings}
     new_docs = [d for d in current if d not in seen]
 
+    # Erstlauf/Seed: voller Parse fürs initiale JSON, KEINE Alerts
     if first or seed_only:
+        build(years, None, write=True)
         state_path.write_text(json.dumps(current, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"[run] Seed: {len(current)} Filings erfasst, KEINE Alerts (Erstlauf).")
         return 0
 
+    if not new_docs:
+        print("[run] Keine neuen Filings.")
+        return 0
+
+    # bestehendes JSON laden, nur die NEUEN Filings parsen
+    existing = {"trades": [], "unparsed_filings": []}
+    if json_path.exists():
+        try: existing = json.loads(json_path.read_text(encoding="utf-8"))
+        except Exception: pass
+
+    new_by_doc, new_unparsed = {}, []
+    for f in filings:
+        if f["DocID"] not in new_docs:
+            continue
+        tr, un = _filing_to_trades(f, universe)
+        if tr: new_by_doc[f["DocID"]] = tr
+        if un: new_unparsed.append(un)
+
+    # mergen (neue voran), dedup je (doc,ticker,tx,action,betrag)
+    merged, keys = [], set()
+    for t in [x for trs in new_by_doc.values() for x in trs] + existing.get("trades", []):
+        k = (t["doc_id"], t["ticker"], t["tx_date"], t["action"], t["amount_low"])
+        if k in keys: continue
+        keys.add(k); merged.append(t)
+    merged.sort(key=lambda t: (t["filing_date"], t["tx_date"]), reverse=True)
+    udup, useen = [], set()
+    for u in new_unparsed + existing.get("unparsed_filings", []):
+        if u["doc_id"] in useen: continue
+        useen.add(u["doc_id"]); udup.append(u)
+    json_path.write_text(json.dumps({
+        "generated": date.today().isoformat(),
+        "source": "U.S. House Clerk — Financial Disclosures (PTR)",
+        "roster": [r["name"] for r in roster],
+        "n_trades": len(merged), "trades": merged, "unparsed_filings": udup,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Alert pro neuem Filing mit Trades — Kontext = übrige Mitglieder, chronologisch
     sent = 0
-    for doc in new_docs:
-        trs = [t for t in out["trades"] if t["doc_id"] == doc]
-        if trs:
-            ok = send_alert(trs)
-            sent += 1 if ok else 0
-            print(f"[run] Alert {'OK' if ok else 'FEHLER'}: {trs[0]['politician']} {trs[0]['filing_date']} ({len(trs)} Trades)")
-        else:
-            print(f"[run] Neues Filing ohne parsebare Trades (Scan/leer): DocID {doc}")
+    for doc, trs in new_by_doc.items():
+        pol = trs[0]["politician"]
+        context = [t for t in merged if t["doc_id"] != doc and t["politician"] != pol][:25]
+        ok = send_alert(trs, context=context)
+        sent += 1 if ok else 0
+        print(f"[run] Alert {'OK' if ok else 'FEHLER'}: {pol} {trs[0]['filing_date']} ({len(trs)} Trades)")
+    for u in new_unparsed:
+        print(f"[run] Neues Scan-Filing ohne Detail: {u['politician']} {u['filing_date']}")
+
     seen.update(current)
     state_path.write_text(json.dumps(seen, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[run] {len(new_docs)} neue Filings, {sent} Alerts gesendet.")
