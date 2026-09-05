@@ -918,6 +918,47 @@ SYMBOLS = {
     "EURJPY=X": {"name": "EUR/JPY", "kategorie": "FX", "währung": "JPY", "exchange": "Forex", "beschreibung": "Euro / Japanischer Yen"},
     "EURCHF=X": {"name": "EUR/CHF", "kategorie": "FX", "währung": "CHF", "exchange": "Forex", "beschreibung": "Euro / Schweizer Franken"},
     "GBPJPY=X": {"name": "GBP/JPY", "kategorie": "FX", "währung": "JPY", "exchange": "Forex", "beschreibung": "Britisches Pfund / Japanischer Yen"},
+
+    # ── ENERGIE / STROM / URAN / SOLAR (KW36 2026) ─────────────────────────────
+    # Smartgrid / Strom-Infrastruktur
+    "IESC": {"name": "IES Holdings", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "IES Holdings — Elektro- & Infrastruktur-Dienstleistungen"},
+    "AGX":  {"name": "Argan", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Argan Inc. — Energie-Infrastruktur & Kraftwerksbau"},
+    "PWR":  {"name": "Quanta Services", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Quanta Services — Strom- & Netz-Infrastruktur"},
+    "BE":   {"name": "Bloom Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Bloom Energy — Festoxid-Brennstoffzellen"},
+    "PRIM": {"name": "Primoris Services", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Primoris Services — Energie- & Versorgungs-Infrastruktur"},
+    "MYRG": {"name": "MYR Group", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "MYR Group — Stromnetz-Bau"},
+    "ATKR": {"name": "Atkore", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Atkore Inc. — Elektro-Infrastrukturprodukte"},
+    "FIX":  {"name": "Comfort Systems USA", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Comfort Systems USA — HLK- & Gebäudetechnik"},
+    "EMR":  {"name": "Emerson Electric", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Emerson Electric — Automatisierungstechnik"},
+    # Unregulierte Versorger / Stromerzeuger
+    "VST":  {"name": "Vistra", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Vistra Corp. — unregulierter Stromerzeuger"},
+    "NRG":  {"name": "NRG Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "NRG Energy — Stromerzeuger & -versorger"},
+    # Power Generation / Rohstoffe
+    "TGB":  {"name": "Taseko Mines", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Taseko Mines — Kupferbergbau"},
+    "TECK": {"name": "Teck Resources", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Teck Resources — Bergbau (Kupfer/Zink)"},
+    "SCCO": {"name": "Southern Copper", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Southern Copper — Kupferbergbau"},
+    "NXE":  {"name": "NexGen Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "NexGen Energy — Uran-Exploration"},
+    "EQT":  {"name": "EQT Corp", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "EQT Corporation — Erdgasförderung"},
+    "NVT":  {"name": "nVent Electric", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "nVent Electric — Elektro-Schutz & Verbindungstechnik"},
+    "POWL": {"name": "Powell Industries", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Powell Industries — Elektro-Schaltanlagen"},
+    # Uran / Kernkraft
+    "UEC":  {"name": "Uranium Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Uranium Energy Corp. — Uran-Bergbau"},
+    "SMR":  {"name": "NuScale Power", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "NuScale Power — Small Modular Reactors (SMR)"},
+    "OKLO": {"name": "Oklo", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Oklo Inc. — Kernkraft (Mikroreaktoren)"},
+    "CCJ":  {"name": "Cameco", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Cameco Corp. — Uran-Bergbau"},
+    "UUUU": {"name": "Energy Fuels", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Energy Fuels — Uran & Seltene Erden"},
+    "MIR":  {"name": "Mirion Technologies", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Mirion Technologies — Strahlenmess- & Nukleartechnik"},
+    "CW":   {"name": "Curtiss-Wright", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Curtiss-Wright — Industrie- & Nukleartechnik"},
+    "BWXT": {"name": "BWX Technologies", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "BWX Technologies — Nukleartechnik & Reaktorkomponenten"},
+    "LEU":  {"name": "Centrus Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Centrus Energy — Uran-Anreicherung"},
+    # Solar / Erneuerbare
+    "SEDG": {"name": "SolarEdge", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "SolarEdge Technologies — Solar-Wechselrichter"},
+    "ARRY": {"name": "Array Technologies", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Array Technologies — Solar-Tracker"},
+    "ENPH": {"name": "Enphase Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Enphase Energy — Solar-Mikrowechselrichter"},
+    "FSLR": {"name": "First Solar", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "First Solar — Dünnschicht-Solarmodule"},
+    "S92.DE":  {"name": "SMA Solar", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "SMA Solar Technology AG — Solar-Wechselrichter (XETRA)"},
+    "NEL.OL":  {"name": "Nel ASA", "kategorie": "EU-Aktie", "währung": "NOK", "exchange": "Oslo", "beschreibung": "Nel ASA — Wasserstoff & Elektrolyse (Oslo)"},
+    "NDX1.DE": {"name": "Nordex", "kategorie": "EU-Aktie", "währung": "EUR", "exchange": "XETRA", "beschreibung": "Nordex SE — Windturbinen (XETRA)"},
 }
 
 
