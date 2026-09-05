@@ -209,11 +209,17 @@
       var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), pad=Math.max(1,(hi-lo)*0.08);
       return {min:Math.floor(lo-pad), max:Math.ceil(hi+pad)};
     }
-    var pf=function(v){return (v>0?'+':'')+v.toFixed(0)+'%'};
+    var pf=function(v){return (v>0?'+':'')+v.toFixed(2)+'%'};
+    // yaxis-Config zentral, damit sie bei Render UND Overlay-updateOptions erhalten bleibt
+    function yaxisCfg(r){
+      return {min:r.min, max:r.max, forceNiceScale:true, tickAmount:6,
+              labels:{style:{colors:MUT},formatter:pf},
+              title:{text:'Kursänderung ggü. Vortag der Ankündigung',style:{color:MUT,fontSize:'11px',fontWeight:400}}};
+    }
 
     function renderChart(d){
       var effOff = Math.round(d.avg_effective_offset||10);
-      var r=yRange(baseSeries(d)), yMin=r.min, yMax=r.max;
+      var r=yRange(baseSeries(d));
       var opts={
         chart:{type:'rangeArea',height:360,background:'transparent',fontFamily:'DM Sans',
                toolbar:{show:false},animations:{enabled:true,speed:400},zoom:{enabled:false}},
@@ -227,9 +233,7 @@
                title:{text:'Handelstage relativ zur Ankündigung',style:{color:MUT,fontSize:'11px',fontWeight:400}},
                labels:{style:{colors:MUT},formatter:function(v){return (v>0?'+':'')+Math.round(v)}},
                axisBorder:{color:'rgba(255,255,255,.08)'},axisTicks:{color:'rgba(255,255,255,.08)'}},
-        yaxis:{min:yMin,max:yMax,forceNiceScale:true,tickAmount:6,
-               labels:{style:{colors:MUT},formatter:pf},
-               title:{text:'Kursänderung ggü. Vortag der Ankündigung',style:{color:MUT,fontSize:'11px',fontWeight:400}}},
+        yaxis:yaxisCfg(r),
         grid:{borderColor:'rgba(255,255,255,.06)',strokeDashArray:3},
         tooltip:{theme:'dark',shared:true,intersect:false,
                  x:{formatter:function(v){return 'Offset '+(v>0?'+':'')+Math.round(v)+' HT'}},
@@ -263,8 +267,8 @@
         s.push({name:ev.ticker, type:'line',
                 data: off.map(function(o,i){return {x:o, y:(ev.path[i]!=null?ev.path[i]-100:null)}})});
       }
-      var r=yRange(s);   // Achse neu skalieren, damit das Event nicht abgeschnitten wird
-      chart.updateOptions({series:s, yaxis:{min:r.min, max:r.max}}, false, true);
+      var r=yRange(s);   // Achse neu skalieren (+ Formatter erhalten), Event nicht abgeschnitten
+      chart.updateOptions({series:s, yaxis:yaxisCfg(r)}, false, true);
     }
 
     function renderTable(d){
