@@ -31,7 +31,7 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _MD = "https://api.marketdata.app/v1/options/chain/{sym}/?dte=30&delta=.25&token={tok}"
-_DEFAULT_TICKERS = ["AAPL"]   # Sandbox-Limit; mit Live-Token: SPY QQQ NVDA … ergänzen
+_DEFAULT_TICKERS = ["SPY","QQQ","IWM","AAPL","MSFT","NVDA","GOOGL","AMZN","META","TSLA","AVGO","LLY","JPM","V","WMT","XOM","UNH","MA","HD","COST","ORCL","NFLX","AMD","CRM","BAC","KO","PEP","ADBE"]   # SPY/QQQ/IWM + Top-Aktien (Live-Token)
 
 
 def _index_series(sym: str, days: int = 504) -> dict:
