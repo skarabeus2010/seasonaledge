@@ -223,7 +223,7 @@
     function _metricLbl(){ return SKEW_MODE==='pctl'?'IV-Pctl':'IV-Rank'; }
     function _btn(v,txt,on){return '<button data-v="'+v+'" style="cursor:pointer;font:600 .88rem/1 DM Sans;padding:.32rem .6rem;border-radius:6px;'+
       'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';color:'+(on?ACC:MUT)+'">'+txt+'</button>';}
-    function refreshRankViews(){ renderSkewQuad(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
+    function refreshRankViews(){ renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
     function buildSkewWinBtns(){
       var box=document.getElementById('sk-win'); if(box){
         box.innerHTML=SKEW_WINS.map(function(w){return _btn(w.d,w.lbl,w.d===SKEW_WIN);}).join('');
@@ -277,10 +277,14 @@
       var QL=[
         [50,96,'Expensive',20,800,'rgba(255,255,255,.32)'],[50,4,'Cheap',20,800,'rgba(255,255,255,.32)'],
         [7,50,'Bullish',20,800,'rgba(48,232,120,.5)'],[93,50,'Bearish',20,800,'rgba(255,77,94,.5)'],
-        [25,74,'Expensive Volatility',12,600,'rgba(255,255,255,.34)'],[25,67,'Upside Potential',12,600,'rgba(255,255,255,.34)'],[25,59,'Sell Put Spread',13,800,'rgba(48,232,120,.6)'],
-        [75,74,'Expensive Volatility',12,600,'rgba(255,255,255,.34)'],[75,67,'Downside Potential',12,600,'rgba(255,255,255,.34)'],[75,59,'Sell Call Spread',13,800,'rgba(255,77,94,.6)'],
-        [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.34)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.34)'],[25,18,'Buy Call Spread',13,800,'rgba(48,232,120,.6)'],
-        [75,33,'Cheap Volatility',12,600,'rgba(255,255,255,.34)'],[75,26,'Downside Potential',12,600,'rgba(255,255,255,.34)'],[75,18,'Buy Put Spread',13,800,'rgba(255,77,94,.6)']
+        // Spread-Strategien in den oberen Ecken: links = bullish, rechts = bearish
+        [18,94,'Sell Put Spread',12,800,'rgba(48,232,120,.62)'],[18,88,'Buy Call Spread',12,800,'rgba(48,232,120,.62)'],
+        [82,94,'Buy Put Spread',12,800,'rgba(255,77,94,.62)'],[82,88,'Sell Call Spread',12,800,'rgba(255,77,94,.62)'],
+        // Kosten/Richtung je Quadrant (Kontext)
+        [25,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[25,63,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
+        [75,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[75,63,'Downside Potential',12,600,'rgba(255,255,255,.30)'],
+        [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
+        [75,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[75,26,'Downside Potential',12,600,'rgba(255,255,255,.30)']
       ];
       var qopts=Object.assign(baseChart(470,'scatter'),{
         series:series,
@@ -447,7 +451,11 @@
     }
 
     // ── Vol-Trigger (Zero-Gamma-Flip) aus gex_summary.json ──────────────────
+    var VT_DATA=null;
+    function _divbg(v,maxabs){ if(v==null||!(maxabs>0))return ''; var a=(Math.min(Math.abs(v)/maxabs,1)*0.34).toFixed(2);
+      return 'background:rgba('+(v>=0?'48,232,120':'255,77,94')+','+a+')'; }
     function renderVolTrigger(d){
+      if(d)VT_DATA=d; d=VT_DATA;
       var body=document.getElementById('sk-vt-body'); if(!body)return;
       var ts=(d&&d.tickers)||[];
       if(!ts.length){body.innerHTML='<div class="psub">'+T('skew.vt_wait','Vol-Trigger folgt (GEX-Cron 22:15 UTC).')+'</div>';return;}
@@ -455,23 +463,26 @@
       if(head&&gi.vol_regime!=null){var v=gi.value_usd_bn_per_pct, up=v>0;
         head.innerHTML=T('skew.vt_giname','Markt-Gamma-Index')+': <b style="color:'+(up?'#30e878':'#ff4d5e')+'">'+(v>0?'+':'')+(v!=null?(+v).toFixed(2):'—')+' Mrd $/1%</b> &mdash; '+gi.vol_regime+' &middot; '+T('skew.vt_asof','Stand')+' '+(d.date||'');}
       var rows=ts.map(function(o){var dist=(o.zero_gamma&&o.spot)?((o.spot-o.zero_gamma)/o.zero_gamma*100):null; return {o:o,dist:dist};})
-                 .filter(function(r){return r.dist!=null;})
+                 .filter(function(r){return r.dist!=null && _inCat(r.o.ticker);})    // Kategorie-Filter wie Radar
                  .sort(function(a,b){return Math.abs(a.dist)-Math.abs(b.dist);});
+      if(!rows.length){body.innerHTML='<div class="psub" style="color:var(--muted);font-weight:400">'+T('skew.vt_nocat','Für diese Kategorie liegen keine GEX-Daten vor (nur Kern-Ticker: Indizes + Mag7).')+'</div>';return;}
+      var maxabs=Math.max.apply(null,rows.map(function(r){return Math.abs(r.dist);}));
       var h='<table class="sk-tbl"><tr><th>Ticker</th><th style="text-align:right">Spot</th><th style="text-align:right">Vol-Trigger</th>'+
         '<th style="text-align:right">'+T('skew.vt_dist','Abstand')+'</th><th>Regime</th>'+
         '<th style="text-align:right">Call-Wall</th><th style="text-align:right">Put-Wall</th></tr>';
       rows.forEach(function(r){var o=r.o, longG=o.regime==='long_gamma', flip=Math.abs(r.dist)<0.5;
         var badge='<span class="sk-badge '+(longG?'up':'dn')+'" style="font-size:.78rem;padding:.15rem .45rem">'+(longG?'long Gamma':'short Gamma')+'</span>';
-        h+='<tr'+(flip?' style="background:rgba(232,168,32,.10)"':'')+'>'+
+        h+='<tr data-tk="'+o.ticker+'"'+(flip?' style="background:rgba(232,168,32,.10)"':'')+'>'+
           '<td style="padding:6px 9px;font-family:monospace;font-weight:700;color:'+ACC+'">'+o.ticker+(flip?' <span style="color:'+ACC+';font-size:.72rem">&#9679; '+T('skew.vt_atflip','am Flip')+'</span>':'')+'</td>'+
           '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+(o.spot!=null?(+o.spot).toFixed(2):'—')+'</td>'+
           '<td style="padding:6px 9px;text-align:right;font-weight:700">'+(o.zero_gamma!=null?(+o.zero_gamma).toFixed(2):'—')+'</td>'+
-          '<td style="padding:6px 9px;text-align:right;font-weight:700;color:'+(r.dist>=0?'#30e878':'#ff4d5e')+'">'+(r.dist>0?'+':'')+r.dist.toFixed(2)+'%</td>'+
+          '<td style="padding:6px 9px;text-align:right;font-weight:700;color:#efe9d8;'+_divbg(r.dist,maxabs)+'">'+(r.dist>0?'+':'')+r.dist.toFixed(2)+'%</td>'+
           '<td style="padding:6px 9px">'+badge+'</td>'+
           '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+(o.call_wall!=null?(+o.call_wall).toFixed(0):'—')+'</td>'+
           '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+(o.put_wall!=null?(+o.put_wall).toFixed(0):'—')+'</td></tr>';
       });
       body.innerHTML=h+'</table>';
+      body.querySelectorAll('tr[data-tk]').forEach(function(rw){rw.onclick=function(){selectTicker(rw.getAttribute('data-tk'));};});
     }
 
     // ── KPIs + Panels + Markt-Chart ─────────────────────────────────────────
