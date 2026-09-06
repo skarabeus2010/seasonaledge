@@ -352,6 +352,28 @@ def _compute_stockholm_holidays(year: int) -> list[date]:
     })
 
 
+def _compute_oslo_holidays(year: int) -> list[date]:
+    """Oslo Børs (Euronext-Oslo) handelsfreie Tage — Norwegen-Kalender, KEIN
+    Observed-Shift (feste Daten). Weicht vom Stockholm-Proxy an mehreren Tagen ab:
+    Oslo schließt **Skjærtorsdag (Gründonnerstag)** + **2. pinsedag (Pfingstmontag)**
+    (Stockholm handelt beide), Oslo HANDELT dagegen am 6.1., 6.6. und Midsommar
+    (Stockholm zu). Grunnlovsdag 17.5. ist Oslo-spezifisch."""
+    return sorted({
+        date(year, 1, 1),                       # Første nyttårsdag
+        _good_friday(year) - timedelta(days=1), # Skjærtorsdag (Maundy Thursday)
+        _good_friday(year),                     # Langfredag
+        _easter_monday(year),                   # Andre påskedag
+        date(year, 5, 1),                       # Arbeidernes dag
+        date(year, 5, 17),                      # Grunnlovsdag (Nationalfeiertag)
+        _ascension_day(year),                   # Kristi himmelfartsdag
+        _whit_monday(year),                     # Andre pinsedag (Pfingstmontag)
+        date(year, 12, 24),                     # Julaften (Oslo Børs geschlossen)
+        date(year, 12, 25),                     # Første juledag
+        date(year, 12, 26),                     # Andre juledag
+        date(year, 12, 31),                     # Nyttårsaften (Oslo Børs geschlossen)
+    })
+
+
 # ── HKEX (Hongkong) + KRX (Korea) ──────────────────────────────────────────────
 # Mondkalender-Feiertage (Lunar New Year, Buddha's Birthday, Mid-Autumn, Chuseok,
 # Seollag …) + unregelmäßige Schließungen (Taifune, Wahltage) sind NICHT regel-
@@ -422,6 +444,7 @@ _EXCHANGE_FUNCTIONS = {
     "SIX":       _compute_six_holidays,         # Schweiz — eigener Kalender (Christi Himmelfahrt!)
     "MILAN":     _compute_milan_holidays,       # Borsa Italiana — Euronext + Ferragosto/24./31.12.
     "STOCKHOLM": _compute_stockholm_holidays,   # Schweden — eigener Kalender
+    "OSLO":      _compute_oslo_holidays,        # Norwegen — eigener Kalender (Skjærtorsdag/Pfingstmontag!)
     "HKEX":      _compute_hkex_holidays,        # Hongkong — Mondkalender-Tabelle
     "KRX":       _compute_krx_holidays,         # Korea — Mondkalender-Tabelle
     "FOREX":     lambda year: [],               # Keine Feiertage (Mo-Fr 24h)

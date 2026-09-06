@@ -42,7 +42,7 @@ EXCHANGE_TO_HOLIDAY = {
     "HKEX":              "HK",   # Hongkong — eigener Mondkalender (Tabelle)
     "KRX":               "KR",   # Korea — eigener Mondkalender (Tabelle)
     "Kopenhagen":        "SE",   # Nordeuropa ~ Stockholm-Kalender
-    "Oslo":              "SE",
+    "Oslo":              "NO",   # Oslo Børs — eigener Norwegen-Kalender (Skjærtorsdag/Pfingstmontag ≠ Stockholm)
     "Stockholm":         "SE",   # eigener Nordic-Kalender (Christi Himmelfahrt!)
     "Forex":             "NONE", # 24/5, keine Feiertage
     "Crypto":            "NONE", # 24/7, keine Feiertage
@@ -60,6 +60,7 @@ HOLIDAY_TO_EXCHANGE = {
     "KR": "KRX",       # Korea — Mondkalender-Tabelle
     "CH": "SIX",       # Schweiz — eigener Kalender mit Christi Himmelfahrt + Bundesfeier 1.8.
     "SE": "STOCKHOLM", # Schweden/Skandinavien — Nasdaq-Stockholm-Kalender
+    "NO": "OSLO",      # Norwegen — Oslo Børs (eigener Kalender, ≠ Stockholm)
     "FOREX": "FOREX",  # Devisen — Mo-Fr, keine Feiertage (is_trading_day-Sonderfall)
     "CRYPTO": "CRYPTO",# Krypto — 24/7, is_trading_day immer True (Sa/So inklusive)
     "NONE": "NYSE",    # Fallback (wird nie Feiertag-Check brauchen)
