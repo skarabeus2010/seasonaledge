@@ -131,7 +131,7 @@
 
     <!-- Skew-Kurve: IV × Delta (30d + Front-Expiry) -->
     <div class="card" style="margin-top:1.1rem">
-      <div class="psub" id="sk-curve-title" data-i18n="skew.curve_hint">Skew-Kurve (IV × Delta) &mdash; Ticker anklicken</div>
+      <div class="psub" id="sk-curve-title" data-i18n-html="skew.curve_hint"><b>Volatility Smile</b> (IV × Delta) &mdash; Ticker in Tabelle/Radar anklicken</div>
       <div id="sk-curve-chart" style="min-height:300px"></div>
     </div>
 
@@ -353,7 +353,7 @@
       var el=document.getElementById('sk-curve-chart'), ttl=document.getElementById('sk-curve-title'); if(!el)return;
       var t=_curTicker(tk), sc=t&&t.skew_curve;
       if(!sc||!sc.iv30){if(ttl)ttl.innerHTML=T('skew.curve_none','Keine Skew-Kurve für ')+tk+'.';el.innerHTML='';return;}
-      if(ttl)ttl.innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; '+T('skew.curve_label','Skew-Kurve: IV je Delta (OTM-Puts links → OTM-Calls rechts)');
+      if(ttl)ttl.innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; '+T('skew.curve_label','Volatility Smile: IV je Delta (OTM-Puts links → ATM → OTM-Calls rechts) · 30d + Front-Expiry');
       var pct=function(a){return (a||[]).map(function(v){return v!=null?+(v*100).toFixed(2):null;});};
       var series=[{name:sc.dte30+'d',data:pct(sc.iv30)}];
       if(sc.iv_ne) series.push({name:T('skew.curve_ne','Front')+' ('+sc.dte_ne+'d)',data:pct(sc.iv_ne)});
