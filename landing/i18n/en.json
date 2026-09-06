@@ -1459,6 +1459,7 @@
   "skew.rank_window": "Rank window:",
   "skew.table_sub": "Vol metrics per ticker (window/method as above) &middot; click a row &rarr; history &amp; term structure",
   "skew.mode": "Method:",
+  "skew.category": "Category:",
   "skew.term_hint": "IV term structure &mdash; ATM IV per expiry",
   "skew.term_none": "No term structure for ",
   "skew.term_label": "IV term structure (ATM IV per expiry)",
