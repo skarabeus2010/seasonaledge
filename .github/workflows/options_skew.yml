@@ -20,4 +20,6 @@ jobs:
           script: |
             echo "[options-skew] start $(date)"
             docker exec seasonalpha-app python3 scripts/compute_options_skew.py 2>&1 | tail -20
+            echo "[iv-surface] start $(date)"
+            docker exec seasonalpha-app python3 scripts/compute_iv_surface.py 2>&1 | tail -15
             echo "[options-skew] done $(date)"
