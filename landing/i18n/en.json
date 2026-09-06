@@ -1483,6 +1483,7 @@
   "skew.vt_asof": "as of",
   "skew.vt_dist": "Distance",
   "skew.vt_atflip": "at flip",
+  "skew.vt_nocat": "No GEX data for this category (core tickers only: indices + Mag7).",
   "skew.market_h": "Market context: CBOE SKEW & VIX",
   "skew.market_sub": "The <b>CBOE SKEW Index</b> measures how expensively the broad market prices tail risk in OTM S&amp;P puts (higher = more crash hedging), the <b>VIX</b> the expected 30-day move.",
   "skew.market_chart_sub": "CBOE SKEW Index (2 years) &middot; VIX for comparison (right axis)",
