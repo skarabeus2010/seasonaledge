@@ -233,6 +233,10 @@ SA.i18n = (function() {
       title: 'Spot-Vol Beta — SPX vs VIX Regression | SeasonAlpha',
       desc:  'Rolling OLS regression between spot returns and implied volatility changes. Measures how strongly volatility reacts to price movements per ticker.'
     },
+    '/skew': {
+      title: 'Options Skew & Vol Quadrant — 25Δ Put/Call IV per Ticker | SeasonAlpha',
+      desc:  '25-delta put vs. call implied volatility per ticker plus a Vol Quadrant of IV Rank and Risk-Reversal Rank relative to each ticker’s own history. CBOE SKEW/VIX/VVIX, free and daily. Backward-looking context, not a signal.'
+    },
     '/opex': {
       title: 'OPEX Analysis — Triple Witching & Monthly Expiry | SeasonAlpha',
       desc:  'Seasonal patterns around monthly options expiration (3rd Friday) and Triple Witching (Mar/Jun/Sep/Dec). Event-window, volatility and historical OPEX calendar.'
