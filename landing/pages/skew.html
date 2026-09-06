@@ -399,32 +399,46 @@
         tooltip:{theme:'dark',style:{fontSize:'13px'},x:{show:false},y:{formatter:function(v){return (v>0?'+':'')+v.toFixed(2)+' pts'},title:{formatter:function(){return '';}}}}
       }));
     }
-    // Metrik-Tabelle je Ticker (IV-Rank/Pctl abhängig von Fenster/Methode)
+    // Heatmap-Farbe je Spalte (grün→amber→rot, relativ zu Spalten-Min/Max)
+    function _seqbg(v,lo,hi){
+      if(v==null||!(hi>lo))return '';
+      var t=(v-lo)/(hi-lo); if(t<0)t=0; if(t>1)t=1; var c;
+      if(t<0.5){var u=t/0.5;c=[48+184*u,232-64*u,120-88*u];}
+      else{var u=(t-0.5)/0.5;c=[232+23*u,168-91*u,32+62*u];}
+      return 'background:rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+',.28)';
+    }
+    // Metrik-Tabelle je Ticker als Heatmap (IV-Rank/Pctl abhängig von Fenster/Methode)
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
       var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;});
       if(!rows.length){panelFail('sk-table',T('skew.table_wait','Skew-Tabelle folgt (Daily-Cron).'));return;}
-      function num(v,dp,suf,col){return '<td style="padding:6px 9px;text-align:right'+(col?';color:'+col+';font-weight:700':';color:var(--dim)')+'">'+(v==null?'—':((v>0&&suf==='pts'?'+':'')+v.toFixed(dp||0)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
+      var ivm={}; rows.forEach(function(t){ivm[t.ticker]=_ivMetric(t.ticker);});
+      // Spalten-Extrema für die Heatmap
+      function ext(fn){var vs=rows.map(fn).filter(function(v){return v!=null&&v===v;});return vs.length?{lo:Math.min.apply(null,vs),hi:Math.max.apply(null,vs)}:{lo:0,hi:1};}
+      var E={iv:ext(function(t){return t.iv_atm!=null?t.iv_atm*100:null;}),rk:ext(function(t){return ivm[t.ticker];}),
+             sk:ext(function(t){return t.skew_pts;}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
+             bf:ext(function(t){return t.bfly_pts;}),pc:ext(function(t){return t.pc_ratio;}),vr:ext(function(t){return t.vrp_pts;}),em:ext(function(t){return t.em_pct;})};
+      function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
+        return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
+          (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
       var h='<table class="sk-tbl"><tr>'+
         '<th>Ticker</th><th style="text-align:right">IV</th><th style="text-align:right">'+_metricLbl()+'</th>'+
         '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right">NE-Skew</th><th style="text-align:right">Skew-Term</th>'+
         '<th style="text-align:right">Butterfly</th><th style="text-align:right">P/C</th>'+
         '<th style="text-align:right">VRP</th><th style="text-align:right">Exp.Move</th><th style="text-align:right">Term</th></tr>';
       rows.forEach(function(t){
-        var sc=t.skew_pts>=0?'#30e878':'#ff4d5e', vc=(t.vrp_pts==null)?null:(t.vrp_pts>=0?'#30e878':'#ff4d5e');
-        var ivm=_ivMetric(t.ticker);
         var termB=t.contango===true?'<span class="sk-badge up" style="font-size:.74rem;padding:.1rem .4rem">Contango</span>':(t.contango===false?'<span class="sk-badge dn" style="font-size:.74rem;padding:.1rem .4rem">Backw.</span>':'—');
         h+='<tr data-tk="'+t.ticker+'">'+
           '<td style="padding:6px 9px;font-family:monospace;font-weight:700;color:'+ACC+'">'+t.ticker+'</td>'+
-          num(t.iv_atm!=null?t.iv_atm*100:null,1,'%')+
-          num(ivm,0,'%')+
-          num(t.skew_pts,2,'pts',sc)+
-          num(t.skew_ne_pts,2,'pts')+
-          num(t.skew_term_pts,2,'pts')+
-          num(t.bfly_pts,2,'pts')+
-          num(t.pc_ratio,2,'')+
-          num(t.vrp_pts,1,'pts',vc)+
-          '<td style="padding:6px 9px;text-align:right;color:var(--muted)">'+(t.em_pct!=null?'±'+t.em_pct.toFixed(1)+'%':'—')+'</td>'+
+          hc(t.iv_atm!=null?t.iv_atm*100:null,1,'%',E.iv)+
+          hc(ivm[t.ticker],0,'%',E.rk)+
+          hc(t.skew_pts,2,'pts',E.sk)+
+          hc(t.skew_ne_pts,2,'pts',E.ne)+
+          hc(t.skew_term_pts,2,'pts',E.st)+
+          hc(t.bfly_pts,2,'pts',E.bf)+
+          hc(t.pc_ratio,2,'',E.pc)+
+          hc(t.vrp_pts,1,'pts',E.vr)+
+          hc(t.em_pct,1,'%',E.em)+
           '<td style="padding:6px 9px;text-align:right">'+termB+'</td></tr>';
       });
       tbl.innerHTML=h+'</table>';
