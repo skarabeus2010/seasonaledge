@@ -4,9 +4,9 @@ compute_options_skew.py — Options-Skew, IV-Term-Structure & Vol-Metriken, dail
 
 Ebenen:
   1) Markt-Gauges (gratis, kein Key): ^SKEW, ^VIX, ^VVIX via yahoo_downloader.
-  2) Per-Ticker via marketdata.app (ein Token):
+  2) Per-Ticker via Massive/Polygon Option-Chain-Snapshot (flatrate, EIN Fetch/Ticker):
      - 25Δ-Skew (Put-IV − Call-IV) bei 30d UND 90d  → Skew + Skew-Term-Structure
-     - ATM-IV-Term-Structure (delta=.5) über mehrere Laufzeiten (Contango/Backwardation)
+     - ATM-IV-Term-Structure über mehrere Laufzeiten (Contango/Backwardation)
      - VRP = ATM-IV(30d) − realisierte Vola (aus unseren Kursen)
      - 25Δ-Butterfly = (Put25+Call25)/2 − ATM  (Smile-Krümmung)
      - Put/Call-IV-Ratio
@@ -56,10 +56,23 @@ def _get(url: str, key: str, tries: int = 5):
             raise
 
 
-def _chain(sym: str, key: str) -> list:
-    """Volle Option-Chain (≤190d) als Kontraktliste (paginiert)."""
+def _spot(sym: str, key: str):
+    """EOD-Vortagsschluss als Spot-Proxy (Underlying im Snapshot ist oft leer)."""
+    try:
+        d = _get(f"https://api.polygon.io/v2/aggs/ticker/{sym}/prev", key)
+        r = d.get("results") or []
+        return round(float(r[0]["c"]), 2) if r else None
+    except Exception:
+        return None
+
+
+def _chain(sym: str, key: str, spot=None) -> list:
+    """Option-Chain (≤190d) als Kontraktliste (paginiert). Bei bekanntem Spot auf
+    ±30 % Moneyness gefiltert — spart viele Seiten (25Δ+ATM liegen near-the-money)."""
     hi = (date.today() + timedelta(days=_MAXDTE)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
+    if spot:
+        url += f"&strike_price.gte={round(spot * 0.7, 2)}&strike_price.lte={round(spot * 1.3, 2)}"
     out, pages = [], 0
     while url and pages < 45:
         d = _get(url, key)
@@ -154,8 +167,9 @@ def _atm_iv(e: dict):
 
 def _enrich(sym: str, key: str) -> dict | None:
     """Voll-Metrik-Objekt aus EINEM Massive-Chain-Snapshot."""
+    spot = _spot(sym, key)
     try:
-        contracts = _chain(sym, key)
+        contracts = _chain(sym, key, spot)
     except Exception as e:
         print(f"  [massive] {sym}: {str(e)[:80]}")
         return None
@@ -178,11 +192,11 @@ def _enrich(sym: str, key: str) -> dict | None:
     iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"] if term else None
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
     rv20, rv30 = _realized_vol(sym)
-    spot = None
-    for c in contracts:
-        p = (c.get("underlying_asset") or {}).get("price")
-        if p:
-            spot = round(float(p), 2); break
+    if not spot:                                    # Fallback: Underlying aus dem Snapshot
+        for c in contracts:
+            p = (c.get("underlying_asset") or {}).get("price")
+            if p:
+                spot = round(float(p), 2); break
     r = {
         "ticker": sym, "cats": categories_for(sym), "underlying": spot, "dte": s30["dte"],
         "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
@@ -243,7 +257,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 per.append(r)
                 ct = "contango" if r.get("contango") else ("backwardation" if r.get("contango") is False else "?")
                 print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {(r['iv_atm'] or 0)*100:.1f}% · "
-                      f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}")
+                      f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}", flush=True)
 
     out = {
         "generated": date.today().isoformat(),
