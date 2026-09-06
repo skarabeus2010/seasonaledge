@@ -129,6 +129,12 @@
       </div>
     </div>
 
+    <!-- Skew-Kurve: IV × Delta (30d + Front-Expiry) -->
+    <div class="card" style="margin-top:1.1rem">
+      <div class="psub" id="sk-curve-title" data-i18n="skew.curve_hint">Skew-Kurve (IV × Delta) &mdash; Ticker anklicken</div>
+      <div id="sk-curve-chart" style="min-height:300px"></div>
+    </div>
+
     <!-- VRP: implizite vs. realisierte Vola je Ticker -->
     <div class="card" style="margin-top:1.1rem">
       <div class="psub" data-i18n-html="skew.vrp_sub"><b>Volatility Risk Premium</b> &mdash; ATM-IV &minus; realisierte 30-Tage-Vola &middot; <span style="color:#30e878">positiv = Optionen teuer</span> (Prämie fürs Verkaufen), <span style="color:#ff4d5e">negativ = Optionen billig</span> ggü. tatsächlicher Bewegung</div>
@@ -314,6 +320,7 @@
       document.querySelectorAll('#sk-table tr[data-tk]').forEach(function(r){r.classList.toggle('sel',r.getAttribute('data-tk')===tk);});
       renderSkewHist(tk);
       renderTermStructure(tk);
+      renderSkewCurve(tk);
     }
     function _curTicker(tk){ if(!SKEW_CUR)return null; for(var i=0;i<SKEW_CUR.length;i++) if(SKEW_CUR[i].ticker===tk)return SKEW_CUR[i]; return null; }
     // IV-Rank/Percentile eines Tickers im aktuellen Fenster (aus 25Δ-Mittel-Historie)
@@ -335,6 +342,24 @@
         yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return (v>0?'+':'')+v.toFixed(1)}},title:{text:T('skew.hist_yaxis','Skew (Vol-Punkte)'),style:{color:MUT,fontSize:'13px'}}},
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,label:{text:'0',style:{background:'transparent',color:MUT,fontSize:'11px'}}}]},
         tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},style:{fontSize:'13px'},y:{formatter:function(v){return (v>0?'+':'')+v.toFixed(2)+' pts'}}}
+      }));
+    }
+    // Skew-Kurve: IV je Delta (OTM-Puts → ATM → OTM-Calls), 30d + Front-Expiry
+    function renderSkewCurve(tk){
+      var el=document.getElementById('sk-curve-chart'), ttl=document.getElementById('sk-curve-title'); if(!el)return;
+      var t=_curTicker(tk), sc=t&&t.skew_curve;
+      if(!sc||!sc.iv30){if(ttl)ttl.innerHTML=T('skew.curve_none','Keine Skew-Kurve für ')+tk+'.';el.innerHTML='';return;}
+      if(ttl)ttl.innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; '+T('skew.curve_label','Skew-Kurve: IV je Delta (OTM-Puts links → OTM-Calls rechts)');
+      var pct=function(a){return (a||[]).map(function(v){return v!=null?+(v*100).toFixed(2):null;});};
+      var series=[{name:sc.dte30+'d',data:pct(sc.iv30)}];
+      if(sc.iv_ne) series.push({name:T('skew.curve_ne','Front')+' ('+sc.dte_ne+'d)',data:pct(sc.iv_ne)});
+      renderInto('sk-curve-chart',Object.assign(baseChart(300,'line'),{
+        series:series,colors:[ACC,BLUE],stroke:{width:[2.6,2],curve:'smooth'},markers:{size:4},
+        xaxis:{categories:sc.labels,labels:{style:{colors:MUT,fontSize:'13px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return v.toFixed(0)+'%'}},title:{text:'IV',style:{color:MUT,fontSize:'12px'}}},
+        legend:{show:true,labels:{colors:MUT},position:'top',horizontalAlign:'right',fontSize:'13px'},
+        annotations:{xaxis:[{x:'ATM',borderColor:'rgba(255,255,255,.25)',strokeDashArray:4}]},
+        tooltip:{theme:'dark',style:{fontSize:'13px'},shared:true,y:{formatter:function(v){return v!=null?v.toFixed(1)+'%':'—'}}}
       }));
     }
     // IV-Term-Structure: ATM-IV je Laufzeit + Contango/Backwardation-Badge
@@ -382,7 +407,7 @@
       function num(v,dp,suf,col){return '<td style="padding:6px 9px;text-align:right'+(col?';color:'+col+';font-weight:700':';color:var(--dim)')+'">'+(v==null?'—':((v>0&&suf==='pts'?'+':'')+v.toFixed(dp||0)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
       var h='<table class="sk-tbl"><tr>'+
         '<th>Ticker</th><th style="text-align:right">IV</th><th style="text-align:right">'+_metricLbl()+'</th>'+
-        '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right">Skew-Term</th>'+
+        '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right">NE-Skew</th><th style="text-align:right">Skew-Term</th>'+
         '<th style="text-align:right">Butterfly</th><th style="text-align:right">P/C</th>'+
         '<th style="text-align:right">VRP</th><th style="text-align:right">Exp.Move</th><th style="text-align:right">Term</th></tr>';
       rows.forEach(function(t){
@@ -394,6 +419,7 @@
           num(t.iv_atm!=null?t.iv_atm*100:null,1,'%')+
           num(ivm,0,'%')+
           num(t.skew_pts,2,'pts',sc)+
+          num(t.skew_ne_pts,2,'pts')+
           num(t.skew_term_pts,2,'pts')+
           num(t.bfly_pts,2,'pts')+
           num(t.pc_ratio,2,'')+
