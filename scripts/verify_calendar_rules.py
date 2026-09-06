@@ -38,11 +38,14 @@ from shared.fed_dates import FOMC_MEETING_DATES
 
 # Vom Holiday-System unterstützte Börsen-Codes (is_trading_day kennt sie):
 SUPPORTED = {"NYSE", "NASDAQ", "XETRA", "EURONEXT", "MILAN", "LSE",
-             "SIX", "STOCKHOLM", "TSE", "HKEX", "KRX", "FOREX", "CRYPTO"}
+             "SIX", "STOCKHOLM", "OSLO", "TSE", "HKEX", "KRX", "FOREX", "CRYPTO"}
 
 # Gap-Audit-Ausnahmen (nur noch Forex — Yahoo-Datenqualität):
 GAP_EXEMPT = lambda t: t.upper().endswith("=X")
-GAP_RESIDUAL_MAX = 10   # Soll nach HKEX/KRX/TSE-Fix: ^STOXX50E:6 + RR.L:1 (advisory)
+# Residual-Toleranz für unvermeidbare Index-/Datenquellen-Phantome. Nach dem
+# Oslo-Kalender-Fix (NEL.OL: 4 echte Oslo-Feiertage, kein Proxy-Bug mehr) sind
+# es nur noch ^STOXX50E:6 (Index-Phantome, Yahoo/Stooq) + RR.L:1 (Einzel-Datengap) = 7.
+GAP_RESIDUAL_MAX = 10
 
 # ── Reporter ──────────────────────────────────────────────────────────────────
 
