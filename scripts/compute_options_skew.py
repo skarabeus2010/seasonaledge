@@ -201,6 +201,14 @@ def _enrich(sym: str, key: str) -> dict | None:
         r["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
     else:
         r["contango"] = None; r["term_slope_pts"] = None
+    # Expected Move (1σ) bis zum ~30d-Verfall: IV·√(T)  (Straddle-impliziert)
+    emd = s30["dte"]
+    if iv_atm and emd:
+        r["em_pct"] = round(iv_atm * math.sqrt(emd / 365.0) * 100, 2)
+        r["em_abs"] = round(spot * iv_atm * math.sqrt(emd / 365.0), 2) if spot else None
+        r["em_dte"] = emd
+    else:
+        r["em_pct"] = r["em_abs"] = r["em_dte"] = None
     return r
 
 
