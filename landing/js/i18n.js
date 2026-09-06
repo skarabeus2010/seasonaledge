@@ -237,6 +237,10 @@ SA.i18n = (function() {
       title: 'Options Skew & Vol Quadrant — 25Δ Put/Call IV per Ticker | SeasonAlpha',
       desc:  '25-delta put vs. call implied volatility per ticker plus a Vol Quadrant of IV Rank and Risk-Reversal Rank relative to each ticker’s own history. CBOE SKEW/VIX/VVIX, free and daily. Backward-looking context, not a signal.'
     },
+    '/options-flow': {
+      title: 'ΔOI Flow & 0DTE — New Options Positioning & Front Expiry per Ticker | SeasonAlpha',
+      desc:  'ΔOI flow: the day-over-day change in open interest per strike shows where fresh positions are built and unwound. Plus 0DTE/short-dated positioning: gamma per strike, pins near spot and front skew from the EOD chain. Backward-looking context, not a signal.'
+    },
     '/key-levels': {
       title: 'Key Levels & Max Pain — Gamma Walls, Vol Trigger & Max Pain per Ticker | SeasonAlpha',
       desc:  'A compact key-levels panel per ticker: spot, Vol Trigger (zero-gamma flip), Call Wall, Put Wall, Max Pain, the largest call/put open-interest strikes and the put/call OI ratio. Full option chain, daily. Backward-looking context, not a signal.'

@@ -44,6 +44,8 @@ landing/data/congress_trades.json
 landing/data/congress_trades_seen.json
 landing/data/options_skew.json
 landing/data/options_skew_history.json
+landing/data/options_flow.json
+landing/data/oi_history/
 landing/data/iv_surface.json
 landing/data/key_levels.json
 
