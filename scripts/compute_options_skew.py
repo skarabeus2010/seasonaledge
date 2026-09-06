@@ -17,10 +17,10 @@ Nutzung:  py -3.14 scripts/compute_options_skew.py [--tickers AAPL SPY QQQ]
 """
 from __future__ import annotations
 import argparse, gc, json, math, os, ssl, sys, time, urllib.error, urllib.request
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
-_THROTTLE = 0.4   # s zwischen marketdata-Requests (Rate-Limit-Schutz)
+_THROTTLE = 0.05  # s zwischen Massive-Seiten (flatrate/unlimited; kleiner Puffer)
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -31,25 +31,64 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
-_MD25 = "https://api.marketdata.app/v1/options/chain/{sym}/?dte={dte}&delta=.25&token={tok}"
-_MDATM = "https://api.marketdata.app/v1/options/chain/{sym}/?dte={dte}&delta=.5&token={tok}"
-_TERM_DTES = (7, 30, 60, 90, 120, 180)
+# Massive.com (Polygon.io) Option-Chain-Snapshot — Flatrate, 1 Ticker = ganze Chain
+# (Greeks/IV/OI je Kontrakt), paginiert. Ersetzt die per-Kontrakt-bepreiste marketdata-API.
+_SNAP = "https://api.polygon.io/v3/snapshot/options/{sym}?expiration_date.lte={hi}&limit=250"
+_MAXDTE = 190                       # nur Laufzeiten ≤190d (deckt Term-Structure + 25Δ ab)
+_TERM_TARGETS = (7, 30, 60, 90, 120, 180)
 _DEFAULT_TICKERS = ["SPY","QQQ","IWM","AAPL","MSFT","NVDA","GOOGL","AMZN","META","TSLA","AVGO","LLY","JPM","V","WMT","XOM","UNH","MA","HD","COST","ORCL","NFLX","AMD","CRM","BAC","KO","PEP","ADBE"]
 
 
-def _get(url: str, tries: int = 5):
-    """GET mit Throttle + 429-Backoff (marketdata rate-limitet Bursts)."""
+def _get(url: str, key: str, tries: int = 5):
+    """GET (Massive: apiKey als Query-Param) mit 429-Backoff."""
+    full = url + ("&" if "?" in url else "?") + "apiKey=" + key
     for i in range(tries):
         time.sleep(_THROTTLE)
         try:
             return json.loads(urllib.request.urlopen(
-                urllib.request.Request(url, headers={"User-Agent": "SeasonAlpha/1.0"}),
-                timeout=25, context=_CTX).read())
+                urllib.request.Request(full, headers={"User-Agent": "SeasonAlpha/1.0"}),
+                timeout=30, context=_CTX).read())
         except urllib.error.HTTPError as e:
             if e.code == 429 and i < tries - 1:
-                time.sleep(2.0 * (i + 1))       # exponentiell zurückstufen
+                time.sleep(2.0 * (i + 1))
                 continue
             raise
+
+
+def _chain(sym: str, key: str) -> list:
+    """Volle Option-Chain (≤190d) als Kontraktliste (paginiert)."""
+    hi = (date.today() + timedelta(days=_MAXDTE)).isoformat()
+    url = _SNAP.format(sym=sym, hi=hi)
+    out, pages = [], 0
+    while url and pages < 45:
+        d = _get(url, key)
+        if d.get("status") not in ("OK", "DELAYED") and not d.get("results"):
+            break
+        out += d.get("results", [])
+        url = d.get("next_url")
+        pages += 1
+    return out
+
+
+def _pick(lst, target):
+    """Kontrakt mit |delta| am nächsten an target (lst = [(delta, iv, strike, oi), …])."""
+    return min(lst, key=lambda x: abs(abs(x[0]) - target)) if lst else None
+
+
+def _byexp(contracts: list) -> dict:
+    """Kontrakte je Verfallstag: {exp: {dte, call:[(δ,iv,K,oi)], put:[…], spot}}."""
+    today = date.today(); by = {}
+    for c in contracts:
+        g = c.get("greeks") or {}; iv = c.get("implied_volatility"); dl = g.get("delta")
+        if iv is None or dl is None:
+            continue
+        det = c.get("details") or {}; ex = det.get("expiration_date"); typ = det.get("contract_type")
+        if not ex or typ not in ("call", "put"):
+            continue
+        dte = (date.fromisoformat(ex) - today).days
+        e = by.setdefault(ex, {"dte": dte, "call": [], "put": []})
+        e[typ].append((float(dl), round(float(iv), 4), det.get("strike_price"), c.get("open_interest")))
+    return by
 
 
 def _index_series(sym: str, days: int = 504) -> dict:
@@ -89,88 +128,83 @@ def _realized_vol(sym: str):
     return rv(20), rv(30)
 
 
-def _ticker_skew(sym: str, tok: str, dte: int = 30) -> dict | None:
-    """25Δ-Put-IV − 25Δ-Call-IV via marketdata.app bei gegebener Laufzeit."""
+def _nearest_exp(by: dict, target_dte: int):
+    return min(by, key=lambda e: abs(by[e]["dte"] - target_dte)) if by else None
+
+
+def _skew_at(by: dict, target_dte: int) -> dict | None:
+    """25Δ-Skew (Put-IV − Call-IV) bei der Expiry nahe target_dte."""
+    ex = _nearest_exp(by, target_dte)
+    if ex is None:
+        return None
+    e = by[ex]; cc = _pick(e["call"], 0.25); pp = _pick(e["put"], 0.25)
+    if not cc or not pp:
+        return None
+    return {"exp": ex, "dte": e["dte"], "call_iv": cc[1], "call_strike": cc[2], "call_delta": round(cc[0], 3),
+            "put_iv": pp[1], "put_strike": pp[2], "put_delta": round(pp[0], 3),
+            "skew_pts": round((pp[1] - cc[1]) * 100, 2)}
+
+
+def _atm_iv(e: dict):
+    """ATM-IV = Mittel der 50Δ-Call/Put-IV einer Expiry."""
+    cc = _pick(e["call"], 0.5); pp = _pick(e["put"], 0.5)
+    return round((cc[1] + pp[1]) / 2, 4) if (cc and pp) else None
+
+
+def _enrich(sym: str, key: str) -> dict | None:
+    """Voll-Metrik-Objekt aus EINEM Massive-Chain-Snapshot."""
     try:
-        d = _get(_MD25.format(sym=sym, dte=dte, tok=tok))
+        contracts = _chain(sym, key)
     except Exception as e:
-        print(f"  [md] {sym} 25Δ@{dte}: HTTP {e}")
+        print(f"  [massive] {sym}: {str(e)[:80]}")
         return None
-    if d.get("s") != "ok":
-        print(f"  [md] {sym} 25Δ@{dte}: {d.get('errmsg', d.get('s'))}")
+    by = _byexp(contracts)
+    s30 = _skew_at(by, 30)
+    if not s30:
+        print(f"  [massive] {sym}: kein 25Δ@30 (n={len(contracts)})")
         return None
-    n = len(d.get("optionSymbol", []))
-    best = {"call": None, "put": None}
-    for i in range(n):
-        side = d["side"][i]; dl = d["delta"][i]; iv = d["iv"][i]
-        if dl is None or iv is None:
+    s90 = _skew_at(by, 90)
+    # Term-Structure: ATM-IV je Ziel-Laufzeit (nächstliegende Expiry, dedupliziert)
+    term, seen = [], set()
+    for tgt in _TERM_TARGETS:
+        ex = _nearest_exp(by, tgt)
+        if ex is None or ex in seen:
             continue
-        cand = {"strike": d["strike"][i], "iv": round(float(iv), 4),
-                "delta": round(float(dl), 3), "dist": abs(abs(float(dl)) - 0.25)}
-        if best[side] is None or cand["dist"] < best[side]["dist"]:
-            best[side] = cand
-    if not best["call"] or not best["put"]:
-        return None
-    skew = round(best["put"]["iv"] - best["call"]["iv"], 4)
-    return {
-        "ticker": sym,
-        "underlying": round(float(d["underlyingPrice"][0]), 2) if d.get("underlyingPrice") else None,
-        "dte": d["dte"][0] if d.get("dte") else None,
-        "call_25d": {k: best["call"][k] for k in ("strike", "iv", "delta")},
-        "put_25d": {k: best["put"][k] for k in ("strike", "iv", "delta")},
-        "skew_25d": skew,
-        "skew_pts": round(skew * 100, 2),
-    }
-
-
-def _term_iv(sym: str, tok: str, dtes=_TERM_DTES) -> dict:
-    """ATM-IV (delta=.5) je Laufzeit → {real_dte: iv-decimal}."""
-    term = {}
-    for dte in dtes:
-        try:
-            d = _get(_MDATM.format(sym=sym, dte=dte, tok=tok))
-        except Exception:
-            continue
-        if d.get("s") != "ok":
-            continue
-        ivs = [d["iv"][i] for i in range(len(d.get("iv", []))) if d["iv"][i]]
-        rd = int(d["dte"][0]) if d.get("dte") else dte
-        if ivs:
-            term[rd] = round(sum(ivs) / len(ivs), 4)
-    return term
-
-
-def _enrich(sym: str, tok: str) -> dict | None:
-    """Voll-Metrik-Objekt für einen Ticker."""
-    r = _ticker_skew(sym, tok, 30)
-    if not r:
-        return None
-    r90 = _ticker_skew(sym, tok, 90)
-    term = _term_iv(sym, tok)
+        atm = _atm_iv(by[ex])
+        if atm:
+            term.append({"dte": by[ex]["dte"], "iv": atm}); seen.add(ex)
+    term.sort(key=lambda t: t["dte"])
+    iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"] if term else None
+    put_iv, call_iv = s30["put_iv"], s30["call_iv"]
     rv20, rv30 = _realized_vol(sym)
-    put_iv = r["put_25d"]["iv"]; call_iv = r["call_25d"]["iv"]
-    iv_atm = None
-    if term:
-        k = min(term, key=lambda kk: abs(kk - 30)); iv_atm = term[k]
-    r["iv_atm"] = iv_atm
-    r["rv20"] = rv20
-    r["rv30"] = rv30
-    r["vrp_pts"] = round((iv_atm - rv30) * 100, 2) if (iv_atm and rv30) else None
-    r["bfly_pts"] = round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None
-    r["pc_ratio"] = round(put_iv / call_iv, 3) if call_iv else None
-    r["skew_back_pts"] = r90["skew_pts"] if r90 else None
-    r["skew_term_pts"] = round(r90["skew_pts"] - r["skew_pts"], 2) if r90 else None
-    r["term"] = [{"dte": k, "iv": term[k]} for k in sorted(term)]
-    if r["term"] and iv_atm:
-        r["contango"] = bool(r["term"][0]["iv"] < iv_atm)
-        r["term_slope_pts"] = round((r["term"][-1]["iv"] - r["term"][0]["iv"]) * 100, 2)
+    spot = None
+    for c in contracts:
+        p = (c.get("underlying_asset") or {}).get("price")
+        if p:
+            spot = round(float(p), 2); break
+    r = {
+        "ticker": sym, "underlying": spot, "dte": s30["dte"],
+        "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
+        "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
+        "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
+        "iv_atm": iv_atm, "rv20": rv20, "rv30": rv30,
+        "vrp_pts": round((iv_atm - rv30) * 100, 2) if (iv_atm and rv30) else None,
+        "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
+        "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
+        "skew_back_pts": s90["skew_pts"] if s90 else None,
+        "skew_term_pts": round(s90["skew_pts"] - s30["skew_pts"], 2) if s90 else None,
+        "term": term,
+    }
+    if term and iv_atm:
+        r["contango"] = bool(term[0]["iv"] < iv_atm)
+        r["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
     else:
         r["contango"] = None; r["term_slope_pts"] = None
     return r
 
 
 def build(tickers: list[str], write: bool = True) -> dict:
-    tok = os.environ.get("MARKETDATA_API_KEY", "")
+    tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
     skew_s = _index_series("^SKEW"); vix_s = _index_series("^VIX"); vvix_s = _index_series("^VVIX")
     indices = {}
     for name, s in [("SKEW", skew_s), ("VIX", vix_s), ("VVIX", vvix_s)]:
@@ -192,7 +226,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
 
     per = []
     if not tok:
-        print("  [md] MARKETDATA_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
+        print("  [massive] MASSIVE_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
     else:
         for t in tickers:
             r = _enrich(t, tok)
@@ -204,7 +238,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
 
     out = {
         "generated": date.today().isoformat(),
-        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + marketdata.app IV (25Δ-Skew, ATM-Term-Structure)",
+        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP)",
         "indices": indices, "correlation": corr, "series": series, "tickers": per,
     }
     if write:
