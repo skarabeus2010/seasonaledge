@@ -8,7 +8,7 @@ category: education
 tags: [options, risk-reversal, iv-rank, iv-percentile, volatility-skew, vol-regime, implied-volatility, options-radar]
 description: "Risk reversal, IV rank and IV percentile made simple: read the SeasonAlpha vol regime radar and tell expensive volatility from cheap."
 ticker: SPY
-status: draft
+status: published
 ---
 
 <!--
