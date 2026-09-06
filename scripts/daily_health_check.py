@@ -286,6 +286,51 @@ def collect_health_data() -> dict:
         })
         downgrade("red")
 
+    # ── Check 4b: Options-Daten (Skew/IV + GEX-Ketten) ────────────────
+    try:
+        import json as _json
+        _dd = pathlib.Path(__file__).resolve().parent.parent / "landing" / "data"
+        sp = _dd / "options_skew.json"
+        if not sp.exists():
+            checks.append({"name": "Options: Skew/IV", "status": "red",
+                           "detail": "options_skew.json fehlt (Cron nie gelaufen?)", "value": "—"})
+            downgrade("red")
+        else:
+            od = _json.loads(sp.read_text(encoding="utf-8"))
+            gen = od.get("generated"); tk = od.get("tickers", [])
+            wterm = sum(1 for t in tk if t.get("term") and t.get("iv_atm"))
+            age = (today_utc - datetime.strptime(gen, "%Y-%m-%d").date()).days if gen else 999
+            if age > 5 or len(tk) < 50:
+                status = "red"; detail = f"{gen} · {len(tk)} Ticker, {wterm} mit Metrik ({age}d alt)"
+            elif age > 3 or len(tk) < 100 or wterm < 100:
+                status = "yellow"; detail = f"{gen} · {len(tk)} Ticker, {wterm} mit voller Metrik"
+            else:
+                status = "green"; detail = f"{gen} · {len(tk)} Ticker, {wterm} mit voller Metrik"
+            checks.append({"name": "Options: Skew/IV", "status": status, "detail": detail, "value": gen or "—"})
+            downgrade(status)
+        gp = _dd / "gex_summary.json"
+        if not gp.exists():
+            checks.append({"name": "Options: GEX-Ketten", "status": "red",
+                           "detail": "gex_summary.json fehlt", "value": "—"})
+            downgrade("red")
+        else:
+            gd = _json.loads(gp.read_text(encoding="utf-8"))
+            gdate = gd.get("date"); gtk = gd.get("tickers", [])
+            wflip = sum(1 for t in gtk if t.get("zero_gamma"))
+            age = (today_utc - datetime.strptime(gdate, "%Y-%m-%d").date()).days if gdate else 999
+            if age > 8 or len(gtk) < 5:
+                status = "red"; detail = f"{gdate} · {len(gtk)} Ticker ({age}d alt)"
+            elif age > 4 or wflip < len(gtk) * 0.6:
+                status = "yellow"; detail = f"{gdate} · {len(gtk)} Ticker, {wflip} mit Zero-Gamma-Flip"
+            else:
+                status = "green"; detail = f"{gdate} · {len(gtk)} Ticker (Flip/Walls)"
+            checks.append({"name": "Options: GEX-Ketten", "status": status, "detail": detail, "value": gdate or "—"})
+            downgrade(status)
+    except Exception as e:
+        checks.append({"name": "Options-Daten", "status": "red",
+                       "detail": f"Fehler: {str(e)[:100]}", "value": "ERR"})
+        downgrade("red")
+
     # ── Check 5: Polymarket Snapshot ──────────────────────────────────
     try:
         resp = (

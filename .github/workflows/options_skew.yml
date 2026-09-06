@@ -8,7 +8,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 55
     steps:
       - name: Options skew run via VPS
         uses: appleboy/ssh-action@v1
@@ -16,7 +16,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 12m
+          command_timeout: 50m
           script: |
             echo "[options-skew] start $(date)"
             docker exec seasonalpha-app python3 scripts/compute_options_skew.py 2>&1 | tail -20

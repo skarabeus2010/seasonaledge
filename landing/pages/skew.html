@@ -102,7 +102,11 @@
     <!-- GRAFIK: Vol-Quadrant -->
     <div class="card">
       <div class="psub" data-i18n-html="skew.quad_sub"><b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
-      <div style="display:flex;align-items:center;gap:.5rem 1.1rem;margin:.55rem 0 .2rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:.5rem;margin:.55rem 0 .35rem;flex-wrap:wrap">
+        <span class="psub" style="margin:0" data-i18n="skew.category">Kategorie:</span>
+        <div id="sk-cat" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem 1.1rem;margin:0 0 .2rem;flex-wrap:wrap">
         <span class="psub" style="margin:0" data-i18n="skew.rank_window">Fenster:</span>
         <div id="sk-win" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
         <span class="psub" style="margin:0" data-i18n="skew.mode">Methode:</span>
@@ -185,10 +189,18 @@
     function renderInto(id,opts){var el=document.getElementById(id);if(!el)return;el.innerHTML='';new ApexCharts(el,opts).render();}
 
     // ── Vol-Regime-Radar + Kennzahlen ───────────────────────────────────────
-    var SKEW_HIST=null, SKEW_CUR=null;
+    var SKEW_HIST=null, SKEW_CUR=null, SKEW_CATMAP={};
     var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365},{lbl:'2J',d:800}];
     var SKEW_WIN=365;                                              // Default: 1 Jahr
     var SKEW_MODE='rank';                                          // 'rank' | 'pctl'
+    var SKEW_CATS=[], SKEW_CAT='Mag7';                            // Kategorie-Filter (Übersicht)
+    function _inCat(tk){ return SKEW_CAT==='Alle' || (SKEW_CATMAP[tk]||[]).indexOf(SKEW_CAT)>=0; }
+    function buildSkewCatBtns(){
+      var box=document.getElementById('sk-cat'); if(!box)return;
+      var cats=['Alle'].concat(SKEW_CATS);
+      box.innerHTML=cats.map(function(c){return _btn('cat:'+c,c,c===SKEW_CAT);}).join('');
+      box.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_CAT=b.getAttribute('data-v').slice(4);buildSkewCatBtns();refreshRankViews();};});
+    }
     // Rank = wo im Min/Max-Bereich; Percentile = Anteil Tage darunter
     function _rank(vals){
       if(vals.length<2)return null;
@@ -205,7 +217,7 @@
     function _metricLbl(){ return SKEW_MODE==='pctl'?'IV-Pctl':'IV-Rank'; }
     function _btn(v,txt,on){return '<button data-v="'+v+'" style="cursor:pointer;font:600 .88rem/1 DM Sans;padding:.32rem .6rem;border-radius:6px;'+
       'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';color:'+(on?ACC:MUT)+'">'+txt+'</button>';}
-    function refreshRankViews(){ renderSkewQuad(); if(SKEW_CUR)renderSkewTable(SKEW_CUR); }
+    function refreshRankViews(){ renderSkewQuad(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
     function buildSkewWinBtns(){
       var box=document.getElementById('sk-win'); if(box){
         box.innerHTML=SKEW_WINS.map(function(w){return _btn(w.d,w.lbl,w.d===SKEW_WIN);}).join('');
@@ -243,6 +255,7 @@
       var pts=[];
       Object.keys(SKEW_HIST).forEach(function(tk){
         if(tk.indexOf('__')===0)return;                            // __CORR o.ä. sind keine Ticker
+        if(!_inCat(tk))return;                                     // Kategorie-Filter
         var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
                  .filter(function(e){return e.date>=cut;});
         if(arr.length<5)return;
@@ -347,7 +360,7 @@
     // VRP: implizite (ATM) minus realisierte 30d-Vola je Ticker
     function renderVRP(tks){
       var el=document.getElementById('sk-vrp-chart'); if(!el)return;
-      var rows=(tks||[]).filter(function(t){return t.vrp_pts!=null;}).slice().sort(function(a,b){return b.vrp_pts-a.vrp_pts;});
+      var rows=(tks||[]).filter(function(t){return t.vrp_pts!=null&&_inCat(t.ticker);}).slice().sort(function(a,b){return b.vrp_pts-a.vrp_pts;});
       if(!rows.length){el.innerHTML='<div class="psub">'+T('skew.vrp_wait','VRP folgt (Daily-Cron).')+'</div>';return;}
       var cats=rows.map(function(t){return t.ticker}), vals=rows.map(function(t){return t.vrp_pts;});
       renderInto('sk-vrp-chart',Object.assign(baseChart(Math.max(340,rows.length*15),'bar'),{
@@ -364,7 +377,7 @@
     // Metrik-Tabelle je Ticker (IV-Rank/Pctl abhängig von Fenster/Methode)
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
-      var rows=(tks||[]).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;});
+      var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;});
       if(!rows.length){panelFail('sk-table',T('skew.table_wait','Skew-Tabelle folgt (Daily-Cron).'));return;}
       function num(v,dp,suf,col){return '<td style="padding:6px 9px;text-align:right'+(col?';color:'+col+';font-weight:700':';color:var(--dim)')+'">'+(v==null?'—':((v>0&&suf==='pts'?'+':'')+v.toFixed(dp||0)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
       var h='<table class="sk-tbl"><tr>'+
@@ -435,7 +448,12 @@
         kpi('Impl. Korr. 3M', c3!=null?c3:'—', '', T('skew.kpi_cor2','hoch = Makro / alles korreliert'));
       var tks=(d.tickers||[]);
       SKEW_CUR=tks;
-      var top=tks.slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
+      SKEW_CATMAP={}; tks.forEach(function(t){SKEW_CATMAP[t.ticker]=t.cats||[];});
+      SKEW_CATS=d.categories||[];
+      if(SKEW_CATS.length && SKEW_CATS.indexOf(SKEW_CAT)<0) SKEW_CAT=SKEW_CATS[0];
+      buildSkewCatBtns();
+      var inCat=tks.filter(function(t){return _inCat(t.ticker);});
+      var top=(inCat.length?inCat:tks).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
       renderVRP(tks);
       renderSkewTable(tks);   // schon ohne Historie sichtbar (IV-Rank füllt sich nach)
       document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure via marketdata.app · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');

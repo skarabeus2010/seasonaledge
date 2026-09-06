@@ -29,6 +29,7 @@ if str(_ROOT) not in sys.path:
 from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
+from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 # Massive.com (Polygon.io) Option-Chain-Snapshot — Flatrate, 1 Ticker = ganze Chain
@@ -36,7 +37,7 @@ _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mo
 _SNAP = "https://api.polygon.io/v3/snapshot/options/{sym}?expiration_date.lte={hi}&limit=250"
 _MAXDTE = 190                       # nur Laufzeiten ≤190d (deckt Term-Structure + 25Δ ab)
 _TERM_TARGETS = (7, 30, 60, 90, 120, 180)
-_DEFAULT_TICKERS = ["SPY","QQQ","IWM","AAPL","MSFT","NVDA","GOOGL","AMZN","META","TSLA","AVGO","LLY","JPM","V","WMT","XOM","UNH","MA","HD","COST","ORCL","NFLX","AMD","CRM","BAC","KO","PEP","ADBE"]
+_DEFAULT_TICKERS = all_option_tickers()   # thematisch gegliedertes US-Options-Universum
 
 
 def _get(url: str, key: str, tries: int = 5):
@@ -183,7 +184,7 @@ def _enrich(sym: str, key: str) -> dict | None:
         if p:
             spot = round(float(p), 2); break
     r = {
-        "ticker": sym, "underlying": spot, "dte": s30["dte"],
+        "ticker": sym, "cats": categories_for(sym), "underlying": spot, "dte": s30["dte"],
         "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
         "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
         "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
@@ -239,7 +240,8 @@ def build(tickers: list[str], write: bool = True) -> dict:
     out = {
         "generated": date.today().isoformat(),
         "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP)",
-        "indices": indices, "correlation": corr, "series": series, "tickers": per,
+        "indices": indices, "correlation": corr, "series": series,
+        "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,
     }
     if write:
         p = _ROOT / "landing/data/options_skew.json"
