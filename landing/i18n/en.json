@@ -1481,5 +1481,10 @@
   "skew.kpi_vvix": "vol of vol",
   "skew.table_wait": "Skew table follows (daily cron).",
   "skew.market_wait": "Market data follows (daily cron).",
-  "skew.source": "Source: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ IV via marketdata.app · BS-reconstructed history. Daily."
+  "skew.source": "Source: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ IV via marketdata.app · BS-reconstructed history. Daily.",
+  "skew.hist_hint": "25Δ skew history &mdash; click a ticker in the table or quadrant",
+  "skew.hist_none": "No history for ",
+  "skew.hist_label": "25Δ skew history (put IV − call IV, vol points)",
+  "skew.points": "points",
+  "skew.hist_yaxis": "Skew (vol points)"
 }
