@@ -89,7 +89,7 @@
 
     <!-- GRAFIK: Vol-Quadrant -->
     <div class="card">
-      <div class="psub" data-i18n-html="skew.quad_sub"><b>Vol-Quadrant</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
+      <div class="psub" data-i18n-html="skew.quad_sub"><b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
       <div style="display:flex;align-items:center;gap:.5rem;margin:.55rem 0 .2rem;flex-wrap:wrap">
         <span class="psub" style="margin:0" data-i18n="skew.rank_window">Rank-Fenster:</span>
         <div id="sk-win" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
@@ -175,6 +175,24 @@
           'color:'+(on?ACC:MUT)+'">'+w.lbl+'</button>';}).join('');
       box.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_WIN=+b.getAttribute('data-d');buildSkewWinBtns();renderSkewQuad();};});
     }
+    // Diagonaler Verlauf grün (u-l, billig+bullish) → rot (o-r, teuer+bearish) hinter die Punkte
+    function paintQuadGrad(ctx){
+      try{
+        var el=(ctx&&ctx.el)||document.getElementById('sk-quad'), inner=el&&el.querySelector('.apexcharts-inner'); if(!inner)return;
+        var g=ctx.w.globals, W=g.gridWidth, H=g.gridHeight, ns='http://www.w3.org/2000/svg';
+        Array.prototype.forEach.call(inner.querySelectorAll('.quad-grad'),function(n){n.parentNode.removeChild(n);});
+        var defs=document.createElementNS(ns,'defs'); defs.setAttribute('class','quad-grad');
+        var lg=document.createElementNS(ns,'linearGradient'); lg.setAttribute('id','skewGrad');
+        lg.setAttribute('x1','0');lg.setAttribute('y1','1');lg.setAttribute('x2','1');lg.setAttribute('y2','0');
+        [['0','rgba(48,232,120,.17)'],['47','rgba(48,232,120,.02)'],['53','rgba(255,77,94,.02)'],['100','rgba(255,77,94,.17)']].forEach(function(s){
+          var st=document.createElementNS(ns,'stop');st.setAttribute('offset',s[0]+'%');st.setAttribute('stop-color',s[1]);lg.appendChild(st);});
+        defs.appendChild(lg);
+        var r=document.createElementNS(ns,'rect');r.setAttribute('class','quad-grad');
+        r.setAttribute('x',0);r.setAttribute('y',0);r.setAttribute('width',W);r.setAttribute('height',H);
+        r.setAttribute('fill','url(#skewGrad)');r.setAttribute('pointer-events','none');
+        inner.insertBefore(r,inner.firstChild); inner.insertBefore(defs,inner.firstChild);
+      }catch(e){}
+    }
     function renderSkewQuad(){
       var el=document.getElementById('sk-quad'); if(!el)return;
       if(!SKEW_HIST){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Historie lädt).')+'</div>';return;}
@@ -193,36 +211,43 @@
         pts.push({x:rrR,y:ivR,tk:tk,ivNow:iv[iv.length-1],skew:arr[arr.length-1].skew_pts});
       });
       if(!pts.length){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Backfill läuft).')+'</div>';return;}
-      function qcol(p){ if(p.y>=50&&p.x<50)return RED; if(p.y>=50&&p.x>=50)return GREEN; return MUT; }
-      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,skew:p.skew,fillColor:qcol(p)};})}];
-      var qopts=Object.assign(baseChart(440,'scatter'),{
+      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,skew:p.skew,fillColor:'#b6a6ff'};})}];
+      // Beschriftung: Rand-Worte (Expensive/Cheap/Bullish/Bearish) + je Feld Cost + Direction + Struktur
+      var QL=[
+        [50,96,'Expensive',20,800,'rgba(255,255,255,.32)'],[50,4,'Cheap',20,800,'rgba(255,255,255,.32)'],
+        [7,50,'Bullish',20,800,'rgba(48,232,120,.5)'],[93,50,'Bearish',20,800,'rgba(255,77,94,.5)'],
+        [25,74,'Expensive Volatility',12,600,'rgba(255,255,255,.34)'],[25,67,'Upside Potential',12,600,'rgba(255,255,255,.34)'],[25,59,'Sell Put Spread',13,800,'rgba(48,232,120,.6)'],
+        [75,74,'Expensive Volatility',12,600,'rgba(255,255,255,.34)'],[75,67,'Downside Potential',12,600,'rgba(255,255,255,.34)'],[75,59,'Sell Call Spread',13,800,'rgba(255,77,94,.6)'],
+        [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.34)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.34)'],[25,18,'Buy Call Spread',13,800,'rgba(48,232,120,.6)'],
+        [75,33,'Cheap Volatility',12,600,'rgba(255,255,255,.34)'],[75,26,'Downside Potential',12,600,'rgba(255,255,255,.34)'],[75,18,'Buy Put Spread',13,800,'rgba(255,77,94,.6)']
+      ];
+      var qopts=Object.assign(baseChart(470,'scatter'),{
         series:series,
-        markers:{size:8,strokeWidth:0},
+        markers:{size:8,strokeWidth:0,colors:['#b6a6ff']},
         dataLabels:{enabled:true,formatter:function(v,o){return o.w.config.series[0].data[o.dataPointIndex].tk;},
-          offsetY:-12,style:{fontSize:'13px',fontWeight:700,colors:['#cfc6ad'],fontFamily:'DM Mono, monospace'},background:{enabled:false}},
-        xaxis:{type:'numeric',min:0,max:100,tickAmount:4,title:{text:T('skew.x_axis','Risk-Reversal-Rank  ·  ← Puts bid (Angst)   Calls bid (Gier) →'),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}},axisBorder:{show:false}},
-        yaxis:{min:0,max:100,tickAmount:4,title:{text:T('skew.y_axis','IV-Rank  ·  ↑ teure Vol'),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}}},
+          offsetY:-12,style:{fontSize:'13px',fontWeight:700,colors:['#eae3d0'],fontFamily:'DM Mono, monospace'},background:{enabled:false}},
+        xaxis:{type:'numeric',min:0,max:100,tickAmount:4,title:{text:'Risk-Reversal-Rank',style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}},axisBorder:{show:false}},
+        yaxis:{min:0,max:100,tickAmount:4,title:{text:'IV-Rank',style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}}},
         annotations:{
-          xaxis:[{x:50,borderColor:'rgba(255,255,255,.28)',strokeDashArray:5}],
-          yaxis:[{y:50,borderColor:'rgba(255,255,255,.28)',strokeDashArray:5}],
-          points:[
-            {x:25,y:78,marker:{size:0},label:{text:'Sell Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.34)',fontSize:'15px',fontWeight:800,fontFamily:'DM Sans'}}},
-            {x:75,y:78,marker:{size:0},label:{text:'Sell Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.34)',fontSize:'15px',fontWeight:800,fontFamily:'DM Sans'}}},
-            {x:25,y:22,marker:{size:0},label:{text:'Buy Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.30)',fontSize:'15px',fontWeight:800,fontFamily:'DM Sans'}}},
-            {x:75,y:22,marker:{size:0},label:{text:'Buy Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.30)',fontSize:'15px',fontWeight:800,fontFamily:'DM Sans'}}}
-          ]
+          xaxis:[{x:50,borderColor:'rgba(255,255,255,.30)',strokeDashArray:5}],
+          yaxis:[{y:50,borderColor:'rgba(255,255,255,.30)',strokeDashArray:5}],
+          points:QL.map(function(q){return {x:q[0],y:q[1],marker:{size:0},label:{text:q[2],borderWidth:0,style:{background:'transparent',color:q[5],fontSize:q[3]+'px',fontWeight:q[4],fontFamily:'DM Sans'}}};})
         },
         tooltip:{theme:'dark',style:{fontSize:'13px'},custom:function(o){var p=o.w.config.series[0].data[o.dataPointIndex];
           return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b><br>IV-Rank '+p.y+'% · RR-Rank '+p.x+'%<br>IV '+(p.ivNow*100).toFixed(1)+'% · Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts</div>';}}
       });
-      qopts.chart.events={dataPointSelection:function(e,ctx,cfg){var p=(qopts.series[0].data||[])[cfg.dataPointIndex]; if(p&&p.tk)selectTicker(p.tk);}};
+      qopts.chart.events={
+        dataPointSelection:function(e,ctx,cfg){var p=(qopts.series[0].data||[])[cfg.dataPointIndex]; if(p&&p.tk)selectTicker(p.tk);},
+        mounted:function(c){paintQuadGrad(c);}, updated:function(c){paintQuadGrad(c);}
+      };
       renderInto('sk-quad',qopts);
       var winLbl=(SKEW_WINS.filter(function(w){return w.d===SKEW_WIN;})[0]||{}).lbl||'';
       document.getElementById('sk-quad-legend').innerHTML=T('skew.legend',
-        '<b>Lesart:</b> Jeder Punkt = ein Ticker, Rang <b>relativ zur eigenen Historie</b>. '+
-        '<b>Oben</b> (IV-Rank hoch, Vol teuer) &rarr; Prämie <b>verkaufen</b>; <b>unten</b> (Vol billig) &rarr; <b>kaufen</b>. '+
-        'Die Seite folgt dem Skew: <b>links</b> Puts bid (Angst), <b>rechts</b> Calls bid (Gier). Daraus die vier Spread-Ideen je Quadrant. '+
-        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal.</span>')
+        '<b>Lesart:</b> Jeder Punkt = ein Ticker, verortet <b>relativ zur eigenen Historie</b>. '+
+        '<b>Y-Achse (IV-Rank):</b> oben teure Vola &rarr; Optionen <b>verkaufen</b>, unten billige &rarr; <b>kaufen</b>. '+
+        '<b>X-Achse (Risk-Reversal):</b> links <span style="color:#30e878">bullish / Upside-Potenzial</span> (RR&lt;50), rechts <span style="color:#ff4d5e">bearish / Downside-Potenzial</span> (RR&gt;50). '+
+        'Oben-rechts = teuer + überkauft, unten-links = billig + überverkauft. '+
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind Struktur-Beispiele.</span>')
         .replace('{win}',winLbl).replace('{n}',pts.length)+' <span style="color:var(--dim)">('+winLbl+' · '+pts.length+' Ticker)</span>';
     }
 
