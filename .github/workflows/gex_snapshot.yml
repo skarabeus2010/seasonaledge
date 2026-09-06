@@ -25,3 +25,6 @@ jobs:
           script: |
             docker exec seasonalpha-app python3 scripts/snapshot_gex_massive.py 2>&1 | tail -30
             echo "GEX snapshot done: $(date)"
+            # Key Levels & Max Pain braucht die frische gex_summary.json (Spot/Flip/Walls) → danach.
+            docker exec seasonalpha-app python3 scripts/compute_key_levels.py 2>&1 | tail -20
+            echo "Key Levels done: $(date)"
