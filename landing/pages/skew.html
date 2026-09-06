@@ -450,7 +450,8 @@
       SKEW_CUR=tks;
       SKEW_CATMAP={}; tks.forEach(function(t){SKEW_CATMAP[t.ticker]=t.cats||[];});
       SKEW_CATS=d.categories||[];
-      if(SKEW_CATS.length && SKEW_CATS.indexOf(SKEW_CAT)<0) SKEW_CAT=SKEW_CATS[0];
+      if(!SKEW_CATS.length) SKEW_CAT='Alle';                       // Altdaten ohne Kategorien → alles zeigen
+      else if(SKEW_CATS.indexOf(SKEW_CAT)<0) SKEW_CAT=SKEW_CATS[0];
       buildSkewCatBtns();
       var inCat=tks.filter(function(t){return _inCat(t.ticker);});
       var top=(inCat.length?inCat:tks).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
