@@ -223,6 +223,27 @@ def _enrich(sym: str, key: str) -> dict | None:
         r["em_dte"] = emd
     else:
         r["em_pct"] = r["em_abs"] = r["em_dte"] = None
+    # NE-Skew (nächster Verfall — kurzfristig/spekulativ, wie SpotGamma "NE Skew")
+    sne = _skew_at(by, 1)
+    r["skew_ne_pts"] = sne["skew_pts"] if sne else None
+    r["skew_ne_dte"] = sne["dte"] if sne else None
+    # Skew-Kurve (IV je Delta): OTM-Puts (Downside) → ATM → OTM-Calls (Upside), für 30d + NE
+    def _curve(ex_target):
+        ex = _nearest_exp(by, ex_target)
+        if ex is None:
+            return None
+        e = by[ex]; out = []
+        for dl in (0.10, 0.25, 0.40):
+            p = _pick(e["put"], dl); out.append(p[1] if p else None)
+        out.append(_atm_iv(e))
+        for dl in (0.40, 0.25, 0.10):
+            c = _pick(e["call"], dl); out.append(c[1] if c else None)
+        return out
+    r["skew_curve"] = {
+        "labels": ["10ΔP", "25ΔP", "40ΔP", "ATM", "40ΔC", "25ΔC", "10ΔC"],
+        "iv30": _curve(30), "iv_ne": _curve(1),
+        "dte30": s30["dte"], "dte_ne": (sne["dte"] if sne else None),
+    }
     return r
 
 
