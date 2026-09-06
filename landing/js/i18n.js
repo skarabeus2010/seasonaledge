@@ -237,6 +237,10 @@ SA.i18n = (function() {
       title: 'Options Skew & Vol Quadrant — 25Δ Put/Call IV per Ticker | SeasonAlpha',
       desc:  '25-delta put vs. call implied volatility per ticker plus a Vol Quadrant of IV Rank and Risk-Reversal Rank relative to each ticker’s own history. CBOE SKEW/VIX/VVIX, free and daily. Backward-looking context, not a signal.'
     },
+    '/iv-surface': {
+      title: 'IV Surface — Implied Volatility by Expiry & Moneyness | SeasonAlpha',
+      desc:  'The implied-volatility surface per ticker as a heatmap across time to expiry (DTE) and moneyness (strike/spot). Shows contango/backwardation and put/call skew at a glance. Full option chain, daily. Backward-looking context, not a signal.'
+    },
     '/opex': {
       title: 'OPEX Analysis — Triple Witching & Monthly Expiry | SeasonAlpha',
       desc:  'Seasonal patterns around monthly options expiration (3rd Friday) and Triple Witching (Mar/Jun/Sep/Dec). Event-window, volatility and historical OPEX calendar.'

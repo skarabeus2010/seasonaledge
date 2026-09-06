@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>IV-Surface &mdash; Implizite Volatilit&auml;t je Laufzeit &amp; Moneyness | SeasonAlpha</title>
+  <meta name="description" content="Die IV-Surface je Ticker: implizite Volatilität als Heatmap über Laufzeit (DTE) und Moneyness (Strike/Spot). Zeigt Contango/Backwardation und Put-/Call-Skew auf einen Blick. Voll-Optionskette, täglich. Rückwärtsgewandter Kontext, kein Signal.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/iv-surface">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/iv-surface">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/iv-surface">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/iv-surface">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/iv-surface">
+  <meta property="og:title" content="IV-Surface &mdash; Implizite Volatilität je Laufzeit &amp; Moneyness | SeasonAlpha">
+  <meta property="og:description" content="Implizite Volatilität als Heatmap über Laufzeit und Moneyness je Ticker. Contango/Backwardation und Skew auf einen Blick. Voll-Optionskette, täglich.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="IV-Surface — Implizite Volatilität je Laufzeit &amp; Moneyness | SeasonAlpha">
+  <meta name="twitter:description" content="Implizite Volatilität als Heatmap über Laufzeit und Moneyness je Ticker. Contango und Skew auf einen Blick.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"IV-Surface","url":"https://seasonalpha.ai/iv-surface","description":"Implizite Volatilität als Heatmap über Laufzeit (DTE) und Moneyness (Strike/Spot) je Ticker. Zeigt Contango/Backwardation und Put-/Call-Skew. Voll-Optionskette, täglich.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"IV-Surface","item":"https://seasonalpha.ai/iv-surface"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist eine IV-Surface?","acceptedAnswer":{"@type":"Answer","text":"Die Implied-Volatility-Surface (IV-Surface) ist eine dreidimensionale Landkarte der impliziten Volatilität eines Basiswerts. Auf der einen Achse liegt die Restlaufzeit der Optionen (in Tagen bis Verfall, DTE), auf der anderen die Moneyness — der Ausübungspreis (Strike) im Verhältnis zum aktuellen Kurs (Spot), also 85 Prozent bis 115 Prozent. Jede Zelle zeigt, welche implizite Volatilität der Markt für Optionen mit dieser Laufzeit und diesem Strike aufruft. So werden Term-Struktur und Skew in einem Bild sichtbar."}},{"@type":"Question","name":"Was zeigen Contango und Skew in der Surface?","acceptedAnswer":{"@type":"Answer","text":"Contango bedeutet, dass die implizite Volatilität mit der Laufzeit steigt: kurze Laufzeiten sind billiger als lange — typisch für ruhige Märkte. Von links nach rechts (kurze zu langer Laufzeit) wird die ATM-Spalte dann wärmer. Backwardation ist der umgekehrte Fall (vorne teurer als hinten), oft bei akutem Stress oder einem nahen Event. Der Skew zeigt sich entlang der Moneyness-Achse: Bei Aktienindizes ist die Volatilität am unteren Rand (Puts, 85 Prozent) höher als am oberen (Calls, 115 Prozent) — der Markt bezahlt einen Aufschlag für Absicherung nach unten (Put-Skew)."}},{"@type":"Question","name":"Wie wird die IV-Surface berechnet?","acceptedAnswer":{"@type":"Answer","text":"Wir laden einmal täglich die volle US-Optionskette je Kern-Ticker (Greeks und implizite Volatilität pro Kontrakt). Pro Ziel-Laufzeit wählen wir die nächstliegende Verfallsserie, und pro Moneyness-Punkt interpolieren wir die implizite Volatilität linear über die Strikes — dabei nutzen wir die aus-dem-Geld-Seite (Puts unter dem Spot, Calls darüber), weil diese Kontrakte liquider sind. Das Ergebnis ist eine kompakte, geglättete Surface für rund ein Dutzend liquider Basiswerte."}},{"@type":"Question","name":"Ist die IV-Surface ein Handelssignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Diese Seite zeigt rückwärtsgewandten Options-Kontext — den aktuellen Stand von Term-Struktur und Skew, keine Prognose und keine Anlageberatung. Eine hohe oder niedrige implizite Volatilität sagt nichts über die künftige Kursrichtung. Optionen sind Hebelprodukte mit Totalverlustrisiko."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.65rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.94rem;margin-bottom:1rem;line-height:1.55}
+    .page-caption b{color:var(--text)}
+    .disc{background:rgba(232,168,32,.07);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.6rem 1rem;font-size:.9rem;color:var(--muted);margin-bottom:1.6rem;line-height:1.5}
+    .disc b{color:var(--text)}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.94rem;display:none}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem}
+    .psub{font-size:.95rem;color:var(--text);margin:.1rem 0 .6rem;font-weight:700}
+    .sec-h{font-family:var(--f-d);font-size:1.22rem;font-weight:800;color:var(--text);margin:2rem 0 .3rem}
+    .sec-sub{color:var(--muted);font-size:.93rem;margin-bottom:.8rem;line-height:1.55}
+    .note{color:var(--dim);font-size:.87rem;line-height:1.55;margin-top:.6rem;border-top:1px solid var(--border);padding-top:.55rem}
+    .kpis{display:flex;gap:.6rem;flex-wrap:wrap;margin:.2rem 0 1.2rem;align-items:stretch}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;min-width:130px;display:flex;flex-direction:column}
+    .kpi .k{color:var(--muted);font-size:.79rem;text-transform:uppercase;letter-spacing:.05em}
+    .kpi .v{font-family:var(--f-d);font-weight:800;font-size:1.35rem;line-height:1.2;margin-top:.15rem}
+    .kpi .v.gold{color:var(--accent)}
+    .kpi .sub2{color:var(--muted);font-size:.79rem;margin-top:.1rem}
+    .iv-badge{display:inline-block;padding:.2rem .55rem;border-radius:6px;font-size:.82rem;font-weight:700}
+    .iv-badge.up{background:rgba(48,232,120,.14);color:#30e878}
+    .iv-badge.dn{background:rgba(255,77,94,.14);color:#ff4d5e}
+    .iv-tk{display:inline-flex;gap:.3rem;flex-wrap:wrap}
+    .iv-tk button{cursor:pointer;font:700 .9rem/1 var(--f-mono, monospace);padding:.36rem .66rem;border-radius:7px;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--muted)}
+    .iv-tk button.on{border-color:var(--accent);background:rgba(232,168,32,.16);color:var(--accent)}
+    details.faq{border:1px solid var(--border);border-radius:12px;padding:.2rem 1rem;margin-top:.7rem;background:var(--card)}
+    details.faq summary{cursor:pointer;font-weight:700;color:var(--text);padding:.7rem 0;font-size:1.02rem}
+    details.faq p{color:var(--muted);font-size:.95rem;line-height:1.6;margin:0 0 .8rem}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container" style="padding-top:1.5rem">
+    <div id="error-banner" class="error-banner"></div>
+
+    <h1 class="page-title" data-i18n-html="iv.h1"><b>IV-Surface</b> &mdash; Volatilit&auml;t je Laufzeit &amp; Moneyness</h1>
+    <p class="page-caption" id="asof" data-i18n-html="iv.caption">
+      Wie der Markt Optionen &uuml;ber Laufzeit und Ausübungspreis bepreist &mdash; die <b>implizite Volatilit&auml;t als Heatmap</b>
+      &uuml;ber <b>Laufzeit (DTE)</b> und <b>Moneyness (Strike/Spot)</b> je Ticker. So werden <b>Contango/Backwardation</b> und der
+      <b>Put-/Call-Skew</b> in einem Bild sichtbar. Voll-Optionskette, t&auml;glich.
+    </p>
+    <div class="disc" data-i18n-html="iv.disc">
+      <b>Wichtig:</b> Rückwärtsgewandter Options-Kontext aus der aktuellen Optionskette. Eine hohe oder niedrige implizite
+      Volatilit&auml;t sagt nichts &uuml;ber die künftige Kursrichtung. <b>Kein Kauf-/Verkaufssignal, keine Anlageberatung.</b>
+    </div>
+
+    <!-- KPIs zum gewählten Ticker -->
+    <div class="kpis" id="iv-kpis"></div>
+
+    <!-- Ticker-Auswahl + Heatmap -->
+    <div class="card">
+      <div style="display:flex;align-items:baseline;gap:.5rem .8rem;margin:0 0 .7rem;flex-wrap:wrap">
+        <span class="psub" style="margin:0" data-i18n="iv.ticker">Ticker:</span>
+        <div id="iv-tk" class="iv-tk"></div>
+      </div>
+      <div class="psub" id="iv-head" style="font-weight:400;color:var(--muted);margin:.1rem 0 .5rem"></div>
+      <div id="iv-heatmap" style="min-height:430px"></div>
+      <div class="psub" id="iv-read" style="margin-top:.7rem;font-weight:400;color:var(--muted);line-height:1.55"></div>
+      <p class="note" id="iv-note" data-i18n="iv.note">Quelle: US-Voll-Optionskette (Greeks/IV je Kontrakt) &middot; ATM &uarr;/&darr; Skew entlang der Moneyness, Contango/Backwardation entlang der Laufzeit. IV je Moneyness-Punkt aus den Strikes interpoliert (OTM-Seite). T&auml;glich. Kein Handelssignal.</p>
+    </div>
+
+    <!-- Erklärung: Lesart -->
+    <h2 class="sec-h" data-i18n="iv.read_h">So liest man die Surface</h2>
+    <p class="sec-sub" data-i18n-html="iv.read_sub">
+      <b>Waagerecht (Laufzeit):</b> wird die ATM-Spalte (Moneyness 100%) nach rechts wärmer, herrscht <span style="color:#30e878">Contango</span>
+      (ruhiger Markt, lange Optionen teurer). Wird sie nach links wärmer, <span style="color:#ff4d5e">Backwardation</span> (akuter Stress).
+      <b>Senkrecht (Moneyness):</b> ist der untere Rand (85%, Puts) wärmer als der obere (115%, Calls), zahlt der Markt einen Aufschlag für
+      Absicherung nach unten &mdash; der klassische <b>Put-Skew</b> bei Aktienindizes.
+    </p>
+
+    <!-- FAQ -->
+    <h2 class="sec-h" data-i18n="iv.faq_h">Häufige Fragen</h2>
+    <details class="faq" open>
+      <summary data-i18n="iv.faq1_q">Was ist eine IV-Surface?</summary>
+      <p data-i18n="iv.faq1_a">Die Implied-Volatility-Surface (IV-Surface) ist eine dreidimensionale Landkarte der impliziten Volatilität eines Basiswerts. Auf der einen Achse liegt die Restlaufzeit der Optionen (in Tagen bis Verfall, DTE), auf der anderen die Moneyness — der Ausübungspreis (Strike) im Verhältnis zum aktuellen Kurs (Spot), also 85 Prozent bis 115 Prozent. Jede Zelle zeigt, welche implizite Volatilität der Markt für Optionen mit dieser Laufzeit und diesem Strike aufruft. So werden Term-Struktur und Skew in einem Bild sichtbar.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="iv.faq2_q">Was zeigen Contango und Skew in der Surface?</summary>
+      <p data-i18n="iv.faq2_a">Contango bedeutet, dass die implizite Volatilität mit der Laufzeit steigt: kurze Laufzeiten sind billiger als lange — typisch für ruhige Märkte. Von links nach rechts (kurze zu langer Laufzeit) wird die ATM-Spalte dann wärmer. Backwardation ist der umgekehrte Fall (vorne teurer als hinten), oft bei akutem Stress oder einem nahen Event. Der Skew zeigt sich entlang der Moneyness-Achse: Bei Aktienindizes ist die Volatilität am unteren Rand (Puts, 85 Prozent) höher als am oberen (Calls, 115 Prozent) — der Markt bezahlt einen Aufschlag für Absicherung nach unten (Put-Skew).</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="iv.faq3_q">Wie wird die IV-Surface berechnet?</summary>
+      <p data-i18n="iv.faq3_a">Wir laden einmal täglich die volle US-Optionskette je Kern-Ticker (Greeks und implizite Volatilität pro Kontrakt). Pro Ziel-Laufzeit wählen wir die nächstliegende Verfallsserie, und pro Moneyness-Punkt interpolieren wir die implizite Volatilität linear über die Strikes — dabei nutzen wir die aus-dem-Geld-Seite (Puts unter dem Spot, Calls darüber), weil diese Kontrakte liquider sind. Das Ergebnis ist eine kompakte, geglättete Surface für rund ein Dutzend liquider Basiswerte.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="iv.faq4_q">Ist die IV-Surface ein Handelssignal?</summary>
+      <p data-i18n="iv.faq4_a">Nein. Diese Seite zeigt rückwärtsgewandten Options-Kontext — den aktuellen Stand von Term-Struktur und Skew, keine Prognose und keine Anlageberatung. Eine hohe oder niedrige implizite Volatilität sagt nichts über die künftige Kursrichtung. Optionen sind Hebelprodukte mit Totalverlustrisiko.</p>
+    </details>
+  </main>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script>
+  !function(){
+    var ACC='#e8a820',MUT='#8a8270',DIM='#5a5648',GREEN='#30e878',RED='#ff4d5e';
+    function T(key,de){return (window.SA&&SA.i18n&&SA.i18n.t)?SA.i18n.t(key,de):de;}
+    function fetchJSON(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    function panelFail(id,msg){var el=document.getElementById(id);if(el)el.innerHTML='<p style="color:var(--muted);padding:1.4rem;text-align:center;font-size:.85rem">'+msg+'</p>';}
+    function kpi(k,v,cls,sub){return '<div class="kpi"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>';}
+
+    var IV_DATA=null, IV_SEL=null;
+
+    // Sequenzielle Palette billig(kühl) → teuer(warm), auf [min,max] gespannt.
+    var IV_PAL=['#0e3d33','#12564a','#1f7d5c','#4f9e4a','#c8a12a','#e08a1e','#d9541f','#c0271c'];
+    function colorRanges(min,max){
+      var n=IV_PAL.length, span=(max-min)||1, ranges=[];
+      for(var i=0;i<n;i++){
+        var lo=min+span*i/n, hi=(i===n-1)?(max+0.01):(min+span*(i+1)/n);
+        ranges.push({from:lo,to:hi,color:IV_PAL[i]});
+      }
+      return ranges;
+    }
+
+    function buildTickerBtns(){
+      var box=document.getElementById('iv-tk'); if(!box||!IV_DATA)return;
+      var ts=(IV_DATA.tickers||[]);
+      box.innerHTML=ts.map(function(t){return '<button data-tk="'+t.ticker+'"'+(t.ticker===IV_SEL?' class="on"':'')+'>'+t.ticker+'</button>';}).join('');
+      box.querySelectorAll('button').forEach(function(b){b.onclick=function(){IV_SEL=b.getAttribute('data-tk');buildTickerBtns();renderSurface();};});
+    }
+
+    function _cur(){ if(!IV_DATA)return null; var ts=IV_DATA.tickers||[]; for(var i=0;i<ts.length;i++) if(ts[i].ticker===IV_SEL)return ts[i]; return ts[0]||null; }
+
+    // ATM-Spalte + Ränder → Contango/Backwardation & Skew ableiten
+    function readSurface(t){
+      var mI=t.moneyness.indexOf(100); if(mI<0)mI=Math.floor(t.moneyness.length/2);
+      var atm=t.grid.map(function(r){return r[mI];}).filter(function(v){return v!=null;});
+      var termTxt='', skewTxt='';
+      if(atm.length>=2){
+        var front=atm[0], back=atm[atm.length-1], slope=back-front;
+        if(slope>0.4) termTxt='<span class="iv-badge up">Contango</span> '+T('iv.contango','vorne billiger als hinten')+' ('+front.toFixed(1)+'% &rarr; '+back.toFixed(1)+'% ATM)';
+        else if(slope<-0.4) termTxt='<span class="iv-badge dn">Backwardation</span> '+T('iv.backw','vorne teurer als hinten')+' ('+front.toFixed(1)+'% &rarr; '+back.toFixed(1)+'% ATM)';
+        else termTxt='<span class="iv-badge">Flach</span> '+T('iv.flat','kaum Term-Struktur')+' ('+front.toFixed(1)+'% &rarr; '+back.toFixed(1)+'% ATM)';
+      }
+      // Skew: 30d-nächste Zeile, unterer vs oberer Moneyness-Rand
+      var row=t.grid[Math.min(2,t.grid.length-1)]||t.grid[0], lo=row[0], hi=row[row.length-1];
+      if(lo!=null&&hi!=null){
+        var d=lo-hi;
+        if(d>0.5) skewTxt='<span class="iv-badge dn">Put-Skew</span> '+T('iv.putskew','Downside teurer')+' ('+t.moneyness[0]+'% = '+lo.toFixed(1)+'% vs '+t.moneyness[t.moneyness.length-1]+'% = '+hi.toFixed(1)+'%)';
+        else if(d<-0.5) skewTxt='<span class="iv-badge up">Call-Skew</span> '+T('iv.callskew','Upside teurer')+' ('+t.moneyness[t.moneyness.length-1]+'% = '+hi.toFixed(1)+'% vs '+t.moneyness[0]+'% = '+lo.toFixed(1)+'%)';
+        else skewTxt='<span class="iv-badge">'+T('iv.symmetric','Symmetrisch')+'</span> '+T('iv.symmetric_d','kaum Skew');
+      }
+      return termTxt+(termTxt&&skewTxt?' &nbsp;·&nbsp; ':'')+skewTxt;
+    }
+
+    function renderKpis(t){
+      var box=document.getElementById('iv-kpis'); if(!box)return;
+      var mI=t.moneyness.indexOf(100); if(mI<0)mI=Math.floor(t.moneyness.length/2);
+      var i30=Math.min(2,t.grid.length-1);
+      var atm30=t.grid[i30]?t.grid[i30][mI]:null;
+      var lo=t.grid[i30]?t.grid[i30][0]:null, hi=t.grid[i30]?t.grid[i30][t.moneyness.length-1]:null;
+      var atmFront=t.grid[0][mI], atmBack=t.grid[t.grid.length-1][mI];
+      var slope=(atmFront!=null&&atmBack!=null)?(atmBack-atmFront):null;
+      var skew=(lo!=null&&hi!=null)?(lo-hi):null;
+      box.innerHTML=
+        kpi(T('iv.kpi_spot','Spot')+(t.spot_estimated?' ~':''), t.spot!=null?t.spot:'—','gold',t.spot_estimated?T('iv.kpi_spot_est','ATM-Schätzung'):T('iv.kpi_spot_sub','Basiswert'))+
+        kpi(T('iv.kpi_atm','ATM-IV 30d'), atm30!=null?atm30.toFixed(1)+'%':'—','',T('iv.kpi_atm_sub','am Geld, ~30 Tage'))+
+        kpi(T('iv.kpi_term','Term-Slope'), slope!=null?((slope>0?'+':'')+slope.toFixed(1)+' pp'):'—',slope==null?'':(slope>0?'':'gold'),T('iv.kpi_term_sub','ATM lang − kurz'))+
+        kpi(T('iv.kpi_skew','Skew 30d'), skew!=null?((skew>0?'+':'')+skew.toFixed(1)+' pp'):'—','',T('iv.kpi_skew_sub','Put- − Call-Flügel'));
+    }
+
+    function renderSurface(){
+      var el=document.getElementById('iv-heatmap'), head=document.getElementById('iv-head'), read=document.getElementById('iv-read'); if(!el)return;
+      var t=_cur();
+      if(!t){panelFail('iv-heatmap',T('iv.wait','Surface folgt (Daily-Cron).'));return;}
+      renderKpis(t);
+      if(head)head.innerHTML='<b style="color:'+ACC+'">'+t.ticker+'</b> &mdash; '+T('iv.head','Implizite Volatilität (%) je Laufzeit &amp; Moneyness')+' &middot; '+T('iv.asof','Stand')+' '+(IV_DATA.generated||'');
+      // Series: eine je Moneyness (Y, unten=downside/Puts), Datenpunkte je DTE (X=Laufzeit)
+      var dteLbls=t.dtes.map(function(d){return d+'d';});
+      var series=t.moneyness.map(function(m,mi){
+        return {name:m+'%', data:t.grid.map(function(row,ri){return {x:dteLbls[ri], y:(row[mi]==null?null:+row[mi].toFixed(1))};})};
+      });
+      var flat=[]; t.grid.forEach(function(r){r.forEach(function(v){if(v!=null)flat.push(v);});});
+      var mn=Math.min.apply(null,flat), mx=Math.max.apply(null,flat);
+      el.innerHTML='';
+      new ApexCharts(el,{
+        chart:{type:'heatmap',height:Math.max(430,t.moneyness.length*54),background:'transparent',toolbar:{show:false},animations:{enabled:false},fontFamily:'DM Sans'},
+        theme:{mode:'dark'},
+        series:series,
+        dataLabels:{enabled:true,style:{fontSize:'13px',fontWeight:700,colors:['#0b0b0b'],fontFamily:'DM Mono, monospace'},formatter:function(v){return v==null?'':Math.round(v)+'%';}},
+        plotOptions:{heatmap:{radius:3,enableShades:false,colorScale:{ranges:colorRanges(mn,mx)}}},
+        stroke:{width:2,colors:['#0b0b0b']},
+        xaxis:{type:'category',categories:dteLbls,title:{text:T('iv.x_axis','Laufzeit (Tage bis Verfall)'),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'}},axisBorder:{show:false},axisTicks:{show:false}},
+        yaxis:{title:{text:T('iv.y_axis','Moneyness (Strike / Spot)'),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'}}},
+        grid:{borderColor:'rgba(255,255,255,.06)'},
+        legend:{show:false},
+        tooltip:{theme:'dark',style:{fontSize:'13px'},custom:function(o){
+          var m=o.w.config.series[o.seriesIndex].name, dte=o.w.globals.labels[o.dataPointIndex], v=o.series[o.seriesIndex][o.dataPointIndex];
+          var side=(parseInt(m)<100)?T('iv.side_put','Put / Downside'):(parseInt(m)>100?T('iv.side_call','Call / Upside'):'ATM');
+          return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+t.ticker+'</b> · '+dte+'<br>'+T('iv.tt_money','Moneyness')+' '+m+' <span style="color:'+DIM+'">('+side+')</span><br>'+T('iv.tt_iv','IV')+' <b>'+(v==null?'—':v.toFixed(1)+'%')+'</b></div>';
+        }}
+      }).render();
+      if(read)read.innerHTML=readSurface(t);
+    }
+
+    function init(){
+      fetchJSON('/landing/data/iv_surface.json').then(function(d){
+        IV_DATA=d;
+        var ts=(d.tickers||[]);
+        if(!ts.length){panelFail('iv-heatmap',T('iv.wait','Surface folgt (Daily-Cron).'));return;}
+        IV_SEL=(ts[0]||{}).ticker;
+        buildTickerBtns();
+        renderSurface();
+      }).catch(function(){
+        panelFail('iv-heatmap',T('iv.wait','Surface-Daten folgen (Daily-Cron).'));
+      });
+    }
+    if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+  }();
+  </script>
+</body>
+</html>
