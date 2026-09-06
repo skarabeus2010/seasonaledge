@@ -119,6 +119,12 @@
         <button data-d="strike" class="on">by Strike</button><button data-d="term">by Term</button>
       </span>
     </div>
+    <p class="page-caption" id="cv-intro" data-i18n-html="dp.cv_intro" style="margin:.2rem 0 .5rem">
+      <b>Charm</b> = Delta-Drift &uuml;ber Zeit &rarr; mechanischer Hedging-Flow Richtung <b>OPEX</b>
+      (Pre-OPEX-Bid, danach Vola-Risiko). <b>Vanna</b> = Delta-Reaktion auf Vol &rarr; Flow bei
+      <b>VIX-Moves</b> (fallende IV &rarr; Aufw&auml;rts-Bid). Marker: Spot, Zero-Gamma-Flip, Call-/Put-Wall.
+      Naive Dealer-Heuristik, EOD, <b>kein Signal</b>.
+    </p>
     <div id="greek-note" class="disc" style="margin:.7rem 0 0"></div>
     <div class="card" style="padding:1rem"><div id="chart" style="min-height:380px"></div></div>
     <p class="page-caption" style="margin-top:.6rem" id="chart-horizon"></p>
@@ -247,24 +253,39 @@
       }
       if(!p){document.getElementById('chart').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Kein Profil für '+state.ticker+' (nur '+Object.keys(profiles).join(', ')+').</p>';return}
       var arr=(state.dim==='strike'?p.by_strike:p.by_term)||[],key=KEY[state.greek];
-      var spot=(summary.tickers.filter(function(t){return t.ticker===state.ticker})[0]||{}).spot;
+      var tko=summary.tickers.filter(function(t){return t.ticker===state.ticker})[0]||{};
+      var spot=tko.spot;
       var cats,data;
       if(state.dim==='strike'){
         arr=arr.filter(function(r){return spot?Math.abs(r.strike-spot)<=spot*0.08:true});
         cats=arr.map(function(r){return r.strike});
       } else { cats=arr.map(function(r){return r.exp.slice(5)}); }
       data=arr.map(function(r){return Number((r[key]||0).toFixed(3))});
+      // Marker fuer die by-Strike-Ansicht: Spot, Zero-Gamma-Flip, Call-/Put-Wall.
+      var xanns=[];
+      if(state.dim==='strike'){
+        var mk=function(x,color,txt,off){
+          if(x==null)return;
+          xanns.push({x:Number(x),borderColor:color,strokeDashArray:5,opacity:.9,
+            label:{borderColor:color,orientation:'horizontal',offsetY:off,
+              style:{background:'#0c1420',color:color,fontSize:'11px',fontWeight:700},text:txt}});
+        };
+        mk(spot,'#ffffff','Spot '+spot,0);
+        mk(tko.zero_gamma,ACC,'Flip '+tko.zero_gamma,16);
+        mk(tko.call_wall,GREEN,'Call-Wall '+tko.call_wall,32);
+        mk(tko.put_wall,RED,'Put-Wall '+tko.put_wall,48);
+      }
       var opts={
         chart:{type:'bar',height:380,background:'transparent',toolbar:{show:false},animations:{enabled:false}},
         theme:{mode:'dark'},
         series:[{name:state.greek+' ($M)',data:data}],
         plotOptions:{bar:{colors:{ranges:[{from:-1e9,to:0,color:RED},{from:0,to:1e9,color:GREEN}]}},columnWidth:'80%'},
         dataLabels:{enabled:false},
-        xaxis:{categories:cats,labels:{style:{colors:MUT,fontSize:'10px'},rotate:-90,rotateAlways:state.dim==='strike'},tickAmount:20,title:{text:state.dim==='strike'?'Strike':'Verfall',style:{color:MUT}}},
-        yaxis:{labels:{style:{colors:MUT},formatter:function(v){return (v>=0?'+':'')+v+'M'}},title:{text:AXIS[state.greek]||'Netto-Hedging ($M)',style:{color:MUT}}},
+        xaxis:{categories:cats,labels:{style:{colors:MUT,fontSize:'13px'},rotate:-90,rotateAlways:state.dim==='strike'},tickAmount:20,title:{text:state.dim==='strike'?'Strike':'Verfall',style:{color:MUT,fontSize:'13px'}}},
+        yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return (v>=0?'+':'')+v+'M'}},title:{text:AXIS[state.greek]||'Netto-Hedging ($M)',style:{color:MUT,fontSize:'13px'}}},
         grid:{borderColor:'rgba(255,255,255,.06)'},
         tooltip:{theme:'dark',y:{formatter:function(v){return v+' Mio $'}}},
-        annotations:state.dim==='strike'&&spot?{xaxis:[{x:spot,borderColor:'#fff',label:{text:'Spot '+spot,style:{background:'#000',color:'#fff'}}}]}:{}
+        annotations:xanns.length?{xaxis:xanns}:{}
       };
       var host=document.getElementById('chart');
       withApex(function(ok){
