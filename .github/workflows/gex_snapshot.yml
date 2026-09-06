@@ -23,5 +23,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 18m
           script: |
-            docker exec seasonalpha-app python3 scripts/snapshot_gex.py 2>&1 | tail -30
+            docker exec seasonalpha-app python3 scripts/snapshot_gex_massive.py 2>&1 | tail -30
             echo "GEX snapshot done: $(date)"
