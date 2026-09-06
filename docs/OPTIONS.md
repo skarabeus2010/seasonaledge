@@ -102,16 +102,75 @@ Output: `landing/data/gex_<T>.json` (+ `gex_summary.json` im Batch). Auswertung/
 4. **Empirie-Loop:** korreliert unser gemessener Pre-OPEX-Drift mit hohem net-GEX / Charm-Intensität?
 5. **Content/SEO/Video:** „Gamma-Exposure erklärt", „OPEX-Pinning / Max Pain", „0DTE-Gamma".
 
-## 25Δ-Skew & Vol-Quadrant (`/flows` Panel G)
+---
 
-Getrennt von der Dealer-GEX-Engine: ein **marktweiter Vol-/Skew-Puls** auf `/flows`.
+# Options-Plattform (Ausbau 2026-09-06, PRs #198–233)
 
-- **Markt-Gauges (gratis, kein Key):** `^SKEW` / `^VIX` / `^VVIX` via `yahoo_downloader` — 2-Jahres-Chart + KPIs. Kein API-Limit.
-- **Per-Ticker 25Δ-Skew:** `scripts/compute_options_skew.py` → `landing/data/options_skew.json` (Tabelle Put-IV − Call-IV je Ticker). Live via **marketdata.app** (`chain?dte=30&delta=.25`, 2 Credits/Ticker), Key `MARKETDATA_API_KEY`. Cron `options_skew.yml` werktags 23:00 UTC, server-seitig (`docker exec`).
-- **Vol-Quadrant** (die Haupt-Grafik): X = **Risk-Reversal-Rank** (RR = 25ΔCall-IV − 25ΔPut-IV), Y = **IV-Rank** (Level (Put+Call)/2), jeweils **Perzentil-Rang des letzten Werts in der eigenen 2-Jahres-Historie** (0–100 %). Fadenkreuz bei 50 %. Strategie-Wasserzeichen je Quadrant (reine Struktur-Beispiele, **kein Signal**):
-  - oben (IV teuer) = Prämie **verkaufen**, unten (billig) = **kaufen**; Seite folgt dem Skew (links Puts bid → Put-Spread, rechts Calls bid → Call-Spread):
-  - oben-links **Sell Put Spread** · oben-rechts **Sell Call Spread** · unten-links **Buy Put Spread** · unten-rechts **Buy Call Spread**.
-- **Historie-Constraint:** marketdata liefert historisch **nur Preise, kein IV/Greeks** (`?date=` → iv=0, delta=0), und der `delta`-Filter greift historisch nicht — eine historische Chain kostet aber nur **1 Credit** (nicht pro Kontrakt). → **BS-Rekonstruktion**: `scripts/backfill_skew_history.py` holt die breite historische Chain (`strikeLimit=120`), **invertiert die IV je Kontrakt selbst per Black-Scholes-Bisektion** aus dem Mid-Preis, rechnet Delta und pickt 25Δ-Call/Put → Skew. Läuft über echte Handelstage (`traded[::every_n_td]`, 5 = wöchentl.), schreibt **inkrementell pro Ticker** in `options_skew_history.json` (Fortschritt überlebt Abbruch), `socket.setdefaulttimeout(20)` gegen hängende Requests. Der Daily-Cron akkumuliert danach vorwärts weiter. `options_skew_history.json` ist **gitignored** → nach Backfill per SSH/`docker cp` auf den Server, nicht committen.
+Die Options-Analysen leben unter dem Top-Level-Nav-Punkt **„Optionen"** (neben „Strategien"): `/skew`, `/iv-surface`, `/key-levels`, `/options-flow`, `/dealer-positioning`, `/flows`, `/spot-vol-beta`. Prinzip: **eine fokussierte Seite pro Analyse** (nicht überfrachten). Alle DE+EN (`data-i18n(-html)` + `en.json` + `_EN_PAGE_META`, `verify_en` FAIL 0).
+
+## Datenquelle: Massive.com (= Polygon.io)
+
+- **Massive.com ist Polygon.io** (umbenannt 30.10.2025; `api.polygon.io` läuft weiter, `api.massive.com` neu). NICHT `joinmassive.com` (fremder Proxy-Dienst).
+- **Warum gewechselt (von marketdata.app):** marketdata rechnet **1 Credit pro zurückgegebenem Kontrakt** → SPX-Voll-Chain = 22.718 Credits, SPY ~4.400 → Voll-Chain-GEX unbezahlbar, tägliches 429-Budget. **Massive = Flatrate / unlimited Calls**: **ein** `GET /v3/snapshot/options/<SYM>?expiration_date.lte=<d>&limit=250` (paginiert via `next_url`, `apiKey`-Query) liefert die **ganze Chain** mit Greeks/IV/**OI** je Kontrakt. **Options-Starter $29/mo** (15-min delayed — für EOD-Crons egal). SPX-Index-Optionen (`I:SPX`) ohne Extra-Plan.
+- **Grenzen:** (a) `underlying_asset.price` im Snapshot oft **leer** → Spot via `/v2/aggs/<SYM>/prev` (EOD-Close). (b) **Historisch nur Preise, keine Greeks/IV** (wie marketdata) → hist. Backfill weiter per BS-Rekonstruktion. (c) Options-Endpoints brauchen den **Options-Plan** (403 NOT_AUTHORIZED sonst — auch über den MCP, der dieselbe Entitlement nutzt).
+- **Key = `MASSIVE_API_KEY`** (lokale + Server-`.env`). ⚠️ **Container liest `.env` per docker-compose `env_file` beim START** → nach `.env`-Änderung **`docker compose up -d --force-recreate app`** (sonst „MASSIVE_API_KEY fehlt", 0 Ticker).
+- **MCP-Server:** `uv tool install "mcp_massive @ git+https://github.com/massive-com/mcp_massive@v0.10.0"` + `claude mcp add massive -e MASSIVE_API_KEY=… -- mcp_massive` (3 Tools search_endpoints/call_api/query_data + BS-Funktionen; interaktiv, nicht im Cron). Alternative für **historische Greeks/IV**: **ThetaData** ($40-80/mo).
+
+## Universum: `shared/options_universe.py`
+
+**156 US-Ticker** in **9 Themen-Kategorien** (Broad-Index, Sektor-ETF, Rohstoff & Bond, Mag7, AI & Semis, Energie & Grid, Finanzen, Healthcare, Consumer & Growth), **Mehrfach-Zuordnung** (NVDA ∈ Mag7 ∩ AI). Helper `all_option_tickers()`/`categories_for()`. **NUR US** (Optionen gibt's nicht auf `.DE`/`.OL`). Alle in `symbols.py` → Kursreihen für VRP/realized vorhanden. Frontend: **Kategorie-Umschalter** filtert Radar/Tabelle/VRP/Vol-Trigger — hält die Übersicht.
+
+## Seiten & Pipelines
+
+| Seite | Skript → Daten | Inhalt |
+|---|---|---|
+| **`/skew`** | `compute_options_skew.py` → `options_skew.json` (+ `options_skew_history.json`) | **Vol-Regime-Radar** (X=RR-Rank, Y=IV-Rank **oder** IV-Percentile, Umschalter; Fenster 3M/6M/1J/2J; grün→rot-Gradient; Rand-Labels Expensive/Cheap/Bullish/Bearish; Spread-Strategien in den Ecken: oben-links Sell Put Spread, unten-links Buy Call Spread, oben-rechts Buy Put Spread, unten-rechts Sell Call Spread), **Heatmap-Metrik-Tabelle**, **Vol-Trigger-Panel** (aus `gex_summary.json`, Heatmap+Kategorie-Filter), Klick-Ticker → **Skew-Verlauf** + **IV-Term-Structure** (Contango/Backwardation) + **Volatility Smile** (IV×Delta, 30d+Front-Expiry), **VRP-Balken**, Correlation-KPIs (`^COR1M/3M`) |
+| **`/iv-surface`** | `compute_iv_surface.py` → `iv_surface.json` | IV-Heatmap **Moneyness × Laufzeit** (~12 Kern-Ticker) |
+| **`/key-levels`** | `compute_key_levels.py` → `key_levels.json` | **Max Pain** (Argmin Auszahlungssumme), Call/Put-Walls + Flip (aus gex_summary), OI-by-Strike, P/C-OI-Ratio, Levels-Copy-Button |
+| **`/options-flow`** | `compute_options_flow.py` → `options_flow.json` (+ `oi_history/`) | **ΔOI-Flow** (Tag-über-Tag-OI = neue Positionierung, **forward-akkumuliert** — baut sich über Tage auf), **0DTE/Short-Dated** (Front-Expiry-Gamma-by-Strike, EOD-ehrlich) |
+| **`/dealer-positioning`** | `snapshot_gex_massive.py` → `gex_summary.json` + `gex_profile_<T>.json` | GEX/Zero-Gamma-Flip/Walls + **Charm-/Vanna-Profile je Strike** (Marker Spot/Flip/Walls) |
+
+**Per-Ticker-Metriken (`compute_options_skew.py`, ein Snapshot/Ticker):** 25Δ-Skew @30d + @90d (Skew-Term), **NE-Skew** (Front-Verfall, spekulativ), ATM-IV-Term-Structure (6 Laufzeiten, Contango/Backwardation), **VRP** (ATM-IV − realisierte 30d-Vola aus Kursen), **25Δ-Butterfly**, **P/C-IV-Ratio**, **Expected Move** (IV·√T), **Volatility-Smile-Kurve** (IV je Delta-Grid 10-40Δ Put/Call + ATM, 30d + NE). Jeder Ticker mit `cats`-Tags. Rank vs. Percentile: `_rank`=(last−min)/(max−min), `_pctl`=Anteil Tage darunter.
+
+**GEX = Yahoo/Massive-EOD, kein marketdata:** Voll-Chain-GEX braucht ALLE Strikes → per-Kontrakt-Bepreisung unbezahlbar. `snapshot_gex_massive.py` holt die Massive-Voll-Chain (flatrate), rechnet Greeks **selbst per BS** (Engine `compute_gamma_exposure.py`, `_profile`/`_profile_by_term` = Gamma/Vanna/Charm je Strike) → gleiches `gex_summary.json`-Schema wie der Yahoo-Pfad (`snapshot_gex.py` bleibt Fallback).
+
+## Crons
+
+- **`options_skew.yml`** (werktags 23:00 UTC, **Timeout 50m** wegen 156 Tickern): `compute_options_skew.py` → `compute_iv_surface.py` → `compute_options_flow.py`.
+- **`gex_snapshot.yml`** (werktags 22:15 UTC): `snapshot_gex_massive.py` → `compute_key_levels.py`.
+- Alle `landing/data/*.json` (inkl. `oi_history/`, `gex_history/`) **gitignored** → server-produziert; nach manuellem Backfill per SSH, nicht committen.
+- **`daily_health_check.py`** prüft jetzt **„Options: Skew/IV"** (Frische + Ticker-Zahl + Metrik-Abdeckung) + **„Options: GEX-Ketten"** (Frische + Flip-Abdeckung).
+
+## Historie-Backfill (BS-Rekonstruktion)
+
+Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker haben anfangs nur 1 (Forward-Akku). `scripts/backfill_skew_history.py` füllt sie: holt die **marketdata**-historische Chain (`?date=`, 1 Credit, `strikeLimit`), **invertiert IV je Kontrakt per BS-Bisektion** aus dem Mid, pickt 25Δ → schreibt inkrementell pro Ticker in `options_skew_history.json` (`socket.setdefaulttimeout(20)`, `--years`/`--every-n-td`). **marketdata.app bleibt genau dafür aktiv** (Massive-Historie hat keine Greeks). `verify_skew_iv.py` bestätigt: unsere BS-IV reproduziert die Live-IV auf **< 0,4 Vol-Punkte**.
+
+## Methodik-Abgleich mit SpotGamma (bestätigt korrekt)
+
+25Δ-Skew (Put−Call) = Industrie-Standard-Risk-Reversal; Vorzeichen (positiv = Put-Skew/„high skew"), ATM = 50Δ-Mittel, OTM-Selektion, IV-Rank vs. IV-Percentile, **NE-Skew** (Next-Expiry), **Volatility Smile** (IV×Delta) — alles SpotGamma-äquivalent. Datengesperrt (nicht baubar ohne OPRA-Realtime/proprietär): HIRO, Live-Tape, Synthetic-OI, TRACE-Intraday.
+
+## Lessons Learned (dieser Ausbau)
+
+- **stdout block-buffert** bei Redirect/`| grep` → `flush=True`; Skripte schreiben die JSON erst am ENDE (kein Fortschritt sichtbar ≠ Hänger). Detached-Läufe (`nohup docker exec`) schreiben ihr eigenes Logfile, nicht die Task-Output-Datei.
+- **Nicht mehrere schwere Läufe gleichzeitig** (Host 3,8 GB, mehrere Container → Thrash/„hängt"). `pkill` fehlt im Container → Host-seitige `docker exec`-Clients killen ODER App-Container neustarten. Sequentiell laufen lassen.
+- **Massive-Snapshot: Spot separat** (`/v2/aggs/prev`) + **Strike-Filter ±30 % Moneyness** (`strike_price.gte/lte`) → 156-Ticker-Lauf 48→~15 Min (nur near-the-money nötig für 25Δ+ATM).
+- **429 unterscheiden:** Burst-Rate-Limit (Throttle hilft) vs. **Tages-Credit-Limit** (nur Zeit hilft). Massive-Flatrate umgeht beide; kleiner Seiten-Throttle bleibt.
+- **Blog-Chart-Embed:** Markdown referenziert `<slug>/datei.png` (Builder prependet `images/`; Post rendert unter `/blog/<slug>/` → finale URL `/blog/<slug>/images/<slug>/datei.png` = **200**; der doppelt aussehende Slug-Pfad ist korrekt, exakt wie beim Dealer-Post).
+- **GEX-Universum = Kern-Set (~20)**, nicht die 156 (Voll-Chain-GEV pro Ticker ist schwer) → Vol-Trigger/Key-Levels/Charm nur für Indizes+Mag7; Kategorie-Filter zeigt dort ggf. „nur Kern-Ticker".
+
+## Offene TODOs (Options)
+
+- [ ] **ΔOI-Flow** baut sich erst über Tage auf (OI-Historie akkumuliert ab jetzt).
+- [ ] **0DTE** ist EOD-limitiert (echtes Intraday-Flow/Tape haben wir nicht).
+- [ ] **Sidebar** für Kategorien/Ticker (User-Wunsch) — einheitlich über alle Options-Seiten.
+- [ ] **GEX-Universum verbreitern** (mehr als Kern-Set) — Aufwand/Zeit abwägen.
+- [ ] **SpotGamma-Top-3 Rest:** Options-Scanner-Layer (IV-Rank-Extreme, Flip-Nähe, ΔOI, VRP-Extreme) noch offen; Compass/Expected-Move teils da.
+- [ ] **marketdata.app** nur noch für Backfill nötig — prüfen, ob Abo weiterläuft/gekündigt wird (dann Massive-BS-Historie-Pfad bauen).
+- [ ] Blog **Distribution/Backlinks** für den Vol-Regime-Radar-Post; GSC nach Indexierung prüfen.
+
+## 25Δ-Skew (Alt-Verweis)
+
+Der ursprüngliche Skew war Panel G auf `/flows` (marketdata, 2 Credits/Ticker). **Abgelöst** durch die dedizierte `/skew`-Seite + Massive (siehe oben).
 
 ## Quellen
 
