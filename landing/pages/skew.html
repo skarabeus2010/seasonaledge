@@ -384,7 +384,7 @@
         '<th>Ticker</th><th style="text-align:right">IV</th><th style="text-align:right">'+_metricLbl()+'</th>'+
         '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right">Skew-Term</th>'+
         '<th style="text-align:right">Butterfly</th><th style="text-align:right">P/C</th>'+
-        '<th style="text-align:right">VRP</th><th style="text-align:right">Term</th></tr>';
+        '<th style="text-align:right">VRP</th><th style="text-align:right">Exp.Move</th><th style="text-align:right">Term</th></tr>';
       rows.forEach(function(t){
         var sc=t.skew_pts>=0?'#30e878':'#ff4d5e', vc=(t.vrp_pts==null)?null:(t.vrp_pts>=0?'#30e878':'#ff4d5e');
         var ivm=_ivMetric(t.ticker);
@@ -398,6 +398,7 @@
           num(t.bfly_pts,2,'pts')+
           num(t.pc_ratio,2,'')+
           num(t.vrp_pts,1,'pts',vc)+
+          '<td style="padding:6px 9px;text-align:right;color:var(--muted)">'+(t.em_pct!=null?'±'+t.em_pct.toFixed(1)+'%':'—')+'</td>'+
           '<td style="padding:6px 9px;text-align:right">'+termB+'</td></tr>';
       });
       tbl.innerHTML=h+'</table>';
