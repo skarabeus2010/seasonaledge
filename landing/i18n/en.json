@@ -1600,5 +1600,6 @@
   "iv.side_put": "Put / downside",
   "iv.side_call": "Call / upside",
   "iv.tt_money": "Moneyness",
-  "iv.tt_iv": "IV"
+  "iv.tt_iv": "IV",
+  "dp.cv_intro": "<b>Charm</b> = delta drift over time &rarr; mechanical hedging flow into <b>OPEX</b> (pre-OPEX bid, then vol risk). <b>Vanna</b> = delta reaction to vol &rarr; flow on <b>VIX moves</b> (falling IV &rarr; upside bid). Markers: spot, zero-gamma flip, call/put wall. Naive dealer heuristic, EOD, <b>no signal</b>."
 }
