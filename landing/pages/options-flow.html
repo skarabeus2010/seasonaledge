@@ -111,6 +111,16 @@
       <p class="note" data-i18n="of.front_note">Gamma-Konzentration = Σ Gamma × Open Interest je Strike (Call + Put), nahe Spot. Hohe Konzentration nahe Spot kann als Pin wirken, ist aber keine Barriere. EOD-Chain, kein Intraday-Tape &mdash; Short-Dated-Positionierung, kein 0DTE-Live-Flow. Kein Handelssignal.</p>
     </div>
 
+    <!-- Equity Put/Call Ratio -->
+    <h2 class="sec-h" data-i18n="of.pc_h">Equity Put/Call Ratio</h2>
+    <p class="sec-sub" data-i18n-html="of.pc_sub">Marktweite <b>Put/Call-Ratio</b> über unser US-Aktien-Universum (ohne Index-ETFs), volumen- und OI-basiert. Klassischer Sentiment-Indikator: <b>&gt;1 = put-lastig</b> (defensiv/Absicherung), <b>&lt;1 = call-lastig</b> (offensiv/Spekulation). Index-P/C separat (Hedging-getrieben, strukturell höher).</p>
+    <div class="kpis" id="of-pc-kpis"></div>
+    <div class="card">
+      <div class="psub" data-i18n="of.pc_chart">Equity- &amp; Index-P/C-Verlauf (baut sich vorwärts auf)</div>
+      <div id="of-pc-chart" style="min-height:280px"></div>
+      <p class="note" data-i18n="of.pc_note">Aus den Massive-Voll-Chains (near-the-money) berechnet, nicht die offizielle CBOE-Ratio. Keine freie Historie verfügbar &rarr; der Verlauf akkumuliert ab jetzt täglich. Kein Handelssignal.</p>
+    </div>
+
     <!-- FAQ -->
     <h2 class="sec-h" data-i18n="of.faq_h">Häufige Fragen</h2>
     <details class="faq" open>
@@ -243,7 +253,38 @@
       if(as&&DATA&&DATA.generated){ /* caption stays i18n; append date subtly */ }
     }
 
+    // ── Panel 3: Equity Put/Call Ratio (aus options_skew.json + __PCR-History) ──
+    function renderPC(pc, hist){
+      var el=document.getElementById('of-pc-kpis');
+      if(el&&pc){var eq=pc.equity||{}, ix=pc.index||{};
+        el.innerHTML=
+          kpi(T('of.pc_eq_vol','Equity P/C (Volumen)'), eq.vol!=null?(+eq.vol).toFixed(2):'—', eq.vol!=null&&eq.vol>1?'':'', eq.vol!=null?(eq.vol>1?T('of.pc_bear','put-lastig / defensiv'):T('of.pc_bull','call-lastig / offensiv')):'')+
+          kpi(T('of.pc_eq_oi','Equity P/C (OI)'), eq.oi!=null?(+eq.oi).toFixed(2):'—','', '')+
+          kpi(T('of.pc_idx','Index P/C (Volumen)'), ix.vol!=null?(+ix.vol).toFixed(2):'—','', T('of.pc_idx_sub','Index-Hedging'));
+      }
+      var ch=document.getElementById('of-pc-chart'); if(!ch)return;
+      var arr=(hist&&hist['__PCR'])||[];
+      if(arr.length<2){panelFail('of-pc-chart',T('of.pc_wait','Verlauf baut sich vorwärts auf (ab dem 2. Handelstag).'));return;}
+      var a=arr.slice().sort(function(x,y){return x.date<y.date?-1:1});
+      renderInto('of-pc-chart',Object.assign(baseChart(280,'line'),{
+        series:[{name:T('of.pc_eq_vol','Equity P/C (Vol)'),data:a.map(function(e){return e.eq_vol;})},{name:T('of.pc_idx','Index P/C (Vol)'),data:a.map(function(e){return e.idx_vol;})}],
+        colors:[ACC,BLUE],stroke:{width:[2.4,1.6],curve:'smooth'},markers:{size:3},
+        legend:{show:true,labels:{colors:MUT},position:'top',horizontalAlign:'right',fontSize:'13px'},
+        xaxis:{type:'datetime',categories:a.map(function(e){return e.date;}),labels:{style:{colors:MUT,fontSize:'13px'}},axisBorder:{show:false}},
+        yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return v.toFixed(2);}}},
+        annotations:{yaxis:[{y:1,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,label:{text:'1.0',style:{background:'transparent',color:MUT,fontSize:'11px'}}}]},
+        tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},shared:true,style:{fontSize:'13px'}}
+      }));
+    }
+    function loadPC(){
+      fetchJSON('/landing/data/options_skew.json').then(function(sk){
+        fetchJSON('/landing/data/options_skew_history.json').then(function(h){renderPC(sk.pc_ratio,h);})
+          .catch(function(){renderPC(sk.pc_ratio,null);});
+      }).catch(function(){panelFail('of-pc-chart',T('of.pc_wait','Equity-P/C folgt (Daily-Cron).'));});
+    }
+
     function init(){
+      loadPC();
       fetchJSON('/landing/data/options_flow.json').then(function(d){
         DATA=d;
         var tks=(d.tickers||[]).map(function(t){return t.ticker;});
