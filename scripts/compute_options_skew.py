@@ -178,6 +178,16 @@ def _enrich(sym: str, key: str) -> dict | None:
     if not s30:
         print(f"  [massive] {sym}: kein 25Δ@30 (n={len(contracts)})")
         return None
+    # Put/Call-Volumen + OI (für markt­weite Equity-P/C-Ratio; near-the-money aus ±30%-Chain)
+    pv = cv = poi = coi = 0
+    for c in contracts:
+        typ = (c.get("details") or {}).get("contract_type")
+        vol = (c.get("day") or {}).get("volume") or 0
+        oi = c.get("open_interest") or 0
+        if typ == "put":
+            pv += vol; poi += oi
+        elif typ == "call":
+            cv += vol; coi += oi
     s90 = _skew_at(by, 90)
     # Term-Structure: ATM-IV je Ziel-Laufzeit (nächstliegende Expiry, dedupliziert)
     term, seen = [], set()
@@ -199,6 +209,7 @@ def _enrich(sym: str, key: str) -> dict | None:
                 spot = round(float(p), 2); break
     r = {
         "ticker": sym, "cats": categories_for(sym), "underlying": spot, "dte": s30["dte"],
+        "put_vol": pv, "call_vol": cv, "put_oi": poi, "call_oi": coi,
         "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
         "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
         "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
@@ -280,10 +291,20 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {(r['iv_atm'] or 0)*100:.1f}% · "
                       f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}", flush=True)
 
+    # Marktweite Put/Call-Ratio (Equity = ohne Broad-Index-ETFs, Index = Broad-Index) — volumen- + OI-basiert
+    def _pc(sel):
+        pv = sum(t["put_vol"] for t in per if sel(t)); cv = sum(t["call_vol"] for t in per if sel(t))
+        poi = sum(t["put_oi"] for t in per if sel(t)); coi = sum(t["call_oi"] for t in per if sel(t))
+        return {"vol": round(pv / cv, 3) if cv else None, "oi": round(poi / coi, 3) if coi else None}
+    _is_idx = lambda t: "Broad-Index" in (t.get("cats") or [])
+    pc_ratio = {"equity": _pc(lambda t: not _is_idx(t)), "index": _pc(_is_idx), "date": date.today().isoformat()}
+    if per:
+        print(f"  P/C equity vol {pc_ratio['equity']['vol']} oi {pc_ratio['equity']['oi']} · index vol {pc_ratio['index']['vol']}", flush=True)
+
     out = {
         "generated": date.today().isoformat(),
-        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP)",
-        "indices": indices, "correlation": corr, "series": series,
+        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
+        "indices": indices, "correlation": corr, "pc_ratio": pc_ratio, "series": series,
         "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,
     }
     if write:
@@ -313,6 +334,14 @@ def build(tickers: list[str], write: bool = True) -> dict:
                              "COR3M": (corr.get("COR3M") or {}).get("last"),
                              "COR30D": (corr.get("COR30D") or {}).get("last")})
             hist["__CORR"] = carr[-750:]
+        # Equity-P/C-Ratio vorwärts akkumulieren (keine freie Historie verfügbar)
+        if per:
+            parr = hist.setdefault("__PCR", [])
+            if not any(e.get("date") == today for e in parr):
+                parr.append({"date": today,
+                             "eq_vol": pc_ratio["equity"]["vol"], "eq_oi": pc_ratio["equity"]["oi"],
+                             "idx_vol": pc_ratio["index"]["vol"]})
+            hist["__PCR"] = parr[-750:]
         hp.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"[history] {sum(len(v) for v in hist.values())} Punkte über {len(hist)} Ticker → {hp.name}")
     return out
