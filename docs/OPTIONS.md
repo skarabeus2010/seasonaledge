@@ -170,6 +170,28 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
   2. **Expiry-Wahl: `min(|dte−30|)` greift Mittwochs-Weeklies ab.** Liquide Titel haben sie, 30 Tage im Voraus handeln sie kaum → keine Trades, keine Bars (MU-Probe: 0/48). Fix: Monatsverfall (3. Freitag) bevorzugen, dann irgendein Freitag. **Gilt auch für `compute_options_skew.py::_nearest_exp`** (Parameter `prefer_monthly`, nur für die 25Δ-Picks — die Term-Structure braucht das kurze Ende).
   3. **Stale-Print-Bias.** Aggregates liefern den letzten *Trade*; bei dünnen Kontrakten Stunden vor Schluss, gepaart mit dem *Schlusskurs* des Basiswerts → IV zu tief. Skaliert mit Illiquidität: SPY/QQQ cZeta 0,4 daneben, AVGO 2,0, **MU 4,1 mit Vorzeichenwechsel** (+3,40 → −0,66). Absolute Volumenschwellen taugen nicht (200 rettet MU, zerstört SPY). Fix: **`--vol-pctl 0.5`** — Perzentil innerhalb der Kandidaten *dieses Tages*, normiert sich selbst auf den Ticker. Danach Mittel 0,79 pts.
   4. **Monatsverfall erzeugt einen Sägezahn.** DTE läuft von ~46 auf ~10 und springt beim Roll zurück, die ATM-IV folgt der Term-Struktur (MU: 0,52 bei 16 Tagen, 0,65 bei 42 — 13 Vol-Punkte). Tagesänderung von call_zeta: p90 6,8 pts. Ein Percentil darüber rankt die Position im Verfallszyklus, nicht den Skew. Fix: **zwei Verfälle wählen, die 30 Tage klammern, und linear in der TOTALEN VARIANZ interpolieren** (σ²·T, VIX-Methodik) — linear in der IV läge 3 Punkte daneben. Restfehler 0,45 pts (Krümmung der Term-Struktur). `cm_mode` hält fest, ob interpoliert wurde.
+  5. **Einzelne Stützstelle bringt den Sägezahn zurück.** Erster CM-Lauf: `cm 98, single 52, None 14` — nur 60 % war wirklich normiert. Kurz vor dem Roll liegt kein Monatsverfall mehr unter 30 Tagen, also gab es kein Bracket. Fix: die **zwei nächstlängeren Verfälle nehmen und nach unten extrapolieren** (Grenze: nächste Stützstelle ≤ 15 Tage vom Ziel). Fehler 0,00–0,04 pts — **besser als die Interpolation** über weite Brackets (dort bis 0,99), weil [39,67]→30 ein kurzer Schritt entlang einer glatten Kurve ist, während [11,46] einen gekrümmten Bereich überspannt. `cm_extrap` markiert diese Tage.
+  6. **`--overwrite` überschrieb nur teilweise.** Tage, die der neue Lauf nicht reproduzieren konnte, überlebten — beim Umstieg auf konstante Laufzeit blieben so 14 Sägezahn-Einträge in der neuen Reihe. Ein Überschreiben, das nur teilweise greift, ist heimtückischer als gar keins. Fix: bei `--overwrite` alle `src=massive`-Einträge **vorher verwerfen**; Provider-Einträge bleiben unangetastet.
+- **Langläufer gehören in einen EIGENEN Container.** Ein `git push` löst den Auto-Deploy aus, der `docker compose up -d --build app` fährt und einen laufenden `docker exec` mitreißt — der erste Backfill starb so nach 400 von 2618 Bars, und im Log sah es aus wie ein Hänger. `landing/data` ist ein Bind-Mount vom Host, deshalb genügt:
+  ```
+  docker run -d --name sa-backfill \
+    -v /opt/seasonaledge/.env:/app/.env:ro \
+    -v /opt/seasonaledge/landing/data:/app/landing/data \
+    -w /app seasonaledge-app python3 -u scripts/backfill_skew_massive.py …
+  ```
+  (`-u` gegen die stdout-Pufferung, `.env` als Mount statt `--env-file` — Docker parst das Format anders als `load_env()`. Der Healthcheck meldet „unhealthy", weil kein Streamlit läuft; das ist folgenlos.)
+- **Diagnose „hängt oder läuft?" braucht ZWEI Messungen.** Ein einzelner frischer Zeitstempel der Logdatei beweist nichts, wenn nur alle 200 Abrufe geschrieben wird. Erst der Vergleich zweier Messungen im Abstand — oder `docker ps` mit der Laufzeit — zeigt den Stillstand. Ich habe deshalb einmal fälschlich Entwarnung gegeben.
+- **Die Methode trägt nicht für jeden Ticker.** Abdeckung und Anteil normierter Tage (1 Jahr, `--vol-pctl 0.5`):
+
+  | Ticker | Punkte | Abdeckung | normiert (cm+extrap) |
+  |---|---|---|---|
+  | SMH | 170 | 67 % | am höchsten (ETF) |
+  | MU | 151 | 60 % | 75 % |
+  | DELL | 139 | 55 % | 72 % |
+  | ARM | 136 | 54 % | — |
+  | **BE** | **70** | **28 %** | **40 %** |
+
+  BE (Bloom Energy, ~95 % ATM-Vola, 25Δ entsprechend weit außen) bleiben effektiv ~28 saubere Tage im Jahr. Das ist kein Code-Problem — die Trades existieren nicht. **Für Percentile nur `cm` und `cm_extrap` zählen, `single` verwerfen**; damit fällt BE von selbst durch das Raster, statt Scheingenauigkeit zu erzeugen.
 - **Verify-Gates müssen die ZIELGRÖSSE prüfen, nicht Rohwerte.** Eine Mittelung über `iv_atm`/`call_iv`/`put_iv` meldete „0,82 pts — gut", während MUs `call_zeta` das Vorzeichen drehte. Das Produkt nutzt Zeta, also prüft das Gate Zeta — mit Vorzeichenwechsel als hartem FAIL.
 - **History stempelte Kalendertage.** Die Vorwärts-Akkumulation nutzte `date.today()`, der Cron läuft aber täglich um 23:00 UTC — auch Sa/So/feiertags. Ergebnis: Einträge für Labor Day mit Freitags Chain, dreifach dupliziert, und `--verify` fand keinen Provider-Tag in der Kursreihe. Fix: `out["session"]` = letzter NYSE-Handelstag; Alt-Einträge werden **umdatiert statt gelöscht** (der Wert stimmt, nur das Label war falsch).
 - **Rohwert-Skew vs. SpotGamma-Compass ist kein direkter Vergleich:** der Compass plottet **Percentile in der Eigenhistorie**, nicht Rohwerte. Ein Titel kann bei negativem Roh-Call-Zeta trotzdem im hohen Call-Skew-Percentil stehen, wenn er üblicherweise noch negativer läuft (Fall BE 2026-09-08: unser Roh-Zeta −11,24/+10,40 = defensiv, SpotGamma zeigte bullish). Für den echten Abgleich braucht es belastbare Historie — die Forward-Akkumulation läuft erst seit KW36.
@@ -187,7 +209,17 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 - [ ] **Sidebar** für Kategorien/Ticker (User-Wunsch) — einheitlich über alle Options-Seiten.
 - [ ] **GEX-Universum verbreitern** (mehr als Kern-Set) — Aufwand/Zeit abwägen.
 - [ ] **SpotGamma-Top-3 Rest:** Options-Scanner-Layer (IV-Rank-Extreme, Flip-Nähe, ΔOI, VRP-Extreme) noch offen; Compass/Expected-Move teils da.
-- [ ] **marketdata.app** nur noch für Backfill nötig — prüfen, ob Abo weiterläuft/gekündigt wird (dann Massive-BS-Historie-Pfad bauen).
+- [x] ~~**marketdata.app**~~ — Abo entfällt, Massive ist die einzige Options-Quelle. `backfill_skew_history.py` stillgelegt, Nachfolger `backfill_skew_massive.py` (2026-09-08).
+
+### Skew-Historie / Vol-Regime-Radar (offen nach dem Backfill 2026-09-08)
+
+- [ ] **Frontend: Percentile nur aus `cm`/`cm_extrap` rechnen.** `single`-Einträge sind nicht auf 30 Tage normiert und tragen den Sägezahn. `renderSkewQuad()` in `landing/pages/skew.html` filtert bisher nicht danach — ohne diesen Filter mischt der Quadrant normierte und nicht normierte Punkte.
+- [ ] **Frontend prüfen: greift noch der Näherungs-Fallback?** Die Rekonstruktionen liefern jetzt echtes `iv_atm`; der dreistufige Fallback in `renderSkewQuad()` (zeta → iv_atm → `(call_iv−put_iv)/2`) sollte auf Stufe 1 landen. Solange Stufe 3 greift, sind beide Achsen spiegelbildlich und der Quadrant wertlos.
+- [ ] **Kalibrierung Rekonstruktion ↔ Provider.** Beide Quellen in einer Reihe sind nur zulässig, wenn der Versatz klein ist. Aktuell 1 Vergleichstag (Zeta-Mittel 0,79 pts). Ab ~30 überlappenden Tagen je Ticker messen und ggf. rückwirkend korrigieren; bis dahin gilt die Reihe für **Rangfolgen**, nicht für absolute Skew-Aussagen.
+- [ ] **BE aus dem Radar nehmen oder gesondert kennzeichnen** — 28 % Abdeckung, davon 60 % nicht normiert. Gilt sinngemäß für jeden Titel mit ähnlich dünner 25Δ-Liquidität; eine Mindestschwelle (z. B. ≥ 80 normierte Tage) wäre sauberer als eine Einzelfall-Ausnahme.
+- [ ] **Backfill auf 2 Jahre und weitere Ticker ausdehnen** — ~20 Min/Ticker/Jahr. Vorher klären, ob 1 Jahr für die Percentile reicht (SpotGamma-Fenster unbekannt).
+- [ ] **`--vol-pctl 0.5` an mehreren Tagen gegenprüfen.** Der Wert stammt aus 8 Vergleichen an EINEM Tag — dünn. Sobald mehr Provider-Tage da sind, 0,3/0,5/0,7 erneut vergleichen.
+- [ ] **`compute_options_skew.py` kennt keine konstante Laufzeit.** Die Vorwärts-Akkumulation nimmt weiter die 30-Tage-nächste Expiry (seit 2026-09-08 monatsbevorzugt) und schwankt dadurch selbst zwischen ~21 und ~39 Tagen. Für eine saubere gemeinsame Reihe müsste `_cm_interp` auch dort greifen.
 - [ ] Blog **Distribution/Backlinks** für den Vol-Regime-Radar-Post; GSC nach Indexierung prüfen.
 
 ## 25Δ-Skew (Alt-Verweis)
