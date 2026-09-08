@@ -279,6 +279,13 @@ SYMBOLS = {
         "exchange":     "NASDAQ",
         "beschreibung": "US-Halbleiter ETF (iShares)",
     },
+    "SOXL": {
+        "name":         "Direxion Daily Semiconductor Bull 3x",
+        "kategorie":    "US-ETF",
+        "währung":      "USD",
+        "exchange":     "NYSE",
+        "beschreibung": "3x gehebelt Long Halbleiter (Direxion)",
+    },
     "IGV": {
         "name":         "iShares Expanded Tech-Software ETF",
         "kategorie":    "US-ETF",
@@ -733,6 +740,7 @@ SYMBOLS = {
     "ORCL": {"name": "Oracle", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Oracle Corp. — Datenbanken & Cloud"},
     "COST": {"name": "Costco", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Costco Wholesale — Großhandel"},
     "MU": {"name": "Micron", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Micron Technology — Speicherchips"},
+    "SNDK": {"name": "SanDisk", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "SanDisk Corp. — NAND-Flash-Speicher (WDC-Spinoff Feb 2025)"},
     "NFLX": {"name": "Netflix", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Netflix Inc. — Streaming"},
     "CVX": {"name": "Chevron", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Chevron Corp. — Öl & Gas"},
     "ABBV": {"name": "AbbVie", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "AbbVie Inc. — Pharma (Immunologie)"},
