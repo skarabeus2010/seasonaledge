@@ -272,13 +272,26 @@ def _plan(closes: dict, contracts: list, targets: list,
 
 
 def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
-                 min_vol: float = 0.0) -> dict | None:
+                 min_vol: float = 0.0, vol_pctl: float = 0.0) -> dict | None:
     """IV je Kontrakt invertieren, 25Δ + 50Δ picken, Metriken rechnen.
 
-    min_vol verwirft Kontrakte, die am Zieltag kaum gehandelt haben — deren
-    Schlusskurs ist ein alter Print und liefert gegen den Schlusskurs des
-    Basiswerts eine verzerrte IV."""
+    Gegen den Stale-Print-Bias (letzter Trade Stunden vor Schluss, gepaart mit
+    dem Schlusskurs des Basiswerts) zwei Filter:
+
+    min_vol   absolute Volumenschwelle. Taugt nur ticker-spezifisch: 200
+              Kontrakte sind bei MU viel, bei SPY nichts. Global gesetzt
+              rettet sie MU und zerstoert SPY (dort faellt der ATM-Pick auf
+              einen entfernteren Strike, dessen IV die Smile-Kruemmung anhebt).
+    vol_pctl  Perzentil-Schwelle innerhalb der Kandidaten DIESES Tages — das
+              normiert sich selbst auf das Liquiditaetsniveau des Tickers.
+              0.5 verwirft die untere Haelfte."""
     T = dte / 365.0
+    cutoff = 0.0
+    if vol_pctl > 0:
+        vols = sorted(rec[1] for occ in occs
+                      if (rec := bars.get(occ, {}).get(d)) is not None)
+        if vols:
+            cutoff = vols[min(len(vols) - 1, int(len(vols) * vol_pctl))]
     best: dict = {"call": {}, "put": {}}
     for occ in occs:
         rec = bars.get(occ, {}).get(d)
@@ -286,6 +299,8 @@ def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: di
             continue
         px, vol = rec
         if min_vol and vol < min_vol:
+            continue
+        if cutoff and vol < cutoff:
             continue
         c = need[occ]
         typ, K = c["contract_type"], float(c["strike_price"])
@@ -321,7 +336,7 @@ def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: di
 
 
 def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwrite: bool,
-               min_vol: float = 0.0) -> int:
+               min_vol: float = 0.0, vol_pctl: float = 0.0) -> int:
     closes = _closes(sym)
     if not closes:
         print(f"  {sym:6} keine Kursreihe — übersprungen", flush=True); return 0
@@ -360,7 +375,7 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
 
     added = 0
     for d, (exp, dte, occs) in sorted(plan.items()):
-        r = _reconstruct(d, closes[d], dte, occs, need, bars, min_vol=min_vol)
+        r = _reconstruct(d, closes[d], dte, occs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
         if r:
             arr.append(r); added += 1
     # Dedup je Datum (neuere Rekonstruktion gewinnt), dann sortieren
@@ -551,7 +566,7 @@ def probe_quotes(sym: str, key: str) -> int:
     return 0
 
 
-def verify(syms: list, key: str, min_vol: float = 0.0) -> int:
+def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) -> int:
     """Rekonstruktion gegen die Provider-IV der Vorwaerts-Akkumulation halten.
 
     Die History enthaelt Eintraege OHNE 'reconstructed' — die stammen aus dem
@@ -619,7 +634,7 @@ def verify(syms: list, key: str, min_vol: float = 0.0) -> int:
                 if d not in pl:
                     continue
                 exp, dte, occs = pl[d]
-                r = _reconstruct(d, closes[d], dte, occs, nd, bars, min_vol=min_vol)
+                r = _reconstruct(d, closes[d], dte, occs, nd, bars, min_vol=min_vol, vol_pctl=vol_pctl)
                 if not r:
                     continue
                 _, rcz, rpz = _row(lbl, dte, r.get("iv_atm"), r.get("call_iv"), r.get("put_iv"))
@@ -675,6 +690,9 @@ def main() -> int:
     ap.add_argument("--min-vol", type=float, default=0.0,
                     help="Kontrakte mit weniger Tagesvolumen verwerfen (0=aus). Gegen alte "
                          "Trade-Prints, die mit dem Schlusskurs gepaart eine zu tiefe IV geben.")
+    ap.add_argument("--vol-pctl", type=float, default=0.0,
+                    help="Perzentil-Volumenfilter innerhalb der Kandidaten des Tages (0=aus, "
+                         "0.5=untere Haelfte verwerfen). Normiert sich selbst auf den Ticker.")
     a = ap.parse_args()
 
     key = os.environ.get("MASSIVE_API_KEY", "")
@@ -687,7 +705,7 @@ def main() -> int:
     if a.probe_quotes:
         return probe_quotes(syms[0], key)
     if a.verify:
-        return verify(syms, key, min_vol=a.min_vol)
+        return verify(syms, key, min_vol=a.min_vol, vol_pctl=a.vol_pctl)
 
     hp = _ROOT / "landing/data/options_skew_history.json"
     hist = {}
@@ -702,7 +720,7 @@ def main() -> int:
         print(f"[{i}/{len(syms)}] {sym}", flush=True)
         try:
             total += run_ticker(sym, key, a.years, a.every_n_td, hist, a.overwrite,
-                                min_vol=a.min_vol)
+                                min_vol=a.min_vol, vol_pctl=a.vol_pctl)
         except KeyboardInterrupt:
             print("\n[abgebrochen] Fortschritt ist gespeichert."); break
         except Exception as e:
