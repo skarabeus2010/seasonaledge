@@ -101,7 +101,7 @@
 
     <!-- GRAFIK: Vol-Quadrant -->
     <div class="card">
-      <div class="psub" data-i18n-html="skew.quad_sub"><b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
+      <div class="psub" id="sk-quad-sub"><b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
       <div style="display:flex;align-items:baseline;gap:.5rem;margin:.55rem 0 .35rem;flex-wrap:wrap">
         <span class="psub" style="margin:0" data-i18n="skew.category">Kategorie:</span>
         <div id="sk-cat" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
@@ -111,6 +111,8 @@
         <div id="sk-win" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
         <span class="psub" style="margin:0" data-i18n="skew.mode">Methode:</span>
         <div id="sk-mode" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
+        <span class="psub" style="margin:0" data-i18n="skew.view_lbl">Darstellung:</span>
+        <div id="sk-view" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
       </div>
       <div id="sk-quad" style="min-height:470px"></div>
       <div class="psub" id="sk-quad-legend" style="margin-top:.6rem;line-height:1.5"></div>
@@ -199,6 +201,7 @@
     var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365},{lbl:'2J',d:800}];
     var SKEW_WIN=365;                                              // Default: 1 Jahr
     var SKEW_MODE='rank';                                          // 'rank' | 'pctl'
+    var SKEW_VIEW='rr_iv';                                         // 'rr_iv' | 'cs_ps'
     var SKEW_CATS=[], SKEW_CAT='Mag7';                            // Kategorie-Filter (Übersicht)
     function _inCat(tk){ return SKEW_CAT==='Alle' || (SKEW_CATMAP[tk]||[]).indexOf(SKEW_CAT)>=0; }
     function buildSkewCatBtns(){
@@ -223,7 +226,15 @@
     function _metricLbl(){ return SKEW_MODE==='pctl'?'IV-Pctl':'IV-Rank'; }
     function _btn(v,txt,on){return '<button data-v="'+v+'" style="cursor:pointer;font:600 .88rem/1 DM Sans;padding:.32rem .6rem;border-radius:6px;'+
       'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';color:'+(on?ACC:MUT)+'">'+txt+'</button>';}
-    function refreshRankViews(){ renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
+    function _updateQuadSub(){
+      var el=document.getElementById('sk-quad-sub'); if(!el)return;
+      if(SKEW_VIEW==='cs_ps'){
+        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Call-Skew</span> (X) &times; <span style="color:var(--accent)">Put-Skew</span> (Y), je unabh&auml;ngig zur eigenen Historie &middot; Fadenkreuz = 50%';
+      } else {
+        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%';
+      }
+    }
+    function refreshRankViews(){ _updateQuadSub(); renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
     function buildSkewWinBtns(){
       var box=document.getElementById('sk-win'); if(box){
         box.innerHTML=SKEW_WINS.map(function(w){return _btn(w.d,w.lbl,w.d===SKEW_WIN);}).join('');
@@ -233,8 +244,14 @@
         mb.innerHTML=_btn('rank','Rank',SKEW_MODE==='rank')+_btn('pctl','Percentile',SKEW_MODE==='pctl');
         mb.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_MODE=b.getAttribute('data-v');buildSkewWinBtns();refreshRankViews();};});
       }
+      var vb=document.getElementById('sk-view'); if(vb){
+        vb.innerHTML=_btn('rr_iv','Risk-Reversal × IV',SKEW_VIEW==='rr_iv')+_btn('cs_ps','Call- vs. Put-Skew',SKEW_VIEW==='cs_ps');
+        vb.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_VIEW=b.getAttribute('data-v');buildSkewWinBtns();refreshRankViews();};});
+      }
     }
-    // Diagonaler Verlauf grün (u-l, billig+bullish) → rot (o-r, teuer+bearish) hinter die Punkte
+    // Diagonaler Verlauf hinter die Punkte (richtungsabhängig je SKEW_VIEW)
+    // rr_iv: u-l grün (billig+bullish) → o-r rot (teuer+bearish)
+    // cs_ps: u-r grün (Call teuer, Puts billig = bullish) → o-l rot (Puts teuer = bearish)
     function paintQuadGrad(ctx){
       try{
         var el=(ctx&&ctx.el)||document.getElementById('sk-quad'), inner=el&&el.querySelector('.apexcharts-inner'); if(!inner)return;
@@ -242,7 +259,12 @@
         Array.prototype.forEach.call(inner.querySelectorAll('.quad-grad'),function(n){n.parentNode.removeChild(n);});
         var defs=document.createElementNS(ns,'defs'); defs.setAttribute('class','quad-grad');
         var lg=document.createElementNS(ns,'linearGradient'); lg.setAttribute('id','skewGrad');
-        lg.setAttribute('x1','0');lg.setAttribute('y1','1');lg.setAttribute('x2','1');lg.setAttribute('y2','0');
+        // rr_iv: bottom-left → top-right; cs_ps: bottom-right → top-left
+        if(SKEW_VIEW==='cs_ps'){
+          lg.setAttribute('x1','1');lg.setAttribute('y1','1');lg.setAttribute('x2','0');lg.setAttribute('y2','0');
+        } else {
+          lg.setAttribute('x1','0');lg.setAttribute('y1','1');lg.setAttribute('x2','1');lg.setAttribute('y2','0');
+        }
         [['0','rgba(48,232,120,.17)'],['47','rgba(48,232,120,.02)'],['53','rgba(255,77,94,.02)'],['100','rgba(255,77,94,.17)']].forEach(function(s){
           var st=document.createElementNS(ns,'stop');st.setAttribute('offset',s[0]+'%');st.setAttribute('stop-color',s[1]);lg.appendChild(st);});
         defs.appendChild(lg);
@@ -257,49 +279,88 @@
       if(!SKEW_HIST){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Historie lädt).')+'</div>';return;}
       buildSkewWinBtns();
       var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
-      var fear=T('skew.fear','Angst'), greed=T('skew.greed','Gier');
+      var isCS=SKEW_VIEW==='cs_ps';
       var pts=[];
       Object.keys(SKEW_HIST).forEach(function(tk){
-        if(tk.indexOf('__')===0)return;                            // __CORR o.ä. sind keine Ticker
-        if(!_inCat(tk))return;                                     // Kategorie-Filter
+        if(tk.indexOf('__')===0)return;
+        if(!_inCat(tk))return;
         var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
                  .filter(function(e){return e.date>=cut;});
         if(arr.length<5)return;
-        var iv=arr.map(function(e){return (e.put_iv+e.call_iv)/2;});
-        var rr=arr.map(function(e){return e.call_iv-e.put_iv;});
-        var ivR=_metric(iv), rrR=_metric(rr);
-        if(ivR==null||rrR==null)return;
-        pts.push({x:rrR,y:ivR,tk:tk,ivNow:iv[iv.length-1],skew:arr[arr.length-1].skew_pts});
+        if(isCS){
+          // Call-Skew vs. Put-Skew: je IV unabhängig gerankt
+          var callArr=arr.map(function(e){return e.call_iv;}),
+              putArr =arr.map(function(e){return e.put_iv;});
+          var callR=_metric(callArr), putR=_metric(putArr);
+          if(callR==null||putR==null)return;
+          pts.push({x:callR,y:putR,tk:tk,
+            callIv:callArr[callArr.length-1],putIv:putArr[putArr.length-1],
+            skew:arr[arr.length-1].skew_pts});
+        } else {
+          var iv=arr.map(function(e){return (e.put_iv+e.call_iv)/2;}),
+              rr=arr.map(function(e){return e.call_iv-e.put_iv;});
+          var ivR=_metric(iv), rrR=_metric(rr);
+          if(ivR==null||rrR==null)return;
+          pts.push({x:rrR,y:ivR,tk:tk,ivNow:iv[iv.length-1],skew:arr[arr.length-1].skew_pts});
+        }
       });
       if(!pts.length){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Backfill läuft).')+'</div>';return;}
-      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,skew:p.skew,fillColor:'#b6a6ff'};})}];
-      // Beschriftung: Rand-Worte (Expensive/Cheap/Bullish/Bearish) + je Feld Cost + Direction + Struktur
-      var QL=[
+      var mLbl=SKEW_MODE==='pctl'?'Percentile':'Rank';
+      var xTitle=isCS?'Call-Skew '+mLbl:'Risk-Reversal-'+mLbl;
+      var yTitle=isCS?'Put-Skew '+mLbl:_metricLbl();
+      // Quadrant-Labels je Darstellungsmodus
+      var QL=isCS?[
+        // Achsenbeschriftung (Ränder)
+        [50,96,'Put-Skew hoch',18,800,'rgba(255,77,94,.45)'],
+        [50,4,'Put-Skew niedrig',18,800,'rgba(48,232,120,.45)'],
+        [4,50,'Call-Skew niedrig',16,800,'rgba(255,255,255,.30)'],
+        [96,50,'Call-Skew hoch',16,800,'rgba(255,255,255,.30)'],
+        // Quadrant-Felder
+        [78,10,'Bullish Positioning',13,700,'rgba(48,232,120,.65)'],
+        [78,6,'(wie SpotGamma Compass)',10,400,'rgba(48,232,120,.45)'],
+        [22,93,'Bearish Hedging',13,700,'rgba(255,77,94,.65)'],
+        [22,89,'Put-Nachfrage dominiert',10,400,'rgba(255,77,94,.45)'],
+        [22,10,'Billig beidseitig',12,600,'rgba(255,255,255,.28)'],
+        [78,93,'Teuer beidseitig',12,600,'rgba(255,255,255,.28)']
+      ]:[
         [50,96,'Expensive',20,800,'rgba(255,255,255,.32)'],[50,4,'Cheap',20,800,'rgba(255,255,255,.32)'],
         [7,50,'Bullish',20,800,'rgba(48,232,120,.5)'],[93,50,'Bearish',20,800,'rgba(255,77,94,.5)'],
-        // Spread-Strategien in den oberen Ecken: links = bullish, rechts = bearish
         [18,94,'Sell Put Spread',12,800,'rgba(48,232,120,.62)'],[18,9,'Buy Call Spread',12,800,'rgba(48,232,120,.62)'],
         [82,94,'Buy Put Spread',12,800,'rgba(255,77,94,.62)'],[82,9,'Sell Call Spread',12,800,'rgba(255,77,94,.62)'],
-        // Kosten/Richtung je Quadrant (Kontext)
         [25,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[25,63,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
         [75,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[75,63,'Downside Potential',12,600,'rgba(255,255,255,.30)'],
         [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
         [75,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[75,26,'Downside Potential',12,600,'rgba(255,255,255,.30)']
       ];
+      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,callIv:p.callIv,putIv:p.putIv,skew:p.skew,fillColor:'#b6a6ff'};})}];
       var qopts=Object.assign(baseChart(470,'scatter'),{
         series:series,
         markers:{size:8,strokeWidth:0,colors:['#b6a6ff']},
         dataLabels:{enabled:true,formatter:function(v,o){return o.w.config.series[0].data[o.dataPointIndex].tk;},
           offsetY:-12,style:{fontSize:'13px',fontWeight:700,colors:['#eae3d0'],fontFamily:'DM Mono, monospace'},background:{enabled:false}},
-        xaxis:{type:'numeric',min:0,max:100,tickAmount:4,title:{text:'Risk-Reversal-'+(SKEW_MODE==='pctl'?'Percentile':'Rank'),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}},axisBorder:{show:false}},
-        yaxis:{min:0,max:100,tickAmount:4,title:{text:_metricLbl(),style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}}},
+        xaxis:{type:'numeric',min:0,max:100,tickAmount:4,title:{text:xTitle,style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}},axisBorder:{show:false}},
+        yaxis:{min:0,max:100,tickAmount:4,title:{text:yTitle,style:{color:MUT,fontSize:'13px'}},labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return Math.round(v)+'%'}}},
         annotations:{
           xaxis:[{x:50,borderColor:'rgba(255,255,255,.30)',strokeDashArray:5}],
           yaxis:[{y:50,borderColor:'rgba(255,255,255,.30)',strokeDashArray:5}],
           points:QL.map(function(q){return {x:q[0],y:q[1],marker:{size:0},label:{text:q[2],borderWidth:0,style:{background:'transparent',color:q[5],fontSize:q[3]+'px',fontWeight:q[4],fontFamily:'DM Sans'}}};})
         },
-        tooltip:{theme:'dark',style:{fontSize:'13px'},custom:function(o){var p=o.w.config.series[0].data[o.dataPointIndex];
-          return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b><br>IV-Rank '+p.y+'% · RR-Rank '+p.x+'%<br>IV '+(p.ivNow*100).toFixed(1)+'% · Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts</div>';}}
+        tooltip:{theme:'dark',style:{fontSize:'13px'},custom:function(o){
+          var p=o.w.config.series[0].data[o.dataPointIndex];
+          if(isCS){
+            return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b>'+
+              '<br>Call-Skew '+p.x+'% · Put-Skew '+p.y+'%'+
+              '<br>Call-IV '+(p.callIv!=null?(p.callIv*100).toFixed(1)+'%':'—')+
+              ' · Put-IV '+(p.putIv!=null?(p.putIv*100).toFixed(1)+'%':'—')+
+              (p.skew!=null?'<br>25Δ Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts':'')+
+              '</div>';
+          }
+          return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b>'+
+            '<br>IV-Rank '+p.y+'% · RR-Rank '+p.x+'%'+
+            '<br>IV '+(p.ivNow!=null?(p.ivNow*100).toFixed(1)+'%':'—')+
+            (p.skew!=null?' · Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts':'')+
+            '</div>';
+        }}
       });
       qopts.chart.events={
         dataPointSelection:function(e,ctx,cfg){var p=(qopts.series[0].data||[])[cfg.dataPointIndex]; if(p&&p.tk)selectTicker(p.tk);},
@@ -307,13 +368,19 @@
       };
       renderInto('sk-quad',qopts);
       var winLbl=(SKEW_WINS.filter(function(w){return w.d===SKEW_WIN;})[0]||{}).lbl||'';
-      document.getElementById('sk-quad-legend').innerHTML=T('skew.legend',
+      var legendTxt=isCS?
+        '<b>Lesart (Call- vs. Put-Skew):</b> Jeder Punkt = ein Ticker relativ zur eigenen Historie. '+
+        '<b>X-Achse (Call-Skew '+mLbl+'):</b> rechts teure Calls (bullishes Positioning). '+
+        '<b>Y-Achse (Put-Skew '+mLbl+'):</b> oben teure Puts (Absicherungsnachfrage). '+
+        '<span style="color:#30e878">Unten-rechts</span> = Calls teuer, Puts billig = bullish Momentum (analog SpotGamma Compass). '+
+        '<span style="color:#ff4d5e">Oben-links</span> = Puts teuer, Calls billig = defensives Hedging. '+
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal.</span>':
         '<b>Lesart:</b> Jeder Punkt = ein Ticker, verortet <b>relativ zur eigenen Historie</b>. '+
         '<b>Y-Achse (IV-Rank):</b> oben teure Vola &rarr; Optionen <b>verkaufen</b>, unten billige &rarr; <b>kaufen</b>. '+
         '<b>X-Achse (Risk-Reversal):</b> links <span style="color:#30e878">bullish / Upside-Potenzial</span> (RR&lt;50), rechts <span style="color:#ff4d5e">bearish / Downside-Potenzial</span> (RR&gt;50). '+
         'Oben-rechts = teuer + überkauft, unten-links = billig + überverkauft. '+
-        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind Struktur-Beispiele.</span>')
-        .replace('{win}',winLbl).replace('{n}',pts.length)+' <span style="color:var(--dim)">('+winLbl+' · '+pts.length+' Ticker)</span>';
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind Struktur-Beispiele.</span>';
+      document.getElementById('sk-quad-legend').innerHTML=legendTxt+' <span style="color:var(--dim)">('+winLbl+' · '+pts.length+' Ticker)</span>';
     }
 
     // ── Skew-Verlauf des gewählten Tickers (Klick aus Tabelle/Quadrant) ──────

@@ -20,7 +20,7 @@ OPTIONS_CATEGORIES: dict[str, list[str]] = {
     ],
     "Sektor-ETF": [
         "XLF", "XLK", "XLE", "XLV", "XLU", "XLI", "XLY", "XLP", "XLB", "XLC",
-        "XLRE", "SMH", "SOXX", "IGV", "XBI", "ITB", "KRE", "GDX", "XOP",
+        "XLRE", "SMH", "SOXX", "SOXL", "IGV", "XBI", "ITB", "KRE", "GDX", "XOP",
     ],
     "Rohstoff & Bond": [
         "GLD", "SLV", "USO", "TLT", "IEF", "HYG", "URA", "TAN", "IBIT", "ETHA",
@@ -29,7 +29,7 @@ OPTIONS_CATEGORIES: dict[str, list[str]] = {
         "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA",
     ],
     "AI & Semis": [
-        "NVDA", "AMD", "AVGO", "MU", "ARM", "ASML", "QCOM", "INTC", "TXN",
+        "NVDA", "AMD", "AVGO", "MU", "SNDK", "ARM", "ASML", "QCOM", "INTC", "TXN",
         "LRCX", "KLAC", "AMAT", "ADI", "ANET", "DELL", "PLTR", "CRWD", "PANW",
         "NOW", "ORCL", "CRM", "ADBE", "INTU", "CSCO", "APP", "SMCI",
     ],
