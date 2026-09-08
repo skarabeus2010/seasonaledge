@@ -212,6 +212,10 @@ def _enrich(sym: str, key: str) -> dict | None:
         "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
         "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
         "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
+        # Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite. call_zeta > 0 = Call-Skew (bullish),
+        # put_zeta > 0 = Put-Skew (Absicherungsnachfrage). skew_pts = put_zeta − call_zeta.
+        "call_zeta_pts": round((call_iv - iv_atm) * 100, 2) if iv_atm else None,
+        "put_zeta_pts":  round((put_iv  - iv_atm) * 100, 2) if iv_atm else None,
         "iv_atm": iv_atm, "rv_1m": rv1m,
         "vrp_pts": round((iv_atm - rv1m) * 100, 2) if (iv_atm and rv1m) else None,
         "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
@@ -323,7 +327,9 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 arr.append({"date": today, "skew_pts": t["skew_pts"],
                             "put_iv": t["put_25d"]["iv"], "call_iv": t["call_25d"]["iv"],
                             "iv_atm": t.get("iv_atm"), "vrp_pts": t.get("vrp_pts"),
-                            "pc_ratio": t.get("pc_ratio"), "bfly_pts": t.get("bfly_pts")})
+                            "pc_ratio": t.get("pc_ratio"), "bfly_pts": t.get("bfly_pts"),
+                            "call_zeta_pts": t.get("call_zeta_pts"),
+                            "put_zeta_pts":  t.get("put_zeta_pts")})
             hist[t["ticker"]] = arr[-750:]
         # CBOE-Correlation vorwärts akkumulieren (Yahoo liefert oft nur letzten Wert)
         if corr:

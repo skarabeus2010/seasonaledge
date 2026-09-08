@@ -229,7 +229,8 @@
     function _updateQuadSub(){
       var el=document.getElementById('sk-quad-sub'); if(!el)return;
       if(SKEW_VIEW==='cs_ps'){
-        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Call-Skew</span> (X) &times; <span style="color:var(--accent)">Put-Skew</span> (Y), je unabh&auml;ngig zur eigenen Historie &middot; Fadenkreuz = 50%';
+        // SpotGamma-Konvention: positiver Call-Skew = OTM-Calls > ATM-IV; positiver Put-Skew = OTM-Puts > ATM-IV
+        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Call-Skew</span> (X, OTM-Calls&nbsp;vs.&nbsp;ATM) &times; <span style="color:var(--accent)">Put-Skew</span> (Y, OTM-Puts&nbsp;vs.&nbsp;ATM), je unabh&auml;ngig gerankt &middot; positiv = OTM teurer als ATM &middot; Fadenkreuz = 50%';
       } else {
         el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%';
       }
@@ -288,14 +289,26 @@
                  .filter(function(e){return e.date>=cut;});
         if(arr.length<5)return;
         if(isCS){
-          // Call-Skew vs. Put-Skew: je IV unabhängig gerankt
-          var callArr=arr.map(function(e){return e.call_iv;}),
-              putArr =arr.map(function(e){return e.put_iv;});
-          var callR=_metric(callArr), putR=_metric(putArr);
+          // Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite, unabhaengig gerankt.
+          // Priorität: call_zeta_pts (direkt) → iv_atm-Fallback → Backfill-Näherung (call_iv-put_iv)/2.
+          // Backfill-Näherung: ATM_approx = (call_iv+put_iv)/2 → call_zeta = (call_iv-ATM)*100 = (call_iv-put_iv)/2*100.
+          var zetaPairs=arr.map(function(e){
+            var cz=e.call_zeta_pts!=null ? e.call_zeta_pts :
+                    (e.iv_atm!=null ? (e.call_iv-e.iv_atm)*100 :
+                     (e.call_iv!=null&&e.put_iv!=null ? (e.call_iv-e.put_iv)/2*100 : null));
+            var pz=e.put_zeta_pts!=null  ? e.put_zeta_pts  :
+                    (e.iv_atm!=null ? (e.put_iv-e.iv_atm)*100 :
+                     (e.call_iv!=null&&e.put_iv!=null ? (e.put_iv-e.call_iv)/2*100 : null));
+            return (cz!=null&&pz!=null)?{cz:cz,pz:pz,skew:e.skew_pts}:null;
+          }).filter(Boolean);
+          if(zetaPairs.length<5)return;
+          var callR=_metric(zetaPairs.map(function(z){return z.cz;}));
+          var putR =_metric(zetaPairs.map(function(z){return z.pz;}));
           if(callR==null||putR==null)return;
+          var last=zetaPairs[zetaPairs.length-1];
           pts.push({x:callR,y:putR,tk:tk,
-            callIv:callArr[callArr.length-1],putIv:putArr[putArr.length-1],
-            skew:arr[arr.length-1].skew_pts});
+            callZeta:last.cz,putZeta:last.pz,
+            skew:last.skew});
         } else {
           var iv=arr.map(function(e){return (e.put_iv+e.call_iv)/2;}),
               rr=arr.map(function(e){return e.call_iv-e.put_iv;});
@@ -309,19 +322,21 @@
       var xTitle=isCS?'Call-Skew '+mLbl:'Risk-Reversal-'+mLbl;
       var yTitle=isCS?'Put-Skew '+mLbl:_metricLbl();
       // Quadrant-Labels je Darstellungsmodus
+      // SpotGamma-Konvention: positiver Call-Skew = OTM-Calls teurer als ATM (call_zeta > 0, bullish)
+      //                        positiver Put-Skew  = OTM-Puts teurer als ATM (put_zeta > 0, defensiv)
       var QL=isCS?[
-        // Achsenbeschriftung (Ränder)
-        [50,96,'Put-Skew hoch',18,800,'rgba(255,77,94,.45)'],
-        [50,4,'Put-Skew niedrig',18,800,'rgba(48,232,120,.45)'],
-        [4,50,'Call-Skew niedrig',16,800,'rgba(255,255,255,.30)'],
-        [96,50,'Call-Skew hoch',16,800,'rgba(255,255,255,.30)'],
+        // Achsenbeschriftungen Ränder
+        [50,97,'+ Put-Skew (Puts > ATM)',14,700,'rgba(255,77,94,.55)'],
+        [50,3,'– Put-Skew (Puts < ATM)',14,700,'rgba(48,232,120,.45)'],
+        [3,50,'– Call-Skew',14,700,'rgba(255,255,255,.30)'],
+        [97,50,'+ Call-Skew',14,700,'rgba(255,255,255,.30)'],
         // Quadrant-Felder
-        [78,10,'Bullish Positioning',13,700,'rgba(48,232,120,.65)'],
-        [78,6,'(wie SpotGamma Compass)',10,400,'rgba(48,232,120,.45)'],
-        [22,93,'Bearish Hedging',13,700,'rgba(255,77,94,.65)'],
-        [22,89,'Put-Nachfrage dominiert',10,400,'rgba(255,77,94,.45)'],
-        [22,10,'Billig beidseitig',12,600,'rgba(255,255,255,.28)'],
-        [78,93,'Teuer beidseitig',12,600,'rgba(255,255,255,.28)']
+        [78,9,'+ Call-Skew / – Put-Skew',12,700,'rgba(48,232,120,.70)'],
+        [78,5,'Bullish Momentum',11,600,'rgba(48,232,120,.55)'],
+        [22,94,'– Call-Skew / + Put-Skew',12,700,'rgba(255,77,94,.70)'],
+        [22,90,'Defensives Hedging',11,600,'rgba(255,77,94,.55)'],
+        [22,9,'Beide negativ (flache Smile)',11,500,'rgba(255,255,255,.28)'],
+        [78,94,'Beide positiv (starke Smile)',11,500,'rgba(255,255,255,.28)']
       ]:[
         [50,96,'Expensive',20,800,'rgba(255,255,255,.32)'],[50,4,'Cheap',20,800,'rgba(255,255,255,.32)'],
         [7,50,'Bullish',20,800,'rgba(48,232,120,.5)'],[93,50,'Bearish',20,800,'rgba(255,77,94,.5)'],
@@ -332,7 +347,7 @@
         [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
         [75,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[75,26,'Downside Potential',12,600,'rgba(255,255,255,.30)']
       ];
-      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,callIv:p.callIv,putIv:p.putIv,skew:p.skew,fillColor:'#b6a6ff'};})}];
+      var series=[{name:'Ticker',data:pts.map(function(p){return {x:p.x,y:p.y,tk:p.tk,ivNow:p.ivNow,callZeta:p.callZeta,putZeta:p.putZeta,skew:p.skew,fillColor:'#b6a6ff'};})}];
       var qopts=Object.assign(baseChart(470,'scatter'),{
         series:series,
         markers:{size:8,strokeWidth:0,colors:['#b6a6ff']},
@@ -348,11 +363,14 @@
         tooltip:{theme:'dark',style:{fontSize:'13px'},custom:function(o){
           var p=o.w.config.series[0].data[o.dataPointIndex];
           if(isCS){
+            // positiver Call-Skew = OTM-Calls > ATM (bullish, Nachfrage nach Upside)
+            // positiver Put-Skew  = OTM-Puts > ATM  (defensiv, Absicherungsnachfrage)
+            var czStr=p.callZeta!=null?(p.callZeta>0?'<span style="color:#48e878">+'+p.callZeta.toFixed(1)+' pts (pos.)</span>':'<span style="color:#ff4d5e">'+p.callZeta.toFixed(1)+' pts (neg.)</span>'):'—';
+            var pzStr=p.putZeta!=null ?(p.putZeta >0?'<span style="color:#ff4d5e">+'+p.putZeta.toFixed(1)+' pts (pos.)</span>':'<span style="color:#48e878">'+p.putZeta.toFixed(1)+' pts (neg.)</span>'):'—';
             return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b>'+
-              '<br>Call-Skew '+p.x+'% · Put-Skew '+p.y+'%'+
-              '<br>Call-IV '+(p.callIv!=null?(p.callIv*100).toFixed(1)+'%':'—')+
-              ' · Put-IV '+(p.putIv!=null?(p.putIv*100).toFixed(1)+'%':'—')+
-              (p.skew!=null?'<br>25Δ Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts':'')+
+              '<br>Call-Skew '+mLbl+' '+p.x+'% · Put-Skew '+mLbl+' '+p.y+'%'+
+              '<br>Call-Skew: '+czStr+' · Put-Skew: '+pzStr+
+              (p.skew!=null?'<br>Net-Skew (Put−Call) '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts':'')+
               '</div>';
           }
           return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b>'+
