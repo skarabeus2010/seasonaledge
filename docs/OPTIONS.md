@@ -159,6 +159,16 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 - **429 unterscheiden:** Burst-Rate-Limit (Throttle hilft) vs. **Tages-Credit-Limit** (nur Zeit hilft). Massive-Flatrate umgeht beide; kleiner Seiten-Throttle bleibt.
 - **Blog-Chart-Embed:** Markdown referenziert `<slug>/datei.png` (Builder prependet `images/`; Post rendert unter `/blog/<slug>/` → finale URL `/blog/<slug>/images/<slug>/datei.png` = **200**; der doppelt aussehende Slug-Pfad ist korrekt, exakt wie beim Dealer-Post).
 - **GEX-Universum = Kern-Set (~20)**, nicht die 156 (Voll-Chain-GEV pro Ticker ist schwer) → Vol-Trigger/Key-Levels/Charm nur für Indizes+Mag7; Kategorie-Filter zeigt dort ggf. „nur Kern-Ticker".
+- **Realized Vol = CBOE-Formel** (Log-Returns, mittelwert-bereinigte Stichproben-Varianz ÷(N−1), ×√252) — war schon korrekt, nur als Dezimal gespeichert (Anzeige ×100). **VRP-Horizont-Bug (2026-09-08):** 30-Kalendertage-IV gegen 30-**Handels**tage-Realized (≈42 Kalendertage) verglichen → Horizonte passten nicht; Fix: **21 HT = 1 Monat** (CBOE). SPY-VRP dadurch +0,6 → +4,2 (korrekt). `_realized_vol(sym, n=21)`, Feld `rv_1m`.
+- **HTML-Browser-Cache-Falle:** die Options-Seiten-Routen hatten `Cache-Control: public, max-age=3600` → Änderungen erschienen bis zu 1 h nicht (normaler Reload = alte HTML), „ich sehe nichts". Fix: die 6 Options-Routen auf **`max-age=0, must-revalidate`** (immer frisch via ETag). Bei UI-Änderungen, die „nicht ankommen": zuerst Cache prüfen (`curl -D-`), Hard-Refresh, sonst diese Header.
+- **Gmail rendert Sonderzeichen nicht** (das ⌥-Options-Symbol war unsichtbar → nur der Zahlenwert blieb, „das sind keine Skews"). In E-Mails **klare Text-Labels** statt exotischer Unicode-Symbole.
+- **`.env`-Änderung greift erst nach `docker compose up -d --force-recreate app`** (env_file wird beim Container-Start gelesen; ein reiner Restart reichte im Test manchmal nicht → force-recreate).
+
+## Integration ins Morning Briefing + Health-Check
+
+- **Skew + Skew-Percentile je Titel im Morning Briefing** (`shared/daily_report.py`): `skew_map()` (aus `options_skew.json`) + `skew_pctl_map()` (Percentile aus `options_skew_history.json`, 1-J-Fenster) → Ticker-Zeilen (Kernliste + Watchlist) bekommen `skew_pts`/`skew_pctl`; Template `daily_report.html.j2` zeigt eine **eigene „Skew"-Spalte** (Wert + `P{pctl}`), nur US-optionierbare Titel. Cache-gelesen pro Lauf.
+- **Skew-Rank/Percentile-Spalte auf `/skew`** (`_skewMetric()`), folgt dem Rank↔Percentile-Umschalter + Fenster, heatmap-gefärbt.
+- **Health-Check** (`daily_health_check.py`) prüft alle Options-Dateien: „Options: Skew/IV", „Options: GEX-Ketten", „Options: Key Levels/IV-Surface/Flow" (Frische via `generated`-Datum + Ticker-Zahl, wochenend-/feiertags-tolerant).
 
 ## Offene TODOs (Options)
 
