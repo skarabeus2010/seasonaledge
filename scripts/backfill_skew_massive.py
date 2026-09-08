@@ -159,10 +159,47 @@ def _bars(occ: str, key: str, d_from: str, d_to: str, strict: bool = False) -> d
         try:
             ds = datetime.fromtimestamp(b["t"] / 1000, tz=timezone.utc).date().isoformat()
             if b.get("c"):
-                out[ds] = float(b["c"])
+                # Volumen mitnehmen: der Schlusskurs ist der LETZTE Trade, bei duennen
+                # Kontrakten also womoeglich Stunden alt. Gepaart mit dem Schlusskurs
+                # des Basiswerts ergibt das eine zu tiefe IV. Das Volumen ist der
+                # einzige Hinweis auf die Frische, den die Aggregates hergeben.
+                out[ds] = (float(b["c"]), float(b.get("v") or 0))
         except Exception:
             continue
     return out
+
+
+_QUOTES = ("https://api.polygon.io/v3/quotes/{occ}"
+           "?timestamp.gte={f}&timestamp.lte={t}&order=desc&sort=timestamp&limit=1")
+
+
+def _quote_mid(occ: str, key: str, d: str, strict: bool = False):
+    """Letzte Bid/Ask-Mitte vor Handelsschluss. None wenn keine Quote.
+
+    Warum überhaupt: Die Aggregates liefern den letzten TRADE. Bei dünnen
+    Kontrakten liegt der Stunden vor dem Schluss, wird aber mit dem
+    SCHLUSSKURS des Basiswerts gepaart — daraus entsteht eine verzerrte IV
+    (MU 25Δ-Call: 4 Vol-Punkte zu tief). Eine Quote zum Schluss ist zeitlich
+    sauber und kennt keine Aggressor-Verzerrung.
+
+    Fenster 19:30-21:05 UTC deckt Sommer- (Close 20:00) und Winterzeit
+    (21:00) ab; die letzte Quote darin ist in beiden Fällen die zum Schluss."""
+    url = _QUOTES.format(occ=occ, f=f"{d}T19:30:00Z", t=f"{d}T21:05:00Z")
+    try:
+        r = _get(url, key)
+    except Exception:
+        if strict:
+            raise
+        return None
+    res = r.get("results") or []
+    if not res:
+        return None
+    q = res[0]
+    b, a = q.get("bid_price"), q.get("ask_price")
+    if not b or not a or a < b:
+        return None
+    return {"mid": round((b + a) / 2, 4), "bid": b, "ask": a,
+            "spread_pct": round(100 * (a - b) / ((a + b) / 2), 1) if (a + b) else None}
 
 
 def _closes(sym: str) -> dict:
@@ -234,13 +271,21 @@ def _plan(closes: dict, contracts: list, targets: list,
     return plan, need
 
 
-def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict) -> dict | None:
-    """IV je Kontrakt invertieren, 25Δ + 50Δ picken, Metriken rechnen."""
+def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
+                 min_vol: float = 0.0) -> dict | None:
+    """IV je Kontrakt invertieren, 25Δ + 50Δ picken, Metriken rechnen.
+
+    min_vol verwirft Kontrakte, die am Zieltag kaum gehandelt haben — deren
+    Schlusskurs ist ein alter Print und liefert gegen den Schlusskurs des
+    Basiswerts eine verzerrte IV."""
     T = dte / 365.0
     best: dict = {"call": {}, "put": {}}
     for occ in occs:
-        px = bars.get(occ, {}).get(d)
-        if not px:
+        rec = bars.get(occ, {}).get(d)
+        if not rec:
+            continue
+        px, vol = rec
+        if min_vol and vol < min_vol:
             continue
         c = need[occ]
         typ, K = c["contract_type"], float(c["strike_price"])
@@ -275,7 +320,8 @@ def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: di
     return r
 
 
-def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwrite: bool) -> int:
+def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwrite: bool,
+               min_vol: float = 0.0) -> int:
     closes = _closes(sym)
     if not closes:
         print(f"  {sym:6} keine Kursreihe — übersprungen", flush=True); return 0
@@ -314,7 +360,7 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
 
     added = 0
     for d, (exp, dte, occs) in sorted(plan.items()):
-        r = _reconstruct(d, closes[d], dte, occs, need, bars)
+        r = _reconstruct(d, closes[d], dte, occs, need, bars, min_vol=min_vol)
         if r:
             arr.append(r); added += 1
     # Dedup je Datum (neuere Rekonstruktion gewinnt), dann sortieren
@@ -379,7 +425,8 @@ def probe(sym: str, key: str) -> int:
     print(f"    Im Fenster {wide_f}..{exp}: {len(wide)} Handelstage mit Kurs", flush=True)
     if wide:
         ds = sorted(wide)
-        print(f"    z.B. {ds[0]}={wide[ds[0]]}  …  {ds[-1]}={wide[ds[-1]]}", flush=True)
+        print(f"    z.B. {ds[0]}: Kurs {wide[ds[0]][0]} Vol {wide[ds[0]][1]:.0f}  …  "
+              f"{ds[-1]}: Kurs {wide[ds[-1]][0]} Vol {wide[ds[-1]][1]:.0f}", flush=True)
 
     bars, hit = {}, 0
     for occ in occs:
@@ -425,7 +472,86 @@ def probe(sym: str, key: str) -> int:
     return 0
 
 
-def verify(syms: list, key: str) -> int:
+def probe_quotes(sym: str, key: str) -> int:
+    """Prüft den Quotes-Weg — und misst direkt, was er gegenüber Trades bringt.
+
+    Zwei Fragen auf einmal:
+      (1) Liefert der Quotes-Endpoint überhaupt für VERFALLENE Kontrakte?
+      (2) Wie groß ist die Lücke Trade-Schluss vs. Quote-Mitte, und rettet sie
+          das Zeta? Nur das entscheidet, ob der Zwei-Pass-Umbau lohnt."""
+    print(f"=== QUOTES-PROBE {sym} ===", flush=True)
+    closes = _closes(sym)
+    if not closes:
+        print("[FAIL] keine Kursreihe"); return 1
+    d = sorted(closes)[-40]
+    spot = closes[d]
+    print(f"[1] Zieldatum {d}, Spot {spot:.2f}", flush=True)
+
+    exp_hi = (date.fromisoformat(d) + timedelta(days=_DTE_MAX)).isoformat()
+    cs = _list_contracts(sym, key, d, exp_hi, spot * 0.7, spot * 1.3)
+    plan, need = _plan(closes, cs, [d])
+    if not plan:
+        print("[FAIL] kein planbares Zieldatum"); return 3
+    exp, dte, occs = plan[d]
+    print(f"[2] Expiry {exp} · DTE {dte} · {len(occs)} Kontrakte", flush=True)
+
+    # Roh-Test am ersten Kontrakt: antwortet der Endpoint fuer Verfallenes?
+    print(f"[3] Roh-Test {occs[0]}", flush=True)
+    try:
+        q0 = _quote_mid(occs[0], key, d, strict=True)
+        print(f"    {'Quote: ' + str(q0) if q0 else 'keine Quote im Fenster'}", flush=True)
+    except Exception as e:
+        print(f"    [HTTP-FEHLER] {type(e).__name__}: {str(e)[:200]}", flush=True)
+        print("\n[FAIL] Quotes-Endpoint nicht verfuegbar (Abo/Tier). Der Zwei-Pass-Weg "
+              "ist damit versperrt — bleibt die Vorwaerts-Akkumulation.", flush=True)
+        return 4
+
+    bars_t = {occ: _bars(occ, key, d, d) for occ in occs}
+    bars_q, hits, spreads = {}, 0, []
+    print(f"[4] Quotes fuer {len(occs)} Kontrakte …", flush=True)
+    for occ in occs:
+        q = _quote_mid(occ, key, d)
+        if q:
+            hits += 1
+            spreads.append(q["spread_pct"] or 0)
+            bars_q[occ] = {d: (q["mid"], 1e9)}       # Volumen irrelevant, Quote ist frisch
+        else:
+            bars_q[occ] = {}
+    print(f"    {hits}/{len(occs)} mit Quote · mittlerer Spread "
+          f"{sum(spreads)/len(spreads):.1f}%" if spreads else "    keine Quotes", flush=True)
+    if hits == 0:
+        print("\n[FAIL] Keine Quotes fuer verfallene Kontrakte.", flush=True); return 5
+
+    # Die eigentliche Aussage: Trade-Schluss gegen Quote-Mitte je Kontrakt
+    print(f"\n[5] Trade-Schluss vs. Quote-Mitte (Auszug):", flush=True)
+    print(f"    {'Strike':>9}{'Typ':>6}{'Vol':>8}{'Trade':>9}{'Quote':>9}{'Abw %':>8}", flush=True)
+    shown = 0
+    for occ in occs:
+        t, q = bars_t.get(occ, {}).get(d), bars_q.get(occ, {}).get(d)
+        if not t or not q or shown >= 10:
+            continue
+        c = need[occ]
+        dev = 100 * (t[0] - q[0]) / q[0] if q[0] else 0
+        print(f"    {c['strike_price']:>9.1f}{c['contract_type']:>6}{t[1]:>8.0f}"
+              f"{t[0]:>9.2f}{q[0]:>9.2f}{dev:>+8.1f}", flush=True)
+        shown += 1
+
+    print(f"\n[6] Rekonstruktion im Vergleich:", flush=True)
+    rt = _reconstruct(d, spot, dte, occs, need, bars_t)
+    rq = _reconstruct(d, spot, dte, occs, need, bars_q)
+    print(f"    {'Quelle':<14}{'ATM':>8}{'Call':>8}{'Put':>8}{'cZeta':>8}{'pZeta':>8}", flush=True)
+    for lbl, r in (("Trades", rt), ("Quotes", rq)):
+        if not r:
+            print(f"    {lbl:<14} keine Rekonstruktion", flush=True); continue
+        print(f"    {lbl:<14}{(r.get('iv_atm') or 0)*100:>8.2f}{(r.get('call_iv') or 0)*100:>8.2f}"
+              f"{(r.get('put_iv') or 0)*100:>8.2f}{r.get('call_zeta_pts') or 0:>+8.2f}"
+              f"{r.get('put_zeta_pts') or 0:>+8.2f}", flush=True)
+    print("\n[OK] Quotes verfuegbar. Ob sie das Zeta retten, zeigt der Vergleich oben — "
+          "massgeblich ist ein --verify-Lauf gegen die Provider-Werte.", flush=True)
+    return 0
+
+
+def verify(syms: list, key: str, min_vol: float = 0.0) -> int:
     """Rekonstruktion gegen die Provider-IV der Vorwaerts-Akkumulation halten.
 
     Die History enthaelt Eintraege OHNE 'reconstructed' — die stammen aus dem
@@ -493,7 +619,7 @@ def verify(syms: list, key: str) -> int:
                 if d not in pl:
                     continue
                 exp, dte, occs = pl[d]
-                r = _reconstruct(d, closes[d], dte, occs, nd, bars)
+                r = _reconstruct(d, closes[d], dte, occs, nd, bars, min_vol=min_vol)
                 if not r:
                     continue
                 _, rcz, rpz = _row(lbl, dte, r.get("iv_atm"), r.get("call_iv"), r.get("put_iv"))
@@ -544,6 +670,11 @@ def main() -> int:
     ap.add_argument("--probe", action="store_true", help="nur Annahmen pruefen, nichts schreiben")
     ap.add_argument("--verify", action="store_true",
                     help="Rekonstruktion gegen Provider-IV halten, nichts schreiben")
+    ap.add_argument("--probe-quotes", action="store_true",
+                    help="Quotes-Endpoint pruefen + Trade-Schluss gegen Quote-Mitte messen")
+    ap.add_argument("--min-vol", type=float, default=0.0,
+                    help="Kontrakte mit weniger Tagesvolumen verwerfen (0=aus). Gegen alte "
+                         "Trade-Prints, die mit dem Schlusskurs gepaart eine zu tiefe IV geben.")
     a = ap.parse_args()
 
     key = os.environ.get("MASSIVE_API_KEY", "")
@@ -553,8 +684,10 @@ def main() -> int:
     syms = a.symbols or (all_option_tickers() if a.all else _DEFAULT)
     if a.probe:
         return probe(syms[0], key)
+    if a.probe_quotes:
+        return probe_quotes(syms[0], key)
     if a.verify:
-        return verify(syms, key)
+        return verify(syms, key, min_vol=a.min_vol)
 
     hp = _ROOT / "landing/data/options_skew_history.json"
     hist = {}
@@ -568,7 +701,8 @@ def main() -> int:
     for i, sym in enumerate(syms, 1):
         print(f"[{i}/{len(syms)}] {sym}", flush=True)
         try:
-            total += run_ticker(sym, key, a.years, a.every_n_td, hist, a.overwrite)
+            total += run_ticker(sym, key, a.years, a.every_n_td, hist, a.overwrite,
+                                min_vol=a.min_vol)
         except KeyboardInterrupt:
             print("\n[abgebrochen] Fortschritt ist gespeichert."); break
         except Exception as e:
