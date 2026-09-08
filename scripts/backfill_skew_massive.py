@@ -282,12 +282,15 @@ def _plan(closes: dict, contracts: list, targets: list,
         dtes = sorted(((date.fromisoformat(e) - dd).days, e) for e in pool)
         below = [x for x in dtes if _DTE_MIN <= x[0] <= _CM_DAYS]
         above = [x for x in dtes if _CM_DAYS < x[0] <= _DTE_MAX]
-        legs_raw = []
-        if below:
-            legs_raw.append(below[-1])            # größte Laufzeit ≤ Ziel
-        if above:
-            legs_raw.append(above[0])             # kleinste Laufzeit > Ziel
-        if not legs_raw:
+        if below and above:
+            legs_raw = [below[-1], above[0]]      # echtes Bracket um _CM_DAYS
+        elif len(above) >= 2:
+            legs_raw = above[:2]                  # nur längere: nach unten extrapolieren
+        elif len(below) >= 2:
+            legs_raw = below[-2:]                 # nur kürzere: nach oben extrapolieren
+        elif below or above:
+            legs_raw = [(below or above)[0]]      # einzelne Stützstelle, Toleranz greift später
+        else:
             continue
         lo, hi = spot * (1 - _BAND), spot * (1 + _BAND)
         legs = []
@@ -383,11 +386,18 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
 
     if len(got) >= 2:
         a, b = got[0], got[1]
+        lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
+        # Extrapolation zulassen, aber nur kurz: kurz vor dem Roll liegt kein
+        # Monatsverfall mehr unter 30 Tagen, und die Alternative waere ein
+        # nicht normierter Einzelpunkt, der den Saegezahn zurueckbringt.
+        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS), abs(hi_d - _CM_DAYS)) > 15:
+            return None
         call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
         put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
         iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
                   if (a["iv_atm"] and b["iv_atm"]) else None)
-        dte_out, mode = _CM_DAYS, "cm"
+        dte_out = _CM_DAYS
+        mode = "cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"
     else:
         # Nur eine Stützstelle: ohne zweiten Punkt keine Interpolation möglich.
         # Tritt in jedem Verfallszyklus kurz vor dem Roll auf, wenn der nahe
@@ -426,6 +436,16 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
         print(f"  {sym:6} zu wenig Handelstage im Fenster", flush=True); return 0
 
     arr = hist.setdefault(sym, [])
+    if overwrite:
+        # Alte Rekonstruktionen VERWERFEN, nicht nur ueberschreiben. Sonst ueberleben
+        # genau die Tage, die der neue Lauf nicht reproduzieren kann — beim Umstieg
+        # auf konstante Laufzeit blieben so 14 Saegezahn-Eintraege in der Reihe.
+        # Provider-Eintraege bleiben unangetastet.
+        n_old = len(arr)
+        arr = [e for e in arr if e.get("src") != "massive"]
+        hist[sym] = arr
+        if n_old != len(arr):
+            print(f"  {sym:6} {n_old - len(arr)} alte Rekonstruktionen verworfen", flush=True)
     have = {e["date"] for e in arr} if not overwrite else set()
     todo = [d for d in targets if d not in have]
     if not todo:
