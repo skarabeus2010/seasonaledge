@@ -143,11 +143,16 @@ def _list_contracts(sym: str, key: str, exp_lo: str, exp_hi: str, k_lo: float, k
     return out
 
 
-def _bars(occ: str, key: str, d_from: str, d_to: str) -> dict:
-    """Tagesschluss je Datum für EINEN Kontrakt — ein Call für den ganzen Zeitraum."""
+def _bars(occ: str, key: str, d_from: str, d_to: str, strict: bool = False) -> dict:
+    """Tagesschluss je Datum für EINEN Kontrakt — ein Call für den ganzen Zeitraum.
+
+    strict=True lässt Fehler durch (für die Probe). Im Massenlauf wird geschluckt,
+    sonst reißt ein einzelner toter Kontrakt den ganzen Ticker ab."""
     try:
         d = _get(_AGGS.format(occ=occ, f=d_from, t=d_to), key)
     except Exception:
+        if strict:
+            raise
         return {}
     out = {}
     for b in d.get("results") or []:
@@ -175,6 +180,12 @@ def _closes(sym: str) -> dict:
 
 
 # ── Rekonstruktion ──────────────────────────────────────────────────────────
+def _is_monthly(iso: str) -> bool:
+    """Standard-Monatsverfall = 3. Freitag des Monats (Tag 15-21 und ein Freitag)."""
+    d = date.fromisoformat(iso)
+    return d.weekday() == 4 and 15 <= d.day <= 21
+
+
 def _plan(closes: dict, contracts: list, targets: list) -> tuple[dict, dict]:
     """Je Zieldatum Expiry+Kontrakte festlegen. Rückgabe: (plan, benötigte Kontrakte)."""
     by_exp: dict[str, list] = {}
@@ -190,7 +201,15 @@ def _plan(closes: dict, contracts: list, targets: list) -> tuple[dict, dict]:
         if not cand:
             continue
         dd = date.fromisoformat(d)
-        exp = min(cand, key=lambda e: abs((date.fromisoformat(e) - dd).days - 30))
+        # Standard-Monatsverfall bevorzugen (3. Freitag), dann irgendein Freitag.
+        # Blind die 30-DTE-naechste Laufzeit zu nehmen greift bei liquiden Titeln
+        # die Mittwochs-Weeklies ab — die 30 Tage im Voraus kaum handeln (keine
+        # Trades = keine Bars) und eine Percentile-Reihe zusaetzlich inhomogen
+        # machen. Die Liquiditaet sitzt im Monatsverfall.
+        pool = ([e for e in cand if _is_monthly(e)]
+                or [e for e in cand if date.fromisoformat(e).weekday() == 4]
+                or cand)
+        exp = min(pool, key=lambda e: abs((date.fromisoformat(e) - dd).days - 30))
         dte = (date.fromisoformat(exp) - dd).days
         if not (_DTE_MIN <= dte <= _DTE_MAX):
             continue
@@ -326,16 +345,71 @@ def probe(sym: str, key: str) -> int:
     if not plan:
         print("[FAIL] kein planbares Zieldatum"); return 3
     exp, dte, occs = plan[d]
-    print(f"[3] Expiry {exp} (DTE {dte}), {len(occs)} Kontrakte geplant", flush=True)
+    _wd = date.fromisoformat(exp).strftime("%a")
+    _kind = "Monatsverfall" if _is_monthly(exp) else (
+        "Freitags-Weekly" if date.fromisoformat(exp).weekday() == 4 else "NICHT-Freitag (illiquide!)")
+    print(f"[3] Expiry {exp} ({_wd}, {_kind}) · DTE {dte} · {len(occs)} Kontrakte geplant", flush=True)
+
+    # [4] Der kritische Test — und er muss die drei Ursachen TRENNEN:
+    #     (a) Abo deckt historische Options-Aggregates nicht ab  -> HTTP-Fehler
+    #     (b) verfallene Kontrakte generell gesperrt              -> leer, aber aktive gehen
+    #     (c) kein Trade an genau diesem Tag                      -> leer, aber Range hat Daten
+    probe_occ = occs[len(occs) // 4]                      # near-the-money, nicht der Rand
+    print(f"[4] Roh-Test am verfallenen Kontrakt {probe_occ}", flush=True)
+    url = _AGGS.format(occ=probe_occ, f=d, t=d)
+    print(f"    URL: {url.split('?')[0]}", flush=True)
+    try:
+        raw = _get(url, key)
+        print(f"    Antwort: status={raw.get('status')!r} resultsCount={raw.get('resultsCount')} "
+              f"queryCount={raw.get('queryCount')}", flush=True)
+        if raw.get("message") or raw.get("error"):
+            print(f"    message={raw.get('message') or raw.get('error')}", flush=True)
+    except Exception as e:
+        print(f"    [HTTP-FEHLER] {type(e).__name__}: {str(e)[:200]}", flush=True)
+        print("\n[FAIL] (a) Der Endpoint antwortet gar nicht — Abo/Tier deckt historische "
+              "Options-Aggregates nicht ab. Massive-Plan pruefen.", flush=True)
+        return 4
+
+    # (c) ausschliessen: weiteres Fenster um das Zieldatum
+    wide_f = (date.fromisoformat(d) - timedelta(days=20)).isoformat()
+    wide = _bars(probe_occ, key, wide_f, exp, strict=True)
+    print(f"    Im Fenster {wide_f}..{exp}: {len(wide)} Handelstage mit Kurs", flush=True)
+    if wide:
+        ds = sorted(wide)
+        print(f"    z.B. {ds[0]}={wide[ds[0]]}  …  {ds[-1]}={wide[ds[-1]]}", flush=True)
 
     bars, hit = {}, 0
     for occ in occs:
-        bars[occ] = _bars(occ, key, d, d)
+        bars[occ] = _bars(occ, key, wide_f, exp)
         if bars[occ].get(d):
             hit += 1
-    print(f"[4] Bars fuer VERFALLENE Kontrakte: {hit}/{len(occs)} mit Kurs am {d}", flush=True)
+    any_data = sum(1 for b in bars.values() if b)
+    print(f"[4b] {hit}/{len(occs)} Kontrakte mit Kurs am {d} · "
+          f"{any_data}/{len(occs)} mit Kursen irgendwo im Fenster", flush=True)
+
     if hit == 0:
-        print("[FAIL] Keine Bars fuer verfallene Kontrakte — Backfill so nicht moeglich"); return 4
+        if any_data:
+            print(f"\n[TEILWEISE] (c) Daten sind da, aber nicht am {d} — die Kontrakte haben an "
+                  "diesem Tag nicht gehandelt. Fix: Zieldatum auf den naechsten Tag mit Kursen "
+                  "schieben statt zu verwerfen.", flush=True)
+            return 6
+        # (b) pruefen: geht ein AKTIVER Kontrakt?
+        print("\n[5] Gegenprobe mit AKTIVEM (nicht verfallenem) Kontrakt …", flush=True)
+        today = date.today().isoformat()
+        fut = (date.today() + timedelta(days=200)).isoformat()
+        act = _list_contracts(sym, key, today, fut, closes[sorted(closes)[-1]] * 0.9,
+                              closes[sorted(closes)[-1]] * 1.1)
+        act = [c for c in act if c.get("expiration_date", "") > today]
+        if act:
+            a_occ = act[len(act) // 2]["ticker"]
+            ab = _bars(a_occ, key, (date.today() - timedelta(days=30)).isoformat(), today)
+            print(f"    aktiver Kontrakt {a_occ}: {len(ab)} Handelstage", flush=True)
+            if ab:
+                print("\n[FAIL] (b) Aktive Kontrakte liefern Bars, verfallene nicht. Historische "
+                      "Rekonstruktion ueber Aggregates ist damit versperrt.", flush=True)
+                return 7
+        print("\n[FAIL] Aggregates liefern generell keine Options-Bars — Abo/Tier pruefen.", flush=True)
+        return 4
 
     r = _reconstruct(d, spot, dte, occs, need, bars)
     if not r:
