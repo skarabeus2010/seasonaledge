@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 """
+backfill_skew_history.py — STILLGELEGT (2026-09-08). Nachfolger: backfill_skew_massive.py
+
+Läuft komplett über MARKETDATA_API_KEY — dieses Abo haben wir nicht mehr, Massive
+ist die einzige Options-Quelle. Zweite Schwäche: speichert kein iv_atm, dadurch
+lässt sich kein echtes Zeta rechnen (der Vol-Regime-Radar fällt auf eine Näherung
+zurück, die beide Achsen spiegelbildlich macht). Bleibt als Referenz für die
+BS-Inversion liegen, die im Nachfolger unverändert weiterlebt.
+
+--- ursprüngliche Doku ---
+
 backfill_skew_history.py — historisches 25Δ-Skew rekonstruieren (Black-Scholes).
 
 marketdata liefert historisch nur Preise (kein IV/Greeks), aber eine breite
