@@ -84,9 +84,22 @@ def _chain(sym: str, key: str, spot=None) -> list:
     return out
 
 
-def _pick(lst, target):
-    """Kontrakt mit |delta| am nächsten an target (lst = [(delta, iv, strike, oi), …])."""
-    return min(lst, key=lambda x: abs(abs(x[0]) - target)) if lst else None
+_DELTA_TOL = 0.08   # max. Abweichung vom Ziel-Delta, sonst gilt die Stützstelle als unbrauchbar
+
+
+def _pick(lst, target, tol=None):
+    """Kontrakt mit |delta| am nächsten an target (lst = [(delta, iv, strike, oi), …]).
+
+    tol: maximal erlaubte Abweichung vom Ziel. Ohne Toleranz liefert min() IMMER
+    einen Treffer — bei dünner Kette also z.B. einen 0,40Δ-Kontrakt, der dann still
+    als „25Δ" etikettiert wird und den Ticker-übergreifenden Vergleich verfälscht.
+    Mit tol wird daraus None → der Ticker fällt für den Tag sauber raus."""
+    if not lst:
+        return None
+    best = min(lst, key=lambda x: abs(abs(x[0]) - target))
+    if tol is not None and abs(abs(best[0]) - target) > tol:
+        return None
+    return best
 
 
 def _byexp(contracts: list) -> dict:
@@ -123,22 +136,29 @@ def _index_series(sym: str, days: int = 504) -> dict:
 def _realized_vol(sym: str, n: int = 21):
     """Annualisierte realisierte Vola über n Handelstage (CBOE-Formel), Decimal.
     n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
-    RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1})."""
+    RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1}).
+
+    Rückgabe: (rv, last_close). Der letzte Close dient als Spot-Fallback — der
+    Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08: Spot 0,00),
+    und die Kursreihe ist hier ohnehin schon geladen."""
     try:
         df = download_data(sym, period="6mo")
     except Exception:
-        clear_cache(); gc.collect(); return None
-    if df is None or len(df) < n + 5:
-        clear_cache(); gc.collect(); return None
+        clear_cache(); gc.collect(); return None, None
+    if df is None or len(df) == 0:
+        clear_cache(); gc.collect(); return None, None
     c = df["Close"].to_numpy(dtype=float)
+    last = round(float(c[-1]), 2) if len(c) and c[-1] == c[-1] else None
+    if len(df) < n + 5:
+        clear_cache(); gc.collect(); return None, last
     r = [math.log(c[i] / c[i - 1]) for i in range(1, len(c)) if c[i - 1] > 0 and c[i] > 0]
     clear_cache(); gc.collect()
     if len(r) < n:
-        return None
+        return None, last
     seg = r[-n:]
     m = sum(seg) / n
     var = sum((x - m) ** 2 for x in seg) / (n - 1)        # Stichproben-Varianz (÷ N−1)
-    return round(math.sqrt(var) * math.sqrt(252), 4)      # × √252 annualisiert
+    return round(math.sqrt(var) * math.sqrt(252), 4), last  # × √252 annualisiert
 
 
 def _nearest_exp(by: dict, target_dte: int):
@@ -150,7 +170,7 @@ def _skew_at(by: dict, target_dte: int) -> dict | None:
     ex = _nearest_exp(by, target_dte)
     if ex is None:
         return None
-    e = by[ex]; cc = _pick(e["call"], 0.25); pp = _pick(e["put"], 0.25)
+    e = by[ex]; cc = _pick(e["call"], 0.25, tol=_DELTA_TOL); pp = _pick(e["put"], 0.25, tol=_DELTA_TOL)
     if not cc or not pp:
         return None
     return {"exp": ex, "dte": e["dte"], "call_iv": cc[1], "call_strike": cc[2], "call_delta": round(cc[0], 3),
@@ -200,12 +220,16 @@ def _enrich(sym: str, key: str) -> dict | None:
     term.sort(key=lambda t: t["dte"])
     iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"] if term else None
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
-    rv1m = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
-    if not spot:                                    # Fallback: Underlying aus dem Snapshot
+    rv1m, last_close = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
+    if not spot:                                    # Fallback 1: Underlying aus dem Snapshot
         for c in contracts:
             p = (c.get("underlying_asset") or {}).get("price")
             if p:
                 spot = round(float(p), 2); break
+    if not spot:                                    # Fallback 2: letzter Close aus eigener Kursreihe
+        spot = last_close
+        if spot:
+            print(f"  [spot] {sym}: Massive ohne Underlying → letzter Close {spot}", flush=True)
     r = {
         "ticker": sym, "cats": categories_for(sym), "underlying": spot, "dte": s30["dte"],
         "put_vol": pv, "call_vol": cv, "put_oi": poi, "call_oi": coi,
