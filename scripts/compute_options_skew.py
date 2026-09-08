@@ -120,26 +120,25 @@ def _index_series(sym: str, days: int = 504) -> dict:
         return {}
 
 
-def _realized_vol(sym: str):
-    """Annualisierte realisierte Vola (20d, 30d) aus unseren Kursen. Decimals."""
+def _realized_vol(sym: str, n: int = 21):
+    """Annualisierte realisierte Vola über n Handelstage (CBOE-Formel), Decimal.
+    n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
+    RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1})."""
     try:
         df = download_data(sym, period="6mo")
     except Exception:
-        clear_cache(); gc.collect(); return None, None
-    if df is None or len(df) < 25:
-        clear_cache(); gc.collect(); return None, None
+        clear_cache(); gc.collect(); return None
+    if df is None or len(df) < n + 5:
+        clear_cache(); gc.collect(); return None
     c = df["Close"].to_numpy(dtype=float)
     r = [math.log(c[i] / c[i - 1]) for i in range(1, len(c)) if c[i - 1] > 0 and c[i] > 0]
     clear_cache(); gc.collect()
-
-    def rv(n):
-        if len(r) < n:
-            return None
-        seg = r[-n:]
-        m = sum(seg) / n
-        var = sum((x - m) ** 2 for x in seg) / (n - 1)
-        return round(math.sqrt(var) * math.sqrt(252), 4)
-    return rv(20), rv(30)
+    if len(r) < n:
+        return None
+    seg = r[-n:]
+    m = sum(seg) / n
+    var = sum((x - m) ** 2 for x in seg) / (n - 1)        # Stichproben-Varianz (÷ N−1)
+    return round(math.sqrt(var) * math.sqrt(252), 4)      # × √252 annualisiert
 
 
 def _nearest_exp(by: dict, target_dte: int):
@@ -201,7 +200,7 @@ def _enrich(sym: str, key: str) -> dict | None:
     term.sort(key=lambda t: t["dte"])
     iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"] if term else None
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
-    rv20, rv30 = _realized_vol(sym)
+    rv1m = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
     if not spot:                                    # Fallback: Underlying aus dem Snapshot
         for c in contracts:
             p = (c.get("underlying_asset") or {}).get("price")
@@ -213,8 +212,8 @@ def _enrich(sym: str, key: str) -> dict | None:
         "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
         "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
         "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
-        "iv_atm": iv_atm, "rv20": rv20, "rv30": rv30,
-        "vrp_pts": round((iv_atm - rv30) * 100, 2) if (iv_atm and rv30) else None,
+        "iv_atm": iv_atm, "rv_1m": rv1m,
+        "vrp_pts": round((iv_atm - rv1m) * 100, 2) if (iv_atm and rv1m) else None,
         "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
         "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
         "skew_back_pts": s90["skew_pts"] if s90 else None,
