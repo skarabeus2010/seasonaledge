@@ -60,7 +60,8 @@ _THROTTLE = 0.05    # Flatrate, kleiner Puffer gegen Burst-429
 _BAND = 0.30        # Strike-Fenster um den Spot des jeweiligen Zieldatums
 _MAX_STRIKES = 24   # je Seite und Expiry — reicht, um 25Δ und 50Δ sauber zu klammern
 _DELTA_TOL = 0.08   # wie in compute_options_skew.py: darüber ist die Stützstelle unbrauchbar
-_DTE_MIN, _DTE_MAX = 10, 60
+_DTE_MIN, _DTE_MAX = 7, 75    # Spanne fuer Interpolations-Stuetzstellen
+_SINGLE_TOL = 10              # nur EINE Stuetzstelle: max. Abstand zu _CM_DAYS
 
 _DEFAULT = ["MU", "DELL", "BE", "SMH", "ARM", "SNDK", "AVGO", "NVDA", "AMD", "SPY", "QQQ"]
 
@@ -389,10 +390,12 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
         dte_out, mode = _CM_DAYS, "cm"
     else:
         # Nur eine Stützstelle: ohne zweiten Punkt keine Interpolation möglich.
-        # Dann nur akzeptieren, wenn die Laufzeit ohnehin nah am Ziel liegt —
-        # sonst wandert genau der Sägezahn zurück in die Reihe.
+        # Tritt in jedem Verfallszyklus kurz vor dem Roll auf, wenn der nahe
+        # Monatsverfall unter _DTE_MIN fällt. Diese Tage zu verwerfen kostet rund
+        # ein Viertel der Abdeckung, deshalb werden sie bis _SINGLE_TOL akzeptiert —
+        # mit cm_mode="single" markiert, damit der Rest-Sägezahn auditierbar bleibt.
         a = got[0]
-        if abs(a["dte"] - _CM_DAYS) > 8:
+        if abs(a["dte"] - _CM_DAYS) > _SINGLE_TOL:
             return None
         call_iv, put_iv, iv_atm = a["call_iv"], a["put_iv"], a["iv_atm"]
         dte_out, mode = a["dte"], "single"
