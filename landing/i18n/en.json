@@ -2,7 +2,7 @@
   "nav.zyklen": "Cycles",
   "nav.events": "Events",
   "nav.strategien": "Strategies",
-  "nav.optionen": "Options",
+  "nav.optionen": "Flows",
   "nav.mehr": "More",
   "nav.tour": "Tour",
   "nav.login": "Sign In",
@@ -1659,5 +1659,29 @@
   "iv.side_call": "Call / upside",
   "iv.tt_money": "Moneyness",
   "iv.tt_iv": "IV",
-  "dp.cv_intro": "<b>Charm</b> = delta drift over time &rarr; mechanical hedging flow into <b>OPEX</b> (pre-OPEX bid, then vol risk). <b>Vanna</b> = delta reaction to vol &rarr; flow on <b>VIX moves</b> (falling IV &rarr; upside bid). Markers: spot, zero-gamma flip, call/put wall. Naive dealer heuristic, EOD, <b>no signal</b>."
+  "dp.cv_intro": "<b>Charm</b> = delta drift over time &rarr; mechanical hedging flow into <b>OPEX</b> (pre-OPEX bid, then vol risk). <b>Vanna</b> = delta reaction to vol &rarr; flow on <b>VIX moves</b> (falling IV &rarr; upside bid). Markers: spot, zero-gamma flip, call/put wall. Naive dealer heuristic, EOD, <b>no signal</b>.",
+
+  "flows.glossar_title": "Terms &amp; Q&amp;A",
+  "flows.glossar_sub": "All metrics appearing on this page and the options pages — concisely explained.",
+  "flows.glossar_options_title": "Options Metrics",
+  "flows.glossar_flows_title": "Structural Flow Terms",
+
+  "flows.def_gex": "Market makers hold an aggregate gamma position they must neutralize by continuously buying or selling the underlying (<b>delta-hedging</b>). With <b>positive GEX (long-gamma regime)</b>, dealers buy dips and sell rallies — dampening volatility. With <b>negative GEX (short-gamma)</b>, they amplify moves. The <b>zero-gamma flip</b> is the spot price where the regime switches.",
+  "flows.def_vanna": "Vanna measures how much an option's delta changes with implied volatility (∂Delta/∂IV). When IV drops sharply (e.g., after a panic), OTM put deltas shrink — dealers who hedged short puts (<b>long underlying</b>) must sell. When IV rises, dealers must buy. Vanna flows are thus procyclical: they amplify IV moves.",
+  "flows.def_charm": "Charm is the time decay of delta (∂Delta/∂Time). OTM options lose delta rapidly near expiry, especially in the final days — dealers adjust hedges daily. The largest <b>charm flows</b> arise in the week before <b>OPEX</b> (third Friday) and before quarterly expirations.",
+  "flows.def_iv": "<b>Implied Volatility (IV)</b> is the market's expected future volatility derived from option prices (annualized). <b>IV Rank</b> = (IV_today − IV_52w_min) / (IV_52w_max − IV_52w_min) — where IV sits in its year range. <b>IV Percentile</b> = share of trading days in the window where IV was lower than today — more robust to outliers. Readings &gt;70% signal relatively expensive premiums.",
+  "flows.def_vrp": "<b>Volatility Risk Premium (VRP)</b> = 30-day IV minus 21-trading-day realized volatility (annualized, CBOE formula). <b>Positive VRP</b>: premiums exceed actual realized movement — premium sellers are historically compensated. <b>Negative VRP</b> occurs in crash episodes when realized vol overshoots IV.",
+  "flows.def_rr": "<b>Risk Reversal = Put-IV(25Δ) − Call-IV(25Δ)</b>. Positive = puts more expensive than calls (typical for indices, crash-protection demand). Negative = calls more expensive than puts (bullish call demand, e.g., AI momentum names). The <b>Risk-Reversal Rank</b> shows how extreme the reading is relative to its own 2-year history.",
+  "flows.def_zeta": "SpotGamma methodology: Zeta measures skew <b>per side independently</b> from ATM IV. <b>Call-Zeta</b> = (Call-IV@25Δ − ATM-IV) × 100: positive = OTM calls more expensive than ATM (upside demand, bullish). <b>Put-Zeta</b> = (Put-IV@25Δ − ATM-IV) × 100: positive = OTM puts more expensive than ATM (hedging demand). For indices, put-zeta is almost always positive; call-zeta turns positive in momentum phases (less common).",
+  "flows.def_skew_flow": "Extreme skew is itself a <b>potential flow trigger</b>: dealers who sold large amounts of OTM puts are <b>long the underlying</b> as a hedge. When skew normalizes (puts lose delta as the market rallies or IV drops), dealers must unwind these hedges — they <b>sell the underlying</b> and thereby amplify the rally (<b>Vanna flow</b>). The reverse applies to extreme call skew (momentum names): when it normalizes, dealers must cover call hedges = buying pressure. The direction depends on who <i>wrote</i> the extreme position.",
+  "flows.def_butterfly": "<b>Butterfly Spread (Smile Curvature)</b> = (Call-IV@25Δ + Put-IV@25Δ) / 2 − ATM-IV, multiplied by 100 (unit: vol points). It measures how much more expensive OTM options on both sides are versus ATM. <b>High readings</b> = market prices in fat tails / jump risk (e.g., pre-earnings). <b>Low readings</b> = market expects continuous moves, no gap risk.",
+  "flows.def_termstructure": "<b>Contango</b> = short-term IV &lt; long-term IV (normal; risk is priced over time). <b>Backwardation</b> = short-term IV &gt; long-term IV (stress regime: market fears immediate risk more than medium-term). Backwardation is historically rarer and often associated with panic. SeasonAlpha compares 30-day IV vs. 90-day IV.",
+  "flows.def_pc": "<b>Put/Call Ratio (Open Interest)</b> = open puts / open calls. High readings = excessive hedging demand, often <b>contrarian bullish</b>. Low readings = call dominance / complacency, can be contrarian bearish. <b>Equity P/C</b> (individual stocks, CBOE) is more informative than index P/C, since index options are heavily used for institutional hedging.",
+  "flows.def_maxpain": "<b>Max Pain</b> is the strike where total losses for all option holders would be maximized at expiry — where writers (market makers) retain the most premium. The hypothesis: price gravitates toward Max Pain before OPEX. Empirically weak but widely watched. <b>OI Walls</b> show where open contracts are most concentrated (potential support/resistance magnets).",
+  "flows.def_0dte": "<b>0DTE (Zero Days to Expiration)</b> are options expiring the same day. Their gamma is extremely concentrated near expiry — large 0DTE flows can trigger sharp intraday moves. SPY/SPX 0DTE now account for &gt;40% of daily options volume. <b>Market makers adjust delta hedges with every tick</b> — this activity can accelerate or reverse intraday trends.",
+
+  "flows.def_dealer": "Dealers are <b>long gamma</b> when customers have <i>sold</i> options to them — dealers buy dips and sell rallies (stabilizing). Dealers are <b>short gamma</b> when customers have <i>bought</i> options from them — dealers amplify trends (destabilizing). The <b>zero-gamma flip level</b> separates these regimes: above it long-gamma, below it short-gamma.",
+  "flows.def_volcontrol": "Vol-Control funds maintain a target volatility by dynamically adjusting leverage: when realized volatility rises, <b>leverage is reduced</b> (selling). When it falls, leverage increases (buying). During VIX spikes this creates mechanical selling pressure that amplifies the move — the <b>volatility feedback loop</b>.",
+  "flows.def_cta": "CTAs (Commodity Trading Advisors) are systematic trend-following funds. Strong trend signals drive their positioning — a COT percentile &gt;80 (long) or &lt;20 (short) signals little capital left to add to the trend: <b>potential reversal</b> on a signal change. Data: weekly CFTC COT with ~3-day reporting lag.",
+  "flows.def_buyback": "SEC Rule 10b-18 prohibits US companies from repurchasing their own shares during the <b>blackout window</b>: ~14 days before the estimated earnings announcement through ~2 days after. Since buybacks are a steady buying-pressure buffer, a high blackout share creates a seasonal gap in this support. Most pronounced: mid-January through mid-February (Q4 earnings season)."
 }

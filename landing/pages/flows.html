@@ -34,7 +34,7 @@
 
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Strukturelle Markt-Flows","url":"https://seasonalpha.ai/flows","description":"Index-Rebalancing-Kalender, Buyback-Blackout-Saison (marktkap-gewichtet), CTA-Positionierung (COT-Perzentil) und Vol-Control-Leverage — die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Strukturelle Markt-Flows","item":"https://seasonalpha.ai/flows"}]}</script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was sind strukturelle Markt-Flows?","acceptedAnswer":{"@type":"Answer","text":"Strukturelle Flows sind mechanische, nicht-fundamentale Kauf- und Verkaufsströme, die nicht aus einer Meinung über den fairen Wert entstehen, sondern aus Regeln und Zwängen: Index-Fonds müssen zu fixen Terminen umschichten (Rebalancing), Firmen dürfen vor Earnings keine eigenen Aktien zurückkaufen (Buyback-Blackout), Trendfolge-Fonds skalieren mit dem Trend (CTAs), Vol-Control-Fonds mit der realisierten Volatilität. Diese Flows erzeugen wiederkehrende, teils saisonale Muster."}},{"@type":"Question","name":"Wie wird der Buyback-Blackout gemessen?","acceptedAnswer":{"@type":"Answer","text":"Wir zeigen den Anteil des US-Kern-Marktwerts im Blackout (marktkap-gewichtet, wie es Bank-Desks führen) plus eine gleichgewichtete Vergleichslinie (Anteil der Firmen). Das Blackout-Fenster reicht vom Quartalsende minus 14 Tage (Standard-Start) bis rund zwei Tage nach der geschätzten Earnings-Ankündigung. Aggregiert über viele Firmen entsteht eine Saison-Kurve mit Hochpunkten zu Beginn jeder Earnings-Saison. Die Markt-Wirkung ist empirisch umstritten — wir zeigen Kalender-Kontext, kein Signal."}},{"@type":"Question","name":"Warum Perzentil statt Netto-Kontrakte bei der CTA-Positionierung?","acceptedAnswer":{"@type":"Answer","text":"Rohe Netto-Kontrakte driften mit dem wachsenden Open Interest und sind schwer einzuordnen. Aussagekräftig ist die OI-normierte Netto-Position im Verhältnis zur eigenen 3-Jahres-Historie: Perzentil und z-Score zeigen, wie ausgereizt (crowded) die Positionierung aktuell ist. Über dem 80. Perzentil gilt sie als selten-long, unter dem 20. als selten-short. Datenbasis ist die wöchentliche CFTC-COT mit rund drei Tagen Meldeverzug — eine Näherung für CTAs, kein Live-Signal."}},{"@type":"Question","name":"Sind diese Flows ein Kaufsignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Alle Panels zeigen strukturellen, nicht-fundamentalen Kontext und sind bewusst als Proxy gelabelt. Genannte Dollar-Beträge sind extern zitierte oder szenariobasierte Schätzungen, nicht aus unseren Daten gemessen. Die Panels erklären, warum bestimmte Kalenderfenster mechanisch stärker oder schwächer sind — sie sind keine Kauf- oder Verkaufsempfehlung und keine Anlageberatung."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was sind strukturelle Markt-Flows?","acceptedAnswer":{"@type":"Answer","text":"Strukturelle Flows sind mechanische, nicht-fundamentale Kauf- und Verkaufsströme, die nicht aus einer Meinung über den fairen Wert entstehen, sondern aus Regeln und Zwängen: Index-Fonds müssen zu fixen Terminen umschichten (Rebalancing), Firmen dürfen vor Earnings keine eigenen Aktien zurückkaufen (Buyback-Blackout), Trendfolge-Fonds skalieren mit dem Trend (CTAs), Vol-Control-Fonds mit der realisierten Volatilität. Diese Flows erzeugen wiederkehrende, teils saisonale Muster."}},{"@type":"Question","name":"Wie wird der Buyback-Blackout gemessen?","acceptedAnswer":{"@type":"Answer","text":"Wir zeigen den Anteil des US-Kern-Marktwerts im Blackout (marktkap-gewichtet, wie es Bank-Desks führen) plus eine gleichgewichtete Vergleichslinie (Anteil der Firmen). Das Blackout-Fenster reicht vom Quartalsende minus 14 Tage (Standard-Start) bis rund zwei Tage nach der geschätzten Earnings-Ankündigung. Aggregiert über viele Firmen entsteht eine Saison-Kurve mit Hochpunkten zu Beginn jeder Earnings-Saison. Die Markt-Wirkung ist empirisch umstritten — wir zeigen Kalender-Kontext, kein Signal."}},{"@type":"Question","name":"Warum Perzentil statt Netto-Kontrakte bei der CTA-Positionierung?","acceptedAnswer":{"@type":"Answer","text":"Rohe Netto-Kontrakte driften mit dem wachsenden Open Interest und sind schwer einzuordnen. Aussagekräftig ist die OI-normierte Netto-Position im Verhältnis zur eigenen 3-Jahres-Historie: Perzentil und z-Score zeigen, wie ausgereizt (crowded) die Positionierung aktuell ist. Über dem 80. Perzentil gilt sie als selten-long, unter dem 20. als selten-short. Datenbasis ist die wöchentliche CFTC-COT mit rund drei Tagen Meldeverzug — eine Näherung für CTAs, kein Live-Signal."}},{"@type":"Question","name":"Was ist GEX (Gamma Exposure) und warum ist er wichtig?","acceptedAnswer":{"@type":"Answer","text":"GEX misst die aggregierte Gamma-Position der Market Maker. Bei positivem GEX (Long-Gamma-Regime) kaufen Dealer Dips und verkaufen Rallys — das dämpft die Volatilität. Bei negativem GEX (Short-Gamma) verstärken Dealer Bewegungen und erhöhen die Volatilität. Der Zero-Gamma-Flip-Level ist der Kursstand, an dem das Regime wechselt."}},{"@type":"Question","name":"Was bedeutet Vanna und wie erzeugt es Markt-Flows?","acceptedAnswer":{"@type":"Answer","text":"Vanna ist die Sensitivität des Deltas gegenüber Änderungen der Implied Volatility (IV). Fällt die IV, verlieren OTM-Puts Delta — Dealer, die Short-Puts abgesichert haben (Long Underlying), müssen das Underlying verkaufen. Steigt die IV, müssen Dealer kaufen. Vanna-Flows sind prozyklisch und verstärken IV-Bewegungen. Besonders relevant: wenn ein extremer Skew (viele OTM-Puts teuer) normalisiert und Dealer ihre Hedges abbauen."}},{"@type":"Question","name":"Was ist der Butterfly-Spread und was misst er?","acceptedAnswer":{"@type":"Answer","text":"Der Butterfly-Spread misst die Krümmung des Volatility Smile: (Call-IV@25Delta + Put-IV@25Delta) / 2 minus ATM-IV, multipliziert mit 100 (Vola-Punkte). Er zeigt, wie viel mehr OTM-Optionen auf beiden Seiten gegenüber ATM kosten. Hohe Werte bedeuten, dass der Markt Sprungrisiken oder fette Tails einpreist (z.B. vor Earnings). Niedrige Werte deuten auf einen Markt hin, der kontinuierliche Moves und keine Gaps erwartet."}},{"@type":"Question","name":"Wie kann ein extremer Skew selbst einen Flow auslösen?","acceptedAnswer":{"@type":"Answer","text":"Wenn der Put-Skew extrem hoch ist, haben Dealer viele OTM-Puts verkauft und halten Long-Positionen im Underlying als Hedge. Normalisiert sich der Skew (z.B. bei einem Kursanstieg oder IV-Rückgang), verlieren diese Puts Delta — Dealer müssen ihre Long-Hedges abbauen und verkaufen das Underlying. Diese Vanna-Flows verstärken die Rally. Umgekehrt gilt: ein extremer Call-Skew erzeugt bei Normalisierung Kaufdruck (Dealer kaufen Hedges zurück)."}},{"@type":"Question","name":"Sind diese Flows ein Kaufsignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Alle Panels zeigen strukturellen, nicht-fundamentalen Kontext und sind bewusst als Proxy gelabelt. Genannte Dollar-Beträge sind extern zitierte oder szenariobasierte Schätzungen, nicht aus unseren Daten gemessen. Die Panels erklären, warum bestimmte Kalenderfenster mechanisch stärker oder schwächer sind — sie sind keine Kauf- oder Verkaufsempfehlung und keine Anlageberatung."}}]}</script>
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/landing/css/app.css">
@@ -286,6 +286,71 @@
       <p>Alle Panels = strukturelle, nicht-fundamentale Flows. Freie Datenquellen, als Proxy gelabelt.
       <b>Kein Kauf-/Verkaufssignal, keine Anlageberatung.</b></p>
     </details>
+
+    <!-- Glossar / Q&A -->
+    <section class="panel" id="p-glossar" style="margin-top:3rem">
+      <h2><span class="em">📖</span><span data-i18n="flows.glossar_title">Begriffe &amp; Q&amp;A</span></h2>
+      <p class="sub" data-i18n="flows.glossar_sub">Alle Kennzahlen, die auf dieser Seite und den Options-Seiten erscheinen — kompakt erklärt.</p>
+
+      <details class="method" open>
+        <summary data-i18n="flows.glossar_options_title">Options-Kennzahlen</summary>
+
+        <h4>GEX — Gamma Exposure</h4>
+        <p data-i18n-html="flows.def_gex">Market Maker haben eine aggregierte Gamma-Position, die sie durch dynamisches Kauf/Verkauf des Underlyings neutralisieren müssen (<b>Delta-Hedging</b>). Bei <b>positivem GEX (Long-Gamma)</b> kaufen Dealer Dips und verkaufen Rallys — dämpfend. Bei <b>negativem GEX (Short-Gamma)</b> verstärken sie Bewegungen. Der <b>Zero-Gamma-Flip</b> trennt die Regime.</p>
+
+        <h4>Vanna</h4>
+        <p data-i18n-html="flows.def_vanna">Vanna misst, wie sich das Delta einer Option mit der IV verändert (∂Delta/∂IV). Fällt die IV, verlieren OTM-Puts Delta — Dealer müssen ihre Hedges abbauen (Underlying verkaufen). Steigt die IV, müssen Dealer kaufen. Vanna-Flows sind prozyklisch zur IV-Bewegung.</p>
+
+        <h4>Charm</h4>
+        <p data-i18n-html="flows.def_charm">Charm ist der zeitliche Verfall des Deltas. OTM-Optionen verlieren kurz vor Ablauf stark an Delta — Dealer passen Hedges täglich an. Die größten Charm-Flows entstehen in der Woche vor OPEX (dritter Freitag).</p>
+
+        <h4>IV · IV Rank · IV Percentile</h4>
+        <p data-i18n-html="flows.def_iv"><b>Implied Volatility</b> ist die erwartete zukünftige Schwankung aus dem Optionspreis. <b>IV Rank</b> = Position im 52-Wochen-Bereich. <b>IV Percentile</b> = Anteil der Tage, an denen die IV tiefer war. Werte &gt;70% = relativ teure Prämien.</p>
+
+        <h4>VRP — Volatility Risk Premium</h4>
+        <p data-i18n-html="flows.def_vrp">VRP = 30-Tage-IV minus realisierte Vol der letzten 21 Handelstage. <b>Positiv</b>: Prämien-Verkäufer werden kompensiert. <b>Negativ</b>: Crash-Phase, realisierte Vola übersteigt IV.</p>
+
+        <h4>Risk Reversal / 25Δ-Net-Skew</h4>
+        <p data-i18n-html="flows.def_rr">Risk Reversal = Put-IV(25Δ) − Call-IV(25Δ). Positiv = Puts teurer (Indizes, Crash-Absicherung). Negativ = Calls teurer (bullisher Druck, Momentum-Aktien). Der Rank zeigt die historische Extremität.</p>
+
+        <h4>Call-Skew · Put-Skew (Zeta-Methode)</h4>
+        <p data-i18n-html="flows.def_zeta">Zeta misst den Skew je Seite unabhängig: <b>Call-Zeta</b> = (Call-IV@25Δ − ATM-IV) × 100 (positiv = bullish). <b>Put-Zeta</b> = (Put-IV@25Δ − ATM-IV) × 100 (positiv = Absicherungsnachfrage). Basis unseres Vol-Regime-Radars.</p>
+
+        <h4 style="color:var(--accent)">⚡ Extremer Skew als Flow-Indikator</h4>
+        <p data-i18n-html="flows.def_skew_flow">Ein extremer Skew ist selbst ein <b>Flow-Auslöser</b>: Dealer, die viele OTM-Puts verkauft haben, sind <b>Long Underlying</b> als Hedge. Normalisiert sich der Skew, müssen Dealer ihre Hedges abbauen — sie <b>verkaufen das Underlying</b> und verstärken damit eine Rally (<b>Vanna-Flow</b>). Umgekehrt bei extremem Call-Skew. Die Richtung hängt davon ab, wer die Extremposition geschrieben hat.</p>
+
+        <h4>Butterfly-Spread (Smile-Krümmung)</h4>
+        <p data-i18n-html="flows.def_butterfly">Butterfly = (Call-IV@25Δ + Put-IV@25Δ) / 2 − ATM-IV, ×100 (Vola-Punkte). Misst die Wölbung des Lächelns: wie viel teurer sind OTM-Optionen gegenüber ATM? <b>Hoch</b> = Tail-/Sprungrisiko eingepreist (z.B. vor Earnings). <b>Tief</b> = Markt erwartet kontinuierliche Moves.</p>
+
+        <h4>Term Structure · Contango · Backwardation</h4>
+        <p data-i18n-html="flows.def_termstructure"><b>Contango</b> = kurzfristige IV &lt; langfristige IV (normal). <b>Backwardation</b> = kurzfristige IV &gt; langfristige IV (Stress-Regime, Panik). SeasonAlpha: Vergleich 30-Tage-IV vs. 90-Tage-IV.</p>
+
+        <h4>Put/Call-Ratio (P/C)</h4>
+        <p data-i18n-html="flows.def_pc">P/C = offene Puts / offene Calls. Hoch = übertriebene Absicherung, oft konträr bullish. Niedrig = Call-Dominanz, kann konträr bearish sein. Equity-P/C (Einzeltitel) ist aussagekräftiger als Index-P/C.</p>
+
+        <h4>Max Pain</h4>
+        <p data-i18n-html="flows.def_maxpain">Max Pain = Strike, wo Gesamtverlust aller Optionshalter am Verfallstag maximal wäre. Hypothese: Kurs driftet vor OPEX dorthin. OI-Walls zeigen Konzentrationen offener Kontrakte (potenzielle Support-/Resistance-Magnete).</p>
+
+        <h4>0DTE — Same-Day-Optionen</h4>
+        <p data-i18n-html="flows.def_0dte">0DTE-Optionen verfallen noch am selben Tag. Ihr Gamma ist extrem konzentriert — große 0DTE-Flows lösen starke Intraday-Moves aus. SPY-/SPX-0DTE = &gt;40% des täglichen Options-Volumens. Market Maker passen Delta-Hedges mit jedem Tick an.</p>
+      </details>
+
+      <details class="method" style="margin-top:.75rem">
+        <summary data-i18n="flows.glossar_flows_title">Strukturelle Flow-Begriffe</summary>
+
+        <h4>Dealer Positioning — Long vs. Short Gamma</h4>
+        <p data-i18n-html="flows.def_dealer">Dealer in <b>Long-Gamma</b>: Kunden haben ihnen Optionen verkauft → Dealer kaufen Dips, verkaufen Rallys (stabilisierend). Dealer in <b>Short-Gamma</b>: Kunden kauften ihnen Optionen ab → Dealer verstärken Trends (destabilisierend). Der <b>Zero-Gamma-Flip-Level</b> trennt die Regime.</p>
+
+        <h4>Vol-Control-Fonds</h4>
+        <p data-i18n-html="flows.def_volcontrol">Vol-Control-Fonds halten eine Ziel-Volatilität durch Hebel-Anpassung: steigt die realisierte Vola, wird Leverage reduziert (Verkauf). Fällt sie, erhöht sich der Hebel (Kauf). Bei VIX-Spikes entsteht mechanischer Verkaufsdruck = <b>Volatility Feedback Loop</b>.</p>
+
+        <h4>CTA-Positionierung</h4>
+        <p data-i18n-html="flows.def_cta">CTAs sind systemische Trendfolge-Fonds. Ein COT-Perzentil &gt;80 (Long) oder &lt;20 (Short) = Crowd-Indikator: wenig Kapital für weiteres Aufstocken übrig → potenzielle Trendwende bei Signaländerung. Datenbasis: CFTC-COT wöchentlich, ~3 Tage Verzug.</p>
+
+        <h4>Buyback-Blackout</h4>
+        <p data-i18n-html="flows.def_buyback">SEC Rule 10b-18 verbietet Buybacks ~14 Tage vor Earnings bis 2 Tage danach. Da Buybacks ein stabiler Kaufpuffer sind, erzeugt ein hoher Blackout-Anteil eine saisonale Schwächephase. Besonders ausgeprägt: Mitte Januar bis Mitte Februar (Q4-Earnings).</p>
+      </details>
+    </section>
   </main>
 
   <div id="footer-container"></div>

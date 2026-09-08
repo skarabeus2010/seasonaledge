@@ -2,7 +2,7 @@
   "nav.zyklen": "Zyklen",
   "nav.events": "Events",
   "nav.strategien": "Strategien",
-  "nav.optionen": "Optionen",
+  "nav.optionen": "Flows",
   "nav.mehr": "Mehr",
   "nav.tour": "Tour",
   "nav.login": "Anmelden",
@@ -370,5 +370,29 @@
   "common.info_aria": "Erklärung",
   "scan.wl_remove": "aus Watchlist entfernen",
   "scan.wl_add": "zur Watchlist hinzufügen",
-  "scan.open_dash": "Im Dashboard öffnen"
+  "scan.open_dash": "Im Dashboard öffnen",
+
+  "flows.glossar_title": "Begriffe &amp; Q&amp;A",
+  "flows.glossar_sub": "Alle Kennzahlen, die auf dieser Seite und den Options-Seiten erscheinen — kompakt erklärt.",
+  "flows.glossar_options_title": "Options-Kennzahlen",
+  "flows.glossar_flows_title": "Strukturelle Flow-Begriffe",
+
+  "flows.def_gex": "Market Maker haben eine aggregierte Gamma-Position, die sie durch dynamisches Kauf/Verkauf des Underlyings neutralisieren müssen (<b>Delta-Hedging</b>). Bei <b>positivem GEX (Long-Gamma-Regime)</b> kaufen Dealer Dips und verkaufen Rallys — dämpfend für Volatilität. Bei <b>negativem GEX (Short-Gamma)</b> verstärken sie Bewegungen. Der <b>Zero-Gamma-Flip</b> ist der Kursstand, an dem das Regime wechselt.",
+  "flows.def_vanna": "Vanna misst, wie sich das Delta einer Option mit der Implied Volatility verändert (∂Delta/∂IV). Fällt die IV stark (z.B. nach einer Panik), verlieren OTM-Puts Delta — Dealer, die Short-Puts abgesichert haben (<b>Long Underlying</b>), müssen verkaufen. Steigt die IV, müssen Dealer kaufen. Vanna-Flows verstärken damit IV-Bewegungen prozyklisch.",
+  "flows.def_charm": "Charm ist der zeitliche Verfall des Deltas (∂Delta/∂Zeit). OTM-Optionen verlieren mit dem Verfall stark an Delta, besonders in den letzten Tagen vor Ablauf — Dealer müssen ihre Hedges täglich anpassen. Die größten <b>Charm-Flows</b> entstehen in der Woche vor <b>OPEX</b> (dritter Freitag) und vor Quarterly-Expirations.",
+  "flows.def_iv": "<b>Implied Volatility (IV)</b> ist die aus dem Optionspreis abgeleitete Erwartung zukünftiger Schwankung (annualisiert). <b>IV Rank</b> = (IV_heute − IV_52w_min) / (IV_52w_max − IV_52w_min) — wo die IV im Jahresbereich steht. <b>IV Percentile</b> = Anteil der Tage im Fenster, an denen die IV niedriger war als heute — robuster bei Ausreißern. Werte &gt;70% signalisieren relativ teure Prämien.",
+  "flows.def_vrp": "<b>Volatility Risk Premium (VRP)</b> = 30-Tage-IV minus realisierte Volatilität der letzten 21 Handelstage (annualisiert, CBOE-Formel). <b>Positiver VRP</b>: Prämien teurer als tatsächliche Schwankung — Prämien-Verkäufer werden historisch kompensiert. <b>Negativer VRP</b> tritt in Crash-Phasen auf, wenn realisierte Vola die IV übersteigt.",
+  "flows.def_rr": "<b>Risk Reversal = Put-IV(25Δ) − Call-IV(25Δ)</b>. Positiv = Puts teurer als Calls (typisch für Indizes, Crash-Absicherung dominiert). Negativ = Calls teurer als Puts (bullisher Call-Druck, z.B. AI-Momentum-Aktien). Der <b>Risk-Reversal-Rank</b> zeigt, wie extrem der Wert relativ zur eigenen 2-Jahres-Historie ist.",
+  "flows.def_zeta": "SpotGamma-Methodik: Zeta misst den Skew <b>je Seite unabhängig</b> von der ATM-IV. <b>Call-Zeta</b> = (Call-IV@25Δ − ATM-IV) × 100: positiv = OTM-Calls teurer als ATM (Upside-Nachfrage, bullish). <b>Put-Zeta</b> = (Put-IV@25Δ − ATM-IV) × 100: positiv = OTM-Puts teurer als ATM (Absicherung). Für Indizes ist Put-Zeta fast immer positiv; Call-Zeta wird in Momentum-Phasen positiv (seltener).",
+  "flows.def_skew_flow": "Ein extremer Skew ist selbst ein <b>Flow-Auslöser</b>: Dealer, die viele OTM-Puts verkauft haben, sind <b>Long Underlying</b> als Hedge. Normalisiert sich der Skew (Puts verlieren Delta durch Kursanstieg oder IV-Rückgang), müssen Dealer ihre Hedges abbauen — sie <b>verkaufen das Underlying</b> und verstärken damit eine Rally (<b>Vanna-Flow</b>). Umgekehrt: normalisiert sich ein extremer Call-Skew (Momentum-Aktien), müssen Dealer Call-Hedges zurückkaufen = Kaufdruck. Die Richtung hängt davon ab, wer die Extremposition <i>geschrieben</i> hat.",
+  "flows.def_butterfly": "<b>Butterfly-Spread (Smile-Krümmung)</b> = (Call-IV@25Δ + Put-IV@25Δ) / 2 − ATM-IV, multipliziert mit 100 (Einheit: Vola-Punkte). Er misst, wie viel mehr OTM-Optionen auf beiden Seiten gegenüber ATM kosten. <b>Hohe Werte</b> = Markt preist fette Tails / Sprungrisiko ein (z.B. vor Earnings). <b>Niedrige Werte</b> = Markt erwartet kontinuierliche Moves, keine Gaps.",
+  "flows.def_termstructure": "<b>Contango</b> = kurzfristige IV &lt; langfristige IV (normal; Risiko über Zeit eingepreist). <b>Backwardation</b> = kurzfristige IV &gt; langfristige IV (Stress-Regime: Markt fürchtet unmittelbare Gefahr). Backwardation ist historisch seltener und oft mit Panik assoziiert. SeasonAlpha vergleicht 30-Tage-IV vs. 90-Tage-IV.",
+  "flows.def_pc": "<b>Put/Call-Ratio (Open Interest)</b> = offene Puts / offene Calls. Hohe Werte = übertriebene Absicherungsnachfrage, oft <b>konträr bullish</b>. Niedrige Werte = Call-Dominanz / Sorglosigkeit, kann konträr bearish sein. <b>Equity-P/C</b> (Einzeltitel, CBOE) ist aussagekräftiger als Index-P/C, da Index-Optionen oft für institutionelles Hedging genutzt werden.",
+  "flows.def_maxpain": "<b>Max Pain</b> ist der Strike, bei dem der Gesamtverlust aller Optionshalter am Verfallstag maximal wäre — wo Stillhalter (Market Maker) die meisten Prämien behalten würden. Die Hypothese: Kurs driftet gravitationell vor OPEX dorthin. Empirisch schwach, aber institutionell beobachtet. <b>OI-Walls</b> zeigen daneben Konzentrationen offener Kontrakte (potenzielle Support-/Resistance-Magnete).",
+  "flows.def_0dte": "<b>0DTE (Zero Days to Expiration)</b> sind Optionen, die noch am selben Tag verfallen. Ihr Gamma ist extrem hoch und konzentriert — große 0DTE-Flows können starke Intradaybewegungen auslösen. SPY-/SPX-0DTE machen inzwischen &gt;40% des täglichen Options-Volumens aus. <b>Market Maker passen Delta-Hedges mit jedem Tick an</b> — diese Aktivität kann Intraday-Trends beschleunigen oder umkehren.",
+
+  "flows.def_dealer": "Dealer sind in <b>Long-Gamma</b>, wenn Kunden ihnen Optionen <i>verkauft</i> haben — Dealer kaufen Dips und verkaufen Rallys (stabilisierend). Dealer sind in <b>Short-Gamma</b>, wenn Kunden ihnen Optionen <i>abgekauft</i> haben — Dealer verstärken Trends (destabilisierend). Der <b>Zero-Gamma-Flip-Level</b> trennt diese Regime: darüber Long-Gamma, darunter Short-Gamma.",
+  "flows.def_volcontrol": "Vol-Control-Fonds halten eine Ziel-Volatilität durch dynamisches Anpassen des Hebels: steigt die realisierte Volatilität, wird <b>Leverage reduziert</b> (Verkauf). Fällt sie, erhöht sich der Hebel (Kauf). Bei VIX-Spikes entsteht so mechanischer Verkaufsdruck, der die Bewegung verstärkt — bekannt als <b>Volatility Feedback Loop</b>.",
+  "flows.def_cta": "CTAs (Commodity Trading Advisors) sind systemische Trendfolge-Fonds. Starke Trend-Signale treiben ihre Positionierung — ein COT-Perzentil &gt;80 (Long) oder &lt;20 (Short) signalisiert, dass wenig Kapital für weiteres Auf-/Abbau übrig ist: <b>potenzielle Trendwende</b> bei Signaländerung. Datenbasis: wöchentliche CFTC-COT mit ~3 Tagen Meldeverzug.",
+  "flows.def_buyback": "SEC Rule 10b-18 verbietet US-Unternehmen i.d.R. ab ~14 Tage vor geschätzter Earnings-Ankündigung bis 2 Tage danach eigene Aktien zurückzukaufen (<b>Blackout-Fenster</b>). Da Buybacks ein stabiler Kaufdruck-Puffer sind, erzeugt ein hoher Blackout-Anteil eine saisonale Schwächephase für diesen Stützungsmechanismus. Besonders ausgeprägt: Mitte Januar bis Mitte Februar (Q4-Earnings-Saison)."
 }
