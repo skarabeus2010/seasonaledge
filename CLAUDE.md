@@ -257,6 +257,23 @@ Meilensteine (KW15-KW24), abgeschlossene Aufgaben & Lessons Learned stehen im Ch
 - [ ] Lead-Magnet PDF "Saisonalitäts-Report 2026"
 - [ ] Google Rich Results Test für die 3 Polymarket-Blog-Posts
 
+### 🔴 ZUERST morgen: `/flows` lädt im Browser nicht (gemeldet 2026-09-08)
+
+Symptom: `https://seasonalpha.ai/flows` bleibt beim Laden hängen (User-Meldung). Der Nav-Eintrag „Flows → Begriffe & Q&A" zeigt auf `/flows#p-glossar` und landet damit auf derselben Seite.
+
+**Server-seitig bereits ausgeschlossen** (nicht erneut prüfen):
+- HTTP 200, 69.567 B ausgeliefert · `%%SUPABASE%%`-Platzhalter ersetzt
+- HTML-Tag-Bilanz ausgeglichen (details/section/div/script/main/style)
+- alle 3 JSON-LD-Blöcke valide (WebPage, BreadcrumbList, FAQPage)
+- alle 10 gefetchten `landing/data/*.json` parsen sauber
+- Fetch-Pfade korrekt `/landing/data/…` (nicht `/data/…`)
+- `Cache-Control: public, max-age=0, must-revalidate` + ETag, nginx-Route sauber
+
+**Nächster Schritt = Browser-Konsole** (JS-Laufzeitfehler), das geht nur mit Browser. Verdachtsmomente in dieser Reihenfolge:
+1. `options_skew_history.json` ist durch den Backfill auf **862 KB** gewachsen und wird in [flows.html:716](landing/pages/flows.html#L716) mit `cache:'no-store'` geladen — bei jedem Aufruf voll. Ggf. auf die benötigten Ticker/Felder eindampfen oder lazy nachladen.
+2. Fehler in `renderSkewQuad()` durch die neuen Feldnamen (`cm_mode`, `call_zeta_pts`) oder durch Einträge ohne `iv_atm`.
+3. Hard-Refresh im Browser (Cache-Header sind korrekt, aber der Client kann eine kaputte Zwischenversion halten).
+
 ### Skew-Historie (nach dem Backfill 2026-09-08) — Detail: [docs/OPTIONS.md](docs/OPTIONS.md)
 - [ ] **Frontend `/skew`: Percentile nur aus `cm`/`cm_extrap`.** `single`-Einträge sind nicht auf 30 Tage normiert; `renderSkewQuad()` filtert bisher nicht danach.
 - [ ] **Prüfen, ob der Näherungs-Fallback noch greift.** Mit echtem `iv_atm` muss Stufe 1 der Fallback-Kette ziehen — sonst wird `put_zeta = −call_zeta` und der Quadrant kollabiert auf seine Antidiagonale.
