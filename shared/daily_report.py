@@ -22,6 +22,30 @@ from typing import Any, TYPE_CHECKING
 from shared.logger import app_logger, error_logger
 from shared.ticker_regimes import regime_hint
 
+import json as _json
+import pathlib as _pathlib
+
+_SKEW_MAP: dict | None = None
+
+
+def skew_map() -> dict:
+    """Ticker → 25Δ-Skew (Vol-Punkte) aus landing/data/options_skew.json (US-optionable).
+    Für die Morning-Briefing-Titel; None wenn Datei fehlt oder Ticker keine Optionen hat."""
+    global _SKEW_MAP
+    if _SKEW_MAP is None:
+        _SKEW_MAP = {}
+        try:
+            p = _pathlib.Path(__file__).resolve().parent.parent / "landing" / "data" / "options_skew.json"
+            if p.exists():
+                d = _json.loads(p.read_text(encoding="utf-8"))
+                for t in d.get("tickers", []):
+                    if t.get("skew_pts") is not None:
+                        _SKEW_MAP[t["ticker"]] = round(float(t["skew_pts"]), 2)
+        except Exception as e:
+            error_logger.error(f"[daily_report] skew_map: {e}")
+            _SKEW_MAP = {}
+    return _SKEW_MAP
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -399,6 +423,7 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         "score":       _score,
         "mw_score":    mw_score,
         "total_score": (mw_score or 0) + (_score or 0),
+        "skew_pts":    skew_map().get(ticker),
     }
 
 
@@ -636,6 +661,7 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "win_rate": c.get("win_rate"),
             "verdict": verdict,
             "tier": tier_name,
+            "skew_pts": skew_map().get(ticker),
             "why": _build_why_summary(mw["windows"], ki, c.get("win_rate"),
                                       verdict, mw["score_total"], ticker),
         })
@@ -1052,6 +1078,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "kategorie": meta.get("kategorie", ""),
             "ki_score": sc.get("score"),
             "signal":   sc.get("signal"),
+            "skew_pts": skew_map().get(ticker),
             "added_at": item.get("added_at"),
             # Signal-Felder (Default None/0, falls keine Historie vorhanden)
             "lbr_daily":   None,
