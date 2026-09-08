@@ -46,6 +46,37 @@ def skew_map() -> dict:
             _SKEW_MAP = {}
     return _SKEW_MAP
 
+
+_SKEW_PCTL_MAP: dict | None = None
+
+
+def skew_pctl_map() -> dict:
+    """Ticker → Skew-Percentile (0-100): Anteil der Tage im letzten Jahr, an denen
+    der 25Δ-Skew NIEDRIGER war als heute. Hoch = ungewöhnlich put-lastig. Aus
+    options_skew_history.json; None wenn <5 Historie-Punkte."""
+    global _SKEW_PCTL_MAP
+    if _SKEW_PCTL_MAP is None:
+        _SKEW_PCTL_MAP = {}
+        try:
+            cur = skew_map()
+            p = _pathlib.Path(__file__).resolve().parent.parent / "landing" / "data" / "options_skew_history.json"
+            if p.exists():
+                h = _json.loads(p.read_text(encoding="utf-8"))
+                cut = (date.today() - timedelta(days=365)).isoformat()
+                for tk, arr in h.items():
+                    if tk.startswith("__") or tk not in cur:
+                        continue
+                    vals = [e.get("skew_pts") for e in arr
+                            if e.get("date", "") >= cut and e.get("skew_pts") is not None]
+                    if len(vals) >= 5:
+                        ref = cur[tk]
+                        below = sum(1 for v in vals if v < ref)
+                        _SKEW_PCTL_MAP[tk] = round(below / len(vals) * 100)
+        except Exception as e:
+            error_logger.error(f"[daily_report] skew_pctl_map: {e}")
+            _SKEW_PCTL_MAP = {}
+    return _SKEW_PCTL_MAP
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -424,6 +455,7 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         "mw_score":    mw_score,
         "total_score": (mw_score or 0) + (_score or 0),
         "skew_pts":    skew_map().get(ticker),
+        "skew_pctl":   skew_pctl_map().get(ticker),
     }
 
 
@@ -661,7 +693,7 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "win_rate": c.get("win_rate"),
             "verdict": verdict,
             "tier": tier_name,
-            "skew_pts": skew_map().get(ticker),
+            "skew_pts": skew_map().get(ticker), "skew_pctl": skew_pctl_map().get(ticker),
             "why": _build_why_summary(mw["windows"], ki, c.get("win_rate"),
                                       verdict, mw["score_total"], ticker),
         })
@@ -1078,7 +1110,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "kategorie": meta.get("kategorie", ""),
             "ki_score": sc.get("score"),
             "signal":   sc.get("signal"),
-            "skew_pts": skew_map().get(ticker),
+            "skew_pts": skew_map().get(ticker), "skew_pctl": skew_pctl_map().get(ticker),
             "added_at": item.get("added_at"),
             # Signal-Felder (Default None/0, falls keine Historie vorhanden)
             "lbr_daily":   None,
