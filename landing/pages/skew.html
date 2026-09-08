@@ -334,6 +334,14 @@
       if(arr.length<5)return null;
       return _metric(arr.map(function(e){return (e.put_iv+e.call_iv)/2;}));
     }
+    // Skew-Rank/Percentile: wo der aktuelle 25Δ-Skew in seiner eigenen Historie liegt (hoch = ungewöhnlich put-lastig)
+    function _skewMetric(tk){
+      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
+      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
+               .filter(function(e){return e.date>=cut && e.skew_pts!=null;});
+      if(arr.length<5)return null;
+      return _metric(arr.map(function(e){return e.skew_pts;}));
+    }
     function renderSkewHist(tk){
       var el=document.getElementById('sk-hist-chart'), ttl=document.getElementById('sk-hist-title'); if(!el)return;
       var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
@@ -416,18 +424,18 @@
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
       var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;});
       if(!rows.length){panelFail('sk-table',T('skew.table_wait','Skew-Tabelle folgt (Daily-Cron).'));return;}
-      var ivm={}; rows.forEach(function(t){ivm[t.ticker]=_ivMetric(t.ticker);});
+      var ivm={}, skm={}; rows.forEach(function(t){ivm[t.ticker]=_ivMetric(t.ticker);skm[t.ticker]=_skewMetric(t.ticker);});
       // Spalten-Extrema für die Heatmap
       function ext(fn){var vs=rows.map(fn).filter(function(v){return v!=null&&v===v;});return vs.length?{lo:Math.min.apply(null,vs),hi:Math.max.apply(null,vs)}:{lo:0,hi:1};}
       var E={iv:ext(function(t){return t.iv_atm!=null?t.iv_atm*100:null;}),rk:ext(function(t){return ivm[t.ticker];}),
-             sk:ext(function(t){return t.skew_pts;}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
+             sk:ext(function(t){return t.skew_pts;}),skr:ext(function(t){return skm[t.ticker];}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
              bf:ext(function(t){return t.bfly_pts;}),pc:ext(function(t){return t.pc_ratio;}),vr:ext(function(t){return t.vrp_pts;}),em:ext(function(t){return t.em_pct;})};
       function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
         return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
           (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
       var h='<table class="sk-tbl"><tr>'+
         '<th>Ticker</th><th style="text-align:right">IV</th><th style="text-align:right">'+_metricLbl()+'</th>'+
-        '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right">NE-Skew</th><th style="text-align:right">Skew-Term</th>'+
+        '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right" title="Wo der aktuelle Skew in seiner eigenen '+(SKEW_MODE==='pctl'?'1-J-Verteilung':'1-J-Spanne')+' liegt (hoch = ungewöhnlich put-lastig)">Skew-'+(SKEW_MODE==='pctl'?'Pctl':'Rk')+'</th><th style="text-align:right">NE-Skew</th><th style="text-align:right">Skew-Term</th>'+
         '<th style="text-align:right">Butterfly</th><th style="text-align:right">P/C</th>'+
         '<th style="text-align:right">VRP</th><th style="text-align:right">Exp.Move</th><th style="text-align:right">Term</th></tr>';
       rows.forEach(function(t){
@@ -437,6 +445,7 @@
           hc(t.iv_atm!=null?t.iv_atm*100:null,1,'%',E.iv)+
           hc(ivm[t.ticker],0,'%',E.rk)+
           hc(t.skew_pts,2,'pts',E.sk)+
+          hc(skm[t.ticker],0,'%',E.skr)+
           hc(t.skew_ne_pts,2,'pts',E.ne)+
           hc(t.skew_term_pts,2,'pts',E.st)+
           hc(t.bfly_pts,2,'pts',E.bf)+
