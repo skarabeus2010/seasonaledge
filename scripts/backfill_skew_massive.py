@@ -217,6 +217,31 @@ def _closes(sym: str) -> dict:
 
 
 # ── Rekonstruktion ──────────────────────────────────────────────────────────
+_CM_DAYS = 30       # Ziel-Laufzeit der Reihe (konstante Maturität)
+
+
+def _cm_interp(v1, t1, v2, t2, t_target=_CM_DAYS):
+    """IV auf konstante Laufzeit interpolieren — linear in der TOTALEN VARIANZ.
+
+    Warum das nötig ist: Monatsverfälle erzeugen einen Sägezahn. Die Laufzeit
+    läuft von ~46 Tagen auf ~10 herunter und springt beim Roll zurück, und die
+    IV folgt der Term-Struktur mit (MU: ATM 0,52 bei 16 Tagen, 0,65 bei 42).
+    Ein Percentil über so eine Reihe rankt die Position im Verfallszyklus, nicht
+    den Skew — die Tagesänderung von call_zeta hatte ein p90 von 6,8 Punkten.
+
+    Linear in σ²·T (nicht in σ), weil sich Varianz über die Zeit addiert. Das
+    ist dieselbe Interpolation, die der VIX für seine 30-Tage-Konstante nutzt."""
+    if v1 is None or v2 is None or t1 is None or t2 is None or t1 == t2:
+        return None
+    if t1 > t2:
+        v1, t1, v2, t2 = v2, t2, v1, t1
+    w1, w2 = v1 * v1 * t1, v2 * v2 * t2          # totale Varianz je Stützstelle
+    var = w1 + (w2 - w1) * (t_target - t1) / (t2 - t1)
+    if var <= 0 or t_target <= 0:
+        return None
+    return round(math.sqrt(var / t_target), 4)
+
+
 def _is_monthly(iso: str) -> bool:
     """Standard-Monatsverfall = 3. Freitag des Monats (Tag 15-21 und ein Freitag)."""
     d = date.fromisoformat(iso)
@@ -249,31 +274,45 @@ def _plan(closes: dict, contracts: list, targets: list,
             pool = ([e for e in cand if _is_monthly(e)]
                     or [e for e in cand if date.fromisoformat(e).weekday() == 4]
                     or cand)
-        exp = min(pool, key=lambda e: abs((date.fromisoformat(e) - dd).days - 30))
-        dte = (date.fromisoformat(exp) - dd).days
-        if not (_DTE_MIN <= dte <= _DTE_MAX):
+        # ZWEI Verfälle wählen, die _CM_DAYS klammern — Grundlage für die
+        # Interpolation auf konstante Laufzeit. Nur einen zu nehmen erzeugt den
+        # Sägezahn (Laufzeit läuft von ~46 auf ~10 Tage und springt beim Roll
+        # zurück, die IV folgt der Term-Struktur mit).
+        dtes = sorted(((date.fromisoformat(e) - dd).days, e) for e in pool)
+        below = [x for x in dtes if _DTE_MIN <= x[0] <= _CM_DAYS]
+        above = [x for x in dtes if _CM_DAYS < x[0] <= _DTE_MAX]
+        legs_raw = []
+        if below:
+            legs_raw.append(below[-1])            # größte Laufzeit ≤ Ziel
+        if above:
+            legs_raw.append(above[0])             # kleinste Laufzeit > Ziel
+        if not legs_raw:
             continue
         lo, hi = spot * (1 - _BAND), spot * (1 + _BAND)
-        picked = []
-        for typ in ("call", "put"):
-            ss = sorted((c for c in by_exp[exp]
-                         if c["contract_type"] == typ and lo <= c["strike_price"] <= hi),
-                        key=lambda c: c["strike_price"])
-            if len(ss) > _MAX_STRIKES:                 # gleichmäßig ausdünnen
-                step = len(ss) / _MAX_STRIKES
-                ss = [ss[int(i * step)] for i in range(_MAX_STRIKES)]
-            picked += ss
-        if len(picked) < 6:
-            continue
-        plan[d] = (exp, dte, [c["ticker"] for c in picked])
-        for c in picked:
-            need[c["ticker"]] = c
+        legs = []
+        for dte, exp in legs_raw:
+            picked = []
+            for typ in ("call", "put"):
+                ss = sorted((c for c in by_exp[exp]
+                             if c["contract_type"] == typ and lo <= c["strike_price"] <= hi),
+                            key=lambda c: c["strike_price"])
+                if len(ss) > _MAX_STRIKES:             # gleichmäßig ausdünnen
+                    step = len(ss) / _MAX_STRIKES
+                    ss = [ss[int(i * step)] for i in range(_MAX_STRIKES)]
+                picked += ss
+            if len(picked) < 6:
+                continue
+            legs.append((exp, dte, [c["ticker"] for c in picked]))
+            for c in picked:
+                need[c["ticker"]] = c
+        if legs:
+            plan[d] = legs
     return plan, need
 
 
-def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
-                 min_vol: float = 0.0, vol_pctl: float = 0.0) -> dict | None:
-    """IV je Kontrakt invertieren, 25Δ + 50Δ picken, Metriken rechnen.
+def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
+             min_vol: float = 0.0, vol_pctl: float = 0.0):
+    """Rohe 25Δ-Call/Put- und ATM-IV EINER Expiry. None wenn nicht klammerbar.
 
     Gegen den Stale-Print-Bias (letzter Trade Stunden vor Schluss, gepaart mit
     dem Schlusskurs des Basiswerts) zwei Filter:
@@ -323,7 +362,44 @@ def _reconstruct(d: str, spot: float, dte: int, occs: list, need: dict, bars: di
     if call_iv is None or put_iv is None:
         return None
     iv_atm = round((atm_c + atm_p) / 2, 4) if (atm_c and atm_p) else (atm_c or atm_p)
-    r = {"date": d, "dte": dte,
+    return {"dte": dte, "call_iv": call_iv, "put_iv": put_iv, "iv_atm": iv_atm}
+
+
+def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
+                 min_vol: float = 0.0, vol_pctl: float = 0.0) -> dict | None:
+    """Konstant-30-Tage-Werte für einen Handelstag.
+
+    Rechnet die rohen IVs an den ein bis zwei klammernden Verfällen und
+    interpoliert sie in der totalen Varianz auf _CM_DAYS. Ohne diesen Schritt
+    misst die Reihe die Position im Verfallszyklus statt den Skew."""
+    got = []
+    for exp, dte, occs in legs:
+        v = _leg_ivs(d, spot, dte, occs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
+        if v:
+            got.append(v)
+    if not got:
+        return None
+
+    if len(got) >= 2:
+        a, b = got[0], got[1]
+        call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
+        put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
+        iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
+                  if (a["iv_atm"] and b["iv_atm"]) else None)
+        dte_out, mode = _CM_DAYS, "cm"
+    else:
+        # Nur eine Stützstelle: ohne zweiten Punkt keine Interpolation möglich.
+        # Dann nur akzeptieren, wenn die Laufzeit ohnehin nah am Ziel liegt —
+        # sonst wandert genau der Sägezahn zurück in die Reihe.
+        a = got[0]
+        if abs(a["dte"] - _CM_DAYS) > 8:
+            return None
+        call_iv, put_iv, iv_atm = a["call_iv"], a["put_iv"], a["iv_atm"]
+        dte_out, mode = a["dte"], "single"
+    if call_iv is None or put_iv is None:
+        return None
+
+    r = {"date": d, "dte": dte_out, "cm_mode": mode,
          "put_iv": round(put_iv, 4), "call_iv": round(call_iv, 4),
          "skew_pts": round((put_iv - call_iv) * 100, 2),
          "reconstructed": True, "src": "massive"}
@@ -374,8 +450,8 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
             print(f"    … {n}/{len(need)} Bars", flush=True)
 
     added = 0
-    for d, (exp, dte, occs) in sorted(plan.items()):
-        r = _reconstruct(d, closes[d], dte, occs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
+    for d, legs in sorted(plan.items()):
+        r = _reconstruct(d, closes[d], legs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
         if r:
             arr.append(r); added += 1
     # Dedup je Datum (neuere Rekonstruktion gewinnt), dann sortieren
@@ -408,11 +484,13 @@ def probe(sym: str, key: str) -> int:
     plan, need = _plan(closes, cs, [d])
     if not plan:
         print("[FAIL] kein planbares Zieldatum"); return 3
-    exp, dte, occs = plan[d]
+    legs = plan[d]
+    exp, dte, occs = legs[0]
     _wd = date.fromisoformat(exp).strftime("%a")
     _kind = "Monatsverfall" if _is_monthly(exp) else (
         "Freitags-Weekly" if date.fromisoformat(exp).weekday() == 4 else "NICHT-Freitag (illiquide!)")
-    print(f"[3] Expiry {exp} ({_wd}, {_kind}) · DTE {dte} · {len(occs)} Kontrakte geplant", flush=True)
+    print(f"[3] {len(legs)} Verfall/Verfaelle fuer konstante {_CM_DAYS}d: "
+          + " + ".join(f"{e} (DTE {t}, {len(o)} Kontr.)" for e, t, o in legs), flush=True)
 
     # [4] Der kritische Test — und er muss die drei Ursachen TRENNEN:
     #     (a) Abo deckt historische Options-Aggregates nicht ab  -> HTTP-Fehler
@@ -476,11 +554,11 @@ def probe(sym: str, key: str) -> int:
         print("\n[FAIL] Aggregates liefern generell keine Options-Bars — Abo/Tier pruefen.", flush=True)
         return 4
 
-    r = _reconstruct(d, spot, dte, occs, need, bars)
+    r = _reconstruct(d, spot, legs, need, bars)
     if not r:
         print("[FAIL] Rekonstruktion ergab nichts (25D nicht klammerbar)"); return 5
     print(f"[5] Rekonstruktion OK:", flush=True)
-    for k in ("date", "dte", "call_iv", "put_iv", "iv_atm",
+    for k in ("date", "dte", "cm_mode", "call_iv", "put_iv", "iv_atm",
               "call_zeta_pts", "put_zeta_pts", "skew_pts", "bfly_pts"):
         print(f"      {k:<15} {r.get(k)}", flush=True)
     print("\n[OK] Alle Annahmen bestaetigt — der Backfill kann laufen.", flush=True)
@@ -507,7 +585,8 @@ def probe_quotes(sym: str, key: str) -> int:
     plan, need = _plan(closes, cs, [d])
     if not plan:
         print("[FAIL] kein planbares Zieldatum"); return 3
-    exp, dte, occs = plan[d]
+    legs = plan[d]
+    exp, dte, occs = legs[0]
     print(f"[2] Expiry {exp} · DTE {dte} · {len(occs)} Kontrakte", flush=True)
 
     # Roh-Test am ersten Kontrakt: antwortet der Endpoint fuer Verfallenes?
@@ -552,8 +631,8 @@ def probe_quotes(sym: str, key: str) -> int:
         shown += 1
 
     print(f"\n[6] Rekonstruktion im Vergleich:", flush=True)
-    rt = _reconstruct(d, spot, dte, occs, need, bars_t)
-    rq = _reconstruct(d, spot, dte, occs, need, bars_q)
+    rt = _reconstruct(d, spot, [(exp, dte, occs)], need, bars_t)
+    rq = _reconstruct(d, spot, [(exp, dte, occs)], need, bars_q)
     print(f"    {'Quelle':<14}{'ATM':>8}{'Call':>8}{'Put':>8}{'cZeta':>8}{'pZeta':>8}", flush=True)
     for lbl, r in (("Trades", rt), ("Quotes", rq)):
         if not r:
@@ -633,11 +712,10 @@ def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) ->
             for lbl, pl, nd in (("Monatsverf.", plan_m, need_m), ("Naechst-30", plan_n, need_n)):
                 if d not in pl:
                     continue
-                exp, dte, occs = pl[d]
-                r = _reconstruct(d, closes[d], dte, occs, nd, bars, min_vol=min_vol, vol_pctl=vol_pctl)
+                r = _reconstruct(d, closes[d], pl[d], nd, bars, min_vol=min_vol, vol_pctl=vol_pctl)
                 if not r:
                     continue
-                _, rcz, rpz = _row(lbl, dte, r.get("iv_atm"), r.get("call_iv"), r.get("put_iv"))
+                _, rcz, rpz = _row(lbl, r.get("dte"), r.get("iv_atm"), r.get("call_iv"), r.get("put_iv"))
                 if lbl != "Monatsverf.":
                     continue                        # bewertet wird der Backfill-Modus
                 for nm, pv, rv in (("cZeta", pcz, rcz), ("pZeta", ppz, rpz)):
