@@ -161,13 +161,37 @@ def _realized_vol(sym: str, n: int = 21):
     return round(math.sqrt(var) * math.sqrt(252), 4), last  # × √252 annualisiert
 
 
-def _nearest_exp(by: dict, target_dte: int):
-    return min(by, key=lambda e: abs(by[e]["dte"] - target_dte)) if by else None
+def _is_monthly(iso: str) -> bool:
+    """Standard-Monatsverfall = 3. Freitag (Tag 15-21 und ein Freitag)."""
+    try:
+        d = date.fromisoformat(iso)
+    except Exception:
+        return False
+    return d.weekday() == 4 and 15 <= d.day <= 21
+
+
+def _nearest_exp(by: dict, target_dte: int, prefer_monthly: bool = False):
+    """Expiry am nächsten an target_dte.
+
+    prefer_monthly: erst Monatsverfälle, dann Freitage, dann der Rest. Für den
+    25Δ-Skew Pflicht — liquide Titel haben Mittwochs-Weeklies, die exakt auf
+    30 Tage fallen können und dann gewinnen, obwohl fast niemand sie handelt.
+    Deren IV ist dünn gestellt, und eine Zeitreihe, die mal Weeklies und mal
+    Monatsverfälle enthält, vergleicht Ungleiches. Für die Term-Structure
+    NICHT setzen — die will gerade das kurze Ende abbilden."""
+    if not by:
+        return None
+    pool = by
+    if prefer_monthly:
+        pool = ([e for e in by if _is_monthly(e)]
+                or [e for e in by if date.fromisoformat(e).weekday() == 4]
+                or by)
+    return min(pool, key=lambda e: abs(by[e]["dte"] - target_dte))
 
 
 def _skew_at(by: dict, target_dte: int) -> dict | None:
-    """25Δ-Skew (Put-IV − Call-IV) bei der Expiry nahe target_dte."""
-    ex = _nearest_exp(by, target_dte)
+    """25Δ-Skew (Put-IV − Call-IV) bei der Expiry nahe target_dte (Monatsverfall bevorzugt)."""
+    ex = _nearest_exp(by, target_dte, prefer_monthly=True)
     if ex is None:
         return None
     e = by[ex]; cc = _pick(e["call"], 0.25, tol=_DELTA_TOL); pp = _pick(e["put"], 0.25, tol=_DELTA_TOL)
@@ -218,7 +242,13 @@ def _enrich(sym: str, key: str) -> dict | None:
         if atm:
             term.append({"dte": by[ex]["dte"], "iv": atm}); seen.add(ex)
     term.sort(key=lambda t: t["dte"])
-    iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"] if term else None
+    # ATM MUSS aus derselben Expiry stammen wie die 25Δ-Picks. Sonst rechnet das
+    # Zeta (25Δ-IV − ATM-IV) über zwei Laufzeiten und misst die Term-Struktur mit
+    # statt den Skew. Vorher kam iv_atm aus der Term-Liste und traf s30 nur zufällig;
+    # seit _skew_at Monatsverfälle bevorzugt, würden sie auseinanderlaufen.
+    iv_atm = _atm_iv(by[s30["exp"]])
+    if iv_atm is None and term:                       # Fallback: nichts ist besser als nichts
+        iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"]
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
     rv1m, last_close = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
     if not spot:                                    # Fallback 1: Underlying aus dem Snapshot

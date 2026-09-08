@@ -422,6 +422,73 @@ def probe(sym: str, key: str) -> int:
     return 0
 
 
+def verify(syms: list, key: str) -> int:
+    """Rekonstruktion gegen die Provider-IV der Vorwaerts-Akkumulation halten.
+
+    Die History enthaelt Eintraege OHNE 'reconstructed' — die stammen aus dem
+    taeglichen Snapshot und tragen die IV des Providers. Genau diese Tage noch
+    einmal aus Preisen zu rekonstruieren zeigt, wie gut die BS-Inversion trifft.
+    Ohne diesen Abgleich waere der Backfill nur intern konsistent, nicht richtig."""
+    hp = _ROOT / "landing/data/options_skew_history.json"
+    if not hp.exists():
+        print("[FAIL] keine History-Datei."); return 1
+    hist = json.loads(hp.read_text(encoding="utf-8"))
+
+    print(f"{'Ticker':<7}{'Datum':<12}{'Feld':<9}{'Provider':>10}{'Rekon':>10}{'Delta pts':>11}", flush=True)
+    print("-" * 59, flush=True)
+    devs: list[float] = []
+    for sym in syms:
+        ref = [e for e in hist.get(sym, [])
+               if not e.get("reconstructed") and e.get("iv_atm") and e.get("call_iv")]
+        if not ref:
+            print(f"{sym:<7} keine Provider-Eintraege zum Vergleichen", flush=True); continue
+        closes = _closes(sym)
+        dates = [e["date"] for e in ref if e["date"] in closes]
+        if not dates:
+            print(f"{sym:<7} Provider-Tage nicht in der Kursreihe", flush=True); continue
+
+        spots = [closes[d] for d in dates]
+        contracts = _list_contracts(sym, key, dates[0],
+                                    (date.fromisoformat(dates[-1]) + timedelta(days=_DTE_MAX + 5)).isoformat(),
+                                    min(spots) * 0.6, max(spots) * 1.4)
+        plan, need = _plan(closes, contracts, dates)
+        bars = {occ: _bars(occ, key, dates[0], dates[-1]) for occ in need}
+
+        for e in ref:
+            d = e["date"]
+            if d not in plan:
+                continue
+            exp, dte, occs = plan[d]
+            r = _reconstruct(d, closes[d], dte, occs, need, bars)
+            if not r:
+                continue
+            for fld in ("iv_atm", "call_iv", "put_iv"):
+                if e.get(fld) and r.get(fld):
+                    dev = (r[fld] - e[fld]) * 100
+                    devs.append(abs(dev))
+                    print(f"{sym:<7}{d:<12}{fld:<9}{e[fld]*100:>9.2f}%{r[fld]*100:>9.2f}%{dev:>+11.2f}",
+                          flush=True)
+        clear_cache(); gc.collect()
+
+    if not devs:
+        print("\n[FAIL] Nichts vergleichbar — Backfill NICHT starten."); return 2
+    mean, mx = sum(devs) / len(devs), max(devs)
+    print("-" * 59, flush=True)
+    print(f"{len(devs)} Vergleiche · mittlere Abweichung {mean:.2f} pts · max {mx:.2f} pts", flush=True)
+    # Der alte marketdata-Backfill lag unter 0,4 pts. Trade-Preise statt Mid-Quotes
+    # rechtfertigen etwas mehr, aber jenseits von ~2 pts ist die Reihe wertlos.
+    if mean <= 1.0:
+        print("[OK] Rekonstruktion trifft die Provider-IV gut — Backfill kann laufen.")
+        return 0
+    if mean <= 2.0:
+        print("[WARN] Spuerbare Abweichung. Brauchbar fuer Percentile (Rangfolge), "
+              "aber nicht fuer absolute IV-Aussagen.")
+        return 0
+    print("[FAIL] Zu grosse Abweichung — Ursache klaeren, bevor 2 Jahre Historie "
+          "damit gefuellt werden.")
+    return 3
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbols", nargs="+", default=None)
@@ -431,6 +498,8 @@ def main() -> int:
                     help="jeder N-te Handelstag (1=taeglich; kostet kaum mehr als woechentlich)")
     ap.add_argument("--overwrite", action="store_true", help="vorhandene Punkte neu rechnen")
     ap.add_argument("--probe", action="store_true", help="nur Annahmen pruefen, nichts schreiben")
+    ap.add_argument("--verify", action="store_true",
+                    help="Rekonstruktion gegen Provider-IV halten, nichts schreiben")
     a = ap.parse_args()
 
     key = os.environ.get("MASSIVE_API_KEY", "")
@@ -440,6 +509,8 @@ def main() -> int:
     syms = a.symbols or (all_option_tickers() if a.all else _DEFAULT)
     if a.probe:
         return probe(syms[0], key)
+    if a.verify:
+        return verify(syms, key)
 
     hp = _ROOT / "landing/data/options_skew_history.json"
     hist = {}
