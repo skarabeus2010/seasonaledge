@@ -326,6 +326,28 @@ def collect_health_data() -> dict:
                 status = "green"; detail = f"{gdate} · {len(gtk)} Ticker (Flip/Walls)"
             checks.append({"name": "Options: GEX-Ketten", "status": status, "detail": detail, "value": gdate or "—"})
             downgrade(status)
+        # Weitere Options-Daten-Dateien: Key Levels, IV-Surface, Flow — Frische + nicht leer
+        for nm, fn, dk in [
+            ("Options: Key Levels", "key_levels.json", "generated"),
+            ("Options: IV-Surface", "iv_surface.json", "generated"),
+            ("Options: Flow/0DTE", "options_flow.json", "generated"),
+        ]:
+            fp = _dd / fn
+            if not fp.exists():
+                checks.append({"name": nm, "status": "yellow",
+                               "detail": f"{fn} fehlt (Cron noch nicht gelaufen?)", "value": "—"})
+                downgrade("yellow"); continue
+            jd = _json.loads(fp.read_text(encoding="utf-8"))
+            gg = jd.get(dk); n = len(jd.get("tickers", []))
+            age = (today_utc - datetime.strptime(gg, "%Y-%m-%d").date()).days if gg else 999
+            if age > 6 or n < 1:
+                status, detail = "red", f"{gg} · {n} Ticker ({age}d alt)"
+            elif age > 4:
+                status, detail = "yellow", f"{gg} · {n} Ticker ({age}d alt)"
+            else:
+                status, detail = "green", f"{gg} · {n} Ticker"
+            checks.append({"name": nm, "status": status, "detail": detail, "value": gg or "—"})
+            downgrade(status)
     except Exception as e:
         checks.append({"name": "Options-Daten", "status": "red",
                        "detail": f"Fehler: {str(e)[:100]}", "value": "ERR"})
