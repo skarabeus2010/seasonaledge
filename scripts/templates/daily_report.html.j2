@@ -95,7 +95,7 @@
       <th align="right" title="BlastOff = |Open−Close|/(High−Low)×100 — kleine Kerze/Compression (&lt;20) = Ausbruchs-Setup">BO</th>
       <th align="center" title="Technical Score (LBR/RSI/RSI3/BlastOff), max 6">TS</th>
       <th align="center" class="hl" title="Gesamtscore = SC + TS (0–10), Sortierschlüssel">Gesamt</th>
-      <th align="center" title="25Δ-Skew (Put-IV − Call-IV, Optionen); + = Put-Skew (Absicherung teuer), − = Call-Skew. Nur US-optionierbare Titel.">Skew</th>
+      <th align="center" title="25Δ-Skew (Put-IV − Call-IV, Optionen); + = Put-Skew (Absicherung teuer), − = Call-Skew. P = Percentile im eigenen 1-Jahres-Skew. Nur US-optionierbare Titel.">Skew</th>
     </tr></thead>
     <tbody>
       {% for r in rows %}
@@ -112,7 +112,7 @@
         <td align="right" class="w6 {{ 'go' if r.blastoff is not none and r.blastoff < 20 else 'nu' }}">{% if r.blastoff is not none %}{{ '%.0f' % r.blastoff }}{% else %}—{% endif %}</td>
         <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/6</span></td>
         <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/10</span></td>
-        <td align="center" class="{{ 'up' if r.skew_pts is not none and r.skew_pts >= 0 else 'dn' if r.skew_pts is not none else 'nu' }}" style="font-weight:700;">{% if r.skew_pts is not none %}{{ '%+.1f' % r.skew_pts }}{% else %}—{% endif %}</td>
+        <td align="center" class="{{ 'up' if r.skew_pts is not none and r.skew_pts >= 0 else 'dn' if r.skew_pts is not none else 'nu' }}" style="font-weight:700;">{% if r.skew_pts is not none %}{{ '%+.1f' % r.skew_pts }}{% if r.skew_pctl is not none %}<br><span style="font-size:9px;color:#8a8270;font-weight:400;" title="Skew-Percentile: an {{ r.skew_pctl }}% der Tage im letzten Jahr war der Skew niedriger als heute (hoch = ungewöhnlich put-lastig)">P{{ r.skew_pctl }}</span>{% endif %}{% else %}—{% endif %}</td>
       </tr>
       {% if show_why and r.why %}
       <tr class="wr"><td colspan="13" class="why">
