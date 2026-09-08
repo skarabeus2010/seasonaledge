@@ -443,9 +443,22 @@ def verify(syms: list, key: str) -> int:
         if not ref:
             print(f"{sym:<7} keine Provider-Eintraege zum Vergleichen", flush=True); continue
         closes = _closes(sym)
-        dates = [e["date"] for e in ref if e["date"] in closes]
-        if not dates:
-            print(f"{sym:<7} Provider-Tage nicht in der Kursreihe", flush=True); continue
+        # Provider-Eintraege tragen (historisch) den Cron-Laufzeitpunkt, nicht den
+        # Handelstag — der Cron laeuft auch Sa/So/feiertags. Auf die tatsaechliche
+        # Session ziehen; die Kursreihe IST der Handelskalender.
+        sess = {}
+        for e in ref:
+            d = e["date"]
+            if d not in closes:
+                prior = [x for x in closes if x < d]
+                if not prior:
+                    continue
+                d = max(prior)
+            sess.setdefault(d, e)              # Sa/So/Feiertag fallen auf dieselbe Session
+        if not sess:
+            print(f"{sym:<7} Provider-Tage nicht auf eine Session abbildbar", flush=True); continue
+        ref = [(d, e) for d, e in sorted(sess.items())]
+        dates = [d for d, _ in ref]
 
         spots = [closes[d] for d in dates]
         contracts = _list_contracts(sym, key, dates[0],
@@ -454,8 +467,7 @@ def verify(syms: list, key: str) -> int:
         plan, need = _plan(closes, contracts, dates)
         bars = {occ: _bars(occ, key, dates[0], dates[-1]) for occ in need}
 
-        for e in ref:
-            d = e["date"]
+        for d, e in ref:
             if d not in plan:
                 continue
             exp, dte, occs = plan[d]

@@ -30,6 +30,54 @@ from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
+from shared.exchange_holidays import is_trading_day                   # noqa: E402
+
+
+def _last_session(d: date | None = None) -> str:
+    """Letzter NYSE-Handelstag ≤ d. Das Options-Universum ist komplett US-gelistet.
+
+    Der Cron läuft täglich um 23:00 UTC — auch samstags, sonntags und an
+    Feiertagen. Mit date.today() gestempelt landeten dadurch Einträge auf Tagen
+    ohne Handel in der History, die immer die Daten der letzten Session
+    duplizieren. Das verfälscht jede Percentile-Berechnung (aufgeblähte
+    Stichprobe mit Doppelwerten) und verstößt gegen die Grundregel, in
+    Handelstagen statt Kalendertagen zu rechnen."""
+    d = d or date.today()
+    for _ in range(10):
+        if is_trading_day(d, "NYSE"):
+            return d.isoformat()
+        d -= timedelta(days=1)
+    return d.isoformat()
+
+
+def _fix_session_dates(hist: dict) -> tuple[int, int]:
+    """Alt-Einträge auf ihren tatsächlichen Handelstag umdatieren (selbstheilend).
+
+    Ein am Samstag geschriebener Eintrag enthält die Chain von Freitag — der Wert
+    stimmt, nur das Label war falsch. Deshalb umdatieren statt löschen. Danach
+    dedupen: die Einträge von Sonntag und Feiertag fallen als Duplikate derselben
+    Session weg. Bei Kollision gewinnt der Provider-Eintrag gegen eine
+    BS-Rekonstruktion (echte IV schlägt invertierte)."""
+    moved = dropped = 0
+    for k, arr in hist.items():
+        by_date: dict = {}
+        for e in arr:
+            try:
+                s = _last_session(date.fromisoformat(e["date"]))
+            except Exception:
+                by_date.setdefault(e.get("date"), e)      # unparsbar: unangetastet behalten
+                continue
+            if s != e["date"]:
+                e["date"] = s; moved += 1
+            cur = by_date.get(s)
+            if cur is None:
+                by_date[s] = e
+            else:
+                dropped += 1
+                if cur.get("reconstructed") and not e.get("reconstructed"):
+                    by_date[s] = e
+        hist[k] = sorted(by_date.values(), key=lambda e: e.get("date") or "")
+    return moved, dropped
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 # Massive.com (Polygon.io) Option-Chain-Snapshot — Flatrate, 1 Ticker = ganze Chain
@@ -359,7 +407,8 @@ def build(tickers: list[str], write: bool = True) -> dict:
         print(f"  P/C equity vol {pc_ratio['equity']['vol']} oi {pc_ratio['equity']['oi']} · index vol {pc_ratio['index']['vol']}", flush=True)
 
     out = {
-        "generated": date.today().isoformat(),
+        "generated": date.today().isoformat(),      # Laufzeitpunkt (Freshness-Checks)
+        "session": _last_session(),                  # Handelstag, zu dem die Daten gehören
         "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
         "indices": indices, "correlation": corr, "pc_ratio": pc_ratio, "series": series,
         "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,
@@ -374,7 +423,14 @@ def build(tickers: list[str], write: bool = True) -> dict:
         if hp.exists():
             try: hist = json.loads(hp.read_text(encoding="utf-8"))
             except Exception: hist = {}
-        today = out["generated"]
+        # Handelstag stempeln, NICHT den Laufzeitpunkt: der Cron läuft täglich um
+        # 23:00 UTC, auch samstags/sonntags/feiertags — dann gehört die Chain zur
+        # letzten Session. Der Dedup unten sorgt dafür, dass die Wiederholungen
+        # am Wochenende keine Doppeleinträge erzeugen.
+        today = out["session"]
+        mv, dp = _fix_session_dates(hist)
+        if mv or dp:
+            print(f"[history] {mv} Einträge auf ihre Session umdatiert, {dp} Duplikate entfernt")
         for t in per:
             arr = hist.setdefault(t["ticker"], [])
             if not any(e.get("date") == today for e in arr):
