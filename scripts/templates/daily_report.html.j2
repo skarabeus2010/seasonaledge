@@ -95,11 +95,12 @@
       <th align="right" title="BlastOff = |Open−Close|/(High−Low)×100 — kleine Kerze/Compression (&lt;20) = Ausbruchs-Setup">BO</th>
       <th align="center" title="Technical Score (LBR/RSI/RSI3/BlastOff), max 6">TS</th>
       <th align="center" class="hl" title="Gesamtscore = SC + TS (0–10), Sortierschlüssel">Gesamt</th>
+      <th align="center" title="25Δ-Skew (Put-IV − Call-IV, Optionen); + = Put-Skew (Absicherung teuer), − = Call-Skew. Nur US-optionierbare Titel.">Skew</th>
     </tr></thead>
     <tbody>
       {% for r in rows %}
       <tr class="r">
-        <td class="tk">{{ r.ticker }}{% if r.skew_pts is not none %} <span title="25Δ-Skew (Put-IV − Call-IV, Optionen); + = Put-Skew/Absicherung teuer, − = Call-Skew" class="{{ 'up' if r.skew_pts >= 0 else 'dn' }}" style="font-size:9px;font-weight:700;white-space:nowrap;">Skew&nbsp;{{ '%+.1f' % r.skew_pts }}</span>{% endif %}{% if r.name %}<i>{{ r.name }}</i>{% endif %}</td>
+        <td class="tk">{{ r.ticker }}{% if r.name %}<i>{{ r.name }}</i>{% endif %}</td>
         <td align="right" class="v">{% if r.price_close is not none %}{{ '%.2f' % r.price_close }}{% else %}—{% endif %}</td>
         <td align="right" class="w6 {{ 'up' if r.change_pct is not none and r.change_pct > 0 else 'dn' if r.change_pct is not none and r.change_pct < 0 else 'nu' }}">{% if r.change_pct is not none %}{{ '%+.2f' % r.change_pct }}%{% else %}—{% endif %}</td>
         <td align="center">{% if r.mw_score is not none %}<span class="p {{ 'g1' if r.mw_score >= 4 else 'g2' if r.mw_score == 3 else 'go' if r.mw_score == 2 else 'gr' }}">{{ r.mw_score }}/4</span>{% else %}<span class="nu">—</span>{% endif %}</td>
@@ -111,9 +112,10 @@
         <td align="right" class="w6 {{ 'go' if r.blastoff is not none and r.blastoff < 20 else 'nu' }}">{% if r.blastoff is not none %}{{ '%.0f' % r.blastoff }}{% else %}—{% endif %}</td>
         <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/6</span></td>
         <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/10</span></td>
+        <td align="center" class="{{ 'up' if r.skew_pts is not none and r.skew_pts >= 0 else 'dn' if r.skew_pts is not none else 'nu' }}" style="font-weight:700;">{% if r.skew_pts is not none %}{{ '%+.1f' % r.skew_pts }}{% else %}—{% endif %}</td>
       </tr>
       {% if show_why and r.why %}
-      <tr class="wr"><td colspan="12" class="why">
+      <tr class="wr"><td colspan="13" class="why">
         <span class="vd vd-{{ r.why.verdict_class }}">{{ r.why.verdict }}</span> · SC {{ r.why.hits }}:
         {% for w in r.why.windows_compact %}{{ w.label }}&nbsp;<span class="{{ 'up' if w.hit else 'nu' }}">{{ w.pct }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
         {% if r.why.win_rate_pct is not none %} · Trefferquote {{ r.why.win_rate_pct }}%{% endif %}
