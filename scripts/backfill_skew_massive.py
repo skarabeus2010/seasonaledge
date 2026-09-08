@@ -186,7 +186,8 @@ def _is_monthly(iso: str) -> bool:
     return d.weekday() == 4 and 15 <= d.day <= 21
 
 
-def _plan(closes: dict, contracts: list, targets: list) -> tuple[dict, dict]:
+def _plan(closes: dict, contracts: list, targets: list,
+          prefer_monthly: bool = True) -> tuple[dict, dict]:
     """Je Zieldatum Expiry+Kontrakte festlegen. Rückgabe: (plan, benötigte Kontrakte)."""
     by_exp: dict[str, list] = {}
     for c in contracts:
@@ -206,9 +207,11 @@ def _plan(closes: dict, contracts: list, targets: list) -> tuple[dict, dict]:
         # die Mittwochs-Weeklies ab — die 30 Tage im Voraus kaum handeln (keine
         # Trades = keine Bars) und eine Percentile-Reihe zusaetzlich inhomogen
         # machen. Die Liquiditaet sitzt im Monatsverfall.
-        pool = ([e for e in cand if _is_monthly(e)]
-                or [e for e in cand if date.fromisoformat(e).weekday() == 4]
-                or cand)
+        pool = cand
+        if prefer_monthly:
+            pool = ([e for e in cand if _is_monthly(e)]
+                    or [e for e in cand if date.fromisoformat(e).weekday() == 4]
+                    or cand)
         exp = min(pool, key=lambda e: abs((date.fromisoformat(e) - dd).days - 30))
         dte = (date.fromisoformat(exp) - dd).days
         if not (_DTE_MIN <= dte <= _DTE_MAX):
@@ -434,9 +437,11 @@ def verify(syms: list, key: str) -> int:
         print("[FAIL] keine History-Datei."); return 1
     hist = json.loads(hp.read_text(encoding="utf-8"))
 
-    print(f"{'Ticker':<7}{'Datum':<12}{'Feld':<9}{'Provider':>10}{'Rekon':>10}{'Delta pts':>11}", flush=True)
-    print("-" * 59, flush=True)
-    devs: list[float] = []
+    print(f"{'Ticker':<6}{'Modus':<11}{'DTE':>4}{'ATM':>8}{'Call':>8}{'Put':>8}"
+          f"{'Skew':>8}{'cZeta':>8}{'pZeta':>8}", flush=True)
+    print("-" * 67, flush=True)
+    zeta_devs: list[float] = []
+    flips: list[str] = []
     for sym in syms:
         ref = [e for e in hist.get(sym, [])
                if not e.get("reconstructed") and e.get("iv_atm") and e.get("call_iv")]
@@ -464,41 +469,68 @@ def verify(syms: list, key: str) -> int:
         contracts = _list_contracts(sym, key, dates[0],
                                     (date.fromisoformat(dates[-1]) + timedelta(days=_DTE_MAX + 5)).isoformat(),
                                     min(spots) * 0.6, max(spots) * 1.4)
-        plan, need = _plan(closes, contracts, dates)
+        # ZWEI Rekonstruktionen, um die Laufzeit als Ursache zu isolieren:
+        # der Provider-Eintrag stammt aus der Zeit VOR der Monatspraeferenz, nahm
+        # also die 30-Tage-naechste Expiry (womoeglich eine Weekly).
+        plan_m, need_m = _plan(closes, contracts, dates, prefer_monthly=True)
+        plan_n, need_n = _plan(closes, contracts, dates, prefer_monthly=False)
+        need = {**need_m, **need_n}
         bars = {occ: _bars(occ, key, dates[0], dates[-1]) for occ in need}
 
+        def _row(lbl, dte, atm, c, p):
+            sk = (p - c) * 100 if (c and p) else None
+            cz = (c - atm) * 100 if (c and atm) else None
+            pz = (p - atm) * 100 if (p and atm) else None
+            print(f"{sym:<6}{lbl:<11}{dte if dte else '?':>4}"
+                  f"{atm*100 if atm else 0:>8.2f}{c*100 if c else 0:>8.2f}{p*100 if p else 0:>8.2f}"
+                  f"{sk:>+8.2f}{cz:>+8.2f}{pz:>+8.2f}", flush=True)
+            return sk, cz, pz
+
         for d, e in ref:
-            if d not in plan:
-                continue
-            exp, dte, occs = plan[d]
-            r = _reconstruct(d, closes[d], dte, occs, need, bars)
-            if not r:
-                continue
-            for fld in ("iv_atm", "call_iv", "put_iv"):
-                if e.get(fld) and r.get(fld):
-                    dev = (r[fld] - e[fld]) * 100
-                    devs.append(abs(dev))
-                    print(f"{sym:<7}{d:<12}{fld:<9}{e[fld]*100:>9.2f}%{r[fld]*100:>9.2f}%{dev:>+11.2f}",
-                          flush=True)
+            print(f"  -- {sym} {d} " + "-" * 40, flush=True)
+            _, pcz, ppz = _row("Provider", e.get("dte"), e["iv_atm"], e["call_iv"], e["put_iv"])
+            for lbl, pl, nd in (("Monatsverf.", plan_m, need_m), ("Naechst-30", plan_n, need_n)):
+                if d not in pl:
+                    continue
+                exp, dte, occs = pl[d]
+                r = _reconstruct(d, closes[d], dte, occs, nd, bars)
+                if not r:
+                    continue
+                _, rcz, rpz = _row(lbl, dte, r.get("iv_atm"), r.get("call_iv"), r.get("put_iv"))
+                if lbl != "Monatsverf.":
+                    continue                        # bewertet wird der Backfill-Modus
+                for nm, pv, rv in (("cZeta", pcz, rcz), ("pZeta", ppz, rpz)):
+                    if pv is None or rv is None:
+                        continue
+                    zeta_devs.append(abs(rv - pv))
+                    # Vorzeichenwechsel ist disqualifizierend: genau diese Achse
+                    # traegt die Aussage des Vol-Regime-Radars.
+                    if pv * rv < 0 and min(abs(pv), abs(rv)) > 0.5:
+                        flips.append(f"{sym} {d} {nm}: {pv:+.2f} -> {rv:+.2f}")
         clear_cache(); gc.collect()
 
-    if not devs:
-        print("\n[FAIL] Nichts vergleichbar — Backfill NICHT starten."); return 2
-    mean, mx = sum(devs) / len(devs), max(devs)
-    print("-" * 59, flush=True)
-    print(f"{len(devs)} Vergleiche · mittlere Abweichung {mean:.2f} pts · max {mx:.2f} pts", flush=True)
-    # Der alte marketdata-Backfill lag unter 0,4 pts. Trade-Preise statt Mid-Quotes
-    # rechtfertigen etwas mehr, aber jenseits von ~2 pts ist die Reihe wertlos.
+    print("-" * 67, flush=True)
+    if not zeta_devs:
+        print("[FAIL] Nichts vergleichbar — Backfill NICHT starten."); return 2
+    mean, mx = sum(zeta_devs) / len(zeta_devs), max(zeta_devs)
+    print(f"{len(zeta_devs)} Zeta-Vergleiche · mittlere Abweichung {mean:.2f} pts · max {mx:.2f} pts",
+          flush=True)
+    # Bewertet wird ZETA, nicht die rohe IV: eine kleine mittlere IV-Abweichung kann
+    # ein gedrehtes Zeta verdecken (MU 2026-09-04: IV-Mittel 0,82 pts "gut", waehrend
+    # call_zeta von +3,40 auf -0,66 kippte). Das Produkt nutzt Zeta, also pruefen wir Zeta.
+    if flips:
+        print(f"\n[FAIL] {len(flips)} VORZEICHENWECHSEL im Zeta:", flush=True)
+        for f in flips:
+            print(f"   {f}", flush=True)
+        print("Eine Historie, die das Vorzeichen der Zielgroesse dreht, ist schlechter "
+              "als keine. Backfill NICHT starten.", flush=True)
+        return 3
     if mean <= 1.0:
-        print("[OK] Rekonstruktion trifft die Provider-IV gut — Backfill kann laufen.")
+        print("[OK] Zeta wird gut getroffen — Backfill kann laufen.")
         return 0
-    if mean <= 2.0:
-        print("[WARN] Spuerbare Abweichung. Brauchbar fuer Percentile (Rangfolge), "
-              "aber nicht fuer absolute IV-Aussagen.")
-        return 0
-    print("[FAIL] Zu grosse Abweichung — Ursache klaeren, bevor 2 Jahre Historie "
-          "damit gefuellt werden.")
-    return 3
+    print("[WARN] Zeta-Abweichung ueber 1 pt. Fuer Rangfolgen ggf. brauchbar, wenn der "
+          "Versatz konstant ist — vor dem Massenlauf an mehreren Tagen pruefen.")
+    return 0
 
 
 def main() -> int:

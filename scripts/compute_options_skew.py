@@ -435,6 +435,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
             arr = hist.setdefault(t["ticker"], [])
             if not any(e.get("date") == today for e in arr):
                 arr.append({"date": today, "skew_pts": t["skew_pts"],
+                            "dte": t.get("dte"),        # ohne Laufzeit ist eine IV nicht einordbar
                             "put_iv": t["put_25d"]["iv"], "call_iv": t["call_25d"]["iv"],
                             "iv_atm": t.get("iv_atm"), "vrp_pts": t.get("vrp_pts"),
                             "pc_ratio": t.get("pc_ratio"), "bfly_pts": t.get("bfly_pts"),
