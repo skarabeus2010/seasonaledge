@@ -32,6 +32,8 @@ OPTIONS_CATEGORIES: dict[str, list[str]] = {
         "NVDA", "AMD", "AVGO", "MU", "SNDK", "ARM", "ASML", "QCOM", "INTC", "TXN",
         "LRCX", "KLAC", "AMAT", "ADI", "ANET", "DELL", "PLTR", "CRWD", "PANW",
         "NOW", "ORCL", "CRM", "ADBE", "INTU", "CSCO", "APP", "SMCI",
+        # AI-Infrastruktur/Rechenzentren (KW37 2026) — Optionsketten geprüft
+        "VRT", "IREN", "APLD", "CRWV", "NBIS",
     ],
     "Energie & Grid": [
         "XOM", "CVX", "COP", "EQT", "WMB", "CEG", "VST", "NRG", "NEE", "DUK",

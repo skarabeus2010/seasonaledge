@@ -837,6 +837,16 @@ SYMBOLS = {
     "MAR": {"name": "Marriott", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Marriott International — Hotels"},
     "WMB": {"name": "Williams Companies", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Williams Companies — Gas-Pipelines"},
 
+    # ── AI-INFRASTRUKTUR / RECHENZENTREN (KW37 2026) ─────────────────────────────
+    # Optionsseitig liquide (Kette geprüft) + volle 1-J-Kursreihe. Stehen im
+    # Options-Universum unter "AI & Semis" (Vol-Regime-Radar).
+    "SMCI": {"name": "Super Micro Computer", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Super Micro Computer — KI-Server & Racks"},
+    "VRT": {"name": "Vertiv Holdings", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Vertiv Holdings — Rechenzentrums-Kühlung & Strom"},
+    "IREN": {"name": "IREN Limited", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "IREN Ltd. — Bitcoin-Mining & KI-Rechenzentren"},
+    "APLD": {"name": "Applied Digital", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Applied Digital — KI-Rechenzentren & Hosting"},
+    "CRWV": {"name": "CoreWeave", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "CoreWeave Inc. — GPU-Cloud für KI"},
+    "NBIS": {"name": "Nebius Group", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "Nebius Group — KI-Cloud-Infrastruktur"},
+
     # ── SEKTOR-ETFs (weitere) ────────────────────────────────────────────────────
     "XLI": {"name": "Industrials Select Sector ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Industriesektor ETF"},
     "XLC": {"name": "Communication Services ETF", "kategorie": "US-ETF", "währung": "USD", "exchange": "NYSE", "beschreibung": "US-Kommunikationssektor ETF"},
