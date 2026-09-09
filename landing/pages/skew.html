@@ -286,7 +286,10 @@
         if(tk.indexOf('__')===0)return;
         if(!_inCat(tk))return;
         var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
-                 .filter(function(e){return e.date>=cut;});
+                 // Nur auf 30 Tage normierte Punkte ranken: cm/cm_extrap (Backfill) + Live-Einträge
+                 // (kein cm_mode). 'single' ist NICHT laufzeit-normiert und trägt den Roll-Sägezahn
+                 // — die Rangfolge würde sonst die Verfallsposition statt den Skew messen.
+                 .filter(function(e){return e.date>=cut && e.cm_mode!=='single';});
         if(arr.length<5)return;
         if(isCS){
           // Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite, unabhaengig gerankt.
@@ -603,7 +606,7 @@
       var top=(inCat.length?inCat:tks).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
       renderVRP(tks);
       renderSkewTable(tks);   // schon ohne Historie sichtbar (IV-Rank füllt sich nach)
-      document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure via Massive.com (Polygon.io) · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
+      document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure aus der US-Optionskette · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
       // Historie → Radar + IV-Rank-Spalte + Default-Auswahl
       fetchJSON('/landing/data/options_skew_history.json').then(function(hh){SKEW_HIST=hh; renderSkewQuad(); renderSkewTable(tks); selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');}).catch(function(){
         selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');

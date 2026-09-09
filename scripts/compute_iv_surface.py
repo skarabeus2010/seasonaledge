@@ -205,7 +205,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
 
     out = {
         "generated": date.today().isoformat(),
-        "source": "Massive/Polygon Option-Chain-Snapshot (Greeks/IV je Kontrakt) → "
+        "source": "US-Option-Chain-Snapshot (Greeks/IV je Kontrakt) → "
                   "Moneyness (Strike/Spot) × DTE-Bucket-Surface, OTM-IV linear interpoliert",
         "moneyness": list(_MONEYNESS), "dte_buckets": list(_DTE_BUCKETS),
         "tickers": surfaces,

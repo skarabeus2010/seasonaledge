@@ -206,7 +206,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
                   f"PW {r.get('put_wall')} · P/C-OI {r.get('pc_oi_ratio')}")
     out = {
         "generated": date.today().isoformat(),
-        "source": "gex_summary.json (Spot/Flip/Walls/Regime) + Massive/Polygon Option-Chain "
+        "source": "Spot/Flip/Walls/Regime + US-Option-Chain "
                   "(Max Pain, OI-by-Strike, P/C-OI). EOD, naive Dealer-Heuristik, kein Signal.",
         "tickers": per,
     }

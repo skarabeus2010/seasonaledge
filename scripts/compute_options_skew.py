@@ -409,7 +409,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
     out = {
         "generated": date.today().isoformat(),      # Laufzeitpunkt (Freshness-Checks)
         "session": _last_session(),                  # Handelstag, zu dem die Daten gehören
-        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + Massive/Polygon Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
+        "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + US-Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
         "indices": indices, "correlation": corr, "pc_ratio": pc_ratio, "series": series,
         "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,
     }

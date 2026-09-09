@@ -274,7 +274,7 @@
       <h4>Panel G — Vol- &amp; Skew-Puls</h4>
       <p><b>CBOE SKEW-Index</b> (^SKEW), <b>VIX</b> (^VIX) und <b>VVIX</b> (^VVIX) — täglich, gratis via Yahoo. SKEW misst
       die relative Preisung von OTM-S&amp;P-Puts (Tail-Risk), typ. 100&ndash;150; hoch = teure Crash-Absicherung. Zusätzlich
-      ein <b>25-Delta-Skew</b> je Einzelticker (Put-IV − Call-IV) aus der Optionskette via Massive.com (Polygon.io).
+      ein <b>25-Delta-Skew</b> je Einzelticker (Put-IV − Call-IV) aus der US-Optionskette.
       Rückwärtsgewandter Kontext, <b>kein Signal</b>.</p>
       <h4>Wissenschaftliche Einordnung</h4>
       <ul class="refs">
@@ -728,7 +728,7 @@
         ],
         tooltip:{theme:'dark',x:{format:'dd.MM.yyyy'},shared:true}
       }));
-      document.getElementById('sk-note').textContent='Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo)'+(tk?' · 25Δ-IV via Massive.com (Polygon.io)':'')+'. Täglich.';
+      document.getElementById('sk-note').textContent='Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo)'+(tk?' · 25Δ-IV aus der US-Optionskette':'')+'. Täglich.';
     }
 
     function load(url,fn,failId,msg){fetchJSON(url).then(fn).catch(function(e){panelFail(failId,msg);});}
