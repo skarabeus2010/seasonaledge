@@ -274,12 +274,12 @@ Symptom: `https://seasonalpha.ai/flows` bleibt beim Laden hängen (User-Meldung)
 2. Fehler in `renderSkewQuad()` durch die neuen Feldnamen (`cm_mode`, `call_zeta_pts`) oder durch Einträge ohne `iv_atm`.
 3. Hard-Refresh im Browser (Cache-Header sind korrekt, aber der Client kann eine kaputte Zwischenversion halten).
 
-### Skew-Historie (nach dem Backfill 2026-09-08) — Detail: [docs/OPTIONS.md](docs/OPTIONS.md)
-- [ ] **Frontend `/skew`: Percentile nur aus `cm`/`cm_extrap`.** `single`-Einträge sind nicht auf 30 Tage normiert; `renderSkewQuad()` filtert bisher nicht danach.
-- [ ] **Prüfen, ob der Näherungs-Fallback noch greift.** Mit echtem `iv_atm` muss Stufe 1 der Fallback-Kette ziehen — sonst wird `put_zeta = −call_zeta` und der Quadrant kollabiert auf seine Antidiagonale.
-- [ ] **Rekonstruktion ↔ Provider kalibrieren**, sobald ~30 überlappende Tage vorliegen (aktuell 1). Bis dahin: Reihe gilt für Rangfolgen, nicht für absolute Skew-Werte.
-- [ ] **BE (und ähnlich dünne Titel) aus dem Radar nehmen** — 28% Abdeckung. Besser eine Mindestschwelle (≥80 normierte Tage) als eine Einzelfall-Ausnahme.
-- [ ] **`--vol-pctl 0.5` gegenprüfen** — der Wert stammt aus 8 Vergleichen an einem einzigen Tag.
+### Skew-Historie / Percentile (Detail: [docs/OPTIONS.md](docs/OPTIONS.md))
+**Konstante 30-Tage-Laufzeit erledigt 2026-09-09** — Percentile/Rank nur noch aus laufzeit-normierten Punkten:
+- [x] **Live auf konstante 30d normiert** (`compute_options_skew.py::_skew_cm`/`_cm_interp`, identisch zum Backfill) → Live + Backfill bilden eine Skala. Angezeigte Per-Ticker-Felder bleiben Front-Monat.
+- [x] **Frontend rankt nur `cm`/`cm_extrap`** (`_normHist`/`MIN_NORM=20` in `skew.html`, Radar + IV-Rank/Skew-Rk-Spalten); `single` + Alt-Einträge ohne `cm_mode` fallen raus (kein Sägezahn). Mindestschwelle ersetzt die BE-Einzelfallausnahme. Näherungs-Fallback entschärft (cm-Einträge tragen immer `call_zeta_pts`/`iv_atm`).
+- [ ] **Engpass: 2-Jahres-Backfill übers Radar-Universum** (`backfill_skew_massive.py`, server-seitig, eigener Container). Mit `MIN_NORM=20` erscheinen sonst nur die wenigen gebackfillten Ticker + die mit ~20 Live-Tagen.
+- [ ] **Rekonstruktion ↔ Live kalibrieren** (ab ~30 überlappenden Tagen; aktuell 1). Bis dahin: Rangfolgen, keine absoluten Skew-Werte. `MIN_NORM` später 20→80 nachziehen. `--vol-pctl 0.5` gegenprüfen (8 Vergleiche, 1 Tag).
 
 ### Technische Roadmap (längerfristig)
 - [ ] **`build_calendar_data.py` via `docker exec` in `inject_credentials.sh`** statt system python3 → pandas verfügbar → JSON+ICS bei jedem Deploy automatisch aktuell (aktuell: committed-Stand, pandas fehlt in system python3)

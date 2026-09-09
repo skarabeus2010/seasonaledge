@@ -210,6 +210,20 @@
       box.innerHTML=cats.map(function(c){return _btn('cat:'+c,c,c===SKEW_CAT);}).join('');
       box.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_CAT=b.getAttribute('data-v').slice(4);buildSkewCatBtns();refreshRankViews();};});
     }
+    // Percentile/Rank nur über laufzeit-NORMIERTE Punkte (konstante 30 Tage).
+    // Nur cm/cm_extrap zählen — 'single' und Alt-Einträge ohne cm_mode (variabler
+    // Verfall) tragen den Roll-Sägezahn und würden die Verfallsposition ranken
+    // statt den Skew. MIN_NORM = Mindestzahl normierter Tage, sonst kein Ranking
+    // (lieber keine Zahl als eine aus 5 Punkten). Bis der 2-Jahres-Backfill über
+    // das Universum gelaufen ist, erscheinen nur Ticker mit genug normierter Historie.
+    var MIN_NORM=20;
+    function _isNorm(e){ return e.cm_mode==='cm'||e.cm_mode==='cm_extrap'; }
+    function _normHist(tk){
+      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
+      return ((SKEW_HIST&&SKEW_HIST[tk])||[]).slice()
+        .sort(function(a,b){return a.date<b.date?-1:1})
+        .filter(function(e){return e.date>=cut && _isNorm(e);});
+    }
     // Rank = wo im Min/Max-Bereich; Percentile = Anteil Tage darunter
     function _rank(vals){
       if(vals.length<2)return null;
@@ -279,18 +293,13 @@
       var el=document.getElementById('sk-quad'); if(!el)return;
       if(!SKEW_HIST){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Historie lädt).')+'</div>';return;}
       buildSkewWinBtns();
-      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
       var isCS=SKEW_VIEW==='cs_ps';
       var pts=[];
       Object.keys(SKEW_HIST).forEach(function(tk){
         if(tk.indexOf('__')===0)return;
         if(!_inCat(tk))return;
-        var arr=(SKEW_HIST[tk]||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
-                 // Nur auf 30 Tage normierte Punkte ranken: cm/cm_extrap (Backfill) + Live-Einträge
-                 // (kein cm_mode). 'single' ist NICHT laufzeit-normiert und trägt den Roll-Sägezahn
-                 // — die Rangfolge würde sonst die Verfallsposition statt den Skew messen.
-                 .filter(function(e){return e.date>=cut && e.cm_mode!=='single';});
-        if(arr.length<5)return;
+        var arr=_normHist(tk);
+        if(arr.length<MIN_NORM)return;
         if(isCS){
           // Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite, unabhaengig gerankt.
           // Priorität: call_zeta_pts (direkt) → iv_atm-Fallback → Backfill-Näherung (call_iv-put_iv)/2.
@@ -304,7 +313,7 @@
                      (e.call_iv!=null&&e.put_iv!=null ? (e.put_iv-e.call_iv)/2*100 : null));
             return (cz!=null&&pz!=null)?{cz:cz,pz:pz,skew:e.skew_pts}:null;
           }).filter(Boolean);
-          if(zetaPairs.length<5)return;
+          if(zetaPairs.length<MIN_NORM)return;
           var callR=_metric(zetaPairs.map(function(z){return z.cz;}));
           var putR =_metric(zetaPairs.map(function(z){return z.pz;}));
           if(callR==null||putR==null)return;
@@ -417,17 +426,14 @@
     function _curTicker(tk){ if(!SKEW_CUR)return null; for(var i=0;i<SKEW_CUR.length;i++) if(SKEW_CUR[i].ticker===tk)return SKEW_CUR[i]; return null; }
     // IV-Rank/Percentile eines Tickers im aktuellen Fenster (aus 25Δ-Mittel-Historie)
     function _ivMetric(tk){
-      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
-      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).filter(function(e){return e.date>=cut;});
-      if(arr.length<5)return null;
+      var arr=_normHist(tk);
+      if(arr.length<MIN_NORM)return null;
       return _metric(arr.map(function(e){return (e.put_iv+e.call_iv)/2;}));
     }
     // Skew-Rank/Percentile: wo der aktuelle 25Δ-Skew in seiner eigenen Historie liegt (hoch = ungewöhnlich put-lastig)
     function _skewMetric(tk){
-      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
-      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1})
-               .filter(function(e){return e.date>=cut && e.skew_pts!=null;});
-      if(arr.length<5)return null;
+      var arr=_normHist(tk).filter(function(e){return e.skew_pts!=null;});
+      if(arr.length<MIN_NORM)return null;
       return _metric(arr.map(function(e){return e.skew_pts;}));
     }
     function renderSkewHist(tk){
