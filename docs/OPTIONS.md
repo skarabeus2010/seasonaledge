@@ -111,8 +111,8 @@ Die Options-Analysen leben unter dem Top-Level-Nav-Punkt **„Optionen"** (neben
 ## Datenquelle: Massive.com (= Polygon.io)
 
 - **Massive.com ist Polygon.io** (umbenannt 30.10.2025; `api.polygon.io` läuft weiter, `api.massive.com` neu). NICHT `joinmassive.com` (fremder Proxy-Dienst).
-- **Warum gewechselt (von marketdata.app):** marketdata rechnet **1 Credit pro zurückgegebenem Kontrakt** → SPX-Voll-Chain = 22.718 Credits, SPY ~4.400 → Voll-Chain-GEX unbezahlbar, tägliches 429-Budget. **Massive = Flatrate / unlimited Calls**: **ein** `GET /v3/snapshot/options/<SYM>?expiration_date.lte=<d>&limit=250` (paginiert via `next_url`, `apiKey`-Query) liefert die **ganze Chain** mit Greeks/IV/**OI** je Kontrakt. **Options-Starter $29/mo** (15-min delayed — für EOD-Crons egal). SPX-Index-Optionen (`I:SPX`) ohne Extra-Plan.
-- **Grenzen:** (a) `underlying_asset.price` im Snapshot oft **leer** → Spot via `/v2/aggs/<SYM>/prev` (EOD-Close). (b) **Historisch nur Preise, keine Greeks/IV** (wie marketdata) → hist. Backfill weiter per BS-Rekonstruktion. (c) Options-Endpoints brauchen den **Options-Plan** (403 NOT_AUTHORIZED sonst — auch über den MCP, der dieselbe Entitlement nutzt).
+- **Massive ist die EINZIGE Options-Datenquelle.** marketdata.app wurde nur **evaluiert, nie produktiv eingesetzt** — dort kostet jeder zurückgegebene Kontrakt **1 Credit** (SPX-Voll-Chain = 22.718 Credits, SPY ~4.400 → Voll-Chain-GEX unbezahlbar, tägliches 429-Budget), deshalb der Entscheid für Massive. **Massive = Flatrate / unlimited Calls**: **ein** `GET /v3/snapshot/options/<SYM>?expiration_date.lte=<d>&limit=250` (paginiert via `next_url`, `apiKey`-Query) liefert die **ganze Chain** mit Greeks/IV/**OI** je Kontrakt. **Options-Starter $29/mo** (15-min delayed — für EOD-Crons egal). SPX-Index-Optionen (`I:SPX`) ohne Extra-Plan.
+- **Grenzen:** (a) `underlying_asset.price` im Snapshot oft **leer** → Spot via `/v2/aggs/<SYM>/prev` (EOD-Close). (b) **Historisch nur Preise, keine Greeks/IV** → hist. Backfill per BS-Rekonstruktion (ebenfalls aus Massive, siehe unten). (c) Options-Endpoints brauchen den **Options-Plan** (403 NOT_AUTHORIZED sonst — auch über den MCP, der dieselbe Entitlement nutzt).
 - **Key = `MASSIVE_API_KEY`** (lokale + Server-`.env`). ⚠️ **Container liest `.env` per docker-compose `env_file` beim START** → nach `.env`-Änderung **`docker compose up -d --force-recreate app`** (sonst „MASSIVE_API_KEY fehlt", 0 Ticker).
 - **MCP-Server:** `uv tool install "mcp_massive @ git+https://github.com/massive-com/mcp_massive@v0.10.0"` + `claude mcp add massive -e MASSIVE_API_KEY=… -- mcp_massive` (3 Tools search_endpoints/call_api/query_data + BS-Funktionen; interaktiv, nicht im Cron). Alternative für **historische Greeks/IV**: **ThetaData** ($40-80/mo).
 
@@ -145,7 +145,9 @@ Die Options-Analysen leben unter dem Top-Level-Nav-Punkt **„Optionen"** (neben
 
 ## Historie-Backfill (BS-Rekonstruktion)
 
-Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker haben anfangs nur 1 (Forward-Akku). `scripts/backfill_skew_history.py` füllt sie: holt die **marketdata**-historische Chain (`?date=`, 1 Credit, `strikeLimit`), **invertiert IV je Kontrakt per BS-Bisektion** aus dem Mid, pickt 25Δ → schreibt inkrementell pro Ticker in `options_skew_history.json` (`socket.setdefaulttimeout(20)`, `--years`/`--every-n-td`). **marketdata.app bleibt genau dafür aktiv** (Massive-Historie hat keine Greeks). `verify_skew_iv.py` bestätigt: unsere BS-IV reproduziert die Live-IV auf **< 0,4 Vol-Punkte**.
+Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker haben anfangs nur 1 (Forward-Akku). **`scripts/backfill_skew_massive.py`** (seit 2026-09-08) füllt sie — **aus Massive**, nicht marketdata: Massive-Historie liefert nur Preise (kein IV/Greeks, Quotes sind 403 auf dem Options-Starter), deshalb **invertiert der Backfill die IV je Kontrakt per BS-Bisektion** aus den Aggregates-Bars, pickt 25Δ, normiert die Laufzeit auf konstante 30 Tage (Varianz-Interpolation `cm`/`cm_extrap`) → schreibt inkrementell pro Ticker in `options_skew_history.json`. Details + die fünf Fallen der Rekonstruktion siehe „Lessons Learned" unten. `verify_skew_iv.py` bestätigt: unsere BS-IV reproduziert die Live-IV auf **< 0,4 Vol-Punkte**.
+
+> **Hinweis:** Der Vorgänger `scripts/backfill_skew_history.py` (marketdata.app, 1 Credit/Chain) ist **stillgelegt** — marketdata wurde nur evaluiert, nie produktiv genutzt. Der Backfill läuft jetzt komplett über Massive.
 
 ## Methodik-Abgleich mit SpotGamma (bestätigt korrekt)
 
@@ -224,7 +226,7 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 
 ## 25Δ-Skew (Alt-Verweis)
 
-Der ursprüngliche Skew war Panel G auf `/flows` (marketdata, 2 Credits/Ticker). **Abgelöst** durch die dedizierte `/skew`-Seite + Massive (siehe oben).
+Der ursprüngliche Skew war Panel G auf `/flows` (anfänglicher marketdata-Test, 2 Credits/Ticker). **Abgelöst** durch die dedizierte `/skew`-Seite + Massive (siehe oben) — Massive ist die einzige produktive Options-Quelle.
 
 ## Quellen
 

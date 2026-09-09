@@ -603,7 +603,7 @@
       var top=(inCat.length?inCat:tks).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
       renderVRP(tks);
       renderSkewTable(tks);   // schon ohne Historie sichtbar (IV-Rank füllt sich nach)
-      document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure via marketdata.app · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
+      document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure via Massive.com (Polygon.io) · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
       // Historie → Radar + IV-Rank-Spalte + Default-Auswahl
       fetchJSON('/landing/data/options_skew_history.json').then(function(hh){SKEW_HIST=hh; renderSkewQuad(); renderSkewTable(tks); selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');}).catch(function(){
         selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');
