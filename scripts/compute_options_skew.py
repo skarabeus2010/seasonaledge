@@ -256,6 +256,91 @@ def _atm_iv(e: dict):
     return round((cc[1] + pp[1]) / 2, 4) if (cc and pp) else None
 
 
+# ── Konstante 30-Tage-Laufzeit (identisch zu backfill_skew_massive.py) ────────
+# Damit der Live-Tageswert auf DERSELBEN Skala wie der Backfill landet. Ohne das
+# schwankt die Reihe zwischen ~21 und ~39 Tagen (nächste Monatsexpiry), und der
+# Percentile misst die Position im Verfallszyklus statt den Skew.
+_CM_DAYS = 30
+_CM_DTE_MIN, _CM_DTE_MAX = 7, 75     # Spanne für Interpolations-Stützstellen
+_CM_SINGLE_TOL = 10                  # nur EINE Stützstelle: max. Abstand zu _CM_DAYS
+
+
+def _cm_interp(v1, t1, v2, t2, t_target=_CM_DAYS):
+    """IV auf konstante Laufzeit interpolieren — linear in der TOTALEN VARIANZ
+    (σ²·T, VIX-Methodik). Linear in σ läge bis zu 3 Vol-Punkte daneben."""
+    if v1 is None or v2 is None or t1 is None or t2 is None or t1 == t2:
+        return None
+    if t1 > t2:
+        v1, t1, v2, t2 = v2, t2, v1, t1
+    w1, w2 = v1 * v1 * t1, v2 * v2 * t2
+    var = w1 + (w2 - w1) * (t_target - t1) / (t2 - t1)
+    if var <= 0 or t_target <= 0:
+        return None
+    return round(math.sqrt(var / t_target), 4)
+
+
+def _cm_leg(e: dict):
+    """25Δ-Call/Put-IV + ATM-IV einer Expiry (für die CM-Interpolation)."""
+    cc = _pick(e["call"], 0.25, tol=_DELTA_TOL); pp = _pick(e["put"], 0.25, tol=_DELTA_TOL)
+    if not cc or not pp:
+        return None
+    return {"dte": e["dte"], "call_iv": cc[1], "put_iv": pp[1], "iv_atm": _atm_iv(e)}
+
+
+def _cm_legs(by: dict) -> list:
+    """Ein bis zwei Verfälle wählen, die _CM_DAYS klammern (Monatsverfall bevorzugt).
+    Ohne Bracket nach unten extrapolieren (zwei nächstlängere), sonst Einzelpunkt."""
+    pool = ([e for e in by if _is_monthly(e)]
+            or [e for e in by if date.fromisoformat(e).weekday() == 4]
+            or list(by))
+    below = sorted([e for e in pool if _CM_DTE_MIN <= by[e]["dte"] <= _CM_DAYS], key=lambda e: by[e]["dte"])
+    above = sorted([e for e in pool if _CM_DAYS < by[e]["dte"] <= _CM_DTE_MAX], key=lambda e: by[e]["dte"])
+    if below and above:
+        return [below[-1], above[0]]      # echtes Bracket um 30d
+    if len(above) >= 2:
+        return [above[0], above[1]]       # kurz vor Roll: nach unten extrapolieren
+    if len(below) >= 2:
+        return [below[-2], below[-1]]     # selten: nach oben extrapolieren
+    return above[:1] or below[-1:]        # nur ein Verfall → Einzelpunkt
+
+
+def _skew_cm(by: dict) -> dict | None:
+    """Konstant-30-Tage 25Δ-Skew + ATM-IV aus der Live-Chain — gleiche Methodik
+    wie backfill_skew_massive.py, damit Live und Backfill eine Reihe bilden."""
+    if not by:
+        return None
+    got = [g for g in (_cm_leg(by[e]) for e in _cm_legs(by)) if g]
+    if not got:
+        return None
+    if len(got) >= 2:
+        a, b = got[0], got[1]
+        lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
+        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS), abs(hi_d - _CM_DAYS)) > 15:
+            return None
+        call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
+        put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
+        iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
+                  if (a["iv_atm"] and b["iv_atm"]) else None)
+        mode, dte_out = ("cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"), _CM_DAYS
+    else:
+        a = got[0]
+        if abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
+            return None
+        call_iv, put_iv, iv_atm = a["call_iv"], a["put_iv"], a["iv_atm"]
+        mode, dte_out = "single", a["dte"]
+    if call_iv is None or put_iv is None:
+        return None
+    out = {"cm_mode": mode, "cm_dte": dte_out,
+           "cm_call_iv": round(call_iv, 4), "cm_put_iv": round(put_iv, 4),
+           "cm_skew_pts": round((put_iv - call_iv) * 100, 2)}
+    if iv_atm:
+        out["cm_iv_atm"] = round(iv_atm, 4)
+        out["cm_call_zeta_pts"] = round((call_iv - iv_atm) * 100, 2)
+        out["cm_put_zeta_pts"] = round((put_iv - iv_atm) * 100, 2)
+        out["cm_bfly_pts"] = round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2)
+    return out
+
+
 def _enrich(sym: str, key: str) -> dict | None:
     """Voll-Metrik-Objekt aus EINEM Massive-Chain-Snapshot."""
     spot = _spot(sym, key)
@@ -360,6 +445,12 @@ def _enrich(sym: str, key: str) -> dict | None:
         "iv30": _curve(30), "iv_ne": _curve(1),
         "dte30": s30["dte"], "dte_ne": (sne["dte"] if sne else None),
     }
+    # Konstante 30-Tage-Werte (gleiche Methodik wie der Backfill) — NUR für die
+    # Vorwärts-Historie, damit Live + Backfill eine percentile-fähige Reihe bilden.
+    # Die angezeigten Per-Ticker-Felder oben bleiben der reale Front-Monat.
+    cm = _skew_cm(by)
+    if cm:
+        r.update(cm)
     return r
 
 
@@ -434,13 +525,24 @@ def build(tickers: list[str], write: bool = True) -> dict:
         for t in per:
             arr = hist.setdefault(t["ticker"], [])
             if not any(e.get("date") == today for e in arr):
-                arr.append({"date": today, "skew_pts": t["skew_pts"],
-                            "dte": t.get("dte"),        # ohne Laufzeit ist eine IV nicht einordbar
-                            "put_iv": t["put_25d"]["iv"], "call_iv": t["call_25d"]["iv"],
-                            "iv_atm": t.get("iv_atm"), "vrp_pts": t.get("vrp_pts"),
-                            "pc_ratio": t.get("pc_ratio"), "bfly_pts": t.get("bfly_pts"),
-                            "call_zeta_pts": t.get("call_zeta_pts"),
-                            "put_zeta_pts":  t.get("put_zeta_pts")})
+                # Skew/IV auf konstante 30 Tage normiert speichern (gleiche Skala wie
+                # der Backfill) → percentile-fähige Reihe. Felder tragen cm_mode; das
+                # Frontend verwirft 'single'. Fällt die CM-Normierung aus (nur ein
+                # Verfall zu weit weg), wird der reale Front-Monat gespeichert (kein
+                # cm_mode) — für den Tag nicht normiert, aber kein Datenverlust.
+                cm_ok = t.get("cm_mode") is not None
+                arr.append({"date": today,
+                            "cm_mode": t.get("cm_mode"),
+                            "dte": t.get("cm_dte") if cm_ok else t.get("dte"),
+                            "skew_pts": t.get("cm_skew_pts") if cm_ok else t["skew_pts"],
+                            "put_iv": t.get("cm_put_iv") if cm_ok else t["put_25d"]["iv"],
+                            "call_iv": t.get("cm_call_iv") if cm_ok else t["call_25d"]["iv"],
+                            "iv_atm": t.get("cm_iv_atm") if cm_ok else t.get("iv_atm"),
+                            "vrp_pts": t.get("vrp_pts"),
+                            "pc_ratio": t.get("pc_ratio"),
+                            "bfly_pts": t.get("cm_bfly_pts") if cm_ok else t.get("bfly_pts"),
+                            "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else t.get("call_zeta_pts"),
+                            "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else t.get("put_zeta_pts")})
             hist[t["ticker"]] = arr[-750:]
         # CBOE-Correlation vorwärts akkumulieren (Yahoo liefert oft nur letzten Wert)
         if corr:

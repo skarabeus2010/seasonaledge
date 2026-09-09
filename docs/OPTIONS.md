@@ -213,15 +213,19 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 - [ ] **SpotGamma-Top-3 Rest:** Options-Scanner-Layer (IV-Rank-Extreme, Flip-Nähe, ΔOI, VRP-Extreme) noch offen; Compass/Expected-Move teils da.
 - [x] ~~**marketdata.app**~~ — Abo entfällt, Massive ist die einzige Options-Quelle. `backfill_skew_history.py` stillgelegt, Nachfolger `backfill_skew_massive.py` (2026-09-08).
 
-### Skew-Historie / Vol-Regime-Radar (offen nach dem Backfill 2026-09-08)
+### Skew-Historie / Vol-Regime-Radar
 
-- [ ] **Frontend: Percentile nur aus `cm`/`cm_extrap` rechnen.** `single`-Einträge sind nicht auf 30 Tage normiert und tragen den Sägezahn. `renderSkewQuad()` in `landing/pages/skew.html` filtert bisher nicht danach — ohne diesen Filter mischt der Quadrant normierte und nicht normierte Punkte.
-- [ ] **Frontend prüfen: greift noch der Näherungs-Fallback?** Die Rekonstruktionen liefern jetzt echtes `iv_atm`; der dreistufige Fallback in `renderSkewQuad()` (zeta → iv_atm → `(call_iv−put_iv)/2`) sollte auf Stufe 1 landen. Solange Stufe 3 greift, sind beide Achsen spiegelbildlich und der Quadrant wertlos.
-- [ ] **Kalibrierung Rekonstruktion ↔ Provider.** Beide Quellen in einer Reihe sind nur zulässig, wenn der Versatz klein ist. Aktuell 1 Vergleichstag (Zeta-Mittel 0,79 pts). Ab ~30 überlappenden Tagen je Ticker messen und ggf. rückwirkend korrigieren; bis dahin gilt die Reihe für **Rangfolgen**, nicht für absolute Skew-Aussagen.
-- [ ] **BE aus dem Radar nehmen oder gesondert kennzeichnen** — 28 % Abdeckung, davon 60 % nicht normiert. Gilt sinngemäß für jeden Titel mit ähnlich dünner 25Δ-Liquidität; eine Mindestschwelle (z. B. ≥ 80 normierte Tage) wäre sauberer als eine Einzelfall-Ausnahme.
-- [ ] **Backfill auf 2 Jahre und weitere Ticker ausdehnen** — ~20 Min/Ticker/Jahr. Vorher klären, ob 1 Jahr für die Percentile reicht (SpotGamma-Fenster unbekannt).
-- [ ] **`--vol-pctl 0.5` an mehreren Tagen gegenprüfen.** Der Wert stammt aus 8 Vergleichen an EINEM Tag — dünn. Sobald mehr Provider-Tage da sind, 0,3/0,5/0,7 erneut vergleichen.
-- [ ] **`compute_options_skew.py` kennt keine konstante Laufzeit.** Die Vorwärts-Akkumulation nimmt weiter die 30-Tage-nächste Expiry (seit 2026-09-08 monatsbevorzugt) und schwankt dadurch selbst zwischen ~21 und ~39 Tagen. Für eine saubere gemeinsame Reihe müsste `_cm_interp` auch dort greifen.
+**Percentile/Rank = konstante 30-Tage-Laufzeit (erledigt 2026-09-09).** Ein Percentile ist nur belastbar, wenn die Historie **genauso gemessen** ist wie der heutige Wert. Gelöst:
+- [x] **Live-Wert auf konstante 30 Tage normiert** (`compute_options_skew.py`): `_skew_cm()` + `_cm_interp()` (Varianz-Interpolation, identisch zu `backfill_skew_massive.py`). Die Vorwärts-Historie speichert jetzt die CM-Werte + `cm_mode`; die **angezeigten** Per-Ticker-Felder bleiben der reale Front-Monat.
+- [x] **Frontend rankt nur noch `cm`/`cm_extrap`** (`_normHist()`/`MIN_NORM` in `skew.html`, sowohl Radar als auch IV-Rank/Skew-Rk-Spalten). `single` und Alt-Einträge ohne `cm_mode` (variabler Verfall) fallen raus — kein Sägezahn mehr in der Rangfolge.
+- [x] **Mindestschwelle** `MIN_NORM=20` normierte Tage, sonst kein Ranking (statt Einzelfall-Ausnahme für BE). Dünne Titel fallen automatisch durch.
+- [x] **Näherungs-Fallback entschärft:** `cm`/`cm_extrap`-Einträge tragen immer `call_zeta_pts`/`iv_atm` → Stufe 1 des Fallbacks greift, der kollabierende `(call_iv−put_iv)/2`-Zweig kommt nicht mehr zum Zug.
+
+Offen:
+- [ ] **2-Jahres-Backfill über das Radar-Universum laufen lassen** (`backfill_skew_massive.py`, server-seitig im eigenen Container, ~20 Min/Ticker/Jahr). **Das ist jetzt der Engpass:** mit `MIN_NORM=20` + strengem cm-Filter erscheinen nur Ticker mit genug normierter Historie — aktuell die wenigen gebackfillten (SMH/MU/DELL/ARM/BE) plus alle, die ~20 Live-Tage akkumuliert haben. Der Rest füllt sich erst über Wochen bzw. mit dem Backfill.
+- [ ] **Kalibrierung Rekonstruktion ↔ Live.** Ab ~30 überlappenden Tagen je Ticker den Versatz messen (aktuell Zeta-Mittel 0,79 pts an 1 Tag) und ggf. rückwirkend korrigieren; bis dahin gilt die Reihe für **Rangfolgen**, nicht für absolute Skew-Werte.
+- [ ] **`MIN_NORM` nachziehen** (20 → ggf. 80), sobald der Backfill genug Tiefe liefert.
+- [ ] **`--vol-pctl 0.5` an mehreren Tagen gegenprüfen** (Wert aus 8 Vergleichen an einem Tag).
 - [ ] Blog **Distribution/Backlinks** für den Vol-Regime-Radar-Post; GSC nach Indexierung prüfen.
 
 ## 25Δ-Skew (Alt-Verweis)
