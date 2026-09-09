@@ -50,12 +50,13 @@ from shared.env_loader import load_env                                # noqa: E4
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache        # noqa: E402
 from shared.options_universe import all_option_tickers                # noqa: E402
+from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
+                                  bs_delta as _bs_delta, implied_vol as _implied_vol)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
 _AGGS = "https://api.polygon.io/v2/aggs/ticker/{occ}/range/1/day/{f}/{t}?adjusted=true&limit=50000"
 
-_R = 0.045          # Risk-free-Näherung; q=0. Für Differenzen innerhalb einer Expiry unkritisch.
 _THROTTLE = 0.05    # Flatrate, kleiner Puffer gegen Burst-429
 _BAND = 0.30        # Strike-Fenster um den Spot des jeweiligen Zieldatums
 _MAX_STRIKES = 24   # je Seite und Expiry — reicht, um 25Δ und 50Δ sauber zu klammern
@@ -66,46 +67,11 @@ _SINGLE_TOL = 10              # nur EINE Stuetzstelle: max. Abstand zu _CM_DAYS
 _DEFAULT = ["MU", "DELL", "BE", "SMH", "ARM", "SNDK", "AVGO", "NVDA", "AMD", "SPY", "QQQ"]
 
 
-# ── Black-Scholes (self-contained, identisch zum marketdata-Backfill) ────────
-def _cdf(x): return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
-
-
-def _bs_price(S, K, T, sig, typ):
-    if T <= 0 or sig <= 0 or S <= 0 or K <= 0:
-        return max(0.0, (S - K) if typ == "call" else (K - S))
-    srt = sig * math.sqrt(T)
-    d1 = (math.log(S / K) + (_R + 0.5 * sig * sig) * T) / srt
-    d2 = d1 - srt
-    if typ == "call":
-        return S * _cdf(d1) - K * math.exp(-_R * T) * _cdf(d2)
-    return K * math.exp(-_R * T) * _cdf(-d2) - S * _cdf(-d1)
-
-
-def _bs_delta(S, K, T, sig, typ):
-    srt = sig * math.sqrt(T)
-    d1 = (math.log(S / K) + (_R + 0.5 * sig * sig) * T) / srt
-    return _cdf(d1) if typ == "call" else _cdf(d1) - 1.0
-
-
-def _implied_vol(price, S, K, T, typ):
-    """IV per Bisektion; None wenn kein Root (z.B. Preis = reiner innerer Wert)."""
-    if price is None or price <= 0 or T <= 0:
-        return None
-    lo, hi = 1e-4, 5.0
-    plo = _bs_price(S, K, T, lo, typ) - price
-    phi = _bs_price(S, K, T, hi, typ) - price
-    if plo * phi > 0:
-        return None
-    for _ in range(64):
-        mid = 0.5 * (lo + hi)
-        pm = _bs_price(S, K, T, mid, typ) - price
-        if abs(pm) < 1e-6:
-            return mid
-        if plo * pm < 0:
-            hi = mid
-        else:
-            lo, plo = mid, pm
-    return 0.5 * (lo + hi)
+# ── Black-Scholes ───────────────────────────────────────────────────────────
+# Aus shared/black_scholes.py — DIESELBE Implementierung nutzt der Live-Lauf
+# (compute_options_skew.py). Getrennte Kopien hatten einen systematischen
+# Zeta-Versatz zwischen Backfill- und Live-Punkten erzeugt (siehe Modul-Doc).
+# Aliase halten die bisherigen Aufrufstellen unveraendert.
 
 
 # ── Massive-REST ────────────────────────────────────────────────────────────
