@@ -31,6 +31,7 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day                   # noqa: E402
+from shared.black_scholes import bs_delta, implied_vol                # noqa: E402
 
 
 def _last_session(d: date | None = None) -> str:
@@ -304,12 +305,84 @@ def _cm_legs(by: dict) -> list:
     return above[:1] or below[-1:]        # nur ein Verfall → Einzelpunkt
 
 
-def _skew_cm(by: dict) -> dict | None:
-    """Konstant-30-Tage 25Δ-Skew + ATM-IV aus der Live-Chain — gleiche Methodik
-    wie backfill_skew_massive.py, damit Live und Backfill eine Reihe bilden."""
+# ── Ranking-Reihe: IV SELBST invertieren (Methodengleichheit mit dem Backfill) ─
+# Die angezeigten Per-Ticker-Werte nutzen weiter die Provider-IV (genau, EOD).
+# Fuer die HISTORIE zaehlt aber nicht Genauigkeit, sondern Vergleichbarkeit: die
+# Reihe besteht zu >99 % aus BS-rekonstruierten Backfill-Punkten. Nimmt man fuer
+# den Live-Punkt die Provider-IV, mischt man zwei Messmethoden — gemessen am
+# 2026-09-09 ergab das einen Zeta-Versatz von 0,84-1,30 pts, bei NVDA so gross
+# wie der gesamte Interquartilsabstand: der Live-Punkt landete im 99. Percentil,
+# rein methodisch. Deshalb hier dieselbe Inversion, derselbe Volumenfilter.
+_CM_VOL_PCTL = 0.5   # wie der Backfill-Lauf (--vol-pctl 0.5)
+
+
+def _own_cands(contracts: list) -> dict:
+    """Snapshot-Kontrakte je Expiry als Rohpreise: {exp: {dte, cands:[…]}}.
+
+    Bewusst OHNE Provider-IV/Greeks — nur Strike, Typ, Tagesschluss und Volumen.
+    Deep-ITM/OTM-Kontrakte ohne Greeks fallen hier NICHT weg (anders als in
+    _byexp), sie werden erst von der Bisektion verworfen, wenn kein Root existiert."""
+    today = date.today(); by = {}
+    for c in contracts:
+        det = c.get("details") or {}
+        ex, typ, K = det.get("expiration_date"), det.get("contract_type"), det.get("strike_price")
+        day = c.get("day") or {}
+        px, vol = day.get("close"), day.get("volume") or 0
+        if not ex or typ not in ("call", "put") or not K or not px:
+            continue
+        e = by.setdefault(ex, {"dte": (date.fromisoformat(ex) - today).days, "cands": []})
+        e["cands"].append({"typ": typ, "K": float(K), "px": float(px), "vol": float(vol)})
+    return by
+
+
+def _leg_own(e: dict, spot: float, vol_pctl: float = _CM_VOL_PCTL):
+    """25Δ-Call/Put- + ATM-IV EINER Expiry aus Preisen — Spiegel von
+    backfill_skew_massive._leg_ivs (gleiche Filter, gleiche Toleranz)."""
+    dte = e["dte"]; cands = e["cands"]
+    if not spot or dte <= 0 or not cands:
+        return None
+    T = dte / 365.0
+    cutoff = 0.0
+    if vol_pctl > 0:
+        vols = sorted(c["vol"] for c in cands)
+        if vols:
+            cutoff = vols[min(len(vols) - 1, int(len(vols) * vol_pctl))]
+    best = {"call": {}, "put": {}}
+    for c in cands:
+        if cutoff and c["vol"] < cutoff:
+            continue
+        iv = implied_vol(c["px"], spot, c["K"], T, c["typ"])
+        if iv is None or iv <= 0.01 or iv > 4.0:
+            continue
+        dl = bs_delta(spot, c["K"], T, iv, c["typ"])
+        for tgt in (0.25, 0.50):
+            dist = abs(abs(dl) - tgt)
+            cur = best[c["typ"]].get(tgt)
+            if cur is None or dist < cur[0]:
+                best[c["typ"]][tgt] = (dist, iv)
+
+    def _take(typ, tgt):
+        v = best[typ].get(tgt)
+        return v[1] if (v and v[0] <= _DELTA_TOL) else None
+
+    call_iv, put_iv = _take("call", 0.25), _take("put", 0.25)
+    atm_c, atm_p = _take("call", 0.50), _take("put", 0.50)
+    if call_iv is None or put_iv is None:
+        return None
+    iv_atm = round((atm_c + atm_p) / 2, 4) if (atm_c and atm_p) else (atm_c or atm_p)
+    return {"dte": dte, "call_iv": call_iv, "put_iv": put_iv, "iv_atm": iv_atm}
+
+
+def _skew_cm(by: dict, leg_fn=None) -> dict | None:
+    """Konstant-30-Tage 25Δ-Skew + ATM-IV — gleiche Methodik wie
+    backfill_skew_massive.py, damit Live und Backfill eine Reihe bilden.
+
+    leg_fn: Stuetzstellen-Quelle. Default = Provider-IV (_cm_leg); fuer die
+    Ranking-Historie wird _leg_own uebergeben (eigene BS-Inversion)."""
     if not by:
         return None
-    got = [g for g in (_cm_leg(by[e]) for e in _cm_legs(by)) if g]
+    leg_fn = leg_fn or (lambda e: _cm_leg(by[e]))
+    got = [g for g in (leg_fn(e) for e in _cm_legs(by)) if g]
     if not got:
         return None
     if len(got) >= 2:
@@ -445,12 +518,24 @@ def _enrich(sym: str, key: str) -> dict | None:
         "iv30": _curve(30), "iv_ne": _curve(1),
         "dte30": s30["dte"], "dte_ne": (sne["dte"] if sne else None),
     }
-    # Konstante 30-Tage-Werte (gleiche Methodik wie der Backfill) — NUR für die
-    # Vorwärts-Historie, damit Live + Backfill eine percentile-fähige Reihe bilden.
-    # Die angezeigten Per-Ticker-Felder oben bleiben der reale Front-Monat.
-    cm = _skew_cm(by)
-    if cm:
-        r.update(cm)
+    # Konstante 30-Tage-Werte für die Vorwärts-Historie — mit EIGENER BS-Inversion
+    # aus den Snapshot-Preisen, also derselben Methode wie der Backfill. Nur so
+    # bilden Live- und Backfill-Punkte eine Reihe, über die ein Percentile
+    # ueberhaupt aussagekraeftig ist (Begruendung: shared/black_scholes.py).
+    # Bewusst KEIN Rueckfall auf die Provider-IV: der wuerde die Methodenmischung
+    # wieder einschleusen. Schlaegt die Inversion fehl, bekommt der Tag kein
+    # cm_mode — das Frontend laesst ihn dann aus der Rangfolge heraus.
+    # Die angezeigten Per-Ticker-Felder oben bleiben Provider-IV (genau, EOD).
+    # Spot fuer die Inversion: bevorzugt der Schluss aus UNSERER Kursreihe — genau
+    # die Quelle, die auch der Backfill nutzt (_closes). Massives /prev-Endpoint
+    # liefert je nach Laufzeitpunkt den Vortag und wuerde die Optionspreise mit
+    # einem Spot des falschen Tages paaren.
+    spot_own = last_close or spot
+    if spot_own:
+        by_own = _own_cands(contracts)
+        cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], spot_own))
+        if cm:
+            r.update(cm)
     return r
 
 
