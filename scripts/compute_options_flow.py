@@ -268,7 +268,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
 
     out = {
         "generated": today,
-        "source": "Massive/Polygon Voll-Chain (EOD) · ΔOI = heute − Vortags-Snapshot (forward-akkumuliert) · Front-Verfall-Gamma/Skew. Kein Intraday-Tape.",
+        "source": "US-Voll-Optionskette (EOD) · ΔOI = heute − Vortags-Snapshot (forward-akkumuliert) · Front-Verfall-Gamma/Skew. Kein Intraday-Tape.",
         "core": list(tickers), "tickers": per,
     }
     if write:

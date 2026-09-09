@@ -163,7 +163,7 @@ def analyze_massive(sym: str, key: str, max_days: int,
         "skew": _skew(spot, summary_c),
         "n_contracts": len(summary_c), "n_expiries": n_exp,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "note": "Massive/Polygon EOD-Chain (OI+IV je Kontrakt) · naive Dealer-Vorzeichen "
+        "note": "US-EOD-Optionskette (OI+IV je Kontrakt) · naive Dealer-Vorzeichen "
                 "(long Calls/short Puts) = Heuristik, keine echten Dealer-Bücher · "
                 "Greeks Black-Scholes (q=0 bei ≤45d vernachlässigbar)",
     }
@@ -232,7 +232,7 @@ def main() -> int:
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "date": stamp, "gamma_index": gamma_index, "tickers": results, "failed": failed,
-        "note": "Naive Dealer-Heuristik (long Calls/short Puts), EOD-Massive/Polygon-Chain, "
+        "note": "Naive Dealer-Heuristik (long Calls/short Puts), US-EOD-Optionskette, "
                 "kein Handelssignal — Referenzen, keine Barrieren.",
     }
     print(f"\n[gamma-index] {gamma_index['value_usd_bn_per_pct'] if gamma_index else '—'} Mrd $/1 % "
