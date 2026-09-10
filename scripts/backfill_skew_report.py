@@ -59,6 +59,26 @@ def log_summary(path):
     return done, odd[:15]
 
 
+def progress(path):
+    """Position im Lauf aus dem Container-Log: (fertig, gesamt, aktueller Ticker)."""
+    if not path or not Path(path).exists():
+        return None, None, None
+    lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
+    fertig = sum(1 for l in lines
+                 if "Punkte (Abdeckung" in l or "bereits vollstaendig" in l
+                 or "bereits vollständig" in l)
+    pos = None
+    for line in reversed(lines):
+        t = line.strip()
+        if t.startswith("[") and "/" in t and "]" in t:
+            head = t[1:t.index("]")]
+            if "/" in head and head.split("/")[0].isdigit():
+                pos = (head, t[t.index("]") + 1:].strip())
+                break
+    gesamt = pos[0].split("/")[1] if pos else None
+    return fertig, gesamt, (pos[1] if pos else None)
+
+
 def render(cov, baseline, done, odd):
     n_ok, n_uni = len(cov["ok"]), cov["universe"]
     pct = (100.0 * n_ok / n_uni) if n_uni else 0.0
@@ -125,6 +145,42 @@ def render(cov, baseline, done, odd):
     return subject, html, text
 
 
+def render_progress(cov, baseline, fertig, gesamt, aktuell, started):
+    """Zwischenstand waehrend eines laufenden Backfills."""
+    n_ok, n_uni = len(cov["ok"]), cov["universe"]
+    delta = " (Start: {})".format(baseline) if baseline is not None else ""
+    pos = "{}/{}".format(fertig, gesamt) if (fertig is not None and gesamt) else "?"
+    subject = "Skew-Backfill laeuft: {} Ticker fertig, {}/{} im Radar".format(pos, n_ok, n_uni)
+
+    eta = ""
+    if started and fertig and gesamt and int(fertig) > 0:
+        import time as _t
+        el = _t.time() - started
+        rest = el / int(fertig) * (int(gesamt) - int(fertig))
+        eta = ("<p style='margin:0 0 14px'>Bisher {:.1f} h gelaufen, "
+               "geschaetzt noch <b>{:.1f} h</b>.</p>").format(el / 3600, rest / 3600)
+
+    css = "font-family:-apple-system,Segoe UI,Arial,sans-serif;font-size:14px;color:#222"
+    html = (
+        '<div style="{css}">'
+        '<h2 style="margin:0 0 4px">Skew-Backfill: Zwischenstand</h2>'
+        '<p style="color:#666;margin:0 0 14px">{stamp} UTC</p>'
+        '<p style="font-size:18px;margin:0 0 2px"><b>{pos} Ticker</b> verarbeitet'
+        '{akt}</p>'
+        '<p style="font-size:18px;margin:0 0 10px"><b>{n_ok} von {n_uni}</b> Tickern '
+        'im Vol-Regime-Radar{delta}</p>{eta}'
+        '<p style="color:#666;font-size:13px;margin:0">Historie: {pts} Punkte. '
+        'Der Lauf pausiert automatisch von 00:50 bis 02:10 (Berliner Zeit), damit '
+        'der naechtliche Cron seine Tagespunkte schreiben kann.</p></div>'
+    ).format(css=css, stamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+             pos=pos, akt=(" &mdash; aktuell " + aktuell) if aktuell else "",
+             n_ok=n_ok, n_uni=n_uni, delta=delta, eta=eta,
+             pts="{:,}".format(cov["points"]))
+    text = "Skew-Backfill laeuft. {} Ticker fertig, {}/{} im Radar{}.".format(
+        pos, n_ok, n_uni, delta)
+    return subject, html, text
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline", type=int, default=None,
@@ -132,14 +188,23 @@ def main() -> int:
     ap.add_argument("--log", default=None, help="Pfad zum Container-Log")
     ap.add_argument("--to", default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--progress", action="store_true",
+                    help="Zwischenstand statt Abschlussbericht")
+    ap.add_argument("--started", type=float, default=None,
+                    help="Startzeit als Unix-Timestamp (fuer die Restzeit-Schaetzung)")
     a = ap.parse_args()
 
     if not _HIST.exists():
         print("[report] History fehlt:", _HIST)
         return 1
     cov = coverage()
-    done, odd = log_summary(a.log)
-    subject, html, text = render(cov, a.baseline, done, odd)
+    if a.progress:
+        fertig, gesamt, aktuell = progress(a.log)
+        subject, html, text = render_progress(cov, a.baseline, fertig, gesamt,
+                                              aktuell, a.started)
+    else:
+        done, odd = log_summary(a.log)
+        subject, html, text = render(cov, a.baseline, done, odd)
 
     print("[report] " + subject)
     print("[report] zu duenn: {} · ohne Punkte: {}".format(len(cov["thin"]), len(cov["none"])))
