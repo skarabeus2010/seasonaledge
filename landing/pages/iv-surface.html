@@ -179,8 +179,21 @@
         else if(slope<-0.4) termTxt='<span class="iv-badge dn">Backwardation</span> '+T('iv.backw','vorne teurer als hinten')+' ('+front.toFixed(1)+'% &rarr; '+back.toFixed(1)+'% ATM)';
         else termTxt='<span class="iv-badge">Flach</span> '+T('iv.flat','kaum Term-Struktur')+' ('+front.toFixed(1)+'% &rarr; '+back.toFixed(1)+'% ATM)';
       }
+      // Zeile mit der Laufzeit NAECHST 30 Tage suchen, nicht blind grid[2].
+      // Backend-Zeilen entfallen, wenn eine Expiry keine ATM-IV liefert — bei
+      // dtes=[14,30,60,90,120] ohne die 30er waere grid[2] die 60-Tage-Zeile,
+      // beschriftet als "ATM-IV 30d". Die echten dtes liegen im JSON.
+      function _row30(t){
+        if(!t.grid||!t.grid.length)return 0;
+        var ds=t.dtes||[]; if(!ds.length)return Math.min(2,t.grid.length-1);
+        var bi=0,bd=Infinity;
+        for(var i=0;i<t.grid.length&&i<ds.length;i++){
+          var d=Math.abs(ds[i]-30); if(d<bd){bd=d;bi=i;}
+        }
+        return bi;
+      }
       // Skew: 30d-nächste Zeile, unterer vs oberer Moneyness-Rand
-      var row=t.grid[Math.min(2,t.grid.length-1)]||t.grid[0], lo=row[0], hi=row[row.length-1];
+      var row=t.grid[_row30(t)]||t.grid[0], lo=row[0], hi=row[row.length-1];
       if(lo!=null&&hi!=null){
         var d=lo-hi;
         if(d>0.5) skewTxt='<span class="iv-badge dn">Put-Skew</span> '+T('iv.putskew','Downside teurer')+' ('+t.moneyness[0]+'% = '+lo.toFixed(1)+'% vs '+t.moneyness[t.moneyness.length-1]+'% = '+hi.toFixed(1)+'%)';
@@ -193,7 +206,7 @@
     function renderKpis(t){
       var box=document.getElementById('iv-kpis'); if(!box)return;
       var mI=t.moneyness.indexOf(100); if(mI<0)mI=Math.floor(t.moneyness.length/2);
-      var i30=Math.min(2,t.grid.length-1);
+      var i30=_row30(t);
       var atm30=t.grid[i30]?t.grid[i30][mI]:null;
       var lo=t.grid[i30]?t.grid[i30][0]:null, hi=t.grid[i30]?t.grid[i30][t.moneyness.length-1]:null;
       var atmFront=t.grid[0][mI], atmBack=t.grid[t.grid.length-1][mI];

@@ -18,10 +18,17 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 50m
           script: |
-            echo "[options-skew] start $(date)"
-            docker exec seasonalpha-app python3 scripts/compute_options_skew.py 2>&1 | tail -20
-            echo "[iv-surface] start $(date)"
-            docker exec seasonalpha-app python3 scripts/compute_iv_surface.py 2>&1 | tail -15
-            echo "[options-flow] start $(date)"
-            docker exec seasonalpha-app python3 scripts/compute_options_flow.py 2>&1 | tail -15
+            # pipefail: ohne ihn liefert `docker exec … | tail -20` den Status von
+            # tail (immer 0), und der abschliessende echo setzt den Exit-Code des
+            # Skripts — ein fehlgeschlagener Lauf waere doppelt unsichtbar.
+            # Kein `set -e`: die drei Schritte sind unabhaengig (verschiedene
+            # Ausgabedateien), ein gescheiterter darf die anderen nicht verdecken.
+            set -uo pipefail
+            fail=0
+            for s in compute_options_skew compute_iv_surface compute_options_flow; do
+              echo "[$s] start $(date)"
+              docker exec seasonalpha-app python3 "scripts/$s.py" 2>&1 | tail -20 \
+                || { echo "FEHLER: $s (Exit ${PIPESTATUS[0]})"; fail=1; }
+            done
             echo "[options-skew] done $(date)"
+            exit $fail

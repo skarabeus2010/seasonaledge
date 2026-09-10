@@ -257,7 +257,11 @@ def _front(recs: list, spot) -> dict | None:
     call_vol = sum(r["vol"] for r in calls); put_vol = sum(r["vol"] for r in puts)
     call_oi = sum(r["oi"] for r in calls); put_oi = sum(r["oi"] for r in puts)
     return {
-        "exp": exp, "dte": front_dte, "is_0dte": front_dte <= 2,
+        "exp": exp, "dte": front_dte,
+        # is_0dte heisst "verfaellt HEUTE". Mit <= 2 bekamen auch 1d und 2d das
+        # 0DTE-Abzeichen — fachlich etwas anderes (Short-Dated). Das Frontend hat
+        # fuer die bereits ein eigenes "Short"-Label.
+        "is_0dte": front_dte == 0,
         "strikes": strikes, "pins": [{"strike": p["strike"], "score": p["gamma_oi"]} for p in pins],
         "skew_pts": skew_pts,
         "call_vol": call_vol, "put_vol": put_vol, "call_oi": call_oi, "put_oi": put_oi,

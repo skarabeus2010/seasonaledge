@@ -50,6 +50,7 @@ from shared.env_loader import load_env                                # noqa: E4
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache        # noqa: E402
 from shared.options_universe import all_option_tickers                # noqa: E402
+from shared.atomic_json import write_json_atomic                      # noqa: E402
 from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
                                   bs_delta as _bs_delta, implied_vol as _implied_vol,
                                   cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
@@ -379,17 +380,20 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
     if len(targets) < 5:
         print(f"  {sym:6} zu wenig Handelstage im Fenster", flush=True); return 0
 
-    arr = hist.setdefault(sym, [])
+    # WICHTIG: nur auf einer LOKALEN Kopie arbeiten. hist[sym] wird erst ganz am
+    # Ende ersetzt, nach erfolgreicher Rekonstruktion. Vorher committet hiess:
+    # eine voruebergehend leere API-Antwort (fruehe returns unten) liess den
+    # Ticker mit 0 Massive-Punkten zurueck, und main() schrieb das so weg —
+    # 500+ Punkte weg wegen eines einzelnen fehlgeschlagenen Requests.
+    arr = list(hist.get(sym) or [])
+    n_purge = 0
     if overwrite:
         # Alte Rekonstruktionen VERWERFEN, nicht nur ueberschreiben. Sonst ueberleben
         # genau die Tage, die der neue Lauf nicht reproduzieren kann — beim Umstieg
         # auf konstante Laufzeit blieben so 14 Saegezahn-Eintraege in der Reihe.
         # Provider-Eintraege bleiben unangetastet.
-        n_old = len(arr)
+        n_purge = sum(1 for e in arr if e.get("src") == "massive")
         arr = [e for e in arr if e.get("src") != "massive"]
-        hist[sym] = arr
-        if n_old != len(arr):
-            print(f"  {sym:6} {n_old - len(arr)} alte Rekonstruktionen verworfen", flush=True)
     have = {e["date"] for e in arr} if not overwrite else set()
     todo = [d for d in targets if d not in have]
     if not todo:
@@ -421,14 +425,21 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
         r = _reconstruct(d, closes[d], legs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
         if r:
             arr.append(r); added += 1
+    if overwrite and not added:
+        # Nichts rekonstruiert, aber die Alt-Punkte waeren verworfen: das ist ein
+        # Ruecksetzer, kein Ergebnis. Alten Stand behalten und laut melden.
+        print(f"  {sym:6} ABBRUCH — 0 Punkte rekonstruiert, {n_purge} alte Punkte "
+              f"bleiben erhalten", flush=True)
+        return 0
     # Dedup je Datum (neuere Rekonstruktion gewinnt), dann sortieren
     ded = {}
     for e in arr:
         ded[e["date"]] = e
     hist[sym] = sorted(ded.values(), key=lambda e: e["date"])[-900:]
     cov = 100.0 * added / max(1, len(plan))
+    _pv = f", {n_purge} alte ersetzt" if n_purge else ""
     print(f"  {sym:6} +{added} Punkte (Abdeckung {cov:.0f}% der geplanten Tage, "
-          f"gesamt {len(hist[sym])})", flush=True)
+          f"gesamt {len(hist[sym])}{_pv})", flush=True)
     return added
 
 
@@ -806,7 +817,7 @@ def main() -> int:
         except Exception as e:
             print(f"  {sym:6} FEHLER: {str(e)[:120]}", flush=True)
         # inkrementell nach JEDEM Ticker — ueberlebt Abbruch/OOM
-        hp.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json_atomic(hp, hist)   # atomar: docker stop darf keine halbe Datei hinterlassen
         clear_cache(); gc.collect()
 
     print(f"\n[OK] +{total} Punkte · {sum(len(v) for v in hist.values())} gesamt "

@@ -23,8 +23,23 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 18m
           script: |
-            docker exec seasonalpha-app python3 scripts/snapshot_gex_massive.py 2>&1 | tail -30
+            # pipefail ist Pflicht: ohne ihn liefert `docker exec … | tail -30` den
+            # Status von tail (immer 0). Zweite Falle: der abschliessende echo setzt
+            # den Exit-Code des Skripts — deshalb am Ende explizit `exit $fail`.
+            set -uo pipefail
+            fail=0
+            docker exec seasonalpha-app python3 scripts/snapshot_gex_massive.py 2>&1 | tail -30 \
+              || { echo "FEHLER: snapshot_gex_massive (Exit ${PIPESTATUS[0]})"; fail=1; }
             echo "GEX snapshot done: $(date)"
-            # Key Levels & Max Pain braucht die frische gex_summary.json (Spot/Flip/Walls) → danach.
-            docker exec seasonalpha-app python3 scripts/compute_key_levels.py 2>&1 | tail -20
+
+            # Key Levels & Max Pain braucht die frische gex_summary.json (Spot/Flip/Walls).
+            # Bei gescheitertem Snapshot wuerde es auf ALTEN Daten rechnen und die Seite
+            # zeigte gestrige Levels als heutige — deshalb hier abbrechen statt fortfahren.
+            if [ "$fail" -ne 0 ]; then
+              echo "UEBERSPRUNGEN: compute_key_levels (haette auf veralteter gex_summary.json gerechnet)"
+              exit 1
+            fi
+            docker exec seasonalpha-app python3 scripts/compute_key_levels.py 2>&1 | tail -20 \
+              || { echo "FEHLER: compute_key_levels (Exit ${PIPESTATUS[0]})"; fail=1; }
             echo "Key Levels done: $(date)"
+            exit $fail

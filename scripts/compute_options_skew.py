@@ -31,6 +31,7 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day                   # noqa: E402
+from shared.atomic_json import write_json_atomic                      # noqa: E402
 from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
@@ -638,7 +639,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
     }
     if write:
         p = _ROOT / "landing/data/options_skew.json"
-        p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json_atomic(p, out)
         print(f"\n[OK] {len(per)}/{len(tickers)} Ticker + {len(indices)} Indizes → {p}")
         if failed:
             from collections import Counter
@@ -715,7 +716,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
                              "eq_vol": pc_ratio["equity"]["vol"], "eq_oi": pc_ratio["equity"]["oi"],
                              "idx_vol": pc_ratio["index"]["vol"]})
             hist["__PCR"] = parr[-750:]
-        hp.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json_atomic(hp, hist)
         print(f"[history] {sum(len(v) for v in hist.values())} Punkte über {len(hist)} Ticker → {hp.name}")
     return out
 
