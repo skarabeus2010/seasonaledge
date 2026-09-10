@@ -61,3 +61,35 @@ def implied_vol(price, S, K, T, typ):
         else:
             lo, plo = mid, pm
     return 0.5 * (lo + hi)
+
+# ── Konstante Laufzeit (Constant Maturity) ───────────────────────────────────
+# Diese Parameter MUESSEN auf beiden Seiten identisch sein (Backfill + Live),
+# sonst driften die Reihen wieder auseinander — dieselbe Klasse Fehler, die die
+# BS-Vereinheitlichung oben beseitigt hat. Deshalb hier zentral, nicht als
+# Kopie je Skript.
+CM_DAYS = 30              # Ziel-Laufzeit der Reihe
+CM_DTE_MIN, CM_DTE_MAX = 7, 75   # zulaessige Spanne fuer Stuetzstellen
+CM_SINGLE_TOL = 10        # nur EINE Stuetzstelle: max. Abstand zu CM_DAYS
+DELTA_TOL = 0.08          # max. Abweichung vom Ziel-Delta, sonst unbrauchbar
+VOL_PCTL = 0.5            # Volumen-Perzentilfilter gegen den Stale-Print-Bias
+
+
+def cm_interp(v1, t1, v2, t2, t_target=CM_DAYS):
+    """IV auf konstante Laufzeit interpolieren — linear in der TOTALEN VARIANZ.
+
+    Linear in sigma^2*T (nicht in sigma), weil sich Varianz ueber die Zeit
+    addiert; das ist dieselbe Interpolation, die der VIX fuer seine 30-Tage-
+    Konstante nutzt. Linear in sigma laege bis zu 3 Vol-Punkte daneben.
+
+    Ohne diesen Schritt misst die Reihe die Position im Verfallszyklus statt den
+    Skew: die Laufzeit laeuft von ~46 Tagen auf ~10 herunter und springt beim
+    Roll zurueck, die IV folgt der Term-Struktur mit."""
+    if v1 is None or v2 is None or t1 is None or t2 is None or t1 == t2:
+        return None
+    if t1 > t2:
+        v1, t1, v2, t2 = v2, t2, v1, t1
+    w1, w2 = v1 * v1 * t1, v2 * v2 * t2
+    var = w1 + (w2 - w1) * (t_target - t1) / (t2 - t1)
+    if var <= 0 or t_target <= 0:
+        return None
+    return round(math.sqrt(var / t_target), 4)
