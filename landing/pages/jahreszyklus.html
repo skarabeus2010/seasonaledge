@@ -1370,6 +1370,12 @@
         for (var m=1;m<=12;m++) {
           var b=MONTH_BOUNDS[m-1], rets=[];
           for (var y in yearData) {
+            // Zeitraeume hinter dem letzten echten Handelstag bestehen nur aus
+            // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
+            // zog als vermeintlich echte Beobachtung den Signifikanztest nach
+            // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
+            var lad=yearData[y].last_actual_day||365;
+            if (lad < Math.min(b[1],365)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
@@ -1380,6 +1386,12 @@
         for (var i=0;i<4;i++) {
           var b=QUARTER_BOUNDS[labels[i]], rets=[];
           for (var y in yearData) {
+            // Zeitraeume hinter dem letzten echten Handelstag bestehen nur aus
+            // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
+            // zog als vermeintlich echte Beobachtung den Signifikanztest nach
+            // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
+            var lad=yearData[y].last_actual_day||365;
+            if (lad < Math.min(b[1],365)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }

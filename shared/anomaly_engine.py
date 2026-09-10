@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, date
 
+from shared.calculations import last_actual_day  # noqa: E402
+
 
 # ══════════════════════════════════════════════════════
 # 1. ANOMALIE-RADAR
@@ -492,6 +494,12 @@ def compute_seasonal_confidence(
         for y in years:
             curve = year_data[y].get("full_365", [])
             if not curve or len(curve) < end_doy + 1:
+                continue
+            # Monate, die hinter dem letzten echten Handelstag liegen, bestehen
+            # nur aus der konstanten Fortschreibung. Ihre "Rendite" ist exakt
+            # 0 %, und als vermeintlich normaler Monat zog das die
+            # Anomalie-Konfidenz nach unten.
+            if last_actual_day(year_data[y]) < end_doy:
                 continue
             segment = curve[start_doy:end_doy + 1]
             if len(segment) < 5 or segment[0] == 0:

@@ -156,6 +156,23 @@ def interpolate_to_365(days, values):
     return full_year
 
 
+def last_actual_day(yd) -> int:
+    """Letzter Tag eines Jahres mit ECHTER Beobachtung (1..365).
+
+    Hinter diesem Tag ist `full_365` konstant fortgeschrieben — eine flache
+    Linie, kein Kursverlauf. Wer daraus Renditen, Drawdowns, Perzentile oder
+    Heatmap-Zellen rechnet, zaehlt erfundene Beobachtungen mit: die Volatilitaet
+    sinkt, der Drawdown geht gegen null, und das laufende Jahr sieht ruhiger aus
+    als es ist.
+
+    Fuer Mittelwert/Std ueber die Jahre ist die Fortschreibung dagegen gewollt
+    (sonst bricht die Durchschnittskurve am Jahresende ab) — deshalb filtert
+    nicht der Erzeuger, sondern jeder Konsument, der es braucht.
+    """
+    tage = yd.get("days") or []
+    return min(max(tage), 365) if tage else 0
+
+
 def build_year_data(df, selected_years):
     """Baue normalisierte Jahreskurven für alle gewählten Jahre."""
     year_data = {}
