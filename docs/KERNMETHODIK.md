@@ -364,6 +364,45 @@ Jahr als Maßstab, also muss die strenge Regel greifen. Jetzt 12/12.
 
 Damit ist **belegt statt behauptet**, dass die Zusicherungen rot werden können.
 
+## 4d. Endabnahme (2026-09-11) — FREIGABE
+
+Die vierte Runde war die Abnahme der Auflagen aus 4c. Ergebnis nach fünf Anläufen:
+
+> **AUFLAGE 1: ERFÜLLT** — Beide Seiten behandeln ein fehlendes `last_actual_day`
+> als 0; ein Fail-open-Pfad bleibt nicht.
+> **AUFLAGE 2: ERFÜLLT** — Bei genau einem Suchtreffer und Byte-Restore kann 15/15
+> mit Exit 0 ohne tatsächliches Greifen der Mutationen nicht entstehen.
+> **XETRA-2023: BESTÄTIGT** — 45,61469156 % und 0,0000000000 pp Differenz stimmen.
+> **FREIGABE** — Alle drei Prüfungen sind erfüllt.
+
+### Die Freigabe-Bedingung, gerechnet
+
+Der Reviewer hatte sich eine einzige Zahl ausbedungen: die XETRA-2023-Jahresrendite
+direkt aus erstem und letztem **Roh**-Schlusskurs, weil sie Referenz, Constant-Fill
+und Jahresendgrenze gleichzeitig prüft.
+
+| Ticker | Rohkurs | Pipeline | Differenz |
+|---|---|---|---|
+| SAP.DE | +45,61469156 % | +45,61469156 % | 0,0000000000 pp |
+| BMW.DE | +27,4532 % | +27,4532 % | 0,000000 pp |
+| SPY | +26,7092 % | +26,7092 % | 0,000000 pp |
+
+Der Fall ist präzise der kritische: **XETRA 2023 endet am 29.12. = Kalendertag 363.**
+Die ursprüngliche strenge Regel (`< 365`) hätte dieses vollständige Jahr verworfen —
+genau die Überkorrektur aus 4b. Mit `year_end_reference` wird es akzeptiert, und die
+Rendite stimmt auf zehn Nachkommastellen.
+
+### Eine Zahl, zwei Ergebnisse — Präzision in Beweisen
+
+Der Reviewer rechnete zunächst `134.23 / 92.18 - 1 = 45,61727 %` und meldete eine
+Abweichung. Zu Recht: ich hatte die **Eingangskurse auf zwei Stellen gerundet**
+angezeigt, das Ergebnis aber auf vier. Die echten Closes sind `92,1786117553711` und
+`134,22560119628906`.
+
+> **Regel daraus:** Beweiszahlen mit derselben Genauigkeit zeigen wie die
+> Schlussfolgerung. Sonst rechnet der Prüfer aus dem Gezeigten etwas anderes nach —
+> und die Diskussion dreht sich um ein Artefakt statt um die Sache.
+
 ## 5. Lessons
 
 - **Zwillinge, die übereinstimmen, können beide falsch sein.** Ein
@@ -410,6 +449,9 @@ Damit ist **belegt statt behauptet**, dass die Zusicherungen rot werden können.
   ersten Lauf sofort eine Zusicherung, die nicht rot werden konnte. Ohne diesen
   Schritt bleibt „der Test besteht" eine Aussage über den Test, nicht über den
   Code.
+- **Beweiszahlen in voller Genauigkeit zeigen.** Gerundete Eingangswerte neben
+  einem präzisen Ergebnis provozieren einen Scheinwiderspruch — der Prüfer rechnet
+  korrekt nach und kommt auf etwas anderes.
 - **Datenkorrekturen ziehen Cache-Arbeit nach sich.** Nach 4.1 waren
   `monthly_stats`, `ki_scores` und `scanner_results` bis zum Rerun inkonsistent
   zum Frontend.
