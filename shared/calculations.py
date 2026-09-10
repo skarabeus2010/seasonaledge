@@ -83,7 +83,24 @@ def normalize_year(year_df):
 
 
 def interpolate_to_365(days, values):
-    """Interpoliere auf volle 365 Kalendertage."""
+    """Interpoliere auf volle 365 Kalendertage.
+
+    Schaltjahre: der 31.12. ist dort Tag 366 und fiel aus der 365er-Achse heraus —
+    die Kurve endete am 30.12., der letzte Handelstag des Jahres fehlte in
+    Jahresrendite und Dezember-Statistik. Tag 366 wird deshalb auf Slot 365
+    gefaltet: der letzte Slot traegt den Jahresendwert, die Ausrichtung aller
+    uebrigen Tage bleibt unveraendert.
+    """
+    if days and days[-1] > 365:
+        days = list(days)
+        values = list(values)
+        # Alles jenseits von 365 auf 365 ziehen; der spaeteste Wert gewinnt.
+        keep = {}
+        for d, v in zip(days, values):
+            keep[min(d, 365)] = v
+        days = sorted(keep)
+        values = [keep[d] for d in days]
+
     full_year = []
     
     for target_day in range(1, 366):

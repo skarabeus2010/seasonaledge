@@ -347,6 +347,18 @@ SA.seasonal = {
 
   /** Interpoliert auf 365 Kalendertage (Port von interpolate_to_365). */
   _interpolateTo365: function(days, values) {
+    // Schaltjahre: der 31.12. ist dort Tag 366 und fiel aus der 365er-Achse heraus —
+    // die Kurve endete am 30.12., der letzte Handelstag fehlte in Jahresrendite und
+    // Dezember-Statistik. Tag 366 wird auf Slot 365 gefaltet (spaetester Wert
+    // gewinnt); die Ausrichtung aller uebrigen Tage bleibt unveraendert.
+    // Gegenstueck: shared/calculations.py::interpolate_to_365 — beide Seiten
+    // muessen identisch falten, siehe scripts/verify_seasonal_twins.py.
+    if (days.length && days[days.length - 1] > 365) {
+      var keep = {};
+      for (var k = 0; k < days.length; k++) keep[Math.min(days[k], 365)] = values[k];
+      days = Object.keys(keep).map(Number).sort(function(a, b) { return a - b; });
+      values = days.map(function(d) { return keep[d]; });
+    }
     var full = [];
     for (var target = 1; target <= 365; target++) {
       var idx = days.indexOf(target);

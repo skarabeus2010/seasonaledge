@@ -812,13 +812,20 @@
       // sonst zaehlen wir per Jahr.
       var withRet = calcStrategyReturn(rows, strategy);
 
-      // tdoy berechnen (Gruppe nach Jahr)
+      // TDoY IMMER aus der DB nehmen, wenn vorhanden (die Query holt sie mit:
+      // select=date,open,close,tdom,tdoy). Nur zaehlen, wenn sie fehlt.
+      //
+      // Warum das wichtig ist: diese Funktion laeuft auch auf den per Indikator
+      // GEFILTERTEN Zeilen. Reines Durchzaehlen vergibt dann fuer den 4. Januar
+      // die 2, wenn der 3. herausgefiltert wurde — die Top-25-Tabelle gruppiert
+      // die Renditen anschliessend unter dem falschen Handelstag und beschriftet
+      // sie mit dem falschen Kalenderdatum. Der DB-Wert ist filterfest.
       var byYear = {};
       for (var i = 0; i < withRet.length; i++) {
         var y = withRet[i].year;
         if (!byYear[y]) byYear[y] = 0;
         byYear[y]++;
-        withRet[i].tdoy_calc = byYear[y];
+        withRet[i].tdoy_calc = (withRet[i].tdoy != null) ? withRet[i].tdoy : byYear[y];
       }
 
       // Group by tdoy
