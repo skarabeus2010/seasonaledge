@@ -93,11 +93,15 @@ SA.seasonal = {
         logRets.push(lr);
       }
 
-      // Kumulative Kurve (1:1 wie Python: cum_log = cumsum(insert(log_rets, 0, 0)[:-1]))
-      // insert(log_rets, 0, 0) = [0, lr0, lr1, ...], dann [:-1] = [0, lr0, lr1, ..., lr_{n-2}]
-      var cumLog = [0];
-      for (var ci = 0; ci < logRets.length - 1; ci++) {
-        cumLog.push(cumLog[ci] + logRets[ci]);
+      // Kumulative Kurve (1:1 wie Python: cum_log = cumsum(log_rets)).
+      // Ohne Verschiebung: logRets[j] ist der Return VON Zeile j. Die frueher
+      // genutzte Variante ordnete jeden Schritt der FOLGENDEN Zeile zu, die
+      // Bewegung erschien im Chart einen Handelstag zu spaet.
+      var cumLog = [];
+      var run = 0;
+      for (var ci = 0; ci < logRets.length; ci++) {
+        run += logRets[ci];
+        cumLog.push(run);
       }
       // raw_curve = 100 * exp(cum_log)
       var rawCurve = cumLog.map(function(v) { return 100 * Math.exp(v); });

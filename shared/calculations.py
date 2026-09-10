@@ -451,7 +451,13 @@ def analyze_turn_of_month(df, days_before, days_after, selected_months, selected
                     continue
                 
                 log_rets = tom_window["log_return"].values
-                cum_log = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+                # Ohne Verschiebung kumulieren: log_rets[j] ist der Return VON
+                # Zeile j (LN(close/prev_close)). Die frueher genutzte Variante
+                # cumsum(insert(log_rets,0,0)[:-1]) ordnete jeden Tagesschritt der
+                # FOLGENDEN Zeile zu — im Chart erschien die Bewegung damit einen
+                # Handelstag zu spaet (t+1 zeigte, was an t+2 stand). Nachweis:
+                # ein isolierter +5%-Tag lag eine Position daneben.
+                cum_log = np.cumsum(log_rets)
                 raw_curve = 100 * np.exp(cum_log)
                 
                 t0_value = raw_curve[t0_idx]
