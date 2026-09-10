@@ -22,10 +22,26 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 10m
           script: |
-            docker exec seasonalpha-app python3 scripts/build_flows_rebalancing.py 2>&1 | tail -3
-            docker exec seasonalpha-app python3 scripts/build_volcontrol_proxy.py 2>&1 | tail -3
-            docker exec seasonalpha-app python3 scripts/build_cot_positioning.py 2>&1 | tail -3
-            docker exec seasonalpha-app python3 scripts/build_buyback_blackout.py 2>&1 | tail -3
-            docker exec seasonalpha-app python3 scripts/build_shortvol_proxy.py 2>&1 | tail -3
-            docker exec seasonalpha-app python3 scripts/build_etf_flows.py 2>&1 | tail -3
+            # pipefail ist hier PFLICHT: ohne ihn liefert `docker exec … | tail -3`
+            # den Status von tail (immer 0), ein fehlgeschlagener Build waere
+            # unsichtbar. Zweite Falle: der abschliessende echo setzt den
+            # Exit-Code des Skripts — deshalb am Ende explizit `exit $fail`.
+            # Kein `set -e`: alle sechs Panels sollen laufen, ein kaputtes darf
+            # die anderen fuenf nicht verdecken. Fehler werden gesammelt.
+            set -uo pipefail
+            fail=0
+            for s in build_flows_rebalancing build_volcontrol_proxy build_cot_positioning \
+                     build_buyback_blackout build_shortvol_proxy build_etf_flows; do
+              echo "--- $s"
+              docker exec seasonalpha-app python3 "scripts/$s.py" 2>&1 | tail -3 \
+                || { echo "FEHLER: $s (Exit ${PIPESTATUS[0]})"; fail=1; }
+            done
+
+            # Exit 0 belegt nicht, dass etwas geschrieben wurde (leere API-Antwort,
+            # abgefangene Exception). Deshalb zusaetzlich das Alter von generated_at
+            # pruefen — sonst zeigt die Seite alte Zahlen bei gruenem Workflow.
+            echo "--- Frischepruefung"
+            docker exec seasonalpha-app python3 scripts/check_flows_freshness.py || fail=1
+
             echo "Flows update done: $(date)"
+            exit $fail

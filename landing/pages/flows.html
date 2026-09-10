@@ -108,8 +108,9 @@
     <h1 class="page-title"><b>Strukturelle</b> Markt-Flows</h1>
     <p class="page-caption" id="asof">
       Die mechanischen, nicht-fundamentalen Kapitalströme hinter dem Markt &mdash; wer <i>muss</i> kaufen oder
-      verkaufen, unabhängig von einer Meinung über den fairen Wert. Sechs Perspektiven: Index-Rebalancing,
-      Buyback-Blackout, ETF-Flows, CTA-Positionierung, Vol-Control-Leverage und Short-Volume.
+      verkaufen, unabhängig von einer Meinung über den fairen Wert. Sieben Perspektiven: Index-Rebalancing,
+      Buyback-Blackout, ETF-Flows, CTA-Positionierung, Vol-Control-Leverage, Short-Volume sowie Vol- und
+      Skew-Puls.
     </p>
     <div class="disc">
       <b>Wichtiger Hinweis:</b> Alle Panels zeigen <b>strukturellen, nicht-fundamentalen</b> Kontext und sind
@@ -228,7 +229,7 @@
 
     <!-- Cross-Link zu Dealer-Gamma -->
     <div class="cta-gamma">
-      <b>Der fünfte Flow: Dealer-Gamma.</b> Die Options-Absicherung der Market Maker (Gamma, Vanna, Charm) ist der
+      <b>Dazu kommt: Dealer-Gamma.</b> Die Options-Absicherung der Market Maker (Gamma, Vanna, Charm) ist der
       am direktesten kurstreibende strukturelle Flow &mdash; er hat eine eigene Seite:
       <a href="/dealer-positioning" style="color:var(--accent);font-weight:700">Dealer Positioning &rarr;</a>
       <div class="xlinks">
@@ -368,6 +369,13 @@
     // erlaubt dem Server aber ein 304 — sonst wird die auf mehrere MB
     // gewachsene options_skew_history.json bei JEDEM Aufruf neu geladen.
     function fetchJSON(u){return fetch(u,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    // Stringfelder aus JSON gehen ueber innerHTML in die Seite. Heute stammen
+    // Ticker und Namen aus unseren eigenen Konstanten (_NAMES-Dict, feste
+    // Event-Bezeichnungen) — also nicht angreifbar. Der Helper ist Vorsorge:
+    // sobald jemand ein extern geliefertes Feld durchreicht, greift er, ohne
+    // dass die Aufrufstellen noch einmal angefasst werden muessen.
+    function esc(s){return s==null?'':String(s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
     function fmtInt(n){return (n>=0?'+':'')+Math.round(n).toLocaleString('de-DE')}
     function fmtBn(usd){return (usd>=0?'+':'')+ (usd/1e9).toLocaleString('de-DE',{maximumFractionDigits:1})+' Mrd $'}
     function panelFail(id,msg){var el=document.getElementById(id);if(el)el.innerHTML='<p style="color:var(--muted);padding:1.4rem;text-align:center;font-size:.85rem">'+msg+'</p>';}
@@ -396,7 +404,7 @@
       document.getElementById('rb-body').innerHTML=(d.events||[]).slice(0,10).map(function(e){
         var cls=e.type==='russell_recon'?'b-ru':'b-sp';
         var dd=new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'});
-        return '<tr><td><span class="badge '+cls+'">'+(e.type==='russell_recon'?'Russell':'S&P')+'</span> '+e.name+'</td><td>'+dd+'</td><td>in '+e.trading_days_until+' HT</td></tr>';
+        return '<tr><td><span class="badge '+cls+'">'+(e.type==='russell_recon'?'Russell':'S&P')+'</span> '+esc(e.name)+'</td><td>'+dd+'</td><td>in '+e.trading_days_until+' HT</td></tr>';
       }).join('');
       document.getElementById('rb-note').textContent=d.note||'';
     }
@@ -438,7 +446,7 @@
         document.getElementById('bb-hw').innerHTML=hw.map(function(h){
           var w=Math.max(4,Math.round(h.weight/maxw*100));
           var since=h.blackout_since?new Date(h.blackout_since).toLocaleDateString('de-DE',{day:'2-digit',month:'short'}):'';
-          return '<div class="hw-row"><span class="tk">'+h.ticker+'</span><span class="hw-track"><span class="hw-bar" style="width:'+w+'%"></span></span><span class="hw-wt">'+(h.weight*100).toFixed(1)+'%</span><span class="hw-since">seit '+since+'</span></div>';
+          return '<div class="hw-row"><span class="tk">'+esc(h.ticker)+'</span><span class="hw-track"><span class="hw-bar" style="width:'+w+'%"></span></span><span class="hw-wt">'+(h.weight*100).toFixed(1)+'%</span><span class="hw-since">seit '+since+'</span></div>';
         }).join('');
       }
       var ent=(d.entering_this_week||[]).map(function(e){return e.ticker});
@@ -552,7 +560,7 @@
       if(!d.ready){
         document.getElementById('etf-framing').innerHTML='<b>Panel neu aktiviert.</b> ETF-Flows brauchen Vorwärts-Historie — Yahoo liefert Shares-Outstanding nur als Tages-Snapshot ohne Verlauf. Aktuell erfasst: <b>'+d.n_snapshots+' Handelstag'+(d.n_snapshots===1?'':'e')+'</b>. Belastbare Wochen-Flows erscheinen ab ~2&nbsp;Wochen. Unten die aktuell getrackten ETFs &mdash; Beleg, dass die tägliche Erfassung läuft.';
         var rows=(d.latest_snapshot||[]).map(function(e){
-          return '<tr><td><b>'+e.ticker+'</b></td><td>'+e.name+'</td><td>'+e.aum_bn.toLocaleString('de-DE')+' Mrd $</td><td>'+e.price.toLocaleString('de-DE')+'</td></tr>';
+          return '<tr><td><b>'+esc(e.ticker)+'</b></td><td>'+esc(e.name)+'</td><td>'+e.aum_bn.toLocaleString('de-DE')+' Mrd $</td><td>'+e.price.toLocaleString('de-DE')+'</td></tr>';
         }).join('');
         body.innerHTML='<div class="card" style="overflow:auto;max-height:420px"><table class="ev-list"><thead><tr>'+
           '<th style="text-align:left;color:var(--muted);font-size:.66rem;padding:.4rem .6rem">ETF</th>'+
@@ -579,7 +587,7 @@
         tooltip:{theme:'dark',y:{formatter:function(v){return (v>=0?'+':'')+v+' Mio $'}}}
       });
       function movers(list,cls){return (list||[]).map(function(m){
-        return '<div class="hw-row"><span class="tk">'+m.ticker+'</span><span style="flex:1;color:var(--dim);font-size:.75rem">'+m.name+'</span><span class="'+cls+'" style="font-family:var(--f-m);font-weight:700">'+(m.flow_mn>=0?'+':'')+m.flow_mn+' Mio</span></div>';
+        return '<div class="hw-row"><span class="tk">'+esc(m.ticker)+'</span><span style="flex:1;color:var(--dim);font-size:.75rem">'+esc(m.name)+'</span><span class="'+cls+'" style="font-family:var(--f-m);font-weight:700">'+(m.flow_mn>=0?'+':'')+m.flow_mn+' Mio</span></div>';
       }).join('')||'<div style="color:var(--muted);font-size:.8rem;padding:.4rem">—</div>';}
       document.getElementById('etf-top').innerHTML=
         '<div><div style="color:#30e878;font-size:.72rem;font-weight:700;margin-bottom:.3rem">Zuflüsse</div>'+movers(d.top_week&&d.top_week.inflows,'pos')+'</div>'+
