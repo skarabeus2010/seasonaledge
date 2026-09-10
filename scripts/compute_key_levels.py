@@ -105,11 +105,18 @@ def _pick_expiry(by: dict) -> str | None:
 def _max_pain(e: dict) -> dict | None:
     """Max Pain + OI-Walls + P/C-Ratio für EINEN Verfall e."""
     calls, puts = e["calls"], e["puts"]
-    strikes = sorted(set(calls) | set(puts))
+    # NUR Strikes mit offener Position als Kandidaten. Strikes mit OI=0 stehen zwar
+    # in der Kette, tragen aber nichts zur Auszahlung bei — sie machen das Minimum
+    # flach und konnten als „Max Pain" gemeldet werden, obwohl dort niemand
+    # positioniert ist.
+    strikes = sorted({k for k, v in calls.items() if v} | {k for k, v in puts.items() if v})
     if len(strikes) < 3:
         return None
+    total_oi = sum(calls.values()) + sum(puts.values())
+    if total_oi <= 0:                       # ohne offene Position gibt es kein Max Pain
+        return None
     # Auszahlungs-Summe über alle offenen Kontrakte je Kandidat-Strike S; Argmin = Max Pain
-    best_S, best_pay = None, None
+    best_S, best_pay, n_min = None, None, 0
     for S in strikes:
         pay = 0.0
         for K, oi in calls.items():
@@ -119,12 +126,17 @@ def _max_pain(e: dict) -> dict | None:
             if S < K:
                 pay += oi * (K - S)
         if best_pay is None or pay < best_pay:
-            best_pay, best_S = pay, S
+            best_pay, best_S, n_min = pay, S, 1
+        elif pay == best_pay:
+            n_min += 1                      # flaches Minimum — Auswahl ist dann willkuerlich
     call_oi_sum = sum(calls.values()); put_oi_sum = sum(puts.values())
     top_call = sorted(calls.items(), key=lambda kv: kv[1], reverse=True)[:5]
     top_put = sorted(puts.items(), key=lambda kv: kv[1], reverse=True)[:5]
     return {
         "max_pain": best_S,
+        # Bei mehreren Strikes mit identischer Auszahlung gewinnt der niedrigste —
+        # das ist keine Aussage, sondern Sortierreihenfolge. Flag machen es sichtbar.
+        "max_pain_non_unique": n_min > 1,
         "exp": None,  # vom Aufrufer gesetzt
         "top_call_oi": [{"strike": k, "oi": int(v)} for k, v in top_call],
         "top_put_oi": [{"strike": k, "oi": int(v)} for k, v in top_put],

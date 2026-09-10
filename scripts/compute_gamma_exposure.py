@@ -177,15 +177,34 @@ def _exposures(S: float, contracts: list, q: float):
 
 
 def _zero_gamma(spot: float, contracts: list, q: float) -> float | None:
+    """Zero-Gamma-Flip: Nulldurchgang des Netto-Gammas, gesucht in ±20 % um den Spot.
+
+    Bei MEHREREN Nulldurchgängen wird der SPOT-NÄCHSTE zurückgegeben, nicht der
+    erste gefundene. Der erste ist bloß der niedrigste im Suchgitter — der
+    praktisch relevante Flip ist der, an dem der Kurs gerade steht.
+    `_zero_gamma_detail` liefert zusätzlich Anzahl und Suchbereich."""
+    d = _zero_gamma_detail(spot, contracts, q)
+    return d["zero_gamma"]
+
+
+def _zero_gamma_detail(spot: float, contracts: list, q: float) -> dict:
+    """Wie _zero_gamma, aber mit Kontext: alle Roots, Anzahl, geprüfter Bereich.
+
+    Ohne den Bereich ist ein `None` nicht interpretierbar — es kann „kein Flip"
+    heißen oder „Flip liegt außerhalb der gesuchten ±20 %"."""
     lo, hi = spot * 0.80, spot * 1.20
     xs = [lo + (hi - lo) * i / 240 for i in range(241)]
     vals = [(x, _exposures(x, contracts, q)[0]) for x in xs]
+    roots: list[float] = []
     for (x0, v0), (x1, v1) in zip(vals, vals[1:]):
         if v0 == 0:
-            return round(x0, 2)
-        if v0 * v1 < 0:
-            return round(x0 + (x1 - x0) * (-v0) / (v1 - v0), 2)
-    return None
+            roots.append(x0)
+        elif v0 * v1 < 0:
+            roots.append(x0 + (x1 - x0) * (-v0) / (v1 - v0))
+    best = min(roots, key=lambda r: abs(r - spot)) if roots else None
+    return {"zero_gamma": round(best, 2) if best is not None else None,
+            "zero_gamma_n_roots": len(roots),
+            "zero_gamma_range": [round(lo, 2), round(hi, 2)]}
 
 
 def _walls(spot: float, contracts: list, q: float):

@@ -202,6 +202,9 @@
 
     // ── Vol-Regime-Radar + Kennzahlen ───────────────────────────────────────
     var SKEW_HIST=null, SKEW_CUR=null, SKEW_CATMAP={};
+    // Handelstag des aktuellen Snapshots. Massstab dafuer, ob der letzte
+    // normierte Historienpunkt eines Tickers wirklich von heute ist.
+    var SKEW_SESSION=null, SKEW_STALE={};
     var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365},{lbl:'2J',d:800}];
     var SKEW_WIN=365;                                              // Default: 1 Jahr
     var SKEW_MODE='rank';                                          // 'rank' | 'pctl'
@@ -224,9 +227,20 @@
     function _isNorm(e){ return e.cm_mode==='cm'||e.cm_mode==='cm_extrap'; }
     function _normHist(tk){
       var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
-      return ((SKEW_HIST&&SKEW_HIST[tk])||[]).slice()
+      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice()
         .sort(function(a,b){return a.date<b.date?-1:1})
         .filter(function(e){return e.date>=cut && _isNorm(e);});
+      // Rank und Percentile nehmen blind den LETZTEN Eintrag als „aktuell".
+      // Fehlt der heutige normierte Punkt (Ticker im Lauf ausgefallen ODER
+      // CM-Normierung heute gescheitert), ruecken damit alte Tage in die Rolle
+      // des aktuellen Werts — gemessen am 2026-09-10 stand DUK mit einem
+      // 20 Tage alten Punkt im Radar, als waere er von heute. Ohne aktuellen
+      // Punkt gibt es kein aktuelles Ranking.
+      if(SKEW_SESSION && arr.length && arr[arr.length-1].date!==SKEW_SESSION){
+        SKEW_STALE[tk]=arr[arr.length-1].date;
+        return [];
+      }
+      return arr;
     }
     // Rank = wo im Min/Max-Bereich; Percentile = Anteil Tage darunter
     function _rank(vals){
@@ -613,6 +627,8 @@
         kpi('Impl. Korr. 3M', c3!=null?c3:'—', '', T('skew.kpi_cor2','hoch = Makro / alles korreliert'));
       var tks=(d.tickers||[]);
       SKEW_CUR=tks;
+      SKEW_SESSION=d.session||null;   // fehlt bei Altdaten -> Pruefung inaktiv
+      SKEW_STALE={};
       SKEW_CATMAP={}; tks.forEach(function(t){SKEW_CATMAP[t.ticker]=t.cats||[];});
       SKEW_CATS=d.categories||[];
       if(!SKEW_CATS.length) SKEW_CAT='Alle';                       // Altdaten ohne Kategorien → alles zeigen

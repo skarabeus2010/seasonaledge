@@ -127,9 +127,13 @@ def _interp_iv(e: dict, spot: float, target_moneyness: float) -> float | None:
         return None
     lo, hi = s[0][0], s[-1][0]
     if kt < lo or kt > hi:
-        # außerhalb der Strike-Spanne → nächster verfügbarer Strike (kein Extrapolieren)
-        near = min(s, key=lambda x: abs(x[0] - kt))
-        return round(near[1], 2)
+        # Außerhalb der Strike-Spanne gibt es keine Beobachtung. Bisher wurde der
+        # nächstgelegene Strike zurückgegeben — der Wert erscheint dann im Chart als
+        # echte IV bei dieser Moneyness, obwohl er von einem ganz anderen Strike
+        # stammt. Bei dünnen Ketten konnte so ein ganzer Rand der Surface aus
+        # wiederholten Randwerten bestehen. Kein Wert ist ehrlicher als ein
+        # umetikettierter.
+        return None
     for i in range(1, len(s)):
         if s[i][0] >= kt:
             k0, v0 = s[i - 1]; k1, v1 = s[i]

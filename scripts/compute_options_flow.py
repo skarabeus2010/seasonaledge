@@ -113,11 +113,21 @@ def _records(contracts: list) -> list:
 
 
 # ── (4) ΔOI-Flow ─────────────────────────────────────────────────────────────
-def _oi_by_strike(recs: list) -> dict:
-    """Aggregierte OI je Strike über alle Laufzeiten: {strike: {"c":oi,"p":oi}}."""
+_OI_SCHEMA = 2      # 1 = je Strike (alle Laufzeiten summiert), 2 = je (Expiry, Strike)
+
+
+def _oi_by_contract(recs: list) -> dict:
+    """OI je (Expiry, Strike): {"<exp>|<strike>": {"c":oi,"p":oi}}.
+
+    Warum nicht nur je Strike (Schema 1): Ein Roll von Verfall A nach B taucht dann
+    als grosses positives Delta-OI an einem Strike auf und sieht aus wie neue
+    Positionierung. Und verfallene Kontrakte verschwinden aus der Kette, statt als
+    Abfluss zu zaehlen — nach jedem OPEX war die Netto-Summe dadurch systematisch
+    zu positiv."""
     by: dict = {}
     for r in recs:
-        e = by.setdefault(r["strike"], {"c": 0, "p": 0})
+        k = f"{r.get('exp')}|{r['strike']:g}"
+        e = by.setdefault(k, {"c": 0, "p": 0})
         e["c" if r["typ"] == "call" else "p"] += r["oi"]
     return by
 
@@ -139,36 +149,67 @@ def _save_hist(sym: str, hist: list):
 
 
 def _doi(sym: str, recs: list, spot, today: str) -> dict:
-    """ΔOI heute − letzter Snapshot. Persistiert heutigen Snapshot forward."""
-    cur = _oi_by_strike(recs)
+    """ΔOI heute − letzter Snapshot, je (Expiry, Strike). Persistiert forward.
+
+    Zwei Korrekturen gegenüber der Aggregation je Strike:
+      * Ein Roll von Verfall A nach B ist kein Netto-Zufluss mehr. Vorher sah er
+        wie neue Positionierung aus.
+      * Kontrakte, die aus der Kette VERSCHWUNDEN sind (verfallen), zählen als
+        Abfluss. Vorher wurde nur über die heutigen Schlüssel iteriert, ihr
+        negatives ΔOI fehlte — nach jedem OPEX war die Netto-Summe zu positiv.
+
+    Der Vergleich braucht ein Vorgänger-Snapshot IM SELBEN Schema. Nach der
+    Umstellung ist der letzte Snapshot noch Schema 1 (nur Strike); dann wird kein
+    ΔOI ausgewiesen statt eines Scheinwerts, bei dem jeder Kontrakt neu aussieht."""
+    cur = _oi_by_contract(recs)
     hist = _load_hist(sym)
     prev = next((h for h in reversed(hist) if h.get("date") != today), None)
     out = {"available": False, "prev_date": None, "strikes": [],
-           "net_call_doi": None, "net_put_doi": None, "pc_doi": None}
-    if prev:
+           "net_call_doi": None, "net_put_doi": None, "pc_doi": None,
+           "unavailable_reason": None, "gap_sessions": None}
+    if not prev:
+        out["unavailable_reason"] = "kein Vorgaenger-Snapshot"
+    elif int(prev.get("schema") or 1) != _OI_SCHEMA:
+        out["unavailable_reason"] = (f"Vorgaenger in Schema {prev.get('schema') or 1}, "
+                                     f"aktuell {_OI_SCHEMA} — erster Lauf nach der Umstellung")
+    else:
         pmap = prev.get("strikes") or {}
-        diffs = []           # (strike, typ, doi, oi_now)
         net_c = net_p = 0
-        for strike, cp in cur.items():
-            pc = pmap.get(f"{strike:g}") or pmap.get(str(strike)) or {}
-            dc = cp["c"] - int(pc.get("c") or 0)
-            dp = cp["p"] - int(pc.get("p") or 0)
+        per_strike: dict = {}                      # Anzeige bleibt je Strike aggregiert
+        for k in set(cur) | set(pmap):             # UNION: verfallene Kontrakte zaehlen mit
+            c_now = cur.get(k) or {"c": 0, "p": 0}
+            c_old = pmap.get(k) or {}
+            dc = int(c_now["c"]) - int(c_old.get("c") or 0)
+            dp = int(c_now["p"]) - int(c_old.get("p") or 0)
             net_c += dc; net_p += dp
-            if dc:
-                diffs.append({"strike": strike, "type": "call", "doi": dc, "oi": cp["c"]})
-            if dp:
-                diffs.append({"strike": strike, "type": "put", "doi": dp, "oi": cp["p"]})
+            try:
+                strike = float(k.split("|", 1)[1])
+            except Exception:
+                continue
+            e = per_strike.setdefault(strike, {"dc": 0, "dp": 0, "oi_c": 0, "oi_p": 0})
+            e["dc"] += dc; e["dp"] += dp
+            e["oi_c"] += int(c_now["c"]); e["oi_p"] += int(c_now["p"])
+        diffs = []
+        for strike, e in per_strike.items():
+            if e["dc"]:
+                diffs.append({"strike": strike, "type": "call", "doi": e["dc"], "oi": e["oi_c"]})
+            if e["dp"]:
+                diffs.append({"strike": strike, "type": "put", "doi": e["dp"], "oi": e["oi_p"]})
         diffs.sort(key=lambda x: abs(x["doi"]), reverse=True)
+        gap = None
+        try:
+            gap = (date.fromisoformat(today) - date.fromisoformat(prev["date"])).days
+        except Exception:
+            pass
         out.update({
-            "available": True, "prev_date": prev.get("date"),
+            "available": True, "prev_date": prev.get("date"), "gap_sessions": gap,
             "strikes": diffs[:_TOP_STRIKES],
             "net_call_doi": net_c, "net_put_doi": net_p,
             "pc_doi": round(abs(net_p) / abs(net_c), 3) if net_c else None,
         })
-    # heutigen Snapshot upserten (kompaktes Strike->{c,p}-Dict)
+    # heutigen Snapshot upserten (Schema-Marke mitschreiben)
     hist = [h for h in hist if h.get("date") != today]
-    hist.append({"date": today, "spot": spot,
-                 "strikes": {f"{k:g}": v for k, v in cur.items()}})
+    hist.append({"date": today, "spot": spot, "schema": _OI_SCHEMA, "strikes": cur})
     _save_hist(sym, hist[-_HIST_KEEP:])
     return out
 
