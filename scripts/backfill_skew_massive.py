@@ -53,7 +53,8 @@ from shared.options_universe import all_option_tickers                # noqa: E4
 from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
                                   bs_delta as _bs_delta, implied_vol as _implied_vol,
                                   cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
-                                  DELTA_TOL as _DELTA_TOL, CM_SINGLE_TOL as _SINGLE_TOL)
+                                  DELTA_TOL as _DELTA_TOL, CM_SINGLE_TOL as _SINGLE_TOL,
+                                  IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
@@ -291,7 +292,7 @@ def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
         c = need[occ]
         typ, K = c["contract_type"], float(c["strike_price"])
         iv = _implied_vol(px, spot, K, T, typ)
-        if iv is None or iv <= 0.01 or iv > 4.0:
+        if iv is None or iv <= _IV_MIN or iv > _IV_MAX:
             continue
         dl = _bs_delta(spot, K, T, iv, typ)
         for tgt in (0.25, 0.50):
@@ -612,12 +613,26 @@ def probe_quotes(sym: str, key: str) -> int:
 
 
 def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) -> int:
-    """Rekonstruktion gegen die Provider-IV der Vorwaerts-Akkumulation halten.
+    """Rekonstruktion gegen eine Referenz aus der Vorwaerts-Akkumulation halten.
 
-    Die History enthaelt Eintraege OHNE 'reconstructed' — die stammen aus dem
-    taeglichen Snapshot und tragen die IV des Providers. Genau diese Tage noch
-    einmal aus Preisen zu rekonstruieren zeigt, wie gut die BS-Inversion trifft.
-    Ohne diesen Abgleich waere der Backfill nur intern konsistent, nicht richtig."""
+    ACHTUNG, zwei verschiedene Messungen — der Unterschied entscheidet, was die
+    Zahl am Ende bedeutet:
+
+      method="provider"  Live-Zeile mit der fertigen IV des Anbieters. Der
+                         Vergleich misst, wie gut unsere BS-Inversion die
+                         Anbieter-IV trifft. Das war der Massstab bis v53.
+      method="own_bs"    Live-Zeile aus _leg_own, also ebenfalls unsere
+                         BS-Inversion — nur auf einer anderen Strike-Grundmenge
+                         (Snapshot-Kette vs. historisch gelistete Kontrakte).
+                         Der Vergleich misst dann NICHT die Genauigkeit gegen
+                         den Anbieter, sondern genau diesen Grundmengen-Versatz.
+
+    Seit v54 schreibt der Live-Lauf 'own_bs'. Vorher trug keine Zeile ein
+    method-Feld; solche Alt-Zeilen werden als 'provider' gewertet (sie stammen
+    aus der Zeit, als der Live-Pfad die Anbieter-IV speicherte).
+
+    Die Ausgabe weist die Referenzart je Ticker aus, damit eine Abweichung nicht
+    stillschweigend als 'Genauigkeit gegen Anbieter-IV' gelesen wird."""
     hp = _ROOT / "landing/data/options_skew_history.json"
     if not hp.exists():
         print("[FAIL] keine History-Datei."); return 1
@@ -628,11 +643,17 @@ def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) ->
     print("-" * 67, flush=True)
     zeta_devs: list[float] = []
     flips: list[str] = []
+    kinds: dict[str, str] = {}          # je Ticker: wogegen wurde eigentlich verglichen?
     for sym in syms:
         ref = [e for e in hist.get(sym, [])
                if not e.get("reconstructed") and e.get("iv_atm") and e.get("call_iv")]
         if not ref:
-            print(f"{sym:<7} keine Provider-Eintraege zum Vergleichen", flush=True); continue
+            print(f"{sym:<7} keine Referenz-Eintraege zum Vergleichen", flush=True); continue
+        # Referenzart bestimmen. Alt-Zeilen ohne method-Feld stammen aus der Zeit
+        # vor v54, als der Live-Pfad die Anbieter-IV speicherte.
+        _m = {e.get("method") or "provider" for e in ref}
+        kinds[sym] = "provider" if _m == {"provider"} else (
+            "own_bs" if _m == {"own_bs"} else "gemischt")
         closes = _closes(sym)
         # Provider-Eintraege tragen (historisch) den Cron-Laufzeitpunkt, nicht den
         # Handelstag — der Cron laeuft auch Sa/So/feiertags. Auf die tatsaechliche
@@ -673,7 +694,7 @@ def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) ->
             return sk, cz, pz
 
         for d, e in ref:
-            print(f"  -- {sym} {d} " + "-" * 40, flush=True)
+            print(f"  -- {sym} {d}  [Referenz: {kinds.get(sym, '?')}] " + "-" * 22, flush=True)
             _, pcz, ppz = _row("Provider", e.get("dte"), e["iv_atm"], e["call_iv"], e["put_iv"])
             for lbl, pl, nd in (("Monatsverf.", plan_m, need_m), ("Naechst-30", plan_n, need_n)):
                 if d not in pl:
@@ -698,6 +719,17 @@ def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) ->
     if not zeta_devs:
         print("[FAIL] Nichts vergleichbar — Backfill NICHT starten."); return 2
     mean, mx = sum(zeta_devs) / len(zeta_devs), max(zeta_devs)
+    # Ohne diese Zeile wird die Abweichung zwangslaeufig als "Genauigkeit gegen
+    # Anbieter-IV" gelesen — bei own_bs-Referenzen misst sie aber den Versatz
+    # der Strike-Grundmengen zwischen Live- und Backfill-Pfad.
+    _kc = {}
+    for k in kinds.values():
+        _kc[k] = _kc.get(k, 0) + 1
+    print("Referenzarten: " + " · ".join(f"{k}={n}" for k, n in sorted(_kc.items())), flush=True)
+    if _kc.get("own_bs") or _kc.get("gemischt"):
+        print("  ACHTUNG: 'own_bs' heisst BS-Rekonstruktion gegen BS-Rekonstruktion —\n"
+              "  gemessen wird der Strike-Grundmengen-Versatz, NICHT die Treffgenauigkeit\n"
+              "  gegenueber der Anbieter-IV.", flush=True)
     print(f"{len(zeta_devs)} Zeta-Vergleiche · mittlere Abweichung {mean:.2f} pts · max {mx:.2f} pts",
           flush=True)
     # Bewertet wird ZETA, nicht die rohe IV: eine kleine mittlere IV-Abweichung kann

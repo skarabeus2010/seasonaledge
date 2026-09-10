@@ -42,11 +42,21 @@ def bs_delta(S, K, T, sig, typ):
     return cdf(d1) if typ == "call" else cdf(d1) - 1.0
 
 
+# Zulaessiger IV-Bereich. EINE Quelle fuer Bisektions-Bracket UND die
+# Plausibilitaetspruefung der Aufrufer: vorher klammerte die Bisektion bis 5,0,
+# die Aufrufer verwarfen aber ab 4,0 — alles dazwischen wurde berechnet und dann
+# weggeworfen. Reiner Datenverlust, der genau die High-Vol-Titel trifft
+# (Earnings, Biotech-Events), deren Skew am interessantesten ist.
+IV_MIN, IV_MAX = 0.01, 5.0
+
+
 def implied_vol(price, S, K, T, typ):
-    """IV per Bisektion; None wenn kein Root (z.B. Preis = reiner innerer Wert)."""
+    """IV per Bisektion; None wenn kein Root (z.B. Preis = reiner innerer Wert
+    oder echte IV oberhalb IV_MAX — dann liegt die Nullstelle ausserhalb des
+    Brackets und beide Randwerte haben dasselbe Vorzeichen)."""
     if price is None or price <= 0 or T <= 0:
         return None
-    lo, hi = 1e-4, 5.0
+    lo, hi = 1e-4, IV_MAX
     plo = bs_price(S, K, T, lo, typ) - price
     phi = bs_price(S, K, T, hi, typ) - price
     if plo * phi > 0:

@@ -20,6 +20,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 import numpy as np
 
@@ -37,14 +38,24 @@ _OUT_DAYS = 90             # Ausgabe-Fenster
 _WIN = 60                  # Perzentil/z-Score-Fenster (Handelstage)
 
 
-def _fetch_day(d: date) -> float | None:
-    """Marktweiter Short-Volume-Anteil für einen Tag (None wenn kein File = Feiertag/Wochenende)."""
+def _fetch_day(d: date):
+    """Marktweiter Short-Volume-Anteil für einen Tag.
+
+    Rückgabe: (wert, grund)
+      (float, "ok")        Anteil ermittelt
+      (None,  "nofile")    FINRA hat für den Tag keine Datei (Feiertag) — endgültig
+      (None,  "error")     HTTP-/Netzwerkfehler oder leere Datei — VORÜBERGEHEND
+
+    Die Unterscheidung ist der Punkt: vorher lieferten beide Fälle None und wurden
+    als „Feiertag" dauerhaft gecacht. Ein einzelner Netzausfall riss damit ein
+    permanentes Loch ins 60-Tage-Fenster, und Perzentil wie z-Score verschoben sich
+    still — ohne dass irgendwo ein Fehler sichtbar wurde."""
     url = _URL.format(ymd=d.strftime("%Y%m%d"))
     try:
         req = Request(url, headers={"User-Agent": "SeasonAlpha/flows"})
         with urlopen(req, timeout=40) as r:
             if r.status != 200:
-                return None
+                return None, ("nofile" if r.status == 404 else "error")
             short_sum = total_sum = 0.0
             first = True
             for raw in r:
@@ -60,10 +71,12 @@ def _fetch_day(d: date) -> float | None:
                 except ValueError:
                     continue
             if total_sum > 0:
-                return round(short_sum / total_sum, 5)
+                return round(short_sum / total_sum, 5), "ok"
+    except HTTPError as e:
+        return None, ("nofile" if e.code == 404 else "error")
     except Exception:
-        return None
-    return None
+        return None, "error"          # Timeout/DNS/Reset — wiederholbar
+    return None, "error"              # 200, aber leere/unbrauchbare Datei
 
 
 def _load_cache() -> dict[str, float]:
@@ -80,17 +93,25 @@ def build() -> dict:
     cache = _load_cache()
     # fehlende Werktage im Fenster nachladen (jüngste zuerst, Deckel _MAX_FETCH)
     fetched = 0
+    errors: list[str] = []
     d = today
     while d >= today - timedelta(days=_BACKFILL_DAYS) and fetched < _MAX_FETCH:
         key = d.isoformat()
         if d.weekday() < 5 and key not in cache:
-            v = _fetch_day(d)
+            v, why = _fetch_day(d)
             if v is not None:
                 cache[key] = v
+            elif why == "nofile":
+                cache[key] = -1.0          # FINRA hat keine Datei (Feiertag) → endgueltig
             else:
-                cache[key] = -1.0          # Marker "kein File" (Feiertag) → nicht erneut versuchen
+                errors.append(key)         # voruebergehend → NICHT cachen, naechster Lauf holt nach
             fetched += 1
         d -= timedelta(days=1)
+    if errors:
+        # Sichtbar machen: diese Tage fehlen im Fenster und verschieben Perzentil/z-Score.
+        print(f"[shortvol] {len(errors)} Tag(e) mit Abrufsfehler, nicht gecacht "
+              f"(naechster Lauf versucht erneut): {', '.join(errors[:8])}"
+              f"{' …' if len(errors) > 8 else ''}", flush=True)
     try:
         _HISTORY.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
     except Exception:

@@ -34,7 +34,8 @@ from shared.exchange_holidays import is_trading_day                   # noqa: E4
 from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
-                                  DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL)
+                                  DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
+                                  IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
 def _last_session(d: date | None = None) -> str:
@@ -261,10 +262,25 @@ def _skew_at(by: dict, target_dte: int) -> dict | None:
             "skew_pts": round((pp[1] - cc[1]) * 100, 2)}
 
 
-def _atm_iv(e: dict):
-    """ATM-IV = Mittel der 50Δ-Call/Put-IV einer Expiry."""
-    cc = _pick(e["call"], 0.5); pp = _pick(e["put"], 0.5)
-    return round((cc[1] + pp[1]) / 2, 4) if (cc and pp) else None
+def _atm_iv(e: dict, tol: float | None = _DELTA_TOL, detail: bool = False):
+    """ATM-IV = Mittel der 50Δ-Call/Put-IV einer Expiry.
+
+    tol: wie bei _pick. Ohne Toleranz liefert min() IMMER einen Treffer — in einer
+    dünnen Kette also z.B. einen 0,35Δ-Kontrakt, der dann als „ATM" gilt. Weil die
+    Smile-Krümmung die IV vom Geld weg anhebt, verzerrt das ATM, VRP, Expected Move
+    UND beide Zeta systematisch nach oben, ohne dass die Zahl unplausibel aussieht.
+    Der 25Δ-Pfad hatte diese Toleranz längst; ATM blieb versehentlich ungeschützt.
+
+    detail=True liefert zusätzlich die tatsächlich erreichte Delta-Abweichung —
+    ohne sie lässt sich im Nachhinein nicht prüfen, wie nah der Pick wirklich war."""
+    cc = _pick(e["call"], 0.5, tol=tol); pp = _pick(e["put"], 0.5, tol=tol)
+    if not (cc and pp):
+        return (None, None) if detail else None
+    iv = round((cc[1] + pp[1]) / 2, 4)
+    if not detail:
+        return iv
+    dev = max(abs(abs(cc[0]) - 0.5), abs(abs(pp[0]) - 0.5))
+    return iv, round(dev, 3)
 
 
 # ── Konstante 30-Tage-Laufzeit (identisch zu backfill_skew_massive.py) ────────
@@ -350,7 +366,7 @@ def _leg_own(e: dict, spot: float, vol_pctl: float = _CM_VOL_PCTL):
         if cutoff and c["vol"] < cutoff:
             continue
         iv = implied_vol(c["px"], spot, c["K"], T, c["typ"])
-        if iv is None or iv <= 0.01 or iv > 4.0:
+        if iv is None or iv <= _IV_MIN or iv > _IV_MAX:
             continue
         dl = bs_delta(spot, c["K"], T, iv, c["typ"])
         for tgt in (0.25, 0.50):
@@ -450,9 +466,12 @@ def _enrich(sym: str, key: str) -> dict | None:
     # Zeta (25Δ-IV − ATM-IV) über zwei Laufzeiten und misst die Term-Struktur mit
     # statt den Skew. Vorher kam iv_atm aus der Term-Liste und traf s30 nur zufällig;
     # seit _skew_at Monatsverfälle bevorzugt, würden sie auseinanderlaufen.
-    iv_atm = _atm_iv(by[s30["exp"]])
-    if iv_atm is None and term:                       # Fallback: nichts ist besser als nichts
-        iv_atm = min(term, key=lambda t: abs(t["dte"] - 30))["iv"]
+    # KEIN Fallback auf die Term-Liste: die liefert womöglich das ATM einer ANDEREN
+    # Expiry, und Zeta/Butterfly/VRP rechnen dann über zwei Laufzeiten. Bei 30d-Flügeln
+    # von 35 %, Ziel-ATM 30 % und Fallback-ATM 40 % verschiebt das Zeta um 10 Vol-Punkte
+    # — die Zahl bleibt plausibel, ist aber falsch. Ein fehlender Wert ist ehrlicher:
+    # alle abhängigen Felder unten sind bereits mit `if iv_atm` abgesichert.
+    iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
     rv1m, last_close = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
     if not spot:                                    # Fallback 1: Underlying aus dem Snapshot
@@ -474,7 +493,7 @@ def _enrich(sym: str, key: str) -> dict | None:
         # put_zeta > 0 = Put-Skew (Absicherungsnachfrage). skew_pts = put_zeta − call_zeta.
         "call_zeta_pts": round((call_iv - iv_atm) * 100, 2) if iv_atm else None,
         "put_zeta_pts":  round((put_iv  - iv_atm) * 100, 2) if iv_atm else None,
-        "iv_atm": iv_atm, "rv_1m": rv1m,
+        "iv_atm": iv_atm, "atm_delta_dev": atm_dev, "rv_1m": rv1m,
         "vrp_pts": round((iv_atm - rv1m) * 100, 2) if (iv_atm and rv1m) else None,
         "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
         "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
@@ -565,16 +584,28 @@ def build(tickers: list[str], write: bool = True) -> dict:
             series.append({"date": dt_, "skew": sk, "vix": vixmap.get(dt_)})
 
     per = []
+    # Ausfaelle als ERGEBNIS festhalten, nicht nur als fehlende Zeile. Ohne das
+    # verschwindet ein Ticker still aus options_skew.json: der Lauf meldet Erfolg,
+    # der Health-Check prueft nur eine globale Mindestzahl, und dass ein bestimmter
+    # Titel seit Wochen nie im Radar auftaucht, faellt niemandem auf.
+    failed: list[dict] = []
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
     else:
         for t in tickers:
-            r = _enrich(t, tok)
+            try:
+                r = _enrich(t, tok)
+            except Exception as e:
+                failed.append({"ticker": t, "reason": f"{type(e).__name__}: {str(e)[:80]}"})
+                print(f"  {t:6} FEHLER {type(e).__name__}: {str(e)[:80]}", flush=True)
+                continue
             if r:
                 per.append(r)
                 ct = "contango" if r.get("contango") else ("backwardation" if r.get("contango") is False else "?")
                 print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {(r['iv_atm'] or 0)*100:.1f}% · "
                       f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}", flush=True)
+            else:
+                failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
 
     # Marktweite Put/Call-Ratio (Equity = ohne Broad-Index-ETFs, Index = Broad-Index) — volumen- + OI-basiert
     def _pc(sel):
@@ -592,11 +623,22 @@ def build(tickers: list[str], write: bool = True) -> dict:
         "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + US-Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
         "indices": indices, "correlation": corr, "pc_ratio": pc_ratio, "series": series,
         "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,
+        # Abdeckung explizit ausweisen — sonst laesst sich aus der Datei nicht
+        # ablesen, ob 163 Ticker angefragt und 12 still gescheitert sind.
+        "coverage": {"requested": len(tickers), "returned": len(per),
+                     "failed": failed},
     }
     if write:
         p = _ROOT / "landing/data/options_skew.json"
         p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"\n[OK] {len(per)} Ticker + {len(indices)} Indizes → {p}")
+        print(f"\n[OK] {len(per)}/{len(tickers)} Ticker + {len(indices)} Indizes → {p}")
+        if failed:
+            from collections import Counter
+            _c = Counter(f["reason"].split(":")[0] for f in failed)
+            print(f"[coverage] {len(failed)} ohne Wert: "
+                  + " · ".join(f"{k} ({n})" for k, n in _c.most_common()), flush=True)
+            print("           " + ", ".join(f["ticker"] for f in failed[:20])
+                  + (" …" if len(failed) > 20 else ""), flush=True)
         # Skalare Metriken vorwärts in History akkumulieren
         hp = _ROOT / "landing/data/options_skew_history.json"
         hist = {}
@@ -621,6 +663,12 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 # cm_mode) — für den Tag nicht normiert, aber kein Datenverlust.
                 cm_ok = t.get("cm_mode") is not None
                 arr.append({"date": today,
+                            # Messmethode mitschreiben. Die cm_*-Felder stammen aus
+                            # _leg_own, also aus UNSERER BS-Inversion — nicht aus der
+                            # Provider-IV. Ohne Markierung hielt verify() diese Zeilen
+                            # fuer Provider-Referenzen und verglich damit zwei
+                            # Rekonstruktionen miteinander (siehe verify-Docstring).
+                            "method": "own_bs" if t.get("cm_mode") else "provider",
                             "cm_mode": t.get("cm_mode"),
                             "dte": t.get("cm_dte") if cm_ok else t.get("dte"),
                             "skew_pts": t.get("cm_skew_pts") if cm_ok else t["skew_pts"],

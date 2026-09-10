@@ -147,7 +147,19 @@ def build() -> dict:
 
     caps = _fetch_marketcaps(universe, today)
     total_cap = sum(caps.get(tk, 0.0) for tk in universe)
-    use_cap = total_cap > 0
+    # Marktkap-Gewichtung NUR bei ausreichender Abdeckung. Sonst enthaelt der
+    # Nenner nur die Firmen, fuer die Yahoo gerade eine Market Cap lieferte —
+    # der ausgewiesene Prozentsatz waere dann der Anteil am zufaellig
+    # abgedeckten Teiluniversum, nicht am Universum. `total_cap > 0` genuegte
+    # dafuer schon EINE Firma.
+    _MIN_CAP_COVERAGE = 0.90
+    n_caps = sum(1 for tk in universe if caps.get(tk, 0.0) > 0)
+    coverage = n_caps / n_universe
+    use_cap = total_cap > 0 and coverage >= _MIN_CAP_COVERAGE
+    if total_cap > 0 and not use_cap:
+        print(f"[buyback] Market-Cap-Abdeckung nur {coverage:.0%} "
+              f"({n_caps}/{n_universe}) < {_MIN_CAP_COVERAGE:.0%} "
+              f"— fallback auf gleichgewichtet", flush=True)
 
     y0, y1 = date(today.year, 1, 1), date(today.year, 12, 31)
     ticker_wins = {tk: _windows_for_year(latest[tk], y0, y1) for tk in universe}

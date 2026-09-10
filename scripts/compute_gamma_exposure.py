@@ -189,8 +189,12 @@ def _zero_gamma(spot: float, contracts: list, q: float) -> float | None:
 
 
 def _walls(spot: float, contracts: list, q: float):
-    """Netto-Dealer-$-Gamma je Strike (Call +, Put −). Call-Wall = max positiv bei Strike ≥ Spot,
-    Put-Wall = max negativ bei Strike ≤ Spot (Fallback: unbeschränkt)."""
+    """Netto-Dealer-$-Gamma je Strike (Call +, Put −).
+
+    Call-Wall = groesstes POSITIVES Netto-Gamma bei Strike ≥ Spot,
+    Put-Wall  = groesstes NEGATIVES Netto-Gamma bei Strike ≤ Spot.
+    Existiert kein Strike mit dem passenden Vorzeichen, ist die Wall None —
+    kein Ausweichen auf die falsche Seite."""
     per: dict[float, float] = {}
     for c in contracts:
         g, _, _ = bs_greeks(spot, c["K"], c["T"], c["iv"], c["type"], q=q)
@@ -198,10 +202,15 @@ def _walls(spot: float, contracts: list, q: float):
         per[c["K"]] = per.get(c["K"], 0.0) + (dollar if c["type"] == "call" else -dollar)
     if not per:
         return None, None, None
-    above = {k: v for k, v in per.items() if k >= spot}
-    below = {k: v for k, v in per.items() if k <= spot}
-    call_wall = max(above or per, key=(above or per).get)
-    put_wall = min(below or per, key=(below or per).get)
+    # Vorzeichen ist Teil der Definition, nicht Beiwerk: eine Call-Wall IST ein
+    # positiver Netto-Gamma-Cluster oberhalb des Spots. Ohne die Vorzeichenpruefung
+    # liefert max() bei durchweg negativen Werten den am wenigsten negativen — die
+    # Seite zeigt dann eine Support-/Resistance-Marke, wo gar kein Gamma der
+    # erwarteten Richtung liegt. Lieber None als eine erfundene Wall.
+    above = {k: v for k, v in per.items() if k >= spot and v > 0}
+    below = {k: v for k, v in per.items() if k <= spot and v < 0}
+    call_wall = max(above, key=above.get) if above else None
+    put_wall = min(below, key=below.get) if below else None
     abs_gamma = max(per, key=lambda k: abs(per[k]))   # magnetischster Pin (max |Netto-Gamma|)
     return call_wall, put_wall, abs_gamma
 
