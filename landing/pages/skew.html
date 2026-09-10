@@ -190,7 +190,10 @@
   !function(){
     var GREEN='#30e878',RED='#ff4d5e',ACC='#e8a820',MUT='#8a8270',BLUE='#7fb2e6',DIM='#5a5648';
     function T(key,de){return (window.SA&&SA.i18n&&SA.i18n.t)?SA.i18n.t(key,de):de;}
-    function fetchJSON(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    // no-cache statt no-store: revalidiert IMMER (Cron-Daten nie veraltet),
+    // erlaubt dem Server aber ein 304 — sonst wird die auf mehrere MB
+    // gewachsene options_skew_history.json bei JEDEM Aufruf neu geladen.
+    function fetchJSON(u){return fetch(u,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
     function panelFail(id,msg){var el=document.getElementById(id);if(el)el.innerHTML='<p style="color:var(--muted);padding:1.4rem;text-align:center;font-size:.85rem">'+msg+'</p>';}
     function kpi(k,v,cls,sub){return '<div class="kpi"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>';}
     function baseChart(h,type){return{chart:{type:type||'line',height:h||280,background:'transparent',toolbar:{show:false},animations:{enabled:false},fontFamily:'DM Sans'},theme:{mode:'dark'},grid:{borderColor:'rgba(255,255,255,.06)'},dataLabels:{enabled:false},legend:{show:false},tooltip:{theme:'dark'}};}

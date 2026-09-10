@@ -364,7 +364,10 @@
   <script>
   !function(){
     var GREEN='#30e878',RED='#ff4d5e',ACC='#e8a820',MUT='#8a8270',BLUE='#7fb2e6',DIM='#5a5648';
-    function fetchJSON(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
+    // no-cache statt no-store: revalidiert IMMER (Cron-Daten nie veraltet),
+    // erlaubt dem Server aber ein 304 — sonst wird die auf mehrere MB
+    // gewachsene options_skew_history.json bei JEDEM Aufruf neu geladen.
+    function fetchJSON(u){return fetch(u,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(u);return r.json()})}
     function fmtInt(n){return (n>=0?'+':'')+Math.round(n).toLocaleString('de-DE')}
     function fmtBn(usd){return (usd>=0?'+':'')+ (usd/1e9).toLocaleString('de-DE',{maximumFractionDigits:1})+' Mrd $'}
     function panelFail(id,msg){var el=document.getElementById(id);if(el)el.innerHTML='<p style="color:var(--muted);padding:1.4rem;text-align:center;font-size:.85rem">'+msg+'</p>';}
