@@ -303,6 +303,67 @@ Gegenprobe gemacht: entfernt man das Nullpadding, fällt Block 4 rot aus. Ein
 zwischenzeitlich gebauter **textueller** Quellcode-Check hatte es **nicht**
 gefangen — er traf einen unbeteiligten Datums-Helfer in derselben Datei.
 
+## 4c. Dritte Prüfrunde (2026-09-11) — der Zirkelschluss
+
+Abnahme von Runde 2: **3 Korrekturen bestätigt, 4 unvollständig, 6 neue
+Befunde.** Alle berechtigt, alle behoben (PR #273). Der schwerste traf wieder
+eine der eigenen Korrekturen.
+
+### Die Referenz beglaubigte sich selbst
+
+`year_end_reference` nahm schlicht das Maximum von `last_actual_day` über **alle**
+Jahre — also aus genau den Daten, die sie prüfen sollte:
+
+| Datenlage | alte Referenz | Folge |
+|---|---|---|
+| nur das laufende Jahr (Tag 250) | 250 | das unfertige Jahr galt als vollständig |
+| alle Jahre abgeschnitten (je 250) | 250 | alle galten als vollständig |
+| Dezember-Delisting (Tag 349) allein | 349 | galt als vollständig |
+
+Zwei Sperren beheben das: **nur abgeschlossene Jahre** stiften die Referenz (das
+laufende wächst noch), und sie muss **überhaupt nach einem Jahresende aussehen**.
+Die Untergrenze ist gemessen, nicht geraten — frühestes Jahresende über alle zehn
+unterstützten Börsenkalender 1990–2030 ist **Tag 362** (XETRA/SIX/MILAN/
+STOCKHOLM/TSE), also `JAHRESENDE_UNTERGRENZE = 359`.
+
+Beim Testen fiel ein **zweiter** Fehler auf, der nicht gemeldet war: bei `ref = 0`
+winkte `lad >= ref` weiterhin **jedes** Jahr durch. Die Rückfall-Klausel greift
+jetzt nur bei `ref > 0`.
+
+### Mindestanzahl vor dem Filter
+
+Der Zyklus-Zweig der Signifikanz prüfte `years.length < 3` **vor** dem
+`yearCovers`-Filter. Eine Gruppe aus 3 Kandidaten konnte danach mit 2
+Beobachtungen in den Signifikanztest gehen.
+
+### Der Wächter — die Kritik traf den Kern
+
+- **Fehlendes node ließ den Lauf grün durchgehen.** Genau die Scheinsicherheit,
+  gegen die das Skript geschrieben wurde. Jetzt Fehlschlag; wer bewusst ohne node
+  prüft, sagt `--ohne-node` und bekommt gesagt, was ungeprüft blieb.
+- **Der ToM-Test prüfte nur `curve[2] == 5`.** Ein verschobenes JS liefert
+  `[0, 5, 5]` und hätte bestanden. Jetzt voller Kurvenvergleich.
+- **Der Padding-Test erzeugte seine Erwartung selbst** und konnte strukturell
+  nicht rot werden. Ersatzlos entfernt — Block 4 prüft das Verhalten.
+- **`analyzeMoonEffect` war ungetestet**, obwohl PR #271 dort einen Off-by-one
+  behoben hatte.
+- Neuer **Block 5** für die Stellen ohne JS-Zwilling: Feiertags-Kumulation und
+  Ticker-Gruppierung.
+
+### `verify_twins_mutation.py` — den Wächter prüfen, nicht den Code
+
+Neu, und die direkte Antwort auf „diese Prüfung kann nicht rot werden": das
+Skript baut **jeden bekannten Fehler absichtlich wieder ein** und verlangt, dass
+`verify_seasonal_twins.py` rot wird. 12 Mutationen.
+
+Beim ersten Lauf blieb **eine unbemerkt** — „`yearEndRef` zählt das laufende Jahr
+mit". Die Testfälle unterschieden sie nicht, weil in allen die
+Plausibilitäts-Untergrenze schon vorher griff. Fehlender Fall ergänzt: *einziges
+Jahr ist das laufende, aber schon bei Tag 364* — es gibt kein abgeschlossenes
+Jahr als Maßstab, also muss die strenge Regel greifen. Jetzt 12/12.
+
+Damit ist **belegt statt behauptet**, dass die Zusicherungen rot werden können.
+
 ## 5. Lessons
 
 - **Zwillinge, die übereinstimmen, können beide falsch sein.** Ein
@@ -338,6 +399,17 @@ gefangen — er traf einen unbeteiligten Datums-Helfer in derselben Datei.
   Code ausführen, der wirklich läuft. Und man muss ihn absichtlich kaputt
   machen, um zu sehen, ob er rot wird — der textuelle Check hier bestand,
   während der Fehler drin war.
+- **Eine selbstkalibrierende Referenz braucht eine Sperre gegen Zirkelschluss.**
+  Wer den Maßstab aus denselben Daten zieht, die er prüft, beglaubigt Fehler mit
+  sich selbst. Entweder eine unabhängige Quelle (hier: nur abgeschlossene Jahre)
+  oder eine Plausibilitätsgrenze — und die gehört gemessen, nicht geraten.
+- **Ein Test, der nur ein Element prüft, lässt die halbe Fehlerklasse durch.**
+  `curve[2] == 5` bestand auch bei `[0, 5, 5]`. Bei Reihen wird die ganze Reihe
+  verglichen.
+- **Prüfe den Wächter mit Mutationen.** `verify_twins_mutation.py` fand beim
+  ersten Lauf sofort eine Zusicherung, die nicht rot werden konnte. Ohne diesen
+  Schritt bleibt „der Test besteht" eine Aussage über den Test, nicht über den
+  Code.
 - **Datenkorrekturen ziehen Cache-Arbeit nach sich.** Nach 4.1 waren
   `monthly_stats`, `ki_scores` und `scanner_results` bis zum Rerun inkonsistent
   zum Frontend.

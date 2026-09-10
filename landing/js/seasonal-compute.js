@@ -392,13 +392,25 @@ SA.seasonal = {
    * Kalendertag 365: XETRA schliesst am 30.12., die NYSE hatte 2006/2017/2023
    * ihren letzten Handelstag am 29.12.
    */
-  yearEndRef: function(yearData) {
+  // Frueheste Jahresende-Position ueber ALLE unterstuetzten Boersenkalender,
+  // gemessen 1990-2030: Tag 362. Alles darunter ist kein Jahresende mehr,
+  // sondern abgeschnittene Historie. (Gegenstueck: JAHRESENDE_UNTERGRENZE.)
+  JAHRESENDE_UNTERGRENZE: 359,
+
+  yearEndRef: function(yearData, aktuellesJahr) {
+    // ZWEI SPERREN GEGEN ZIRKELSCHLUSS — die erste Fassung nahm schlicht das
+    // Maximum ueber ALLE Jahre und beglaubigte die Daten mit sich selbst:
+    // lag nur das laufende Jahr vor (Tag 250), galt es als vollstaendig.
+    // (1) Nur abgeschlossene Jahre stiften die Referenz. (2) Sie muss ueberhaupt
+    // nach einem Jahresende aussehen. Sonst 0 -> yearCovers wird streng.
+    var jetzt = aktuellesJahr || new Date().getFullYear();
     var ref = 0;
     for (var y in yearData) {
+      if (parseInt(y, 10) >= jetzt) continue;
       var lad = yearData[y].last_actual_day || 365;
       if (lad > ref) ref = lad;
     }
-    return ref;
+    return ref >= SA.seasonal.JAHRESENDE_UNTERGRENZE ? ref : 0;
   },
 
   /**
@@ -411,7 +423,10 @@ SA.seasonal = {
    */
   yearCovers: function(yd, endDoy, ref) {
     var lad = yd.last_actual_day || 365;
-    return lad >= Math.min(endDoy, 365) || lad >= ref;
+    if (lad >= Math.min(endDoy, 365)) return true;
+    // ref === 0 heisst: keine vertrauenswuerdige Referenz. Dann greift NUR die
+    // strenge Regel — sonst wuerde `lad >= 0` jedes Jahr durchwinken.
+    return ref > 0 && lad >= ref;
   },
 
   /** Interpoliert auf 365 Kalendertage (Port von interpolate_to_365). */

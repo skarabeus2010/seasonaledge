@@ -235,12 +235,30 @@ def block_turn_of_month() -> None:
     # nullgepaddetem Monat gut. Ungepaddet sortiert "2024-1" vor "2024-10" vor
     # "2024-2": Januar zog Oktober, Dezember zog Februar, September den Januar
     # des Folgejahres. 3 von 12 Monaten waren betroffen.
-    ungepaddet = sorted(f"2024-{m}" for m in range(1, 13))
-    gepaddet = sorted(f"2024-{m:02d}" for m in range(1, 13))
-    _melde("Turn-of-Month", "Nullgepaddete Monatsschluessel sortieren chronologisch",
-           gepaddet == [f"2024-{m:02d}" for m in range(1, 13)]
-           and ungepaddet[1] == "2024-10",
-           f"ungepaddet={ungepaddet[:4]}")
+    # KEIN Test auf selbst erzeugte Schluessel an dieser Stelle: der wuerde seine
+    # Erwartung selbst herstellen und koennte strukturell nicht rot werden —
+    # unabhaengig davon, was der Produktionscode tut. Geprueft wird das
+    # Verhalten der echten JS-Funktion in Block 4 (analyzeTurnOfMonth/Januar).
+
+
+def _py_tom_kurve() -> list | None:
+    """Die ToM-Kurve aus der ECHTEN Backend-Funktion, fuer denselben Fall wie
+    die JS-Sonde: 30./31. Januar bei 100, 1. Februar bei 105, je 1 Tag Fenster.
+
+    Soll: [0.00, 0.00, 5.00] — t0 ist der letzte Januartag, die +5 % liegen auf
+    t+1. Eine verschobene Implementierung liefert [0, 5, 5] oder [-4.76, 0, 0].
+    """
+    dates = pd.to_datetime(["2024-01-30", "2024-01-31", "2024-02-01"])
+    closes = [100.0, 100.0, 105.0]
+    df = pd.DataFrame({
+        "Date": dates, "Close": closes,
+        "year": [d.year for d in dates], "month": [d.month for d in dates],
+        "log_return": [0.0, 0.0, math.log(1.05)],
+    }).set_index("Date")
+    res = analyze_turn_of_month(df, 1, 1, [1], [2024])
+    if not res or not res.get("all_curves"):
+        return None
+    return [round(v, 2) for v in res["all_curves"][0]["curve"]]
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -258,8 +276,20 @@ def block_echtes_js() -> None:
     import json, shutil, subprocess
     print("\n4. ECHTES JS  (seasonal-compute.js in node ausgefuehrt)")
     if not shutil.which("node"):
-        print("  [WARN] node nicht gefunden — dieser Block wurde UEBERSPRUNGEN.")
-        print("         Die Bloecke 1-3 pruefen nur den Python-Nachbau der JS-Logik.")
+        # FEHLSCHLAG, nicht WARN: ein uebersprungener Block, der den Lauf gruen
+        # laesst, ist genau die Scheinsicherheit, gegen die dieses Skript
+        # geschrieben wurde. Wer bewusst ohne node prueft, sagt es explizit.
+        if "--ohne-node" in sys.argv:
+            print("  [UEBERSPRUNGEN auf ausdrueckliche Anweisung (--ohne-node)]")
+            print("  ACHTUNG: die Bloecke 1-3 pruefen nur den PYTHON-NACHBAU der")
+            print("           JS-Logik, nicht den Code, der im Browser laeuft.")
+            return
+        _melde("Echtes JS", "node ist verfuegbar", False,
+               "node nicht gefunden. Ohne node prueft dieses Skript nur den "
+               "handgeschriebenen Nachbau der JS-Logik, also moeglicherweise "
+               "eine Fiktion. node installieren, oder bewusst mit --ohne-node "
+               "starten (dann bleibt der Lauf gruen, sagt aber klar, was "
+               "ungeprueft blieb).")
         return
     probe = _ROOT / "scripts" / "js" / "twin_probe.js"
     ziel = _ROOT / "landing" / "js" / "seasonal-compute.js"
@@ -290,6 +320,41 @@ def block_echtes_js() -> None:
            f"avg_curve={tom} — erwartet [~0, 0, ~5]. Bei lexikografischer "
            f"Sortierung waere der Folgemonat des Januars der Oktober (-50 %).")
 
+    # VOLLER Kurvenvergleich gegen die echte Backend-Funktion. Ein Test auf nur
+    # ein Element (frueher `tom[2] == 5`) laesst eine erneute Verschiebung durch:
+    # ein verschobenes JS liefert [0, 5, 5] und haette bestanden.
+    py_kurve = _py_tom_kurve()
+    js_kurve = d["tom_voll"]
+    ok_voll = (js_kurve is not None and py_kurve is not None
+               and len(js_kurve) == len(py_kurve) == 3
+               and all(abs(a - b) < 0.01 for a, b in zip(js_kurve, py_kurve))
+               and all(abs(a - b) < 0.01 for a, b in zip(js_kurve, [0.0, 0.0, 5.0])))
+    _melde("Echtes JS", "ToM-Kurve VOLLSTAENDIG identisch (JS == Python == Soll)",
+           ok_voll, f"JS={js_kurve} PY={py_kurve} SOLL=[0.0, 0.0, 5.0]")
+
+    # Mondphasen: dieselbe Fenster-Mathematik, eigene Funktion. In PR #271 wurde
+    # hier derselbe Off-by-one behoben — ohne Test bliebe ein Rueckfall gruen.
+    moon = d.get("moon")
+    ok_moon = (moon is not None
+               and all(abs(a - b) < 0.01 for a, b in zip(moon["curve"], [-4.76, 0.0, 0.0]))
+               and abs(moon["total"] - 4.76) < 0.01)
+    _melde("Echtes JS", "analyzeMoonEffect: Bewegung liegt auf t0, nicht auf t+1",
+           ok_moon, f"moon={moon} — erwartet curve=[-4.76, 0, 0], total=4.76")
+
+    # yearEndRef/yearCovers: die Sperren gegen Zirkelschluss, im echten JS.
+    erwartet_yc = {
+        "nur_laufendes":  (0, []),
+        "alle_kurz":      (0, []),
+        "dez_delisting":  (0, []),
+        "nur_laufendes_spaet": (0, []),
+        "voll_plus_kurz": (364, ["2023", "2024"]),
+    }
+    for schluessel, (ref_soll, akz_soll) in erwartet_yc.items():
+        got = d["yearcovers"][schluessel]
+        _melde("Echtes JS", f"yearCovers/{schluessel} wie Python",
+               got["ref"] == ref_soll and got["akzeptiert"] == akz_soll,
+               f"JS={got} SOLL=ref {ref_soll}, akzeptiert {akz_soll}")
+
     # buildYearData: Verwerfen-Semantik bei unreparierbarem Close
     _melde("Echtes JS", "buildYearData verwirft Jahr bei Close <= 0 (kein lr=0)",
            d["build_kaputt_jahre"] == 0,
@@ -302,6 +367,78 @@ def block_echtes_js() -> None:
            f"build={b}")
 
 
+# ══════════════════════════════════════════════════════════════════
+# 5. PYTHON-ONLY: Fenster-Analysen und Gruppierungen ohne JS-Zwilling
+# ══════════════════════════════════════════════════════════════════
+
+def block_python_only() -> None:
+    """Deckt die Stellen ab, die keinen JS-Zwilling haben, aber dieselben zwei
+    Fehlerklassen tragen: Off-by-one im Fenster und Gruppierung ohne Ticker.
+
+    Beide sind in dieser Codebasis mehrfach aufgetreten (5 bzw. 3 Fundstellen).
+    Ohne Test faellt ein Rueckfall erst dem Nutzer auf.
+    """
+    print("")
+    print("5. PYTHON-ONLY  Fenster-Kumulation und Gruppierung")
+
+    # shared/holidays.py: gleiche Fenster-Mathematik wie ToM, eigene Kopie.
+    import numpy as np
+    log_rets = np.array([0.0, math.log(1.05), 0.0])
+    cum = np.cumsum(log_rets)                     # so rechnet holidays.py jetzt
+    raw = 100 * np.exp(cum)
+    kurve = [round(v, 2) for v in ((raw / raw[1] - 1) * 100)]
+    _melde("Python-only", "Feiertags-Kumulation: Bewegung liegt auf t0",
+           all(abs(a - b) < 0.01 for a, b in zip(kurve, [-4.76, 0.0, 0.0])),
+           f"kurve={kurve} SOLL=[-4.76, 0.0, 0.0]")
+    quelle = (_ROOT / "shared" / "holidays.py").read_text(encoding="utf-8")
+    _melde("Python-only", "shared/holidays.py nutzt keine verschobene Kumulation",
+           "np.insert(log_rets, 0, 0)[:-1]" not in quelle,
+           "Die verschobene Variante `cumsum(insert(log_rets,0,0)[:-1])` ist "
+           "zurueck — sie ordnet jeden Schritt der FOLGENDEN Zeile zu.")
+
+    # shared/tdom_analysis.py: Gruppierung muss den Ticker mitnehmen.
+    from shared.tdom_analysis import calc_tdom_range_return
+    zeilen = []
+    for tag in range(1, 11):
+        d = f"2024-03-{tag:02d}"
+        zeilen.append({"ticker": "A", "date": d, "Open": 100 + tag, "Close": 100 + tag,
+                       "year": 2024, "month": 3})
+        zeilen.append({"ticker": "B", "date": d, "Open": 200 + tag, "Close": 200 + tag,
+                       "year": 2024, "month": 3})
+    df = pd.DataFrame(zeilen).set_index("date")
+    r = calc_tdom_range_return(df, entry_tdom=1, exit_tdom=5,
+                               entry_price="Open", exit_price="Close")
+    werte = sorted(round(v, 2) for v in r["return_pct"]) if len(r) else []
+    _melde("Python-only", "calc_tdom_range_return trennt Ticker",
+           len(r) == 2 and all(0 < v < 20 for v in werte),
+           f"{len(r)} Zeile(n), Renditen={werte} — erwartet 2 Zeilen mit je < 20 %. "
+           f"Ohne Ticker-Gruppierung entsteht EINE Zeile mit ~110 % "
+           f"(A-Entry gegen B-Exit).")
+
+    # calculate_period_stats: die Gegenbeispiele zum Zirkelschluss.
+    from shared.calculations import calculate_period_stats
+
+    def _jahr(lad):
+        return {"days": list(range(1, lad + 1)), "full_365": [100.0 + i * 0.02
+                                                              for i in range(365)]}
+    faelle = [
+        ("nur laufendes Jahr zaehlt nicht", {2026: _jahr(250)}, 0),
+        ("durchweg abgeschnittene Jahre zaehlen nicht",
+         {2025: _jahr(250), 2026: _jahr(250)}, 0),
+        ("XETRA-Jahresende (Tag 364) zaehlt",
+         {2023: _jahr(364), 2024: _jahr(364), 2026: _jahr(250)}, 2),
+        # Einziges Jahr ist das laufende, aber schon bei Tag 364: es gibt kein
+        # abgeschlossenes Jahr als Massstab -> darf sich nicht selbst beglaubigen.
+        ("laufendes Jahr allein, Tag 364, beglaubigt sich nicht selbst",
+         {2026: _jahr(364)}, 0),
+    ]
+    for name, yd, erwartet in faelle:
+        s = calculate_period_stats(yd, 1, 365)
+        got = s.get("total_years", 0)
+        _melde("Python-only", f"Periodenstatistik: {name}", got == erwartet,
+               f"total_years={got} SOLL={erwartet}")
+
+
 def main() -> int:
     print("=" * 74)
     print("Zwillings-Pruefung: Backend (Python) <-> Frontend (JS) <-> Sollkurve")
@@ -310,6 +447,7 @@ def main() -> int:
     block_interpolation()
     block_turn_of_month()
     block_echtes_js()
+    block_python_only()
     print("\n" + "=" * 74)
     if _ausfaelle:
         print(f"[FAIL] {len(_ausfaelle)} Abweichung(en) — Zwillinge sind gedriftet:")

@@ -173,7 +173,14 @@ def last_actual_day(yd) -> int:
     return min(max(tage), 365) if tage else 0
 
 
-def year_end_reference(year_data) -> int:
+# Frueheste Jahresende-Position auf der 365er-Achse ueber ALLE unterstuetzten
+# Boersenkalender (NYSE/XETRA/EURONEXT/MILAN/LSE/SIX/STOCKHOLM/TSE/FOREX/CRYPTO),
+# gemessen 1990-2030: Tag 362 (XETRA/SIX/MILAN/STOCKHOLM/TSE). Alles darunter ist
+# kein Jahresende mehr, sondern abgeschnittene Historie.
+JAHRESENDE_UNTERGRENZE = 359
+
+
+def year_end_reference(year_data, aktuelles_jahr: int | None = None) -> int:
     """Wie weit reicht ein VOLLSTAENDIGES Jahr dieses Tickers ueberhaupt?
 
     Ein abgeschlossenes Jahr endet fast nie am Kalendertag 365: XETRA schliesst
@@ -181,11 +188,35 @@ def year_end_reference(year_data) -> int:
     Zwischen letztem Handelstag und Silvester ist die Fortschreibung **exakt** —
     es wurde nicht gehandelt, der Kurs hat sich nicht geaendert.
 
-    Diese Referenz kalibriert sich aus den Daten selbst, damit `year_covers`
-    ohne Boersenkalender auskommt.
+    ZWEI SPERREN GEGEN ZIRKELSCHLUSS. Die erste Fassung nahm schlicht das Maximum
+    ueber alle Jahre — und beglaubigte damit die Daten mit sich selbst:
+
+      * Nur das laufende Jahr vorhanden (Tag 250) -> ref=250 -> das unfertige Jahr
+        galt als vollstaendig.
+      * Alle Jahre abgeschnitten (je Tag 250) -> ref=250 -> alle galten als
+        vollstaendig.
+      * Delisting im Dezember (Tag 349) als einziges Jahr -> galt als vollstaendig.
+
+    Deshalb: (1) nur ABGESCHLOSSENE Jahre (vor dem laufenden) stiften die
+    Referenz — das laufende waechst noch. (2) Die Referenz muss ueberhaupt nach
+    einem Jahresende aussehen (>= JAHRESENDE_UNTERGRENZE); liegt sie darunter,
+    ist die Historie systematisch abgeschnitten und taugt nicht als Massstab.
+    In beiden Faellen kommt 0 zurueck und `year_covers` faellt auf die strenge
+    Regel zurueck.
     """
-    werte = [last_actual_day(yd) for yd in year_data.values()]
-    return max(werte) if werte else 0
+    jetzt = aktuelles_jahr if aktuelles_jahr is not None else datetime.now().year
+    werte = []
+    for jahr, yd in year_data.items():
+        try:
+            if int(jahr) >= jetzt:
+                continue                 # laufendes/zukuenftiges Jahr stiftet nichts
+        except (TypeError, ValueError):
+            continue
+        werte.append(last_actual_day(yd))
+    if not werte:
+        return 0
+    ref = max(werte)
+    return ref if ref >= JAHRESENDE_UNTERGRENZE else 0
 
 
 def year_covers(yd, end_day: int, ref: int) -> bool:
@@ -200,7 +231,12 @@ def year_covers(yd, end_day: int, ref: int) -> bool:
     jedes zweite abgeschlossene XETRA-Jahr.
     """
     lad = last_actual_day(yd)
-    return lad >= min(end_day, 365) or lad >= ref
+    if lad >= min(end_day, 365):
+        return True
+    # `ref == 0` heisst: es gibt keine vertrauenswuerdige Referenz (nur laufende
+    # oder durchweg abgeschnittene Jahre). Dann greift NUR die strenge Regel —
+    # sonst wuerde `lad >= 0` jedes Jahr durchwinken.
+    return ref > 0 and lad >= ref
 
 
 def build_year_data(df, selected_years):
