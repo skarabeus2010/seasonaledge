@@ -226,6 +226,83 @@ unten).
 > **Das ist eine Neu-Optimierung, keine Neuberechnung** — die Zahlen sind
 > zitierfähig, solange dabei steht, dass der Einstiegstag noch nachoptimiert wird.
 
+## 4b. Zweite Prüfrunde (2026-09-11) — was die erste übersehen hat
+
+Der externe Reviewer bekam die 12 Korrekturen zur Abnahme: **7 bestätigt,
+5 unvollständig**, dazu **7 neue Befunde**. Alle gegengeprüft, alle behoben
+(PR #272). Zwei davon waren Fehler, die **die Korrekturen selbst** eingebaut
+hatten — der wichtigste Ertrag dieser Runde.
+
+### Lexikografische Monatsschlüssel — der schwerste Fund
+
+`analyzeTurnOfMonth` gruppiert nach `y + '-' + m` **ohne Nullpadding** und nimmt
+den nächsten *sortierten* Schlüssel als Folgemonat. Sortiert wird als String:
+
+```
+"2024-1" < "2024-10" < "2024-11" < "2024-12" < "2024-2" < … < "2024-9"
+```
+
+Damit zog der **Januar Oktober-Daten**, der **Dezember Februar-Daten** und der
+**September den Januar des Folgejahres** — 3 von 12 Monaten falsch, live auf
+`/monatswechsel`. Python rechnet `next_month = month + 1` explizit und war
+korrekt: ein reiner Zwillings-Drift, den Welle 1 nicht gesehen hat, weil sie auf
+die *Kumulation* schaute und nicht auf die *Fensterbildung*.
+
+Behoben durch Nullpadding **plus** Nachbarschaftsprüfung — bei einer Lücke in der
+Historie hätte die Sortierung sonst Januar mit März gepaart.
+
+### Zwei Überkorrekturen aus Welle 1
+
+**Vollständige Jahre wurden verworfen.** Fix 4.5 verlangte Beobachtungen bis
+Kalendertag 365. Ein abgeschlossenes Jahr endet aber fast nie am 31.12.: XETRA
+schließt am 30.12., die NYSE hatte 2006/2017/2023 ihren letzten Handelstag am
+29.12. Gemessen über 2000–2025 warf die Regel **7 von 26 NYSE- und 15 von 26
+XETRA-Jahren** weg. Zwischen letztem Handelstag und Silvester ist die
+Fortschreibung **exakt** — es wurde nicht gehandelt.
+
+Neu deshalb `year_end_reference()` + `year_covers()`: die Referenz ist nicht 365,
+sondern **wie weit ein vollständiges Jahr dieses Tickers reicht**.
+Selbstkalibrierend, ohne den Börsenkalender zu kennen. Dieselbe Überkorrektur
+steckte in `blog_builder` (Dezember-Spalte) und in `jahreszyklus.html`
+(Monats-/Quartals-Signifikanz).
+
+**Die Zwillinge divergierten bei kaputten Daten.** JS setzte bei nicht
+rekonstruierbarem `log_return` still `lr = 0`, Python verwarf das Jahr. Jetzt
+verwerfen beide — ein stiller Nullwert ist eine erfundene Beobachtung und
+verschiebt den gesamten restlichen Jahresverlauf.
+
+### Drei Stellen, die weiter ungefiltert rechneten
+
+- `jahreszyklus.html::periodStats` filterte **gar nicht** — das direkte
+  Gegenstück zu `calculate_period_stats`, wo Welle 1 den Filter einbaute. Seite
+  und Backend zeigten dadurch verschiedene Trefferquoten.
+- Der Zyklus-Zweig der Signifikanz: das laufende Jahr trug seine **YTD**-Rendite
+  als volle Jahresrendite in die Präsidentenzyklus-Gruppe ein.
+- `blog_builder` Monatszyklus: im September flossen Oktober bis Dezember als
+  exakt 0 % in den **veröffentlichten** Monatsdurchschnitt.
+
+### Mehrticker-Verschmutzung, dritte Fundstelle
+
+`calc_tdom_range_return` gruppierte nach `(year, month)` ohne Ticker — Welle 1
+hatte das in `add_tdom_columns` und `calc_strategy_returns` behoben, diese
+Funktion aber übersehen. Zwei verschachtelte Ticker ergaben eine Zeile mit
+~110 % statt zwei Zeilen mit 4 % und 2 %.
+
+### Der Wächter prüfte eine Fiktion
+
+`verify_seasonal_twins.py` verglich Python gegen einen **handgeschriebenen
+Python-Nachbau** der JS-Logik. Der kann selbst von der Quelle driften — dann
+zertifiziert der Wächter etwas, das im Browser gar nicht läuft.
+
+Neu: **Block 4 führt die echte `seasonal-compute.js` in node aus**
+(`scripts/js/twin_probe.js`, ein `window`-Stub genügt). Dazu abgedeckt sind jetzt
+`interpolate_to_365` und `analyze_turn_of_month` — beide vorher ungeprüft, und
+genau die ToM-Lücke hat die Fehlerfamilie durchschlüpfen lassen.
+
+Gegenprobe gemacht: entfernt man das Nullpadding, fällt Block 4 rot aus. Ein
+zwischenzeitlich gebauter **textueller** Quellcode-Check hatte es **nicht**
+gefangen — er traf einen unbeteiligten Datums-Helfer in derselben Datei.
+
 ## 5. Lessons
 
 - **Zwillinge, die übereinstimmen, können beide falsch sein.** Ein
@@ -253,6 +330,14 @@ unten).
 - **Externe Befunde gegenprüfen, nicht umsetzen.** Bei 4.1 nannte der Reviewer
   zwei gleichwertige Konventionen; tatsächlich war eine Seite eindeutig falsch.
   Ungeprüftes Umsetzen hätte hier das *Frontend* kaputtgemacht.
+- **Ein Fix kann schlimmer sein als der Fehler.** Zwei der Welle-1-Korrekturen
+  überschossen: die Jahresfilterung warf jedes zweite abgeschlossene XETRA-Jahr
+  weg. Wer eine Bedingung verschärft, muss messen, **wie viel** sie wegwirft —
+  nicht nur, ob sie den gemeldeten Fall erwischt.
+- **Ein Wächter, der einen Nachbau prüft, prüft eine Fiktion.** Er muss den
+  Code ausführen, der wirklich läuft. Und man muss ihn absichtlich kaputt
+  machen, um zu sehen, ob er rot wird — der textuelle Check hier bestand,
+  während der Fehler drin war.
 - **Datenkorrekturen ziehen Cache-Arbeit nach sich.** Nach 4.1 waren
   `monthly_stats`, `ki_scores` und `scanner_results` bis zum Rerun inkonsistent
   zum Frontend.

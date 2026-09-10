@@ -55,7 +55,11 @@ SA.seasonal = {
       var r = rows[i];
       var y = parseInt(r.date.substring(0, 4));
       var m = parseInt(r.date.substring(5, 7));
-      var key = y + '-' + m;
+      // Monat MUSS nullgepaddet werden: sonst sortiert Object.keys().sort()
+      // lexikografisch ("2024-1" < "2024-10" < "2024-2") und der "Folgemonat"
+      // ist ein voellig anderer — Januar zog Oktober, Dezember zog Februar,
+      // September den Januar des Folgejahres.
+      var key = y + '-' + (m < 10 ? '0' : '') + m;
       if (!ymGroups[key]) ymGroups[key] = { year: y, month: m, rows: [] };
       ymGroups[key].rows.push(r);
     }
@@ -66,6 +70,12 @@ SA.seasonal = {
     for (var ki = 0; ki < keys.length - 1; ki++) {
       var cur = ymGroups[keys[ki]];
       var nxt = ymGroups[keys[ki + 1]];
+
+      // Nachbarschaft pruefen (1:1 wie Python, das next_month explizit rechnet):
+      // bei einer Luecke in der Historie waere sonst z.B. Jan mit Maerz gepaart.
+      var expMonth = cur.month < 12 ? cur.month + 1 : 1;
+      var expYear = cur.month < 12 ? cur.year : cur.year + 1;
+      if (nxt.month !== expMonth || nxt.year !== expYear) continue;
 
       // Filter: ausgewaehlte Monate
       if (selectedMonths && selectedMonths.indexOf(cur.month) < 0) continue;
@@ -307,13 +317,26 @@ SA.seasonal = {
     for (var year in yearGroups) {
       var yRows = yearGroups[year];
       if (yRows.length < 20) continue;
-      // Log-Returns kumulieren → normalisiert auf 100
+      // Log-Returns kumulieren → normalisiert auf 100.
+      // Fehlt ein log_return, wird er aus den Closes rekonstruiert. Ist auch das
+      // unmoeglich (Close <= 0 oder nicht endlich), wird DAS JAHR VERWORFEN —
+      // frueher lief hier ein stilles `lr = 0` weiter, das den restlichen
+      // Jahresverlauf verschob und als "keine Bewegung" in den Saison-
+      // Durchschnitt einging. Python (normalize_year) verwirft ebenso; ein
+      // stiller Nullwert waere eine erfundene Beobachtung.
       var cumulative = [100];
+      var verwerfen = false;
       for (var j = 1; j < yRows.length; j++) {
-        var lr = yRows[j].log_return != null ? yRows[j].log_return
-          : (yRows[j - 1].close > 0 ? Math.log(yRows[j].close / yRows[j - 1].close) : 0);
+        var lr = yRows[j].log_return;
+        if (lr == null || !isFinite(lr)) {
+          var prev = yRows[j - 1].close, cur = yRows[j].close;
+          if (isFinite(prev) && isFinite(cur) && prev > 0 && cur > 0) {
+            lr = Math.log(cur / prev);
+          } else { verwerfen = true; break; }
+        }
         cumulative.push(cumulative[j - 1] * Math.exp(lr));
       }
+      if (verwerfen) continue;
       // Day-of-Year fuer jeden Eintrag
       var days = yRows.map(function(r) {
         var d = new Date(r.date);
@@ -361,6 +384,34 @@ SA.seasonal = {
       std.push(Math.round(Math.sqrt(variance) * 100) / 100);
     }
     return { avg: avg, std: std };
+  },
+
+  /**
+   * Wie weit reicht ein VOLLSTAENDIGES Jahr dieses Tickers ueberhaupt?
+   * (Port von year_end_reference.) Ein abgeschlossenes Jahr endet fast nie am
+   * Kalendertag 365: XETRA schliesst am 30.12., die NYSE hatte 2006/2017/2023
+   * ihren letzten Handelstag am 29.12.
+   */
+  yearEndRef: function(yearData) {
+    var ref = 0;
+    for (var y in yearData) {
+      var lad = yearData[y].last_actual_day || 365;
+      if (lad > ref) ref = lad;
+    }
+    return ref;
+  },
+
+  /**
+   * Darf dieses Jahr fuer eine Periode bis `endDoy` mitgezaehlt werden?
+   * (Port von year_covers.) Ja, wenn echte Beobachtungen bis zum Periodenende
+   * reichen ODER das Jahr bis zu seinem eigenen Jahresende reicht — dann
+   * ueberbrueckt die Fortschreibung nur handelsfreie Tage.
+   *
+   * Ein starres `>= 365` warf 7 von 26 NYSE- und 15 von 26 XETRA-Jahren weg.
+   */
+  yearCovers: function(yd, endDoy, ref) {
+    var lad = yd.last_actual_day || 365;
+    return lad >= Math.min(endDoy, 365) || lad >= ref;
   },
 
   /** Interpoliert auf 365 Kalendertage (Port von interpolate_to_365). */
