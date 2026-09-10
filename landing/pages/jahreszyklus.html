@@ -585,7 +585,10 @@
           days: days,
           log_returns: logRets,
           cumulative: cumulative,
-          last_actual_day: lastActualDay,
+          // Auf 365 klammern wie SA.seasonal.buildYearData und wie Python
+          // (shared/calculations.last_actual_day): im Schaltjahr ist der
+          // 31.12. Tag 366, die 365er-Achse kennt ihn aber als Slot 365.
+          last_actual_day: Math.min(lastActualDay, 365),
           simpleReturn: full365[364]>0 ? (full365[364]/full365[0]-1)*100 : 0
         };
       }

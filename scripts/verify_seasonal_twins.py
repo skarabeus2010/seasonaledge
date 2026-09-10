@@ -348,6 +348,9 @@ def block_echtes_js() -> None:
         "dez_delisting":  (0, []),
         "nur_laufendes_spaet": (0, []),
         "voll_plus_kurz": (364, ["2023", "2024"]),
+        # fail-closed: ein Jahr ohne last_actual_day gilt als NICHT
+        # ausreichend, nicht als vollstaendig (Python: last_actual_day -> 0).
+        "fehlt_lad": (364, ["2023"]),
     }
     for schluessel, (ref_soll, akz_soll) in erwartet_yc.items():
         got = d["yearcovers"][schluessel]
@@ -359,6 +362,27 @@ def block_echtes_js() -> None:
     _melde("Echtes JS", "buildYearData verwirft Jahr bei Close <= 0 (kein lr=0)",
            d["build_kaputt_jahre"] == 0,
            f"Jahre im Ergebnis: {d['build_kaputt_jahre']} — erwartet 0.")
+
+    # ToM mit Luecke: Januar, dann direkt Maerz. Ohne Nachbarschaftspruefung
+    # wuerde der Januar mit dem Maerz gepaart (Python rechnet next_month explizit
+    # und liefert dort korrekt nichts).
+    _melde("Echtes JS", "ToM ueberspringt Luecke in der Historie (Jan -> Maerz)",
+           d.get("tom_luecke") == 0,
+           f"all_curves={d.get('tom_luecke')} — erwartet 0 Kurven.")
+
+    # buildMonthlyStats erzeugt die sichtbaren Monatsdurchschnitte. Oktober bis
+    # Dezember sind kritisch: ein Monatsindex, der nur die zweite Ziffer liest,
+    # macht aus 10/11/12 die Zahl 0 — der Oktober waere dann leer.
+    mo = d.get("monthly") or {}
+    _melde("Echtes JS", "buildMonthlyStats ordnet Oktober korrekt zu",
+           mo.get("okt_n") == 1 and abs((mo.get("okt_avg") or 0) - 10.0) < 0.01
+           and mo.get("monate") == list(range(1, 13)),
+           f"{mo} — erwartet okt_n=1, okt_avg=10.0, Monate 1..12.")
+
+    # buildTOMHeatmap muss die NEUESTEN nYears zeigen, nicht die aeltesten.
+    _melde("Echtes JS", "buildTOMHeatmap zeigt die neuesten Jahre",
+           d.get("heatmap_jahre") == [2022, 2023, 2024],
+           f"years={d.get('heatmap_jahre')} — erwartet [2022, 2023, 2024].")
 
     # last_actual_day muss geliefert werden (war frueher nie gesetzt)
     b = d.get("build") or {}
@@ -437,6 +461,32 @@ def block_python_only() -> None:
         got = s.get("total_years", 0)
         _melde("Python-only", f"Periodenstatistik: {name}", got == erwartet,
                f"total_years={got} SOLL={erwartet}")
+
+    # Und den WERT, nicht nur die Anzahl: ein um einen Kalendertag verschobener
+    # Endindex aendert die Trefferzahl nicht — nur die Rendite. Ein Jahr, das von
+    # 100 auf 110 laeuft und ab Tag 200 fortgeschrieben ist, muss ueber die
+    # volle Periode exakt +10,00 % liefern.
+    # Tag 1 = 100,00; ab Tag 200 konstant 110,00. Die Jahre reichen bis Tag 364
+    # (XETRA-Jahresende), damit sie die Jahresende-Pruefung passieren.
+    lauf = [100.0 + 10.0 * min(max(d_ - 1, 0), 199) / 199 for d_ in range(1, 366)]
+    yd_wert = {2024: {"days": list(range(1, 365)), "full_365": lauf},
+               2023: {"days": list(range(1, 365)), "full_365": lauf}}
+    s = calculate_period_stats(yd_wert, 1, 365)
+    _melde("Python-only", "Periodenstatistik liefert den richtigen WERT (+10,00 %)",
+           s and abs(s.get("avg_return", 0) - 10.0) < 0.001,
+           f"avg_return={s.get('avg_return')} SOLL=10.0 — ein verschobener "
+           f"Endindex faellt bei einer reinen Anzahl-Pruefung nicht auf.")
+
+    # Zweiter Wert-Test mit einer Periode MITTEN im Jahr. Bei end_day=365 liefern
+    # min(end_day-1, 364) und min(end_day, 364) denselben Index — ein um einen Tag
+    # verschobener Endindex bliebe dort unsichtbar. Bei Tag 100 nicht:
+    # full_365[99] = 105,00 gegen full_365[100] = 105,05.
+    s100 = calculate_period_stats(yd_wert, 1, 100)
+    soll100 = (lauf[99] - lauf[0]) / lauf[0] * 100
+    _melde("Python-only", "Periodenstatistik: Endindex bei Periode bis Tag 100",
+           s100 and abs(s100.get("avg_return", 0) - soll100) < 1e-9,
+           f"avg_return={s100.get('avg_return')} SOLL={soll100} "
+           f"(ein Tag Versatz ergaebe {(lauf[100]-lauf[0])/lauf[0]*100}).")
 
 
 def main() -> int:

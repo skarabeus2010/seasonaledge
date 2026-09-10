@@ -129,8 +129,52 @@ ergebnis.interp = [
     // sich selbst beglaubigen. Es gibt kein abgeschlossenes Jahr als
     // Massstab -> streng bleiben.
     nur_laufendes_spaet: f({ 2026: mk(364) }, 2026),
-    voll_plus_kurz:  f({ 2023: mk(364), 2024: mk(364), 2026: mk(250) }, 2026)
+    voll_plus_kurz:  f({ 2023: mk(364), 2024: mk(364), 2026: mk(250) }, 2026),
+    // Jahr OHNE last_actual_day: fail-closed heisst 'unbekannt = nicht
+    // ausreichend'. Ein Rueckfall auf 365 wuerde es als vollstaendig
+    // ausweisen, waehrend Python es verwirft — genau diese Divergenz.
+    fehlt_lad: f({ 2023: mk(364), 2024: { full_365: new Array(365).fill(100) } }, 2026)
   };
+}
+
+// 7) ToM mit LUECKE in der Historie: Januar, dann direkt Maerz. Ohne
+//    Nachbarschaftspruefung wuerde der Januar mit dem Maerz gepaart.
+{
+  const rows = [];
+  const push = (d, c) => rows.push({ date: d, close: c, log_return: null });
+  for (let t = 29; t <= 31; t++) push('2024-01-' + t, 100);
+  for (let t = 1; t <= 3; t++) push('2024-03-0' + t, 150);   // +50 %, Falle
+  for (let i = 1; i < rows.length; i++) rows[i].log_return = Math.log(rows[i].close / rows[i-1].close);
+  rows[0].log_return = 0;
+  const r = S.analyzeTurnOfMonth(rows, 1, 1, [1], [2024]);
+  ergebnis.tom_luecke = r ? r.all_curves.length : 0;
+}
+
+// 8) buildMonthlyStats — erzeugt die sichtbaren Monatsdurchschnitte.
+//    Oktober bis Dezember sind der kritische Bereich: ein Monatsindex, der nur
+//    die zweite Ziffer liest, macht aus 10/11/12 die Zahl 0.
+{
+  const rows = [];
+  // Oktober 2024: 20 Handelstage, +10 % ueber den Monat
+  for (let t = 1; t <= 20; t++) {
+    const d = '2024-10-' + String(t).padStart(2, '0');
+    rows.push({ date: d, close: 100 + (t - 1) * (10 / 19), log_return: null });
+  }
+  for (let i = 1; i < rows.length; i++) rows[i].log_return = Math.log(rows[i].close / rows[i-1].close);
+  rows[0].log_return = 0;
+  // Rueckgabe ist ein Array von {month, avg, n, ...} — Oktober ist month === 10.
+  const st = S.buildMonthlyStats(rows) || [];
+  const okt = st.filter(function (e) { return e.month === 10; })[0] || null;
+  ergebnis.monthly = { okt_avg: okt ? okt.avg : null, okt_n: okt ? okt.n : null,
+                       monate: st.map(function (e) { return e.month; }) };
+}
+
+// 9) buildTOMHeatmap — muss die NEUESTEN nYears zeigen, nicht die aeltesten.
+{
+  const kurven = [];
+  for (let y = 2015; y <= 2024; y++) kurven.push({ year: y, month: 1, total_return: y - 2000 });
+  const h = S.buildTOMHeatmap({ all_curves: kurven }, 3);
+  ergebnis.heatmap_jahre = h ? h.years : null;
 }
 
 process.stdout.write(JSON.stringify(ergebnis, null, 1));
