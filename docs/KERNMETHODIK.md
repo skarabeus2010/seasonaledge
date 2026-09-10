@@ -191,14 +191,40 @@ Jetzt werden Fehlschläge gezählt und mit Exit 1 gemeldet.
 Nachweis: ein Fenster, in dem sich ausschließlich Tag t+1 um +5 % bewegt, zeigte
 die Bewegung auf t+2. Nach dem Fix steht sie auf t+1.
 
-> ### ⚠️ Offene Folge
-> **Die veröffentlichten Turn-of-Month-Zahlen sind um einen Handelstag
-> verschoben** — das betrifft auch den Backtest **„SPY Down-Month ToM Reversal"**
-> (CLAUDE.md v47: Sharpe 0,21→0,34 · WR 68→72 % · PF 1,80→2,39).
-> **Diese Werte müssen neu gerechnet werden, bevor sie weiter zitiert werden.**
-> Betroffen: `landing/js/strategy-compute.js::calc_downmonth_tom`, die
-> `SA.STRATEGIES`-Kategorie `monat`, das Dashboard-Signal und die zugehörigen
-> Blog-Posts (DE+EN).
+#### Es war eine Fehlerfamilie, kein Einzelfall — PR #271
+
+PR #270 korrigierte die beiden Zwillinge, suchte aber nicht, **wo dasselbe Muster
+sonst noch steht**. Es stand an fünf Stellen — offenbar beim Bau jeder neuen
+Fenster-Analyse mitkopiert:
+
+| Fundstelle | Wirkung |
+|---|---|
+| `monatswechsel.html::buildCurrentYearTOMCurves` | **dritte** ToM-Kopie; im selben Chart lag die Kurve des laufenden Jahres nach #270 einen Tag neben der historischen |
+| `seasonal-compute.js::analyzeMoonEffect` | live auf `/mondphasen` |
+| `scripts/video/render_lunar_charts.py` | Port davon — Kommentar sagte „1:1 wie JS" und war es auch: gleich falsch |
+| `shared/holidays.py::analyze_holiday_effect` | Feiertags-Fenster |
+| `pages/06_Mondphasen.py`, `pages/03_Monatszyklus.py` | Streamlit-Legacy, aber die dokumentierten Zwillinge der JS-Seite |
+
+Geprüft und **nicht** betroffen: `feiertage.html` (rechnet aus rohen Closes
+relativ zum Basis-Close) und `strategy-compute.js::calc_downmonth_tom` (siehe
+unten).
+
+> ### ⚠️ Offene Folge — präzisiert
+> Betroffen sind die **Kurven** der Fenster-Analysen (`/monatswechsel`,
+> `/mondphasen`, Feiertage, Lunar-Videos): jede Bewegung stand einen Handelstag
+> zu spät. Diese Seiten rechnen live im Browser und sind mit dem Fix erledigt.
+>
+> **Der Backtest „SPY Down-Month ToM Reversal" ist NICHT falsch gerechnet** —
+> `calc_downmonth_tom` nutzt `_nthTradingDay` und echte Closes, nicht die
+> kumulierte Reihe. (Die ursprüngliche Folgenabschätzung in PR #270 war hier
+> zu weit gefasst.)
+>
+> **Was offen bleibt:** die *Parameter* der Strategie (Einstieg TDOM 14,
+> Haltedauer 13) wurden aus der verschobenen Kurve abgelesen. Sie können also um
+> einen Handelstag danebenliegen. Sharpe 0,34 · WR 72 % · PF 2,39 sind damit
+> korrekt gerechnet, aber möglicherweise für den falschen Einstiegstag optimiert.
+> **Das ist eine Neu-Optimierung, keine Neuberechnung** — die Zahlen sind
+> zitierfähig, solange dabei steht, dass der Einstiegstag noch nachoptimiert wird.
 
 ## 5. Lessons
 
@@ -209,6 +235,15 @@ die Bewegung auf t+2. Nach dem Fix steht sie auf t+1.
 - **Off-by-one in kumulierenden Reihen zeichnet plausible Kurven.** Weder 4.1
   noch 4.11 sahen im Chart falsch aus. Solche Fehler findet man nur mit einem
   Testfall, bei dem sich **genau ein** Tag bewegt.
+- **Nach einem Fix nach dem MUSTER suchen, nicht nur nach der Funktion.** Der
+  ToM-Versatz saß an fünf Stellen; PR #270 fixte zwei. Ein Copy-Paste-Muster
+  (`cum[0]=0`, dann Schritt j auf Zeile j+1) verbreitet sich mit jeder neuen
+  Fenster-Analyse. Nach jedem Fix an geteilter Mathematik: `grep` auf die
+  **Code-Form**, nicht auf den Funktionsnamen.
+- **Die Folgenabschätzung eines Fixes selbst gegenprüfen.** PR #270 erklärte den
+  Backtest für betroffen, ohne dessen Code zu lesen — er war es nicht. Eine zu
+  weit gefasste Warnung kostet echte Arbeit und macht die nächste Warnung
+  unglaubwürdiger.
 - **Constant-Fill ist eine Design-Entscheidung mit Konsumenten-Pflicht.** Wer
   `full_365` liest, muss wissen, ob er hinter `last_actual_day` weiterrechnen
   darf. Die Grenze gehört deshalb an **eine** Stelle (`last_actual_day()`), nicht

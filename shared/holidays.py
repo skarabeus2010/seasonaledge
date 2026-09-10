@@ -198,7 +198,12 @@ def analyze_holiday_effect(df, days_before, days_after, selected_holidays, selec
                     continue
                 
                 log_rets = tom_window["log_return"].values
-                cum_log = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+                # Glatte Kumulation: log_rets[j] ist der Return VON Zeile j.
+                # Die frueher genutzte Verschiebung ordnete jeden Schritt der
+                # FOLGENDEN Zeile zu -> die Bewegung um den Feiertag lag einen
+                # Handelstag zu spaet. Der konstante Offset aus log_rets[0]
+                # faellt bei der Normierung auf t0 heraus.
+                cum_log = np.cumsum(log_rets)
                 raw_curve = 100 * np.exp(cum_log)
                 
                 t0_value = raw_curve[t0_idx]

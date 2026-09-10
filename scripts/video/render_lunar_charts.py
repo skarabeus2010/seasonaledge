@@ -79,7 +79,10 @@ def event_study(ticker="^DJI", start=2016, end=2026, before=5, after=5):
         w = logret[s:e]
         if len(w) != before + 1 + after:
             continue
-        cum = np.concatenate([[0.0], np.cumsum(w[:-1])])
+        # Glatte Kumulation: w[j] ist der Return VON Zeile j. Die frueher genutzte
+        # Verschiebung ordnete jeden Schritt der FOLGENDEN Zeile zu -> die Bewegung
+        # lag einen Handelstag zu spaet (identisch zum Fix in analyzeMoonEffect).
+        cum = np.cumsum(w)
         raw = 100 * np.exp(cum)
         curve = np.round((raw / raw[before] - 1) * 100, 2)   # 1:1 wie JS (rundet auf 2 Dez.)
         curves.append(curve)

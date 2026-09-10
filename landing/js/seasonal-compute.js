@@ -505,8 +505,14 @@ SA.seasonal = {
         logRets.push(window[wi].log_return != null ? window[wi].log_return
           : (wi > 0 && window[wi - 1].close > 0 ? Math.log(window[wi].close / window[wi - 1].close) : 0));
       }
-      var cumLog = [0];
-      for (var ci = 0; ci < logRets.length - 1; ci++) cumLog.push(cumLog[ci] + logRets[ci]);
+      // Glatte Kumulation ohne Verschiebung — logRets[j] ist der Return VON
+      // Zeile j (siehe analyzeTurnOfMonth). Die frueher genutzte Variante ordnete
+      // jeden Schritt der FOLGENDEN Zeile zu; der Mondphasen-Effekt erschien
+      // dadurch einen Handelstag zu spaet. Der konstante Offset aus logRets[0]
+      // faellt bei der Normierung auf t0 heraus.
+      var cumLog = [];
+      var run = 0;
+      for (var ci = 0; ci < logRets.length; ci++) { run += logRets[ci]; cumLog.push(run); }
       var rawCurve = cumLog.map(function(v) { return 100 * Math.exp(v); });
 
       var t0Val = rawCurve[t0Idx];
