@@ -1,5 +1,6 @@
 # CLAUDE.md — SeasonAlpha
 
+> Version 56.0 | 2026-09-10 | **Options-Review abgeschlossen (3 Runden, 26 Befunde, 22 behoben — Detail: [docs/OPTIONS.md](docs/OPTIONS.md))** — **Datenintegrität:** `--overwrite` löschte bei leerer API-Antwort eine ganze Ticker-Historie (Purge wurde vor den frühen `return`s committet); `write_text()` ist nicht atomar, der Supervisor stoppt den Container aber zu einem FESTEN Zeitpunkt → neues **`shared/atomic_json.py`** (Temp-Datei **im Zielverzeichnis**, flush+fsync, `os.replace`). **Crons:** alle drei Options-Workflows verschluckten Fehler (`| tail` ohne `pipefail` + finaler `echo` als Exit-Code); `gex_snapshot` rechnete bei gescheitertem Snapshot auf ALTER `gex_summary.json` weiter → harter Abbruch. **Rechenfehler:** ATM-Fallback aus fremder Expiry, `_atm_iv` ohne Delta-Toleranz, totes IV-Band 4,0–5,0, Walls ohne Vorzeichenprüfung, Max Pain bei leerer OI, IV-Surface klemmte still, ΔOI vermischte Roll/Verfall, Frontend zeigte 20 Tage alte Punkte als aktuell. **Bestätigt korrekt:** Put-Call-Parität (2,3e-13), GEX/Vanna/Charm gegen Finite-Differenzen inkl. q≠0 (2,5e-9), `q=0` und `R` quantifiziert unkritisch. **Lessons:** destruktive Operationen nur auf lokaler Kopie, Commit erst nach Erfolg · Verify-Gates müssen die **Zielgröße** prüfen (Mittelung über rohe IV verdeckte einen Vorzeichenwechsel) · **Backend/Frontend-Zwillinge driften** (zwei BS-Implementierungen mit `R=0.045` vs. `0.04`) · Doku-Drift kostet Sessions (SSH-Key-Name, `ai_models.py` als „gelöscht" geführt obwohl von `ki_score.py` importiert). **Neu: systematischer Review-Plan in 7 Wellen** (siehe TODO) — Optionen = Welle 0, erledigt.
 > Version 55.2 | 2026-09-10 | **Betrieb langlaufender Backfills (PRs #261-263)** - `scripts/backfill_supervisor.sh` + `scripts/backfill_skew_report.py`. **Problem:** ein Backfill ueber das Universum laeuft ~18 h und ueberlappt mit dem 23:00-UTC-Cron; beide schreiben dieselbe `options_skew_history.json`, und der Backfill schreibt nach JEDEM Ticker die im Speicher gehaltene Struktur zurueck -> **Lost Update**. **Loesung:** Supervisor pausiert den Container 22:50-00:10 UTC, setzt danach fort (ohne `--overwrite` gratis: fertige Ticker werden uebersprungen), mailt alle 3 h einen Zwischenstand und am Ende den Bericht. Der Bericht meldet **nicht** "exit 0", sondern **wie viele Ticker im Radar erscheinen** (mind. `MIN_NORM` normierte Punkte) - ein Lauf kann sauber durchlaufen und trotzdem kaum Abdeckung bringen. Laeuft als transiente **systemd-Unit** -> unabhaengig von SSH-Sitzung und Entwickler-PC. **Lessons:** `pkill -f <supervisor>` killt die **eigene Shell** (das Muster steht in der eigenen Kommandozeile) -> `systemctl stop`; HHMM-Vergleiche in bash brauchen **`10#`** (sonst Oktal-Deutung von `0010`), und die Fensterlogik gehoert **vor** dem Ausrollen trocken durchgespielt - mein erster Entwurf legte das Pausenfenster faelschlich hinter statt vor den kollidierenden Cron.
 > Version 55.1 | 2026-09-10 | **Code-Review der Options-Arbeit (PR #258, Detail: [docs/OPTIONS.md](docs/OPTIONS.md#code-review-2026-09-10-prs-248258))** — 11 Befunde, **8 behoben**: `--vol-pctl`-Default stand im Backfill auf 0.0 während der Live-Pfad fest 0.5 filtert (der geplante 2-J-Lauf ohne Flag hätte die Reihe wieder gemischt); `spot_own` fiel auf den `/prev`-Spot zurück, vor dem der eigene Kommentar warnt; `cm`-Zeilen ohne `iv_atm` liessen das Frontend auf die Näherung zurückfallen, die den Quadranten auf die Antidiagonale kollabiert; `dte` wurde gegen `date.today()` statt gegen die Session gerechnet; `_fix_session_dates` liess einen **nicht** normierten Live-Punkt einen `cm`-Punkt verdrängen; CM-Parameter + `cm_interp` lagen als Kopie in beiden Skripten; **`verify_skew_iv.py` importierte BS aus dem stillgelegten `backfill_skew_history.py`** und zertifizierte damit eine dritte, produktiv nicht laufende Engine; History-Zeile mischte CM-IVs mit Front-Monats-VRP. **3 bewusst offen** (mit Begründung dokumentiert): `_leg_own` vs. `_leg_ivs` nutzen unterschiedliche Strike-Grundmengen; zwei Darstellungsfragen (Tabelle Front-Monat neben normiertem Rank, `renderSkewHist` ungefiltert). **Lesson:** nach einer Vereinheitlichung gezielt nach **verbliebenen Kopien und Defaults** suchen — Konstanten und CLI-Defaults driften genauso wie Code.
 > Version 55.0 | 2026-09-10 | **Options-Skew abgeschlossen + verifiziert (Detail: [docs/OPTIONS.md](docs/OPTIONS.md), PRs #248-256)** — **Abnahme grün:** 0 Zeta-Vorzeichenwechsel, mittlere Abweichung **0,24 pts** (vorher 0,88), max 0,62 (vorher 1,30). Percentile des Live-Punkts SPY 5 % · QQQ 36 % · SMH 57 % · NVDA 72 % (vorher 31/80/**97**/**99**) → das methodische Klumpen am oberen Rand ist weg. **1-J-Backfill** über 53 Ticker (+6469 Pkt) + 6 neue AI-Infra-Ticker (+750 Pkt, 28-116 normierte Punkte je Ticker). **`daten-auditor` PASS** auf allen 5 Punkten (366 Preis-Ticker == 366 in symbols.py, SMCI-Orphan behoben). **`frontend-qa`**: /skew + /flows 0 P0; drei P1 behoben — fehlender `skew.view_lbl` (unübersetztes „Darstellung" auf /en/skew), Anbietername in `of.pc_note`, und **`cache:'no-store'` → `no-cache`**. **nginx-gzip für `/landing/` aktiviert** (fehlte komplett): `options_skew_history.json` 2.649.629 → **273.669 B** (Faktor 9,7) — zusammen mit `no-cache` die Ursache des „/flows hängt beim Laden". **Lessons:** Backfill **nach** dem Live-Lauf überschreibt per Dedup den Live-Punkt desselben Tages → `--verify` verliert seine Referenz (Backfill möglichst VOR dem ersten Live-Lauf); `no-store` nicht einfach streichen (nginx `max-age=86400` → bis zu tagesalte Daten) sondern `no-cache`; `docker exec` lässt sich über SSH **nicht** detachen → Audits gezielt per `--ticker` oder mit ≥10 min Timeout.
@@ -67,7 +68,7 @@ docs/                    ← Ausgelagerte Dokumentation
 
 ### Module / Pages — Detail-Listen in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-- **Shared (`shared/`)** — Kern: `yahoo_downloader` (Stooq-Fallback, einziger Cache), `data` (Supabase-First), `charts` (`apply_se_theme`), `ki_score`, `tdom_analysis`, `anomaly_engine`, `significance_gauge` (key_prefix!), `footer`, `i18n`. ⚠️ Gelöscht (ML-Pipeline KW16): `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`, `ai_models`.
+- **Shared (`shared/`)** — Kern: `yahoo_downloader` (Stooq-Fallback, einziger Cache), `data` (Supabase-First), `charts` (`apply_se_theme`), `ki_score`, `tdom_analysis`, `anomaly_engine`, `significance_gauge` (key_prefix!), `footer`, `i18n`. ⚠️ Gelöscht (ML-Pipeline KW16): `mstl_decomposition`, `chronos_forecast`, `neural_prophet_forecast`. **`ai_models.py` lebt weiter** (Korrektur 2026-09-10 — stand hier fälschlich als gelöscht): 447 Zeilen, importiert von `ki_score.py` (`find_similar_years`, `forecast_seasonal`) und `outlier_manager.py` (`detect_outlier_years`). Der KI-Score hängt also daran — vor Änderungen prüfen, was das Modul wirklich tut (Review-Welle 2).
 - **Frontend JS (`landing/js/`)** — `app.js`, `charts.js` (ApexCharts), `holidays.js` (Gauss-Ostern), `*-compute.js`, `tour.js`, `auth.js`, **`i18n.js`** (SA.i18n IIFE).
 - **HTML-Pages (`landing/pages/`)** — 30 Feature-Pages (Dashboard, Zyklen, Events, Strategien, KI, Backtest …).
 
@@ -288,6 +289,73 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [ ] **`MIN_NORM` 20→80 nachziehen**, sobald die Historie tief genug ist; **`--vol-pctl 0.5`** an mehreren Tagen gegenprüfen (Wert stammt aus 8 Vergleichen an einem Tag).
 - [ ] **CRWV `monthly_stats`** in einigen Wochen erneut prüfen (aktuell zu junge Historie seit IPO 03/2025 — kein Defekt, Zeitfrage).
 - [ ] **vorbestehender `verify_en`-FAIL `nav.kalender`** auf [index]: Key existiert in `en.json`, Ursache ist die `_skipPrefixes`-Interaktion beim EN-Build (`/kalender` ist auth-gated) → „Kalender" bleibt auf der EN-Homepage deutsch. Unabhängig von der Options-Arbeit.
+
+### 🔬 Systematischer Code-Review in Wellen
+
+**Vorgehen je Welle:** Prompt für den externen Reviewer schreiben (Muster: die drei
+Options-Prompts — konkrete Datei/Zeilen-Anker, Domänen-Invarianten statt „prüfe mal",
+Liste des bereits Bestätigten gegen Doppelmeldungen, Warnung vor absehbaren
+Fehlalarmen) → Befunde **am Code gegenprüfen, nicht ungeprüft umsetzen** → fixen mit
+Test je Befund → committen → Lessons in die Fach-Doku.
+
+**Drei Fragen, die in JEDER Welle gestellt werden** — sie haben im Options-Teil die
+teuersten Fehler gefunden:
+1. **Backend/Frontend-Zwillinge:** Dieselbe Mathematik existiert oft zweimal (Python +
+   JS). Rechnen beide dasselbe? Im Options-Teil hatten zwei Black-Scholes-Kopien
+   verschiedene Zinssätze, und der Frontend-Fallback machte `put_zeta = −call_zeta`.
+2. **Was passiert bei fehlenden Daten?** Wird ein Wert `None`, oder rutscht ein alter
+   Wert in die Rolle des aktuellen? (DUK stand 20 Tage alt im Radar.)
+3. **Meldet ein Fehlschlag sich als Fehlschlag?** Oder als grüner Job mit alten Zahlen?
+
+- [x] **Welle 0 — Optionen/Flows** (2026-09-08/10, 3 Runden, 26 Befunde, 22 behoben).
+
+- [ ] **Welle 1 — Kern-Methodik: normalisierte Renditen + Zeitindizes.** Höchster Hebel,
+  weil alles darauf steht. `shared/calculations.py` (478) · `shared/tdom_analysis.py` ·
+  `scripts/compute_tdoy_tdom.py` · **`landing/js/seasonal-compute.js` (544)**.
+  Leitfrage: Rechnen Backend und Frontend nachweislich dasselbe? Die Kern-Regel
+  („jedes Jahr startet bei 100, tägliche Returns kumulieren, NIE `close − close[lookback]`")
+  existiert in beiden Sprachen — genau die Konstellation, die im Options-Teil driftete.
+  Dazu: Schaltjahre, `last_actual_day`-Filter (Perzentil/Drawdown/Heatmap dürfen nicht
+  auf constant-fill rechnen), Umgang mit Kurslücken.
+
+- [ ] **Welle 2 — KI-Score, Anomalie, Signifikanz.** Das, was der Nutzer als Signal liest.
+  `shared/ki_score.py` · **`shared/ai_models.py` (447, in der Doku fälschlich als gelöscht
+  geführt)** · `shared/anomaly_engine.py` (553) · `shared/significance_gauge.py` ·
+  `shared/outlier_manager.py`.
+  Leitfrage: Was rechnet `ai_models` wirklich, und ist der KI-Score reproduzierbar?
+  4 Sub-Scores à 0–2,5 → 0–10, Schwellen ≥6,5 bullish / ≤3,5 bearish — sind die
+  Schwellen empirisch belegt oder gesetzt? Anomalie-Radar misst nur 10 Tage.
+
+- [ ] **Welle 3 — Backtest + Strategien.** `shared/backtest_engine.py` (727) ·
+  `landing/js/strategy-compute.js` (746) · `landing/js/indicators.js` (435).
+  Leitfrage: Look-ahead-Bias. CLAUDE.md nennt `filterMask[entryIdx-1]` als Regel —
+  gilt sie überall? Dazu Quantile ohne Floor-Indexing, Transaktionskosten,
+  Survivorship, und ob Walk-Forward-Ergebnisse aus dem UI reproduzierbar sind.
+
+- [ ] **Welle 4 — Datenpipeline + Integrität.** `scripts/nightly_refresh.py` (587) ·
+  `shared/yahoo_downloader.py` · `shared/data.py` · `shared/supabase_client.py` (683) ·
+  `scripts/check_db_completeness.py` (832).
+  Leitfrage: stille Schreibfehler. Der Free-Tier-Write-Block hat schon einmal 6 Tage
+  lang lautlos nichts geschrieben. Dazu: Stooq-Fallback ändert den Datenbereich
+  (^GSPC ab 1970 vs. 1950), OOM in Full-Universe-Schleifen, `log_return`-Nachrechnung.
+
+- [ ] **Welle 5 — Börsenkalender + Handelstage.** `shared/exchange_holidays.py` (567) ·
+  `landing/js/holidays.js` · `scripts/verify_calendar_rules.py` (473).
+  Leitfrage: wieder ein Backend/Frontend-Zwilling. Beide implementieren Feiertage,
+  Gauss-Ostern, OPEX/VIXpiration. Weichen sie ab? Der Prüfagent deckt 9 Regeln ab —
+  prüft er auch das Frontend?
+
+- [ ] **Welle 6 — Newsletter + Reports (was das Haus verlässt).**
+  `shared/daily_report.py` (1483, größte Datei in `shared/`) · `shared/weekly_report.py`
+  (729) · `scripts/daily_newsletter.py`.
+  Leitfrage: Stimmen die Zahlen in der Mail mit denen auf der Seite überein, und was
+  passiert bei fehlenden Daten — Lücke oder alter Wert? Dazu Mailgröße (Gmail kappt
+  ab ~102 KB), Empfängerfilter, Abmelde-Pfad.
+
+- [ ] **Welle 7 — Frontend-Rendering breit.** `landing/js/app.js` (743) ·
+  `decade-compute.js` (635) · `polymarket.js` (604) · `watchlist.js` (427) · die ~31 Pages.
+  Leitfrage: Erzählt jede Seite das, was der Code gerechnet hat? Einheiten,
+  Null-Behandlung, Achsen/Tooltip-Konsistenz, Proxy-Kennzeichnung.
 
 ### Technische Roadmap (längerfristig)
 - [ ] **`build_calendar_data.py` via `docker exec` in `inject_credentials.sh`** statt system python3 → pandas verfügbar → JSON+ICS bei jedem Deploy automatisch aktuell (aktuell: committed-Stand, pandas fehlt in system python3)
