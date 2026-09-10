@@ -66,6 +66,10 @@ def compute_tdoy_tdom(dates: list[date], exchange: str) -> list[dict]:
     return results
 
 
+# Fehlgeschlagene Upsert-Batches — entscheidet am Ende ueber den Exit-Code.
+_FAILED_BATCHES: list[str] = []
+
+
 def backfill_ticker(client, ticker: str, exchange: str) -> int:
     """Backfill TDOM/TDOY fuer einen Ticker. Returns: Anzahl aktualisierter Zeilen."""
 
@@ -124,6 +128,11 @@ def backfill_ticker(client, ticker: str, exchange: str) -> int:
             total_updated += len(records)
         except Exception as e:
             print(f"    ⚠ Batch-Fehler bei {ticker}: {e}")
+            # Nicht nur melden: mitzaehlen. Frueher lief das Skript nach einem
+            # fehlgeschlagenen Batch weiter, endete mit Exit 0 und meldete
+            # "Fertig" — Monitoring stand auf gruen, waehrend Zeilen veraltet
+            # blieben. Ein Fehlschlag muss sich als Fehlschlag zeigen.
+            _FAILED_BATCHES.append(f"{ticker}: {str(e)[:120]}")
         del records  # Speicher freigeben
 
     # Explizit aufraeumen
@@ -167,7 +176,15 @@ def main():
 
     print(f"\n{'=' * 60}")
     print(f"Fertig: {total_fixed} Ticker, {total_rows} Zeilen aktualisiert")
+    if _FAILED_BATCHES:
+        print("")
+        print(f"[FAIL] {len(_FAILED_BATCHES)} Batch(es) nicht geschrieben — "
+              f"TDOM/TDOY sind nur TEILWEISE aktualisiert:")
+        for _f in _FAILED_BATCHES[:20]:
+            print(f"  - {_f}")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

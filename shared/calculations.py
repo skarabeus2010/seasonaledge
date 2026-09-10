@@ -52,19 +52,34 @@ def get_decade_digit(year):
 def normalize_year(year_df):
     """
     Normalisiere ein Jahr auf Startwert 100.
-    Methode: Kumulative Log-Returns → zurück in Prozent.
+
+    Konvention: Zeile 0 = 100 (Referenzpunkt), Zeile j trägt den Return VON Zeile j:
+        wert_j = 100 · exp(Σ r_1..r_j)
+
+    `log_return` ist rückwärts definiert — `LN(close / prev_close)`, siehe
+    `scripts/fix_tdom_trigger_and_log_returns.sql`. Der Wert einer Zeile gehört
+    also zu genau dieser Zeile.
+
+    FRÜHER wurde stattdessen Σ r_0..r_{j-1} kumuliert. Das hatte zwei Folgen:
+      * Der **Jahreswechsel-Return** (letzter Handelstag des Vorjahres → erster
+        dieses Jahres) landete als Bewegung von Tag 1 auf Tag 2 IN diesem Jahr.
+        Bei einem Jahresauftakt von +10 % stand Tag 2 bei 110 statt 101.
+      * Der Return des **letzten** Handelstags fiel hinten weg.
+    Das Frontend (`seasonal-compute.js::buildYearData`) rechnete bereits die hier
+    implementierte Variante — die beiden Zwillinge lieferten damit systematisch
+    verschiedene Kurven. Gegenprobe: `scripts/verify_seasonal_twins.py`.
+
+    Hinweis: nicht-endliche Returns (NaN) propagieren bewusst, statt still
+    ersetzt zu werden — ein Jahr mit Datenloch soll auffallen, nicht plausibel
+    aussehen. Das Frontend rechnet an dieser Stelle abweichend aus den Closes
+    zurück; siehe offener Punkt in docs/CHANGELOG.md.
     """
-    log_returns = year_df["log_return"].values
-    cum_log = np.cumsum(log_returns)
-    cum_log = np.insert(cum_log[:-1], 0, 0) if len(log_returns) > 0 else np.array([0])
-    cumulative = (100 * np.exp(np.cumsum(np.insert(log_returns, 0, 0)[:-1]))).tolist()
-    
-    if len(cumulative) < len(year_df):
-        cumulative.append(100 * np.exp(np.sum(log_returns)))
-    elif len(cumulative) > len(year_df):
-        cumulative = cumulative[:len(year_df)]
-    
-    return cumulative
+    log_returns = np.asarray(year_df["log_return"].values, dtype=float)
+    if len(log_returns) == 0:
+        return []
+    # Zeile 0 ist der Referenzpunkt (100), ab Zeile 1 kumuliert der EIGENE Return.
+    steps = np.concatenate(([0.0], log_returns[1:]))
+    return (100.0 * np.exp(np.cumsum(steps))).tolist()
 
 
 def interpolate_to_365(days, values):
