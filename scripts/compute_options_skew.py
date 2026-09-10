@@ -589,6 +589,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
     # der Health-Check prueft nur eine globale Mindestzahl, und dass ein bestimmter
     # Titel seit Wochen nie im Radar auftaucht, faellt niemandem auf.
     failed: list[dict] = []
+    partial: list[dict] = []   # Zeile vorhanden, aber ATM-abhaengige Felder fehlen
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
     else:
@@ -602,8 +603,15 @@ def build(tickers: list[str], write: bool = True) -> dict:
             if r:
                 per.append(r)
                 ct = "contango" if r.get("contango") else ("backwardation" if r.get("contango") is False else "?")
-                print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {(r['iv_atm'] or 0)*100:.1f}% · "
+                # `or 0` machte aus einem fehlenden ATM ein "0.0%" — das liest sich wie
+                # ein echter Messwert. Fehlend muss als fehlend erkennbar sein.
+                _atm = f"{r['iv_atm']*100:.1f}%" if r.get("iv_atm") else "—"
+                print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {_atm} · "
                       f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}", flush=True)
+                if not r.get("iv_atm"):
+                    # Teil-Ausfall: Zeile existiert, aber Zeta/Butterfly/VRP fehlen,
+                    # weil der 50Δ-Pick ausserhalb der Toleranz lag.
+                    partial.append({"ticker": t, "reason": "kein 50Δ-ATM in Toleranz"})
             else:
                 failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
 
@@ -626,7 +634,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
         # Abdeckung explizit ausweisen — sonst laesst sich aus der Datei nicht
         # ablesen, ob 163 Ticker angefragt und 12 still gescheitert sind.
         "coverage": {"requested": len(tickers), "returned": len(per),
-                     "failed": failed},
+                     "failed": failed, "partial": partial},
     }
     if write:
         p = _ROOT / "landing/data/options_skew.json"
@@ -639,6 +647,10 @@ def build(tickers: list[str], write: bool = True) -> dict:
                   + " · ".join(f"{k} ({n})" for k, n in _c.most_common()), flush=True)
             print("           " + ", ".join(f["ticker"] for f in failed[:20])
                   + (" …" if len(failed) > 20 else ""), flush=True)
+        if partial:
+            print(f"[coverage] {len(partial)} nur teilweise (kein ATM → Zeta/Bfly/VRP fehlen): "
+                  + ", ".join(f["ticker"] for f in partial[:20])
+                  + (" …" if len(partial) > 20 else ""), flush=True)
         # Skalare Metriken vorwärts in History akkumulieren
         hp = _ROOT / "landing/data/options_skew_history.json"
         hist = {}
