@@ -17,6 +17,7 @@ if not os.path.isdir(os.path.join(_project_dir, "shared")):
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 import pandas as pd
+import math
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
@@ -69,14 +70,39 @@ def normalize_year(year_df):
     implementierte Variante — die beiden Zwillinge lieferten damit systematisch
     verschiedene Kurven. Gegenprobe: `scripts/verify_seasonal_twins.py`.
 
-    Hinweis: nicht-endliche Returns (NaN) propagieren bewusst, statt still
-    ersetzt zu werden — ein Jahr mit Datenloch soll auffallen, nicht plausibel
-    aussehen. Das Frontend rechnet an dieser Stelle abweichend aus den Closes
-    zurück; siehe offener Punkt in docs/CHANGELOG.md.
+    Fehlende/nicht-endliche Returns werden — wie im Frontend — aus den Closes
+    nachgerechnet. Das ist kein Schoenreden, sondern verhindert einen weit
+    groesseren Schaden: ein einzelnes NaN pflanzt sich ueber `np.exp(cumsum)`
+    durch die ganze Jahreskurve fort, und `calculate_seasonal_average` mittelt
+    anschliessend ueber alle Jahre — EIN kaputter Kurs machte damit den
+    Saison-Durchschnitt ALLER Jahre zu NaN und den Chart leer, waehrend das
+    Frontend munter weiterzeichnete. Laesst sich ein Return auch aus den Closes
+    nicht rekonstruieren, wird das Jahr mit [] verworfen (build_year_data
+    ueberspringt es) statt alle anderen mitzureissen.
     """
     log_returns = np.asarray(year_df["log_return"].values, dtype=float)
     if len(log_returns) == 0:
         return []
+
+    if not np.all(np.isfinite(log_returns[1:])):
+        spalte = "Close" if "Close" in year_df.columns else (
+            "close" if "close" in year_df.columns else None)
+        closes = (np.asarray(year_df[spalte].values, dtype=float)
+                  if spalte else None)
+        for j in range(1, len(log_returns)):
+            if np.isfinite(log_returns[j]):
+                continue
+            reparierbar = (
+                closes is not None
+                and j < len(closes)
+                and np.isfinite(closes[j]) and np.isfinite(closes[j - 1])
+                and closes[j - 1] > 0 and closes[j] > 0
+            )
+            if reparierbar:
+                log_returns[j] = math.log(closes[j] / closes[j - 1])
+            else:
+                return []          # nicht reparierbar -> Jahr verwerfen
+
     # Zeile 0 ist der Referenzpunkt (100), ab Zeile 1 kumuliert der EIGENE Return.
     steps = np.concatenate(([0.0], log_returns[1:]))
     return (100.0 * np.exp(np.cumsum(steps))).tolist()
@@ -141,6 +167,8 @@ def build_year_data(df, selected_years):
             continue
         
         cumulative = normalize_year(year_df)
+        if not cumulative:            # nicht reparierbare Luecke -> Jahr auslassen
+            continue
         days = year_df["day_of_year"].tolist()
         full_365 = interpolate_to_365(days, cumulative)
         
@@ -183,15 +211,34 @@ def count_trading_days(year_data, start_day, end_day):
 
 
 def calculate_period_stats(year_data, start_day, end_day):
-    """Berechne Statistiken für einen gewählten Zeitraum."""
+    """Berechne Statistiken für einen gewählten Zeitraum.
+
+    Ein Jahr zählt NUR mit, wenn es bis zum Periodenende echte Beobachtungen hat.
+
+    Warum: `full_365` ist hinter dem letzten Handelstag konstant fortgeschrieben
+    (siehe interpolate_to_365). Ohne diese Prüfung ging das laufende, noch
+    unfertige Jahr als abgeschlossenes in Trefferquote und Mittelwert ein — sein
+    „Periodenende" war dann der fortgeschriebene letzte Kurs, also eine Rendite
+    über einen Zeitraum, den es noch gar nicht gab. Im September lieferte der
+    September damit eine Beobachtung mehr, als real vorlag.
+
+    Die Prüfung über `days` ist schärfer als ein Ausschluss nur des laufenden
+    Jahres (so macht es das Frontend in ki-saisonalitaet.html): sie erwischt auch
+    Jahre mit abgeschnittenem Ende, etwa bei Delisting oder Datenlücken.
+    """
     period_returns = []
-    
+
     for year, yd in year_data.items():
+        letzter_echter_tag = max(yd["days"]) if yd.get("days") else 0
+        if letzter_echter_tag < min(end_day, 365):
+            continue                      # Periode reicht in die Fortschreibung
         start_val = yd["full_365"][start_day - 1]
         end_val = yd["full_365"][min(end_day - 1, 364)]
+        if not start_val:
+            continue
         ret = (end_val - start_val) / start_val * 100
         period_returns.append(ret)
-    
+
     if not period_returns:
         return {}
     
