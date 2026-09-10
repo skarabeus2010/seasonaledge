@@ -55,7 +55,8 @@ from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,  
                                   bs_delta as _bs_delta, implied_vol as _implied_vol,
                                   cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
                                   DELTA_TOL as _DELTA_TOL, CM_SINGLE_TOL as _SINGLE_TOL,
-                                  IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
+                                  IV_MIN as _IV_MIN, IV_MAX as _IV_MAX,
+                                  VOL_PCTL as _VOL_PCTL)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
@@ -260,7 +261,7 @@ def _plan(closes: dict, contracts: list, targets: list,
 
 
 def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
-             min_vol: float = 0.0, vol_pctl: float = 0.0):
+             min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL):
     """Rohe 25Δ-Call/Put- und ATM-IV EINER Expiry. None wenn nicht klammerbar.
 
     Gegen den Stale-Print-Bias (letzter Trade Stunden vor Schluss, gepaart mit
@@ -315,7 +316,7 @@ def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
 
 
 def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
-                 min_vol: float = 0.0, vol_pctl: float = 0.0) -> dict | None:
+                 min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL) -> dict | None:
     """Konstant-30-Tage-Werte für einen Handelstag.
 
     Rechnet die rohen IVs an den ein bis zwei klammernden Verfällen und
@@ -357,6 +358,16 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
     if call_iv is None or put_iv is None:
         return None
 
+    if not iv_atm and mode in ("cm", "cm_extrap"):
+        # Ohne ATM-IV gibt es kein Zeta. Das Frontend rankt cm/cm_extrap und
+        # faellt dann auf die Naeherung (call_iv-put_iv)/2 zurueck, die
+        # put_zeta = -call_zeta erzwingt und den Quadranten auf seine
+        # Antidiagonale kollabieren laesst. Solche Tage sind NICHT rankbar.
+        # Die Zeile bleibt erhalten (skew_pts ist weiter brauchbar), verliert
+        # aber ihre cm-Kennzeichnung. Gegenstueck im Live-Pfad:
+        # compute_options_skew.py::_enrich prueft dasselbe an der Aufrufstelle.
+        mode = "noatm"
+
     r = {"date": d, "dte": dte_out, "cm_mode": mode,
          "put_iv": round(put_iv, 4), "call_iv": round(call_iv, 4),
          "skew_pts": round((put_iv - call_iv) * 100, 2),
@@ -370,7 +381,7 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
 
 
 def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwrite: bool,
-               min_vol: float = 0.0, vol_pctl: float = 0.0) -> int:
+               min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL) -> int:
     closes = _closes(sym)
     if not closes:
         print(f"  {sym:6} keine Kursreihe — übersprungen", flush=True); return 0
@@ -623,7 +634,7 @@ def probe_quotes(sym: str, key: str) -> int:
     return 0
 
 
-def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = 0.0) -> int:
+def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL) -> int:
     """Rekonstruktion gegen eine Referenz aus der Vorwaerts-Akkumulation halten.
 
     ACHTUNG, zwei verschiedene Messungen — der Unterschied entscheidet, was die
