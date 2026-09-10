@@ -101,7 +101,7 @@
 
     <!-- GRAFIK: Vol-Quadrant -->
     <div class="card">
-      <div class="psub" id="sk-quad-sub"><b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
+      <div class="psub" id="sk-quad-sub" data-i18n-html="skew.quad_sub"><b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
       <div style="display:flex;align-items:baseline;gap:.5rem;margin:.55rem 0 .35rem;flex-wrap:wrap">
         <span class="psub" style="margin:0" data-i18n="skew.category">Kategorie:</span>
         <div id="sk-cat" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
@@ -116,6 +116,7 @@
       </div>
       <div id="sk-quad" style="min-height:470px"></div>
       <div class="psub" id="sk-quad-legend" style="margin-top:.6rem;line-height:1.5"></div>
+      <p class="note" data-i18n-html="skew.disp_hint">Liegen <b>Indizes</b> (SPY/QQQ) und die <b>Einzelwerte</b> in verschiedenen Feldern, ist der Markt uneinig: die Indexoptionen preisen etwas anderes als die Einzeltitel. Das ist die klassische <b>Dispersion</b> &mdash; und passt zu einer niedrigen impliziten Korrelation in den KPIs oben. Umgekehrt bedeutet ein enger Pulk gleichlaufende Titel und hohe Korrelation. Reine Beschreibung der Optionspreisung, <b>kein Signal</b>.</p>
     </div>
 
     <!-- GRAFIK direkt unter dem Radar: Skew-Verlauf + Term-Structure des gewählten Tickers -->
@@ -245,11 +246,17 @@
       'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';color:'+(on?ACC:MUT)+'">'+txt+'</button>';}
     function _updateQuadSub(){
       var el=document.getElementById('sk-quad-sub'); if(!el)return;
+      // Untertitel MUSS über SA.i18n laufen: er wird bei jedem Render neu
+      // gesetzt und ueberschrieb bisher den vorgerenderten EN-Text mit deutschem
+      // Hartcode — auf /en/skew kippte die Zeile also zurueck ins Deutsche,
+      // sobald der Radar zeichnete. Statisches HTML zu pruefen findet das nicht.
+      // Vorangestellt jeweils eine Klartext-Zeile: die Fachbegriffe allein sagen
+      // niemandem, was die Achsen bedeuten.
       if(SKEW_VIEW==='cs_ps'){
         // SpotGamma-Konvention: positiver Call-Skew = OTM-Calls > ATM-IV; positiver Put-Skew = OTM-Puts > ATM-IV
-        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Call-Skew</span> (X, OTM-Calls&nbsp;vs.&nbsp;ATM) &times; <span style="color:var(--accent)">Put-Skew</span> (Y, OTM-Puts&nbsp;vs.&nbsp;ATM), je unabh&auml;ngig gerankt &middot; positiv = OTM teurer als ATM &middot; Fadenkreuz = 50%';
+        el.innerHTML=T('skew.quad_sub_cs','<b>Vol-Regime-Radar</b> &mdash; <b>Aufw&auml;rts-Nachfrage</b> (X) &times; <b>Absicherungs-Nachfrage</b> (Y)<br><span style="color:var(--accent)">Call-Skew</span> (OTM-Calls&nbsp;vs.&nbsp;ATM) &times; <span style="color:var(--accent)">Put-Skew</span> (OTM-Puts&nbsp;vs.&nbsp;ATM), je unabh&auml;ngig gerankt &middot; positiv = OTM teurer als ATM &middot; Fadenkreuz = 50%');
       } else {
-        el.innerHTML='<b>Vol-Regime-Radar</b> &mdash; <span style="color:var(--accent)">Risk-Reversal-Rank</span> (X) &times; <span style="color:var(--accent)">IV-Rank</span> (Y), je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%';
+        el.innerHTML=T('skew.quad_sub','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%');
       }
     }
     function refreshRankViews(){ _updateQuadSub(); renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
