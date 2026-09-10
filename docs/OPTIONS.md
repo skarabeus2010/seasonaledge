@@ -202,6 +202,31 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 - **Verify-Gate braucht eine Referenz derselben Bauart.** `--verify` vergleicht gegen History-Einträge ohne `reconstructed`. Solange das die alten Provider-Punkte waren, maß das Gate den Methodenunterschied statt der Rekonstruktionsgüte — es schlug zu Recht an, aber die Ursache lag nicht im Backfill. Die 380 nicht-normierten Legacy-Live-Punkte (148 Ticker) wurden entfernt (Backup `options_skew_history.bak.json`); sie hätten außerdem den nächsten Cron-Eintrag blockiert, weil pro Session-Datum nur einmal angehängt wird.
 - **Backfill NACH dem Live-Lauf überschreibt den Live-Punkt desselben Tages (2026-09-10).** `run_ticker` dedupliziert am Ende je Datum, und dabei gewinnt der zuletzt angehängte Eintrag. Läuft der Backfill also nach dem EOD-Lauf, ersetzt seine Rekonstruktion den Live-Punkt für den überlappenden Tag. Inhaltlich unkritisch, seit beide dieselbe Methode nutzen — **aber `--verify` verliert dadurch seine Referenz**, denn es vergleicht gegen Einträge *ohne* `reconstructed`. Für die sechs neuen Ticker war das Gate deshalb nicht durchführbar; die Methode war global über SPY/QQQ/SMH/NVDA validiert. Konsequenz: Backfill für einen Ticker möglichst **vor** dem ersten Live-Lauf fahren, sonst die per-Ticker-Gegenprobe einen Cron-Zyklus später nachholen.
 - **Cron-JSONs gingen unkomprimiert raus (2026-09-10).** `deploy/nginx.conf` hatte **gar keine** gzip-Direktive, und das Frontend holte die Dateien mit `cache:'no-store'` — die auf **2,65 MB** gewachsene `options_skew_history.json` wurde damit bei **jedem** Aufruf von `/skew` und `/flows` komplett neu übertragen. Das war die plausibelste Ursache des gemeldeten „/flows hängt beim Laden". Zwei Hebel: **gzip** in der `/landing/`-Location (2.649.629 → **273.669 B**, Faktor 9,7) und `no-store` → **`no-cache`** (revalidiert weiterhin immer, erlaubt dem Server aber ein 304). `no-store` einfach zu streichen wäre falsch gewesen — nginx liefert `max-age=86400`, die täglich aktualisierten Daten wären bis zu einen Tag alt ausgeliefert worden.
+## Code-Review 2026-09-10 (PRs #248–#258)
+
+Review über `shared/black_scholes.py`, `compute_options_skew.py`, `backfill_skew_massive.py`, `skew.html`, `options_universe.py`. **11 Befunde** — durchweg Restpfade, auf denen Live- und Backfill-Reihe wieder auseinanderlaufen konnten, also genau die Fehlerklasse, die der Umbau schließen sollte.
+
+**Behoben (8, PR #258):**
+
+| # | Befund | Warum es zählt |
+|---|---|---|
+| 1 | `--vol-pctl` Default `0.0`, Live filtert fest `0.5` | Der geplante 2-J-Lauf **ohne Flag** hätte die Reihe mit anders gefilterten Punkten gemischt |
+| 2 | `spot_own = last_close or spot` fiel auf den `/prev`-Spot zurück | Genau die Quelle, vor der der Kommentar darüber warnt — ein falsch skalierter Punkt bekam trotzdem `cm_mode` |
+| 3 | `cm`-Zeilen ohne `iv_atm` möglich | Frontend fällt dann auf `(call_iv−put_iv)/2` zurück → `put_zeta = −call_zeta`, der Quadrant kollabiert auf seine Antidiagonale |
+| 4 | `_own_cands` rechnete `dte` gegen `date.today()` | Zeile wird unter `_last_session()` gestempelt → bei Nachhol-Läufen lag T bis zu 3 Tage daneben |
+| 5 | `_fix_session_dates` bevorzugte pauschal den Live-Eintrag | Ein **nicht** normierter Live-Punkt konnte einen brauchbaren `cm`-Punkt verdrängen und die Stichprobe verkleinern |
+| 6 | CM-Parameter + `cm_interp` als Kopie in beiden Skripten | Dasselbe Drift-Risiko, das die BS-Vereinheitlichung gerade beseitigt hatte |
+| 7 | `verify_skew_iv.py` importierte BS aus dem **stillgelegten** `backfill_skew_history.py` | Das Gate zertifizierte eine dritte, produktiv gar nicht laufende Engine |
+| 8 | History-Zeile mischte CM-IVs mit Front-Monats-`vrp_pts`/`pc_ratio` | Intern inkonsistente Zeile |
+
+Gegenprobe nach dem Fix: `CM_DAYS`/`DELTA_TOL`/`SINGLE_TOL`/`VOL_PCTL` auf beiden Seiten identisch, `cm_interp` ist **dieselbe Funktion** (Identitätstest `is`), `verify` nutzt dieselbe `implied_vol`, BS-Rundlauf exakt, `_enrich` liefert weiter `cm_mode=cm`.
+
+**Bewusst NICHT behoben (3) — mit Begründung:**
+
+- **`_leg_own` ist kein exakter Spiegel von `_leg_ivs`.** Der Backfill dünnt auf `_MAX_STRIKES=24` je Seite aus, der Live-Pfad nutzt alle Strikes der ±30 %-Kette. Dadurch laufen Delta-Pick und Volumen-Perzentil auf **unterschiedlichen Grundmengen**. Die Ausdünnung hat im Backfill einen Sachgrund (er muss je Kontrakt Bars **abrufen**, der Live-Snapshot liefert die Kette in einem Zug). Angleichen ist sinnvoll, aber kein Einzeiler und will gemessen werden.
+- **Tabelle paart Front-Monats-IV mit einem Rank, dessen „aktueller" Punkt der letzte *normierte* Tag ist.** Bei dünnen Tickern kann der Wochen alt sein. Darstellungs-Entscheidung, kein Rechenfehler.
+- **`renderSkewHist` chartet die ungefilterte Historie**, inkl. Sägezahn und Provider-Stufe, während die Rank-Spalte daneben genau diese Punkte ausschließt. Der Verlauf *soll* womöglich alles zeigen — aber die Diskrepanz gehört erklärt oder der Chart gefiltert.
+
 ## Integration ins Morning Briefing + Health-Check
 
 - **Skew + Skew-Percentile je Titel im Morning Briefing** (`shared/daily_report.py`): `skew_map()` (aus `options_skew.json`) + `skew_pctl_map()` (Percentile aus `options_skew_history.json`, 1-J-Fenster) → Ticker-Zeilen (Kernliste + Watchlist) bekommen `skew_pts`/`skew_pctl`; Template `daily_report.html.j2` zeigt eine **eigene „Skew"-Spalte** (Wert + `P{pctl}`), nur US-optionierbare Titel. Cache-gelesen pro Lauf.
@@ -230,6 +255,9 @@ Offen:
 - [x] **Rekonstruktion ↔ Live vereinheitlicht statt kalibriert** (2026-09-09): beide Seiten nutzen dieselbe BS-Inversion (`shared/black_scholes.py`) → eine Kalibrierung ist gar nicht mehr nötig. Erwartet war eine Wartezeit von ~30 überlappenden Tagen; die Vereinheitlichung löst es sofort und dauerhaft.
 - [x] **EOD-Validierung erledigt (2026-09-10):** nach dem EOD-Lauf war das Gate grün — 0 Vorzeichenwechsel, mittlere Zeta-Abweichung **0,24 pts** (vorher 0,88), max 0,62 (vorher 1,30), Richtung gemischt statt einseitig. Percentile des Live-Punkts: SPY 5 % · QQQ 36 % · SMH 57 % · NVDA 72 % (vorher 31/80/**97**/**99**) — das methodische Klumpen am oberen Rand ist weg.
 - [ ] **`--verify` für SMCI/VRT/IREN/APLD/CRWV/NBIS nachholen**, sobald der nächste Cron einen Live-Punkt für sie geschrieben hat (aktuell überschrieb der spätere Backfill deren Live-Eintrag, siehe Lessons).
+- [ ] **`_leg_own` und `_leg_ivs` auf dieselbe Kandidaten-Grundmenge bringen** (Backfill dünnt auf 24 Strikes/Seite aus, Live nicht → Volumen-Perzentil und Delta-Pick laufen auf verschiedenen Mengen). Vorher messen, wie groß der Effekt real ist.
+- [ ] **Darstellung klären:** Tabelle zeigt Front-Monats-IV neben einem Rank aus dem letzten *normierten* Tag; `renderSkewHist` chartet ungefiltert (Sägezahn sichtbar), während die Rank-Spalte filtert. Entweder Chart filtern oder die Differenz im UI erklären.
+- [ ] **Historie serverseitig eindampfen** auf die vom Frontend benötigten Ticker/Felder — sie ist bei 2,65 MB (gzip 274 KB) und wächst weiter.
 - [ ] **`MIN_NORM` nachziehen** (20 → ggf. 80), sobald der Backfill genug Tiefe liefert.
 - [ ] **`--vol-pctl 0.5` an mehreren Tagen gegenprüfen** (Wert aus 8 Vergleichen an einem Tag).
 - [ ] Blog **Distribution/Backlinks** für den Vol-Regime-Radar-Post; GSC nach Indexierung prüfen.
