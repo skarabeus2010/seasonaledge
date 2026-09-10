@@ -256,6 +256,56 @@ Review über `shared/black_scholes.py`, `compute_options_skew.py`, `backfill_ske
 
 Gegenprobe nach dem Fix: `CM_DAYS`/`DELTA_TOL`/`SINGLE_TOL`/`VOL_PCTL` auf beiden Seiten identisch, `cm_interp` ist **dieselbe Funktion** (Identitätstest `is`), `verify` nutzt dieselbe `implied_vol`, BS-Rundlauf exakt, `_enrich` liefert weiter `cm_mode=cm`.
 
+## Endabnahme 2026-09-11 (PR #275)
+
+Externe Abnahme der 8 Fixes und der 3 offenen Punkte. **6 Fixes halten, 2 waren
+lückenhaft**, dazu eine korrigierte Einstufung.
+
+### Zwei Fixes waren unvollständig
+
+**Fix 1 (`--vol-pctl`) griff nur am CLI.** Der Parser stand auf `0.5`, aber
+**vier Funktionssignaturen** defaulteten weiter auf `0.0` (`_leg_ivs`,
+`_reconstruct`, `run_ticker`, `verify`). Produktiv reicht die CLI den Wert durch —
+ein Direktaufruf hätte still eine anders gefilterte Reihe erzeugt, also genau die
+Drift-Klasse, die der Umbau schließen sollte. Jetzt kommen alle vier Defaults aus
+`shared/black_scholes.VOL_PCTL`.
+
+**Fix 3 wurde nur im Live-Pfad angewendet.** Dort prüft die *Aufrufstelle*
+(`compute_options_skew.py::_enrich`), ob `cm_iv_atm` da ist. Der Backfill hat
+dieselbe Erzeugerstruktur, aber keine solche Wache: `_reconstruct` setzte
+`cm_mode` auch ohne `iv_atm`, das Frontend rankte die Zeile und fiel dann auf die
+Näherung `(call_iv−put_iv)/2` zurück — die `put_zeta = −call_zeta` erzwingt und den
+Quadranten auf seine Antidiagonale kollabieren lässt.
+Jetzt verliert eine solche Zeile ihre `cm`-Kennzeichnung (Modus `noatm`) und bleibt
+damit aus der Rangfolge; `skew_pts` bleibt erhalten.
+
+> **Lesson, zum zweiten Mal in dieser Datei:** ein Fix an der *Aufrufstelle*
+> schützt nur diese eine Stelle. Die Regel gehört zum **Erzeuger** — sonst fehlt
+> sie beim nächsten Aufrufer.
+
+### `_leg_own` vs. `_leg_ivs` — Einstufung korrigiert
+
+Der Reviewer stufte den Punkt als echten Rechenfehler ein: die Ausdünnung entferne
+den nächstliegenden 25Δ-Kontrakt und verschiebe den Volumenmedian, „weil Liquidität
+und Strike nicht unabhängig sind".
+
+**Der Mechanismus stimmt so nicht** — die Ausdünnung ist *gleichmäßig* über das
+±30 %-Band (`step = len(ss)/24`), nicht „die 24 nächsten am Spot". Gemessen
+(4000 Simulationen, glockenförmiges Volumenprofil, lognormale Streuung):
+
+| Ausdünnung | Median-Verschiebung | Anteil positiv |
+|---|---|---|
+| gleichmäßig (Ist-Zustand) | **+7,2 %** (Median), Streuung 82 pp | 55 % |
+| die 24 nächsten am Spot (unterstellt) | +9624 % | 100 % |
+
+Also: eine **kleine, aber echte** systematische Verschiebung — die Volumenschwelle
+liegt im Backfill rund 7 % höher als live. Meine ursprüngliche Einstufung („nur
+unterschiedliche Grundmengen, kein Rechenfehler") hat das untertrieben; die
+Einstufung als grober Fehler überzeichnet es um den Faktor 1000. Bleibt offen, jetzt
+mit Zahl statt Vermutung.
+
+Die beiden Darstellungsfragen wurden bestätigt: keine Rechenfehler.
+
 **Bewusst NICHT behoben (3) — mit Begründung:**
 
 - **`_leg_own` ist kein exakter Spiegel von `_leg_ivs`.** Der Backfill dünnt auf `_MAX_STRIKES=24` je Seite aus, der Live-Pfad nutzt alle Strikes der ±30 %-Kette. Dadurch laufen Delta-Pick und Volumen-Perzentil auf **unterschiedlichen Grundmengen**. Die Ausdünnung hat im Backfill einen Sachgrund (er muss je Kontrakt Bars **abrufen**, der Live-Snapshot liefert die Kette in einem Zug). Angleichen ist sinnvoll, aber kein Einzeiler und will gemessen werden.
@@ -290,7 +340,7 @@ Offen:
 - [x] **Rekonstruktion ↔ Live vereinheitlicht statt kalibriert** (2026-09-09): beide Seiten nutzen dieselbe BS-Inversion (`shared/black_scholes.py`) → eine Kalibrierung ist gar nicht mehr nötig. Erwartet war eine Wartezeit von ~30 überlappenden Tagen; die Vereinheitlichung löst es sofort und dauerhaft.
 - [x] **EOD-Validierung erledigt (2026-09-10):** nach dem EOD-Lauf war das Gate grün — 0 Vorzeichenwechsel, mittlere Zeta-Abweichung **0,24 pts** (vorher 0,88), max 0,62 (vorher 1,30), Richtung gemischt statt einseitig. Percentile des Live-Punkts: SPY 5 % · QQQ 36 % · SMH 57 % · NVDA 72 % (vorher 31/80/**97**/**99**) — das methodische Klumpen am oberen Rand ist weg.
 - [ ] **`--verify` für SMCI/VRT/IREN/APLD/CRWV/NBIS nachholen**, sobald der nächste Cron einen Live-Punkt für sie geschrieben hat (aktuell überschrieb der spätere Backfill deren Live-Eintrag, siehe Lessons).
-- [ ] **`_leg_own` und `_leg_ivs` auf dieselbe Kandidaten-Grundmenge bringen** (Backfill dünnt auf 24 Strikes/Seite aus, Live nicht → Volumen-Perzentil und Delta-Pick laufen auf verschiedenen Mengen). Vorher messen, wie groß der Effekt real ist.
+- [ ] **`_leg_own` und `_leg_ivs` auf dieselbe Kandidaten-Grundmenge bringen.** Gemessen 2026-09-11: die gleichmäßige Ausdünnung auf 24 Strikes/Seite hebt die Volumenschwelle im Backfill um **~7 % (Median)** gegenüber dem Live-Pfad — klein, aber systematisch (55 % der Fälle positiv). Kein grober Fehler, aber eine bekannte Asymmetrie. Angleichen lohnt, sobald der Backfill ohnehin angefasst wird.
 - [ ] **Darstellung klären:** Tabelle zeigt Front-Monats-IV neben einem Rank aus dem letzten *normierten* Tag; `renderSkewHist` chartet ungefiltert (Sägezahn sichtbar), während die Rank-Spalte filtert. Entweder Chart filtern oder die Differenz im UI erklären.
 - [ ] **Historie serverseitig eindampfen** auf die vom Frontend benötigten Ticker/Felder — sie ist bei 2,65 MB (gzip 274 KB) und wächst weiter.
 - [ ] **`MIN_NORM` nachziehen** (20 → ggf. 80), sobald der Backfill genug Tiefe liefert.
