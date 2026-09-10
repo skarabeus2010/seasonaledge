@@ -409,7 +409,12 @@ SA.seasonal = {
     var ref = 0;
     for (var y in yearData) {
       if (parseInt(y, 10) >= jetzt) continue;
-      var lad = yearData[y].last_actual_day || 365;
+      // FAIL-CLOSED: fehlt das Feld, ist die Datenlage unbekannt — dann 0, nicht
+      // 365. Ein Rueckfall auf 365 wuerde ein Jahr ohne jede Metadaten als
+      // vollstaendig ausweisen, waehrend Python (last_actual_day -> 0) es
+      // verwirft. Genau diese Divergenz war der Befund.
+      var lad = yearData[y].last_actual_day;
+      lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;
       if (lad > ref) ref = lad;
     }
     return ref >= SA.seasonal.JAHRESENDE_UNTERGRENZE ? ref : 0;
@@ -424,7 +429,10 @@ SA.seasonal = {
    * Ein starres `>= 365` warf 7 von 26 NYSE- und 15 von 26 XETRA-Jahren weg.
    */
   yearCovers: function(yd, endDoy, ref) {
-    var lad = yd.last_actual_day || 365;
+    // FAIL-CLOSED wie yearEndRef: fehlendes Feld heisst "unbekannt", nicht
+    // "vollstaendig". Python verwirft solche Jahre ebenfalls.
+    var lad = yd.last_actual_day;
+    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;
     if (lad >= Math.min(endDoy, 365)) return true;
     // ref === 0 heisst: keine vertrauenswuerdige Referenz. Dann greift NUR die
     // strenge Regel — sonst wuerde `lad >= 0` jedes Jahr durchwinken.
