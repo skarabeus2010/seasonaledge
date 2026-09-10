@@ -441,7 +441,7 @@ def _get_ticker_data(ticker: str):
 def _build_seasonal_yearly_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
     """Baut einen saisonalen Jahresverlauf-Chart."""
     import plotly.graph_objects as go
-    from shared.calculations import build_year_data, calculate_seasonal_average
+    from shared.calculations import build_year_data, calculate_seasonal_average, last_actual_day
     from shared.charts import apply_se_theme
     from shared.constants import SE_COLORS
 
@@ -511,7 +511,7 @@ def _build_seasonal_yearly_chart(ticker: str, years: int, lang: str = "de") -> "
 def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
     """Baut eine Monats-Rendite Heatmap."""
     import plotly.graph_objects as go
-    from shared.calculations import build_year_data
+    from shared.calculations import build_year_data, last_actual_day
     from shared.charts import apply_se_heatmap_theme
     from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
 
@@ -548,6 +548,14 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
         for m in range(1, 13):
             s, e = _MONTH_DOY[m]
             yd = year_data[year]
+            # Monate hinter dem letzten echten Handelstag bestehen nur aus der
+            # konstanten Fortschreibung und ergaeben stets exakt 0 % — im
+            # veroeffentlichten Chart sahen die Restmonate des laufenden Jahres
+            # dadurch wie real gemessene Nullmonate aus. Leere Zelle statt
+            # erfundener Null.
+            if last_actual_day(yd) < min(e, 365):
+                row.append(None)
+                continue
             start_val = yd["full_365"][s - 1]
             end_val = yd["full_365"][min(e - 1, 364)]
             ret = (end_val - start_val) / start_val * 100 if start_val != 0 else 0
@@ -585,7 +593,7 @@ def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go
     """Durchschnittliche Rendite je Kalendermonat (Balken). Aktueller Monat hervorgehoben."""
     import numpy as np
     import plotly.graph_objects as go
-    from shared.calculations import build_year_data
+    from shared.calculations import build_year_data, last_actual_day
     from shared.charts import apply_se_theme
     from shared.constants import SE_COLORS
 
