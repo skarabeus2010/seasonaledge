@@ -202,6 +202,29 @@ Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker 
 - **Verify-Gate braucht eine Referenz derselben Bauart.** `--verify` vergleicht gegen History-Einträge ohne `reconstructed`. Solange das die alten Provider-Punkte waren, maß das Gate den Methodenunterschied statt der Rekonstruktionsgüte — es schlug zu Recht an, aber die Ursache lag nicht im Backfill. Die 380 nicht-normierten Legacy-Live-Punkte (148 Ticker) wurden entfernt (Backup `options_skew_history.bak.json`); sie hätten außerdem den nächsten Cron-Eintrag blockiert, weil pro Session-Datum nur einmal angehängt wird.
 - **Backfill NACH dem Live-Lauf überschreibt den Live-Punkt desselben Tages (2026-09-10).** `run_ticker` dedupliziert am Ende je Datum, und dabei gewinnt der zuletzt angehängte Eintrag. Läuft der Backfill also nach dem EOD-Lauf, ersetzt seine Rekonstruktion den Live-Punkt für den überlappenden Tag. Inhaltlich unkritisch, seit beide dieselbe Methode nutzen — **aber `--verify` verliert dadurch seine Referenz**, denn es vergleicht gegen Einträge *ohne* `reconstructed`. Für die sechs neuen Ticker war das Gate deshalb nicht durchführbar; die Methode war global über SPY/QQQ/SMH/NVDA validiert. Konsequenz: Backfill für einen Ticker möglichst **vor** dem ersten Live-Lauf fahren, sonst die per-Ticker-Gegenprobe einen Cron-Zyklus später nachholen.
 - **Cron-JSONs gingen unkomprimiert raus (2026-09-10).** `deploy/nginx.conf` hatte **gar keine** gzip-Direktive, und das Frontend holte die Dateien mit `cache:'no-store'` — die auf **2,65 MB** gewachsene `options_skew_history.json` wurde damit bei **jedem** Aufruf von `/skew` und `/flows` komplett neu übertragen. Das war die plausibelste Ursache des gemeldeten „/flows hängt beim Laden". Zwei Hebel: **gzip** in der `/landing/`-Location (2.649.629 → **273.669 B**, Faktor 9,7) und `no-store` → **`no-cache`** (revalidiert weiterhin immer, erlaubt dem Server aber ein 304). `no-store` einfach zu streichen wäre falsch gewesen — nginx liefert `max-age=86400`, die täglich aktualisierten Daten wären bis zu einen Tag alt ausgeliefert worden.
+## Langlaufende Backfills betreiben (Supervisor + Statusmail)
+
+Ein Backfill ueber das Radar-Universum laeuft **viele Stunden** (~10 Min/Ticker/Jahr; 110 Ticker ≈ 18 h) und ueberlappt damit zwangslaeufig mit dem naechtlichen `options_skew`-Cron. Beide schreiben **dieselbe** `options_skew_history.json` — und der Backfill haelt sie im Speicher und schreibt nach *jedem* Ticker die ganze Struktur zurueck. Alles, was der Cron in der Zwischenzeit anlegt, waere damit weg (**Lost Update**). Nur der 23:00-Cron kollidiert; der GEX-Cron (22:15) schreibt andere Dateien.
+
+**`scripts/backfill_supervisor.sh`** loest das: er pausiert den Container kurz vor dem Cron (Default 22:50 UTC), setzt ihn danach fort (00:10 UTC), mailt alle drei Stunden einen Zwischenstand und am Ende den Abschlussbericht.
+
+```bash
+# Backfill starten (EIGENER Container, ohne --overwrite -> Live-Punkte bleiben erhalten)
+docker run -d --name sa-backfill-rest   -v /opt/seasonaledge/.env:/app/.env:ro   -v /opt/seasonaledge/landing/data:/app/landing/data   -w /app seasonaledge-app   python3 -u scripts/backfill_skew_massive.py --years 1 --vol-pctl 0.5 --symbols <TICKER…>
+
+# Supervisor als transiente systemd-Unit (ueberlebt SSH-Abbruch UND Entwickler-PC)
+BASELINE=53 systemd-run --unit=sa-bfsup --description="Backfill Supervisor"   /bin/bash /opt/seasonaledge/scripts/backfill_supervisor.sh
+systemctl is-active sa-bfsup.service
+tail -f /var/log/sa-backfill-supervisor.log
+```
+
+**`scripts/backfill_skew_report.py`** erzeugt den Bericht. Er meldet bewusst **nicht** „exit 0", sondern die Zahl, die zaehlt: **wie viele Ticker jetzt im Radar erscheinen** (cm/cm_extrap-Punkte ≥ `MIN_NORM`), plus die Liste der weiterhin zu duennen Titel. Ein Lauf kann sauber durchlaufen und trotzdem kaum Abdeckung bringen, wenn die 25Δ-Liquiditaet fehlt. `--progress` liefert waehrend des Laufs Position und eine Restzeit-Schaetzung aus dem **tatsaechlichen** Tempo.
+
+**Fallstricke, die Zeit gekostet haben:**
+- **`pkill -f backfill_supervisor` killt die eigene Shell** — das Muster steht in der eigenen Kommandozeile. Beenden mit `systemctl stop sa-bfsup.service`.
+- **`docker exec` laesst sich ueber SSH nicht detachen** (haelt den Kanal bis Prozessende offen; `nohup`/`setsid` helfen nicht). Langlaeufer deshalb per `docker run -d` in einen eigenen Container, Audits gezielt per `--ticker` oder mit ≥10 min Timeout.
+- **HHMM-Zeitvergleiche brauchen `10#`** — sonst liest bash `0010` als Oktalzahl. Fensterlogik vor dem Ausrollen trocken gegen mehrere Uhrzeiten durchspielen; mein erster Entwurf hatte das Fenster faelschlich auf 23:45 statt vor den 23:00-Cron gelegt.
+
 ## Code-Review 2026-09-10 (PRs #248–#258)
 
 Review über `shared/black_scholes.py`, `compute_options_skew.py`, `backfill_skew_massive.py`, `skew.html`, `options_universe.py`. **11 Befunde** — durchweg Restpfade, auf denen Live- und Backfill-Reihe wieder auseinanderlaufen konnten, also genau die Fehlerklasse, die der Umbau schließen sollte.
