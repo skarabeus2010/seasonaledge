@@ -76,7 +76,8 @@ def analyze_moon_effect(df, moon_dates, days_before, days_after):
                 continue
             
             log_rets = window["log_return"].values
-            cum_log = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+            # Glatte Kumulation (siehe shared/calculations.analyze_turn_of_month)
+            cum_log = np.cumsum(log_rets)
             raw_curve = 100 * np.exp(cum_log)
             
             t0_value = raw_curve[t0_idx]

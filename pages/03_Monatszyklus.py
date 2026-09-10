@@ -755,7 +755,8 @@ def calc_cycle_match(df, target_month, selected_years, current_month_curve):
             if len(month_df) < 10:
                 continue
             log_rets = month_df["log_return"].values
-            cum = np.cumsum(np.insert(log_rets, 0, 0)[:-1])
+            # Glatte Kumulation (siehe shared/calculations.analyze_turn_of_month)
+            cum = np.cumsum(log_rets)
             curve = (np.exp(cum) - 1) * 100
             tdoms = month_df["tdom"].tolist()
             curves.append({"tdoms": tdoms, "curve": curve.tolist()})
