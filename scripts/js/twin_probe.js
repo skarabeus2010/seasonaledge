@@ -86,4 +86,51 @@ ergebnis.interp = [
   ergebnis.build_kaputt_jahre = Object.keys(S.buildYearData(kaputt)).length;
 }
 
+// 4) Mondphasen — dieselbe Fenster-Mathematik wie ToM, eigene Funktion.
+//    In PR #271 wurde hier derselbe Off-by-one behoben; ohne Test bliebe eine
+//    erneute Verschiebung gruen.
+{
+  const rows = [
+    { date: '2024-03-10', close: 100, log_return: 0 },
+    { date: '2024-03-11', close: 105, log_return: Math.log(1.05) },
+    { date: '2024-03-12', close: 105, log_return: 0 }
+  ];
+  // t0 = mittlere Zeile; die Bewegung liegt AUF t0, also muss t-1 darunter liegen.
+  const r = S.analyzeMoonEffect(rows, [{ date: '2024-03-11', phase: 'Neumond' }], 1, 1);
+  ergebnis.moon = r ? { curve: r.all_curves[0].curve, total: r.all_curves[0].total_return } : null;
+}
+
+// 5) Volle ToM-Kurve fuer den Vergleich gegen Python — nicht nur ein Element.
+//    Ein verschobenes JS koennte [0,5,5] liefern und einen Test bestehen, der
+//    nur curve[2] === 5 prueft.
+{
+  const rows = [
+    { date: '2024-01-30', close: 100, log_return: 0 },
+    { date: '2024-01-31', close: 100, log_return: 0 },
+    { date: '2024-02-01', close: 105, log_return: Math.log(1.05) }
+  ];
+  const r = S.analyzeTurnOfMonth(rows, 1, 1, [1], [2024]);
+  ergebnis.tom_voll = r ? r.all_curves[0].curve : null;
+}
+
+// 6) yearEndRef/yearCovers — die Sperren gegen Zirkelschluss.
+{
+  const mk = (lad) => ({ last_actual_day: lad, full_365: new Array(365).fill(100) });
+  const f = (yd, jetzt) => {
+    const ref = S.yearEndRef(yd, jetzt);
+    return { ref: ref, akzeptiert: Object.keys(yd).filter(y => S.yearCovers(yd[y], 365, ref)) };
+  };
+  ergebnis.yearcovers = {
+    nur_laufendes:   f({ 2026: mk(250) }, 2026),
+    alle_kurz:       f({ 2025: mk(250), 2026: mk(250) }, 2026),
+    dez_delisting:   f({ 2024: mk(349) }, 2026),
+    // Einziges Jahr ist das LAUFENDE, aber schon bei Tag 364: ohne die
+    // Sperre 'nur abgeschlossene Jahre stiften die Referenz' wuerde es
+    // sich selbst beglaubigen. Es gibt kein abgeschlossenes Jahr als
+    // Massstab -> streng bleiben.
+    nur_laufendes_spaet: f({ 2026: mk(364) }, 2026),
+    voll_plus_kurz:  f({ 2023: mk(364), 2024: mk(364), 2026: mk(250) }, 2026)
+  };
+}
+
 process.stdout.write(JSON.stringify(ergebnis, null, 1));

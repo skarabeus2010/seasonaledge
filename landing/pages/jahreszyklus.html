@@ -1408,7 +1408,6 @@
         for (var c2=1;c2<=4;c2++) {
           var years=[];
           for (var y in yearData) if (JZ.cycleOf(parseInt(y))===c2) years.push(parseInt(y));
-          if (years.length<3) continue;
           var rets=[];
           for (var yi=0;yi<years.length;yi++) {
             // Ohne diesen Filter trug das laufende Jahr seine YTD-Rendite als
@@ -1417,7 +1416,11 @@
             var cc=yearData[years[yi]].full_365, sv=cc[0], ev=cc[364];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
-          if (rets.length) { groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]); }
+          // Mindestanzahl NACH dem Filter pruefen: vorher zaehlte sie Jahre mit,
+          // die yearCovers danach verwarf — eine Gruppe aus 3 Kandidaten konnte
+          // so mit 2 tatsaechlichen Beobachtungen in den Signifikanztest gehen.
+          if (rets.length<3) continue;
+          groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]);
         }
       }
       var id = kind==='month' ? 'content-monthly-sig' : (kind==='quarter' ? 'content-quarterly-sig' : 'content-cycle-sig');
