@@ -173,10 +173,16 @@ def last_actual_day(yd) -> int:
     return min(max(tage), 365) if tage else 0
 
 
-# Frueheste Jahresende-Position auf der 365er-Achse ueber ALLE unterstuetzten
-# Boersenkalender (NYSE/XETRA/EURONEXT/MILAN/LSE/SIX/STOCKHOLM/TSE/FOREX/CRYPTO),
-# gemessen 1990-2030: Tag 362 (XETRA/SIX/MILAN/STOCKHOLM/TSE). Alles darunter ist
-# kein Jahresende mehr, sondern abgeschnittene Historie.
+# Frueheste Jahresende-Position auf der 365er-Achse, gemessen 1990-2030 ueber ALLE
+# Kalender, die shared/exchange_holidays.py kennt:
+#   362  KRX, MILAN, OSLO, SIX, STOCKHOLM, TSE, XETRA
+#   363  EURONEXT, FOREX, HKEX, LSE, NYSE
+#   365  CRYPTO
+# Alles darunter ist kein Jahresende mehr, sondern abgeschnittene Historie.
+# (Korrektur 2026-09-11: die erste Messung liess KRX, OSLO und HKEX aus. Das
+# Minimum bleibt 362, die Grenze haelt — aber die Behauptung "alle Kalender" war
+# falsch. Bei einem NEUEN Kalender diese Messung wiederholen:
+# scripts/verify_seasonal_twins.py Block 5 prueft den Wert nicht nach.)
 JAHRESENDE_UNTERGRENZE = 359
 
 

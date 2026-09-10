@@ -392,9 +392,11 @@ SA.seasonal = {
    * Kalendertag 365: XETRA schliesst am 30.12., die NYSE hatte 2006/2017/2023
    * ihren letzten Handelstag am 29.12.
    */
-  // Frueheste Jahresende-Position ueber ALLE unterstuetzten Boersenkalender,
-  // gemessen 1990-2030: Tag 362. Alles darunter ist kein Jahresende mehr,
-  // sondern abgeschnittene Historie. (Gegenstueck: JAHRESENDE_UNTERGRENZE.)
+  // Frueheste Jahresende-Position, gemessen 1990-2030 ueber alle Kalender in
+  // shared/exchange_holidays.py: Tag 362 (KRX, MILAN, OSLO, SIX, STOCKHOLM,
+  // TSE, XETRA), 363 (EURONEXT, FOREX, HKEX, LSE, NYSE), 365 (CRYPTO).
+  // Alles darunter ist abgeschnittene Historie, kein Jahresende.
+  // (Gegenstueck: shared/calculations.JAHRESENDE_UNTERGRENZE.)
   JAHRESENDE_UNTERGRENZE: 359,
 
   yearEndRef: function(yearData, aktuellesJahr) {
