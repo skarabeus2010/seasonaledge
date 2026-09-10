@@ -51,7 +51,9 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache        # noqa: E402
 from shared.options_universe import all_option_tickers                # noqa: E402
 from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
-                                  bs_delta as _bs_delta, implied_vol as _implied_vol)
+                                  bs_delta as _bs_delta, implied_vol as _implied_vol,
+                                  cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
+                                  DELTA_TOL as _DELTA_TOL, CM_SINGLE_TOL as _SINGLE_TOL)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
@@ -60,9 +62,7 @@ _AGGS = "https://api.polygon.io/v2/aggs/ticker/{occ}/range/1/day/{f}/{t}?adjuste
 _THROTTLE = 0.05    # Flatrate, kleiner Puffer gegen Burst-429
 _BAND = 0.30        # Strike-Fenster um den Spot des jeweiligen Zieldatums
 _MAX_STRIKES = 24   # je Seite und Expiry — reicht, um 25Δ und 50Δ sauber zu klammern
-_DELTA_TOL = 0.08   # wie in compute_options_skew.py: darüber ist die Stützstelle unbrauchbar
 _DTE_MIN, _DTE_MAX = 7, 75    # Spanne fuer Interpolations-Stuetzstellen
-_SINGLE_TOL = 10              # nur EINE Stuetzstelle: max. Abstand zu _CM_DAYS
 
 _DEFAULT = ["MU", "DELL", "BE", "SMH", "ARM", "SNDK", "AVGO", "NVDA", "AMD", "SPY", "QQQ"]
 
@@ -184,29 +184,6 @@ def _closes(sym: str) -> dict:
 
 
 # ── Rekonstruktion ──────────────────────────────────────────────────────────
-_CM_DAYS = 30       # Ziel-Laufzeit der Reihe (konstante Maturität)
-
-
-def _cm_interp(v1, t1, v2, t2, t_target=_CM_DAYS):
-    """IV auf konstante Laufzeit interpolieren — linear in der TOTALEN VARIANZ.
-
-    Warum das nötig ist: Monatsverfälle erzeugen einen Sägezahn. Die Laufzeit
-    läuft von ~46 Tagen auf ~10 herunter und springt beim Roll zurück, und die
-    IV folgt der Term-Struktur mit (MU: ATM 0,52 bei 16 Tagen, 0,65 bei 42).
-    Ein Percentil über so eine Reihe rankt die Position im Verfallszyklus, nicht
-    den Skew — die Tagesänderung von call_zeta hatte ein p90 von 6,8 Punkten.
-
-    Linear in σ²·T (nicht in σ), weil sich Varianz über die Zeit addiert. Das
-    ist dieselbe Interpolation, die der VIX für seine 30-Tage-Konstante nutzt."""
-    if v1 is None or v2 is None or t1 is None or t2 is None or t1 == t2:
-        return None
-    if t1 > t2:
-        v1, t1, v2, t2 = v2, t2, v1, t1
-    w1, w2 = v1 * v1 * t1, v2 * v2 * t2          # totale Varianz je Stützstelle
-    var = w1 + (w2 - w1) * (t_target - t1) / (t2 - t1)
-    if var <= 0 or t_target <= 0:
-        return None
-    return round(math.sqrt(var / t_target), 4)
 
 
 def _is_monthly(iso: str) -> bool:
@@ -757,7 +734,11 @@ def main() -> int:
     ap.add_argument("--min-vol", type=float, default=0.0,
                     help="Kontrakte mit weniger Tagesvolumen verwerfen (0=aus). Gegen alte "
                          "Trade-Prints, die mit dem Schlusskurs gepaart eine zu tiefe IV geben.")
-    ap.add_argument("--vol-pctl", type=float, default=0.0,
+    # Default 0.5 statt 0.0: der Live-Pfad (compute_options_skew._CM_VOL_PCTL)
+    # filtert fest mit 0.5. Ein Backfill-Lauf OHNE das Flag wuerde die Reihe mit
+    # anders gefilterten Punkten mischen — genau der Fehler, den die
+    # Vereinheitlichung beseitigt hat.
+    ap.add_argument("--vol-pctl", type=float, default=0.5,
                     help="Perzentil-Volumenfilter innerhalb der Kandidaten des Tages (0=aus, "
                          "0.5=untere Haelfte verwerfen). Normiert sich selbst auf den Ticker.")
     a = ap.parse_args()

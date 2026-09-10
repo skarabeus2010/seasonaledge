@@ -20,8 +20,10 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from shared.env_loader import load_env          # noqa: E402
 load_env()
-# BS-Engine aus der Rekonstruktion wiederverwenden (identischer Code-Pfad)
-from scripts.backfill_skew_history import _bs_delta, _implied_vol   # noqa: E402
+# BS-Engine zentral aus shared — vorher kam sie aus dem STILLGELEGTEN
+# backfill_skew_history.py und war damit eine dritte Implementierung: das Gate
+# haette eine Engine zertifiziert, die produktiv gar nicht mehr laeuft.
+from shared.black_scholes import bs_delta as _bs_delta, implied_vol as _implied_vol  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _MD = "https://api.marketdata.app/v1/options/chain/{sym}/?dte=30&delta=.25&token={tok}"

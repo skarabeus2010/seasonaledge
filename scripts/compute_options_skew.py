@@ -31,7 +31,10 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day                   # noqa: E402
-from shared.black_scholes import bs_delta, implied_vol                # noqa: E402
+from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
+                                  CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
+                                  CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
+                                  DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL)
 
 
 def _last_session(d: date | None = None) -> str:
@@ -75,7 +78,15 @@ def _fix_session_dates(hist: dict) -> tuple[int, int]:
                 by_date[s] = e
             else:
                 dropped += 1
-                if cur.get("reconstructed") and not e.get("reconstructed"):
+                # Normiert schlaegt nicht-normiert: ein laufzeitnormierter Punkt
+                # (cm/cm_extrap) traegt die Rangfolge, ein Front-Monats-Punkt
+                # nicht. Frueher gewann pauschal der Live-Eintrag — der konnte
+                # damit einen brauchbaren Backfill-Punkt verdraengen und die
+                # Stichprobe verkleinern.
+                _norm = lambda x: x.get("cm_mode") in ("cm", "cm_extrap")
+                if _norm(e) and not _norm(cur):
+                    by_date[s] = e
+                elif _norm(e) == _norm(cur) and cur.get("reconstructed") and not e.get("reconstructed"):
                     by_date[s] = e
         hist[k] = sorted(by_date.values(), key=lambda e: e.get("date") or "")
     return moved, dropped
@@ -133,7 +144,6 @@ def _chain(sym: str, key: str, spot=None) -> list:
     return out
 
 
-_DELTA_TOL = 0.08   # max. Abweichung vom Ziel-Delta, sonst gilt die Stützstelle als unbrauchbar
 
 
 def _pick(lst, target, tol=None):
@@ -261,23 +271,6 @@ def _atm_iv(e: dict):
 # Damit der Live-Tageswert auf DERSELBEN Skala wie der Backfill landet. Ohne das
 # schwankt die Reihe zwischen ~21 und ~39 Tagen (nächste Monatsexpiry), und der
 # Percentile misst die Position im Verfallszyklus statt den Skew.
-_CM_DAYS = 30
-_CM_DTE_MIN, _CM_DTE_MAX = 7, 75     # Spanne für Interpolations-Stützstellen
-_CM_SINGLE_TOL = 10                  # nur EINE Stützstelle: max. Abstand zu _CM_DAYS
-
-
-def _cm_interp(v1, t1, v2, t2, t_target=_CM_DAYS):
-    """IV auf konstante Laufzeit interpolieren — linear in der TOTALEN VARIANZ
-    (σ²·T, VIX-Methodik). Linear in σ läge bis zu 3 Vol-Punkte daneben."""
-    if v1 is None or v2 is None or t1 is None or t2 is None or t1 == t2:
-        return None
-    if t1 > t2:
-        v1, t1, v2, t2 = v2, t2, v1, t1
-    w1, w2 = v1 * v1 * t1, v2 * v2 * t2
-    var = w1 + (w2 - w1) * (t_target - t1) / (t2 - t1)
-    if var <= 0 or t_target <= 0:
-        return None
-    return round(math.sqrt(var / t_target), 4)
 
 
 def _cm_leg(e: dict):
@@ -313,16 +306,21 @@ def _cm_legs(by: dict) -> list:
 # 2026-09-09 ergab das einen Zeta-Versatz von 0,84-1,30 pts, bei NVDA so gross
 # wie der gesamte Interquartilsabstand: der Live-Punkt landete im 99. Percentil,
 # rein methodisch. Deshalb hier dieselbe Inversion, derselbe Volumenfilter.
-_CM_VOL_PCTL = 0.5   # wie der Backfill-Lauf (--vol-pctl 0.5)
 
 
-def _own_cands(contracts: list) -> dict:
+def _own_cands(contracts: list, s30_ref: str | None = None) -> dict:
     """Snapshot-Kontrakte je Expiry als Rohpreise: {exp: {dte, cands:[…]}}.
 
     Bewusst OHNE Provider-IV/Greeks — nur Strike, Typ, Tagesschluss und Volumen.
     Deep-ITM/OTM-Kontrakte ohne Greeks fallen hier NICHT weg (anders als in
-    _byexp), sie werden erst von der Bisektion verworfen, wenn kein Root existiert."""
-    today = date.today(); by = {}
+    _byexp), sie werden erst von der Bisektion verworfen, wenn kein Root existiert.
+
+    s30_ref: Bezugsdatum fuer die Restlaufzeit. MUSS die Session sein, unter der
+    die Zeile gestempelt wird — nicht date.today(). Ein Nachhol-Lauf nach einem
+    ausgefallenen Cron (oder am Wochenende) hat sonst ein T, das bis zu drei Tage
+    daneben liegt, und die daraus invertierte IV waere entsprechend verzerrt."""
+    today = date.fromisoformat(s30_ref) if s30_ref else date.today()
+    by = {}
     for c in contracts:
         det = c.get("details") or {}
         ex, typ, K = det.get("expiration_date"), det.get("contract_type"), det.get("strike_price")
@@ -526,15 +524,21 @@ def _enrich(sym: str, key: str) -> dict | None:
     # wieder einschleusen. Schlaegt die Inversion fehl, bekommt der Tag kein
     # cm_mode — das Frontend laesst ihn dann aus der Rangfolge heraus.
     # Die angezeigten Per-Ticker-Felder oben bleiben Provider-IV (genau, EOD).
-    # Spot fuer die Inversion: bevorzugt der Schluss aus UNSERER Kursreihe — genau
-    # die Quelle, die auch der Backfill nutzt (_closes). Massives /prev-Endpoint
-    # liefert je nach Laufzeitpunkt den Vortag und wuerde die Optionspreise mit
-    # einem Spot des falschen Tages paaren.
-    spot_own = last_close or spot
-    if spot_own:
-        by_own = _own_cands(contracts)
-        cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], spot_own))
-        if cm:
+    # Spot fuer die Inversion: der Schluss aus UNSERER Kursreihe — dieselbe Quelle,
+    # die auch der Backfill nutzt (_closes). Ohne ihn wird NICHT normiert: Massives
+    # /prev liefert je nach Laufzeitpunkt den Vortag, und ein damit falsch
+    # skalierter Punkt bekaeme trotzdem ein cm_mode und landete in der Rangfolge.
+    # Lieber kein Punkt als ein falsch skalierter.
+    if last_close:
+        # Restlaufzeit gegen die SESSION rechnen, unter der die Zeile gestempelt
+        # wird — sonst liegt T bei einem Nachhol-Lauf um bis zu drei Tage daneben.
+        by_own = _own_cands(contracts, s30_ref=_last_session())
+        cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], last_close))
+        # cm-Zeilen ohne iv_atm haetten kein Zeta — das Frontend wuerde auf die
+        # (call_iv-put_iv)/2-Naeherung zurueckfallen, die put_zeta = -call_zeta
+        # erzwingt und den Quadranten auf seine Antidiagonale kollabieren laesst.
+        # Solche Tage gehoeren nicht in die Rangfolge.
+        if cm and cm.get("cm_iv_atm"):
             r.update(cm)
     return r
 
@@ -623,8 +627,14 @@ def build(tickers: list[str], write: bool = True) -> dict:
                             "put_iv": t.get("cm_put_iv") if cm_ok else t["put_25d"]["iv"],
                             "call_iv": t.get("cm_call_iv") if cm_ok else t["call_25d"]["iv"],
                             "iv_atm": t.get("cm_iv_atm") if cm_ok else t.get("iv_atm"),
-                            "vrp_pts": t.get("vrp_pts"),
-                            "pc_ratio": t.get("pc_ratio"),
+                            # VRP/PC aus den CM-Werten ableiten, wenn vorhanden:
+                            # sonst stuenden in EINER Zeile normierte IVs neben
+                            # Front-Monats-Kennzahlen — intern inkonsistent.
+                            "vrp_pts": (round((t["cm_iv_atm"] - t["rv_1m"]) * 100, 2)
+                                        if (cm_ok and t.get("cm_iv_atm") and t.get("rv_1m"))
+                                        else t.get("vrp_pts")),
+                            "pc_ratio": (round(t["cm_put_iv"] / t["cm_call_iv"], 3)
+                                         if (cm_ok and t.get("cm_call_iv")) else t.get("pc_ratio")),
                             "bfly_pts": t.get("cm_bfly_pts") if cm_ok else t.get("bfly_pts"),
                             "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else t.get("call_zeta_pts"),
                             "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else t.get("put_zeta_pts")})
