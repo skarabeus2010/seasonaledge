@@ -290,7 +290,7 @@ SA.seasonal = {
    * Normalisiert Jahreskurven: Start=100, kumulative Log-Returns, interpoliert auf 365 Tage.
    * (Port von build_year_data + normalize_year + interpolate_to_365)
    * @param {Array} rows - [{date, close, log_return}]
-   * @returns {Object} {year: {full_365: [365 values], simpleReturn: %}}
+   * @returns {Object} {year: {full_365: [365 values], last_actual_day: n, simpleReturn: %}}
    */
   buildYearData: function(rows) {
     var yearGroups = {};
@@ -319,7 +319,21 @@ SA.seasonal = {
       // Interpolieren auf 365 Kalendertage
       var full365 = SA.seasonal._interpolateTo365(days, cumulative);
       var simpleReturn = full365[364] > 0 ? (full365[364] / full365[0] - 1) * 100 : 0;
-      result[parseInt(year)] = { full_365: full365, simpleReturn: Math.round(simpleReturn * 100) / 100 };
+      // last_actual_day = letzter Tag mit ECHTER Beobachtung. Alles danach ist in
+      // full_365 konstant fortgeschrieben (siehe _interpolateTo365) und damit eine
+      // flache Linie, kein Kursverlauf.
+      //
+      // Das Feld MUSS mitgeliefert werden: dashboard.html filtert bereits damit
+      // (`yearData[y].last_actual_day || 365`), bekam es aber nie — der Fallback
+      // griff immer, die Schutzabfrage war wirkungslos. Ergebnis: der laufende
+      // Drawdown und die "aktuelle" Kurve liefen flach bis Tag 365 weiter, als
+      // waeren es echte Beobachtungen.
+      var lastActualDay = days.length ? Math.min(days[days.length - 1], 365) : 0;
+      result[parseInt(year)] = {
+        full_365: full365,
+        last_actual_day: lastActualDay,
+        simpleReturn: Math.round(simpleReturn * 100) / 100
+      };
     }
     return result;
   },
