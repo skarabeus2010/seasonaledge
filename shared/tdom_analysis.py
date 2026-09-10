@@ -31,13 +31,17 @@ def add_tdom_columns(df: pd.DataFrame) -> pd.DataFrame:
             df["year"] = df.index.year
             df["month"] = df.index.month
 
+    # Nach Ticker mitgruppieren, wenn die Spalte da ist. Ohne sie zaehlt ein
+    # DataFrame mit mehreren Tickern durch: die SAP-Zeilen setzen den AAPL-Zaehler
+    # fort, und der Monat bekommt doppelt so viele "Handelstage" wie er hat.
+    # Ohne ticker-Spalte MUSS das DataFrame genau einen Ticker enthalten.
+    grp = (["ticker"] if "ticker" in df.columns else []) + ["year", "month"]
+
     # Vorwärts: TDoM 1, 2, 3, ...
-    df["tdom"] = df.groupby(["year", "month"]).cumcount() + 1
+    df["tdom"] = df.groupby(grp).cumcount() + 1
 
     # Rückwärts: TDoM -1, -2, -3, ...
-    df["tdom_reverse"] = (
-        df.groupby(["year", "month"]).cumcount(ascending=False) + 1
-    ) * -1
+    df["tdom_reverse"] = (df.groupby(grp).cumcount(ascending=False) + 1) * -1
 
     return df
 
@@ -56,14 +60,21 @@ def calc_strategy_returns(df: pd.DataFrame, strategy: str = "open_to_close") -> 
     """
     df = df.copy()
 
+    # shift(-1) holt den "naechsten" Tag. Ueber ein DataFrame mit mehreren Tickern
+    # gezogen, ist der naechste Tag der ERSTE Tag des naechsten Tickers — die
+    # Overnight-Rendite waere dann AAPL-Open gegen SAP-Open. Deshalb je Ticker
+    # verschieben, wenn die Spalte vorhanden ist.
+    def _next(col):
+        return df.groupby("ticker")[col].shift(-1) if "ticker" in df.columns             else df[col].shift(-1)
+
     if strategy == "open_to_close":
         df["strat_return"] = (df["Close"] - df["Open"]) / df["Open"] * 100
     elif strategy == "open_to_next_open":
-        df["strat_return"] = (df["Open"].shift(-1) - df["Open"]) / df["Open"] * 100
+        df["strat_return"] = (_next("Open") - df["Open"]) / df["Open"] * 100
     elif strategy == "open_to_next_close":
-        df["strat_return"] = (df["Close"].shift(-1) - df["Open"]) / df["Open"] * 100
+        df["strat_return"] = (_next("Close") - df["Open"]) / df["Open"] * 100
     elif strategy == "close_to_next_close":
-        df["strat_return"] = (df["Close"].shift(-1) - df["Close"]) / df["Close"] * 100
+        df["strat_return"] = (_next("Close") - df["Close"]) / df["Close"] * 100
     else:
         raise ValueError(f"Unbekannte Strategie: {strategy}")
 

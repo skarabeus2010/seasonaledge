@@ -311,7 +311,7 @@ teuersten Fehler gefunden:
 
 - [ ] **Welle 1 — Kern-Methodik: normalisierte Renditen + Zeitindizes.** Höchster Hebel,
   weil alles darauf steht. `shared/calculations.py` (478) · `shared/tdom_analysis.py` ·
-  `scripts/compute_tdoy_tdom.py` · **`landing/js/seasonal-compute.js` (544)**.
+  `scripts/backfill_tdoy.py` · **`landing/js/seasonal-compute.js` (544)**.
   Leitfrage: Rechnen Backend und Frontend nachweislich dasselbe? Die Kern-Regel
   („jedes Jahr startet bei 100, tägliche Returns kumulieren, NIE `close − close[lookback]`")
   existiert in beiden Sprachen — genau die Konstellation, die im Options-Teil driftete.
