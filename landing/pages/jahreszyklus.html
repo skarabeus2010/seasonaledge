@@ -595,7 +595,13 @@
     // ── Period Stats (periodStats, null-safe) ───────────────────────────────
     function periodStats(yearData, startDoy, endDoy) {
       var rets=[];
+      // Jahre, deren echte Beobachtungen nicht bis zum Periodenende reichen,
+      // liefern als "Rendite" nur die konstante Fortschreibung — das laufende
+      // Jahr ging so als abgeschlossenes in Trefferquote und Mittelwert ein.
+      // Gegenstueck zu shared/calculations.calculate_period_stats.
+      var ref=SA.seasonal.yearEndRef(yearData);
       for (var y in yearData) {
+        if (!SA.seasonal.yearCovers(yearData[y], endDoy, ref)) continue;
         var c=yearData[y].full_365;
         var sv=c[startDoy-1], ev=c[Math.min(endDoy-1,364)];
         // Beide Werte müssen echte Zahlen sein, sonst überspringen
@@ -1366,6 +1372,9 @@
       // kind: 'month'|'quarter'|'cycle'
       if (!SA.significance) return;
       var groups={}, order=[];
+      // Referenz fuer yearCovers: wie weit reicht ein vollstaendiges Jahr dieses
+      // Tickers? (XETRA endet am 30.12. -> Tag 364, nicht 365.)
+      var sigRef=SA.seasonal.yearEndRef(yearData);
       if (kind==='month') {
         for (var m=1;m<=12;m++) {
           var b=MONTH_BOUNDS[m-1], rets=[];
@@ -1374,8 +1383,7 @@
             // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
             // zog als vermeintlich echte Beobachtung den Signifikanztest nach
             // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
-            var lad=yearData[y].last_actual_day||365;
-            if (lad < Math.min(b[1],365)) continue;
+            if (!SA.seasonal.yearCovers(yearData[y], b[1], sigRef)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
@@ -1390,8 +1398,7 @@
             // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
             // zog als vermeintlich echte Beobachtung den Signifikanztest nach
             // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
-            var lad=yearData[y].last_actual_day||365;
-            if (lad < Math.min(b[1],365)) continue;
+            if (!SA.seasonal.yearCovers(yearData[y], b[1], sigRef)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
@@ -1404,6 +1411,9 @@
           if (years.length<3) continue;
           var rets=[];
           for (var yi=0;yi<years.length;yi++) {
+            // Ohne diesen Filter trug das laufende Jahr seine YTD-Rendite als
+            // vollstaendige Jahresrendite in die Zyklusgruppe ein.
+            if (!SA.seasonal.yearCovers(yearData[years[yi]], 365, sigRef)) continue;
             var cc=yearData[years[yi]].full_365, sv=cc[0], ev=cc[364];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }

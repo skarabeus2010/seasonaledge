@@ -159,7 +159,14 @@ def calc_tdom_range_return(
     entry_col = "tdom" if entry_tdom > 0 else "tdom_reverse"
     exit_col = "tdom" if exit_tdom > 0 else "tdom_reverse"
 
-    for (year, month), group in df.groupby(["year", "month"]):
+    # Ticker mitgruppieren, wenn die Spalte da ist: sonst liefen bei einem
+    # DataFrame mit mehreren Tickern A- und B-Zeilen in dieselbe Gruppe, und
+    # die "Rendite" war A-Entry gegen B-Exit (siehe add_tdom_columns, gleicher
+    # Fehler, andere Funktion).
+    _keys = (["ticker", "year", "month"] if "ticker" in df.columns
+             else ["year", "month"])
+    for _grp_key, group in df.groupby(_keys):
+        year, month = (_grp_key[-2], _grp_key[-1])
         entry_rows = group[group[entry_col] == entry_tdom]
         exit_rows = group[group[exit_col] == exit_tdom]
 

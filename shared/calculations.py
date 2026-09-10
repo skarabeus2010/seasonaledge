@@ -173,6 +173,36 @@ def last_actual_day(yd) -> int:
     return min(max(tage), 365) if tage else 0
 
 
+def year_end_reference(year_data) -> int:
+    """Wie weit reicht ein VOLLSTAENDIGES Jahr dieses Tickers ueberhaupt?
+
+    Ein abgeschlossenes Jahr endet fast nie am Kalendertag 365: XETRA schliesst
+    am 30.12., die NYSE hatte 2006/2017/2023 ihren letzten Handelstag am 29.12.
+    Zwischen letztem Handelstag und Silvester ist die Fortschreibung **exakt** —
+    es wurde nicht gehandelt, der Kurs hat sich nicht geaendert.
+
+    Diese Referenz kalibriert sich aus den Daten selbst, damit `year_covers`
+    ohne Boersenkalender auskommt.
+    """
+    werte = [last_actual_day(yd) for yd in year_data.values()]
+    return max(werte) if werte else 0
+
+
+def year_covers(yd, end_day: int, ref: int) -> bool:
+    """Darf dieses Jahr fuer eine Periode bis `end_day` mitgezaehlt werden?
+
+    Ja, wenn echte Beobachtungen bis zum Periodenende reichen — ODER das Jahr
+    bis zu seinem eigenen Jahresende reicht (`ref`), denn dann ueberbrueckt die
+    Fortschreibung nur handelsfreie Tage.
+
+    Ein starres `>= 365` warf 7 von 26 NYSE- und 15 von 26 XETRA-Jahren weg
+    (gemessen 2000-2025) — das laufende Jahr fiel korrekt raus, aber eben auch
+    jedes zweite abgeschlossene XETRA-Jahr.
+    """
+    lad = last_actual_day(yd)
+    return lad >= min(end_day, 365) or lad >= ref
+
+
 def build_year_data(df, selected_years):
     """Baue normalisierte Jahreskurven für alle gewählten Jahre."""
     year_data = {}
@@ -242,12 +272,22 @@ def calculate_period_stats(year_data, start_day, end_day):
     Die Prüfung über `days` ist schärfer als ein Ausschluss nur des laufenden
     Jahres (so macht es das Frontend in ki-saisonalitaet.html): sie erwischt auch
     Jahre mit abgeschnittenem Ende, etwa bei Delisting oder Datenlücken.
+
+    ABER: ein abgeschlossenes Jahr endet fast nie am Kalendertag 365. XETRA
+    schliesst am 30.12., die NYSE hatte 2006/2017/2023 ihren letzten Handelstag
+    am 29.12. Zwischen letztem Handelstag und Silvester ist die Fortschreibung
+    **exakt** — es wurde ja nicht gehandelt, der Kurs hat sich nicht geändert.
+    Ein starres `< 365` warf deshalb 7 von 26 NYSE- und 15 von 26 XETRA-Jahren
+    weg (gemessen 2000-2025). Die Referenz ist daher nicht 365, sondern wie weit
+    ein vollständiges Jahr DIESES Tickers überhaupt reicht — selbstkalibrierend,
+    ohne den Börsenkalender hier zu kennen.
     """
     period_returns = []
 
+    ref = year_end_reference(year_data)
+
     for year, yd in year_data.items():
-        letzter_echter_tag = max(yd["days"]) if yd.get("days") else 0
-        if letzter_echter_tag < min(end_day, 365):
+        if not year_covers(yd, end_day, ref):
             continue                      # Periode reicht in die Fortschreibung
         start_val = yd["full_365"][start_day - 1]
         end_val = yd["full_365"][min(end_day - 1, 364)]

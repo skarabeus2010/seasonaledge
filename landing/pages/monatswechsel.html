@@ -367,7 +367,9 @@
         var y = parseInt(r.date.substring(0, 4));
         var m = parseInt(r.date.substring(5, 7));
         if (y !== currentYear && !(y === currentYear - 1 && m === 12)) continue;
-        var key = y + '-' + m;
+        // Monat nullgepaddet — sonst sortiert sort() lexikografisch
+        // ("2024-1" < "2024-10" < "2024-2") und der "Folgemonat" ist ein anderer.
+        var key = y + '-' + (m < 10 ? '0' : '') + m;
         if (!ymGroups[key]) ymGroups[key] = { year: y, month: m, rows: [] };
         ymGroups[key].rows.push(r);
       }
@@ -378,6 +380,10 @@
       for (var ki = 0; ki < keys.length - 1; ki++) {
         var cur = ymGroups[keys[ki]];
         var nxt = ymGroups[keys[ki + 1]];
+        // Nachbarschaft pruefen (wie SA.seasonal.analyzeTurnOfMonth)
+        var expMonth = cur.month < 12 ? cur.month + 1 : 1;
+        var expYear = cur.month < 12 ? cur.year : cur.year + 1;
+        if (nxt.month !== expMonth || nxt.year !== expYear) continue;
         // Nur Transitions aus dem aktuellen Jahr (cur.year === currentYear),
         // oder Dez Vorjahr → Jan aktuelles Jahr
         var transitionYear = nxt.year;
