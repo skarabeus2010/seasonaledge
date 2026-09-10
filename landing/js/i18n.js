@@ -19,7 +19,12 @@ SA.i18n = (function() {
   var _isEN = false;
 
   // Paths that have no EN equivalent — never auto-redirect here
-  var _noAutoRedirect = ['/blog/', '/tools/', '/rechtliches', '/disclaimer', '/app/', '/umami/'];
+  // These pages intentionally have no /en/ variant.  Their nginx routes
+  // redirect /en/<slug> back to the German page; auto-redirecting here would
+  // therefore create an infinite browser/server redirect loop for users with
+  // an English preference.
+  var _noAutoRedirect = ['/blog/', '/tools/', '/rechtliches', '/disclaimer', '/app/', '/umami/',
+                         '/flows', '/dealer-positioning'];
 
   function _detectLang() {
     var path = window.location.pathname;
