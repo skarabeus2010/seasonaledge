@@ -38,32 +38,46 @@ print(datetime.now())
 
 
 def compute_tdoy_tdom(dates: list[date], exchange: str) -> list[dict]:
-    """Berechnet TDOM + TDOY fuer eine sortierte Liste von Dates."""
+    """TDOM + TDOY je Datum — gezaehlt auf dem BOERSENKALENDER, nicht auf den Zeilen.
+
+    Frueher lief der Zaehler ueber die uebergebene Datumsliste. Beginnt die
+    gespeicherte Historie eines Tickers am 1. Juli, bekam dieser Tag `tdoy=1`,
+    obwohl auf dem Kalender schon rund 125 Handelstage vorbei waren; eine
+    Datenluecke schob analog alle folgenden Indizes nach vorn. TDOY/TDOM sind
+    aber Eigenschaften des KALENDERS, nicht unserer Datenlage — genau so steht
+    es auch in CLAUDE.md ("Ground-Truth = reiner Boersenkalender ab Jan 1").
+
+    Deshalb wird je betroffenem Jahr einmal der komplette Handelstags-Kalender
+    aufgebaut und jedes Datum darauf nachgeschlagen.
+    """
+    if not dates:
+        return []
+
+    # Kalender je Jahr genau einmal aufbauen (365/366 is_trading_day-Aufrufe).
+    kalender: dict[int, dict[date, tuple[int, int]]] = {}
+    for jahr in sorted({d.year for d in dates}):
+        tage: dict[date, tuple[int, int]] = {}
+        tdoy = 0
+        tdom = 0
+        letzter_monat = None
+        tag = date(jahr, 1, 1)
+        while tag.year == jahr:
+            if tag.month != letzter_monat:
+                letzter_monat = tag.month
+                tdom = 0
+            if is_trading_day(tag, exchange):
+                tdoy += 1
+                tdom += 1
+            tage[tag] = (tdom, tdoy)
+            tag += timedelta(days=1)
+        kalender[jahr] = tage
+
     results = []
-    tdoy_counter = 0
-    tdom_counter = 0
-    current_year = None
-    current_month = None
-
     for d in dates:
-        # Jahr/Monat Reset
-        if d.year != current_year:
-            current_year = d.year
-            tdoy_counter = 0
-            current_month = d.month
-            tdom_counter = 0
-        if d.month != current_month:
-            current_month = d.month
-            tdom_counter = 0
-
-        # Nur Handelstage zaehlen
-        if is_trading_day(d, exchange):
-            tdoy_counter += 1
-            tdom_counter += 1
-
-        results.append({"date": d, "tdom": tdom_counter, "tdoy": tdoy_counter})
-
+        tdom, tdoy = kalender[d.year].get(d, (0, 0))
+        results.append({"date": d, "tdom": tdom, "tdoy": tdoy})
     return results
+
 
 
 # Fehlgeschlagene Upsert-Batches — entscheidet am Ende ueber den Exit-Code.
