@@ -36,6 +36,7 @@ from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
+                                  leg_from_prices, standardserie_filter,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
@@ -325,7 +326,8 @@ def _cm_legs(by: dict) -> list:
 # rein methodisch. Deshalb hier dieselbe Inversion, derselbe Volumenfilter.
 
 
-def _own_cands(contracts: list, s30_ref: str | None = None) -> dict:
+def _own_cands(contracts: list, s30_ref: str | None = None,
+               underlying: str | None = None) -> dict:
     """Snapshot-Kontrakte je Expiry als Rohpreise: {exp: {dte, cands:[…]}}.
 
     Bewusst OHNE Provider-IV/Greeks — nur Strike, Typ, Tagesschluss und Volumen.
@@ -337,6 +339,12 @@ def _own_cands(contracts: list, s30_ref: str | None = None) -> dict:
     ausgefallenen Cron (oder am Wochenende) hat sonst ein T, das bis zu drei Tage
     daneben liegt, und die daraus invertierte IV waere entsprechend verzerrt."""
     today = date.fromisoformat(s30_ref) if s30_ref else date.today()
+    if underlying:
+        # Angepasste Serien (Wurzel mit Ziffernsuffix, z. B. SPGI1 neben SPGI)
+        # haben einen anderen Lieferumfang und passen nicht zum normalen Spot.
+        contracts, weg = standardserie_filter(contracts, underlying)
+        if weg:
+            print(f"  {underlying}: {weg} angepasste Optionskontrakte verworfen", flush=True)
     by = {}
     for c in contracts:
         det = c.get("details") or {}
@@ -351,41 +359,20 @@ def _own_cands(contracts: list, s30_ref: str | None = None) -> dict:
 
 
 def _leg_own(e: dict, spot: float, vol_pctl: float = _CM_VOL_PCTL):
-    """25Δ-Call/Put- + ATM-IV EINER Expiry aus Preisen — Spiegel von
-    backfill_skew_massive._leg_ivs (gleiche Filter, gleiche Toleranz)."""
-    dte = e["dte"]; cands = e["cands"]
-    if not spot or dte <= 0 or not cands:
-        return None
-    T = dte / 365.0
-    cutoff = 0.0
-    if vol_pctl > 0:
+    """25Δ-Call/Put- + ATM-IV EINER Expiry aus Rohpreisen.
+
+    Die Rechnung selbst steht in shared/black_scholes.leg_from_prices und ist
+    damit BUCHSTAEBLICH dieselbe Funktion, die der Backfill aufruft — nicht mehr
+    zwei Spiegel, die auseinanderlaufen koennen. `vol_pctl` bleibt als Parameter
+    erhalten, steht aber auf 0: der Volumenfilter war das falsche Kriterium
+    (Begruendung in shared/black_scholes.py bei VOL_PCTL).
+    """
+    cands = e.get("cands") or []
+    if vol_pctl > 0 and cands:
         vols = sorted(c["vol"] for c in cands)
-        if vols:
-            cutoff = vols[min(len(vols) - 1, int(len(vols) * vol_pctl))]
-    best = {"call": {}, "put": {}}
-    for c in cands:
-        if cutoff and c["vol"] < cutoff:
-            continue
-        iv = implied_vol(c["px"], spot, c["K"], T, c["typ"])
-        if iv is None or iv <= _IV_MIN or iv > _IV_MAX:
-            continue
-        dl = bs_delta(spot, c["K"], T, iv, c["typ"])
-        for tgt in (0.25, 0.50):
-            dist = abs(abs(dl) - tgt)
-            cur = best[c["typ"]].get(tgt)
-            if cur is None or dist < cur[0]:
-                best[c["typ"]][tgt] = (dist, iv)
-
-    def _take(typ, tgt):
-        v = best[typ].get(tgt)
-        return v[1] if (v and v[0] <= _DELTA_TOL) else None
-
-    call_iv, put_iv = _take("call", 0.25), _take("put", 0.25)
-    atm_c, atm_p = _take("call", 0.50), _take("put", 0.50)
-    if call_iv is None or put_iv is None:
-        return None
-    iv_atm = round((atm_c + atm_p) / 2, 4) if (atm_c and atm_p) else (atm_c or atm_p)
-    return {"dte": dte, "call_iv": call_iv, "put_iv": put_iv, "iv_atm": iv_atm}
+        cutoff = vols[min(len(vols) - 1, int(len(vols) * vol_pctl))]
+        cands = [c for c in cands if not cutoff or c["vol"] >= cutoff]
+    return leg_from_prices(cands, spot, e["dte"])
 
 
 def _skew_cm(by: dict, leg_fn=None) -> dict | None:
@@ -552,7 +539,7 @@ def _enrich(sym: str, key: str) -> dict | None:
     if last_close:
         # Restlaufzeit gegen die SESSION rechnen, unter der die Zeile gestempelt
         # wird — sonst liegt T bei einem Nachhol-Lauf um bis zu drei Tage daneben.
-        by_own = _own_cands(contracts, s30_ref=_last_session())
+        by_own = _own_cands(contracts, s30_ref=_last_session(), underlying=sym)
         cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], last_close))
         # cm-Zeilen ohne iv_atm haetten kein Zeta — das Frontend wuerde auf die
         # (call_iv-put_iv)/2-Naeherung zurueckfallen, die put_zeta = -call_zeta

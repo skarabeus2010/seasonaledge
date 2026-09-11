@@ -56,7 +56,9 @@ from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,  
                                   cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
                                   DELTA_TOL as _DELTA_TOL, CM_SINGLE_TOL as _SINGLE_TOL,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX,
-                                  VOL_PCTL as _VOL_PCTL)
+                                  VOL_PCTL as _VOL_PCTL,
+                                  leg_from_prices as _leg_from_prices,
+                                  standardserie_filter as _standardserie_filter)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
@@ -196,8 +198,18 @@ def _is_monthly(iso: str) -> bool:
 
 
 def _plan(closes: dict, contracts: list, targets: list,
-          prefer_monthly: bool = True) -> tuple[dict, dict]:
-    """Je Zieldatum Expiry+Kontrakte festlegen. Rückgabe: (plan, benötigte Kontrakte)."""
+          prefer_monthly: bool = True, underlying: str | None = None) -> tuple[dict, dict]:
+    """Je Zieldatum Expiry+Kontrakte festlegen. Rückgabe: (plan, benötigte Kontrakte).
+
+    Angepasste Serien (Wurzel mit Ziffernsuffix, z. B. SPGI1 neben SPGI) fliegen
+    raus: sie haben einen anderen Lieferumfang und passen nicht zum normalen
+    Spot. Gegenstueck im Live-Pfad: _own_cands.
+    """
+    if underlying:
+        contracts, weg = _standardserie_filter(
+            contracts, underlying, ticker_feld=lambda c: c.get("ticker", ""))
+        if weg:
+            print(f"  {underlying}: {weg} angepasste Optionskontrakte verworfen", flush=True)
     by_exp: dict[str, list] = {}
     for c in contracts:
         e = c.get("expiration_date")
@@ -262,26 +274,23 @@ def _plan(closes: dict, contracts: list, targets: list,
 
 def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
              min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL):
-    """Rohe 25Δ-Call/Put- und ATM-IV EINER Expiry. None wenn nicht klammerbar.
+    """25Δ-Call/Put- + ATM-IV EINER Expiry aus den Tagesbars.
 
-    Gegen den Stale-Print-Bias (letzter Trade Stunden vor Schluss, gepaart mit
-    dem Schlusskurs des Basiswerts) zwei Filter:
+    Die Rechnung steht in shared/black_scholes.leg_from_prices — BUCHSTAEBLICH
+    dieselbe Funktion, die der Live-Pfad aufruft. Hier wird nur die andere
+    Datenform (Bars statt Snapshot) in dieselben Kandidaten uebersetzt.
 
-    min_vol   absolute Volumenschwelle. Taugt nur ticker-spezifisch: 200
-              Kontrakte sind bei MU viel, bei SPY nichts. Global gesetzt
-              rettet sie MU und zerstoert SPY (dort faellt der ATM-Pick auf
-              einen entfernteren Strike, dessen IV die Smile-Kruemmung anhebt).
-    vol_pctl  Perzentil-Schwelle innerhalb der Kandidaten DIESES Tages — das
-              normiert sich selbst auf das Liquiditaetsniveau des Tickers.
-              0.5 verwirft die untere Haelfte."""
-    T = dte / 365.0
+    `min_vol` taugt nur ticker-spezifisch: 200 Kontrakte sind bei MU viel, bei
+    SPY nichts. `vol_pctl` steht auf 0 — der Volumenfilter war das falsche
+    Kriterium und hat den Radar messbar verdorben (Begruendung im BS-Modul).
+    """
     cutoff = 0.0
     if vol_pctl > 0:
         vols = sorted(rec[1] for occ in occs
                       if (rec := bars.get(occ, {}).get(d)) is not None)
         if vols:
             cutoff = vols[min(len(vols) - 1, int(len(vols) * vol_pctl))]
-    best: dict = {"call": {}, "put": {}}
+    cands = []
     for occ in occs:
         rec = bars.get(occ, {}).get(d)
         if not rec:
@@ -292,27 +301,9 @@ def _leg_ivs(d: str, spot: float, dte: int, occs: list, need: dict, bars: dict,
         if cutoff and vol < cutoff:
             continue
         c = need[occ]
-        typ, K = c["contract_type"], float(c["strike_price"])
-        iv = _implied_vol(px, spot, K, T, typ)
-        if iv is None or iv <= _IV_MIN or iv > _IV_MAX:
-            continue
-        dl = _bs_delta(spot, K, T, iv, typ)
-        for tgt in (0.25, 0.50):
-            dist = abs(abs(dl) - tgt)
-            cur = best[typ].get(tgt)
-            if cur is None or dist < cur[0]:
-                best[typ][tgt] = (dist, iv)
-
-    def _take(typ, tgt):
-        v = best[typ].get(tgt)
-        return v[1] if (v and v[0] <= _DELTA_TOL) else None
-
-    call_iv, put_iv = _take("call", 0.25), _take("put", 0.25)
-    atm_c, atm_p = _take("call", 0.50), _take("put", 0.50)
-    if call_iv is None or put_iv is None:
-        return None
-    iv_atm = round((atm_c + atm_p) / 2, 4) if (atm_c and atm_p) else (atm_c or atm_p)
-    return {"dte": dte, "call_iv": call_iv, "put_iv": put_iv, "iv_atm": iv_atm}
+        cands.append({"typ": c["contract_type"], "K": float(c["strike_price"]),
+                      "px": px})
+    return _leg_from_prices(cands, spot, dte)
 
 
 def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
@@ -418,7 +409,7 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
     contracts = _list_contracts(sym, key, exp_lo, exp_hi, k_lo, k_hi)
     if not contracts:
         print(f"  {sym:6} keine Kontrakte gelistet", flush=True); return 0
-    plan, need = _plan(closes, contracts, todo)
+    plan, need = _plan(closes, contracts, todo, underlying=sym)
     if not plan:
         print(f"  {sym:6} kein Zieldatum planbar (Kontrakte={len(contracts)})", flush=True); return 0
     print(f"  {sym:6} {len(todo)} Ziele · {len(contracts)} Kontrakte gelistet · "
@@ -470,7 +461,7 @@ def probe(sym: str, key: str) -> int:
     if not cs:
         print("[FAIL] Listing leer — expired-Parameter oder Strike-Band prüfen"); return 2
 
-    plan, need = _plan(closes, cs, [d])
+    plan, need = _plan(closes, cs, [d], underlying=sym)
     if not plan:
         print("[FAIL] kein planbares Zieldatum"); return 3
     legs = plan[d]
@@ -571,7 +562,7 @@ def probe_quotes(sym: str, key: str) -> int:
 
     exp_hi = (date.fromisoformat(d) + timedelta(days=_DTE_MAX)).isoformat()
     cs = _list_contracts(sym, key, d, exp_hi, spot * 0.7, spot * 1.3)
-    plan, need = _plan(closes, cs, [d])
+    plan, need = _plan(closes, cs, [d], underlying=sym)
     if not plan:
         print("[FAIL] kein planbares Zieldatum"); return 3
     legs = plan[d]
@@ -701,8 +692,8 @@ def verify(syms: list, key: str, min_vol: float = 0.0, vol_pctl: float = _VOL_PC
         # ZWEI Rekonstruktionen, um die Laufzeit als Ursache zu isolieren:
         # der Provider-Eintrag stammt aus der Zeit VOR der Monatspraeferenz, nahm
         # also die 30-Tage-naechste Expiry (womoeglich eine Weekly).
-        plan_m, need_m = _plan(closes, contracts, dates, prefer_monthly=True)
-        plan_n, need_n = _plan(closes, contracts, dates, prefer_monthly=False)
+        plan_m, need_m = _plan(closes, contracts, dates, prefer_monthly=True, underlying=sym)
+        plan_n, need_n = _plan(closes, contracts, dates, prefer_monthly=False, underlying=sym)
         need = {**need_m, **need_n}
         bars = {occ: _bars(occ, key, dates[0], dates[-1]) for occ in need}
 
@@ -792,9 +783,10 @@ def main() -> int:
     # filtert fest mit 0.5. Ein Backfill-Lauf OHNE das Flag wuerde die Reihe mit
     # anders gefilterten Punkten mischen — genau der Fehler, den die
     # Vereinheitlichung beseitigt hat.
-    ap.add_argument("--vol-pctl", type=float, default=0.5,
-                    help="Perzentil-Volumenfilter innerhalb der Kandidaten des Tages (0=aus, "
-                         "0.5=untere Haelfte verwerfen). Normiert sich selbst auf den Ticker.")
+    ap.add_argument("--vol-pctl", type=float, default=_VOL_PCTL,
+                    help="Perzentil-Volumenfilter (0=aus). Default kommt aus "
+                         "shared/black_scholes.VOL_PCTL und steht dort auf 0 — der "
+                         "Filter war das falsche Kriterium, Begruendung im Modul.")
     a = ap.parse_args()
 
     key = os.environ.get("MASSIVE_API_KEY", "")
