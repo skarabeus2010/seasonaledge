@@ -256,6 +256,168 @@ Review über `shared/black_scholes.py`, `compute_options_skew.py`, `backfill_ske
 
 Gegenprobe nach dem Fix: `CM_DAYS`/`DELTA_TOL`/`SINGLE_TOL`/`VOL_PCTL` auf beiden Seiten identisch, `cm_interp` ist **dieselbe Funktion** (Identitätstest `is`), `verify` nutzt dieselbe `implied_vol`, BS-Rundlauf exakt, `_enrich` liefert weiter `cm_mode=cm`.
 
+## Der Radar mass Müll — drei Fehler (2026-09-11, PRs #277/278)
+
+**Vom Nutzer bemerkt, nicht von einem Test:** GOOGL und AAPL standen im
+Extrembereich, obwohl die Kurse das nicht hergaben. Nachgemessen am
+veröffentlichten Stand:
+
+| Prüfung | Befund |
+|---|---|
+| 25Δ-Put-IV **unter** ATM-IV (bei Aktien praktisch ausgeschlossen) | **31 von 145 (21 %)** |
+| Put-Zeta unter −5 Punkte | 13 Ticker, Spitzen **SPOT −50,8**, **SOXX −46,8** |
+| Front-Monat (35 d) vs. 30-Tage-CM, Abweichung > 8 Punkte | **69 von 145 (48 %)**, SOXL front +9,0 gegen cm **+58,0** |
+
+Der letzte Punkt war der Beweis: derselbe Basiswert, derselbe Tag, fünf Tage
+Laufzeitunterschied — das *kann* nicht um 49 Punkte auseinanderliegen. Die
+Zeitreihe trennte es sauber: die gebackfillten Punkte waren stabil (AAPL +1,2
+bis +2,1 über acht Tage), die Live-Punkte sprangen (AAPL +2,68 → **−16,78** an
+einem Tag).
+
+### 1. Der Volumenfilter war das falsche Kriterium
+
+`VOL_PCTL` stand auf 0,5. An SOXX reproduziert (Expiry 2026-10-16, 35 DTE):
+
+| | Strike | Volumen | IV | Delta-Abstand |
+|---|---|---|---|---|
+| ohne Filter | **570** | 1 | **0,3930** | 0,008 |
+| mit Filter | 585 | 2 | **0,4759** | 0,017 |
+
+Der Cutoff lag bei **Volumen 2** — der Filter unterschied also zwischen „ein
+Kontrakt gehandelt" und „zwei". Er verwarf dabei den Strike mit dem *besseren*
+Delta-Treffer und dem *korrekten* Preis (Anbieter-IV 0,3896, Abweichung 0,0034)
+und behielt den, dessen IV aus dem Smile herausragt (570 → 0,393, 575 → 0,388,
+585 → **0,476**). Der Skew kippte von +1,79 auf −6,50.
+
+> **Volumen misst Aktivität, nicht Preisqualität.** Damit ist die Angleichung aus
+> PR #275 zurückgenommen — der Review-Befund „Backfill 0.0, Live 0.5, angleichen"
+> hatte auf die falsche Seite angeglichen.
+
+### 2. Das Delta kam aus der IV des Kontrakts selbst
+
+In `_leg_own`/`_leg_ivs` wurde je Kontrakt die IV aus dem Preis invertiert und
+das Delta **aus genau dieser IV** berechnet. Ein schlechter Preis erzeugte damit
+*beides*: die falsche IV und das Delta, das den Kontrakt wie den gesuchten
+Strike aussehen ließ. `DELTA_TOL` prüft gegen dieselbe verdorbene Größe und kann
+es nicht fangen.
+
+Am **ATM-Pick** war es am schlimmsten, weil eine zu hohe IV das Delta *jedes*
+Strikes Richtung 0,50 zieht: SPY wies eine ATM-IV von **38 %** aus (realistisch
+~13 %), SPGI 43 % über *beiden* Flügeln, HON gar keine.
+
+Neu (Zweipass): ATM über **Moneyness am Forward** (`F = S·e^(rT)`), IV zwischen
+den zwei Strikes um F interpoliert, dann **alle** Deltas mit dieser *einen*
+Referenz-IV. Ohne gültigen Anker fällt die Expiry aus der Rangreihe — kein
+Rückfall auf einen Flügel, kein `IV = 0`.
+
+### 3. Angepasste Optionsserien liefen mit — der eigentliche Quellenfehler
+
+SPGIs Kette enthielt **350 Kontrakte mit der Wurzel `SPGI1`** neben 904
+regulären. Jeder Strike kam **doppelt** vor, mit völlig verschiedenen Preisen
+(K=450: 21,40 und 3,00); die Anbieter-IV passte jeweils zum regulären. Unser
+25Δ-Call landete auf der angepassten Serie: **92 % IV neben 28,5 % ATM**.
+HON hatte 144 solcher Kontrakte.
+
+Angepasste Serien entstehen nach Kapitalmaßnahmen (Sonderdividende, Spin-off)
+und haben einen **anderen Lieferumfang** — ihr Preis gehört nicht zum normalen
+Spot. `standardserie_filter()` entfernt sie in beiden Pfaden.
+
+### Zwei weitere Wachen
+
+**Paritätsprüfung je Strike.** Call und Put am selben Strike müssen nach
+Put-Call-Parität dieselbe IV haben. Eine Abweichung beweist einen **Messfehler**,
+unabhängig davon, was der Markt macht — Earnings, Übernahmen oder ein Squeeze
+lassen die beiden nicht auseinanderlaufen. Das war die Anforderung: der Test muss
+zeigen, dass die *Messung* kaputt ist, nicht dass der *Wert* überrascht.
+Geprüft wird nur im Band |log(K/F)| ≤ 8 %: unsere Kontrakte sind **amerikanisch**,
+und der Frühausübungswert eines Puts kann die Parität weiter im Geld legitim
+verletzen.
+
+**Leave-one-out-Smile-Check.** Lokale Gerade durch die Nachbarstrikes derselben
+Seite, **ohne den geprüften Kontrakt** — sonst zieht der Ausreißer die Kurve zu
+sich und spricht sich selbst frei.
+
+### Strukturell
+
+Die ganze Leg-Rechnung liegt jetzt in `shared/black_scholes.leg_from_prices`.
+Live und Backfill rufen **buchstäblich dieselbe Funktion** auf, statt zwei
+Spiegel zu pflegen.
+
+### Was der externe Review an der Umsetzung fand
+
+Zwei **harte Fehler im eigenen Fix**, beide nachgeprüft und echt:
+
+- Die Paritätsprüfung filterte den ATM-Anker, aber **nicht** die Kandidatenliste
+  — ein verworfener Strike konnte trotzdem als 25Δ-Kontrakt gewählt werden.
+- `iv_atm` wurde **vor** dem Smile-Filter berechnet und danach nicht neu — ein
+  Ausreißer nahe dem Forward vergiftete den Anker weiterhin.
+
+Reihenfolge jetzt: IV invertieren → Smile-Ausreißer raus → Parität prüfen →
+ATM-Anker → Delta-Auswahl, alles auf **derselben** gefilterten Menge.
+
+Bei einem Punkt wurde der Empfehlung **nicht** gefolgt: bei unlesbarer
+OCC-Wurzel wollte der Reviewer fail-closed. Das hätte einen ganzen Ticker still
+verlieren können. Jetzt entscheidet die Befundlage — passt **kein** Kontrakt der
+Kette aufs Muster, wird nicht gefiltert; passen **welche**, fliegt alles
+Abweichende raus.
+
+### Regressionstest: `scripts/verify_leg_robustheit.py`
+
+Lehrreich war der **Testbau selbst**. Der erste Entwurf verdarb weite Flügel um
+das 20-fache — das erzeugt eine IV über `IV_MAX` und fliegt ohnehin raus, der
+Test bestand also **auch mit der alten Methode**. Erst eine index-artige ATM-Vol
+von 13 % mit einem verdorbenen Preis *am Geld* reproduziert den Fehler:
+„put K=505 ×5" ergab ALT **0,4487** statt 0,1300 — dasselbe Muster wie SPY mit
+0,3845. 48 Varianten, keine kippt den Anker.
+
+> **Ein Test, der den echten Fehler nicht reproduziert, beweist nichts.** Die
+> Gegenprobe gegen die alte Implementierung ist Pflicht, nicht Kür.
+
+### Ergebnis an Live-Daten (38 Ticker)
+
+| | vorher | nachher |
+|---|---|---|
+| Put-Zeta unter −3 Punkte | 13 Ticker, bis −50,8 | **0 %** |
+| 25Δ-Put-IV unter ATM | 21 % | 15 % (alle über −3, also im Rauschen) |
+
+### ⚠️ Offen: die Radar-Abdeckung bricht ein
+
+Der Reparatur-Backfill (`--all --years 0.08 --overwrite`, eigener Container
+`sa-skewfix`) läuft zum Zeitpunkt dieser Notiz. Zwischenstand:
+
+| Fortschritt | Ticker im Radar |
+|---|---|
+| 96 / 163 | 77 |
+| 109 / 163 | **66** |
+
+**Vor der Korrektur waren es 148 von 163.** Das ist kein neuer Defekt, sondern
+der Preis der Ehrlichkeit: die alte Methode akzeptierte auch Tage, an denen die
+Kette zu dünn für eine belastbare Messung war. Die fallen jetzt raus, und viele
+Ticker rutschen unter `MIN_NORM = 20`.
+
+Zwei Dinge sind noch nicht getrennt: die noch nicht verarbeiteten Ticker tragen
+weiter ihre alten, aufgeblähten Punktzahlen (die Zahl kann also weiter fallen),
+und das Fenster war mit 20 Handelstagen bewusst kurz — ein längerer Backfill
+sammelt mehr messbare Tage.
+
+**Entscheidung nach dem Abschlussbericht**, mit Zahlen statt Vermutung:
+`MIN_NORM` senken, längeren Backfill fahren, oder akzeptieren, dass ein Teil des
+Universums für diese Messung zu dünn ist. Für HYG und IEF war Letzteres schon
+2026-09-10 der Befund.
+
+Statusmail alle zwei Stunden: `scripts/skewfix_status.sh` als systemd-Timer
+(Einrichtung im Skript-Kopf). Der Timer schaltet sich nach dem Abschlussbericht
+selbst ab.
+
+### Noch offen aus der Messung
+
+`DELTA_TOL = 0.08` sitzt bei niedrigvolatilen Titeln knapp: das Delta springt bei
+TLT um **0,092** pro Strike-Schritt, bei HYG um **0,115** — beide über der
+Toleranz. Am 2026-09-11 lag der beste erreichbare Abstand bei 0,028 bzw. 0,036,
+also im grünen Bereich; fällt der 25Δ-Punkt an einem Tag genau zwischen zwei
+Strikes, kann es kippen. Saubere Lösung: die IV **auf exakt 25Δ interpolieren**
+statt den nächsten Strike zu nehmen.
+
 ## Endabnahme 2026-09-11 (PR #275)
 
 Externe Abnahme der 8 Fixes und der 3 offenen Punkte. **6 Fixes halten, 2 waren
