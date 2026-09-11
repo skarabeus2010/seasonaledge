@@ -126,6 +126,8 @@ def cm_interp(v1, t1, v2, t2, t_target=CM_DAYS):
 # ── 25Δ-Leg aus Rohpreisen — EINE Implementierung fuer Live und Backfill ──────
 ATM_MAX_MONEYNESS = 0.05   # naechster Strike weiter als 5 % vom Forward -> kein Anker
 PARITAET_TOL = 0.03        # max. IV-Differenz Call vs Put am GLEICHEN Strike
+PARITAET_BAND = 0.08       # nur hier pruefen: |log(K/F)| <= 8 % (amerikanische
+                           # Ausuebung verletzt die Paritaet weiter im Geld legitim)
 
 
 def forward(spot: float, T: float, r: float = R) -> float:
@@ -139,14 +141,13 @@ def forward(spot: float, T: float, r: float = R) -> float:
 _OCC = re.compile(r"^O:([A-Z]+\d*)\d{6}[CP]\d{8}$")
 
 
-def ist_standardserie(occ_ticker: str, underlying: str) -> bool:
-    """Gehoert dieser Kontrakt zur REGULAEREN Serie des Basiswerts?
+def standardserie_filter(contracts, underlying: str, ticker_feld=None):
+    """Angepasste Optionsserien aus einer Kette entfernen.
 
     Nach einer Kapitalmassnahme (Sonderdividende, Spin-off, Split mit Baranteil)
     entsteht eine ANGEPASSTE Serie mit abweichendem Lieferumfang. Sie traegt
     dieselbe Expiry und denselben Strike, aber eine Wurzel mit Ziffernsuffix:
-    `SPGI1` neben `SPGI`. Ihr Preis gehoert NICHT zum normalen Spot — wer sie
-    mitrechnet, invertiert Unsinn.
+    `SPGI1` neben `SPGI`. Ihr Preis gehoert NICHT zum normalen Spot.
 
     Gemessen am 2026-09-11: SPGIs Kette enthielt 350 `SPGI1`-Kontrakte neben
     904 regulaeren. Jeder Strike kam doppelt vor, mit voellig verschiedenen
@@ -154,13 +155,22 @@ def ist_standardserie(occ_ticker: str, underlying: str) -> bool:
     regulaeren. Unser 25Δ-Call landete auf der angepassten Serie und wies 92 %
     IV neben 28,5 % ATM aus.
 
-    Bei unbekanntem Format wird NICHT gefiltert — lieber ein Kontrakt zu viel
-    als eine ganze Kette still verworfen.
+    UMGANG MIT UNBEKANNTEM FORMAT — bewusst weder stur fail-open noch
+    fail-closed, sondern nach Befundlage:
+      * Passt KEIN Kontrakt der Kette auf das OCC-Muster, ist das Format
+        insgesamt anders (andere Quelle, Index-Konvention). Dann wird NICHT
+        gefiltert — sonst verschwindet der Ticker still und vollstaendig.
+      * Passen WELCHE, ist das Muster gueltig. Dann fliegt alles raus, was nicht
+        auf die eigene Wurzel passt — auch Unlesbares. Ein einzelner Kontrakt
+        mit kaputtem Symbol ist genau der stille Datenfehler, den wir suchen.
     """
-    if not occ_ticker or not underlying:
-        return True
-    m = _OCC.match(occ_ticker)
-    return True if not m else m.group(1) == underlying.upper()
+    hol = ticker_feld or (lambda c: (c.get("details") or {}).get("ticker", ""))
+    passend = [(c, _OCC.match(hol(c) or "")) for c in contracts]
+    if not any(m for _, m in passend):
+        return list(contracts), 0          # Format unbekannt -> nicht filtern
+    wurzel = (underlying or "").upper()
+    behalten = [c for c, m in passend if m and m.group(1) == wurzel]
+    return behalten, len(contracts) - len(behalten)
 
 
 SMILE_MIN_NACHBARN = 3     # weniger -> nicht filtern, sondern unbewertbar lassen
@@ -235,62 +245,19 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     T = dte / 365.0
     F = forward(spot, T)
 
-    # Durchgang 1: IV je Kontrakt invertieren.
-    #
-    # PARITAETSPRUEFUNG je Strike: Call und Put mit gleichem Strike und gleicher
-    # Laufzeit MUESSEN nach Put-Call-Paritaet dieselbe IV haben. Weichen sie ab,
-    # ist mindestens einer der beiden Preise nicht brauchbar — und zwar
-    # unabhaengig davon, was der Markt gerade macht. Das ist der Test, den wir
-    # brauchen: er weist einen MESSFEHLER nach, statt einen ueberraschenden Wert
-    # zu verwerfen. Earnings, Uebernahmen oder ein Squeeze lassen Call- und
-    # Put-IV am selben Strike NICHT auseinanderlaufen.
-    #
-    # Ohne diese Pruefung vergiftete eine verdorbene Seite den ATM-Mittelwert:
-    # SPY wies am 2026-09-11 (call 0.12 + put 0.65)/2 = 0.385 als ATM-IV aus,
-    # realistisch waren ~0.13.
-    je_strike: dict[float, dict] = {}
+    # Schritt 1: IV je Kontrakt invertieren.
     gueltig = []
     for c in cands:
         iv = implied_vol(c["px"], spot, c["K"], T, c["typ"])
         if iv is None or iv <= IV_MIN or iv > IV_MAX:
             continue
         gueltig.append((c["typ"], c["K"], iv))
-        je_strike.setdefault(c["K"], {})[c["typ"]] = iv
-
-    def _paritaet(d):
-        """IV eines Strikes, oder None wenn Call und Put sich widersprechen."""
-        ca, pu = d.get("call"), d.get("put")
-        if ca is not None and pu is not None:
-            if abs(ca - pu) > PARITAET_TOL:
-                return None               # ein Preis taugt nicht — Strike verwerfen
-            return (ca + pu) / 2
-        return ca if ca is not None else pu
-
-    je_strike = {k: v for k, v in ((k, _paritaet(d)) for k, d in je_strike.items())
-                 if v is not None}
-    if not je_strike:
+    if not gueltig:
         return None
 
-    strikes = sorted(je_strike)
-    unten = [k for k in strikes if k <= F]
-    oben = [k for k in strikes if k > F]
-    if unten and oben:
-        k1, k2 = unten[-1], oben[0]
-        v1, v2 = je_strike[k1], je_strike[k2]
-        m1, m2 = math.log(k1 / F), math.log(k2 / F)
-        iv_atm = v1 if m1 == m2 else v1 + (v2 - v1) * (0.0 - m1) / (m2 - m1)
-    else:
-        k = (unten or oben)[-1] if unten else oben[0]
-        if abs(math.log(k / F)) > ATM_MAX_MONEYNESS:
-            return None                      # Kette deckt den Forward nicht ab
-        iv_atm = je_strike[k]
-    if not iv_atm or iv_atm <= IV_MIN or iv_atm > IV_MAX:
-        return None
-
-    # Smile-Pruefung je Seite: Kontrakte, deren IV nicht zu ihren Nachbarn passt,
-    # fallen raus. Der Zweipass repariert die AUSWAHL des Strikes, nicht die
-    # QUALITAET seines Preises — SPGI zeigte einen korrekt gewaehlten 25Δ-Call
-    # mit 92 % IV neben 28,5 % ATM.
+    # Schritt 2: Smile-Ausreisser ZUERST entfernen — VOR der ATM-Berechnung.
+    # Sonst vergiftet ein verdorbener Kontrakt nahe dem Forward den Anker, und
+    # der spaetere Filter korrigiert ihn nicht mehr.
     verdaechtig = set()
     for seite in ("call", "put"):
         verdaechtig |= _smile_ausreisser([p for p in gueltig if p[0] == seite])
@@ -298,7 +265,56 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     if not gueltig:
         return None
 
-    # Durchgang 2: Deltas mit der EINEN Referenz-IV — nicht mit der je Kontrakt.
+    # Schritt 3: Paritaetspruefung — NUR in der ATM-Region.
+    #
+    # Call und Put mit gleichem Strike muessen nach Put-Call-Paritaet dieselbe
+    # IV haben. Das gilt allerdings fuer EUROPAEISCHE Ausuebung; unsere
+    # Kontrakte sind amerikanisch, und der Fruehausuebungswert eines Puts kann
+    # die Paritaet legitim verletzen. Nahe dem Forward ist dieser Aufschlag bei
+    # 30 Tagen und q=0 vernachlaessigbar — weiter im Geld nicht. Deshalb wird
+    # nur dort geprueft, wo der ATM-Anker herkommt.
+    #
+    # Ohne die Pruefung vergiftete eine verdorbene Seite den Anker: SPY wies am
+    # 2026-09-11 (call 0.12 + put 0.65)/2 = 0.385 aus, realistisch ~0.13.
+    je_strike: dict[float, dict] = {}
+    for typ, K, iv in gueltig:
+        if abs(math.log(K / F)) <= PARITAET_BAND:
+            je_strike.setdefault(K, {})[typ] = iv
+
+    anker = {}
+    for K, d in je_strike.items():
+        ca, pu = d.get("call"), d.get("put")
+        if ca is not None and pu is not None:
+            if abs(ca - pu) > PARITAET_TOL:
+                continue                  # ein Preis taugt nicht -> Strike raus
+            anker[K] = (ca + pu) / 2
+        else:
+            anker[K] = ca if ca is not None else pu
+    if not anker:
+        return None
+
+    # Schritt 4: ATM-IV ueber MONEYNESS am Forward, zwischen den zwei Strikes
+    # um F interpoliert. Kein Delta-basierter Pick — eine zu hohe IV zoege das
+    # Delta jedes Strikes Richtung 0,50.
+    strikes = sorted(anker)
+    unten = [k for k in strikes if k <= F]
+    oben = [k for k in strikes if k > F]
+    if unten and oben:
+        k1, k2 = unten[-1], oben[0]
+        v1, v2 = anker[k1], anker[k2]
+        m1, m2 = math.log(k1 / F), math.log(k2 / F)
+        iv_atm = v1 if m1 == m2 else v1 + (v2 - v1) * (0.0 - m1) / (m2 - m1)
+    else:
+        k = unten[-1] if unten else oben[0]
+        if abs(math.log(k / F)) > ATM_MAX_MONEYNESS:
+            return None                   # Kette deckt den Forward nicht ab
+        iv_atm = anker[k]
+    if not iv_atm or iv_atm <= IV_MIN or iv_atm > IV_MAX:
+        return None
+
+    # Schritt 5: Deltas mit der EINEN Referenz-IV — nicht mit der je Kontrakt.
+    # Der gemeldete Wert ist dann die EIGENE IV des gewaehlten Kontrakts: die
+    # Auswahl ist stabil, die Messung bleibt die des Kontrakts.
     best = {"call": None, "put": None}
     for typ, K, iv in gueltig:
         d = abs(abs(bs_delta(spot, K, T, iv_atm, typ)) - 0.25)

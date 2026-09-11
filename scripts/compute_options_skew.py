@@ -36,7 +36,7 @@ from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
-                                  leg_from_prices, ist_standardserie,
+                                  leg_from_prices, standardserie_filter,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
@@ -339,13 +339,15 @@ def _own_cands(contracts: list, s30_ref: str | None = None,
     ausgefallenen Cron (oder am Wochenende) hat sonst ein T, das bis zu drei Tage
     daneben liegt, und die daraus invertierte IV waere entsprechend verzerrt."""
     today = date.fromisoformat(s30_ref) if s30_ref else date.today()
+    if underlying:
+        # Angepasste Serien (Wurzel mit Ziffernsuffix, z. B. SPGI1 neben SPGI)
+        # haben einen anderen Lieferumfang und passen nicht zum normalen Spot.
+        contracts, weg = standardserie_filter(contracts, underlying)
+        if weg:
+            print(f"  {underlying}: {weg} angepasste Optionskontrakte verworfen", flush=True)
     by = {}
     for c in contracts:
         det = c.get("details") or {}
-        # Angepasste Serien (Wurzel mit Ziffernsuffix, z. B. SPGI1 neben SPGI)
-        # haben einen anderen Lieferumfang und passen nicht zum normalen Spot.
-        if underlying and not ist_standardserie(det.get("ticker", ""), underlying):
-            continue
         ex, typ, K = det.get("expiration_date"), det.get("contract_type"), det.get("strike_price")
         day = c.get("day") or {}
         px, vol = day.get("close"), day.get("volume") or 0

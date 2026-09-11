@@ -58,7 +58,7 @@ from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,  
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX,
                                   VOL_PCTL as _VOL_PCTL,
                                   leg_from_prices as _leg_from_prices,
-                                  ist_standardserie as _ist_standardserie)
+                                  standardserie_filter as _standardserie_filter)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _CONTRACTS = "https://api.polygon.io/v3/reference/options/contracts"
@@ -205,10 +205,13 @@ def _plan(closes: dict, contracts: list, targets: list,
     raus: sie haben einen anderen Lieferumfang und passen nicht zum normalen
     Spot. Gegenstueck im Live-Pfad: _own_cands.
     """
+    if underlying:
+        contracts, weg = _standardserie_filter(
+            contracts, underlying, ticker_feld=lambda c: c.get("ticker", ""))
+        if weg:
+            print(f"  {underlying}: {weg} angepasste Optionskontrakte verworfen", flush=True)
     by_exp: dict[str, list] = {}
     for c in contracts:
-        if underlying and not _ist_standardserie(c.get("ticker", ""), underlying):
-            continue
         e = c.get("expiration_date")
         if e and c.get("strike_price") and c.get("contract_type") in ("call", "put"):
             by_exp.setdefault(e, []).append(c)
