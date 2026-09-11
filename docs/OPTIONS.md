@@ -306,6 +306,35 @@ mit Zahl statt Vermutung.
 
 Die beiden Darstellungsfragen wurden bestätigt: keine Rechenfehler.
 
+### Live-Störung: atomares Schreiben machte die Ausgaben unlesbar (PR #276)
+
+Beim Durchsehen der TODO-Liste nach der Abnahme aufgefallen: `/skew` und `/flows`
+bekamen ihre Daten nicht mehr.
+
+```
+open() "/app/landing/data/options_skew_history.json" failed (13: Permission denied)
+```
+
+`tempfile.mkstemp()` legt die Temp-Datei bewusst mit **0600** an, und `os.replace()`
+überträgt diesen Modus auf die Zieldatei. nginx läuft als anderer Nutzer → 403.
+
+**Der Beweis lag in der Differenz:** betroffen waren genau die zwei Dateien, die
+`write_json_atomic` nutzen (`options_skew.json`, `options_skew_history.json`); die
+vier ohne atomares Schreiben (`iv_surface`, `options_flow`, `gex_summary`,
+`key_levels`) lieferten weiter 200.
+
+Behoben: vor `os.replace` die Rechte der Zieldatei übernehmen, sonst die des
+normalen Schreibwegs (umask) nachbilden. Auf dem Server verifiziert — neue Dateien
+0644, bestehende Rechte bleiben erhalten. Die Live-Dateien wurden sofort per
+`chmod 644` repariert.
+
+> **Zum dritten Mal in dieser Reihe: eine Korrektur kann schlimmer sein als der
+> Fehler.** Der Schutz gegen Datenverlust (PR #256) baute eine Zustellstörung ein.
+> Und sie fiel weder im Options-Review noch in der Endabnahme auf, weil beide den
+> **Inhalt** der Dateien prüften und nicht, ob sie noch **auslieferbar** sind.
+> Konsequenz: nach Änderungen am Schreibweg einer Cron-Ausgabe immer einen
+> HTTP-Abruf gegen die Live-URL machen, nicht nur den Dateiinhalt ansehen.
+
 **Bewusst NICHT behoben (3) — mit Begründung:**
 
 - **`_leg_own` ist kein exakter Spiegel von `_leg_ivs`.** Der Backfill dünnt auf `_MAX_STRIKES=24` je Seite aus, der Live-Pfad nutzt alle Strikes der ±30 %-Kette. Dadurch laufen Delta-Pick und Volumen-Perzentil auf **unterschiedlichen Grundmengen**. Die Ausdünnung hat im Backfill einen Sachgrund (er muss je Kontrakt Bars **abrufen**, der Live-Snapshot liefert die Kette in einem Zug). Angleichen ist sinnvoll, aber kein Einzeiler und will gemessen werden.
@@ -345,6 +374,7 @@ Offen:
 - [ ] **Historie serverseitig eindampfen** auf die vom Frontend benötigten Ticker/Felder — sie ist bei 2,65 MB (gzip 274 KB) und wächst weiter.
 - [ ] **`MIN_NORM` nachziehen** (20 → ggf. 80), sobald der Backfill genug Tiefe liefert.
 - [ ] **`--vol-pctl 0.5` an mehreren Tagen gegenprüfen** (Wert aus 8 Vergleichen an einem Tag).
+- [ ] **Health-Check um einen HTTP-Abruf erweitern.** Er prüft die Options-Dateien bisher auf Frische (Dateiinhalt), nicht auf **Erreichbarkeit**. Die 0600-Störung (PR #276) wäre dadurch sofort aufgefallen statt erst beim Nachsehen. Ein `curl -o /dev/null -w '%{http_code}'` je Datei genügt.
 - [ ] Blog **Distribution/Backlinks** für den Vol-Regime-Radar-Post; GSC nach Indexierung prüfen.
 
 ## 25Δ-Skew (Alt-Verweis)
