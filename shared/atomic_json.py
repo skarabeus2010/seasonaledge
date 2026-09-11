@@ -39,6 +39,20 @@ def write_json_atomic(path: str | Path, obj, *, indent: int | None = 2,
             json.dump(obj, f, ensure_ascii=ensure_ascii, indent=indent)
             f.flush()
             os.fsync(f.fileno())
+        # WICHTIG: tempfile.mkstemp() legt die Datei bewusst mit 0600 an, und
+        # os.replace() uebertraegt diesen Modus aufs Ziel. Cron-Ausgaben unter
+        # landing/data/ werden von nginx als ANDEREM Nutzer gelesen -> 403,
+        # die Seite laedt keine Daten mehr. (Live aufgetreten 2026-09-11:
+        # options_skew.json und options_skew_history.json waren 403, die vier
+        # Dateien ohne atomares Schreiben 200.)
+        # Deshalb die Rechte der Zieldatei erhalten, sonst die des normalen
+        # Schreibwegs (umask) nachbilden.
+        try:
+            modus = os.stat(p).st_mode & 0o777
+        except FileNotFoundError:
+            maske = os.umask(0); os.umask(maske)
+            modus = 0o666 & ~maske
+        os.chmod(tmp, modus)
         os.replace(tmp, p)          # atomar: entweder alte oder neue Datei, nie halbe
         return p
     except BaseException:
