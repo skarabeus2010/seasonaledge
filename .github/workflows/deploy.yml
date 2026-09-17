@@ -18,7 +18,24 @@ jobs:
             cd /opt/seasonaledge
             git checkout -- seo/output/ 2>/dev/null || true
             git checkout -- landing/ 2>/dev/null || true
-            git pull origin master
+
+            # Der Pull MUSS den Job fehlschlagen lassen, wenn er abbricht. Ohne das
+            # meldet der Deploy "success", waehrend der Server auf dem alten Commit
+            # stehen bleibt — die neue Seite/der Fix fehlt lautlos.
+            # Passiert am 2026-09-17: scripts/skewfix_status.sh hatte auf dem Server
+            # ein abweichendes Mode-Bit (chmod +x von Hand), der zugehoerige Commit
+            # setzte dasselbe Bit in git -> "local changes would be overwritten,
+            # Aborting". Der Revert oben deckt nur landing/ und seo/output/ ab;
+            # alles ausserhalb blockiert den Pull.
+            # Frueherer Fall derselben Klasse: uncommittete nginx.conf (CLAUDE.md).
+            if ! git pull origin master; then
+              echo "::error::git pull abgebrochen — Server bleibt auf $(git rev-parse --short HEAD)."
+              echo "Blockierende Dateien ausserhalb von landing/ und seo/output/:"
+              git status --porcelain | grep -v '^??' | grep -vE ' (landing|seo/output)/' || true
+              echo "Aufloesen: auf dem Server pruefen (git diff <datei>), dann"
+              echo "  git checkout -- <datei>   (nur wenn die Aenderung verzichtbar ist)"
+              exit 1
+            fi
 
             # Supabase Credentials in Landing-HTML injizieren
             bash deploy/inject_credentials.sh /opt/seasonaledge
