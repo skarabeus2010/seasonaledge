@@ -151,6 +151,43 @@ KI-Text hat verräterische Leerformeln. Lies JEDEN fertigen Post (DE **und** EN)
 - **Übergangswort-Inflation:** „Zudem/Darüber hinaus/Des Weiteren/Moreover/Furthermore" sparsam; Em-Dashes nicht als Allzweck-Satzzeichen.
 - **Grammatik/Vollständigkeit:** jeden Satz auf fehlende Verben/abgeschnittene Sätze prüfen (KI lässt gern Verben weg) — DE und EN parallel gegenlesen, damit Übersetzungslücken auffallen.
 
+### Satz-Choreografie — die Muster, an denen unsere eigenen Posts aufgeflogen sind
+
+Die Liste oben erwischt einzelne Floskeln. Das auffälligere Problem ist der **Rhythmus**: ein Text,
+der jede Zahl erst ankündigt, dann nennt, dann noch einmal deutet. Das liest sich flüssig und ist
+trotzdem sofort als Maschinentext erkennbar. Diese sechs Muster sind HART begrenzt:
+
+1. **Antithesen-Reflex „nicht X, sondern Y".** Auch in den Varianten „kein A, sondern B",
+   „nicht im …, sondern in …", „the value is not in X but in Y". → **Maximal EINE** solche
+   Konstruktion pro Post. Sonst: die Sache direkt behaupten („Die Strategie senkt das Risiko und
+   kostet Rendite.").
+2. **Bedeutungs-Ankündigung.** „Der eigentliche Befund", „Das ist bemerkenswert", „Zwei Dinge
+   fallen auf", „Der interessanteste Teil", „Das Spannende daran", „Hier wird es interessant",
+   „What stands out", „The real finding". → **Verboten.** Wer eine Zahl für wichtig hält, stellt
+   sie voran; ein Etikett macht sie nicht wichtiger.
+3. **Deutungssatz am Absatzende.** Ein Schlusssatz, der die eben genannte Zahl nur in Worte
+   zurückübersetzt: „Genau das ist der Tausch, den die Strategie eingeht.", „Das Muster ist
+   logisch.", „Die Kurven trennen sich früh und bleiben getrennt.", „That is exactly the trade …".
+   → streichen. Der Absatz endet mit der letzten echten Information.
+4. **Cliffhanger und Vorausdeutung.** „…, und der interessanteste Befund kommt weiter unten",
+   „Das klingt nach Kleinkram, erklärt aber einen großen Teil der folgenden Zahlen", „mehr dazu
+   gleich". → Fachtexte haben keine Spannungsbögen. Information sofort liefern.
+5. **Aufzähl-Choreografie.** „Erstens: … Zweitens: …" als Absatzgerüst, Dreierfiguren
+   („schneller, klarer, belastbarer"), rhetorische Frage als Überschrift („Und die ausgelassenen
+   Tage?"). → Überschriften benennen den Inhalt („Beitrag der ausgelassenen Tage").
+6. **Wertende Adjektive ohne Beleg.** „gefeiert", „viel zitiert", „überraschend", „bemerkenswert",
+   „berüchtigt", „celebrated", „much-quoted". → nur mit Quelle/Zahl, sonst weg.
+
+**Mechanischer Endcheck** (dauert 30 Sekunden, DE und EN getrennt):
+
+```bash
+grep -nE "sondern|eigentlich(e|er)? (Befund|Punkt)|bemerkenswert|fallen auf|Spannende|überraschend|viel zitiert|gefeiert|Genau das ist" blog/posts/<datei>.md
+grep -nE "not (a|an|the)? ?[a-z]+,? but|real finding|what stands out|remarkable|celebrated|much-quoted|that is exactly" blog/posts/en/<datei>.md
+```
+
+Jeder Treffer muss einzeln begründet werden. Zusätzlich: Em-Dash-Dichte zählen — **höchstens
+ein Gedankenstrich pro zwei Absätze**; der Rest wird zu Punkt oder Doppelpunkt.
+
 **Leitregel:** Jeder Satz trägt eine konkrete Info (Zahl, Mechanik, Beispiel, Beleg) — sonst fliegt er raus. Lieber kurz und konkret als lang und rund. Der Test: Würde ein Fachredakteur den Satz so schreiben — oder klingt er nach generischem „Content"?
 
 ## Nach dem Schreiben

@@ -1,12 +1,12 @@
 ---
-title: "The Monthly 10 Strategy Tested: 32 Years of SPY, 10 Trading Days a Month — and a Surprising Driver"
+title: "Monthly 10 Strategy Backtested: 32 Years of SPY, 10 Trading Days a Month"
 seo_title: "Monthly 10 Strategy: 32 Years of SPY Backtested"
 slug: monthly-10-strategy
 de_slug: monthly-10-strategie
 date: 2026-09-17
 category: education
 tags: [monthly-10, tdom, seasonality, turn-of-month, backtest, spy]
-description: "Monthly 10 strategy backtested over 32 years: half the volatility, half the return — and the gains come from mid-month, not from the turn of month."
+description: "Monthly 10 strategy backtested over 32 years: half the volatility, half the return, and the gains come from mid-month rather than the turn of month."
 ticker: SPY
 status: published
 ---
@@ -18,35 +18,33 @@ Keyword-Plan:
 - LSI: calendar effect, drawdown, volatility, buy and hold, cash, hit rate, S&P 500 ETF
 -->
 
-## Ten days out of 21 — is that enough?
+## What the Monthly 10 strategy does
 
-The **Monthly 10 strategy** rests on one claim: equities do not earn their return evenly across the month, but on a handful of recurring trading days. Hold the market only on those days, sit in cash otherwise, and you should track the index with far less risk.
+The **Monthly 10 strategy** holds a long position on ten trading days per month and sits in cash the rest of the time. The assumption behind it: equities do not earn their return evenly across the month, but on recurring days in the calendar grid.
 
-We ran the rule over 32 full calendar years of SPY (1994–2025, 8,054 trading days, adjusted close including dividends). The outcome is not what strategy marketing usually promises — and the most interesting finding has nothing to do with the turn of month everybody talks about.
-
-## What the Monthly 10 strategy actually does
+We ran the rule over 32 full calendar years of SPY: 1994 to 2025, 8,054 trading days, adjusted close including dividends.
 
 The strategy works off the **trading day of month** (TDOM). TDOM 1 is the first trading day of a month, TDOM 2 the second; weekends and exchange holidays do not count. Depending on the calendar, a month has 19 to 23 trading days.
 
-The strategy is long only on these days:
+The strategy is long on these days:
 
 - **TDOM 1–4** — start of month
 - **TDOM 9–12** — mid-month
 - **the last two trading days** — end of month
 
-On every other day the money sits in cash, with no interest assumed. The marked days form three contiguous blocks per month, so three trades: in at the close of the first day of a block, out at the close of the last.
+On every other day the money sits in cash, with no interest assumed. The marked days form three contiguous blocks per month, so three trades: buy at the close of the first day of a block, sell at the close of the last.
 
-### Why the strategy is only in the market 33% of the time
+### Time in market: 33 percent, not 48
 
-Ten marked days out of roughly 21 sounds like almost 48% exposure. The real figure is **33.4%**. The reason is the entry convention: you buy at the **close** of the first day of a block. That day is already over when the position exists, so it contributes no return of its own.
+Ten marked days out of roughly 21 amount to almost 48% of all trading days. The strategy is still invested only **33.4%** of the time. The entry happens at the **close** of the first day of a block: that day is over once the position exists, so it contributes no return. Ten marked days leave seven return-bearing days.
 
-Ten marked days therefore leave about seven return-bearing days. The detail sounds trivial, but it explains a large part of the numbers below — and it decides which block ends up looking good.
+The convention also shapes which block looks good in the breakdown. See "Limits of this decomposition" below.
 
-## The 32-year backtest: SPY 1994–2025
+## SPY backtest, 1994–2025
 
 ![Monthly 10 versus buy and hold: growth of USD 10,000 in SPY from 1994 to 2025 on a log scale — final value USD 56,883 against USD 259,463](/en/blog/monthly-10-strategy/images/monthly-10-strategie/monthly10-equity-spy-en.png)
 
-The curves separate early and stay apart. Buy and hold turns USD 10,000 into USD 259,463 over the period; Monthly 10 reaches USD 56,883.
+USD 10,000 grows to USD 259,463 under buy and hold and to USD 56,883 under Monthly 10.
 
 | Metric | Monthly 10 | Buy & Hold |
 |---|---:|---:|
@@ -58,15 +56,13 @@ The curves separate early and stay apart. Buy and hold turns USD 10,000 into USD
 | Time in market | 33.4% | 100% |
 | USD 10,000 grew to | USD 56,883 | USD 259,463 |
 
-Two things stand out. First, the strategy nearly halves the swing and cuts the deepest interim loss by 14 percentage points. Second, it gives up more than half the return for that.
+The strategy nearly halves the swing and cuts the deepest interim loss by 14 percentage points. It costs 5.13 percentage points of annual return to do so.
 
-Divide return by risk and you get **0.52 against 0.57** — Monthly 10 is slightly behind. On a risk-adjusted basis this is not an edge over buy and hold; it is a wash with a small minus.
+Return divided by volatility gives **0.52 for Monthly 10 and 0.57 for buy and hold**, so on a risk-adjusted basis the rule trails staying invested. Across single years it came out ahead in **10 of 32 years**, or 31%.
 
-The annual scoreboard offers little more: Monthly 10 beat buy and hold in **10 of 32 years**, or 31% of the time.
+## Contribution of the three blocks
 
-## The real finding: mid-month carries the strategy
-
-Each of the three blocks was traded 384 times over 32 years. Compound their contributions separately and the picture of what is actually working shifts.
+Each of the three blocks was traded 384 times over 32 years. Compounded separately, they split like this.
 
 ![Contribution per block of the Monthly 10 strategy in SPY 1994–2025: start of month TDOM 1–4 plus 83 percent at a 60 percent hit rate, mid-month TDOM 9–12 plus 287 percent at 64 percent, end of month minus 20 percent at 46 percent](/en/blog/monthly-10-strategy/images/monthly-10-strategie/monthly10-bloecke-spy-en.png)
 
@@ -76,25 +72,19 @@ Each of the three blocks was traded 384 times over 32 years. Compound their cont
 | Mid-month (TDOM 9–12) | 384 | 64% | +287% |
 | End of month (last 2 days) | 384 | 46% | −20% |
 
-The heavy lifting happens **mid-month**. TDOM 9–12 delivers more than three times the start-of-month block and carries the highest hit rate at 64%. The celebrated turn of month is not the engine here.
-
-That matters, because the [turn-of-month effect](/en/monatswechsel) — strength around the month boundary — is among the most cited calendar patterns in equity research. In this particular rule set it comes in second.
+**Mid-month** delivers +287%, more than three times the start-of-month block, and carries the highest hit rate at 64%. The [turn-of-month effect](/en/monatswechsel), meaning strength around the month boundary, is the better-known calendar pattern; in this rule set it ranks behind TDOM 9–12.
 
 ### Limits of this decomposition
 
 The minus in the end-of-month block is largely an artefact of the entry convention. Enter one trading day earlier, so that every marked day carries return, and the block flips from −20% to **+14%**, with the hit rate moving from 46% to 51%.
 
-**Important:** the end-of-month block does not systematically lose money — it contributes close to nothing, and a technical rule detail decides on which side of zero it lands. What survives both conventions is the core statement: **mid-month carries the strategy, end of month is the weakest leg.**
+**Important:** the end-of-month block does not lose money systematically. It contributes close to nothing, and which side of zero it lands on comes down to a technical rule detail. What holds across both conventions is the ranking: TDOM 9–12 contributes most, end of month least.
 
-### What about the days left out?
+### Contribution of the excluded days
 
-The 67% of the time Monthly 10 spends in cash was not worthless: those days compounded to **+356%**. They also carried the deeper setback — maximum drawdown across the excluded days was **−58.9%**, against −41.0% for the strategy days.
+The 67% of the time Monthly 10 spends in cash was not worthless: those days compounded to **+356%**. They also carried the deeper setback, with a maximum drawdown of **−58.9%** against −41.0% for the strategy days.
 
-That is exactly the trade Monthly 10 makes: give up return in order to sit out the rougher stretches of the market.
-
-## A counter-cyclical profile
-
-The yearly returns show when the strategy shines and when it lags.
+## Annual returns: a counter-cyclical profile
 
 ![Annual returns of Monthly 10 versus buy and hold in SPY from 1994 to 2025 as paired bars: ahead in bear years such as 2000, 2001, 2002, 2008 and 2022, behind in bull years such as 2013, 2023 and 2024](/en/blog/monthly-10-strategy/images/monthly-10-strategie/monthly10-jahre-spy-en.png)
 
@@ -112,23 +102,23 @@ In strong bull years it falls well behind:
 - **2023:** +6.1% vs. +26.2%
 - **2024:** +2.3% vs. +24.9%
 
-The pattern follows from the exposure. Invested only a third of the time, you capture a fraction of an advance — and miss two thirds of a decline. Still, 2008 shows the cushion is not protection: −27.8% is a hard year even for a cash-heavy rule set.
+Invested only a third of the time, you capture a fraction of an advance and a fraction of a decline. 2008 marks the limit of that cushion: −27.8% is a hard year even for a cash-heavy rule set.
 
 ## What investors can take from this
 
-Monthly 10 is a risk strategy, not a return strategy. It halves volatility and reduces drawdown, and it pays for that with more than half the return. On these numbers it is no substitute for a broad equity position.
+Monthly 10 lowers volatility and return at the same time, and on a risk-adjusted basis it stays slightly behind buy and hold. On these numbers it is no substitute for a broad equity position. It fits better as a building block for portfolios where the swing is a hard constraint, or alongside a core holding.
 
-It is more interesting as a **building block**: for portfolios where the swing is a hard constraint, or alongside a core holding. One item is missing from every figure above — **transaction costs**. Three trades a month means 36 round turns a year, and with no CAGR advantage to begin with, that comes straight out of the substance. Anyone testing the rule seriously has to model their own fees.
+Every figure above excludes **transaction costs**. Three trades a month means 36 round turns a year. With no return advantage to begin with, every fee comes straight out of the substance, so anyone testing the rule seriously has to model their own terms.
 
-The most useful result is the decomposition. That TDOM 9–12 does most of the work suggests the calendar month has more structure than the single much-quoted turn-of-month window — and that it pays to examine individual trading days rather than judging rule packages as a whole.
+The usable result is the decomposition. That TDOM 9–12 does most of the work argues for examining individual trading days separately instead of judging rule packages as a whole.
 
 Both are reproducible on SeasonAlpha: Monthly 10 sits in the [backtest engine](/en/backtest-engine) under the monthly patterns and can be applied to any ticker in the universe. The single-day view lives on the [turn-of-month page](/en/monatswechsel), the side-by-side comparison of rule sets on the [plain vanilla overview](/en/plain-vanilla). To see which tickers currently show a notable monthly pattern, start with the [seasonal scanner](/en/scanner). Related reading: our backtest on the [turn of month after down months](/en/blog/spy-turn-of-month-down-month-reversal-backtest/).
 
 ## Conclusion
 
-Over 32 years of SPY, the Monthly 10 strategy delivers 5.58% p.a. against 10.71% for buy and hold, at 10.79% instead of 18.84% volatility and −41.0% instead of −55.2% maximum drawdown. Per unit of risk it comes out at 0.52 against 0.57 — slightly worse than simply staying invested.
+Over 32 years of SPY, the Monthly 10 strategy delivers 5.58% p.a. against 10.71% for buy and hold, at 10.79% instead of 18.84% volatility and −41.0% instead of −55.2% maximum drawdown. Per unit of risk it stands at 0.52 against 0.57.
 
-The value is not in the headline result but in the breakdown: **mid-month (TDOM 9–12) contributes the most at +287%**, start of month follows at +83%, end of month contributes nothing. And because of the entry convention, time in market is 33.4%, not 48%.
+The decomposition shows the structure underneath: **mid-month (TDOM 9–12) contributes +287%**, start of month +83%, end of month close to nothing. Time in market is 33.4% because of the entry convention, not the 48% the day count suggests.
 
 **Not a signal:** these are averages over 32 years with wide dispersion, not a forecast for next month. Test the rule on your own tickers and periods at [seasonalpha.ai](https://seasonalpha.ai/en/backtest-engine).
 
@@ -144,11 +134,11 @@ Not in our SPY backtest for 1994–2025. The strategy returns 5.58% per year aga
 
 ### What does TDOM mean?
 
-TDOM stands for trading day of month. TDOM 1 is the first trading day, TDOM 2 the second. Weekends and exchange holidays are excluded, which is why TDOM drifts away from the calendar day — and why the listing venue with its own holiday calendar matters, not a company's home country.
+TDOM stands for trading day of month. TDOM 1 is the first trading day, TDOM 2 the second. Weekends and exchange holidays are excluded, which is why TDOM drifts away from the calendar day. What counts is the listing venue with its own holiday calendar, not a company's home country.
 
 ### Why is the strategy invested only 33% of the time instead of 48%?
 
-Because entry happens at the **close** of the first day of each block. That day has already played out and contributes no return. Ten marked days therefore leave roughly seven return-bearing days — 33.4% instead of the expected 48%.
+Because entry happens at the **close** of the first day of each block. That day has already played out and contributes no return. Ten marked days therefore leave roughly seven return-bearing days, which is 33.4% instead of the expected 48%.
 
 ### Which part of the month contributes most?
 
@@ -158,25 +148,25 @@ Mid-month. Across 384 trades per block, TDOM 9–12 compounded to +287% at a 64%
 #### Social Media Snippet
 
 **LinkedIn:**
-The Monthly 10 strategy is in the market on just 10 trading days a month — TDOM 1–4, 9–12 and the last two. We ran it over 32 years of SPY (1994–2025, adjusted close).
-Result: 5.58% p.a. against 10.71% for buy and hold. In exchange, 10.79% instead of 18.84% volatility and −41.0% instead of −55.2% maximum drawdown. Per unit of risk: 0.52 vs 0.57 — no edge.
-The real finding is in the decomposition: the driver is not the much-quoted turn of month but mid-month (TDOM 9–12) at +287% across 384 trades.
+The Monthly 10 strategy is in the market on just 10 trading days a month: TDOM 1–4, 9–12 and the final two. We ran it over 32 years of SPY (1994–2025, adjusted close).
+Result: 5.58% p.a. against 10.71% for buy and hold, at 10.79% instead of 18.84% volatility and −41.0% instead of −55.2% maximum drawdown. Per unit of risk, 0.52 against 0.57.
+In the breakdown, mid-month (TDOM 9–12) contributes +287% across 384 trades, well ahead of the turn of month.
 Which part of the month do you watch? → seasonalpha.ai
 
 **Twitter/X:**
-Monthly 10 over 32 years of SPY: 5.58% p.a. vs 10.71% buy & hold — but half the vol and −41% instead of −55% drawdown.
-The driver is NOT the turn of month. It's mid-month (TDOM 9–12, +287%).
-#Stocks #Seasonality #SeasonAlpha
+Monthly 10 over 32 years (SPY): 5.58% p.a. vs. 10.71% buy and hold, at half the volatility and −41% instead of −55% drawdown.
+Largest contribution comes from mid-month (TDOM 9–12, +287%), not the turn of month.
+#Markets #Seasonality #SeasonAlpha
 
 #### Internal links
 - /en/backtest-engine (run Monthly 10 yourself)
 - /en/monatswechsel (turn-of-month single-day view)
 - /en/plain-vanilla (rule sets compared)
-- /en/scanner (notable monthly patterns by ticker)
+- /en/scanner (notable monthly patterns per ticker)
 - /en/blog/spy-turn-of-month-down-month-reversal-backtest/ (related backtest)
 
 #### Content ideas (follow-ups)
-- "TDOM 9–12: why mid-month is underrated" — single-day analysis across several indices
-- "Monthly 10 on DAX, Nasdaq and gold" — does the finding hold outside the S&P 500?
-- "What do 36 round turns a year cost?" — fee sensitivity test
+- "TDOM 9–12: what mid-month delivers across indices" — single-day analysis beyond the S&P 500
+- "Monthly 10 on DAX, Nasdaq and gold" — does the finding hold outside US large caps?
+- "How much do fees eat? 36 round turns a year in a cost test"
 -->
