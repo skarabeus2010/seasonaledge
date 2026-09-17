@@ -493,7 +493,12 @@ SA.strategy = {
     years.forEach(function(y) {
       for (var m = 1; m <= 12; m++) {
         var days = self._getTradingDays(rows, y, m);
-        if (days.length < 10) return;
+        // continue, NICHT return: `return` verlaesst den forEach-Callback und damit
+        // das GANZE Jahr. Ein angebrochener erster Monat (Datenreihe startet
+        // Monatsmitte) loeschte so alle uebrigen 11 Monate dieses Jahres aus dem
+        // Backtest. Die Python-Referenz (etf_seasonal_scan.py::S_monthly_10) nutzt
+        // continue, ebenso die Geschwister in dieser Datei (Z. 287/303/319).
+        if (days.length < 10) continue;
         var maxTdom = days.length;
         // Aktive TDOMs
         var active = {};
