@@ -917,6 +917,11 @@ def _extract_faq_items(md_content: str) -> list[dict]:
         "## Haeufige Fragen",
         "## FAQ",
         "## Fragen und Antworten",
+        # EN-Posts (blog/posts/en/) — ohne diese Muster bekamen EN-Posts nie
+        # ein FAQPage-Schema, obwohl sie dieselbe FAQ-Sektion haben.
+        "## Frequently asked questions",
+        "## Frequently Asked Questions",
+        "## Questions and answers",
     ]
     start = -1
     heading_len = 0
