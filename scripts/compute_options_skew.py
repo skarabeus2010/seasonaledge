@@ -37,6 +37,8 @@ from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
+                                  cm_leg_kandidaten as _cm_leg_kandidaten,
+                                  ist_monatsverfall,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
@@ -200,36 +202,47 @@ def _realized_vol(sym: str, n: int = 21):
     n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
     RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1}).
 
-    Rückgabe: (rv, last_close). Der letzte Close dient als Spot-Fallback — der
-    Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08: Spot 0,00),
-    und die Kursreihe ist hier ohnehin schon geladen."""
+    Rückgabe: (rv, last_close, last_date). Der letzte Close dient als Spot-Fallback —
+    der Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08:
+    Spot 0,00), und die Kursreihe ist hier ohnehin schon geladen.
+
+    `last_date` MUSS mitkommen und vom Aufrufer gegen die Session geprüft werden.
+    Ein um eine Session veralteter Spot verschiebt den Forward, damit den
+    Moneyness-Anker UND über `bs_delta(spot, K, T, iv_atm, typ)` die 25Δ-Auswahl
+    beider Flügel — ein einziger falscher Spot erzeugt also alle Symptome
+    gleichzeitig: gekipptes Skew-Vorzeichen, `iv_atm` über beiden Flügeln, und
+    Legs, die an der Delta-Toleranz scheitern. Gemessen am 2026-09-18: der aus
+    den veröffentlichten IVs zurückgerechnete Spot lag bei NVDA 3,0 % und bei
+    SPY 0,94 % unter dem echten Schluss; mit dem korrekten Schluss sind dieselben
+    Ticker sauber."""
     try:
         df = download_data(sym, period="6mo")
     except Exception:
-        clear_cache(); gc.collect(); return None, None
+        clear_cache(); gc.collect(); return None, None, None
     if df is None or len(df) == 0:
-        clear_cache(); gc.collect(); return None, None
+        clear_cache(); gc.collect(); return None, None, None
     c = df["Close"].to_numpy(dtype=float)
     last = round(float(c[-1]), 2) if len(c) and c[-1] == c[-1] else None
+    # Datum der letzten Zeile — Date ist der Index (siehe preprocess).
+    try:
+        last_d = str(df.index[-1])[:10]
+    except Exception:
+        last_d = None
     if len(df) < n + 5:
-        clear_cache(); gc.collect(); return None, last
+        clear_cache(); gc.collect(); return None, last, last_d
     r = [math.log(c[i] / c[i - 1]) for i in range(1, len(c)) if c[i - 1] > 0 and c[i] > 0]
     clear_cache(); gc.collect()
     if len(r) < n:
-        return None, last
+        return None, last, last_d
     seg = r[-n:]
     m = sum(seg) / n
     var = sum((x - m) ** 2 for x in seg) / (n - 1)        # Stichproben-Varianz (÷ N−1)
-    return round(math.sqrt(var) * math.sqrt(252), 4), last  # × √252 annualisiert
+    return round(math.sqrt(var) * math.sqrt(252), 4), last, last_d  # × √252 annualisiert
 
 
-def _is_monthly(iso: str) -> bool:
-    """Standard-Monatsverfall = 3. Freitag (Tag 15-21 und ein Freitag)."""
-    try:
-        d = date.fromisoformat(iso)
-    except Exception:
-        return False
-    return d.weekday() == 4 and 15 <= d.day <= 21
+# Standard-Monatsverfall = 3. Freitag. Alias auf die gemeinsame Definition in
+# shared/black_scholes.py — zwei Kopien derselben Regel driften.
+_is_monthly = ist_monatsverfall
 
 
 def _nearest_exp(by: dict, target_dte: int, prefer_monthly: bool = False):
@@ -299,21 +312,11 @@ def _cm_leg(e: dict):
     return {"dte": e["dte"], "call_iv": cc[1], "put_iv": pp[1], "iv_atm": _atm_iv(e)}
 
 
-def _cm_legs(by: dict) -> list:
-    """Ein bis zwei Verfälle wählen, die _CM_DAYS klammern (Monatsverfall bevorzugt).
-    Ohne Bracket nach unten extrapolieren (zwei nächstlängere), sonst Einzelpunkt."""
-    pool = ([e for e in by if _is_monthly(e)]
-            or [e for e in by if date.fromisoformat(e).weekday() == 4]
-            or list(by))
-    below = sorted([e for e in pool if _CM_DTE_MIN <= by[e]["dte"] <= _CM_DAYS], key=lambda e: by[e]["dte"])
-    above = sorted([e for e in pool if _CM_DAYS < by[e]["dte"] <= _CM_DTE_MAX], key=lambda e: by[e]["dte"])
-    if below and above:
-        return [below[-1], above[0]]      # echtes Bracket um 30d
-    if len(above) >= 2:
-        return [above[0], above[1]]       # kurz vor Roll: nach unten extrapolieren
-    if len(below) >= 2:
-        return [below[-2], below[-1]]     # selten: nach oben extrapolieren
-    return above[:1] or below[-1:]        # nur ein Verfall → Einzelpunkt
+# _cm_legs ist entfallen: die Stuetzstellen-Wahl steht jetzt als
+# cm_leg_kandidaten in shared/black_scholes.py und wird von Live UND
+# Backfill benutzt. Zwei Kopien derselben Auswahl sind in dieser Codebasis
+# schon dreimal auseinandergelaufen.
+
 
 
 # ── Ranking-Reihe: IV SELBST invertieren (Methodengleichheit mit dem Backfill) ─
@@ -380,32 +383,70 @@ def _skew_cm(by: dict, leg_fn=None) -> dict | None:
     backfill_skew_massive.py, damit Live und Backfill eine Reihe bilden.
 
     leg_fn: Stuetzstellen-Quelle. Default = Provider-IV (_cm_leg); fuer die
-    Ranking-Historie wird _leg_own uebergeben (eigene BS-Inversion)."""
+    Ranking-Historie wird _leg_own uebergeben (eigene BS-Inversion).
+
+    PROBIERT EINE RANGLISTE, statt bei der ersten gescheiterten Leg aufzugeben.
+    Vorher wurde EIN Paar gewaehlt; scheiterte davon eine Stuetzstelle an
+    leg_from_prices, blieb nur eine uebrig und der Tag wurde als `single`
+    gestempelt — was im Frontend nicht fuer das Ranking zaehlt. Gemessen am
+    2026-09-15/16: die duenne 65-Tage-Stuetzstelle fiel durch, und damit fiel
+    die Normierungsquote von 77-100 % auf 38-56 %.
+    Die Rangliste kommt aus shared/black_scholes.cm_leg_kandidaten; ein
+    Fehlschlag kostet jetzt nur die naechste Gruppe, nicht den Tag.
+    """
     if not by:
         return None
     leg_fn = leg_fn or (lambda e: _cm_leg(by[e]))
-    got = [g for g in (leg_fn(e) for e in _cm_legs(by)) if g]
-    if not got:
+    gruppen = _cm_leg_kandidaten({e: by[e]["dte"] for e in by})
+    if not gruppen:
         return None
-    if len(got) >= 2:
-        a, b = got[0], got[1]
+
+    _cache: dict = {}
+    def _leg(e):
+        # Gruppen ueberlappen sich; leg_fn invertiert ~100 IVs je Expiry.
+        if e not in _cache:
+            _cache[e] = leg_fn(e)
+        return _cache[e]
+
+    # Runde 1: die erste Gruppe, die ZWEI brauchbare Stuetzstellen liefert.
+    for gruppe in gruppen:
+        if len(gruppe) != 2:
+            continue
+        a, b = _leg(gruppe[0]), _leg(gruppe[1])
+        if not a or not b:
+            continue
         lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
-        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS), abs(hi_d - _CM_DAYS)) > 15:
-            return None
+        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS),
+                                                  abs(hi_d - _CM_DAYS)) > 15:
+            continue
         call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
         put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
         iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
                   if (a["iv_atm"] and b["iv_atm"]) else None)
-        mode, dte_out = ("cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"), _CM_DAYS
-    else:
-        a = got[0]
-        if abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
-            return None
-        call_iv, put_iv, iv_atm = a["call_iv"], a["put_iv"], a["iv_atm"]
-        mode, dte_out = "single", a["dte"]
-    if call_iv is None or put_iv is None:
-        return None
-    out = {"cm_mode": mode, "cm_dte": dte_out,
+        if call_iv is None or put_iv is None:
+            continue
+        mode = "cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"
+        return _cm_out(mode, _CM_DAYS, call_iv, put_iv, iv_atm)
+
+    # Runde 2: nur noch ein Einzelpunkt, und nur nahe genug an der Ziellaufzeit.
+    for gruppe in gruppen:
+        for e in gruppe:
+            a = _leg(e)
+            if not a or abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
+                continue
+            if a["call_iv"] is None or a["put_iv"] is None:
+                continue
+            return _cm_out("single", a["dte"], a["call_iv"], a["put_iv"], a["iv_atm"])
+    return None
+
+
+def _cm_out(mode: str, dte: int, call_iv: float, put_iv: float,
+            iv_atm: float | None) -> dict:
+    """Ergebniszeile. Zeta-Felder nur MIT ATM-Anker — ohne den faellt das
+    Frontend auf die Naeherung (call_iv-put_iv)/2 zurueck, die
+    put_zeta = -call_zeta erzwingt und den Quadranten auf seine Antidiagonale
+    kollabieren laesst."""
+    out = {"cm_mode": mode, "cm_dte": dte,
            "cm_call_iv": round(call_iv, 4), "cm_put_iv": round(put_iv, 4),
            "cm_skew_pts": round((put_iv - call_iv) * 100, 2)}
     if iv_atm:
@@ -414,7 +455,6 @@ def _skew_cm(by: dict, leg_fn=None) -> dict | None:
         out["cm_put_zeta_pts"] = round((put_iv - iv_atm) * 100, 2)
         out["cm_bfly_pts"] = round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2)
     return out
-
 
 def _enrich(sym: str, key: str) -> dict | None:
     """Voll-Metrik-Objekt aus EINEM Massive-Chain-Snapshot."""
@@ -461,7 +501,7 @@ def _enrich(sym: str, key: str) -> dict | None:
     # alle abhängigen Felder unten sind bereits mit `if iv_atm` abgesichert.
     iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
-    rv1m, last_close = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
+    rv1m, last_close, close_datum = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
     if not spot:                                    # Fallback 1: Underlying aus dem Snapshot
         for c in contracts:
             p = (c.get("underlying_asset") or {}).get("price")
@@ -536,10 +576,28 @@ def _enrich(sym: str, key: str) -> dict | None:
     # /prev liefert je nach Laufzeitpunkt den Vortag, und ein damit falsch
     # skalierter Punkt bekaeme trotzdem ein cm_mode und landete in der Rangfolge.
     # Lieber kein Punkt als ein falsch skalierter.
+    # SPOT UND OPTIONSPREISE MUESSEN AUS DERSELBEN SESSION KOMMEN.
+    # Der Kommentar darueber versprach das ("lieber kein Punkt als ein falsch
+    # skalierter"), geprueft wurde aber nur, DASS es einen Schluss gibt — nicht,
+    # von WANN. Ist die Kursreihe eine Session alt, verschiebt der falsche Spot
+    # den Forward und damit sowohl den Moneyness-Anker als auch die 25Δ-Auswahl
+    # beider Fluegel. Ein einziger falscher Spot erzeugt so ALLE Symptome:
+    # gekipptes Skew-Vorzeichen, iv_atm ueber beiden Fluegeln, gescheiterte Legs.
+    # Gemessen am 2026-09-18 an vier Blue Chips; mit dem korrekten Schluss waren
+    # dieselben Ticker sauber.
+    _sess = _last_session()
+    # FAIL-CLOSED: ein unbekanntes Datum ist kein gueltiges Datum. Ohne diese
+    # Klammer wuerde ein fehlendes close_datum die Pruefung durchfallen lassen
+    # und mit einem Spot unbekannter Herkunft normieren.
+    if last_close and close_datum != _sess:
+        print(f"  {sym:6} Kursreihe endet {close_datum}, Session ist {_sess} "
+              f"-> KEINE cm-Normierung (Spot passt nicht zu den Optionspreisen)",
+              flush=True)
+        last_close = None
     if last_close:
         # Restlaufzeit gegen die SESSION rechnen, unter der die Zeile gestempelt
         # wird — sonst liegt T bei einem Nachhol-Lauf um bis zu drei Tage daneben.
-        by_own = _own_cands(contracts, s30_ref=_last_session(), underlying=sym)
+        by_own = _own_cands(contracts, s30_ref=_sess, underlying=sym)
         cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], last_close))
         # cm-Zeilen ohne iv_atm haetten kein Zeta — das Frontend wuerde auf die
         # (call_iv-put_iv)/2-Naeherung zurueckfallen, die put_zeta = -call_zeta

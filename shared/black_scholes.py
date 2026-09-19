@@ -16,6 +16,7 @@ im 99. Percentil, rein methodisch. Deshalb: eine Quelle, keine Kopien.
 from __future__ import annotations
 import math
 import re
+from datetime import date as _date
 
 # Risk-free-Näherung; q=0. Für Differenzen INNERHALB einer Expiry unkritisch,
 # muss aber auf beiden Seiten identisch sein.
@@ -126,6 +127,19 @@ def cm_interp(v1, t1, v2, t2, t_target=CM_DAYS):
 # ── 25Δ-Leg aus Rohpreisen — EINE Implementierung fuer Live und Backfill ──────
 ATM_MAX_MONEYNESS = 0.05   # naechster Strike weiter als 5 % vom Forward -> kein Anker
 PARITAET_TOL = 0.03        # max. IV-Differenz Call vs Put am GLEICHEN Strike
+# Wie weit darf die ATM-IV die Fluegel ueberragen, bevor die Leg unbrauchbar ist?
+# GEMESSEN am 2026-09-19 an 33 Tickern mit SYNCHRONER Kursreihe (also ohne den
+# Spot-Fehler), Verteilung von iv_atm - max(call_iv, put_iv) in Vol-Punkten:
+#   Median -1.78 | 75. Perz. -0.44 | 90. +0.60 | 95. +1.83 | max +7.41
+# Der Normalfall ist also NEGATIV (konvexer Smile, ATM ist sein Minimum).
+# Kleine positive Werte sind legitim: die 25Delta-Fluegel liegen nicht symmetrisch
+# um ATM, und Event-Risiko oder breite Quotes heben das Geld an. No-Arbitrage
+# erzwingt PREIS-Konvexitaet, nicht IV-Konvexitaet — das hier ist also KEINE
+# harte Invariante, sondern eine Ausreisser-Grenze.
+# 3.0 liegt jenseits des 95. Perzentils der gesunden Verteilung und haette den
+# groben Fall vom 2026-09-18 gefangen (NVDA +5.06 Punkte bei veraltetem Spot),
+# ohne die vier gesunden Ticker zwischen +0.4 und +1.8 zu verwerfen.
+ATM_KONKAV_TOL = 0.03
 PARITAET_BAND = 0.08       # nur hier pruefen: |log(K/F)| <= 8 % (amerikanische
                            # Ausuebung verletzt die Paritaet weiter im Geld legitim)
 
@@ -323,5 +337,114 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     call, put = best["call"], best["put"]
     if not call or not put or call[0] > delta_tol or put[0] > delta_tol:
         return None
+
+    # INVARIANTE: die ATM-IV darf nicht ueber BEIDEN Fluegeln liegen.
+    # Der Smile ist am Geld konvex — ATM ist sein Minimum, die Fluegel liegen
+    # darueber (reiner Skew) oder gleichauf. Liegt ATM ueber beiden, ist der
+    # Smile am Geld konkav: kein Marktzustand, sondern ein Messfehler.
+    # Gemessen am 2026-09-15..18: 14-21 % der Zeilen hatten das, ausgeloest durch
+    # einen um eine Session veralteten Spot (NVDA iv_atm 0.4201 gegen call 0.3695
+    # und put 0.2869). Die Toleranz laesst Messrauschen bei liquiden Titeln durch,
+    # ohne die grossen Faelle zu verpassen.
+    if iv_atm > max(call[1], put[1]) + ATM_KONKAV_TOL:
+        return None
     return {"dte": dte, "call_iv": call[1], "put_iv": put[1],
             "iv_atm": round(iv_atm, 4)}
+
+
+# ── Stuetzstellen-Wahl fuer die konstante Laufzeit ───────────────────────────
+
+def _ist_freitag(iso: str) -> bool:
+    try:
+        return _date.fromisoformat(iso).weekday() == 4
+    except Exception:
+        return False
+
+
+def ist_monatsverfall(iso: str) -> bool:
+    """Standard-Monatsverfall = 3. Freitag (Tag 15-21 und ein Freitag)."""
+    try:
+        d = _date.fromisoformat(iso)
+    except Exception:
+        return False
+    return d.weekday() == 4 and 15 <= d.day <= 21
+
+
+def cm_leg_kandidaten(dte_je_expiry: dict) -> list:
+    """Rangliste von Stuetzstellen-Gruppen fuer die 30-Tage-Interpolation.
+
+    Eingabe: {expiry_iso: dte}. Rueckgabe: Liste von Gruppen, jede Gruppe eine
+    Liste mit ein oder zwei Expiry-Schluesseln, beste zuerst. Der Aufrufer
+    probiert sie der Reihe nach, bis eine Gruppe zwei brauchbare Legs liefert.
+
+    ZWEI FEHLER DER VORGAENGERVERSION, beide am 2026-09-18 gemessen:
+
+    1. DER POOL WURDE GEWAEHLT, BEVOR KLAR WAR, OB ER KLAMMERN KANN.
+       Sobald irgendein Monatsverfall existierte, wurden Wochenverfaelle NIE
+       betrachtet. Am 2026-09-15 lagen die Monatsverfaelle bei 3 Tagen (unter
+       CM_DTE_MIN) und 31 Tagen — `below` war also leer, eine echte Klammer um
+       30 Tage unmoeglich. Die Wochenverfaelle bei 10, 17 und 24 Tagen haetten
+       eine geliefert, kamen aber nicht in Frage.
+       Folge: statt zu interpolieren wurde von 31 auf 30 Tage EXTRAPOLIERT,
+       mit der 66-Tage-Stuetzstelle als zweitem Punkt.
+       Das wiederholt sich JEDEN MONAT im Fenster zwischen "Front-Verfall unter
+       CM_DTE_MIN" und dem Verfall selbst.
+
+    2. EINE GESCHEITERTE LEG LIESS DEN GANZEN TAG FALLEN.
+       Die 66-Tage-Stuetzstelle ist duenn; `leg_from_prices` verwarf sie. Damit
+       blieb eine Leg uebrig -> `cm_mode = "single"`, und `single` zaehlt im
+       Frontend nicht fuer das Ranking. Gemessen: die Normierungsquote fiel von
+       77-100 % auf 38-56 %, und damit von 148 auf 19 Ticker im Radar.
+
+    Deshalb jetzt: erst in JEDEM Pool nach einer echten Klammer suchen
+    (Monatsverfall bevorzugt, weil dort die Liquiditaet sitzt), und erst wenn
+    kein Pool klammern kann, extrapolieren. Und als Rangliste, damit eine
+    gescheiterte Leg nur die naechste Gruppe kostet, nicht den Tag.
+    """
+    if not dte_je_expiry:
+        return []
+    alle = list(dte_je_expiry)
+    monatlich = [e for e in alle if ist_monatsverfall(e)]
+    freitags = [e for e in alle if _ist_freitag(e)]
+
+    def _spalten(pool):
+        unten = sorted([e for e in pool if CM_DTE_MIN <= dte_je_expiry[e] <= CM_DAYS],
+                       key=lambda e: dte_je_expiry[e])
+        oben = sorted([e for e in pool if CM_DAYS < dte_je_expiry[e] <= CM_DTE_MAX],
+                      key=lambda e: dte_je_expiry[e])
+        return unten, oben
+
+    gruppen, gesehen = [], set()
+
+    def _nimm(gruppe):
+        s = tuple(gruppe)
+        if gruppe and s not in gesehen:
+            gesehen.add(s)
+            gruppen.append(list(gruppe))
+
+    # Stufe 1: echte Klammer, Pools in Liquiditaets-Reihenfolge.
+    # Eine Interpolation zwischen zwei WIRKLICH klammernden Wochenverfaellen ist
+    # belastbarer als eine Extrapolation von 31 auf 30 Tage ueber eine 66-Tage-
+    # Stuetzstelle — auch wenn Wochenverfaelle weniger liquide sind.
+    for pool in (monatlich, freitags, alle):
+        unten, oben = _spalten(pool)
+        if unten and oben:
+            _nimm([unten[-1], oben[0]])
+
+    # Stufe 2: keine Klammer moeglich -> extrapolieren, wieder pool-weise.
+    for pool in (monatlich, freitags, alle):
+        unten, oben = _spalten(pool)
+        if len(oben) >= 2:
+            _nimm([oben[0], oben[1]])          # nach unten (kurz vor dem Roll)
+        if len(unten) >= 2:
+            _nimm([unten[-2], unten[-1]])      # nach oben (selten)
+
+    # Stufe 3: Einzelpunkt. Die Laufzeit-Toleranz prueft der Aufrufer.
+    for pool in (monatlich, freitags, alle):
+        unten, oben = _spalten(pool)
+        if oben:
+            _nimm([oben[0]])
+        if unten:
+            _nimm([unten[-1]])
+
+    return gruppen
