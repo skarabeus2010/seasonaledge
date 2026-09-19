@@ -187,6 +187,34 @@ def standardserie_filter(contracts, underlying: str, ticker_feld=None):
     return behalten, len(contracts) - len(behalten)
 
 
+# ── Diagnose: warum wurde eine Leg verworfen? ────────────────────────────────
+# Standardmaessig AUS. Ohne diese Zaehler sieht man nur das Ergebnis (`single`,
+# `None`) und nicht den Grund — genau deshalb wurde am 2026-09-15..18 zwei Tage
+# lang OPEX verdaechtigt, waehrend die Ursache ein veralteter Spot war.
+# Das Verhalten der Funktionen aendert sich dadurch NICHT.
+
+_diag: dict | None = None
+
+
+def diagnose_start() -> None:
+    """Zaehlung einschalten und zuruecksetzen."""
+    global _diag
+    _diag = {}
+
+
+def diagnose_stop() -> dict:
+    """Zaehlung ausschalten und Ergebnis liefern."""
+    global _diag
+    d = _diag or {}
+    _diag = None
+    return d
+
+
+def _zaehl(grund: str, n: int = 1) -> None:
+    if _diag is not None:
+        _diag[grund] = _diag.get(grund, 0) + n
+
+
 SMILE_MIN_NACHBARN = 3     # weniger -> nicht filtern, sondern unbewertbar lassen
 SMILE_TOL = 0.08           # max. Abweichung vom Nachbar-Fit, in Vol-Punkten
 
@@ -264,6 +292,7 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     for c in cands:
         iv = implied_vol(c["px"], spot, c["K"], T, c["typ"])
         if iv is None or iv <= IV_MIN or iv > IV_MAX:
+            _zaehl("iv_unbrauchbar")
             continue
         gueltig.append((c["typ"], c["K"], iv))
     if not gueltig:
@@ -275,8 +304,10 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     verdaechtig = set()
     for seite in ("call", "put"):
         verdaechtig |= _smile_ausreisser([p for p in gueltig if p[0] == seite])
+    _zaehl("smile_ausreisser", len(verdaechtig))
     gueltig = [p for p in gueltig if (p[1], p[2]) not in verdaechtig]
     if not gueltig:
+        _zaehl("leg_None_kein_kandidat_nach_smile")
         return None
 
     # Schritt 3: Paritaetspruefung — NUR in der ATM-Region.
@@ -300,11 +331,13 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
         ca, pu = d.get("call"), d.get("put")
         if ca is not None and pu is not None:
             if abs(ca - pu) > PARITAET_TOL:
+                _zaehl("paritaet_bruch")
                 continue                  # ein Preis taugt nicht -> Strike raus
             anker[K] = (ca + pu) / 2
         else:
             anker[K] = ca if ca is not None else pu
     if not anker:
+        _zaehl("leg_None_kein_atm_anker")
         return None
 
     # Schritt 4: ATM-IV ueber MONEYNESS am Forward, zwischen den zwei Strikes
@@ -321,9 +354,11 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     else:
         k = unten[-1] if unten else oben[0]
         if abs(math.log(k / F)) > ATM_MAX_MONEYNESS:
+            _zaehl("leg_None_kette_ohne_forward")
             return None                   # Kette deckt den Forward nicht ab
         iv_atm = anker[k]
     if not iv_atm or iv_atm <= IV_MIN or iv_atm > IV_MAX:
+        _zaehl("leg_None_atm_ausserhalb_band")
         return None
 
     # Schritt 5: Deltas mit der EINEN Referenz-IV — nicht mit der je Kontrakt.
@@ -335,7 +370,11 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
         if best[typ] is None or d < best[typ][0]:
             best[typ] = (d, iv)
     call, put = best["call"], best["put"]
-    if not call or not put or call[0] > delta_tol or put[0] > delta_tol:
+    if not call or not put:
+        _zaehl("leg_None_seite_fehlt")
+        return None
+    if call[0] > delta_tol or put[0] > delta_tol:
+        _zaehl("leg_None_delta_toleranz")
         return None
 
     # INVARIANTE: die ATM-IV darf nicht ueber BEIDEN Fluegeln liegen.
@@ -347,6 +386,7 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     # und put 0.2869). Die Toleranz laesst Messrauschen bei liquiden Titeln durch,
     # ohne die grossen Faelle zu verpassen.
     if iv_atm > max(call[1], put[1]) + ATM_KONKAV_TOL:
+        _zaehl("leg_None_atm_konkav")
         return None
     return {"dte": dte, "call_iv": call[1], "put_iv": put[1],
             "iv_atm": round(iv_atm, 4)}
@@ -373,9 +413,11 @@ def ist_monatsverfall(iso: str) -> bool:
 def cm_leg_kandidaten(dte_je_expiry: dict) -> list:
     """Rangliste von Stuetzstellen-Gruppen fuer die 30-Tage-Interpolation.
 
-    Eingabe: {expiry_iso: dte}. Rueckgabe: Liste von Gruppen, jede Gruppe eine
-    Liste mit ein oder zwei Expiry-Schluesseln, beste zuerst. Der Aufrufer
-    probiert sie der Reihe nach, bis eine Gruppe zwei brauchbare Legs liefert.
+    Eingabe: {expiry_iso: dte}. Rueckgabe: Liste von Gruppen, beste zuerst, je
+    {"exps": [1-2 Expiry-Schluessel], "pool": monatlich|freitags|alle,
+     "art": klammer|extrap_ab|extrap_auf|einzel, "rang": int}.
+    Der Aufrufer probiert sie der Reihe nach, bis eine zwei brauchbare Legs
+    liefert, und schreibt die Herkunft in die Ergebniszeile.
 
     ZWEI FEHLER DER VORGAENGERVERSION, beide am 2026-09-18 gemessen:
 
@@ -416,35 +458,42 @@ def cm_leg_kandidaten(dte_je_expiry: dict) -> list:
 
     gruppen, gesehen = [], set()
 
-    def _nimm(gruppe):
+    def _nimm(gruppe, pool_name, art):
+        """Jede Gruppe traegt ihre HERKUNFT mit: aus welchem Pool sie kommt und
+        ob sie klammert, extrapoliert oder ein Einzelpunkt ist.
+
+        Ohne das laesst sich ein spaeterer Percentile-Sprung nicht erklaeren —
+        derselbe Ticker kann heute aus dem Monatsverfall und morgen aus einem
+        Wochenverfall kommen, und beides sieht im Ergebnis gleich aus."""
         s = tuple(gruppe)
         if gruppe and s not in gesehen:
             gesehen.add(s)
-            gruppen.append(list(gruppe))
+            gruppen.append({"exps": list(gruppe), "pool": pool_name, "art": art,
+                            "rang": len(gruppen)})
 
     # Stufe 1: echte Klammer, Pools in Liquiditaets-Reihenfolge.
     # Eine Interpolation zwischen zwei WIRKLICH klammernden Wochenverfaellen ist
     # belastbarer als eine Extrapolation von 31 auf 30 Tage ueber eine 66-Tage-
     # Stuetzstelle — auch wenn Wochenverfaelle weniger liquide sind.
-    for pool in (monatlich, freitags, alle):
+    for pool_name, pool in (("monatlich", monatlich), ("freitags", freitags), ("alle", alle)):
         unten, oben = _spalten(pool)
         if unten and oben:
-            _nimm([unten[-1], oben[0]])
+            _nimm([unten[-1], oben[0]], pool_name, "klammer")
 
     # Stufe 2: keine Klammer moeglich -> extrapolieren, wieder pool-weise.
-    for pool in (monatlich, freitags, alle):
+    for pool_name, pool in (("monatlich", monatlich), ("freitags", freitags), ("alle", alle)):
         unten, oben = _spalten(pool)
         if len(oben) >= 2:
-            _nimm([oben[0], oben[1]])          # nach unten (kurz vor dem Roll)
+            _nimm([oben[0], oben[1]], pool_name, "extrap_ab")   # nach unten (vor dem Roll)
         if len(unten) >= 2:
-            _nimm([unten[-2], unten[-1]])      # nach oben (selten)
+            _nimm([unten[-2], unten[-1]], pool_name, "extrap_auf")  # nach oben (selten)
 
     # Stufe 3: Einzelpunkt. Die Laufzeit-Toleranz prueft der Aufrufer.
-    for pool in (monatlich, freitags, alle):
+    for pool_name, pool in (("monatlich", monatlich), ("freitags", freitags), ("alle", alle)):
         unten, oben = _spalten(pool)
         if oben:
-            _nimm([oben[0]])
+            _nimm([oben[0]], pool_name, "einzel")
         if unten:
-            _nimm([unten[-1]])
+            _nimm([unten[-1]], pool_name, "einzel")
 
     return gruppen

@@ -38,7 +38,7 @@ from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
                                   cm_leg_kandidaten as _cm_leg_kandidaten,
-                                  ist_monatsverfall,
+                                  ist_monatsverfall, _zaehl as _bs_zaehl,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
@@ -197,7 +197,7 @@ def _index_series(sym: str, days: int = 504) -> dict:
         return {}
 
 
-def _realized_vol(sym: str, n: int = 21):
+def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     """Annualisierte realisierte Vola über n Handelstage (CBOE-Formel), Decimal.
     n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
     RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1}).
@@ -221,6 +221,18 @@ def _realized_vol(sym: str, n: int = 21):
         clear_cache(); gc.collect(); return None, None, None
     if df is None or len(df) == 0:
         clear_cache(); gc.collect(); return None, None, None
+    # ZUERST auf die Session kappen, DANN rechnen. Sonst stammt die realisierte
+    # Vola aus einem Fenster, das ueber die Session hinausreicht — und bliebe
+    # selbst dann falsch, wenn der Spot als veraltet verworfen wird.
+    # (Der umgekehrte Fall, eine Reihe die VOR der Session endet, wird unten
+    # ueber last_d erkannt und fuehrt zum Verzicht auf die cm-Normierung.)
+    if bis:
+        try:
+            df = df[df.index <= bis]
+        except Exception:
+            pass
+        if df is None or len(df) == 0:
+            clear_cache(); gc.collect(); return None, None, None
     c = df["Close"].to_numpy(dtype=float)
     last = round(float(c[-1]), 2) if len(c) and c[-1] == c[-1] else None
     # Datum der letzten Zeile — Date ist der Index (siehe preprocess).
@@ -409,39 +421,54 @@ def _skew_cm(by: dict, leg_fn=None) -> dict | None:
         return _cache[e]
 
     # Runde 1: die erste Gruppe, die ZWEI brauchbare Stuetzstellen liefert.
-    for gruppe in gruppen:
-        if len(gruppe) != 2:
+    for g in gruppen:
+        exps = g["exps"]
+        if len(exps) != 2:
             continue
-        a, b = _leg(gruppe[0]), _leg(gruppe[1])
+        a, b = _leg(exps[0]), _leg(exps[1])
         if not a or not b:
+            _diag_zaehl("gruppe_leg_fehlt")
             continue
         lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
         if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS),
                                                   abs(hi_d - _CM_DAYS)) > 15:
+            _diag_zaehl("gruppe_zu_weit_von_30d")
             continue
         call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
         put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
         iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
                   if (a["iv_atm"] and b["iv_atm"]) else None)
         if call_iv is None or put_iv is None:
+            _diag_zaehl("gruppe_interp_fehlgeschlagen")
             continue
         mode = "cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"
-        return _cm_out(mode, _CM_DAYS, call_iv, put_iv, iv_atm)
+        return _cm_out(mode, _CM_DAYS, call_iv, put_iv, iv_atm, g, exps, by)
 
     # Runde 2: nur noch ein Einzelpunkt, und nur nahe genug an der Ziellaufzeit.
-    for gruppe in gruppen:
-        for e in gruppe:
+    for g in gruppen:
+        for e in g["exps"]:
             a = _leg(e)
-            if not a or abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
+            if not a:
+                continue
+            if abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
+                _diag_zaehl("einzel_ausserhalb_toleranz")
                 continue
             if a["call_iv"] is None or a["put_iv"] is None:
                 continue
-            return _cm_out("single", a["dte"], a["call_iv"], a["put_iv"], a["iv_atm"])
+            return _cm_out("single", a["dte"], a["call_iv"], a["put_iv"], a["iv_atm"],
+                           g, [e], by)
+    _diag_zaehl("cm_None_keine_gruppe_brauchbar")
     return None
 
 
+def _diag_zaehl(grund: str) -> None:
+    """Zaehlt nur, wenn die Diagnose laeuft (shared.black_scholes.diagnose_start)."""
+    _bs_zaehl(grund)
+
+
 def _cm_out(mode: str, dte: int, call_iv: float, put_iv: float,
-            iv_atm: float | None) -> dict:
+            iv_atm: float | None, gruppe: dict | None = None,
+            exps: list | None = None, by: dict | None = None) -> dict:
     """Ergebniszeile. Zeta-Felder nur MIT ATM-Anker — ohne den faellt das
     Frontend auf die Naeherung (call_iv-put_iv)/2 zurueck, die
     put_zeta = -call_zeta erzwingt und den Quadranten auf seine Antidiagonale
@@ -454,6 +481,17 @@ def _cm_out(mode: str, dte: int, call_iv: float, put_iv: float,
         out["cm_call_zeta_pts"] = round((call_iv - iv_atm) * 100, 2)
         out["cm_put_zeta_pts"] = round((put_iv - iv_atm) * 100, 2)
         out["cm_bfly_pts"] = round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2)
+    # HERKUNFT mitschreiben. Derselbe Ticker kann heute aus dem Monatsverfall und
+    # morgen aus einem Wochenverfall kommen — im Ergebnis sieht das gleich aus.
+    # Ohne diese Felder ist ein Percentile-Sprung spaeter nicht erklaerbar.
+    if gruppe:
+        out["cm_pool"] = gruppe.get("pool")
+        out["cm_art"] = gruppe.get("art")
+        out["cm_rang"] = gruppe.get("rang")
+    if exps:
+        out["cm_exps"] = list(exps)
+        if by:
+            out["cm_exp_dte"] = [by[e]["dte"] for e in exps if e in by]
     return out
 
 def _enrich(sym: str, key: str) -> dict | None:
@@ -501,7 +539,9 @@ def _enrich(sym: str, key: str) -> dict | None:
     # alle abhängigen Felder unten sind bereits mit `if iv_atm` abgesichert.
     iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
-    rv1m, last_close, close_datum = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
+    # Kursreihe auf die Session kappen: Spot UND realisierte Vola muessen aus
+    # demselben Zeitraum stammen wie die Optionspreise.
+    rv1m, last_close, close_datum = _realized_vol(sym, 21, bis=_last_session())
     if not spot:                                    # Fallback 1: Underlying aus dem Snapshot
         for c in contracts:
             p = (c.get("underlying_asset") or {}).get("price")
