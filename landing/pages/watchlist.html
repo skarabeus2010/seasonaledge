@@ -817,7 +817,7 @@
       // Ticker-Autocomplete + Enter-Handler
       loadTickersMeta().then(function() {
         if (window.SA && SA.initTickerInput) {
-          SA.initTickerInput('wl-add-input', 'ticker-list', onAdd);
+          SA.initTickerInput('wl-add-input', 'ticker-list', onAdd, {remember: false, years: false});
         }
         loadAll();
       });

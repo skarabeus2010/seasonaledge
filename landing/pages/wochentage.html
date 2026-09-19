@@ -1831,7 +1831,7 @@
       if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
       if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
         SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
-        loadTicker('^GSPC');
+        loadTicker(SA.prefs.applyTicker('ticker-input', '^GSPC'));
       } else {
         document.getElementById('page-caption').textContent = 'Supabase nicht konfiguriert';
       }

@@ -599,7 +599,7 @@
     document.getElementById('chk-individual').addEventListener('change', rerender);
 
     // Auto-Load: erst CB-Termine aus DB, dann Ticker laden
-    loadCBDates().then(function() { loadTicker('^GSPC'); });
+    loadCBDates().then(function() { loadTicker(SA.prefs.applyTicker('ticker-input', '^GSPC')); });
 
   })();
   </script>

@@ -32,11 +32,18 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day                   # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
-from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
+from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
+                                 rv_aus_closes)
+from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
+from shared.black_scholes import (diagnose_start as _diagnose_start,
+                                  diagnose_stop as _diagnose_stop,
+                                  bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
+                                  cm_leg_kandidaten as _cm_leg_kandidaten,
+                                  ist_monatsverfall, _zaehl as _bs_zaehl,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
@@ -181,7 +188,16 @@ def _byexp(contracts: list) -> dict:
 
 
 def _index_series(sym: str, days: int = 504) -> dict:
-    """Letzte ~days Handelstage: {dates:[...], vals:[...]} + letzter Wert."""
+    """Letzte ~days Handelstage: {dates:[...], vals:[...]} + letzter Wert.
+
+    Bleibt BEWUSST bei Yahoo, obwohl _realized_vol auf Supabase umgestellt
+    wurde: hier kommen Volatilitaetsindizes herein (^VIX, ^SKEW, ^VVIX,
+    ^COR1M/3M/30D). Die zahlen keine Dividende, also gibt es keine
+    Adjustierung, die wandern koennte — der Grund fuer die Umstellung trifft
+    hier nicht zu. Ausserdem stehen diese Indizes nicht vollstaendig in
+    Supabase (^COR* liefert Yahoo ohnehin nur den letzten Wert, weshalb die
+    Historie vorwaerts akkumuliert wird).
+    """
     try:
         df = download_data(sym, period="max")
         clear_cache()
@@ -195,41 +211,101 @@ def _index_series(sym: str, days: int = 504) -> dict:
         return {}
 
 
-def _realized_vol(sym: str, n: int = 21):
+def _rv_ab(bis: str | None, monate: int = 8) -> str:
+    """Fruehestes Datum fuer das Laden der Kursreihe.
+
+    Ein 21-Handelstage-Fenster braucht gut einen Monat; acht Monate geben
+    Luft fuer Feiertage, Handelspausen und den n+5-Puffer, ohne die ganze
+    Historie zu ziehen (das waren bei 165 Tickern sonst Millionen Zeilen).
+    """
+    ende = date.fromisoformat(bis) if bis else date.today()
+    jahr, monat = ende.year, ende.month - monate
+    while monat <= 0:
+        monat += 12
+        jahr -= 1
+    return f"{jahr:04d}-{monat:02d}-01"
+
+
+def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     """Annualisierte realisierte Vola über n Handelstage (CBOE-Formel), Decimal.
     n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
     RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1}).
 
-    Rückgabe: (rv, last_close). Der letzte Close dient als Spot-Fallback — der
-    Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08: Spot 0,00),
-    und die Kursreihe ist hier ohnehin schon geladen."""
+    Rückgabe: (rv, last_close, last_date). Der letzte Close dient als Spot-Fallback —
+    der Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08:
+    Spot 0,00), und die Kursreihe ist hier ohnehin schon geladen.
+
+    `last_date` MUSS mitkommen und vom Aufrufer gegen die Session geprüft werden.
+    Ein um eine Session veralteter Spot verschiebt den Forward, damit den
+    Moneyness-Anker UND über `bs_delta(spot, K, T, iv_atm, typ)` die 25Δ-Auswahl
+    beider Flügel — ein einziger falscher Spot erzeugt also alle Symptome
+    gleichzeitig: gekipptes Skew-Vorzeichen, `iv_atm` über beiden Flügeln, und
+    Legs, die an der Delta-Toleranz scheitern. Gemessen am 2026-09-18: der aus
+    den veröffentlichten IVs zurückgerechnete Spot lag bei NVDA 3,0 % und bei
+    SPY 0,94 % unter dem echten Schluss; mit dem korrekten Schluss sind dieselben
+    Ticker sauber."""
+    # QUELLE: Supabase, ohne stillen Rueckfall auf Yahoo. `download_data`
+    # liefert ADJUSTIERTE Kurse, und die Adjustierung wandert mit jeder
+    # Dividende — dieselbe Abfrage ergibt an verschiedenen Tagen verschiedene
+    # Reihen. Fuer eine Historie, aus der ein ticker-internes Perzentil
+    # gebildet wird, ist das unbrauchbar: der heutige Punkt verschiebt sich
+    # gegen die gespeicherten. Begruendung, Messung und der in Kauf genommene
+    # Restfehler stehen bei shared.data.lade_closes.
+    #
+    # Ein Ticker ohne Reihe beendet den Lauf NICHT — er bekommt kein rv und
+    # keinen Spot-Fallback, damit faellt unten die cm-Normierung aus
+    # (fail-closed). Gemeldet wird es aber, sonst ist es ein stiller Ausfall.
     try:
-        df = download_data(sym, period="6mo")
+        daten_alle, closes_alle = lade_closes(sym, ab=_rv_ab(bis),
+                                              mindestens=n + 5)
+    except KursreiheFehlt as e:
+        print(f"  {sym:6} {e} -> kein rv, kein Spot-Fallback", flush=True)
+        return None, None, None
+    except Exception as e:
+        print(f"  {sym:6} Kursreihe nicht ladbar ({e}) -> kein rv", flush=True)
+        return None, None, None
+    # ZUERST auf die Session kappen, DANN rechnen. Sonst stammt die realisierte
+    # Vola aus einem Fenster, das ueber die Session hinausreicht — und bliebe
+    # selbst dann falsch, wenn der Spot als veraltet verworfen wird.
+    # (Der umgekehrte Fall, eine Reihe die VOR der Session endet, wird unten
+    # ueber last_d erkannt und fuehrt zum Verzicht auf die cm-Normierung.)
+    #
+    # ACHTUNG, HIER SASS EIN FEHLER (gefunden 2026-09-19): die Kappung lief als
+    # `df[df.index <= bis]` auf dem DatetimeIndex. Dessen Werte tragen eine
+    # UHRZEIT (Timestamp('2026-09-18 13:30:00') = NYSE-Open in UTC), also wurde
+    # der Vergleich zu `<= 2026-09-18 00:00:00` und schnitt die Session WEG.
+    # Folge: die realisierte Vola lief taeglich auf einem Fenster, das einen
+    # Handelstag zu frueh endete, und `last_d` war immer der Vortag — der
+    # Frische-Waechter unten meldete deshalb JEDEN Tag eine veraltete Reihe,
+    # obwohl der Tag vorhanden war. Gemessen am 2026-09-19: _last_session()
+    # 2026-09-18, last_d 2026-09-17 bei SPY/QQQ/NVDA, VRP um 0,26-0,75 pp
+    # verschoben. Jetzt wird auf Kalendertagen verglichen, nicht auf
+    # Zeitstempeln (shared/realized_vol.kappe_auf).
+    try:
+        daten, closes = kappe_auf(daten_alle, closes_alle, bis)
     except Exception:
-        clear_cache(); gc.collect(); return None, None
-    if df is None or len(df) == 0:
-        clear_cache(); gc.collect(); return None, None
-    c = df["Close"].to_numpy(dtype=float)
-    last = round(float(c[-1]), 2) if len(c) and c[-1] == c[-1] else None
-    if len(df) < n + 5:
-        clear_cache(); gc.collect(); return None, last
-    r = [math.log(c[i] / c[i - 1]) for i in range(1, len(c)) if c[i - 1] > 0 and c[i] > 0]
-    clear_cache(); gc.collect()
-    if len(r) < n:
-        return None, last
-    seg = r[-n:]
-    m = sum(seg) / n
-    var = sum((x - m) ** 2 for x in seg) / (n - 1)        # Stichproben-Varianz (÷ N−1)
-    return round(math.sqrt(var) * math.sqrt(252), 4), last  # × √252 annualisiert
+        return None, None, None
+    if not closes:
+        return None, None, None
+    c = closes
+    last = round(float(c[-1]), 2) if c[-1] == c[-1] else None
+    last_d = daten[-1]
+    # n+5 statt n+1: ein Puffer gegen Reihen, die gerade eben reichen. Bewusst
+    # beibehalten, damit die Umstellung keine Zahl verschiebt. Gezaehlt wird
+    # auf der GEKAPPTEN Reihe — vorher stand hier len(df), was nach der Kappung
+    # dasselbe war, jetzt aber auseinanderfallen wuerde.
+    if len(c) < n + 5:
+        return None, last, last_d
+    # Die Formel liegt in shared/realized_vol.py — dieselbe Funktion nutzt die
+    # Nachruestung des VRP fuer vergangene Tage (scripts/backfill_skew_vrp.py).
+    # Zwei Implementierungen derselben Mathematik driften; nachgewiesen
+    # identisch zur vorherigen Fassung in scripts/verify_realized_vol.py.
+    return rv_aus_closes(c, n), last, last_d
 
 
-def _is_monthly(iso: str) -> bool:
-    """Standard-Monatsverfall = 3. Freitag (Tag 15-21 und ein Freitag)."""
-    try:
-        d = date.fromisoformat(iso)
-    except Exception:
-        return False
-    return d.weekday() == 4 and 15 <= d.day <= 21
+# Standard-Monatsverfall = 3. Freitag. Alias auf die gemeinsame Definition in
+# shared/black_scholes.py — zwei Kopien derselben Regel driften.
+_is_monthly = ist_monatsverfall
 
 
 def _nearest_exp(by: dict, target_dte: int, prefer_monthly: bool = False):
@@ -299,21 +375,11 @@ def _cm_leg(e: dict):
     return {"dte": e["dte"], "call_iv": cc[1], "put_iv": pp[1], "iv_atm": _atm_iv(e)}
 
 
-def _cm_legs(by: dict) -> list:
-    """Ein bis zwei Verfälle wählen, die _CM_DAYS klammern (Monatsverfall bevorzugt).
-    Ohne Bracket nach unten extrapolieren (zwei nächstlängere), sonst Einzelpunkt."""
-    pool = ([e for e in by if _is_monthly(e)]
-            or [e for e in by if date.fromisoformat(e).weekday() == 4]
-            or list(by))
-    below = sorted([e for e in pool if _CM_DTE_MIN <= by[e]["dte"] <= _CM_DAYS], key=lambda e: by[e]["dte"])
-    above = sorted([e for e in pool if _CM_DAYS < by[e]["dte"] <= _CM_DTE_MAX], key=lambda e: by[e]["dte"])
-    if below and above:
-        return [below[-1], above[0]]      # echtes Bracket um 30d
-    if len(above) >= 2:
-        return [above[0], above[1]]       # kurz vor Roll: nach unten extrapolieren
-    if len(below) >= 2:
-        return [below[-2], below[-1]]     # selten: nach oben extrapolieren
-    return above[:1] or below[-1:]        # nur ein Verfall → Einzelpunkt
+# _cm_legs ist entfallen: die Stuetzstellen-Wahl steht jetzt als
+# cm_leg_kandidaten in shared/black_scholes.py und wird von Live UND
+# Backfill benutzt. Zwei Kopien derselben Auswahl sind in dieser Codebasis
+# schon dreimal auseinandergelaufen.
+
 
 
 # ── Ranking-Reihe: IV SELBST invertieren (Methodengleichheit mit dem Backfill) ─
@@ -380,32 +446,85 @@ def _skew_cm(by: dict, leg_fn=None) -> dict | None:
     backfill_skew_massive.py, damit Live und Backfill eine Reihe bilden.
 
     leg_fn: Stuetzstellen-Quelle. Default = Provider-IV (_cm_leg); fuer die
-    Ranking-Historie wird _leg_own uebergeben (eigene BS-Inversion)."""
+    Ranking-Historie wird _leg_own uebergeben (eigene BS-Inversion).
+
+    PROBIERT EINE RANGLISTE, statt bei der ersten gescheiterten Leg aufzugeben.
+    Vorher wurde EIN Paar gewaehlt; scheiterte davon eine Stuetzstelle an
+    leg_from_prices, blieb nur eine uebrig und der Tag wurde als `single`
+    gestempelt — was im Frontend nicht fuer das Ranking zaehlt. Gemessen am
+    2026-09-15/16: die duenne 65-Tage-Stuetzstelle fiel durch, und damit fiel
+    die Normierungsquote von 77-100 % auf 38-56 %.
+    Die Rangliste kommt aus shared/black_scholes.cm_leg_kandidaten; ein
+    Fehlschlag kostet jetzt nur die naechste Gruppe, nicht den Tag.
+    """
     if not by:
         return None
     leg_fn = leg_fn or (lambda e: _cm_leg(by[e]))
-    got = [g for g in (leg_fn(e) for e in _cm_legs(by)) if g]
-    if not got:
+    gruppen = _cm_leg_kandidaten({e: by[e]["dte"] for e in by})
+    if not gruppen:
         return None
-    if len(got) >= 2:
-        a, b = got[0], got[1]
+
+    _cache: dict = {}
+    def _leg(e):
+        # Gruppen ueberlappen sich; leg_fn invertiert ~100 IVs je Expiry.
+        if e not in _cache:
+            _cache[e] = leg_fn(e)
+        return _cache[e]
+
+    # Runde 1: die erste Gruppe, die ZWEI brauchbare Stuetzstellen liefert.
+    for g in gruppen:
+        exps = g["exps"]
+        if len(exps) != 2:
+            continue
+        a, b = _leg(exps[0]), _leg(exps[1])
+        if not a or not b:
+            _diag_zaehl("gruppe_leg_fehlt")
+            continue
         lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
-        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS), abs(hi_d - _CM_DAYS)) > 15:
-            return None
+        if not (lo_d <= _CM_DAYS <= hi_d) and min(abs(lo_d - _CM_DAYS),
+                                                  abs(hi_d - _CM_DAYS)) > 15:
+            _diag_zaehl("gruppe_zu_weit_von_30d")
+            continue
         call_iv = _cm_interp(a["call_iv"], a["dte"], b["call_iv"], b["dte"])
         put_iv = _cm_interp(a["put_iv"], a["dte"], b["put_iv"], b["dte"])
         iv_atm = (_cm_interp(a["iv_atm"], a["dte"], b["iv_atm"], b["dte"])
                   if (a["iv_atm"] and b["iv_atm"]) else None)
-        mode, dte_out = ("cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"), _CM_DAYS
-    else:
-        a = got[0]
-        if abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
-            return None
-        call_iv, put_iv, iv_atm = a["call_iv"], a["put_iv"], a["iv_atm"]
-        mode, dte_out = "single", a["dte"]
-    if call_iv is None or put_iv is None:
-        return None
-    out = {"cm_mode": mode, "cm_dte": dte_out,
+        if call_iv is None or put_iv is None:
+            _diag_zaehl("gruppe_interp_fehlgeschlagen")
+            continue
+        mode = "cm" if lo_d <= _CM_DAYS <= hi_d else "cm_extrap"
+        return _cm_out(mode, _CM_DAYS, call_iv, put_iv, iv_atm, g, exps, by)
+
+    # Runde 2: nur noch ein Einzelpunkt, und nur nahe genug an der Ziellaufzeit.
+    for g in gruppen:
+        for e in g["exps"]:
+            a = _leg(e)
+            if not a:
+                continue
+            if abs(a["dte"] - _CM_DAYS) > _CM_SINGLE_TOL:
+                _diag_zaehl("einzel_ausserhalb_toleranz")
+                continue
+            if a["call_iv"] is None or a["put_iv"] is None:
+                continue
+            return _cm_out("single", a["dte"], a["call_iv"], a["put_iv"], a["iv_atm"],
+                           g, [e], by)
+    _diag_zaehl("cm_None_keine_gruppe_brauchbar")
+    return None
+
+
+def _diag_zaehl(grund: str) -> None:
+    """Zaehlt nur, wenn die Diagnose laeuft (shared.black_scholes.diagnose_start)."""
+    _bs_zaehl(grund)
+
+
+def _cm_out(mode: str, dte: int, call_iv: float, put_iv: float,
+            iv_atm: float | None, gruppe: dict | None = None,
+            exps: list | None = None, by: dict | None = None) -> dict:
+    """Ergebniszeile. Zeta-Felder nur MIT ATM-Anker — ohne den faellt das
+    Frontend auf die Naeherung (call_iv-put_iv)/2 zurueck, die
+    put_zeta = -call_zeta erzwingt und den Quadranten auf seine Antidiagonale
+    kollabieren laesst."""
+    out = {"cm_mode": mode, "cm_dte": dte,
            "cm_call_iv": round(call_iv, 4), "cm_put_iv": round(put_iv, 4),
            "cm_skew_pts": round((put_iv - call_iv) * 100, 2)}
     if iv_atm:
@@ -413,8 +532,18 @@ def _skew_cm(by: dict, leg_fn=None) -> dict | None:
         out["cm_call_zeta_pts"] = round((call_iv - iv_atm) * 100, 2)
         out["cm_put_zeta_pts"] = round((put_iv - iv_atm) * 100, 2)
         out["cm_bfly_pts"] = round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2)
+    # HERKUNFT mitschreiben. Derselbe Ticker kann heute aus dem Monatsverfall und
+    # morgen aus einem Wochenverfall kommen — im Ergebnis sieht das gleich aus.
+    # Ohne diese Felder ist ein Percentile-Sprung spaeter nicht erklaerbar.
+    if gruppe:
+        out["cm_pool"] = gruppe.get("pool")
+        out["cm_art"] = gruppe.get("art")
+        out["cm_rang"] = gruppe.get("rang")
+    if exps:
+        out["cm_exps"] = list(exps)
+        if by:
+            out["cm_exp_dte"] = [by[e]["dte"] for e in exps if e in by]
     return out
-
 
 def _enrich(sym: str, key: str) -> dict | None:
     """Voll-Metrik-Objekt aus EINEM Massive-Chain-Snapshot."""
@@ -461,7 +590,9 @@ def _enrich(sym: str, key: str) -> dict | None:
     # alle abhängigen Felder unten sind bereits mit `if iv_atm` abgesichert.
     iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
     put_iv, call_iv = s30["put_iv"], s30["call_iv"]
-    rv1m, last_close = _realized_vol(sym, 21)   # 1-Monat-Realized (CBOE), passend zur 30d-IV
+    # Kursreihe auf die Session kappen: Spot UND realisierte Vola muessen aus
+    # demselben Zeitraum stammen wie die Optionspreise.
+    rv1m, last_close, close_datum = _realized_vol(sym, 21, bis=_last_session())
     if not spot:                                    # Fallback 1: Underlying aus dem Snapshot
         for c in contracts:
             p = (c.get("underlying_asset") or {}).get("price")
@@ -536,10 +667,28 @@ def _enrich(sym: str, key: str) -> dict | None:
     # /prev liefert je nach Laufzeitpunkt den Vortag, und ein damit falsch
     # skalierter Punkt bekaeme trotzdem ein cm_mode und landete in der Rangfolge.
     # Lieber kein Punkt als ein falsch skalierter.
+    # SPOT UND OPTIONSPREISE MUESSEN AUS DERSELBEN SESSION KOMMEN.
+    # Der Kommentar darueber versprach das ("lieber kein Punkt als ein falsch
+    # skalierter"), geprueft wurde aber nur, DASS es einen Schluss gibt — nicht,
+    # von WANN. Ist die Kursreihe eine Session alt, verschiebt der falsche Spot
+    # den Forward und damit sowohl den Moneyness-Anker als auch die 25Δ-Auswahl
+    # beider Fluegel. Ein einziger falscher Spot erzeugt so ALLE Symptome:
+    # gekipptes Skew-Vorzeichen, iv_atm ueber beiden Fluegeln, gescheiterte Legs.
+    # Gemessen am 2026-09-18 an vier Blue Chips; mit dem korrekten Schluss waren
+    # dieselben Ticker sauber.
+    _sess = _last_session()
+    # FAIL-CLOSED: ein unbekanntes Datum ist kein gueltiges Datum. Ohne diese
+    # Klammer wuerde ein fehlendes close_datum die Pruefung durchfallen lassen
+    # und mit einem Spot unbekannter Herkunft normieren.
+    if last_close and close_datum != _sess:
+        print(f"  {sym:6} Kursreihe endet {close_datum}, Session ist {_sess} "
+              f"-> KEINE cm-Normierung (Spot passt nicht zu den Optionspreisen)",
+              flush=True)
+        last_close = None
     if last_close:
         # Restlaufzeit gegen die SESSION rechnen, unter der die Zeile gestempelt
         # wird — sonst liegt T bei einem Nachhol-Lauf um bis zu drei Tage daneben.
-        by_own = _own_cands(contracts, s30_ref=_last_session(), underlying=sym)
+        by_own = _own_cands(contracts, s30_ref=_sess, underlying=sym)
         cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], last_close))
         # cm-Zeilen ohne iv_atm haetten kein Zeta — das Frontend wuerde auf die
         # (call_iv-put_iv)/2-Naeherung zurueckfallen, die put_zeta = -call_zeta
@@ -578,9 +727,16 @@ def build(tickers: list[str], write: bool = True) -> dict:
     # Titel seit Wochen nie im Radar auftaucht, faellt niemandem auf.
     failed: list[dict] = []
     partial: list[dict] = []   # Zeile vorhanden, aber ATM-abhaengige Felder fehlen
+    diag: dict = {}
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
     else:
+        # Verwerfungsgruende mitzaehlen. Die Zaehler in shared/black_scholes.py
+        # waren bis hierher toter Code — ohne diesen Aufruf bleibt `_diag` None
+        # und jedes `_zaehl` ist wirkungslos. Genau deshalb wurde am
+        # 2026-09-15..18 zwei Tage lang OPEX verdaechtigt, waehrend die Ursache
+        # ein veralteter Spot war: man sah nur das Ergebnis, nie den Grund.
+        _diagnose_start()
         for t in tickers:
             try:
                 r = _enrich(t, tok)
@@ -602,6 +758,12 @@ def build(tickers: list[str], write: bool = True) -> dict:
                     partial.append({"ticker": t, "reason": "kein 50Δ-ATM in Toleranz"})
             else:
                 failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
+        diag = _diagnose_stop()
+        if diag:
+            ges = sum(diag.values())
+            print(f"  [diagnose] {ges} Verwerfungen ueber {len(tickers)} Ticker:", flush=True)
+            for grund, n in sorted(diag.items(), key=lambda x: -x[1]):
+                print(f"    {n:6}  {grund}", flush=True)
 
     # Marktweite Put/Call-Ratio (Equity = ohne Broad-Index-ETFs, Index = Broad-Index) — volumen- + OI-basiert
     def _pc(sel):

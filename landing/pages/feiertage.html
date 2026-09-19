@@ -654,7 +654,7 @@
     document.getElementById('rng-after').addEventListener('change', rerender);
 
     // Auto-Load
-    loadTicker('SPY');
+    loadTicker(SA.prefs.applyTicker('ticker-input', 'SPY'));
 
   })();
   </script>
