@@ -2494,11 +2494,9 @@
       if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
       if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
         SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
-        // URL-Param ?t=TSLA unterstuetzen
-        var urlParams = new URLSearchParams(window.location.search);
-        var initTicker = urlParams.get('t') || '^GSPC';
-        document.getElementById('ticker-input').value = initTicker;
-        loadTicker(initTicker);
+        // ?t=TSLA aus der URL, sonst der gemerkte Ticker, sonst ^GSPC —
+        // beides erledigt SA.prefs.applyTicker, inkl. Schreiben ins Feld.
+        loadTicker(SA.prefs.applyTicker('ticker-input', '^GSPC'));
       } else {
         document.getElementById('loading-msg').textContent = 'Supabase nicht konfiguriert';
       }

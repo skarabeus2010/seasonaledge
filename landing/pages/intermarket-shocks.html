@@ -274,8 +274,8 @@
     });
 
     // ── Init ticker inputs ─────────────────────────────────────────────────────
-    SA.initTickerInput('trigger-input', 'trigger-list', null);
-    SA.initTickerInput('target-input', 'target-list', null);
+    SA.initTickerInput('trigger-input', 'trigger-list', null, {remember: false});
+    SA.initTickerInput('target-input', 'target-list', null, {remember: false, years: false});
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     function showError(msg) {

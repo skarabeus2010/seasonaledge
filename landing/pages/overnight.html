@@ -683,7 +683,7 @@
     document.getElementById('sel-heatmap-type').addEventListener('change', function() { if (_cachedData) renderHeatmap(_cachedData); });
 
     // Auto-Load
-    loadTicker('SPY');
+    loadTicker(SA.prefs.applyTicker('ticker-input', 'SPY'));
 
   })();
   </script>

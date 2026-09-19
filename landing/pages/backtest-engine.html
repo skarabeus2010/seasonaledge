@@ -1697,7 +1697,7 @@
       if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
       if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
         SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
-        loadTicker('^GSPC');
+        loadTicker(SA.prefs.applyTicker('ticker-input', '^GSPC'));
       } else {
         document.getElementById('page-caption').textContent = 'Supabase nicht konfiguriert';
       }
@@ -1820,6 +1820,13 @@
       // 1. Ticker setzen
       var tickerInput = document.getElementById('ticker-input');
       if (tickerInput) tickerInput.value = p.ticker;
+      // Die Presets setzen das Feld direkt und laufen nicht durch commit() —
+      // ohne diese Zeile merkt sich die Seite den bequemsten Einstiegsweg
+      // nicht, und der naechste Seitenwechsel zeigt wieder den alten Ticker.
+      if (SA.prefs) {
+        var _e = SA._tickerFind ? SA._tickerFind(p.ticker) : null;
+        SA.prefs.setTicker(p.ticker, _e ? _e.k : null);
+      }
 
       // 2. Event-Typ auf TDOM setzen
       var selEvent = document.getElementById('sel-event');

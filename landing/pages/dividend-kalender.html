@@ -515,7 +515,7 @@
   loadComponent('footer-container', '/landing/components/footer.html');
   if (window.initSidebarToggle) initSidebarToggle();
 
-  loadTicker('SPY');
+  loadTicker(SA.prefs.applyTicker('ticker-input', 'SPY', {nurAktien: true}));
 }();
 </script>
 </body>

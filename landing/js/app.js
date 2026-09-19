@@ -300,18 +300,255 @@ SA.supabase = {
   }
 };
 
+/**
+ * SA.prefs — merkt Ticker und Zeitraum ueber den Seitenwechsel hinweg.
+ * ====================================================================
+ * Ohne das steht auf jeder Seite wieder der hartcodierte Standard: wer auf
+ * /jahreszyklus den DAX ansieht und auf /monatszyklus wechselt, bekommt dort
+ * wieder den S&P 500.
+ *
+ * WARUM HIER UND NICHT AUF DEN SEITEN: landing/en/*.html wird beim Deploy aus
+ * den DE-Seiten generiert. Logik in einer einzelnen Seite wuerde zwischen DE
+ * und EN auseinanderlaufen. Alles Gemeinsame gehoert nach app.js.
+ *
+ * WARUM localStorage und nicht die URL: die Navigation in components/nav.html
+ * besteht aus 38 reinen Pfad-Links ohne Query, und der EN-Builder schreibt
+ * jeden href textuell um. Query-Parameter muessten an 38 Stellen angehaengt
+ * und im Builder beruecksichtigt werden — localStorage kommt ohne das aus.
+ * Vorbild ist die Sidebar (`sa-sidebar-collapsed`, weiter unten in dieser Datei).
+ */
+SA.prefs = (function() {
+  'use strict';
+  var K_TICKER = 'sa-prefs-ticker';
+  var K_ART = 'sa-prefs-ticker-art';     // Kategorie aus tickers.json ("US-ETF", "EU-Aktie", ...)
+  var K_YEARS = 'sa-prefs-years';
+
+  function lies(k) {
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  }
+  /** Ereignis ausloesen, ohne an alten Browsern zu scheitern. */
+  function _feuere(el, typ) {
+    try {
+      el.dispatchEvent(new Event(typ, {bubbles: true}));
+    } catch (e) {
+      try {
+        var ev = document.createEvent('Event');
+        ev.initEvent(typ, true, true);
+        el.dispatchEvent(ev);
+      } catch (e2) { /* dann eben ohne Label-Abgleich */ }
+    }
+  }
+
+  function schreib(k, v) {
+    try { if (v == null || v === '') localStorage.removeItem(k); else localStorage.setItem(k, String(v)); }
+    catch (e) { /* privater Modus, Speicher voll — kein Grund, die Seite zu brechen */ }
+  }
+
+  /**
+   * Gespeicherter Ticker, sonst der Seiten-Standard.
+   * @param {string} standard - was die Seite ohne Erinnerung zeigen wuerde
+   */
+  function ticker(standard) {
+    return lies(K_TICKER) || standard;
+  }
+
+  /** Kategorie des gemerkten Tickers, oder null wenn unbekannt. */
+  function art() { return lies(K_ART); }
+
+  /**
+   * @param {string} t
+   * @param {string} [kategorie] - das `k`-Feld aus tickers.json, falls bekannt.
+   *        WIRD BEIM MERKEN MITGESCHRIEBEN und nicht beim Anwenden nachgesehen:
+   *        `SA._tickerCache` wird per fetch gefuellt und ist beim ersten
+   *        applyTicker einer Seite noch leer. Beim Merken dagegen hat der
+   *        Nutzer gerade getippt oder aus der Vorschlagsliste gewaehlt — da
+   *        liegt die Kategorie vor.
+   */
+  function setTicker(t, kategorie) {
+    t = String(t || '').trim().toUpperCase();
+    if (!t) return;
+    schreib(K_TICKER, t);
+    schreib(K_ART, kategorie || '');      // unbekannt -> Eintrag loeschen, nicht luegen
+  }
+
+  /** Vergisst den gemerkten Ticker (z. B. weil er nicht im Universum ist). */
+  function vergessen() { schreib(K_TICKER, ''); schreib(K_ART, ''); }
+
+  function years() { return lies(K_YEARS); }
+  function setYears(v) { schreib(K_YEARS, v); }
+
+  /**
+   * Setzt einen Zeitraum-Selector auf den gemerkten Wert — oder auf den
+   * NAECHSTLIEGENDEN, den es dort gibt.
+   *
+   * Noetig, weil die Seiten drei verschiedene Widgets mit nicht deckungs-
+   * gleichen Wertemengen nutzen: `sel-years` (14 Seiten), `sel-period`
+   * (5 Seiten) und Range-Slider `sl-years` (2 Seiten). Vorhandene Werte sind
+   * 1, 3, 5, 7, 10, 15, 20, 25, 30, 50 und "max" — je nach Seite nur eine
+   * Teilmenge. Ein gemerktes 25 gibt es auf /feiertage nicht; ohne Annaeherung
+   * bliebe das Select leer.
+   *
+   * Achtung: auf /monatswechsel, /mondphasen, /trifecta und /plain-vanilla
+   * haben die Optionen KEIN value-Attribut — dort ist der Wert der Text. Das
+   * erledigt `option.value` von selbst, der Browser faellt auf den Textinhalt
+   * zurueck.
+   *
+   * @returns {string|null} der tatsaechlich gesetzte Wert, oder null
+   */
+  function applyYears(selectId) {
+    var el = document.getElementById(selectId);
+    var want = years();
+    if (!el || !want) return null;
+
+    if (el.tagName === 'INPUT') {            // Range-Slider
+      if (want === 'max') return null;       // "max" hat im Slider keine Entsprechung
+      var z = parseInt(want, 10);
+      if (!isFinite(z)) return null;
+      var lo = parseInt(el.min, 10), hi = parseInt(el.max, 10);
+      if (isFinite(lo) && z < lo) z = lo;
+      if (isFinite(hi) && z > hi) z = hi;
+      el.value = String(z);
+      // Das Zahl-Label neben dem Slider ist statischer HTML-Text; nur ein
+      // 'input'-Listener pflegt es (wochentage.html, backtest-engine.html).
+      // Ohne dieses Ereignis stuende der Slider auf 25 und die Zahl daneben
+      // auf 10, waehrend mit 25 gerechnet wird — Anzeige gegen Inhalt.
+      // Bewusst NICHT 'change': daran haengt auf wochentage.html ein
+      // erneutes Rendern.
+      _feuere(el, 'input');
+      return String(z);
+    }
+
+    var opts = Array.prototype.slice.call(el.options || []);
+    if (!opts.length) return null;
+    var exakt = opts.filter(function(o) { return o.value === want; })[0];
+    if (exakt) { el.value = exakt.value; return el.value; }
+    if (want === 'max') {                    // "max" nicht da -> groesste Zahl
+      var zahlen = opts.filter(function(o) { return isFinite(parseInt(o.value, 10)); });
+      if (!zahlen.length) return null;
+      zahlen.sort(function(a, b) { return parseInt(b.value, 10) - parseInt(a.value, 10); });
+      el.value = zahlen[0].value;
+      return el.value;
+    }
+    var w = parseInt(want, 10);
+    if (!isFinite(w)) return null;
+    var best = null, dist = Infinity;
+    opts.forEach(function(o) {
+      var v = parseInt(o.value, 10);
+      if (!isFinite(v)) return;              // "max" als Kandidat ueberspringen
+      var d = Math.abs(v - w);
+      if (d < dist) { dist = d; best = o.value; }
+    });
+    if (best == null) return null;
+    el.value = best;
+    return best;
+  }
+
+  /**
+   * Hat dieser Titel ueberhaupt Earnings und Dividenden? Nur Einzelaktien.
+   *
+   * Von 366 Tickern sind 160 `US-Aktie` und 110 `EU-Aktie`; die restlichen 96
+   * (41 US-ETF, 11 FX, 10 Rohstoff, 9 EU-Index, 6 Krypto, 5 US-Index, je 3
+   * Anleihen/Emerging Markets/Asien-Index/Volatility, 2 Futures) haben keine.
+   * /earnings-kalender wirft bei leerer Earnings-Liste und zeigt dann eine
+   * LEERE Seite — ein gemerktes SPY (auf acht Seiten der Standard!) traf das
+   * zwangslaeufig, und eine Heuristik auf ^ / =F / =X faengt SPY nicht.
+   *
+   * Deshalb entscheidet die gespeicherte Kategorie. Nur wenn sie fehlt
+   * (Erinnerung aus einem ?t=-Link oder von vor dieser Aenderung), fallen wir
+   * auf die Zeichen-Heuristik zurueck — die faengt wenigstens Indizes,
+   * Futures, Devisen und Krypto.
+   */
+  function hatEarnings(t) {
+    var k = art();
+    if (k) return /Aktie$/.test(k);
+    return !(/^\^/.test(t) || /=[FX]$/.test(t) || /-USD$/.test(t));
+  }
+
+  /**
+   * Holt den Ticker fuer diese Seite, schreibt ihn ins Eingabefeld und gibt
+   * ihn zurueck. Eine Stelle je Seite statt zwei (Feld + loadTicker-Aufruf),
+   * die auseinanderlaufen koennen.
+   *
+   * Reihenfolge: ?t=<Ticker> aus der URL > gemerkt > Seiten-Standard.
+   * Der URL-Parameter gewinnt, weil ein geteilter Link sonst etwas anderes
+   * zeigen wuerde, als der Absender im Sinn hatte (/dashboard nutzt ihn).
+   *
+   * @param {string} inputId
+   * @param {string} standard
+   * @param {object} [opts] - {nurAktien:true} fuer /earnings-kalender und
+   *        /dividend-kalender, die nur Einzelwerte darstellen koennen
+   */
+  function applyTicker(inputId, standard, opts) {
+    opts = opts || {};
+    var t = null;
+    try {
+      t = new URLSearchParams(window.location.search).get('t');
+    } catch (e) { /* alter Browser — dann eben ohne URL-Parameter */ }
+    if (t) {
+      t = String(t).trim().toUpperCase();
+      setTicker(t);                       // geteilter Link setzt auch die Erinnerung
+    } else {
+      t = ticker(standard);
+      if (opts.nurAktien && !hatEarnings(t)) t = standard;
+    }
+    var el = document.getElementById(inputId);
+    if (el) el.value = t;
+    return t;
+  }
+
+  /** Merkt jede Aenderung des Zeitraums. Ruft optional den Seiten-Handler. */
+  function bindYears(selectId) {
+    var el = document.getElementById(selectId);
+    if (!el) return;
+    el.addEventListener('change', function() { setYears(el.value); });
+    // Range-Slider feuern 'change' erst beim Loslassen — das genuegt hier.
+  }
+
+  /**
+   * Findet das Zeitraum-Widget dieser Seite selbst, stellt den gemerkten Wert
+   * ein und merkt kuenftige Aenderungen.
+   *
+   * Absichtlich zentral statt 21x in den Seiten: die Seiten nutzen drei
+   * verschiedene IDs, aber je Seite nur eine. Wird aus initTickerInput
+   * gerufen, das ohnehin jede Seite aufruft — so kann es nicht vergessen
+   * werden, und es laeuft vor dem ersten Rendern, weil der Ticker-Input
+   * ueberall unmittelbar vor dem ersten loadTicker initialisiert wird.
+   *
+   * @returns {string|null} die ID des gefundenen Widgets
+   */
+  function autoYears() {
+    var ids = ['sel-years', 'sel-period', 'sl-years'];
+    for (var i = 0; i < ids.length; i++) {
+      if (!document.getElementById(ids[i])) continue;
+      applyYears(ids[i]);
+      bindYears(ids[i]);
+      return ids[i];
+    }
+    return null;
+  }
+
+  return { ticker: ticker, setTicker: setTicker, applyTicker: applyTicker,
+           art: art, vergessen: vergessen, autoYears: autoYears,
+           years: years, setYears: setYears,
+           applyYears: applyYears, bindYears: bindYears };
+})();
+
 // ── Ticker-Input (wiederverwendbar) ────────────────────────────────────────
 
 /**
  * Initialisiert ein Ticker-Input mit Autocomplete (Datalist) + Focus-Select.
  *
- * Laedt tickers.json einmal (263 Ticker mit Namen), cached im SA-Objekt.
+ * Laedt tickers.json einmal (366 Ticker mit Namen), cached im SA-Objekt.
  * Bei Focus wird der Text markiert (sofort ueberschreibbar).
  * Bei Enter oder Datalist-Auswahl wird der Callback aufgerufen.
  *
  * @param {string} inputId    - ID des <input> Elements
  * @param {string} datalistId - ID des <datalist> Elements
  * @param {function} onSelect - Callback(ticker) bei Auswahl
+ * @param {object} [opts] - {remember:false} schaltet das Merken ab. Noetig fuer
+ *        Eingabefelder, die NICHT den angezeigten Ticker waehlen, sondern etwas
+ *        hinzufuegen (watchlist.html) — sonst uebernaehme ein Watchlist-Eintrag
+ *        den Ticker aller anderen Seiten.
  *
  * Beispiel:
  *   <input type="text" id="ticker-input" value="^DJI" list="ticker-list">
@@ -325,14 +562,33 @@ SA._tickerCache = null;
 // Custom-Substring-Autocomplete (ersetzt das native <datalist>, das je nach
 // Browser nur Prefix matcht / Optionen kappt). Matcht Ticker UND Name,
 // case-insensitiv, Prefix-Treffer zuerst. Signatur bleibt kompatibel.
-SA.initTickerInput = function(inputId, datalistId, onSelect) {
+SA.initTickerInput = function(inputId, datalistId, onSelect, opts) {
   var input = document.getElementById(inputId);
   if (!input) return;
+  var merken = !(opts && opts.remember === false);
+  // Getrennt von `merken`: /intermarket-shocks merkt seine beiden Ticker nicht
+  // (sie waehlen nicht den angezeigten Titel), hat aber ein normales sel-years.
+  if (!(opts && opts.years === false)) SA.prefs.autoYears();
   input.removeAttribute('list');            // natives datalist deaktivieren
   input.setAttribute('autocomplete', 'off');
 
   function commit(val) {
-    if (onSelect) onSelect(String(val == null ? input.value : val).trim().toUpperCase());
+    var t = String(val == null ? input.value : val).trim().toUpperCase();
+    // HIER und nicht in den Seiten: jede der 22 Seiten hat ihren eigenen
+    // onSelect-Handler; an einer zentralen Stelle kann das Merken nicht
+    // vergessen werden.
+    //
+    // Gemerkt wird nur, was im Universum steht. Ein Tippfehler wuerde sonst
+    // auf JEDER Folgeseite "zu wenig Daten" erzeugen, ohne erkennbare Ursache
+    // und bis zur naechsten Handeingabe. Ist die Liste noch nicht geladen,
+    // merken wir trotzdem (ohne Kategorie) — sie wird beim naechsten Laden
+    // nachgeprueft.
+    if (merken && t) {
+      var e = SA._tickerFind(t);
+      if (e) SA.prefs.setTicker(t, e.k);
+      else if (!SA._tickerCache) SA.prefs.setTicker(t);
+    }
+    if (onSelect) onSelect(t);
   }
 
   input.addEventListener('focus', function() { this.select(); });
@@ -412,8 +668,40 @@ SA.initTickerInput = function(inputId, datalistId, onSelect) {
   if (SA._tickerCache) return;
   fetch('/landing/data/tickers.json')
     .then(function(r) { return r.json(); })
-    .then(function(tickers) { SA._tickerCache = tickers; })
+    .then(function(tickers) {
+      SA._tickerCache = tickers;
+      SA._pruefeGemerkten();
+    })
     .catch(function() {});
+};
+
+/** Sucht einen Ticker in der geladenen Liste. null = Liste fehlt oder unbekannt. */
+SA._tickerFind = function(t) {
+  var data = SA._tickerCache;
+  if (!data) return null;
+  t = String(t || '').toUpperCase();
+  for (var i = 0; i < data.length; i++) {
+    if (String(data[i].t || '').toUpperCase() === t) return data[i];
+  }
+  return null;
+};
+
+/**
+ * Prueft den gemerkten Ticker, sobald die Liste da ist.
+ *
+ * Noetig, weil der Ticker aus einem ?t=-Link ungeprueft gemerkt wird (die
+ * Liste ist zu diesem Zeitpunkt noch nicht geladen) und weil ein Titel spaeter
+ * aus dem Universum fallen kann. Ohne diese Nachpruefung wuerde ein
+ * /dashboard?t=FOO jede Folgeseite dauerhaft auf "zu wenig Daten" setzen.
+ * Die Kategorie wird dabei gleich nachgetragen.
+ */
+SA._pruefeGemerkten = function() {
+  if (!SA.prefs) return;
+  var t = SA.prefs.ticker(null);
+  if (!t) return;
+  var e = SA._tickerFind(t);
+  if (!e) SA.prefs.vergessen();
+  else if (SA.prefs.art() !== e.k) SA.prefs.setTicker(t, e.k);
 };
 
 /**

@@ -261,7 +261,7 @@
     /* ── Init ── */
     function initialLoad(){
       if(typeof SA==='undefined'||!SA.supabase){setTimeout(initialLoad,50);return}
-      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0)loadTicker('^DJI');
+      if(SA.supabase.url&&SA.supabase.url.indexOf('%%')<0)loadTicker(SA.prefs.applyTicker('ticker-input', '^DJI'));
       else document.getElementById('page-caption').textContent='Supabase nicht konfiguriert';
     }
     initialLoad();
