@@ -486,7 +486,14 @@ SA.prefs = (function() {
     } catch (e) { /* alter Browser — dann eben ohne URL-Parameter */ }
     if (t) {
       t = String(t).trim().toUpperCase();
-      setTicker(t);                       // geteilter Link setzt auch die Erinnerung
+      // Kategorie mitnehmen, WENN die Liste schon geladen ist. Ohne das wuerde
+      // ein ?t=-Link die gespeicherte Kategorie aktiv LOESCHEN, und die
+      // Zeichen-Heuristik in hatEarnings laesst dann SPY als Aktie durch —
+      // auf /earnings-kalender waere die Seite leer. `_pruefeGemerkten` traegt
+      // sie zwar nach, aber erst wenn der fetch zurueck ist: fuer den Aufruf
+      // AUF DIESER Seite zu spaet.
+      var e = (SA._tickerFind ? SA._tickerFind(t) : null);
+      setTicker(t, e ? e.k : (art() || null));
     } else {
       t = ticker(standard);
       if (opts.nurAktien && !hatEarnings(t)) t = standard;

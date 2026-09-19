@@ -68,6 +68,20 @@ HISTORIE = _ROOT / "landing/data/options_skew_history.json"
 KEINE_TICKER = {"__CORR", "__PCR"}
 
 
+def _vrp_loeschen(z: dict) -> bool:
+    """Entfernt alle drei VRP-Felder einer Zeile. True, wenn etwas dranstand.
+
+    Immer alle drei zusammen: `vrp_quelle` ist die Behauptung, dieser Wert sei
+    nachgerechnet worden. Sie ohne Wert stehenzulassen waere eine Luege ueber
+    die Herkunft.
+    """
+    dran = any(z.get(k) is not None for k in ("vrp_pts", "vrp_rv", "vrp_quelle"))
+    for k in ("vrp_pts", "vrp_rv", "vrp_quelle"):
+        if k in z:
+            z[k] = None
+    return dran
+
+
 def _kursfenster(daten: list[str]) -> str:
     """Fruehestes Ladedatum: das aelteste Historien-Datum minus Puffer.
 
@@ -86,7 +100,7 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
     stat = {"ticker": 0, "uebersprungen": 0, "zeilen_mit_iv": 0, "gesetzt": 0,
             "kein_rv": 0, "vorher_vorhanden": 0, "abweichungen": [],
             "ohne_reihe": [], "invariant_alt": [], "invariant_neu_gleich": [],
-            "invariant_neu_dazu": []}
+            "invariant_neu_dazu": [], "geleert_ohne_iv": 0}
 
     for t in sorted(hist):
         if t in KEINE_TICKER:
@@ -116,18 +130,30 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
         stat["ticker"] += 1
 
         for z in zeilen:
-            if not isinstance(z, dict) or not z.get("iv_atm") or not z.get("date"):
+            if not isinstance(z, dict):
+                continue
+            if not z.get("iv_atm"):
+                # KEIN ATM-Anker -> kein VRP moeglich. Ein alter Wert aus
+                # fremder Quelle darf hier nicht stehenbleiben: er waere der
+                # einzige nicht nachgerechnete Punkt in einer sonst
+                # einheitlichen Reihe und ginge ungeprueft ins Perzentil.
+                if _vrp_loeschen(z):
+                    stat["geleert_ohne_iv"] += 1
+                continue
+            if not z.get("date"):
                 continue
             stat["zeilen_mit_iv"] += 1
             rv = rv_je_tag.get(z["date"])
             if rv is None:
-                # Handelstag ohne volles, lueckenfreies 21-Tage-Fenster. Das
-                # Feld wird BEWUSST geleert, falls vorher ein Wert stand: ein
+                # Handelstag ohne volles, lueckenfreies 21-Tage-Fenster. Die
+                # Felder werden BEWUSST geleert, falls vorher etwas stand: ein
                 # nicht nachvollziehbarer Wert in einer sonst einheitlichen
-                # Reihe ist schlimmer als eine Luecke.
+                # Reihe ist schlimmer als eine Luecke. ALLE drei Felder — eine
+                # Zeile mit vrp_pts=None, aber vrp_quelle="supabase21" wuerde
+                # behaupten, sie sei nachgerechnet worden.
                 if z.get("vrp_pts") is not None:
                     stat["vorher_vorhanden"] += 1
-                    z["vrp_pts"] = None
+                _vrp_loeschen(z)
                 stat["kein_rv"] += 1
                 continue
             neu = round((float(z["iv_atm"]) - rv) * 100, 2)
@@ -148,7 +174,7 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
     return stat
 
 
-def bericht(stat: dict) -> None:
+def bericht(stat: dict) -> bool:
     print()
     print("=" * 70)
     print("Ticker gerechnet        : %d" % stat["ticker"])
@@ -156,6 +182,7 @@ def bericht(stat: dict) -> None:
     print("Zeilen mit iv_atm       : %d" % stat["zeilen_mit_iv"])
     print("VRP gesetzt             : %d" % stat["gesetzt"])
     print("ohne volles RV-Fenster  : %d" % stat["kein_rv"])
+    print("ohne iv_atm geleert     : %d" % stat["geleert_ohne_iv"])
     print("vorher schon vorhanden  : %d" % stat["vorher_vorhanden"])
 
     ab = stat["abweichungen"]
@@ -179,13 +206,14 @@ def bericht(stat: dict) -> None:
         print("  nicht mehr rekonstruierbar. Eine Reihe aus nicht")
         print("  nachvollziehbaren Werten taugt nicht fuer ein Perzentil.")
 
-    _invariant(stat)
+    invariant_ok = _invariant(stat)
 
     if stat["ohne_reihe"]:
         print()
         print("Ohne Kursreihe in Supabase (%d):" % len(stat["ohne_reihe"]))
         for z in stat["ohne_reihe"][:10]:
             print("  " + z)
+    return invariant_ok
 
 
 def _verteilung(werte):
@@ -196,7 +224,7 @@ def _verteilung(werte):
     return (n, w[n // 2], sum(w) / n, sum(1 for v in w if v > 0) / n * 100)
 
 
-def _invariant(stat: dict) -> None:
+def _invariant(stat: dict) -> bool:
     """Prueft den Domaenen-Invariant: das VRP ist im Mittel POSITIV.
 
     Optionskaeufer zahlen eine Praemie fuer Absicherung, die implizite Vola
@@ -209,6 +237,7 @@ def _invariant(stat: dict) -> None:
     Grundmengen verschieden sind — beim ersten Lauf sah die Neurechnung dadurch
     schlechter aus, obwohl sie auf den vergleichbaren Zeilen besser ist.
     """
+    ok = True
     a = _verteilung(stat["invariant_alt"])
     b = _verteilung(stat["invariant_neu_gleich"])
     if a and b:
@@ -216,11 +245,20 @@ def _invariant(stat: dict) -> None:
         print("Domaenen-Invariant (VRP im Mittel positiv), SELBE Zeilen:")
         print("  alt  n=%4d  Median %+6.2f  Mittel %+6.2f  positiv %5.1f %%" % a)
         print("  neu  n=%4d  Median %+6.2f  Mittel %+6.2f  positiv %5.1f %%" % b)
-        if b[2] >= a[2] and b[3] >= a[3]:
-            print("  -> die Neurechnung verbessert Mittel UND Anteil positiver Werte.")
+        # ZWEI Bedingungen, nicht eine. "Besser als vorher" allein genuegt
+        # nicht: eine Reihe mit Mittel -8 waere "besser" als eine mit -12 und
+        # trotzdem unbrauchbar. Das VRP MUSS im Mittel positiv sein.
+        if b[2] <= 0:
+            print("  -> ROT: das Mittel ist nicht positiv. Der Invariant ist")
+            print("     verletzt, die Reihe taugt nicht fuer ein Perzentil.")
+            ok = False
+        elif b[2] >= a[2] and b[3] >= a[3]:
+            print("  -> gruen: positives Mittel, und besser als vorher in")
+            print("     Mittelwert UND Anteil positiver Werte.")
         else:
-            print("  -> ACHTUNG: die Neurechnung ist auf diesem Pruefstein NICHT besser.")
-            print("     Nicht schreiben, bevor die Ursache geklaert ist.")
+            print("  -> ROT: die Neurechnung ist auf diesem Pruefstein nicht")
+            print("     besser als die alten Werte. Ursache klaeren.")
+            ok = False
 
     dazu = stat["invariant_neu_dazu"]
     if dazu:
@@ -242,6 +280,8 @@ def _invariant(stat: dict) -> None:
             print("  unbrauchbar, egal wie gut die Vola-Seite gerechnet ist.")
             print("  -> Erst den Reparatur-Backfill mit der korrigierten Methodik")
             print("     fahren, dann diese Nachrechnung.")
+            ok = False
+    return ok
 
 
 def main() -> int:
@@ -250,6 +290,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="nur rechnen und berichten, nichts schreiben")
     ap.add_argument("--ticker", help="Komma-Liste statt aller Ticker")
+    ap.add_argument("--trotzdem", action="store_true",
+                    help="schreiben, obwohl der Invariant rot ist (bewusste "
+                         "Entscheidung, wird im Bericht vermerkt)")
     args = ap.parse_args()
 
     if not HISTORIE.exists():
@@ -265,7 +308,7 @@ def main() -> int:
         print("nur: %s" % ", ".join(sorted(nur)))
 
     stat = nachrechnen(hist, nur)
-    bericht(stat)
+    invariant_ok = bericht(stat)
 
     if args.dry_run:
         print()
@@ -276,6 +319,15 @@ def main() -> int:
         print("Kein Wert gesetzt -> nicht geschrieben (eine Datei ohne Grund zu")
         print("ersetzen ist ein unnoetiges Risiko).")
         return 1
+
+    # GATE: ein roter Invariant blockiert das Schreiben. Eine Pruefung, die
+    # warnt und dann doch schreibt, ist keine Pruefung — sie verschiebt die
+    # Entscheidung nur auf jemanden, der die Ausgabe vielleicht nicht liest.
+    if not invariant_ok and not args.trotzdem:
+        print()
+        print("NICHT GESCHRIEBEN: der Invariant ist rot (siehe oben).")
+        print("Wenn das bewusst in Kauf genommen wird: --trotzdem.")
+        return 2
 
     write_json_atomic(HISTORIE, hist)
     print()

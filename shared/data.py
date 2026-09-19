@@ -8,6 +8,7 @@ Alle Pages importieren: from shared.data import download_data, preprocess
 """
 from __future__ import annotations
 
+import math
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -295,9 +296,18 @@ def lade_closes(ticker: str, ab: str | None = None, mindestens: int = 30):
         if not d or c is None:
             continue
         try:
-            closes.append(float(c))
+            wert = float(c)
         except (TypeError, ValueError):
             continue
+        # Nur endliche, positive Kurse. Ein NaN, ein inf oder ein Kurs <= 0 ist
+        # ein Datenfehler; die Vola-Rechnung verwirft ihn ohnehin, aber der
+        # LETZTE Kurs dieser Reihe wird als Spot-Fallback in die
+        # Black-Scholes-Inversion gereicht — dort waere er nicht nur wertlos,
+        # sondern schaedlich (er verschiebt Forward, Moneyness-Anker und beide
+        # 25-Delta-Fluegel gleichzeitig).
+        if not math.isfinite(wert) or wert <= 0:
+            continue
+        closes.append(wert)
         daten.append(str(d)[:10])
 
     if len(closes) < mindestens:

@@ -35,7 +35,9 @@ from shared.atomic_json import write_json_atomic                      # noqa: E4
 from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
                                  rv_aus_closes)
 from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
-from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
+from shared.black_scholes import (diagnose_start as _diagnose_start,
+                                  diagnose_stop as _diagnose_stop,
+                                  bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
@@ -725,9 +727,16 @@ def build(tickers: list[str], write: bool = True) -> dict:
     # Titel seit Wochen nie im Radar auftaucht, faellt niemandem auf.
     failed: list[dict] = []
     partial: list[dict] = []   # Zeile vorhanden, aber ATM-abhaengige Felder fehlen
+    diag: dict = {}
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — überspringe Per-Ticker-Metriken.")
     else:
+        # Verwerfungsgruende mitzaehlen. Die Zaehler in shared/black_scholes.py
+        # waren bis hierher toter Code — ohne diesen Aufruf bleibt `_diag` None
+        # und jedes `_zaehl` ist wirkungslos. Genau deshalb wurde am
+        # 2026-09-15..18 zwei Tage lang OPEX verdaechtigt, waehrend die Ursache
+        # ein veralteter Spot war: man sah nur das Ergebnis, nie den Grund.
+        _diagnose_start()
         for t in tickers:
             try:
                 r = _enrich(t, tok)
@@ -749,6 +758,12 @@ def build(tickers: list[str], write: bool = True) -> dict:
                     partial.append({"ticker": t, "reason": "kein 50Δ-ATM in Toleranz"})
             else:
                 failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
+        diag = _diagnose_stop()
+        if diag:
+            ges = sum(diag.values())
+            print(f"  [diagnose] {ges} Verwerfungen ueber {len(tickers)} Ticker:", flush=True)
+            for grund, n in sorted(diag.items(), key=lambda x: -x[1]):
+                print(f"    {n:6}  {grund}", flush=True)
 
     # Marktweite Put/Call-Ratio (Equity = ohne Broad-Index-ETFs, Index = Broad-Index) — volumen- + OI-basiert
     def _pc(sel):

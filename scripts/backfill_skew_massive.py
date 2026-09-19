@@ -51,6 +51,7 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache        # noqa: E402
 from shared.options_universe import all_option_tickers                # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
+from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
 from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
                                   bs_delta as _bs_delta, implied_vol as _implied_vol,
                                   cm_interp as _cm_interp, CM_DAYS as _CM_DAYS,
@@ -58,6 +59,7 @@ from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,  
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX,
                                   VOL_PCTL as _VOL_PCTL,
                                   leg_from_prices as _leg_from_prices,
+                                  cm_leg_kandidaten as _cm_leg_kandidaten,
                                   standardserie_filter as _standardserie_filter)
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
@@ -175,17 +177,33 @@ def _quote_mid(occ: str, key: str, d: str, strict: bool = False):
 
 
 def _closes(sym: str) -> dict:
-    """Eigene Kursreihe: {ISO-Datum: Close}. Liefert Spot + echte Handelstage."""
+    """Eigene Kursreihe: {ISO-Datum: Close}. Liefert Spot + echte Handelstage.
+
+    QUELLE: Supabase, dieselbe wie im Live-Lauf (compute_options_skew) und in
+    der VRP-Nachrechnung. Vorher stand hier `download_data`, also Yahoo mit
+    ADJUSTIERTEN Kursen — dadurch wurden die Optionspreise rund um jeden
+    Ex-Dividenden-Tag gegen eine anders adjustierte Spotreihe invertiert als
+    live, und die rekonstruierte Historie war methodisch nicht mit dem
+    Tagespunkt vergleichbar. Genau diese Art Mischung hat am 2026-09-09 den
+    Live-Punkt ins 99. Perzentil gehoben.
+
+    Fuer die Inversion ist der ROHE Kurs ohnehin der richtige: Optionspreise
+    beziehen sich auf den tatsaechlich gehandelten Kurs, nicht auf einen um
+    spaetere Dividenden zurueckgerechneten.
+
+    Kein stiller Rueckfall auf Yahoo — eine fehlende Reihe fuehrt zu einer
+    leeren Rueckgabe, und der Aufrufer ueberspringt den Ticker sichtbar.
+    """
     try:
-        df = download_data(sym, period="max")
-    except Exception:
-        clear_cache(); gc.collect(); return {}
-    if df is None or len(df) == 0:
-        clear_cache(); gc.collect(); return {}
-    dts = [str(x)[:10] for x in (df["Date"] if "Date" in df.columns else df.index).tolist()]
-    vals = [float(v) for v in df["Close"].to_numpy()]
-    clear_cache(); gc.collect()
-    return {d: v for d, v in zip(dts, vals) if v == v and v > 0}
+        daten, closes = lade_closes(sym, mindestens=30)
+    except KursreiheFehlt as e:
+        print(f"  {sym:6} {e} -> uebersprungen", flush=True)
+        return {}
+    except Exception as e:
+        print(f"  {sym:6} Kursreihe nicht ladbar ({e}) -> uebersprungen", flush=True)
+        return {}
+    gc.collect()
+    return dict(zip(daten, closes))
 
 
 # ── Rekonstruktion ──────────────────────────────────────────────────────────
@@ -195,6 +213,13 @@ def _is_monthly(iso: str) -> bool:
     """Standard-Monatsverfall = 3. Freitag des Monats (Tag 15-21 und ein Freitag)."""
     d = date.fromisoformat(iso)
     return d.weekday() == 4 and 15 <= d.day <= 21
+
+
+# Wie viele Kandidatengruppen der Plan mit Preisen versorgt. Drei deckt die
+# uebliche Kette (Monatsverfall-Klammer, Freitags-Klammer, Extrapolation) ab,
+# ohne die Zahl der Preisabrufe zu sprengen — jede zusaetzliche Expiry kostet
+# einen Abruf je Kontrakt.
+_PLAN_GRUPPEN = 3
 
 
 def _plan(closes: dict, contracts: list, targets: list,
@@ -223,33 +248,38 @@ def _plan(closes: dict, contracts: list, targets: list,
         if not cand:
             continue
         dd = date.fromisoformat(d)
-        # Standard-Monatsverfall bevorzugen (3. Freitag), dann irgendein Freitag.
-        # Blind die 30-DTE-naechste Laufzeit zu nehmen greift bei liquiden Titeln
-        # die Mittwochs-Weeklies ab — die 30 Tage im Voraus kaum handeln (keine
-        # Trades = keine Bars) und eine Percentile-Reihe zusaetzlich inhomogen
-        # machen. Die Liquiditaet sitzt im Monatsverfall.
-        pool = cand
-        if prefer_monthly:
-            pool = ([e for e in cand if _is_monthly(e)]
-                    or [e for e in cand if date.fromisoformat(e).weekday() == 4]
-                    or cand)
-        # ZWEI Verfälle wählen, die _CM_DAYS klammern — Grundlage für die
-        # Interpolation auf konstante Laufzeit. Nur einen zu nehmen erzeugt den
-        # Sägezahn (Laufzeit läuft von ~46 auf ~10 Tage und springt beim Roll
-        # zurück, die IV folgt der Term-Struktur mit).
-        dtes = sorted(((date.fromisoformat(e) - dd).days, e) for e in pool)
-        below = [x for x in dtes if _DTE_MIN <= x[0] <= _CM_DAYS]
-        above = [x for x in dtes if _CM_DAYS < x[0] <= _DTE_MAX]
-        if below and above:
-            legs_raw = [below[-1], above[0]]      # echtes Bracket um _CM_DAYS
-        elif len(above) >= 2:
-            legs_raw = above[:2]                  # nur längere: nach unten extrapolieren
-        elif len(below) >= 2:
-            legs_raw = below[-2:]                 # nur kürzere: nach oben extrapolieren
-        elif below or above:
-            legs_raw = [(below or above)[0]]      # einzelne Stützstelle, Toleranz greift später
-        else:
+        # STUETZSTELLEN: dieselbe Rangliste wie im Live-Lauf, aus
+        # shared/black_scholes.cm_leg_kandidaten. Vorher stand hier eine eigene,
+        # einmalige Wahl — und die hatte zwei gemessene Fehler (2026-09-18):
+        #
+        # 1. Der Pool wurde gewaehlt, BEVOR klar war, ob er klammern kann.
+        #    Sobald irgendein Monatsverfall existierte, kamen Wochenverfaelle
+        #    nie in Frage. Am 2026-09-15 lagen die Monatsverfaelle bei 3 und
+        #    31 Tagen, eine echte Klammer um 30 war damit unmoeglich, waehrend
+        #    die Wochenverfaelle bei 10, 17 und 24 Tagen eine geliefert haetten.
+        # 2. Eine gescheiterte Leg liess den ganzen Tag fallen (`single`, das
+        #    im Frontend nicht rankt) statt die naechste Gruppe zu probieren.
+        #
+        # Beides ist in der gemeinsamen Funktion behoben. Eine zweite Kopie der
+        # Regel hier wuerde genau wieder auseinanderlaufen — deshalb ruft der
+        # Backfill jetzt dieselbe Funktion, und `_reconstruct` probiert die
+        # Gruppen der Reihe nach durch.
+        dte_je_exp = {e: (date.fromisoformat(e) - dd).days for e in cand}
+        gruppen = _cm_leg_kandidaten(dte_je_exp)
+        if not gruppen:
             continue
+        # Kontrakte fuer die ersten Gruppen holen, nicht nur fuer die beste:
+        # welche Stuetzstelle am Ende traegt, zeigt sich erst beim Rechnen
+        # (duenne Ketten scheitern in leg_from_prices). Ohne Alternative kostet
+        # eine gescheiterte Leg den ganzen Tag — gemessen am 2026-09-15/16 fiel
+        # die Normierungsquote dadurch von 77-100 % auf 38-56 %.
+        # Die Auswahl der besten VERFUEGBAREN Gruppe passiert in _reconstruct.
+        gewaehlt = []
+        for g in gruppen[:_PLAN_GRUPPEN]:
+            for e in g:
+                if e not in gewaehlt:
+                    gewaehlt.append(e)
+        legs_raw = [(dte_je_exp[e], e) for e in gewaehlt]
         lo, hi = spot * (1 - _BAND), spot * (1 + _BAND)
         legs = []
         for dte, exp in legs_raw:
@@ -317,12 +347,27 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
     for exp, dte, occs in legs:
         v = _leg_ivs(d, spot, dte, occs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
         if v:
+            v["exp"] = exp
             got.append(v)
     if not got:
         return None
 
-    if len(got) >= 2:
-        a, b = got[0], got[1]
+    # Die Rangliste NOCH EINMAL anwenden, jetzt auf die tatsaechlich
+    # gelungenen Stuetzstellen. Vorher wurden stur die ersten beiden genommen:
+    # scheiterte eine davon, blieb eine uebrig und der Tag wurde `single`
+    # gestempelt — was im Frontend nicht fuer das Ranking zaehlt, obwohl eine
+    # andere Kombination eine echte Klammer ergeben haette.
+    got_je_exp = {v["exp"]: v for v in got}
+    paar = None
+    for g in _cm_leg_kandidaten({e: v["dte"] for e, v in got_je_exp.items()}):
+        if len(g) == 2 and all(e in got_je_exp for e in g):
+            paar = [got_je_exp[g[0]], got_je_exp[g[1]]]
+            break
+    if paar is None and len(got) >= 2:
+        paar = got[:2]          # keine Gruppe passt: wie bisher die ersten zwei
+
+    if paar:
+        a, b = paar[0], paar[1]
         lo_d, hi_d = min(a["dte"], b["dte"]), max(a["dte"], b["dte"])
         # Extrapolation zulassen, aber nur kurz: kurz vor dem Roll liegt kein
         # Monatsverfall mehr unter 30 Tagen, und die Alternative waere ein
