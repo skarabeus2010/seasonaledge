@@ -550,3 +550,226 @@ Der ursprüngliche Skew war Panel G auf `/flows` (anfänglicher marketdata-Test,
 - MenthorQ — Vanna/Charm & Post-OPEX-Vola: https://menthorq.com/guide/why-markets-can-go-wild-after-options-expiration-vanna-and-charm-and-the-volatility-effect/
 - Cem Karsan (The Derivative/RCM) — Vol-Curves & Vanna/Charm-Flows
 - Macroption / Wikipedia „Greeks (finance)" — BS-Formeln (Gamma/Vanna/Charm mit q)
+
+---
+
+## Eine Kursquelle für Live und Backfill (2026-09-19)
+
+Die Reparatur der Skew-Messfehler vom 11.09. war noch **nicht deployed**, als
+beim Vorbereiten der VRP-Nachrüstung auffiel, dass sie einen schwereren Fehler
+eingebaut hatte als den, den sie behob.
+
+### Die Session fiel beim Kappen weg
+
+`_realized_vol` kappte die Kursreihe auf die Session mit
+
+```python
+df = df[df.index <= bis]          # bis = "2026-09-18"
+```
+
+Der DatetimeIndex aus `shared/yahoo_downloader` trägt **Uhrzeiten**:
+`Timestamp('2026-09-18 13:30:00')` — NYSE-Open in UTC. Der Vergleich wird damit
+zu `<= 2026-09-18 00:00:00` und schneidet die Session weg (127 Zeilen vorher,
+126 danach).
+
+Das wäre schlimm genug für die realisierte Vola. Entscheidend ist aber, dass
+`last_close` und `close_datum` aus **derselben gekappten Reihe** stammen. Der
+Spot-Frische-Wächter in `_enrich` prüft `close_datum != _sess` und hätte
+deshalb an jedem Tag gegriffen — gemessen: Session 2026-09-18, `last_date`
+2026-09-17 bei SPY, QQQ und NVDA, obwohl der 18.09. in der Reihe steht.
+
+Und an `last_close` hängt die **gesamte** cm-Normierung:
+
+```python
+if last_close:
+    by_own = _own_cands(...)
+    cm = _skew_cm(by_own, leg_fn=lambda e: _leg_own(by_own[e], last_close))
+```
+
+Ohne `last_close` also keine `cm_`-Felder, kein `cm_mode` — und das Frontend
+rankt ausschließlich `cm`/`cm_extrap` (`MIN_NORM=20`). Die Normierungsquote wäre
+im Live-Lauf auf 0 % gefallen: **der Vol-Regime-Radar wäre nach dem Deploy
+vollständig leer gewesen.** Der Fix gegen „der Radar misst Müll" hatte „der
+Radar zeigt nichts" eingebaut — zum vierten Mal in diesem Projekt die Klasse
+*eine Korrektur ist schlimmer als der Fehler*.
+
+**Warum die Messung es nicht fand.** Es gibt genau einen Aufruf mit `bis`: den
+Live-Pfad. Alle Diagnoseläufe, mit denen die Normierungsquote von 43 % auf 76 %
+gemessen wurde, rufen mit `bis=None` — dort findet keine Kappung statt, der
+Fehler *kann* nicht auftreten. **Ein Test, der einen anderen Pfad nimmt als die
+Produktion, sagt nichts über die Produktion, auch wenn er dieselbe Funktion
+aufruft.**
+
+Behoben so, dass der Fallstrick strukturell verschwindet: im Rechenweg kommen
+keine Zeitstempel mehr vor. `shared/realized_vol.kappe_auf()` liefert
+ISO-Datumsstrings und Kurse als Listen.
+
+Dieselbe Fehlerklasse sitzt an einer zweiten Stelle: `shared/holidays.py:180`
+vergleicht `df.index > holiday_date` gegen Mitternacht, was bei
+Frühschluss-Tagen (Black Friday, Heiligabend) den Tag selbst ins
+„danach"-Fenster legt. Dort ohne Wirkung, weil `analyze_holiday_effect`
+**keinen Aufrufer** hat (`/feiertage` rechnet im Frontend-Zwilling
+`holidays.js`); trotzdem korrigiert.
+
+### `shared/realized_vol.py` — die RV-Formel an einer Stelle
+
+Gebraucht wird sie zweimal: der Live-Lauf rechnet die realisierte Vola der
+Session, die VRP-Nachrüstung dieselbe Größe für vergangene Tage. Auch die
+rollende Variante `rv_reihe` ruft denselben Kern, statt den rollenden Fall
+nachzubauen.
+
+Formel (CBOE): `RV = sqrt(252/(N-1) · Σ(R_t − R̄)²)`, also Stichproben-Varianz
+über die letzten N Log-Returns. `N=21` passt zur 30-Kalendertage-ATM-IV — der
+Horizont muss zusammenpassen, sonst vergleicht das VRP zwei Zeiträume (der
+Fehler von v52.0).
+
+Lücken: ein fehlender oder nicht-positiver Kurs macht den Return unbrauchbar,
+ein Fenster mit einer Lücke liefert **keine** RV. Ihn zu überspringen würde zwei
+Tage zu einem Return zusammenziehen — die Reihe enthielte Returns verschiedener
+Horizonte, ohne dass es auffällt.
+
+`verify_realized_vol.py` prüft gegen **drei unabhängige Referenzen**, damit der
+Nachweis nicht an derselben Zeile hängt, die er prüft: `statistics.stdev` aus
+der Standardbibliothek, analytisch bekannte Fälle (konstante Returns → 0,
+alternierende ±r, `n=2` unterscheidet ÷N von ÷(N−1)), und die Identität
+rollend == einmalig. Dazu die alte Live-Formel als Beweis, dass die
+Zusammenlegung keine Zahl verschiebt (0 bei `tol 1e-12`), der Kappungsfall mit
+uhrzeitbehafteten Zeitstempeln inklusive Gegenprobe, dass der naive Vergleich
+die Session verliert, der Live-Wrapper mit Lücke und die `n+5`-Grenze.
+
+### Welche Kursquelle — und warum keine sauber ist
+
+`download_data` liefert **adjustierte** Kurse (`yahoo_downloader.py:111` nimmt
+`adjclose`), und Yahoo rechnet die gesamte Historie bei **jeder** Dividende nach
+unten. Dieselbe Abfrage ergibt dadurch an verschiedenen Tagen verschiedene
+Reihen. Für eine Historie, aus der ein ticker-internes Perzentil gebildet wird,
+ist das unbrauchbar: der heutige Punkt verschiebt sich gegen die gespeicherten —
+genau der Mechanismus, der am 2026-09-09 den Live-Punkt ins 99. Perzentil
+gehoben hat.
+
+Die Alternative wurde gemessen, statt sie anzunehmen. Das Verhältnis
+Supabase/Yahoo ist zwischen zwei Ex-Dividenden-Tagen **konstant** und springt
+genau an ihnen:
+
+| Ticker | Verlauf über ein Jahr | Sprünge |
+|---|---|---|
+| SPY | 1,005066 → 1,002483 → 1,000000 | 2026-06-12, 2026-09-18 |
+| JNJ | 1,010711 → 1,004932 → 1,000000 | 2026-05-20, 2026-08-19 |
+| KO | ~1,012462 durchgehend | keine (Rauschen bei 1e-6) |
+
+Supabase hält also den Adjustierungsstand des Schreibzeitpunkts (der Nightly
+Refresh schreibt nur ein 7-Tage-Fenster) und trägt an jedem Ex-Tag einen
+künstlichen Abschlag in Dividendenhöhe — bei SPY etwa 0,25 % je Quartal.
+
+**Keine der beiden Quellen ist sauber.** Die Entscheidung fiel für Supabase,
+weil dieser Restfehler klein ist und alle Punkte der Reihe gleichmäßig trifft,
+während Yahoos Wandern gerade den Vergleich zwischen heute und gestern
+zerstört. Der Restfehler steht im Docstring von `shared.data.lade_closes`,
+statt verschwiegen zu werden; sauber lösen liesse er sich nur mit echten
+Dividendendaten (`dividend_events` ist leer).
+
+`lade_closes` fällt bewusst **nicht** still auf Yahoo zurück und nimmt nur
+endliche, positive Kurse: der letzte Kurs geht als Spot-Fallback in die
+BS-Inversion, wo ein NaN oder ein Kurs ≤ 0 Forward, Moneyness-Anker und beide
+25Δ-Flügel gleichzeitig verschieben würde.
+
+Nebeneffekt, der einen echten Fehler behebt: der Spot ist jetzt der
+**unadjustierte** Schlusskurs (SPY 761,69 statt Yahoos 760,71). Optionspreise
+beziehen sich auf den tatsächlich gehandelten Kurs.
+
+`_index_series` bleibt bei Yahoo: dort kommen Volatilitätsindizes herein
+(^VIX, ^SKEW, ^VVIX, ^COR*), die keine Dividende zahlen.
+
+### VRP nachgerüstet — und warum es noch nicht geschrieben ist
+
+`vrp_pts` stand in der Historie nur in **793 von 6271** Zeilen: der Live-Lauf
+schreibt es, der Backfill nicht. Der geplante IV/RealVol-Radar braucht ein
+ticker-internes VRP-Perzentil, das damit bei 87 % der Ticker nicht bildbar war.
+
+`scripts/backfill_skew_vrp.py` rechnet es für alle Zeilen mit `iv_atm` — ohne
+einen einzigen neuen API-Abruf, weil die realisierte Vola aus der eigenen
+Kursreihe rückwärts rechenbar ist. Ergebnis: **163 Ticker, 3150 statt 770
+Werte.**
+
+Alle Zeilen neu, auch die vorhandenen. Begründung ist nicht, dass die alten
+Werte *anders* sind, sondern dass sie **nicht nachvollziehbar** sind: bei
+GOOGL/2026-09-15 ergeben Supabase und Yahoo beide `rv21 = 0,225`, der
+gespeicherte Wert impliziert 0,191 — er passt zu keiner Quelle.
+MRK/2026-09-18 impliziert eine realisierte Vola von **48,7 %** für Merck (neu
+25,6 %). Aus welchem Daten- und Codestand sie stammen, ist nicht
+rekonstruierbar.
+
+**Eingebautes Gate über einen Domänen-Invariant:** das VRP muss im Mittel
+**positiv** sein — Optionskäufer zahlen eine Prämie, die implizite Vola liegt im
+Schnitt über der realisierten. Der erste Vergleich sah schlecht aus (Mittel neu
+−1,76 gegen alt +2,90), war aber **unfair**: 772 alte Live-Zeilen gegen 3152
+Zeilen inklusive Backfill, also verschiedene Grundmengen. Auf **derselben**
+Teilmenge ist die Neurechnung besser:
+
+| | n | Median | Mittel | positiv |
+|---|---|---|---|---|
+| alt | 770 | +3,78 | +2,90 | 73,6 % |
+| **neu** | 770 | **+4,28** | **+3,07** | **75,7 %** |
+
+⚠️ **Der Befund, weshalb noch nichts geschrieben wurde:** die 2380 neu
+berechenbaren Zeilen sind zu **100 %** Backfill-Zeilen, und ihr VRP ist im
+Mittel **negativ** (Median +0,21, Mittel −3,32, 51,2 % positiv). Das liegt nicht
+an der Vola-Seite, die aus der gepflegten Kursreihe kommt, sondern am
+gespeicherten `iv_atm`: diese Zeilen stammen aus der Zeit **vor** der
+Skew-Reparatur vom 11.09. Ein VRP-Perzentil darüber wäre unbrauchbar, egal wie
+gut die realisierte Vola gerechnet ist.
+
+→ **Reihenfolge: erst Reparatur-Backfill, dann VRP-Nachrechnung, dann Radar.**
+Das Gate blockiert das Schreiben bis dahin von selbst (`--trotzdem` überstimmt
+bewusst).
+
+### Reparatur-Backfill: warum ein eigener Runner
+
+`scripts/skew_repair_runner.sh`, gestartet als `sa-skewrep.service`.
+
+Der vorhandene `backfill_supervisor.sh` passt nicht: er bewacht **einen** langen
+Lauf und stoppt ihn im Cron-Fenster, was nur **ohne** `--overwrite` funktioniert
+(der Neustart muss fertige Ticker überspringen). Dieser Lauf braucht
+`--overwrite`, und dessen Purge läuft **pro Ticker beim Start dieses Tickers** —
+nach jeder Nachtpause hätte der Supervisor fertige Ticker erneut geleert und neu
+gerechnet. Endlosschleife.
+
+Alles vorab zu leeren ist die andere naheliegende Lösung und genauso falsch: der
+Radar wäre für die ganze Laufzeit leer, weil die normierten Punkte fast alle aus
+dem Backfill stammen und die Live-Punkte erst seit dem 11.09. laufen — keine 20
+je Ticker. Baseline vor dem Start: **37 Ticker im Radar, 2387 Backfill-Punkte
+gegen 3867 sonstige.**
+
+Deshalb batchweise à 6 Ticker: jeder Batch leert und rechnet nur seine eigenen,
+die übrigen bleiben im Radar. Ein Batch startet nur, wenn er vor dem
+Cron-Fenster fertig werden kann (240 Min Vorlauf), und wird sonst **hart
+gestoppt** — seine Ticker bleiben offen und werden komplett wiederholt, was
+Rechenzeit kostet, aber keine Daten. Nötig, weil der SPY-Einzeltest **50 Minuten
+für einen Ticker** brauchte (9038 Bars); die Schätzung von 6,6 Minuten war weit
+daneben, und ein zu großer Batch wäre ins Fenster gelaufen, wo der Cron dieselbe
+History schreibt.
+
+Fortschritt in `/var/lib/sa-skew-repair.state` (übersteht Neustarts),
+Zwischenstandsmail alle 4 Batches, Abschlussbericht am Ende — der meldet nicht
+„exit 0", sondern wie viele Ticker im Radar erscheinen. Beenden mit
+`systemctl stop sa-skewrep.service`, **nicht** `pkill` (das Muster steht in der
+eigenen Kommandozeile).
+
+### Lesson: Rückgabestrukturen liest man
+
+Beim Anbinden des Backfills an `cm_leg_kandidaten` wurde direkt über die
+Kandidatengruppen iteriert — sie sind aber dicts `{exps, pool, art, rang}`. Die
+Iteration lief über die Schlüssel, und `len(g) == 2` zählte Schlüssel statt
+Stützstellen. Der Syntax-Check konnte das nicht fangen (Laufzeitfehler), die
+Vola-Wächter auch nicht; gefunden hat es ein **kontrollierter Einzellauf vor dem
+163-Ticker-Lauf** (`SPY FEHLER: 'exps'`), ohne Datenverlust — 0 Punkte
+geschrieben, die bestehenden 6271 unberührt, der Purge-Schutz aus v56 hielt.
+
+Der Live-Pfad greift korrekt via `g["exps"]` zu; ein Blick auf die bestehende
+Aufrufstelle hätte genügt. Neuer Wächter `verify_cm_gruppen.py` (24 Fälle) prüft
+den Vertrag der Rückgabe, die Falle selbst und die Zugriffsmuster **beider**
+Aufrufer — verhaltensbasiert, nicht als Textsuche im Quellcode: ein textueller
+Check bestand in diesem Projekt schon einmal, während der Fehler drinstand.
+Enthalten ist der Fall vom 15.09., der den Radar leer laufen liess
+(Monatsverfälle bei 3 und 31 Tagen, Wochenverfälle bei 10/17/24 → die beste
+Gruppe muss die Wochenverfälle nehmen und 30 Tage echt klammern).
