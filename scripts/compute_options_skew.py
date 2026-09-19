@@ -32,6 +32,8 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day                   # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
+from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
+                                 rv_aus_closes)
 from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
@@ -226,30 +228,40 @@ def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     # selbst dann falsch, wenn der Spot als veraltet verworfen wird.
     # (Der umgekehrte Fall, eine Reihe die VOR der Session endet, wird unten
     # ueber last_d erkannt und fuehrt zum Verzicht auf die cm-Normierung.)
-    if bis:
-        try:
-            df = df[df.index <= bis]
-        except Exception:
-            pass
-        if df is None or len(df) == 0:
-            clear_cache(); gc.collect(); return None, None, None
-    c = df["Close"].to_numpy(dtype=float)
-    last = round(float(c[-1]), 2) if len(c) and c[-1] == c[-1] else None
-    # Datum der letzten Zeile — Date ist der Index (siehe preprocess).
+    #
+    # ACHTUNG, HIER SASS EIN FEHLER (gefunden 2026-09-19): die Kappung lief als
+    # `df[df.index <= bis]` auf dem DatetimeIndex. Dessen Werte tragen eine
+    # UHRZEIT (Timestamp('2026-09-18 13:30:00') = NYSE-Open in UTC), also wurde
+    # der Vergleich zu `<= 2026-09-18 00:00:00` und schnitt die Session WEG.
+    # Folge: die realisierte Vola lief taeglich auf einem Fenster, das einen
+    # Handelstag zu frueh endete, und `last_d` war immer der Vortag — der
+    # Frische-Waechter unten meldete deshalb JEDEN Tag eine veraltete Reihe,
+    # obwohl der Tag vorhanden war. Gemessen am 2026-09-19: _last_session()
+    # 2026-09-18, last_d 2026-09-17 bei SPY/QQQ/NVDA, VRP um 0,26-0,75 pp
+    # verschoben. Jetzt wird auf Kalendertagen verglichen, nicht auf
+    # Zeitstempeln (shared/realized_vol.kappe_auf).
     try:
-        last_d = str(df.index[-1])[:10]
+        daten, closes = kappe_auf(df.index, df["Close"].to_numpy(dtype=float), bis)
     except Exception:
-        last_d = None
-    if len(df) < n + 5:
+        clear_cache(); gc.collect(); return None, None, None
+    if not closes:
+        clear_cache(); gc.collect(); return None, None, None
+    c = closes
+    last = round(float(c[-1]), 2) if c[-1] == c[-1] else None
+    last_d = daten[-1]
+    # n+5 statt n+1: ein Puffer gegen Reihen, die gerade eben reichen. Bewusst
+    # beibehalten, damit die Zusammenlegung keine Zahl verschiebt. Gezaehlt wird
+    # auf der GEKAPPTEN Reihe — vorher stand hier len(df), was nach der Kappung
+    # dasselbe war, jetzt aber auseinanderfallen wuerde.
+    if len(c) < n + 5:
         clear_cache(); gc.collect(); return None, last, last_d
-    r = [math.log(c[i] / c[i - 1]) for i in range(1, len(c)) if c[i - 1] > 0 and c[i] > 0]
+    # Die Formel liegt in shared/realized_vol.py — dieselbe Funktion nutzt die
+    # Nachruestung des VRP fuer vergangene Tage (scripts/backfill_skew_vrp.py).
+    # Zwei Implementierungen derselben Mathematik driften; nachgewiesen
+    # identisch zur vorherigen Fassung in scripts/verify_realized_vol.py.
+    rv = rv_aus_closes(c, n)
     clear_cache(); gc.collect()
-    if len(r) < n:
-        return None, last, last_d
-    seg = r[-n:]
-    m = sum(seg) / n
-    var = sum((x - m) ** 2 for x in seg) / (n - 1)        # Stichproben-Varianz (÷ N−1)
-    return round(math.sqrt(var) * math.sqrt(252), 4), last, last_d  # × √252 annualisiert
+    return rv, last, last_d
 
 
 # Standard-Monatsverfall = 3. Freitag. Alias auf die gemeinsame Definition in
