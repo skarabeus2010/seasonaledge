@@ -165,6 +165,11 @@ def get_nyse_holidays(year):
 def analyze_holiday_effect(df, days_before, days_after, selected_holidays, selected_years):
     """
     Feiertags-Effekt-Analyse: t0 = letzter Handelstag VOR Feiertag → 0% normiert.
+
+    OHNE AUFRUFER (geprueft 2026-09-19): die Live-Seite /feiertage rechnet im
+    Frontend-Zwilling landing/js/holidays.js. Die Funktion bleibt, weil sie die
+    Streamlit-Legacy-Seiten bedient hat; die Datumsvergleiche unten wurden
+    trotzdem korrigiert, damit der Fehler nicht auf den naechsten Leser wartet.
     """
     window_size = days_before + 1 + days_after
     t0_idx = days_before
@@ -180,13 +185,23 @@ def analyze_holiday_effect(df, days_before, days_after, selected_holidays, selec
             holiday_date = hol["date"]
             
             try:
-                pre_holiday = df[df.index < holiday_date]
+                # Auf KALENDERTAGE vergleichen, nicht auf Zeitstempel.
+                # holiday_date ist per normalize() Mitternacht, der Kursindex
+                # kann aber eine Uhrzeit tragen (13:30 = NYSE-Open in UTC).
+                # Dann waere ein Handelstag AM Feiertag groesser als Mitternacht
+                # und landete im "danach"-Fenster — was bei Fruehschluss-Tagen
+                # (Black Friday, Heiligabend) tatsaechlich einen halben
+                # Handelstag betrifft. Dieselbe Fehlerklasse hat am 2026-09-18
+                # im Options-Live-Lauf die Session weggeschnitten.
+                _tag = str(holiday_date)[:10]
+                _idx_tage = [str(x)[:10] for x in df.index]
+                pre_holiday = df[[t < _tag for t in _idx_tage]]
                 if len(pre_holiday) < days_before + 1:
                     continue
-                
+
                 pre_window = pre_holiday.iloc[-(days_before + 1):]
-                
-                post_holiday = df[df.index > holiday_date]
+
+                post_holiday = df[[t > _tag for t in _idx_tage]]
                 if len(post_holiday) < days_after:
                     continue
                 

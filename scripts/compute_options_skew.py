@@ -34,6 +34,7 @@ from shared.exchange_holidays import is_trading_day                   # noqa: E4
 from shared.atomic_json import write_json_atomic                      # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
                                  rv_aus_closes)
+from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
 from shared.black_scholes import (bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
                                   CM_DAYS as _CM_DAYS, CM_DTE_MIN as _CM_DTE_MIN,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
@@ -185,7 +186,16 @@ def _byexp(contracts: list) -> dict:
 
 
 def _index_series(sym: str, days: int = 504) -> dict:
-    """Letzte ~days Handelstage: {dates:[...], vals:[...]} + letzter Wert."""
+    """Letzte ~days Handelstage: {dates:[...], vals:[...]} + letzter Wert.
+
+    Bleibt BEWUSST bei Yahoo, obwohl _realized_vol auf Supabase umgestellt
+    wurde: hier kommen Volatilitaetsindizes herein (^VIX, ^SKEW, ^VVIX,
+    ^COR1M/3M/30D). Die zahlen keine Dividende, also gibt es keine
+    Adjustierung, die wandern koennte — der Grund fuer die Umstellung trifft
+    hier nicht zu. Ausserdem stehen diese Indizes nicht vollstaendig in
+    Supabase (^COR* liefert Yahoo ohnehin nur den letzten Wert, weshalb die
+    Historie vorwaerts akkumuliert wird).
+    """
     try:
         df = download_data(sym, period="max")
         clear_cache()
@@ -197,6 +207,21 @@ def _index_series(sym: str, days: int = 504) -> dict:
     except Exception as e:
         print(f"  [idx] {sym}: {e}")
         return {}
+
+
+def _rv_ab(bis: str | None, monate: int = 8) -> str:
+    """Fruehestes Datum fuer das Laden der Kursreihe.
+
+    Ein 21-Handelstage-Fenster braucht gut einen Monat; acht Monate geben
+    Luft fuer Feiertage, Handelspausen und den n+5-Puffer, ohne die ganze
+    Historie zu ziehen (das waren bei 165 Tickern sonst Millionen Zeilen).
+    """
+    ende = date.fromisoformat(bis) if bis else date.today()
+    jahr, monat = ende.year, ende.month - monate
+    while monat <= 0:
+        monat += 12
+        jahr -= 1
+    return f"{jahr:04d}-{monat:02d}-01"
 
 
 def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
@@ -217,12 +242,26 @@ def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     den veröffentlichten IVs zurückgerechnete Spot lag bei NVDA 3,0 % und bei
     SPY 0,94 % unter dem echten Schluss; mit dem korrekten Schluss sind dieselben
     Ticker sauber."""
+    # QUELLE: Supabase, ohne stillen Rueckfall auf Yahoo. `download_data`
+    # liefert ADJUSTIERTE Kurse, und die Adjustierung wandert mit jeder
+    # Dividende — dieselbe Abfrage ergibt an verschiedenen Tagen verschiedene
+    # Reihen. Fuer eine Historie, aus der ein ticker-internes Perzentil
+    # gebildet wird, ist das unbrauchbar: der heutige Punkt verschiebt sich
+    # gegen die gespeicherten. Begruendung, Messung und der in Kauf genommene
+    # Restfehler stehen bei shared.data.lade_closes.
+    #
+    # Ein Ticker ohne Reihe beendet den Lauf NICHT — er bekommt kein rv und
+    # keinen Spot-Fallback, damit faellt unten die cm-Normierung aus
+    # (fail-closed). Gemeldet wird es aber, sonst ist es ein stiller Ausfall.
     try:
-        df = download_data(sym, period="6mo")
-    except Exception:
-        clear_cache(); gc.collect(); return None, None, None
-    if df is None or len(df) == 0:
-        clear_cache(); gc.collect(); return None, None, None
+        daten_alle, closes_alle = lade_closes(sym, ab=_rv_ab(bis),
+                                              mindestens=n + 5)
+    except KursreiheFehlt as e:
+        print(f"  {sym:6} {e} -> kein rv, kein Spot-Fallback", flush=True)
+        return None, None, None
+    except Exception as e:
+        print(f"  {sym:6} Kursreihe nicht ladbar ({e}) -> kein rv", flush=True)
+        return None, None, None
     # ZUERST auf die Session kappen, DANN rechnen. Sonst stammt die realisierte
     # Vola aus einem Fenster, das ueber die Session hinausreicht — und bliebe
     # selbst dann falsch, wenn der Spot als veraltet verworfen wird.
@@ -241,27 +280,25 @@ def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     # verschoben. Jetzt wird auf Kalendertagen verglichen, nicht auf
     # Zeitstempeln (shared/realized_vol.kappe_auf).
     try:
-        daten, closes = kappe_auf(df.index, df["Close"].to_numpy(dtype=float), bis)
+        daten, closes = kappe_auf(daten_alle, closes_alle, bis)
     except Exception:
-        clear_cache(); gc.collect(); return None, None, None
+        return None, None, None
     if not closes:
-        clear_cache(); gc.collect(); return None, None, None
+        return None, None, None
     c = closes
     last = round(float(c[-1]), 2) if c[-1] == c[-1] else None
     last_d = daten[-1]
     # n+5 statt n+1: ein Puffer gegen Reihen, die gerade eben reichen. Bewusst
-    # beibehalten, damit die Zusammenlegung keine Zahl verschiebt. Gezaehlt wird
+    # beibehalten, damit die Umstellung keine Zahl verschiebt. Gezaehlt wird
     # auf der GEKAPPTEN Reihe — vorher stand hier len(df), was nach der Kappung
     # dasselbe war, jetzt aber auseinanderfallen wuerde.
     if len(c) < n + 5:
-        clear_cache(); gc.collect(); return None, last, last_d
+        return None, last, last_d
     # Die Formel liegt in shared/realized_vol.py — dieselbe Funktion nutzt die
     # Nachruestung des VRP fuer vergangene Tage (scripts/backfill_skew_vrp.py).
     # Zwei Implementierungen derselben Mathematik driften; nachgewiesen
     # identisch zur vorherigen Fassung in scripts/verify_realized_vol.py.
-    rv = rv_aus_closes(c, n)
-    clear_cache(); gc.collect()
-    return rv, last, last_d
+    return rv_aus_closes(c, n), last, last_d
 
 
 # Standard-Monatsverfall = 3. Freitag. Alias auf die gemeinsame Definition in

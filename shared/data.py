@@ -225,3 +225,83 @@ def append_today_if_missing(df: pd.DataFrame, ticker: str) -> pd.DataFrame:
         pass  # Yahoo-Fehler → DataFrame unverändert zurückgeben
 
     return df
+
+
+# ── Explizite Kursreihe fuer Vola-Rechnungen ────────────────────────────────
+
+class KursreiheFehlt(RuntimeError):
+    """Supabase hat keine brauchbare Kursreihe. Bewusst ein Fehler, kein Fallback."""
+
+
+def lade_closes(ticker: str, ab: str | None = None, mindestens: int = 30):
+    """Schlusskurse eines Tickers aus Supabase. (daten, closes) als Listen.
+
+    KEIN YAHOO-FALLBACK — im Unterschied zu download_data() oben. Wer eine
+    Zeitreihe baut, aus der Perzentile gebildet werden, darf die Quelle nicht
+    stillschweigend wechseln: genau diese Mischung hat am 2026-09-09 den
+    Live-Punkt ins 99. Perzentil gehoben (Provider-IV neben BS-Rekonstruktion,
+    siehe docs/OPTIONS.md). Fehlt die Reihe, ist ein Fehler die richtige
+    Antwort, kein anders gerechneter Wert.
+
+    WARUM SUPABASE UND NICHT YAHOO — gemessen am 2026-09-19: `download_data`
+    liefert ADJUSTIERTE Kurse (shared/yahoo_downloader.py:111 nimmt `adjclose`),
+    und diese Adjustierung wandert mit JEDER Dividende, weil Yahoo die gesamte
+    Historie nachtraeglich nach unten korrigiert. Dieselbe Abfrage ergibt
+    dadurch an verschiedenen Tagen verschiedene Reihen — fuer eine Historie,
+    aus der ein ticker-internes Perzentil gebildet wird, ist das unbrauchbar:
+    der heutige Punkt verschiebt sich gegen die gespeicherten.
+
+    WAS DAFUER IN KAUF GENOMMEN WIRD, ehrlich benannt: Supabase haelt den
+    Adjustierungsstand des Schreibzeitpunkts (der Nightly Refresh schreibt nur
+    ein 7-Tage-Fenster), also traegt die Reihe an jedem Ex-Dividenden-Tag einen
+    kuenstlichen Abschlag in Dividendenhoehe. Gemessen ueber ein Jahr: das
+    Verhaeltnis Supabase/Yahoo ist zwischen zwei Ex-Tagen konstant und springt
+    genau an ihnen (SPY 1,005066 -> 1,002483 am 2026-06-12 -> 1,000000 am
+    2026-09-18; JNJ am 2026-05-20 und 2026-08-19; KO durchgehend konstant).
+    Fuer die 21-Tage-Vola heisst das ein zusaetzlicher Return von etwa 0,25 %
+    je Quartal — klein, und er trifft alle Punkte der Reihe gleichmaessig,
+    waehrend Yahoos Wandern gerade den Vergleich zwischen heute und gestern
+    zerstoert. Sauber loesen liesse sich das nur mit echten Dividendendaten
+    (Tabelle `dividend_events` ist noch leer, siehe TODO in CLAUDE.md).
+
+    Fuer den Spot der laufenden Session ist die Adjustierung unkritisch: die
+    jeweils letzte Zeile ist immer unadjustiert (Faktor 1,0).
+
+    @param ab: fruehestes Datum (ISO). None = ganze Historie.
+    @param mindestens: weniger Zeilen gelten als "keine brauchbare Reihe".
+    @raises KursreiheFehlt
+    """
+    from shared.supabase_client import get_client
+    client = get_client()
+    if client is None:
+        raise KursreiheFehlt(f"{ticker}: kein Supabase-Client")
+
+    zeilen, offset = [], 0
+    while True:
+        q = (client.table("prices").select("date,close").eq("ticker", ticker)
+             .order("date").range(offset, offset + 999))
+        if ab:
+            q = q.gte("date", ab)
+        antwort = q.execute()
+        teil = antwort.data or []
+        zeilen += teil
+        if len(teil) < 1000:
+            break
+        offset += 1000
+
+    daten, closes = [], []
+    for z in zeilen:
+        d, c = z.get("date"), z.get("close")
+        if not d or c is None:
+            continue
+        try:
+            closes.append(float(c))
+        except (TypeError, ValueError):
+            continue
+        daten.append(str(d)[:10])
+
+    if len(closes) < mindestens:
+        raise KursreiheFehlt(
+            f"{ticker}: nur {len(closes)} Schlusskurse in Supabase "
+            f"(mindestens {mindestens} erwartet)")
+    return daten, closes
