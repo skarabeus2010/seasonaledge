@@ -44,10 +44,27 @@ CONT=${CONT:-sa-skewrep-batch}
 JAHRE=${JAHRE:-1}
 BATCH=${BATCH:-12}              # Ticker je Batch
 MIN_MINUTEN=${MIN_MINUTEN:-150} # so viel Zeit muss bis zum Fenster bleiben
+MAIL_ALLE=${MAIL_ALLE:-4}       # Zwischenstand per Mail alle N Batches
 PAUSE_FROM=${PAUSE_FROM:-2250}  # UTC HHMM, 10 Min vor dem options_skew-Cron
 RESUME_AT=${RESUME_AT:-0010}
 
 log() { echo "[$(date -u +%F' '%T)] $*" >> "$LOG"; }
+
+# Zwischenstand/Abschluss per Mail. Ohne das laeuft ein Lauf ueber mehrere
+# Naechte blind durch, und man erfaehrt erst am Ende, ob ueberhaupt etwas
+# vorangeht — oder ob er seit Stunden im Kreis laeuft.
+# Der Bericht meldet bewusst NICHT "exit 0", sondern wie viele Ticker im Radar
+# erscheinen: ein Lauf kann sauber durchlaufen und trotzdem kaum Abdeckung
+# bringen. Genau das ist am 2026-09-11 passiert (siehe docs/OPTIONS.md).
+bericht() {
+  docker run --rm \
+    -v "$APP_DIR/.env":/app/.env:ro \
+    -v "$APP_DIR/landing/data":/app/landing/data \
+    -v "$LOG":/tmp/bf.log:ro \
+    -w /app "$IMAGE" \
+    python3 -u scripts/backfill_skew_report.py --log /tmp/bf.log \
+      ${BASELINE:+--baseline "$BASELINE"} ${1:-} >> "$LOG" 2>&1
+}
 
 # 10# verhindert, dass 0010 als Oktalzahl gelesen wird.
 now_hhmm() { echo $((10#$(date -u +%H%M))); }
@@ -90,6 +107,7 @@ done
 log "offen: ${#OFFEN[@]}"
 
 I=0
+FERTIG=0
 while [ "$I" -lt "${#OFFEN[@]}" ]; do
     # Im Fenster gar nicht erst anfangen.
     while im_fenster; do
@@ -119,7 +137,12 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
          >> "$LOG" 2>&1
     then
         for t in "${STAPEL[@]}"; do echo "$t" >> "$STATE"; done
+        FERTIG=$((FERTIG+1))
         log "Batch fertig, $((${#OFFEN[@]}-I-${#STAPEL[@]})) Ticker offen"
+        if [ $((FERTIG % MAIL_ALLE)) -eq 0 ]; then
+            log "Zwischenstand faellig -> Mail"
+            bericht --progress
+        fi
     else
         CODE=$?
         log "Batch FEHLGESCHLAGEN (exit=$CODE) -> Ticker bleiben offen, naechster Versuch spaeter"
@@ -130,11 +153,5 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
 done
 
 log "ALLE BATCHES DURCH -> Abschlussbericht"
-docker logs "$CONT" > /tmp/sa-skewrep.log 2>&1 || true
-docker run --rm \
-  -v "$APP_DIR/.env":/app/.env:ro \
-  -v "$APP_DIR/landing/data":/app/landing/data \
-  -v "$LOG":/tmp/bf.log:ro \
-  -w /app "$IMAGE" \
-  python3 -u scripts/backfill_skew_report.py --log /tmp/bf.log >> "$LOG" 2>&1
+bericht
 log "Bericht versendet, Runner endet"
