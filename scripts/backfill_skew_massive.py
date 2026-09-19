@@ -276,7 +276,7 @@ def _plan(closes: dict, contracts: list, targets: list,
         # Die Auswahl der besten VERFUEGBAREN Gruppe passiert in _reconstruct.
         gewaehlt = []
         for g in gruppen[:_PLAN_GRUPPEN]:
-            for e in g:
+            for e in g["exps"]:          # g ist ein dict, nicht die Expiry-Liste
                 if e not in gewaehlt:
                     gewaehlt.append(e)
         legs_raw = [(dte_je_exp[e], e) for e in gewaehlt]
@@ -360,8 +360,9 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
     got_je_exp = {v["exp"]: v for v in got}
     paar = None
     for g in _cm_leg_kandidaten({e: v["dte"] for e, v in got_je_exp.items()}):
-        if len(g) == 2 and all(e in got_je_exp for e in g):
-            paar = [got_je_exp[g[0]], got_je_exp[g[1]]]
+        exps = g["exps"]
+        if len(exps) == 2 and all(e in got_je_exp for e in exps):
+            paar = [got_je_exp[exps[0]], got_je_exp[exps[1]]]
             break
     if paar is None and len(got) >= 2:
         paar = got[:2]          # keine Gruppe passt: wie bisher die ersten zwei
