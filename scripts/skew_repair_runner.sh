@@ -42,8 +42,13 @@ STATE=${STATE:-/var/lib/sa-skew-repair.state}
 IMAGE=${IMAGE:-seasonaledge-app}
 CONT=${CONT:-sa-skewrep-batch}
 JAHRE=${JAHRE:-1}
-BATCH=${BATCH:-12}              # Ticker je Batch
-MIN_MINUTEN=${MIN_MINUTEN:-150} # so viel Zeit muss bis zum Fenster bleiben
+BATCH=${BATCH:-6}               # Ticker je Batch. Klein gehalten: SPY allein
+                                # brauchte 50 Minuten (9038 Bars). Ein grosser
+                                # Batch wuerde staendig am Fenster abgebrochen
+                                # und komplett wiederholt.
+MIN_MINUTEN=${MIN_MINUTEN:-240} # so viel Zeit muss bis zum Fenster bleiben.
+                                # Grob BATCH x 40 Min plus Puffer — lieber warten
+                                # als einen Batch anreissen, der abgebrochen wird.
 MAIL_ALLE=${MAIL_ALLE:-4}       # Zwischenstand per Mail alle N Batches
 PAUSE_FROM=${PAUSE_FROM:-2250}  # UTC HHMM, 10 Min vor dem options_skew-Cron
 RESUME_AT=${RESUME_AT:-0010}
@@ -128,14 +133,43 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
     # --overwrite: die alten Rekonstruktionen dieser Ticker muessen weg, nicht
     # nur ueberschrieben werden. Sonst ueberleben genau die Tage, die der neue
     # Lauf nicht reproduzieren kann.
-    if docker run --name "$CONT" \
+    #
+    # ABGESETZT (-d) und selbst bewacht, statt im Vordergrund: ein Batch kann
+    # laenger dauern als geschaetzt (SPY allein brauchte 50 Minuten bei 9038
+    # Bars), und dann liefe er ins Cron-Fenster. Der options_skew-Cron schreibt
+    # dieselbe History, und der Backfill haelt sie im Speicher und schreibt
+    # nach JEDEM Ticker die ganze Struktur zurueck — was der Cron dazwischen
+    # anlegt, waere verloren (Lost Update). Deshalb wird der Container am
+    # Fenster hart gestoppt. Die Ticker dieses Batches bleiben dann offen und
+    # werden spaeter komplett wiederholt: das kostet Rechenzeit, aber keine
+    # Daten, weil der Purge pro Ticker laeuft und ein abgebrochener Ticker
+    # beim naechsten Anlauf ohnehin neu gerechnet wird.
+    docker run -d --name "$CONT" \
          --env-file "$APP_DIR/.env" \
          -v "$APP_DIR/landing/data":/app/landing/data \
          -w /app "$IMAGE" \
          python3 -u scripts/backfill_skew_massive.py \
            --symbols "${STAPEL[@]}" --years "$JAHRE" --overwrite \
-         >> "$LOG" 2>&1
-    then
+         >/dev/null 2>&1
+
+    ABGEBROCHEN=0
+    while [ "$(docker inspect -f '{{.State.Running}}' "$CONT" 2>/dev/null)" = "true" ]; do
+        if im_fenster; then
+            log "Cron-Fenster erreicht, Batch laeuft noch -> harter Stopp"
+            docker stop "$CONT" >/dev/null 2>&1
+            ABGEBROCHEN=1
+            break
+        fi
+        sleep 60
+    done
+
+    docker logs "$CONT" >> "$LOG" 2>&1
+    CODE=$(docker inspect -f '{{.State.ExitCode}}' "$CONT" 2>/dev/null)
+
+    if [ "$ABGEBROCHEN" = "1" ]; then
+        log "Batch am Fenster abgebrochen -> ${#STAPEL[@]} Ticker bleiben offen"
+        # I NICHT weiterzaehlen: derselbe Stapel wird nach dem Fenster wiederholt.
+    elif [ "$CODE" = "0" ]; then
         for t in "${STAPEL[@]}"; do echo "$t" >> "$STATE"; done
         FERTIG=$((FERTIG+1))
         log "Batch fertig, $((${#OFFEN[@]}-I-${#STAPEL[@]})) Ticker offen"
@@ -143,13 +177,13 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
             log "Zwischenstand faellig -> Mail"
             bericht --progress
         fi
+        I=$((I+BATCH))
     else
-        CODE=$?
-        log "Batch FEHLGESCHLAGEN (exit=$CODE) -> Ticker bleiben offen, naechster Versuch spaeter"
-        sleep 300
+        log "Batch FEHLGESCHLAGEN (exit=$CODE) -> Ticker bleiben offen, weiter mit dem naechsten"
+        I=$((I+BATCH))
+        sleep 60
     fi
     docker rm -f "$CONT" >/dev/null 2>&1
-    I=$((I+BATCH))
 done
 
 log "ALLE BATCHES DURCH -> Abschlussbericht"
