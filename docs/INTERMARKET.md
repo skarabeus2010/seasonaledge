@@ -153,6 +153,10 @@ korrigiert. Dort erkunden, hier nachsehen, was standhält.
   die p-Werte verdoppelten sich etwa, die Befunde hielten.)
 - **Ein Vergleich über verschiedene Grundmengen ist kein Vergleich.** Erst auf
   derselben Teilmenge verglichen ergab die Neurechnung +2,90 → +3,07.
+- **Lokaler Build != Server-Build.** `build_en.py` erzeugt lokal 2 JSON-LD-Blöcke
+  je EN-Seite und auf dem Server 3, weil dort vorher ein Cache-Buster an die
+  CSS-Referenz gehängt wird und eine Regex deshalb ins Leere greift. Wer eine
+  Build-Kette lokal prüft, prüft nicht die, die ausliefert. Siehe 6.
 - **Der Vorlauf gehört ins Bild.** Ein Pfad, der nur ab t=0 zeigt, macht aus
   einer Erholung eine Prognose. Der Chart `2_pfad.png` zeigt bewusst t-10 bis t+30.
 - Die Kursreihen sind dividendenbereinigt und tragen an Ausschüttungstagen einen
@@ -162,14 +166,35 @@ korrigiert. Dort erkunden, hier nachsehen, was standhält.
 
 ## 6. Offen
 
-- [ ] **JSON-LD ist auf allen EN-Seiten deutsch** (geprüft 2026-09-22 an
-  `/en/intermarket`, `/en/skew`, `/en/sektor-rotation`): `build_en.py` übersetzt
-  Titel, Description, canonical und hreflang, aber nicht die
-  `application/ld+json`-Blöcke — inklusive der `url`, die auf die DE-Fassung
-  zeigt. Google liest strukturierte Daten; eine englische Seite mit deutschem
-  FAQPage-Schema ist ein Mismatch. **Seitenweiter Defekt, nicht neu**, aber jetzt
-  belegt. Braucht einen Mechanismus in `build_en.py` (z. B. ein zweiter, mit
-  `data-en` markierter Block je Seite).
+- [ ] **Der Haupt-Pfad von `build_en.py` ist auf dem Server tot** (2026-09-22
+  gefunden und bis zur Ursache verfolgt).
+
+  **Symptom:** das JSON-LD ist auf allen EN-Seiten deutsch — belegt an
+  `/en/intermarket`, `/en/skew`, `/en/sektor-rotation` — inklusive der `url`, die
+  auf die DE-Fassung zeigt. Google liest strukturierte Daten; eine englische
+  Seite mit deutschem FAQPage-Schema ist ein Mismatch.
+
+  **Ursache:** `replace_head()` ersetzt den Head bis zum `app.css`-Link durch
+  einen neu gebauten mit genau zwei JSON-LD-Blöcken (WebPage, BreadcrumbList).
+  Seine Regex verlangt `href="/landing/css/app.css"` **ohne Query-String**. Im
+  Deploy läuft aber `inject_credentials.sh` **vorher** und macht
+  `app.css?v=<git-sha>` daraus (`.github/workflows/deploy.yml:41` vor `:47`).
+  Die Regex greift nie → `replace_head` liefert `False` → **jede** EN-Seite
+  fällt auf `localize_head_targeted` zurück, das den deutschen Head samt
+  JSON-LD erhält und nur Titel, Description und URLs tauscht.
+
+  **Warum es niemand gemerkt hat:** lokal gibt es keinen Cache-Buster, also
+  greift die Regex dort und der lokale Build erzeugt ein *anderes* Ergebnis als
+  der Server (lokal 2 JSON-LD-Blöcke, Server 3). Genau die Fehlerklasse aus
+  v62: **ein Test, der einen anderen Pfad nimmt als die Produktion, sagt nichts
+  über die Produktion.** `verify_en` bleibt grün, weil es sichtbaren Text prüft
+  und kein JSON-LD.
+
+  **Warum der Einzeiler falsch wäre:** die Regex zu weiten lässt `replace_head`
+  auf 37 EN-Seiten greifen — und entfernt dort das FAQPage-Schema, weil der neu
+  gebaute Head nur WebPage und BreadcrumbList kennt. Der richtige Fix trägt
+  seitenfremde JSON-LD-Blöcke mit und übersetzt sie; und er braucht einen Test,
+  der **mit** Cache-Buster baut.
 - [ ] Die Matrix kontrolliert nicht für das gemeinsame Marktumfeld. Starke
   Bewegungen häufen sich in Krisen; die Einzelstudie 3b trennt das, die Matrix
   nicht. Codex hat das als systematische Verzerrung benannt.
