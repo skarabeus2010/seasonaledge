@@ -204,6 +204,32 @@ def nullband(etf_reihe, treffer_n, tage_n, runden=BOOTSTRAP, seed=12345):
     return werte
 
 
+def _p_wert(ist: float, verteilung: list[float]) -> float:
+    """Zweiseitiger Monte-Carlo-p-Wert mit Plus-eins-Korrektur.
+
+    ZWEI Korrekturen gegenueber der ersten Fassung, beide machen die Zahlen
+    ehrlicher und groesser:
+
+    1. ZWEISEITIG. Vorher wurde die Richtung NACH dem Ergebnis gewaehlt
+       ("ist >= 0 ? zaehle darueber : zaehle darunter"). Das ist eine
+       nachtraegliche Festlegung der Alternative und halbiert den p-Wert
+       kuenstlich. Da keine Richtung vorab festgelegt war — die Studie fragt
+       ergebnisoffen "passiert etwas?" — ist der zweiseitige Test der richtige.
+
+    2. PLUS EINS im Zaehler UND Nenner. Ohne ihn kann ein
+       Monte-Carlo-p-Wert exakt 0 werden, und "p = 0,000" behauptet eine
+       Genauigkeit, die 2000 Verschiebungen nicht hergeben. Der kleinste
+       ehrlich darstellbare Wert ist 1/(2000+1).
+       Quelle der Konvention: Davison/Hinkley, Bootstrap Methods.
+    """
+    if not verteilung:
+        return 1.0
+    mitte = sum(verteilung) / len(verteilung)
+    abstand = abs(ist - mitte)
+    extremer = sum(1 for x in verteilung if abs(x - mitte) >= abstand)
+    return (extremer + 1) / (len(verteilung) + 1)
+
+
 def perzentil(sortiert: list[float], q: float) -> float:
     if not sortiert:
         return float("nan")
@@ -225,11 +251,7 @@ def auswerten(tage, reihen, treffer, etf) -> dict | None:
         j = VOR + k
         ist = m[j]
         vert = sorted(x[j] for x in null)
-        # Einseitiger empirischer p-Wert in Richtung des beobachteten Effekts.
-        if ist >= 0:
-            p = sum(1 for x in vert if x >= ist) / max(1, len(vert))
-        else:
-            p = sum(1 for x in vert if x <= ist) / max(1, len(vert))
+        p = _p_wert(ist, vert)
         einzel = [x[j] for x in pfade]
         return {"tage": k, "wochen": WOCHEN.get(k, ""), "mittel_pct": round(ist, 3),
                 "median_pct": round(statistics.median(einzel), 3),

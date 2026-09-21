@@ -116,10 +116,15 @@ def eine_reihe(signal: str) -> dict:
            "schwellen": [{"name": n, "wert_pct": round(w * 100, 2)} for n, w in sw],
            "richtungen": {}}
 
-    for richtung, was in (("auf", "KURS STEIGT" + (" (Renditen fallen)" if signal == "TLT"
-                                                   else " (Risikoappetit)")),
-                          ("ab", "KURS FAELLT" + (" (Renditen steigen)" if signal == "TLT"
-                                                  else " (Risikoabbau)"))):
+    # "Kurs", nicht "Rendite": TLT ist ein ETF und enthaelt neben der
+    # Renditebewegung auch Duration-Konvexitaet, Kupon-Drift und Rebalancing
+    # des Index. Der Zusammenhang zur Rendite ist invers und eng, aber die
+    # Messgroesse bleibt ein Kurs — wer das vermischt, schreibt eine
+    # Interpretation als Messung auf.
+    for richtung, was in (("auf", "KURS STEIGT" + (" (Renditen fielen tendenziell)"
+                                                   if signal == "TLT" else " (Risikoappetit)")),
+                          ("ab", "KURS FAELLT" + (" (Renditen stiegen tendenziell)"
+                                                  if signal == "TLT" else " (Risikoabbau)"))):
         print()
         print("  %s %s" % (signal, was))
         print("  %-22s %4s | %9s %9s %9s %9s   Treffer 3 Wo"
@@ -153,8 +158,7 @@ def eine_reihe(signal: str) -> dict:
             for k in (5, 10, 15, 20):
                 ist = mp[BLL.VOR + k]
                 vert = sorted(x[BLL.VOR + k] for x in null)
-                p = (sum(1 for x in vert if x >= ist) if ist >= 0
-                     else sum(1 for x in vert if x <= ist)) / max(1, len(vert))
+                p = BLL._p_wert(ist, vert)      # zweiseitig, mit Plus-eins
                 einzel = [q[BLL.VOR + k] for q in pf]
                 z["t%d" % k] = {"mittel_pct": round(ist, 3), "p_wert": round(p, 4),
                                 "treffer_pct": round(

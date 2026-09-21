@@ -173,9 +173,9 @@ def chart_staerke(daten: dict, ziel: pathlib.Path) -> None:
     uneinheitlich aus (Bitcoin stark bei 10 %, Ether nicht), bei drei Wochen
     zeigen beide Kryptowaehrungen dasselbe Muster. Die Wahl ist nicht
     geschoent, sondern folgt den p-Werten: signifikant sind bei BEIDEN nur die
-    hohen Schwellen ueber drei bis vier Wochen (Bitcoin ab 20 %: p=0,015;
-    Ether ab 20 %: p=0,011), waehrend 3 % und 5 % bei beiden im Rauschen
-    liegen (p zwischen 0,29 und 0,64).
+    hohen Schwellen ueber drei bis vier Wochen (Bitcoin ab 20 %: p=0,027;
+    Ether ab 20 %: p=0,020), waehrend 3 % und 5 % bei beiden im Rauschen
+    liegen (p zwischen 0,60 und 0,99).
     """
     horizont = "t15"          # drei Wochen
     labels, btc_w, eth_w, basis_btc, basis_eth = [], [], [], None, None
@@ -206,10 +206,12 @@ def chart_staerke(daten: dict, ziel: pathlib.Path) -> None:
     ax.axhline(0, color=GITTER, linewidth=1.0)
 
     # p-Werte aus dem zirkulaeren Nullband (2000 Runden), Horizont 3 Wochen.
-    # Ohne sie waere jeder Balken nur eine Zahl; mit ihnen sieht man, welche
-    # Saeule etwas aussagt und welche Rauschen ist.
-    P_BTC = {0: 0.355, 1: 0.570, 2: 0.013, 3: 0.015}
-    P_ETH = {0: 0.478, 1: 0.432, 2: 0.614, 3: 0.011}
+    # ZWEISEITIG und mit Plus-eins-Korrektur — die erste Fassung waehlte die
+    # Richtung nach dem Ergebnis und konnte p=0,000 ausgeben, was bei 2000
+    # Verschiebungen nicht darstellbar ist. Die Werte sind dadurch rund
+    # doppelt so gross; der Befund bei den hohen Schwellen haelt trotzdem.
+    P_BTC = {0: 0.697, 1: 0.857, 2: 0.022, 3: 0.027}
+    P_ETH = {0: 0.994, 1: 0.898, 2: 0.754, 3: 0.020}
 
     for i, (a1, a2) in enumerate(zip(btc_w, eth_w)):
         ax.text(i - b / 2, a1 + (0.03 if a1 >= 0 else -0.10), "%+.2f" % a1,
