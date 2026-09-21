@@ -92,7 +92,8 @@ MAERKTE = [
 L = 10                    # Signalfenster in Handelstagen
 HORIZONT = 10             # Hauptspezifikation: zwei Wochen, vorab festgelegt
 PERZENTIL = 0.90
-MIN_EREIGNISSE = 20
+MIN_EREIGNISSE = 20       # damit eine Zelle ueberhaupt ausgewertet wird
+MIN_JE_HAELFTE = 20      # damit sie als BESTAETIGT gelten darf
 ABSTAND = 41
 RUNDEN = 2000
 
@@ -219,9 +220,26 @@ def main() -> int:
                 streuung = statistics.pstdev(bas) if len(bas) > 2 else 0.0
                 zellen.append({
                     "streuung_pct": round(streuung, 3),
+                    # PRIMAERFAMILIE = nur Paare ueber Kategoriegrenzen hinweg.
+                    # SPY->DIA, XLK->SMH oder Bitcoin->Ether sind keine
+                    # eigenstaendigen Intermarket-Hypothesen: sie messen
+                    # weitgehend denselben Faktor und blaehen die Testfamilie
+                    # auf, ohne eine neue Frage zu stellen. Sie werden weiter
+                    # gerechnet und angezeigt, gelten aber als Replikations-
+                    # zellen und koennen keinen Befund stiften.
+                    # Die Regel trennt nach KATEGORIE, nicht nach gemessener
+                    # Korrelation — sonst waere die Verkleinerung der Familie
+                    # selbst wieder Data Mining.
+                    "primaer": sg != zg,
                     "signal": st, "signal_name": sn, "signal_gruppe": sg,
                     "ziel": zt, "ziel_name": zn, "ziel_gruppe": zg,
                     "richtung": richtung, "n": len(tr),
+                    # Zeitraum und Umfang je Zelle. Codex hat darauf bestanden,
+                    # und zu Recht: die Zellen haben VERSCHIEDENE Historien
+                    # (Uran ab 2010, Ether ab 2017), also ist eine Zelle mit
+                    # 6000 Beobachtungen nicht so belastbar wie eine mit 1200 —
+                    # und ohne die Angabe sieht man das in der Tabelle nicht.
+                    "von": tage[0], "bis": tage[-1], "beob": len(tage),
                     "schwelle_pct": round(sw * 100, 2),
                     "basis_pct": round(statistics.fmean(bas), 3),
                     "_ziel": ziel, "_tr": tr, "_haelfte": haelfte,
@@ -249,13 +267,15 @@ def main() -> int:
     # ── Max-T über die GESAMTE Matrix ───────────────────────────────────────
     # Je Runde EIN gemeinsamer Versatz für alle Zellen: das erhält die
     # Abhängigkeit zwischen den Paaren. Gespeichert wird nur das Maximum.
-    print("Max-T über die gesamte Matrix, %d Runden ..." % RUNDEN, flush=True)
+    primaer = [z for z in zellen if z["primaer"]]
+    print("Max-T über die Primärfamilie (%d von %d Zellen), %d Runden ..."
+          % (len(primaer), len(zellen), RUNDEN), flush=True)
     rnd = random.Random(20260922)
     maxima = []
     for r in range(RUNDEN):
         versatz = rnd.randrange(1000, 100000)
         groesstes = 0.0
-        for z in zellen:
+        for z in primaer:
             tw = t_wert(z["_ziel"], z["_tr"], z["basis_pct"], z["streuung_pct"],
                         versatz=versatz)
             if tw is not None:
@@ -274,7 +294,7 @@ def main() -> int:
     print("Max-T-Schranke (95 %%): der standardisierte Effekt muss |t| > %.2f" % schranke)
     print("erreichen — so gross wird die beste Zelle einer rein zufaelligen Matrix")
     print("in 5 %% der Faelle. Ohne Korrektur fuer die %d Tests laege die Schwelle"
-          % len(zellen))
+          % len(primaer))
     print("bei |t| = 1,96.")
 
     for z in zellen:
@@ -283,7 +303,18 @@ def main() -> int:
         z["haelt_beide"] = bool(
             u is not None and z.get("h1_pp") is not None and z.get("h2_pp") is not None
             and (z["h1_pp"] > 0) == (u > 0) and (z["h2_pp"] > 0) == (u > 0))
-        z["befund"] = bool(tw is not None and abs(tw) > schranke and z["haelt_beide"])
+        # Ein Befund muss VIER Huerden nehmen, nicht eine:
+        #   1. in der Primaerfamilie liegen (Frage ueber Kategoriegrenzen)
+        #   2. die Max-T-Schranke reissen (Korrektur fuer die ganze Familie)
+        #   3. in beiden Zeithaelften dasselbe Vorzeichen zeigen
+        #   4. in JEDER Haelfte genug Ereignisse haben — 20 insgesamt heisst
+        #      schlimmstenfalls 3 in der einen Haelfte, und "haelt beide
+        #      Haelften" waere dann eine Aussage ueber 3 Faelle.
+        genug = (z.get("h1_n", 0) >= MIN_JE_HAELFTE
+                 and z.get("h2_n", 0) >= MIN_JE_HAELFTE)
+        z["genug_je_haelfte"] = bool(genug)
+        z["befund"] = bool(z["primaer"] and tw is not None
+                           and abs(tw) > schranke and z["haelt_beide"] and genug)
         for k in ("_ziel", "_tr", "_haelfte"):
             z.pop(k, None)
 
@@ -292,11 +323,16 @@ def main() -> int:
     knapp = sorted([z for z in zellen if not z["befund"] and z["t_wert"]
                     and abs(z["t_wert"]) > max(1.96, schranke * 0.7)],
                    key=lambda z: -abs(z["t_wert"]))
+    for z in zellen:
+        z["status"] = ("bestaetigt" if z["befund"]
+                       else "hinweis" if (z["t_wert"] is not None
+                                          and abs(z["t_wert"]) > 1.96)
+                       else "unauffaellig")
 
     print()
     print("=" * 78)
-    print("BEFUNDE: %d von %d Zellen halten der Korrektur stand UND beiden Hälften"
-          % (len(befunde), len(zellen)))
+    print("BEFUNDE: %d von %d Zellen der Primärfamilie halten alle vier Hürden"
+          % (len(befunde), len(primaer)))
     print("=" * 78)
     if befunde:
         print("  %-20s %-20s %-6s %4s %9s %9s %6s %8s"
@@ -315,17 +351,21 @@ def main() -> int:
         print()
         print("KNAPP DARUNTER (Hinweise, keine Befunde) — %d Zellen:" % len(knapp))
         for z in knapp[:10]:
-            print("  %-20s %-20s %-6s n=%-3d %+7.2f pp  t=%5.2f  (beide Haelften: %s)"
+            print("  %-19s %-19s %-6s n=%-3d(%2d/%2d) %+6.2f pp t=%5.2f %s%s"
                   % (z["signal_name"], z["ziel_name"],
                      "hoch" if z["richtung"] == "auf" else "runter",
-                     z["n"], z["ueberschuss_pp"], z["t_wert"],
-                     "ja" if z["haelt_beide"] else "nein"))
+                     z["n"], z.get("h1_n", 0), z.get("h2_n", 0),
+                     z["ueberschuss_pp"], z["t_wert"],
+                     "beide" if z["haelt_beide"] else "EINE",
+                     "" if z["primaer"] else " REPLIKATION"))
 
     if a.json:
         pathlib.Path(a.json).write_text(json.dumps({
             "stand": "2026-09-22", "horizont_tage": HORIZONT,
             "signalfenster_tage": L, "perzentil": PERZENTIL,
-            "min_ereignisse": MIN_EREIGNISSE, "runden": RUNDEN,
+            "min_ereignisse": MIN_EREIGNISSE,
+            "min_je_haelfte": MIN_JE_HAELFTE,
+            "primaerfamilie": len(primaer), "runden": RUNDEN,
             "max_t_schranke_t": round(schranke, 3),
             "n_zellen": len(zellen), "n_befunde": len(befunde),
             "zellen": zellen}, ensure_ascii=False, indent=2), encoding="utf-8")

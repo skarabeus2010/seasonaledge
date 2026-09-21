@@ -210,6 +210,10 @@ SA.i18n = (function() {
       title: 'January Trifecta — SCR + FFD + JanB Signal | SeasonAlpha',
       desc:  'January Trifecta: three signals combined into a full-year forecast indicator. Historical win rate > 80% when all three signals are met.'
     },
+    '/intermarket': {
+      title: 'Intermarket Matrix — Which Links Survive Correction | SeasonAlpha',
+      desc:  '470 tested intermarket relationships across 18 markets: when one market moves sharply, does another follow? Corrected for the number of tests — and almost nothing survives.'
+    },
     '/intermarket-shocks': {
       title: 'Intermarket Shocks — Trigger-Target Analysis | SeasonAlpha',
       desc:  'When Asset A drops or surges by X% — how does Asset B react? Event-window, scatter plot, seasonal breakdown and heatmap for any ticker pair.'
