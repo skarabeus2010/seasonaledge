@@ -1464,6 +1464,22 @@ def build_daily_context(
     # ML-Regime im Newsletter entfernt → market_regime bleibt leer.
     core_list = build_signal_rows(NEWSLETTER_CORE_LIST, target_date=target)
 
+    # Marktuebergreifende Signale aus der Lead-Lag-Studie (Anleihen, Krypto).
+    # Liefert meist eine leere Liste — die Sektion erscheint dann gar nicht.
+    # Ein Fehler hier darf die Mail NICHT verhindern: der Rest des Briefings
+    # ist davon unabhaengig, und ein taeglicher Versand, der an einer
+    # Zusatzsektion scheitert, waere der schlechtere Ausfall.
+    try:
+        from shared.intermarket import intermarket_signale
+        intermarket = intermarket_signale()
+    except Exception as e:
+        try:
+            from shared.logger import error_logger
+            error_logger.error(f"[daily] intermarket_signale fehlgeschlagen: {e}")
+        except Exception:
+            pass
+        intermarket = []
+
     return {
         "report_time":      now_utc.strftime("%Y-%m-%d %H:%M UTC"),
         "report_date":      target.strftime("%Y-%m-%d"),
@@ -1477,6 +1493,7 @@ def build_daily_context(
         "strategies":       strategies,
         "rotation":         rotation,
         "market_regime":    {},
+        "intermarket":      intermarket,
         # für Footer + Unsubscribe-URL
         "unsubscribe_url":  "",  # wird in daily_newsletter.py pro Recipient gesetzt
         "dashboard_url":    "https://seasonalpha.ai/dashboard",

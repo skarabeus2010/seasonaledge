@@ -8,7 +8,7 @@ category: education
 tags: [bitcoin, correlation, spy, crypto, lead-lag, risk-appetite]
 description: "Does Bitcoin lead the stock market? Twelve years of data show the link is same-day. Only very large crypto rallies leave a measurable trace in SPY."
 ticker: BTC-USD
-status: draft
+status: published
 ---
 
 <!--

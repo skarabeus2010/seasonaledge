@@ -52,7 +52,24 @@ _spec.loader.exec_module(B)
 from shared.data import lade_closes                                  # noqa: E402
 from shared.realized_vol import log_returns, rv_aus_returns          # noqa: E402
 
-SCHWELLE = 0.041        # 90. Perzentil der TLT-10-Tage-Bewegungen
+# Die Schwelle kommt aus bond_lead_lag.schwellen(), NICHT als gerundete Zahl.
+# Angezeigt wird sie dort als "4,1 %", exakt ist sie 0,040632 — wer die
+# gerundete Zahl nachbildet, prueft eine andere Ereignismenge als der
+# Hauptbefund und erzeugt Abweichungen, die wie ein Rechenfehler aussehen
+# (aufgefallen beim Schreiben des Artikels: +2,09 % gegen +2,07 % fuer
+# dieselbe Groesse).
+_bl = importlib.util.module_from_spec(importlib.util.spec_from_file_location(
+    "bond_lead_lag", str(pathlib.Path(__file__).with_name("bond_lead_lag.py"))))
+_bl.__loader__.exec_module(_bl)
+
+
+def _schwelle_90() -> float:
+    from shared.data import lade_closes as _lc
+    _, c = _lc("TLT")
+    return _bl.schwellen([float(x) for x in c])[1][1]
+
+
+SCHWELLE = None         # wird in main() aus der Quelle gesetzt
 HORIZONT = 10           # zwei Wochen
 
 
@@ -105,6 +122,8 @@ def zeile(label, r, basis=None):
 
 
 def main() -> int:
+    global SCHWELLE
+    SCHWELLE = _schwelle_90()
     tage, reihen = lade()
     spy = [reihen["SPY"][d] for d in tage]
     kum = B.kumulierte([reihen["TLT"][d] for d in tage], B.L)

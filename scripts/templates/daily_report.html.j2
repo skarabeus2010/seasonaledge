@@ -219,6 +219,36 @@
     </td></tr>
     {% endif %}
 
+    {% if intermarket %}
+    <!-- ══════════════════ SEKTION: MARKTUEBERGREIFEND ══════════════════════
+         Erscheint NUR, wenn eine der gemessenen Bedingungen erfuellt ist —
+         meist also gar nicht. Eine taegliche Zeile "heute kein Signal" waere
+         kein Informationsgewinn und wuerde suggerieren, hier gaebe es taeglich
+         etwas zu entscheiden. Grundlage: shared/intermarket.py. -->
+    <tr><td style="padding:24px 32px 8px;">
+      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
+        🔗 Marktübergreifend
+      </div>
+      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
+        Seltene Konstellationen aus Anleihen und Krypto — erscheint nur, wenn eine eintritt
+      </div>
+      {% for s in intermarket %}
+      <div style="padding:14px 16px;margin-bottom:10px;background:rgba(232,168,32,0.05);border:1px solid rgba(232,168,32,0.18);border-radius:8px;">
+        <div style="font-size:13px;font-weight:600;color:#e8e8e8;margin-bottom:6px;">{{ s.titel }}</div>
+        <div style="font-size:12.5px;color:#b8b0a0;line-height:1.65;">{{ s.text }}</div>
+        <div style="font-size:11px;color:#8a8070;margin-top:8px;">
+          Stand {{ s.stand }} ·
+          <a href="https://seasonalpha.ai{{ s.artikel }}" style="color:#e8a820;text-decoration:none;">Methodik und Zahlen</a>
+        </div>
+      </div>
+      {% endfor %}
+      <div style="font-size:11px;color:#8a8070;line-height:1.55;margin-top:2px;">
+        Historische Auswertung, keine Empfehlung und keine Prognose. Die genannten
+        Durchschnitte sind Mittelwerte über viele Fälle mit erheblicher Streuung.
+      </div>
+    </td></tr>
+    {% endif %}
+
     {% set month_names = {1:'Januar',2:'Februar',3:'März',4:'April',5:'Mai',6:'Juni',7:'Juli',8:'August',9:'September',10:'Oktober',11:'November',12:'Dezember'} %}
     {% if rotation and (rotation.current_top or rotation.next_top) %}
     <!-- ══════════════════════ SEKTION: SEKTOR-ROTATION ══════════════════════ -->

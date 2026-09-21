@@ -7,7 +7,7 @@ category: education
 tags: [bitcoin, korrelation, spy, krypto, lead-lag, risikoappetit]
 description: "Läuft Bitcoin dem Aktienmarkt voraus? 12 Jahre Daten zeigen: Die Kopplung ist gleichzeitig. Nur sehr große Krypto-Anstiege hinterlassen eine Spur."
 ticker: BTC-USD
-status: draft
+status: published
 ---
 
 <!--
