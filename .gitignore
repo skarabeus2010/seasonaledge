@@ -52,3 +52,11 @@ landing/data/key_levels.json
 # Research-Scan: Kurs-Cache und Roh-Kandidaten (regenerierbar, gross)
 scripts/research/.cache/
 scripts/research/out/scan_candidates.json
+
+# Sicherungskopien nie ins Repo und nie in den Web-Root (gefunden 2026-09-21:
+# 6,7 MB veraltete Options-Historie waren oeffentlich mit HTTP 200 abrufbar).
+# nginx blockt sie zusaetzlich, siehe deploy/nginx.conf.
+*.bak
+*.bak-*
+*.orig
+*.old
