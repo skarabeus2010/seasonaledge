@@ -66,7 +66,14 @@ from shared.data import lade_closes                                  # noqa: E40
 from shared.realized_vol import log_returns                          # noqa: E402
 
 ETFS = ("SPY", "QQQ", "DIA")
-KRYPTO = "BTC-USD"
+
+# ZWEI Kryptowaehrungen, getrennt gerechnet. Ether ist die eigentliche
+# Gegenprobe der Studie: existiert ein Krypto-Vorlauf auf die Aktienmaerkte,
+# muss er bei ETH genauso auftauchen. Zeigt er sich nur bei einer der beiden,
+# ist er mit hoher Wahrscheinlichkeit Zufall — bei ETH gibt es weniger
+# Historie (ab 11-2017), also auch weniger Ereignisse, das ist beim Lesen der
+# Fallzahlen mitzudenken.
+KRYPTOS = ("BTC-USD", "ETH-USD")
 
 L = 10                  # Signalfenster in Handelstagen
 Z_SCHWELLE = 2.5        # Ereignisschwelle
@@ -98,14 +105,22 @@ KUMULATIV = [("ab 3 %", 0.03), ("ab 5 %", 0.05),
              ("ab 10 %", 0.10), ("ab 20 %", 0.20)]
 
 
-def lade() -> tuple[list, dict]:
+def lade(krypto: str) -> tuple[list, dict]:
+    """Kursreihen und die gemeinsamen Handelstage fuer EINE Kryptowaehrung.
+
+    Je Kryptowaehrung eine eigene Schnittmenge: ETH beginnt erst 11-2017, und
+    wer beide in eine gemeinsame Schnittmenge zwingt, verliert drei Jahre
+    BTC-Historie fuer nichts.
+
+    Nur Tage, an denen alle vier gehandelt haben. Krypto hat Wochenenden, die
+    ETFs nicht — wer auf dem Krypto-Kalender rechnet, vergleicht
+    Wochenendbewegungen mit Nicht-Handelstagen und misst Kalendermechanik statt
+    Marktverhalten.
+    """
     reihen = {}
-    for t in (KRYPTO,) + ETFS:
+    for t in (krypto,) + ETFS:
         d, c = lade_closes(t)
         reihen[t] = dict(zip(d, [float(x) for x in c]))
-    # Nur Tage, an denen ALLE vier gehandelt haben. BTC hat Wochenenden, die
-    # ETFs nicht — wer auf BTCs Kalender rechnet, vergleicht Wochenendbewegungen
-    # mit Nicht-Handelstagen und misst Kalendermechanik statt Marktverhalten.
     tage = sorted(set.intersection(*[set(v) for v in reihen.values()]))
     return tage, reihen
 
@@ -371,8 +386,24 @@ def main() -> int:
     ap.add_argument("--json", help="Ergebnis als JSON hierhin schreiben")
     a = ap.parse_args()
 
-    tage, reihen = lade()
-    btc = [reihen[KRYPTO][d] for d in tage]
+    alles = {}
+    for krypto in KRYPTOS:
+        alles[krypto] = _eine_waehrung(krypto)
+    if a.json:
+        pathlib.Path(a.json).write_text(
+            json.dumps(alles, ensure_ascii=False, indent=2), encoding="utf-8")
+        print()
+        print("JSON geschrieben: %s" % a.json)
+    return 0
+
+
+def _eine_waehrung(krypto: str) -> dict:
+    print()
+    print("#" * 78)
+    print("# %s" % krypto)
+    print("#" * 78)
+    tage, reihen = lade(krypto)
+    btc = [reihen[krypto][d] for d in tage]
     btc_kum = kumulierte(btc, L)
     print("Gemeinsame Handelstage: %d  (%s .. %s)" % (len(tage), tage[0], tage[-1]))
     print("Signal: BTC %d-Tage-Kumulativreturn, |z| >= %.1f gegen die vorangegangenen"
@@ -393,7 +424,7 @@ def main() -> int:
                  bas[e][5]["mittel_pct"], bas[e][10]["mittel_pct"],
                  bas[e][20]["mittel_pct"], bas[e][5]["anteil_positiv_pct"]))
 
-    ergebnis = {"stand": tage[-1], "handelstage": len(tage),
+    ergebnis = {"krypto": krypto, "stand": tage[-1], "handelstage": len(tage),
                 "basisrate": bas,
                 "von": tage[0], "bis": tage[-1],
                 "spezifikation": {"fenster_tage": L, "z_schwelle": Z_SCHWELLE,
@@ -519,12 +550,7 @@ def main() -> int:
         print("  %-30s %s" % (name, "  |  ".join(aus)))
         ergebnis["regime"][name] = zeile
 
-    if a.json:
-        pathlib.Path(a.json).write_text(
-            json.dumps(ergebnis, ensure_ascii=False, indent=2), encoding="utf-8")
-        print()
-        print("JSON geschrieben: %s" % a.json)
-    return 0
+    return ergebnis
 
 
 if __name__ == "__main__":
