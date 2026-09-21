@@ -71,7 +71,7 @@ KRYPTO = "BTC-USD"
 L = 10                  # Signalfenster in Handelstagen
 Z_SCHWELLE = 2.5        # Ereignisschwelle
 BASIS = 252             # Fenster fuer den Nenner
-VOR, NACH = 10, 20      # ausgewerteter Pfad um das Ereignis
+VOR, NACH = 10, 30      # ausgewerteter Pfad um das Ereignis (30 HT = 6 Wochen)
 ABSTAND = VOR + NACH + 1
 BOOTSTRAP = 2000
 
@@ -81,8 +81,21 @@ REGIME = [("bis 2019 (vor der Kopplung)", "2000-01-01", "2019-12-31"),
 
 # Staerke-Buckets in PROZENT. Absolut, nicht z-normiert: so ist die Frage
 # gestellt ("ab 5 % passiert etwas"), und so steht sie in der Literatur.
+# Horizonte: 5 Handelstage = 1 Woche. Bewusst auch die kurzen, damit sichtbar
+# bleibt, ob ein Effekt sofort da ist oder erst spaeter entsteht.
+HORIZONTE = (1, 2, 3, 5, 10, 15, 20, 30)
+WOCHEN = {5: "1 Wo", 10: "2 Wo", 15: "3 Wo", 20: "4 Wo", 30: "6 Wo"}
+
+# Staerke-Schwellen. ZWEI Formen, weil sie verschiedene Fragen beantworten:
+#   BUCKETS    — disjunkt, zeigt ob die Wirkung mit der Staerke WAECHST
+#   KUMULATIV  — "ab 5 %", so ist die These formuliert und so waere sie handelbar
+# Absolute Prozentschwellen, nicht z-normiert: so steht die Frage in der
+# Literatur. Nachteil, der mitgelesen werden muss: BTCs Volatilitaet ist ueber
+# die Jahre stark gefallen, 5 % waren 2017 ein normaler Tag.
 BUCKETS = [("3-5 %", 0.03, 0.05), ("5-10 %", 0.05, 0.10),
            ("10-20 %", 0.10, 0.20), ("ueber 20 %", 0.20, 9.99)]
+KUMULATIV = [("ab 3 %", 0.03), ("ab 5 %", 0.05),
+             ("ab 10 %", 0.10), ("ab 20 %", 0.20)]
 
 
 def lade() -> tuple[list, dict]:
@@ -203,7 +216,7 @@ def auswerten(tage, reihen, treffer, etf) -> dict | None:
         else:
             p = sum(1 for x in vert if x <= ist) / max(1, len(vert))
         einzel = [x[j] for x in pfade]
-        return {"tage": k, "mittel_pct": round(ist, 3),
+        return {"tage": k, "wochen": WOCHEN.get(k, ""), "mittel_pct": round(ist, 3),
                 "median_pct": round(statistics.median(einzel), 3),
                 "anteil_positiv_pct": round(sum(1 for x in einzel if x > 0) / len(einzel) * 100, 1),
                 "null_5pct": round(perzentil(vert, 0.05), 3),
@@ -217,7 +230,7 @@ def auswerten(tage, reihen, treffer, etf) -> dict | None:
                           for j in range(len(m))],
             "null_95pct": [round(perzentil(sorted(x[j] for x in null), 0.95), 3)
                            for j in range(len(m))],
-            "horizonte": [stelle(k) for k in (1, 2, 3, 5, 10, 20)]}
+            "horizonte": [stelle(k) for k in HORIZONTE]}
 
 
 def basisrate(tage, reihen) -> dict:
@@ -233,7 +246,7 @@ def basisrate(tage, reihen) -> dict:
     for e in ETFS:
         er = [reihen[e][d] for d in tage]
         out[e] = {}
-        for k in (1, 2, 3, 5, 10, 20):
+        for k in HORIZONTE:
             w = [(er[i + k] / er[i] - 1) * 100
                  for i in range(len(er) - k) if er[i] > 0]
             out[e][k] = {"mittel_pct": round(statistics.fmean(w), 3),
@@ -308,9 +321,47 @@ def staerke_tabelle(tage, reihen, btc_kum, richtung: str) -> list[dict]:
                 zeile[e] = None
                 continue
             m = mittelpfad(pf)
-            zeile[e] = {("t%d" % k): round(m[VOR + k], 3) for k in (1, 3, 5, 10, 20)}
+            zeile[e] = {("t%d" % k): round(m[VOR + k], 3) for k in HORIZONTE}
             zeile[e]["treffer_t5_pct"] = round(
                 sum(1 for p in pf if p[VOR + 5] > 0) / len(pf) * 100, 1)
+        out.append(zeile)
+    return out
+
+
+def kumulativ_tabelle(tage, reihen, btc_kum, richtung: str) -> list[dict]:
+    """EXPLORATIV: "Bitcoin steigt um mindestens X %" — und dann?
+
+    Genau die Form, in der die These in der Literatur steht und in der sie
+    handelbar waere. Im Unterschied zu BUCKETS sind die Gruppen hier
+    verschachtelt (ab 3 % enthaelt ab 5 %), die Zeilen sind also nicht
+    unabhaengig voneinander.
+    """
+    er = {e: [reihen[e][d] for d in tage] for e in ETFS}
+    out = []
+    for name, lo in KUMULATIV:
+        treffer, letztes = [], -10 ** 9
+        for i in range(BASIS + L, len(tage)):
+            k = btc_kum[i]
+            if k is None:
+                continue
+            bew = math.exp(k) - 1.0
+            passt = (bew >= lo) if richtung == "auf" else (bew <= -lo)
+            if passt and i - letztes >= ABSTAND:
+                treffer.append(i); letztes = i
+        zeile = {"schwelle": name, "n": len(treffer)}
+        for e in ETFS:
+            pf = [p for p in (pfad(er[e], i) for i in treffer) if p]
+            if len(pf) < 5:
+                zeile[e] = None
+                continue
+            m = mittelpfad(pf)
+            zeile[e] = {}
+            for k in HORIZONTE:
+                einzel = [p[VOR + k] for p in pf]
+                zeile[e]["t%d" % k] = {
+                    "mittel_pct": round(m[VOR + k], 3),
+                    "median_pct": round(statistics.median(einzel), 3),
+                    "treffer_pct": round(sum(1 for x in einzel if x > 0) / len(einzel) * 100, 1)}
         out.append(zeile)
     return out
 
@@ -397,6 +448,29 @@ def main() -> int:
                 for o in ef["ohne_groesste"]:
                     print("    ohne %-17s n=%2d  %+6.2f %%  p=%.3f"
                           % (o["ohne"], o["n"], o["mittel_pct"], o["p_wert"]))
+
+        print()
+        print("  \"BTC steigt/faellt um mindestens X %\" -> SPY danach (explorativ).")
+        print("  Jede Zeile gegen die BASISRATE lesen, nicht gegen null.")
+        ku = kumulativ_tabelle(tage, reihen, btc_kum, richtung)
+        ergebnis.setdefault("kumulativ", {})[richtung] = ku
+        kopf = "  %-10s %4s |" % ("Schwelle", "n")
+        for k in (5, 10, 15, 20, 30):
+            kopf += "%10s" % WOCHEN[k]
+        print(kopf + "   Treffer 2 Wo")
+        zb = "  %-10s %4d |" % ("ohne Signal", 0)
+        for k in (5, 10, 15, 20, 30):
+            zb += "%10.2f" % bas["SPY"][k]["mittel_pct"]
+        print(zb + "        %.1f %%" % bas["SPY"][10]["anteil_positiv_pct"])
+        for z in ku:
+            sp = z.get("SPY")
+            if not sp:
+                print("  %-10s %4d | zu wenige Ereignisse" % (z["schwelle"], z["n"]))
+                continue
+            zeile = "  %-10s %4d |" % (z["schwelle"], z["n"])
+            for k in (5, 10, 15, 20, 30):
+                zeile += "%10.2f" % sp["t%d" % k]["mittel_pct"]
+            print(zeile + "        %.1f %%" % sp["t10"]["treffer_pct"])
 
         print()
         print("  STAERKE (explorativ, absolute Buckets — nicht mit der")
