@@ -327,14 +327,20 @@
         if(isCS){
           // Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite, unabhaengig gerankt.
           // Priorität: call_zeta_pts (direkt) → iv_atm-Fallback → Backfill-Näherung (call_iv-put_iv)/2.
-          // Backfill-Näherung: ATM_approx = (call_iv+put_iv)/2 → call_zeta = (call_iv-ATM)*100 = (call_iv-put_iv)/2*100.
+          // Zeta braucht einen ECHTEN ATM-Anker. Früher stand hier als letzte
+          // Stufe eine Näherung ATM ≈ (call_iv+put_iv)/2 aus der Zeit, als der
+          // Backfill kein iv_atm schrieb. Sie ist entfernt, weil sie
+          // put_zeta = −call_zeta erzwingt: damit liegt JEDER Punkt exakt auf
+          // der Antidiagonale und der Quadrant kollabiert zur Linie — er zeigt
+          // dann eine Eigenschaft der Formel statt des Marktes.
+          // Zeilen ohne Anker fallen jetzt heraus. Gemessen am 2026-09-21 kostet
+          // das 3 von 11.483 normierten Zeilen (je eine bei ARRY, SCHW, XLRE),
+          // also nichts gegenüber ~180 Punkten je Ticker.
           var zetaPairs=arr.map(function(e){
             var cz=e.call_zeta_pts!=null ? e.call_zeta_pts :
-                    (e.iv_atm!=null ? (e.call_iv-e.iv_atm)*100 :
-                     (e.call_iv!=null&&e.put_iv!=null ? (e.call_iv-e.put_iv)/2*100 : null));
+                    (e.iv_atm!=null ? (e.call_iv-e.iv_atm)*100 : null);
             var pz=e.put_zeta_pts!=null  ? e.put_zeta_pts  :
-                    (e.iv_atm!=null ? (e.put_iv-e.iv_atm)*100 :
-                     (e.call_iv!=null&&e.put_iv!=null ? (e.put_iv-e.call_iv)/2*100 : null));
+                    (e.iv_atm!=null ? (e.put_iv-e.iv_atm)*100 : null);
             return (cz!=null&&pz!=null)?{cz:cz,pz:pz,skew:e.skew_pts}:null;
           }).filter(Boolean);
           if(zetaPairs.length<MIN_NORM)return;
