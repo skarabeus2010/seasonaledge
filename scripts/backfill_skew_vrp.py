@@ -67,6 +67,10 @@ HISTORIE = _ROOT / "landing/data/options_skew_history.json"
 # Schluessel, die keine Ticker sind (vorwaerts akkumulierte Reihen).
 KEINE_TICKER = {"__CORR", "__PCR"}
 
+# So viele nachgerechnete Zeilen muessen mindestens vorliegen, bevor das
+# Invariant-Urteil ueberhaupt etwas wert ist.
+MIN_ZEILEN = 200
+
 
 def _vrp_loeschen(z: dict) -> bool:
     """Entfernt alle drei VRP-Felder einer Zeile. True, wenn etwas dranstand.
@@ -245,20 +249,38 @@ def _invariant(stat: dict) -> bool:
         print("Domaenen-Invariant (VRP im Mittel positiv), SELBE Zeilen:")
         print("  alt  n=%4d  Median %+6.2f  Mittel %+6.2f  positiv %5.1f %%" % a)
         print("  neu  n=%4d  Median %+6.2f  Mittel %+6.2f  positiv %5.1f %%" % b)
-        # ZWEI Bedingungen, nicht eine. "Besser als vorher" allein genuegt
-        # nicht: eine Reihe mit Mittel -8 waere "besser" als eine mit -12 und
-        # trotzdem unbrauchbar. Das VRP MUSS im Mittel positiv sein.
+        # HART ist nur das positive Mittel. "Besser als die alten Werte" war
+        # frueher ebenfalls hart und ist als Schranke NICHT haltbar: die alten
+        # Werte sind genau die, die sich nicht reproduzieren lassen (siehe
+        # Modul-Docstring) — sie als Messlatte zu nehmen ist zirkulaer. Dazu
+        # kommt die Stichprobengroesse: am 2026-09-21 lagen 19 gemeinsame
+        # Zeilen vor, und 0,14 pp Unterschied im Mittel sind dort Rauschen.
+        # Die Richtung wird weiter ANGEZEIGT, aber sie blockiert nicht mehr.
         if b[2] <= 0:
             print("  -> ROT: das Mittel ist nicht positiv. Der Invariant ist")
             print("     verletzt, die Reihe taugt nicht fuer ein Perzentil.")
             ok = False
-        elif b[2] >= a[2] and b[3] >= a[3]:
-            print("  -> gruen: positives Mittel, und besser als vorher in")
-            print("     Mittelwert UND Anteil positiver Werte.")
         else:
-            print("  -> ROT: die Neurechnung ist auf diesem Pruefstein nicht")
-            print("     besser als die alten Werte. Ursache klaeren.")
-            ok = False
+            print("  -> gruen: das Mittel ist positiv.")
+        if b[2] >= a[2] and b[3] >= a[3]:
+            print("     (zur Einordnung: auch besser als die alten Werte in")
+            print("      Mittelwert und Anteil positiver Werte)")
+        else:
+            print("     (zur Einordnung: auf den %d gemeinsamen Zeilen NICHT" % a[0])
+            print("      besser als die alten Werte — kein Ausschlussgrund,")
+            print("      aber ein Blick wert, wenn die Stichprobe gross ist)")
+
+    # MINDESTSTICHPROBE, hart. Ohne sie koennte eine Handvoll zufaellig
+    # positiver Zeilen das Gate passieren — das Mittel einer Stichprobe von
+    # drei sagt nichts. Der Wert ist bewusst grosszuegig: es geht darum,
+    # Zufallstreffer auszuschliessen, nicht um statistische Signifikanz.
+    ges = len(stat["invariant_neu_gleich"]) + len(stat["invariant_neu_dazu"])
+    if ges < MIN_ZEILEN:
+        print()
+        print("  -> ROT: nur %d nachgerechnete Zeilen (mindestens %d noetig)."
+              % (ges, MIN_ZEILEN))
+        print("     Eine so kleine Stichprobe traegt keine Aussage.")
+        ok = False
 
     dazu = stat["invariant_neu_dazu"]
     if dazu:

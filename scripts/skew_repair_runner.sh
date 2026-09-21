@@ -50,6 +50,7 @@ MIN_MINUTEN=${MIN_MINUTEN:-240} # so viel Zeit muss bis zum Fenster bleiben.
                                 # Grob BATCH x 40 Min plus Puffer — lieber warten
                                 # als einen Batch anreissen, der abgebrochen wird.
 MAIL_ALLE=${MAIL_ALLE:-4}       # Zwischenstand per Mail alle N Batches
+MAX_VERSUCHE=${MAX_VERSUCHE:-3} # Wiederholungen je Batch, bevor er liegenbleibt
 PAUSE_FROM=${PAUSE_FROM:-2250}  # UTC HHMM, 10 Min vor dem options_skew-Cron
 RESUME_AT=${RESUME_AT:-0010}
 
@@ -113,6 +114,7 @@ log "offen: ${#OFFEN[@]}"
 
 I=0
 FERTIG=0
+VERSUCH=0
 while [ "$I" -lt "${#OFFEN[@]}" ]; do
     # Im Fenster gar nicht erst anfangen.
     while im_fenster; do
@@ -163,26 +165,57 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
         sleep 60
     done
 
-    docker logs "$CONT" >> "$LOG" 2>&1
+    AUSGABE=$(docker logs "$CONT" 2>&1)
+    echo "$AUSGABE" >> "$LOG"
     CODE=$(docker inspect -f '{{.State.ExitCode}}' "$CONT" 2>/dev/null)
 
     if [ "$ABGEBROCHEN" = "1" ]; then
         log "Batch am Fenster abgebrochen -> ${#STAPEL[@]} Ticker bleiben offen"
         # I NICHT weiterzaehlen: derselbe Stapel wird nach dem Fenster wiederholt.
     elif [ "$CODE" = "0" ]; then
-        for t in "${STAPEL[@]}"; do echo "$t" >> "$STATE"; done
+        # JE TICKER pruefen, nicht dem Exit-Code des Batches vertrauen.
+        # backfill_skew_massive faengt Tickerfehler ab und beendet trotzdem mit
+        # 0 ("SPY FEHLER: 'exps'" gefolgt von "[OK] +0 Punkte" — genau so im
+        # Einzeltest am 2026-09-19 gesehen). Wer hier den ganzen Stapel als
+        # erledigt einträgt, verliert den gescheiterten Ticker endgueltig: er
+        # steht in der State-Datei und wird nie wieder versucht.
+        # Als erledigt gilt nur, wer eine Punkte-Zeile gemeldet hat.
+        OK=0; SCHLECHT=()
+        for t in "${STAPEL[@]}"; do
+            if echo "$AUSGABE" | grep -qE "^[[:space:]]*$t[[:space:]]+\+[0-9]+ Punkte"; then
+                echo "$t" >> "$STATE"; OK=$((OK+1))
+            else
+                SCHLECHT+=("$t")
+            fi
+        done
         FERTIG=$((FERTIG+1))
-        log "Batch fertig, $((${#OFFEN[@]}-I-${#STAPEL[@]})) Ticker offen"
+        log "Batch fertig: $OK von ${#STAPEL[@]} Tickern bestaetigt"
+        if [ ${#SCHLECHT[@]} -gt 0 ]; then
+            log "  OHNE Punkte, bleiben offen: ${SCHLECHT[*]}"
+        fi
         if [ $((FERTIG % MAIL_ALLE)) -eq 0 ]; then
             log "Zwischenstand faellig -> Mail"
             bericht --progress
         fi
         I=$((I+BATCH))
     else
-        log "Batch FEHLGESCHLAGEN (exit=$CODE) -> Ticker bleiben offen, weiter mit dem naechsten"
+        # Fehlgeschlagenen Batch WIEDERHOLEN statt ueberspringen — sonst bleiben
+        # seine Ticker offen, der Runner laeuft aber bis zum Abschlussbericht
+        # weiter und meldet Vollzug, obwohl sie fehlen. Begrenzt, damit ein
+        # dauerhaft kaputter Ticker den Lauf nicht blockiert.
+        VERSUCH=$((VERSUCH+1))
+        if [ "$VERSUCH" -lt "$MAX_VERSUCHE" ]; then
+            log "Batch FEHLGESCHLAGEN (exit=$CODE), Versuch $VERSUCH von $MAX_VERSUCHE -> Wiederholung"
+            sleep 300
+            docker rm -f "$CONT" >/dev/null 2>&1
+            continue                      # I NICHT erhoehen
+        fi
+        log "Batch nach $MAX_VERSUCHE Versuchen aufgegeben (exit=$CODE) -> ${STAPEL[*]} bleiben offen"
+        VERSUCH=0
         I=$((I+BATCH))
         sleep 60
     fi
+    VERSUCH=0
     docker rm -f "$CONT" >/dev/null 2>&1
 done
 
