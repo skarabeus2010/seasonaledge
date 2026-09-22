@@ -6,7 +6,13 @@ archive_front_straddle.py — täglich den Straddle des nächsten Verfalls festh
 
 WOZU: Die Praktikerregel „Straddle des nächsten Verfalls, geteilt durch den Spot,
 ergibt die erwartete Tagesspanne" lässt sich nur prüfen, wenn man den Straddle
-über viele Tage hat. Wir rechnen die Options-Snapshots täglich, schreiben aber
+über viele Tage hat.
+
+ZUR BENENNUNG, und die ist nicht Pedanterie: Straddle/Spot ist die implizierte
+BEWEGUNG bis zum Verfall — ein ±-Radius um den Spot, zugleich der Breakeven
+eines Long-Straddles. Es ist NICHT die Hoch-Tief-Spanne des Tages; die misst
+den Weg statt das Ziel und ist gemessen rund 1,7-mal so gross. Wer die Zahl als
+„erwartete Tagesspanne" beschriftet, verspricht etwas anderes, als er liefert. Wir rechnen die Options-Snapshots täglich, schreiben aber
 nur IV, Skew und VRP weg — der Straddle war nie dabei. Dieses Skript schliesst
 die Lücke, damit die Auswertung in einigen Monaten möglich ist. Es sammelt, es
 bewertet nicht.
@@ -33,13 +39,27 @@ WANN DAS SKRIPT LAUFEN MUSS — das ist keine Nebensache, sondern der Kern:
 
     VOR DER US-EROEFFNUNG (vor 13:30 UTC). Dann verfaellt der 0DTE-Kontrakt am
     Ende genau der Sitzung, die vorhergesagt werden soll: ein Tag, kein
-    Horizont-Fehler. Zum Schlusskurs waere derselbe Kontrakt wertlos, und der
-    naechste Verfall liegt je nach Wochentag ein bis drei Tage entfernt — dann
-    bepreist der Straddle mehrere Tage und ueberschaetzt die Tagesspanne.
+    Horizont-Fehler. Zum Schlusskurs waere derselbe Kontrakt fast nur noch
+    innerer Wert und damit keine Prognose, sondern eine Nachschau auf einen
+    Tag, der schon gelaufen ist.
 
-    Jeder Datensatz haelt in `vor_eroeffnung` fest, ob das beim Lauf zutraf.
-    Eine spaetere Auswertung soll die uebrigen Tage ausschliessen, nicht
-    mitrechnen.
+    DASS DAS UEBERHAUPT GEHT, liegt an den taeglichen Verfaellen. Am
+    22.09.2026 aus unserer eigenen Kette geprueft:
+      SPY  22.09. Di · 23.09. Mi · 24.09. Do · 25.09. Fr · 28.09. Mo · …
+      DIA  25.09. Fr · 30.09. Mi · 02.10. Fr
+    SPY, QQQ und IWM verfallen an JEDEM Handelstag, DIA nicht. Fuer die ersten
+    drei findet ein Lauf vor der Eroeffnung also immer einen Kontrakt, der
+    genau die kommende Sitzung abdeckt. Fuer DIA liegt der naechste Verfall
+    ein bis vier Tage entfernt — dort bepreist der Straddle mehrere Tage und
+    ueberschaetzt die Tagesbewegung entsprechend.
+
+    (Ein frueherer Stand dieses Docstrings behauptete, SPY verfalle nur
+    Mo/Mi/Fr. Das war veraltet und ist oben an echten Kettendaten korrigiert.)
+
+    Jeder Datensatz haelt in `vor_eroeffnung` fest, ob der Lauf rechtzeitig
+    lag, und in `dte`, wie weit der Verfall entfernt war. Eine Auswertung der
+    Regel soll auf `dte == 0` UND `vor_eroeffnung` filtern und alles andere
+    ausschliessen, nicht mitrechnen.
 
 ARCHIVIERT WIRD JE TICKER UND TAG: Spot, Verfallstag, Restlaufzeit, der Strike
 am Geld, Call- und Put-IV dort, der daraus gerechnete Straddle, und die Anzahl

@@ -1,0 +1,36 @@
+name: Front-Straddle Archiv
+
+on:
+  schedule:
+    # 12:00 UTC, Mo-Fr — VOR der US-Eroeffnung (13:30 UTC Sommerzeit,
+    # 14:30 UTC Winterzeit). Der Puffer ist Absicht: GitHub startet geplante
+    # Laeufe regelmaessig 15-30 Minuten verspaetet, und ein Lauf NACH der
+    # Eroeffnung waere fuer diese Messung wertlos — der 0DTE-Straddle bepreist
+    # dann nur noch den Rest des Tages statt die ganze Sitzung.
+    - cron: '0 12 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Front-Straddle via VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 12m
+          script: |
+            # pipefail: ohne ihn liefert `docker exec … | tail` den Status von
+            # tail (immer 0) und ein abschliessender echo ueberschriebe ihn
+            # danach. Ein gescheiterter Lauf waere doppelt unsichtbar — und bei
+            # einem reinen Sammler faellt das besonders spaet auf, weil erst
+            # die Auswertung Monate spaeter die Luecken zeigt.
+            set -uo pipefail
+            echo "[straddle] start $(date -u)"
+            docker exec seasonalpha-app python3 scripts/archive_front_straddle.py 2>&1 | tail -20
+            rc=${PIPESTATUS[0]}
+            echo "[straddle] done $(date -u) rc=$rc"
+            exit $rc
