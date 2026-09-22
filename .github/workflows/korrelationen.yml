@@ -1,0 +1,35 @@
+name: Korrelationen
+
+on:
+  schedule:
+    # 23:40 UTC, Mo-Fr — nach dem US-Schluss und nach den Options-Crons (23:00),
+    # damit sich nichts um dieselben Ressourcen streitet. Die Korrelationen
+    # brauchen nur Schlusskurse aus Supabase, also keine API-Abrufe.
+    - cron: '40 23 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Korrelationen via VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 22m
+          script: |
+            # pipefail: ohne ihn liefert `docker exec … | tail` den Status von
+            # tail (immer 0) und ein abschliessender echo ueberschriebe ihn.
+            # Ein gescheiterter Lauf waere doppelt unsichtbar — und hier faellt
+            # das besonders spaet auf, weil die Seite dann still eine alte
+            # Datei weiterzeigt.
+            set -uo pipefail
+            echo "[korrelationen] start $(date -u)"
+            docker exec seasonalpha-app python3 scripts/research/build_korrelationen.py \
+              --json landing/data/korrelationen.json 2>&1 | tail -25
+            rc=${PIPESTATUS[0]}
+            echo "[korrelationen] done $(date -u) rc=$rc"
+            exit $rc

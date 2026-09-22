@@ -165,6 +165,46 @@ SYMBOLS = {
         "exchange":     "CBOE",
         "beschreibung": "CBOE Crude Oil Volatility Index — WTI Fear Gauge",
     },
+    # ── US-Staatsanleiherenditen ──────────────────────────────────────────────
+    # ACHTUNG BEIM RECHNEN: Das sind RENDITEN in Prozent, keine Kurse. Eine
+    # Log-Rendite darauf waere sinnlos — die Reihe kann null oder negativ
+    # werden, und eine prozentuale Aenderung einer Prozentzahl ist keine
+    # oekonomisch sinnvolle Groesse. Gerechnet wird mit der taeglichen
+    # AENDERUNG, vorzugsweise in Basispunkten.
+    #
+    # Ebenso: eine steigende Rendite bedeutet FALLENDE Anleihekurse. Wer diese
+    # Reihen gegen TLT haelt, erwartet ein negatives Vorzeichen — TLT ist
+    # allerdings nicht ihr Spiegelbild, sondern ein ETF mit Duration, Kupons
+    # und eigener Fondsstruktur.
+    "^IRX": {
+        "name":         "US 13-Wochen T-Bill Rendite",
+        "kategorie":    "Rates",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "Rendite 13-Wochen US-Staatsanleihe (kurzes Ende der Zinskurve)",
+    },
+    "^FVX": {
+        "name":         "US 5-Jahres Rendite",
+        "kategorie":    "Rates",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "Rendite 5-jährige US-Staatsanleihe",
+    },
+    "^TNX": {
+        "name":         "US 10-Jahres Rendite",
+        "kategorie":    "Rates",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "Rendite 10-jährige US-Staatsanleihe — der Referenzzins schlechthin",
+    },
+    "^TYX": {
+        "name":         "US 30-Jahres Rendite",
+        "kategorie":    "Rates",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "Rendite 30-jährige US-Staatsanleihe (langes Ende der Zinskurve)",
+    },
+
     "IBIT": {
         "name":         "iShares Bitcoin Trust ETF",
         "kategorie":    "US-ETF",
