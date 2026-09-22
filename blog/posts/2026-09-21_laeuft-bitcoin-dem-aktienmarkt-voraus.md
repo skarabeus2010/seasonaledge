@@ -29,9 +29,7 @@ Grundlage sind **3020 gemeinsame Handelstage** vom 17.09.2014 bis 21.09.2026, je
 
 Zwei Dinge wurden getrennt gerechnet. Erstens die Korrelation der Tagesrenditen bei unterschiedlicher zeitlicher Verschiebung: Verschiebung 0 bedeutet derselbe Handelstag, Verschiebung +1 bedeutet Bitcoin heute gegen den Aktienmarkt morgen. Zweitens eine Ereignisstudie: Was macht SPY in den Wochen nach einem klar definierten Krypto-Anstieg, verglichen mit dem, was er ohne jedes Signal ohnehin macht?
 
-Der Code liegt offen in `scripts/research/btc_lead_lag.py`, die Grafiken stammen aus `scripts/research/render_krypto_lag_charts.py`.
-
-## Befund 1: Die Kopplung ist gleichzeitig
+## Die Kopplung sitzt am selben Tag
 
 ![Korrelation der Tagesrenditen von BTC-USD gegen SPY je Verschiebung in Handelstagen, drei Zeitfenster: bis 2019 flach, ab 2020 ein scharfer Gipfel bei Verschiebung 0 von +0,36 bis +0,42, bei Verschiebung +1 praktisch null](laeuft-bitcoin-dem-aktienmarkt-voraus/1_korrelation_lag.png)
 
@@ -39,15 +37,15 @@ Die Kurve hat genau einen Gipfel, und der sitzt bei Verschiebung 0. In den Jahre
 
 Rechts vom Gipfel bricht alles weg. Bei Verschiebung +1 Tag, also Bitcoin heute gegen SPY morgen, bleibt praktisch nichts übrig; in 2020–2021 ist der Wert mit **−0,185** sogar leicht negativ. Das ist die Stelle, an der eine Prognosefähigkeit sichtbar werden müsste. Sie ist leer.
 
-Die graue Linie ist der dritte Befund in diesem Chart: Vor 2019 beträgt die gleichzeitige Korrelation **+0,017**. Es gab schlicht keine Kopplung. Sie entstand erst 2020, zusammen mit dem institutionellen Einstieg in Krypto und der gemeinsamen Abhängigkeit von Liquidität und Zinserwartung.
+Die graue Linie zeigt noch etwas: Vor 2019 beträgt die gleichzeitige Korrelation **+0,017**. Es gab schlicht keine Kopplung. Sie entstand erst 2020, zusammen mit dem institutionellen Einstieg in Krypto und der gemeinsamen Abhängigkeit von Liquidität und Zinserwartung.
 
 ### Warum Gleichlauf keine Prognose ist
 
 Eine Korrelation von +0,42 am selben Tag heißt: An Tagen, an denen Bitcoin stark steigt, steigt meist auch der S&P 500. Wer die Bitcoin-Rendite des Tages kennt, kennt aber auch schon die Aktienrendite desselben Tages — handelbar ist daraus nichts.
 
-Die Handelszeiten machen es nicht besser. Bitcoin handelt durch, sein Tagesschluss liegt bei 00:00 UTC, der ETF-Schluss bei 20:00 bzw. 21:00 UTC. Die beiden „gleichen" Tage überlappen also, ohne deckungsgleich zu sein. Deshalb wird der überlappende Tag in der Ereignisstudie bewusst nicht gewertet: Er würde Information einrechnen, die zum Handelszeitpunkt noch gar nicht vorlag.
+Die Handelszeiten machen es nicht besser. Bitcoin handelt durch, sein Tagesschluss liegt bei 00:00 UTC, der ETF-Schluss bei 20:00 bzw. 21:00 UTC. Die beiden „gleichen" Tage überlappen also, ohne deckungsgleich zu sein. Deshalb bleibt der überlappende Tag in der Ereignisstudie außen vor: Er würde Information einrechnen, die zum Handelszeitpunkt noch gar nicht vorlag.
 
-## Befund 2: Die 5-Prozent-These hält nicht
+## Die 5-Prozent-These hält nicht
 
 Die gängigste Faustregel lautet: Ein Bitcoin-Anstieg von rund 5 % über zwei Wochen kündigt Stärke am Aktienmarkt an. Über die zwölf Jahre gab es **56 solcher Fälle**.
 
@@ -55,9 +53,9 @@ SPY danach: nach drei Wochen **+0,78 %** (p = 0,857), nach vier Wochen **+1,12 %
 
 Der p-Wert gibt an, wie oft ein zufällig gewähltes Zeitfenster ein mindestens so auffälliges Ergebnis liefert. Bei p = 0,857 ist das in rund sechs von sieben Fällen so.
 
-Ether liefert dasselbe Bild. Ab 5 % über zehn Handelstage (n = 40) kommt SPY auf **+1,01 %** nach drei Wochen (p = 0,898) und **+1,56 %** nach vier Wochen (p = 0,595). Kein Befund.
+Ether liefert dasselbe Bild. Ab 5 % über zehn Handelstage (n = 40) kommt SPY auf **+1,01 %** nach drei Wochen (p = 0,898) und **+1,56 %** nach vier Wochen (p = 0,595). Auch hier ist nichts vom Zufall zu unterscheiden.
 
-## Befund 3: Bei den großen Bewegungen bleibt etwas übrig
+## Bei den großen Bewegungen bleibt etwas übrig
 
 Mit höherer Schwelle ändert sich das Bild.
 
@@ -82,7 +80,7 @@ Der Chart zeigt auch die Bruchstelle in der Gegenprobe: Bei der 10-Prozent-Schwe
 
 Am Folgetag steht nichts, nach einer Woche wenig. Sichtbar wird der Unterschied erst nach drei bis vier Wochen. Wer in Krypto einen Tagesindikator sucht, sucht am falschen Zeitfenster.
 
-## Warum man Einzelfälle prüft
+## Der 12. März 2020
 
 Ein Test der Ereignisstudie sah zunächst nach einem Volltreffer aus. Nach einem scharfen Bitcoin-Einbruch (definiert über die Standardabweichung, n = 10) legte SPY am **Folgetag +1,29 %** zu, hochsignifikant, bei einer Trefferquote von 90 %.
 
@@ -94,13 +92,13 @@ Ohne ihn bleiben **+0,49 %**, und die Signifikanz ist weg.
 
 Die Grafik zeigt dasselbe grafisch. Der gelbe Pfad ist der mittlere SPY-Verlauf von zehn Handelstagen vor bis 30 Handelstage nach dem Ereignis, normiert auf den Ereignistag. Das blaue Band ist das 5.- bis 95.-Perzentil aus 2000 zufällig verschobenen Ereignisterminen: der Korridor, in dem ein beliebiger Zeitraum landet. Beide Pfade bleiben darin. Nach der Rallye läuft SPY am oberen Rand, nach dem Einbruch schwankt er um die Nulllinie — in beiden Fällen innerhalb dessen, was der Zufall produziert.
 
-Deshalb wird jede auffällige Zahl auf ihre Einzelbeiträge zerlegt und gegen zufällig verschobene Termine geprüft, bevor sie irgendwo als Befund auftaucht.
+Bei zehn Ereignissen kann ein einzelner Tag das ganze Ergebnis tragen. Deshalb steht in den Tabellen oben überall die Fallzahl daneben.
 
 ## Grenzen dieser Untersuchung
 
-**Die Schwelle war nicht vorab festgelegt.** Dass 10 % und 20 % funktionieren und 5 % nicht, kam beim Durchprobieren heraus. Wer mehrere Schwellen testet, findet fast immer eine, die signifikant aussieht. Der Befund ist damit explorativ und wartet auf eine Bestätigung an Daten, die noch nicht existieren.
+**Die Schwelle war nicht vorab festgelegt.** Dass 10 % und 20 % funktionieren und 5 % nicht, kam beim Durchprobieren heraus. Wer mehrere Schwellen testet, findet fast immer eine, die signifikant aussieht. Das Ergebnis ist damit explorativ und wartet auf eine Bestätigung an Daten, die noch nicht existieren.
 
-**Die p-Werte sind bewusst streng gerechnet.** Ein erster Durchgang testete einseitig und wählte die Richtung erst nach dem Blick auf das Ergebnis; das halbiert den p-Wert künstlich. Außerdem fehlte die Plus-eins-Korrektur, weshalb ein Zufallsverfahren mit 2000 Verschiebungen „p = 0,000" ausweisen konnte, obwohl der kleinste darstellbare Wert 1/2001 beträgt. Alle Zahlen hier stammen aus der korrigierten Rechnung, zweiseitig und mit Plus-eins, und sind dadurch rund doppelt so hoch. Ein Befund, der diese Verschärfung übersteht, ist mehr wert als einer, der von ihr lebt: Bei Ether ab 20 % bleiben p = 0,020 und p = 0,011 stehen, bei Bitcoin nach vier Wochen rutscht der Wert auf die Grenze.
+**Die p-Werte stammen aus einer Neurechnung.** Ein erster Durchgang testete einseitig und wählte die Richtung erst nach dem Blick auf das Ergebnis; das halbiert den p-Wert künstlich. Außerdem fehlte die Plus-eins-Korrektur, weshalb ein Zufallsverfahren mit 2000 Verschiebungen „p = 0,000" ausweisen konnte, obwohl der kleinste darstellbare Wert 1/2001 beträgt. Alle Zahlen hier sind zweiseitig und mit Plus-eins gerechnet und dadurch rund doppelt so hoch wie zuvor. Bei Ether ab 20 % bleiben p = 0,020 und p = 0,011 stehen, bei Bitcoin nach vier Wochen rutscht der Wert auf die Grenze.
 
 **Die Trefferquote bewegt sich nicht.** Sie liegt bei den signifikanten Fällen bei rund 65 %, die Basisrate des Marktes über denselben Zeitraum bei 64,4 %. Der Mehrertrag kommt aus wenigen großen Fällen, nicht aus häufigeren Gewinnen. Für einen Trade heißt das: gleiche Trefferwahrscheinlichkeit, nur mit einer dickeren rechten Verteilungsflanke.
 
@@ -114,7 +112,7 @@ Deshalb wird jede auffällige Zahl auf ihre Einzelbeiträge zerlegt und gegen zu
 
 Die Ausgangsfrage ist beantwortet: Bitcoin läuft dem Aktienmarkt nicht in dem Sinn voraus, dass die gestrige Krypto-Bewegung die heutige Aktienbewegung anzeigt. Die Kopplung sitzt am selben Tag, und sie existiert erst seit 2020.
 
-Übrig bleibt ein schmaler Befund am Rand der Verteilung, und dieser Rand wird selten erreicht. Für die tägliche Marktbeobachtung liefert Bitcoin damit vor allem einen Zustandsmesser: Ein Krypto-Markt, der 20 % in zwei Wochen zulegt, beschreibt eine Risikoneigung, die historisch auch in Aktien noch einige Wochen nachwirkte. Das ist Kontext für die Einordnung, kein Einstiegszeitpunkt.
+Übrig bleibt ein schmaler Effekt am Rand der Verteilung, und dieser Rand wird selten erreicht. Für die tägliche Marktbeobachtung liefert Bitcoin damit vor allem einen Zustandsmesser: Ein Krypto-Markt, der 20 % in zwei Wochen zulegt, beschreibt eine Risikoneigung, die historisch auch in Aktien noch einige Wochen nachwirkte. Das ist Kontext für die Einordnung, kein Einstiegszeitpunkt.
 
 Verwandte Fragestellungen lassen sich auf SeasonAlpha direkt nachschauen: Der [Risikozyklus](/risikozyklus) zeigt die Risikoneigung über den Jahresverlauf, [Intermarket-Schocks](/intermarket-shocks) behandelt die Frage der Übertragung zwischen Märkten, und der [Saisonal-Scanner](/scanner) sagt, welche Titel gerade in einem auffälligen Kalenderfenster stehen.
 
@@ -140,7 +138,7 @@ Am selben Handelstag mit +0,36 (2020–2021), +0,45 (2022–2023) und +0,38 (202
 
 Nach diesen Daten nicht. In 56 Fällen legte SPY danach in drei Wochen +0,78 % zu (p = 0,857), der Marktdurchschnitt ohne jedes Signal liegt bei +0,85 %. Das Signal führte also minimal unter den Durchschnitt.
 
-### Gilt der Befund bei großen Anstiegen auch für Ether?
+### Gilt das bei großen Anstiegen auch für Ether?
 
 Ab 20 % ja: SPY kam danach auf +2,85 % nach drei Wochen (p = 0,020) und +3,63 % nach vier Wochen (p = 0,011), bei 25 Fällen. Bei der 10-Prozent-Schwelle folgt Ether dem Bitcoin-Muster dagegen nicht (+0,72 %, p = 0,754).
 

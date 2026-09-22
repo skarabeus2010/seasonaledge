@@ -21,7 +21,7 @@ Keyword-Plan:
 
 Der Anleihemarkt gilt als der ältere und nüchternere der beiden Märkte. Wenn Kapital in langlaufende Staatsanleihen fließt, so die verbreitete Lesart, preisen die Anleihe-Anleger eine Abkühlung ein, die der Aktienmarkt erst später versteht. Daraus wird schnell die These: Anleihen sind ein Frühindikator für den Aktienmarkt.
 
-Diese These ist prüfbar, weil sie eine zeitliche Abfolge behauptet. Wir haben sie an 6075 gemeinsamen Handelstagen gemessen. Herausgekommen ist ein Befund, aber ein deutlich engerer als die These verlangt.
+Diese These ist prüfbar, weil sie eine zeitliche Abfolge behauptet. Wir haben sie an 6075 gemeinsamen Handelstagen gemessen. Herausgekommen ist ein Zusammenhang, aber ein deutlich engerer als die These verlangt.
 
 ## Was gemessen wurde
 
@@ -31,9 +31,9 @@ Als Signal gilt ein **TLT-Kursanstieg von mindestens 4,1 % über 10 Handelstage*
 
 Gemessen wird, was SPY **nach** dem Signal macht, verglichen mit dem, was der Markt über dieselben Zeiträume ohne jedes Signal ohnehin tut. Diese Basisrate liegt bei +0,24 % nach einer Woche, +0,48 % nach zwei, +0,72 % nach drei und +0,95 % nach vier Wochen.
 
-Das methodische Gerüst (Basisrate, Zufallsverschiebungen, p-Wert) ist im [ersten Teil dieser Serie zu Bitcoin](/blog/laeuft-bitcoin-dem-aktienmarkt-voraus/) ausführlich erklärt. Der Code liegt in `scripts/research/bond_lead_lag.py` und `bond_kontrollen.py`.
+Das methodische Gerüst (Basisrate, Zufallsverschiebungen, p-Wert) ist im [ersten Teil dieser Serie zu Bitcoin](/blog/laeuft-bitcoin-dem-aktienmarkt-voraus/) ausführlich erklärt.
 
-## Der Rohbefund
+## Die Rohzahlen
 
 | SPY nach dem Signal | Ergebnis | p | Basisrate ohne Signal |
 |---|---:|---:|---:|
@@ -54,7 +54,7 @@ Die 50 Ereignisse wurden am Median der realisierten Volatilität des S&P 500 am 
 
 In den **25 ruhigen Fällen** kommt SPY zwei Wochen später auf **+0,53 %** bei p = 0,935. Die Basisrate beträgt +0,48 %. Das Signal trägt in ruhigen Phasen also nichts bei.
 
-In den **25 unruhigen Fällen** sind es **+3,65 %** bei p < 0,001, mit einer Trefferquote von 80 %. Der gesamte Befund steckt in dieser Hälfte.
+In den **25 unruhigen Fällen** sind es **+3,65 %** bei p < 0,001, mit einer Trefferquote von 80 %. Der gesamte Effekt steckt in dieser Hälfte.
 
 Der Mittelwert über alle 50 Fälle (+2,09 %) ist damit ein Durchschnitt aus einem starken und einem leeren Zustand. Wer ihn ohne die Aufteilung zitiert, beschreibt eine Größe, die so in keiner der beiden Marktlagen auftritt.
 
@@ -82,7 +82,7 @@ Der Chart zeigt den mittleren SPY-Verlauf von zehn Handelstagen vor bis 30 Hande
 
 Die linke Hälfte des Bildes ist die wichtigere. In den zehn Handelstagen vor dem Signal ist der S&P 500 im Median um **1,33 %** gefallen (Mittel −1,75 %, in 62 % der Fälle negativ). Die Flucht in langlaufende Staatsanleihen setzt am Ende eines Rücksetzers ein, nicht in einem ruhigen Aktienmarkt.
 
-Damit ändert sich die Beschreibung des Befunds. Gemessen wurde ein Erholungsmuster nach Kursverlusten in nervösen Marktphasen, kein Signal, das aus heiterem Himmel eine Aufwärtsbewegung ankündigt. Rechts vom Ereignistag verlässt die Mittellinie das Zufallsband nach oben und bleibt dort, die Erholung ist also größer als das, was zufällig gewählte Zeitfenster liefern.
+Damit ändert sich, wie man das Ergebnis beschreiben muss. Gemessen wurde ein Erholungsmuster nach Kursverlusten in nervösen Marktphasen, kein Signal, das aus heiterem Himmel eine Aufwärtsbewegung ankündigt. Rechts vom Ereignistag verlässt die Mittellinie das Zufallsband nach oben und bleibt dort, die Erholung ist also größer als das, was zufällig gewählte Zeitfenster liefern.
 
 ## Die Gegenrichtung liefert nichts
 
@@ -96,7 +96,7 @@ Diese Asymmetrie passt zur Stress-Lesart: Ein kräftiger Anstieg langlaufender A
 
 Der Zeitraum wurde vorab am offensichtlichen Bruch geteilt: 2003-2019 gegen 2020-2025. Nicht dort, wo das Ergebnis am schönsten aussieht.
 
-Vor 2020 liegt SPY zwei Wochen nach dem Signal bei **+1,72 %** (n = 34, p = 0,019, Treffer 65 %), ab 2020 bei **+2,87 %** (n = 16, p = 0,008, Treffer 94 %). Der Befund existiert in beiden Hälften. Die zweite Hälfte ist mit 16 Fällen dünn besetzt, und eine Trefferquote von 94 % bei dieser Fallzahl sollte man nicht als eigene Zahl lesen.
+Vor 2020 liegt SPY zwei Wochen nach dem Signal bei **+1,72 %** (n = 34, p = 0,019, Treffer 65 %), ab 2020 bei **+2,87 %** (n = 16, p = 0,008, Treffer 94 %). Der Effekt existiert in beiden Hälften. Die zweite Hälfte ist mit 16 Fällen dünn besetzt, und eine Trefferquote von 94 % bei dieser Fallzahl sollte man nicht als eigene Zahl lesen.
 
 Bleibt die Frage, wie viel das viele Testen kostet. Geprüft wurden vier Schwellen, zwei Richtungen, zwei Signalgeber und vier Horizonte, zusammen **64 Kombinationen**. Der kleinste Einzel-p-Wert aus so einer Familie sagt wenig, weil bei 64 Versuchen auch reiner Zufall Treffer produziert. Der Max-T-Test fragt stattdessen, wie oft der *beste* Zufallstreffer aus einer gleich großen Familie das beobachtete Niveau erreicht. Ergebnis: **p = 0,018**. Das ist die strengste Zahl der ganzen Studie, und sie hält.
 
@@ -118,7 +118,7 @@ Bleibt die Frage, wie viel das viele Testen kostet. Geprüft wurden vier Schwell
 
 Die Ausgangsthese hält in ihrer allgemeinen Form nicht. Ein starker Anstieg langlaufender Staatsanleihen kündigt keine Aktienbewegung an. Er beschreibt einen Zustand: Risikoabbau unter Druck, nach einem Rücksetzer, in einem nervösen Markt. In genau dieser Konstellation fiel die Erholung des S&P 500 historisch überdurchschnittlich aus, in jeder anderen nicht.
 
-Verglichen mit dem [Bitcoin-Teil dieser Serie](/blog/laeuft-bitcoin-dem-aktienmarkt-voraus/) ist das der stärkere Befund. Dort blieb nur bei sehr großen Krypto-Bewegungen ab 20 % etwas übrig, die verbreitete 5-Prozent-These fiel durch, und die Trefferquote bewegte sich nicht. Hier bewegt sie sich, der Effekt hält in beiden Teilperioden und übersteht die Max-T-Korrektur. Der Preis dafür ist die Bedingung: ohne das Stress-Regime bleibt nichts übrig.
+Verglichen mit dem [Bitcoin-Teil dieser Serie](/blog/laeuft-bitcoin-dem-aktienmarkt-voraus/) ist das der stärkere Zusammenhang. Dort blieb nur bei sehr großen Krypto-Bewegungen ab 20 % etwas übrig, die verbreitete 5-Prozent-These fiel durch, und die Trefferquote bewegte sich nicht. Hier bewegt sie sich, der Effekt hält in beiden Teilperioden und übersteht die Max-T-Korrektur. Der Preis dafür ist die Bedingung: ohne das Stress-Regime bleibt nichts übrig.
 
 Angrenzende Fragestellungen lassen sich auf SeasonAlpha direkt nachschauen: [Intermarket-Schocks](/intermarket-shocks) behandelt die Übertragung zwischen Märkten, der [Risikozyklus](/risikozyklus) zeigt die Risikoneigung über den Jahresverlauf.
 
@@ -151,7 +151,7 @@ Weil der S&P 500 vor dem Signal gefallen ist: in den zehn Handelstagen davor im 
 
 **LinkedIn:**
 „Anleihen sind der Frühindikator für Aktien" — wir haben die These an 6075 gemeinsamen Handelstagen seit 2002 gemessen (TLT gegen SPY).
-Rohbefund: nach einem TLT-Kursanstieg ab 4,1 % über 10 Handelstage steht der S&P 500 zwei Wochen später bei +2,09 % statt bei den üblichen +0,48 %, 50 Fälle, p = 0,001.
+Die Rohzahlen: nach einem TLT-Kursanstieg ab 4,1 % über 10 Handelstage steht der S&P 500 zwei Wochen später bei +2,09 % statt bei den üblichen +0,48 %, 50 Fälle, p = 0,001.
 Die Kontrollen engen das ein: In ruhigen Phasen +0,53 % bei p = 0,935, in unruhigen +3,65 % bei p < 0,001. Und der S&P 500 ist vor dem Signal im Median um 1,33 % gefallen. Es ist ein Erholungsmuster im Stress, keine Prophezeiung.
 Die Gegenrichtung (TLT fällt) zeigt gar nichts: p zwischen 0,29 und 0,97.
 Welche Intermarket-Regel sollen wir als nächstes prüfen? → seasonalpha.ai

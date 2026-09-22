@@ -30,9 +30,7 @@ The study covers **3,020 shared trading days** from 17 September 2014 to 21 Sept
 
 Two things were calculated separately. First, the correlation of daily returns at different lags: lag 0 means the same trading day, lag +1 means Bitcoin today against equities tomorrow. Second, an event study: what does SPY do in the weeks after a clearly defined crypto rally, compared with what it does anyway, with no signal at all?
 
-The code is open: `scripts/research/btc_lead_lag.py`, with the charts from `scripts/research/render_krypto_lag_charts.py`.
-
-## Finding 1: the link is same-day
+## The link sits on the same day
 
 ![Correlation of daily BTC-USD returns against SPY by lag in trading days across three windows: flat before 2019, a sharp spike at lag 0 between +0.36 and +0.42 from 2020 onwards, and essentially nothing at lag +1](laeuft-bitcoin-dem-aktienmarkt-voraus/1_korrelation_lag.png)
 
@@ -46,9 +44,9 @@ The grey line carries a third result: before 2019 the same-day correlation was *
 
 A same-day correlation of +0.42 means that on days when Bitcoin rallies hard, the S&P 500 usually rallies too. But anyone who knows Bitcoin's return for the day already knows the equity return for that same day. There is nothing tradable in it.
 
-Trading hours do not help. Bitcoin trades around the clock and closes at 00:00 UTC; the ETF close falls at 20:00 or 21:00 UTC. The two "same" days overlap without being identical. That is why the overlapping day is deliberately excluded from the event study: including it would price in information that was not available at the time of the trade.
+Trading hours do not help. Bitcoin trades around the clock and closes at 00:00 UTC; the ETF close falls at 20:00 or 21:00 UTC. The two "same" days overlap without being identical. That is why the overlapping day is left out of the event study: including it would price in information that was not available at the time of the trade.
 
-## Finding 2: the 5 percent rule does not hold up
+## The 5 percent rule does not hold up
 
 The most common rule of thumb says a Bitcoin gain of roughly 5 % over two weeks signals strength in equities. Over twelve years there were **56 such cases**.
 
@@ -58,7 +56,7 @@ The p-value says how often a randomly chosen window produces a result at least t
 
 Ether gives the same picture. From 5 % over ten trading days (n = 40), SPY reaches **+1.01 %** after three weeks (p = 0.898) and **+1.56 %** after four weeks (p = 0.595). Nothing there.
 
-## Finding 3: something survives at the large moves
+## Something survives at the large moves
 
 Raising the threshold changes the picture.
 
@@ -83,7 +81,7 @@ The chart also shows where the cross-check breaks: at the 10 % threshold Ether d
 
 The next day shows nothing and one week shows little. The difference only becomes visible after three to four weeks. Anyone looking for a daily indicator in crypto is looking at the wrong horizon.
 
-## Why single cases get checked
+## 12 March 2020
 
 One test in the event study initially looked like a direct hit. After a sharp Bitcoin drop (defined via standard deviation, n = 10), SPY gained **+1.29 % the next day**, highly significant, with a hit rate of 90 %.
 
@@ -95,11 +93,11 @@ Without it, **+0.49 %** remains, and the significance is gone.
 
 The chart shows the same thing visually. The yellow path is the average SPY course from ten trading days before to 30 trading days after the event, normalised to the event day. The blue band is the 5th-to-95th percentile from 2,000 randomly shifted event dates: the corridor any arbitrary window lands in. Both paths stay inside it. After a rally SPY runs along the upper edge, after a drop it oscillates around zero, in both cases within what chance produces.
 
-So every eye-catching number gets broken down into its individual contributions and tested against randomly shifted dates before it is presented as a finding.
+With ten events, a single day can carry the whole result. That is why the case count sits next to every number in the tables above.
 
 ## Limits of this study
 
-**The threshold was not set in advance.** That 10 % and 20 % work while 5 % does not came out of trying several cut-offs. Test enough thresholds and you almost always find one that looks significant. The finding is exploratory and waits for confirmation on data that does not exist yet.
+**The threshold was not set in advance.** That 10 % and 20 % work while 5 % does not came out of trying several cut-offs. Test enough thresholds and you almost always find one that looks significant. The result is exploratory and waits for confirmation on data that does not exist yet.
 
 **The p-values are calculated the strict way.** A first pass tested one-sided and picked the direction only after looking at the result, which halves the p-value artificially. It also omitted the plus-one correction, so a randomisation over 2,000 shifts could report "p = 0.000" although the smallest value it can represent is 1/2001. Every number here comes from the corrected calculation, two-sided and with plus-one, which makes the p-values roughly twice as large. A result that survives that tightening is worth more than one that depended on it: Ether at the 20 % threshold holds at p = 0.020 and p = 0.011, while Bitcoin after four weeks slips onto the line.
 
@@ -141,7 +139,7 @@ On the same trading day: +0.36 (2020–2021), +0.45 (2022–2023) and +0.38 (202
 
 Not according to this data. Across 56 cases, SPY gained +0.78 % over the following three weeks (p = 0.857), while the market average with no signal at all is +0.85 %. The signal landed marginally below average.
 
-### Does the large-rally finding also hold for Ether?
+### Does that also hold for Ether at large rallies?
 
 From 20 % it does: SPY reached +2.85 % after three weeks (p = 0.020) and +3.63 % after four weeks (p = 0.011), across 25 cases. At the 10 % threshold, though, Ether does not follow the Bitcoin pattern (+0.72 %, p = 0.754).
 

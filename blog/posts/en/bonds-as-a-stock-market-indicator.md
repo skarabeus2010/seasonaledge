@@ -22,7 +22,7 @@ Keyword-Plan:
 
 The bond market is widely treated as the older and cooler-headed of the two. When capital moves into long-dated Treasuries, the reading goes, bond investors are pricing a slowdown that equities only understand later. From there it is a short step to the claim that bonds lead the stock market.
 
-The claim is testable, because it asserts a sequence. We measured it across 6,075 common trading days. There is a finding, and it is considerably narrower than the claim requires.
+The claim is testable, because it asserts a sequence. We measured it across 6,075 common trading days. There is a relationship, and it is considerably narrower than the claim requires.
 
 ## What was measured
 
@@ -32,9 +32,9 @@ The signal is a **TLT price gain of at least 4.1 % over 10 trading days**. The t
 
 What gets measured is SPY **after** the signal, against what the market does over the same horizons with no signal at all. That base rate is +0.24 % after one week, +0.48 % after two, +0.72 % after three and +0.95 % after four weeks.
 
-The methodological scaffolding (base rate, random shifts, p-value) is set out in the [first part of this series on Bitcoin](/en/blog/does-bitcoin-lead-the-stock-market/). The code sits in `scripts/research/bond_lead_lag.py` and `bond_kontrollen.py`.
+The methodological scaffolding (base rate, random shifts, p-value) is set out in the [first part of this series on Bitcoin](/en/blog/does-bitcoin-lead-the-stock-market/).
 
-## The raw finding
+## The raw numbers
 
 | SPY after the signal | Result | p | Base rate, no signal |
 |---|---:|---:|---:|
@@ -55,7 +55,7 @@ The 50 events were split at the median realised volatility of the S&P 500 on the
 
 In the **25 calm cases** SPY stands at **+0.53 %** two weeks later, at p = 0.935. The base rate is +0.48 %. In calm markets the signal adds nothing.
 
-In the **25 volatile cases** the figure is **+3.65 %** at p < 0.001, with a hit rate of 80 %. The entire finding sits in that half of the sample.
+In the **25 volatile cases** the figure is **+3.65 %** at p < 0.001, with a hit rate of 80 %. The entire effect sits in that half of the sample.
 
 The average across all 50 cases (+2.09 %) is therefore a blend of a strong state and an empty one. Quoted without the split, it describes a number that occurs in neither market condition.
 
@@ -83,7 +83,7 @@ The chart shows the average SPY path from ten trading days before to 30 trading 
 
 The left half of the picture carries the argument. In the ten trading days before the signal, the S&P 500 fell by a median of **1.33 %** (mean −1.75 %, negative in 62 % of cases). The flight into long-dated Treasuries sets in at the end of a drawdown, not in a quiet equity market.
 
-That changes how the finding has to be described. What was measured is a recovery pattern after losses in a nervous market, not a signal that announces an advance out of nowhere. To the right of the event day the average line leaves the random band upwards and stays there, so the rebound is larger than randomly chosen windows deliver.
+That changes how the result has to be described. What was measured is a recovery pattern after losses in a nervous market, not a signal that announces an advance out of nowhere. To the right of the event day the average line leaves the random band upwards and stays there, so the rebound is larger than randomly chosen windows deliver.
 
 ## The opposite direction shows nothing
 
@@ -97,7 +97,7 @@ The asymmetry fits the stress reading: a sharp rally in long-dated bonds is typi
 
 The sample was split in advance at the obvious break: 2003-2019 against 2020-2025. Not where the result looks best.
 
-Before 2020, SPY stands at **+1.72 %** two weeks after the signal (n = 34, p = 0.019, hit rate 65 %); from 2020 onwards at **+2.87 %** (n = 16, p = 0.008, hit rate 94 %). The finding exists in both halves. The second half is thin at 16 cases, and a 94 % hit rate on that sample size should not be read as a figure in its own right.
+Before 2020, SPY stands at **+1.72 %** two weeks after the signal (n = 34, p = 0.019, hit rate 65 %); from 2020 onwards at **+2.87 %** (n = 16, p = 0.008, hit rate 94 %). The effect exists in both halves. The second half is thin at 16 cases, and a 94 % hit rate on that sample size should not be read as a figure in its own right.
 
 That leaves the cost of testing many variants. Four thresholds, two directions, two signal sources and four horizons add up to **64 combinations**. The smallest individual p-value from a family that size says little, because 64 attempts throw up hits by chance alone. The max-T test asks instead how often the *best* chance result from an equally large family reaches the observed level. The answer: **p = 0.018**. That is the strictest number in the whole study, and it holds.
 
