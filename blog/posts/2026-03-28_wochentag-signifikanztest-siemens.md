@@ -64,7 +64,7 @@ Ein paar wichtige Punkte zur Einordnung:
 
 ## Wie nutzt du das in der Praxis?
 
-Signifikanztests sind kein Handelssystem — aber sie helfen dir, **Bauchgefühle von echten Mustern zu trennen**.
+[Signifikanztests](/blog/p-wert-erklaert/) sind kein Handelssystem — aber sie helfen dir, **Bauchgefühle von echten Mustern zu trennen**.
 
 Ein paar Denkansätze:
 

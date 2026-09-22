@@ -35,7 +35,7 @@ Those four appear here at the same length as the other seven, for a practical re
 | Rule | Result | Data base |
 |---|---|---|
 | Expiration-day pinning | **supported** · +0.35 pp, p = 0.0050 | 158 stocks, 30 years |
-| DAX weak in September | **supported** · avg −1.55 %, p = 0.0241 | DAX since 1988 |
+| DAX weak in September | **supported** · avg −1.55 %, p = 0.0241 | DAX, 68 years per month |
 | The expected move is too wide | **supported** · 84.3 % instead of 68.3 % | VIX/S&P 500, 1990–2026 |
 | Bonds as a leading indicator | **only under stress** · +2.09 % in two weeks | 50 cases since 2002 |
 | Bitcoin leads | **only above 20 %** · nothing below | 12 years, 3,020 trading days |
@@ -46,7 +46,7 @@ Those four appear here at the same length as the other seven, for a practical re
 | Index addition lifts the price | *descriptive* · +5.8 % at T+20 | 36 additions |
 | Midterm year | *descriptive* · +31 % afterwards on average | cycles since 1950 |
 
-The three levels mean different things, and that difference is the actual subject of this article. **Supported** means the question was fixed beforehand, the difference is measured, and it survives a significance test. **Descriptive** means the pattern is there but the number of observations carries no test — at 36 events a p-value is false precision. In between sit the cases where the effect is tied to a condition you have to quote along with it.
+The three levels mean different things, and that difference is the actual subject of this article. **Supported** means the question was fixed beforehand, the difference is measured, and it survives a [significance test](/en/blog/p-value-explained/). **Descriptive** means the pattern is there but the number of observations carries no test — at 36 events a [p-value](/en/blog/p-value-explained/#multiple-testing) is false precision. In between sit the cases where the effect is tied to a condition you have to quote along with it.
 
 ## What holds
 
@@ -60,9 +60,9 @@ For all the significance: 0.35 percentage points on a base of 6.53 % shift proba
 
 ### Is September statistically unusual for the DAX?
 
-Yes, and as the only month by a clear margin. Avg **−1.55 %** against −0.27 % for an average month, and the difference survives the test at **p = 0.0241**.
+Yes, and as the only month. Avg **−1.55 %** — the weakest of all twelve months, with the next weakest (June) at −0.27 %. The test runs against zero, and it yields **p = 0.0241**.
 
-That is a real effect and a small one. Significant and large are two separate properties, and September invites confusing them: a p-value says how unlikely a difference of that size would be under pure chance. About the size itself it says nothing.
+That is a real effect and a small one. Significant and large are two separate properties, and September invites confusing them: a p-value says how unlikely a difference of that size would be under pure chance. About the size itself it says nothing. → [The DAX September significance test](/en/blog/dax-september-significance/)
 
 ### How accurate is the expected move from option prices?
 
@@ -128,7 +128,7 @@ No. The rule: be invested on only ten selected trading days a month — the firs
 
 It does cut volatility, from 18.84 to 10.79 percent, and the largest loss from −55.2 to −41.0 percent. Per unit of risk it stands at 0.52 against 0.57, narrowly behind. Anyone who wants less volatility gets it — but pays more than half the return for it.
 
-The most revealing part is **where** the return comes from: the middle of the month, not the turn of the month the rule invokes. So the reasoning fails even if you let the result stand.
+The most revealing part is **where** the return comes from: the middle of the month, not the turn of the month the rule invokes. So the reasoning fails even if you let the result stand. → [Monthly 10 over 32 years](/en/blog/monthly-10-strategy/)
 
 ## What is a pattern but not a test
 
@@ -144,7 +144,7 @@ Twenty trading days after the announcement the price stands +5.8 % higher, with 
 
 ### Is the midterm year different from the other three?
 
-The second year of a US term carries the deepest drawdown of the four, and that low is on average followed by a recovery of +31 %. Roughly twenty cycles since 1950 are too few observations for more than a description.
+The second year of a US term carries the deepest drawdown of the four, and that low is on average followed by a recovery of +31 %. Roughly twenty cycles since 1950 are too few observations for more than a description. → [Midterm year 2026](/en/blog/midterm-election-year-2026-recovery/)
 
 ## Why fixing the question in advance makes the difference
 

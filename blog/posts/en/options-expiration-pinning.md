@@ -56,7 +56,7 @@ Only Fridays are compared with Fridays, so the known day-of-week effect does not
 
 Across the full period the 95 % interval for the difference runs from **+0.09 to +0.62 percentage points**. It excludes zero, while covering a range from almost nothing to nearly double the point estimate.
 
-The p-value answers one specific question: how often would a difference of this size come up if expiration Friday were not a special Friday at all? To answer it, one Friday in each month is drawn at random and treated as if it were the expiry. That leaves untouched everything that must stay untouched — the monthly structure, the number of expiry days, the composition of names, the price level of the era — and shuffles only the one thing at issue. Across 2,000 such runs the drawn variant reached the measured +0.35 percentage points in 0.5 percent of cases.
+[The p-value](/en/blog/p-value-explained/#bootstrap-or-permutation) answers one specific question: how often would a difference of this size come up if expiration Friday were not a special Friday at all? To answer it, one Friday in each month is drawn at random and treated as if it were the expiry. That leaves untouched everything that must stay untouched — the monthly structure, the number of expiry days, the composition of names, the price level of the era — and shuffles only the one thing at issue. Across 2,000 such runs the drawn variant reached the measured +0.35 percentage points in 0.5 percent of cases.
 
 One hypothesis was tested, fixed in advance and directional: the share is higher on expiration Friday. No set of thresholds, definitions or time windows was tried out with the best result picked afterwards.
 

@@ -52,7 +52,7 @@ An dieser Stelle hätte man den Artikel schreiben können, den die Überschrift 
 
 Die 50 Ereignisse wurden am Median der realisierten Volatilität des S&P 500 am Ereignistag geteilt, also danach, wie stark der Aktienmarkt in dieser Phase ohnehin schwankte. Der Median liegt bei 13,9 % annualisiert.
 
-In den **25 ruhigen Fällen** kommt SPY zwei Wochen später auf **+0,53 %** bei p = 0,935. Die Basisrate beträgt +0,48 %. Das Signal trägt in ruhigen Phasen also nichts bei.
+In den **25 ruhigen Fällen** kommt SPY zwei Wochen später auf **+0,53 %** bei [p = 0,935](/blog/p-wert-erklaert/#p-0-935). Die Basisrate beträgt +0,48 %. Das Signal trägt in ruhigen Phasen also nichts bei.
 
 In den **25 unruhigen Fällen** sind es **+3,65 %** bei p < 0,001, mit einer Trefferquote von 80 %. Der gesamte Effekt steckt in dieser Hälfte.
 

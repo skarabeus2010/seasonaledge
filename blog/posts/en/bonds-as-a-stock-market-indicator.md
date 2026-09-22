@@ -53,7 +53,7 @@ This is the point where the headline the claim invites would have been written. 
 
 The 50 events were split at the median realised volatility of the S&P 500 on the event day, that is, by how much the equity market was already moving at the time. The median sits at 13.9 % annualised.
 
-In the **25 calm cases** SPY stands at **+0.53 %** two weeks later, at p = 0.935. The base rate is +0.48 %. In calm markets the signal adds nothing.
+In the **25 calm cases** SPY stands at **+0.53 %** two weeks later, at [p = 0.935](/en/blog/p-value-explained/#p-0-935). The base rate is +0.48 %. In calm markets the signal adds nothing.
 
 In the **25 volatile cases** the figure is **+3.65 %** at p < 0.001, with a hit rate of 80 %. The entire effect sits in that half of the sample.
 

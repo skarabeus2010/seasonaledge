@@ -34,7 +34,7 @@ Die vier stehen hier mit derselben Ausführlichkeit wie die anderen sieben, und 
 | Regel | Ergebnis | Datenbasis |
 |---|---|---|
 | Pinning am Verfallstag | **belegt** · +0,35 pp, p = 0,0050 | 158 Aktien, 30 Jahre |
-| DAX im September schwach | **belegt** · Ø −1,55 %, p = 0,0241 | DAX seit 1988 |
+| DAX im September schwach | **belegt** · Ø −1,55 %, p = 0,0241 | DAX, 68 Jahre je Monat |
 | Expected Move ist zu weit | **belegt** · 84,3 % statt 68,3 % | VIX/S&P 500, 1990–2026 |
 | Anleihen als Frühindikator | **nur im Stress** · +2,09 % in zwei Wochen | 50 Fälle seit 2002 |
 | Bitcoin läuft voraus | **erst ab 20 %** · darunter nichts | 12 Jahre, 3020 Handelstage |
@@ -45,7 +45,7 @@ Die vier stehen hier mit derselben Ausführlichkeit wie die anderen sieben, und 
 | Index-Aufnahme treibt den Kurs | *beschreibend* · +5,8 % bei T+20 | 36 Aufnahmen |
 | Zwischenwahljahr | *beschreibend* · danach Ø +31 % | Zyklen seit 1950 |
 
-Die drei Stufen bedeuten Verschiedenes, und der Unterschied ist der eigentliche Inhalt dieses Artikels. **Belegt** heißt: Die Frage stand vorher fest, der Unterschied ist gemessen, und er übersteht einen Signifikanztest. **Beschreibend** heißt: Das Muster ist da, aber die Zahl der Beobachtungen trägt keinen Test — bei 36 Ereignissen ist ein p-Wert Scheingenauigkeit. Dazwischen liegen die Fälle, in denen der Effekt an eine Bedingung gebunden ist, die man mitzitieren muss.
+Die drei Stufen bedeuten Verschiedenes, und der Unterschied ist der eigentliche Inhalt dieses Artikels. **Belegt** heißt: Die Frage stand vorher fest, der Unterschied ist gemessen, und er übersteht einen [Signifikanztest](/blog/p-wert-erklaert/). **Beschreibend** heißt: Das Muster ist da, aber die Zahl der Beobachtungen trägt keinen Test — bei 36 Ereignissen ist ein [p-Wert](/blog/p-wert-erklaert/#multiples-testen) Scheingenauigkeit. Dazwischen liegen die Fälle, in denen der Effekt an eine Bedingung gebunden ist, die man mitzitieren muss.
 
 ## Was hält
 
@@ -59,7 +59,7 @@ Bei aller Signifikanz: 0,35 Prozentpunkte auf eine Basis von 6,53 % verschieben 
 
 ### Ist der September beim DAX statistisch auffällig?
 
-Ja, und zwar als einziger Monat deutlich. Ø **−1,55 %** gegen −0,27 % für einen durchschnittlichen Monat, und der Unterschied übersteht den Test mit **p = 0,0241**.
+Ja, und zwar als einziger Monat. Ø **−1,55 %** — der schwächste Wert aller zwölf Monate, der nächstschwächste (Juni) liegt bei −0,27 %. Geprüft wird gegen die Null, und dieser Test ergibt **p = 0,0241**.
 
 Das ist ein echter Effekt und ein kleiner. Signifikant und groß sind zwei verschiedene Eigenschaften, und der September verwechselt sie gern: Ein p-Wert sagt, wie unwahrscheinlich ein Unterschied dieser Größe bei reinem Zufall wäre. Über die Größe selbst sagt er nichts. → [DAX-September im Signifikanztest](/blog/dax-september-signifikanz/)
 

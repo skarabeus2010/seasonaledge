@@ -216,6 +216,49 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return meta, content
 
 
+def _heading_id(text: str, gesehene: set) -> tuple[str, str]:
+    """Trennt eine optionale `{#id}` ab und liefert (Text, id).
+
+    Ohne explizite Angabe wird die id aus dem Text gebildet. Wer von AUSSEN auf
+    einen Abschnitt verlinkt, sollte die explizite Form nehmen: eine aus dem
+    Text erzeugte id aendert sich, sobald jemand die Ueberschrift umformuliert,
+    und ein gebrochener Anker faellt niemandem auf — die Seite laedt trotzdem,
+    nur springt sie nicht.
+
+    Umlaute werden umgeschrieben statt weggeworfen, sonst ergeben "Woche" und
+    "Woeche" dieselbe id. Doppelte ids bekommen ein Suffix; ohne das fuehrt ein
+    Link auf den zweiten gleichnamigen Abschnitt immer zum ersten.
+    """
+    m = re.search(r"\s*\{#([A-Za-z0-9_-]+)\}\s*$", text)
+    if m:
+        kennung, text = m.group(1), text[:m.start()].rstrip()
+    else:
+        s = text.lower()
+        for a, b in (("\u00e4", "ae"), ("\u00f6", "oe"), ("\u00fc", "ue"),
+                     ("\u00df", "ss")):
+            s = s.replace(a, b)
+        s = re.sub(r"<[^>]+>", "", s)
+        s = re.sub(r"\*\*?|`", "", s)
+        s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+        kennung = s[:60] or "abschnitt"
+    if kennung in gesehene:
+        n = 2
+        while "%s-%d" % (kennung, n) in gesehene:
+            n += 1
+        kennung = "%s-%d" % (kennung, n)
+        # Laut warnen, nicht still vergeben. Ein Suffix haengt an der
+        # Dokumentreihenfolge: wird spaeter ein gleichnamiger Abschnitt VOR dem
+        # bisherigen eingefuegt, zeigt ein externer Link auf `#…-2` plotzlich
+        # auf einen anderen Abschnitt, und das faellt niemandem auf. Wer von
+        # aussen auf so einen Abschnitt verlinkt, setzt eine explizite
+        # `{#id}` (Codex, 2026-09-22).
+        print("    [WARN] doppelte Ueberschrift-id, Suffix vergeben: %s"
+              " — fuer externe Links besser `{#eigene-id}` setzen" % kennung,
+              flush=True)
+    gesehene.add(kennung)
+    return text, kennung
+
+
 def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str:
     """Einfacher Markdown ->HTML Converter (kein externes Package noetig)."""
     # HTML-Kommentare entfernen (<!-- ... -->, auch mehrzeilig)
@@ -287,6 +330,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
     md_text = _convert_tables(md_text)
 
     lines = md_text.split("\n")
+    gesehene_ids: set = set()
     html_parts = []
     in_list = False
     in_ol = False
@@ -321,12 +365,17 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
             )
             continue
 
-        # Headings
+        # Headings — jetzt MIT id, damit von aussen auf einen Abschnitt
+        # verlinkt werden kann. `## Text {#eigene-id}` setzt die id woertlich.
         if stripped.startswith("### "):
-            html_parts.append(f"<h3>{_inline(stripped[4:], post_slug)}</h3>")
+            roh, kennung = _heading_id(stripped[4:], gesehene_ids)
+            html_parts.append(
+                f'<h3 id="{kennung}">{_inline(roh, post_slug)}</h3>')
             continue
         if stripped.startswith("## "):
-            html_parts.append(f"<h2>{_inline(stripped[3:], post_slug)}</h2>")
+            roh, kennung = _heading_id(stripped[3:], gesehene_ids)
+            html_parts.append(
+                f'<h2 id="{kennung}">{_inline(roh, post_slug)}</h2>')
             continue
 
         # Blockquote
@@ -951,6 +1000,11 @@ def _extract_faq_items(md_content: str) -> list[dict]:
     for part in parts[1:]:  # erster Part ist vor dem ersten H3
         lines = part.split("\n", 1)
         question = lines[0].strip()
+        # Eine explizite Anker-id `{#…}` gehoert nicht in den Fragentext. Der
+        # FAQ-Pfad liest das ROHE Markdown, nicht das gerenderte HTML — ohne
+        # diese Zeile stand die Klammer im FAQPage-JSON-LD, waehrend das
+        # sichtbare HTML sie korrekt entfernt hatte (Codex, 2026-09-22).
+        question = re.sub(r"\s*\{#[A-Za-z0-9_-]+\}\s*$", "", question)
         answer_md = lines[1].strip() if len(lines) > 1 else ""
 
         # Markdown-Formatierung fuer JSON-LD entfernen (Plain Text fuer Google)

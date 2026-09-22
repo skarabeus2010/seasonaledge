@@ -236,13 +236,24 @@ def pruefe_hypothese(ym: list[str], werte: list[float], monate: tuple) -> dict:
         #
         # Ein Versatz von 24 Monaten ordnet jeden September wieder einem
         # September zu und jeden Oktober einem Oktober. Solche Ziehungen
-        # zerstoeren die Kalenderzuordnung NICHT, sie reproduzieren sie. Wer
-        # sie in der Nullverteilung laesst, fuellt deren oberen Rand mit
-        # Ziehungen, die den gemessenen Wert nachbauen — der p-Wert wird zu
-        # gross und der Test zu konservativ.
+        # zerstoeren die Kalenderzuordnung NICHT, sie reproduzieren sie — sie
+        # gehoeren also nicht in eine Nullverteilung, die "kein Kalendereffekt"
+        # darstellen soll. Das ist der Grund fuer den Ausschluss, und er gilt
+        # unabhaengig davon, wie gross seine Wirkung ausfaellt.
         #
         # Ein erster Entwurf schloss nur Versaetze nahe null aus. Damit war
         # rund ein Zwoelftel der Nullverteilung wertlos. Von Codex gefunden.
+        #
+        # WIE GROSS die Wirkung ist, wurde am 2026-09-22 nachgemessen, gepaart
+        # (dieselben Versaetze, einmal mit und einmal ohne Ausschluss) ueber
+        # acht Startwerte: der Ausschluss HEBT p um +0,0078 (Spanne +0,0063 bis
+        # +0,0092, alle acht gleiches Vorzeichen), von rund 0,116 auf 0,124.
+        # Hier stand vorher, die Ziehungen machten p "zu gross und den Test zu
+        # konservativ" — das Vorzeichen ist umgekehrt, und die Wirkung ist
+        # klein. Die Behauptung war plausibel und ungemessen. Am Ergebnis der
+        # Studie aendert das nichts: beide Varianten liegen deutlich ueber 0,05.
+        # Gegenprobe: der Lauf ohne Ausschluss reproduziert mit Startwert
+        # 20260922 exakt den veroeffentlichten Wert 0,1266.
         versatz = rnd.randrange(13, len(werte) - 13)
         if versatz % 12 == 0:
             continue

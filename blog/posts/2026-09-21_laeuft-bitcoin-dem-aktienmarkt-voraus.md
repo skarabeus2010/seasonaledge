@@ -120,7 +120,7 @@ Verwandte Fragestellungen lassen sich auf SeasonAlpha direkt nachschauen: Der [R
 
 Über 3020 gemeinsame Handelstage seit 2014 ist die Korrelation zwischen Bitcoin und SPY bei Verschiebung 0 am höchsten (+0,36 bis +0,45 je nach Fenster) und bei einem Tag Vorlauf praktisch null. Vor 2019 lag sie bei +0,017.
 
-Die populäre 5-Prozent-These fällt durch: +0,78 % nach drei Wochen gegen eine Basisrate von +0,85 %. Erst ab 10 % (+2,06 %, p = 0,022) und ab 20 % (+2,29 %, p = 0,027) löst sich das Ergebnis vom Zufall, bei Ether ab 20 % mit +2,85 % (p = 0,020) unabhängig bestätigt. Nach vier Wochen liegt Bitcoin ab 20 % mit p = 0,050 genau auf der Signifikanzgrenze und zählt damit nicht als belegt.
+Die populäre 5-Prozent-These fällt durch: +0,78 % nach drei Wochen gegen eine Basisrate von +0,85 %. Erst ab 10 % (+2,06 %, p = 0,022) und ab 20 % (+2,29 %, p = 0,027) löst sich das Ergebnis vom Zufall, bei Ether ab 20 % mit +2,85 % (p = 0,020) unabhängig bestätigt. Nach vier Wochen liegt Bitcoin ab 20 % mit p = 0,050 genau auf der [Signifikanzgrenze](/blog/p-wert-erklaert/#p-0-0241) und zählt damit nicht als belegt.
 
 **Kein Signal:** Die Schwelle wurde nachträglich gewählt, die Trefferquote bleibt auf Marktniveau, und die Fallzahlen sind klein. Was hier steht, ist eine Messung, keine Handelsregel. Eigene Zeiträume und Ticker lassen sich auf [seasonalpha.ai](https://seasonalpha.ai) nachrechnen.
 

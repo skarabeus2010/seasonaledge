@@ -115,8 +115,8 @@ Der September beim DAX ist belegt; die Volatilität im September und Oktober bei
 ### Ist der DAX im September wirklich signifikant schwach?
 Ja. Über 68 Jahre verliert der DAX im September im Schnitt 1,55 % bei einem t-Wert von −2,31 und p=0,0241. Da p unter der 5-%-Schwelle liegt, gilt der Effekt als statistisch signifikant — der einzige signifikant negative Monat im Jahr.
 
-### Was bedeutet ein p-Wert von 0,05 an der Börse?
-Der p-Wert ist die Wahrscheinlichkeit, ein so extremes Ergebnis rein zufällig zu sehen, wenn es keinen echten Effekt gibt. Ein p unter 0,05 heißt: unter 5 % Zufallswahrscheinlichkeit — üblich als Grenze für „signifikant". Beim DAX-September sind es rund 2,4 %.
+### Ist ein Rückgang von 1,55 % im Monatsmittel viel?
+Für einen einzelnen September wenig, über die Jahre spürbar — und genau darin liegt die Falle. Der p-Wert von 0,0241 sagt nur, dass der Unterschied schwer als Zufall zu erklären ist; über die **Grösse** sagt er nichts. Dass ein Effekt signifikant und wirtschaftlich unbedeutend sein kann, ist der Regelfall und nicht die Ausnahme: [was ein p-Wert aussagt](/blog/p-wert-erklaert/#p-0-0241).
 
 ### Warum sind Juni und August nicht signifikant, obwohl sie negativ sind?
 Weil ihr Minus winzig (−0,27 % bzw. −0,24 %) und statistisch nicht belastbar ist: p=0,64 und p=0,73 liegen weit über 0,05. Ihre Mittelwerte sind mit reinem Zufall vereinbar, während der September deutlich aus dem Rauschen heraussticht.

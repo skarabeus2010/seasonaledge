@@ -121,7 +121,7 @@ Related questions can be checked directly on SeasonAlpha: the [risk cycle](/en/r
 
 Across 3,020 shared trading days since 2014, the correlation between Bitcoin and SPY is highest at lag 0 (+0.36 to +0.45 depending on the window) and essentially zero at a one-day lead. Before 2019 it stood at +0.017.
 
-The popular 5 % rule fails: +0.78 % after three weeks against a base rate of +0.85 %. Only from 10 % (+2.06 %, p = 0.022) and 20 % (+2.29 %, p = 0.027) does the result separate from chance, independently confirmed by Ether from 20 % with +2.85 % (p = 0.020). After four weeks, Bitcoin at the 20 % threshold sits exactly on the significance line at p = 0.050 and does not count as established.
+The popular 5 % rule fails: +0.78 % after three weeks against a base rate of +0.85 %. Only from 10 % (+2.06 %, p = 0.022) and 20 % (+2.29 %, p = 0.027) does the result separate from chance, independently confirmed by Ether from 20 % with +2.85 % (p = 0.020). After four weeks, Bitcoin at the 20 % threshold sits exactly on the [significance line](/en/blog/p-value-explained/#p-0-0241) at p = 0.050 and does not count as established.
 
 **Not a signal:** the threshold was chosen after the fact, the hit rate stays at market level, and the samples are small. This is a measurement, not a trading rule. Run your own periods and tickers on [seasonalpha.ai](https://seasonalpha.ai).
 
