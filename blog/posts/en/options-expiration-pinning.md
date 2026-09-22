@@ -104,6 +104,8 @@ The effect matters in practice where a position happens to expire near a large s
 
 **Not a signal:** what you read here is a measurement on historical prices, not a trading rule and not a statement about future prices.
 
+Pinning is one of eleven market rules we recomputed on our own price data. Four of them do not hold — the full set is at [eleven market rules, measured](/en/blog/market-rules-tested/).
+
 ## Frequently asked questions
 
 ### What does pinning on expiration day mean?

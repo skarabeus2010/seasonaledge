@@ -108,6 +108,8 @@ Den Signifikanztacho mit t-Wert, p-Wert, Win-Rate und Relevance-Score gibt es in
 
 Der DAX ist im September nicht nur im Schnitt schwach (−1,55 %), sondern als einziger Monat auch statistisch signifikant negativ (t=−2,31, p=0,0241). Der Signifikanztest trennt dieses Muster sauber von der zufälligen Schwäche in Juni und August. Signifikanz ist dabei kein Beweis für die Zukunft — aber sie zeigt, welche saisonalen Auffälligkeiten es wert sind, ernst genommen zu werden. Teste den Signifikanztacho selbst auf [seasonalpha.ai](https://seasonalpha.ai/monatszyklus).
 
+Der September beim DAX ist belegt; die Volatilität im September und Oktober beim S&P 500 ist es nicht. Beide Messungen nebeneinander stehen unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Ist der DAX im September wirklich signifikant schwach?

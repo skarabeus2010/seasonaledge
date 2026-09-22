@@ -124,6 +124,8 @@ Angrenzende Fragestellungen lassen sich auf SeasonAlpha direkt nachschauen: [Int
 
 **Kein Signal:** Was hier steht, ist eine Messung an historischen Kursen, keine Handelsregel und keine Aussage über künftige Kurse.
 
+Dieser Effekt ist einer der wenigen, die in unserer Zusammenstellung eine Bedingung tragen. Wie er neben zehn weiteren geprüften Regeln einzuordnen ist, steht unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Sind Anleihen ein Frühindikator für den Aktienmarkt?

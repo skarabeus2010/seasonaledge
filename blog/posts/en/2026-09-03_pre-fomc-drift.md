@@ -92,6 +92,8 @@ The scheduled FOMC dates are openly published. On SeasonAlpha you find them bund
 
 The pre-FOMC drift is among the most robust documented anomalies in the US stock market: much of the return arises in the hours before scheduled Fed decisions, not after. The research (Lucca & Moench 2015, recent Fed work) and our own daily-close approximation for SPY (prior day avg +0.131% vs. +0.040% on ordinary days, 2006–2025) point the same way. It remains an average pattern with wide dispersion — context for your own judgment, not a schedule. You can check the next Fed dates any time at [seasonalpha.ai](https://seasonalpha.ai/en/zentralbanken).
 
+The pre-FOMC drift is a descriptive pattern, not a tested effect — what that distinction means, beside ten further rules, is at [eleven market rules, measured](/en/blog/market-rules-tested/).
+
 ## Frequently asked questions
 
 ### What is the pre-FOMC drift in simple terms?

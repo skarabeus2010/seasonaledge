@@ -121,6 +121,8 @@ Die Zerlegung zeigt die Struktur dahinter: **Die Monatsmitte (TDOM 9–12) träg
 
 **Kein Signal:** Diese Zahlen sind Durchschnitte über 32 Jahre mit großer Streuung, keine Prognose für den nächsten Monat. Probiere die Regel mit deinen eigenen Tickern und Zeiträumen auf [seasonalpha.ai](https://seasonalpha.ai/backtest-engine).
 
+Monthly 10 gehört zu den vier Regeln, die in unserer Zusammenstellung nicht halten. Die übrigen zehn stehen unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Was ist die Monthly-10-Strategie?

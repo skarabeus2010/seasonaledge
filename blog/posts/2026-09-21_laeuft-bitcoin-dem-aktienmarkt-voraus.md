@@ -124,6 +124,8 @@ Die populäre 5-Prozent-These fällt durch: +0,78 % nach drei Wochen gegen eine 
 
 **Kein Signal:** Die Schwelle wurde nachträglich gewählt, die Trefferquote bleibt auf Marktniveau, und die Fallzahlen sind klein. Was hier steht, ist eine Messung, keine Handelsregel. Eigene Zeiträume und Ticker lassen sich auf [seasonalpha.ai](https://seasonalpha.ai) nachrechnen.
 
+Die Fünf-Prozent-Schwelle ist ein Musterfall dafür, wie eine Regel an ihrer eigenen Definition scheitert. Zehn weitere geprüfte Regeln stehen unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Läuft Bitcoin dem Aktienmarkt voraus?

@@ -125,6 +125,8 @@ The popular 5 % rule fails: +0.78 % after three weeks against a base rate of +0.
 
 **Not a signal:** the threshold was chosen after the fact, the hit rate stays at market level, and the samples are small. This is a measurement, not a trading rule. Run your own periods and tickers on [seasonalpha.ai](https://seasonalpha.ai).
 
+The five-percent threshold is a textbook case of a rule failing on its own definition. Ten further rules we tested are at [eleven market rules, measured](/en/blog/market-rules-tested/).
+
 ## Frequently asked questions
 
 ### Does Bitcoin lead the stock market?

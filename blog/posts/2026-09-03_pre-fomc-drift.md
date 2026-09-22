@@ -91,6 +91,8 @@ Die planmäßigen FOMC-Termine stehen offen im Kalender. Auf SeasonAlpha findest
 
 Der Pre-FOMC-Drift gehört zu den robustesten dokumentierten Anomalien am US-Aktienmarkt: Ein großer Teil der Rendite entsteht in den Stunden vor planmäßigen Fed-Entscheidungen, nicht danach. Die Studienlage (Lucca & Moench 2015, aktuelle Fed-Arbeiten) und unsere eigene Tagesschluss-Näherung für SPY (Vortag Ø +0,131 % vs. +0,040 % an gewöhnlichen Tagen, 2006–2025) zeigen dieselbe Richtung. Es bleibt ein Durchschnittsmuster mit großer Streuung — Kontext für die eigene Einordnung, kein Fahrplan. Die nächsten Fed-Termine kannst du dir jederzeit auf [seasonalpha.ai](https://seasonalpha.ai/zentralbanken) ansehen.
 
+Der Pre-FOMC-Drift ist ein beschreibendes Muster, kein getesteter Effekt — was dieser Unterschied bedeutet, steht neben zehn weiteren Regeln unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Was ist der Pre-FOMC-Drift einfach erklärt?

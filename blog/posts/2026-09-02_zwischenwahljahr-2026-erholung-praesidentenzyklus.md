@@ -117,6 +117,8 @@ Der Zykluseffekt ist ein statistischer Durchschnitt über Jahrzehnte, kein Signa
 
 Das **Zwischenwahljahr an der Börse 2026** folgt einem der robustesten Muster im Präsidentenzyklus: der schwächsten Rendite (+0,9 % Ø) und dem tiefsten Drawdown (–18 % Ø) — gefolgt von einer Erholung, die in unseren Daten in 14 von 14 Fällen positiv war (+31 % Ø ab dem Tief). 2026 hat sein Frühjahrstief bereits hinter sich und läuft milder als der Schnitt; das saisonal schwächste Fenster September/Oktober liegt aber noch vor uns. Verfolge den Verlauf live mit dem Cycle-Filter auf [seasonalpha.ai](https://seasonalpha.ai).
 
+Rund zwanzig Zyklen seit 1950 tragen eine Beschreibung, aber keinen Signifikanztest. Wo dieses Muster neben zehn weiteren geprüften Regeln steht: [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Was ist ein Zwischenwahljahr an der Börse?

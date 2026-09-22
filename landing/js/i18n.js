@@ -214,10 +214,6 @@ SA.i18n = (function() {
       title: 'Volatility Seasonality — Which Months Are Really Turbulent | SeasonAlpha',
       desc:  'In which months does a market really swing harder? Monthly realised-volatility profile for 300+ tickers — and the test of whether September and October are the crash months.'
     },
-    '/studien': {
-      title: 'Studies — Eleven Market Rules Measured, Four Refuted | SeasonAlpha',
-      desc:  'Eleven analyses of historical price data with the question, the result and the data base — expiration pinning, bonds as a leading indicator, volatility seasonality. The null results are included.'
-    },
     '/korrelationen': {
       title: 'Correlation Radar — How Markets Move Together | SeasonAlpha',
       desc:  'Rolling correlation between 21 markets across their full shared history — equities, commodities, rates, crypto, currencies. Free choice of pair, two time windows.'

@@ -125,6 +125,8 @@ Adjacent questions can be checked directly on SeasonAlpha: [Intermarket Shocks](
 
 **Not a signal:** what stands here is a measurement on historical prices, not a trading rule and not a statement about future prices.
 
+This is one of the few effects in our set that carries a condition. How it sits beside ten further rules we tested is at [eleven market rules, measured](/en/blog/market-rules-tested/).
+
 ## Frequently asked questions
 
 ### Do bonds lead the stock market?

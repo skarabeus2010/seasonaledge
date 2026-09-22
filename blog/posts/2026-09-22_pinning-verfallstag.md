@@ -103,6 +103,8 @@ Praktisch relevant ist der Effekt dort, wo eine Position ohnehin in der Nähe ei
 
 **Kein Signal:** Was hier steht, ist eine Messung an historischen Kursen, keine Handelsregel und keine Aussage über künftige Kurse.
 
+Pinning ist eine von elf Börsenweisheiten, die wir an eigenen Kursdaten nachgerechnet haben. Vier davon halten nicht — die Zusammenstellung steht unter [elf Börsenregeln nachgerechnet](/blog/boersenregeln-nachgerechnet/).
+
 ## Häufige Fragen
 
 ### Was bedeutet Pinning am Verfallstag?
