@@ -24,9 +24,18 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 18m
           script: |
+            # pipefail: ohne ihn liefert `docker exec … | tail -60` den Status von
+            # tail (immer 0), und der abschliessende echo setzt danach den
+            # Exit-Code des Skripts — ein gescheiterter Lauf waere doppelt
+            # unsichtbar. Genau das macht einen stillen Ausfall moeglich: der
+            # Job meldet gruen, waehrend seit Tagen kein Filing mehr geprueft
+            # wird, und auffallen wuerde es erst an der Mail, die NICHT kommt.
+            set -uo pipefail
             SEED="${{ github.event.inputs.seed_only }}"
             ARGS="--run"
             if [ "$SEED" = "true" ]; then ARGS="--seed-only"; fi
             echo "[congress-trades] args:$ARGS"
             docker exec seasonalpha-app python3 scripts/congress_trades.py $ARGS 2>&1 | tail -60
-            echo "[congress-trades] Done: $(date)"
+            rc=${PIPESTATUS[0]}
+            echo "[congress-trades] Done: $(date) rc=$rc"
+            exit $rc
