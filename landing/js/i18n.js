@@ -214,6 +214,10 @@ SA.i18n = (function() {
       title: 'Volatility Seasonality — Which Months Are Really Turbulent | SeasonAlpha',
       desc:  'In which months does a market really swing harder? Monthly realised-volatility profile for 300+ tickers — and the test of whether September and October are the crash months.'
     },
+    '/korrelationen': {
+      title: 'Correlation Radar — How Markets Move Together | SeasonAlpha',
+      desc:  'Rolling correlation between 21 markets across their full shared history — equities, commodities, rates, crypto, currencies. Free choice of pair, two time windows.'
+    },
     '/intermarket': {
       title: 'Intermarket Matrix — Which Links Survive Correction | SeasonAlpha',
       desc:  '470 tested intermarket relationships across 18 markets: when one market moves sharply, does another follow? Corrected for the number of tests — and almost nothing survives.'

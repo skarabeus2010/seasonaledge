@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Korrelations-Radar &mdash; wie M&auml;rkte zueinander stehen | SeasonAlpha</title>
+  <meta name="description" content="Rollierende Korrelation zwischen 21 Märkten über die volle gemeinsame Historie — Aktien, Rohstoffe, Zinsen, Krypto, Währungen. Frei wählbares Paar, zwei Zeitfenster.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/korrelationen">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/korrelationen">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/korrelationen">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/korrelationen">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/korrelationen">
+  <meta property="og:title" content="Korrelations-Radar &mdash; wie M&auml;rkte zueinander stehen | SeasonAlpha">
+  <meta property="og:description" content="Rollierende Korrelation zwischen 21 Märkten über die volle gemeinsame Historie. Frei wählbares Paar, zwei Zeitfenster, Einordnung des aktuellen Werts.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Korrelations-Radar | SeasonAlpha">
+  <meta name="twitter:description" content="Rollierende Korrelation zwischen 21 Märkten über die volle gemeinsame Historie.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Korrelations-Radar","url":"https://seasonalpha.ai/korrelationen","description":"Rollierende Korrelation zwischen 21 Märkten über die volle gemeinsame Historie, mit Einordnung des aktuellen Werts in seiner eigenen Verteilung.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Korrelations-Radar","item":"https://seasonalpha.ai/korrelationen"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was zeigt die rollierende Korrelation?","acceptedAnswer":{"@type":"Answer","text":"Wie stark sich die Tagesbewegungen zweier Märkte in einem gleitenden Zeitfenster gemeinsam bewegt haben. Ein Wert von +1 bedeutet gleichgerichtet, 0 kein Zusammenhang, −1 gegenläufig. Gerechnet wird über die letzten 63 beziehungsweise 252 gemeinsamen Handelstage, und der Wert wandert mit der Zeit — daraus entsteht die Kurve."}},{"@type":"Question","name":"Warum wird auf Bewegungen und nicht auf Kursen gerechnet?","acceptedAnswer":{"@type":"Answer","text":"Weil zwei steigende Kurse fast immer hoch korrelieren, ohne dass das etwas bedeutet. Das ist die klassische Scheinkorrelation trendbehafteter Reihen: Beide steigen über die Jahre, also läuft der Zusammenhang gegen eins. Erst die Tagesbewegungen beantworten die eigentliche Frage, nämlich ob sich die beiden Märkte an denselben Tagen in dieselbe Richtung bewegen."}},{"@type":"Question","name":"Warum sind Zinsen anders gerechnet als Kurse?","acceptedAnswer":{"@type":"Answer","text":"Weil eine Rendite kein Kurs ist. Die 10-Jahres-Rendite ist ein Zinssatz in Prozent; eine prozentuale Änderung einer Prozentzahl ist keine sinnvolle Größe, und die Reihe kann null werden. Zinsreihen gehen deshalb als tägliche Änderung in Basispunkten ein. Wichtig beim Lesen: eine steigende Rendite bedeutet fallende Anleihekurse — wer die Rendite gegen einen Anleihe-ETF hält, erwartet ein negatives Vorzeichen."}},{"@type":"Question","name":"Ist ein hoher Wert ein Signal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Diese Seite ist eine Auswertung historischer Kursdaten, keine Prognose und keine Anlageberatung. Sie weist auch keine Signifikanz aus: Der Höchstwert einer rollierenden Reihe ist ein Extremwert aus Hunderten überlappender Fenster und existiert deshalb immer irgendwo. Angegeben wird ausschließlich, wo der aktuelle Wert in seiner eigenen Verteilung liegt — das ist eine Beschreibung, kein Ereignis."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem;line-height:1.55}
+    .disc{background:rgba(232,168,32,.07);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.6rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.4rem;line-height:1.5}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .ctrl{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:.9rem}
+    .ctrl label{font-size:.75rem;color:var(--muted)}
+    .ctrl select{padding:.4rem .6rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:.85rem;font-family:inherit;max-width:210px}
+    .ctrl button{padding:.4rem .7rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.78rem;font-family:inherit;cursor:pointer}
+    .ctrl button.on{background:rgba(232,168,32,.16);border-color:var(--accent);color:var(--accent)}
+    .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1rem .4rem}
+    .chart-hint{color:var(--dim);font-size:.75rem;margin:.4rem 0 0;line-height:1.5}
+    .kpirow{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin:1.1rem 0}
+    @media(max-width:860px){.kpirow{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.7rem .8rem}
+    .kpi .k-l{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;line-height:1.3}
+    .kpi .k-v{font-family:var(--f-d);font-weight:800;font-size:1.3rem;color:var(--text);margin-top:.15rem}
+    .kpi .k-s{color:var(--dim);font-size:.7rem;margin-top:.2rem;line-height:1.4}
+    .sec-h{font-family:var(--f-d);font-size:1.1rem;font-weight:800;color:var(--text);margin:2rem 0 .3rem}
+    .sec-sub{color:var(--muted);font-size:.8rem;margin-bottom:.8rem;line-height:1.55}
+    .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+    table.kr{width:100%;border-collapse:collapse;font-size:.8rem;min-width:700px}
+    table.kr th{text-align:right;color:var(--muted);font-weight:600;padding:.5rem .7rem;border-bottom:1px solid var(--border);white-space:nowrap;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em}
+    table.kr th:nth-child(-n+2){text-align:left}
+    table.kr td{text-align:right;padding:.45rem .7rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim);white-space:nowrap;font-family:var(--f-m,monospace)}
+    table.kr td:nth-child(-n+2){text-align:left;font-family:inherit}
+    table.kr tbody tr{cursor:pointer}
+    table.kr tbody tr:hover{background:rgba(232,168,32,.06)}
+    .method{margin-top:2rem}
+    .method summary{cursor:pointer;font-family:var(--f-d);font-weight:700;color:var(--text);font-size:.95rem;padding:.4rem 0}
+    .method h4{color:var(--accent);font-size:.82rem;margin:.9rem 0 .3rem;text-transform:uppercase;letter-spacing:.04em}
+    .method p,.method li{color:var(--muted);font-size:.82rem;line-height:1.65}
+    .method ul{padding-left:1.1rem}
+    .faq{border-top:1px solid var(--border);padding:.7rem 0}
+    .faq summary{cursor:pointer;font-weight:700;color:var(--text);font-size:.9rem}
+    .faq p{color:var(--muted);font-size:.82rem;line-height:1.65;margin:.5rem 0 0}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container" style="padding-top:1.5rem">
+    <div id="error-banner" class="error-banner"></div>
+    <h1 class="page-title" data-i18n-html="kr.h1"><b>Korrelations</b>-Radar</h1>
+    <p class="page-caption" data-i18n-html="kr.caption">
+      Bewegen sich zwei M&auml;rkte gerade im Gleichschritt oder gegeneinander &mdash; und ist das f&uuml;r dieses
+      Paar normal? Die Kurve zeigt die Korrelation der <b>Tagesbewegungen</b> in einem gleitenden Fenster, &uuml;ber
+      die gesamte gemeinsame Historie. Die l&auml;ngsten Reihen reichen bis <b>1970</b> zur&uuml;ck.
+    </p>
+    <div class="disc" data-i18n-html="kr.disclaimer">
+      <b>Wichtiger Hinweis:</b> Auswertung historischer Kursdaten, <b>keine Prognose und keine Anlageberatung</b>.
+      Die Seite weist <b>keine Signifikanz</b> aus. Der H&ouml;chstwert einer gleitenden Reihe ist ein Extremwert aus
+      Hunderten &uuml;berlappender Fenster &mdash; irgendwo existiert er immer. Angegeben wird nur, wo der aktuelle
+      Wert in seiner <i>eigenen</i> Verteilung liegt.
+    </div>
+
+    <div class="ctrl">
+      <label for="sel-a" data-i18n="kr.a_label">Markt A:</label>
+      <select id="sel-a"></select>
+      <label for="sel-b" data-i18n="kr.b_label">Markt B:</label>
+      <select id="sel-b"></select>
+      <label style="margin-left:.8rem" data-i18n="kr.win_label">Fenster:</label>
+      <button id="btn-63" class="on">63</button>
+      <button id="btn-252">252</button>
+      <button id="btn-beide" data-i18n="kr.both">beide</button>
+    </div>
+
+    <div class="chart-wrap">
+      <div id="chart" style="min-height:360px"></div>
+      <p class="chart-hint" data-i18n-html="kr.chart_hint">
+        Y-Achse = Korrelationskoeffizient von <b>&minus;1</b> (exakt gegenl&auml;ufig) &uuml;ber <b>0</b> (kein
+        Zusammenhang) bis <b>+1</b> (exakt gleichgerichtet). Das Fenster z&auml;hlt <b>gemeinsame Handelstage</b>,
+        nicht Kalendertage: 63 entspricht rund drei Monaten, 252 rund einem Jahr. Die Linie ist f&uuml;r die
+        Darstellung ausged&uuml;nnt; alle Kennzahlen rechnen auf der vollst&auml;ndigen Reihe.
+      </p>
+    </div>
+
+    <div class="kpirow" id="kpis"></div>
+
+    <h2 class="sec-h" data-i18n="kr.table_h">Alle Paare im &Uuml;berblick</h2>
+    <p class="sec-sub" data-i18n-html="kr.table_sub">
+      Sortiert nach der St&auml;rke des aktuellen Werts im 63-Tage-Fenster. <b>Perzentil</b> sagt, wo dieser Wert in
+      der eigenen Geschichte des Paares liegt &mdash; 95 hei&szlig;t: nur in 5&nbsp;% der Zeit lag er h&ouml;her.
+      <b>Klick auf eine Zeile</b> zeigt das Paar im Chart.
+    </p>
+    <div class="tbl-wrap"><table class="kr" id="tbl"></table></div>
+
+    <details class="method">
+      <summary data-i18n="kr.method_h">Methodik &mdash; wie gerechnet wurde</summary>
+      <div data-i18n-html="kr.method_body">
+        <h4>Gerechnet wird auf Bewegungen, nicht auf Kursen</h4>
+        <p>Zwei steigende Kurse korrelieren fast immer hoch, ohne dass das etwas bedeutet &mdash; beide steigen
+        &uuml;ber die Jahre, also l&auml;uft der Zusammenhang gegen eins. Das ist die klassische Scheinkorrelation
+        trendbehafteter Reihen. Erst die <b>Tagesbewegungen</b> beantworten die eigentliche Frage: Bewegen sich die
+        beiden M&auml;rkte an denselben Tagen in dieselbe Richtung? Kursreihen gehen als logarithmische Rendite ein.</p>
+
+        <h4>Zinsen sind keine Kurse</h4>
+        <p>Die Renditereihen sind Zins<i>s&auml;tze</i> in Prozent. Eine prozentuale &Auml;nderung einer Prozentzahl
+        ist keine sinnvolle Gr&ouml;sse, und die Reihe kann null werden &mdash; eine logarithmische Rendite darauf
+        w&auml;re unbrauchbar. Sie gehen deshalb als <b>t&auml;gliche &Auml;nderung in Basispunkten</b> ein. Beim
+        Lesen wichtig: eine steigende Rendite bedeutet <i>fallende</i> Anleihekurse. Wer die 10-Jahres-Rendite gegen
+        einen Anleihe-ETF h&auml;lt, erwartet deshalb ein negatives Vorzeichen &mdash; und findet es auch.</p>
+
+        <h4>Es wird nichts aufgef&uuml;llt</h4>
+        <p>Krypto handelt an sieben Tagen die Woche, die NYSE nicht, und XETRA hat wieder andere Feiertage.
+        Gerechnet wird ausschlie&szlig;lich auf Tagen, an denen <b>beide</b> Reihen einen Schlusskurs haben, und die
+        Bewegungen entstehen <i>erst danach</i> &uuml;ber aufeinanderfolgende gemeinsame Termine. W&uuml;rde man
+        fehlende Tage auff&uuml;llen, verglich man einen Bitcoin-Sonntag mit einem Freitagsschluss.</p>
+
+        <h4>Zwei Fenster, nicht eines</h4>
+        <p>63 Handelstage sind die Hauptansicht und entsprechen ungef&auml;hr drei Monaten. Sie reagieren schnell,
+        schwanken daf&uuml;r stark. 252 Tage &mdash; rund ein Jahr &mdash; sind die langsamere Gegenprobe. Ein
+        kurzes Fenster allein taugt nicht, um einen H&ouml;chstwert einzuordnen: bei Hunderten &uuml;berlappender
+        Fenster findet sich fast zwangsl&auml;ufig irgendwo eine Spitze.</p>
+
+        <h4>Was die Seite nicht sagt</h4>
+        <ul>
+          <li>Keinen <b>p-Wert</b> und keine Signifikanzklasse. Das Paar w&auml;hlen Sie aus &mdash; eine
+          Signifikanzaussage &uuml;ber eine selbst ausgesuchte Reihe w&auml;re irref&uuml;hrend.</li>
+          <li>Nichts &uuml;ber <b>Ursache</b>. Zwei M&auml;rkte k&ouml;nnen gemeinsam auf dieselbe dritte Gr&ouml;sse
+          reagieren, ohne dass einer den anderen bewegt.</li>
+          <li>Nichts &uuml;ber die <b>Zukunft</b>. Korrelationen brechen, und zwar am ehesten dann, wenn man sich
+          auf sie verl&auml;sst.</li>
+          <li>Nichts &uuml;ber die <b>Gr&ouml;sse</b> der Bewegung. Zwei M&auml;rkte k&ouml;nnen perfekt korreliert
+          sein, w&auml;hrend der eine um ein Prozent und der andere um zehn schwankt.</li>
+        </ul>
+
+        <h4>Datengrundlage</h4>
+        <p>Tagesschlusskurse aus der eigenen Datenbank, 21 Reihen &uuml;ber Aktien, Rohstoffe, Zinsen, Krypto,
+        W&auml;hrungen und Sektoren. Das Universum ist bewusst klein und vorab festgelegt: Wer aus mehreren hundert
+        Tickern frei kombiniert, sucht sich Auff&auml;lligkeiten zusammen. Futures und ETFs sind als solche
+        beschriftet, weil ein Rollverfahren oder eine Dividendenbereinigung eine andere Reihe erzeugt als der reine
+        Kassakurs.</p>
+      </div>
+    </details>
+
+    <h2 class="sec-h" data-i18n="kr.faq_h">H&auml;ufige Fragen</h2>
+    <details class="faq" open>
+      <summary data-i18n="kr.faq1_q">Was bedeutet der Wert konkret?</summary>
+      <p data-i18n-html="kr.faq1_a">Er misst, wie gleichgerichtet sich die Tagesbewegungen im gew&auml;hlten Fenster
+      bewegt haben. <b>+1</b> hie&szlig;e: jeder Tag, an dem der eine steigt, steigt auch der andere. <b>0</b>: kein
+      erkennbarer Zusammenhang. <b>&minus;1</b>: exakt gegenl&auml;ufig. Werte um 0,9 sind bei nahen Verwandten
+      normal &mdash; ein Technologie-ETF und der Nasdaq enthalten weitgehend dieselben Aktien.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="kr.faq2_q">Warum ist das Perzentil wichtiger als der Wert selbst?</summary>
+      <p data-i18n-html="kr.faq2_a">Weil jedes Paar sein eigenes Normalniveau hat. Eine Korrelation von 0,85 ist
+      zwischen zwei Aktienindizes unauff&auml;llig und zwischen Gold und dem Nasdaq ein Ausnahmezustand. Das
+      Perzentil sagt, wo der heutige Wert in der eigenen Geschichte dieses Paares liegt &mdash; und nur das ist
+      vergleichbar.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="kr.faq3_q">Warum reicht die Historie bei manchen Paaren nur wenige Jahre?</summary>
+      <p data-i18n-html="kr.faq3_a">Weil gerechnet wird, solange <b>beide</b> Reihen existieren. Die
+      10-Jahres-Rendite reicht bis 1970 zur&uuml;ck, Ether erst bis 2017 &mdash; das Paar aus beiden beginnt also
+      2017. Der gemeinsame Zeitraum steht bei jedem Paar dabei, und bei kurzen Historien ist ein Perzentil
+      entsprechend weniger wert.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="kr.faq4_q">Ist ein Extremwert ein Signal?</summary>
+      <p data-i18n-html="kr.faq4_a">Nein. Die Seite zeigt eine Auswertung historischer Kursdaten, keine Prognose und
+      keine Anlageberatung. Ein gleitendes Fenster erzeugt Hunderte &uuml;berlappender Beobachtungen; ein
+      H&ouml;chstwert darin ist kein Ereignis, sondern eine Eigenschaft der Rechnung. Vergangene Muster garantieren
+      keine k&uuml;nftigen Ergebnisse.</p>
+    </details>
+
+    <div id="footer-container"></div>
+  </main>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var T = function (k, d) { return (window.SA && SA.i18n) ? SA.i18n.t(k, d) : d; };
+    var ACC = '#e8a820', MUT = '#8a8270', DIM = '#9ca3af', BLUE = '#60a5fa';
+    var D = null, chart = null, FENSTER = 63, BEIDE = false;
+    var IDX = {};                       // ticker -> Reihe
+
+    function $(id) { return document.getElementById(id); }
+    function fehler(m) { var e = $('error-banner'); e.textContent = m; e.style.display = 'block'; }
+    function nz(v, n) { return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(n == null ? 2 : n).replace('.', ','); }
+
+    /* Rollierende Pearson-Korrelation über LAUFENDE SUMMEN.
+       Die naive Variante rechnet jedes Fenster neu und ist bei 15.000 Tagen
+       und Fenster 252 um Größenordnungen langsamer. Die Formel ist dieselbe:
+         r = (n·Σxy − Σx·Σy) / √((n·Σxx − Σx²)(n·Σyy − Σy²))
+       Ein Referenzwert aus der Python-Rechnung liegt im JSON und wird beim
+       Laden gegengeprüft — die beiden Implementierungen dürfen nicht driften. */
+    function rollierend(x, y, w) {
+      var n = x.length, out = new Array(Math.max(0, n - w + 1));
+      if (n < w) return [];
+      var sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, i;
+      for (i = 0; i < w; i++) {
+        sx += x[i]; sy += y[i]; sxx += x[i] * x[i]; syy += y[i] * y[i]; sxy += x[i] * y[i];
+      }
+      function r() {
+        var za = w * sxy - sx * sy;
+        var nb = (w * sxx - sx * sx) * (w * syy - sy * sy);
+        if (!(nb > 0)) return null;
+        var v = za / Math.sqrt(nb);
+        return v > 1 ? 1 : (v < -1 ? -1 : v);
+      }
+      out[0] = r();
+      for (i = w; i < n; i++) {
+        var a = x[i - w], b = y[i - w];
+        sx += x[i] - a; sy += y[i] - b;
+        sxx += x[i] * x[i] - a * a; syy += y[i] * y[i] - b * b;
+        sxy += x[i] * y[i] - a * b;
+        out[i - w + 1] = r();
+      }
+      return out;
+    }
+
+    /* Paarweise Ausrichtung: nur Tage, an denen BEIDE einen Wert haben. */
+    function ausrichten(ta, tb) {
+      var a = IDX[ta].bewegungen, b = IDX[tb].bewegungen, tage = D.tage;
+      var x = [], y = [], t = [];
+      for (var i = 0; i < tage.length; i++) {
+        if (a[i] == null || b[i] == null) continue;
+        x.push(a[i]); y.push(b[i]); t.push(tage[i]);
+      }
+      return { x: x, y: y, tage: t };
+    }
+
+    function perzentil(werte, wert) {
+      var n = 0, g = 0;
+      for (var i = 0; i < werte.length; i++) {
+        if (werte[i] == null) continue;
+        n++; if (werte[i] <= wert) g++;
+      }
+      return n ? g / n * 100 : null;
+    }
+
+    function kennzahlen(ta, tb, w) {
+      var g = ausrichten(ta, tb);
+      if (g.x.length < w + 20) return null;
+      var roh = rollierend(g.x, g.y, w);
+      var werte = [], tage = [];
+      for (var i = 0; i < roh.length; i++) {
+        if (roh[i] == null) continue;
+        werte.push(roh[i]); tage.push(g.tage[i + w - 1]);
+      }
+      if (!werte.length) return null;
+      var min = werte[0], max = werte[0];
+      for (var j = 1; j < werte.length; j++) {
+        if (werte[j] < min) min = werte[j];
+        if (werte[j] > max) max = werte[j];
+      }
+      var akt = werte[werte.length - 1];
+      return { werte: werte, tage: tage, aktuell: akt,
+               perzentil: perzentil(werte, akt), min: min, max: max,
+               n: werte.length, von: g.tage[0], bis: g.tage[g.tage.length - 1],
+               n_gemeinsam: g.x.length };
+    }
+
+    /* Für die Darstellung ausdünnen — die Kennzahlen oben rechnen auf allem. */
+    function duennen(tage, werte, ziel) {
+      var n = werte.length;
+      if (n <= ziel) {
+        return werte.map(function (v, i) { return [tage[i], +v.toFixed(4)]; });
+      }
+      var schritt = n / ziel, out = [];
+      for (var k = 0; k < ziel; k++) {
+        var i = Math.min(n - 1, Math.round(k * schritt));
+        out.push([tage[i], +werte[i].toFixed(4)]);
+      }
+      if (out[out.length - 1][0] !== tage[n - 1]) out.push([tage[n - 1], +werte[n - 1].toFixed(4)]);
+      return out;
+    }
+
+    function zeichne() {
+      var ta = $('sel-a').value, tb = $('sel-b').value;
+      if (ta === tb) { fehler(T('kr.same', 'Bitte zwei verschiedene Märkte wählen.')); return; }
+      $('error-banner').style.display = 'none';
+
+      var serien = [], haupt = null;
+      var fenster = BEIDE ? D.fenster : [FENSTER];
+      for (var i = 0; i < fenster.length; i++) {
+        var k = kennzahlen(ta, tb, fenster[i]);
+        if (!k) continue;
+        if (fenster[i] === (BEIDE ? D.fenster[0] : FENSTER)) haupt = k;
+        serien.push({ name: fenster[i] + ' ' + T('kr.days', 'Handelstage'),
+                      data: duennen(k.tage, k.werte, 1400) });
+      }
+      if (!haupt) { fehler(T('kr.thin', 'Für dieses Paar gibt es zu wenig gemeinsame Historie.')); return; }
+
+      var opts = {
+        chart: { type: 'line', height: 360, background: 'transparent',
+                 toolbar: { show: false }, animations: { enabled: false },
+                 zoom: { enabled: true, type: 'x' } },
+        theme: { mode: 'dark' },
+        colors: [ACC, BLUE],
+        series: serien,
+        stroke: { curve: 'straight', width: BEIDE ? [2, 2] : [2.4] },
+        dataLabels: { enabled: false },
+        legend: { show: BEIDE, labels: { colors: DIM } },
+        xaxis: { type: 'datetime', labels: { style: { colors: MUT } },
+                 axisBorder: { color: 'rgba(255,255,255,.08)' },
+                 axisTicks: { color: 'rgba(255,255,255,.08)' } },
+        yaxis: { min: -1, max: 1, tickAmount: 8,
+                 labels: { style: { colors: MUT },
+                           formatter: function (v) { return v.toFixed(1).replace('.', ','); } } },
+        grid: { borderColor: 'rgba(255,255,255,.06)', strokeDashArray: 3 },
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' },
+                   y: { formatter: function (v) { return v == null ? '–' : nz(v); } } },
+        annotations: { yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.35)',
+                                 strokeDashArray: 4,
+                                 label: { text: T('kr.nozero', 'kein Zusammenhang'),
+                                          style: { background: 'transparent', color: DIM,
+                                                   fontSize: '10px' } } }] }
+      };
+      var el = $('chart'); el.innerHTML = '';
+      chart = new ApexCharts(el, opts); chart.render();
+
+      var na = IDX[ta].name, nb = IDX[tb].name;
+      $('kpis').innerHTML =
+        kpi(T('kr.kpi_now', 'aktuell'), nz(haupt.aktuell),
+            na + ' ' + T('kr.vs', 'gegen') + ' ' + nb) +
+        kpi(T('kr.kpi_pct', 'Perzentil der eigenen Historie'),
+            haupt.perzentil == null ? '—' : haupt.perzentil.toFixed(0) + '.',
+            T('kr.kpi_pct_s', 'rein beschreibend, keine Signifikanz')) +
+        kpi(T('kr.kpi_span', 'Spanne im Zeitraum'),
+            nz(haupt.min) + ' … ' + nz(haupt.max),
+            T('kr.kpi_span_s', 'Minimum und Maximum der gleitenden Reihe')) +
+        kpi(T('kr.kpi_hist', 'gemeinsame Historie'),
+            haupt.von.slice(0, 4) + '–' + haupt.bis.slice(0, 4),
+            haupt.n_gemeinsam.toLocaleString('de-DE') + ' ' + T('kr.common_days', 'gemeinsame Handelstage'));
+    }
+
+    function kpi(l, v, s) {
+      return '<div class="kpi"><div class="k-l">' + l + '</div><div class="k-v">' + v + '</div>'
+           + (s ? '<div class="k-s">' + s + '</div>' : '') + '</div>';
+    }
+
+    function tabelle() {
+      var w = D.fenster[0], zeilen = [];
+      for (var i = 0; i < D.reihen.length; i++) {
+        for (var j = i + 1; j < D.reihen.length; j++) {
+          var k = kennzahlen(D.reihen[i].ticker, D.reihen[j].ticker, w);
+          if (!k) continue;
+          zeilen.push({ a: D.reihen[i], b: D.reihen[j], k: k });
+        }
+      }
+      zeilen.sort(function (p, q) { return Math.abs(q.k.aktuell) - Math.abs(p.k.aktuell); });
+      var h = '<thead><tr><th>' + T('kr.th_a', 'Markt A') + '</th><th>' + T('kr.th_b', 'Markt B')
+            + '</th><th>' + T('kr.th_now', 'aktuell') + '</th><th>' + T('kr.th_pct', 'Perzentil')
+            + '</th><th>' + T('kr.th_min', 'Min') + '</th><th>' + T('kr.th_max', 'Max')
+            + '</th><th>' + T('kr.th_since', 'ab') + '</th></tr></thead><tbody>';
+      zeilen.slice(0, 40).forEach(function (z) {
+        h += '<tr data-a="' + z.a.ticker + '" data-b="' + z.b.ticker + '">'
+           + '<td>' + z.a.name + '</td><td>' + z.b.name + '</td>'
+           + '<td style="color:var(--accent);font-weight:700">' + nz(z.k.aktuell) + '</td>'
+           + '<td>' + (z.k.perzentil == null ? '—' : z.k.perzentil.toFixed(0)) + '</td>'
+           + '<td>' + nz(z.k.min) + '</td><td>' + nz(z.k.max) + '</td>'
+           + '<td>' + z.k.von.slice(0, 4) + '</td></tr>';
+      });
+      $('tbl').innerHTML = h + '</tbody>';
+    }
+
+    /* Gegenprobe gegen die Python-Referenz. Weicht die Frontend-Formel ab,
+       steht es in der Konsole — statt still andere Zahlen zu zeigen als das
+       Skript, das die Daten erzeugt hat. */
+    function gegenprobe() {
+      if (!D.referenz) return;
+      D.referenz.forEach(function (r) {
+        var k = kennzahlen(r.a, r.b, r.fenster);
+        if (!k) return;
+        var d = Math.abs(k.aktuell - r.aktuell);
+        if (d > 0.002) {
+          console.warn('[korrelationen] Abweichung zur Referenz ' + r.a + '/' + r.b
+                       + ': Frontend ' + k.aktuell.toFixed(4) + ' vs. Python ' + r.aktuell);
+        }
+      });
+    }
+
+    function boot() {
+      loadComponent('nav-container', '/landing/components/nav.html');
+      loadComponent('footer-container', '/landing/components/footer.html');
+      fetch('/landing/data/korrelationen.json', { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (j) {
+          D = j;
+          D.reihen.forEach(function (r) { IDX[r.ticker] = r; });
+
+          var gruppen = {};
+          D.reihen.forEach(function (r) { (gruppen[r.gruppe] = gruppen[r.gruppe] || []).push(r); });
+          var html = '';
+          Object.keys(gruppen).forEach(function (g) {
+            html += '<optgroup label="' + g + '">';
+            gruppen[g].forEach(function (r) {
+              html += '<option value="' + r.ticker + '">' + r.name + '</option>';
+            });
+            html += '</optgroup>';
+          });
+          $('sel-a').innerHTML = html;
+          $('sel-b').innerHTML = html;
+          $('sel-a').value = 'CL=F';
+          $('sel-b').value = '^TNX';
+
+          gegenprobe();
+          zeichne();
+          tabelle();
+        })
+        .catch(function (e) {
+          fehler(T('kr.err', 'Die Daten konnten nicht geladen werden: ') + e.message);
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+      if (e.target && (e.target.id === 'sel-a' || e.target.id === 'sel-b')) zeichne();
+    });
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t && (t.id === 'btn-63' || t.id === 'btn-252' || t.id === 'btn-beide')) {
+        BEIDE = t.id === 'btn-beide';
+        if (!BEIDE) FENSTER = t.id === 'btn-63' ? 63 : 252;
+        ['btn-63', 'btn-252', 'btn-beide'].forEach(function (id) {
+          $(id).classList.toggle('on', id === t.id);
+        });
+        zeichne();
+        return;
+      }
+      var tr = t && t.closest ? t.closest('tr[data-a]') : null;
+      if (!tr) return;
+      $('sel-a').value = tr.getAttribute('data-a');
+      $('sel-b').value = tr.getAttribute('data-b');
+      zeichne();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+  </script>
+</body>
+</html>
