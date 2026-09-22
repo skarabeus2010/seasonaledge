@@ -47,6 +47,8 @@ Ein konkretes, klar datiertes Beispiel: Am 2. August 2026 lag die Call-Wall des 
 
 ## Was die Forschung belegt — und wie stark
 
+> Wir haben den Effekt inzwischen an eigenen Daten nachgemessen: 158 Aktien, 369 Kalendermonate, 1996 bis 2026. Die Zahlen und eine überraschende Entwicklung seit 2010 stehen in [Pinning am Verfallstag](/blog/pinning-verfallstag/).
+
 Pinning gehört zu den am besten dokumentierten Beobachtungen der Marktmikrostruktur. Drei Arbeiten bilden das Fundament — zwei davon im *Journal of Financial Economics*, einem der drei renommiertesten Finanzjournale der Welt.
 
 | Studie | Ebene | Kernbefund |

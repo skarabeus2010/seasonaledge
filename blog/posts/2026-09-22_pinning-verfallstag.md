@@ -29,7 +29,7 @@ Wer eine Option verkauft hat, sichert die Position in der Regel über die zugrun
 
 Kurz vor dem Verfall ändert sich dieses Delta in der Nähe des Strikes extrem schnell. Eine Option, die knapp im Geld liegt, braucht fast die volle Aktienmenge zur Absicherung, eine knapp aus dem Geld liegende fast keine. Steigt der Kurs über den Strike, müssen Stillhalter zukaufen; fällt er darunter, verkaufen sie wieder.
 
-Diese Anpassung wirkt gegen die jeweilige Bewegung. Liegt an einem Strike viel Open Interest, kann das Absichern den Kurs in dessen Nähe halten. Diese Mechanik ist die gängige Erklärung für Pinning. Die zugehörige Marktstruktur zeigen wir laufend unter [Key Levels](/key-levels), wo die größten Open-Interest-Ansammlungen je Titel stehen.
+Diese Anpassung wirkt gegen die jeweilige Bewegung. Liegt an einem Strike viel Open Interest, kann das Absichern den Kurs in dessen Nähe halten. Diese Mechanik ist die gängige Erklärung für Pinning; ausführlich steht sie samt Call-Wall und Put-Wall in [Pinning erklärt](/blog/pinning-call-wall-put-wall/). Die zugehörige Marktstruktur zeigen wir laufend unter [Key Levels](/key-levels), wo die größten Open-Interest-Ansammlungen je Titel stehen.
 
 ## Das Strike-Raster kennen wir nicht — die Kontrollgruppe löst das
 

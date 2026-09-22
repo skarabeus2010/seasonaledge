@@ -48,6 +48,8 @@ A concrete, clearly dated example: on 2 August 2026, the **SPY** call wall sat a
 
 ## What the research shows — and how strong it is
 
+> We have since measured the effect on our own data: 158 stocks, 369 calendar months, 1996 to 2026. The numbers, and a surprising development since 2010, are in [Pinning on Expiration Day](/en/blog/options-expiration-pinning/).
+
 Pinning is one of the best-documented observations in market microstructure. Three works form the foundation — two of them in the *Journal of Financial Economics*, one of the three most respected finance journals in the world.
 
 | Study | Level | Core finding |

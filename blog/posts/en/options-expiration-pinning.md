@@ -30,7 +30,7 @@ Whoever sold an option usually hedges the position in the underlying stock. Shor
 
 Close to expiry, that delta changes very fast near the strike. An option slightly in the money needs almost the full share amount as a hedge; one slightly out of the money needs almost none. When the price rises above the strike, writers have to buy; when it falls back below, they sell again.
 
-Each adjustment works against the move that triggered it. With large open interest sitting at one strike, hedging can hold the price in its neighbourhood. This mechanism is the standard explanation for pinning. The corresponding market structure is tracked on [Key Levels](/key-levels), where the largest open-interest clusters per name are listed.
+Each adjustment works against the move that triggered it. With large open interest sitting at one strike, hedging can hold the price in its neighbourhood. This mechanism is the standard explanation for pinning; it is set out in full, together with the call wall and the put wall, in [Pinning explained](/en/blog/pinning-call-wall-put-wall/). The corresponding market structure is tracked on [Key Levels](/key-levels), where the largest open-interest clusters per name are listed.
 
 ## The strike grid is unknown — the control group handles it
 
