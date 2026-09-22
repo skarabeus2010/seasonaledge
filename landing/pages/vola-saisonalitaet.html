@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Volatilit&auml;ts-Saisonalit&auml;t &mdash; welche Monate wirklich unruhig sind | SeasonAlpha</title>
+  <meta name="description" content="In welchen Monaten schwankt ein Markt wirklich stärker? Monatsprofil der realisierten Volatilität für über 300 Ticker — und der Test, ob September und Oktober die Crash-Monate sind.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/vola-saisonalitaet">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/vola-saisonalitaet">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/vola-saisonalitaet">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/vola-saisonalitaet">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/vola-saisonalitaet">
+  <meta property="og:title" content="Volatilit&auml;ts-Saisonalit&auml;t &mdash; welche Monate wirklich unruhig sind | SeasonAlpha">
+  <meta property="og:description" content="Monatsprofil der realisierten Volatilität für über 300 Ticker. Und der Test: sind September und Oktober wirklich die Crash-Monate?">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Volatilit&auml;ts-Saisonalit&auml;t | SeasonAlpha">
+  <meta name="twitter:description" content="Welche Monate wirklich unruhig sind — Monatsprofil der realisierten Volatilität.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Volatilitäts-Saisonalität","url":"https://seasonalpha.ai/vola-saisonalitaet","description":"Monatsprofil der realisierten Volatilität für über 300 Ticker, mit einem vorab festgelegten Test der These, September und Oktober seien die volatilsten Monate.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Volatilitäts-Saisonalität","item":"https://seasonalpha.ai/vola-saisonalitaet"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was zeigt die Volatilitäts-Saisonalität?","acceptedAnswer":{"@type":"Answer","text":"Für jeden Kalendermonat die typische Schwankungsbreite eines Marktes, normiert auf dessen eigene Normalvolatilität. Ein Wert von 1,15 im März heißt: der März schwankt typischerweise 15 Prozent stärker als ein durchschnittlicher Monat dieses Titels. Gerechnet wird die annualisierte Streuung der Tagesrenditen, die dem Monat selbst gehören, und über die Jahre der Median genommen — so bestimmt kein einzelnes Krisenjahr das Bild."}},{"@type":"Question","name":"Warum Volatilität und nicht Rendite?","acceptedAnswer":{"@type":"Answer","text":"Weil Volatilität die verlässlichere Größe ist. Renditen sind kaum vorhersagbar, Volatilität ist stark autokorreliert: auf eine unruhige Woche folgt meist eine unruhige. Ein saisonales Volatilitätsmuster ist deshalb belastbarer als ein saisonales Renditemuster — und für jeden, der Optionen bewertet oder Positionsgrößen festlegt, unmittelbar relevanter."}},{"@type":"Question","name":"Sind September und Oktober die Crash-Monate?","acceptedAnswer":{"@type":"Answer","text":"Nach dieser Messung nicht. Beim S&P 500 liegt die Volatilität in September und Oktober zusammen beim 1,035-fachen des übrigen Jahres — und das ist statistisch nicht von Zufall zu unterscheiden (p = 0,354 bei 2000 zirkulären Zufallsverschiebungen). Die Hypothese war vor der Rechnung festgelegt, mit einem Ticker und einem Monatspaar. Einzelne Crashs im Oktober prägen die Erinnerung, das durchschnittliche Volatilitätsniveau des Monats prägen sie nicht."}},{"@type":"Question","name":"Ist das ein Handelssignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Diese Seite ist eine Auswertung historischer Kursdaten, keine Prognose und keine Anlageberatung. Die Monatsprofile aller Ticker sind beschreibend und tragen keine Signifikanztests: zwölf Monate mal mehrere hundert Titel wären Tausende Fragen, und bei so vielen Fragen findet man immer Auffälligkeiten, die nur Zufall sind. Geprüft wurde genau eine vorab festgelegte Hypothese."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem;line-height:1.55}
+    .disc{background:rgba(232,168,32,.07);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.6rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .verdict{border-radius:16px;padding:1.2rem 1.3rem;background:#0c1420;border:1px solid var(--border);margin-bottom:1.3rem}
+    .verdict .big{font-family:var(--f-d);font-weight:800;font-size:1.5rem;color:var(--accent);line-height:1.2;margin-bottom:.4rem}
+    .verdict p{color:var(--muted);font-size:.84rem;line-height:1.65;margin:0}
+    .ctrl{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:.9rem}
+    .ctrl label{font-size:.75rem;color:var(--muted)}
+    .ctrl input,.ctrl select{padding:.4rem .6rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:.85rem;font-family:inherit}
+    .ctrl input{width:130px;text-transform:uppercase}
+    .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1rem .4rem}
+    .chart-hint{color:var(--dim);font-size:.75rem;margin:.4rem 0 0;line-height:1.5}
+    .kpirow{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin:1.1rem 0}
+    @media(max-width:860px){.kpirow{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.7rem .8rem}
+    .kpi .k-l{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;line-height:1.3}
+    .kpi .k-v{font-family:var(--f-d);font-weight:800;font-size:1.3rem;color:var(--text);margin-top:.15rem}
+    .sec-h{font-family:var(--f-d);font-size:1.1rem;font-weight:800;color:var(--text);margin:2rem 0 .3rem}
+    .sec-sub{color:var(--muted);font-size:.8rem;margin-bottom:.8rem;line-height:1.55}
+    .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+    table.vs{width:100%;border-collapse:collapse;font-size:.78rem;min-width:820px}
+    table.vs th{color:var(--muted);font-weight:600;padding:.5rem .55rem;border-bottom:1px solid var(--border);white-space:nowrap;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;text-align:right}
+    table.vs th:nth-child(-n+2){text-align:left}
+    table.vs td{padding:.4rem .55rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim);white-space:nowrap;text-align:right;font-family:var(--f-m,monospace)}
+    table.vs td:nth-child(-n+2){text-align:left;font-family:inherit}
+    table.vs tbody tr{cursor:pointer}
+    table.vs tbody tr:hover{background:rgba(232,168,32,.06)}
+    table.vs .tk{font-family:var(--f-d);font-weight:700;color:var(--accent)}
+    .method{margin-top:2rem}
+    .method summary{cursor:pointer;font-family:var(--f-d);font-weight:700;color:var(--text);font-size:.95rem;padding:.4rem 0}
+    .method h4{color:var(--accent);font-size:.82rem;margin:.9rem 0 .3rem;text-transform:uppercase;letter-spacing:.04em}
+    .method p,.method li{color:var(--muted);font-size:.82rem;line-height:1.65}
+    .method ul{padding-left:1.1rem}
+    .faq{border-top:1px solid var(--border);padding:.7rem 0}
+    .faq summary{cursor:pointer;font-weight:700;color:var(--text);font-size:.9rem}
+    .faq p{color:var(--muted);font-size:.82rem;line-height:1.65;margin:.5rem 0 0}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container" style="padding-top:1.5rem">
+    <div id="error-banner" class="error-banner"></div>
+    <h1 class="page-title" data-i18n-html="vs.h1"><b>Volatilit&auml;ts</b>-Saisonalit&auml;t</h1>
+    <p class="page-caption" data-i18n-html="vs.caption">
+      Alle Saisonalit&auml;ts-Auswertungen drehen sich um <i>Renditen</i>. Diese hier dreht sich um die
+      <b>Schwankungsbreite</b> &mdash; und die ist die verl&auml;sslichere Gr&ouml;sse: Renditen sind kaum vorhersagbar,
+      Volatilit&auml;t dagegen h&auml;ngt stark an ihrer eigenen Vergangenheit. Hier steht f&uuml;r jeden Monat, wie
+      unruhig er bei einem Titel typischerweise ist.
+    </p>
+    <div class="disc" data-i18n-html="vs.disclaimer">
+      <b>Wichtiger Hinweis:</b> Auswertung historischer Kursdaten, <b>keine Prognose und keine Anlageberatung</b>.
+      Die Monatsprofile sind <b>beschreibend</b> und tragen keine Signifikanztests &mdash; zw&ouml;lf Monate mal mehrere
+      hundert Titel w&auml;ren Tausende Fragen, und bei so vielen findet man immer etwas. Gepr&uuml;ft wurde genau
+      <b>eine</b> vorab festgelegte Hypothese, unten nachzulesen.
+    </div>
+
+    <div class="verdict">
+      <div class="big" id="verdict-big">&nbsp;</div>
+      <p data-i18n-html="vs.verdict_body">
+        Die verbreitete These lautet, September und Oktober seien die volatilsten Monate. Sie wurde <b>vor</b> der
+        Rechnung als einzige Hypothese festgelegt, an einem Ticker und einem Monatspaar, einseitig gepr&uuml;ft
+        &mdash; und gegen 2000 zirkul&auml;re Zufallsverschiebungen gehalten, damit das Klumpen der Volatilit&auml;t in
+        Bl&ouml;cken die Nullverteilung nicht k&uuml;nstlich eng macht. Einzelne Oktober-Crashs pr&auml;gen die
+        Erinnerung; das <i>durchschnittliche</i> Niveau des Monats pr&auml;gen sie nicht.
+      </p>
+    </div>
+
+    <div class="ctrl">
+      <label for="tk" data-i18n="vs.ticker_label">Ticker:</label>
+      <input id="tk" list="tk-list" placeholder="SPY" autocomplete="off">
+      <datalist id="tk-list"></datalist>
+      <label for="sel-grp" style="margin-left:.8rem" data-i18n="vs.group_label">Tabelle:</label>
+      <select id="sel-grp"></select>
+    </div>
+
+    <div class="chart-wrap">
+      <div id="chart" style="min-height:330px"></div>
+      <p class="chart-hint" data-i18n-html="vs.chart_hint">
+        Y-Achse = Schwankungsbreite des Monats <b>relativ zur eigenen Normalvolatilit&auml;t</b> dieses Titels.
+        1,00 ist ein durchschnittlicher Monat, 1,15 bedeutet 15&nbsp;% unruhiger als sonst. So sind Titel
+        vergleichbar, deren absolute Volatilit&auml;t weit auseinanderliegt &mdash; Bitcoin schwankt vielfach
+        st&auml;rker als eine Versorgeraktie, aber beide haben ein Jahresmuster.
+      </p>
+    </div>
+
+    <div class="kpirow" id="kpis"></div>
+
+    <h2 class="sec-h" data-i18n="vs.table_h">Monatsprofile im Vergleich</h2>
+    <p class="sec-sub" data-i18n-html="vs.table_sub">
+      Jede Zeile ein Titel, jede Spalte ein Monat, normiert auf die eigene Normalvolatilit&auml;t.
+      <b>Klick auf eine Zeile</b> zeigt sie im Chart oben. Ein Punkt hei&szlig;t: zu wenige Jahre f&uuml;r diesen Monat.
+    </p>
+    <div class="tbl-wrap"><table class="vs" id="tbl"></table></div>
+
+    <details class="method">
+      <summary data-i18n="vs.method_h">Methodik &mdash; wie gerechnet wurde</summary>
+      <div data-i18n-html="vs.method_body">
+        <h4>Die Monatsvolatilit&auml;t</h4>
+        <p>Gerechnet wird die annualisierte Streuung der Tagesrenditen, die dem Monat <b>selbst</b> geh&ouml;ren.
+        Gestreut wird um null und nicht um den Monatsmittelwert: gefragt ist die Gr&ouml;sse der Bewegungen, nicht
+        die Abweichung von einem Trend &mdash; bei rund 21 Beobachtungen s&auml;he ein Trendmonat sonst zu ruhig aus.
+        Monate mit weniger als zw&ouml;lf Handelstagen fallen heraus, Monatsprofile mit weniger als zehn Jahren
+        ebenfalls.</p>
+
+        <h4>Warum kein rollendes Fenster</h4>
+        <p>Die naheliegende Rechnung w&auml;re die &uuml;bliche rollende 21-Tage-Volatilit&auml;t. Sie ist hier
+        <b>falsch</b>: sie misst die zur&uuml;ckliegenden 21 Handelstage, der Septemberwert deckte damit Mitte August
+        bis Ende September ab, und ein Oktober-Crash landete zur H&auml;lfte im November. Ein erster Durchlauf dieser
+        Auswertung hatte genau diesen Fehler und liess den September als ruhigsten Monat erscheinen, weil der ruhige
+        Sp&auml;tsommer mitz&auml;hlte. Eine Kennzahl, die f&uuml;r die t&auml;gliche Messung richtig ist, ist nicht
+        automatisch f&uuml;r eine Kalenderfrage richtig.</p>
+
+        <h4>Der Median, nicht der Mittelwert</h4>
+        <p>&Uuml;ber die Jahre wird der Median der Monatswerte genommen. Sonst bestimmte ein einzelnes Krisenjahr
+        den Monat &mdash; Oktober 2008 ist ein Oktober von vielen.</p>
+
+        <h4>Der Zufallstest</h4>
+        <p>Gepr&uuml;ft wird gegen 2000 <b>zirkul&auml;re Verschiebungen</b>: die Monatswerte werden gegen die
+        Kalendermonate verschoben. Das zerst&ouml;rt die Zuordnung zum Kalender, erh&auml;lt aber die Eigenart der
+        Volatilit&auml;t, in Bl&ouml;cken aufzutreten &mdash; unruhige Phasen dauern mehrere Monate. Wer die Monate
+        stattdessen mischen w&uuml;rde, bek&auml;me eine viel zu enge Nullverteilung, und dann s&auml;he jeder
+        Monatsunterschied signifikant aus. Der p-Wert ist einseitig, weil die Hypothese eine Richtung behauptet, und
+        tr&auml;gt eine Plus-eins-Korrektur: bei 2000 Verschiebungen ist der kleinste darstellbare Wert 1/2001, und
+        „p = 0,000" w&auml;re eine Behauptung &uuml;ber Genauigkeit, die das Verfahren nicht hergibt.</p>
+
+        <h4>Grenzen</h4>
+        <ul>
+          <li>Es sind <b>Tagesschlusskurse</b>. Was innerhalb eines Tages passiert, ist unsichtbar &mdash; und
+          gerade Volatilit&auml;t lebt zu einem guten Teil dort.</li>
+          <li>Die Kursreihen sind dividendenbereinigt. An Aussch&uuml;ttungstagen tr&auml;gt das einen kleinen
+          k&uuml;nstlichen Sprung in die Reihe, bei monatlich aussch&uuml;ttenden Anleihe-ETFs sp&uuml;rbarer als bei
+          Gold.</li>
+          <li>Die Tabelle ist <b>beschreibend</b>. Wer in ihr die auff&auml;lligste Zelle sucht und sie dann testet,
+          testet sich selbst &mdash; das Ergebnis w&auml;re ein Zufallstreffer mit p-Wert.</li>
+          <li>Ein Monatsprofil sagt nichts &uuml;ber die <b>Richtung</b>. Ein unruhiger Monat kann steigen oder
+          fallen; gemessen ist nur, wie weit er sich bewegt.</li>
+        </ul>
+      </div>
+    </details>
+
+    <h2 class="sec-h" data-i18n="vs.faq_h">H&auml;ufige Fragen</h2>
+    <details class="faq" open>
+      <summary data-i18n="vs.faq1_q">Warum Volatilit&auml;t und nicht Rendite?</summary>
+      <p data-i18n-html="vs.faq1_a">Weil Volatilit&auml;t die verl&auml;sslichere Gr&ouml;sse ist. Renditen sind kaum
+      vorhersagbar; Volatilit&auml;t h&auml;ngt stark an ihrer eigenen Vergangenheit &mdash; auf eine unruhige Woche
+      folgt meist eine unruhige. Ein saisonales Volatilit&auml;tsmuster ist deshalb belastbarer als ein saisonales
+      Renditemuster. Und f&uuml;r jeden, der Optionen bewertet oder Positionsgr&ouml;ssen festlegt, ist es die
+      unmittelbar relevantere Zahl.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="vs.faq2_q">Sind September und Oktober die Crash-Monate?</summary>
+      <p data-i18n-html="vs.faq2_a">Nach dieser Messung nicht. Beim S&amp;P&nbsp;500 liegt die Volatilit&auml;t in
+      September und Oktober zusammen beim <b>1,035-fachen</b> des &uuml;brigen Jahres, und das ist statistisch nicht
+      von Zufall zu unterscheiden (<b>p = 0,354</b>). Die Erinnerung h&auml;ngt an einzelnen Ereignissen &mdash;
+      Oktober 1929, Oktober 1987, Oktober 2008. Das durchschnittliche Niveau des Monats machen sie nicht aus.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="vs.faq3_q">Was hei&szlig;t „relativ zur eigenen Normalvolatilit&auml;t"?</summary>
+      <p data-i18n-html="vs.faq3_a">Jeder Wert ist durch den Median aller Monate desselben Titels geteilt. 1,00 ist
+      ein durchschnittlicher Monat, 1,20 ein um ein F&uuml;nftel unruhigerer. Ohne diese Normierung w&uuml;rde jeder
+      Vergleich von Bitcoin dominiert, der in absoluten Prozentpunkten um ein Vielfaches schwankt &mdash; das Muster
+      w&auml;re dann nicht mehr zu sehen.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="vs.faq4_q">Ist das ein Handelssignal?</summary>
+      <p data-i18n-html="vs.faq4_a">Nein. Die Seite zeigt eine Auswertung historischer Kursdaten, keine Prognose und
+      keine Anlageberatung. Sie sagt auch nichts &uuml;ber die Richtung: ein unruhiger Monat kann steigen oder fallen.
+      Vergangene Muster garantieren keine k&uuml;nftigen Ergebnisse.</p>
+    </details>
+
+    <div id="footer-container"></div>
+  </main>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var T = function (k, d) { return (window.SA && SA.i18n) ? SA.i18n.t(k, d) : d; };
+    var ACC = '#e8a820', MUT = '#8a8270', DIM = '#9ca3af', BLUE = '#60a5fa';
+    var MON = T('vs.months', 'Jan,Feb,Mär,Apr,Mai,Jun,Jul,Aug,Sep,Okt,Nov,Dez')
+              .split(',');
+    var D = null, chart = null, aktiv = null;
+
+    function $(id) { return document.getElementById(id); }
+    function fehler(m) { var e = $('error-banner'); e.textContent = m; e.style.display = 'block'; }
+    function num(v, n) { return v == null ? '—' : v.toFixed(n === undefined ? 2 : n).replace('.', ','); }
+
+    function finde(tk) {
+      tk = String(tk || '').trim().toUpperCase();
+      for (var i = 0; i < D.profile.length; i++) {
+        if (D.profile[i].ticker.toUpperCase() === tk) return D.profile[i];
+      }
+      return null;
+    }
+
+    function zeichne(p) {
+      aktiv = p;
+      var werte = [], farben = [];
+      for (var m = 1; m <= 12; m++) {
+        var e = p.monate[String(m)] || p.monate[m];
+        werte.push(e ? e.rel : null);
+        farben.push(e && e.rel >= 1 ? ACC : BLUE);
+      }
+      var opts = {
+        chart: { type: 'bar', height: 330, background: 'transparent',
+                 toolbar: { show: false }, animations: { enabled: true, speed: 350 } },
+        theme: { mode: 'dark' },
+        colors: [ACC],
+        series: [{ name: T('vs.series', 'relativ zur eigenen Normalvola'), data: werte }],
+        plotOptions: { bar: { columnWidth: '62%', distributed: false,
+                              colors: { ranges: [{ from: 0, to: 0.9999, color: BLUE }] } } },
+        dataLabels: { enabled: false },
+        xaxis: { categories: MON, labels: { style: { colors: MUT } },
+                 axisBorder: { color: 'rgba(255,255,255,.08)' },
+                 axisTicks: { color: 'rgba(255,255,255,.08)' } },
+        yaxis: { labels: { style: { colors: MUT },
+                           formatter: function (v) { return v == null ? '' : v.toFixed(2); } },
+                 title: { text: T('vs.yaxis', 'relativ zur eigenen Normalvolatilität'),
+                          style: { color: MUT, fontSize: '11px', fontWeight: 400 } } },
+        grid: { borderColor: 'rgba(255,255,255,.06)', strokeDashArray: 3 },
+        tooltip: { theme: 'dark',
+                   y: { formatter: function (v, o) {
+                          if (v == null) return '–';
+                          var m = o && o.dataPointIndex != null ? o.dataPointIndex + 1 : null;
+                          var e = m ? (aktiv.monate[String(m)] || aktiv.monate[m]) : null;
+                          var s = v.toFixed(2).replace('.', ',') + '×';
+                          if (e) s += '  (' + (e.vola * 100).toFixed(1).replace('.', ',')
+                                    + ' % p. a., ' + e.jahre + ' Jahre)';
+                          return s; } } },
+        annotations: { yaxis: [{ y: 1, borderColor: 'rgba(255,255,255,.35)',
+                                 strokeDashArray: 4,
+                                 label: { text: T('vs.normal', 'eigener Durchschnitt'),
+                                          style: { background: 'transparent', color: DIM,
+                                                   fontSize: '10px' } } }] }
+      };
+      var el = $('chart'); el.innerHTML = '';
+      chart = new ApexCharts(el, opts); chart.render();
+
+      var hoch = null, tief = null;
+      for (var k in p.monate) {
+        var e2 = p.monate[k];
+        if (!hoch || e2.rel > hoch[1].rel) hoch = [k, e2];
+        if (!tief || e2.rel < tief[1].rel) tief = [k, e2];
+      }
+      $('kpis').innerHTML =
+        kpi(T('vs.kpi_name', 'Titel'), p.name + ' (' + p.ticker + ')') +
+        kpi(T('vs.kpi_med', 'Normalvolatilität'), num(p.median_rv * 100, 1) + ' %') +
+        kpi(T('vs.kpi_high', 'unruhigster Monat'),
+            hoch ? MON[hoch[0] - 1] + '  ' + num(hoch[1].rel) + '×' : '—') +
+        kpi(T('vs.kpi_low', 'ruhigster Monat'),
+            tief ? MON[tief[0] - 1] + '  ' + num(tief[1].rel) + '×' : '—');
+    }
+
+    function kpi(l, v) {
+      return '<div class="kpi"><div class="k-l">' + l + '</div><div class="k-v">' + v + '</div></div>';
+    }
+
+    function tabelle() {
+      var grp = $('sel-grp').value;
+      var rows = D.profile.filter(function (p) {
+        return grp === '__alle' ? true : (p.gruppe || T('vs.grp_other', 'übrige')) === grp;
+      });
+      rows = rows.slice(0, 60);
+      var h = '<thead><tr><th>' + T('vs.th_ticker', 'Ticker') + '</th><th>'
+            + T('vs.th_name', 'Name') + '</th>';
+      for (var m = 0; m < 12; m++) h += '<th>' + MON[m] + '</th>';
+      h += '<th>' + T('vs.th_years', 'Jahre') + '</th></tr></thead><tbody>';
+      rows.forEach(function (p) {
+        h += '<tr data-tk="' + p.ticker + '"><td class="tk">' + p.ticker + '</td><td>'
+           + (p.name || p.ticker) + '</td>';
+        for (var m = 1; m <= 12; m++) {
+          var e = p.monate[String(m)] || p.monate[m];
+          h += '<td' + (e && e.rel >= 1.1 ? ' style="color:var(--accent)"' : '') + '>'
+             + (e ? num(e.rel) : '·') + '</td>';
+        }
+        h += '<td>' + p.jahre + '</td></tr>';
+      });
+      $('tbl').innerHTML = h + '</tbody>';
+    }
+
+    function boot() {
+      loadComponent('nav-container', '/landing/components/nav.html');
+      loadComponent('footer-container', '/landing/components/footer.html');
+      fetch('/landing/data/vol_saisonalitaet.json', { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (j) {
+          D = j;
+          var hy = D.hypothese || {};
+          $('verdict-big').textContent = (hy.p != null && hy.p >= 0.05)
+            ? T('vs.verdict_no', 'Die Crash-Monate sind statistisch keine.')
+            : T('vs.verdict_yes', 'September und Oktober sind messbar unruhiger.');
+
+          // Ticker-Liste + Gruppen
+          var dl = $('tk-list'), gr = {};
+          D.profile.forEach(function (p) {
+            var o = document.createElement('option');
+            o.value = p.ticker; o.label = p.name || p.ticker; dl.appendChild(o);
+            gr[p.gruppe || T('vs.grp_other', 'übrige')] = 1;
+          });
+          var sel = $('sel-grp');
+          sel.innerHTML = '<option value="__alle">' + T('vs.grp_all', 'alle')
+                        + '</option>' + Object.keys(gr).map(function (g) {
+                            return '<option value="' + g + '">' + g + '</option>'; }).join('');
+          // Explizit setzen statt sich darauf zu verlassen, dass der Browser
+          // nach innerHTML die erste Option auswaehlt. Ohne das bleibt .value
+          // leer, und die Tabelle filtert gegen einen Wert, den es nicht gibt.
+          sel.value = '__alle';
+
+          // SA.prefs merkt den Ticker seitenuebergreifend; ohne Vorgabe SPY.
+          var start = (window.SA && SA.prefs && SA.prefs.applyTicker)
+            ? SA.prefs.applyTicker('tk', 'SPY') : 'SPY';
+          var p0 = finde(start) || finde('SPY') || D.profile[0];
+          $('tk').value = p0.ticker;
+          zeichne(p0); tabelle();
+        })
+        .catch(function (e) {
+          fehler(T('vs.err', 'Die Daten konnten nicht geladen werden: ') + e.message);
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+      if (e.target && e.target.id === 'tk') {
+        var p = finde(e.target.value);
+        if (p) { zeichne(p); if (window.SA && SA.prefs && SA.prefs.setTicker) SA.prefs.setTicker(p.ticker); }
+      }
+    });
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'sel-grp') tabelle();
+    });
+    document.addEventListener('click', function (e) {
+      var tr = e.target.closest ? e.target.closest('tr[data-tk]') : null;
+      if (!tr) return;
+      var p = finde(tr.getAttribute('data-tk'));
+      if (p) { $('tk').value = p.ticker; zeichne(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+  </script>
+</body>
+</html>

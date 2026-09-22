@@ -52,6 +52,7 @@ hat.
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import math
 import pathlib
@@ -229,15 +230,36 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="Ergebnis als JSON schreiben")
     ap.add_argument("--ticker", nargs="+", help="nur diese (Standard: Universum)")
+    ap.add_argument("--alle", action="store_true",
+                    help="das ganze Ticker-Universum statt der kuratierten Auswahl")
     a = ap.parse_args()
 
-    auswahl = ([(t, t, "") for t in a.ticker] if a.ticker else UNIVERSUM)
+    if a.ticker:
+        auswahl = [(t, t, "") for t in a.ticker]
+    elif a.alle:
+        from shared.symbols import get_all_tickers
+        kuratiert = {t for t, _, _ in UNIVERSUM}
+        auswahl = UNIVERSUM + [(t, t, "") for t in sorted(get_all_tickers())
+                               if t not in kuratiert]
+    else:
+        auswahl = UNIVERSUM
 
     print("Saisonalität der Volatilität — Streuung der Renditen je "
           "Kalendermonat, annualisiert\n")
 
     profile, roh = [], {}
     for ticker, name, gruppe in auswahl:
+        # Cache leeren und aufraeumen: download_data ist @st.cache_data und
+        # haelt jede geladene Voll-Historie. Ueber das ganze Universum reisst
+        # das den Prozess ab Ticker ~70 mit SIGKILL ab — in diesem Projekt
+        # schon mehrfach als vermeintlicher Supabase-Fehler fehlgedeutet.
+        if len(profile) % 10 == 9:
+            try:
+                from shared.yahoo_downloader import download_data as _dd
+                _dd.clear()
+            except Exception:
+                pass
+            gc.collect()
         try:
             ym, werte = monatswerte(ticker)
         except (KursreiheFehlt, Exception) as e:
@@ -298,7 +320,7 @@ def main() -> int:
           "(1,00 = eigener Median):")
     print("  %-16s %s" % ("", " ".join("%5s" % MONATSNAMEN[m][:3]
                                        for m in range(1, 13))))
-    for p in profile:
+    for p in profile[:25]:
         zeile = " ".join(
             ("%5.2f" % p["monate"][m]["rel"]) if m in p["monate"] else "    ·"
             for m in range(1, 13))

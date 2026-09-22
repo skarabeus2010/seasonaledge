@@ -210,6 +210,10 @@ SA.i18n = (function() {
       title: 'January Trifecta — SCR + FFD + JanB Signal | SeasonAlpha',
       desc:  'January Trifecta: three signals combined into a full-year forecast indicator. Historical win rate > 80% when all three signals are met.'
     },
+    '/vola-saisonalitaet': {
+      title: 'Volatility Seasonality — Which Months Are Really Turbulent | SeasonAlpha',
+      desc:  'In which months does a market really swing harder? Monthly realised-volatility profile for 300+ tickers — and the test of whether September and October are the crash months.'
+    },
     '/intermarket': {
       title: 'Intermarket Matrix — Which Links Survive Correction | SeasonAlpha',
       desc:  '470 tested intermarket relationships across 18 markets: when one market moves sharply, does another follow? Corrected for the number of tests — and almost nothing survives.'

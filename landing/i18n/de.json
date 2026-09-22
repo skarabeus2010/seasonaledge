@@ -399,5 +399,6 @@
   "flows.def_cta": "CTAs (Commodity Trading Advisors) sind systemische Trendfolge-Fonds. Starke Trend-Signale treiben ihre Positionierung — ein COT-Perzentil &gt;80 (Long) oder &lt;20 (Short) signalisiert, dass wenig Kapital für weiteres Auf-/Abbau übrig ist: <b>potenzielle Trendwende</b> bei Signaländerung. Datenbasis: wöchentliche CFTC-COT mit ~3 Tagen Meldeverzug.",
   "flows.def_buyback": "SEC Rule 10b-18 verbietet US-Unternehmen i.d.R. ab ~14 Tage vor geschätzter Earnings-Ankündigung bis 2 Tage danach eigene Aktien zurückzukaufen (<b>Blackout-Fenster</b>). Da Buybacks ein stabiler Kaufdruck-Puffer sind, erzeugt ein hoher Blackout-Anteil eine saisonale Schwächephase für diesen Stützungsmechanismus. Besonders ausgeprägt: Mitte Januar bis Mitte Februar (Q4-Earnings-Saison).",
 
-  "nav.intermarket": "Intermarket-Matrix"
+  "nav.intermarket": "Intermarket-Matrix",
+  "nav.vola_saisonalitaet": "Volatilitäts-Saison"
 }
