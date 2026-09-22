@@ -273,6 +273,49 @@ def send_alert(trades: list[dict], context: list[dict] | None = None, to_email: 
     return send_html(to, subject, render_alert_html(trades, context=context))
 
 
+def render_scan_notice_html(u: dict) -> str:
+    """Mail fuer ein Filing, dessen PDF ein Scan ist.
+
+    Kein Trade-Alert — wir wissen ja gerade NICHT, was drinsteht. Der Zweck ist,
+    dass die Offenlegung überhaupt auffällt, mit einem Link zum Original.
+    """
+    ACC, BG, CARD, TXT, MUT = "#e8a820", "#0a0a0a", "#141414", "#f0f0f0", "#8a8270"
+    return (
+        f'<div style="background:{BG};padding:24px;font-family:-apple-system,'
+        f'Segoe UI,Roboto,sans-serif;color:{TXT}">'
+        f'<div style="max-width:620px;margin:0 auto;background:{CARD};'
+        f'border:1px solid #262626;border-radius:14px;padding:22px">'
+        f'<div style="color:{ACC};font-size:13px;letter-spacing:.08em;'
+        f'text-transform:uppercase;margin-bottom:10px">Congress-Filing ohne Details</div>'
+        f'<div style="font-size:21px;font-weight:800;margin-bottom:4px">'
+        f'{u["politician"]}</div>'
+        f'<div style="color:{MUT};font-size:13px;margin-bottom:16px">'
+        f'{u["district"]} · {u["party"]} · eingereicht {u["filing_date"]}</div>'
+        f'<p style="color:{TXT};font-size:14px;line-height:1.65;margin:0 0 14px">'
+        f'Es liegt eine neue Offenlegung vor, <b>die Transaktionen enthalten '
+        f'dürfte</b> &mdash; das PDF ist aber eingescanntes Papier, aus dem sich '
+        f'kein Text auslesen lässt. Was gekauft oder verkauft wurde, steht '
+        f'deshalb nicht in dieser Mail und auch nicht auf der Seite.</p>'
+        f'<p style="color:{MUT};font-size:13px;line-height:1.6;margin:0 0 18px">'
+        f'Diese Nachricht geht raus, damit die Einreichung nicht unbemerkt '
+        f'bleibt. Wer wissen will, was drinsteht, muss das Original ansehen.</p>'
+        f'<a href="{u["pdf_url"]}" style="display:inline-block;background:{ACC};'
+        f'color:#000;font-weight:700;font-size:14px;text-decoration:none;'
+        f'padding:11px 18px;border-radius:8px">Original-PDF öffnen</a>'
+        f'<div style="color:{MUT};font-size:11px;margin-top:18px">'
+        f'DocID {u["doc_id"]} &middot; Quelle: U.S. House Clerk &mdash; '
+        f'Financial Disclosures (PTR)</div>'
+        f'</div></div>')
+
+
+def send_scan_notice(u: dict, to_email: str | None = None) -> bool:
+    from shared.email_brevo import send_html
+    subject = (f"\U0001F3DB\uFE0F Congress-Filing ohne Details: {u['politician']} "
+               f"\u2014 als Scan eingereicht")
+    to = to_email or os.environ.get("ADMIN_EMAIL", "heiko.seibel@gmail.com")
+    return send_html(to, subject, render_scan_notice_html(u))
+
+
 _STATE = "landing/data/congress_trades_seen.json"
 
 
@@ -357,8 +400,27 @@ def run(years: list[int], seed_only: bool = False) -> int:
         ok = send_alert(trs, context=context)
         sent += 1 if ok else 0
         print(f"[run] Alert {'OK' if ok else 'FEHLER'}: {pol} {trs[0]['filing_date']} ({len(trs)} Trades)")
+    # Ein Scan-Filing ist NICHT dasselbe wie ein Filing ohne Transaktionen:
+    # beim Scan gibt es mit hoher Wahrscheinlichkeit welche, wir können sie nur
+    # nicht lesen. Früher stand dazu nur eine Zeile im CI-Log — die niemand
+    # liest, und die bis heute in einem Job stand, der ohnehin immer grün
+    # meldete. Damit fiel ein ganzes Roster-Mitglied stillschweigend aus:
+    # Ro Khanna reicht monatlich auf Papier ein, 8 der 9 unlesbaren Filings
+    # stammen von ihm. Deshalb geht dafür jetzt eine Mail raus.
+    #
+    # "keine Wertpapier-Transaktion" bekommt bewusst KEINE Mail: da gab es
+    # nichts zu melden, und eine Benachrichtigung darüber wäre genau das
+    # Rauschen, das dazu führt, dass man die echten nicht mehr liest.
     for u in new_unparsed:
-        print(f"[run] Neues Scan-Filing ohne Detail: {u['politician']} {u['filing_date']}")
+        ist_scan = u.get("reason", "").startswith("Scan-PDF")
+        if not ist_scan:
+            print(f"[run] Neues Filing ohne Wertpapier-Transaktion: "
+                  f"{u['politician']} {u['filing_date']} (keine Mail)")
+            continue
+        ok = send_scan_notice(u)
+        sent += 1 if ok else 0
+        print(f"[run] Scan-Hinweis {'OK' if ok else 'FEHLER'}: "
+              f"{u['politician']} {u['filing_date']}")
 
     seen.update(current)
     state_path.write_text(json.dumps(seen, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -375,9 +437,23 @@ def main() -> int:
     ap.add_argument("--email-digest", action="store_true", help="Digest: neuestes Filing JE Politiker an ADMIN_EMAIL")
     ap.add_argument("--run", action="store_true", help="Cron: bauen + bei neuen Filings alarmieren")
     ap.add_argument("--seed-only", action="store_true", help="State seeden ohne Alerts")
+    ap.add_argument("--scan-test", action="store_true",
+                    help="Sample-Scan-Hinweis (neuestes Scan-Filing) an ADMIN_EMAIL")
     a = ap.parse_args()
     if a.run or a.seed_only:
         return run(a.years, seed_only=a.seed_only)
+    if a.scan_test:
+        data = json.loads((_ROOT / "landing/data/congress_trades.json").read_text(encoding="utf-8"))
+        scans = [u for u in data.get("unparsed_filings", [])
+                 if u.get("reason", "").startswith("Scan-PDF")]
+        if not scans:
+            print("[scan-test] kein Scan-Filing im Bestand")
+            return 1
+        u = max(scans, key=lambda x: x["filing_date"])
+        ok = send_scan_notice(u)
+        print(f"[scan-test] {'OK gesendet' if ok else 'FEHLGESCHLAGEN'} — "
+              f"{u['politician']} {u['filing_date']}")
+        return 0 if ok else 1
     if a.email_digest:
         from shared.email_brevo import send_html
         data = json.loads((_ROOT / "landing/data/congress_trades.json").read_text(encoding="utf-8"))
