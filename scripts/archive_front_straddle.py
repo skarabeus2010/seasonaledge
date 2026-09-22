@@ -29,6 +29,18 @@ bevor man die Zahlen benutzt:
     liest, zahlt sie. Der rekonstruierte Straddle ist ein fairer Wert, kein
     handelbarer Preis. Das gehört an jede Auswertung dieser Daten dran.
 
+WANN DAS SKRIPT LAUFEN MUSS — das ist keine Nebensache, sondern der Kern:
+
+    VOR DER US-EROEFFNUNG (vor 13:30 UTC). Dann verfaellt der 0DTE-Kontrakt am
+    Ende genau der Sitzung, die vorhergesagt werden soll: ein Tag, kein
+    Horizont-Fehler. Zum Schlusskurs waere derselbe Kontrakt wertlos, und der
+    naechste Verfall liegt je nach Wochentag ein bis drei Tage entfernt — dann
+    bepreist der Straddle mehrere Tage und ueberschaetzt die Tagesspanne.
+
+    Jeder Datensatz haelt in `vor_eroeffnung` fest, ob das beim Lauf zutraf.
+    Eine spaetere Auswertung soll die uebrigen Tage ausschliessen, nicht
+    mitrechnen.
+
 ARCHIVIERT WIRD JE TICKER UND TAG: Spot, Verfallstag, Restlaufzeit, der Strike
 am Geld, Call- und Put-IV dort, der daraus gerechnete Straddle, und die Anzahl
 der Verfallstage, die überhaupt zur Wahl standen. Die letzte Zahl ist die
@@ -100,13 +112,24 @@ def front_straddle(mod, ticker: str, key: str) -> dict | None:
     if not iv_c or not iv_p:
         return None
 
-    # T in Jahren. Ein 0DTE-Kontrakt hat am Schluss rechnerisch T = 0 und damit
-    # Preis 0; damit die Reihe nicht auf null zusammenbricht, wird ein halber
-    # Tag als Untergrenze gesetzt und das Feld `t_untergrenze` gesetzt, damit
-    # eine spaetere Auswertung diese Tage erkennen und ausschliessen kann.
-    tage = max(e["dte"], 0)
-    untergrenze = tage == 0
-    T = max(tage, 0.5) / 365.0
+    # T IN JAHREN — und hier haengt alles am Zeitpunkt des Laufs.
+    #
+    # Ein Kontrakt mit dte = 0 verfaellt HEUTE zum Schluss. Laeuft dieses
+    # Skript VOR der Eroeffnung, liegt genau eine Sitzung dazwischen, und der
+    # Straddle bepreist exakt den kommenden Handelstag — das ist der saubere
+    # Fall fuer die Regel "Straddle durch Spot ergibt die Tagesspanne", ohne
+    # jeden Horizont-Fehler. Laeuft es dagegen ZUM SCHLUSS, ist derselbe
+    # Kontrakt wertlos und die Zahl Unsinn.
+    #
+    # dte = 0 wird deshalb als EIN Tag gerechnet, nicht als null und nicht als
+    # halber. Das unterstellt den Lauf vor der Eroeffnung; `vor_eroeffnung`
+    # haelt fest, ob das zum Zeitpunkt des Laufs plausibel war, damit eine
+    # spaetere Auswertung die uebrigen Tage ausschliessen kann.
+    from datetime import datetime, timezone
+    jetzt = datetime.now(timezone.utc)
+    vor_eroeffnung = (jetzt.hour * 60 + jetzt.minute) < 13 * 60 + 30   # NYSE-Open
+    tage = max(e["dte"], 1)
+    T = tage / 365.0
 
     call = bs_price(spot, k, T, iv_c, "call")
     put = bs_price(spot, k, T, iv_p, "put")
@@ -117,7 +140,9 @@ def front_straddle(mod, ticker: str, key: str) -> dict | None:
         "call": round(call, 4), "put": round(put, 4),
         "straddle": round(straddle, 4),
         "straddle_pct": round(straddle / spot * 100, 4),
-        "t_untergrenze": untergrenze,
+        "t_tage": tage,
+        "vor_eroeffnung": bool(vor_eroeffnung),
+        "lauf_utc": jetzt.strftime("%H:%M"),
         "n_verfaelle": len(kandidaten),
         "r": R,
         "quelle": "aus Anbieter-IV per Black-Scholes zurueckgerechnet; "
@@ -169,7 +194,8 @@ def main() -> int:
         print("  %-6s Verfall %s (dte %d)  Strike %s  Straddle %.2f  = %.3f %% "
               "des Spot%s"
               % (t, d["exp"], d["dte"], d["strike"], d["straddle"],
-                 d["straddle_pct"], "  [T untergrenzt]" if d["t_untergrenze"] else ""))
+                 d["straddle_pct"],
+                 "" if d["vor_eroeffnung"] else "  [NACH Eroeffnung gelaufen]"))
 
     gesamt = sum(len(v) for v in hist.values())
     if a.dry_run:
