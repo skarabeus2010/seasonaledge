@@ -168,6 +168,30 @@ def main() -> None:
             melde(("location = %s {" % u) in routen,
                   "%-56s nginx-Route vorhanden" % u)
 
+    print("Links auf der ENGLISCHEN Fassung:")
+    # rewrite_body_links ueberspringt /blog/, ein Blog-Link bleibt auf der
+    # EN-Seite also deutsch. Das ist hinnehmbar, solange das Etikett es ansagt —
+    # ein englischer Leser darf nicht ueber "Read it" auf einem deutschen
+    # Artikel landen. Geprueft wird die GEBAUTE Seite, nicht die Vorlage.
+    p_en = os.path.join(WURZEL, "landing/en/studien.html")
+    if not os.path.exists(p_en):
+        hinweise.append("landing/en/studien.html fehlt — erst build_en.py --write")
+    else:
+        enh = io.open(p_en, encoding="utf-8").read()
+        anker = re.findall(r'href="([^"]+)"[^>]*data-i18n="(st\.read[a-z_]*)"', enh)
+        melde(len(anker) == 11, "%d Links (erwartet 11, einer je Karte)" % len(anker))
+        falsch = [u for u, key in anker
+                  if u.startswith("/blog/") and key != "st.read_deonly"]
+        melde(not falsch,
+              "kein deutscher Artikel hinter einem neutralen Etikett"
+              + ("" if not falsch else ": " + ", ".join(falsch)))
+        tot = [u for u, _ in anker if u.startswith("/en/blog/")
+               and not os.path.exists(os.path.join(
+                   WURZEL, "blog/posts/en"))]
+        melde(not tot, "alle /en/blog/-Ziele haben einen EN-Ordner")
+        melde(en.get("st.read_deonly", "").endswith("(German)"),
+              "das Etikett fuer deutsche Ziele nennt die Sprache")
+
     print("")
     for h in hinweise:
         print("  HINWEIS " + h)

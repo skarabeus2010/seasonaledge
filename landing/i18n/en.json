@@ -1853,7 +1853,6 @@
   "st.tally": "11 questions",
   "st.tally_sub": "asked and computed",
   "st.read": "Read it",
-  "st.read_en": "English version",
   "st.method_h": "Methodology &mdash; what the four labels mean",
   "st.method_body": "<h4>The four labels</h4><p><b>Supported</b> means the question was fixed in advance, the difference is measured, and it survives a significance test. <b>Qualified</b> means the effect exists, but only under a condition that belongs with it &mdash; in turbulent markets, say, or only above a certain magnitude. Drop the condition and you are quoting something other than what was measured. <b>Not supported</b> means it was computed and the difference cannot be told apart from chance. <b>Descriptive</b> means the pattern is there but the number of observations carries no test &mdash; at 36 events a p-value is false precision.</p><h4>Why the null results are here</h4><p>Asking ten questions and publishing only the one that produced an answer is not measuring, it is selecting. Across the 470 pairings of the intermarket matrix some 24 chance hits are to be expected &mdash; showing them one at a time means showing noise with a p-value attached. That is why the number of questions asked appears with every analysis, and why the null results stay up.</p><h4>What is not here</h4><p>Analyses whose data base is too thin are not published &mdash; not even when the figures happen to look good. The returns of members of Congress, for instance, have been computed, but so far rest on too few events and too few people; any statement about &lsquo;the politicians&rsquo; would be a statement about two of them.</p><h4>Repeatability</h4><p>Every analysis runs on the same price database as the rest of the site. The hypothesis, the period and the threshold appear in each write-up &mdash; not because it sounds good, but because a figure without those three is not checkable.</p>",
   "st.faq_h": "Frequently asked questions",
@@ -1917,5 +1916,8 @@
   "st.midterm_t": "The midterm year in the presidential cycle",
   "st.midterm_f": "Does the second year of a US term differ from the other three?",
   "st.midterm_e": "In pattern, yes. Midterm years carry the <b>deepest drawdown</b> of the four, and that low is on average followed by a recovery of <b>+31&nbsp;%</b>. With roughly twenty cycles since 1950 the number of observations is small &mdash; this is a descriptive pattern, not a tested effect.",
-  "st.midterm_b": "S&amp;P&nbsp;500 &middot; presidential cycles since 1950"
+  "st.midterm_b": "S&amp;P&nbsp;500 &middot; presidential cycles since 1950",
+
+  "st.read_alt": "Read it",
+  "st.read_deonly": "Read it (German)"
 }
