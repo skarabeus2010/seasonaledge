@@ -76,6 +76,26 @@ def main() -> None:
     en = json.loads(io.open(EN_JSON, encoding="utf-8").read())
     k = karten(html)
 
+    print("Quelle:")
+    # studien.html wird von build_studien_seite.py erzeugt. Wer stattdessen das
+    # HTML von Hand aendert, baut eine zweite Quelle — und die naechste
+    # Ausfuehrung des Generators wirft die Aenderung kommentarlos weg.
+    try:
+        sys.path.insert(0, os.path.join(WURZEL, "scripts"))
+        import build_studien_seite as gen
+        neu = gen.seite()
+        melde(neu == html,
+              "studien.html stimmt mit build_studien_seite.py ueberein"
+              if neu == html else
+              "studien.html WEICHT AB — von Hand geaendert? Aenderungen gehoeren "
+              "in scripts/build_studien_seite.py")
+        en_soll, _ = gen.sprachdateien()
+        abw = [x for x, v in en_soll.items() if en.get(x) != v]
+        melde(not abw, "en.json stimmt mit dem Generator ueberein"
+              if not abw else "en.json weicht ab: " + ", ".join(abw[:4]))
+    except ImportError as e:
+        hinweise.append("Generator nicht importierbar: %s" % e)
+
     print("Karten:")
     melde(len(k) == 11, "%d Studien-Karten gefunden (erwartet 11)" % len(k))
     melde(all(set(v) == {"t", "f", "e", "b"} for v in k.values()),
