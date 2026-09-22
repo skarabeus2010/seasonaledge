@@ -146,7 +146,7 @@
 
     <!-- METRIK-TABELLE je Ticker -->
     <div class="card" style="margin-top:1.1rem">
-      <div class="psub" data-i18n-html="skew.table_sub">Vol-Kennzahlen je Ticker (Fenster/Methode wie oben) &middot; Zeile anklicken &rarr; Verlauf &amp; Term-Structure</div>
+      <div class="psub" data-i18n-html="skew.table_sub">Vol-Kennzahlen je Ticker (Fenster/Methode wie oben) &middot; Zeile anklicken &rarr; Verlauf &amp; Term-Structure &middot; die Einfärbung zeigt nur, wo ein Wert innerhalb seiner Spalte liegt &mdash; kräftiger heisst höher, keine Richtungsaussage &middot; Spaltenüberschrift antippen für die Definition</div>
       <div id="sk-table" style="overflow-x:auto"></div>
       <p class="note" id="sk-note"></p>
     </div>
@@ -539,14 +539,28 @@
         tooltip:{theme:'dark',style:{fontSize:'13px'},x:{show:false},y:{formatter:function(v){return (v>0?'+':'')+v.toFixed(2)+' pts'},title:{formatter:function(){return '';}}}}
       }));
     }
-    // Heatmap-Farbe je Spalte (grün→amber→rot, relativ zu Spalten-Min/Max)
+    // Heatmap-Farbe je Spalte: EINE Farbe, die Intensität ist die Position in der
+    // Spalte. Bewusst NICHT grün→rot. Die meisten dieser Spalten messen einen
+    // Betrag oder einen Preis und keine Richtung — eine Ampel darüber liest sich
+    // wie eine Kauf-/Verkaufsempfehlung, die in der Zahl nicht steckt. Das
+    // Vorzeichen steht ohnehin in der Zahl selbst (gleiche Überlegung wie bei
+    // der Intermarket-Matrix).
     function _seqbg(v,lo,hi){
       if(v==null||!(hi>lo))return '';
-      var t=(v-lo)/(hi-lo); if(t<0)t=0; if(t>1)t=1; var c;
-      if(t<0.5){var u=t/0.5;c=[48+184*u,232-64*u,120-88*u];}
-      else{var u=(t-0.5)/0.5;c=[232+23*u,168-91*u,32+62*u];}
-      return 'background:rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+',.28)';
+      var t=(v-lo)/(hi-lo); if(t<0)t=0; if(t>1)t=1;
+      return 'background:rgba(232,168,32,'+(0.05+0.30*t).toFixed(3)+')';
     }
+    var TH_IV="Implizite Volatilität der am Geld liegenden Optionen, auf 30 Tage Laufzeit normiert und aufs Jahr gerechnet. Sie sagt, welche Schwankungsbreite der Optionsmarkt einpreist — über die Richtung sagt sie nichts.";
+    var TH_RANK="IV-Rank: wo die heutige IV zwischen Jahrestief (0) und Jahreshoch (100) liegt. IV-Perzentil: an wie viel Prozent der Tage des letzten Jahres die IV niedriger war. Das Perzentil ist robuster, weil ein einzelner Ausreisser den Rank für ein ganzes Jahr verzerrt. Umschalten über die Schaltflächen oben.";
+    var TH_SKEW="Implizite Vola des 25-Delta-Puts minus die des 25-Delta-Calls, in Vol-Punkten, bei rund 30 Tagen Laufzeit. Positiv heisst: Absicherung nach unten kostet mehr als Spekulation nach oben — bei Aktien der Normalzustand. Ein hoher Wert ist kein Verkaufssignal, sondern der Preis einer Versicherung.";
+    var TH_SKEWRK="Wo der heutige Skew in seiner eigenen Historie des letzten Jahres liegt. Hoch heisst: ungewöhnlich put-lastig für diesen Titel — vergleichbar wird der Skew erst dadurch, denn jeder Basiswert hat sein eigenes Normalniveau.";
+    var TH_NE="Derselbe 25-Delta-Skew, aber am nächstgelegenen Verfall statt bei 30 Tagen. Kurzläufer reagieren viel stärker auf einzelne Termine. Weicht der Wert deutlich vom 30-Tage-Skew ab, preist der Markt etwas Kurzfristiges ein — Quartalszahlen oder eine Notenbanksitzung.";
+    var TH_SKEWTERM="Skew bei 90 Tagen minus Skew bei 30 Tagen. Positiv heisst: die Absicherung auf lange Sicht ist relativ teurer als die kurzfristige, die Sorge liegt also eher bei den kommenden Monaten als bei den kommenden Wochen. Negativ ist es umgekehrt.";
+    var TH_BFLY="Mittelwert aus 25-Delta-Put-IV und 25-Delta-Call-IV, minus die ATM-IV. Misst, wie stark sich das Vola-Lächeln zu beiden Rändern hin hebt, also wie teuer die Flügel gegenüber dem Geld sind. Ein hoher Wert heisst: der Markt bezahlt grosse Sprünge in beide Richtungen.";
+    var TH_PC="Verhältnis der impliziten Vola des 25-Delta-Puts zu der des 25-Delta-Calls. Über 1 heisst: der Put ist der teurere der beiden. Nicht zu verwechseln mit der Put-Call-Ratio aus Volumen oder Open Interest — hier stehen Preise, nicht Stückzahlen.";
+    var TH_VRP="Volatilitäts-Risikoprämie: implizite ATM-Vola minus der tatsächlich realisierten Vola der letzten 21 Handelstage. Positiv heisst: Optionen waren teurer als die eingetretene Schwankung — der übliche Zustand, weil Verkäufer für das Risiko bezahlt werden wollen. Negativ heisst: der Markt hat stärker geschwankt als eingepreist war.";
+    var TH_EM="Rechnerische 1-Sigma-Bewegung bis zum 30-Tage-Verfall, aus der ATM-IV. Ein Betrag ohne Richtung — nach oben wie nach unten gleich weit. Gemessen 1990-2026 hielt dieses Band in 84 % der Fälle statt in den rechnerischen 68 %, ist also systematisch zu weit. Details in den Fragen unten.";
+    var TH_TERM="Vergleich der ATM-Vola über die Laufzeiten. Contango: kurze Laufzeiten billiger als lange, der ruhige Normalfall. Backwardation: kurze teurer als lange — akuter Stress oder ein naher Termin.";
     // Metrik-Tabelle je Ticker als Heatmap (IV-Rank/Pctl abhängig von Fenster/Methode)
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
@@ -561,11 +575,22 @@
       function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
         return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
           (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
-      var h='<table class="sk-tbl"><tr>'+
-        '<th>Ticker</th><th style="text-align:right">IV</th><th style="text-align:right">'+_metricLbl()+'</th>'+
-        '<th style="text-align:right">25Δ-Skew</th><th style="text-align:right" title="Wo der aktuelle Skew in seiner eigenen '+(SKEW_MODE==='pctl'?'1-J-Verteilung':'1-J-Spanne')+' liegt (hoch = ungewöhnlich put-lastig)">Skew-'+(SKEW_MODE==='pctl'?'Pctl':'Rk')+'</th><th style="text-align:right">NE-Skew</th><th style="text-align:right">Skew-Term</th>'+
-        '<th style="text-align:right">Butterfly</th><th style="text-align:right">P/C</th>'+
-        '<th style="text-align:right">VRP</th><th style="text-align:right" title="Rechnerische 1-Sigma-Bewegung bis zum 30-Tage-Verfall. Gemessen 1990-2026 hielt dieses Band in 84 % der Fälle statt in den rechnerischen 68 % — es ist systematisch zu weit. Details in den Fragen unten.">Exp.Move</th><th style="text-align:right">Term</th></tr>';
+      // Jede Spaltenüberschrift trägt ihre Definition als Tooltip. Die Texte
+      // laufen über T(), weil build_en.py Script-Inhalte nicht übersetzen kann.
+      function th(lbl,key,def){
+        return '<th style="text-align:right" title="'+T(key,def).replace(/"/g,'&quot;')+'">'+lbl+'</th>';}
+      var h='<table class="sk-tbl"><tr><th>Ticker</th>'+
+        th('IV','skew.th_iv',TH_IV)+
+        th(_metricLbl(),'skew.th_rank',TH_RANK)+
+        th('25Δ-Skew','skew.th_skew',TH_SKEW)+
+        th('Skew-'+(SKEW_MODE==='pctl'?'Pctl':'Rk'),'skew.th_skewrk',TH_SKEWRK)+
+        th('NE-Skew','skew.th_ne',TH_NE)+
+        th('Skew-Term','skew.th_skewterm',TH_SKEWTERM)+
+        th('Butterfly','skew.th_bfly',TH_BFLY)+
+        th('P/C','skew.th_pc',TH_PC)+
+        th('VRP','skew.th_vrp',TH_VRP)+
+        th('Exp.Move','skew.th_em',TH_EM)+
+        th('Term','skew.th_term',TH_TERM)+'</tr>';
       rows.forEach(function(t){
         var termB=t.contango===true?'<span class="sk-badge up" style="font-size:.74rem;padding:.1rem .4rem">Contango</span>':(t.contango===false?'<span class="sk-badge dn" style="font-size:.74rem;padding:.1rem .4rem">Backw.</span>':'—');
         h+='<tr data-tk="'+t.ticker+'">'+

@@ -1463,7 +1463,7 @@
   "skew.quad_sub_cs": "<b>Vol Regime Radar</b> &mdash; <b>Upside demand</b> (X) &times; <b>Hedging demand</b> (Y)<br><span style=\"color:var(--accent)\">Call skew</span> (OTM calls vs. ATM) &times; <span style=\"color:var(--accent)\">Put skew</span> (OTM puts vs. ATM), ranked independently &middot; positive = OTM richer than ATM &middot; crosshair = 50%",
   "skew.rank_window": "Rank window:",
   "skew.view_lbl": "View:",
-  "skew.table_sub": "Vol metrics per ticker (window/method as above) &middot; click a row &rarr; history &amp; term structure",
+  "skew.table_sub": "Vol metrics per ticker (window/method as above) &middot; click a row &rarr; history &amp; term structure &middot; the shading shows only where a value sits within its column &mdash; stronger means higher, it states no direction &middot; tap a column heading for its definition",
   "skew.mode": "Method:",
   "skew.category": "Category:",
   "skew.curve_hint": "<b>Volatility Smile</b> (IV × delta) — click a ticker in the table/radar",
@@ -1833,5 +1833,17 @@
   "kr.faq3_q": "Why does the history only run a few years for some pairs?",
   "kr.faq3_a": "Because the calculation runs only while <b>both</b> series exist. The 10-year yield reaches back to 1970, ether only to 2017 &mdash; so the pair of the two begins in 2017. The shared period is shown for every pair, and with a short history a percentile is worth correspondingly less.",
   "kr.faq4_q": "Is an extreme value a signal?",
-  "kr.faq4_a": "No. The page shows an analysis of historical price data, not a forecast and not investment advice. A rolling window produces hundreds of overlapping observations; a peak among them is not an event but a property of the calculation. Past patterns guarantee no future results."
+  "kr.faq4_a": "No. The page shows an analysis of historical price data, not a forecast and not investment advice. A rolling window produces hundreds of overlapping observations; a peak among them is not an event but a property of the calculation. Past patterns guarantee no future results.",
+
+  "skew.th_iv": "Implied volatility of the at-the-money options, normalised to a 30-day maturity and annualised. It states the range of movement the options market is pricing in — it says nothing about direction.",
+  "skew.th_rank": "IV rank: where today&#39;s IV sits between the year&#39;s low (0) and its high (100). IV percentile: on what share of days over the past year the IV was lower. The percentile is the more robust of the two, because a single outlier distorts the rank for a whole year. Switch using the buttons above.",
+  "skew.th_skew": "Implied volatility of the 25-delta put minus that of the 25-delta call, in vol points, at roughly 30 days to expiry. Positive means downside protection costs more than upside speculation — the normal state for equities. A high reading is not a sell signal; it is the price of an insurance.",
+  "skew.th_skewrk": "Where today&#39;s skew sits within its own history over the past year. High means unusually put-heavy for this underlying — and only this makes skew comparable, since every underlying has its own normal level.",
+  "skew.th_ne": "The same 25-delta skew, but at the nearest expiry instead of 30 days. Short-dated options react far more strongly to individual dates. A large gap to the 30-day skew means the market is pricing in something imminent — quarterly figures or a central bank meeting.",
+  "skew.th_skewterm": "Skew at 90 days minus skew at 30 days. Positive means protection further out is relatively more expensive than short-dated protection, so the concern lies with the coming months rather than the coming weeks. Negative is the reverse.",
+  "skew.th_bfly": "The average of the 25-delta put IV and the 25-delta call IV, minus the ATM IV. It measures how far the volatility smile lifts towards both edges, i.e. how expensive the wings are relative to the money. A high reading means the market is paying for large jumps in either direction.",
+  "skew.th_pc": "Ratio of the 25-delta put&#39;s implied volatility to the 25-delta call&#39;s. Above 1 means the put is the more expensive of the two. Not to be confused with the put/call ratio from volume or open interest — these are prices, not counts.",
+  "skew.th_vrp": "Volatility risk premium: implied ATM volatility minus the volatility actually realised over the past 21 trading days. Positive means options were more expensive than the movement that followed — the usual state, because sellers want paying for the risk. Negative means the market moved more than was priced in.",
+  "skew.th_em": "The calculated one-sigma move to the 30-day expiry, from the ATM IV. An amount without a direction — equally far up as down. Measured over 1990-2026 this band held in 84 % of cases rather than the calculated 68 %, so it is systematically too wide. Details in the questions below.",
+  "skew.th_term": "A comparison of ATM volatility across maturities. Contango: short maturities cheaper than long ones, the calm normal case. Backwardation: short dearer than long — acute stress or an imminent date."
 }
