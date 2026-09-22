@@ -6,7 +6,7 @@ de_slug: pinning-verfallstag
 date: 2026-09-22
 category: education
 tags: [options, expiration, opex, pinning, delta-hedging, statistics]
-description: "Do stocks close near a strike more often on expiration Friday? 158 names, 30 years, 41,203 observations: 6.88 % versus 6.53 %, p = 0.0075."
+description: "Do stocks close near a strike more often on expiration Friday? 158 names, 30 years, 41,203 observations: 6.88 % versus 6.53 %, p = 0.0050."
 ticker: SPY
 status: published
 ---
@@ -22,7 +22,7 @@ Keyword-Plan:
 
 On the third Friday of each month, standard US equity options expire. Options desks have long observed that stock prices close unusually close to an option strike on that day. The phenomenon is called pinning.
 
-We measured it across 158 optionable US stocks over 30 years: **6.88 % of closing prices sit on a strike on expiration Friday, against 6.53 % on every other Friday** for the same names. The difference is +0.35 percentage points at p = 0.0075.
+We measured it across 158 optionable US stocks over 30 years: **6.88 % of closing prices sit on a strike on expiration Friday, against 6.53 % on every other Friday** for the same names. The difference is +0.35 percentage points at p = 0.0050.
 
 ## Why a price can stick to a strike
 
@@ -38,21 +38,25 @@ A clean measurement would require knowing, for every day in the past, at which p
 
 Any assumption about them is therefore wrong. The way around it is not a better grid but the comparison group: the same assumption is applied to expiration Fridays **and** to every other Friday of the same stocks over the same period.
 
-If the assumed grid is too coarse, too fine, or placed at the wrong levels, it is wrong in exactly the same way in both groups. The absolute rate loses its meaning, while the difference between the groups stays interpretable. A hit is a closing price within 0.125 $ of an assumed strike.
+If the assumed grid is too coarse, too fine, or placed at the wrong levels, that error hits both groups. The absolute rate therefore loses its meaning — ours sits at roughly a third of what studies with real strikes report. A hit is a closing price within 0.125 $ of an assumed strike.
+
+That the **difference** is equally untouched does not follow automatically, and that belongs on the record: whether a close counts as a hit depends on where it sits relative to the assumed grid. If expiration days really do close nearer to real strikes, a wrong grid can sort them differently from control Fridays. Part of the measured difference could therefore come from the grid assumption — or be masked by it. Only the real historical strikes would settle that.
 
 Only Fridays are compared with Fridays, so the known day-of-week effect does not leak into the calculation. The data are daily closing prices: 41,203 observations on expiration Fridays against 135,738 control observations, spread over 369 calendar months from 1996 to 2026.
 
 ## The numbers, overall and in two sub-periods
 
-![Three pairs of bars comparing the share of closing prices on a strike on expiration Fridays versus other Fridays: full period 1996-2026 (6.88 % versus 6.53 %, p = 0.0075), the years up to 2009 (8.43 % versus 8.28 %, p = 0.3188) and from 2010 onwards (6.06 % versus 5.61 %, p = 0.0015)](pinning-verfallstag/1_perioden.png)
+![Three pairs of bars comparing the share of closing prices on a strike on expiration Fridays versus other Fridays: full period 1996-2026 (6.88 % versus 6.53 %, p = 0.0050), the years up to 2009 (8.43 % versus 8.28 %, p = 0.2744) and from 2010 onwards (6.06 % versus 5.61 %, p = 0.0015)](pinning-verfallstag/1_perioden.png)
 
 | Period | Expiration Fridays | Other Fridays | Difference | p |
 |---|---:|---:|---:|---:|
-| 1996–2026 | **6.88 %** | 6.53 % | +0.35 pp | 0.0075 |
-| up to 2009 | 8.43 % | 8.28 % | +0.15 pp | 0.3188 |
+| 1996–2026 | **6.88 %** | 6.53 % | +0.35 pp | 0.0050 |
+| up to 2009 | 8.43 % | 8.28 % | +0.15 pp | 0.2744 |
 | from 2010 | **6.06 %** | 5.61 % | +0.45 pp | 0.0015 |
 
-Across the full period the 95 % interval for the difference runs from **+0.07 to +0.65 percentage points**. It excludes zero, while covering a range from almost nothing to nearly double the point estimate.
+Across the full period the 95 % interval for the difference runs from **+0.09 to +0.62 percentage points**. It excludes zero, while covering a range from almost nothing to nearly double the point estimate.
+
+The p-value answers one specific question: how often would a difference of this size come up if expiration Friday were not a special Friday at all? To answer it, one Friday in each month is drawn at random and treated as if it were the expiry. That leaves untouched everything that must stay untouched — the monthly structure, the number of expiry days, the composition of names, the price level of the era — and shuffles only the one thing at issue. Across 2,000 such runs the drawn variant reached the measured +0.35 percentage points in 0.5 percent of cases.
 
 One hypothesis was tested, fixed in advance and directional: the share is higher on expiration Friday. No set of thresholds, definitions or time windows was tried out with the best result picked afterwards.
 
@@ -60,7 +64,7 @@ One hypothesis was tested, fixed in advance and directional: the share is higher
 
 Weekly-expiring options have been broadly available since 2010. The obvious expectation: open interest spreads across many dates, the monthly expiration loses its special role, the effect shrinks.
 
-The measurement points the other way. Before 2010 the difference is +0.15 percentage points at p = 0.3188, which these data cannot distinguish from zero. From 2010 onwards it is +0.45 percentage points at p = 0.0015. The effect is three times as large in the more recent half, and only there does it carry statistical weight.
+The measurement points the other way. Before 2010 the difference is +0.15 percentage points at p = 0.2744, which these data cannot distinguish from zero. From 2010 onwards it is +0.45 percentage points at p = 0.0015. The effect is three times as large in the more recent half, and only there does it carry statistical weight.
 
 The 2010 split was fixed before the calculation, not placed afterwards where the gap looks widest. These data carry no explanation with them. One possibility is that the monthly expiry has gained weight because total options volume has grown sharply since 2010, while the third Friday remains the date with the largest open position.
 
@@ -84,7 +88,7 @@ The effect only becomes visible across 158 names and 369 months taken together. 
 
 **The effect is small.** +0.35 percentage points on a base of 6.53 % is a relative increase of about five percent. It is not a trading signal and carries no strategy.
 
-**The dependence structure is accounted for, not removed.** 158 stocks on the same Friday are not 158 independent observations; the broad market moves them together. The bootstrap therefore resamples whole months rather than individual ticker-days, which keeps the structure within a month intact.
+**The dependence structure is accounted for, not removed.** 158 stocks on the same Friday are not 158 independent observations; the broad market moves them together. The calculation therefore works over whole months rather than individual ticker-days, which keeps the structure within a month intact.
 
 **These are daily closing prices.** What happens intraday — whether the price drifts towards the strike during the session or only in the closing auction — cannot be measured from these data.
 
@@ -108,7 +112,7 @@ Pinning describes the observation that stock prices close very close to an optio
 
 ### How large is the measurable effect?
 
-Across 158 US stocks and 30 years, 6.88 % of closing prices on expiration Fridays fall within 0.125 $ of an assumed strike, against 6.53 % on all other Fridays. The difference of +0.35 percentage points has a p of 0.0075, with a 95 % interval from +0.07 to +0.65 percentage points.
+Across 158 US stocks and 30 years, 6.88 % of closing prices on expiration Fridays fall within 0.125 $ of an assumed strike, against 6.53 % on all other Fridays. The difference of +0.35 percentage points has a p of 0.0050, with a 95 % interval from +0.09 to +0.62 percentage points.
 
 ### Why are these rates so far below the 19 % found in research?
 
@@ -116,7 +120,7 @@ Because the strike grid assumed here is coarser than the real one available to t
 
 ### Have weekly options replaced the monthly expiry?
 
-Not for this effect. Up to 2009 the difference is +0.15 percentage points at p = 0.3188; from 2010 it is +0.45 percentage points at p = 0.0015. The excess on the third Friday has grown during the era of weekly options.
+Not for this effect. Up to 2009 the difference is +0.15 percentage points at p = 0.2744; from 2010 it is +0.45 percentage points at p = 0.0015. The excess on the third Friday has grown during the era of weekly options.
 
 ### Can the effect be seen on a single stock?
 
@@ -131,14 +135,14 @@ No. Lifting a 6.53 % base by 0.35 percentage points shifts probabilities margina
 
 **LinkedIn:**
 "On expiration day the price sticks to the strike" — we tested that trading-floor rule across 158 US stocks and 30 years.
-Result: 6.88 % of closing prices sit on a strike on expiration Friday, against 6.53 % on all other Fridays for the same names. +0.35 percentage points, p = 0.0075, 41,203 versus 135,738 observations.
-The sub-periods contradict the obvious expectation: weekly options arrived in 2010, so the monthly expiry should have lost weight. Measured, it is three times as large from 2010 (+0.45 pp, p = 0.0015) as before (+0.15 pp, p = 0.3188).
+Result: 6.88 % of closing prices sit on a strike on expiration Friday, against 6.53 % on all other Fridays for the same names. +0.35 percentage points, p = 0.0050, 41,203 versus 135,738 observations.
+The sub-periods contradict the obvious expectation: weekly options arrived in 2010, so the monthly expiry should have lost weight. Measured, it is three times as large from 2010 (+0.45 pp, p = 0.0015) as before (+0.15 pp, p = 0.2744).
 On method: historical strike grids are not available. Solved via the control group — apply the same wrong assumption to both groups, and the difference stays meaningful.
 The effect is small and not a trading signal. → seasonalpha.ai
 
 **Twitter/X:**
 Options expiration pinning, 158 US stocks, 30 years:
-6.88 % of closes on a strike on expiration Fridays vs 6.53 % on other Fridays. +0.35 pp, p = 0.0075.
+6.88 % of closes on a strike on expiration Fridays vs 6.53 % on other Fridays. +0.35 pp, p = 0.0050.
 And: from 2010 (weekly options era) the effect is three times as large.
 Small. Not a trading signal.
 #Options #Markets #SeasonAlpha

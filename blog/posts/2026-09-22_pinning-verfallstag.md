@@ -5,7 +5,7 @@ slug: pinning-verfallstag
 date: 2026-09-22
 category: education
 tags: [optionen, verfallstag, opex, pinning, delta-hedging, statistik]
-description: "Schließen Aktien am Optionsverfall häufiger auf einem Strike? 158 Titel, 30 Jahre, 41.203 Beobachtungen: 6,88 % gegen 6,53 %, p = 0,0075."
+description: "Schließen Aktien am Optionsverfall häufiger auf einem Strike? 158 Titel, 30 Jahre, 41.203 Beobachtungen: 6,88 % gegen 6,53 %, p = 0,0050."
 ticker: SPY
 status: published
 ---
@@ -21,7 +21,7 @@ Keyword-Plan:
 
 Am dritten Freitag im Monat verfallen die klassischen Aktienoptionen in den USA. Eine alte Beobachtung aus dem Optionshandel besagt, dass Aktienkurse an diesem Tag ungewöhnlich oft sehr nah an einem Options-Strike schließen. Dieses Phänomen heißt Pinning.
 
-Wir haben es an 158 optionablen US-Aktien über 30 Jahre nachgerechnet: **6,88 % der Schlusskurse liegen am Verfallsfreitag auf einem Strike gegenüber 6,53 % an allen anderen Freitagen** derselben Titel. Die Differenz beträgt +0,35 Prozentpunkte bei p = 0,0075.
+Wir haben es an 158 optionablen US-Aktien über 30 Jahre nachgerechnet: **6,88 % der Schlusskurse liegen am Verfallsfreitag auf einem Strike gegenüber 6,53 % an allen anderen Freitagen** derselben Titel. Die Differenz beträgt +0,35 Prozentpunkte bei p = 0,0050.
 
 ## Warum ein Kurs an einem Strike kleben kann
 
@@ -37,21 +37,25 @@ Für eine saubere Messung müsste man für jeden Tag der Vergangenheit wissen, a
 
 Jede Annahme darüber ist also falsch. Der Ausweg führt nicht über ein besseres Raster, sondern über die Vergleichsgruppe: Dieselbe Annahme wird auf Verfallsfreitage **und** auf alle übrigen Freitage derselben Aktien im selben Zeitraum angewandt.
 
-Ist das unterstellte Raster zu grob, zu fein oder an den falschen Stellen, dann ist es in beiden Gruppen auf identische Weise verkehrt. Die absolute Quote verliert dadurch ihre Bedeutung, die Differenz zwischen den Gruppen bleibt interpretierbar. Als Treffer zählt ein Schlusskurs, der höchstens 0,125 $ von einem angenommenen Strike entfernt liegt.
+Ist das unterstellte Raster zu grob, zu fein oder an den falschen Stellen, trifft dieser Fehler beide Gruppen. Die absolute Quote verliert damit ihre Bedeutung — sie liegt bei uns bei rund einem Drittel dessen, was Arbeiten mit echten Strikes berichten.
+
+Dass auch die **Differenz** davon unberührt bleibt, folgt daraus allerdings nicht zwingend, und das gehört dazugesagt: Ob ein Kurs als Treffer zählt, hängt davon ab, wo er relativ zum angenommenen Raster liegt. Wenn Verfallstage tatsächlich näher an echten Strikes schließen, kann ein falsches Raster sie anders einsortieren als Kontrollfreitage. Ein Teil der gemessenen Differenz könnte daher aus der Rasterannahme stammen — oder von ihr verdeckt werden. Ausräumen ließe sich das nur mit den echten historischen Strikes. Als Treffer zählt ein Schlusskurs, der höchstens 0,125 $ von einem angenommenen Strike entfernt liegt.
 
 Verglichen werden ausschließlich Freitage mit Freitagen, damit sich der bekannte Wochentagseffekt nicht in die Rechnung mischt. Datenbasis sind Tagesschlusskurse, 41.203 Beobachtungen an Verfallsfreitagen gegen 135.738 Kontrollbeobachtungen, verteilt auf 369 Kalendermonate von 1996 bis 2026.
 
 ## Die Zahlen: gesamt und in zwei Teilperioden
 
-![Drei Balkenpaare im Vergleich: Anteil der Schlusskurse am Strike an Verfallsfreitagen gegen übrige Freitage, für den Gesamtzeitraum 1996-2026 (6,88 % gegen 6,53 %, p = 0,0075), für die Jahre bis 2009 (8,43 % gegen 8,28 %, p = 0,3188) und ab 2010 (6,06 % gegen 5,61 %, p = 0,0015)](pinning-verfallstag/1_perioden.png)
+![Drei Balkenpaare im Vergleich: Anteil der Schlusskurse am Strike an Verfallsfreitagen gegen übrige Freitage, für den Gesamtzeitraum 1996-2026 (6,88 % gegen 6,53 %, p = 0,0050), für die Jahre bis 2009 (8,43 % gegen 8,28 %, p = 0,2744) und ab 2010 (6,06 % gegen 5,61 %, p = 0,0015)](pinning-verfallstag/1_perioden.png)
 
 | Zeitraum | Verfallsfreitage | übrige Freitage | Differenz | p |
 |---|---:|---:|---:|---:|
-| 1996–2026 | **6,88 %** | 6,53 % | +0,35 pp | 0,0075 |
-| bis 2009 | 8,43 % | 8,28 % | +0,15 pp | 0,3188 |
+| 1996–2026 | **6,88 %** | 6,53 % | +0,35 pp | 0,0050 |
+| bis 2009 | 8,43 % | 8,28 % | +0,15 pp | 0,2744 |
 | ab 2010 | **6,06 %** | 5,61 % | +0,45 pp | 0,0015 |
 
-Über den Gesamtzeitraum liegt das 95-Prozent-Intervall der Differenz bei **+0,07 bis +0,65 Prozentpunkten**. Es schließt die Null aus, umfasst aber eine Spanne vom Fast-Nichts bis zum knapp Doppelten des Punktschätzers.
+Über den Gesamtzeitraum liegt das 95-Prozent-Intervall der Differenz bei **+0,09 bis +0,62 Prozentpunkten**. Es schließt die Null aus, umfasst aber eine Spanne vom Fast-Nichts bis zum knapp Doppelten des Punktschätzers.
+
+Der p-Wert beantwortet eine bestimmte Frage: Wie oft käme eine Differenz dieser Größe heraus, wenn der Verfallsfreitag gar kein besonderer Freitag wäre? Um das zu beantworten, wird in jedem Monat ein Freitag ausgelost und so behandelt, als wäre er der Verfallstag. Das lässt alles unangetastet, was unangetastet bleiben muss — Monatsstruktur, Zahl der Verfallstage, Zusammensetzung der Titel, Kursniveau der Epoche — und verwürfelt nur das eine, worum es geht. In 2000 solchen Durchläufen erreichte die ausgeloste Variante die gemessenen +0,35 Prozentpunkte in 0,5 Prozent der Fälle.
 
 Geprüft wurde eine einzige, vorab festgelegte Hypothese, und zwar gerichtet: Am Verfallsfreitag liegt der Anteil höher. Es wurden nicht mehrere Schwellen, Definitionen oder Zeitfenster durchprobiert, aus denen man sich anschließend das beste Ergebnis aussuchen könnte.
 
@@ -59,7 +63,7 @@ Geprüft wurde eine einzige, vorab festgelegte Hypothese, und zwar gerichtet: Am
 
 Seit 2010 sind wöchentlich verfallende Optionen auf breiter Front verfügbar. Die naheliegende Erwartung: Das Open Interest verteilt sich auf viele Termine, der monatliche Verfallstag verliert seine Sonderstellung, der Effekt schrumpft.
 
-Gemessen ist das Gegenteil. Vor 2010 beträgt die Differenz +0,15 Prozentpunkte bei p = 0,3188, ist also mit diesen Daten nicht von null zu unterscheiden. Ab 2010 sind es +0,45 Prozentpunkte bei p = 0,0015. Der Effekt ist in der jüngeren Hälfte dreimal so groß und erst dort statistisch belastbar.
+Gemessen ist das Gegenteil. Vor 2010 beträgt die Differenz +0,15 Prozentpunkte bei p = 0,2744, ist also mit diesen Daten nicht von null zu unterscheiden. Ab 2010 sind es +0,45 Prozentpunkte bei p = 0,0015. Der Effekt ist in der jüngeren Hälfte dreimal so groß und erst dort statistisch belastbar.
 
 Die Trennstelle 2010 stand vor der Rechnung fest, sie wurde nicht nachträglich dorthin gelegt, wo der Unterschied am größten aussieht. Eine Erklärung liefern diese Daten nicht mit. Denkbar ist, dass die Bedeutung des Monatsverfalls gewachsen ist, weil das gesamte Optionsvolumen seit 2010 stark zugenommen hat und der dritte Freitag weiterhin der Termin mit dem größten offenen Bestand ist.
 
@@ -83,7 +87,7 @@ Sichtbar wird der Effekt erst über 158 Titel und 369 Monate zusammen. Genau des
 
 **Der Effekt ist klein.** +0,35 Prozentpunkte auf eine Basis von 6,53 % sind eine relative Steigerung von gut fünf Prozent. Das ist kein Handelssignal und trägt keine Strategie.
 
-**Die Abhängigkeitsstruktur ist berücksichtigt, aber nicht aufgelöst.** 158 Aktien an demselben Freitag sind keine 158 unabhängigen Beobachtungen, der Gesamtmarkt bewegt sie gemeinsam. Das Bootstrap-Verfahren zieht deshalb ganze Monate statt einzelner Ticker-Tage. Innerhalb eines Monats bleibt die Struktur damit erhalten.
+**Die Abhängigkeitsstruktur ist berücksichtigt, aber nicht aufgelöst.** 158 Aktien an demselben Freitag sind keine 158 unabhängigen Beobachtungen, der Gesamtmarkt bewegt sie gemeinsam. Gerechnet wird deshalb über ganze Monate statt über einzelne Ticker-Tage; innerhalb eines Monats bleibt die Struktur erhalten.
 
 **Es sind Tagesschlusskurse.** Was im Tagesverlauf passiert, ob sich der Kurs dem Strike also im Verlauf annähert oder erst in der Schlussauktion, ist mit diesen Daten nicht messbar.
 
@@ -107,7 +111,7 @@ Pinning beschreibt die Beobachtung, dass Aktienkurse am Optionsverfallstag häuf
 
 ### Wie stark ist der Effekt messbar?
 
-Über 158 US-Aktien und 30 Jahre schließen 6,88 % der Kurse an Verfallsfreitagen innerhalb von 0,125 $ eines angenommenen Strikes, gegenüber 6,53 % an allen übrigen Freitagen. Die Differenz von +0,35 Prozentpunkten hat ein p von 0,0075, das 95-Prozent-Intervall reicht von +0,07 bis +0,65 Prozentpunkten.
+Über 158 US-Aktien und 30 Jahre schließen 6,88 % der Kurse an Verfallsfreitagen innerhalb von 0,125 $ eines angenommenen Strikes, gegenüber 6,53 % an allen übrigen Freitagen. Die Differenz von +0,35 Prozentpunkten hat ein p von 0,0050, das 95-Prozent-Intervall reicht von +0,09 bis +0,62 Prozentpunkten.
 
 ### Warum liegen diese Quoten so weit unter den 19 % aus der Forschung?
 
@@ -115,7 +119,7 @@ Weil das hier unterstellte Strike-Raster gröber ist als das tatsächliche, das 
 
 ### Haben Wochenoptionen den Monatsverfall abgelöst?
 
-Für diesen Effekt nicht. Bis 2009 beträgt die Differenz +0,15 Prozentpunkte bei p = 0,3188, ab 2010 dagegen +0,45 Prozentpunkte bei p = 0,0015. Der Überschuss am dritten Freitag ist in der Zeit der Wochenoptionen also gewachsen.
+Für diesen Effekt nicht. Bis 2009 beträgt die Differenz +0,15 Prozentpunkte bei p = 0,2744, ab 2010 dagegen +0,45 Prozentpunkte bei p = 0,0015. Der Überschuss am dritten Freitag ist in der Zeit der Wochenoptionen also gewachsen.
 
 ### Lässt sich der Effekt an einer einzelnen Aktie nachvollziehen?
 
@@ -130,14 +134,14 @@ Nein. Eine Erhöhung um 0,35 Prozentpunkte bei einer Basis von 6,53 % verschiebt
 
 **LinkedIn:**
 „Am Verfallstag klebt der Kurs am Strike" — diese Regel aus dem Optionshandel haben wir an 158 US-Aktien über 30 Jahre nachgerechnet.
-Ergebnis: 6,88 % der Schlusskurse liegen am Verfallsfreitag auf einem Strike, gegen 6,53 % an allen übrigen Freitagen derselben Titel. +0,35 Prozentpunkte, p = 0,0075, 41.203 gegen 135.738 Beobachtungen.
-Die Teilperioden widersprechen der Erwartung: Seit 2010 gibt es Wochenoptionen, der Monatsverfall müsste an Gewicht verloren haben. Gemessen ist er ab 2010 dreimal so groß (+0,45 pp, p = 0,0015) wie davor (+0,15 pp, p = 0,3188).
+Ergebnis: 6,88 % der Schlusskurse liegen am Verfallsfreitag auf einem Strike, gegen 6,53 % an allen übrigen Freitagen derselben Titel. +0,35 Prozentpunkte, p = 0,0050, 41.203 gegen 135.738 Beobachtungen.
+Die Teilperioden widersprechen der Erwartung: Seit 2010 gibt es Wochenoptionen, der Monatsverfall müsste an Gewicht verloren haben. Gemessen ist er ab 2010 dreimal so groß (+0,45 pp, p = 0,0015) wie davor (+0,15 pp, p = 0,2744).
 Zur Methode: historische Strike-Raster sind nicht verfügbar. Gelöst über die Kontrollgruppe — dieselbe falsche Annahme auf beide Gruppen angewandt, dann bleibt die Differenz aussagekräftig.
 Der Effekt ist klein und kein Handelssignal. → seasonalpha.ai
 
 **Twitter/X:**
 Pinning am Verfallstag, 158 US-Aktien, 30 Jahre:
-6,88 % der Schlusskurse am Strike an Verfallsfreitagen, 6,53 % an anderen Freitagen. +0,35 pp, p = 0,0075.
+6,88 % der Schlusskurse am Strike an Verfallsfreitagen, 6,53 % an anderen Freitagen. +0,35 pp, p = 0,0050.
 Dazu: ab 2010 (Wochenoptionen!) ist der Effekt dreimal so groß, nicht kleiner.
 Klein. Kein Handelssignal.
 #Optionen #Börse #SeasonAlpha
