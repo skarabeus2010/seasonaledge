@@ -154,12 +154,26 @@ def front_straddle(mod, ticker: str, key: str) -> dict | None:
     call = bs_price(spot, k, T, iv_c, "call")
     put = bs_price(spot, k, T, iv_p, "put")
     straddle = call + put
+
+    # LAEUFT DER JOB NACH DER EROEFFNUNG UND DER KONTRAKT VERFAELLT HEUTE, ist
+    # die Annahme "ein Tag Restlaufzeit" falsch — es sind nur noch Stunden.
+    # Der Preis skaliert mit der Wurzel der Restlaufzeit, die Zahl waere also
+    # um ein Mehrfaches zu hoch.
+    #
+    # Sie wird deshalb NICHT geschrieben. Die Rohwerte (Spot, Strike, beide
+    # IVs, Laufzeit) bleiben drin, damit der Tag nachrechenbar ist und der
+    # Zeitverzug des Crons sichtbar bleibt — aber es steht keine falsche Zahl
+    # in der Datei, die jemand ungefiltert weiterverwendet. Dasselbe Muster
+    # wie bei der Congress-Auswertung: erfassen ja, Ergebnis nein.
+    unbrauchbar = (e["dte"] == 0 and not vor_eroeffnung)
     return {
         "spot": round(spot, 4), "exp": ex, "dte": e["dte"],
         "strike": k, "iv_call": iv_c, "iv_put": iv_p,
-        "call": round(call, 4), "put": round(put, 4),
-        "straddle": round(straddle, 4),
-        "straddle_pct": round(straddle / spot * 100, 4),
+        "call": None if unbrauchbar else round(call, 4),
+        "put": None if unbrauchbar else round(put, 4),
+        "straddle": None if unbrauchbar else round(straddle, 4),
+        "straddle_pct": None if unbrauchbar else round(straddle / spot * 100, 4),
+        "unbrauchbar": bool(unbrauchbar),
         "t_tage": tage,
         "vor_eroeffnung": bool(vor_eroeffnung),
         "lauf_utc": jetzt.strftime("%H:%M"),
@@ -211,11 +225,16 @@ def main() -> int:
         reihe.append(d)
         reihe.sort(key=lambda p: p["date"])
         neu += 1
-        print("  %-6s Verfall %s (dte %d)  Strike %s  Straddle %.2f  = %.3f %% "
-              "des Spot%s"
-              % (t, d["exp"], d["dte"], d["strike"], d["straddle"],
-                 d["straddle_pct"],
-                 "" if d["vor_eroeffnung"] else "  [NACH Eroeffnung gelaufen]"))
+        if d["unbrauchbar"]:
+            print("  %-6s Verfall %s (dte %d)  Strike %s  — Preis NICHT "
+                  "geschrieben: nach der Eroeffnung gelaufen (%s UTC), die "
+                  "Restlaufzeit-Annahme traegt nicht"
+                  % (t, d["exp"], d["dte"], d["strike"], d["lauf_utc"]))
+        else:
+            print("  %-6s Verfall %s (dte %d)  Strike %s  Straddle %.2f  "
+                  "= %.3f %% des Spot"
+                  % (t, d["exp"], d["dte"], d["strike"], d["straddle"],
+                     d["straddle_pct"]))
 
     gesamt = sum(len(v) for v in hist.values())
     if a.dry_run:

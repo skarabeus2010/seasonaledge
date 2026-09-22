@@ -2,12 +2,22 @@ name: Front-Straddle Archiv
 
 on:
   schedule:
-    # 12:00 UTC, Mo-Fr — VOR der US-Eroeffnung (13:30 UTC Sommerzeit,
-    # 14:30 UTC Winterzeit). Der Puffer ist Absicht: GitHub startet geplante
-    # Laeufe regelmaessig 15-30 Minuten verspaetet, und ein Lauf NACH der
-    # Eroeffnung waere fuer diese Messung wertlos — der 0DTE-Straddle bepreist
-    # dann nur noch den Rest des Tages statt die ganze Sitzung.
-    - cron: '0 12 * * 1-5'
+    # 09:30 UTC, Mo-Fr — VOR der US-Eroeffnung (13:30 UTC Sommerzeit,
+    # 14:30 UTC Winterzeit).
+    #
+    # DER PUFFER VON VIER STUNDEN IST GEMESSEN, NICHT GESCHAETZT. Der erste
+    # Entwurf stand auf 12:00 UTC mit der Annahme "GitHub ist 15-30 Minuten
+    # spaet". Am 22.09. fiel der einzige Actions-Lauf des Vormittags auf
+    # 13:27 UTC — bei einem 12:00-Plan sind das 87 Minuten Verzug und ganze
+    # drei Minuten vor der Eroeffnung. Ein Lauf NACH der Eroeffnung ist fuer
+    # diese Messung wertlos: der 0DTE-Straddle bepreist dann nur noch den Rest
+    # des Tages statt die ganze Sitzung, und der Datensatz traegt eine viel zu
+    # hohe Zahl.
+    #
+    # Der Lauf vom selben Tag um 08:54 UTC hat gezeigt, dass die Kette
+    # vorboerslich bereits brauchbare IVs fuer den heute verfallenden Kontrakt
+    # liefert — frueher zu laufen kostet also nichts.
+    - cron: '30 9 * * 1-5'
   workflow_dispatch:
 
 jobs:
