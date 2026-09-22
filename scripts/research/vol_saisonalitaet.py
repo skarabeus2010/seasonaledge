@@ -71,8 +71,26 @@ HANDELSTAGE_JAHR = 252       # Annualisierung
 MIN_TAGE_MONAT = 12          # weniger Renditen tragen keine Monatsstreuung
 RUNDEN = 2000                # Zufallsverschiebungen für die Nullverteilung
 MIN_JAHRE = 10               # weniger trägt kein Monatsprofil
-HYPOTHESE_TICKER = "SPY"
+# DIE HYPOTHESE SPRICHT VOM S&P 500 — ALSO WIRD DER S&P 500 GERECHNET.
+#
+# Ein erster Lauf nahm SPY. Das ist ein ETF, keine Indexreihe: die Kurse sind
+# dividendenbereinigt, und die Bereinigung traegt an jedem Ex-Tag einen
+# kuenstlichen Sprung in die Renditereihe. SPY schuettet QUARTALSWEISE aus —
+# Maerz, Juni, September, Dezember. Fuer eine Frage nach Kalendermonaten ist
+# das kein vernachlaessigbarer Rest, sondern ein Artefakt, das sich ausgerechnet
+# in vier bestimmten Monaten sammelt. Von Codex gefunden.
+#
+# ^GSPC ist der Kursindex ohne Dividenden und damit frei davon.
+HYPOTHESE_TICKER = "^GSPC"
 HYPOTHESE_MONATE = (9, 10)   # September + Oktober
+
+# START 1957, und die Grenze ist sachlich, nicht nach dem Ergebnis gewaehlt:
+# in diesem Jahr wurde der Index auf 500 Werte erweitert und bekam seine
+# heutige Form. Tagesdaten liegen zwar ab 1885 vor, aber vor 1900 sind es
+# exakt zwoelf Werte pro Jahr (Monatsdaten), und die Qualitaet der
+# Zwischenkriegsjahre aus dieser Quelle ist nicht nachpruefbar — CLAUDE.md
+# warnt ausdruecklich vor Phantomen in den Alt-Daten.
+HYPOTHESE_AB = "1957"
 
 MONATSNAMEN = ["", "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
                "August", "September", "Oktober", "November", "Dezember"]
@@ -102,7 +120,7 @@ UNIVERSUM = [
 
 # ── Bausteine ───────────────────────────────────────────────────────────────
 
-def monatswerte(ticker: str) -> tuple[list[str], list[float]]:
+def monatswerte(ticker: str, ab: str | None = None) -> tuple[list[str], list[float]]:
     """Annualisierte Streuung je Kalendermonat, aus dessen EIGENEN Renditen.
 
     Rueckgabe: (["2020-03", ...], [0.4712, ...]) in aufsteigender Reihenfolge.
@@ -114,6 +132,10 @@ def monatswerte(ticker: str) -> tuple[list[str], list[float]]:
     geschoben hat.
     """
     daten, closes = lade_closes(ticker)
+    if ab:
+        paare = [(d, c) for d, c in zip(daten, closes) if iso_tag(d) >= ab]
+        daten = [d for d, _ in paare]
+        closes = [c for _, c in paare]
     lr = log_returns(closes)
     je_monat = defaultdict(list)
     for i in range(1, len(closes)):               # lr[i-1] gehoert zu closes[i]
@@ -122,8 +144,18 @@ def monatswerte(ticker: str) -> tuple[list[str], list[float]]:
             continue
         je_monat[iso_tag(daten[i])[:7]].append(r)
 
+    # DER LAUFENDE KALENDERMONAT FLIEGT RAUS. Er ist per Definition
+    # unvollstaendig, und MIN_TAGE_MONAT allein faengt das nicht: ein Lauf am
+    # 22. September haette einen halben September im Median, waehrend der
+    # Oktober naturgemaess ganz fehlt. Das ist eine asymmetrische Stichprobe
+    # genau in den Monaten, um die es geht. Von Codex gefunden.
+    from datetime import date as _d
+    laufend = _d.today().isoformat()[:7]
+
     schluessel, werte = [], []
     for ym in sorted(je_monat):
+        if ym == laufend:
+            continue
         rr = je_monat[ym]
         if len(rr) < MIN_TAGE_MONAT:
             continue
@@ -199,10 +231,22 @@ def pruefe_hypothese(ym: list[str], werte: list[float], monate: tuple) -> dict:
     rnd = random.Random(20260922)
     verteilung = []
     for _ in range(RUNDEN):
-        # Mindestens 13 Monate Versatz, damit kein Lauf fast die Identität
-        # trifft und die Nullverteilung nicht kuenstlich eng wird.
-        v = _monats_kennzahl(ym, werte, monate,
-                             versatz=rnd.randrange(13, len(werte) - 13))
+        # VIELFACHE VON ZWOELF SIND AUSGESCHLOSSEN — und das ist der Kern
+        # des Tests, nicht eine Feinheit.
+        #
+        # Ein Versatz von 24 Monaten ordnet jeden September wieder einem
+        # September zu und jeden Oktober einem Oktober. Solche Ziehungen
+        # zerstoeren die Kalenderzuordnung NICHT, sie reproduzieren sie. Wer
+        # sie in der Nullverteilung laesst, fuellt deren oberen Rand mit
+        # Ziehungen, die den gemessenen Wert nachbauen — der p-Wert wird zu
+        # gross und der Test zu konservativ.
+        #
+        # Ein erster Entwurf schloss nur Versaetze nahe null aus. Damit war
+        # rund ein Zwoelftel der Nullverteilung wertlos. Von Codex gefunden.
+        versatz = rnd.randrange(13, len(werte) - 13)
+        if versatz % 12 == 0:
+            continue
+        v = _monats_kennzahl(ym, werte, monate, versatz=versatz)
         if v is not None:
             verteilung.append(v)
 
@@ -289,15 +333,26 @@ def main() -> int:
     print()
     print("=" * 76)
     print("VORAB FESTGELEGTE HYPOTHESE")
-    print("  H1: Die realisierte Vola des S&P 500 ist im September und Oktober")
-    print("      höher als im Rest des Jahres.")
+    print("  H1: Die Volatilität des S&P 500 (%s, ab %s) ist im September"
+          % (HYPOTHESE_TICKER, HYPOTHESE_AB))
+    print("      und Oktober höher als im Rest des Jahres.")
     print("      EIN Ticker, EIN Monatspaar, einseitig. Alles andere unten ist")
     print("      Beschreibung ohne p-Wert.")
     print("=" * 76)
 
+    # Die Hypothesenreihe wird EIGENS geladen und nicht aus der
+    # Anzeigeauswahl genommen: sie hat ihren eigenen Basiswert und ihren
+    # eigenen Startzeitpunkt, und sie darf nicht davon abhaengen, welche
+    # Ticker gerade in der Tabelle stehen.
     test = {}
-    if HYPOTHESE_TICKER in roh:
-        test = pruefe_hypothese(*roh[HYPOTHESE_TICKER], HYPOTHESE_MONATE)
+    try:
+        h_ym, h_werte = monatswerte(HYPOTHESE_TICKER, ab=HYPOTHESE_AB)
+    except Exception as e:
+        h_ym, h_werte = [], []
+        print("  Hypothesenreihe %s nicht ladbar: %s"
+              % (HYPOTHESE_TICKER, str(e)[:60]))
+    if h_werte:
+        test = pruefe_hypothese(h_ym, h_werte, HYPOTHESE_MONATE)
         if "fehler" in test:
             print("  %s: %s" % (HYPOTHESE_TICKER, test["fehler"]))
         else:
@@ -312,7 +367,7 @@ def main() -> int:
                             "H1 NICHT gestützt — der Unterschied liegt im "
                             "Bereich des Zufalls."))
     else:
-        print("  %s nicht in der Auswahl — Test nicht gelaufen." % HYPOTHESE_TICKER)
+        print("  %s nicht ladbar — Test NICHT gelaufen." % HYPOTHESE_TICKER)
 
     # ── Beschreibung: wo liegen die Monate quer über die Anlageklassen ─────
     print()
@@ -341,9 +396,11 @@ def main() -> int:
             "runden": RUNDEN,
             "min_jahre": MIN_JAHRE,
             "hypothese": {
-                "text": ("Die realisierte Vola des S&P 500 ist im September und "
+                "text": ("Die Volatilität des S&P 500 ist im September und "
                          "Oktober höher als im Rest des Jahres."),
                 "ticker": HYPOTHESE_TICKER,
+                "ab": HYPOTHESE_AB,
+                "n_monate": len(h_werte),
                 "monate": list(HYPOTHESE_MONATE),
                 "einseitig": True,
                 **test,

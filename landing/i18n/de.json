@@ -400,5 +400,5 @@
   "flows.def_buyback": "SEC Rule 10b-18 verbietet US-Unternehmen i.d.R. ab ~14 Tage vor geschätzter Earnings-Ankündigung bis 2 Tage danach eigene Aktien zurückzukaufen (<b>Blackout-Fenster</b>). Da Buybacks ein stabiler Kaufdruck-Puffer sind, erzeugt ein hoher Blackout-Anteil eine saisonale Schwächephase für diesen Stützungsmechanismus. Besonders ausgeprägt: Mitte Januar bis Mitte Februar (Q4-Earnings-Saison).",
 
   "nav.intermarket": "Intermarket-Matrix",
-  "nav.vola_saisonalitaet": "Volatilitäts-Saison"
+  "nav.vola_saisonalitaet": "Vol-Zyklus"
 }

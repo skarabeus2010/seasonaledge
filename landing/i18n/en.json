@@ -1753,7 +1753,7 @@
   "skew.faq5_q": "How reliable is the expected move?",
   "skew.faq5_a": "The expected move is the arithmetic 1-sigma move to the 30-day expiry, derived from at-the-money volatility. Under a normal distribution a 1-sigma band should hold in 68.3 percent of cases — measured on the S&amp;P 500 from 1990 to 2026 it held in <b>84.3 percent</b> (95 percent interval 82.2 to 86.3). The band is therefore systematically too wide, because implied volatility sits on average above subsequently realised volatility. In practice the actual move stays inside the band more often than the label suggests. The excess is largest at the money and shrinks towards the tails — at 2 sigma only 3.4 percentage points remain.",
 
-  "nav.vola_saisonalitaet": "Volatility Season",
+  "nav.vola_saisonalitaet": "Vol Cycle",
   "vs.caption": "Every seasonality analysis out there is about <i>returns</i>. This one is about <b>how far things move</b> &mdash; and that is the more dependable quantity: returns are barely predictable, whereas volatility depends strongly on its own past. Here is how turbulent each month typically is for a given instrument.",
   "vs.disclaimer": "<b>Important:</b> an analysis of historical price data, <b>not a forecast and not investment advice</b>. The monthly profiles are <b>descriptive</b> and carry no significance tests &mdash; twelve months times several hundred instruments would be thousands of questions, and with that many you always find something. Exactly <b>one</b> hypothesis was tested, set in advance; it is spelled out below.",
   "vs.verdict_no": "The crash months are not statistically crash months.",
@@ -1783,11 +1783,12 @@
   "vs.faq1_q": "Why volatility and not returns?",
   "vs.faq1_a": "Because volatility is the more dependable quantity. Returns are barely predictable; volatility depends strongly on its own past &mdash; a turbulent week is usually followed by a turbulent one. A seasonal volatility pattern is therefore sturdier than a seasonal return pattern. And for anyone pricing options or sizing positions it is the more immediately relevant number.",
   "vs.faq2_q": "Are September and October the crash months?",
-  "vs.faq2_a": "Not by this measurement. For the S&amp;P&nbsp;500, volatility in September and October together sits at <b>1.035 times</b> the rest of the year, and that is statistically indistinguishable from chance (<b>p = 0.354</b>). The memory hangs on individual events &mdash; October 1929, October 1987, October 2008. They do not make up the average level of the month.",
+  "vs.faq2_a": "Not by this measurement. For the S&amp;P&nbsp;500, volatility in September and October together sits at <b>1.059 times</b> the rest of the year, and that is statistically indistinguishable from chance (<b>p = 0.127</b>, measured on the index itself from 1957). The memory hangs on individual events &mdash; October 1929, October 1987, October 2008. They do not make up the average level of the month.",
   "vs.faq3_q": "What does &ldquo;relative to own normal volatility&rdquo; mean?",
   "vs.faq3_a": "Every value is divided by the median across all months of the same instrument. 1.00 is an average month, 1.20 one that is a fifth more turbulent. Without that normalisation any comparison would be dominated by bitcoin, which swings many times harder in absolute percentage points &mdash; the pattern would no longer be visible.",
   "vs.faq4_q": "Is this a trading signal?",
   "vs.faq4_a": "No. The page shows an analysis of historical price data, not a forecast and not investment advice. It also says nothing about direction: a turbulent month can rise or fall. Past patterns guarantee no future results.",
   "vs.h1": "<b>Volatility</b> Seasonality",
-  "vs.months": "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"
+  "vs.months": "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec",
+  "vs.verdict_na": "The test is not available."
 }
