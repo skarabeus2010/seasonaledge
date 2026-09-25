@@ -32,7 +32,7 @@ codex exec -s read-only "<Prompt>"
 `-s read-only` = Codex darf lesen und Kommandos ausführen, aber nichts schreiben.
 Das ist die richtige Voreinstellung für eine Abnahme.
 
-### Sieben Fallen (fünf vom 2026-09-11, zwei vom 2026-09-25)
+### Acht Fallen (fünf vom 2026-09-11, drei vom 2026-09-25)
 
 | Falle | Symptom | Abhilfe |
 |---|---|---|
@@ -42,6 +42,7 @@ Das ist die richtige Voreinstellung für eine Abnahme.
 | **Langläufer** | Abbruch beim Warten; der Mutationstest startet den Wächter 16× | Selbst ausführen, Codex die **Ausgabe** prüfen lassen — samt der Frage, ob das Ergebnis auch ohne echtes Greifen entstehen könnte |
 | **Falscher Sandbox-Modus** | Der Mutationstest **schreibt** Dateien, unter `read-only` unmöglich | `--sandbox workspace-write`, vorher `git status --porcelain --untracked-files=no \| md5sum` merken und danach vergleichen |
 | **`codex` nicht im PATH** (2026-09-25) | `command not found`, obwohl `~/.codex/` existiert und frisch beschrieben ist | Die Desktop-App bringt die CLI unter `%LOCALAPPDATA%/OpenAI/Codex/bin/<hash>/codex.exe` mit, **der Hash wechselt beim Selbst-Update**. Dynamisch auflösen: `CODEX=$(ls -t /c/Users/<user>/AppData/Local/OpenAI/Codex/bin/*/codex.exe \| head -1)`. In Git-Bash POSIX-Pfad nutzen — `$LOCALAPPDATA` mit Backslashes zerfällt, und `… \| tail` verschluckt dann auch noch den Fehlercode |
+| **Lauf hängt im Hintergrund** (2026-09-25) | Ausgabe endet bei `Reading additional input from stdin...`, Prozess läuft Stunden mit ~0 s CPU | `codex exec` liest nach dem Prompt noch die Standardeingabe, die im Hintergrund nie geschlossen wird. **Immer `< /dev/null` anhängen.** Einmal gingen so zwei Stunden verloren |
 | **Anderes Modell als gedacht** | Log zeigt `model: gpt-6-sol`, obwohl `config.toml` `gpt-6-astra` nennt | `-c model="gpt-6-astra"` explizit mitgeben und die `model:`-Zeile im Log prüfen |
 
 Ein Reviewer, der nichts ausführen kann, lehnt korrekterweise ab. **Vier der fünf

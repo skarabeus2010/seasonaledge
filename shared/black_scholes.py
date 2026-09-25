@@ -280,33 +280,71 @@ def bs_vega(S, K, T, sig):
     return S * math.exp(-0.5 * d1 * d1) / math.sqrt(2 * math.pi) * math.sqrt(T)
 
 
-TICK = 0.01               # Kursraster der Optionspreise (Massive liefert Cent)
+def beobachtetes_raster(px: float) -> float:
+    """Das GROEBSTE Kursraster, auf dem der beobachtete Preis entstanden sein kann.
+
+    Cboe (Rule 5.4): Klassen im Penny-Programm handeln unter 3 $ in 0,01, ab 3 $
+    in 0,05; alle anderen unter 3 $ in 0,05, ab 3 $ in 0,10. Welche Klasse ein
+    Kontrakt hat, liefert der Anbieter nicht, und aus den Kursen laesst es sich
+    nicht sauber ablesen: gemessen am 2026-09-24 lag der Anteil nicht-nickliger
+    Preise unter 3 $ bei Penny-Titeln bei 0,68-0,84, bei HCA, BKNG, SO, TMO,
+    RSP und XLC aber zwischen 0,20 und 0,48 — dazwischen, nicht bei null.
+    Deshalb je KONTRAKT das groebste mit seinem Preis vereinbare Raster:
+    0,38 kann nur auf 0,01 entstanden sein, 0,35 auch auf 0,05, 3,40 auch auf
+    0,10. Beweisbar konservativ, ohne die Klasse zu kennen (Codex-Review
+    2026-09-25: "ein Cent ist keine allgemeingueltige Tickgroesse")."""
+    cents = round(px * 100)
+    if cents % 5:
+        return 0.01
+    if px >= 3 and cents % 10 == 0:
+        return 0.10
+    return 0.05
 
 
-def tick_unsicherheit_pts(cands, spot: float, dte: int, tick: float = TICK, _punkte=None):
-    """Wie weit kann allein die Rundung auf den Kursraster den 25d-Skew verschieben?
+def skew_intervall_pts(cands, spot: float, dte: int, _punkte=None):
+    """Exakter Bereich des 25d-Skews (Put-IV − Call-IV, in Vol-Punkten), wenn
+    jeder der beiden gewaehlten Preise um ein halbes Raster falsch sein kann.
 
-    Codex-Review 2026-09-25: kurz vor Verfall kostet ein 25d-Kontrakt wenige
-    Cent. Ein halber Tick Rundungsfehler, geteilt durch das Vega, ist dann
-    ein nennenswerter IV-Fehler — synthetisch gemessen drehte er einen Skew
-    von +0,14 auf −0,09. Rueckgabe in Vol-Punkten, konservativ als Summe der
-    beiden Fluegel (die Fehler koennen sich addieren), oder None, wenn keine
-    25d-Leg waehlbar ist. Dieselben Kontrakte wie leg_from_prices."""
+    Ersetzt die lineare Naeherung "halber Tick / Vega": kurz vor Verfall ist
+    der Zusammenhang Preis -> IV stark gekruemmt. Codex konstruierte einen Fall
+    mit Skew −0,698 und Naeherung U = 0,699 — "richtungsfest" —, dessen exakt
+    invertiertes Intervall aber [−1,398; +0,001] war und die Null enthielt.
+    Hier werden die Grenzpreise direkt invertiert:
+        min = IV_put(p − h_p) − IV_call(c + h_c)
+        max = IV_put(p + h_p) − IV_call(c − h_c)
+    Rueckgabe {"lo", "hi", "raster_put", "raster_call"} UNGERUNDET, oder None,
+    wenn keine 25d-Leg waehlbar ist. Ist eine Grenze nicht invertierbar (Preis
+    minus halbes Raster unter dem inneren Wert), ist sie offen (−inf/+inf) —
+    die Richtung ist dann nicht belegbar."""
     g = _punkte if _punkte is not None else _gefilterte_punkte(cands, spot, dte)
     if g is None:
         return None
     gueltig, iv_atm, T, _klammer = g
     wahl = _waehle_delta(gueltig, spot, T, iv_atm, 0.25)
-    summe = 0.0
+    if not wahl["call"] or not wahl["put"]:
+        return None
+    preis = {}
+    for c in (cands or []):
+        preis.setdefault((c["typ"], c["K"]), c["px"])
+    grenzen = {}
     for typ in ("call", "put"):
-        if not wahl[typ]:
-            return None
         _d, iv, K = wahl[typ]
-        vega = bs_vega(spot, K, T, iv)
-        if vega <= 0:
-            return None
-        summe += (tick / 2.0) / vega
-    return round(summe * 100.0, 3)
+        # Der beobachtete Preis; fehlt die Kette (Aufruf nur mit _punkte), wird
+        # er aus der eigenen IV rekonstruiert — die Bisektion trifft ihn auf
+        # ~1e-6, der Cent-Wert ist damit eindeutig.
+        px = preis.get((typ, K))
+        if px is None:
+            px = round(bs_price(spot, K, T, iv, typ), 2)
+        h = beobachtetes_raster(px) / 2.0
+        unten = implied_vol(px - h, spot, K, T, typ) if px - h > 0 else None
+        oben = implied_vol(px + h, spot, K, T, typ)
+        grenzen[typ] = (unten, oben, beobachtetes_raster(px))
+    pu, po, rp = grenzen["put"]
+    cu, co, rc = grenzen["call"]
+    inf = float("inf")
+    lo = (pu - co) * 100.0 if (pu is not None and co is not None) else -inf
+    hi = (po - cu) * 100.0 if (po is not None and cu is not None) else inf
+    return {"lo": lo, "hi": hi, "raster_put": rp, "raster_call": rc}
 
 
 def _gefilterte_punkte(cands, spot: float, dte: int):

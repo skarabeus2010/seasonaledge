@@ -70,7 +70,7 @@ def _sigma(K: float, T: float, schiefe: float = 0.10) -> float:
 
 
 def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True,
-           veraltet=(), schiefe=0.10) -> list:
+           veraltet=(), schiefe=0.10, raster=0.01) -> list:
     """Synthetische Chain im Massive-Format.
 
     schritt(dte) -> Strike-Abstand; entferne(dte, K, typ) -> True = weglassen;
@@ -89,7 +89,7 @@ def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True,
             for typ in ("call", "put"):
                 if entferne and entferne(dte, K, typ):
                     continue
-                px = round(max(bs_price(S, K, T, sig, typ), 0.01), 2)
+                px = round(max(round(bs_price(S, K, T, sig, typ) / raster) * raster, raster), 2)
                 c = {"details": {"expiration_date": ex, "contract_type": typ, "strike_price": K,
                                  "ticker": f"O:SYN{ex[2:4]}{ex[5:7]}{ex[8:10]}{typ[0].upper()}{int(K * 1000):08d}"},
                      "open_interest": 100, "day": {"close": px, "volume": 10,
@@ -102,10 +102,11 @@ def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True,
     return out
 
 
-def _enrich(kette, close_datum=SESSION) -> dict | None:
-    m._spot = lambda sym, key: S
+def _enrich(kette, close_datum=SESSION, spot=None) -> dict | None:
+    spot = spot or S
+    m._spot = lambda sym, key: spot
     m._chain = lambda sym, key, spot=None: kette
-    m._realized_vol = lambda sym, n=21, bis=None: (0.18, S, close_datum.isoformat())
+    m._realized_vol = lambda sym, n=21, bis=None: (0.18, spot, close_datum.isoformat())
     with contextlib.redirect_stdout(io.StringIO()):
         return m._enrich("SYN", "probe-kein-echter-schluessel")
 
@@ -165,6 +166,51 @@ def _pruefe_render() -> int:
     b = out.get("beide")
     f += _zeile(b is not None and b["n"] == 2 and b["farben"] == ["ACC", "BLUE"], f"beide Kurven: {b}")
     f += _zeile(out.get("keine") is None, "keine Kurve: nichts gezeichnet")
+    return f
+
+
+def _pruefe_codex_grenzfall() -> int:
+    """Codex-Review R2, woertlich: S = 87,79, 1 Tag, Calls/Puts K = 80 ... 95,5 in
+    0,5-Schritten, BS-Preise bei sigma = 0,5447656011394632 auf Cent gerundet.
+    Die lineare Naeherung sagte "richtungsfest" (Skew −0,70, U 0,699), das exakt
+    invertierte Intervall [−1,398; +0,001] enthaelt aber die Null."""
+    from shared.black_scholes import bs_price
+    sigma, spot, ex = 0.5447656011394632, 87.79, VERFAELLE[1]
+    T = 1 / 365.0
+    lu = _ns(SESSION)
+    kette = []
+    k = 80.0
+    while k <= 95.5 + 1e-9:
+        for typ in ("call", "put"):
+            px = round(bs_price(spot, k, T, sigma, typ), 2)
+            # Die beiden gewaehlten Kontrakte mit Codex' Preisen — ohne diese
+            # Festlegung ergab die Kette Skew +0,02 statt −0,698, und der Test
+            # haette den Grenzfall gar nicht getroffen.
+            if typ == "call" and k == 89.5:
+                px = 0.38
+            if typ == "put" and k == 86.0:
+                px = 0.33
+            if px <= 0:
+                continue
+            kette.append({"details": {"expiration_date": ex, "contract_type": typ, "strike_price": k,
+                                      "ticker": f"O:SYN260925{typ[0].upper()}{int(k * 1000):08d}"},
+                          "open_interest": 100, "day": {"close": px, "volume": 10, "last_updated": lu}})
+        k += 0.5
+    with contextlib.redirect_stdout(io.StringIO()):
+        by = m._own_cands(kette, s30_ref=SESSION.isoformat(), underlying="SYN")
+    e = by[ex]
+    iv_int = bs.skew_intervall_pts(e["cands"], spot, 1)
+    f = 0
+    f += _zeile(iv_int is not None and iv_int["lo"] <= 0 <= iv_int["hi"],
+                f"Codex-Grenzfall: exaktes Intervall enthaelt die Null "
+                f"[{iv_int and round(iv_int['lo'], 3)}; {iv_int and round(iv_int['hi'], 3)}]")
+    # Und durch die ganze Kette: die Markierung muss gesetzt sein.
+    r = m._rankbar  # nur um m zu referenzieren
+    rr = {}
+    m._laufzeiten_eigen(rr, by, spot, [1])
+    f += _zeile(rr.get("skew_ne_richtung_unsicher") is True,
+                f"Codex-Grenzfall ueber _laufzeiten_eigen: Skew {rr.get('skew_ne_pts')}, "
+                f"Richtung unsicher = {rr.get('skew_ne_richtung_unsicher')}")
     return f
 
 
@@ -306,18 +352,25 @@ def _proben() -> int:
                      f"{r['skew_ne_pts']} (dte {r['skew_ne_dte']}, Ersatz {r['skew_ne_ersatz']})")
     PROBEN.append("ne_weggefiltert")
 
-    # ── Tick-Rauschen: Richtung unbestimmt vs. richtungsfest (Codex R1)
-    print("\nTick-Rauschen am 1-Tages-Verfall\n" + "-" * 68)
+    # ── Kursraster: exaktes Intervall, Raster je Kontrakt (Codex R1+R2)
+    print("\nKursraster-Unsicherheit am 1-Tages-Verfall\n" + "-" * 68)
+    for px, soll in ((0.38, 0.01), (0.35, 0.05), (0.30, 0.05), (3.40, 0.10), (3.45, 0.05), (3.41, 0.01)):
+        ist = bs.beobachtetes_raster(px)
+        fehler += _zeile(ist == soll, f"Raster fuer {px:.2f} $: {ist}")
     r = _enrich(_kette(schritt=FEIN_1T))
-    u, sk = r["skew_ne_unsicherheit_pts"], r["skew_ne_pts"]
-    fehler += _zeile(r["skew_ne_richtung_unsicher"] is (u is not None and sk is not None and u >= abs(sk)),
-                     f"flacher Skew {sk} bei ±{u}: Richtung unsicher = {r['skew_ne_richtung_unsicher']}")
-    fehler += _zeile(r["skew_ne_richtung_unsicher"] is True,
-                     "der bekannte Fall (+0,14 wahr, -0,09 gerundet) ist als unsicher markiert")
+    lo_hi = r["skew_ne_intervall"]
+    fehler += _zeile(r["skew_ne_richtung_unsicher"] is True and lo_hi and lo_hi[0] <= 0 <= lo_hi[1],
+                     f"flacher Skew {r['skew_ne_pts']}, Intervall {lo_hi}: Richtung unbestimmt")
     r = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0))
-    fehler += _zeile(r["skew_ne_richtung_unsicher"] is False and (r["skew_ne_pts"] or 0) > 0,
-                     f"steiler Put-Skew {r['skew_ne_pts']} bei ±{r['skew_ne_unsicherheit_pts']}: "
-                     f"richtungsfest und positiv")
+    lo_hi = r["skew_ne_intervall"]
+    fehler += _zeile(r["skew_ne_richtung_unsicher"] is False and lo_hi and lo_hi[0] > 0,
+                     f"steiler Put-Skew {r['skew_ne_pts']}, Intervall {lo_hi}: richtungsfest")
+    r_cent = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0))
+    r_nick = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0, raster=0.05))
+    fehler += _zeile((r_nick["skew_ne_unsicherheit_pts"] or 0) > (r_cent["skew_ne_unsicherheit_pts"] or 0),
+                     f"0,05-Raster breiter als Cent: ±{r_nick['skew_ne_unsicherheit_pts']} vs "
+                     f"±{r_cent['skew_ne_unsicherheit_pts']}")
+    fehler += _pruefe_codex_grenzfall()
     PROBEN.append("tick")
 
     # ── Contango und Steigung direkt (Gleichstand, 0/1 Punkte)

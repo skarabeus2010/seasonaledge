@@ -43,7 +43,7 @@ from shared.black_scholes import (diagnose_start as _diagnose_start,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
                                   atm_from_prices, smile_from_prices, SMILE_DELTAS,
-                                  tick_unsicherheit_pts,
+                                  skew_intervall_pts,
                                   _gefilterte_punkte,
                                   cm_leg_kandidaten as _cm_leg_kandidaten,
                                   ist_monatsverfall, _zaehl as _bs_zaehl,
@@ -927,6 +927,7 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref,
     """
     r.update({"skew_ne_pts": None, "skew_ne_dte": None, "skew_ne_ersatz": None,
               "skew_ne_unsicherheit_pts": None, "skew_ne_richtung_unsicher": None,
+              "skew_ne_intervall": None,
               "skew_back_pts": None, "skew_back_dte": None, "skew_term_pts": None,
               "term": [], "contango": None, "term_slope_pts": None,
               "term_slope_von": None, "term_slope_bis": None,
@@ -992,16 +993,24 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref,
                 break
     r["skew_ne_dte"] = by_own[ne]["dte"] if ne else ne_dte_roh
     r["skew_ne_pts"] = _skew_von(leg_ne)
-    # Tick-Unsicherheit (Codex-Review): kurz vor Verfall kostet ein 25d-Kontrakt
-    # wenige Cent, die Rundung kann das Vorzeichen eines kleinen Skews drehen.
-    # Gemessen am 2026-09-24: 1 Tag Median 0,19 pts, max 1,00 (XLE — bei einem
-    # Skew von 7,15, also richtungsfest). Deshalb keine absolute Schwelle,
-    # sondern: Richtung unbestimmt, wenn die Unsicherheit den Betrag erreicht.
-    # Der Wert bleibt sichtbar, aber ausdruecklich als solcher gekennzeichnet.
+    # Kursraster-Unsicherheit (Codex-Review R1+R2): kurz vor Verfall kostet ein
+    # 25d-Kontrakt wenige Cent, die Rundung kann das Vorzeichen eines kleinen
+    # Skews drehen. Geprueft wird das EXAKTE Intervall (Grenzpreise invertiert,
+    # Raster je Kontrakt), UNGERUNDET: die erste Fassung verglich den auf zwei
+    # Stellen gerundeten Skew mit einer linearen Naeherung und liess so einen
+    # Fall durch, dessen Intervall die Null enthielt. Der Wert bleibt sichtbar,
+    # "Richtung unbestimmt" wird ausdruecklich gekennzeichnet.
     if ne and r["skew_ne_pts"] is not None:
-        u = tick_unsicherheit_pts(None, spot_ref, by_own[ne]["dte"], _punkte=_punkte(ne))
-        r["skew_ne_unsicherheit_pts"] = u
-        r["skew_ne_richtung_unsicher"] = bool(u is not None and u >= abs(r["skew_ne_pts"]))
+        iv_int = skew_intervall_pts(by_own[ne].get("cands") or [], spot_ref, by_own[ne]["dte"],
+                                    _punkte=_punkte(ne))
+        if iv_int is None:
+            r["skew_ne_richtung_unsicher"] = True
+        else:
+            lo, hi = iv_int["lo"], iv_int["hi"]
+            endlich = lo != float("-inf") and hi != float("inf")
+            r["skew_ne_unsicherheit_pts"] = round((hi - lo) / 2, 3) if endlich else None
+            r["skew_ne_intervall"] = [round(lo, 3), round(hi, 3)] if endlich else None
+            r["skew_ne_richtung_unsicher"] = bool(lo <= 0 <= hi)
 
     # ── 90-Tage-Konstante und Skew-Term ──────────────────────────────────────
     def _bevorzugt(e):
