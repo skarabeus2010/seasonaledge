@@ -839,3 +839,59 @@ Vorfall und Runden, alle erkannt, Quellen und Cron-Ausgaben per Hash unveränder
 **Offen** (Zahlen in CLAUDE.md-TODO): `MIN_NORM` 20→80 (14 Ticker fielen raus), VRP-Nachrechnung
 (neue Zeilen im Mittel nur +0,54 pts), `verify()` braucht eine Referenz gleicher Laufzeit,
 angezeigte vs. gerankte Skew-Werte klaffen bei 33 von 158 Tickern um > 8 pts auseinander.
+
+## Anzeige = Ranking und nur Kurse aus der Session (2026-09-25)
+
+**Befund:** bei 33 von 158 Tickern wich der auf `/skew` angezeigte 25Δ-Skew um mehr als 8 pts vom
+gerankten 30-Tage-Wert ab. Zwei getrennte Rechenfehler, beide am Snapshot vom 24.09. belegt.
+
+**1. Anzeigepfad — Selbstauswahl über das Anbieter-Delta.** `_byexp` + `_skew_at` wählten den
+Kontrakt, dessen Delta am nächsten an 0,25 liegt. Das Delta rechnet der Anbieter aus der IV
+**desselben** Kontrakts. Ein falsch bepreister Kontrakt bekommt eine zu hohe IV und damit ein zu
+großes Delta und rutscht genau ins 25Δ-Fenster:
+
+| Ticker | gewählt | Befund |
+|---|---|---|
+| RSP | Put K=199, IV 35,6 %, Δ −0,229 | nie gehandelt (kein Kurs, OI 0); K=200 hat Δ −0,134 — nicht monoton |
+| XLC | Put K=105, IV 56 % | 8 % aus dem Geld, Nachbarn 21–28 % |
+| SO | Call K=95, IV 74 %, Δ 0,253 | 0,10 $ (Mindestkurs), 15 % aus dem Geld; K=86 hat Δ 0,197 |
+
+Der Ranking-Pfad hat diesen Fehler seit v61 nicht (ATM-Referenz, dann alle Deltas aus EINER IV).
+**Korrektur (Variante a, Nutzerentscheidung):** `_anzeige_aus_ranking()` am Ende von `_enrich` —
+IV, 25Δ-Skew, Zeta, Butterfly, P/C, VRP und Expected Move zeigen die 30-Tage-Werte; nicht rankbare
+Tage bleiben **leer**. Anbieterwerte unter `front_provider` (Diagnose, History-Fallback).
+**Noch offen:** NE-Skew, Skew-Term, Term-Struktur, Smile-Kurve laufen weiter über den Anbieter-Picker.
+
+**2. Ranking-Pfad — veraltete Kurse.** `_own_cands` nahm `day.close` ohne Zeitprüfung. Im Snapshot
+ist `day` der Balken vom **letzten Handelstag des Kontrakts**. BKNG nach Split: Call K=168,2 für
+26,70 $ bei Spot 157,41 und 22 Tagen → IV 200 %; so viele solcher Strikes, dass der Smile-Test nicht
+mehr griff (cm_skew −32,0). Der Backfill ist davon frei — historische Balken gibt es nur an Tagen mit
+Handel —, **Live und Backfill rechneten also verschieden**. Korrektur: nur Kontrakte, deren
+`last_updated` (in ET) auf die Session fällt (`_kurs_datum`, `_NUR_SESSIONSKURSE`).
+
+**Messung vor Umstellung** (163 Ticker, rein lesend, 08:37 ET vor Börsenöffnung):
+
+| | ohne Filter | mit Filter |
+|---|---|---|
+| rankbar | 156 | 151 (XLB, XLC, EQT, UEC, ETN, TRV → single; MAR → keine; SEDG, XLRE neu rankbar) |
+| unverändert (von 149) | — | 97 |
+| \|Skew\| > 15 | 2 (SEDG, BKNG) | 0 |
+| Vorzeichen | BKNG −32,0 · LRCX −4,2 · BX −2,0 | +3,5 · +2,5 · +4,0 |
+
+Auffällig und offen: HCA wird extremer (−6,4 → −9,8) bei nur 61/430 frischen Kontrakten.
+
+**Prüfung:** `scripts/verify_skew_anzeige.py` führt das **echte** `_enrich` mit einer synthetischen
+BS-Chain aus (frisch → rankbar, Anzeige = 30-Tage-Wert; veraltet → leer) und `build()` mit `_ROOT` im
+Temp-Verzeichnis — isoliert im Unterprozess über `scripts/waechter_isolation.py` (gemeinsam mit dem
+Session-Wächter). `scripts/verify_session_mutation.py`: 24/24. Codex Astra: Freigabe nach 2 Runden,
+zum Produktivcode kein Befund.
+
+**Lessons:**
+- **Ein Anbieter-Greek ist keine unabhängige Koordinate**, wenn er aus demselben Preis stammt wie die
+  Größe, die man misst. Wer über Delta auswählt, braucht ein Delta aus einer **Referenz**-IV.
+- **Ein Snapshot-Feld „day" heißt nicht „heute".** Vor jedem Preis prüfen, **wann** er entstand.
+- **Ein Wächter, der die geprüfte Funktion in seinem Stub selbst aufruft**, merkt nicht, wenn der
+  echte Code es vergisst — die erste Fassung bestand die Mutation „Aufruf entfernt".
+- **Windows sperrt frisch geschriebene Dateien kurz.** Das Zurückschreiben einer Mutation scheiterte
+  mit WinError 5; eine Produktionsdatei blieb mutiert im Arbeitsbaum (per Diff gegen `.mutation-tmp`
+  gefunden und byte-genau wiederhergestellt). `_atomar_schreiben` wiederholt jetzt.
