@@ -713,7 +713,11 @@
         kpi('VIX', vxL!=null?vxL:'—', '', 'erwartete 30-Tage-Vol')+
         kpi('VVIX', vvL!=null?vvL:'—', '', 'Vol der Vol');
       // Per-Ticker-Skew-Tabelle (nach Skew absteigend: höchster Put-Skew oben)
-      var tks=(d.tickers||[]).slice().sort(function(a,b){return b.skew_pts-a.skew_pts});
+      // Nur Ticker mit 30-Tage-Wert: an nicht rankbaren Tagen sind skew_pts/put_25d/
+      // call_25d leer (seit 2026-09-25), und t.put_25d.iv haette das ganze Panel
+      // mit TypeError abgebrochen.
+      var tks=(d.tickers||[]).filter(function(t){return t.skew_pts!=null&&t.put_25d&&t.call_25d&&t.put_25d.iv!=null&&t.call_25d.iv!=null;})
+        .sort(function(a,b){return b.skew_pts-a.skew_pts});
       if(tks.length){
         var h='<table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:420px">'+
           '<tr style="color:'+MUT+';text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em">'+

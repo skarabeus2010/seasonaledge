@@ -67,6 +67,15 @@ def offline_checks():
     if not p.exists():
         print("  options_skew.json fehlt (noch kein Cron-Lauf)."); return
     d = json.loads(p.read_text(encoding="utf-8"))
+    # Seit 2026-09-25 sind die 25Δ-Felder an nicht rankbaren Tagen leer (Anzeige
+    # = 30-Tage-Normierung). Nur Ticker mit Werten pruefen, die leeren zaehlen.
+    def _hat(t):
+        return (t.get("skew_pts") is not None and (t.get("put_25d") or {}).get("iv") is not None
+                and (t.get("call_25d") or {}).get("iv") is not None)
+    leer = [t["ticker"] for t in d.get("tickers", []) if not _hat(t)]
+    d["tickers"] = [t for t in d.get("tickers", []) if _hat(t)]
+    if leer:
+        print(f"  {len(leer)} Ticker ohne 30-Tage-Wert (nicht rankbar, Anzeige leer): {', '.join(leer[:15])}")
     vix = (d.get("indices", {}).get("VIX", {}) or {}).get("last")
     print(f"\n[VIX-Konsistenz] VIX={vix} — VIX (30-Tage-ATM-Vol des S&P) muss ZWISCHEN")
     print("  25Δ-Call-IV und 25Δ-Put-IV von SPY liegen (ATM sitzt zwischen den Flügeln).")

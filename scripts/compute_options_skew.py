@@ -437,6 +437,25 @@ def _cm_leg(e: dict):
 # rein methodisch. Deshalb hier dieselbe Inversion, derselbe Volumenfilter.
 
 
+# Frische-Filter fuer den Live-Pfad (Begruendung in _own_cands).
+_NUR_SESSIONSKURSE = True
+
+
+def _kurs_datum(day: dict) -> str | None:
+    """Handelstag (US-Ostkueste), zu dem der Tagesbalken eines Kontrakts gehoert.
+
+    `last_updated` ist ein Nanosekunden-Zeitstempel. In ET umrechnen, nicht in
+    UTC: ein Balken, der um 16:15 ET (20:15 UTC) schliesst, gehoert zu DIESEM
+    Tag — in UTC laege er bei Winterzeit-Schluss 21:15 ebenfalls am selben Tag,
+    aber spaete Korrekturen nach Mitternacht UTC wuerden den Tag wechseln."""
+    lu = day.get("last_updated")
+    if not lu:
+        return None
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    return datetime.fromtimestamp(lu / 1e9, ZoneInfo("America/New_York")).date().isoformat()
+
+
 def _own_cands(contracts: list, s30_ref: str | None = None,
                underlying: str | None = None) -> dict:
     """Snapshot-Kontrakte je Expiry als Rohpreise: {exp: {dte, cands:[…]}}.
@@ -456,16 +475,33 @@ def _own_cands(contracts: list, s30_ref: str | None = None,
         contracts, weg = standardserie_filter(contracts, underlying)
         if weg:
             print(f"  {underlying}: {weg} angepasste Optionskontrakte verworfen", flush=True)
+    # NUR KURSE AUS DER SESSION. `day` im Snapshot ist der Tagesbalken vom
+    # LETZTEN HANDELSTAG DES KONTRAKTS — das kann Wochen her sein oder vor einem
+    # Split liegen. Gegen den heutigen Spot invertiert ergibt ein solcher Kurs
+    # Unsinn: BKNG (nach Split) hatte am 2026-09-24 einen Call K=168,2 fuer
+    # 26,70 $ bei Spot 157,41 und 22 Tagen Restlaufzeit -> IV 200 %, und weil
+    # es so viele waren, griff der Smile-Test nicht mehr (cm_skew −32,0 statt
+    # +3,5). SEDG: −40,3 statt −1,4. Der Backfill hat das Problem NICHT — ein
+    # historischer Tagesbalken existiert nur, wenn an DIESEM Tag gehandelt wurde.
+    # Ohne den Filter rechneten Live und Backfill also verschieden.
+    ref_tag = today.isoformat()
     by = {}
+    veraltet = 0
     for c in contracts:
         det = c.get("details") or {}
         ex, typ, K = det.get("expiration_date"), det.get("contract_type"), det.get("strike_price")
         day = c.get("day") or {}
+        if _NUR_SESSIONSKURSE and s30_ref and _kurs_datum(day) != ref_tag:
+            veraltet += 1
+            continue
         px, vol = day.get("close"), day.get("volume") or 0
         if not ex or typ not in ("call", "put") or not K or not px:
             continue
         e = by.setdefault(ex, {"dte": (date.fromisoformat(ex) - today).days, "cands": []})
         e["cands"].append({"typ": typ, "K": float(K), "px": float(px), "vol": float(vol)})
+    if veraltet and underlying:
+        print(f"  {underlying}: {veraltet} Kontraktkurse nicht aus der Session {ref_tag} verworfen",
+              flush=True)
     return by
 
 
@@ -741,7 +777,64 @@ def _enrich(sym: str, key: str) -> dict | None:
         # Solche Tage gehoeren nicht in die Rangfolge.
         if cm and cm.get("cm_iv_atm"):
             r.update(cm)
+    _anzeige_aus_ranking(r)
     return r
+
+
+# Felder, die bisher den Front-Monat mit Anbieter-IV zeigten und jetzt die
+# 30-Tage-Werte des Radars tragen.
+_ANZEIGE_FELDER = ("dte", "call_25d", "put_25d", "skew_25d", "skew_pts",
+                   "call_zeta_pts", "put_zeta_pts", "iv_atm", "atm_delta_dev",
+                   "vrp_pts", "bfly_pts", "pc_ratio", "em_pct", "em_abs", "em_dte")
+
+
+def _anzeige_aus_ranking(r: dict) -> None:
+    """Tabelle, /flows-Panel und Morning Briefing zeigen dieselben Zahlen wie der Radar.
+
+    WARUM (Befund 2026-09-25, Entscheidung Variante a): der Anzeigepfad pickte
+    den 25Δ-Kontrakt ueber das DELTA DES ANBIETERS, und der rechnet es aus der IV
+    desselben Kontrakts. Ein falsch bepreister Kontrakt (nie gehandelt, zum
+    Mindestkurs, veraltet) bekam dadurch eine zu hohe IV UND ein zu grosses Delta
+    und rutschte genau in das 25Δ-Fenster. Gemessen: bei 33 von 158 Tickern wich
+    der angezeigte Skew um > 8 pts vom gerankten ab — RSP +24,1 statt +3,8 (Put
+    K=199 nie gehandelt, Delta −0,229, waehrend K=200 nur −0,134 hatte), SO −61
+    statt +1,2 (Call zu 0,10 $ bei 15 % aus dem Geld, Delta 0,253). Der
+    Ranking-Pfad hat diesen Fehler seit v61 nicht mehr (ATM-Referenz, dann alle
+    Deltas aus dieser EINEN IV; Paritaets- und Smile-Pruefung).
+
+    Deshalb EINE Rechnung: die angezeigten 25Δ/ATM-Felder kommen aus der
+    30-Tage-Normierung. Ist der Tag nicht rankbar, bleiben sie LEER — lieber
+    keine Zahl als die alte, nachweislich unzuverlaessige. Die Anbieterwerte
+    bleiben unter `front_provider` erhalten (Diagnose, History-Fallback).
+    NICHT umgestellt, weil ohne 30-Tage-Gegenstueck: NE-Skew, Skew-Term,
+    Term-Struktur, Smile-Kurve — die rechnen weiter mit dem Anbieter-Picker.
+    """
+    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}
+    if not _rankbar(r):
+        for k in _ANZEIGE_FELDER:
+            r[k] = None
+        return
+    call_iv, put_iv, iv_atm = r["cm_call_iv"], r["cm_put_iv"], r.get("cm_iv_atm")
+    dte = r.get("cm_dte") or _CM_DAYS
+    rv = r.get("rv_1m")
+    spot = r.get("underlying")
+    r.update({
+        "dte": dte,
+        "call_25d": {"strike": None, "iv": round(call_iv, 4), "delta": 0.25},
+        "put_25d": {"strike": None, "iv": round(put_iv, 4), "delta": -0.25},
+        "skew_25d": round(put_iv - call_iv, 4),
+        "skew_pts": r.get("cm_skew_pts"),
+        "call_zeta_pts": r.get("cm_call_zeta_pts"),
+        "put_zeta_pts": r.get("cm_put_zeta_pts"),
+        "iv_atm": iv_atm,
+        "atm_delta_dev": None,          # 30-Tage-Wert ist interpoliert, kein einzelner Pick
+        "vrp_pts": round((iv_atm - rv) * 100, 2) if (iv_atm and rv) else None,
+        "bfly_pts": r.get("cm_bfly_pts"),
+        "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
+        "em_pct": round(iv_atm * math.sqrt(dte / 365.0) * 100, 2) if iv_atm else None,
+        "em_abs": round(spot * iv_atm * math.sqrt(dte / 365.0), 2) if (iv_atm and spot) else None,
+        "em_dte": dte if iv_atm else None,
+    })
 
 
 class SchluesselFehlt(RuntimeError):
@@ -812,12 +905,16 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 # `or 0` machte aus einem fehlenden ATM ein "0.0%" — das liest sich wie
                 # ein echter Messwert. Fehlend muss als fehlend erkennbar sein.
                 _atm = f"{r['iv_atm']*100:.1f}%" if r.get("iv_atm") else "—"
-                print(f"  {t:6} skew {r['skew_pts']:+.2f} · ATM {_atm} · "
+                _sk = f"{r['skew_pts']:+.2f}" if r.get("skew_pts") is not None else "—"
+                print(f"  {t:6} skew {_sk} · ATM {_atm} · "
                       f"VRP {r.get('vrp_pts')} · bfly {r.get('bfly_pts')} · P/C {r.get('pc_ratio')} · term {ct}", flush=True)
                 if not r.get("iv_atm"):
                     # Teil-Ausfall: Zeile existiert, aber Zeta/Butterfly/VRP fehlen,
                     # weil der 50Δ-Pick ausserhalb der Toleranz lag.
-                    partial.append({"ticker": t, "reason": "kein 50Δ-ATM in Toleranz"})
+                    # Seit die Anzeige aus der 30-Tage-Normierung kommt, heisst ein
+                    # fehlendes iv_atm: dieser Tag ist nicht rankbar.
+                    partial.append({"ticker": t, "reason": "keine 30-Tage-Normierung "
+                                    f"(cm_mode={r.get('cm_mode')}) — Anzeige leer"})
             else:
                 failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
         diag = _diagnose_stop()
@@ -903,6 +1000,11 @@ def build(tickers: list[str], write: bool = True) -> dict:
                 # Verfall zu weit weg), wird der reale Front-Monat gespeichert (kein
                 # cm_mode) — für den Tag nicht normiert, aber kein Datenverlust.
                 cm_ok = t.get("cm_mode") is not None
+                # Nicht normierte Tage: wie bisher die Anbieterwerte des Front-Monats
+                # (nicht rankbar, aber kein Datenverlust). Seit der Anzeige-Umstellung
+                # sind die Top-Level-Felder an solchen Tagen leer — deshalb aus
+                # front_provider lesen, sonst TypeError auf put_25d = None.
+                fp = t.get("front_provider") or t
                 arr.append({"date": today,
                             # Messmethode mitschreiben. Die cm_*-Felder stammen aus
                             # _leg_own, also aus UNSERER BS-Inversion — nicht aus der
@@ -911,22 +1013,22 @@ def build(tickers: list[str], write: bool = True) -> dict:
                             # Rekonstruktionen miteinander (siehe verify-Docstring).
                             "method": "own_bs" if t.get("cm_mode") else "provider",
                             "cm_mode": t.get("cm_mode"),
-                            "dte": t.get("cm_dte") if cm_ok else t.get("dte"),
-                            "skew_pts": t.get("cm_skew_pts") if cm_ok else t["skew_pts"],
-                            "put_iv": t.get("cm_put_iv") if cm_ok else t["put_25d"]["iv"],
-                            "call_iv": t.get("cm_call_iv") if cm_ok else t["call_25d"]["iv"],
-                            "iv_atm": t.get("cm_iv_atm") if cm_ok else t.get("iv_atm"),
+                            "dte": t.get("cm_dte") if cm_ok else fp.get("dte"),
+                            "skew_pts": t.get("cm_skew_pts") if cm_ok else fp["skew_pts"],
+                            "put_iv": t.get("cm_put_iv") if cm_ok else (fp.get("put_25d") or {}).get("iv"),
+                            "call_iv": t.get("cm_call_iv") if cm_ok else (fp.get("call_25d") or {}).get("iv"),
+                            "iv_atm": t.get("cm_iv_atm") if cm_ok else fp.get("iv_atm"),
                             # VRP/PC aus den CM-Werten ableiten, wenn vorhanden:
                             # sonst stuenden in EINER Zeile normierte IVs neben
                             # Front-Monats-Kennzahlen — intern inkonsistent.
                             "vrp_pts": (round((t["cm_iv_atm"] - t["rv_1m"]) * 100, 2)
                                         if (cm_ok and t.get("cm_iv_atm") and t.get("rv_1m"))
-                                        else t.get("vrp_pts")),
+                                        else fp.get("vrp_pts")),
                             "pc_ratio": (round(t["cm_put_iv"] / t["cm_call_iv"], 3)
-                                         if (cm_ok and t.get("cm_call_iv")) else t.get("pc_ratio")),
-                            "bfly_pts": t.get("cm_bfly_pts") if cm_ok else t.get("bfly_pts"),
-                            "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else t.get("call_zeta_pts"),
-                            "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else t.get("put_zeta_pts")})
+                                         if (cm_ok and t.get("cm_call_iv")) else fp.get("pc_ratio")),
+                            "bfly_pts": t.get("cm_bfly_pts") if cm_ok else fp.get("bfly_pts"),
+                            "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else fp.get("call_zeta_pts"),
+                            "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else fp.get("put_zeta_pts")})
             hist[t["ticker"]] = arr[-750:]
         # CBOE-Correlation vorwärts akkumulieren (Yahoo liefert oft nur letzten Wert)
         if corr:

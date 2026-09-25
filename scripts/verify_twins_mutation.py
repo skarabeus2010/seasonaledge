@@ -163,7 +163,21 @@ def _atomar_schreiben(pfad: Path, inhalt: bytes) -> None:
         fh.write(inhalt)
         fh.flush()
         os.fsync(fh.fileno())
-    os.replace(tmp, pfad)
+    # Windows sperrt eine frisch geschriebene Datei kurz (Virenscanner,
+    # Datei-Watcher des Editors). Am 2026-09-25 scheiterte so das ZURUECK-
+    # schreiben nach einer Mutation mit WinError 5 — die Produktionsdatei blieb
+    # MUTIERT im Arbeitsbaum liegen und haette versehentlich committet werden
+    # koennen. Deshalb wiederholen statt beim ersten Fehlschlag aufzugeben;
+    # scheitert es endgueltig, bleibt die .mutation-tmp mit dem Inhalt liegen.
+    import time
+    for versuch in range(20):
+        try:
+            os.replace(tmp, pfad)
+            return
+        except PermissionError:
+            if versuch == 19:
+                raise
+            time.sleep(0.25 * (versuch + 1))
 
 
 def waechter_laeuft_durch() -> bool:

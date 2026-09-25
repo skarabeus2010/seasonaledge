@@ -36,6 +36,7 @@ from scripts.verify_twins_mutation import (LF, LockBelegt, _atomar_schreiben,  #
                                            _exklusiver_lauf, _zeilenende)
 
 _WAECHTER = _ROOT / "scripts" / "verify_session_stamp.py"
+_WAECHTER_ANZEIGE = _ROOT / "scripts" / "verify_skew_anzeige.py"
 SK, FL, EH = ("scripts/compute_options_skew.py", "scripts/compute_options_flow.py",
               "shared/exchange_holidays.py")
 
@@ -87,13 +88,34 @@ MUTATIONEN = [
     ("R6", "Import-Nebenwirkung taeuscht eine gruene Bilanz vor", SK,
      "_RANKBAR = (\"cm\", \"cm_extrap\")",
      "_RANKBAR = (\"cm\", \"cm_extrap\")\nprint('ISOLIERT-BILANZ ' + '0' * 32 + ' 0 explizit', flush=True)"),
+    # -- Anzeige = Ranking + Frische-Filter (Befund 2026-09-25).
+    #    6. Element: zustaendiger Waechter ist verify_skew_anzeige.py.
+    ("Anzeige", "Frische-Filter abgeschaltet (veraltete Kurse wieder drin)", SK,
+     "_NUR_SESSIONSKURSE = True", "_NUR_SESSIONSKURSE = False", "anzeige"),
+    ("Anzeige", "Kursdatum in UTC statt ET", SK,
+     'return datetime.fromtimestamp(lu / 1e9, ZoneInfo("America/New_York")).date().isoformat()',
+     'return datetime.fromtimestamp(lu / 1e9, ZoneInfo("UTC")).date().isoformat()', "anzeige"),
+    ("Anzeige", "nicht rankbare Tage zeigen wieder Anbieterwerte", SK,
+     "    if not _rankbar(r):\n        for k in _ANZEIGE_FELDER:\n            r[k] = None\n        return",
+     "    if not _rankbar(r):\n        return", "anzeige"),
+    ("Anzeige", "Anzeige-Umstellung nicht aufgerufen", SK,
+     "    _anzeige_aus_ranking(r)\n    return r\n", "    return r\n", "anzeige"),
+    ("Anzeige", "History-Fallback liest wieder die geleerten Top-Level-Felder", SK,
+     '                fp = t.get("front_provider") or t', "                fp = t", "anzeige"),
+    ("Anzeige", "single/noatm gelten in der Anzeige als rankbar", SK,
+     "    if not _rankbar(r):\n        for k in _ANZEIGE_FELDER:",
+     '    if not r.get("cm_mode"):\n        for k in _ANZEIGE_FELDER:', "anzeige"),
 ]
 
 
-def _waechter_gruen() -> bool:
-    r = subprocess.run([sys.executable, str(_WAECHTER)], capture_output=True,
+def _waechter_gruen(waechter: Path = _WAECHTER) -> bool:
+    r = subprocess.run([sys.executable, str(waechter)], capture_output=True,
                        text=True, cwd=str(_ROOT), timeout=900)
     return r.returncode == 0
+
+
+def _alle_gruen() -> bool:
+    return _waechter_gruen(_WAECHTER) and _waechter_gruen(_WAECHTER_ANZEIGE)
 
 
 def _daten_fingerabdruck() -> str:
@@ -113,14 +135,15 @@ def main() -> int:
     print("=" * 78)
     print("Mutationstest Session-Waechter: wird er rot, wenn der Fehler zurueckkommt?")
     print("=" * 78)
-    if not _waechter_gruen():
-        print("\n[ABBRUCH] Der Waechter ist schon vor der ersten Mutation ROT.")
+    if not _alle_gruen():
+        print("\n[ABBRUCH] Ein Waechter ist schon vor der ersten Mutation ROT.")
         return 1
     daten_vorher = _daten_fingerabdruck()
     print("\nAusgangslage: Waechter gruen.\n")
 
     unbemerkt, beschaedigt = [], []
-    for nr, (herkunft, beschreibung, datei, suchen, ersetzen) in enumerate(MUTATIONEN, 1):
+    for nr, (herkunft, beschreibung, datei, suchen, ersetzen, *art) in enumerate(MUTATIONEN, 1):
+        waechter = _WAECHTER_ANZEIGE if art and art[0] == "anzeige" else _WAECHTER
         pfad = _ROOT / datei
         original = pfad.read_bytes()
         le = _zeilenende(original)
@@ -133,7 +156,7 @@ def main() -> int:
             continue
         try:
             _atomar_schreiben(pfad, original.replace(such_b, ersatz_b, 1))
-            erkannt = not _waechter_gruen()
+            erkannt = not _waechter_gruen(waechter)
         finally:
             _atomar_schreiben(pfad, original)
             if pfad.read_bytes() != original:                 # nachweisen, nicht hoffen
@@ -153,7 +176,7 @@ def main() -> int:
         print("[FAIL] Echte Cron-Ausgaben unter landing/data/ wurden veraendert — "
               "die Isolation des Waechters hat versagt.")
         fehler = True
-    if not _waechter_gruen():
+    if not _alle_gruen():
         print("[FAIL] Nach dem Test ist der Waechter rot — `git diff` pruefen!")
         fehler = True
     if unbemerkt:

@@ -569,7 +569,11 @@
     // Metrik-Tabelle je Ticker als Heatmap (IV-Rank/Pctl abhängig von Fenster/Methode)
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
-      var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;});
+      // Seit 2026-09-25 kommen die Werte aus der 30-Tage-Normierung und sind an
+      // nicht rankbaren Tagen LEER. b-a mit null ergibt NaN und eine zufaellige
+      // Reihenfolge -> leere Zeilen ans Ende.
+      var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){
+        return ((a.skew_pts==null)-(b.skew_pts==null)) || (b.skew_pts-a.skew_pts);});
       if(!rows.length){panelFail('sk-table',T('skew.table_wait','Skew-Tabelle folgt (Daily-Cron).'));return;}
       var ivm={}, skm={}; rows.forEach(function(t){ivm[t.ticker]=_ivMetric(t.ticker);skm[t.ticker]=_skewMetric(t.ticker);});
       // Spalten-Extrema für die Heatmap
@@ -675,7 +679,8 @@
       else if(SKEW_CATS.indexOf(SKEW_CAT)<0) SKEW_CAT=SKEW_CATS[0];
       buildSkewCatBtns();
       var inCat=tks.filter(function(t){return _inCat(t.ticker);});
-      var top=(inCat.length?inCat:tks).slice().sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
+      var top=(inCat.length?inCat:tks).filter(function(t){return t.skew_pts!=null;})
+        .sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
       renderVRP(tks);
       renderSkewTable(tks);   // schon ohne Historie sichtbar (IV-Rank füllt sich nach)
       document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure aus der US-Optionskette · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
