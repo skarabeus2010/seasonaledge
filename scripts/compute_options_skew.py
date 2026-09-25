@@ -1012,11 +1012,16 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref,
             # AUSSEN gerundet. Die erste Fassung nahm die halbe Breite (hi-lo)/2 —
             # bei asymmetrischem Intervall um den falschen Mittelpunkt gelegt:
             # -0,09 ± 1,82 deckte die Untergrenze -1,94 nicht ab (Codex R3).
-            sk_roh = (leg_ne["put_iv"] - leg_ne["call_iv"]) * 100.0
-            r["skew_ne_unsicherheit_pts"] = (math.ceil(max(sk_roh - lo, hi - sk_roh) * 1000) / 1000
-                                             if endlich else None)
-            r["skew_ne_intervall"] = ([math.floor(lo * 1000) / 1000, math.ceil(hi * 1000) / 1000]
-                                      if endlich else None)
+            # Gerechnet fuer das VEROEFFENTLICHTE Wertepaar: ausgegebener Skew
+            # (2 Stellen) und nach aussen gerundete Grenzen. Um den ungerundeten
+            # Skew gerechnet, blieb eine Unterdeckung: -0,09 - 1,852 = -1,942 lag
+            # ueber der Grenze -1,9426 (Codex R4).
+            if endlich:
+                lo_r, hi_r = math.floor(lo * 1000) / 1000, math.ceil(hi * 1000) / 1000
+                sk_pub = r["skew_ne_pts"]
+                r["skew_ne_intervall"] = [lo_r, hi_r]
+                r["skew_ne_unsicherheit_pts"] = math.ceil(max(sk_pub - lo_r, hi_r - sk_pub) * 1000
+                                                          - 1e-9) / 1000
             r["skew_ne_richtung_unsicher"] = bool(lo <= 0 <= hi)
 
     # ── 90-Tage-Konstante und Skew-Term ──────────────────────────────────────

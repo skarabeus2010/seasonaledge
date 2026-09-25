@@ -362,11 +362,18 @@ def _proben() -> int:
     fehler += _zeile(r["skew_ne_richtung_unsicher"] is True and lo_hi and lo_hi[0] <= 0 <= lo_hi[1],
                      f"flacher Skew {r['skew_ne_pts']}, Intervall {lo_hi}: Richtung unbestimmt")
     # Die Kennzahl muss BEIDE Grenzen abdecken (Codex R3: "-0,09 ± 1,82" liess
-    # die Untergrenze -1,94 aus). Toleranz 0,01 fuer den auf 2 Stellen
-    # gerundeten Skew.
+    # die Untergrenze -1,94 aus) — und zwar fuer das VEROEFFENTLICHTE Paar,
+    # ohne Toleranz (Codex R4: eine Toleranz von 0,01 liess eine Unterdeckung
+    # von 0,0005 durch). Nur Gleitkomma-Epsilon.
     u, sk = r["skew_ne_unsicherheit_pts"], r["skew_ne_pts"]
-    fehler += _zeile(u is not None and sk - u <= lo_hi[0] + 0.01 and sk + u >= lo_hi[1] - 0.01,
+    fehler += _zeile(u is not None and sk - u <= lo_hi[0] + 1e-9 and sk + u >= lo_hi[1] - 1e-9,
                      f"Kennzahl deckt das Intervall ab: {sk} ± {u} umfasst {lo_hi}")
+    # Dasselbe fuer das steile Beispiel und den Codex-Grenzfall (andere Asymmetrie)
+    for kette_ in (_kette(schritt=FEIN_1T, schiefe=2.0), _kette(schritt=FEIN_1T, raster=0.05)):
+        rr = _enrich(kette_)
+        li, uu, ss = rr["skew_ne_intervall"], rr["skew_ne_unsicherheit_pts"], rr["skew_ne_pts"]
+        fehler += _zeile(li is not None and ss - uu <= li[0] + 1e-9 and ss + uu >= li[1] - 1e-9,
+                         f"Abdeckung auch bei {ss} ± {uu} um {li}")
     r = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0))
     lo_hi = r["skew_ne_intervall"]
     fehler += _zeile(r["skew_ne_richtung_unsicher"] is False and lo_hi and lo_hi[0] > 0,
