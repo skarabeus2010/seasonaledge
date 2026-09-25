@@ -57,6 +57,12 @@ def load_env(override: bool = False) -> int:
     Returns:
         Anzahl der gesetzten Keys (0 wenn .env nicht existiert).
     """
+    # Abschaltbar fuer isolierte Pruefprozesse: ein Waechter, der die Crons in
+    # einem Unterprozess ausfuehrt, darf keine echten Schluessel aus .env
+    # bekommen (sonst wird aus einer vergessenen Falle ein echter API-Aufruf).
+    # Standard bleibt: laden. (Codex-Review 2026-09-25, R5.)
+    if os.environ.get("SA_OHNE_DOTENV") == "1":
+        return 0
     path = _find_dotenv()
     if not path:
         return 0
