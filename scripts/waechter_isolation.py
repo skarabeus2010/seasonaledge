@@ -31,6 +31,16 @@ from pathlib import Path
 
 BILANZ_PRAEFIX = "ISOLIERT-BILANZ"
 
+# Unter Windows ist die Konsole oft cp1252. Ein "Δ" in der Ausgabe liess den
+# Elternprozess ohne PYTHONUTF8=1 mit UnicodeEncodeError abbrechen — der
+# Waechter meldete dann Exit 1 ohne jeden Befund (Codex-Review 2026-09-25, R3).
+# Alle Waechter importieren dieses Modul als Erstes; hier einmal umstellen.
+for _strom in (sys.stdout, sys.stderr):
+    try:
+        _strom.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 
 # ── Unterprozess ─────────────────────────────────────────────────────────────
 def nonce_sichern() -> str:

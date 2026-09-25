@@ -593,7 +593,11 @@
         if(t.skew_ne_pts==null||t.skew_ne_dte==null)return z;
         var tip=T('skew.ne_dte','Verfall in {n} Tagen').replace('{n}',t.skew_ne_dte)+
           (t.skew_ne_ersatz?' — '+T('skew.ne_ersatz','der nächste Verfall war nicht auswertbar, dies ist der nächste auswertbare'):'')+
-          (t.skew_ne_unsicherheit_pts!=null?' · ±'+(+t.skew_ne_unsicherheit_pts).toFixed(2)+' pts '+T('skew.ne_tick','Kursraster-Unsicherheit'):'')+
+          // Das echte (oft asymmetrische) Intervall, nicht "± halbe Breite" —
+          // die lag um den falschen Mittelpunkt (Codex R3). Nach aussen gerundet.
+          (t.skew_ne_intervall?' · '+T('skew.ne_tick','Kursraster-Intervall')+' ['+
+            (Math.floor(t.skew_ne_intervall[0]*100)/100).toFixed(2)+'; '+
+            (Math.ceil(t.skew_ne_intervall[1]*100)/100).toFixed(2)+'] pts':'')+
           (t.skew_ne_richtung_unsicher?' — '+T('skew.ne_richtung','Richtung unbestimmt: die Rundung auf den Kursraster kann das Vorzeichen drehen'):'');
         z=z.replace('<td ','<td title="'+tip.replace(/"/g,'&quot;')+'" ');
         // Richtung unbestimmt: Wert bleibt sichtbar, aber mit ≈ statt Vorzeichen-Aussage

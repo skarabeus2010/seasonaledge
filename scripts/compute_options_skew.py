@@ -1008,8 +1008,15 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref,
         else:
             lo, hi = iv_int["lo"], iv_int["hi"]
             endlich = lo != float("-inf") and hi != float("inf")
-            r["skew_ne_unsicherheit_pts"] = round((hi - lo) / 2, 3) if endlich else None
-            r["skew_ne_intervall"] = [round(lo, 3), round(hi, 3)] if endlich else None
+            # Kennzahl = GROESSERER Abstand vom Skew zu einer Intervallgrenze, nach
+            # AUSSEN gerundet. Die erste Fassung nahm die halbe Breite (hi-lo)/2 —
+            # bei asymmetrischem Intervall um den falschen Mittelpunkt gelegt:
+            # -0,09 ± 1,82 deckte die Untergrenze -1,94 nicht ab (Codex R3).
+            sk_roh = (leg_ne["put_iv"] - leg_ne["call_iv"]) * 100.0
+            r["skew_ne_unsicherheit_pts"] = (math.ceil(max(sk_roh - lo, hi - sk_roh) * 1000) / 1000
+                                             if endlich else None)
+            r["skew_ne_intervall"] = ([math.floor(lo * 1000) / 1000, math.ceil(hi * 1000) / 1000]
+                                      if endlich else None)
             r["skew_ne_richtung_unsicher"] = bool(lo <= 0 <= hi)
 
     # ── 90-Tage-Konstante und Skew-Term ──────────────────────────────────────

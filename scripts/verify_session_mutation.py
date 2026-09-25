@@ -135,6 +135,8 @@ MUTATIONEN = [
      "            r[\"skew_ne_richtung_unsicher\"] = bool(lo <= 0 <= hi)",
      "            r[\"skew_ne_richtung_unsicher\"] = bool(round((hi - lo) / 2, 3) >= abs(r[\"skew_ne_pts\"]))",
      "laufzeiten"),
+    ("Laufzeit", "Kennzahl wieder halbe Intervallbreite statt groesster Abstand (Codex R3)", SK,
+     "max(sk_roh - lo, hi - sk_roh)", "(hi - lo) / 2", "laufzeiten"),
     ("Laufzeit", "Kursraster pauschal ein Cent (Codex R2)", BS,
      "    cents = round(px * 100)\n    if cents % 5:",
      "    return 0.01\n    cents = round(px * 100)\n    if cents % 5:", "laufzeiten"),

@@ -361,6 +361,12 @@ def _proben() -> int:
     lo_hi = r["skew_ne_intervall"]
     fehler += _zeile(r["skew_ne_richtung_unsicher"] is True and lo_hi and lo_hi[0] <= 0 <= lo_hi[1],
                      f"flacher Skew {r['skew_ne_pts']}, Intervall {lo_hi}: Richtung unbestimmt")
+    # Die Kennzahl muss BEIDE Grenzen abdecken (Codex R3: "-0,09 ± 1,82" liess
+    # die Untergrenze -1,94 aus). Toleranz 0,01 fuer den auf 2 Stellen
+    # gerundeten Skew.
+    u, sk = r["skew_ne_unsicherheit_pts"], r["skew_ne_pts"]
+    fehler += _zeile(u is not None and sk - u <= lo_hi[0] + 0.01 and sk + u >= lo_hi[1] - 0.01,
+                     f"Kennzahl deckt das Intervall ab: {sk} ± {u} umfasst {lo_hi}")
     r = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0))
     lo_hi = r["skew_ne_intervall"]
     fehler += _zeile(r["skew_ne_richtung_unsicher"] is False and lo_hi and lo_hi[0] > 0,
