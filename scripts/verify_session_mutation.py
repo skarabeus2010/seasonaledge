@@ -102,6 +102,10 @@ MUTATIONEN = [
      "    _anzeige_aus_ranking(r)\n    return r\n", "    return r\n", "anzeige"),
     ("Anzeige", "History-Fallback liest wieder die geleerten Top-Level-Felder", SK,
      '                fp = t.get("front_provider") or t', "                fp = t", "anzeige"),
+    ("Anzeige", "Produktivcode schreibt beim Anzeige-Umbau ins echte Repo (Codex R1)", SK,
+     '    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}',
+     '    Path(__file__).resolve().parent.parent.joinpath("landing/data/options_skew.json").write_text("{}")\n'
+     '    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}', "anzeige"),
     ("Anzeige", "single/noatm gelten in der Anzeige als rankbar", SK,
      "    if not _rankbar(r):\n        for k in _ANZEIGE_FELDER:",
      '    if not r.get("cm_mode"):\n        for k in _ANZEIGE_FELDER:', "anzeige"),

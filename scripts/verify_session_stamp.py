@@ -39,8 +39,6 @@ os.environ["SA_OHNE_DOTENV"] = "1"
 sys.dont_write_bytecode = True
 
 import json                                   # noqa: E402
-import subprocess                             # noqa: E402
-import tempfile                               # noqa: E402
 from datetime import date, datetime, timedelta  # noqa: E402
 from pathlib import Path                      # noqa: E402
 from zoneinfo import ZoneInfo                 # noqa: E402
@@ -49,6 +47,8 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from scripts.waechter_isolation import (melde_bilanz, nonce_sichern,  # noqa: E402
+                                       schreibsperre, starte_isoliert)
 from shared.exchange_holidays import (letzte_session, is_trading_day,   # noqa: E402
                                      markt_offen, pruefe_eod_fenster, MarktOffen)
 
@@ -160,56 +160,9 @@ def _reine_proben() -> int:
 
 
 def _unterprozess() -> int:
-    """Startet die ausfuehrenden Proben isoliert. Ein Unterprozess, der gar
-    nicht erst laeuft oder keine Bilanz meldet, zaehlt als FEHLER — sonst waere
-    ein blinder Lauf gruen (vier von fuenf "keine Freigabe" im Kern-Review
-    waren solche Werkzeugfehler)."""
-    import re
-    import secrets
+    """Ausfuehrende Proben isoliert starten (Mechanik: scripts/waechter_isolation.py)."""
     print("\nAusfuehrende Proben (isolierter Unterprozess)\n" + "-" * 68)
-    nonce = secrets.token_hex(16)
-    with tempfile.TemporaryDirectory(prefix="sa_sessionprobe_") as tmp:
-        env = {k: v for k, v in os.environ.items() if k != "MASSIVE_API_KEY"}
-        env.update({"SA_OHNE_DOTENV": "1", "PYTHONDONTWRITEBYTECODE": "1",
-                    "PYTHONUTF8": "1",
-                    # build() ueberspringt ohne Schluessel die Ticker-Schleife —
-                    # der Test waere dann stumm blind. Kein echter Schluessel.
-                    "MASSIVE_API_KEY": "probe-kein-echter-schluessel",
-                    "SA_PROBE_NONCE": nonce})
-        r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--isoliert", tmp],
-                           cwd=tmp, env=env, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=600)
-        ausgabe = [z for z in r.stdout.splitlines()
-                   if "streamlit" not in z and "No runtime found" not in z]
-        for z in ausgabe:
-            if not z.startswith("ISOLIERT-BILANZ"):
-                print(z)
-        # GENAU eine Bilanzzeile, striktes Format, eigene Nonce, vollstaendige
-        # Probenliste, Exit passend zur Fehlerzahl. Alles andere ist kein Beweis
-        # (R6: "BILANZ 8" gefolgt von "BILANZ 0" wurde als 0 Fehler akzeptiert).
-        bilanz = [z for z in r.stdout.splitlines() if z.startswith("ISOLIERT-BILANZ")]
-        muster = re.compile(r"^ISOLIERT-BILANZ ([0-9a-f]{32}) (\d+) ([a-z_,]+)$")
-        t = muster.match(bilanz[0]) if len(bilanz) == 1 else None
-        n, grund = 0, None
-        if len(bilanz) != 1:
-            grund = f"{len(bilanz)} Bilanzzeilen statt genau einer"
-        elif not t:
-            grund = f"Bilanzzeile ohne gueltiges Format: {bilanz[0][:80]!r}"
-        elif t.group(1) != nonce:
-            grund = "Nonce stimmt nicht — die Zeile stammt nicht aus diesem Lauf"
-        else:
-            proben = t.group(3).split(",")
-            n = int(t.group(2))
-            if len(proben) != len(set(proben)) or set(proben) != set(ERWARTETE_PROBEN):
-                grund = (f"Proben unvollstaendig/doppelt: fehlt "
-                         f"{sorted(set(ERWARTETE_PROBEN) - set(proben))}, gemeldet {proben}")
-            elif (n == 0) != (r.returncode == 0):
-                grund = f"Bilanz {n} passt nicht zum Exit {r.returncode}"
-        if grund:
-            print(f"  FAIL {grund} (Exit {r.returncode}) — stderr:\n"
-                  + "\n".join(r.stderr.splitlines()[-15:]))
-            return 1
-        return n
+    return starte_isoliert(Path(__file__), ERWARTETE_PROBEN, "sa_sessionprobe_")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -223,60 +176,8 @@ class _Falle(BaseException):
 
 def _isoliert(tmp: str) -> int:
     tmp_p = Path(tmp).resolve()
-    verstoesse: list[str] = []
-
-    # Das Nullgeraet ist kein Schreibzugriff auf echte Daten. Unter Windows
-    # oeffnet `subprocess` es beim Import von Streamlit (ueber `platform`) mit
-    # Schreibflags — ohne diese Ausnahme meldete der Hook dreimal
-    # `open(nul, 130)` und der Waechter konnte umgebungsabhaengig nie gruen
-    # werden (Codex-Review R7). Nur exakt das Geraet, kein Praefix-Vergleich.
-    _NULLGERAETE = {os.path.normcase(os.devnull), "nul", "/dev/null"}
-
-    def _innen(pfad) -> bool:
-        roh = os.fsdecode(pfad)
-        if os.path.normcase(roh) in _NULLGERAETE:
-            return True
-        try:
-            return Path(roh).resolve().is_relative_to(tmp_p)
-        except Exception:
-            return False
-
-    _SCHREIB_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
-
-    def _audit(ereignis, args):
-        vorher = len(verstoesse)
-        _audit_pruefen(ereignis, args)
-        if len(verstoesse) > vorher:
-            # Nicht nur melden, sondern VERHINDERN: eine Mutation, die ins echte
-            # Repo schreibt, darf im Test nichts anrichten. (In R3 hat genau so
-            # eine Probe eine leere options_flow.json auf die Platte gelegt.)
-            raise PermissionError(f"Waechter-Isolation: {verstoesse[-1]}")
-
-    def _audit_pruefen(ereignis, args):
-        if ereignis == "open":
-            pfad, modus, flags = (list(args) + [None, None, None])[:3]
-            if pfad is None or isinstance(pfad, int):
-                return
-            schreibt = (any(c in (modus or "") for c in "wax+")
-                        or (modus is None and isinstance(flags, int) and flags & _SCHREIB_FLAGS))
-            if schreibt and not _innen(pfad):
-                verstoesse.append(f"open({os.fsdecode(pfad)}, {modus or flags})")
-        elif ereignis in ("os.mkdir", "os.remove", "os.rmdir", "os.chmod", "os.truncate"):
-            if args and not isinstance(args[0], int) and not _innen(args[0]):
-                verstoesse.append(f"{ereignis}({os.fsdecode(args[0])})")
-        elif ereignis == "os.rename":
-            # BEIDE Seiten: auch "extern -> Temp-Baum" veraendert das echte Repo
-            # (die Quelle verschwindet dort). R6.
-            if len(args) >= 2 and not (_innen(args[0]) and _innen(args[1])):
-                verstoesse.append(f"os.rename({os.fsdecode(args[0])} -> {os.fsdecode(args[1])})")
-        elif ereignis in ("os.link", "os.symlink"):
-            # Ein Hardlink/Symlink im Temp-Baum auf eine echte Datei macht jede
-            # spaetere Schreiboperation "innen" zu einer aussen. Kein legitimer
-            # Cron-Pfad braucht Links -> grundsaetzlich sperren. R6.
-            verstoesse.append(f"{ereignis}{tuple(os.fsdecode(a) for a in args[:2] if not isinstance(a, int))}")
-
     # Hook VOR dem Import der Crons: auch Import-Nebenwirkungen zaehlen.
-    sys.addaudithook(_audit)
+    verstoesse = schreibsperre(tmp_p)
 
     import shared.exchange_holidays as eh
     import scripts.compute_options_skew as m
@@ -506,8 +407,8 @@ def pruefe() -> int:
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "--isoliert":
-        nonce = os.environ.pop("SA_PROBE_NONCE", "")   # fuer spaetere Importe unsichtbar
+        nonce = nonce_sichern()          # vor jedem Cron-Import
         n = _isoliert(sys.argv[2])
-        print(f"ISOLIERT-BILANZ {nonce} {n} {','.join(PROBEN)}", flush=True)
+        melde_bilanz(nonce, n, PROBEN)
         sys.exit(1 if n else 0)
     sys.exit(pruefe())

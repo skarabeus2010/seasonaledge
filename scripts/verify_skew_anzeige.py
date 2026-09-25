@@ -35,8 +35,18 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-import shared.exchange_holidays as eh          # noqa: E402
-import scripts.compute_options_skew as m      # noqa: E402
+from scripts.waechter_isolation import (melde_bilanz, nonce_sichern,   # noqa: E402
+                                        schreibsperre, starte_isoliert)
+
+# Die Cron-Module werden ERST im isolierten Unterprozess und NACH der
+# Schreibsperre importiert (Codex-Review 2026-09-25: die erste Fassung fuehrte
+# das echte _enrich ohne Sperre aus — eine Regression mit Schreibzugriff ins
+# Repo waere weder verhindert noch bemerkt worden).
+eh = None
+m = None
+
+PROBEN: list[str] = []
+ERWARTETE_PROBEN = ("kursdatum", "frische", "anzeige", "enrich", "build", "audit")
 
 ET = ZoneInfo("America/New_York")
 UTC = ZoneInfo("UTC")
@@ -125,7 +135,8 @@ def _pruefe_echtes_enrich() -> int:
     return fehler
 
 
-def pruefe() -> int:
+def _proben() -> int:
+    """Alle ausfuehrenden Proben. Laeuft NUR im isolierten Unterprozess."""
     fehler = 0
 
     print("Kursdatum eines Tagesbalkens (ET, nicht UTC)\n" + "-" * 68)
@@ -137,6 +148,7 @@ def pruefe() -> int:
     ]:
         ist = m._kurs_datum({"last_updated": lu} if lu else {})
         fehler += _zeile(ist == soll, f"{name:<44} -> {ist}")
+    PROBEN.append("kursdatum")
 
     print("\nFrische-Filter in _own_cands (Session " + SESSION + ")\n" + "-" * 68)
     cs = [_kontrakt("call", 700.0, 5.0, _ns(2026, 9, 24, 15, 0)),      # frisch
@@ -149,6 +161,7 @@ def pruefe() -> int:
     ks = sorted(c["K"] for e in by.values() for c in e["cands"])
     fehler += _zeile(ks == [680.0, 700.0],
                      f"uebrig: {ks} (erwartet [680.0, 700.0] — 710 veraltet, 690 ohne Zeit)")
+    PROBEN.append("frische")
 
     print("\nAnzeige = Ranking (_anzeige_aus_ranking)\n" + "-" * 68)
     def _roh(cm_mode):
@@ -186,12 +199,14 @@ def pruefe() -> int:
         fp = r.get("front_provider") or {}
         fehler += _zeile(leer and fp.get("skew_pts") == 25.55,
                          f"cm_mode={modus!s:<7}: Anzeige leer, front_provider erhalten")
+    PROBEN.append("anzeige")
 
     # Das ECHTE _enrich muss die Umstellung selbst vornehmen. Die Proben oben
     # rufen _anzeige_aus_ranking direkt — ein entfernter Aufruf in _enrich blieb
     # dort unbemerkt (erste Mutationsprobe, Fall 21).
     print("\nEchtes _enrich mit synthetischer Chain\n" + "-" * 68)
     fehler += _pruefe_echtes_enrich()
+    PROBEN.append("enrich")
 
     print("\nbuild(): History-Fallback liest front_provider (kein Absturz)\n" + "-" * 68)
     echte = {n: getattr(m, n) for n in ("_ROOT", "_enrich", "_index_series")}
@@ -256,10 +271,39 @@ def pruefe() -> int:
             os.environ.pop("MASSIVE_API_KEY", None)
         else:
             os.environ["MASSIVE_API_KEY"] = alt_key
+    PROBEN.append("build")
+    return fehler
 
+
+def _isoliert(tmp: str) -> int:
+    """Unterprozess: Schreibsperre VOR dem Cron-Import, dann alle Proben."""
+    global eh, m
+    tmp_p = Path(tmp).resolve()
+    verstoesse = schreibsperre(tmp_p)
+    import shared.exchange_holidays as _eh
+    import scripts.compute_options_skew as _m
+    eh, m = _eh, _m
+    fehler = _proben()
+    print("\nSchreibzugriffe ausserhalb des Temp-Verzeichnisses (Audit-Hook)\n" + "-" * 68)
+    fehler += _zeile(not verstoesse, f"{len(verstoesse)} gefunden")
+    for v in verstoesse[:10]:
+        print(f"       {v}")
+    PROBEN.append("audit")
+    return fehler
+
+
+def pruefe() -> int:
+    """Elternprozess: fuehrt selbst nichts aus, startet nur isoliert und prueft
+    die Bilanz (Mechanik: scripts/waechter_isolation.py)."""
+    fehler = starte_isoliert(Path(__file__), ERWARTETE_PROBEN, "sa_anzeigeprobe_")
     print("\n" + ("ERGEBNIS: PASS" if fehler == 0 else f"ERGEBNIS: {fehler} FAIL"))
     return 1 if fehler else 0
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 3 and sys.argv[1] == "--isoliert":
+        nonce = nonce_sichern()          # vor jedem Cron-Import
+        n = _isoliert(sys.argv[2])
+        melde_bilanz(nonce, n, PROBEN)
+        sys.exit(1 if n else 0)
     sys.exit(pruefe())
