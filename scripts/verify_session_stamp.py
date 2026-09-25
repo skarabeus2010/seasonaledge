@@ -66,78 +66,138 @@ def _mit_zeit(jetzt_utc: datetime) -> str:
     return letzte_session("NYSE", jetzt=jetzt_utc).isoformat()
 
 
-class _Falle(Exception):
-    """Wird geworfen, sobald ein gesperrter Lauf trotzdem Netz oder Platte berührt."""
+class _Falle(BaseException):
+    """Wird geworfen, sobald ein gesperrter Lauf trotzdem Netz oder Platte berührt.
+
+    BaseException, NICHT Exception: Produktivcode mit `except Exception` (z. B.
+    `_spot`, `_enrich`) hätte eine Exception-Falle geschluckt, und der Wächter
+    hätte einen Zugriff vor der Sperre nicht bemerkt (Codex-Review R4,
+    reproduziert mit einem `_spot`-Aufruf vor der Sperre). Zusätzlich wird jeder
+    Treffer protokolliert — auch einer, den jemand mit `except BaseException`
+    abfängt.
+    """
+
+
+FALLEN_TREFFER: list[str] = []
+
+
+def _falle(name):
+    def _f(*a, **k):
+        FALLEN_TREFFER.append(name)
+        raise _Falle(name)
+    return _f
+
+
+def _synth_chain(spot: float = 700.0) -> list:
+    """Kleine Chain im Massive-Format — genug, damit _records/_doi/_front laufen."""
+    out = []
+    for typ, delta in (("call", 0.5), ("put", -0.5)):
+        for k in (690.0, 700.0, 710.0):
+            out.append({"details": {"expiration_date": "2026-10-16", "contract_type": typ,
+                                    "strike_price": k},
+                        "open_interest": 1000, "implied_volatility": 0.2,
+                        "greeks": {"gamma": 0.01, "delta": delta},
+                        "day": {"volume": 10}, "underlying_asset": {"price": spot}})
+    return out
 
 
 def _pruefe_sperre_ausgefuehrt() -> int:
+    import os
+    import pathlib as _pl
     import shared.exchange_holidays as eh
     fehler = 0
-    handel = datetime(2026, 9, 25, 14, 0, tzinfo=ZoneInfo("UTC"))   # Fr 10:00 ET
+    UTC = ZoneInfo("UTC")
+    handel = datetime(2026, 9, 25, 14, 0, tzinfo=UTC)       # Fr 10:00 ET
+    geschlossen = datetime(2026, 9, 25, 23, 0, tzinfo=UTC)  # Fr 19:00 ET
 
-    def _falle(name):
-        def _f(*a, **k):
-            raise _Falle(name)
-        return _f
-
-    # Alles, was ein ungesperrter build() als Erstes anfassen würde.
-    fallen = {
-        m: ["_index_series", "_enrich", "_get", "write_json_atomic"],
-        f: ["_enrich", "_get", "_chain", "_save_hist"],
-    }
     echte_uhr = eh._uhr
-    gesichert = {(mod, n): getattr(mod, n) for mod, ns in fallen.items() for n in ns
-                 if hasattr(mod, n)}
-    eh._uhr = lambda tz: handel.astimezone(tz)
+    echter_key = os.environ.get("MASSIVE_API_KEY")
+    echtes_write_text = _pl.Path.write_text
+    gesichert = {}
+
+    def _setze(mod, name, wert):
+        if (mod, name) not in gesichert:
+            gesichert[(mod, name)] = getattr(mod, name, None)
+        setattr(mod, name, wert)
+
+    def _main(mod, *args):
+        alt = sys.argv
+        sys.argv = [Path(mod.__file__).name, *args]
+        try:
+            return mod.main()
+        except _Falle as e:
+            return f"Falle {e}"
+        finally:
+            sys.argv = alt
+
+    # Ohne Schlüssel überspringt build() die Ticker-Schleife — der Test wäre
+    # dann stumm blind. Also immer einen setzen.
+    os.environ["MASSIVE_API_KEY"] = "probe-kein-echter-schluessel"
     try:
-        for (mod, n) in gesichert:
-            setattr(mod, n, _falle(f"{Path(mod.__file__).name}:{n}"))
+        # ---- A) Handelszeit: build(write=True) muss VOR jedem Zugriff abbrechen
+        print("  -- Handelszeit, Schreiblauf")
+        eh._uhr = lambda tz: handel.astimezone(tz)
+        for mod, namen in ((m, ["_index_series", "_enrich", "_get", "write_json_atomic"]),
+                           (f, ["_spot", "_enrich", "_get", "_chain", "_save_hist", "_load_hist"])):
+            for n in namen:
+                if hasattr(mod, n):
+                    _setze(mod, n, _falle(f"{Path(mod.__file__).name}:{n}"))
+        _pl.Path.write_text = _falle("Path.write_text")
         for mod in (m, f):
             name = Path(mod.__file__).name
-            # 1) build(write=True) muss VOR jedem Netz-/Schreibzugriff abbrechen
+            FALLEN_TREFFER.clear()
             try:
                 mod.build(["SPY"], write=True)
-                ergebnis, ok = "lief durch", False
+                ergebnis = "lief durch"
             except MarktOffen:
-                ergebnis, ok = "MarktOffen vor erstem Zugriff", True
+                ergebnis = "MarktOffen"
             except _Falle as e:
-                ergebnis, ok = f"erreichte {e} — Sperre wirkungslos", False
+                ergebnis = f"erreichte {e}"
+            ok = ergebnis == "MarktOffen" and not FALLEN_TREFFER
             if not ok:
                 fehler += 1
-            print(f"  {'OK  ' if ok else 'FAIL'} {name}: build(write=True) -> {ergebnis}")
-            # 2) main() muss das als Exit 2 melden, nicht als Traceback/Exit 0
-            alt_argv = sys.argv
-            sys.argv = [name]
-            try:
-                rc = mod.main()
-            except _Falle as e:
-                rc = f"Falle {e}"
-            finally:
-                sys.argv = alt_argv
-            ok = rc == 2
+            print(f"  {'OK  ' if ok else 'FAIL'} {name}: build(write=True) -> {ergebnis}"
+                  f"{'' if not FALLEN_TREFFER else f', Zugriffe vor der Sperre: {FALLEN_TREFFER}'}")
+            FALLEN_TREFFER.clear()
+            rc = _main(mod)
+            ok = rc == 2 and not FALLEN_TREFFER
             if not ok:
                 fehler += 1
-            print(f"  {'OK  ' if ok else 'FAIL'} {name}: main() -> Exit {rc}")
-        # 3) --no-write darf NICHTS schreiben — auch nicht die Flow-OI-Historie.
-        #    (R3: _doi() rief _save_hist() unabhängig von write.)
-        #    Ausgeführt, nicht gesucht: _save_hist ist oben eine Falle. Mit
-        #    write=False darf sie NICHT auslösen, mit write=True MUSS sie — sonst
-        #    wäre die Probe blind (Falle nie erreichbar).
-        rec = [{"exp": "2026-10-16", "dte": 22, "typ": "call", "strike": 700.0,
-                "oi": 100, "gamma": 0.01, "delta": 0.5, "iv": 0.2, "vol": 10}]
-        for schreiben, soll_falle in [(False, False), (True, True)]:
-            try:
-                f._doi("__PROBE__", rec, 700.0, "2026-09-24", write=schreiben)
-                ausgeloest = False
-            except _Falle:
-                ausgeloest = True
-            ok = ausgeloest == soll_falle
+            print(f"  {'OK  ' if ok else 'FAIL'} {name}: main() -> Exit {rc}"
+                  f"{'' if not FALLEN_TREFFER else f', Zugriffe: {FALLEN_TREFFER}'}")
+
+        # ---- B) Echte Aufrufkette mit synthetischer Chain: --no-write darf
+        #         NICHTS schreiben, ein Schreiblauf nach Schluss MUSS schreiben.
+        #         Prüft main -> build -> _enrich -> _doi -> _save_hist am Stück;
+        #         eine abgerissene write-Weitergabe an JEDER Stelle wird rot
+        #         (R4: die direkte _doi-Probe übersah Brüche an den Aufrufstellen).
+        print("  -- Aufrufkette mit synthetischer Chain")
+        eh._uhr = lambda tz: geschlossen.astimezone(tz)
+        geschrieben: list[str] = []
+        _pl.Path.write_text = lambda self, *a, **k: geschrieben.append(str(self.name)) or 0
+        _setze(f, "_spot", lambda sym, key: 700.0)
+        _setze(f, "_chain", lambda sym, key, spot=None: _synth_chain(700.0))
+        _setze(f, "_load_hist", lambda sym: [])
+        _setze(f, "_enrich", gesichert[(f, "_enrich")])
+        _setze(f, "_save_hist", gesichert[(f, "_save_hist")])
+        for args, soll_schreibt in ((["--no-write", "--tickers", "SPY"], False),
+                                    (["--tickers", "SPY"], True)):
+            geschrieben.clear(); FALLEN_TREFFER.clear()
+            rc = _main(f, *args)
+            schreibt = bool(geschrieben)
+            ok = (rc == 0 and schreibt == soll_schreibt and not FALLEN_TREFFER)
             if not ok:
                 fehler += 1
-            print(f"  {'OK  ' if ok else 'FAIL'} compute_options_flow._doi(write={schreiben}) "
-                  f"-> {'schreibt' if ausgeloest else 'schreibt nicht'}")
+            print(f"  {'OK  ' if ok else 'FAIL'} flow main {' '.join(args):<26} -> Exit {rc}, "
+                  f"Schreibzugriffe {geschrieben or 'keine'}"
+                  f"{'' if not FALLEN_TREFFER else f', Fallen: {FALLEN_TREFFER}'}")
     finally:
         eh._uhr = echte_uhr
+        _pl.Path.write_text = echtes_write_text
+        if echter_key is None:
+            os.environ.pop("MASSIVE_API_KEY", None)
+        else:
+            os.environ["MASSIVE_API_KEY"] = echter_key
         for (mod, n), fn in gesichert.items():
             setattr(mod, n, fn)
     return fehler
