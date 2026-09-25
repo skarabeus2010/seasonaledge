@@ -27,7 +27,8 @@ if str(_ROOT) not in sys.path:
 
 import scripts.compute_options_skew as m           # noqa: E402
 import scripts.compute_options_flow as f           # noqa: E402
-from shared.exchange_holidays import letzte_session, is_trading_day   # noqa: E402
+from shared.exchange_holidays import (letzte_session, is_trading_day,   # noqa: E402
+                                     markt_offen, pruefe_eod_fenster, MarktOffen)
 
 ET = ZoneInfo("America/New_York")
 
@@ -130,6 +131,41 @@ def pruefe() -> int:
         if not ok:
             fehler += 1
         print(f"  {'OK  ' if ok else 'FAIL'} cm_mode={modus!s:<10} -> rankbar={ist}")
+
+    # Handelszeit-Sperre: waehrend der Session darf kein EOD-Job schreiben
+    # (Snapshot intraday, Stempel = Vorsession). Codex-Review 2026-09-25, R2.
+    print("\nHandelszeit-Sperre (markt_offen)\n" + "-" * 68)
+    UTC = ZoneInfo("UTC")
+    for name, jetzt, soll in [
+        ("Fr 09:00 ET, vor Oeffnung",        datetime(2026, 9, 25, 13, 0, tzinfo=UTC), False),
+        ("Fr 10:00 ET, Handel laeuft",       datetime(2026, 9, 25, 14, 0, tzinfo=UTC), True),
+        ("Fr 16:10 ET, im Puffer",           datetime(2026, 9, 25, 20, 10, tzinfo=UTC), True),
+        ("Fr 16:20 ET, nach Schluss",        datetime(2026, 9, 25, 20, 20, tzinfo=UTC), False),
+        ("Cron 01:00 UTC",                   datetime(2026, 9, 25, 1, 0, tzinfo=UTC), False),
+        ("Sa 11:00 ET",                      datetime(2026, 9, 26, 15, 0, tzinfo=UTC), False),
+        ("Feiertag 25.12. 11:00 ET",         datetime(2026, 12, 25, 16, 0, tzinfo=UTC), False),
+        ("Winter 15:00 EST, Handel laeuft",  datetime(2026, 12, 1, 20, 0, tzinfo=UTC), True),
+    ]:
+        ist = markt_offen("NYSE", jetzt)
+        ok = ist == soll
+        if not ok:
+            fehler += 1
+        print(f"  {'OK  ' if ok else 'FAIL'} {name:<34} -> offen={ist}"
+              f"{'' if ok else f'  ERWARTET {soll}'}")
+    try:
+        pruefe_eod_fenster("probe", jetzt=datetime(2026, 9, 25, 14, 0, tzinfo=UTC))
+        print("  FAIL pruefe_eod_fenster laesst einen Schreiblauf in der Handelszeit durch")
+        fehler += 1
+    except MarktOffen:
+        print("  OK   pruefe_eod_fenster bricht in der Handelszeit ab")
+    # Der Schutz muss im ERZEUGER sitzen (build), nicht an der Aufrufstelle.
+    for mod in (m, f):
+        quelle = Path(mod.__file__).read_text(encoding="utf-8")
+        rumpf = quelle.split("def build(", 1)[1].split("\ndef ", 1)[0]
+        ok = "pruefe_eod_fenster(" in rumpf
+        if not ok:
+            fehler += 1
+        print(f"  {'OK  ' if ok else 'FAIL'} {Path(mod.__file__).name}: build() ruft pruefe_eod_fenster")
 
     # Beide Options-Crons muessen DIESELBE Session sehen. Eine eigene Kopie der
     # Regel in einem der Skripte wuerde driften wie die zwei

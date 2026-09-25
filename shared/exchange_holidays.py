@@ -559,6 +559,54 @@ def letzte_session(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER
     return d
 
 
+_OEFFNUNG = {"NYSE": (9, 30)}      # nur dort gebraucht; weitere Börsen bei Bedarf
+
+
+class MarktOffen(RuntimeError):
+    """Ein EOD-Job wurde während der laufenden Handelszeit gestartet."""
+
+
+def markt_offen(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MIN) -> bool:
+    """Läuft an `exchange` gerade eine Session, deren Schluss noch aussteht?
+
+    Grund (Codex-Review 2026-09-25, Runde 2): `letzte_session()` ordnet einen
+    Lauf während der Handelszeit korrekt der VORSESSION zu — der Options-Snapshot
+    ist dann aber schon ein Intraday-Stand des laufenden Tages. Datum und Daten
+    passten nicht zusammen, und weder der Kurs-Frischewächter noch die Dedup-
+    Regel können das sehen (die Kursreihe endet korrekt am Vortag).
+    Vor der Öffnung liefert der Snapshot noch den EOD-Stand der Vorsession,
+    nach Schluss den des Tages — beides passt. Nur dieses Fenster nicht.
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    ex = (exchange or "NYSE").upper()
+    if ex == "CRYPTO":
+        return True
+    tz_name, s_h, s_m = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
+    o_h, o_m = _OEFFNUNG.get(ex, _OEFFNUNG["NYSE"])
+    tz = ZoneInfo(tz_name)
+    j = (jetzt.astimezone(tz) if jetzt is not None else datetime.now(tz))
+    if not is_trading_day(j.date(), ex):
+        return False
+    minute = j.hour * 60 + j.minute
+    return o_h * 60 + o_m <= minute < s_h * 60 + s_m + puffer_min
+
+
+def pruefe_eod_fenster(job: str, exchange: str = "NYSE", jetzt=None) -> None:
+    """Bricht mit `MarktOffen` ab, wenn ein EOD-Job in der Handelszeit SCHREIBEN will.
+
+    Bewusst im Erzeuger aufgerufen (build), nicht an der Aufrufstelle: ein
+    Schutz an der Aufrufstelle deckt nur diesen einen Aufrufer ab (v60.1).
+    Lesende Läufe (--no-write) bleiben erlaubt.
+    """
+    if markt_offen(exchange, jetzt):
+        raise MarktOffen(
+            f"{job}: {exchange} handelt gerade. Der Snapshot wäre ein Intraday-"
+            f"Stand, gestempelt würde die Vorsession — Datum und Daten passen nicht "
+            f"zusammen. Nach Handelsschluss erneut starten oder --no-write nutzen.")
+
+
 def get_holidays_for_ticker(
     ticker: str,
     start_year: int,

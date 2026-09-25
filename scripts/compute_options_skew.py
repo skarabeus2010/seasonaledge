@@ -30,7 +30,7 @@ from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
-from shared.exchange_holidays import is_trading_day, letzte_session   # noqa: E402
+from shared.exchange_holidays import is_trading_day, letzte_session, MarktOffen, pruefe_eod_fenster   # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
                                  rv_aus_closes)
@@ -745,6 +745,10 @@ def _enrich(sym: str, key: str) -> dict | None:
 
 
 def build(tickers: list[str], write: bool = True) -> dict:
+    if write:
+        # EOD-Job: waehrend der US-Handelszeit waere der Snapshot intraday,
+        # gestempelt wuerde die Vorsession (Codex-Review 2026-09-25, R2).
+        pruefe_eod_fenster("compute_options_skew")
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
     skew_s = _index_series("^SKEW"); vix_s = _index_series("^VIX"); vvix_s = _index_series("^VVIX")
     indices = {}
@@ -937,7 +941,11 @@ def main() -> int:
     ap.add_argument("--tickers", nargs="+", default=_DEFAULT_TICKERS)
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
-    build(a.tickers, not a.no_write)
+    try:
+        build(a.tickers, not a.no_write)
+    except MarktOffen as e:
+        print(f"ABBRUCH: {e}", flush=True)
+        return 2
     return 0
 
 

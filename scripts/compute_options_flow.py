@@ -35,7 +35,7 @@ if str(_ROOT) not in sys.path:
 
 from shared.env_loader import load_env          # noqa: E402
 load_env()
-from shared.exchange_holidays import letzte_session            # noqa: E402
+from shared.exchange_holidays import letzte_session, MarktOffen, pruefe_eod_fenster            # noqa: E402
 from shared.options_universe import CORE_OPTIONS, categories_for  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
@@ -306,6 +306,10 @@ def _enrich(sym: str, key: str, today: str) -> dict | None:
 
 
 def build(tickers: list[str], write: bool = True) -> dict:
+    if write:
+        # EOD-Job: waehrend der US-Handelszeit waere der Snapshot intraday,
+        # gestempelt wuerde die Vorsession (Codex-Review 2026-09-25, R2).
+        pruefe_eod_fenster("compute_options_flow")
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
     # Session, NICHT date.today(): der Cron laeuft mit Verzug nach Mitternacht
     # UTC, dann ist today der Folgetag und die OI-Historie traegt Labels eine
@@ -351,7 +355,11 @@ def main() -> int:
     ap.add_argument("--tickers", nargs="+", default=list(CORE_OPTIONS))
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
-    build(a.tickers, not a.no_write)
+    try:
+        build(a.tickers, not a.no_write)
+    except MarktOffen as e:
+        print(f"ABBRUCH: {e}", flush=True)
+        return 2
     return 0
 
 
