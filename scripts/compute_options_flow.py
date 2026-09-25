@@ -92,9 +92,13 @@ def _chain(sym: str, key: str, spot=None) -> list:
     return out
 
 
-def _records(contracts: list) -> list:
-    """Normalisiert Kontrakte → [{exp,dte,typ,strike,oi,gamma,delta,iv,vol}]."""
-    today = date.today(); out = []
+def _records(contracts: list, session: str) -> list:
+    """Normalisiert Kontrakte → [{exp,dte,typ,strike,oi,gamma,delta,iv,vol}].
+
+    dte gegen die SESSION der Chain, nicht gegen date.today(): nach Mitternacht
+    UTC war jede Restlaufzeit einen Tag zu kurz, ein 0DTE-Kontrakt bekam dte=-1
+    und fiel aus _front (Codex-Review 2026-09-25)."""
+    today = date.fromisoformat(session); out = []
     for c in contracts:
         det = c.get("details") or {}
         ex = det.get("expiration_date"); typ = det.get("contract_type")
@@ -114,7 +118,15 @@ def _records(contracts: list) -> list:
 
 
 # ── (4) ΔOI-Flow ─────────────────────────────────────────────────────────────
-_OI_SCHEMA = 2      # 1 = je Strike (alle Laufzeiten summiert), 2 = je (Expiry, Strike)
+_OI_SCHEMA = 3      # 1 = je Strike (alle Laufzeiten summiert), 2 = je (Expiry, Strike)
+                    # 3 = wie 2, aber gestempelt mit der ABGESCHLOSSENEN Session
+                    #     (shared/exchange_holidays.letzte_session). Schema-2-Eintraege
+                    #     tragen nach verspaeteten Cron-Laeufen ein Label eine Session
+                    #     voraus; welche genau, laesst sich nachtraeglich nicht sicher
+                    #     bestimmen. Deshalb derselbe Mechanismus wie beim Wechsel
+                    #     1->2: der erste Lauf nach der Umstellung setzt dOI aus, statt
+                    #     zwei Sessions als "gap_sessions=1" zu vergleichen
+                    #     (Codex-Review 2026-09-25).
 
 
 def _oi_by_contract(recs: list) -> dict:
@@ -278,7 +290,7 @@ def _enrich(sym: str, key: str, today: str) -> dict | None:
     except Exception as e:
         print(f"  [massive] {sym}: {str(e)[:80]}")
         return None
-    recs = _records(contracts)
+    recs = _records(contracts, today)
     if not recs:
         print(f"  [massive] {sym}: leere Chain (n={len(contracts)})")
         return None
@@ -317,7 +329,11 @@ def build(tickers: list[str], write: bool = True) -> dict:
             gc.collect()
 
     out = {
-        "generated": today,
+        # generated = Laufzeitpunkt (Frische), session = Handelstag der Daten.
+        # Vorher stand hier die Session — nach Mitternacht UTC meldete die Datei
+        # dann ein Erzeugungsdatum, das einen Tag vor dem Lauf lag.
+        "generated": date.today().isoformat(),
+        "session": today,
         "source": "US-Voll-Optionskette (EOD) · ΔOI = heute − Vortags-Snapshot (forward-akkumuliert) · Front-Verfall-Gamma/Skew. Kein Intraday-Tape.",
         "core": list(tickers), "tickers": per,
     }

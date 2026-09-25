@@ -90,23 +90,46 @@ def pruefe() -> int:
         print(f"  {'OK  ' if ok else 'FAIL'} {tag} -> {ist}"
               f"{'' if ok else f'  ERWARTET {soll}'}")
 
-    # MUTATIONSPROBE: die alte Logik (letzter Handelstag <= today, ohne
+    # MUTATIONSPROBE: die alte Logik (letzter Handelstag <= date.today(), ohne
     # Schlusszeit) muss von diesem Waechter erkannt werden. Ohne diese Probe ist
     # ein gruener Lauf eine Aussage ueber den Test, nicht ueber den Code.
+    #
+    # ERSTE FASSUNG WAR SELBST FALSCH (Codex-Review 2026-09-25): sie bildete
+    # date.today() mit dem ET-Datum nach. Der Cron-Container laeuft aber in
+    # UTC — und genau die UTC-Sicht erzeugt den Vorfall. Mit ET-Datum lieferte
+    # die "alte Logik" um 01:00 UTC korrekt den 24.09., die Probe fing also den
+    # dokumentierten Fall NICHT, und die "2 von 11" waren andere Faelle. Dazu
+    # reichte irgendein Treffer fuer PASS. Jetzt: UTC-Datum wie im Container,
+    # und der Vorfall selbst muss zwingend erkannt werden.
     print("\nMutationsprobe (alte Logik muss FAIL erzeugen)\n" + "-" * 68)
     def _alt(jetzt_utc: datetime) -> str:
-        d = jetzt_utc.astimezone(ET).date()      # == date.today() im Cron-Kontext
+        d = jetzt_utc.astimezone(ZoneInfo("UTC")).date()   # date.today() im UTC-Container
         for _ in range(10):
             if is_trading_day(d, "NYSE"):
                 return d.isoformat()
             d -= timedelta(days=1)
         return d.isoformat()
 
-    erkannt = sum(1 for name, jetzt, soll in FAELLE if _alt(jetzt) != soll)
-    print(f"  alte Logik scheitert an {erkannt} von {len(FAELLE)} Faellen")
-    if erkannt == 0:
-        print("  FAIL: der Waechter kann den Vorfall nicht reproduzieren")
+    erkannt = [name for name, jetzt, soll in FAELLE if _alt(jetzt) != soll]
+    print(f"  alte Logik scheitert an {len(erkannt)} von {len(FAELLE)} Faellen:")
+    for name in erkannt:
+        print(f"    - {name}")
+    vorfall = [n for n, _, _ in FAELLE if "DER VORFALL" in n]
+    if not vorfall or vorfall[0] not in erkannt:
+        print("  FAIL: der dokumentierte Vorfall wird von der Probe NICHT erkannt")
         fehler += 1
+
+    # Ersetzungsregel der Historie: rankbar ersetzt nicht-rankbar, sonst nichts.
+    # Erste Fassung pruefte "cm_mode is not None" und liess damit eine
+    # noatm-Zeile einen rankbaren Punkt blockieren (Codex-Review 2026-09-25).
+    print("\nRankbarkeit wie im Frontend (skew.html::_isNorm)\n" + "-" * 68)
+    for modus, soll in [("cm", True), ("cm_extrap", True), ("noatm", False),
+                        ("single", False), (None, False)]:
+        ist = m._rankbar({"cm_mode": modus})
+        ok = ist == soll
+        if not ok:
+            fehler += 1
+        print(f"  {'OK  ' if ok else 'FAIL'} cm_mode={modus!s:<10} -> rankbar={ist}")
 
     # Beide Options-Crons muessen DIESELBE Session sehen. Eine eigene Kopie der
     # Regel in einem der Skripte wuerde driften wie die zwei

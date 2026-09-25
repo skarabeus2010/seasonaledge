@@ -47,6 +47,18 @@ from shared.black_scholes import (diagnose_start as _diagnose_start,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
 
 
+_RANKBAR = ("cm", "cm_extrap")
+
+
+def _rankbar(e: dict | None) -> bool:
+    """Traegt diese History-Zeile zum Ranking bei? Muss exakt
+    `landing/pages/skew.html::_isNorm` entsprechen. `noatm` und `single`
+    sind NICHT rankbar, obwohl ihr cm_mode nicht None ist — genau daran
+    scheiterte die erste Fassung der Ersetzungsregel (Codex-Review
+    2026-09-25): eine noatm-Zeile blockierte den rankbaren Punkt."""
+    return bool(e) and e.get("cm_mode") in _RANKBAR
+
+
 def _last_session(d: date | None = None) -> str:
     """Letzter NYSE-Handelstag ≤ d. Das Options-Universum ist komplett US-gelistet.
 
@@ -122,7 +134,7 @@ def _fix_session_dates(hist: dict) -> tuple[int, int]:
                 # nicht. Frueher gewann pauschal der Live-Eintrag — der konnte
                 # damit einen brauchbaren Backfill-Punkt verdraengen und die
                 # Stichprobe verkleinern.
-                _norm = lambda x: x.get("cm_mode") in ("cm", "cm_extrap")
+                _norm = _rankbar
                 if _norm(e) and not _norm(cur):
                     by_date[s] = e
                 elif _norm(e) == _norm(cur) and cur.get("reconstructed") and not e.get("reconstructed"):
@@ -202,7 +214,11 @@ def _pick(lst, target, tol=None):
 
 def _byexp(contracts: list) -> dict:
     """Kontrakte je Verfallstag: {exp: {dte, call:[(δ,iv,K,oi)], put:[…], spot}}."""
-    today = date.today(); by = {}
+    # Restlaufzeit gegen die SESSION, zu der die Chain gehoert — nicht gegen
+    # date.today(). Nach Mitternacht UTC (Cron mit Verzug) war jede dte einen
+    # Tag zu kurz, und _nearest_exp(by, 30) waehlte damit ggf. einen anderen
+    # Verfall als "30 Tage". Befund Codex-Review 2026-09-25.
+    today = date.fromisoformat(_last_session()); by = {}
     for c in contracts:
         g = c.get("greeks") or {}; iv = c.get("implied_volatility"); dl = g.get("delta")
         if iv is None or dl is None:
@@ -852,11 +868,12 @@ def build(tickers: list[str], write: bool = True) -> dict:
             # unheilbar — die falsch gestempelten Provider-Zeilen haetten auch
             # den echten Lauf der Folgenacht blockiert, der Radar waere leer
             # geblieben, ohne dass irgendetwas fehlschlaegt.
-            # Deshalb: normiert ersetzt nicht-normiert, sonst bleibt es beim
-            # Bestand (kein Ueberschreiben gleichwertiger Zeilen).
+            # Deshalb: rankbar ersetzt nicht-rankbar, sonst bleibt es beim
+            # Bestand (kein Ueberschreiben gleichwertiger Zeilen). "Rankbar"
+            # heisst cm/cm_extrap — NICHT "cm_mode ist gesetzt" (noatm/single).
             vorhanden = next((e for e in arr if e.get("date") == today), None)
-            neu_norm = t.get("cm_mode") is not None
-            alt_norm = vorhanden is not None and vorhanden.get("cm_mode") is not None
+            neu_norm = _rankbar(t)
+            alt_norm = _rankbar(vorhanden)
             if vorhanden is not None and neu_norm and not alt_norm:
                 arr.remove(vorhanden)
                 print(f"  {t['ticker']:6} nicht normierte Zeile fuer {today} durch "
