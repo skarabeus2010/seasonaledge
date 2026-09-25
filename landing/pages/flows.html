@@ -629,7 +629,12 @@
 
     // ── Panel G: Vol- & Skew-Puls (CBOE) ────────────────────────────────────
     var SKEW_HIST=null;
-    var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365},{lbl:'2J',d:800}];
+    // Kein '2J': die normierte Historie reicht nur ein Jahr zurueck (ab 2025-09-19,
+    // 1-Jahres-Backfill; ein 2-J-Lauf ist bewusst nicht geplant, Entscheidung
+    // 2026-09-25). '2J' rechnete daher auf denselben Daten wie '1J' und
+    // behauptete ein doppelt so langes Fenster. Erst wieder anbieten, wenn die
+    // Vorwaertshistorie tatsaechlich zwei Jahre tief ist (~09/2027).
+    var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365}];
     var SKEW_WIN=365;                                              // Default: 1 Jahr (IV-Rank-Standard)
     // Perzentil-Rang (0-100) des letzten Werts innerhalb der eigenen Historie
     function _rank(vals){
