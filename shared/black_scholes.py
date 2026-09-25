@@ -255,6 +255,60 @@ def _smile_ausreisser(punkte, tol: float = SMILE_TOL,
     return {punkte[i][1:] for i in raus}                 # {(K, iv)}
 
 
+def _waehle_delta(gueltig, spot: float, T: float, iv_atm: float, ziel: float) -> dict:
+    """Je Seite den Kontrakt, dessen Delta — mit der EINEN Referenz-IV gerechnet —
+    am naechsten an `ziel` liegt. Rueckgabe {"call"|"put": (abstand, iv, K) | None}.
+
+    Aus Schritt 5 von leg_from_prices herausgezogen (2026-09-25), damit
+    leg_from_prices, smile_from_prices und die Tick-Unsicherheit DENSELBEN
+    Kontrakt waehlen. Schleifenreihenfolge und striktes "<" sind unveraendert —
+    bei Gleichstand gewinnt wie bisher der zuerst gefundene."""
+    best = {"call": None, "put": None}
+    for typ, K, iv in gueltig:
+        d = abs(abs(bs_delta(spot, K, T, iv_atm, typ)) - ziel)
+        if best[typ] is None or d < best[typ][0]:
+            best[typ] = (d, iv, K)
+    return best
+
+
+def bs_vega(S, K, T, sig):
+    """Preisaenderung je 1,0 Volatilitaet (nicht je Vol-Punkt)."""
+    if T <= 0 or sig <= 0:
+        return 0.0
+    srt = sig * math.sqrt(T)
+    d1 = (math.log(S / K) + (R + 0.5 * sig * sig) * T) / srt
+    return S * math.exp(-0.5 * d1 * d1) / math.sqrt(2 * math.pi) * math.sqrt(T)
+
+
+TICK = 0.01               # Kursraster der Optionspreise (Massive liefert Cent)
+
+
+def tick_unsicherheit_pts(cands, spot: float, dte: int, tick: float = TICK, _punkte=None):
+    """Wie weit kann allein die Rundung auf den Kursraster den 25d-Skew verschieben?
+
+    Codex-Review 2026-09-25: kurz vor Verfall kostet ein 25d-Kontrakt wenige
+    Cent. Ein halber Tick Rundungsfehler, geteilt durch das Vega, ist dann
+    ein nennenswerter IV-Fehler — synthetisch gemessen drehte er einen Skew
+    von +0,14 auf −0,09. Rueckgabe in Vol-Punkten, konservativ als Summe der
+    beiden Fluegel (die Fehler koennen sich addieren), oder None, wenn keine
+    25d-Leg waehlbar ist. Dieselben Kontrakte wie leg_from_prices."""
+    g = _punkte if _punkte is not None else _gefilterte_punkte(cands, spot, dte)
+    if g is None:
+        return None
+    gueltig, iv_atm, T, _klammer = g
+    wahl = _waehle_delta(gueltig, spot, T, iv_atm, 0.25)
+    summe = 0.0
+    for typ in ("call", "put"):
+        if not wahl[typ]:
+            return None
+        _d, iv, K = wahl[typ]
+        vega = bs_vega(spot, K, T, iv)
+        if vega <= 0:
+            return None
+        summe += (tick / 2.0) / vega
+    return round(summe * 100.0, 3)
+
+
 def _gefilterte_punkte(cands, spot: float, dte: int):
     """Schritte 1-4 von `leg_from_prices`: IV-Inversion, Smile-Ausreisser,
     Paritaet im ATM-Band, ATM ueber Moneyness am Forward.
@@ -389,11 +443,7 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
     # Schritt 5: Deltas mit der EINEN Referenz-IV — nicht mit der je Kontrakt.
     # Der gemeldete Wert ist dann die EIGENE IV des gewaehlten Kontrakts: die
     # Auswahl ist stabil, die Messung bleibt die des Kontrakts.
-    best = {"call": None, "put": None}
-    for typ, K, iv in gueltig:
-        d = abs(abs(bs_delta(spot, K, T, iv_atm, typ)) - 0.25)
-        if best[typ] is None or d < best[typ][0]:
-            best[typ] = (d, iv)
+    best = _waehle_delta(gueltig, spot, T, iv_atm, 0.25)
     call, put = best["call"], best["put"]
     if not call or not put:
         _zaehl("leg_None_seite_fehlt")
@@ -482,14 +532,9 @@ def smile_from_prices(cands, spot: float, dte: int, deltas=SMILE_DELTAS,
     gueltig, iv_atm, T, _klammer = g
     out = {"dte": dte, "iv_atm": round(iv_atm, 4), "put": {}, "call": {}}
     for ziel in deltas:
+        wahl = _waehle_delta(gueltig, spot, T, iv_atm, ziel)
         for typ in ("put", "call"):
-            best = None
-            for t, K, iv in gueltig:
-                if t != typ:
-                    continue
-                d = abs(abs(bs_delta(spot, K, T, iv_atm, typ)) - ziel)
-                if best is None or d < best[0]:
-                    best = (d, iv)
+            best = wahl[typ]
             out[typ][ziel] = best[1] if (best and best[0] <= delta_tol) else None
     return out
 

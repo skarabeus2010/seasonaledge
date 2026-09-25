@@ -43,7 +43,7 @@ eh = m = bs = None                             # erst im Unterprozess, nach der 
 PROBEN: list[str] = []
 ERWARTETE_PROBEN = ("regression", "basis", "ne_ersatz", "ne_ohne", "anbieter_fehlt",
                     "spot_veraltet", "fluegel_fehlen", "klammer_luecke", "single",
-                    "smile_luecke", "audit")
+                    "smile_luecke", "ne_weggefiltert", "tick", "helfer", "render_ne", "audit")
 
 ET = ZoneInfo("America/New_York")
 UTC = ZoneInfo("UTC")
@@ -63,13 +63,14 @@ def _ns(tag: date, stunde=15, minute=30) -> int:
     return int(datetime(tag.year, tag.month, tag.day, stunde, minute, tzinfo=ET).timestamp() * 1e9)
 
 
-def _sigma(K: float, T: float) -> float:
+def _sigma(K: float, T: float, schiefe: float = 0.10) -> float:
     """Smile mit Put-Skew und leichter Aufwaertsneigung der Term-Struktur."""
     mm = math.log(K / S)
-    return 0.20 + 0.03 * T - 0.10 * mm + 0.40 * mm * mm
+    return 0.20 + 0.03 * T - schiefe * mm + 0.40 * mm * mm
 
 
-def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True) -> list:
+def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True,
+           veraltet=(), schiefe=0.10) -> list:
     """Synthetische Chain im Massive-Format.
 
     schritt(dte) -> Strike-Abstand; entferne(dte, K, typ) -> True = weglassen;
@@ -84,14 +85,15 @@ def _kette(dtes=None, schritt=None, entferne=None, provider=True, frisch=True) -
         k = 60.0
         while k <= 140.0 + 1e-9:
             K = round(k, 4)
-            sig = _sigma(K, T)
+            sig = _sigma(K, T, schiefe)
             for typ in ("call", "put"):
                 if entferne and entferne(dte, K, typ):
                     continue
                 px = round(max(bs_price(S, K, T, sig, typ), 0.01), 2)
                 c = {"details": {"expiration_date": ex, "contract_type": typ, "strike_price": K,
                                  "ticker": f"O:SYN{ex[2:4]}{ex[5:7]}{ex[8:10]}{typ[0].upper()}{int(K * 1000):08d}"},
-                     "open_interest": 100, "day": {"close": px, "volume": 10, "last_updated": lu}}
+                     "open_interest": 100, "day": {"close": px, "volume": 10,
+                                                   "last_updated": _ns(SESSION - timedelta(days=14)) if dte in veraltet else lu}}
                 if provider:
                     c["implied_volatility"] = round(sig, 4)
                     c["greeks"] = {"delta": round(bs_delta(S, K, T, sig, typ), 4)}
@@ -112,6 +114,58 @@ def _enrich(kette, close_datum=SESSION) -> dict | None:
 # 1-$-Schritten trifft kein Strike die Toleranz — wie bei 13 echten Tickern.
 GROB_1T = lambda d: 1.0
 FEIN_1T = lambda d: 0.1 if d == 1 else 1.0
+
+
+_NODE_PROBE = r"""
+const fs = require('fs');
+const src = fs.readFileSync(process.argv[1], 'utf8');
+const a = src.indexOf('function renderSkewCurve(tk){');
+const b = src.indexOf('// IV-Term-Structure', a);
+if (a < 0 || b < 0) { console.log(JSON.stringify({fehler: 'Funktion nicht gefunden'})); process.exit(0); }
+const fnSrc = src.slice(a, b);
+const labels = ['10ΔP','25ΔP','40ΔP','ATM','40ΔC','25ΔC','10ΔC'];
+const kurve = [0.21,0.2,0.2,0.19,0.19,0.18,0.18];
+const faelle = {
+  nur_ne:  {labels, iv30: null, iv_ne: kurve, dte_ne: 4, dte30: null},
+  beide:   {labels, iv30: kurve, iv_ne: kurve, dte_ne: 4, dte30: 30},
+  keine:   {labels, iv30: null, iv_ne: null},
+};
+const out = {};
+for (const [name, sc] of Object.entries(faelle)) {
+  let gefangen = null;
+  const ctx = {document: {getElementById: () => ({innerHTML: ''})}, T: (k, d) => d,
+               ACC: 'ACC', BLUE: 'BLUE', MUT: 'MUT', baseChart: () => ({}),
+               renderInto: (id, opt) => { gefangen = opt; }, _curTicker: () => ({skew_curve: sc})};
+  const f = new Function(...Object.keys(ctx), fnSrc + '; renderSkewCurve("X"); return null;');
+  f(...Object.values(ctx));
+  out[name] = gefangen ? {n: gefangen.series.length, namen: gefangen.series.map(s => s.name),
+                          farben: gefangen.colors} : null;
+}
+console.log(JSON.stringify(out));
+"""
+
+
+def _pruefe_render() -> int:
+    import json
+    import subprocess
+    r = subprocess.run(["node", "-e", _NODE_PROBE, str(_ROOT / "landing" / "pages" / "skew.html")],
+                       capture_output=True, text=True, encoding="utf-8", timeout=60)
+    try:
+        out = json.loads(r.stdout.strip().splitlines()[-1])
+    except Exception:
+        return _zeile(False, f"node-Probe lieferte nichts Auswertbares (Exit {r.returncode}): "
+                             f"{(r.stderr or r.stdout)[-200:]}")
+    if "fehler" in out:
+        return _zeile(False, out["fehler"])
+    f = 0
+    ne = out.get("nur_ne")
+    f += _zeile(ne is not None and ne["n"] == 1 and ne["farben"] == ["BLUE"]
+                and ne["namen"][0].startswith("Front"),
+                f"nur NE-Kurve: gezeichnet, eigene Farbe — {ne}")
+    b = out.get("beide")
+    f += _zeile(b is not None and b["n"] == 2 and b["farben"] == ["ACC", "BLUE"], f"beide Kurven: {b}")
+    f += _zeile(out.get("keine") is None, "keine Kurve: nichts gezeichnet")
+    return f
 
 
 def _proben() -> int:
@@ -135,6 +189,8 @@ def _proben() -> int:
     # Put-Skew, und ein 25d-Kontrakt kostet ~8 Cent — die Rundung auf 1 Cent
     # dominiert das Vorzeichen. Geprueft wird: gemessen, am richtigen Verfall,
     # plausibel klein.
+    fehler += _zeile(r["skew_ne_unsicherheit_pts"] is not None,
+                     f"Tick-Unsicherheit ausgewiesen: ±{r['skew_ne_unsicherheit_pts']} pts")
     fehler += _zeile(r["skew_ne_dte"] == 1 and r["skew_ne_ersatz"] is False
                      and r["skew_ne_pts"] is not None and abs(r["skew_ne_pts"]) < 3,
                      f"NE am 1-Tages-Verfall: {r['skew_ne_pts']} (dte {r['skew_ne_dte']}, Ersatz {r['skew_ne_ersatz']})")
@@ -238,6 +294,54 @@ def _proben() -> int:
     fehler += _zeile(iv30 is not None and iv30[0] is None and iv30[6] is None and iv30[1] is not None,
                      f"10d-Punkte leer, 25d vorhanden: {iv30}")
     PROBEN.append("smile_luecke")
+
+    # ── NE-Verfaelle durch den Frische-Filter komplett weggefiltert (Codex R1, HOCH)
+    print("\nNE-Verfaelle komplett veraltet\n" + "-" * 68)
+    r = _enrich(_kette(schritt=FEIN_1T, veraltet={1}))
+    fehler += _zeile(r["skew_ne_dte"] == 4 and r["skew_ne_ersatz"] is True,
+                     f"1 T. veraltet -> 4 T. als ERSATZ: dte {r['skew_ne_dte']}, Ersatz {r['skew_ne_ersatz']}")
+    r = _enrich(_kette(schritt=FEIN_1T, veraltet={1, 4, 8}))
+    fehler += _zeile(r["skew_ne_pts"] is None and r["skew_ne_dte"] == 1 and r["skew_ne_ersatz"] is False,
+                     f"1/4/8 T. veraltet -> NE leer statt 22 T. als regulaer: "
+                     f"{r['skew_ne_pts']} (dte {r['skew_ne_dte']}, Ersatz {r['skew_ne_ersatz']})")
+    PROBEN.append("ne_weggefiltert")
+
+    # ── Tick-Rauschen: Richtung unbestimmt vs. richtungsfest (Codex R1)
+    print("\nTick-Rauschen am 1-Tages-Verfall\n" + "-" * 68)
+    r = _enrich(_kette(schritt=FEIN_1T))
+    u, sk = r["skew_ne_unsicherheit_pts"], r["skew_ne_pts"]
+    fehler += _zeile(r["skew_ne_richtung_unsicher"] is (u is not None and sk is not None and u >= abs(sk)),
+                     f"flacher Skew {sk} bei ±{u}: Richtung unsicher = {r['skew_ne_richtung_unsicher']}")
+    fehler += _zeile(r["skew_ne_richtung_unsicher"] is True,
+                     "der bekannte Fall (+0,14 wahr, -0,09 gerundet) ist als unsicher markiert")
+    r = _enrich(_kette(schritt=FEIN_1T, schiefe=2.0))
+    fehler += _zeile(r["skew_ne_richtung_unsicher"] is False and (r["skew_ne_pts"] or 0) > 0,
+                     f"steiler Put-Skew {r['skew_ne_pts']} bei ±{r['skew_ne_unsicherheit_pts']}: "
+                     f"richtungsfest und positiv")
+    PROBEN.append("tick")
+
+    # ── Contango und Steigung direkt (Gleichstand, 0/1 Punkte)
+    print("\nContango/Steigung: Randfaelle\n" + "-" * 68)
+    for name, term, iv30, soll in [
+        ("Gleichstand", [{"dte": 8, "iv": 0.20}], 0.20, None),
+        ("kein Punkt <= 14 T.", [{"dte": 22, "iv": 0.18}], 0.20, None),
+        ("kurz billiger", [{"dte": 8, "iv": 0.18}], 0.20, True),
+        ("kurz teurer", [{"dte": 8, "iv": 0.22}], 0.20, False),
+        ("ohne 30-Tage-Wert", [{"dte": 8, "iv": 0.18}], None, None),
+    ]:
+        ist = m._kontango(term, iv30)
+        fehler += _zeile(ist is soll, f"Contango {name}: {ist}")
+    for name, term, soll in [("0 Punkte", [], (None, None, None)),
+                             ("1 Punkt", [{"dte": 8, "iv": 0.2}], (None, None, None)),
+                             ("2 Punkte", [{"dte": 8, "iv": 0.2}, {"dte": 57, "iv": 0.25}], (5.0, 8, 57))]:
+        ist = m._steigung(term)
+        fehler += _zeile(ist == soll, f"Steigung {name}: {ist}")
+    PROBEN.append("helfer")
+
+    # ── Frontend: NE-Kurve allein wird gezeichnet (echte Funktion aus skew.html in node)
+    print("\nFrontend renderSkewCurve (in node ausgefuehrt)\n" + "-" * 68)
+    fehler += _pruefe_render()
+    PROBEN.append("render_ne")
     return fehler
 
 

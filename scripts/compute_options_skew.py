@@ -43,6 +43,7 @@ from shared.black_scholes import (diagnose_start as _diagnose_start,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
                                   atm_from_prices, smile_from_prices, SMILE_DELTAS,
+                                  tick_unsicherheit_pts,
                                   _gefilterte_punkte,
                                   cm_leg_kandidaten as _cm_leg_kandidaten,
                                   ist_monatsverfall, _zaehl as _bs_zaehl,
@@ -715,7 +716,13 @@ def _enrich(sym: str, key: str) -> dict | None:
         print(f"  [massive] {sym}: weder Anbieter- noch eigene 30-Tage-Messung", flush=True)
         return None
     _anzeige_aus_ranking(r)
-    _laufzeiten_eigen(r, by_own, last_close)
+    # Der NAECHSTE Verfall wird aus der UNGEFILTERTEN Kette bestimmt: faellt
+    # ein Verfall durch den Frische-Filter ganz weg, darf der naechste nicht
+    # still als regulaerer NE gelten (Codex-Review 2026-09-25, HOCH).
+    roh_dte = sorted({(date.fromisoformat(ex) - date.fromisoformat(_sess)).days
+                      for ex in {(c.get("details") or {}).get("expiration_date") for c in contracts}
+                      if ex})
+    _laufzeiten_eigen(r, by_own, last_close, [d for d in roh_dte if d >= 1])
     return r
 
 
@@ -865,7 +872,32 @@ _KONTANGO_KURZ_MAX = 14   # Contango: kurzer Punkt hoechstens so lang
 _SMILE_LABELS = ["10ΔP", "25ΔP", "40ΔP", "ATM", "40ΔC", "25ΔC", "10ΔC"]
 
 
-def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
+def _kontango(term: list, iv30) -> bool | None:
+    """True = kurzes Ende billiger als 30 Tage, False = teurer, None = unbestimmt.
+
+    "Kurz" heisst hoechstens _KONTANGO_KURZ_MAX Tage. Mit "< 30" haette XLF am
+    2026-09-24 (7-Tage-Punkt wegen zu weitem Anker verworfen) den 29-Tage-
+    Punkt gegen den 30-Tage-Wert verglichen — formal kuerzer, fachlich derselbe
+    Punkt. Gleichstand ist weder Contango noch Backwardation (Codex)."""
+    kurz = [t for t in (term or []) if t["dte"] <= _KONTANGO_KURZ_MAX]
+    if not kurz or not iv30:
+        return None
+    if kurz[0]["iv"] < iv30:
+        return True
+    if kurz[0]["iv"] > iv30:
+        return False
+    return None
+
+
+def _steigung(term: list):
+    """(Steigung in Vol-Punkten, von-dte, bis-dte) — erst ab zwei Laufzeiten."""
+    if len({t["dte"] for t in (term or [])}) < 2:
+        return None, None, None
+    return (round((term[-1]["iv"] - term[0]["iv"]) * 100, 2), term[0]["dte"], term[-1]["dte"])
+
+
+def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref,
+                      roh_dte: list | None = None) -> None:
     """NE-Skew, 90-Tage-Skew/Skew-Term, Term-Struktur und Smile-Kurve aus der
     EIGENEN Rechnung (Session-Kurse, Referenz-Delta, Paritaets-/Smile-Filter).
 
@@ -894,6 +926,7 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
     Rueckfall auf den Anbieter und kein anderer Spot.
     """
     r.update({"skew_ne_pts": None, "skew_ne_dte": None, "skew_ne_ersatz": None,
+              "skew_ne_unsicherheit_pts": None, "skew_ne_richtung_unsicher": None,
               "skew_back_pts": None, "skew_back_dte": None, "skew_term_pts": None,
               "term": [], "contango": None, "term_slope_pts": None,
               "term_slope_von": None, "term_slope_bis": None,
@@ -936,18 +969,39 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
         if leg and leg.get("put_iv") is not None and leg.get("call_iv") is not None:
             return round((leg["put_iv"] - leg["call_iv"]) * 100, 2)
         return None
-    ne, leg_ne = laufend[0], _leg(laufend[0])
+    # Der tatsaechlich naechste Verfall kommt aus der UNGEFILTERTEN Kette. Ist er
+    # nicht auswertbar — weggefiltert (alle Kurse veraltet) ODER die Leg
+    # scheitert —, springt der naechste auswertbare bis _NE_MAX_DTE ein, und
+    # zwar IMMER als Ersatz gekennzeichnet. Vorher bestimmte der Frische-Filter
+    # still, was "naechster" hiess: Codex reproduzierte veraltete 1/4/8-Tages-
+    # Verfaelle -> NE mit 22 Tagen, ohne Stern und jenseits der 10-Tage-Grenze.
+    ne_dte_roh = (roh_dte or [by_own[laufend[0]]["dte"]])[0]
+    ne_roh = next((e for e in laufend if by_own[e]["dte"] == ne_dte_roh), None)
+    ne, leg_ne = ne_roh, (_leg(ne_roh) if ne_roh else None)
     r["skew_ne_ersatz"] = False
     if _skew_von(leg_ne) is None:
-        for e in laufend[1:]:
+        ne, leg_ne = None, None
+        for e in laufend:
+            if by_own[e]["dte"] <= ne_dte_roh:
+                continue
             if by_own[e]["dte"] > _NE_MAX_DTE:
                 break
             if _skew_von(_leg(e)) is not None:
                 ne, leg_ne = e, _leg(e)
                 r["skew_ne_ersatz"] = True
                 break
-    r["skew_ne_dte"] = by_own[ne]["dte"]
+    r["skew_ne_dte"] = by_own[ne]["dte"] if ne else ne_dte_roh
     r["skew_ne_pts"] = _skew_von(leg_ne)
+    # Tick-Unsicherheit (Codex-Review): kurz vor Verfall kostet ein 25d-Kontrakt
+    # wenige Cent, die Rundung kann das Vorzeichen eines kleinen Skews drehen.
+    # Gemessen am 2026-09-24: 1 Tag Median 0,19 pts, max 1,00 (XLE — bei einem
+    # Skew von 7,15, also richtungsfest). Deshalb keine absolute Schwelle,
+    # sondern: Richtung unbestimmt, wenn die Unsicherheit den Betrag erreicht.
+    # Der Wert bleibt sichtbar, aber ausdruecklich als solcher gekennzeichnet.
+    if ne and r["skew_ne_pts"] is not None:
+        u = tick_unsicherheit_pts(None, spot_ref, by_own[ne]["dte"], _punkte=_punkte(ne))
+        r["skew_ne_unsicherheit_pts"] = u
+        r["skew_ne_richtung_unsicher"] = bool(u is not None and u >= abs(r["skew_ne_pts"]))
 
     # ── 90-Tage-Konstante und Skew-Term ──────────────────────────────────────
     def _bevorzugt(e):
@@ -993,15 +1047,8 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
     # XLF am 2026-09-24 (7-Tage-Punkt wegen zu weitem Anker verworfen) den
     # 29-Tage-Punkt gegen den 30-Tage-Wert verglichen — formal kuerzer,
     # fachlich derselbe Punkt.
-    kurz = [t for t in term if t["dte"] <= _KONTANGO_KURZ_MAX]
-    if kurz and iv30:
-        if kurz[0]["iv"] < iv30:
-            r["contango"] = True
-        elif kurz[0]["iv"] > iv30:
-            r["contango"] = False
-    if len({t["dte"] for t in term}) >= 2:
-        r["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
-        r["term_slope_von"], r["term_slope_bis"] = term[0]["dte"], term[-1]["dte"]
+    r["contango"] = _kontango(term, iv30)
+    r["term_slope_pts"], r["term_slope_von"], r["term_slope_bis"] = _steigung(term)
 
     # ── Smile-Kurven ──────────────────────────────────────────────────────────
     def _kurve(sm, ersetze=None):
@@ -1019,7 +1066,10 @@ def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
     # und Tabellenwert zusammenpassen.
     ersatz_ne = ({1: leg_ne.get("put_iv"), 3: leg_ne.get("iv_atm"), 5: leg_ne.get("call_iv")}
                  if leg_ne else None)
-    sc["iv_ne"] = _kurve(_smile(ne), ersatz_ne)
+    # ne ist None, wenn weder der naechste noch ein Ersatzverfall bis 10 Tage
+    # auswertbar war. Ohne diese Abfrage warf _smile(None) KeyError, und der
+    # GANZE Ticker fiel aus dem Cron-Lauf (vom Waechter gefunden, 2026-09-25).
+    sc["iv_ne"] = _kurve(_smile(ne), ersatz_ne) if ne else None
     sc["dte_ne"] = by_own[ne]["dte"] if sc["iv_ne"] else None
 
     # 30 Tage: nur fuer rankbare Tage, auf denselben Stuetzstellen wie die Anzeige.

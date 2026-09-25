@@ -1847,6 +1847,8 @@
   "skew.th_em": "The calculated one-sigma move to the 30-day expiry, from the ATM IV. An amount without a direction — equally far up as down. Measured over 1990-2026 this band held in 84 % of cases rather than the calculated 68 %, so it is systematically too wide. Details in the questions below.",
   "skew.ne_dte": "Expiry in {n} days",
   "skew.ne_ersatz": "the nearest expiry could not be evaluated, this is the next evaluable one",
+  "skew.ne_tick": "price-tick uncertainty",
+  "skew.ne_richtung": "direction undetermined: rounding to the price tick can flip the sign",
   "skew.th_term": "A comparison of ATM volatility across maturities. Contango: short maturities cheaper than long ones, the calm normal case. Backwardation: short dearer than long — acute stress or an imminent date."
 
 
