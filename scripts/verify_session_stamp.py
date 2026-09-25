@@ -92,6 +92,15 @@ ERZEUGER_UHREN = [
 ]
 
 
+# Jede ausfuehrende Probe traegt sich nach vollstaendigem Durchlauf hier ein.
+# Der Elternprozess verlangt GENAU diese Menge — eine Bilanz ohne sie (Abbruch,
+# vorzeitiges sys.exit, eine importierte Nebenwirkung, die eine gruene Zeile
+# druckt) zaehlt als Fehler (Codex-Review R6).
+PROBEN: list[str] = []
+ERWARTETE_PROBEN = ("explizit", "rankbar", "handelszeit", "ohne_schluessel",
+                    "kette", "stempel", "audit")
+
+
 def _zeile(ok: bool, text: str) -> int:
     print(f"  {'OK  ' if ok else 'FAIL'} {text}")
     return 0 if ok else 1
@@ -155,14 +164,18 @@ def _unterprozess() -> int:
     nicht erst laeuft oder keine Bilanz meldet, zaehlt als FEHLER — sonst waere
     ein blinder Lauf gruen (vier von fuenf "keine Freigabe" im Kern-Review
     waren solche Werkzeugfehler)."""
+    import re
+    import secrets
     print("\nAusfuehrende Proben (isolierter Unterprozess)\n" + "-" * 68)
+    nonce = secrets.token_hex(16)
     with tempfile.TemporaryDirectory(prefix="sa_sessionprobe_") as tmp:
         env = {k: v for k, v in os.environ.items() if k != "MASSIVE_API_KEY"}
         env.update({"SA_OHNE_DOTENV": "1", "PYTHONDONTWRITEBYTECODE": "1",
                     "PYTHONUTF8": "1",
                     # build() ueberspringt ohne Schluessel die Ticker-Schleife —
                     # der Test waere dann stumm blind. Kein echter Schluessel.
-                    "MASSIVE_API_KEY": "probe-kein-echter-schluessel"})
+                    "MASSIVE_API_KEY": "probe-kein-echter-schluessel",
+                    "SA_PROBE_NONCE": nonce})
         r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--isoliert", tmp],
                            cwd=tmp, env=env, capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=600)
@@ -171,14 +184,30 @@ def _unterprozess() -> int:
         for z in ausgabe:
             if not z.startswith("ISOLIERT-BILANZ"):
                 print(z)
-        bilanz = [z for z in ausgabe if z.startswith("ISOLIERT-BILANZ")]
-        if not bilanz:
-            print("  FAIL Unterprozess lieferte keine Bilanz (Exit "
-                  f"{r.returncode}) — stderr:\n" + "\n".join(r.stderr.splitlines()[-15:]))
-            return 1
-        n = int(bilanz[-1].split()[1])
-        if n != r.returncode and not (n > 0 and r.returncode == 1):
-            print(f"  FAIL Bilanz {n} passt nicht zum Exit {r.returncode}")
+        # GENAU eine Bilanzzeile, striktes Format, eigene Nonce, vollstaendige
+        # Probenliste, Exit passend zur Fehlerzahl. Alles andere ist kein Beweis
+        # (R6: "BILANZ 8" gefolgt von "BILANZ 0" wurde als 0 Fehler akzeptiert).
+        bilanz = [z for z in r.stdout.splitlines() if z.startswith("ISOLIERT-BILANZ")]
+        muster = re.compile(r"^ISOLIERT-BILANZ ([0-9a-f]{32}) (\d+) ([a-z_,]+)$")
+        t = muster.match(bilanz[0]) if len(bilanz) == 1 else None
+        n, grund = 0, None
+        if len(bilanz) != 1:
+            grund = f"{len(bilanz)} Bilanzzeilen statt genau einer"
+        elif not t:
+            grund = f"Bilanzzeile ohne gueltiges Format: {bilanz[0][:80]!r}"
+        elif t.group(1) != nonce:
+            grund = "Nonce stimmt nicht — die Zeile stammt nicht aus diesem Lauf"
+        else:
+            proben = t.group(3).split(",")
+            n = int(t.group(2))
+            if len(proben) != len(set(proben)) or set(proben) != set(ERWARTETE_PROBEN):
+                grund = (f"Proben unvollstaendig/doppelt: fehlt "
+                         f"{sorted(set(ERWARTETE_PROBEN) - set(proben))}, gemeldet {proben}")
+            elif (n == 0) != (r.returncode == 0):
+                grund = f"Bilanz {n} passt nicht zum Exit {r.returncode}"
+        if grund:
+            print(f"  FAIL {grund} (Exit {r.returncode}) — stderr:\n"
+                  + "\n".join(r.stderr.splitlines()[-15:]))
             return 1
         return n
 
@@ -226,8 +255,15 @@ def _isoliert(tmp: str) -> int:
             if args and not isinstance(args[0], int) and not _innen(args[0]):
                 verstoesse.append(f"{ereignis}({os.fsdecode(args[0])})")
         elif ereignis == "os.rename":
-            if len(args) >= 2 and not _innen(args[1]):
-                verstoesse.append(f"os.rename(-> {os.fsdecode(args[1])})")
+            # BEIDE Seiten: auch "extern -> Temp-Baum" veraendert das echte Repo
+            # (die Quelle verschwindet dort). R6.
+            if len(args) >= 2 and not (_innen(args[0]) and _innen(args[1])):
+                verstoesse.append(f"os.rename({os.fsdecode(args[0])} -> {os.fsdecode(args[1])})")
+        elif ereignis in ("os.link", "os.symlink"):
+            # Ein Hardlink/Symlink im Temp-Baum auf eine echte Datei macht jede
+            # spaetere Schreiboperation "innen" zu einer aussen. Kein legitimer
+            # Cron-Pfad braucht Links -> grundsaetzlich sperren. R6.
+            verstoesse.append(f"{ereignis}{tuple(os.fsdecode(a) for a in args[:2] if not isinstance(a, int))}")
 
     # Hook VOR dem Import der Crons: auch Import-Nebenwirkungen zaehlen.
     sys.addaudithook(_audit)
@@ -259,7 +295,10 @@ def _isoliert(tmp: str) -> int:
         return w
 
     def _dateien(w: Path) -> list[str]:
-        return sorted(str(p.relative_to(w)).replace("\\", "/") for p in w.rglob("*") if p.is_file())
+        # ALLE Eintraege, nicht nur Dateien: ein angelegtes leeres Verzeichnis
+        # ist in einem gesperrten Lauf genauso ein Verstoss (R6).
+        return sorted(str(p.relative_to(w)).replace("\\", "/") + ("/" if p.is_dir() else "")
+                      for p in w.rglob("*"))
 
     def _uhr(jetzt):
         eh._uhr = lambda tz: jetzt.astimezone(tz)
@@ -306,12 +345,16 @@ def _isoliert(tmp: str) -> int:
             ist = m._last_session(tag)
             fehler += _zeile(ist == soll, f"{tag} -> {ist}{'' if ist == soll else f'  ERWARTET {soll}'}")
 
+        PROBEN.append("explizit")
+
         # -- 2) Rankbarkeit exakt wie skew.html::_isNorm
         print("  -- Rankbarkeit (cm/cm_extrap, NICHT noatm/single)")
         for modus, soll in [("cm", True), ("cm_extrap", True), ("noatm", False),
                             ("single", False), (None, False)]:
             ist = m._rankbar({"cm_mode": modus})
             fehler += _zeile(ist == soll, f"cm_mode={modus!s:<10} -> rankbar={ist}")
+
+        PROBEN.append("rankbar")
 
         # -- 3) Handelszeit: Schreiblauf muss VOR jedem Zugriff abbrechen
         print("  -- Handelszeit (Fr 10:00 ET), Schreiblauf")
@@ -340,6 +383,27 @@ def _isoliert(tmp: str) -> int:
             fehler += _zeile(rc == 2 and not treffer and not _dateien(w),
                              f"{name}: main() -> Exit {rc}")
 
+        PROBEN.append("handelszeit")
+
+        # -- 3b) Schreiblauf OHNE Schluessel: frueher entstand eine Ausgabe ohne
+        #        Ticker mit Exit 0 (beim Skew-Cron: leerer Radar). R6.
+        print("  -- Schreiblauf ohne MASSIVE_API_KEY (nach Schluss)")
+        _uhr(datetime(2026, 9, 25, 23, 0, tzinfo=UTC))
+        schluessel = {k: os.environ.pop(k) for k in ("MASSIVE_API_KEY", "POLYGON_API_KEY")
+                      if k in os.environ}
+        try:
+            for mod in (m, f):
+                name = Path(mod.__file__).name
+                w = _neue_wurzel(f"ohneschluessel_{name}")
+                treffer.clear()
+                rc = _main(mod, "--tickers", "SPY")
+                d = _dateien(w)
+                fehler += _zeile(rc == 3 and not d and not treffer,
+                                 f"{name}: main() ohne Schluessel -> Exit {rc}, Eintraege {d or 'keine'}")
+        finally:
+            os.environ.update(schluessel)
+        PROBEN.append("ohne_schluessel")
+
         # -- 4) echte Aufrufkette Flow: --no-write schreibt nichts, Schreiblauf schon
         print("  -- Flow-Aufrufkette nach Schluss (synthetische Chain)")
         _uhr(datetime(2026, 9, 25, 23, 0, tzinfo=UTC))
@@ -355,6 +419,8 @@ def _isoliert(tmp: str) -> int:
             ok = rc == 0 and bool(d) == soll_dateien and not treffer
             fehler += _zeile(ok, f"flow main {' '.join(args):<26} -> Exit {rc}, "
                              f"Dateien {d or 'keine'}")
+
+        PROBEN.append("kette")
 
         # -- 5) ERZEUGER-STEMPEL unter zwei festen Uhren (R5)
         print("  -- Erzeuger-Stempel unter fester Uhr (Rueckfall auf date.today() muss auffallen)")
@@ -406,6 +472,7 @@ def _isoliert(tmp: str) -> int:
                 fehler += _zeile(ist == soll and not treffer,
                                  f"flow  {lauf}: {feld:<14} = {ist}"
                                  f"{'' if ist == soll else f'  ERWARTET {soll}'}")
+        PROBEN.append("stempel")
     finally:
         eh._uhr = echte_uhr
         for (mod, n), fn in gesichert.items():
@@ -416,6 +483,7 @@ def _isoliert(tmp: str) -> int:
     fehler += _zeile(not verstoesse, f"{len(verstoesse)} gefunden")
     for v in verstoesse[:10]:
         print(f"       {v}")
+    PROBEN.append("audit")
     return fehler
 
 
@@ -428,7 +496,8 @@ def pruefe() -> int:
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "--isoliert":
+        nonce = os.environ.pop("SA_PROBE_NONCE", "")   # fuer spaetere Importe unsichtbar
         n = _isoliert(sys.argv[2])
-        print(f"ISOLIERT-BILANZ {n}", flush=True)
+        print(f"ISOLIERT-BILANZ {nonce} {n} {','.join(PROBEN)}", flush=True)
         sys.exit(1 if n else 0)
     sys.exit(pruefe())

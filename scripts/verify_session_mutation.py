@@ -78,6 +78,15 @@ MUTATIONEN = [
     ("R5", "Flow schreibt am _ROOT vorbei ins echte Repo", FL,
      '    d = _ROOT / "landing/data/oi_history"',
      '    d = Path(__file__).resolve().parent.parent / "landing/data/oi_history"'),
+    ("R6", "Skew schreibt ohne Schluessel eine leere Ausgabe (Exit 0)", SK,
+     "    if write and not tok:", "    if False:"),
+    ("R6", "Flow legt in der Handelszeit ein leeres Verzeichnis an", FL,
+     '        pruefe_eod_fenster("compute_options_flow")',
+     '        (_ROOT / "rogue-dir").mkdir(parents=True, exist_ok=True)\n'
+     '        pruefe_eod_fenster("compute_options_flow")'),
+    ("R6", "Import-Nebenwirkung taeuscht eine gruene Bilanz vor", SK,
+     "_RANKBAR = (\"cm\", \"cm_extrap\")",
+     "_RANKBAR = (\"cm\", \"cm_extrap\")\nprint('ISOLIERT-BILANZ ' + '0' * 32 + ' 0 explizit', flush=True)"),
 ]
 
 

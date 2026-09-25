@@ -744,12 +744,25 @@ def _enrich(sym: str, key: str) -> dict | None:
     return r
 
 
+class SchluesselFehlt(RuntimeError):
+    """Ein Schreiblauf ohne MASSIVE_API_KEY.
+
+    Frueher lief der Cron dann weiter und schrieb eine Datei OHNE Ticker —
+    mit Exit 0. Beim Skew-Cron hiesse das: leerer Radar, gruener Job. Egal ob
+    der Schluessel durch eine kaputte .env, einen falschen Container-Start
+    oder den Pruefschalter SA_OHNE_DOTENV fehlt — ein Fehlschlag muss sich
+    als Fehlschlag melden (Codex-Review 2026-09-25, R6)."""
+
+
 def build(tickers: list[str], write: bool = True) -> dict:
     if write:
         # EOD-Job: waehrend der US-Handelszeit waere der Snapshot intraday,
         # gestempelt wuerde die Vorsession (Codex-Review 2026-09-25, R2).
         pruefe_eod_fenster("compute_options_skew")
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
+    if write and not tok:
+        raise SchluesselFehlt("compute_options_skew: MASSIVE_API_KEY fehlt — ohne ihn entstuende eine "
+                              "Ausgabe ohne Ticker. Nichts geschrieben.")
     skew_s = _index_series("^SKEW"); vix_s = _index_series("^VIX"); vvix_s = _index_series("^VVIX")
     indices = {}
     for name, s in [("SKEW", skew_s), ("VIX", vix_s), ("VVIX", vvix_s)]:
@@ -946,6 +959,9 @@ def main() -> int:
     except MarktOffen as e:
         print(f"ABBRUCH: {e}", flush=True)
         return 2
+    except SchluesselFehlt as e:
+        print(f"ABBRUCH: {e}", flush=True)
+        return 3
     return 0
 
 
