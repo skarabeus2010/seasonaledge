@@ -520,6 +520,15 @@ _SCHLUSSZEIT = {
 _PUFFER_MIN = 15          # Kulanz für verzögerte EOD-Daten des Anbieters
 
 
+def _uhr(tz):
+    """Aktuelle Zeit in `tz`. Eigene Funktion, damit Wächter die Uhr festsetzen
+    und die Sperren in den Crons tatsächlich AUSFÜHREN können — eine reine
+    Quelltext-Suche ließ eine auskommentierte oder wirkungslose Sperre
+    durch (Codex-Review 2026-09-25, R3)."""
+    from datetime import datetime
+    return datetime.now(tz)
+
+
 def letzte_session(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MIN) -> date:
     """Letzter Handelstag, dessen Schluss VORBEI ist.
 
@@ -544,10 +553,10 @@ def letzte_session(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER
 
     ex = (exchange or "NYSE").upper()
     if ex == "CRYPTO":
-        return (jetzt or datetime.now(ZoneInfo("UTC"))).date()
+        return (jetzt or _uhr(ZoneInfo("UTC"))).date()
     tz_name, stunde, minute = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
     tz = ZoneInfo(tz_name)
-    jetzt_lokal = (jetzt.astimezone(tz) if jetzt is not None else datetime.now(tz))
+    jetzt_lokal = (jetzt.astimezone(tz) if jetzt is not None else _uhr(tz))
     d = jetzt_lokal.date()
     grenze = stunde * 60 + minute + puffer_min
     if jetzt_lokal.hour * 60 + jetzt_lokal.minute < grenze:
@@ -576,6 +585,13 @@ def markt_offen(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MI
     Regel können das sehen (die Kursreihe endet korrekt am Vortag).
     Vor der Öffnung liefert der Snapshot noch den EOD-Stand der Vorsession,
     nach Schluss den des Tages — beides passt. Nur dieses Fenster nicht.
+
+    Verkürzte Handelstage (Schluss 13:00 ET, z. B. 24.12.) gelten bewusst bis
+    16:15 ET als „offen". Geprüft im Codex-Review R3: kein Datenverlust — der
+    Cron läuft um 23:00 UTC (18:00/19:00 ET), gesperrt wird nur ein früher
+    Handlauf, und zwar vor jedem Schreibzugriff. Wer das ändern will, muss die
+    verkürzten Schlusszeiten in `markt_offen()` UND `letzte_session()`
+    gemeinsam einführen, sonst driften beide.
     """
     from datetime import datetime
     from zoneinfo import ZoneInfo
@@ -586,7 +602,7 @@ def markt_offen(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MI
     tz_name, s_h, s_m = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
     o_h, o_m = _OEFFNUNG.get(ex, _OEFFNUNG["NYSE"])
     tz = ZoneInfo(tz_name)
-    j = (jetzt.astimezone(tz) if jetzt is not None else datetime.now(tz))
+    j = (jetzt.astimezone(tz) if jetzt is not None else _uhr(tz))
     if not is_trading_day(j.date(), ex):
         return False
     minute = j.hour * 60 + j.minute

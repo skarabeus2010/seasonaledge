@@ -161,7 +161,7 @@ def _save_hist(sym: str, hist: list):
     (d / f"{sym}.json").write_text(json.dumps(hist, ensure_ascii=False), encoding="utf-8")
 
 
-def _doi(sym: str, recs: list, spot, today: str) -> dict:
+def _doi(sym: str, recs: list, spot, today: str, write: bool = True) -> dict:
     """ΔOI heute − letzter Snapshot, je (Expiry, Strike). Persistiert forward.
 
     Zwei Korrekturen gegenüber der Aggregation je Strike:
@@ -223,7 +223,11 @@ def _doi(sym: str, recs: list, spot, today: str) -> dict:
     # heutigen Snapshot upserten (Schema-Marke mitschreiben)
     hist = [h for h in hist if h.get("date") != today]
     hist.append({"date": today, "spot": spot, "schema": _OI_SCHEMA, "strikes": cur})
-    _save_hist(sym, hist[-_HIST_KEEP:])
+    # Nur bei write: --no-write schrieb hier frueher trotzdem die OI-Historie
+    # und umging damit jede Schreibsperre (Codex-Review 2026-09-25, R3:
+    # Intraday-OI 999 ersetzte den Bestand 100 unter der Vorsession).
+    if write:
+        _save_hist(sym, hist[-_HIST_KEEP:])
     return out
 
 
@@ -283,7 +287,7 @@ def _front(recs: list, spot) -> dict | None:
     }
 
 
-def _enrich(sym: str, key: str, today: str) -> dict | None:
+def _enrich(sym: str, key: str, today: str, write: bool = True) -> dict | None:
     spot = _spot(sym, key)
     try:
         contracts = _chain(sym, key, spot)
@@ -299,7 +303,7 @@ def _enrich(sym: str, key: str, today: str) -> dict | None:
             p = (c.get("underlying_asset") or {}).get("price")
             if p:
                 spot = round(float(p), 2); break
-    doi = _doi(sym, recs, spot, today)
+    doi = _doi(sym, recs, spot, today, write)
     front = _front(recs, spot)
     return {"ticker": sym, "cats": categories_for(sym), "spot": spot,
             "doi": doi, "front": front}
@@ -321,7 +325,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
         print("  [massive] MASSIVE_API_KEY fehlt — nichts zu tun.")
     else:
         for t in tickers:
-            r = _enrich(t, tok, today)
+            r = _enrich(t, tok, today, write)
             if r:
                 per.append(r)
                 d, f = r["doi"], r["front"]
