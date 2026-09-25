@@ -255,33 +255,15 @@ def _smile_ausreisser(punkte, tol: float = SMILE_TOL,
     return {punkte[i][1:] for i in raus}                 # {(K, iv)}
 
 
-def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
-    """25Δ-Call-/Put-IV + ATM-IV EINER Expiry aus Rohpreisen.
+def _gefilterte_punkte(cands, spot: float, dte: int):
+    """Schritte 1-4 von `leg_from_prices`: IV-Inversion, Smile-Ausreisser,
+    Paritaet im ATM-Band, ATM ueber Moneyness am Forward.
 
-    cands: [{"typ": "call"|"put", "K": float, "px": float}]
-
-    WARUM ZWEI DURCHGAENGE. Frueher wurde je Kontrakt die IV aus dem Preis
-    invertiert und das Delta DANN aus genau dieser IV berechnet. Ein schlechter
-    Preis erzeugte damit beides: die falsche IV UND das Delta, das den Kontrakt
-    wie den gesuchten Strike aussehen liess. `delta_tol` prueft gegen dieselbe
-    verdorbene Groesse und kann es nicht fangen.
-
-    Am ATM-Pick war das am schlimmsten: eine zu hohe IV zieht das Delta JEDES
-    Strikes Richtung 0,50, also gewann ein weit aus dem Geld liegender Kontrakt
-    mit veraltetem Preis — und brachte seine falsche IV als "ATM-IV" mit.
-    Gemessen am 2026-09-11: SPY ATM 38 % statt ~13 %, SPGI 43 % ueber beiden
-    Fluegeln, HON gar keine.
-
-    Deshalb:
-      1. ATM ueber MONEYNESS bestimmen (preisunabhaengig), IV zwischen den zwei
-         gueltigen Strikes um F interpolieren.
-      2. ALLE Deltas mit dieser EINEN Referenz-IV rechnen und den 25Δ-Kontrakt
-         waehlen. Der gemeldete Wert ist dann dessen EIGENE IV — die Auswahl ist
-         stabil, die Messung bleibt die des Kontrakts.
-
-    Ohne gueltigen ATM-Anker gibt es KEINEN Rueckfall auf einen Fluegel oder auf
-    0: die Expiry ist unbewertbar und faellt aus der Rangreihe.
-    """
+    Liefert `(punkte, iv_atm, T)` mit punkte = [(typ, K, iv), ...] nach allen
+    Filtern, oder None. Herausgezogen (2026-09-25), damit Term-Struktur und
+    Smile-Kurve DIESELBE Filterkette nutzen wie der 25d-Skew statt einer
+    Kopie. Der Code ist woertlich aus `leg_from_prices` verschoben; deren
+    Ergebnis ist unveraendert (Nachweis in scripts/verify_skew_anzeige.py)."""
     if not cands or not spot or dte <= 0:
         return None
     T = dte / 365.0
@@ -361,6 +343,49 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
         _zaehl("leg_None_atm_ausserhalb_band")
         return None
 
+    # Klammer-Information fuer Aufrufer, die KEINE Fluegel verlangen
+    # (atm_from_prices). leg_from_prices ignoriert sie — ihr Verhalten bleibt.
+    if unten and oben:
+        klammer = {"beidseitig": True,
+                   "max_abstand": max(abs(math.log(unten[-1] / F)), abs(math.log(oben[0] / F)))}
+    else:
+        kk = unten[-1] if unten else oben[0]
+        klammer = {"beidseitig": False, "max_abstand": abs(math.log(kk / F))}
+    return gueltig, iv_atm, T, klammer
+
+
+def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
+    """25Δ-Call-/Put-IV + ATM-IV EINER Expiry aus Rohpreisen.
+
+    cands: [{"typ": "call"|"put", "K": float, "px": float}]
+
+    WARUM ZWEI DURCHGAENGE. Frueher wurde je Kontrakt die IV aus dem Preis
+    invertiert und das Delta DANN aus genau dieser IV berechnet. Ein schlechter
+    Preis erzeugte damit beides: die falsche IV UND das Delta, das den Kontrakt
+    wie den gesuchten Strike aussehen liess. `delta_tol` prueft gegen dieselbe
+    verdorbene Groesse und kann es nicht fangen.
+
+    Am ATM-Pick war das am schlimmsten: eine zu hohe IV zieht das Delta JEDES
+    Strikes Richtung 0,50, also gewann ein weit aus dem Geld liegender Kontrakt
+    mit veraltetem Preis — und brachte seine falsche IV als "ATM-IV" mit.
+    Gemessen am 2026-09-11: SPY ATM 38 % statt ~13 %, SPGI 43 % ueber beiden
+    Fluegeln, HON gar keine.
+
+    Deshalb:
+      1. ATM ueber MONEYNESS bestimmen (preisunabhaengig), IV zwischen den zwei
+         gueltigen Strikes um F interpolieren.
+      2. ALLE Deltas mit dieser EINEN Referenz-IV rechnen und den 25Δ-Kontrakt
+         waehlen. Der gemeldete Wert ist dann dessen EIGENE IV — die Auswahl ist
+         stabil, die Messung bleibt die des Kontrakts.
+
+    Ohne gueltigen ATM-Anker gibt es KEINEN Rueckfall auf einen Fluegel oder auf
+    0: die Expiry ist unbewertbar und faellt aus der Rangreihe.
+    """
+    g = _gefilterte_punkte(cands, spot, dte)
+    if g is None:
+        return None
+    gueltig, iv_atm, T, _klammer = g
+
     # Schritt 5: Deltas mit der EINEN Referenz-IV — nicht mit der je Kontrakt.
     # Der gemeldete Wert ist dann die EIGENE IV des gewaehlten Kontrakts: die
     # Auswahl ist stabil, die Messung bleibt die des Kontrakts.
@@ -390,6 +415,83 @@ def leg_from_prices(cands, spot: float, dte: int, delta_tol: float = DELTA_TOL):
         return None
     return {"dte": dte, "call_iv": call[1], "put_iv": put[1],
             "iv_atm": round(iv_atm, 4)}
+
+
+ATM_MAX_SIGMA = 0.5        # nur atm_from_prices: max. Ankerabstand in sigma*sqrt(T)
+
+
+def atm_from_prices(cands, spot: float, dte: int, _punkte=None):
+    """ATM-IV EINER Expiry aus Rohpreisen — ohne Fluegelzwang.
+
+    Fuer die Term-Struktur. `leg_from_prices` verwirft eine Expiry, wenn einer
+    der beiden 25d-Fluegel fehlt, auch wenn der ATM-Anker sauber ist; gemessen
+    am 2026-09-24 fehlten dadurch 42 von 237 Term-Punkten. Dieselbe
+    Filterkette (Inversion, Smile, Paritaet, Moneyness am Forward) — nur ohne
+    Schritt 5."""
+    g = _punkte if _punkte is not None else _gefilterte_punkte(cands, spot, dte)
+    if g is None:
+        return None
+    # Ersatz-Schutz fuer den fehlenden Fluegel-Check (Codex-Entwurfspruefung
+    # 2026-09-25): leg_from_prices faengt einen falschen Anker ueber die
+    # Konkav-Invariante (ATM ueber beiden Fluegeln). Ohne Fluegel geht das
+    # nicht. Deshalb hier strenger als dort: der Anker muss BEIDSEITIG um den
+    # Forward geklammert sein, und keiner der beiden Strikes darf weiter als
+    # ATM_MAX_MONEYNESS vom Forward liegen. Einseitige Anker (bis 5 % entfernt,
+    # in leg_from_prices erlaubt) sind hier nicht zulaessig.
+    # Abstand in STANDARDABWEICHUNGEN statt in Prozent: 5 % sind bei 7 Tagen
+    # fast zwei Sigma (kein ATM mehr), bei 180 Tagen ein Bruchteil davon.
+    # Gemessen am 2026-09-24 auf 239 Term-Punkten (40 Ticker): Median z = 0,11,
+    # 90. Perzentil 0,49; die Ausreisser sind kurze Laufzeiten mit weit
+    # auseinanderliegenden Ankern (XLU 8 T. z = 1,66, KO 8 T. z = 2,05).
+    # Eine erste Fassung verlangte "beidseitig und <= 5 %" — das liess genau
+    # diese durch und verwarf dafuer einseitige, nahe Anker bei langen
+    # Laufzeiten (ARM 57/85/176 T.).
+    klammer = g[3]
+    iv_atm, T = g[1], g[2]
+    z = klammer["max_abstand"] / (iv_atm * math.sqrt(T))
+    if klammer["max_abstand"] > ATM_MAX_MONEYNESS or z > ATM_MAX_SIGMA:
+        _zaehl("atm_None_klammer_zu_weit")
+        return None
+    return round(iv_atm, 4)
+
+
+SMILE_DELTAS = (0.10, 0.25, 0.40)
+# Halber Abstand zwischen den Ziel-Deltas ist 0,075. Mit DELTA_TOL = 0,08
+# ueberlappten sich die Fenster (10d: 0,02-0,18 / 25d: 0,17-0,33), und
+# derselbe Kontrakt haette zwei Kurvenpunkte bedienen koennen (Codex-
+# Entwurfspruefung). 0,07 haelt sie disjunkt. Die 25d-Leg des Rankings
+# behaelt DELTA_TOL — sie waehlt nur EINEN Punkt je Seite.
+SMILE_DELTA_TOL = 0.07
+
+
+def smile_from_prices(cands, spot: float, dte: int, deltas=SMILE_DELTAS,
+                      delta_tol: float = SMILE_DELTA_TOL, _punkte=None):
+    """IV je Delta EINER Expiry aus Rohpreisen, Auswahl ueber das REFERENZ-Delta.
+
+    Wie Schritt 5 in `leg_from_prices`: alle Deltas mit der EINEN ATM-IV
+    rechnen, den naechstliegenden Kontrakt waehlen, dessen EIGENE IV melden.
+    So kann ein falsch bepreister Kontrakt sich nicht selbst in einen
+    Delta-Punkt waehlen (das tat der alte Anbieter-Picker: SO-Call K=95 zu
+    0,10 $ bei 15 % aus dem Geld als "25d").
+
+    Rueckgabe: {"dte", "iv_atm", "put": {d: iv|None}, "call": {d: iv|None}}.
+    Ein Punkt ohne Kontrakt innerhalb `delta_tol` ist None — kein Rueckfall."""
+    g = _punkte if _punkte is not None else _gefilterte_punkte(cands, spot, dte)
+    if g is None:
+        return None
+    gueltig, iv_atm, T, _klammer = g
+    out = {"dte": dte, "iv_atm": round(iv_atm, 4), "put": {}, "call": {}}
+    for ziel in deltas:
+        for typ in ("put", "call"):
+            best = None
+            for t, K, iv in gueltig:
+                if t != typ:
+                    continue
+                d = abs(abs(bs_delta(spot, K, T, iv_atm, typ)) - ziel)
+                if best is None or d < best[0]:
+                    best = (d, iv)
+            out[typ][ziel] = best[1] if (best and best[0] <= delta_tol) else None
+    return out
 
 
 # ── Stuetzstellen-Wahl fuer die konstante Laufzeit ───────────────────────────

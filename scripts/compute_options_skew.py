@@ -42,6 +42,8 @@ from shared.black_scholes import (diagnose_start as _diagnose_start,
                                   CM_DTE_MAX as _CM_DTE_MAX, CM_SINGLE_TOL as _CM_SINGLE_TOL,
                                   DELTA_TOL as _DELTA_TOL, VOL_PCTL as _CM_VOL_PCTL,
                                   leg_from_prices, standardserie_filter,
+                                  atm_from_prices, smile_from_prices, SMILE_DELTAS,
+                                  _gefilterte_punkte,
                                   cm_leg_kandidaten as _cm_leg_kandidaten,
                                   ist_monatsverfall, _zaehl as _bs_zaehl,
                                   IV_MIN as _IV_MIN, IV_MAX as _IV_MAX)
@@ -636,9 +638,13 @@ def _enrich(sym: str, key: str) -> dict | None:
         return None
     by = _byexp(contracts)
     s30 = _skew_at(by, 30)
+    # Der Anbieter-Pick ist seit 2026-09-25 nur noch Diagnose (front_provider).
+    # Frueher beendete ein fehlender Pick den GANZEN Ticker, bevor die eigene
+    # Rechnung ueberhaupt lief (Codex-Entwurfspruefung) — TAN, DUK, NXE, ARRY
+    # fielen so jeden Tag aus. Jetzt entscheidet die eigene Rechnung.
     if not s30:
-        print(f"  [massive] {sym}: kein 25Δ@30 (n={len(contracts)})")
-        return None
+        print(f"  [massive] {sym}: kein Anbieter-25Δ@30 (n={len(contracts)}) — nur eigene Rechnung",
+              flush=True)
     # Put/Call-Volumen + OI (für markt­weite Equity-P/C-Ratio; near-the-money aus ±30%-Chain)
     pv = cv = poi = coi = 0
     for c in contracts:
@@ -649,28 +655,6 @@ def _enrich(sym: str, key: str) -> dict | None:
             pv += vol; poi += oi
         elif typ == "call":
             cv += vol; coi += oi
-    s90 = _skew_at(by, 90)
-    # Term-Structure: ATM-IV je Ziel-Laufzeit (nächstliegende Expiry, dedupliziert)
-    term, seen = [], set()
-    for tgt in _TERM_TARGETS:
-        ex = _nearest_exp(by, tgt)
-        if ex is None or ex in seen:
-            continue
-        atm = _atm_iv(by[ex])
-        if atm:
-            term.append({"dte": by[ex]["dte"], "iv": atm}); seen.add(ex)
-    term.sort(key=lambda t: t["dte"])
-    # ATM MUSS aus derselben Expiry stammen wie die 25Δ-Picks. Sonst rechnet das
-    # Zeta (25Δ-IV − ATM-IV) über zwei Laufzeiten und misst die Term-Struktur mit
-    # statt den Skew. Vorher kam iv_atm aus der Term-Liste und traf s30 nur zufällig;
-    # seit _skew_at Monatsverfälle bevorzugt, würden sie auseinanderlaufen.
-    # KEIN Fallback auf die Term-Liste: die liefert womöglich das ATM einer ANDEREN
-    # Expiry, und Zeta/Butterfly/VRP rechnen dann über zwei Laufzeiten. Bei 30d-Flügeln
-    # von 35 %, Ziel-ATM 30 % und Fallback-ATM 40 % verschiebt das Zeta um 10 Vol-Punkte
-    # — die Zahl bleibt plausibel, ist aber falsch. Ein fehlender Wert ist ehrlicher:
-    # alle abhängigen Felder unten sind bereits mit `if iv_atm` abgesichert.
-    iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
-    put_iv, call_iv = s30["put_iv"], s30["call_iv"]
     # Kursreihe auf die Session kappen: Spot UND realisierte Vola muessen aus
     # demselben Zeitraum stammen wie die Optionspreise.
     rv1m, last_close, close_datum = _realized_vol(sym, 21, bis=_last_session())
@@ -683,66 +667,13 @@ def _enrich(sym: str, key: str) -> dict | None:
         spot = last_close
         if spot:
             print(f"  [spot] {sym}: Massive ohne Underlying → letzter Close {spot}", flush=True)
-    r = {
-        "ticker": sym, "cats": categories_for(sym), "underlying": spot, "dte": s30["dte"],
-        "put_vol": pv, "call_vol": cv, "put_oi": poi, "call_oi": coi,
-        "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
-        "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
-        "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
-        # Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite. call_zeta > 0 = Call-Skew (bullish),
-        # put_zeta > 0 = Put-Skew (Absicherungsnachfrage). skew_pts = put_zeta − call_zeta.
-        "call_zeta_pts": round((call_iv - iv_atm) * 100, 2) if iv_atm else None,
-        "put_zeta_pts":  round((put_iv  - iv_atm) * 100, 2) if iv_atm else None,
-        "iv_atm": iv_atm, "atm_delta_dev": atm_dev, "rv_1m": rv1m,
-        "vrp_pts": round((iv_atm - rv1m) * 100, 2) if (iv_atm and rv1m) else None,
-        "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
-        "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
-        "skew_back_pts": s90["skew_pts"] if s90 else None,
-        "skew_term_pts": round(s90["skew_pts"] - s30["skew_pts"], 2) if s90 else None,
-        "term": term,
-    }
-    if term and iv_atm:
-        r["contango"] = bool(term[0]["iv"] < iv_atm)
-        r["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
-    else:
-        r["contango"] = None; r["term_slope_pts"] = None
-    # Expected Move (1σ) bis zum ~30d-Verfall: IV·√(T)  (Straddle-impliziert)
-    emd = s30["dte"]
-    if iv_atm and emd:
-        r["em_pct"] = round(iv_atm * math.sqrt(emd / 365.0) * 100, 2)
-        r["em_abs"] = round(spot * iv_atm * math.sqrt(emd / 365.0), 2) if spot else None
-        r["em_dte"] = emd
-    else:
-        r["em_pct"] = r["em_abs"] = r["em_dte"] = None
-    # NE-Skew (nächster Verfall — kurzfristig/spekulativ, wie SpotGamma "NE Skew")
-    sne = _skew_at(by, 1)
-    r["skew_ne_pts"] = sne["skew_pts"] if sne else None
-    r["skew_ne_dte"] = sne["dte"] if sne else None
-    # Skew-Kurve (IV je Delta): OTM-Puts (Downside) → ATM → OTM-Calls (Upside), für 30d + NE
-    def _curve(ex_target):
-        ex = _nearest_exp(by, ex_target)
-        if ex is None:
-            return None
-        e = by[ex]; out = []
-        for dl in (0.10, 0.25, 0.40):
-            p = _pick(e["put"], dl); out.append(p[1] if p else None)
-        out.append(_atm_iv(e))
-        for dl in (0.40, 0.25, 0.10):
-            c = _pick(e["call"], dl); out.append(c[1] if c else None)
-        return out
-    r["skew_curve"] = {
-        "labels": ["10ΔP", "25ΔP", "40ΔP", "ATM", "40ΔC", "25ΔC", "10ΔC"],
-        "iv30": _curve(30), "iv_ne": _curve(1),
-        "dte30": s30["dte"], "dte_ne": (sne["dte"] if sne else None),
-    }
-    # Konstante 30-Tage-Werte für die Vorwärts-Historie — mit EIGENER BS-Inversion
-    # aus den Snapshot-Preisen, also derselben Methode wie der Backfill. Nur so
-    # bilden Live- und Backfill-Punkte eine Reihe, über die ein Percentile
-    # ueberhaupt aussagekraeftig ist (Begruendung: shared/black_scholes.py).
-    # Bewusst KEIN Rueckfall auf die Provider-IV: der wuerde die Methodenmischung
-    # wieder einschleusen. Schlaegt die Inversion fehl, bekommt der Tag kein
-    # cm_mode — das Frontend laesst ihn dann aus der Rangfolge heraus.
-    # Die angezeigten Per-Ticker-Felder oben bleiben Provider-IV (genau, EOD).
+    r = {"ticker": sym, "cats": categories_for(sym), "underlying": spot,
+         "put_vol": pv, "call_vol": cv, "put_oi": poi, "call_oi": coi, "rv_1m": rv1m}
+    anbieter = _anbieter_werte(by, s30, rv1m, spot)
+    r.update(anbieter)
+    # EINMAL vollstaendig sichern, bevor irgendetwas ueberschrieben wird.
+    # _anzeige_aus_ranking und _laufzeiten_eigen ergaenzen nur noch.
+    r["front_provider"] = dict(anbieter)
     # Spot fuer die Inversion: der Schluss aus UNSERER Kursreihe — dieselbe Quelle,
     # die auch der Backfill nutzt (_closes). Ohne ihn wird NICHT normiert: Massives
     # /prev liefert je nach Laufzeitpunkt den Vortag, und ein damit falsch
@@ -766,6 +697,7 @@ def _enrich(sym: str, key: str) -> dict | None:
               f"-> KEINE cm-Normierung (Spot passt nicht zu den Optionspreisen)",
               flush=True)
         last_close = None
+    by_own = None
     if last_close:
         # Restlaufzeit gegen die SESSION rechnen, unter der die Zeile gestempelt
         # wird — sonst liegt T bei einem Nachhol-Lauf um bis zu drei Tage daneben.
@@ -777,8 +709,91 @@ def _enrich(sym: str, key: str) -> dict | None:
         # Solche Tage gehoeren nicht in die Rangfolge.
         if cm and cm.get("cm_iv_atm"):
             r.update(cm)
+    if not s30 and not r.get("cm_mode"):
+        # Weder Anbieter noch eigene Rechnung: kein brauchbarer Wert — wie bisher
+        # als Ausfall melden statt eine leere Zeile zu schreiben.
+        print(f"  [massive] {sym}: weder Anbieter- noch eigene 30-Tage-Messung", flush=True)
+        return None
     _anzeige_aus_ranking(r)
+    _laufzeiten_eigen(r, by_own, last_close)
     return r
+
+
+def _anbieter_werte(by: dict, s30: dict | None, rv1m, spot) -> dict:
+    """Die bisherige Rechnung ueber den Anbieter-Picker — nur noch Diagnose.
+
+    Woertlich aus _enrich uebernommen (2026-09-25), damit `front_provider` exakt
+    die Werte enthaelt, die bis dahin angezeigt wurden. Kein angezeigtes oder
+    gespeichertes Feld stammt mehr hieraus, ausser als History-Fallback an
+    Tagen ohne jede 30-Tage-Normierung. `s30` darf fehlen."""
+    out: dict = {}
+    s90 = _skew_at(by, 90)
+    term, seen = [], set()
+    for tgt in _TERM_TARGETS:
+        ex = _nearest_exp(by, tgt)
+        if ex is None or ex in seen:
+            continue
+        atm = _atm_iv(by[ex])
+        if atm:
+            term.append({"dte": by[ex]["dte"], "iv": atm}); seen.add(ex)
+    term.sort(key=lambda t: t["dte"])
+    if s30:
+        iv_atm, atm_dev = _atm_iv(by[s30["exp"]], detail=True)
+        put_iv, call_iv = s30["put_iv"], s30["call_iv"]
+        out.update({
+            "dte": s30["dte"],
+            "call_25d": {"strike": s30["call_strike"], "iv": call_iv, "delta": s30["call_delta"]},
+            "put_25d": {"strike": s30["put_strike"], "iv": put_iv, "delta": s30["put_delta"]},
+            "skew_25d": round(put_iv - call_iv, 4), "skew_pts": s30["skew_pts"],
+            "call_zeta_pts": round((call_iv - iv_atm) * 100, 2) if iv_atm else None,
+            "put_zeta_pts":  round((put_iv  - iv_atm) * 100, 2) if iv_atm else None,
+            "iv_atm": iv_atm, "atm_delta_dev": atm_dev,
+            "vrp_pts": round((iv_atm - rv1m) * 100, 2) if (iv_atm and rv1m) else None,
+            "bfly_pts": round(((put_iv + call_iv) / 2 - iv_atm) * 100, 2) if iv_atm else None,
+            "pc_ratio": round(put_iv / call_iv, 3) if call_iv else None,
+            "skew_back_pts": s90["skew_pts"] if s90 else None,
+            "skew_term_pts": round(s90["skew_pts"] - s30["skew_pts"], 2) if s90 else None,
+        })
+    else:
+        iv_atm = None
+        for k in ("dte", "call_25d", "put_25d", "skew_25d", "skew_pts", "call_zeta_pts",
+                  "put_zeta_pts", "iv_atm", "atm_delta_dev", "vrp_pts", "bfly_pts",
+                  "pc_ratio", "skew_term_pts"):
+            out[k] = None
+        out["skew_back_pts"] = s90["skew_pts"] if s90 else None
+    out["term"] = term
+    if term and iv_atm:
+        out["contango"] = bool(term[0]["iv"] < iv_atm)
+        out["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
+    else:
+        out["contango"] = None; out["term_slope_pts"] = None
+    emd = s30["dte"] if s30 else None
+    if iv_atm and emd:
+        out["em_pct"] = round(iv_atm * math.sqrt(emd / 365.0) * 100, 2)
+        out["em_abs"] = round(spot * iv_atm * math.sqrt(emd / 365.0), 2) if spot else None
+        out["em_dte"] = emd
+    else:
+        out["em_pct"] = out["em_abs"] = out["em_dte"] = None
+    sne = _skew_at(by, 1)
+    out["skew_ne_pts"] = sne["skew_pts"] if sne else None
+    out["skew_ne_dte"] = sne["dte"] if sne else None
+    def _curve(ex_target):
+        ex = _nearest_exp(by, ex_target)
+        if ex is None:
+            return None
+        e = by[ex]; kurve = []
+        for dl in (0.10, 0.25, 0.40):
+            pk = _pick(e["put"], dl); kurve.append(pk[1] if pk else None)
+        kurve.append(_atm_iv(e))
+        for dl in (0.40, 0.25, 0.10):
+            c = _pick(e["call"], dl); kurve.append(c[1] if c else None)
+        return kurve
+    out["skew_curve"] = {
+        "labels": ["10ΔP", "25ΔP", "40ΔP", "ATM", "40ΔC", "25ΔC", "10ΔC"],
+        "iv30": _curve(30), "iv_ne": _curve(1),
+        "dte30": s30["dte"] if s30 else None, "dte_ne": (sne["dte"] if sne else None),
+    }
+    return out
 
 
 # Felder, die bisher den Front-Monat mit Anbieter-IV zeigten und jetzt die
@@ -809,7 +824,12 @@ def _anzeige_aus_ranking(r: dict) -> None:
     NICHT umgestellt, weil ohne 30-Tage-Gegenstueck: NE-Skew, Skew-Term,
     Term-Struktur, Smile-Kurve — die rechnen weiter mit dem Anbieter-Picker.
     """
-    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}
+    # Nur ERGAENZEN: _enrich sichert die Anbieterwerte schon vollstaendig
+    # (inkl. NE/Term/Smile). Ein Ueberschreiben haette diese Sicherung
+    # geloescht (Codex-Entwurfspruefung 2026-09-25).
+    fp = r.setdefault("front_provider", {})
+    for k in _ANZEIGE_FELDER:
+        fp.setdefault(k, r.get(k))
     if not _rankbar(r):
         for k in _ANZEIGE_FELDER:
             r[k] = None
@@ -835,6 +855,186 @@ def _anzeige_aus_ranking(r: dict) -> None:
         "em_abs": round(spot * iv_atm * math.sqrt(dte / 365.0), 2) if (iv_atm and spot) else None,
         "em_dte": dte if iv_atm else None,
     })
+
+
+# 90-Tage-Konstante fuer Skew-Term: Stuetzstellen-Fenster und Ziel.
+_BACK_DAYS = 90
+_BACK_MIN, _BACK_MAX = 45, 150
+_NE_MAX_DTE = 10          # NE-Ersatz nur bis zu diesem Verfall
+_KONTANGO_KURZ_MAX = 14   # Contango: kurzer Punkt hoechstens so lang
+_SMILE_LABELS = ["10ΔP", "25ΔP", "40ΔP", "ATM", "40ΔC", "25ΔC", "10ΔC"]
+
+
+def _laufzeiten_eigen(r: dict, by_own: dict | None, spot_ref) -> None:
+    """NE-Skew, 90-Tage-Skew/Skew-Term, Term-Struktur und Smile-Kurve aus der
+    EIGENEN Rechnung (Session-Kurse, Referenz-Delta, Paritaets-/Smile-Filter).
+
+    WARUM (Messung 2026-09-24, 40 Ticker, Anbieter-Picker gegen eigene Leg):
+    NE-Skew nahm IMMER den Monatsverfall mit 22 Tagen (`_skew_at(by, 1)`
+    bevorzugt Monate — der naechste Monatsverfall zu "1 Tag" ist der
+    Front-Monat), 14 von 38 mit umgekehrtem Vorzeichen; 90-Tage-Skew 7 von 31
+    mit Vorzeichenwechsel; Term-ATM am kurzen Ende systematisch zu hoch
+    (XLF 7 Tage: 20,3 % statt 14,5 %).
+
+    Festlegungen aus der Codex-Entwurfspruefung:
+    - NE = strikt der naechste Verfall mit dte >= 1 (SpotGamma-Definition,
+      0DTE ausgeschlossen: T -> 0). Scheitert er, bleibt NE leer — keine
+      stille Ersatzsuche.
+    - Skew-Term = 90-CM minus 30-CM. Die 90 Tage werden wie die 30 Tage
+      interpoliert (Call und Put getrennt, linear in totaler Varianz), nur mit
+      echter Klammer, ohne Extrapolation. Vorzeichen 90 minus 30.
+    - Term: je Ziel der naechste Verfall OHNE Monatsvorzug, ATM ohne
+      Fluegelzwang (atm_from_prices, mit strenger Klammerpruefung).
+      Contango nur mit einem Punkt UNTER 30 Tagen, Gleichstand = unbestimmt.
+      Steigung nur mit >= 2 Laufzeiten, mit tatsaechlichen Endpunkten.
+    - Smile 30 Tage: 25d- und ATM-Punkte = die angezeigten Werte, 10d/40d je
+      Punkt zwischen denselben cm_exps interpoliert. Nur fuer cm/cm_extrap;
+      `modus30` weist aus, welches von beiden.
+    Ohne gueltigen Session-Schluss (`spot_ref`) bleiben ALLE Felder leer — kein
+    Rueckfall auf den Anbieter und kein anderer Spot.
+    """
+    r.update({"skew_ne_pts": None, "skew_ne_dte": None, "skew_ne_ersatz": None,
+              "skew_back_pts": None, "skew_back_dte": None, "skew_term_pts": None,
+              "term": [], "contango": None, "term_slope_pts": None,
+              "term_slope_von": None, "term_slope_bis": None,
+              "skew_curve": {"labels": list(_SMILE_LABELS), "iv30": None, "iv_ne": None,
+                             "dte30": None, "modus30": None, "dte_ne": None}})
+    if not by_own or not spot_ref:
+        return
+
+    punkte_cache: dict = {}
+    def _punkte(ex):
+        if ex not in punkte_cache:
+            e = by_own[ex]
+            punkte_cache[ex] = _gefilterte_punkte(e.get("cands") or [], spot_ref, e["dte"])
+        return punkte_cache[ex]
+
+    leg_cache: dict = {}
+    def _leg(ex):
+        if ex not in leg_cache:
+            leg_cache[ex] = _leg_own(by_own[ex], spot_ref)
+        return leg_cache[ex]
+
+    def _smile(ex):
+        g = _punkte(ex)
+        if g is None:
+            return None
+        return smile_from_prices(None, spot_ref, by_own[ex]["dte"], _punkte=g)
+
+    laufend = sorted((e for e in by_own if by_own[e]["dte"] >= 1), key=lambda e: by_own[e]["dte"])
+    if not laufend:
+        return
+
+    # ── NE-Skew: naechster Verfall, sonst naechster AUSWERTBARER (gekennzeichnet)
+    # Gemessen am 2026-09-24: bei 13 von 40 Tickern scheiterte der 1-Tages-
+    # Verfall an der Delta-Toleranz — kurz vor Verfall ist die Delta-Kurve so
+    # steil, dass zwischen zwei Strikes kein Kontrakt nahe 25d liegt. Die Kurse
+    # waren frisch; das ist Strike-Struktur, keine Datenqualitaet. Codex
+    # (Entwurfspruefung): strikt = leer, Ersatz zulaessig, wenn Laufzeit und
+    # Ersatz sichtbar sind. Grenze 10 Tage, damit "NE" nah bleibt.
+    def _skew_von(leg):
+        if leg and leg.get("put_iv") is not None and leg.get("call_iv") is not None:
+            return round((leg["put_iv"] - leg["call_iv"]) * 100, 2)
+        return None
+    ne, leg_ne = laufend[0], _leg(laufend[0])
+    r["skew_ne_ersatz"] = False
+    if _skew_von(leg_ne) is None:
+        for e in laufend[1:]:
+            if by_own[e]["dte"] > _NE_MAX_DTE:
+                break
+            if _skew_von(_leg(e)) is not None:
+                ne, leg_ne = e, _leg(e)
+                r["skew_ne_ersatz"] = True
+                break
+    r["skew_ne_dte"] = by_own[ne]["dte"]
+    r["skew_ne_pts"] = _skew_von(leg_ne)
+
+    # ── 90-Tage-Konstante und Skew-Term ──────────────────────────────────────
+    def _bevorzugt(e):
+        # Monate vor Freitagen vor Rest — wie _nearest_exp(prefer_monthly=True)
+        return 0 if _is_monthly(e) else (1 if date.fromisoformat(e).weekday() == 4 else 2)
+    fenster = [e for e in laufend if _BACK_MIN <= by_own[e]["dte"] <= _BACK_MAX]
+    unten = oben = None
+    for rang in (0, 1, 2):
+        pool = [e for e in fenster if _bevorzugt(e) <= rang]
+        kand_u = sorted((e for e in pool if by_own[e]["dte"] <= _BACK_DAYS),
+                        key=lambda e: -by_own[e]["dte"])
+        kand_o = sorted((e for e in pool if by_own[e]["dte"] > _BACK_DAYS),
+                        key=lambda e: by_own[e]["dte"])
+        unten = next((e for e in kand_u if _leg(e)), None)
+        oben = next((e for e in kand_o if _leg(e)), None)
+        if unten and oben:
+            break
+    if unten and oben:
+        lu, lo = _leg(unten), _leg(oben)
+        c90 = _cm_interp(lu["call_iv"], lu["dte"], lo["call_iv"], lo["dte"], t_target=_BACK_DAYS)
+        p90 = _cm_interp(lu["put_iv"], lu["dte"], lo["put_iv"], lo["dte"], t_target=_BACK_DAYS)
+        if c90 is not None and p90 is not None:
+            r["skew_back_pts"] = round((p90 - c90) * 100, 2)
+            r["skew_back_dte"] = _BACK_DAYS
+            if _rankbar(r) and r.get("skew_pts") is not None:
+                r["skew_term_pts"] = round(r["skew_back_pts"] - r["skew_pts"], 2)
+
+    # ── Term-Struktur ─────────────────────────────────────────────────────────
+    term, gesehen = [], set()
+    for ziel in _TERM_TARGETS:
+        ex = min(laufend, key=lambda e: abs(by_own[e]["dte"] - ziel))
+        if ex in gesehen:
+            continue
+        gesehen.add(ex)
+        g = _punkte(ex)
+        atm = atm_from_prices(None, spot_ref, by_own[ex]["dte"], _punkte=g) if g else None
+        if atm:
+            term.append({"dte": by_own[ex]["dte"], "iv": atm})
+    term.sort(key=lambda t: t["dte"])
+    r["term"] = term
+    iv30 = r.get("iv_atm") if _rankbar(r) else None
+    # "Kurz" heisst hier: hoechstens _KONTANGO_KURZ_MAX Tage. Mit "< 30" haette
+    # XLF am 2026-09-24 (7-Tage-Punkt wegen zu weitem Anker verworfen) den
+    # 29-Tage-Punkt gegen den 30-Tage-Wert verglichen — formal kuerzer,
+    # fachlich derselbe Punkt.
+    kurz = [t for t in term if t["dte"] <= _KONTANGO_KURZ_MAX]
+    if kurz and iv30:
+        if kurz[0]["iv"] < iv30:
+            r["contango"] = True
+        elif kurz[0]["iv"] > iv30:
+            r["contango"] = False
+    if len({t["dte"] for t in term}) >= 2:
+        r["term_slope_pts"] = round((term[-1]["iv"] - term[0]["iv"]) * 100, 2)
+        r["term_slope_von"], r["term_slope_bis"] = term[0]["dte"], term[-1]["dte"]
+
+    # ── Smile-Kurven ──────────────────────────────────────────────────────────
+    def _kurve(sm, ersetze=None):
+        if not sm:
+            return None
+        pts = [sm["put"].get(0.10), sm["put"].get(0.25), sm["put"].get(0.40), sm["iv_atm"],
+               sm["call"].get(0.40), sm["call"].get(0.25), sm["call"].get(0.10)]
+        for i, v in (ersetze or {}).items():
+            if v is not None:
+                pts[i] = v
+        return pts if any(v is not None for v in pts) else None
+
+    sc = r["skew_curve"]
+    # NE: 25d-Punkte und ATM aus derselben Leg wie skew_ne_pts, damit Kurve
+    # und Tabellenwert zusammenpassen.
+    ersatz_ne = ({1: leg_ne.get("put_iv"), 3: leg_ne.get("iv_atm"), 5: leg_ne.get("call_iv")}
+                 if leg_ne else None)
+    sc["iv_ne"] = _kurve(_smile(ne), ersatz_ne)
+    sc["dte_ne"] = by_own[ne]["dte"] if sc["iv_ne"] else None
+
+    # 30 Tage: nur fuer rankbare Tage, auf denselben Stuetzstellen wie die Anzeige.
+    exps = r.get("cm_exps") or []
+    if _rankbar(r) and len(exps) == 2 and all(e in by_own for e in exps):
+        s1, s2 = _smile(exps[0]), _smile(exps[1])
+        t1, t2 = by_own[exps[0]]["dte"], by_own[exps[1]]["dte"]
+        def _ip(seite, dl):
+            if not s1 or not s2:
+                return None
+            return _cm_interp(s1[seite].get(dl), t1, s2[seite].get(dl), t2)
+        sc["iv30"] = [_ip("put", 0.10), r.get("cm_put_iv"), _ip("put", 0.40), r.get("cm_iv_atm"),
+                      _ip("call", 0.40), r.get("cm_call_iv"), _ip("call", 0.10)]
+        sc["dte30"] = _CM_DAYS
+        sc["modus30"] = r.get("cm_mode")
 
 
 class SchluesselFehlt(RuntimeError):

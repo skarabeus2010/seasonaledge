@@ -37,8 +37,11 @@ from scripts.verify_twins_mutation import (LF, LockBelegt, _atomar_schreiben,  #
 
 _WAECHTER = _ROOT / "scripts" / "verify_session_stamp.py"
 _WAECHTER_ANZEIGE = _ROOT / "scripts" / "verify_skew_anzeige.py"
+_WAECHTER_LAUFZEITEN = _ROOT / "scripts" / "verify_skew_laufzeiten.py"
+_WAECHTER_JE_ART = {"anzeige": _WAECHTER_ANZEIGE, "laufzeiten": _WAECHTER_LAUFZEITEN}
 SK, FL, EH = ("scripts/compute_options_skew.py", "scripts/compute_options_flow.py",
               "shared/exchange_holidays.py")
+BS = "shared/black_scholes.py"
 
 # (Herkunft, Beschreibung, Datei, Suchtext, Ersatztext)
 MUTATIONEN = [
@@ -99,13 +102,48 @@ MUTATIONEN = [
      "    if not _rankbar(r):\n        for k in _ANZEIGE_FELDER:\n            r[k] = None\n        return",
      "    if not _rankbar(r):\n        return", "anzeige"),
     ("Anzeige", "Anzeige-Umstellung nicht aufgerufen", SK,
-     "    _anzeige_aus_ranking(r)\n    return r\n", "    return r\n", "anzeige"),
+     "    _anzeige_aus_ranking(r)\n    _laufzeiten_eigen(r, by_own, last_close)\n",
+     "    _laufzeiten_eigen(r, by_own, last_close)\n", "anzeige"),
     ("Anzeige", "History-Fallback liest wieder die geleerten Top-Level-Felder", SK,
      '                fp = t.get("front_provider") or t', "                fp = t", "anzeige"),
     ("Anzeige", "Produktivcode schreibt beim Anzeige-Umbau ins echte Repo (Codex R1)", SK,
-     '    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}',
+     '    fp = r.setdefault("front_provider", {})',
      '    Path(__file__).resolve().parent.parent.joinpath("landing/data/options_skew.json").write_text("{}")\n'
-     '    r["front_provider"] = {k: r.get(k) for k in _ANZEIGE_FELDER}', "anzeige"),
+     '    fp = r.setdefault("front_provider", {})', "anzeige"),
+    # -- NE/Skew-Term/Term/Smile aus eigener Rechnung (2026-09-25),
+    #    Waechter verify_skew_laufzeiten.py
+    ("Laufzeit", "Ticker ohne Anbieter-Pick wieder verworfen", SK,
+     "    if not s30 and not r.get(\"cm_mode\"):", "    if not s30:", "laufzeiten"),
+    ("Laufzeit", "ohne Session-Schluss sickern Anbieterwerte durch", SK,
+     "    if not by_own or not spot_ref:\n        return\n",
+     "    if not by_own or not spot_ref:\n"
+     "        r.update({k: v for k, v in (r.get(\"front_provider\") or {}).items()\n"
+     "                  if k in (\"skew_ne_pts\", \"term\", \"skew_curve\", \"contango\")})\n"
+     "        return\n", "laufzeiten"),
+    ("Laufzeit", "NE wieder mit Monatsvorzug (war faktisch der Front-Monat)", SK,
+     "    ne, leg_ne = laufend[0], _leg(laufend[0])",
+     "    ne = _nearest_exp(by_own, 1, prefer_monthly=True); leg_ne = _leg(ne)", "laufzeiten"),
+    ("Laufzeit", "NE-Ersatz ohne Kennzeichnung", SK,
+     "                r[\"skew_ne_ersatz\"] = True", "                r[\"skew_ne_ersatz\"] = False",
+     "laufzeiten"),
+    ("Laufzeit", "NE-Ersatz ohne 10-Tage-Grenze", SK,
+     "            if by_own[e][\"dte\"] > _NE_MAX_DTE:\n                break",
+     "            if False:\n                break", "laufzeiten"),
+    ("Laufzeit", "Contango wieder mit jedem Punkt unter 30 Tagen", SK,
+     "    kurz = [t for t in term if t[\"dte\"] <= _KONTANGO_KURZ_MAX]",
+     "    kurz = [t for t in term if t[\"dte\"] < _CM_DAYS]", "laufzeiten"),
+    ("Laufzeit", "ATM-Anker ohne Sigma-Grenze", BS,
+     "    if klammer[\"max_abstand\"] > ATM_MAX_MONEYNESS or z > ATM_MAX_SIGMA:",
+     "    if klammer[\"max_abstand\"] > ATM_MAX_MONEYNESS:", "laufzeiten"),
+    ("Laufzeit", "Term wieder mit Fluegelzwang (ueber leg_from_prices)", SK,
+     "        atm = atm_from_prices(None, spot_ref, by_own[ex][\"dte\"], _punkte=g) if g else None",
+     "        atm = (_leg(ex) or {}).get(\"iv_atm\")", "laufzeiten"),
+    ("Laufzeit", "front_provider wird in der Anzeige wieder ueberschrieben", SK,
+     "    fp = r.setdefault(\"front_provider\", {})", "    fp = r[\"front_provider\"] = {}",
+     "laufzeiten"),
+    ("Laufzeit", "leg_from_prices: Referenz-IV vorzeitig gerundet", BS,
+     "    return gueltig, iv_atm, T, klammer", "    return gueltig, round(iv_atm, 3), T, klammer",
+     "laufzeiten"),
     ("Anzeige", "single/noatm gelten in der Anzeige als rankbar", SK,
      "    if not _rankbar(r):\n        for k in _ANZEIGE_FELDER:",
      '    if not r.get("cm_mode"):\n        for k in _ANZEIGE_FELDER:', "anzeige"),
@@ -119,7 +157,7 @@ def _waechter_gruen(waechter: Path = _WAECHTER) -> bool:
 
 
 def _alle_gruen() -> bool:
-    return _waechter_gruen(_WAECHTER) and _waechter_gruen(_WAECHTER_ANZEIGE)
+    return all(_waechter_gruen(w) for w in (_WAECHTER, _WAECHTER_ANZEIGE, _WAECHTER_LAUFZEITEN))
 
 
 def _daten_fingerabdruck() -> str:
@@ -147,7 +185,7 @@ def main() -> int:
 
     unbemerkt, beschaedigt = [], []
     for nr, (herkunft, beschreibung, datei, suchen, ersetzen, *art) in enumerate(MUTATIONEN, 1):
-        waechter = _WAECHTER_ANZEIGE if art and art[0] == "anzeige" else _WAECHTER
+        waechter = _WAECHTER_JE_ART.get(art[0], _WAECHTER) if art else _WAECHTER
         pfad = _ROOT / datei
         original = pfad.read_bytes()
         le = _zeilenende(original)

@@ -493,13 +493,17 @@
     function renderSkewCurve(tk){
       var el=document.getElementById('sk-curve-chart'), ttl=document.getElementById('sk-curve-title'); if(!el)return;
       var t=_curTicker(tk), sc=t&&t.skew_curve;
-      if(!sc||!sc.iv30){if(ttl)ttl.innerHTML=T('skew.curve_none','Keine Skew-Kurve für ')+tk+'.';el.innerHTML='';return;}
+      // Seit 2026-09-25 kommen beide Kurven aus der eigenen Rechnung und koennen
+      // einzeln fehlen (30 Tage nur an rankbaren Tagen). Eine gueltige NE-Kurve
+      // soll nicht verschwinden, nur weil die 30-Tage-Kurve fehlt.
+      if(!sc||(!sc.iv30&&!sc.iv_ne)){if(ttl)ttl.innerHTML=T('skew.curve_none','Keine Skew-Kurve für ')+tk+'.';el.innerHTML='';return;}
       if(ttl)ttl.innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; '+T('skew.curve_label','Volatility Smile: IV je Delta (OTM-Puts links → ATM → OTM-Calls rechts) · 30d + Front-Expiry');
       var pct=function(a){return (a||[]).map(function(v){return v!=null?+(v*100).toFixed(2):null;});};
-      var series=[{name:sc.dte30+'d',data:pct(sc.iv30)}];
-      if(sc.iv_ne) series.push({name:T('skew.curve_ne','Front')+' ('+sc.dte_ne+'d)',data:pct(sc.iv_ne)});
+      var series=[], farben=[], breiten=[];
+      if(sc.iv30){series.push({name:sc.dte30+'d',data:pct(sc.iv30)});farben.push(ACC);breiten.push(2.6);}
+      if(sc.iv_ne){series.push({name:T('skew.curve_ne','Front')+' ('+sc.dte_ne+'d)',data:pct(sc.iv_ne)});farben.push(BLUE);breiten.push(2);}
       renderInto('sk-curve-chart',Object.assign(baseChart(300,'line'),{
-        series:series,colors:[ACC,BLUE],stroke:{width:[2.6,2],curve:'smooth'},markers:{size:4},
+        series:series,colors:farben,stroke:{width:breiten,curve:'smooth'},markers:{size:4},
         xaxis:{categories:sc.labels,labels:{style:{colors:MUT,fontSize:'13px'}},axisBorder:{show:false}},
         yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return v.toFixed(0)+'%'}},title:{text:'IV',style:{color:MUT,fontSize:'12px'}}},
         legend:{show:true,labels:{colors:MUT},position:'top',horizontalAlign:'right',fontSize:'13px'},
@@ -522,8 +526,8 @@
       }));
       if(bd){
         var slope=t.term_slope_pts, co=t.contango;
-        if(co===true) bd.innerHTML='<span class="sk-badge up">Contango</span> '+T('skew.term_contango','vorne billiger als hinten &mdash; ruhiger Markt')+(slope!=null?' ('+(slope>0?'+':'')+slope.toFixed(1)+' pts 7&rarr;180d)':'');
-        else if(co===false) bd.innerHTML='<span class="sk-badge dn">Backwardation</span> '+T('skew.term_backw','vorne teurer als hinten &mdash; akuter Stress/Event')+(slope!=null?' ('+(slope>0?'+':'')+slope.toFixed(1)+' pts 7&rarr;180d)':'');
+        if(co===true) bd.innerHTML='<span class="sk-badge up">Contango</span> '+T('skew.term_contango','vorne billiger als hinten &mdash; ruhiger Markt')+(slope!=null?' ('+(slope>0?'+':'')+slope.toFixed(1)+' pts'+(t.term_slope_von!=null?' '+t.term_slope_von+'&rarr;'+t.term_slope_bis+'d':'')+')':'');
+        else if(co===false) bd.innerHTML='<span class="sk-badge dn">Backwardation</span> '+T('skew.term_backw','vorne teurer als hinten &mdash; akuter Stress/Event')+(slope!=null?' ('+(slope>0?'+':'')+slope.toFixed(1)+' pts'+(t.term_slope_von!=null?' '+t.term_slope_von+'&rarr;'+t.term_slope_bis+'d':'')+')':'');
         else bd.innerHTML='';
       }
     }
@@ -559,7 +563,7 @@
     var TH_RANK="IV-Rank: wo die heutige IV zwischen Jahrestief (0) und Jahreshoch (100) liegt. IV-Perzentil: an wie viel Prozent der Tage des letzten Jahres die IV niedriger war. Das Perzentil ist robuster, weil ein einzelner Ausreisser den Rank für ein ganzes Jahr verzerrt. Umschalten über die Schaltflächen oben.";
     var TH_SKEW="Implizite Vola des 25-Delta-Puts minus die des 25-Delta-Calls, in Vol-Punkten, bei rund 30 Tagen Laufzeit. Positiv heisst: Absicherung nach unten kostet mehr als Spekulation nach oben — bei Aktien der Normalzustand. Ein hoher Wert ist kein Verkaufssignal, sondern der Preis einer Versicherung.";
     var TH_SKEWRK="Wo der heutige Skew in seiner eigenen Historie des letzten Jahres liegt. Hoch heisst: ungewöhnlich put-lastig für diesen Titel — vergleichbar wird der Skew erst dadurch, denn jeder Basiswert hat sein eigenes Normalniveau.";
-    var TH_NE="Derselbe 25-Delta-Skew, aber am nächstgelegenen Verfall statt bei 30 Tagen. Kurzläufer reagieren viel stärker auf einzelne Termine. Weicht der Wert deutlich vom 30-Tage-Skew ab, preist der Markt etwas Kurzfristiges ein — Quartalszahlen oder eine Notenbanksitzung.";
+    var TH_NE="Derselbe 25-Delta-Skew, aber am nächstgelegenen Verfall statt bei 30 Tagen. Kurzläufer reagieren viel stärker auf einzelne Termine. Weicht der Wert deutlich vom 30-Tage-Skew ab, preist der Markt etwas Kurzfristiges ein — Quartalszahlen oder eine Notenbanksitzung. Ist der nächste Verfall nicht auswertbar (kurz vor Verfall liegen die Strikes oft zu weit auseinander), steht hier der nächste auswertbare bis 10 Tage, markiert mit *.";
     var TH_SKEWTERM="Skew bei 90 Tagen minus Skew bei 30 Tagen. Positiv heisst: die Absicherung auf lange Sicht ist relativ teurer als die kurzfristige, die Sorge liegt also eher bei den kommenden Monaten als bei den kommenden Wochen. Negativ ist es umgekehrt.";
     var TH_BFLY="Mittelwert aus 25-Delta-Put-IV und 25-Delta-Call-IV, minus die ATM-IV. Misst, wie stark sich das Vola-Lächeln zu beiden Rändern hin hebt, also wie teuer die Flügel gegenüber dem Geld sind. Ein hoher Wert heisst: der Markt bezahlt grosse Sprünge in beide Richtungen.";
     var TH_PC="Verhältnis der impliziten Vola des 25-Delta-Puts zu der des 25-Delta-Calls. Über 1 heisst: der Put ist der teurere der beiden. Nicht zu verwechseln mit der Put-Call-Ratio aus Volumen oder Open Interest — hier stehen Preise, nicht Stückzahlen.";
@@ -581,6 +585,17 @@
       var E={iv:ext(function(t){return t.iv_atm!=null?t.iv_atm*100:null;}),rk:ext(function(t){return ivm[t.ticker];}),
              sk:ext(function(t){return t.skew_pts;}),skr:ext(function(t){return skm[t.ticker];}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
              bf:ext(function(t){return t.bfly_pts;}),pc:ext(function(t){return t.pc_ratio;}),vr:ext(function(t){return t.vrp_pts;}),em:ext(function(t){return t.em_pct;})};
+      // NE-Skew mit tatsaechlicher Laufzeit; ein Ersatzverfall (der naechste war
+      // nicht auswertbar) wird mit * markiert — Codex-Entwurfspruefung: Ersatz nur
+      // zulaessig, wenn er sichtbar ist.
+      function neZelle(t){
+        var z=hc(t.skew_ne_pts,2,'pts',E.ne);
+        if(t.skew_ne_pts==null||t.skew_ne_dte==null)return z;
+        var tip=T('skew.ne_dte','Verfall in {n} Tagen').replace('{n}',t.skew_ne_dte)+
+          (t.skew_ne_ersatz?' — '+T('skew.ne_ersatz','der nächste Verfall war nicht auswertbar, dies ist der nächste auswertbare'):'');
+        z=z.replace('<td ','<td title="'+tip.replace(/"/g,'&quot;')+'" ');
+        return t.skew_ne_ersatz?z.replace('</td>','<sup>*</sup></td>'):z;
+      }
       function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
         return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
           (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
@@ -608,7 +623,7 @@
           hc(ivm[t.ticker],0,'%',E.rk)+
           hc(t.skew_pts,2,'pts',E.sk)+
           hc(skm[t.ticker],0,'%',E.skr)+
-          hc(t.skew_ne_pts,2,'pts',E.ne)+
+          neZelle(t)+
           hc(t.skew_term_pts,2,'pts',E.st)+
           hc(t.bfly_pts,2,'pts',E.bf)+
           hc(t.pc_ratio,2,'',E.pc)+
