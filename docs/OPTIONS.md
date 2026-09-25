@@ -895,3 +895,62 @@ zum Produktivcode kein Befund.
 - **Windows sperrt frisch geschriebene Dateien kurz.** Das Zurückschreiben einer Mutation scheiterte
   mit WinError 5; eine Produktionsdatei blieb mutiert im Arbeitsbaum (per Diff gegen `.mutation-tmp`
   gefunden und byte-genau wiederhergestellt). `_atomar_schreiben` wiederholt jetzt.
+
+## NE-Skew, Skew-Term, Term-Struktur und Smile aus eigener Rechnung (2026-09-25)
+
+**Befund:** die letzten vier Werte auf dem Anbieter-Picker (`_skew_at`/`_pick`/`_atm_iv` auf `_byexp`),
+also mit demselben Selbstauswahl-Fehler wie die alte Anzeige. Zusätzlich war der **NE-Skew gar nicht der
+nächste Verfall**: `_skew_at(by, 1)` bevorzugt Monatsverfälle, der Pool enthält dann nur Monate — es war
+immer der Front-Monat (22 Tage).
+
+**Messung auf echten Daten.** Ein Vorher/Nachher-Vergleich geht nur auf einem EOD-Snapshot; ab 09:30 ET
+liefert der Snapshot Intraday-Stände. Deshalb am 25.09. um 09:09–09:16 ET die Rohketten von 40 Tickern
+gesichert (`/opt/seasonaledge/logs/ketten_2026-09-24/`) und alle Varianten darauf gerechnet:
+
+| | alt (Anbieter) | neu |
+|---|---|---|
+| NE-Abdeckung / \|NE\| > 15 | 40 / 5 (SO −61,4, XLC +41,0 …) | 40 / 0 |
+| NE-Laufzeiten | nur 22 | 1, 4, 8, 22 (14 × gekennzeichneter Ersatz) |
+| 90-Tage-Skew / Skew-Term | 38 / 38 | 33 / 32 |
+| \|Skew-Term\| > 10 | 3 | 0 |
+| Contango klassifiziert | 40 | 30 (nur mit Punkt ≤ 14 T.) |
+| Term-Punkte | 237 | 193 |
+| Smile-30: 25Δ/ATM = Tabelle | — | 38/38 |
+| „Richtung unbestimmt" | — | AAPL −0,02, AMD −0,10, MU +0,27 |
+
+**Umsetzung** (Kern in `shared/black_scholes.py`, damit Live und Backfill dieselbe Mathematik nutzen):
+- `leg_from_prices` in `_gefilterte_punkte` (Schritte 1–4) + `_waehle_delta` (Schritt 5) geteilt —
+  **bit-identisch auf 574 echten Expiries**, dazu eingefrorene Referenz im Wächter.
+- `atm_from_prices`: ATM ohne Flügelzwang (42 von 237 Term-Punkten fehlten nur wegen eines Flügels),
+  dafür Anker ≤ min(5 %, 0,5 σ√T). Gemessen: z-Median 0,11, 90. Perzentil 0,49; die Regel verwirft kurze
+  Laufzeiten mit weitem Anker (XLU 8 T. z = 1,66), die eine feste 5-%-Grenze durchließe.
+- `smile_from_prices`: Referenz-Delta, disjunkte Fenster (`SMILE_DELTA_TOL = 0.07`).
+- `skew_intervall_pts` + `beobachtetes_raster`: die Grenzpreise beider 25Δ-Kontrakte ±½ Raster **exakt**
+  invertiert; Raster je Kontrakt das gröbste mit dem Preis vereinbare (Cboe Rule 5.4). Die Klasse
+  (Penny-Programm ja/nein) liefert der Anbieter nicht, und aus den Kursen trennt sie sich nicht sauber
+  (Penny-Titel 0,68–0,84 nicht-nicklige Preise, HCA/BKNG/SO/TMO/RSP/XLC 0,20–0,48).
+- `_enrich`: Anbieterwerte nur noch Diagnose (`front_provider`, einmal vollständig gesichert); ein
+  fehlender Anbieter-Pick verwirft den Ticker nicht mehr. `_laufzeiten_eigen`: NE = nächster Verfall **aus
+  der ungefilterten Kette**, sonst gekennzeichneter Ersatz ≤ 10 T.; 90-CM wie 30-CM (echte Klammer,
+  ohne Extrapolation); Contango nur mit Punkt ≤ 14 T.; Steigung mit echten Endpunkten.
+- Frontend: NE-Kurve auch ohne 30-Tage-Kurve, Farben je Serie, NE-Zelle mit `*` (Ersatz), `≈`
+  (Richtung unbestimmt) und Tooltip mit Laufzeit und Kursraster-Intervall.
+
+**Abnahme:** Codex Astra — Entwurf („nicht tragfähig", 10 Befunde, alle vor der ersten Codezeile
+übernommen), dann fünf Code-Runden bis Freigabe. Wächter `scripts/verify_skew_laufzeiten.py` (isoliert,
+14 Proben inkl. `renderSkewCurve` in node), Mutationstest `scripts/verify_session_mutation.py` 44/44.
+
+**Lessons:**
+- **Den Entwurf reviewen lassen**, bevor Code entsteht — zehn Befunde, die sonst als Code-Runden gekommen wären.
+- **Echte Daten sichern, solange es geht.** Der EOD-Snapshot ist nur bis 09:30 ET zu haben; mit
+  gesicherten Rohketten ließ sich jede Variante den ganzen Tag gegen echte Daten prüfen.
+- **Ein Regressionstest muss den Fall wörtlich treffen.** Die erste Nachbildung von Codex' Grenzfall
+  rechnete beide Kontrakte aus demselben σ und ergab Skew +0,02 statt −0,698 — grün, aber ohne Aussage.
+- **Eine lineare Näherung ist keine Schranke.** Halber Tick ÷ Vega sagte „richtungsfest", das exakt
+  invertierte Intervall enthielt die Null.
+- **Toleranzen im Test verbergen genau die kleinen Fehler**, um die es geht (0,01 ließ 0,0005 durch).
+- Der Wächter fand einen **echten Produktivfehler**: ohne NE-Verfall warf `_smile(None)` `KeyError`,
+  der ganze Ticker wäre aus dem Cron gefallen.
+
+**Offen:** q = 0 bei Dividendenzahlern auf lange Laufzeit (TLT) — Term-Punkte fehlen; erster Live-Lauf
+prüfen (CLAUDE.md-TODO).
