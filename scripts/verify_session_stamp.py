@@ -225,9 +225,19 @@ def _isoliert(tmp: str) -> int:
     tmp_p = Path(tmp).resolve()
     verstoesse: list[str] = []
 
+    # Das Nullgeraet ist kein Schreibzugriff auf echte Daten. Unter Windows
+    # oeffnet `subprocess` es beim Import von Streamlit (ueber `platform`) mit
+    # Schreibflags — ohne diese Ausnahme meldete der Hook dreimal
+    # `open(nul, 130)` und der Waechter konnte umgebungsabhaengig nie gruen
+    # werden (Codex-Review R7). Nur exakt das Geraet, kein Praefix-Vergleich.
+    _NULLGERAETE = {os.path.normcase(os.devnull), "nul", "/dev/null"}
+
     def _innen(pfad) -> bool:
+        roh = os.fsdecode(pfad)
+        if os.path.normcase(roh) in _NULLGERAETE:
+            return True
         try:
-            return Path(os.fsdecode(pfad)).resolve().is_relative_to(tmp_p)
+            return Path(roh).resolve().is_relative_to(tmp_p)
         except Exception:
             return False
 
