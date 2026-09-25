@@ -773,3 +773,69 @@ Check bestand in diesem Projekt schon einmal, während der Fehler drinstand.
 Enthalten ist der Fall vom 15.09., der den Radar leer laufen liess
 (Monatsverfälle bei 3 und 31 Tagen, Wochenverfälle bei 10/17/24 → die beste
 Gruppe muss die Wochenverfälle nehmen und 30 Tage echt klammern).
+
+## Der Radar war leer — Session-Stempel vor dem US-Schluss (2026-09-25)
+
+**Befund:** Nach Abschluss des Reparatur-Backfills waren **0 von 165 Tickern** rankbar. Nicht der
+Backfill war schuld, sondern der Live-Cron. Kette, jeweils gemessen:
+
+1. Der Cron steht auf 23:00 UTC, GitHub startet ihn mit 1–2 h Verzug (sechs Läufe: 00:44–01:20 UTC).
+2. Nach Mitternacht UTC ist `date.today()` der Folgetag. `_last_session()` gab „letzter
+   NYSE-Handelstag ≤ heute" zurück und stempelte damit eine Session, **die noch nicht gehandelt hatte**.
+3. Der Frische-Wächter in `_enrich` verglich die Kursreihe (korrekt: Vortag) mit dem Stempel und
+   verzichtete auf die cm-Normierung — für alle 161 Ticker. `method` fiel auf `provider` zurück.
+4. `skew.html::_normHist` verwirft jeden Ticker, dessen letzter normierter Punkt nicht auf
+   `SKEW_SESSION` liegt → leerer Radar. Die letzten normierten Punkte (18.–23.09.) stammten vom
+   Backfill, nicht vom Live-Lauf; der Backfill hatte den Fehler tagelang überdeckt.
+
+Der Wächter war richtig, der Stempel war falsch. Im Workflow-Log waren nur 6 der 161
+Abbruchzeilen sichtbar, weil `docker exec … | tail -20` den Rest abschneidet.
+
+**Zweiter Defekt, beim Fixen gefunden:** die Append-Regel war „erste Zeile für die Session gewinnt".
+Die falsch gestempelten Zeilen hätten damit auch den korrekten Lauf der Folgenacht blockiert —
+dauerhaft, ohne dass etwas fehlschlägt. Jetzt ersetzt eine **rankbare** Zeile (`cm`/`cm_extrap`,
+`_rankbar()`, identisch zu `_isNorm`) eine nicht rankbare derselben Session.
+
+**Korrekturen** (Commits `28d4a0e` … `60797aa`):
+- `shared/exchange_holidays.letzte_session()` — letzter Handelstag, dessen Schluss **vorbei** ist,
+  Schlusszeit in lokaler Börsenzeit (DST ohne Handarbeit). Skew- und Flow-Cron nutzen dieselbe
+  Quelle; der Flow-Cron stempelte seine OI-Historie ebenfalls mit `date.today()`.
+- `dte` in `_byexp` (Skew) und `_records` (Flow) gegen die Session statt gegen den Kalendertag —
+  sonst wählt `_nearest_exp(by, 30)` ggf. einen anderen Verfall, und ein 0DTE-Kontrakt fällt mit
+  `dte=-1` aus `_front`.
+- `_OI_SCHEMA` 2→3: der Bestand trägt Labels eine Session voraus; ein Lauf setzt ΔOI aus, statt
+  zwei Sessions als `gap_sessions=1` zu vergleichen.
+- `markt_offen()`/`pruefe_eod_fenster()`: EOD-Crons schreiben nicht während der Handelszeit
+  (Intraday-Snapshot, Stempel Vorsession). Sperre im **Erzeuger** `build()`, Exit 2.
+- Schreiblauf ohne `MASSIVE_API_KEY` bricht ab (Exit 3) — vorher Ausgabe ohne Ticker mit Exit 0.
+- `--no-write` schrieb im Flow-Cron trotzdem die OI-Historie (`_doi` → `_save_hist` unbedingt).
+
+**Externe Abnahme:** acht Runden Codex (R1 `gpt-6-sol`, ab R2 `gpt-6-astra`). Produktivcode ab R2
+bis auf zwei Befunde abgenommen; fünf Runden galten dem **Wächter**. Er bestand dreimal, obwohl er
+den Fehler nicht fangen konnte: Mutationsprobe in ET statt UTC (R1), Sperre nur per Textsuche
+geprüft (R3), Rückfall der Crons auf `date.today()` blieb grün (R5). Heute:
+`scripts/verify_session_stamp.py` (reine Proben im Elternprozess; alles, was `build()`/`main()`
+ausführt, in einem Unterprozess mit `_ROOT` im Temp-Verzeichnis, blockierendem Audit-Hook,
+`SA_OHNE_DOTENV=1`, Nonce-Bilanz) und `scripts/verify_session_mutation.py` (17 Mutationen aus
+Vorfall und Runden, alle erkannt, Quellen und Cron-Ausgaben per Hash unverändert).
+
+**Lessons:**
+- **Ein Wächter, der richtig misst, kann trotzdem alles leeren** — wenn die Größe, gegen die er
+  misst (hier der Session-Stempel), falsch ist. Bei einem Totalausfall zuerst die gemeinsame
+  Referenz prüfen, nicht die Einzelfälle.
+- **Ein Backfill kann einen Live-Fehler tagelang überdecken.** Solange er normierte Punkte für die
+  jüngsten Tage schrieb, sah der Radar gesund aus. Nach Backfill-Ende gezielt prüfen, ob der
+  **Live**-Pfad allein trägt.
+- **`| tail -N` im Workflow zeigt das Ende, nicht das Muster.** 6 sichtbare Abbruchzeilen waren
+  161 echte. Für Diagnose die Zeilen zählen (`grep -c`), nicht lesen.
+- **Codex-CLI liegt nicht im PATH und wechselt beim Selbst-Update den Ordner-Hash**
+  (`…/OpenAI/Codex/bin/<hash>/codex.exe`). Pfad dynamisch auflösen:
+  `ls -t …/bin/*/codex.exe | head -1`. Das Modell kann von `config.toml` abweichen → mit
+  `-c model="gpt-6-astra"` erzwingen und im Log (`model:`) prüfen.
+- **Eine Mutationsprobe kann selbst Schaden anrichten**, wenn ihre Fallen schluckbar sind: in R3
+  schrieb eine Probe eine leere lokale `options_flow.json` (tickers: 0). Fallen als `BaseException`,
+  Schreibwege über ein umgebogenes `_ROOT`, Audit-Hook blockierend.
+
+**Offen** (Zahlen in CLAUDE.md-TODO): `MIN_NORM` 20→80 (14 Ticker fielen raus), VRP-Nachrechnung
+(neue Zeilen im Mittel nur +0,54 pts), `verify()` braucht eine Referenz gleicher Laufzeit,
+angezeigte vs. gerankte Skew-Werte klaffen bei 33 von 158 Tickern um > 8 pts auseinander.

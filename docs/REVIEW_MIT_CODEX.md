@@ -32,7 +32,7 @@ codex exec -s read-only "<Prompt>"
 `-s read-only` = Codex darf lesen und Kommandos ausführen, aber nichts schreiben.
 Das ist die richtige Voreinstellung für eine Abnahme.
 
-### Fünf Fallen, alle am 2026-09-11 durchlebt
+### Sieben Fallen (fünf vom 2026-09-11, zwei vom 2026-09-25)
 
 | Falle | Symptom | Abhilfe |
 |---|---|---|
@@ -41,6 +41,8 @@ Das ist die richtige Voreinstellung für eine Abnahme.
 | **`py -3.14` unsichtbar** | Codex sieht nur Python 3.9, das an `X \| None` scheitert | Absoluten Pfad mitgeben: `C:/Users/<user>/AppData/Local/Python/pythoncore-3.14-64/python.exe` |
 | **Langläufer** | Abbruch beim Warten; der Mutationstest startet den Wächter 16× | Selbst ausführen, Codex die **Ausgabe** prüfen lassen — samt der Frage, ob das Ergebnis auch ohne echtes Greifen entstehen könnte |
 | **Falscher Sandbox-Modus** | Der Mutationstest **schreibt** Dateien, unter `read-only` unmöglich | `--sandbox workspace-write`, vorher `git status --porcelain --untracked-files=no \| md5sum` merken und danach vergleichen |
+| **`codex` nicht im PATH** (2026-09-25) | `command not found`, obwohl `~/.codex/` existiert und frisch beschrieben ist | Die Desktop-App bringt die CLI unter `%LOCALAPPDATA%/OpenAI/Codex/bin/<hash>/codex.exe` mit, **der Hash wechselt beim Selbst-Update**. Dynamisch auflösen: `CODEX=$(ls -t /c/Users/<user>/AppData/Local/OpenAI/Codex/bin/*/codex.exe \| head -1)`. In Git-Bash POSIX-Pfad nutzen — `$LOCALAPPDATA` mit Backslashes zerfällt, und `… \| tail` verschluckt dann auch noch den Fehlercode |
+| **Anderes Modell als gedacht** | Log zeigt `model: gpt-6-sol`, obwohl `config.toml` `gpt-6-astra` nennt | `-c model="gpt-6-astra"` explizit mitgeben und die `model:`-Zeile im Log prüfen |
 
 Ein Reviewer, der nichts ausführen kann, lehnt korrekterweise ab. **Vier der fünf
 „KEINE FREIGABE" waren Werkzeugfehler, kein inhaltliches Urteil.** Vor jeder
