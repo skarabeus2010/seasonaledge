@@ -30,7 +30,7 @@ from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
-from shared.exchange_holidays import is_trading_day                   # noqa: E402
+from shared.exchange_holidays import is_trading_day, letzte_session   # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
                                  rv_aus_closes)
@@ -55,8 +55,37 @@ def _last_session(d: date | None = None) -> str:
     ohne Handel in der History, die immer die Daten der letzten Session
     duplizieren. Das verfälscht jede Percentile-Berechnung (aufgeblähte
     Stichprobe mit Doppelwerten) und verstößt gegen die Grundregel, in
-    Handelstagen statt Kalendertagen zu rechnen."""
-    d = d or date.today()
+    Handelstagen statt Kalendertagen zu rechnen.
+
+    EINE SESSION GILT ERST NACH DEM US-HANDELSSCHLUSS ALS ABGESCHLOSSEN.
+    Der Cron steht auf 23:00 UTC, GitHub startet ihn aber regelmaessig mit
+    ein bis zwei Stunden Verzug — gemessen 2026-09-18 bis 25: 00:44, 00:52,
+    00:56, 00:59, 01:00, 01:20 UTC. Nach Mitternacht UTC ist `date.today()`
+    schon der FOLGETAG. Ist der ein Handelstag, stempelte diese Funktion eine
+    Session, die noch nicht gehandelt hatte, auf Daten vom Vortag.
+    Folge am 2026-09-25: alle 161 Ticker bekamen eine Zeile mit `date`
+    2026-09-25, waehrend die Kursreihe (korrekt) am 24. endete. Der
+    Frische-Waechter unten verweigerte daraufhin die cm-Normierung — fuer
+    JEDEN Ticker — und das Frontend hatte keinen aktuellen normierten Punkt
+    mehr: **0 von 165 Tickern im Radar**, `method` faellt auf `provider`
+    zurueck (genau die Methodenmischung, die v54 beseitigt hat).
+    Der Waechter war richtig, der Stempel war falsch.
+
+    Deshalb: vor 16:15 ET gehoert der laufende Kalendertag noch nicht in die
+    Historie. Grenze in ET statt UTC gerechnet, damit die Sommerzeit
+    (20:00 UTC im Sommer, 21:00 im Winter) nicht von Hand nachgezogen werden
+    muss. Verkuerzte Handelstage (Schluss 13:00 ET) fallen bewusst unter
+    dieselbe Regel: der Cron laeuft um 19:00 ET, lange danach; ein
+    Ad-hoc-Lauf um 14:00 ET stempelt lieber die Vorsession als eine
+    unfertige.
+
+    Ein ausdruecklich uebergebenes `d` bleibt unangetastet — `_fix_session_dates`
+    datiert damit Alt-Eintraege um und braucht reine Kalenderlogik."""
+    if d is None:
+        # Eine Kopie dieser Regel in jedem Cron wuerde driften (dieselbe
+        # Fehlerklasse wie die beiden Black-Scholes-Kopien mit
+        # verschiedenen Zinssaetzen) -> EINE Quelle in shared/.
+        return letzte_session("NYSE").isoformat()
     for _ in range(10):
         if is_trading_day(d, "NYSE"):
             return d.isoformat()
@@ -817,7 +846,23 @@ def build(tickers: list[str], write: bool = True) -> dict:
             print(f"[history] {mv} Einträge auf ihre Session umdatiert, {dp} Duplikate entfernt")
         for t in per:
             arr = hist.setdefault(t["ticker"], [])
-            if not any(e.get("date") == today for e in arr):
+            # „Erste Zeile gewinnt" war zu streng: eine bereits vorhandene,
+            # NICHT normierte Zeile sperrte die Session dauerhaft fuer den
+            # normierten Punkt. Genau das machte den Vorfall 2026-09-25
+            # unheilbar — die falsch gestempelten Provider-Zeilen haetten auch
+            # den echten Lauf der Folgenacht blockiert, der Radar waere leer
+            # geblieben, ohne dass irgendetwas fehlschlaegt.
+            # Deshalb: normiert ersetzt nicht-normiert, sonst bleibt es beim
+            # Bestand (kein Ueberschreiben gleichwertiger Zeilen).
+            vorhanden = next((e for e in arr if e.get("date") == today), None)
+            neu_norm = t.get("cm_mode") is not None
+            alt_norm = vorhanden is not None and vorhanden.get("cm_mode") is not None
+            if vorhanden is not None and neu_norm and not alt_norm:
+                arr.remove(vorhanden)
+                print(f"  {t['ticker']:6} nicht normierte Zeile fuer {today} durch "
+                      f"normierte ersetzt", flush=True)
+                vorhanden = None
+            if vorhanden is None:
                 # Skew/IV auf konstante 30 Tage normiert speichern (gleiche Skala wie
                 # der Backfill) → percentile-fähige Reihe. Felder tragen cm_mode; das
                 # Frontend verwirft 'single'. Fällt die CM-Normierung aus (nur ein

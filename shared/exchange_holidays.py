@@ -501,6 +501,64 @@ def is_trading_day(d: date, exchange: str = "NYSE") -> bool:
     return not is_holiday(d, exchange)
 
 
+# Handelsschluss je Börse in LOKALER Börsenzeit. Bewusst lokal und nicht in UTC:
+# sonst muss die Sommerzeit zweimal im Jahr von Hand nachgezogen werden (NYSE
+# schliesst 20:00 UTC im Sommer, 21:00 im Winter).
+_SCHLUSSZEIT = {
+    "NYSE": ("America/New_York", 16, 0),
+    "XETRA": ("Europe/Berlin", 17, 30),
+    "LSE": ("Europe/London", 16, 30),
+    "EURONEXT": ("Europe/Paris", 17, 30),
+    "MILAN": ("Europe/Rome", 17, 30),
+    "SIX": ("Europe/Zurich", 17, 30),
+    "STOCKHOLM": ("Europe/Stockholm", 17, 30),
+    "OSLO": ("Europe/Oslo", 16, 20),
+    "TSE": ("Asia/Tokyo", 15, 0),
+    "HKEX": ("Asia/Hong_Kong", 16, 0),
+    "KRX": ("Asia/Seoul", 15, 30),
+}
+_PUFFER_MIN = 15          # Kulanz für verzögerte EOD-Daten des Anbieters
+
+
+def letzte_session(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MIN) -> date:
+    """Letzter Handelstag, dessen Schluss VORBEI ist.
+
+    Unterschied zu „letzter Handelstag ≤ heute": der laufende Tag zählt erst,
+    wenn an der Börse Schluss ist. Genau das fehlte und hat am 2026-09-25 den
+    Skew-Radar geleert:
+
+    Der Options-Cron steht auf 23:00 UTC, GitHub startet ihn aber mit ein bis
+    zwei Stunden Verzug (gemessen 00:44 bis 01:20 UTC). Nach Mitternacht UTC ist
+    `date.today()` der FOLGETAG; ist der ein Handelstag, wurden die Daten der
+    abgelaufenen Session auf eine Session gestempelt, die noch nicht gehandelt
+    hatte. Die Kursreihe endete (korrekt) einen Tag früher, der Frische-Wächter
+    verweigerte daraufhin die Laufzeit-Normierung — für ALLE 161 Ticker — und
+    das Ranking im Frontend fiel auf 0 Ticker.
+
+    `jetzt` darf ein aufgelöster `datetime` mit Zeitzone sein (für Tests).
+    CRYPTO handelt durchgehend und hat keinen Schluss → dort ist der laufende
+    Tag immer die aktuelle Session.
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    ex = (exchange or "NYSE").upper()
+    if ex == "CRYPTO":
+        return (jetzt or datetime.now(ZoneInfo("UTC"))).date()
+    tz_name, stunde, minute = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
+    tz = ZoneInfo(tz_name)
+    jetzt_lokal = (jetzt.astimezone(tz) if jetzt is not None else datetime.now(tz))
+    d = jetzt_lokal.date()
+    grenze = stunde * 60 + minute + puffer_min
+    if jetzt_lokal.hour * 60 + jetzt_lokal.minute < grenze:
+        d -= timedelta(days=1)
+    for _ in range(12):               # Brückentage/Feiertagsketten
+        if is_trading_day(d, ex):
+            return d
+        d -= timedelta(days=1)
+    return d
+
+
 def get_holidays_for_ticker(
     ticker: str,
     start_year: int,

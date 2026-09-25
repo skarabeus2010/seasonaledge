@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""verify_session_stamp.py — die Session-Stempelung der Options-Crons pruefen.
+
+WARUM DIESER WAECHTER EXISTIERT (Vorfall 2026-09-25):
+`_last_session()` gab den letzten Handelstag <= `date.today()` zurueck. Der Cron
+steht auf 23:00 UTC, GitHub startet ihn aber mit ein bis zwei Stunden Verzug
+(gemessen 00:44 bis 01:20 UTC). Nach Mitternacht UTC ist `today` der Folgetag —
+ist der ein Handelstag, wurden Daten der abgelaufenen Session auf eine Session
+gestempelt, die noch nicht gehandelt hatte. Der Frische-Waechter in
+`compute_options_skew` verglich die Kursreihe (korrekt: Vortag) mit diesem
+Stempel, fand die Abweichung und verzichtete auf die cm-Normierung — fuer JEDEN
+Ticker. Ergebnis: 0 von 165 Tickern im Radar, `method` zurueck auf `provider`.
+
+Der Fehler war NICHT im Waechter und nicht im Backfill, sondern im Stempel.
+
+Aufruf: py -3.14 scripts/verify_session_stamp.py     (Exit 1 = Drift)
+"""
+from __future__ import annotations
+import sys
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+import scripts.compute_options_skew as m           # noqa: E402
+import scripts.compute_options_flow as f           # noqa: E402
+from shared.exchange_holidays import letzte_session, is_trading_day   # noqa: E402
+
+ET = ZoneInfo("America/New_York")
+
+# (Beschreibung, UTC-Zeitpunkt des Laufs, erwartete Session)
+# Der Kalender 2026: Do 24.09., Fr 25.09., Sa 26.09., Mo 28.09. sind echte Tage;
+# der 25.12. ist NYSE-Feiertag (Freitag), der 24.12. ein verkuerzter Handelstag.
+FAELLE = [
+    ("Cron wie geplant, 23:00 UTC am Handelstag",
+     datetime(2026, 9, 24, 23, 0, tzinfo=ZoneInfo("UTC")), "2026-09-24"),
+    ("Cron mit Verzug, 01:00 UTC am Folgetag (DER VORFALL)",
+     datetime(2026, 9, 25, 1, 0, tzinfo=ZoneInfo("UTC")), "2026-09-24"),
+    ("Cron mit Verzug, 01:20 UTC nach Freitag -> bleibt Freitag",
+     datetime(2026, 9, 26, 1, 20, tzinfo=ZoneInfo("UTC")), "2026-09-25"),
+    ("Ad-hoc-Lauf vormittags (Session laeuft noch)",
+     datetime(2026, 9, 25, 10, 30, tzinfo=ZoneInfo("UTC")), "2026-09-24"),
+    ("Samstagslauf -> Freitag",
+     datetime(2026, 9, 26, 18, 0, tzinfo=ZoneInfo("UTC")), "2026-09-25"),
+    ("Sonntagslauf -> Freitag",
+     datetime(2026, 9, 27, 18, 0, tzinfo=ZoneInfo("UTC")), "2026-09-25"),
+    ("Montag 01:00 UTC -> Freitag, nicht Montag",
+     datetime(2026, 9, 28, 1, 0, tzinfo=ZoneInfo("UTC")), "2026-09-25"),
+    ("nach dem Schluss am Montag -> Montag",
+     datetime(2026, 9, 28, 23, 0, tzinfo=ZoneInfo("UTC")), "2026-09-28"),
+    ("Winterzeit: 21:30 UTC = 16:30 EST, nach Schluss",
+     datetime(2026, 12, 1, 21, 30, tzinfo=ZoneInfo("UTC")), "2026-12-01"),
+    ("Winterzeit: 20:30 UTC = 15:30 EST, VOR Schluss -> Vortag",
+     datetime(2026, 12, 1, 20, 30, tzinfo=ZoneInfo("UTC")), "2026-11-30"),
+    ("Feiertag 25.12. (Fr), Lauf 01:00 UTC danach -> 24.12.",
+     datetime(2026, 12, 26, 1, 0, tzinfo=ZoneInfo("UTC")), "2026-12-24"),
+]
+
+
+def _mit_zeit(jetzt_utc: datetime) -> str:
+    """Session zum gegebenen Laufzeitpunkt — ueber die gemeinsame Quelle."""
+    return letzte_session("NYSE", jetzt=jetzt_utc).isoformat()
+
+
+def pruefe() -> int:
+    fehler = 0
+    print("Session-Stempel je Laufzeitpunkt\n" + "-" * 68)
+    for name, jetzt, soll in FAELLE:
+        ist = _mit_zeit(jetzt)
+        ok = ist == soll
+        if not ok:
+            fehler += 1
+        et = jetzt.astimezone(ET).strftime("%a %d.%m. %H:%M ET")
+        print(f"  {'OK  ' if ok else 'FAIL'} {et} -> {ist}"
+              f"{'' if ok else f'  ERWARTET {soll}'}   ({name})")
+
+    # Explizit uebergebene Daten muessen reine Kalenderlogik behalten —
+    # _fix_session_dates datiert damit Alt-Eintraege um.
+    print("\nExplizites Datum (muss ohne Uhrzeit-Regel arbeiten)\n" + "-" * 68)
+    for tag, soll in [(date(2026, 9, 26), "2026-09-25"),   # Sa -> Fr
+                      (date(2026, 9, 25), "2026-09-25"),   # Fr -> Fr selbst
+                      (date(2026, 12, 25), "2026-12-24")]:  # Feiertag -> Vortag
+        ist = m._last_session(tag)
+        ok = ist == soll
+        if not ok:
+            fehler += 1
+        print(f"  {'OK  ' if ok else 'FAIL'} {tag} -> {ist}"
+              f"{'' if ok else f'  ERWARTET {soll}'}")
+
+    # MUTATIONSPROBE: die alte Logik (letzter Handelstag <= today, ohne
+    # Schlusszeit) muss von diesem Waechter erkannt werden. Ohne diese Probe ist
+    # ein gruener Lauf eine Aussage ueber den Test, nicht ueber den Code.
+    print("\nMutationsprobe (alte Logik muss FAIL erzeugen)\n" + "-" * 68)
+    def _alt(jetzt_utc: datetime) -> str:
+        d = jetzt_utc.astimezone(ET).date()      # == date.today() im Cron-Kontext
+        for _ in range(10):
+            if is_trading_day(d, "NYSE"):
+                return d.isoformat()
+            d -= timedelta(days=1)
+        return d.isoformat()
+
+    erkannt = sum(1 for name, jetzt, soll in FAELLE if _alt(jetzt) != soll)
+    print(f"  alte Logik scheitert an {erkannt} von {len(FAELLE)} Faellen")
+    if erkannt == 0:
+        print("  FAIL: der Waechter kann den Vorfall nicht reproduzieren")
+        fehler += 1
+
+    # Beide Options-Crons muessen DIESELBE Session sehen. Eine eigene Kopie der
+    # Regel in einem der Skripte wuerde driften wie die zwei
+    # Black-Scholes-Implementierungen mit verschiedenen Zinssaetzen.
+    print("\nBeide Crons an derselben Quelle\n" + "-" * 68)
+    gemeinsam = letzte_session("NYSE").isoformat()
+    proben = [("compute_options_skew._last_session()", m._last_session(), gemeinsam),
+              ("compute_options_flow nutzt shared",
+               str("letzte_session" in Path(f.__file__).read_text(encoding="utf-8")), "True")]
+    for name, ist, soll in proben:
+        ok = ist == soll
+        if not ok:
+            fehler += 1
+        print(f"  {'OK  ' if ok else 'FAIL'} {name}: {ist}"
+              f"{'' if ok else f'  ERWARTET {soll}'}")
+
+    print("\n" + ("ERGEBNIS: PASS" if fehler == 0 else f"ERGEBNIS: {fehler} FAIL"))
+    return 1 if fehler else 0
+
+
+if __name__ == "__main__":
+    sys.exit(pruefe())

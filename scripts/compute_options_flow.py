@@ -35,6 +35,7 @@ if str(_ROOT) not in sys.path:
 
 from shared.env_loader import load_env          # noqa: E402
 load_env()
+from shared.exchange_holidays import letzte_session            # noqa: E402
 from shared.options_universe import CORE_OPTIONS, categories_for  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
@@ -294,7 +295,11 @@ def _enrich(sym: str, key: str, today: str) -> dict | None:
 
 def build(tickers: list[str], write: bool = True) -> dict:
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
-    today = date.today().isoformat()
+    # Session, NICHT date.today(): der Cron laeuft mit Verzug nach Mitternacht
+    # UTC, dann ist today der Folgetag und die OI-Historie traegt Labels eine
+    # Session voraus (gap_sessions rechnet auf diesen Labels). Vorfall
+    # 2026-09-25, Detail: shared/exchange_holidays.letzte_session.
+    today = letzte_session("NYSE").isoformat()
     per = []
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — nichts zu tun.")
