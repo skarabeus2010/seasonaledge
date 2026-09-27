@@ -62,3 +62,9 @@ scripts/research/out/scan_candidates.json
 *.bak-*
 *.orig
 *.old
+
+# raw/papers/ ist Arbeitsmaterial (PDFs, Notizen) und gehoert nicht ins Repo.
+# Konkreter Anlass 2026-09-27: dort lag eine Datei mit Zugangsdaten im Klartext,
+# und `raw/` ist getrackt (raw/articles/ ist committet) — ein `git add -A` haette
+# sie mitgenommen. Nie passiert, aber die Luecke war offen.
+raw/papers/
