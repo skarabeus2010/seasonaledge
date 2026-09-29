@@ -4,13 +4,17 @@ SeasonAlpha — Intraday Price Refresh
 
 Lightweight-Script fuer unterta¨gige Kurs-Updates.
 Laedt nur Preise herunter (keine KI-Scores, TDOM, Monthly Stats).
-Wird alle 30 Min via GitHub Actions getriggert und entscheidet
+Laeuft stuendlich um :17 UTC per systemd-Timer auf dem VPS
+(deploy/systemd/sa-intraday.timer) und entscheidet
 anhand der aktuellen UTC-Zeit, welche Ticker-Gruppen aktualisiert werden.
 
 Nutzung:
     python scripts/intraday_refresh.py              # Normaler Lauf
     python scripts/intraday_refresh.py --dry-run    # Nur anzeigen, nichts laden
     python scripts/intraday_refresh.py --group eu   # Nur eine Gruppe
+
+Exit-Code: 0 ok, 1 gescheitert (refresh_log nicht geschrieben oder zu viele
+Ticker ausgefallen, siehe fehlschlag()), 2 unbekannte Gruppe.
 """
 
 import sys
@@ -112,87 +116,95 @@ def refresh_tickers(tickers, group_name, dry_run=False):
         try:
             t0 = time.time()
             df = download_data(ticker, period="5d")
-            if df is not None and not df.empty:
-                # log_return berechnen (ln(close_t / close_{t-1}))
-                df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
+            if df is None or df.empty:
+                # Ein leerer Download ist kein Erfolg — frueher zaehlte er als solcher,
+                # und ein Ausfall der Quelle sah im Monitoring wie ein gruener Lauf aus.
+                errors.append(ticker)
+                print(f"    [{i:2d}/{len(tickers)}] {ticker} — FEHLER: leerer Download")
+                continue
+            # log_return berechnen (ln(close_t / close_{t-1}))
+            df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
 
-                # TDOM/TDOY berechnen: Letzten bekannten Wert aus DB lesen + weiterzaehlen
-                try:
-                    from shared.exchange_holidays import is_trading_day as _is_td
-                    from shared.symbols import get_exchange_for_holidays
-                    from shared.supabase_client import get_client as _get_client
-                    _exchange = get_exchange_for_holidays(ticker)
+            # TDOM/TDOY berechnen: Letzten bekannten Wert aus DB lesen + weiterzaehlen
+            try:
+                from shared.exchange_holidays import is_trading_day as _is_td
+                from shared.symbols import get_exchange_for_holidays
+                from shared.supabase_client import get_client as _get_client
+                _exchange = get_exchange_for_holidays(ticker)
 
-                    # Letzten TDOY/TDOM aus Supabase holen (vor dem aeltesten Tag im Download)
-                    _sorted_df = df.sort_index()
-                    _first_date = _sorted_df.index[0]
-                    _first_str = _first_date.strftime("%Y-%m-%d") if hasattr(_first_date, 'strftime') else str(_first_date)
-                    _db_client = _get_client()
-                    _prev = (_db_client.table("prices")
-                             .select("date,tdom,tdoy")
-                             .eq("ticker", ticker)
-                             .lt("date", _first_str)
-                             .order("date", desc=True)
-                             .limit(1)
-                             .execute())
+                # Letzten TDOY/TDOM aus Supabase holen (vor dem aeltesten Tag im Download)
+                _sorted_df = df.sort_index()
+                _first_date = _sorted_df.index[0]
+                _first_str = _first_date.strftime("%Y-%m-%d") if hasattr(_first_date, 'strftime') else str(_first_date)
+                _db_client = _get_client()
+                _prev = (_db_client.table("prices")
+                         .select("date,tdom,tdoy")
+                         .eq("ticker", ticker)
+                         .lt("date", _first_str)
+                         .order("date", desc=True)
+                         .limit(1)
+                         .execute())
 
-                    _tdoy = 0
-                    _tdom = 0
-                    _prev_month = None
-                    if _prev.data and _prev.data[0].get("tdoy") is not None:
-                        _tdoy = int(_prev.data[0]["tdoy"])
-                        _tdom = int(_prev.data[0]["tdom"])
-                        _prev_month = int(_prev.data[0]["date"].split("-")[1])
+                _tdoy = 0
+                _tdom = 0
+                _prev_month = None
+                if _prev.data and _prev.data[0].get("tdoy") is not None:
+                    _tdoy = int(_prev.data[0]["tdoy"])
+                    _tdom = int(_prev.data[0]["tdom"])
+                    _prev_month = int(_prev.data[0]["date"].split("-")[1])
 
-                    for _d_idx in _sorted_df.index:
-                        _d = _d_idx.date() if hasattr(_d_idx, 'date') else _d_idx
-                        # Jahreswechsel: TDOY reset
-                        if _prev_month is not None and _d.month == 1 and _prev_month == 12:
-                            _tdoy = 0
-                            _tdom = 0
-                        # Monatswechsel: TDOM reset
-                        if _prev_month is not None and _d.month != _prev_month:
-                            _tdom = 0
-                        _prev_month = _d.month
+                for _d_idx in _sorted_df.index:
+                    _d = _d_idx.date() if hasattr(_d_idx, 'date') else _d_idx
+                    # Jahreswechsel: TDOY reset
+                    if _prev_month is not None and _d.month == 1 and _prev_month == 12:
+                        _tdoy = 0
+                        _tdom = 0
+                    # Monatswechsel: TDOM reset
+                    if _prev_month is not None and _d.month != _prev_month:
+                        _tdom = 0
+                    _prev_month = _d.month
 
-                        if _is_td(_d, _exchange):
-                            _tdoy += 1
-                            _tdom += 1
-                        df.loc[_d_idx, "tdoy"] = _tdoy
-                        df.loc[_d_idx, "tdom"] = _tdom
-                except Exception:
-                    pass  # Fallback: kein TDOM/TDOY
+                    if _is_td(_d, _exchange):
+                        _tdoy += 1
+                        _tdom += 1
+                    df.loc[_d_idx, "tdoy"] = _tdoy
+                    df.loc[_d_idx, "tdom"] = _tdom
+            except Exception:
+                pass  # Fallback: kein TDOM/TDOY
 
-                # Preise in Supabase schreiben
-                try:
-                    from shared.supabase_client import upsert_prices
-                    records = []
-                    for idx, row in df.iterrows():
-                        rec = {
-                            "ticker": ticker,
-                            "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
-                            "close": round(float(row["Close"]), 4),
-                            "source": "yahoo",
-                        }
-                        for col in ["Open", "High", "Low"]:
-                            if col in row and pd.notna(row[col]):
-                                rec[col.lower()] = round(float(row[col]), 4)
-                        if "Volume" in row and pd.notna(row["Volume"]):
-                            rec["volume"] = int(row["Volume"])
-                        if "log_return" in row and pd.notna(row["log_return"]):
-                            rec["log_return"] = round(float(row["log_return"]), 8)
-                        if "tdoy" in row and pd.notna(row["tdoy"]):
-                            rec["tdoy"] = int(row["tdoy"])
-                        if "tdom" in row and pd.notna(row["tdom"]):
-                            rec["tdom"] = int(row["tdom"])
-                        records.append(rec)
-                    if records:
-                        upsert_prices(records)
-                except Exception as db_err:
-                    print(f"    [{i:2d}/{len(tickers)}] {ticker} — DB-Fehler: {db_err}")
+            # Preise in Supabase schreiben
+            try:
+                from shared.supabase_client import upsert_prices
+                records = []
+                for idx, row in df.iterrows():
+                    rec = {
+                        "ticker": ticker,
+                        "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
+                        "close": round(float(row["Close"]), 4),
+                        "source": "yahoo",
+                    }
+                    for col in ["Open", "High", "Low"]:
+                        if col in row and pd.notna(row[col]):
+                            rec[col.lower()] = round(float(row[col]), 4)
+                    if "Volume" in row and pd.notna(row["Volume"]):
+                        rec["volume"] = int(row["Volume"])
+                    if "log_return" in row and pd.notna(row["log_return"]):
+                        rec["log_return"] = round(float(row["log_return"]), 8)
+                    if "tdoy" in row and pd.notna(row["tdoy"]):
+                        rec["tdoy"] = int(row["tdoy"])
+                    if "tdom" in row and pd.notna(row["tdom"]):
+                        rec["tdom"] = int(row["tdom"])
+                    records.append(rec)
+                if records:
+                    upsert_prices(records)
+            except Exception as db_err:
+                # Nicht geschrieben = nicht erfolgreich (frueher zaehlte das als Erfolg).
+                errors.append(ticker)
+                print(f"    [{i:2d}/{len(tickers)}] {ticker} — DB-Fehler: {db_err}")
+                continue
 
             elapsed = time.time() - t0
-            print(f"    [{i:2d}/{len(tickers)}] {ticker} — {elapsed:.1f}s ({len(df) if df is not None else 0} rows)")
+            print(f"    [{i:2d}/{len(tickers)}] {ticker} — {elapsed:.1f}s ({len(df)} rows)")
             success += 1
         except Exception as e:
             errors.append(ticker)
@@ -222,11 +234,13 @@ def main():
 
     active = get_active_groups(now_utc, force_group)
 
+    if not active and force_group:
+        return 2  # unbekannte Gruppe, die Meldung kam aus get_active_groups
     if not active:
         print("\n  Keine Gruppe aktiv zu dieser Zeit.")
         print(f"  Wochentag: {'ja' if now_utc.weekday() < 5 else 'nein (Wochenende)'}")
         print(f"  UTC-Minute: {now_utc.hour * 60 + now_utc.minute}")
-        return
+        return 0
 
     total_success = 0
     total_errors = []
@@ -266,7 +280,27 @@ def main():
             }).execute()
         except Exception as e:
             print(f"[intraday] refresh_log insert failed: {e}")
+            # Ohne Log-Zeile sieht der Health-Check den Lauf nicht — das ist ein
+            # Fehler, kein Erfolg. Exit != 0 macht ihn im systemd-Journal sichtbar.
+            return 1
+
+    total_tickers = sum(len(cfg["tickers"]) for cfg in active.values())
+    if fehlschlag(total_tickers, len(total_errors)):
+        print(f"[intraday] {len(total_errors)}/{total_tickers} Ticker fehlgeschlagen "
+              f"— Lauf gilt als gescheitert")
+        return 1
+    return 0
+
+
+def fehlschlag(total: int, fehler: int) -> bool:
+    """Ab wann ein Lauf als gescheitert gilt.
+
+    Einzelne Yahoo-Aussetzer sind Alltag und sollen nicht jede Stunde einen
+    Fehlalarm ausloesen; faellt dagegen mehr als ein Zehntel (mindestens drei)
+    aus, ist die Quelle oder die DB gestoert.
+    """
+    return fehler > max(2, total // 10)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

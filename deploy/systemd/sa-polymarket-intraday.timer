@@ -1,0 +1,11 @@
+[Unit]
+Description=SeasonAlpha Polymarket-Intraday stuendlich um :23 UTC
+
+[Timer]
+OnCalendar=*-*-* *:23:00 UTC
+AccuracySec=1min
+Persistent=false
+Unit=sa-polymarket-intraday.service
+
+[Install]
+WantedBy=timers.target

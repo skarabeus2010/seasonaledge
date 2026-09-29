@@ -70,4 +70,14 @@ jobs:
             # Non-blocking: Fehler werden geloggt aber brechen den Deploy nicht
             python3 scripts/submit_indexnow.py 2>&1 | sed 's/^/  [IndexNow] /' || echo "  [IndexNow] submission failed (non-fatal)"
 
+            # Stuendliche Jobs laufen als systemd-Timer auf dem Host (deploy/systemd/),
+            # weil GitHub die stuendlichen Crons seit 2026-08-26 nur noch 4-8x/Tag startet.
+            # Das Skript ist idempotent und prueft enabled/active/naechsten Termin.
+            # Scheitert es, soll der Deploy rot werden — sonst liefen geaenderte
+            # Units still mit dem alten Stand weiter.
+            if ! bash deploy/install_timers.sh; then
+              echo "::error::systemd-Timer-Installation fehlgeschlagen (deploy/install_timers.sh)"
+              exit 1
+            fi
+
             echo "Deploy done: $(date)"

@@ -1,0 +1,15 @@
+# SeasonAlpha — Polymarket-Snapshot im FOMC-Fenster (stuendlich, sa-polymarket-intraday.timer).
+# Ersetzt den GitHub-Cron in polymarket_intraday.yml. Ausserhalb des FOMC-Fensters
+# beendet sich das Skript sofort und schreibt nur eine Skip-Zeile in refresh_log
+# (run_type='polymarket_intraday'), an der der Health-Check den Timer erkennt.
+
+[Unit]
+Description=SeasonAlpha Polymarket-Intraday (FOMC-Fenster)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=30s 8m python3 -u scripts/polymarket_refresh.py --near-fomc-only
+TimeoutStartSec=10min

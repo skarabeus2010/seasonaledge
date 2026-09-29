@@ -1,0 +1,13 @@
+[Unit]
+Description=SeasonAlpha Intraday-Kurse stuendlich um :17 UTC
+
+[Timer]
+OnCalendar=*-*-* *:17:00 UTC
+AccuracySec=1min
+# Verpasste Termine (Server aus) NICHT nachholen: ein alter Snapshot hilft nicht,
+# der naechste regulaere Lauf kommt innerhalb einer Stunde.
+Persistent=false
+Unit=sa-intraday.service
+
+[Install]
+WantedBy=timers.target

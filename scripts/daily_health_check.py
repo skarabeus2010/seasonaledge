@@ -43,6 +43,13 @@ WEEKLY_SCANNER_MAX_AGE_DAYS = 8   # Scanner laeuft Sonntags, 8 Tage Puffer
 POLYMARKET_MAX_AGE_DAYS = 2       # Phase G taeglich
 EVENT_DATA_MAX_AGE_DAYS = 2       # event_data_daily.yml taeglich 22:15 UTC
 DAILY_NL_MAX_AGE_WORKDAYS = 2     # daily_newsletter.yml Mo-Fr 06:00 UTC
+# Stuendliche systemd-Timer auf dem VPS (deploy/systemd/). Die Krypto-Gruppe ist
+# rund um die Uhr aktiv, also schreibt JEDER Intraday-Lauf eine Zeile — an jedem
+# Wochentag 24. Ein verlorener Slot (Deploy ersetzt den Container) ist normal.
+INTRADAY_GRUEN_AB = 20
+INTRADAY_GELB_AB = 12
+STUENDLICH_MAX_ALTER_H = 2.5      # letzter Lauf eines stuendlichen Timers
+INTRADAY_FEHLLAEUFE_GELB = 3      # Laeufe mit ausgefallenen Tickern in 24h
 
 
 def _last_workday(ref: date) -> date:
@@ -59,6 +66,61 @@ def _status(ok: bool, warn: bool = False) -> str:
     if warn:
         return "yellow"
     return "red"
+
+
+def _alter_h(created_at: str, now_utc: datetime) -> float:
+    """Alter eines refresh_log-Zeitstempels in Stunden."""
+    ts = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return (now_utc - ts).total_seconds() / 3600
+
+
+def bewerte_intraday(rows: list[dict], now_utc: datetime) -> tuple[str, str]:
+    """Status fuer die Intraday-Laeufe der letzten 24 h (rows neueste zuerst).
+
+    Rot, wenn der letzte Lauf zu alt ist (Timer steht) oder zu wenige Laeufe
+    ankamen; gelb bei Luecken oder gehaeuften Laeufen mit ausgefallenen Tickern.
+    """
+    n = len(rows)
+    if n == 0:
+        return "red", "Keine Intraday-Runs in 24h"
+    alter = _alter_h(rows[0]["created_at"], now_utc)
+    fehl = sum(1 for r in rows if (r.get("tickers_missing") or 0) > 0)
+    zusatz = f", {fehl} mit Ausfällen" if fehl else ""
+    if alter > STUENDLICH_MAX_ALTER_H:
+        return "red", f"Letzter Lauf vor {alter:.1f} h — Timer steht? ({n} Runs in 24h)"
+    if n < INTRADAY_GELB_AB:
+        return "red", f"Nur {n} Runs in 24h (erwartet ≥{INTRADAY_GRUEN_AB}){zusatz}"
+    if n < INTRADAY_GRUEN_AB:
+        return "yellow", f"{n} Runs in 24h (erwartet ≥{INTRADAY_GRUEN_AB}){zusatz}"
+    if fehl >= INTRADAY_FEHLLAEUFE_GELB:
+        return "yellow", f"{n} Runs in 24h{zusatz}"
+    return "green", f"{n} Runs in 24h{zusatz}"
+
+
+def bewerte_polymarket_intraday(row: dict | None, now_utc: datetime) -> tuple[str, str, str]:
+    """Status des stuendlichen Polymarket-Timers aus seiner letzten refresh_log-Zeile.
+
+    Rot: keine Zeile, Zeile zu alt (Timer steht), oder ein echter Lauf (kein Skip)
+    ohne einen einzigen Snapshot. Ein Skip ausserhalb des FOMC-Fensters ist gruen.
+    """
+    if not row:
+        return "red", "Kein Lauf in refresh_log (Timer nie gelaufen?)", "—"
+    alter_h = _alter_h(row["created_at"], now_utc)
+    try:
+        details = json.loads(row.get("missing_details") or "{}")
+    except (TypeError, ValueError):
+        details = {}
+    skip = isinstance(details, dict) and bool(details.get("skip"))
+    ok_n, total = row.get("tickers_success") or 0, row.get("tickers_total") or 0
+    art = "Skip (kein FOMC-Fenster)" if skip else f"{ok_n}/{total} Snapshots"
+    detail = f"Letzter Lauf vor {alter_h:.1f} h · {art}"
+    if alter_h > STUENDLICH_MAX_ALTER_H:
+        return "red", detail + " — Timer steht?", f"{alter_h:.1f}h"
+    if not skip and ok_n == 0:
+        return "red", detail + " — kein Snapshot geschrieben", f"{alter_h:.1f}h"
+    return "green", detail, f"{alter_h:.1f}h"
 
 
 def collect_health_data() -> dict:
@@ -457,46 +519,61 @@ def collect_health_data() -> dict:
         downgrade("red")
 
     # ── Check 6b: Intraday-Coverage (letzte 24h) ──────────────────────
+    # Zaehlt die Laeufe UND prueft das Alter des letzten: ein ausgefallener Timer
+    # waere sonst bis zu 14 h lang noch gruen (Zaehlung ueber 24 h).
     try:
         since_iso = (now_utc - timedelta(hours=24)).isoformat()
         resp = (
             client.table("refresh_log")
-            .select("created_at,duration_seconds,errors")
+            .select("created_at,duration_seconds,errors,tickers_missing")
             .eq("run_type", "intraday")
             .gte("created_at", since_iso)
             .order("created_at", desc=True)
             .execute()
         )
         rows = resp.data or []
-        count = len(rows)
-        is_weekend = now_utc.weekday() >= 5
-
-        if is_weekend:
-            # Wochenende: nur Crypto aktiv, ~4 Runs im Durchschnitt
-            if count >= 3:
-                status, detail = "green", f"{count} Runs (Wochenende, erwartet 3+)"
-            elif count >= 1:
-                status, detail = "yellow", f"{count} Runs (Wochenende, erwartet 3+)"
-            else:
-                status, detail = "red", "Keine Intraday-Runs in 24h"
-        else:
-            if count >= 10:
-                status, detail = "green", f"{count} Runs in 24h"
-            elif count >= 5:
-                status, detail = "yellow", f"{count} Runs (erwartet ≥10)"
-            else:
-                status, detail = "red", f"Nur {count} Runs in 24h (erwartet ≥10)"
-
+        status, detail = bewerte_intraday(rows, now_utc)
         checks.append({
             "name": "Intraday-Coverage (24h)",
             "status": status,
             "detail": detail,
-            "value": str(count),
+            "value": str(len(rows)),
         })
         downgrade(status)
     except Exception as e:
         checks.append({
             "name": "Intraday-Coverage (24h)",
+            "status": "red",
+            "detail": f"Query-Fehler: {str(e)[:100]}",
+            "value": "ERR",
+        })
+        downgrade("red")
+
+    # ── Check 6c: Polymarket-Intraday-Timer ───────────────────────────
+    # Der Timer schreibt auch ausserhalb des FOMC-Fensters eine Skip-Zeile;
+    # fehlt sie, laeuft der Timer nicht. Check 5 sieht das nicht, weil der
+    # taegliche Polymarket-Lauf weiter Snapshots schreibt.
+    try:
+        resp = (
+            client.table("refresh_log")
+            .select("created_at,tickers_success,tickers_total,missing_details")
+            .eq("run_type", "polymarket_intraday")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        status, detail, value = bewerte_polymarket_intraday(rows[0] if rows else None, now_utc)
+        checks.append({
+            "name": "Polymarket-Intraday-Timer",
+            "status": status,
+            "detail": detail,
+            "value": value,
+        })
+        downgrade(status)
+    except Exception as e:
+        checks.append({
+            "name": "Polymarket-Intraday-Timer",
             "status": "red",
             "detail": f"Query-Fehler: {str(e)[:100]}",
             "value": "ERR",

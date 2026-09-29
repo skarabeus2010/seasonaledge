@@ -1,0 +1,19 @@
+# SeasonAlpha — Intraday-Kurse (stuendlich, ausgeloest von sa-intraday.timer).
+# Ersetzt den GitHub-Cron in intraday_update.yml: GitHub fuehrte ihn seit
+# 2026-08-26 nur noch 4-8x pro Tag aus statt 24x.
+# Installation/Aktualisierung: deploy/install_timers.sh (laeuft im Deploy).
+
+[Unit]
+Description=SeasonAlpha Intraday-Kurse
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Nach einem Deploy kann der Container gerade neu erstellt werden: begrenzt warten.
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+# Der Timeout sitzt IM Container: systemd beendet bei TimeoutStartSec nur den
+# docker-Client, nicht den Prozess im Container. `timeout` begrenzt den Python-
+# Lauf selbst (8 min + 30 s Kill), das aeussere Limit liegt darueber.
+ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=30s 8m python3 -u scripts/intraday_refresh.py
+TimeoutStartSec=10min

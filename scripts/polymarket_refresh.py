@@ -128,12 +128,16 @@ def main():
                     help="Nichts in DB schreiben, nur logging")
     args = ap.parse_args()
 
+    t0 = time.time()
+
     if args.near_fomc_only:
         from shared.fed_dates import is_near_fomc
         if not is_near_fomc():
             print(f"  [fomc-gate] Heute {datetime.now(timezone.utc).strftime('%Y-%m-%d')} "
                   f"nicht im FOMC-Fenster (+/-2d). Early-Exit.")
-            return
+            # Auch der Skip hinterlaesst eine Zeile: der Health-Check erkennt am
+            # Alter der letzten Zeile, ob der stuendliche Timer ueberhaupt laeuft.
+            return 0 if _log_intraday(0, 0, [], t0, skip=True, dry_run=args.dry_run) else 1
 
     data = load_markets_yaml()
     entries = filter_entries(data.get("markets", []), args.category, args.refresh)
@@ -152,10 +156,19 @@ def main():
 
     if not entries:
         print("\n  Keine Maerkte im Scope.")
-        return
+        if args.near_fomc_only:
+            # Im FOMC-Fenster ohne Maerkte ist die YAML kaputt oder leer — ein Ausfall,
+            # der sonst als stiller Erfolg ohne Log-Zeile durchginge.
+            _log_intraday(0, 0, ["keine Maerkte im Scope (markets.yaml leer?)"], t0,
+                          skip=False, dry_run=args.dry_run)
+            return 1
+        return 0
 
-    t0 = time.time()
-    success, errors = refresh_markets(entries, dry_run=args.dry_run)
+    try:
+        success, errors = refresh_markets(entries, dry_run=args.dry_run)
+    except Exception as e:
+        # Schreibfehler der Snapshots: frueher ungefangen ohne Log-Zeile.
+        success, errors = 0, [f"upsert/abruf abgebrochen: {e}"]
     elapsed = time.time() - t0
 
     print(f"\n{'=' * 60}")
@@ -169,6 +182,42 @@ def main():
     if errors:
         app_logger.info(f"polymarket_refresh: {success} ok, {len(errors)} Fehler")
 
+    log_ok = True
+    if args.near_fomc_only:
+        log_ok = _log_intraday(len(entries), success, errors, t0, skip=False, dry_run=args.dry_run)
+
+    # Gescheitert = gar kein Snapshot geschrieben. Einzelne Maerkte ohne Preis
+    # (z. B. noch nicht im DB-Katalog) sind Dauerzustand und kein Ausfall.
+    if success == 0 or not log_ok:
+        return 1
+    return 0
+
+
+def _log_intraday(total: int, success: int, errors: list[str], t0: float,
+                  skip: bool, dry_run: bool) -> bool:
+    """refresh_log-Zeile run_type='polymarket_intraday' (nur im stuendlichen Modus)."""
+    if dry_run:
+        return True
+    try:
+        import json as _json
+        from shared.supabase_client import get_client
+        now = datetime.now(timezone.utc)
+        get_client().table("refresh_log").insert({
+            "run_date": now.strftime("%Y-%m-%d"),
+            "run_type": "polymarket_intraday",
+            "tickers_total": total,
+            "tickers_success": success,
+            "tickers_missing": len(errors),
+            "missing_details": _json.dumps({"skip": "ausserhalb FOMC-Fenster"} if skip else {}),
+            "auto_fixed": 0,
+            "duration_seconds": round(time.time() - t0, 1),
+            "errors": _json.dumps(errors[:20]),
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"[polymarket] refresh_log insert failed: {e}")
+        return False
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
