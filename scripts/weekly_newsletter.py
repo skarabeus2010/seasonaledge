@@ -108,6 +108,33 @@ def main() -> int:
 
     app_logger.info("[weekly] Starting weekly newsletter job")
     t_start = time.time()
+    # Nur der echte Versand an alle Abonnenten hinterlaesst eine refresh_log-Zeile
+    # (run_type='weekly_newsletter') — auch wenn er scheitert. Daran erkennt der
+    # Health-Check, ob der Newsletter rausging. Test/Einzelempfaenger/Dry-Run nicht.
+    live = not (args.dry_run or args.test or args.to)
+
+    def _log(sent: int, failed: int, total: int, fehler: list[str]) -> bool:
+        if not live:
+            return True
+        try:
+            import json as _json
+            from datetime import datetime, timezone
+            from shared.supabase_client import get_client
+            get_client().table("refresh_log").insert({
+                "run_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "run_type": "weekly_newsletter",
+                "tickers_total": total,
+                "tickers_success": sent,
+                "tickers_missing": failed,
+                "missing_details": "{}",
+                "auto_fixed": 0,
+                "duration_seconds": round(time.time() - t_start, 1),
+                "errors": _json.dumps(fehler[:20]),
+            }).execute()
+            return True
+        except Exception as e:
+            print(f"[weekly] refresh_log insert failed: {e}")
+            return False
 
     # 1. Report-Context bauen
     try:
@@ -115,6 +142,7 @@ def main() -> int:
     except Exception as e:
         error_logger.error(f"[weekly] build_report_context failed: {e}")
         print(f"[ERROR] Report-Context-Aufbau fehlgeschlagen: {e}")
+        _log(0, 0, 0, [f"build_report_context: {e}"])
         return 2
 
     if not context.get("top_ki"):
@@ -122,6 +150,7 @@ def main() -> int:
         print("[WARN] Keine KI-Scores verfügbar, Report würde leer sein.")
         if not args.dry_run and not args.to and not args.test:
             print("[ABORT] Versand abgebrochen — kein Inhalt.")
+            _log(0, 0, 0, ["kein top_ki (scanner_results leer?)"])
             return 3
 
     # 2. Empfänger bestimmen
@@ -141,6 +170,7 @@ def main() -> int:
         except Exception as e:
             error_logger.error(f"[weekly] get_active_subscribers failed: {e}")
             print(f"[ERROR] Subscriber-Liste konnte nicht geladen werden: {e}")
+            _log(0, 0, 0, [f"get_active_subscribers: {e}"])
             return 4
 
     print(f"[weekly] Mode: {mode}")
@@ -195,6 +225,9 @@ def main() -> int:
     )
     print(summary)
     app_logger.info(summary)
+    # Keine Adressen ins Log, nur die Anzahl. Scheitert das Log, sieht der
+    # Health-Check den Versand nicht -> eigener Fehlercode statt Exit 0.
+    geloggt = _log(sent, failed, len(recipients), [f"{failed} Versandfehler"] if failed else [])
 
     # 5. Admin-Alert bei hoher Fehlerrate
     if recipients and failed > len(recipients) * 0.1:
@@ -208,6 +241,8 @@ def main() -> int:
             pass
         return 5
 
+    if not geloggt:
+        return 6
     return 0
 
 

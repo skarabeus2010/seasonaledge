@@ -1,11 +1,10 @@
 name: Polymarket Daily Refresh
 
-# Taeglicher Polymarket-Snapshot — eigenstaendig, NICHT via nightly_refresh.py
-# Phase G. Grund: Phase G via subprocess.run crasht in <1s (vermutlich
-# httpx-Socket-Leak oder DNS-Cache-State im Nightly-Parent). Manueller
-# Aufruf sowie direkter docker exec funktionieren einwandfrei in 10-15s.
-# Deshalb: eigener GitHub-Cron ruft direkt via docker exec auf — keine
-# subprocess-Ebene dazwischen.
+# Taeglicher Polymarket-Snapshot — der EINZIGE automatische Ausloeser dafuer.
+# Frueher zusaetzlich nightly_refresh.py Phase G; die scheiterte dort jeden Tag,
+# weil ein st.secrets-Zugriff eine veraltete SUPABASE_URL aus .streamlit/secrets.toml
+# in die Umgebung kopierte und die Kind-Prozesse sie erbten (Ursache gefunden
+# 2026-09-29, Phase G danach entfernt, damit nichts doppelt laeuft).
 #
 # Montags zusaetzlich Backfill fuer volle Historie aller 26 Markets.
 

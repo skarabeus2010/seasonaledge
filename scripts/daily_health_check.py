@@ -50,6 +50,7 @@ INTRADAY_GRUEN_AB = 20
 INTRADAY_GELB_AB = 12
 STUENDLICH_MAX_ALTER_H = 2.5      # letzter Lauf eines stuendlichen Timers
 INTRADAY_FEHLLAEUFE_GELB = 3      # Laeufe mit ausgefallenen Tickern in 24h
+WEEKLY_NL_MAX_ALTER_TAGE = 8      # Weekly Newsletter sonntags (nightly Phase F)
 
 
 def _last_workday(ref: date) -> date:
@@ -97,6 +98,28 @@ def bewerte_intraday(rows: list[dict], now_utc: datetime) -> tuple[str, str]:
     if fehl >= INTRADAY_FEHLLAEUFE_GELB:
         return "yellow", f"{n} Runs in 24h{zusatz}"
     return "green", f"{n} Runs in 24h{zusatz}"
+
+
+def bewerte_weekly_newsletter(row: dict | None, now_utc: datetime, an: bool) -> tuple[str, str, str]:
+    """Status des sonntaeglichen Weekly Newsletters (letzte Live-Versandzeile).
+
+    Aus -> gelb (Erinnerung, dass die Freigabe aussteht). An -> rot, wenn der
+    letzte Versand aelter als 8 Tage ist, nichts ankam oder Sends scheiterten.
+    Ohne jede Zeile nach dem Einschalten gelb, bis der erste Sonntag gelaufen ist.
+    """
+    if not an:
+        return "yellow", "Abgeschaltet — Freigabe ausstehend (WEEKLY_NEWSLETTER_AN)", "aus"
+    if not row:
+        return "yellow", "Noch kein Versand seit dem Einschalten", "—"
+    alter_d = _alter_h(row["created_at"], now_utc) / 24
+    sent, failed = row.get("tickers_success") or 0, row.get("tickers_missing") or 0
+    total = row.get("tickers_total") or 0
+    detail = f"Letzter Versand vor {alter_d:.1f} Tagen · {sent}/{total} gesendet"
+    if alter_d > WEEKLY_NL_MAX_ALTER_TAGE:
+        return "red", detail + " — Sonntagsversand ausgeblieben", f"{alter_d:.0f}d"
+    if sent == 0 or failed > 0:
+        return "red", detail + f" · {failed} fehlgeschlagen", f"{alter_d:.0f}d"
+    return "green", detail, f"{alter_d:.0f}d"
 
 
 def bewerte_polymarket_intraday(row: dict | None, now_utc: datetime) -> tuple[str, str, str]:
@@ -578,6 +601,30 @@ def collect_health_data() -> dict:
             "detail": f"Query-Fehler: {str(e)[:100]}",
             "value": "ERR",
         })
+        downgrade("red")
+
+    # ── Check 6d: Weekly Newsletter ───────────────────────────────────
+    # Lief von Juni bis September 2026 an 20 Sonntagen nie, ohne dass es auffiel:
+    # der Nightly meldete Exit 0, und kein Check sah hin.
+    try:
+        from shared.constants import WEEKLY_NEWSLETTER_AN
+        resp = (
+            client.table("refresh_log")
+            .select("created_at,tickers_success,tickers_total,tickers_missing")
+            .eq("run_type", "weekly_newsletter")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        status, detail, value = bewerte_weekly_newsletter(
+            rows[0] if rows else None, now_utc, WEEKLY_NEWSLETTER_AN)
+        checks.append({"name": "Weekly Newsletter", "status": status,
+                       "detail": detail, "value": value})
+        downgrade(status)
+    except Exception as e:
+        checks.append({"name": "Weekly Newsletter", "status": "red",
+                       "detail": f"Query-Fehler: {str(e)[:100]}", "value": "ERR"})
         downgrade("red")
 
     # ── Check 6c: Brier-Stats (Polymarket-Kalibrierung, wöchentlich) ──

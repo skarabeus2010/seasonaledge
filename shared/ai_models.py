@@ -188,12 +188,9 @@ Antworte in 2-3 Sätzen auf Deutsch. Keine Anlageempfehlung."""
     try:
         import os
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            try:
-                import streamlit as st
-                api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
-            except Exception:
-                pass
+        # Kein st.secrets-Rueckfall mehr: der Zugriff kopiert alle Eintraege der
+        # secrets.toml in os.environ und vererbte so 2026 eine alte SUPABASE_URL an
+        # die Kind-Skripte des Nightly (siehe nightly_refresh._KIND_UMGEBUNG).
 
         client = anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
@@ -280,12 +277,9 @@ Regeln:
     try:
         import os
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            try:
-                import streamlit as st
-                api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
-            except Exception:
-                pass
+        # Kein st.secrets-Rueckfall mehr: der Zugriff kopiert alle Eintraege der
+        # secrets.toml in os.environ und vererbte so 2026 eine alte SUPABASE_URL an
+        # die Kind-Skripte des Nightly (siehe nightly_refresh._KIND_UMGEBUNG).
 
         if not api_key:
             return None

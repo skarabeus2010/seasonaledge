@@ -88,12 +88,9 @@ def fetch_cpi_from_fred(api_key: str = None) -> pd.DataFrame | None:
     """
     import os
     key = api_key or os.environ.get("FRED_API_KEY", "")
-    if not key:
-        try:
-            import streamlit as st
-            key = st.secrets.get("FRED_API_KEY", "")
-        except Exception:
-            pass
+    # Kein st.secrets-Rueckfall mehr: der Zugriff kopiert alle Eintraege der
+    # secrets.toml in os.environ und vererbte so 2026 eine alte SUPABASE_URL an
+    # die Kind-Skripte des Nightly (siehe nightly_refresh._KIND_UMGEBUNG).
 
     if not key:
         app_logger.debug("Kein FRED_API_KEY gesetzt — verwende eingebettete CPI-Daten")

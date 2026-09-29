@@ -8,7 +8,7 @@ SeasonAlpha hat zwei automatische Refresh-Jobs:
 
 | Job | Zeitplan | Was er tut |
 |---|---|---|
-| **Nightly Refresh** | 22:30 MESZ (Mo-Fr) | Schlusskurse + TDOM/TDOY + Health-Check |
+| **Nightly Refresh** | Täglich 16:45 New Yorker Zeit (Sommer 20:45 UTC, Winter 21:45 UTC), `sa-nightly.timer` | Schlusskurse + TDOM/TDOY + KI-Scores/Regime; sonntags Weekly Newsletter (wenn `WEEKLY_NEWSLETTER_AN`) |
 | **Intraday Refresh** | Stündlich :17 UTC, jeden Tag (systemd-Timer auf dem VPS) | Live-Kurse der gerade offenen Börsen; Krypto rund um die Uhr |
 | **Polymarket-Intraday** | Stündlich :23 UTC (systemd-Timer) | Snapshot im FOMC-Fenster, sonst nur eine Skip-Zeile |
 
@@ -172,9 +172,21 @@ Der Nightly-Refresh prüft am Ende jedes Runs automatisch:
 
 ### Problem: Nightly Refresh läuft nicht
 
-1. GitHub Actions prüfen: https://github.com/skarabeus2010/seasonaledge/actions
-2. Manuell auslösen: `docker exec seasonalpha-app python3 scripts/nightly_refresh.py`
-3. Log prüfen: GitHub Action → Run Details → Logs
+1. Timer: `systemctl list-timers sa-nightly.timer` · letzter Lauf: `journalctl -u sa-nightly.service -n 100`
+2. Manuell auslösen: `systemctl start sa-nightly.service` (oder GitHub-Workflow „Nightly DB Refresh")
+3. Exit 1 heißt: eine Kind-Phase ist gescheitert (Weekly Newsletter, Landing-Chart) — Zeile „Gescheiterte Phasen:" im Journal.
+
+Früher lief der Nightly zusätzlich aus der Root-Crontab (Log `/var/log/seasonalpha-refresh.log`, seit 29.09.2026 stillgelegt).
+
+### Falle: Kind-Prozesse erben verbogene Umgebung (2026-09-29)
+
+Der Nightly startet Teilaufgaben als eigene Python-Prozesse. Ein Zugriff auf `st.secrets` kopiert alle Einträge
+der `.streamlit/secrets.toml` in `os.environ` — lag dort eine alte `SUPABASE_URL`, arbeitete der Hauptprozess mit
+seinem fertigen Client korrekt weiter, jedes Kind aber gegen einen nicht mehr existierenden Host
+(`[Errno -2] Name or service not known`). So lief der Weekly Newsletter von Juni bis September **nie**.
+Heute: `secrets.toml` auf dem Server leer, kein `st.secrets` mehr in `shared/`, und die Kinder bekommen
+`env=_KIND_UMGEBUNG` (Umgebung vom Laufbeginn). **Symptom zum Wiedererkennen:** ein Skript läuft per
+`docker exec` einwandfrei und scheitert nur als Kind eines langlaufenden Prozesses.
 
 ### Problem: EU-Aktien zeigen keine Charts
 

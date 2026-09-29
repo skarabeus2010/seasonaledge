@@ -1,28 +1,30 @@
 name: Nightly DB Refresh
 
+# Der Nightly laeuft seit 2026-09-29 als systemd-Timer auf dem VPS
+# (deploy/systemd/sa-nightly.timer, 16:45 New Yorker Zeit = 45 min nach US-Schluss).
+# Vorher liefen zwei Ausloeser parallel: die Root-Crontab (20:30 UTC) und dieser
+# Workflow (Cron 20:30, real 23:00-00:30 UTC) — ein doppelter Lauf pro Tag.
+# Dieser Workflow ist nur noch der manuelle Notausloeser und startet DIESELBE
+# Unit: laeuft gerade ein Timer-Lauf, wartet systemctl auf dessen Ende statt
+# einen zweiten zu starten. Exit-Code des Nightly wird weitergereicht.
+
 on:
-  schedule:
-    # Mo-Fr um 20:30 UTC (22:30 MESZ) — 30 Min nach US-Boersenschluss fuer amtliche Schlusskurse
-    - cron: '30 20 * * 1-5'
-    # Sonntag 17:30 UTC (19:30 MESZ) — Weekly Newsletter via Phase F
-    - cron: '30 17 * * 0'
-  workflow_dispatch:  # Manueller Trigger
+  workflow_dispatch:
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    # 60 Minuten total (vorher 15) — der Ticker-Loop braucht fuer ~270 Ticker
-    # im quick-mode ~20-40 Min. Alte 10m Timeout hat dazu gefuehrt dass
-    # nur ~94 von 270 Tickern in scanner_results landeten.
-    timeout-minutes: 60
+    timeout-minutes: 105
     steps:
-      - name: Run nightly refresh on VPS
+      - name: sa-nightly.service auf dem VPS starten
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 55m
+          command_timeout: 100m
           script: |
-            docker exec seasonalpha-app python3 scripts/nightly_refresh.py 2>&1 | tail -150
-            echo "Nightly refresh done: $(date)"
+            rc=0
+            systemctl start sa-nightly.service || rc=$?
+            journalctl -u sa-nightly.service -n 60 --no-pager
+            exit $rc

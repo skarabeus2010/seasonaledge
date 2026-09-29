@@ -1,0 +1,17 @@
+# SeasonAlpha — Nightly Refresh (taeglich, ausgeloest von sa-nightly.timer).
+# Ersetzt BEIDE bisherigen Ausloeser, die parallel liefen: die Root-Crontab
+# (`30 20 * * *`) und den GitHub-Cron in nightly_refresh.yml (real 23:00-00:30 UTC).
+# Folge war ein doppelter Lauf pro Tag, am 2026-09-27 ueberlappend.
+# Installation/Aktualisierung: deploy/install_timers.sh (laeuft im Deploy).
+
+[Unit]
+Description=SeasonAlpha Nightly Refresh
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+# Timeout IM Container (siehe sa-intraday.service). Ein Lauf dauert 9-18 min.
+ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=60s 90m python3 -u scripts/nightly_refresh.py
+TimeoutStartSec=95min

@@ -4,6 +4,13 @@ SeasonAlpha - Konstanten & Konfiguration
 Farben, Labels, Presets und statische Daten.
 """
 
+# ── Betrieb ──────────────────────────────────────────────────
+# Weekly Newsletter an alle Abonnenten (nightly_refresh.py, Phase F, sonntags).
+# Aus bis zur Freigabe durch den Nutzer: der Versand lief aus dem Nightly heraus
+# nie (veraltete secrets.toml, 2026-09-29 behoben); vor dem ersten echten Versand
+# erst eine Test-Mail abnehmen. Der Health-Check meldet gelb, solange er aus ist.
+WEEKLY_NEWSLETTER_AN = False
+
 # ── Defaults ─────────────────────────────────────────────────
 DEFAULT_TICKER = "AAPL"
 DEFAULT_YEARS = 20

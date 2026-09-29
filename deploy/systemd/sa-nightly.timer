@@ -1,0 +1,17 @@
+[Unit]
+Description=SeasonAlpha Nightly Refresh taeglich 45 min nach US-Boersenschluss
+
+[Timer]
+# In New Yorker Ortszeit, damit der Termin die US-Zeitumstellung mitmacht:
+# Sommer 20:45 UTC, Winter 21:45 UTC. Der alte Crontab-Termin 20:30 UTC lag im
+# Winter 30 min VOR dem Schluss (21:00 UTC) und haette unfertige Tageskurse gerechnet.
+# Sonntags verschickt der Nightly auch den Weekly Newsletter (Phase F, >= 17 UTC).
+OnCalendar=*-*-* 16:45:00 America/New_York
+AccuracySec=1min
+# Anders als die stuendlichen Timer: ein verpasster Nightly (Server aus) wird
+# nachgeholt, sonst fehlt ein ganzer Tag KI-Scores/Regime/Scanner.
+Persistent=true
+Unit=sa-nightly.service
+
+[Install]
+WantedBy=timers.target

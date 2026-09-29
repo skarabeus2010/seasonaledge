@@ -22,6 +22,19 @@ if _project_dir not in sys.path:
 import pandas as pd
 from shared.logger import app_logger
 
+# Umgebung der Kind-Skripte (Phasen F-I), festgehalten VOR der ersten Phase.
+# Grund (2026-09-29): ein Zugriff auf `st.secrets` (shared/cpi_data.py, Phase A2)
+# kopierte die Eintraege einer veralteten .streamlit/secrets.toml in os.environ,
+# darunter eine alte SUPABASE_URL. Der Hauptprozess arbeitete mit seinem schon
+# gebauten Client weiter, jedes Kind erbte die alte Adresse und scheiterte an DNS —
+# Weekly Newsletter und Polymarket-Snapshot liefen deshalb nie (20/20 Sonntage).
+_KIND_UMGEBUNG = dict(os.environ)
+
+# Phasen, deren Kind-Skript gescheitert ist. Nicht leer -> Exit 1, damit der
+# Ausfall im systemd-Journal/`systemctl --failed` sichtbar wird statt als
+# gruener Lauf durchzugehen.
+_FEHLGESCHLAGEN: list[str] = []
+
 
 def refresh_calendar():
     """Phase A: Market Calendar sync."""
@@ -465,14 +478,17 @@ def main():
     try:
         from datetime import datetime as _dt, timezone as _tz
         _now = _dt.now(_tz.utc)
-        if _now.weekday() == 6 and _now.hour >= 17:  # 6 = Sonntag
+        from shared.constants import WEEKLY_NEWSLETTER_AN
+        if not WEEKLY_NEWSLETTER_AN:
+            print("Weekly Newsletter: abgeschaltet (shared/constants.py WEEKLY_NEWSLETTER_AN)", flush=True)
+        elif _now.weekday() == 6 and _now.hour >= 17:  # 6 = Sonntag
             app_logger.info("[phase-f] Sonntag ≥17 UTC → starte Weekly Newsletter")
             print("=" * 60, flush=True)
             print("Weekly Newsletter: Sonntag erkannt, starte Versand...", flush=True)
             import subprocess as _sp
             _res = _sp.run(
                 [sys.executable, "scripts/weekly_newsletter.py"],
-                cwd=_project_dir,
+                cwd=_project_dir, env=_KIND_UMGEBUNG,
                 timeout=1800,  # 30 Min max
             )
             if _res.returncode == 0:
@@ -480,77 +496,21 @@ def main():
             else:
                 app_logger.error(f"[phase-f] weekly_newsletter exit {_res.returncode}")
                 print(f"Weekly Newsletter FAILED (exit {_res.returncode})", flush=True)
+                _FEHLGESCHLAGEN.append("Weekly Newsletter")
             print("=" * 60, flush=True)
         else:
             print(f"Weekly Newsletter: skip (weekday={_now.weekday()}, hour={_now.hour} UTC, Sonntag ≥17 UTC gefordert)")
     except Exception as e:
         app_logger.error(f"nightly_refresh: Weekly Newsletter fehlgeschlagen: {e}")
         print(f"Weekly Newsletter: exception {e}")
+        _FEHLGESCHLAGEN.append("Weekly Newsletter")
 
-    # Phase G: Polymarket Refresh (taeglich Snapshot, Sonntags zusaetzlich Backfill)
-    # WICHTIG: capture_output=False — Output direkt in docker logs spiegeln,
-    # damit Ausfaelle sichtbar sind. Vorher landete alles im captured String,
-    # der bei silent-fail nie ausgewertet wurde.
-    try:
-        from datetime import datetime as _dt, timezone as _tz
-        import subprocess as _sp
-        _now = _dt.now(_tz.utc)
-
-        # G1: taeglicher Snapshot — alle 26 Markets aktueller YES-Preis
-        app_logger.info("[phase-g] starte polymarket_refresh")
-        print("Polymarket Refresh: starte Snapshot...", flush=True)
-        _res = _sp.run(
-            [sys.executable, "scripts/polymarket_refresh.py"],
-            cwd=_project_dir, timeout=600,
-        )
-        if _res.returncode == 0:
-            print("Polymarket Refresh: OK", flush=True)
-            app_logger.info("[phase-g] polymarket_refresh OK")
-        else:
-            print(f"Polymarket Refresh FAILED (exit {_res.returncode})", flush=True)
-            app_logger.error(f"[phase-g] polymarket_refresh exit {_res.returncode}")
-
-        # G2: wöchentlicher Backfill nur Montags (nightly läuft Mo–Fr — Montag ist der Tag
-        # nach dem 48h-Lücken-Wochenende, am meisten Sinn für Historien-Refresh)
-        if _now.weekday() == 0:
-            app_logger.info("[phase-g2] Montag -> starte polymarket_backfill")
-            print("Polymarket Backfill: Montag, volle Historie...", flush=True)
-            _res2 = _sp.run(
-                [sys.executable, "scripts/polymarket_backfill.py"],
-                cwd=_project_dir, timeout=1800,
-            )
-            if _res2.returncode == 0:
-                print("Polymarket Backfill: OK", flush=True)
-                app_logger.info("[phase-g2] polymarket_backfill OK")
-            else:
-                print(f"Polymarket Backfill FAILED (exit {_res2.returncode})", flush=True)
-                app_logger.error(f"[phase-g2] polymarket_backfill exit {_res2.returncode}")
-    except Exception as e:
-        app_logger.error(f"nightly_refresh: Polymarket Phase G fehlgeschlagen: {e}")
-        print(f"Polymarket Phase G: exception {e}", flush=True)
-
-    # Phase H: Brier-Score Refresh (Sonntags nachts — Kalibrierung der Polymarket-Snapshots)
-    try:
-        from datetime import datetime as _dt2, timezone as _tz2
-        import subprocess as _sp2
-        _now2 = _dt2.now(_tz2.utc)
-        # Sonntag nacht (UTC-Wochenende) — compute_brier erzeugt brier_stats.json fuer Landing
-        if _now2.weekday() == 6:
-            print("Brier-Compute: Sonntag, Kalibrierung aktualisieren...", flush=True)
-            app_logger.info("[phase-h] starte compute_brier_stats")
-            _res3 = _sp2.run(
-                [sys.executable, "scripts/compute_brier_stats.py"],
-                cwd=_project_dir, timeout=600,
-            )
-            if _res3.returncode == 0:
-                print("Brier-Compute: OK", flush=True)
-                app_logger.info("[phase-h] compute_brier_stats OK")
-            else:
-                print(f"Brier-Compute FAILED (exit {_res3.returncode})", flush=True)
-                app_logger.error(f"[phase-h] compute_brier_stats exit {_res3.returncode}")
-    except Exception as e:
-        app_logger.error(f"nightly_refresh: Brier Phase H fehlgeschlagen: {e}")
-        print(f"Brier Phase H: exception {e}", flush=True)
+    # Phase G (Polymarket-Snapshot/-Backfill) und Phase H (Brier) sind entfernt
+    # (2026-09-29). Sie scheiterten hier jeden Tag an der vererbten alten
+    # SUPABASE_URL (siehe _KIND_UMGEBUNG) und waren laengst durch eigene Workflows
+    # ersetzt: polymarket_daily.yml (taeglich, montags Backfill) und
+    # brier_compute.yml (sonntags, mit vorherigem Scrape). Nach dem Umgebungs-Fix
+    # liefen sie sonst doppelt. Genau EIN Ausloeser pro Aufgabe.
 
     # Phase I: Landing-Hero-Chart regenerieren (chart-data.json) — taeglich, sonst friert die
     # "aktuelles Jahr"-Kurve ein (stand bis 2026-06 still, weil kein Cron). Schreibt landing/data (rw-Mount).
@@ -559,17 +519,19 @@ def main():
         app_logger.info("[phase-i] starte generate_landing_chart")
         _resI = _sp3.run(
             [sys.executable, "scripts/generate_landing_chart.py"],
-            cwd=_project_dir, timeout=300,
+            cwd=_project_dir, env=_KIND_UMGEBUNG, timeout=300,
         )
         if _resI.returncode == 0:
             print("Landing-Chart: OK", flush=True)
             app_logger.info("[phase-i] generate_landing_chart OK")
         else:
             print(f"Landing-Chart FAILED (exit {_resI.returncode})", flush=True)
+            _FEHLGESCHLAGEN.append("Landing-Chart")
             app_logger.error(f"[phase-i] generate_landing_chart exit {_resI.returncode}")
     except Exception as e:
         app_logger.error(f"nightly_refresh: Landing-Chart Phase I fehlgeschlagen: {e}")
         print(f"Landing-Chart Phase I: exception {e}", flush=True)
+        _FEHLGESCHLAGEN.append("Landing-Chart Phase I")
 
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
@@ -582,6 +544,12 @@ def main():
     app_logger.info(f"nightly_refresh: Fertig — {n_results} Scanner-Ergebnisse in {elapsed:.0f}s")
     print(f"Done: {n_results} scanner results in {elapsed:.0f}s")
 
+    if _FEHLGESCHLAGEN:
+        print(f"Gescheiterte Phasen: {', '.join(_FEHLGESCHLAGEN)}", flush=True)
+        app_logger.error(f"nightly_refresh: gescheiterte Phasen {_FEHLGESCHLAGEN}")
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
