@@ -9,9 +9,16 @@ SeasonAlpha hat zwei automatische Refresh-Jobs:
 | Job | Zeitplan | Was er tut |
 |---|---|---|
 | **Nightly Refresh** | 22:30 MESZ (Mo-Fr) | Schlusskurse + TDOM/TDOY + Health-Check |
-| **Intraday Refresh** | Stündlich :17 (Mo-Fr) | Live-Kurse während Handelszeiten |
+| **Intraday Refresh** | Stündlich :17 UTC, jeden Tag (systemd-Timer auf dem VPS) | Live-Kurse der gerade offenen Börsen; Krypto rund um die Uhr |
+| **Polymarket-Intraday** | Stündlich :23 UTC (systemd-Timer) | Snapshot im FOMC-Fenster, sonst nur eine Skip-Zeile |
 
-Beide schreiben ein Protokoll in die Supabase-Tabelle `refresh_log`.
+Alle schreiben ein Protokoll in die Supabase-Tabelle `refresh_log`.
+
+> **Seit 2026-09-29 laufen die stündlichen Jobs NICHT mehr über GitHub Actions.** GitHub startete die
+> stündlichen Crons ab dem 26.08.2026 nur noch 4–8× pro Tag statt 24× (Workflow unverändert, alle
+> gestarteten Läufe grün — die Läufe kamen schlicht nicht an). Die Units liegen in `deploy/systemd/`,
+> `deploy/install_timers.sh` installiert sie bei jedem Deploy. Die Workflows `intraday_update.yml` und
+> `polymarket_intraday.yml` sind nur noch manuelle Notauslöser und starten dieselbe systemd-Unit.
 
 ---
 
@@ -143,7 +150,7 @@ Der Nightly-Refresh prüft am Ende jedes Runs automatisch:
 | Feld | Beschreibung |
 |---|---|
 | `run_date` | Datum des Runs |
-| `run_type` | `nightly` oder `intraday` |
+| `run_type` | `nightly`, `intraday`, `polymarket_intraday` (u. a.) |
 | `tickers_total` | Anzahl geprüfter Ticker |
 | `tickers_success` | Ticker ohne Lücken |
 | `tickers_missing` | Ticker mit fehlenden Tagen |
@@ -176,9 +183,25 @@ Fix: `fix_missing_days.py` laufen lassen.
 
 ### Problem: Intraday Refresh aktualisiert nicht
 
-1. Prüfe ob die Börse offen ist (Zeitfenster in `intraday_refresh.py`)
-2. Prüfe GitHub Action Cron: `17 * * * 1-5` (stündlich :17, Mo-Fr)
-3. Manuell testen: `docker exec seasonalpha-app python3 scripts/intraday_refresh.py --group eu`
+1. Timer aktiv? `systemctl list-timers 'sa-*'` — beide mit nächstem Termin
+2. Letzte Läufe: `journalctl -u sa-intraday.service -n 50` · gescheiterte Units: `systemctl --failed`
+3. Timer neu installieren: `bash /opt/seasonaledge/deploy/install_timers.sh`
+4. Einen Lauf sofort auslösen: `systemctl start sa-intraday.service` (oder GitHub-Workflow „Intraday Price Update" manuell)
+5. Zeitfenster der Gruppen: `intraday_refresh.py` (Tabelle unten)
+
+**Exit-Codes** (`intraday_refresh.py`): 0 ok · 1 gescheitert (`refresh_log` nicht geschrieben, oder mehr als
+max(2, 10 %) der Ticker ausgefallen — leerer Download und DB-Fehler zählen seit 2026-09-29 als Ausfall) ·
+2 unbekannte `--group`. `polymarket_refresh.py --near-fomc-only`: 1, wenn im FOMC-Fenster kein Snapshot
+geschrieben wurde oder das Log scheitert.
+
+**Health-Check** (`daily_health_check.py`): Intraday grün ab 20 Läufen in 24 h an **jedem** Wochentag
+(die Krypto-Gruppe ist immer aktiv, also schreibt jeder Lauf eine Zeile), gelb 12–19, rot darunter oder
+wenn der letzte Lauf älter als 2,5 h ist. Polymarket-Timer: rot ohne Zeile, bei Alter > 2,5 h oder bei
+einem echten Lauf ohne Snapshot. Ein verlorener Stundenslot (Deploy baut den Container neu, der Lauf
+wartet max. 2 min) ist normal.
+
+**Timeout:** sitzt im Container (`timeout --kill-after=30s 8m`). systemd beendet bei seinem eigenen Timeout
+nur den `docker exec`-Client, der Prozess im Container liefe weiter — am 29.09.2026 auf dem Server nachgewiesen.
 
 ---
 
@@ -200,6 +223,7 @@ Fix: `fix_missing_days.py` laufen lassen.
 |---|---|
 | `scripts/nightly_refresh.py` | Nightly Job + Health-Check |
 | `scripts/intraday_refresh.py` | Intraday Updates |
+| `deploy/systemd/` + `deploy/install_timers.sh` | Stündliche Timer (Intraday, Polymarket) |
 | `scripts/fix_missing_days.py` | Fehlende Tage finden + nachladen |
 | `scripts/backfill_tdoy.py` | TDOM/TDOY neu berechnen |
 | `shared/exchange_holidays.py` | Börsen-Feiertagskalender |

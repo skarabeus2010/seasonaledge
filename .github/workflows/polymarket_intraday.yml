@@ -1,28 +1,29 @@
 name: Polymarket Intraday Refresh (FOMC-Fenster)
 
-# Laeuft stuendlich, aber das Script early-exitet ausserhalb des FOMC-Fensters
-# (FOMC-Tag -2 bis +1 Kalendertage). So bekommen wir dichte Snapshots an den
-# paar Tagen im Jahr wo Polymarket-YES sich bewegt, ohne den Rest des Jahres
-# unnoetig API-Traffic zu erzeugen.
-#
-# Gate-Logik: scripts/polymarket_refresh.py --near-fomc-only prueft
-# shared.fed_dates.is_near_fomc() und exited sauber wenn nicht aktiv.
+# Polymarket-Snapshot im FOMC-Fenster (scripts/polymarket_refresh.py --near-fomc-only).
+# Der Zeitplan liegt seit 2026-09-29 auf dem VPS als systemd-Timer
+# (deploy/systemd/sa-polymarket-intraday.timer), weil GitHub die stuendlichen
+# Crons seit 2026-08-26 nur noch 4-8x pro Tag startete. Dieser Workflow ist nur
+# noch der manuelle Notausloeser. Er startet DIESELBE Unit: laeuft gerade ein
+# Timer-Lauf, wartet systemctl auf dessen Ende statt einen zweiten zu starten.
 
 on:
-  schedule:
-    - cron: '23 * * * *'       # Stuendlich :23 (off-peak, kein Clash mit :17 intraday_update)
   workflow_dispatch:
 
 jobs:
-  refresh:
+  run:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Polymarket Snapshot (FOMC-gated)
+      - name: sa-polymarket-intraday.service auf dem VPS starten
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 13m
           script: |
-            docker exec seasonalpha-app python3 scripts/polymarket_refresh.py --near-fomc-only 2>&1 | tail -20
+            rc=0
+            systemctl start sa-polymarket-intraday.service || rc=$?
+            journalctl -u sa-polymarket-intraday.service -n 30 --no-pager
+            exit $rc
