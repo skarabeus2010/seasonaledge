@@ -2,7 +2,7 @@
 title: "April 2026: What Does Seasonality Say for the S&P 500?"
 seo_title: "S&P 500 April Seasonality 2026: Historical Analysis"
 slug: april-seasonality-sp500
-de_slug: april-saisonalitaet-sp500
+de_slug: april-saisonalitaet-sp500-2026
 date: 2026-03-27
 category: marktausblick
 tags: [sp500, april, seasonality, market-outlook, 2026, dow-jones, april-performance, seasonal-patterns, return, multi-year-analysis]

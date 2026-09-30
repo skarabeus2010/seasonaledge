@@ -27,11 +27,15 @@ Usage:
   py scripts/upgrade_page_meta.py --write   # schreibt die Dateien
 """
 from __future__ import annotations
+import html
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+from shared.seo_basis import json_ld  # noqa: E402
 PAGES_DIR = REPO / "landing" / "pages"
 BASE_URL = "https://seasonalpha.ai"
 TWITTER_HANDLE = "@SeasonAlph4882"
@@ -72,29 +76,45 @@ PAGE_META = {
 }
 
 
-def extract_existing(html: str) -> dict:
-    """Liest title + description + og:title aus dem bestehenden HTML."""
+def extract_existing(src: str) -> dict:
+    """Liest title + description + og:title aus dem bestehenden HTML — DEKODIERT.
+
+    Die Werte stehen im Quelltext HTML-kodiert (&mdash;, &amp; …). Weiterverarbeitet
+    wird der Klartext; maskiert wird erst bei der Ausgabe, je nach Kontext
+    (SEO-Review 2026-09-30: vorher wurden kodierte Werte roh in JSON-LD und
+    Attribute eingesetzt).
+    """
     out = {}
-    m = re.search(r"<title>(.*?)</title>", html, re.DOTALL)
+    m = re.search(r"<title>(.*?)</title>", src, re.DOTALL)
     if m:
-        out["title"] = m.group(1).strip()
-    m = re.search(r'<meta\s+name="description"\s+content="([^"]*)"', html)
+        out["title"] = html.unescape(m.group(1).strip())
+    m = re.search(r'<meta\s+name="description"\s+content="([^"]*)"', src)
     if m:
-        out["description"] = m.group(1)
-    m = re.search(r'<meta\s+property="og:title"\s+content="([^"]*)"', html)
+        out["description"] = html.unescape(m.group(1))
+    m = re.search(r'<meta\s+property="og:title"\s+content="([^"]*)"', src)
     if m:
-        out["og_title"] = m.group(1)
+        out["og_title"] = html.unescape(m.group(1))
     return out
+
+
+def _attr(s: str) -> str:
+    """Klartext -> HTML-Attributwert."""
+    return html.escape(s, quote=True)
+
+
+def _text(s: str) -> str:
+    """Klartext -> HTML-Textinhalt (z. B. <title>)."""
+    return html.escape(s, quote=False)
 
 
 def build_meta_block(slug: str, title: str, description: str, og_type: str, category: str | None) -> str:
     """Generiert den vollen Meta-Tag-Block inkl. WebPage + BreadcrumbList JSON-LD."""
     url = f"{BASE_URL}/{slug}"
     og_title = title
-    # Shortened title fuer OG (ohne "— SeasonAlpha" suffix)
-    short_title = re.sub(r"\s*(?:&mdash;|—|-)?\s*SeasonAlpha\s*$", "", title).strip()
+    # Shortened title fuer OG (ohne "— SeasonAlpha" suffix); title ist Klartext
+    short_title = re.sub(r"\s*[—-]?\s*SeasonAlpha\s*$", "", title).strip()
     if short_title:
-        og_title = f"{short_title} &mdash; SeasonAlpha"
+        og_title = f"{short_title} — SeasonAlpha"
 
     # BreadcrumbList: Home -> Page (2-Level)
     # Die Nav-Kategorien (Zyklen/Events/Strategien/Mehr) haben keine eigenen URLs
@@ -104,29 +124,27 @@ def build_meta_block(slug: str, title: str, description: str, og_type: str, cate
     # (category-Parameter bleibt im API-Vertrag fuer spaetere Erweiterung, wird hier
     #  aktuell nicht genutzt.)
     _ = category
-    breadcrumb_items = [
-        f'{{"@type":"ListItem","position":1,"name":"Home","item":"{BASE_URL}/"}}',
-        f'{{"@type":"ListItem","position":2,"name":"{short_title}","item":"{url}"}}',
-    ]
-    breadcrumb_json = (
-        '{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":['
-        + ",".join(breadcrumb_items)
-        + "]}"
-    )
-
-    webpage_json = (
-        '{"@context":"https://schema.org","@type":"WebPage","name":"'
-        + short_title + '","url":"' + url + '","description":"' + description + '",'
-        '"isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"' + BASE_URL + '"},'
-        '"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"' + BASE_URL + '",'
-        '"logo":{"@type":"ImageObject","url":"' + OG_IMAGE + '"}}}'
-    )
+    breadcrumb_json = json_ld({
+        "@context": "https://schema.org", "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{BASE_URL}/"},
+            {"@type": "ListItem", "position": 2, "name": short_title, "item": url},
+        ],
+    })
+    webpage_json = json_ld({
+        "@context": "https://schema.org", "@type": "WebPage",
+        "name": short_title, "url": url, "description": description,
+        "isPartOf": {"@type": "WebSite", "name": "SeasonAlpha", "url": BASE_URL},
+        "publisher": {"@type": "Organization", "name": "SeasonAlpha", "url": BASE_URL,
+                      "logo": {"@type": "ImageObject", "url": OG_IMAGE}},
+    })
+    t_text, t_attr, d_attr, og_attr = _text(title), _attr(title), _attr(description), _attr(og_title)
 
     return f"""  {MARKER}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{title}</title>
-  <meta name="description" content="{description}">
+  <title>{t_text}</title>
+  <meta name="description" content="{d_attr}">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <meta name="theme-color" content="#000000">
@@ -135,8 +153,8 @@ def build_meta_block(slug: str, title: str, description: str, og_type: str, cate
   <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
   <meta property="og:type" content="{og_type}">
   <meta property="og:url" content="{url}">
-  <meta property="og:title" content="{og_title}">
-  <meta property="og:description" content="{description}">
+  <meta property="og:title" content="{og_attr}">
+  <meta property="og:description" content="{d_attr}">
   <meta property="og:image" content="{OG_IMAGE}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -147,8 +165,8 @@ def build_meta_block(slug: str, title: str, description: str, og_type: str, cate
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="{TWITTER_HANDLE}">
   <meta name="twitter:creator" content="{TWITTER_HANDLE}">
-  <meta name="twitter:title" content="{og_title}">
-  <meta name="twitter:description" content="{description}">
+  <meta name="twitter:title" content="{og_attr}">
+  <meta name="twitter:description" content="{d_attr}">
   <meta name="twitter:image" content="{OG_IMAGE}">
 
   <!-- Icons -->

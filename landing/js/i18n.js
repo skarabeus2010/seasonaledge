@@ -167,8 +167,8 @@ SA.i18n = (function() {
   // Maintains all 31 feature pages + home. Used by _updatePageTitle().
   var _EN_PAGE_META = {
     '/': {
-      title: 'SeasonAlpha — Seasonal Stock Market Patterns with 131 Years of Data',
-      desc:  'Analyse seasonal patterns for 270+ tickers: AI Score, Decade Cycle, Annual Cycle, OPEX, Moon Phases, Central Bank Effect and more. Free & Premium.'
+      title: 'SeasonAlpha — Seasonal Stock Market Patterns with up to 131 Years of Data',
+      desc:  'Analyse seasonal patterns for 350+ tickers: AI Score, Decade Cycle, Annual Cycle, OPEX, Moon Phases, Central Bank Effect and more. Free & Premium.'
     },
     '/dashboard': {
       title: 'Ticker Dashboard — Seasonality at a Glance | SeasonAlpha',
@@ -180,7 +180,7 @@ SA.i18n = (function() {
     },
     '/jahreszyklus': {
       title: 'Annual Cycle — Seasonal Market Patterns | SeasonAlpha',
-      desc:  'Seasonal annual progression for 270+ tickers: monthly & quarterly performance, percentile bands, TruePath pattern matching and significance test.'
+      desc:  'Seasonal annual progression for 350+ tickers: monthly & quarterly performance, percentile bands, TruePath pattern matching and significance test.'
     },
     '/monatszyklus': {
       title: 'Monthly Cycle — Intra-Month Seasonality | SeasonAlpha',
@@ -300,7 +300,7 @@ SA.i18n = (function() {
     },
     '/scanner': {
       title: 'Seasonal Scanner — All Tickers by AI Score | SeasonAlpha',
-      desc:  'All 270+ tickers sorted by AI Composite Score. Filter by category, signal, win rate and score range. Weekly updated seasonal edge overview.'
+      desc:  'All 350+ tickers sorted by AI Composite Score. Filter by category, signal, win rate and score range. Weekly updated seasonal edge overview.'
     },
     '/pricing': {
       title: 'Pricing — Free & Premium Plans | SeasonAlpha',

@@ -90,20 +90,15 @@ def load_en() -> dict:
     return json.loads((I18N / "en.json").read_text(encoding="utf-8"))
 
 def load_en_page_meta() -> dict:
-    """_EN_PAGE_META aus i18n.js parsen -> {slug: (title, desc)}. '/' -> 'index'."""
-    txt = I18N_JS.read_text(encoding="utf-8")
-    block = re.search(r"_EN_PAGE_META\s*=\s*\{(.*?)\n\s*\};", txt, re.S)
-    scope = block.group(1) if block else txt
-    entry = re.compile(
-        r"'(/[a-z0-9-]*)'\s*:\s*\{\s*"
-        r"title:\s*'((?:[^'\\]|\\.)*)'\s*,\s*"
-        r"desc:\s*'((?:[^'\\]|\\.)*)'\s*\}", re.S)
-    out = {}
-    for path, title, desc in entry.findall(scope):
-        slug = path.strip("/") or "index"
-        unesc = lambda s: s.replace("\\'", "'").replace('\\"', '"')
-        out[slug] = (unesc(title), unesc(desc))
-    return out
+    """_EN_PAGE_META aus i18n.js -> {slug: (title, desc)}. '/' -> 'index'.
+
+    Liegt in shared/seo_basis.py, damit Sitemap, hreflang-Pruefung und dieser
+    EN-Build dieselbe Liste lesen (SEO-Review 2026-09-30).
+    """
+    if str(REPO) not in sys.path:
+        sys.path.insert(0, str(REPO))
+    from shared.seo_basis import en_seiten_meta
+    return en_seiten_meta()
 
 
 # ---------------------------------------------------------------- SEO head
@@ -353,56 +348,62 @@ class Splicer(HTMLParser):
 
 
 # index.html JSON-LD: deutsche Structured Data (WebSite/SoftwareApplication/
-# Organization/FAQPage) -> Englisch. Map auf DEKODIERTE Strings (json.loads
-# loest \u-Escapes auf), daher escape-unabhaengig.
+# Organization) -> Englisch. Map auf DEKODIERTE Strings (json.loads loest
+# Unicode-Escapes auf), daher escape-unabhaengig. Die FAQPage der Startseite ist
+# seit 2026-09-30 entfernt (unsichtbar, inhaltlich falsch, FAQ-Rich-Results gibt
+# es bei Google seit 07.05.2026 nicht mehr).
 _INDEX_JSONLD_DE2EN = {
     "de-DE": "en-US",
     "SeasonAlpha — Saisonale Börsenanalyse": "SeasonAlpha — Seasonal Stock Market Analysis",
-    "Saisonale Börsenanalyse mit bis zu 131 Jahren Marktdaten und 15 KI-Modellen. Über 500 Basiswerte.":
-        "Seasonal stock market analysis with up to 131 years of market data and 15 AI models. Over 500 assets.",
+    "Saisonale Börsenanalyse mit bis zu 131 Jahren Marktdaten. Über 350 Basiswerte.":
+        "Seasonal stock market analysis with up to 131 years of market data. Over 350 assets.",
     "Datengetriebene saisonale Börsenanalyse mit KI":
         "Data-driven seasonal stock market analysis with AI",
-    "Was ist saisonale Boersenanalyse?": "What is seasonal stock market analysis?",
-    "Saisonale Boersenanalyse untersucht wiederkehrende Muster in Aktienkursen ueber Jahrzehnte. "
-    "SeasonAlpha nutzt bis zu 131 Jahre Marktdaten und 15 KI-Modelle.":
-        "Seasonal stock market analysis examines recurring patterns in stock prices over decades. "
-        "SeasonAlpha uses up to 131 years of market data and 15 AI models.",
-    "Ist SeasonAlpha kostenlos?": "Is SeasonAlpha free?",
-    "Ja. Alle Analyse-Module, ueber 500 Basiswerte und interaktive Charts sind frei verfuegbar.":
-        "Yes. All analysis modules, over 500 assets and interactive charts are freely available.",
-    "Welche Basiswerte werden unterstuetzt?": "Which assets are supported?",
-    "Ueber 500 Basiswerte: US- und EU-Aktien, ETFs, Indizes, Rohstoffe, Kryptowaehrungen und Anleihen.":
-        "Over 500 assets: US and EU stocks, ETFs, indices, commodities, cryptocurrencies and bonds.",
-    "Was bedeutet The Beauty of Noise?": "What does The Beauty of Noise mean?",
-    "Boersenkurse erscheinen chaotisch (Noise). SeasonAlpha extrahiert daraus statistisch "
-    "signifikante saisonale Muster (Signal) — das ist die Schoenheit im Rauschen.":
-        "Stock prices appear chaotic (noise). SeasonAlpha extracts statistically significant "
-        "seasonal patterns (signal) from it — that is the beauty in the noise.",
 }
+# Felder, deren Text sprachabhaengig ist. Alles andere (URLs, @type, Preise,
+# Kategorien) ist neutral. Ein Text in diesen Feldern ohne Uebersetzung laesst
+# den EN-Build scheitern — sonst stuende nach einer DE-Textaenderung still
+# Deutsch im EN-Schema (Codex, SEO-Review 2026-09-30).
+_INDEX_JSONLD_SPRACHFELDER = {"name", "alternateName", "description", "inLanguage"}
+_INDEX_JSONLD_NEUTRAL = {"SeasonAlpha"}
+
+
+class UnuebersetztesSchema(ValueError):
+    pass
 
 
 def localize_index_jsonld(html_doc: str) -> str:
-    """JSON-LD-Bloecke parsen, bekannte dt. Werte -> EN, re-serialisieren."""
-    def walk(o):
+    """JSON-LD-Bloecke parsen, sprachabhaengige Felder DE -> EN, re-serialisieren.
+
+    Wirft `UnuebersetztesSchema`, wenn ein sprachabhaengiges Feld keinen Eintrag
+    in `_INDEX_JSONLD_DE2EN` hat.
+    """
+    fehlend = []
+
+    def walk(o, feld=None):
         if isinstance(o, dict):
-            return {k: walk(v) for k, v in o.items()}
+            return {k: walk(v, k) for k, v in o.items()}
         if isinstance(o, list):
-            return [walk(x) for x in o]
-        if isinstance(o, str):
-            return _INDEX_JSONLD_DE2EN.get(o, o)
+            return [walk(x, feld) for x in o]
+        if isinstance(o, str) and feld in _INDEX_JSONLD_SPRACHFELDER:
+            if o in _INDEX_JSONLD_DE2EN:
+                return _INDEX_JSONLD_DE2EN[o]
+            # schon englisch (z. B. inLanguage, das localize_head_targeted vorab umsetzt)
+            if o not in _INDEX_JSONLD_NEUTRAL and o not in _INDEX_JSONLD_DE2EN.values():
+                fehlend.append(f"{feld}: {o!r}")
         return o
 
     def repl(m):
-        try:
-            data = json.loads(m.group(1))
-        except Exception:
-            return m.group(0)
+        data = json.loads(m.group(1))   # ungueltiges JSON soll hier scheitern, nicht still durchgehen
         return ('<script type="application/ld+json">'
                 + json.dumps(walk(data), ensure_ascii=True, separators=(",", ":"))
                 + "</script>")
 
-    return re.sub(r'<script type="application/ld\+json">(.*?)</script>',
-                  repl, html_doc, flags=re.S)
+    aus = re.sub(r'<script type="application/ld\+json">(.*?)</script>',
+                 repl, html_doc, flags=re.S)
+    if fehlend:
+        raise UnuebersetztesSchema("Startseiten-Schema ohne EN-Uebersetzung: " + "; ".join(fehlend))
+    return aus
 
 
 def strip_en_hidden(html: str) -> str:

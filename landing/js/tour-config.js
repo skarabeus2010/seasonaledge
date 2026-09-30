@@ -21,7 +21,7 @@ SA.TOUR_STEPS = [
     element: '.hero__content',
     popover: {
       title: 'Willkommen bei SeasonAlpha',
-      description: 'Datengetriebene Börsenanalyse mit 131 Jahren saisonaler Marktdaten. In 26 Schritten zeigen wir dir die wichtigsten Features.',
+      description: 'Datengetriebene Börsenanalyse mit bis zu 131 Jahren saisonaler Marktdaten. In 26 Schritten zeigen wir dir die wichtigsten Features.',
       side: 'bottom',
       align: 'center'
     }
@@ -44,7 +44,7 @@ SA.TOUR_STEPS = [
     page: '/scanner',
     element: '#sel-search',
     popover: {
-      title: 'Saisonal-Scanner — 269 Ticker',
+      title: 'Saisonal-Scanner — 350+ Ticker',
       description: 'Der wöchentlich aktualisierte Scanner zeigt dir alle Ticker mit aktuellem <b>KI-Score</b>, Signal (Bullish/Neutral/Bearish), Win-Rate und Monatsrendite. Filtere nach Signal, Kategorie oder Mindest-Score — die Tabelle aktualisiert sich live.',
       side: 'right',
       align: 'start'
@@ -326,11 +326,11 @@ SA.TOUR_STEPS = [
  */
 SA.TOUR_STEPS_EN = [
   // 0 — Landing: Welcome
-  { title: 'Welcome to SeasonAlpha', description: 'Data-driven market analysis with 131 years of seasonal data. In 26 steps we\'ll show you the most important features.' },
+  { title: 'Welcome to SeasonAlpha', description: 'Data-driven market analysis with up to 131 years of seasonal data. In 26 steps we\'ll show you the most important features.' },
   // 1 — Landing: Sign In
   { title: 'Sign In with Google', description: 'Optional: Google login gives you a <b>Cloud Watchlist</b> that syncs across your devices, plus access to your personal profile at <b>/profile</b>. Everything works without login too — your watchlist is then stored locally in the browser.' },
   // 2 — Scanner
-  { title: 'Seasonal Scanner — 269 Tickers', description: 'The weekly-updated scanner shows all tickers with the current <b>AI Score</b>, signal (Bullish/Neutral/Bearish), win rate and monthly return. Filter by signal, category or minimum score — the table updates live.' },
+  { title: 'Seasonal Scanner — 350+ Tickers', description: 'The weekly-updated scanner shows all tickers with the current <b>AI Score</b>, signal (Bullish/Neutral/Bearish), win rate and monthly return. Filter by signal, category or minimum score — the table updates live.' },
   // 3 — Watchlist
   { title: 'Watchlist — Your Favourite Tickers', description: 'Add tickers via <b>+</b> or use the star icon on any analysis page. Each card shows the current AI Score, 2-week seasonality, drawdown and the next strategy signal. Logged in: cloud sync across devices. Guest: local browser storage only.' },
   // 4 — Dashboard: Ticker

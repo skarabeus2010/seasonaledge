@@ -10,7 +10,11 @@
     <meta property="og:title" content="{{ og_title | default('SeasonAlpha Blog — Saisonale Analysen') }}">
     <meta property="og:description" content="{{ og_description | default('Datenbasierte Boersenanalysen, Strategien und Tutorials.') }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://seasonalpha.ai{{ blog_base | default('/blog/') }}">
+    <meta property="og:url" content="https://seasonalpha.ai{{ blog_base | default('/blog/') }}{{ canonical_path | default('') }}">
+    {# Blog-Startseite und Kategorien gibt es in beiden Sprachen unter demselben Pfad. #}
+    <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/blog/{{ canonical_path | default('') }}">
+    <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/blog/{{ canonical_path | default('') }}">
+    <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/blog/{{ canonical_path | default('') }}">
     <meta name="google-site-verification" content="46lbAINaqCQSU5pWAplt6WioigjnIc3mmLMBnCteMwk">
 
     <!-- Icons -->
@@ -298,16 +302,16 @@
 
     <div class="blog-hero">
         <h1>{{ hero_title | default('SeasonAlpha Blog') }}</h1>
-        <p>{{ hero_subtitle | default('Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials f&uuml;r Trader und Anleger.') }}</p>
+        <p>{{ hero_subtitle | default('Datenbasierte saisonale Analysen, Trading-Strategien und Tutorials für Trader und Anleger.') }}</p>
     </div>
 
     <div class="search-wrap" id="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="blog-search" placeholder="{{ str_search_placeholder | default('Artikel durchsuchen &hellip; (Titel, Tags, Ticker)') }}" autocomplete="off" aria-label="{{ str_search_placeholder | default('Blog durchsuchen') }}">
-        <button type="button" class="search-clear" id="search-clear" aria-label="{{ str_search_clear | default('Suche l&ouml;schen') }}">&times;</button>
+        <input type="text" id="blog-search" placeholder="{{ str_search_placeholder | default('Artikel durchsuchen … (Titel, Tags, Ticker)') }}" autocomplete="off" aria-label="{{ str_search_placeholder | default('Blog durchsuchen') }}">
+        <button type="button" class="search-clear" id="search-clear" aria-label="{{ str_search_clear | default('Suche löschen') }}">&times;</button>
     </div>
     <div class="search-hint">
-        <kbd>/</kbd> {{ str_focus_hint | default('zum Fokussieren') }} &middot; <kbd>Esc</kbd> {{ str_clear_hint | default('zum L&ouml;schen') }}
+        <kbd>/</kbd> {{ str_focus_hint | default('zum Fokussieren') }} &middot; <kbd>Esc</kbd> {{ str_clear_hint | default('zum Löschen') }}
     </div>
     <div class="search-counter" id="search-counter"></div>
 
@@ -333,13 +337,13 @@
     </div>
 
     <div class="no-results" id="no-results">
-        {{ str_no_results | default('Keine Artikel gefunden f&uuml;r') }} <strong id="no-results-query"></strong>.<br>
-        {{ str_no_results_hint | default('Versuche einen anderen Suchbegriff oder w&auml;hle eine andere Kategorie.') }}
+        {{ str_no_results | default('Keine Artikel gefunden für') }} <strong id="no-results-query"></strong>.<br>
+        {{ str_no_results_hint | default('Versuche einen anderen Suchbegriff oder wähle eine andere Kategorie.') }}
     </div>
 
     {% if not posts %}
     <div style="text-align:center; padding:3rem; color:var(--muted);">
-        {{ str_no_posts | default('Noch keine Beitr&auml;ge in dieser Kategorie. Bald verf&uuml;gbar!') }}
+        {{ str_no_posts | default('Noch keine Beiträge in dieser Kategorie. Bald verfügbar!') }}
     </div>
     {% endif %}
 
@@ -390,7 +394,7 @@
             if (hit) visible++;
         });
 
-        counter.textContent = visible + ' {{ str_counter_of | default('von') }} ' + totalCount + ' {{ str_counter_article | default('Artikel') }}' + (visible === 1 ? '' : '{{ str_counter_plural | default('n') }}');
+        counter.textContent = visible + ' ' + {{ str_counter_of | default('von') | tojson }} + ' ' + totalCount + ' ' + {{ str_counter_article | default('Artikel') | tojson }} + (visible === 1 ? '' : {{ str_counter_plural | default('n') | tojson }});
         counter.classList.add('active');
 
         if (visible === 0) {

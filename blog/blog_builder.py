@@ -19,13 +19,20 @@ import yaml
 from datetime import datetime, date
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 
 # ── Projekt-Root ──────────────────────────────────────────
 _script_dir = Path(__file__).resolve().parent
 _project_root = _script_dir.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
+
+from shared.seo_basis import (  # noqa: E402
+    json_ld, ist_veroeffentlicht, ist_indexierbar, geaendert_am, veroeffentlicht_am,
+    blog_sprachpaare, blog_hreflang_ziele,
+    anzahl_basiswerte,
+)
 
 
 # ── Konfiguration ────────────────────────────────────────
@@ -71,11 +78,11 @@ def _extra_vars_de(post: dict) -> dict:
         "post_url": f"{BASE_URL}/blog/{slug}/",
         "str_min_read": "Min Lesezeit",
         "str_cta_h3": "Analysiere es selbst auf SeasonAlpha",
-        "str_cta_p": "Interaktive Charts, KI-Prognosen und technische Filter f&uuml;r 270+ Ticker.",
+        "str_cta_p": f"Interaktive Charts, Saisonalitäts-Statistik und technische Filter für {anzahl_basiswerte()} Basiswerte.",
         "str_cta_btn": "Kostenlos starten",
         "str_cta_url": f"{BASE_URL}/dashboard",
-        "str_disclaimer_summary": "Vollst&auml;ndiger rechtlicher Hinweis",
-        "str_related_header": "Weitere Beitr&auml;ge",
+        "str_disclaimer_summary": "Vollständiger rechtlicher Hinweis",
+        "str_related_header": "Weitere Beiträge",
         "is_en": False,
         "de_slug": None,
     }
@@ -92,7 +99,7 @@ def _extra_vars_en(post: dict) -> dict:
         "post_url": f"{BASE_URL_EN}/en/blog/{slug}/",
         "str_min_read": "min read",
         "str_cta_h3": "Analyse it yourself on SeasonAlpha",
-        "str_cta_p": "Interactive charts, AI forecasts and technical filters for 270+ tickers.",
+        "str_cta_p": f"Interactive charts, seasonality statistics and technical filters for {anzahl_basiswerte()} assets.",
         "str_cta_btn": "Start for free",
         "str_cta_url": f"{BASE_URL_EN}/en/dashboard",
         "str_disclaimer_summary": "Full legal notice",
@@ -106,15 +113,15 @@ def _extra_index_vars_de() -> dict:
     return {
         "lang": "de",
         "blog_base": "/blog/",
-        "str_search_placeholder": "Artikel durchsuchen &hellip; (Titel, Tags, Ticker)",
-        "str_search_clear": "Suche l&ouml;schen",
+        "str_search_placeholder": "Artikel durchsuchen … (Titel, Tags, Ticker)",
+        "str_search_clear": "Suche löschen",
         "str_focus_hint": "zum Fokussieren",
-        "str_clear_hint": "zum L&ouml;schen",
+        "str_clear_hint": "zum Löschen",
         "str_cat_all": "Alle",
         "str_cat_marktausblick": "Marktausblick",
-        "str_no_results": "Keine Artikel gefunden f&uuml;r",
-        "str_no_results_hint": "Versuche einen anderen Suchbegriff oder w&auml;hle eine andere Kategorie.",
-        "str_no_posts": "Noch keine Beitr&auml;ge in dieser Kategorie. Bald verf&uuml;gbar!",
+        "str_no_results": "Keine Artikel gefunden für",
+        "str_no_results_hint": "Versuche einen anderen Suchbegriff oder wähle eine andere Kategorie.",
+        "str_no_posts": "Noch keine Beiträge in dieser Kategorie. Bald verfügbar!",
         "str_nl_h3": "Saisonale Insights direkt ins Postfach",
         "str_nl_p": "Monatliche Analysen, neue Strategien und SeasonAlpha Updates.",
         "str_nl_btn": "Kostenlos registrieren",
@@ -131,7 +138,7 @@ def _extra_index_vars_en() -> dict:
     return {
         "lang": "en",
         "blog_base": "/en/blog/",
-        "str_search_placeholder": "Search articles &hellip; (title, tags, ticker)",
+        "str_search_placeholder": "Search articles … (title, tags, ticker)",
         "str_search_clear": "Clear search",
         "str_focus_hint": "to focus",
         "str_clear_hint": "to clear",
@@ -1036,21 +1043,11 @@ def load_posts() -> list[dict]:
             continue
 
         status = meta.get("status", "draft")
-
-        # Draft: nicht generieren
-        if status == "draft":
-            print(f"  [DRAFT] {md_file.name}")
+        # Gemeinsame Regel mit der Sitemap (shared/seo_basis.py): Entwurf und noch
+        # nicht faellige Planung werden nicht gebaut.
+        if not ist_veroeffentlicht(meta):
+            print(f"  [{str(status).upper()}] {md_file.name}")
             continue
-
-        # Scheduled: nur wenn publish_date <= heute
-        if status == "scheduled":
-            pub_date = meta.get("publish_date")
-            if pub_date:
-                if isinstance(pub_date, str):
-                    pub_date = datetime.strptime(pub_date, "%Y-%m-%d").date()
-                if pub_date > date.today():
-                    print(f"  [SCHEDULED] {md_file.name} ->{pub_date}")
-                    continue
 
         # Content zu HTML (mit Chart-Generierung)
         html_content = markdown_to_html(content, post_slug=meta.get("slug", ""))
@@ -1063,9 +1060,7 @@ def load_posts() -> list[dict]:
         reading_time = max(1, round(word_count / 200))
 
         # Date formatting
-        post_date = meta.get("date", date.today())
-        if isinstance(post_date, str):
-            post_date = datetime.strptime(post_date, "%Y-%m-%d").date()
+        post_date = veroeffentlicht_am(meta)   # ohne date scheitert der Build (kein Tagesdatum)
 
         date_formatted = f"{post_date.day}. {MONTHS_DE[post_date.month]} {post_date.year}"
 
@@ -1087,6 +1082,8 @@ def load_posts() -> list[dict]:
             "canonical_url": meta.get("canonical_url", ""),      # Override fuer Content Syndication
             "og_image": meta.get("og_image", ""),                # Custom OG-Image Pfad
             "noindex": meta.get("noindex", False),               # noindex,follow fuer duenne Posts
+            "indexierbar": ist_indexierbar(meta),
+            "updated": str(geaendert_am(meta)),
             "status": status,
             "content": html_content,
             "reading_time": reading_time,
@@ -1117,26 +1114,16 @@ def load_posts_en() -> list[dict]:
             continue
 
         status = meta.get("status", "draft")
-        if status == "draft":
-            print(f"  [DRAFT] {md_file.name}")
+        if not ist_veroeffentlicht(meta):
+            print(f"  [{str(status).upper()}] {md_file.name}")
             continue
-        if status == "scheduled":
-            pub_date = meta.get("publish_date")
-            if pub_date:
-                if isinstance(pub_date, str):
-                    pub_date = datetime.strptime(pub_date, "%Y-%m-%d").date()
-                if pub_date > date.today():
-                    print(f"  [SCHEDULED] {md_file.name} ->{pub_date}")
-                    continue
 
         html_content = markdown_to_html(content, post_slug=meta.get("slug", ""), lang="en")
         faq_items = _extract_faq_items(content)
         word_count = len(content.split())
         reading_time = max(1, round(word_count / 200))
 
-        post_date = meta.get("date", date.today())
-        if isinstance(post_date, str):
-            post_date = datetime.strptime(post_date, "%Y-%m-%d").date()
+        post_date = veroeffentlicht_am(meta)   # ohne date scheitert der Build (kein Tagesdatum)
 
         date_formatted = f"{MONTHS_EN[post_date.month]} {post_date.day}, {post_date.year}"
 
@@ -1148,6 +1135,8 @@ def load_posts_en() -> list[dict]:
             "slug": meta["slug"],
             "de_slug": meta.get("de_slug", ""),
             "noindex": meta.get("noindex", False),
+            "indexierbar": ist_indexierbar(meta),
+            "updated": str(geaendert_am(meta)),
             "date": str(post_date),
             "date_obj": post_date,
             "date_formatted": date_formatted,
@@ -1174,15 +1163,93 @@ def load_posts_en() -> list[dict]:
 
 # ── HTML generieren ──────────────────────────────────────
 
+# ── Sichere Ausgabe (SEO-Review 2026-09-30) ──────────────────
+# Autoescape ist an: jeder Text wird fuer HTML maskiert. Als sicher gelten NUR
+# die drei bewusst erzeugten HTML-Fragmente (Artikelinhalt, Disclaimer kurz/lang)
+# und die JSON-LD-Bloecke aus shared.seo_basis.json_ld. Vorher setzte das Template
+# Texte unmaskiert in Attribute ein; eine Beschreibung mit geraden Anfuehrungs-
+# zeichen beendete so das content-Attribut und machte das JSON-LD ungueltig.
+
+def _jinja_env() -> Environment:
+    return Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)),
+                       autoescape=select_autoescape(["html", "xml"]))
+
+
+def _og_bild(post: dict) -> str:
+    return post.get("og_image") or f"{BASE_URL}/blog/{post['slug']}/social/og_image.png"
+
+
+def _ld_kontext(post: dict, extra: dict) -> dict:
+    """JSON-LD-Bloecke eines Artikels als fertig serialisierte, sichere Strings."""
+    blog_base = extra.get("blog_base", "/blog/")
+    artikel = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post["title"],
+        "description": post.get("description", ""),
+        "datePublished": f"{post['date']}T08:00:00+02:00",
+        "dateModified": f"{post['updated']}T08:00:00+02:00",
+        "author": {"@type": "Organization", "name": "SeasonAlpha", "url": BASE_URL},
+        "publisher": {
+            "@type": "Organization", "name": "SeasonAlpha", "url": BASE_URL,
+            "logo": {"@type": "ImageObject",
+                     "url": f"{BASE_URL}/landing/assets/images/og-image.png",
+                     "width": 1200, "height": 630},
+        },
+        "mainEntityOfPage": {"@type": "WebPage", "@id": extra["post_url"]},
+        "image": {"@type": "ImageObject", "url": _og_bild(post), "width": 1200, "height": 630},
+        "articleSection": post.get("category_label", ""),
+        "inLanguage": extra.get("in_language", "de-DE"),
+    }
+    if post.get("tags"):
+        artikel["keywords"] = ", ".join(str(t) for t in post["tags"])
+    brotkrumen = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": BASE_URL},
+            {"@type": "ListItem", "position": 2, "name": "Blog", "item": f"{BASE_URL}{blog_base}"},
+            {"@type": "ListItem", "position": 3, "name": post.get("category_label", ""),
+             "item": f"{BASE_URL}{blog_base}{post['category']}/"},
+            {"@type": "ListItem", "position": 4, "name": post["title"]},
+        ],
+    }
+    ctx = {"ld_article": Markup(json_ld(artikel)), "ld_breadcrumb": Markup(json_ld(brotkrumen)),
+           "ld_faq": None}
+    if post.get("faq_items"):
+        ctx["ld_faq"] = Markup(json_ld({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [{"@type": "Question", "name": f["question"],
+                            "acceptedAnswer": {"@type": "Answer", "text": f["answer"]}}
+                           for f in post["faq_items"]],
+        }))
+    return ctx
+
+
+def _render_post(tpl, post: dict, extra: dict, related_posts, disclaimer_short, disclaimer_long) -> str:
+    ctx = {**post, **extra}
+    ctx["content"] = Markup(post["content"])
+    ctx["og_image_url"] = _og_bild(post)
+    ctx.update(_ld_kontext(post, extra))
+    return tpl.render(**ctx, related_posts=related_posts,
+                      disclaimer_short=Markup(disclaimer_short),
+                      disclaimer_long=Markup(disclaimer_long))
+
+
 def build_all():
     """Generiert alle Blog-HTMLs."""
     print("=" * 60)
     print("  SeasonAlpha — Blog Builder")
     print("=" * 60)
 
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    env = _jinja_env()
     post_tpl = env.get_template("blog_post.html")
     index_tpl = env.get_template("blog_index.html")
+
+    # hreflang-Ziele nach denselben Regeln wie die Sitemap (nur indexierbare
+    # Gegenstuecke). Wirft, wenn ein EN-Artikel per de_slug ins Leere zeigt.
+    de_zu_en, _ = blog_hreflang_ziele()
 
     # Output-Verzeichnis
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1215,13 +1282,10 @@ def build_all():
         related_posts = (same_cat + other)[:3]
 
         # HTML rendern
-        html = post_tpl.render(
-            **post,
-            **_extra_vars_de(post),
-            related_posts=related_posts,
-            disclaimer_short=disclaimer_short,
-            disclaimer_long=disclaimer_long,
-        )
+        extra = _extra_vars_de(post)
+        extra["en_slug"] = de_zu_en.get(slug)
+        html = _render_post(post_tpl, post, extra, related_posts,
+                            disclaimer_short, disclaimer_long)
         out_file = post_dir / "index.html"
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html)
@@ -1271,9 +1335,11 @@ def build_en():
     print("  SeasonAlpha — Blog Builder (EN)")
     print("=" * 60)
 
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
+    env = _jinja_env()
     post_tpl = env.get_template("blog_post.html")
     index_tpl = env.get_template("blog_index.html")
+
+    _, en_zu_de = blog_hreflang_ziele()  # scheitert bei de_slug ins Leere
 
     OUTPUT_DIR_EN.mkdir(parents=True, exist_ok=True)
 
@@ -1292,11 +1358,10 @@ def build_en():
         other = [p for p in related if p["category"] != post["category"]]
         related_posts = (same_cat + other)[:3]
 
-        ctx = {**post, **_extra_vars_en(post),
-               "related_posts": related_posts,
-               "disclaimer_short": disclaimer_short,
-               "disclaimer_long": disclaimer_long}
-        html = post_tpl.render(**ctx)
+        extra = _extra_vars_en(post)
+        extra["hreflang_de_slug"] = en_zu_de.get(slug)
+        html = _render_post(post_tpl, post, extra, related_posts,
+                            disclaimer_short, disclaimer_long)
         out_file = post_dir / "index.html"
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(html)
@@ -1352,6 +1417,18 @@ def _build_index(tpl, posts, active_cat, out_path, hero_title=None, hero_subtitl
     }
     if extra_vars:
         vars_.update(extra_vars)
+    # Kategorieseiten sind eigenstaendige Themenseiten: eigene Canonical-URL,
+    # eigener Titel und eigene Beschreibung. Vorher uebergab niemand
+    # canonical_path, und jede Kategorie erklaerte die Blog-Startseite zu
+    # ihrem Original (SEO-Review 2026-09-30).
+    if active_cat != "all":
+        label = hero_title or active_cat
+        vars_["canonical_path"] = f"{active_cat}/"
+        vars_["page_title"] = f"{label} — Blog"
+        vars_["og_title"] = f"SeasonAlpha Blog — {label}"
+        if hero_subtitle:
+            vars_["page_description"] = hero_subtitle
+            vars_["og_description"] = hero_subtitle
     html = tpl.render(**vars_)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
@@ -1578,69 +1655,47 @@ def _generate_youtube(post: dict, youtube_dir: Path):
 
 # ── Sitemap ──────────────────────────────────────────────
 
+def _blog_sitemap_xml(posts: list[dict], basis: str, kategorien) -> tuple[str, int]:
+    """Sitemap-XML fuer einen Blog (DE oder EN).
+
+    Gleiche Regeln wie die Haupt-Sitemap (shared/seo_basis.py): nur
+    veroeffentlichte UND indexierbare Artikel, lastmod = letzte wesentliche
+    Aenderung (`updated`, sonst `date`). Uebersichtsseiten tragen das Datum
+    ihres juengsten Artikels statt „heute".
+    """
+    idx = [p for p in posts if p.get("indexierbar")]
+    def neuester(ps):
+        return max((p["updated"] for p in ps), default=None)
+    urls = []
+    def eintrag(loc, lastmod, freq, prio):
+        lm = f"<lastmod>{lastmod}</lastmod>" if lastmod else ""
+        urls.append(f"  <url><loc>{loc}</loc>{lm}<changefreq>{freq}</changefreq>"
+                    f"<priority>{prio}</priority></url>")
+    eintrag(f"{BASE_URL}{basis}", neuester(idx), "weekly", "0.8")
+    for cat_slug in kategorien:
+        eintrag(f"{BASE_URL}{basis}{cat_slug}/",
+                neuester([p for p in idx if p["category"] == cat_slug]), "weekly", "0.7")
+    for post in idx:
+        eintrag(f"{BASE_URL}{basis}{post['slug']}/", post["updated"], "monthly", "0.6")
+    zeilen = ['<?xml version="1.0" encoding="UTF-8"?>',
+              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+              *urls, "</urlset>", ""]
+    return chr(10).join(zeilen), len(urls)
+
+
 def _build_blog_sitemap(posts: list[dict]):
-    """Generiert Blog-Sitemap-Eintraege."""
-    sitemap_path = OUTPUT_DIR / "sitemap_blog.xml"
-    today = date.today().isoformat()
-
-    urls = [
-        f'  <url><loc>{BASE_URL}/blog/</loc><lastmod>{today}</lastmod>'
-        f'<changefreq>weekly</changefreq><priority>0.8</priority></url>',
-    ]
-    for cat_slug in CATEGORY_LABELS:
-        urls.append(
-            f'  <url><loc>{BASE_URL}/blog/{cat_slug}/</loc><lastmod>{today}</lastmod>'
-            f'<changefreq>weekly</changefreq><priority>0.7</priority></url>'
-        )
-    for post in posts:
-        urls.append(
-            f'  <url><loc>{BASE_URL}/blog/{post["slug"]}/</loc>'
-            f'<lastmod>{post["date"]}</lastmod>'
-            f'<changefreq>monthly</changefreq><priority>0.6</priority></url>'
-        )
-
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "\n".join(urls) + "\n"
-        '</urlset>\n'
-    )
-    with open(sitemap_path, "w", encoding="utf-8") as f:
-        f.write(xml)
-    print(f"  [OK] sitemap_blog.xml ({len(urls)} URLs)")
+    """DE-Blog-Sitemap (blog/output/sitemap_blog.xml)."""
+    xml, n = _blog_sitemap_xml(posts, "/blog/", CATEGORY_LABELS)
+    (OUTPUT_DIR / "sitemap_blog.xml").write_text(xml, encoding="utf-8")
+    print(f"  [OK] sitemap_blog.xml ({n} URLs)")
 
 
 def _build_blog_sitemap_en(posts: list[dict]):
-    """Generiert EN Blog-Sitemap-Eintraege."""
-    sitemap_path = OUTPUT_DIR_EN / "sitemap_blog_en.xml"
-    today = date.today().isoformat()
-
-    urls = [
-        f'  <url><loc>{BASE_URL_EN}/en/blog/</loc><lastmod>{today}</lastmod>'
-        f'<changefreq>weekly</changefreq><priority>0.8</priority></url>',
-    ]
-    for cat_slug in CATEGORY_LABELS_EN:
-        urls.append(
-            f'  <url><loc>{BASE_URL_EN}/en/blog/{cat_slug}/</loc><lastmod>{today}</lastmod>'
-            f'<changefreq>weekly</changefreq><priority>0.7</priority></url>'
-        )
-    for post in posts:
-        urls.append(
-            f'  <url><loc>{BASE_URL_EN}/en/blog/{post["slug"]}/</loc>'
-            f'<lastmod>{post["date"]}</lastmod>'
-            f'<changefreq>monthly</changefreq><priority>0.6</priority></url>'
-        )
-
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "\n".join(urls) + "\n"
-        '</urlset>\n'
-    )
+    """EN-Blog-Sitemap (blog/output/en/sitemap_blog_en.xml)."""
+    xml, n = _blog_sitemap_xml(posts, "/en/blog/", CATEGORY_LABELS_EN)
     OUTPUT_DIR_EN.mkdir(parents=True, exist_ok=True)
-    with open(sitemap_path, "w", encoding="utf-8") as f:
-        f.write(xml)
-    print(f"  [OK] sitemap_blog_en.xml ({len(urls)} URLs)")
+    (OUTPUT_DIR_EN / "sitemap_blog_en.xml").write_text(xml, encoding="utf-8")
+    print(f"  [OK] sitemap_blog_en.xml ({n} URLs)")
 
 
 # ── KI-Content-Generierung (--generate) ─────────────────

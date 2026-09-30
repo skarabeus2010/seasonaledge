@@ -18,11 +18,14 @@ import re
 import unicodedata
 from datetime import datetime
 
+from pathlib import Path
+
 from jinja2 import Environment, FileSystemLoader
 
 # Projekt-Root finden damit shared/ importiert werden kann
 _skript_ordner = os.path.dirname(os.path.abspath(__file__))
 _projekt_root = os.path.dirname(_skript_ordner)
+_REPO = Path(_projekt_root)
 if _projekt_root not in sys.path:
     sys.path.insert(0, _projekt_root)
 
@@ -116,186 +119,189 @@ def build_titel_daten() -> list[dict]:
 
 # ── Sitemap Generator ────────────────────────────────────────────────────────
 
-def build_sitemap(titel_daten: list[dict], output_ordner: str):
-    """Generiert sitemap.xml mit allen SEO-Seiten + statischen Seiten."""
-    heute_iso = datetime.now().strftime("%Y-%m-%d")
+# Prioritaeten/Ausschluesse der Landing-Seiten (Modulebene, auch fuer den Waechter)
+PRIORITY_OVERRIDES = {
+    # Kernstuecke
+    "dashboard":          ("1.0",  "daily"),
+    "jahreszyklus":       ("0.95", "daily"),
+    "monatszyklus":       ("0.95", "daily"),
+    "dekadenzyklus":      ("0.9",  "weekly"),
+    "wochentage":         ("0.9",  "weekly"),
+    "monatswechsel":      ("0.9",  "weekly"),
+    "zentralbanken":      ("0.9",  "weekly"),
+    "polymarket":         ("0.95", "daily"),
+    # Strategien
+    "scanner":            ("0.95", "daily"),
+    "trifecta":           ("0.9",  "weekly"),
+    "plain-vanilla":      ("0.95", "weekly"),
+    "backtest-engine":    ("0.95", "weekly"),
+    # Advanced
+    "ki-saisonalitaet":   ("0.9",  "daily"),
+    "crash-fruehwarnung": ("0.9",  "daily"),
+    # Rand
+    "kriegszeiten":       ("0.7",  "monthly"),
+    "overnight":          ("0.8",  "weekly"),
+    # Neue Pages (KW16-18)
+    "risikozyklus":       ("0.85", "weekly"),
+    "vixpiration":        ("0.85", "weekly"),
+    "dividend-kalender":  ("0.85", "weekly"),
+    "earnings-kalender":  ("0.85", "weekly"),
+    # Pricing
+    "pricing":            ("0.8",  "monthly"),
+}
+PAGE_EXCLUDES = {
+    "_disabled", "404", "index",
+    "apex-demo",    # Dev/Demo-Chart, nicht produktiv
+    "unsubscribe",  # Newsletter-Abmeldung, kein SEO-Ziel (noindex)
+    "watchlist",    # Personalisiert, localStorage, kein SEO-Ziel (noindex)
+    "profile",      # Personalisiert, eingeloggt only, kein SEO-Ziel (noindex)
+}
 
-    urls = []
 
-    # Statische Seiten (hohe Prioritaet)
-    static_pages = [
-        {"loc": f"{BASE_URL}/",             "priority": "1.0",  "changefreq": "weekly"},
-        {"loc": f"{BASE_URL}/disclaimer",   "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": f"{BASE_URL}/rechtliches",  "priority": "0.3",  "changefreq": "yearly"},
-    ]
-    for page in static_pages:
-        urls.append(
-            f'  <url>\n'
-            f'    <loc>{page["loc"]}</loc>\n'
-            f'    <lastmod>{heute_iso}</lastmod>\n'
-            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
-            f'    <priority>{page["priority"]}</priority>\n'
-            f'  </url>'
-        )
+def _git_datum(pfad: Path) -> str | None:
+    """Datum (YYYY-MM-DD) des letzten Commits, der die Datei geaendert hat.
 
-    # Tools (hohe Prioritaet — interaktive, kostenlose Tools)
-    tool_pages = [
-        {"loc": f"{BASE_URL}/tools/trading-day-converter", "priority": "0.9", "changefreq": "monthly"},
-    ]
-    for page in tool_pages:
-        urls.append(
-            f'  <url>\n'
-            f'    <loc>{page["loc"]}</loc>\n'
-            f'    <lastmod>{heute_iso}</lastmod>\n'
-            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
-            f'    <priority>{page["priority"]}</priority>\n'
-            f'  </url>'
-        )
-
-    # Core-Feature-Pages (HOCH priorisiert — das sind die Haupt-Features)
-    # Priority-Overrides per Slug. Default = 0.85 / weekly. Nur Abweichungen listen.
-    PRIORITY_OVERRIDES = {
-        # Kernstuecke
-        "dashboard":          ("1.0",  "daily"),
-        "jahreszyklus":       ("0.95", "daily"),
-        "monatszyklus":       ("0.95", "daily"),
-        "dekadenzyklus":      ("0.9",  "weekly"),
-        "wochentage":         ("0.9",  "weekly"),
-        "monatswechsel":      ("0.9",  "weekly"),
-        "zentralbanken":      ("0.9",  "weekly"),
-        "polymarket":         ("0.95", "daily"),
-        # Strategien
-        "scanner":            ("0.95", "daily"),
-        "trifecta":           ("0.9",  "weekly"),
-        "plain-vanilla":      ("0.95", "weekly"),
-        "backtest-engine":    ("0.95", "weekly"),
-        # Advanced
-        "ki-saisonalitaet":   ("0.9",  "daily"),
-        "crash-fruehwarnung": ("0.9",  "daily"),
-        # Rand
-        "kriegszeiten":       ("0.7",  "monthly"),
-        "overnight":          ("0.8",  "weekly"),
-        # Neue Pages (KW16-18)
-        "risikozyklus":       ("0.85", "weekly"),
-        "vixpiration":        ("0.85", "weekly"),
-        "dividend-kalender":  ("0.85", "weekly"),
-        "earnings-kalender":  ("0.85", "weekly"),
-        # Pricing
-        "pricing":            ("0.8",  "monthly"),
-    }
-    PAGE_EXCLUDES = {
-        "_disabled", "404", "index",
-        "apex-demo",    # Dev/Demo-Chart, nicht produktiv
-        "unsubscribe",  # Newsletter-Abmeldung, kein SEO-Ziel (noindex)
-        "watchlist",    # Personalisiert, localStorage, kein SEO-Ziel (noindex)
-        "profile",      # Personalisiert, eingeloggt only, kein SEO-Ziel (noindex)
-    }
-
-    # ── Auto-Discovery: alle *.html aus landing/pages/ ─────────────────────
-    from pathlib import Path
-    pages_dir = Path(__file__).resolve().parent.parent / "landing" / "pages"
-    landing_pages = []
-    if pages_dir.exists():
-        for html_file in sorted(pages_dir.glob("*.html")):
-            slug = html_file.stem  # Dateiname ohne .html
-            if slug in PAGE_EXCLUDES:
-                continue
-            # _disabled/ Unterordner ausschliessen (ueberpruefung ueber relative_to)
-            if "_disabled" in html_file.parts:
-                continue
-            priority, changefreq = PRIORITY_OVERRIDES.get(slug, ("0.85", "weekly"))
-            landing_pages.append({"slug": slug, "priority": priority, "changefreq": changefreq})
-        print(f"  [INFO] {len(landing_pages)} Pages auto-discovered aus landing/pages/")
-
-    # Blog-Indizes (manuell, weil sie auf Unterordnern liegen)
-    landing_pages.extend([
-        {"slug": "blog/",              "priority": "0.9",  "changefreq": "daily"},
-        {"slug": "blog/education/",    "priority": "0.8",  "changefreq": "weekly"},
-        {"slug": "blog/marktausblick/","priority": "0.8",  "changefreq": "weekly"},
-        {"slug": "blog/tutorials/",    "priority": "0.8",  "changefreq": "weekly"},
-    ])
-
-    # Slugs die KEINE EN-Version bekommen (Blog, Legal, Tools, Profile)
-    NO_EN_PREFIXES = ("blog/", "blog", "tools/", "tools")
-    NO_EN_SLUGS = {"disclaimer", "rechtliches", "profile", "unsubscribe", "watchlist"}
-
-    for page in landing_pages:
-        slug = page["slug"]
-        de_url = f'{BASE_URL}/{slug}'
-        en_url = f'{BASE_URL}/en/{slug}'
-        has_en = slug not in NO_EN_SLUGS and not any(slug.startswith(p) for p in NO_EN_PREFIXES)
-        hreflang = (
-            f'    <xhtml:link rel="alternate" hreflang="de" href="{de_url}"/>\n'
-            f'    <xhtml:link rel="alternate" hreflang="en" href="{en_url}"/>\n'
-            f'    <xhtml:link rel="alternate" hreflang="x-default" href="{de_url}"/>\n'
-        ) if has_en else ''
-        urls.append(
-            f'  <url>\n'
-            f'    <loc>{de_url}</loc>\n'
-            f'{hreflang}'
-            f'    <lastmod>{heute_iso}</lastmod>\n'
-            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
-            f'    <priority>{page["priority"]}</priority>\n'
-            f'  </url>'
-        )
-        if has_en:
-            en_priority = str(round(float(page["priority"]) - 0.1, 2))
-            urls.append(
-                f'  <url>\n'
-                f'    <loc>{en_url}</loc>\n'
-                f'    <xhtml:link rel="alternate" hreflang="de" href="{de_url}"/>\n'
-                f'    <xhtml:link rel="alternate" hreflang="en" href="{en_url}"/>\n'
-                f'    <xhtml:link rel="alternate" hreflang="x-default" href="{de_url}"/>\n'
-                f'    <lastmod>{heute_iso}</lastmod>\n'
-                f'    <changefreq>{page["changefreq"]}</changefreq>\n'
-                f'    <priority>{en_priority}</priority>\n'
-                f'  </url>'
-            )
-
-    # Blog-Posts (aus blog/posts/ Markdown-Frontmatter lesen)
+    Laeuft auf dem Host (dort liegt das Git-Repo mit voller Historie). Ohne
+    verlaessliche Antwort: None -> die URL bekommt KEIN lastmod. Frueher stand
+    ueberall das Build-Datum, womit lastmod nichts mehr aussagte.
+    """
+    import subprocess
+    # SA_GIT_WURZEL: Git-Historie eines anderen Checkouts lesen (nur fuer den
+    # Mutationstest, der in einer Kopie ohne .git laeuft; Pfade relativ gleich).
+    wurzel = os.environ.get("SA_GIT_WURZEL") or str(_REPO)
     try:
-        import yaml
-        from pathlib import Path
-        posts_dir = Path(__file__).resolve().parent.parent / "blog" / "posts"
-        if posts_dir.exists():
-            for md in sorted(posts_dir.glob("*.md")):
-                try:
-                    raw = md.read_text(encoding="utf-8")
-                    if raw.startswith("---"):
-                        _, fm, _ = raw.split("---", 2)
-                        meta = yaml.safe_load(fm) or {}
-                        slug = meta.get("slug")
-                        if slug and meta.get("status", "published") == "published":
-                            urls.append(
-                                f'  <url>\n'
-                                f'    <loc>{BASE_URL}/blog/{slug}/</loc>\n'
-                                f'    <lastmod>{heute_iso}</lastmod>\n'
-                                f'    <changefreq>monthly</changefreq>\n'
-                                f'    <priority>0.75</priority>\n'
-                                f'  </url>'
-                            )
-                except Exception as e:
-                    print(f"  [WARN] Blog-Post {md.name}: {e}")
-    except ImportError:
-        print("  [WARN] PyYAML fehlt, Blog-Posts werden nicht in sitemap aufgenommen")
+        rel = str(Path(pfad).resolve().relative_to(_REPO.resolve()))
+    except ValueError:
+        return None
+    try:
+        r = subprocess.run(["git", "log", "-1", "--format=%cs", "--", rel],
+                           cwd=wurzel, capture_output=True, text=True, timeout=20)
+    except Exception:
+        return None
+    d = r.stdout.strip()
+    return d if r.returncode == 0 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", d) else None
 
-    # SEO-Landingpages /analyse/*: 2026-04-18 ENDGUELTIG ENTFERNT.
-    # Ursprung: 2026-04-10 auf noindex gesetzt (Thin-Content, fake KI-Prognose-Dummies).
-    # 2026-04-18: komplett beerdigt. Nginx liefert 410 Gone, Builder erzeugt keine
-    # Pages mehr. `titel_daten` wird nur noch fuer den Cleanup-Schritt gebraucht.
 
-    sitemap = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
+def _ist_noindex(pfad: Path) -> bool:
+    m = re.search(r'<meta\s+name="robots"\s+content="([^"]*)"',
+                  pfad.read_text(encoding="utf-8", errors="replace"))
+    return bool(m and "noindex" in m.group(1).lower())
+
+
+def sitemap_eintraege() -> list[dict]:
+    """Alle Sitemap-URLs als Liste von Dicts {loc, lastmod, changefreq, priority, alternates}.
+
+    Regeln (SEO-Review 2026-09-30, docs/SEO_UMSETZUNGSPLAN_2026-09.md):
+    - nur indexierbare Seiten (kein `noindex`, veroeffentlicht);
+    - EN-Fassung nur, wenn sie existiert (`_EN_PAGE_META`, Blog-Paare ueber `de_slug`);
+    - hreflang je Paar in beide Richtungen, x-default = DE;
+    - lastmod = letzte wesentliche Aenderung, sonst weggelassen.
+    Wird auch vom Waechter (scripts/verify_seo_html.py) gelesen.
+    """
+    from shared.seo_basis import en_seiten_meta, blog_artikel, blog_hreflang_ziele
+
+    en_seiten = set(en_seiten_meta())
+    eintraege: list[dict] = []
+
+    def paar(de_url: str, en_url: str | None) -> list[tuple[str, str]]:
+        if not en_url:
+            return []
+        return [("de", de_url), ("en", en_url), ("x-default", de_url)]
+
+    def neu(loc, lastmod, freq, prio, alternates=()):
+        eintraege.append({"loc": loc, "lastmod": lastmod, "changefreq": freq,
+                          "priority": prio, "alternates": list(alternates)})
+
+    # Startseite DE + EN
+    start_datum = _git_datum(_REPO / "landing" / "index.html")
+    alt = paar(f"{BASE_URL}/", f"{BASE_URL}/en/")
+    neu(f"{BASE_URL}/", start_datum, "weekly", "1.0", alt)
+    neu(f"{BASE_URL}/en/", start_datum, "weekly", "0.9", alt)
+
+    # Statische Seiten ohne EN-Fassung. /disclaimer fehlt bewusst: die Seite ist
+    # noindex (Rechtstext), stand aber bis 2026-09-30 trotzdem in der Sitemap.
+    for slug, datei, prio, freq in [
+        ("ueber-uns", _REPO / "landing" / "ueber-uns.html", "0.7", "monthly"),
+        ("rechtliches", _REPO / "landing" / "rechtliches.html", "0.3", "yearly"),
+        ("tools/trading-day-converter", _REPO / "seo" / "tools" / "trading-day-converter.html",
+         "0.9", "monthly"),
+    ]:
+        if _ist_noindex(datei):
+            continue
+        neu(f"{BASE_URL}/{slug}", _git_datum(datei), freq, prio)
+
+    # Landing-Feature-Seiten (Auto-Discovery), ohne noindex
+    for html_datei in sorted((_REPO / "landing" / "pages").glob("*.html")):
+        slug = html_datei.stem
+        if slug in PAGE_EXCLUDES or _ist_noindex(html_datei):
+            continue
+        prio, freq = PRIORITY_OVERRIDES.get(slug, ("0.85", "weekly"))
+        de_url = f"{BASE_URL}/{slug}"
+        en_url = f"{BASE_URL}/en/{slug}" if slug in en_seiten else None
+        datum = _git_datum(html_datei)
+        alt = paar(de_url, en_url)
+        neu(de_url, datum, freq, prio, alt)
+        if en_url:
+            neu(en_url, datum, freq, str(round(float(prio) - 0.1, 2)), alt)
+
+    # Blog: Startseite + Kategorien (beide Sprachen, gleiche Pfade)
+    de_art = [a for a in blog_artikel("de") if a["indexierbar"]]
+    en_art = [a for a in blog_artikel("en") if a["indexierbar"]]
+    def neuester(arts):
+        d = max((a["geaendert"] for a in arts), default=None)
+        return d.isoformat() if d else None
+    kategorien = ["", "education/", "marktausblick/", "tutorials/"]
+    for pfad in kategorien:
+        kat = pfad.rstrip("/")
+        de_k = [a for a in de_art if not kat or a["meta"].get("category", "education") == kat]
+        en_k = [a for a in en_art if not kat or a["meta"].get("category", "education") == kat]
+        de_url, en_url = f"{BASE_URL}/blog/{pfad}", f"{BASE_URL}/en/blog/{pfad}"
+        alt = paar(de_url, en_url)
+        prio = "0.9" if not pfad else "0.8"
+        neu(de_url, neuester(de_k), "weekly", prio, alt)
+        neu(en_url, neuester(en_k), "weekly", str(round(float(prio) - 0.1, 2)), alt)
+
+    # Blog-Artikel, reziprokes hreflang nach derselben Regel wie im Blog-HTML
+    # (shared.seo_basis.blog_hreflang_ziele: nur indexierbare Gegenstuecke)
+    de_zu_en, en_zu_de = blog_hreflang_ziele()      # wirft bei Fehlverweis
+    for a in de_art:
+        de_url = f"{BASE_URL}/blog/{a['slug']}/"
+        e = de_zu_en.get(a["slug"])
+        en_url = f"{BASE_URL}/en/blog/{e}/" if e else None
+        neu(de_url, a["geaendert"].isoformat(), "monthly", "0.75", paar(de_url, en_url))
+    for a in en_art:
+        en_url = f"{BASE_URL}/en/blog/{a['slug']}/"
+        d = en_zu_de.get(a["slug"])
+        de_url = f"{BASE_URL}/blog/{d}/" if d else None
+        neu(en_url, a["geaendert"].isoformat(), "monthly", "0.65",
+            paar(de_url, en_url) if de_url else [])
+    return eintraege
+
+
+def build_sitemap(titel_daten: list[dict], output_ordner: str):
+    """Schreibt sitemap.xml aus sitemap_eintraege() (titel_daten nur noch API-Rest)."""
+    _ = titel_daten
+    from xml.sax.saxutils import escape, quoteattr
+    teile = []
+    for e in sitemap_eintraege():
+        z = [f"  <url>", f"    <loc>{escape(e['loc'])}</loc>"]
+        for sprache, href in e["alternates"]:
+            z.append(f'    <xhtml:link rel="alternate" hreflang="{sprache}" href={quoteattr(href)}/>')
+        if e["lastmod"]:
+            z.append(f"    <lastmod>{e['lastmod']}</lastmod>")
+        z.append(f"    <changefreq>{e['changefreq']}</changefreq>")
+        z.append(f"    <priority>{e['priority']}</priority>")
+        z.append("  </url>")
+        teile.append(chr(10).join(z))
+    xml = chr(10).join([
+        '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
-        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
-        + "\n".join(urls) + "\n"
-        '</urlset>\n'
-    )
-
+        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+        *teile, "</urlset>", ""])
     path = os.path.join(output_ordner, "sitemap.xml")
     with open(path, "w", encoding="utf-8") as f:
-        f.write(sitemap)
-    print(f"  [OK] sitemap.xml ({len(urls)} URLs)")
+        f.write(xml)
+    print(f"  [OK] sitemap.xml ({len(teile)} URLs)")
 
 
 # ── robots.txt Generator ────────────────────────────────────────────────────

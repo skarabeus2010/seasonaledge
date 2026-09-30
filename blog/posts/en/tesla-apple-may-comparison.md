@@ -2,7 +2,7 @@
 title: "May Seasonality: Tesla vs. Apple — Who Beats the Sell-in-May Effect?"
 seo_title: "Tesla vs Apple May Seasonality: Who Defies Sell in May?"
 slug: tesla-apple-may-comparison
-de_slug: tesla-apple-mai-vergleich
+de_slug: tesla-apple-mai-saisonalitaet
 date: 2026-04-10
 category: marktausblick
 tags: [tesla, apple, sell-in-may, may, individual-stocks, seasonality, tech-stocks, earnings-drift, q2-seasonality, stock-comparison]

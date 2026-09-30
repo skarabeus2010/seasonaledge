@@ -40,19 +40,30 @@ jobs:
             # Supabase Credentials in Landing-HTML injizieren
             bash deploy/inject_credentials.sh /opt/seasonaledge
 
+            # Reihenfolge und Abbrueche (SEO-Review 2026-09-30): erst ALLE Seiten
+            # bauen, dann die Sitemap daraus erzeugen, dann pruefen. Jeder dieser
+            # Schritte bricht den Deploy ab — frueher waren EN-Build und
+            # Blog-Build "non-fatal", ein spaeter erfolgreicher Befehl verdeckte
+            # den Fehlschlag, und die Sitemap entstand vor dem Blog.
+            # (Der fruehere nginx-Laufzeitfallback @en_runtime existiert nicht mehr.)
+            scheitern() { echo "::error::$1"; exit 1; }
+
             # EN-Landing-Pages vorrendern -> landing/en/<slug>.html (statisch).
             # Laeuft NACH inject_credentials, damit die EN-Pages Credentials +
-            # Cache-Bust erben. Non-fatal: nginx faellt sonst auf den
-            # Laufzeit-sub_filter-Swap zurueck (@en_runtime).
-            python3 landing/build_en.py --write || echo "  [build_en] fehlgeschlagen (non-fatal)"
+            # Cache-Bust erben.
+            python3 landing/build_en.py --write || scheitern "build_en.py fehlgeschlagen"
 
-            # SEO + Blog generieren
+            # Docker rebuild + restart, dann Blog (DE+EN) im Container bauen
+            docker compose up -d --build || scheitern "docker compose up fehlgeschlagen"
+            docker compose exec -T app python3 blog/blog_builder.py --build \
+              || scheitern "blog_builder.py --build fehlgeschlagen"
+
+            # Sitemap + robots.txt + llms.txt + Disclaimer (Host-Python, liest Git-Daten fuer lastmod)
             pip install -q Jinja2 PyYAML 2>/dev/null || pip3 install -q Jinja2 PyYAML 2>/dev/null
-            python3 seo/programmatic_seo_builder.py
+            python3 seo/programmatic_seo_builder.py || scheitern "programmatic_seo_builder.py fehlgeschlagen"
 
-            # Docker rebuild + restart
-            docker compose up -d --build
-            docker compose exec -T app python3 blog/blog_builder.py --build
+            # Waechter: gebaute Seiten + Sitemap gegen die erwartete URL-Liste
+            python3 scripts/verify_seo_html.py || scheitern "verify_seo_html.py meldet Fehler"
 
             # Dekaden-Daten generieren (131 Jahre ^DJI via Stooq)
             docker compose exec -T app python3 scripts/generate_decade_data.py --ticker "^DJI" 2>/dev/null || echo "generate_decade_data.py uebersprungen"

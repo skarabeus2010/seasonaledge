@@ -2,7 +2,7 @@
 title: "Welcome to SeasonAlpha.ai — Your Unfair Edge in the Stock Market"
 seo_title: "SeasonAlpha.ai: AI-Powered Seasonal Market Analysis"
 slug: welcome-to-seasonalpha
-de_slug: willkommen-bei-seasonalpha
+de_slug: willkommen-bei-seasonalpha.ai
 noindex: true
 date: 2026-03-27
 category: education
