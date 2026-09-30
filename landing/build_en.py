@@ -503,6 +503,17 @@ def main():
         title, desc = meta[slug]
         print("  " + build_page(slug, title, desc, en, args.write))
 
+    # Verwaiste EN-Dateien entfernen: landing/en/ ist gitignored und wurde nie
+    # aufgeräumt. Nach dem Löschen von /studien lag landing/en/studien.html weiter
+    # auf dem Server, verlinkte /en/index-effekt (existiert nicht) und liess den
+    # Deploy am Wächter scheitern (2026-09-30). Nur beim Vollbau, nie mit --page.
+    if args.write and not args.page and OUT.exists():
+        soll = {"index.html" if s == "index" else f"{s}.html" for s in meta}
+        for datei in sorted(OUT.glob("*.html")):
+            if datei.name not in soll:
+                datei.unlink()
+                print(f"  [DEL]   {datei.name}: kein _EN_PAGE_META-Eintrag (verwaist)")
+
     if not args.write:
         print("\n  -> Mit --write schreiben, danach: py landing/verify_en.py")
 
