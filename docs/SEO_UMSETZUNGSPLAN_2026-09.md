@@ -23,6 +23,27 @@ Grundlage: externes SEO-Review (ChatGPT), jede Behauptung live und am Code gepr�
 
 ## Phase 1 — Defekte beheben (ohne Nutzerentscheidung)
 
+> **Erledigt 2026-09-30** (Commit `857126a`, Codex-Freigabe nach 3 Code-Runden, Review-Aufträge
+> `docs/review_prompts/2026-09-30_seo_phase1_runde*.md`). Live nachgewiesen: Sitemap 184 URLs (vorher 139),
+> alle 200 ohne Redirect, 33 verschiedene `lastmod` statt einem; p-Wert-Artikel DE+EN mit gültigen Metadaten;
+> Startseite ohne FAQPage; Kategorien mit eigener Canonical. `verify_seo_html.py` läuft im Deploy (auf dem
+> Server 0 Fehler), `verify_seo_mutation.py` fängt 28/28 Mutationen.
+>
+> **Abweichungen vom Plan / Zusatzfunde:** `/disclaimer` ist `noindex` und stand trotzdem in der Sitemap — der
+> Wächter fand es beim ersten Lauf. Die Blog-Artikel verlinkten per hreflang nur EN→DE, nie DE→EN (jetzt
+> reziprok; HTML und Sitemap nutzen dieselbe Funktion `blog_hreflang_ziele`, die nur indexierbare Gegenstücke
+> zulässt). Die Blog-Übersichten hatten gar kein hreflang. Weitere veraltete Zahlen auf `/pricing` („270
+> Ticker", „130 Jahre"), in der Tour („269 Ticker") und in den EN-Beschreibungen. Ohne `date` scheitert der
+> Blog-Build jetzt, statt das Tagesdatum einzusetzen.
+>
+> **Lessons:** (1) Zwei Werkzeugschichten haben Backslash-Escapes beim Schreiben still umgedeutet — einmal
+> entstand eine Escape-Tabelle, die `<` auf `<` abbildete, also nichts schützte, bei weiterhin laufendem Code.
+> Getestet wird deshalb die AUSGABE (Rundlauf + „kein `</` im Ergebnis"), nicht der Quelltext. (2) Eine
+> Mutation, die nichts ändert, prüft nichts — die erste Doppelmaskierungs-Mutation traf eine Beschreibung ohne
+> maskierbare Zeichen; der Test bricht jetzt bei wirkungsloser Mutation ab. (3) Codex fand in jeder Runde
+> Prüflücken des Wächters, nicht des Produktivcodes: leere Sitemap bestand, fehlende noindex-Pflichtseiten
+> fielen durch einen Existenzfilter, ein zusätzliches `unescape` verdeckte Doppelmaskierung.
+
 **1a. Sichere Serialisierung**
 - Blog-Builder: `autoescape` für HTML/XML. Als sicher markiert werden NUR die drei bewusst erzeugten
   HTML-Fragmente `content`, `disclaimer_short`, `disclaimer_long`. UI-Strings/Template-Defaults, die heute
