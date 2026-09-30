@@ -34,6 +34,7 @@ Danach verifizieren:  py landing/verify_en.py
 """
 from __future__ import annotations
 import re, sys, json, argparse
+from html import unescape as html_unescape
 from pathlib import Path
 from html.parser import HTMLParser
 
@@ -48,6 +49,7 @@ BASE_URL  = "https://seasonalpha.ai"
 OG_IMAGE  = f"{BASE_URL}/landing/assets/images/og-image.png"
 TWITTER   = "@SeasonAlph4882"
 MARKER    = "<!-- SA_META_V5_EN -->"
+STANDARD_ROBOTS = "index, follow, max-snippet:-1, max-image-preview:large"
 
 # Page-Registry (Typ/Kategorie) aus dem DE-Generator wiederverwenden
 try:
@@ -86,6 +88,14 @@ def esc_text(s: str) -> str:
     s = re.sub(r"&(?!#?\w+;)", "&amp;", s)   # nur freistehende & escapen
     return s.replace("<", "&lt;").replace(">", "&gt;")
 
+def _json_ld(obj) -> str:
+    """JSON-LD ueber shared.seo_basis (Script-Kontext-Escapes, eine Quelle)."""
+    if str(REPO) not in sys.path:
+        sys.path.insert(0, str(REPO))
+    from shared.seo_basis import json_ld
+    return json_ld(obj)
+
+
 def load_en() -> dict:
     return json.loads((I18N / "en.json").read_text(encoding="utf-8"))
 
@@ -102,7 +112,8 @@ def load_en_page_meta() -> dict:
 
 
 # ---------------------------------------------------------------- SEO head
-def build_en_head(slug: str, title: str, desc: str, og_type: str) -> str:
+def build_en_head(slug: str, title: str, desc: str, og_type: str,
+                  robots: str = STANDARD_ROBOTS) -> str:
     de_url = f"{BASE_URL}/{slug}"
     en_url = f"{BASE_URL}/en/{slug}"
     short  = re.sub(r"\s*[|—-]\s*SeasonAlpha\s*$", "", title).strip() or title
@@ -121,8 +132,17 @@ def build_en_head(slug: str, title: str, desc: str, og_type: str) -> str:
             {"@type": "ListItem", "position": 2, "name": short, "item": en_url},
         ],
     }
-    jd = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
+    jd = _json_ld
     t, d = esc_attr(title), esc_attr(desc)
+    # noindex-Seiten (profile, watchlist, unsubscribe) bleiben noindex und bekommen
+    # keine hreflang-Verweise — sie sollen nicht als Sprachpartner dienen.
+    if "noindex" in robots.lower():
+        sprachen = ""
+    else:
+        nl = chr(10)
+        sprachen = (f'  <link rel="alternate" hreflang="de" href="{de_url}">{nl}'
+                    f'  <link rel="alternate" hreflang="en" href="{en_url}">{nl}'
+                    f'  <link rel="alternate" hreflang="x-default" href="{de_url}">{nl}')
 
     return f"""  {MARKER}
   <meta charset="utf-8">
@@ -130,13 +150,10 @@ def build_en_head(slug: str, title: str, desc: str, og_type: str) -> str:
   <title>{t}</title>
   <meta name="description" content="{d}">
   <meta name="author" content="SeasonAlpha">
-  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="robots" content="{esc_attr(robots)}">
   <meta name="theme-color" content="#000000">
   <link rel="canonical" href="{en_url}">
-  <link rel="alternate" hreflang="de" href="{de_url}">
-  <link rel="alternate" hreflang="en" href="{en_url}">
-  <link rel="alternate" hreflang="x-default" href="{de_url}">
-
+{sprachen}
   <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
   <meta property="og:type" content="{og_type}">
   <meta property="og:url" content="{en_url}">
@@ -169,19 +186,52 @@ def build_en_head(slug: str, title: str, desc: str, og_type: str) -> str:
 """
 
 
+class HeadFehler(ValueError):
+    pass
+
+
 def replace_head(html: str, slug: str, title: str, desc: str, og_type: str):
+    """Head einer Feature-Seite neu bauen (EN-Canonical, EN-JSON-LD, EN-OG).
+
+    Ersetzt wird der Bereich von <head> bis einschliesslich des app.css-Links.
+    Seit 2026-09-30 (SEO-Plan, EN-Duplikate):
+    - Der CSS-Link darf den Cache-Buster tragen (`app.css?v=<sha>`, gesetzt von
+      deploy/inject_credentials.sh VOR diesem Build) und wird unveraendert
+      uebernommen. Vorher verlangte die Regex den Link OHNE Query — auf dem Server
+      griff sie deshalb nie, und jede EN-Seite behielt deutsches JSON-LD mit
+      DE-URLs (GSC: 18 EN-Seiten als "Duplikat").
+    - Google Fonts: der nicht-blockierende Link (media="print" + onload) samt
+      folgendem <noscript> wird woertlich uebernommen. Vorher traf die Regex den
+      Fallback-Link IM <noscript> und baute ihn als render-blockierendes Stylesheet
+      ein. Eine Quelle ohne Fonts (z. B. unsubscribe) ist gueltig; eine
+      ausschliesslich blockierende Einbindung ist ein Fehler.
+    - preconnect-Links und robots (noindex!) kommen aus der Quelle.
+    """
     m = re.search(
-        r"<head>(.*?)(<link\s+rel=\"stylesheet\"\s+href=\"/landing/css/app\.css\">)",
+        r'<head>(.*?)(<link\s+rel="stylesheet"\s+href="/landing/css/app\.css(?:\?v=[^"]*)?">)',
         html, re.S)
     if not m:
         return html, False
-    fonts = re.search(
-        r'(<link\s+href="https://fonts\.googleapis\.com[^"]*"\s+rel="stylesheet">)', html)
-    new_head = "<head>\n" + build_en_head(slug, title, desc, og_type)
-    if fonts:
-        new_head += f"\n  {fonts.group(1)}"
-    new_head += '\n  <link rel="stylesheet" href="/landing/css/app.css">'
-    return html.replace(m.group(0), new_head), True
+    bereich, css_link = m.group(1), m.group(2)
+    rob = re.search(r'<meta\s+name="robots"\s+content="([^"]*)"', bereich)
+    robots = html_unescape(rob.group(1)) if rob else STANDARD_ROBOTS
+    if str(REPO) not in sys.path:
+        sys.path.insert(0, str(REPO))
+    from shared.seo_basis import google_fonts_pruefung
+    fonts_paar, font_probleme = google_fonts_pruefung(bereich)
+    if font_probleme:
+        # Quelle fehlerhaft (blockierend, ohne onload oder ohne noscript) -> lieber
+        # scheitern als eine haengende oder schriftlose EN-Seite ausliefern.
+        raise HeadFehler(f"{slug}: " + "; ".join(font_probleme))
+    preconnect = re.findall(r'<link\b[^>]*\brel="preconnect"[^>]*>', bereich)
+    nl = chr(10)
+    neu = "<head>" + nl + build_en_head(slug, title, desc, og_type, robots)
+    for pc in preconnect:
+        neu += f"{nl}  {pc}"
+    if fonts_paar:
+        neu += f"{nl}  {fonts_paar.strip()}"
+    neu += f"{nl}  {css_link}"
+    return html.replace(m.group(0), neu), True
 
 
 def localize_head_targeted(html: str, en_url: str, de_url: str,
@@ -382,7 +432,13 @@ def localize_index_jsonld(html_doc: str) -> str:
 
     def walk(o, feld=None):
         if isinstance(o, dict):
-            return {k: walk(v, k) for k, v in o.items()}
+            neu = {k: walk(v, k) for k, v in o.items()}
+            # Seiten-/Suchziele sprachabhaengig; Organisations-Identitaet bleibt Domainwurzel
+            if neu.get("@type") == "WebSite" and neu.get("url") == f"{BASE_URL}/":
+                neu["url"] = f"{BASE_URL}/en/"
+            if isinstance(neu.get("urlTemplate"), str) and neu["urlTemplate"].startswith(f"{BASE_URL}/dashboard"):
+                neu["urlTemplate"] = f"{BASE_URL}/en" + neu["urlTemplate"][len(BASE_URL):]
+            return neu
         if isinstance(o, list):
             return [walk(x, feld) for x in o]
         if isinstance(o, str) and feld in _INDEX_JSONLD_SPRACHFELDER:
@@ -459,11 +515,18 @@ def build_page(slug: str, title: str, desc: str, en: dict, write: bool):
         en_url, de_url = f"{BASE_URL}/en/{slug}", f"{BASE_URL}/{slug}"
 
     html = re.sub(r'<html\s+lang="de"', '<html lang="en"', html, count=1)
-    html, head_ok = replace_head(html, slug, title, desc, og_type)
-    head_mode = "regen"
-    if not head_ok:
+    if slug == "index":
+        # Startseite: eigener, reicher Head (Umami, site-verification, eigenes
+        # JSON-LD) -> gezielt lokalisieren statt neu bauen.
         html = localize_head_targeted(html, en_url, de_url, title, desc)
         head_ok, head_mode = True, "targeted"
+    else:
+        html, head_ok = replace_head(html, slug, title, desc, og_type)
+        head_mode = "regen"
+        if not head_ok:
+            # Frueher stiller Rueckfall auf localize_head_targeted -> deutsches
+            # JSON-LD mit DE-URLs auf der EN-Seite. Jetzt ein Build-Fehler.
+            raise HeadFehler(f"{slug}: Head-Bereich bis app.css nicht gefunden")
 
     if slug == "index":
         html = localize_index_jsonld(html)

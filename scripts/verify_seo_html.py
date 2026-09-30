@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -328,6 +329,40 @@ def pruefe(live: bool) -> list[str]:
             if ziel is None or not ziel.exists():
                 fehler.append(f"{pfad.relative_to(REPO).as_posix()}: Link {href} zeigt auf keine gebaute Seite")
 
+    # 9: EN-Köpfe (Serverpfad!) gegen Regeln und DE-Quelle; html lang + OG + hreflang
+    #    der indexierbaren DE-Landingseiten; blockierende Fonts auf allen Seiten.
+    for slug in en_seiten_meta():
+        en_pfad = REPO / "landing" / "en" / ("index.html" if slug == "index" else f"{slug}.html")
+        de_pfad = REPO / "landing" / ("index.html" if slug == "index" else f"pages/{slug}.html")
+        if en_pfad.exists() and de_pfad.exists():
+            fehler += pruefe_en_kopf(slug, en_pfad.read_text(encoding="utf-8"),
+                                     de_pfad.read_text(encoding="utf-8"))
+    en_meta = en_seiten_meta()
+    for url in soll_urls:
+        pfad = artefakt(url)
+        if pfad is None or not pfad.exists() or "/en/" in url or "/blog/" in url or pfad.name in AUSGENOMMEN:
+            continue
+        roh = pfad.read_text(encoding="utf-8")
+        s = geparst.get(pfad) or lies(pfad)
+        rel = pfad.relative_to(REPO).as_posix()
+        if not re.search(r'<html\s+lang="de"', roh):
+            fehler.append(f"{rel}: <html lang> ist nicht de")
+        if s.meta("og:url") not in (url, None) or s.meta("og:url") is None:
+            fehler.append(f"{rel}: og:url {s.meta('og:url')!r} statt {url}")
+        if s.meta("og:locale") != "de_DE":
+            fehler.append(f"{rel}: og:locale {s.meta('og:locale')!r} statt de_DE")
+        slug = "index" if url.rstrip("/") == BASE_URL else url.rsplit("/", 1)[1]
+        if slug in en_meta:
+            en_url = f"{BASE_URL}/en/" if slug == "index" else f"{BASE_URL}/en/{slug}"
+            soll = {("de", url), ("en", en_url), ("x-default", url)}
+            if set(s.hreflang) != soll:
+                fehler.append(f"{rel}: hreflang {sorted(s.hreflang)} statt {sorted(soll)}")
+    for pfad in geparst:
+        if pfad.name in AUSGENOMMEN:
+            continue
+        for b in blockierende_fonts(pfad.read_text(encoding="utf-8", errors="replace")):
+            fehler.append(f"{pfad.relative_to(REPO).as_posix()}: {b}")
+
     # 8: robots.txt sperrt nichts, was Google sehen muss
     robots = REPO / "seo" / "output" / "robots.txt"
     if not robots.exists():
@@ -416,6 +451,103 @@ def pruefe_kennzahlen(sitemap_urls: list[str]) -> list[str]:
                     continue
                 fehler.append(f"{rel}: „{m.group(0)}“ ohne „bis zu/up to“ (gilt nur für einzelne Reihen)")
     return fehler
+
+
+# reihenfolgeunabhängig (Codex R1: rel vor href ist genauso gültig)
+PRECONNECT = re.compile(r'<link\b[^>]*\brel="preconnect"[^>]*>')
+
+
+def blockierende_fonts(roh: str) -> list[str]:
+    """Probleme der Google-Fonts-Einbindung (blockierend, ohne onload, ohne <noscript>).
+    Gemeinsame Regel mit build_en (shared.seo_basis.google_fonts_pruefung)."""
+    from shared.seo_basis import google_fonts_pruefung
+    kopf = roh.split("</head>", 1)[0]
+    return google_fonts_pruefung(kopf)[1]
+
+
+def pruefe_en_kopf(slug: str, en_roh: str, de_roh: str) -> list[str]:
+    """Kopf einer gebauten EN-Seite gegen Regeln und gegen ihre DE-Quelle.
+
+    SEO-Plan „EN-Duplikate" (2026-09-30): auf dem Server trugen alle EN-Seiten das
+    deutsche JSON-LD mit DE-URLs, weil build_en.replace_head den Cache-Buster am
+    CSS-Link nicht erkannte. Wird auch von scripts/verify_en_serverpfad.py genutzt.
+    """
+    f: list[str] = []
+    rel = f"landing/en/{'index' if slug == 'index' else slug}.html"
+    kanon = f"{BASE_URL}/en/" if slug == "index" else f"{BASE_URL}/en/{slug}"
+    s = Seite()
+    s.feed(en_roh)
+    if not re.search(r'<html\s+lang="en"', en_roh):
+        f.append(f"{rel}: <html lang> ist nicht en")
+    if s.canonical != [kanon]:
+        f.append(f"{rel}: Canonical {s.canonical} statt {kanon}")
+    if s.meta("og:url") != kanon:
+        f.append(f"{rel}: og:url {s.meta('og:url')!r} statt {kanon}")
+    if s.meta("og:locale") != "en_US":
+        f.append(f"{rel}: og:locale {s.meta('og:locale')!r} statt en_US")
+    from shared.seo_basis import schema_knoten, schema_typen
+    # alle Schema-Knoten, auch in @graph und Listen (Codex R1)
+    blocks = [k for r in s.ld_roh if _parsebar(r) for k in schema_knoten(json.loads(r))]
+    typen = [t for k in blocks for t in schema_typen(k)]
+    if "FAQPage" in typen:
+        f.append(f"{rel}: FAQPage auf EN (deutsch, Rich Result abgeschafft)")
+    if slug == "index":
+        ws = [b for b in blocks if "WebSite" in schema_typen(b)]
+        if len(ws) != 1 or ws[0].get("url") != f"{BASE_URL}/en/":
+            f.append(f"{rel}: WebSite.url nicht /en/")
+        else:
+            tpl = (ws[0].get("potentialAction") or {}).get("target", {}).get("urlTemplate", "")
+            if not str(tpl).startswith(f"{BASE_URL}/en/dashboard"):
+                f.append(f"{rel}: SearchAction.urlTemplate {tpl!r} nicht auf /en/dashboard")
+            if not str(ws[0].get("inLanguage", "")).startswith("en"):
+                f.append(f"{rel}: WebSite.inLanguage nicht en")
+    else:
+        wp = [b for b in blocks if "WebPage" in schema_typen(b)]
+        bc = [b for b in blocks if "BreadcrumbList" in schema_typen(b)]
+        if len(wp) != 1:
+            f.append(f"{rel}: {len(wp)} WebPage-Blöcke statt 1")
+        elif wp[0].get("url") != kanon or not str(wp[0].get("inLanguage", "")).startswith("en"):
+            f.append(f"{rel}: WebPage url={wp[0].get('url')!r} inLanguage={wp[0].get('inLanguage')!r}")
+        if len(bc) != 1:
+            f.append(f"{rel}: {len(bc)} BreadcrumbList-Blöcke statt 1")
+        else:
+            items = bc[0].get("itemListElement") or []
+            if not items or items[0].get("item") != f"{BASE_URL}/en/" or items[-1].get("item") != kanon:
+                f.append(f"{rel}: BreadcrumbList Anfang/Ende nicht /en/ … {kanon}")
+    # robots aus der Quelle erhalten
+    de = Seite()
+    de.feed(de_roh)
+    if "noindex" in de.robots() and "noindex" not in s.robots():
+        f.append(f"{rel}: noindex der Quelle verloren")
+    if "noindex" in s.robots():
+        if s.hreflang:
+            f.append(f"{rel}: noindex-Seite mit hreflang-Verweisen")
+    else:
+        de_url = f"{BASE_URL}/" if slug == "index" else f"{BASE_URL}/{slug}"
+        soll = {("de", de_url), ("en", kanon), ("x-default", de_url)}
+        if set(s.hreflang) != soll:
+            f.append(f"{rel}: hreflang {sorted(s.hreflang)} statt {sorted(soll)}")
+    # Erhalt gegen die Quelle: CSS-Link (inkl. Cache-Buster), Font-Paar, preconnect
+    if slug != "index":
+        # strukturell geparst: ein durch kaputtes Markup verschluckter Link fehlt hier (Codex R4)
+        from shared.seo_basis import aktive_stylesheets
+
+        def _app_css(roh):
+            kopf = roh.split("</head>", 1)[0]
+            return [h for h in aktive_stylesheets(kopf) if h.startswith("/landing/css/app.css")]
+        de_css, en_css = _app_css(de_roh), _app_css(en_roh)
+        if de_css[:1] != en_css[:1]:
+            f.append(f"{rel}: CSS-Link {en_css[:1]} statt {de_css[:1]} (Cache-Buster verloren?)")
+        from shared.seo_basis import google_fonts_pruefung
+        de_font = google_fonts_pruefung(de_roh.split("</head>", 1)[0])[0]
+        if de_font and de_font.strip() not in en_roh:
+            f.append(f"{rel}: nicht-blockierendes Font-Paar der Quelle fehlt")
+        for pc in PRECONNECT.findall(de_roh):
+            if pc not in en_roh:
+                f.append(f"{rel}: preconnect der Quelle fehlt ({pc[:60]})")
+    for b in blockierende_fonts(en_roh):
+        f.append(f"{rel}: {b}")
+    return f
 
 
 def _parsebar(roh: str) -> bool:

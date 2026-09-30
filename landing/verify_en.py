@@ -286,9 +286,15 @@ def phase_b(rep: Report, pages: dict, en: dict, de: dict, build_dir: Path):
 
         # B4 - hreflang + title
         hreflangs = set(re.findall(r'hreflang="([^"]+)"', doc))
-        for need in ("de", "en", "x-default"):
-            if need not in hreflangs:
-                rep.failed(f"B4  [{slug}] hreflang '{need}' fehlt")
+        robots = re.search(r'<meta\s+name="robots"\s+content="([^"]*)"', doc)
+        if robots and "noindex" in robots.group(1):
+            # noindex-Seiten tragen bewusst keine Sprachpaare (SEO-Plan EN-Duplikate 2026-09-30)
+            if hreflangs:
+                rep.failed(f"B4  [{slug}] noindex-Seite mit hreflang")
+        else:
+            for need in ("de", "en", "x-default"):
+                if need not in hreflangs:
+                    rep.failed(f"B4  [{slug}] hreflang '{need}' fehlt")
         title = re.search(r"<title>(.*?)</title>", doc, re.S)
         if not title or not title.group(1).strip():
             rep.failed(f"B4  [{slug}] <title> leer")

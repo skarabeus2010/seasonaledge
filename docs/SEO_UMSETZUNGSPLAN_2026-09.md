@@ -176,3 +176,36 @@ Zeilen); Codex-Prüfung `docs/review_prompts/2026-09-30_gsc_indexierung*.md`.
    Nach dem Deploy einmalig „Indexierung beantragen" für die wichtigsten geänderten Seiten.
 6. **G7** und Tool↔Artikel-Verlinkung als Inhaltsarbeit, getrennt.
 7. Erfolg messen an den gewünschten kanonischen Zielseiten, nicht an der Gesamtzahl der Ausschlüsse.
+
+## Phase 1c — EN-Köpfe (2026-09-30)
+
+**Anlass:** GSC „Duplikat – Google hat eine andere Seite als der Nutzer als kanonische Seite bestimmt“:
+18 URLs, alle unter `/en/`. Rohdaten: `raw/gsc/2026-09-30_duplikat.txt`.
+
+**Befund:** Auf dem Server trugen alle EN-Seiten den deutschen Kopf: WebPage- und BreadcrumbList-JSON-LD
+mit **DE-URLs**, deutsches FAQPage. `deploy/inject_credentials.sh` läuft vor `landing/build_en.py` und
+hängt `?v=<sha>` an die CSS-Links; die Regex in `replace_head` verlangte `app.css"` ohne Query, griff also
+nie und fiel still auf `localize_head_targeted` zurück (tauscht nur Titel/Description/Canonical). Lokal
+fehlt der Cache-Buster, deshalb war es in keinem lokalen Test sichtbar. Ob das JSON-LD Googles
+Canonical-Wahl verursacht hat, ist **nicht bewiesen** — es ist ein widersprüchliches Signal
+(Canonical `/en/x`, Schema-URL `/x`), das weg musste. Erfolg messen: Duplikat-Bericht nach dem nächsten Crawl.
+
+**Umsetzung** (Plan: `docs/review_prompts/2026-09-30_en_jsonld_plan.md`, Codex-Freigabe Runde 3;
+Code: `…_code_runde1.md` bis `…_runde5.md`, Freigabe Runde 5):
+- `replace_head`: `app.css(?:\?v=…)?`, CSS-Link unverändert; `robots` aus der Quelle, bei noindex keine
+  hreflang-Tags; Google-Fonts-Paar und `preconnect` wörtlich übernommen; eigenes WebPage + BreadcrumbList
+  auf `/en/…`; FAQPage entfällt auf EN. Kein Rückfall mehr: `HeadFehler` bricht den Build ab.
+- Startseite: `localize_index_jsonld` setzt `WebSite.url` auf `/en/`, `urlTemplate` auf `/en/dashboard…`;
+  unbekannte deutsche Schema-Knoten → `UnuebersetztesSchema`.
+- `shared/seo_basis.py`: `google_fonts_pruefung` (HTMLParser, gemeinsam für Build und Wächter),
+  `aktive_stylesheets`, `schema_knoten`/`schema_typen` (inkl. `@graph`).
+- Wächter: `verify_seo_html.py::pruefe_en_kopf` für alle EN-Seiten (läuft im Deploy nach dem Build);
+  `landing/verify_en.py` B4: noindex-Seiten ohne hreflang.
+- `scripts/verify_en_serverpfad.py`: baut alle EN-Seiten mit Cache-Buster wie der Server. Neu 0 Fehler,
+  Stand `2da452e` **106 Fehler**; 14 Mutationen am Ergebnis, 9 Fälle an der Quelle (3 gültige Varianten
+  müssen bauen, 6 kaputte müssen abbrechen).
+- Nebenfund: Blog-Templates luden Google Fonts render-blockierend → nicht-blockierend + `<noscript>`;
+  fehlende `og:locale`/`og:url` auf `/ueber-uns`, `/rechtliches`, `/tools/trading-day-converter`.
+
+**Nachher (Nutzer):** Duplikat-Bericht in der GSC nach dem nächsten Crawl; für `/en/scanner` die „von Google
+ausgewählte kanonische URL“ vergleichen.

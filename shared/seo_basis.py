@@ -16,6 +16,7 @@ Nur Standardbibliothek + PyYAML: läuft auch mit dem System-Python des Hosts.
 from __future__ import annotations
 
 import json
+from html.parser import HTMLParser
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -213,6 +214,128 @@ def en_seiten_meta() -> dict[str, tuple[str, str]]:
     for pfad, titel, desc in eintrag.findall(block.group(1)):
         aus[pfad.strip("/") or "index"] = (unesc(titel), unesc(desc))
     return aus
+
+
+# ── Google Fonts im <head> ─────────────────────────────────────────────
+# Strukturell per HTMLParser (Codex R2/R3): Attribute mit/ohne Anführungszeichen,
+# Kommentare zählen nicht (sind keine Tags), disabled-Links sind unwirksam.
+
+
+class _KopfTags(HTMLParser):
+    """Liste der Ereignisse (link / noscript-Anfang / noscript-Ende / Text) mit Quelloffsets."""
+
+    def __init__(self, text: str):
+        super().__init__(convert_charrefs=True)
+        # HTMLParser zählt Zeilen nur an \n (nicht splitlines: \r,   …)
+        self._zeilen = [0] + [m.end() for m in re.finditer("\n", text)]
+        self._text = text
+        self.ereignisse: list[dict] = []
+        self._ns_tiefe = 0
+        self.feed(text)
+        self.close()
+
+    def _idx(self) -> int:
+        zeile, spalte = self.getpos()
+        return self._zeilen[zeile - 1] + spalte
+
+    def handle_starttag(self, tag, attrs):
+        start = self._idx()
+        ende = start + len(self.get_starttag_text() or "")
+        if tag == "noscript":
+            self._ns_tiefe += 1
+            self.ereignisse.append({"typ": "ns_an", "start": start, "ende": ende})
+        elif tag == "link":
+            self.ereignisse.append({"typ": "link", "start": start, "ende": ende, "im_ns": self._ns_tiefe > 0,
+                                    "at": {k.lower(): (v or "") for k, v in attrs}})
+
+    handle_startendtag = handle_starttag
+
+    def handle_endtag(self, tag):
+        if tag == "noscript" and self._ns_tiefe:
+            self._ns_tiefe -= 1
+            start = self._idx()
+            self.ereignisse.append({"typ": "ns_ab", "start": start, "ende": self._text.index(">", start) + 1})
+
+    def handle_data(self, data):
+        if data.strip():
+            self.ereignisse.append({"typ": "text", "start": self._idx()})
+
+
+def aktive_stylesheets(html_teil: str) -> list[str]:
+    """href aller aktiven Stylesheet-Links außerhalb von <noscript>, strukturell geparst.
+    Ein Link, der z. B. durch ein kaputtes End-Tag verschluckt wurde, fehlt hier (Codex R4)."""
+    return [e["at"].get("href", "") for e in _KopfTags(html_teil).ereignisse
+            if e["typ"] == "link" and not e["im_ns"] and _ist_stylesheet(e["at"])]
+
+
+def _ist_stylesheet(at: dict[str, str]) -> bool:
+    tokens = at.get("rel", "").lower().split()
+    return "stylesheet" in tokens and "alternate" not in tokens and "disabled" not in at
+
+
+def _medium_wirksam(at: dict[str, str]) -> bool:
+    return at.get("media", "").strip().lower() in ("", "all", "screen")
+
+
+def google_fonts_pruefung(html_teil: str) -> tuple[str | None, list[str]]:
+    """Google-Fonts-Einbindung eines HTML-Abschnitts prüfen.
+
+    Rückgabe (Paar, Probleme): Paar = Quelltext des nicht-blockierenden Links
+    (rel=stylesheet, media=print, onload) bis zum Ende des direkt folgenden <noscript>,
+    oder None, wenn es keins gibt. Probleme: blockierende Einbindung außerhalb von
+    <noscript>, fehlendes onload (Fonts würden nie aktiv), fehlender oder unwirksamer
+    <noscript>-Fallback (verlangt: aktiver Stylesheet-Link auf dieselbe Font-URL mit
+    wirksamem Medium). Keine Fonts ist gültig. (CLAUDE.md: blockierendes Dritt-CSS kann
+    Seiten hängen lassen.)
+    """
+    ev = _KopfTags(html_teil).ereignisse
+    paar, probleme = None, []
+    for i, e in enumerate(ev):
+        if e["typ"] != "link" or e["im_ns"]:
+            continue
+        at = e["at"]
+        if "fonts.googleapis.com" not in at.get("href", "") or not _ist_stylesheet(at):
+            continue
+        if at.get("media", "").strip().lower() != "print":
+            probleme.append(f"render-blockierendes Google-Fonts-Stylesheet: {html_teil[e['start']:e['ende']][:80]}")
+            continue
+        if "onload" not in at:
+            probleme.append("Google-Fonts-Link mit media=print ohne onload (Fonts würden nie aktiv)")
+            continue
+        wirksam, ns_ende = False, None
+        if i + 1 < len(ev) and ev[i + 1]["typ"] == "ns_an":
+            for f in ev[i + 2:]:
+                if f["typ"] == "ns_ab":
+                    ns_ende = f["ende"]
+                    break
+                if (f["typ"] == "link" and _ist_stylesheet(f["at"])
+                        and f["at"].get("href") == at["href"] and _medium_wirksam(f["at"])):
+                    wirksam = True
+        if not wirksam or ns_ende is None:
+            probleme.append("nicht-blockierender Google-Fonts-Link ohne wirksamen <noscript>-Fallback")
+            continue
+        if paar is None:
+            paar = html_teil[e["start"]:ns_ende]
+    return paar, probleme
+
+
+def schema_knoten(obj) -> list[dict]:
+    """Schema-Knoten eines JSON-LD-Blocks: oberste Objekte, Listen und @graph-Mitglieder."""
+    aus = []
+    if isinstance(obj, list):
+        for x in obj:
+            aus += schema_knoten(x)
+    elif isinstance(obj, dict):
+        if "@graph" in obj:
+            aus += schema_knoten(obj["@graph"])
+        if "@type" in obj:
+            aus.append(obj)
+    return aus
+
+
+def schema_typen(knoten: dict) -> list[str]:
+    t = knoten.get("@type")
+    return [t] if isinstance(t, str) else list(t or [])
 
 
 # ── Kennzahlen ─────────────────────────────────────────────────────────
