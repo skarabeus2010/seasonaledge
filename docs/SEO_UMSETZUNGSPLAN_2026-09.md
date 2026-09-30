@@ -123,3 +123,45 @@ Danach: Sitemap in der GSC neu einreichen (Nutzer).
 - Die Themenvorschläge des Reviews existieren großteils (`dax-september-signifikanz`, Sell-in-May-Artikel,
   `/monatswechsel`) → keine neuen Seiten, sondern Verlinkung Artikel↔Tool, priorisiert nach GSC-Daten
   (steht teilweise schon als TODO „Rückverweise aus den Tool-Seiten").
+
+## Phase 1b — Indexierung laut GSC (2026-09-30, Plan)
+
+Anlass: GSC meldet 551 nicht indexierte, 28 indexierte Seiten. Export „Gecrawlt – zurzeit nicht indexiert"
+(318) ausgewertet (`raw/gsc/2026-09-30_gecrawlt_nicht_indexiert.txt`, nur die 33 Nicht-Dashboard-/Nicht-Analyse-
+Zeilen); Codex-Prüfung `docs/review_prompts/2026-09-30_gsc_indexierung*.md`.
+
+**Befunde**
+| # | Befund | Beleg |
+|---|---|---|
+| G1 | **Automatische Sprachweiterleitung per JS:** `landing/js/i18n.js::_detectLang` leitet bei englischer Browsersprache (erster Besuch) oder gespeicherter Präferenz `sa_lang=en` JEDE DE-Seite außer Blog/kurzer Ausnahmeliste per `location.replace` auf `/en/…` — auch die Startseite. Googlebot rendert üblicherweise mit englischer Sprache → DE-Werkzeugseiten sind für Google vermutlich JS-Weiterleitungen; `/crash-fruehwarnung` landet auf einer 404. Google rät ausdrücklich von automatischen Sprachweiterleitungen ab. | Code gelesen (Codex-Fund, von mir bestätigt); ob Googlebot tatsächlich umgeleitet wurde, zeigt die URL-Prüfung |
+| G2 | **Links auf nicht existierende EN-Seiten:** die EN-Startseite verlinkt `/en/crash-fruehwarnung` (404), `/en/ueber-uns` (404), `/en/congress`, `/en/index-effekt` (301). Ursache: `build_en.py::rewrite_body_links` und `i18n.js::_applyNavLinks` schreiben pauschal um (Ausnahmelisten statt der EN-Seitenliste). | live geprüft |
+| G3 | **`robots.txt` sperrt `/analyse/`** — dort antwortet der Server mit 410; gesperrt kann Google die 410 nicht abrufen. | Generator + nginx |
+| G4 | **`robots.txt` sperrt `/landing/data/`** — Ressourcen, die Seiten zum Rendern laden (`app.js` → `tickers.json` u. a.). | Generator, `app.js` |
+| G5 | ~250 `/dashboard?t=…`: Canonical `/dashboard`, funktionale Links aus Scanner/Watchlist. | live |
+| G6 | 31 Inhaltsseiten technisch indexierbar (200, Sitemap, Self-Canonical, kein noindex, Text im HTML) — Ursache offen (Rendering s. G1/G4, Googles Bewertung). | live |
+| G7 | Inhaltlich: `sell-in-may-2026` und `sell-in-may-halbzeit-2026` nennen für denselben Zeitraum (130 J.) verschiedene Zahlen (5,2/1,4 % · 70/62 % vs. 7,1/1,8 % · 72/61 %). | Codex |
+
+**Plan**
+1. **G1 beheben:** keine automatische Weiterleitung mehr — Sprache folgt ausschließlich der URL. Die gespeicherte
+   Präferenz steuert nur noch Links/den Sprachumschalter, nie einen Seitenwechsel beim Laden.
+2. **G2 beheben:** Link-Umschreibung (Build und Laufzeit) nur für Seiten mit EN-Fassung (`_EN_PAGE_META`,
+   bzw. `shared.seo_basis.en_seiten_meta` im Build). **Auch `SA.i18n.switchTo()`** (Sprachumschalter, ruft die
+   Navigation per Button) wechselt nur auf existierende Gegenstücke; ohne EN-Fassung wird kein Wechsel auf eine
+   erfundene URL angeboten. Wächter: jeder interne Link in gebauten EN-Seiten muss auf eine existierende Seite
+   zeigen (kein 404/301) — neue Prüfung in `verify_seo_html.py` + Mutation.
+2b. **JavaScript-Regressionstest** (node, echter `landing/js/i18n.js`): DE- und EN-URLs mit verschiedenen
+   Browsersprachen und gespeicherten Präferenzen laden → URL bleibt unverändert, Seitensprache passt; danach
+   Navigation/Footer nachladen (wie `loadComponent`) → alle umgeschriebenen Linkziele existieren; `switchTo()`
+   auf Seiten ohne EN-Fassung erzeugt kein ungültiges Ziel. Gegen den alten Code muss der Test rot sein.
+3. **G3/G4:** `Disallow: /analyse/` und `Disallow: /landing/data/` entfernen; für `/landing/data/*.json` per nginx
+   `X-Robots-Tag: noindex` (Ressource, keine Suchseite). `/app/` (Streamlit-Rest) bleibt gesperrt; `/landing/pages/`,
+   `/static/`, `/_stcore/` bleiben (keine öffentlichen Seiten).
+4. **G5:** nichts ändern; an einigen Ticker-URLs in der GSC prüfen, ob Google `/dashboard` als Canonical übernimmt.
+5. **Messung (Nutzer), zwei getrennte Schritte:** (a) URL-Prüfung → **Live-Test** für `/crash-fruehwarnung`,
+   `/trifecta`, `/scanner`, einen Artikel und `/pricing`: gerenderter Inhalt, Screenshot, fehlgeschlagene
+   Ressourcen. (b) **Indexansicht** derselben URLs: von Google gewähltes Canonical und letzter Crawl — dieser Wert
+   stammt nur aus den Indexdaten, nicht aus dem Live-Test. Nach erneutem Crawling beide vergleichen.
+   Exporte für 404, Duplikat, robots-blockiert, „Gefunden – nicht indexiert".
+   Nach dem Deploy einmalig „Indexierung beantragen" für die wichtigsten geänderten Seiten.
+6. **G7** und Tool↔Artikel-Verlinkung als Inhaltsarbeit, getrennt.
+7. Erfolg messen an den gewünschten kanonischen Zielseiten, nicht an der Gesamtzahl der Ausschlüsse.
