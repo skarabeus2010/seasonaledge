@@ -360,6 +360,8 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 
 ### SEO-Review 2026-09-30 (Plan: [docs/SEO_UMSETZUNGSPLAN_2026-09.md](docs/SEO_UMSETZUNGSPLAN_2026-09.md), Codex-Freigabe nach 3 Runden)
 - [x] **Phase 1 — Defekte** (erledigt 2026-09-30, v65.5, live nachgewiesen): sichere Serialisierung Blog/JSON-LD (p-Wert-Artikel DE+EN kaputt), Sitemap vollständig und nur 200/indexierbar (EN-Blog fehlt komplett, 6 URLs nicht 200, `noindex`-Seiten drin), `lastmod` echt, 3 falsche `de_slug`, Kategorie-Canonicals, Deploy bricht bei Build-/Prüffehler ab, Wächter `verify_seo_html.py`, falsches Startseiten-FAQ-Markup raus, Kennzahlen korrigieren (370 statt „500“/„270+“, „15 KI-Modelle“ raus).
+- [x] **Phase 1b — Indexierung** (2026-09-30, live): automatische Sprachweiterleitung in `i18n.js` entfernt (Googlebot rendert englisch und landete auf `/en/…`, belegt per GSC-Live-Test), Links/Umschalter nur auf existierende EN-Seiten, robots.txt gibt `/analyse/` (410) und `/landing/data/` (Render-Daten, jetzt `X-Robots-Tag: noindex`) frei. **Regel: niemals wieder automatisch nach Browsersprache umleiten.**
+- [ ] **GSC nach dem nächsten Crawl prüfen:** `/scanner`, `/crash-fruehwarnung`, `/trifecta`, `/` live testen (lang=de, Tabelle gefüllt) und Indexierung beantragen; Exporte 404/Duplikat/robots/„Gefunden“ auswerten.
 - [ ] **Phase 2 — Nutzerentscheidung:** H1 der Startseite, Preise/Leistungsumfang, Autorenschaft (Person, Byline, Autorenseite) + `/en/ueber-uns`.
 - [ ] **Phase 3 — GSC:** `/scanner` rendern lassen, Sitemap neu einreichen, Themen-Verlinkung nach Suchdaten.
 - Hinweis: Google zeigt FAQ-Rich-Results seit 07.05.2026 nicht mehr — FAQPage-Markup bringt keine Darstellung, sichtbarer FAQ-Text bleibt Inhalt.

@@ -124,7 +124,18 @@ Danach: Sitemap in der GSC neu einreichen (Nutzer).
   `/monatswechsel`) → keine neuen Seiten, sondern Verlinkung Artikel↔Tool, priorisiert nach GSC-Daten
   (steht teilweise schon als TODO „Rückverweise aus den Tool-Seiten").
 
-## Phase 1b — Indexierung laut GSC (2026-09-30, Plan)
+## Phase 1b — Indexierung laut GSC (2026-09-30, umgesetzt)
+
+> **Umgesetzt und live 2026-09-30** (Commits `9966215`, `ef54b2f`; Codex: Plan 3 Runden, Code 2 Runden FREIGABE).
+> **Beleg vom Nutzer (GSC-Live-Test `/scanner`):** gerendert als `<html lang="en">` mit Canonical `/en/scanner`
+> und leerer Tabelle („Unexpected end of JSON input", weil `tickers.json` per robots.txt gesperrt war) — G1 und G4
+> waren also die tatsächliche Lage, nicht nur Hypothesen. Live nachgewiesen: robots.txt ohne `/analyse/` und
+> `/landing/data/`, `tickers.json` mit `X-Robots-Tag: noindex`, `/analyse/*` 410, keine `/en/`-Links ins Leere,
+> keine Sprachweiterleitung mehr. Beim ersten Deploy stoppte der neue Wächter an einer verwaisten
+> `landing/en/studien.html` (gitignored, nie aufgeräumt) → `build_en.py --write` entfernt verwaiste EN-Dateien.
+> Der neue Wächter fand außerdem acht fest verdrahtete `/en/`-Links in EN-Artikeln (Markdown).
+> **Offen:** JS-Test (`scripts/js/probe_i18n_sprache.js`) läuft nur lokal — kein node auf Server/Container;
+> ein CI-Job vor dem Deploy wäre die dauerhafte Absicherung. Wirkung in der GSC frühestens nach erneutem Crawl.
 
 Anlass: GSC meldet 551 nicht indexierte, 28 indexierte Seiten. Export „Gecrawlt – zurzeit nicht indexiert"
 (318) ausgewertet (`raw/gsc/2026-09-30_gecrawlt_nicht_indexiert.txt`, nur die 33 Nicht-Dashboard-/Nicht-Analyse-
