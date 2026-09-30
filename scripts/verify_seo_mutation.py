@@ -254,7 +254,34 @@ def pruefe_hreflang_regel() -> bool:
     return ok
 
 
-MUTATIONEN = [m_noindex_de_seite_fehlt, m_profil_fehlt, m_titel_falsch, m_og_titel_falsch,
+def m_en_link_ins_leere(w: Path):
+    """EN-Seite verlinkt eine EN-Fassung, die es nicht gibt (Phase 1b, G2)."""
+    ersetze(w / "landing/en/index.html", "</body>",
+            '<a href="/en/crash-fruehwarnung">x</a></body>')
+
+
+def m_robots_sperrt_analyse(w: Path):
+    """robots.txt sperrt wieder /analyse/ (Google sieht die 410 nicht)."""
+    ersetze(w / "seo/output/robots.txt", "Disallow: /landing/pages/",
+            "Disallow: /landing/pages/" + chr(10) + "Disallow: /analyse/")
+
+
+def pruefe_i18n_js() -> bool:
+    """JS-Regressionstest: neuer i18n.js grün, Stand vor Phase 1b (39556ab) rot."""
+    sonde = REPO / "scripts" / "js" / "probe_i18n_sprache.js"
+    neu = subprocess.run(["node", str(sonde)], capture_output=True, text=True, encoding="utf-8")
+    with tempfile.TemporaryDirectory() as t:
+        alt = Path(t) / "i18n_alt.js"
+        inhalt = subprocess.run(["git", "show", "39556ab:landing/js/i18n.js"], cwd=str(REPO),
+                                capture_output=True, text=True, encoding="utf-8").stdout
+        alt.write_text(inhalt, encoding="utf-8")
+        alt_lauf = subprocess.run(["node", str(sonde), str(alt)], capture_output=True, text=True, encoding="utf-8")
+    ok = neu.returncode == 0 and alt_lauf.returncode != 0 and inhalt
+    print(f"  {'gefangen ' if ok else 'VERFEHLT'}  i18n.js (neu rc={neu.returncode}, alt rc={alt_lauf.returncode})")
+    return bool(ok)
+
+
+MUTATIONEN = [m_en_link_ins_leere, m_robots_sperrt_analyse, m_noindex_de_seite_fehlt, m_profil_fehlt, m_titel_falsch, m_og_titel_falsch,
               m_date_modified_falsch, m_modified_time_falsch, m_hreflang_auf_noindex, m_sitemap_leer, m_sitemap_falsche_wurzel, m_sitemap_ohne_lastmod,
               m_sitemap_ohne_hreflang, m_disclaimer_fehlt, m_noindex_artikel_fehlt,
               m_en_doppelt_maskiert, m_historie_ohne_bis_zu, m_kennzahl_veraltet, m_strategien_falsch, m_unmaskierte_description, m_jsonld_texteinsetzung, m_script_ende_im_jsonld,
@@ -287,7 +314,8 @@ def main() -> int:
         print(f"{len(MUTATIONEN) - len(verfehlt)}/{len(MUTATIONEN)} Mutationen gefangen")
         sys.path.insert(0, str(REPO))
         regel_ok = pruefe_hreflang_regel()
-        return 1 if verfehlt or not regel_ok else 0
+        js_ok = pruefe_i18n_js()
+        return 1 if verfehlt or not regel_ok or not js_ok else 0
 
 
 if __name__ == "__main__":

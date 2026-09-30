@@ -490,7 +490,7 @@
         var sigClass = r.signal.toLowerCase();
         var wrClass = r.win_rate >= 50 ? 'pos' : 'neg';
         var arClass = r.avg_return >= 0 ? 'pos' : 'neg';
-        var dashHref = '/dashboard?t=' + encodeURIComponent(r.ticker);
+        var dashHref = SA.i18n.pfad('/dashboard') + '?t=' + encodeURIComponent(r.ticker);
         var scoreColor = r.score >= 6.5 ? 'pos' : (r.score <= 3.5 ? 'neg' : '');
         var escName = (r.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
         var inWL = hasWL && SA.watchlist.has(r.ticker);

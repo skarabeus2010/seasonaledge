@@ -508,7 +508,7 @@
     // ── Card-HTML ─────────────────────────────────────────────
     function renderCard(card) {
       var t = card.ticker;
-      var dashHref = '/dashboard?t=' + encodeURIComponent(t);
+      var dashHref = SA.i18n.pfad('/dashboard') + '?t=' + encodeURIComponent(t);
       var name = (card.meta && card.meta.n) || '';
       var escName = name.replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
 

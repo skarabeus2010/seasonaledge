@@ -103,7 +103,7 @@ A significance test is a tool, not an oracle. Three caveats belong with it.
 
 Seasonality provides **context**, not a trading signal. September weakness explains why the DAX often feels sluggish at the autumn start — a reason to stay calm rather than react nervously. For active traders, the asymmetry is more interesting: a month with a 37% hit rate carries a different risk-reward profile than November at 65%.
 
-SeasonAlpha shows the significance gauge with t-value, p-value, win rate and relevance score for every ticker and time index. You can click through the interactive [monthly cycle](/en/monatszyklus) yourself. How we check data and compute significance is laid out openly on the [methodology page](/en/ueber-uns). If you want the broad comparison of all months across the official index history, see our study on the [worst DAX month](/en/blog/worst-dax-month-seasonality/).
+SeasonAlpha shows the significance gauge with t-value, p-value, win rate and relevance score for every ticker and time index. You can click through the interactive [monthly cycle](/en/monatszyklus) yourself. How we check data and compute significance is laid out openly on the [methodology page](/ueber-uns). If you want the broad comparison of all months across the official index history, see our study on the [worst DAX month](/en/blog/worst-dax-month-seasonality/).
 
 ## Conclusion
 

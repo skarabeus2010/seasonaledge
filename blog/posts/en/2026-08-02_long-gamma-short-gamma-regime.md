@@ -80,7 +80,7 @@ We turn this two-regime logic into a simple **gamma light**. It combines two pie
 - **Red / short gamma:** amplifying regime, spot below the flip — a raised tendency toward trends and large swings.
 - **Near the flip:** transition zone — the regime can tip at any moment, so caution is warranted.
 
-You will find the light live on the [Dealer Positioning](/en/dealer-positioning) page — for SPY, QQQ and the most important US underlyings. As a complement to overall market risk, it pairs well with our [Crash Early Warning](/crash-fruehwarnung): both tools describe fragility, but from different angles — the gamma regime from options mechanics, the crash light from the broader market regime.
+You will find the light live on the [Dealer Positioning](/dealer-positioning) page — for SPY, QQQ and the most important US underlyings. As a complement to overall market risk, it pairs well with our [Crash Early Warning](/crash-fruehwarnung): both tools describe fragility, but from different angles — the gamma regime from options mechanics, the crash light from the broader market regime.
 
 ## Regime meets seasonality: the SeasonAlpha angle
 
@@ -111,7 +111,7 @@ These limits are not a flaw but part of the method. Anyone who takes the regime 
 
 The gamma regime is the most memorable building block in dealer positioning: a single sign decides whether dealers dampen the market (long gamma, vol-suppressing) or stoke it (short gamma, vol-amplifying). The zero-gamma flip marks the tipping point — and how close price sits to it is a fragility barometer.
 
-Practitioner knowledge from the industry, backed academically by Barbon & Buraschi, clearly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/en/dealer-positioning)** yourself.
+Practitioner knowledge from the industry, backed academically by Barbon & Buraschi, clearly labelled as regime context with no signal claim: that is how a buzzword becomes a useful thinking tool. And when you combine it with our seasonal calendar, you see not just the current state but the seasonal environment it appears in. Try the gamma light on **[seasonalpha.ai/dealer-positioning](/dealer-positioning)** yourself.
 
 ## Frequently Asked Questions
 

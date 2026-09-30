@@ -314,6 +314,30 @@ def pruefe(live: bool) -> list[str]:
     # 6: Kennzahlen gegen den Bestand (Startseite, Pricing, Tour, EN-Texte)
     fehler += pruefe_kennzahlen(soll_urls)
 
+    # 7: interne /en/-Links in allen gebauten Seiten zeigen auf eine existierende Seite
+    #    (SEO-Plan 1b, G2: die EN-Startseite verlinkte /en/crash-fruehwarnung und
+    #    /en/ueber-uns (404) sowie zwei weiterleitende URLs). Die Laufzeit-Umschreibung
+    #    in i18n.js prüft scripts/js/probe_i18n_sprache.js (braucht node, läuft lokal).
+    import re as _re
+    for pfad, s in geparst.items():
+        if pfad.name in AUSGENOMMEN:
+            continue
+        roh = pfad.read_text(encoding="utf-8", errors="replace")
+        for href in sorted(set(_re.findall(r'href="(/en/[^"#?]*)', roh))):
+            ziel = artefakt(BASE_URL + href)
+            if ziel is None or not ziel.exists():
+                fehler.append(f"{pfad.relative_to(REPO).as_posix()}: Link {href} zeigt auf keine gebaute Seite")
+
+    # 8: robots.txt sperrt nichts, was Google sehen muss
+    robots = REPO / "seo" / "output" / "robots.txt"
+    if not robots.exists():
+        fehler.append("seo/output/robots.txt fehlt")
+    else:
+        for zeile in robots.read_text(encoding="utf-8").splitlines():
+            z = zeile.strip()
+            if z.lower().startswith("disallow:") and z.split(":", 1)[1].strip() in ("/analyse/", "/landing/data/"):
+                fehler.append(f"robots.txt: '{z}' — Google muss dort 410 bzw. Render-Ressourcen abrufen können")
+
     # Live-Prüfung
     if live:
         fehler += _live(soll_urls)

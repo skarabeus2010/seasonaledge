@@ -77,7 +77,7 @@ Seasonality is a **probability context**, not a signal. Three takeaways:
 
 ## Methodology & transparency
 
-We use **normalized returns** based on adjusted DAX closing prices since 1988 — not absolute point levels. How we verify data and compute seasonality is laid out openly on our [methodology page](/en/about). The full [risk disclosure](/rechtliches#risikohinweis) is in the legal section.
+We use **normalized returns** based on adjusted DAX closing prices since 1988 — not absolute point levels. How we verify data and compute seasonality is laid out openly on our [methodology page](/ueber-uns). The full [risk disclosure](/rechtliches#risikohinweis) is in the legal section.
 
 ## Conclusion
 

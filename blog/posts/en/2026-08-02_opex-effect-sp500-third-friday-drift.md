@@ -88,7 +88,7 @@ A solid data study must also show where the pattern breaks.
 
 There are many gamma vendors, and there are many seasonality sites. **Almost no one marries the two.** That is exactly where our edge lies.
 
-Pure seasonality sites show the calendar pattern on average — *that* the third Friday stands out. Pure options vendors show the dealer flow right now — *how* the hedge is currently positioned. SeasonAlpha has both: an **exchange-accurate calendar** for OPEX, Triple Witching and VIXpiration on our [Options Expiration](/en/opex) page, plus the gamma, vanna and charm metrics on [Dealer Positioning](/en/dealer-positioning). That lets us say *why* a seasonal pattern exists, instead of merely showing it.
+Pure seasonality sites show the calendar pattern on average — *that* the third Friday stands out. Pure options vendors show the dealer flow right now — *how* the hedge is currently positioned. SeasonAlpha has both: an **exchange-accurate calendar** for OPEX, Triple Witching and VIXpiration on our [Options Expiration](/en/opex) page, plus the gamma, vanna and charm metrics on [Dealer Positioning](/dealer-positioning). That lets us say *why* a seasonal pattern exists, instead of merely showing it.
 
 For the investor, that means: you don't just see that a period is statistically distinctive, you understand the structural cause — and can better judge when a pattern is robust and when it gets overridden.
 
@@ -96,7 +96,7 @@ For the investor, that means: you don't just see that a period is statistically 
 
 The OPEX effect on the S&P 500 is real and academically documented: +18.5 basis points on the third Friday over 18 years, highly significant, charm-driven. It exists because market makers have to buy back their short hedges into expiration as time decay and falling volatility shrink their put deltas.
 
-But the headline number is an **overnight jump**, not a close-to-close trade — and the effect has weakened lately. The real value lies in understanding the mechanism, not in a simple buy signal. Explore the [options expiration calendar](/en/opex) and [Dealer Positioning](/en/dealer-positioning) yourself on **seasonalpha.ai** — and see how calendar and dealer flows interact.
+But the headline number is an **overnight jump**, not a close-to-close trade — and the effect has weakened lately. The real value lies in understanding the mechanism, not in a simple buy signal. Explore the [options expiration calendar](/en/opex) and [Dealer Positioning](/dealer-positioning) yourself on **seasonalpha.ai** — and see how calendar and dealer flows interact.
 
 ## Frequently Asked Questions
 

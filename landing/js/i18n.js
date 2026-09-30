@@ -18,49 +18,56 @@ SA.i18n = (function() {
   var _data = {};
   var _isEN = false;
 
-  // Paths that have no EN equivalent — never auto-redirect here
-  // These pages intentionally have no /en/ variant.  Their nginx routes
-  // redirect /en/<slug> back to the German page; auto-redirecting here would
-  // therefore create an infinite browser/server redirect loop for users with
-  // an English preference.
-  var _noAutoRedirect = ['/blog/', '/tools/', '/rechtliches', '/disclaimer', '/app/', '/umami/',
-                         '/flows', '/dealer-positioning'];
-
+  // Sprache folgt AUSSCHLIESSLICH der URL (/en/... = Englisch, sonst Deutsch).
+  // Bis 2026-09-30 leitete diese Funktion bei englischer Browsersprache oder
+  // gespeicherter Praeferenz jede DE-Seite per location.replace auf /en/... um —
+  // auch fuer Googlebot, der mit englischer Sprache rendert. Deutsche
+  // Werkzeugseiten waren fuer Google damit JS-Weiterleitungen, teils auf eine
+  // 404 (/en/crash-fruehwarnung). Google raet ausdruecklich von automatischen
+  // Sprachweiterleitungen ab (SEO-Plan Phase 1b, G1). Den Wechsel macht der
+  // Nutzer ueber den Sprachumschalter.
   function _detectLang() {
     var path = window.location.pathname;
-
-    // Already on an EN URL
     if (path === '/en/' || path === '/en' || path.indexOf('/en/') === 0) {
       _isEN = true;
       _lang = 'en';
-      try { localStorage.setItem('sa_lang', 'en'); } catch (e) {}
-      return _lang;
     }
+    return _lang;
+  }
 
-    // Explicit user preference stored from a previous visit or switchTo() call
-    var stored;
-    try { stored = localStorage.getItem('sa_lang'); } catch (e) {}
-    if (stored === 'en') {
-      var canRedirect = !_noAutoRedirect.some(function(p) { return path.indexOf(p) === 0; });
-      if (canRedirect) {
-        window.location.replace('/en' + (path === '/' ? '/' : path));
-      }
-      return 'en';
+  // Hat dieser DE-Pfad eine EN-Fassung? Einzige Quelle: _EN_PAGE_META (dieselbe
+  // Liste rendert build_en.py; Sitemap und Waechter lesen sie ueber
+  // shared/seo_basis.py). Pfad ohne Query/Fragment, ohne abschliessenden Slash.
+  function _hatEN(dePath) {
+    var p = (dePath || '/').split('?')[0].split('#')[0];
+    if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
+    return Object.prototype.hasOwnProperty.call(_EN_PAGE_META, p || '/');
+  }
+
+  // Ziel des Sprachwechsels: bevorzugt das hreflang-Gegenstueck aus dem Seitenkopf
+  // (deckt auch Blog-Artikel mit abweichenden Slugs ab), sonst die EN-Seitenliste.
+  // null = kein Gegenstueck -> kein Wechsel auf eine erfundene URL.
+  function _zielFuer(lang) {
+    var path = window.location.pathname;
+    var tag = document.querySelector('link[rel="alternate"][hreflang="' + lang + '"]');
+    if (tag && tag.getAttribute('href')) {
+      var href = tag.getAttribute('href').replace(/^https?:[/][/][^/]+/, '');
+      if (href !== path) return href;
     }
-    if (stored === 'de') return 'de';
-
-    // First visit: detect browser language
-    var browserLang = ((navigator.language || navigator.userLanguage) || '').toLowerCase();
-    if (browserLang.indexOf('en') === 0) {
-      var canAutoRedirect = !_noAutoRedirect.some(function(p) { return path.indexOf(p) === 0; });
-      if (canAutoRedirect) {
-        try { localStorage.setItem('sa_lang', 'en'); } catch (e) {}
-        window.location.replace('/en' + (path === '/' ? '/' : path));
-      }
-      return 'en';
+    if (lang === 'en') {
+      if (_isEN) return null;
+      return _hatEN(path) ? '/en' + (path === '/' ? '/' : path) : null;
     }
+    if (!_isEN) return null;
+    var dePfad = path.replace(/^[/]en/, '') || '/';
+    return _hatEN(dePfad) ? dePfad : null;   // nur bekannte Seitenpaare, sonst kein Wechsel
+  }
 
-    return _lang; // 'de'
+  // Interner Pfad in der Sprache der aktuellen Seite (fuer per JS gebaute Links,
+  // z. B. Scanner/Watchlist -> /dashboard?t=...). Ohne EN-Fassung bleibt er deutsch.
+  function pfad(dePfad) {
+    if (!_isEN || !dePfad || dePfad.charAt(0) !== '/' || !_hatEN(dePfad)) return dePfad;
+    return '/en' + (dePfad === '/' ? '/' : dePfad);
   }
 
   // Bump this version whenever en.json gains new keys — busts sessionStorage cache
@@ -122,30 +129,40 @@ SA.i18n = (function() {
     });
   }
 
-  // These link prefixes are NOT rewritten to /en/ — external or already handled separately
-  var _skipPrefixes = ['/en/', '/blog/', '/tools/', '/rechtliches', '/disclaimer',
-                       '/app/', '/umami/', 'http', 'mailto:', '#', 'javascript:',
-                       '/kalender', '/profile', '/watchlist', '/pricing', '/unsubscribe',
-                       '/dealer-positioning', '/flows'];
-
+  // Links auf DE-Seiten mit EN-Fassung bekommen auf EN-Seiten das /en-Praefix.
+  // Alles andere bleibt, wie es ist (vorher pauschal umgeschrieben mit einer
+  // Ausnahmeliste -> /en/crash-fruehwarnung 404, /en/ueber-uns 404, zwei 301).
   function _applyNavLinks() {
     if (!_isEN) return;
     document.querySelectorAll('a[href]').forEach(function(a) {
       var href = a.getAttribute('href');
-      if (!href || href.charAt(0) !== '/') return;
-      var skip = _skipPrefixes.some(function(p) { return href.indexOf(p) === 0; });
-      if (!skip) a.setAttribute('href', '/en' + href);
+      if (!href || href.charAt(0) !== '/' || href.indexOf('/en/') === 0) return;
+      if (_hatEN(href)) a.setAttribute('href', '/en' + (href === '/' ? '/' : href));
     });
   }
 
   function _updateLangSwitch() {
     document.querySelectorAll('.nav__lang-btn').forEach(function(btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-lang') === _lang);
+      var lang = btn.getAttribute('data-lang');
+      btn.classList.toggle('active', lang === _lang);
+      // Ohne Gegenstueck in der anderen Sprache ist der Knopf ohne Funktion.
+      var ohneZiel = lang !== _lang && !_zielFuer(lang);
+      btn.disabled = ohneZiel;
+      if (ohneZiel) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.title = lang === 'en' ? 'No English version of this page' : 'Keine deutsche Fassung';
+      } else {
+        btn.removeAttribute('aria-disabled');
+      }
     });
   }
 
   function _injectHreflang() {
     if (!_isEN) return;
+    // Vom Build gebackene Sprachpaare sind massgeblich (build_en.py / Blog-Builder
+    // kennen die echten Gegenstuecke); nicht ueberschreiben (Codex, Phase 1b R1).
+    if (document.querySelectorAll('link[hreflang]').length) return;
+    if (!_hatEN((window.location.pathname.replace(/^[/]en/, '') || '/'))) return;
     var path = window.location.pathname;
     var dePath = path.replace(/^\/en/, '') || '/';
 
@@ -370,6 +387,7 @@ SA.i18n = (function() {
 
   // Called from loadComponent() after nav or footer HTML is injected
   function _onComponentLoaded(containerId) {
+    _updateLangSwitch();   // auch auf DE-Seiten: Knopf ohne Gegenstueck deaktivieren
     if (!_isEN) return;
     // If JSON is already loaded, apply immediately
     if (Object.keys(_data).length) {
@@ -381,16 +399,10 @@ SA.i18n = (function() {
   }
 
   function switchTo(lang) {
-    var path = window.location.pathname;
-    var newPath;
-    if (lang === 'en') {
-      if (path === '/en/' || path === '/en' || path.indexOf('/en/') === 0) return;
-      newPath = '/en' + (path === '/' ? '/' : path);
-    } else {
-      newPath = path.replace(/^\/en/, '') || '/';
-    }
-    try { localStorage.setItem('sa_lang', lang); } catch (e) {}
-    window.location.href = newPath;
+    if (lang === _lang) return;
+    var ziel = _zielFuer(lang);
+    if (!ziel) return;          // kein Gegenstueck: nicht auf eine erfundene URL wechseln
+    window.location.href = ziel;
   }
 
   function init() {
@@ -420,6 +432,7 @@ SA.i18n = (function() {
     t: t,
     isEN: function() { return _isEN; },
     switchTo: switchTo,
+    pfad: pfad,
     _onComponentLoaded: _onComponentLoaded,
     _applyDOM: _applyDOM,
     _applyNavLinks: _applyNavLinks,

@@ -418,14 +418,26 @@ def strip_en_hidden(html: str) -> str:
 
 
 def rewrite_body_links(html: str) -> str:
+    """Links im Body auf /en/ umschreiben — NUR fuer Seiten mit EN-Fassung.
+
+    Vorher pauschal mit Ausnahmeliste (SKIP_PREFIXES): die EN-Startseite verlinkte
+    so /en/crash-fruehwarnung und /en/ueber-uns (404) sowie /en/congress und
+    /en/index-effekt (301). Massgeblich ist jetzt _EN_PAGE_META (SEO-Plan 1b, G2).
+    """
     idx = html.find("<body")
     if idx < 0:
         return html
     head, body = html[:idx], html[idx:]
+    en_pfade = {"/" if slug == "index" else f"/{slug}" for slug in load_en_page_meta()}
 
     def repl(m):
         href = m.group(1)
         if any(href.startswith(p) for p in SKIP_PREFIXES):
+            return m.group(0)
+        pfad = re.split(r"[?#]", href, maxsplit=1)[0]
+        if len(pfad) > 1 and pfad.endswith("/"):
+            pfad = pfad[:-1]
+        if pfad not in en_pfade:
             return m.group(0)
         return f'href="/en{href}"'
 

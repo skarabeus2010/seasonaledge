@@ -115,13 +115,13 @@ A sober look at the cycle has to show the fault lines.
 
 The real value lies in **understanding**, not in clicking "buy." Anyone who knows the cycle frames market moves better: a calm upward phase before expiration is rarely a strong buy signal, and a more nervous window afterward is rarely the start of a crash — both are often simply the OPEX rhythm.
 
-Concretely, you'll find the building blocks here: the exchange-accurate **calendar** for OPEX, Triple Witching and VIXpiration is on the [Options Expiration](/en/opex) page. The current **gamma, vanna and charm metrics** — i.e. which phase of the cycle dealers are in right now — are on [Dealer Positioning](/en/dealer-positioning). And the seasonal patterns that emerge are visible via the weekday and monthly-cycle pages. That is how SeasonAlpha marries the calendar with dealer flows: you don't just see *that* a pattern exists, you understand the structural cause behind it.
+Concretely, you'll find the building blocks here: the exchange-accurate **calendar** for OPEX, Triple Witching and VIXpiration is on the [Options Expiration](/en/opex) page. The current **gamma, vanna and charm metrics** — i.e. which phase of the cycle dealers are in right now — are on [Dealer Positioning](/dealer-positioning). And the seasonal patterns that emerge are visible via the weekday and monthly-cycle pages. That is how SeasonAlpha marries the calendar with dealer flows: you don't just see *that* a pattern exists, you understand the structural cause behind it.
 
 ## Conclusion
 
 The OPEX cycle is the stock market's hidden monthly metronome: positions build, dealers hedge, the contracts expire on the third Friday, and the hedge is unwound. From this come the calm pre-OPEX drift, the pin on expiration day, and the more directional window afterward.
 
-The cycle explains *why* — it is context, not a signal. Patterns weaken, macro overrides them, and the sign of dealer positioning flips the effect. Explore the [options expiration calendar](/en/opex) and [Dealer Positioning](/en/dealer-positioning) yourself on **seasonalpha.ai** — and see which phase of the cycle the market is in right now.
+The cycle explains *why* — it is context, not a signal. Patterns weaken, macro overrides them, and the sign of dealer positioning flips the effect. Explore the [options expiration calendar](/en/opex) and [Dealer Positioning](/dealer-positioning) yourself on **seasonalpha.ai** — and see which phase of the cycle the market is in right now.
 
 ## Frequently Asked Questions
 

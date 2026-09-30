@@ -125,7 +125,7 @@ To check the patterns across all 324 tickers yourself: the [monthly heatmap and 
 
 ## Methodology and transparency
 
-We calculate **normalized returns** based on adjusted closing prices: each year starts at 100 and daily returns compound on top. Monthly returns are the change within the respective month window, and significance comes from a t-test against zero (p < 0.05). How we validate data is laid out openly on our [methodology page](/en/ueber-uns).
+We calculate **normalized returns** based on adjusted closing prices: each year starts at 100 and daily returns compound on top. Monthly returns are the change within the respective month window, and significance comes from a t-test against zero (p < 0.05). How we validate data is laid out openly on our [methodology page](/ueber-uns).
 
 ## Conclusion
 

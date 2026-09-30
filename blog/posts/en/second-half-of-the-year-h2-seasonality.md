@@ -116,7 +116,7 @@ You can explore the interactive [monthly cycle](/en/monatszyklus) and the [seaso
 
 ## Methodology & transparency
 
-We calculate with **normalized returns** based on adjusted closing prices — not absolute index points. Quarterly and half-year figures are compounded from the monthly returns; the win rate counts the share of positive periods. How we check data and compute seasonality is laid out openly on our [methodology page](/en/ueber-uns). The full [risk notice](/en/rechtliches#risikohinweis) is in the legal section.
+We calculate with **normalized returns** based on adjusted closing prices — not absolute index points. Quarterly and half-year figures are compounded from the monthly returns; the win rate counts the share of positive periods. How we check data and compute seasonality is laid out openly on our [methodology page](/ueber-uns). The full [risk notice](/rechtliches#risikohinweis) is in the legal section.
 
 ## Conclusion
 
