@@ -31,23 +31,47 @@ jobs:
     steps:
       - name: Scrape resolved + compute Brier
         uses: appleboy/ssh-action@v1
+        env:
+          SA_EVENT: ${{ github.event_name }}
+          SA_TAGS:  ${{ github.event.inputs.tags }}
+          SA_SKIP:  ${{ github.event.inputs.skip_prices }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 140m
+          envs: SA_EVENT,SA_TAGS,SA_SKIP
           script: |
-            TAG_FLAG=""
-            if [ "${{ github.event.inputs.tags }}" != "all" ] && [ -n "${{ github.event.inputs.tags }}" ]; then
-              TAG_FLAG="--tag ${{ github.event.inputs.tags }}"
+            set -uo pipefail
+            # FAIL-CLOSED: eine nicht angekommene Eingabe darf nicht in den
+            # Standard fallen. Auf dem Zeitplan sind die Variablen gesetzt und
+            # LEER, bei Transportfehler UNGESETZT — ${VAR?} unterscheidet das.
+            : "${SA_EVENT?Uebertragung fehlgeschlagen: SA_EVENT fehlt}"
+            : "${SA_TAGS?Uebertragung fehlgeschlagen: SA_TAGS fehlt}"
+            : "${SA_SKIP?Uebertragung fehlgeschlagen: SA_SKIP fehlt}"
+            if [ "$SA_EVENT" = "workflow_dispatch" ]; then
+              case "$SA_SKIP" in
+                true|false) ;;
+                *) echo "[brier] FEHLER: skip_prices ist '$SA_SKIP'"; exit 1 ;;
+              esac
             fi
-            SKIP_FLAG=""
-            if [ "${{ github.event.inputs.skip_prices }}" = "true" ]; then
-              SKIP_FLAG="--skip-prices"
+            args=()
+            if [ "$SA_TAGS" != "all" ] && [ -n "$SA_TAGS" ]; then
+              # ACHTUNG, vorbestehender Widerspruch: die Eingabe-Beschreibung
+              # verspricht eine Kommaliste, der Parser behandelt --tag aber als
+              # EINEN Tag (scripts/polymarket_scrape_resolved.py). Hier wird
+              # deshalb nur die Form geprueft; der Widerspruch ist notiert und
+              # gehoert in einen eigenen Schritt.
+              case "$SA_TAGS" in
+                *[!A-Za-z0-9,_-]*)
+                  echo "[brier] FEHLER: tags enthaelt unerwartete Zeichen"; exit 1 ;;
+              esac
+              args+=(--tag "$SA_TAGS")
             fi
+            if [ "$SA_SKIP" = "true" ]; then args+=(--skip-prices); fi
 
             echo "[brier] Step 1/2: scrape resolved markets"
-            docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py $TAG_FLAG $SKIP_FLAG 2>&1 | tail -40
+            docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py ${args[@]+"${args[@]}"} 2>&1 | tail -40
 
             echo "[brier] Step 2/2: compute brier stats -> landing/data/brier_stats.json"
             docker exec seasonalpha-app python3 scripts/compute_brier_stats.py 2>&1 | tail -20

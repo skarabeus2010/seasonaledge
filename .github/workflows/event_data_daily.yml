@@ -35,24 +35,49 @@ jobs:
     steps:
       - name: Fetch dividend + earnings events
         uses: appleboy/ssh-action@v1
+        env:
+          SA_EVENT:   ${{ github.event_name }}
+          SA_MODE:    ${{ github.event.inputs.mode }}
+          SA_TICKERS: ${{ github.event.inputs.tickers }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 25m
+          envs: SA_EVENT,SA_MODE,SA_TICKERS
           script: |
-            MODE="${{ github.event.inputs.mode }}"
-            MODE="${MODE:-both}"
-            TICKERS="${{ github.event.inputs.tickers }}"
+            set -uo pipefail
+            # FAIL-CLOSED: eine nicht angekommene Eingabe darf nicht in den
+            # Standard fallen. Auf dem Zeitplan sind die Variablen gesetzt und
+            # LEER, bei Transportfehler UNGESETZT — ${VAR?} unterscheidet das.
+            : "${SA_EVENT?Uebertragung fehlgeschlagen: SA_EVENT fehlt}"
+            : "${SA_MODE?Uebertragung fehlgeschlagen: SA_MODE fehlt}"
+            : "${SA_TICKERS?Uebertragung fehlgeschlagen: SA_TICKERS fehlt}"
 
-            echo "[event-data-daily] mode=$MODE tickers='${TICKERS:-ALL}'"
+            MODE="${SA_MODE:-both}"
+            case "$MODE" in
+              both|dividends|earnings) ;;
+              *) echo "[event-data-daily] FEHLER: unbekannter Modus '$MODE'"; exit 1 ;;
+            esac
 
-            if [ -n "$TICKERS" ]; then
-              docker exec seasonalpha-app python3 scripts/fetch_event_data.py \
-                --mode "$MODE" --tickers $TICKERS 2>&1 | tail -60
-            else
-              docker exec seasonalpha-app python3 scripts/fetch_event_data.py \
-                --mode "$MODE" 2>&1 | tail -60
+            # Die Tickerliste wird ABSICHTLICH in Woerter geteilt (--tickers nimmt
+            # mehrere). Sie zu quotieren wuerde die Argumentaufteilung aendern.
+            # Deshalb wird jedes Wort einzeln gegen die Tickerform geprueft und in
+            # ein Array gelegt — Aufteilung ja, Freitext nein.
+            args=(--mode "$MODE")
+            if [ -n "$SA_TICKERS" ]; then
+              read -r -a _tk <<< "$SA_TICKERS"
+              for t in "${_tk[@]}"; do
+                case "$t" in
+                  *[!A-Za-z0-9.^=-]*)
+                    echo "[event-data-daily] FEHLER: '$t' ist kein Ticker"; exit 1 ;;
+                esac
+              done
+              args+=(--tickers "${_tk[@]}")
             fi
+
+            echo "[event-data-daily] event=$SA_EVENT args=${args[*]}"
+            docker exec seasonalpha-app python3 scripts/fetch_event_data.py \
+              "${args[@]}" 2>&1 | tail -60
 
             echo "[event-data-daily] Done: $(date)"

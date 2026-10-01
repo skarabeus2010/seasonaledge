@@ -28,18 +28,41 @@ jobs:
     steps:
       - name: Polymarket daily snapshot
         uses: appleboy/ssh-action@v1
+        env:
+          SA_EVENT:    ${{ github.event_name }}
+          SA_BACKFILL: ${{ github.event.inputs.include_backfill }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 40m
+          envs: SA_EVENT,SA_BACKFILL
           script: |
+            set -uo pipefail
+            # FAIL-CLOSED: eine nicht angekommene Eingabe darf nicht in den
+            # Standard fallen. Auf dem Zeitplan sind die Variablen gesetzt und
+            # LEER, bei Transportfehler UNGESETZT — ${VAR?} unterscheidet das.
+            #
+            # Die Prüfung steht VOR Schritt 1. Mein erster Entwurf hatte sie erst
+            # beim Backfill-Zweig — dann wäre Schritt 1 schon gelaufen, bevor der
+            # Abbruch greift, und „fail-closed" wäre nur halb wahr. Der Testfall
+            # hat genau das gemeldet.
+            : "${SA_EVENT?Uebertragung fehlgeschlagen: SA_EVENT fehlt}"
+            : "${SA_BACKFILL?Uebertragung fehlgeschlagen: SA_BACKFILL fehlt}"
+            if [ "$SA_EVENT" = "workflow_dispatch" ]; then
+              case "$SA_BACKFILL" in
+                true|false) ;;
+                *) echo "[polymarket-daily] FEHLER: include_backfill ist" \
+                        "'$SA_BACKFILL', erwartet true oder false"; exit 1 ;;
+              esac
+            fi
+
             echo "[polymarket-daily] Step 1/2: snapshot (26 markets)"
             docker exec seasonalpha-app python3 scripts/polymarket_refresh.py 2>&1 | tail -30
 
             # Montags ODER workflow_dispatch mit include_backfill=true: Backfill
             DOW=$(date -u +%u)  # 1 = Montag, 7 = Sonntag
-            if [ "$DOW" = "1" ] || [ "${{ github.event.inputs.include_backfill }}" = "true" ]; then
+            if [ "$DOW" = "1" ] || [ "$SA_BACKFILL" = "true" ]; then
               echo "[polymarket-daily] Step 2/2: backfill (volle Historie)"
               docker exec seasonalpha-app python3 scripts/polymarket_backfill.py 2>&1 | tail -20
             else

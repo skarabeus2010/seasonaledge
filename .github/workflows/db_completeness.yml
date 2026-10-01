@@ -48,31 +48,68 @@ jobs:
     steps:
       - name: DB completeness audit
         uses: appleboy/ssh-action@v1
+        env:
+          SA_EVENT:     ${{ github.event_name }}
+          SA_DIMS:      ${{ github.event.inputs.dims }}
+          SA_GAP_YEARS: ${{ github.event.inputs.gap_years }}
+          SA_FIX:       ${{ github.event.inputs.fix }}
+          SA_DERIVED:   ${{ github.event.inputs.fix_derived }}
+          SA_MAIL:      ${{ github.event.inputs.mail }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 55m
+          envs: SA_EVENT,SA_DIMS,SA_GAP_YEARS,SA_FIX,SA_DERIVED,SA_MAIL
           script: |
-            DIMS="${{ github.event.inputs.dims }}"
-            DIMS="${DIMS:-freshness,coverage,gaps,events}"
-            GAP_YEARS="${{ github.event.inputs.gap_years }}"
-            GAP_YEARS="${GAP_YEARS:-2}"
+            set -euo pipefail
 
-            # Defaults fuer scheduled run (kein inputs-Kontext): fix=on, mail=on, derived=off
-            FIX_IN="${{ github.event.inputs.fix }}"
-            DERIVED_IN="${{ github.event.inputs.fix_derived }}"
-            MAIL_IN="${{ github.event.inputs.mail }}"
+            # FAIL-CLOSED gegen eine verlorene Übertragung. Die Polarität hier ist
+            # ABSICHT: leer heisst an, weil der Zeitplan-Lauf keine Eingaben hat
+            # (`!= "false"`). Genau deshalb ist ein verlorener Dispatch-Wert
+            # gefährlich — wer `fix=false` setzt und dessen Wert unterwegs
+            # verliert, bekommt stillschweigend `--fix` samt Backfill.
+            : "${SA_EVENT?Uebertragung fehlgeschlagen: SA_EVENT fehlt}"
+            : "${SA_DIMS?Uebertragung fehlgeschlagen: SA_DIMS fehlt}"
+            : "${SA_GAP_YEARS?Uebertragung fehlgeschlagen: SA_GAP_YEARS fehlt}"
+            : "${SA_FIX?Uebertragung fehlgeschlagen: SA_FIX fehlt}"
+            : "${SA_DERIVED?Uebertragung fehlgeschlagen: SA_DERIVED fehlt}"
+            : "${SA_MAIL?Uebertragung fehlgeschlagen: SA_MAIL fehlt}"
 
-            FLAGS="--dim $DIMS --gap-years $GAP_YEARS"
-            if [ "$FIX_IN" != "false" ]; then FLAGS="$FLAGS --fix"; fi
-            if [ "$DERIVED_IN" = "true" ]; then FLAGS="$FLAGS --fix-derived"; fi
-            if [ "$MAIL_IN" != "false" ]; then FLAGS="$FLAGS --mail"; fi
+            if [ "$SA_EVENT" = "workflow_dispatch" ]; then
+              for wert in "$SA_FIX" "$SA_DERIVED" "$SA_MAIL"; do
+                case "$wert" in
+                  true|false) ;;
+                  *) echo "[db-completeness] FEHLER: Boolean-Eingabe ist '$wert'," \
+                          "erwartet true oder false — Abbruch"; exit 1 ;;
+                esac
+              done
+            fi
 
-            echo "[db-completeness] flags: $FLAGS"
-            docker exec seasonalpha-app python3 scripts/check_db_completeness.py $FLAGS 2>&1 | tail -120
+            DIMS="${SA_DIMS:-freshness,coverage,gaps,events}"
+            GAP_YEARS="${SA_GAP_YEARS:-2}"
 
-            echo "[db-completeness] Done: $(date)"
+            # Freitext gegen die erlaubten Werte prüfen, statt ihn in die
+            # Kommandozeile zu reichen.
+            case "$GAP_YEARS" in
+              ''|*[!0-9]*) echo "[db-completeness] FEHLER: gap_years ist keine Zahl"; exit 1 ;;
+            esac
+            IFS=',' read -r -a _dims <<< "$DIMS"
+            for d in "${_dims[@]}"; do
+              case "$d" in
+                freshness|coverage|gaps|events) ;;
+                *) echo "[db-completeness] FEHLER: unbekannte Dimension '$d'"; exit 1 ;;
+              esac
+            done
+
+            flags=(--dim "$DIMS" --gap-years "$GAP_YEARS")
+            if [ "$SA_FIX" != "false" ];     then flags+=(--fix); fi
+            if [ "$SA_DERIVED" = "true" ];   then flags+=(--fix-derived); fi
+            if [ "$SA_MAIL" != "false" ];    then flags+=(--mail); fi
+
+            echo "[db-completeness] event=$SA_EVENT flags=${flags[*]}"
+            docker exec seasonalpha-app python3 scripts/check_db_completeness.py \
+              "${flags[@]}" 2>&1 | tail -120
 
       - name: Calendar rules verification (Prüfagent)
         # Deterministischer Check aller 9 Handels-Kalender-Regeln (Code + DB,
