@@ -109,14 +109,19 @@
 
   function _setUser(user) {
     var wasLoggedIn = !!_user;
+    var wasUserId = _user && _user.id;
     _user = user;
     var isLoggedIn = !!_user;
 
     // Nav-UI aktualisieren
     _updateNavUI();
 
-    // Listeners benachrichtigen
-    if (wasLoggedIn !== isLoggedIn) {
+    // Listeners benachrichtigen — bei jedem Wechsel der IDENTITAET, nicht nur
+    // beim Umschalten von "eingeloggt" an/aus. Vorher verglich diese Stelle nur
+    // den Boolean: ein direkter Wechsel von Konto A auf Konto B (beide
+    // eingeloggt) blieb damit unbemerkt, und wer auf das Ereignis hoert, um
+    // konto-gebundene Daten zu trennen, bekam es nie zu hoeren.
+    if (wasLoggedIn !== isLoggedIn || wasUserId !== (_user && _user.id)) {
       for (var i = 0; i < _listeners.length; i++) {
         try { _listeners[i](_user); } catch(e) { console.error('[auth] Listener error:', e); }
       }

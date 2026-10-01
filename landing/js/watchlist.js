@@ -35,7 +35,24 @@
 (function() {
   window.SA = window.SA || {};
 
-  var STORAGE_KEY = 'sa-watchlist-v1';
+  var GAST_KEY = 'sa-watchlist-v1';
+
+  /* Der Speicher ist PRO KONTO getrennt. Vorher lag alles unter einem einzigen
+     Schluessel: der Cache ueberlebt den Logout (bewusst, Gast-Modus), und beim
+     naechsten Login wurden die lokalen Eintraege unter der AKTUELLEN Nutzer-ID
+     hochgeladen. Wechselten zwei Konten denselben Browser, sah das zweite die
+     Liste des ersten — und bekam sie in sein eigenes Supabase-Konto geschrieben.
+     RLS verhindert das NICHT: der Client sendet bereits die neue Kennung als
+     Eigentuemer.
+
+     Der Gast-Schluessel bleibt, weil das gewollte Verhalten bleibt — was ein
+     Gast anlegt, soll nach dem Login in seinem Konto landen. Nach dieser
+     Uebernahme wird der Gast-Schluessel GELEERT, damit er nicht beim naechsten
+     Konto ein zweites Mal eingesammelt wird. */
+  function _storageKey() {
+    var uid = _supaUserId();
+    return uid ? GAST_KEY + '::' + uid : GAST_KEY;
+  }
   var SCHEMA_VERSION = 1;
   var MAX_ITEMS = 50;
 
@@ -60,7 +77,7 @@
 
   function _read() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw = localStorage.getItem(_storageKey());
       if (!raw) return _initial();
       var data = JSON.parse(raw);
       // Schema-Validierung mit Fallback
@@ -78,7 +95,7 @@
   function _write(data) {
     try {
       data.updated_at = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(_storageKey(), JSON.stringify(data));
       return true;
     } catch (e) {
       // Quota exceeded oder Privacy-Mode
@@ -297,7 +314,7 @@
   // Wenn ein anderer Tab die Watchlist ändert, re-emittieren wir 'changed'
   // damit die UI dieses Tabs sich aktualisiert.
   window.addEventListener('storage', function(e) {
-    if (e.key === STORAGE_KEY && e.newValue !== e.oldValue) {
+    if (e.key === _storageKey() && e.newValue !== e.oldValue) {
       var count = 0;
       try { count = (JSON.parse(e.newValue || '{}').items || []).length; } catch (_) {}
       _emit('changed', { action: 'cross-tab', count: count });
@@ -361,7 +378,38 @@
   // Sync beim Login: Cloud ist autoritativ, ABER lokale Tombstones gewinnen.
   // Gelöschte Ticker werden NICHT aus remote zurückgeholt; ihr Cloud-Delete wird
   // erneut versucht (robust auch wenn ein früherer Delete fehlschlug — z.B. RLS).
+  /* Uebernimmt EINMALIG, was der Gast angelegt hat, in das Konto des gerade
+     angemeldeten Nutzers — und leert danach den Gast-Schluessel. Ohne das
+     Leeren sammelt das naechste Konto dieselbe Liste ein zweites Mal ein. */
+  function _gastListeUebernehmen() {
+    var uid = _supaUserId();
+    if (!uid) return;
+    var roh;
+    try { roh = localStorage.getItem(GAST_KEY); } catch (e) { return; }
+    if (!roh) return;
+    var gast;
+    try { gast = JSON.parse(roh); } catch (e) { gast = null; }
+    if (!gast || !Array.isArray(gast.items) || !gast.items.length) {
+      try { localStorage.removeItem(GAST_KEY); } catch (e) {}
+      return;
+    }
+    var data = _read();
+    var bekannt = {};
+    for (var i = 0; i < data.items.length; i++) bekannt[data.items[i].ticker] = true;
+    var tomb = data.tombstones || {};
+    for (var j = 0; j < gast.items.length; j++) {
+      var it = gast.items[j];
+      if (!it || !it.ticker || bekannt[it.ticker] || tomb[it.ticker]) continue;
+      data.items.push(it);
+      bekannt[it.ticker] = true;
+    }
+    data.items = data.items.slice(0, MAX_ITEMS);
+    _write(data);
+    try { localStorage.removeItem(GAST_KEY); } catch (e) {}
+  }
+
   function _syncOnLogin() {
+    _gastListeUebernehmen();
     _supaLoad().then(function(remote) {
       var data = _read();
       var tomb = data.tombstones || {};
