@@ -98,6 +98,31 @@ def _get_active_daily_subscribers() -> list[str]:
     return [r["email"] for r in rows if r.get("email")]
 
 
+def _fehler_zusammenfassung(failed_emails: list[str]) -> dict:
+    """Fehlgeschlagene Empfänger ohne Personenbezug zusammenfassen.
+
+    Gibt die Anzahl und die Verteilung über die Domains zurück, nach Häufigkeit
+    sortiert und auf zehn Domains begrenzt. Eine Domain ohne den lokalen Teil
+    identifiziert niemanden, zeigt aber genau das Muster, das man sucht.
+    """
+    from collections import Counter
+    domains = Counter()
+    unleserlich = 0
+    for adresse in failed_emails:
+        teile = str(adresse).rsplit("@", 1)
+        if len(teile) == 2 and teile[1]:
+            domains[teile[1].lower()] += 1
+        else:
+            unleserlich += 1
+    zusammenfassung: dict = {
+        "failed_count": len(failed_emails),
+        "failed_domains": dict(domains.most_common(10)),
+    }
+    if unleserlich:
+        zusammenfassung["failed_unparsed"] = unleserlich
+    return zusammenfassung
+
+
 def _write_refresh_log(elapsed_sec: float, sent: int, failed: int,
                        failed_emails: list[str]) -> None:
     """Schreibt refresh_log-Eintrag für daily_health_check.py."""
@@ -110,7 +135,17 @@ def _write_refresh_log(elapsed_sec: float, sent: int, failed: int,
             "tickers_total":    sent + failed,
             "tickers_success":  sent,
             "tickers_missing":  failed,
-            "missing_details":  _json.dumps({"failed_emails": failed_emails[:20]}),
+            # KEINE Empfängeradressen. `refresh_log` ist mit dem öffentlichen
+            # Anon-Key lesbar — hier standen bis zu 20 vollständige Adressen, und
+            # damit war eine Betriebstabelle eine Offenlegung personenbezogener
+            # Daten. Niemand hat sie gelesen (`failed_emails` hatte keinen
+            # Verbraucher), sie dienten der Fehlersuche.
+            #
+            # Was die Fehlersuche wirklich braucht, ist die Verteilung über die
+            # Empfänger-Domains: „alle gmail scheitern" ist die Diagnose, eine
+            # Liste von Adressen nicht. Eine Domain allein ist nicht
+            # personenbezogen.
+            "missing_details":  _json.dumps(_fehler_zusammenfassung(failed_emails)),
             "auto_fixed":       0,
             "duration_seconds": round(elapsed_sec, 1),
             "errors":           "[]",

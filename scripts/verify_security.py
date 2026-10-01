@@ -78,6 +78,19 @@ PRIVATE_TABELLEN = {
 # Spaltennamen, die auf Personenbezug hindeuten.
 PERSONENBEZUG = ("email", "e_mail", "mail_adresse", "recipient", "empfaenger")
 
+# Tabellen, die Personendaten tragen DÜRFEN, weil das ihr Zweck ist. Alle anderen
+# dürfen keine bekommen — auch keine Betriebs- oder Protokolltabelle.
+#
+# Diese Liste ist absichtlich kurz und als Allowlist formuliert. Die erste Fassung
+# der Prüfung fragte umgekehrt („landen Personendaten in einer als öffentlich
+# geführten Tabelle?") und konnte den real aufgetretenen Fall deshalb nicht fangen:
+# die betroffene Protokolltabelle stand gar nicht auf der Öffentlich-Liste, war aber
+# trotzdem öffentlich lesbar. Eine Allowlist hat diese Lücke nicht.
+TABELLEN_MIT_PERSONENBEZUG = {
+    "subscribers", "daily_subscribers", "user_watchlists",
+    "user_subscriptions", "user_profiles", "profiles",
+}
+
 
 @dataclass
 class Ergebnis:
@@ -390,31 +403,55 @@ def pruefe_edge_identitaet() -> Ergebnis:
 # ── Prüfung 7: keine Personendaten in öffentliche Tabellen ─────────────────
 
 def pruefe_personendaten_in_oeffentlichen_tabellen() -> Ergebnis:
-    """Die Freigabeliste oben ist eine Behauptung über SPALTEN, nicht über Namen.
-    Diese Prüfung sucht Code, der eine Adresse in eine als öffentlich geführte
-    Tabelle schreibt — der Weg, auf dem eine Betriebstabelle zur Datenpanne wird.
+    """Sucht Code, der eine Adresse in eine Tabelle schreibt, die keine tragen soll.
+
+    Als **Allowlist** formuliert: nur `TABELLEN_MIT_PERSONENBEZUG` dürfen eine
+    bekommen. Das ist der Weg, auf dem eine Betriebs- oder Protokolltabelle zur
+    Datenpanne wird — und die umgekehrte Frage hätte den real aufgetretenen Fall
+    nicht gefangen, weil die betroffene Tabelle gar nicht als öffentlich geführt war.
     """
     treffer = []
-    basis = REPO / "scripts"
-    tabellen = "|".join(sorted(OEFFENTLICHE_TABELLEN))
-    for p in sorted(basis.rglob("*.py")):
-        s = lies(p)
-        for m in re.finditer(rf"table\(\s*[\"']({tabellen})[\"']", s):
-            tabelle = m.group(1)
-            # Umfeld des Aufrufs nach Personenbezug absuchen
-            umfeld = s[m.start():m.start() + 1200]
-            for feld in PERSONENBEZUG:
-                if re.search(rf"\b{feld}\b", umfeld, re.I):
-                    treffer.append(
-                        f"{rel(p)}:{zeilennummer(s, m.start())} — schreibt nach "
-                        f"{tabelle}, im Umfeld steht ein Feld „{feld}\""
-                    )
-                    break
-    titel = "Keine Personendaten in als öffentlich geführte Tabellen"
+    for unter in ("scripts", "shared"):
+        basis = REPO / unter
+        if not basis.is_dir():
+            continue
+        for p in sorted(basis.rglob("*.py")):
+            s = lies(p)
+            for m in re.finditer(r"table\(\s*[\"'](?P<t>[a-z_]+)[\"']", s):
+                tabelle = m.group("t")
+                if tabelle in TABELLEN_MIT_PERSONENBEZUG:
+                    continue
+                # Das Fenster am Ende des Statements abschneiden, nicht nach einer
+                # festen Zeichenzahl. Ein zu weites Fenster reicht in die nächste
+                # Funktion und meldet dort ein `email`, das mit dieser Tabelle
+                # nichts zu tun hat — beim ersten Lauf waren zwei von drei
+                # Treffern genau das.
+                ende = s.find(".execute()", m.start())
+                umfeld = s[m.start():ende if 0 < ende - m.start() < 900
+                           else m.start() + 400]
+                # Nur der Schreibaufruf zählt — ein SELECT auf eine Tabelle neben
+                # einer Variable namens `email` ist kein Befund.
+                if not re.search(r"\.(insert|upsert|update)\s*\(", umfeld):
+                    continue
+                for feld in PERSONENBEZUG:
+                    # Als TEILWORT suchen. `\bemail\b` trifft `user_email` nicht,
+                    # weil der Unterstrich ein Wortzeichen ist — genau so ist der
+                    # erste echte Treffer dieser Prüfung durchgerutscht, während
+                    # der Mutationstest es gemeldet hat.
+                    if re.search(rf"[\"'][a-z_]*{feld}[a-z_]*[\"']"
+                                 rf"|\b[a-z_]*{feld}[a-z_]*\s*[:=]",
+                                 umfeld, re.I):
+                        treffer.append(
+                            f"{rel(p)}:{zeilennummer(s, m.start())} — schreibt nach "
+                            f"{tabelle}, im Umfeld steht „{feld}\"; diese Tabelle "
+                            f"soll keine Personendaten tragen"
+                        )
+                        break
+    titel = "Keine Personendaten in Tabellen, die keine tragen sollen"
     if treffer:
         return Ergebnis(7, titel, DURCHGEFALLEN, sorted(set(treffer)))
     return Ergebnis(7, titel, BESTANDEN,
-                    [f"{len(OEFFENTLICHE_TABELLEN)} freigegebene Tabellen geprüft"])
+                    [f"Allowlist: {len(TABELLEN_MIT_PERSONENBEZUG)} Tabellen dürfen Personendaten tragen"])
 
 
 # ── Prüfung 8: nginx-Header fallen in keiner location weg ──────────────────
