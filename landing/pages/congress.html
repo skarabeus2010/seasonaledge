@@ -129,7 +129,23 @@
   !function(){
     var ACC='#e8a820';
     function $(id){return document.getElementById(id)}
-    function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+    /* Maskiert AUCH Anfuehrungszeichen: esc() wird hier in Attributen benutzt
+       (data-p, href), und dort bricht ein ungemaskiertes " aus dem Attribut aus.
+       Nur &<> zu ersetzen genuegt im Textknoten, nicht im Attribut. */
+    function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+    /* Linkziel gegen eine Allowlist pruefen statt es zu maskieren.
+       Die Daten kommen aus einem fremden XML ueber einen Cron in diese Seite —
+       ein Maskieren macht aus javascript:alert(1) ein gueltiges, maskiertes
+       javascript:alert(1). Nur der erwartete Host darf zum Link werden; alles
+       andere ergibt '' und wird als reiner Text angezeigt. */
+    var PDF_PREFIX='https://disclosures-clerk.house.gov/public_disc/';
+    function pdfhref(u){
+      u=String(u||'');
+      if(u.indexOf(PDF_PREFIX)!==0) return '';
+      if(/[\s"'<>]/.test(u)) return '';
+      return u;
+    }
     var DATA=null, filter=null;
 
     function tklink(t){
@@ -162,15 +178,17 @@
       if(!rows.length){body.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--dim)">Keine Trades.</td></tr>';return;}
       body.innerHTML=rows.slice(0,400).map(function(t){
         return '<tr>'+
-          '<td>'+t.filing_date+'</td>'+
+          '<td>'+esc(t.filing_date)+'</td>'+
           '<td class="pol">'+esc(t.politician)+' <span style="color:var(--dim);font-weight:400">'+esc(t.district)+'</span></td>'+
           '<td class="'+(t.is_buy?'buy':'sell')+'">'+esc(t.action)+'</td>'+
           '<td>'+tklink(t)+'</td>'+
           '<td style="color:var(--muted)">'+esc(t.asset_type)+'</td>'+
           '<td style="color:var(--text)">'+esc(t.amount_range)+'</td>'+
-          '<td style="color:var(--muted)">'+t.tx_date+'</td>'+
+          '<td style="color:var(--muted)">'+esc(t.tx_date)+'</td>'+
           '<td style="color:var(--muted)">'+esc(t.owner)+'</td>'+
-          '<td><a href="'+t.pdf_url+'" target="_blank" rel="noopener">PDF</a></td>'+
+          '<td>'+(pdfhref(t.pdf_url)
+            ? '<a href="'+esc(pdfhref(t.pdf_url))+'" target="_blank" rel="noopener">PDF</a>'
+            : '<span style="color:var(--dim)">—</span>')+'</td>'+
         '</tr>';
       }).join('');
     }

@@ -23,7 +23,21 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-_CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
+# TLS MIT Verifikation. Vorher war sie abgeschaltet — damit bestimmte jeder im
+# Netzwerkpfad den Inhalt dieser Datei, und der Inhalt landet über einen Cron in
+# `landing/data/congress_trades.json` und von dort in den Browser des Besuchers.
+# Das war eine durchgehende Kette von fremdem Netz bis in die Seite.
+#
+# Nachgewiesen vor der Umstellung, dass die Verifikation trägt: HTTP 200 lokal
+# UND im Produktionscontainer (CA-Bundle /usr/lib/ssl/cert.pem). Ein Test, der
+# den Produktionspfad nicht nimmt, hätte darüber nichts gesagt.
+_CTX = ssl.create_default_context()
+
+# Die DocID stammt aus dem fremden XML und wird in eine URL und in die Seite
+# eingesetzt. Beim Herausgeber ist sie durchgehend numerisch. Alles andere wird
+# verworfen, statt es später maskieren zu müssen: eine Prüfung an der Quelle
+# gilt für jeden Verbraucher, ein Maskieren nur für den, der daran denkt.
+_DOCID_RE = re.compile(r"^[0-9]{4,12}$")
 _UA = {"User-Agent": "Mozilla/5.0 (compatible; SeasonAlpha/1.0)"}
 _XML_URL = "https://disclosures-clerk.house.gov/public_disc/financial-pdfs/{year}FD.zip"
 _PDF_URL = "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/{year}/{doc}.pdf"
@@ -58,10 +72,20 @@ def _fetch_index(year: int) -> list[dict]:
     z = zipfile.ZipFile(io.BytesIO(_get(_XML_URL.format(year=year))))
     xmlname = next(n for n in z.namelist() if n.lower().endswith(".xml"))
     root = ET.fromstring(z.read(xmlname))
-    out = []
+    out, verworfen = [], 0
     for m in root.findall(".//Member"):
-        out.append({k: (m.findtext(k) or "") for k in
-                    ("Last", "First", "FilingType", "StateDst", "Year", "FilingDate", "DocID")})
+        eintrag = {k: (m.findtext(k) or "") for k in
+                   ("Last", "First", "FilingType", "StateDst", "Year", "FilingDate", "DocID")}
+        # Quellprüfung: eine DocID, die nicht dem Format des Herausgebers
+        # entspricht, ist entweder ein Datenfehler oder ein Angriff. In beiden
+        # Fällen hat sie in einer URL und in der Seite nichts zu suchen.
+        if not _DOCID_RE.match(eintrag["DocID"]):
+            verworfen += 1
+            continue
+        out.append(eintrag)
+    if verworfen:
+        print(f"  [WARN] {verworfen} Eintrag/Einträge mit unerwarteter DocID "
+              f"verworfen (erwartet {_DOCID_RE.pattern})", flush=True)
     return out
 
 
