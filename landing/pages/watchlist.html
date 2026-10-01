@@ -267,6 +267,14 @@
   (function() {
     'use strict';
     var qs = function(id) { return document.getElementById(id); };
+
+    /* Maskiert fuer die Ausgabe in HTML, inklusive Anfuehrungszeichen — die
+       Werte landen hier auch in Attributen (data-ticker, title). */
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
     var currentRender = []; // Cache aller Card-Objekte für Re-Filter/Sort ohne Refetch
     var loadSeq = 0;        // Run-Token: nur der jüngste loadAll()-Lauf darf currentRender committen
 
@@ -510,13 +518,18 @@
       var t = card.ticker;
       var dashHref = SA.i18n.pfad('/dashboard') + '?t=' + encodeURIComponent(t);
       var name = (card.meta && card.meta.n) || '';
-      var escName = name.replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
+      var escName = esc(name);
+      // Der Ticker wurde hier bisher UNMASKIERT eingesetzt, waehrend der Name
+      // daneben maskiert wurde. Die Quelle prueft ihn inzwischen gegen eine
+      // feste Form (watchlist.js::_normalize) — maskiert wird hier trotzdem,
+      // damit die Senke nicht davon abhaengt, dass die Quelle streng bleibt.
+      var escT = esc(t);
 
       if (card.error) {
-        return '<div class="wl-card error" data-ticker="' + t + '">' +
+        return '<div class="wl-card error" data-ticker="' + escT + '">' +
           '<div class="wl-card__head">' +
-            '<div><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + t + '</a><div class="wl-card__name">' + escName + '</div></div>' +
-            '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
+            '<div><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + escT + '</a><div class="wl-card__name">' + escName + '</div></div>' +
+            '<button type="button" class="wl-card__remove" data-ticker="' + escT + '" title="Entfernen">✕</button>' +
           '</div>' +
           '<div style="color:var(--red);font-size:.8125rem;padding:.5rem">⚠ ' + card.error + '</div>' +
           '<a href="' + dashHref + '" rel="nofollow" class="wl-card__cta">Trotzdem öffnen →</a>' +
@@ -601,12 +614,12 @@
           '</div>';
       }
 
-      return '<div class="wl-card" data-ticker="' + t + '">' +
+      return '<div class="wl-card" data-ticker="' + escT + '">' +
         '<div class="wl-card__head">' +
-          '<div style="min-width:0"><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + t + '</a>' +
+          '<div style="min-width:0"><a href="' + dashHref + '" rel="nofollow" class="wl-card__ticker">' + escT + '</a>' +
           (escName ? '<div class="wl-card__name">' + escName + '</div>' : '') +
           '</div>' +
-          '<button type="button" class="wl-card__remove" data-ticker="' + t + '" title="Entfernen">✕</button>' +
+          '<button type="button" class="wl-card__remove" data-ticker="' + escT + '" title="Entfernen">✕</button>' +
         '</div>' +
 
         '<div class="wl-card__price">' +
@@ -738,8 +751,9 @@
 
       qs('wl-caption').textContent = 'Lade Daten für ' + items.length + ' Ticker …';
       qs('wl-grid').innerHTML = items.map(function(item) {
-        return '<div class="wl-card loading" data-ticker="' + item.ticker + '">' +
-          '<div class="wl-card__head"><a class="wl-card__ticker">' + item.ticker + '</a></div>' +
+        var escT = esc(item.ticker);
+        return '<div class="wl-card loading" data-ticker="' + escT + '">' +
+          '<div class="wl-card__head"><a class="wl-card__ticker">' + escT + '</a></div>' +
           '<div style="color:var(--muted);font-size:.8125rem;padding:1rem;text-align:center">Lade …</div>' +
         '</div>';
       }).join('');

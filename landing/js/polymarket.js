@@ -14,6 +14,22 @@ var SA = window.SA || {};
 SA.polymarket = (function() {
   'use strict';
 
+  /**
+   * Maskiert einen Wert fuer die Ausgabe in HTML — inklusive Anfuehrungszeichen,
+   * damit er auch in einem Attribut nicht ausbrechen kann.
+   *
+   * Noetig, weil die Marktfragen, Slugs und Kategorien NICHT von uns stammen:
+   * sie kommen von Polymarket ueber scripts/polymarket_refresh.py in die
+   * Supabase-Tabellen und von dort hierher. Wir geben fremden Text weiter, und
+   * das heisst maskieren — unabhaengig davon, ob heute jemand dort etwas
+   * unterbringen kann.
+   */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   // ── Data-Loader ───────────────────────────────────────────────────────────
 
   /** Alle aktiven Markets aus dem Katalog (bereits nach category,slug sortiert). */
@@ -554,9 +570,9 @@ SA.polymarket = (function() {
 
       var liq = m.liquidity_usd ? '$' + (m.liquidity_usd / 1000).toFixed(0) + 'k' : '—';
       return '<tr>' +
-             '<td>' + (m.slug || '') + '</td>' +
-             '<td>' + (m.category || '') + '</td>' +
-             '<td>' + (m.question || '').slice(0, 60) + '</td>' +
+             '<td>' + esc(m.slug) + '</td>' +
+             '<td>' + esc(m.category) + '</td>' +
+             '<td>' + esc(String(m.question || '').slice(0, 60)) + '</td>' +
              '<td style="text-align:right;font-weight:700;color:#fff">' + pct + '</td>' +
              '<td style="text-align:right" class="' + deltaCls + '">' + deltaStr + '</td>' +
              '<td style="text-align:right">' + liq + '</td>' +

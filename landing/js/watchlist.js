@@ -87,8 +87,21 @@
     }
   }
 
+  /* Ein Ticker hat eine bekannte Form. Alles andere wird hier VERWORFEN statt
+     spaeter maskiert zu werden — eine Pruefung an der Quelle gilt fuer jeden
+     Verbraucher, ein Maskieren nur fuer den, der daran denkt. Und daran wurde
+     nicht ueberall gedacht: der Wert landete in `data-ticker="…"` und im Text,
+     waehrend der Name daneben maskiert wurde.
+
+     Zugelassen sind die Formen, die im Universum vorkommen: SPY, ^GSPC,
+     BTC-USD, SAP.DE, EURUSD=X, BRK-B, HG=F. Alle vier Aufrufstellen behandeln
+     den Leerwert bereits als "nichts" (`if (!t) return false` bzw. ein filter
+     im Import), deshalb ist das Verwerfen folgenlos. */
+  var TICKER_RE = /^[A-Z0-9.^=-]{1,15}$/;
+
   function _normalize(ticker) {
-    return (ticker || '').toString().trim().toUpperCase();
+    var t = (ticker || '').toString().trim().toUpperCase();
+    return TICKER_RE.test(t) ? t : '';
   }
 
   function _emit(event, detail) {
