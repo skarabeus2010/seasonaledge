@@ -48,20 +48,71 @@ jobs:
     steps:
       - name: Daily newsletter send via VPS
         uses: appleboy/ssh-action@v1
+        # Die Dispatch-Eingaben gehen über `env:` + `envs:` auf den Server und
+        # NICHT mehr in den Quelltext des Skripts. Vorher stand
+        # `TO="${{ github.event.inputs.to }}"` im Skriptrumpf: GitHub setzt den
+        # Wert dort VOR der Shell ein, er ist damit Quelltext und nicht Daten —
+        # und dieses Skript läuft als root auf dem VPS.
+        env:
+          SA_EVENT: ${{ github.event_name }}
+          SA_DRY:   ${{ github.event.inputs.dry_run }}
+          SA_TEST:  ${{ github.event.inputs.test_mode }}
+          SA_TO:    ${{ github.event.inputs.to }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 18m
+          envs: SA_EVENT,SA_DRY,SA_TEST,SA_TO
           script: |
-            DRY="${{ github.event.inputs.dry_run }}"
-            TEST="${{ github.event.inputs.test_mode }}"
-            TO="${{ github.event.inputs.to }}"
-            ARGS=""
-            if [ "$DRY" = "true" ];   then ARGS="$ARGS --dry-run"; fi
-            if [ "$TEST" = "true" ];  then ARGS="$ARGS --test"; fi
-            if [ -n "$TO" ];          then ARGS="$ARGS --to $TO"; fi
+            set -euo pipefail
 
-            echo "[daily-newsletter] args:$ARGS"
-            docker exec seasonalpha-app python3 scripts/daily_newsletter.py $ARGS 2>&1 | tail -80
-            echo "[daily-newsletter] Done: $(date)"
+            # FAIL-CLOSED. Mein erster Entwurf nahm an, eine nicht angekommene
+            # Variable sei harmlos, weil der Lauf dann dem Zeitplan entspricht.
+            # Das ist rückwärts gedacht: der Zeitplan-Standard IST der
+            # produktive Versand an alle Abonnenten. Verliert ein Dispatch sein
+            # `dry_run`, geht die Mail wirklich raus; verliert es `test_mode`,
+            # geht sie an alle statt nur an den Admin. Eine fehlende Übertragung
+            # muss den Lauf also abbrechen, bevor irgendetwas passiert.
+            #
+            # Auf dem Zeitplan sind die Variablen gesetzt und LEER; scheitert
+            # die Übertragung, sind sie UNGESETZT — ${VAR?} unterscheidet das.
+            : "${SA_EVENT?Uebertragung fehlgeschlagen: SA_EVENT fehlt}"
+            : "${SA_DRY?Uebertragung fehlgeschlagen: SA_DRY fehlt}"
+            : "${SA_TEST?Uebertragung fehlgeschlagen: SA_TEST fehlt}"
+            : "${SA_TO?Uebertragung fehlgeschlagen: SA_TO fehlt}"
+
+            if [ "$SA_EVENT" = "workflow_dispatch" ]; then
+              # Bei einem Dispatch sind die Booleans gesetzt. Etwas anderes als
+              # true/false heisst, dass der Wert unterwegs verloren ging.
+              for wert in "$SA_DRY" "$SA_TEST"; do
+                case "$wert" in
+                  true|false) ;;
+                  *) echo "[daily-newsletter] FEHLER: Boolean-Eingabe ist '$wert'," \
+                          "erwartet true oder false — Abbruch ohne Versand"; exit 1 ;;
+                esac
+              done
+            fi
+
+            args=()
+            if [ "$SA_DRY" = "true" ];  then args+=(--dry-run); fi
+            if [ "$SA_TEST" = "true" ]; then args+=(--test); fi
+            if [ -n "$SA_TO" ]; then
+              # Grobe, bewusst STRENGE Formprüfung. Sie ist kein RFC-5322-Test:
+              # sie weist exotische, aber zulässige Adressen ab (etwa mit einem
+              # Apostroph) und lässt Unsinn wie a@@b.c durch. Ihr Zweck ist, dass
+              # der Wert ein einzelnes Shell-Wort ohne Steuerzeichen bleibt.
+              case "$SA_TO" in
+                -*) echo "[daily-newsletter] FEHLER: --to beginnt mit '-'"; exit 1 ;;
+                *[!A-Za-z0-9._%+@-]*)
+                  echo "[daily-newsletter] FEHLER: --to enthaelt unerwartete Zeichen"; exit 1 ;;
+                *@*.*) args+=("--to=$SA_TO") ;;
+                *) echo "[daily-newsletter] FEHLER: --to sieht nicht wie eine Adresse aus"; exit 1 ;;
+              esac
+            fi
+
+            echo "[daily-newsletter] event=$SA_EVENT args=${args[*]-}"
+            docker exec seasonalpha-app python3 scripts/daily_newsletter.py \
+              ${args[@]+"${args[@]}"} 2>&1 | tail -80
+            # `set -e` traegt den Fehler; ein echo DANACH wuerde ihn loeschen,
+            # deshalb steht hier keines mehr.
