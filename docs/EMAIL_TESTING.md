@@ -142,7 +142,10 @@ Brevo lehnt den Sender ab. Zwei Ursachen:
 
 ### `permission denied for table …`
 
-Supabase-GRANT-Problem, siehe [incident_grant_loss_2026_04_21.md](../../.claude/projects/C--dev-SeasonalEdge/memory/incident_grant_loss_2026_04_21.md) bzw. `memory/`.
+Supabase-GRANT-Problem: die `service_role` verlor ihre DML-Rechte, Fix über `GRANT` plus
+Default-Privileges. Der Vorfall vom 21.04.2026 ist im Auto-Memory der Arbeitsmaschine
+protokolliert (`incident_grant_loss_2026_04_21`) — das liegt außerhalb des Repos, ein
+relativer Verweis darauf zeigt also ins Leere.
 
 ### Mail kommt nicht an, aber Brevo zeigt „Delivered"
 
