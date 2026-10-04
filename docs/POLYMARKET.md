@@ -236,7 +236,7 @@ Separate Pipeline auf eigenem DB-Schema, weil die Daten nie geupdated werden (hi
 
 **2. Scraper auf dem Server starten** (dauert 30–60 min wegen CLOB-Rate-Limits):
 ```bash
-ssh root@178.104.75.46
+ssh root@<VPS-IP>
 cd /opt/seasonaledge
 nohup docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py > /tmp/brier_scrape.log 2>&1 &
 tail -f /tmp/brier_scrape.log
@@ -253,7 +253,7 @@ ls -la /opt/seasonaledge/landing/data/brier_stats.json
 **4. JSON-Datei in Git committen** (vom lokalen Dev-Rechner, nicht Server — Server hat kein GitHub-Token):
 ```bash
 # Lokal auf Windows (PowerShell oder Git-Bash):
-scp root@178.104.75.46:/opt/seasonaledge/landing/data/brier_stats.json C:/dev/SeasonalEdge/landing/data/brier_stats.json
+scp root@<VPS-IP>:/opt/seasonaledge/landing/data/brier_stats.json C:/dev/SeasonalEdge/landing/data/brier_stats.json
 cd C:/dev/SeasonalEdge
 git add landing/data/brier_stats.json
 git commit -m "data: brier_stats.json update"

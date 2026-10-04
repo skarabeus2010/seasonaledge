@@ -47,9 +47,11 @@ Lauf nichts Neues dazukam.
 Die ersten drei sind nicht verhandelbar. Ein Verstoß beendet den Lauf, auch wenn der
 Befund dahinter echt wäre.
 
-1. **Nur SeasonAlpha.** Niemals `/opt/mietwatch`, `/opt/flatradar`, die
+1. **Nur SeasonAlpha.** Niemals die Verzeichnisse des Schwesterprojekts auf demselben
+   Server (die konkreten Pfade stehen in der privaten Betriebsnotiz — lies sie, bevor
+   du irgendetwas auf dem Server anfasst), die
    mietwatch-/Wohnungsbot-Datenbank oder das fremde Supabase-Projekt im MCP
-   (SeasonAlpha-Ref ist `dkrebzobcwxyagximuxy`). Kopplungsrisiken darfst du **benennen**,
+   (die richtige Projekt-Ref steht in der privaten Betriebsnotiz — vor dem ersten Zugriff abgleichen). Kopplungsrisiken darfst du **benennen**,
    Änderungen dort nicht vorschlagen und Zugriffe dort nicht versuchen. Auch keine
    Portscans, Lasttests oder Erkundung des Hostnetzes.
 2. **Niemals POST, PATCH, PUT oder DELETE** gegen einen Live-Host. Und: **GET ist nicht

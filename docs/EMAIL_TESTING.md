@@ -20,7 +20,7 @@ Alles andere (`UNSUBSCRIBE_SECRET`, `ANTHROPIC_API_KEY`) hat Code-Defaults.
 Check ob der Container die Vars sieht:
 
 ```bash
-ssh root@178.104.75.46
+ssh root@<VPS-IP>
 docker exec seasonalpha-app env | grep -E "BREVO_API_KEY|ADMIN_EMAIL|SENDER_EMAIL" | sed 's/=.\{10\}.*/=***/'
 ```
 
@@ -40,7 +40,7 @@ Tägliches Monitoring um 07:00 UTC. 6 Systemchecks (Nightly, prices SPY/BTC, Sca
 ### Test per SSH (direkt auf dem Server)
 
 ```bash
-ssh root@178.104.75.46
+ssh root@<VPS-IP>
 
 # Live an ADMIN_EMAIL
 docker exec seasonalpha-app python3 scripts/daily_health_check.py 2>&1 | tail -15
@@ -71,7 +71,7 @@ Rollt Sonntags 17:00 UTC automatisch via Phase F (`scripts/nightly_refresh.py`).
 ### Test per SSH
 
 ```bash
-ssh root@178.104.75.46
+ssh root@<VPS-IP>
 
 # Test-Modus: nur an ADMIN_EMAIL
 docker exec seasonalpha-app python3 scripts/weekly_newsletter.py --test 2>&1 | tail -10
@@ -165,18 +165,18 @@ Wenn der Brevo-Key geleakt wurde (z. B. in Chat/Repo):
 #    b) Server: /opt/seasonaledge/.env
 #    Sauber vom lokalen Stand aus (der Key-Wert erscheint nicht im Klartext im Befehl):
 NEWKEY=$(grep -E '^BREVO_API_KEY=' /c/dev/SeasonalEdge/.env)
-ssh root@178.104.75.46 "cd /opt/seasonaledge && sed -i.bak 's#^BREVO_API_KEY=.*#$NEWKEY#' .env && docker compose up -d --force-recreate app"
+ssh root@<VPS-IP> "cd /opt/seasonaledge && sed -i.bak 's#^BREVO_API_KEY=.*#$NEWKEY#' .env && docker compose up -d --force-recreate app"
 
 # 3. 1-2 Min warten (Container-Neustart), dann Test-Send VOM SERVER (nicht lokal!):
-ssh root@178.104.75.46 "docker exec seasonalpha-app python3 scripts/daily_newsletter.py --test 2>&1 | tail -5"
+ssh root@<VPS-IP> "docker exec seasonalpha-app python3 scripts/daily_newsletter.py --test 2>&1 | tail -5"
 
 # 4. Kam die Mail an → alten Key im Brevo-Dashboard LÖSCHEN + Server-Backup entfernen:
-ssh root@178.104.75.46 "rm -f /opt/seasonaledge/.env.bak"
+ssh root@<VPS-IP> "rm -f /opt/seasonaledge/.env.bak"
 ```
 
 **Lessons Learned (Rotation 2026-08-06):**
 
-- **⚠️ Brevo-Keys teilen den Account-Präfix.** Alter und neuer Key desselben Kontos beginnen IDENTISCH (`xkeysib-5440ec2afed4…`). **Keys NUR an der Endung (letzte ~6 Zeichen) unterscheiden, NIE am Präfix** — sonst hält man einen neuen Key fälschlich für den alten (genau das passierte hier: Präfix-Vergleich sagte fälschlich „alter Key", die Endung `…WbWkUe` vs `…lylWgh` war der echte Unterschied).
+- **⚠️ Brevo-Keys teilen den Account-Präfix.** Alter und neuer Key desselben Kontos beginnen IDENTISCH (`xkeysib-<gekuerzt>…`). **Keys NUR an der Endung (letzte ~6 Zeichen) unterscheiden, NIE am Präfix** — sonst hält man einen neuen Key fälschlich für den alten (genau das passierte hier: Präfix-Vergleich sagte fälschlich „alter Key", die Endung `…WbWkUe` vs `…lylWgh` war der echte Unterschied).
 - **Brevo „Authorised IPs" → 401 ist KEIN Key-Fehler.** Ist im Konto die IP-Whitelist aktiv (Account → Security → Authorised IPs), liefert ein API-Call von einer nicht-freigegebenen IP `401 {"message":"…unrecognised IP address…"}`. Das heißt NICHT, dass der Key ungültig ist. Ein Key lässt sich daher **nur von der freigegebenen Server-IP** testen — lokale `/v3/account`-Checks scheitern an der IP, nicht am Key.
 - **Deploy überträgt `.env` nicht** (gitignored) → Server-`.env` immer separat aktualisieren, sonst läuft die Produktion mit dem alten Key weiter.
 - **SSH aus der Claude-Umgebung = `permission denied`** (kein VPS-Key hinterlegt) → Server-Schritte macht der User; Claude liefert nur die Copy-Paste-Befehle.

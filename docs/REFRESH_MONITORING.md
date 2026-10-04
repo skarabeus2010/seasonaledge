@@ -103,7 +103,7 @@ Falls der automatische Fix nicht greift:
 ### Auf dem Server (SSH):
 
 ```bash
-ssh root@178.104.75.46
+ssh root@<VPS-IP>
 
 # Alle Ticker prüfen + fehlende Tage nachladen
 docker exec seasonalpha-app python3 scripts/fix_missing_days.py

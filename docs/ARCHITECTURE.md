@@ -61,8 +61,8 @@ Direkt in `yahoo_downloader.py` integriert. Automatisch aktiv wenn Yahoo < 40 Ja
 | Eigenschaft | Wert |
 |-------------|------|
 | Projekt | **SeasonAlpha** |
-| Projekt-ID | `dkrebzobcwxyagximuxy` |
-| URL | `https://dkrebzobcwxyagximuxy.supabase.co` |
+| Projekt-ID | `<SUPABASE-PROJEKT-REF>` |
+| URL | `https://<SUPABASE-PROJEKT-REF>.supabase.co` |
 | Plan | Free |
 | Region | EU (Frankfurt) |
 | VPS `.env` | `SUPABASE_URL` + `SUPABASE_KEY` (anon/public) |
