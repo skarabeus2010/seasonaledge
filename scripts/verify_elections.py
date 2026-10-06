@@ -14,7 +14,13 @@ Prüft landing/data/elections.json und landing/data/election_calendar_exceptions
      und plain_vanilla.py::_get_election_day liefern für jedes US-Jahr dasselbe Datum
      wie die Liste — bis Phase M rechnen die alten Strategien noch mit diesen Formeln.
   5. Kalender-Ausnahmen: jeder NYSE-Wahltag bis 1968 (auch ungerade Jahre) sowie
-     1972/1976/1980 ist als Schließung eingetragen, danach keiner.
+     1972/1976/1980 ist als Schließung eingetragen, danach keiner; die gemessene
+     Abdeckungsgrenze (1971) und die fünf Sonderschließungen 1972–1994 sind festgeschrieben.
+
+GRENZE: Dieser Wächter prüft Struktur, Regeln und Belegpflicht. Ob ein plausibel
+formatierter Sieger, Kanzler oder eine Kammermehrheit historisch STIMMT, ist eine
+redaktionelle Sachprüfung (docs/WAHLEN_QUELLENPRUEFUNG.md); `verified: true` ist deren
+Bestätigung, kein Ergebnis dieses Skripts.
 
     py -3.14 scripts/verify_elections.py            # Exit 0 = grün
     py -3.14 scripts/verify_elections.py --ohne-node  # Termin-Parität JS bewusst überspringen
@@ -37,6 +43,16 @@ AUSNAHMEN = REPO / "landing" / "data" / "election_calendar_exceptions.json"
 TYPEN = {"US": {"president", "midterm"}, "DE": {"bundestag"}}
 STATUS = {"held", "scheduled"}
 KAMMER_BASIS = {"speaker", "organizing_majority", "tie_vp", "unknown"}
+UNBEKANNT = "unknown"
+PFLICHT = {
+    "president": ("winner", "winner_party", "prior_party"),
+    "midterm": ("congress_before", "congress_after", "house_before", "house_after"),
+    "bundestag": ("strongest_party", "chancellor_before", "chancellor_after", "chancellor_party_before",
+                  "chancellor_party_after", "chancellor_change", "zweitstimmen_union", "zweitstimmen_spd"),
+}
+# Gemessen 2026-10-06 (docs/WAHLEN.md): ab hier stimmen Regelkalender + Ausnahmen mit den Kurszeilen.
+KALENDER_BELEGT_AB = {"NYSE": "1971-01-01"}
+SONDERSCHLIESSUNGEN = {"1972-12-28", "1973-01-25", "1977-07-14", "1985-09-27", "1994-04-27"}
 
 
 def us_wahltag(jahr: int) -> date:
@@ -90,13 +106,23 @@ def pruefe_liste(doc: dict) -> list[str]:
                 f.append(f"{i}: gehaltene Wahl ohne Ergebnis")
                 continue
             f += pruefe_ergebnis(i, e, r, d, parteien)
-            if len(e.get("sources", [])) < 2:
-                f.append(f"{i}: weniger als zwei Quellen")
-            if e.get("verified") is not True:
+            quellen = e.get("sources", [])
+            ergebnis = {q.get("url") for q in quellen if "result" in (q.get("field") or [])}
+            termin = {q.get("url") for q in quellen if "date" in (q.get("field") or [])}
+            if len({q.get("url") for q in quellen}) < 2:
+                f.append(f"{i}: weniger als zwei verschiedene Quellen")
+            if len(ergebnis) < 2:
+                f.append(f"{i}: Ergebnis nicht durch zwei verschiedene Quellen belegt")
+            if not termin:
+                f.append(f"{i}: Termin ohne Quelle")
+            unbekannt = UNBEKANNT in json.dumps(r)
+            if e.get("verified") is not True and not unbekannt:
                 f.append(f"{i}: nicht aus zwei Quellen bestätigt (verified != true)")
-        for s in e.get("sources", []):
-            if not s.get("url") or not s.get("field"):
-                f.append(f"{i}: Quelle ohne url/field")
+            if unbekannt and e.get("verified") is True:
+                f.append(f"{i}: 'unknown' im Ergebnis, aber verified = true")
+        for q in e.get("sources", []):
+            if not q.get("url") or not q.get("field") or not q.get("checked"):
+                f.append(f"{i}: Quelle ohne url/field/checked")
         # Termin bekannt seit
         skf = e.get("schedule_known_from")
         if skf is not None and skf > e["date"]:
@@ -113,8 +139,16 @@ def pruefe_ergebnis(i: str, e: dict, r: dict, d: date, parteien: set) -> list[st
     f: list[str] = []
 
     def partei(wert, feld):
-        if wert not in parteien:
-            f.append(f"{i}: {feld} = {wert!r} ist keine bekannte Partei")
+        if wert == UNBEKANNT:
+            return
+        if wert not in parteien or not str(wert).startswith(e["country"] + "-"):
+            f.append(f"{i}: {feld} = {wert!r} ist keine bekannte Partei für {e['country']}")
+
+    for k in PFLICHT[e["type"]]:
+        if e["type"] == "bundestag" and d.year == 1949 and k == "chancellor_change":
+            continue  # erste Bundestagswahl: kein Kanzler davor
+        if r.get(k) in (None, ""):
+            f.append(f"{i}: Pflichtfeld result.{k} fehlt")
 
     if e["type"] == "president":
         partei(r.get("winner_party"), "winner_party")
@@ -133,8 +167,7 @@ def pruefe_ergebnis(i: str, e: dict, r: dict, d: date, parteien: set) -> list[st
                 if not isinstance(v, dict):
                     f.append(f"{i}: {k} fehlt")
                     continue
-                if v.get("party") != "unknown":
-                    partei(v.get("party"), k)
+                partei(v.get("party"), k)
                 if v.get("basis") not in KAMMER_BASIS:
                     f.append(f"{i}: {k}.basis {v.get('basis')!r}")
                 as_of = v.get("as_of", "")
@@ -148,7 +181,8 @@ def pruefe_ergebnis(i: str, e: dict, r: dict, d: date, parteien: set) -> list[st
             partei(r.get("chancellor_party_before"), "chancellor_party_before")
         partei(r.get("chancellor_party_after"), "chancellor_party_after")
         wechsel = r.get("chancellor_before") != r.get("chancellor_after")
-        if d.year > 1949 and r.get("chancellor_change") is not wechsel:
+        if d.year > 1949 and r.get("chancellor_change") is not wechsel and UNBEKANNT not in (
+                r.get("chancellor_before"), r.get("chancellor_after")):
             f.append(f"{i}: chancellor_change passt nicht zu den Namen")
     return f
 
@@ -178,9 +212,20 @@ def pruefe_abdeckung(doc: dict, wahlen: list[dict]) -> list[str]:
 def pruefe_ausnahmen(cal: dict) -> list[str]:
     f: list[str] = []
     ist = {(x["calendar_id"], x["date"]) for x in cal.get("exceptions", []) if x.get("closed")}
+    schluessel = [(x.get("calendar_id"), x.get("date")) for x in cal.get("exceptions", [])]
+    for k in {k for k in schluessel if schluessel.count(k) > 1}:
+        f.append(f"Ausnahme doppelt: {k}")
     for x in cal.get("exceptions", []):
         if not x.get("reason") or "verified" not in x:
             f.append(f"Ausnahme {x.get('date')}: reason/verified fehlt")
+        if x.get("verified") and not x.get("evidence"):
+            f.append(f"Ausnahme {x.get('date')}: verified ohne evidence")
+    if cal.get("calendar_documented_from") != KALENDER_BELEGT_AB:
+        f.append(f"calendar_documented_from {cal.get('calendar_documented_from')} ≠ gemessen {KALENDER_BELEGT_AB} "
+                 "— Änderung nur mit neuer Messung (docs/WAHLEN.md)")
+    for tag in sorted(SONDERSCHLIESSUNGEN):
+        if ("NYSE", tag) not in ist:
+            f.append(f"Sonderschließung {tag} fehlt (gemessen: kein Kurs in ^GSPC/^DJI)")
     for jahr in range(1896, 2030):
         tag = us_wahltag(jahr).isoformat()
         soll_zu = jahr <= 1968 or jahr in (1972, 1976, 1980)

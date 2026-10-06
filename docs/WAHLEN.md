@@ -22,13 +22,15 @@ späteren Abschnitte (10–14) vor den früheren.
   Jede gehaltene Wahl mit ≥ 2 übereinstimmenden Quellen (`verified: true`). Herkunft und alle Quellenkonflikte:
   [WAHLEN_QUELLENPRUEFUNG.md](WAHLEN_QUELLENPRUEFUNG.md).
 - **`landing/data/election_calendar_exceptions.json`** — belegte Börsenschließungen nach `(calendar_id, date)`.
-  NYSE am Wahltag: geschlossen **jedes Jahr bis 1968 (auch ungerade Jahre)**, danach nur 1972/1976/1980. Ab 1928
-  doppelt belegt (NYSE-Liste + fehlender S&P-500-Tageskurs, 49/49 bzw. auch alle ungeraden Jahre), davor nur die
-  NYSE-Liste (`verified: false`).
-- **Wächter:** `py -3.14 scripts/verify_elections.py` — Schema, US-Regel, DE-Sonntag, lückenlose Abdeckung,
-  Quellenpflicht, Kammer-Stichtage, Kalender-Ausnahmen und **Termin-Parität** zu den alten Formeln
-  `strategy-compute.js::_electionDay` (per node) und `plain_vanilla.py::_get_election_day`. 11/11 absichtlich
-  eingebaute Fehler gefangen.
+  NYSE am Wahltag: geschlossen **jedes Jahr bis 1968 (auch ungerade Jahre)**, danach nur 1972/1976/1980. Doppelt
+  belegt für 1896–1980: NYSE-Liste + fehlender Tageskurs in `^GSPC` und `^DJI` (Supabase, Vortag und Folgetag
+  vorhanden, gemessen 2026-10-06). Dazu die fünf Sonderschließungen 1972–1994 und `calendar_documented_from`.
+- **Wächter:** `py -3.14 scripts/verify_elections.py` — Schema, typspezifische Pflichtfelder, Parteien je Land,
+  US-Regel, DE-Sonntag, lückenlose Abdeckung, Quellenpflicht (zwei verschiedene Ergebnisquellen, Prüfdatum),
+  Kammer-Stichtage, Kalender-Ausnahmen inkl. festgeschriebener Abdeckungsgrenze und Sonderschließungen, sowie
+  **Termin-Parität** zu `strategy-compute.js::_electionDay` (per node) und `plain_vanilla.py::_get_election_day`.
+  `scripts/verify_elections_mutation.py`: 18/18. **Grenze:** ob ein plausibel formatierter Sieger oder Kanzler
+  historisch stimmt, ist redaktionelle Sachprüfung (Quellenbericht); `verified` bestätigt sie, der Wächter nicht.
 
 ## Rechenkern (Phase 1a)
 
@@ -63,8 +65,7 @@ späteren Abschnitte (10–14) vor den früheren.
 
 ## Offen
 
-- Vor 1928: NYSE-Wahltagsschließung gegen unsere `^DJI`-Tagesreihe prüfen (die NYSE-Liste ist in der
-  Spaltenzuordnung uneindeutig: „Closed every year except 1898, 1906 and 1907" steht nahe der Election-Day-Zeile).
-- Samstagshandel bis 1952 und Schließung 31.07.–27.11.1914 als Kalender-Einträge erfassen.
+- Samstagshandel bis 1952 und Schließung 31.07.–27.11.1914 sind nicht als Kalender-Einträge erfasst — nötig ist
+  das erst, wenn der Kalender vor 1971 als belegt gelten soll (heute: Kurszeilenfolge + 4-Tage-Regel).
 - Quellen für `schedule_known_from` (US-Gesetze) sind gesetzt, aber nicht abgerufen (`checked: null`).
 - DE: Anordnungsdatum regulärer Bundestagswahlen recherchieren.

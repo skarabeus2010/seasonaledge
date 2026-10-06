@@ -45,12 +45,15 @@ def _meta(w: dict) -> dict:
     r = w.get("result") or {}
     m = {"id": w["id"], "type": w["type"], "date": w["date"], "status": w["status"]}
     if w["type"] == "president" and r:
-        m.update(winner=r.get("winner"), winner_party=r.get("winner_party"), prior_party=r.get("prior_party"),
-                 machtwechsel=r.get("winner_party") != r.get("prior_party"), contested=bool(r.get("contested")))
+        wp, pp = r.get("winner_party"), r.get("prior_party")
+        bekannt = wp not in (None, "unknown") and pp not in (None, "unknown")
+        # Unbekannte Ergebnisse dürfen nie als "Wechsel" oder "kein Wechsel" in Filter laufen (Codex R1).
+        m.update(winner=r.get("winner"), winner_party=wp, prior_party=pp,
+                 machtwechsel=(wp != pp) if bekannt else None, contested=bool(r.get("contested")))
     elif w["type"] == "midterm" and r:
         for k in ("house_before", "house_after", "senate_before", "senate_after"):
             if k in r:
-                m[k] = r[k]["party"]
+                m[k] = None if r[k]["party"] == "unknown" else r[k]["party"]
     return m
 
 

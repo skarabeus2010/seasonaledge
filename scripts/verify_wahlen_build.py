@@ -164,6 +164,32 @@ def fall_kontrolljahre():
     soll(k2[2011].get("ausgeschlossen") == el.G_ZUKUNFT, "künftiges Kontrolljahr nicht ausgeschlossen")
 
 
+def fall_nicht_sitzung_vorlauf_und_grenze():
+    """Codex R1: rückwärts ist die neu aufgenommene Zeile `a`; Grenze unbelegt → belegt."""
+    sa = date(2010, 10, 23)  # Samstag vor der Wahl
+    d, c = reihe(VON, BIS, mit={sa})
+    i, _ = el.anker(d, WAHL, BELEGT)
+    p = el.pfad(d, c, i, BELEGT)
+    off = d.index(sa.isoformat()) - i
+    soll(p["grund"].get(off) == el.G_NICHT_SITZUNG, f"Nicht-Sitzung im Vorlauf: Grund {p['grund'].get(off)}")
+    soll(not gueltig(p, -off, 20) and gueltig(p, -off - 1, 20), "Nicht-Sitzung im Vorlauf: Gültigkeitsgrenze falsch")
+    ist = kalender(date(1971, 1, 1))
+    d2, c2 = reihe(date(1970, 6, 1), date(1971, 3, 1), ohne={date(1971, 1, 1)}, mit={date(1971, 1, 2)})
+    i2 = d2.index("1970-12-31")
+    p2 = el.pfad(d2, c2, i2, ist)
+    soll(p2["grund"].get(1) == el.G_NICHT_SITZUNG, f"Grenze 1970→1971: Samstag 02.01.1971 als {p2['grund'].get(1)}")
+    soll(p2["tage"][N + 1] == 2 and p2["tage"][N - 1] == -1, f"Datumsversatz im Pfad falsch: {p2['tage'][N - 1:N + 2]}")
+
+
+def fall_belegte_lange_schliessung():
+    """Belegter Kalender: eine belegte Schliessung > 4 Tage (11.–14.09.2001) ist keine Lücke."""
+    zu = {date(2001, 9, 11) + timedelta(days=k) for k in range(4)}
+    ist = kalender(date(1971, 1, 1), zu)
+    d, c = reihe(date(2001, 1, 2), date(2002, 6, 28), ohne=zu)
+    i, _ = el.anker(d, date(2001, 11, 6), ist)
+    soll(gueltig(el.pfad(d, c, i, ist), 60, 20), "belegte Schliessung 2001 macht das Fenster fälschlich ungültig")
+
+
 def fall_kurs_an_nicht_sitzung():
     sa = date(2010, 11, 6)  # Samstag nach der Wahl
     d, c = reihe(VON, BIS, mit={sa})
@@ -185,7 +211,7 @@ def fall_anker_zu_weit():
 def fall_live():
     termin = date(2026, 11, 3)
     d, c = reihe(date(2026, 1, 1), date(2026, 10, 6))  # letzter Kurs Di 06.10.
-    p = el.live_pfad(d, c, termin, BELEGT)
+    p = el.live_pfad(d, c, termin, BELEGT, date(2026, 10, 6))
     # Sitzungen 07.10.–03.11. = 20 → letzter Kurs liegt bei Offset −20
     soll(p["c"][N - 20] == c[-1], f"Live: letzter Kurs nicht bei −20 ({p['c'][N - 20]} vs {c[-1]})")
     soll(p["c"][N - 19] is None and p["grund"].get(-19) == el.G_ZUKUNFT, "Live: −19 sollte Zukunft sein")
@@ -194,6 +220,13 @@ def fall_live():
     soll(p["t0"] == "2026-11-03" and p["t0_projiziert"], "Live: projiziertes t0 falsch")
     # Wechsel X=5 / X=20: Basis t−X liegt in der Zukunft bzw. ist vorhanden
     soll(p["c"][N - 5] is None and p["c"][N - 20] is not None, "Live: Basis t−5 / t−20 falsch verfügbar")
+    soll(p["tage"][N] == 0 and p["tage"][N - 20] == -28 and p["tage"][N + 1] == 1, f"Live: Datumsversatz {p['tage'][N - 20]}")
+    # Verzögerter Kurs-Refresh (Codex R1): Session 06.10. abgeschlossen, Kurs fehlt noch
+    d2, c2 = d[:-1], c[:-1]
+    p2 = el.live_pfad(d2, c2, termin, BELEGT, date(2026, 10, 6))
+    soll(p2["grund"].get(-20) == el.G_FEHLENDE_SITZUNG, f"Live: fehlende abgeschlossene Session als {p2['grund'].get(-20)}")
+    soll(p2["c"][N - 21] == c2[-1], "Live: ältere Kurse durch fehlende Session verschoben")
+    soll(p2["grund"].get(-19) == el.G_ZUKUNFT, "Live: Session nach dem Stichtag nicht als Zukunft")
 
 
 def fall_mini_rendite():
@@ -205,6 +238,18 @@ def fall_mini_rendite():
     # Vorlauf 99/100−1 = −1 %, Nachlauf 118,8/99−1 = +20 %, Fenster 118,8/100−1 = +18,8 %
     ok = r and abs(r["vorlauf"] + 1) < 1e-9 and abs(r["nachlauf"] - 20) < 1e-9 and abs(r["fenster"] - 18.8) < 1e-9
     soll(bool(ok), f"Mini-Reihe: {r}")
+
+
+def fall_machtwechsel_unbekannt():
+    """Codex R1: unbekannte Ergebnisse dürfen weder als Wechsel noch als kein Wechsel erscheinen."""
+    import build_wahlen as bw
+    w = {"id": "x", "type": "president", "date": "2000-11-07", "status": "held",
+         "result": {"winner": "?", "winner_party": "unknown", "prior_party": "US-R"}}
+    soll(bw._meta(w)["machtwechsel"] is None, "unknown + US-R ergibt einen Machtwechsel-Wert")
+    w["result"]["prior_party"] = "unknown"
+    soll(bw._meta(w)["machtwechsel"] is None, "unknown + unknown ergibt 'kein Wechsel'")
+    w["result"].update(winner_party="US-D", prior_party="US-R")
+    soll(bw._meta(w)["machtwechsel"] is True, "bekannter Wechsel nicht erkannt")
 
 
 def fall_baue_end_to_end():
@@ -243,8 +288,9 @@ def fall_baue_end_to_end():
 def main() -> int:
     for f in (fall_offen, fall_geschlossen, fall_wahltag_fehlt, fall_sonntag, fall_fehlende_sitzung_plus3_und_45,
               fall_datenende_plus25, fall_unbelegt_lange_schliessung_und_samstag, fall_lueckengrenze_4_tage, fall_kontrolljahre,
+              fall_nicht_sitzung_vorlauf_und_grenze, fall_belegte_lange_schliessung,
               fall_kurs_an_nicht_sitzung,
-              fall_anker_zu_weit, fall_live, fall_mini_rendite, fall_baue_end_to_end):
+              fall_anker_zu_weit, fall_live, fall_mini_rendite, fall_machtwechsel_unbekannt, fall_baue_end_to_end):
         vorher = len(FEHLER)
         try:
             f()

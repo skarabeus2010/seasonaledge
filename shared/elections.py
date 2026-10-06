@@ -98,14 +98,19 @@ def _fehlende_sitzung(a: date, b: date, ist_sitzung) -> Optional[date]:
 
 
 def _schritt_ok(a: date, b: date, ist_sitzung) -> Optional[str]:
-    """Prüft den Übergang zwischen zwei benachbarten Kurszeilen a < b. None = ok, sonst Grund."""
+    """Prüft den Übergang zwischen zwei benachbarten Kurszeilen a < b. None = ok, sonst Grund.
+
+    Beide Endpunkte werden geprüft (Codex R1: rückwärts ist `a` die neu aufgenommene Zeile),
+    fehlende belegte Sitzungen auch über die Abdeckungsgrenze hinweg, die Lückenregel nur dort,
+    wo mindestens ein Endpunkt unbelegt ist.
+    """
     sa, sb = ist_sitzung(a), ist_sitzung(b)
-    if sa is None or sb is None:
-        return G_LUECKE if (b - a).days > MAX_LUECKE else None
-    if sb is False:
+    if sa is False or sb is False:
         return G_NICHT_SITZUNG
     if _fehlende_sitzung(a, b, ist_sitzung):
         return G_FEHLENDE_SITZUNG
+    if (sa is None or sb is None) and (b - a).days > MAX_LUECKE:
+        return G_LUECKE
     return None
 
 
@@ -132,8 +137,10 @@ def anker(daten: list[str], termin: date, ist_sitzung) -> tuple[Optional[int], O
 def pfad(daten: list[str], closes: list[float], i0: int, ist_sitzung, n: int = FENSTER) -> dict:
     """Kurse −n…+n um den Anker i0, mit Gültigkeit je Offset."""
     c: list[Optional[float]] = [None] * (2 * n + 1)
+    tage: list[Optional[int]] = [None] * (2 * n + 1)   # Kalendertage relativ zu t0 (Datum je Offset)
     grund: dict[int, str] = {}
-    c[n] = closes[i0]
+    t0 = _d(daten[i0])
+    c[n], tage[n] = closes[i0], 0
     for richtung in (-1, 1):
         kaputt: Optional[str] = None
         for k in range(1, n + 1):
@@ -145,6 +152,7 @@ def pfad(daten: list[str], closes: list[float], i0: int, ist_sitzung, n: int = F
             if j >= len(daten):
                 grund[off] = G_NACH_DATENENDE
                 continue
+            tage[n + off] = (_d(daten[j]) - t0).days
             if kaputt is None:
                 a, b = (j, j + 1) if richtung < 0 else (j - 1, j)
                 kaputt = _schritt_ok(_d(daten[a]), _d(daten[b]), ist_sitzung)
@@ -152,44 +160,51 @@ def pfad(daten: list[str], closes: list[float], i0: int, ist_sitzung, n: int = F
                 grund[off] = kaputt
                 continue
             c[n + off] = closes[j]
-    return {"t0": daten[i0], "c": c, "grund": grund,
+    return {"t0": daten[i0], "c": c, "tage": tage, "grund": grund,
             "kalender_belegt": ist_sitzung(_d(daten[max(0, i0 - n)])) is not None}
 
 
 def live_pfad(daten: list[str], closes: list[float], termin: date, ist_sitzung,
-              n: int = FENSTER) -> dict:
-    """Pfad für einen künftigen Termin: t0 = projizierte Sitzung (letzte erwartete ≤ Termin)."""
-    t0 = termin
-    while not ist_sitzung(t0):
-        if ist_sitzung(t0) is None:
-            raise ValueError("Live-Pfad braucht einen belegten Kalender")
-        t0 -= timedelta(days=1)
-    letzte = _d(daten[-1])
-    # Zahl erwarteter Sitzungen nach dem letzten Kurs bis einschliesslich t0
-    m, x = 0, letzte + timedelta(days=1)
-    while x <= t0:
-        if ist_sitzung(x):
-            m += 1
-        x += timedelta(days=1)
+              stichtag: date, n: int = FENSTER) -> dict:
+    """Pfad für einen künftigen Termin. t0 = projizierte Sitzung (letzte erwartete ≤ Termin).
+
+    Offsets zählen hier ERWARTETE Sitzungen des belegten Kalenders, nicht Kurszeilen: so verschiebt
+    eine fehlende Zeile die übrigen nicht. Sitzungen ≤ `stichtag` (letzte abgeschlossene Session)
+    ohne Kurs sind `fehlende_sitzung`, nur Sitzungen danach `zukunft` (Codex R1).
+    """
+    def schritt(x: date, r: int) -> date:
+        x += timedelta(days=r)
+        while True:
+            s_ = ist_sitzung(x)
+            if s_ is None:
+                raise ValueError("Live-Pfad braucht einen belegten Kalender")
+            if s_:
+                return x
+            x += timedelta(days=r)
+
+    t0 = termin if ist_sitzung(termin) else schritt(termin, -1)
+    kurs = {d: c for d, c in zip(daten, closes)}
     c: list[Optional[float]] = [None] * (2 * n + 1)
+    tage: list[Optional[int]] = [None] * (2 * n + 1)
     grund: dict[int, str] = {}
-    kaputt: Optional[str] = None
-    for off in range(n, -n - 1, -1):
-        if off > -m:
-            grund[off] = G_ZUKUNFT
-            continue
-        j = len(daten) - 1 + off + m
-        if j < 0:
-            grund[off] = G_VOR_DATENBEGINN
-            continue
-        if kaputt is None and j < len(daten) - 1:
-            kaputt = _schritt_ok(_d(daten[j]), _d(daten[j + 1]), ist_sitzung)
-        if kaputt:
-            grund[off] = kaputt
-            continue
-        c[n + off] = closes[j]
-    return {"t0": t0.isoformat(), "t0_projiziert": True, "letzter_kurs": daten[-1],
-            "c": c, "grund": grund, "kalender_belegt": True}
+    for richtung in (-1, 1):
+        x = t0
+        for k in range(0 if richtung < 0 else 1, n + 1):
+            if k:
+                x = schritt(x, richtung)
+            off = richtung * k
+            tage[n + off] = (x - t0).days
+            if x > stichtag:
+                grund[off] = G_ZUKUNFT
+            elif x.isoformat() in kurs:
+                c[n + off] = kurs[x.isoformat()]
+            else:
+                grund[off] = G_FEHLENDE_SITZUNG
+    lo, hi = (t0 + timedelta(days=tage[0])).isoformat(), min(stichtag, t0).isoformat()
+    fremd = [d for d in daten if lo <= d <= hi and ist_sitzung(_d(d)) is False]
+    return {"t0": t0.isoformat(), "t0_projiziert": True, "stichtag": stichtag.isoformat(),
+            "letzter_kurs": daten[-1] if daten else None, "c": c, "tage": tage, "grund": grund,
+            "kurse_an_nicht_sitzungen": fremd, "kalender_belegt": True}
 
 
 def fenster_rendite(p: dict, x: int, y: int, n: int = FENSTER) -> Optional[dict]:
@@ -213,7 +228,7 @@ def studie_fuer_reihe(wahl: dict, daten: list[str], closes: list[float], ist_sit
     aus: dict = {}
     if termin > heute_letzte_session:
         try:
-            aus["pfad"] = live_pfad(daten, closes, termin, ist_sitzung)
+            aus["pfad"] = live_pfad(daten, closes, termin, ist_sitzung, heute_letzte_session)
         except ValueError as e:
             aus["ausgeschlossen"] = str(e)
     else:

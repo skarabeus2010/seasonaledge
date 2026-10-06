@@ -1,5 +1,7 @@
 # Wahltermine – Recherchebericht (Stand 2026-10-06)
 
+> **Hinweis zur Ablage:** Die Recherche-Artefakte (`elections_research.json`, `build.py`, Rohquellen) lagen in einem temporären Arbeitsordner. Ausgeliefert sind daraus `landing/data/elections.json` und `landing/data/election_calendar_exceptions.json`. **Nachtrag 2026-10-06:** Die NYSE-Wahltagsschließungen 1896–1926 sind inzwischen zusätzlich durch fehlende Tageskurse in `^GSPC` und `^DJI` belegt (siehe docs/WAHLEN.md); die Angabe „nur eine Quelle“ unten ist damit überholt.
+
 Datei: `elections_research.json` (88 Einträge: 34 US-Präsidentschaft 1896–2028, 33 US-Midterms 1898–2026, 21 Bundestagswahlen 1949–2025). Erzeugt von `build.py` im selben Ordner aus den heruntergeladenen Rohquellen (archives.gov, history.house.gov, senate.gov über web.archive.org, Wikipedia-Rohtext, NYSE-Feiertagshistorie, Yahoo ^GSPC, Bundeswahlleiterin-PDF „Ergebnisse früherer Bundestagswahlen“ Juni 2025, BVerfGE 62,1, BGBl.).
 
 ## Ergebnis der Gegenprüfung

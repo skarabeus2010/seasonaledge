@@ -27,12 +27,20 @@ MUTATIONEN = {
     "keine Prüfung auf fehlende Sitzungen":
         ("    if _fehlende_sitzung(a, b, ist_sitzung):\n", "    if False:\n"),
     "Kurs an Nicht-Sitzung erlaubt":
-        ("    if sb is False:\n        return G_NICHT_SITZUNG", "    if False:\n        return G_NICHT_SITZUNG"),
+        ("    if sa is False or sb is False:\n        return G_NICHT_SITZUNG", "    if False:\n        return G_NICHT_SITZUNG"),
+    "nur der hintere Endpunkt geprüft (Codex R1)":
+        ("    if sa is False or sb is False:", "    if sb is False:"),
+    "Lückenregel auch im belegten Kalender":
+        ("    if (sa is None or sb is None) and (b - a).days > MAX_LUECKE:", "    if (b - a).days > MAX_LUECKE:"),
     "Lückengrenze 10 statt 4 Tage":
         ("MAX_LUECKE = 4 ", "MAX_LUECKE = 10 "),
     "Live-Position um eine Sitzung verschoben":
-        ("    c: list[Optional[float]] = [None] * (2 * n + 1)\n    grund: dict[int, str] = {}\n    kaputt",
-         "    m -= 1\n    c: list[Optional[float]] = [None] * (2 * n + 1)\n    grund: dict[int, str] = {}\n    kaputt"),
+        ("            tage[n + off] = (x - t0).days\n            if x > stichtag:",
+         "            tage[n + off] = (x - t0).days\n            off += richtung\n            if x > stichtag:"),
+    "Live: fehlende Session als Zukunft (Codex R1)":
+        ("            if x > stichtag:", "            if x > stichtag or x.isoformat() not in kurs:"),
+    "Datumsversatz im Pfad falsch":
+        ("            tage[n + off] = (_d(daten[j]) - t0).days", "            tage[n + off] = off"),
     "Nachlauf auf t−X bezogen":
         ('"nachlauf": 100 * (pp / p0 - 1)', '"nachlauf": 100 * (pp / pm - 1)'),
     "Gültigkeit nur am Fensterrand geprüft":
