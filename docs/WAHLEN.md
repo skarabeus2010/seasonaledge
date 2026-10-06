@@ -69,3 +69,21 @@ späteren Abschnitte (10–14) vor den früheren.
   das erst, wenn der Kalender vor 1971 als belegt gelten soll (heute: Kurszeilenfolge + 4-Tage-Regel).
 - Quellen für `schedule_known_from` (US-Gesetze) sind gesetzt, aber nicht abgerufen (`checked: null`).
 - DE: Anordnungsdatum regulärer Bundestagswahlen recherchieren.
+
+## Lessons (2026-10-06)
+
+- **Den Entwurf reviewen lassen, bevor Code entsteht** — 8 Runden am Plan (13 → 7 → 5 → 4 → 2 → 2 → 1 → 0 Befunde)
+  haben die schweren Fragen (Anker bei geschlossenem Wahltag, Kontrolljahre, kein p-Wert bei n≈30, „Sell" ≠ Short,
+  Snapshots für Blogzahlen) vor der ersten Codezeile geklärt; die Code-Runden fanden danach nur noch Präzisierungen.
+- **Zuschnitt statt Vollausbau:** Runde 3 zeigte, dass Phase 1 nicht gleichzeitig die alten Wahlstrategien umziehen
+  darf. Die Uneinigkeit von JS, Python und Engine bei geschlossenem Wahltag (t−5→t+4 / t−4→t+3 / t−4→t+4) ist
+  festgehalten und bekommt eine eigene Phase M; bis dahin hält ein Wächter nur die **Termine** gleich.
+- **Uneindeutige Quellen mit Daten auflösen:** Die NYSE-Liste ließ offen, worauf „except 1898, 1906 and 1907" sich
+  bezieht. Die Kurslücken in zwei Reihen (`^GSPC`, `^DJI`) an jedem Wahltag 1896–1968 klärten es in einem Lauf.
+- **Ein Kalender ist nur so weit belegt, wie man ihn gemessen hat.** Unser Regelkalender stimmt erst ab 1971; davor
+  hätte er 1968 allein 29 „fehlende" Sitzungen gemeldet. Die Grenze ist jetzt Messwert und im Wächter festgeschrieben.
+- **Grün beim ersten Lauf heißt nichts:** die Tests waren sofort grün, die Mutationsprobe fand zwei Lücken
+  (Lückengrenze, Kontrolljahre). Codex fand drei weitere Wege, auf denen fehlerhafte Daten den Wächter passierten.
+- **Shell-Heredocs deuten Backslashes um** (`\1` wurde wieder zum Steuerzeichen) — Ersetzungen mit Rückverweisen
+  über das Edit-Werkzeug oder `\g<1>` schreiben und die geschriebene Datei prüfen.
+
