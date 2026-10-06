@@ -113,16 +113,21 @@ def pruefe_liste(doc: dict) -> list[str]:
                 f.append(f"{i}: weniger als zwei verschiedene Quellen")
             if len(ergebnis) < 2:
                 f.append(f"{i}: Ergebnis nicht durch zwei verschiedene Quellen belegt")
-            if not termin:
-                f.append(f"{i}: Termin ohne Quelle")
             unbekannt = UNBEKANNT in json.dumps(r)
             if e.get("verified") is not True and not unbekannt:
                 f.append(f"{i}: nicht aus zwei Quellen bestätigt (verified != true)")
             if unbekannt and e.get("verified") is True:
                 f.append(f"{i}: 'unknown' im Ergebnis, aber verified = true")
+        # Terminquelle unabhängig vom Status (Codex R2: auch geplante Wahlen)
+        if not any("date" in (q.get("field") or []) for q in e.get("sources", [])):
+            f.append(f"{i}: Termin ohne Quelle")
         for q in e.get("sources", []):
-            if not q.get("url") or not q.get("field") or not q.get("checked"):
-                f.append(f"{i}: Quelle ohne url/field/checked")
+            if not q.get("url") or not q.get("field"):
+                f.append(f"{i}: Quelle ohne url/field")
+            try:
+                date.fromisoformat(str(q.get("checked")))
+            except ValueError:
+                f.append(f"{i}: Quelle mit ungültigem Prüfdatum {q.get('checked')!r}")
         # Termin bekannt seit
         skf = e.get("schedule_known_from")
         if skf is not None and skf > e["date"]:

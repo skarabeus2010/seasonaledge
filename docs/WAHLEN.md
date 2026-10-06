@@ -8,8 +8,8 @@ späteren Abschnitte (10–14) vor den früheren.
 
 | Phase | Inhalt | Stand |
 |---|---|---|
-| 0 | Terminliste `landing/data/elections.json` + Kalender-Ausnahmen + Wächter | **erledigt 2026-10-06** (Code-Review durch Codex steht aus) |
-| 1a | Rechenkern `shared/elections.py` + `scripts/build_wahlen.py` → `landing/data/wahlen_study.json` | **erledigt 2026-10-06**, Probelauf auf dem Server ohne Schreiben (Code-Review durch Codex steht aus) |
+| 0 | Terminliste `landing/data/elections.json` + Kalender-Ausnahmen + Wächter | **erledigt 2026-10-06**, Codex-Freigabe nach 3 Code-Runden |
+| 1a | Rechenkern `shared/elections.py` + `scripts/build_wahlen.py` → `landing/data/wahlen_study.json` | **erledigt 2026-10-06**, Probelauf auf dem Server ohne Schreiben, Codex-Freigabe nach 3 Code-Runden |
 | 1b | Seite `/wahlen` (S&P 500, Dow): historische Studie, Referenz „Jahr ohne Wahl", Live-Linie Midterm 03.11.2026, DE+EN; Build im Nightly | offen |
 | 2 | Deutschland (Bundestag, DAX-Reihe vorher prüfen) | offen |
 | 3 | Backtest-Engine-Ereignistyp `election` (Long), Kalender, Dashboard-Hinweis | offen |
@@ -29,7 +29,7 @@ späteren Abschnitte (10–14) vor den früheren.
   US-Regel, DE-Sonntag, lückenlose Abdeckung, Quellenpflicht (zwei verschiedene Ergebnisquellen, Prüfdatum),
   Kammer-Stichtage, Kalender-Ausnahmen inkl. festgeschriebener Abdeckungsgrenze und Sonderschließungen, sowie
   **Termin-Parität** zu `strategy-compute.js::_electionDay` (per node) und `plain_vanilla.py::_get_election_day`.
-  `scripts/verify_elections_mutation.py`: 18/18. **Grenze:** ob ein plausibel formatierter Sieger oder Kanzler
+  `scripts/verify_elections_mutation.py`: 21/21. **Grenze:** ob ein plausibel formatierter Sieger oder Kanzler
   historisch stimmt, ist redaktionelle Sachprüfung (Quellenbericht); `verified` bestätigt sie, der Wächter nicht.
 
 ## Rechenkern (Phase 1a)

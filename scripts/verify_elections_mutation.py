@@ -48,6 +48,10 @@ MUTATIONEN = {
                                                       for k in ("chancellor_before", "chancellor_after")],
     "unknown, aber verified": lambda d, c: _e(d, "us-president-1984")["result"].__setitem__("winner_party", "unknown"),
     "as_of nicht Vortag": lambda d, c: _e(d, "us-midterm-1950")["result"]["house_before"].__setitem__("as_of", "1950-11-01"),
+    "geplante Wahl ohne Quellen (Codex R2)": lambda d, c: _e(d, "us-midterm-2026").__setitem__("sources", []),
+    "geplante Wahl nur mit Bekanntgabe-Quelle (Codex R2)": lambda d, c: _e(d, "us-midterm-2026").__setitem__(
+        "sources", [dict(q, field=["schedule"]) for q in _e(d, "us-midterm-2026")["sources"]]),
+    "Prüfdatum kein Datum (Codex R2)": lambda d, c: _e(d, "us-president-1932")["sources"][0].__setitem__("checked", "kein Datum"),
     "Kalender: Wahltag 1966 fehlt": lambda d, c: c["exceptions"].remove(
         next(x for x in c["exceptions"] if x["date"].startswith("1966-11"))),
     "Kalender: 1984 geschlossen": lambda d, c: c["exceptions"].append(
