@@ -74,3 +74,6 @@ raw/papers/
 # in Allow-Regeln — in einem oeffentlichen Repo gehoert das nicht hinein.
 # settings.json (ohne .local) bleibt getrackt fuer geteilte Einstellungen.
 .claude/settings.local.json
+
+# Wahl-Ereignisstudie (Cron-Output, scripts/build_wahlen.py)
+landing/data/wahlen_study.json

@@ -10,8 +10,8 @@
   }
  ],
  "open_questions": [
-  "Die Spaltenzuordnung der NYSE-Liste lässt offen, ob sich 'Closed every year except 1898, 1906 and 1907' auf Election Day bezieht; vor 1928 deshalb gegen unsere ^DJI-Tagesreihe prüfen.",
-  "Samstagshandel (bis 1952) und die Schließung 31.07.–27.11.1914 sind noch nicht als Einträge erfasst."
+  "Die Spaltenzuordnung der NYSE-Liste ('Closed every year except 1898, 1906 and 1907') betrifft NICHT den Wahltag: in ^GSPC und ^DJI fehlt der Kurs an jedem Wahltag 1896–1968 (geklärt 2026-10-06).",
+  "^DJI hat am Samstag 1979-06-02 eine Kurszeile (Datenfehler, ausserhalb aller Wahlfenster)."
  ],
  "exceptions": [
   {
@@ -19,256 +19,256 @@
    "date": "1896-11-03",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1897-11-02",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1898-11-08",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1899-11-07",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1900-11-06",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1901-11-05",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1902-11-04",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1903-11-03",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1904-11-08",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1905-11-07",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1906-11-06",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1907-11-05",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1908-11-03",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1909-11-02",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1910-11-08",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1911-11-07",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1912-11-05",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1913-11-04",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1914-11-03",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1915-11-02",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1916-11-07",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1917-11-06",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1918-11-05",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1919-11-04",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1920-11-02",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1921-11-08",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1922-11-07",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1923-11-06",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1924-11-04",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1925-11-03",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1926-11-02",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
    "date": "1927-11-08",
    "closed": true,
    "reason": "Election Day",
-   "verified": false,
-   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+   "verified": true,
+   "evidence": "NYSE-Feiertagsliste + kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06), Vortag und Folgetag vorhanden"
   },
   {
    "calendar_id": "NYSE",
@@ -608,6 +608,22 @@
   },
   {
    "calendar_id": "NYSE",
+   "date": "1972-12-28",
+   "closed": true,
+   "reason": "Trauerfeier Präsident Truman",
+   "verified": true,
+   "evidence": "Kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06) + NYSE-Schließungshistorie"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1973-01-25",
+   "closed": true,
+   "reason": "Trauerfeier Präsident Johnson",
+   "verified": true,
+   "evidence": "Kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06) + NYSE-Schließungshistorie"
+  },
+  {
+   "calendar_id": "NYSE",
    "date": "1976-11-02",
    "closed": true,
    "reason": "Election Day",
@@ -616,11 +632,39 @@
   },
   {
    "calendar_id": "NYSE",
+   "date": "1977-07-14",
+   "closed": true,
+   "reason": "Stromausfall New York",
+   "verified": true,
+   "evidence": "Kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06) + NYSE-Schließungshistorie"
+  },
+  {
+   "calendar_id": "NYSE",
    "date": "1980-11-04",
    "closed": true,
    "reason": "Election Day",
    "verified": true,
    "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1985-09-27",
+   "closed": true,
+   "reason": "Hurrikan Gloria",
+   "verified": true,
+   "evidence": "Kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06) + NYSE-Schließungshistorie"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1994-04-27",
+   "closed": true,
+   "reason": "Trauerfeier Präsident Nixon",
+   "verified": true,
+   "evidence": "Kein Tageskurs in ^GSPC und ^DJI (Supabase, geprüft 2026-10-06) + NYSE-Schließungshistorie"
   }
- ]
+ ],
+ "calendar_documented_from": {
+  "NYSE": "1971-01-01"
+ },
+ "calendar_documented_note": "Ab 1971 stimmen Regelkalender (shared/nyse_holidays.py) + diese Ausnahmen mit den Kurszeilen von ^GSPC und ^DJI überein (gemessen 2026-10-06). Davor andere Feiertagsregeln, Samstagshandel bis 1952 (^GSPC mit, ^DJI vor 1928 ohne Samstage) und viele Sonderschließungen (1968: 29) — dort gilt die Kurszeilenfolge der Reihe, Fenster werden als 'Kalender unbelegt' gekennzeichnet."
 }

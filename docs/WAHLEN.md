@@ -9,7 +9,8 @@ späteren Abschnitte (10–14) vor den früheren.
 | Phase | Inhalt | Stand |
 |---|---|---|
 | 0 | Terminliste `landing/data/elections.json` + Kalender-Ausnahmen + Wächter | **erledigt 2026-10-06** (Code-Review durch Codex steht aus) |
-| 1 | Seite `/wahlen` (S&P 500, Dow): historische Studie, Referenz „Jahr ohne Wahl", Live-Linie Midterm 03.11.2026, DE+EN | offen |
+| 1a | Rechenkern `shared/elections.py` + `scripts/build_wahlen.py` → `landing/data/wahlen_study.json` | **erledigt 2026-10-06**, Probelauf auf dem Server ohne Schreiben (Code-Review durch Codex steht aus) |
+| 1b | Seite `/wahlen` (S&P 500, Dow): historische Studie, Referenz „Jahr ohne Wahl", Live-Linie Midterm 03.11.2026, DE+EN; Build im Nightly | offen |
 | 2 | Deutschland (Bundestag, DAX-Reihe vorher prüfen) | offen |
 | 3 | Backtest-Engine-Ereignistyp `election` (Long), Kalender, Dashboard-Hinweis | offen |
 | M | Angleichung der bestehenden Wahlstrategien (Midterm, UECS, KTI, Signalvorschau) | offen, eigener Plan |
@@ -28,6 +29,25 @@ späteren Abschnitte (10–14) vor den früheren.
   Quellenpflicht, Kammer-Stichtage, Kalender-Ausnahmen und **Termin-Parität** zu den alten Formeln
   `strategy-compute.js::_electionDay` (per node) und `plain_vanilla.py::_get_election_day`. 11/11 absichtlich
   eingebaute Fehler gefangen.
+
+## Rechenkern (Phase 1a)
+
+- `shared/elections.py`: Anker t0 (letzter Kurs am/vor dem Termin, ≤ 4 Kalendertage), Pfad −60…+60 als **Kurse**
+  mit Gültigkeit je Offset, Live-Pfad mit projiziertem t0, Kontrolljahre (angrenzende ungerade Jahre,
+  Pseudotermin nach US-Regel), `fenster_rendite` als Referenz für den Browser.
+- **Kalender:** belegt ab 1971 — Regelkalender `shared/nyse_holidays.py` + Ausnahmen aus
+  `election_calendar_exceptions.json`. Gemessen: ab 1971 stimmen Kalender und Kurszeilen von `^GSPC` und `^DJI`
+  überein bis auf fünf Sonderschließungen (1972-12-28 Truman, 1973-01-25 Johnson, 1977-07-14 Stromausfall,
+  1985-09-27 Hurrikan Gloria, 1994-04-27 Nixon), die jetzt als Ausnahmen eingetragen sind. Davor gilt die
+  Kurszeilenfolge der Reihe; Lücken > 4 Kalendertage machen die weiter entfernten Offsets ungültig.
+- **Offsets = Kurszeilen der Reihe.** `^GSPC` hat bis 1952 Samstage, `^DJI` vor 1928 nicht — „20 Handelstage" sind
+  vor 1953 je Reihe leicht verschieden lange Kalenderzeiträume.
+- **Wächter:** `scripts/verify_wahlen_build.py` (14 Fälle inkl. aller Pflichtfälle des Plans und eines
+  End-to-End-Laufs von `baue()`), `scripts/verify_wahlen_mutation.py` (10/10 eingebaute Fehler gefangen).
+- **Probelauf 2026-10-06** (Server, echte Kurse, nicht geschrieben): 67 US-Wahlen, 132 von 134 Pfaden; ausgeschlossen
+  nur 1914 (Börse 31.07.–27.11. geschlossen). Datei kompakt ≈ 390 KB. Live-Linie Midterm 2026: letzter Kurs bei
+  Offset −21. Erste Zahlen Hauptfenster (t0 → +20, **noch nicht zur Veröffentlichung**, Review steht aus):
+  S&P 500 Präsident n=32 Mittel +0,49 % / Referenz +0,17 %; Midterm n=30 +0,72 % / +0,39 %.
 
 ## Wichtige Definitionen
 
