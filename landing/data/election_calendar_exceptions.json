@@ -1,0 +1,626 @@
+{
+ "schema": 1,
+ "data_version": "2026-10-06",
+ "note": "Belegte Abweichungen vom Regelkalender je Börse. Ein Eintrag rückt den Anker (letzter Schluss am oder vor dem Wahltermin), führt aber nicht zum Ausschluss. Gilt auch für Pseudotermine in Kontrolljahren.",
+ "sources": [
+  {
+   "url": "https://www.ltadvisors.net/Info/research/closings.pdf",
+   "detail": "NYSE Holidays & Closings history (Stand 2008)",
+   "checked": "2026-10-06"
+  }
+ ],
+ "open_questions": [
+  "Die Spaltenzuordnung der NYSE-Liste lässt offen, ob sich 'Closed every year except 1898, 1906 and 1907' auf Election Day bezieht; vor 1928 deshalb gegen unsere ^DJI-Tagesreihe prüfen.",
+  "Samstagshandel (bis 1952) und die Schließung 31.07.–27.11.1914 sind noch nicht als Einträge erfasst."
+ ],
+ "exceptions": [
+  {
+   "calendar_id": "NYSE",
+   "date": "1896-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1897-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1898-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1899-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1900-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1901-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1902-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1903-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1904-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1905-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1906-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1907-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1908-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1909-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1910-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1911-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1912-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1913-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1914-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1915-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1916-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1917-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1918-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1919-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1920-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1921-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1922-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1923-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1924-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1925-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1926-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1927-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": false,
+   "evidence": "Nur NYSE-Feiertagsliste (Stand 2008); tägliche Kursdaten für eine Gegenprüfung erst ab 1928"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1928-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1929-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1930-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1931-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1932-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1933-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1934-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1935-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1936-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1937-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1938-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1939-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1940-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1941-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1942-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1943-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1944-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1945-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1946-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1947-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1948-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1949-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1950-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1951-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1952-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1953-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1954-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1955-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1956-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1957-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1958-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1959-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1960-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1961-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1962-11-06",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1963-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1964-11-03",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1965-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1966-11-08",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1967-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1968-11-05",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1972-11-07",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1976-11-02",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  },
+  {
+   "calendar_id": "NYSE",
+   "date": "1980-11-04",
+   "closed": true,
+   "reason": "Election Day",
+   "verified": true,
+   "evidence": "Kein S&P-500-Tageskurs an diesem Tag (Yahoo ^GSPC), dazu NYSE-Feiertagsliste"
+  }
+ ]
+}

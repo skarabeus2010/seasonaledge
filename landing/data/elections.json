@@ -1,0 +1,6946 @@
+{
+ "schema": 1,
+ "data_version": "2026-10-06",
+ "coverage": {
+  "US": {
+   "president": [
+    1896,
+    2028
+   ],
+   "midterm": [
+    1898,
+    2026
+   ],
+   "senate_results_from": 1914
+  },
+  "DE": {
+   "bundestag": [
+    1949,
+    2025
+   ]
+  }
+ },
+ "parties": {
+  "US-D": "Democratic",
+  "US-R": "Republican",
+  "DE-UNION": "CDU/CSU",
+  "DE-SPD": "SPD"
+ },
+ "definitions": {
+  "date": "Wahltermin (Ortszeit). US: erster Dienstag nach dem ersten Montag im November.",
+  "schedule_known_from": "Ab wann der Termin feststand. US: Gesetz; DE vorgezogen: Auflösung; DE regulär: noch nicht recherchiert (null).",
+  "house_*": "Partei des Speakers; before = Tag vor der Wahl, after = Beginn der Amtszeit des neuen Kongresses.",
+  "senate_*": "Organisatorische Mehrheit inkl. Stimme des Vizepräsidenten (tie_vp) und Unabhängiger in der Fraktion; ab 1914.",
+  "strongest_party": "Stärkste Partei nach Zweitstimmen (1949: einzige Stimme); CDU/CSU zusammen als DE-UNION.",
+  "chancellor_party_after": "Partei des nach dieser Wahl gewählten Kanzlers — kann von strongest_party abweichen (1969, 1976, 1980).",
+  "verified": "Kernfelder stimmen in mindestens zwei unabhängigen Quellen überein (Recherche 2026-10-06)."
+ },
+ "elections": [
+  {
+   "id": "us-president-1896",
+   "country": "US",
+   "type": "president",
+   "date": "1896-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "William McKinley",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     271,
+     176
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1896",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1896_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1900",
+   "country": "US",
+   "type": "president",
+   "date": "1900-11-06",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "William McKinley",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     292,
+     155
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "McKinley shot 1901-09-06, died 1901-09-14; succeeded by T. Roosevelt (R).",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1900",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1900_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1904",
+   "country": "US",
+   "type": "president",
+   "date": "1904-11-08",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Theodore Roosevelt",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     336,
+     140
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1904",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1904_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1908",
+   "country": "US",
+   "type": "president",
+   "date": "1908-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "William H. Taft",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     321,
+     162
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1908",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1908_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1912",
+   "country": "US",
+   "type": "president",
+   "date": "1912-11-05",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Woodrow Wilson",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     435,
+     88
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1912",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1912_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1916",
+   "country": "US",
+   "type": "president",
+   "date": "1916-11-07",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Woodrow Wilson",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     277,
+     254
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1916",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1916_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1920",
+   "country": "US",
+   "type": "president",
+   "date": "1920-11-02",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Warren G. Harding",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     404,
+     127
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1920",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1920_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1924",
+   "country": "US",
+   "type": "president",
+   "date": "1924-11-04",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Calvin Coolidge",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     382,
+     136
+    ]
+   },
+   "verified": true,
+   "notes": [
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1924",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1924_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1928",
+   "country": "US",
+   "type": "president",
+   "date": "1928-11-06",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Herbert C. Hoover",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     444,
+     87
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1928",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1928_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1932",
+   "country": "US",
+   "type": "president",
+   "date": "1932-11-08",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Franklin D. Roosevelt",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     472,
+     59
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1932",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1932_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1936",
+   "country": "US",
+   "type": "president",
+   "date": "1936-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Franklin D. Roosevelt",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     523,
+     8
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1936",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1936_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1940",
+   "country": "US",
+   "type": "president",
+   "date": "1940-11-05",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Franklin D. Roosevelt",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     449,
+     82
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1940",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1940_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1944",
+   "country": "US",
+   "type": "president",
+   "date": "1944-11-07",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Franklin D. Roosevelt",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     432,
+     99
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1944",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1944_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1948",
+   "country": "US",
+   "type": "president",
+   "date": "1948-11-02",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Harry S. Truman",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     303,
+     189
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1948",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1948_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1952",
+   "country": "US",
+   "type": "president",
+   "date": "1952-11-04",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Dwight D. Eisenhower",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     442,
+     89
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1952",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1952_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1956",
+   "country": "US",
+   "type": "president",
+   "date": "1956-11-06",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Dwight D. Eisenhower",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     457,
+     73
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1956",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1956_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1960",
+   "country": "US",
+   "type": "president",
+   "date": "1960-11-08",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "John F. Kennedy",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     303,
+     219
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1960",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1960_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1964",
+   "country": "US",
+   "type": "president",
+   "date": "1964-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Lyndon B. Johnson",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     486,
+     52
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1964",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1964_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1968",
+   "country": "US",
+   "type": "president",
+   "date": "1968-11-05",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Richard M. Nixon",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     301,
+     191
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1968",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1968_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1972",
+   "country": "US",
+   "type": "president",
+   "date": "1972-11-07",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Richard M. Nixon",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     520,
+     17
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1972",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1972_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1976",
+   "country": "US",
+   "type": "president",
+   "date": "1976-11-02",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Jimmy Carter",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     297,
+     240
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1976",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1976_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1980",
+   "country": "US",
+   "type": "president",
+   "date": "1980-11-04",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Ronald Reagan",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     489,
+     49
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1980",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1980_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1984",
+   "country": "US",
+   "type": "president",
+   "date": "1984-11-06",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Ronald Reagan",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     525,
+     13
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1984",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1984_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1988",
+   "country": "US",
+   "type": "president",
+   "date": "1988-11-08",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "George Bush",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     426,
+     111
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1988",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1988_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1992",
+   "country": "US",
+   "type": "president",
+   "date": "1992-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "William J. Clinton",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     370,
+     168
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1992",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1992_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-1996",
+   "country": "US",
+   "type": "president",
+   "date": "1996-11-05",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "William J. Clinton",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     379,
+     159
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/1996",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1996_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2000",
+   "country": "US",
+   "type": "president",
+   "date": "2000-11-07",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result_note": "Entscheidung durch Bush v. Gore am 12.12.2000",
+   "result": {
+    "winner": "George W. Bush",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     271,
+     266
+    ],
+    "contested": true,
+    "result_decided": "2000-12-12"
+   },
+   "verified": true,
+   "notes": [
+    "Outcome decided by the U.S. Supreme Court, Bush v. Gore (2000-12-12); Bush won 271 EV while losing the popular vote (archives.gov note)."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2000",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2000_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2004",
+   "country": "US",
+   "type": "president",
+   "date": "2004-11-02",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "George W. Bush",
+    "winner_party": "US-R",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     286,
+     251
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2004",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2004_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2008",
+   "country": "US",
+   "type": "president",
+   "date": "2008-11-04",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Barack Obama",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     365,
+     173
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2008",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2008_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2012",
+   "country": "US",
+   "type": "president",
+   "date": "2012-11-06",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Barack Obama",
+    "winner_party": "US-D",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     332,
+     206
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2012",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2012_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2016",
+   "country": "US",
+   "type": "president",
+   "date": "2016-11-08",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Donald J. Trump",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     304,
+     227
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2016",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2016_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2020",
+   "country": "US",
+   "type": "president",
+   "date": "2020-11-03",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Joseph R. Biden Jr.",
+    "winner_party": "US-D",
+    "prior_party": "US-R",
+    "electoral_votes": [
+     306,
+     232
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2020",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2020_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2024",
+   "country": "US",
+   "type": "president",
+   "date": "2024-11-05",
+   "status": "held",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "winner": "Donald J. Trump",
+    "winner_party": "US-R",
+    "prior_party": "US-D",
+    "electoral_votes": [
+     312,
+     226
+    ]
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.archives.gov/electoral-college/2024",
+     "field": [
+      "result"
+     ],
+     "detail": "winner, winner_party, electoral_votes",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2024_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-president-2028",
+   "country": "US",
+   "type": "president",
+   "date": "2028-11-07",
+   "status": "scheduled",
+   "schedule_known_from": "1845-01-23",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/3/1",
+    "detail": "Act of Jan. 23, 1845 — einheitlicher Wahltag für die Wahlmänner (3 U.S.C. 1)",
+    "checked": null
+   },
+   "early": false,
+   "result": null,
+   "verified": true,
+   "notes": [
+    "Scheduled; prior_party = party of the sitting president (Trump, R) as of 2026-10-06.",
+    "Scheduled; NYSE has not observed Election Day since 1980 (NYSE holiday history)."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2028_United_States_presidential_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, winner, prior_party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1898",
+   "country": "US",
+   "type": "midterm",
+   "date": "1898-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 55,
+    "congress_after": 56,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1898-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1899-03-04",
+     "basis": "speaker"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "Some other states (e.g. Oregon in June, Vermont in September) also voted early this year (Wikipedia infobox).",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1898_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1902",
+   "country": "US",
+   "type": "midterm",
+   "date": "1902-11-04",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 57,
+    "congress_after": 58,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1902-11-03",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1903-03-04",
+     "basis": "speaker"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "Some other states (e.g. Oregon in June, Vermont in September) also voted early this year (Wikipedia infobox).",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1902_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1906",
+   "country": "US",
+   "type": "midterm",
+   "date": "1906-11-06",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 59,
+    "congress_after": 60,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1906-11-05",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1907-03-04",
+     "basis": "speaker"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "Some other states (e.g. Oregon in June, Vermont in September) also voted early this year (Wikipedia infobox).",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1906_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1910",
+   "country": "US",
+   "type": "midterm",
+   "date": "1910-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 61,
+    "congress_after": 62,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1910-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1911-03-04",
+     "basis": "speaker"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1910_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1914",
+   "country": "US",
+   "type": "midterm",
+   "date": "1914-11-03",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 63,
+    "congress_after": 64,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1914-11-02",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1915-03-04",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1914-11-02",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1915-03-04",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "1914 is the first general election of senators by popular vote (17th Amendment); Senate coverage starts here.",
+    "Exchange was closed anyway 1914-07-31 to 1914-11-27 (WWI outbreak, NYSE special-closings list); single source for the election-day holiday itself, price data starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1914_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1914_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1918",
+   "country": "US",
+   "type": "midterm",
+   "date": "1918-11-05",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 65,
+    "congress_after": 66,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1918-11-04",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1919-03-04",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1918-11-04",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1919-03-04",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "house_before: 65th Congress had 215 R vs 214 D seats (history.house.gov) but Democrats organized the House with third-party votes; Speaker Champ Clark (D) -> US-D by the Speaker rule.",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1918_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1918_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1922",
+   "country": "US",
+   "type": "midterm",
+   "date": "1922-11-07",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 67,
+    "congress_after": 68,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1922-11-06",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1923-03-04",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1922-11-06",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1923-03-04",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1922_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1922_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1926",
+   "country": "US",
+   "type": "midterm",
+   "date": "1926-11-02",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 69,
+    "congress_after": 70,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1926-11-01",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1927-03-04",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1926-11-01",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1927-03-04",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "senate_after (70th): 48 R, 46 D, 1 Farmer-Labor, 1 vacancy; Republicans organized.",
+    "Single source (NYSE holiday history); daily price data for an independent check starts 1928."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1926_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1926_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1930",
+   "country": "US",
+   "type": "midterm",
+   "date": "1930-11-04",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 71,
+    "congress_after": 72,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1930-11-03",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1931-03-04",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1930-11-03",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1931-03-04",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "house_after: Republicans won 218-216 in Nov 1930, but 14 members-elect died before the 72nd Congress met; special elections gave Democrats the majority; Speaker John Nance Garner (D) (history.house.gov footnote 2).",
+    "senate_after (72nd): 48 R, 47 D, 1 Farmer-Labor; Republicans kept organization."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1930_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1930_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1934",
+   "country": "US",
+   "type": "midterm",
+   "date": "1934-11-06",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 73,
+    "congress_after": 74,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1934-11-05",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1935-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1934-11-05",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1935-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1934_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1934_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1938",
+   "country": "US",
+   "type": "midterm",
+   "date": "1938-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 75,
+    "congress_after": 76,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1938-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1939-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1938-11-07",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1939-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1938_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1938_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1942",
+   "country": "US",
+   "type": "midterm",
+   "date": "1942-11-03",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 77,
+    "congress_after": 78,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1942-11-02",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1943-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1942-11-02",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1943-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1942_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1942_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1946",
+   "country": "US",
+   "type": "midterm",
+   "date": "1946-11-05",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 79,
+    "congress_after": 80,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1946-11-04",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1947-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1946-11-04",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1947-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1946_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1946_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1950",
+   "country": "US",
+   "type": "midterm",
+   "date": "1950-11-07",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 81,
+    "congress_after": 82,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1950-11-06",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1951-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1950-11-06",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1951-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1950_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1950_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1954",
+   "country": "US",
+   "type": "midterm",
+   "date": "1954-11-02",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 83,
+    "congress_after": 84,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1954-11-01",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1955-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1954-11-01",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1955-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical.",
+    "senate_after (84th): 48 D, 47 R, 1 I (Morse, became D 1955-02-17); Democrats organized."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1954_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1954_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1958",
+   "country": "US",
+   "type": "midterm",
+   "date": "1958-11-04",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 85,
+    "congress_after": 86,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1958-11-03",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1959-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1958-11-03",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1959-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "Maine held its House (and Senate) elections in September until 1958; the national November date is canonical."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1958_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1958_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1962",
+   "country": "US",
+   "type": "midterm",
+   "date": "1962-11-06",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 87,
+    "congress_after": 88,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1962-11-05",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1963-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1962-11-05",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1963-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1962_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1962_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1966",
+   "country": "US",
+   "type": "midterm",
+   "date": "1966-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 89,
+    "congress_after": 90,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1966-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1967-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1966-11-07",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1967-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1966_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1966_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1970",
+   "country": "US",
+   "type": "midterm",
+   "date": "1970-11-03",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 91,
+    "congress_after": 92,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1970-11-02",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1971-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1970-11-02",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1971-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1970_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1970_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1974",
+   "country": "US",
+   "type": "midterm",
+   "date": "1974-11-05",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 93,
+    "congress_after": 94,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1974-11-04",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1975-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1974-11-04",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1975-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1974_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1974_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1978",
+   "country": "US",
+   "type": "midterm",
+   "date": "1978-11-07",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 95,
+    "congress_after": 96,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1978-11-06",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1979-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1978-11-06",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1979-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1978_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1978_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1982",
+   "country": "US",
+   "type": "midterm",
+   "date": "1982-11-02",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 97,
+    "congress_after": 98,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1982-11-01",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1983-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1982-11-01",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1983-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1982_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1982_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1986",
+   "country": "US",
+   "type": "midterm",
+   "date": "1986-11-04",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 99,
+    "congress_after": 100,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1986-11-03",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1987-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1986-11-03",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1987-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1986_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1986_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1990",
+   "country": "US",
+   "type": "midterm",
+   "date": "1990-11-06",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 101,
+    "congress_after": 102,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1990-11-05",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "1991-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1990-11-05",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "1991-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1990_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1990_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1994",
+   "country": "US",
+   "type": "midterm",
+   "date": "1994-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 103,
+    "congress_after": 104,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "1994-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1995-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "1994-11-07",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1995-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1994_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1994_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-1998",
+   "country": "US",
+   "type": "midterm",
+   "date": "1998-11-03",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 105,
+    "congress_after": 106,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "1998-11-02",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "1999-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "1998-11-02",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "1999-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1998_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1998_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2002",
+   "country": "US",
+   "type": "midterm",
+   "date": "2002-11-05",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 107,
+    "congress_after": 108,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "2002-11-04",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "2003-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "2002-11-04",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "2003-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "senate_before: the 107th Senate changed control three times (D Jan 3-20 2001 via VP Gore, R Jan 20-Jun 6 via VP Cheney, D from Jun 6 2001 after Jeffords). A Missouri special election shifted the numeric majority to R on 2002-11-12 without reorganization. Control at election day = D."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2002_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2002_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2006",
+   "country": "US",
+   "type": "midterm",
+   "date": "2006-11-07",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 109,
+    "congress_after": 110,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "2006-11-06",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "2007-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "2006-11-06",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "2007-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "senate_after (110th): 49 D + 2 independents caucusing with D vs 49 R."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2006_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2006_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2010",
+   "country": "US",
+   "type": "midterm",
+   "date": "2010-11-02",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 111,
+    "congress_after": 112,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "2010-11-01",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "2011-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "2010-11-01",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "2011-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2010_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2010_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2014",
+   "country": "US",
+   "type": "midterm",
+   "date": "2014-11-04",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 113,
+    "congress_after": 114,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "2014-11-03",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "2015-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "2014-11-03",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "2015-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2014_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2014_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2018",
+   "country": "US",
+   "type": "midterm",
+   "date": "2018-11-06",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 115,
+    "congress_after": 116,
+    "house_before": {
+     "party": "US-R",
+     "as_of": "2018-11-05",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-D",
+     "as_of": "2019-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-R",
+     "as_of": "2018-11-05",
+     "basis": "organizing_majority"
+    },
+    "senate_after": {
+     "party": "US-R",
+     "as_of": "2019-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2018_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2018_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2022",
+   "country": "US",
+   "type": "midterm",
+   "date": "2022-11-08",
+   "status": "held",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": {
+    "congress_before": 117,
+    "congress_after": 118,
+    "house_before": {
+     "party": "US-D",
+     "as_of": "2022-11-07",
+     "basis": "speaker"
+    },
+    "house_after": {
+     "party": "US-R",
+     "as_of": "2023-01-03",
+     "basis": "speaker"
+    },
+    "senate_before": {
+     "party": "US-D",
+     "as_of": "2022-11-07",
+     "basis": "tie_vp"
+    },
+    "senate_after": {
+     "party": "US-D",
+     "as_of": "2023-01-03",
+     "basis": "organizing_majority"
+    }
+   },
+   "verified": true,
+   "notes": [
+    "senate_before: 50-50, Democratic control via VP Harris tie-break. senate_after: 51 incl. independents caucusing with D (senate.gov lists 47 D + 4 I for the 118th, after Sinema left the party in Dec 2022)."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2022_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2022_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "Yahoo Finance ^GSPC daily history (query2.finance.yahoo.com/v8/finance/chart/%5EGSPC): no bar on election day = closed",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "us-midterm-2026",
+   "country": "US",
+   "type": "midterm",
+   "date": "2026-11-03",
+   "status": "scheduled",
+   "schedule_known_from": "1872-02-02",
+   "schedule_source": {
+    "url": "https://www.law.cornell.edu/uscode/text/2/7",
+    "detail": "Act of Feb. 2, 1872 — einheitlicher Termin für die Wahl zum Repräsentantenhaus (2 U.S.C. 7)",
+    "checked": null
+   },
+   "early": false,
+   "result": null,
+   "verified": true,
+   "notes": [
+    "Scheduled; before = 119th Congress (Speaker Mike Johnson, R; Senate 53 R).",
+    "Scheduled; NYSE has not observed Election Day since 1980 (NYSE holiday history)."
+   ],
+   "sources": [
+    {
+     "url": "2 U.S.C. 7 / 3 U.S.C. 1 (Tuesday next after the first Monday in November) - computed",
+     "field": [
+      "date"
+     ],
+     "detail": "date (rule)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2026_United_States_House_of_Representatives_elections",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, house_before, house_after (Speaker before/after)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://history.house.gov/Institution/Party-Divisions/Party-Divisions/",
+     "field": [
+      "result"
+     ],
+     "detail": "house_before, house_after (seat majority)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.senate.gov/history/partydiv.htm (blocks bots with 403; read via web.archive.org snapshots 2024 and 2026)",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2026_United_States_Senate_elections",
+     "field": [
+      "result"
+     ],
+     "detail": "senate_before, senate_after (majority leader party)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.ltadvisors.net/Info/research/closings.pdf (NYSE 'History of New York Stock Exchange Holidays', revised through Nov 2008)",
+     "field": [
+      "calendar"
+     ],
+     "detail": "nyse_closed_on_election_day",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1949",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1949-08-14",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 7359084,
+    "zweitstimmen_spd": 6934975,
+    "chancellor_before": "n/a",
+    "chancellor_party_before": "n/a",
+    "chancellor_after": "Konrad Adenauer",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": null
+   },
+   "verified": true,
+   "notes": [
+    "1949: one vote per voter only (bundeswahlleiterin: \"1949 nur Erststimmen\"); strongest party by those votes. No chancellor before (Federal Republic founded 1949) -> chancellor_party_before/chancellor_change null.",
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1949_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1953",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1953-09-06",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 12443981,
+    "zweitstimmen_spd": 7944943,
+    "chancellor_before": "Konrad Adenauer",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Konrad Adenauer",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1953_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1957",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1957-09-15",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 15008399,
+    "zweitstimmen_spd": 9495571,
+    "chancellor_before": "Konrad Adenauer",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Konrad Adenauer",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1957_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1961",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1961-09-17",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 14298372,
+    "zweitstimmen_spd": 11427355,
+    "chancellor_before": "Konrad Adenauer",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Konrad Adenauer",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1961_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1965",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1965-09-19",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 15524068,
+    "zweitstimmen_spd": 12813186,
+    "chancellor_before": "Ludwig Erhard",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Ludwig Erhard",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1965_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1969",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1969-09-28",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 15195187,
+    "zweitstimmen_spd": 14065716,
+    "chancellor_before": "Kurt Georg Kiesinger",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Willy Brandt",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": true
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1969_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1972",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1972-11-19",
+   "status": "held",
+   "early": true,
+   "schedule_known_from": "1972-09-22",
+   "schedule_source": {
+    "url": null,
+    "detail": "Auflösung und Anordnung der Neuwahl durch den Bundespräsidenten",
+    "checked": "2026-10-06"
+   },
+   "result": {
+    "strongest_party": "DE-SPD",
+    "zweitstimmen_union": 16806020,
+    "zweitstimmen_spd": 17175169,
+    "chancellor_before": "Willy Brandt",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Willy Brandt",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": false
+   },
+   "vertrauensfrage_vote": "1972-09-22",
+   "dissolution_date": "1972-09-22",
+   "dissolved_by": "Gustav Heinemann",
+   "verified": true,
+   "notes": [
+    "SPD (45.8 %) strongest party ahead of the combined Union (44.9 %), the first time ever.",
+    "Brandt submitted the Vertrauensfrage on 1972-09-20 (WD Bundestag); vote and dissolution on 1972-09-22."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1972_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Vertrauensfrage",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage_vote, dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundestag.de/resource/blob/548320/7118bc0b0c5f65e8bc58034d1c77f1b5/WD-3-025-18-pdf-data.pdf",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1976",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1976-10-03",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 18394801,
+    "zweitstimmen_spd": 16099019,
+    "chancellor_before": "Helmut Schmidt",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Helmut Schmidt",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1976_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1980",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1980-10-05",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 16897659,
+    "zweitstimmen_spd": 16260677,
+    "chancellor_before": "Helmut Schmidt",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Helmut Schmidt",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1980_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1983",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1983-03-06",
+   "status": "held",
+   "early": true,
+   "schedule_known_from": "1983-01-06",
+   "schedule_source": {
+    "url": null,
+    "detail": "Auflösung und Anordnung der Neuwahl durch den Bundespräsidenten",
+    "checked": "2026-10-06"
+   },
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 18998545,
+    "zweitstimmen_spd": 14865807,
+    "chancellor_before": "Helmut Kohl",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Helmut Kohl",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "vertrauensfrage_vote": "1982-12-17",
+   "dissolution_date": "1983-01-06",
+   "dissolution_published": "1983-01-07",
+   "dissolved_by": "Karl Carstens",
+   "verified": true,
+   "notes": [
+    "Dissolution order (Anordnung) dated 1983-01-06, published BGBl. I S. 1 on 1983-01-07 and announced by Carstens on TV on 1983-01-07 (BVerfGE 62, 1). de.wikipedia \"Vertrauensfrage\" gives 7 January."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1983_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Vertrauensfrage",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage_vote, dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundestag.de/resource/blob/548320/7118bc0b0c5f65e8bc58034d1c77f1b5/WD-3-025-18-pdf-data.pdf",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.servat.unibe.ch/dfr/bv062001.html",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date (BVerfGE 62, 1)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundestag.de/dokumente/textarchiv/2023/kw01-kalenderblatt-parlamentsaufloesung-532172",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1987",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1987-01-25",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 16761572,
+    "zweitstimmen_spd": 14025763,
+    "chancellor_before": "Helmut Kohl",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Helmut Kohl",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1987_West_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1990",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1990-12-02",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 20358096,
+    "zweitstimmen_spd": 15545366,
+    "chancellor_before": "Helmut Kohl",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Helmut Kohl",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "First all-German Bundestag election (after reunification on 1990-10-03). Not flagged as early by bundeswahlleiterin.",
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1990_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1994",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1994-10-16",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 19517156,
+    "zweitstimmen_spd": 17140354,
+    "chancellor_before": "Helmut Kohl",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Helmut Kohl",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1994_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-1998",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "1998-09-27",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-SPD",
+    "zweitstimmen_union": 17329388,
+    "zweitstimmen_spd": 20181269,
+    "chancellor_before": "Helmut Kohl",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Gerhard Schröder",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": true
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/1998_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2002",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2002-09-22",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-SPD",
+    "zweitstimmen_union": 18482641,
+    "zweitstimmen_spd": 18488668,
+    "chancellor_before": "Gerhard Schröder",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Gerhard Schröder",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "SPD ahead of CDU/CSU by only 6,027 Zweitstimmen (18,488,668 vs 18,482,641); both 38.5 %.",
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2002_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2005",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2005-09-18",
+   "status": "held",
+   "early": true,
+   "schedule_known_from": "2005-07-21",
+   "schedule_source": {
+    "url": null,
+    "detail": "Auflösung und Anordnung der Neuwahl durch den Bundespräsidenten",
+    "checked": "2026-10-06"
+   },
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 16631049,
+    "zweitstimmen_spd": 16194665,
+    "chancellor_before": "Gerhard Schröder",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Angela Merkel",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": true
+   },
+   "vertrauensfrage_vote": "2005-07-01",
+   "dissolution_date": "2005-07-21",
+   "dissolved_by": "Horst Köhler",
+   "verified": true,
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2005_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Vertrauensfrage",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage_vote, dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundestag.de/resource/blob/548320/7118bc0b0c5f65e8bc58034d1c77f1b5/WD-3-025-18-pdf-data.pdf",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bpb.de/themen/politisches-system/wahlen-in-deutschland/558540/vorzeitige-aufloesung-des-bundestages/",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage_vote, dissolution_date",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2009",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2009-09-27",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 14658515,
+    "zweitstimmen_spd": 9990488,
+    "chancellor_before": "Angela Merkel",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Angela Merkel",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2009_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2013",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2013-09-22",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 18165446,
+    "zweitstimmen_spd": 11252215,
+    "chancellor_before": "Angela Merkel",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Angela Merkel",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2013_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2017",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2017-09-24",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 15317344,
+    "zweitstimmen_spd": 9539381,
+    "chancellor_before": "Angela Merkel",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Angela Merkel",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": false
+   },
+   "verified": true,
+   "notes": [
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2017_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2021",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2021-09-26",
+   "status": "held",
+   "early": false,
+   "schedule_known_from": null,
+   "schedule_source": null,
+   "result": {
+    "strongest_party": "DE-SPD",
+    "zweitstimmen_union": 11177747,
+    "zweitstimmen_spd": 11901558,
+    "chancellor_before": "Angela Merkel",
+    "chancellor_party_before": "DE-UNION",
+    "chancellor_after": "Olaf Scholz",
+    "chancellor_party_after": "DE-SPD",
+    "chancellor_change": true
+   },
+   "verified": true,
+   "notes": [
+    "Official figures include the partial Berlin repeat election of 2024-02-11; the Wikipedia infobox shows the original 2021 counts (SPD 11,901,556 / Union 11,177,746). Ranking unaffected.",
+    "Datum der Anordnung durch den Bundespräsidenten noch nicht recherchiert — Handelbarkeit vor dem Termin damit nicht nachgewiesen."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2021_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "id": "de-bundestag-2025",
+   "country": "DE",
+   "type": "bundestag",
+   "date": "2025-02-23",
+   "status": "held",
+   "early": true,
+   "schedule_known_from": "2024-12-27",
+   "schedule_source": {
+    "url": null,
+    "detail": "Auflösung und Anordnung der Neuwahl durch den Bundespräsidenten",
+    "checked": "2026-10-06"
+   },
+   "result": {
+    "strongest_party": "DE-UNION",
+    "zweitstimmen_union": 14160402,
+    "zweitstimmen_spd": 8149124,
+    "chancellor_before": "Olaf Scholz",
+    "chancellor_party_before": "DE-SPD",
+    "chancellor_after": "Friedrich Merz",
+    "chancellor_party_after": "DE-UNION",
+    "chancellor_change": true
+   },
+   "vertrauensfrage_vote": "2024-12-16",
+   "dissolution_date": "2024-12-27",
+   "dissolved_by": "Frank-Walter Steinmeier",
+   "verified": true,
+   "notes": [
+    "Second-strongest party was AfD (10,328,780), not SPD; the zweitstimmen_spd field holds SPD for comparability.",
+    "Merz elected chancellor 2025-05-06."
+   ],
+   "sources": [
+    {
+     "url": "https://www.bundeswahlleiterin.de/dam/jcr/397735e3-0585-46f6-a0b5-2c60c5b83de6/btw_ab49_gesamt.pdf",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, early, strongest_party (table 1 dates, table 6 Zweitstimmen)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/2025_German_federal_election",
+     "field": [
+      "date",
+      "result"
+     ],
+     "detail": "date, strongest_party (CDU/CSU combined)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bundeskanzler.de/bk-de/kanzleramt/bundeskanzler-seit-1949",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor persons/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Bundeskanzler_(Deutschland)",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/List_of_chancellors_of_Germany",
+     "field": [
+      "result"
+     ],
+     "detail": "chancellor party/terms",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://de.wikipedia.org/wiki/Vertrauensfrage",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage_vote, dissolution_date",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.recht.bund.de/bgbl/1/2024/434/VO.html",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "dissolution_date (BGBl. 2024 I Nr. 434 of 27.12.2024)",
+     "checked": "2026-10-06"
+    },
+    {
+     "url": "https://www.bpb.de/themen/politisches-system/wahlen-in-deutschland/558540/vorzeitige-aufloesung-des-bundestages/",
+     "field": [
+      "date",
+      "schedule"
+     ],
+     "detail": "vertrauensfrage, election date",
+     "checked": "2026-10-06"
+    }
+   ]
+  }
+ ]
+}
