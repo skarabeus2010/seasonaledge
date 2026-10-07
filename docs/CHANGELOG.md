@@ -21,6 +21,28 @@ KI-Score: 4 Sub-Scores (à 2.5, 0–10). `DROP TABLE ml_forecasts` erledigt 2026
 
 ## Detail-Logs
 
+### 2026-10-06/07 — Wahlen und Börse: Daten, Rechenkern, Seite `/wahlen`, Midterm-Artikel, EN-Adressen (kanonisch: docs/WAHLEN.md)
+
+Nutzerwunsch „Buy/Sell the Election": S&P 500 und Dow X Handelstage vor bis Y nach US-Präsidentschafts- und
+Midterm-Wahlen, später Bundestag. Plan in 8 Codex-Runden, jede Phase mit Codex bis Freigabe.
+
+- **Phase 0:** `landing/data/elections.json` (88 Wahlen, je zwei Quellen), `election_calendar_exceptions.json`
+  (NYSE am Wahltag geschlossen bis 1968 und 1972/76/80, belegt durch Kurslücken). Regelkalender erst ab 1971 belegt.
+- **Phase 1a:** `shared/elections.py` + `scripts/build_wahlen.py` → `wahlen_study.json` (gitignored), Kontrolljahre
+  = angrenzende ungerade Jahre, Live-Linie Midterm 03.11.2026.
+- **Phase 1b:** Browser-Rechenkern `wahlen-compute.js` + Python-Zwilling `aggregiere` (Zwillingstest 12/12 Mutationen),
+  Nightly-Phase J, Seite `/wahlen` (DE+EN) unter Events, Snapshot-Ansicht `?snapshot=<id>`, `sa:i18n-bereit`.
+- **Phase 1c:** Artikel „Midterm-Wahl und Börse" DE+EN mit Snapshot `midterm-2026-10` (Kurse bis 06.10.2026):
+  nachher +0,56 % (31 Wahlen), gepaart +0,72 % gegen +0,39 % ohne Wahl (+0,33 Pp), seit 1971 +0,06 Pp, Vorlauf
+  +2,33 Pp. Wächter `verify_wahlen_blog.py` (31/31 Mutationen). Geschrieben vom `blogger`-Agenten.
+- **EN-Adressen:** `/en/wahlen` → `/en/elections` über `_EN_SLUGS` (eine Quelle für Browser + Python), 301 mit Query,
+  Kollisionsprüfung im Build und Deploy, `verify_en_slugs.py`.
+- **Nebenbei:** EN-Blogbilder zeigten auf `/blog/<en-slug>/images/` (404 bei abweichendem Slug) → behoben.
+- **Lessons:** zwei Mittel auf verschiedenen Stichproben nebeneinander sind eine Subtraktionsfalle; ein Zahlenwächter,
+  der Teilstrings sucht, lässt Vorzeichen, Rundung und Fallzahlen-als-Rendite durch; eine Mutation, die das ganze
+  Fenster gleich skaliert, ändert keine Rendite; eine Kollisionsprüfung braucht ALLE DE-Seiten, nicht nur die mit
+  EN-Fassung (Codex fand `skew → wahlen`).
+
 ### 2026-09-05 — Energie-Ticker, Index-Effekt-Seite, KI-Duktus raus, nginx/mietwatch-Entkopplung (PRs #178-186)
 
 **Ticker-Universum 324→358** (PRs #184-185): 34 Energie-/Strom-/Uran-/Solar-Werte aus einer User-Watchlist (45 Ticker; 7 hatten wir schon, 4 sehr dünne weggelassen: FRMI/NNE/TLN/NXT). Alle bei Yahoo mit voller Historie verifiziert (54J EMR … ~4,5J SMR). Lokal onboardet (service_role-Key) in 3 Batches, dann Scores/Stats gezielt via `refresh_ticker_data(<subset>)` (74s, 34/34 Scanner + TDOM/TDOY). `tickers.json` committet. Kalender: `S92.DE`/`NDX1.DE`→XETRA, `NEL.OL`→Oslo/SE-Proxy.

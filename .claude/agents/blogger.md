@@ -93,7 +93,11 @@ Für Dealer-Positioning-, Gamma-/Vanna-/Charm-, Pinning-, OPEX-Flow-Themen passe
    Der Builder prependet automatisch `/blog/<slug>/images/`. Schreibst du `images/<slug>/datei.png`, entsteht
    doppeltes `images/images/` → 404. Das Bild liegt physisch in `blog/posts/images/<slug>/datei.png`, der
    Builder kopiert den `images/`-Baum in DE **und** EN. Also: Datei nach `blog/posts/images/<slug>/` legen,
-   im Markdown nur `<slug>/datei.png` referenzieren.
+   im Markdown nur `<slug>/datei.png` referenzieren. **Auch im EN-Post relativ** — der Builder setzt dort
+   `/en/blog/<en-slug>/images/` (seit 2026-10-07; absolute Pfade sind unnötig).
+4. **Zahlen aus einem Faktenblatt/Snapshot** (z. B. Wahlstudie) **wörtlich** übernehmen, keine eigenen Rundungen,
+   und zwei Mittelwerte auf verschiedenen Stichproben (alle Fälle vs. gepaarte Teilmenge) nie ohne Fallzahl
+   nebeneinanderstellen — der Leser subtrahiert sonst selbst und bekommt die falsche Differenz.
 
 ### C) Sonstige Daten-Charts
 Ohne passenden Tag/GEX-Chart darfst du einen eigenen Chart aus echten App-Daten rendern (matplotlib

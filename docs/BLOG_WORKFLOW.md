@@ -225,6 +225,28 @@ Der Nightly-Job rebuildet taeglich. Posts erscheinen am `publish_date` automatis
 
 ---
 
+## Eigene Bilder
+
+- Datei nach `blog/posts/images/<ordner>/datei.png`, im Markdown relativ: `![Alt](<ordner>/datei.png)` — ohne
+  `images/`-Präfix. Der Builder macht daraus `/blog/<slug>/images/…` (DE) bzw. **`/en/blog/<slug>/images/…`** (EN)
+  und kopiert den `images/`-Baum in beide Ausgaben.
+- Bis 2026-10-07 setzte der Builder auch für EN-Artikel `/blog/<en-slug>/images/` → 404, sobald EN- und DE-Slug
+  abweichen. Behoben in `blog_builder.py::_bild_src`; absolute Pfade in EN-Posts sind seitdem unnötig.
+
+## Datenartikel mit eingefrorenem Stand (Muster: Wahlen, 2026-10-07)
+
+Wenn ein Artikel Zahlen einer Seite zitiert, die sich täglich ändert, muss der Leser genau diesen Stand nachprüfen können:
+
+1. **Snapshot** erzeugen (bei der Wahlstudie `scripts/wahlen_snapshot.py`, auf dem Server), committen, nie
+   überschreiben — neuer Artikel = neue Kennung. Die Seite zeigt ihn unter `?snapshot=<id>`.
+2. **Faktenblatt** aus dem Snapshot rechnen (`scripts/research/wahlen_fakten.py`), Charts ebenso
+   (`scripts/research/render_wahlen_charts.py`). Der Agent bekommt NUR diese Zahlen.
+3. **Wächter** (`scripts/verify_wahlen_blog.py`): jede sichtbare Zahl mit %/Pp typisiert gegen das Faktenblatt
+   (Vorzeichen, Rundung, Einheit, Dezimaltrenner), Fallzahlen, Snapshot-Links, Bildpfade; dazu `--mutationen`.
+4. **Zwei Stichproben nie nebeneinander ohne Fallzahl** — ein Mittel über alle Fälle neben einem Vergleich über eine
+   Teilmenge lädt den Leser zur falschen Subtraktion ein.
+5. Codex-Review bis Freigabe, dann `blog_builder.py --build`, `seo/programmatic_seo_builder.py`, `verify_seo_html.py`.
+
 ## Kategorien
 
 | Kategorie | Slug | Wann verwenden |
@@ -248,6 +270,9 @@ Der Nightly-Job rebuildet taeglich. Posts erscheinen am `publish_date` automatis
 | `ticker` | Nein | Haupt-Ticker des Posts (fuer Charts) |
 | `status` | Ja | draft, scheduled, oder published |
 | `publish_date` | Nein | Veroeffentlichungsdatum (fuer scheduled) |
+| `de_slug` | Nur EN | Slug der DE-Fassung (hreflang) |
+| `seo_title` | Nein | eigener `<title>`, sonst `title` |
+| `updated` | Nein | bei inhaltlicher Überarbeitung setzen (Sitemap-`lastmod`) |
 
 ---
 
