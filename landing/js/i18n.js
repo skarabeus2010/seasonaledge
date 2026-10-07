@@ -71,7 +71,7 @@ SA.i18n = (function() {
   }
 
   // Bump this version whenever en.json gains new keys — busts sessionStorage cache
-  var _JSON_VER = 'v4';
+  var _JSON_VER = 'v5';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
@@ -230,6 +230,10 @@ SA.i18n = (function() {
     '/vola-saisonalitaet': {
       title: 'Volatility Seasonality — Which Months Are Really Turbulent | SeasonAlpha',
       desc:  'In which months does a market really swing harder? Monthly realised-volatility profile for 300+ tickers — and the test of whether September and October are the crash months.'
+    },
+    '/wahlen': {
+      title: 'Elections & Markets — S&P 500 and Dow Around US Elections | SeasonAlpha',
+      desc:  'How the S&P 500 and the Dow moved before and after US presidential and midterm elections — every election since 1896, compared with the same weeks in years without an election. With a live line for the next election.'
     },
     '/korrelationen': {
       title: 'Correlation Radar — How Markets Move Together | SeasonAlpha',
@@ -421,16 +425,26 @@ SA.i18n = (function() {
       .then(function(data) {
         _data = data;
         _applyAll();
+        _meldeBereit();
       })
       .catch(function(e) {
         console.warn('[SA.i18n] Failed to load en.json', e);
+        _meldeBereit();   // Seiten sollen nicht ewig warten; t() liefert dann den Fallback
       });
+  }
+
+  // Seiten mit dynamischen Texten (z. B. /wahlen) rendern neu, sobald das Wörterbuch da ist.
+  var _bereit = false;
+  function _meldeBereit() {
+    _bereit = true;
+    try { document.dispatchEvent(new CustomEvent('sa:i18n-bereit')); } catch (e) {}
   }
 
   return {
     init: init,
     t: t,
     isEN: function() { return _isEN; },
+    bereit: function() { return !_isEN || _bereit; },
     switchTo: switchTo,
     pfad: pfad,
     _onComponentLoaded: _onComponentLoaded,

@@ -115,7 +115,9 @@
         vorlauf: 100 * (roh[x] / roh[0] - 1),
         nachlauf: 100 * (roh[laenge - 1] / roh[x] - 1),
         fenster: 100 * (roh[laenge - 1] / roh[0] - 1),
-        basisDatum: datum(r.pfad, opts.basis === 'tx' ? -x : 0, n)
+        basisDatum: datum(r.pfad, opts.basis === 'tx' ? -x : 0, n),
+        // Fensterbeginn im belegten Kalender? Sonst nur Kurszeilenfolge (Codex 1b-2 R1)
+        kalenderBelegt: !!st.kalender_belegt_ab && (datum(r.pfad, -x, n) || '') >= st.kalender_belegt_ab
       };
       wahlen.push(e);
       // Referenz-Tripel: beide Kontrolljahre vollständig

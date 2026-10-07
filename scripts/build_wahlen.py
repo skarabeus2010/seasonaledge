@@ -49,7 +49,8 @@ def _meta(w: dict) -> dict:
         bekannt = wp not in (None, "unknown") and pp not in (None, "unknown")
         # Unbekannte Ergebnisse dürfen nie als "Wechsel" oder "kein Wechsel" in Filter laufen (Codex R1).
         m.update(winner=r.get("winner"), winner_party=wp, prior_party=pp,
-                 machtwechsel=(wp != pp) if bekannt else None, contested=bool(r.get("contested")))
+                 machtwechsel=(wp != pp) if bekannt else None, contested=bool(r.get("contested")),
+                 result_decided=r.get("result_decided"))
     elif w["type"] == "midterm" and r:
         for k in ("house_before", "house_after", "senate_before", "senate_after"):
             if k in r:
@@ -87,6 +88,8 @@ def baue(laden=None, letzte=None) -> dict:
         "schema": 1,
         "erzeugt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "fenster": el.FENSTER,
+        # Ab hier ist der Börsenkalender gemessen belegt; davor nur Kurszeilenfolge (docs/WAHLEN.md)
+        "kalender_belegt_ab": el.kalender_belegt_ab("NYSE"),
         "letzte_session": letzte.isoformat(),
         "quellen": {"elections.json": _sha(el.WAHLEN_JSON),
                     "election_calendar_exceptions.json": _sha(el.AUSNAHMEN_JSON),

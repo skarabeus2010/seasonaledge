@@ -129,6 +129,7 @@ PRIORITY_OVERRIDES = {
     "wochentage":         ("0.9",  "weekly"),
     "monatswechsel":      ("0.9",  "weekly"),
     "zentralbanken":      ("0.9",  "weekly"),
+    "wahlen":             ("0.85", "weekly"),
     "polymarket":         ("0.95", "daily"),
     # Strategien
     "scanner":            ("0.95", "daily"),

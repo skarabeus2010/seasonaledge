@@ -19,7 +19,8 @@ const aus = optionen.map((o) => {
     opts: o, kurven: r.kurven, kennzahlen: r.kennzahlen, live: r.live, offsets: r.offsets,
     ausgeschlossen: r.ausgeschlossen,
     einzel: r.wahlen.map((e) => ({ id: e.id, t0: e.t0, kurve: e.kurve, nachlauf: e.nachlauf,
-                                  vorlauf: e.vorlauf, fenster: e.fenster, basisDatum: e.basisDatum })),
+                                  vorlauf: e.vorlauf, fenster: e.fenster, basisDatum: e.basisDatum,
+                                  kalenderBelegt: e.kalenderBelegt })),
   };
 });
 process.stdout.write(JSON.stringify(aus));

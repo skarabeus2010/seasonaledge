@@ -10,7 +10,9 @@ späteren Abschnitte (10–14) vor den früheren.
 |---|---|---|
 | 0 | Terminliste `landing/data/elections.json` + Kalender-Ausnahmen + Wächter | **erledigt 2026-10-06**, Codex-Freigabe nach 3 Code-Runden |
 | 1a | Rechenkern `shared/elections.py` + `scripts/build_wahlen.py` → `landing/data/wahlen_study.json` | **erledigt 2026-10-06**, Probelauf auf dem Server ohne Schreiben, Codex-Freigabe nach 3 Code-Runden |
-| 1b | Seite `/wahlen` (S&P 500, Dow): historische Studie, Referenz „Jahr ohne Wahl", Live-Linie Midterm 03.11.2026, DE+EN; Build im Nightly | offen |
+| 1b-1 | Browser-Rechenkern `landing/js/wahlen-compute.js` + Python-Zwilling `aggregiere`, Nightly-Phase J | **erledigt 2026-10-07**, Codex-Freigabe nach 2 Runden |
+| 1b-2 | Seite `/wahlen` (DE+EN) unter „Events": Streuband, Mittel/Median, Vergleichslinie, Live-Linie, Tabelle, Snapshot-Ansicht | **erledigt 2026-10-07**, Codex-Freigabe nach 3 Runden |
+| 1c | Blogartikel zur Midterm 2026 mit eingefrorenem Snapshot (Hauptfenster 20/20) | offen |
 | 2 | Deutschland (Bundestag, DAX-Reihe vorher prüfen) | offen |
 | 3 | Backtest-Engine-Ereignistyp `election` (Long), Kalender, Dashboard-Hinweis | offen |
 | M | Angleichung der bestehenden Wahlstrategien (Midterm, UECS, KTI, Signalvorschau) | offen, eigener Plan |
@@ -50,6 +52,26 @@ späteren Abschnitte (10–14) vor den früheren.
   nur 1914 (Börse 31.07.–27.11. geschlossen). Datei kompakt ≈ 390 KB. Live-Linie Midterm 2026: letzter Kurs bei
   Offset −21. Erste Zahlen Hauptfenster (t0 → +20, **noch nicht zur Veröffentlichung**, Review steht aus):
   S&P 500 Präsident n=32 Mittel +0,49 % / Referenz +0,17 %; Midterm n=30 +0,72 % / +0,39 %.
+
+## Seite /wahlen (Phase 1b)
+
+- **Rechnet im Browser nur noch Auswahl, Umbasierung, Renditen und Aggregation** (`landing/js/wahlen-compute.js`);
+  Anker, Sitzungen und Gültigkeit kommen aus Python. Zwilling `shared/elections.py::aggregiere` liefert dieselben
+  Kurven, Kennzahlen, Einzelwerte, Ausschlüsse und die Live-Linie — `scripts/verify_wahlen_twin.py` vergleicht
+  jede Zahl (8 Optionssätze, Wahltag/Folgetag, 12/12 Mutationen).
+- **Kennzahl „Differenz Wahl − ohne Wahl"** ist gepaart je Wahl und in Prozentpunkten; die graue Linie mittelt nur
+  Wahlen mit beiden Vergleichsjahren, ihr Abstand zur goldenen Linie kann deshalb abweichen (steht im Chart-Hinweis).
+- **Datenstand** steht in einer eigenen Zeile, unabhängig von Filtern; Fenster, die vor 1971 beginnen, tragen einen
+  Stern (Kalender ungeprüft). **Hauptfenster 20/20** ist gekennzeichnet, alles andere heißt „Exploration".
+- **Snapshot-Ansicht** `?snapshot=<id>` lädt ausschließlich `/landing/data/wahlen_snapshots/<id>.json` und dessen
+  gespeicherte Ansicht; ungültig oder fehlend → sichtbarer Fehler, nie die aktuelle Datei.
+- **i18n:** `landing/js/i18n.js` meldet jetzt `sa:i18n-bereit` und `bereit()`; `_JSON_VER` v5. Seiten mit
+  dynamischen Texten warten darauf, sonst bleiben Zahlen/Wörter auf `/en/` deutsch (Codex-Fund).
+- **Seitentest** `scripts/js/probe_wahlen_seite.js`: führt das echte Seitenskript in node aus (DE, EN mit spätem
+  Wörterbuch, XSS in Namen und Seriennamen, Snapshot gültig/fehlend/ungültig in fünf Formen, spätes Ergebnis 2000).
+- **Gefunden in den Reviews:** Seriennamen gingen ungeschützt in die ApexCharts-Legende (innerHTML); die EN-Seite
+  hätte deutsche Zahlen gezeigt, weil `SA.i18n.current` nicht existiert; „alle Wahlen" nahm die Live-Wahl in
+  Dateireihenfolge (2028 vor 2026).
 
 ## Wichtige Definitionen
 

@@ -309,7 +309,8 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 
 ### Wahlen und Börse (Detail: [docs/WAHLEN.md](docs/WAHLEN.md))
 - [x] **Phase 0 + 1a** (2026-10-06): belegte Wahlliste, Kalender-Ausnahmen, Rechenkern + Build, Codex-Freigabe.
-- [ ] **Phase 1b: Seite `/wahlen`** (DE+EN, Chart t0=100 mit Mittel/Median/Streuband, Vergleichslinie, Live-Linie, Tabelle) + `build_wahlen.py` im Nightly — vor der Midterm am 03.11.2026.
+- [x] **Phase 1b: Seite `/wahlen`** (2026-10-07, DE+EN, Nightly-Phase J; Codex-Freigabe 1b-1 nach 2, 1b-2 nach 3 Runden).
+- [ ] **Phase 1c: Blogartikel zur Midterm 2026** mit eingefrorenem Snapshot (Hauptfenster 20/20) — vor dem 03.11.2026.
 - [ ] **Phase 2** Bundestag/DAX · **Phase 3** Backtest-Ereignistyp `election` (Optimierung/Sharpe gesperrt) · **Phase M** Angleichung der alten Wahlstrategien (eigener Plan).
 
 ### Intermarket (Detail: [docs/INTERMARKET.md](docs/INTERMARKET.md))

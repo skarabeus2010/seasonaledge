@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wahlen &amp; B&ouml;rse &mdash; S&amp;P 500 und Dow vor und nach US-Wahlen | SeasonAlpha</title>
+  <meta name="description" content="Wie sich S&P 500 und Dow Jones vor und nach US-Präsidentschafts- und Midterm-Wahlen entwickelt haben — jede Wahl seit 1896, verglichen mit denselben Wochen in Jahren ohne Wahl. Mit Live-Linie zur nächsten Wahl.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/wahlen">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/wahlen">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/wahlen">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/wahlen">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/wahlen">
+  <meta property="og:title" content="Wahlen &amp; B&ouml;rse &mdash; Indexverlauf um US-Wahlen | SeasonAlpha">
+  <meta property="og:description" content="S&P 500 und Dow vor und nach US-Präsidentschafts- und Midterm-Wahlen seit 1896, verglichen mit Jahren ohne Wahl. Live-Linie zur nächsten Wahl.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Wahlen &amp; B&ouml;rse | SeasonAlpha">
+  <meta name="twitter:description" content="S&P 500 und Dow vor und nach US-Wahlen seit 1896, verglichen mit Jahren ohne Wahl.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Wahlen & Börse","url":"https://seasonalpha.ai/wahlen","description":"Indexverlauf von S&P 500 und Dow Jones vor und nach US-Präsidentschafts- und Midterm-Wahlen seit 1896, verglichen mit denselben Wochen in Jahren ohne Wahl.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Wahlen & Börse","item":"https://seasonalpha.ai/wahlen"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Steigen die Kurse nach einer US-Wahl?","acceptedAnswer":{"@type":"Answer","text":"Im historischen Mittel lagen S&P 500 und Dow einige Wochen nach US-Wahlen höher als am Wahltag — aber Anfang November ist an der Börse ohnehin eine eher starke Zeit. Deshalb zeigt die Seite dieselben Wochen in Jahren ohne Wahl als Vergleich. Der Abstand zu dieser Linie ist ein historischer Unterschied, kein isolierter Wahleffekt."}},{"@type":"Question","name":"Warum ist der Bezugspunkt der Schlusskurs am Wahltag?","acceptedAnswer":{"@type":"Answer","text":"Weil das Ergebnis einer US-Wahl in der Nacht nach dem Wahltag bekannt wird. Der letzte Schlusskurs vor dem Ergebnis ist deshalb der des Wahltags. Bis 1968 war die New Yorker Börse an jedem Wahltag geschlossen, 1972, 1976 und 1980 noch an den Präsidentschaftswahltagen — dann ist der Bezugspunkt der Schlusskurs am Tag davor."}},{"@type":"Question","name":"Wie wichtig ist, wer gewinnt?","acceptedAnswer":{"@type":"Answer","text":"Die Seite lässt nach Machtwechsel filtern, aber das ist eine rückblickende Auswahl: am Tag vor der Wahl kennt niemand den Sieger. Mit etwa 30 Wahlen je Typ werden solche Teilmengen klein, und die Seite weist deshalb keine Signifikanz aus."}},{"@type":"Question","name":"Ist das ein Handelssignal?","acceptedAnswer":{"@type":"Answer","text":"Nein. Die Seite ist eine Auswertung historischer Kursdaten, keine Prognose und keine Anlageberatung. Jede Wahl findet in einem anderen wirtschaftlichen Umfeld statt, und vergangene Muster garantieren keine künftigen Ergebnisse."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:1rem;line-height:1.55}
+    .disc{background:rgba(232,168,32,.07);border:1px solid rgba(232,168,32,.18);border-radius:10px;padding:.6rem 1rem;font-size:.78rem;color:var(--muted);margin-bottom:1.4rem;line-height:1.5}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .ctrl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin-bottom:.9rem}
+    .ctrl .grp{display:flex;align-items:center;gap:.4rem}
+    .ctrl label{font-size:.75rem;color:var(--muted)}
+    .ctrl select{padding:.4rem .6rem;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:.85rem;font-family:inherit;min-height:36px}
+    .ctrl input[type=range]{width:120px;accent-color:var(--accent)}
+    .ctrl .val{font-family:var(--f-m,monospace);color:var(--text);font-size:.8rem;min-width:2ch}
+    .ctrl button{padding:.4rem .7rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.78rem;font-family:inherit;cursor:pointer;min-height:36px}
+    .ctrl button.on{background:rgba(232,168,32,.16);border-color:var(--accent);color:var(--accent)}
+    .ctrl .retro{font-size:.68rem;color:var(--dim)}
+    .live{background:#0c1420;border:1px solid var(--border);border-radius:14px;padding:.8rem 1rem;margin-bottom:1rem;display:none}
+    .live .lbl{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+    .live .big{font-family:var(--f-d);font-weight:800;font-size:1.15rem;color:var(--accent);margin:.15rem 0}
+    .live .sub{color:var(--dim);font-size:.78rem;line-height:1.5}
+    .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1rem .4rem}
+    .chart-hint{color:var(--dim);font-size:.75rem;margin:.4rem 0 0;line-height:1.5}
+    .kpirow{display:grid;grid-template-columns:repeat(5,1fr);gap:.7rem;margin:1.1rem 0}
+    @media(max-width:960px){.kpirow{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.7rem .8rem}
+    .kpi .k-l{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;line-height:1.3}
+    .kpi .k-v{font-family:var(--f-d);font-weight:800;font-size:1.3rem;color:var(--text);margin-top:.15rem}
+    .kpi .k-s{color:var(--dim);font-size:.7rem;margin-top:.2rem;line-height:1.4}
+    .sec-h{font-family:var(--f-d);font-size:1.1rem;font-weight:800;color:var(--text);margin:2rem 0 .3rem}
+    .sec-sub{color:var(--muted);font-size:.8rem;margin-bottom:.8rem;line-height:1.55}
+    .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+    table.wa{width:100%;border-collapse:collapse;font-size:.8rem;min-width:720px}
+    table.wa th{text-align:right;color:var(--muted);font-weight:600;padding:.5rem .7rem;border-bottom:1px solid var(--border);white-space:nowrap;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em}
+    table.wa th:nth-child(-n+3){text-align:left}
+    table.wa td{text-align:right;padding:.45rem .7rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim);white-space:nowrap;font-family:var(--f-m,monospace)}
+    table.wa td:nth-child(-n+3){text-align:left;font-family:inherit}
+    table.wa tbody tr{cursor:pointer}
+    table.wa tbody tr:hover{background:rgba(232,168,32,.06)}
+    table.wa tr.on{background:rgba(232,168,32,.12)}
+    .ausg{color:var(--dim);font-size:.75rem;margin-top:.5rem;line-height:1.5}
+    .method{margin-top:2rem}
+    .method summary{cursor:pointer;font-family:var(--f-d);font-weight:700;color:var(--text);font-size:.95rem;padding:.4rem 0}
+    .method h4{color:var(--accent);font-size:.82rem;margin:.9rem 0 .3rem;text-transform:uppercase;letter-spacing:.04em}
+    .method p,.method li{color:var(--muted);font-size:.82rem;line-height:1.65}
+    .method ul{padding-left:1.1rem}
+    .faq{border-top:1px solid var(--border);padding:.7rem 0}
+    .faq summary{cursor:pointer;font-weight:700;color:var(--text);font-size:.9rem}
+    .faq p{color:var(--muted);font-size:.82rem;line-height:1.65;margin:.5rem 0 0}
+  </style>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <main class="container" style="padding-top:1.5rem">
+    <div id="error-banner" class="error-banner"></div>
+    <h1 class="page-title" data-i18n-html="wa.h1"><b>Wahlen</b> &amp; B&ouml;rse</h1>
+    <p class="page-caption" data-i18n-html="wa.caption">
+      Wie haben sich S&amp;P&nbsp;500 und Dow Jones in den Wochen <b>vor und nach US-Wahlen</b> entwickelt?
+      Jede Pr&auml;sidentschafts- und Midterm-Wahl seit 1896, ausgerichtet auf den <b>Referenzschluss t0</b>
+      (letzter Schlusskurs am oder vor dem Wahltag) &mdash; und daneben <b>dieselben Wochen in Jahren ohne Wahl</b>, denn Anfang November ist an der
+      B&ouml;rse ohnehin eine eher starke Zeit.
+    </p>
+    <div class="disc" data-i18n-html="wa.disclaimer">
+      <b>Wichtiger Hinweis:</b> Auswertung historischer Kursdaten, <b>keine Prognose und keine Anlageberatung</b>.
+      Mit rund 30 Wahlen je Typ weist die Seite <b>keine Signifikanz</b> aus. Filter nach Wahlausgang sind
+      <b>r&uuml;ckblickend</b>: am Tag vor der Wahl kennt niemand den Sieger.
+    </div>
+
+    <div class="live" id="live-box">
+      <div class="lbl" data-i18n="wa.live_lbl">N&auml;chste Wahl</div>
+      <div class="big" id="live-titel"></div>
+      <div class="sub" id="live-sub"></div>
+    </div>
+
+    <div class="ctrl">
+      <div class="grp">
+        <label for="sel-reihe" data-i18n="wa.lbl_index">Index:</label>
+        <select id="sel-reihe">
+          <option value="^GSPC" data-i18n="wa.opt_gspc">S&amp;P 500</option>
+          <option value="^DJI" data-i18n="wa.opt_dji">Dow Jones</option>
+        </select>
+      </div>
+      <div class="grp">
+        <label for="sel-typ" data-i18n="wa.lbl_typ">Wahl:</label>
+        <select id="sel-typ">
+          <option value="president" data-i18n="wa.opt_president">Pr&auml;sidentschaftswahl</option>
+          <option value="midterm" data-i18n="wa.opt_midterm">Midterm (Kongresswahl)</option>
+          <option value="alle" data-i18n="wa.opt_alle">alle US-Wahlen</option>
+        </select>
+      </div>
+      <div class="grp">
+        <label for="rng-x" data-i18n="wa.lbl_vor">Tage davor:</label>
+        <input type="range" id="rng-x" min="5" max="60" step="1" value="20">
+        <span class="val" id="val-x">20</span>
+      </div>
+      <div class="grp">
+        <label for="rng-y" data-i18n="wa.lbl_nach">Tage danach:</label>
+        <input type="range" id="rng-y" min="5" max="60" step="1" value="20">
+        <span class="val" id="val-y">20</span>
+      </div>
+      <div class="grp">
+        <label for="sel-ab" data-i18n="wa.lbl_ab">ab:</label>
+        <select id="sel-ab">
+          <option value="" data-i18n="wa.opt_ab_alle">allen Jahren</option>
+          <option value="1928">1928</option>
+          <option value="1950">1950</option>
+          <option value="1971">1971</option>
+          <option value="1990">1990</option>
+        </select>
+      </div>
+      <div class="grp">
+        <label for="sel-wechsel" data-i18n="wa.lbl_wechsel">Machtwechsel:</label>
+        <select id="sel-wechsel">
+          <option value="alle" data-i18n="wa.opt_w_alle">egal</option>
+          <option value="ja" data-i18n="wa.opt_w_ja">ja</option>
+          <option value="nein" data-i18n="wa.opt_w_nein">nein</option>
+        </select>
+        <span class="retro" data-i18n="wa.retro">r&uuml;ckblickend</span>
+      </div>
+      <div class="grp">
+        <button id="btn-t0" class="on" data-i18n="wa.btn_t0">t0 = 0&nbsp;%</button>
+        <button id="btn-tx" data-i18n="wa.btn_tx">Start = 0&nbsp;% (mit Live-Linie)</button>
+        <button id="btn-haupt" data-i18n="wa.btn_haupt">Hauptfenster 20/20</button>
+      </div>
+    </div>
+    <p class="ausg" id="stand" style="margin:-.3rem 0 .8rem"></p>
+
+    <div class="chart-wrap">
+      <div id="chart" style="min-height:380px"></div>
+      <p class="chart-hint" data-i18n-html="wa.chart_hint">
+        X-Achse = <b>Handelstage</b> relativ zum Referenzschluss t0 (letzter Schlusskurs am oder vor dem
+        Wahltag). Y-Achse = Ver&auml;nderung in&nbsp;% gegen&uuml;ber t0 bzw. dem Fensterbeginn. Linie = Mittel,
+        gestrichelt = Median, Fl&auml;che = Spanne, in der die mittlere H&auml;lfte der Wahlen lag
+        (25.&ndash;75. Perzentil, kein Konfidenzband). Grau = dieselben Wochen in den beiden angrenzenden Jahren
+        ohne Wahl &mdash; nur Wahlen, f&uuml;r die beide Vergleichsjahre vollst&auml;ndig sind, deshalb kann ihr
+        Abstand zur goldenen Linie von der gepaarten Differenz unten abweichen. Vorab festgelegt ist das
+        <b>Hauptfenster 20/20</b>; andere Einstellungen sind Exploration. <b>Klick auf eine Tabellenzeile</b>
+        blendet die einzelne Wahl ein.
+      </p>
+    </div>
+
+    <div class="kpirow" id="kpis"></div>
+
+    <h2 class="sec-h" data-i18n="wa.table_h">Jede Wahl einzeln</h2>
+    <p class="sec-sub" data-i18n-html="wa.table_sub">
+      <b>Vorher</b> = Ver&auml;nderung vom Fensterbeginn bis zum Referenzschluss t0, <b>nachher</b> = von t0 bis
+      zum Ende des Fensters. Gez&auml;hlt werden nur Wahlen, f&uuml;r die jeder Tag des gew&auml;hlten Fensters
+      einen Kurs hat &mdash; deshalb kann sich die Zahl mit dem Fenster &auml;ndern.
+    </p>
+    <div class="tbl-wrap"><table class="wa" id="tbl"></table></div>
+    <p class="ausg" id="ausg"></p>
+
+    <details class="method">
+      <summary data-i18n="wa.method_h">Methodik &mdash; wie gerechnet wurde</summary>
+      <div data-i18n-html="wa.method_body">
+        <h4>Bezugspunkt</h4>
+        <p>Ausgerichtet wird auf den <b>letzten Schlusskurs am oder vor dem Wahltag</b>. US-Wahlergebnisse werden in
+        der Nacht nach dem Wahltag bekannt, dieser Kurs ist also der letzte vor dem Ergebnis. Bis 1968 war die
+        New Yorker B&ouml;rse an jedem Wahltag geschlossen, 1972, 1976 und 1980 noch an den
+        Pr&auml;sidentschaftswahltagen; dann ist der Bezugspunkt der Schlusskurs am Tag davor. Ein sp&auml;t
+        feststehendes Ergebnis (2000: Entscheidung erst am 12. Dezember) verschiebt den Bezugspunkt nicht.</p>
+
+        <h4>Vergleich mit Jahren ohne Wahl</h4>
+        <p>F&uuml;r jede Wahl werden die beiden angrenzenden ungeraden Jahre ausgewertet &mdash; in diesen Jahren gibt
+        es keine bundesweite US-Wahl. Als Stichtag dient dort derselbe Kalendertermin nach derselben Regel
+        (erster Dienstag nach dem ersten Montag im November). Die graue Linie mittelt erst die beiden
+        Vergleichsjahre einer Wahl und dann &uuml;ber alle Wahlen, f&uuml;r die beide Vergleichsjahre vollst&auml;ndig
+        sind. Der Abstand zur grauen Linie ist ein historischer Vergleich, kein isolierter Wahleffekt:
+        Konjunktur, Zinsentscheidungen und andere Ereignisse wirken mit.</p>
+
+        <h4>Datengrundlage</h4>
+        <p>Wahltermine und -ergebnisse sind jeweils aus mindestens zwei Quellen belegt (US-Nationalarchiv,
+        Repr&auml;sentantenhaus und Senat). Tagesschlusskurse aus der eigenen Datenbank. Der Dow bestand bis 1916
+        aus 12, bis 1928 aus 20 Werten; der S&amp;P&nbsp;500 ist vor 1957 eine R&uuml;ckrechnung, und vor 1953 gab
+        es Samstagssitzungen. Ein &bdquo;Handelstag&ldquo; ist hier jeweils eine Kurszeile der gew&auml;hlten Reihe.</p>
+
+        <h4>Was die Seite nicht sagt</h4>
+        <ul>
+          <li>Keinen <b>p-Wert</b>. Mit rund 30 Wahlen je Typ und frei w&auml;hlbaren Fenstern w&auml;re eine
+          Signifikanzaussage irref&uuml;hrend.</li>
+          <li>Nichts &uuml;ber die <b>Partei</b> als Ursache. Der Filter nach Machtwechsel zeigt eine
+          r&uuml;ckblickende Auswahl mit kleinen Fallzahlen.</li>
+          <li>Nichts &uuml;ber die <b>Zukunft</b>. Jede Wahl findet in einem anderen Umfeld statt.</li>
+        </ul>
+      </div>
+    </details>
+
+    <h2 class="sec-h" data-i18n="wa.faq_h">H&auml;ufige Fragen</h2>
+    <details class="faq" open>
+      <summary data-i18n="wa.faq1_q">Steigen die Kurse nach einer US-Wahl?</summary>
+      <p data-i18n-html="wa.faq1_a">Im historischen Mittel lagen S&amp;P&nbsp;500 und Dow einige Wochen nach US-Wahlen
+      h&ouml;her als am Wahltag &mdash; aber Anfang November ist an der B&ouml;rse ohnehin eine eher starke Zeit.
+      Deshalb steht die graue Vergleichslinie daneben. Der Abstand zu ihr ist ein historischer Unterschied, kein
+      isolierter Wahleffekt.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="wa.faq2_q">Warum ist der Bezugspunkt der Schlusskurs am Wahltag?</summary>
+      <p data-i18n-html="wa.faq2_a">Weil das Ergebnis in der Nacht nach dem Wahltag bekannt wird. Der Schlusskurs des
+      Wahltags ist also der letzte vor dem Ergebnis. War die B&ouml;rse am Wahltag geschlossen, gilt der Schlusskurs
+      des Vortags.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="wa.faq3_q">Wie wichtig ist, wer gewinnt?</summary>
+      <p data-i18n-html="wa.faq3_a">Der Filter &bdquo;Machtwechsel&ldquo; zeigt, wie sich Wahlen mit und ohne Wechsel
+      unterschieden haben. Das ist eine r&uuml;ckblickende Auswahl &mdash; am Tag vor der Wahl kennt niemand den
+      Sieger &mdash;, und mit wenigen F&auml;llen je Gruppe weist die Seite bewusst keine Signifikanz aus.</p>
+    </details>
+    <details class="faq">
+      <summary data-i18n="wa.faq4_q">Ist das ein Handelssignal?</summary>
+      <p data-i18n-html="wa.faq4_a">Nein. Die Seite ist eine Auswertung historischer Kursdaten, keine Prognose und
+      keine Anlageberatung. Vergangene Muster garantieren keine k&uuml;nftigen Ergebnisse.</p>
+    </details>
+
+    <div id="footer-container"></div>
+  </main>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/wahlen-compute.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script>
+  (function () {
+    'use strict';
+    var T = function (k, d) { return (window.SA && SA.i18n) ? SA.i18n.t(k, d) : d; };
+    // Sprache erst zur Renderzeit lesen: i18n.init() läuft bei DOMContentLoaded (Codex 1b-2 R1)
+    function istEN() { return !!(window.SA && SA.i18n && SA.i18n.isEN && SA.i18n.isEN()); }
+    var ACC = '#e8a820', MUT = '#8a8270', GRAU = '#9ca3af', HELL = '#f2d9a0';
+    var HAUPT_X = 20, HAUPT_Y = 20;            // vorab festgelegtes Hauptfenster (Plan, Abschnitt 4)
+    var ST = null, chart = null, auswahl = null, BASIS = 't0', SNAPSHOT = null;
+
+    function $(id) { return document.getElementById(id); }
+    function esc(s) {
+      return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    var FEHLER = null;   // {k, d}: bleibt erhalten, damit er nach dem Wörterbuch übersetzt werden kann
+    function fehler(k, d) { FEHLER = { k: k, d: d }; var e = $('error-banner'); e.textContent = T(k, d); e.style.display = 'block'; }
+    function zahl(v, n) { var s = v.toFixed(n); return istEN() ? s : s.replace('.', ','); }
+    function pz(v, n) {
+      if (v === null || v === undefined || isNaN(v)) return '—';
+      return (v >= 0 ? '+' : '') + zahl(v, n === undefined ? 2 : n) + ' %';
+    }
+    function pp(v) {
+      if (v === null || v === undefined || isNaN(v)) return '—';
+      return (v >= 0 ? '+' : '') + zahl(v, 2) + ' ' + T('wa.pp', 'Pp.');
+    }
+    function datumText(iso) {
+      if (!iso) return '—';
+      var p = iso.split('-');
+      return istEN() ? iso : p[2] + '.' + p[1] + '.' + p[0];
+    }
+    function partei(code) {
+      return ({ 'US-D': T('wa.p_d', 'Demokraten'), 'US-R': T('wa.p_r', 'Republikaner') })[code] || code;
+    }
+    function grund(code) {
+      return ({
+        anker_zu_weit: T('wa.g_anker', 'Börse um den Wahltag geschlossen'),
+        kurs_am_wahltag_fehlt: T('wa.g_wahltag', 'Kurs am Wahltag fehlt'),
+        fehlende_sitzung: T('wa.g_sitzung', 'fehlender Handelstag im Fenster'),
+        kurs_an_nicht_sitzung: T('wa.g_nicht', 'Kurs an einem Nicht-Handelstag'),
+        ungeklaerte_luecke: T('wa.g_luecke', 'Datenlücke im Fenster'),
+        vor_datenbeginn: T('wa.g_vor', 'vor Beginn der Kursreihe'),
+        nach_datenende: T('wa.g_nach', 'Fenster reicht über das Datenende'),
+        kein_pfad: T('wa.g_keiner', 'keine Kurse')
+      })[code] || code;
+    }
+    function typText(t) {
+      return t === 'president' ? T('wa.t_president', 'Präsident') : T('wa.t_midterm', 'Midterm');
+    }
+
+    function optionen() {
+      return {
+        reihe: $('sel-reihe').value, typ: $('sel-typ').value,
+        x: parseInt($('rng-x').value, 10), y: parseInt($('rng-y').value, 10),
+        basis: BASIS, abJahr: $('sel-ab').value ? parseInt($('sel-ab').value, 10) : null,
+        wechsel: $('sel-wechsel').value
+      };
+    }
+
+    function ergebnisText(w) {
+      var m = w.meta || w;
+      if (m.type === 'president') {
+        if (!m.winner_party) return '—';
+        var wechsel = m.machtwechsel === true ? T('wa.wechsel', 'Wechsel') :
+                      (m.machtwechsel === false ? T('wa.kein_wechsel', 'kein Wechsel') : '');
+        var spaet = m.contested && m.result_decided ? ' · ' + T('wa.spaet', 'Ergebnis erst am') + ' ' + datumText(m.result_decided) : '';
+        return (m.winner || '') + ' (' + partei(m.winner_party) + ')' + (wechsel ? ' · ' + wechsel : '') + spaet;
+      }
+      if (!m.house_before || !m.house_after) return '—';
+      return T('wa.house', 'Repräsentantenhaus') + ': ' + partei(m.house_before) + ' → ' + partei(m.house_after);
+    }
+
+    function serien(r, o) {
+      var off = r.offsets, k = r.kurven, s = [];
+      // ApexCharts schreibt Seriennamen per innerHTML in Legende und Tooltip → escapen (Codex 1b-2 R2)
+      s.push = function (x) { x.name = esc(x.name); return Array.prototype.push.call(this, x); };
+      s.push({ name: T('wa.s_band', 'mittlere Hälfte (25.–75. Perzentil)'), type: 'rangeArea',
+               data: off.map(function (x, i) { return { x: x, y: k.p25[i] === null ? null : [k.p25[i] - 100, k.p75[i] - 100] }; }) });
+      s.push({ name: T('wa.s_mittel', 'Mittel'), type: 'line',
+               data: off.map(function (x, i) { return { x: x, y: k.mittel[i] === null ? null : k.mittel[i] - 100 }; }) });
+      s.push({ name: T('wa.s_median', 'Median'), type: 'line',
+               data: off.map(function (x, i) { return { x: x, y: k.median[i] === null ? null : k.median[i] - 100 }; }) });
+      s.push({ name: T('wa.s_ref', 'Jahre ohne Wahl') + ' (n=' + r.kennzahlen.n_tripel + ')', type: 'line',
+               data: off.map(function (x, i) { return { x: x, y: k.referenz[i] === null ? null : k.referenz[i] - 100 }; }) });
+      if (o.basis === 'tx' && r.live && r.live.kurve) {
+        s.push({ name: T('wa.s_live', 'Live') + ' ' + (r.live.date || '').slice(0, 4), type: 'line',
+                 data: off.map(function (x, i) { var v = r.live.kurve[i]; return { x: x, y: v === null ? null : v - 100 }; }) });
+      }
+      if (auswahl) {
+        var e = r.wahlen.filter(function (w) { return w.id === auswahl; })[0];
+        if (e) s.push({ name: e.date.slice(0, 4) + ' · ' + T('wa.tt_wahl', 'Wahl') + ' ' + datumText(e.date) + ' · t0 ' +
+                              datumText(e.t0) + ' · ' + ergebnisText(e), type: 'line',
+                        data: off.map(function (x, i) { return { x: x, y: e.kurve[i] - 100 }; }) });
+      }
+      return s;
+    }
+
+    function zeichne(r, o) {
+      var s = serien(r, o);
+      var farben = [ACC, ACC, ACC, GRAU, HELL, '#ffffff'];
+      var breiten = [0, 3, 2, 2, 3, 1.5];
+      var striche = [0, 0, 5, 4, 0, 0];
+      var opts = {
+        chart: { type: 'rangeArea', height: 380, background: 'transparent', fontFamily: 'DM Sans',
+                 toolbar: { show: false }, zoom: { enabled: false }, animations: { enabled: false } },
+        series: s, colors: farben.slice(0, s.length),
+        fill: { opacity: s.map(function (x, i) { return i === 0 ? 0.15 : 1; }) },
+        stroke: { curve: 'straight', width: breiten.slice(0, s.length), dashArray: striche.slice(0, s.length) },
+        legend: { show: true, labels: { colors: MUT } },
+        dataLabels: { enabled: false },
+        xaxis: { type: 'numeric', tickAmount: 8,
+                 title: { text: T('wa.x_titel', 'Handelstage relativ zum Referenzschluss t0'), style: { color: MUT, fontSize: '11px', fontWeight: 400 } },
+                 labels: { style: { colors: MUT }, formatter: function (v) { v = Math.round(v); return (v > 0 ? '+' : '') + v; } } },
+        yaxis: { tickAmount: 6, labels: { style: { colors: MUT }, formatter: function (v) { return pz(v, 1); } },
+                 title: { text: o.basis === 'tx' ? T('wa.y_tx', 'Veränderung seit Fensterbeginn') : T('wa.y_t0', 'Veränderung gegenüber Referenzschluss t0'),
+                          style: { color: MUT, fontSize: '11px', fontWeight: 400 } } },
+        grid: { borderColor: 'rgba(255,255,255,.06)', strokeDashArray: 3 },
+        tooltip: { theme: 'dark', shared: true, intersect: false,
+                   x: { formatter: function (v) { v = Math.round(v); return T('wa.tt_tag', 'Handelstag') + ' ' + (v > 0 ? '+' : '') + v; } },
+                   y: { formatter: function (v) { return pz(v, 2); } } },
+        annotations: {
+          yaxis: [{ y: 0, borderColor: 'rgba(255,255,255,.25)', strokeDashArray: 4 }],
+          xaxis: [{ x: 0, borderColor: ACC, label: { text: T('wa.anno_t0', 'Referenzschluss t0'), orientation: 'horizontal', position: 'top',
+                    style: { background: ACC, color: '#000', fontSize: '10px', fontWeight: 600 } } }]
+        }
+      };
+      if (chart) { chart.destroy(); chart = null; }
+      chart = new ApexCharts($('chart'), opts);
+      chart.render();
+    }
+
+    function kpi(l, v, sub) {
+      return '<div class="kpi"><div class="k-l">' + esc(l) + '</div><div class="k-v">' + esc(v) + '</div>' +
+             (sub ? '<div class="k-s">' + esc(sub) + '</div>' : '') + '</div>';
+    }
+
+    function kennzahlen(r, o) {
+      var k = r.kennzahlen;
+      var ungeprueft = r.wahlen.filter(function (w) { return !w.kalenderBelegt; }).length;
+      var subN = [];
+      if (r.ausgeschlossen.length) subN.push(r.ausgeschlossen.length + ' ' + T('wa.k_ausg', 'ausgeschlossen'));
+      if (ungeprueft) subN.push(ungeprueft + ' ' + T('wa.k_ungeprueft', 'mit ungeprüftem Kalender (vor 1971)'));
+      $('kpis').innerHTML =
+        kpi(T('wa.k_n', 'Wahlen im Fenster'), String(k.n), subN.join(' · ')) +
+        kpi(T('wa.k_nach', 'Ø nachher') + ' (t0 → +' + o.y + ')', pz(k.nachlauf_mittel), T('wa.k_median', 'Median') + ' ' + pz(k.nachlauf_median)) +
+        kpi(T('wa.k_treffer', 'nachher im Plus'), k.trefferquote === null ? '—' : Math.round(k.trefferquote * 100) + ' %', '') +
+        kpi(T('wa.k_ref', 'Ø ohne Wahl (nachher)'), pz(k.referenz_nachlauf_mittel), k.n_tripel + ' ' + T('wa.k_tripel', 'Wahlen mit beiden Vergleichsjahren')) +
+        kpi(T('wa.k_diff', 'Differenz Wahl − ohne Wahl'), pp(k.differenz_mittel),
+            T('wa.k_diff_s', 'gepaart je Wahl, nachher · historischer Unterschied, kein p-Wert'));
+    }
+
+    function tabelle(r) {
+      var kopf = '<thead><tr><th>' + esc(T('wa.th_wahl', 'Wahl')) + '</th><th>' + esc(T('wa.th_bezug', 'Referenzschluss t0')) + '</th><th>' +
+                 esc(T('wa.th_ergebnis', 'Ergebnis')) + '</th><th>' + esc(T('wa.th_vor', 'vorher')) + '</th><th>' + esc(T('wa.th_nach', 'nachher')) +
+                 '</th><th>' + esc(T('wa.th_fenster', 'ganzes Fenster')) + '</th></tr></thead>';
+      var zeilen = r.wahlen.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (w) {
+        return '<tr data-id="' + esc(w.id) + '"' + (w.id === auswahl ? ' class="on"' : '') + '><td>' + esc(w.date.slice(0, 4)) + ' · ' +
+               esc(typText(w.type)) + (w.kalenderBelegt ? '' : ' *') + '</td><td>' + esc(datumText(w.t0)) + '</td><td>' + esc(ergebnisText(w)) +
+               '</td><td>' + pz(w.vorlauf) + '</td><td>' + pz(w.nachlauf) + '</td><td>' + pz(w.fenster) + '</td></tr>';
+      }).join('');
+      $('tbl').innerHTML = kopf + '<tbody>' + zeilen + '</tbody>';
+      var teile = [];
+      if (r.wahlen.some(function (w) { return !w.kalenderBelegt; })) {
+        teile.push(T('wa.stern', '* Fenster beginnt vor 1971: Börsenkalender nicht geprüft, Handelstage = Kurszeilen der Reihe (vor 1953 mit Samstagen).'));
+      }
+      var ausg = r.ausgeschlossen.map(function (a) { return a.id.slice(-4) + ' (' + grund(a.grund) + ')'; });
+      if (ausg.length) teile.push(T('wa.ausg', 'Nicht im gewählten Fenster auswertbar:') + ' ' + ausg.join(', '));
+      $('ausg').textContent = teile.join(' ');
+    }
+
+    function stand(o) {
+      var meta = (ST.reihen || {})[o.reihe] || {};
+      var teile = [T('wa.stand', 'Datenstand: letzter Schlusskurs') + ' ' + datumText(meta.letzter_kurs) +
+                   ' (' + (meta.name || o.reihe) + ')',
+                   T('wa.kal_ab', 'Börsenkalender geprüft ab') + ' ' + datumText(ST.kalender_belegt_ab)];
+      teile.push(o.x === HAUPT_X && o.y === HAUPT_Y ? T('wa.haupt', 'Hauptfenster 20/20 (vorab festgelegt)')
+                                                    : T('wa.explo', 'Exploration — vorab festgelegt ist das Hauptfenster 20/20'));
+      if (SNAPSHOT) teile.unshift(T('wa.snap', 'Eingefrorener Stand') + ' ' + SNAPSHOT);
+      $('stand').textContent = teile.join(' · ');
+    }
+
+    function liveBox(r) {
+      var lv = r.live, box = $('live-box');
+      if (!lv) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      $('live-titel').textContent = typText(lv.id.indexOf('midterm') >= 0 ? 'midterm' : 'president') + ' ' + datumText(lv.date);
+      var txt = T('wa.live_t0', 'Referenzschluss t0') + ' ' + datumText(lv.t0) +
+                (lv.t0_projiziert ? ' (' + T('wa.live_proj', 'vorausberechnet aus dem Börsenkalender') + ')' : '') + '. ' +
+                T('wa.live_stand', 'Letzter Schlusskurs') + ' ' + datumText(lv.letzter_kurs) + '. ';
+      if (BASIS !== 'tx') txt += T('wa.live_hinweis', 'Die Live-Linie erscheint in der Ansicht „Start = 0 %“.');
+      else if (!lv.kurve) txt += T('wa.live_zukunft', 'Der Fensterbeginn liegt noch in der Zukunft — „Tage davor“ vergrößern.');
+      else txt += T('wa.live_ok', 'Die helle Linie zeigt den bisherigen Verlauf vor dieser Wahl, normiert auf den Fensterbeginn') + ' ' + datumText(lv.basisDatum) + '.';
+      $('live-sub').textContent = txt;
+    }
+
+    function rechne() {
+      if (!ST || !(SA.i18n && SA.i18n.bereit ? SA.i18n.bereit() : true)) return;
+      var o = optionen();
+      $('val-x').textContent = o.x; $('val-y').textContent = o.y;
+      var r = SA.wahlen.auswerten(ST, o);
+      if (!r.wahlen.length) fehler('wa.leer', 'Für diese Auswahl gibt es keine Wahl mit vollständigem Fenster.');
+      else { FEHLER = null; $('error-banner').style.display = 'none'; }
+      zeichne(r, o); kennzahlen(r, o); tabelle(r); liveBox(r); stand(o);
+    }
+
+    function setzeAnsicht(a) {
+      if (!a) return;
+      if (a.reihe) $('sel-reihe').value = a.reihe;
+      if (a.typ) $('sel-typ').value = a.typ;
+      if (a.x) $('rng-x').value = String(a.x);
+      if (a.y) $('rng-y').value = String(a.y);
+      $('sel-ab').value = a.abJahr ? String(a.abJahr) : '';
+      $('sel-wechsel').value = a.wechsel || 'alle';
+      BASIS = a.basis === 'tx' ? 'tx' : 't0';
+      $('btn-tx').classList[BASIS === 'tx' ? 'add' : 'remove']('on');
+      $('btn-t0').classList[BASIS === 't0' ? 'add' : 'remove']('on');
+    }
+
+    function binde() {
+      ['sel-reihe', 'sel-typ', 'sel-ab', 'sel-wechsel'].forEach(function (id) { $(id).addEventListener('change', function () { auswahl = null; rechne(); }); });
+      ['rng-x', 'rng-y'].forEach(function (id) { $(id).addEventListener('input', rechne); });
+      $('btn-t0').addEventListener('click', function () { BASIS = 't0'; $('btn-t0').classList.add('on'); $('btn-tx').classList.remove('on'); rechne(); });
+      $('btn-tx').addEventListener('click', function () { BASIS = 'tx'; $('btn-tx').classList.add('on'); $('btn-t0').classList.remove('on'); rechne(); });
+      $('btn-haupt').addEventListener('click', function () { $('rng-x').value = String(HAUPT_X); $('rng-y').value = String(HAUPT_Y); rechne(); });
+      $('tbl').addEventListener('click', function (ev) {
+        var tr = ev.target.closest ? ev.target.closest('tr[data-id]') : null;
+        if (!tr) return;
+        var id = tr.getAttribute('data-id');
+        auswahl = (auswahl === id) ? null : id;
+        rechne();
+      });
+      document.addEventListener('sa:i18n-bereit', function () {   // dynamische Texte nach dem Wörterbuch neu
+        if (FEHLER) fehler(FEHLER.k, FEHLER.d);
+        rechne();
+      });
+    }
+
+    function start() {
+      binde();
+      // ?snapshot=<id> lädt ausschliesslich das eingefrorene Paket — nie die aktuelle Datei (Plan R5-1)
+      var m = /[?&]snapshot(?:=([^&]*))?(?:&|$)/.exec(location.search || '');
+      var url = '/landing/data/wahlen_study.json';
+      if (m) {
+        var id = null;
+        try { id = decodeURIComponent(m[1] || ''); } catch (e) { id = null; }
+        if (!id || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(id)) { fehler('wa.snap_ungueltig', 'Ungültige Snapshot-Kennung.'); return; }
+        SNAPSHOT = id;
+        url = '/landing/data/wahlen_snapshots/' + id + '.json';
+      }
+      fetch(url, { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (d) {
+          if (SNAPSHOT && d.snapshot_id !== SNAPSHOT) throw new Error('snapshot');
+          ST = d; setzeAnsicht(d.ansicht); rechne();
+        })
+        .catch(function () {
+          if (SNAPSHOT) fehler('wa.snap_fehlt', 'Dieser eingefrorene Stand existiert nicht.');
+          else fehler('wa.fehler', 'Die Daten der Wahlstudie konnten nicht geladen werden.');
+        });
+    }
+    if (document.readyState !== 'loading') start(); else document.addEventListener('DOMContentLoaded', start);
+  })();
+  </script>
+</body>
+</html>

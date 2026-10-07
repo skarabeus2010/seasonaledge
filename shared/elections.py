@@ -57,6 +57,12 @@ def lade_wahlen() -> dict:
     return json.loads(WAHLEN_JSON.read_text(encoding="utf-8"))
 
 
+def kalender_belegt_ab(calendar_id: str = "NYSE") -> str:
+    """Datum, ab dem der Börsenkalender als belegt gilt (ISO)."""
+    doc = json.loads(AUSNAHMEN_JSON.read_text(encoding="utf-8"))
+    return doc["calendar_documented_from"][calendar_id]
+
+
 def lade_kalender(calendar_id: str = "NYSE") -> Callable[[date], Optional[bool]]:
     """Sitzungsfunktion: True = erwartete Sitzung, False = keine, None = Kalender unbelegt.
 
@@ -334,7 +340,10 @@ def aggregiere(st: dict, reihe: str, typ: str, x: int, y: int, basis: str = "t0"
         wahlen.append({"id": w["id"], "t0": r["pfad"]["t0"], "kurve": [100 * v / roh[b] for v in roh],
                        "nachlauf": nach, "vorlauf": 100 * (roh[x] / roh[0] - 1),
                        "fenster": 100 * (roh[-1] / roh[0] - 1),
-                       "basisDatum": _datum(r["pfad"], -x if basis == "tx" else 0, n)})
+                       "basisDatum": _datum(r["pfad"], -x if basis == "tx" else 0, n),
+                       # Fensterbeginn im belegten Kalender? Sonst nur Kurszeilenfolge (Codex 1b-2 R1)
+                       "kalenderBelegt": bool(st.get("kalender_belegt_ab")) and
+                                         (_datum(r["pfad"], -x, n) or "") >= st["kalender_belegt_ab"]})
         ks = [stueck(k.get("pfad")) for k in r.get("kontrollen", [])]
         if len(ks) == 2 and all(ks):
             kk = [[100 * v / k[b] for v in k] for k in ks]

@@ -281,6 +281,10 @@ def fall_baue_end_to_end():
     soll(live["reihen"]["^GSPC"]["pfad"].get("t0_projiziert") is True, "baue(): Midterm 2026 ohne Live-Pfad")
     w72 = next(w for w in st["wahlen"] if w["id"] == "us-president-1972")
     soll(w72["reihen"]["^GSPC"]["pfad"]["t0"] == "1972-11-06", "baue(): 1972 (Wahltag geschlossen) nicht am Montag verankert")
+    w00 = next(w for w in st["wahlen"] if w["id"] == "us-president-2000")
+    soll(w00.get("contested") is True and w00.get("result_decided") == "2000-12-12",
+         "baue(): 2000 ohne verspätetes Ergebnisdatum im Export")
+    soll(st.get("kalender_belegt_ab") == "1971-01-01", "baue(): kalender_belegt_ab fehlt im Export")
     w84 = next(w for w in st["wahlen"] if w["id"] == "us-president-1984")
     soll(w84["reihen"]["^GSPC"]["pfad"]["t0"] == "1984-11-06", "baue(): 1984 nicht am Wahltag verankert")
 
