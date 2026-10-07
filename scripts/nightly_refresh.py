@@ -533,6 +533,27 @@ def main():
         print(f"Landing-Chart Phase I: exception {e}", flush=True)
         _FEHLGESCHLAGEN.append("Landing-Chart Phase I")
 
+    # Phase J: Wahl-Ereignisstudie (/wahlen) — Kurse um US-Wahltermine + Live-Linie der
+    # nächsten Wahl. Läuft nach dem Kurs-Refresh, damit die letzte Session drin ist.
+    # Exit != 0 (z. B. Wahl ab 1971 ohne Pfad, fehlende Live-Linie) → Nightly rot.
+    try:
+        import subprocess as _spJ
+        app_logger.info("[phase-j] starte build_wahlen")
+        _resJ = _spJ.run(
+            [sys.executable, "scripts/build_wahlen.py"],
+            cwd=_project_dir, env=_KIND_UMGEBUNG, timeout=600,
+        )
+        if _resJ.returncode == 0:
+            print("Wahl-Studie: OK", flush=True)
+        else:
+            print(f"Wahl-Studie FAILED (exit {_resJ.returncode})", flush=True)
+            _FEHLGESCHLAGEN.append("Wahl-Studie")
+            app_logger.error(f"[phase-j] build_wahlen exit {_resJ.returncode}")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Wahl-Studie Phase J fehlgeschlagen: {e}")
+        print(f"Wahl-Studie Phase J: exception {e}", flush=True)
+        _FEHLGESCHLAGEN.append("Wahl-Studie Phase J")
+
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
         heartbeat()

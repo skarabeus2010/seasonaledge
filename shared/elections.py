@@ -252,3 +252,121 @@ def studie_fuer_reihe(wahl: dict, daten: list[str], closes: list[float], ist_sit
         kontrollen.append(eintrag)
     aus["kontrollen"] = kontrollen
     return aus
+
+
+# ── Aggregation (Zwilling von landing/js/wahlen-compute.js) ─────────────────
+
+def _quantil(werte: list[float], q: float) -> Optional[float]:
+    """Linear interpoliert wie numpy (method='linear')."""
+    a = sorted(werte)
+    if not a:
+        return None
+    pos = (len(a) - 1) * q
+    lo, hi = int(pos // 1), -int(-pos // 1)
+    return a[lo] + (a[hi] - a[lo]) * (pos - lo)
+
+
+def _mittel(werte: list[float]) -> Optional[float]:
+    return sum(werte) / len(werte) if werte else None
+
+
+def _wechsel(w: dict) -> Optional[bool]:
+    if w["type"] == "president":
+        return w.get("machtwechsel") if isinstance(w.get("machtwechsel"), bool) else None
+    if w["type"] == "midterm":
+        if not w.get("house_before") or not w.get("house_after"):
+            return None
+        return w["house_before"] != w["house_after"]
+    return None
+
+
+def _datum(pfad: dict, off: int, n: int) -> Optional[str]:
+    t = (pfad.get("tage") or [None] * (2 * n + 1))[n + off]
+    if t is None:
+        return None
+    return (date.fromisoformat(pfad["t0"]) + timedelta(days=t)).isoformat()
+
+
+def _grund_im_fenster(pfad: Optional[dict], x: int, y: int) -> str:
+    if not pfad:
+        return "kein_pfad"
+    for k in range(-x, y + 1):
+        g = (pfad.get("grund") or {}).get(str(k))
+        if g:
+            return g
+    return "unvollstaendig"
+
+
+def aggregiere(st: dict, reihe: str, typ: str, x: int, y: int, basis: str = "t0",
+               ab_jahr: Optional[int] = None, wechsel: str = "alle") -> dict:
+    """Referenzrechnung für den Browser: dieselben Regeln wie wahlen-compute.js::auswerten,
+    einschliesslich Einzelwerte, Ausschlussgründe und Live-Linie (Codex R1, Phase 1b-1)."""
+    n = st.get("fenster", FENSTER)
+    b = 0 if basis == "tx" else x
+    laenge = x + y + 1
+    wahlen, tripel, ausgeschlossen, live = [], [], [], None
+
+    def stueck(p):
+        if not p:
+            return None
+        w_ = p["c"][n - x: n + y + 1]
+        return None if len(w_) != laenge or any(v is None for v in w_) else w_
+
+    for w in st["wahlen"]:
+        if typ != "alle" and w["type"] != typ:
+            continue
+        if ab_jahr and int(w["date"][:4]) < ab_jahr:
+            continue
+        if wechsel != "alle":
+            wv = _wechsel(w)
+            if wv is None or wv != (wechsel == "ja"):
+                continue
+        r = w["reihen"].get(reihe, {})
+        if w["status"] != "held":
+            if r.get("pfad") and (live is None or w["date"] < live[0]["date"]):
+                live = (w, r["pfad"])
+            continue
+        roh = stueck(r.get("pfad"))
+        if roh is None:
+            ausgeschlossen.append({"id": w["id"], "grund": r.get("ausgeschlossen") or _grund_im_fenster(r.get("pfad"), x, y)})
+            continue
+        nach = 100 * (roh[-1] / roh[x] - 1)
+        wahlen.append({"id": w["id"], "t0": r["pfad"]["t0"], "kurve": [100 * v / roh[b] for v in roh],
+                       "nachlauf": nach, "vorlauf": 100 * (roh[x] / roh[0] - 1),
+                       "fenster": 100 * (roh[-1] / roh[0] - 1),
+                       "basisDatum": _datum(r["pfad"], -x if basis == "tx" else 0, n)})
+        ks = [stueck(k.get("pfad")) for k in r.get("kontrollen", [])]
+        if len(ks) == 2 and all(ks):
+            kk = [[100 * v / k[b] for v in k] for k in ks]
+            tripel.append({"ref": [(a + c) / 2 for a, c in zip(*kk)],
+                           "ref_nach": sum(100 * (k[-1] / k[x] - 1) for k in ks) / 2, "nach": nach})
+    kurven = {"mittel": [], "median": [], "p25": [], "p75": [], "referenz": []}
+    for i in range(laenge):
+        sp = [e["kurve"][i] for e in wahlen]
+        kurven["mittel"].append(_mittel(sp))
+        kurven["median"].append(_quantil(sp, 0.5))
+        kurven["p25"].append(_quantil(sp, 0.25))
+        kurven["p75"].append(_quantil(sp, 0.75))
+        kurven["referenz"].append(_mittel([t["ref"][i] for t in tripel]))
+    nl = [e["nachlauf"] for e in wahlen]
+    lv = None
+    if live:
+        w, p = live
+        meta = st.get("reihen", {}).get(reihe, {})
+        lv = {"id": w["id"], "date": w["date"], "t0": p["t0"], "t0_projiziert": bool(p.get("t0_projiziert")),
+              "stichtag": p.get("stichtag") or st.get("letzte_session"),
+              "letzter_kurs": p.get("letzter_kurs") or meta.get("letzter_kurs"),
+              "basisDatum": _datum(p, -x, n), "kurve": None}
+        basiswert = p["c"][n - x]
+        if basiswert is not None:
+            lv["kurve"] = [None if p["c"][n + k] is None else 100 * p["c"][n + k] / basiswert
+                           for k in range(-x, y + 1)]
+    return {"kurven": kurven, "einzel": wahlen, "ausgeschlossen": ausgeschlossen, "live": lv,
+            "kennzahlen": {
+        "n": len(wahlen), "nachlauf_mittel": _mittel(nl), "nachlauf_median": _quantil(nl, 0.5),
+        "vorlauf_mittel": _mittel([e["vorlauf"] for e in wahlen]),
+        "fenster_mittel": _mittel([e["fenster"] for e in wahlen]),
+        "trefferquote": (sum(v > 0 for v in nl) / len(nl)) if nl else None,
+        "n_tripel": len(tripel),
+        "referenz_nachlauf_mittel": _mittel([t["ref_nach"] for t in tripel]),
+        "differenz_mittel": _mittel([t["nach"] - t["ref_nach"] for t in tripel])}}
