@@ -94,6 +94,8 @@ Drei Denkansätze aus der Midterm-Analyse:
 3. Öffne den Expander **"Drawdown nach Präsidentenzyklus"**
 4. Vergleiche die 4 Zyklusjahre im Chart — Midterm (rot) vs. Pre-Election (grün)
 
+Die Wochen direkt um den Wahltag behandelt der Artikel [Midterm-Wahl und Börse](/blog/midterm-wahltag-boerse/), die Daten dazu stehen auf [Wahlen und Börse](/wahlen).
+
 ## Fazit
 
 Midterm-Jahre sind historisch die riskanteste Phase im Präsidentenzyklus. 2026 steht noch am Anfang — der typische Drawdown kommt erst in der zweiten Jahreshälfte. Nutze die saisonale Analyse auf [seasonalpha.ai](https://seasonalpha.ai), um den Verlauf live zu verfolgen.

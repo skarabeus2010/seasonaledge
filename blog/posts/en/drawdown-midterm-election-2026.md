@@ -95,6 +95,8 @@ Three ways of thinking emerging from the midterm analysis:
 3. Open the **"Drawdown by Presidential Cycle"** section
 4. Compare the 4 cycle years in the chart — midterm (red) vs. pre-election (green)
 
+The weeks right around election day are covered in [Midterm Elections and the Stock Market](/en/blog/midterm-election-day-stock-market/), with the data on the [Elections and Markets](/en/elections) page.
+
 ## Conclusion
 
 Midterm years are historically the riskiest phase in the presidential cycle. 2026 is still early — the typical drawdown does not arrive until the second half of the year. Use the seasonal analysis on [seasonalpha.ai](https://seasonalpha.ai) to track the development in real time.

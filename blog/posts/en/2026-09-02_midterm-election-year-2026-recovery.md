@@ -114,6 +114,8 @@ The cycle effect is a statistical average across decades, not a signal for any s
 3. Scroll to **Drawdown & Risk** to overlay the current 2026 path on the historical midterm average.
 4. The trading-day header in the top right shows the current cycle position ("MidTerm" for 2026).
 
+How the S&P 500 behaves in the weeks right around election day on November 3 is covered in [Midterm Elections and the Stock Market](/en/blog/midterm-election-day-stock-market/) and on the [Elections and Markets](/en/elections) page.
+
 ## Conclusion
 
 The **midterm election year stock market** in 2026 follows one of the most robust patterns in the presidential cycle: the weakest return (+0.9% avg) and the deepest drawdown (–18% avg) — followed by a recovery that was positive in 14 of 14 cases in our data (+31% avg from the low). 2026 already has its spring low behind it and is running milder than average; the seasonally weakest window of September/October still lies ahead. Track it live with the Cycle filter on [seasonalpha.ai](https://seasonalpha.ai).

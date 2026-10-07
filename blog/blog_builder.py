@@ -266,6 +266,14 @@ def _heading_id(text: str, gesehene: set) -> tuple[str, str]:
     return text, kennung
 
 
+def _bild_src(src: str, post_slug: str, lang: str) -> str:
+    """Relativer Bildpfad → Adresse des Bilderordners DIESES Artikels. EN-Artikel liegen unter
+    /en/blog/<slug>/ — mit /blog/<en-slug>/ gab es eine 404, sobald der EN-Slug vom DE-Slug abweicht."""
+    if not post_slug:
+        return src
+    return f"{'/en' if lang == 'en' else ''}/blog/{post_slug}/images/{src}"
+
+
 def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str:
     """Einfacher Markdown ->HTML Converter (kein externes Package noetig)."""
     # HTML-Kommentare entfernen (<!-- ... -->, auch mehrzeilig)
@@ -364,7 +372,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
         if img_match:
             alt, src = img_match.group(1), img_match.group(2)
             if not src.startswith(("http://", "https://", "/")):
-                src = f"/blog/{post_slug}/images/{src}" if post_slug else src
+                src = _bild_src(src, post_slug, lang)
             html_parts.append(
                 f'<figure><img src="{src}" alt="{alt}" loading="lazy">'
                 f'{"<figcaption>" + alt + "</figcaption>" if alt else ""}'
@@ -377,12 +385,12 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
         if stripped.startswith("### "):
             roh, kennung = _heading_id(stripped[4:], gesehene_ids)
             html_parts.append(
-                f'<h3 id="{kennung}">{_inline(roh, post_slug)}</h3>')
+                f'<h3 id="{kennung}">{_inline(roh, post_slug, lang)}</h3>')
             continue
         if stripped.startswith("## "):
             roh, kennung = _heading_id(stripped[3:], gesehene_ids)
             html_parts.append(
-                f'<h2 id="{kennung}">{_inline(roh, post_slug)}</h2>')
+                f'<h2 id="{kennung}">{_inline(roh, post_slug, lang)}</h2>')
             continue
 
         # Blockquote
@@ -390,7 +398,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
             if not in_blockquote:
                 html_parts.append("<blockquote>")
                 in_blockquote = True
-            html_parts.append(f"<p>{_inline(stripped[2:], post_slug)}</p>")
+            html_parts.append(f"<p>{_inline(stripped[2:], post_slug, lang)}</p>")
             continue
 
         # Unordered list
@@ -398,7 +406,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
             if not in_list:
                 html_parts.append("<ul>")
                 in_list = True
-            html_parts.append(f"<li>{_inline(stripped[2:], post_slug)}</li>")
+            html_parts.append(f"<li>{_inline(stripped[2:], post_slug, lang)}</li>")
             continue
 
         # Ordered list
@@ -407,7 +415,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
             if not in_ol:
                 html_parts.append("<ol>")
                 in_ol = True
-            html_parts.append(f"<li>{_inline(ol_match.group(1), post_slug)}</li>")
+            html_parts.append(f"<li>{_inline(ol_match.group(1), post_slug, lang)}</li>")
             continue
 
         # Chart tags
@@ -426,7 +434,7 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
             continue
 
         # Regular paragraph
-        html_parts.append(f"<p>{_inline(stripped, post_slug)}</p>")
+        html_parts.append(f"<p>{_inline(stripped, post_slug, lang)}</p>")
 
     if in_list:
         html_parts.append("</ul>")
@@ -438,14 +446,14 @@ def markdown_to_html(md_text: str, post_slug: str = "", lang: str = "de") -> str
     return "\n".join(html_parts)
 
 
-def _inline(text: str, post_slug: str = "") -> str:
+def _inline(text: str, post_slug: str = "", lang: str = "de") -> str:
     """Inline-Markdown: **bold**, *italic*, `code`, [link](url), ![img](src)."""
     # Bilder ZUERST (vor Links, da ![...] sonst als Link gematcht wird)
     def _img_replace(m):
         alt, src = m.group(1), m.group(2)
         # Relative Pfade → /blog/{slug}/images/...
         if not src.startswith(("http://", "https://", "/")):
-            src = f"/blog/{post_slug}/images/{src}" if post_slug else src
+            src = _bild_src(src, post_slug, lang)
         return f'<img src="{src}" alt="{alt}" loading="lazy">'
     text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", _img_replace, text)
     # Standard-Inline

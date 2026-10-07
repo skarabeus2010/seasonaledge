@@ -12,7 +12,7 @@ späteren Abschnitte (10–14) vor den früheren.
 | 1a | Rechenkern `shared/elections.py` + `scripts/build_wahlen.py` → `landing/data/wahlen_study.json` | **erledigt 2026-10-06**, Probelauf auf dem Server ohne Schreiben, Codex-Freigabe nach 3 Code-Runden |
 | 1b-1 | Browser-Rechenkern `landing/js/wahlen-compute.js` + Python-Zwilling `aggregiere`, Nightly-Phase J | **erledigt 2026-10-07**, Codex-Freigabe nach 2 Runden |
 | 1b-2 | Seite `/wahlen` (DE+EN) unter „Events": Streuband, Mittel/Median, Vergleichslinie, Live-Linie, Tabelle, Snapshot-Ansicht | **erledigt 2026-10-07**, Codex-Freigabe nach 3 Runden |
-| 1c | Blogartikel zur Midterm 2026 mit eingefrorenem Snapshot (Hauptfenster 20/20) | offen |
+| 1c | Blogartikel zur Midterm 2026 (DE+EN) mit eingefrorenem Snapshot `midterm-2026-10` (Hauptfenster 20/20) + EN-Adresse `/en/elections` | **erledigt 2026-10-07**, Codex-Freigabe Adresse nach 3, Artikel nach 3 Runden |
 | 2 | Deutschland (Bundestag, DAX-Reihe vorher prüfen) | offen |
 | 3 | Backtest-Engine-Ereignistyp `election` (Long), Kalender, Dashboard-Hinweis | offen |
 | M | Angleichung der bestehenden Wahlstrategien (Midterm, UECS, KTI, Signalvorschau) | offen, eigener Plan |
@@ -73,6 +73,26 @@ späteren Abschnitte (10–14) vor den früheren.
   hätte deutsche Zahlen gezeigt, weil `SA.i18n.current` nicht existiert; „alle Wahlen" nahm die Live-Wahl in
   Dateireihenfolge (2028 vor 2026).
 
+## Blogartikel und Snapshot (Phase 1c)
+
+- **Artikel:** `blog/posts/2026-10-07_midterm-wahltag-boerse.md` / `blog/posts/en/2026-10-07_midterm-election-day-stock-market.md`,
+  Bilder `blog/posts/images/wahlen-midterm-2026/` aus `scripts/research/render_wahlen_charts.py`. Rücklinks aus den
+  beiden Midterm-Jahr-Artikeln (DE+EN).
+- **Snapshot** `landing/data/wahlen_snapshots/midterm-2026-10.json` (Kurse bis 06.10.2026, Code d6d4999), erzeugt mit
+  `scripts/wahlen_snapshot.py` auf dem Server, **unveränderlich und committet** (anders als `wahlen_study.json`).
+  Neuer Artikel = neue Kennung, nie überschreiben.
+- **Jede Zahl kommt aus `scripts/research/wahlen_fakten.py`**; `scripts/verify_wahlen_blog.py` (+ `--mutationen`, 31/31)
+  prüft den sichtbaren Text: jede Zahl mit %/Pp muss ein typisierter Faktenblatt-Wert sein (Vorzeichen, Rundung,
+  Dezimaltrenner), Pflichtaussagen, Fallzahlen, Snapshot-Links, Bildpfade; dazu Snapshot-Kennzahlen = Rechenkern.
+- **Zwei Stichproben, nie gemischt:** „Ø nachher" läuft über alle Wahlen (31), der Vergleich „ohne Wahl" nur über die
+  vollständigen Tripel (30). Wer +0,56 % und +0,39 % nebeneinander stellt, liest +0,17 Pp — der gepaarte Abstand ist
+  +0,33 Pp, das Wahlmittel derselben 30 Tripel +0,72 % (Codex-Blog R1, Hoch).
+- **EN-Adresse:** `/en/elections` statt `/en/wahlen` über `_EN_SLUGS` in `landing/js/i18n.js` (eine Quelle für Browser
+  und Python: `shared/seo_basis.en_slug/en_url/pruefe_en_slugs`); `/en/wahlen` → 301 mit Query. Regressionstest
+  `scripts/verify_en_slugs.py`.
+- **Nebenbei behoben:** relative Bilder in EN-Artikeln zeigten auf `/blog/<en-slug>/images/` (404, sobald EN- und
+  DE-Slug abweichen) → `blog_builder.py::_bild_src`.
+
 ## Wichtige Definitionen
 
 - **Bezugsschluss t0** = letzter gültiger Börsenschluss am oder vor dem Wahltermin (US bei geschlossenem Wahltag
@@ -87,6 +107,9 @@ späteren Abschnitte (10–14) vor den früheren.
 
 ## Offen
 
+- **Seite `/wahlen` mischt dieselben Stichproben** wie der erste Artikelentwurf: KPI „Ø nachher" (alle Wahlen)
+  steht neben „Ø ohne Wahl" und „Differenz" (Tripel). Gepaartes Wahlmittel in `aggregiere` (JS+Python-Zwilling)
+  ergänzen und als eigene KPI zeigen; Zwillingstest + Mutationen erweitern.
 - Samstagshandel bis 1952 und Schließung 31.07.–27.11.1914 sind nicht als Kalender-Einträge erfasst — nötig ist
   das erst, wenn der Kalender vor 1971 als belegt gelten soll (heute: Kurszeilenfolge + 4-Tage-Regel).
 - Quellen für `schedule_known_from` (US-Gesetze) sind gesetzt, aber nicht abgerufen (`checked: null`).
@@ -109,3 +132,13 @@ späteren Abschnitte (10–14) vor den früheren.
 - **Shell-Heredocs deuten Backslashes um** (`\1` wurde wieder zum Steuerzeichen) — Ersetzungen mit Rückverweisen
   über das Edit-Werkzeug oder `\g<1>` schreiben und die geschriebene Datei prüfen.
 
+
+## Lessons (2026-10-07)
+
+- **Zwei Mittelwerte auf verschiedenen Stichproben nebeneinander sind eine Subtraktionsfalle** — der Leser rechnet die
+  Differenz selbst aus und bekommt die falsche. Fallzahl an jede Zahl, gepaarte Werte gepaart nennen.
+- **Ein Zahlenwächter, der Teilstrings sucht, prüft nichts:** Vorzeichen, Rundung, Einheit und Fundort fielen durch;
+  dazu ließ er Fallzahlen als Renditen gelten. Erst eine typisierte Prüfung JEDER sichtbaren Zahl hielt Codex stand
+  (zwei Runden, sechs Gegenbeispiele).
+- **Eine Mutation ohne Wirkung prüft nichts:** die Kursreihen-Mutation skalierte das ganze Fenster gleichmäßig — alle
+  Renditen blieben gleich.
