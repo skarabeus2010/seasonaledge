@@ -199,7 +199,7 @@ def sitemap_eintraege() -> list[dict]:
     - lastmod = letzte wesentliche Aenderung, sonst weggelassen.
     Wird auch vom Waechter (scripts/verify_seo_html.py) gelesen.
     """
-    from shared.seo_basis import en_seiten_meta, blog_artikel, blog_hreflang_ziele
+    from shared.seo_basis import en_seiten_meta, blog_artikel, blog_hreflang_ziele, en_url as _en_url
 
     en_seiten = set(en_seiten_meta())
     eintraege: list[dict] = []
@@ -238,7 +238,7 @@ def sitemap_eintraege() -> list[dict]:
             continue
         prio, freq = PRIORITY_OVERRIDES.get(slug, ("0.85", "weekly"))
         de_url = f"{BASE_URL}/{slug}"
-        en_url = f"{BASE_URL}/en/{slug}" if slug in en_seiten else None
+        en_url = _en_url(slug) if slug in en_seiten else None
         datum = _git_datum(html_datei)
         alt = paar(de_url, en_url)
         neu(de_url, datum, freq, prio, alt)

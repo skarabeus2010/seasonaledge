@@ -44,6 +44,33 @@ SA.i18n = (function() {
     return Object.prototype.hasOwnProperty.call(_EN_PAGE_META, p || '/');
   }
 
+  // Abweichende EN-Adressen: DE-Pfad -> EN-Pfad (ohne /en). Einzige Quelle; build_en.py,
+  // Sitemap und Wächter lesen dieselbe Liste über shared/seo_basis.py::en_slugs().
+  var _EN_SLUGS = {
+    '/wahlen': '/elections'
+  };
+
+  // DE-Href (mit Query/Fragment) -> EN-Href. Abschliessender Schrägstrich wird entfernt:
+  // nginx bildet /en/x/ auf /landing/en/x/.html ab (404) — Codex, EN-Slugs R1.
+  function _enHref(href) {
+    var m = String(href).match(/^([^?#]*)(.*)$/);
+    var p = m[1], rest = m[2];
+    if (p === '/' || p === '') return '/en/' + rest;
+    var norm = p.charAt(p.length - 1) === '/' ? p.slice(0, -1) : p;
+    var ziel = Object.prototype.hasOwnProperty.call(_EN_SLUGS, norm) ? _EN_SLUGS[norm] : norm;
+    return '/en' + ziel + rest;
+  }
+
+  // EN-Pfad -> DE-Pfad (Umkehrung von _EN_SLUGS)
+  function _deAusEn(enPath) {
+    var p = (enPath || '').replace(/^[/]en/, '') || '/';
+    var norm = (p.length > 1 && p.charAt(p.length - 1) === '/') ? p.slice(0, -1) : p;
+    for (var k in _EN_SLUGS) {
+      if (Object.prototype.hasOwnProperty.call(_EN_SLUGS, k) && _EN_SLUGS[k] === norm) return k;
+    }
+    return p;
+  }
+
   // Ziel des Sprachwechsels: bevorzugt das hreflang-Gegenstueck aus dem Seitenkopf
   // (deckt auch Blog-Artikel mit abweichenden Slugs ab), sonst die EN-Seitenliste.
   // null = kein Gegenstueck -> kein Wechsel auf eine erfundene URL.
@@ -56,10 +83,10 @@ SA.i18n = (function() {
     }
     if (lang === 'en') {
       if (_isEN) return null;
-      return _hatEN(path) ? '/en' + (path === '/' ? '/' : path) : null;
+      return _hatEN(path) ? _enHref(path) : null;
     }
     if (!_isEN) return null;
-    var dePfad = path.replace(/^[/]en/, '') || '/';
+    var dePfad = _deAusEn(path);
     return _hatEN(dePfad) ? dePfad : null;   // nur bekannte Seitenpaare, sonst kein Wechsel
   }
 
@@ -67,7 +94,7 @@ SA.i18n = (function() {
   // z. B. Scanner/Watchlist -> /dashboard?t=...). Ohne EN-Fassung bleibt er deutsch.
   function pfad(dePfad) {
     if (!_isEN || !dePfad || dePfad.charAt(0) !== '/' || !_hatEN(dePfad)) return dePfad;
-    return '/en' + (dePfad === '/' ? '/' : dePfad);
+    return _enHref(dePfad);
   }
 
   // Bump this version whenever en.json gains new keys — busts sessionStorage cache
@@ -137,7 +164,7 @@ SA.i18n = (function() {
     document.querySelectorAll('a[href]').forEach(function(a) {
       var href = a.getAttribute('href');
       if (!href || href.charAt(0) !== '/' || href.indexOf('/en/') === 0) return;
-      if (_hatEN(href)) a.setAttribute('href', '/en' + (href === '/' ? '/' : href));
+      if (_hatEN(href)) a.setAttribute('href', _enHref(href));
     });
   }
 
@@ -162,9 +189,9 @@ SA.i18n = (function() {
     // Vom Build gebackene Sprachpaare sind massgeblich (build_en.py / Blog-Builder
     // kennen die echten Gegenstuecke); nicht ueberschreiben (Codex, Phase 1b R1).
     if (document.querySelectorAll('link[hreflang]').length) return;
-    if (!_hatEN((window.location.pathname.replace(/^[/]en/, '') || '/'))) return;
+    if (!_hatEN(_deAusEn(window.location.pathname))) return;
     var path = window.location.pathname;
-    var dePath = path.replace(/^\/en/, '') || '/';
+    var dePath = _deAusEn(path);
 
     document.querySelectorAll('link[hreflang]').forEach(function(l) { l.remove(); });
 
@@ -343,7 +370,7 @@ SA.i18n = (function() {
 
   function _updatePageTitle() {
     if (!_isEN) return;
-    var path = window.location.pathname.replace(/^\/en/, '') || '/';
+    var path = _deAusEn(window.location.pathname);
     if (path !== '/' && path.slice(-1) === '/') path = path.slice(0, -1);
     var meta = _EN_PAGE_META[path];
     if (!meta) return;
@@ -447,6 +474,7 @@ SA.i18n = (function() {
     bereit: function() { return !_isEN || _bereit; },
     switchTo: switchTo,
     pfad: pfad,
+    enHref: _enHref,
     _onComponentLoaded: _onComponentLoaded,
     _applyDOM: _applyDOM,
     _applyNavLinks: _applyNavLinks,

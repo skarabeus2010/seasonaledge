@@ -143,7 +143,7 @@
       var navTarget = step.navigateAfter.url;
       // Prepend /en prefix for EN pages (skip if URL already has /en or is absolute)
       if (_isEN() && navTarget.charAt(0) === '/' && navTarget.indexOf('/en/') !== 0) {
-        navTarget = '/en' + navTarget;
+        navTarget = (window.SA && SA.i18n && SA.i18n.enHref) ? SA.i18n.enHref(navTarget) : '/en' + navTarget;
       }
       driverStep.popover.onNextClick = (function(target, stepIdx) {
         return function() {

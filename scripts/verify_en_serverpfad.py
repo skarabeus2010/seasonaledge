@@ -62,7 +62,8 @@ def baue(code: Path, ziel: Path) -> dict[str, str]:
 def pruefe(ziel: Path) -> list[str]:
     fehler = []
     for slug in en_seiten_meta():
-        en = ziel / "landing" / "en" / ("index.html" if slug == "index" else f"{slug}.html")
+        from shared.seo_basis import en_slug
+        en = ziel / "landing" / "en" / f"{en_slug(slug)}.html"
         de = ziel / "landing" / ("index.html" if slug == "index" else f"pages/{slug}.html")
         if not en.exists():
             fehler.append(f"{slug}: EN-Seite nicht gebaut")

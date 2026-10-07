@@ -114,8 +114,9 @@ def load_en_page_meta() -> dict:
 # ---------------------------------------------------------------- SEO head
 def build_en_head(slug: str, title: str, desc: str, og_type: str,
                   robots: str = STANDARD_ROBOTS) -> str:
+    from shared.seo_basis import en_url as _en_url
     de_url = f"{BASE_URL}/{slug}"
-    en_url = f"{BASE_URL}/en/{slug}"
+    en_url = _en_url(slug)
     short  = re.sub(r"\s*[|—-]\s*SeasonAlpha\s*$", "", title).strip() or title
 
     webpage = {
@@ -484,7 +485,10 @@ def rewrite_body_links(html: str) -> str:
     if idx < 0:
         return html
     head, body = html[:idx], html[idx:]
-    en_pfade = {"/" if slug == "index" else f"/{slug}" for slug in load_en_page_meta()}
+    from shared.seo_basis import en_slug
+    # DE-Pfad -> EN-Pfad (ohne /en); abweichende EN-Adressen aus _EN_SLUGS (z. B. /wahlen -> /elections)
+    en_pfade = {("/" if s == "index" else f"/{s}"): ("/" if s == "index" else f"/{en_slug(s)}")
+                for s in load_en_page_meta()}
 
     def repl(m):
         href = m.group(1)
@@ -495,7 +499,9 @@ def rewrite_body_links(html: str) -> str:
             pfad = pfad[:-1]
         if pfad not in en_pfade:
             return m.group(0)
-        return f'href="/en{href}"'
+        # Query/Fragment erhalten, abschliessenden Schrägstrich verwerfen (/en/x/ wäre 404)
+        rest = re.match(r"[^?#]*(.*)", href).group(1)
+        return f'href="/en{en_pfade[pfad]}{rest}"'
 
     return head + HREF_RE.sub(repl, body)
 
@@ -509,10 +515,9 @@ def build_page(slug: str, title: str, desc: str, en: dict, write: bool):
     html = src.read_text(encoding="utf-8")
     og_type = _DE_PAGE_META.get(f"{slug}.html", {}).get("type", "website")
 
-    if slug == "index":
-        en_url, de_url = f"{BASE_URL}/en/", f"{BASE_URL}/"
-    else:
-        en_url, de_url = f"{BASE_URL}/en/{slug}", f"{BASE_URL}/{slug}"
+    from shared.seo_basis import en_url as _en_url, en_slug
+    en_url = _en_url(slug)
+    de_url = f"{BASE_URL}/" if slug == "index" else f"{BASE_URL}/{slug}"
 
     html = re.sub(r'<html\s+lang="de"', '<html lang="en"', html, count=1)
     if slug == "index":
@@ -541,7 +546,7 @@ def build_page(slug: str, title: str, desc: str, en: dict, write: bool):
 
     if write:
         OUT.mkdir(parents=True, exist_ok=True)
-        out = OUT / ("index.html" if slug == "index" else f"{slug}.html")
+        out = OUT / f"{en_slug(slug)}.html"
         out.write_text(html, encoding="utf-8")
         return f"[WRITE] {slug}: {sp.baked} Strings gebacken -> {out}{note}"
     return f"[DRY]   {slug}: {sp.baked} Strings (head={'ok' if head_ok else 'FAIL'}){note}"
@@ -558,6 +563,10 @@ def main():
     print(f"=== build_en.py ({'WRITE' if args.write else 'DRY-RUN'}) | "
           f"{len(meta)} Pages bekannt | {len(en)} en.json-Keys ===")
 
+    from shared.seo_basis import pruefe_en_slugs
+    konflikte = pruefe_en_slugs(meta)
+    if konflikte:
+        raise SystemExit("EN-Adressen nicht eindeutig: " + "; ".join(konflikte))
     slugs = [args.page] if args.page else sorted(meta.keys())
     for slug in slugs:
         if slug not in meta:
@@ -571,7 +580,8 @@ def main():
     # auf dem Server, verlinkte /en/index-effekt (existiert nicht) und liess den
     # Deploy am Wächter scheitern (2026-09-30). Nur beim Vollbau, nie mit --page.
     if args.write and not args.page and OUT.exists():
-        soll = {"index.html" if s == "index" else f"{s}.html" for s in meta}
+        from shared.seo_basis import en_slug
+        soll = {f"{en_slug(s)}.html" for s in meta}
         for datei in sorted(OUT.glob("*.html")):
             if datei.name not in soll:
                 datei.unlink()

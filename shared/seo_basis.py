@@ -216,6 +216,57 @@ def en_seiten_meta() -> dict[str, tuple[str, str]]:
     return aus
 
 
+def en_slugs() -> dict[str, str]:
+    """`_EN_SLUGS` aus landing/js/i18n.js: {de_slug: en_slug} für Seiten, deren EN-Adresse anders
+    heisst (z. B. 'wahlen' -> 'elections'). Einzige Quelle; i18n.js nutzt dieselbe Liste im Browser."""
+    txt = I18N_JS.read_text(encoding="utf-8")
+    block = re.search(r"_EN_SLUGS\s*=\s*\{(.*?)\};", txt, re.S)
+    if not block:
+        return {}
+    paare = re.findall(r"'/([a-z0-9-]+)'\s*:\s*'/([a-z0-9-]+)'", block.group(1))
+    return dict(paare)
+
+
+def landing_de_slugs() -> set[str]:
+    """Alle DE-Seiten des Frontends (landing/pages/*.html und landing/*.html) als Slugs."""
+    landing = I18N_JS.parent.parent
+    return {p.stem for p in [*landing.glob("pages/*.html"), *landing.glob("*.html")]}
+
+
+def pruefe_en_slugs(seiten, alle_de_slugs=None) -> list[str]:
+    """Jede EN-Adresse darf nur EINER Seite gehören (Codex, EN-Slugs R1): sonst schreiben zwei
+    Seiten dieselbe Datei, und der Browser übersetzt die EN-Adresse auf die falsche DE-Seite.
+    `seiten` = DE-Slugs mit EN-Fassung (en_seiten_meta()); `alle_de_slugs` = weitere DE-Seiten ohne
+    EN-Fassung (deren Adresse /en/<slug> per Umleitung belegt sein kann). Liefert Fehlertexte."""
+    f, belegt = [], {}
+    abb = en_slugs()
+    for de in abb:
+        if de not in seiten:
+            f.append(f"_EN_SLUGS: '{de}' hat keinen _EN_PAGE_META-Eintrag")
+    alle_de = set(seiten) | set(landing_de_slugs() if alle_de_slugs is None else alle_de_slugs)
+    for de, en in abb.items():
+        # Ein EN-Ziel, das wie eine andere DE-Seite heisst, kollidiert mit deren /en/<slug>-Umleitung
+        # bzw. EN-Fassung — unabhängig davon, ob jene Seite selbst eine eigene EN-Adresse hat (Codex R2).
+        if en != de and en in alle_de:
+            f.append(f"_EN_SLUGS: EN-Ziel '/en/{en}' von '{de}' ist zugleich DE-Slug einer anderen Seite")
+    for de in seiten:
+        ziel = "index" if de == "index" else abb.get(de, de)
+        if ziel in belegt:
+            f.append(f"EN-Adresse /en/{ziel} doppelt belegt: '{belegt[ziel]}' und '{de}'")
+        belegt[ziel] = de
+    return f
+
+
+def en_slug(slug: str) -> str:
+    """EN-Slug zu einem DE-Slug (gleich, wenn keine eigene EN-Adresse festgelegt ist)."""
+    return "index" if slug == "index" else en_slugs().get(slug, slug)
+
+
+def en_url(slug: str) -> str:
+    """Absolute EN-Adresse einer Landing-Seite."""
+    return f"{BASE_URL}/en/" if slug == "index" else f"{BASE_URL}/en/{en_slug(slug)}"
+
+
 # ── Google Fonts im <head> ─────────────────────────────────────────────
 # Strukturell per HTMLParser (Codex R2/R3): Attribute mit/ohne Anführungszeichen,
 # Kommentare zählen nicht (sind keine Tags), disabled-Links sind unwirksam.

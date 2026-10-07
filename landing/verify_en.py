@@ -43,6 +43,8 @@ import sys, re, json, html, argparse
 from pathlib import Path
 
 LANDING = Path(__file__).resolve().parent
+if str(LANDING.parent) not in sys.path:
+    sys.path.insert(0, str(LANDING.parent))   # für shared.seo_basis (EN-Slugs)
 PAGES   = LANDING / "pages"
 I18N    = LANDING / "i18n"
 I18N_JS = LANDING / "js" / "i18n.js"
@@ -264,7 +266,8 @@ def phase_b(rep: Report, pages: dict, en: dict, de: dict, build_dir: Path):
         return
 
     for slug, src in sorted(pages.items()):
-        out = build_dir / ("index.html" if slug == "index" else f"{slug}.html")
+        from shared.seo_basis import en_slug
+        out = build_dir / f"{en_slug(slug)}.html"
         if not out.exists():
             rep.failed(f"B1  EN-Datei fehlt: {out}")
             continue

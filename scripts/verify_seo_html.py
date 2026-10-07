@@ -143,7 +143,8 @@ def pflicht_artefakte(sitemap_urls: list[str]) -> dict[Path, str]:
             pflicht[basis / kat / "index.html"] = f"Blog-Übersicht {sprache} /{kat}"
     en_meta = en_seiten_meta()
     for slug in en_meta:
-        pflicht[REPO / "landing" / "en" / ("index.html" if slug == "index" else f"{slug}.html")] =             "EN-Seite laut _EN_PAGE_META"
+        from shared.seo_basis import en_slug as _en_slug
+        pflicht[REPO / "landing" / "en" / f"{_en_slug(slug)}.html"] =             "EN-Seite laut _EN_PAGE_META"
     # DE-Seiten aus unabhängigen Quellen (nicht aus dem Dateibestand, nicht aus der
     # Sitemap): jede EN-Seite braucht ihre DE-Quelle, und jedes Ziel aus Navigation
     # und Footer muss existieren — auch noindex-Seiten wie /kalender, /profile.
@@ -198,6 +199,9 @@ def sitemap_ist(pfad: Path) -> tuple[list[dict] | None, str | None]:
 def pruefe(live: bool) -> list[str]:
     import programmatic_seo_builder as builder  # seo/, liefert die erwarteten URLs
     fehler: list[str] = []
+    # EN-Adressen eindeutig (_EN_SLUGS, Codex EN-Slugs R1)
+    from shared.seo_basis import pruefe_en_slugs
+    fehler += [f"landing/js/i18n.js: {x}" for x in pruefe_en_slugs(en_seiten_meta())]
 
     # 1 + 2: Sitemap-Soll gegen geschriebene Datei und gegen gebaute Artefakte
     soll = builder.sitemap_eintraege()
@@ -289,7 +293,8 @@ def pruefe(live: bool) -> list[str]:
 
     # 4b: EN-Landing-Seiten gegen _EN_PAGE_META
     for slug, (_titel, desc) in en_seiten_meta().items():
-        pfad = REPO / "landing" / "en" / ("index.html" if slug == "index" else f"{slug}.html")
+        from shared.seo_basis import en_slug
+        pfad = REPO / "landing" / "en" / f"{en_slug(slug)}.html"
         if pfad not in geparst:
             fehler.append(f"landing/en/{pfad.name}: EN-Seite laut _EN_PAGE_META erwartet, fehlt")
             continue
@@ -332,7 +337,8 @@ def pruefe(live: bool) -> list[str]:
     # 9: EN-Köpfe (Serverpfad!) gegen Regeln und DE-Quelle; html lang + OG + hreflang
     #    der indexierbaren DE-Landingseiten; blockierende Fonts auf allen Seiten.
     for slug in en_seiten_meta():
-        en_pfad = REPO / "landing" / "en" / ("index.html" if slug == "index" else f"{slug}.html")
+        from shared.seo_basis import en_slug as _en_slug
+        en_pfad = REPO / "landing" / "en" / f"{_en_slug(slug)}.html"
         de_pfad = REPO / "landing" / ("index.html" if slug == "index" else f"pages/{slug}.html")
         if en_pfad.exists() and de_pfad.exists():
             fehler += pruefe_en_kopf(slug, en_pfad.read_text(encoding="utf-8"),
@@ -353,7 +359,8 @@ def pruefe(live: bool) -> list[str]:
             fehler.append(f"{rel}: og:locale {s.meta('og:locale')!r} statt de_DE")
         slug = "index" if url.rstrip("/") == BASE_URL else url.rsplit("/", 1)[1]
         if slug in en_meta:
-            en_url = f"{BASE_URL}/en/" if slug == "index" else f"{BASE_URL}/en/{slug}"
+            from shared.seo_basis import en_url as _en_url
+            en_url = _en_url(slug)
             soll = {("de", url), ("en", en_url), ("x-default", url)}
             if set(s.hreflang) != soll:
                 fehler.append(f"{rel}: hreflang {sorted(s.hreflang)} statt {sorted(soll)}")
@@ -473,8 +480,9 @@ def pruefe_en_kopf(slug: str, en_roh: str, de_roh: str) -> list[str]:
     CSS-Link nicht erkannte. Wird auch von scripts/verify_en_serverpfad.py genutzt.
     """
     f: list[str] = []
-    rel = f"landing/en/{'index' if slug == 'index' else slug}.html"
-    kanon = f"{BASE_URL}/en/" if slug == "index" else f"{BASE_URL}/en/{slug}"
+    from shared.seo_basis import en_slug, en_url as _en_url
+    rel = f"landing/en/{en_slug(slug)}.html"
+    kanon = _en_url(slug)
     s = Seite()
     s.feed(en_roh)
     if not re.search(r'<html\s+lang="en"', en_roh):
