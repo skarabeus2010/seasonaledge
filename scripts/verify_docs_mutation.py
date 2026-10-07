@@ -102,28 +102,28 @@ MUTATIONEN: list[Mutation] = [
     # Entwurf nahm genau die, und beide Mutationen „entwischten": der Test war
     # falsch, nicht der Wächter.
     Mutation(1, "oeffentliche IP in einer Doku-Datei", lambda b: _anhaengen(
-        b, "docs/_mutation.md", "\nServer: 51.158.22.1\n")),
+        b, "docs/_mutation.md", "\nServer: 51.158.22.1\n")), # WAECHTER-BEISPIEL
 
     Mutation(1, "oeffentliche IP in einem Skript", lambda b: _schreibe(
-        b, "scripts/_mutation_ip.py", 'HOST = "8.8.4.4"\n')),
+        b, "scripts/_mutation_ip.py", 'HOST = "8.8.4.4"\n')), # WAECHTER-BEISPIEL
 
     # Die Gegenprobe zur Entschaerfung: eine Programmversion darf NICHT greifen.
     Mutation(1, "User-Agent-Version darf NICHT als IP gelten "
                 "(Gegenprobe zur Entschaerfung)", lambda b: _schreibe(
         b, "scripts/_mutation_ua.py",
-        'UA = "Mozilla/5.0 (Windows NT 10.0) Chrome/131.0.0.0 Safari/537.36"\n')),
+        'UA = "Mozilla/5.0 (Windows NT 10.0) Chrome/131.0.0.0 Safari/537.36"\n')), # WAECHTER-BEISPIEL
 
     Mutation(2, "Supabase-Projekt-Host", lambda b: _anhaengen(
-        b, "docs/_mutation2.md", "\nhttps://abcdefghijklmnopqrst.supabase.co/rest/v1/x\n")),
+        b, "docs/_mutation2.md", "\nhttps://abcdefghijklmnopqrst.supabase.co/rest/v1/x\n")), # WAECHTER-BEISPIEL
 
     Mutation(2, "Versand-Key mit Nutzlast", lambda b: _anhaengen(
-        b, "docs/_mutation3.md", "\nbrevo_api_key = xkeysib-a1b2c3d4e5f6a7b8\n")),
+        b, "docs/_mutation3.md", "\nbrevo_api_key = xkeysib-a1b2c3d4e5f6a7b8\n")), # WAECHTER-BEISPIEL
 
     Mutation(2, "fremdes Server-Verzeichnis", lambda b: _anhaengen(
-        b, "docs/_mutation4.md", "\nMount aus /opt/fremdprojekt/website lesen\n")),
+        b, "docs/_mutation4.md", "\nMount aus /opt/fremdprojekt/website lesen\n")), # WAECHTER-BEISPIEL
 
     Mutation(2, "SSH-Zugang mit konkretem Ziel", lambda b: _anhaengen(
-        b, "docs/_mutation5.md", "\n    ssh -i ~/.ssh/key root@beispielhost.example\n")),
+        b, "docs/_mutation5.md", "\n    ssh -i ~/.ssh/key root@beispielhost.example\n")), # WAECHTER-BEISPIEL
 
     Mutation(3, "Verweis auf eine nicht existierende Datei", lambda b: _anhaengen(
         b, "docs/_mutation6.md", "\nSiehe [Plan](gibtesnicht/plan.md).\n")),

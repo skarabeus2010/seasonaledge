@@ -56,6 +56,19 @@ MAX_ZEILEN = {
 # das sind alte Arbeitskopien, keine gültige Doku.
 SUCHE_IN = ("*.md", "docs/**/*.md", ".claude/agents/*.md", ".claude/skills/**/*.md")
 
+# Eine Zeile mit diesem Vermerk ist ein ABSICHTLICHES Beispiel — etwa eine
+# synthetische Nutzlast im Mutationstest oder ein Muster in einem Kommentar.
+#
+# Warum zeilenweise und nicht je Datei: eine Datei pauschal auszunehmen wäre ein
+# Loch, in das später ein echter Wert rutscht. So steht die Ausnahme an genau der
+# Zeile, die sie braucht, und ist im Diff sichtbar.
+#
+# Der Vermerk hat den Defekt selbst aufgedeckt: in Stufe B war dieser Wächter nur
+# grün, weil sein Mutationstest noch NICHT committet war — `git ls-files` sah ihn
+# nicht. Abgenommen wurde also ein Zustand ohne die Datei, die gleich danach
+# dazukam. **Eine Abnahme vor dem Commit prüft nicht, was der Commit enthält.**
+BEISPIEL_VERMERK = "WAECHTER-BEISPIEL"
+
 # Eigenes Verzeichnis plus die geplante neutrale Infrastruktur-Ebene. Alles
 # andere unter /opt gehört einem anderen Projekt.
 EIGENE_OPT = ("seasonaledge", "infra")
@@ -146,7 +159,7 @@ def pruefe_keine_ip() -> Ergebnis:
             anfang = s.rfind("\n", 0, m.start()) + 1
             ende = s.find("\n", m.end())
             zeile = s[anfang:ende if ende > 0 else len(s)]
-            if IP_ERLAUBT_TEXT.search(zeile):
+            if BEISPIEL_VERMERK in zeile or IP_ERLAUBT_TEXT.search(zeile):
                 continue
             if IP_NACH_SLASH.search(s[max(0, m.start() - 12):m.start()]):
                 continue
@@ -166,7 +179,9 @@ FORMEN = (
     (re.compile(r"/opt/(?!(?:" + "|".join(EIGENE_OPT) + r")\b)[a-z][a-z0-9_-]{2,}"),
      "fremdes Server-Verzeichnis"),
     # Zwischen `ssh` und `root@` stehen beliebige Tokens, nicht nur Schalter:
-    # `ssh -i ~/.ssh/key root@host`. Mein erster Entwurf erlaubte dort nur
+    # `ssh -i <key> root@<host>`. Mein erster Entwurf erlaubte dort nur
+    # (im Beispiel bewusst mit Platzhaltern, damit dieser Kommentar nicht selbst
+    # ein Treffer der eigenen Prüfung wird)
     # `-…`-Argumente und übersah deshalb genau die übliche Form — der
     # Mutationstest hat es gemeldet.
     # Platzhalter sind erlaubt, auch HTML-maskiert (`root@&lt;VPS&gt;`).
@@ -195,6 +210,11 @@ def pruefe_formen() -> Ergebnis:
         s = lies(p)
         for rx, was in FORMEN:
             for m in rx.finditer(s):
+                anfang = s.rfind("\n", 0, m.start()) + 1
+                ende = s.find("\n", m.end())
+                zeile = s[anfang:ende if ende > 0 else len(s)]
+                if BEISPIEL_VERMERK in zeile:
+                    continue
                 treffer.append(f"{rel(p)}:{zeilennummer(s, m.start())} — {was}")
     if treffer:
         return Ergebnis(2, titel, DURCHGEFALLEN, sorted(set(treffer)))
