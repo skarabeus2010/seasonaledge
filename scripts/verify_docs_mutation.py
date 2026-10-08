@@ -102,7 +102,7 @@ MUTATIONEN: list[Mutation] = [
     # Entwurf nahm genau die, und beide Mutationen „entwischten": der Test war
     # falsch, nicht der Wächter.
     Mutation(1, "oeffentliche IP in einer Doku-Datei", lambda b: _anhaengen(
-        b, "docs/_mutation.md", "\nServer: 51.158.22.1\n")), # WAECHTER-BEISPIEL
+        b, "docs/_mutation.md", "\nServer: 8.8.8.8\n")), # WAECHTER-BEISPIEL
 
     Mutation(1, "oeffentliche IP in einem Skript", lambda b: _schreibe(
         b, "scripts/_mutation_ip.py", 'HOST = "8.8.4.4"\n')), # WAECHTER-BEISPIEL
