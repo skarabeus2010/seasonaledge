@@ -286,6 +286,102 @@ Schritte 2–4 wiederholen. Der Scraper ist idempotent (UPSERT) — schon bekann
 | Service-role-Key im Frontend-HTML sichtbar | `SUPABASE_ANON_KEY` fehlt in .env | Anon-Key als separate `.env`-Zeile |
 | nightly Phase G schreibt nicht | Container-Env hat anon-Key | `.env` korrigieren, `docker compose up -d --force-recreate app` |
 
+## Review der Seite /polymarket (2026-10-07 bis 2026-10-09, mit Codex)
+
+Ein Review der Seite ergab achtzehn Befunde. **Dreizehn sind behoben**, jeder
+mit einem Waechter und einem Mutationstest; fuenf bleiben offen, weil sie eine
+Nutzerentscheidung brauchen (siehe CLAUDE.md-TODO). Die Abnahme lief ueber
+**sieben Runden** bis zur Freigabe — Runden 1 bis 6 endeten mit „keine
+Freigabe", und jede fand Luecken in den **Waechtern**, nicht im Produktivcode.
+
+### Was sich inhaltlich geaendert hat
+
+| Thema | Vorher | Jetzt |
+|---|---|---|
+| Vergleichsfenster | die letzte Kurszeile des Jahres galt als Jahresende | der Endpreis muss aus dem Dezember stammen (`VERTRAG.jahresendeMonat`, `JAHRESENDE_MONAT`) |
+| Bewertung der Divergenz | „Markt unterschaetzt / ueberschaetzt" | „Prior ueber Markt / Markt ueber Prior" — die Richtung des Abstands, kein Urteil darueber, welche Zahl richtig liegt |
+| Prior | eine Dezimalstelle | ganze Prozent **mit Fallzahl k/n** |
+| Schwelle 3 pp | Zahl im Code | Vertragskonstante, auf der Seite als **redaktionell** ausgewiesen |
+| Risiko-Ampel | „historisch erhoehte Wahrscheinlichkeit" | Schwellen als redaktionell gesetzt benannt |
+| Kalibrierung | „0.15–0.20 = gut kalibriert" | Bezug auf die Basisrate **dieser** Stichprobe, Stichprobe offengelegt |
+| Zeitfaecher | „ein flacher Verlauf heisst: Polymarket kennt das Outcome Monate vorher" | der Vergleich ist nicht gepaart, und das steht dort |
+| Erwartungswert Fed | eine Zahl ohne Vorbehalt | `≥` bei Masse auf „12+", in KPI **und** Chart-Annotation |
+| Linien mit Luecken | durchgezogen (beide Renderer) | gebrochen, `curve: 'straight'` |
+| YES/NO | Position im Feld `clobTokenIds` | aus `outcomes` abgeleitet, Position nur als benannter Rueckfall |
+| Discovery | ein Worttreffer genuegte | Jahreszahl **in der Kennung** Pflicht, Jahresbegriff zaehlt nicht als Treffer |
+
+### Pruefverfahren (im Deploy-Gate)
+
+Fuenf JS-Proben (`scripts/js/probe_polymarket_*.js`: Maskierung, Abschnitte,
+Fed-Verteilung, Kalibrierung, Divergenz) und acht Python-Waechter
+(`scripts/verify_polymarket_*`, `verify_deploy_commitbindung.py`,
+`verify_i18n_cache_version.py`), dazu je ein Mutationstest.
+
+**Fuenf Beweisregeln** fuer die Mutationstests, jede aus einem Fehlschlag
+entstanden:
+
+1. Eine gerissene `[Aufbau]`-Pruefung heisst: die Mutation hat das Geruest
+   zerstoert. Dann ist das Rot kein Nachweis.
+2. Der Endmarker `PROBE-ENDE` muss erreicht sein — eine abgebrochene Probe
+   beweist nichts.
+3. Jede Mutation **benennt** die Pruefung, die sie reissen muss. Rot an der
+   falschen Stelle zaehlt nicht.
+4. Eine Ausnahme gilt nie als Nachweis.
+5. Auch eine **eingefangene** Ausnahme nicht: die Probe kennzeichnet solche
+   Zeilen mit `[Ausnahme]`, und jeder Mutationstest verwirft sie. (Regel 4
+   erkannte nur den Abbruch; eine Probe, die den Fehler abfing und meldete,
+   sah wie eine gefangene Mutation aus.)
+
+Dazu `UNGUELTIG_ERWARTET`: eine Liste von Mutationen, die der Test als
+**ungueltig** einordnen MUSS — sie prueft das Urteil des Tests selbst.
+
+### Zwei Regeln, die ueber diese Seite hinausgehen
+
+- **`_JSON_VER` in `landing/js/i18n.js` erhoehen, sobald `de.json` oder
+  `en.json` sich inhaltlich aendert.** Das Woerterbuch liegt im
+  `sessionStorage` unter `sa-i18n-<_JSON_VER>-<lang>`; ohne Erhoehung liest ein
+  Besucher mit offenem Tab weiter die alte Fassung. Eine zurueckgenommene
+  Behauptung kam so wieder zum Vorschein. Waechter:
+  `scripts/verify_i18n_cache_version.py` (vergleicht Arbeitsbaum gegen HEAD
+  **und** HEAD gegen HEAD~1 — darum `fetch-depth: 2` im Deploy; eine flache
+  Historie meldet UNGEPRUEFT und ist rot).
+- **Dynamische Texte brauchen eine Neuausgabe, wenn das Woerterbuch spaeter
+  kommt.** Die Seite startet per Zeitgeber; ist das Woerterbuch dann nicht da,
+  liefert `SA.i18n.t` den deutschen Ersatztext und es bleibt dabei.
+  `landing/js/i18n.js` sendet `sa:i18n-bereit`; `starteSeite()` verdrahtet es.
+
+### Lessons
+
+- **Ein Fix an der Aufrufstelle schuetzt nur diese Stelle.** Die
+  Richtungsbehauptung stand an **drei** Stellen in `shared/weekly_report.py`
+  und blieb dort, als die Seite sie losgeworden war.
+- **Zwei Rechenwege mit verschiedenen Eingangsfiltern sind keine Zwillinge.**
+  `Number('')` ist 0 und damit endlich: derselbe Datensatz ergab in Python drei
+  Renditen und in JS keine einzige.
+- **Ein Test, dessen Ergebnis vom Kalender abhaengt, ist kein Test.** Eine
+  Probe baute Testdaten aus lokalen Datumsfeldern, die geprueefte Funktion
+  liest UTC — im Dezember und in New York waere sie rot geworden und haette
+  das Deploy blockiert.
+- **Ein Test, der die Einbindung selbst herstellt, prueft sie nicht.** Zweimal
+  passiert: die Probe rief die zu pruefende Verdrahtung selbst auf, und das
+  Entfernen des produktiven Aufrufs blieb gruen.
+- **Eine Mutation, deren Anker nach einer Korrektur nicht mehr trifft, prueft
+  nichts** — sie muss nachgezogen werden, nicht weggelassen.
+- **Ein Gate, das seine eigene Voraussetzung nicht hat, prueft nichts.**
+  `fetch-depth: 1` liefert kein `HEAD~1`; und `rev-list --count HEAD` meldet im
+  flachen Klon ebenfalls 1, weshalb die Erkennung „erster Commit" nicht half.
+- **`|| true` an einer Pipeline verschluckt auch den Fehlschlag des ersten
+  Befehls.** Ein `git status` mit Exit 128 ergab eine leere Ausgabe, und das
+  Pruefskript bestaetigte einen sauberen Arbeitsbaum, den es nie gesehen hatte.
+- **`git clone --depth` wird bei einem lokalen Pfad ignoriert.** Ein Testfall
+  zur flachen Historie lief gruen durch und bewies nichts, bis der Klon ueber
+  `file://` lief.
+- **Heredoc-Escapes werden umgedeutet.** Sechsmal in dieser Arbeit; mehrzeilige
+  Anker und `\uXXXX` gehoeren in eine Patch-Datei, nicht in ein Heredoc.
+- **Erwartungstexte im Mutationstest: reines ASCII und ohne gemessene Werte.**
+  Ein `≥` im Namen liess den Lauf an cp1252 abbrechen, und eine Erwartung mit
+  der Zahl darin traf nicht, weil die Fehlerzeile die *gemessene* Zahl nennt.
+
 ## Roadmap
 
 **Short-term:**

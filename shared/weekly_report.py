@@ -15,6 +15,8 @@ Daten-Quellen (alle Supabase):
 """
 from __future__ import annotations
 
+import math
+
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -30,6 +32,20 @@ BIAS_WEAK_THRESHOLD = -0.15    # < −0.15 %        → "schwach"
 # Polymarket-Divergenz: Ranking-Parameter
 POLY_DIV_MIN_PP = 5.0           # Mindest-|Divergenz| in pp für Inklusion
 POLY_DIV_MIN_SAMPLES = 3        # Mindest-Historie-Jahre für einen Prior
+
+
+def divergenz_urteil(divergence_pp: float) -> str:
+    """Die Richtung des ABSTANDS, kein Urteil darüber, welche Zahl richtig liegt.
+
+    Vorher stand hier „Markt unterschätzt" / „Markt überschätzt" — das
+    behauptet, der Prior sei der richtige Wert. Er ist eine Häufigkeit auf
+    wenigen Jahren (Krypto) oder eine redaktionell gesetzte Grundlinie
+    (Fed/Makro). Dieselbe Formulierung stand an DREI Stellen in dieser Datei;
+    sie gehört an eine, sonst driftet sie (Lehre aus v60.1: die Regel gehört
+    zum Erzeuger). Die Seite /polymarket sagt dasselbe über
+    `pmjs.verdict_seasonal_above` / `pmjs.verdict_market_above`.
+    """
+    return "Prior über Markt" if divergence_pp > 0 else "Markt über Prior"
 POLY_DIV_TOP_N = 5              # maximale Top-Einträge im Report
 POLY_CRYPTO_TICKERS = {
     "btc": "BTC-USD",
@@ -287,6 +303,11 @@ def _collect_year_end_returns(price_rows: list[dict], as_of: date) -> list[float
             c = float(close)
         except (TypeError, ValueError):
             continue
+        # NaN und Infinity sind keine Kurse. Python liess sie durch und rechnete
+        # damit weiter (gemessen: Rendite nan), JS verwarf sie — zwei
+        # Rechenwege, zwei Stichproben (Codex, Abnahme Runde 2).
+        if not math.isfinite(c):
+            continue
         by_year.setdefault(d.year, []).append((d, c))
 
     samples: list[float] = []
@@ -307,7 +328,18 @@ def _collect_year_end_returns(price_rows: list[dict], as_of: date) -> list[float
                 break
         if start_price is None or start_price <= 0:
             continue
-        end_price = rows[-1][1]
+        # Das Vergleichsfenster muss VOLLSTAENDIG sein: die letzte Zeile des
+        # Jahres muss im Dezember liegen. Vorher wurde sie genommen, egal wann —
+        # eine Reihe, die im Juni endete, lieferte eine Juni-Rendite unter der
+        # Beschriftung „Jahresende" (gemessen: 0,200 neben 0,500 fuer
+        # vollstaendige Jahre). Dieselbe Regel steht als `jahresendeMonat` im
+        # VERTRAG in landing/js/polymarket.js; erzwungen wird die Gleichheit von
+        # scripts/verify_polymarket_zwillinge.py (Codex-Befund 13).
+        JAHRESENDE_MONAT = 12
+        letzte_zeile = rows[-1]
+        if letzte_zeile[0].month != JAHRESENDE_MONAT:
+            continue
+        end_price = letzte_zeile[1]
         if end_price is None or end_price <= 0:
             continue
         samples.append(end_price / start_price - 1.0)
@@ -342,7 +374,7 @@ def top_polymarket_divergences(
             prior_prob   float   (Saisonal-Prior, 0..1)
             divergence_pp float  (prior - market) * 100
             samples      int     (# Jahre im Prior)
-            verdict      str     "Markt unterschätzt" / "Markt überschätzt"
+            verdict      str     "Prior über Markt" / "Markt über Prior"
             slug         str     Polymarket-Slug (für Debug)
     """
     try:
@@ -425,7 +457,7 @@ def top_polymarket_divergences(
         divergence_pp = (prior_prob - market_prob) * 100.0
         if abs(divergence_pp) < min_pp:
             continue
-        verdict = "Markt unterschätzt" if divergence_pp > 0 else "Markt überschätzt"
+        verdict = divergenz_urteil(divergence_pp)
         out.append({
             "asset": asset.upper(),
             "target": f"${k}k",
@@ -518,7 +550,7 @@ def top_fed_macro_divergences(
             market_prob  float (0..1)
             prior_prob   float (0..1)
             divergence_pp float
-            verdict      "Markt unterschätzt" / "Markt überschätzt"
+            verdict      "Prior über Markt" / "Markt über Prior"
             rationale    Kurzbegründung der Baseline
     """
     try:
@@ -588,7 +620,7 @@ def top_fed_macro_divergences(
             "market_prob": market_prob,
             "prior_prob": prior,
             "divergence_pp": divergence_pp,
-            "verdict": "Markt unterschätzt" if divergence_pp > 0 else "Markt überschätzt",
+            "verdict": divergenz_urteil(divergence_pp),
             "rationale": rat,
         })
 
@@ -613,7 +645,7 @@ def top_fed_macro_divergences(
             "market_prob": market_prob,
             "prior_prob": prior,
             "divergence_pp": divergence_pp,
-            "verdict": "Markt unterschätzt" if divergence_pp > 0 else "Markt überschätzt",
+            "verdict": divergenz_urteil(divergence_pp),
             "rationale": rat,
         })
 

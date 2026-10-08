@@ -182,7 +182,11 @@ def process_event(event: dict, tag_slug: str) -> list[dict]:
         if not cid:
             continue
 
-        yes_token, no_token = _extract_token_ids(m.get("clobTokenIds"))
+        # `outcomes` mitgeben: ohne das faellt die Zuordnung auf die Position
+        # zurueck, und eine vertauschte Reihenfolge dreht jeden Preis dieses
+        # Marktes um (1 - p statt p), ohne dass etwas scheitert.
+        yes_token, no_token = _extract_token_ids(m.get("clobTokenIds"),
+                                                 m.get("outcomes"))
         if not yes_token:
             continue
 

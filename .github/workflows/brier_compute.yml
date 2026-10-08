@@ -42,7 +42,12 @@ jobs:
           command_timeout: 140m
           envs: SA_EVENT,SA_TAGS,SA_SKIP
           script: |
-            set -uo pipefail
+            # -e fehlte: `pipefail` liefert den Fehlerstatus der Pipeline, aber
+            # ohne errexit lief das Skript weiter. Ein gescheiterter Scrape
+            # fuehrte so dazu, dass Schritt 2 die ALTEN Daten neu auswertete und
+            # der Lauf gruen endete. Geprueft: alle Kommandos mit legitimem
+            # Rueckgabewert ungleich null stehen in `if`/`case`.
+            set -euo pipefail
             # FAIL-CLOSED: eine nicht angekommene Eingabe darf nicht in den
             # Standard fallen. Auf dem Zeitplan sind die Variablen gesetzt und
             # LEER, bei Transportfehler UNGESETZT — ${VAR?} unterscheidet das.
@@ -70,10 +75,21 @@ jobs:
             fi
             if [ "$SA_SKIP" = "true" ]; then args+=(--skip-prices); fi
 
+            # Im `if`, damit bei einem Fehlschlag noch eine eigene Zeile ins Log
+            # geht statt eines stummen Abbruchs. Wichtig ist hier zusaetzlich die
+            # REIHENFOLGE: scheitert Schritt 1, darf Schritt 2 nicht laufen —
+            # sonst wertet er die alten Daten neu aus und die Seite zeigt eine
+            # frische Kennzahl auf veraltetem Bestand.
             echo "[brier] Step 1/2: scrape resolved markets"
-            docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py ${args[@]+"${args[@]}"} 2>&1 | tail -40
+            if ! docker exec seasonalpha-app python3 scripts/polymarket_scrape_resolved.py ${args[@]+"${args[@]}"} 2>&1 | tail -40; then
+              echo "[brier] FEHLER: scrape fehlgeschlagen — Schritt 2 wird NICHT gestartet"
+              exit 1
+            fi
 
             echo "[brier] Step 2/2: compute brier stats -> landing/data/brier_stats.json"
-            docker exec seasonalpha-app python3 scripts/compute_brier_stats.py 2>&1 | tail -20
+            if ! docker exec seasonalpha-app python3 scripts/compute_brier_stats.py 2>&1 | tail -40; then
+              echo "[brier] FEHLER: brier-Berechnung fehlgeschlagen"
+              exit 1
+            fi
 
             echo "[brier] Done: $(date)"

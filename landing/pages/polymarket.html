@@ -118,7 +118,7 @@
     <main>
       <div class="error-banner" id="error-banner"></div>
       <h1 class="page-title"><b data-i18n="pm.page_title">Polymarket Prognosen</b> &mdash; <span data-i18n="pm.page_subtitle">Fed-Path, Crypto &amp; Risiko</span></h1>
-      <p class="page-caption" data-i18n="pm.page_caption">Prediction-Market-Daten als zweites Koordinatensystem neben Saisonalit&auml;t. Live via Polymarket Gamma + CLOB API.</p>
+      <p class="page-caption" data-i18n="pm.page_caption">Prediction-Market-Daten als zweites Koordinatensystem neben Saisonalit&auml;t. T&auml;glicher Snapshot aus der Polymarket-Gamma- und CLOB-API.</p>
 
       <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
         <b style="color:var(--accent)" data-i18n="common.what_shows">Was zeigt diese Seite?</b> &mdash;
@@ -130,11 +130,20 @@
         <b>Sidebar:</b> Kategorie filtern, Historien-Zeitraum w&auml;hlen, bis zu 10 Markets f&uuml;r den Explorer ausw&auml;hlen.</span>
       </div>
 
+      <!-- Rechtslage fuer Leser in Deutschland. Steht bewusst HIER und nicht im
+           Footer: der allgemeine Risikohinweis erklaert die besondere Lage bei
+           Ereignismaerkten nicht. Erscheint auch auf der EN-Seite, weil deutsche
+           Leser diese ebenfalls aufrufen. -->
+      <div role="note" style="background:rgba(255,64,64,.06);border:1px solid rgba(255,64,64,.25);border-radius:10px;padding:.75rem 1.1rem;margin-bottom:1.25rem;font-size:.78125rem;color:var(--dim);line-height:1.6">
+        <b style="color:#ff4040" data-i18n="pm.de_hinweis_lbl">Hinweis f&uuml;r Leser in Deutschland</b> &mdash;
+        <span data-i18n-html="pm.de_hinweis">SeasonAlpha zeigt &ouml;ffentliche Marktdaten zu Informationszwecken und bietet oder vermittelt keine Wetten. Polymarket untersagt den Handel aus Deutschland. Die Gemeinsame Gl&uuml;cksspielbeh&ouml;rde der L&auml;nder stuft Gesellschaftswetten als illegal ein und warnt vor strafbarer Teilnahme. Angezeigte Preise sind keine Teilnahmeempfehlung.</span>
+      </div>
+
       <!-- Hero-KPIs -->
       <div class="hero-kpi" id="hero-kpi"></div>
 
       <!-- ── Fed-Path-Section ── -->
-      <h2 class="section-hdr"><b data-i18n="pm.fed_path_title">Fed-Path 2026</b> &mdash; <span data-i18n="pm.fed_path_subtitle">Wahrscheinlichkeitsverteilung</span></h2>
+      <h2 class="section-hdr" data-abschnitt="fed"><b data-i18n="pm.fed_path_title">Fed-Path 2026</b> &mdash; <span data-i18n="pm.fed_path_subtitle">Wahrscheinlichkeitsverteilung</span></h2>
       <p class="section-caption" data-i18n-html="pm.fed_path_caption">
         13 Outcome-Markets aus dem Polymarket-Event &quot;How many Fed rate cuts in 2026?&quot;.
         Jeder Balken zeigt die implizite Marktwahrscheinlichkeit fuer <b>genau</b> so viele Cuts.
@@ -152,12 +161,12 @@
       </details>
 
       <!-- ── Risiko-Ampel ── -->
-      <h2 class="section-hdr"><b data-i18n="pm.risk_signal_title">Risiko-Ampel</b> &mdash; <span data-i18n="pm.risk_signal_subtitle">Tail-Events &amp; Macro</span></h2>
+      <h2 class="section-hdr" data-abschnitt="risiko"><b data-i18n="pm.risk_signal_title">Risiko-Ampel</b> &mdash; <span data-i18n="pm.risk_signal_subtitle">Tail-Events &amp; Macro</span></h2>
       <p class="section-caption" data-i18n="pm.risk_signal_caption">
-        Vier binaere Markets fuer Szenarien ausserhalb des Fed-Basispfads. Rot: historisch erhoehte Wahrscheinlichkeit. Gruen: Markt sieht das als unwahrscheinlich.
+        Vier bin&auml;re Markets f&uuml;r Szenarien ausserhalb des Fed-Basispfads. Rot: der Marktpreis liegt &uuml;ber einer redaktionell gesetzten Schwelle (siehe unten) &mdash; keine historisch gemessene Gr&ouml;sse. Gr&uuml;n: darunter.
       </p>
       <div class="kpi-row" id="risk-gauges" style="grid-template-columns:repeat(4,1fr);display:grid;gap:.75rem"></div>
-      <p class="box-info" data-i18n-html="pm.risk_signal_hint"><b>So liest du die Ampel:</b> jede Kachel zeigt einen binaeren Markt (JA/NEIN). Der Prozentwert ist die aktuelle implizite Wahrscheinlichkeit fuer das <b>JA</b>-Outcome. <b>Gruen</b> = ungew&ouml;hnlich niedrig, <b>neutral</b> = Standard-Niveau, <b>rot</b> = deutlich erh&ouml;ht. Schwellen: Recession &gt; 35 % (rot), Fed-Hike &gt; 20 %, Emergency-Cut &gt; 15 %, Neg. GDP &gt; 15 %.</p>
+      <p class="box-info" data-i18n-html="pm.risk_signal_hint"><b>So liest du die Ampel:</b> jede Kachel zeigt einen binaeren Markt (JA/NEIN). Der Prozentwert ist die aktuelle implizite Wahrscheinlichkeit fuer das <b>JA</b>-Outcome. <b>Gruen</b> = ungew&ouml;hnlich niedrig, <b>neutral</b> = Standard-Niveau, <b>rot</b> = &uuml;ber der Schwelle. Schwellen: Recession &gt; 35 %, Fed-Hike &gt; 20 %, Emergency-Cut &gt; 15 %, Neg. GDP &gt; 15 % &mdash; <b>redaktionell gesetzt</b>, nicht aus einer Verteilung gesch&auml;tzt.</p>
 
       <details open style="margin-top:1rem">
         <summary data-i18n="pm.risk_history_title">Risiko-Markets im Zeitverlauf</summary>
@@ -168,7 +177,7 @@
       </details>
 
       <!-- ── Crypto-Ladder ── -->
-      <h2 class="section-hdr"><b data-i18n="pm.crypto_div_title">Crypto-Divergenz</b> &mdash; <span data-i18n="pm.crypto_div_subtitle">BTC &amp; ETH Ziel-Wahrscheinlichkeiten</span></h2>
+      <h2 class="section-hdr" data-abschnitt="krypto"><b data-i18n="pm.crypto_div_title">Crypto-Divergenz</b> &mdash; <span data-i18n="pm.crypto_div_subtitle">BTC &amp; ETH Ziel-Wahrscheinlichkeiten</span></h2>
       <p class="section-caption" data-i18n="pm.crypto_div_caption">
         Horizontale Leitern der Preis-Targets per Ende 2026. Vergleiche die Marktwahrscheinlichkeiten mit deinen saisonalen Prognosen auf den jeweiligen Ticker-Pages.
       </p>
@@ -179,12 +188,13 @@
       <p class="box-info" data-i18n-html="pm.crypto_ladder_hint"><b>So liest du die Leiter:</b> jeder horizontale Balken ist ein Polymarket fuer &laquo;wird der Kurs bis Ende 2026 mindestens X erreichen?&raquo;. Je h&ouml;her das Kursziel, desto geringer die Wahrscheinlichkeit. Der Balken zeigt direkt die implizite Marktwahrscheinlichkeit in Prozent. Typischer Lesefall: <b>BTC &ge; $100k: 40 %</b> heisst der Markt sieht 40 % Chance, dass Bitcoin das Jahr &uuml;ber $100k schliesst.</p>
 
       <!-- ── Divergenz-Analyse ── -->
-      <h2 class="section-hdr"><b data-i18n="pm.divergence_title">Divergenz-Analyse</b> &mdash; <span data-i18n="pm.divergence_subtitle">Saisonalit&auml;t vs. Markt</span></h2>
+      <h2 class="section-hdr" data-abschnitt="divergenz"><b data-i18n="pm.divergence_title">Divergenz-Analyse</b> &mdash; <span data-i18n="pm.divergence_subtitle">Saisonalit&auml;t vs. Markt</span></h2>
       <p class="section-caption" data-i18n-html="pm.divergence_caption">
         F&uuml;r jedes Crypto-Target: der aus der Preis-Historie empirisch berechnete <b>Saisonal-Prior</b>
         (Anteil vergangener Jahre mit Year-End-Return &ge; ben&ouml;tigter Performance ab heutigem Tag).
         Vergleich zur aktuellen Polymarket-Wahrscheinlichkeit. <b style="color:#30e878">Gr&uuml;n</b>:
-        Saisonalit&auml;t h&ouml;her als Markt (Markt unterschaetzt). <b style="color:#ff4040">Rot</b>: Saisonalit&auml;t niedriger als Markt.
+        Prior h&ouml;her als Markt. <b style="color:#ff4040">Rot</b>: Markt h&ouml;her als Prior.
+        Welche der beiden Zahlen n&auml;her an der Wirklichkeit liegt, sagt der Abstand nicht.
       </p>
       <div id="divergence-btc" style="margin-bottom:1.5rem"></div>
       <div id="divergence-eth"></div>
@@ -192,7 +202,10 @@
         <b>Ben&ouml;tigt</b> = prozentualer Return den der aktuelle Kurs noch braucht, um das Ziel bis Jahresende zu erreichen.
         <b>Markt YES</b> = aktuelle Polymarket-Wahrscheinlichkeit.
         <b>Saisonal-Prior</b> = Anteil der vergangenen Jahre in denen dieser Return ab heutigem Kalendertag bis Year-End tats&auml;chlich erreicht wurde.
-        <b>Divergenz</b> = Saisonal-Prior &minus; Markt YES in Prozentpunkten. <b style="color:#30e878">Positiv (gr&uuml;n)</b>: Saisonalit&auml;t sagt h&ouml;here Chance als der Markt &mdash; m&ouml;glicher Long-Trade wenn fundamental passt. <b style="color:#ff4040">Negativ (rot)</b>: Markt preist mehr Optimismus ein als die Historie rechtfertigt &mdash; Vorsicht.
+        <b>Divergenz</b> = Saisonal-Prior &minus; Markt YES in Prozentpunkten. <b style="color:#30e878">Positiv (gr&uuml;n)</b>: Saisonalit&auml;t sagt h&ouml;here Chance als der Markt. Das ist ein Abstand zweier Zahlen und kein Hinweis darauf, welche von beiden richtig liegt. <b style="color:#ff4040">Negativ (rot)</b>: der Markt liegt &uuml;ber dem Prior.
+        <b>Bewertung</b> nennt erst ab einem Abstand von 3&nbsp;Prozentpunkten eine Richtung &mdash; diese
+        Schwelle ist <b>redaktionell gesetzt</b> und nicht aus den Daten gesch&auml;tzt; bei Stichproben von
+        wenigen Jahren gibt es daf&uuml;r keine Grundlage. Die Fallzahl steht als <b>k/n</b> hinter jedem Prior.
       </p>
 
       <!-- ── Historien-Explorer ── -->
@@ -222,17 +235,40 @@
         <div class="info-tooltip" data-i18n-html="pm.brier_tooltip_html">
           <b>Brier-Score &mdash; Kalibrierungs-Ma&szlig; f&uuml;r Wahrscheinlichkeits-Prognosen</b><br><br>
           Formel: <code>Brier = Mittel((p &minus; o)<sup>2</sup>)</code> &mdash; Mittlere quadratische Abweichung zwischen prognostizierter Wahrscheinlichkeit <code>p</code> (0&ndash;1) und tats&auml;chlichem Outcome <code>o</code> (1 eingetreten, 0 nicht).<br><br>
-          <b>Referenzwerte:</b><br>
-          <span style="color:#30e878">0.00</span> = perfekter Forecaster &middot;
-          <span style="color:var(--accent)">0.15&ndash;0.20</span> = gut kalibriert &middot;
-          <b>0.25</b> = 50/50-Rauschen &middot;
-          <span style="color:#ff4040">0.50+</span> = systematisch falsch<br><br>
-          <b>Wichtig:</b> Niedriger Brier &ne; "meistens richtig". Wenn Markt konstant 30 % sagt und Events in 30 % der F&auml;lle eintreten, ist Brier niedrig &mdash; obwohl &laquo;meistens NO&raquo; das Hauptoutcome ist.<br><br>
-          Polymarket schl&auml;gt die <b>Basisrate-Baseline</b> (<code>p&middot;(1&minus;p)</code>) deutlich &mdash; die Markt-Prognosen sind informativ, nicht blo&szlig; Rauschen.
+          <b>Woran man ihn messen muss:</b> an der Basisrate <b>dieser</b> Stichprobe.
+          Ein fester Bereich wie &laquo;0,15&ndash;0,20 = gut&raquo; gilt nicht allgemein &mdash;
+          liegt die Basisrate bei 10 %, ist schon <code>p&middot;(1&minus;p) = 0,09</code>
+          besser als 0,15. Deshalb steht hier die Basisrate-Baseline der ausgewerteten
+          Stichprobe daneben, und der Abstand dazu ist die Aussage.
+          <b>0,25</b> entspricht einer durchgehenden 50/50-Prognose.<br><br>
+          <b>Wichtig:</b> Ein niedriger Brier hei&szlig;t nicht &laquo;meistens richtig&raquo;.
+          Sagt der Markt konstant 30 % und das Ereignis tritt in 30 % der F&auml;lle ein,
+          ist der Brier niedrig &mdash; obwohl &laquo;meistens NEIN&raquo; der h&auml;ufigere
+          Ausgang ist.<br><br>
+          Ob die Markt-Prognosen die Basisrate schlagen, steht als <b>Einstufung</b> in
+          den Kennzahlen und wird aus den Daten gerechnet. Hier stand fr&uuml;her die
+          Behauptung, Polymarket schlage sie &laquo;deutlich&raquo; &mdash; die war fest
+          eingebaut und kam nicht aus der Auswertung.
         </div>
       </div>
       <p class="section-caption" data-i18n="pm.calibration_caption">
         Brier-Score-Analyse auf historisch aufgel&ouml;sten Markets. Wenn Polymarket 70 % sagt, tritt das Ereignis dann tats&auml;chlich in ~70 % der F&auml;lle ein?
+      </p>
+
+      <p class="box-info" data-i18n-html="pm.calibration_stichprobe">
+        <b>Welche M&auml;rkte hier drinstecken &mdash; und welche nicht.</b>
+        Ausgewertet werden aufgel&ouml;ste M&auml;rkte aus sechs Kategorien
+        (<code>fed</code>, <code>economy</code>, <code>crypto</code>,
+        <code>crypto-prices</code>, <code>us-politics</code>, <code>politics</code>),
+        aufgel&ouml;st seit Januar 2024, mit mindestens 10.000 Dollar Volumen, maximal
+        500 Ereignisse je Kategorie-Abruf. Das ist eine <b>ausgew&auml;hlte</b>
+        Stichprobe und nicht &laquo;Polymarket&raquo;.
+        Drei Dinge, die die Zahl mitbestimmen: ein Markt, der lange lief, geht mit
+        <b>jedem</b> seiner Tage ein und wiegt damit schwerer als ein kurzer; mehrere
+        abh&auml;ngige Kontrakte desselben Ereignisses z&auml;hlen <b>einzeln</b>; und die
+        Basisrate unten ist der Anteil YES &uuml;ber alle <b>Prognosetage</b>, nicht &uuml;ber
+        die Aufl&ouml;sungen. Wie weit die Stichprobe die Unsicherheit tr&auml;gt, ist damit
+        nicht beantwortet &mdash; die Zahl ist ein Anhaltspunkt, kein Qualit&auml;tsurteil.
       </p>
 
       <div id="brier-loading" style="color:var(--muted);font-size:.8125rem;padding:1rem 0" data-i18n="pm.loading_brier">Lade Brier-Statistiken ...</div>
@@ -254,7 +290,7 @@
         <!-- 5. Zeit zur Resolution -->
         <h3 style="font-size:.875rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:1.5rem 0 .5rem" data-i18n="pm.time_to_resolution">Kalibrierung je n&auml;her zur Resolution</h3>
         <div class="chart-box"><div id="chart-time-buckets"></div></div>
-        <p class="box-info" data-i18n-html="pm.time_resolution_hint"><b>Hypothese:</b> Je n&auml;her der Resolution-Termin r&uuml;ckt, desto besser sollte der Brier-Score werden &mdash; mehr Information verf&uuml;gbar, weniger Unsicherheit. Ein flacher Verlauf bedeutet: Polymarket kennt das Outcome schon Monate vorher.</p>
+        <p class="box-info" data-i18n-html="pm.time_resolution_hint"><b>Hypothese:</b> Je n&auml;her der Resolution-Termin r&uuml;ckt, desto besser sollte der Brier-Score werden &mdash; mehr Information verf&uuml;gbar, weniger Unsicherheit. Ein flacher Verlauf hei&szlig;t nur, dass der Brier-Score in den gemessenen Zeitf&auml;chern nicht besser wird &mdash; nicht, dass das Ergebnis Monate vorher festst&auml;nde. Die Zeitf&auml;cher enthalten verschiedene M&auml;rkte, der Vergleich ist also nicht gepaart.</p>
 
         <p style="font-size:.7rem;color:var(--muted);margin-top:1.5rem"><span id="brier-meta" data-i18n="pm.brier_meta_loading">Daten-Stand wird geladen ...</span></p>
       </div>
@@ -264,8 +300,10 @@
         <summary data-i18n="section.methodology_source">Methodik &amp; Datenquelle</summary>
         <div class="content">
           <p class="box-info" data-i18n-html="pm.method_datasource_html">
-            <b>Datenquelle:</b> Polymarket Gamma API (Metadata, Snapshots) und CLOB prices-history (historische Mid-Preise).
-            Snapshots werden stuendlich via <code>scripts/polymarket_refresh.py</code> aktualisiert, Backfill alle 24h.
+            <b>Datenquelle:</b> Polymarket Gamma API (Metadaten, Snapshots) und CLOB prices-history (historische Mid-Preise).
+            Ein Snapshot pro Tag nach US-Schluss; in den Tagen um eine Fed-Entscheidung
+            zus&auml;tzlich st&uuml;ndlich. Die Historie wird w&ouml;chentlich nachgezogen.
+            Wie alt der jeweils gezeigte Preis ist, steht an der Zahl.
           </p>
           <p class="box-info" data-i18n-html="pm.method_yes_price_html">
             <b>Was bedeutet YES-Preis?</b> Der Preis in USDC pro YES-Share. Da Polymarket-Markets in <code>[0, 1]</code> normiert sind (1 USDC Payout bei YES-Resolution), entspricht der Preis der <b>impliziten Marktwahrscheinlichkeit</b>.
@@ -275,7 +313,11 @@
             <b>Liquiditaet:</b> Volumen an aktivem Orderbook (USDC). Markets mit &lt;$20k Liquiditaet sind illiquide &mdash; ihre Preise koennen verzerrt sein.
           </p>
           <p class="box-info" data-i18n-html="pm.method_divergence_example_html">
-            <b>Divergenz-Beispiel:</b> Saisonalitaet sagt, BTC hat in Q4 historisch +25% im Median gemacht &mdash; aber Polymarket preist nur 10% Wahrscheinlichkeit fuer BTC &gt; $150k ein. Das ist ein Crowd-vs-History-Signal: entweder die Crowd unterschaetzt die Saisonalitaet, oder aktuelle Faktoren sprechen dagegen.
+            <b>Beispiel (erfundene Zahlen):</b> BTC steht bei $120k, das Ziel ist $150k bis Jahresende &mdash;
+            ben&ouml;tigt werden also +25&nbsp;%. In 2 von 8 vergleichbaren Jahren wurde ab diesem Kalendertag bis
+            Jahresende mindestens +25&nbsp;% erreicht, der Prior liegt damit bei 25&nbsp;% (2/8). Polymarket preist
+            10&nbsp;%. Der Abstand betr&auml;gt 15&nbsp;Prozentpunkte &mdash; <b>mehr nicht</b>: zwei von acht Jahren
+            sind eine sehr d&uuml;nne Grundlage, und der Markt kennt Dinge, die in der Kursreihe nicht stehen.
           </p>
         </div>
       </details>
@@ -298,7 +340,10 @@
   <script src="/landing/js/auth.js"></script>
   <script src="/landing/js/i18n.js"></script>
   <script src="/landing/js/app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <!-- Gepinnt: "@4" laedt, was jsDelivr gerade als 4.x ausliefert. Die Legende
+       schreibt Seriennamen per innerHTML, also haengt die Maskierungsannahme am
+       Stand der Bibliothek. 4.7.0 ist der heute ausgelieferte Stand. -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.7.0"></script>
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/polymarket.js"></script>
 
@@ -329,11 +374,20 @@
       var el = document.getElementById('loading-overlay');
       if (el) el.style.display = 'none';
     }
+    // Gegenstueck zu showError: ohne das bliebe die Meldung jetzt fuer immer
+    // stehen, nachdem die Selbstloeschung nach acht Sekunden entfernt wurde.
+    // Wird nur bei einem ERFOLGREICHEN Abruf gerufen.
+    function clearError() {
+      var el = document.getElementById('error-banner');
+      if (el) { el.textContent = ''; el.style.display = 'none'; }
+    }
     function showError(msg) {
       var el = document.getElementById('error-banner');
       if (!el) return;
+      // Bleibt stehen, bis ein erfolgreicher Abruf sie ersetzt. Vorher
+      // verschwand sie nach acht Sekunden, und danach sah die Seite aus, als
+      // waere alles in Ordnung (Codex-Befund 15).
       el.textContent = msg; el.style.display = 'block';
-      setTimeout(function() { el.style.display = 'none'; }, 8000);
     }
     function kpi(label, value, cls) {
       return '<div class="kpi"><span class="kpi-label">' + label + '</span>' +
@@ -363,9 +417,25 @@
       var recession = getYes('us-recession-2026');
       var btc150 = getYes('btc-above-150k-2026');
 
+      // Der Erwartungswert ist eine UNTERGRENZE, sobald im offenen Ende („12+")
+      // Wahrscheinlichkeit liegt: der Kontrakt sagt „12 oder mehr", und die
+      // Rechnung wiegt ihn mit genau 12. Vorher stand dort eine Zahl ohne
+      // diesen Vorbehalt (Codex-Befund 14).
+      var vorz = fedStats.istUntergrenze ? '≥ ' : '';
+      // Die Preissumme ist die Information, die beim Normieren verloren geht.
+      // Weit unter 1 heisst: die Verteilung ist unvollstaendig, und dann sagt
+      // der Erwartungswert weniger, als er zu sagen scheint.
+      var summe = fedStats.totalProb;
+      var summeKlasse = (summe >= 0.9 && summe <= 1.1) ? 'green'
+                      : ((summe >= 0.75 && summe <= 1.25) ? '' : 'red');
+
       document.getElementById('hero-kpi').innerHTML =
-        kpi('E[Fed Cuts 2026]', expected.toFixed(2) + ' × 25bps', '') +
-        kpi('E[Total Cut]', expBps.toFixed(0) + ' bps', '') +
+        kpi(SA.i18n.t('pmjs.kpi_e_cuts', 'E[Fed Cuts 2026]'),
+            vorz + expected.toFixed(2) + ' × 25bps', '') +
+        kpi(SA.i18n.t('pmjs.kpi_e_total', 'E[Total Cut]'),
+            vorz + expBps.toFixed(0) + ' bps', '') +
+        kpi(SA.i18n.t('pmjs.kpi_preissumme', 'Preissumme der Verteilung'),
+            (summe * 100).toFixed(0) + '%', summeKlasse) +
         kpi('Recession 2026',
             recession != null ? (recession * 100).toFixed(1) + '%' : '—',
             recession != null && recession >= 0.35 ? 'red' : (recession != null && recession >= 0.2 ? '' : 'green')) +
@@ -376,20 +446,29 @@
 
     // ── Market-Checkboxen in Sidebar ──
     function renderCheckboxes() {
-      var html = state.markets.map(function(m) {
-        var checked = state.selectedCids.has(m.condition_id) ? 'checked' : '';
-        return '<label><input type="checkbox" data-cid="' + m.condition_id + '" ' + checked + '> ' +
-               m.slug + '</label>';
-      }).join('');
+      // Per DOM gebaut, nicht per Zeichenkette: condition_id landete vorher in
+      // einem Attribut, und ein Anfuehrungszeichen darin bricht es auf. slug und
+      // condition_id stammen aus einer fremden Quelle.
       var box = document.getElementById('market-checkboxes');
-      box.innerHTML = html;
+      box.textContent = '';
+      state.markets.forEach(function(m) {
+        var label = document.createElement('label');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.setAttribute('data-cid', String(m.condition_id == null ? '' : m.condition_id));
+        cb.checked = state.selectedCids.has(m.condition_id);
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(' ' + String(m.slug == null ? '' : m.slug)));
+        box.appendChild(label);
+      });
       box.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
         cb.addEventListener('change', function() {
           var cid = cb.getAttribute('data-cid');
           if (cb.checked) {
             if (state.selectedCids.size >= 10) {
               cb.checked = false;
-              showError('Maximal 10 Markets fuer den Vergleich.');
+              showError(SA.i18n.t('pmjs.max_markets',
+                'Maximal 10 Markets für den Vergleich.'));
               return;
             }
             state.selectedCids.add(cid);
@@ -441,19 +520,32 @@
       renderDivergenceFor('ETH-USD', 'eth', 'divergence-eth');
     }
 
+    // Die Generation wird NICHT als Parameter uebergeben, sondern beim
+    // Eintritt gelesen und nach der eigenen asynchronen Stufe erneut geprueft.
+    // Sonst ueberschreibt eine langsame Kursabfrage von BTC die bereits
+    // gezeichnete Tabelle, nachdem der Nutzer weitergeklickt hat (Codex,
+    // Abnahme 2026-10-08). Der Aufrufer renderCrypto() laeuft selbst schon
+    // hinter der Generationspruefung — das schuetzt aber nur bis zu diesem
+    // Aufruf, nicht ueber das fetch hinaus.
     function renderDivergenceFor(ticker, prefix, targetId) {
+      var meineGeneration = ladeGeneration;
       var target = document.getElementById(targetId);
       if (!target) return;
-      target.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:.5rem">Lade ' + ticker + ' Historie...</p>';
+      var tk = SA.polymarket.esc(ticker);
+      target.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:.5rem">' +
+        SA.i18n.t('pmjs.lade_historie', 'Lade {t} Historie...').replace('{t}', tk) + '</p>';
 
       if (!SA.fetchAllPrices) {
-        target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">Preis-API nicht verfügbar.</p>';
+        target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">' +
+          SA.i18n.t('pmjs.keine_preis_api', 'Preis-API nicht verfügbar.') + '</p>';
         return;
       }
       // Historie 10 Jahre (volle Historie reicht auch, aber 10y ist genug für den Prior)
       SA.fetchAllPrices(ticker).then(function(rows) {
+        if (meineGeneration !== ladeGeneration) return;   // ueberholt
         if (!rows || !rows.length) {
-          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">' + ticker + ' nicht in Preis-DB — Divergenz übersprungen.</p>';
+          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">' +
+            SA.i18n.t('pmjs.keine_kursreihe', '{t} nicht in der Kursreihe — Divergenz uebersprungen.').replace('{t}', SA.polymarket.esc(ticker)) + '</p>';
           return;
         }
         // fetchAllPrices liefert desc — für collectYearEndReturns brauchen wir asc
@@ -464,13 +556,17 @@
           return (m.slug || '').indexOf(prefix + '-above-') === 0;
         });
         if (!assetMarkets.length) {
-          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">Keine ' + prefix.toUpperCase() + '-Markets aktiv.</p>';
+          target.innerHTML = '<p style="color:var(--muted);font-size:.75rem">' +
+            SA.i18n.t('pmjs.keine_markets', 'Keine {p}-Markets aktiv.')
+              .replace('{p}', SA.polymarket.esc(prefix.toUpperCase())) + '</p>';
           return;
         }
         SA.polymarket.renderCryptoDivergence(targetId, ticker, assetMarkets, state.latest, asc, currentPrice);
       }).catch(function(err) {
+        if (meineGeneration !== ladeGeneration) return;   // ueberholt
         console.error('Divergenz ' + ticker + ':', err);
-        target.innerHTML = '<p style="color:var(--red);font-size:.75rem">Fehler beim Laden von ' + ticker + '.</p>';
+        target.innerHTML = '<p style="color:var(--red);font-size:.75rem">' +
+          SA.i18n.t('pmjs.ladefehler', 'Fehler beim Laden von {t}.').replace('{t}', SA.polymarket.esc(ticker)) + '</p>';
       });
     }
 
@@ -478,7 +574,9 @@
       var selected = state.markets.filter(function(m) { return state.selectedCids.has(m.condition_id); });
       if (!selected.length) {
         document.getElementById('chart-history').innerHTML =
-          '<p style="color:var(--muted);padding:2rem;text-align:center">Waehle Markets in der Sidebar fuer den Historien-Vergleich aus.</p>';
+          '<p style="color:var(--muted);padding:2rem;text-align:center">' +
+          SA.i18n.t('pmjs.keine_auswahl',
+            'Wähle Markets in der Sidebar für den Historien-Vergleich aus.') + '</p>';
         return;
       }
       var selCids = new Set(selected.map(function(m) { return m.condition_id; }));
@@ -488,13 +586,22 @@
     }
 
     function renderTable() {
-      // 7d-Historie fuer Delta-Anzeige
-      var sevenDaysAgo = Date.now() - 7 * 86400 * 1000;
+      // Grundlinie fuer die Spalte „7d Δ": der letzte Punkt VOR dem Stichtag.
+      //
+      // Mit Altersgrenze, und das ist der Punkt: vorher wurde einfach der
+      // naechstgelegene Punkt vor dem Stichtag genommen, egal wie alt. Bei
+      // lueckenhafter Historie stand dann ein 60-Tage-Delta in einer Spalte,
+      // die „7d" heisst (Codex-Befund 14). Liegt kein Punkt im zulaessigen
+      // Fenster, wird KEIN Delta gezeigt — eine fehlende Angabe ist richtig,
+      // eine falsch beschriftete nicht.
+      var TOLERANZ_TAGE = 3;   // Kadenz ist taeglich; drei Tage deckt einen Ausfall
+      var jetzt = Date.now();
+      var stichtag = jetzt - 7 * 86400000;
+      var aeltesteErlaubt = jetzt - (7 + TOLERANZ_TAGE) * 86400000;
       var grouped = {};
       state.history.forEach(function(r) {
         var t = new Date(r.ts).getTime();
-        if (t < sevenDaysAgo) {
-          // nehme den letzten Punkt VOR 7d als Baseline
+        if (t < stichtag && t >= aeltesteErlaubt) {
           if (!grouped[r.condition_id] || new Date(grouped[r.condition_id][0].ts).getTime() < t) {
             grouped[r.condition_id] = [r];
           }
@@ -504,22 +611,69 @@
     }
 
     // ── Hauptablauf ──
+    // Ein Abschnitt reicht von seiner Ueberschrift bis zur naechsten. Die
+    // Ueberschriften tragen `data-abschnitt`, damit nicht mehr per Index
+    // adressiert wird (`querySelectorAll('.section-hdr')[0]` bricht, sobald
+    // jemand eine Ueberschrift einfuegt).
+    function abschnittSichtbar(name, sichtbar) {
+      var kopf = document.querySelector('.section-hdr[data-abschnitt="' + name + '"]');
+      if (!kopf) {
+        // Nicht still zurueckkehren: faende man die Ueberschrift nicht, waere
+        // die ganze Abschnittsschaltung wirkungslos, ohne dass irgendetwas
+        // auffaellt. Ein stiller Rueckfall hat in diesem Projekt schon einmal
+        // einen Defekt ein halbes Jahr getragen.
+        if (window.console && console.warn) {
+          console.warn('[polymarket] Abschnitt "' + name + '" nicht gefunden — ' +
+                       'die Schaltung bleibt wirkungslos.');
+        }
+        return false;
+      }
+      var el = kopf;
+      while (el) {
+        el.style.display = sichtbar ? '' : 'none';
+        el = el.nextElementSibling;
+        if (el && el.classList && el.classList.contains('section-hdr')) break;
+      }
+      return true;
+    }
+
+    // Ladegeneration gegen verspaetete Antworten. Wer schnell zwischen
+    // Kategorien wechselt, loest mehrere Laeufe aus; ohne diesen Abgleich
+    // schreibt der langsamere die Daten des schnelleren zu (Codex-Befund 15).
+    var ladeGeneration = 0;
+
     function applyCategoryFilter(allMarkets, cat) {
       return (cat === 'all') ? allMarkets.slice() : allMarkets.filter(function(m) { return m.category === cat; });
     }
 
     function reload() {
-      showLoading('Lade Polymarket-Daten...');
+      var meineGeneration = ++ladeGeneration;
+      showLoading(SA.i18n.t('pmjs.lade_daten', 'Lade Polymarket-Daten...'));
       var histDays = parseInt(document.getElementById('sel-history').value, 10) || 90;
       var cat = document.getElementById('sel-category').value || 'all';
 
-      SA.polymarket.loadCatalog().then(function(catalog) {
+      // Das Versprechen wird ZURUECKGEGEBEN. Ohne das ist der Ablauf von
+      // aussen nicht abwartbar, und ein Test, der `await reload()` schreibt,
+      // wartet auf undefined und prueft nichts — genau so war die erste
+      // Fassung der Probe hohl. Am Verhalten der Seite aendert es nichts.
+      return SA.polymarket.loadCatalog().then(function(catalog) {
+        // Die Pruefung steht VOR jeder Zustandsaenderung. Mein erster Entwurf
+        // schrieb state.allMarkets und state.markets darueber — ein ueberholter
+        // Lauf veraenderte den Zustand also trotzdem, und nur das Rendern
+        // entfiel. Beim Schreiben des Waechters aufgefallen.
+        if (meineGeneration !== ladeGeneration) return;   // ueberholt
         var all = (catalog || []).filter(function(m) { return m.active !== false; });
         state.allMarkets = all;
         state.markets = applyCategoryFilter(all, cat);
         if (!state.markets.length) {
           hideLoading();
-          showError('Keine Markets in dieser Kategorie gefunden.');
+          // Alle datengetriebenen Abschnitte verbergen. Vorher blieben die
+          // Kacheln der VORIGEN Kategorie stehen und sahen aktuell aus.
+          abschnittSichtbar('fed', false);
+          abschnittSichtbar('risiko', false);
+          abschnittSichtbar('krypto', false);
+          abschnittSichtbar('divergenz', false);
+          showError(SA.i18n.t('pmjs.keine_maerkte', 'Keine Maerkte in dieser Kategorie.'));
           return;
         }
 
@@ -528,6 +682,11 @@
           SA.polymarket.loadLatestPrices(cids),
           SA.polymarket.loadHistory(cids, histDays)
         ]).then(function(results) {
+          // ZWEITE Pruefung, und sie fehlte. Zwischen dem Katalog und den
+          // Preisen liegt ein weiterer asynchroner Sprung; ohne sie schrieb ein
+          // langsamer Lauf hier die Daten des schnelleren zu, obwohl die erste
+          // Pruefung bestanden hatte.
+          if (meineGeneration !== ladeGeneration) return;   // ueberholt
           state.latest = results[0] || {};
           state.history = results[1] || [];
 
@@ -537,22 +696,36 @@
           var showCrypto = cat === 'all' || cat === 'crypto';
           var showRisk = cat === 'all' || cat === 'fed' || cat === 'macro';
 
-          if (showFed) {
-            document.querySelectorAll('.section-hdr')[0].style.display = '';
-            renderFedPath(state.history);
-          } else {
-            renderFedPath(state.history); // render aber KPIs könnten weniger haben
-          }
+          // Jeder Abschnitt wird EXPLIZIT geschaltet, und was nicht gezeigt
+          // wird, wird auch nicht gerechnet. Vorher stand im else-Zweig
+          // `renderFedPath(state.history)` — der Fed-Pfad wurde also aus dem
+          // GEFILTERTEN Katalog gerechnet und blieb sichtbar (Codex-Befund 15).
+          abschnittSichtbar('fed', showFed);
+          abschnittSichtbar('risiko', showRisk);
+          abschnittSichtbar('krypto', showCrypto);
+          // Die Divergenz-Analyse zeigt BTC/ETH und haengt damit an derselben
+          // Bedingung. Sie trug keine Kennung, die Schaltung endete vor ihrer
+          // Ueberschrift, und ihre alten Inhalte blieben beim Wechsel stehen —
+          // von Codex an der laufenden Seitenfunktion reproduziert.
+          abschnittSichtbar('divergenz', showCrypto);
+          if (showFed) renderFedPath(state.history);
           if (showRisk) renderRisk(state.history);
           if (showCrypto) renderCrypto();
           renderHistoryChart();
           renderTable();
+          clearError();
           hideLoading();
         });
       }).catch(function(err) {
+        // Auch hier: ein ueberholter Lauf darf nichts mehr anfassen. Ohne diese
+        // Pruefung ueberschrieb ein verspaetetes Scheitern von Lauf A den
+        // ERFOLG von Lauf B mit einer Fehlermeldung — die Pruefung im
+        // Erfolgspfad allein genuegt also nicht. Von Codex reproduziert.
+        if (meineGeneration !== ladeGeneration) return;
         hideLoading();
         console.error('Polymarket load error', err);
-        showError('Fehler beim Laden: ' + (err && err.message ? err.message : 'unbekannt'));
+        showError(SA.i18n.t('pmjs.ladefehler_allg', 'Fehler beim Laden: {m}')
+          .replace('{m}', (err && err.message ? err.message : 'unbekannt')));
       });
     }
 
@@ -572,7 +745,8 @@
           if (stats.error === 'no_data') {
             loading.style.display = 'none';
             err.style.display = 'block';
-            err.textContent = 'Noch keine Brier-Daten verfügbar. Scraper muss zuerst laufen.';
+            err.textContent = SA.i18n.t('pmjs.brier_keine_daten',
+              'Noch keine Brier-Daten verfügbar. Der Scraper muss zuerst laufen.');
             return;
           }
           loading.style.display = 'none';
@@ -587,27 +761,38 @@
           console.warn('[brier] load failed:', e);
           loading.style.display = 'none';
           err.style.display = 'block';
-          err.textContent = 'Brier-Statistiken konnten nicht geladen werden.';
+          err.textContent = SA.i18n.t('pmjs.brier_ladefehler',
+            'Brier-Statistiken konnten nicht geladen werden.');
         });
     }
 
     function renderBrierKpis(o) {
       var delta = (o.baseline_brier - o.brier);
-      var verdict = delta > 0.02 ? 'informativ' : (delta > 0 ? 'schwach informativ' : 'nicht besser als Basisrate');
+      // Jeder dieser Texte war fest deutsch und erschien auch auf /en/ —
+      // Codex hat das mit `SA.i18n.t = () => 'ENGLISH'` nachgewiesen: die
+      // Ausgabe enthielt weiter „Einstufung". Befund 17 war damit nicht
+      // vollstaendig behoben, meine fuenf Fundstellen waren nicht alle.
+      var t = function(k, f) { return SA.i18n.t(k, f); };
+      var verdict = delta > 0.02 ? t('pmjs.brier_informativ', 'informativ')
+        : (delta > 0 ? t('pmjs.brier_schwach', 'schwach informativ')
+                     : t('pmjs.brier_nicht_besser', 'nicht besser als Basisrate'));
       var verdictColor = delta > 0.02 ? '#30e878' : (delta > 0 ? 'var(--accent)' : '#ff4040');
 
       var html = [
-        ['Brier-Score', o.brier.toFixed(3), 'Ø (p - o)²'],
-        ['vs. Basisrate', (delta >= 0 ? '−' : '+') + Math.abs(delta).toFixed(3), 'Abstand (niedriger = besser)'],
-        ['vs. 50-50', (o.random_50_50_brier - o.brier).toFixed(3), 'klassische Referenz 0.25'],
-        ['Basisrate YES', (o.base_rate * 100).toFixed(1) + '%', 'Anteil der YES-Resolutions']
+        [t('pmjs.brier_score', 'Brier-Score'), o.brier.toFixed(3), 'Ø (p - o)²'],
+        [t('pmjs.brier_vs_basis', 'vs. Basisrate'), (delta >= 0 ? '−' : '+') + Math.abs(delta).toFixed(3),
+         t('pmjs.brier_abstand', 'Abstand (niedriger = besser)')],
+        [t('pmjs.brier_vs_5050', 'vs. 50-50'), (o.random_50_50_brier - o.brier).toFixed(3),
+         t('pmjs.brier_ref', 'klassische Referenz 0.25')],
+        [t('pmjs.brier_basisrate', 'Basisrate YES'), (o.base_rate * 100).toFixed(1) + '%',
+         t('pmjs.brier_anteil', 'Anteil YES je Prognosetag')]
       ].map(function(k) {
         return '<div class="kpi"><span class="kpi-label">' + k[0] + '</span>' +
                '<span class="kpi-value">' + k[1] + '</span>' +
                '<span style="font-size:.65rem;color:var(--muted);margin-top:.2rem">' + k[2] + '</span></div>';
       }).join('');
       html += '<div class="kpi" style="background:rgba(232,168,32,.08);border-color:var(--accent)">' +
-              '<span class="kpi-label">Einstufung</span>' +
+              '<span class="kpi-label">' + t('pmjs.brier_einstufung', 'Einstufung') + '</span>' +
               '<span class="kpi-value" style="color:' + verdictColor + ';font-size:.9rem">' + verdict + '</span>' +
               '</div>';
       document.getElementById('brier-kpis').innerHTML = html;
@@ -620,8 +805,10 @@
 
       var cfg = {
         series: [
-          { name: 'Beobachtet', type: 'scatter', data: scatterData },
-          { name: 'Perfekt kalibriert', type: 'line', data: [[0, 0], [100, 100]] }
+          { name: SA.i18n.t('pmjs.serie_beobachtet', 'Beobachtet'),
+            type: 'scatter', data: scatterData },
+          { name: SA.i18n.t('pmjs.serie_perfekt', 'Perfekt kalibriert'),
+            type: 'line', data: [[0, 0], [100, 100]] }
         ],
         chart: Object.assign({ type: 'line', height: 360, toolbar: { show: false } }, SA.chartTheme.chart),
         colors: ['#e8a820', 'rgba(168,152,120,.4)'],
@@ -630,11 +817,11 @@
         grid: SA.chartTheme.grid,
         xaxis: Object.assign({
           type: 'numeric', min: 0, max: 100,
-          title: { text: 'Prognostizierte Wahrscheinlichkeit (%)', style: { color: '#a89878', fontSize: '11px' } }
+          title: { text: SA.i18n.t('pmjs.achse_prognose', 'Prognostizierte Wahrscheinlichkeit (%)'), style: { color: '#a89878', fontSize: '11px' } }
         }, SA.chartTheme.xaxis, { labels: { style: { colors: '#a89878' }, formatter: function(v) { return Math.round(v) + '%'; } } }),
         yaxis: Object.assign({}, SA.chartTheme.yaxis, {
           min: 0, max: 100,
-          title: { text: 'Beobachtete Trefferrate (%)', style: { color: '#a89878', fontSize: '11px' } },
+          title: { text: SA.i18n.t('pmjs.achse_trefferrate', 'Beobachtete Trefferrate (%)'), style: { color: '#a89878', fontSize: '11px' } },
           labels: { style: { colors: '#a89878' }, formatter: function(v) { return Math.round(v) + '%'; } }
         }),
         tooltip: {
@@ -642,29 +829,38 @@
           custom: function(o) {
             var i = o.dataPointIndex;
             var s = o.seriesIndex;
-            if (s === 1) return '<div style="padding:.4rem .6rem">Perfekte Linie</div>';
+            if (s === 1) return '<div style="padding:.4rem .6rem">'
+              + SA.i18n.t('pmjs.tt_perfekte_linie', 'Perfekte Linie') + '</div>';
             var p = scatterData[i];
             var n = labels[i];
             return '<div style="padding:.4rem .6rem;font-size:.75rem">' +
-                   'Prognose: <b>' + p[0].toFixed(1) + '%</b><br>' +
-                   'Beobachtet: <b>' + p[1].toFixed(1) + '%</b><br>' +
-                   'n=' + n + ' Forecasts</div>';
+                   SA.i18n.t('pmjs.tt_prognose', 'Prognose') + ': <b>' + p[0].toFixed(1) + '%</b><br>' +
+                   SA.i18n.t('pmjs.tt_beobachtet', 'Beobachtet') + ': <b>' + p[1].toFixed(1) + '%</b><br>' +
+                   SA.i18n.t('pmjs.tt_n_forecasts', 'n={n} Prognosen').replace('{n}', n) + '</div>';
           }
         },
         legend: { show: true, position: 'top', horizontalAlign: 'right', labels: { colors: '#a89878' }, fontSize: '11px' }
       };
       var el = document.getElementById('chart-calibration');
-      if (el) new ApexCharts(el, cfg).render();
+      // Festhalten und vorher zerstoeren. Ohne das entstand beim Neuzeichnen
+      // eine ZWEITE Instanz im selben Ziel, und die deutsche Erstfassung blieb
+      // darunter stehen (Codex, Abnahme Runde 5: vier Instanzen, null
+      // destroy()). Alle uebrigen Diagramme dieser Seite laufen schon so.
+      destroyChart('calibration');
+      if (el) {
+        state.charts.calibration = new ApexCharts(el, cfg);
+        state.charts.calibration.render();
+      }
     }
 
     function renderCategoryTable(cats) {
-      if (!cats || !cats.length) { document.getElementById('brier-categories').innerHTML = '<p style="color:var(--muted);font-size:.75rem">Keine Daten</p>'; return; }
+      if (!cats || !cats.length) { document.getElementById('brier-categories').innerHTML = '<p style="color:var(--muted);font-size:.75rem">' + SA.i18n.t('pmjs.keine_daten', 'Keine Daten') + '</p>'; return; }
       var rows = cats.map(function(c) {
         var delta = (c.baseline || 0) - c.brier;
         var deltaColor = delta > 0.02 ? '#30e878' : (delta > 0 ? 'var(--accent)' : '#ff4040');
         var deltaStr = (delta >= 0 ? '−' : '+') + Math.abs(delta).toFixed(3);
         return '<tr>' +
-               '<td><b>' + c.category + '</b></td>' +
+               '<td><b>' + SA.polymarket.esc(c.category) + '</b></td>' +
                '<td class="num">' + c.markets + '</td>' +
                '<td class="num">' + c.forecasts + '</td>' +
                '<td class="num">' + c.brier.toFixed(3) + '</td>' +
@@ -674,14 +870,18 @@
       }).join('');
       document.getElementById('brier-categories').innerHTML =
         '<table class="perf-table" data-no-sort="1"><thead><tr>' +
-        '<th>Kategorie</th><th class="num">Markets</th><th class="num">Forecasts</th>' +
-        '<th class="num">Brier</th><th class="num">Basisrate-Baseline</th><th class="num">Δ</th>' +
+        '<th>' + SA.i18n.t('pmjs.sp_kategorie', 'Kategorie') + '</th>' +
+        '<th class="num">' + SA.i18n.t('pmjs.sp_markets', 'Markets') + '</th>' +
+        '<th class="num">' + SA.i18n.t('pmjs.sp_forecasts', 'Prognosen') + '</th>' +
+        '<th class="num">' + SA.i18n.t('pmjs.sp_brier', 'Brier') + '</th>' +
+        '<th class="num">' + SA.i18n.t('pmjs.sp_baseline', 'Basisrate-Baseline') + '</th>' +
+        '<th class="num">Δ</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table>';
     }
 
     function renderTimeBucketsChart(buckets) {
       var valid = (buckets || []).filter(function(b) { return b.count > 0 && b.brier != null; });
-      if (!valid.length) { document.getElementById('chart-time-buckets').innerHTML = '<p style="color:var(--muted);padding:1rem">Keine Daten</p>'; return; }
+      if (!valid.length) { document.getElementById('chart-time-buckets').innerHTML = '<p style="color:var(--muted);padding:1rem">' + SA.i18n.t('pmjs.keine_daten', 'Keine Daten') + '</p>'; return; }
       var cats = valid.map(function(b) { return b.bucket; });
       var data = valid.map(function(b) { return parseFloat(b.brier.toFixed(3)); });
       var counts = valid.map(function(b) { return b.count; });
@@ -692,9 +892,9 @@
         colors: ['#e8a820'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
         grid: SA.chartTheme.grid,
-        xaxis: Object.assign({ categories: cats, title: { text: 'Abstand zur Resolution', style: { color: '#a89878', fontSize: '11px' } } }, SA.chartTheme.xaxis),
+        xaxis: Object.assign({ categories: cats, title: { text: SA.i18n.t('pmjs.achse_abstand', 'Abstand zur Resolution'), style: { color: '#a89878', fontSize: '11px' } } }, SA.chartTheme.xaxis),
         yaxis: Object.assign({}, SA.chartTheme.yaxis, {
-          min: 0, title: { text: 'Brier-Score', style: { color: '#a89878', fontSize: '11px' } },
+          min: 0, title: { text: SA.i18n.t('pmjs.achse_brier', 'Brier-Score'), style: { color: '#a89878', fontSize: '11px' } },
           labels: { style: { colors: '#a89878' }, formatter: function(v) { return v.toFixed(2); } }
         }),
         dataLabels: { enabled: true, style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 },
@@ -709,7 +909,11 @@
         }
       };
       var el = document.getElementById('chart-time-buckets');
-      if (el) new ApexCharts(el, cfg).render();
+      destroyChart('timeBuckets');
+      if (el) {
+        state.charts.timeBuckets = new ApexCharts(el, cfg);
+        state.charts.timeBuckets.render();
+      }
     }
 
     function renderBrierMeta(meta) {
@@ -718,21 +922,56 @@
       var earliest = (meta.date_range && meta.date_range.earliest || '').substr(0, 10);
       var latest = (meta.date_range && meta.date_range.latest || '').substr(0, 10);
       var computed = (meta.computed_at || '').substr(0, 10);
-      mEl.textContent = meta.markets_count + ' resolved Markets · ' +
-                        meta.forecasts_count + ' Forecast-Snapshots · ' +
-                        'Resolutions ' + earliest + ' bis ' + latest + ' · ' +
-                        'Berechnet am ' + computed;
+      mEl.textContent =
+        SA.i18n.t('pmjs.meta_markets', '{n} aufgelöste Markets')
+          .replace('{n}', meta.markets_count) + ' · ' +
+        SA.i18n.t('pmjs.meta_snapshots', '{n} Prognose-Snapshots')
+          .replace('{n}', meta.forecasts_count) + ' · ' +
+        SA.i18n.t('pmjs.meta_zeitraum', 'Auflösungen {von} bis {bis}')
+          .replace('{von}', earliest).replace('{bis}', latest) + ' · ' +
+        SA.i18n.t('pmjs.meta_berechnet', 'Berechnet am {d}')
+          .replace('{d}', computed);
     }
 
     // ── Event-Listener ──
-    document.addEventListener('DOMContentLoaded', function() {
+    // Die dynamischen Texte dieser Seite entstehen im JS, also NACH dem
+    // Austausch der statischen `data-i18n`-Knoten. Trifft der Zeitgeber unten,
+    // bevor das Woerterbuch geladen ist, liefert `SA.i18n.t` den deutschen
+    // Ersatztext — und ohne Neuausgabe bleibt er stehen, auch wenn EN eine
+    // Sekunde spaeter ankommt (von Codex an den echten Funktionen
+    // reproduziert, Abnahme Runde 4). `landing/js/i18n.js` sendet dafuer
+    // `sa:i18n-bereit`.
+    //
+    // Eigene Funktion und nicht inline im DOMContentLoaded-Block: die Probe
+    // schneidet benannte Funktionen aus der Seite und fuehrt den Block nie
+    // aus. Inline waere diese Regel von keinem Test erreichbar gewesen.
+    //
+    // Einmalig: mehrfaches Neuzeichnen macht nur Arbeit, und `reload()` ist
+    // gegen Ueberholer per Ladegeneration geschuetzt.
+    function verdrahteUebersetzung() {
+      document.addEventListener('sa:i18n-bereit', function() {
+        reload();
+        loadBrierStats();
+      }, { once: true });
+    }
+
+    // Der Start als BENANNTE Funktion, damit ein Test ihn ausfuehren kann.
+    // Vorher stand er inline im DOMContentLoaded-Block: die Probe konnte dann
+    // nur in der Quelle nach dem Aufruf suchen, und ein auskommentierter
+    // Aufruf kam durch (Codex, Abnahme Runde 6). Ein Suchmuster ist hier kein
+    // Nachweis — das Ausfuehren ist einer.
+    function starteSeite() {
       document.getElementById('sel-category').addEventListener('change', reload);
       document.getElementById('sel-history').addEventListener('change', reload);
       // Kurz warten damit SA.supabase initialisiert ist
       setTimeout(reload, 200);
       // Brier-Stats async nachladen
       setTimeout(loadBrierStats, 400);
-    });
+
+      verdrahteUebersetzung();
+    }
+
+    document.addEventListener('DOMContentLoaded', starteSeite);
   })();
   </script>
 </body>

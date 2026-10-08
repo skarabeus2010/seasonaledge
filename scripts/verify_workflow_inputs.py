@@ -47,6 +47,13 @@ class Fall:
     erwartet_exit: int | None   # None = egal
     erwartet_args: list[str] | None = None   # Argumente an das Python-Skript
     erwartet_kein_aufruf: bool = False       # das Skript darf NICHT laufen
+    # Der Stub scheitert, sobald der Aufruf diesen Text enthaelt. Damit laesst
+    # sich ein Teilfehler nachstellen, statt die Fehlerweitergabe zu behaupten.
+    stub_scheitert_bei: str | None = None
+    # Dieses Skript darf NACH dem Fehlschlag nicht mehr gelaufen sein. Die
+    # Reihenfolge ist der eigentliche Schutz: ein gescheiterter Scrape, dem die
+    # Auswertung folgt, rechnet auf veralteten Daten weiter.
+    erwartet_nicht_aufgerufen: str | None = None
 
 
 # ── Workflows und ihre erwartete Matrix ─────────────────────────────────────
@@ -212,6 +219,19 @@ MATRIX: dict[str, list[Fall]] = {
         Fall("Freitext: Backtick in tags -> Abbruch",
              {"SA_EVENT": "workflow_dispatch", "SA_TAGS": "fed`id`",
               "SA_SKIP": "false"}, 1, erwartet_kein_aufruf=True),
+        # Fehlerweitergabe (Codex-Befund 4, 2026-10-07). Vorher stand hier
+        # `set -uo pipefail` OHNE -e: die Pipeline meldete den Fehler, das
+        # Skript lief weiter, und das letzte `echo Done` wurde zum Exit-Code.
+        # Die REIHENFOLGE ist der eigentliche Schutz — laeuft die Auswertung
+        # nach einem gescheiterten Scrape, rechnet sie den alten Bestand neu
+        # aus und die Seite zeigt eine frische Kennzahl auf veralteten Daten.
+        Fall("Scrape scheitert -> ROT und die Brier-Berechnung laeuft NICHT",
+             {"SA_EVENT": "schedule", "SA_TAGS": "", "SA_SKIP": ""},
+             1, stub_scheitert_bei="polymarket_scrape_resolved.py",
+             erwartet_nicht_aufgerufen="compute_brier_stats.py"),
+        Fall("Brier-Berechnung scheitert -> ROT",
+             {"SA_EVENT": "schedule", "SA_TAGS": "", "SA_SKIP": ""},
+             1, stub_scheitert_bei="compute_brier_stats.py"),
     ],
     "polymarket_daily.yml": [
         Fall("FAIL-CLOSED: SA_BACKFILL ungesetzt -> Abbruch",
@@ -220,12 +240,39 @@ MATRIX: dict[str, list[Fall]] = {
         Fall("Dispatch: Boolean ist Unsinn -> Abbruch",
              {"SA_EVENT": "workflow_dispatch", "SA_BACKFILL": "vielleicht"},
              1, erwartet_kein_aufruf=True),
+        # Fehlerweitergabe, siehe Begruendung bei brier_compute.yml.
+        # Die Faelle sind bewusst WOCHENTAGSUNABHAENGIG: das Skript liest
+        # `date -u +%u` fuer den Montags-Backfill. Im Fehlerfall bricht es vor
+        # dieser Stelle ab, im Normalfall wird ueber den Backfill nichts
+        # behauptet — sonst waere der Test montags rot.
+        # Erfolgskontrolle, KEIN Nachweis der Fehlerweitergabe: dieser Fall
+        # bleibt auch ohne den Fix gruen (Codex-Befund, Runde 2). Er steht hier,
+        # damit eine zu scharfe Korrektur den Normalfall nicht mitreisst.
+        Fall("Erfolgskontrolle (kein Fehlernachweis): normaler Lauf, Exit 0",
+             {"SA_EVENT": "schedule", "SA_BACKFILL": ""}, 0, []),
+        # workflow_dispatch mit SA_BACKFILL=true, damit der Backfill wirklich
+        # LAUFEN WUERDE. Mein erster Entwurf nahm `schedule` mit leerem Wert —
+        # dann ist der Backfill ausser montags ohnehin uebersprungen und die
+        # Aussage „KEIN Backfill" beweist nichts (Codex-Befund, Runde 2).
+        Fall("Snapshot scheitert -> ROT und KEIN Backfill (der sonst liefe)",
+             {"SA_EVENT": "workflow_dispatch", "SA_BACKFILL": "true"},
+             1, stub_scheitert_bei="polymarket_refresh.py",
+             erwartet_nicht_aufgerufen="polymarket_backfill.py"),
+        Fall("Backfill scheitert -> ROT",
+             {"SA_EVENT": "workflow_dispatch", "SA_BACKFILL": "true"},
+             1, stub_scheitert_bei="polymarket_backfill.py"),
     ],
 }
 
 STUB = """#!/bin/bash
 # Protokolliert nur, was aufgerufen wurde — fuehrt nichts aus.
 printf '%s\\n' "$*" >> "$SA_PROTOKOLL"
+# Nachgestellter Teilfehler: enthaelt der Aufruf den gesetzten Text, endet der
+# Stub mit 1. So wird die Fehlerweitergabe gemessen und nicht behauptet.
+if [ -n "${SA_STUB_FEHLER:-}" ] && printf '%s' "$*" | grep -qF -- "$SA_STUB_FEHLER"; then
+  echo "Stub: absichtlicher Fehlschlag fuer '$SA_STUB_FEHLER'" >&2
+  exit 1
+fi
 exit 0
 """
 
@@ -256,6 +303,8 @@ def fahre(skript: str, fall: Fall, arbeitsverz: Path) -> tuple[int, list[str], s
         "SA_PROTOKOLL": str(protokoll),
         "HOME": str(arbeitsverz),
     }
+    if fall.stub_scheitert_bei:
+        umgebung["SA_STUB_FEHLER"] = fall.stub_scheitert_bei
     for k, v in fall.umgebung.items():
         if v is not None:
             umgebung[k] = v
@@ -310,6 +359,12 @@ def main() -> int:
                 ist = args_aus_aufruf(zeilen)
                 if ist != fall.erwartet_args:
                     probleme.append(f"Argumente {ist}, erwartet {fall.erwartet_args}")
+            if fall.erwartet_nicht_aufgerufen:
+                nach = fall.erwartet_nicht_aufgerufen
+                if any(nach in z for z in zeilen):
+                    probleme.append(
+                        f"'{nach}' lief TROTZ des Fehlschlags — der Folgeschritt "
+                        "rechnet damit auf veralteten Daten weiter")
             # Eine Einschleusung darf nie einen zweiten Befehl erzeugt haben
             if any("pwned" in z or z.strip() == "id" for z in zeilen):
                 probleme.append("ein eingeschleuster Befehl wurde ausgefuehrt")

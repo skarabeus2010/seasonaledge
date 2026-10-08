@@ -14,6 +14,55 @@ var SA = window.SA || {};
 SA.polymarket = (function() {
   'use strict';
 
+  /* ── Gemeinsamer Vertrag mit der Python-Seite (Codex-Befund 10) ───────────
+     Dieselbe Rechnung lief hier und in shared/weekly_report.py, und sie kam zu
+     verschiedenen Zahlen. Fuenf Abweichungen, alle am Code bestaetigt:
+
+       1. Zeitrahmen: `new Date("2024-03-15")` parst UTC-Mitternacht, aber
+          `getFullYear/getMonth/getDate` lesen LOKAL. In New York verschob das
+          auf den Vortag — dieselbe Eingabe ergab in Berlin 50,0 % und in New
+          York 36,4 % (Messung von Codex). Python rechnet mit `date`, also mit
+          einem Kalenderdatum ohne Zone. Der Vertrag ist deshalb das
+          UTC-KALENDERDATUM, und hier wird durchgaengig `getUTC*` benutzt.
+       2. Schalttag: `new Date(2023, 1, 29)` rollt auf den 1. Maerz, Python
+          nimmt den 28. Februar. Der Vertrag ist der 28. — er haelt den
+          Vergleich im selben Monat. Eine Modellwahl, kein Naturgesetz.
+       3. Mindeststichprobe: Python verlangt 3 Jahre, hier genuegte EINES.
+       4. Preisfrische: Python laedt nur Zeilen der letzten 7 Tage, hier gab es
+          keine Altersgrenze.
+       5. Von mir dazugefunden: Python verwirft einen Endpreis <= 0, hier
+          genuegte `!= null`.
+
+     Die Gleichheit erzwingt scripts/verify_polymarket_zwillinge.py — es
+     fuettert BEIDE Seiten mit denselben Eingaben und vergleicht die Zahlen.
+     Ein gemeinsamer Vertrag als Datei kaeme nicht in den Browser, ohne einen
+     Bauschritt einzufuehren; der Zwillingstest ist die kleinere Mechanik. */
+  var VERTRAG = {
+    minStichprobe: 3,      // = POLY_DIV_MIN_SAMPLES in shared/weekly_report.py
+    preisFrischeTage: 7,   // = timedelta(days=7) in shared/supabase_client.py
+    schalttagErsatz: 28,   // 29.02. in einem Nicht-Schaltjahr -> 28.02.
+    // Ab welcher Luecke eine Linie BRECHEN muss. Die Kadenz ist ein
+    // Snapshot pro Tag; zwei Tage sind also schon eine Luecke und keine
+    // Schwankung. Vorher verband die Linie durch, und `curve: 'smooth'`
+    // erfand dazu noch eine Kruemmung (Codex-Befund 14).
+    lueckeTage: 2,
+    // In welchem Monat die Reihe eines Vergleichsjahres enden MUSS, damit
+    // sie als Jahresende gilt (11 = Dezember). Vorher wurde die letzte
+    // Zeile des Jahres genommen, egal wann: eine Reihe, die im Juni
+    // endete, lieferte eine Juni-Rendite unter der Beschriftung
+    // „Jahresende" (gemessen: 0,200 neben 0,500 fuer vollstaendige
+    // Jahre). Ein unvollstaendiges Vergleichsfenster ist kein Vergleich
+    // (Codex-Befund 13).
+    jahresendeMonat: 11,
+    // Ab welchem Abstand in Prozentpunkten die Bewertung ueberhaupt eine
+    // Richtung nennt. REDAKTIONELL GESETZT, nicht aus den Daten geschaetzt —
+    // bei Stichproben von drei bis gut einem Dutzend Jahren gibt es keine
+    // Grundlage fuer eine statistische Schwelle. Die Seite weist das aus.
+    // „nahe beieinander" heisst |Abstand| < 3 pp; genau 3 pp zaehlt schon als
+    // Richtung (Codex-Befund 13).
+    divergenzSchwellePp: 3
+  };
+
   /**
    * Maskiert einen Wert fuer die Ausgabe in HTML — inklusive Anfuehrungszeichen,
    * damit er auch in einem Attribut nicht ausbrechen kann.
@@ -99,11 +148,31 @@ SA.polymarket = (function() {
       totalProb += p;
     });
     var normalized = totalProb > 0 ? (weighted / totalProb) : 0;
+
+    // Die Balken liefen auf ROHEN Preisen, der Erwartungswert auf der durch
+    // `totalProb` normierten Verteilung — zwei verschiedene Grundlagen in einem
+    // Bild (Codex-Befund 14). `distNorm` ist die Grundlage, auf der auch der
+    // Erwartungswert steht; `dist` bleibt fuer alles erhalten, was die rohen
+    // Preise braucht.
+    var distNorm = {};
+    Object.keys(dist).forEach(function(k) {
+      distNorm[k] = totalProb > 0 ? dist[k] / totalProb : 0;
+    });
+
+    // `12plus` wiegt mit genau 12. Liegt dort Wahrscheinlichkeit, ist der
+    // Erwartungswert eine UNTERGRENZE und kein exakter Wert — der Kontrakt
+    // sagt „12 oder mehr", und wie viel mehr, sagt er nicht.
+    var tail = dist['12plus'] || 0;
+
     return {
       dist: dist,
+      distNorm: distNorm,
       totalProb: totalProb,
       expectedCuts: normalized,
-      expectedBps: normalized * 25
+      expectedBps: normalized * 25,
+      // Wahr, sobald im offenen Ende Wahrscheinlichkeit liegt.
+      istUntergrenze: tail > 0,
+      tailProb: tail
     };
   }
 
@@ -118,7 +187,12 @@ SA.polymarket = (function() {
   function renderFedDistChart(elementId, fedStats) {
     var order = ['0','1','2','3','4','5','6','7','8','9','10','11','12plus'];
     var cats = order.map(function(c) { return c === '12plus' ? '12+' : c; });
-    var probs = order.map(function(c) { return (fedStats.dist[c] || 0) * 100; });
+    // Normierte Verteilung, damit Balken und Erwartungswert auf derselben
+    // Grundlage stehen. Wie weit die Preissumme von 1 entfernt ist, steht als
+    // eigene Angabe daneben — sie ist die Information, die beim Normieren
+    // verloren geht.
+    var quelle = fedStats.distNorm || fedStats.dist || {};
+    var probs = order.map(function(c) { return (quelle[c] || 0) * 100; });
 
     // Farbgebung: Rot-Grün-Gradient nach Wahrscheinlichkeit (nicht nach "gut/schlecht" —
     // neutrale Verteilungs-Darstellung). Akzent-Gold fuer den Balken mit hoechster Prob.
@@ -168,7 +242,13 @@ SA.polymarket = (function() {
           borderColor: SA.COLORS.green,
           strokeDashArray: 4,
           label: {
-            text: 'E[Cuts] = ' + fedStats.expectedCuts.toFixed(2),
+            // Zweiter Ausgabepfad desselben Werts. Die KPI-Zeile trug das
+            // ≥ schon, die Chart-Annotation nicht — derselbe
+            // Erwartungswert stand dort ohne den Vorbehalt
+            // (Codex, Abnahme Runde 2). Eine Regel, die nur einen von
+            // zwei Ausgabepfaden kennt, ist keine Regel.
+            text: (fedStats.istUntergrenze ? '\u2265 ' : '')
+                  + 'E[Cuts] = ' + fedStats.expectedCuts.toFixed(2),
             style: { color: '#000', background: SA.COLORS.green, fontSize: '11px', fontWeight: 700 }
           }
         }]
@@ -178,6 +258,28 @@ SA.polymarket = (function() {
     var chart = new ApexCharts(document.getElementById(elementId), cfg);
     chart.render();
     return chart;
+  }
+
+  /**
+   * Setzt an jede Luecke einen Nullpunkt, damit die Linie dort BRICHT.
+   *
+   * Die Reihen kommen als {x,y}-Paare ohne Nullwerte: ein fehlender Tag fehlt
+   * einfach, und die Linie verbindet darueber hinweg. Der Leser sieht dann eine
+   * durchgehende Entwicklung, wo keine Messung vorliegt. Ein Nullwert zwischen
+   * den Punkten ist das Einzige, was ApexCharts als Unterbrechung zeichnet.
+   */
+  function mitLuecken(punkte) {
+    if (!punkte || punkte.length < 2) return punkte || [];
+    var grenze = VERTRAG.lueckeTage * 86400000;
+    var sortiert = punkte.slice().sort(function(a, b) { return a.x - b.x; });
+    var aus = [sortiert[0]];
+    for (var i = 1; i < sortiert.length; i++) {
+      if (sortiert[i].x - sortiert[i - 1].x > grenze) {
+        aus.push({ x: sortiert[i - 1].x + 1, y: null });
+      }
+      aus.push(sortiert[i]);
+    }
+    return aus;
   }
 
   /**
@@ -212,7 +314,7 @@ SA.polymarket = (function() {
     var series = order.map(function(c, i) {
       return {
         name: (c === '12plus' ? '12+' : c) + ' cuts',
-        data: byKey[c] || [],
+        data: mitLuecken(byKey[c] || []),
         color: palette[i]
       };
     }).filter(function(s) { return s.data.length > 0; });
@@ -220,7 +322,7 @@ SA.polymarket = (function() {
     var cfg = {
       series: series,
       chart: Object.assign({ type: 'line', height: 340, zoom: { enabled: false } }, SA.chartTheme.chart),
-      stroke: { width: 2, curve: 'smooth' },
+      stroke: { width: 2, curve: 'straight' },
       grid: SA.chartTheme.grid,
       tooltip: { theme: 'dark', x: { format: 'dd. MMM yy' }, y: { formatter: function(v) { return v.toFixed(1) + '%'; } } },
       xaxis: { type: 'datetime', labels: { style: { colors: '#a89878', fontSize: '11px' } } },
@@ -353,8 +455,16 @@ SA.polymarket = (function() {
                    '#ffd43b','#ff922b','#20c997','#e64980','#748ffc'];
     var series = Object.keys(buckets).slice(0, 10).map(function(cid, i) {
       return {
-        name: (byCid[cid].question || byCid[cid].slug).slice(0, 40),
-        data: buckets[cid],
+        // ApexCharts schreibt Legendennamen und Tooltip-Titel per innerHTML (am
+        // ausgelieferten Bundle geprueft) -> der Name muss maskiert ankommen.
+        // Reihenfolge: ERST kuerzen, DANN maskieren, sonst zerschneidet der
+        // 40-Zeichen-Schnitt eine Entitaet wie "&amp;" zu "&a".
+        name: esc((byCid[cid].question || byCid[cid].slug).slice(0, 40)),
+        // Dieselbe Lueckenregel wie im Fed-Trend-Chart. Sie fehlte hier, und
+        // der Waechter prueefte nur den Fed-Renderer (Codex, Abnahme
+        // 2026-10-08) — eine Linie verband also weiter ueber fehlende Tage
+        // hinweg und behauptete Messwerte, die es nicht gibt.
+        data: mitLuecken(buckets[cid]),
         color: palette[i % palette.length]
       };
     });
@@ -381,7 +491,7 @@ SA.polymarket = (function() {
     var cfg = {
       series: series,
       chart: Object.assign({ type: 'line', height: 380, zoom: { enabled: false } }, SA.chartTheme.chart),
-      stroke: { width: 2, curve: 'smooth' },
+      stroke: { width: 2, curve: 'straight' },
       grid: SA.chartTheme.grid,
       tooltip: { theme: 'dark', x: { format: 'dd. MMM yy' }, y: { formatter: function(v) { return v.toFixed(1) + '%'; } } },
       xaxis: { type: 'datetime', labels: { style: { colors: '#a89878', fontSize: '11px' } } },
@@ -411,36 +521,63 @@ SA.polymarket = (function() {
    * @returns {samples: [{year, yStart, yEnd, ret}], n: int}
    */
   function collectYearEndReturns(priceRows, asOfDate) {
-    if (!priceRows || !priceRows.length) return { samples: [], n: 0 };
+    if (!priceRows || !priceRows.length) return { samples: [], n: 0, zuDuenn: true };
     var ref = asOfDate || new Date();
-    var refMonth = ref.getMonth();   // 0-11
-    var refDay = ref.getDate();
+    // UTC durchgaengig — siehe VERTRAG, Punkt 1.
+    var refMonth = ref.getUTCMonth();   // 0-11
+    var refDay = ref.getUTCDate();
 
-    // Gruppiere nach Jahr
     var byYear = {};
     priceRows.forEach(function(r) {
+      // Dieselbe Verwerfungsregel wie shared/weekly_report.py: eine Zeile ohne
+      // Datum, ohne Kurs oder mit nicht lesbarem Kurs faellt heraus. Vorher
+      // nahm JS sie mit — eine Zeile mit `close: null` am Stichtag wurde zum
+      // Startpreis, und derselbe Datensatz ergab in Python drei Renditen und
+      // in JS keine einzige (Codex, Abnahme 2026-10-08). Zwei Rechenwege mit
+      // verschiedenen Eingangsfiltern sind keine Zwillinge.
+      if (!r || !r.date || r.close === null || r.close === undefined) return;
+      // Der Leerstring ist KEIN Kurs: `Number('')` ist 0, und 0 ist
+      // endlich — die Zeile waere also durchgekommen und haette als
+      // Startpreis 0 das ganze Jahr verworfen, waehrend Python sie
+      // uebersprang und den Folgetag nahm. Gemessen: Python [0.5, 0.5,
+      // 0.5], JS [] (Codex, Abnahme Runde 2).
+      if (typeof r.close === 'string' && r.close.trim() === '') return;
+      var close = Number(r.close);
+      if (!isFinite(close)) return;
       var d = new Date(r.date);
-      var y = d.getFullYear();
+      if (isNaN(d.getTime())) return;
+      var y = d.getUTCFullYear();
       if (!byYear[y]) byYear[y] = [];
-      byYear[y].push({ d: d, close: r.close });
+      byYear[y].push({ d: d, close: close });
     });
 
     var samples = [];
-    var currentYear = ref.getFullYear();
+    var currentYear = ref.getUTCFullYear();
     Object.keys(byYear).forEach(function(y) {
       var yearInt = parseInt(y, 10);
       if (yearInt >= currentYear) return; // nur Vergangenheit
       var rows = byYear[y].sort(function(a, b) { return a.d - b.d; });
 
-      // Suche Preis am oder nach (refMonth, refDay) in diesem Jahr
-      var refInYear = new Date(yearInt, refMonth, refDay);
+      // Stichtag im Vergleichsjahr, als UTC-Kalenderdatum. Der Schalttag faellt
+      // auf den 28., statt auf den 1. Maerz zu rollen (VERTRAG, Punkt 2).
+      var tag = refDay;
+      if (refMonth === 1 && refDay === 29) {
+        var schalt = new Date(Date.UTC(yearInt, 1, 29));
+        if (schalt.getUTCMonth() !== 1) tag = VERTRAG.schalttagErsatz;
+      }
+      var refInYear = new Date(Date.UTC(yearInt, refMonth, tag));
       var startPrice = null;
       for (var i = 0; i < rows.length; i++) {
         if (rows[i].d >= refInYear) { startPrice = rows[i].close; break; }
       }
-      // Letzter Preis im Jahr (Year-End oder naehester Handelstag)
-      var endPrice = rows.length ? rows[rows.length - 1].close : null;
-      if (startPrice != null && endPrice != null && startPrice > 0) {
+      // Das Vergleichsfenster muss VOLLSTAENDIG sein: die letzte Zeile des
+      // Jahres muss im Jahresendmonat liegen. Sonst ist es keine
+      // Jahresend-Rendite, auch wenn sie so heisst.
+      var letzte = rows.length ? rows[rows.length - 1] : null;
+      var endPrice = (letzte && letzte.d.getUTCMonth() === VERTRAG.jahresendeMonat)
+        ? letzte.close : null;
+      // Beide Preise muessen positiv sein (VERTRAG, Punkt 5).
+      if (startPrice != null && startPrice > 0 && endPrice != null && endPrice > 0) {
         samples.push({
           year: yearInt,
           yStart: startPrice,
@@ -449,7 +586,14 @@ SA.polymarket = (function() {
         });
       }
     });
-    return { samples: samples, n: samples.length };
+    // `zuDuenn` statt stillem Durchlassen: unter der Mindeststichprobe gibt es
+    // keinen Prior (VERTRAG, Punkt 3). Vorher rechnete die Seite schon mit
+    // EINEM Jahr, waehrend der Newsletter drei verlangte.
+    return {
+      samples: samples,
+      n: samples.length,
+      zuDuenn: samples.length < VERTRAG.minStichprobe
+    };
   }
 
   /**
@@ -459,8 +603,16 @@ SA.polymarket = (function() {
    */
   function empiricalAboveProbability(samples, targetReturn) {
     if (!samples.length) return null;
-    var above = samples.filter(function(s) { return s.ret >= targetReturn; }).length;
-    return above / samples.length;
+    return empiricalAboveCount(samples, targetReturn) / samples.length;
+  }
+
+  /** Die Fallzahl hinter dem Anteil. Eine Haeufigkeit ohne k und n laesst sich
+   *  nicht einordnen: 40 % aus 2 von 5 Jahren ist etwas anderes als 40 % aus
+   *  40 von 100. Bewusst eine eigene Funktion, damit der Rueckgabewert von
+   *  `empiricalAboveProbability` unveraendert bleibt — er steht im
+   *  Zwillingsvertrag mit shared/weekly_report.py. */
+  function empiricalAboveCount(samples, targetReturn) {
+    return samples.filter(function(s) { return s.ret >= targetReturn; }).length;
   }
 
   /**
@@ -483,7 +635,12 @@ SA.polymarket = (function() {
       var targetK = parseInt(match[2], 10);
       var targetPrice = targetK * 1000;
       var requiredRet = currentPrice > 0 ? (targetPrice / currentPrice - 1) : null;
-      var priorProb = requiredRet != null ? empiricalAboveProbability(histData.samples, requiredRet) : null;
+      // Kein Prior bei zu duenner Stichprobe — sonst steht auf der Seite eine
+      // Zahl, die der Newsletter aus denselben Daten verweigert.
+      var priorProb = (requiredRet != null && !histData.zuDuenn)
+        ? empiricalAboveProbability(histData.samples, requiredRet) : null;
+      var priorK = (priorProb != null)
+        ? empiricalAboveCount(histData.samples, requiredRet) : null;
 
       var snap = latestPrices[m.condition_id];
       var marketProb = snap ? (snap.yes_price || 0) : 0;
@@ -492,7 +649,9 @@ SA.polymarket = (function() {
         target: '$' + targetK + 'k',
         requiredRet: requiredRet,
         marketProb: marketProb,
-        priorProb: priorProb
+        priorProb: priorProb,
+        priorK: priorK,
+        priorN: histData.n
       };
     }).filter(function(r) { return r; }).sort(function(a, b) {
       return parseInt(a.target.replace(/\D/g, ''), 10) - parseInt(b.target.replace(/\D/g, ''), 10);
@@ -500,15 +659,29 @@ SA.polymarket = (function() {
 
     var tbody = rows.map(function(r) {
       var mkt = (r.marketProb * 100).toFixed(1) + '%';
-      var pri = r.priorProb != null ? (r.priorProb * 100).toFixed(1) + '%' : '—';
+      // Ganze Prozent plus Fallzahl. Eine Dezimalstelle auf drei bis gut einem
+      // Dutzend Jahren ist Schein: bei n=5 kann der Anteil nur 0, 20, 40 … sein,
+      // „40,0 %" suggeriert eine Genauigkeit, die es nicht gibt.
+      var pri = r.priorProb != null
+        ? (Math.round(r.priorProb * 100) + '% <span style="color:var(--muted)">('
+           + r.priorK + '/' + r.priorN + ')</span>')
+        : '—';
       var reqRet = r.requiredRet != null ? ((r.requiredRet >= 0 ? '+' : '') + (r.requiredRet * 100).toFixed(1) + '%') : '—';
 
       var diverge = null, verdict = '—', cls = '';
       if (r.priorProb != null) {
         diverge = (r.priorProb - r.marketProb) * 100;
-        if (Math.abs(diverge) < 3) { verdict = _en ? SA.i18n.t('pmjs.verdict_aligned') : 'Im Einklang'; cls = ''; }
-        else if (diverge > 0) { verdict = _en ? SA.i18n.t('pmjs.verdict_seasonal_above') : 'Saisonal > Markt ·  Markt unterschaetzt'; cls = 'pos'; }
-        else { verdict = _en ? SA.i18n.t('pmjs.verdict_market_above') : 'Markt > Saisonal ·  Markt ueberschaetzt'; cls = 'neg'; }
+        // Nur die Richtung des ABSTANDS, kein Urteil darueber, welche der
+        // beiden Zahlen richtig liegt. „Markt unterschaetzt" behauptete
+        // genau das — und der Prior ist eine Haeufigkeit auf wenigen Jahren
+        // (Codex-Befund 13).
+        if (Math.abs(diverge) < VERTRAG.divergenzSchwellePp) {
+          verdict = SA.i18n.t('pmjs.verdict_aligned', 'nahe beieinander'); cls = '';
+        } else if (diverge > 0) {
+          verdict = SA.i18n.t('pmjs.verdict_seasonal_above', 'Prior über Markt'); cls = 'pos';
+        } else {
+          verdict = SA.i18n.t('pmjs.verdict_market_above', 'Markt über Prior'); cls = 'neg';
+        }
       }
       var divStr = diverge == null ? '—' : ((diverge >= 0 ? '+' : '') + diverge.toFixed(1) + 'pp');
 
@@ -530,9 +703,11 @@ SA.polymarket = (function() {
           ? (SA.i18n.t('pmjs.history_label') + ': ' + histData.n + ' ' + SA.i18n.t('pmjs.years_samples') + ' · ' + SA.i18n.t('pmjs.current_price') + ': $' +
             (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
             ' · ' + SA.i18n.t('pmjs.seasonal_prior_desc'))
-          : ('Historie: ' + histData.n + ' Jahre Samples · aktueller Kurs: $' +
+          : ('Historie: ' + histData.n + ' vollständige Jahre · aktueller Kurs: $' +
             (currentPrice >= 10000 ? Math.round(currentPrice).toLocaleString() : currentPrice.toFixed(0)) +
-            ' · Saisonal-Prior = % der Vergangenheit mit Year-End ≥ benötigter Return ab heutigem Tag.')) +
+            ' · Saisonal-Prior = Anteil dieser Jahre, in denen der benötigte Return ab dem heutigen'
+            + ' Kalendertag bis Jahresende erreicht wurde. Jedes Jahr liefert genau ein Fenster;'
+            + ' die Jahre sind nicht garantiert vergleichbar, weil sich das Marktregime ändert.')) +
       '</div>' +
       '<table class="perf-table" data-no-sort="1">' +
       '<thead><tr>' +
@@ -601,12 +776,16 @@ SA.polymarket = (function() {
   // ── Public API ────────────────────────────────────────────────────────────
 
   return {
+    // Bewusst exportiert, damit das Inline-JS der Seite nicht eine ZWEITE
+    // Maskierung mitschleppt — zwei Fassungen derselben Regel driften.
+    esc: esc,
     loadCatalog: loadCatalog,
     loadLatestPrices: loadLatestPrices,
     loadHistory: loadHistory,
     computeFedDistribution: computeFedDistribution,
     collectYearEndReturns: collectYearEndReturns,
     empiricalAboveProbability: empiricalAboveProbability,
+    empiricalAboveCount: empiricalAboveCount,
     renderFedDistChart: renderFedDistChart,
     renderFedTrendChart: renderFedTrendChart,
     renderRiskGauges: renderRiskGauges,

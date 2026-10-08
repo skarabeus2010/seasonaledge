@@ -4,36 +4,116 @@ on:
   push:
     branches: [master]
 
+# Zwei Deploys arbeiten sonst gleichzeitig im selben Serververzeichnis.
+# cancel-in-progress bewusst FALSE: ein mitten im Ausrollen abgebrochener Lauf
+# liesse den Server in einem halben Zustand zurueck — schlimmer als warten.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Gate VOR dem Ausrollen. Die Probe braucht nur node und die Dateien im
+      # Baum — keine Cron-Ausgaben, keine Zugangsdaten. Deshalb laeuft sie hier
+      # auf dem Runner und nicht in der ssh-action: node ist auf ubuntu-latest
+      # vorhanden, auf dem VPS nicht nachgewiesen. Fehlt node doch, endet der
+      # Schritt mit "command not found" und damit ROT — nicht still gruen
+      # (derselbe Fehler steckte 2026-09-11 im Zwillings-Waechter).
+      # fetch-depth: 2, weil der Cache-Waechter HEAD gegen HEAD~1 vergleicht.
+      # Der Standard 1 liefert kein HEAD~1 — Codex hat nachgestellt, dass der
+      # Waechter dann „kein Woerterbuch geaendert" meldete und gruen durchlief.
+      # Ein Gate, das seine eigene Voraussetzung nicht hat, prueft nichts.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Waechter - Maskierung auf /polymarket
+        run: node scripts/js/probe_polymarket_maskierung.js
+      # Prueft deploy/pruefe_commit.sh mit einem git-Stub, also BEVOR es auf dem
+      # Server laeuft. Braucht nur bash und die Standardbibliothek.
+      - name: Waechter - Abschnitte und Ladegeneration auf /polymarket
+        run: node scripts/js/probe_polymarket_abschnitte.js
+      - name: Waechter - Discovery nimmt nichts Unpassendes an
+        run: python3 scripts/verify_polymarket_discovery.py
+      - name: Waechter - Zwillinge Python/JS auf /polymarket
+        run: python3 scripts/verify_polymarket_zwillinge.py
+      - name: Waechter - Fed-Verteilung auf /polymarket
+        run: node scripts/js/probe_polymarket_fedverteilung.js
+      - name: Waechter - Kalibrierungs-Aussagen auf /polymarket
+        run: node scripts/js/probe_polymarket_kalibrierung.js
+      - name: Waechter - Divergenz-Analyse auf /polymarket
+        run: node scripts/js/probe_polymarket_divergenz.js
+      # Eine Textkorrektur ohne neue Cache-Kennung erreicht den Leser nicht:
+      # i18n.js legt das Woerterbuch unter sa-i18n-<_JSON_VER> ab. Ein
+      # wiederkehrender Besucher las sonst weiter die alte Fassung.
+      - name: Waechter - Cache-Kennung der Woerterbuecher
+        run: python3 scripts/verify_i18n_cache_version.py
+      - name: Waechter - Commit-Bindung des Deploys
+        run: python3 scripts/verify_deploy_commitbindung.py
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          SA_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
+          envs: SA_SHA
           script: |
             cd /opt/seasonaledge
+
+            # Holen zuerst: das veraendert den Arbeitsbaum NICHT, bringt aber die
+            # Objekte des geprueften Commits auf den Server.
+            : "${SA_SHA?Uebertragung fehlgeschlagen: SA_SHA fehlt}"
+            if ! git fetch origin master; then
+              echo "::error::git fetch fehlgeschlagen — Arbeitsbaum unveraendert."
+              exit 1
+            fi
+
+            # Die Bindung laeuft aus der GEPRUEFTEN Fassung des Skripts, gezogen
+            # aus dem geholten Commit — nicht aus dem Arbeitsbaum des Servers.
+            # Zwei Gruende, beide von Codex gefunden: beim ersten Lauf liegt die
+            # Datei im Arbeitsbaum noch nicht (der Deploy haette sich selbst
+            # blockiert), und danach liefe die Server-Fassung, waehrend das Gate
+            # auf dem Runner die neue geprueft hat.
+            # Exklusiv angelegtes privates Verzeichnis, KEIN vorhersagbarer Pfad.
+            # Der Server wird mit einem zweiten Projekt geteilt; eine feste Datei
+            # wie /tmp/sa_pruefe_commit.sh koennte ein lokaler Nutzer vorher als
+            # Symlink anlegen oder zwischen Schreiben und Ausfuehren austauschen —
+            # und ausgefuehrt wird hier als root (Codex-Befund, Runde 5).
+            SA_TMP=$(mktemp -d) || { echo "::error::mktemp -d fehlgeschlagen."; exit 1; }
+            chmod 700 "$SA_TMP"
+            trap 'rm -rf "$SA_TMP"' EXIT
+            if ! git show "$SA_SHA:deploy/pruefe_commit.sh" > "$SA_TMP/pruefe_commit.sh"; then
+              echo "::error::Geprueefte Fassung von deploy/pruefe_commit.sh nicht"
+              echo "aus $SA_SHA lesbar — Abbruch, nichts veraendert."
+              exit 1
+            fi
+            # Erst NUR vergleichen: bricht dieser Schritt ab, ist der
+            # Arbeitsbaum unangetastet und die live gebundene Seite liefert
+            # weiter den alten, funktionierenden Stand. Vorher liefen die
+            # Reverts davor — ein Abbruch hinterliess landing/ mit
+            # Credential-Platzhaltern (Codex, Abnahme 2026-10-08).
+            if ! bash "$SA_TMP/pruefe_commit.sh" --nur-vergleich; then
+              echo "::error::Commit-Bindung fehlgeschlagen — nichts veraendert."
+              exit 1
+            fi
+
+            # Jetzt die Reverts: inject_credentials.sh aendert landing/
+            # in-place, und diese Aenderungen blockieren sonst das Vorspulen.
             git checkout -- seo/output/ 2>/dev/null || true
             git checkout -- landing/ 2>/dev/null || true
 
-            # Der Pull MUSS den Job fehlschlagen lassen, wenn er abbricht. Ohne das
-            # meldet der Deploy "success", waehrend der Server auf dem alten Commit
-            # stehen bleibt — die neue Seite/der Fix fehlt lautlos.
-            # Passiert am 2026-09-17: scripts/skewfix_status.sh hatte auf dem Server
-            # ein abweichendes Mode-Bit (chmod +x von Hand), der zugehoerige Commit
-            # setzte dasselbe Bit in git -> "local changes would be overwritten,
-            # Aborting". Der Revert oben deckt nur landing/ und seo/output/ ab;
-            # alles ausserhalb blockiert den Pull.
-            # Frueherer Fall derselben Klasse: uncommittete nginx.conf (CLAUDE.md).
-            if ! git pull origin master; then
-              echo "::error::git pull abgebrochen — Server bleibt auf $(git rev-parse --short HEAD)."
-              echo "Blockierende Dateien ausserhalb von landing/ und seo/output/:"
-              git status --porcelain | grep -v '^??' | grep -vE ' (landing|seo/output)/' || true
-              echo "Aufloesen: auf dem Server pruefen (git diff <datei>), dann"
-              echo "  git checkout -- <datei>   (nur wenn die Aenderung verzichtbar ist)"
+            # Ab hier ist der Baum angefasst. Scheitert das Vorspulen, traegt
+            # landing/ die Platzhalter aus dem Commit — deshalb wird die
+            # Auslieferbarkeit vor dem Abbruch wiederhergestellt.
+            if ! bash "$SA_TMP/pruefe_commit.sh"; then
+              echo "::error::Commit-Bindung fehlgeschlagen — Auslieferbarkeit" \
+                   "wird wiederhergestellt, nichts Neues ausgerollt."
+              bash deploy/inject_credentials.sh /opt/seasonaledge || \
+                echo "::error::Wiederherstellung fehlgeschlagen — Seite pruefen!"
               exit 1
             fi
 

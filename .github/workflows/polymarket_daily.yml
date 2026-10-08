@@ -38,7 +38,13 @@ jobs:
           command_timeout: 40m
           envs: SA_EVENT,SA_BACKFILL
           script: |
-            set -uo pipefail
+            # -e fehlte: `pipefail` liefert den Fehlerstatus der Pipeline, aber
+            # ohne errexit lief das Skript weiter und das letzte `echo Done`
+            # wurde zum Exit-Code. Ein gescheiterter Snapshot war damit ein
+            # GRUENER Lauf. Geprueft: die einzigen Kommandos, die hier legitim
+            # ungleich null zurueckgeben, stehen in `if`-Bedingungen, und dort
+            # greift errexit nicht — der Zusatz bricht also nichts Bestehendes.
+            set -euo pipefail
             # FAIL-CLOSED: eine nicht angekommene Eingabe darf nicht in den
             # Standard fallen. Auf dem Zeitplan sind die Variablen gesetzt und
             # LEER, bei Transportfehler UNGESETZT — ${VAR?} unterscheidet das.
@@ -57,14 +63,23 @@ jobs:
               esac
             fi
 
+            # Die Pruefung steht im `if`, damit bei einem Fehlschlag noch eine
+            # EIGENE Zeile ins Log geht. Mit blossem errexit bricht die Shell
+            # stumm ab, und im Protokoll steht nur abgeschnittene Python-Ausgabe.
             echo "[polymarket-daily] Step 1/2: snapshot (26 markets)"
-            docker exec seasonalpha-app python3 scripts/polymarket_refresh.py 2>&1 | tail -30
+            if ! docker exec seasonalpha-app python3 scripts/polymarket_refresh.py 2>&1 | tail -40; then
+              echo "[polymarket-daily] FEHLER: snapshot fehlgeschlagen"
+              exit 1
+            fi
 
             # Montags ODER workflow_dispatch mit include_backfill=true: Backfill
             DOW=$(date -u +%u)  # 1 = Montag, 7 = Sonntag
             if [ "$DOW" = "1" ] || [ "$SA_BACKFILL" = "true" ]; then
               echo "[polymarket-daily] Step 2/2: backfill (volle Historie)"
-              docker exec seasonalpha-app python3 scripts/polymarket_backfill.py 2>&1 | tail -20
+              if ! docker exec seasonalpha-app python3 scripts/polymarket_backfill.py 2>&1 | tail -40; then
+                echo "[polymarket-daily] FEHLER: backfill fehlgeschlagen"
+                exit 1
+              fi
             else
               echo "[polymarket-daily] Step 2/2: skip backfill (nicht Montag)"
             fi

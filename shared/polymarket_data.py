@@ -25,6 +25,7 @@ Wichtige Feldnamen (Gamma):
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 import pathlib
@@ -193,7 +194,8 @@ def normalize_market(raw: dict) -> dict:
         condition_id, question, end_date, yes_token_id, no_token_id,
         liquidity_usd, volume_total_usd, meta
     """
-    yes_token, no_token = _extract_token_ids(raw.get("clobTokenIds"))
+    yes_token, no_token = _extract_token_ids(raw.get("clobTokenIds"),
+                                             raw.get("outcomes"))
 
     return {
         "condition_id": raw.get("conditionId") or "",
@@ -214,19 +216,43 @@ def normalize_market(raw: dict) -> dict:
     }
 
 
-def _extract_token_ids(clob_token_ids) -> tuple[str, str]:
-    """clobTokenIds kommt als JSON-String oder Liste. Gibt (yes, no) zurueck."""
-    if not clob_token_ids:
-        return "", ""
-    tokens = clob_token_ids
-    if isinstance(tokens, str):
+def _als_liste(wert):
+    """Gamma liefert Listenfelder teils als JSON-String. Gibt eine Liste oder None."""
+    if isinstance(wert, list):
+        return wert
+    if isinstance(wert, str):
         try:
-            tokens = json.loads(tokens)
+            geparst = json.loads(wert)
         except (ValueError, TypeError):
-            return "", ""
-    if not isinstance(tokens, list) or len(tokens) < 2:
+            return None
+        return geparst if isinstance(geparst, list) else None
+    return None
+
+
+def _extract_token_ids(clob_token_ids, outcomes=None) -> tuple[str, str]:
+    """clobTokenIds kommt als JSON-String oder Liste. Gibt (yes, no) zurueck.
+
+    Die Zuordnung folgt `outcomes`, nicht der Position. Vorher galt fest
+    „[YES, NO]"; das ist bei Polymarket die ueblichste, aber keine zugesicherte
+    Reihenfolge, und eine Verwechslung dreht jeden Preis dieses Marktes um
+    (1 - p statt p) — ohne dass irgendwo etwas scheitert. Steht in `outcomes`
+    kein Ja/Nein-Paar, bleibt die Position als benannter Rueckfall.
+    """
+    tokens = _als_liste(clob_token_ids)
+    if not tokens or len(tokens) < 2:
         return "", ""
-    # Konvention bei Polymarket: [YES, NO]
+
+    namen = _als_liste(outcomes)
+    if namen and len(namen) >= 2:
+        klein = [str(n).strip().lower() for n in namen[:len(tokens)]]
+        JA = {"yes", "ja", "true"}
+        NEIN = {"no", "nein", "false"}
+        i_ja = next((i for i, n in enumerate(klein) if n in JA), None)
+        i_nein = next((i for i, n in enumerate(klein) if n in NEIN), None)
+        if i_ja is not None and i_nein is not None and i_ja != i_nein:
+            return (str(tokens[i_ja]) or "", str(tokens[i_nein]) or "")
+
+    # Rueckfall: uebliche Reihenfolge [YES, NO].
     return (str(tokens[0]) or "", str(tokens[1]) or "")
 
 
@@ -311,8 +337,18 @@ def fetch_price_history(
     history = data.get("history") or []
     out = []
     for pt in history:
-        ts = pt.get("t") or pt.get("timestamp")
-        p = _safe_float(pt.get("p") or pt.get("price"))
+        # `or` verwirft eine echte Null: fuer p = 0.0 ist der Ausdruck falsch und
+        # faellt auf den zweiten Schluessel durch, der meist fehlt -> der Punkt
+        # verschwand. Gemessen: `{"t": 123, "p": 0.0}` ergab None. Ein Preis von
+        # 0 ist aber eine Aussage ("so gut wie ausgeschlossen"), kein fehlender
+        # Wert. Deshalb wird auf VORHANDENSEIN geprueft, nicht auf Wahrheit.
+        ts = pt.get("t")
+        if ts is None:
+            ts = pt.get("timestamp")
+        roh_p = pt.get("p")
+        if roh_p is None:
+            roh_p = pt.get("price")
+        p = _safe_float(roh_p)
         if ts is None or p is None:
             continue
         out.append({"t": int(ts), "p": p})
@@ -323,13 +359,25 @@ def fetch_price_history(
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 def _safe_float(x) -> float | None:
-    """Liberale Konvertierung zu float, None bei Fehler/leer."""
+    """Konvertierung zu float, None bei Fehler, leer oder nicht endlich.
+
+    Gemessen 2026-10-07: `float("nan")`, `"inf"` und `"-inf"` kamen hier als
+    gueltige Zahlen heraus und wanderten als Preis weiter. NaN ist in diesen
+    Daten nie eine Messung, sondern immer ein Fehler — und ein NaN-Preis faellt
+    spaeter nicht auf, weil jeder Vergleich mit ihm falsch ergibt.
+
+    Eine echte **Null** bleibt dagegen ein Wert: `0.0` ist die Aussage „so gut
+    wie ausgeschlossen" und wird nicht verworfen.
+    """
     if x is None or x == "":
         return None
     try:
-        return float(x)
+        f = float(x)
     except (TypeError, ValueError):
         return None
+    if not math.isfinite(f):
+        return None
+    return f
 
 
 # ── YAML-Loader (kuratiertes Market-Set) ──────────────────────────────────────

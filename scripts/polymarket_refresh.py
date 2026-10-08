@@ -42,7 +42,14 @@ def build_price_record(condition_id: str, snap: dict, ts: datetime) -> dict:
         "yes_price": snap["yes_price"],
         "volume_24h": snap.get("volume_24h"),
         "spread": snap.get("spread"),
-        "source": "clob",
+        # Die Zeile stammt aus der Gamma-API (fetch_current_price ->
+        # fetch_market_by_condition_id), NICHT aus dem CLOB-Orderbuch. Die
+        # bisherige Angabe "clob" war falsch und haette bei jeder Auswertung
+        # nach Quelle in die Irre gefuehrt. Nichts filtert heute darauf
+        # (geprueft), die Berichtigung ist also folgenlos — ALTE Zeilen tragen
+        # weiterhin die falsche Angabe, das laesst sich ohne Migration nicht
+        # ruekwirkend richtigstellen.
+        "source": "gamma-snapshot",
     }
 
 

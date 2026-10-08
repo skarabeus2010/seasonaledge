@@ -98,7 +98,17 @@ SA.i18n = (function() {
   }
 
   // Bump this version whenever en.json gains new keys — busts sessionStorage cache
-  var _JSON_VER = 'v7';
+  // v8 (2026-10-09): die EN-Texte auf /polymarket wurden inhaltlich
+  // korrigiert (zurueckgenommene Behauptungen). Ohne Erhoehung liefert
+  // der **sessionStorage**-Cache weiter das ALTE Woerterbuch, solange der
+  // Tab offen ist, und die Korrektur erreicht den Leser in dieser Sitzung
+  // nicht (Codex, Abnahme Runde 2 — am gespeicherten Woerterbuch
+  // reproduziert; die Bezeichnung „localStorage" stand hier zuerst falsch,
+  // Richtigstellung aus Runde 4). Nicht unbegrenzt, aber unbemerkt.
+  // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
+  // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
+  // veroeffentlicht.
+  var _JSON_VER = 'v8';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;

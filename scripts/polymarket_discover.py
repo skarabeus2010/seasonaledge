@@ -18,6 +18,7 @@ import sys
 import os
 import pathlib
 import json
+import re
 
 try:
     _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -101,18 +102,69 @@ def _markets_for_tag(tag_slug: str) -> list[dict]:
     return markets
 
 
-def _score_match(market: dict, search_terms: list[str]) -> float:
-    """Wie gut passt ein Gamma-Market zu den Suchbegriffen?"""
-    text = " ".join([
+# Mindestzahl sachlicher Treffer, damit ein Markt ueberhaupt in Frage kommt.
+# Liquiditaet ORDNET passende Kandidaten, sie macht keinen passend.
+MIN_TREFFER = 1
+
+
+def kennungstext(market: dict) -> str:
+    """Nur die Felder, in denen das EREIGNISJAHR eines Markts lebt.
+
+    Die Beschreibung bleibt bewusst draussen: sie erwaehnt oft andere Jahre
+    („unlike 2026 …"), und damit galt ein 2027-Markt wieder als geeignet
+    (Codex, Abnahme Runde 2).
+    """
+    return " ".join([
+        str(market.get("slug", "")),
+        str(market.get("question", "")),
+        str(market.get("title", "")),
+        str(market.get("groupItemTitle", "")),
+    ]).lower()
+
+
+def markttext(market: dict) -> str:
+    """Der Text, auf dem Passung UND Eignung geprueft werden — eine Quelle.
+
+    Zwei Kopien dieses Zusammenbaus wuerden driften, und dann prueefte die
+    Eignung einen anderen Text als die Bewertung.
+    """
+    return " ".join([
         str(market.get("question", "")),
         str(market.get("title", "")),
         str(market.get("slug", "")),
         str(market.get("description", "")),
-        str(market.get("groupItemTitle", "")),  # Bei Multi-Outcome-Events ("1 cut", "2 cuts")
+        str(market.get("groupItemTitle", "")),  # Multi-Outcome ("1 cut", "2 cuts")
     ]).lower()
+
+
+def _score_match(market: dict, search_terms: list[str]) -> tuple[int, float]:
+    """Passung eines Gamma-Markets: (sachliche Treffer, Liquiditaetsrang).
+
+    Gibt bewusst ein PAAR zurueck und keine Summe. Die alte Summe
+    `hits + liq_score` liess Liquiditaet eine fehlende Passung ersetzen:
+    `liq_score` ist `log10(liquidity)/6`, erreicht also bei **1.000 Dollar**
+    schon 0,500 und passierte damit die Annahmeschwelle 0,5 — bei NULL
+    Suchworttreffern. Gemessen, nicht geschaetzt: 1.000 → 0,500 ·
+    10.000 → 0,667 · 1.000.000 → 1,000. Jeder hinreichend liquide Markt wurde
+    so angenommen, egal wovon er handelt (Codex-Befund 16).
+
+    Die Trennung liegt hier beim Erzeuger und nicht an den Aufrufstellen —
+    sonst fehlt sie beim naechsten Aufrufer. Diese Fehlerklasse hat das Projekt
+    schon zweimal bezahlt.
+    """
+    text = markttext(market)
     if not text.strip():
-        return 0.0
-    hits = sum(1 for term in search_terms if term.lower() in text)
+        # MUSS ein Paar sein: die Aufrufstelle entpackt mit `*`, und ein float
+        # ergibt dort TypeError — ein einziger Markt ohne Text haette den
+        # ganzen Discovery-Lauf abgebrochen. Selbst gefunden beim Nachpruefen
+        # der Codex-Befunde zu 16.
+        return 0, 0.0
+    # Jahresbegriffe zaehlen NICHT als sachlicher Treffer. Sonst genuegte bei
+    # der Mindestzahl die Jahreszahl allein, und ein Markt zum richtigen Jahr
+    # aber falschen Thema kam durch (Codex, Abnahme Runde 2).
+    jahre = set(j.lower() for j in jahresbegriffe(search_terms))
+    hits = sum(1 for term in search_terms
+               if term.lower() not in jahre and term.lower() in text)
     # Bonus: Liquiditaet (logarithmisch bis 1.0)
     liquidity = 0.0
     try:
@@ -126,7 +178,46 @@ def _score_match(market: dict, search_terms: list[str]) -> float:
         liquidity = 0.0
     import math
     liq_score = min(1.0, math.log10(max(1.0, liquidity)) / 6.0) if liquidity > 0 else 0.0
-    return hits + liq_score
+    return hits, liq_score
+
+
+_JAHR = re.compile(r"^(19|20)\d{2}$")
+
+
+def jahresbegriffe(search_terms: list[str]) -> list[str]:
+    """Die Suchbegriffe, die eine Jahreszahl sind."""
+    return [str(t) for t in (search_terms or []) if _JAHR.match(str(t).strip())]
+
+
+def ist_geeignet(treffer: int, search_terms: list[str],
+                 kennung: str = "") -> bool:
+    """Kommt ein Kandidat sachlich in Frage?
+
+    Fail-closed: ohne Suchbegriffe im YAML-Eintrag ist NICHTS geeignet. Vorher
+    fiel dieser Fall auf die Liquiditaet zurueck und nahm einen beliebigen
+    Markt an.
+
+    Eine Jahreszahl unter den Suchbegriffen ist PFLICHT und nicht einer von
+    mehreren Treffern. Sonst genuegt ein Wort wie „fed", und der Lauf nimmt
+    reproduzierbar den Markt zum falschen Jahr an — die Preise sehen dann
+    plausibel aus und beziehen sich auf ein anderes Ereignis.
+
+    `kennung` ist bewusst NICHT der ganze Markttext, sondern nur
+    slug/question/title/groupItemTitle (`kennungstext()`): die Beschreibung
+    erwaehnt oft andere Jahre, und damit kam ein 2027-Markt wieder durch.
+    Fehlt die Kennung, kann die Jahrespruefung nichts belegen — dann ist der
+    Kandidat nicht geeignet, denn ungeprueft ist nicht bestanden.
+    """
+    if not search_terms:
+        return False
+    if treffer < MIN_TREFFER:
+        return False
+    jahre = jahresbegriffe(search_terms)
+    if jahre:
+        text = (kennung or "").lower()
+        if not any(j.lower() in text for j in jahre):
+            return False
+    return True
 
 
 def find_candidate(entry: dict) -> dict | None:
@@ -153,18 +244,18 @@ def find_candidate(entry: dict) -> dict | None:
     if not seen:
         return None
 
-    scored = [
-        (mid, m, _score_match(m, terms))
-        for mid, m in seen.items()
-    ]
-    scored.sort(key=lambda x: x[2], reverse=True)
-    top = scored[0]
-    if top[2] < 0.5:
+    # Erst aussortieren, DANN ordnen. Liquiditaet entscheidet nur noch die
+    # Reihenfolge unter sachlich passenden Kandidaten.
+    bewertet = [(mid, m, *_score_match(m, terms)) for mid, m in seen.items()]
+    geeignet = [z for z in bewertet
+                if ist_geeignet(z[2], terms, kennungstext(z[1]))]
+    if not geeignet:
         return None
-    return top[1]
+    geeignet.sort(key=lambda x: (x[2], x[3]), reverse=True)
+    return geeignet[0][1]
 
 
-def find_top_candidates(entry: dict, n: int = 5) -> list[tuple[dict, float]]:
+def find_top_candidates(entry: dict, n: int = 5) -> list[tuple[dict, int, float, bool]]:
     """Top-N Kandidaten fuer --interactive-Modus."""
     cat = entry.get("category", "")
     tags = CATEGORY_TAGS.get(cat, ["economy"])
@@ -178,9 +269,13 @@ def find_top_candidates(entry: dict, n: int = 5) -> list[tuple[dict, float]]:
             if m.get("closed") is True or m.get("active") is False:
                 continue
             seen[cid] = m
-    scored = [(m, _score_match(m, terms)) for m in seen.values()]
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:n]
+    # Fuer die Durchsicht werden AUCH unpassende Kandidaten gezeigt, aber mit
+    # ihrer Trefferzahl — sonst sieht niemand, dass ein Vorschlag nur liquide
+    # ist. Die Eignung steht als dritter Wert dabei.
+    bewertet = [(m, *_score_match(m, terms)) for m in seen.values()]
+    bewertet.sort(key=lambda x: (x[1], x[2]), reverse=True)
+    return [(m, treffer, liq, ist_geeignet(treffer, terms, kennungstext(m)))
+            for m, treffer, liq in bewertet[:n]]
 
 
 def sync_catalog_to_db(data: dict) -> int:
@@ -239,6 +334,19 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                     help="Nichts schreiben, nur Report")
     args = ap.parse_args()
+
+    # `--interactive` war deklariert, in der Hilfe beworben und wurde NIE
+    # gelesen — der Schalter tat stillschweigend nichts, und `find_top_candidates`
+    # stand als Baustein dafuer ohne Aufrufer da. Ein Schalter, der nichts tut,
+    # ist schlimmer als keiner: er laesst glauben, man haette geprueft. Bis er
+    # verdrahtet ist, bricht er ab, statt zu schweigen.
+    if args.interactive:
+        print("--interactive ist nicht verdrahtet: der Schalter wurde nie")
+        print("ausgewertet. `find_top_candidates()` liefert die Kandidaten mit")
+        print("Trefferzahl, Liquiditaetsrang und Eignung, ist aber an keine")
+        print("Eingabe angebunden. Abbruch, damit niemand eine Durchsicht")
+        print("annimmt, die nicht stattgefunden hat.")
+        return 1
 
     data = load_markets_yaml()
     entries = data.get("markets", [])
@@ -299,4 +407,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # `main()` ohne sys.exit() verwirft den Rueckgabewert: ein `return 1` kam
+    # mit Exit 0 an, gemessen. Dieselbe Klasse, die den Weekly Newsletter fuenf
+    # Monate unsichtbar scheitern liess.
+    import sys as _sys
+    _sys.exit(main() or 0)
