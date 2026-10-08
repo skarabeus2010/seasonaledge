@@ -37,6 +37,15 @@ for (const pflicht of ['strategy-compute.js', 'indicators.js', 'holidays.js']) {
 if (!SA.strategy || !SA.STRATEGIES || !SA.indicators || !SA.indicators.calcMACD) throw new Error('[Aufbau] Module unvollständig');
 
 const meta = JSON.parse(fs.readFileSync(path.join(kursOrdner, 'snapshot.json'), 'utf8'));
+// Hash neu rechnen (dasselbe Verfahren wie plain_vanilla_kurse.snapshot_hash) — veränderter Snapshot = Abbruch
+{
+  const h = crypto.createHash('sha256');
+  for (const f of fs.readdirSync(kursOrdner).filter(f => f.endsWith('.json') && f !== 'snapshot.json').sort()) {
+    h.update(Buffer.concat([Buffer.from(f), Buffer.from([0]), fs.readFileSync(path.join(kursOrdner, f))]));
+  }
+  const ist = h.digest('hex').slice(0, 16);
+  if (ist !== meta.hash) throw new Error('[Aufbau] Kurs-Snapshot verändert: ' + ist + ' ≠ ' + meta.hash);
+}
 const stichtag = meta.stichtag;
 const zeitraeume = (zArg || '10,max').split(',');
 const stops = (sArg || 'aus').split(',');
@@ -73,13 +82,18 @@ for (const datei of fs.readdirSync(kursOrdner).filter(f => f.endsWith('.json') &
           stats = SA.strategy.computeStats(trades);
         } catch (e) { fehler = String(e && e.message || e); }
         je[key] = { n: trades.length, offen: trades.filter(t => t.open).length, stats, fehler,
-                    trades: trades.map(t => [t.entry_date, t.exit_date, t.return_pct, t.open ? 1 : 0, t.stopped ? 1 : 0]) };
+                    trades: trades.map(t => [t.entry_date, t.exit_date, t.entry_price, t.exit_price, t.return_pct, t.open ? 1 : 0, t.stopped ? 1 : 0, t.leverage || 1]) };
       }
       out.je[z + '|' + s] = je;
     }
   }
 }
+ergebnis.fehler = [];
+for (const [tk, o] of Object.entries(ergebnis.ticker)) for (const [k, je] of Object.entries(o.je))
+  for (const [st, v] of Object.entries(je)) if (v.fehler) ergebnis.fehler.push([tk, k, st, v.fehler]);
+ergebnis.gueltig = ergebnis.fehler.length === 0;
 fs.writeFileSync(ausgabe, JSON.stringify(ergebnis));
+if (!ergebnis.gueltig) { console.error('UNGÜLTIG: Strategiefehler', ergebnis.fehler.slice(0, 5)); process.exitCode = 1; }
 console.log('Module:', geladen.join(' '), '| übersprungen:', uebersprungen.join(' '));
 console.log('Messlauf fertig, Stichtag', stichtag, 'Kurs-Hash', meta.hash, '→', ausgabe);
 console.log('ENDE');
