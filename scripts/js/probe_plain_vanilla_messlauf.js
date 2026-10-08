@@ -1,0 +1,85 @@
+/**
+ * probe_plain_vanilla_messlauf.js — Messlauf der Seite /plain-vanilla: führt die ECHTEN Module der Seite in der
+ * Reihenfolge aus, in der die Seite sie lädt, und schreibt Trades + Kennzahlen aller Strategien als JSON.
+ *
+ *   node scripts/js/probe_plain_vanilla_messlauf.js <kurs-snapshot-ordner> <ausgabe.json> [zeitraeume=10,max] [stops=aus,fixed8,trailing8]
+ *
+ * - Die Script-Liste wird aus landing/pages/plain-vanilla.html gelesen (lokale <script src>), nicht von Hand gepflegt:
+ *   ein erster Lauf ohne indicators.js ließ LBR still auf Sell in May zurückfallen und lieferte identische Zahlen.
+ *   Module, die einen Browser brauchen (auth/i18n/app/charts/tour), werden übersprungen und in der Ausgabe genannt.
+ * - Nachbildung der Seitenlogik: Zeitraum in Jahren ab Stichtag des Snapshots (nicht ab heute — sonst ändert ein
+ *   späterer Lauf die Ergebnisse ohne Codeänderung), optional Stop-Loss wie calcStrategy().
+ * - Ausgabe enthält Hash des Kurs-Snapshots, Stichtag und Hash der geladenen Module.
+ */
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const [kursOrdner, ausgabe, zArg, sArg] = process.argv.slice(2);
+const REPO = path.resolve(__dirname, '..', '..');
+
+const BROWSER_ONLY = new Set(['auth.js', 'i18n.js', 'app.js', 'charts.js', 'tour-config.js', 'tour.js']);
+const html = fs.readFileSync(path.join(REPO, 'landing/pages/plain-vanilla.html'), 'utf8');
+const srcs = [...html.matchAll(/<script src="\/landing\/js\/([^"?]+)/g)].map(m => m[1]);
+const geladen = [], uebersprungen = [];
+const window = {};
+const modulHash = crypto.createHash('sha256');
+for (const f of srcs) {
+  if (BROWSER_ONLY.has(f)) { uebersprungen.push(f); continue; }
+  const code = fs.readFileSync(path.join(REPO, 'landing/js', f), 'utf8');
+  modulHash.update(f + '\0' + code);
+  new Function('window', 'var SA = window.SA || {};\n' + code + '\nwindow.SA = SA;')(window);
+  geladen.push(f);
+}
+const SA = window.SA;
+for (const pflicht of ['strategy-compute.js', 'indicators.js', 'holidays.js']) {
+  if (!geladen.includes(pflicht)) throw new Error('[Aufbau] Seite lädt ' + pflicht + ' nicht mehr oder Liste nicht lesbar');
+}
+if (!SA.strategy || !SA.STRATEGIES || !SA.indicators || !SA.indicators.calcMACD) throw new Error('[Aufbau] Module unvollständig');
+
+const meta = JSON.parse(fs.readFileSync(path.join(kursOrdner, 'snapshot.json'), 'utf8'));
+const stichtag = meta.stichtag;
+const zeitraeume = (zArg || '10,max').split(',');
+const stops = (sArg || 'aus').split(',');
+
+function filtern(rows, z) {
+  if (z === 'max') return rows;
+  const grenze = (parseInt(stichtag.slice(0, 4), 10) - parseInt(z, 10)) + stichtag.slice(4);
+  return rows.filter(r => r.date >= grenze);
+}
+
+function mitStop(rows, trades, s) {
+  if (s === 'aus') return trades;
+  const m = /^(fixed|trailing)(\d+(?:\.\d+)?)$/.exec(s);
+  if (!m) throw new Error('[Aufbau] unbekannter Stop ' + s);
+  return m[1] === 'trailing' ? SA.strategy.applyTrailingStop(rows, trades, +m[2]) : SA.strategy.applyStopLoss(rows, trades, +m[2]);
+}
+
+const ergebnis = { stichtag, kurs_hash: meta.hash, modul_hash: modulHash.digest('hex').slice(0, 16),
+                   module: geladen, uebersprungen, zeitraeume, stops, ticker: {} };
+for (const datei of fs.readdirSync(kursOrdner).filter(f => f.endsWith('.json') && f !== 'snapshot.json').sort()) {
+  const ticker = datei.replace(/\.json$/, '').replace(/^_/, '^');
+  const rows = JSON.parse(fs.readFileSync(path.join(kursOrdner, datei), 'utf8')).filter(r => r.date <= stichtag);
+  rows.forEach(r => { r.close = parseFloat(r.close); if (r.log_return != null) r.log_return = parseFloat(r.log_return); });
+  const out = ergebnis.ticker[ticker] = { zeilen: rows.length, letzte: rows.length ? rows[rows.length - 1].date : null, je: {} };
+  for (const z of zeitraeume) {
+    const sub = filtern(rows, z);
+    for (const s of stops) {
+      const je = {};
+      for (const [key, st] of Object.entries(SA.STRATEGIES)) {
+        SA.strategy._dateIdx = null;
+        let trades = [], stats = null, fehler = null;
+        try {
+          trades = mitStop(sub, SA.strategy[st.func](sub) || [], s);
+          stats = SA.strategy.computeStats(trades);
+        } catch (e) { fehler = String(e && e.message || e); }
+        je[key] = { n: trades.length, offen: trades.filter(t => t.open).length, stats, fehler,
+                    trades: trades.map(t => [t.entry_date, t.exit_date, t.return_pct, t.open ? 1 : 0, t.stopped ? 1 : 0]) };
+      }
+      out.je[z + '|' + s] = je;
+    }
+  }
+}
+fs.writeFileSync(ausgabe, JSON.stringify(ergebnis));
+console.log('Module:', geladen.join(' '), '| übersprungen:', uebersprungen.join(' '));
+console.log('Messlauf fertig, Stichtag', stichtag, 'Kurs-Hash', meta.hash, '→', ausgabe);
+console.log('ENDE');

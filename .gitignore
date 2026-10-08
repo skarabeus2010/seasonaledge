@@ -77,3 +77,6 @@ raw/papers/
 
 # Wahl-Ereignisstudie (Cron-Output, scripts/build_wahlen.py)
 landing/data/wahlen_study.json
+
+# Messläufe /plain-vanilla (lokal neu erzeugbar aus eingefrorenem Kurs-Snapshot)
+scripts/research/out/plain_vanilla_*
