@@ -549,18 +549,43 @@ SA.strategy = {
   calc_uhts: function(rows) {
     var trades = [], years = this._getYears(rows), self = this;
     years.forEach(function(y) {
-      var hols = self._nyseHolidays(y);
-      hols.forEach(function(holDate) {
-        var t = self._makeTrade(rows, self._sitzung(rows, holDate, -3, 'nach'), self._sitzung(rows, holDate, 3, 'nach'));
-        if (t) {
-          // Hebel vorläufig wie bisher: Gesamtrendite × 1,5 (Modellentscheidung in Phase 1B)
-          t.return_pct = t.return_pct * 1.5;
-          t.leverage = 1.5;
-          trades.push(t);
-        }
+      self._nyseHolidays(y).forEach(function(F) {
+        // Plan 1B T2: Einstieg S⁻3 (3. Sitzung vor F), Ausstieg S⁺3 (3. Sitzung strikt NACH F). 1A rechnete
+        // _sitzung(F, 3) mit Basis >= F und landete bei geschlossenem F auf S⁺4 (Codex Plan-R1).
+        var t = self._makeTrade(rows, self._sitzung(rows, F, -3, 'nach'), self._sitzung(rows, self._plusTage(F, 1), 2, 'nach'));
+        if (!t) return;
+        // T3: Aufstockung auf 2x zum Schluss von S⁻1 (letzte Sitzung vor F)
+        var s1 = self._aufloesen(self._sitzung(rows, F, -1, 'nach'));
+        var aufstock = (s1.code >= 0 && s1.code < rows.length) ? rows[s1.code].date : s1.datum;
+        if (self._hebelPfad(rows, t, aufstock)) trades.push(t);
       });
     });
     return trades;
+  },
+
+  /** Gehebelter Pfad eines Trades (Plan 1B T3): je Kursintervall a → b gilt der Hebel NACH dem Schluss von a —
+   *  1x solange a vor der Aufstockung liegt, sonst 2x; Rendite = Π(1 + h·(b/a − 1)). Tägliches Rebalancing, keine
+   *  Finanzierungskosten. Über eine Kurslücke wird das beobachtete Intervall einmal bewertet (Näherung, L/V1).
+   *  Setzt return_pct, leverage = 2, hebel = [[datum_b, h], …], aufstockung. false bei ungültigem Kurs im Pfad. */
+  _hebelPfad: function(rows, t, aufstock) {
+    var i0 = this._exakt(rows, t.entry_date), i1 = this._exakt(rows, t.exit_date);
+    if (i0 < 0 || i1 < i0) return false;
+    var f = 1, hebel = [];
+    for (var i = i0 + 1; i <= i1; i++) {
+      var a = rows[i - 1].close, b = rows[i].close;
+      if (!(typeof a === 'number' && isFinite(a) && a > 0 && typeof b === 'number' && isFinite(b) && b > 0)) {
+        this._notiere('preis_ungueltig', rows[i].date);
+        return false;
+      }
+      var h = (aufstock != null && rows[i - 1].date >= aufstock) ? 2 : 1;
+      f *= 1 + h * (b / a - 1);
+      hebel.push([rows[i].date, h]);
+    }
+    t.return_pct = (f - 1) * 100;
+    t.leverage = 2;
+    t.hebel = hebel;
+    t.aufstockung = aufstock;
+    return true;
   },
 
   /** 19. Nach-Weihnachten bis Silvester */
@@ -829,13 +854,26 @@ SA.strategy = {
         trades = opts.stop.typ === 'trailing' ? this.applyTrailingStop(rows, trades, opts.stop.pct)
                                               : this.applyStopLoss(rows, trades, opts.stop.pct);
       }
+      this._lueckenMarkieren(rows, trades);   // nach dem Stop: Lücken bis zum tatsächlichen Ausstieg (S2)
       var veraltet = this._datenVeraltet(rows), unvollstaendig = [];
       if (veraltet) {
         unvollstaendig = trades.filter(function(t) { return t.open; });
         trades = trades.filter(function(t) { return !t.open; });
         unvollstaendig.forEach(function(t) { protokoll.push({ grund: 'datenbestand_veraltet', datum: t.entry_date }); });
       }
-      return { trades: trades, stats: this.computeStats(trades), streak: this.streak(trades),
+      var stats = this.computeStats(trades);
+      if (stats) {
+        // Ergebnisvertrag 1B/E2: alte Schlüssel behalten ihre trade-basierte Bedeutung, Tageswerte nur unter taeglich
+        var tgInfo = {};
+        stats.taeglich = this.tagesEquity(rows, trades, 1000, tgInfo);
+        stats.taeglich_grund = tgInfo.grund || null;
+        var zu = trades.filter(function(t) { return !t.open; });
+        stats.luecken = { von: zu.length,
+          fehlende: zu.filter(function(t) { return t.fehlende_sitzungen > 0; }).length,
+          abstand: zu.filter(function(t) { return t.auffaellige_abstaende > 0; }).length,
+          naeherung: zu.filter(function(t) { return t.naeherung; }).length };
+      }
+      return { trades: trades, stats: stats, streak: this.streak(trades),
                unvollstaendig: unvollstaendig, veraltet: veraltet, protokoll: protokoll };
     } finally {
       this._protokoll = null;
@@ -978,7 +1016,8 @@ SA.strategy = {
   /** Gestoppten Trade zum Close der Zeile i schliessen. Close-Modus der Seite (Plan v5, E4/E5): Auslösung am
    *  Close, Ausführung am Close — nicht am Stopniveau, das an einem Gap-Tag gar nicht handelbar war (Befund 2).
    *  Alle Metadaten bleiben erhalten (Hebel!), der Trade ist danach geschlossen, auch wenn er offen war;
-   *  Rendite nach derselben Regel wie ein regulär geschlossener Trade (Kursrendite × Hebel, vorläufig bis 1B). */
+   *  Rendite (Plan 1B S2/V3): mit Hebelpfad der bis zum Stop-Tag gekürzte Pfad; Hebel ohne Pfad → Kursrendite ×
+   *  leverage (Ersatzrechnung, die Tageskurve ist dann null); sonst Kursrendite. */
   _stopAusstieg: function(t, rows, i) {
     var c = rows[i].close, neu = {};
     for (var k in t) if (Object.prototype.hasOwnProperty.call(t, k)) neu[k] = t[k];
@@ -986,9 +1025,99 @@ SA.strategy = {
     neu.zustand_ausstieg = 'gefunden';
     neu.exit_date = rows[i].date;
     neu.exit_price = c;
-    neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);
+    if (t.hebel) this._hebelPfad(rows, neu, t.aufstockung);
+    else neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);
     neu.stopped = true;
     return neu;
+  },
+
+  /** Hat der Trade irgendwo einen Hebel ≠ 1? (Regelpfad oder leverage ohne Pfad) */
+  _gehebelt: function(t) {
+    if (t.hebel) { for (var i = 0; i < t.hebel.length; i++) if (t.hebel[i][1] !== 1) return true; return false; }
+    return t.leverage != null && t.leverage !== 1;
+  },
+
+  /** Geprüfter Kalenderbereich (Kalendervertrag 1A): NYSE/XETRA 2000–2035 */
+  _geprueft: function(ds, boerse) { return (boerse === 'NYSE' || boerse === 'XETRA') && this._imKalender(ds); },
+
+  _tageZwischen: function(a, b) {
+    return Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) -
+                       Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86400000);
+  },
+
+  /** Kurslücken je Trade markieren (Plan 1B L1/V1), je Kursintervall a → b bis Ausstieg bzw. Stop-Tag:
+   *  im geprüften Bereich fehlende Kalendersitzungen strikt zwischen a und b, sonst ein auffälliger Abstand bei mehr
+   *  als 4 Kalendertagen (Warnheuristik). naeherung = Hebel ≠ 1 irgendwo im Trade UND mindestens ein Lückenintervall —
+   *  auch ein übersprungener Hebelwechsel ist ohne Zwischenkurs nicht rekonstruierbar. Trades bleiben erhalten (L3). */
+  _gueltigerKurs: function(c) { return typeof c === 'number' && isFinite(c) && c > 0; },
+
+  _lueckenMarkieren: function(rows, trades) {
+    var b = this._ctx(rows).boerse, self = this;
+    (trades || []).forEach(function(t) {
+      var i0 = self._exakt(rows, t.entry_date), i1 = self._exakt(rows, t.exit_date), fs = 0, aa = 0, vor = i0;
+      for (var i = i0 + 1; i0 >= 0 && i <= i1; i++) {
+        // Zeile mit ungültigem Kurs (0, null, NaN) zählt wie eine fehlende Bewertung (Codex Code-R1 1B)
+        if (!self._gueltigerKurs(rows[i].close)) continue;
+        var a = rows[vor].date, z = rows[i].date;
+        vor = i;
+        if (self._geprueft(a, b) && self._geprueft(z, b)) {
+          var d = self._kalenderSitzung(self._plusTage(a, 1), 1, b);
+          while (d != null && d < z) { fs++; d = self._kalenderSitzung(self._plusTage(d, 1), 1, b); }
+        } else if (self._tageZwischen(a, z) > 4) {
+          aa++;
+        }
+      }
+      t.fehlende_sitzungen = fs;
+      t.auffaellige_abstaende = aa;
+      t.naeherung = self._gehebelt(t) && (fs + aa) > 0;
+    });
+    return trades;
+  },
+
+  /** Tägliche Equity eines Kontos (Plan 1B E1/V3): nur geschlossene Trades; je Kursintervall Exposure = größter Hebel
+   *  aller Trades, die das Intervall halten (keine Stapelung — ein Konto, höchstens die größte gleichzeitige
+   *  Position). null, wenn ein Trade einen Hebel ohne täglichen Pfad hat (kein scheinbar gültiger 1x-Kontowert).
+   *  Werte ungerundet; Kurve als [{date, value}] ab dem ersten Einstieg.
+   *  Ungültige Kurse (0, null, NaN) sind fehlende Bewertungen: bewertet wird zwischen gültigen Schlusskursen, wenn das
+   *  Exposure über die übersprungenen Intervalle gleich bleibt; sonst null mit info.grund = 'ungueltiger_kurs'
+   *  (Codex Code-R1 1B). info.grund = 'hebel_ohne_pfad' bei Hebel ohne täglichen Pfad. */
+  tagesEquity: function(rows, trades, start, info) {
+    info = info || {};
+    start = start || 1000;
+    var zu = (trades || []).filter(function(t) { return !t.open && typeof t.return_pct === 'number' && isFinite(t.return_pct); });
+    if (!zu.length) return null;
+    var exp = [], erst = -1, letzt = -1, ersterEin = null, letzterAus = null, self = this;
+    for (var n = 0; n < zu.length; n++) {
+      var t = zu[n];
+      if (!t.hebel && t.leverage != null && t.leverage !== 1) { info.grund = 'hebel_ohne_pfad'; return null; }
+      var i0 = this._exakt(rows, t.entry_date), i1 = this._exakt(rows, t.exit_date);
+      if (i0 < 0 || i1 < i0) continue;
+      for (var i = i0 + 1; i <= i1; i++) {
+        var h = t.hebel ? t.hebel[i - i0 - 1][1] : 1;
+        if (!(exp[i] >= h)) exp[i] = h;
+      }
+      if (erst < 0 || i0 < erst) erst = i0;
+      if (i1 > letzt) letzt = i1;
+      if (ersterEin == null || t.entry_date < ersterEin) ersterEin = t.entry_date;
+      if (letzterAus == null || t.exit_date > letzterAus) letzterAus = t.exit_date;
+    }
+    if (erst < 0) return null;
+    var e = 1, peak = 1, maxdd = 0, kurve = [{ date: rows[erst].date, value: start }], vor = erst;
+    for (var j = erst + 1; j <= letzt; j++) {
+      if (!this._gueltigerKurs(rows[j].close)) continue;
+      var h = exp[vor + 1] || 0;
+      for (var k = vor + 2; k <= j; k++) {
+        if ((exp[k] || 0) !== h) { info.grund = 'ungueltiger_kurs'; return null; }
+      }
+      e *= 1 + h * (rows[j].close / rows[vor].close - 1);
+      vor = j;
+      if (e > peak) peak = e;
+      if (e / peak - 1 < maxdd) maxdd = e / peak - 1;
+      kurve.push({ date: rows[j].date, value: start * e });
+    }
+    var jahre = self._tageZwischen(ersterEin, letzterAus) / 365.25;
+    return { max_dd: maxdd * 100, final_equity: start * e, total_return: (e - 1) * 100,
+             cagr: jahre > 0 ? (Math.pow(e, 1 / jahre) - 1) * 100 : 0, kurve: kurve };
   },
 
   /** Fixed Stop-Loss: Auslösung, wenn ein Close (einschliesslich des regulären Ausstiegstags) <= Einstieg × (1−p) */
@@ -1068,7 +1197,7 @@ SA.strategy = {
 
     santa_claus:       { name:'Santa Claus',       icon:'🎅', cat:'feiertag',   func:'calc_santa_claus',       desc: _en ? SA.i18n.t('strat.santa_claus_desc')         : '3 HT vor Thanksgiving → 5. HT Jan' },
     one_day_holiday:   { name: _en ? SA.i18n.t('strat.one_day_holiday_name') : 'Feiertag 1-Tag',    icon:'🎆', cat:'feiertag',   func:'calc_one_day_holiday',   desc: _en ? SA.i18n.t('strat.one_day_holiday_desc') : '2 HT vor Feiertag → 1 HT vor' },
-    uhts:              { name:'UHTS (Hebel)',       icon:'🎇', cat:'feiertag',   func:'calc_uhts',              desc: _en ? SA.i18n.t('strat.uhts_desc')                : '3 HT vor → 3 HT nach (1.5x)' },
+    uhts:              { name:'UHTS (Hebel)',       icon:'🎇', cat:'feiertag',   func:'calc_uhts',              desc: _en ? SA.i18n.t('strat.uhts_desc')                : '3 HT vor → 3 HT nach (2x ab Vortag)' },
     post_christmas:    { name: _en ? SA.i18n.t('strat.post_christmas_name') : 'Nach Weihnachten',  icon:'🎄', cat:'feiertag',   func:'calc_post_christmas',    desc: _en ? SA.i18n.t('strat.post_christmas_desc')  : '26. Dez → Silvester' },
 
     month_end:         { name:'Month-End',         icon:'🔄', cat:'monat',      func:'calc_month_end',         desc: _en ? SA.i18n.t('strat.month_end_desc')           : 'Vorletzter HT → 4. HT Folgemonat' },

@@ -30,8 +30,13 @@ from shared.constants import SE_COLORS, DEFAULT_TICKER
 from shared.charts import apply_se_theme
 from shared.data import download_data, preprocess
 from shared.strategies.plain_vanilla import (
-    STRATEGIES, STRATEGY_CATEGORIES, auswerten, build_equity_curve,
+    STRATEGIES, STRATEGY_CATEGORIES, auswerten,
 )
+
+
+def _tg(stats):
+    """Tageswerte des Kontos (Plan 1B E2) oder None — kein Rückfall auf die Trade-Equity."""
+    return (stats or {}).get("taeglich")
 from shared.symbols import get_exchange_for_holidays
 
 # ── Page Config ──────────────────────────────────────
@@ -142,8 +147,8 @@ def main():
                 is_selected = (st.session_state["pv_selected"] == key)
 
                 # CAGR nur anzeigen wenn bereits berechnet
-                if key in all_results:
-                    cagr = all_results[key]["stats"].get("cagr", 0)
+                if key in all_results and _tg(all_results[key]["stats"]):
+                    cagr = _tg(all_results[key]["stats"])["cagr"]
                     _cagr_html = f'<div style="color:{"#34d399" if cagr > 0 else "#ff4444"};font-size:14px;font-weight:700;">{cagr:+.1f}%</div>'
                 else:
                     _cagr_html = f'<div style="color:{SE_COLORS["text_muted"]};font-size:12px;">—</div>'
@@ -201,14 +206,16 @@ def main():
         _val = 'font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0;'
 
         c1, c2, c3, c4, c5 = st.columns(5)
+        tg = _tg(sel_stats)
         with c1:
-            _clr = "#34d399" if sel_stats["cagr"] > 0 else "#ff4444"
+            _clr = "#34d399" if (tg and tg["cagr"] > 0) else "#ff4444"
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">CAGR</div>'
-                        f'<div style="{_val}color:{_clr};">{sel_stats["cagr"]:+.1f}%</div></div>',
+                        f'<div style="{_val}color:{_clr};">{(format(tg["cagr"], "+.1f") + "%") if tg else "—"}</div></div>',
                         unsafe_allow_html=True)
         with c2:
-            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Max Drawdown</div>'
-                        f'<div style="{_val}color:#ff4444;">{sel_stats["max_drawdown"]:.1f}%</div></div>',
+            st.markdown(f'<div style="{_card}"><div style="{_lbl}">Max DD (Schlusskurse)</div>'
+                        f'<div style="{_val}color:#ff4444;">{(format(tg["max_dd"], ".1f") + "%") if tg else "—"}</div>'
+                        f'<div style="{_lbl}">Trades: {sel_stats["max_drawdown"]:.1f}%</div></div>',
                         unsafe_allow_html=True)
         with c3:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">Win-Rate</div>'
@@ -220,12 +227,17 @@ def main():
                         unsafe_allow_html=True)
         with c5:
             st.markdown(f'<div style="{_card}"><div style="{_lbl}">$1.000 Endwert</div>'
-                        f'<div style="{_val}color:{SE_COLORS["accent_warm"]};">${sel_stats["final_equity"]:,.0f}</div></div>',
+                        f'<div style="{_val}color:{SE_COLORS["accent_warm"]};">{("$" + format(tg["final_equity"], ",.0f")) if tg else "—"}</div></div>',
                         unsafe_allow_html=True)
 
     # Equity-Chart
     if sel_trades:
-        equity = build_equity_curve(sel_trades, start_capital=1000.0)
+        # Tägliche Kontokurve (Plan 1B E4); ohne Tagespfad kein Chart statt einer Trade-Equity
+        equity = (_tg(sel_stats) or {}).get("kurve") or []
+        if not equity:
+            _grund = (sel_stats or {}).get("taeglich_grund")
+            st.caption("Ungültige Kurse bei wechselnder Position: Kontokurve ausgesetzt." if _grund == "ungueltiger_kurs"
+                       else "Kein täglicher Hebelpfad bzw. keine abgeschlossenen Trades: keine Kontokurve.")
         if equity:
             eq_dates = [e[0] for e in equity]
             eq_vals = [e[1] for e in equity]
@@ -294,7 +306,7 @@ def main():
             data = all_results.get(key, {"trades": [], "stats": {}})
             if not data["trades"]:
                 continue
-            equity = build_equity_curve(data["trades"], 1000.0)
+            equity = (_tg(data["stats"]) or {}).get("kurve") or []
             if equity:
                 fig_cmp.add_trace(go.Scatter(
                     x=[e[0] for e in equity],
@@ -306,16 +318,18 @@ def main():
                 ))
 
             stats = data["stats"]
+            tg = _tg(stats)
             ranking.append({
                 "Strategie": strat["name"],
-                "CAGR": f'{stats.get("cagr", 0):+.1f}%',
-                "Max DD": f'{stats.get("max_drawdown", 0):.1f}%',
+                "CAGR": f'{tg["cagr"]:+.1f}%' if tg else "—",
+                "Max DD (Schlusskurse)": f'{tg["max_dd"]:.1f}%' if tg else "—",
+                "Max DD (Trades)": f'{stats.get("max_drawdown", 0):.1f}%',
                 "Win-Rate": f'{stats.get("win_rate", 0):.0f}%',
                 "Trades": stats.get("n_trades", 0),
-                "Endwert": f'${stats.get("final_equity", 0):,.0f}',
+                "Endwert": f'${tg["final_equity"]:,.0f}' if tg else "—",
                 # Sharpe ist bei weniger als MIN_TRADES_SHARPE Trades None (shared/strategies/plain_vanilla.py)
                 "Sharpe": (f'{stats["sharpe"]:.2f}' if stats.get("sharpe") is not None else "—"),
-                "_cagr": stats.get("cagr", 0),
+                "_cagr": tg["cagr"] if tg else float("-inf"),
             })
 
         fig_cmp.add_hline(y=1000, line_dash="dot", line_color="rgba(255,255,255,0.2)")
@@ -413,7 +427,7 @@ Der stärkste Einzeltag des Jahres: Kauf 2 Handelstage vor einem der 8 großen U
 
 ### 🎇 Ultimate Holiday Trading System (UHTS)
 
-Erweiterte Feiertagsstrategie mit Hebel: 3 Handelstage vor dem Feiertag Long, am Tag unmittelbar davor wird auf ~1,5x Hebel erhöht, Ausstieg 3 Handelstage danach. Obwohl man nur ~18 % der Zeit im Markt ist, liefert das System bemerkenswerte Ergebnisse.
+Erweiterte Feiertagsstrategie mit Hebel: Einstieg zum Schluss der 3. Sitzung vor dem Feiertag mit 1x, zum Schluss der letzten Sitzung vor dem Feiertag Aufstockung auf 2x, Ausstieg zum Schluss der 3. Sitzung nach dem Feiertag. Täglich neu gewichtet, ohne Finanzierungskosten. Obwohl man nur ~18 % der Zeit im Markt ist, liefert das System bemerkenswerte Ergebnisse.
 
 ### 🎄 Nach-Weihnachten bis Silvester
 

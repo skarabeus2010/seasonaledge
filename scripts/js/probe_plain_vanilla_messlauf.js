@@ -95,7 +95,13 @@ for (const datei of fs.readdirSync(kursOrdner).filter(f => f.endsWith('.json') &
         } catch (e) { fehler = String(e && e.message || e); }
         const tupel = t => [t.entry_date, t.exit_date, t.entry_price, t.exit_price, t.return_pct, t.open ? 1 : 0,
                             t.stopped ? 1 : 0, t.leverage || 1, t.zustand_ausstieg || '', t.zustand_einstieg || '',
-                            t.regeltermin_ausstieg || ''];
+                            t.regeltermin_ausstieg || '',
+                            // Plan 1B: Lücken, Näherung (Spalten 11–13)
+                            t.fehlende_sitzungen || 0, t.auffaellige_abstaende || 0, t.naeherung ? 1 : 0];
+        // Tageskurve nicht in die Messdatei (Größe); die Kennzahlen daraus bleiben
+        if (stats && stats.taeglich) {
+          const tg = Object.assign({}, stats.taeglich); delete tg.kurve; stats = Object.assign({}, stats, { taeglich: tg });
+        }
         je[key] = { n: trades.length, offen: trades.filter(t => t.open).length, stats, fehler, veraltet,
                     trades: trades.map(tupel), unvollstaendig: unvollstaendig.map(tupel),
                     protokoll: protokoll.map(p => [p.grund, p.datum]),

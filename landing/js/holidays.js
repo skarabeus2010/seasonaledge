@@ -152,11 +152,15 @@ SA.holidays = {
   _NYSE_SONDER: ['2001-09-11', '2001-09-12', '2001-09-13', '2001-09-14', '2004-06-11', '2007-01-02',
                  '2012-10-29', '2012-10-30', '2018-12-05', '2025-01-09'],
 
+  /** Belegte einmalige Xetra-Schliessungen — identisch mit shared/exchange_holidays.XETRA_SONDER (Quellen dort) */
+  _XETRA_SONDER: ['2000-10-03', '2007-05-28', '2014-10-03', '2015-05-25', '2016-05-16', '2016-10-03', '2017-06-05',
+                  '2017-10-03', '2017-10-31', '2018-05-21', '2018-10-03', '2019-06-10', '2019-10-03', '2020-06-01',
+                  '2021-05-24'],
+
   _xetra: function(y) {
-    // Offizielle Xetra-Handelsfreitage (Deutsche Börse): NUR diese 8 Tage.
-    // Xetra HANDELT an Pfingstmontag UND am 3. Oktober (Dt. Einheit)! Kein
-    // Observed-Shift. (Muss mit shared/exchange_holidays.py::_compute_xetra_holidays
-    // übereinstimmen.)
+    // Xetra-Handelsfreitage (Deutsche Börse). In der Regel handelt Xetra an Pfingstmontag und am 3. Oktober —
+    // Ausnahmejahre in _XETRA_SONDER. Kein Observed-Shift. Muss mit
+    // shared/exchange_holidays.py::_compute_xetra_holidays übereinstimmen (verify_kalender_zwilling.py).
     var list = [
       this._ds(y, 1, 1),                                    // Neujahr
       this.goodFriday(y),                                    // Karfreitag
@@ -165,8 +169,12 @@ SA.holidays = {
       this._ds(y, 12, 25),                                  // 1. Weihnachtstag
       this._ds(y, 12, 26)                                   // 2. Weihnachtstag
     ];
-    // Heiligabend + Silvester: seit 2011 ganztaegig geschlossen (davor Handel mit Fruehschluss)
-    if (y >= 2011) { list.push(this._ds(y, 12, 24)); list.push(this._ds(y, 12, 31)); }
+    // Heiligabend + Silvester: ab 2001 geschlossen (offizielle Kalender 2002–2010; 24.12.2001 dokumentierte
+    // Annahme ohne Primärquelle). Die frühere Regel „erst ab 2011" war falsch (Korrektur 2026-10-08).
+    if (y >= 2001) { list.push(this._ds(y, 12, 24)); list.push(this._ds(y, 12, 31)); }
+    for (var i = 0; i < this._XETRA_SONDER.length; i++) {
+      if (this._XETRA_SONDER[i].slice(0, 4) === String(y)) list.push(this._XETRA_SONDER[i]);
+    }
     return list;
   },
 

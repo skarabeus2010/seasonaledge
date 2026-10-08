@@ -99,16 +99,20 @@ def _corpus_christi(year: int) -> date:
 
 def _compute_xetra_holidays(year: int) -> list[date]:
     """
-    XETRA/Frankfurt handelsfreie Tage — OFFIZIELL (Deutsche Börse Cash Market).
+    XETRA/Frankfurt handelsfreie Tage (Deutsche Börse Cash Market).
 
-    Xetra handelt Mo-Fr AUSSER: Neujahr, Karfreitag, Ostermontag, 1. Mai,
-    24./25./26./31. Dezember. Das ist die VOLLSTÄNDIGE Liste (8 Tage).
-
-    ⚠️ NICHT handelsfrei (Xetra HANDELT, durch Daten + offiz. Kalender bestätigt):
-       - Pfingstmontag, Christi Himmelfahrt, Fronleichnam
-       - Tag der Deutschen Einheit (3. Oktober)  ← häufiger Irrtum!
+    Regel: Neujahr, Karfreitag, Ostermontag, 1. Mai, 25./26. Dezember, ab 2001 auch 24./31. Dezember.
+    In der Regel HANDELT Xetra an Pfingstmontag, Christi Himmelfahrt, Fronleichnam und am 3. Oktober —
+    mit belegten Ausnahmejahren in XETRA_SONDER.
     ⚠️ KEIN Observed-Shift: fällt ein Feiertag aufs Wochenende, gibt es KEINEN
        Montags-Ersatz (anders als NYSE/LSE). Daher feste Daten, kein _observed.
+
+    Korrektur 2026-10-08 (Codex-Recherche, Plan /plain-vanilla 1B): die frühere Regel „24./31.12. erst ab 2011"
+    war falsch — die offiziellen Handelskalender 2003, 2004, 2007–2010 und das Eurex-Rundschreiben 087/02 (2002)
+    führen beide Tage als geschlossen. 2001: 31.12. durch eine zeitgenössische UPI-Meldung belegt, für den
+    24.12.2001 gibt es KEINE Primärquelle — geschlossen geführt als dokumentierte Annahme (Kalender 2002–2010,
+    Kursbestand ohne Zeile). Vor 2001 bleibt das bisherige Verhalten (offen), weil dafür nichts geprüft ist.
+    Zwilling: landing/js/holidays.js::_xetra, Prüfung scripts/verify_kalender_zwilling.py (feste Sollwerte).
     """
     holidays = [
         date(year, 1, 1),       # Neujahr
@@ -118,13 +122,34 @@ def _compute_xetra_holidays(year: int) -> list[date]:
         date(year, 12, 25),     # 1. Weihnachtstag
         date(year, 12, 26),     # 2. Weihnachtstag
     ]
-    # Heiligabend + Silvester: Xetra seit 2011 ganztägig geschlossen
-    # (davor Handelstag mit Frühschluss).
-    if year >= 2011:
+    # Heiligabend + Silvester: ab 2001 geschlossen (2001 = Annahme, siehe Docstring)
+    if year >= 2001:
         holidays.append(date(year, 12, 24))
         holidays.append(date(year, 12, 31))
+    holidays.extend(d for d in XETRA_SONDER if d.year == year)
 
     return sorted(set(holidays))
+
+
+# Belegte einmalige Xetra-Schließungen (Quellen: Codex-Recherche 2026-10-08,
+# docs/review_prompts/2026-10-08_plain_vanilla_1b_plan_antwort1.md). Zwilling: holidays.js::_XETRA_SONDER.
+XETRA_SONDER = [
+    date(2000, 10, 3),    # 10 Jahre Deutsche Einheit — Mitteilung Deutsche Börse (Mondo Visione)
+    date(2007, 5, 28),    # Pfingstmontag — FWB-Rundschreiben 18/2006
+    date(2014, 10, 3),    # Handelskalender 2014
+    date(2015, 5, 25),    # Pfingstmontag — Handelskalender 2015
+    date(2016, 5, 16),    # Pfingstmontag — Handelskalender 2016
+    date(2016, 10, 3),    # Handelskalender 2016
+    date(2017, 6, 5),     # Pfingstmontag — Eurex-Rundschreiben 128/16 (FWB-Beschluss)
+    date(2017, 10, 3),    # Eurex-Rundschreiben 128/16
+    date(2017, 10, 31),   # Reformationstag (500 Jahre) — Eurex-Rundschreiben 128/16
+    date(2018, 5, 21),    # Pfingstmontag — Handelskalender 2018
+    date(2018, 10, 3),    # Handelskalender 2018
+    date(2019, 6, 10),    # Pfingstmontag — Xetra-Handelskalender 2019
+    date(2019, 10, 3),    # Xetra-Handelskalender 2019
+    date(2020, 6, 1),     # Pfingstmontag — Xetra-Handelskalender 2020
+    date(2021, 5, 24),    # Pfingstmontag — Xetra-Handelskalender 2021
+]
 
 
 # ── LSE (London) ───────────────────────────────────────────────────────────────

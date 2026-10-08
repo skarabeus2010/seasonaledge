@@ -40,11 +40,46 @@ FAELLE = [
     ("NYSE", "2012-10-29", False, "sonderschliessung"),
     ("NYSE", "2025-01-09", False, "sonderschliessung"),
     ("NYSE", "2000-01-17", False, "mlk"),                # MLK seit 1998
-    ("XETRA", "2010-12-24", True, "xetra_vor_2011"),
-    ("XETRA", "2010-12-31", True, "xetra_vor_2011"),
-    ("XETRA", "2011-12-30", True, "xetra_ab_2011"),      # 31.12.2011 Samstag; 30.12. normaler Handelstag
-    ("XETRA", "2014-12-24", False, "xetra_ab_2011"),
+    ("XETRA", "2011-12-30", True, "xetra_dezember"),     # 31.12.2011 Samstag; 30.12. normaler Handelstag
+    ("XETRA", "2014-12-24", False, "xetra_dezember"),
     ("XETRA", "2020-10-05", True, "xetra_regulaer"),
+] + [
+    # Plan /plain-vanilla 1B, V4: konkrete Paare statt pauschaler Nachbarn (Quellen in exchange_holidays.XETRA_SONDER)
+    # 24./31.12. ab 2001 geschlossen (offizielle Kalender; 24.12.2001 dokumentierte Annahme) — nur Werktage
+    *[("XETRA", s, False, "xetra_dezember") for s in (
+        "2001-12-24", "2001-12-31", "2002-12-24", "2002-12-31", "2003-12-24", "2003-12-31", "2004-12-24",
+        "2004-12-31", "2007-12-24", "2007-12-31", "2008-12-24", "2008-12-31", "2009-12-24", "2009-12-31",
+        "2010-12-24", "2010-12-31")],
+    # Werktage um Weihnachten 2001–2010, die geöffnet waren
+    *[("XETRA", s, True, "xetra_dezember") for s in (
+        "2001-12-27", "2001-12-28", "2002-12-23", "2002-12-27", "2002-12-30", "2003-12-23", "2003-12-29",
+        "2003-12-30", "2004-12-23", "2004-12-27", "2004-12-30", "2007-12-27", "2007-12-28", "2008-12-23",
+        "2008-12-29", "2008-12-30", "2009-12-23", "2009-12-28", "2009-12-30", "2010-12-23", "2010-12-27",
+        "2010-12-30")],
+    # vor 2001 bleibt das bisherige Verhalten (nichts geprüft): 24.12.1999 Freitag offen
+    ("XETRA", "1999-12-24", True, "xetra_vor_2001"),
+    # belegte Sonderschließungen
+    *[("XETRA", s, False, "xetra_sonder") for s in (
+        "2000-10-03", "2007-05-28", "2014-10-03", "2015-05-25", "2016-05-16", "2016-10-03", "2017-06-05",
+        "2017-10-03", "2017-10-31", "2018-05-21", "2018-10-03", "2019-06-10", "2019-10-03", "2020-06-01",
+        "2021-05-24")],
+    # Regeljahre: 3. Oktober und Pfingstmontag offen (Werktage), Dienstag nach Pfingstmontag 2015–2021 offen
+    *[("XETRA", s, True, "xetra_regulaer") for s in (
+        "2001-10-03", "2013-10-03", "2022-10-03", "2023-10-03", "2024-10-03", "2025-10-03",
+        "2014-06-09", "2022-06-06", "2023-05-29", "2024-05-20", "2025-06-09",
+        "2015-05-26", "2016-05-17", "2017-06-06", "2018-05-22", "2019-06-11", "2020-06-02", "2021-05-25",
+        "2017-11-01", "2007-05-29")],
+    # Wochenende: weder Feiertag noch Handelstag (Feiertagsstatus in FEIERTAGE)
+    ("XETRA", "2020-10-03", False, "xetra_regulaer"),
+    ("XETRA", "2021-10-03", False, "xetra_regulaer"),
+]
+
+# (Datum, Soll „steht in der XETRA-Feiertagsliste“, Prüfungsname) — getrennt vom Handelstagsstatus (V4)
+FEIERTAGE = [
+    ("2000-10-03", True, "xetra_sonder"), ("2017-10-31", True, "xetra_sonder"), ("2021-05-24", True, "xetra_sonder"),
+    ("2020-10-03", False, "xetra_feiertagsliste"), ("2021-10-03", False, "xetra_feiertagsliste"),
+    ("2022-10-03", False, "xetra_feiertagsliste"), ("2022-06-06", False, "xetra_feiertagsliste"),
+    ("2001-12-24", True, "xetra_dezember"), ("1999-12-24", False, "xetra_vor_2001"),
 ]
 
 PROBE = r"""
@@ -61,15 +96,18 @@ for (; d <= ende; d.setUTCDate(d.getUTCDate() + 1)) {
   out.NYSE[s] = H.isTradingDay(s, 'NYSE');
   out.XETRA[s] = H.isTradingDay(s, 'XETRA');
 }
+out.FEIERTAGE_XETRA = {};
+for (let y = 1999; y <= 2035; y++) out.FEIERTAGE_XETRA[y] = H.get(y, 'XETRA');
 process.stdout.write(JSON.stringify(out) + '\nENDE\n');
 """
 
 
-def js_kalender(js_pfad: pathlib.Path) -> dict:
+def js_kalender(js_pfad: pathlib.Path, bereich=None) -> dict:
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
         f.write(PROBE)
         probe = f.name
-    r = subprocess.run(["node", probe, str(js_pfad), BEREICH[0].isoformat(), BEREICH[1].isoformat()],
+    von, bis = bereich or (BEREICH[0].isoformat(), BEREICH[1].isoformat())
+    r = subprocess.run(["node", probe, str(js_pfad), von, bis],
                        capture_output=True, text=True, encoding="utf-8")
     pathlib.Path(probe).unlink(missing_ok=True)
     zeilen = r.stdout.strip().splitlines()
@@ -91,10 +129,24 @@ def pruefe(js_pfad: pathlib.Path = JS) -> dict[str, list[str]]:
                 fehler.setdefault("zwilling", []).append(f"{b} {s}: JS {jsk[b][s]} ≠ Python {py}")
         d += timedelta(days=1)
     for b, s, soll, name in FAELLE:
+        if s not in jsk[b]:   # Fälle außerhalb des Vergleichsbereichs (vor 2000) einzeln nachfragen
+            jsk[b][s] = js_einzeltag(js_pfad, s, b)
         js_ist, py_ist = jsk[b][s], bool(is_trading_day(date.fromisoformat(s), b))
         if js_ist != soll or py_ist != soll:
             fehler.setdefault(name, []).append(f"{b} {s}: soll {soll}, JS {js_ist}, Python {py_ist}")
+    from shared.exchange_holidays import _compute_xetra_holidays
+    for s, soll, name in FEIERTAGE:
+        d = date.fromisoformat(s)
+        js_ist = s in jsk["FEIERTAGE_XETRA"][str(d.year)]
+        py_ist = d in _compute_xetra_holidays(d.year)
+        if js_ist != soll or py_ist != soll:
+            fehler.setdefault(name, []).append(f"Feiertagsliste {s}: soll {soll}, JS {js_ist}, Python {py_ist}")
     return fehler
+
+
+def js_einzeltag(js_pfad: pathlib.Path, s: str, b: str) -> bool:
+    k = js_kalender(js_pfad, (s, s))
+    return k[b][s]
 
 
 # (Name, alter Text, neuer Text, Prüfung, die reißen muss)
@@ -106,8 +158,18 @@ MUTATIONEN = [
      "list.push(this._observed(y, 6, 19));", "juneteenth_vor_2022"),
     ("Sonderschließungen leer", "_NYSE_SONDER: ['2001-09-11',", "_NYSE_SONDER: [], _alt: ['2001-09-11',",
      "sonderschliessung"),
-    ("XETRA 24./31.12. ohne Jahresgrenze", "if (y >= 2011) { list.push(this._ds(y, 12, 24));",
-     "if (true) { list.push(this._ds(y, 12, 24));", "xetra_vor_2011"),
+    ("XETRA 24./31.12. erst ab 2011 (alte Regel)", "if (y >= 2001) { list.push(this._ds(y, 12, 24));",
+     "if (y >= 2011) { list.push(this._ds(y, 12, 24));", "xetra_dezember"),
+    ("XETRA 24./31.12. ohne Jahresgrenze", "if (y >= 2001) { list.push(this._ds(y, 12, 24));",
+     "if (true) { list.push(this._ds(y, 12, 24));", "xetra_vor_2001"),
+    ("XETRA-Sonderschließungen leer", "  _XETRA_SONDER: ['2000-10-03',", "  _XETRA_SONDER: [], _alt: ['2000-10-03',",
+     "xetra_sonder"),
+    ("XETRA: eine Sonderschließung fehlt", "'2017-10-03', '2017-10-31', '2018-05-21'", "'2017-10-03', '2018-05-21'",
+     "xetra_sonder"),
+    ("XETRA: Pfingstmontag jedes Jahr geschlossen", "    for (var i = 0; i < this._XETRA_SONDER.length; i++) {",
+     "    (function(self){ var e = new Date(self.easterMonday(y) + 'T12:00:00Z'); e.setUTCDate(e.getUTCDate() + 49);"
+     " list.push(e.toISOString().slice(0, 10)); })(this);\n"
+     "    for (var i = 0; i < this._XETRA_SONDER.length; i++) {", "xetra_regulaer"),
     ("MLK fehlt", "if (y >= 1998) list.push(this._ds(y, 1, this._nthDow(y, 1, 1, 3)));",
      "", "mlk"),
 ]

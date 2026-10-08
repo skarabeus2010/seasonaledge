@@ -84,14 +84,25 @@ def auswerten(df, key, *, boerse: str, stichtag: date | None = None,
     try:
         trades = STRATEGIES[key]["func"](df) or []
         if stop_pct and stop_pct > 0 and trades:
-            trades = apply_stop_loss(stop_df if stop_df is not None else df, trades, stop_pct, stop_type)
+            # Close-Modus wie die Seite (Plan 1B S3); stop_df wird nicht mehr gebraucht (OHLC-Stop = Phase 3)
+            trades = apply_stop_close(df, trades, stop_pct, stop_type)
+        _luecken_markieren(df, trades)   # nach dem Stop (S2)
         # E7: erst Strategie, dann Stop, dann bei veraltetem Bestand die verbliebenen OFFENEN Kandidaten heraus
         veraltet = _daten_veraltet(df)
         unvollstaendig = [t for t in trades if t.get("open")] if veraltet else []
         if veraltet:
             trades = [t for t in trades if not t.get("open")]
-        return {"trades": trades, "stats": compute_strategy_stats(trades) if trades else {},
-                "unvollstaendig": unvollstaendig, "veraltet": veraltet}
+        stats = compute_strategy_stats(trades) if trades else {}
+        if stats:
+            # Ergebnisvertrag 1B/E2: alte Schlüssel trade-basiert, Tageswerte nur unter "taeglich"
+            tg_info = {}
+            stats["taeglich"] = tages_equity(df, trades, 1000.0, tg_info)
+            stats["taeglich_grund"] = tg_info.get("grund")
+            zu = [t for t in trades if not t.get("open")]
+            stats["luecken"] = {"von": len(zu), "fehlende": sum(1 for t in zu if t.get("fehlende_sitzungen")),
+                                "abstand": sum(1 for t in zu if t.get("auffaellige_abstaende")),
+                                "naeherung": sum(1 for t in zu if t.get("naeherung"))}
+        return {"trades": trades, "stats": stats, "unvollstaendig": unvollstaendig, "veraltet": veraltet}
     finally:
         _KONTEXT_VAR.reset(token)
 
@@ -679,7 +690,9 @@ def calc_september_avoid(df: pd.DataFrame) -> list[dict]:
 # ══════════════════════════════════════════════════════════════
 
 # 8 große US-Börsenfeiertage (ohne MLK)
-_US_HOLIDAYS_MONTH_DAY = [
+# Legacy, Phase 3: Näherungsanker (z. B. Thanksgiving „25.11.“). Nur noch Ultimate Monthly (_is_near_holiday)
+# und KTI nutzen sie; One-Day-Holiday und UHTS rechnen seit 1B mit den exakten NYSE-Feiertagen (_nyse_feiertage).
+_US_HOLIDAYS_NAEHERUNG_LEGACY = [
     (1, 1),   # New Year's Day
     (2, 15),  # Presidents' Day (ca.)
     (5, 25),  # Memorial Day (ca.)
@@ -694,7 +707,7 @@ _US_HOLIDAYS_MONTH_DAY = [
 def _is_near_holiday(dt, df, days_before=1):
     """Prüft ob ein Tag innerhalb von days_before HT vor einem Feiertag liegt."""
     year = dt.year
-    for m, d in _US_HOLIDAYS_MONTH_DAY:
+    for m, d in _US_HOLIDAYS_NAEHERUNG_LEGACY:
         try:
             hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
             if hol is None:
@@ -890,7 +903,7 @@ def _compute_kti_daily(df: pd.DataFrame) -> pd.Series:
             (_even_decade & (decade_digit == 5))).astype(int)
 
     # 15. Feiertage: Vereinfacht — 3 HT vor festen Terminen
-    for m, d in _US_HOLIDAYS_MONTH_DAY:
+    for m, d in _US_HOLIDAYS_NAEHERUNG_LEGACY:
         for y in year.unique():
             try:
                 hol = _als_datum(_nearest_trading_day(df2, date(int(y), m, d)))
@@ -1052,25 +1065,22 @@ def calc_january_barometer(df: pd.DataFrame) -> list[dict]:
 # STRATEGIE 17: EIN-TAGES-FEIERTAG
 # ══════════════════════════════════════════════════════════════
 
+def _nyse_feiertage(year: int) -> list[date]:
+    """Exakte reguläre NYSE-Feiertage ohne Sonderschließungen — Zwilling von JS _nyseHolidays (Plan 1B T1).
+    Nur Werktage: ein Feiertag am Wochenende schließt keine Sitzung (Neujahr an einem Samstag führt die
+    Python-Liste, JS nicht — gemessen in 18 Jahren 1896–2026)."""
+    from shared.nyse_holidays import _compute_nyse_holidays, _NYSE_SPECIAL_CLOSURES
+    return [d for d in _compute_nyse_holidays(year) if d not in _NYSE_SPECIAL_CLOSURES and d.weekday() < 5]
+
+
 def calc_one_day_holiday(df: pd.DataFrame) -> list[dict]:
-    """Kauf 2 HT vor Feiertag (Close), Verkauf 1 HT vor Feiertag (Close)."""
+    """Kauf S⁻2 (2. Sitzung vor dem Feiertag), Verkauf S⁻1 — wie JS."""
     trades = []
     for year in sorted(df.index.year.unique()):
-        for m, d in _US_HOLIDAYS_MONTH_DAY:
-            try:
-                hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
-                if hol is None:
-                    continue
-                before = df[df.index < hol]
-                if len(before) < 2:
-                    continue
-                entry = before.index[-2]
-                exit_d = before.index[-1]
-                trade = _make_trade(df, entry, exit_d)
-                if trade:
-                    trades.append(trade)
-            except Exception:
-                continue
+        for F in _nyse_feiertage(year):
+            trade = _make_trade(df, _sitzung(df, F, -2, "nach"), _sitzung(df, F, -1, "nach"))
+            if trade:
+                trades.append(trade)
     return trades
 
 
@@ -1079,35 +1089,44 @@ def calc_one_day_holiday(df: pd.DataFrame) -> list[dict]:
 # ══════════════════════════════════════════════════════════════
 
 def calc_uhts(df: pd.DataFrame) -> list[dict]:
-    """3 HT vor Feiertag Long, Tag davor 2x Hebel, 3 HT nach Feiertag Exit."""
+    """UHTS: Einstieg S⁻3, Ausstieg S⁺3 (3. Sitzung strikt nach dem Feiertag), Aufstockung auf 2x zum Schluss von
+    S⁻1 — Plan 1B T2/T3, wie JS calc_uhts."""
     trades = []
     for year in sorted(df.index.year.unique()):
-        for m, d in _US_HOLIDAYS_MONTH_DAY:
-            try:
-                hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
-                if hol is None:
-                    continue
-                before = df[df.index < hol]
-                after = df[df.index > hol]
-                if len(before) < 3 or len(after) < 3:
-                    continue
-                entry = before.index[-3]
-                exit_d = after.index[2]
-                trade = _make_trade(df, entry, exit_d)
-                if trade:
-                    # Hebel: Tag vor Feiertag = 2x
-                    pre_hol = before.index[-1]
-                    p_pre = float(df.loc[pre_hol, "Close"])
-                    p_entry = trade["entry_price"]
-                    # Return Split: Normal bis pre_hol, dann 2x bis exit
-                    r1 = (p_pre - p_entry) / p_entry * 100
-                    r2 = (trade["exit_price"] - p_pre) / p_pre * 100 * 1.5  # Misch-Hebel ~1.5x
-                    trade["return_pct"] = round(r1 + r2, 4)
-                    trade["leverage"] = 1.5
-                    trades.append(trade)
-            except Exception:
+        for F in _nyse_feiertage(year):
+            trade = _make_trade(df, _sitzung(df, F, -3, "nach"), _sitzung(df, F + timedelta(days=1), 2, "nach"))
+            if not trade:
                 continue
+            s1 = _sitzung(df, F, -1, "nach")
+            aufstock = s1.datum if _ist_zustand(s1) else (s1.date() if s1 is not None else None)
+            if _hebel_pfad(df, trade, aufstock):
+                trades.append(trade)
     return trades
+
+
+def _hebel_pfad(df, t, aufstock) -> bool:
+    """Gehebelter Pfad (Plan 1B T3), Zwilling von JS _hebelPfad: je Kursintervall a → b Hebel nach dem Schluss von a
+    (1x vor der Aufstockung, sonst 2x); Rendite = Π(1 + h·(b/a − 1)); setzt return_pct, leverage, hebel, aufstockung."""
+    idx = df.index
+    if t["entry_date"] not in idx or t["exit_date"] not in idx:
+        return False
+    i0, i1 = idx.get_loc(t["entry_date"]), idx.get_loc(t["exit_date"])
+    if i1 < i0:
+        return False
+    closes = df["Close"].to_numpy(dtype=float)
+    f, hebel = 1.0, []
+    for i in range(i0 + 1, i1 + 1):
+        a, b = closes[i - 1], closes[i]
+        if not (np.isfinite(a) and np.isfinite(b) and a > 0 and b > 0):
+            return False
+        h = 2 if (aufstock is not None and idx[i - 1].date() >= aufstock) else 1
+        f *= 1 + h * (b / a - 1)
+        hebel.append([idx[i], h])
+    t["return_pct"] = (f - 1) * 100
+    t["leverage"] = 2
+    t["hebel"] = hebel
+    t["aufstockung"] = aufstock
+    return True
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1342,6 +1361,144 @@ def apply_stop_loss(df, trades, stop_pct, stop_type="fixed"):
             result.append(t)
 
     return result
+
+
+def _stop_ausstieg(df, t, i):
+    """Gestoppten Trade zum Close der Zeile i schließen — Zwilling von JS _stopAusstieg (Plan 1B S2/V3)."""
+    c = float(df["Close"].iloc[i])
+    neu = dict(t)
+    neu.pop("open", None)
+    neu.pop("regeltermin_ausstieg", None)
+    neu["zustand_ausstieg"] = "gefunden"
+    neu["exit_date"] = df.index[i]
+    neu["exit_price"] = c
+    if t.get("hebel"):
+        _hebel_pfad(df, neu, t.get("aufstockung"))
+    else:
+        neu["return_pct"] = (c / t["entry_price"] - 1) * 100 * (t.get("leverage") or 1)
+    neu["stopped"] = True
+    return neu
+
+
+def apply_stop_close(df, trades, stop_pct, stop_type="fixed"):
+    """Stops im Close-Modus der Seite (Plan 1B S1), Zwilling von JS applyStopLoss/applyTrailingStop: Prüfung ab der
+    Sitzung nach dem Einstieg bis einschließlich Ausstiegstag; Fixed: Close <= Einstieg·(1−p); Trailing: Close <=
+    höchster Close seit Einstieg (inkl. Einstiegs-Close)·(1−p); Ausstieg zum Close des Auslösetags; ungültige Closes
+    übersprungen. Die OHLC-Funktion apply_stop_loss bleibt für Phase 3 und wird von keiner Seite gerufen."""
+    if not stop_pct or stop_pct <= 0:
+        return trades
+    idx = df.index
+    closes = df["Close"].to_numpy(dtype=float)
+    out = []
+    for t in trades:
+        if t["entry_date"] not in idx or t["exit_date"] not in idx:
+            out.append(t)
+            continue
+        i0, i1 = idx.get_loc(t["entry_date"]), idx.get_loc(t["exit_date"])
+        peak, neu = t["entry_price"], None
+        for i in range(i0 + 1, i1 + 1):
+            c = closes[i]
+            if not (np.isfinite(c) and c > 0):
+                continue
+            if stop_type == "trailing":
+                peak = max(peak, c)
+                grenze = peak * (1 - stop_pct / 100)
+            else:
+                grenze = t["entry_price"] * (1 - stop_pct / 100)
+            if c <= grenze:
+                neu = _stop_ausstieg(df, t, i)
+                break
+        out.append(neu if neu is not None else t)
+    return out
+
+
+def _gueltiger_kurs(c) -> bool:
+    return bool(np.isfinite(c) and c > 0)
+
+
+def _gehebelt(t) -> bool:
+    if t.get("hebel"):
+        return any(h != 1 for _, h in t["hebel"])
+    return t.get("leverage") is not None and t.get("leverage") != 1
+
+
+def _luecken_markieren(df, trades):
+    """Kurslücken je Trade (Plan 1B L1/V1), Zwilling von JS _lueckenMarkieren."""
+    b = _ctx(df)["boerse"]
+    idx = df.index
+    closes = df["Close"].to_numpy(dtype=float)
+
+    def geprueft(d):
+        return b in ("NYSE", "XETRA") and _im_kalender(d)
+    for t in trades or []:
+        fs = aa = 0
+        if t["entry_date"] in idx and t["exit_date"] in idx:
+            i0, i1 = idx.get_loc(t["entry_date"]), idx.get_loc(t["exit_date"])
+            vor = i0
+            for i in range(i0 + 1, i1 + 1):
+                # ungültiger Kurs = fehlende Bewertung (wie JS, Codex Code-R1 1B)
+                if not _gueltiger_kurs(closes[i]):
+                    continue
+                a, z = idx[vor].date(), idx[i].date()
+                vor = i
+                if geprueft(a) and geprueft(z):
+                    d = _kalender_sitzung(a + timedelta(days=1), 1, b)
+                    while d is not None and d < z:
+                        fs += 1
+                        d = _kalender_sitzung(d + timedelta(days=1), 1, b)
+                elif (z - a).days > 4:
+                    aa += 1
+        t["fehlende_sitzungen"] = fs
+        t["auffaellige_abstaende"] = aa
+        t["naeherung"] = _gehebelt(t) and (fs + aa) > 0
+    return trades
+
+
+def tages_equity(df, trades, start_capital=1000.0, info=None):
+    """Tägliche Konto-Equity (Plan 1B E1/V3), Zwilling von JS tagesEquity: nur geschlossene Trades, Exposure je
+    Kursintervall = größter Hebel der haltenden Trades (keine Stapelung); None bei Hebel ohne täglichen Pfad."""
+    info = info if info is not None else {}
+    zu = [t for t in (trades or []) if not t.get("open") and np.isfinite(t["return_pct"])]
+    if not zu:
+        return None
+    idx = df.index
+    exp = {}
+    erst = letzt = None
+    for t in zu:
+        if not t.get("hebel") and t.get("leverage") is not None and t.get("leverage") != 1:
+            info["grund"] = "hebel_ohne_pfad"
+            return None
+        if t["entry_date"] not in idx or t["exit_date"] not in idx:
+            continue
+        i0, i1 = idx.get_loc(t["entry_date"]), idx.get_loc(t["exit_date"])
+        if i1 < i0:
+            continue
+        for i in range(i0 + 1, i1 + 1):
+            h = t["hebel"][i - i0 - 1][1] if t.get("hebel") else 1
+            exp[i] = max(exp.get(i, 0), h)
+        erst = i0 if erst is None else min(erst, i0)
+        letzt = i1 if letzt is None else max(letzt, i1)
+    if erst is None:
+        return None
+    closes = df["Close"].to_numpy(dtype=float)
+    e, peak, maxdd = 1.0, 1.0, 0.0
+    kurve = [(idx[erst], start_capital)]
+    vor = erst
+    for j in range(erst + 1, letzt + 1):
+        if not _gueltiger_kurs(closes[j]):
+            continue
+        h = exp.get(vor + 1, 0)
+        if any(exp.get(k, 0) != h for k in range(vor + 2, j + 1)):
+            info["grund"] = "ungueltiger_kurs"
+            return None
+        e *= 1 + h * (closes[j] / closes[vor] - 1)
+        vor = j
+        peak = max(peak, e)
+        maxdd = min(maxdd, e / peak - 1)
+        kurve.append((idx[j], start_capital * e))
+    jahre = (max(t["exit_date"] for t in zu) - min(t["entry_date"] for t in zu)).days / 365.25
+    return {"max_dd": maxdd * 100, "final_equity": start_capital * e, "total_return": (e - 1) * 100,
+            "cagr": (e ** (1 / jahre) - 1) * 100 if jahre > 0 else 0, "kurve": kurve}
 
 
 def build_equity_curve(trades, start_capital=1000.0):

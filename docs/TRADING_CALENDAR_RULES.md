@@ -73,11 +73,15 @@ Danach: Code → `HOLIDAY_TO_EXCHANGE` → Börsen-Kürzel → `is_trading_day(d
   **+ Einmalige Sonderschließungen** (`_NYSE_SPECIAL_CLOSURES`): 09.01.2025
   (Staatstrauer Carter), 05.12.2018 (Bush), 29.+30.10.2012 (Sandy), 02.01.2007
   (Ford), 11.06.2004 (Reagan), 11.–14.09.2001 (9/11).
-- **XETRA** (offiziell, Deutsche Börse) — **NUR 8 Tage:** Neujahr, Karfreitag,
-  Ostermontag, 1. Mai, **24.+25.+26.+31.12.** (24./31. ganztägig zu seit 2011).
-  ⚠️ Xetra **HANDELT** an **Pfingstmontag, Christi Himmelfahrt UND 3. Oktober
-  (Tag der Deutschen Einheit)** — häufiger Irrtum! Daten + offizieller Kalender
-  bestätigt. **KEIN Observed-Shift** (Feiertag am Wochenende → kein Mo-Ersatz).
+- **XETRA** (offiziell, Deutsche Börse) — Regel: Neujahr, Karfreitag, Ostermontag, 1. Mai,
+  25.+26.12., **ab 2001 auch 24.+31.12.** (offizielle Handelskalender 2002–2010; der
+  **24.12.2001 ist eine dokumentierte Annahme ohne Primärquelle**, 31.12.2001 durch UPI belegt;
+  vor 2001 ungeprüft und unverändert offen). Die frühere Angabe „24./31. zu seit 2011" war falsch
+  (Korrektur 2026-10-08, Codex-Recherche mit Quellen in `docs/review_prompts/2026-10-08_plain_vanilla_1b_plan_antwort1.md`).
+  ⚠️ Xetra **handelt in der Regel** an **Pfingstmontag, Christi Himmelfahrt und am 3. Oktober** —
+  **mit belegten Ausnahmejahren** (`XETRA_SONDER` in `shared/exchange_holidays.py`, Zwilling
+  `holidays.js::_XETRA_SONDER`): 03.10.2000, Pfingstmontag 2007 und 2015–2021, 03.10.2014,
+  2016–2019, 31.10.2017 (Reformationstag). **KEIN Observed-Shift** (Feiertag am Wochenende → kein Mo-Ersatz).
 - **EURONEXT** (Paris/Amsterdam/Brüssel/Lissabon) — **NUR 6 Tage:** Neujahr,
   Karfreitag, Ostermontag, 1. Mai, 25.+26.12. Euronext handelt **durch** an
   Pfingstmontag, Himmelfahrt, 8. Mai, 14. Juli, 15. Aug, 1. Nov, 11. Nov.
@@ -284,7 +288,8 @@ VSTOXX derzeit **nicht** (kein `^V2X`-Ticker) — hier nur zur Vollständigkeit.
 Feiertage sind **national** und gelten nur für die Börse des jeweiligen Tickers
 (= Auflösung wie Regel 1). Der DAX (`^GDAXI`, XETRA) ruht z.B. am **1. Mai**, der
 S&P 500 (NYSE) nicht; umgekehrt handelt XETRA an Thanksgiving — und der DAX
-**handelt** am 3. Oktober/Pfingstmontag (anders als die Bank-Feiertage!).
+**handelt in der Regel** am 3. Oktober/Pfingstmontag (anders als die Bank-Feiertage; Ausnahmejahre
+siehe `XETRA_SONDER`).
 → In der Event-/Kalender-Anzeige eines Tickers **nur die Feiertage seiner Börse**
 zeigen (`market_calendar.populate_holidays` erzeugt pro Börse getrennte Rows mit
 `exchange`-Tag; `get_events(exchanges=[...])` filtert). Beispiel-Divergenzen siehe

@@ -166,7 +166,7 @@
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li><b>CAGR</b>: <span data-i18n="pv.metric_cagr">Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</span></li>
-            <li><b>Max Drawdown</b>: <span data-i18n="pv.metric_max_dd">Gr&ouml;&szlig;ter R&uuml;ckgang der Equity zwischen abgeschlossenen Trades &ndash; Verluste w&auml;hrend eines laufenden Trades sind nicht enthalten</span></li>
+            <li><b>Max Drawdown</b>: <span data-i18n="pv.metric_max_dd">Gr&ouml;&szlig;ter R&uuml;ckgang der Kontokurve, t&auml;glich zum Schlusskurs bewertet; daneben der R&uuml;ckgang zwischen abgeschlossenen Trades, der Verluste w&auml;hrend eines laufenden Trades nicht enth&auml;lt</span></li>
             <li><b>Win-Rate</b>: <span data-i18n="pv.metric_win_rate">Anteil profitabler Trades</span></li>
             <li><b>Sharpe Ratio</b>: <span data-i18n="pv.metric_sharpe">Risikoadjustierte Rendite</span></li>
             <li><b>Profit Factor</b>: <span data-i18n="pv.metric_profit_factor">Bruttogewinne / Bruttoverluste</span></li>
@@ -180,7 +180,7 @@
         <summary data-i18n="pv.seo_h">Plain-Vanilla-Strategien verstehen &mdash; Saisonale Regeln, Kennzahlen &amp; Methodik</summary>
         <div class="content">
           <p data-i18n-html="pv.seo_p1">Die <b>Plain-Vanilla-Strategien</b> von SeasonAlpha b&uuml;ndeln 24 einfache, <b>regelbasierte Saisonal-Strategien</b> und testen sie auf dem von dir gew&auml;hlten Ticker. Jede Strategie kauft und verkauft nach festen Kalenderregeln &mdash; etwa der Klassiker <b>Sell in May</b> (Einstieg letzter Handelstag Oktober, Ausstieg 3. Handelstag Mai), die <b>September-Vermeidung</b>, der <b>Turn-of-the-Month</b>-Effekt, das <b>Januar-Barometer</b> oder die <b>Santa-Claus-Rallye</b>. Das Tool rechnet f&uuml;r jede Strategie eine <b>Equity-Kurve</b> auf Basis von 1.000&nbsp;Euro Startkapital, listet alle Einzel-Trades auf und pr&uuml;ft per <b>Signifikanztest</b>, ob die Renditen statistisch von Null verschieden sind. So siehst du auf einen Blick, wie sich ein fester saisonaler Plan historisch geschlagen h&auml;tte.</p>
-          <p data-i18n-html="pv.seo_p2">Zur Bewertung dienen mehrere <b>Kennzahlen</b>, die du gemeinsam lesen solltest. Die <b>Rendite</b> erscheint als <b>CAGR</b> (durchschnittliche j&auml;hrliche Wachstumsrate mit Zinseszins) und als Endwert eines 1.000-Euro-Depots. Die <b>Win-Rate</b> ist der Anteil profitabler Trades &mdash; sie sagt aber nichts &uuml;ber die H&ouml;he der Gewinne. Der <b>Max Drawdown</b> zeigt hier den gr&ouml;&szlig;ten R&uuml;ckgang der Equity von einem abgeschlossenen Trade zum n&auml;chsten. Verluste, die w&auml;hrend eines laufenden Trades entstehen und bis zum Ausstieg wieder aufgeholt werden, sind darin nicht enthalten &ndash; der tats&auml;chliche zwischenzeitliche R&uuml;ckgang kann also gr&ouml;&szlig;er sein. Erg&auml;nzend messen die <b>Sharpe Ratio</b> (Rendite je Risikoeinheit) und der <b>Profit Factor</b> (Bruttogewinne geteilt durch Bruttoverluste, &uuml;ber&nbsp;1 ist profitabel) die Qualit&auml;t der Strategie. Optional kannst du einen festen oder nachgezogenen <b>Stop-Loss</b> aktivieren und beobachten, wie er die Kennzahlen ver&auml;ndert.</p>
+          <p data-i18n-html="pv.seo_p2">Zur Bewertung dienen mehrere <b>Kennzahlen</b>, die du gemeinsam lesen solltest. Die <b>Rendite</b> erscheint als <b>CAGR</b> (durchschnittliche j&auml;hrliche Wachstumsrate mit Zinseszins) und als Endwert eines 1.000-Euro-Depots. Die <b>Win-Rate</b> ist der Anteil profitabler Trades &mdash; sie sagt aber nichts &uuml;ber die H&ouml;he der Gewinne. Der <b>Max Drawdown</b> misst den gr&ouml;&szlig;ten R&uuml;ckgang der Kontokurve, die t&auml;glich zum Schlusskurs bewertet wird &ndash; also auch Verluste, die w&auml;hrend eines laufenden Trades entstehen und bis zum Ausstieg wieder aufgeholt werden. Daneben steht der R&uuml;ckgang von einem abgeschlossenen Trade zum n&auml;chsten, der solche Zwischenverluste nicht enth&auml;lt. Erg&auml;nzend messen die <b>Sharpe Ratio</b> (Rendite je Risikoeinheit) und der <b>Profit Factor</b> (Bruttogewinne geteilt durch Bruttoverluste, &uuml;ber&nbsp;1 ist profitabel) die Qualit&auml;t der Strategie. Optional kannst du einen festen oder nachgezogenen <b>Stop-Loss</b> aktivieren und beobachten, wie er die Kennzahlen ver&auml;ndert.</p>
           <p data-i18n-html="pv.seo_p3">Methodisch arbeitet das Tool mit den realen <b>Tagesschlusskursen</b> des Tickers: Ein- und Ausstieg erfolgen jeweils zum <b>Close</b> des Signaltags, exakt nach der Strategie-Regel. Die Handelstage werden <b>b&ouml;rsenspezifisch und feiertagsbewusst</b> gez&auml;hlt &mdash; ein &bdquo;dritter Handelstag im Mai&ldquo; bei einer XETRA-Aktie kann auf einen anderen Kalendertag fallen als bei einer NYSE-Aktie. Es findet <b>keine Optimierung</b> statt: Die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet, was eine &Uuml;beranpassung an die Vergangenheit (Overfitting) vermeidet. Der Backtest ist <b>look-ahead-frei</b> &mdash; jeder Trade nutzt nur Informationen, die am Signaltag bereits verf&uuml;gbar waren, etwa wenn das Januar-Barometer erst nach Monatsende &uuml;ber den Einstieg im Februar entscheidet. Berechnet wird im Browser aus den von SeasonAlpha gepflegten Kursdaten.</p>
           <p data-i18n-html="pv.seo_p4">Die Plain-Vanilla-Strategien sind ein <b>Werkzeug zur Einordnung saisonaler Muster</b>, keine Anlageberatung und keine Gewinngarantie. Backtests blicken r&uuml;ckw&auml;rts und ber&uuml;cksichtigen weder Handelskosten, Steuern noch Slippage; reale Ergebnisse w&auml;ren niedriger. Einzelne Strategien beruhen auf wenigen Trades pro Jahrzehnt &mdash; achte deshalb auf die <b>Anzahl der Trades</b> und den <b>Signifikanztest</b>, bevor du einem Muster Bedeutung beimisst. Saisonale Effekte k&ouml;nnen sich abschw&auml;chen oder verschwinden, sobald sie breit bekannt sind. Nutze die Auswertungen als zus&auml;tzlichen Kontext zu deiner eigenen Recherche, nicht als alleinige Entscheidungsgrundlage. Vergangene Muster garantieren keine k&uuml;nftigen Ergebnisse.</p>
           <h3 data-i18n="pv.seo_faq_h" style="font-size:.95rem;margin:1rem 0 .5rem">H&auml;ufige Fragen</h3>
@@ -258,8 +258,10 @@
         card.className='strat-card'+(key===selectedKey?' selected':'');
         var cagrHtml='<div class="cagr" style="color:var(--muted)">\u2014</div>';
         if(cachedResults[key]){
-          var cagr=cachedResults[key].stats?cachedResults[key].stats.cagr:0;
-          cagrHtml='<div class="cagr" style="color:'+(cagr>=0?'#00d4aa':'#ff4757')+'">'+(cagr>=0?'+':'')+cagr.toFixed(1)+'%</div>';
+          // Konto-CAGR wie in den KPIs (taeglich.cagr); ohne Tagespfad „—“
+          var _tg=cachedResults[key].stats&&cachedResults[key].stats.taeglich;
+          if(_tg){var cagr=_tg.cagr;
+            cagrHtml='<div class="cagr" style="color:'+(cagr>=0?'#00d4aa':'#ff4757')+'">'+(cagr>=0?'+':'')+cagr.toFixed(1)+'%</div>';}
         }
         card.innerHTML='<div class="icon">'+s.icon+'</div><div class="name">'+s.name+'</div>'+cagrHtml;
         card.dataset.key=key;
@@ -337,30 +339,46 @@
       // Info Box
       var info=document.getElementById('strat-info');
       info.style.display='block';
-      info.innerHTML='<div class="title">'+s.icon+' '+s.name+'</div><div class="desc">'+s.desc+'</div>';
+      var _T=function(k,d){return SA.i18n&&SA.i18n.t?SA.i18n.t(k,d):d;};
+      var _hebelInfo=selectedKey==='uhts'?'<div class="desc">'+_T('pv.uhts_hebel','Hebel: 1x bis zum Schluss vor dem Feiertag, danach 2x bis zum Ausstieg; t\u00E4glich neu gewichtet, ohne Finanzierungskosten.')+'</div>':'';
+      info.innerHTML='<div class="title">'+s.icon+' '+s.name+'</div><div class="desc">'+s.desc+'</div>'+_hebelInfo;
 
       // KPIs
       var kpiEl=document.getElementById('kpi-strat');
       if(data&&data.stats){
-        var st=data.stats;
+        var st=data.stats, tg=st.taeglich, strich='\u2014';
+        // Ergebnisvertrag 1B/E2: Konto-Werte ausdrücklich aus taeglich.*, Trade-Drawdown aus max_drawdown.
+        // Ohne täglichen Hebelpfad (taeglich = null) kein Rückfall auf Trade-Equity oder 1x (V3).
         kpiEl.innerHTML=
-          kpi('CAGR',(st.cagr>=0?'+':'')+st.cagr.toFixed(1)+'%',st.cagr>=0?'green':'red')+
-          kpi(SA.i18n&&SA.i18n.t?SA.i18n.t('pv.kpi_max_dd_trades','Max DD (Trades)'):'Max DD (Trades)',st.max_drawdown.toFixed(1)+'%','red')+
+          kpi('CAGR',tg?(tg.cagr>=0?'+':'')+tg.cagr.toFixed(1)+'%':strich,tg?(tg.cagr>=0?'green':'red'):'')+
+          kpi(_T('pv.kpi_max_dd_tag','Max DD (Schlusskurse)'),tg?tg.max_dd.toFixed(1)+'%':strich,'red')+
+          kpi(_T('pv.kpi_max_dd_trades','Max DD (Trades)'),st.max_drawdown.toFixed(1)+'%','')+
           kpi('Win-Rate',st.win_rate.toFixed(0)+'%',st.win_rate>=50?'green':'')+
           kpi('Trades',st.n_trades)+
-          kpi('$1.000 Endwert','$'+st.final_equity.toLocaleString(undefined,{maximumFractionDigits:0}),st.final_equity>=1000?'green':'red')+
+          kpi('$1.000 Endwert',tg?'$'+tg.final_equity.toLocaleString(undefined,{maximumFractionDigits:0}):strich,tg?(tg.final_equity>=1000?'green':'red'):'')+
           kpi('Sharpe',SA.strategy.formatZahl(st.sharpe,2))+
           kpi('Profit Factor',SA.strategy.formatPF(st.profit_factor),st.profit_factor==null?'':st.profit_factor>=1.5?'green':st.profit_factor>=1?'':'red');
+        var L=st.luecken||{}, hw=[];
+        var _n=function(k,d,n){return _T(k,d).replace('{n}',n).replace('{N}',L.von);};
+        if(L.fehlende) hw.push(_n('pv.luecken_fehlend','{n} von {N} Trades mit fehlender Sitzung (der B\u00F6rsenkalender kennt einen Handelstag ohne Kurs).',L.fehlende));
+        if(L.abstand) hw.push(_n('pv.luecken_abstand','{n} von {N} Trades mit auff\u00E4lligem Kursabstand (mehr als 4 Kalendertage ohne Kurs: B\u00F6rse geschlossen oder Daten fehlen).',L.abstand));
+        if(L.naeherung) hw.push(_n('pv.luecken_naeherung','{n} gehebelte Trades \u00FCber eine Kursl\u00FCcke: Rendite als N\u00E4herung, der t\u00E4gliche Hebelpfad ist dort nicht rekonstruierbar.',L.naeherung));
+        hw.push(tg?_T('pv.konto_regel','Kontokurve, CAGR und Endwert: t\u00E4glich zum Schlusskurs bewertet, \u00FCberlappende Trades z\u00E4hlen einmal (ein Konto, keine Stapelung). Bei fehlenden Kursen kann der wahre R\u00FCckgang gr\u00F6\u00DFer sein.')
+                  :st.taeglich_grund==='ungueltiger_kurs'?_T('pv.taeglich_ausgesetzt','Ung\u00FCltige Kurse bei wechselnder Position: Kontokurve, CAGR und Endwert ausgesetzt.')
+                  :_T('pv.kein_tagespfad','Kein t\u00E4glicher Hebelpfad: Kontokurve, CAGR und Endwert entfallen.'));
+        kpiEl.innerHTML+='<div class="pv-hinweise" style="flex-basis:100%;color:var(--muted);font-size:.72rem;line-height:1.5">'+hw.join('<br>')+'</div>';
       } else kpiEl.innerHTML=kpi('Status','Keine Trades','red');
 
       // Equity Chart
-      if(data&&data.trades&&data.trades.length>0){
-        var equity=SA.strategy.buildEquityCurve(data.trades,1000);
-        var eqData=equity.map(function(e){return{x:new Date(e.date).getTime(),y:e.value}});
-
-        // High / Low / Last finden fuer Annotations
-        var highPt=eqData[0],lowPt=eqData[0],lastPt=eqData[eqData.length-1];
-        eqData.forEach(function(p){if(p.y>highPt.y)highPt=p;if(p.y<lowPt.y)lowPt=p});
+      var _kurve=data&&data.stats&&data.stats.taeglich&&data.stats.taeglich.kurve;
+      if(_kurve&&_kurve.length>1){
+        // Tägliche Kontokurve (Plan 1B E4); fürs Zeichnen auf höchstens ~3000 Punkte ausgedünnt — Hoch, Tief und
+        // letzter Punkt kommen aus der vollen Kurve und bleiben immer enthalten
+        var voll=_kurve.map(function(e){return{x:new Date(e.date).getTime(),y:e.value}});
+        var highPt=voll[0],lowPt=voll[0],lastPt=voll[voll.length-1];
+        voll.forEach(function(p){if(p.y>highPt.y)highPt=p;if(p.y<lowPt.y)lowPt=p});
+        var schritt=Math.max(1,Math.ceil(voll.length/3000)), eqData=[];
+        voll.forEach(function(p,i){if(i%schritt===0||p===highPt||p===lowPt||p===lastPt)eqData.push(p);});
         var fmtVal=function(v){return'$'+Math.round(v).toLocaleString()};
         var pointAnnotations=[];
         // High
@@ -396,7 +414,10 @@
         });
         charts.equity.render();
       } else {
-        document.getElementById('chart-equity').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Keine Trades f\u00FCr diese Strategie.</p>';
+        var _leer=(data&&data.stats&&data.stats.taeglich_grund==='ungueltiger_kurs')?_T('pv.taeglich_ausgesetzt','Ung\u00FCltige Kurse bei wechselnder Position: Kontokurve, CAGR und Endwert ausgesetzt.')
+                 :(data&&data.stats&&!data.stats.taeglich)?_T('pv.kein_tagespfad','Kein t\u00E4glicher Hebelpfad: Kontokurve, CAGR und Endwert entfallen.')
+                 :_T('pv.keine_abgeschlossenen','Keine abgeschlossenen Trades f\u00FCr diese Strategie.');
+        document.getElementById('chart-equity').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">'+_leer+'</p>';
       }
 
       // Trade Table
@@ -454,6 +475,7 @@
     }
 
     function renderTradeTable(data){
+      var _T=function(k,d){return SA.i18n&&SA.i18n.t?SA.i18n.t(k,d):d;};
       var el=document.getElementById('content-trades');
       if(!data||!data.trades||!data.trades.length){el.innerHTML='<p style="color:var(--muted)">Keine Trades.</p>';return}
       var html='<table class="trade-table"><tr><th>Einstieg</th><th>Ausstieg</th><th>Entry $</th><th>Exit $</th><th>Rendite</th></tr>';
@@ -462,7 +484,12 @@
         var rowAttr=t.open?' style="background:rgba(232,168,32,.06)"':'';
         var openBadge=t.open?' <span style="color:var(--accent);font-size:.65rem;font-weight:700;letter-spacing:.04em;padding:.05rem .35rem;border:1px solid rgba(232,168,32,.4);border-radius:4px;margin-left:.35rem">OFFEN</span>':'';
         var exitLabel=t.open?(t.exit_date+' \u00b7 mark-to-market'):t.exit_date;
-        var rendLabel=(t.return_pct>=0?'+':'')+t.return_pct.toFixed(2)+'%'+(t.open?' \u00b7 unrealisiert':'')+(t.stopped?' \u26D4':'');
+        var rendLabel=(t.naeherung?'\u2248 ':'')+(t.return_pct>=0?'+':'')+t.return_pct.toFixed(2)+'%'+(t.open?' \u00b7 unrealisiert':'')+(t.stopped?' \u26D4':'');
+        if(t.fehlende_sitzungen||t.auffaellige_abstaende){
+          var _tip=t.fehlende_sitzungen?_T('pv.tip_fehlend','Fehlende Sitzung: der B\u00F6rsenkalender kennt einen Handelstag ohne Kurs.')
+                                       :_T('pv.tip_abstand','Auff\u00E4lliger Kursabstand: mehr als 4 Kalendertage ohne Kurs (B\u00F6rse geschlossen oder Daten fehlen).');
+          rendLabel+=' <span title="'+_tip.replace(/"/g,'&quot;')+'" style="color:var(--muted);font-size:.65rem;border:1px solid var(--border);border-radius:4px;padding:0 .3rem">'+_T('pv.badge_luecke','L\u00FCcke')+'</span>';
+        }
         html+='<tr'+rowAttr+'><td>'+t.entry_date+openBadge+'</td><td>'+exitLabel+'</td>';
         html+='<td>'+t.entry_price.toFixed(2)+'</td><td>'+t.exit_price.toFixed(2)+'</td>';
         html+='<td style="color:'+clr+'">'+rendLabel+'</td></tr>';
