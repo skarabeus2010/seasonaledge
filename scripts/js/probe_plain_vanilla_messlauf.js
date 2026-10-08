@@ -14,8 +14,9 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const [kursOrdner, ausgabe, zArg, sArg] = process.argv.slice(2);
-const REPO = path.resolve(__dirname, '..', '..');
+const [kursOrdner, ausgabe, zArg, sArg, basisArg] = process.argv.slice(2);
+// optional: Basisordner mit landing/… (z. B. alter Stand per git archive) — sonst das Repo
+const REPO = path.resolve(basisArg || path.join(__dirname, '..', '..'));
 
 const BROWSER_ONLY = new Set(['auth.js', 'i18n.js', 'app.js', 'charts.js', 'tour-config.js', 'tour.js']);
 const html = fs.readFileSync(path.join(REPO, 'landing/pages/plain-vanilla.html'), 'utf8');
@@ -50,9 +51,10 @@ const stichtag = meta.stichtag;
 const zeitraeume = (zArg || '10,max').split(',');
 const stops = (sArg || 'aus').split(',');
 
+// Wie getFilteredRows() der Seite: ab 1. Januar des Jahres (Stichtagsjahr − Zeitraum)
 function filtern(rows, z) {
   if (z === 'max') return rows;
-  const grenze = (parseInt(stichtag.slice(0, 4), 10) - parseInt(z, 10)) + stichtag.slice(4);
+  const grenze = (parseInt(stichtag.slice(0, 4), 10) - parseInt(z, 10)) + '-01-01';
   return rows.filter(r => r.date >= grenze);
 }
 
@@ -76,13 +78,28 @@ for (const datei of fs.readdirSync(kursOrdner).filter(f => f.endsWith('.json') &
       const je = {};
       for (const [key, st] of Object.entries(SA.STRATEGIES)) {
         SA.strategy._dateIdx = null;
-        let trades = [], stats = null, fehler = null;
+        let trades = [], stats = null, fehler = null, protokoll = [], unvollstaendig = [], veraltet = null;
+        const boerse = SA.holidays.detect(ticker);
         try {
-          trades = mitStop(sub, SA.strategy[st.func](sub) || [], s);
-          stats = SA.strategy.computeStats(trades);
+          if (SA.strategy.auswerten) {
+            // derselbe Pfad wie die Seite (Codex Code-R1 Befund 10): Strategie → Stop → Datenende → Kennzahlen
+            const m = /^(fixed|trailing)(\d+(?:\.\d+)?)$/.exec(s);
+            const r = SA.strategy.auswerten(sub, key, { stichtag, boerse, stop: m ? { typ: m[1], pct: +m[2] } : null });
+            trades = r.trades; stats = r.stats; protokoll = r.protokoll || [];
+            unvollstaendig = r.unvollstaendig || []; veraltet = r.veraltet;
+          } else {
+            // alter Stand ohne auswerten(): Strategie + Stop + Statistik direkt
+            trades = mitStop(sub, SA.strategy[st.func](sub) || [], s);
+            stats = SA.strategy.computeStats(trades);
+          }
         } catch (e) { fehler = String(e && e.message || e); }
-        je[key] = { n: trades.length, offen: trades.filter(t => t.open).length, stats, fehler,
-                    trades: trades.map(t => [t.entry_date, t.exit_date, t.entry_price, t.exit_price, t.return_pct, t.open ? 1 : 0, t.stopped ? 1 : 0, t.leverage || 1]) };
+        const tupel = t => [t.entry_date, t.exit_date, t.entry_price, t.exit_price, t.return_pct, t.open ? 1 : 0,
+                            t.stopped ? 1 : 0, t.leverage || 1, t.zustand_ausstieg || '', t.zustand_einstieg || '',
+                            t.regeltermin_ausstieg || ''];
+        je[key] = { n: trades.length, offen: trades.filter(t => t.open).length, stats, fehler, veraltet,
+                    trades: trades.map(tupel), unvollstaendig: unvollstaendig.map(tupel),
+                    protokoll: protokoll.map(p => [p.grund, p.datum]),
+                    protokoll_zaehler: protokoll.reduce((a, p) => (a[p.grund] = (a[p.grund] || 0) + 1, a), {}) };
       }
       out.je[z + '|' + s] = je;
     }

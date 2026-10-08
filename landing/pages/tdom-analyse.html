@@ -1088,8 +1088,8 @@
         kpi('CAGR', (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'green' : 'red') +
         kpi('Max Drawdown', stats.max_drawdown.toFixed(1) + ' %', 'red') +
         kpi('Win-Rate', stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'green' : '') +
-        kpi('Sharpe', stats.sharpe.toFixed(2)) +
-        kpi('Profit Factor', (stats.profit_factor >= 999 ? '\u221E' : stats.profit_factor.toFixed(2)), stats.profit_factor >= 1.5 ? 'green' : stats.profit_factor >= 1 ? '' : 'red') +
+        kpi('Sharpe', SA.strategy.formatZahl(stats.sharpe, 2)) +
+        kpi('Profit Factor', SA.strategy.formatPF(stats.profit_factor), stats.profit_factor == null ? '' : stats.profit_factor >= 1.5 ? 'green' : stats.profit_factor >= 1 ? '' : 'red') +
         kpi('Trades', stats.n_trades) +
         kpi('$1.000 Endwert', '$' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}), stats.final_equity >= 1000 ? 'green' : 'red');
 

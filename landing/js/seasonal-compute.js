@@ -153,7 +153,7 @@ SA.seasonal = {
     returns.sort(function(a, b) { return a - b; });
     var sum = returns.reduce(function(s, v) { return s + v; }, 0);
     var avg = sum / returns.length;
-    var med = returns[Math.floor(returns.length / 2)];
+    var med = SA.seasonal._quantil(returns, 0.5);
     var winning = returns.filter(function(r) { return r > 0; }).length;
     var variance = returns.reduce(function(s, v) { return s + (v - avg) * (v - avg); }, 0) / returns.length;
 
@@ -226,7 +226,7 @@ SA.seasonal = {
       result.push({
         month: m,
         avg: Math.round(sum / rets.length * 100) / 100,
-        median: Math.round(rets[Math.floor(rets.length / 2)] * 100) / 100,
+        median: Math.round(SA.seasonal._quantil(rets, 0.5) * 100) / 100,
         winRate: Math.round(wins / rets.length * 1000) / 10,
         maxGain: Math.round(rets[rets.length - 1] * 100) / 100,
         maxLoss: Math.round(rets[0] * 100) / 100,
@@ -439,6 +439,15 @@ SA.seasonal = {
     return ref > 0 && lad >= ref;
   },
 
+  /** Quantil einer AUFSTEIGEND sortierten Liste mit linearer Interpolation (numpy-Methode „linear").
+   *  Projektregel: nie arr[Math.floor(p*n)] — bei [10, 30] wäre der Median 30 statt 20 (Plan /plain-vanilla, Befund 12). */
+  _quantil: function(sorted, p) {
+    var n = sorted.length;
+    if (!n) return null;
+    var h = (n - 1) * p, lo = Math.floor(h), hi = Math.ceil(h);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo);
+  },
+
   /** Interpoliert auf 365 Kalendertage (Port von interpolate_to_365). */
   _interpolateTo365: function(days, values) {
     // Schaltjahre: der 31.12. ist dort Tag 366 und fiel aus der 365er-Achse heraus —
@@ -622,7 +631,7 @@ SA.seasonal = {
     returns.sort(function(a, b) { return a - b; });
     var sum = returns.reduce(function(s, v) { return s + v; }, 0);
     var avg = sum / returns.length;
-    var med = returns[Math.floor(returns.length / 2)];
+    var med = SA.seasonal._quantil(returns, 0.5);
     var winning = returns.filter(function(r) { return r > 0; }).length;
     var variance = returns.reduce(function(s, v) { return s + (v - avg) * (v - avg); }, 0) / returns.length;
 

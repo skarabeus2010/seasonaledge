@@ -166,7 +166,7 @@
           <h3 data-i18n="common.metrics">Kennzahlen</h3>
           <ul>
             <li><b>CAGR</b>: <span data-i18n="pv.metric_cagr">Durchschnittliche j&auml;hrliche Rendite (Zinseszins)</span></li>
-            <li><b>Max Drawdown</b>: <span data-i18n="pv.metric_max_dd">Gr&ouml;&szlig;ter R&uuml;ckgang vom H&ouml;chststand</span></li>
+            <li><b>Max Drawdown</b>: <span data-i18n="pv.metric_max_dd">Gr&ouml;&szlig;ter R&uuml;ckgang der Equity zwischen abgeschlossenen Trades &ndash; Verluste w&auml;hrend eines laufenden Trades sind nicht enthalten</span></li>
             <li><b>Win-Rate</b>: <span data-i18n="pv.metric_win_rate">Anteil profitabler Trades</span></li>
             <li><b>Sharpe Ratio</b>: <span data-i18n="pv.metric_sharpe">Risikoadjustierte Rendite</span></li>
             <li><b>Profit Factor</b>: <span data-i18n="pv.metric_profit_factor">Bruttogewinne / Bruttoverluste</span></li>
@@ -180,7 +180,7 @@
         <summary data-i18n="pv.seo_h">Plain-Vanilla-Strategien verstehen &mdash; Saisonale Regeln, Kennzahlen &amp; Methodik</summary>
         <div class="content">
           <p data-i18n-html="pv.seo_p1">Die <b>Plain-Vanilla-Strategien</b> von SeasonAlpha b&uuml;ndeln 24 einfache, <b>regelbasierte Saisonal-Strategien</b> und testen sie auf dem von dir gew&auml;hlten Ticker. Jede Strategie kauft und verkauft nach festen Kalenderregeln &mdash; etwa der Klassiker <b>Sell in May</b> (Einstieg letzter Handelstag Oktober, Ausstieg 3. Handelstag Mai), die <b>September-Vermeidung</b>, der <b>Turn-of-the-Month</b>-Effekt, das <b>Januar-Barometer</b> oder die <b>Santa-Claus-Rallye</b>. Das Tool rechnet f&uuml;r jede Strategie eine <b>Equity-Kurve</b> auf Basis von 1.000&nbsp;Euro Startkapital, listet alle Einzel-Trades auf und pr&uuml;ft per <b>Signifikanztest</b>, ob die Renditen statistisch von Null verschieden sind. So siehst du auf einen Blick, wie sich ein fester saisonaler Plan historisch geschlagen h&auml;tte.</p>
-          <p data-i18n-html="pv.seo_p2">Zur Bewertung dienen mehrere <b>Kennzahlen</b>, die du gemeinsam lesen solltest. Die <b>Rendite</b> erscheint als <b>CAGR</b> (durchschnittliche j&auml;hrliche Wachstumsrate mit Zinseszins) und als Endwert eines 1.000-Euro-Depots. Die <b>Win-Rate</b> ist der Anteil profitabler Trades &mdash; sie sagt aber nichts &uuml;ber die H&ouml;he der Gewinne. Der <b>Max Drawdown</b> zeigt den gr&ouml;&szlig;ten zwischenzeitlichen R&uuml;ckgang vom H&ouml;chststand und damit das emotional schwerste Szenario. Erg&auml;nzend messen die <b>Sharpe Ratio</b> (Rendite je Risikoeinheit) und der <b>Profit Factor</b> (Bruttogewinne geteilt durch Bruttoverluste, &uuml;ber&nbsp;1 ist profitabel) die Qualit&auml;t der Strategie. Optional kannst du einen festen oder nachgezogenen <b>Stop-Loss</b> aktivieren und beobachten, wie er die Kennzahlen ver&auml;ndert.</p>
+          <p data-i18n-html="pv.seo_p2">Zur Bewertung dienen mehrere <b>Kennzahlen</b>, die du gemeinsam lesen solltest. Die <b>Rendite</b> erscheint als <b>CAGR</b> (durchschnittliche j&auml;hrliche Wachstumsrate mit Zinseszins) und als Endwert eines 1.000-Euro-Depots. Die <b>Win-Rate</b> ist der Anteil profitabler Trades &mdash; sie sagt aber nichts &uuml;ber die H&ouml;he der Gewinne. Der <b>Max Drawdown</b> zeigt hier den gr&ouml;&szlig;ten R&uuml;ckgang der Equity von einem abgeschlossenen Trade zum n&auml;chsten. Verluste, die w&auml;hrend eines laufenden Trades entstehen und bis zum Ausstieg wieder aufgeholt werden, sind darin nicht enthalten &ndash; der tats&auml;chliche zwischenzeitliche R&uuml;ckgang kann also gr&ouml;&szlig;er sein. Erg&auml;nzend messen die <b>Sharpe Ratio</b> (Rendite je Risikoeinheit) und der <b>Profit Factor</b> (Bruttogewinne geteilt durch Bruttoverluste, &uuml;ber&nbsp;1 ist profitabel) die Qualit&auml;t der Strategie. Optional kannst du einen festen oder nachgezogenen <b>Stop-Loss</b> aktivieren und beobachten, wie er die Kennzahlen ver&auml;ndert.</p>
           <p data-i18n-html="pv.seo_p3">Methodisch arbeitet das Tool mit den realen <b>Tagesschlusskursen</b> des Tickers: Ein- und Ausstieg erfolgen jeweils zum <b>Close</b> des Signaltags, exakt nach der Strategie-Regel. Die Handelstage werden <b>b&ouml;rsenspezifisch und feiertagsbewusst</b> gez&auml;hlt &mdash; ein &bdquo;dritter Handelstag im Mai&ldquo; bei einer XETRA-Aktie kann auf einen anderen Kalendertag fallen als bei einer NYSE-Aktie. Es findet <b>keine Optimierung</b> statt: Die Regeln stehen fest und werden Jahr f&uuml;r Jahr identisch angewendet, was eine &Uuml;beranpassung an die Vergangenheit (Overfitting) vermeidet. Der Backtest ist <b>look-ahead-frei</b> &mdash; jeder Trade nutzt nur Informationen, die am Signaltag bereits verf&uuml;gbar waren, etwa wenn das Januar-Barometer erst nach Monatsende &uuml;ber den Einstieg im Februar entscheidet. Berechnet wird im Browser aus den von SeasonAlpha gepflegten Kursdaten.</p>
           <p data-i18n-html="pv.seo_p4">Die Plain-Vanilla-Strategien sind ein <b>Werkzeug zur Einordnung saisonaler Muster</b>, keine Anlageberatung und keine Gewinngarantie. Backtests blicken r&uuml;ckw&auml;rts und ber&uuml;cksichtigen weder Handelskosten, Steuern noch Slippage; reale Ergebnisse w&auml;ren niedriger. Einzelne Strategien beruhen auf wenigen Trades pro Jahrzehnt &mdash; achte deshalb auf die <b>Anzahl der Trades</b> und den <b>Signifikanztest</b>, bevor du einem Muster Bedeutung beimisst. Saisonale Effekte k&ouml;nnen sich abschw&auml;chen oder verschwinden, sobald sie breit bekannt sind. Nutze die Auswertungen als zus&auml;tzlichen Kontext zu deiner eigenen Recherche, nicht als alleinige Entscheidungsgrundlage. Vergangene Muster garantieren keine k&uuml;nftigen Ergebnisse.</p>
           <h3 data-i18n="pv.seo_faq_h" style="font-size:.95rem;margin:1rem 0 .5rem">H&auml;ufige Fragen</h3>
@@ -218,14 +218,14 @@
     /* ── Sidebar Events ── */
     document.getElementById('chk-stop').addEventListener('change',function(){
       document.getElementById('stop-controls').style.display=this.checked?'block':'none';
-      cachedResults={};renderSelected();
+      cachedResults={};renderSelected();if(rawRows)renderSignals(rawRows);
     });
     document.getElementById('rng-stop').addEventListener('input',function(){
       document.getElementById('lbl-stop').textContent=this.value;
-      cachedResults={};renderSelected();
+      cachedResults={};renderSelected();if(rawRows)renderSignals(rawRows);
     });
     document.getElementById('sel-stop-type').addEventListener('change',function(){
-      cachedResults={};renderSelected();
+      cachedResults={};renderSelected();if(rawRows)renderSignals(rawRows);
     });
     document.getElementById('sel-period').addEventListener('change',function(){
       cachedResults={};renderAll();
@@ -274,20 +274,18 @@
       var s=SA.STRATEGIES[key];
       if(!s||!SA.strategy[s.func]) return null;
       try{
-        var rows=getFilteredRows();
-        var trades=SA.strategy[s.func](rows);
-        // Stop-Loss
+        // Eine Auswertung für Kennzahlen UND Signalansicht (Plan /plain-vanilla v5, E9): Zeitraum, Stop,
+        // Bewertungsstichtag (heute, Börsenzeit) und Börse gehen identisch in beide ein.
+        var boerse=SA.holidays.detect(currentTicker);
+        var opts={stichtag:SA.strategy.heute(boerse),boerse:boerse};
         if(document.getElementById('chk-stop').checked){
-          var stopPct=parseFloat(document.getElementById('rng-stop').value)||8;
-          var stopType=document.getElementById('sel-stop-type').value;
-          trades=stopType==='trailing'
-            ? SA.strategy.applyTrailingStop(rows,trades,stopPct)
-            : SA.strategy.applyStopLoss(rows,trades,stopPct);
+          opts.stop={pct:parseFloat(document.getElementById('rng-stop').value)||8,
+                     typ:document.getElementById('sel-stop-type').value==='trailing'?'trailing':'fixed'};
         }
-        var stats=SA.strategy.computeStats(trades);
-        cachedResults[key]={trades:trades,stats:stats};
+        cachedResults[key]=SA.strategy.auswerten(getFilteredRows(),key,opts)||{trades:[],stats:null,streak:{typ:null,n:0}};
       }catch(e){
-        cachedResults[key]={trades:[],stats:null};
+        console.warn('Strategie',key,e);
+        cachedResults[key]={trades:[],stats:null,streak:{typ:null,n:0},fehler:String(e&&e.message||e)};
       }
       return cachedResults[key];
     }
@@ -347,12 +345,12 @@
         var st=data.stats;
         kpiEl.innerHTML=
           kpi('CAGR',(st.cagr>=0?'+':'')+st.cagr.toFixed(1)+'%',st.cagr>=0?'green':'red')+
-          kpi('Max Drawdown',st.max_drawdown.toFixed(1)+'%','red')+
+          kpi(SA.i18n&&SA.i18n.t?SA.i18n.t('pv.kpi_max_dd_trades','Max DD (Trades)'):'Max DD (Trades)',st.max_drawdown.toFixed(1)+'%','red')+
           kpi('Win-Rate',st.win_rate.toFixed(0)+'%',st.win_rate>=50?'green':'')+
           kpi('Trades',st.n_trades)+
           kpi('$1.000 Endwert','$'+st.final_equity.toLocaleString(undefined,{maximumFractionDigits:0}),st.final_equity>=1000?'green':'red')+
-          kpi('Sharpe',st.sharpe.toFixed(2))+
-          kpi('Profit Factor',st.profit_factor>=999?'\u221E':st.profit_factor.toFixed(2),st.profit_factor>=1.5?'green':st.profit_factor>=1?'':'red');
+          kpi('Sharpe',SA.strategy.formatZahl(st.sharpe,2))+
+          kpi('Profit Factor',SA.strategy.formatPF(st.profit_factor),st.profit_factor==null?'':st.profit_factor>=1.5?'green':st.profit_factor>=1?'':'red');
       } else kpiEl.innerHTML=kpi('Status','Keine Trades','red');
 
       // Equity Chart
@@ -479,6 +477,17 @@
     function renderSignals(rows) {
       var el = document.getElementById('content-signals');
       if (!rows || rows.length < 50) { el.innerHTML = '<p style="color:var(--muted)">Nicht gen\u00FCgend Daten.</p>'; return; }
+      // Veralteter Datenbestand (> 10 Handelssitzungen vor heute): keine aktiven Signale (Plan v5, E1/E7)
+      var _bSig = SA.holidays.detect(currentTicker);
+      SA.strategy.setKontext({ stichtag: SA.strategy.heute(_bSig), boerse: _bSig });
+      var _veraltet = SA.strategy._datenVeraltet(rows);
+      SA.strategy.setKontext(null);
+      if (_veraltet) {
+        var _txt = (SA.i18n && SA.i18n.t) ? SA.i18n.t('pv.signale_veraltet', 'Die Kursdaten enden am {d}. F\u00FCr einen veralteten Datenbestand werden keine kommenden Signale angezeigt.')
+                                          : 'Die Kursdaten enden am {d}. F\u00FCr einen veralteten Datenbestand werden keine kommenden Signale angezeigt.';
+        el.innerHTML = '<p style="color:var(--muted)">' + _txt.replace('{d}', rows[rows.length - 1].date) + '</p>';
+        return;
+      }
 
       var today = new Date();
       var todayStr = today.getFullYear() + '-' + SA.strategy._pad2(today.getMonth()+1) + '-' + SA.strategy._pad2(today.getDate());
@@ -486,12 +495,6 @@
       var Y = today.getFullYear();
       var S = SA.strategy; // Shorthand
 
-      // Alle Trades fuer Streak-Berechnung
-      var tradeCache = {};
-      for (var k in SA.STRATEGIES) {
-        var fn = S[SA.STRATEGIES[k].func];
-        if (fn) tradeCache[k] = fn.call(S, rows) || [];
-      }
 
       // ── Holiday-aware Trading Day Helpers (nutzt SA.holidays) ──
       var _exchange = SA.holidays.detect(currentTicker);
@@ -500,18 +503,13 @@
       function _lastTD(y, m, nFromEnd) { return SA.holidays.lastTradingDay(y, m, nFromEnd || 1, _exchange); }
       function _nearFwd(y, m, d) { return SA.holidays.nextTradingDay(y, m, d, _exchange); }
 
+      // Streak aus derselben konfigurierten Auswertung wie die Kennzahlen (Zeitraum, Stop; nur geschlossene
+      // Trades) — nicht mehr aus einem eigenen Cache über alle Kurszeilen (Befund 13)
       function getStreak(key) {
-        var trades = tradeCache[key] || [];
-        var streak = 0, st = '';
-        for (var j = trades.length - 1; j >= 0; j--) {
-          if (trades[j].exit_date > todayStr) continue;
-          var w = trades[j].return_pct > 0;
-          if (!streak) { st = w ? 'W' : 'L'; streak = 1; }
-          else if ((w && st === 'W') || (!w && st === 'L')) streak++;
-          else break;
-        }
-        return { label: streak ? streak + ' ' + (st === 'W' ? 'Winner' : 'Loser') : '\u2014',
-                 color: st === 'W' ? 'var(--green)' : st === 'L' ? 'var(--red)' : 'var(--muted)' };
+        var r = calcStrategy(key);
+        var sk = (r && r.streak) || { typ: null, n: 0 };
+        return { label: sk.n ? sk.n + ' ' + (sk.typ === 'gewinn' ? 'Winner' : 'Loser') : '\u2014',
+                 color: sk.typ === 'gewinn' ? 'var(--green)' : sk.typ === 'verlust' ? 'var(--red)' : 'var(--muted)' };
       }
 
       // Helper: Datum-String → Signal-Objekt (nur wenn >= heute)

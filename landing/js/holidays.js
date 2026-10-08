@@ -115,33 +115,31 @@ SA.holidays = {
    * Neujahr, MLK Day, Presidents Day, Karfreitag, Memorial Day,
    * Juneteenth, Independence Day, Labor Day, Thanksgiving, Weihnachten.
    *
-   * Jahresgrenze Neujahr: Jan 1 = Samstag → observed Dec 31 (Vorjahr).
-   * isTradingDay() nutzt den Jahr-Cache des angefragten Datums, daher muss
-   * Dec 31 im _nyse(y-1)-Cache stehen. Hier wird Jan 1 Sat ausgelassen;
-   * stattdessen wird Dec 31 dieses Jahres ergaenzt wenn Jan 1 des Folgejahres
-   * auf Samstag faellt.
+   * Neujahr: faellt der 1. Januar auf einen Samstag, schliesst die NYSE NICHT am Freitag davor (NYSE-Regel:
+   * kein Ersatztag, wenn er ins Vorjahr fiele; 2021-12-31 war Handelstag). Sonntag → Montag 2. Januar.
+   * Muss mit shared/nyse_holidays.py::_compute_nyse_holidays uebereinstimmen — geprueft durch
+   * scripts/verify_kalender_zwilling.py (jeder Tag 2000–2035, NYSE + XETRA).
    */
   _nyse: function(y) {
     var list = [
-      this._ds(y, 1, this._nthDow(y, 1, 1, 3)),             // MLK Day: 3. Mo Jan
       this._ds(y, 2, this._nthDow(y, 2, 1, 3)),             // Presidents Day: 3. Mo Feb
       this.goodFriday(y),                                    // Karfreitag
       this._ds(y, 5, this._lastDow(y, 5, 1)),               // Memorial Day: letzter Mo Mai
-      this._observed(y, 6, 19),                              // Juneteenth (Observed-Shift)
       this._observed(y, 7, 4),                               // Independence Day (Observed-Shift)
       this._ds(y, 9, this._nthDow(y, 9, 1, 1)),             // Labor Day: 1. Mo Sep
       this.thanksgiving(y),                                  // Thanksgiving: 4. Do Nov
       this._observed(y, 12, 25)                              // Weihnachten (Observed-Shift)
     ];
-    // Neujahr mit Jahresgrenze-Sonderfall
+    if (y >= 1998) list.push(this._ds(y, 1, this._nthDow(y, 1, 1, 3)));   // MLK Day: 3. Mo Jan, seit 1998
+    if (y >= 2022) list.push(this._observed(y, 6, 19));                   // Juneteenth, seit 2022
+    // Neujahr: Sonntag → Montag 2. Januar; Samstag → kein Ersatztag
     var jan1dow = new Date(y, 0, 1).getDay();
-    if (jan1dow === 0) {
-      list.push(this._ds(y, 1, 2));   // Jan 1 = Sonntag → observed Mo 2. Jan
-    } else if (jan1dow !== 6) {
-      list.push(this._ds(y, 1, 1));   // Normal: 1. Jan (inkl. normaler Werktag)
+    if (jan1dow === 0) list.push(this._ds(y, 1, 2));
+    else if (jan1dow !== 6) list.push(this._ds(y, 1, 1));
+    // Einmalige Sonderschliessungen — Liste wie shared/nyse_holidays._NYSE_SPECIAL_CLOSURES
+    for (var i = 0; i < this._NYSE_SONDER.length; i++) {
+      if (this._NYSE_SONDER[i].slice(0, 4) === String(y)) list.push(this._NYSE_SONDER[i]);
     }
-    // Falls Jan 1 des Folgejahres auf Samstag faellt → Dec 31 dieses Jahres ist observed
-    if (new Date(y + 1, 0, 1).getDay() === 6) list.push(this._ds(y, 12, 31));
     return list;
   },
 
@@ -150,21 +148,26 @@ SA.holidays = {
    * Neujahr, Karfreitag, Ostermontag, Tag der Arbeit,
    * Heiligabend, 1. Weihnachtstag, 2. Weihnachtstag, Silvester.
    */
+  /** NYSE-Sonderschliessungen (Staatstrauer, 9/11, Hurrikan Sandy) — identisch mit Python */
+  _NYSE_SONDER: ['2001-09-11', '2001-09-12', '2001-09-13', '2001-09-14', '2004-06-11', '2007-01-02',
+                 '2012-10-29', '2012-10-30', '2018-12-05', '2025-01-09'],
+
   _xetra: function(y) {
     // Offizielle Xetra-Handelsfreitage (Deutsche Börse): NUR diese 8 Tage.
     // Xetra HANDELT an Pfingstmontag UND am 3. Oktober (Dt. Einheit)! Kein
     // Observed-Shift. (Muss mit shared/exchange_holidays.py::_compute_xetra_holidays
     // übereinstimmen.)
-    return [
+    var list = [
       this._ds(y, 1, 1),                                    // Neujahr
       this.goodFriday(y),                                    // Karfreitag
       this.easterMonday(y),                                  // Ostermontag
       this._ds(y, 5, 1),                                    // Tag der Arbeit
-      this._ds(y, 12, 24),                                  // Heiligabend
       this._ds(y, 12, 25),                                  // 1. Weihnachtstag
-      this._ds(y, 12, 26),                                  // 2. Weihnachtstag
-      this._ds(y, 12, 31)                                   // Silvester
+      this._ds(y, 12, 26)                                   // 2. Weihnachtstag
     ];
+    // Heiligabend + Silvester: seit 2011 ganztaegig geschlossen (davor Handel mit Fruehschluss)
+    if (y >= 2011) { list.push(this._ds(y, 12, 24)); list.push(this._ds(y, 12, 31)); }
+    return list;
   },
 
   /**

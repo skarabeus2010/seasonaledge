@@ -13,11 +13,200 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, date, timedelta
 from typing import Optional
+from contextvars import ContextVar
 
 
 # ══════════════════════════════════════════════════════════════
 # HILFSFUNKTIONEN
 # ══════════════════════════════════════════════════════════════
+
+# ── Datenrand und Bewertungsstichtag (Plan /plain-vanilla v5, E1/E2/E8) — Zwilling von strategy-compute.js ──
+# Ein Regeltermin, der nicht als Kurszeile vorliegt, liefert einen Zustand statt still die letzte Zeile:
+#   None                  fehlt (historisch, Verhalten wie bisher)
+#   NOCH_NICHT_FAELLIG    Regeltermin liegt nach dem Bewertungsstichtag
+#   KURS_AUSSTEHEND       Regeltermin <= Stichtag, aber nach der letzten Kurszeile
+# Der Kalender wird nur am Datenrand und nur im geprüften Bereich 2000–2035 befragt
+# (Kalendervertrag JS = Python, scripts/verify_kalender_zwilling.py); historisch bleibt die Zeilenzählung.
+NOCH_NICHT_FAELLIG = "noch_nicht_faellig"
+KURS_AUSSTEHEND = "kurs_ausstehend"
+
+
+class Termin(tuple):
+    """Zustand eines Regeltermins ohne Kurszeile: (zustand, datum) — trägt den Regeltermin (E8)."""
+    def __new__(cls, zustand, datum):
+        return tuple.__new__(cls, (zustand, datum))
+
+    @property
+    def zustand(self):
+        return self[0]
+
+    @property
+    def datum(self):
+        return self[1]
+KALENDER_VON, KALENDER_BIS = 2000, 2035
+# Je Ausführungskontext (Thread/Task) getrennt: parallele Streamlit-Sitzungen dürfen sich die Börse nicht
+# gegenseitig überschreiben (Codex Code-R4). Nie ein modulweites dict daraus machen.
+_KONTEXT_VAR: ContextVar = ContextVar("plain_vanilla_kontext", default=None)
+
+
+def _kontext() -> dict:
+    return _KONTEXT_VAR.get() or {}
+
+
+def set_kontext(stichtag: date | None = None, boerse: str | None = None):
+    """Bewertungsstichtag und Börse für die folgenden Berechnungen; ohne Angabe: letzte Kurszeile, NYSE.
+    Liefert das Token für `_KONTEXT_VAR.reset`."""
+    k = {}
+    if stichtag is not None:
+        k["stichtag"] = stichtag
+    if boerse is not None:
+        k["boerse"] = boerse
+    return _KONTEXT_VAR.set(k)
+
+
+_ZONEN = {"XETRA": "Europe/Berlin", "LSE": "Europe/London"}
+
+
+def heute(boerse: str = "NYSE") -> date:
+    """Heutiges Datum in der Zeitzone der Börse (Bewertungsstichtag) — Zwilling von SA.strategy.heute."""
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo(_ZONEN.get(boerse, "America/New_York"))).date()
+
+
+def auswerten(df, key, *, boerse: str, stichtag: date | None = None,
+              stop_df=None, stop_pct: float = 0.0, stop_type: str = "fixed") -> dict:
+    """Einziger Rechenweg der Python-Seite (E9, wie SA.strategy.auswerten): Kontext setzen → Strategie → Stop →
+    Kennzahlen, danach den vorherigen Kontext IMMER wiederherstellen (auch bei Ausnahme). Ohne Börse kein Lauf —
+    der NYSE-Standard ist für XETRA-Ticker falsch (Codex Code-R3)."""
+    if not boerse:
+        raise ValueError("auswerten: Börse fehlt")
+    token = set_kontext(stichtag if stichtag is not None else heute(boerse), boerse)
+    try:
+        trades = STRATEGIES[key]["func"](df) or []
+        if stop_pct and stop_pct > 0 and trades:
+            trades = apply_stop_loss(stop_df if stop_df is not None else df, trades, stop_pct, stop_type)
+        # E7: erst Strategie, dann Stop, dann bei veraltetem Bestand die verbliebenen OFFENEN Kandidaten heraus
+        veraltet = _daten_veraltet(df)
+        unvollstaendig = [t for t in trades if t.get("open")] if veraltet else []
+        if veraltet:
+            trades = [t for t in trades if not t.get("open")]
+        return {"trades": trades, "stats": compute_strategy_stats(trades) if trades else {},
+                "unvollstaendig": unvollstaendig, "veraltet": veraltet}
+    finally:
+        _KONTEXT_VAR.reset(token)
+
+
+def _daten_veraltet(df) -> bool:
+    """Mehr als 10 Handelssitzungen zwischen letzter Kurszeile und Stichtag (E1) — Zwilling von _datenVeraltet."""
+    c = _ctx(df)
+    if c["letzte"] is None or c["stichtag"] <= c["letzte"] or not _im_kalender(c["letzte"]):
+        return False
+    n, ds = 0, c["letzte"]
+    while n <= 10:
+        ds = _kalender_sitzung(ds + timedelta(days=1), 1, c["boerse"])
+        if ds is None or ds > c["stichtag"]:
+            return False
+        n += 1
+    return True
+
+
+def _ctx(df):
+    letzte = df.index[-1].date() if len(df) else None
+    k = _kontext()
+    return {"stichtag": k.get("stichtag", letzte), "boerse": k.get("boerse", "NYSE"), "letzte": letzte}
+
+
+def _im_kalender(d: date) -> bool:
+    return KALENDER_VON <= d.year <= KALENDER_BIS
+
+
+def _ist_sitzung(d: date, boerse: str) -> bool:
+    from shared.exchange_holidays import is_trading_day
+    return bool(is_trading_day(d, boerse))
+
+
+def _kalender_sitzung(d: date, richtung: int, boerse: str):
+    for _ in range(20):
+        if _ist_sitzung(d, boerse):
+            return d
+        d = d + timedelta(days=richtung)
+    return None
+
+
+def _kalender_schritt(d: date, k: int, boerse: str):
+    schritt = -1 if k < 0 else 1
+    for _ in range(abs(k)):
+        d = _kalender_sitzung(d + timedelta(days=schritt), schritt, boerse)
+        if d is None:
+            return None
+    return d
+
+
+def _termin_zustand(df, d):
+    """Regeltermin (Datum einer Sitzung) → Timestamp der Kurszeile oder Zustand."""
+    if d is None:
+        return None
+    c = _ctx(df)
+    if c["letzte"] is not None and d <= c["letzte"]:
+        ts = pd.Timestamp(d)
+        return ts if ts in df.index else None
+    return Termin(NOCH_NICHT_FAELLIG if d > c["stichtag"] else KURS_AUSSTEHEND, d)
+
+
+def _als_datum(x):
+    """Für Konsumenten, die ein Datum brauchen: Zustand am Datenrand → None (Verhalten wie vor Phase 1A)."""
+    return None if _ist_zustand(x) else x
+
+
+def _rand_termin(df, d, zeilenbasiert):
+    """Am Datenrand: Kalendertermin d; liegt d schon in der Vergangenheit der Kurszeilen, bleibt das zeilenbasierte
+    Ergebnis (E1: historisch keine neue Kalenderentscheidung, auch im letzten Datenmonat) — wie JS _randTermin."""
+    c = _ctx(df)
+    if d is None or d <= c["letzte"]:
+        return zeilenbasiert()
+    return _termin_zustand(df, d)
+
+
+def _sitzung(df, datum, k, richtung):
+    """Sitzung mit Abstand k zur ersten Sitzung >= datum ('nach') bzw. letzten <= datum ('vor'); über den Datenrand
+    über den Kalender — wie JS _sitzung."""
+    c = _ctx(df)
+    if c["letzte"] is None:
+        return None
+    if datum <= c["letzte"]:
+        ts = pd.Timestamp(datum)
+        pos = df.index.searchsorted(ts, side="left") if richtung == "nach" else df.index.searchsorted(ts, side="right") - 1
+        if pos < 0 or pos >= len(df):
+            return None
+        ziel = pos + k
+        if ziel < 0:
+            return None
+        if ziel < len(df):
+            return df.index[ziel]
+        if not _im_kalender(c["letzte"]):
+            return None
+        return _termin_zustand(df, _kalender_schritt(c["letzte"], ziel - (len(df) - 1), c["boerse"]))
+    if not _im_kalender(datum):
+        return None
+    b = _kalender_sitzung(datum, -1 if richtung == "vor" else 1, c["boerse"])
+    return None if b is None else _termin_zustand(df, _kalender_schritt(b, k, c["boerse"]))
+
+
+def _am_rand(df, year, month) -> bool:
+    c = _ctx(df)
+    if c["letzte"] is None:
+        return False
+    return (year, month) >= (c["letzte"].year, c["letzte"].month) and KALENDER_VON <= year <= KALENDER_BIS
+
+
+def _kalender_monat(year, month, boerse):
+    d, out = date(year, month, 1), []
+    while d.month == month:
+        if _ist_sitzung(d, boerse):
+            out.append(d)
+        d += timedelta(days=1)
+    return out
+
 
 def _get_trading_days(df: pd.DataFrame, year: int, month: int) -> pd.DatetimeIndex:
     """Alle Handelstage eines Monats."""
@@ -26,29 +215,52 @@ def _get_trading_days(df: pd.DataFrame, year: int, month: int) -> pd.DatetimeInd
 
 
 def _nth_trading_day(df, year, month, n):
-    """n-ter Handelstag im Monat (1-basiert). None wenn nicht vorhanden."""
-    days = _get_trading_days(df, year, month)
-    if len(days) >= n:
-        return days[n - 1]
-    return None
+    """n-ter Handelstag im Monat (1-basiert). None wenn nicht vorhanden; am Datenrand aus dem Kalender."""
+    def zeilen():
+        days = _get_trading_days(df, year, month)
+        return days[n - 1] if len(days) >= n else None
+    if _am_rand(df, year, month):
+        k = _kalender_monat(year, month, _ctx(df)["boerse"])
+        return _rand_termin(df, k[n - 1] if len(k) >= n else None, zeilen)
+    return zeilen()
 
 
 def _last_trading_day(df, year, month):
-    """Letzter Handelstag im Monat."""
-    days = _get_trading_days(df, year, month)
-    return days[-1] if len(days) > 0 else None
+    """Letzter Handelstag im Monat — am Datenrand aus dem Kalender, nicht die letzte vorhandene Zeile (Befund 1)."""
+    def zeilen():
+        days = _get_trading_days(df, year, month)
+        return days[-1] if len(days) > 0 else None
+    if _am_rand(df, year, month):
+        k = _kalender_monat(year, month, _ctx(df)["boerse"])
+        return _rand_termin(df, k[-1] if k else None, zeilen)
+    return zeilen()
 
 
 def _nth_last_trading_day(df, year, month, n):
     """n-ter vorletzter Handelstag (1 = letzter, 2 = vorletzter)."""
-    days = _get_trading_days(df, year, month)
-    if len(days) >= n:
-        return days[-n]
-    return None
+    def zeilen():
+        days = _get_trading_days(df, year, month)
+        return days[-n] if len(days) >= n else None
+    if _am_rand(df, year, month):
+        k = _kalender_monat(year, month, _ctx(df)["boerse"])
+        d = k[-n] if len(k) >= n else None
+        # vom Monatsende gezählt: Monat in den Kurszeilen unvollständig → Kalendertermin (wie JS, Codex Code-R2)
+        if d is not None and k and k[-1] > _ctx(df)["letzte"]:
+            return _termin_zustand(df, d)
+        return _rand_termin(df, d, zeilen)
+    return zeilen()
 
 
 def _nearest_trading_day(df, target_date, direction="forward"):
-    """Nächster Handelstag an/nach (forward) oder an/vor (backward) einem Datum."""
+    """Nächster Handelstag an/nach (forward) oder an/vor (backward) einem Datum; hinter dem Datenrand über den
+    Kalender (Zustand statt letzter Zeile)."""
+    c = _ctx(df)
+    if c["letzte"] is not None and target_date > c["letzte"] and _im_kalender(target_date):
+        if direction == "forward":
+            return _termin_zustand(df, _kalender_sitzung(target_date, 1, c["boerse"]))
+        t = _kalender_sitzung(target_date, -1, c["boerse"])
+        if t is not None and t > c["letzte"]:
+            return _termin_zustand(df, t)
     ts = pd.Timestamp(target_date)
     if direction == "forward":
         candidates = df[df.index >= ts]
@@ -58,25 +270,42 @@ def _nearest_trading_day(df, target_date, direction="forward"):
         return candidates.index[-1] if len(candidates) > 0 else None
 
 
+def _ist_zustand(x) -> bool:
+    return isinstance(x, Termin)
+
+
 def _make_trade(df, entry_date, exit_date):
-    """Erstellt Trade-Dict aus Entry/Exit Daten."""
-    if entry_date is None or exit_date is None:
+    """Trade aus Ein-/Ausstieg (Timestamp oder Zustand), wie strategy-compute.js::_makeTrade:
+    Einstieg ohne Kurszeile → kein Trade; Ausstieg noch nicht fällig/Kurs ausstehend → offener Trade zum letzten
+    Kurs (Einstieg auf der letzten Zeile → offen mit 0 %); Ausstieg historisch fehlend → kein Trade.
+    Preise und Rendite ungerundet; nur endliche, positive Preise (Befund 10)."""
+    if entry_date is None or _ist_zustand(entry_date) or entry_date not in df.index:
         return None
-    if entry_date not in df.index or exit_date not in df.index:
+    offen, zustand, regeltermin = False, "gefunden", None
+    if _ist_zustand(exit_date):
+        offen, zustand, regeltermin, exit_date = True, exit_date.zustand, exit_date.datum, df.index[-1]
+    elif exit_date is None or exit_date not in df.index:
         return None
-    if exit_date <= entry_date:
+    if exit_date < entry_date or (exit_date == entry_date and not offen):
         return None
     p_entry = float(df.loc[entry_date, "Close"])
     p_exit = float(df.loc[exit_date, "Close"])
-    if p_entry <= 0:
+    if not (np.isfinite(p_entry) and np.isfinite(p_exit) and p_entry > 0 and p_exit > 0):
         return None
-    return {
+    t = {
         "entry_date": entry_date,
         "exit_date": exit_date,
-        "entry_price": round(p_entry, 2),
-        "exit_price": round(p_exit, 2),
-        "return_pct": round((p_exit - p_entry) / p_entry * 100, 4),
+        "entry_price": p_entry,
+        "exit_price": p_exit,
+        "return_pct": (p_exit - p_entry) / p_entry * 100,
     }
+    c = _ctx(df)   # E8: Zustände, Stichtag, letzte Kurszeile am Trade
+    t.update({"zustand_einstieg": "gefunden", "zustand_ausstieg": zustand,
+              "bewertungsstichtag": c["stichtag"], "letzte_kurszeile": c["letzte"]})
+    if offen:
+        t["open"] = True
+        t["regeltermin_ausstieg"] = regeltermin
+    return t
 
 
 # ══════════════════════════════════════════════════════════════
@@ -105,43 +334,48 @@ def calc_sell_in_may(df: pd.DataFrame) -> list[dict]:
 
 def calc_lbr_november_mai(df: pd.DataFrame) -> list[dict]:
     """
-    Einstieg: Ab 1. Oktober, sobald LBR Histogramm > 0.
-    Ausstieg: Ab 1. April, sobald LBR Histogramm < 0.
+    Einstieg: ab 1. Oktober am ersten Tag i mit LBR-Histogramm(i-1) > 0, Ausstieg ab 1. April am ersten Tag i mit
+    Histogramm(i-1) < 0, ausgeführt zum Close von i — die Entscheidung nutzt nur den Vortag (Befund 3, wie JS).
+    Einstieg erfolgt, Ausstiegsfenster (bis 30. Juni) noch nicht vorbei → offener Trade.
     """
     from shared.indicators import calc_lbr
 
-    lbr = calc_lbr(df["Close"])
-    hist = lbr["histogram"]
+    hist = calc_lbr(df["Close"])["histogram"].reindex(df.index)
+    vortag = hist.shift(1)
     trades = []
     years = sorted(df.index.year.unique())
+    c = _ctx(df)
 
     for year in years:
-        # Entry: Erster Tag ab 1. Oktober mit LBR > 0
         oct_start = _nearest_trading_day(df, date(year, 10, 1))
-        if oct_start is None:
+        if oct_start is None or _ist_zustand(oct_start):
             continue
         entry = None
         for d in df[df.index >= oct_start].index:
-            if d.month > 12 or (d.month >= 4 and d.year > year):
+            if d > pd.Timestamp(date(year + 1, 3, 31)):
                 break
-            if d in hist.index and hist.loc[d] > 0:
+            v = vortag.loc[d]
+            if pd.notna(v) and np.isfinite(v) and v > 0:
                 entry = d
                 break
-
         if entry is None:
             continue
 
-        # Exit: Erster Tag ab 1. April Folgejahr mit LBR < 0
+        fenster_ende = date(year + 1, 6, 30)
         apr_start = _nearest_trading_day(df, date(year + 1, 4, 1))
-        if apr_start is None:
-            continue
         exit_d = None
-        for d in df[df.index >= apr_start].index:
-            if d.month > 6:
-                break
-            if d in hist.index and hist.loc[d] < 0:
-                exit_d = d
-                break
+        if apr_start is not None and not _ist_zustand(apr_start):
+            for d in df[df.index >= apr_start].index:
+                if d > pd.Timestamp(fenster_ende):
+                    break
+                v = vortag.loc[d]
+                if pd.notna(v) and np.isfinite(v) and v < 0:
+                    exit_d = d
+                    break
+        if exit_d is None:
+            if c["letzte"] is None or fenster_ende <= c["letzte"]:
+                continue   # Fenster vorbei ohne Signal → kein Trade (wie bisher)
+            exit_d = Termin(NOCH_NICHT_FAELLIG if fenster_ende > c["stichtag"] else KURS_AUSSTEHEND, fenster_ende)
 
         trade = _make_trade(df, entry, exit_d)
         if trade:
@@ -214,6 +448,28 @@ def calc_monthly_10(df: pd.DataFrame) -> list[dict]:
     for year in years:
         for month in range(1, 13):
             month_df = df2[(df2["year"] == year) & (df2["month"] == month)].copy()
+            if _am_rand(df, year, month):
+                # laufender Monat: vorhandene Zeilen + Kalendertermine NACH der letzten Zeile (wie JS, Codex Code-R2)
+                c = _ctx(df)
+                pos = list(month_df.index.sort_values()) + [
+                    _termin_zustand(df, d) for d in _kalender_monat(year, month, c["boerse"]) if d > c["letzte"]]
+                if len(pos) < 10:
+                    continue
+                n = len(pos)
+                aktiv = sorted(t for t in set(range(1, 5)) | set(range(9, 13)) | {n, n - 1} if 1 <= t <= n)
+                bs = prev = aktiv[0]
+                bloecke = []
+                for t in aktiv[1:]:
+                    if t != prev + 1:
+                        bloecke.append((bs, prev))
+                        bs = t
+                    prev = t
+                bloecke.append((bs, prev))
+                for a, e in bloecke:
+                    trade = _make_trade(df, pos[a - 1], pos[e - 1])
+                    if trade:
+                        trades.append(trade)
+                continue
             if len(month_df) < 10:
                 continue
 
@@ -270,11 +526,10 @@ def calc_santa_claus(df: pd.DataFrame) -> list[dict]:
 
     for year in years:
         thanksgiving = _get_thanksgiving(year)
-        # 3 Handelstage VOR Thanksgiving
-        before_thx = df[df.index < pd.Timestamp(thanksgiving)]
-        if len(before_thx) < 3:
+        if len(df) and thanksgiving < df.index[0].date():
             continue
-        entry = before_thx.index[-3]
+        # dritte Sitzung STRENG vor Thanksgiving; am Datenrand über den Kalender (wie JS)
+        entry = _sitzung(df, thanksgiving, -3, "nach")
 
         # 5. Handelstag im Januar Folgejahr
         exit_d = _nth_trading_day(df, year + 1, 1, 5)
@@ -441,7 +696,7 @@ def _is_near_holiday(dt, df, days_before=1):
     year = dt.year
     for m, d in _US_HOLIDAYS_MONTH_DAY:
         try:
-            hol = _nearest_trading_day(df, date(year, m, d))
+            hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
             if hol is None:
                 continue
             # Handelstage vor dem Feiertag
@@ -482,7 +737,7 @@ def calc_ultimate_monthly(df: pd.DataFrame) -> list[dict]:
         thx_ts = pd.Timestamp(thanksgiving)
         before_thx = df2[df2.index < thx_ts]
         santa_start = before_thx.index[-3] if len(before_thx) >= 3 else None
-        jan5_next = _nth_trading_day(df2, year + 1, 1, 5)
+        jan5_next = _als_datum(_nth_trading_day(df2, year + 1, 1, 5))
 
         # Markiere aktive Tage
         active_dates = set()
@@ -638,7 +893,7 @@ def _compute_kti_daily(df: pd.DataFrame) -> pd.Series:
     for m, d in _US_HOLIDAYS_MONTH_DAY:
         for y in year.unique():
             try:
-                hol = _nearest_trading_day(df2, date(int(y), m, d))
+                hol = _als_datum(_nearest_trading_day(df2, date(int(y), m, d)))
                 if hol is None:
                     continue
                 before = df2[df2.index <= hol]
@@ -803,7 +1058,7 @@ def calc_one_day_holiday(df: pd.DataFrame) -> list[dict]:
     for year in sorted(df.index.year.unique()):
         for m, d in _US_HOLIDAYS_MONTH_DAY:
             try:
-                hol = _nearest_trading_day(df, date(year, m, d))
+                hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
                 if hol is None:
                     continue
                 before = df[df.index < hol]
@@ -829,7 +1084,7 @@ def calc_uhts(df: pd.DataFrame) -> list[dict]:
     for year in sorted(df.index.year.unique()):
         for m, d in _US_HOLIDAYS_MONTH_DAY:
             try:
-                hol = _nearest_trading_day(df, date(year, m, d))
+                hol = _als_datum(_nearest_trading_day(df, date(year, m, d)))
                 if hol is None:
                     continue
                 before = df[df.index < hol]
@@ -1091,6 +1346,7 @@ def apply_stop_loss(df, trades, stop_pct, stop_type="fixed"):
 
 def build_equity_curve(trades, start_capital=1000.0):
     """Baut Equity-Kurve aus Trades. Returns: list[(date, value)]."""
+    trades = [t for t in (trades or []) if not t.get("open")]   # offene Trades nicht in der Abschluss-Equity
     if not trades:
         return []
 
@@ -1105,8 +1361,12 @@ def build_equity_curve(trades, start_capital=1000.0):
     return curve
 
 
+MIN_TRADES_SHARPE = 5
+
+
 def compute_strategy_stats(trades, start_capital=1000.0):
     """Berechnet KPIs für eine Strategie."""
+    trades = [t for t in (trades or []) if not t.get("open") and np.isfinite(t["return_pct"])]
     if not trades:
         return {}
 
@@ -1141,7 +1401,8 @@ def compute_strategy_stats(trades, start_capital=1000.0):
     avg_ret = np.mean(returns)
     std_ret = np.std(returns) if len(returns) > 1 else 1
     trades_per_year = n / years_span if years_span > 0 else 1
-    sharpe = (avg_ret / std_ret) * np.sqrt(trades_per_year) if std_ret > 0 else 0
+    # unter MIN_TRADES_SHARPE geschlossenen Trades keine Sharpe-Ratio (wie JS) — Streuung aus 2 Werten ist Zufall
+    sharpe = (avg_ret / std_ret) * np.sqrt(trades_per_year) if (n >= MIN_TRADES_SHARPE and std_ret > 0) else None
 
     return {
         "total_return": round((final / start_capital - 1) * 100, 1),
@@ -1150,13 +1411,13 @@ def compute_strategy_stats(trades, start_capital=1000.0):
         "win_rate": round(wins / n * 100, 1) if n > 0 else 0,
         "n_trades": n,
         "avg_return": round(avg_ret, 2),
-        "sharpe": round(sharpe, 2),
+        "sharpe": round(sharpe, 2) if sharpe is not None else None,
         "final_equity": round(final, 2),
         "years_span": round(years_span, 1),
+        # ohne Verlusttrade nicht definiert (auch 0/0) → None, wie JS (Befund 10)
         "profit_factor": round(
-            sum(r for r in returns if r > 0) / abs(sum(r for r in returns if r < 0))
-            if sum(r for r in returns if r < 0) != 0 else 999, 2
-        ),
+            sum(r for r in returns if r > 0) / abs(sum(r for r in returns if r < 0)), 2
+        ) if sum(r for r in returns if r < 0) != 0 else None,
     }
 
 

@@ -30,8 +30,9 @@ from shared.constants import SE_COLORS, DEFAULT_TICKER
 from shared.charts import apply_se_theme
 from shared.data import download_data, preprocess
 from shared.strategies.plain_vanilla import (
-    STRATEGIES, STRATEGY_CATEGORIES, apply_stop_loss, build_equity_curve, compute_strategy_stats,
+    STRATEGIES, STRATEGY_CATEGORIES, auswerten, build_equity_curve,
 )
+from shared.symbols import get_exchange_for_holidays
 
 # ── Page Config ──────────────────────────────────────
 st.set_page_config(
@@ -103,12 +104,9 @@ def main():
         if key in all_results:
             return all_results[key]
         try:
-            strat = STRATEGIES[key]
-            trades = strat["func"](df)
-            if use_stop and trades:
-                trades = apply_stop_loss(raw_df, trades, stop_pct, stop_type)
-            stats = compute_strategy_stats(trades) if trades else {}
-            all_results[key] = {"trades": trades, "stats": stats}
+            # Börse des Tickers als Kalenderkontext (sonst NYSE-Standard auch für XETRA, Codex Code-R3)
+            all_results[key] = auswerten(df, key, boerse=get_exchange_for_holidays(ticker),
+                                         stop_df=raw_df, stop_pct=stop_pct if use_stop else 0.0, stop_type=stop_type)
         except Exception:
             all_results[key] = {"trades": [], "stats": {}}
         return all_results[key]
@@ -315,7 +313,8 @@ def main():
                 "Win-Rate": f'{stats.get("win_rate", 0):.0f}%',
                 "Trades": stats.get("n_trades", 0),
                 "Endwert": f'${stats.get("final_equity", 0):,.0f}',
-                "Sharpe": f'{stats.get("sharpe", 0):.2f}',
+                # Sharpe ist bei weniger als MIN_TRADES_SHARPE Trades None (shared/strategies/plain_vanilla.py)
+                "Sharpe": (f'{stats["sharpe"]:.2f}' if stats.get("sharpe") is not None else "—"),
                 "_cagr": stats.get("cagr", 0),
             })
 

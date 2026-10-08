@@ -1198,46 +1198,7 @@
       };
     }
 
-    // ── Strategie-Streak (aus trades-Liste die letzten N nach Vorzeichen) ──
-    function calcStrategyStreak(trades){
-      if(!trades||!trades.length)return {type:'none',count:0};
-      // Sortieren absteigend nach exit_date
-      var sorted=trades.slice().sort(function(a,b){return a.exit_date<b.exit_date?1:-1;});
-      var first=sorted[0];
-      var type=first.return_pct>0?'win':'loss';
-      var count=1;
-      for(var i=1;i<sorted.length;i++){
-        var isWin=sorted[i].return_pct>0;
-        if((type==='win'&&isWin)||(type==='loss'&&!isWin))count++;
-        else break;
-      }
-      return {type:type,count:count};
-    }
-
     // ── "Naechste Strategien" (aus plain-vanilla.html sigD-Pattern) ──
-    /** Berechnet das naechste Signal-Datum fuer eine Strategie. Vereinfacht: nur Entry-Daten. */
-    function _lastTradingDay(year,month,nFromEnd){
-      try{
-        var ex=SA.holidays.detect(currentTicker||'')||'NYSE';
-        if(ex==='NONE')ex='NYSE';
-        return SA.holidays.lastTradingDay(year,month,nFromEnd||1,ex);
-      }catch(e){return null;}
-    }
-    function _nthTradingDay(year,month,n){
-      try{
-        var ex=SA.holidays.detect(currentTicker||'')||'NYSE';
-        if(ex==='NONE')ex='NYSE';
-        return SA.holidays.nthTradingDay(year,month,n,ex);
-      }catch(e){return null;}
-    }
-    function _nearForward(year,month,day){
-      try{
-        var ex=SA.holidays.detect(currentTicker||'')||'NYSE';
-        if(ex==='NONE')ex='NYSE';
-        return SA.holidays.nextTradingDay(year,month,day,ex);
-      }catch(e){return null;}
-    }
-
     /**
      * Erzeugt eine Liste der naechsten Signal-Daten ueber alle 22 Strategien.
      * Pro Strategie wird das naechste Entry-Datum berechnet (vereinfacht).
@@ -1268,78 +1229,9 @@
         });
       }
 
-      // Saisonal
-      add('sell_in_may','entry',_lastTradingDay(Y,10));
-      add('sell_in_may','entry',_lastTradingDay(Y+1,10));
-      add('sell_in_may','exit',_nthTradingDay(Y,5,3*5));
-      add('sell_in_may','exit',_nthTradingDay(Y+1,5,3*5));
-      add('lbr_november_mai','entry',_lastTradingDay(Y,10));
-      add('lbr_november_mai','exit',_lastTradingDay(Y,4));
-      add('nasdaq_trend','entry',_lastTradingDay(Y,10));
-      add('nasdaq_trend','exit',_lastTradingDay(Y,6));
-      add('september_avoid','entry',_nearForward(Y,9,30));
-      add('september_avoid','exit',_lastTradingDay(Y,8));
-
-      // Wahljahr 7 Mon
-      if (Y % 4 === 0 || (Y+1) % 4 === 0) {
-        var ey = Y % 4 === 0 ? Y : Y + 1;
-        add('election_7months','entry',_nearForward(ey,5,31));
-        add('election_7months','exit',_lastTradingDay(ey,12));
-      }
-
-      // Januar
-      add('first_five_days','entry',_nthTradingDay(Y,1,1));
-      add('first_five_days','exit',_nthTradingDay(Y,1,5));
-      add('first_five_days','entry',_nthTradingDay(Y+1,1,1));
-      add('first_five_days','exit',_nthTradingDay(Y+1,1,5));
-      add('last_five_days','entry',_lastTradingDay(Y,1,5));
-      add('last_five_days','exit',_lastTradingDay(Y,1));
-      add('last_five_days','entry',_lastTradingDay(Y+1,1,5));
-      add('last_five_days','exit',_lastTradingDay(Y+1,1));
-      add('january_barometer','entry',_nthTradingDay(Y,2,1));
-      add('january_barometer','exit',_lastTradingDay(Y,12));
-      add('january_barometer','entry',_nthTradingDay(Y+1,2,1));
-      add('january_barometer','exit',_lastTradingDay(Y+1,12));
-
-      // Feiertag (Santa Claus, Post-Christmas, etc.)
-      try {
-        var ex = SA.holidays.detect(currentTicker||'NYSE');
-        if (ex !== 'NONE') {
-          var thx = SA.holidays.thanksgiving(Y);
-          if (thx) {
-            // Santa Claus Entry: 3 HT vor Thanksgiving
-            var dt = new Date(thx);
-            var c = 0;
-            while (c < 3) { dt.setDate(dt.getDate() - 1); var ds = pad2(dt.getMonth()+1); var dss = dt.getFullYear()+'-'+ds+'-'+pad2(dt.getDate()); if (SA.holidays.isTradingDay(dss, ex)) c++; }
-            add('santa_claus','entry',dt.getFullYear()+'-'+pad2(dt.getMonth()+1)+'-'+pad2(dt.getDate()));
-          }
-          add('santa_claus','exit',_nthTradingDay(Y,1,5));
-          add('santa_claus','exit',_nthTradingDay(Y+1,1,5));
-          // Post-Christmas
-          add('post_christmas','entry',_nearForward(Y,12,26));
-          add('post_christmas','exit',_lastTradingDay(Y,12));
-          add('post_christmas','entry',_nearForward(Y+1,12,26));
-          add('post_christmas','exit',_lastTradingDay(Y+1,12));
-        }
-      } catch(e){}
-
-      // Monat (naechste 3 Monate)
-      for (var mi = 0; mi < 3; mi++) {
-        var futM = todayD.getMonth() + 1 + mi;
-        var mm = ((futM - 1) % 12) + 1;
-        var yy = Y + Math.floor((futM - 1) / 12);
-        add('month_end','entry',_lastTradingDay(yy,mm,2));
-        var nm = mm === 12 ? 1 : mm + 1, ny = mm === 12 ? yy + 1 : yy;
-        add('month_end','exit',_nthTradingDay(ny,nm,4));
-        add('second_trading_day','entry',_nthTradingDay(yy,mm,1));
-        add('second_trading_day','exit',_nthTradingDay(yy,mm,2));
-        add('monthly_10','entry',_nthTradingDay(yy,mm,1));
-        add('monthly_10','exit',_nthTradingDay(yy,mm,4));
-        // Down-Month ToM: Einstieg TDOM14, Ausstieg ~TDOM5 Folgemonat
-        add('downmonth_tom','entry',_nthTradingDay(yy,mm,14));
-        var nm2 = mm === 12 ? 1 : mm + 1, ny2 = mm === 12 ? yy + 1 : yy;
-        add('downmonth_tom','exit',_nthTradingDay(ny2,nm2,5));
-      }
+      // Termine aus der gemeinsamen Funktion (Plan /plain-vanilla v5, E6) — keine Kopie der Regeln mehr hier
+      var exD = SA.holidays.detect(currentTicker || 'NYSE');
+      SA.strategy.regeltermine(todayS, exD).forEach(function(r){ add(r.key, r.type, r.date); });
 
       // Deduplizieren (gleiche Strategie + Type + Datum)
       var seen = {};
@@ -2389,10 +2281,13 @@
             try {
               var meta = SA.STRATEGIES[key];
               if (meta && SA.strategy[meta.func]) {
-                var trades = SA.strategy[meta.func](rawRows);
-                var closedTrades = trades.filter(function(t){ return !t.open; });
+                var bD = SA.holidays.detect(currentTicker || 'NYSE');
+                var ausw = SA.strategy.auswerten(rawRows, key, { stichtag: SA.strategy.heute(bD), boerse: bD });
+                var closedTrades = ausw.trades.filter(function(t){ return !t.open; });
                 var last5 = closedTrades.slice(-5).map(function(t){ return t.return_pct; });
-                streaks[key] = { streak: calcStrategyStreak(trades), lastTrades: last5 };
+                var sk = ausw.streak;
+                streaks[key] = { streak: { type: sk.typ === 'gewinn' ? 'win' : sk.typ === 'verlust' ? 'loss' : 'none', count: sk.n },
+                                 lastTrades: last5 };
               }
             } catch(e) { console.warn('Strategy', key, e); }
           }

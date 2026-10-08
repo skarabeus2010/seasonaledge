@@ -239,45 +239,56 @@ SA.indicators = {
     var n = closes.length;
     var mask = new Array(n).fill(false);
     var type = f.type, cond = f.condition;
+    // Gültigkeit ZUERST (Plan /plain-vanilla v5, Punkt 7): fehlt ein Operand (Warm-up, null, NaN), ist die Bedingung
+    // für jeden Operator false — auch für „!=" und negierte Bedingungen. Vorher verglich SMA im Warm-up gegen null
+    // wie gegen 0 und lieferte „Close > SMA" = true, obwohl es noch keinen SMA gab.
+    function ok() {
+      for (var a = 0; a < arguments.length; a++) {
+        var v = arguments[a];
+        if (typeof v !== 'number' || !isFinite(v)) return false;
+      }
+      return true;
+    }
 
     if (type === 'SMA') {
       var sma = SA.indicators.calcSMA(closes, f.period || 200);
-      for (var i = 1; i < n; i++) mask[i] = cond === 'Close > SMA' ? closes[i - 1] > sma[i - 1] : closes[i - 1] < sma[i - 1];
+      for (var i = 1; i < n; i++) if (ok(closes[i - 1], sma[i - 1])) mask[i] = cond === 'Close > SMA' ? closes[i - 1] > sma[i - 1] : closes[i - 1] < sma[i - 1];
     } else if (type === 'EMA') {
       var ema = SA.indicators.calcEMA(closes, f.period || 200);
-      for (var i = 1; i < n; i++) if (ema[i - 1] !== null) mask[i] = cond === 'Close > EMA' ? closes[i - 1] > ema[i - 1] : closes[i - 1] < ema[i - 1];
+      for (var i = 1; i < n; i++) if (ok(closes[i - 1], ema[i - 1])) mask[i] = cond === 'Close > EMA' ? closes[i - 1] > ema[i - 1] : closes[i - 1] < ema[i - 1];
     } else if (type === 'RSI') {
       var rsi = SA.indicators.calcRSI(closes, f.period || 14);
       var thr = f.threshold || 50;
-      for (var i = 1; i < n; i++) if (rsi[i - 1] !== null) mask[i] = cond === 'RSI > Threshold' ? rsi[i - 1] > thr : rsi[i - 1] < thr;
+      for (var i = 1; i < n; i++) if (ok(rsi[i - 1], thr)) mask[i] = cond === 'RSI > Threshold' ? rsi[i - 1] > thr : rsi[i - 1] < thr;
     } else if (type === 'Bollinger') {
       var bb = SA.indicators.calcBollinger(closes, f.period || 20, f.num_std || 2.0);
       for (var i = 1; i < n; i++) {
-        if (bb.upper[i - 1] === null) continue;
+        if (!ok(closes[i - 1], bb.upper[i - 1], bb.lower[i - 1])) continue;
         if (cond === 'Close > Upper Band') mask[i] = closes[i - 1] > bb.upper[i - 1];
         else if (cond === 'Close < Lower Band') mask[i] = closes[i - 1] < bb.lower[i - 1];
         else mask[i] = closes[i - 1] >= bb.lower[i - 1] && closes[i - 1] <= bb.upper[i - 1];
       }
     } else if (type === 'MACD') {
       var macd = SA.indicators.calcMACD(closes, f.fast || 12, f.slow || 26, f.signal || 9);
-      for (var i = 1; i < n; i++) if (macd.macd[i - 1] !== null && macd.signal[i - 1] !== null) mask[i] = cond.indexOf('bullish') >= 0 ? macd.macd[i - 1] > macd.signal[i - 1] : macd.macd[i - 1] < macd.signal[i - 1];
+      for (var i = 1; i < n; i++) if (ok(macd.macd[i - 1], macd.signal[i - 1])) mask[i] = cond.indexOf('bullish') >= 0 ? macd.macd[i - 1] > macd.signal[i - 1] : macd.macd[i - 1] < macd.signal[i - 1];
     } else if (type === 'LBR') {
       var lbr = SA.indicators.calcLBR(closes, f.fast || 3, f.slow || 10, f.smoothing || 16);
-      for (var i = 1; i < n; i++) if (lbr.fastline[i - 1] !== null) mask[i] = cond.indexOf('bullish') >= 0 ? lbr.fastline[i - 1] > 0 : lbr.fastline[i - 1] < 0;
+      for (var i = 1; i < n; i++) if (ok(lbr.fastline[i - 1])) mask[i] = cond.indexOf('bullish') >= 0 ? lbr.fastline[i - 1] > 0 : lbr.fastline[i - 1] < 0;
     } else if (type === 'Regime') {
       var regs = SA.indicators.calcRegime(closes, f.period || 20);
       for (var i = 1; i < n; i++) {
-        if (regs[i - 1] === null) continue;
-        if (cond === 'Regime != Bear') mask[i] = regs[i - 1] !== 'Bear';
-        else if (cond === 'Regime == Bull') mask[i] = regs[i - 1] === 'Bull';
-        else mask[i] = regs[i - 1] === 'Bear';
+        var rg = regs[i - 1];
+        if (rg !== 'Bull' && rg !== 'Bear' && rg !== 'Sideways') continue;   // unbekanntes Regime → false, auch für !=
+        if (cond === 'Regime != Bear') mask[i] = rg !== 'Bear';
+        else if (cond === 'Regime == Bull') mask[i] = rg === 'Bull';
+        else mask[i] = rg === 'Bear';
       }
     } else if (type === 'Momentum') {
       var mom = SA.indicators.calcMomentum(closes, f.long_p || 252, f.short_p || 21);
-      for (var i = 1; i < n; i++) if (mom[i - 1] !== null) mask[i] = cond.indexOf('bullisch') >= 0 ? mom[i - 1] > 0 : mom[i - 1] < 0;
+      for (var i = 1; i < n; i++) if (ok(mom[i - 1])) mask[i] = cond.indexOf('bullisch') >= 0 ? mom[i - 1] > 0 : mom[i - 1] < 0;
     } else if (type === 'StRev') {
       var strev = SA.indicators.calcStRev(closes, f.period || 21);
-      for (var i = 1; i < n; i++) if (strev[i - 1] !== null) mask[i] = cond.indexOf('Down') >= 0 ? strev[i - 1] < 0 : strev[i - 1] > 0;
+      for (var i = 1; i < n; i++) if (ok(strev[i - 1])) mask[i] = cond.indexOf('Down') >= 0 ? strev[i - 1] < 0 : strev[i - 1] > 0;
     } else {
       mask.fill(true);
     }
