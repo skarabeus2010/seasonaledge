@@ -33,6 +33,7 @@ if _project_dir not in sys.path:
 from shared.polymarket_data import (
     fetch_price_history,
     load_markets_yaml,
+    PREISART_HISTORIE,
 )
 from shared.logger import app_logger
 
@@ -41,9 +42,12 @@ def history_to_records(
     condition_id: str,
     points: list[dict],
     source: str = "prices-history",
+    abgerufen_am: str | None = None,
 ) -> list[dict]:
     """{t:unix, p:float} -> Supabase-Records."""
     out = []
+    if abgerufen_am is None:
+        abgerufen_am = datetime.now(timezone.utc).isoformat()
     for pt in points:
         try:
             ts = datetime.fromtimestamp(int(pt["t"]), tz=timezone.utc)
@@ -57,6 +61,12 @@ def history_to_records(
             "ts": ts.isoformat(),
             "yes_price": round(float(p), 4),
             "source": source,
+            # Historienzeilen sind ausdruecklich als solche gekennzeichnet.
+            # `ts` ist hier die QUELLZEIT aus der CLOB-Historie (Feld `t`),
+            # nicht der Abrufzeitpunkt — anders als beim Snapshot. Genau
+            # deshalb gibt es `fetched_at`.
+            "price_kind": PREISART_HISTORIE,
+            "fetched_at": abgerufen_am,
         })
     return out
 

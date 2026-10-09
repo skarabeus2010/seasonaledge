@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import io
 import json
+import pathlib
 import re
 import subprocess
 import sys
@@ -31,6 +32,13 @@ if hasattr(sys.stderr, 'reconfigure'):
 JS = 'landing/js/i18n.js'
 EN = 'landing/i18n/en.json'
 PROBE = 'scripts/verify_i18n_cache_version.py'
+
+# Atomares Schreiben mit Wiederholung — IMPORTIERT, nicht kopiert.
+# Ohne flush/fsync/os.replace liest der Unterprozess unter Windows
+# gelegentlich noch den alten Inhalt, und der Test wird nicht
+# deterministisch (beobachtet am 2026-10-09).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from scripts.verify_twins_mutation import _atomar_schreiben  # noqa: E402
 
 ROH = {JS: io.open(JS, 'rb').read(), EN: io.open(EN, 'rb').read()}
 
@@ -123,13 +131,12 @@ try:
             print('  KEIN-ANKER     %s (Mutation aenderte nichts)' % name)
         else:
             for d, b in dateien.items():
-                io.open(d, 'wb').write(b)
+                _atomar_schreiben(pathlib.Path(d), b)
             try:
                 rc, ausgabe = lauf()
             finally:
                 for d, b in ROH.items():
-                    io.open(d, 'wb').write(b)
-
+                    _atomar_schreiben(pathlib.Path(d), b)
             if erwartet is None:
                 # Gegenprobe: dieser Fall MUSS gruen bleiben.
                 if rc == 0:
@@ -162,8 +169,7 @@ try:
             gefangen += 1
 finally:
     for d, b in ROH.items():
-        io.open(d, 'wb').write(b)
-
+        _atomar_schreiben(pathlib.Path(d), b)
 for d, b in ROH.items():
     assert io.open(d, 'rb').read() == b, 'WIEDERHERSTELLUNG FEHLGESCHLAGEN: ' + d
 json.load(io.open(EN, encoding='utf-8'))   # muss noch gueltiges JSON sein
@@ -178,6 +184,7 @@ import os
 import pathlib
 import shutil
 import tempfile
+
 
 # `git clone --depth` wird bei einem LOKALEN Pfad ignoriert (git nutzt dann
 # Hardlinks und uebertraegt die ganze Historie). Nur ueber `file://` entsteht

@@ -50,6 +50,14 @@ def build_price_record(condition_id: str, snap: dict, ts: datetime) -> dict:
         # weiterhin die falsche Angabe, das laesst sich ohne Migration nicht
         # ruekwirkend richtigstellen.
         "source": "gamma-snapshot",
+        # Neu mit der Migration vom 2026-10: woraus der Preis entstand, die
+        # beiden Quotes, und der Abrufzeitpunkt getrennt von `ts`. Bei einem
+        # Snapshot sind beide gleich — Gamma nennt keine Quotenzeit, und ein
+        # Abrufzeitpunkt darf nicht als Quotenalter ausgegeben werden.
+        "price_kind": snap.get("price_kind"),
+        "bid": snap.get("bid"),
+        "ask": snap.get("ask"),
+        "fetched_at": ts.isoformat(),
     }
 
 
@@ -64,13 +72,16 @@ def refresh_markets(
     from shared.supabase_client import (
         fetch_polymarket_markets as _fetch_catalog,
         upsert_polymarket_prices,
+        update_polymarket_fetch_state,
     )
+    from shared.polymarket_data import bewerte_quote, fetch_market_by_condition_id
 
     # Katalog aus DB laden (token_id-Mapping liegt dort)
     catalog = _fetch_catalog(active_only=False)
     by_cid = {c["condition_id"]: c for c in catalog}
 
     records = []
+    zustaende: list[dict] = []
     errors: list[str] = []
     now = datetime.now(timezone.utc)
 
@@ -86,24 +97,52 @@ def refresh_markets(
             errors.append(f"{slug}: nicht im DB-Katalog (erst 'polymarket_discover --sync-db' laufen lassen)")
             continue
 
-        # fetch_current_price nimmt die conditionId (Gamma-Markets-Endpoint).
-        # yes_token_id wird nur fuer CLOB prices-history gebraucht (Backfill).
-        snap = fetch_current_price(cid)
-        if not snap:
-            errors.append(f"{slug}: fetch_current_price liefert None")
-            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- FEHLER: kein Preis")
+        # Die conditionId geht an den Gamma-Markets-Endpoint; yes_token_id
+        # braucht nur die CLOB-Historie (Backfill).
+        #
+        # `bewerte_quote` statt `fetch_current_price`, weil der GRUND zaehlt:
+        # „kein Preis geliefert" und „Preis verworfen, weil das Buch gekreuzt
+        # war" sind verschiedene Lagen. Vorher endeten beide in `continue`, die
+        # zuletzt gespeicherte Zeile blieb stehen und galt weiter als jung.
+        try:
+            markt = fetch_market_by_condition_id(cid)
+            urteil = bewerte_quote(markt) if markt else {
+                "status": "fehler", "grund": "kein_markt", "snapshot": None}
+        except Exception as e:                     # Netz, Zeitueberschreitung
+            urteil = {"status": "fehler", "grund": type(e).__name__,
+                      "snapshot": None}
+
+        zustand = urteil["status"] if urteil["status"] in (
+            "ok", "kein_preis", "verworfen") else "fehler"
+        zustaende.append({"condition_id": cid,
+                          "last_fetch_state": zustand,
+                          "last_fetch_at": now.isoformat()})
+
+        if zustand != "ok":
+            errors.append(f"{slug}: Abruf {zustand}"
+                          + (f" ({urteil.get('grund')})" if urteil.get("grund") else ""))
+            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- {zustand.upper()}"
+                  f": {urteil.get('grund') or '-'}")
             continue
 
-        rec = build_price_record(cid, snap, now)
-        records.append(rec)
+        snap = urteil["snapshot"]
+        records.append(build_price_record(cid, snap, now))
         print(
             f"  [{i:2d}/{len(entries)}] {slug:40s} "
             f"YES={snap['yes_price']:.3f}  "
-            f"spread={snap.get('spread', 0) or 0:.3f}"
+            f"spread={snap.get('spread') if snap.get('spread') is not None else float('nan'):.3f}  "
+            f"{snap.get('price_kind')}"
         )
 
-    if records and not dry_run:
-        upsert_polymarket_prices(records)
+    if not dry_run:
+        # Die Zustaende werden AUCH dann geschrieben, wenn keine einzige
+        # Preiszeile entstand — gerade dann sind sie die Information. Ein
+        # Fehlschlag hier ist ein Fehlschlag des Laufs und wird nicht
+        # verschluckt.
+        if zustaende:
+            update_polymarket_fetch_state(zustaende)
+        if records:
+            upsert_polymarket_prices(records)
 
     return len(records), errors
 

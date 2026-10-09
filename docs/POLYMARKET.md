@@ -382,6 +382,140 @@ Dazu `UNGUELTIG_ERWARTET`: eine Liste von Mutationen, die der Test als
   Ein `≥` im Namen liess den Lauf an cp1252 abbrechen, und eine Erwartung mit
   der Zahl darin traf nicht, weil die Fehlerzeile die *gemessene* Zahl nennt.
 
+## Phase B — Datenlage (ab 2026-10-09, Nutzer hat die Datenbank freigegeben)
+
+Die vier Befunde, die eine Schemaaenderung brauchen. Der Entwurf ging ZUERST an
+Codex und kam als **nicht tragfaehig** zurueck: drei meiner Annahmen waren
+falsch, neun Punkte fehlten. Das hat Runden gespart, nicht gekostet.
+
+### Die Migration
+
+`scripts/sql/polymarket_schema_2026_10.sql` — einmal im Supabase-SQL-Editor.
+Rein ergaenzend: neue Spalten, ein Index, eine Funktion. **Nichts wird
+umbenannt, verengt oder gefuellt.** Der Grund ist das Fenster zwischen
+Migration und Deploy: dort laeuft der alte Code weiter und darf nicht brechen.
+
+Jede Pruefbedingung bindet deshalb nur Zeilen, die sich ausdruecklich als
+klassifiziert ausgeben (`price_kind` gesetzt und nicht `unbekannt`). Die
+Bestandszeilen erfuellen sie trivial.
+
+| Spalte | Tabelle | wozu |
+|---|---|---|
+| `price_kind` | prices | woraus der Preis entstand: `mid`, `bid_only`, `ask_only`, `last_trade`, `history`, `unbekannt` |
+| `bid`, `ask` | prices | die beiden Quotes, bisher verworfen |
+| `fetched_at` | prices | der Abruf, getrennt von `ts` |
+| `status` | markets | `open` / `paused` / `closed` / `resolved` / `unavailable` / `unbekannt` |
+| `status_checked_at` | markets | wann der Status aus einer ERFOLGREICHEN Antwort kam |
+| `last_fetch_state` | markets | `ok` / `kein_preis` / `verworfen` / `fehler` |
+| `last_fetch_at` | markets | Zeitpunkt des letzten Versuchs |
+
+**`ts` und `fetched_at` — hier steckte ein Denkfehler von mir.** `ts` trug
+bisher ZWEI Bedeutungen: beim Snapshot den Abrufzeitpunkt, beim Backfill die
+historische Quellzeit aus der CLOB-Historie. Damit laesst sich das Alter eines
+Preises nicht berechnen. Jetzt: `ts` = der Zeitpunkt, zu dem der Preis gehoert;
+`fetched_at` = wann wir ihn geholt haben. **Gamma liefert keine Quotenzeit** —
+bei Snapshots sind beide gleich, und das ist eine Beobachtungszeit, kein
+Quotenalter. Der Code darf es auch nicht als solches ausgeben.
+
+**Neueste Zeile pro Markt** kommt aus der Funktion
+`polymarket_latest_prices(text[])` — `STABLE`, `SECURITY INVOKER` (der
+Standard), aufrufbar per GET. Bewusst eine Funktion und keine View:
+`security_invoker` fuer Views gibt es erst ab PostgreSQL 15, und die Version
+des Projekts ist nicht geprueft. Gelesen wird sie mit dem vorhandenen
+`SA.supabase.get('rpc/polymarket_latest_prices', ...)`; `app.js` braucht keine
+neue Methode.
+
+⚠️ **PostgREST haelt das Schema im Speicher.** Ohne `NOTIFY pgrst, 'reload
+schema';` ist die Funktion ueber HTTP unsichtbar („Could not find the
+function"), obwohl sie in der Datenbank steht. Das NOTIFY steht in der
+Migration; die Fehlermeldung im Python-Lader nennt es ebenfalls.
+
+Am Dateiende stehen **acht Abnahmeabfragen**. „Keine Fehlermeldung" ist kein
+Nachweis: darunter ein echter Lauf in der Rolle `anon` mit `ROLLBACK` und ein
+`curl` ueber HTTP — das Privileg zu HABEN ist nicht dasselbe wie durchzukommen.
+
+### B1 — Preisqualitaet am Erzeuger (erledigt)
+
+`bewerte_quote()` in `shared/polymarket_data.py` liefert einen von **drei**
+Zustaenden: `ok`, `kein_preis`, `verworfen`. Die Unterscheidung ist der Punkt:
+ein **verworfener** Abruf muss den zuletzt gespeicherten Preis entwerten
+koennen. Vorher endeten beide Faelle im selben `continue`, die alte Zeile blieb
+stehen und galt weiter als jung — auch wenn das Buch inzwischen gekreuzt war.
+Dafuer schreibt der Refresh jetzt `last_fetch_state` je Markt.
+
+Ein gekreuztes Buch wird **verworfen**, nicht gemittelt (Bid 0,80 / Ask 0,20
+ergab einen Preis von 0,50 mit Spannweite −0,60). Werte ausserhalb 0..1
+ebenso. `bid = ask = 0` ergibt dagegen eine **echte Null** mit Preisart `mid` —
+genau die Unterscheidung, um die es in Befund 1 geht.
+
+**Die Spannweitengrenze `SPREAD_GRENZE = 0.06` ist abgeleitet, nicht gesetzt:**
+die Seite nennt einen Abstand erst ab 3 Prozentpunkten eine Richtung, ein
+Mittelkurs traegt ± Spannweite/2 Unsicherheit, also kann er ab 0,06 keine
+solche Aussage mehr stuetzen. Der Waechter prueft diese **Bindung** mit — wird
+die Seitenschwelle geaendert, faellt die Grenze auf.
+
+Was die Zahl NICHT ist: eine Messung der tatsaechlichen Spannweiten. Die ginge
+auf der Spalte `spread`, sobald die Daten erreichbar sind (TODO unten). Die
+Gebuehrentabelle aus `docs/research/PREDICTION_MARKETS_2026-10.md` taugt dafuer
+nicht — 2,75 Cent sind eine Arbitrageschwelle, kein Qualitaetsmass.
+
+**Zweite Fundstelle derselben Verdraengung:** `fetch_polymarket_latest_prices`
+in `shared/supabase_client.py` — der Lader des **Newsletters** — hatte genau
+den Fehler des Frontends: letzte 7 Tage, `limit(5000)`, Reduktion in Python.
+Ein haeufig aktualisierter Markt konnte einen selten aktualisierten
+vollstaendig aus der Antwort draengen, und ein Markt ohne Zeile in sieben Tagen
+fiel grundsaetzlich heraus. Kein stiller Rueckfall, wenn die Funktion fehlt:
+die Meldung nennt die Migrationsdatei und den Schema-Cache.
+
+Waechter: `scripts/verify_polymarket_preisqualitaet.py` (40 Pruefungen, ohne
+Datenbank) + Mutationstest 16/16.
+
+### ⚠️ Mutationstests waren nicht deterministisch
+
+Beim Pruefen von B1 meldete derselbe Fall einmal „ungueltig" und in den beiden
+folgenden Laeufen „gefangen" — die rote Zeile stammte von der VORIGEN
+Mutation. Ursache: **alle neun Mutationstests dieser Arbeit schrieben mit
+`io.open(datei,'wb').write(...)`** — ohne flush, ohne fsync, ohne
+`os.replace`. Unter Windows sperrt ein Virenscanner oder Datei-Watcher eine
+frisch geschriebene Datei kurz, und dann liest der Unterprozess noch den alten
+Inhalt.
+
+Ein nicht deterministischer Mutationstest ist **schlimmer als keiner**: er kann
+eine entwischte Mutation als gefangen verbuchen. Die Loesung lag seit September
+im Projekt — `_atomar_schreiben` in `scripts/verify_twins_mutation.py`
+(Temp-Datei im Zielverzeichnis, flush, fsync, `os.replace`, 20 Wiederholungen
+bei `PermissionError`). Alle neun **importieren** sie jetzt, keine Kopie.
+
+Beim Umstellen zwei eigene Fehler, beide vom Lauf gemeldet: ein Import nach
+der Verwendung (mein Patch setzte ihn hinter das letzte importartige Vorkommen,
+und in einer Datei stehen Importe mitten im Code) und ein fehlendes `pathlib`
+am Dateikopf (es stand nur weiter unten, also hielt der Patch es fuer
+vorhanden).
+
+### Offen in Phase B
+
+- **B2 — Status-Lebenszyklus.** Entscheidungstabelle aus der Gamma-Antwort;
+  `umaResolutionStatus`, `archived`, `enableOrderBook` gehoeren dazu, eine
+  nachgewiesene Auflösung hat Vorrang vor `closed`, und fehlende oder
+  widersprueckliche Angaben ergeben `unbekannt` statt `open`. Der
+  Katalogabgleich muss in den Daily-Workflow — **der ruft heute nur Refresh
+  und montags Backfill**, der Status wuerde also nie aktualisiert. Bei einem
+  API-Ausfall bleibt der Status stehen, aber `status_checked_at` wird NICHT
+  erneuert, damit er sichtbar veraltet.
+- **B3 — Verbraucher.** Eine gemeinsame Gueltigkeitsregel fuer Seite und
+  Newsletter: vorhanden UND frisch UND bewertbare Preisart UND Status `open`.
+  Die Frische braucht einen Kadenzvertrag samt FOMC-Fenster (der stuendliche
+  Dienst laeuft mit `--near-fomc-only`, das Fenster ist FOMC−2 bis FOMC+1 in
+  UTC); ein Etikett `hourly` aus dem YAML reicht nicht. Dazu:
+  Fed-Vollstaendigkeit (fehlende Buckets weglassen und den Rest normieren
+  ergibt weiter einen scheinbar vollstaendigen Erwartungswert) und das **Alter
+  des Krypto-Schlusskurses**, das beide Verbraucher heute nicht pruefen.
+- **B4 — Auflösung und Archiv.** `resolution` und `resolved_at` brauchen einen
+  Beleg; der vorhandene Resolved-Scraper setzt `resolution_date` aus `endDate`,
+  und das ist keiner.
+- **Messung statt Herleitung fuer `SPREAD_GRENZE`**, sobald die Spalte
+  `spread` auf dem Server auswertbar ist.
+
 ## Roadmap
 
 **Short-term:**

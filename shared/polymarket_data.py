@@ -258,41 +258,130 @@ def _extract_token_ids(clob_token_ids, outcomes=None) -> tuple[str, str]:
 
 # ── Snapshot-Preis (aus Gamma — KEIN CLOB-Roundtrip noetig) ───────────────────
 
-def market_to_price_snapshot(market: dict) -> dict | None:
-    """
-    Baut einen Preis-Snapshot direkt aus dem Gamma-Market-Response.
-    Nutzt bestBid/bestAsk fuer Mid, fallback auf lastTradePrice.
+# ── Qualitaetsgrenzen fuer eine Quote ────────────────────────────────────────
 
-    Returns dict oder None:
-        yes_price  (0.00-1.00)
-        spread     (best_ask - best_bid, None wenn nur lastTradePrice)
-        volume_24h (aus volume24hr)
+# Ab welcher Spannweite ein Mittelkurs keine Bewertung mehr tragen kann.
+#
+# HERLEITUNG, damit die Zahl nicht geraten ist: Die Seite /polymarket nennt
+# einen Abstand erst ab 3 Prozentpunkten eine Richtung
+# (`VERTRAG.divergenzSchwellePp` in landing/js/polymarket.js). Ein Mittelkurs
+# aus Gebot und Nachfrage traegt eine Unsicherheit von ± Spannweite/2. Ist
+# Spannweite/2 groesser als 3 Punkte, ist der Mittelkurs unsicherer als der
+# kleinste Unterschied, den wir ueberhaupt als Richtung ausweisen — dann kann
+# er eine solche Aussage nicht stuetzen. Daraus 2 x 3 Punkte = 0,06.
+#
+# WAS DIESE ZAHL NICHT IST: eine Messung der tatsaechlichen Spannweiten auf
+# Polymarket. Die liesse sich auf der Spalte `spread` in `polymarket_prices`
+# erheben, sobald die Daten erreichbar sind (TODO in docs/POLYMARKET.md). Die
+# Gebuehrentabelle aus docs/research/PREDICTION_MARKETS_2026-10.md taugt dafuer
+# NICHT: 2,75-3,00 Cent sind eine Gebuehrenschwelle fuer Arbitrage, kein Mass
+# fuer Quotenqualitaet — das waere dieselbe Kategorienverwechslung wie ein
+# Median neben einer Wahrscheinlichkeit.
+SPREAD_GRENZE = 0.06
+
+# Die Preisarten. Sie sagen, WORAUS der Preis entstand — nicht, wie gut er ist.
+# Die Breite steht getrennt in `spread`, und die Bewertbarkeit ergibt sich aus
+# beidem (plus Alter und Marktstatus). Ein Begriff je Spalte.
+PREISART_MID = "mid"
+PREISART_BID = "bid_only"
+PREISART_ASK = "ask_only"
+PREISART_TRADE = "last_trade"
+PREISART_HISTORIE = "history"
+PREISART_UNBEKANNT = "unbekannt"
+
+# Die Preisarten, aus denen ueberhaupt eine Bewertung entstehen darf. Eine
+# einseitige Quote nennt keinen Markt-Mittelkurs, und der letzte Trade kann
+# beliebig alt sein — beide bleiben sichtbar, aber gekennzeichnet.
+PREISARTEN_BEWERTBAR = frozenset({PREISART_MID})
+
+
+def bewerte_quote(market: dict) -> dict:
+    """Prueft die Quote eines Gamma-Markets und sagt, was daraus folgt.
+
+    Returns immer ein dict:
+        status    'ok' | 'kein_preis' | 'verworfen'
+        grund     Kurzkennung bei 'verworfen'/'kein_preis', sonst None
+        snapshot  dict (nur bei 'ok'), sonst None
+
+    Warum drei Zustaende und nicht nur „Preis oder nicht": ein VERWORFENER
+    Abruf muss den zuletzt gespeicherten Preis entwerten koennen. Bisher fuehrte
+    beides zu `continue`, die alte Zeile blieb stehen und galt weiter als
+    jung — auch wenn das Buch inzwischen gekreuzt war (Codex, Entwurfspruefung
+    zu Phase B).
     """
     if not isinstance(market, dict):
-        return None
+        return {"status": "kein_preis", "grund": "kein_markt", "snapshot": None}
 
     best_bid = _safe_float(market.get("bestBid"))
     best_ask = _safe_float(market.get("bestAsk"))
     last = _safe_float(market.get("lastTradePrice"))
 
+    # `_safe_float` verwirft nicht-endliche Werte bereits; der Wertebereich ist
+    # eine eigene Frage. Eine Wahrscheinlichkeit ausserhalb 0..1 ist keine.
+    def _im_band(x):
+        return x is not None and 0.0 <= x <= 1.0
+
+    if best_bid is not None and not _im_band(best_bid):
+        return {"status": "verworfen", "grund": "gebot_ausserhalb", "snapshot": None}
+    if best_ask is not None and not _im_band(best_ask):
+        return {"status": "verworfen", "grund": "nachfrage_ausserhalb", "snapshot": None}
+
     spread = None
     if best_bid is not None and best_ask is not None:
-        mid = (best_bid + best_ask) / 2
+        # Ein gekreuztes Buch ist ein Messfehler, kein Preis. Gemittelt ergab
+        # Bid 0,80 / Ask 0,20 einen Preis von 0,50 mit Spannweite -0,60.
+        if best_bid > best_ask:
+            return {"status": "verworfen", "grund": "buch_gekreuzt", "snapshot": None}
+        preis = (best_bid + best_ask) / 2
         spread = best_ask - best_bid
+        art = PREISART_MID
     elif best_bid is not None:
-        mid = best_bid
+        preis, art = best_bid, PREISART_BID
     elif best_ask is not None:
-        mid = best_ask
+        preis, art = best_ask, PREISART_ASK
     elif last is not None:
-        mid = last
+        if not _im_band(last):
+            return {"status": "verworfen", "grund": "trade_ausserhalb", "snapshot": None}
+        preis, art = last, PREISART_TRADE
     else:
-        return None
+        return {"status": "kein_preis", "grund": "keine_quote", "snapshot": None}
 
     return {
-        "yes_price": round(mid, 4),
-        "spread": round(spread, 4) if spread is not None else None,
-        "volume_24h": _safe_float(market.get("volume24hr")),
+        "status": "ok",
+        "grund": None,
+        "snapshot": {
+            "yes_price": round(preis, 4),
+            "spread": round(spread, 4) if spread is not None else None,
+            "volume_24h": _safe_float(market.get("volume24hr")),
+            "price_kind": art,
+            "bid": round(best_bid, 4) if best_bid is not None else None,
+            "ask": round(best_ask, 4) if best_ask is not None else None,
+        },
     }
+
+
+def quote_zu_breit(snapshot: dict | None) -> bool:
+    """Ist die Spannweite so gross, dass der Mittelkurs keine Bewertung traegt?
+
+    Getrennt von `bewerte_quote`, weil eine breite Quote KEIN Messfehler ist:
+    sie wird gespeichert und angezeigt, nur nicht bewertet. Herleitung der
+    Grenze siehe SPREAD_GRENZE.
+    """
+    if not isinstance(snapshot, dict):
+        return False
+    sp = snapshot.get("spread")
+    return sp is not None and sp > SPREAD_GRENZE
+
+
+def market_to_price_snapshot(market: dict) -> dict | None:
+    """Preis-Snapshot aus dem Gamma-Market-Response.
+
+    Duenne Huelle um `bewerte_quote`, damit der bisherige Rueckgabevertrag
+    erhalten bleibt (dict oder None). Wer den Grund braucht — und der Refresh
+    braucht ihn, um einen verworfenen Abruf von einem fehlenden zu
+    unterscheiden — ruft `bewerte_quote` direkt.
+    """
+    return bewerte_quote(market).get("snapshot")
 
 
 def fetch_current_price(condition_id: str) -> dict | None:

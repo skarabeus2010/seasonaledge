@@ -47,6 +47,11 @@ jobs:
       # Eine Textkorrektur ohne neue Cache-Kennung erreicht den Leser nicht:
       # i18n.js legt das Woerterbuch unter sa-i18n-<_JSON_VER> ab. Ein
       # wiederkehrender Besucher las sonst weiter die alte Fassung.
+      # Phase B1: die Preisqualitaet am Erzeuger. Prueft OHNE Datenbank —
+      # dass die Migration gelaufen ist, kann er nicht sehen; dafuer sind
+      # die Abnahmeabfragen in scripts/sql/polymarket_schema_2026_10.sql da.
+      - name: Waechter - Preisqualitaet auf /polymarket
+        run: python3 scripts/verify_polymarket_preisqualitaet.py
       - name: Waechter - Cache-Kennung der Woerterbuecher
         run: python3 scripts/verify_i18n_cache_version.py
       - name: Waechter - Commit-Bindung des Deploys

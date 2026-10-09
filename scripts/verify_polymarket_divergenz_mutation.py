@@ -20,7 +20,15 @@ from __future__ import annotations
 import io
 import re
 import subprocess
+import pathlib
 import sys
+
+# Atomares Schreiben mit Wiederholung — IMPORTIERT, nicht kopiert.
+# Ohne flush/fsync/os.replace liest der Unterprozess unter Windows
+# gelegentlich noch den alten Inhalt, und der Test wird nicht
+# deterministisch (beobachtet am 2026-10-09).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from scripts.verify_twins_mutation import _atomar_schreiben  # noqa: E402
 
 if hasattr(sys.stdout, 'reconfigure'):          # cp1252 kann die
     sys.stdout.reconfigure(encoding='utf-8')     # Mutationsnamen nicht
@@ -140,11 +148,11 @@ def bewerte(datei, alt, neu, erwartet=None):
     n = ROH[datei].count(a)
     if n != 1:
         return 'kein-anker', 'Anker %dx gefunden, erwartet 1x' % n
-    io.open(datei, 'wb').write(ROH[datei].replace(a, anker(datei, neu), 1))
+    _atomar_schreiben(pathlib.Path(datei), ROH[datei].replace(a, anker(datei, neu), 1))
     try:
         r = subprocess.run(['node', PROBE], capture_output=True, text=True)
     finally:
-        io.open(datei, 'wb').write(ROH[datei])
+        _atomar_schreiben(pathlib.Path(datei), ROH[datei])
     ausgabe = (r.stdout or '') + (r.stderr or '')
     if r.returncode == 0:
         return 'entwischt', 'Probe blieb gruen'
@@ -192,8 +200,7 @@ try:
             klassifizierer_ok = False
 finally:
     for d, b in ROH.items():
-        io.open(d, 'wb').write(b)
-
+        _atomar_schreiben(pathlib.Path(d), b)
 for d, b in ROH.items():
     assert io.open(d, 'rb').read() == b, 'WIEDERHERSTELLUNG FEHLGESCHLAGEN: ' + d
 nach = subprocess.run(['node', PROBE], capture_output=True, text=True)

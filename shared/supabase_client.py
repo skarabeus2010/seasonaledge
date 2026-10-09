@@ -598,28 +598,68 @@ def upsert_polymarket_prices(records: list[dict]):
         ).execute()
 
 
-def fetch_polymarket_latest_prices(condition_ids: list[str] | None = None) -> list[dict]:
+def update_polymarket_fetch_state(records: list[dict]):
+    """Haelt je Markt fest, wie der letzte Preisabruf ausging.
+
+    Erwartet dicts mit condition_id, last_fetch_state, last_fetch_at.
+
+    Warum das gebraucht wird: ein gescheiterter oder verworfener Abruf muss den
+    zuletzt gespeicherten Preis ENTWERTEN koennen. Ohne diesen Zustand bleibt
+    eine noch junge Preiszeile bewertbar, obwohl der letzte Abruf ein
+    gekreuztes Buch gesehen hat — ein reiner Zeitvergleich merkt das nicht.
+
+    Bewusst ein UPDATE je Markt und kein Upsert: ein Upsert auf
+    `condition_id` wuerde bei einem unbekannten Markt eine halbe Katalogzeile
+    ANLEGEN (ohne slug, question, category — alle NOT NULL), und das schlaegt
+    entweder fehl oder erzeugt Datenmuell. Der Katalog wird vom
+    Discovery-Lauf gepflegt, nicht hier.
     """
-    Neueste Preis-Zeile pro Markt. Nutzt Supabase-RPC (falls definiert) oder
-    pragmatisch: alle Markets + join auf max(ts) via view. Fuer V1 reicht der
-    simple Weg: Fuer jeden condition_id das letzte Row holen.
+    if not records:
+        return
+    client = get_client()
+    for r in records:
+        cid = r.get("condition_id")
+        if not cid:
+            continue
+        client.table("polymarket_markets").update({
+            "last_fetch_state": r.get("last_fetch_state"),
+            "last_fetch_at": r.get("last_fetch_at"),
+        }).eq("condition_id", cid).execute()
+
+
+def fetch_polymarket_latest_prices(condition_ids: list[str] | None = None) -> list[dict]:
+    """Neueste Preiszeile je Markt — serverseitig bestimmt.
+
+    Ruft die Datenbankfunktion `polymarket_latest_prices` aus der Migration
+    scripts/sql/polymarket_schema_2026_10.sql.
+
+    Die vorherige Fassung hatte denselben Fehler wie das Frontend: sie holte
+    die letzten 7 Tage mit `limit(5000)` und suchte in Python den neuesten
+    Eintrag je Markt. Zwei Folgen, beide gemessen von Codex: ein haeufig
+    aktualisierter Markt konnte einen selten aktualisierten vollstaendig aus
+    der Antwort draengen, und ein Markt ohne Zeile in den letzten sieben Tagen
+    fiel grundsaetzlich heraus. Beides endete im Verbraucher als Preis 0.
+
+    KEIN stiller Rueckfall auf den alten Weg, wenn die Funktion fehlt: ein
+    Rueckfall haette den Fehler weitergetragen, und das Projekt hat fuer
+    stille Rueckfaelle schon bezahlt. Stattdessen eine Meldung, die sagt, was
+    zu tun ist.
     """
     client = get_client()
-    if condition_ids:
-        q = client.table("polymarket_prices").select("*").in_("condition_id", condition_ids)
-    else:
-        q = client.table("polymarket_prices").select("*")
-    # Pragmatisch: letzte 7 Tage ziehen, dann in Python reduzieren
-    # (Supabase kann kein GROUP BY direkt; fuer UI-Load ist das ok)
-    from datetime import datetime, timedelta, timezone
-    since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    rows = q.gte("ts", since).order("ts", desc=True).limit(5000).execute().data or []
-    latest: dict[str, dict] = {}
-    for r in rows:
-        cid = r.get("condition_id")
-        if cid and cid not in latest:
-            latest[cid] = r
-    return list(latest.values())
+    try:
+        antwort = client.rpc(
+            "polymarket_latest_prices",
+            {"p_condition_ids": list(condition_ids) if condition_ids else None},
+        ).execute()
+    except Exception as e:
+        raise RuntimeError(
+            "polymarket_latest_prices ist nicht aufrufbar. Wurde "
+            "scripts/sql/polymarket_schema_2026_10.sql im Supabase-SQL-Editor "
+            "ausgefuehrt? Falls ja und der Fehler bleibt: PostgREST haelt das "
+            "Schema im Speicher — `NOTIFY pgrst, 'reload schema';` nachziehen. "
+            f"Urspruenglicher Fehler: {e}"
+        ) from e
+    return antwort.data or []
 
 
 def fetch_polymarket_price_history(
