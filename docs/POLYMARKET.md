@@ -434,6 +434,31 @@ Am Dateiende stehen **acht Abnahmeabfragen**. „Keine Fehlermeldung" ist kein
 Nachweis: darunter ein echter Lauf in der Rolle `anon` mit `ROLLBACK` und ein
 `curl` ueber HTTP — das Privileg zu HABEN ist nicht dasselbe wie durchzukommen.
 
+### Abnahme der Migration (2026-10-09, auf der laufenden Datenbank, LESEND)
+
+Der Nutzer hat die Migration ausgefuehrt. „Erledigt" ist kein Nachweis —
+nachgemessen wurde ueber `docker exec seasonalpha-app` auf dem Server, ohne
+einen einzigen Schreibzugriff:
+
+| Punkt | Ergebnis |
+|---|---|
+| Acht neue Spalten | alle da |
+| Bestand | **16.381** Preiszeilen, **0** klassifiziert — die Migration hat keine Preisart erfunden |
+| Bestand ausserhalb 0..1 | `yes_price>1`: 0 · `yes_price<0`: 0 · `spread<0`: 0 |
+| Funktion `polymarket_latest_prices(NULL)` | 26 Zeilen, 26 verschiedene Maerkte — genau eine je Markt |
+| Gegenprobe gegen die Tabelle | 26 von 26 geprueft, **0 Abweichungen** |
+| Weg des Frontends (HTTP, Anon-Key) | **HTTP 200**, 26 Zeilen — PostgREST sieht die Funktion |
+
+Zwei Beobachtungen am Bestand, die zur Einordnung gehoeren:
+
+- **Kein gespeichertes gekreuztes Buch.** Der Defekt war im Code real (Bid 0,80
+  / Ask 0,20 ergab 0,50 mit Spannweite −0,60, im Test reproduziert), hat sich
+  in den 16.381 Zeilen aber nicht niedergeschlagen. Die Wertebereichspruefung
+  koennte deshalb spaeter verschaerft werden; das ist eine eigene Migration.
+- Die juengste Zeile tragt `source = "clob"` und `price_kind = NULL` — die
+  bekannte Altlast (neue Snapshots schreiben `gamma-snapshot`) und der
+  gewollte Zustand vor dem Deploy.
+
 ### B1 — Preisqualitaet am Erzeuger (erledigt)
 
 `bewerte_quote()` in `shared/polymarket_data.py` liefert einen von **drei**
