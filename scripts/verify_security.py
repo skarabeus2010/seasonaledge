@@ -63,7 +63,7 @@ UNGEPRUEFT = "UNGEPRÜFT"
 OEFFENTLICHE_TABELLEN = {
     "prices", "monthly_stats", "scanner_results", "stress_laeufe", "stress_scores",
     "tdom_stats", "tdoy_stats", "tickers", "historical_cpi",
-    "spot_vol_beta", "market_events", "seasonality", "ki_scores",
+    "spot_vol_beta", "market_events", "seasonality",
     "central_bank_dates", "dividend_events", "earnings_events",
     "polymarket_markets", "polymarket_prices",
     "polymarket_resolved_markets", "polymarket_resolved_prices",
