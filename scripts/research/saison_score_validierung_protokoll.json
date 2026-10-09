@@ -1,0 +1,247 @@
+{
+  "erstellt": "2026-10-09T12:50:11+00:00",
+  "bezeichnung": "historische Walk-forward-Auswertung nach Methodenrevision (kein Bestätigungstest)",
+  "commit": "28a58a1abc15b2ca42d121813fe9fae385b90378",
+  "kern_sha256": {
+    "shared/saison_score.py": "d4def89ee50d21ea61e07da6c7178aae8d18aa8dda2a6266e908c0426a2eca31",
+    "landing/js/saison-score.js": "fda8cf4fa505fde06fa3bd8c9992de2919c482996bd47961ef38ea836b84bc2a",
+    "shared/calculations.py": "724dd95237be48f4cae4f8c6dacabed943a3a9b360ae0c5a5824d602a3be2669"
+  },
+  "skript_sha256": "f397080f883f86adf6093027bcb433dc8aae210a552ad00b003ff8be1efac0f9",
+  "parameter": {
+    "seed": 20261009,
+    "ziehungen": 2000,
+    "abschnitt_a": [
+      "2010-01-01",
+      "2025-12-31"
+    ],
+    "abschnitt_b": [
+      "1960-01-01",
+      "2009-12-31"
+    ],
+    "b_reihen": [
+      "^GSPC",
+      "^DJI"
+    ],
+    "raster": 5,
+    "min_beob": 100,
+    "min_jahre": 8,
+    "min_beob_ziehung": 10,
+    "max_verworfen": 0.05,
+    "horizont_kt": 30
+  },
+  "methode": "saison_v1",
+  "snapshot": "C:\\Users\\HeikoSeibel\\AppData\\Local\\Temp\\claude\\C--dev-Seasonaledge\\b1245851-7084-4449-b6ab-61b4ed04fde7\\scratchpad\\pv_kurse",
+  "manifest": {
+    "^GSPC": {
+      "datei": "_GSPC.json",
+      "sha256": "3e37d6c6c2d66ed98149775e8f0ce67a8fef05962b0072e696021276489cb622"
+    },
+    "^DJI": {
+      "datei": "_DJI.json",
+      "sha256": "14c5ff27be9873aa5e123de9010884b82b13f84bfc8c0e19d28a8b721eb142cc"
+    },
+    "^GDAXI": {
+      "datei": "_GDAXI.json",
+      "sha256": "f995bd425a5d9a6282ca1374c65c564d36ea019d9684d929dd759b1726052ab5"
+    },
+    "SPY": {
+      "datei": "SPY.json",
+      "sha256": "7420f035047506cfbbe764099ea9b6f3c97d9a16d54b261e08e09ee3fe7bc240"
+    },
+    "QQQ": {
+      "datei": "QQQ.json",
+      "sha256": "55f5ce97c7f4ec3c43203e988d2425af4ae3e4984b3ec15d30ff80df828ef05a"
+    },
+    "CNXT": {
+      "datei": "scripts\\research\\.cache\\CNXT.json",
+      "sha256": "948b92adb9e6ce01d8a9439f6c284e2f37c78edeeb99ab7603fa07236fa46d8e"
+    },
+    "DIA": {
+      "datei": "scripts\\research\\.cache\\DIA.json",
+      "sha256": "88dd3fefc95417a77a4b8a0d2fede97121c6feabd9ba86fdf832529c055bd265"
+    },
+    "ETHA": {
+      "datei": "scripts\\research\\.cache\\ETHA.json",
+      "sha256": "eb8bd2a52649a0b96d5011c621f774c480c119240fb75453feea31b9df421b61"
+    },
+    "GDX": {
+      "datei": "scripts\\research\\.cache\\GDX.json",
+      "sha256": "3099848e9be554705bcbb376fdb195510118ed57826733ace5dae85bc24d0daf"
+    },
+    "GLD": {
+      "datei": "scripts\\research\\.cache\\GLD.json",
+      "sha256": "1e0683caa212b95c9bc8319add8fe374618b5958e90c805e270b65264ed54c51"
+    },
+    "IBIT": {
+      "datei": "scripts\\research\\.cache\\IBIT.json",
+      "sha256": "0ef2a37ac6df49935528d889ea2fcc1d4b1103815eff8af088fe254a4b1457ec"
+    },
+    "IGV": {
+      "datei": "scripts\\research\\.cache\\IGV.json",
+      "sha256": "6eb69a116a40376d4c2e9e25576e7697a6f982bfa2e7303189426a0d4c6610d1"
+    },
+    "ITB": {
+      "datei": "scripts\\research\\.cache\\ITB.json",
+      "sha256": "8581387eb0a6a9c1de2cb5fcea162be74c208ef316be00603e15991d687a1fb7"
+    },
+    "IWM": {
+      "datei": "scripts\\research\\.cache\\IWM.json",
+      "sha256": "4aaf0e59af9f37e43992e5b708eecf36f0165b3c7e7076b735890d385d83ccf9"
+    },
+    "IYT": {
+      "datei": "scripts\\research\\.cache\\IYT.json",
+      "sha256": "8685addd99e495923885cfce1faa68a459db224f00dd5ed57a1177d1048d7ac1"
+    },
+    "KRE": {
+      "datei": "scripts\\research\\.cache\\KRE.json",
+      "sha256": "84067601b7fe0e4f3d6dd8067eae208db61375d09cf316ffa1e33834e25ba846"
+    },
+    "KWEB": {
+      "datei": "scripts\\research\\.cache\\KWEB.json",
+      "sha256": "3510b021fdfae7b6d93aa31582280a0e3760975464c0d9aa35c86e60c8d0eccd"
+    },
+    "MAGS": {
+      "datei": "scripts\\research\\.cache\\MAGS.json",
+      "sha256": "d9cf389426cf58be74505f2b52765b2f2bf6cd181872e27fb862b7c732ddd9fc"
+    },
+    "RSP": {
+      "datei": "scripts\\research\\.cache\\RSP.json",
+      "sha256": "5dab10ac8843a76ceef0304cdf79e178fe016fdf0068345d6678ecb011a2d982"
+    },
+    "SLV": {
+      "datei": "scripts\\research\\.cache\\SLV.json",
+      "sha256": "e09a899b0b3c64d8430a20a1597866413476819402ea4d35c62f7155fce47b6e"
+    },
+    "SMH": {
+      "datei": "scripts\\research\\.cache\\SMH.json",
+      "sha256": "c612d950c343a496e92ee890199a85810152be09db0c255bd07da2fd50e99515"
+    },
+    "SOXX": {
+      "datei": "scripts\\research\\.cache\\SOXX.json",
+      "sha256": "6b8a21afe0656c455db5444da2fe8c7493225e14de6daed9a67611c5bd406c59"
+    },
+    "TAN": {
+      "datei": "scripts\\research\\.cache\\TAN.json",
+      "sha256": "b91fe7684d74a9ce43091e0c8ef421961c808eee03580239f10d3209a585e9c5"
+    },
+    "TLT": {
+      "datei": "scripts\\research\\.cache\\TLT.json",
+      "sha256": "a94f97f2d7ccfa0e17986af5ffd8ee1ccdcd6597b8ae065e9bf7dfd7cd785af5"
+    },
+    "URA": {
+      "datei": "scripts\\research\\.cache\\URA.json",
+      "sha256": "01cdf934025ef1d2da4f7e67e675d169dcc2d241ba6a0fc407f70abddaa5edd7"
+    },
+    "USO": {
+      "datei": "scripts\\research\\.cache\\USO.json",
+      "sha256": "039e091e24a9ab9827968065f66607a920eb7b9eac1ca263c83432a504e871d8"
+    },
+    "XBI": {
+      "datei": "scripts\\research\\.cache\\XBI.json",
+      "sha256": "238fe02812b84b04dc937afc5b90ccdd5f03820ed7ada4cda53ea21f4b6373b7"
+    },
+    "XHB": {
+      "datei": "scripts\\research\\.cache\\XHB.json",
+      "sha256": "be2192852c4bd16b3a2371c2f7e569783409cde2795683d785e6a5dec8824982"
+    },
+    "XLB": {
+      "datei": "scripts\\research\\.cache\\XLB.json",
+      "sha256": "e88608068bb6ef0b36da495828c4352c840671614153cfb8c1282cdf2f65fef4"
+    },
+    "XLC": {
+      "datei": "scripts\\research\\.cache\\XLC.json",
+      "sha256": "60a1aadd6798cf51573f35bf1c131bcd13991f9cedc6887346464dfbabd74343"
+    },
+    "XLE": {
+      "datei": "scripts\\research\\.cache\\XLE.json",
+      "sha256": "537a3815c30145947f64f659d5fe36ddce81e57c4dbdecf1adb1b9347d0da27a"
+    },
+    "XLF": {
+      "datei": "scripts\\research\\.cache\\XLF.json",
+      "sha256": "b43d22afbe09b62d781d8f1e6dc9b69d05f04bdcbffe2c309e37cf6835c7623f"
+    },
+    "XLI": {
+      "datei": "scripts\\research\\.cache\\XLI.json",
+      "sha256": "e6d2e310d0ed26ceec438cac3c3937573c159d8b8e5caba259cd3fa49e949e8c"
+    },
+    "XLK": {
+      "datei": "scripts\\research\\.cache\\XLK.json",
+      "sha256": "75000109fe5933021e28a94f042b9b6129aed35d61431ecf68ba812fb233f7ec"
+    },
+    "XLP": {
+      "datei": "scripts\\research\\.cache\\XLP.json",
+      "sha256": "e609a0304a0c58f047f6796317e513d544801fd07199b5976bd07ec79bbbcaf2"
+    },
+    "XLRE": {
+      "datei": "scripts\\research\\.cache\\XLRE.json",
+      "sha256": "e9a22c3736c953f57cf1111da64f391caae3e494eed3a6c2547cbaa8c05205a5"
+    },
+    "XLU": {
+      "datei": "scripts\\research\\.cache\\XLU.json",
+      "sha256": "11af12b7f1c1f0f9a2c028c1b453a970ab67a4bcf106de9511c83839ce5ee5e9"
+    },
+    "XLV": {
+      "datei": "scripts\\research\\.cache\\XLV.json",
+      "sha256": "88802f128d9492232865355c84475ae40658fb07e7b12fca344a969286dc7151"
+    },
+    "XLY": {
+      "datei": "scripts\\research\\.cache\\XLY.json",
+      "sha256": "9ea7b41d58f2aef50b1933cf5758633ad087cb9037f81802d9ced18e5393b220"
+    },
+    "XME": {
+      "datei": "scripts\\research\\.cache\\XME.json",
+      "sha256": "77fc282c9c76fcb68de379b5665897dffe598add6123aa0041ce141028d9b112"
+    },
+    "XOP": {
+      "datei": "scripts\\research\\.cache\\XOP.json",
+      "sha256": "b7bd224a49ed62c3586ca95214f530cffbdab3742f270c5d5d3932f081101280"
+    },
+    "XRT": {
+      "datei": "scripts\\research\\.cache\\XRT.json",
+      "sha256": "1bf7c8c99ba2e802d110913db3832bcca2a4d282f163eb21b16d5d495a889951"
+    },
+    "XSD": {
+      "datei": "scripts\\research\\.cache\\XSD.json",
+      "sha256": "0ca3751cf167b3e96f0d7f013f7a6945660d993ca6c4de4de98bee3a29c712ca"
+    }
+  },
+  "abschnitt_a": [
+    "2010-01-01",
+    "2025-12-31"
+  ],
+  "abschnitt_b": {
+    "zeitraum": [
+      "1960-01-01",
+      "2009-12-31"
+    ],
+    "reihen": [
+      "^GSPC",
+      "^DJI"
+    ]
+  },
+  "raster_handelstage": 5,
+  "auswertbar": {
+    "min_beobachtungen": 100,
+    "min_jahre": 8,
+    "nicht_konstant": true
+  },
+  "primaer": "Mittel der Spearman je Reihe (gleich gewichtet), score_roh vs. Ziel, Abschnitt A",
+  "bootstrap": {
+    "ziehungen": 2000,
+    "seed": 20261009,
+    "block": "Kalenderjahr, dieselben Jahre für alle Reihen",
+    "min_beob_je_reihe_und_ziehung": 10,
+    "max_verworfen": 0.05,
+    "intervall": "Perzentil 2,5/97,5"
+  },
+  "sekundaer": "gepaart: Score vs. 5·(B1+B2), Differenz der Mittel, dieselben Tage/Ziehungen",
+  "gueltigkeit": "je Kennzahl getrennt: primär nach Score/Ziel, gepaart nach beiden Scores/Ziel, explorativ je Baustein",
+  "positivrate": "je Reihe k/n Ziel > 0; Mittel der Raten (gleich gewichtet); explorativ oberstes Score-Quintil",
+  "explorativ": [
+    "B1–B4 einzeln",
+    "Quintile je Reihe (Mittelrang)",
+    "Abschnitt B"
+  ],
+  "aussage": "nur Rangzusammenhang ja/nein mit Zahlen; keine Rückkehr der Richtungsetiketten"
+}
