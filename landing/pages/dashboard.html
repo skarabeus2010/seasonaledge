@@ -286,7 +286,7 @@
         <!-- Anomalie-Radar (2 cols) -->
         <div class="bento-card bento-anomaly" id="card-anomaly">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar" data-i18n-aria="dash.aria_anomaly">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_anomaly"><b>Anomalie-Radar</b> — Misst wie stark die Rendite der letzten 10 Handelstage vom historischen Mittel am gleichen Kalender-Fenster abweicht. <b>Grün</b> = ungewöhnlich stark, <b>Rot</b> = ungewöhnlich schwach. Nützlich als Contrarian-Hinweis bei Extremwerten.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_anomaly"><b>Anomalie-Radar</b> — Rendite der letzten 10 Handelstage gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren. <b>z</b> = Abstand zum Mittel in Standardabweichungen (mit Vorzeichen); ab |z| 1,33 auffällig, ab 2,33 stark auffällig. Beschreibt die jüngste Bewegung, keine Prognose.</div>
           <div class="ttl" data-i18n="dash.anomaly_title"><span class="ico">📡</span> Anomalie</div>
           <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
@@ -382,7 +382,7 @@
           <ul>
             <li data-i18n-html="dash.method_ki"><b>KI Composite Score (0-10)</b>: Gewichteter Mix aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking zur Saisonalität). Bullish ≥6.5, Neutral, Bearish ≤3.5. Berechnung wie auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
             <li data-i18n-html="dash.method_crash"><b>Stress-Ampel (0-100)</b>: Stress-Maß = 0,3 × Volatilität (5 Tage) + 0,3 × Volatilität (20 Tage) + 0,4 × Abstand vom 20-Tage-Hoch; Score = Rang gegen die vorangegangenen bis zu 2.520 Handelstage des <b>gleichen Tickers</b> (mindestens 756). Schwellen: ab 70 gelb, ab 90 rot.</li>
-            <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: Z-Score der letzten 10d-Rendite vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. Stark anomal ≥70.</li>
+            <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: 10-Tage-Rendite (10 Tagesrenditen) gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren (mind. 10); z mit Stichproben-Standardabweichung, Rang mit halben Gleichständen. Auffällig ab |z| 1,33, stark auffällig ab 2,33 (gesetzte Schwellen).</li>
             <li data-i18n-html="dash.method_year"><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
             <li data-i18n-html="dash.method_tdom_curve"><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
             <li data-i18n-html="dash.method_truepath"><b>TruePath</b>: Gewichteter Ø der Top-5 ähnlichsten historischen Jahre (Pearson-Korrelation auf den Verlauf bis heute) + 30d-Forward-Projektion.</li>
@@ -818,8 +818,7 @@
         // Find vola value at today's DOY
         var tdLast=NaN;
         for(var k=0;k<rs.length-1;k++){
-          var d=new Date(rs[k+1].date);
-          var doy=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);
+          var doy=SA.seasonal.tagNummer(rs[k+1].date);
           if(doy>td)break;
           if(!isNaN(vola[k]))tdLast=vola[k];
         }
@@ -1434,19 +1433,7 @@
     // ── 3. Anomalie-Radar Card ───────────────────────────────────
     function renderAnomalyCard(anom) {
       var el = document.getElementById('anomaly-content');
-      if (!anom) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">...</p>'; return; }
-      var col = anom.score >= 70 ? '#f87171' : anom.score >= 40 ? '#fbbf24' : '#34d399';
-      var icon = anom.score >= 70 ? '🔴' : anom.score >= 40 ? '🟡' : '🟢';
-      var label = anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal';
-      var retCls = anom.return_10d >= 0 ? 'green' : 'red';
-      var html = '<div class="anomaly-score-big" style="color:' + col + '">' + anom.score + '<span style="font-size:1rem;color:#8899aa"> / 100</span></div>';
-      html += '<div class="anomaly-status" style="color:' + col + '">' + icon + ' ' + label + '</div>';
-      html += '<div class="kpi-row-mini">' +
-        '<div class="kpi"><div class="kpi-label">10d-Rendite</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d,2) + '</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Historisch Ø</div><div class="kpi-value">' + fmtPct(anom.avg_10d,2) + '</div></div>' +
-      '</div>';
-      html += '<p style="color:#8899aa;font-size:.6875rem;text-align:center;margin-top:.5rem">Basis: ' + anom.n_comparisons + ' Vergleichsfenster</p>';
-      el.innerHTML = html;
+      el.innerHTML = SA.decadeCompute.anomalieHtml(anom, currentTicker, 'karte');
     }
 
     // ── 4. Year-Chart (Fokus: heute -1 Monat bis +3 Monate) ──────
@@ -2100,9 +2087,8 @@
 
       // 3. Anomalie-Radar via SA.decadeCompute
       try {
-        var decade = SA.decadeCompute.fromPrices(rawRows, currentTicker);
-        renderAnomalyCard(decade ? decade.anomaly : null);
-      } catch(e) { console.warn('Anomaly:', e); renderAnomalyCard(null); }
+        renderAnomalyCard(SA.decadeCompute.anomalie(rawRows, currentTicker));
+      } catch(e) { console.warn('Anomaly:', e); renderAnomalyCard({ status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }); }
 
       // 4. Year-Chart
       renderYearChart(yearData, avg, currentTicker);

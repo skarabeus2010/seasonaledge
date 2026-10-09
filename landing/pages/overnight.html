@@ -116,9 +116,9 @@
       <p class="page-caption" data-i18n="ov.page_caption">Wo entsteht die Performance &mdash; nachts (Close&rarr;Open) oder tags&uuml;ber (Open&rarr;Close)?</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
-      <!-- Anomalie-Radar (KI Quick-Check) -->
+      <!-- Anomalie-Radar -->
       <details open id="sec-anomaly" style="display:none">
-        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -313,7 +313,7 @@
           date: rows[i].date,
           month: m,
           weekday: dow - 1, // 0=Mo..4=Fr
-          doy: Math.floor((d - new Date(y, 0, 1)) / 86400000) + 1,
+          doy: SA.decadeCompute._dayOfYear(rows[i].date),   // UTC aus dem Datumstext (Sommerzeit verschob um 1)
           overnight: (open / prevClose - 1) * 100,
           intraday: (close / open - 1) * 100,
           total: (close / prevClose - 1) * 100

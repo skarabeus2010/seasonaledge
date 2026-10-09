@@ -306,6 +306,18 @@ SA.seasonal = {
    * @param {Array} rows - [{date, close, log_return}]
    * @returns {Object} {year: {full_365: [365 values], last_actual_day: n, simpleReturn: %}}
    */
+  /**
+   * Tagesnummer (1…366) aus "YYYY-MM-DD" — rein aus dem Datumstext in UTC gerechnet.
+   * Vorher: `new Date(iso)` (= UTC-Mitternacht) minus `new Date(jahr, 0, 0)` (= LOKALE Mitternacht) → in Zeitzonen
+   * westlich von UTC (z. B. New York) eine Tagesnummer zu wenig, d. h. alle Saisonkurven um einen Tag verschoben
+   * (Codex-Planprüfung Saison-Score v2, 2026-10-09). Gegenstück in Python: pandas `dayofyear`.
+   */
+  tagNummer: function(iso) {
+    var s = String(iso).substring(0, 10);
+    var y = +s.substring(0, 4), m = +s.substring(5, 7), d = +s.substring(8, 10);
+    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86400000);
+  },
+
   buildYearData: function(rows) {
     var yearGroups = {};
     for (var i = 0; i < rows.length; i++) {
@@ -338,11 +350,7 @@ SA.seasonal = {
       }
       if (verwerfen) continue;
       // Day-of-Year fuer jeden Eintrag
-      var days = yRows.map(function(r) {
-        var d = new Date(r.date);
-        var jan1 = new Date(d.getFullYear(), 0, 0);
-        return Math.floor((d - jan1) / 86400000);
-      });
+      var days = yRows.map(function(r) { return SA.seasonal.tagNummer(r.date); });
       // Interpolieren auf 365 Kalendertage
       var full365 = SA.seasonal._interpolateTo365(days, cumulative);
       var simpleReturn = full365[364] > 0 ? (full365[364] / full365[0] - 1) * 100 : 0;

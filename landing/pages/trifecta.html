@@ -358,9 +358,7 @@
         for(var i=0;i<rawRows.length;i++){if(rawRows[i].date.substring(0,4)===String(CURRENT_YEAR))cyDays.push(i)}
         if(cyDays.length>0){
           // Letzter Handelstag → Kalendertag des Jahres (x-Achse ist Kalendertag 1-365)
-          var lastD=new Date(rawRows[cyDays[cyDays.length-1]].date);
-          var jan0=new Date(lastD.getFullYear(),0,0);
-          var lastCalDay=Math.floor((lastD-jan0)/86400000);
+          var lastCalDay=SA.seasonal.tagNummer(rawRows[cyDays[cyDays.length-1]].date);
           var cyData=[];
           for(var d=0;d<lastCalDay&&d<365;d++) cyData.push({x:d+1,y:Math.round((cy[d]-100)*100)/100});
           series.push({name:CURRENT_YEAR+' (aktuell)',data:cyData,color:'#FFD700'});

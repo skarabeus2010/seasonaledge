@@ -126,7 +126,7 @@
   "common.window": "Fenster",
   "common.loading": "Lade Daten…",
 
-  "section.anomaly_radar": "Anomalie-Radar (KI Quick-Check)",
+  "section.anomaly_radar": "Anomalie-Radar",
   "section.significance_test": "Signifikanztest",
   "section.detrend": "Detrend-Indikator / Saisonaler Druck",
   "section.heatmap_month_offset": "Heatmap: Monat × Offset",
@@ -317,14 +317,6 @@
   "hol.days_after": "Tage nach Feiertag",
 
   "dc.not_recovered": "nicht erholt",
-  "dc.anomaly_unavailable": "Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).",
-  "dc.status_strongly_anomalous": "Stark anomal",
-  "dc.status_slightly_anomalous": "Leicht anomal",
-  "dc.status_normal": "Normal",
-  "dc.percentile_rank": "Perzentil-Rang",
-  "dc.percentile_suffix": ". Perzentil",
-  "dc.return_10d": "10d-Rendite",
-  "dc.historical_avg": "Historisch &#216;",
 
   "sig.highly_significant": "Hochsignifikant",
   "sig.significant": "Signifikant",
@@ -419,5 +411,23 @@
   "nav.korrelationen": "Korrelations-Radar",
   "nav.wahlen": "Wahlen & Börse"
 ,
-  "dash.stress_kurz": "Zu kurze Historie"
+  "dash.stress_kurz": "Zu kurze Historie",
+  "dc.anom_nicht": "Nicht berechenbar",
+  "dc.anom_stark": "Stark auffällig",
+  "dc.anom_auffaellig": "Auffällig",
+  "dc.anom_normal": "Normal",
+  "dc.anom_hoch": "ungewöhnlich stark",
+  "dc.anom_tief": "ungewöhnlich schwach",
+  "dc.anom_basis": "Basis",
+  "dc.anom_jahre": "Vergleichsjahre",
+  "dc.anom_stand": "Stand",
+  "dc.anom_rendite": "Rendite 10 Handelstage",
+  "dc.anom_mittel": "Ø Vergleichsjahre",
+  "dc.anom_abweichung": "Abweichung",
+  "dc.anom_rang": "Rang",
+  "dc.anom_g_zu_wenige_kurse": "zu wenige Kurse",
+  "dc.anom_g_luecke_aktuell": "Kurslücke im aktuellen Fenster",
+  "dc.anom_g_zu_wenige_jahre": "weniger als 10 Vergleichsjahre",
+  "dc.anom_g_keine_streuung": "keine Streuung in den Vergleichsjahren",
+  "dc.anom_g_fehler": "Rechenfehler"
 }

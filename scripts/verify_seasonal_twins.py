@@ -30,7 +30,7 @@ Nutzung:  PYTHONUTF8=1 py -3.14 scripts/verify_seasonal_twins.py
 Exit 0 = deckungsgleich, 1 = Abweichung (dann NICHT deployen).
 """
 from __future__ import annotations
-import math, sys
+import math, os, sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -489,6 +489,63 @@ def block_python_only() -> None:
            f"(ein Tag Versatz ergaebe {(lauf[100]-lauf[0])/lauf[0]*100}).")
 
 
+# 4b. ZEITZONEN — dieselben Tagesnummern und Jahreskurven unter jeder Zeitzone (Schritt U, 2026-10-09)
+ZEITZONEN = ["UTC", "Europe/Berlin", "America/New_York", "America/Los_Angeles", "Asia/Tokyo", "Pacific/Auckland"]
+
+
+def block_zeitzonen():
+    """
+    `new Date("YYYY-MM-DD")` ist UTC-Mitternacht, `new Date(jahr, 0, 0)` lokale Mitternacht. Westlich von UTC lag
+    damit JEDE Tagesnummer um eins daneben (gemessen: New York 16 801 von 16 801 Tagen 1990–2035). Referenz ist
+    pandas `dayofyear` — unabhängig von beiden JS-Funktionen. Ohne node: wie Block 4 (kein stilles Überspringen).
+    """
+    import json, shutil, subprocess
+    import pandas as pd
+    print("\n4b. ZEITZONEN  (seasonal-compute.js + decade-compute.js unter 6 Zeitzonen)")
+    if not shutil.which("node"):
+        if "--ohne-node" in sys.argv:
+            print("  [UEBERSPRUNGEN auf ausdrueckliche Anweisung (--ohne-node)]")
+            return
+        _melde("Zeitzonen", "node ist verfuegbar", False, "node nicht gefunden")
+        return
+    soll = list(pd.date_range("1990-01-01", "2035-12-31", freq="D").dayofyear)
+    probe = _ROOT / "scripts" / "js" / "tz_probe.js"
+    sc = _ROOT / "landing" / "js" / "seasonal-compute.js"
+    dc = _ROOT / "landing" / "js" / "decade-compute.js"
+    kurven = {}
+    for tz in ZEITZONEN:
+        seiten = [str(_ROOT / "landing" / "pages" / f) for f in ("jahreszyklus.html", "risikozyklus.html")]
+        r = subprocess.run(["node", str(probe), tz, str(sc), str(dc), *seiten], capture_output=True, text=True,
+                           env={**os.environ, "MSYS_NO_PATHCONV": "1"})
+        if r.returncode:
+            _melde("Zeitzonen", f"tz_probe.js laeuft unter {tz}", False, r.stderr[:300])
+            continue
+        d = json.loads(r.stdout)
+        # Beweis, dass die Zeitzone wirklich gilt (sonst prueft der Block nur UTC — die Falle aus Git Bash)
+        erwartet_offset = {"UTC": 0, "Europe/Berlin": -60, "America/New_York": 300, "America/Los_Angeles": 480,
+                           "Asia/Tokyo": -540, "Pacific/Auckland": -780}[tz]
+        _melde("Zeitzonen", f"{tz}: Zeitzone wirkt (Offset {erwartet_offset})", d["offset_jan"] == erwartet_offset,
+               f"Offset {d['offset_jan']}")
+        for name in ("tage_seasonal", "tage_decade"):
+            abw = [i for i, (a, b) in enumerate(zip(d[name], soll)) if a != b]
+            _melde("Zeitzonen", f"{tz}: {name} == pandas dayofyear (16 801 Tage)", len(d[name]) == len(soll) and not abw,
+                   f"{len(abw)} Abweichungen, erste bei Index {abw[:1]}")
+        kurven[tz] = d["kurve_2023"]
+        for seite, e in d.get("extra", {}).items():
+            # Januar 01.–20.2023, Schlusskurse 100…119: Tag 1 = 100, Tag 21 und Tag 365 = 119 (konstant fortgeschrieben)
+            ok_jan = e["jan"] is not None and e["jan"]["lad"] == 20 and abs(e["jan"]["k"][0] - 100) < 1e-9 \
+                and abs(e["jan"]["k"][1] - 119) < 1e-9 and abs(e["jan"]["k"][2] - 119) < 1e-9
+            _melde("Zeitzonen", f"{tz}: {seite} buildExtendedYearData Januar-Fall", ok_jan, f"{e['jan']}")
+            _melde("Zeitzonen", f"{tz}: {seite} Kurve == buildYearData", e["w"] == d["kurve_2023"],
+                   f"{seite}: lad={e['w'] and e['w']['lad']} vs {d['kurve_2023'] and d['kurve_2023']['lad']}")
+    if kurven:
+        ref = kurven.get("UTC")
+        gleich = all(k == ref for k in kurven.values())
+        _melde("Zeitzonen", "buildYearData liefert unter allen Zeitzonen dieselbe Kurve und last_actual_day",
+               ref is not None and gleich,
+               "; ".join(f"{tz}: lad={k['lad'] if k else None}" for tz, k in kurven.items()))
+
+
 def main() -> int:
     print("=" * 74)
     print("Zwillings-Pruefung: Backend (Python) <-> Frontend (JS) <-> Sollkurve")
@@ -497,6 +554,7 @@ def main() -> int:
     block_interpolation()
     block_turn_of_month()
     block_echtes_js()
+    block_zeitzonen()
     block_python_only()
     print("\n" + "=" * 74)
     if _ausfaelle:

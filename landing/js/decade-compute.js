@@ -264,56 +264,10 @@ SA.decadeCompute = {
     worstDDTable.sort(function(a, b) { return a.max_dd - b.max_dd; });
     worstDDTable = worstDDTable.slice(0, 25);
 
-    // Anomalie (vereinfachter Z-Score, kein Isolation Forest client-seitig)
-    var anomaly = { score: 0, status: 'normal', return_10d: 0, avg_10d: 0, n_comparisons: 0 };
-    if (cyRows && cyRows.length >= 10) {
-      var last10 = cyRows.slice(-10);
-      var ret10d = last10.length >= 2
-        ? (last10[last10.length - 1].close / last10[0].close - 1) * 100 : 0;
-
-      // Historische 10d-Returns am gleichen Kalenderzeitpunkt
-      var lastDate = cyRows[cyRows.length - 1].date;
-      var doy = SA.decadeCompute._dayOfYear(lastDate);
-      var histReturns = [];
-      for (var hy = 0; hy < validYears.length; hy++) {
-        var hYear = validYears[hy];
-        if (hYear === currentYear) continue;
-        var hRows = yearGroups[hYear];
-        if (!hRows) continue;
-        // Finde naechsten Tag zum gleichen DOY
-        var hIdx = -1;
-        for (var hi = 0; hi < hRows.length; hi++) {
-          if (SA.decadeCompute._dayOfYear(hRows[hi].date) >= doy - 5) { hIdx = hi; break; }
-        }
-        if (hIdx >= 10) {
-          var h10 = hRows.slice(hIdx - 10, hIdx);
-          if (h10.length >= 2 && h10[0].close > 0) {
-            histReturns.push((h10[h10.length - 1].close / h10[0].close - 1) * 100);
-          }
-        }
-      }
-
-      if (histReturns.length >= 5) {
-        var hMean = histReturns.reduce(function(s, v) { return s + v; }, 0) / histReturns.length;
-        var hVar = histReturns.reduce(function(s, v) { return s + (v - hMean) * (v - hMean); }, 0) / histReturns.length;
-        var hStd = Math.sqrt(hVar) || 1;
-        var zScore = Math.abs((ret10d - hMean) / hStd);
-        var score = Math.min(Math.round(zScore * 30), 100);
-        // Perzentil-Rang der aktuellen 10d-Rendite in der Verteilung historischer 10d-Returns
-        var sortedHist = histReturns.slice().sort(function(a, b) { return a - b; });
-        var rankCount = 0;
-        for (var ri = 0; ri < sortedHist.length; ri++) { if (sortedHist[ri] <= ret10d) rankCount = ri + 1; }
-        var percentileRank = Math.round(rankCount / sortedHist.length * 100);
-        anomaly = {
-          score: score,
-          status: score >= 40 ? 'anomal' : 'normal',
-          return_10d: Math.round(ret10d * 100) / 100,
-          avg_10d: Math.round(hMean * 100) / 100,
-          n_comparisons: histReturns.length,
-          percentile_rank: percentileRank
-        };
-      }
-    }
+    // Anomalie-Radar: EINE Rechnung (anomalie), nicht mehr hier im Dekaden-Zusammenbau
+    var anomaly;
+    try { anomaly = SA.decadeCompute.anomalie(rows, ticker); }
+    catch (eA) { anomaly = { status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(eA && eA.message || eA) }; }
 
     return {
       ticker: ticker,
@@ -493,9 +447,10 @@ SA.decadeCompute = {
 
   /** Tag des Jahres aus "YYYY-MM-DD" String. */
   _dayOfYear: function(dateStr) {
-    var d = new Date(dateStr);
-    var start = new Date(d.getFullYear(), 0, 0);
-    return Math.floor((d - start) / 86400000);
+    // rein in UTC aus dem Datumstext (wie SA.seasonal.tagNummer) — lokale Mitternacht verschob westlich von UTC um 1
+    var s = String(dateStr).substring(0, 10);
+    var y = +s.substring(0, 4), m = +s.substring(5, 7), d = +s.substring(8, 10);
+    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86400000);
   },
 
   // ═══════════════════════════════════════════════════════════════════
@@ -503,6 +458,108 @@ SA.decadeCompute = {
   // ═══════════════════════════════════════════════════════════════════
 
   /** CSS fuer Anomalie-Sektion einmalig in den Head injizieren. Idempotent. */
+  // ── Anomalie-Radar (Plan v3 Teil C, Codex-Freigabe 2026-10-09) ──────────
+  // EINE Rechnung für alle Seiten (der Python-Zwilling ist gelöscht). Vertrag:
+  //  * Eingabe: vollständige Kursreihe + Ticker (Pflicht). Bereinigt: nicht-endlich/≤0 raus, doppelte Daten → letzter.
+  //  * as_of = letzte Kurszeile (oder opts.as_of: Reihe wird ZUERST darauf abgeschnitten → präfixinvariant).
+  //  * Aktuelles Fenster = 11 Kurszeilen bis as_of = 10 Tagesrenditen.
+  //  * Vergleich je früherem Jahr y: Endpunkt = letzte Kurszeile ≤ (Monat/Tag von as_of in y; 29.02. → 28.02.),
+  //    11 Kurszeilen bis dorthin über die ganze Reihe (Jahreswechsel erlaubt).
+  //  * Plausibilität (HEURISTIK, keine Sitzungsprüfung): Endpunkt höchstens T Kalendertage vor dem Ziel und kein
+  //    Abstand zwischen zwei Kurszeilen im Fenster > T; T = 1 Krypto, 3 Forex, 7 Börse. Erkennt grobe Datenlücken,
+  //    nicht eine einzelne fehlende Sitzung. Börse 7 statt der geplanten 5: XETRA 23.12.→29.12.2025 sind 6 KT ohne
+  //    fehlende Sitzung (24.–26.12. Mi–Fr), asiatische Feiertagsblöcke sind länger — gemessen am DAX 12.01.2026.
+  //  * Bis zu 30 gültige Vergleichsjahre (die jüngsten), mindestens 10. z mit Stichproben-Std (n−1), Rang als
+  //    Mittelrang bei Gleichstand. Status: |z| < 4/3 normal, ≥ 4/3 auffällig, ≥ 7/3 stark auffällig (gesetzt).
+  ANOMALIE: { FENSTER: 10, MAX_JAHRE: 30, MIN_JAHRE: 10, AUFFAELLIG: 4 / 3, STARK: 7 / 3,
+              TOLERANZ: { krypto: 1, forex: 3, boerse: 7 } },
+
+  /** Marktklasse aus dem Ticker — wortgleich in shared/saison_score.py. Kein Ticker → Fehler (kein stiller Standard). */
+  marktklasse: function(ticker) {
+    if (ticker == null || String(ticker).trim() === '') throw new Error('Ticker fehlt');
+    var t = String(ticker).trim().toUpperCase();
+    if (/-USD$/.test(t)) return 'krypto';
+    if (/=X$/.test(t)) return 'forex';
+    return 'boerse';
+  },
+
+  /** Kalendertag seit 1970 (UTC) aus "YYYY-MM-DD". */
+  _epochTag: function(iso) {
+    return Math.round(Date.UTC(+iso.substring(0, 4), +iso.substring(5, 7) - 1, +iso.substring(8, 10)) / 86400000);
+  },
+
+  /** Zieltag (Monat/Tag) in Jahr y als Kalendertag seit 1970; existiert der Tag nicht (29.02.), der letzte des Monats. */
+  _zielTag: function(y, m, d) {
+    var letzter = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return Math.round(Date.UTC(y, m - 1, Math.min(d, letzter)) / 86400000);
+  },
+
+  /** Bereinigte, sortierte Reihe [{date, close}] — wie stress_score.bereinigen. */
+  _bereinigen: function(rows, asOf) {
+    var m = {};
+    for (var i = 0; i < (rows || []).length; i++) {
+      var r = rows[i];
+      if (!r || r.date == null) continue;
+      var c = +r.close, d = String(r.date).substring(0, 10);
+      if (!isFinite(c) || c <= 0) continue;
+      if (asOf && d > asOf) continue;
+      m[d] = c;
+    }
+    return Object.keys(m).sort().map(function(d) { return { date: d, close: m[d] }; });
+  },
+
+  /** Status aus z — eigene Funktion, damit die Grenzen exakt testbar sind (|z| = 4/3 bzw. 7/3 gehört zur höheren Stufe). */
+  anomalieStatus: function(z) {
+    var az = Math.abs(z), K = this.ANOMALIE;
+    return az >= K.STARK ? 'stark_auffaellig' : (az >= K.AUFFAELLIG ? 'auffaellig' : 'normal');
+  },
+
+  anomalie: function(rows, ticker, opts) {
+    var K = this.ANOMALIE, self = this;
+    var klasse = this.marktklasse(ticker), T = K.TOLERANZ[klasse];
+    var asOfOpt = opts && opts.as_of ? String(opts.as_of).substring(0, 10) : null;
+    var r = this._bereinigen(rows, asOfOpt);
+    var n = r.length, F = K.FENSTER;
+    var aus = function(code, grund, extra) {
+      var o = { status: 'nicht_berechenbar', grund_code: code, grund: grund, as_of: n ? r[n - 1].date : null, marktklasse: klasse };
+      for (var k in (extra || {})) o[k] = extra[k];
+      return o;
+    };
+    if (n < F + 1) return aus('zu_wenige_kurse', 'zu wenige Kurse');
+    var tage = r.map(function(z) { return self._epochTag(z.date); });
+    var fensterOk = function(e) {
+      if (e < F) return false;
+      for (var i = e - F + 1; i <= e; i++) if (tage[i] - tage[i - 1] > T) return false;
+      return true;
+    };
+    if (!fensterOk(n - 1)) return aus('luecke_aktuell', 'Kurslücke im aktuellen Fenster');
+    var R = (r[n - 1].close / r[n - 1 - F].close - 1) * 100;
+    var asOf = r[n - 1].date, yA = +asOf.substring(0, 4), mA = +asOf.substring(5, 7), dA = +asOf.substring(8, 10);
+    var hist = [], e = n - 1;
+    for (var y = yA - 1; hist.length < K.MAX_JAHRE; y--) {
+      var ziel = this._zielTag(y, mA, dA);
+      while (e >= 0 && tage[e] > ziel) e--;      // letzte Kurszeile ≤ Ziel (Ziele fallen monoton)
+      if (e < F) break;                           // davor reicht die Reihe nicht mehr
+      if (ziel - tage[e] > T || !fensterOk(e)) continue;
+      hist.push({ jahr: y, rendite: (r[e].close / r[e - F].close - 1) * 100 });
+    }
+    if (hist.length < K.MIN_JAHRE) return aus('zu_wenige_jahre', 'weniger als ' + K.MIN_JAHRE + ' Vergleichsjahre', { n: hist.length, rendite: R });
+    var nh = hist.length, sum = 0;
+    for (var i = 0; i < nh; i++) sum += hist[i].rendite;
+    var mittel = sum / nh, q = 0;
+    for (i = 0; i < nh; i++) q += (hist[i].rendite - mittel) * (hist[i].rendite - mittel);
+    var s = Math.sqrt(q / (nh - 1));
+    if (!(s > 0)) return aus('keine_streuung', 'keine Streuung in den Vergleichsjahren', { n: nh, rendite: R });
+    var z = (R - mittel) / s, kleiner = 0, gleich = 0;
+    for (i = 0; i < nh; i++) { if (hist[i].rendite < R) kleiner++; else if (hist[i].rendite === R) gleich++; }
+    return {
+      status: this.anomalieStatus(z),
+      grund: null, as_of: asOf, marktklasse: klasse,
+      z: z, rendite: R, mittel: mittel, std: s, rang: 100 * (kleiner + 0.5 * gleich) / nh,
+      n: nh, jahr_von: hist[nh - 1].jahr, jahr_bis: hist[0].jahr
+    };
+  },
+
   _ensureAnomalyCss: function() {
     if (document.getElementById('sa-anomaly-css')) return;
     var css = [
@@ -519,9 +576,9 @@ SA.decadeCompute = {
       '.sa-anom-tooltip b{color:var(--text,#fff);font-weight:700}',
       '.sa-anom-tooltip p{margin:0 0 .5rem 0}',
       '.sa-anom-tooltip p:last-child{margin-bottom:0}',
-      // Perzentil-Slider (rot → gold → grün → gold → rot)
+      // Rang-Balken einfarbig: Ränder = selten, Mitte = üblich (keine Gut/Schlecht-Farbe)
       '.sa-anom-prank{display:flex;flex-direction:column;align-items:stretch;gap:.35rem;margin-top:.15rem}',
-      '.sa-anom-prank-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,#ff4040 0%,#ff4040 10%,#e8a820 20%,#30e878 30%,#30e878 70%,#e8a820 80%,#ff4040 90%,#ff4040 100%);box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}',
+      '.sa-anom-prank-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(232,168,32,.55) 0%,rgba(232,168,32,.12) 50%,rgba(232,168,32,.55) 100%);box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}',
       '.sa-anom-prank-mark{position:absolute;top:-3px;width:3px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 6px rgba(255,255,255,.5);transform:translateX(-50%);transition:left .3s ease}',
       '.sa-anom-prank-label{font-family:var(--f-d,sans-serif);font-size:1rem;font-weight:700;text-align:center;line-height:1}',
       '.sa-anom-prank-scale{display:flex;justify-content:space-between;font-size:.625rem;color:var(--muted,#a89878);font-family:var(--f-m,monospace);margin-top:.1rem}'
@@ -543,14 +600,14 @@ SA.decadeCompute = {
     summary.classList.add('sa-anom-sum');
     var _isEN = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
     var tooltipHtml = _isEN
-      ? '<p><b>Methodology:</b> Z-score comparison of the last 10-day return vs. all historical 10d-returns at the same calendar point.</p>' +
-        '<p>The <b>Score</b> measures how many standard deviations the current trajectory is from the historical mean (&ge;40 = slightly anomalous, &ge;70 = strongly anomalous).</p>' +
-        '<p>The <b>Percentile Rank</b> shows where the current 10d-return stands in the historical distribution — the 90th percentile means: higher than 90&nbsp;% of all comparable historical windows.</p>' +
-        '<p>A high score or extreme percentile does not mean bullish or bearish — it only means &ldquo;the current trajectory is unusual&rdquo;.</p>'
-      : '<p><b>Methodik:</b> Z-Score-Vergleich der letzten 10-Tages-Rendite gegen alle historischen 10d-Returns am gleichen Kalenderzeitpunkt.</p>' +
-        '<p>Der <b>Score</b> misst wie viele Standardabweichungen der aktuelle Verlauf vom historischen Mittel entfernt ist (&ge;40 = leicht anomal, &ge;70 = stark anomal).</p>' +
-        '<p>Der <b>Perzentil-Rang</b> zeigt komplementär, wo die aktuelle 10d-Rendite in der historischen Verteilung steht &mdash; das 90. Perzentil bedeutet: höher als 90&nbsp;% aller vergleichbaren historischen Fenster.</p>' +
-        '<p>Ein hoher Score oder extremer Perzentil bedeutet nicht bullish oder bearish, sondern nur &bdquo;der Verlauf ist ungewöhnlich".</p>';
+      ? '<p><b>Method:</b> return of the last 10 trading days compared with the same calendar window in up to 30 prior years (at least 10).</p>' +
+        '<p><b>z</b> = distance from the historical mean in standard deviations, with sign. From |z| 1.33 the window counts as unusual, from 2.33 as strongly unusual — set thresholds, not probabilities.</p>' +
+        '<p><b>Rank</b> = share of comparison years with a lower 10-day return (ties count half).</p>' +
+        '<p>Describes the recent move; it says nothing about what comes next. A window is dropped if two prices in it are more than 7 calendar days apart (crypto 1, forex 3) — a heuristic: a single missing session is not detected.</p>'
+      : '<p><b>Methodik:</b> Rendite der letzten 10 Handelstage gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren (mindestens 10).</p>' +
+        '<p><b>z</b> = Abstand zum historischen Mittel in Standardabweichungen, mit Vorzeichen. Ab |z| 1,33 gilt das Fenster als auffällig, ab 2,33 als stark auffällig &mdash; gesetzte Schwellen, keine Wahrscheinlichkeiten.</p>' +
+        '<p><b>Rang</b> = Anteil der Vergleichsjahre mit niedrigerer 10-Tage-Rendite (Gleichstände zählen halb).</p>' +
+        '<p>Beschreibt die jüngste Bewegung, sagt nichts über die nächste. Ein Fenster fällt aus, wenn zwei Kurse darin mehr als 7 Kalendertage auseinanderliegen (Krypto 1, Devisen 3) &mdash; eine Heuristik: eine einzelne fehlende Sitzung wird nicht erkannt.</p>';
     var badge = document.createElement('span');
     badge.className = 'sa-anom-badge';
     badge.setAttribute('aria-label', _isEN ? 'Anomaly Radar methodology' : 'Methodik des Anomalie-Radars');
@@ -576,59 +633,52 @@ SA.decadeCompute = {
     if (!el) return;
     this._ensureAnomalyCss();
     this._injectAnomalySummaryBadge(el);
+    var a;
+    try { a = this.anomalie(rows, ticker); }
+    catch (e) { a = { status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }; }
+    el.innerHTML = this.anomalieHtml(a, ticker, 'zeile');
+  },
 
-    var anom = null;
-    try {
-      if (rows && rows.length >= 200) {
-        var dec = this.fromPrices(rows.slice(), ticker);
-        anom = dec ? dec.anomaly : null;
-      }
-    } catch (e) { console.warn('[anomaly] compute failed:', e); }
-
-    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
-    if (!anom || anom.n_comparisons === 0) {
-      el.innerHTML = '<p style="color:var(--muted);font-size:.875rem;margin:0">' +
-        (_en ? SA.i18n.t('dc.anomaly_unavailable') : 'Anomalie-Score nicht berechenbar (zu wenig historische Vergleichsfenster).') +
-        '</p>';
-      return;
+  /** Eine Darstellung für beide Orte (Seiten-Abschnitt 'zeile', Dashboard-Karte 'karte'). Einfarbig Gold. */
+  anomalieHtml: function(a, ticker, form) {
+    // CSS gehört zur Darstellung, nicht zum Aufrufer — sonst fehlt der Rang-Balken dort, wo nur die Karte rendert
+    // (Dashboard, Codex U+C R2).
+    if (typeof document !== 'undefined' && document.head) this._ensureAnomalyCss();
+    var _en = !!(window.SA && SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    var t = function(k, de) { return _en ? SA.i18n.t(k, de) : de; };
+    var esc = function(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var dez = function(v, k) { var s = (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(k); return _en ? s : s.replace('.', ','); };
+    if (!a || a.status === 'nicht_berechenbar') {
+      return '<p class="sa-anom-leer" style="color:var(--muted);font-size:.875rem;margin:0">' +
+        esc(t('dc.anom_nicht', 'Nicht berechenbar')) +
+        (a && a.grund ? ': ' + esc(a.grund_code ? t('dc.anom_g_' + a.grund_code, a.grund) : a.grund) : '') + '</p>';
     }
-
-    var fmtPct = function(v) { if (v == null || isNaN(v)) return '–'; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
-    var scoreCls = anom.score >= 70 ? 'red' : anom.score >= 40 ? 'gold' : 'green';
-    var statusLabel = _en
-      ? (anom.score >= 70 ? SA.i18n.t('dc.status_strongly_anomalous') : anom.score >= 40 ? SA.i18n.t('dc.status_slightly_anomalous') : SA.i18n.t('dc.status_normal'))
-      : (anom.score >= 70 ? 'Stark anomal' : anom.score >= 40 ? 'Leicht anomal' : 'Normal');
-    var retCls = anom.return_10d >= 0 ? 'green' : 'red';
-
-    var pRank = anom.percentile_rank;
-    var pRankCell;
-    var _pRankLabel = _en ? SA.i18n.t('dc.percentile_rank') : 'Perzentil-Rang';
-    if (pRank == null) {
-      pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div><div class="kpi-value">&ndash;</div></div>';
-    } else {
-      var pRankCls = (pRank < 10 || pRank > 90) ? 'red' : (pRank < 20 || pRank > 80) ? 'gold' : 'green';
-      var pRankText = _en ? pRank + SA.i18n.t('dc.percentile_suffix') : pRank + '. Perzentil';
-      pRankCell = '<div class="kpi"><div class="kpi-label">' + _pRankLabel + '</div>' +
-        '<div class="sa-anom-prank">' +
-          '<div class="sa-anom-prank-label ' + pRankCls + '">' + pRankText + '</div>' +
-          '<div class="sa-anom-prank-bar" title="' + pRankText + '">' +
-            '<div class="sa-anom-prank-mark" style="left:' + pRank + '%"></div>' +
-          '</div>' +
-          '<div class="sa-anom-prank-scale"><span>0</span><span>50</span><span>100</span></div>' +
+    var stufe = a.status === 'stark_auffaellig' ? 2 : a.status === 'auffaellig' ? 1 : 0;
+    var label = stufe === 2 ? t('dc.anom_stark', 'Stark auffällig') : stufe === 1 ? t('dc.anom_auffaellig', 'Auffällig') : t('dc.anom_normal', 'Normal');
+    var richtung = stufe === 0 ? '' : (a.z > 0 ? t('dc.anom_hoch', 'ungewöhnlich stark') : t('dc.anom_tief', 'ungewöhnlich schwach'));
+    var gold = ['var(--muted,#a89878)', 'rgba(232,168,32,.85)', 'var(--accent,#e8a820)'][stufe];
+    var zTxt = 'z = ' + dez(a.z, 1);
+    var basis = t('dc.anom_basis', 'Basis') + ': ' + a.n + ' ' + t('dc.anom_jahre', 'Vergleichsjahre') + ' (' + a.jahr_von + '\u2013' + a.jahr_bis + '), ' + t('dc.anom_stand', 'Stand') + ' ' + esc(a.as_of);
+    var rang = Math.round(a.rang);
+    var rangHtml = '<div class="sa-anom-prank"><div class="sa-anom-prank-label">' + rang + ' / 100</div>' +
+      '<div class="sa-anom-prank-bar" title="' + rang + '"><div class="sa-anom-prank-mark" style="left:' + rang + '%"></div></div></div>';
+    if (form === 'karte') {
+      return '<div class="anomaly-score-big sa-anom-z" style="color:' + gold + '">' + zTxt + '</div>' +
+        '<div class="anomaly-status sa-anom-status" style="color:' + gold + '">' + esc(label) + (richtung ? ' \u00b7 ' + esc(richtung) : '') + '</div>' +
+        '<div class="kpi-row-mini">' +
+          '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_rendite', 'Rendite 10 Handelstage')) + '</div><div class="kpi-value">' + dez(a.rendite, 2) + '%</div></div>' +
+          '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_mittel', 'Ø Vergleichsjahre')) + '</div><div class="kpi-value">' + dez(a.mittel, 2) + '%</div></div>' +
         '</div>' +
-      '</div>';
+        '<div class="kpi sa-anom-rang" style="margin-top:.5rem"><div class="kpi-label">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +
+        '<p class="sa-anom-basis" style="color:#8899aa;font-size:.6875rem;text-align:center;margin-top:.5rem">' + basis + '</p>';
     }
-
-    var _retLabel = _en ? SA.i18n.t('dc.return_10d') + ' ' : '10d-Rendite ';
-    var _avgLabel = _en ? SA.i18n.t('dc.historical_avg') : 'Historisch &Oslash;';
-    var html = '<div class="sa-anom-row">' +
-      '<div class="kpi"><div class="kpi-label">Score</div><div class="kpi-value ' + scoreCls + '">' + anom.score + ' / 100</div></div>' +
-      '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value ' + scoreCls + '">' + statusLabel + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">' + _retLabel + (ticker || '') + '</div><div class="kpi-value ' + retCls + '">' + fmtPct(anom.return_10d) + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">' + _avgLabel + '</div><div class="kpi-value">' + fmtPct(anom.avg_10d) + '</div></div>' +
-      pRankCell +
-    '</div>';
-    el.innerHTML = html;
+    return '<div class="sa-anom-row">' +
+      '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_abweichung', 'Abweichung')) + '</div><div class="kpi-value sa-anom-z" style="color:' + gold + '">' + zTxt + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-value sa-anom-status" style="color:' + gold + '">' + esc(label) + '</div>' + (richtung ? '<div style="font-size:.75rem;color:var(--muted)">' + esc(richtung) + '</div>' : '') + '</div>' +
+      '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_rendite', 'Rendite 10 Handelstage')) + ' ' + esc(ticker || '') + '</div><div class="kpi-value">' + dez(a.rendite, 2) + '%</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_mittel', 'Ø Vergleichsjahre')) + '</div><div class="kpi-value">' + dez(a.mittel, 2) + '%</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +
+    '</div><p class="sa-anom-basis" style="color:var(--muted);font-size:.75rem;margin:.5rem 0 0">' + basis + '</p>';
   }
 };
 

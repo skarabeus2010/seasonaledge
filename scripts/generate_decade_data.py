@@ -241,22 +241,6 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
     worst_dd_table.sort(key=lambda x: x["max_dd"])
     worst_dd_table = worst_dd_table[:25]
 
-    # ── Anomalie ──
-    anomaly = {"score": 0, "status": "normal", "return_10d": 0, "avg_10d": 0, "n_comparisons": 0}
-    try:
-        from shared.anomaly_engine import compute_ticker_anomaly_score
-        radar = compute_ticker_anomaly_score(df, lookback_days=10)
-        if "error" not in radar:
-            anomaly = {
-                "score": round(radar["anomaly_score"], 0),
-                "status": "anomal" if radar["anomaly_score"] >= 40 else "normal",
-                "return_10d": round(radar["current_return"], 2),
-                "avg_10d": round(radar["historical_avg"], 2),
-                "n_comparisons": radar.get("n_comparisons", 0),
-            }
-    except Exception:
-        pass
-
     # ── Zusammenbauen ──
     result = {
         "ticker": ticker,
@@ -271,7 +255,6 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
         "current_year_dd": current_dd,
         "monthly_heatmap": monthly_heatmap,
         "dd_monthly_heatmap": dd_monthly_heatmap,
-        "anomaly": anomaly,
         "worst_dd_table": worst_dd_table,
         "generated_at": datetime.now().isoformat(),
     }

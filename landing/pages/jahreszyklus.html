@@ -159,9 +159,9 @@
       <p class="page-caption" id="page-caption" data-i18n="jz.page_caption">Saisonaler Jahresverlauf &middot; Monats-/Quartals-Performance &middot; Signifikanz</p>
       <div class="trading-day-header" id="trading-day-header"></div>
 
-      <!-- 0. Anomalie-Radar (KI Quick-Check) -->
+      <!-- 0. Anomalie-Radar -->
       <details open id="sec-anomaly" style="display:none">
-        <summary data-i18n="section.anomaly_radar">Anomalie-Radar (KI Quick-Check)</summary>
+        <summary data-i18n="section.anomaly_radar">Anomalie-Radar</summary>
         <div class="content" id="content-anomaly"></div>
       </details>
 
@@ -547,15 +547,13 @@
         var cumulative=[100];
         var days=[];
         var logRets=[];
-        var d0=new Date(yRows[0].date); var jan1=new Date(d0.getFullYear(),0,0);
-        days.push(Math.floor((d0-jan1)/86400000));
+        days.push(SA.seasonal.tagNummer(yRows[0].date));
         logRets.push(0);
         for (var j=1;j<yRows.length;j++) {
           var lr = yRows[j].log_return != null ? parseFloat(yRows[j].log_return) :
             (yRows[j-1].close>0 ? Math.log(parseFloat(yRows[j].close)/parseFloat(yRows[j-1].close)) : 0);
           cumulative.push(cumulative[j-1]*Math.exp(lr));
-          var dj=new Date(yRows[j].date);
-          days.push(Math.floor((dj-new Date(dj.getFullYear(),0,0))/86400000));
+          days.push(SA.seasonal.tagNummer(yRows[j].date));
           logRets.push(lr);
         }
         // Interpoliere cumulative auf 365 Kalendertage — KONSTANT-FILL nach
@@ -791,7 +789,7 @@
       };
     }
 
-    // ── Render: Anomalie-Radar (KI Quick-Check) ─────────────────────────────
+    // ── Render: Anomalie-Radar ─────────────────────────────
     // Wrapper um den Shared-Renderer aus decade-compute.js — einmal bauen, 4x nutzen.
     JZ.renderAnomaly = function(rows, ticker) {
       if (window.SA && SA.decadeCompute && SA.decadeCompute.renderAnomalyInto) {

@@ -116,6 +116,22 @@ MUTATIONEN = [
      "years = years.slice(-nYears);",
      "years = years.slice(0, nYears);"),
 
+    # ── Schritt U (2026-10-09): lokale Zeitzone in der Tagesnummer
+    ("Tagesnummer wieder ueber lokale Mitternacht (westlich von UTC um 1 daneben)",
+     "landing/js/seasonal-compute.js",
+     "      var days = yRows.map(function(r) { return SA.seasonal.tagNummer(r.date); });",
+     "      var days = yRows.map(function(r) { var d = new Date(r.date); return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000); });"),
+
+    ("decade-compute _dayOfYear wieder ueber lokale Mitternacht",
+     "landing/js/decade-compute.js",
+     "    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86400000);\n  },",
+     "    var dd = new Date(s); return Math.floor((dd - new Date(dd.getFullYear(), 0, 0)) / 86400000);\n  },"),
+
+    ("Erster Kurstag in buildExtendedYearData wieder ueber lokale Mitternacht",
+     "landing/pages/jahreszyklus.html",
+     "        days.push(SA.seasonal.tagNummer(yRows[0].date));",
+     "        var d0=new Date(yRows[0].date); var jan1=new Date(d0.getFullYear(),0,0);\n        days.push(Math.floor((d0-jan1)/86400000));"),
+
     ("yearCovers faellt bei fehlendem last_actual_day auf 365 zurueck (fail-open)",
      "landing/js/seasonal-compute.js",
      "    var lad = yd.last_actual_day;\n    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;",
