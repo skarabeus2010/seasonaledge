@@ -16,7 +16,6 @@
     week_number          15
     year                 2026
     top_ki               list[dict]  ← Sektion 1
-    regimes              dict[ticker, dict]
     events               list[dict]  ← Sektion 2
     tdom_bias            dict[ticker, dict]  ← Sektion 3
     poly_divergences     list[dict]  ← Sektion 3b (Crypto vs Saisonalität)
@@ -86,21 +85,16 @@
             <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Ticker</th>
             <th align="right" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Score</th>
             <th align="left"  style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Signal</th>
-            <th align="center" style="padding:8px 10px;font-size:11px;color:#a89878;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid rgba(232,168,32,0.15);font-weight:600;">Regime</th>
           </tr>
           {% for r in top_ki %}
           {% set sig = (r.signal or '')|lower %}
           {% set sig_color = '#30e878' if 'bull' in sig else ('#ff4040' if 'bear' in sig else '#a89878') %}
           {% set sig_emoji = '🟢' if 'bull' in sig else ('🔴' if 'bear' in sig else '⚪') %}
-          {% set reg = regimes.get(r.ticker, {}) %}
-          {% set light = (reg.get('traffic_light') or 'grey')|lower %}
-          {% set light_emoji = {'green':'🟢','yellow':'🟡','red':'🔴','grey':'⚫'}.get(light, '⚫') %}
           <tr>
             <td align="left"  style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:12px;color:#64748b;border-bottom:1px solid rgba(255,255,255,0.04);">{{ loop.index }}</td>
             <td align="left"  style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ r.ticker }}</td>
             <td align="right" style="padding:10px;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#e8a820;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ '%.1f' % (r.score or 0) }}/10</td>
             <td align="left"  style="padding:10px;font-size:12px;color:{{ sig_color }};font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ sig_emoji }} {{ r.signal or '–' }}</td>
-            <td align="center" style="padding:10px;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.04);">{{ light_emoji }}</td>
           </tr>
           {% endfor %}
         </table>
@@ -244,46 +238,6 @@
       </div>
     </td></tr>
     {% endif %}
-
-    <!-- ══════════════════════ SEKTION 4: REGIME-STATUS ══════════════════════ -->
-    <tr><td style="padding:24px 32px 8px;">
-      <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
-        🚦 Stress-Ampel
-      </div>
-      <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Rang des Stress-Maßes (Volatilität + Abstand vom 20-Tage-Hoch) gegen bis zu zehn Jahre · Gelb ab 70, Rot ab 90 · keine Prognose
-      </div>
-      {% set risky = [] %}
-      {% set ohne = [] %}
-      {% for r in top_ki %}
-        {% set reg = regimes.get(r.ticker, {}) %}
-        {% set light = (reg.get('traffic_light') or '')|lower %}
-        {% if reg.get('status') != 'ok' %}{% set _ = ohne.append((r.ticker, reg.get('status') or 'fehlt')) %}
-        {% elif light in ['yellow', 'red'] %}{% set _ = risky.append((r.ticker, reg, light)) %}{% endif %}
-      {% endfor %}
-      {% if risky %}
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-          {% for ticker, reg, light in risky %}
-          {% set light_emoji = {'yellow':'🟡','red':'🔴'}.get(light, '⚫') %}
-          {% set light_color = {'yellow':'#e8a820','red':'#ff4040'}.get(light, '#a89878') %}
-          <tr>
-            <td width="36" style="padding:10px 8px 10px 0;font-size:16px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ light_emoji }}</td>
-            <td width="80" style="padding:10px 0;font-family:'JetBrains Mono',Menlo,monospace;font-size:13px;color:#ffffff;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">{{ ticker }}</td>
-            <td style="padding:10px 0;font-size:12px;color:{{ light_color }};border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;">
-              Score {{ '%.1f' % ((reg.risk_score * 10)|int / 10) }} · Vol 20d: {{ '%.2f' % (reg.vol_20d or 0) }}%
-              {% if reg.drawdown is not none %} · Abstand 20-T.-Hoch: {{ '%.1f' % reg.drawdown }}%{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </table>
-      {% elif not ohne %}
-        <p style="color:#30e878;font-size:13px;margin:0;">✓ Alle Top-Ticker im grünen Bereich.</p>
-      {% endif %}
-      {% if ohne %}
-        <p style="color:#a89878;font-size:12px;margin:8px 0 0;">Ohne aktuellen Wert ({{ ohne|length }} von {{ top_ki|length }}):
-          {% for t, st in ohne %}{{ t }} ({{ {'veraltet':'Kurse veraltet','zu_kurz':'zu kurze Historie','leer':'keine Kurse','fehlt':'nicht ladbar'}.get(st, st) }}){% if not loop.last %}, {% endif %}{% endfor %}</p>
-      {% endif %}
-    </td></tr>
 
     <!-- ══════════════════════ CTA ══════════════════════ -->
     <tr><td align="center" style="padding:28px 32px 24px;">

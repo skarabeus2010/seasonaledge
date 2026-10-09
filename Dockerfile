@@ -14,23 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # App-Code kopieren
 COPY . .
 
-# Streamlit Config
-RUN mkdir -p /app/.streamlit
-
 # Verzeichnisse fuer SEO-Seiten und statische Dateien (werden per Volume gemountet)
 RUN mkdir -p /app/seo/output /app/static
 
-# Port 8501 (Streamlit Standard)
-EXPOSE 8501
-
-# Health-Check
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
-
-# Start
-CMD ["streamlit", "run", "seasonal_app.py", \
-     "--server.port=8501", \
-     "--server.address=0.0.0.0", \
-     "--server.headless=true", \
-     "--browser.gatherUsageStats=false", \
-     "--server.maxUploadSize=5"]
+# Kein Webserver mehr (Streamlit abgeschaltet 2026-10-09). Der Container ist nur
+# noch der Host fuer die Crons, die per `docker exec` hineinlaufen. Der Haupt-
+# prozess wartet und beendet sich sauber auf SIGTERM (docker stop ohne 10-s-Kill).
+CMD ["sh", "-c", "trap 'exit 0' TERM INT; while :; do sleep 3600 & wait $!; done"]

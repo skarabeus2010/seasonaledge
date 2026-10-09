@@ -67,18 +67,6 @@ ENVEOF
     echo "  nano /opt/seasonaledge/.env"
 fi
 
-# Streamlit Secrets
-mkdir -p .streamlit
-if [ ! -f ".streamlit/secrets.toml" ]; then
-    cat > .streamlit/secrets.toml << 'SECEOF'
-# Streamlit Secrets
-SUPABASE_URL = "https://xxx.supabase.co"
-SUPABASE_KEY = "eyJxxx"
-ANTHROPIC_API_KEY = ""
-SECEOF
-    echo "WICHTIG: .streamlit/secrets.toml erstellt — bitte Credentials eintragen!"
-fi
-
 # Certbot-Verzeichnisse
 mkdir -p deploy/certbot/conf deploy/certbot/www
 
@@ -92,7 +80,6 @@ echo "Naechste Schritte:"
 echo ""
 echo "1. Credentials eintragen:"
 echo "   nano /opt/seasonaledge/.env"
-echo "   nano /opt/seasonaledge/.streamlit/secrets.toml"
 echo ""
 echo "2. SSL-Zertifikat holen (Domain muss auf diese IP zeigen!):"
 echo "   docker compose up -d nginx"
@@ -103,7 +90,7 @@ echo "   docker compose up -d"
 echo ""
 echo "4. Pruefen:"
 echo "   docker compose ps"
-echo "   curl http://localhost:8501/_stcore/health"
+echo "   docker exec seasonalpha-app python3 -c 'import shared.supabase_client'"
 echo ""
 echo "Die App ist dann erreichbar unter: https://seasonalpha.ai"
 echo ""

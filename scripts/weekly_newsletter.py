@@ -179,7 +179,6 @@ def main() -> int:
     print(f"[weekly] Top-KI Ticker: {len(context['top_ki'])}")
     print(f"[weekly] Events: {len(context['events'])}")
     print(f"[weekly] TDoM-Bias: {len(context['tdom_bias'])}")
-    print(f"[weekly] Regime-Records: {len(context['regimes'])}")
 
     # 3. Dry-Run: HTML auf Disk schreiben und fertig
     if args.dry_run:

@@ -2,7 +2,7 @@
 shared/daily_report.py — Daily Newsletter Aggregations für SeasonAlpha.
 
 Liefert "Trading-Tipps für den nächsten Handelstag" — kombiniert vorhandene
-Daten aus scanner_results, tdom_stats (4 Strategien), regime_scores,
+Daten aus scanner_results, tdom_stats (4 Strategien),
 market_events, earnings_events, dividend_events + Sektor-Rotation.
 
 Kernfeature: **Multi-Window-TDOM-Score (0-4)** — vier historische Renditefenster
@@ -1461,7 +1461,6 @@ def build_daily_context(
     status_line = build_status_line(ticker="^DJI")
 
     # Kern-Marktbarometer: fixe Kernliste mit LBR/RSI-Signalen + Score (score DESC).
-    # ML-Regime im Newsletter entfernt → market_regime bleibt leer.
     core_list = build_signal_rows(NEWSLETTER_CORE_LIST, target_date=target)
 
     # Marktuebergreifende Signale aus der Lead-Lag-Studie (Anleihen, Krypto).
@@ -1492,7 +1491,6 @@ def build_daily_context(
         "events":           events,
         "strategies":       strategies,
         "rotation":         rotation,
-        "market_regime":    {},
         "intermarket":      intermarket,
         # für Footer + Unsubscribe-URL
         "unsubscribe_url":  "",  # wird in daily_newsletter.py pro Recipient gesetzt

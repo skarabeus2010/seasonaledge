@@ -1,13 +1,11 @@
 version: "3.8"
 
 services:
-  # ── Streamlit App ──────────────────────────────────
+  # ── App-Container: Python-Umgebung fuer Crons/Backfills (kein Webserver) ──
   app:
     build: .
     container_name: seasonalpha-app
     restart: always
-    ports:
-      - "8501:8501"
     # Alle Vars aus .env (BREVO_API_KEY, ADMIN_EMAIL, SENDER_*,
     # UNSUBSCRIBE_SECRET, SUPABASE_ANON_KEY, …) werden durchgereicht.
     # Explizite environment-Liste darunter ist nur noch Fallback-Default.
@@ -24,12 +22,6 @@ services:
       # (brier_stats.json, ggf. weitere precomputed JSONs fuers Frontend).
       # nginx liest aus dem gleichen Host-Ordner read-only.
       - ./landing/data:/app/landing/data
-      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ── Nginx Reverse Proxy + SSL ──────────────────────
   nginx:

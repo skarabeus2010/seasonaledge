@@ -13,7 +13,7 @@ Teile:
      OHLC (S3, Codex-Fall Open 100/Low 90/Close 105); Legacy-Konsumenten (Ultimate Monthly, KTI) gegen den Stand 1A
      unverändert (V2).
   3. Kalender: `verify_kalender_zwilling.pruefe()` mit festen Sollwerten (K3/V4).
-  4. Statisch: Seite und Streamlit lesen die Tageswerte ausdrücklich aus `taeglich` (E2/E4).
+  4. Statisch: die Seite liest die Tageswerte ausdrücklich aus `taeglich` (E2/E4); Streamlit seit 2026-10-09 entfernt.
   5. Snapshot (nur mit --snapshot): Monthly 10 SPY 1994–2025 gegen die Referenzlogik von
      `scripts/research/monthly10_blogzahlen.py` auf denselben Zeilen (1e-9, beide CAGR-Konventionen); der veröffentlichte
      Wert wird nur berichtet. ^GDAXI 0 fehlende Sitzungen 2000–2025 (unter der dokumentierten Annahme 24.12.2001).
@@ -41,7 +41,6 @@ PROBE = REPO / "scripts" / "js" / "probe_plain_vanilla_1b.js"
 JS = "landing/js/strategy-compute.js"
 HOL = "landing/js/holidays.js"
 PV = "landing/pages/plain-vanilla.html"
-ST = "pages/09_Plain_Vanilla_Strategien.py"
 PYZ = "shared/strategies/plain_vanilla.py"
 STAND_1A = "6170252"
 PHASE3 = {"lbr_november_mai", "midterm_election", "uecs"}
@@ -340,7 +339,6 @@ def kalender_pruefung(basis: pathlib.Path) -> dict:
 def statisch(basis: pathlib.Path) -> dict:
     import re
     pv = (basis / PV).read_text(encoding="utf-8")
-    st = (basis / ST).read_text(encoding="utf-8")
     py = (basis / PYZ).read_text(encoding="utf-8")
     P = {}
     P["seite_kpi"] = True if re.search(r"kpi\(_T\('pv\.kpi_max_dd_tag',[^\n]*?\),tg\?tg\.max_dd\.toFixed", pv) \
@@ -349,8 +347,6 @@ def statisch(basis: pathlib.Path) -> dict:
         else "Chart nicht aus der Tageskurve"
     P["seite_karten"] = True if "var _tg=cachedResults[key].stats&&cachedResults[key].stats.taeglich;" in pv \
         else "Kachel-CAGR nicht aus taeglich"
-    P["streamlit_vertrag"] = True if ("build_equity_curve" not in st and "_tg(sel_stats)" in st) \
-        else "Streamlit liest nicht taeglich bzw. nutzt die Trade-Equity"
     m = re.search(r"def auswerten\(.*?\n(?=def )", py, re.S)
     P["py_auswerten_close_stop"] = True if (m and "apply_stop_close(" in m.group(0) and "apply_stop_loss(" not in m.group(0)) \
         else "auswerten ruft nicht den Close-Stop"
@@ -469,8 +465,6 @@ MUTATIONEN = [
      "var _kurve=data&&data.trades&&SA.strategy.buildEquityCurve(data.trades,1000);", "seite_chart"),
     ("Seite: Kachel-CAGR trade-basiert", PV, "var _tg=cachedResults[key].stats&&cachedResults[key].stats.taeglich;",
      "var _tg=cachedResults[key].stats;", "seite_karten"),
-    ("Streamlit: Trade-Equity im Chart", ST, '        equity = (_tg(sel_stats) or {}).get("kurve") or []',
-     "        equity = build_equity_curve(sel_trades, start_capital=1000.0)", "streamlit_vertrag"),
     ("Python: Wochenend-Feiertage als Anker", PYZ, "and d.weekday() < 5]", "]", "py_anker"),
     ("Python: UHTS-Ausstieg S⁺4", PYZ, '_sitzung(df, F + timedelta(days=1), 2, "nach")', '_sitzung(df, F, 3, "nach")',
      "py_t_thanksgiving"),
@@ -517,8 +511,6 @@ UNGUELTIG_ERWARTET = [
 def _kopie(tmp: pathlib.Path):
     for rel in ("landing/js", "landing/pages"):
         shutil.copytree(REPO / rel, tmp / rel)
-    (tmp / "pages").mkdir()
-    shutil.copy(REPO / ST, tmp / ST)
     (tmp / "shared/strategies").mkdir(parents=True)
     shutil.copy(REPO / PYZ, tmp / PYZ)
 

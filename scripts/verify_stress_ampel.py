@@ -51,6 +51,8 @@ CRS = "scripts/compute_regime_scores.py"
 NIGHT = "scripts/nightly_refresh.py"
 HEALTH = "scripts/daily_health_check.py"
 WEEK_T = "scripts/templates/weekly_report.html.j2"
+WEEK_PY = "shared/weekly_report.py"
+DAILY_PY = "shared/daily_report.py"
 EPS = 1e-9
 
 
@@ -666,10 +668,17 @@ def statisch(basis):
                                        and "stress_score.vollauf" in crs and "_stress.vollauf" in night) else "Schreibweg nutzt noch IF"
     P["health_methodennachweis"] = True if ("stress_score.stress_aktuell" in health and "letzter_fertiger_lauf" in health) \
         else "Health-Check ohne Nachrechnung"
-    abschnitt = week.split("SEKTION 4")[1].split("CTA ═")[0] if "SEKTION 4" in week else ""
-    P["wochenreport"] = True if (abschnitt and "Isolation" not in abschnitt and "* 100" not in abschnitt
-                                 and "{% elif not ohne %}" in abschnitt) \
-        else "Wochenreport: IF-Text, doppeltes ×100 oder 'alles grün' ohne Abdeckung"
+    # Seit 2026-10-09 (Nutzerentscheidung) steht die Ampel in KEINER Mail mehr — weder Weekly noch Daily.
+    week_py, daily_py = t(WEEK_PY), t(DAILY_PY)
+    in_mail = [n for n, q, w in (("Weekly-Vorlage", week, ("regimes", "traffic_light", "Stress-Ampel", "Ampel")),
+                                  ("weekly_report.py", week_py, ("regime_status", "stress_fuer_ticker", "regime_scores")),
+                                  ("daily_report.py", daily_py, ("market_regime", "regime_scores", "stress_score")),
+                                  # Admin-Health-Mail: Prüfbefund ja, Marktfarbe nein (Codex A+B R1)
+                                  ("daily_health_check.py", health, ("['ampel']}", "get('ampel')}", "Stress-Ampel (SPY)")),
+                                  # Nightly-Fehlertext landet über refresh_log in der Health-Mail (Codex A+B R2)
+                                  ("nightly_refresh.py", night, ('regime_status["error"] = str(e)',)))
+               if any(x in q for x in w)]
+    P["ampel_nicht_in_mails"] = True if not in_mail else f"Ampel wieder in: {in_mail}"
     comp = t("scripts/check_db_completeness.py")
     P["completeness_nur_fertig"] = True if ('if table == "stress_scores":' in comp and "letzter_fertiger_lauf" in comp) \
         else "Completeness prüft stress_scores nicht über den veröffentlichten Lauf"
@@ -764,7 +773,13 @@ MUTATIONEN = [
      "crash_ladezeitraum"),
     ("Dashboard mit eigener Rechnung", DASH, "      var regime = SA.dashCompute.computeStress(rawRows);",
      "      function computeRegime(r){return SA.dashCompute.computeStress(r);}\n      var regime = computeRegime(rawRows);", "seiten_eine_rechnung"),
-    ("Wochenreport 'alle grün' ohne Abdeckung", WEEK_T, "{% elif not ohne %}", "{% else %}", "wochenreport"),
+    ("Ampelfarbe in der Health-Mail", HEALTH, 'f"Aktuell bis {last_date_str}, nachgerechnet gleich"',
+     'f"Aktuell bis {last_date_str}, nachgerechnet gleich ({neu[\'ampel\']})"', "ampel_nicht_in_mails"),
+    ("Stress-Fehlertext roh ins refresh_log", NIGHT,
+     '        regime_status["error"] = f"Stress-Lauf gescheitert ({type(e).__name__}), Details im App-Log"',
+     '        regime_status["error"] = str(e)', "ampel_nicht_in_mails"),
+    ("Ampel zurück im Weekly", WEEK_PY, '        "top_ki": top_ki,\n', '        "top_ki": top_ki,\n        "regimes": regime_status(top_ki),\n',
+     "ampel_nicht_in_mails"),
     ("SQL: Abbrechen auch aus fertig", SQL, "UPDATE stress_laeufe SET status = 'abgebrochen' WHERE lauf_id = p_lauf AND status = 'laeuft';",
      "UPDATE stress_laeufe SET status = 'abgebrochen' WHERE lauf_id = p_lauf;", "sql_regeln"),
 ]
@@ -777,7 +792,7 @@ UNGUELTIG_ERWARTET = [
 
 
 def _kopie(tmp):
-    for rel in (PY, JS, CRASH, DASH, WL, SQL, CRS, NIGHT, HEALTH, WEEK_T, "scripts/check_db_completeness.py",
+    for rel in (PY, JS, CRASH, DASH, WL, SQL, CRS, NIGHT, HEALTH, WEEK_T, WEEK_PY, DAILY_PY, "scripts/check_db_completeness.py",
                 "scripts/verify_stress_sql_live.py"):
         (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / rel, tmp / rel)

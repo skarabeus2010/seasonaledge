@@ -74,13 +74,7 @@ def seiten_pruefungen(basis: pathlib.Path) -> dict:
                        and re.search(r"if \(_veraltet\) \{\n(?:(?!\n      \}).)*?el\.innerHTML(?:(?!\n      \}).)*?return;\s*\n      \}",
                                      sig.group(1), re.S))
     P["seite_veraltet"] = True if veraltet_ok else "renderSignals unterdrückt Signale bei veraltetem Bestand nicht"
-    st = (basis / "pages/09_Plain_Vanilla_Strategien.py").read_text(encoding="utf-8") if (basis / "pages/09_Plain_Vanilla_Strategien.py").exists() \
-        else (REPO / "pages/09_Plain_Vanilla_Strategien.py").read_text(encoding="utf-8")
-    # bis zum ABSCHLIESSENDEN return (Rumpf-Einrückung), nicht bis zum frühen Cache-return
-    calc_st = re.search(r"def _calc_strategy\(key\):(.*?)\n        return all_results\[key\]\n", st, re.S)
-    P["streamlit_kontext"] = True if (calc_st and re.search(r"auswerten\(df, key, boerse=get_exchange_for_holidays\(ticker\)", calc_st.group(1))
-                                      and '["func"](' not in calc_st.group(1)) else "Streamlit rechnet nicht über auswerten mit Ticker-Börse"
-    P["streamlit_sharpe"] = True if 'stats.get("sharpe", 0):.2f' not in st else "Streamlit formatiert Sharpe None mit :.2f"
+    # Streamlit-Seite (pages/09) seit 2026-10-09 entfernt — ihre zwei Prüfungen entfallen mit ihr.
     P["dash_streak"] = True if ("SA.strategy.auswerten(rawRows" in da and "calcStrategyStreak" not in da) else "Dashboard-Streak nicht aus auswerten"
     return P
 
@@ -350,21 +344,21 @@ MUTATIONEN = [
      "      return_pct: Math.round((px - pe) / pe * 10000) / 100\n    };", "ungerundet"),
     ("SMA ohne Gültigkeitsprüfung", IND, "for (var i = 1; i < n; i++) if (ok(closes[i - 1], sma[i - 1])) mask[i] = cond === 'Close > SMA'",
      "for (var i = 1; i < n; i++) mask[i] = cond === 'Close > SMA'", "sma_warmup"),
-    ("Stop zum Stopniveau", JS, "    neu.exit_price = c;\n    neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);",
-     "    c = t.entry_price * 0.92; neu.exit_price = c;\n    neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);", "stop_gap"),
+    ("Stop zum Stopniveau", JS, "    neu.exit_date = rows[i].date;\n    neu.exit_price = c;",
+     "    c = t.entry_price * 0.92;\n    neu.exit_date = rows[i].date;\n    neu.exit_price = c;", "stop_gap"),
     ("Stop ohne regulären Ausstiegstag", JS,
      "      var stopPrice = t.entry_price * (1 - stopPct / 100);\n      for (var i = entryIdx + 1; i <= exitIdx; i++) {",
      "      var stopPrice = t.entry_price * (1 - stopPct / 100);\n      for (var i = entryIdx + 1; i < exitIdx; i++) {", "stop_am_exit"),
     ("gestoppter offener Trade bleibt offen", JS, "    delete neu.open; delete neu.regeltermin_ausstieg;", "", "stop_offen"),
-    ("Hebel geht beim Stop verloren", JS, "    neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);",
-     "    neu.return_pct = (c / t.entry_price - 1) * 100; delete neu.leverage;", "stop_hebel"),
+    ("Hebel geht beim Stop verloren", JS, "    else neu.return_pct = (c / t.entry_price - 1) * 100 * (t.leverage || 1);",
+     "    else { neu.return_pct = (c / t.entry_price - 1) * 100; delete neu.leverage; }", "stop_hebel"),
     ("Trailing-Peak nur Einstieg", JS, "        if (c > peak) peak = c;\n        if (c <= peak * (1 - stopPct / 100)) return self._stopAusstieg(t, rows, i);",
      "        if (c <= peak * (1 - stopPct / 100)) return self._stopAusstieg(t, rows, i);", "trailing_close"),
     ("veraltet ab 9 Sitzungen", JS, "    while (n <= 10) {", "    while (n <= 9) {", "datenende_veraltet"),
     ("Einstieg auf letzter Zeile verworfen", JS, "    if (exitIdx < entryIdx || (exitIdx === entryIdx && !open)) return null;",
      "    if (exitIdx <= entryIdx) return null;", "einstieg_letzte_zeile"),
-    ("Streak zählt offene Trades", JS, "    var zu = (trades || []).filter(function(t) { return !t.open && typeof t.return_pct",
-     "    var zu = (trades || []).filter(function(t) { return typeof t.return_pct", "streak_konfig"),
+    ("Streak zählt offene Trades", JS, "  streak: function(trades) {\n    var zu = (trades || []).filter(function(t) { return !t.open && typeof t.return_pct",
+     "  streak: function(trades) {\n    var zu = (trades || []).filter(function(t) { return typeof t.return_pct", "streak_konfig"),
     ("Median per Floor-Index", SEAS, "    return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo);", "    return sorted[Math.floor(n * p)];", "median"),
     ("Regeltermin 3*5", JS, "      add('sell_in_may', 'exit', nth(y, 5, 3));", "      add('sell_in_may', 'exit', nth(y, 5, 3*5));", "regeltermine"),
     ("Datenrand: letzte Zeile als Termin", JS,
@@ -395,9 +389,6 @@ MUTATIONEN = [
     ("Seite: Stop ohne Signal-Neuzeichnen", PV, "cachedResults={};renderSelected();if(rawRows)renderSignals(rawRows);\n    });\n    document.getElementById('sel-stop-type')",
      "cachedResults={};renderSelected();\n    });\n    document.getElementById('sel-stop-type')", "seite_stop_signale"),
     ("Seite: Signale trotz veraltetem Bestand", PV, "      if (_veraltet) {", "      if (false) {", "seite_veraltet"),
-    ("Streamlit: Sharpe :.2f", "pages/09_Plain_Vanilla_Strategien.py",
-     """                "Sharpe": (f'{stats["sharpe"]:.2f}' if stats.get("sharpe") is not None else "—"),""",
-     """                "Sharpe": f'{stats.get("sharpe", 0):.2f}',""", "streamlit_sharpe"),
     ("Python: Santa am Rand aus letzter Zeile", PYZ, '        entry = _sitzung(df, thanksgiving, -3, "nach")',
      '        entry = df[df.index < pd.Timestamp(thanksgiving)].index[-3]', "py_santa_rand"),
     ("Python: Zustand in Datumsvergleich", PYZ, "        jan5_next = _als_datum(_nth_trading_day(df2, year + 1, 1, 5))",
@@ -433,8 +424,6 @@ _KONTEXT_VAR = _Geteilt()""", "py_kontext_parallel"),
      '        trades = STRATEGIES[key]["func"](df) or []\n        if stop_pct',
      '        trades = [t for t in (STRATEGIES[key]["func"](df) or []) if not (t.get("open") and _daten_veraltet(df))]\n        if stop_pct',
      "py_veraltet"),
-    ("Streamlit: NYSE-Standard statt Ticker-Börse", "pages/09_Plain_Vanilla_Strategien.py",
-     "auswerten(df, key, boerse=get_exchange_for_holidays(ticker),", "auswerten(df, key, boerse=\"NYSE\",", "streamlit_kontext"),
     ("Python: LBR mit Wert des Tages", PYZ, "    vortag = hist.shift(1)", "    vortag = hist", "py_lbr_vortag"),
     ("Python: PF 999", PYZ, "        ) if sum(r for r in returns if r < 0) != 0 else None,", "        ) if sum(r for r in returns if r < 0) != 0 else 999,",
      "py_pf_none"),
@@ -455,8 +444,6 @@ UNGUELTIG_ERWARTET = [
 def _kopie(tmp: pathlib.Path):
     for rel in ("landing/js", "landing/pages"):
         shutil.copytree(REPO / rel, tmp / rel)
-    (tmp / "pages").mkdir()
-    shutil.copy(REPO / "pages/09_Plain_Vanilla_Strategien.py", tmp / "pages/09_Plain_Vanilla_Strategien.py")
     (tmp / "shared/strategies").mkdir(parents=True)
     shutil.copy(REPO / PYZ, tmp / PYZ)
 

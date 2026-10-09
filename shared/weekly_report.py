@@ -8,7 +8,6 @@ genutzt wird.
 
 Daten-Quellen (alle Supabase):
     - scanner_results  → Top KI-Scores
-    - regime_scores    → Traffic-Light pro Ticker
     - market_events    → Holidays + OPEX + Central Bank
     - tdom_stats       → Saisonaler Bias für aktuelle Handelswoche
     - fed_dates.py     → FOMC-Meetings (statisch aus Python-Konstante)
@@ -94,45 +93,6 @@ def top_ki_scores(limit: int = DEFAULT_TOP_N) -> list[dict]:
     except Exception as e:
         error_logger.error(f"[weekly_report] top_ki_scores failed: {e}")
         return []
-
-
-# ── Sektion 2: Regime-Status ─────────────────────────────────────────────
-def regime_status(tickers: list[str]) -> dict[str, dict]:
-    """
-    Stress-Ampel je Ticker, live aus den Kursen gerechnet (shared/stress_score.py) — `stress_scores` enthält nur SPY,
-    die alte Tabelle `regime_scores` ist seit 2026-10-09 stillgelegt (Vorzeichen vertauscht).
-
-    Returns:
-        {ticker: {status, traffic_light, risk_score, vol_20d, drawdown, ret_5d, date}} für JEDEN angefragten Ticker;
-        status ok | veraltet | zu_kurz | leer | fehlt. Werte in Prozent (vol20/dd20/ret5d wie von stress_score).
-    """
-    result: dict[str, dict] = {}
-    if not tickers:
-        return result
-    try:
-        from shared import stress_score
-        from shared.supabase_client import get_client
-        from shared.symbols import get_exchange_for_holidays
-        client = get_client()
-    except Exception as e:
-        error_logger.error(f"[weekly_report] regime_status: Setup fehlgeschlagen: {e}")
-        return {t: {"status": "fehlt", "traffic_light": "grey"} for t in tickers}
-    for t in tickers:
-        try:
-            z = stress_score.stress_fuer_ticker(t, client, boerse=get_exchange_for_holidays(t))
-        except Exception as e:  # noqa: BLE001
-            error_logger.error(f"[weekly_report] regime_status {t}: {e}")
-            z = {"status": "fehlt", "score": None, "ampel": "grey"}
-        result[t] = {
-            "status": z.get("status"),
-            "traffic_light": z.get("ampel", "grey") if z.get("status") == "ok" else "grey",
-            "risk_score": z.get("score"),
-            "vol_20d": z.get("vol20"),
-            "drawdown": z.get("dd20"),
-            "ret_5d": z.get("ret5d"),
-            "date": z.get("date"),
-        }
-    return result
 
 
 # ── Sektion 3: Upcoming Events ───────────────────────────────────────────
@@ -659,7 +619,6 @@ def build_report_context(top_n: int = DEFAULT_TOP_N) -> dict[str, Any]:
             week_number: int,
             year: int,
             top_ki: list[dict],
-            regimes: dict[ticker, dict],
             events: list[dict],
             tdom_bias: dict[ticker, dict],
             subscriber_count: int,
@@ -671,9 +630,6 @@ def build_report_context(top_n: int = DEFAULT_TOP_N) -> dict[str, Any]:
     # 1. Top KI-Scores
     top_ki = top_ki_scores(limit=top_n)
     top_tickers = [r["ticker"] for r in top_ki]
-
-    # 2. Regime für Top-Tickers
-    regimes = regime_status(top_tickers)
 
     # 3. Events
     events = upcoming_events(days=DEFAULT_EVENT_DAYS)
@@ -701,7 +657,6 @@ def build_report_context(top_n: int = DEFAULT_TOP_N) -> dict[str, Any]:
         "week_number": today.isocalendar()[1],
         "year": today.year,
         "top_ki": top_ki,
-        "regimes": regimes,
         "events": events,
         "tdom_bias": bias,
         "poly_divergences": poly_divs,

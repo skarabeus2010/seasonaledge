@@ -740,11 +740,12 @@ def collect_health_data() -> dict:
         })
         downgrade("red")
 
-    # ── Check 6: Stress-Ampel (SPY) — Aktualität UND Methodennachweis ──────────
+    # ── Check 6: Stress-Score-Lauf (SPY) — Aktualität UND Methodennachweis ──────────
     # Liest den jüngsten veröffentlichten Lauf aus stress_scores und rechnet den letzten Wert unabhängig aus den
     # Kursen nach (shared/stress_score.py). Eine Zeile einer anderen Methode fällt so auf, auch wenn Wertebereich
     # und Farbe zufällig passen (Plan 2026-10-09, W3/E5 aus Runde 2).
-    _name6 = "Stress-Ampel (SPY)"
+    # Die Mail nennt nur den Prüfbefund, NIE die Marktfarbe (Nutzerentscheidung 2026-10-09: keine Ampel in Mails).
+    _name6 = "Stress-Score-Lauf (SPY)"
     try:
         from shared import stress_score
         lauf = stress_score.letzter_fertiger_lauf(client, "SPY")
@@ -771,10 +772,10 @@ def collect_health_data() -> dict:
                   or abs(float(letzte[0]["score"]) - neu["score"]) > 1e-9
                   or abs(float(letzte[0]["s"]) - neu["s"]) > 1e-9 or letzte[0]["ampel"] != neu["ampel"]):
                 status = "red"
-                detail = (f"Gespeichert {last_date_str} score {letzte[0]['score']} {letzte[0]['ampel']} ≠ nachgerechnet "
-                          f"{neu.get('date')} score {neu.get('score')} {neu.get('ampel')}")
+                detail = (f"Gespeicherter Wert {last_date_str} weicht von der Nachrechnung ab "
+                          f"(nachgerechnet bis {neu.get('date')}) — Lauf prüfen")
             elif age_workdays == 0:
-                status, detail = "green", f"Aktuell bis {last_date_str}, nachgerechnet gleich ({neu['ampel']})"
+                status, detail = "green", f"Aktuell bis {last_date_str}, nachgerechnet gleich"
             elif age_workdays <= 1:
                 status, detail = "yellow", f"{last_date_str} ({age_workdays} Werktag hinterher)"
             else:

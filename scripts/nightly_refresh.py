@@ -401,7 +401,9 @@ def main():
             regime_status["scores"] += _r["n_scores"]
         regime_status["ok"] = regime_status["scores"] > 0
     except Exception as e:
-        regime_status["error"] = str(e)
+        # Volltext (kann Score/Farbe enthalten, z. B. aus dem Rücklesevergleich) NUR ins App-Log; refresh_log und damit
+        # die Health-Mail bekommen einen neutralen Befund — keine Ampel in Mails (Nutzerentscheidung 2026-10-09).
+        regime_status["error"] = f"Stress-Lauf gescheitert ({type(e).__name__}), Details im App-Log"
         app_logger.error(f"nightly_refresh: Stress-Ampel fehlgeschlagen: {e}")
         print(f"Stress-Ampel failed: {e}")
 
@@ -440,7 +442,7 @@ def main():
         # Regime-Status ergaenzen (in errors-Feld, da kein eigenes Feld)
         if not regime_status["ok"]:
             _errs = json.loads(_log_entry["errors"])
-            _errs.append(f"REGIME: {regime_status.get('error', 'unknown')}")
+            _errs.append(f"STRESS: {regime_status.get('error') or 'kein Lauf veröffentlicht'}")
             _log_entry["errors"] = json.dumps(_errs)
         _log_client.table("refresh_log").insert(_log_entry).execute()
         print("Refresh-Log: geschrieben ✓")

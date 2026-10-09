@@ -11,7 +11,7 @@ name: Daily Morning Briefing
 #      Ø-Return >0; max 4)
 #   2. Events heute/morgen (FOMC, OPEX, Earnings, Dividenden, Feiertage)
 #   3. Aktive Saisonal-Strategien (Santa, Sell-in-May, January Effect, ...)
-#   4. Sektor-Rotation + Crash-Ampel Marktbarometer
+#   4. Sektor-Rotation + Marktbarometer (LBR/RSI-Kernliste)
 #
 # Voraussetzungen:
 #   - BREVO_API_KEY in /opt/seasonaledge/.env (gemeinsam mit Weekly)
