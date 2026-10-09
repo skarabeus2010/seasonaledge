@@ -107,7 +107,8 @@ NULL_LOGRET_WINDOW_DAYS = 30
 COVERAGE_DAILY = {
     "ki_scores": "computed_date",
     "scanner_results": "scan_date",
-    "regime_scores": "date",
+    # stress_scores: erwartetes Schreibuniversum ist nur SPY (Nightly) → keine Universums-Abdeckung; Frische über die
+    # specs unten, Methode und Aktualität über daily_health_check Check 6 (Stress-Ampel, seit 2026-10-09).
 }
 
 EQUITY_CATEGORIES = ["US-Aktie", "EU-Aktie"]
@@ -249,7 +250,7 @@ def dim_freshness(ctx: dict) -> dict:
     specs = [
         ("prices", "date", "workday", 1),
         ("ki_scores", "computed_date", "workday", 1),
-        ("regime_scores", "date", "workday", 1),
+        ("stress_scores", "date", "workday", 1),
         ("spot_vol_beta", "event_date", "workday", 1),
         ("scanner_results", "scan_date", "calday", 8),
         ("polymarket_prices", "ts", "calday", 2),
@@ -258,8 +259,19 @@ def dim_freshness(ctx: dict) -> dict:
     ]
     for table, col, kind, thr in specs:
         try:
-            # prices ist riesig → über liquiden Proxy SPY (Index-Lookup) statt Full-Scan
-            mx = _max_value(table, col, ticker="SPY" if table == "prices" else None)
+            if table == "stress_scores":
+                # nur der jüngste VERÖFFENTLICHTE SPY-Lauf zählt, nie unveröffentlichte Zeilen (Codex Code-R1 Befund 2)
+                from shared import stress_score
+                lauf = stress_score.letzter_fertiger_lauf(_c(), "SPY")
+                if not lauf:
+                    add(table, "red", "kein veröffentlichter SPY-Lauf", "—")
+                    continue
+                r = (_c().table("stress_scores").select("date").eq("lauf_id", lauf["lauf_id"])
+                     .order("date", desc=True).limit(1).execute().data) or []
+                mx = r[0]["date"] if r else None
+            else:
+                # prices ist riesig → über liquiden Proxy SPY (Index-Lookup) statt Full-Scan
+                mx = _max_value(table, col, ticker="SPY" if table == "prices" else None)
             if not mx:
                 add(table, "red", "Tabelle leer", "—")
                 continue
@@ -650,8 +662,6 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
 
     # 5) Fehlende abgeleitete (teuer) → --fix-derived
     md = f.get("missing_derived", {})
-    for t in md.get("regime_scores", []):
-        exec_or_recommend("compute_regime_scores.py", ["--ticker", t], derived=True)
     ki_or_scan = sorted(set(md.get("ki_scores", [])) | set(md.get("scanner_results", [])))
     for t in ki_or_scan:
         exec_or_recommend("full_scanner_run.py", ["--only", t], derived=True)

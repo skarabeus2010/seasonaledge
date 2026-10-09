@@ -429,7 +429,7 @@ Termine, Mondphasen u.v.m. Methodik: normalisierte Renditen (jedes Jahr startet
 bei 100, tägliche Returns kumulieren) — keine absoluten Preisänderungen.
 
 ## Kern-Tools
-- [Dashboard]({b}/dashboard): Alle Saisonal-Signale für einen Ticker auf einen Blick — KI-Score, Crash-Ampel, Jahreschart, TruePath-Muster, Strategien, Events.
+- [Dashboard]({b}/dashboard): Alle Saisonal-Signale für einen Ticker auf einen Blick — KI-Score, Stress-Ampel, Jahreschart, TruePath-Muster, Strategien, Events.
 - [Jahreszyklus]({b}/jahreszyklus): Saisonaler Jahresverlauf mit Perzentil-Bändern, Monats-/Quartals-Performance und Mustervergleich.
 - [Dekadenzyklus]({b}/dekadenzyklus): 131 Jahre Dow-Jones-Muster nach Jahresend-Ziffer + Anomalie-Radar.
 - [KI-Saisonalität]({b}/ki-saisonalitaet): Composite-Score 0-10 aus 4 Sub-Scores + TruePath-Mustervergleich mit Sigma-Cone-Projektion.

@@ -102,8 +102,8 @@ SA.TOUR_STEPS = [
     page: '/dashboard',
     element: '#card-crash',
     popover: {
-      title: 'Crash-Ampel',
-      description: 'Rot = erhöhtes Risiko laut Isolation Forest. Der Score 0–100 vergleicht Vol, Drawdown und Returns mit dem 252-Tage-Perzentil des Tickers.',
+      title: 'Stress-Ampel',
+      description: 'Rang aus Volatilität und Abstand vom 20-Tage-Hoch gegen die vorangegangenen bis zu zehn Jahre des Tickers. Gelb ab 70, Rot ab 90 — beschreibt den Zustand, keine Prognose.',
       side: 'bottom',
       align: 'start'
     }

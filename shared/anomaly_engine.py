@@ -138,89 +138,18 @@ def compute_ticker_anomaly_score(
 # 2. CRASH-FRUEHWARNUNG
 # ══════════════════════════════════════════════════════
 
-def compute_market_regime(
-    df: pd.DataFrame,
-    windows: list[int] = None,
-) -> dict:
-    """
-    Erkennt das aktuelle Markt-Regime via Isolation Forest.
-
-    Features pro Tag: Rendite, Volatilitaet (5d, 10d, 20d),
-    Drawdown, Volumen-Anomalie.
-
-    Returns:
-        dict mit: regime ("calm"/"caution"/"stress"),
-                  risk_score (0-100), traffic_light, details
-    """
-    if windows is None:
-        windows = [5, 10, 20]
-
-    try:
-        from sklearn.ensemble import IsolationForest
-    except ImportError:
-        return {"regime": "unknown", "risk_score": 0,
-                "traffic_light": "grey", "error": "sklearn nicht installiert"}
-
-    if len(df) < 60:
-        return {"regime": "unknown", "risk_score": 0,
-                "traffic_light": "grey", "error": "Zu wenig Daten"}
-
-    # Features berechnen
-    feat_df = pd.DataFrame(index=df.index)
-    feat_df["return_1d"] = df["Close"].pct_change() * 100
-
-    for w in windows:
-        feat_df[f"vol_{w}d"] = feat_df["return_1d"].rolling(w).std()
-        feat_df[f"ret_{w}d"] = df["Close"].pct_change(w) * 100
-
-    # Drawdown vom 20d-Hoch
-    feat_df["high_20d"] = df["Close"].rolling(20).max()
-    feat_df["drawdown"] = (df["Close"] - feat_df["high_20d"]) / feat_df["high_20d"] * 100
-
-    feat_df = feat_df.dropna()
-    if len(feat_df) < 100:
-        return {"regime": "unknown", "risk_score": 0,
-                "traffic_light": "grey", "error": "Zu wenig berechnete Features"}
-
-    feature_cols = [c for c in feat_df.columns if c != "high_20d"]
-    X = feat_df[feature_cols].values
-
-    # IF trainieren
-    clf = IsolationForest(contamination=0.05, random_state=42)
-    clf.fit(X)
-
-    # Aktueller Tag bewerten
-    current_score = clf.decision_function(X[-1:].reshape(1, -1))[0]
-    all_scores = clf.decision_function(X)
-
-    # Percentile (niedrigeres Percentile = anomaler)
-    percentile = (all_scores >= current_score).mean() * 100
-    risk_score = round(max(0, min(100, (1 - percentile / 100) * 100)), 1)
-
-    # Ampel
-    if risk_score >= 70:
-        regime = "stress"
-        traffic_light = "red"
-    elif risk_score >= 40:
-        regime = "caution"
-        traffic_light = "yellow"
-    else:
-        regime = "calm"
-        traffic_light = "green"
-
-    # Details
-    latest = feat_df.iloc[-1]
-
-    return {
-        "regime": regime,
-        "risk_score": risk_score,
-        "traffic_light": traffic_light,
-        "volatility_5d": round(float(latest.get("vol_5d", 0)), 3),
-        "volatility_20d": round(float(latest.get("vol_20d", 0)), 3),
-        "drawdown": round(float(latest.get("drawdown", 0)), 2),
-        "return_5d": round(float(latest.get("ret_5d", 0)), 2),
-        "return_20d": round(float(latest.get("ret_20d", 0)), 2),
-    }
+def compute_market_regime(df, **_ignoriert):
+    """Stress-Ampel für einen DataFrame mit `Close` (Index = Datum). Seit 2026-10-09 kein Isolation Forest mehr —
+    der Rang war im Vorzeichen vertauscht. Rechnung: shared/stress_score.py (eine Formel für Python und JS)."""
+    from shared import stress_score
+    if df is None or len(df) == 0 or "Close" not in df:
+        return {"regime": "unknown", "risk_score": None, "traffic_light": "grey", "error": "keine Daten"}
+    daten = [str(d)[:10] for d in df.index]
+    z = stress_score.stress_aktuell(daten, list(df["Close"]))
+    regime = {"red": "stress", "yellow": "caution", "green": "calm"}.get(z["ampel"], "unknown")
+    return {"regime": regime, "risk_score": z["score"], "traffic_light": z["ampel"],
+            "error": None if z["status"] == "ok" else "zu kurze Historie",
+            "details": {k: z.get(k) for k in ("vol5", "vol20", "dd20", "s", "referenz_n")}}
 
 
 TRAFFIC_LIGHT_LABELS = {

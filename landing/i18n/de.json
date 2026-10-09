@@ -27,7 +27,7 @@
   "nav.plain_vanilla": "Plain Vanilla Strategien",
   "nav.backtest_engine": "Backtest Engine",
   "nav.kriegszeiten": "Kriegszeiten",
-  "nav.crash_fruehwarnung": "Crash-Frühwarnung",
+  "nav.crash_fruehwarnung": "Stress-Ampel",
   "nav.dealer_positioning": "Dealer Positioning",
   "nav.flows": "Strukturelle Flows",
   "nav.options_glossar": "Begriffe & Q&A",
@@ -361,7 +361,7 @@
   "ind.param_period":    "Periode",
   "ind.param_threshold": "Schwelle",
   "dash.aria_ki": "Erklärung zum KI Composite Score",
-  "dash.aria_crash": "Erklärung zur Crash-Ampel",
+  "dash.aria_crash": "Erklärung zur Stress-Ampel",
   "dash.aria_anomaly": "Erklärung zum Anomalie-Radar",
   "dash.aria_trifecta": "Erklärung zum Januar Trifecta",
   "dash.aria_truepath": "Erklärung zu TruePath",
@@ -418,5 +418,6 @@
 
   "nav.korrelationen": "Korrelations-Radar",
   "nav.wahlen": "Wahlen & Börse"
-
+,
+  "dash.stress_kurz": "Zu kurze Historie"
 }

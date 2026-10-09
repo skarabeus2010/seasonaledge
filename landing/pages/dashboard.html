@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | SeasonAlpha</title>
-  <meta name="description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Crash-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <meta name="theme-color" content="#000000">
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/dashboard">
   <meta property="og:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
-  <meta property="og:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Crash-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta property="og:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -30,7 +30,7 @@
   <meta name="twitter:site" content="@SeasonAlph4882">
   <meta name="twitter:creator" content="@SeasonAlph4882">
   <meta name="twitter:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
-  <meta name="twitter:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Crash-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="twitter:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
 
   <!-- Icons -->
@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
 
   <!-- Structured Data: WebPage -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","url":"https://seasonalpha.ai/dashboard","description":"Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Crash-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","url":"https://seasonalpha.ai/dashboard","description":"Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
   <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","item":"https://seasonalpha.ai/dashboard"}]}</script>
 
@@ -277,9 +277,9 @@
 
         <!-- Crash-Ampel (3 cols) -->
         <div class="bento-card bento-crash" id="card-crash">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Crash-Ampel" data-i18n-aria="dash.aria_crash">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_crash"><b>Crash-Ampel</b> — Isolation-Forest-Modell auf Tagesrenditen + Volatilität des Tickers. <b>Grün</b> = ruhiges Regime, <b>Gelb</b> = erhöhte Vorsicht, <b>Rot</b> = Stress-Regime. Risk-Score 0&ndash;100 quantifiziert die Anomalie-Stärke.</div>
-          <div class="ttl" data-i18n="dash.crash_title"><span class="ico">🚦</span> Crash-Ampel</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Stress-Ampel" data-i18n-aria="dash.aria_crash">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_crash"><b>Stress-Ampel</b> — Rang aus Volatilität (5 und 20 Tage) und Abstand vom 20-Tage-Hoch gegen die vorangegangenen bis zu zehn Jahre desselben Tickers. <b>Grün</b> unter 70, <b>Gelb</b> ab 70, <b>Rot</b> ab 90. Beschreibt den aktuellen Zustand, keine Prognose.</div>
+          <div class="ttl" data-i18n="dash.crash_title"><span class="ico">🚦</span> Stress-Ampel</div>
           <div id="crash-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
@@ -381,7 +381,7 @@
           <p data-i18n="dash.method_intro">Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
           <ul>
             <li data-i18n-html="dash.method_ki"><b>KI Composite Score (0-10)</b>: Gewichteter Mix aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking zur Saisonalität). Bullish ≥6.5, Neutral, Bearish ≤3.5. Berechnung wie auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
-            <li data-i18n-html="dash.method_crash"><b>Crash-Ampel (0-100)</b>: Composite-Score aus Volatilität (5d/20d) + Drawdown vom 20d-Hoch. Risk-Score = Perzentilrang innerhalb der letzten 252 Tage des <b>gleichen Tickers</b>. Vollständig ticker-individuell. Schwellen: ≥70 rot, ≥40 gelb.</li>
+            <li data-i18n-html="dash.method_crash"><b>Stress-Ampel (0-100)</b>: Stress-Maß = 0,3 × Volatilität (5 Tage) + 0,3 × Volatilität (20 Tage) + 0,4 × Abstand vom 20-Tage-Hoch; Score = Rang gegen die vorangegangenen bis zu 2.520 Handelstage des <b>gleichen Tickers</b> (mindestens 756). Schwellen: ab 70 gelb, ab 90 rot.</li>
             <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: Z-Score der letzten 10d-Rendite vs. historische 10d-Returns am gleichen Kalenderzeitpunkt. Stark anomal ≥70.</li>
             <li data-i18n-html="dash.method_year"><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
             <li data-i18n-html="dash.method_tdom_curve"><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
@@ -412,6 +412,7 @@
   <script src="/landing/js/charts.js"></script>
   <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/dash-compute.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
   <script src="/landing/js/decade-compute.js"></script>
   <script src="/landing/js/indicators.js"></script>
@@ -757,43 +758,6 @@
           tracking:{score:subTracking,correlation:trackingCorr}
         }
       };
-    }
-
-    // ── Crash-Ampel (Port von crash-fruehwarnung.html) ───────────
-    function computeRegime(rows){
-      if(!rows||rows.length<100)return {traffic_light:'grey',risk_score:0,features:{}};
-      var n=rows.length,closes=rows.map(function(r){return r.close;});
-      var ret1d=closes[n-1]/closes[n-2]-1;
-      var ret5d=closes[n-1]/closes[Math.max(0,n-6)]-1;
-      var ret20d=closes[n-1]/closes[Math.max(0,n-21)]-1;
-      function vol(window){var rets=[];for(var i=Math.max(1,n-window);i<n;i++)rets.push(closes[i]/closes[i-1]-1);var m=rets.reduce(function(s,v){return s+v;},0)/rets.length;var v2=rets.reduce(function(s,v){return s+(v-m)*(v-m);},0)/rets.length;return Math.sqrt(v2)*100;}
-      var vol5=vol(5),vol10=vol(10),vol20=vol(20);
-      var high20=0;
-      for(var i=Math.max(0,n-20);i<n;i++)if(closes[i]>high20)high20=closes[i];
-      var drawdown=(closes[n-1]-high20)/high20*100;
-      // Historische Percentile
-      var histScores=[];
-      for(var t=Math.max(60,n-252);t<n;t++){
-        var hr=[];
-        for(var j=Math.max(1,t-5);j<=t;j++)hr.push(closes[j]/closes[j-1]-1);
-        var hm=hr.reduce(function(s,v){return s+v;},0)/hr.length;
-        var hv5=Math.sqrt(hr.reduce(function(s,v){return s+(v-hm)*(v-hm);},0)/hr.length)*100;
-        hr=[];
-        for(var j=Math.max(1,t-20);j<=t;j++)hr.push(closes[j]/closes[j-1]-1);
-        hm=hr.reduce(function(s,v){return s+v;},0)/hr.length;
-        var hv20=Math.sqrt(hr.reduce(function(s,v){return s+(v-hm)*(v-hm);},0)/hr.length)*100;
-        var hh=0;
-        for(var j=Math.max(0,t-20);j<=t;j++)if(closes[j]>hh)hh=closes[j];
-        var hdd=(closes[t]-hh)/hh*100;
-        histScores.push(hv5*0.3+hv20*0.3+Math.abs(hdd)*0.4);
-      }
-      var currentScore=vol5*0.3+vol20*0.3+Math.abs(drawdown)*0.4;
-      var below=histScores.filter(function(s){return s<currentScore;}).length;
-      var riskScore=Math.round(below/histScores.length*100);
-      var traffic='green';
-      if(riskScore>=70)traffic='red';
-      else if(riskScore>=40)traffic='yellow';
-      return {traffic_light:traffic,risk_score:riskScore,features:{vol_5d:vol5,vol_10d:vol10,vol_20d:vol20,drawdown:drawdown,ret_1d:ret1d*100,ret_5d:ret5d*100,ret_20d:ret20d*100}};
     }
 
     // ── Drawdown + Vola (Port von jahreszyklus.html) ─────────────
@@ -1437,21 +1401,25 @@
     function renderCrashCard(regime, kmeansRegime) {
       var el = document.getElementById('crash-content');
       if (!regime) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">...</p>'; return; }
-      var labels = { green:'Niedrig', yellow:'Erhöht', red:'Hoch', grey:'Unbekannt' };
+      var labels = { green:'Ruhig', yellow:'Erhöht', red:'Hoch', grey:'Kein Wert' };
+      var kopf = regime.risk_score == null
+        ? '<div class="crash-headline" style="font-size:1rem">' + (SA.i18n && SA.i18n.t ? SA.i18n.t('dash.stress_kurz', 'Zu kurze Historie') : 'Zu kurze Historie') +
+          '<small> (' + regime.n_kurse + '/' + regime.benoetigt + ')</small></div>'
+        : '<div class="crash-headline">' + regime.anzeige.toFixed(1).replace('.', ',') + '<small> / 100</small></div>';
       var html = '<div class="crash-light">' +
         '<div class="crash-circle ' + regime.traffic_light + '"></div>' +
-        '<div>' +
-          '<div class="crash-headline">' + regime.risk_score + '<small> / 100</small></div>' +
+        '<div>' + kopf +
           '<div class="crash-status">' + labels[regime.traffic_light] + '</div>' +
         '</div>' +
       '</div>';
       var f = regime.features;
-      var ddCls = f.drawdown < -1 ? 'red' : 'green';
-      var retCls = f.ret_20d >= 0 ? 'green' : 'red';
+      function _w(v, d) { return v == null ? '—' : v.toFixed(d) + '%'; }
+      var ddCls = f.drawdown != null && f.drawdown < -1 ? 'red' : 'green';
+      var retCls = f.ret_20d != null && f.ret_20d >= 0 ? 'green' : 'red';
       html += '<div class="kpi-row-mini" style="grid-template-columns:repeat(3,1fr)">' +
-        '<div class="kpi"><div class="kpi-label">Vol 20d</div><div class="kpi-value">' + f.vol_20d.toFixed(2) + '%</div></div>' +
-        '<div class="kpi"><div class="kpi-label">DD 20d</div><div class="kpi-value ' + ddCls + '">' + f.drawdown.toFixed(1) + '%</div></div>' +
-        '<div class="kpi"><div class="kpi-label">Ret 20d</div><div class="kpi-value ' + retCls + '">' + fmtPct(f.ret_20d,1) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Vol 20d</div><div class="kpi-value">' + _w(f.vol_20d, 2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">DD 20d</div><div class="kpi-value ' + ddCls + '">' + _w(f.drawdown, 1) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ret 20d</div><div class="kpi-value ' + retCls + '">' + (f.ret_20d == null ? '—' : fmtPct(f.ret_20d,1)) + '</div></div>' +
       '</div>';
       if (kmeansRegime) {
         var rCol = {Bull:'#22c55e', Sideways:'#94a3b8', Bear:'#f87171'}[kmeansRegime] || '#94a3b8';
@@ -2123,8 +2091,8 @@
       var ki = computeKiScore(yearData, matches, currentYear, avg, truepath);
       renderKiCard(ki);
 
-      // 2. Crash-Ampel + ML-Regime
-      var regime = computeRegime(rawRows);
+      // 2. Stress-Ampel (eine Formel: SA.dashCompute.computeStress, Zwilling von shared/stress_score.py) + ML-Regime
+      var regime = SA.dashCompute.computeStress(rawRows);
       var _closes = rawRows.map(function(r) { return r.close; });
       var _kArr = (SA.indicators && SA.indicators.calcRegime) ? SA.indicators.calcRegime(_closes, 20) : null;
       var kmeansRegime = _kArr ? (_kArr[_kArr.length - 1] || null) : null;

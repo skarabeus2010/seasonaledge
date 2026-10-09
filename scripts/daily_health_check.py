@@ -740,57 +740,49 @@ def collect_health_data() -> dict:
         })
         downgrade("red")
 
-    # ── Check 6: Regime-Scores (Crash-Ampel) ──────────────────────────
+    # ── Check 6: Stress-Ampel (SPY) — Aktualität UND Methodennachweis ──────────
+    # Liest den jüngsten veröffentlichten Lauf aus stress_scores und rechnet den letzten Wert unabhängig aus den
+    # Kursen nach (shared/stress_score.py). Eine Zeile einer anderen Methode fällt so auf, auch wenn Wertebereich
+    # und Farbe zufällig passen (Plan 2026-10-09, W3/E5 aus Runde 2).
+    _name6 = "Stress-Ampel (SPY)"
     try:
-        resp = (
-            client.table("regime_scores")
-            .select("date")
-            .eq("ticker", "SPY")
-            .order("date", desc=True)
-            .limit(1)
-            .execute()
-        )
-        rows = resp.data or []
-        if not rows:
-            checks.append({
-                "name": "Regime-Scores (SPY)",
-                "status": "red",
-                "detail": "regime_scores leer",
-                "value": "—",
-            })
+        from shared import stress_score
+        lauf = stress_score.letzter_fertiger_lauf(client, "SPY")
+        if not lauf:
+            checks.append({"name": _name6, "status": "red", "detail": "kein veröffentlichter Lauf", "value": "—"})
             downgrade("red")
         else:
-            last_date_str = rows[0]["date"]
-            last_d = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+            letzte = (client.table("stress_scores").select("date,score,s,ampel").eq("lauf_id", lauf["lauf_id"])
+                      .order("date", desc=True).limit(1).execute().data) or []
+            daten, closes, _ = stress_score.lade_kurse("SPY", client)
+            neu = stress_score.stress_aktuell(daten, closes)
+            last_date_str = letzte[0]["date"] if letzte else "—"
+            last_d = datetime.strptime(last_date_str, "%Y-%m-%d").date() if letzte else None
             age_workdays = 0
             probe = last_workday
-            while probe > last_d:
+            while last_d is not None and probe > last_d:
                 probe -= timedelta(days=1)
                 while probe.weekday() >= 5:
                     probe -= timedelta(days=1)
                 age_workdays += 1
-            if age_workdays == 0:
-                status, detail = "green", f"Aktuell bis {last_date_str}"
-            elif age_workdays <= 1:
-                status = "yellow"
-                detail = f"{last_date_str} ({age_workdays} Werktag hinterher)"
-            else:
+            if not letzte:
+                status, detail = "red", "Lauf ohne Zeilen"
+            elif (last_date_str != neu.get("date") or neu.get("score") is None
+                  or abs(float(letzte[0]["score"]) - neu["score"]) > 1e-9
+                  or abs(float(letzte[0]["s"]) - neu["s"]) > 1e-9 or letzte[0]["ampel"] != neu["ampel"]):
                 status = "red"
-                detail = f"{last_date_str} ({age_workdays} Werktage hinterher)"
-            checks.append({
-                "name": "Regime-Scores (SPY)",
-                "status": status,
-                "detail": detail,
-                "value": last_date_str,
-            })
+                detail = (f"Gespeichert {last_date_str} score {letzte[0]['score']} {letzte[0]['ampel']} ≠ nachgerechnet "
+                          f"{neu.get('date')} score {neu.get('score')} {neu.get('ampel')}")
+            elif age_workdays == 0:
+                status, detail = "green", f"Aktuell bis {last_date_str}, nachgerechnet gleich ({neu['ampel']})"
+            elif age_workdays <= 1:
+                status, detail = "yellow", f"{last_date_str} ({age_workdays} Werktag hinterher)"
+            else:
+                status, detail = "red", f"{last_date_str} ({age_workdays} Werktage hinterher)"
+            checks.append({"name": _name6, "status": status, "detail": detail, "value": last_date_str})
             downgrade(status)
     except Exception as e:
-        checks.append({
-            "name": "Regime-Scores (SPY)",
-            "status": "red",
-            "detail": f"Query-Fehler: {str(e)[:100]}",
-            "value": "ERR",
-        })
+        checks.append({"name": _name6, "status": "red", "detail": f"Fehler: {str(e)[:100]}", "value": "ERR"})
         downgrade("red")
 
     return {

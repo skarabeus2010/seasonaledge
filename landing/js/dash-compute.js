@@ -18,8 +18,8 @@
  *       Gewichteter Ø aus den Match-Jahren, geglättet.
  *   - computeKiScore(yearData, matches, currentYear, avg, truepath)
  *       Composite Score 0-10 aus 4 Sub-Scores. Liefert {score, signal, subs}.
- *   - computeRegime(rows)
- *       Crash-Ampel (green/yellow/red + risk_score 0-100 + features).
+ *   - computeStress(rows) / stressReihe(rows)
+ *       Stress-Ampel (green/yellow/red/grey + Score 0-100 + features), Zwilling von shared/stress_score.py.
  *
  * Helper die mit-exportiert werden (weil sie Dashboard-intern genutzt werden):
  *   - mean, stdev, median, corrcoef, euclidean, _clean
@@ -242,63 +242,115 @@
     };
   }
 
-  // ── Crash-Ampel / Regime ──────────────────────────────────────
-  function computeRegime(rows) {
-    if (!rows || rows.length < 100) return { traffic_light: 'grey', risk_score: 0, features: {} };
-    var n = rows.length, closes = rows.map(function(r) { return r.close; });
-    var ret1d = closes[n - 1] / closes[n - 2] - 1;
-    var ret5d = closes[n - 1] / closes[Math.max(0, n - 6)] - 1;
-    var ret20d = closes[n - 1] / closes[Math.max(0, n - 21)] - 1;
+  // ── Stress-Ampel ──────────────────────────────────────────────
+  // Zwilling von shared/stress_score.py (gleiche Formel, gleiche Rechenreihenfolge → bitgleiche Werte).
+  // Plan mit Codex-Freigabe: docs/review_prompts/2026-10-09_stress_ampel_plan.md (v5).
+  //   S_t = 0,3·vol5 + 0,3·vol20 + 0,4·|dd20|; score = Rang von S_t gegen bis zu 2520 FRÜHERE Tage (½ bei Gleichstand,
+  //   ε = 1e-9), erst ab 756 Referenzwerten (777. Schluss); Ampel aus dem ungerundeten Score: gelb ab 70, rot ab 90.
+  //   Heuristisches Stress-Maß, keine Prognose. Ersetzt die frühere „Crash-Ampel" (Rang gegen 252 Tage, 40/70).
+  var STRESS = { GEWICHTE: [0.3, 0.3, 0.4], REF_MAX: 2520, REF_MIN: 756, ERSTER_KURS: 777, VOLL_KURS: 2541,
+                 EPS: 1e-9, GELB: 70, ROT: 90 };
 
-    function vol(window) {
-      var rets = [];
-      for (var i = Math.max(1, n - window); i < n; i++) rets.push(closes[i] / closes[i - 1] - 1);
-      var m = rets.reduce(function(s, v) { return s + v; }, 0) / rets.length;
-      var v2 = rets.reduce(function(s, v) { return s + (v - m) * (v - m); }, 0) / rets.length;
-      return Math.sqrt(v2) * 100;
-    }
+  function stressAmpel(score) {
+    if (score == null) return 'grey';
+    if (score >= STRESS.ROT) return 'red';
+    if (score >= STRESS.GELB) return 'yellow';
+    return 'green';
+  }
+  /** Auf eine Nachkommastelle abgeschnitten (89,96 → 89,9) — die Zahl widerspricht nie der Farbe. */
+  function stressAnzeige(score) { return score == null ? null : Math.floor(score * 10) / 10; }
 
-    var vol5 = vol(5), vol10 = vol(10), vol20 = vol(20);
-    var high20 = 0;
-    for (var i = Math.max(0, n - 20); i < n; i++) if (closes[i] > high20) high20 = closes[i];
-    var drawdown = (closes[n - 1] - high20) / high20 * 100;
+  function _stressBereinigen(rows) {
+    var je = {}, dup = 0;
+    (rows || []).forEach(function(r) {
+      var c = typeof r.close === 'number' ? r.close : parseFloat(r.close);
+      if (!(typeof c === 'number' && isFinite(c) && c > 0) || !r.date) return;
+      var d = String(r.date).slice(0, 10);
+      if (Object.prototype.hasOwnProperty.call(je, d)) dup++;
+      je[d] = c;
+    });
+    var ds = Object.keys(je).sort();
+    return { daten: ds, closes: ds.map(function(d) { return je[d]; }), duplikate: dup };
+  }
 
-    // Historische Perzentile
-    var histScores = [];
-    for (var t = Math.max(60, n - 252); t < n; t++) {
-      var hr = [];
-      for (var j = Math.max(1, t - 5); j <= t; j++) hr.push(closes[j] / closes[j - 1] - 1);
-      var hm = hr.reduce(function(s, v) { return s + v; }, 0) / hr.length;
-      var hv5 = Math.sqrt(hr.reduce(function(s, v) { return s + (v - hm) * (v - hm); }, 0) / hr.length) * 100;
-      hr = [];
-      for (var j = Math.max(1, t - 20); j <= t; j++) hr.push(closes[j] / closes[j - 1] - 1);
-      hm = hr.reduce(function(s, v) { return s + v; }, 0) / hr.length;
-      var hv20 = Math.sqrt(hr.reduce(function(s, v) { return s + (v - hm) * (v - hm); }, 0) / hr.length) * 100;
-      var hh = 0;
-      for (var j = Math.max(0, t - 20); j <= t; j++) if (closes[j] > hh) hh = closes[j];
-      var hdd = (closes[t] - hh) / hh * 100;
-      histScores.push(hv5 * 0.3 + hv20 * 0.3 + Math.abs(hdd) * 0.4);
-    }
+  function _stressStd(r, von, bis) {
+    var n = bis - von + 1, m = 0, q = 0, i;
+    for (i = von; i <= bis; i++) m += r[i];
+    m = m / n;
+    for (i = von; i <= bis; i++) q += (r[i] - m) * (r[i] - m);
+    return Math.sqrt(q / (n - 1));
+  }
+  function _lowerBound(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (a[mid] < x) lo = mid + 1; else hi = mid; } return lo; }
+  function _upperBound(a, x) { var lo = 0, hi = a.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (a[mid] <= x) lo = mid + 1; else hi = mid; } return lo; }
 
-    var currentScore = vol5 * 0.3 + vol20 * 0.3 + Math.abs(drawdown) * 0.4;
-    var below = histScores.filter(function(s) { return s < currentScore; }).length;
-    var riskScore = Math.round(below / histScores.length * 100);
-    var traffic = 'green';
-    if (riskScore >= 70) traffic = 'red';
-    else if (riskScore >= 40) traffic = 'yellow';
-
-    return {
-      traffic_light: traffic,
-      risk_score: riskScore,
-      features: {
-        vol_5d: vol5,
-        vol_10d: vol10,
-        vol_20d: vol20,
-        drawdown: drawdown,
-        ret_1d: ret1d * 100,
-        ret_5d: ret5d * 100,
-        ret_20d: ret20d * 100
+  /** Eine Zeile je bereinigtem Kurs: date, close, vol5, vol10, vol20, dd20, s, score, ampel, referenz_n, ret1d/5d/20d. */
+  function stressReihe(rows) {
+    var b = _stressBereinigen(rows), daten = b.daten, c = b.closes, n = c.length;
+    var r = [null], i, k;
+    for (i = 1; i < n; i++) r.push((c[i] / c[i - 1] - 1) * 100);
+    var out = [], fenster = [], sFolge = [];
+    for (i = 0; i < n; i++) {
+      var vol5 = i >= 5 ? _stressStd(r, i - 4, i) : null;
+      var vol10 = i >= 10 ? _stressStd(r, i - 9, i) : null;
+      var vol20 = i >= 20 ? _stressStd(r, i - 19, i) : null;
+      var dd20 = null;
+      if (i >= 19) {
+        var hoch = c[i - 19];
+        for (k = i - 18; k <= i; k++) if (c[k] > hoch) hoch = c[k];
+        dd20 = (c[i] / hoch - 1) * 100;
       }
+      var s = null;
+      if (vol5 != null && vol20 != null && dd20 != null) s = STRESS.GEWICHTE[0] * vol5 + STRESS.GEWICHTE[1] * vol20 + STRESS.GEWICHTE[2] * Math.abs(dd20);
+      var score = null, refN = fenster.length;
+      if (s != null && refN >= STRESS.REF_MIN) {
+        var kleiner = _lowerBound(fenster, s - STRESS.EPS), bisGleich = _upperBound(fenster, s + STRESS.EPS);
+        score = 100.0 * (kleiner + 0.5 * (bisGleich - kleiner)) / refN;
+      }
+      out.push({ date: daten[i], close: c[i], vol5: vol5, vol10: vol10, vol20: vol20, dd20: dd20, s: s, score: score,
+                 ampel: stressAmpel(score), referenz_n: s != null ? refN : 0,
+                 ret1d: i >= 1 ? r[i] : null, ret5d: i >= 5 ? (c[i] / c[i - 5] - 1) * 100 : null,
+                 ret20d: i >= 20 ? (c[i] / c[i - 20] - 1) * 100 : null });
+      // Referenz endet bei t−1: S_t erst nach dem Rang hinein, S_{t−2520} heraus
+      sFolge.push(s);
+      if (s != null) {
+        fenster.splice(_lowerBound(fenster, s), 0, s);
+        var altI = i - STRESS.REF_MAX;
+        if (altI >= 0 && sFolge[altI] != null) fenster.splice(_lowerBound(fenster, sFolge[altI]), 1);
+      }
+    }
+    return out;
+  }
+
+  /** Anzeigewerte für die letzten n Kurse (Plan W2): Werte des veröffentlichten DB-Laufs nur, wenn sie für JEDEN Tag mit
+   *  Score im Zeitraum vorliegen und der letzte Kurstag dabei ist; sonst die Browserrechnung. Rückgabe {zeilen, quelle}. */
+  function stressAnzeigeWerte(reihe, dbZeilen, n) {
+    var anzeige = reihe.slice(-n), db = {};
+    if (!anzeige.length || !dbZeilen || !dbZeilen.length) return { zeilen: anzeige, quelle: 'browser' };
+    dbZeilen.forEach(function(z) { db[String(z.date).slice(0, 10)] = z; });
+    var letzte = anzeige[anzeige.length - 1];
+    var voll = anzeige.every(function(z) { return z.score == null || db[z.date]; });
+    if (!voll || !db[letzte.date]) return { zeilen: anzeige, quelle: 'browser' };
+    function f(v) { return v == null ? null : parseFloat(v); }
+    return { quelle: 'db', zeilen: anzeige.map(function(z) {
+      var d = db[z.date];
+      if (!d) return z;
+      return { date: z.date, close: z.close, score: f(d.score), ampel: d.ampel, s: f(d.s), vol5: f(d.vol5), vol10: f(d.vol10),
+               vol20: f(d.vol20), dd20: f(d.dd20), ret1d: f(d.ret1d), ret5d: f(d.ret5d), ret20d: f(d.ret20d),
+               referenz_n: z.referenz_n };
+    }) };
+  }
+
+  /** Aktueller Stand (letzte Zeile) im Format der früheren computeRegime-Ausgabe plus Status. */
+  function computeStress(rows) {
+    var reihe = stressReihe(rows);
+    if (!reihe.length) return { status: 'leer', n_kurse: 0, traffic_light: 'grey', risk_score: null, anzeige: null, features: {} };
+    var z = reihe[reihe.length - 1];
+    return {
+      status: z.score != null ? 'ok' : 'zu_kurz', n_kurse: reihe.length, benoetigt: STRESS.ERSTER_KURS,
+      date: z.date, traffic_light: z.ampel, risk_score: z.score, anzeige: stressAnzeige(z.score),
+      s: z.s, referenz_n: z.referenz_n,
+      features: { vol_5d: z.vol5, vol_10d: z.vol10, vol_20d: z.vol20, drawdown: z.dd20,
+                  ret_1d: z.ret1d, ret_5d: z.ret5d, ret_20d: z.ret20d }
     };
   }
 
@@ -308,7 +360,12 @@
     findMatchingYears: findMatchingYears,
     computeTruePath: computeTruePath,
     computeKiScore: computeKiScore,
-    computeRegime: computeRegime,
+    computeStress: computeStress,
+    stressReihe: stressReihe,
+    stressAnzeigeWerte: stressAnzeigeWerte,
+    stressAmpel: stressAmpel,
+    stressAnzeige: stressAnzeige,
+    STRESS: STRESS,
     // Math-Helper (wieder-verwendbar von Consumer-Pages)
     mean: mean,
     median: median,

@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Meine Watchlist &mdash; KI-Score & Signale deiner Ticker | SeasonAlpha</title>
-  <meta name="description" content="Deine pers&ouml;nliche Watchlist mit KI-Score, Crash-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.">
+  <meta name="description" content="Deine pers&ouml;nliche Watchlist mit KI-Score, Stress-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#000000">
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/watchlist">
   <meta property="og:title" content="Meine Watchlist &mdash; SeasonAlpha">
-  <meta property="og:description" content="Pers&ouml;nliche Watchlist mit KI-Score, Crash-Ampel und saisonalen Signalen.">
+  <meta property="og:description" content="Pers&ouml;nliche Watchlist mit KI-Score, Stress-Ampel und saisonalen Signalen.">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
   <meta property="og:site_name" content="SeasonAlpha">
   <meta property="og:locale" content="de_DE">
@@ -90,6 +90,7 @@
     .wl-card__crash.yellow .wl-card__crash-dot{background:var(--accent);box-shadow:0 0 12px rgba(232,168,32,.5)}
     .wl-card__crash.red{border-color:rgba(255,64,64,.3)}
     .wl-card__crash.red .wl-card__crash-dot{background:var(--red);box-shadow:0 0 12px rgba(255,64,64,.5)}
+    .wl-card__crash.grey .wl-card__crash-dot{background:var(--muted)}
     .wl-card__crash-label{flex:1;color:var(--dim);font-weight:600}
     .wl-card__crash-score{font-family:var(--f-m);font-size:.75rem;color:var(--muted)}
 
@@ -242,7 +243,7 @@
           <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_avg_ki">Ø KI-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
           <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bullish">Bullish</div><div class="kpi-value green" id="sum-bulls">–</div></div>
           <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bearish">Bearish</div><div class="kpi-value red" id="sum-bears">–</div></div>
-          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_green_regime">Im grünen Regime</div><div class="kpi-value" id="sum-green">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_green_regime">Stress-Ampel grün</div><div class="kpi-value" id="sum-green">–</div></div>
         </div>
       </div>
     </main>
@@ -462,7 +463,7 @@
         var matches = SA.dashCompute.findMatchingYears(yearData, currentYear, 'correlation', 5);
         var truepath = SA.dashCompute.computeTruePath(matches, 5);
         var ki = SA.dashCompute.computeKiScore(yearData, matches, currentYear, avg, truepath);
-        var regime = SA.dashCompute.computeRegime(rows);
+        var regime = SA.dashCompute.computeStress(rows);
 
         // ── Zusätzliche KPIs für die erweiterte Card ───────────
         var n = rows.length;
@@ -551,7 +552,7 @@
       // 4 KPIs
       var winRate = ki.subs.winRate.score * 100;
       var ret5 = regime.features.ret_5d;
-      var ret5Class = ret5 > 0.1 ? 'pos' : (ret5 < -0.1 ? 'neg' : 'neutral');
+      var ret5Class = ret5 == null ? 'neutral' : (ret5 > 0.1 ? 'pos' : (ret5 < -0.1 ? 'neg' : 'neutral'));
       var dd252 = card.dd252;
       // Drawdown ist immer ≤ 0 — Farb-Intensität nach Tiefe: >-5% neutral, -5 bis -15 muted, <-15 rot
       var ddClass = dd252 > -5 ? 'neutral' : (dd252 > -15 ? 'muted' : 'neg');
@@ -560,7 +561,7 @@
       var volClass = vol20 < 15 ? 'neutral' : (vol20 < 30 ? '' : 'gold');
 
       // Crash-Ampel
-      var trafficLabels = { green: 'Normal', yellow: 'Erhöht', red: 'Risiko', grey: 'Unbekannt' };
+      var trafficLabels = { green: 'Ruhig', yellow: 'Erhöht', red: 'Hoch', grey: 'Kein Wert' };
       var trafficLabel = trafficLabels[regime.traffic_light] || regime.traffic_light;
 
       // 2W-Saisonalität mit Bewertung
@@ -637,8 +638,8 @@
 
         '<div class="wl-card__crash ' + regime.traffic_light + '">' +
           '<span class="wl-card__crash-dot"></span>' +
-          '<span class="wl-card__crash-label">Crash-Ampel: ' + trafficLabel + '</span>' +
-          '<span class="wl-card__crash-score">' + regime.risk_score + '/100</span>' +
+          '<span class="wl-card__crash-label">Stress-Ampel: ' + trafficLabel + '</span>' +
+          '<span class="wl-card__crash-score">' + (regime.risk_score == null ? 'zu kurz' : regime.anzeige.toFixed(1).replace('.', ',') + '/100') + '</span>' +
         '</div>' +
 
         '<div class="wl-card__kpi-grid">' +
@@ -648,7 +649,7 @@
           '</div>' +
           '<div class="wl-card__kpi">' +
             '<div class="wl-card__kpi-lbl">Ret 5d</div>' +
-            '<div class="wl-card__kpi-val ' + ret5Class + '">' + (ret5 >= 0 ? '+' : '') + ret5.toFixed(1) + '%</div>' +
+            '<div class="wl-card__kpi-val ' + ret5Class + '">' + (ret5 == null ? '—' : (ret5 >= 0 ? '+' : '') + ret5.toFixed(1) + '%') + '</div>' +
           '</div>' +
           '<div class="wl-card__kpi">' +
             '<div class="wl-card__kpi-lbl">DD 1Y</div>' +
@@ -656,7 +657,7 @@
           '</div>' +
           '<div class="wl-card__kpi">' +
             '<div class="wl-card__kpi-lbl">Vol 20d</div>' +
-            '<div class="wl-card__kpi-val ' + volClass + '">' + vol20.toFixed(0) + '%</div>' +
+            '<div class="wl-card__kpi-val ' + volClass + '">' + (vol20 == null ? '—' : vol20.toFixed(0) + '%') + '</div>' +
           '</div>' +
         '</div>' +
 
@@ -729,12 +730,14 @@
       var avgKi = valid.reduce(function(s, c) { return s + c.ki.score; }, 0) / valid.length;
       var bulls = valid.filter(function(c) { return c.ki.signal === 'Bullish'; }).length;
       var bears = valid.filter(function(c) { return c.ki.signal === 'Bearish'; }).length;
-      var greens = valid.filter(function(c) { return c.regime.traffic_light === 'green'; }).length;
+      // Grün nur unter den berechenbaren Tickern; ohne Score (zu kurze Historie) separat (Plan 2026-10-09, V5)
+      var mitScore = valid.filter(function(c) { return c.regime.risk_score != null; });
+      var greens = mitScore.filter(function(c) { return c.regime.traffic_light === 'green'; }).length;
 
       qs('sum-avg-ki').textContent = avgKi.toFixed(1);
       qs('sum-bulls').textContent = bulls + ' / ' + valid.length;
       qs('sum-bears').textContent = bears + ' / ' + valid.length;
-      qs('sum-green').textContent = greens + ' / ' + valid.length;
+      qs('sum-green').textContent = greens + ' / ' + mitScore.length + (mitScore.length < valid.length ? ' (' + (valid.length - mitScore.length) + ' ohne Wert)' : '');
       qs('wl-summary').style.display = '';
 
       qs('wl-bull-pill').textContent = bulls + ' Bullish';

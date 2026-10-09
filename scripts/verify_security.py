@@ -61,7 +61,7 @@ UNGEPRUEFT = "UNGEPRÜFT"
 # nach ihrem Namen. Eine Protokolltabelle gehört hier nur hinein, wenn nachgewiesen
 # ist, dass kein Job Personendaten hineinschreibt — siehe Prüfung 7.
 OEFFENTLICHE_TABELLEN = {
-    "prices", "monthly_stats", "scanner_results", "regime_scores",
+    "prices", "monthly_stats", "scanner_results", "regime_scores", "stress_laeufe", "stress_scores",
     "tdom_stats", "tdoy_stats", "tickers", "historical_cpi",
     "spot_vol_beta", "market_events", "seasonality", "ki_scores",
     "central_bank_dates", "dividend_events", "earnings_events",

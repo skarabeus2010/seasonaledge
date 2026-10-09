@@ -99,47 +99,40 @@ def top_ki_scores(limit: int = DEFAULT_TOP_N) -> list[dict]:
 # ── Sektion 2: Regime-Status ─────────────────────────────────────────────
 def regime_status(tickers: list[str]) -> dict[str, dict]:
     """
-    Neuester regime_scores-Record pro Ticker.
+    Stress-Ampel je Ticker, live aus den Kursen gerechnet (shared/stress_score.py) — `stress_scores` enthält nur SPY,
+    die alte Tabelle `regime_scores` ist seit 2026-10-09 stillgelegt (Vorzeichen vertauscht).
 
     Returns:
-        {ticker: {traffic_light, risk_score, vol_20d, drawdown, date}}
-        Fehlt ein Ticker → nicht im Dict enthalten.
+        {ticker: {status, traffic_light, risk_score, vol_20d, drawdown, ret_5d, date}} für JEDEN angefragten Ticker;
+        status ok | veraltet | zu_kurz | leer | fehlt. Werte in Prozent (vol20/dd20/ret5d wie von stress_score).
     """
+    result: dict[str, dict] = {}
     if not tickers:
-        return {}
-    try:
-        from shared.supabase_client import get_client
-        client = get_client()
-        # Wir laden alle Records der letzten 14 Tage für diese Tickers und
-        # behalten pro Ticker nur den neuesten. So kriegen wir mit einer
-        # einzigen Query alles und die Client-Logik filtert lokal.
-        cutoff = (date.today() - timedelta(days=14)).strftime("%Y-%m-%d")
-        rows = (
-            client.table("regime_scores")
-            .select("ticker,date,risk_score,traffic_light,vol_20d,drawdown,ret_5d")
-            .in_("ticker", tickers)
-            .gte("date", cutoff)
-            .order("date", desc=True)
-            .execute()
-            .data
-        ) or []
-
-        result: dict[str, dict] = {}
-        for r in rows:
-            t = r["ticker"]
-            if t not in result:  # Erster Treffer = neuester (weil desc sortiert)
-                result[t] = {
-                    "traffic_light": r.get("traffic_light", "grey"),
-                    "risk_score": r.get("risk_score"),
-                    "vol_20d": r.get("vol_20d"),
-                    "drawdown": r.get("drawdown"),
-                    "ret_5d": r.get("ret_5d"),
-                    "date": r.get("date"),
-                }
         return result
+    try:
+        from shared import stress_score
+        from shared.supabase_client import get_client
+        from shared.symbols import get_exchange_for_holidays
+        client = get_client()
     except Exception as e:
-        error_logger.error(f"[weekly_report] regime_status failed: {e}")
-        return {}
+        error_logger.error(f"[weekly_report] regime_status: Setup fehlgeschlagen: {e}")
+        return {t: {"status": "fehlt", "traffic_light": "grey"} for t in tickers}
+    for t in tickers:
+        try:
+            z = stress_score.stress_fuer_ticker(t, client, boerse=get_exchange_for_holidays(t))
+        except Exception as e:  # noqa: BLE001
+            error_logger.error(f"[weekly_report] regime_status {t}: {e}")
+            z = {"status": "fehlt", "score": None, "ampel": "grey"}
+        result[t] = {
+            "status": z.get("status"),
+            "traffic_light": z.get("ampel", "grey") if z.get("status") == "ok" else "grey",
+            "risk_score": z.get("score"),
+            "vol_20d": z.get("vol20"),
+            "drawdown": z.get("dd20"),
+            "ret_5d": z.get("ret5d"),
+            "date": z.get("date"),
+        }
+    return result
 
 
 # ── Sektion 3: Upcoming Events ───────────────────────────────────────────

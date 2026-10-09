@@ -390,44 +390,20 @@ def main():
         app_logger.error(f"nightly_refresh: Backfill fehlgeschlagen: {e}")
         print(f"Backfill log_return failed: {e}")
 
-    # Phase E: Regime-Scores (Isolation Forest)
+    # Phase E: Stress-Ampel (shared/stress_score.py) — jeder Lauf ist ein geprüfter Vollauf mit eigener Version;
+    # sichtbar erst nach Rücklesevergleich und atomarer Veröffentlichung (Plan 2026-10-09 v5, Y1/Y2).
     regime_status = {"ok": False, "tickers": [], "scores": 0, "error": None}
     try:
-        from scripts.compute_regime_scores import compute_regime_scores, upsert_regime_scores, get_last_score_date
-        from shared.data import download_data as _dl_regime, preprocess as _pp_regime
-        from datetime import timedelta as _td
-        _regime_tickers = ["SPY"]
-        for _rt in _regime_tickers:
-            _raw = _dl_regime(_rt)
-            if _raw is not None and not _raw.empty:
-                _df_r = _pp_regime(_raw)
-                _scores = compute_regime_scores(_df_r)
-                if not _scores.empty:
-                    _cutoff = (date.today() - _td(days=7)).strftime("%Y-%m-%d")
-                    _recent = _scores[_scores["date"] >= _cutoff]
-                    if not _recent.empty:
-                        upsert_regime_scores(_rt, _recent)
-                        regime_status["tickers"].append(_rt)
-                        regime_status["scores"] += len(_recent)
-                        print(f"Regime-Scores {_rt}: {len(_recent)} Tage aktualisiert ✓")
-
-        # Health-Check: letzter Score darf max 3 Tage alt sein
-        for _rt in _regime_tickers:
-            _last = get_last_score_date(_rt)
-            _max_age = date.today() - _td(days=3)
-            if _last is None or _last.date() < _max_age:
-                _msg = f"Regime-Score {_rt}: letzter Score veraltet ({_last})"
-                app_logger.warning(_msg)
-                print(f"⚠️ {_msg}")
-                regime_status["error"] = _msg
-            else:
-                print(f"Regime-Score {_rt}: aktuell bis {_last.strftime('%Y-%m-%d')} ✓")
-
-        regime_status["ok"] = regime_status["error"] is None and regime_status["scores"] > 0
+        from shared import stress_score as _stress
+        for _rt in ["SPY"]:
+            _r = _stress.vollauf(_rt, protokoll=lambda m: print(m, flush=True))
+            regime_status["tickers"].append(_rt)
+            regime_status["scores"] += _r["n_scores"]
+        regime_status["ok"] = regime_status["scores"] > 0
     except Exception as e:
         regime_status["error"] = str(e)
-        app_logger.error(f"nightly_refresh: Regime-Scores fehlgeschlagen: {e}")
-        print(f"Regime-Scores failed: {e}")
+        app_logger.error(f"nightly_refresh: Stress-Ampel fehlgeschlagen: {e}")
+        print(f"Stress-Ampel failed: {e}")
 
     # Phase E1b: Spot-Vol-Beta (SPX vs VIX) — hatte bisher KEINEN Cron und stand still.
     try:
