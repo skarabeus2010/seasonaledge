@@ -26,8 +26,17 @@ zerstört.
 ## Der Aufruf
 
 ```bash
-codex exec -s read-only "<Prompt>"
+codex exec -s read-only "<Prompt>" < /dev/null
 ```
+
+**Stand 2026-10-09:** `codex` im PATH ist die npm-CLI (`%APPDATA%/npm/codex`,
+v0.162.0), in Git-Bash und PowerShell erreichbar. Sie muss mit dem Modell in
+`~/.codex/config.toml` Schritt halten. Die alte Fassung 0.154.0 lehnte das dort
+eingestellte `gpt-6.1-sol` mit Fehler 400 ab („not supported when using Codex
+with a ChatGPT account"). Das sieht aus wie ein Konto- oder Rechteproblem, ist
+aber nur eine veraltete CLI. Vor einer Review-Runde einmal prüfen:
+`codex exec -s read-only "Antworte nur mit: bereit" < /dev/null`. Bei Fehler 400
+oder „requires a newer version" hilft `npm i -g @openai/codex@latest`.
 
 `-s read-only` = Codex darf lesen und Kommandos ausführen, aber nichts schreiben.
 Das ist die richtige Voreinstellung für eine Abnahme.
@@ -37,7 +46,7 @@ Das ist die richtige Voreinstellung für eine Abnahme.
 | Falle | Symptom | Abhilfe |
 |---|---|---|
 | **`nohup … &`** | Lauf wird abgeschnitten, kein Schlussurteil — die Tool-Shell endet und nimmt den Prozess mit | Im **Vordergrund** starten; das Werkzeug lagert selbst aus, wenn es lange dauert |
-| **Veraltete CLI** | `The 'gpt-5.6-luna' model requires a newer version of Codex` | `npm install -g @openai/codex@latest` |
+| **Veraltete CLI** | `The 'gpt-5.6-luna' model requires a newer version of Codex` — oder (2026-10-09) **HTTP 400 „model is not supported when using Codex with a ChatGPT account"**, das nach Kontoproblem aussieht | `npm install -g @openai/codex@latest`. Das Desktop-App-Binary aktualisiert sich selbst und ist meist neuer als die npm-CLI |
 | **`py -3.14` unsichtbar** | Codex sieht nur Python 3.9, das an `X \| None` scheitert | Absoluten Pfad mitgeben: `C:/Users/<user>/AppData/Local/Python/pythoncore-3.14-64/python.exe` |
 | **Langläufer** | Abbruch beim Warten; der Mutationstest startet den Wächter 16× | Selbst ausführen, Codex die **Ausgabe** prüfen lassen — samt der Frage, ob das Ergebnis auch ohne echtes Greifen entstehen könnte |
 | **Falscher Sandbox-Modus** | Der Mutationstest **schreibt** Dateien, unter `read-only` unmöglich | `--sandbox workspace-write`, vorher `git status --porcelain --untracked-files=no \| md5sum` merken und danach vergleichen |

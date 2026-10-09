@@ -158,32 +158,217 @@ def fetch_event_detail(event_id: str | int) -> dict | None:
 
 # ── Gamma API: Markets (Snapshot + Metadata) ──────────────────────────────────
 
-def fetch_markets_by_condition_ids(condition_ids: list[str]) -> list[dict]:
+# Wie viele IDs in einen Abruf gehen. Das `limit` wird AUSDRUECKLICH gesetzt:
+# ohne Angabe liefert Gamma 20 Zeilen, und zwar lautlos. Gemessen am
+# 2026-10-09 mit den 26 condition_ids des Katalogs: ohne `limit` kamen 20
+# zurueck, mit `limit=100` kamen 25 — der sechste fehlte wirklich. Sechs
+# Maerkte gingen also bei jedem Lauf verloren, ohne dass etwas scheiterte.
+GAMMA_STAPEL = 50
+
+
+class GammaAbdeckung:
+    """Ergebnis einer Sammelabfrage, mit NACHGEWIESENER Abdeckung.
+
+    Vier getrennte Mengen, weil sie verschiedene Dinge bedeuten und nur die
+    zweite eine Aussage ueber den Markt erlaubt:
+
+      markets           die Antworten, die zu angefragten IDs gehoeren
+      fehlt_bestaetigt  einzeln nachgefragt, Antwort war ERFOLGREICH und leer
+      unklar            der Abruf oder die Nachfrage ist technisch gescheitert
+      fremd             kam zurueck, war aber nicht angefragt
+
+    `unklar` darf NIE zu „unavailable" fuehren. Eine Mengendifferenz beweist
+    keine Vollstaendigkeit — das war der Kern des Befundes: fuenf von sechs
+    scheinbar verschwundenen Maerkten waren einzeln angefragt da und offen.
     """
-    Markt-Batch laden. Gamma unterstuetzt multiple condition_ids per Query-Param.
-    Gibt leere Liste wenn keine IDs uebergeben.
+
+    __slots__ = ('markets', 'fehlt_bestaetigt', 'unklar', 'fremd')
+
+    def __init__(self, markets, fehlt_bestaetigt, unklar, fremd):
+        self.markets = markets
+        self.fehlt_bestaetigt = fehlt_bestaetigt
+        self.unklar = unklar
+        self.fremd = fremd
+
+    @property
+    def vollstaendig(self) -> bool:
+        """Ist ueber JEDE angefragte ID eine Aussage moeglich?"""
+        return not self.unklar
+
+    def __repr__(self):
+        return ('GammaAbdeckung(markets=%d, fehlt_bestaetigt=%d, unklar=%d, '
+                'fremd=%d)' % (len(self.markets), len(self.fehlt_bestaetigt),
+                               len(self.unklar), len(self.fremd)))
+
+
+def _ein_stapel(batch: list[str]) -> list | None:
+    """Ein Abruf. `None` heisst TECHNISCH GESCHEITERT, `[]` heisst leer.
+
+    `_request` gibt bei einem harten Fehler `None` zurueck, bei einer
+    erfolgreichen leeren Antwort `[]`. Der alte Helfer machte daraus beides
+    dasselbe (`if isinstance(data, list)`), und damit war ein Ausfall nicht von
+    „gibt es nicht" zu unterscheiden.
+    """
+    data = _request(
+        "GET", f"{GAMMA_URL}/markets",
+        # requests serialisiert eine Liste zu ?condition_ids=a&condition_ids=b
+        params={"condition_ids": batch, "limit": len(batch)},
+    )
+    return data if isinstance(data, list) else None
+
+
+def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
+    """Sammelabfrage mit Nachweis, was ueber jede angefragte ID gilt.
+
+    Reihenfolge der Schritte, und jeder ist noetig:
+      1. Eingaben deduplizieren (Reihenfolge bleibt). Eine doppelte ID wuerde
+         die Mengenrechnung verfaelschen.
+      2. Stapelweise abrufen, `limit` ausdruecklich gesetzt.
+      3. Antworten gegen die ANGEFRAGTEN IDs pruefen. Was nicht angefragt war,
+         gilt als `fremd` und wird nicht mitgezaehlt.
+      4. Was fehlt, EINZELN nachfragen. Erst eine erfolgreiche leere Antwort
+         belegt „gibt es nicht"; ein Fehler dabei ergibt `unklar`.
+    """
+    gesehen: set[str] = set()
+    ids: list[str] = []
+    for c in (condition_ids or []):
+        c = (c or '').strip()
+        if c and c not in gesehen:
+            gesehen.add(c)
+            ids.append(c)
+    if not ids:
+        return GammaAbdeckung([], set(), set(), set())
+
+    angefragt = set(ids)
+    markets: list[dict] = []
+    getroffen: set[str] = set()
+    unklar: set[str] = set()
+    fremd: set[str] = set()
+
+    for i in range(0, len(ids), GAMMA_STAPEL):
+        batch = ids[i:i + GAMMA_STAPEL]
+        data = _ein_stapel(batch)
+        if data is None:
+            # Der ganze Stapel ist ungeprueft. Jede seiner IDs bekommt unten
+            # noch eine Einzelnachfrage; bleibt die auch erfolglos, ist sie
+            # `unklar` und NICHT verschwunden.
+            continue
+        for m in data:
+            cid = (m or {}).get('conditionId')
+            if cid in angefragt:
+                markets.append(m)
+                getroffen.add(cid)
+            elif cid:
+                fremd.add(cid)
+
+    fehlt_bestaetigt: set[str] = set()
+    for cid in ids:
+        if cid in getroffen:
+            continue
+        einzeln = _ein_stapel([cid])
+        if einzeln is None:
+            unklar.add(cid)              # technischer Fehler, keine Aussage
+        elif einzeln:
+            for m in einzeln:
+                if (m or {}).get('conditionId') == cid:
+                    markets.append(m)
+                    getroffen.add(cid)
+            if cid not in getroffen:
+                # Antwort da, aber die ID nicht darin — das ist keine
+                # Bestaetigung, sondern eine unpassende Antwort.
+                unklar.add(cid)
+        else:
+            fehlt_bestaetigt.add(cid)    # erfolgreich und leer
+
+    return GammaAbdeckung(markets, fehlt_bestaetigt, unklar, fremd)
+
+
+def fetch_markets_by_condition_ids(condition_ids: list[str]) -> list[dict]:
+    """Markt-Batch laden. Huelle um `fetch_markets_mit_abdeckung`.
+
+    Der Rueckgabetyp bleibt unveraendert (Liste), damit der bestehende
+    Aufrufer nichts merkt. Wer wissen muss, was ueber die NICHT gelieferten
+    IDs gilt, nimmt `fetch_markets_mit_abdeckung` — eine Liste allein kann das
+    nicht sagen.
     """
     if not condition_ids:
         return []
-    # Gamma Query-Param: condition_ids wiederholen
-    # Praktisch limitieren auf ~50 pro Request
-    out: list[dict] = []
-    for i in range(0, len(condition_ids), 50):
-        batch = condition_ids[i:i + 50]
-        # requests serialisiert list -> ?condition_ids=a&condition_ids=b
-        data = _request(
-            "GET", f"{GAMMA_URL}/markets",
-            params={"condition_ids": batch},
-        )
-        if isinstance(data, list):
-            out.extend(data)
-    return out
+    return fetch_markets_mit_abdeckung(condition_ids).markets
 
 
 def fetch_market_by_condition_id(condition_id: str) -> dict | None:
     """Ein einzelnes Market per conditionId holen."""
     lst = fetch_markets_by_condition_ids([condition_id])
     return lst[0] if lst else None
+
+
+# ── Marktstatus aus der Gamma-Antwort ────────────────────────────────────────
+
+STATUS_OFFEN = "open"
+STATUS_PAUSIERT = "paused"
+STATUS_GESCHLOSSEN = "closed"
+STATUS_AUFGELOEST = "resolved"
+STATUS_UNERREICHBAR = "unavailable"
+STATUS_UNBEKANNT = "unbekannt"
+
+# Welche Status eine Bewertung tragen duerfen. Nur ein offener Markt — und
+# auch das ist in Phase B3 nur eine NOTWENDIGE Bedingung neben Frische und
+# Preisqualitaet, keine hinreichende.
+STATUS_BEWERTBAR = frozenset({STATUS_OFFEN})
+
+# Welche Status sichtbar bleiben. Ein pausierter Markt soll gekennzeichnet
+# werden und nicht verschwinden; `unbekannt` ebenfalls — wenn wir es nicht
+# wissen, ist Anzeigen mit Kennzeichnung ehrlicher als Verstecken.
+STATUS_SICHTBAR = frozenset({STATUS_OFFEN, STATUS_PAUSIERT, STATUS_UNBEKANNT})
+
+
+def status_aus_markt(raw: dict | None) -> str:
+    """Leitet den Marktstatus aus der Gamma-Antwort ab.
+
+    Die Tabelle steht auf GEMESSENEN Feldern (2026-10-09, lesend im
+    App-Container, 20 offene und 40 geschlossene Maerkte). Drei Felder, die
+    naheliegend aussehen, sind dabei ausgeschieden:
+
+      * `umaResolutionStatus` existiert nicht (0 von 20). Es gibt
+        `umaResolutionStatuses`, und der Wert ist `"[]"` — auch bei 40 von 40
+        geschlossenen Maerkten. Als Aufloesungssignal wertlos.
+      * `active` ist bei geschlossenen Maerkten `true` (40 von 40). Wertlos.
+      * `acceptingOrders` ist bei geschlossenen Maerkten `null`, nicht
+        `false`. Die naheliegende Regel „nicht handelsbereit heisst pausiert"
+        haette damit JEDEN geschlossenen Markt als pausiert eingestuft.
+
+    Deshalb wird strikt auf `is True` / `is False` geprueft: `null` ist weder
+    das eine noch das andere und darf keine Richtung begruenden.
+
+    ERKENNTNISGRENZE, ausdruecklich: `resolved` ist mit diesen Feldern NICHT
+    von `closed` zu unterscheiden. `closedTime` sagt, WANN geschlossen wurde,
+    nicht WIE aufgeloest wurde; `outcomePrices` war bei den gemessenen
+    geschlossenen Maerkten `["0","0"]`, nennt also auch keinen Ausgang. Diese
+    Funktion gibt deshalb nie `resolved` zurueck. Wer es setzt, braucht einen
+    Beleg von anderswo (Phase B4) — und `status_aus_markt` darf ihn dann nicht
+    wieder zu `closed` machen; das ist Sache der Aufrufstelle.
+    """
+    if not isinstance(raw, dict):
+        return STATUS_UNBEKANNT
+
+    closed = raw.get("closed")
+    annahme = raw.get("acceptingOrders")
+    archiviert = raw.get("archived")
+    orderbuch = raw.get("enableOrderBook")
+
+    if closed is True:
+        return STATUS_GESCHLOSSEN
+    if closed is not False:
+        # Fehlt die Angabe oder ist sie kein Wahrheitswert, wissen wir nichts.
+        return STATUS_UNBEKANNT
+    if archiviert is True:
+        # Nicht geschlossen, aber archiviert — widerspruechlich.
+        return STATUS_UNBEKANNT
+    if annahme is False:
+        return STATUS_PAUSIERT
+    if annahme is True and archiviert is False and orderbuch is True:
+        return STATUS_OFFEN
+    return STATUS_UNBEKANNT
 
 
 def normalize_market(raw: dict) -> dict:
@@ -200,6 +385,9 @@ def normalize_market(raw: dict) -> dict:
     return {
         "condition_id": raw.get("conditionId") or "",
         "question": raw.get("question") or "",
+        # Der Status kommt aus derselben Antwort, aus der auch die Preise
+        # kommen — nicht aus einem zweiten Abruf, der anders ausgehen koennte.
+        "status": status_aus_markt(raw),
         "end_date": raw.get("endDateIso") or raw.get("endDate"),
         "yes_token_id": yes_token,
         "no_token_id": no_token,
