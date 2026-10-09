@@ -133,7 +133,10 @@ SA.decadeCompute = {
 
       // Statistiken
       var sortedRet = returns.slice().sort(function(a, b) { return a - b; });
-      var medianReturn = sortedRet[Math.floor(sortedRet.length / 2)];
+      // Median wie np.median (Python-Zwilling shared/calculations.py): bei gerader Fallzahl das Mittel der beiden
+      // mittleren Werte — vorher Floor-Index, also das obere der beiden (TODO aus /plain-vanilla 1A)
+      var mitte = (sortedRet.length - 1) / 2;
+      var medianReturn = (sortedRet[Math.floor(mitte)] + sortedRet[Math.ceil(mitte)]) / 2;
       var avgReturn = returns.reduce(function(s, v) { return s + v; }, 0) / n;
       var winRate = returns.filter(function(r) { return r > 0; }).length / n * 100;
       var retMean = avgReturn;

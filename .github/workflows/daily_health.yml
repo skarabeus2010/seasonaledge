@@ -22,5 +22,11 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 3m
           script: |
+            # pipefail: ohne ihn liefert `docker exec … | tail -30` den Status von tail (immer 0) — ein Exit 1
+            # des Skripts (Alarm-Mail NICHT versendet) wäre ein grüner Lauf. Das echo danach würde den Status
+            # ebenfalls löschen, deshalb wird er festgehalten und am Ende zurückgegeben.
+            set -uo pipefail
             docker exec seasonalpha-app python3 scripts/daily_health_check.py 2>&1 | tail -30
-            echo "Health check done: $(date)"
+            rc=$?
+            echo "Health check done: $(date) (exit $rc)"
+            exit $rc
