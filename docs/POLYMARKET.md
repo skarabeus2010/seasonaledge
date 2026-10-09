@@ -519,10 +519,21 @@ vorhanden).
 
 ### Offen in Phase B
 
-- **B2 — Status-Lebenszyklus.** Entscheidungstabelle aus der Gamma-Antwort;
-  `umaResolutionStatus`, `archived`, `enableOrderBook` gehoeren dazu, eine
-  nachgewiesene Auflösung hat Vorrang vor `closed`, und fehlende oder
-  widersprueckliche Angaben ergeben `unbekannt` statt `open`. Der
+- **B2 — Status-Lebenszyklus.** Entscheidungstabelle aus der Gamma-Antwort.
+  ⚠️ **Am 2026-10-09 gemessen (lesend, im App-Container) — und drei Annahmen
+  aus der Planung sind damit widerlegt:** `umaResolutionStatus` existiert
+  nicht (0 von 20 Antworten; es gibt `umaResolutionStatuses`, Wert `"[]"` —
+  auch bei 40 von 40 geschlossenen Maerkten, also als Aufloesungssignal
+  wertlos); `active` ist bei geschlossenen Maerkten **true** (ebenfalls
+  wertlos); und `acceptingOrders` ist dort **null**, nicht `false` — die Regel
+  „nicht handelsbereit heisst pausiert" haette jeden geschlossenen Markt als
+  pausiert eingestuft.
+  Brauchbar sind `closed`, `closedTime` (nur bei geschlossenen gesetzt),
+  `archived`, `enableOrderBook` und `comboStatus` (`"disabled"` bei
+  geschlossenen). **`resolved` ist mit diesen Feldern NICHT von `closed` zu
+  unterscheiden** — das ist die Erkenntnisgrenze und wird so benannt, nicht
+  erfunden; ein Beleg muss aus B4 kommen. Fehlende oder widersprueckliche
+  Angaben ergeben `unbekannt` statt `open`. Der
   Katalogabgleich muss in den Daily-Workflow — **der ruft heute nur Refresh
   und montags Backfill**, der Status wuerde also nie aktualisiert. Bei einem
   API-Ausfall bleibt der Status stehen, aber `status_checked_at` wird NICHT
@@ -538,6 +549,19 @@ vorhanden).
 - **B4 — Auflösung und Archiv.** `resolution` und `resolved_at` brauchen einen
   Beleg; der vorhandene Resolved-Scraper setzt `resolution_date` aus `endDate`,
   und das ist keiner.
+- 🔴 **`fetch_markets_by_condition_ids` verliert stillschweigend Maerkte.** Der
+  Helfer setzt kein `limit`, und Gamma liefert dann 20 Zeilen. Gemessen mit den
+  26 condition_ids des Katalogs: ohne `limit` **20 von 26**, mit `limit=100`
+  **25 von 26**. Die sechs fehlenden einzeln angefragt: fuenf sind da und
+  offen, **einer fehlt wirklich** (`fed-hike-2026`). Heute hat der Helfer genau
+  einen Aufrufer, der eine einzelne ID uebergibt — der Fehler ist also latent,
+  schlaegt aber in B2 zu, weil der Katalogabgleich die Sammelabfrage braucht.
+  Und: ein Abruffehler und eine erfolgreiche Leerantwort liefern beide `[]`,
+  sind also nicht unterscheidbar (von Codex unabhaengig reproduziert).
+  **Vor B2 zu reparieren**, mit Abdeckungsnachweis: Eingaben deduplizieren,
+  jeden Stapel pruefen, fehlende IDs EINZELN nachfragen, und technische Fehler
+  gesondert scheitern lassen — eine Mengendifferenz allein beweist keine
+  Vollstaendigkeit.
 - **Messung statt Herleitung fuer `SPREAD_GRENZE`**, sobald die Spalte
   `spread` auf dem Server auswertbar ist.
 
