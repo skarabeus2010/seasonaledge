@@ -2049,13 +2049,16 @@
     // ── Ticker laden ─────────────────────────────────────────────
     function loadTicker(ticker) {
       ticker = ticker.trim().toUpperCase();
-      if (!ticker || ticker === MZ.getCurrentTicker()) return;
+      if (!ticker) return;
+      var _lk = SA.ladeKennung.start(ticker, MZ.getCurrentTicker());   // null: schon angezeigt, nichts unterwegs
+      if (_lk === null) return;
       document.getElementById('page-caption').textContent = 'Lade ' + ticker + '...';
       // Letzte 30 Jahre laden (reicht fuer Monatszyklus)
       var startDate = new Date();
       startDate.setFullYear(startDate.getFullYear() - 30);
       var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
       SA.fetchAllPrices(ticker, dateFilter).then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;
         if (!rows || rows.length < 200) { showError(ticker + ': Zu wenig Daten'); return; }
         rows.forEach(function(r){ r.close = parseFloat(r.close); if (r.log_return != null) r.log_return = parseFloat(r.log_return); });
         MZ.setRawRows(rows);
@@ -2063,6 +2066,7 @@
         document.getElementById('page-caption').textContent = 'Intra-Monat-Saisonalität · Wochen · Two-Week · Heatmap';
         renderAll();
       }).catch(function(e){
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // veralteter Abruf: keine Fehlermeldung in die neue Ansicht
         showError('Fehler: ' + (e && e.message ? e.message : e));
         document.getElementById('page-caption').textContent = 'Fehler beim Laden';
       });

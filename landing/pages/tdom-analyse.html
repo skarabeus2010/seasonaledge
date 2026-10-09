@@ -1209,6 +1209,7 @@
     }
 
     function loadTicker(ticker) {
+      var _lk = SA.ladeKennung.start(ticker);   // ein neuerer Abruf gewinnt (siehe app.js)
       currentTicker = ticker;
       document.getElementById('title-ticker').textContent = ticker;
       var yearsVal = document.getElementById('sel-years').value;
@@ -1225,6 +1226,7 @@
       $kpi.innerHTML = '';
 
       fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;
         if (!rows || rows.length < 100) {
           showError('Zu wenig Daten f\u00FCr ' + ticker);
           $loading.style.display = 'none';
@@ -1244,6 +1246,7 @@
         rerender();
         $loading.style.display = 'none';
       }).catch(function(err) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // veralteter Abruf: keine Fehlermeldung in die neue Ansicht
         showError('Fehler: ' + err.message);
         $loading.style.display = 'none';
       });

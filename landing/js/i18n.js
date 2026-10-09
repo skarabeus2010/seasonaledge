@@ -108,7 +108,7 @@ SA.i18n = (function() {
   // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
   // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
   // veroeffentlicht.
-  var _JSON_VER = 'v10';
+  var _JSON_VER = 'v11';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;

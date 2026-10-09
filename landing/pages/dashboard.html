@@ -2053,7 +2053,9 @@
     // PHASE 3: Page Lifecycle
     // ══════════════════════════════════════════════════════════════
 
+    var _seitenKennung = 0;   // Kennung des Abrufs, dessen Daten gerade gezeichnet werden (loadTicker setzt sie)
     function renderAll() {
+      var _rk = _seitenKennung;
       if (!rawRows.length || !currentTicker) return;
       document.getElementById('title-ticker').textContent = currentTicker;
 
@@ -2087,7 +2089,13 @@
 
       // 3. Anomalie-Radar via SA.decadeCompute
       try {
-        renderAnomalyCard(SA.decadeCompute.anomalie(rawRows, currentTicker));
+        var _radarTicker = currentTicker;   // nach dem Nachladen nur zeichnen, wenn der Ticker noch derselbe ist
+        document.getElementById('anomaly-content').innerHTML = SA.decadeCompute.anomalieLadeHtml();
+        SA.decadeCompute.anomalieMitHistorie(rawRows, _radarTicker).then(function(a) {
+          if (currentTicker === _radarTicker && SA.ladeKennung.aktuell(_rk)) renderAnomalyCard(a);
+        }, function(e) {
+          if (currentTicker === _radarTicker && SA.ladeKennung.aktuell(_rk)) renderAnomalyCard({ status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) });
+        });
       } catch(e) { console.warn('Anomaly:', e); renderAnomalyCard({ status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }); }
 
       // 4. Year-Chart
@@ -2267,7 +2275,10 @@
 
     function loadTicker(ticker) {
       ticker = (ticker || '').trim().toUpperCase();
-      if (!ticker || ticker === currentTicker) return;
+      if (!ticker) return;
+      var _lk = SA.ladeKennung.start(ticker, currentTicker);   // null: schon angezeigt, nichts unterwegs (app.js)
+      if (_lk === null) return;
+      _seitenKennung = _lk;
       document.getElementById('loading-msg').style.display = '';
       document.getElementById('loading-msg').textContent = 'Lade ' + ticker + '...';
       document.getElementById('bento').style.display = 'none';
@@ -2278,6 +2289,7 @@
       var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
 
       SA.fetchAllPrices(ticker, dateFilter).then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;
         if (!rows || rows.length < 200) {
           showError(ticker + ': Zu wenig Daten');
           document.getElementById('loading-msg').textContent = 'Zu wenig Daten für ' + ticker;
@@ -2291,6 +2303,7 @@
         renderAll();
         updateWatchlistButton();
       }).catch(function(e) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // veralteter Abruf: keine Fehlermeldung in die neue Ansicht
         showError('Fehler: ' + (e && e.message ? e.message : e));
         document.getElementById('loading-msg').textContent = 'Fehler beim Laden';
       });

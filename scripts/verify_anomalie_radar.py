@@ -156,9 +156,10 @@ STATUS_Z = [4 / 3, -4 / 3, 4 / 3 - 1e-12, 7 / 3, -7 / 3, 7 / 3 - 1e-12, 0.0]
 STATUS_SOLL = ["auffaellig", "auffaellig", "normal", "stark_auffaellig", "stark_auffaellig", "auffaellig", "normal"]
 
 
-def node_probe(basis: pathlib.Path, fl, tmp, reihen=None, mit_status=False):
+def node_probe(basis: pathlib.Path, fl, tmp, reihen=None, mit_status=False, historie=None):
     p = pathlib.Path(tmp) / "faelle.json"
     p.write_text(json.dumps({"reihen": reihen or {}, "status_z": STATUS_Z if mit_status else [],
+                             "historie": historie or [],
                              "faelle": [{k: v for k, v in f.items() if k not in ("soll", "ref_rows")} for f in fl]}),
                  encoding="utf-8")
     r = subprocess.run(["node", str(basis / PROBE), str(basis / DC), str(p), str(basis / "landing/i18n/en.json")],
@@ -169,6 +170,7 @@ def node_probe(basis: pathlib.Path, fl, tmp, reihen=None, mit_status=False):
     erg = {x["id"]: x for x in o["faelle"]}
     erg["__status__"] = o["status"]
     erg["__css__"] = o.get("css", [])
+    erg["__historie__"] = {h["id"]: h for h in o.get("historie", [])}
     return erg
 
 
@@ -188,7 +190,29 @@ def pruefen(basis: pathlib.Path, snap: pathlib.Path | None) -> dict:
     P = {}
     with tempfile.TemporaryDirectory() as tmp:
         fl = faelle()
-        js = node_probe(basis, fl, tmp, mit_status=True)
+        voll = werktage("1985-01-02", "2025-06-30", welle)
+        schalt = werktage("1985-01-02", "2024-02-29", welle)
+        js = node_probe(basis, fl, tmp, mit_status=True, reihen={"voll": voll, "schalt": schalt},
+                        historie=[{"id": "nur_10_jahre", "ticker": "SPY", "voll": "voll", "ab": "2015-06-01"},
+                                  {"id": "schon_voll", "ticker": "SPY", "voll": "voll", "ab": "1985-01-01"},
+                                  {"id": "cache_aelter", "ticker": "SPY", "voll": "voll", "ab": "2015-06-01",
+                                   "voll_bis": "2025-05-30"},
+                                  {"id": "schalttag_filter", "ticker": "SPY", "voll": "schalt", "ab": "2015-06-01"}])
+        hist = js.pop("__historie__")
+        ref = referenz(voll, "SPY")
+        k, v = hist.get("nur_10_jahre", {}), hist.get("schon_voll", {})
+        P["historie_regler_unabhaengig"] = True if (k.get("ergebnis", {}).get("n") == ref["n"] == 30
+                                                    and abs(k["ergebnis"]["z"] - ref["z"]) < 1e-9
+                                                    and k.get("aufrufe") == [["SPY", "&date=gte.1994-06-30"]]
+                                                    and v.get("aufrufe") == []
+                                                    and v.get("ergebnis") == k.get("ergebnis"))             else f"10-Jahre-Seite: {k.get('ergebnis', {}).get('n')} Jahre, Aufrufe {k.get('aufrufe')}; volle Seite Aufrufe {v.get('aufrufe')}"
+        c = hist.get("cache_aelter", {}).get("ergebnis", {})
+        P["historie_cache_aelter"] = True if (c.get("as_of") == "2025-06-30" and abs(c.get("z", 1e9) - ref["z"]) < 1e-9) \
+            else f"älterer Cache verdrängt das Datenende: as_of {c.get('as_of')}"
+        sh = hist.get("schalttag_filter", {})
+        P["historie_schalttag"] = True if (sh.get("aufrufe") == [["SPY", "&date=gte.1993-02-28"]]
+                                           and sh.get("ergebnis", {}).get("n") == 30) \
+            else f"29.02.: Aufrufe {sh.get('aufrufe')}, n {sh.get('ergebnis', {}).get('n')}"
         st = js.pop("__status__")
         css = js.pop("__css__")
         P["css_von_der_darstellung"] = True if css == ["sa-anomaly-css"] else f"CSS-Einbindung: {css}"
@@ -260,12 +284,74 @@ def pruefen(basis: pathlib.Path, snap: pathlib.Path | None) -> dict:
             print(f"  Info: echte Reihen {len(fl2)} Stichtage, Status {stati}")
     # statisch
     dash = (basis / DASH).read_text(encoding="utf-8")
-    P["dashboard_eine_rechnung"] = True if ("SA.decadeCompute.anomalie(rawRows, currentTicker)" in dash
+    P["dashboard_eine_rechnung"] = True if ("SA.decadeCompute.anomalieMitHistorie(rawRows, _radarTicker)" in dash
                                             and "anomalieHtml(anom, currentTicker, 'karte')" in dash
                                             and "anom.score" not in dash) else "Dashboard rechnet/rendert selbst"
     dc = (basis / DC).read_text(encoding="utf-8")
     P["fromprices_nutzt_kern"] = True if ("anomaly = SA.decadeCompute.anomalie(rows, ticker)" in dc
                                           and "zScore * 30" not in dc) else "fromPrices rechnet eigene Anomalie"
+    # Abrufkennung: jede Ticker-Seite vergibt sie in loadTicker und prüft sie im Rückruf (Codex Anomalie R4)
+    ohne = []
+    for seite in SEITEN + ["dashboard"]:
+        q = (basis / f"landing/pages/{seite}.html").read_text(encoding="utf-8")
+        rumpf = q[q.index("function loadTicker("):]
+        rumpf = rumpf[:rumpf.index("\n    }\n")]
+        # Kennung beim Start, Prüfung im Erfolgs- UND im Fehler-Rückruf (Codex R5)
+        if "SA.ladeKennung.start(ticker" not in rumpf or len(re.findall(r"SA\.ladeKennung\.aktuell\(_lk\)\)\s*return", rumpf)) < 2 \
+                or not re.search(r"catch\(function\(\w+\)\s*\{\s*(?://[^\n]*\n)?\s*if\s*\(!SA\.ladeKennung\.aktuell\(_lk\)\)\s*return", rumpf):
+            ohne.append(seite)
+    if "SA.ladeKennung.aktuell(_rk)) renderAnomalyCard(a)" not in dash or "var _rk = _seitenKennung;" not in dash:
+        ohne.append("dashboard-radar")
+    P["abrufkennung"] = True if not ohne else f"ohne Abrufkennung: {ohne}"
+    # Verhalten von SA.ladeKennung (aus app.js gezogen): A → B → A entwertet B und lädt A; A erneut ohne Wechsel = null
+    app = (basis / "landing/js/app.js").read_text(encoding="utf-8")
+    a0 = app.index("SA.ladeKennung = (function() {")
+    a1 = app.index("})();", a0) + len("})();")
+    js_code = "var SA={};" + app[a0:a1] + """
+var L=SA.ladeKennung, o=[];
+var k1=L.start('A', null); o.push(L.aktuell(k1));
+var k2=L.start('B','A');  o.push(L.aktuell(k1), L.aktuell(k2));
+var k3=L.start('A','A');  o.push(k3===null, L.aktuell(k2), L.aktuell(k3));
+var k4=L.start('A','A');  o.push(k4===null, L.aktuell(k3));
+console.log(JSON.stringify(o));"""
+    r = subprocess.run(["node", "-e", js_code], capture_output=True, text=True)
+    soll = [True, False, True, False, False, True, True, True]
+    try:
+        ist = json.loads(r.stdout)
+    except Exception:  # noqa: BLE001
+        ist = r.stderr[:200]
+    P["ladekennung_verhalten"] = True if ist == soll else f"ist {ist}, soll {soll}"
+    # Verhalten am echten loadTicker des Dekadenzyklus: A geladen, B unterwegs, A erneut (Cache) → Ansicht A, kein
+    # Ladeoverlay; B kommt danach an (Erfolg bzw. Fehler) → ändert nichts (Codex R6)
+    dek = (basis / "landing/pages/dekadenzyklus.html").read_text(encoding="utf-8")
+    l0 = dek.index("    function loadTicker(ticker){")
+    l1 = dek.index("\n    }\n", l0) + len("\n    }")
+    for ausgang in ("erfolg", "fehler"):
+        js_code = "var SA={};" + app[a0:a1] + """
+var overlay=null, fehler=null, inits=[], tickerCache={}, D=null, rawRows=null, currentTicker=null, offen=null;
+function showLoading(t){overlay=t;} function hideLoading(){overlay=null;} function showError(t){fehler=t;}
+function init(){inits.push(currentTicker);}
+var document={getElementById:function(){return {value:'20'};}};
+SA.supabase={url:'x'};
+SA.decadeCompute={fromPrices:function(rows,t){return {t:t};}};
+SA.fetchAllPrices=function(t){return new Promise(function(res,rej){offen={t:t,res:res,rej:rej};});};
+""" + dek[l0:l1] + """
+var rowsA=[]; for(var i=0;i<250;i++) rowsA.push({close:'1'});
+loadTicker('A'); var a=offen; a.res(rowsA);
+setTimeout(function(){
+  loadTicker('B'); var b=offen;
+  loadTicker('A');
+  var vorher={overlay:overlay, ticker:currentTicker};
+  if('""" + ausgang + """'==='erfolg') b.res(rowsA); else b.rej('netz');
+  setTimeout(function(){console.log(JSON.stringify({vorher:vorher, overlay:overlay, ticker:currentTicker, fehler:fehler}));},0);
+},0);"""
+        r = subprocess.run(["node", "-e", js_code], capture_output=True, text=True)
+        try:
+            ist = json.loads(r.stdout)
+        except Exception:  # noqa: BLE001
+            ist = r.stderr[:200]
+        soll = {"vorher": {"overlay": None, "ticker": "A"}, "overlay": None, "ticker": "A", "fehler": None}
+        P[f"dekaden_rueckwechsel_{ausgang}"] = True if ist == soll else f"ist {ist}"
     rest = [s for s in SEITEN if "KI Quick-Check" in (basis / f"landing/pages/{s}.html").read_text(encoding="utf-8")]
     for j in ("de", "en"):
         if "Quick-Check" in (basis / f"landing/i18n/{j}.json").read_text(encoding="utf-8"):
@@ -307,6 +393,24 @@ MUTATIONEN = [
      "'Rendite 10 Handelstage')) + '</div><div class=\"kpi-value\">' + dez(a.rendite, 2)",
      "'Rendite 10 Handelstage')) + '</div><div class=\"kpi-value ' + (a.rendite >= 0 ? 'green' : 'red') + '\">' + dez(a.rendite, 2)",
      "html_sprung_html_karte"),
+    ("Radar mit Seitenausschnitt statt eigener Historie", DC,
+     "    if (r[0].date <= start || !(window.SA && SA.fetchAllPrices)) return",
+     "    if (true || r[0].date <= start || !(window.SA && SA.fetchAllPrices)) return", "historie_regler_unabhaengig"),
+    ("Nachladen ersetzt statt zusammenzuführen", DC, "      return rechne((voll || []).concat(rows || []));",
+     "      return rechne(voll && voll.length >= r.length ? voll : rows);", "historie_cache_aelter"),
+    ("Schalttag-Startdatum ungeprüft", DC,
+     "    var start = new Date(this._zielTag(+letzte.substring(0, 4) - this.RADAR_HISTORIE_JAHRE, +letzte.substring(5, 7),\n"
+     "                                       +letzte.substring(8, 10)) * 86400000).toISOString().substring(0, 10);",
+     "    var start = (+letzte.substring(0, 4) - this.RADAR_HISTORIE_JAHRE) + letzte.substring(4);", "historie_schalttag"),
+    ("Fehler-Rückruf ohne Kennung", "landing/pages/overnight.html",
+     "        if (!SA.ladeKennung.aktuell(_lk)) return;   // veralteter Abruf: keine Fehlermeldung in die neue Ansicht\n",
+     "", "abrufkennung"),
+    ("Dekaden-Cachepfad ohne hideLoading", "landing/pages/dekadenzyklus.html",
+     "        hideLoading();   // ein Rückwechsel A → B → A kommt hierher, während „Lade B …“ noch steht (Codex R6)\n",
+     "", "dekaden_rueckwechsel_erfolg"),
+    ("Rückwechsel ohne Entwertung", "landing/js/app.js",
+     "      if (ticker && angezeigt && ticker === angezeigt && angefordert === angezeigt) return null;",
+     "      if (ticker && angezeigt && ticker === angezeigt) return null;", "ladekennung_verhalten"),
     ("Dashboard mit eigener Karte", DASH, "      el.innerHTML = SA.decadeCompute.anomalieHtml(anom, currentTicker, 'karte');",
      "      el.innerHTML = '<div>' + anom.score + ' / 100</div>';", "dashboard_eine_rechnung"),
 ]
@@ -317,7 +421,7 @@ UNGUELTIG = [
 
 
 def _kopie(tmp: pathlib.Path):
-    for rel in (DC, DASH, PROBE, "landing/i18n/de.json", "landing/i18n/en.json") + tuple(f"landing/pages/{s}.html" for s in SEITEN):
+    for rel in (DC, DASH, PROBE, "landing/js/app.js", "landing/pages/dekadenzyklus.html", "landing/i18n/de.json", "landing/i18n/en.json") + tuple(f"landing/pages/{s}.html" for s in SEITEN):
         (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / rel, tmp / rel)
 

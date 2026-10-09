@@ -2015,5 +2015,6 @@
   "dc.anom_g_luecke_aktuell": "price gap in the current window",
   "dc.anom_g_zu_wenige_jahre": "fewer than 10 comparison years",
   "dc.anom_g_keine_streuung": "no dispersion across comparison years",
-  "dc.anom_g_fehler": "calculation error"
+  "dc.anom_g_fehler": "calculation error",
+  "dc.anom_laden": "Calculating…"
 }

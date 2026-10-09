@@ -429,5 +429,6 @@
   "dc.anom_g_luecke_aktuell": "Kurslücke im aktuellen Fenster",
   "dc.anom_g_zu_wenige_jahre": "weniger als 10 Vergleichsjahre",
   "dc.anom_g_keine_streuung": "keine Streuung in den Vergleichsjahren",
-  "dc.anom_g_fehler": "Rechenfehler"
+  "dc.anom_g_fehler": "Rechenfehler",
+  "dc.anom_laden": "Wird berechnet …"
 }

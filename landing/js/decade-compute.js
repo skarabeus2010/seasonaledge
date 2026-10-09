@@ -508,6 +508,27 @@ SA.decadeCompute = {
     return Object.keys(m).sort().map(function(d) { return { date: d, close: m[d] }; });
   },
 
+  /**
+   * Radar mit eigener Historie: die Seiten laden je nach Zeitraum-Regler oft nur 10 Jahre — das Radar braucht aber bis
+   * zu 30 Vergleichsjahre plus Fenster. Reichen die übergebenen Kurse nicht 31 Jahre vor das letzte Datum zurück, wird
+   * über SA.fetchAllPrices (15-min-Cache) ab diesem Datum nachgeladen. Ergebnis unabhängig vom Regler.
+   * Schlägt das Nachladen fehl, rechnet es mit den übergebenen Kursen — die angezeigte Basis (n Jahre) zeigt das.
+   */
+  RADAR_HISTORIE_JAHRE: 31,
+  anomalieMitHistorie: function(rows, ticker) {
+    var self = this, r = this._bereinigen(rows);
+    var rechne = function(x) { return self.anomalie(x, ticker); };
+    if (!r.length) return Promise.resolve().then(function() { return rechne(rows); });
+    var letzte = r[r.length - 1].date;
+    var start = new Date(this._zielTag(+letzte.substring(0, 4) - this.RADAR_HISTORIE_JAHRE, +letzte.substring(5, 7),
+                                       +letzte.substring(8, 10)) * 86400000).toISOString().substring(0, 10);
+    if (r[0].date <= start || !(window.SA && SA.fetchAllPrices)) return Promise.resolve().then(function() { return rechne(rows); });
+    return SA.fetchAllPrices(ticker, '&date=gte.' + start).then(function(voll) {
+      // zusammenführen statt ersetzen: ein älterer Cache-Stand darf das jüngere Datenende nicht verdrängen
+      return rechne((voll || []).concat(rows || []));
+    }, function() { return rechne(rows); });
+  },
+
   /** Status aus z — eigene Funktion, damit die Grenzen exakt testbar sind (|z| = 4/3 bzw. 7/3 gehört zur höheren Stufe). */
   anomalieStatus: function(z) {
     var az = Math.abs(z), K = this.ANOMALIE;
@@ -633,10 +654,19 @@ SA.decadeCompute = {
     if (!el) return;
     this._ensureAnomalyCss();
     this._injectAnomalySummaryBadge(el);
-    var a;
-    try { a = this.anomalie(rows, ticker); }
-    catch (e) { a = { status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }; }
-    el.innerHTML = this.anomalieHtml(a, ticker, 'zeile');
+    var self = this, marke = String(Date.now()) + Math.random();
+    el.setAttribute('data-radar-marke', marke);   // ein späterer Aufruf (Tickerwechsel) gewinnt — kein veraltetes Ergebnis
+    el.innerHTML = this.anomalieLadeHtml();       // das Ergebnis des vorigen Tickers nicht stehen lassen
+    var zeige = function(a) { if (el.getAttribute('data-radar-marke') === marke) el.innerHTML = self.anomalieHtml(a, ticker, 'zeile'); };
+    var fehler = function(e) { return { status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }; };
+    try { this.anomalieMitHistorie(rows, ticker).then(zeige, function(e) { zeige(fehler(e)); }); }
+    catch (e) { zeige(fehler(e)); }
+  },
+
+  anomalieLadeHtml: function() {
+    var _en = !!(window.SA && SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    return '<p class="sa-anom-laden" style="color:var(--muted);font-size:.875rem;margin:0">' +
+      (_en ? SA.i18n.t('dc.anom_laden', 'Calculating…') : 'Wird berechnet …') + '</p>';
   },
 
   /** Eine Darstellung für beide Orte (Seiten-Abschnitt 'zeile', Dashboard-Karte 'karte'). Einfarbig Gold. */

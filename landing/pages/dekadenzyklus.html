@@ -292,7 +292,8 @@
     function loadTicker(ticker){
       ticker=ticker.trim().toUpperCase();
       if(!ticker)return;
-      if(ticker===currentTicker&&D)return; // Bereits geladen
+      var _lk = SA.ladeKennung.start(ticker, D ? currentTicker : null);   // null: schon angezeigt, nichts unterwegs
+      if (_lk === null) return; // Bereits geladen
 
       // Cache-Hit: sofort aus Memory nutzen, kein Netzwerk, kein Recompute
       if(tickerCache[ticker]){
@@ -301,6 +302,7 @@
         rawRows=c.rawRows;
         currentTicker=ticker;
         init();
+        hideLoading();   // ein Rückwechsel A → B → A kommt hierher, während „Lade B …“ noch steht (Codex R6)
         return;
       }
 
@@ -308,6 +310,7 @@
       showLoading('Lade '+ticker+' aus Datenbank...');
 
       SA.fetchAllPrices(ticker).then(function(rows){
+        if (!SA.ladeKennung.aktuell(_lk)) return;
         if(!rows||rows.length<200){hideLoading();showError(ticker+': Zu wenig Daten ('+((rows&&rows.length)||0)+' Zeilen, min. 200 noetig)');return}
 
         // Numerische Werte sicherstellen
@@ -324,7 +327,7 @@
         tickerCache[ticker]={D:D,rawRows:rawRows};
         init();
         hideLoading();
-      }).catch(function(e){hideLoading();showError('Fehler: '+e)});
+      }).catch(function(e){if(!SA.ladeKennung.aktuell(_lk))return;hideLoading();showError('Fehler: '+e)});
     }
 
     function init(){

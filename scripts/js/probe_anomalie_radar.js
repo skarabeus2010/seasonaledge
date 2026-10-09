@@ -35,4 +35,22 @@ const faelle = (ein.faelle || []).map(f => {
   }
 });
 const status = (ein.status_z || []).map(z => [z, SA.decadeCompute.anomalieStatus(z)]);
-process.stdout.write(JSON.stringify({ faelle, status, css: styles }));
+// anomalieMitHistorie: Seite übergibt nur einen Teil (z. B. 10 Jahre), fetchAllPrices-Stub liefert die volle Reihe ab
+// dem angefragten Datum. Protokolliert, ob und womit nachgeladen wurde.
+(async () => {
+  const historie = [];
+  for (const h of (ein.historie || [])) {
+    const aufrufe = [];
+    window.SA.fetchAllPrices = (ticker, filter) => {
+      aufrufe.push([ticker, filter]);
+      const ab = /gte\.(\d{4}-\d{2}-\d{2})/.exec(filter || '');
+      // voll_bis: simuliert einen älteren Cache-Stand, der früher endet als die übergebenen Kurse
+      return Promise.resolve(reihen[h.voll].filter(r => (!ab || r.date >= ab[1]) && (!h.voll_bis || r.date <= h.voll_bis)));
+    };
+    const teil = reihen[h.voll].filter(r => r.date >= h.ab);
+    const e = await SA.decadeCompute.anomalieMitHistorie(teil, h.ticker);
+    historie.push({ id: h.id, ergebnis: e, aufrufe });
+  }
+  delete window.SA.fetchAllPrices;
+  process.stdout.write(JSON.stringify({ faelle, status, css: styles, historie }));
+})();

@@ -720,6 +720,26 @@ SA._pruefeGemerkten = function() {
  * @param {string} ticker
  * @param {string} extraFilter - optionaler Supabase-Filter (z.B. "&date=gte.2000-01-01")
  */
+/**
+ * Abrufkennung je Seite: loadTicker vergibt beim Start eine Kennung, jeder Rückruf zeichnet nur, wenn sie noch die
+ * jüngste ist. Sonst überschreibt ein verspätet zurückkommender Abruf für Ticker A die Seite für den neueren
+ * Ticker B (Codex Anomalie R4 — die Rennbedingung bestand auf allen Ticker-Seiten).
+ */
+SA.ladeKennung = (function() {
+  var nr = 0, angefordert = null;
+  return {
+    /** Neue Kennung für einen Abruf von `ticker`. `null`, wenn `ticker` schon angezeigt wird UND kein anderer Abruf
+     *  unterwegs ist — dann gibt es nichts zu tun, und eine laufende Nachladung (Radar) bleibt gültig. Ein Rückwechsel
+     *  A → B → A entwertet dagegen B und lädt A neu (Codex Anomalie R5). */
+    start: function(ticker, angezeigt) {
+      if (ticker && angezeigt && ticker === angezeigt && angefordert === angezeigt) return null;
+      angefordert = ticker || null;
+      return ++nr;
+    },
+    aktuell: function(k) { return k === nr; }
+  };
+})();
+
 SA.fetchAllPrices = function(ticker, extraFilter) {
   // Cache-first: 15-min TTL reicht — Nightly Refresh aktualisiert Preisdaten
   // ohnehin nur 1x täglich. Bei Tour-Mode oder Page-Navigation: instant Hit.
