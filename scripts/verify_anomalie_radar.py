@@ -383,7 +383,7 @@ MUTATIONEN = [
      "(az > K.AUFFAELLIG ? 'auffaellig' : 'normal')", "status_grenzen"),
     ("CSS nur über renderAnomalyInto", DC, "    if (typeof document !== 'undefined' && document.head) this._ensureAnomalyCss();\n", "",
      "css_von_der_darstellung"),
-    ("Karte ohne Rang", DC, "        '<div class=\"kpi sa-anom-rang\" style=\"margin-top:.5rem\"><div class=\"kpi-label\">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +\n",
+    ("Karte ohne Rang", DC, "        '<div class=\"kpi sa-anom-rang\"><div class=\"kpi-label\">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +\n",
      "", "html_sprung_html_karte"),
     ("Grund auf EN unübersetzt", DC, "(a && a.grund ? ': ' + esc(a.grund_code ? t('dc.anom_g_' + a.grund_code, a.grund) : a.grund) : '')",
      "(a && a.grund ? ': ' + esc(a.grund) : '')", "html_en_grund"),

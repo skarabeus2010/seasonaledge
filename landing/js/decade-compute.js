@@ -745,14 +745,15 @@ SA.decadeCompute = {
     var rangHtml = '<div class="sa-anom-prank"><div class="sa-anom-prank-label">' + rang + ' / 100</div>' +
       '<div class="sa-anom-prank-bar" title="' + rang + '"><div class="sa-anom-prank-mark" style="left:' + rang + '%"></div></div></div>';
     if (form === 'karte') {
-      return '<div class="anomaly-score-big sa-anom-z" style="color:' + gold + '">' + zTxt + '</div>' +
-        '<div class="anomaly-status sa-anom-status" style="color:' + gold + '">' + esc(label) + (richtung ? ' \u00b7 ' + esc(richtung) : '') + '</div>' +
+      // kompakt: z und Status in einer Zeile, Rendite/Vergleich/Rang nebeneinander (Dashboard-Kachel, 2026-10-09)
+      return '<div class="anomaly-kopf"><div class="anomaly-score-big sa-anom-z" style="color:' + gold + '">' + zTxt + '</div>' +
+        '<div class="anomaly-status sa-anom-status" style="color:' + gold + '">' + esc(label) + (richtung ? ' \u00b7 ' + esc(richtung) : '') + '</div></div>' +
         '<div class="kpi-row-mini">' +
           '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_rendite', 'Rendite 10 Handelstage')) + '</div><div class="kpi-value">' + dez(a.rendite, 2) + '%</div></div>' +
           '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_mittel', 'Ø Vergleichsjahre')) + '</div><div class="kpi-value">' + dez(a.mittel, 2) + '%</div></div>' +
+        '<div class="kpi sa-anom-rang"><div class="kpi-label">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +
         '</div>' +
-        '<div class="kpi sa-anom-rang" style="margin-top:.5rem"><div class="kpi-label">' + esc(t('dc.anom_rang', 'Rang')) + '</div>' + rangHtml + '</div>' +
-        '<p class="sa-anom-basis" style="color:#8899aa;font-size:.6875rem;text-align:center;margin-top:.5rem">' + basis + '</p>';
+        '<p class="sa-anom-basis" style="color:#8899aa;font-size:.6875rem;margin:.45rem 0 0">' + basis + '</p>';
     }
     return '<div class="sa-anom-row">' +
       '<div class="kpi"><div class="kpi-label">' + esc(t('dc.anom_abweichung', 'Abweichung')) + '</div><div class="kpi-value sa-anom-z" style="color:' + gold + '">' + zTxt + '</div></div>' +

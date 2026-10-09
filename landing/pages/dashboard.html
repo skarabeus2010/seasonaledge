@@ -92,10 +92,12 @@
     .bento-card.empty{opacity:.4}
 
     /* Card-Spans */
-    .bento-ki{grid-column:span 4;min-height:200px}
-    .bento-crash{grid-column:span 3;min-height:200px}
-    .bento-anomaly{grid-column:span 2;min-height:200px}
-    .bento-trifecta{grid-column:span 3;min-height:200px}
+    /* oberste Reihe: vier gleich breite, inhaltshohe Kacheln (vorher 4/3/2/3 mit min-height 200 — die schmale
+       Anomalie-Karte wuchs in die Höhe und zog die ganze Reihe mit, 2026-10-09) */
+    .bento-ki{grid-column:span 3}
+    .bento-crash{grid-column:span 3}
+    .bento-anomaly{grid-column:span 3}
+    .bento-trifecta{grid-column:span 3}
     .bento-year{grid-column:span 6;min-height:300px}
     .bento-drawdown{grid-column:span 6;min-height:300px}
     .bento-month{grid-column:span 6;min-height:300px}
@@ -117,7 +119,7 @@
       .bento-stat6{grid-column:span 4}
     }
     @media (max-width:900px){
-      .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12;min-height:180px}
+      .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12}
       .bento-stat6{grid-column:span 6}
     }
     @media (max-width:768px){
@@ -129,8 +131,8 @@
     }
 
     /* ── Saison-Score Hero ── */
-    .ki-hero{display:flex;align-items:center;gap:1rem;margin-bottom:.65rem}
-    .ki-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;color:var(--text)}
+    .ki-hero{display:flex;align-items:center;gap:.85rem;margin-bottom:.5rem}
+    .ki-score-big{font-size:2.1rem;font-weight:800;font-family:var(--f-m);line-height:1;color:var(--text)}
     .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
     .ki-sub{font-size:.6875rem;color:var(--dim);line-height:1.3}
     .ki-sub-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.2rem;overflow:hidden}
@@ -148,8 +150,12 @@
     .crash-status{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
 
     /* ── Anomalie-Radar ── */
-    .anomaly-score-big{font-size:2.25rem;font-weight:800;font-family:var(--f-m);line-height:1;text-align:center;margin:.4rem 0 .15rem}
-    .anomaly-status{text-align:center;font-size:.875rem;font-weight:700;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+    .anomaly-kopf{display:flex;align-items:baseline;gap:.6rem;margin:.1rem 0 .5rem}
+    .anomaly-score-big{font-size:1.75rem;font-weight:800;font-family:var(--f-m);line-height:1}
+    .anomaly-status{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+    .bento-anomaly .kpi-row-mini{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .bento-anomaly .sa-anom-prank{gap:.25rem;margin-top:0}
+    .bento-anomaly .sa-anom-prank-label{font-size:1rem}
 
     /* ── Wochentag/TDOM Headlines ── */
     .card-headline{font-size:1.375rem;font-weight:800;color:var(--text);margin-bottom:.15rem;font-family:var(--f-d)}
