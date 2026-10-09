@@ -649,16 +649,14 @@
       if(!results.length){document.getElementById('content-cycle').innerHTML='<p style="color:var(--muted)">Nicht gen\u00FCgend Daten.</p>';return}
       var best=results[0];for(var i=1;i<results.length;i++){if(results[i].avg>best.avg)best=results[i]}
       var ranked=results.slice().sort(function(a,b){return b.avg-a.avg});
-      var ranks=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49','#4'];
 
       var html='<p style="text-align:center;font-size:1rem;margin-bottom:1rem">St\u00E4rkster TOM-Effekt: <b style="color:'+best.color+'">'+best.name+'</b> (\u00D8 '+fmtPct(best.avg)+', WR '+best.winRate.toFixed(0)+'%, n='+best.n+')</p>';
       html+='<div class="kpi-row">';
       for(var i=0;i<ranked.length;i++){
         var r=ranked[i];
-        var rank=i<ranks.length?ranks[i]:'#'+(i+1);
         var curBorder=r.isCurrent?'border:2px solid #FFE600;box-shadow:0 0 12px rgba(255,230,0,.2)':'border-color:'+r.color;
         var curTag=r.isCurrent?' <span style="color:#FFE600;font-size:.75rem">\u2B50 aktuell</span>':'';
-        html+='<div class="kpi" style="'+curBorder+';padding:1rem"><div class="kpi-label" style="color:'+r.color+';font-size:.875rem">'+rank+' '+r.name+curTag+'</div><div class="kpi-value '+clr(r.avg)+'" style="font-size:1.25rem">'+fmtPct(r.avg)+'</div><div class="kpi-label" style="font-size:.8125rem">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
+        html+='<div class="kpi" style="'+curBorder+';padding:1rem"><div class="kpi-label" style="color:'+r.color+';font-size:.875rem">'+r.name+curTag+'</div><div class="kpi-value '+clr(r.avg)+'" style="font-size:1.25rem">'+fmtPct(r.avg)+'</div><div class="kpi-label" style="font-size:.8125rem">WR '+r.winRate.toFixed(0)+'% \u00B7 n='+r.n+'</div></div>';
       }
       html+='</div>';
       html+='<p style="font-size:.875rem;color:var(--dim);margin-top:1rem;line-height:1.6"><b>Interpretation:</b> TOM-Effekt aufgesplittet nach Pr\u00E4sidentenzyklus-Jahr. Pre-Election Years zeigen typischerweise den st\u00E4rksten Monatswechsel-Effekt durch erh\u00F6hte fiskalische Stimuli.</p>';

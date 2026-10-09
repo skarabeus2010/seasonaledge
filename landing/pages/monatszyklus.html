@@ -1404,22 +1404,17 @@
       }
       // Best: hoechster match_score
       var best = cycleResults.reduce(function(a,b){return b.match_score>a.match_score?b:a;});
-      var ranked = cycleResults.slice().sort(function(a,b){return b.match_score-a.match_score;});
-      var rankMap = {};
-      for (var i=0;i<ranked.length;i++) rankMap[ranked[i].name] = i;
       var html = '<p style="color:#fff;font-size:14px;text-align:center;margin-bottom:12px">' +
         'Bester Match: <b style="color:'+best.color+'">'+best.name+'</b> ' +
         '(r='+(best.correlation>=0?'+':'')+best.correlation.toFixed(2)+', DTW '+Math.round(best.dtw_score*100)+'%, n='+best.n_years+' Jahre)</p>';
       html += '<div class="match-cards">';
       for (var i=0;i<cycleResults.length;i++) {
         var r = cycleResults[i];
-        var rank = rankMap[r.name];
-        var medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : '#'+(rank+1);
         var corrCol = r.correlation > 0.5 ? '#34d399' : (r.correlation > 0 ? '#fbbf24' : '#f87171');
         var deg = Math.round(r.match_score * 180);
         var color = SA.significance.scoreToColor(r.match_score);
         html += '<div class="match-card' + (r.name === best.name ? ' is-best' : '') + '" style="border-color:'+(r.name===best.name?r.color:'rgba(255,255,255,.07)')+'">' +
-          '<div class="mc-name" style="color:'+r.color+'">'+medal+' '+r.name+'</div>' +
+          '<div class="mc-name" style="color:'+r.color+'">'+r.name+'</div>' +
           '<div style="position:relative;width:120px;height:65px;margin:0 auto;overflow:hidden">' +
             '<div style="width:120px;height:120px;border-radius:50%;background:conic-gradient('+color+' 0deg,'+color+' '+deg+'deg,rgba(255,255,255,.06) '+deg+'deg,rgba(255,255,255,.06) 360deg);transform:rotate(-90deg)"></div>' +
             '<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:85px;height:42px;border-radius:0 0 85px 85px;background:var(--card,#0a0a0e)"></div>' +
