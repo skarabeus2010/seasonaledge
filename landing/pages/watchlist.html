@@ -435,7 +435,9 @@
 
     // ── Compute + Fetch für einen Ticker ──────────────────────
     function computeForTicker(ticker) {
-      return SA.fetchAllPrices(ticker).then(function(rows) {
+      // volle Historie über denselben Lader wie Dashboard/KI-Seite (Datums-Blättern ohne count=exact; der gemeinsame
+      // Lader brach bei langen Reihen wie ^GSPC mit HTTP 500 ab) — so rechnen alle drei auf derselben Datenbasis
+      return SA.decadeCompute.ladeVollHistorie(ticker).then(function(rows) {
         if (!rows || rows.length < 200) {
           return { ticker: ticker, error: 'Zu wenig Daten', rows: null };
         }
