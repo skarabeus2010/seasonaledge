@@ -45,7 +45,7 @@ SA.TOUR_STEPS = [
     element: '#sel-search',
     popover: {
       title: 'Saisonal-Scanner — 350+ Ticker',
-      description: 'Der wöchentlich aktualisierte Scanner zeigt dir alle Ticker mit aktuellem <b>KI-Score</b>, Signal (Bullish/Neutral/Bearish), Win-Rate und Monatsrendite. Filtere nach Signal, Kategorie oder Mindest-Score — die Tabelle aktualisiert sich live.',
+      description: 'Der nächtlich neu gerechnete Scanner zeigt dir alle Ticker mit <b>Saison-Score</b>, Trefferquote der Vorjahre für die nächsten 30 Tage, Ø-Rendite und den ähnlichsten Jahren. Filtere nach Kategorie oder Mindest-Score — die Tabelle aktualisiert sich live.',
       side: 'right',
       align: 'start'
     },
@@ -59,7 +59,7 @@ SA.TOUR_STEPS = [
     element: '#wl-add-btn',
     popover: {
       title: 'Watchliste — deine Favoriten-Ticker',
-      description: 'Ticker per <b>+</b> hinzufügen oder über den Stern auf jeder Analyse-Seite markieren. Jede Karte zeigt den aktuellen KI-Score, 2-Wochen-Saisonalität, Drawdown und das nächste Strategie-Signal. Eingeloggt: Cloud-Sync zwischen Geräten. Gast: rein lokal im Browser.',
+      description: 'Ticker per <b>+</b> hinzufügen oder über den Stern auf jeder Analyse-Seite markieren. Jede Karte zeigt den Saison-Score, 2-Wochen-Saisonalität, Drawdown und das nächste Strategie-Signal. Eingeloggt: Cloud-Sync zwischen Geräten. Gast: rein lokal im Browser.',
       side: 'right',
       align: 'start'
     },
@@ -92,8 +92,8 @@ SA.TOUR_STEPS = [
     page: '/dashboard',
     element: '#card-ki',
     popover: {
-      title: 'KI-Score 0–10',
-      description: 'Composite Score aus vier Sub-Scores: Musterpfad-Qualität, Trend-Projektion, Win-Rate des aktuellen Monats und Tracking-Qualität. Bullish ≥ 6,5, bearish ≤ 3,5.',
+      title: 'Saison-Score 0–10',
+      description: 'Vier Bausteine für die nächsten 30 Kalendertage: Anteil positiver Vorjahre, deren Ø-Rendite und dieselben zwei Werte für die fünf ähnlichsten Jahre. Beschreibend, keine Bullish-/Bearish-Einstufung.',
       side: 'bottom',
       align: 'start'
     }
@@ -248,13 +248,13 @@ SA.TOUR_STEPS = [
     optional: true
   },
 
-  // ── Phase 12: KI-Saisonalität ───────────────────────────────────────
+  // ── Phase 12: Saison-Score & Musterjahre ───────────────────────────────────────
   {
     page: '/ki-saisonalitaet',
     element: '#score-value',
     popover: {
-      title: 'KI Composite Score',
-      description: 'Vier Sub-Scores à 0–2,5 → Gesamt 0–10. Rechts daneben: Radar-Chart. Darunter der Musterpfad — rekalibrierte Saisonalität aus den ähnlichsten historischen Jahren.',
+      title: 'Saison-Score & Musterjahre',
+      description: 'Vier Bausteine à 0–2,5 → 0–10, mit festen Parametern. Rechts daneben: Radar-Chart. Darunter der Musterpfad der ähnlichsten historischen Jahre — die Regler links ändern nur ihn, nicht den Score.',
       side: 'bottom',
       align: 'start'
     },
@@ -330,15 +330,15 @@ SA.TOUR_STEPS_EN = [
   // 1 — Landing: Sign In
   { title: 'Sign In with Google', description: 'Optional: Google login gives you a <b>Cloud Watchlist</b> that syncs across your devices, plus access to your personal profile at <b>/profile</b>. Everything works without login too — your watchlist is then stored locally in the browser.' },
   // 2 — Scanner
-  { title: 'Seasonal Scanner — 350+ Tickers', description: 'The weekly-updated scanner shows all tickers with the current <b>AI Score</b>, signal (Bullish/Neutral/Bearish), win rate and monthly return. Filter by signal, category or minimum score — the table updates live.' },
+  { title: 'Seasonal Scanner — 350+ Tickers', description: 'The nightly-recomputed scanner shows all tickers with the <b>Seasonal Score</b>, the hit rate of prior years for the next 30 days, average return and the most similar years. Filter by category or minimum score — the table updates live.' },
   // 3 — Watchlist
-  { title: 'Watchlist — Your Favourite Tickers', description: 'Add tickers via <b>+</b> or use the star icon on any analysis page. Each card shows the current AI Score, 2-week seasonality, drawdown and the next strategy signal. Logged in: cloud sync across devices. Guest: local browser storage only.' },
+  { title: 'Watchlist — Your Favourite Tickers', description: 'Add tickers via <b>+</b> or use the star icon on any analysis page. Each card shows the Seasonal Score, 2-week seasonality, drawdown and the next strategy signal. Logged in: cloud sync across devices. Guest: local browser storage only.' },
   // 4 — Dashboard: Ticker
   { title: 'Ticker Selection', description: 'Choose any ticker: SPY, AAPL, ^GSPC, BTC-USD, TSLA, ^DJI, … All cards update automatically.' },
   // 5 — Dashboard: Header
   { title: 'Where Are You in the Cycle?', description: 'The header shows all seasonal coordinates: <b>TDOM</b> = Trading Day of Month (e.g. 6/21), <b>TWOY</b> = Trading Week of Year, <b>TDOY</b> = Trading Day of Year, <b>Q</b> = Quarter, <b>MidTerm</b> = Presidential cycle phase (Election, Post-Election, Midterm, Pre-Election). Exchange-specific calculation (NYSE, XETRA, LSE).' },
-  // 6 — Dashboard: AI Score
-  { title: 'AI Score 0–10', description: 'Composite score from four sub-scores: pattern path quality, trend projection, win rate for the current month, and tracking quality. Bullish ≥ 6.5, bearish ≤ 3.5.' },
+  // 6 — Dashboard: Seasonal Score
+  { title: 'Seasonal Score 0–10', description: 'Four components for the next 30 calendar days: share of positive prior years, their average return, and the same two values for the five most similar years. Descriptive, no bullish/bearish label.' },
   // 7 — Dashboard: Crash
   { title: 'Crash Signal', description: 'Red = elevated risk according to Isolation Forest. The score 0–100 compares volatility, drawdown and returns against the 252-day percentile of the ticker.' },
   // 8 — Dashboard: Year chart
@@ -363,8 +363,8 @@ SA.TOUR_STEPS_EN = [
   { title: 'Spot-Vol Beta (SPX vs. VIX)', description: 'How strongly does VIX react to SPX moves? Scatter + OLS regression + regime turning points (spikes, complacency, beta stress) with forward returns 5/10/20/60d.' },
   // 18 — Plain Vanilla
   { title: 'Plain Vanilla Strategies', description: '24 classic strategies (Sell in May, KTI, UECS, TOM, …) with equity curve, stats, significance test and stop-loss / trailing stop. Open trades are marked as "OPEN".' },
-  // 19 — KI-Saisonalität
-  { title: 'AI Composite Score', description: 'Four sub-scores of 0–2.5 → total 0–10. Next to it: radar chart. Below: the pattern path — recalibrated seasonality from the most similar historical years.' },
+  // 19 — Saison-Score & Musterjahre
+  { title: 'Seasonal Score & Pattern Years', description: 'Four components of 0–2.5 → 0–10, with fixed parameters. Next to it: radar chart. Below: the pattern path of the most similar historical years — the sliders on the left change only the path, not the score.' },
   // 20 — Backtest: Outlier
   { title: 'Outlier Manager', description: 'Extreme outliers (crash years like 2008 or bubbles like 1999) can distort seasonal patterns. Filter via IQR, Winsorize or Isolation Forest — selectable for month-end, lunar phases, annual cycle, TDoM and backtest.' },
   // 21 — Backtest: Tech filter

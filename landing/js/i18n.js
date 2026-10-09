@@ -108,7 +108,7 @@ SA.i18n = (function() {
   // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
   // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
   // veroeffentlicht.
-  var _JSON_VER = 'v11';
+  var _JSON_VER = 'v12';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
@@ -222,11 +222,11 @@ SA.i18n = (function() {
   var _EN_PAGE_META = {
     '/': {
       title: 'SeasonAlpha — Seasonal Stock Market Patterns with up to 131 Years of Data',
-      desc:  'Analyse seasonal patterns for 350+ tickers: AI Score, Decade Cycle, Annual Cycle, OPEX, Moon Phases, Central Bank Effect and more. Free & Premium.'
+      desc:  'Analyse seasonal patterns for 350+ tickers: Seasonal Score, Decade Cycle, Annual Cycle, OPEX, Moon Phases, Central Bank Effect and more. Free & Premium.'
     },
     '/dashboard': {
       title: 'Ticker Dashboard — Seasonality at a Glance | SeasonAlpha',
-      desc:  'All seasonal signals for your ticker in one view: AI Score, Crash Signal, Annual Chart, TruePath pattern path, Strategies and Events.'
+      desc:  'All seasonal signals for your ticker in one view: Seasonal Score, Stress Light, Annual Chart, TruePath pattern path, Strategies and Events.'
     },
     '/dekadenzyklus': {
       title: 'Decade Cycle — 131 Years of Dow Jones Patterns | SeasonAlpha',
@@ -329,8 +329,8 @@ SA.i18n = (function() {
       desc:  'Seasonal patterns around monthly options expiration (3rd Friday) and Triple Witching (Mar/Jun/Sep/Dec). Event-window, volatility and historical OPEX calendar.'
     },
     '/ki-saisonalitaet': {
-      title: 'AI Seasonality — Composite Score & Pattern Path | SeasonAlpha',
-      desc:  'AI Composite Score (0–10) combining four sub-scores: seasonality, drawdown, volatility and momentum. TruePath pattern matching with sigma cone projection.'
+      title: 'Seasonal Score & Pattern Years — Pattern Path | SeasonAlpha',
+      desc:  'Seasonal Score 0–10 for the next 30 days from prior years and the five most similar years, plus the pattern path of the most similar years. Descriptive, not a forecast.'
     },
     '/backtest-engine': {
       title: 'Backtest Engine — Event-Trading Optimisation | SeasonAlpha',
@@ -357,8 +357,8 @@ SA.i18n = (function() {
       desc:  'Seasonal patterns around VIX settlement (30 days before OPEX Friday). Event-window, volatility reaction and exchange-holiday-adjusted calendar.'
     },
     '/scanner': {
-      title: 'Seasonal Scanner — All Tickers by AI Score | SeasonAlpha',
-      desc:  'All 350+ tickers sorted by AI Composite Score. Filter by category, signal, win rate and score range. Weekly updated seasonal edge overview.'
+      title: 'Seasonal Scanner — Seasonal Score of All Tickers | SeasonAlpha',
+      desc:  'All 350+ tickers by Seasonal Score for the next 30 days — hit rate of prior years, average return and most similar years. Descriptive, not a forecast.'
     },
     '/pricing': {
       title: 'Pricing — Free & Premium Plans | SeasonAlpha',
@@ -369,8 +369,8 @@ SA.i18n = (function() {
       desc:  'Manage your SeasonAlpha account: subscription status, watchlist, newsletter settings and daily briefing preferences.'
     },
     '/watchlist': {
-      title: 'My Watchlist — AI Score & Signals | SeasonAlpha',
-      desc:  'Your personal ticker watchlist with AI Composite Score, current regime signal and seasonal context. Up to 50 tickers, cloud-synced.'
+      title: 'My Watchlist — Seasonal Score & Signals | SeasonAlpha',
+      desc:  'Your personal ticker watchlist with Seasonal Score, stress light and seasonal context. Up to 50 tickers, cloud-synced.'
     },
     '/unsubscribe': {
       title: 'Unsubscribe — SeasonAlpha',

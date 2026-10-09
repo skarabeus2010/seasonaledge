@@ -4,8 +4,8 @@
   <!-- SA_META_V5 -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Saisonal-Scanner &mdash; Alle Ticker nach KI-Score | SeasonAlpha</title>
-  <meta name="description" content="Saisonal-Scanner: alle Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal (Bullish/Bearish/Neutral), Win-Rate. Screening f&uuml;r saisonale Trading-Chancen.">
+  <title>Saisonal-Scanner &mdash; Saison-Score aller Ticker | SeasonAlpha</title>
+  <meta name="description" content="Saisonal-Scanner: alle Ticker nach Saison-Score f&uuml;r die n&auml;chsten 30 Tage &ndash; Trefferquote der Vorjahre, &Oslash;-Rendite und &auml;hnlichste Jahre. Beschreibend, keine Prognose.">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <meta name="theme-color" content="#000000">
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/scanner">
   <meta property="og:title" content="Saisonal-Scanner &mdash; SeasonAlpha">
-  <meta property="og:description" content="Alle analysierten Ticker nach KI-Saisonalit&auml;ts-Score sortiert. Filter nach Kategorie, Signal, Win-Rate.">
+  <meta property="og:description" content="Alle Ticker nach Saison-Score f&uuml;r die n&auml;chsten 30 Tage &ndash; Trefferquote der Vorjahre und &auml;hnlichste Jahre.">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -30,7 +30,7 @@
   <meta name="twitter:site" content="@SeasonAlph4882">
   <meta name="twitter:creator" content="@SeasonAlph4882">
   <meta name="twitter:title" content="Saisonal-Scanner &mdash; SeasonAlpha">
-  <meta name="twitter:description" content="Alle analysierten Ticker nach KI-Saisonalit&auml;ts-Score sortiert.">
+  <meta name="twitter:description" content="Alle Ticker nach Saison-Score f&uuml;r die n&auml;chsten 30 Tage.">
   <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
 
   <!-- Icons -->
@@ -40,11 +40,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
 
   <!-- Structured Data: WebPage -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Saisonal-Scanner","url":"https://seasonalpha.ai/scanner","description":"Saisonal-Scanner: Alle analysierten Ticker nach KI-Score sortiert. Filter nach Kategorie, Signal, Win-Rate.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai/"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai/","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Saisonal-Scanner","url":"https://seasonalpha.ai/scanner","description":"Saisonal-Scanner: alle Ticker nach Saison-Score für die nächsten 30 Tage – Trefferquote der Vorjahre, Ø-Rendite und ähnlichste Jahre.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai/"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai/","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
   <!-- Structured Data: BreadcrumbList -->
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Saisonal-Scanner","item":"https://seasonalpha.ai/scanner"}]}</script>
   <!-- Structured Data: FAQPage (SERP Rich Result) -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was bedeutet ein KI-Score von 6,5 oder höher?","acceptedAnswer":{"@type":"Answer","text":"Der KI-Score läuft von 0 bis 10. Ab einem Wert von 6,5 stuft der Scanner einen Ticker als Bullish ein – das aktuelle saisonale Muster ist also überdurchschnittlich günstig. Werte von 3,5 oder darunter gelten als Bearish, dazwischen als Neutral. Der Score ist eine statistische Einordnung der saisonalen Stärke, keine Kaufempfehlung und keine Vorhersage künftiger Kurse."}},{"@type":"Question","name":"Aus welchen Sub-Scores setzt sich der KI-Score zusammen?","acceptedAnswer":{"@type":"Answer","text":"Der KI-Score kombiniert vier gleich gewichtete Sub-Scores zu je 0 bis 2,5 Punkten: DTW Pattern Matching (Ähnlichkeit des laufenden Jahres zu historisch guten Jahren), Prophet Forecast (Richtung der 30-Tage-Prognose), Win-Rate des aktuellen Monats und Tracking-Qualität (Korrelation des laufenden Jahres zum Saisonalmuster). Die Summe ergibt den Gesamtwert von 0 bis 10."}},{"@type":"Question","name":"Auf welchen Daten beruht der Saisonal-Scanner?","acceptedAnswer":{"@type":"Answer","text":"Der Scanner berechnet alle Werte aus normalisierten Renditen: Jedes Jahr startet bei 100, die täglichen Renditen kumulieren darauf. So sind unterschiedlich teure Ticker vergleichbar und Preis-Splits verzerren nichts. Grundlage ist die verfügbare Kurshistorie je Ticker (typischerweise bis zu 20 Jahre); absolute Preisänderungen werden bewusst nicht verwendet."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was misst der Saison-Score?","acceptedAnswer":{"@type":"Answer","text":"Er fasst zusammen, wie die nächsten 30 Kalendertage in früheren Jahren verliefen: Anteil positiver Jahre und Ø-Rendite über bis zu 20 Vergleichsjahre, dazu dieselben zwei Werte für die fünf Jahre, deren Verlauf bis heute dem laufenden Jahr am ähnlichsten war. Vier Bausteine zu je 0 bis 2,5 Punkten ergeben 0 bis 10. Der Score ist eine Beschreibung der Vergangenheit, keine Prognose und keine Kaufempfehlung."}},{"@type":"Question","name":"Warum gibt es kein Bullish- oder Bearish-Signal mehr?","acceptedAnswer":{"@type":"Answer","text":"Die alten Schwellen 6,5 und 3,5 waren gesetzt, nicht gemessen. Solange eine Schwelle nicht an vorab festgelegten Daten geprüft ist, zeigt der Scanner nur die Zahl und ihre Bausteine."}},{"@type":"Question","name":"Auf welchen Daten beruht der Saisonal-Scanner?","acceptedAnswer":{"@type":"Answer","text":"Auf den Schlusskursen je Ticker. Jedes Jahr wird auf 100 normiert; das 30-Tage-Fenster wird aus den Kursen am Fensteranfang und am letzten Handelstag bis zum Zieldatum gerechnet. Fehlen dafür Daten, steht der Ticker mit Grund am Ende der Tabelle statt mit einem Ersatzwert."}}]}</script>
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/landing/css/app.css">
@@ -59,6 +59,9 @@
     .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
     @keyframes spin{to{transform:rotate(360deg)}}
     main{position:relative;min-height:60vh}
+    .scanner-table td.score-val{color:var(--accent);font-weight:700}
+    .scanner-table td.score-val.nb,.scanner-table td.nb-grund{color:var(--muted);font-weight:400}
+    .scanner-table td.muster{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--dim);white-space:nowrap}
     .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
 
     /* Scan-Header mit Distribution-Karten */
@@ -151,14 +154,6 @@
 
       <hr>
       <div class="filter-group">
-        <h4 data-i18n="scan.filter_signal">Signal</h4>
-        <label class="filter-row signal-row bullish"><input type="checkbox" class="chk-signal" value="Bullish" checked> <span class="badge">Bullish</span><span class="chk-count" id="cnt-bullish">0</span></label>
-        <label class="filter-row signal-row neutral"><input type="checkbox" class="chk-signal" value="Neutral" checked> <span class="badge">Neutral</span><span class="chk-count" id="cnt-neutral">0</span></label>
-        <label class="filter-row signal-row bearish"><input type="checkbox" class="chk-signal" value="Bearish" checked> <span class="badge">Bearish</span><span class="chk-count" id="cnt-bearish">0</span></label>
-      </div>
-
-      <hr>
-      <div class="filter-group">
         <h4 data-i18n="scan.filter_score_range">Score-Range</h4>
         <label class="filter-row"><span data-i18n="scan.filter_min_label">Min:</span><input type="range" class="range-slider" id="sel-min-score" min="0" max="10" step="0.1" value="0"></label>
         <div class="range-display"><span id="lbl-min-score">0.0</span> &ndash; 10.0</div>
@@ -166,7 +161,7 @@
 
       <hr>
       <div class="filter-group">
-        <h4 data-i18n="scan.filter_min_win_rate">Min Win-Rate</h4>
+        <h4 data-i18n="scan.filter_min_treffer">Min. Trefferquote 30 T.</h4>
         <label class="filter-row"><input type="range" class="range-slider" id="sel-min-wr" min="0" max="100" step="1" value="0"></label>
         <div class="range-display"><span id="lbl-min-wr">0</span>%</div>
       </div>
@@ -186,30 +181,30 @@
       <div class="error-banner" id="error-banner"></div>
 
       <h1 class="page-title"><b data-i18n="scan.page_title">Saisonal-Scanner</b></h1>
-      <p class="page-caption" id="page-caption" data-i18n="scan.page_caption">Alle analysierten Ticker nach KI-Score sortiert &middot; Filter nach Kategorie, Signal und Win-Rate</p>
+      <p class="page-caption" id="page-caption" data-i18n="scan.caption_saison">Alle Ticker nach Saison-Score f&uuml;r die n&auml;chsten 30 Tage &middot; beschreibend, keine Prognose</p>
       <div class="trading-day-header" id="scan-date-header"></div>
 
       <!-- Scan-Summary Cards -->
       <div class="scan-summary" id="scan-summary" style="display:none">
         <div class="scan-card">
-          <div class="lbl" data-i18n="scan.summary_tickers_scanned">Ticker gescannt</div>
-          <div class="val" id="sm-total">&ndash;</div>
+          <div class="lbl" data-i18n="scan.sum_berechnet">Berechnet</div>
+          <div class="val" id="sm-ok">&ndash;</div>
+          <div class="sub" id="sm-abdeckung">&ndash;</div>
+        </div>
+        <div class="scan-card">
+          <div class="lbl" data-i18n="scan.sum_nicht">Nicht berechenbar</div>
+          <div class="val" id="sm-nb">&ndash;</div>
+          <div class="sub" data-i18n="scan.sum_nicht_sub">am Ende der Tabelle, mit Grund</div>
+        </div>
+        <div class="scan-card">
+          <div class="lbl" data-i18n="scan.sum_fehlt">Im Lauf fehlend</div>
+          <div class="val" id="sm-fehlt">&ndash;</div>
+          <div class="sub" id="sm-fehlt-liste">&ndash;</div>
+        </div>
+        <div class="scan-card">
+          <div class="lbl" data-i18n="scan.sum_stand">Kursstand</div>
+          <div class="val" id="sm-asof">&ndash;</div>
           <div class="sub" id="sm-date">&ndash;</div>
-        </div>
-        <div class="scan-card bullish">
-          <div class="lbl" data-i18n="scan.summary_bullish">Bullish</div>
-          <div class="val" id="sm-bullish">&ndash;</div>
-          <div class="sub" id="sm-bullish-pct">&ndash;</div>
-        </div>
-        <div class="scan-card neutral">
-          <div class="lbl" data-i18n="scan.summary_neutral">Neutral</div>
-          <div class="val" id="sm-neutral">&ndash;</div>
-          <div class="sub" id="sm-neutral-pct">&ndash;</div>
-        </div>
-        <div class="scan-card bearish">
-          <div class="lbl" data-i18n="scan.summary_bearish">Bearish</div>
-          <div class="val" id="sm-bearish">&ndash;</div>
-          <div class="sub" id="sm-bearish-pct">&ndash;</div>
         </div>
       </div>
 
@@ -227,10 +222,10 @@
                 <th data-sort="ticker"><span data-i18n="scan.col_ticker">Ticker</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
                 <th data-sort="name"><span data-i18n="scan.col_name">Name</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
                 <th data-sort="kategorie"><span data-i18n="scan.col_category">Kategorie</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="signal"><span data-i18n="scan.col_signal">Signal</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
                 <th data-sort="score" class="num sorted"><span data-i18n="scan.col_score">Score</span> <span class="sort-ind">&#x25BE;</span></th>
-                <th data-sort="win_rate" class="num"><span data-i18n="table.win_rate">Win-Rate</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
-                <th data-sort="avg_return" class="num"><span data-i18n="scan.col_avg_return">&Oslash; Return</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="win_rate" class="num"><span data-i18n="scan.col_treffer" data-i18n-title="scan.col_treffer_tt" title="Anteil der Vergleichsjahre, in denen die n&auml;chsten 30 Kalendertage positiv verliefen">Trefferquote 30 T.</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-sort="avg_return" class="num"><span data-i18n="scan.col_avg30">&Oslash; 30 T.</span> <span class="sort-ind">&#x25B4;&#x25BE;</span></th>
+                <th data-i18n="scan.col_muster" data-i18n-title="scan.col_muster_tt" title="Die f&uuml;nf Jahre, deren Verlauf bis heute dem laufenden Jahr am &auml;hnlichsten war">Musterjahre</th>
                 <th class="num" data-i18n="scan.col_action">Aktion</th>
               </tr>
             </thead>
@@ -247,32 +242,26 @@
       <details>
         <summary data-i18n="section.methodology_data">Methodik &amp; Daten</summary>
         <div class="content">
-          <p data-i18n-html="scan.method_data_source"><b>Datenquelle:</b> Der Saisonal-Scanner durchl&auml;uft n&auml;chtlich alle unterst&uuml;tzten Ticker und berechnet pro Ticker den <b>KI-Saisonalit&auml;ts-Score</b> auf einer Skala von 0&ndash;10. Der Score kombiniert 4 Sub-Scores: DTW Pattern Matching, Prophet Forecast, Win-Rate aktueller Monat, und Tracking-Qualit&auml;t (Korrelation zum historischen Muster).</p>
-          <p data-i18n-html="scan.method_signal_label"><b>Signal-Ableitung:</b></p>
-          <ul style="margin-left:1.25rem;color:var(--dim);font-size:.8125rem">
-            <li><span style="color:var(--green);font-weight:700">Bullish</span>: Score &ge; 6.5</li>
-            <li><span style="color:var(--accent);font-weight:700">Neutral</span>: 3.5 &lt; Score &lt; 6.5</li>
-            <li><span style="color:var(--red);font-weight:700">Bearish</span>: Score &le; 3.5</li>
-          </ul>
-          <p data-i18n-html="scan.method_win_rate"><b>Win-Rate</b> = Prozentsatz der historischen Jahre in denen der aktuelle Monat positiv verlief.</p>
-          <p data-i18n-html="scan.method_avg_return"><b>&Oslash; Return</b> = durchschnittliche Monats-Rendite im aktuellen Kalendermonat &uuml;ber alle verf&uuml;gbaren Jahre.</p>
-          <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)" data-i18n="scan.method_update_note">Hinweis: Der Scanner aktualisiert alle Ticker nur bei voll-Durchl&auml;ufen (je nach Serverlast mehrmals pro Woche, nicht zwingend t&auml;glich). Das Scan-Datum oben zeigt den tats&auml;chlichen Stand der Daten.</p>
-          <p data-i18n-html="scan.method_disclaimer"><b>Keine Anlageberatung.</b> Die gezeigten Signale sind rein statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
+          <p data-i18n-html="scan.m_def"><b>Saison-Score (0&ndash;10):</b> vier Bausteine zu je 0 bis 2,5 Punkten, alle bezogen auf die n&auml;chsten 30 Kalendertage ab dem letzten Kurs. (1) Anteil der Vergleichsjahre mit positivem Fenster, (2) deren &Oslash;-Rendite, abgebildet von &minus;3&nbsp;% bis +3&nbsp;% auf 0 bis 1, (3) und (4) dieselben zwei Werte f&uuml;r die f&uuml;nf Jahre, deren Jahresverlauf bis heute dem laufenden am &auml;hnlichsten war (Korrelation), gewichtet nach &Auml;hnlichkeit.</p>
+          <p data-i18n-html="scan.m_jahre"><b>Vergleichsjahre:</b> die bis zu 20 j&uuml;ngsten abgeschlossenen Jahre mit vollst&auml;ndigem Fenster, mindestens 10. Ab dem 20. Handelstag des Jahres; davor und bei zu kurzer Historie steht der Ticker als &bdquo;nicht berechenbar&ldquo; am Ende &ndash; mit Grund, nicht mit einem Ersatzwert.</p>
+          <p data-i18n-html="scan.m_kein_signal"><b>Keine Bullish-/Bearish-Einstufung:</b> die fr&uuml;heren Schwellen 6,5 und 3,5 waren gesetzt, nicht gemessen. Der Scanner zeigt die Zahl und ihre Bausteine.</p>
+          <p data-i18n-html="scan.m_validierung"><b>Geprüft:</b> Im historischen Walk-forward 2010&ndash;2025 über 34 Indizes und ETFs hängt der Score nicht messbar mit der Rendite der jeweils folgenden 30 Tage zusammen: mittlere Rangkorrelation 0,019, 95-%-Intervall &minus;0,035 bis 0,084. Die fünf ähnlichsten Jahre fügen gegenüber den Vorjahren allein nichts hinzu (Differenz 0,001). Der Score beschreibt, wie diese Wochen früher liefen &mdash; eine Vorhersage ist er nicht.</p>
+          <p style="margin-top:.75rem;font-size:.75rem;color:var(--muted)" data-i18n="scan.m_update">Hinweis: Der Saison-Score wird jede Nacht f&uuml;r alle Ticker neu gerechnet. &bdquo;Lauf&ldquo; oben zeigt das Datum des Laufs, &bdquo;Kursstand&ldquo; den letzten verwendeten Kurs.</p>
+          <p data-i18n-html="scan.m_disclaimer"><b>Keine Anlageberatung.</b> Die gezeigten Werte sind statistisch-historische Auswertungen und keine Kaufempfehlung.</p>
         </div>
       </details>
 
       <!-- SEO-Content (statisch, indexierbar) -->
       <details open>
-        <summary data-i18n="scan.seo_h">Saisonal-Scanner verstehen &ndash; KI-Score, Sub-Scores &amp; Methodik</summary>
+        <summary data-i18n="scan.seo2_h">Saisonal-Scanner verstehen &ndash; Saison-Score, Bausteine &amp; Grenzen</summary>
         <div class="content">
-          <p data-i18n-html="scan.seo_p1">Der <b>Saisonal-Scanner</b> von SeasonAlpha durchsucht das gesamte unterst&uuml;tzte Ticker-Universum &mdash; ETFs, Aktien, Futures und Crypto &mdash; und ordnet jeden Wert nach seinem <b>KI-Score</b> ein, einer Kennzahl f&uuml;r die <b>saisonale St&auml;rke</b> auf einer Skala von 0 bis 10. So beantwortet das Tool eine einzige Frage auf einen Blick: Bei welchen M&auml;rkten ist das aktuelle Kalenderfenster historisch besonders g&uuml;nstig &mdash; und bei welchen eher schwach? Die Ergebnisse lassen sich nach Kategorie, Signal (Bullish, Neutral, Bearish) und Win-Rate filtern, sodass du das breite Universum schnell auf die saisonal interessantesten Kandidaten eingrenzt.</p>
-          <p data-i18n-html="scan.seo_p2">Der <b>KI-Score</b> verdichtet die saisonale Lage zu einer einzigen Zahl. Ab einem Wert von <b>6,5</b> markiert der Scanner einen Ticker als <b>Bullish</b> &mdash; das saisonale Muster ist dann &uuml;berdurchschnittlich g&uuml;nstig. Werte von <b>3,5 oder darunter</b> gelten als <b>Bearish</b>, alles dazwischen als <b>Neutral</b>. Erg&auml;nzend zeigt jede Zeile die <b>Win-Rate</b> (Anteil der historischen Jahre, in denen der aktuelle Monat positiv verlief) und den durchschnittlichen Monats-Return. Ein hoher Score in Kombination mit einer Win-Rate deutlich &uuml;ber 50&nbsp;Prozent beschreibt ein besonders konsistentes saisonales Profil.</p>
-          <p data-i18n-html="scan.seo_p3">Methodisch setzt sich der KI-Score aus <b>vier gleich gewichteten Sub-Scores zu je 0 bis 2,5 Punkten</b> zusammen, die in Summe den Bereich 0 bis 10 ergeben: <b>DTW Pattern Matching</b> misst, wie &auml;hnlich der bisherige Jahresverlauf historisch starken Jahren ist; der <b>Prophet Forecast</b> bewertet die Richtung der 30-Tage-Prognose; die <b>Win-Rate</b> flie&szlig;t als Trefferquote des aktuellen Monats ein; und die <b>Tracking-Qualit&auml;t</b> erfasst, wie eng das laufende Jahr dem typischen Saisonalmuster folgt (Korrelation). Alle Berechnungen beruhen auf <b>normalisierten Renditen</b>: Jedes Jahr startet bei 100, die t&auml;glichen Renditen kumulieren darauf. Dadurch sind unterschiedlich teure Ticker vergleichbar und Kurs-Splits verzerren das Bild nicht &mdash; absolute Preisdifferenzen werden bewusst nicht verwendet.</p>
-          <p data-i18n-html="scan.seo_p4">Der Saisonal-Scanner ist ein <b>statistisches Werkzeug zur Einordnung</b>, keine Anlageberatung und keine Prognose. Ein <b>Bullish</b>-Signal bedeutet nicht, dass ein Kurs steigen wird &mdash; es zeigt, dass das aktuelle Kalenderfenster historisch g&uuml;nstig war. Saisonalit&auml;t ist eine von vielen Einflussgr&ouml;&szlig;en; Nachrichten, Konjunktur und markt&uuml;bergreifende Schocks k&ouml;nnen jedes Muster &uuml;berlagern. Je k&uuml;rzer die verf&uuml;gbare Historie eines Tickers, desto vorsichtiger sind die Werte zu lesen. Nutze den Scanner als Ausgangspunkt f&uuml;r eigene Recherche &mdash; vergangene Muster garantieren keine k&uuml;nftigen Ergebnisse.</p>
+          <p data-i18n-html="scan.seo2_p1">Der <b>Saisonal-Scanner</b> ordnet das gesamte Ticker-Universum &mdash; ETFs, Aktien, Futures und Crypto &mdash; nach dem <b>Saison-Score</b>. Er beantwortet eine Frage: Wie verliefen die <b>n&auml;chsten 30 Kalendertage</b> in fr&uuml;heren Jahren? Jede Zeile zeigt die Trefferquote der Vorjahre mit ihrer Fallzahl, die &Oslash;-Rendite im selben Fenster und die f&uuml;nf Jahre, deren Verlauf dem laufenden am &auml;hnlichsten war.</p>
+          <p data-i18n-html="scan.seo2_p2">Die Werte sind <b>beschreibend</b>. Eine Trefferquote von 14/20 hei&szlig;t: in 14 der letzten 20 Jahre lag der Kurs 30 Tage nach diesem Datum h&ouml;her. Sie sagt nichts dar&uuml;ber, ob das in diesem Jahr wieder so kommt. Bei 20 Jahren ist schon 14/20 mit Zufall gut vereinbar; wer daraus etwas ableitet, sollte die Fallzahl mitlesen.</p>
+          <p data-i18n-html="scan.seo2_p3">Grundlage sind die Schlusskurse je Ticker, jedes Jahr auf 100 normiert. Die &auml;hnlichsten Jahre werden &uuml;ber die Korrelation des bisherigen Jahresverlaufs bestimmt. Keine Anlageberatung.</p>
           <h3 data-i18n="scan.seo_faq_h" style="font-size:.95rem;margin:1rem 0 .5rem">H&auml;ufige Fragen</h3>
-          <p data-i18n-html="scan.seo_faq1"><b>Was bedeutet ein KI-Score von 6,5 oder h&ouml;her?</b> Der KI-Score l&auml;uft von 0 bis 10. Ab einem Wert von 6,5 stuft der Scanner einen Ticker als Bullish ein &mdash; das aktuelle saisonale Muster ist also &uuml;berdurchschnittlich g&uuml;nstig. Werte von 3,5 oder darunter gelten als Bearish, dazwischen als Neutral. Der Score ist eine statistische Einordnung der saisonalen St&auml;rke, keine Kaufempfehlung und keine Vorhersage k&uuml;nftiger Kurse.</p>
-          <p data-i18n-html="scan.seo_faq2"><b>Aus welchen Sub-Scores setzt sich der KI-Score zusammen?</b> Der KI-Score kombiniert vier gleich gewichtete Sub-Scores zu je 0 bis 2,5 Punkten: DTW Pattern Matching (&Auml;hnlichkeit des laufenden Jahres zu historisch guten Jahren), Prophet Forecast (Richtung der 30-Tage-Prognose), Win-Rate des aktuellen Monats und Tracking-Qualit&auml;t (Korrelation des laufenden Jahres zum Saisonalmuster). Die Summe ergibt den Gesamtwert von 0 bis 10.</p>
-          <p data-i18n-html="scan.seo_faq3"><b>Auf welchen Daten beruht der Saisonal-Scanner?</b> Der Scanner berechnet alle Werte aus normalisierten Renditen: Jedes Jahr startet bei 100, die t&auml;glichen Renditen kumulieren darauf. So sind unterschiedlich teure Ticker vergleichbar und Preis-Splits verzerren nichts. Grundlage ist die verf&uuml;gbare Kurshistorie je Ticker (typischerweise bis zu 20 Jahre); absolute Preis&auml;nderungen werden bewusst nicht verwendet.</p>
+          <p data-i18n-html="scan.seo2_faq1"><b>Was misst der Saison-Score?</b> Er fasst zusammen, wie die n&auml;chsten 30 Kalendertage in fr&uuml;heren Jahren verliefen: Anteil positiver Jahre und &Oslash;-Rendite &uuml;ber bis zu 20 Vergleichsjahre, dazu dieselben zwei Werte f&uuml;r die f&uuml;nf Jahre, deren Verlauf bis heute dem laufenden Jahr am &auml;hnlichsten war. Vier Bausteine zu je 0 bis 2,5 Punkten ergeben 0 bis 10. Der Score ist eine Beschreibung der Vergangenheit, keine Prognose und keine Kaufempfehlung.</p>
+          <p data-i18n-html="scan.seo2_faq2"><b>Warum gibt es kein Bullish- oder Bearish-Signal mehr?</b> Die alten Schwellen 6,5 und 3,5 waren gesetzt, nicht gemessen. Solange eine Schwelle nicht an vorab festgelegten Daten gepr&uuml;ft ist, zeigt der Scanner nur die Zahl und ihre Bausteine.</p>
+          <p data-i18n-html="scan.seo2_faq3"><b>Auf welchen Daten beruht der Saisonal-Scanner?</b> Auf den Schlusskursen je Ticker. Jedes Jahr wird auf 100 normiert; das 30-Tage-Fenster wird aus den Kursen am Fensteranfang und am letzten Handelstag bis zum Zieldatum gerechnet. Fehlen daf&uuml;r Daten, steht der Ticker mit Grund am Ende der Tabelle statt mit einem Ersatzwert.</p>
         </div>
       </details>
     </main>
@@ -297,7 +286,6 @@
       sortDir: -1,    // -1 = desc, +1 = asc
       filters: {
         search: '',
-        signals: new Set(['Bullish', 'Neutral', 'Bearish']),
         categories: new Set(),  // leer = alle
         minScore: 0,
         minWinRate: 0,
@@ -336,39 +324,60 @@
         });
     }
 
+    var METHODE = 'saison_v1';
+
     function loadScannerResults() {
       if (!window.SA || !SA.supabase || !SA.supabase.url || SA.supabase.url.indexOf('%%') >= 0) {
         return Promise.reject(new Error('Supabase nicht konfiguriert'));
       }
-      // Lade alle Scanner-Results (PostgREST limit default 1000, reicht fuer ~300 Ticker)
-      return SA.supabase.get('scanner_results', 'select=*&order=score.desc&limit=5000');
+      // Erst das jüngste Datum DIESER Methode, dann nur dessen Zeilen. Alte KI-Score-Zeilen (methode NULL) werden nie
+      // gelesen, und ein Limit über alle Tage kann den jüngsten Lauf nicht mehr verdrängen.
+      return SA.supabase.get('scanner_results', 'select=scan_date&methode=eq.' + METHODE + '&order=scan_date.desc&limit=1')
+        .then(function(r) {
+          if (!Array.isArray(r) || !r.length) return [];
+          return SA.supabase.get('scanner_results', 'select=*&methode=eq.' + METHODE + '&scan_date=eq.' + r[0].scan_date +
+                                 '&order=score.desc.nullslast&limit=2000');
+        });
     }
+
+    var GRUND = {
+      keine_kurse: ['scan.g_keine_kurse', 'keine Kurse'],
+      zu_frueh_im_jahr: ['scan.g_zu_frueh', 'vor dem 20. Handelstag des Jahres'],
+      unvollstaendiges_jahr: ['scan.g_unvollst', 'laufendes Jahr beginnt nach dem 10. Januar'],
+      zu_wenige_jahre: ['scan.g_wenige_jahre', 'weniger als 10 Vergleichsjahre'],
+      zu_wenige_musterjahre: ['scan.g_wenige_muster', 'zu wenige vergleichbare Jahre'],
+      gewichte_null: ['scan.g_gewichte_null', 'keine ähnlichen Jahre'],
+    };
+    function grundText(code) {
+      var g = GRUND[code];
+      return g ? SA.i18n.t(g[0], g[1]) : SA.i18n.t('scan.g_unbekannt', 'nicht berechenbar');
+    }
+    function num(v) { var x = parseFloat(v); return isFinite(x) ? x : null; }
 
     function enrichAndStore(scannerRows, tickersMap) {
       state.tickersMap = tickersMap;
-      // Neuestes scan_date ermitteln
-      var latestDate = null;
-      scannerRows.forEach(function(r) {
-        if (!latestDate || r.scan_date > latestDate) latestDate = r.scan_date;
-      });
-      // Nur Rows vom neuesten Datum behalten
-      var rows = scannerRows.filter(function(r) { return r.scan_date === latestDate; });
-      // Mit Metadata mergen
-      state.raw = rows.map(function(r) {
+      state.latestDate = scannerRows.length ? scannerRows[0].scan_date : null;
+      state.raw = scannerRows.map(function(r) {
         var meta = tickersMap[r.ticker] || {};
+        var b = r.bausteine || {};
+        var ok = r.status === 'ok' && num(r.score) !== null;
         return {
           ticker: r.ticker,
           name: meta.n || r.ticker,
           kategorie: meta.k || 'Sonstige',
-          signal: r.signal,
-          score: parseFloat(r.score) || 0,
-          win_rate: parseFloat(r.win_rate) || 0,
-          avg_return: parseFloat(r.avg_return) || 0,
-          deviation: parseFloat(r.deviation) || 0,
+          ok: ok,
+          grund: r.grund,
+          score: ok ? num(r.score) : null,
+          win_rate: ok ? num(r.win_rate) : null,
+          k: b.b1 ? b.b1.k : null, n: b.b1 ? b.b1.n : null,
+          avg_return: ok ? num(r.avg_return) : null,
+          muster: (b.musterjahre || []).map(function(m) { return m.jahr; }),
+          as_of: r.as_of,
           scan_date: r.scan_date,
         };
       });
-      state.latestDate = latestDate;
+      state.asOf = null;
+      state.raw.forEach(function(r) { if (r.as_of && (!state.asOf || r.as_of > state.asOf)) state.asOf = r.as_of; });
     }
 
     function buildCategoryFilters() {
@@ -418,29 +427,26 @@
 
     function updateSummary() {
       var total = state.raw.length;
-      var bullish = 0, neutral = 0, bearish = 0;
-      state.raw.forEach(function(r) {
-        if (r.signal === 'Bullish') bullish++;
-        else if (r.signal === 'Bearish') bearish++;
-        else neutral++;
-      });
-      qs('sm-total').textContent = total;
-      qs('sm-date').textContent = 'Scan: ' + formatDate(state.latestDate);
-      qs('sm-bullish').textContent = bullish;
-      qs('sm-bullish-pct').textContent = total > 0 ? (bullish * 100 / total).toFixed(0) + '%' : '';
-      qs('sm-neutral').textContent = neutral;
-      qs('sm-neutral-pct').textContent = total > 0 ? (neutral * 100 / total).toFixed(0) + '%' : '';
-      qs('sm-bearish').textContent = bearish;
-      qs('sm-bearish-pct').textContent = total > 0 ? (bearish * 100 / total).toFixed(0) + '%' : '';
+      var ok = state.raw.filter(function(r) { return r.ok; }).length;
+      var universum = Object.keys(state.tickersMap).length;
+      qs('sm-ok').textContent = ok;
+      qs('sm-abdeckung').textContent = SA.i18n.t('scan.abdeckung2', 'von {v} verarbeiteten · {n} im Universum')
+        .replace('{v}', total).replace('{n}', universum || total);
+      qs('sm-nb').textContent = total - ok;
+      // Teilstand sichtbar machen: welche Ticker des Universums hat der jüngste Lauf gar nicht geschrieben?
+      var imLauf = {};
+      state.raw.forEach(function(r) { imLauf[r.ticker] = true; });
+      var fehlend = Object.keys(state.tickersMap).filter(function(t) { return !imLauf[t]; }).sort();
+      qs('sm-fehlt').textContent = fehlend.length;
+      qs('sm-fehlt-liste').textContent = fehlend.length
+        ? fehlend.slice(0, 12).join(', ') + (fehlend.length > 12 ? ' … (+' + (fehlend.length - 12) + ')' : '')
+        : SA.i18n.t('scan.fehlt_keiner', 'Lauf vollständig');
+      qs('sm-fehlt-liste').title = fehlend.join(', ');
+      qs('sm-asof').textContent = state.asOf ? formatDate(state.asOf) : '–';
+      qs('sm-date').textContent = SA.i18n.t('scan.lauf', 'Lauf') + ': ' + formatDate(state.latestDate);
       qs('scan-summary').style.display = '';
-
-      // Sidebar counts (vor Filter)
-      qs('cnt-bullish').textContent = bullish;
-      qs('cnt-neutral').textContent = neutral;
-      qs('cnt-bearish').textContent = bearish;
-
-      // Scan-Date Header
-      qs('scan-date-header').textContent = 'Scan-Datum: ' + formatDate(state.latestDate) + ' \u00B7 ' + total + ' Ticker analysiert';
+      qs('scan-date-header').textContent = SA.i18n.t('scan.lauf', 'Lauf') + ': ' + formatDate(state.latestDate) + ' \u00B7 ' +
+        ok + ' ' + SA.i18n.t('scan.von', 'von') + ' ' + (universum || total) + ' ' + SA.i18n.t('scan.ticker_berechnet', 'Tickern berechnet');
       qs('rc-total').textContent = total;
     }
 
@@ -450,10 +456,10 @@
       var minWR = state.filters.minWinRate;
 
       var filtered = state.raw.filter(function(r) {
-        if (!state.filters.signals.has(r.signal)) return false;
         if (state.filters.categories.size > 0 && !state.filters.categories.has(r.kategorie)) return false;
-        if (r.score < minScore) return false;
-        if (r.win_rate < minWR) return false;
+        // Ein gesetzter Mindestwert blendet nicht berechenbare Ticker aus; ohne Filter stehen sie am Ende.
+        if (minScore > 0 && (r.score === null || r.score < minScore)) return false;
+        if (minWR > 0 && (r.win_rate === null || r.win_rate < minWR)) return false;
         if (q) {
           var haystack = (r.ticker + ' ' + r.name).toLowerCase();
           if (haystack.indexOf(q) === -1) return false;
@@ -466,9 +472,11 @@
       var dir = state.sortDir;
       filtered.sort(function(a, b) {
         var av = a[key], bv = b[key];
-        if (typeof av === 'string') {
-          return av.localeCompare(bv) * dir;
+        if (typeof av === 'string' || typeof bv === 'string') {
+          return String(av || '').localeCompare(String(bv || '')) * dir;
         }
+        // nicht berechenbar (null) immer ans Ende, unabhängig von der Richtung
+        if (av === null || bv === null) return (av === null) - (bv === null);
         return (av - bv) * dir;
       });
 
@@ -487,11 +495,7 @@
 
       var hasWL = !!(window.SA && SA.watchlist);
       var html = rows.map(function(r, i) {
-        var sigClass = r.signal.toLowerCase();
-        var wrClass = r.win_rate >= 50 ? 'pos' : 'neg';
-        var arClass = r.avg_return >= 0 ? 'pos' : 'neg';
         var dashHref = SA.i18n.pfad('/dashboard') + '?t=' + encodeURIComponent(r.ticker);
-        var scoreColor = r.score >= 6.5 ? 'pos' : (r.score <= 3.5 ? 'neg' : '');
         var escName = (r.name || '').replace(/[<>&"']/g, function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]});
         var inWL = hasWL && SA.watchlist.has(r.ticker);
         var wlClass = inWL ? 'btn-wl-row active' : 'btn-wl-row';
@@ -501,10 +505,13 @@
           '<td class="ticker"><a href="' + dashHref + '" rel="nofollow" title="' + SA.i18n.t('scan.open_dash','Im Dashboard öffnen') + '">' + r.ticker + '</a></td>' +
           '<td class="name" title="' + escName + '">' + escName + '</td>' +
           '<td class="cat">' + r.kategorie + '</td>' +
-          '<td><span class="sig-badge ' + sigClass + '">' + r.signal + '</span></td>' +
-          '<td class="num score-val ' + scoreColor + '">' + r.score.toFixed(1) + '</td>' +
-          '<td class="num ' + wrClass + '">' + r.win_rate.toFixed(0) + '%</td>' +
-          '<td class="num ' + arClass + '">' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</td>' +
+          (r.ok
+            ? '<td class="num score-val">' + r.score.toFixed(1) + '</td>' +
+              '<td class="num">' + (r.n ? r.k + '/' + r.n : r.win_rate.toFixed(0) + '%') + '</td>' +
+              '<td class="num">' + (r.avg_return >= 0 ? '+' : '') + r.avg_return.toFixed(2) + '%</td>' +
+              '<td class="muster">' + r.muster.join(' · ') + '</td>'
+            : '<td class="num score-val nb" title="' + grundText(r.grund) + '">&ndash;</td>' +
+              '<td colspan="3" class="nb-grund">' + grundText(r.grund) + '</td>') +
           '<td class="actions">' +
             '<button type="button" class="' + wlClass + '" data-ticker="' + r.ticker + '" title="' + wlTitle + '" aria-label="Watchlist-Toggle">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -586,14 +593,6 @@
         applyFilters();
       });
 
-      Array.prototype.forEach.call(document.querySelectorAll('.chk-signal'), function(cb) {
-        cb.addEventListener('change', function() {
-          if (this.checked) state.filters.signals.add(this.value);
-          else state.filters.signals.delete(this.value);
-          applyFilters();
-        });
-      });
-
       qs('sel-min-score').addEventListener('input', function() {
         state.filters.minScore = parseFloat(this.value);
         qs('lbl-min-score').textContent = this.value;
@@ -609,10 +608,6 @@
       qs('btn-reset').addEventListener('click', function() {
         qs('sel-search').value = '';
         state.filters.search = '';
-        Array.prototype.forEach.call(document.querySelectorAll('.chk-signal'), function(cb) {
-          cb.checked = true;
-        });
-        state.filters.signals = new Set(['Bullish', 'Neutral', 'Bearish']);
         qs('sel-min-score').value = 0;
         qs('lbl-min-score').textContent = '0.0';
         state.filters.minScore = 0;
@@ -650,7 +645,7 @@
           var tickersMap = results[1];
           if (!Array.isArray(scannerRows) || scannerRows.length === 0) {
             hideLoading();
-            showError('Keine Scanner-Daten verf\u00fcgbar. Der n\u00e4chtliche Scan-Job hat noch keine Ergebnisse geschrieben.');
+            showError(SA.i18n.t('scan.keine_daten', 'Noch kein Saison-Score-Lauf vorhanden. Der nächtliche Lauf schreibt die Ergebnisse.'));
             return;
           }
           enrichAndStore(scannerRows, tickersMap);

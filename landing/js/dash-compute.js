@@ -5,7 +5,7 @@
  * dashboard.html standen. Extrahiert für Wiederverwendung durch:
  *   - dashboard.html (Single-Ticker Bento)
  *   - watchlist.html (N-Ticker Compact-Cards)
- *   - spätere Pages die KI-Score/Crash-Ampel brauchen
+ *   - spätere Pages die Stress-Ampel/Musterjahre brauchen
  *
  * Math/Render-Trennung: dieses Modul macht NUR Berechnungen, keine DOM-Arbeit.
  *
@@ -16,8 +16,7 @@
  *       Findet die ähnlichsten Jahre via Pearson-Korrelation oder Euklid.
  *   - computeTruePath(matches, smoothing)
  *       Gewichteter Ø aus den Match-Jahren, geglättet.
- *   - computeKiScore(yearData, matches, currentYear, avg, truepath)
- *       Composite Score 0-10 aus 4 Sub-Scores. Liefert {score, signal, subs}.
+ *   (Saison-Score: landing/js/saison-score.js — der frühere computeKiScore ist seit 2026-10 entfernt.)
  *   - computeStress(rows) / stressReihe(rows)
  *       Stress-Ampel (green/yellow/red/grey + Score 0-100 + features), Zwilling von shared/stress_score.py.
  *
@@ -172,76 +171,6 @@
     return truepath;
   }
 
-  // ── KI Composite Score ────────────────────────────────────────
-  function computeKiScore(yearData, matches, currentYear, avg, truepath) {
-    var now = new Date(), currentMonth = now.getMonth() + 1, td = todayDoy();
-    var currentCurve = yearData[currentYear] ? yearData[currentYear].full_365 : [];
-
-    // 1) Musterpfad-Qualität
-    var posMatches = matches.filter(function(m) { return m.returnPct > 0; }).length;
-    var subMusterpfad = matches.length ? posMatches / matches.length : 0.5;
-
-    // 2) Trend-Projektion
-    var subTrend = 0.5, trendRet = 0;
-    if (truepath && td > 0 && td + 30 < 365) {
-      var tpNow = truepath[td], tpFut = truepath[Math.min(364, td + 30)];
-      if (tpNow > 0) {
-        trendRet = (tpFut - tpNow) / tpNow * 100;
-        subTrend = Math.max(0, Math.min(1, (trendRet + 3) / 6));
-      }
-    }
-
-    // 3) Win-Rate aktueller Monat
-    var monStart = MONTH_START_DOY[currentMonth - 1] - 1;
-    var monEnd = currentMonth < 12 ? MONTH_START_DOY[currentMonth] - 1 : 365;
-    var wins = 0, total = 0, avgMonthRet = 0;
-    for (var y in yearData) {
-      if (parseInt(y) === currentYear) continue;
-      var c = yearData[y].full_365;
-      if (c[monStart] > 0 && c[monEnd - 1] > 0) {
-        var r = (c[monEnd - 1] / c[monStart] - 1) * 100;
-        avgMonthRet += r;
-        if (r > 0) wins++;
-        total++;
-      }
-    }
-    var subWinRate = total ? wins / total : 0.5;
-    avgMonthRet = total ? avgMonthRet / total : 0;
-
-    // 4) Tracking-Qualität
-    var subTracking = 0.5, trackingCorr = 0;
-    if (currentCurve.length && avg.length && td >= 10) {
-      var n = Math.min(td, currentCurve.length, avg.length);
-      var c1 = currentCurve.slice(0, n), c2 = avg.slice(0, n);
-      trackingCorr = corrcoef(c1, c2);
-      var corrScore = Math.max(0, trackingCorr);
-      var avgRange = Math.max.apply(null, c2) - Math.min.apply(null, c2);
-      var mae = 0;
-      if (avgRange > 0) {
-        for (var i = 0; i < n; i++) mae += Math.abs(c1[i] - c2[i]);
-        mae /= n;
-      }
-      var normMae = avgRange > 0 ? Math.min(1, mae / avgRange) : 0;
-      subTracking = Math.max(0, Math.min(1, 0.7 * corrScore + 0.3 * (1 - normMae)));
-    }
-
-    var composite = (subMusterpfad + subTrend + subWinRate + subTracking) * 2.5;
-    composite = Math.round(composite * 10) / 10;
-    composite = Math.max(0, Math.min(10, composite));
-    var signal = composite >= 6.5 ? 'Bullish' : (composite <= 3.5 ? 'Bearish' : 'Neutral');
-
-    return {
-      score: composite,
-      signal: signal,
-      subs: {
-        musterpfad: { score: subMusterpfad, posCount: posMatches, total: matches.length },
-        trend: { score: subTrend, returnPct: trendRet },
-        winRate: { score: subWinRate, wins: wins, total: total, avgReturn: avgMonthRet },
-        tracking: { score: subTracking, correlation: trackingCorr }
-      }
-    };
-  }
-
   // ── Stress-Ampel ──────────────────────────────────────────────
   // Zwilling von shared/stress_score.py (gleiche Formel, gleiche Rechenreihenfolge → bitgleiche Werte).
   // Plan mit Codex-Freigabe: docs/review_prompts/2026-10-09_stress_ampel_plan.md (v5).
@@ -363,7 +292,6 @@
     // Compute (Kern)
     findMatchingYears: findMatchingYears,
     computeTruePath: computeTruePath,
-    computeKiScore: computeKiScore,
     computeStress: computeStress,
     stressReihe: stressReihe,
     stressAnzeigeWerte: stressAnzeigeWerte,

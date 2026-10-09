@@ -514,6 +514,25 @@ SA.decadeCompute = {
    * über SA.fetchAllPrices (15-min-Cache) ab diesem Datum nachgeladen. Ergebnis unabhängig vom Regler.
    * Schlägt das Nachladen fehl, rechnet es mit den übergebenen Kursen — die angezeigte Basis (n Jahre) zeigt das.
    */
+  /**
+   * Die VOLLE Kurshistorie des Tickers (SA.fetchAllPrices ohne Datumsfilter, 15-min-Cache — derselbe Schlüssel wie
+   * die Watchlist). Eindeutige Rangfolge: die Vollhistorie gewinnt an jedem Tag, den sie enthält; die übergebenen
+   * Zeilen verlängern nur das Datenende NACH ihrem letzten Tag (Codex D3/D4 R2 Befund 1 — vorher konnte ein älterer
+   * Zeitraum-Cache korrigierte Kurse überschreiben, und der Regler wirkte wieder auf den Score). Für Rechnungen, deren
+   * Ergebnis nicht vom Zeitraum-Regler abhängen darf (Saison-Score): Nightly und Watchlist rechnen ebenfalls auf der
+   * vollen Historie, und die 20 gültigen Vergleichsjahre können weiter zurückreichen als jede feste Jahreszahl
+   * (Codex D3/D4 R1 Befund 1). Ein Ladefehler wird NICHT durch die übergebenen Kurse ersetzt — er lehnt ab, und der
+   * Aufrufer zeigt „Kurse nicht ladbar" statt eines Scores auf verkürzter Basis (Befund 2).
+   */
+  mitHistorie: function(rows, ticker) {
+    if (!(window.SA && SA.fetchAllPrices)) return Promise.reject(new Error('Kursquelle nicht verfügbar'));
+    return SA.fetchAllPrices(ticker).then(function(voll) {
+      if (!voll || !voll.length) throw new Error('keine Kurse geladen');
+      var ende = voll[voll.length - 1].date;
+      return voll.concat((rows || []).filter(function(z) { return z && z.date > ende; }));
+    });
+  },
+
   RADAR_HISTORIE_JAHRE: 31,
   anomalieMitHistorie: function(rows, ticker) {
     var self = this, r = this._bereinigen(rows);

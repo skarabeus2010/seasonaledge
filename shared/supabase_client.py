@@ -372,76 +372,7 @@ def fetch_monthly_stats(ticker: str, years_back: int = 20) -> list[dict]:
 
 # ── KI Scores ─────────────────────────────────────
 
-def upsert_ki_score(record: dict):
-    """KI Score upserten."""
-    if not record:
-        return
-    get_client().table("ki_scores").upsert(
-        [record], on_conflict="ticker,computed_date"
-    ).execute()
-
-
-def fetch_ki_score(ticker: str, computed_date: str) -> dict | None:
-    """KI Score aus DB laden."""
-    result = (
-        get_client()
-        .table("ki_scores")
-        .select("*")
-        .eq("ticker", ticker)
-        .eq("computed_date", computed_date)
-        .execute()
-        .data
-    )
-    return result[0] if result else None
-
-
 # ── Scanner Results ────────────────────────────────
-
-def upsert_scanner_results(records: list[dict]):
-    """Scanner-Ergebnisse upserten."""
-    if not records:
-        return
-    batch_size = 500
-    client = get_client()
-    for i in range(0, len(records), batch_size):
-        batch = records[i:i + batch_size]
-        client.table("scanner_results").upsert(
-            batch, on_conflict="ticker,scan_date"
-        ).execute()
-
-
-def fetch_scanner_results(scan_date: str = None) -> list[dict]:
-    """Scanner-Ergebnisse aus DB laden (neuestes Datum wenn kein Datum angegeben)."""
-    client = get_client()
-    if scan_date:
-        return (
-            client.table("scanner_results")
-            .select("*")
-            .eq("scan_date", scan_date)
-            .order("score", desc=True)
-            .execute()
-            .data
-        )
-    # Neuestes Datum
-    latest = (
-        client.table("scanner_results")
-        .select("scan_date")
-        .order("scan_date", desc=True)
-        .limit(1)
-        .execute()
-        .data
-    )
-    if not latest:
-        return []
-    return (
-        client.table("scanner_results")
-        .select("*")
-        .eq("scan_date", latest[0]["scan_date"])
-        .order("score", desc=True)
-        .execute()
-        .data
-    )
-
 
 # ── TDoM Stats ────────────────────────────────────
 
@@ -721,3 +652,23 @@ def fetch_polymarket_resolved_markets(
     if category:
         q = q.eq("category", category)
     return q.order("resolution_date", desc=True).execute().data or []
+
+
+def fetch_scanner_results(scan_date: str = None, methode: str = "saison_v1") -> list[dict]:
+    """Scanner-Ergebnisse der Methode `methode` (Saison-Score) — jüngstes Datum DIESER Methode, wenn keins angegeben.
+    Alte KI-Score-Zeilen (methode NULL) werden nie gelesen. Nicht berechenbare Ticker (score NULL) kommen ans Ende."""
+    client = get_client()
+    if not scan_date:
+        latest = (client.table("scanner_results").select("scan_date").eq("methode", methode)
+                  .order("scan_date", desc=True).limit(1).execute().data)
+        if not latest:
+            return []
+        scan_date = latest[0]["scan_date"]
+    zeilen, offset = [], 0
+    while True:
+        teil = (client.table("scanner_results").select("*").eq("methode", methode).eq("scan_date", scan_date)
+                .order("score", desc=True, nullsfirst=False).range(offset, offset + 999).execute().data) or []
+        zeilen += teil
+        if len(teil) < 1000:
+            return zeilen
+        offset += 1000

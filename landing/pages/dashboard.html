@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | SeasonAlpha</title>
-  <meta name="description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <meta name="theme-color" content="#000000">
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/dashboard">
   <meta property="og:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
-  <meta property="og:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta property="og:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -30,7 +30,7 @@
   <meta name="twitter:site" content="@SeasonAlph4882">
   <meta name="twitter:creator" content="@SeasonAlph4882">
   <meta name="twitter:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
-  <meta name="twitter:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="twitter:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
   <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
 
   <!-- Icons -->
@@ -40,7 +40,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
 
   <!-- Structured Data: WebPage -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","url":"https://seasonalpha.ai/dashboard","description":"Alle Saisonal-Signale f&uuml;r deinen Ticker: KI-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","url":"https://seasonalpha.ai/dashboard","description":"Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
   <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","item":"https://seasonalpha.ai/dashboard"}]}</script>
 
@@ -128,13 +128,9 @@
       .bento-card{min-height:auto;padding:.875rem}
     }
 
-    /* ── KI-Score Hero ── */
+    /* ── Saison-Score Hero ── */
     .ki-hero{display:flex;align-items:center;gap:1rem;margin-bottom:.65rem}
     .ki-score-big{font-size:2.5rem;font-weight:800;font-family:var(--f-m);line-height:1;color:var(--text)}
-    .ki-signal{font-size:.875rem;font-weight:700;padding:.3rem .65rem;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
-    .ki-signal.bullish{background:rgba(48,232,120,.18);color:var(--green)}
-    .ki-signal.bearish{background:rgba(255,64,64,.18);color:var(--red)}
-    .ki-signal.neutral{background:rgba(232,168,32,.18);color:var(--accent)}
     .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
     .ki-sub{font-size:.6875rem;color:var(--dim);line-height:1.3}
     .ki-sub-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.2rem;overflow:hidden}
@@ -267,11 +263,11 @@
       <div id="loading-msg" class="loading" data-i18n="dash.loading">Lade Daten...</div>
 
       <div class="bento" id="bento" style="display:none">
-        <!-- KI-Score (gross, 6 cols) -->
+        <!-- Saison-Score (gross, 6 cols) -->
         <div class="bento-card bento-ki" id="card-ki">
-          <div class="info-badge" tabindex="0" aria-label="Erklärung zum KI Composite Score" data-i18n-aria="dash.aria_ki">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_ki"><b>KI Composite Score</b> — Gesamtnote 0&ndash;10 aus vier unabhängigen Sub-Scores (Saisonalität, Drawdown, Volatilität, Momentum). <b>&ge; 6,5</b> = bullish, <b>&le; 3,5</b> = bearish, dazwischen neutral. Der Score ist eine aggregierte Signal-Stärke, kein Renditeversprechen.</div>
-          <div class="ttl" data-i18n="dash.ki_title"><span class="ico">🧠</span> KI Composite Score</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Saison-Score" data-i18n-aria="dash.aria_ki">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_ki"><b>Saison-Score</b> — 0&ndash;10 aus vier Bausteinen zu je 2,5 Punkten, alle für die nächsten 30 Kalendertage: Anteil positiver Vorjahre, deren Ø-Rendite, und dieselben zwei Werte für die fünf ähnlichsten Jahre. Bis zu 20 Vergleichsjahre, unabhängig vom Zeitraum-Regler. Beschreibt die Vergangenheit, keine Prognose.</div>
+          <div class="ttl" data-i18n="dash.ki_title"><span class="ico">🧠</span> Saison-Score · 30 Tage</div>
           <div id="ki-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
         </div>
 
@@ -380,7 +376,7 @@
         <div class="content">
           <p data-i18n="dash.method_intro">Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
           <ul>
-            <li data-i18n-html="dash.method_ki"><b>KI Composite Score (0-10)</b>: Gewichteter Mix aus 4 Sub-Scores (Musterpfad-Qualität, Trend-Projektion, Win-Rate aktueller Monat, Tracking zur Saisonalität). Bullish ≥6.5, Neutral, Bearish ≤3.5. Berechnung wie auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
+            <li data-i18n-html="dash.method_ki"><b>Saison-Score (0–10)</b>: vier Bausteine für die nächsten 30 Kalendertage — Anteil positiver Vorjahre (bis zu 20), deren Ø-Rendite (−3 % … +3 % → 0 … 1) und dieselben zwei Werte für die fünf Jahre mit dem ähnlichsten Verlauf bis heute. Keine Bullish-/Bearish-Einstufung. Dieselbe Rechnung wie im <a href="/scanner">Scanner</a> und auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
             <li data-i18n-html="dash.method_crash"><b>Stress-Ampel (0-100)</b>: Stress-Maß = 0,3 × Volatilität (5 Tage) + 0,3 × Volatilität (20 Tage) + 0,4 × Abstand vom 20-Tage-Hoch; Score = Rang gegen die vorangegangenen bis zu 2.520 Handelstage des <b>gleichen Tickers</b> (mindestens 756). Schwellen: ab 70 gelb, ab 90 rot.</li>
             <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: 10-Tage-Rendite (10 Tagesrenditen) gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren (mind. 10); z mit Stichproben-Standardabweichung, Rang mit halben Gleichständen. Auffällig ab |z| 1,33, stark auffällig ab 2,33 (gesetzte Schwellen).</li>
             <li data-i18n-html="dash.method_year"><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
@@ -415,6 +411,7 @@
   <script src="/landing/js/dash-compute.js"></script>
   <script src="/landing/js/strategy-compute.js"></script>
   <script src="/landing/js/decade-compute.js"></script>
+  <script src="/landing/js/saison-score.js"></script>
   <script src="/landing/js/indicators.js"></script>
   <script src="/landing/js/streak-analysis.js"></script>
   <script src="/landing/js/fomc-dates.js"></script>
@@ -644,7 +641,7 @@
       return tdom||null;
     }
 
-    // ── KI Composite Score (Port von ki-saisonalitaet.html) ──────
+    // ── Musterjahre für den TruePath-Chart (Anzeige; der Saison-Score rechnet in SA.saisonScore) ──
     var MONTH_START_DOY=[1,32,60,91,121,152,182,213,244,274,305,335];
 
     function findMatchingYears(yearData,currentYear,method,topN){
@@ -702,62 +699,6 @@
         truepath=sm;
       }
       return truepath;
-    }
-
-    function computeKiScore(yearData,matches,currentYear,avg,truepath){
-      var now=new Date(),currentMonth=now.getMonth()+1,td=todayDoy();
-      var currentCurve=yearData[currentYear]?yearData[currentYear].full_365:[];
-      // 1) Musterpfad-Qualität
-      var posMatches=matches.filter(function(m){return m.returnPct>0;}).length;
-      var subMusterpfad=matches.length?posMatches/matches.length:0.5;
-      // 2) Trend-Projektion
-      var subTrend=0.5,trendRet=0;
-      if(truepath&&td>0&&td+30<365){
-        var tpNow=truepath[td],tpFut=truepath[Math.min(364,td+30)];
-        if(tpNow>0){trendRet=(tpFut-tpNow)/tpNow*100;subTrend=Math.max(0,Math.min(1,(trendRet+3)/6));}
-      }
-      // 3) Win-Rate aktueller Monat
-      var monStart=MONTH_START_DOY[currentMonth-1]-1;
-      var monEnd=currentMonth<12?MONTH_START_DOY[currentMonth]-1:365;
-      var wins=0,total=0,avgMonthRet=0;
-      for(var y in yearData){
-        if(parseInt(y)===currentYear)continue;
-        var c=yearData[y].full_365;
-        if(c[monStart]>0&&c[monEnd-1]>0){
-          var r=(c[monEnd-1]/c[monStart]-1)*100;
-          avgMonthRet+=r;
-          if(r>0)wins++;
-          total++;
-        }
-      }
-      var subWinRate=total?wins/total:0.5;
-      avgMonthRet=total?avgMonthRet/total:0;
-      // 4) Tracking
-      var subTracking=0.5,trackingCorr=0;
-      if(currentCurve.length&&avg.length&&td>=10){
-        var n=Math.min(td,currentCurve.length,avg.length);
-        var c1=currentCurve.slice(0,n),c2=avg.slice(0,n);
-        trackingCorr=corrcoef(c1,c2);
-        var corrScore=Math.max(0,trackingCorr);
-        var avgRange=Math.max.apply(null,c2)-Math.min.apply(null,c2);
-        var mae=0;
-        if(avgRange>0){for(var i=0;i<n;i++)mae+=Math.abs(c1[i]-c2[i]);mae/=n;}
-        var normMae=avgRange>0?Math.min(1,mae/avgRange):0;
-        subTracking=Math.max(0,Math.min(1,0.7*corrScore+0.3*(1-normMae)));
-      }
-      var composite=(subMusterpfad+subTrend+subWinRate+subTracking)*2.5;
-      composite=Math.round(composite*10)/10;
-      composite=Math.max(0,Math.min(10,composite));
-      var signal=composite>=6.5?'Bullish':(composite<=3.5?'Bearish':'Neutral');
-      return {
-        score:composite,signal:signal,
-        subs:{
-          musterpfad:{score:subMusterpfad,posCount:posMatches,total:matches.length},
-          trend:{score:subTrend,returnPct:trendRet},
-          winRate:{score:subWinRate,wins:wins,total:total,avgReturn:avgMonthRet},
-          tracking:{score:subTracking,correlation:trackingCorr}
-        }
-      };
     }
 
     // ── Drawdown + Vola (Port von jahreszyklus.html) ─────────────
@@ -1371,28 +1312,44 @@
       setTimeout(function(){el.style.display='none';}, 8000);
     }
 
-    // ── 1. KI-Score Card ─────────────────────────────────────────
-    function renderKiCard(ki) {
+    // ── 1. Saison-Score Card (SA.saisonScore — dieselbe Rechnung wie Scanner und Nightly) ──
+    var SS_GRUND = {
+      keine_kurse: ['scan.g_keine_kurse', 'keine Kurse'],
+      zu_frueh_im_jahr: ['scan.g_zu_frueh', 'vor dem 20. Handelstag des Jahres'],
+      unvollstaendiges_jahr: ['scan.g_unvollst', 'laufendes Jahr beginnt nach dem 10. Januar'],
+      zu_wenige_jahre: ['scan.g_wenige_jahre', 'weniger als 10 Vergleichsjahre'],
+      zu_wenige_musterjahre: ['scan.g_wenige_muster', 'zu wenige vergleichbare Jahre'],
+      gewichte_null: ['scan.g_gewichte_null', 'keine ähnlichen Jahre'],
+      ladefehler: ['scan.g_ladefehler', 'Kurse konnten nicht geladen werden'],
+    };
+    function _t(k, d) { return SA.i18n && SA.i18n.t ? SA.i18n.t(k, d) : d; }
+    function renderKiCard(e) {
       var el = document.getElementById('ki-content');
-      if (!ki) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten für KI-Score</p>'; return; }
-      var sigCls = ki.signal === 'Bullish' ? 'bullish' : (ki.signal === 'Bearish' ? 'bearish' : 'neutral');
-      var html = '<div class="ki-hero">' +
-        '<div class="ki-score-big">' + ki.score.toFixed(1) + '</div>' +
-        '<div>' +
-          '<div class="ki-signal ' + sigCls + '">' + ki.signal + '</div>' +
-          '<div style="color:#a89878;font-size:.75rem;margin-top:.4rem">Composite Score 0–10</div>' +
-        '</div>' +
-      '</div>';
-      html += '<div class="ki-subs">';
-      function bar(label, sub, extra) {
-        var pct = Math.round(sub.score * 100);
-        return '<div class="ki-sub"><div>' + label + ' <b>' + pct + '%</b>' + (extra ? ' · '+extra : '') + '</div><div class="ki-sub-bar"><div style="width:' + pct + '%"></div></div></div>';
+      if (!e) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">' + _t('dash.computing', 'Wird berechnet...') + '</p>'; return; }
+      if (e.status !== 'ok') {
+        var g = SS_GRUND[e.grund_code];
+        el.innerHTML = '<div class="ki-hero"><div class="ki-score-big" style="color:var(--muted)">–</div>' +
+          '<div style="color:#a89878;font-size:.8125rem">' + _t('dash.ss_nicht', 'Nicht berechenbar') + ': ' +
+          (g ? _t(g[0], g[1]) : (e.grund || _t('scan.g_unbekannt', 'nicht berechenbar'))) + '</div></div>';
+        return;
       }
-      html += bar('Musterpfad', ki.subs.musterpfad, ki.subs.musterpfad.posCount + '/' + ki.subs.musterpfad.total + ' positiv');
-      html += bar('Trend (30d)', ki.subs.trend, fmtPct(ki.subs.trend.returnPct, 1));
-      html += bar('Win-Rate Monat', ki.subs.winRate, ki.subs.winRate.wins + '/' + ki.subs.winRate.total);
-      html += bar('Tracking', ki.subs.tracking, 'r=' + ki.subs.tracking.correlation.toFixed(2));
+      var html = '<div class="ki-hero">' +
+        '<div class="ki-score-big" style="color:var(--accent)">' + e.score.toFixed(1) + '</div>' +
+        '<div style="color:#a89878;font-size:.75rem">' + _t('dash.ss_unter', 'von 10 · nächste 30 Tage') + '<br>' +
+          _t('dash.ss_stand', 'Kursstand') + ' ' + e.as_of + '</div>' +
+      '</div>';
+      function bar(label, wert, extra) {
+        var pct = Math.round(wert * 100);
+        return '<div class="ki-sub"><div>' + label + ' · <b>' + extra + '</b></div><div class="ki-sub-bar"><div style="width:' + pct + '%"></div></div></div>';
+      }
+      html += '<div class="ki-subs">';
+      html += bar(_t('dash.ss_b1', 'Vorjahre positiv'), e.b1.wert, e.b1.k + '/' + e.b1.n);
+      html += bar(_t('dash.ss_b2', 'Ø Vorjahre'), e.b2.wert, fmtPct(e.b2.mittel, 2));
+      html += bar(_t('dash.ss_b3', 'Musterjahre positiv'), e.b3.wert, e.b3.k + '/' + e.b3.n);
+      html += bar(_t('dash.ss_b4', 'Ø Musterjahre'), e.b4.wert, fmtPct(e.b4.mittel, 2));
       html += '</div>';
+      html += '<div style="color:#a89878;font-size:.6875rem;margin-top:.45rem">' + _t('dash.ss_muster', 'Musterjahre') + ': ' +
+        e.musterjahre.map(function(m) { return m.jahr; }).join(' · ') + '</div>';
       el.innerHTML = html;
     }
 
@@ -2074,11 +2031,18 @@
       var avg = avgResult.avg || [];
       var currentYear = new Date().getFullYear();
 
-      // 1. KI-Score
+      // 1. Saison-Score — eigene Historie (bis zu 20 Vergleichsjahre), unabhängig vom Zeitraum-Regler
       var matches = findMatchingYears(yearData, currentYear, 'correlation', 5);
-      var truepath = computeTruePath(matches, 5);
-      var ki = computeKiScore(yearData, matches, currentYear, avg, truepath);
-      renderKiCard(ki);
+      var truepath = computeTruePath(matches, 5);   // nur für den TruePath-Chart
+      try {
+        var _ssTicker = currentTicker;
+        renderKiCard(null);
+        SA.decadeCompute.mitHistorie(rawRows, _ssTicker).then(function(voll) {
+          if (currentTicker === _ssTicker && SA.ladeKennung.aktuell(_rk)) renderKiCard(SA.saisonScore.berechne(voll, _ssTicker));
+        }, function(e) {
+          if (currentTicker === _ssTicker && SA.ladeKennung.aktuell(_rk)) renderKiCard({ status: 'nicht_berechenbar', grund_code: 'ladefehler', grund: String(e && e.message || e) });
+        });
+      } catch(e) { console.warn('Saison-Score:', e); renderKiCard({ status: 'nicht_berechenbar', grund_code: 'ladefehler', grund: String(e && e.message || e) }); }
 
       // 2. Stress-Ampel (eine Formel: SA.dashCompute.computeStress, Zwilling von shared/stress_score.py) + ML-Regime
       var regime = SA.dashCompute.computeStress(rawRows);

@@ -12,7 +12,7 @@ halb-angelegten Ticker (Orphans / vergessene Backfills) mehr entstehen:
   4. Regeneriert landing/data/tickers.json (Autocomplete-Quelle).
   5. Verifiziert, dass der Ticker bis zum letzten Handelstag reicht.
 
-ki_scores/scanner/monthly_stats/tdom_stats ziehen danach automatisch der nächste
+Saison-Score/scanner/monthly_stats/tdom_stats ziehen danach automatisch der nächste
 Nightly-Refresh nach (der Ticker ist jetzt in get_all_tickers()).
 
 Voraussetzung: Ticker(s) sind bereits in shared/symbols.py eingetragen
@@ -115,7 +115,7 @@ def main() -> int:
 
     print("\n" + "=" * 64)
     print(f"  Fertig: {len(valid)}/{len(tickers)} onboarded. "
-          f"ki_scores/scanner/stats füllt der nächste Nightly nach.")
+          f"Saison-Score/Scanner/Stats füllt der nächste Nightly nach.")
     print("=" * 64)
     return 0
 

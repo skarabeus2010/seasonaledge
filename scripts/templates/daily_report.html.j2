@@ -116,10 +116,10 @@
       </tr>
       {% if show_why and r.why %}
       <tr class="wr"><td colspan="13" class="why">
-        <span class="vd vd-{{ r.why.verdict_class }}">{{ r.why.verdict }}</span> · SC {{ r.why.hits }}:
+        <span class="vd vd-{{ r.why.verdict_class }}">{{ r.why.verdict }}</span>:
         {% for w in r.why.windows_compact %}{{ w.label }}&nbsp;<span class="{{ 'up' if w.hit else 'nu' }}">{{ w.pct }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
-        {% if r.why.win_rate_pct is not none %} · Trefferquote {{ r.why.win_rate_pct }}%{% endif %}
-        {% if r.why.sample_n %} · n={{ r.why.sample_n }}{% endif %}
+        {% if r.why.sample_n %} (je Fenster mind. n={{ r.why.sample_n }}){% endif %}
+        {% if r.why.saison_30t %} · Saison nächste 30 Tage: {{ r.why.saison_30t }} Vorjahre positiv{% endif %}
         {% if r.why.regime %}<br><span class="rg rg-{{ r.why.regime.kind }}">{{ '⚠' if r.why.regime.kind == 'fade' else '↗' }} {{ r.why.regime.text }}</span>{% endif %}
       </td></tr>
       {% endif %}

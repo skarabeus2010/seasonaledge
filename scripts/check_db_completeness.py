@@ -105,8 +105,7 @@ NULL_LOGRET_WINDOW_DAYS = 30
 
 # "Latest-Snapshot"-Tabellen: 1 Zeile/Ticker am letzten Lauf-Datum.
 COVERAGE_DAILY = {
-    "ki_scores": "computed_date",
-    "scanner_results": "scan_date",
+    "scanner_results": "scan_date",   # nur methode = saison_v1 (TABELLEN_FILTER); ki_scores wird seit 2026-10 nicht mehr geschrieben
     # stress_scores: erwartetes Schreibuniversum ist nur SPY (Nightly) → keine Universums-Abdeckung; Frische über die
     # specs unten, Methode und Aktualität über daily_health_check Check 6 (Stress-Ampel, seit 2026-10-09).
 }
@@ -140,8 +139,17 @@ def _count(table: str, ticker: str | None = None, null_col: str | None = None) -
     return r.count or 0
 
 
+# Tabellen mit mehreren Methoden: nur die aktuelle zählt (alte KI-Score-Zeilen in scanner_results haben methode NULL)
+TABELLEN_FILTER = {"scanner_results": ("methode", "saison_v1")}
+
+
+def _filter(q, table):
+    f = TABELLEN_FILTER.get(table)
+    return q.eq(f[0], f[1]) if f else q
+
+
 def _max_value(table: str, col: str, ticker: str | None = None) -> str | None:
-    q = _c().table(table).select(col)
+    q = _filter(_c().table(table).select(col), table)
     if ticker is not None:
         q = q.eq("ticker", ticker)  # nutzt (ticker,col)-Index → kein Full-Scan
     r = q.order(col, desc=True).limit(1).execute()
@@ -153,7 +161,7 @@ def _tickers_since(table: str, col: str, since: str) -> set[str]:
     out: set[str] = set()
     offset = 0
     while True:
-        r = (_c().table(table).select("ticker").gte(col, since)
+        r = (_filter(_c().table(table).select("ticker"), table).gte(col, since)
              .range(offset, offset + 999).execute())
         if not r.data:
             break
@@ -249,7 +257,6 @@ def dim_freshness(ctx: dict) -> dict:
     # (table, col, kind, threshold)
     specs = [
         ("prices", "date", "workday", 1),
-        ("ki_scores", "computed_date", "workday", 1),
         ("stress_scores", "date", "workday", 1),
         ("spot_vol_beta", "event_date", "workday", 1),
         ("scanner_results", "scan_date", "calday", 8),
@@ -662,7 +669,7 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
 
     # 5) Fehlende abgeleitete (teuer) → --fix-derived
     md = f.get("missing_derived", {})
-    ki_or_scan = sorted(set(md.get("ki_scores", [])) | set(md.get("scanner_results", [])))
+    ki_or_scan = sorted(set(md.get("scanner_results", [])))
     for t in ki_or_scan:
         exec_or_recommend("full_scanner_run.py", ["--only", t], derived=True)
 

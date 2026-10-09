@@ -2,7 +2,7 @@
 shared/daily_report.py — Daily Newsletter Aggregations für SeasonAlpha.
 
 Liefert "Trading-Tipps für den nächsten Handelstag" — kombiniert vorhandene
-Daten aus scanner_results, tdom_stats (4 Strategien),
+Daten aus scanner_results (Saison-Score), tdom_stats (4 Strategien),
 market_events, earnings_events, dividend_events + Sektor-Rotation.
 
 Kernfeature: **Multi-Window-TDOM-Score (0-4)** — vier historische Renditefenster
@@ -87,7 +87,6 @@ if TYPE_CHECKING:
 
 DEFAULT_N_ETFS = 5
 DEFAULT_N_STOCKS = 10
-KI_MIN_SCORE = 6.5
 MULTI_WINDOW_MIN_SCORE = 3   # mindestens 3 von 4 Fenstern positiv
 
 # Fixe Kernliste fürs Markt-Barometer (alle in symbols.py verifiziert).
@@ -547,24 +546,12 @@ def _tdom_for_date(target_date: date, exchange: str = "NYSE") -> int:
     return tdom
 
 
-def _candidate_passes(
-    c: dict,
-    universe_tickers: set[str],
-    ki_min: float,
-) -> bool:
-    """
-    Pre-Check: passt Kandidat ins Universum + erreicht KI-Mindest-Score?
-
-    Regime spielt im Daily-Newsletter keine Rolle mehr (durch LBR/RSI-Signale
-    + Score ersetzt) — die AUSWAHL bleibt KI-Score + Multi-Window-TDOM.
-    """
-    ticker = c.get("ticker")
-    if ticker not in universe_tickers:
-        return False
-    ki = c.get("score") or 0
-    if ki < ki_min:
-        return False
-    return True
+def _candidate_passes(c: dict, universe_tickers: set[str]) -> bool:
+    """Pre-Check: im Universum UND Saison-Score berechenbar (Mails lassen nicht berechenbare Ticker weg, Plan v2).
+    Seit 2026-10 KEINE Score-Mindestgrenze mehr — die alten Schwellen 6,5/5,5/5,0 waren KI-Score-Grenzen ohne
+    Validierung; Gültigkeit (vorhanden) und Schwelle (Höhe) sind getrennte Dinge (Codex D3/D4 R1 Befund 5)."""
+    return (c.get("ticker") in universe_tickers and c.get("status") == "ok"
+            and c.get("score") is not None)
 
 
 def _build_tip_rows(
@@ -575,20 +562,14 @@ def _build_tip_rows(
     limit: int,
 ) -> list[dict]:
     """
-    Filter + Sort. Drei-stufiger Fallback — Tiers werden kumuliert bis das
-    Limit erreicht ist:
-      1. Strict:    KI ≥6.5 · Multi-Window ≥3
-      2. Relaxed:   KI ≥5.5 · Multi-Window ≥2
-      3. Fallback:  KI ≥5.0 · ohne MW-Filter
-
-    Regime-Bedingung wurde entfernt (Daily-Newsletter nutzt LBR/RSI-Score
-    statt ML-Regime). Beispiel: limit=10, strict liefert 2 → relaxed füllt mit
-    5 weiteren auf → fallback füllt mit 3 weiteren bis 10 voll sind.
+    Filter + Sort. Drei Stufen nach dem Multi-Window-TDOM-Score, kumuliert bis das
+    Limit erreicht ist: MW ≥ 3, MW ≥ 2, alle. Innerhalb gleicher Stufe sortiert der
+    Saison-Score (nicht berechenbar → ans Ende); er ist keine Auswahlschwelle mehr.
     """
     tiers = [
-        ("strict",   {"ki_min": 6.5, "mw_min": 3}),
-        ("relaxed",  {"ki_min": 5.5, "mw_min": 2}),
-        ("fallback", {"ki_min": 5.0, "mw_min": 0}),
+        ("strict",   {"mw_min": 3}),
+        ("relaxed",  {"mw_min": 2}),
+        ("fallback", {"mw_min": 0}),
     ]
     collected: list[dict] = []
     seen_tickers: set[str] = set()
@@ -614,7 +595,7 @@ def _build_tip_rows(
 _WHY_WIN_LABELS = ["O→C", "O→O⁺", "O→C⁺", "C→C⁺"]
 
 
-def _build_why_summary(windows: dict, ki_score, win_rate, verdict: str,
+def _build_why_summary(windows: dict, saison: dict | None, verdict: str,
                        score_total: int, ticker: str | None = None) -> dict:
     """Kompakte, deterministische Begründung pro Top-Pick aus bereits
     berechneten Feldern — KEINE neue Berechnung, gleiche Quelle wie die Tabelle.
@@ -636,21 +617,16 @@ def _build_why_summary(windows: dict, ki_score, win_rate, verdict: str,
             "pct": (f"{avg:+.2f}%" if avg is not None else "—"),
             "hit": bool(w.get("hit")),
         })
-    # win_rate kann als Anteil (0–1) oder Prozent (0–100) vorliegen → auf % normieren
-    wr_pct = None
-    if win_rate is not None:
-        try:
-            wr = float(win_rate)
-            wr_pct = round(wr * 100) if wr <= 1 else round(wr)
-        except (TypeError, ValueError):
-            wr_pct = None
-    _vmap = {"stark bullish": "strong", "bullish": "bull", "leicht bullish": "bull"}
+    # Saison-Trefferquote mit IHRER Fallzahl und IHREM Horizont (30 KT) — nie eine Prozentzahl neben der Fallzahl
+    # der TDOM-Fenster (verschiedene Stichproben, Codex Plan v1 Befund 8)
+    b1 = ((saison or {}).get("bausteine") or {}).get("b1") or {}
+    saison_txt = f"{b1['k']}/{b1['n']}" if b1.get("n") else None
     return {
         "verdict": verdict,
-        "verdict_class": _vmap.get(verdict, "weak"),
+        "verdict_class": {4: "strong", 3: "bull", 2: "bull"}.get(score_total, "weak"),
         "hits": f"{score_total}/4",
         "windows_compact": windows_compact,
-        "win_rate_pct": wr_pct,
+        "saison_30t": saison_txt,
         "sample_n": min(counts) if counts else None,
         "regime": regime_hint(ticker) if ticker else None,
     }
@@ -660,24 +636,20 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
                limit, params, tier_name):
     rows: list[dict] = []
     for c in candidates:
-        if not _candidate_passes(c, universe_tickers, params["ki_min"]):
+        if not _candidate_passes(c, universe_tickers):
             continue
         ticker = c["ticker"]
-        ki = c.get("score") or 0
+        saison_score = c.get("score")      # None = nicht berechenbar
 
         mw = compute_multi_window_tdom_score(ticker, target_tdom)
         if mw["score_total"] < params["mw_min"]:
             continue
+        # ohne ein einziges auswertbares TDOM-Fenster ist MW=0 kein Messwert, sondern fehlende Daten
+        if not any(((mw["windows"] or {}).get(f"w{i}") or {}).get("count") for i in range(1, 5)):
+            continue
 
-        # Verdict
-        if mw["score_total"] == 4 and ki >= 7.5:
-            verdict = "stark bullish"
-        elif mw["score_total"] >= 3 and ki >= 6.5:
-            verdict = "bullish"
-        elif mw["score_total"] >= 2:
-            verdict = "leicht bullish"
-        else:
-            verdict = "schwach (Fallback)"
+        # Beschreibung statt Urteil: wie viele der vier TDOM-Fenster waren historisch im Mittel positiv
+        verdict = f"{mw['score_total']}/4 TDOM-Fenster positiv"
 
         meta = universe_meta.get(ticker, {})
         w1 = mw["windows"].get("w1", {})
@@ -685,7 +657,7 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "ticker": ticker,
             "name": meta.get("name", ticker),
             "kategorie": meta.get("kategorie", ""),
-            "ki_score": round(ki, 1),
+            "saison_score": saison_score,
             "tdom": target_tdom,
             "multi_window_score": mw["score_total"],
             "windows": mw["windows"],
@@ -694,11 +666,11 @@ def _try_build(candidates, universe_tickers, universe_meta, target_tdom,
             "verdict": verdict,
             "tier": tier_name,
             "skew_pts": skew_map().get(ticker), "skew_pctl": skew_pctl_map().get(ticker),
-            "why": _build_why_summary(mw["windows"], ki, c.get("win_rate"),
-                                      verdict, mw["score_total"], ticker),
+            "why": _build_why_summary(mw["windows"], c, verdict, mw["score_total"], ticker),
         })
 
-    rows.sort(key=lambda r: (-r["multi_window_score"], -r["ki_score"]))
+    rows.sort(key=lambda r: (-r["multi_window_score"],
+                             -(r["saison_score"] if r["saison_score"] is not None else -1)))
     return rows[:limit]
 
 
@@ -712,8 +684,7 @@ def top_daily_tips(
 
     Auswahl-Filter (Regime entfernt — Daily-Newsletter nutzt LBR/RSI-Score):
       - kategorie='US-ETF' (ETFs) bzw. kategorie IN ('US-Aktie','EU-Aktie') (Aktien)
-      - KI-Score ≥ 6.5
-      - Multi-Window-TDOM-Score ≥ 3 (mit Relaxed/Fallback-Tiers)
+      - Multi-Window-TDOM-Score ≥ 3 (mit Relaxed/Fallback-Tiers); Saison-Score nur Sortierung
     Nach Auswahl: LBR/RSI/Score + Kurs/Vortag anreichern, dann **score DESC**.
     """
     if target_date is None:
@@ -765,13 +736,13 @@ def top_daily_tips(
         row["mw_score"] = row.get("multi_window_score", 0)
         row["total_score"] = (row.get("mw_score") or 0) + (row.get("score") or 0)
 
-    # Gesamt-Score zuerst (total_score), dann MW-Saisonalscore, dann KI.
+    # Gesamt-Score zuerst (total_score), dann MW-Saisonalscore, dann Saison-Score.
     def _sort_key(r: dict):
         return (
             r.get("total_score", 0),
             r.get("mw_score", 0),
             r.get("score") if r.get("score") is not None else -999,
-            r.get("ki_score", 0),
+            r.get("saison_score") if r.get("saison_score") is not None else -1,
         )
     etfs.sort(key=_sort_key, reverse=True)
     stocks.sort(key=_sort_key, reverse=True)
@@ -1060,8 +1031,8 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
     """
     Holt die Cloud-Watchlist eines Subscribers via Email.
 
-    Returnt list[{ticker, name, ki_score, signal, added_at}] — leer wenn User
-    nicht eingeloggt ist oder keine Watchlist hat. KI-Score wird angereichert
+    Returnt list[{ticker, name, saison_score, added_at}] — leer wenn User
+    nicht eingeloggt ist oder keine Watchlist hat. Saison-Score wird angereichert
     sofern in scanner_results vorhanden.
     """
     from shared.supabase_client import get_client
@@ -1083,10 +1054,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
         for s in scanner_results:
             t = s.get("ticker")
             if t:
-                score_map[t] = {
-                    "score":  s.get("score"),
-                    "signal": s.get("signal"),
-                }
+                score_map[t] = {"score": s.get("score")}
 
     items = raw[:WATCHLIST_LIMIT]
     # Eine Historie-Query für alle Watchlist-Ticker → MW + LBR/RSI/Score + Kurs/Vortag.
@@ -1108,8 +1076,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "ticker":   ticker,
             "name":     meta.get("name", ticker),
             "kategorie": meta.get("kategorie", ""),
-            "ki_score": sc.get("score"),
-            "signal":   sc.get("signal"),
+            "saison_score": sc.get("score"),
             "skew_pts": skew_map().get(ticker), "skew_pctl": skew_pctl_map().get(ticker),
             "added_at": item.get("added_at"),
             # Signal-Felder (Default None/0, falls keine Historie vorhanden)

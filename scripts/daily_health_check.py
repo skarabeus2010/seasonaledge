@@ -333,6 +333,7 @@ def collect_health_data() -> dict:
         resp = (
             client.table("scanner_results")
             .select("scan_date")
+            .eq("methode", "saison_v1")       # alte KI-Score-Zeilen (methode NULL) zählen nicht
             .order("scan_date", desc=True)
             .limit(1)
             .execute()

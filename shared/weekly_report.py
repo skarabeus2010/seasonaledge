@@ -7,7 +7,7 @@ weekly_report.html.j2) und vom Hauptscript (scripts/weekly_newsletter.py)
 genutzt wird.
 
 Daten-Quellen (alle Supabase):
-    - scanner_results  → Top KI-Scores
+    - scanner_results  → Top Saison-Scores (methode saison_v1)
     - market_events    → Holidays + OPEX + Central Bank
     - tdom_stats       → Saisonaler Bias für aktuelle Handelswoche
     - fed_dates.py     → FOMC-Meetings (statisch aus Python-Konstante)
@@ -74,14 +74,11 @@ FED_MACRO_STATIC_BASELINES: dict[str, tuple[float, str]] = {
 }
 
 
-# ── Sektion 1: Top KI-Scores ─────────────────────────────────────────────
+# ── Sektion 1: Top Saison-Scores ─────────────────────────────────────────
 def top_ki_scores(limit: int = DEFAULT_TOP_N) -> list[dict]:
     """
-    Die top N Ticker aus den neuesten scanner_results, sortiert nach Score DESC.
-
-    Returns:
-        list[dict] mit Feldern: ticker, score, signal, win_rate, avg_return,
-        deviation, scan_date
+    Die top N Ticker des jüngsten Saison-Score-Laufs (methode saison_v1), Score DESC; nicht berechenbare raus.
+    (Name der Funktion bleibt, damit Template und Aufrufer unverändert binden.)
     """
     try:
         from shared.supabase_client import fetch_scanner_results
@@ -89,7 +86,7 @@ def top_ki_scores(limit: int = DEFAULT_TOP_N) -> list[dict]:
         if not results:
             app_logger.warning("[weekly_report] scanner_results leer")
             return []
-        return results[:limit]
+        return [r for r in results if r.get("status") == "ok" and r.get("score") is not None][:limit]
     except Exception as e:
         error_logger.error(f"[weekly_report] top_ki_scores failed: {e}")
         return []

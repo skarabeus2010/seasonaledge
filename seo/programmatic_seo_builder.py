@@ -420,7 +420,7 @@ def build_llms_txt(output_ordner: str):
     content = f"""# SeasonAlpha
 
 > Datengetriebene saisonale Börsenanalyse mit bis zu 131 Jahren Marktdaten,
-> 270+ Basiswerten (Aktien, ETFs, Futures, Crypto, FX) und KI-Composite-Score.
+> 350+ Basiswerten (Aktien, ETFs, Futures, Crypto, FX) und beschreibendem Saison-Score.
 > Kostenlos. Deutsch: {b}/ · English: {b}/en/
 
 SeasonAlpha findet wiederkehrende saisonale Muster in Finanzmärkten — Jahres-
@@ -429,12 +429,12 @@ Termine, Mondphasen u.v.m. Methodik: normalisierte Renditen (jedes Jahr startet
 bei 100, tägliche Returns kumulieren) — keine absoluten Preisänderungen.
 
 ## Kern-Tools
-- [Dashboard]({b}/dashboard): Alle Saisonal-Signale für einen Ticker auf einen Blick — KI-Score, Stress-Ampel, Jahreschart, TruePath-Muster, Strategien, Events.
+- [Dashboard]({b}/dashboard): Alle Saisonal-Signale für einen Ticker auf einen Blick — Saison-Score, Stress-Ampel, Jahreschart, TruePath-Muster, Strategien, Events.
 - [Jahreszyklus]({b}/jahreszyklus): Saisonaler Jahresverlauf mit Perzentil-Bändern, Monats-/Quartals-Performance und Mustervergleich.
 - [Dekadenzyklus]({b}/dekadenzyklus): 131 Jahre Dow-Jones-Muster nach Jahresend-Ziffer + Anomalie-Radar.
-- [KI-Saisonalität]({b}/ki-saisonalitaet): Composite-Score 0-10 aus 4 Sub-Scores + TruePath-Mustervergleich mit Sigma-Cone-Projektion.
+- [Saison-Score & Musterjahre]({b}/ki-saisonalitaet): Saison-Score 0-10 für die nächsten 30 Tage aus Vorjahren und den ähnlichsten Jahren + Musterpfad der ähnlichsten Jahre.
 - [Backtest-Engine]({b}/backtest-engine): Saisonale Event-Strategien testen (OPEX, FOMC, Mondphasen, Feiertage) — Equity-Kurve, Sharpe, Max DD, look-ahead-bias-frei.
-- [Saisonal-Scanner]({b}/scanner): 270+ Ticker nach KI-Composite-Score sortiert, filterbar.
+- [Saisonal-Scanner]({b}/scanner): 350+ Ticker nach Saison-Score für die nächsten 30 Tage, mit Trefferquote der Vorjahre, filterbar.
 - [Polymarket]({b}/polymarket): Prognosemarkt-Wahrscheinlichkeiten (Fed-Pfad, Crypto) neben historischer Saisonalität + Brier-Score-Kalibrierung.
 
 ## Themen-Tools

@@ -1,7 +1,7 @@
 """
 scripts/full_scanner_run.py — Dedicated Full-Scanner Run
 =========================================================
-Berechnet den KI-Saisonalitaets-Score fuer ALLE Ticker aus shared/symbols.py
+Berechnet den Saison-Score (shared/saison_score.py) fuer ALLE Ticker aus shared/symbols.py
 und schreibt pro Ticker SOFORT nach Supabase (statt Batch am Ende).
 
 Unterschied zu nightly_refresh.py:
@@ -43,107 +43,29 @@ if _project_dir not in sys.path:
 
 
 def load_already_scanned_today() -> set:
-    """Liest alle Ticker die heute schon in scanner_results sind (fuer --resume)."""
-    try:
-        from shared.supabase_client import get_client
-        today = date.today().strftime("%Y-%m-%d")
-        client = get_client()
-        result = (
-            client.table("scanner_results")
-            .select("ticker")
-            .eq("scan_date", today)
-            .execute()
-        )
-        return set(r["ticker"] for r in result.data)
-    except Exception as e:
-        print(f"[WARN] resume-check failed: {e}", file=sys.stderr)
-        return set()
-
-
-def _clean_num(v, fallback=None):
-    """NaN/inf -> fallback (Postgres lehnt NaN-Token im JSON-Body ab, 22P02)."""
-    import math
-    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-        return fallback
-    return v
-
-
-def upsert_single_scanner_result(result: dict) -> None:
-    """Ein einzelnes Scanner-Result nach Supabase schreiben (resume-safe)."""
-    from shared.supabase_client import upsert_scanner_results
+    """Ticker, die HEUTE schon eine Saison-Score-Zeile haben (für --resume). Nur methode = saison_v1 — eine alte
+    KI-Score-Zeile von heute darf einen Ticker nicht überspringen lassen. Ein Fehler beim Lesen ist ein Abbruch,
+    kein leeres Ergebnis (sonst liefe --resume still über alles)."""
+    from shared.supabase_client import get_client
     today = date.today().strftime("%Y-%m-%d")
-    record = {
-        "ticker": result["ticker"],
-        "score": _clean_num(result["score"], 0.0),        # NOT NULL
-        "signal": result["signal"],
-        "win_rate": _clean_num(result.get("win_rate", 0)),
-        "avg_return": _clean_num(result.get("avg_return", 0)),
-        "deviation": _clean_num(result.get("deviation", 0)),
-        "scan_date": today,
-    }
-    upsert_scanner_results([record])
+    zeilen, offset = set(), 0
+    while True:
+        teil = (get_client().table("scanner_results").select("ticker").eq("scan_date", today)
+                .eq("methode", "saison_v1").range(offset, offset + 999).execute().data) or []
+        zeilen.update(r["ticker"] for r in teil)
+        if len(teil) < 1000:
+            return zeilen
+        offset += 1000
 
 
-def compute_scanner_for_ticker(ticker: str, *, years_back: int, quick_mode: bool) -> dict | None:
-    """
-    Berechnet KI-Score + Scanner-Result fuer einen Ticker.
-
-    Returns:
-        dict mit keys: ticker, score, signal, win_rate, avg_return, deviation
-        oder None wenn nicht berechnet werden konnte.
-    """
-    from shared.yahoo_downloader import download_data, preprocess
-    from shared.calculations import build_year_data, calculate_seasonal_average
-    from shared.cache_manager import get_or_compute_ki_score
-
-    current_year = date.today().year
-    start_year = current_year - years_back
-
-    # 1. Download
-    raw_df = download_data(ticker, period="max")
-    if raw_df is None or raw_df.empty:
-        return None
-
-    # 2. Preprocess
-    df = preprocess(raw_df)
-    if df is None or df.empty:
-        return None
-
-    # 3. Verfuegbare Jahre
-    available_years = sorted([
-        y for y in df["year"].unique()
-        if start_year <= y <= current_year
-    ])
-    if len(available_years) < 3:
-        return None
-
-    # 4. Year-Data + Seasonal Average
-    year_data = build_year_data(df, available_years)
-    if len(year_data) < 3:
-        return None
-
-    avg, std = calculate_seasonal_average(year_data)
-
-    # 5. KI-Score
-    result = get_or_compute_ki_score(
-        ticker, df, year_data, avg, std,
-        quick_mode=quick_mode,
-    )
-    if not result:
-        return None
-
-    # 6. Scanner-Fields extrahieren
-    wr_details = result["sub_scores"]["win_rate"]["details"]
-    tracking_details = result["sub_scores"]["tracking"]["details"]
-
-    return {
-        "ticker": result["ticker"],
-        "score": result["score"],
-        "signal": result["signal"],
-        "win_rate": wr_details.get("win_rate", 0),
-        "avg_return": wr_details.get("avg_return", 0),
-        "deviation": round(1 - tracking_details.get("correlation", 0), 3),
-    }
+def scan_ticker(ticker: str, today: str) -> dict:
+    """Saison-Score aus den Supabase-Kursen rechnen und sofort schreiben (resume-safe). Wirft bei Lade-/Schreibfehler."""
+    from shared import saison_score_betrieb as sb
+    from shared.supabase_client import get_client
+    e = sb.fuer_ticker(ticker, get_client())
+    for ab in sb.schreibe(get_client(), [sb.scanner_zeile(e, ticker, today)], [sb.protokoll_zeile(e, ticker)]):
+        print(f"  Protokoll weicht ab (erster Eintrag bleibt): {ab}", flush=True)
+    return e
 
 
 def run_full_scan(
@@ -207,32 +129,21 @@ def run_full_scan(
     errors = 0
     error_details: list[tuple[str, str]] = []
 
-    # OOM-Schutz: download_data ist @st.cache_data → cached jede Voll-Historie im
-    # Memory. Bei 324 Tickern (tiefe Historien) sprengt das den Container (exit 137).
-    from shared.yahoo_downloader import clear_cache
+    today = date.today().strftime("%Y-%m-%d")
 
     for i, ticker in enumerate(tickers, 1):
         t_ticker = time.time()
         try:
-            result = compute_scanner_for_ticker(
-                ticker, years_back=20, quick_mode=quick,
-            )
-            if result is None:
-                skipped_nodata += 1
-                elapsed = time.time() - t_ticker
-                print(f"  [{i:3d}/{len(tickers)}] {ticker:<14} SKIP (kein Score)  {elapsed:4.1f}s")
-                continue
-
-            # Pro-Ticker Upsert (resume-safe)
-            upsert_single_scanner_result(result)
-            success += 1
-
+            e = scan_ticker(ticker, today)
             elapsed = time.time() - t_ticker
+            if e["status"] != "ok":
+                skipped_nodata += 1     # als Zeile mit Grund gespeichert — kein Fehler
+                print(f"  [{i:3d}/{len(tickers)}] {ticker:<14} nicht berechenbar ({e.get('grund_code')})  {elapsed:4.1f}s")
+                continue
+            success += 1
             print(
-                f"  [{i:3d}/{len(tickers)}] {ticker:<14} "
-                f"{result['signal']:<8} score={result['score']:4.1f} "
-                f"wr={result['win_rate']:5.1f}% avg={result['avg_return']:+6.2f}%  "
-                f"{elapsed:4.1f}s"
+                f"  [{i:3d}/{len(tickers)}] {ticker:<14} Saison-Score {e['score']:4.1f}  "
+                f"30T-Trefferquote {e['b1']['k']}/{e['b1']['n']}  Ø {e['b2']['mittel']:+6.2f}%  {elapsed:4.1f}s"
             )
         except KeyboardInterrupt:
             print("\n  [STOP] KeyboardInterrupt — partial results bleiben in DB")
@@ -244,11 +155,6 @@ def run_full_scan(
             print(f"  [{i:3d}/{len(tickers)}] {ticker:<14} ERROR             {elapsed:4.1f}s — {str(e)[:80]}")
             app_logger.error(f"full_scanner_run: {ticker}: {e}")
         finally:
-            # Pro-Ticker Speicher freigeben (sonst OOM/exit 137 ab ~Ticker 69).
-            try:
-                clear_cache()
-            except Exception:
-                pass
             gc.collect()
 
         # Progress Summary alle N Ticker
@@ -267,7 +173,7 @@ def run_full_scan(
     print(f"  Finished: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Total Time: {total_elapsed/60:.1f} min")
     print(f"  Success:    {success:3d}")
-    print(f"  No Data:    {skipped_nodata:3d} (Ticker ohne ausreichende Historie)")
+    print(f"  Nicht berechenbar: {skipped_nodata:3d} (als Zeile mit Grund gespeichert)")
     print(f"  Errors:     {errors:3d}")
     if resume:
         print(f"  Resumed:    {skipped_existing:3d} (bereits heute gescannt, skipped)")
@@ -278,11 +184,12 @@ def run_full_scan(
         for t, msg in error_details[:10]:
             print(f"  {t}: {msg}")
 
-    # 6. Exit-Code
-    if success == 0:
-        return 2  # Nichts berechnet = harter Fehler
-    if errors > len(tickers) * 0.2:
-        return 1  # >20% Errors = weicher Warn-Fehler
+    # 6. Exit-Code: jeder Lade- oder Schreibfehler macht den Lauf rot (vorher erst ab 20 %) — sonst stünde im
+    #    Scanner still ein Teilstand. Ein nicht berechenbarer Ticker ist kein Fehler (Zeile mit Grund).
+    if success == 0 and skipped_nodata == 0:
+        return 2      # nichts verarbeitet; nur nicht berechenbare, aber geschriebene Zeilen sind kein Fehler
+    if errors > 0:
+        return 1
     return 0
 
 

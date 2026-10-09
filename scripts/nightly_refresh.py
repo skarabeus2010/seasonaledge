@@ -52,16 +52,17 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
     from shared.calculations import build_year_data, calculate_seasonal_average
     from shared.cache_manager import (
         get_or_compute_monthly_stats,
-        get_or_compute_ki_score,
         get_or_compute_tdom_stats,
         get_or_compute_tdoy_stats,
-        store_scanner_results,
     )
-    from shared.supabase_client import upsert_scanner_results as _upsert_scanner_one
+    from shared import saison_score_betrieb as _saison
+    from shared.supabase_client import get_client as _get_client
 
     current_year = date.today().year
     start_year = current_year - years_back
     scanner_results = []
+    saison_fehler: list[str] = []
+    ticker_fehler: list[str] = []     # alles im Tickerpfad, was den Lauf rot machen muss (Codex D3/D4 R1 Befund 4)
     today_str = date.today().strftime("%Y-%m-%d")
 
     for i, ticker in enumerate(tickers):
@@ -71,11 +72,13 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             # Download + Preprocess
             raw_df = download_data(ticker, period="max")
             if raw_df is None or raw_df.empty:
-                app_logger.debug(f"nightly_refresh: {ticker} — keine Daten")
+                ticker_fehler.append(f"{ticker}: keine Kursdaten geladen")
+                app_logger.error(f"nightly_refresh: {ticker} — keine Daten")
                 continue
 
             df = preprocess(raw_df)
             if df is None or df.empty:
+                ticker_fehler.append(f"{ticker}: Vorverarbeitung leer")
                 continue
 
             # Preise in Supabase schreiben (letzte 7 Tage — historische Daten bleiben unverändert)
@@ -108,58 +111,28 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                 if _price_records:
                     upsert_prices(_price_records)
             except Exception as _pe:
-                app_logger.debug(f"nightly_refresh: {ticker} price upsert failed: {_pe}")
+                # Ohne frische Kurse würde der Saison-Score aus alten Supabase-Kursen einen heutigen Eintrag schreiben
+                # → Ticker als Fehler zählen und überspringen (Codex D3/D4 R1 Befund 4)
+                ticker_fehler.append(f"{ticker}: Kurs-Upsert {str(_pe)[:100]}")
+                app_logger.error(f"nightly_refresh: {ticker} price upsert failed: {_pe}")
+                continue
 
             # Monthly Stats
             get_or_compute_monthly_stats(ticker, df, years_back)
 
-            # KI Score
-            available_years = sorted([
-                y for y in df["year"].unique()
-                if start_year <= y <= current_year
-            ])
-            if len(available_years) >= 3:
-                year_data = build_year_data(df, available_years)
-                if len(year_data) >= 3:
-                    avg, std = calculate_seasonal_average(year_data)
-                    result = get_or_compute_ki_score(
-                        ticker, df, year_data, avg, std,
-                        quick_mode=quick_mode,
-                    )
-                    if result:
-                        from shared.symbols import SYMBOLS, get_display_name
-                        sym_info = SYMBOLS.get(ticker, {})
-                        result["name"] = sym_info.get("name", get_display_name(ticker))
-                        result["kategorie"] = sym_info.get("kategorie", "Sonstige")
-
-                        # Defensiv: alte DB-Rows können 'details' NULL haben
-                        # oder Cache hat die Shape nicht — dann sub_scores fehlt
-                        sub_scores = result.get("sub_scores") or result.get("details") or {}
-                        wr_details = (sub_scores.get("win_rate") or {}).get("details") or {}
-                        result["win_rate"] = wr_details.get("win_rate", 0)
-                        result["avg_return"] = wr_details.get("avg_return", 0)
-
-                        tracking_details = (sub_scores.get("tracking") or {}).get("details") or {}
-                        result["deviation"] = round(
-                            1 - tracking_details.get("correlation", 0), 3
-                        )
-                        scanner_results.append(result)
-
-                        # Pro-Ticker-Upsert (resume-safe bei Timeouts)
-                        try:
-                            _upsert_scanner_one([{
-                                "ticker": result["ticker"],
-                                "score": result["score"],
-                                "signal": result["signal"],
-                                "win_rate": result.get("win_rate", 0),
-                                "avg_return": result.get("avg_return", 0),
-                                "deviation": result.get("deviation", 0),
-                                "scan_date": today_str,
-                            }])
-                        except Exception as _up_e:
-                            app_logger.debug(
-                                f"nightly_refresh: scanner upsert {ticker}: {_up_e}"
-                            )
+            # Saison-Score (shared/saison_score.py, Nachfolger des KI-Score): aus den Supabase-Kursen — dieselbe Quelle
+            # wie die Seiten, nachdem oben die letzten 7 Tage geschrieben wurden. Lade-/Schreibfehler werden gezählt
+            # und machen den Nightly rot; ein nicht berechenbarer Ticker ist KEIN Fehler, sondern eine Zeile mit Grund.
+            try:
+                _e = _saison.fuer_ticker(ticker, _get_client())
+                for _ab in _saison.schreibe(_get_client(), [_saison.scanner_zeile(_e, ticker, today_str)],
+                                            [_saison.protokoll_zeile(_e, ticker)]):
+                    app_logger.warning(f"nightly_refresh: Saison-Protokoll weicht ab (erster Eintrag bleibt): {_ab}")
+                if _e["status"] == "ok":
+                    scanner_results.append(ticker)
+            except Exception as _se:  # noqa: BLE001
+                saison_fehler.append(f"{ticker}: {str(_se)[:120]}")
+                app_logger.error(f"nightly_refresh: Saison-Score {ticker}: {_se}")
 
             # TDoM Stats (alle 4 Strategien, forward) — Daily-Newsletter Multi-Window-Score
             for strategy in ["open_to_close", "open_to_next_open", "open_to_next_close", "close_to_next_close"]:
@@ -175,15 +148,15 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             )
 
         except Exception as e:
+            ticker_fehler.append(f"{ticker}: {str(e)[:120]}")
             app_logger.error(f"nightly_refresh: {ticker} — Fehler: {e}")
             continue
 
-    # Scanner Results speichern
-    if scanner_results:
-        scanner_results.sort(key=lambda x: x["score"], reverse=True)
-        store_scanner_results(scanner_results)
-        app_logger.info(f"nightly_refresh: Scanner — {len(scanner_results)} Ticker gespeichert")
-
+    app_logger.info(f"nightly_refresh: Saison-Score — {len(scanner_results)} berechnet, {len(saison_fehler)} Fehler")
+    if saison_fehler:
+        _FEHLGESCHLAGEN.append(f"Saison-Score ({len(saison_fehler)} Lade-/Schreibfehler, z. B. {saison_fehler[0]})")
+    if ticker_fehler:
+        _FEHLGESCHLAGEN.append(f"Ticker-Refresh ({len(ticker_fehler)} Fehler, z. B. {ticker_fehler[0]})")
     return len(scanner_results)
 
 

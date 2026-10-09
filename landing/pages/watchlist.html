@@ -4,8 +4,8 @@
   <!-- SA_META_V5 -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Meine Watchlist &mdash; KI-Score & Signale deiner Ticker | SeasonAlpha</title>
-  <meta name="description" content="Deine pers&ouml;nliche Watchlist mit KI-Score, Stress-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.">
+  <title>Meine Watchlist &mdash; Saison-Score & Signale deiner Ticker | SeasonAlpha</title>
+  <meta name="description" content="Deine pers&ouml;nliche Watchlist mit Saison-Score, Stress-Ampel und saisonalen Signalen f&uuml;r bis zu 50 Ticker. Local-First, kein Login n&ouml;tig.">
   <meta name="author" content="SeasonAlpha">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#000000">
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://seasonalpha.ai/watchlist">
   <meta property="og:title" content="Meine Watchlist &mdash; SeasonAlpha">
-  <meta property="og:description" content="Pers&ouml;nliche Watchlist mit KI-Score, Stress-Ampel und saisonalen Signalen.">
+  <meta property="og:description" content="Pers&ouml;nliche Watchlist mit Saison-Score, Stress-Ampel und saisonalen Signalen.">
   <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
   <meta property="og:site_name" content="SeasonAlpha">
   <meta property="og:locale" content="de_DE">
@@ -27,7 +27,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@SeasonAlph4882">
   <meta name="twitter:title" content="Meine Watchlist &mdash; SeasonAlpha">
-  <meta name="twitter:description" content="Pers&ouml;nliche Watchlist mit KI-Score und saisonalen Signalen.">
+  <meta name="twitter:description" content="Pers&ouml;nliche Watchlist mit Saison-Score und saisonalen Signalen.">
   <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
 
   <!-- Icons -->
@@ -77,10 +77,6 @@
     .wl-card__ki-score{display:flex;align-items:baseline;gap:.25rem}
     .wl-card__ki-num{font-family:var(--f-m);font-size:1.75rem;font-weight:800;line-height:1;color:var(--accent)}
     .wl-card__ki-max{font-size:.75rem;color:var(--muted)}
-    .wl-card__ki-sig{font-size:.6875rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:.3rem .6rem;border-radius:5px}
-    .wl-card__ki-sig.bullish{background:rgba(48,232,120,.15);color:var(--green);border:1px solid rgba(48,232,120,.3)}
-    .wl-card__ki-sig.bearish{background:rgba(255,64,64,.15);color:var(--red);border:1px solid rgba(255,64,64,.3)}
-    .wl-card__ki-sig.neutral{background:rgba(232,168,32,.12);color:var(--accent);border:1px solid rgba(232,168,32,.25)}
 
     .wl-card__crash{display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;border-radius:6px;font-size:.8125rem;border:1px solid var(--border)}
     .wl-card__crash-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.05)}
@@ -197,17 +193,10 @@
       <select id="wl-sort">
         <option value="added_at_desc" data-i18n="wl.sort_added_desc">Zuletzt hinzugefügt</option>
         <option value="added_at_asc" data-i18n="wl.sort_added_asc">Zuerst hinzugefügt</option>
-        <option value="score_desc" data-i18n="wl.sort_score_desc">KI-Score (höchster zuerst)</option>
-        <option value="score_asc" data-i18n="wl.sort_score_asc">KI-Score (niedrigster zuerst)</option>
+        <option value="score_desc" data-i18n="wl.sort_score_desc">Saison-Score (höchster zuerst)</option>
+        <option value="score_asc" data-i18n="wl.sort_score_asc">Saison-Score (niedrigster zuerst)</option>
         <option value="ticker_asc" data-i18n="wl.sort_ticker_asc">Ticker (A–Z)</option>
       </select>
-
-      <hr>
-
-      <h3 data-i18n="wl.sidebar_filter_signal">Filter nach Signal</h3>
-      <label class="filter-lbl"><input type="checkbox" id="f-bull" checked> 🟢 Bullish</label>
-      <label class="filter-lbl"><input type="checkbox" id="f-neut" checked> ⚪ Neutral</label>
-      <label class="filter-lbl"><input type="checkbox" id="f-bear" checked> 🔴 Bearish</label>
 
       <hr>
 
@@ -223,8 +212,6 @@
 
       <div class="wl-header-stats">
         <span class="pill gold" id="wl-count-pill">0 Ticker</span>
-        <span class="pill" id="wl-bull-pill" style="display:none">0 Bullish</span>
-        <span class="pill" id="wl-bear-pill" style="display:none">0 Bearish</span>
       </div>
 
       <div id="wl-empty" class="wl-empty" style="display:none">
@@ -240,9 +227,8 @@
       <div id="wl-summary" class="wl-summary" style="display:none">
         <h2 data-i18n="wl.summary_title">Zusammenfassung</h2>
         <div class="wl-summary-grid">
-          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_avg_ki">Ø KI-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
-          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bullish">Bullish</div><div class="kpi-value green" id="sum-bulls">–</div></div>
-          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_bearish">Bearish</div><div class="kpi-value red" id="sum-bears">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_avg_ss">Ø Saison-Score</div><div class="kpi-value gold" id="sum-avg-ki">–</div></div>
+          <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_ss_ok">Saison-Score berechnet</div><div class="kpi-value" id="sum-ss-ok">–</div></div>
           <div class="kpi"><div class="kpi-label" data-i18n="wl.summary_green_regime">Stress-Ampel grün</div><div class="kpi-value" id="sum-green">–</div></div>
         </div>
       </div>
@@ -262,6 +248,8 @@
   <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/dash-compute.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
+  <script src="/landing/js/saison-score.js"></script>
   <script src="/landing/js/watchlist.js"></script>
 
   <script>
@@ -460,9 +448,8 @@
         var avg = SA.seasonal.calculateSeasonalAverage(yearData).avg || [];
         var currentYear = new Date().getFullYear();
 
-        var matches = SA.dashCompute.findMatchingYears(yearData, currentYear, 'correlation', 5);
-        var truepath = SA.dashCompute.computeTruePath(matches, 5);
-        var ki = SA.dashCompute.computeKiScore(yearData, matches, currentYear, avg, truepath);
+        // Saison-Score: dieselbe Rechnung wie Scanner, Dashboard und Nightly (volle Historie liegt hier schon vor)
+        var ss = SA.saisonScore.berechne(rows, ticker);
         var regime = SA.dashCompute.computeStress(rows);
 
         // ── Zusätzliche KPIs für die erweiterte Card ───────────
@@ -497,7 +484,7 @@
           ticker: ticker,
           error: null,
           rows: rows,
-          ki: ki,
+          ss: ss,
           regime: regime,
           meta: tickersMeta[ticker] || null,
           lastClose: lastClose,
@@ -537,9 +524,9 @@
         '</div>';
       }
 
-      var ki = card.ki;
+      var ss = card.ss;
+      var ssOk = ss && ss.status === 'ok';
       var regime = card.regime;
-      var sigClass = ki.signal.toLowerCase();
 
       // Tages-Change
       var dayChange = card.dayChange;
@@ -550,7 +537,20 @@
       var priceDisplay = '$' + card.lastClose.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       // 4 KPIs
-      var winRate = ki.subs.winRate.score * 100;
+      var b1Txt = ssOk ? ss.b1.k + '/' + ss.b1.n : '–';
+      var SS_GRUND = { keine_kurse: ['scan.g_keine_kurse', 'keine Kurse'], zu_frueh_im_jahr: ['scan.g_zu_frueh', 'vor dem 20. Handelstag des Jahres'],
+        unvollstaendiges_jahr: ['scan.g_unvollst', 'laufendes Jahr beginnt nach dem 10. Januar'], zu_wenige_jahre: ['scan.g_wenige_jahre', 'weniger als 10 Vergleichsjahre'],
+        zu_wenige_musterjahre: ['scan.g_wenige_muster', 'zu wenige vergleichbare Jahre'], gewichte_null: ['scan.g_gewichte_null', 'keine ähnlichen Jahre'] };
+      var _g = ss && SS_GRUND[ss.grund_code];
+      var ssGrund = ssOk ? '' : (_g ? SA.i18n.t(_g[0], _g[1]) : SA.i18n.t('scan.g_unbekannt', 'nicht berechenbar'));
+      function _pz(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' %'; }
+      // vier Bausteine + Musterkonformität (getrennt, nicht Teil des Scores) im Tooltip
+      var ssTitel = ssOk ? SA.i18n.t('ki.ss_b1', 'Vorjahre positiv') + ' ' + ss.b1.k + '/' + ss.b1.n + ' · ' +
+        SA.i18n.t('ki.ss_b2', 'Ø Vorjahre') + ' ' + _pz(ss.b2.mittel) + ' · ' +
+        SA.i18n.t('ki.ss_b3', 'Musterjahre positiv') + ' ' + ss.b3.k + '/' + ss.b3.n + ' · ' +
+        SA.i18n.t('ki.ss_b4', 'Ø Musterjahre') + ' ' + _pz(ss.b4.mittel) +
+        (ss.konformitaet != null ? ' · ' + SA.i18n.t('wl.ss_konf', 'Musterkonformität r') + ' = ' + ss.konformitaet.toFixed(2) : '') : ssGrund;
+      var b1Cls = ssOk ? (ss.b1.wert >= 0.5 ? 'pos' : 'neg') : 'neutral';
       var ret5 = regime.features.ret_5d;
       var ret5Class = ret5 == null ? 'neutral' : (ret5 > 0.1 ? 'pos' : (ret5 < -0.1 ? 'neg' : 'neutral'));
       var dd252 = card.dd252;
@@ -630,10 +630,11 @@
 
         '<div class="wl-card__ki">' +
           '<div class="wl-card__ki-score">' +
-            '<span class="wl-card__ki-num">' + ki.score.toFixed(1) + '</span>' +
-            '<span class="wl-card__ki-max">/10</span>' +
+            '<span class="wl-card__ki-num"' + (ssOk ? '' : ' style="color:var(--muted)"') + '>' + (ssOk ? ss.score.toFixed(1) : '–') + '</span>' +
+            '<span class="wl-card__ki-max">/10 · ' + SA.i18n.t('wl.ss_30', 'Saison 30 T.') + '</span>' +
           '</div>' +
-          '<span class="wl-card__ki-sig ' + sigClass + '">' + ki.signal + '</span>' +
+          '<span class="wl-card__ki-max" title="' + esc(ssTitel) + '">' + (ssOk ? SA.i18n.t('wl.ss_vorjahre', 'Vorjahre positiv') + ' ' + b1Txt
+                                                 : SA.i18n.t('wl.ss_nicht', 'nicht berechenbar') + ': ' + esc(ssGrund)) + '</span>' +
         '</div>' +
 
         '<div class="wl-card__crash ' + regime.traffic_light + '">' +
@@ -644,8 +645,8 @@
 
         '<div class="wl-card__kpi-grid">' +
           '<div class="wl-card__kpi">' +
-            '<div class="wl-card__kpi-lbl">WR</div>' +
-            '<div class="wl-card__kpi-val ' + (winRate >= 50 ? 'pos' : 'neg') + '">' + winRate.toFixed(0) + '%</div>' +
+            '<div class="wl-card__kpi-lbl" title="' + SA.i18n.t('wl.ss_30_tt', 'Vorjahre mit positiven nächsten 30 Kalendertagen') + '">30T</div>' +
+            '<div class="wl-card__kpi-val ' + b1Cls + '">' + b1Txt + '</div>' +
           '</div>' +
           '<div class="wl-card__kpi">' +
             '<div class="wl-card__kpi-lbl">Ret 5d</div>' +
@@ -670,19 +671,7 @@
 
     // ── Filter + Sort anwenden ────────────────────────────────
     function getFilteredSorted() {
-      // Filter nach Signal
-      var fBull = qs('f-bull').checked;
-      var fNeut = qs('f-neut').checked;
-      var fBear = qs('f-bear').checked;
-
-      var filtered = currentRender.filter(function(c) {
-        if (c.error) return true; // Errors immer zeigen
-        var sig = c.ki.signal;
-        if (sig === 'Bullish' && !fBull) return false;
-        if (sig === 'Neutral' && !fNeut) return false;
-        if (sig === 'Bearish' && !fBear) return false;
-        return true;
-      });
+      var filtered = currentRender.slice();
 
       // Sort
       var sortVal = qs('wl-sort').value;
@@ -694,9 +683,10 @@
         if (sortVal === 'ticker_asc') return a.ticker.localeCompare(b.ticker);
         if (sortVal === 'added_at_asc') return (addedAtMap[a.ticker] || '').localeCompare(addedAtMap[b.ticker] || '');
         if (sortVal === 'added_at_desc') return (addedAtMap[b.ticker] || '').localeCompare(addedAtMap[a.ticker] || '');
-        // Score-basiert — Errors ans Ende
-        var ascore = a.error ? -1 : (a.ki ? a.ki.score : 0);
-        var bscore = b.error ? -1 : (b.ki ? b.ki.score : 0);
+        // Score-basiert — Fehler und nicht berechenbare Ticker in beiden Richtungen ans Ende
+        var ascore = !a.error && a.ss && a.ss.status === 'ok' ? a.ss.score : null;
+        var bscore = !b.error && b.ss && b.ss.status === 'ok' ? b.ss.score : null;
+        if (ascore === null || bscore === null) return (ascore === null) - (bscore === null);
         if (sortVal === 'score_desc') return bscore - ascore;
         if (sortVal === 'score_asc') return ascore - bscore;
         return 0;
@@ -722,28 +712,20 @@
 
       if (valid.length === 0) {
         qs('wl-summary').style.display = 'none';
-        qs('wl-bull-pill').style.display = 'none';
-        qs('wl-bear-pill').style.display = 'none';
         return;
       }
 
-      var avgKi = valid.reduce(function(s, c) { return s + c.ki.score; }, 0) / valid.length;
-      var bulls = valid.filter(function(c) { return c.ki.signal === 'Bullish'; }).length;
-      var bears = valid.filter(function(c) { return c.ki.signal === 'Bearish'; }).length;
+      var mitSs = valid.filter(function(c) { return c.ss && c.ss.status === 'ok'; });
+      var avgSs = mitSs.length ? mitSs.reduce(function(s, c) { return s + c.ss.score; }, 0) / mitSs.length : null;
       // Grün nur unter den berechenbaren Tickern; ohne Score (zu kurze Historie) separat (Plan 2026-10-09, V5)
       var mitScore = valid.filter(function(c) { return c.regime.risk_score != null; });
       var greens = mitScore.filter(function(c) { return c.regime.traffic_light === 'green'; }).length;
 
-      qs('sum-avg-ki').textContent = avgKi.toFixed(1);
-      qs('sum-bulls').textContent = bulls + ' / ' + valid.length;
-      qs('sum-bears').textContent = bears + ' / ' + valid.length;
+      qs('sum-avg-ki').textContent = avgSs === null ? '–' : avgSs.toFixed(1);
+      qs('sum-ss-ok').textContent = mitSs.length + ' / ' + valid.length;
       qs('sum-green').textContent = greens + ' / ' + mitScore.length + (mitScore.length < valid.length ? ' (' + (valid.length - mitScore.length) + ' ohne Wert)' : '');
       qs('wl-summary').style.display = '';
 
-      qs('wl-bull-pill').textContent = bulls + ' Bullish';
-      qs('wl-bull-pill').style.display = bulls > 0 ? '' : 'none';
-      qs('wl-bear-pill').textContent = bears + ' Bearish';
-      qs('wl-bear-pill').style.display = bears > 0 ? '' : 'none';
     }
 
     // ── Load + Render alle Watchlist-Ticker ───────────────────
@@ -850,9 +832,6 @@
 
       // Sort + Filter
       qs('wl-sort').addEventListener('change', renderGrid);
-      qs('f-bull').addEventListener('change', renderGrid);
-      qs('f-neut').addEventListener('change', renderGrid);
-      qs('f-bear').addEventListener('change', renderGrid);
 
       // Event-Delegation für Remove-Buttons
       qs('wl-grid').addEventListener('click', function(e) {
