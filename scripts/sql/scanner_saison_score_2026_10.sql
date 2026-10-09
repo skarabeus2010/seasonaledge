@@ -50,7 +50,9 @@ CREATE TABLE IF NOT EXISTS saison_score_protokoll (
 
 ALTER TABLE saison_score_protokoll ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON saison_score_protokoll FROM PUBLIC, anon, authenticated;
-REVOKE UPDATE, DELETE, TRUNCATE ON saison_score_protokoll FROM service_role;
+-- ALLE Rechte entziehen und nur SELECT/INSERT zurückgeben: Supabase vergibt service_role standardmäßig alles,
+-- ein Entzug einzelner Rechte ließ REFERENCES und TRIGGER stehen (Abnahme c am 2026-10-09).
+REVOKE ALL ON saison_score_protokoll FROM service_role;
 GRANT SELECT, INSERT ON saison_score_protokoll TO service_role;
 
 CREATE OR REPLACE FUNCTION saison_score_protokoll_unveraenderlich() RETURNS trigger
