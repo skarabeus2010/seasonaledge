@@ -252,6 +252,9 @@ class FakeDB:
             treffer = treffer[:q.lim]
         if q.rng is None and q.lim is None:
             treffer = treffer[:1000]               # PostgREST liefert ohne Range höchstens 1000 Zeilen
+        if q.tab == "stress_scores":
+            # wie PostgREST/PostgreSQL: double precision kommt nur auf 15 signifikante Stellen zurück
+            treffer = [{k: (float(f"{v:.15g}") if isinstance(v, float) else v) for k, v in r.items()} for r in treffer]
         if q.tab == "stress_scores" and self.rueck_verfaelschen and treffer:
             treffer = [dict(r) for r in treffer]
             treffer[-1]["score"] = (treffer[-1]["score"] or 0) + 1e-6
@@ -455,6 +458,16 @@ def pruefe_alles(basis=REPO, snap=None):
         neu_soll = [d for d in DK if d != DK[900]][776:]
         return True if sorted(gelesen(db)) == neu_soll else f"nach Korrektur gelesen {len(gelesen(db))}, soll {len(neu_soll)}"
     pruefe("db_vollauf", db_erfolg)
+
+    def db_grosses_s():
+        # Codex Code-R4: 776 Kurse zu 100, danach 10.000 → S ≈ 1992; muss das 15-stellige Rücklesen bestehen
+        d = tage(900)
+        c = [100.0] * 776 + [10000.0] * 124
+        db = FakeDB(kurse_zeilen("SPY", d, c))
+        r = ss.vollauf("SPY", db, still)
+        groesstes = max(z["s"] for z in ss.stress_reihe(d, c) if z["s"] is not None)
+        return True if r["status"] == "fertig" and groesstes > 1000 else f"Lauf {r}, größtes S {groesstes}"
+    pruefe("db_grosses_s", db_grosses_s)
 
     def db_fehler(setze, name):
         db = neue_db()
@@ -722,6 +735,10 @@ MUTATIONEN = [
     ("DB-Werte trotz Lücke (JS)", JS, "    if (!voll || !db[letzte.date]) return { zeilen: anzeige, quelle: 'browser' };\n", "",
      "anzeige_db_oder_browser"),
     ("Veröffentlichen ohne Rücklesen", PY, "        _vergleiche(soll, rueck)\n", "", "db_rueckleseprobe"),
+    ("Score ungerundet gespeichert", PY, "score = round(100.0 * (kleiner + 0.5 * (bis_gleich - kleiner)) / ref_n, STELLEN_SCORE)",
+     "score = 100.0 * (kleiner + 0.5 * (bis_gleich - kleiner)) / ref_n", "db_vollauf"),
+    ("S nur auf Nachkommastellen gerundet", PY, '"s": None if s is None else float(f"{s:.{SIGNIFIKANT_S}g}")',
+     '"s": None if s is None else round(s, 12)', "db_grosses_s"),
     ("Kein Abbruch bei Fehler", PY, "            _rpc(client, \"stress_lauf_abbrechen\", {\"p_lauf\": lauf_id})\n", "            pass\n",
      "db_batchfehler"),
     ("Zählung nicht geprüft", PY, "    if quell_n is None or len(zeilen) != quell_n:\n", "    if quell_n is None:\n", "db_unvollstaendige_eingabe"),

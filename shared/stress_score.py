@@ -37,6 +37,12 @@ REFERENZ_MIN = 756
 ERSTER_SCORE_KURS = REFERENZ_MIN + 21          # 777: S entsteht am 21. Schluss, danach 756 Referenzwerte
 VOLLE_REFERENZ_KURS = REFERENZ_MAX + 21        # 2541
 EPS = 1e-9
+# Gespeicherte Genauigkeit: die Datenbank liefert double precision über PostgREST nur auf 15 signifikante Stellen
+# zurück (gemessen beim ersten Lauf 2026-10-09: 88.35978835978835 → 88.3597883597884). Score und S werden deshalb
+# VOR der Farbentscheidung gerundet — so übersteht der gespeicherte Wert das Rücklesen exakt, und Farbe, Anzeige und
+# Datenbank beziehen sich auf dieselbe Zahl (89,99999999999999 wäre sonst gelb, käme aber als „90" zurück).
+STELLEN_SCORE = 10          # Nachkommastellen; Score ≤ 100 → höchstens 13 signifikante Stellen
+SIGNIFIKANT_S = 15          # S ist nach oben offen (Codex Code-R4: 1992,336… bei einem Kurssprung) → signifikante Stellen
 GRENZE_GELB = 70.0
 GRENZE_ROT = 90.0
 METHODE = "stress_v1"
@@ -119,7 +125,7 @@ def stress_reihe(daten, closes, bereinigt=False):
                 if closes[k] > hoch:
                     hoch = closes[k]
             dd20 = (closes[i] / hoch - 1) * 100
-        s = None
+        s = None          # ungerundet für den Rang
         if vol5 is not None and vol20 is not None and dd20 is not None:
             s = GEWICHTE[0] * vol5 + GEWICHTE[1] * vol20 + GEWICHTE[2] * abs(dd20)
         score = None
@@ -127,10 +133,10 @@ def stress_reihe(daten, closes, bereinigt=False):
         if s is not None and ref_n >= REFERENZ_MIN:
             kleiner = bisect.bisect_left(fenster, s - EPS)
             bis_gleich = bisect.bisect_right(fenster, s + EPS)
-            score = 100.0 * (kleiner + 0.5 * (bis_gleich - kleiner)) / ref_n
+            score = round(100.0 * (kleiner + 0.5 * (bis_gleich - kleiner)) / ref_n, STELLEN_SCORE)
         out.append({
             "date": daten[i], "close": closes[i], "vol5": vol5, "vol10": vol10, "vol20": vol20, "dd20": dd20,
-            "s": s, "score": score, "ampel": ampel(score), "referenz_n": ref_n if s is not None else 0,
+            "s": None if s is None else float(f"{s:.{SIGNIFIKANT_S}g}"), "score": score, "ampel": ampel(score), "referenz_n": ref_n if s is not None else 0,
             "ret1d": r[i] if i >= 1 else None,
             "ret5d": (closes[i] / closes[i - 5] - 1) * 100 if i >= 5 else None,
             "ret20d": (closes[i] / closes[i - 20] - 1) * 100 if i >= 20 else None,

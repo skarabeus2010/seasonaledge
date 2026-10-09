@@ -249,7 +249,10 @@
   //   ε = 1e-9), erst ab 756 Referenzwerten (777. Schluss); Ampel aus dem ungerundeten Score: gelb ab 70, rot ab 90.
   //   Heuristisches Stress-Maß, keine Prognose. Ersetzt die frühere „Crash-Ampel" (Rang gegen 252 Tage, 40/70).
   var STRESS = { GEWICHTE: [0.3, 0.3, 0.4], REF_MAX: 2520, REF_MIN: 756, ERSTER_KURS: 777, VOLL_KURS: 2541,
-                 EPS: 1e-9, GELB: 70, ROT: 90 };
+                 EPS: 1e-9, GELB: 70, ROT: 90, STELLEN_SCORE: 10, SIGNIFIKANT_S: 15 };
+  // Gespeicherte Genauigkeit wie shared/stress_score.py: Score und S gerundet, bevor die Farbe entschieden wird
+  // (PostgREST liefert double precision nur auf 15 Stellen zurück).
+  function _runden(x, stellen) { var f = Math.pow(10, stellen); return Math.round(x * f) / f; }
 
   function stressAmpel(score) {
     if (score == null) return 'grey';
@@ -304,9 +307,10 @@
       var score = null, refN = fenster.length;
       if (s != null && refN >= STRESS.REF_MIN) {
         var kleiner = _lowerBound(fenster, s - STRESS.EPS), bisGleich = _upperBound(fenster, s + STRESS.EPS);
-        score = 100.0 * (kleiner + 0.5 * (bisGleich - kleiner)) / refN;
+        score = _runden(100.0 * (kleiner + 0.5 * (bisGleich - kleiner)) / refN, STRESS.STELLEN_SCORE);
       }
-      out.push({ date: daten[i], close: c[i], vol5: vol5, vol10: vol10, vol20: vol20, dd20: dd20, s: s, score: score,
+      out.push({ date: daten[i], close: c[i], vol5: vol5, vol10: vol10, vol20: vol20, dd20: dd20,
+                 s: s == null ? null : Number(s.toPrecision(STRESS.SIGNIFIKANT_S)), score: score,
                  ampel: stressAmpel(score), referenz_n: s != null ? refN : 0,
                  ret1d: i >= 1 ? r[i] : null, ret5d: i >= 5 ? (c[i] / c[i - 5] - 1) * 100 : null,
                  ret20d: i >= 20 ? (c[i] / c[i - 20] - 1) * 100 : null });
