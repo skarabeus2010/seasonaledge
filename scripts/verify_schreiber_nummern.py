@@ -36,6 +36,19 @@ import pandas as pd
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, WURZEL)
 
+
+def _kein_client(*_a, **_k):
+    raise RuntimeError("Stub: kein echter Supabase-Client im Wächter")
+
+
+# Gleiches Verhalten mit und ohne installiertes supabase-Paket: das Deploy-Gate hat es nicht, und dann wirft
+# supabase_client.py beim Import einen ABGEFANGENEN ImportError, den die Absturzwache als Absturz zählte
+# (Deploy d63fdf1, 2026-10-10 — lokal unsichtbar, weil das Paket dort installiert ist). Der Client selbst kommt
+# ohnehin aus stub_supabase().
+_sb = types.ModuleType("supabase")
+_sb.create_client = _kein_client
+sys.modules["supabase"] = _sb
+
 from shared.exchange_holidays import get_holidays  # noqa: E402
 from shared.symbols import get_exchange_for_holidays  # noqa: E402
 
