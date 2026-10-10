@@ -93,6 +93,10 @@ jobs:
         run: |
           python3 -m pip install --quiet pandas==2.2.3 tzdata
           python3 scripts/verify_schreiber_nummern.py
+      # Kurslader SA.kurse (docs/TICKER_LADEN.md, S1): die echte landing/js/kurse.js in node gegen einen
+      # PostgREST-Nachbau, jeder Abschnitt in eigenem Prozess. Verlangt Exit 0 und Endmarker je Abschnitt.
+      - name: Waechter - Kurslader SA.kurse
+        run: python3 scripts/verify_kurse.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
