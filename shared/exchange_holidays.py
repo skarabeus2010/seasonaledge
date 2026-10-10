@@ -160,8 +160,11 @@ def _compute_lse_holidays(year: int) -> list[date]:
     """
     holidays = []
 
-    # New Year's Day — 1. Januar
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
+    # New Year's Day — 1. Januar; fällt er auf Samstag ODER Sonntag, ist der folgende
+    # Montag frei (England & Wales, gov.uk/bank-holidays). Bis 2026-10 kannte der Code nur
+    # den Sonntag: 2000/2005/2011/2022/2028-01-03 standen fälschlich offen.
+    neujahr = date(year, 1, 1)
+    holidays.append(neujahr + timedelta(days=(7 - neujahr.weekday()) % 7) if neujahr.weekday() >= 5 else neujahr)
 
     # Good Friday
     holidays.append(_good_friday(year))
@@ -179,6 +182,7 @@ def _compute_lse_holidays(year: int) -> list[date]:
     # Spring Bank Holiday — letzter Montag im Mai
     # Ausnahme: 2002 (Golden Jubilee), 2012 (Diamond Jubilee), 2022 (Platinum Jubilee)
     if year == 2002:
+        holidays.append(date(2002, 6, 3))  # Golden Jubilee, zusätzlicher Bank Holiday (London Gazette L-56043-1001)
         holidays.append(date(2002, 6, 4))
     elif year == 2012:
         holidays.append(date(2012, 6, 5))
@@ -206,8 +210,8 @@ def _compute_lse_holidays(year: int) -> list[date]:
     boxing = date(year, 12, 26)
     if boxing.weekday() == 5:  # Samstag → Dienstag (weil Montag = Xmas observed)
         holidays.append(date(year, 12, 28))
-    elif boxing.weekday() == 6: # Sonntag → bereits oben behandelt
-        pass
+    elif boxing.weekday() == 6: # Sonntag (Weihnachten war Samstag) → Dienstag 28.12.,
+        holidays.append(date(year, 12, 28))  # weil der Montag schon Weihnachts-Ersatz ist
     elif boxing.weekday() == 0 and xmas.weekday() != 6:
         # Wenn Xmas normal Freitag war, Boxing Day = Montag
         holidays.append(boxing)
@@ -215,6 +219,8 @@ def _compute_lse_holidays(year: int) -> list[date]:
         holidays.append(boxing)
 
     # Sonderfeiertage
+    if year == 2011:
+        holidays.append(date(2011, 4, 29))  # Royal Wedding (London Gazette L-59637-1268656)
     if year == 2022:
         holidays.append(date(2022, 9, 19))  # Queen Elizabeth II Staatsbegräbnis
     if year == 2023:
@@ -268,6 +274,23 @@ def _compute_milan_holidays(year: int) -> list[date]:
 
 # ── TSE (Tokyo Stock Exchange) ─────────────────────────────────────────────────
 
+# Olympia 2020/2021: Meeres-, Sport- und Bergtag per Sondergesetz verlegt
+# (NAOJ-Kalender 2020/2021, revidiert). Ersetzt die Regeltermine dieser drei Feiertage.
+_TSE_OLYMPIA = {
+    2020: (date(2020, 7, 23), date(2020, 7, 24), date(2020, 8, 10)),
+    2021: (date(2021, 7, 22), date(2021, 7, 23), date(2021, 8, 8)),   # 8.8. Sonntag → Ersatz 9.8.
+}
+# Einmalige nationale Feiertage (zählen für Ersatz- und Brückentage mit).
+_TSE_EINMALIG_FEIERTAG = {
+    2019: (date(2019, 5, 1), date(2019, 10, 22)),   # Thronbesteigung, Inthronisierung (JPX 2019-01-15)
+}
+# Börse geschlossen ohne Feiertag.
+_TSE_BOERSE_GESCHLOSSEN = {
+    2020: (date(2020, 10, 1),),   # ganztägiger Systemausfall arrowhead (JPX-Mitteilung 2020-10-01)
+}
+
+
+
 def _compute_tse_holidays(year: int) -> list[date]:
     """
     TSE Tokyo Stock Exchange Feiertage (japanische Nationalfeiertage).
@@ -283,45 +306,75 @@ def _compute_tse_holidays(year: int) -> list[date]:
         return date(year, 9, int(23.2488 + 0.242194 * (year - 1980) - (year - 1980) // 4))
 
     # ── Nationale Feiertage (ohne Shift) ──
+    # Regeländerungen (NAOJ, Gesetzesänderungen; Belege in
+    # docs/review_prompts/2026-10-10_xetra_tdoy_plan_antwort4.md, J1–J6):
+    # Vor 2000 ist dieser Kalender NICHT geprüft (Status siehe KALENDER_GUELTIG);
+    # Keiro/Taiiku no Hi erst ab 1966, Ersatztage erst ab 1973.
+    #   Seijin no Hi   15.1. bis 1999, ab 2000 2. Montag im Januar
+    #   Umi no Hi      20.7. 1996–2002, ab 2003 3. Montag im Juli
+    #   Keiro no Hi    15.9. bis 2002, ab 2003 3. Montag im September
+    #   Taiiku no Hi   10.10. bis 1999, ab 2000 2. Montag im Oktober
+    #   Tenno Tanjobi  23.12. 1989–2018, 2019 keiner, ab 2020 23.2.
+    #   2020/2021      Olympia: Meeres-, Sport- und Bergtag verlegt (eigene Tabelle)
     national: set[date] = {
         date(year, 1, 1),            # Ganjitsu (Neujahr)
         date(year, 2, 11),           # Kenkoku Kinen no Hi
         equinox(3),                  # Shunbun no Hi (Frühlingsanfang)
-        date(year, 4, 29),           # Showa no Hi
+        date(year, 4, 29),           # Showa no Hi (bis 2006 Midori no Hi)
         date(year, 5, 3),            # Kenpo Kinenbi
-        date(year, 5, 4),            # Midori no Hi
+        date(year, 5, 4),            # Midori no Hi (bis 2006 Kokumin no Kyujitsu)
         date(year, 5, 5),            # Kodomo no Hi
-        _nth_weekday(year, 7, 0, 3), # Umi no Hi (Meerestag)
-        _nth_weekday(year, 9, 0, 3), # Keiro no Hi
         equinox(9),                  # Shubun no Hi (Herbstanfang)
-        _nth_weekday(year, 10, 0, 2),# Sports no Hi
         date(year, 11, 3),           # Bunka no Hi
         date(year, 11, 23),          # Kinro Kansha no Hi
     }
-    if year >= 2000:
-        national.add(_nth_weekday(year, 1, 0, 2))   # Seijin no Hi
+    national.add(_nth_weekday(year, 1, 0, 2) if year >= 2000 else date(year, 1, 15))   # Seijin no Hi
+    if year in _TSE_OLYMPIA:
+        national.update(_TSE_OLYMPIA[year])                                             # Umi/Sport/Yama verlegt
+    else:
+        if year >= 2003:
+            national.add(_nth_weekday(year, 7, 0, 3))                                   # Umi no Hi
+        elif year >= 1996:
+            national.add(date(year, 7, 20))
+        if year >= 2000:
+            national.add(_nth_weekday(year, 10, 0, 2))                                  # Taiiku/Sports no Hi
+        elif year >= 1966:
+            national.add(date(year, 10, 10))
+        if year >= 2016:
+            national.add(date(year, 8, 11))                                             # Yama no Hi
+    if year >= 2003:
+        national.add(_nth_weekday(year, 9, 0, 3))                                       # Keiro no Hi
+    elif year >= 1966:
+        national.add(date(year, 9, 15))
     if year >= 2020:
         national.add(date(year, 2, 23))             # Tenno Tanjobi (Naruhito)
-    elif year >= 1990:
-        national.add(date(year, 12, 23))            # (Akihito)
-    if year >= 2016:
-        national.add(date(year, 8, 11))             # Yama no Hi
+    elif 1989 <= year <= 2018:
+        national.add(date(year, 12, 23))            # (Akihito); 2019 ohne Kaisergeburtstag
+    national.update(_TSE_EINMALIG_FEIERTAG.get(year, ()))   # Thronwechsel 2019
 
     holidays = set(national)
 
-    # ── Furikae Kyujitsu (振替休日): Sonntags-Feiertag → nächster Nicht-Feiertag ──
+    # ── Furikae Kyujitsu (振替休日): Sonntags-Feiertag → Ersatztag ──
+    # Ab 2007: nächster Tag, der kein Feiertag ist. Bis 2006: nur der Montag danach,
+    # und nur wenn dieser selbst kein Feiertag ist (deshalb 2003-05-06 kein Ersatztag).
     for h in sorted(national):
-        if h.weekday() == 6:
+        if h.weekday() == 6 and year >= 1973:   # Ersatztag-Regel gilt erst seit 1973
             sub = h + timedelta(days=1)
-            while sub in national:
-                sub += timedelta(days=1)
-            holidays.add(sub)
+            if year >= 2007:
+                while sub in national:
+                    sub += timedelta(days=1)
+                holidays.add(sub)
+            elif sub not in national:
+                holidays.add(sub)
 
     # ── Kokumin no Kyujitsu (国民の休日): Werktag zwischen zwei Feiertagen ──
     for h in sorted(national):
         mid = h + timedelta(days=1)
         if (h + timedelta(days=2)) in national and mid not in national and mid.weekday() < 5:
             holidays.add(mid)
+
+    # ── Einmalige Börsenschließungen ohne Feiertag ──
+    holidays.update(_TSE_BOERSE_GESCHLOSSEN.get(year, ()))
 
     # ── Börsen-Schließungen Jahreswechsel (keine Nationalfeiertage, kein Shift) ──
     holidays.add(date(year, 1, 2))
@@ -402,11 +455,14 @@ def _compute_oslo_holidays(year: int) -> list[date]:
 # ── HKEX (Hongkong) + KRX (Korea) ──────────────────────────────────────────────
 # Mondkalender-Feiertage (Lunar New Year, Buddha's Birthday, Mid-Autumn, Chuseok,
 # Seollag …) + unregelmäßige Schließungen (Taifune, Wahltage) sind NICHT regel-
-# basiert berechenbar → datengetriebene Tabelle (aus ^HSI/^KS11, Clean-Ära), wie
-# _chinese_new_year. Bei neuen Jahren aus dem offiziellen HKEX/KRX-Kalender ergänzen.
+# basiert berechenbar → Tabelle. Sie stammte ursprünglich aus Kurslücken in ^HSI/^KS11
+# — und eine fehlende Kurszeile ist KEIN Schließungsbeleg: KRX trug so vier Handelstage
+# als Feiertag (2017-09-22, 2017-12-20, 2022-01-03, 2022-05-09; Gegenbelege aus KRX-KIND),
+# beiden fehlte der 1.1.2016. Korrigiert 2026-10-10 (plan_antwort4.md). Neue Einträge NUR
+# aus dem offiziellen HKEX/KRX-Kalender, nie aus fehlenden Kursen.
 
 _HKEX_HOLIDAYS = {
-    2016: [(2,8),(2,9),(2,10),(3,25),(3,28),(4,4),(5,2),(6,9),(7,1),(8,2),(9,16),(10,10),(10,21),(12,26),(12,27)],
+    2016: [(1,1),(2,8),(2,9),(2,10),(3,25),(3,28),(4,4),(5,2),(6,9),(7,1),(8,2),(9,16),(10,10),(10,21),(12,26),(12,27)],
     2017: [(1,2),(1,30),(1,31),(4,4),(4,14),(4,17),(5,1),(5,3),(5,30),(8,23),(10,2),(10,5),(12,25),(12,26)],
     2018: [(1,1),(2,16),(2,19),(3,30),(4,2),(4,5),(5,1),(5,22),(6,18),(7,2),(9,25),(10,1),(10,17),(12,25),(12,26)],
     2019: [(1,1),(2,5),(2,6),(2,7),(4,5),(4,19),(4,22),(5,1),(5,13),(6,7),(7,1),(10,1),(10,7),(12,25),(12,26)],
@@ -422,13 +478,13 @@ _HKEX_HOLIDAYS = {
 }
 
 _KRX_HOLIDAYS = {
-    2016: [(2,8),(2,9),(2,10),(3,1),(4,13),(5,5),(5,6),(6,6),(8,15),(9,14),(9,15),(9,16),(10,3),(12,30)],
-    2017: [(1,27),(1,30),(3,1),(5,1),(5,3),(5,5),(5,9),(6,6),(8,15),(9,22),(10,2),(10,3),(10,4),(10,5),(10,6),(10,9),(12,20),(12,25),(12,29)],
+    2016: [(1,1),(2,8),(2,9),(2,10),(3,1),(4,13),(5,5),(5,6),(6,6),(8,15),(9,14),(9,15),(9,16),(10,3),(12,30)],
+    2017: [(1,27),(1,30),(3,1),(5,1),(5,3),(5,5),(5,9),(6,6),(8,15),(10,2),(10,3),(10,4),(10,5),(10,6),(10,9),(12,25),(12,29)],
     2018: [(1,1),(2,15),(2,16),(3,1),(5,1),(5,7),(5,22),(6,6),(6,13),(8,15),(9,24),(9,25),(9,26),(10,3),(10,9),(12,25),(12,31)],
     2019: [(1,1),(2,4),(2,5),(2,6),(3,1),(5,1),(5,6),(6,6),(8,15),(9,12),(9,13),(10,3),(10,9),(12,25),(12,31)],
     2020: [(1,1),(1,24),(1,27),(4,15),(4,30),(5,1),(5,5),(8,17),(9,30),(10,1),(10,2),(10,9),(12,25),(12,31)],
     2021: [(1,1),(2,11),(2,12),(3,1),(5,5),(5,19),(8,16),(9,20),(9,21),(9,22),(10,4),(10,11),(12,31)],
-    2022: [(1,3),(1,31),(2,1),(2,2),(3,1),(3,9),(5,5),(5,9),(6,1),(6,6),(8,15),(9,9),(9,12),(10,3),(10,10),(12,30)],
+    2022: [(1,31),(2,1),(2,2),(3,1),(3,9),(5,5),(6,1),(6,6),(8,15),(9,9),(9,12),(10,3),(10,10),(12,30)],
     2023: [(1,23),(1,24),(3,1),(5,1),(5,5),(5,29),(6,6),(8,15),(9,28),(9,29),(10,2),(10,3),(10,9),(12,25),(12,29)],
     2024: [(1,1),(2,9),(2,12),(3,1),(4,10),(5,1),(5,6),(5,15),(6,6),(8,15),(9,16),(9,17),(9,18),(10,1),(10,3),(10,9),(12,25),(12,31)],
     2025: [(1,1),(1,27),(1,28),(1,29),(1,30),(3,3),(5,1),(5,5),(5,6),(6,3),(6,6),(8,15),(10,3),(10,6),(10,7),(10,8),(10,9),(12,25),(12,31)],

@@ -196,9 +196,26 @@ def _atomar_schreiben(pfad: Path, inhalt: bytes) -> None:
             time.sleep(0.25 * (versuch + 1))
 
 
+def python_probe(befehl: list, **kwargs) -> subprocess.CompletedProcess:
+    """Startet einen Python-Prüflauf mit EIGENEM, leerem Bytecode-Cache.
+
+    Gemeinsam für alle Mutationstests, die mutierten Python-Code importieren. Ohne
+    das liest der Unterprozess die .pyc der VORIGEN Mutation: CPython vergleicht nur
+    Quell-mtime (Sekunden) und Größe, und eine Mutation gleicher Länge („2003“ →
+    „1996“), die in derselben Sekunde zurückgeschrieben wird, gilt als unverändert.
+    Beobachtet 2026-10-10 (zwei Mutationen meldeten die Prüfung ihrer Vorgängerin);
+    `-B` hilft nicht, es verhindert nur das Schreiben, nicht das Lesen.
+    `befehl` ohne Interpreter, z. B. ['scripts/verify_x.py', '--flag'].
+    """
+    import tempfile
+    env = dict(kwargs.pop("env", None) or os.environ)
+    with tempfile.TemporaryDirectory() as cache:
+        env["PYTHONPYCACHEPREFIX"] = cache
+        return subprocess.run([sys.executable] + [str(b) for b in befehl], env=env, **kwargs)
+
+
 def waechter_laeuft_durch() -> bool:
-    r = subprocess.run([sys.executable, str(_WAECHTER)],
-                       capture_output=True, text=True, cwd=str(_ROOT))
+    r = python_probe([_WAECHTER], capture_output=True, text=True, cwd=str(_ROOT))
     return r.returncode == 0
 
 

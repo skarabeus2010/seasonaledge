@@ -23,7 +23,7 @@ import sys
 # gelegentlich noch den alten Inhalt, und der Test wird nicht
 # deterministisch (beobachtet am 2026-10-09).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from scripts.verify_twins_mutation import _atomar_schreiben  # noqa: E402
+from scripts.verify_twins_mutation import _atomar_schreiben, python_probe  # noqa: E402
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -179,7 +179,7 @@ def anker(datei: str, text: str) -> bytes:
 
 
 def lauf() -> tuple[int, str]:
-    r = subprocess.run(['py', '-3.14', PROBE], capture_output=True, text=True)
+    r = python_probe([PROBE], capture_output=True, text=True)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

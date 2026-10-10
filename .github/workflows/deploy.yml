@@ -56,6 +56,11 @@ jobs:
         run: python3 scripts/verify_i18n_cache_version.py
       - name: Waechter - Commit-Bindung des Deploys
         run: python3 scripts/verify_deploy_commitbindung.py
+      # Boersenkalender gegen woertlich belegte Sollfaelle (offen UND zu, mit Quelle).
+      # Nicht aus dem Code abgeleitet: ein Zwillingsvergleich findet keinen falschen
+      # Feiertag, den beide Seiten teilen (Lesson 1B). Nur Standardbibliothek.
+      - name: Waechter - Boersenkalender gegen belegte Sollfaelle
+        run: python3 scripts/verify_kalender_sollfaelle.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

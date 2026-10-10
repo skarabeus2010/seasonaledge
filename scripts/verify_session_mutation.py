@@ -32,7 +32,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.verify_twins_mutation import (LF, LockBelegt, _atomar_schreiben,  # noqa: E402
+from scripts.verify_twins_mutation import (LF, LockBelegt, _atomar_schreiben, python_probe,  # noqa: E402
                                            _exklusiver_lauf, _zeilenende)
 
 _WAECHTER = _ROOT / "scripts" / "verify_session_stamp.py"
@@ -181,8 +181,8 @@ MUTATIONEN = [
 
 
 def _waechter_gruen(waechter: Path = _WAECHTER) -> bool:
-    r = subprocess.run([sys.executable, str(waechter)], capture_output=True,
-                       text=True, cwd=str(_ROOT), timeout=900)
+    r = python_probe([waechter], capture_output=True,
+                     text=True, cwd=str(_ROOT), timeout=900)
     return r.returncode == 0
 
 

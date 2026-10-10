@@ -148,6 +148,19 @@ _NYSE_SPECIAL_CLOSURES = [
     date(2001, 9, 12),   # 9/11 (Tag 2)
     date(2001, 9, 13),   # 9/11 (Tag 3)
     date(2001, 9, 14),   # 9/11 (Tag 4)
+    # Ab 1971 belegt durch die NYSE-Liste "Holidays & Closings" (Stand 2008) und je
+    # fehlenden Tageskurs in ^GSPC/^DJI — dieselben Fälle wie in
+    # landing/data/election_calendar_exceptions.json (Wahlen-Arbeit, 2026-10-06).
+    # Vor 1971 ist dieser Kalender NICHT geprüft (Wahltage bis 1968, Mittwochs-
+    # schließungen 1968 u. a. fehlen) — siehe docs/review_prompts/2026-10-10_xetra_tdoy_plan_antwort4.md.
+    date(1994, 4, 27),   # Staatstrauer Präsident Richard Nixon
+    date(1985, 9, 27),   # Hurrikan Gloria
+    date(1980, 11, 4),   # Präsidentschaftswahl
+    date(1977, 7, 14),   # Stromausfall New York
+    date(1976, 11, 2),   # Präsidentschaftswahl
+    date(1973, 1, 25),   # Staatstrauer Präsident Lyndon B. Johnson
+    date(1972, 12, 28),  # Staatstrauer Präsident Harry S. Truman
+    date(1972, 11, 7),   # Präsidentschaftswahl
 ]
 
 

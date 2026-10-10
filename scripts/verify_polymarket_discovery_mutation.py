@@ -23,7 +23,7 @@ import sys
 # gelegentlich noch den alten Inhalt, und der Test wird nicht
 # deterministisch (beobachtet am 2026-10-09).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from scripts.verify_twins_mutation import _atomar_schreiben  # noqa: E402
+from scripts.verify_twins_mutation import _atomar_schreiben, python_probe  # noqa: E402
 
 if hasattr(sys.stdout, 'reconfigure'):          # cp1252 kann die
     sys.stdout.reconfigure(encoding='utf-8')     # Mutationsnamen nicht
@@ -129,7 +129,7 @@ def anker(datei: str, text: str) -> bytes:
     return text.encode('utf-8')
 
 
-basis = subprocess.run(['py', '-3.14', PROBE], capture_output=True, text=True)
+basis = python_probe([PROBE], capture_output=True, text=True)
 if basis.returncode != 0:
     print('ABBRUCH: die Probe ist schon ohne Mutation rot.')
     print(basis.stdout[-1200:])
@@ -148,7 +148,7 @@ def bewerte(datei: str, alt: str, neu: str, erwartet: str | None = None):
         return 'kein-anker', 'Anker %dx gefunden, erwartet 1x' % n
     _atomar_schreiben(pathlib.Path(datei), ROH[datei].replace(a, anker(datei, neu), 1))
     try:
-        r = subprocess.run(['py', '-3.14', PROBE], capture_output=True, text=True)
+        r = python_probe([PROBE], capture_output=True, text=True)
     finally:
         _atomar_schreiben(pathlib.Path(datei), ROH[datei])
     ausgabe = (r.stdout or '') + (r.stderr or '')
@@ -200,7 +200,7 @@ finally:
         _atomar_schreiben(pathlib.Path(_d), _b)
 for _d, _b in ROH.items():
     assert io.open(_d, 'rb').read() == _b, 'WIEDERHERSTELLUNG FEHLGESCHLAGEN: ' + _d
-nach = subprocess.run(['py', '-3.14', PROBE], capture_output=True, text=True)
+nach = python_probe([PROBE], capture_output=True, text=True)
 
 print()
 print('wiederhergestellt: Probe laeuft wieder gruen' if nach.returncode == 0
