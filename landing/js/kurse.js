@@ -251,6 +251,15 @@
     return { zeilen: aus, generation: b.generation, abdeckungAb: b.bedarf.ab, geladenUm: b.geladenUm };
   }
 
+  /** Genau eine Anfrage allein laden (Rückfall, wenn eine breitere gemeinsame Ladung scheiterte): nicht gecacht,
+   *  Bestand unverändert, eigene Generation. Scheitert auch sie, lehnt die Anfrage ab. */
+  function eigeneLadung(ticker, anfrage) {
+    return ladeAlles(ticker, anfrage).then(function (zeilen) {
+      return sicht({ zeilen: zeilen, bedarf: anfrage, geladenUm: uhr(), generation: ++generationen },
+                   anfrage.felder, anfrage.ab);
+    });
+  }
+
   function starte(ticker, k, bedarf) {
     var lauf = { bedarf: bedarf };
     lauf.promise = ladeAlles(ticker, bedarf).then(function (zeilen) {
@@ -266,6 +275,7 @@
         k.wartend = null;
         // der Bestand (falls die laufende Ladung ihn gerade erneuert hat) gehört zur Vereinigung
         var b = starte(ticker, k, vereinige(w.bedarf, k.bestand ? k.bestand.bedarf : null));
+        w.gestartet = b.bedarf;                 // tatsächlich geladener Bedarf (für den Rückfall in laden)
         b.promise.then(w.ok, w.nein);
       }
       verdraengen(null);
@@ -289,21 +299,47 @@
         return sicht(b, felder, ab);
       };
 
+      // Eine Anfrage scheitert nur an ihrem EIGENEN Bedarf (Codex M1 R1): hängt sie an einer breiteren gemeinsamen
+      // Ladung (Vereinigung, Bestand nach Ablauf) und scheitert diese, wird genau ihr Bedarf einmal allein geladen —
+      // ohne Cache, ohne den Bestand zu ändern. Sonst rechnete z. B. das Radar still auf verkürzten Kursen, weil die
+      // Vollhistorie des Saison-Scores scheiterte, oder eine 30-Jahres-Anfrage scheiterte an einer Vollladung.
+      var geteilt = function (p, bedarfVon) {
+        return p.then(aus, function (e) {
+          var b = bedarfVon();
+          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;     // die Ladung war genau der eigene Bedarf
+          return eigeneLadung(ticker, anfrage);
+        });
+      };
+
       if (frisch(k.bestand) && deckt(k.bestand.bedarf, felder, ab)) return aus(k.bestand);
-      if (k.laufend && deckt(k.laufend.bedarf, felder, ab)) return k.laufend.promise.then(aus);
+      if (k.laufend && deckt(k.laufend.bedarf, felder, ab)) {
+        var l = k.laufend;
+        return geteilt(l.promise, function () { return l.bedarf; });
+      }
       if (k.wartend) {
-        if (!deckt(k.wartend.bedarf, felder, ab)) k.wartend.bedarf = vereinige(k.wartend.bedarf, anfrage);
-        return k.wartend.promise.then(aus);
+        var wt = k.wartend;
+        if (!deckt(wt.bedarf, felder, ab)) wt.bedarf = vereinige(wt.bedarf, anfrage);
+        return geteilt(wt.promise, function () { return wt.gestartet || wt.bedarf; });
       }
       if (k.laufend) {
         var w = { bedarf: vereinige(anfrage, k.laufend.bedarf) };
         w.promise = new Promise(function (ok, nein) { w.ok = ok; w.nein = nein; });
         k.wartend = w;
-        return w.promise.then(aus);
+        return geteilt(w.promise, function () { return w.gestartet || w.bedarf; });
       }
-      return starte(ticker, k, vereinige(anfrage, k.bestand ? k.bestand.bedarf : null)).promise.then(aus);
+      var neu = starte(ticker, k, vereinige(anfrage, k.bestand ? k.bestand.bedarf : null));
+      return geteilt(neu.promise, function () { return neu.bedarf; });
     });
   }
+
+  // Kurse lagen früher als `sa-cache-prices:*` im localStorage (SA.fetchAllPrices) — bis zu 2,8 MB je Ticker, und ein
+  // Quota-Fehler leerte den ganzen Cache. Sie werden nicht mehr gelesen; einmal beim Laden entfernen.
+  try {
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf('sa-cache-prices:') === 0) localStorage.removeItem(key);
+    }
+  } catch (e) { /* kein localStorage (privat, Vorschau) — nichts zu tun */ }
 
   SA.kurse = {
     laden: laden,

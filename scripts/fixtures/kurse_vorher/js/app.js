@@ -740,19 +740,73 @@ SA.ladeKennung = (function() {
   };
 })();
 
-/**
- * Alte Schnittstelle, jetzt eine dünne Hülle auf SA.kurse (landing/js/kurse.js, docs/TICKER_LADEN.md S1): gleiche
- * Felder (date, close, log_return, tdom, tdoy), gleiche Grenze. Früher Offset-Blöcke mit count=exact, nacheinander,
- * und ein eigener localStorage-Cache je Filter; jetzt teilt sich jede Seite eine Ladung je Ticker mit Saison-Score,
- * Radar und Overnight. `extraFilter` ist nur noch '&date=gte.YYYY-MM-DD' oder leer — alles andere lehnt ab, statt
- * still ignoriert zu werden.
- */
-SA.FELDER_STANDARD = ['date', 'close', 'log_return', 'tdom', 'tdoy'];
 SA.fetchAllPrices = function(ticker, extraFilter) {
-  var m = /^&date=gte\.(\d{4}-\d{2}-\d{2})$/.exec(extraFilter || '');
-  if (extraFilter && !m) return Promise.reject(new Error('fetchAllPrices: Filter nicht unterstützt: ' + extraFilter));
-  if (!SA.kurse) return Promise.reject(new Error('kurse.js ist nicht eingebunden'));
-  return SA.kurse.zeilen(ticker, { felder: SA.FELDER_STANDARD, ab: m ? m[1] : null });
+  // Cache-first: 15-min TTL reicht — Nightly Refresh aktualisiert Preisdaten
+  // ohnehin nur 1x täglich. Bei Tour-Mode oder Page-Navigation: instant Hit.
+  var cacheKey = ticker + '|' + (extraFilter || '');
+  if (SA.cache) {
+    var cached = SA.cache.get('prices', cacheKey);
+    if (cached) return Promise.resolve(cached);
+  }
+
+  var allRows = [];
+  var batchSize = 1000;
+  function fetchBatch(offset, attempt) {
+    attempt = attempt || 0;
+    var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date' + (extraFilter || '');
+    // Retry mit linearem Backoff + Jitter, damit parallel ladende Ticker nicht im
+    // Gleichtakt erneut anklopfen (Thundering Herd). Ein Retry-After des Servers hat Vorrang.
+    function retry(retryAfterMs) {
+      var wait = (retryAfterMs != null) ? retryAfterMs
+                                        : (350 * (attempt + 1) + Math.floor(Math.random() * 300));
+      return new Promise(function(res) { setTimeout(res, wait); })
+        .then(function() { return fetchBatch(offset, attempt + 1); });
+    }
+    return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+      headers: {
+        'apikey': SA.supabase.key,
+        'Authorization': 'Bearer ' + SA.supabase.key,
+        'Range': offset + '-' + (offset + batchSize - 1),
+        'Prefer': 'count=exact'
+      }
+    }).then(function(r) {
+      // Rate-Limit (429) / Serverfehler (5xx) → Retry. Seiten wie die Watchlist feuern
+      // viele parallele Batch-Requests; einzelne können gedrosselt werden. Ohne Retry
+      // landete früher ein Fehler-JSON als "Zeilen" im Ergebnis.
+      if (!r.ok) {
+        if ((r.status === 429 || r.status >= 500) && attempt < 4) {
+          var ra = parseInt(r.headers.get('retry-after'), 10);
+          return retry(isNaN(ra) ? null : ra * 1000);
+        }
+        throw new Error('prices ' + r.status + ' (' + ticker + ')');
+      }
+      var contentRange = r.headers.get('content-range');
+      return r.json().then(function(rows) {
+        // Fehler-JSON (kein Array) NIEMALS als Zeilen anhängen — sonst kommt ein
+        // kurzes/kaputtes Ergebnis raus und das UI zeigt fälschlich "Zu wenig Daten".
+        if (!Array.isArray(rows)) throw new Error('prices non-array (' + ticker + ')');
+        allRows = allRows.concat(rows);
+        if (contentRange) {
+          var parts = contentRange.split('/');
+          var total = parseInt(parts[1]);
+          if (allRows.length < total) return fetchBatch(allRows.length);
+        } else if (rows.length === batchSize) {
+          return fetchBatch(allRows.length);
+        }
+        return allRows;
+      });
+    }, function(netErr) {
+      // Netzwerk-Fehler / abgebrochener Request (z.B. Tab-Ruhezustand): fetch() rejectet
+      // statt ein !r.ok zu liefern → hier ebenfalls begrenzt neu versuchen (genau der
+      // im Commit genannte Ruhezustand-Fall, der sonst durchgereicht würde).
+      if (attempt < 4) return retry(null);
+      throw netErr;
+    });
+  }
+  return fetchBatch(0).then(function(rows) {
+    if (SA.cache && rows && rows.length) SA.cache.set('prices', cacheKey, rows);
+    return rows;
+  });
 };
 
 // ── Trading Day Header (wiederverwendbar) ──────────────────────────────────

@@ -526,14 +526,39 @@ SA.decadeCompute = {
    * (Codex D3/D4 R1 Befund 1). Ein Ladefehler wird NICHT durch die übergebenen Kurse ersetzt — er lehnt ab, und der
    * Aufrufer zeigt „Kurse nicht ladbar" statt eines Scores auf verkürzter Basis (Befund 2).
    */
+  _vollCache: {},
   /**
-   * Volle Kurshistorie — dünne Hülle auf SA.kurse (ganze Historie, dieselben fünf Felder). Früher eigenes Blättern
-   * mit eigenem 15-min-Cache; jetzt teilt sie die Ladung mit der Seite (eine wartende Vereinigung statt einer zweiten
-   * Vollladung). Fehler → Ablehnung, wie zuvor.
+   * Volle Kurshistorie per Datums-Blättern (date=gt.<letztes Datum>, 1000 je Abruf, OHNE count=exact). Grund: der
+   * gemeinsame Lader SA.fetchAllPrices zählt bei JEDEM Block exakt mit; bei langen Reihen (^GSPC ab 1895, 35 000
+   * Zeilen) bricht Supabase das mit HTTP 500 ab (gemessen 2026-10-09 nach 28 s). Blättern über den Index
+   * (ticker, date) braucht keine Zählung und keinen wachsenden Offset. Fehler oder kein Array → Ablehnung.
    */
   ladeVollHistorie: function(ticker) {
-    if (!(window.SA && SA.kurse)) return Promise.reject(new Error('Kursquelle nicht verfügbar'));
-    return SA.kurse.zeilen(ticker, { felder: ['date', 'close', 'log_return', 'tdom', 'tdoy'], ab: null });
+    var self = this, jetzt = Date.now(), c = this._vollCache[ticker];
+    if (c && jetzt - c.zeit < 15 * 60 * 1000) return Promise.resolve(c.zeilen);
+    if (!(window.SA && SA.supabase && SA.supabase.url)) return Promise.reject(new Error('Kursquelle nicht verfügbar'));
+    var alle = [];
+    function seite(nach, versuch) {
+      var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close,log_return,tdom,tdoy&order=date.asc&limit=1000' +
+              (nach ? '&date=gt.' + nach : '');
+      return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+        headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
+      }).then(function(r) {
+        if (!r.ok) {
+          if ((r.status === 429 || r.status >= 500) && (versuch || 0) < 3) {
+            return new Promise(function(res) { setTimeout(res, 400 * ((versuch || 0) + 1)); })
+              .then(function() { return seite(nach, (versuch || 0) + 1); });
+          }
+          throw new Error('prices ' + r.status + ' (' + ticker + ')');
+        }
+        return r.json().then(function(z) {
+          if (!Array.isArray(z)) throw new Error('prices non-array (' + ticker + ')');
+          alle = alle.concat(z);
+          return z.length === 1000 ? seite(z[z.length - 1].date, 0) : alle;
+        });
+      });
+    }
+    return seite(null, 0).then(function(z) { self._vollCache[ticker] = { zeit: Date.now(), zeilen: z }; return z; });
   },
 
   mitHistorie: function(rows, ticker) {

@@ -18,7 +18,8 @@ import sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 LANDING = WURZEL / "landing"
-MIN_PRUEFUNGEN = 77
+MIN_PRUEFUNGEN = 119
+MIN_HUELLEN = 65
 
 ALTE_LADER = re.compile(r"\b(?:SA\.)?fetchAllPrices\s*\(|\bladeVollHistorie\s*\(")
 DIREKT = re.compile(r"rest/v1/prices|supabase\.get\(\s*['\"]prices['\"]|getAll\(\s*['\"]prices['\"]")
@@ -92,6 +93,32 @@ def probe():
     return ok, meldungen
 
 
+def huellen():
+    """Rückgabe je Aufrufer vor/nach der Umstellung gleich: alte Lader (wörtlich, scripts/fixtures/
+    kurse_alte_lader.js) gegen die Hüllen aus den echten Dateien (scripts/js/probe_kurse_huellen.js)."""
+    try:
+        r = subprocess.run(["node", str(WURZEL / "scripts" / "js" / "probe_kurse_huellen.js")],
+                           capture_output=True, text=True, encoding="utf-8", timeout=120)
+    except subprocess.TimeoutExpired:
+        return False, ["  FEHL [Hüllen hängen]"]
+    try:
+        d = json.loads(r.stdout)
+    except ValueError:
+        return False, ["  FEHL [Hüllen: kein JSON] Exit %d %s" % (r.returncode, (r.stderr or r.stdout)[-300:])]
+    meldungen = []
+    if d.get("absturz"):
+        meldungen.append("  FEHL [Ausnahme] Hüllen: " + " | ".join(d["absturz"][:300].splitlines()))
+    rot = [x for x in d.get("pruefungen", []) if not x["ok"]]
+    for x in rot:
+        meldungen.append("  FEHL [%s] %s" % (x["name"], x["detail"]))
+    n = len(d.get("pruefungen", []))
+    ok = r.returncode == 0 and d.get("ende") is True and not d.get("absturz") and not rot and n >= MIN_HUELLEN
+    if n < MIN_HUELLEN:
+        meldungen.append("  FEHL [Anzahl Hüllen] nur %d (mindestens %d)" % (n, MIN_HUELLEN))
+    meldungen.append("Hüllen: %d Prüfungen, %d rot" % (n, len(rot)))
+    return ok, meldungen
+
+
 def dateien():
     for f in sorted(LANDING.rglob("*")):
         if f.suffix not in (".html", ".js") or not f.is_file():
@@ -127,6 +154,9 @@ def main(argv=None):
     ap.add_argument("--streng", action="store_true")
     a = ap.parse_args(argv)
     ok, meldungen = probe()
+    ok_h, meldungen_h = huellen()
+    ok = ok and ok_h
+    meldungen = meldungen_h + meldungen      # Endmarker der Probe zuletzt
     for m in meldungen:
         sys.stdout.write(m + "\n")
     if a.bestand or a.streng:

@@ -457,6 +457,38 @@ ABSCHNITTE.push(['19c abgelaufene Wartende nehmen keinen Platz, wenn die Transpo
   pruefe('abgelaufene Wartende fragt später nicht an', istKursFehler(fuenf) && NETZ.anfragen.filter(a => a.ticker === 'Q').length === 0 &&
          I.aktiv() === 0, 'Q-Anfragen ' + NETZ.anfragen.filter(a => a.ticker === 'Q').length + ', aktiv ' + I.aktiv());
 }]);
+ABSCHNITTE.push(['19d engere Anfrage scheitert nicht an breiterer gemeinsamer Ladung (Radar am Saison-Score)', async function () {
+  // Dashboard: 30-J-Ladung läuft, Saison-Score fragt die Vollhistorie, das Radar 31 Jahre — beide warten auf EINE
+  // vereinigte Vollladung. Scheitert die Vollladung, muss das Radar seine 31 Jahre trotzdem bekommen.
+  setze('T', reihe(1500)); NETZ.verzoegerung = 15; I.K.MAX_WIEDERHOLUNGEN = 0;
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.gte === null, antwort: 'status:500' });
+  const pA = KU.laden('T', { felder: ['close'], ab: '1902-01-01' });
+  await new Promise(r => setTimeout(r, 3));
+  const pVoll = fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
+  const pRadar = ergebnisOderFehler(KU.laden('T', { felder: ['close'], ab: '1901-06-01' }));
+  const [rA, fVoll, rRadar] = await Promise.all([pA, pVoll, pRadar]);
+  pruefe('Vollhistorie scheitert an ihrem Bedarf', istKursFehler(fVoll), fVoll && fVoll.message);
+  pruefe('Radar bekommt seinen eigenen Bedarf trotz gescheiterter Vereinigung',
+         rRadar && rRadar.zeilen && rRadar.zeilen[0].date === '1901-06-01' && rRadar.zeilen.length === 1500 - 516,
+         (rRadar && rRadar.message) || (rRadar.zeilen && rRadar.zeilen.length));
+  pruefe('Rückfall ändert den Bestand nicht', I.koordinatoren().T.bestand.generation === rA.generation &&
+         I.koordinatoren().T.bestand.bedarf.ab === '1902-01-01');
+}]);
+ABSCHNITTE.push(['19e nach TTL-Ablauf scheitert eine engere Anfrage nicht an der Neuladung des ganzen Bestands', async function () {
+  setze('T', reihe(1200)); I.K.MAX_WIEDERHOLUNGEN = 0;
+  const voll = await KU.laden('T', { felder: ['close'], ab: null });
+  JETZT += I.K.TTL_MS + 1;
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.gte === null, antwort: 'status:500' });
+  const r = await ergebnisOderFehler(KU.laden('T', { felder: ['close'], ab: '1902-01-01' }));
+  pruefe('engere Anfrage nach Ablauf gelingt', r && r.zeilen && r.zeilen[0].date === '1902-01-01' && r.zeilen.length === 1200 - 730,
+         (r && r.message) || (r.zeilen && r.zeilen.length));
+  pruefe('abgelaufener Bestand bleibt unverändert', I.koordinatoren().T.bestand.generation === voll.generation);
+  const vorher = NETZ.anfragen.length;
+  const f = await fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
+  pruefe('Anfrage mit genau dem gescheiterten Bedarf lehnt ab', istKursFehler(f), f && f.message);
+  pruefe('kein Rückfall bei genau dem eigenen Bedarf (eine Anfrage)', NETZ.anfragen.length - vorher === 1,
+         (NETZ.anfragen.length - vorher) + ' Anfragen');
+}]);
 ABSCHNITTE.push(['20 JSON-Fehler: einmal → Wiederholung, dauerhaft → Ablehnung', async function () {
   // 20 JSON-Fehler: einmal → Wiederholung, dauerhaft → Ablehnung
   neu(); setze('T', reihe(10));

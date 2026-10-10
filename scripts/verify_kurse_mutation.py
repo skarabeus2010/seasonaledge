@@ -26,6 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 KU = "landing/js/kurse.js"
+APP = "landing/js/app.js"
+DC = "landing/js/decade-compute.js"
 PROBE = "scripts/verify_kurse.py"
 
 MUTATIONEN = [
@@ -67,6 +69,27 @@ MUTATIONEN = [
     ("Frist ignoriert (verspätete Antwort wird veröffentlicht)",
      KU, "    return Promise.race([transport, frist]).then(", "    return transport.then(",
      "[verspätete Antwort veröffentlicht nichts]"),
+    # Codex M1 R1: eine Anfrage scheitert nur an ihrem eigenen Bedarf
+    ("kein Rückfall auf den eigenen Bedarf",
+     KU, "          return eigeneLadung(ticker, anfrage);", "          throw e;",
+     "[Radar bekommt seinen eigenen Bedarf trotz gescheiterter Vereinigung]"),
+    ("Rückfall auch bei genau dem eigenen Bedarf (doppelte Wiederholung)",
+     KU, "          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;", "          if (!b) throw e;",
+     "[kein Rückfall bei genau dem eigenen Bedarf (eine Anfrage)]"),
+    # Hüllen (Migration Schritt 1): Rückgabe je Aufrufer gleich wie vorher
+    ("Hülle ignoriert die Grenze",
+     APP, "ab: m ? m[1] : null });", "ab: null });",
+     "[fetchAllPrices gleich: n=2500 &date=gte.1993"),
+    ("Hülle lässt ein Feld weg",
+     APP, "SA.FELDER_STANDARD = ['date', 'close', 'log_return', 'tdom', 'tdoy'];",
+     "SA.FELDER_STANDARD = ['date', 'close', 'log_return', 'tdom'];",
+     "[fetchAllPrices gleich: n=1 (ohne)]"),
+    ("Hülle ignoriert unbekannte Filter still",
+     APP, "  if (extraFilter && !m) return Promise.reject(new Error('fetchAllPrices: Filter nicht unterstützt: ' + extraFilter));\n", "",
+     "[unbekannter Filter lehnt ab]"),
+    ("Vollhistorie mit Grenze",
+     DC, "felder: ['date', 'close', 'log_return', 'tdom', 'tdoy'], ab: null });", "felder: ['date', 'close', 'log_return', 'tdom', 'tdoy'], ab: '1991-01-01' });",
+     "[ladeVollHistorie gleich: n=1001]"),
     # Vollständigkeit
     ("Ende schon bei genau 1000 Zeilen",
      KU, "        if (z.length < K.BLOCK) return [].concat.apply([], bloecke);",
@@ -115,11 +138,11 @@ MUTATIONEN = [
      KU, "(a.ab < b.ab ? a.ab : b.ab)", "(a.ab < b.ab ? b.ab : a.ab)",
      "[wartende Vereinigung zweier Grenzen]"),
     ("Bestand nicht Teil der Vereinigung (schrumpft)",
-     KU, "      return starte(ticker, k, vereinige(anfrage, k.bestand ? k.bestand.bedarf : null)).promise.then(aus);",
-     "      return starte(ticker, k, vereinige(anfrage, null)).promise.then(aus);",
+     KU, "      var neu = starte(ticker, k, vereinige(anfrage, k.bestand ? k.bestand.bedarf : null));",
+     "      var neu = starte(ticker, k, vereinige(anfrage, null));",
      "[Bestand schrumpft nicht]"),
     ("laufende Ladung nicht geteilt",
-     KU, "      if (k.laufend && deckt(k.laufend.bedarf, felder, ab)) return k.laufend.promise.then(aus);\n", "",
+     KU, "      if (k.laufend && deckt(k.laufend.bedarf, felder, ab)) {", "      if (false) {",
      "[geteilte Ladung]"),
     ("wartende Ladung startet nach Fehler nicht",
      KU, "    lauf.promise.then(danach, danach);", "    lauf.promise.then(danach, function () { k.laufend = null; });",
@@ -167,7 +190,7 @@ UNGUELTIG_ERWARTET = [
      "        throw new TypeError('getarnt prices ' + w.status);"),
 ]
 
-DATEIEN = (KU,)
+DATEIEN = (KU, APP, DC)
 ROH: dict = {}
 
 

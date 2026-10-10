@@ -97,6 +97,12 @@ jobs:
       # PostgREST-Nachbau, jeder Abschnitt in eigenem Prozess. Verlangt Exit 0 und Endmarker je Abschnitt.
       - name: Waechter - Kurslader SA.kurse
         run: python3 scripts/verify_kurse.py
+      # Seitenprobe: die echte Seite in jsdom (feste Version scripts/perf/package-lock.json), vorher/nachher gleiche
+      # Anzeige und Chart-Serien — normal, gescheiterte Vollhistorie, TTL-Ablauf mit Fehler.
+      - name: Waechter - Seitenprobe Kurslader (Anzeige vorher = nachher)
+        run: |
+          npm ci --prefix scripts/perf --no-audit --no-fund
+          python3 scripts/verify_seiten_kurse.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

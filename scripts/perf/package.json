@@ -1,0 +1,8 @@
+{
+  "name": "seasonalpha-perf-proben",
+  "private": true,
+  "description": "Feste Werkzeugversionen für die Seitenproben (docs/TICKER_LADEN.md). node_modules ist gitignored; installieren mit: npm ci --prefix scripts/perf",
+  "dependencies": {
+    "jsdom": "25.0.1"
+  }
+}
