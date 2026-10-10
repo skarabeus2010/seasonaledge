@@ -641,10 +641,10 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
         else:
             recommend.append(c)
 
-    # 1) Ticker fehlt komplett in prices → Voll-Backfill (+ tdoy danach)
+    # 1) Ticker fehlt komplett in prices → Voll-Backfill. TDOM/TDOY schreibt backfill_new_ticker selbst nach
+    #    Börsenkalender (P2) — backfill_tdoy ist kein Nachlauf mehr, sondern ein begrenztes Prüfwerkzeug.
     for t in f.get("missing_prices", []):
         exec_or_recommend("backfill_new_ticker.py", [t])
-        exec_or_recommend("backfill_tdoy.py", ["--ticker", t])
 
     # 1b) Stale Tail (Ticker steht still) → Voll-Refresh holt fehlende Tage bis heute
     for t in f.get("stale_tickers", {}):
@@ -656,10 +656,9 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
             f"# Orphan {t}: in shared/symbols.py eintragen, dann: "
             f"python scripts/onboard_ticker.py {t}")
 
-    # 2) Datumsluecken → fix_missing_days (+ tdoy)
+    # 2) Datumsluecken → fix_missing_days (schreibt TDOM/TDOY seit P2 mit)
     for t in sorted(f.get("price_gaps", {}), key=lambda x: -f["price_gaps"][x]):
         exec_or_recommend("fix_missing_days.py", ["--ticker", t])
-        exec_or_recommend("backfill_tdoy.py", ["--ticker", t])
 
     # 3) NULL OHLC / log_return → globale Backfills (idempotent, einmal)
     if f.get("null_ohlc"):
@@ -667,10 +666,13 @@ def run_fixes(ctx: dict) -> tuple[int, list[str], list[str]]:
     if f.get("null_logret"):
         exec_or_recommend("backfill_log_return.py", [])
 
-    # 4) Unvollstaendige tdom/tdoy → backfill_tdoy je Ticker
+    # 4) Unvollstaendige tdom_stats/tdoy_stats: das sind Statistiken, die der Nightly neu rechnet —
+    #    backfill_tdoy repariert sie nicht (es schreibt prices). Früher lief es hier automatisch und änderte
+    #    dabei die ganze Historie (Codex R7). Jetzt nur eine Empfehlung, und nur als Trockenlauf.
     for table, tlist in f.get("incomplete_tdomy", {}).items():
         for t in tlist:
-            exec_or_recommend("backfill_tdoy.py", ["--ticker", t])
+            recommend.append(f"# {table} unvollständig für {t}: füllt der nächste Nightly. "
+                             f"TDOM/TDOY in prices prüfen: python scripts/backfill_tdoy.py --ticker {t}")
 
     # 5) Fehlende abgeleitete (teuer) → --fix-derived
     md = f.get("missing_derived", {})

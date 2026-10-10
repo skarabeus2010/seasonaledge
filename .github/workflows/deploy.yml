@@ -87,6 +87,12 @@ jobs:
         run: |
           python3 scripts/build_boersenkalender_js.py --pruefen
           python3 scripts/verify_boersenkalender_js.py
+      # P2: jeder Schreiber von prices.tdom/tdoy schreibt Kalendernummern — die echten Schreibwege offline
+      # mit Stubs fuer Supabase/Yahoo, gegen eine unabhaengige numpy-Zaehlung. Braucht pandas.
+      - name: Waechter - Schreiber von TDOM/TDOY nach Boersenkalender
+        run: |
+          python3 -m pip install --quiet pandas==2.2.3 tzdata
+          python3 scripts/verify_schreiber_nummern.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

@@ -1,3 +1,6 @@
+-- HISTORISCH, NICHT ERNEUT AUSFÜHREN (2026-10-10): einmalige Korrektur vom August 2026. Seit P2
+-- („Tage nach Börsenkalender“) schreiben alle Schreiber Kalendernummern; historische Korrekturen nur
+-- noch über P5 (Manifest + eine Transaktion, Nutzerfreigabe). Siehe docs/review_prompts/2026-10-10_xetra_tdoy_plan_v7.md.
 -- Fix tdoy/tdom-Glitch XETRA-Ticker 2026-08-03..08-13 (328 Zeilen)
 -- Werte = XETRA-Kalender-Wahrheit (verifiziert). Scope: nur diese (ticker,date)-Paare.
 UPDATE prices AS p SET tdom = v.tdom, tdoy = v.tdoy

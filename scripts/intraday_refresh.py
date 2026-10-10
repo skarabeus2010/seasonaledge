@@ -125,59 +125,21 @@ def refresh_tickers(tickers, group_name, dry_run=False):
             # log_return berechnen (ln(close_t / close_{t-1}))
             df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
 
-            # TDOM/TDOY berechnen: Letzten bekannten Wert aus DB lesen + weiterzaehlen
+            # TDOM/TDOY nach Börsenkalender für GENAU diese Zeilen (P2, Plan v7). Früher: letzte DB-Zeile
+            # + Kalenderschritte über die heruntergeladenen Tage — eine Lücke zwischen DB-Stand und Download
+            # verschob alles (SAP.DE 2026-09-07/08 beide (5,174)). Keine DB-Abfrage der Vorzeile mehr; alle
+            # Nummern entstehen in einem Aufruf, also gibt es keine halb berechneten.
             try:
-                from shared.exchange_holidays import is_trading_day as _is_td
-                from shared.symbols import get_exchange_for_holidays
-                from shared.supabase_client import get_client as _get_client
-                _exchange = get_exchange_for_holidays(ticker)
-
-                # Letzten TDOY/TDOM aus Supabase holen (vor dem aeltesten Tag im Download)
-                _sorted_df = df.sort_index()
-                _first_date = _sorted_df.index[0]
-                _first_str = _first_date.strftime("%Y-%m-%d") if hasattr(_first_date, 'strftime') else str(_first_date)
-                _db_client = _get_client()
-                _prev = (_db_client.table("prices")
-                         .select("date,tdom,tdoy")
-                         .eq("ticker", ticker)
-                         .lt("date", _first_str)
-                         .order("date", desc=True)
-                         .limit(1)
-                         .execute())
-
-                _tdoy = 0
-                _tdom = 0
-                _prev_month = None
-                if _prev.data and _prev.data[0].get("tdoy") is not None:
-                    _tdoy = int(_prev.data[0]["tdoy"])
-                    _tdom = int(_prev.data[0]["tdom"])
-                    _prev_month = int(_prev.data[0]["date"].split("-")[1])
-
-                for _d_idx in _sorted_df.index:
-                    _d = _d_idx.date() if hasattr(_d_idx, 'date') else _d_idx
-                    # Jahreswechsel: TDOY reset
-                    if _prev_month is not None and _d.month == 1 and _prev_month == 12:
-                        _tdoy = 0
-                        _tdom = 0
-                    # Monatswechsel: TDOM reset
-                    if _prev_month is not None and _d.month != _prev_month:
-                        _tdom = 0
-                    _prev_month = _d.month
-
-                    if _is_td(_d, _exchange):
-                        _tdoy += 1
-                        _tdom += 1
-                    df.loc[_d_idx, "tdoy"] = _tdoy
-                    df.loc[_d_idx, "tdom"] = _tdom
+                from shared.exchange_holidays import tdom_tdoy_fuer_ticker
+                _num = tdom_tdoy_fuer_ticker(ticker, [_i.strftime("%Y-%m-%d") for _i in df.index])
+                df["tdom"] = [_t for _t, _ in _num]
+                df["tdoy"] = [_y for _, _y in _num]
             except Exception as _e:
                 # Früher still `pass`: die Zeile ging ohne Nummern raus und zählte als
                 # Erfolg (Codex R4, A3). Kurse werden weiter geschrieben, der Lauf wird rot.
                 print(f"    [{i:2d}/{len(tickers)}] {ticker} — FEHLER TDOM/TDOY: {_e}")
                 errors.append(ticker)
                 KALENDER_FEHLER.append(ticker)
-                # Keine halb berechneten Nummern veröffentlichen (Codex Paket 3, R2): was vor
-                # dem Fehler schon gesetzt war, fliegt raus — die Zeilen gehen ohne TDOM/TDOY.
-                df = df.drop(columns=["tdoy", "tdom"], errors="ignore")
 
             # Preise in Supabase schreiben
             try:

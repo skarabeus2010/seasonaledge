@@ -1,204 +1,173 @@
 #!/usr/bin/env python3
 """
-SeasonAlpha — Backfill TDOM/TDOY
-=================================
-Berechnet TDOM (Trading Day of Month) und TDOY (Trading Day of Year)
-fuer alle Zeilen in der prices-Tabelle und schreibt sie zurueck.
+SeasonAlpha — TDOM/TDOY prüfen und begrenzt reparieren (Plan v7, K3)
+=====================================================================
+Vergleicht `prices.tdom/tdoy` mit dem Börsenkalender (`shared.exchange_holidays.tdom_tdoy_fuer_ticker`)
+und berichtet die Abweichungen je Jahr, getrennt nach TDOM und TDOY.
 
-Nutzt den boersenspezifischen Feiertagskalender pro Ticker.
+STANDARD IST EIN TROCKENLAUF. Geschrieben wird nur mit `--schreiben`, und nur innerhalb enger Grenzen —
+die historische Massenkorrektur ist P5 (eine Transaktion mit Nutzerfreigabe), nicht dieses Skript.
 
-Aufruf:  py scripts/backfill_tdoy.py
+  py -3.14 scripts/backfill_tdoy.py                                   # Bericht über alle Ticker
+  py -3.14 scripts/backfill_tdoy.py --ticker SAP.DE                   # Bericht für einen Ticker
+  py -3.14 scripts/backfill_tdoy.py --ticker SAP.DE --von 2026-09-01 --bis 2026-09-30 --schreiben
+                                    [--max-aenderungen 500]
+
+Grenzen beim Schreiben (alle geprüft, BEVOR der erste Schreibrequest geht):
+  - genau ein Ticker, `--von` und `--bis` angegeben, `--von` ab 2001-01-01
+  - kein Jahr im Bereich mit Kalenderstatus „ungeprueft“ (`kalender_status`)
+  - höchstens `--max-aenderungen` geänderte Zeilen (Standard 500)
+  - nur die Spalten tdom/tdoy, je Zeile per `update … eq(ticker) eq(date)`; jede Antwort muss genau eine
+    Zeile bestätigen, sonst Fehler. Kein `close` im Schreibweg (früher: Upsert mit mitgelesenem Schlusskurs —
+    ein Nightly dazwischen wäre überschrieben worden).
+Exit 1 bei verweigertem Schreiben, Lese- oder Schreibfehlern.
 """
 from __future__ import annotations
 
-import sys, os, pathlib
+import os
+import sys
+from collections import Counter
+from datetime import date
 
-# -- Projekt-Root finden --
-try:
-    _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
-except NameError:
-    _project_dir = os.getcwd()
-if _project_dir not in sys.path:
-    sys.path.insert(0, _project_dir)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:  # Windows: UTF-8 erzwingen (✓-Prints crashen sonst unter cp1252 bei Datei-Umleitung)
+try:  # Windows: UTF-8 erzwingen (cp1252 crasht sonst bei Datei-Umleitung)
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 except Exception:
     pass
 
-from datetime import date, datetime, timedelta
-from shared.supabase_client import get_client
-from shared.exchange_holidays import is_trading_day
-from shared.symbols import SYMBOLS, get_exchange_for_holidays
+from shared.exchange_holidays import kalender_status, tdom_tdoy_fuer_ticker  # noqa: E402
+from shared.symbols import SYMBOLS, get_exchange_for_holidays  # noqa: E402
 
-print("=" * 60)
-print("SeasonAlpha — Backfill TDOM/TDOY")
-print("=" * 60)
-print(datetime.now())
+FRUEHESTES_SCHREIBDATUM = date(2001, 1, 1)
+MAX_AENDERUNGEN_STANDARD = 500
 
 
-def compute_tdoy_tdom(dates: list[date], exchange: str) -> list[dict]:
-    """TDOM + TDOY je Datum — gezaehlt auf dem BOERSENKALENDER, nicht auf den Zeilen.
-
-    Frueher lief der Zaehler ueber die uebergebene Datumsliste. Beginnt die
-    gespeicherte Historie eines Tickers am 1. Juli, bekam dieser Tag `tdoy=1`,
-    obwohl auf dem Kalender schon rund 125 Handelstage vorbei waren; eine
-    Datenluecke schob analog alle folgenden Indizes nach vorn. TDOY/TDOM sind
-    aber Eigenschaften des KALENDERS, nicht unserer Datenlage — genau so steht
-    es auch in CLAUDE.md ("Ground-Truth = reiner Boersenkalender ab Jan 1").
-
-    Deshalb wird je betroffenem Jahr einmal der komplette Handelstags-Kalender
-    aufgebaut und jedes Datum darauf nachgeschlagen.
-    """
-    if not dates:
-        return []
-
-    # Kalender je Jahr genau einmal aufbauen (365/366 is_trading_day-Aufrufe).
-    kalender: dict[int, dict[date, tuple[int, int]]] = {}
-    for jahr in sorted({d.year for d in dates}):
-        tage: dict[date, tuple[int, int]] = {}
-        tdoy = 0
-        tdom = 0
-        letzter_monat = None
-        tag = date(jahr, 1, 1)
-        while tag.year == jahr:
-            if tag.month != letzter_monat:
-                letzter_monat = tag.month
-                tdom = 0
-            if is_trading_day(tag, exchange):
-                tdoy += 1
-                tdom += 1
-            tage[tag] = (tdom, tdoy)
-            tag += timedelta(days=1)
-        kalender[jahr] = tage
-
-    results = []
-    for d in dates:
-        tdom, tdoy = kalender[d.year].get(d, (0, 0))
-        results.append({"date": d, "tdom": tdom, "tdoy": tdoy})
-    return results
-
-
-
-# Fehlgeschlagene Upsert-Batches — entscheidet am Ende ueber den Exit-Code.
-_FAILED_BATCHES: list[str] = []
-
-
-def backfill_ticker(client, ticker: str, exchange: str) -> int:
-    """Backfill TDOM/TDOY fuer einen Ticker. Returns: Anzahl aktualisierter Zeilen."""
-
-    # Alle Rows fuer diesen Ticker laden (date + close fuer Upsert)
-    all_rows = []
-    page_size = 1000
-    offset = 0
+def lade(client, ticker: str, von: str | None, bis: str | None) -> list[dict]:
+    """date, tdom, tdoy des Tickers im Bereich — seitenweise (1000er Grenze von PostgREST)."""
+    zeilen, start = [], 0
     while True:
-        result = (client.table("prices")
-                  .select("date,close")
-                  .eq("ticker", ticker)
-                  .order("date")
-                  .range(offset, offset + page_size - 1)
-                  .execute())
-        if not result.data:
-            break
-        all_rows.extend(result.data)
-        if len(result.data) < page_size:
-            break
-        offset += page_size
+        q = client.table("prices").select("date,tdom,tdoy").eq("ticker", ticker)
+        if von:
+            q = q.gte("date", von)
+        if bis:
+            q = q.lte("date", bis)
+        r = q.order("date").range(start, start + 999).execute()
+        zeilen.extend(r.data or [])
+        if len(r.data or []) < 1000:
+            return zeilen
+        start += 1000
 
-    if not all_rows:
-        return 0
 
-    # Zeilen ohne Close filtern (NOT NULL constraint)
-    all_rows = [r for r in all_rows if r.get("close") is not None]
-    if not all_rows:
-        return 0
+def abweichungen(ticker: str, zeilen: list[dict]) -> list[dict]:
+    soll = tdom_tdoy_fuer_ticker(ticker, [z["date"] for z in zeilen])
+    out = []
+    for z, (tdom, tdoy) in zip(zeilen, soll):
+        if z.get("tdom") != tdom or z.get("tdoy") != tdoy:
+            out.append({"date": z["date"], "alt": (z.get("tdom"), z.get("tdoy")), "neu": (tdom, tdoy)})
+    return out
 
-    all_dates = [date.fromisoformat(r["date"]) for r in all_rows]
 
-    # TDOM/TDOY berechnen
-    td_values = compute_tdoy_tdom(all_dates, exchange)
+def bericht(ticker: str, abw: list[dict]) -> None:
+    je_jahr_tdom, je_jahr_tdoy = Counter(), Counter()
+    for a in abw:
+        j = a["date"][:4]
+        if a["alt"][0] != a["neu"][0]:
+            je_jahr_tdom[j] += 1
+        if a["alt"][1] != a["neu"][1]:
+            je_jahr_tdoy[j] += 1
+    jahre = sorted(set(je_jahr_tdom) | set(je_jahr_tdoy))
+    print(f"  {ticker:10s} {len(abw):6d} Zeilen abweichend"
+          + (": " + ", ".join(f"{j} TDOM {je_jahr_tdom[j]}/TDOY {je_jahr_tdoy[j]}" for j in jahre[:8])
+             + (" …" if len(jahre) > 8 else "") if jahre else ""))
 
-    # In Batches zurueckschreiben (Upsert MIT close → NOT NULL constraint OK)
-    batch_size = 500
-    total_updated = 0
 
-    for i in range(0, len(td_values), batch_size):
-        batch = td_values[i:i + batch_size]
-        records = []
-        for j, v in enumerate(batch):
-            row_idx = i + j
-            records.append({
-                "ticker": ticker,
-                "date": v["date"].isoformat(),
-                "close": all_rows[row_idx]["close"],  # Bestehenden Close mitgeben
-                "tdom": v["tdom"],
-                "tdoy": v["tdoy"],
-            })
+def grenzen_pruefen(ticker: str | None, von: str | None, bis: str | None, abw: list[dict],
+                    max_aenderungen: int) -> list[str]:
+    """Alle Gründe, warum NICHT geschrieben werden darf (leer = darf)."""
+    gruende = []
+    if not ticker:
+        gruende.append("--ticker fehlt (Schreiben nur für genau einen Ticker)")
+    if not von or not bis:
+        gruende.append("--von und --bis sind beim Schreiben Pflicht")
+        return gruende
+    try:
+        d_von, d_bis = date.fromisoformat(von), date.fromisoformat(bis)
+    except ValueError:
+        return gruende + [f"ungültiger Bereich {von}..{bis}"]
+    if d_von < FRUEHESTES_SCHREIBDATUM:
+        gruende.append(f"--von vor {FRUEHESTES_SCHREIBDATUM} (ältere Historie nur über P5)")
+    if d_bis < d_von:
+        gruende.append("--bis liegt vor --von")
+    if ticker:
+        boerse = get_exchange_for_holidays(ticker)
+        for j in range(d_von.year, d_bis.year + 1):
+            if kalender_status(boerse, j) == "ungeprueft":
+                gruende.append(f"{boerse} {j}: Kalender ungeprüft")
+    if len(abw) > max_aenderungen:
+        gruende.append(f"{len(abw)} Änderungen > --max-aenderungen {max_aenderungen} (Massenkorrektur = P5)")
+    return gruende
+
+
+def schreiben(client, ticker: str, abw: list[dict]) -> list[str]:
+    fehler = []
+    for a in abw:
+        tdom, tdoy = a["neu"]
         try:
-            client.table("prices").upsert(
-                records,
-                on_conflict="ticker,date"
-            ).execute()
-            total_updated += len(records)
+            r = (client.table("prices").update({"tdom": tdom, "tdoy": tdoy})
+                 .eq("ticker", ticker).eq("date", a["date"]).execute())
+            if len(r.data or []) != 1:
+                fehler.append(f"{a['date']}: {len(r.data or [])} Zeilen bestätigt statt 1")
         except Exception as e:
-            print(f"    ⚠ Batch-Fehler bei {ticker}: {e}")
-            # Nicht nur melden: mitzaehlen. Frueher lief das Skript nach einem
-            # fehlgeschlagenen Batch weiter, endete mit Exit 0 und meldete
-            # "Fertig" — Monitoring stand auf gruen, waehrend Zeilen veraltet
-            # blieben. Ein Fehlschlag muss sich als Fehlschlag zeigen.
-            _FAILED_BATCHES.append(f"{ticker}: {str(e)[:120]}")
-        del records  # Speicher freigeben
-
-    # Explizit aufraeumen
-    del all_rows, all_dates, td_values
-    return total_updated
+            fehler.append(f"{a['date']}: {str(e)[:120]}")
+    return fehler
 
 
-def main():
-    import gc
-    args = sys.argv[1:]
-    single_ticker = None
-    for i, arg in enumerate(args):
-        if arg == "--ticker" and i + 1 < len(args):
-            single_ticker = args[i + 1]
+def wert(args: list[str], name: str) -> str | None:
+    return args[args.index(name) + 1] if name in args and args.index(name) + 1 < len(args) else None
 
-    client = get_client()
 
-    # Alle Ticker aus SYMBOLS (oder einzelner)
-    if single_ticker:
-        tickers = [single_ticker]
-    else:
-        tickers = sorted(SYMBOLS.keys())
-    print(f"\nGefunden: {len(tickers)} Ticker\n")
+def main(argv: list[str] | None = None, client=None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    ticker, von, bis = wert(args, "--ticker"), wert(args, "--von"), wert(args, "--bis")
+    schreib = "--schreiben" in args
+    max_aenderungen = int(wert(args, "--max-aenderungen") or MAX_AENDERUNGEN_STANDARD)
+    if client is None:
+        from shared.supabase_client import get_client
+        client = get_client()
 
-    total_rows = 0
-    total_fixed = 0
-
-    for idx, ticker in enumerate(tickers, 1):
-        exchange = get_exchange_for_holidays(ticker)
-        updated = backfill_ticker(client, ticker, exchange)
-
-        if updated > 0:
-            total_fixed += 1
-            total_rows += updated
-            print(f"  [{idx:3d}/{len(tickers)}] {ticker:<12s} — ✓ {updated:6d} Zeilen ({exchange})")
-        else:
-            print(f"  [{idx:3d}/{len(tickers)}] — ⚠ Übersprungen (keine Daten)")
-
-        # Speicher freigeben nach jedem Ticker (verhindert OOM bei Docker)
-        gc.collect()
-
-    print(f"\n{'=' * 60}")
-    print(f"Fertig: {total_fixed} Ticker, {total_rows} Zeilen aktualisiert")
-    if _FAILED_BATCHES:
-        print("")
-        print(f"[FAIL] {len(_FAILED_BATCHES)} Batch(es) nicht geschrieben — "
-              f"TDOM/TDOY sind nur TEILWEISE aktualisiert:")
-        for _f in _FAILED_BATCHES[:20]:
-            print(f"  - {_f}")
+    tickers = [ticker] if ticker else sorted(SYMBOLS)
+    if schreib and len(tickers) != 1:
+        print("VERWEIGERT: --schreiben nur mit genau einem --ticker")
         return 1
-    return 0
+    print(f"TDOM/TDOY gegen Börsenkalender — {'SCHREIBEN' if schreib else 'Trockenlauf'}"
+          f"{f', {von}..{bis}' if von or bis else ''}")
+    fehler, alle_abw = [], {}
+    for t in tickers:
+        try:
+            abw = abweichungen(t, lade(client, t, von, bis))
+        except Exception as e:
+            fehler.append(f"{t}: {type(e).__name__}: {str(e)[:120]}")
+            continue
+        alle_abw[t] = abw
+        if abw or ticker:
+            bericht(t, abw)
+
+    if schreib and not fehler:
+        abw = alle_abw.get(ticker, [])
+        gruende = grenzen_pruefen(ticker, von, bis, abw, max_aenderungen)
+        if gruende:
+            print("VERWEIGERT — nichts geschrieben:")
+            for g in gruende:
+                print("  -", g)
+            return 1
+        fehler.extend(schreiben(client, ticker, abw))
+        if not fehler:
+            print(f"  {len(abw)} Zeilen geschrieben und bestätigt")
+    for f in fehler[:20]:
+        print("  FEHLER", f)
+    return 1 if fehler else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    sys.exit(main())

@@ -816,6 +816,19 @@ def handelstag_nummern(daten, exchange: str) -> list[Nummer]:
     return [_jahresnummern(e, d.year)[d] for d in tage]
 
 
+def tdom_tdoy_fuer_ticker(ticker: str, daten) -> list[tuple[int, int]]:
+    """(tdom, tdoy) je Datum für die Spalten `prices.tdom/tdoy` — der EINE Weg für alle Schreiber (P2).
+
+    Nach Börsenkalender des Tickers (shared.symbols.get_exchange_for_holidays), Reihenfolge wie die Eingabe,
+    0 ist ein gültiger Wert (geschlossener Tag vor der ersten Sitzung der Periode). Zuordnungs- oder
+    Bereichsfehler → ValueError; der Schreiber schreibt dann KEINE Nummern und meldet den Fehler.
+    Ersetzt „Vorzeile + 1“ (Intraday), `cumcount` (preprocess/Nightly) und die Zählung ab der ersten Zeile
+    (Onboarding) — Plan v7, Codex Runde 7.
+    """
+    from shared.symbols import get_exchange_for_holidays
+    return [(n.tdom, n.tdoy) for n in handelstag_nummern(daten, get_exchange_for_holidays(ticker))]
+
+
 # ── Selbsttest ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

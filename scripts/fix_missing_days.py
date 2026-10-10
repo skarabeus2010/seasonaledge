@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 from shared.supabase_client import get_client, upsert_prices
 from shared.symbols import SYMBOLS, get_exchange_for_holidays
-from shared.exchange_holidays import is_trading_day
+from shared.exchange_holidays import is_trading_day, tdom_tdoy_fuer_ticker
 
 
 def get_expected_trading_days(exchange, year_start, year_end):
@@ -137,16 +137,34 @@ def download_and_fill(ticker, missing_dates, dry_run=False):
 
         records.append(rec)
 
-    if records:
-        # Batch-Upsert (500er Batches)
+    if records:   # Trockenlauf endet schon oben
+        # TDOM/TDOY nach Börsenkalender gleich mitschreiben (P2) — früher gingen die Zeilen ohne Nummern
+        # raus und das Skript empfahl danach backfill_tdoy. Kann der Kalender nicht rechnen, ist das ein
+        # Fehler: die Zeilen werden nicht geschrieben.
+        try:
+            for rec, (tdom, tdoy) in zip(records, tdom_tdoy_fuer_ticker(ticker, [r["date"] for r in records])):
+                rec["tdom"], rec["tdoy"] = tdom, tdoy
+        except ValueError as e:
+            FEHLER.append(f"{ticker}: TDOM/TDOY {str(e)[:100]}")
+            return 0
+        geschrieben = 0
         for i in range(0, len(records), 500):
             batch = records[i:i+500]
             try:
                 upsert_prices(batch)
+                geschrieben += len(batch)   # erst nach bestätigtem Schreiben zählen (Codex R7)
             except Exception as e:
+                geschrieben += getattr(e, "geschrieben", 0)   # bestätigter Teil vor dem Fehler (UpsertTeilfehler)
+                FEHLER.append(f"{ticker}: Batch {i} {str(e)[:100]}")
                 print(f"    ⚠ Batch-Fehler bei {ticker}: {e}")
+        return geschrieben
 
-    return len(records)
+    return 0   # Yahoo hatte keinen der fehlenden Tage
+
+
+# Fehler im Schreibweg — machen den Lauf rot (vorher meldete das Skript die vorbereitete Zeilenzahl als
+# Ergebnis und endete mit 0, auch wenn kein Batch geschrieben wurde; Codex R7).
+FEHLER: list[str] = []
 
 
 def main():
@@ -233,10 +251,11 @@ def main():
         print(f"\n  Ticker mit Lücken:")
         for t, n in sorted(tickers_with_gaps, key=lambda x: -x[1]):
             print(f"    {t:12s}: {n} fehlende Tage")
-    print(f"\n  ⚠ TDOM/TDOY Backfill nochmal laufen lassen!")
-    print(f"    python scripts/backfill_tdoy.py")
+    if FEHLER:
+        print(f"\n  ✗ {len(FEHLER)} Fehler beim Schreiben — z. B. {FEHLER[0]}")
     print("=" * 60)
+    return 1 if FEHLER else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

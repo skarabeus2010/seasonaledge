@@ -92,8 +92,10 @@ def main() -> int:
 
     # 3: Voll-Backfill
     print(f"\n[backfill] Max-Historie für {len(valid)} Ticker …")
-    if not _run("backfill_new_ticker.py", valid):
-        print("  ⚠ backfill_new_ticker meldete einen Fehler — Log prüfen.")
+    backfill_ok = _run("backfill_new_ticker.py", valid)
+    if not backfill_ok:
+        # Früher nur eine Warnung und am Ende Exit 0 (Codex R7) — ein gescheiterter Backfill ist ein Fehlschlag.
+        print("  ✗ backfill_new_ticker meldete einen Fehler — Log prüfen.")
 
     # 4: tickers.json regenerieren
     print("\n[tickers.json] regeneriere Autocomplete-Quelle …")
@@ -117,7 +119,7 @@ def main() -> int:
     print(f"  Fertig: {len(valid)}/{len(tickers)} onboarded. "
           f"Saison-Score/Scanner/Stats füllt der nächste Nightly nach.")
     print("=" * 64)
-    return 0
+    return 0 if backfill_ok else 1
 
 
 if __name__ == "__main__":

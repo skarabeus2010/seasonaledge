@@ -85,8 +85,19 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             # 7 statt 5 Tage: Feiertags-Konstellationen (z.B. 1. Mai + Wochenende) abfangen
             try:
                 from shared.supabase_client import upsert_prices
+                from shared.exchange_holidays import tdom_tdoy_fuer_ticker
                 _cutoff = (date.today() - __import__('datetime').timedelta(days=7)).strftime("%Y-%m-%d")
                 _recent = df[df.index >= _cutoff] if hasattr(df.index, 'year') else df
+                # TDOM/TDOY nach Börsenkalender für GENAU diese Zeilen (P2). Früher kamen sie aus preprocess():
+                # ein Yahoo-Download hat keine Spalte → cumcount → jede Nacht neue Drift (SAP.DE 2026-09-07/08
+                # beide (5,174)). Kann der Kalender nicht rechnen, gehen die Kurse ohne Nummern raus, und der
+                # Ticker zählt als Fehler (Lauf rot).
+                _iso = [_i.strftime("%Y-%m-%d") for _i in _recent.index]
+                try:
+                    _nummern = dict(zip(_iso, tdom_tdoy_fuer_ticker(ticker, _iso)))
+                except ValueError as _ne:
+                    _nummern = {}
+                    ticker_fehler.append(f"{ticker}: TDOM/TDOY {str(_ne)[:100]}")
                 _price_records = []
                 for _idx, _row in _recent.iterrows():
                     _rec = {
@@ -102,11 +113,8 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                         _rec["volume"] = int(_row["Volume"])
                     if "log_return" in _row and pd.notna(_row["log_return"]):
                         _rec["log_return"] = round(float(_row["log_return"]), 8)
-                    # TDOM/TDOY aus preprocess() (nutzt DB-Werte oder Fallback)
-                    if "tdoy" in _row and pd.notna(_row["tdoy"]):
-                        _rec["tdoy"] = int(_row["tdoy"])
-                    if "tdom" in _row and pd.notna(_row["tdom"]):
-                        _rec["tdom"] = int(_row["tdom"])
+                    if _rec["date"] in _nummern:
+                        _rec["tdom"], _rec["tdoy"] = _nummern[_rec["date"]]
                     _price_records.append(_rec)
                 if _price_records:
                     upsert_prices(_price_records)
@@ -204,7 +212,7 @@ def health_check(tickers: list[str]) -> dict:
     gescheitert: list[str] = []
     try:
         from shared.supabase_client import get_client, upsert_prices
-        from shared.exchange_holidays import is_trading_day
+        from shared.exchange_holidays import is_trading_day, tdom_tdoy_fuer_ticker
         from shared.symbols import get_exchange_for_holidays
         from shared.yahoo_downloader import download_data as yahoo_download
 
@@ -236,50 +244,63 @@ def health_check(tickers: list[str]) -> dict:
                     d += __import__('datetime').timedelta(days=1)
 
                 if missing_days:
-                    # Auto-Fix: Yahoo nachladen + Kalender-Edgecase-Erkennung
-                    # Wenn Yahoo für ALLE fehlenden Tage keine Daten hat → Börse war zu
-                    # (Feiertag der nicht in shared/exchange_holidays steht). Nur dann
-                    # zählt der Ticker nicht als echte Lücke in missing_details/tickers_success.
-                    _yahoo_confirmed_any = False
-                    _yahoo_fixed_ticker = 0
+                    # Auto-Fix: fehlende Handelstage bei Yahoo nachladen. Drei Ausgänge je Tag (P2/K5, Codex R7):
+                    #   nachgeladen  Yahoo hat einen Kurs → Zeile MIT Nummern nach Börsenkalender schreiben
+                    #   ungeklärt    Yahoo hat keinen Kurs → bleibt fehlend, wird gemeldet; das ist KEIN
+                    #                Schließungsbeleg (früher: „Börse war zu“ → still als vollständig gezählt)
+                    #   Fehler       Download/Upsert scheitert → Fehler, Ticker nicht erfolgreich
                     try:
                         fresh = yahoo_download(ticker, period="1mo")
-                        if fresh is not None and not fresh.empty:
-                            fresh.index = fresh.index.normalize()
-                            records = []
-                            for md in missing_days:
-                                ts = pd.Timestamp(md)
-                                if ts in fresh.index and pd.notna(fresh.loc[ts, "Close"]):
-                                    _yahoo_confirmed_any = True
-                                    rec = {
-                                        "ticker": ticker,
-                                        "date": md.strftime("%Y-%m-%d"),
-                                        "close": round(float(fresh.loc[ts, "Close"]), 4),
-                                        "source": "yahoo",
-                                    }
-                                    for col in ["Open", "High", "Low"]:
-                                        if col in fresh.columns and pd.notna(fresh.loc[ts, col]):
-                                            rec[col.lower()] = round(float(fresh.loc[ts, col]), 4)
-                                    records.append(rec)
-                            if records:
-                                upsert_prices(records)
-                                auto_fixed += len(records)
-                                _yahoo_fixed_ticker = len(records)
-                    except Exception:
-                        _yahoo_confirmed_any = True  # Bei Fehler: konservativ als echte Lücke werten
-
-                    # Echte Lücke: Yahoo hat Daten (oder Fehler), aber nicht alle fehlen konnten gefixxt werden
-                    if _yahoo_confirmed_any and (len(missing_days) - _yahoo_fixed_ticker) > 0:
-                        missing_total += len(missing_days) - _yahoo_fixed_ticker
-                        missing_details[ticker] = [d.strftime("%Y-%m-%d") for d in missing_days]
-                    # Sonst: Kalender-Edgecase — Börse war zu, kein Eintrag in missing_details
+                    except Exception as de:
+                        health_errors.append(f"{ticker}: Yahoo-Nachladen {str(de)[:100]}")
+                        health_ungeprueft.add(ticker)
+                        continue
+                    if fresh is not None and not fresh.empty:
+                        fresh.index = fresh.index.normalize()
+                    records, ungeklaert_tage = [], []
+                    for md in missing_days:
+                        ts = pd.Timestamp(md)
+                        if fresh is not None and not fresh.empty and ts in fresh.index \
+                                and pd.notna(fresh.loc[ts, "Close"]):
+                            rec = {
+                                "ticker": ticker,
+                                "date": md.strftime("%Y-%m-%d"),
+                                "close": round(float(fresh.loc[ts, "Close"]), 4),
+                                "source": "yahoo",
+                            }
+                            for col in ["Open", "High", "Low"]:
+                                if col in fresh.columns and pd.notna(fresh.loc[ts, col]):
+                                    rec[col.lower()] = round(float(fresh.loc[ts, col]), 4)
+                            records.append(rec)
+                        else:
+                            ungeklaert_tage.append(md.strftime("%Y-%m-%d"))
+                    if records:
+                        try:
+                            for rec, (tdom, tdoy) in zip(records, tdom_tdoy_fuer_ticker(
+                                    ticker, [r["date"] for r in records])):
+                                rec["tdom"], rec["tdoy"] = tdom, tdoy
+                        except ValueError as ne:
+                            health_errors.append(f"{ticker}: TDOM/TDOY {str(ne)[:100]}")
+                            health_ungeprueft.add(ticker)
+                        try:
+                            upsert_prices(records)
+                            auto_fixed += len(records)
+                        except Exception as ue:
+                            health_errors.append(f"{ticker}: Nachlade-Upsert {str(ue)[:100]}")
+                            health_ungeprueft.add(ticker)
+                            continue
+                    if ungeklaert_tage:
+                        missing_total += len(ungeklaert_tage)
+                        missing_details[ticker] = ungeklaert_tage
+                        health_errors.append(f"UNGEKLÄRT {ticker}: kein Kurs bei Yahoo für {', '.join(ungeklaert_tage)}")
 
             except Exception as te:
                 health_errors.append(f"{ticker}: {te}")
                 health_ungeprueft.add(ticker)
 
         if missing_total > 0:
-            print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} fehlenden Tagen, {auto_fixed} auto-gefixt")
+            print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} ungeklärten Tagen "
+                  f"(kein Kurs bei Yahoo), {auto_fixed} nachgeladen")
         elif not health_ungeprueft:
             print("Health-Check: Alle Ticker vollständig ✓")
         if health_ungeprueft:

@@ -6,7 +6,8 @@ Laedt einen NEUEN Ticker komplett in Supabase:
 - Yahoo Finance historische OHLCV (period='max')
 - Split+Dividend-adjustiert (via yahoo_downloader)
 - Upsert in prices-Tabelle (ticker, date, open, high, low, close, volume, log_return)
-- Berechnet TDOM + TDOY boersenspezifisch (via is_trading_day)
+- TDOM + TDOY nach Börsenkalender (tdom_tdoy_fuer_ticker) — NUR für neue Zeilen;
+  bestehende behalten ihre Werte (historische Korrektur = P5)
 - Schreibt ticker-Metadata in tickers-Tabelle (aus SYMBOLS)
 
 Aufruf:
@@ -33,34 +34,24 @@ from datetime import datetime, timezone
 from shared.yahoo_downloader import download_data
 from shared.supabase_client import get_client, upsert_prices, upsert_tickers
 from shared.symbols import SYMBOLS, get_exchange_for_holidays
-from shared.exchange_holidays import is_trading_day
+from shared.exchange_holidays import tdom_tdoy_fuer_ticker
 
 
-def compute_tdoy_tdom(dates: list, exchange: str) -> dict:
-    """Berechnet TDOM + TDOY fuer sortierte Date-Liste. Returns: {date_str: (tdom, tdoy)}."""
-    result = {}
-    tdoy_counter = 0
-    tdom_counter = 0
-    current_year = None
-    current_month = None
+def vorhandene_daten(ticker: str) -> set[str]:
+    """Alle Daten, für die `prices` schon eine Zeile hat (seitenweise, 1000er Grenze von PostgREST).
 
-    for d in dates:
-        if d.year != current_year:
-            current_year = d.year
-            tdoy_counter = 0
-            current_month = d.month
-            tdom_counter = 0
-        if d.month != current_month:
-            current_month = d.month
-            tdom_counter = 0
-
-        if is_trading_day(d, exchange):
-            tdoy_counter += 1
-            tdom_counter += 1
-
-        result[d.strftime("%Y-%m-%d")] = (tdom_counter, tdoy_counter)
-
-    return result
+    Bestehende Zeilen behalten ihre TDOM/TDOY — die historische Korrektur ist P5 (eine freigegebene
+    Transaktion), nicht die Tail-Reparatur, die check_db_completeness --fix hierüber auslöst (Codex R7).
+    Ein Lesefehler bricht ab: ohne diese Menge lässt sich nicht entscheiden, was neu ist.
+    """
+    client, daten, start = get_client(), set(), 0
+    while True:
+        r = (client.table("prices").select("date").eq("ticker", ticker)
+             .order("date").range(start, start + 999).execute())
+        daten.update(x["date"] for x in (r.data or []))
+        if len(r.data or []) < 1000:
+            return daten
+        start += 1000
 
 
 def backfill_ticker(ticker: str) -> dict:
@@ -105,16 +96,20 @@ def backfill_ticker(ticker: str) -> dict:
     # 4. log_return berechnen
     df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
 
-    # 5. TDOM/TDOY berechnen (boersenspezifisch)
+    # 5. TDOM/TDOY nach Börsenkalender (P2) — nur für Zeilen, die es in prices noch nicht gibt
     print(f"  Berechne TDOM/TDOY (Exchange: {exchange_hol})...")
-    dates = sorted([d.date() for d in df.index])
-    tdoy_map = compute_tdoy_tdom(dates, exchange_hol)
+    iso_daten = [d.strftime("%Y-%m-%d") for d in df.index]
+    try:
+        tdoy_map = dict(zip(iso_daten, tdom_tdoy_fuer_ticker(ticker, iso_daten)))
+        schon_da = vorhandene_daten(ticker)
+    except Exception as e:
+        return {"ok": False, "error": f"TDOM/TDOY bzw. Bestand nicht ermittelbar: {e}"}
+    print(f"  {len(schon_da)} Zeilen schon vorhanden — deren TDOM/TDOY bleiben unverändert")
 
     # 6. Records bauen
     records = []
     for dt, row in df.iterrows():
         ds = dt.strftime("%Y-%m-%d")
-        tdom, tdoy = tdoy_map.get(ds, (None, None))
 
         close_val = row.get("Close")
         if pd.isna(close_val):
@@ -136,10 +131,9 @@ def backfill_ticker(ticker: str) -> dict:
                 pass
         if "log_return" in row.index and pd.notna(row["log_return"]):
             rec["log_return"] = round(float(row["log_return"]), 8)
-        if tdom is not None and tdom > 0:
-            rec["tdom"] = int(tdom)
-        if tdoy is not None and tdoy > 0:
-            rec["tdoy"] = int(tdoy)
+        if ds not in schon_da:
+            # auch 0 (geschlossener Tag vor der ersten Sitzung der Periode) — früher nur Werte > 0
+            rec["tdom"], rec["tdoy"] = tdoy_map[ds]
 
         records.append(rec)
 
@@ -148,15 +142,22 @@ def backfill_ticker(ticker: str) -> dict:
     # 7. Batch-Upsert (500er Chunks)
     chunk_size = 500
     total_written = 0
+    fehler = []
     for i in range(0, len(records), chunk_size):
         chunk = records[i:i + chunk_size]
         try:
             upsert_prices(chunk)
-            total_written += len(chunk)
+            total_written += len(chunk)          # erst NACH bestätigtem Schreiben zählen
             print(f"  … {total_written}/{len(records)} geschrieben")
         except Exception as e:
+            total_written += getattr(e, "geschrieben", 0)   # bestätigter Teil vor dem Fehler (UpsertTeilfehler)
+            fehler.append(f"Chunk {i}: {str(e)[:120]}")
             print(f"  ! Upsert-Fehler (Chunk {i}): {e}")
 
+    if fehler:
+        # Früher ok=True trotz gescheiterter Chunks (Codex R7: abgelehnter Upsert → ok=True, rows=0).
+        return {"ok": False, "error": f"{len(fehler)} von {(len(records) + chunk_size - 1) // chunk_size} "
+                                      f"Chunks nicht geschrieben: {fehler[0]}", "rows": total_written}
     print(f"  ✓ Fertig: {total_written} Zeilen in Supabase")
     return {
         "ok": True,

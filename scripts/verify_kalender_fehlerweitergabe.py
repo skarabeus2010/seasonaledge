@@ -124,11 +124,13 @@ def block_intraday() -> None:
             raise ValueError("Stub: Kalenderfehler am zweiten Datum")
         return echt(d, ex)
     GESCHRIEBEN["upsert"].clear()
+    eh._NUMMERN_CACHE.clear()   # sonst rechnet handelstag_nummern aus dem Cache und der Stub greift nie
     eh.is_trading_day = wackelig
     try:
         rc = lauf(["SPY"])
     finally:
         eh.is_trading_day = echt
+        eh._NUMMERN_CACHE.clear()
     mit_nummer = [r for r in GESCHRIEBEN["upsert"] if "tdoy" in r or "tdom" in r]
     pruefe("Intraday keine Teilnummern nach Fehler", rc == 1 and bool(GESCHRIEBEN["upsert"]) and not mit_nummer,
            f"Exit {rc}, {len(mit_nummer)} von {len(GESCHRIEBEN['upsert'])} Zeilen tragen trotzdem Nummern")

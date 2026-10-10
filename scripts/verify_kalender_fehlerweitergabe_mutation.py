@@ -68,10 +68,8 @@ MUTATIONEN = [
      NR, "        health_ungeprueft.update(tickers)\n",
      "",
      "[Nightly Abbruch: alle ungeprüft]"),
-    ("Intraday: Teilnummern nach Fehler bleiben stehen",
-     IR, '                df = df.drop(columns=["tdoy", "tdom"], errors="ignore")\n',
-     "",
-     "[Intraday keine Teilnummern nach Fehler]"),
+    # „Teilnummern nach Fehler bleiben stehen“ entfällt seit P2: alle Nummern entstehen in einem
+    # Aufruf (tdom_tdoy_fuer_ticker), halb berechnete gibt es nicht mehr. Die Prüfung bleibt im Wächter.
     ("Nightly: Erfolgszählung wie früher ohne ungeprüfte",
      NR, "    return len(set(tickers) - set(missing_details) - set(ungeprueft))",
      "    return len(tickers) - len(missing_details)",

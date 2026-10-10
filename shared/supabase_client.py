@@ -91,12 +91,38 @@ def fetch_prices(ticker: str, start_date: str = None) -> list[dict]:
 
 
 def upsert_prices(records: list[dict]):
-    """Kursdaten in Supabase upserten (insert or update)."""
+    """Kursdaten in Supabase upserten (insert or update) — je Spaltensatz eine eigene Anfrage.
+
+    PostgREST bildet die Spaltenliste einer Anfrage aus ALLEN Schlüsseln aller Datensätze und setzt einen
+    fehlenden Wert auf NULL (merge-duplicates). Ein gemischter Upsert hätte damit bestehende Werte gelöscht:
+    Zeilen ohne `tdom`/`tdoy` (Onboarding schützt so den Bestand, Codex P2 R1) oder ohne `open`
+    (Yahoo-NaN). Gruppiert, enthält jede Anfrage nur Spalten, die alle ihre Datensätze tragen; nicht
+    gesendete Spalten bleiben in der Datenbank unverändert.
+    """
     if not records:
         return
-    get_client().table("prices").upsert(
-        records, on_conflict="ticker,date"
-    ).execute()
+    gruppen: dict[frozenset, list[dict]] = {}
+    for r in records:
+        gruppen.setdefault(frozenset(r), []).append(r)
+    geschrieben = 0
+    for gruppe in gruppen.values():
+        try:
+            get_client().table("prices").upsert(
+                gruppe, on_conflict="ticker,date"
+            ).execute()
+        except Exception as e:
+            # Mehrere Gruppen sind nicht atomar: was vor dem Fehler bestätigt wurde, IST geschrieben.
+            # Die Zahl geht mit, damit Aufrufer keinen geschriebenen Teil als 0 zählen (Codex P2 R2).
+            raise UpsertTeilfehler(geschrieben, e) from e
+        geschrieben += len(gruppe)
+
+
+class UpsertTeilfehler(RuntimeError):
+    """Ein Upsert ist gescheitert; `geschrieben` Datensätze davor sind bestätigt geschrieben."""
+
+    def __init__(self, geschrieben: int, ursache: Exception):
+        super().__init__(f"{ursache} (davor {geschrieben} Zeilen bestätigt geschrieben)")
+        self.geschrieben = geschrieben
 
 
 def delete_prices(ticker: str):
