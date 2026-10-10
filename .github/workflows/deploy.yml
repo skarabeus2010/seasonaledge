@@ -28,11 +28,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      # Fest 3.12: numpy 1.26.4 (Waechter Handelstag-Nummern) unterstuetzt nur 3.9-3.12;
-      # die Python-Version des Runner-Images kann sich sonst unbemerkt aendern.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Waechter - Maskierung auf /polymarket
         run: node scripts/js/probe_polymarket_maskierung.js
       # Prueft deploy/pruefe_commit.sh mit einem git-Stub, also BEVOR es auf dem
@@ -61,6 +56,15 @@ jobs:
         run: python3 scripts/verify_i18n_cache_version.py
       - name: Waechter - Commit-Bindung des Deploys
         run: python3 scripts/verify_deploy_commitbindung.py
+      # Ab hier fest Python 3.12: numpy 1.26.4 (Waechter Handelstag-Nummern) unterstuetzt nur
+      # 3.9-3.12. Bewusst NACH den uebrigen Waechtern: setup-python ersetzt python3, und dem
+      # frischen Interpreter fehlt `requests` aus dem System-Python, das die Polymarket-
+      # Waechter brauchen — am 2026-10-10 stand setup-python ganz oben, und der Deploy
+      # scheiterte am Discovery-Waechter. Die drei Kalender-Waechter brauchen nur die
+      # Standardbibliothek (und numpy).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       # Boersenkalender gegen woertlich belegte Sollfaelle (offen UND zu, mit Quelle).
       # Nicht aus dem Code abgeleitet: ein Zwillingsvergleich findet keinen falschen
       # Feiertag, den beide Seiten teilen (Lesson 1B). Nur Standardbibliothek.
