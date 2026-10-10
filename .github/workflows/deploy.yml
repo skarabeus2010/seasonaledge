@@ -80,6 +80,13 @@ jobs:
         run: |
           python3 -m pip install --quiet numpy==1.26.4
           python3 scripts/verify_handelstag_nummern.py
+      # Der JS-Boersenkalender (Plan v6, Weg A) ist erzeugt: erst pruefen, dass die committete
+      # Datei der Neuerzeugung aus Python entspricht (Arbeitsbaum UND HEAD), dann die echte
+      # Datei in node unter sechs Zeitzonen gegen Python/numpy. Keine Seite bindet sie bisher ein.
+      - name: Waechter - JS-Boersenkalender aktuell und gleich Python
+        run: |
+          python3 scripts/build_boersenkalender_js.py --pruefen
+          python3 scripts/verify_boersenkalender_js.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

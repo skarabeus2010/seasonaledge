@@ -1,0 +1,4 @@
+# Erzeugte Dateien, die ein Wächter byteweise gegen den Erzeuger und gegen git HEAD vergleicht,
+# brauchen feste Zeilenenden — sonst macht core.autocrlf=true auf Windows CRLF daraus (Codex Runde 5/6).
+landing/js/boersenkalender.js text eol=lf
+scripts/boersenkalender/api.js text eol=lf

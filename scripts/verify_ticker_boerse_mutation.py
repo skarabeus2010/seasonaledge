@@ -20,7 +20,8 @@ import sys
 
 # Atomares Schreiben mit Wiederholung — IMPORTIERT, nicht kopiert (deterministisch, v65.1/v66.5).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from scripts.verify_twins_mutation import _atomar_schreiben, python_probe  # noqa: E402
+from scripts.verify_twins_mutation import (LockBelegt, _atomar_schreiben,  # noqa: E402
+                                           _exklusiver_lauf, python_probe)
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -101,7 +102,10 @@ UNGUELTIG_ERWARTET = [
     ("Anker existiert nicht", SY, "diese Zeile gibt es nicht", "egal"),
 ]
 
-ROH = {d: io.open(d, "rb").read() for d in (EH, SY)}
+# Originalbytes erst UNTER der gemeinsamen Sperre lesen (Codex P1b R1): sonst kann ein
+# paralleler Lauf mutierte Bytes als Original übernehmen.
+DATEIEN = (EH, SY)
+ROH: dict = {}
 
 
 def anker(datei: str, text: str) -> bytes:
@@ -143,7 +147,7 @@ def bewerte(datei, alt, neu, erwartet=None):
     return "gefangen", zeilen[0].strip()[:70]
 
 
-def main() -> int:
+def _main() -> int:
     rc, ausgabe = lauf()
     if rc != 0:
         print("ABBRUCH: die Probe ist schon ohne Mutation rot.")
@@ -187,6 +191,16 @@ def main() -> int:
     for p in probleme:
         print("  " + p)
     return 0 if (gefangen == len(MUTATIONEN) and urteil_ok and rc_nach == 0) else 1
+
+
+def main() -> int:
+    try:
+        with _exklusiver_lauf():
+            ROH.update({d: io.open(d, "rb").read() for d in DATEIEN})
+            return _main()
+    except LockBelegt as e:
+        print(f"ABBRUCH: {e}")
+        return 1
 
 
 if __name__ == "__main__":
