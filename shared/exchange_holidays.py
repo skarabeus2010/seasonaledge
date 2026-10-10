@@ -19,6 +19,7 @@
 
 from datetime import date, timedelta
 import calendar
+import re
 from shared.nyse_holidays import (
     _easter_sunday,
     _good_friday,
@@ -746,6 +747,159 @@ def get_exchange_for_ticker(ticker: str) -> str:
     except Exception:
         pass
     return "NYSE"
+
+
+# ── Kalenderstatus je Börse und Jahr ───────────────────────────────────────────
+# Auskunft, wie belastbar ein Kalenderjahr ist — die Funktionen rechnen trotzdem für
+# jedes Jahr (lange Historien, Plan v4 K2). Leser nutzen den Status, um Aussagen zu
+# kennzeichnen oder auszuschließen. Quellen: docs/review_prompts/2026-10-10_xetra_tdoy_plan_antwort4.md
+# (A2) und 2026-10-08_plain_vanilla_1b_plan_antwort1.md (XETRA).
+#   belegt      die implementierte Fassung stimmt mit einer offiziellen Quelle überein
+#               (bei künftigen Jahren: mit dem zum Prüfdatum veröffentlichten Plan)
+#   annahme     dokumentierte Regel, Einzelfälle nicht vollständig gegen Quellen geprüft
+#   ungeprueft  bekannte Lücken oder Ersatzregeln (z. B. HKEX/KRX ohne Tabelle)
+#   konvention  Projektkonvention, keine Börsenaussage (FOREX Mo–Fr, CRYPTO täglich)
+# Je Börse: Liste (von, bis, status) — Jahre außerhalb aller Intervalle: Standardstatus.
+KALENDER_PRUEFDATUM = "2026-10-10"
+KALENDER_GUELTIG: dict[str, tuple[str, list[tuple[int, int, str]]]] = {
+    # „belegt“ nur, wo ein VOLLSTÄNDIGER Abgleich gegen offizielle Quellen vorliegt:
+    # NYSE ab 1971 (Wahlen-Arbeit + Paket 1), XETRA 2002–2026 (1B), LSE 2026–2028 und
+    # TSE 2001–2027 (Tagesvergleich Codex R4), HKEX 2026 (Wertpapierkalender).
+    # EURONEXT/SIX/MILAN/STOCKHOLM/OSLO sind nur stichprobenhaft geprüft → Annahme.
+    # Ungeprüfte Vergangenheit reicht bis zum Rechenbeginn 1885 (Codex Paket 2, Befund 1).
+    "NYSE":      ("annahme",    [(1885, 1970, "ungeprueft"), (1971, 2028, "belegt")]),
+    "XETRA":     ("annahme",    [(1885, 2000, "ungeprueft"), (2002, 2026, "belegt")]),
+    "LSE":       ("annahme",    [(1885, 1999, "ungeprueft"), (2026, 2028, "belegt")]),
+    "TSE":       ("annahme",    [(1885, 1999, "ungeprueft"), (2001, 2027, "belegt")]),
+    "EURONEXT":  ("annahme",    [(1885, 1999, "ungeprueft")]),
+    "SIX":       ("annahme",    [(1885, 1999, "ungeprueft")]),
+    "MILAN":     ("annahme",    [(1885, 1999, "ungeprueft")]),
+    "STOCKHOLM": ("annahme",    [(1885, 1999, "ungeprueft")]),
+    "OSLO":      ("annahme",    [(1885, 1999, "ungeprueft")]),
+    "HKEX":      ("ungeprueft", [(2016, 2025, "annahme"), (2026, 2026, "belegt")]),
+    "KRX":       ("ungeprueft", [(2016, 2026, "annahme")]),
+    "FOREX":     ("konvention", []),
+    "CRYPTO":    ("konvention", []),
+}
+
+# Rechenbereich der Nummernfunktion. Außerhalb → ValueError (kein stilles Ergebnis).
+NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR = 1885, 2100
+
+_ALIAS_BOERSE = {"NASDAQ": "NYSE"}
+
+
+def boerse_normalisieren(exchange) -> str:
+    """Kanonische Börsenkennung oder ValueError. NASDAQ → NYSE, Groß/Klein egal."""
+    if not isinstance(exchange, str) or not exchange.strip():
+        raise ValueError(f"Börse fehlt oder ist kein Text: {exchange!r}")
+    e = exchange.strip().upper()
+    e = _ALIAS_BOERSE.get(e, e)
+    if e not in _EXCHANGE_FUNCTIONS:
+        raise ValueError(f"Unbekannte Börse: {exchange!r}")
+    return e
+
+
+def kalender_status(exchange: str, jahr: int) -> str:
+    """'belegt' | 'annahme' | 'ungeprueft' | 'konvention' für Börse und Jahr."""
+    e = boerse_normalisieren(exchange)
+    standard, intervalle = KALENDER_GUELTIG[e]
+    for von, bis, status in intervalle:
+        if von <= jahr <= bis:
+            return status
+    return standard
+
+
+# ── Handelstag-Nummern (TDOM/TDOY) nach Börsenkalender ─────────────────────────
+
+class Nummer(tuple):
+    """(tdom, tdoy, tdom_rev, tdoy_rev, offen) — unveränderlich, Felder auch per Name."""
+    __slots__ = ()
+    _felder = ("tdom", "tdoy", "tdom_rev", "tdoy_rev", "offen")
+
+    def __new__(cls, tdom, tdoy, tdom_rev, tdoy_rev, offen):
+        return tuple.__new__(cls, (tdom, tdoy, tdom_rev, tdoy_rev, offen))
+
+    tdom = property(lambda s: s[0])
+    tdoy = property(lambda s: s[1])
+    tdom_rev = property(lambda s: s[2])
+    tdoy_rev = property(lambda s: s[3])
+    offen = property(lambda s: s[4])
+
+    def __repr__(self):
+        return "Nummer(" + ", ".join(f"{k}={v!r}" for k, v in zip(self._felder, self)) + ")"
+
+
+_NUMMERN_CACHE: dict[tuple[str, int], dict[date, Nummer]] = {}
+
+_ISO_DATUM = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")   # \d ließe auch nicht-lateinische Ziffern zu
+
+
+def _als_datum(x) -> date:
+    """Nur `date` (kein `datetime`) oder strenges 'YYYY-MM-DD'."""
+    if isinstance(x, str):
+        if not _ISO_DATUM.fullmatch(x):
+            raise ValueError(f"Datum nicht im Format YYYY-MM-DD: {x!r}")
+        return date.fromisoformat(x)
+    # datetime ist eine Unterklasse von date — ausdrücklich ablehnen (Zeitzone/Uhrzeit
+    # haben hier keine Bedeutung, und ein UTC-Zeitstempel kann den Börsentag verschieben).
+    if type(x) is date:
+        return x
+    raise ValueError(f"Datum muss date oder 'YYYY-MM-DD' sein, nicht {type(x).__name__}: {x!r}")
+
+
+def _jahresnummern(exchange: str, jahr: int) -> dict[date, Nummer]:
+    """Nummern für jeden Kalendertag eines Jahres, gecacht je (Börse, Jahr)."""
+    schluessel = (exchange, jahr)
+    tab = _NUMMERN_CACHE.get(schluessel)
+    if tab is not None:
+        return tab
+    tage = [date(jahr, 1, 1) + timedelta(days=i)
+            for i in range((date(jahr + 1, 1, 1) - date(jahr, 1, 1)).days)]
+    offen = {d: is_trading_day(d, exchange) for d in tage}
+    jahr_summe = sum(offen.values())
+    monat_summe: dict[int, int] = {}
+    for d in tage:
+        if offen[d]:
+            monat_summe[d.month] = monat_summe.get(d.month, 0) + 1
+    tab = {}
+    tdoy = tdom = 0
+    monat = None
+    for d in tage:
+        if d.month != monat:
+            monat, tdom = d.month, 0
+        if offen[d]:
+            tdoy += 1
+            tdom += 1
+            tab[d] = Nummer(tdom, tdoy, -(monat_summe[d.month] - tdom + 1), -(jahr_summe - tdoy + 1), True)
+        else:
+            tab[d] = Nummer(tdom, tdoy, None, None, False)
+    _NUMMERN_CACHE[schluessel] = tab
+    return tab
+
+
+def handelstag_nummern(daten, exchange: str) -> list[Nummer]:
+    """Handelstag des Monats/Jahres nach Börsenkalender, je Eingabedatum.
+
+    Vertrag (Plan v3/v4, Codex-Runden 3+4):
+      - Börse wird ZUERST geprüft, auch bei leerer Eingabe (unbekannt → ValueError).
+      - Eingabe: Folge aus `date` (kein `datetime`) oder strengem 'YYYY-MM-DD'.
+        Reihenfolge und Duplikate bleiben erhalten; unsortiert und über mehrere
+        Jahre ist erlaubt. Jahr außerhalb NUMMERN_VON_JAHR..NUMMERN_BIS_JAHR → ValueError.
+      - tdom/tdoy: Anzahl Handelstage vom Periodenbeginn bis EINSCHLIESSLICH des Datums,
+        auch wenn der Tag selbst geschlossen ist (dann = letzter Handelstag davor in der
+        Periode, vor dem ersten Handelstag 0).
+      - tdom_rev/tdoy_rev nur für offene Tage: −(Periodensumme − vorwärts + 1), also −1
+        am letzten Handelstag; geschlossene Tage: None. Periodensumme = ganzer Monat bzw.
+        ganzes Jahr, unabhängig vom übergebenen Ausschnitt.
+      - offen: Kalenderstatus des Tages, unabhängig davon, ob ein Kurs existiert.
+    Der Kalenderstatus des Jahres (belegt/annahme/…) steht in kalender_status().
+    """
+    e = boerse_normalisieren(exchange)
+    tage = [_als_datum(x) for x in daten]
+    for d in tage:
+        if not NUMMERN_VON_JAHR <= d.year <= NUMMERN_BIS_JAHR:
+            raise ValueError(f"Jahr außerhalb des Rechenbereichs {NUMMERN_VON_JAHR}–{NUMMERN_BIS_JAHR}: {d}")
+    return [_jahresnummern(e, d.year)[d] for d in tage]
 
 
 # ── Selbsttest ─────────────────────────────────────────────────────────────────
