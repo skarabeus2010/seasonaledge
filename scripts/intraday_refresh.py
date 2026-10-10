@@ -169,8 +169,15 @@ def refresh_tickers(tickers, group_name, dry_run=False):
                         _tdom += 1
                     df.loc[_d_idx, "tdoy"] = _tdoy
                     df.loc[_d_idx, "tdom"] = _tdom
-            except Exception:
-                pass  # Fallback: kein TDOM/TDOY
+            except Exception as _e:
+                # Früher still `pass`: die Zeile ging ohne Nummern raus und zählte als
+                # Erfolg (Codex R4, A3). Kurse werden weiter geschrieben, der Lauf wird rot.
+                print(f"    [{i:2d}/{len(tickers)}] {ticker} — FEHLER TDOM/TDOY: {_e}")
+                errors.append(ticker)
+                KALENDER_FEHLER.append(ticker)
+                # Keine halb berechneten Nummern veröffentlichen (Codex Paket 3, R2): was vor
+                # dem Fehler schon gesetzt war, fliegt raus — die Zeilen gehen ohne TDOM/TDOY.
+                df = df.drop(columns=["tdoy", "tdom"], errors="ignore")
 
             # Preise in Supabase schreiben
             try:
@@ -205,7 +212,8 @@ def refresh_tickers(tickers, group_name, dry_run=False):
 
             elapsed = time.time() - t0
             print(f"    [{i:2d}/{len(tickers)}] {ticker} — {elapsed:.1f}s ({len(df)} rows)")
-            success += 1
+            if ticker not in errors:   # ein TDOM/TDOY-Fehler oben ist kein Erfolg
+                success += 1
         except Exception as e:
             errors.append(ticker)
             print(f"    [{i:2d}/{len(tickers)}] {ticker} — FEHLER: {e}")
@@ -285,11 +293,22 @@ def main():
             return 1
 
     total_tickers = sum(len(cfg["tickers"]) for cfg in active.values())
+    if KALENDER_FEHLER:
+        # Ein Kalender-/Zuordnungsfehler ist kein Yahoo-Aussetzer: er wiederholt sich jede
+        # Stunde und fällt nie unter die Toleranz auf (Codex Paket 3, Befund 1).
+        print(f"[intraday] TDOM/TDOY nicht berechenbar für {', '.join(KALENDER_FEHLER)} "
+              f"— Lauf gilt als gescheitert")
+        return 1
     if fehlschlag(total_tickers, len(total_errors)):
         print(f"[intraday] {len(total_errors)}/{total_tickers} Ticker fehlgeschlagen "
               f"— Lauf gilt als gescheitert")
         return 1
     return 0
+
+
+# Ticker, deren TDOM/TDOY nicht berechnet werden konnte (Kalender-/Zuordnungsfehler).
+# Unabhängig von der Ausfalltoleranz in fehlschlag(): jeder Eintrag macht den Lauf rot.
+KALENDER_FEHLER: list[str] = []
 
 
 def fehlschlag(total: int, fehler: int) -> bool:

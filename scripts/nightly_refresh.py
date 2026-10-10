@@ -189,41 +189,19 @@ def heartbeat():
         print(f"Heartbeat: SELECT sent (write failed: {e})")
 
 
-def main():
-    """Hauptfunktion: Calendar + Ticker Refresh + Heartbeat."""
-    from shared.symbols import SYMBOLS
+def health_check(tickers: list[str]) -> dict:
+    """Phase C: fehlende Handelstage der letzten 7 Tage finden und nachladen.
 
-    app_logger.info("nightly_refresh: Start")
-    t_start = time.time()
-
-    # Phase A: Calendar
-    try:
-        n_events = refresh_calendar()
-        print(f"Calendar: {n_events} events synced")
-    except Exception as e:
-        app_logger.error(f"nightly_refresh: Calendar-Sync fehlgeschlagen: {e}")
-        print(f"Calendar sync failed: {e}")
-
-    # Phase A2: CPI Update
-    try:
-        from shared.cpi_data import update_cpi_in_db
-        update_cpi_in_db()
-        print("CPI: updated")
-    except Exception as e:
-        app_logger.error(f"nightly_refresh: CPI-Update fehlgeschlagen: {e}")
-        print(f"CPI update failed: {e}")
-
-    # Phase B: Ticker Data
-    tickers = list(SYMBOLS.keys())
-    print(f"Ticker refresh: {len(tickers)} Ticker")
-
-    n_results = refresh_ticker_data(tickers, years_back=20, quick_mode=True)
-
-    # Phase C: Health-Check — fehlende Handelstage der letzten 7 Tage finden + nachladen
+    Eigene Funktion seit 2026-10-10, damit der Wächter sie offline mit Stubs ausführen kann
+    (scripts/verify_kalender_fehlerweitergabe.py). Ein Ticker, der nicht geprüft werden
+    konnte, zählt nie als vollständig: er landet in `ungeprueft` und in `gescheitert`.
+    """
     missing_total = 0
     auto_fixed = 0
     missing_details = {}
     health_errors = []
+    health_ungeprueft: set[str] = set()
+    gescheitert: list[str] = []
     try:
         from shared.supabase_client import get_client, upsert_prices
         from shared.exchange_holidays import is_trading_day
@@ -298,15 +276,72 @@ def main():
 
             except Exception as te:
                 health_errors.append(f"{ticker}: {te}")
+                health_ungeprueft.add(ticker)
 
         if missing_total > 0:
             print(f"Health-Check: {len(missing_details)} Ticker mit {missing_total} fehlenden Tagen, {auto_fixed} auto-gefixt")
-        else:
+        elif not health_ungeprueft:
             print("Health-Check: Alle Ticker vollständig ✓")
+        if health_ungeprueft:
+            # Ein nicht prüfbarer Ticker ist kein vollständiger (Codex Paket 3, Befund 2): vorher
+            # meldete der Lauf „Alle Ticker vollständig“, zählte ihn als Erfolg und endete mit 0.
+            print(f"Health-Check: {len(health_ungeprueft)} Ticker nicht prüfbar — {health_errors[0]}")
+            gescheitert.append(f"Health-Check ({len(health_ungeprueft)} Ticker nicht prüfbar)")
 
     except Exception as e:
         app_logger.error(f"nightly_refresh: Health-Check fehlgeschlagen: {e}")
         print(f"Health-Check failed: {e}")
+        gescheitert.append("Health-Check")
+        # Bricht die Phase vor oder in der Schleife ab, ist kein Ticker geprüft — sonst stand
+        # im refresh_log „alle erfolgreich“ mit leerer Fehlerliste (Codex Paket 3, R2).
+        health_errors.append(f"Health-Check abgebrochen: {type(e).__name__}: {str(e)[:120]}")
+        health_ungeprueft.update(tickers)
+
+    return {"missing_total": missing_total, "auto_fixed": auto_fixed,
+            "missing_details": missing_details, "errors": health_errors,
+            "ungeprueft": health_ungeprueft, "gescheitert": gescheitert}
+
+
+def tickers_erfolgreich(tickers, missing_details, ungeprueft) -> int:
+    """Ticker ohne Lücke UND geprüft — ein nicht prüfbarer Ticker ist kein Erfolg."""
+    return len(set(tickers) - set(missing_details) - set(ungeprueft))
+
+
+def main():
+    """Hauptfunktion: Calendar + Ticker Refresh + Heartbeat."""
+    from shared.symbols import SYMBOLS
+
+    app_logger.info("nightly_refresh: Start")
+    t_start = time.time()
+
+    # Phase A: Calendar
+    try:
+        n_events = refresh_calendar()
+        print(f"Calendar: {n_events} events synced")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Calendar-Sync fehlgeschlagen: {e}")
+        print(f"Calendar sync failed: {e}")
+
+    # Phase A2: CPI Update
+    try:
+        from shared.cpi_data import update_cpi_in_db
+        update_cpi_in_db()
+        print("CPI: updated")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: CPI-Update fehlgeschlagen: {e}")
+        print(f"CPI update failed: {e}")
+
+    # Phase B: Ticker Data
+    tickers = list(SYMBOLS.keys())
+    print(f"Ticker refresh: {len(tickers)} Ticker")
+
+    n_results = refresh_ticker_data(tickers, years_back=20, quick_mode=True)
+
+    # Phase C: Health-Check — fehlende Handelstage der letzten 7 Tage finden + nachladen
+    _hc = health_check(tickers)
+    missing_total, auto_fixed = _hc["missing_total"], _hc["auto_fixed"]
+    missing_details, health_errors, health_ungeprueft = _hc["missing_details"], _hc["errors"], _hc["ungeprueft"]
+    _FEHLGESCHLAGEN.extend(_hc["gescheitert"])
 
     # Phase D: Backfill NULL log_return (letzte 14 Tage)
     # Fängt Fälle ab, in denen Kurse vorhanden sind aber log_return fehlt
@@ -405,7 +440,7 @@ def main():
             "run_date": date.today().strftime("%Y-%m-%d"),
             "run_type": "nightly",
             "tickers_total": len(tickers),
-            "tickers_success": len(tickers) - len(missing_details),
+            "tickers_success": tickers_erfolgreich(tickers, missing_details, health_ungeprueft),
             "tickers_missing": len(missing_details),
             "missing_details": json.dumps(missing_details),
             "auto_fixed": auto_fixed + backfill_fixed,

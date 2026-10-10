@@ -13,7 +13,7 @@
 # Neue Symbole einfach unten in die passende Gruppe eintragen.
 # Import-Beispiel:
 #   from shared.symbols import SYMBOLS, get_symbols_by_category, KATEGORIEN
-#   from shared.symbols import get_holiday_calendar
+#   from shared.symbols import get_exchange_for_holidays
 
 # ── Exchange → Holiday-Kalender Mapping ──────────────────────────────────────
 # Wird genutzt um aus der Börse den richtigen Feiertagskalender zu ermitteln.
@@ -63,46 +63,70 @@ HOLIDAY_TO_EXCHANGE = {
     "NO": "OSLO",      # Norwegen — Oslo Børs (eigener Kalender, ≠ Stockholm)
     "FOREX": "FOREX",  # Devisen — Mo-Fr, keine Feiertage (is_trading_day-Sonderfall)
     "CRYPTO": "CRYPTO",# Krypto — 24/7, is_trading_day immer True (Sa/So inklusive)
-    "NONE": "NYSE",    # Fallback (wird nie Feiertag-Check brauchen)
 }
 
 
-def get_holiday_calendar(ticker: str) -> str:
-    """Gibt den Holiday-Kalender-Code fuer einen Ticker zurueck.
+# Suffix des Yahoo-Tickers → Börsenkalender, nur für Ticker OHNE Eintrag in SYMBOLS.
+# Bekannte Ticker folgen ihrem Eintrag (unten), damit sich keine der 370 bestehenden
+# Zuordnungen ändert (Codex Runde 4, Auflage 1). .F = Frankfurt → XETRA-Kalender wie
+# ENR.F/RHM.F; .MC (BME) und .CO (Kopenhagen) wie bisher als Proxy.
+SUFFIX_ZU_BOERSE = (
+    (".DE", "XETRA"), (".F", "XETRA"),
+    (".PA", "EURONEXT"), (".AS", "EURONEXT"), (".BR", "EURONEXT"), (".LS", "EURONEXT"),
+    (".MC", "EURONEXT"),
+    (".L", "LSE"), (".SW", "SIX"), (".MI", "MILAN"),
+    (".ST", "STOCKHOLM"), (".CO", "STOCKHOLM"), (".OL", "OSLO"),
+    (".T", "TSE"), (".HK", "HKEX"), (".KS", "KRX"),
+)
 
-    Der Kalender folgt dem TATSÄCHLICHEN Yahoo-Handelsplatz (= Ticker-Suffix),
-    NICHT der Heimatbörse des Unternehmens (SYMBOLS.exchange). Beispiel:
-    "AZN"/"BP"/"ASML"/"LIN" sind US-gelistete ADRs (kein Suffix) → US-Kalender,
-    obwohl das Unternehmen primär in London/Paris/Frankfurt notiert. Würde man
-    SYMBOLS.exchange nutzen, bekämen diese ~23 ADRs einen falschen Kalender →
-    falsche Datumslücken-Alarme UND falsche TDOM/TDOY-Werte.
+_SYMBOLS_GROSS: dict[str, str] | None = None
 
-    Returns: "US", "DE", "UK", "FR", "JP", "CH", "SE", "FOREX", "NONE"
-    """
-    t = ticker.upper()
-    # Krypto (24/7 inkl. Wochenende — is_trading_day immer True)
-    if t.endswith("-USD"):
-        return "CRYPTO"
-    # Devisen (Mo-Fr 24h, keine Feiertage)
-    if t.endswith("=X"):
-        return "FOREX"
-    # Index (^...), Future (=F) oder ausländische Notierung (Suffix .DE/.PA/.L/.ST
-    # /.SW/.MI/.MC) → Kalender aus SYMBOLS.exchange (der Suffix IST der Handelsplatz)
-    if t.startswith("^") or "." in t or t.endswith("=F"):
-        exchange = SYMBOLS.get(ticker, {}).get("exchange", "NYSE")
-        return EXCHANGE_TO_HOLIDAY.get(exchange, "US")
-    # Kein Suffix = US-gelistet (US-Aktie/ETF + ausländische ADRs) → NYSE-Kalender
-    return "US"
+
+def _symbols_gross() -> dict[str, str]:
+    global _SYMBOLS_GROSS
+    if _SYMBOLS_GROSS is None:
+        _SYMBOLS_GROSS = {k.upper(): k for k in SYMBOLS}
+    return _SYMBOLS_GROSS
 
 
 def get_exchange_for_holidays(ticker: str) -> str:
-    """Gibt den exchange_holidays.py Exchange-Namen fuer einen Ticker zurueck.
+    """Börsenkalender (Name aus exchange_holidays) für einen Ticker — die EINZIGE Zuordnung.
 
-    Nutzt: ticker → SYMBOLS.exchange → EXCHANGE_TO_HOLIDAY → HOLIDAY_TO_EXCHANGE
-    Returns: "NYSE", "XETRA", "LSE", "EURONEXT", "TSE"
+    Der Kalender folgt dem TATSÄCHLICHEN Handelsplatz (Yahoo-Suffix), nicht der
+    Heimatbörse: "AZN"/"BP"/"ASML"/"LIN" sind US-gelistete ADRs → NYSE, obwohl
+    SYMBOLS.exchange London/Paris/Frankfurt nennt.
+
+    Reihenfolge (Groß/Klein egal):
+      1. `-USD`/`-USDT` → CRYPTO, `=X` → FOREX.
+      2. Eintrag in SYMBOLS: Index (^), Future (=F) oder Suffix → Kalender aus dessen
+         `exchange`; sonst (US-Listing) → NYSE. Ein `exchange` ohne Kalender → ValueError.
+      3. Unbekannter Ticker mit bekanntem Suffix → SUFFIX_ZU_BOERSE.
+      4. Unbekannter Ticker ohne Punkt, ohne ^, ohne = → NYSE (US-Listing).
+      5. Sonst (unbekannter Index/Future/Suffix) → ValueError. Kein stiller NYSE-Ersatz:
+         der Aufrufer muss den Zuordnungsfehler als Fehler behandeln.
     """
-    cal = get_holiday_calendar(ticker)
-    return HOLIDAY_TO_EXCHANGE.get(cal, "NYSE")
+    if not isinstance(ticker, str) or not ticker.strip():
+        raise ValueError(f"Ticker fehlt: {ticker!r}")
+    t = ticker.strip().upper()
+    if t.endswith("-USD") or t.endswith("-USDT"):
+        return "CRYPTO"
+    if t.endswith("=X"):
+        return "FOREX"
+    schluessel = _symbols_gross().get(t)
+    if schluessel is not None:
+        if t.startswith("^") or "." in t or t.endswith("=F"):
+            exchange = SYMBOLS[schluessel].get("exchange")
+            code = EXCHANGE_TO_HOLIDAY.get(exchange)
+            if code is None or code not in HOLIDAY_TO_EXCHANGE:
+                raise ValueError(f"Börse {exchange!r} von {ticker} hat keinen Kalender")
+            return HOLIDAY_TO_EXCHANGE[code]
+        return "NYSE"
+    for suffix, boerse in SUFFIX_ZU_BOERSE:
+        if t.endswith(suffix):
+            return boerse
+    if t.startswith("^") or "." in t or "=" in t:
+        raise ValueError(f"Kein Börsenkalender für unbekannten Ticker {ticker!r}")
+    return "NYSE"
 
 # ── Symboldatenbank ────────────────────────────────────────────────────────────
 

@@ -93,10 +93,7 @@ def _is_us_listed(ticker: str) -> bool:
     """US-gelistet (NYSE/Nasdaq, inkl. ADRs ohne Suffix) → Yahoo liefert Earnings
     zuverlässig. Nicht-US (.DE/.L/.PA/.SW/.MI/…) hat bei Yahoo schlechte
     Earnings-Coverage → fehlende Einträge sind erwartet, kein Defekt."""
-    try:
-        return get_exchange_for_holidays(ticker) == "NYSE"
-    except Exception:
-        return not any(c in ticker for c in (".", "=", "-"))
+    return get_exchange_for_holidays(ticker) == "NYSE"   # Zuordnungsfehler bricht sichtbar ab
 
 
 # NULL log_return: nur das jüngste Fenster prüfen — die ERSTE Kurszeile je Ticker
@@ -443,6 +440,7 @@ def dim_gaps(ctx: dict) -> dict:
 
     price_gaps: dict[str, int] = {}
     stale_tickers: dict[str, tuple] = {}
+    audit_fehler: dict[str, str] = {}
     total_missing = 0
     for i, t in enumerate(tickers):
         try:
@@ -464,12 +462,19 @@ def dim_gaps(ctx: dict) -> dict:
             behind = _trading_days_behind(db_max, exchange, today)
             if behind > STALE_TRADING_DAYS:
                 stale_tickers[t] = (db_max.isoformat(), behind)
-        except Exception:
-            pass
+        except Exception as e:
+            # Früher `pass`: der Ticker fiel still aus der Prüfung (Codex R4, A3).
+            audit_fehler[t] = f"{type(e).__name__}: {str(e)[:80]}"
         if (i + 1) % 40 == 0:
             gc.collect()
 
     findings["stale_tickers"] = stale_tickers
+    findings["audit_fehler"] = audit_fehler
+    if audit_fehler:
+        add("prices: Ticker nicht prüfbar", "red",
+            f"{len(audit_fehler)} Ticker übersprungen — "
+            + ", ".join(f"{t} ({g})" for t, g in list(audit_fehler.items())[:5])
+            + ("…" if len(audit_fehler) > 5 else ""))
     if stale_tickers:
         worst_s = sorted(stale_tickers.items(), key=lambda x: -x[1][1])[:8]
         add("prices: Stale Ticker (Tail veraltet)", "red",

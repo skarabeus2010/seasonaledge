@@ -503,23 +503,12 @@ def _tdom_for_ticker(ticker: str, target_date: date) -> int:
     """TDOM (Trading Day of Month) für die HEIMATBÖRSE des Tickers — börsenspezifisch
     (NYSE/XETRA/EURONEXT/CRYPTO/…). Wichtig, damit der Multi-Window-Lookup die richtige
     tdom_stats-Zeile trifft: DAX/ESTX50/BTC haben andere Handelstage als NYSE."""
-    from shared.exchange_holidays import is_trading_day
+    # Ein Zuordnungs- oder Kalenderfehler bleibt ein Fehler (ValueError). Hier stand ein
+    # NYSE- bzw. Mo–Fr-Ersatz, der einen EU-Ticker still mit dem falschen Kalender zählte;
+    # der Aufrufer protokolliert den Fehler und lässt den Score leer (Codex R4, A3).
+    from shared.exchange_holidays import handelstag_nummern
     from shared.symbols import get_exchange_for_holidays
-    try:
-        exch = get_exchange_for_holidays(ticker)
-    except Exception:
-        exch = "NYSE"
-    tdom = 0
-    d = date(target_date.year, target_date.month, 1)
-    while d <= target_date:
-        try:
-            td = is_trading_day(d, exch)
-        except Exception:
-            td = d.weekday() < 5
-        if td:
-            tdom += 1
-        d += timedelta(days=1)
-    return tdom
+    return handelstag_nummern([target_date], get_exchange_for_holidays(ticker))[0].tdom
 
 
 def _tdom_for_date(target_date: date, exchange: str = "NYSE") -> int:
@@ -776,19 +765,13 @@ def _total_iso_weeks(year: int) -> int:
 
 def _count_trading_days_in_year(today: date, exchange: str) -> tuple[int, int]:
     """Returnt (tdoy_current_inkl_heute, tdoy_total_jahr) börsenspezifisch."""
-    try:
-        from shared.exchange_holidays import is_trading_day
-    except Exception:
-        is_trading_day = None
+    from shared.exchange_holidays import is_trading_day
 
     count_now = total = 0
     d = date(today.year, 1, 1)
     end = date(today.year, 12, 31)
     while d <= end:
-        is_td = (
-            is_trading_day(d, exchange) if is_trading_day is not None
-            else d.weekday() < 5
-        )
+        is_td = is_trading_day(d, exchange)
         if is_td:
             total += 1
             if d <= today:
@@ -798,10 +781,7 @@ def _count_trading_days_in_year(today: date, exchange: str) -> tuple[int, int]:
 
 
 def _count_trading_days_in_month(today: date, exchange: str) -> tuple[int, int]:
-    try:
-        from shared.exchange_holidays import is_trading_day
-    except Exception:
-        is_trading_day = None
+    from shared.exchange_holidays import is_trading_day
 
     # Monatsende ermitteln
     if today.month == 12:
@@ -813,10 +793,7 @@ def _count_trading_days_in_month(today: date, exchange: str) -> tuple[int, int]:
     count_now = total = 0
     d = date(today.year, today.month, 1)
     while d <= end:
-        is_td = (
-            is_trading_day(d, exchange) if is_trading_day is not None
-            else d.weekday() < 5
-        )
+        is_td = is_trading_day(d, exchange)
         if is_td:
             total += 1
             if d <= today:
@@ -831,11 +808,8 @@ def build_status_line(ticker: str = "^DJI") -> str:
 
     Börsenspezifische Berechnung via shared.exchange_holidays.is_trading_day.
     """
-    try:
-        from shared.symbols import get_exchange_for_holidays
-        exchange = get_exchange_for_holidays(ticker)
-    except Exception:
-        exchange = "NYSE"
+    from shared.symbols import get_exchange_for_holidays
+    exchange = get_exchange_for_holidays(ticker)   # kein NYSE-Ersatz bei Zuordnungsfehler
 
     today = datetime.now(timezone.utc).date()
     weekday = _WEEKDAY_SHORT_DE[today.weekday()]

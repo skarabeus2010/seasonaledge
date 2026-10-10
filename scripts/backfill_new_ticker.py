@@ -198,7 +198,10 @@ def main():
             print(f"  ✓ {ticker:15s} {res['rows']:6d} Zeilen  {res['from']} → {res['to']}")
         else:
             print(f"  ✗ {ticker:15s} FEHLER: {res.get('error', 'unbekannt')}")
+    # Ein gescheiterter Ticker muss den Lauf rot machen — vorher endete er mit Exit 0
+    # und onboard_ticker.py sah einen Erfolg (Codex R4, A3).
+    return 1 if any(not res.get("ok") for _, res in summary) else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

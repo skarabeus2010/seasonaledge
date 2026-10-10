@@ -320,12 +320,16 @@ def central_banks_for_ticker(ticker: str) -> list[str]:
                      CURRENCY_TO_CENTRAL_BANK.get(base[3:6])}
             return sorted(b for b in banks if b)
         return []
+    from shared.symbols import get_exchange_for_holidays
     try:
-        from shared.symbols import get_exchange_for_holidays
-        bank = EXCHANGE_TO_CENTRAL_BANK.get(get_exchange_for_holidays(ticker))
-        return [bank] if bank else []
-    except Exception:
+        boerse = get_exchange_for_holidays(ticker)
+    except ValueError as e:
+        # Sichtbar statt still „keine Ereignisse“ (Codex R4, A3).
+        from shared.logger import error_logger
+        error_logger.error(f"[central_banks] keine Börse für {ticker}: {e}")
         return []
+    bank = EXCHANGE_TO_CENTRAL_BANK.get(boerse)
+    return [bank] if bank else []
 
 
 # ══════════════════════════════════════════════════════════════

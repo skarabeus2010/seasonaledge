@@ -12,10 +12,11 @@
 #   - Feste Feiertage regelbasiert berechnet
 #   - Variable Feiertage (Ostern, Goldene Woche etc.) algorithmisch
 #   - Auto-Erweiterung: funktioniert für jedes Jahr ohne Update
-#   - Exchange-Zuordnung via Ticker (nutzt SYMBOLS["exchange"])
+#   - Ticker → Börse: shared.symbols.get_exchange_for_holidays (einzige Zuordnung)
 #
 # Import-Beispiel:
-#   from shared.exchange_holidays import get_holidays, is_holiday, get_holidays_for_ticker
+#   from shared.exchange_holidays import get_holidays, is_holiday, is_trading_day, handelstag_nummern
+#   Ticker → Börse: shared.symbols.get_exchange_for_holidays
 
 from datetime import date, timedelta
 import calendar
@@ -29,52 +30,9 @@ from shared.nyse_holidays import (
     get_nyse_holidays,
 )
 
-# ── Exchange → Ticker Mapping ──────────────────────────────────────────────────
-# Wird genutzt um aus einem Ticker die richtige Börse zu ermitteln.
-# Ergänze hier neue Ticker wenn nötig.
-
-TICKER_TO_EXCHANGE = {
-    # NYSE / NASDAQ
-    "NYSE":    ["SPY", "QQQ", "IWM", "DIA", "TLT", "GLD", "SLV", "USO",
-                "XLF", "XLK", "XLE", "XLV", "XLU", "XLI", "XLC", "XLB", "XLP", "XLY",
-                "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "JPM", "XOM",
-                "BRK-B", "V", "JNJ", "WMT", "PG", "UNH", "HD", "MA",
-                "SHY", "IEF", "HYG", "EEM", "FXI", "EWZ",
-                "^GSPC", "^DJI", "^IXIC", "^NDX", "^RUT", "^VIX",
-                "GC=F", "SI=F", "CL=F", "BZ=F", "NG=F", "ZC=F", "ZW=F",
-                "HG=F", "PL=F", "ZS=F",
-                "ES=F", "NQ=F"],
-    # Forex: Mo-Fr 24h, keine Feiertage, Sa geschlossen, So ab 23:00 CET
-    "FOREX":   ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
-                "AUDUSD=X", "NZDUSD=X", "USDCAD=X",
-                "EURGBP=X", "EURJPY=X", "EURCHF=X", "GBPJPY=X"],
-    # Crypto: 24/7 inkl. Wochenende
-    "CRYPTO":  ["BTC-USD", "ETH-USD", "SOL-USD",
-                "XRP-USD", "ADA-USD", "DOGE-USD"],
-    # XETRA (Deutschland)
-    "XETRA":  ["^GDAXI", "^MDAXI", "^SDAXI", "^TECDAX",
-               "SAP", "SIE.DE", "ALV.DE", "BAS.DE", "BMW.DE",
-               "MBG.DE", "DTE.DE", "ADS.DE"],
-    # LSE (London)
-    "LSE":    ["^FTSE", "^FTMC"],
-    # Euronext Paris
-    "EURONEXT": ["^FCHI", "ASML", "MC.PA"],
-    # TSE (Tokyo)
-    "TSE":    ["^N225", "^TOPX"],
-    # SIX (Schweiz) — nutzt NYSE-ähnliche Feiertage + Schweizer Extras
-    "SIX":    ["^SSMI"],
-    # HKEX
-    "HKEX":   ["^HSI"],
-    # KRX
-    "KRX":    ["^KS11"],
-}
-
-# Umgekehrtes Mapping: Ticker → Exchange
-_TICKER_MAP = {
-    ticker: exchange
-    for exchange, tickers in TICKER_TO_EXCHANGE.items()
-    for ticker in tickers
-}
+# Ticker → Börse: NUR über shared.symbols.get_exchange_for_holidays. Hier stand bis
+# 2026-10-10 eine zweite Zuordnung (TICKER_TO_EXCHANGE/_TICKER_MAP) mit NYSE-Ersatz, die
+# `SAP.DE` als NYSE und `SAP` (US-ADR) als XETRA führte (Codex Runde 3, Befund 3).
 
 
 # ── Gemeinsame Helfer ──────────────────────────────────────────────────────────
@@ -550,11 +508,7 @@ def get_holidays(
     Returns:
         set[date] — alle Feiertage im Zeitraum
     """
-    fn = _EXCHANGE_FUNCTIONS.get(exchange.upper())
-    if fn is None:
-        # Fallback: NYSE
-        return get_nyse_holidays(start_year, end_year)
-
+    fn = _EXCHANGE_FUNCTIONS[boerse_normalisieren(exchange)]   # unbekannt → ValueError, kein NYSE-Ersatz
     holidays = set()
     for year in range(start_year, end_year + 1):
         holidays.update(fn(year))
@@ -562,11 +516,8 @@ def get_holidays(
 
 
 def is_holiday(d: date, exchange: str = "NYSE") -> bool:
-    """Prüft ob ein Datum ein Feiertag an der gegebenen Börse ist."""
-    fn = _EXCHANGE_FUNCTIONS.get(exchange.upper())
-    if fn is None:
-        fn = _EXCHANGE_FUNCTIONS["NYSE"]
-    return d in fn(d.year)
+    """Prüft ob ein Datum ein Feiertag an der gegebenen Börse ist (unbekannte Börse → ValueError)."""
+    return d in _EXCHANGE_FUNCTIONS[boerse_normalisieren(exchange)](d.year)
 
 
 def is_trading_day(d: date, exchange: str = "NYSE") -> bool:
@@ -575,8 +526,11 @@ def is_trading_day(d: date, exchange: str = "NYSE") -> bool:
     Sonderfaelle:
       - CRYPTO: 24/7, immer True (auch Sa/So)
       - FOREX:  Mo-Fr 24h, keine Feiertage (Sa/So geschlossen)
+    Die Börse wird ZUERST geprüft — vorher lieferte eine unbekannte Börse am Samstag
+    still False und unter der Woche den NYSE-Kalender.
     """
-    if exchange.upper() == "CRYPTO":
+    exchange = boerse_normalisieren(exchange)
+    if exchange == "CRYPTO":
         return True  # 24/7
     if d.weekday() >= 5:
         return False
@@ -633,10 +587,12 @@ def letzte_session(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
-    ex = (exchange or "NYSE").upper()
+    ex = boerse_normalisieren(exchange)
     if ex == "CRYPTO":
         return (jetzt or _uhr(ZoneInfo("UTC"))).date()
-    tz_name, stunde, minute = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
+    if ex not in _SCHLUSSZEIT:   # früher still NYSE-Zeiten (Codex R4, A3)
+        raise ValueError(f"Keine Schlusszeit für {ex} hinterlegt")
+    tz_name, stunde, minute = _SCHLUSSZEIT[ex]
     tz = ZoneInfo(tz_name)
     jetzt_lokal = (jetzt.astimezone(tz) if jetzt is not None else _uhr(tz))
     d = jetzt_lokal.date()
@@ -678,11 +634,13 @@ def markt_offen(exchange: str = "NYSE", jetzt=None, puffer_min: int = _PUFFER_MI
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
-    ex = (exchange or "NYSE").upper()
+    ex = boerse_normalisieren(exchange)
     if ex == "CRYPTO":
         return True
-    tz_name, s_h, s_m = _SCHLUSSZEIT.get(ex, _SCHLUSSZEIT["NYSE"])
-    o_h, o_m = _OEFFNUNG.get(ex, _OEFFNUNG["NYSE"])
+    if ex not in _SCHLUSSZEIT or ex not in _OEFFNUNG:   # früher still NYSE-Zeiten
+        raise ValueError(f"Keine Handelszeiten für {ex} hinterlegt")
+    tz_name, s_h, s_m = _SCHLUSSZEIT[ex]
+    o_h, o_m = _OEFFNUNG[ex]
     tz = ZoneInfo(tz_name)
     j = (jetzt.astimezone(tz) if jetzt is not None else _uhr(tz))
     if not is_trading_day(j.date(), ex):
@@ -703,50 +661,6 @@ def pruefe_eod_fenster(job: str, exchange: str = "NYSE", jetzt=None) -> None:
             f"{job}: {exchange} handelt gerade. Der Snapshot wäre ein Intraday-"
             f"Stand, gestempelt würde die Vorsession — Datum und Daten passen nicht "
             f"zusammen. Nach Handelsschluss erneut starten oder --no-write nutzen.")
-
-
-def get_holidays_for_ticker(
-    ticker: str,
-    start_year: int,
-    end_year: int,
-) -> set[date]:
-    """
-    Gibt die Börsenfeiertage für einen Ticker zurück.
-    Erkennt die Börse automatisch aus TICKER_TO_EXCHANGE.
-    Fallback: NYSE.
-
-    Args:
-        ticker     : Ticker-Symbol (z.B. "SPY", "^GDAXI", "^FTSE")
-        start_year : erstes Jahr
-        end_year   : letztes Jahr
-
-    Returns:
-        set[date] — Feiertage der zugehörigen Börse
-    """
-    exchange = _TICKER_MAP.get(ticker.upper(), "NYSE")
-    return get_holidays(exchange, start_year, end_year)
-
-
-def get_exchange_for_ticker(ticker: str) -> str:
-    """Gibt das Exchange-Kürzel für einen Ticker zurück.
-
-    Prueft zuerst TICKER_TO_EXCHANGE, dann SYMBOLS["exchange"] Fallback.
-    """
-    ex = _TICKER_MAP.get(ticker.upper())
-    if ex:
-        return ex
-    # Fallback: exchange-Feld aus SYMBOLS
-    try:
-        from shared.symbols import SYMBOLS
-        sym = SYMBOLS.get(ticker, {})
-        exchange = sym.get("exchange", "")
-        if exchange == "Forex":
-            return "FOREX"
-        if exchange == "Crypto":
-            return "CRYPTO"
-    except Exception:
-        pass
-    return "NYSE"
 
 
 # ── Kalenderstatus je Börse und Jahr ───────────────────────────────────────────
@@ -918,7 +832,6 @@ if __name__ == "__main__":
 
     print("\n\nExchange-Erkennung via Ticker:")
     print("=" * 60)
-    test_tickers = ["SPY", "^GDAXI", "^FTSE", "^FCHI", "^N225", "AAPL"]
-    for t in test_tickers:
-        ex = get_exchange_for_ticker(t)
-        print(f"  {t:12} → {ex}")
+    from shared.symbols import get_exchange_for_holidays
+    for t in ["SPY", "^GDAXI", "^FTSE", "^FCHI", "^N225", "AAPL"]:
+        print(f"  {t:12} → {get_exchange_for_holidays(t)}")
