@@ -76,6 +76,13 @@ MUTATIONEN = [
     ("Rückfall auch bei genau dem eigenen Bedarf (doppelte Wiederholung)",
      KU, "          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;", "          if (!b) throw e;",
      "[kein Rückfall bei genau dem eigenen Bedarf (eine Anfrage)]"),
+    ("Rückfall nur bei längerem Zeitraum (M2-R1-Fehler)",
+     KU, "          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;",
+     "          if (!b || b.ab === anfrage.ab || (b.ab !== null && anfrage.ab === null)) throw e;",
+     "[gescheitertes VORLADEN: eigene Anfrage gelingt]"),
+    ("gemeinsame Ladung ohne VORLADEN",
+     KU, "    bedarf = vereinige(bedarf, { felder: VORLADEN, ab: bedarf.ab });\n", "",
+     "[Overnight-Felder aus dem Bestand]"),
     # Hüllen (Migration Schritt 1): Rückgabe je Aufrufer gleich wie vorher
     ("Hülle ignoriert die Grenze",
      APP, "ab: m ? m[1] : null });", "ab: null });",

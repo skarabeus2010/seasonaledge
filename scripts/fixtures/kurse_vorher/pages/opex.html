@@ -1,0 +1,1345 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OPEX Analyse &mdash; Triple Witching &amp; monatlicher Verfall | SeasonAlpha</title>
+  <meta name="description" content="Triple Witching und monatlicher OPEX: Wie verhalten sich Kurse rund um den 3. Freitag? Heatmap, Backtest, Signifikanz und Kalender.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/opex">  
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/opex">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/opex">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/opex">
+
+  <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/opex">
+  <meta property="og:title" content="OPEX Analyse &mdash; Triple Witching &amp; monatlicher Verfall | SeasonAlpha">
+  <meta property="og:description" content="Triple Witching und monatlicher OPEX: Wie verhalten sich Kurse rund um den 3. Freitag? Heatmap, Backtest, Signifikanz und Kalender.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="OPEX Analyse &mdash; Triple Witching &amp; monatlicher Verfall | SeasonAlpha">
+  <meta name="twitter:description" content="Triple Witching und monatlicher OPEX: Wie verhalten sich Kurse rund um den 3. Freitag? Heatmap, Backtest, Signifikanz und Kalender.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"OPEX Analyse \u2014 Triple Witching & monatlicher Verfall","url":"https://seasonalpha.ai/opex","description":"Triple Witching und monatlicher OPEX: Wie verhalten sich Kurse rund um den 3. Freitag? Heatmap, Backtest, Signifikanz und Kalender.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"OPEX Analyse","item":"https://seasonalpha.ai/opex"}]}</script>
+  <!-- Structured Data: FAQPage (SERP Rich Result) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Was ist OPEX und der große Verfall?","acceptedAnswer":{"@type":"Answer","text":"OPEX (Options Expiration) ist der monatliche Optionsverfall. Der große Verfall fällt auf den 3. Freitag jedes Monats – dann laufen zahlreiche Aktien- und Indexoptionen aus. In den Monaten März, Juni, September und Dezember verfallen zusätzlich Index-Futures und Single-Stock-Futures gleichzeitig: Das nennt man Triple beziehungsweise Quadruple Witching."}},{"@type":"Question","name":"Warum ist der 3. Freitag rund um OPEX oft volatiler?","acceptedAnswer":{"@type":"Answer","text":"Zum Verfall müssen Market-Maker und institutionelle Anleger ihre Absicherungen auf auslaufende Optionen anpassen oder rollen. Dieses gebündelte Glattstellen kann das Handelsvolumen und die Kursschwankungen rund um den 3. Freitag erhöhen – besonders beim Triple Witching, wenn mehrere Verfallsarten zusammentreffen. Das OPEX-Tool zeigt, wie ausgeprägt diese Muster für den gewählten Ticker historisch waren."}},{"@type":"Question","name":"Was passiert, wenn der 3. Freitag auf einen Feiertag fällt?","acceptedAnswer":{"@type":"Answer","text":"Ist der 3. Freitag ein Börsenfeiertag, wird der Verfall auf den vorherigen Handelstag vorverlegt – in den USA betrifft das vor allem Karfreitag und Juneteenth. Das OPEX-Tool berechnet den Verfallstermin börsenspezifisch und feiertagsbewusst über den jeweiligen Handelskalender, sodass das Event-Fenster auf dem tatsächlichen Handelstag liegt."}}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  
+  
+  
+  
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .opex-table{width:100%;border-collapse:collapse;font-size:.9375rem}
+    .opex-table th{color:var(--dim);font-size:.8125rem;text-transform:uppercase;letter-spacing:.06em;padding:.55rem .5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .opex-table td{padding:.5rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text);font-variant-numeric:tabular-nums}
+    .opex-table tr:hover td{background:rgba(232,168,32,.05)}
+    .opex-table td.pos{color:var(--green)}
+    .opex-table td.neg{color:var(--red)}
+    .opex-table td.triple{color:#fb923c;font-weight:600}
+    .badge-triple{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(251,146,60,.35);color:#ffffff;border:1px solid rgba(251,146,60,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .badge-standard{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(96,165,250,.35);color:#ffffff;border:1px solid rgba(96,165,250,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .badge-vix{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.75rem;font-weight:700;background:rgba(167,139,250,.35);color:#ffffff;border:1px solid rgba(167,139,250,.7);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .calendar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-top:.75rem}
+    @media(max-width:700px){.calendar-grid{grid-template-columns:repeat(2,1fr)}}
+    .cal-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;font-size:.9375rem}
+    .cal-card.is-next{border-color:rgba(232,168,32,.5);background:rgba(232,168,32,.08)}
+    .cal-card.is-triple{border-color:rgba(251,146,60,.4)}
+    .cal-card .cal-date{font-weight:700;color:var(--text);font-size:1.0625rem;font-family:var(--f-m);letter-spacing:.01em}
+    .cal-card .cal-type{color:var(--dim);font-size:.8125rem;margin-top:.3rem}
+    .cal-card .cal-days{font-size:.875rem;color:var(--accent);margin-top:.35rem;font-weight:600}
+    .range-wrap{margin-top:.5rem}
+    .range-wrap label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
+    .range-wrap input{width:100%;margin-top:.25rem;accent-color:var(--accent)}
+    .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem}
+    .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+    .mode-radio{display:flex;flex-direction:column;gap:.4rem}
+    .mode-radio label{display:flex;align-items:center;gap:.45rem;font-size:.8125rem;color:var(--dim);cursor:pointer}
+    .mode-radio input[type=radio]{accent-color:var(--accent);cursor:pointer}
+    .vix-months{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;font-size:.75rem;margin-top:.25rem}
+    .vix-months label{display:flex;align-items:center;gap:.3rem;cursor:pointer;color:var(--dim)}
+    .vix-months input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+    .btn-mini{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--dim);padding:.3rem;border-radius:5px;font-size:.75rem;cursor:pointer;font-family:var(--f-m)}
+    .btn-mini:hover{border-color:var(--accent);color:var(--accent)}
+    #outlier-filter select{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m);cursor:pointer}
+    #outlier-filter select:focus{outline:none;border-color:var(--accent)}
+    .chart-grid-12{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+    @media(max-width:1100px){.chart-grid-12{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:750px){.chart-grid-12{grid-template-columns:repeat(2,1fr)}}
+    .mini-chart{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3 data-i18n="sidebar.ticker">Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+      <hr>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
+      <select id="sel-years" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="10" selected data-i18n="dash.yr10">10 Jahre</option>
+        <option value="15" data-i18n="dash.yr15">15 Jahre</option>
+        <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+        <option value="25" data-i18n="dash.yr25">25 Jahre</option>
+        <option value="30" data-i18n="dash.yr30">30 Jahre</option>
+        <option value="max">Max</option>
+      </select>
+      <hr>
+      <h3 data-i18n="common.window">Fenster</h3>
+      <div class="range-wrap">
+        <label><span data-i18n="opex.days_before">Tage vor OPEX</span> <span id="lbl-before">3</span></label>
+        <input type="range" id="sl-before" min="1" max="10" value="3">
+      </div>
+      <div class="range-wrap" style="margin-top:.5rem">
+        <label><span data-i18n="opex.days_after">Tage nach OPEX</span> <span id="lbl-after">3</span></label>
+        <input type="range" id="sl-after" min="1" max="10" value="3">
+      </div>
+      <!-- OPEX-spezifisch -->
+      <div id="opts-opex">
+        <hr>
+        <h3 data-i18n="opex.opex_view_h3">OPEX-Ansicht</h3>
+        <div class="mode-radio">
+          <label><input type="radio" name="opex-view" value="triple" checked> Triple Witching</label>
+          <label><input type="radio" name="opex-view" value="monthly"> <span data-i18n="opex.monthly_view">Monatlich (12 Charts)</span></label>
+        </div>
+        <!-- Triple Witching Monate (nur wenn opex-view=triple) -->
+        <div id="triple-months-block" style="margin-top:.6rem">
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em" data-i18n="opex.select_quarters">Quartale w&auml;hlen</div>
+          <div class="vix-months" id="triple-months-checkboxes" style="grid-template-columns:repeat(4,1fr)">
+            <label><input type="checkbox" data-month="3" checked> <span data-i18n="common.mon_mar">M&auml;r</span></label>
+            <label><input type="checkbox" data-month="6" checked> Jun</label>
+            <label><input type="checkbox" data-month="9" checked> Sep</label>
+            <label><input type="checkbox" data-month="12" checked> <span data-i18n="common.mon_dec">Dez</span></label>
+          </div>
+          <div style="display:flex;gap:.25rem;margin-top:.4rem">
+            <button type="button" id="btn-triple-all" class="btn-mini" data-i18n="common.all">Alle</button>
+            <button type="button" id="btn-triple-none" class="btn-mini" data-i18n="common.none">Keine</button>
+          </div>
+        </div>
+        <!-- Monatliche Verfall Monate (nur wenn opex-view=monthly) -->
+        <div id="opex-monthly-block" style="margin-top:.6rem;display:none">
+          <div style="font-size:.6875rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em" data-i18n="opex.select_months">Monate w&auml;hlen</div>
+          <div class="vix-months" id="opex-months-checkboxes">
+            <label><input type="checkbox" data-month="1" checked> Jan</label>
+            <label><input type="checkbox" data-month="2" checked> Feb</label>
+            <label><input type="checkbox" data-month="3" checked> <span data-i18n="common.mon_mar">M&auml;r</span></label>
+            <label><input type="checkbox" data-month="4" checked> Apr</label>
+            <label><input type="checkbox" data-month="5" checked> <span data-i18n="common.mon_may">Mai</span></label>
+            <label><input type="checkbox" data-month="6" checked> Jun</label>
+            <label><input type="checkbox" data-month="7" checked> Jul</label>
+            <label><input type="checkbox" data-month="8" checked> Aug</label>
+            <label><input type="checkbox" data-month="9" checked> Sep</label>
+            <label><input type="checkbox" data-month="10" checked> <span data-i18n="common.mon_oct">Okt</span></label>
+            <label><input type="checkbox" data-month="11" checked> Nov</label>
+            <label><input type="checkbox" data-month="12" checked> <span data-i18n="common.mon_dec">Dez</span></label>
+          </div>
+          <div style="display:flex;gap:.25rem;margin-top:.4rem">
+            <button type="button" id="btn-opex-all" class="btn-mini" data-i18n="common.all">Alle</button>
+            <button type="button" id="btn-opex-none" class="btn-mini" data-i18n="common.none">Keine</button>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+      <h3 data-i18n="common.tech_filter">Technischer Filter</h3>
+      <div id="indicator-filter"></div>
+      <hr>
+      <h3 data-i18n="sidebar.outlier_filter">Outlier-Filter</h3>
+      <div id="outlier-filter"></div>
+      <hr>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.7">
+        <b>OPEX</b> = <span data-i18n="opex.sidebar_info">3. Freitag im Monat</span><br>
+        <b>Triple Witching</b> = <span data-i18n="opex.triple_months">M&auml;r, Jun, Sep, Dez</span><br>
+        <a href="/vixpiration" style="color:var(--accent);text-decoration:none">VIXpiration-Analyse &rarr;</a>
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b data-i18n="opex.page_title">OPEX Analyse</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="opex.page_caption">Saisonale Muster rund um den monatlichen Options-Verfalltag (3. Freitag) &amp; Triple Witching</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- OPEX Triple Witching (Default) -->
+      <details open id="sec-opex-triple" style="display:none">
+        <summary data-i18n="opex.triple_witching_section">Triple Witching &mdash; Verlauf rund um den Verfallstag</summary>
+        <div class="content">
+          <div style="margin-bottom:.75rem">
+            <span class="badge-triple">Triple Witching</span>
+            <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem" data-i18n="opex.triple_caption">
+              4 Termine/Jahr: M&auml;r, Jun, Sep, Dez &middot; t=0 = OPEX-Tag
+            </span>
+          </div>
+          <div id="chart-opex-triple"></div>
+        </div>
+      </details>
+
+      <!-- Volatilität rund um den Verfall -->
+      <details open id="sec-vola" style="display:none">
+        <summary data-i18n="opex.vola_section">Volatilit&auml;t rund um den Verfall &mdash; 1d vs. 5d</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n-html="opex.vola_desc">
+            Zeigt die annualisierte Volatilit&auml;t (Cross-Section Std aller Events) pro Tag im Event-Fenster.
+            <b style="color:var(--accent)">1d Vola</b> = Streuung an genau diesem Tag,
+            <b style="color:var(--green)">5d Vola</b> = gegl&auml;ttete Streuung &uuml;ber &plusmn;2 Tage.
+            Ein R&uuml;ckgang um t=0 signalisiert Vola-Kompression vor dem Verfall.
+          </p>
+          <div id="chart-vola" style="min-height:260px"></div>
+        </div>
+      </details>
+
+      <!-- OPEX Monthly Grid -->
+      <details open id="sec-opex-monthly" style="display:none">
+        <summary data-i18n="opex.monthly_section">Monatlicher Verfall &mdash; 12 Charts (ein Chart pro Monat)</summary>
+        <div class="content">
+          <p data-i18n="opex.monthly_grid_desc" style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            Jeder Chart zeigt den kumulierten Verlauf rund um den 3. Freitag des jeweiligen Monats.
+          </p>
+          <div id="chart-opex-monthly-grid" class="chart-grid-12"></div>
+        </div>
+      </details>
+
+      <!-- Heatmap Monat × Offset -->
+      <details open id="sec-heatmap" style="display:none">
+        <summary data-i18n="section.heatmap_month_offset">Heatmap: Monat &times; Offset</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem" data-i18n="opex.heatmap_desc">
+            &Oslash; Tagesrendite pro Monat und Offset-Tag (t&minus;N bis t+N). Rot = negativ, Gr&uuml;n = positiv.
+          </p>
+          <div id="chart-heatmap"></div>
+        </div>
+      </details>
+
+      <!-- Streak (grafisch, direkt unter Heatmap) -->
+      <details open id="sec-streak" style="display:none">
+        <summary data-i18n="section.streak_by_month">Streak-Analyse nach Monat</summary>
+        <div class="content" id="content-streak"></div>
+      </details>
+
+      <!-- Signifikanz -->
+      <details open id="sec-significance" style="display:none">
+        <summary data-i18n="opex.significance_section">Signifikanztest &mdash; Ist der Effekt statistisch bedeutsam?</summary>
+        <div class="content" id="content-significance"></div>
+      </details>
+
+      <!-- Backtest -->
+      <details open id="sec-backtest" style="display:none">
+        <summary id="bt-summary">Backtest</summary>
+        <div class="content">
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">
+            <span id="bt-desc">Strategie</span>: <span data-i18n="common.buy">Kauf</span> t<span id="bt-entry">-3</span> (Close) &middot; <span data-i18n="common.sell">Verkauf</span> t<span id="bt-exit">+3</span> (Close)
+          </p>
+          <div class="kpi-row" id="bt-kpis"></div>
+          <div id="chart-equity" style="margin-top:1rem"></div>
+          <div id="chart-bt-bar" style="margin-top:.5rem"></div>
+        </div>
+      </details>
+
+      <!-- Kalender -->
+      <details id="sec-calendar" style="display:none">
+        <summary id="cal-summary">Kalender</summary>
+        <div class="content">
+          <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--text)" id="cal-upcoming-title" data-i18n="opex.cal_upcoming">N&auml;chste 8 Termine</h3>
+          <div id="calendar-upcoming"></div>
+          <h3 style="font-size:1rem;margin-top:1.25rem;margin-bottom:.5rem;color:var(--text)" id="cal-all-title" data-i18n="opex.cal_all">Alle Termine im Analyse-Zeitraum</h3>
+          <div style="max-height:360px;overflow-y:auto">
+            <table class="opex-table" id="tbl-all-opex">
+              <thead id="thead-all-opex"></thead>
+              <tbody id="tbody-all-opex"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary data-i18n="common.methodology">Methodik</summary>
+        <div class="content methodik">
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
+          <ul>
+            <li data-i18n-html="opex.method_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="opex.method_opex_date"><b>OPEX-Datum:</b> 3. Freitag im Monat (berechnet via Gauss-Kalender, feiertags-bereinigt)</li>
+            <li data-i18n-html="opex.method_triple"><b>Triple Witching:</b> M&auml;rz, Juni, September, Dezember (gleichzeitiger Verfall Aktienoptionen + Index-Futures + Index-Optionen)</li>
+          </ul>
+          <h3 data-i18n="common.event_window">Event-Window</h3>
+          <ul>
+            <li data-i18n-html="opex.method_t0"><b>t=0:</b> OPEX-Freitag (oder n&auml;chster Handelstag, falls Feiertag)</li>
+            <li data-i18n-html="opex.method_return"><b>Rendite:</b> Tagesrendite (Close[t] / Close[t&minus;1] &minus; 1) &times; 100</li>
+            <li data-i18n-html="opex.method_window"><b>Fenster:</b> t&minus;N bis t+N (einstellbar), N = Anzahl Handelstage</li>
+            <li data-i18n-html="opex.method_aggregation"><b>Aggregation:</b> Arithmetisches Mittel aller Ereignisse pro Offset</li>
+          </ul>
+          <h3 data-i18n="common.backtest">Backtest</h3>
+          <ul>
+            <li data-i18n="opex.method_bt1">Kauf am Close von Tag t&minus;N, Verkauf am Close von Tag t+N</li>
+            <li data-i18n="opex.method_bt2">Rendite = kumulierter Return &uuml;ber das Fenster (nicht annualisiert)</li>
+            <li data-i18n="opex.method_bt3">Equity-Kurve = kumulative Summe aller Trade-Renditen</li>
+          </ul>
+          <h3 data-i18n="opex.vixpiration_h3">VIXpiration</h3>
+          <p data-i18n-html="opex.vixpiration_para">Die VIXpiration-Daten werden im OPEX-Kalender als Referenz angezeigt. Ausf&uuml;hrliche VIXpiration-Analyse mit eigenen Charts, Backtest und Signifikanztest: <a href="/vixpiration" style="color:var(--accent)">VIXpiration-Seite &rarr;</a></p>
+        </div>
+      </details>
+
+      <!-- SEO-Content (statisch, indexierbar) -->
+      <details open>
+        <summary data-i18n="opex.seo_h">OPEX &amp; Triple Witching verstehen &mdash; Verfallstermine, Marktverhalten &amp; Methodik</summary>
+        <div class="content">
+          <p data-i18n-html="opex.seo_p1">Die <b>OPEX-Analyse</b> von SeasonAlpha untersucht das Marktverhalten rund um den <b>Optionsverfall</b> (Options Expiration, kurz OPEX). Der große monatliche Verfall fällt auf den <b>3. Freitag jedes Monats</b> &mdash; dann laufen zahlreiche Aktien- und Indexoptionen aus. Das Tool zeigt für einen frei wählbaren Ticker, wie sich die Kurse im Fenster um diesen Verfallstag historisch entwickelt haben: als kumulierter Verlauf, als Heatmap über die zwölf Monate sowie als Volatilitäts- und Backtest-Auswertung. So lässt sich auf einen Blick erkennen, ob sich rund um den Verfall ein wiederkehrendes saisonales Muster abzeichnet.</p>
+          <p data-i18n-html="opex.seo_p2">Im Zentrum steht der <b>Verlauf rund um t=0</b> (den Verfallstag). Die Charts richten alle Verfallstermine auf diesen Nullpunkt aus und mitteln die Tagesrenditen über das Fenster von <b>t&minus;N bis t+N</b> (Anzahl der Handelstage frei einstellbar). Eine ansteigende Kurve vor t=0 deutet auf eine typische Stärke in den Tagen <b>vor dem Verfall</b> hin, ein Knick danach auf eine Schwäche oder Beruhigung. Die <b>Volatilitäts-Ansicht</b> stellt die Streuung der Renditen pro Tag dar &mdash; oft steigt die Schwankungsbreite zum Verfall hin an, weil Absicherungen gebündelt angepasst werden. Der besondere Fokus liegt auf dem <b>Triple Witching</b> in den Monaten <b>März, Juni, September und Dezember</b>, wenn Index-Futures, Index-Optionen und Single-Stock-Futures gleichzeitig verfallen.</p>
+          <p data-i18n-html="opex.seo_p3">Methodisch berechnet das Tool den Verfallstermin als <b>3. Freitag des Monats</b> über den Kalender und passt ihn <b>börsenspezifisch und feiertagsbewusst</b> an: Fällt der 3. Freitag auf einen Börsenfeiertag, wird der Verfall auf den vorherigen Handelstag vorverlegt &mdash; in den USA betrifft das vor allem <b>Karfreitag</b> und <b>Juneteenth</b> (seit 2022). Jeder Verfall bildet ein <b>Event-Fenster</b>; pro Offset-Tag werden die Tagesrenditen aller Termine arithmetisch gemittelt. Die Renditen folgen der <b>normalisierten Methodik</b> (Tagesrendite = Close[t] / Close[t&minus;1] &minus; 1), nicht der absoluten Preisdifferenz. Datenbasis ist Yahoo Finance über Supabase, täglich aktualisiert; ein Signifikanztest und ein Backtest mit Kauf an t&minus;N und Verkauf an t+N ergänzen die Auswertung.</p>
+          <p data-i18n-html="opex.seo_p4">Die OPEX-Analyse ist ein <b>statistisches Werkzeug zur Einordnung</b>, keine Anlageberatung und keine Prognose. Ein historisch auffälliges Muster rund um den Verfall garantiert nicht, dass es sich wiederholt &mdash; Märkte ändern sich, und einzelne Verfallstermine können stark vom Durchschnitt abweichen. Die Auswertung blickt ausschließlich auf vergangene Kursdaten und berücksichtigt weder Nachrichten noch Fundamentaldaten oder Transaktionskosten. Nutze die Muster als zusätzlichen Kontext für eigene Recherche, nicht als alleinige Entscheidungsgrundlage. Vergangene Ergebnisse sind kein verlässlicher Indikator für künftige Entwicklungen.</p>
+          <h3 data-i18n="opex.seo_faq_h" style="font-size:.95rem;margin:1rem 0 .5rem">Häufige Fragen</h3>
+          <p data-i18n-html="opex.seo_faq1"><b>Was ist OPEX und der große Verfall?</b> OPEX (Options Expiration) ist der monatliche Optionsverfall. Der große Verfall fällt auf den <b>3. Freitag</b> jedes Monats &mdash; dann laufen zahlreiche Aktien- und Indexoptionen aus. In den Monaten <b>März, Juni, September und Dezember</b> verfallen zusätzlich Index-Futures und Single-Stock-Futures gleichzeitig: Das nennt man <b>Triple</b> beziehungsweise Quadruple Witching.</p>
+          <p data-i18n-html="opex.seo_faq2"><b>Warum ist der 3. Freitag rund um OPEX oft volatiler?</b> Zum Verfall müssen Market-Maker und institutionelle Anleger ihre Absicherungen auf auslaufende Optionen anpassen oder rollen. Dieses gebündelte Glattstellen kann das Handelsvolumen und die Kursschwankungen rund um den 3. Freitag erhöhen &mdash; besonders beim Triple Witching, wenn mehrere Verfallsarten zusammentreffen. Das OPEX-Tool zeigt, wie ausgeprägt diese Muster für den gewählten Ticker historisch waren.</p>
+          <p data-i18n-html="opex.seo_faq3"><b>Was passiert, wenn der 3. Freitag auf einen Feiertag fällt?</b> Ist der 3. Freitag ein Börsenfeiertag, wird der Verfall auf den <b>vorherigen Handelstag</b> vorverlegt &mdash; in den USA betrifft das vor allem Karfreitag und Juneteenth. Das OPEX-Tool berechnet den Verfallstermin <b>börsenspezifisch und feiertagsbewusst</b> über den jeweiligen Handelskalender, sodass das Event-Fenster auf dem tatsächlichen Handelstag liegt.</p>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/kurse.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/significance.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/strategy-compute.js"></script>
+  <script src="/landing/js/outlier.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var MONTHS_DE = ['Jan','Feb','M\u00E4r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var MONTHS_FULL = ['Januar','Februar','M\u00E4rz','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    var WEEKDAYS_DE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    var TRIPLE_MONTHS = [3,6,9,12];
+    var COL_ALL    = '#60a5fa';
+    var COL_TRIPLE = '#fb923c';
+    var COL_POS    = '#34d399';
+    var COL_NEG    = '#f87171';
+
+    var charts = {};
+    var miniCharts = []; // Array fuer die 12 Monatscharts
+    var currentTicker = 'SPY';
+    var opexView    = 'triple';     // 'triple' oder 'monthly'
+    var tripleMonthsMask = { 3:true, 6:true, 9:true, 12:true };
+    var opexMonthsMask = [true,true,true,true,true,true,true,true,true,true,true,true];
+    var _cachedRows = null;
+    var _cachedData = null;
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function pad2(n) { return n < 10 ? '0'+n : ''+n; }
+    function ds(y,m,d) { return y+'-'+pad2(m)+'-'+pad2(d); }
+    function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
+    function cc(v) { return v>=0?'pos':'neg'; }
+    function fmtPct(v,d) { d=d||3; return (v>=0?'+':'')+v.toFixed(d)+' %'; }
+    /** KPI-Karte im globalen Stil (app.css .kpi/.kpi-label/.kpi-value). */
+    function kpi(l, v, c) {
+      var cls = (c || '').replace(/kpi__value--/g, '').replace(/kpi__value/g, '');
+      return '<div class="kpi"><div class="kpi-label">'+l+'</div><div class="kpi-value '+cls+'">'+v+'</div></div>';
+    }
+
+    function showSections(show) {
+      // Sektionen die immer sichtbar sein koennen
+      ['sec-vola','sec-backtest','sec-calendar','sec-streak','sec-heatmap','sec-significance'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+      var secOpexTriple  = document.getElementById('sec-opex-triple');
+      var secOpexMonthly = document.getElementById('sec-opex-monthly');
+      if (!show) {
+        secOpexTriple.style.display  = 'none';
+        secOpexMonthly.style.display = 'none';
+        return;
+      }
+      secOpexTriple.style.display  = opexView === 'triple'  ? '' : 'none';
+      secOpexMonthly.style.display = opexView === 'monthly' ? '' : 'none';
+    }
+
+    function destroyAll() {
+      ['opex-triple','heatmap','equity','bt-bar'].forEach(function(k) {
+        if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k]=null; }
+      });
+      for (var i = 0; i < miniCharts.length; i++) {
+        try { miniCharts[i].destroy(); } catch(e) {}
+      }
+      miniCharts = [];
+    }
+
+    // ── OPEX-Datum Berechnung ────────────────────────────────────────────────
+    function getOpexDay(y, m) {
+      // 3. Freitag im Monat (Kalender, Freitag = 5 per JS getDay())
+      return SA.holidays._nthDow(y, m, 5, 3);
+    }
+
+    /**
+     * Kalender-3.Freitag als String (ohne Feiertag-Anpassung).
+     * Wird als Basis fuer die VIXpiration-Berechnung verwendet (CBOE-Regel).
+     */
+    function getOpexCalendarStr(y, m) {
+      return ds(y, m, getOpexDay(y, m));
+    }
+
+    /**
+     * EFFEKTIVES OPEX-Datum: der Handelstag, an dem der Verfall stattfindet.
+     * CBOE-Regel: Faellt der 3. Freitag auf einen NYSE-Feiertag,
+     * wird der Verfall auf den VORHERIGEN Handelstag (meist Donnerstag) vorgezogen.
+     */
+    function getOpexDateStr(y, m) {
+      var opexDay = getOpexDay(y, m);
+      var calStr  = ds(y, m, opexDay);
+      if (SA.holidays.isTradingDay(calStr, 'NYSE')) return calStr;
+      // Feiertag → vorheriger HT (meist Do bei Good Friday, oder Do bei Juneteenth-Fr)
+      var dt = new Date(y, m - 1, opexDay);
+      return _prevTradingDate(dt).str;
+    }
+
+    /**
+     * VIXpiration Settlement (CBOE-Regel):
+     * 1. Basis = 3. Freitag von Monat M (Kalender)
+     * 2. Settlement = Basis - 30 Kalendertage (ergibt typischerweise Mittwoch)
+     * 3. Ist ENTWEDER der Basis-Freitag ODER der Settlement-Mittwoch
+     *    ein NYSE-Feiertag, wird das Settlement um 1 HT zurueckverlegt.
+     * 4. Rekursiv: falls der neue Tag auch Feiertag, weiter zurueck.
+     */
+    function _prevTradingDate(dt) {
+      dt.setDate(dt.getDate() - 1);
+      var s = ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+      // Wochenende ueberspringen
+      var dow = dt.getDay();
+      while (dow === 0 || dow === 6 || !SA.holidays.isTradingDay(s, 'NYSE')) {
+        dt.setDate(dt.getDate() - 1);
+        s = ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+        dow = dt.getDay();
+      }
+      return { dt: dt, str: s };
+    }
+
+    function getVixpirationDateStr(y, m) {
+      // CBOE verwendet den KALENDER-3.Freitag (nicht den adjustierten OPEX-Tag!)
+      // als Basis fuer "minus 30 Kalendertage"
+      var opexDay     = getOpexDay(y, m);
+      var calFridayStr = ds(y, m, opexDay);
+      var vixDt        = new Date(y, m - 1, opexDay);
+      vixDt.setDate(vixDt.getDate() - 30);
+      var vixStr       = ds(vixDt.getFullYear(), vixDt.getMonth()+1, vixDt.getDate());
+
+      // CBOE-Regel: Wenn Basis-Freitag ODER Mittwoch ein Feiertag ist → -1 HT
+      var fridayHoliday    = !SA.holidays.isTradingDay(calFridayStr, 'NYSE');
+      var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,       'NYSE');
+      if (fridayHoliday || wednesdayHoliday) {
+        var prev = _prevTradingDate(vixDt);
+        vixStr = prev.str;
+      }
+      return vixStr;
+    }
+
+    /**
+     * Letzter Handelstag der VIX-Optionen = 1 HT VOR dem Settlement-Tag.
+     * Typischerweise Dienstag. Bei Feiertagen entsprechend verschoben.
+     */
+    function getVixLastTradingDayStr(y, m) {
+      var settleStr = getVixpirationDateStr(y, m);
+      var parts = settleStr.split('-');
+      var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      var prev = _prevTradingDate(dt);
+      return prev.str;
+    }
+
+    /**
+     * Letzter Handelstag <= targetStr (Feiertag-Logik: Verfall wird VORVERLEGT).
+     * OPEX und VIXpiration verschieben sich bei Boersenfeiertag auf den Vortag.
+     */
+    function findTradingDayIdx(sortedDates, targetStr) {
+      // Suche letzten HT <= target (vorheriger HT bei Feiertag)
+      var best = -1;
+      for (var i = 0; i < sortedDates.length; i++) {
+        if (sortedDates[i] <= targetStr) best = i;
+        else break;
+      }
+      return best;
+    }
+
+    // ── Daten-Berechnung ─────────────────────────────────────────────────────
+    function buildReturns(rows) {
+      var result = [];
+      for (var i = 1; i < rows.length; i++) {
+        var prevClose = parseFloat(rows[i-1].close);
+        var curClose  = parseFloat(rows[i].close);
+        if (!prevClose || !curClose) continue;
+        result.push({
+          date: rows[i].date,
+          returnPct: (curClose / prevClose - 1) * 100
+        });
+      }
+      return result;
+    }
+
+    function computeEventWindows(returns, events, daysBefore, daysAfter) {
+      var sortedDates = returns.map(function(r){ return r.date; });
+      var results = [];
+
+      for (var e = 0; e < events.length; e++) {
+        var ev = events[e];
+        var t0 = findTradingDayIdx(sortedDates, ev.date);
+        if (t0 < 0) continue;
+        if (t0 - daysBefore < 0 || t0 + daysAfter >= returns.length) continue;
+
+        var rec = {
+          date: ev.date, year: ev.year, month: ev.month,
+          isTriple: ev.isTriple, vixDate: ev.vixDate,
+          entryDate: returns[t0 - daysBefore].date,
+          exitDate:  returns[t0 + daysAfter].date
+        };
+        for (var offset = -daysBefore; offset <= daysAfter; offset++) {
+          var idx = t0 + offset;
+          if (idx >= 0 && idx < returns.length) {
+            rec['t' + offset] = returns[idx].returnPct;
+          }
+        }
+        // Summe der Tagesrenditen im Fenster (als Naeherung fuer den Trade-Return)
+        var cumReturn = 0;
+        if (rec['t' + (-daysBefore)] !== undefined) {
+          for (var off = -daysBefore; off <= daysAfter; off++) {
+            if (rec['t' + off] !== undefined) cumReturn += rec['t' + off];
+          }
+        }
+        rec.cumReturn = cumReturn;
+        results.push(rec);
+      }
+      return results;
+    }
+
+    function aggregateByOffset(windows, daysBefore, daysAfter) {
+      var offsets = [];
+      for (var o = -daysBefore; o <= daysAfter; o++) offsets.push(o);
+      var means = [], winRates = [], counts = [];
+      for (var oi = 0; oi < offsets.length; oi++) {
+        var key = 't' + offsets[oi];
+        var vals = windows.filter(function(w){ return w[key] !== undefined; }).map(function(w){ return w[key]; });
+        means.push(vals.length ? vals.reduce(function(s,v){return s+v;},0)/vals.length : 0);
+        winRates.push(vals.length ? vals.filter(function(v){return v>0;}).length/vals.length*100 : 50);
+        counts.push(vals.length);
+      }
+      return { offsets: offsets, means: means, winRates: winRates, counts: counts };
+    }
+
+    /** Std-Abweichung (Population) */
+    function _std(arr) {
+      if (arr.length < 2) return 0;
+      var m = arr.reduce(function(s,v){return s+v;},0) / arr.length;
+      var v = arr.reduce(function(s,v){return s + (v-m)*(v-m);},0) / arr.length;
+      return Math.sqrt(v);
+    }
+
+    /** Volatilität pro Offset: 1d (Cross-Section) vs 5d (Pooled ±2 Tage) */
+    function computeVolaByOffset(windows, daysBefore, daysAfter) {
+      var offsets = [];
+      for (var o = -daysBefore; o <= daysAfter; o++) offsets.push(o);
+      var vola1d = [], vola5d = [];
+      var ANN = Math.sqrt(252);
+
+      for (var oi = 0; oi < offsets.length; oi++) {
+        var key = 't' + offsets[oi];
+        // 1d Vola: Streuung der Returns aller Events an dieser Position
+        var vals = windows.filter(function(w){return w[key]!==undefined;}).map(function(w){return w[key];});
+        vola1d.push(vals.length > 2 ? parseFloat((_std(vals) * ANN).toFixed(2)) : null);
+
+        // 5d Vola: Pooled Returns aus [o-2..o+2]
+        var pooled = [];
+        for (var d = -2; d <= 2; d++) {
+          var k2 = 't' + (offsets[oi] + d);
+          for (var wi = 0; wi < windows.length; wi++) {
+            if (windows[wi][k2] !== undefined) pooled.push(windows[wi][k2]);
+          }
+        }
+        vola5d.push(pooled.length > 5 ? parseFloat((_std(pooled) * ANN).toFixed(2)) : null);
+      }
+      return { offsets: offsets, vola1d: vola1d, vola5d: vola5d };
+    }
+
+    function makeOffsetLabels(offsets) {
+      return offsets.map(function(o){ return o===0 ? 't=0\n(OPEX)' : (o>0?'t+':'t')+o; });
+    }
+
+    /** Kumulierte Serie aus einem aggregierten means-Array (startet bei 0) */
+    function toCumSeries(means) {
+      var out = [0];
+      var cum = 0;
+      for (var i = 0; i < means.length; i++) {
+        cum += means[i];
+        out.push(parseFloat(cum.toFixed(4)));
+      }
+      return out;
+    }
+
+    /** Labels mit "Start" Position vor t-N (passend zu toCumSeries) */
+    function makeCumLabels(daysBefore, daysAfter) {
+      var out = ['Start'];
+      for (var o = -daysBefore; o <= daysAfter; o++) {
+        out.push(o === 0 ? 't=0' : (o > 0 ? 't+' + o : 't' + o));
+      }
+      return out;
+    }
+
+    // ── Render: OPEX Triple Witching (1 Chart, kumulierter Verlauf) ──────────
+    function renderOpexTriple(windows, daysBefore, daysAfter) {
+      var agg = aggregateByOffset(windows, daysBefore, daysAfter);
+      var cumSeries = toCumSeries(agg.means);
+      var labels = makeCumLabels(daysBefore, daysAfter);
+
+      if (charts['opex-triple']) { charts['opex-triple'].destroy(); charts['opex-triple']=null; }
+      charts['opex-triple'] = new ApexCharts(document.getElementById('chart-opex-triple'), {
+        series: [{ name: 'Kumul. \u00D8 Rendite', data: cumSeries }],
+        chart: Object.assign({ type:'area', height:340 }, SA.chartTheme.chart),
+        stroke: { width:3, curve:'straight' },
+        fill: { type:'gradient', gradient:{opacityFrom:.3, opacityTo:.02} },
+        colors: [COL_TRIPLE],
+        markers: { size:5, colors:[COL_TRIPLE], strokeColors:'#000', strokeWidth:2 },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return (v>=0?'+':'')+v.toFixed(2)+'%';}}, title:{text:'Kumul. Rendite (%)',style:{color:'#a89878',fontSize:'11px'}} },
+        annotations: {
+          xaxis:[{ x:'t=0', borderColor:'rgba(251,146,60,.5)', strokeDashArray:4, label:{text:'Verfall',style:{color:'#fff',background:'rgba(251,146,60,.7)',fontSize:'10px'}} }],
+          yaxis:[{ y:0, borderColor:'rgba(255,255,255,.15)', strokeDashArray:2 }]
+        },
+        dataLabels: { enabled:false },
+        title: { text:currentTicker+' \u2014 Triple Witching Verlauf (n='+windows.length+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['opex-triple'].render();
+    }
+
+    // ── Render: Volatilität 1d vs 5d ──────────────────────────────────────────
+    function renderVolaChart(windows, daysBefore, daysAfter, nEvents, modeLabel) {
+      var vd = computeVolaByOffset(windows, daysBefore, daysAfter);
+      var labels = vd.offsets.map(function(o){ return o===0 ? 't=0\n(Verfall)' : (o>0?'t+':'t')+o; });
+
+      if (charts['vola']) { charts['vola'].destroy(); charts['vola']=null; }
+      charts['vola'] = new ApexCharts(document.getElementById('chart-vola'), {
+        series: [
+          { name: '1d Vola', type:'bar', data: vd.vola1d },
+          { name: '5d Vola', type:'line', data: vd.vola5d }
+        ],
+        chart: Object.assign({ type:'line', height:280 }, SA.chartTheme.chart),
+        stroke: { width:[0, 3], curve:'straight' },
+        colors: ['#e8a820', '#30e878'],
+        fill: { opacity:[0.85, 1] },
+        plotOptions: { bar:{ columnWidth:'55%', borderRadius:3 } },
+        markers: { size:[0,5], hover:{size:6} },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { categories:labels, labels:{style:{colors:'#a89878',fontSize:'11px'}} },
+        yaxis: {
+          labels:{ style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){ return v!=null ? v.toFixed(1)+'%' : ''; } },
+          title:{ text:'Vola (% ann.)', style:{color:'#a89878',fontSize:'11px'} }
+        },
+        legend: { labels:{colors:'#a89878'}, fontSize:'11px', position:'top', horizontalAlign:'right' },
+        annotations: {
+          xaxis:[{ x:'t=0\n(Verfall)', borderColor:'rgba(251,146,60,.5)', strokeDashArray:4, label:{text:'Verfall',style:{color:'#fff',background:'rgba(251,146,60,.7)',fontSize:'10px'}} }]
+        },
+        dataLabels: { enabled:false },
+        title: { text:currentTicker+' \u2014 Volatilit\u00E4t rund um '+modeLabel+' (n='+nEvents+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['vola'].render();
+    }
+
+    // ── Render: OPEX Monatlich Grid (12 kleine Charts, einer pro Monat) ──────
+    function renderOpexMonthlyGrid(allWindows, daysBefore, daysAfter) {
+      var container = document.getElementById('chart-opex-monthly-grid');
+      container.innerHTML = '';
+      var labels = makeCumLabels(daysBefore, daysAfter);
+
+      var anyVisible = false;
+      for (var m = 1; m <= 12; m++) {
+        if (!opexMonthsMask[m-1]) continue;
+        anyVisible = true;
+        (function(month) {
+          var mWindows = allWindows.filter(function(w){ return w.month === month; });
+          var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
+          var cum = toCumSeries(agg.means);
+          var isTriple = TRIPLE_MONTHS.indexOf(month) >= 0;
+          var col = isTriple ? COL_TRIPLE : COL_ALL;
+
+          var wrap = document.createElement('div');
+          wrap.className = 'mini-chart';
+          container.appendChild(wrap);
+
+          var chart = new ApexCharts(wrap, {
+            series: [{ name:'Kum.', data:cum }],
+            chart: Object.assign({ type:'area', height:190, sparkline:{enabled:false}, toolbar:{show:false} }, SA.chartTheme.chart),
+            stroke: { width:2, curve:'straight' },
+            fill: { type:'gradient', gradient:{opacityFrom:.35, opacityTo:.02} },
+            colors: [col],
+            grid: { borderColor:'rgba(255,255,255,.08)', strokeDashArray:0, padding:{left:6,right:6,top:4,bottom:0} },
+            tooltip: SA.chartTheme.tooltip,
+            xaxis: { categories:labels, labels:{show:true, style:{colors:'#d4c5a0',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true} },
+            yaxis: { labels:{show:true, style:{colors:'#d4c5a0',fontSize:'10px'}, formatter:function(v){return v.toFixed(1)+'%';}} },
+            annotations: {
+              xaxis:[{ x:'t=0', borderColor:'#ffffff', strokeDashArray:0, opacity:1, label:{text:'',borderWidth:0} }],
+              yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:2 }]
+            },
+            dataLabels: { enabled:false },
+            title: { text:MONTHS_FULL[month-1]+(isTriple?' \u2605':'')+' (n='+mWindows.length+')',
+                     align:'left',
+                     style:{color:isTriple?COL_TRIPLE:'#f5f5f5',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+          });
+          chart.render();
+          miniCharts.push(chart);
+        })(m);
+      }
+    }
+
+    // ── Render: Heatmap Monat x Offset ───────────────────────────────────────
+    function renderHeatmap(allWindows, daysBefore, daysAfter, titleSuffix) {
+      var series = [];
+      for (var m = 12; m >= 1; m--) {
+        var mWindows = allWindows.filter(function(w){ return w.month === m; });
+        var agg = aggregateByOffset(mWindows, daysBefore, daysAfter);
+        var row = [];
+        for (var i = 0; i < agg.offsets.length; i++) {
+          var off = agg.offsets[i];
+          var label = off === 0 ? 't=0' : (off > 0 ? 't+'+off : 't'+off);
+          row.push({ x: label, y: mWindows.length === 0 ? null : parseFloat(agg.means[i].toFixed(4)) });
+        }
+        series.push({ name: MONTHS_DE[m-1], data: row });
+      }
+
+      if (charts['heatmap']) { charts['heatmap'].destroy(); charts['heatmap']=null; }
+      charts['heatmap'] = new ApexCharts(document.getElementById('chart-heatmap'), {
+        series: series,
+        chart: Object.assign({ type:'heatmap', height: 420 }, SA.chartTheme.chart),
+        plotOptions: {
+          heatmap: {
+            radius: 3,
+            enableShades: false,
+            colorScale: {
+              ranges: [
+                { from:-99, to:-0.30, color:'#7f1d1d', name:'stark negativ' },
+                { from:-0.30, to:-0.10, color:'#991b1b', name:'negativ' },
+                { from:-0.10, to:-0.02, color:'#7f1d1d', name:'leicht neg.' },
+                { from:-0.02, to:0.02,  color:'#1f2937', name:'neutral' },
+                { from:0.02, to:0.10,   color:'#166534', name:'leicht pos.' },
+                { from:0.10, to:0.30,   color:'#15803d', name:'positiv' },
+                { from:0.30, to:99,     color:'#14532d', name:'stark pos.' }
+              ]
+            }
+          }
+        },
+        grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
+        xaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'12px'}} },
+        dataLabels: {
+          enabled: true,
+          formatter: function(v) { return v === null ? '' : (v>=0?'+':'')+v.toFixed(2); },
+          style: { fontSize:'13px', fontWeight:600, colors:['#f5f5f5'] }
+        },
+        legend: { show:false },
+        title: { text:currentTicker+' \u2014 '+titleSuffix+': \u00D8 Tagesrendite Monat \u00D7 Offset', style:{color:'#fff',fontSize:'14px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts['heatmap'].render();
+    }
+
+    // ── Render: KPIs (Modus-abhaengig) ────────────────────────────────────────
+    function renderKPIs(windows, label) {
+      var t0vals = windows.map(function(w){ return w.t0; }).filter(function(v){ return v!==undefined; });
+      var avg = t0vals.length ? t0vals.reduce(function(s,v){return s+v;},0)/t0vals.length : 0;
+      var wr  = t0vals.length ? t0vals.filter(function(v){return v>0;}).length/t0vals.length*100 : 50;
+
+      var daysBefore = parseInt(document.getElementById('sl-before').value);
+      var daysAfter  = parseInt(document.getElementById('sl-after').value);
+      var agg = aggregateByOffset(windows, daysBefore, daysAfter);
+      var bestIdx = 0, worstIdx = 0;
+      for (var i = 0; i < agg.means.length; i++) {
+        if (agg.means[i] > agg.means[bestIdx])  bestIdx = i;
+        if (agg.means[i] < agg.means[worstIdx]) worstIdx = i;
+      }
+      var bestLabel  = agg.offsets[bestIdx]  === 0 ? 't=0' : (agg.offsets[bestIdx] >0?'t+':'t')+agg.offsets[bestIdx];
+      var worstLabel = agg.offsets[worstIdx] === 0 ? 't=0' : (agg.offsets[worstIdx]>0?'t+':'t')+agg.offsets[worstIdx];
+
+      $kpi.innerHTML =
+        kpi('Events', windows.length.toLocaleString()) +
+        kpi(label+'-Tag \u00D8 Rendite', fmtPct(avg,3), avg>=0?'kpi__value--green':'kpi__value--red') +
+        kpi('Win-Rate '+label+'-Tag', wr.toFixed(1)+' %', wr>=50?'kpi__value--green':'kpi__value--red') +
+        kpi('Bester Tag', bestLabel+' ('+fmtPct(agg.means[bestIdx],3)+')', 'kpi__value--green') +
+        kpi('Schlechtester Tag', worstLabel+' ('+fmtPct(agg.means[worstIdx],3)+')', 'kpi__value--red');
+    }
+
+    // ── Render: Backtest ──────────────────────────────────────────────────────
+    function renderBacktest(windows, btLabel) {
+      // Backtest-Titel dynamisch setzen
+      document.getElementById('bt-summary').textContent = 'Backtest: '+btLabel;
+      document.getElementById('bt-desc').textContent = btLabel;
+
+      // In Trade-Objekte fuer SA.strategy.computeStats umwandeln
+      var sorted = windows.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+      var trades = sorted
+        .filter(function(w){ return w.entryDate && w.exitDate; })
+        .map(function(w){
+          return {
+            entry_date: w.entryDate,
+            exit_date:  w.exitDate,
+            entry_price: 100,
+            exit_price:  100 * (1 + (w.cumReturn||0)/100),
+            return_pct:  w.cumReturn || 0
+          };
+        });
+
+      var daysBefore = parseInt(document.getElementById('sl-before').value);
+      var daysAfter  = parseInt(document.getElementById('sl-after').value);
+      document.getElementById('bt-entry').textContent = '-' + daysBefore;
+      document.getElementById('bt-exit').textContent  = '+' + daysAfter;
+
+      if (trades.length === 0) {
+        document.getElementById('bt-kpis').innerHTML = '<div style="color:var(--muted);font-size:.8125rem">Keine Trades</div>';
+        ['equity','bt-bar'].forEach(function(k){ if(charts[k]){charts[k].destroy();charts[k]=null;} });
+        return;
+      }
+
+      var stats = SA.strategy ? SA.strategy.computeStats(trades, 1000) : null;
+      if (!stats) {
+        var rr = trades.map(function(t){ return t.return_pct; });
+        var avgR = rr.reduce(function(s,v){return s+v;},0)/rr.length;
+        stats = { cagr:0, max_drawdown:0, win_rate:rr.filter(function(v){return v>0;}).length/rr.length*100,
+                  sharpe:0, profit_factor:0, n_trades:trades.length, final_equity:1000, avg_return:avgR };
+      }
+
+      document.getElementById('bt-kpis').innerHTML =
+        kpi('CAGR', (stats.cagr >= 0 ? '+' : '') + stats.cagr.toFixed(1) + ' %', stats.cagr >= 0 ? 'green' : 'red') +
+        kpi('Max Drawdown', stats.max_drawdown.toFixed(1) + ' %', 'red') +
+        kpi('Win-Rate', stats.win_rate.toFixed(0) + ' %', stats.win_rate >= 50 ? 'green' : '') +
+        kpi('\u00D8 Trade', (stats.avg_return >= 0 ? '+' : '') + stats.avg_return.toFixed(2) + ' %', stats.avg_return >= 0 ? 'green' : 'red') +
+        kpi('Sharpe', SA.strategy.formatZahl(stats.sharpe, 2), stats.sharpe >= 1 ? 'green' : stats.sharpe >= 0.3 ? '' : 'red') +
+        kpi('Profit Factor', SA.strategy.formatPF(stats.profit_factor),
+            stats.profit_factor == null ? '' : stats.profit_factor >= 1.5 ? 'green' : stats.profit_factor >= 1 ? '' : 'red') +
+        kpi('Trades', stats.n_trades) +
+        kpi('$1.000 Endwert', '$' + (stats.final_equity || 0).toLocaleString(undefined, {maximumFractionDigits: 0}),
+            stats.final_equity >= 1000 ? 'green' : 'red');
+
+      // Equity-Kurve (Compounding, startet bei 1000)
+      var equity = [1000];
+      for (var i = 0; i < trades.length; i++) {
+        equity.push(equity[equity.length-1] * (1 + trades[i].return_pct / 100));
+      }
+      var eqDates = [trades.length ? trades[0].entry_date : ''].concat(trades.map(function(t){ return t.exit_date; }));
+      var eqColor = equity[equity.length-1] >= 1000 ? COL_POS : COL_NEG;
+
+      if (charts.equity) { charts.equity.destroy(); charts.equity=null; }
+      charts.equity = new ApexCharts(document.getElementById('chart-equity'), {
+        series: [{ name:'Equity ($)', data: equity.map(function(v){ return parseFloat(v.toFixed(2)); }) }],
+        chart: Object.assign({ type:'area', height:260 }, SA.chartTheme.chart),
+        stroke: { width:2, curve:'straight' },
+        fill: { type:'gradient', gradient:{opacityFrom:.28,opacityTo:.03} },
+        colors: [eqColor],
+        grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          x: { formatter:function(v,opts){ return eqDates[opts.dataPointIndex]||''; } },
+          y: { formatter:function(v){ return '$'+v.toLocaleString(undefined,{maximumFractionDigits:0}); } }
+        }),
+        xaxis: { categories:eqDates, tickAmount:8, labels:{style:{colors:'#d4c5a0',fontSize:'11px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
+        yaxis: { labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return '$'+v.toFixed(0);}} },
+        annotations: { yaxis:[{ y:1000, borderColor:'rgba(255,255,255,.25)', strokeDashArray:3, label:{text:'Start',style:{color:'#ddd',background:'rgba(0,0,0,.5)',fontSize:'10px'}} }] },
+        dataLabels: { enabled:false },
+        title: { text:currentTicker + ' \u2014 Equity-Kurve $1.000 Compounding ('+btLabel+')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts.equity.render();
+
+      // Uebergabe der Daten fuer den Bar-Chart (muss direkt nach Equity kommen)
+      var rets = trades.map(function(t){ return t.return_pct; });
+      var eqDatesBar = trades.map(function(t){ return t.exit_date; });
+
+      // Rendite pro Event
+      var barCols = rets.map(function(v){ return v>=0?COL_POS:COL_NEG; });
+      // Dynamische Y-Achse: symmetrisches Padding von ~10% um die Extremwerte
+      var yMin = 0, yMax = 0;
+      if (rets.length > 0) {
+        yMin = Math.min.apply(null, rets);
+        yMax = Math.max.apply(null, rets);
+        var range = Math.max(yMax - yMin, 0.5);
+        var pad = range * 0.12;
+        yMin = parseFloat((yMin - pad).toFixed(2));
+        yMax = parseFloat((yMax + pad).toFixed(2));
+      }
+      if (charts['bt-bar']) { charts['bt-bar'].destroy(); charts['bt-bar']=null; }
+      charts['bt-bar'] = new ApexCharts(document.getElementById('chart-bt-bar'), {
+        series: [{ name:'Trade-Rendite', data: rets.map(function(v){ return parseFloat(v.toFixed(3)); }) }],
+        chart: Object.assign({ type:'bar', height:200 }, SA.chartTheme.chart),
+        colors: barCols,
+        plotOptions: { bar:{ distributed:true, columnWidth:'90%', borderRadius:0 } },
+        grid: SA.chartTheme.grid, tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          x: { formatter:function(v,opts){ return eqDatesBar[opts.dataPointIndex]||''; } }
+        }),
+        xaxis: { categories:eqDatesBar, tickAmount:8, labels:{style:{colors:'#d4c5a0',fontSize:'10px'}, formatter:function(v){ return v?v.substring(0,7):''; }} },
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#d4c5a0',fontSize:'11px'},formatter:function(v){return v.toFixed(2)+' %';}}
+        },
+        annotations: { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:2 }] },
+        dataLabels: { enabled:false },
+        legend: { show:false },
+        title: { text: SA.i18n.t('opex.return_per_event','Rendite pro Event') + ' (%)', style:{color:'#d4c5a0',fontSize:'12px',fontFamily:'Sora,sans-serif'} }
+      });
+      charts['bt-bar'].render();
+    }
+
+    // ── Render: Kalender (Modus-abhaengig) ───────────────────────────────────
+    function fmtDate(d) { return d.substring(8,10)+'.'+d.substring(5,7)+'.'+d.substring(0,4); }
+    function fmtDayMonth(d) { return d.substring(8,10)+'.'+d.substring(5,7); }
+
+    function renderCalendar(opexDates) {
+      var today = new Date().toISOString().substring(0,10);
+
+      document.getElementById('cal-summary').textContent = SA.i18n.t('opex.calendar_title','OPEX-Kalender');
+      document.getElementById('cal-upcoming-title').textContent = SA.i18n.t('opex.next_opex_dates','N\u00E4chste 10 OPEX-Termine');
+      document.getElementById('cal-all-title').textContent = SA.i18n.t('opex.next_dates','N\u00E4chste 10 Termine');
+
+      var events = opexDates.slice();
+      events.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+
+      var upcoming = events.filter(function(ev){ return ev.date >= today; }).slice(0, 10);
+
+      var html = '<div class="calendar-grid">';
+      for (var i = 0; i < upcoming.length; i++) {
+        var ev = upcoming[i];
+        var dt = new Date(ev.date.substring(0,4)+'/'+ev.date.substring(5,7)+'/'+ev.date.substring(8,10));
+        var days = Math.round((dt - new Date())/86400000);
+        var cls = 'cal-card'+(i===0?' is-next':'')+(ev.isTriple?' is-triple':'');
+        html += '<div class="'+cls+'">';
+        html += '<div class="cal-date">'+fmtDate(ev.date)+'</div>';
+        html += '<div class="cal-type">'+(ev.isTriple?'<span class="badge-triple">Triple Witching</span>':'<span class="badge-standard">Standard OPEX</span>')+'</div>';
+        html += '<div style="font-size:.75rem;color:var(--muted);margin-top:.35rem">VIXpiration: '+fmtDayMonth(ev.vixDate)+' (Mi)</div>';
+        html += '<div class="cal-days">'+(days<=0?'Heute':(days===1?'Morgen':'in '+days+' Tagen'))+'</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+      document.getElementById('calendar-upcoming').innerHTML = html;
+
+      // Table header: OPEX with VIXpiration reference columns
+      document.getElementById('thead-all-opex').innerHTML =
+        '<tr><th>OPEX-Datum</th><th>Tag</th><th data-i18n="table.month">Monat</th><th>Typ</th><th>VIXpiration (Mi)</th><th>Letzter VIX-HT (Di)</th></tr>';
+
+      // Table body: nächste 10 zukünftige Termine
+      var futureAll = opexDates.filter(function(ev){ return ev.date >= today; });
+      var recent = futureAll.slice(0, 10);
+
+      var tbody = '';
+      for (var j = 0; j < recent.length; j++) {
+        var e2 = recent[j];
+        var d2 = new Date(e2.date.substring(0,4)+'/'+e2.date.substring(5,7)+'/'+e2.date.substring(8,10));
+        var dow = WEEKDAYS_DE[d2.getDay()];
+        var isPast = e2.date < today;
+        var rowStyle = (isPast?'opacity:.55':'')+(e2.date===today?';background:rgba(232,168,32,.08)':'');
+        var typeHtml = e2.isTriple ? '<span class="badge-triple">Triple Witching</span>' : '<span class="badge-standard">Standard</span>';
+
+        tbody += '<tr style="'+rowStyle+'">';
+        tbody += '<td><b>'+(e2.date===today?'&#9733; ':'')+fmtDate(e2.date)+'</b></td>';
+        tbody += '<td>'+dow+'</td>';
+        tbody += '<td>'+MONTHS_DE[parseInt(e2.month)-1]+'</td>';
+        tbody += '<td>'+typeHtml+'</td>';
+        tbody += '<td><span class="badge-vix">'+fmtDayMonth(e2.vixDate)+'</span></td>';
+        tbody += '<td style="color:var(--muted)">'+fmtDayMonth(e2.vixLtd)+'</td>';
+        tbody += '</tr>';
+      }
+      document.getElementById('tbody-all-opex').innerHTML = tbody;
+    }
+
+    // ── Render: Signifikanztest (Modus-abhaengig) ────────────────────────────
+    function renderSignificance(windows, label, viewContext) {
+      var el = document.getElementById('content-significance');
+      if (!SA.significance || windows.length < 3) {
+        document.getElementById('sec-significance').style.display = 'none';
+        return;
+      }
+
+      // Ziel-Monate ermitteln je Kontext
+      var monthsToShow = [];
+      if (viewContext === 'triple') {
+        [3, 6, 9, 12].forEach(function(m) { if (tripleMonthsMask[m]) monthsToShow.push(m); });
+      } else if (viewContext === 'monthly') {
+        for (var mi = 1; mi <= 12; mi++) if (opexMonthsMask[mi-1]) monthsToShow.push(mi);
+      }
+
+      // t=0 Gruppen: All + pro Monat
+      var t0Groups = {};
+      var t0All = windows.map(function(w){ return w.t0; }).filter(function(v){return v!==undefined && !isNaN(v);});
+      if (t0All.length >= 3) t0Groups['Alle'] = t0All;
+      for (var i = 0; i < monthsToShow.length; i++) {
+        var m = monthsToShow[i];
+        var arr = windows.filter(function(w){ return parseInt(w.month)===m; })
+                         .map(function(w){ return w.t0; })
+                         .filter(function(v){return v!==undefined && !isNaN(v);});
+        if (arr.length >= 3) t0Groups[MONTHS_DE[m-1]] = arr;
+      }
+      var t0Result = SA.significance.runSignificanceTest(t0Groups);
+
+      // Kumuliertes Fenster gegen 0
+      var cumGroups = {};
+      var cumAll = windows.map(function(w){ return w.cumReturn; }).filter(function(v){return v!==undefined && !isNaN(v);});
+      if (cumAll.length >= 3) cumGroups['Alle'] = cumAll;
+      for (var i = 0; i < monthsToShow.length; i++) {
+        var m = monthsToShow[i];
+        var arr = windows.filter(function(w){ return parseInt(w.month)===m; })
+                         .map(function(w){ return w.cumReturn; })
+                         .filter(function(v){return v!==undefined && !isNaN(v);});
+        if (arr.length >= 3) cumGroups[MONTHS_DE[m-1]] = arr;
+      }
+      var cumResult = SA.significance.runSignificanceTest(cumGroups);
+
+      // Sort-Order: Alle + Monate in richtiger Reihenfolge
+      var orderT0 = [];
+      if (t0Groups['Alle']) orderT0.push('Alle');
+      for (var i = 0; i < monthsToShow.length; i++) {
+        if (t0Groups[MONTHS_DE[monthsToShow[i]-1]]) orderT0.push(MONTHS_DE[monthsToShow[i]-1]);
+      }
+      var orderCum = [];
+      if (cumGroups['Alle']) orderCum.push('Alle');
+      for (var i = 0; i < monthsToShow.length; i++) {
+        if (cumGroups[MONTHS_DE[monthsToShow[i]-1]]) orderCum.push(MONTHS_DE[monthsToShow[i]-1]);
+      }
+
+      // Layout: Anzahl Spalten je Zeile
+      // Triple: 5 (Alle+4) → 5 cols
+      // Monthly: 13 (Alle+12) → 7 cols (2 Zeilen: 7/6)
+      var colsPerRow = viewContext === 'triple' ? 5 : 7;
+
+      var before = parseInt(document.getElementById('sl-before').value);
+      var after  = parseInt(document.getElementById('sl-after').value);
+
+      var html = '';
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-bottom:.3rem">'+label+'-'+SA.i18n.t('opex.t0_days','Tage (t0)')+'</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">'+SA.i18n.t('opex.ttest_opex_days','t-Test: Ist die durchschnittliche Tagesrendite am Verfalltag systematisch von Null verschieden?')+'</p>';
+      html += SA.significance.renderSection(t0Result, colsPerRow, orderT0);
+
+      html += '<h3 style="font-size:.9375rem;color:var(--text);margin-top:1.5rem;margin-bottom:.3rem">'+SA.i18n.t('opex.sig_window_heading','Kumuliertes Fenster')+' (t-'+before+' '+SA.i18n.t('common.to','bis')+' t+'+after+')</h3>';
+      html += '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.6rem">'+SA.i18n.t('opex.ttest_window','Summe der Tagesrenditen im gesamten Event-Fenster gegen Null.')+'</p>';
+      html += SA.significance.renderSection(cumResult, colsPerRow, orderCum);
+
+      el.innerHTML = html;
+    }
+
+    // ── Render: Streak (grafisch, Modus-abhaengig) ───────────────────────────
+    function renderStreak(windows, label) {
+      if (!SA.streaks) { document.getElementById('sec-streak').style.display='none'; return; }
+      var sorted = windows.slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+      var groups = [];
+      for (var m = 1; m <= 12; m++) {
+        var mWindows = sorted.filter(function(w){ return parseInt(w.month)===m; });
+        if (mWindows.length === 0) continue;
+        // Eintraege: neueste zuerst (für currentStreak()). sorted ist aufsteigend → reverse
+        var entries = mWindows.map(function(w){ return { date:parseInt(w.year), ret:w.cumReturn||0 }; }).reverse();
+        groups.push({ label: MONTHS_DE[m-1]+' '+label, entries: entries });
+      }
+      if (groups.length === 0) {
+        document.getElementById('content-streak').innerHTML =
+          '<div style="color:var(--muted);font-size:.8125rem;padding:1rem">Keine Events</div>';
+        return;
+      }
+      var subtitle = SA.i18n.t('opex.streak_desc', 'Aktuelle Gewinn-/Verlust-Serien pro OPEX-Monat. Triple Witching (Mrz/Jun/Sep/Dez) hat oft st\u00E4rkere Effekte.');
+      // WICHTIG: renderStreakTable-Signatur = (groups, colHeader, nBlocks)
+      // nBlocks MUSS eine Zahl sein, sonst werden keine W/L-Kacheln gerendert!
+      var tableHtml = SA.streaks.renderStreakTable(groups, label+'-Monat', 10);
+      var html = '<p style="color:var(--muted);font-size:.75rem;margin-bottom:.75rem">'+subtitle+'</p>'+tableHtml;
+      document.getElementById('content-streak').innerHTML = html;
+    }
+
+    // ── Indicator Filter ──────────────────────────────────────────────────────
+    var _getFilters = SA.indicators.renderFilterUI('indicator-filter', function(){ rerender(); });
+
+    // ── Outlier Filter ────────────────────────────────────────────────────────
+    var _getOutlierMethod = SA.outlier ?
+      SA.outlier.renderFilterUI('outlier-filter', function(){ rerender(); }) :
+      function(){ return 'off'; };
+
+    /**
+     * Wendet Outlier-Filter auf ein Event-Window-Array an.
+     * Nutzt cumReturn (Summe der Tagesrenditen im Fenster) als Kennzahl.
+     * IQR-Modi entfernen Ausreisser-Events komplett, Winsorize clippt cumReturn.
+     */
+    function applyOutlierFilter(windows, method) {
+      if (!method || method === 'off' || !SA.outlier || windows.length < 4) return windows;
+      var rets = windows.map(function(w){ return w.cumReturn || 0; });
+
+      if (method === 'winsorize') {
+        var clipped = SA.outlier.winsorize(rets, 3.0);
+        return windows.map(function(w, i) {
+          var copy = {};
+          for (var k in w) copy[k] = w[k];
+          copy.cumReturn = clipped[i];
+          return copy;
+        });
+      }
+      // IQR oder IQR-strict: Events komplett entfernen
+      var factor = method === 'iqr_strict' ? 3.0 : 1.5;
+      var isOut = SA.outlier.detectIQR(rets, factor);
+      return windows.filter(function(_, i) { return !isOut[i]; });
+    }
+
+    /** Badge-Anzeige: entfernte/geclippte Events. */
+    function updateOutlierBadge(before, after, method) {
+      var badge = document.getElementById('outlier-badge');
+      if (!badge) return;
+      if (!method || method === 'off') { badge.textContent = ''; return; }
+      var diff = before - after;
+      if (method === 'winsorize') {
+        badge.textContent = 'Winsorized (cumReturn geclippt auf 3\u03C3)';
+      } else if (diff > 0) {
+        badge.textContent = diff+' Event'+(diff===1?'':'s')+' entfernt ('+before+' \u2192 '+after+')';
+      } else {
+        badge.textContent = 'Keine Ausreisser gefunden';
+      }
+    }
+
+    // ── Haupt-Logik ───────────────────────────────────────────────────────────
+    function buildOpexDates(rows) {
+      if (!rows || rows.length === 0) return [];
+      var yearsVal = document.getElementById('sel-years').value;
+      var minYear  = yearsVal === 'max' ? 1990 : new Date().getFullYear() - parseInt(yearsVal);
+      var maxYear  = new Date().getFullYear() + 2;  // +2 damit immer 10 zukuenftige Termine verfuegbar
+      var firstRow = rows[0].date.substring(0,4);
+      if (parseInt(firstRow) > minYear) minYear = parseInt(firstRow);
+
+      var result = [];
+      for (var y = minYear; y <= maxYear; y++) {
+        for (var m = 1; m <= 12; m++) {
+          var opexStr = getOpexDateStr(y, m);
+          var vixStr  = getVixpirationDateStr(y, m);
+          var vixLtd  = getVixLastTradingDayStr(y, m);
+          result.push({ date:opexStr, year:y, month:m, isTriple:TRIPLE_MONTHS.indexOf(m)>=0, vixDate:vixStr, vixLtd:vixLtd });
+        }
+      }
+      return result;
+    }
+
+    function rerender() {
+      if (!_cachedRows) return;
+
+      var closes = _cachedRows.map(function(r){ return parseFloat(r.close); });
+      var filters = _getFilters();
+      var mask = SA.indicators.applyFilter(closes, filters);
+      var filteredRows = _cachedRows.filter(function(r,i){ return mask[i]; });
+      if (filteredRows.length < 100) { showError('Zu wenig Daten nach Filter ('+filteredRows.length+' Tage)'); return; }
+
+      var returns   = buildReturns(filteredRows);
+      var opexDates = buildOpexDates(filteredRows);
+      var daysBefore = parseInt(document.getElementById('sl-before').value);
+      var daysAfter  = parseInt(document.getElementById('sl-after').value);
+
+      var lastDate = filteredRows[filteredRows.length-1].date;
+      var eventsAll    = opexDates.filter(function(e){ return e.date <= lastDate; });
+      var eventsTriple = eventsAll.filter(function(e){ return e.isTriple && tripleMonthsMask[parseInt(e.month)]; });
+
+      var windowsAll    = computeEventWindows(returns, eventsAll, daysBefore, daysAfter);
+      var windowsTriple = computeEventWindows(returns, eventsTriple, daysBefore, daysAfter);
+
+      // Outlier-Filter anwenden (wirkt auf cumReturn)
+      var outlierMethod = _getOutlierMethod();
+      var beforeCount = opexView === 'triple' ? windowsTriple.length : windowsAll.length;
+      windowsAll    = applyOutlierFilter(windowsAll,    outlierMethod);
+      windowsTriple = applyOutlierFilter(windowsTriple, outlierMethod);
+      var afterCount = opexView === 'triple' ? windowsTriple.length : windowsAll.length;
+      updateOutlierBadge(beforeCount, afterCount, outlierMethod);
+
+      _cachedData = { windowsAll:windowsAll, windowsTriple:windowsTriple, opexDates:eventsAll };
+
+      destroyAll();
+      document.getElementById('bt-entry').textContent = '-' + daysBefore;
+      document.getElementById('bt-exit').textContent  = '+' + daysAfter;
+
+      if (opexView === 'triple') {
+        renderKPIs(windowsTriple, 'OPEX');
+        renderOpexTriple(windowsTriple, daysBefore, daysAfter);
+        renderHeatmap(windowsAll, daysBefore, daysAfter, 'OPEX');
+        renderSignificance(windowsTriple, 'OPEX', 'triple');
+        renderBacktest(windowsTriple, 'Triple Witching');
+        renderStreak(windowsTriple, 'OPEX');
+      } else {
+        // Monatlich: Auf ausgewaehlte Monate filtern
+        var windowsOpexFiltered = windowsAll.filter(function(w){ return opexMonthsMask[parseInt(w.month)-1]; });
+        renderKPIs(windowsOpexFiltered, 'OPEX');
+        renderOpexMonthlyGrid(windowsAll, daysBefore, daysAfter); // Grid nutzt eigenes Mask-Filtering
+        renderHeatmap(windowsOpexFiltered, daysBefore, daysAfter, 'OPEX');
+        renderSignificance(windowsOpexFiltered, 'OPEX', 'monthly');
+        renderBacktest(windowsOpexFiltered, 'Monatlicher Verfall');
+        renderStreak(windowsOpexFiltered, 'OPEX');
+      }
+      // Vola-Chart
+      var volaWindows = opexView === 'triple' ? windowsTriple : windowsAll.filter(function(w){ return opexMonthsMask[parseInt(w.month)-1]; });
+      renderVolaChart(volaWindows, daysBefore, daysAfter, volaWindows.length, opexView === 'triple' ? 'Triple Witching' : 'OPEX');
+
+      renderCalendar(opexDates);  // ungefiltert — enthält auch zukünftige Termine
+
+      showSections(true);
+    }
+
+    function loadTicker(ticker) {
+      currentTicker = ticker;
+      document.getElementById('title-ticker').textContent = ticker;
+      var yearsVal = document.getElementById('sel-years').value;
+      var dateFilter = '';
+      if (yearsVal !== 'max') {
+        var minYear = new Date().getFullYear() - parseInt(yearsVal) - 1;
+        dateFilter = '&date=gte.' + minYear + '-01-01';
+      }
+
+      $loading.style.display = 'flex';
+      $error.style.display = 'none';
+      showSections(false);
+      destroyAll();
+      $kpi.innerHTML = '';
+      document.getElementById('bt-kpis').innerHTML = '';
+
+      // Fetch close prices
+      var allRows = [];
+      function fetchBatch(offset) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close&order=date' + dateFilter;
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers:{ 'apikey':SA.supabase.key, 'Authorization':'Bearer '+SA.supabase.key,
+                    'Range':offset+'-'+(offset+999), 'Prefer':'count=exact' }
+        }).then(function(r){
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows){
+            allRows = allRows.concat(rows);
+            if (cr){ var t=parseInt(cr.split('/')[1]); if(allRows.length<t) return fetchBatch(allRows.length); }
+            else if (rows.length===1000) return fetchBatch(allRows.length);
+            return allRows;
+          });
+        });
+      }
+
+      fetchBatch(0).then(function(rows) {
+        if (!rows || rows.length < 100) {
+          showError('Zu wenig Daten f\u00FCr '+ticker+' ('+((rows||[]).length)+' Zeilen)');
+          $loading.style.display = 'none';
+          return;
+        }
+        _cachedRows = rows;
+        SA.renderTradingDayHeader('trading-day-header', ticker, rows);
+        rerender();
+        $loading.style.display = 'none';
+      }).catch(function(err){
+        showError('Fehler: '+err.message);
+        $loading.style.display = 'none';
+      });
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+    document.getElementById('sel-years').addEventListener('change', function(){ loadTicker(currentTicker); });
+
+    document.getElementById('sl-before').addEventListener('input', function(){
+      document.getElementById('lbl-before').textContent = this.value;
+    });
+    document.getElementById('sl-after').addEventListener('input', function(){
+      document.getElementById('lbl-after').textContent = this.value;
+    });
+    document.getElementById('sl-before').addEventListener('change', function(){ if(_cachedRows) rerender(); });
+    document.getElementById('sl-after').addEventListener('change',  function(){ if(_cachedRows) rerender(); });
+
+    // OPEX-Ansicht Radio
+    var viewRadios = document.querySelectorAll('input[name="opex-view"]');
+    for (var i = 0; i < viewRadios.length; i++) {
+      viewRadios[i].addEventListener('change', function() {
+        if (!this.checked) return;
+        opexView = this.value;
+        document.getElementById('triple-months-block').style.display =
+          opexView === 'triple' ? '' : 'none';
+        document.getElementById('opex-monthly-block').style.display =
+          opexView === 'monthly' ? '' : 'none';
+        if (_cachedRows) rerender();
+      });
+    }
+
+    // Triple Witching Monats-Checkboxen
+    var tripleMonthChecks = document.querySelectorAll('#triple-months-checkboxes input[type=checkbox]');
+    for (var i = 0; i < tripleMonthChecks.length; i++) {
+      tripleMonthChecks[i].addEventListener('change', function() {
+        var m = parseInt(this.getAttribute('data-month'));
+        tripleMonthsMask[m] = this.checked;
+        if (_cachedRows && opexView === 'triple') rerender();
+      });
+    }
+    document.getElementById('btn-triple-all').addEventListener('click', function() {
+      [3,6,9,12].forEach(function(m,i) { tripleMonthsMask[m] = true; tripleMonthChecks[i].checked = true; });
+      if (_cachedRows && opexView === 'triple') rerender();
+    });
+    document.getElementById('btn-triple-none').addEventListener('click', function() {
+      [3,6,9,12].forEach(function(m,i) { tripleMonthsMask[m] = false; tripleMonthChecks[i].checked = false; });
+      if (_cachedRows && opexView === 'triple') rerender();
+    });
+
+    // OPEX Monatlich: Monats-Checkboxen
+    var opexMonthChecks = document.querySelectorAll('#opex-months-checkboxes input[type=checkbox]');
+    for (var i = 0; i < opexMonthChecks.length; i++) {
+      opexMonthChecks[i].addEventListener('change', function() {
+        var m = parseInt(this.getAttribute('data-month'));
+        opexMonthsMask[m-1] = this.checked;
+        if (_cachedRows && opexView === 'monthly') rerender();
+      });
+    }
+    document.getElementById('btn-opex-all').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { opexMonthsMask[i] = true; opexMonthChecks[i].checked = true; }
+      if (_cachedRows && opexView === 'monthly') rerender();
+    });
+    document.getElementById('btn-opex-none').addEventListener('click', function() {
+      for (var i = 0; i < 12; i++) { opexMonthsMask[i] = false; opexMonthChecks[i].checked = false; }
+      if (_cachedRows && opexView === 'monthly') rerender();
+    });
+
+    // Auto-Load
+    loadTicker(SA.prefs.applyTicker('ticker-input', 'SPY'));
+
+  })();
+  </script>
+
+</body>
+</html>

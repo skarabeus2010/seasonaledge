@@ -28,6 +28,9 @@
   var SA = window.SA = window.SA || {};
 
   var ERLAUBT = ['date', 'open', 'high', 'low', 'close', 'log_return', 'tdom', 'tdoy'];
+  // Feldsatz jeder gemeinsamen Ladung (alles, was eine Seite heute liest, außer high/low): ein Feldwechsel zwischen
+  // Verbrauchern derselben Seite löst so keine zweite Vollladung aus. Kosten: `open` ≈ +12 % Bytes je Block.
+  var VORLADEN = ['date', 'open', 'close', 'log_return', 'tdom', 'tdoy'];
   var K = {
     BLOCK: 1000,
     MAX_BLOECKE: 61,          // 60 000 Zeilen — längste Reihe heute ~35 000; Schutz gegen Endlosschleifen
@@ -253,14 +256,20 @@
 
   /** Genau eine Anfrage allein laden (Rückfall, wenn eine breitere gemeinsame Ladung scheiterte): nicht gecacht,
    *  Bestand unverändert, eigene Generation. Scheitert auch sie, lehnt die Anfrage ab. */
+  var eigeneAktiv = 0;   // laufende Rückfall-Ladungen (nur für Beobachtung, z. B. Seitenproben)
   function eigeneLadung(ticker, anfrage) {
+    eigeneAktiv++;
     return ladeAlles(ticker, anfrage).then(function (zeilen) {
+      eigeneAktiv--;
       return sicht({ zeilen: zeilen, bedarf: anfrage, geladenUm: uhr(), generation: ++generationen },
                    anfrage.felder, anfrage.ab);
-    });
+    }, function (e) { eigeneAktiv--; throw e; });
   }
 
   function starte(ticker, k, bedarf) {
+    // Eine gemeinsame Ladung holt immer mindestens VORLADEN — sonst lädt eine Anfrage, die nur ein weiteres Feld
+    // braucht (Dashboard-Overnight: `open`), die ganze Historie ein zweites Mal (gemessen: 44 statt 27 Anfragen).
+    bedarf = vereinige(bedarf, { felder: VORLADEN, ab: bedarf.ab });
     var lauf = { bedarf: bedarf };
     lauf.promise = ladeAlles(ticker, bedarf).then(function (zeilen) {
       k.bestand = { zeilen: zeilen, bedarf: bedarf, geladenUm: uhr(), generation: ++generationen };
@@ -306,7 +315,10 @@
       var geteilt = function (p, bedarfVon) {
         return p.then(aus, function (e) {
           var b = bedarfVon();
-          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;     // die Ladung war genau der eigene Bedarf
+          // Rückfall, sobald die gescheiterte Ladung MEHR verlangte als diese Anfrage — längerer Zeitraum ODER
+          // zusätzliche Spalten (VORLADEN, Felder anderer Verbraucher). Ein Fehler kann an einer Spalte hängen
+          // (Codex M2 R1). Nur bei genau dem eigenen Bedarf kein zweiter Versuch.
+          if (!b || deckt(anfrage, b.felder, b.ab)) throw e;
           return eigeneLadung(ticker, anfrage);
         });
       };
@@ -344,6 +356,13 @@
   SA.kurse = {
     laden: laden,
     zeilen: function (ticker, opts) { return laden(ticker, opts).then(function (e) { return e.zeilen; }); },
+    /** Grenze aus dem alten Filterformat der Seiten: '' / undefined → null, '&date=gte.YYYY-MM-DD' → Datum. Alles
+     *  andere wird unverändert weitergereicht und lehnt dann in laden() ab (nie still ignoriert, nie synchron). */
+    abAusFilter: function (filter) {
+      if (!filter) return null;
+      var m = /^&date=gte\.(\d{4}-\d{2}-\d{2})$/.exec(filter);
+      return m ? m[1] : filter;
+    },
     KursFehler: 'KursFehler',
     /** nur für Proben: Grenzen, Uhr und Zustand */
     _intern: {
@@ -351,7 +370,8 @@
       setzeUhr: function (fn) { uhr = fn; },
       zuruecksetzen: function () { koordinatoren = {}; schlange = []; aktiv = 0; zugriff = 0; },
       koordinatoren: function () { return koordinatoren; },
-      aktiv: function () { return aktiv; }
+      aktiv: function () { return aktiv; },
+      eigene: function () { return eigeneAktiv; }
     }
   };
 })();

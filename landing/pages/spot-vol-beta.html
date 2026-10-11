@@ -337,23 +337,9 @@
     function fmtPct(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '\u2013'; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
 
     // ── Fetch Spot + Vol ─────────────────────────────────────────────────────
+    // Kurse über den gemeinsamen Lader (landing/js/kurse.js, docs/TICKER_LADEN.md): vollständig oder Ablehnung.
     function fetchOHLC(ticker, extraFilter) {
-      var all = []; var batchSize = 1000;
-      function batch(off) {
-        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close&order=date' + (extraFilter || '');
-        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
-          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': off + '-' + (off + batchSize - 1), 'Prefer': 'count=exact' }
-        }).then(function(r) {
-          var cr = r.headers.get('content-range');
-          return r.json().then(function(rows) {
-            all = all.concat(rows);
-            if (cr) { var t = parseInt(cr.split('/')[1]); if (all.length < t) return batch(all.length); }
-            else if (rows.length === batchSize) return batch(all.length);
-            return all;
-          });
-        });
-      }
-      return batch(0);
+      return SA.kurse.zeilen(ticker, { felder: ['date', 'close'], ab: SA.kurse.abAusFilter(extraFilter) });
     }
 
     // ── Statistik-Helpers ────────────────────────────────────────────────────

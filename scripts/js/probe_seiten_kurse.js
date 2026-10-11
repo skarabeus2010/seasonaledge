@@ -3,8 +3,10 @@
 // sowie jede Kursanfrage. Der Wächter (scripts/verify_seiten_kurse.py) fährt dieselbe Probe einmal gegen den Stand
 // VOR der Umstellung und einmal gegen den Arbeitsbaum und verlangt gleiche Anzeige.
 //
-// Aufruf: node probe_seiten_kurse.js <landing-Wurzel> <seite> <fall>
-//   fall: normal | vollfehler | ttl
+// Aufruf: node probe_seiten_kurse.js <landing-Wurzel> <seite> <fall> [--ohne-obergrenze]
+//   fall: normal | vollfehler | ttl | blockfehler
+//   --ohne-obergrenze: der Nachbau liefert eine Abfrage OHNE Range/limit vollständig statt nach 1000 Zeilen
+//   abzuschneiden — so rechnet der ALTE Code auf vollständigen Daten (Soll für die Overnight-Korrektur).
 // Feste Uhr (2026-10-09 14:00 UTC, Zone Europe/Berlin), leerer Speicher, deterministische Kurse.
 'use strict';
 process.env.TZ = 'Europe/Berlin';
@@ -13,6 +15,7 @@ const path = require('path');
 const { JSDOM, ResourceLoader, VirtualConsole } = require(path.join(__dirname, '..', 'perf', 'node_modules', 'jsdom'));
 
 const [WURZEL, SEITE, FALL] = process.argv.slice(2);
+const OHNE_OBERGRENZE = process.argv.includes('--ohne-obergrenze');
 const UHR_START = Date.UTC(2026, 9, 9, 14, 0, 0);
 let uhrVersatz = 0;
 
@@ -41,7 +44,8 @@ function kurse(ticker, startJahr) {
   }
   return aus;
 }
-const DATEN = { '^GSPC': kurse('^GSPC', 1960), 'SPY': kurse('SPY', 1993) };
+const DATEN = {};
+function daten(t) { return DATEN[t] || (DATEN[t] = kurse(t, t === 'SPY' ? 1993 : 1960)); }
 
 // ── Netz: PostgREST-Nachbau (Range + count=exact UND Keyset) + statische Dateien aus der Wurzel ─────────────────
 const ANFRAGEN = [];
@@ -52,6 +56,7 @@ function antwort(status, body, kopf) {
            json: () => Promise.resolve(JSON.parse(text)), text: () => Promise.resolve(text) };
 }
 function preise(url, init) {
+  const h = (init && init.headers) || {};
   const q = url.split('?')[1] || '';
   const p = { gte: null, gt: null, lte: null, limit: null, select: null, ticker: null };
   for (const teil of q.split('&')) {
@@ -64,17 +69,18 @@ function preise(url, init) {
     else if (k === 'date' && v.startsWith('gt.')) p.gt = v.slice(3);
     else if (k === 'date' && v.startsWith('lte.')) p.lte = v.slice(4);
   }
-  const h = (init && init.headers) || {};
   ANFRAGEN.push({ url: decodeURIComponent(url.replace(/^https:\/\/stub/, '')), range: h.Range || null, prefer: h.Prefer || null,
                   t: Date.now() });
   // Fall „vollfehler": jede Abfrage der GANZEN Historie (ohne Untergrenze) scheitert serverseitig
   if (FEHLER_VOLL && p.gte === null) return antwort(500, { message: 'statement timeout' });
-  let z = (DATEN[p.ticker] || []).filter(x => (p.gte === null || x.date >= p.gte) && (p.gt === null || x.date > p.gt) &&
+  // Fall „blockfehler": jeder zweite und spätere Block einer Ladung scheitert dauerhaft
+  if (FALL === 'blockfehler' && (p.gt !== null || (h.Range && !/^0-/.test(h.Range)))) return antwort(500, { message: 'Fehler im Block' });
+  let z = daten(p.ticker).filter(x => (p.gte === null || x.date >= p.gte) && (p.gt === null || x.date > p.gt) &&
                                               (p.lte === null || x.date <= p.lte));
   const gesamt = z.length;
   let von = 0;
   if (h.Range) { const [a, b] = h.Range.split('-').map(Number); von = a; z = z.slice(a, b + 1); }
-  z = z.slice(0, Math.min(p.limit || 1000, 1000));
+  if (!(OHNE_OBERGRENZE && !h.Range && !p.limit)) z = z.slice(0, Math.min(p.limit || 1000, 1000));
   const sel = p.select || ['date', 'close'];
   z = z.map(x => { const o = {}; for (const f of sel) o[f] = x[f] === undefined ? null : x[f]; return o; });
   const cr = (z.length ? von + '-' + (von + z.length - 1) : '*') + '/' + (h.Prefer === 'count=exact' ? gesamt : '*');
@@ -86,8 +92,11 @@ function datei(pfad) {
   const f = path.join(WURZEL, rel);
   return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
 }
+let OFFEN = 0, LETZTE = Date.now();
 function netz(url, init) {
   url = String(url);
+  OFFEN++; LETZTE = Date.now();
+  const fertig = (x) => { OFFEN--; LETZTE = Date.now(); return x; };
   return new Promise(res => setTimeout(res, 2)).then(() => {
     if (url.startsWith('https://stub/rest/v1/prices')) return preise(url, init);
     if (url.startsWith('https://stub/')) return antwort(200, []);        // übrige Tabellen: leer
@@ -97,7 +106,7 @@ function netz(url, init) {
       return t === null ? antwort(404, 'nicht gefunden') : antwort(200, t);
     }
     return antwort(404, 'nicht gefunden');
-  });
+  }).then(fertig, (e) => { fertig(); throw e; });
 }
 
 // ── Skripte: eigene aus der Wurzel, ApexCharts als aufzeichnender Stub, Supabase-SDK leer ──────────────────────
@@ -128,7 +137,20 @@ class Lader extends ResourceLoader {
   }
 }
 
-const SEITEN = { dashboard: { datei: 'pages/dashboard.html', adresse: 'https://seasonalpha.ai/dashboard', inhalt: 'bento' } };
+const SEITEN = {
+  dashboard: { datei: 'pages/dashboard.html', adresse: 'https://seasonalpha.ai/dashboard' },
+  jahreszyklus: { datei: 'pages/jahreszyklus.html', adresse: 'https://seasonalpha.ai/jahreszyklus' },
+  'ki-saisonalitaet': { datei: 'pages/ki-saisonalitaet.html', adresse: 'https://seasonalpha.ai/ki-saisonalitaet' },
+  risikozyklus: { datei: 'pages/risikozyklus.html', adresse: 'https://seasonalpha.ai/risikozyklus' },
+  overnight: { datei: 'pages/overnight.html', adresse: 'https://seasonalpha.ai/overnight' },
+  'tdom-analyse': { datei: 'pages/tdom-analyse.html', adresse: 'https://seasonalpha.ai/tdom-analyse' },
+  wochentage: { datei: 'pages/wochentage.html', adresse: 'https://seasonalpha.ai/wochentage' },
+  'backtest-engine': { datei: 'pages/backtest-engine.html', adresse: 'https://seasonalpha.ai/backtest-engine' },
+  opex: { datei: 'pages/opex.html', adresse: 'https://seasonalpha.ai/opex' },
+  vixpiration: { datei: 'pages/vixpiration.html', adresse: 'https://seasonalpha.ai/vixpiration' },
+  'spot-vol-beta': { datei: 'pages/spot-vol-beta.html', adresse: 'https://seasonalpha.ai/spot-vol-beta' },
+  embed: { datei: 'embed.html', adresse: 'https://seasonalpha.ai/embed?ticker=SPY&years=15' }
+};
 const S = SEITEN[SEITE];
 if (!S) { process.stdout.write(JSON.stringify({ absturz: 'unbekannte Seite ' + SEITE })); process.exit(0); }
 let html = fs.readFileSync(path.join(WURZEL, S.datei), 'utf8')
@@ -155,9 +177,22 @@ const dom = new JSDOM(html, {
 });
 const W = dom.window;
 
+function inhaltText() {
+  const b = W.document.body.cloneNode(true);
+  ['nav-container', 'footer-container'].forEach(id => { const e = b.querySelector('#' + id); if (e) e.remove(); });
+  b.querySelectorAll('script,style').forEach(e => e.remove());
+  return b.textContent.replace(/\s+/g, ' ').trim();
+}
 function text(id) {
   const el = W.document.getElementById(id);
   return el ? el.textContent.replace(/\s+/g, ' ').trim() : null;
+}
+// Der neue Lader wartet zwischen Wiederholungen ohne offene Anfrage (bis ~1,7 s) — das ist keine Ruhe.
+function kurseAktiv() {
+  const K = W.SA && W.SA.kurse && W.SA.kurse._intern;
+  if (!K) return false;
+  const ko = K.koordinatoren();
+  return K.aktiv() > 0 || (K.eigene && K.eigene() > 0) || Object.keys(ko).some(t => ko[t].laufend || ko[t].wartend);
 }
 function warteRuhe(maxMs) {
   // fertig, wenn 1,5 s lang keine Kursanfrage mehr kam und keine Ladeanzeige mehr im Inhalt steht
@@ -166,8 +201,9 @@ function warteRuhe(maxMs) {
     (function blick() {
       // genau die Platzhalter der Seite („Wird berechnet …"), nicht Wörter wie „Ladefehler" im Fehlertext
       const ladend = /Wird berechnet|Calculating/.test(text('anomaly-content') || '') ||
-                     /Wird berechnet|Calculating/.test(text('ki-content') || '');
+                     /Wird berechnet|Calculating/.test(text('ki-content') || '') || OFFEN > 0 || kurseAktiv();
       if (ANFRAGEN.length !== n) { n = ANFRAGEN.length; seit = Date.now(); }
+      seit = Math.max(seit, LETZTE);
       if ((!ladend && Date.now() - seit > 1500) || Date.now() - start > maxMs) return ok(Date.now() - start < maxMs);
       setTimeout(blick, 100);
     })();
@@ -185,7 +221,7 @@ function warteRuhe(maxMs) {
     sel.dispatchEvent(new W.Event('change'));
     ruhig = (await warteRuhe(40000)) && ruhig;
   }
-  const inhalt = text(S.inhalt) || '';
+  const inhalt = inhaltText();
   const aus = {
     seite: SEITE, fall: FALL, ruhig,
     inhalt,

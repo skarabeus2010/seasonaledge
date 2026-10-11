@@ -108,6 +108,8 @@ function neu() {
   JETZT = 1e12;
 }
 const P = [];
+// genau der Feldsatz einer gemeinsamen Ladung (VORLADEN) — eine Anfrage damit hat keinen Rückfall
+const VF = ['date', 'open', 'close', 'log_return', 'tdom', 'tdoy'];
 function pruefe(name, ok, detail) { P.push({ name, ok: !!ok, detail: detail === undefined ? '' : String(detail) }); }
 // Eine Ausnahme, die KEIN KursFehler ist, ist ein Absturz des Produktivcodes — auch wenn ein Fall sie abfängt, gilt
 // sie nie als Nachweis (fünfte Beweisregel, v66.4). Sie wird gesammelt und vom Wächter als [Ausnahme] gemeldet.
@@ -218,33 +220,33 @@ ABSCHNITTE.push(['7 429 mit Retry-After, Netzfehler, Zeitüberschreitung', async
   pruefe('Zeitüberschreitung wiederholt', e.zeilen.length === 10 && NETZ.anfragen.length === 2, NETZ.anfragen.length);
   neu(); setze('T', reihe(10));
   NETZ.regeln.push({ ticker: 'T', antwort: 'status:404' });
-  f = await fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
+  f = await fehlerVon(KU.laden('T', { felder: VF, ab: null }));
   pruefe('404 ohne Wiederholung abgelehnt', istKursFehler(f) && NETZ.anfragen.length === 1, NETZ.anfragen.length);
   neu(); setze('T', reihe(10));
   NETZ.regeln.push({ ticker: 'T', antwort: 'status:500|0' });
-  f = await fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
+  f = await fehlerVon(KU.laden('T', { felder: VF, ab: null }));
   pruefe('500 nach Wiederholungen abgelehnt', istKursFehler(f) && NETZ.anfragen.length === I.K.MAX_WIEDERHOLUNGEN + 1, NETZ.anfragen.length);
 
 }]);
 ABSCHNITTE.push(['8 Blockprüfung: Cursor ohne Fortschritt, nicht aufsteigend, ungültiges', async function () {
   // 8 Blockprüfung: Cursor ohne Fortschritt, nicht aufsteigend, ungültiges Datum, fehlendes Feld, kein Array
+  const v = (z) => Object.assign({ open: 1, close: 1, log_return: 0, tdom: 1, tdoy: 1 }, z);
   const kaputt = {
     // zweiter Block beginnt MIT dem Cursor-Datum (Überlappung), ist in sich aufsteigend und kürzer als 1000 —
     // nur die Cursor-Prüfung fängt das, nicht die Blockgrenze und nicht die Ordnung im Block
-    'Cursor ohne Fortschritt': (p, nr) => antworte(200, (nr === 1 ? reihe(1000) : reihe(1001).slice(999))
-      .map(z => ({ date: z.date, close: z.close }))),
-    'nicht aufsteigend': () => antworte(200, [{ date: '2000-01-02', close: 1 }, { date: '2000-01-01', close: 1 }]),
-    'Duplikat': () => antworte(200, [{ date: '2000-01-01', close: 1 }, { date: '2000-01-01', close: 1 }]),
-    'ungültiges Datum': () => antworte(200, [{ date: '2000-02-30', close: 1 }]),
-    'Zeitstempel statt Datum': () => antworte(200, [{ date: '2000-01-01T00:00:00', close: 1 }]),
+    'Cursor ohne Fortschritt': (p, nr) => antworte(200, nr === 1 ? reihe(1000) : reihe(1001).slice(999)),
+    'nicht aufsteigend': () => antworte(200, [v({ date: '2000-01-02' }), v({ date: '2000-01-01' })]),
+    'Duplikat': () => antworte(200, [v({ date: '2000-01-01' }), v({ date: '2000-01-01' })]),
+    'ungültiges Datum': () => antworte(200, [v({ date: '2000-02-30' })]),
+    'Zeitstempel statt Datum': () => antworte(200, [v({ date: '2000-01-01T00:00:00' })]),
     'Feld fehlt': () => antworte(200, [{ date: '2000-01-01' }]),
     'kein Array': () => antworte(200, { message: 'x' }),
-    'Zeile vor Grenze': () => antworte(200, [{ date: '1899-01-01', close: 1 }])
+    'Zeile vor Grenze': () => antworte(200, [v({ date: '1899-01-01' })])
   };
   for (const [name, fn] of Object.entries(kaputt)) {
     neu();
     NETZ.regeln.push({ ticker: 'T', antwort: fn });
-    f = await fehlerVon(KU.laden('T', { felder: ['close'], ab: name === 'Zeile vor Grenze' ? '1900-01-01' : null }));
+    f = await fehlerVon(KU.laden('T', { felder: VF, ab: name === 'Zeile vor Grenze' ? '1900-01-01' : null }));
     pruefe('Block abgelehnt: ' + name, istKursFehler(f) && !I.koordinatoren().T.bestand, f && f.message);
   }
   // Blockgrenze
@@ -306,9 +308,9 @@ ABSCHNITTE.push(['11Bestand schrumpft nicht: ganzer Bestand + neues Feld mit sp�
   // 11 Bestand schrumpft nicht: ganzer Bestand + neues Feld mit späterer Grenze → Ladung ab null
   neu(); setze('T', reihe(1200));
   await KU.laden('T', { felder: ['close'], ab: null });
-  await KU.laden('T', { felder: ['tdom'], ab: '1902-01-01' });
+  await KU.laden('T', { felder: ['high'], ab: '1902-01-01' });
   const letzte = NETZ.anfragen[NETZ.anfragen.length - 1].url;
-  pruefe('Bestand schrumpft nicht', !NETZ.anfragen.slice(1).some(x => x.url.includes('gte')) && letzte.includes('close') && letzte.includes('tdom'),
+  pruefe('Bestand schrumpft nicht', !NETZ.anfragen.slice(1).some(x => x.url.includes('gte')) && letzte.includes('close') && letzte.includes('high'),
          NETZ.anfragen.slice(1).map(x => x.url).join(' | '));
   const nachher = NETZ.anfragen.length;
   await KU.laden('T', { felder: ['close'], ab: null });
@@ -318,10 +320,10 @@ ABSCHNITTE.push(['11Bestand schrumpft nicht: ganzer Bestand + neues Feld mit sp�
 ABSCHNITTE.push(['12 laufende Ladung scheitert, wartende startet trotzdem und gelingt', async function () {
   // 12 laufende Ladung scheitert, wartende startet trotzdem und gelingt
   neu(); setze('T', reihe(800)); NETZ.verzoegerung = 15;
-  NETZ.regeln.push({ ticker: 'T', wenn: (p) => !p.select.includes('open'), antwort: 'status:400' });
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => !p.select.includes('high'), antwort: 'status:400' });
   const pF = fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
   await new Promise(r => setTimeout(r, 3));
-  const pW = KU.laden('T', { felder: ['open'], ab: null });
+  const pW = KU.laden('T', { felder: ['high'], ab: null });
   const fF = await pF, rW = await pW;
   pruefe('laufende scheitert, wartende gelingt', istKursFehler(fF) && rW.zeilen.length === 800);
 
@@ -484,10 +486,34 @@ ABSCHNITTE.push(['19e nach TTL-Ablauf scheitert eine engere Anfrage nicht an der
          (r && r.message) || (r.zeilen && r.zeilen.length));
   pruefe('abgelaufener Bestand bleibt unverändert', I.koordinatoren().T.bestand.generation === voll.generation);
   const vorher = NETZ.anfragen.length;
-  const f = await fehlerVon(KU.laden('T', { felder: ['close'], ab: null }));
+  const f = await fehlerVon(KU.laden('T', { felder: ['date', 'open', 'close', 'log_return', 'tdom', 'tdoy'], ab: null }));
   pruefe('Anfrage mit genau dem gescheiterten Bedarf lehnt ab', istKursFehler(f), f && f.message);
   pruefe('kein Rückfall bei genau dem eigenen Bedarf (eine Anfrage)', NETZ.anfragen.length - vorher === 1,
          (NETZ.anfragen.length - vorher) + ' Anfragen');
+}]);
+ABSCHNITTE.push(['19f gemeinsame Ladung holt VORLADEN: ein weiteres Feld (open) lädt nichts nach', async function () {
+  // Dashboard: Vollhistorie (close, log_return …) für Score/Radar, dann Overnight mit `open` ab einem späteren Datum
+  setze('T', reihe(2100));
+  await KU.laden('T', { felder: ['date', 'close', 'log_return', 'tdom', 'tdoy'], ab: null });
+  const n = NETZ.anfragen.length;
+  const o = await KU.laden('T', { felder: ['date', 'open', 'close'], ab: '1902-06-01' });
+  pruefe('Overnight-Felder aus dem Bestand', NETZ.anfragen.length === n && o.zeilen.length === DATEN.T.filter(z => z.date >= '1902-06-01').length &&
+         Object.keys(o.zeilen[0]).join() === 'date,open,close', (NETZ.anfragen.length - n) + ' neue Anfragen');
+  pruefe('erste Ladung holte VORLADEN', /select=date,open,close,log_return,tdom,tdoy&/.test(NETZ.anfragen[0].url), NETZ.anfragen[0].url);
+}]);
+ABSCHNITTE.push(['19g Rückfall auch bei bloß zusätzlichen Spalten (Codex M2 R1)', async function () {
+  // (a) die VORLADEN-Ladung scheitert an einer Spalte (open), die Anfrage braucht nur close → eigene Ladung gelingt
+  setze('T', reihe(1200)); I.K.MAX_WIEDERHOLUNGEN = 0;
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.select.includes('open'), antwort: 'status:500' });
+  const r = await ergebnisOderFehler(KU.laden('T', { felder: ['close'], ab: null }));
+  pruefe('gescheitertes VORLADEN: eigene Anfrage gelingt', r && r.zeilen && r.zeilen.length === 1200, (r && r.message) || '');
+  // (b) nach TTL: Bestand trug high (anderer Verbraucher), die Neuladung scheitert an high, close-Anfrage gelingt
+  NETZ.regeln = [];
+  await KU.laden('T', { felder: ['high'], ab: null });
+  JETZT += I.K.TTL_MS + 1;
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.select.includes('high'), antwort: 'status:500' });
+  const r2 = await ergebnisOderFehler(KU.laden('T', { felder: ['close'], ab: null }));
+  pruefe('Felderweiterung nach TTL: eigene Anfrage gelingt', r2 && r2.zeilen && r2.zeilen.length === 1200, (r2 && r2.message) || '');
 }]);
 ABSCHNITTE.push(['20 JSON-Fehler: einmal → Wiederholung, dauerhaft → Ablehnung', async function () {
   // 20 JSON-Fehler: einmal → Wiederholung, dauerhaft → Ablehnung
@@ -504,10 +530,10 @@ ABSCHNITTE.push(['20 JSON-Fehler: einmal → Wiederholung, dauerhaft → Ablehnu
 ABSCHNITTE.push(['21 wartende Ladung scheitert: ihre Anfragen lehnen ab, der Bestand der', async function () {
   // 21 wartende Ladung scheitert: ihre Anfragen lehnen ab, der Bestand der laufenden bleibt
   neu(); setze('T', reihe(600)); NETZ.verzoegerung = 15;
-  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.select.includes('open'), antwort: 'status:400' });
+  NETZ.regeln.push({ ticker: 'T', wenn: (p) => p.select.includes('high'), antwort: 'status:400' });
   const pOk = KU.laden('T', { felder: ['close'], ab: null });
   await new Promise(r => setTimeout(r, 3));
-  const pWf = fehlerVon(KU.laden('T', { felder: ['open'], ab: null }));
+  const pWf = fehlerVon(KU.laden('T', { felder: ['high'], ab: null }));
   const rOk = await pOk, fW = await pWf;
   pruefe('wartende scheitert: ihre Anfrage lehnt ab', istKursFehler(fW), fW && fW.message);
   pruefe('wartende scheitert: Bestand der laufenden bleibt',
@@ -521,12 +547,12 @@ ABSCHNITTE.push(['22 Übergang: Anfrage genau beim Abschluss der laufenden Ladun
   neu(); setze('T', reihe(300)); NETZ.verzoegerung = 5;
   let uebergang = null;
   const pU = KU.laden('T', { felder: ['close'], ab: null }).then(function (r) {
-    uebergang = KU.laden('T', { felder: ['close', 'tdom'], ab: null });
+    uebergang = KU.laden('T', { felder: ['close', 'high'], ab: null });
     return r;
   });
   await pU;
   const rU = await uebergang;
-  pruefe('Übergangsanfrage bekommt eigenen Bedarf', rU.zeilen.length === 300 && 'tdom' in rU.zeilen[0] && NETZ.anfragen.length === 2,
+  pruefe('Übergangsanfrage bekommt eigenen Bedarf', rU.zeilen.length === 300 && 'high' in rU.zeilen[0] && NETZ.anfragen.length === 2,
          NETZ.anfragen.length);
   neu(); setze('T', reihe(300)); NETZ.verzoegerung = 5;
   let uebergang2 = null;

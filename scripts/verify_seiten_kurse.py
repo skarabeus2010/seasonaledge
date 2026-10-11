@@ -8,7 +8,13 @@ wörtliche alte Dateien aus scripts/fixtures/kurse_vorher/) und gegen den Arbeit
 Die Kursanfragen werden nur berichtet (gebündelt dürfen es weniger sein; ihren Vertrag prüft verify_kurse.py).
 
 Fälle: normal · vollfehler (jede Abfrage der ganzen Historie scheitert) · ttl (16 min später scheitert die ganze
-Historie, der Zeitraum-Regler zeichnet neu).
+Historie, der Zeitraum-Regler zeichnet neu) · blockfehler (ab dem zweiten Block scheitert jede Ladung dauerhaft).
+
+Beabsichtigte Korrekturen haben ein eigenes Soll statt „gleich wie vorher":
+  * Dashboard-Overnight lud ohne Pagination nur die ersten 1000 Zeilen. Soll = der ALTE Code auf vollständigen
+    Daten (Nachbau mit --ohne-obergrenze) — dieselbe Rechnung, nur ohne die Kürzung.
+  * blockfehler: die alten lokalen Lader hängten den Fehlerkörper als „Zeile" an und rechneten weiter. Soll = die
+    Seite zeigt den Ladefehler (`prices 500`) — der alte Stand wird nur berichtet.
 
 Aufruf: py -3.14 scripts/verify_seiten_kurse.py   (braucht: npm ci --prefix scripts/perf)
 """
@@ -24,9 +30,22 @@ WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PROBE = WURZEL / "scripts" / "js" / "probe_seiten_kurse.js"
 
 SEITEN = {
-    # Seite: (Fälle, Bausteine, die in der Anzeige stehen MÜSSEN)
-    "dashboard": (("normal", "vollfehler", "ttl"), ("Saison-Score", "Stress-Ampel", "Anomalie-Radar")),
+    # Seite: (Fälle, Bausteine, die in der Anzeige stehen MÜSSEN, mindestens n Charts)
+    "dashboard": (("normal", "vollfehler", "ttl", "blockfehler"), ("Saison-Score", "Stress-Ampel", "Anomalie-Radar"), 3),
+    "jahreszyklus": (("normal", "blockfehler"), (), 1),
+    "ki-saisonalitaet": (("normal", "blockfehler"), ("Saison-Score",), 1),
+    "risikozyklus": (("normal", "blockfehler"), (), 1),
+    "overnight": (("normal", "blockfehler"), (), 1),
+    "tdom-analyse": (("normal", "blockfehler"), (), 1),
+    "wochentage": (("normal", "blockfehler"), (), 1),
+    "backtest-engine": (("normal", "blockfehler"), (), 1),
+    "opex": (("normal", "blockfehler"), (), 1),
+    "vixpiration": (("normal", "blockfehler"), (), 1),
+    "spot-vol-beta": (("normal", "blockfehler"), (), 1),
+    "embed": (("normal", "blockfehler"), ("Saisonalitäts-Chart",), 1),
 }
+# Seiten, deren Vorher-Stand eine beabsichtigte Kürzung hatte: Vergleich gegen den alten Code ohne Kürzung
+OHNE_OBERGRENZE_ALT = {"dashboard"}
 
 
 FIXTURES = WURZEL / "scripts" / "fixtures" / "kurse_vorher"
@@ -54,9 +73,9 @@ def vorher_baum(ziel):
     return alt
 
 
-def lauf(wurzel, seite, fall):
+def lauf(wurzel, seite, fall, *extra):
     try:
-        r = subprocess.run(["node", str(PROBE), str(wurzel), seite, fall], capture_output=True, text=True,
+        r = subprocess.run(["node", str(PROBE), str(wurzel), seite, fall, *extra], capture_output=True, text=True,
                            encoding="utf-8", timeout=180)
     except subprocess.TimeoutExpired:
         return None, "Frist überschritten"
@@ -83,23 +102,34 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp:
         alt_wurzel = vorher_baum(pathlib.Path(tmp))
-        for seite, (faelle, bausteine) in SEITEN.items():
+        for seite, (faelle, bausteine, min_charts) in SEITEN.items():
             for fall in faelle:
-                a, fa = lauf(alt_wurzel, seite, fall)
-                n, fn = lauf(WURZEL / "landing", seite, fall)
                 name = "%s/%s" % (seite, fall)
-                pruefe(name + " alt vollständig", a is not None, fa or "")
+                n, fn = lauf(WURZEL / "landing", seite, fall)
                 pruefe(name + " neu vollständig", n is not None, fn or "")
+                if fall == "blockfehler":
+                    # beabsichtigte Korrektur: der neue Stand zeigt den Ladefehler; der alte wird nur berichtet
+                    a, _ = lauf(alt_wurzel, seite, fall)
+                    if n is not None:
+                        pruefe(name + " neu zeigt den Ladefehler", "prices 500" in n["inhalt"],
+                               n["inhalt"][:160])
+                        pruefe(name + " neu ohne Seitenfehler", not n["seitenfehler"], " | ".join(n["seitenfehler"])[:300])
+                    ergebnisse.append("     %s alt zeigte den Fehler: %s" % (name, "ja" if a and "prices 500" in a["inhalt"] else "nein"))
+                    continue
+                extra = ("--ohne-obergrenze",) if seite in OHNE_OBERGRENZE_ALT else ()
+                a, fa = lauf(alt_wurzel, seite, fall, *extra)
+                pruefe(name + " alt vollständig", a is not None, fa or "")
                 if a is None or n is None:
                     continue
                 for v, d in (("alt", a), ("neu", n)):
                     pruefe("%s %s Ruhe erreicht" % (name, v), d["ruhig"])
                     pruefe("%s %s ohne Seitenfehler" % (name, v), not d["seitenfehler"], " | ".join(d["seitenfehler"])[:300])
                     fehlt = [b for b in bausteine if b not in d["inhalt"]]
-                    pruefe("%s %s Anzeige vollständig" % (name, v), not fehlt and len(d["inhalt"]) > 500, "fehlt: %s" % fehlt)
-                    pruefe("%s %s Charts gezeichnet" % (name, v),
-                           len(d["charts"]) >= 3 and all(c["series"] not in ("null", "[]") for c in d["charts"]),
-                           "%d Charts" % len(d["charts"]))
+                    pruefe("%s %s Anzeige vollständig" % (name, v), not fehlt and len(d["inhalt"]) > (40 if seite == "embed" else 200),
+                           "fehlt: %s, %d Zeichen" % (fehlt, len(d["inhalt"])))
+                    gez = [c for c in d["charts"] if c["series"] not in ("null", "[]", None)]
+                    pruefe("%s %s Charts gezeichnet" % (name, v), len(gez) >= min_charts,
+                           "%d von %d Charts mit Serien" % (len(gez), len(d["charts"])))
                 gleich = a["inhalt"] == n["inhalt"]
                 detail = ""
                 if not gleich:
@@ -107,10 +137,15 @@ def main():
                              min(len(a["inhalt"]), len(n["inhalt"])))
                     detail = "ab Zeichen %d: alt «%s» / neu «%s»" % (i, a["inhalt"][max(0, i - 40):i + 80],
                                                                     n["inhalt"][max(0, i - 40):i + 80])
-                pruefe(name + " Anzeige gleich", gleich, detail)
-                pruefe(name + " Chart-Serien gleich", a["charts"] == n["charts"],
+                soll = " (Soll: alter Code ohne Kürzung)" if extra else ""
+                pruefe(name + " Anzeige gleich" + soll, gleich, detail)
+                pruefe(name + " Chart-Serien gleich" + soll, a["charts"] == n["charts"],
                        "alt %d / neu %d Charts" % (len(a["charts"]), len(n["charts"])))
                 ergebnisse.append("     %s Kursanfragen: alt %d, neu %d" % (name, len(a["kursanfragen"]), len(n["kursanfragen"])))
+                if extra and fall == "normal":
+                    # Nachweis, dass die Korrektur etwas korrigiert: der alte Stand MIT Kürzung zeigt anderes
+                    k, _ = lauf(alt_wurzel, seite, fall)
+                    pruefe(name + " alter Stand mit Kürzung weicht ab (Korrektur wirkt)", k is not None and k["inhalt"] != n["inhalt"])
     for e in ergebnisse:
         sys.stdout.write(e + "\n")
     n_pr = sum(1 for e in ergebnisse if e.startswith(("ok", "FEHL")))

@@ -1,0 +1,2358 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | SeasonAlpha</title>
+  <meta name="description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/dashboard">  
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/dashboard">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/dashboard">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/dashboard">
+
+  <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/dashboard">
+  <meta property="og:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
+  <meta property="og:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick | &mdash; SeasonAlpha">
+  <meta name="twitter:description" content="Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","url":"https://seasonalpha.ai/dashboard","description":"Alle Saisonal-Signale f&uuml;r deinen Ticker: Saison-Score, Stress-Ampel, Jahreschart, TruePath, Strategien, Events. Dein Cockpit f&uuml;r datengetriebene Trading-Entscheidungen.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Ticker Dashboard &mdash; Saisonalit&auml;t auf einen Blick |","item":"https://seasonalpha.ai/dashboard"}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  
+  
+  
+  
+  <style>
+    /* Dashboard ist Full-Width — keine Sidebar */
+    .app{grid-template-columns:1fr!important;max-width:1500px}
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin:0}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1rem;font-family:var(--f-m)}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .loading{color:var(--muted);font-size:.875rem;text-align:center;padding:2rem}
+    main{position:relative}
+
+    /* Toolbar neben dem Titel */
+    .dash-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:.5rem}
+    .dash-head__title{display:flex;flex-direction:column;gap:.15rem}
+    .dash-toolbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .dash-toolbar label{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:.35rem}
+    .dash-toolbar input,.dash-toolbar select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;color:var(--text);font-family:var(--f-m);font-size:.875rem;min-width:140px}
+    .dash-toolbar input:focus,.dash-toolbar select:focus{border-color:var(--accent);outline:none}
+    .dash-toolbar select{min-width:120px;cursor:pointer}
+
+    /* ── Watchlist-Toolbar im Dashboard-Header ── */
+    .wl-toolbar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .btn-wl-toggle{display:inline-flex;align-items:center;gap:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);padding:.5rem .85rem;border-radius:8px;font-family:var(--f-b);font-size:.8125rem;font-weight:600;cursor:pointer;transition:all .15s;min-height:40px}
+    .btn-wl-toggle:hover{border-color:var(--accent);color:var(--text)}
+    .btn-wl-toggle .icon-star{transition:fill .15s,stroke .15s}
+    .btn-wl-toggle.active{background:rgba(232,168,32,.12);border-color:var(--accent);color:var(--accent)}
+    .btn-wl-toggle.active .icon-star{fill:var(--accent);stroke:var(--accent)}
+    .btn-wl-count{display:inline-flex;align-items:center;gap:.5rem;background:transparent;border:1px solid var(--border);color:var(--dim);padding:.5rem .85rem;border-radius:8px;font-size:.8125rem;font-weight:500;text-decoration:none;transition:all .15s;min-height:40px}
+    .btn-wl-count:hover{border-color:var(--accent);color:var(--text);text-decoration:none}
+    #wl-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;background:var(--accent);color:#000;border-radius:11px;font-weight:800;font-size:.75rem;font-family:var(--f-m);line-height:1}
+    #wl-badge.empty{background:var(--border);color:var(--muted)}
+    @media (max-width:768px){.wl-toolbar{width:100%;justify-content:flex-start}.btn-wl-count{flex:1;justify-content:space-between}}
+
+    /* ── Bento-Grid ── */
+    .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;margin-top:1rem}
+    .bento-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:border-color .15s ease;min-height:120px;position:relative}
+    .bento-card:hover{border-color:var(--accent-g)}
+    .bento-card .ttl{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+    .bento-card .ttl .ico{font-size:1rem}
+    .bento-card.empty{opacity:.4}
+
+    /* Card-Spans */
+    /* oberste Reihe: vier gleich breite, inhaltshohe Kacheln (vorher 4/3/2/3 mit min-height 200 — die schmale
+       Anomalie-Karte wuchs in die Höhe und zog die ganze Reihe mit, 2026-10-09) */
+    .bento-ki{grid-column:span 3}
+    .bento-crash{grid-column:span 3}
+    .bento-anomaly{grid-column:span 3}
+    .bento-trifecta{grid-column:span 3}
+    .bento-year{grid-column:span 6;min-height:300px}
+    .bento-drawdown{grid-column:span 6;min-height:300px}
+    .bento-month{grid-column:span 6;min-height:300px}
+    .bento-truepath{grid-column:span 6;min-height:300px}
+    .bento-stat6{grid-column:span 2;min-height:180px}
+    .bento-risk{grid-column:span 12}
+    .bento-strategies{grid-column:span 12}
+    .bento-events{grid-column:span 12}
+
+    @media (max-width:1100px){
+      .bento-ki{grid-column:span 6}
+      .bento-crash{grid-column:span 6}
+      .bento-anomaly{grid-column:span 6}
+      .bento-trifecta{grid-column:span 6}
+      .bento-year{grid-column:span 12}
+      .bento-drawdown{grid-column:span 12}
+      .bento-month{grid-column:span 12}
+      .bento-truepath{grid-column:span 12}
+      .bento-stat6{grid-column:span 4}
+    }
+    @media (max-width:900px){
+      .bento-ki,.bento-crash,.bento-anomaly,.bento-trifecta{grid-column:span 12}
+      .bento-stat6{grid-column:span 6}
+    }
+    @media (max-width:768px){
+      .bento{grid-template-columns:1fr}
+      .bento-card{grid-column:span 1!important}
+    }
+    @media (max-width:600px){
+      .bento-card{min-height:auto;padding:.875rem}
+    }
+
+    /* ── Saison-Score Hero ── */
+    .ki-hero{display:flex;align-items:center;gap:.85rem;margin-bottom:.5rem}
+    .ki-score-big{font-size:2.1rem;font-weight:800;font-family:var(--f-m);line-height:1;color:var(--text)}
+    .ki-subs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
+    .ki-sub{font-size:.6875rem;color:var(--dim);line-height:1.3}
+    .ki-sub-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:.2rem;overflow:hidden}
+    .ki-sub-bar > div{height:100%;background:linear-gradient(90deg,#e8a820,#34d399);transition:width .3s ease}
+
+    /* ── Crash-Ampel ── */
+    .crash-light{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem}
+    .crash-circle{width:54px;height:54px;border-radius:50%;flex-shrink:0;box-shadow:0 0 24px rgba(0,0,0,.4)}
+    .crash-circle.green{background:radial-gradient(circle at 30% 30%,#5ee5b0,#16a34a);box-shadow:0 0 24px rgba(52,211,153,.4)}
+    .crash-circle.yellow{background:radial-gradient(circle at 30% 30%,#fcd34d,#d97706);box-shadow:0 0 24px rgba(232,168,32,.4)}
+    .crash-circle.red{background:radial-gradient(circle at 30% 30%,#fca5a5,#dc2626);box-shadow:0 0 24px rgba(248,113,113,.4)}
+    .crash-circle.grey{background:radial-gradient(circle at 30% 30%,#9ca3af,#4b5563)}
+    .crash-headline{font-size:1.75rem;font-weight:800;font-family:var(--f-m);color:var(--text);line-height:1}
+    .crash-headline small{font-size:.875rem;color:var(--muted);font-weight:500}
+    .crash-status{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
+
+    /* ── Anomalie-Radar ── */
+    .anomaly-kopf{display:flex;align-items:baseline;gap:.6rem;margin:.1rem 0 .5rem}
+    .anomaly-score-big{font-size:1.75rem;font-weight:800;font-family:var(--f-m);line-height:1}
+    .anomaly-status{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+    .bento-anomaly .kpi-row-mini{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .bento-anomaly .kpi-row-mini .kpi{padding:.45rem .5rem}
+    .bento-anomaly .kpi-label{letter-spacing:.02em;hyphens:auto;overflow-wrap:anywhere}
+    .bento-anomaly .sa-anom-prank{gap:.25rem;margin-top:0}
+    .bento-anomaly .sa-anom-prank-label{font-size:1rem}
+
+    /* ── Wochentag/TDOM Headlines ── */
+    .card-headline{font-size:1.375rem;font-weight:800;color:var(--text);margin-bottom:.15rem;font-family:var(--f-d)}
+    .card-sub{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+
+    /* ── Stat6 Cards: einheitliche innere Struktur ── */
+    .stat6-body .s6-headline{font-size:1.2rem;font-weight:800;color:var(--text);font-family:var(--f-d);line-height:1.2;margin-bottom:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stat6-body .s6-sub{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem}
+    .stat6-body .s6-kpis{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+    .stat6-body .s6-kpis .kpi{padding:.45rem .55rem;min-width:0}
+    .stat6-body .s6-kpis .kpi-label{font-size:.6rem}
+    .stat6-body .s6-kpis .kpi-value{font-size:.9375rem}
+
+    /* ── Weekday Streak Mini-Blocks ── */
+    .wd-streak-row{display:flex;gap:3px;margin-top:.45rem}
+    .wd-streak-row .wd-blk{flex:1;text-align:center;padding:3px 0;border-radius:4px;font-size:.625rem;font-weight:700;letter-spacing:.02em;line-height:1.2}
+    .wd-blk.w{background:rgba(48,232,120,.2);color:var(--green);border:1px solid rgba(48,232,120,.25)}
+    .wd-blk.l{background:rgba(255,64,64,.2);color:var(--red);border:1px solid rgba(255,64,64,.25)}
+    .wd-blk.today{box-shadow:0 0 0 2px var(--accent);position:relative}
+
+    /* ── Mini KPI-Row in Cards (nutzt globale .kpi Klasse) ── */
+    .kpi-row-mini{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.25rem}
+    .kpi-row-mini .kpi{padding:.55rem .65rem;min-width:0}
+    .kpi-row-mini .kpi-label{font-size:.625rem}
+    .kpi-row-mini .kpi-value{font-size:1rem}
+
+    /* ── Trifecta ── */
+    .tri-head{display:flex;align-items:center;gap:.85rem;margin-bottom:.5rem}
+    .tri-emoji{font-size:2.25rem;line-height:1}
+    .tri-signal{font-size:1.125rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .tri-count{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.1rem}
+    .tri-conditions{font-size:.75rem;color:var(--dim);line-height:1.65}
+    .tri-cond{display:flex;align-items:center;gap:.4rem}
+    .tri-cond .check{font-weight:700}
+    .tri-cond .check.ok{color:var(--green)}
+    .tri-cond .check.no{color:var(--red)}
+
+    /* ── KPI-Row für Risiko (4 Cards nutzen globale .kpi) ── */
+    .risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
+    @media (max-width:768px){.risk-grid{grid-template-columns:1fr 1fr}}
+    .risk-grid .kpi{position:relative}
+
+    /* ── Info-Badge + Hover-Tooltip (pure CSS, übernommen aus ki-saisonalitaet) ── */
+    .info-badge{position:absolute;top:.6rem;right:.6rem;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--muted);display:flex;align-items:center;justify-content:center;font-family:var(--f-d);font-size:.6875rem;font-weight:700;font-style:italic;cursor:help;z-index:5;transition:all .2s;user-select:none}
+    .info-badge:hover{background:rgba(232,168,32,.2);border-color:var(--accent);color:var(--accent)}
+    .info-tooltip{position:absolute;top:2.25rem;right:.6rem;width:300px;max-width:calc(100vw - 4rem);background:rgba(10,10,14,.98);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;font-size:.75rem;color:var(--dim);line-height:1.55;box-shadow:0 10px 30px rgba(0,0,0,.65);z-index:100;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .2s, transform .2s, visibility .2s;pointer-events:none;text-align:left;text-transform:none;letter-spacing:0;font-weight:400}
+    .info-badge:hover ~ .info-tooltip,.info-badge:focus ~ .info-tooltip,.info-tooltip:hover{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+    .info-tooltip b{color:var(--text)}
+    /* Kleinerer Tooltip speziell für die .risk-grid .kpi-Kacheln */
+    .risk-grid .kpi .info-tooltip{width:260px}
+    .risk-grid .kpi .info-badge{top:.35rem;right:.35rem;width:18px;height:18px;font-size:.625rem}
+
+    /* ── Strategien-Tabelle ── */
+    .strategies-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .strategies-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .strategies-table td{padding:.45rem .5rem;border-bottom:1px solid var(--border);color:var(--dim);font-variant-numeric:tabular-nums}
+    .streak-badge{display:inline-block;padding:.15rem .5rem;border-radius:5px;font-size:.6875rem;font-weight:700}
+    .streak-badge.win{background:rgba(48,232,120,.2);color:var(--green);border:1px solid rgba(48,232,120,.3)}
+    .streak-badge.loss{background:rgba(255,64,64,.2);color:var(--red);border:1px solid rgba(255,64,64,.3)}
+
+    /* ── Events ── */
+    .events-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.875rem}
+    @media (max-width:1100px){.events-grid{grid-template-columns:1fr 1fr}}
+    @media (max-width:768px){.events-grid{grid-template-columns:1fr}}
+    .event-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem .9rem;font-size:.75rem;line-height:1.5}
+    .event-card .ev-name{font-size:.9375rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+    .event-card .ev-date{color:var(--muted);font-size:.75rem;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .event-card .ev-stats{color:var(--dim)}
+    .event-card .ev-stats > div{margin-top:.2rem}
+    .event-card .ev-stats .pos{color:var(--green)}
+    .event-card .ev-stats .neg{color:var(--red)}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <main>
+      <div class="error-banner" id="error-banner"></div>
+      <div class="dash-head">
+        <div class="dash-head__title">
+          <h1 class="page-title"><b>Dashboard</b> — <span id="title-ticker">^GSPC</span></h1>
+          <p class="page-caption" data-i18n="dash.caption">Alle wichtigen Signale auf einen Blick · Saisonalität · Strategien · Risiko · Events</p>
+        </div>
+        <div class="dash-toolbar">
+          <div><label for="ticker-input">Ticker</label><input type="text" id="ticker-input" value="^GSPC" placeholder="z.B. TSLA, ^GSPC" list="ticker-list" data-i18n-placeholder="dash.ticker_placeholder"></div>
+          <datalist id="ticker-list"></datalist>
+          <div><label for="sel-years" data-i18n="dash.period">Zeitraum</label><select id="sel-years">
+            <option value="5" data-i18n="dash.yr5">5 Jahre</option>
+            <option value="10" data-i18n="dash.yr10">10 Jahre</option>
+            <option value="15" selected data-i18n="dash.yr15">15 Jahre</option>
+            <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+            <option value="30" data-i18n="dash.yr30">30 Jahre</option>
+          </select></div>
+          <div class="wl-toolbar">
+            <button id="btn-wl-toggle" type="button" class="btn-wl-toggle" title="Diesen Ticker zur Watchlist hinzufügen oder entfernen" data-i18n-title="dash.wl_toggle_title">
+              <svg class="icon-star" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span id="btn-wl-label" data-i18n="dash.to_watchlist">Zur Watchlist</span>
+            </button>
+            <a href="/watchlist" class="btn-wl-count" id="btn-wl-link" title="Meine Watchlist öffnen" data-i18n="dash.my_watchlist" data-i18n-title="dash.wl_link_title">
+              Meine Watchlist <span id="wl-badge">0</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <div id="loading-msg" class="loading" data-i18n="dash.loading">Lade Daten...</div>
+
+      <div class="bento" id="bento" style="display:none">
+        <!-- Saison-Score (gross, 6 cols) -->
+        <div class="bento-card bento-ki" id="card-ki">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Saison-Score" data-i18n-aria="dash.aria_ki">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_ki"><b>Saison-Score</b> — 0&ndash;10 aus vier Bausteinen zu je 2,5 Punkten, alle für die nächsten 30 Kalendertage: Anteil positiver Vorjahre, deren Ø-Rendite, und dieselben zwei Werte für die fünf ähnlichsten Jahre. Bis zu 20 Vergleichsjahre, unabhängig vom Zeitraum-Regler. Beschreibt die Vergangenheit, keine Prognose.</div>
+          <div class="ttl" data-i18n="dash.ki_title"><span class="ico">🧠</span> Saison-Score · 30 Tage</div>
+          <div id="ki-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
+        </div>
+
+        <!-- Crash-Ampel (3 cols) -->
+        <div class="bento-card bento-crash" id="card-crash">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zur Stress-Ampel" data-i18n-aria="dash.aria_crash">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_crash"><b>Stress-Ampel</b> — Rang aus Volatilität (5 und 20 Tage) und Abstand vom 20-Tage-Hoch gegen die vorangegangenen bis zu zehn Jahre desselben Tickers. <b>Grün</b> unter 70, <b>Gelb</b> ab 70, <b>Rot</b> ab 90. Beschreibt den aktuellen Zustand, keine Prognose.</div>
+          <div class="ttl" data-i18n="dash.crash_title"><span class="ico">🚦</span> Stress-Ampel</div>
+          <div id="crash-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
+        </div>
+
+        <!-- Anomalie-Radar (2 cols) -->
+        <div class="bento-card bento-anomaly" id="card-anomaly">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Anomalie-Radar" data-i18n-aria="dash.aria_anomaly">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_anomaly"><b>Anomalie-Radar</b> — Rendite der letzten 10 Handelstage gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren. <b>z</b> = Abstand zum Mittel in Standardabweichungen (mit Vorzeichen); ab |z| 1,33 auffällig, ab 2,33 stark auffällig. Beschreibt die jüngste Bewegung, keine Prognose.</div>
+          <div class="ttl" data-i18n="dash.anomaly_title"><span class="ico">📡</span> Anomalie</div>
+          <div id="anomaly-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
+        </div>
+
+        <!-- Trifecta (3 cols, in oberster Zeile) -->
+        <div class="bento-card bento-trifecta" id="card-trifecta">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zum Januar Trifecta" data-i18n-aria="dash.aria_trifecta">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_trifecta"><b>Januar Trifecta</b> — Klassisches Markt-Indiz: wenn (1) Santa-Rally positiv, (2) erste 5 Handelstage positiv und (3) Januar-Monat positiv zusammentreffen, war das Gesamtjahr historisch in <b>&gt; 80 %</b> der Fälle positiv. Trifft alle drei Bedingungen nicht zu, ist die Erfolgs-Wahrscheinlichkeit deutlich niedriger.</div>
+          <div class="ttl" data-i18n="dash.trifecta_title"><span class="ico">🚥</span> Januar Trifecta · Jahresampel</div>
+          <div id="trifecta-content"><p style="color:#a89878;font-size:.875rem">...</p></div>
+        </div>
+
+        <!-- Saisonaler Jahres-Chart (6 cols) -->
+        <div class="bento-card bento-year" id="card-year">
+          <div class="ttl" data-i18n="dash.year_title"><span class="ico">📈</span> Saisonaler Jahresverlauf</div>
+          <div id="chart-year"></div>
+        </div>
+
+        <!-- Drawdown-Chart (6 cols, neben Year-Chart) -->
+        <div class="bento-card bento-drawdown" id="card-drawdown">
+          <div class="ttl" data-i18n="dash.drawdown_title"><span class="ico">📉</span> Saisonaler Drawdown · Ø vs. aktuelles Jahr</div>
+          <div id="chart-drawdown"></div>
+        </div>
+
+        <!-- Intra-Monat Chart (6 cols) -->
+        <div class="bento-card bento-month" id="card-month">
+          <div class="ttl" data-i18n="dash.month_title"><span class="ico">📅</span> Aktueller Monat — TDOM-Verlauf</div>
+          <div id="chart-month"></div>
+        </div>
+
+        <!-- TruePath (6 cols) -->
+        <div class="bento-card bento-truepath" id="card-truepath">
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TruePath" data-i18n-aria="dash.aria_truepath">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_truepath"><b>TruePath</b> &mdash; Pattern-Matching über die letzten N Handelstage: jedes historische Jahr wird per Pearson-Korrelation + euklidischem Abstand zum aktuellen YTD-Verlauf verglichen. Die Top-Matches werden <b>gewichtet gemittelt</b> zu einer Projektion bis Jahresende &mdash; plus &plusmn; &sigma;-Cone für die Unsicherheit. Kein Vorhersage-Modell, sondern "wie lief es in ähnlichen Jahren weiter?".</div>
+          <div class="ttl" data-i18n="dash.truepath_title"><span class="ico">🛤️</span> TruePath — Top-Match Jahre</div>
+          <div id="chart-truepath"></div>
+        </div>
+
+        <!-- 6 Stat-Cards: je 2 cols = 12 -->
+        <div class="bento-card bento-stat6" id="card-month-perf">
+          <div class="ttl" data-i18n="dash.month_perf_title"><span class="ico">📅</span> Monatsperformance</div>
+          <div id="month-perf-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-twoweek">
+          <div class="ttl" data-i18n="dash.twoweek_title"><span class="ico">📊</span> 2-Wochen-Phase</div>
+          <div id="twoweek-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-weekday">
+          <div class="ttl" data-i18n="dash.weekday_title"><span class="ico">📆</span> Wochentag</div>
+          <div id="weekday-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-tdom-today">
+          <div class="ttl" data-i18n="dash.tdom_today_title"><span class="ico">📌</span> TDOM Heute</div>
+          <div id="tdom-today-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-overnight">
+          <div class="ttl" data-i18n="dash.overnight_title"><span class="ico">🌙</span> Overnight</div>
+          <div id="overnight-content" class="stat6-body"></div>
+        </div>
+
+        <div class="bento-card bento-stat6" id="card-tdom-tomorrow">
+          <div class="ttl" data-i18n="dash.tdom_tomorrow_title"><span class="ico">⏭️</span> TDOM Morgen</div>
+          <div id="tdom-tomorrow-content" class="stat6-body"></div>
+        </div>
+
+        <!-- Risiko-KPIs (12 cols) -->
+        <div class="bento-card bento-risk" id="card-risk">
+          <div class="ttl" data-i18n="dash.risk_title"><span class="ico">📉</span> Risiko-Metriken</div>
+          <div class="risk-grid" id="risk-content"></div>
+        </div>
+
+        <!-- Plain Vanilla Strategien (12 cols) -->
+        <div class="bento-card bento-strategies" id="card-strategies">
+          <div class="ttl" data-i18n="dash.strategies_title"><span class="ico">⚡</span> Aktuell relevante Strategien (nächste 30 Tage)</div>
+          <div id="strategies-content"><p style="color:#a89878;font-size:.875rem" data-i18n="dash.computing">Wird berechnet...</p></div>
+        </div>
+
+        <!-- Nächste Events (12 cols) -->
+        <div class="bento-card bento-events" id="card-events">
+          <div class="ttl" data-i18n="dash.events_title"><span class="ico">🗓️</span> Nächste Events + historische Streak</div>
+          <div class="events-grid" id="events-content"></div>
+        </div>
+      </div>
+
+      <details style="margin-top:1.5rem">
+        <summary data-i18n="dash.methodology">📚 Methodik</summary>
+        <div class="content">
+          <p data-i18n="dash.method_intro">Das Dashboard kombiniert die wichtigsten Signale aus den 19 Analyse-Pages auf einer Seite. Alle Berechnungen laufen client-seitig im Browser (kein Server-Round-Trip).</p>
+          <ul>
+            <li data-i18n-html="dash.method_ki"><b>Saison-Score (0–10)</b>: vier Bausteine für die nächsten 30 Kalendertage — Anteil positiver Vorjahre (bis zu 20), deren Ø-Rendite (−3 % … +3 % → 0 … 1) und dieselben zwei Werte für die fünf Jahre mit dem ähnlichsten Verlauf bis heute. Keine Bullish-/Bearish-Einstufung. Dieselbe Rechnung wie im <a href="/scanner">Scanner</a> und auf <a href="/ki-saisonalitaet">/ki-saisonalitaet</a>.</li>
+            <li data-i18n-html="dash.method_crash"><b>Stress-Ampel (0-100)</b>: Stress-Maß = 0,3 × Volatilität (5 Tage) + 0,3 × Volatilität (20 Tage) + 0,4 × Abstand vom 20-Tage-Hoch; Score = Rang gegen die vorangegangenen bis zu 2.520 Handelstage des <b>gleichen Tickers</b> (mindestens 756). Schwellen: ab 70 gelb, ab 90 rot.</li>
+            <li data-i18n-html="dash.method_anomaly"><b>Anomalie-Radar</b>: 10-Tage-Rendite (10 Tagesrenditen) gegen dasselbe Kalenderfenster in bis zu 30 Vorjahren (mind. 10); z mit Stichproben-Standardabweichung, Rang mit halben Gleichständen. Auffällig ab |z| 1,33, stark auffällig ab 2,33 (gesetzte Schwellen).</li>
+            <li data-i18n-html="dash.method_year"><b>Saisonaler Jahresverlauf</b>: Ø über alle Jahre + aktuelles Jahr in gold + 25./75. Perzentil-Bänder.</li>
+            <li data-i18n-html="dash.method_tdom_curve"><b>TDOM-Verlauf</b>: Kumulierte log-Return Kurve des aktuellen Monats. TDOM 0 = Vormonatsschluss.</li>
+            <li data-i18n-html="dash.method_truepath"><b>TruePath</b>: Gewichteter Ø der Top-5 ähnlichsten historischen Jahre (Pearson-Korrelation auf den Verlauf bis heute) + 30d-Forward-Projektion.</li>
+            <li data-i18n-html="dash.method_month_perf"><b>Monatsperformance</b>: Historische Ø Rendite, Win-Rate, Best/Worst des aktuellen Monats über N Jahre.</li>
+            <li data-i18n-html="dash.method_twoweek"><b>2-Wochen-Phase</b>: Aktuelle H1/H2-Phase im Monat mit Ø Return, Rang (1-24) und Status.</li>
+            <li data-i18n-html="dash.method_tdom_day"><b>TDOM Heute/Morgen</b>: Win-Rate und Ø Rendite an der heutigen/morgigen TDOM-Position über N Jahre.</li>
+            <li data-i18n-html="dash.method_overnight"><b>Overnight</b>: Ø Overnight-Rendite (Close→Open) des aktuellen Wochentags vs. Intraday (Open→Close). Residual-Ansatz.</li>
+            <li data-i18n-html="dash.method_weekday"><b>Wochentag</b>: Win-Rate, Ø Rendite und aktuelle Win/Loss-Streak aller 5 Wochentage (Mo-Fr).</li>
+            <li data-i18n-html="dash.method_trifecta"><b>Trifecta</b>: SCR + FFD + JanB Bedingungen für das aktuelle Jahr — auf den eingegebenen Ticker angewendet (Original-Konzept ist für Indizes).</li>
+            <li data-i18n-html="dash.method_risk"><b>Risiko-Metriken</b>: Aktueller DD vs. historischer Ø Max DD, aktuelle 20d-Vola annualisiert + Perzentilrang.</li>
+            <li data-i18n-html="dash.method_strategies"><b>Strategien</b>: Alle 22 Plain Vanilla Strategien werden auf den Ticker angewendet. Gefiltert nach "nächstes Signal in den nächsten 30 Tagen". Aktuelle Streak (letzte W oder L in Folge) als Badge.</li>
+            <li data-i18n-html="dash.method_events"><b>Nächste Events</b>: Pro Event-Typ (FOMC, OPEX, Vollmond, NYSE-Holiday) das nächste Datum + die historische Performance des Tickers im Window t-3 bis t+3 (Vollmond/FOMC/OPEX) bzw. t-3 bis t+0 (Pre-Holiday-Effect). Mit aktueller Win-Streak.</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.7.0/dist/apexcharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/kurse.js"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+  <script src="/landing/js/seasonal-compute.js"></script>
+  <script src="/landing/js/dash-compute.js"></script>
+  <script src="/landing/js/strategy-compute.js"></script>
+  <script src="/landing/js/decade-compute.js"></script>
+  <script src="/landing/js/saison-score.js"></script>
+  <script src="/landing/js/indicators.js"></script>
+  <script src="/landing/js/streak-analysis.js"></script>
+  <script src="/landing/js/fomc-dates.js"></script>
+  <script src="/landing/js/watchlist.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // DASHBOARD — Inline Math + Render Modul
+  // ══════════════════════════════════════════════════════════════
+  (function() {
+    'use strict';
+
+    var charts = {};
+    var currentTicker = '';
+    var rawRows = [];
+
+    var MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    var MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var WEEKDAYS_DE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    var WEEKDAYS_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+    var COL_AVG = '#00CED1';
+    var COL_CURRENT = '#F1C40F';
+    var COL_POS = '#34d399';
+    var COL_NEG = '#f87171';
+    var COL_TRUEPATH = '#5eead4';
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function _clean(arr){var o=[];for(var i=0;i<arr.length;i++){var v=arr[i];if(v!=null&&typeof v==='number'&&!isNaN(v)&&isFinite(v))o.push(v);}return o;}
+    function mean(a){var v=_clean(a);if(!v.length)return 0;var s=0;for(var i=0;i<v.length;i++)s+=v[i];return s/v.length;}
+    function median(a){var v=_clean(a).slice().sort(function(x,y){return x-y;});if(!v.length)return 0;var m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2;}
+    function stdev(a){var v=_clean(a);if(v.length<2)return 0;var m=mean(v),sq=0;for(var i=0;i<v.length;i++)sq+=(v[i]-m)*(v[i]-m);return Math.sqrt(sq/v.length);}
+    function corrcoef(a,b){var n=Math.min(a.length,b.length);if(n<2)return 0;var ma=mean(a.slice(0,n)),mb=mean(b.slice(0,n)),cov=0,va=0,vb=0;for(var i=0;i<n;i++){cov+=(a[i]-ma)*(b[i]-mb);va+=(a[i]-ma)*(a[i]-ma);vb+=(b[i]-mb)*(b[i]-mb);}if(va===0||vb===0)return 0;return cov/Math.sqrt(va*vb);}
+    function euclidean(a,b){var n=Math.min(a.length,b.length),s=0;for(var i=0;i<n;i++)s+=(a[i]-b[i])*(a[i]-b[i]);return Math.sqrt(s);}
+    function fmtPct(v,d){d=d==null?2:d;if(v==null||isNaN(v))return '–';return (v>=0?'+':'')+v.toFixed(d)+'%';}
+    function fmtNum(v,d){d=d==null?2:d;if(v==null||isNaN(v))return '–';return v.toFixed(d);}
+    function pad2(n){return n<10?'0'+n:''+n;}
+    function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+    function todayDoy(){var n=new Date();return Math.min(365,Math.floor((n-new Date(n.getFullYear(),0,0))/86400000));}
+    function presidentialCycleYear(y){return ((y-2020)%4+4)%4+1;}
+
+    // KI Cycle Labels (deutsch)
+    var CYCLE_NAMES = {1:'Wahljahr',2:'Nachwahljahr',3:'Zwischenwahljahr',4:'Vorwahljahr'};
+
+    // ══════════════════════════════════════════════════════════════
+    // PHASE 1: Math/Compute Module
+    // ══════════════════════════════════════════════════════════════
+
+    // ── Tdom Helpers (aus monatszyklus.html) ─────────────────────
+    function assignTdom(rows){
+      var lastKey=null,counter=0,out=[];
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i],k=r.date.substring(0,7);
+        if(k!==lastKey){counter=0;lastKey=k;}
+        counter++;
+        out.push({date:r.date,close:r.close,log_return:r.log_return,year:parseInt(r.date.substring(0,4)),month:parseInt(r.date.substring(5,7)),tdom:counter});
+      }
+      return out;
+    }
+
+    function calcIntramonthCurve(tdomRows,targetMonth,selectedYears){
+      var allCurves=[],yearSet={};
+      for(var i=0;i<selectedYears.length;i++)yearSet[selectedYears[i]]=true;
+      var byYear={};
+      for(var i=0;i<tdomRows.length;i++){
+        var r=tdomRows[i];
+        if(!yearSet[r.year])continue;
+        if(r.month!==targetMonth)continue;
+        if(!byYear[r.year])byYear[r.year]=[];
+        byYear[r.year].push(r);
+      }
+      for(var y in byYear){
+        var rs=byYear[y];
+        if(rs.length<10)continue;
+        var logRets=rs.map(function(r){var lr=parseFloat(r.log_return);return (isNaN(lr)||!isFinite(lr))?0:lr;});
+        var cum=[],sum=0;
+        for(var k=0;k<logRets.length;k++){sum+=logRets[k];cum.push((Math.exp(sum)-1)*100);}
+        allCurves.push({year:parseInt(y),tdoms:rs.map(function(r){return r.tdom;}),curve:cum,total_return:cum.length?cum[cum.length-1]:0});
+      }
+      if(!allCurves.length)return {tdomStats:null,allCurves:[]};
+      var maxTdom=0;
+      for(var i=0;i<allCurves.length;i++)for(var j=0;j<allCurves[i].tdoms.length;j++)if(allCurves[i].tdoms[j]>maxTdom)maxTdom=allCurves[i].tdoms[j];
+      var tdomStats={};
+      for(var t=1;t<=maxTdom;t++){
+        var vals=[];
+        for(var i=0;i<allCurves.length;i++){
+          var idx=allCurves[i].tdoms.indexOf(t);
+          if(idx>=0)vals.push(allCurves[i].curve[idx]);
+        }
+        if(vals.length)tdomStats[t]={avg:mean(vals),std:stdev(vals),n:vals.length};
+      }
+      return {tdomStats:tdomStats,allCurves:allCurves};
+    }
+
+    function calcCurrentMonthCurve(tdomRows,targetMonth){
+      var ty=new Date().getFullYear();
+      var monthRows=tdomRows.filter(function(r){return r.year===ty&&r.month===targetMonth;});
+      if(!monthRows.length)return null;
+      var logRets=monthRows.map(function(r){var lr=parseFloat(r.log_return);return (isNaN(lr)||!isFinite(lr))?0:lr;});
+      var cum=[],sum=0;
+      for(var k=0;k<logRets.length;k++){sum+=logRets[k];cum.push((Math.exp(sum)-1)*100);}
+      return {tdoms:monthRows.map(function(r){return r.tdom;}),curve:cum};
+    }
+
+    /** Streak fuer eine bestimmte TDOM-Position (aus allCurves).
+     *  Nutzt die TAGES-Rendite (Differenz zum Vortag), nicht die kumulierte Rendite. */
+    function calcTdomPositionStreak(allCurves, tdom) {
+      var vals = [];
+      for (var i = 0; i < allCurves.length; i++) {
+        var idx = allCurves[i].tdoms.indexOf(tdom);
+        if (idx >= 0) {
+          var cumVal = allCurves[i].curve[idx];
+          var prevVal = idx > 0 ? allCurves[i].curve[idx - 1] : 0;
+          var dayReturn = cumVal - prevVal; // Tagesrendite, nicht kumuliert
+          vals.push({ year: allCurves[i].year, val: dayReturn });
+        }
+      }
+      vals.sort(function(a,b){ return b.year - a.year; });
+      if (!vals.length) return { type: 'none', count: 0 };
+      var sType = vals[0].val > 0 ? 'win' : 'loss';
+      var sCount = 1;
+      for (var j = 1; j < vals.length; j++) {
+        var w = vals[j].val > 0;
+        if ((sType === 'win' && w) || (sType === 'loss' && !w)) sCount++;
+        else break;
+      }
+      return { type: sType, count: sCount };
+    }
+
+    /**
+     * Liefert TDOM-Mini-Stats fuer einen beliebigen Datum.
+     * Berechnet TDOM-Position via Holiday-Kalender, lädt Intramonth-Stats fuer den Monat,
+     * gibt Win-Rate + Ø Cum-Ret + n + monthName + neighborStreaks zurueck.
+     * Cache-Map vermeidet doppelte Berechnung wenn mehrere Daten im selben Monat liegen.
+     */
+    function getTdomMiniStats(tdomRows, dateObj, allYearsList, intramonthCache){
+      var year = dateObj.getFullYear(), month = dateObj.getMonth()+1, day = dateObj.getDate();
+      var ds = year+'-'+pad2(month)+'-'+pad2(day);
+      var ex;
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      // Wenn Boerse zu (Wochenende/Feiertag): kein TDOM
+      if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;
+      // TDOM = Anzahl Handelstage von Monatsanfang bis dateObj inklusive
+      var tdom = 0;
+      for (var d = 1; d <= day; d++) {
+        var dStr = year+'-'+pad2(month)+'-'+pad2(d);
+        if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;
+      }
+      if (!tdom) return null;
+      // Intramonth Stats fuer diesen Monat (mit Cache)
+      var im = intramonthCache[month];
+      if (!im) {
+        im = calcIntramonthCurve(tdomRows, month, allYearsList);
+        intramonthCache[month] = im;
+      }
+      if (!im || !im.tdomStats || !im.tdomStats[tdom]) return null;
+      var ts = im.tdomStats[tdom];
+      var maxTdom = Math.max.apply(null, Object.keys(im.tdomStats).map(Number));
+      // Win-Rate an diesem TDOM ueber alle Curves
+      var pos = 0, total = 0;
+      for (var i = 0; i < im.allCurves.length; i++) {
+        var idx = im.allCurves[i].tdoms.indexOf(tdom);
+        if (idx >= 0) { total++; if (im.allCurves[i].curve[idx] > 0) pos++; }
+      }
+      // Streak fuer diesen TDOM
+      var streak = calcTdomPositionStreak(im.allCurves, tdom);
+      // Nachbar-TDOMs: 5 Positionen zentriert auf aktuellen TDOM (wie Mo-Fr bei Wochentag)
+      var allTdoms = Object.keys(im.tdomStats).map(Number).sort(function(a,b){return a-b;});
+      var centerIdx = allTdoms.indexOf(tdom);
+      var neighborStreaks = [];
+      if (centerIdx >= 0) {
+        var start = Math.max(0, centerIdx - 2);
+        var end = Math.min(allTdoms.length - 1, start + 4);
+        start = Math.max(0, end - 4); // Anpassung wenn am rechten Rand
+        for (var ni = start; ni <= end; ni++) {
+          neighborStreaks.push({
+            tdom: allTdoms[ni],
+            streak: calcTdomPositionStreak(im.allCurves, allTdoms[ni]),
+            isCurrent: allTdoms[ni] === tdom
+          });
+        }
+      }
+      return {
+        date: ds,
+        tdom: tdom,
+        maxTdom: maxTdom,
+        month: month,
+        monthName: MONTHS_DE[month-1],
+        avg: ts.avg,
+        n: ts.n,
+        winRate: total > 0 ? pos/total*100 : 0,
+        weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())],
+        streak: streak,
+        neighborStreaks: neighborStreaks
+      };
+    }
+
+    /** Naechster Handelstag nach gegebenem Datum (returns Date) */
+    function nextTradingDate(fromDate){
+      var ex;
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      var d = new Date(fromDate);
+      for (var i = 0; i < 14; i++) {
+        d.setDate(d.getDate()+1);
+        var ds = d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+        if (ex === 'NONE' || SA.holidays.isTradingDay(ds, ex)) return new Date(d);
+      }
+      return null;
+    }
+
+    function getCurrentTdom(tdomRows,ticker){
+      // Berechne TDOM direkt aus dem Holiday-Kalender — nicht aus DB-Rows,
+      // weil die DB ggf. den heutigen Tag noch nicht enthält (nightly-refresh
+      // lief gestern, intraday-refresh läuft erst wenn Börse offen ist).
+      // Selbe Logik wie getTdomMiniStats() Zeile 490–494.
+      var t=new Date(),ty=t.getFullYear(),tm=t.getMonth()+1,td=t.getDate();
+      var ex;
+      try{ex=SA.holidays.detect(ticker||'');}catch(e){ex='NONE';}
+      // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive.
+      // An WE/Feiertagen wird der heutige Nicht-Handelstag nicht mitgezählt →
+      // Marker landet automatisch auf dem letzten Handelstag (statt zu fehlen).
+      var tdom=0;
+      for(var d=1;d<=td;d++){
+        var dStr=ty+'-'+pad2(tm)+'-'+pad2(d);
+        if(ex==='NONE'||SA.holidays.isTradingDay(dStr,ex))tdom++;
+      }
+      return tdom||null;
+    }
+
+    // ── Musterjahre für den TruePath-Chart (Anzeige; der Saison-Score rechnet in SA.saisonScore) ──
+    var MONTH_START_DOY=[1,32,60,91,121,152,182,213,244,274,305,335];
+
+    function findMatchingYears(yearData,currentYear,method,topN){
+      if(!yearData[currentYear])return [];
+      var current=yearData[currentYear].full_365;
+      var td=todayDoy();
+      var currentSeg=current.slice(0,td);
+      if(currentSeg.length<10)return [];
+      var matches=[];
+      for(var y in yearData){
+        y=parseInt(y);
+        if(y===currentYear)continue;
+        var hist=yearData[y].full_365;
+        var histSeg=hist.slice(0,td);
+        var sim;
+        if(method==='correlation'){
+          var c=corrcoef(currentSeg,histSeg);
+          sim=Math.max(0,(c+1)/2*100);
+        }else{
+          var cm=mean(currentSeg),hm=mean(histSeg),cs=stdev(currentSeg)||1,hs=stdev(histSeg)||1;
+          var an=currentSeg.map(function(v){return (v-cm)/cs;});
+          var bn=histSeg.map(function(v){return (v-hm)/hs;});
+          var dist=euclidean(an,bn);
+          sim=Math.max(0,100-dist*5);
+        }
+        var fullRet=hist[364]>0?(hist[364]/hist[0]-1)*100:0;
+        matches.push({year:y,similarity:Math.round(sim*10)/10,full365:hist,returnPct:Math.round(fullRet*10)/10,cycle:presidentialCycleYear(y)});
+      }
+      matches.sort(function(a,b){return b.similarity-a.similarity;});
+      return matches.slice(0,topN);
+    }
+
+    function computeTruePath(matches,smoothing){
+      if(!matches.length)return null;
+      var simSum=matches.reduce(function(s,m){return s+m.similarity;},0);
+      if(simSum<=0)return null;
+      var truepath=new Array(365).fill(0);
+      for(var d=0;d<365;d++){
+        var w=0,sum=0;
+        for(var i=0;i<matches.length;i++){
+          var m=matches[i],v=m.full365[d];
+          if(v!=null&&isFinite(v)){sum+=v*m.similarity;w+=m.similarity;}
+        }
+        truepath[d]=w>0?sum/w:100;
+      }
+      // Glaettung
+      if(smoothing>1){
+        var sm=new Array(365);
+        var half=Math.floor(smoothing/2);
+        for(var d=0;d<365;d++){
+          var s=0,c=0;
+          for(var k=Math.max(0,d-half);k<=Math.min(364,d+half);k++){s+=truepath[k];c++;}
+          sm[d]=s/c;
+        }
+        truepath=sm;
+      }
+      return truepath;
+    }
+
+    // ── Drawdown + Vola (Port von jahreszyklus.html) ─────────────
+    function drawdownSeries(curve,base){
+      base=base||0;
+      var dd=[],peak=-Infinity;
+      for(var i=0;i<curve.length;i++){
+        var v=curve[i];
+        if(v==null||isNaN(v)||!isFinite(v)){dd.push(null);continue;}
+        v=v+base;
+        if(v>peak)peak=v;
+        dd.push(peak>0?(v-peak)/peak*100:0);
+      }
+      return dd;
+    }
+
+    /** Annualisierte Rolling-Std der log_returns innerhalb eines Jahres */
+    function rollingVolForYear(rows,window){
+      if(!rows||rows.length<window+5)return null;
+      var rets=[];
+      for(var i=1;i<rows.length;i++){
+        if(rows[i-1].close>0&&rows[i].close>0)rets.push(Math.log(rows[i].close/rows[i-1].close));
+      }
+      if(rets.length<window+5)return null;
+      var ann=Math.sqrt(252);
+      var out=new Array(rets.length).fill(NaN);
+      for(var i=window-1;i<rets.length;i++){
+        var s=0;
+        for(var j=i-window+1;j<=i;j++)s+=rets[j];
+        var m=s/window,sq=0;
+        for(var j=i-window+1;j<=i;j++)sq+=(rets[j]-m)*(rets[j]-m);
+        out[i]=Math.sqrt(sq/window)*ann*100;
+      }
+      return out;
+    }
+
+    /**
+     * Aktuelle Vola-Stats: aktueller Wert + historischer Vergleich.
+     * Sammelt fuer alle Jahre die Vola am gleichen DOY und berechnet Perzentil.
+     */
+    function currentVolaStats(rawRows,window){
+      // Group by year
+      var byYear={};
+      for(var i=0;i<rawRows.length;i++){
+        var y=parseInt(rawRows[i].date.substring(0,4));
+        if(!byYear[y])byYear[y]=[];
+        byYear[y].push(rawRows[i]);
+      }
+      var currentYear=new Date().getFullYear();
+      var td=todayDoy();
+      var current=NaN,histVolas=[];
+      for(var y in byYear){
+        var ya=parseInt(y);
+        var vola=rollingVolForYear(byYear[y],window);
+        if(!vola)continue;
+        // Map vola to DOY
+        var rs=byYear[y];
+        // Find vola value at today's DOY
+        var tdLast=NaN;
+        for(var k=0;k<rs.length-1;k++){
+          var doy=SA.seasonal.tagNummer(rs[k+1].date);
+          if(doy>td)break;
+          if(!isNaN(vola[k]))tdLast=vola[k];
+        }
+        if(isNaN(tdLast))continue;
+        if(ya===currentYear)current=tdLast;
+        else histVolas.push(tdLast);
+      }
+      if(isNaN(current)||histVolas.length<3)return null;
+      var avgV=mean(histVolas),stdV=stdev(histVolas);
+      var sorted=histVolas.slice().sort(function(a,b){return a-b;});
+      var below=sorted.filter(function(v){return v<current;}).length;
+      var pct=below/sorted.length*100;
+      return {current_vola:current,avg_vola:avgV,delta:current-avgV,percentile:pct,n_years:histVolas.length,is_elevated:current>avgV+stdV,is_low:current<avgV-stdV};
+    }
+
+    /**
+     * Saisonaler Drawdown: pro DOY den Ø DD ueber alle vergangenen Jahre +
+     * den DD-Verlauf des aktuellen Jahres bis heute.
+     */
+    function computeAvgDrawdownCurve(yearData, currentYear) {
+      var ddByDoy = [];
+      for (var d = 0; d < 365; d++) ddByDoy.push([]);
+      var lastDayMap = {}; // year -> last_actual_day
+      for (var y in yearData) {
+        if (parseInt(y) === currentYear) continue;
+        var curve = yearData[y].full_365;
+        var dd = drawdownSeries(curve, 0);
+        var lad = yearData[y].last_actual_day || 365;
+        lastDayMap[y] = lad;
+        for (var d = 0; d < 365; d++) {
+          if ((d+1) > lad) continue;
+          if (dd[d] != null && !isNaN(dd[d]) && isFinite(dd[d])) ddByDoy[d].push(dd[d]);
+        }
+      }
+      var minN = Math.max(3, Math.floor(Object.keys(yearData).length * 0.5));
+      var avgDd = ddByDoy.map(function(arr){ return arr.length >= minN ? mean(arr) : null; });
+      // Aktuelles Jahr: nur bis heute
+      var curDd = new Array(365).fill(null);
+      if (yearData[currentYear]) {
+        var cdd = drawdownSeries(yearData[currentYear].full_365, 0);
+        var td = todayDoy();
+        var ladCur = yearData[currentYear].last_actual_day || td;
+        for (var d = 0; d < Math.min(td, ladCur, 365); d++) {
+          if (cdd[d] != null && !isNaN(cdd[d])) curDd[d] = cdd[d];
+        }
+      }
+      return { avg: avgDd, current: curDd };
+    }
+
+    /**
+     * Two-Week Phase Stats: 24 Phasen (H1/H2 pro Monat), Ø Return je Phase.
+     * Liefert Liste + currentIdx + Rang.
+     */
+    function computeTwoWeekPhases(yearData, currentYear) {
+      var periods = [];
+      for (var m = 0; m < 12; m++) {
+        var monStart = MONTH_START_DOY[m] - 1;
+        var monEnd = m < 11 ? MONTH_START_DOY[m+1] - 1 : 365;
+        var mid = Math.floor((monStart + monEnd) / 2);
+        periods.push({ name: MONTHS_DE_SHORT[m]+' H1', start: monStart, end: mid });
+        periods.push({ name: MONTHS_DE_SHORT[m]+' H2', start: mid, end: monEnd });
+      }
+      var stats = periods.map(function(p) {
+        var rets = [];
+        for (var y in yearData) {
+          if (parseInt(y) === currentYear) continue;
+          var c = yearData[y].full_365;
+          var lad = yearData[y].last_actual_day || 365;
+          if (p.end > lad) return { name:p.name, avg:null, n:0, start:p.start, end:p.end };
+          var s = c[p.start], e = c[p.end-1];
+          if (s != null && e != null && s > 0) rets.push((e/s - 1) * 100);
+        }
+        var wins = rets.filter(function(r){return r > 0;}).length;
+        return {
+          name: p.name,
+          avg: rets.length ? mean(rets) : null,
+          winRate: rets.length ? wins / rets.length * 100 : null,
+          n: rets.length,
+          start: p.start,
+          end: p.end
+        };
+      });
+      // Aktuelle Phase via DOY
+      var td = todayDoy();
+      var curIdx = -1;
+      for (var i = 0; i < periods.length; i++) {
+        if (td >= periods[i].start && td < periods[i].end) { curIdx = i; break; }
+      }
+      // Rank: 1 = best
+      var withVal = stats.filter(function(s){return s.avg != null;});
+      var sorted = withVal.slice().sort(function(a,b){return b.avg - a.avg;});
+      var rank = null;
+      if (curIdx >= 0 && stats[curIdx].avg != null) {
+        rank = sorted.indexOf(stats[curIdx]) + 1;
+      }
+      return {
+        periods: stats,
+        currentIdx: curIdx,
+        current: curIdx >= 0 ? stats[curIdx] : null,
+        rank: rank,
+        total: withVal.length
+      };
+    }
+
+    /** Aktueller DD des laufenden Jahres + Ø Max DD ueber alle Jahre */
+    function computeRiskKpis(rawRows,yearData){
+      var currentYear=new Date().getFullYear();
+      var ddNow=NaN,worstDd=NaN;
+      var allMaxDds=[];
+      for(var y in yearData){
+        var curve=yearData[y].full_365;
+        var dd=drawdownSeries(curve,0);
+        var clean=dd.filter(function(v){return v!=null&&!isNaN(v)&&isFinite(v);});
+        if(!clean.length)continue;
+        var maxDd=Math.min.apply(null,clean);
+        allMaxDds.push(maxDd);
+        if(parseInt(y)===currentYear){
+          // Aktueller DD = letzter Wert in dd bis heute
+          var td=todayDoy();
+          var last=null;
+          for(var i=Math.min(td-1,dd.length-1);i>=0;i--){
+            if(dd[i]!=null&&!isNaN(dd[i])){last=dd[i];break;}
+          }
+          ddNow=last;
+        }
+      }
+      var avgMaxDd=mean(allMaxDds);
+      worstDd=allMaxDds.length?Math.min.apply(null,allMaxDds):NaN;
+      // DD-Perzentil: Vergleicht aktuellen DD mit DD am gleichen DOY in vergangenen Jahren
+      // 0%=harmlos (wenig DD), 100%=extrem (schlimmer DD als fast alle Jahre zum selben Zeitpunkt)
+      var ddPercentile=NaN;
+      var td3=todayDoy();
+      if(!isNaN(ddNow)){
+        var histDdAtDoy=[];
+        for(var yp in yearData){
+          if(parseInt(yp)===currentYear)continue;
+          var cP=yearData[yp].full_365;
+          var ddP=drawdownSeries(cP,0);
+          var doyIdx=Math.min(td3-1,ddP.length-1);
+          while(doyIdx>0&&(ddP[doyIdx]==null||isNaN(ddP[doyIdx])))doyIdx--;
+          if(doyIdx>=0&&ddP[doyIdx]!=null&&!isNaN(ddP[doyIdx]))histDdAtDoy.push(ddP[doyIdx]);
+        }
+        if(histDdAtDoy.length>2){
+          var betterYears=histDdAtDoy.filter(function(v){return v>ddNow;}).length;
+          ddPercentile=betterYears/histDdAtDoy.length*100;
+        }
+      }
+      // Tage im DD: seit wann unter Peak (aktuelles Jahr)
+      var daysInDd=0;
+      if(!isNaN(ddNow)&&ddNow<-0.01&&yearData[currentYear]){
+        var cy=yearData[currentYear].full_365;
+        var peak=cy[0]||100,td2=todayDoy();
+        for(var di=0;di<Math.min(td2,cy.length);di++){
+          if(cy[di]!=null&&cy[di]>=peak){peak=cy[di];daysInDd=0;}
+          else daysInDd++;
+        }
+      }
+      // YTD Return
+      var ytdReturn=NaN;
+      if(yearData[currentYear]){
+        var cyc=yearData[currentYear].full_365;
+        var tdIdx=Math.min(todayDoy()-1,cyc.length-1);
+        while(tdIdx>0&&(cyc[tdIdx]==null||isNaN(cyc[tdIdx])))tdIdx--;
+        if(tdIdx>0&&cyc[0])ytdReturn=cyc[tdIdx]/cyc[0]*100-100;
+      }
+      return {dd_now:ddNow,avg_max_dd:avgMaxDd,worst_max_dd:worstDd,n:allMaxDds.length,dd_percentile:ddPercentile,days_in_dd:daysInDd,ytd_return:ytdReturn};
+    }
+
+    // ── Trifecta (Port von trifecta.html) ────────────────────────
+    var TRIFECTA_AMPEL={
+      3:{signal:'Grün',color:'#34d399',emoji:'🟢',desc:'Alle 3 Bedingungen erfüllt — starkes bullishes Jahressignal'},
+      2:{signal:'Gelb',color:'#fbbf24',emoji:'🟡',desc:'2 von 3 erfüllt — leicht bullishes Signal'},
+      1:{signal:'Orange',color:'#fb923c',emoji:'🟠',desc:'1 von 3 erfüllt — neutrales Signal'},
+      0:{signal:'Rot',color:'#f87171',emoji:'🔴',desc:'Keine Bedingung erfüllt — bearishes Signal'}
+    };
+
+    function _getTradingDays(year,month){
+      var prefix=year+'-'+pad2(month);
+      var days=[];
+      for(var i=0;i<rawRows.length;i++){if(rawRows[i].date.substring(0,7)===prefix)days.push(i);}
+      return days;
+    }
+    function _checkSCR(year){
+      var dez=_getTradingDays(year,12),jan=_getTradingDays(year+1,1);
+      if(dez.length<5||jan.length<2)return {erfuellt:null,rendite:0};
+      var startIdx=dez[dez.length-5],endIdx=jan[1];
+      var r=(rawRows[endIdx].close-rawRows[startIdx].close)/rawRows[startIdx].close*100;
+      return {erfuellt:r>0,rendite:Math.round(r*100)/100};
+    }
+    function _checkFFD(year){
+      var jan=_getTradingDays(year,1),dez=_getTradingDays(year-1,12);
+      if(jan.length<5||dez.length<1)return {erfuellt:null,rendite:0};
+      var ref=rawRows[dez[dez.length-1]].close,end=rawRows[jan[4]].close;
+      var r=(end-ref)/ref*100;
+      return {erfuellt:r>0,rendite:Math.round(r*100)/100};
+    }
+    function _checkJanB(year){
+      var jan=_getTradingDays(year,1),dez=_getTradingDays(year-1,12);
+      if(jan.length<10||dez.length<1)return {erfuellt:null,rendite:0};
+      var ref=rawRows[dez[dez.length-1]].close,end=rawRows[jan[jan.length-1]].close;
+      var r=(end-ref)/ref*100;
+      return {erfuellt:r>0,rendite:Math.round(r*100)/100};
+    }
+    function calcTrifecta(year){
+      var scr=_checkSCR(year-1),ffd=_checkFFD(year),janb=_checkJanB(year);
+      var count=0;
+      if(scr.erfuellt===true)count++;
+      if(ffd.erfuellt===true)count++;
+      if(janb.erfuellt===true)count++;
+      var a=TRIFECTA_AMPEL[count];
+      return {year:year,count:count,signal:a.signal,color:a.color,emoji:a.emoji,desc:a.desc,scr:scr,ffd:ffd,janb:janb};
+    }
+
+    // ── Wochentag-Stats (vereinfacht) ────────────────────────────
+    /** Gibt {weekday: {win_rate, avg, n}} zurueck fuer einen einzigen Wochentag */
+    function calcWeekdayStatsSingle(rows,weekday,yearsBack){
+      var lastDate=new Date(rows[rows.length-1].date);
+      var cutoff=new Date(lastDate);cutoff.setFullYear(cutoff.getFullYear()-yearsBack);
+      var cutoffStr=cutoff.toISOString().substring(0,10);
+      var rets=[];
+      for(var i=1;i<rows.length;i++){
+        var r=rows[i];
+        if(r.date<cutoffStr)continue;
+        var d=new Date(r.date);
+        var wd=d.getDay();wd=wd===0?6:wd-1;
+        if(wd!==weekday)continue;
+        var prev=rows[i-1];
+        if(prev.close>0&&r.close>0)rets.push((r.close/prev.close-1)*100);
+      }
+      if(rets.length<5)return null;
+      var wins=rets.filter(function(r){return r>0;}).length;
+      return {n:rets.length,win_rate:wins/rets.length*100,avg:mean(rets)};
+    }
+
+    // ── Monatsperformance fuer aktuellen Monat (historisch) ──
+    function calcCurrentMonthPerf(rows, yearsBack) {
+      var currentMonth = new Date().getMonth() + 1;
+      var lastDate = new Date(rows[rows.length - 1].date);
+      var cutoff = new Date(lastDate);
+      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0, 10);
+      var currentYear = new Date().getFullYear();
+
+      var ymGroups = {};
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].date < cutoffStr) continue;
+        var y = parseInt(rows[i].date.substring(0, 4));
+        var m = parseInt(rows[i].date.substring(5, 7));
+        if (m !== currentMonth) continue;
+        if (y === currentYear) continue; // aktuelles Jahr ausschließen
+        var key = y + '-' + m;
+        if (!ymGroups[key]) ymGroups[key] = [];
+        ymGroups[key].push(rows[i]);
+      }
+      var rets = [];
+      for (var k in ymGroups) {
+        var g = ymGroups[k];
+        if (g.length < 5) continue;
+        var first = g[0].close, last = g[g.length - 1].close;
+        if (first > 0) rets.push((last / first - 1) * 100);
+      }
+      if (!rets.length) return null;
+      var wins = rets.filter(function(r) { return r > 0; }).length;
+      rets.sort(function(a, b) { return a - b; });
+      return {
+        month: currentMonth,
+        monthName: MONTHS_DE_SHORT[currentMonth - 1],
+        avg: mean(rets),
+        winRate: wins / rets.length * 100,
+        median: rets[Math.floor(rets.length / 2)],
+        best: rets[rets.length - 1],
+        worst: rets[0],
+        n: rets.length
+      };
+    }
+
+    // ── Wochentag Win-Streak (aktuelle Serie gleicher Vorzeichen) ──
+    function calcWeekdayStreak(rows, weekday) {
+      // Sammle alle Returns des Wochentags chronologisch
+      var rets = [];
+      for (var i = 1; i < rows.length; i++) {
+        var d = new Date(rows[i].date);
+        var wd = d.getDay(); wd = wd === 0 ? 6 : wd - 1;
+        if (wd !== weekday) continue;
+        var prev = rows[i - 1];
+        if (prev.close > 0 && rows[i].close > 0) {
+          rets.push((rows[i].close / prev.close - 1) * 100);
+        }
+      }
+      if (!rets.length) return { type: 'none', count: 0 };
+      // Vom Ende rückwärts zählen
+      var last = rets[rets.length - 1];
+      var type = last > 0 ? 'win' : 'loss';
+      var count = 1;
+      for (var j = rets.length - 2; j >= 0; j--) {
+        var isWin = rets[j] > 0;
+        if ((type === 'win' && isWin) || (type === 'loss' && !isWin)) count++;
+        else break;
+      }
+      return { type: type, count: count };
+    }
+
+    // ── Overnight Performance (heute→morgen) aus OHLC ──
+    /** Berechnet Overnight-Stats fuer den aktuellen Wochentag (close→open+1).
+     *  Residual-Ansatz: overnight = total - intraday */
+    function calcOvernightStats(ohlcRows, yearsBack, targetWd) {
+      if (!ohlcRows || ohlcRows.length < 50) return null;
+      var wd = targetWd != null ? targetWd : new Date().getDay(); // 0=So..6=Sa
+      if (wd === 0 || wd === 6) return null;
+      var lastDate = new Date(ohlcRows[ohlcRows.length - 1].date);
+      var cutoff = new Date(lastDate);
+      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      var cutoffStr = cutoff.toISOString().substring(0, 10);
+
+      var onRets = [], idRets = [];
+      for (var i = 1; i < ohlcRows.length; i++) {
+        var r = ohlcRows[i], prev = ohlcRows[i - 1];
+        if (r.date < cutoffStr) continue;
+        var d = new Date(r.date);
+        if (d.getDay() !== wd) continue; // gleicher Wochentag
+        if (!prev.close || !r.open || !r.close || prev.close <= 0 || r.open <= 0) continue;
+        var total = (r.close / prev.close - 1) * 100;
+        var intraday = (r.close / r.open - 1) * 100;
+        var overnight = total - intraday; // Residual
+        onRets.push(overnight);
+        idRets.push(intraday);
+      }
+      if (onRets.length < 5) return null;
+      var onWins = onRets.filter(function(r) { return r > 0; }).length;
+      var wdName = WEEKDAYS_DE[wd];
+      var avgOn = mean(onRets), avgId = mean(idRets);
+      var ratio = Math.abs(avgId) > 0.0001 ? (avgOn / avgId).toFixed(1) + 'x' : '–';
+      return {
+        label: wdName + ' → ' + WEEKDAYS_DE[wd < 5 ? wd + 1 : 1],
+        avg: avgOn,
+        avgIntraday: avgId,
+        winRate: onWins / onRets.length * 100,
+        ratio: ratio,
+        n: onRets.length
+      };
+    }
+
+    // ── "Naechste Strategien" (aus plain-vanilla.html sigD-Pattern) ──
+    /**
+     * Erzeugt eine Liste der naechsten Signal-Daten ueber alle 22 Strategien.
+     * Pro Strategie wird das naechste Entry-Datum berechnet (vereinfacht).
+     * Nur Strategien mit daysAway <= 30 werden zurueckgegeben.
+     */
+    function getNextStrategySignals() {
+      var todayD = new Date();
+      todayD.setHours(0,0,0,0);
+      var todayS = todayStr();
+      var Y = todayD.getFullYear();
+      var signals = [];
+
+      function add(key, type, dateStr) {
+        if (!dateStr || dateStr < todayS) return;
+        var meta = SA.STRATEGIES[key];
+        if (!meta) return;
+        var d = new Date(dateStr);
+        var daysAway = Math.ceil((d - todayD) / 86400000);
+        if (daysAway > 30) return;
+        signals.push({
+          key: key,
+          name: meta.name,
+          icon: meta.icon,
+          type: type,
+          date: dateStr,
+          daysAway: daysAway,
+          dateLabel: d.getDate() + '. ' + MONTHS_DE_SHORT[d.getMonth()] + ' ' + d.getFullYear()
+        });
+      }
+
+      // Termine aus der gemeinsamen Funktion (Plan /plain-vanilla v5, E6) — keine Kopie der Regeln mehr hier
+      var exD = SA.holidays.detect(currentTicker || 'NYSE');
+      SA.strategy.regeltermine(todayS, exD).forEach(function(r){ add(r.key, r.type, r.date); });
+
+      // Deduplizieren (gleiche Strategie + Type + Datum)
+      var seen = {};
+      signals = signals.filter(function(s){
+        var k = s.key + '|' + s.type + '|' + s.date;
+        if (seen[k]) return false;
+        seen[k] = true;
+        return true;
+      });
+      // Pro Strategie nur das frueheste Signal behalten
+      var perStrategy = {};
+      signals.forEach(function(s){
+        if (!perStrategy[s.key] || perStrategy[s.key].daysAway > s.daysAway) perStrategy[s.key] = s;
+      });
+      var uniq = Object.values(perStrategy);
+      // Sortieren nach daysAway aufsteigend
+      uniq.sort(function(a,b){return a.daysAway - b.daysAway;});
+      // Nur die ersten 8
+      return uniq.slice(0, 8);
+    }
+
+    // ── Holiday-Effekt: Streak + Win-Rate fuer Event-Typ ─────────
+    /** Generic Event-Window-Analyse: pro Event historische Performance ueber t-N bis t+M Window */
+    function analyzeEventWindow(rows, eventDates, daysBefore, daysAfter) {
+      var dateIdx = {};
+      for (var i = 0; i < rows.length; i++) dateIdx[rows[i].date] = i;
+      var allCurves = [];
+      for (var e = 0; e < eventDates.length; e++) {
+        var evDate = eventDates[e];
+        var t0 = null;
+        for (var j = 0; j < rows.length; j++) {
+          if (rows[j].date >= evDate) { t0 = j; break; }
+        }
+        if (t0 == null) continue;
+        var start = t0 - daysBefore;
+        var end = t0 + daysAfter + 1;
+        if (start < 0 || end > rows.length) continue;
+        var baseClose = parseFloat(rows[start].close);
+        if (!baseClose) continue;
+        var startClose = parseFloat(rows[start].close);
+        var endClose = parseFloat(rows[end-1].close);
+        var totalReturn = (endClose / startClose - 1) * 100;
+        allCurves.push({ date: evDate, year: parseInt(evDate.substring(0,4)), totalReturn: totalReturn });
+      }
+      if (!allCurves.length) return null;
+      var rets = allCurves.map(function(c){return c.totalReturn;});
+      var wins = rets.filter(function(r){return r>0;}).length;
+      return {
+        allCurves: allCurves,
+        nEvents: allCurves.length,
+        avgReturn: mean(rets),
+        winRate: wins/rets.length*100,
+        returns: rets
+      };
+    }
+
+    // ── Naechste Events (FOMC, OPEX, Vollmond, Holiday) ──────────
+    function getNextEvents() {
+      var todayS = todayStr();
+      var todayD = new Date();
+      var Y = todayD.getFullYear();
+      var events = [];
+
+      // FOMC
+      if (window.SA_FOMC_DATES) {
+        var futureFomc = window.SA_FOMC_DATES
+          .map(function(d){return d[0]+'-'+pad2(d[1])+'-'+pad2(d[2]);})
+          .filter(function(d){return d >= todayS;})
+          .sort();
+        if (futureFomc.length) {
+          var f = futureFomc[0];
+          var historicFomc = window.SA_FOMC_DATES
+            .map(function(d){return d[0]+'-'+pad2(d[1])+'-'+pad2(d[2]);})
+            .filter(function(d){return d < todayS;})
+            .sort();
+          events.push({ icon:'🏛️', name:'FOMC Sitzung', date:f, daysBefore:3, daysAfter:3, historicDates: historicFomc });
+        }
+      }
+
+      // OPEX (3. Freitag, feiertagsbereinigt — naechste 2 Monate)
+      // Faellt der 3. Freitag auf einen NYSE-Feiertag (z.B. Juneteenth 19.06.2026),
+      // wird OPEX auf den vorherigen Handelstag vorverlegt (wie auf der OPEX-Seite).
+      function _adjOpex(yy, mm) {
+        var d = SA.holidays._nthDow(yy, mm, 5, 3); // 5 = Freitag
+        var s = yy + '-' + pad2(mm) + '-' + pad2(d);
+        if (SA.holidays.isTradingDay(s, 'NYSE')) return s;
+        var dt = new Date(yy, mm - 1, d);
+        do { dt.setDate(dt.getDate() - 1); }
+        while (!SA.holidays.isTradingDay(
+          dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()), 'NYSE'));
+        return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+      }
+      try {
+        for (var mi = 0; mi < 2; mi++) {
+          var futM = todayD.getMonth() + 1 + mi;
+          var mm = ((futM - 1) % 12) + 1;
+          var yy = Y + Math.floor((futM - 1) / 12);
+          var ds = _adjOpex(yy, mm);
+          if (ds >= todayS) {
+            // Historische OPEX (letzte 15 Jahre, ebenfalls feiertagsbereinigt)
+            var histOpex = [];
+            for (var hy = Y - 15; hy < Y; hy++) {
+              for (var hm = 1; hm <= 12; hm++) {
+                histOpex.push(_adjOpex(hy, hm));
+              }
+            }
+            events.push({ icon:'📊', name:'OPEX (3. Freitag)', date:ds, daysBefore:3, daysAfter:3, historicDates: histOpex });
+            break;
+          }
+        }
+      } catch(e){}
+
+      // Vollmond
+      try {
+        var fullMoons = SA.seasonal.getMoonDates(Y, Y+1, 'full') || [];
+        var futureMoons = fullMoons.filter(function(m){
+          var d = m.date instanceof Date ? m.date : new Date(m.date);
+          var ds = d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+          return ds >= todayS;
+        });
+        if (futureMoons.length) {
+          var fm = futureMoons[0];
+          var fmDate = fm.date instanceof Date ? fm.date : new Date(fm.date);
+          var fmStr = fmDate.getFullYear() + '-' + pad2(fmDate.getMonth()+1) + '-' + pad2(fmDate.getDate());
+          var histMoons = (SA.seasonal.getMoonDates(Y-15, Y-1, 'full') || []).map(function(m){
+            var d = m.date instanceof Date ? m.date : new Date(m.date);
+            return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+          });
+          events.push({ icon:'🌕', name:'Vollmond', date:fmStr, daysBefore:3, daysAfter:3, historicDates: histMoons });
+        }
+      } catch(e){}
+
+      // Naechster Holiday
+      try {
+        var ex = SA.holidays.detect(currentTicker || '');
+        if (ex !== 'NONE') {
+          var thisYearHols = SA.holidays.get(Y, ex) || [];
+          var nextYearHols = SA.holidays.get(Y+1, ex) || [];
+          var futureHols = thisYearHols.concat(nextYearHols).filter(function(d){return d >= todayS;}).sort();
+          if (futureHols.length) {
+            var nextHol = futureHols[0];
+            // Holiday-Name: einfacher Lookup nach Position im Jahr
+            var holName = 'Feiertag';
+            var holIdx = thisYearHols.indexOf(nextHol);
+            if (holIdx < 0) holIdx = nextYearHols.indexOf(nextHol);
+            // Fuer NYSE: Index → Name
+            var NYSE_NAMES = ['New Year','MLK Day','Presidents Day','Good Friday','Memorial Day','Juneteenth','Independence Day','Labor Day','Thanksgiving','Christmas'];
+            if (ex === 'NYSE' && holIdx >= 0 && holIdx < NYSE_NAMES.length) holName = NYSE_NAMES[holIdx];
+            // Historische Holidays — gleiche Position im Jahr fuer historische Jahre
+            var histHols = [];
+            for (var hy = Y - 15; hy < Y; hy++) {
+              var hyHols = SA.holidays.get(hy, ex) || [];
+              if (holIdx >= 0 && holIdx < hyHols.length) histHols.push(hyHols[holIdx]);
+            }
+            // Pre-Holiday: t-3 to t+0 (3 Tage vor + Tag selbst)
+            events.push({ icon:'🎄', name:holName, date:nextHol, daysBefore:3, daysAfter:0, historicDates: histHols, isHoliday:true });
+          }
+        }
+      } catch(e){}
+
+      // Chronologisch sortieren (frühestes Event zuerst). date = 'YYYY-MM-DD' → String-Vergleich = Datums-Vergleich.
+      events.sort(function(a, b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+      return events;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // PHASE 2: Render Functions
+    // ══════════════════════════════════════════════════════════════
+
+    function showError(msg) {
+      var el = document.getElementById('error-banner');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(function(){el.style.display='none';}, 8000);
+    }
+
+    // ── 1. Saison-Score Card (SA.saisonScore — dieselbe Rechnung wie Scanner und Nightly) ──
+    var SS_GRUND = {
+      keine_kurse: ['scan.g_keine_kurse', 'keine Kurse'],
+      zu_frueh_im_jahr: ['scan.g_zu_frueh', 'vor dem 20. Handelstag des Jahres'],
+      unvollstaendiges_jahr: ['scan.g_unvollst', 'laufendes Jahr beginnt nach dem 10. Januar'],
+      zu_wenige_jahre: ['scan.g_wenige_jahre', 'weniger als 10 Vergleichsjahre'],
+      zu_wenige_musterjahre: ['scan.g_wenige_muster', 'zu wenige vergleichbare Jahre'],
+      gewichte_null: ['scan.g_gewichte_null', 'keine ähnlichen Jahre'],
+      ladefehler: ['scan.g_ladefehler', 'Kurse konnten nicht geladen werden'],
+    };
+    function _t(k, d) { return SA.i18n && SA.i18n.t ? SA.i18n.t(k, d) : d; }
+    function renderKiCard(e) {
+      var el = document.getElementById('ki-content');
+      if (!e) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">' + _t('dash.computing', 'Wird berechnet...') + '</p>'; return; }
+      if (e.status !== 'ok') {
+        var g = SS_GRUND[e.grund_code];
+        el.innerHTML = '<div class="ki-hero"><div class="ki-score-big" style="color:var(--muted)">–</div>' +
+          '<div style="color:#a89878;font-size:.8125rem">' + _t('dash.ss_nicht', 'Nicht berechenbar') + ': ' +
+          (g ? _t(g[0], g[1]) : (e.grund || _t('scan.g_unbekannt', 'nicht berechenbar'))) + '</div></div>';
+        return;
+      }
+      var html = '<div class="ki-hero">' +
+        '<div class="ki-score-big" style="color:var(--accent)">' + e.score.toFixed(1) + '</div>' +
+        '<div style="color:#a89878;font-size:.75rem">' + _t('dash.ss_unter', 'von 10 · nächste 30 Tage') + '<br>' +
+          _t('dash.ss_stand', 'Kursstand') + ' ' + e.as_of + '</div>' +
+      '</div>';
+      function bar(label, wert, extra) {
+        var pct = Math.round(wert * 100);
+        return '<div class="ki-sub"><div>' + label + ' · <b>' + extra + '</b></div><div class="ki-sub-bar"><div style="width:' + pct + '%"></div></div></div>';
+      }
+      html += '<div class="ki-subs">';
+      html += bar(_t('dash.ss_b1', 'Vorjahre positiv'), e.b1.wert, e.b1.k + '/' + e.b1.n);
+      html += bar(_t('dash.ss_b2', 'Ø Vorjahre'), e.b2.wert, fmtPct(e.b2.mittel, 2));
+      html += bar(_t('dash.ss_b3', 'Musterjahre positiv'), e.b3.wert, e.b3.k + '/' + e.b3.n);
+      html += bar(_t('dash.ss_b4', 'Ø Musterjahre'), e.b4.wert, fmtPct(e.b4.mittel, 2));
+      html += '</div>';
+      html += '<div style="color:#a89878;font-size:.6875rem;margin-top:.45rem">' + _t('dash.ss_muster', 'Musterjahre') + ': ' +
+        e.musterjahre.map(function(m) { return m.jahr; }).join(' · ') + '</div>';
+      el.innerHTML = html;
+    }
+
+    // ── 2. Crash-Ampel Card ──────────────────────────────────────
+    function renderCrashCard(regime, kmeansRegime) {
+      var el = document.getElementById('crash-content');
+      if (!regime) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">...</p>'; return; }
+      var labels = { green:'Ruhig', yellow:'Erhöht', red:'Hoch', grey:'Kein Wert' };
+      var kopf = regime.risk_score == null
+        ? '<div class="crash-headline" style="font-size:1rem">' + (SA.i18n && SA.i18n.t ? SA.i18n.t('dash.stress_kurz', 'Zu kurze Historie') : 'Zu kurze Historie') +
+          '<small> (' + regime.n_kurse + '/' + regime.benoetigt + ')</small></div>'
+        : '<div class="crash-headline">' + regime.anzeige.toFixed(1).replace('.', ',') + '<small> / 100</small></div>';
+      var html = '<div class="crash-light">' +
+        '<div class="crash-circle ' + regime.traffic_light + '"></div>' +
+        '<div>' + kopf +
+          '<div class="crash-status">' + labels[regime.traffic_light] + '</div>' +
+        '</div>' +
+      '</div>';
+      var f = regime.features;
+      function _w(v, d) { return v == null ? '—' : v.toFixed(d) + '%'; }
+      var ddCls = f.drawdown != null && f.drawdown < -1 ? 'red' : 'green';
+      var retCls = f.ret_20d != null && f.ret_20d >= 0 ? 'green' : 'red';
+      html += '<div class="kpi-row-mini" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="kpi"><div class="kpi-label">Vol 20d</div><div class="kpi-value">' + _w(f.vol_20d, 2) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">DD 20d</div><div class="kpi-value ' + ddCls + '">' + _w(f.drawdown, 1) + '</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ret 20d</div><div class="kpi-value ' + retCls + '">' + (f.ret_20d == null ? '—' : fmtPct(f.ret_20d,1)) + '</div></div>' +
+      '</div>';
+      if (kmeansRegime) {
+        var rCol = {Bull:'#22c55e', Sideways:'#94a3b8', Bear:'#f87171'}[kmeansRegime] || '#94a3b8';
+        html += '<div style="margin-top:.5rem;display:flex;align-items:center;gap:.375rem;font-size:.6875rem">' +
+          '<span style="color:var(--dim)">ML-Regime:</span>' +
+          '<span style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:10px;font-weight:600;color:' + rCol + '">' + kmeansRegime + '</span>' +
+          '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    // ── 3. Anomalie-Radar Card ───────────────────────────────────
+    function renderAnomalyCard(anom) {
+      var el = document.getElementById('anomaly-content');
+      el.innerHTML = SA.decadeCompute.anomalieHtml(anom, currentTicker, 'karte');
+    }
+
+    // ── 4. Year-Chart (Fokus: heute -1 Monat bis +3 Monate) ──────
+    function renderYearChart(yearData, avg, ticker) {
+      var currentYear = new Date().getFullYear();
+      var todayDoyVal = todayDoy();
+
+      // Fenster: 30 Tage zurueck bis 90 Tage voraus (insgesamt ~4 Monate)
+      var startDoy = Math.max(1, todayDoyVal - 30);
+      var endDoy = Math.min(365, todayDoyVal + 90);
+      var winLen = endDoy - startDoy + 1;
+
+      // Date-Labels statt DOY (von startDoy bis endDoy)
+      var year = new Date().getFullYear();
+      var startDate = new Date(year, 0, startDoy);
+      var labels = [];
+      for (var i = 0; i < winLen; i++) {
+        var d = new Date(year, 0, startDoy + i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
+      }
+
+      // Rebase zu 100 am Fenster-Anfang: beide Linien starten zusammen bei 100,
+      // zeigen relative Performance seit Fenster-Start. Fixt (a) die irrefuehrende
+      // Y-Achsen-Beschriftung "Normiert (Start=100)" — jetzt stimmt 100 wirklich am
+      // Chart-Anfang — und (b) das Flatliner-Problem, weil die Y-Achse enger zoomt.
+      var avgBase = avg[startDoy - 1];
+      var cBaseRaw = yearData[currentYear] ? yearData[currentYear].full_365 : null;
+      var cBase = cBaseRaw ? cBaseRaw[startDoy - 1] : null;
+
+      // Avg im Fenster, rebased
+      var avgArr = [];
+      for (var i = 0; i < winLen; i++) {
+        var doy = startDoy + i;
+        var raw = avg[doy - 1];
+        avgArr.push(avgBase > 0 ? parseFloat((100 * raw / avgBase).toFixed(2)) : parseFloat(raw.toFixed(2)));
+      }
+
+      // Aktuelles Jahr im Fenster, rebased auf denselben Startpunkt
+      var curArr = new Array(winLen).fill(null);
+      if (cBaseRaw && cBase > 0) {
+        for (var i = 0; i < winLen; i++) {
+          var doy = startDoy + i;
+          if (doy <= todayDoyVal && doy <= 365) curArr[i] = parseFloat((100 * cBaseRaw[doy - 1] / cBase).toFixed(2));
+        }
+      }
+
+      var nYears = Object.keys(yearData).length;
+      var todayLabelIdx = todayDoyVal - startDoy;
+
+      // Dynamische Y-Achse: Min/Max aus avg + current
+      var allVals = [];
+      for (var i = 0; i < winLen; i++) {
+        if (avgArr[i] != null) allVals.push(avgArr[i]);
+        if (curArr[i] != null) allVals.push(curArr[i]);
+      }
+      var yMin = null, yMax = null;
+      if (allVals.length) {
+        var lo = Math.min.apply(null, allVals);
+        var hi = Math.max.apply(null, allVals);
+        var pad = Math.max((hi - lo) * 0.12, 0.5);
+        yMin = lo - pad;
+        yMax = hi + pad;
+      }
+
+      if (charts.year) { try { charts.year.destroy(); } catch(e){} }
+      charts.year = new ApexCharts(document.getElementById('chart-year'), {
+        series: [
+          { name: 'Ø Saisonal (' + nYears + 'J)', data: avgArr },
+          { name: currentYear + ' (aktuell)', data: curArr }
+        ],
+        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        stroke: { width:[3,3], curve:'straight' },
+        colors: [COL_AVG, COL_CURRENT],
+        markers: { size: 0, hover:{size:5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          y: { formatter: function(v){
+            if (v == null) return '–';
+            var delta = v - 100;
+            return v.toFixed(1) + ' (' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%)';
+          } }
+        }),
+        xaxis: {
+          categories: labels,
+          tickAmount: 8,
+          labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true }
+        },
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1);}},
+          title:{text:'Fenster-Anfang = 100',style:{color:'#a89878',fontSize:'10px'}}
+        },
+        annotations: {
+          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : []
+        },
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'}, markers:{width:10,height:10} },
+        dataLabels: { enabled: false },
+        title: { text: ticker + ' · -1 / +3 Monate', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts.year.render();
+    }
+
+    // ── 4b. Drawdown-Chart (Ø vs. aktuelles Jahr, gleiches Fenster) ──
+    function renderDrawdownChart(ddData, ticker) {
+      if (!ddData) return;
+      var currentYear = new Date().getFullYear();
+      var todayDoyVal = todayDoy();
+      var startDoy = Math.max(1, todayDoyVal - 30);
+      var endDoy = Math.min(365, todayDoyVal + 90);
+      var winLen = endDoy - startDoy + 1;
+      var year = currentYear;
+
+      var labels = [];
+      for (var i = 0; i < winLen; i++) {
+        var d = new Date(year, 0, startDoy + i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
+      }
+
+      var avgArr = [], curArr = [];
+      for (var i = 0; i < winLen; i++) {
+        var doy = startDoy + i - 1;
+        avgArr.push(ddData.avg[doy] != null ? parseFloat(ddData.avg[doy].toFixed(2)) : null);
+        curArr.push(ddData.current[doy] != null ? parseFloat(ddData.current[doy].toFixed(2)) : null);
+      }
+      var todayLabelIdx = todayDoyVal - startDoy;
+
+      // Dynamische Y-Achse
+      var allVals = [];
+      for (var i = 0; i < winLen; i++) {
+        if (avgArr[i] != null) allVals.push(avgArr[i]);
+        if (curArr[i] != null) allVals.push(curArr[i]);
+      }
+      var yMin = null, yMax = 0.5;
+      if (allVals.length) {
+        var lo = Math.min.apply(null, allVals);
+        yMin = lo - Math.max(Math.abs(lo) * 0.15, 0.5);
+      }
+
+      if (charts.drawdown) { try { charts.drawdown.destroy(); } catch(e){} }
+      charts.drawdown = new ApexCharts(document.getElementById('chart-drawdown'), {
+        series: [
+          { name: 'Ø Saisonaler DD', data: avgArr },
+          { name: currentYear + ' (aktuell)', data: curArr }
+        ],
+        chart: Object.assign({ type:'area', height:260 }, SA.chartTheme.chart),
+        stroke: { width:[2.5,3], curve:'straight' },
+        colors: ['#f87171', COL_CURRENT],
+        fill: { type:'gradient', gradient:{ shade:'dark', type:'vertical', opacityFrom:0.35, opacityTo:0.05 } },
+        markers: { size: 0, hover:{size:5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          y: { formatter: function(v){return v != null ? v.toFixed(2)+'%' : '–';} }
+        }),
+        xaxis: {
+          categories: labels,
+          tickAmount: 8,
+          labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true }
+        },
+        yaxis: {
+          min: yMin, max: yMax, forceNiceScale: true,
+          labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(1)+'%';}},
+          title:{text:'Drawdown (%)',style:{color:'#a89878',fontSize:'10px'}}
+        },
+        annotations: {
+          xaxis: todayLabelIdx >= 0 && todayLabelIdx < winLen ? [{ x: labels[todayLabelIdx], borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }] : [],
+          yaxis: [{ y:0, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        },
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'}, markers:{width:10,height:10} },
+        dataLabels: { enabled: false },
+        title: { text: ticker + ' · -1 / +3 Monate', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
+      });
+      charts.drawdown.render();
+    }
+
+    // ── 5. Month-Chart (mit Solid/Weak Split bei n<10) ───────────
+    function renderMonthChart(intramonth, currentMonthCurve, ticker, currentTdom) {
+      if (!intramonth || !intramonth.tdomStats) return;
+      var MIN_N = 10;
+      var stats = intramonth.tdomStats;
+      var tdoms = Object.keys(stats).map(Number).sort(function(a,b){return a-b;});
+      var allXVals = [0].concat(tdoms);
+
+      // Solid (n>=10) und Weak (n<10) Split — Bridge-Punkt am Uebergang
+      var solidData = [0];   // Start TDOM 0 = 0%
+      var weakData = [null];
+      for (var i = 0; i < tdoms.length; i++) {
+        var t = tdoms[i], n = stats[t].n;
+        var v = parseFloat(stats[t].avg.toFixed(3));
+        if (n >= MIN_N) {
+          solidData.push(v);
+          weakData.push(null);
+        } else {
+          // Bridge: ersten Weak-Punkt mit letztem Solid verbinden
+          if (weakData[weakData.length-1] === null && solidData[solidData.length-1] !== null) {
+            weakData[weakData.length-1] = solidData[solidData.length-1];
+          }
+          solidData.push(null);
+          weakData.push(v);
+        }
+      }
+      var hasWeak = weakData.some(function(v){return v !== null;});
+
+      // Aktuelles Jahr
+      var curData = [0];
+      for (var i = 0; i < tdoms.length; i++) {
+        if (currentMonthCurve && currentMonthCurve.tdoms) {
+          var idx = currentMonthCurve.tdoms.indexOf(tdoms[i]);
+          curData.push(idx >= 0 ? parseFloat(currentMonthCurve.curve[idx].toFixed(3)) : null);
+        } else {
+          curData.push(null);
+        }
+      }
+
+      var nYears = stats[1] ? stats[1].n : 0;
+      var monthName = MONTHS_DE[new Date().getMonth()];
+
+      var annotations = { yaxis:[{ y:0, borderColor:'rgba(255,255,255,.3)', strokeDashArray:3 }] };
+      if (currentTdom != null) {
+        annotations.xaxis = [{ x: String(currentTdom), borderColor:'rgba(232,168,32,.6)', strokeDashArray:4, label:{text:'TDOM '+currentTdom,style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }];
+      }
+
+      var series = [{ name:'Ø '+monthName+' ('+nYears+'J)', data:solidData }];
+      var colors = [COL_AVG];
+      var widths = [3];
+      var dashes = [0];
+      if (hasWeak) {
+        series.push({ name:'⚠ n<'+MIN_N+' (unsicher)', data:weakData });
+        colors.push('#f1c40f');
+        widths.push(2);
+        dashes.push(5);
+      }
+      series.push({ name: new Date().getFullYear()+' (aktuell)', data:curData });
+      colors.push(COL_CURRENT);
+      widths.push(3);
+      dashes.push(0);
+
+      if (charts.month) { try { charts.month.destroy(); } catch(e){} }
+      charts.month = new ApexCharts(document.getElementById('chart-month'), {
+        series: series,
+        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        stroke: { width:widths, curve:'straight', dashArray:dashes },
+        colors: colors,
+        markers: { size: 0, hover:{size:5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          x: { formatter: function(v){return v === '0' ? 'Basis (Vormonat)' : 'TDOM ' + v;} },
+          y: { formatter: function(v){return v != null ? fmtPct(v,3) : '–';} }
+        }),
+        xaxis: { categories: allXVals.map(String), labels:{style:{colors:'#a89878',fontSize:'10px'}} },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(2)+'%';}} },
+        annotations: annotations,
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'} },
+        dataLabels: { enabled: false }
+      });
+      charts.month.render();
+    }
+
+    // ── 6. TruePath Chart (Vergangenheit + Prognose farbig) ──────
+    function renderTruePathChart(yearData, truepath, currentYear, ticker) {
+      if (!truepath) return;
+      var todayDoyVal = todayDoy();
+
+      // Date-Labels (1.1. bis 31.12.)
+      var labels = [];
+      for (var i = 1; i <= 365; i++) {
+        var d = new Date(currentYear, 0, i);
+        labels.push(pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.');
+      }
+
+      // TruePath split: vor heute = solid, ab heute = dashed (Prognose)
+      var tpPast = new Array(365).fill(null);
+      var tpFuture = new Array(365).fill(null);
+      for (var i = 0; i < 365; i++) {
+        var v = parseFloat(truepath[i].toFixed(2));
+        if (i < todayDoyVal) tpPast[i] = v;
+        else tpFuture[i] = v;
+      }
+      // Bridge: erster Future-Punkt = letzter Past-Punkt fuer durchgehende Linie
+      if (todayDoyVal > 0 && todayDoyVal < 365) tpFuture[todayDoyVal-1] = tpPast[todayDoyVal-1];
+
+      // Aktuelles Jahr (nur bis heute)
+      var curArr = new Array(365).fill(null);
+      if (yearData[currentYear]) {
+        var c = yearData[currentYear].full_365;
+        for (var i = 0; i < Math.min(todayDoyVal, 365); i++) curArr[i] = parseFloat(c[i].toFixed(2));
+      }
+
+      if (charts.truepath) { try { charts.truepath.destroy(); } catch(e){} }
+      charts.truepath = new ApexCharts(document.getElementById('chart-truepath'), {
+        series: [
+          { name: 'TruePath bis Heute', data: tpPast },
+          { name: 'TruePath Prognose', data: tpFuture },
+          { name: currentYear + ' (aktuell)', data: curArr }
+        ],
+        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        stroke: { width:[3,3,3], curve:'straight', dashArray:[0,6,0] },
+        colors: [COL_TRUEPATH, '#a78bfa', COL_CURRENT],
+        markers: { size: 0, hover:{size:5} },
+        grid: SA.chartTheme.grid,
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, {
+          shared:true, intersect:false,
+          y: { formatter: function(v){return v != null ? v.toFixed(1) : '–';} }
+        }),
+        xaxis: { categories: labels, tickAmount: 11, labels: { style:{colors:'#a89878',fontSize:'10px'}, rotate:0, hideOverlappingLabels:true } },
+        yaxis: { labels:{style:{colors:'#a89878',fontSize:'10px'},formatter:function(v){return v.toFixed(0);}} },
+        annotations: {
+          xaxis: [
+            // Prognose-Bereich farbig hinterlegen
+            { x: labels[Math.max(0,todayDoyVal-1)], x2: labels[364],
+              fillColor: 'rgba(167,139,250,.10)', borderColor: 'transparent',
+              label:{text:'Prognose',style:{color:'#a78bfa',background:'rgba(167,139,250,.15)',fontSize:'10px',fontWeight:700},position:'top',offsetY:8} },
+            // Heute-Linie
+            { x: labels[Math.max(0,todayDoyVal-1)], borderColor:'rgba(232,168,32,.7)', strokeDashArray:4,
+              label:{text:'Heute',style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }
+          ],
+          yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
+        },
+        legend: { position:'top', fontSize:'10px', labels:{colors:'#a89878'} },
+        dataLabels: { enabled: false }
+      });
+      charts.truepath.render();
+    }
+
+    // ── 7. Wochentag Card (mit 5 Streak-Blöcken Mo-Fr) ─────────
+    function renderWeekdayCard(stats, streak, allWdStreaks, displayWd, closedHint) {
+      var el = document.getElementById('weekday-content');
+      var wd = displayWd != null ? displayWd : (function(){ var w = new Date().getDay(); return w === 0 ? 6 : w - 1; })();
+      var wdName = WEEKDAYS_DE[wd === 6 ? 0 : wd + 1];
+      if (!stats) { el.innerHTML = '<div class="s6-headline">' + wdName + '</div>' + STAT6_EMPTY; return; }
+      // Streak badge inline
+      var streakHtml = '';
+      if (streak && streak.count > 0) {
+        var sCls = streak.type === 'win' ? 'win' : 'loss';
+        streakHtml = ' <span class="streak-badge ' + sCls + '" style="font-size:.65rem;vertical-align:middle">' + streak.count + (streak.type === 'win' ? ' W' : ' L') + '</span>';
+      }
+      var html = '<div class="s6-headline">' + wdName + streakHtml + '</div>';
+      html += '<div class="s6-sub">' + stats.n + ' Beobachtungen</div>';
+      if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
+      html += '<div class="s6-kpis">' +
+        '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (stats.win_rate >= 50 ? 'green' : 'red') + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
+        '<div class="kpi"><div class="kpi-label">Ø Rendite</div><div class="kpi-value ' + (stats.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(stats.avg,2) + '</div></div>' +
+      '</div>';
+      // 5 Mini-Blocks Mo-Fr: aktuelle Streak jedes Wochentags
+      if (allWdStreaks) {
+        var WD_SHORT = ['Mo','Di','Mi','Do','Fr'];
+        html += '<div class="wd-streak-row">';
+        for (var i = 0; i < 5; i++) {
+          var s = allWdStreaks[i];
+          var cls = (!s || s.count === 0) ? 'w' : (s.type === 'win' ? 'w' : 'l');
+          var lbl = (!s || s.count === 0) ? '–' : s.count + (s.type === 'win' ? 'W' : 'L');
+          html += '<div class="wd-blk ' + cls + (i === wd ? ' today' : '') + '">' + WD_SHORT[i] + '<br>' + lbl + '</div>';
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    // ── 8. TDOM-Mini Card (generisch fuer heute/morgen) ──
+    function renderTdomMiniCard(elementId, dateLabel, mini, closedHint) {
+      var el = document.getElementById(elementId);
+      if (!mini) {
+        el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
+        return;
+      }
+      var html = '<div class="s6-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + '</div>';
+      html += '<div class="s6-sub">' + mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel + '</div>';
+      if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
+      html += '<div class="s6-kpis">';
+      html += '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (mini.winRate >= 50 ? 'green' : 'red') + '">' + mini.winRate.toFixed(0) + '%</div></div>';
+      html += '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + (mini.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(mini.avg,2) + '</div></div>';
+      html += '</div>';
+      // Streak-Kacheln: 5 benachbarte TDOM-Positionen (wie Mo-Fr bei Wochentag)
+      if (mini.neighborStreaks && mini.neighborStreaks.length > 0) {
+        html += '<div class="wd-streak-row">';
+        for (var ri = 0; ri < mini.neighborStreaks.length; ri++) {
+          var nb = mini.neighborStreaks[ri];
+          var s = nb.streak;
+          var cls = (!s || s.count === 0) ? 'w' : (s.type === 'win' ? 'w' : 'l');
+          var lbl = (!s || s.count === 0) ? '–' : s.count + (s.type === 'win' ? 'W' : 'L');
+          html += '<div class="wd-blk ' + cls + (nb.isCurrent ? ' today' : '') + '">T' + nb.tdom + '<br>' + lbl + '</div>';
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    // ── 9. Trifecta Card ─────────────────────────────────────────
+    function renderTrifectaCard(trifecta) {
+      var el = document.getElementById('trifecta-content');
+      if (!trifecta) { el.innerHTML = '<p style="color:#a89878;font-size:.875rem">Nicht genug Daten</p>'; return; }
+      var html = '<div class="tri-head">';
+      html += '<div class="tri-emoji">' + trifecta.emoji + '</div>';
+      html += '<div><div class="tri-signal" style="color:' + trifecta.color + '">' + trifecta.signal + '</div>';
+      html += '<div class="tri-count">' + trifecta.count + ' / 3 Bedingungen</div></div>';
+      html += '</div>';
+      html += '<div class="tri-conditions">';
+      html += '<div class="tri-cond"><span class="check ' + (trifecta.scr.erfuellt ? 'ok' : 'no') + '">' + (trifecta.scr.erfuellt ? '✓' : '✗') + '</span> Santa Claus Rally <span style="color:#8899aa">(' + fmtPct(trifecta.scr.rendite, 1) + ')</span></div>';
+      html += '<div class="tri-cond"><span class="check ' + (trifecta.ffd.erfuellt ? 'ok' : 'no') + '">' + (trifecta.ffd.erfuellt ? '✓' : '✗') + '</span> First Five Days <span style="color:#8899aa">(' + fmtPct(trifecta.ffd.rendite, 1) + ')</span></div>';
+      html += '<div class="tri-cond"><span class="check ' + (trifecta.janb.erfuellt ? 'ok' : 'no') + '">' + (trifecta.janb.erfuellt ? '✓' : '✗') + '</span> January Barometer <span style="color:#8899aa">(' + fmtPct(trifecta.janb.rendite, 1) + ')</span></div>';
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    // ── 10. Risiko-KPIs ──────────────────────────────────────────
+    function renderRiskKpis(riskKpis, volaStats, volaStats5) {
+      var el = document.getElementById('risk-content');
+      function kpi(label, value, colorClass, tooltip) {
+        var badge = '';
+        if (tooltip) {
+          badge = '<div class="info-badge" tabindex="0" aria-label="' + SA.i18n.t('common.info_aria','Erklärung') + '">i</div>' +
+                  '<div class="info-tooltip">' + tooltip + '</div>';
+        }
+        return '<div class="kpi">' + badge +
+               '<div class="kpi-label">' + label + '</div>' +
+               '<div class="kpi-value' + (colorClass ? ' '+colorClass : '') + '">' + value + '</div></div>';
+      }
+      // Zeile 1: bestehende 4 KPIs
+      var html = '';
+      if (riskKpis) {
+        var ddNowCol = riskKpis.dd_now != null && riskKpis.dd_now < -1 ? 'red' : 'green';
+        html += kpi('Aktueller DD ' + new Date().getFullYear(), riskKpis.dd_now != null ? fmtNum(riskKpis.dd_now,1)+'%' : '–', ddNowCol,
+          '<b>Aktueller Drawdown</b> &mdash; prozentualer Abstand vom Jahreshoch im laufenden Jahr. <b>0&nbsp;%</b> = aktuell auf Hoch, <b>&minus;10&nbsp;%</b> = Kurs 10&nbsp;% unter dem Jahres-Peak.');
+        html += kpi('Ø Max DD (' + riskKpis.n + 'J)', fmtNum(riskKpis.avg_max_dd, 1) + '%', 'red',
+          '<b>Ø Maximaler Drawdown</b> &mdash; Durchschnitt der jährlichen Tief-Peaks der letzten N Jahre. Hilft einzuordnen, ob der aktuelle DD normal oder ungewöhnlich schlimm ist.');
+      } else {
+        html += kpi('Aktueller DD', '–', '', null);
+        html += kpi('Ø Max DD', '–', '', null);
+      }
+      if (volaStats) {
+        var volaCol = volaStats.is_elevated ? 'red' : volaStats.is_low ? 'green' : 'gold';
+        html += kpi('Aktuelle 20d-Vola', volaStats.current_vola.toFixed(1) + '%', volaCol,
+          '<b>20-Tage-Volatilität</b> &mdash; annualisierte Standardabweichung der Tagesrenditen über 20 Handelstage (&times; &radic;252). Je höher, desto breiter die typische Kursbewegung.');
+        var pctLabel = volaStats.percentile.toFixed(0) + '% (' + (volaStats.is_elevated ? 'erhöht' : volaStats.is_low ? 'niedrig' : 'normal') + ')';
+        html += kpi('Vola-Perzentil', pctLabel, volaCol,
+          '<b>Vola-Perzentil</b> &mdash; wo liegt die aktuelle Vola in der historischen Verteilung der letzten 5 Jahre. <b>&gt; 80&nbsp;%</b> = Stress-Phase, <b>&lt; 20&nbsp;%</b> = extrem ruhig.');
+      } else {
+        html += kpi('Aktuelle Vola', '–', '', null);
+        html += kpi('Vola-Perzentil', '–', '', null);
+      }
+      // Zeile 2: YTD Return, Tage im DD, DD-Perzentil, Vola-Trend
+      html += '<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:.15rem 0"></div>';
+      if (riskKpis) {
+        var ytdCol = !isNaN(riskKpis.ytd_return) ? (riskKpis.ytd_return >= 0 ? 'green' : 'red') : '';
+        html += kpi('YTD Return', !isNaN(riskKpis.ytd_return) ? fmtPct(riskKpis.ytd_return,1) : '–', ytdCol,
+          '<b>Year-to-Date Return</b> &mdash; Gesamtrendite seit dem 1.&nbsp;Januar des laufenden Jahres bis heute.');
+        html += kpi('Tage im DD', riskKpis.days_in_dd > 0 ? riskKpis.days_in_dd + 'd' : '–', riskKpis.days_in_dd > 20 ? 'red' : riskKpis.days_in_dd > 0 ? 'gold' : 'green',
+          '<b>Tage im Drawdown</b> &mdash; Handelstage seit dem letzten Jahreshoch. <b>&gt; 20&nbsp;d</b> = verfestigte Korrektur, <b>0&nbsp;d</b> = Kurs auf oder an neuem Hoch.');
+        var ddPctCol = !isNaN(riskKpis.dd_percentile) ? (riskKpis.dd_percentile > 70 ? 'red' : riskKpis.dd_percentile > 30 ? 'gold' : 'green') : '';
+        html += kpi('DD-Perzentil', !isNaN(riskKpis.dd_percentile) ? riskKpis.dd_percentile.toFixed(0) + '%' : '–', ddPctCol,
+          '<b>DD-Perzentil (saisonal)</b> &mdash; wie tief ist der aktuelle DD im Vergleich zur historischen DD-Verteilung am gleichen Kalendertag. <b>&gt; 70&nbsp;%</b> = ungewöhnlich schwacher Jahresverlauf bis hierhin.');
+      } else {
+        html += kpi('YTD Return', '–', '', null);
+        html += kpi('Tage im DD', '–', '', null);
+        html += kpi('DD-Perzentil', '–', '', null);
+      }
+      // Vola-Trend: 5d vs 20d
+      if (volaStats && volaStats5) {
+        var ratio = volaStats5.current_vola / volaStats.current_vola;
+        var trendLabel, trendCol;
+        if (ratio > 1.15) { trendLabel = '↑ steigend'; trendCol = 'red'; }
+        else if (ratio < 0.85) { trendLabel = '↓ fallend'; trendCol = 'green'; }
+        else { trendLabel = '→ stabil'; trendCol = 'gold'; }
+        html += kpi('Vola-Trend 5d/20d', trendLabel, trendCol,
+          '<b>Vola-Trend 5d/20d</b> &mdash; Verhältnis kurzfristige (5d) zu mittelfristige (20d) Volatilität. <b>&gt; 1,15</b> = Vola steigend (Stress kommt), <b>&lt; 0,85</b> = Vola fallend (Beruhigung), dazwischen stabil.');
+      } else {
+        html += kpi('Vola-Trend', '–', '', null);
+      }
+      el.innerHTML = html;
+    }
+
+    // ── 11. Strategien-Tabelle (mit Streak) ──────────────────────
+    function renderStrategiesTable(signals, strategiesStreaks) {
+      var el = document.getElementById('strategies-content');
+      if (!signals || !signals.length) {
+        el.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1rem">Keine relevanten Signale in den nächsten 30 Tagen</p>';
+        return;
+      }
+      var html = '<table class="strategies-table">';
+      html += '<thead><tr><th data-i18n="table.strategy">Strategie</th><th>Signal</th><th data-i18n="table.date">Datum</th><th>In Tagen</th><th>Aktuelle Streak</th></tr></thead><tbody>';
+      for (var i = 0; i < signals.length; i++) {
+        var s = signals[i];
+        var typeLabel = s.type === 'entry' ? 'Einstieg' : 'Ausstieg';
+        var typeCol = s.type === 'entry' ? '#34d399' : '#f87171';
+        var sData = strategiesStreaks[s.key];
+        var streakBadge = '<span style="color:#8899aa">–</span>';
+        if (sData && sData.lastTrades && sData.lastTrades.length) {
+          // Letzte 5 Trades als Einzel-Kacheln (ältester links, neuester rechts)
+          streakBadge = '<div class="wd-streak-row" style="justify-content:flex-end;max-width:140px">';
+          for (var ti = 0; ti < sData.lastTrades.length; ti++) {
+            var tw = sData.lastTrades[ti] > 0;
+            streakBadge += '<div class="wd-blk ' + (tw ? 'w' : 'l') + '" style="flex:0 0 24px;font-size:.55rem">' + (tw ? 'W' : 'L') + '</div>';
+          }
+          streakBadge += '</div>';
+        }
+        html += '<tr>';
+        html += '<td>' + s.icon + ' <b>' + s.name + '</b></td>';
+        html += '<td style="color:' + typeCol + ';font-weight:600">' + typeLabel + '</td>';
+        html += '<td>' + s.dateLabel + '</td>';
+        html += '<td>' + (s.daysAway === 0 ? 'Heute' : s.daysAway === 1 ? '1 Tag' : s.daysAway + ' Tage') + '</td>';
+        html += '<td>' + streakBadge + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    }
+
+    // ── Stat6 Helper: einheitliches Card-Markup ──
+    function stat6(headline, sub, kpis) {
+      var html = '<div class="s6-headline">' + headline + '</div>';
+      html += '<div class="s6-sub">' + sub + '</div>';
+      html += '<div class="s6-kpis">';
+      for (var i = 0; i < kpis.length; i++) {
+        var k = kpis[i];
+        html += '<div class="kpi"><div class="kpi-label">' + k[0] + '</div><div class="kpi-value ' + (k[2]||'') + '">' + k[1] + '</div></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+    var STAT6_EMPTY = '<p style="color:#a89878;font-size:.8125rem;padding:.5rem 0">Nicht genug Daten</p>';
+
+    // ── 6b. Monatsperformance Card ─────────────────────────────────
+    function renderMonthlyPerfCard(mp) {
+      var el = document.getElementById('month-perf-content');
+      if (!mp) { el.innerHTML = STAT6_EMPTY; return; }
+      el.innerHTML = stat6(mp.monthName, mp.n + ' Jahre historisch', [
+        ['Ø Return', fmtPct(mp.avg,2), mp.avg >= 0 ? 'green' : 'red'],
+        ['Win-Rate', mp.winRate.toFixed(0)+'%', mp.winRate >= 50 ? 'green' : 'red'],
+        ['Bester', fmtPct(mp.best,1), 'green'],
+        ['Schlechtester', fmtPct(mp.worst,1), 'red']
+      ]);
+    }
+
+    // ── 11b. Two-Week Phase Card (kompakt) ───────────────────────
+    function renderTwoWeekPhase(tw) {
+      var el = document.getElementById('twoweek-content');
+      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) { el.innerHTML = STAT6_EMPTY; return; }
+      var cur = tw.current, avg = cur.avg;
+      var status, statusCls;
+      if (avg >= 0.5) { status = 'Bullish'; statusCls = 'green'; }
+      else if (avg <= -0.5) { status = 'Bearish'; statusCls = 'red'; }
+      else { status = 'Neutral'; statusCls = 'gold'; }
+      var rankCls = tw.rank <= 8 ? 'green' : (tw.rank >= 17 ? 'red' : 'gold');
+      el.innerHTML = stat6(cur.name, cur.n + 'J Daten', [
+        ['Ø Return', fmtPct(avg,2), avg >= 0 ? 'green' : 'red'],
+        ['Status', status, statusCls],
+        ['Rang', tw.rank + ' / ' + tw.total, rankCls],
+        ['Win-Rate', cur.winRate != null ? cur.winRate.toFixed(0)+'%' : '–', cur.winRate >= 50 ? 'green' : 'red']
+      ]);
+    }
+
+    // ── Overnight Card ───────────────────────────────────────────
+    function renderOvernightCard(overnightStats, closedHint) {
+      var el = document.getElementById('overnight-content');
+      if (!overnightStats) { el.innerHTML = STAT6_EMPTY; return; }
+      var o = overnightStats;
+      var hintHtml = closedHint ? '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>' : '';
+      el.innerHTML = stat6(o.label, o.n + ' Beobachtungen', [
+        ['Ø Overnight', fmtPct(o.avg,3), o.avg >= 0 ? 'green' : 'red'],
+        ['Win-Rate', o.winRate.toFixed(0)+'%', o.winRate >= 50 ? 'green' : 'red'],
+        ['Ø Intraday', fmtPct(o.avgIntraday,3), o.avgIntraday >= 0 ? 'green' : 'red'],
+        ['ON/ID Ratio', o.ratio, 'gold']
+      ]);
+      if (hintHtml) el.querySelector('.s6-sub').insertAdjacentHTML('afterend', hintHtml);
+    }
+
+    // ── 12. Nächste Events Cards ─────────────────────────────────
+    function renderEventsGrid(events) {
+      var el = document.getElementById('events-content');
+      if (!events || !events.length) {
+        el.innerHTML = '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1rem;grid-column:1/-1">Keine kommenden Events</p>';
+        return;
+      }
+      var todayD = new Date();
+      var html = '';
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        var d = new Date(ev.date);
+        var daysAway = Math.ceil((d - todayD) / 86400000);
+        var dateLabel = WEEKDAYS_SHORT[d.getDay()] + ', ' + pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.' + d.getFullYear();
+        var inDaysLabel = daysAway === 0 ? 'Heute' : (daysAway === 1 ? 'Morgen' : 'in ' + daysAway + ' Tagen');
+
+        html += '<div class="event-card">';
+        html += '<div class="ev-name">' + ev.icon + ' ' + ev.name + '</div>';
+        html += '<div class="ev-date">' + dateLabel + ' · ' + inDaysLabel + '</div>';
+
+        // Historische Performance via analyzeEventWindow
+        var hist = analyzeEventWindow(rawRows, ev.historicDates || [], ev.daysBefore, ev.daysAfter);
+        if (hist && hist.nEvents >= 3) {
+          // Streak: letzten N nach Datum sortieren
+          var sorted = hist.allCurves.slice().sort(function(a,b){return a.date<b.date?1:-1;});
+          var entries = sorted.map(function(c){return {ret: c.totalReturn};});
+          var streak = SA.streaks ? SA.streaks.currentStreak(entries) : { type: entries[0].ret>0?'win':'loss', count: 1 };
+          // Letzte 5 Events als W/L Einzel-Kacheln (ältester links)
+          var last5 = sorted.slice(0, 5).reverse();
+          html += '<div class="ev-stats">';
+          html += '<div class="wd-streak-row" style="max-width:140px;margin-bottom:.4rem">';
+          for (var ei = 0; ei < last5.length; ei++) {
+            var ew = last5[ei].totalReturn > 0;
+            html += '<div class="wd-blk ' + (ew ? 'w' : 'l') + '" style="flex:0 0 24px;font-size:.55rem">' + (ew ? 'W' : 'L') + '</div>';
+          }
+          html += '</div>';
+          html += '<div>Win-Rate (' + hist.nEvents + ' Events): <b>' + hist.winRate.toFixed(0) + '%</b></div>';
+          html += '<div>Ø Return: <b class="' + (hist.avgReturn>=0?'pos':'neg') + '">' + fmtPct(hist.avgReturn,2) + '</b></div>';
+          html += '</div>';
+        } else {
+          html += '<div class="ev-stats" style="color:#8899aa">Nicht genug historische Daten</div>';
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // PHASE 3: Page Lifecycle
+    // ══════════════════════════════════════════════════════════════
+
+    var _seitenKennung = 0;   // Kennung des Abrufs, dessen Daten gerade gezeichnet werden (loadTicker setzt sie)
+    function renderAll() {
+      var _rk = _seitenKennung;
+      if (!rawRows.length || !currentTicker) return;
+      document.getElementById('title-ticker').textContent = currentTicker;
+
+      // Trading Day Header
+      try { SA.renderTradingDayHeader('trading-day-header', currentTicker, rawRows); } catch(e) { console.warn(e); }
+
+      // Year Filter
+      var yearsBack = parseInt(document.getElementById('sel-years').value);
+      var lastDate = new Date(rawRows[rawRows.length-1].date);
+      var cutoffYear = new Date().getFullYear() - yearsBack;
+      var filteredRows = rawRows.filter(function(r){return parseInt(r.date.substring(0,4)) >= cutoffYear;});
+
+      // YearData via SA.seasonal
+      var yearData = SA.seasonal.buildYearData(filteredRows);
+      var avgResult = SA.seasonal.calculateSeasonalAverage(yearData);
+      var avg = avgResult.avg || [];
+      var currentYear = new Date().getFullYear();
+
+      // 1. Saison-Score — eigene Historie (bis zu 20 Vergleichsjahre), unabhängig vom Zeitraum-Regler
+      var matches = findMatchingYears(yearData, currentYear, 'correlation', 5);
+      var truepath = computeTruePath(matches, 5);   // nur für den TruePath-Chart
+      try {
+        var _ssTicker = currentTicker;
+        renderKiCard(null);
+        SA.decadeCompute.mitHistorie(rawRows, _ssTicker).then(function(voll) {
+          if (currentTicker === _ssTicker && SA.ladeKennung.aktuell(_rk)) renderKiCard(SA.saisonScore.berechne(voll, _ssTicker));
+        }, function(e) {
+          if (currentTicker === _ssTicker && SA.ladeKennung.aktuell(_rk)) renderKiCard({ status: 'nicht_berechenbar', grund_code: 'ladefehler', grund: String(e && e.message || e) });
+        });
+      } catch(e) { console.warn('Saison-Score:', e); renderKiCard({ status: 'nicht_berechenbar', grund_code: 'ladefehler', grund: String(e && e.message || e) }); }
+
+      // 2. Stress-Ampel (eine Formel: SA.dashCompute.computeStress, Zwilling von shared/stress_score.py) + ML-Regime
+      var regime = SA.dashCompute.computeStress(rawRows);
+      var _closes = rawRows.map(function(r) { return r.close; });
+      var _kArr = (SA.indicators && SA.indicators.calcRegime) ? SA.indicators.calcRegime(_closes, 20) : null;
+      var kmeansRegime = _kArr ? (_kArr[_kArr.length - 1] || null) : null;
+      renderCrashCard(regime, kmeansRegime);
+
+      // 3. Anomalie-Radar via SA.decadeCompute
+      try {
+        var _radarTicker = currentTicker;   // nach dem Nachladen nur zeichnen, wenn der Ticker noch derselbe ist
+        document.getElementById('anomaly-content').innerHTML = SA.decadeCompute.anomalieLadeHtml();
+        SA.decadeCompute.anomalieMitHistorie(rawRows, _radarTicker).then(function(a) {
+          if (currentTicker === _radarTicker && SA.ladeKennung.aktuell(_rk)) renderAnomalyCard(a);
+        }, function(e) {
+          if (currentTicker === _radarTicker && SA.ladeKennung.aktuell(_rk)) renderAnomalyCard({ status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) });
+        });
+      } catch(e) { console.warn('Anomaly:', e); renderAnomalyCard({ status: 'nicht_berechenbar', grund_code: 'fehler', grund: String(e && e.message || e) }); }
+
+      // 4. Year-Chart
+      renderYearChart(yearData, avg, currentTicker);
+
+      // 4b. Drawdown-Chart
+      try {
+        var ddData = computeAvgDrawdownCurve(yearData, currentYear);
+        renderDrawdownChart(ddData, currentTicker);
+      } catch(e) { console.warn('Drawdown chart:', e); }
+
+      // 4c. Two-Week Phase (kompakt)
+      try {
+        var tw = computeTwoWeekPhases(yearData, currentYear);
+        renderTwoWeekPhase(tw);
+      } catch(e) { console.warn('Two-Week:', e); }
+
+      // 4d. Historische Monatsperformance
+      try {
+        var mp = calcCurrentMonthPerf(filteredRows, yearsBack);
+        renderMonthlyPerfCard(mp);
+      } catch(e) { console.warn('MonthPerf:', e); }
+
+      // 5. + 8. Month + TDOM-Mini-Cards (heute / morgen / uebermorgen)
+      var tdomRows = assignTdom(filteredRows);
+      var currentMonth = new Date().getMonth() + 1;
+      var allYearsList = Object.keys(yearData).map(Number);
+      var intramonthCache = {};
+      var intramonth = calcIntramonthCurve(tdomRows, currentMonth, allYearsList);
+      intramonthCache[currentMonth] = intramonth;
+      var currentMonthCurve = calcCurrentMonthCurve(tdomRows, currentMonth);
+      var currentTdom = getCurrentTdom(tdomRows, currentTicker);
+      renderMonthChart(intramonth, currentMonthCurve, currentTicker, currentTdom);
+
+      // TDOM Heute / Morgen / Uebermorgen via Holiday-Kalender
+      var todayD = new Date(); todayD.setHours(0,0,0,0);
+      var dayLbl = function(d){ return WEEKDAYS_SHORT[d.getDay()] + ' ' + pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.'; };
+      // Heute (oder nächster Handelstag wenn WE/Feiertag)
+      var miniToday = getTdomMiniStats(tdomRows, todayD, allYearsList, intramonthCache);
+      var todayLabel, tdomClosedHint = null;
+      if (miniToday) { todayLabel = 'Heute · ' + dayLbl(todayD); }
+      else {
+        var nextTd = nextTradingDate(todayD);
+        if (nextTd) {
+          miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache);
+          todayLabel = dayLbl(nextTd);
+          var todayWdRaw = new Date().getDay();
+          tdomClosedHint = (todayWdRaw === 0 || todayWdRaw === 6)
+            ? 'Börse geschlossen · nächster HT ' + dayLbl(nextTd)
+            : 'Feiertag · nächster HT ' + dayLbl(nextTd);
+        }
+        else todayLabel = 'Heute';
+      }
+      renderTdomMiniCard('tdom-today-content', todayLabel, miniToday, tdomClosedHint);
+      // Morgen = nächster Handelstag nach heute (oder nach miniToday.date)
+      var fromDate = miniToday ? new Date(miniToday.date) : todayD;
+      var d1 = nextTradingDate(fromDate);
+      var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache) : null;
+      renderTdomMiniCard('tdom-tomorrow-content', d1 ? dayLbl(d1) : 'Morgen', mini1);
+
+      // 6. TruePath
+      renderTruePathChart(yearData, truepath, currentYear, currentTicker);
+
+      // 7. Wochentag + Streak (alle 5 Wochentage)
+      var todayWd = new Date().getDay(); todayWd = todayWd === 0 ? 6 : todayWd - 1;
+      var wdClosedHint = null;
+      var wdTarget = todayWd; // 0=Mo..4=Fr
+      if (todayWd > 4) {
+        // Wochenende: nächsten Handelstag ermitteln
+        var nextHt = nextTradingDate(new Date());
+        if (nextHt) {
+          var nwd = nextHt.getDay(); nwd = nwd === 0 ? 6 : nwd - 1;
+          wdTarget = nwd;
+          wdClosedHint = 'Börse geschlossen · nächster HT ' + dayLbl(nextHt);
+        }
+      } else {
+        // Werktag aber ggf. Feiertag prüfen
+        var todayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
+        var ex; try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+        if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) {
+          var nextHt2 = nextTradingDate(new Date());
+          if (nextHt2) {
+            var nwd2 = nextHt2.getDay(); nwd2 = nwd2 === 0 ? 6 : nwd2 - 1;
+            wdTarget = nwd2;
+            wdClosedHint = 'Feiertag · nächster HT ' + dayLbl(nextHt2);
+          }
+        }
+      }
+      var wdStats = calcWeekdayStatsSingle(filteredRows, wdTarget, yearsBack);
+      var wdStreak = calcWeekdayStreak(filteredRows, wdTarget);
+      var allWdStreaks = [];
+      for (var wi = 0; wi < 5; wi++) allWdStreaks.push(calcWeekdayStreak(filteredRows, wi));
+      renderWeekdayCard(wdStats, wdStreak, allWdStreaks, wdTarget, wdClosedHint);
+
+      // 9. Trifecta
+      try {
+        var trifecta = calcTrifecta(currentYear);
+        renderTrifectaCard(trifecta);
+      } catch(e) { console.warn('Trifecta:', e); renderTrifectaCard(null); }
+
+      // 10. Risiko-KPIs
+      var riskKpis = computeRiskKpis(filteredRows, yearData);
+      var volaStats = currentVolaStats(filteredRows, 20);
+      var volaStats5 = currentVolaStats(filteredRows, 5);
+      renderRiskKpis(riskKpis, volaStats, volaStats5);
+
+      // 10b. Overnight (separater OHLC-Fetch, lazy)
+      (function() {
+        // Ziel-Wochentag ermitteln (bei WE/Feiertag → nächster HT)
+        var onTargetWd = new Date().getDay();
+        var onClosedHint = null;
+        if (onTargetWd === 0 || onTargetWd === 6) {
+          var onNext = nextTradingDate(new Date());
+          if (onNext) { onTargetWd = onNext.getDay(); onClosedHint = 'Börse geschlossen · nächster HT ' + dayLbl(onNext); }
+          else { renderOvernightCard(null); return; }
+        } else {
+          var onTodayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
+          var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ onEx='NONE'; }
+          if (onEx !== 'NONE' && !SA.holidays.isTradingDay(onTodayStr, onEx)) {
+            var onNext2 = nextTradingDate(new Date());
+            if (onNext2) { onTargetWd = onNext2.getDay(); onClosedHint = 'Feiertag · nächster HT ' + dayLbl(onNext2); }
+          }
+        }
+        var oStart = new Date(); oStart.setFullYear(oStart.getFullYear() - yearsBack);
+        var oFilter = '&date=gte.' + oStart.toISOString().substring(0,10);
+        var q = 'ticker=eq.' + encodeURIComponent(currentTicker) + '&select=date,open,close&order=date' + oFilter;
+        fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
+        }).then(function(r){ return r.json(); }).then(function(ohlc){
+          ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
+          var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd);
+          renderOvernightCard(onStats, onClosedHint);
+        }).catch(function(e){ console.warn('Overnight:', e); renderOvernightCard(null); });
+      })();
+
+      // 11. Strategien (lazy via setTimeout — teuerster Block)
+      setTimeout(function() {
+        try {
+          var signals = getNextStrategySignals();
+          // Pro Strategie die Streak berechnen
+          var streaks = {};
+          for (var i = 0; i < signals.length; i++) {
+            var key = signals[i].key;
+            if (streaks[key]) continue;
+            try {
+              var meta = SA.STRATEGIES[key];
+              if (meta && SA.strategy[meta.func]) {
+                var bD = SA.holidays.detect(currentTicker || 'NYSE');
+                var ausw = SA.strategy.auswerten(rawRows, key, { stichtag: SA.strategy.heute(bD), boerse: bD });
+                var closedTrades = ausw.trades.filter(function(t){ return !t.open; });
+                var last5 = closedTrades.slice(-5).map(function(t){ return t.return_pct; });
+                var sk = ausw.streak;
+                streaks[key] = { streak: { type: sk.typ === 'gewinn' ? 'win' : sk.typ === 'verlust' ? 'loss' : 'none', count: sk.n },
+                                 lastTrades: last5 };
+              }
+            } catch(e) { console.warn('Strategy', key, e); }
+          }
+          renderStrategiesTable(signals, streaks);
+        } catch(e) {
+          console.warn('Strategies:', e);
+          document.getElementById('strategies-content').innerHTML = '<p style="color:#a89878">Strategien konnten nicht berechnet werden</p>';
+        }
+      }, 50);
+
+      // 12. Nächste Events (lazy)
+      setTimeout(function() {
+        try {
+          var events = getNextEvents();
+          renderEventsGrid(events);
+        } catch(e) {
+          console.warn('Events:', e);
+          document.getElementById('events-content').innerHTML = '<p style="color:#a89878">Events konnten nicht berechnet werden</p>';
+        }
+      }, 100);
+
+    }
+
+    function loadTicker(ticker) {
+      ticker = (ticker || '').trim().toUpperCase();
+      if (!ticker) return;
+      var _lk = SA.ladeKennung.start(ticker, currentTicker);   // null: schon angezeigt, nichts unterwegs (app.js)
+      if (_lk === null) return;
+      _seitenKennung = _lk;
+      document.getElementById('loading-msg').style.display = '';
+      document.getElementById('loading-msg').textContent = 'Lade ' + ticker + '...';
+      document.getElementById('bento').style.display = 'none';
+
+      // Lade volle Historie (max 30 Jahre)
+      var startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 30);
+      var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
+
+      SA.fetchAllPrices(ticker, dateFilter).then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;
+        if (!rows || rows.length < 200) {
+          showError(ticker + ': Zu wenig Daten');
+          document.getElementById('loading-msg').textContent = 'Zu wenig Daten für ' + ticker;
+          return;
+        }
+        rows.forEach(function(r){ r.close = parseFloat(r.close); if (r.log_return != null) r.log_return = parseFloat(r.log_return); });
+        rawRows = rows;
+        currentTicker = ticker;
+        document.getElementById('loading-msg').style.display = 'none';
+        document.getElementById('bento').style.display = '';
+        renderAll();
+        updateWatchlistButton();
+      }).catch(function(e) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // veralteter Abruf: keine Fehlermeldung in die neue Ansicht
+        showError('Fehler: ' + (e && e.message ? e.message : e));
+        document.getElementById('loading-msg').textContent = 'Fehler beim Laden';
+      });
+    }
+
+    // ── Watchlist-Button-Logik ─────────────────────────────────
+    function updateWatchlistButton() {
+      if (typeof SA === 'undefined' || !SA.watchlist || !currentTicker) return;
+      var btn = document.getElementById('btn-wl-toggle');
+      var label = document.getElementById('btn-wl-label');
+      var badge = document.getElementById('wl-badge');
+      if (!btn || !label || !badge) return;
+      var inWL = SA.watchlist.has(currentTicker);
+      btn.classList.toggle('active', inWL);
+      label.textContent = inWL ? 'In Watchlist' : 'Zur Watchlist';
+      btn.title = inWL ? currentTicker + ' aus Watchlist entfernen' : currentTicker + ' zur Watchlist hinzufügen';
+      var count = SA.watchlist.count();
+      badge.textContent = String(count);
+      badge.classList.toggle('empty', count === 0);
+    }
+
+    function onWatchlistToggleClick() {
+      if (!currentTicker || !SA.watchlist) return;
+      var res = SA.watchlist.toggle(currentTicker);
+      if (res.added === false && res.removed === false) {
+        // Limit erreicht
+        showError('Watchlist-Limit erreicht (max ' + SA.watchlist._maxItems + ' Ticker).');
+        setTimeout(function(){ document.getElementById('error-banner').style.display='none'; }, 4000);
+        return;
+      }
+      updateWatchlistButton();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('btn-wl-toggle');
+      if (btn) btn.addEventListener('click', onWatchlistToggleClick);
+      if (window.SA && SA.watchlist) {
+        SA.watchlist.on('changed', updateWatchlistButton);
+        updateWatchlistButton();
+      }
+    });
+
+    // Listener: Year-Slider
+    document.getElementById('sel-years').addEventListener('change', function() {
+      if (rawRows.length) renderAll();
+    });
+
+    // Init
+    function initialLoad() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(initialLoad, 50); return; }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) {
+        SA.initTickerInput('ticker-input', 'ticker-list', function(t){ loadTicker(t); });
+        // ?t=TSLA aus der URL, sonst der gemerkte Ticker, sonst ^GSPC —
+        // beides erledigt SA.prefs.applyTicker, inkl. Schreiben ins Feld.
+        loadTicker(SA.prefs.applyTicker('ticker-input', '^GSPC'));
+      } else {
+        document.getElementById('loading-msg').textContent = 'Supabase nicht konfiguriert';
+      }
+    }
+    initialLoad();
+  })();
+  </script>
+
+  <script>
+  // Nav + Footer Loader
+  // loadComponent() ruft initNav() automatisch auf nachdem die nav.html geladen ist
+  // → Burger-Button bekommt seinen Click-Handler. Manueller fetch() umging das.
+  if (window.loadComponent) {
+    loadComponent('nav-container', '/landing/components/nav.html');
+    loadComponent('footer-container', '/landing/components/footer.html');
+  } else {
+    fetch('/landing/components/nav.html').then(function(r){return r.text();}).then(function(html){document.getElementById('nav-container').innerHTML = html; if (window.initNav) initNav();});
+    fetch('/landing/components/footer.html').then(function(r){return r.text();}).then(function(html){document.getElementById('footer-container').innerHTML = html;});
+  }
+  </script>
+  <script src="/landing/js/tour-config.js?v=20260409"></script>
+  <script src="/landing/js/tour.js?v=20260409"></script>
+</body>
+</html>

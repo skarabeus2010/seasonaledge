@@ -18,7 +18,7 @@ import sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 LANDING = WURZEL / "landing"
-MIN_PRUEFUNGEN = 119
+MIN_PRUEFUNGEN = 124
 MIN_HUELLEN = 65
 
 ALTE_LADER = re.compile(r"\b(?:SA\.)?fetchAllPrices\s*\(|\bladeVollHistorie\s*\(")

@@ -1,0 +1,1242 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Spot-Vol Beta &mdash; SPX vs VIX Regression | SeasonAlpha</title>
+  <meta name="description" content="Tagesaktuelles SPX-VIX Beta, Rolling Beta, Regime-Wendepunkte. VIX-Spikes, Complacency-Warnungen und Forward Returns 5/10/20/60 Tage.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/spot-vol-beta">  
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/spot-vol-beta">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/spot-vol-beta">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/spot-vol-beta">
+
+  <!-- Open Graph / Facebook / LinkedIn / WhatsApp / iMessage -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/spot-vol-beta">
+  <meta property="og:title" content="Spot-Vol Beta &mdash; SPX vs VIX Regression | &mdash; SeasonAlpha">
+  <meta property="og:description" content="Tagesaktuelles SPX-VIX Beta, Rolling Beta, Regime-Wendepunkte. VIX-Spikes, Complacency-Warnungen und Forward Returns 5/10/20/60 Tage.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Spot-Vol Beta &mdash; SPX vs VIX Regression | &mdash; SeasonAlpha">
+  <meta name="twitter:description" content="Tagesaktuelles SPX-VIX Beta, Rolling Beta, Regime-Wendepunkte. VIX-Spikes, Complacency-Warnungen und Forward Returns 5/10/20/60 Tage.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <!-- Structured Data: WebPage -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Spot-Vol Beta &mdash; SPX vs VIX Regression |","url":"https://seasonalpha.ai/spot-vol-beta","description":"Tagesaktuelles SPX-VIX Beta, Rolling Beta, Regime-Wendepunkte. VIX-Spikes, Complacency-Warnungen und Forward Returns 5/10/20/60 Tage.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <!-- Structured Data: BreadcrumbList (SERP Rich Result) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Spot-Vol Beta &mdash; SPX vs VIX Regression |","item":"https://seasonalpha.ai/spot-vol-beta"}]}</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  
+  
+  
+  
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .trading-day-header{background:rgba(232,168,32,.08);border:1px solid rgba(232,168,32,.15);border-radius:8px;padding:.5rem 1rem;font-size:.8125rem;color:var(--accent);margin-bottom:1.5rem;font-family:var(--f-m)}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+
+    .svb-table{width:100%;border-collapse:collapse;font-size:.8125rem}
+    .svb-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:left;border-bottom:1px solid var(--border)}
+    .svb-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums}
+    .svb-table tr:hover td{background:rgba(232,168,32,.04)}
+    .svb-table td.pos{color:var(--green)}
+    .svb-table td.neg{color:var(--red)}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.75rem}
+
+    .regime-badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.6875rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-family:var(--f-m)}
+    .regime-strong-neg{background:rgba(0,212,170,.15);color:#00d4aa;border:1px solid rgba(0,212,170,.3)}
+    .regime-neg{background:rgba(232,164,37,.15);color:#e8a425;border:1px solid rgba(232,164,37,.3)}
+    .regime-null{background:rgba(90,110,133,.2);color:#9aa7ba;border:1px solid rgba(90,110,133,.4)}
+    .regime-pos{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3)}
+
+    .beta-hint{background:rgba(232,168,32,.06);border-left:3px solid var(--accent);padding:.6rem .8rem;margin:1rem 0;font-size:.8125rem;color:var(--dim);border-radius:4px}
+    .beta-hint.warn{background:rgba(232,164,37,.08);border-left-color:#e8a425;color:#e8a425}
+    .beta-hint.err{background:rgba(255,71,87,.08);border-left-color:#ff4757;color:#ff4757}
+    .beta-hint.ok{background:rgba(0,212,170,.08);border-left-color:#00d4aa;color:#00d4aa}
+
+    .svb-tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:.75rem}
+    .svb-tab{padding:.5rem .9rem;font-size:.75rem;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--f-m)}
+    .svb-tab:hover{color:var(--dim)}
+    .svb-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+    .sidebar input[type="number"],.sidebar select{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m)}
+    .sidebar label.check{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--muted);cursor:pointer;padding:.25rem 0}
+    .sidebar label.check input{width:auto;margin:0}
+
+    .apexcharts-xaxis text title{display:none}
+
+    /* Vol Percentile Ribbon */
+    .vol-ribbon{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center}
+    .vol-ribbon__label{font-size:.6875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:var(--f-m);white-space:nowrap}
+    .vol-ribbon__label b{display:block;font-size:1.25rem;color:var(--accent);font-weight:800;letter-spacing:0;text-transform:none}
+    .vol-ribbon__bar{position:relative;height:30px;background:linear-gradient(90deg, #00d4aa 0%, #30e878 20%, #e8a820 50%, #ff7043 80%, #ff4757 100%);border-radius:4px;opacity:.5}
+    .vol-ribbon__marker{position:absolute;top:-3px;bottom:-3px;width:3px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.9);border-radius:2px}
+    .vol-ribbon__marker::after{content:attr(data-label);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:.625rem;color:#fff;font-family:var(--f-m);white-space:nowrap;font-weight:700}
+    .vol-ribbon__ticks{position:absolute;left:0;right:0;bottom:-16px;display:flex;justify-content:space-between;font-size:.5625rem;color:var(--muted);font-family:var(--f-m)}
+    .vol-ribbon__pct{font-size:.6875rem;color:var(--muted);text-align:right;white-space:nowrap;font-family:var(--f-m);font-variant-numeric:tabular-nums}
+    .vol-ribbon__pct b{display:block;font-size:1rem;color:var(--text);font-weight:700}
+    .kpi-label{font-size:.625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:var(--f-m)}
+    .kpi-value{font-size:1.125rem;color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+    .kpi{display:flex;flex-direction:column;gap:.15rem;padding:.6rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-width:100px}
+    .kpi-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3 data-i18n="svb.vol_index_h3">Vol-Index</h3>
+      <select id="sel-vol">
+        <option value="^VIX" selected>VIX &mdash; S&amp;P 500 Vol</option>
+        <option value="^VXN">VXN &mdash; Nasdaq 100 Vol</option>
+        <option value="^OVX">OVX &mdash; Crude Oil Vol</option>
+      </select>
+
+      <h3 style="margin-top:.75rem" data-i18n="svb.spot_ticker_h3">Spot-Ticker</h3>
+      <select id="sel-spot"></select>
+
+      <hr>
+      <h3 data-i18n="sidebar.period">Zeitraum</h3>
+      <select id="sel-years">
+        <option value="3" data-i18n="dash.yr3">3 Jahre</option>
+        <option value="5" selected data-i18n="dash.yr5">5 Jahre</option>
+        <option value="10" data-i18n="dash.yr10">10 Jahre</option>
+        <option value="15" data-i18n="dash.yr15">15 Jahre</option>
+        <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+        <option value="max" data-i18n="svb.yr_max">Max (ab 1990)</option>
+      </select>
+
+      <hr>
+      <h3 data-i18n="svb.returns_h3">Returns</h3>
+      <label class="check"><input type="checkbox" id="chk-log"><span data-i18n="svb.use_log_returns"> Log-Returns verwenden</span></label>
+
+      <hr>
+      <h3 data-i18n="svb.thresholds_h3">Schwellen</h3>
+      <label style="font-size:.75rem;color:var(--muted);display:block;margin-bottom:.25rem" data-i18n="svb.label_vol_spike">Vol Spike</label>
+      <input type="number" id="inp-spike" value="30" min="5" max="200" step="1">
+      <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem" data-i18n="svb.label_vol_complacency">Vol Complacency</label>
+      <input type="number" id="inp-low" value="15" min="1" max="100" step="0.5">
+      <label style="font-size:.75rem;color:var(--muted);display:block;margin:.5rem 0 .25rem" data-i18n="svb.label_beta_stress">Beta Stress</label>
+      <input type="number" id="inp-bstress" value="-1.0" min="-3" max="0" step="0.1">
+
+      <hr>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
+        <span data-i18n-html="svb.sidebar_desc"><b>Spot-Vol Beta</b> misst die Korrelation zwischen Spot-Rendite und Vol-&Auml;nderung.
+        Negatives Beta = klassisches &bdquo;Fear Gauge&ldquo;.<br><br>
+        <b>Paare:</b> Jeder Vol-Index wird nur gegen den passenden Spot gerechnet.
+        VXN misst Nasdaq-Vol, OVX misst &Ouml;l-Vol.</span>
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b data-i18n="svb.page_title">Spot-Vol Beta</b> &mdash; <span id="title-pair">^GSPC vs. ^VIX</span></h1>
+      <p class="page-caption" data-i18n="svb.page_caption">Wie stark reagiert die Volatilit&auml;t auf Kursbewegungen? OLS-Regression, Rolling Beta, Regime-Wendepunkte.</p>
+      <div class="trading-day-header" id="trading-day-header"></div>
+
+      <div style="background:rgba(232,168,32,.06);border:1px solid rgba(232,168,32,.15);border-radius:10px;padding:.85rem 1.1rem;margin-bottom:1.25rem;font-size:.8125rem;color:var(--dim);line-height:1.6">
+        <b style="color:var(--accent)" data-i18n="common.what_does_page_show">Was zeigt diese Seite?</b> &mdash;
+        <span data-i18n-html="svb.intro_desc">Das Spot-Vol Beta misst, wie stark die Volatilit&auml;t (VIX) auf Kursbewegungen des Index reagiert.
+        Ein negatives Beta bedeutet: Fallende Kurse treiben die Vola &uuml;berproportional nach oben (typisches Angst-Muster).
+        Hier siehst du OLS-Regression, Rolling Beta im Zeitverlauf und automatisch erkannte Regime-Wendepunkte.
+        <b>Sidebar:</b> W&auml;hle Index/VIX-Paar, Zeitraum und Rolling-Fenster.</span>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row" id="kpi-row"></div>
+
+      <!-- Vol-Percentile-Ribbon: Wo steht Vol heute? -->
+      <div id="vol-percentile-ribbon" style="display:none"></div>
+
+      <!-- Scatter + Regression (oben, Hauptergebnis) -->
+      <details open id="sec-scatter" style="display:none">
+        <summary data-i18n="svb.scatter_regression">Scatter &amp; Regression</summary>
+        <div class="content">
+          <div id="chart-scatter"></div>
+          <div id="beta-hint"></div>
+        </div>
+      </details>
+
+      <!-- Spot + Daily Beta + Vol (3 synchronisierte Charts) -->
+      <details open id="sec-triple" style="display:none">
+        <summary data-i18n="svb.spot_daily_beta_vol">Spot, Daily Spot-Vol Beta &amp; Vol</summary>
+        <div class="content">
+          <div id="chart-spx"></div>
+          <div id="chart-daily-beta"></div>
+          <div id="chart-vix"></div>
+          <p class="box-info" data-i18n="svb.daily_beta_note">Gr&uuml;ne Balken = normales inverses Verhalten (Spot-Rendite &times; Vol-&Auml;nderung &lt; 0). Rote Balken = beide in gleiche Richtung (anomal).</p>
+        </div>
+      </details>
+
+      <!-- NEU: Vol-Regime-Buckets -->
+      <details open id="sec-buckets" style="display:none">
+        <summary data-i18n="svb.vol_regime_buckets">Vol-Regime-Buckets: Wie performt der Spot je Vol-Niveau?</summary>
+        <div class="content">
+          <div id="chart-buckets"></div>
+          <div id="buckets-table"></div>
+          <p class="box-info" data-i18n="svb.vol_buckets_note">Tage werden in 5 Quintile nach Vol-Level aufgeteilt (p20/p40/p60/p80). Die Tabelle zeigt die durchschnittliche Spot-Rendite pro Bucket f&uuml;r verschiedene Horizonte (t+1, t+5, t+20). Historisch: niedrige Vol = beste laufende Performance, sehr hohe Vol = oft hohe Forward-Returns (Mean-Reversion).</p>
+        </div>
+      </details>
+
+      <!-- Volatility Risk Premium -->
+      <details open id="sec-vrp" style="display:none">
+        <summary data-i18n="svb.vrp_summary">Volatility Risk Premium: Ist Vol gerade teuer oder billig?</summary>
+        <div class="content">
+          <div class="kpi-row" id="vrp-kpis" style="margin-bottom:1rem"></div>
+          <div id="chart-vrp-iv"></div>
+          <div id="chart-vrp-diff"></div>
+          <div id="vrp-percentile-ribbon" style="margin-top:1rem"></div>
+          <p class="box-info" data-i18n-html="svb.vrp_note"><b>VRP = Implizite Vol &minus; Realisierte Vol (30d).</b> Positiver VRP &rarr; Vola ist teurer als die tats&auml;chlich realisierte Schwankung (typisches &bdquo;Fear Premium&ldquo;, Short-Vol Opportunity). Negativer VRP &rarr; Vola ist unterbewertet, h&auml;ufig Vorbote von Vol-Spikes. Realisierte Vol = Standardabweichung der Log-Returns &times; &radic;252 &times; 100.</p>
+        </div>
+      </details>
+
+      <!-- Regime-Wendepunkte -->
+      <details open id="sec-extremes" style="display:none">
+        <summary data-i18n="svb.regime_turning_points">Regime-Wendepunkte: Was passiert nach Extremen?</summary>
+        <div class="content">
+          <div class="svb-tabs" id="ext-tabs"></div>
+          <div id="ext-content"></div>
+        </div>
+      </details>
+
+      <!-- Methodik -->
+      <details>
+        <summary data-i18n="common.methodology">Methodik</summary>
+        <div class="content methodik">
+          <h3 data-i18n="common.data_basis">Datengrundlage</h3>
+          <ul>
+            <li data-i18n-html="svb.meth_datasource"><b>Datenquelle:</b> Supabase (Yahoo Finance), t&auml;glich aktualisiert</li>
+            <li data-i18n-html="svb.meth_fixed_pairs"><b>3 feste Paare</b> (nur sinnvolle Kombinationen):</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_vix">&bull; <b>VIX</b> &rarr; ^GSPC oder SPY (S&amp;P 500)</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_vxn">&bull; <b>VXN</b> &rarr; ^NDX oder QQQ (Nasdaq 100)</li>
+            <li style="margin-left:1rem" data-i18n-html="svb.pair_ovx">&bull; <b>OVX</b> &rarr; CL=F oder USO (WTI Crude)</li>
+            <li data-i18n-html="svb.meth_period"><b>Zeitraum:</b> 3&ndash;20 Jahre oder Max (ab 1990)</li>
+          </ul>
+          <h3 data-i18n="common.calculation">Berechnung</h3>
+          <ul>
+            <li data-i18n-html="svb.meth_returns"><b>Renditen:</b> prozentual oder log (w&auml;hlbar)</li>
+            <li data-i18n-html="svb.meth_daily_beta"><b>Daily Beta:</b> Spot-Rendite &times; Vol-&Auml;nderung</li>
+            <li data-i18n-html="svb.meth_total_beta"><b>Gesamt-Beta:</b> OLS-Regression y = &alpha; + &beta;x, mit y=Vol-&Auml;nderung, x=Spot-Rendite</li>
+            <li data-i18n-html="svb.meth_r2"><b>R&sup2;:</b> Anteil der Vol-Varianz, der durch Spot-Renditen erkl&auml;rt wird</li>
+            <li data-i18n-html="svb.meth_rolling_beta"><b>Rolling Beta:</b> OLS-Regression &uuml;ber Fenster (20&ndash;252 Handelstage)</li>
+          </ul>
+          <h3 data-i18n="common.interpretation">Interpretation</h3>
+          <ul>
+            <li data-i18n-html="svb.meth_interp_strong_neg"><b>&beta; &le; &minus;0.8</b> &mdash; klassisches &bdquo;Fear Gauge&ldquo; (stark inverse Beziehung)</li>
+            <li data-i18n-html="svb.meth_interp_neg"><b>&beta; zwischen &minus;0.3 und &minus;0.8</b> &mdash; normale inverse Beziehung</li>
+            <li data-i18n-html="svb.meth_interp_null"><b>&beta; nahe null</b> &mdash; schwacher Zusammenhang (Regimewechsel m&ouml;glich)</li>
+            <li data-i18n-html="svb.meth_interp_pos"><b>&beta; &gt; 0</b> &mdash; sehr selten, Vol steigt trotz steigender Kurse</li>
+          </ul>
+          <h3 data-i18n="svb.regime_turning_points_h3">Regime-Wendepunkte</h3>
+          <ul>
+            <li data-i18n-html="svb.meth_regime_spike"><b>VIX Spike:</b> VIX &ge; Schwelle &mdash; wie reagiert der Spot danach?</li>
+            <li data-i18n-html="svb.meth_regime_complacency"><b>VIX Complacency:</b> VIX &le; Schwelle &mdash; Warnsignal f&uuml;r Selbstzufriedenheit?</li>
+            <li data-i18n-html="svb.meth_regime_beta_stress"><b>Beta Stress:</b> Rolling Beta &le; Schwelle &mdash; Panik-Regime, Wendepunkt?</li>
+            <li data-i18n="svb.meth_regime_decoupling">Events werden mit Mindestabstand 10 Tage entkoppelt (um dieselbe Phase nicht doppelt zu z&auml;hlen)</li>
+          </ul>
+          <h3 data-i18n="common.hint">Hinweis</h3>
+          <ul>
+            <li data-i18n-html="svb.meth_hint_nonstationary">Die Spot-Vol Beziehung ist <b>nicht stationär</b> &mdash; sie kann sich in Krisenzeiten abrupt &auml;ndern</li>
+            <li data-i18n="svb.meth_hint_no_guarantee">Historische Regressionen sind keine Garantie f&uuml;r die Zukunft</li>
+          </ul>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/kurse.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/holidays.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var COL_SPOT = '#60a5fa';
+    var COL_VOL  = '#ff4757';
+    var COL_BETA = '#e8a820';
+    var COL_POS  = '#00d4aa';
+    var COL_NEG  = '#ff4757';
+
+    // Fixed pairs: nur sinnvolle Kombinationen (Vol-Index hat Spot-Basis)
+    var PAIRS = {
+      '^VIX': { label: 'VIX', name: 'CBOE S&P 500 Vol',    spots: [{t:'^GSPC',n:'S&P 500'}, {t:'SPY',n:'SPDR S&P 500 ETF'}],
+                spike: 30, low: 15 },
+      '^VXN': { label: 'VXN', name: 'CBOE Nasdaq 100 Vol', spots: [{t:'^NDX',n:'Nasdaq 100'}, {t:'QQQ',n:'Invesco Nasdaq 100 ETF'}],
+                spike: 35, low: 18 },
+      '^OVX': { label: 'OVX', name: 'CBOE Crude Oil Vol',  spots: [{t:'CL=F',n:'WTI Crude Futures'}, {t:'USO',n:'US Oil Fund ETF'}],
+                spike: 55, low: 25 }
+    };
+
+    var charts = {};
+    var _df = null;          // berechnete Reihe
+    var _metrics = null;
+    var _extremes = null;
+    var _spotTicker = '^GSPC';
+    var _volTicker  = '^VIX';
+
+    var $loading = document.getElementById('loading');
+    var $error   = document.getElementById('error-banner');
+    var $kpi     = document.getElementById('kpi-row');
+
+    function showError(msg) { $error.textContent = msg; $error.style.display = 'block'; setTimeout(function(){ $error.style.display='none'; }, 8000); }
+    function showSections(show) {
+      ['sec-triple','sec-scatter','sec-buckets','sec-vrp','sec-extremes'].forEach(function(id) {
+        document.getElementById(id).style.display = show ? '' : 'none';
+      });
+      if (!show) document.getElementById('vol-percentile-ribbon').style.display = 'none';
+    }
+    function destroyAll() {
+      Object.keys(charts).forEach(function(k) {
+        if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
+      });
+    }
+    function kpi(label, value, extraClass) {
+      return '<div class="kpi"><div class="kpi-label">'+label+'</div><div class="kpi-value '+(extraClass||'')+'">'+value+'</div></div>';
+    }
+    function fmtNum(v, d) { d = d == null ? 3 : d; if (v == null || isNaN(v)) return '\u2013'; return (v>=0?'':'') + v.toFixed(d); }
+    function fmtPct(v, d) { d = d == null ? 2 : d; if (v == null || isNaN(v)) return '\u2013'; return (v>=0?'+':'') + v.toFixed(d) + '%'; }
+
+    // ── Fetch Spot + Vol ─────────────────────────────────────────────────────
+    function fetchOHLC(ticker, extraFilter) {
+      var all = []; var batchSize = 1000;
+      function batch(off) {
+        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,close&order=date' + (extraFilter || '');
+        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
+          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': off + '-' + (off + batchSize - 1), 'Prefer': 'count=exact' }
+        }).then(function(r) {
+          var cr = r.headers.get('content-range');
+          return r.json().then(function(rows) {
+            all = all.concat(rows);
+            if (cr) { var t = parseInt(cr.split('/')[1]); if (all.length < t) return batch(all.length); }
+            else if (rows.length === batchSize) return batch(all.length);
+            return all;
+          });
+        });
+      }
+      return batch(0);
+    }
+
+    // ── Statistik-Helpers ────────────────────────────────────────────────────
+    function mean(arr) { var s = 0; for (var i=0;i<arr.length;i++) s += arr[i]; return s / arr.length; }
+    function variance(arr, m) { var s = 0; for (var i=0;i<arr.length;i++) { var d = arr[i] - m; s += d*d; } return s / arr.length; }
+    function covariance(x, y, mx, my) { var s = 0; for (var i=0;i<x.length;i++) s += (x[i]-mx)*(y[i]-my); return s / x.length; }
+    function ols(x, y) {
+      var n = x.length;
+      if (n < 2) return { beta: NaN, alpha: NaN, r2: NaN, corr: NaN };
+      var mx = mean(x), my = mean(y);
+      var cov = covariance(x, y, mx, my);
+      var vx = variance(x, mx), vy = variance(y, my);
+      if (vx === 0) return { beta: NaN, alpha: NaN, r2: NaN, corr: NaN };
+      var beta = cov / vx;
+      var alpha = my - beta * mx;
+      var corr = vy > 0 ? cov / Math.sqrt(vx * vy) : 0;
+      return { beta: beta, alpha: alpha, r2: corr*corr, corr: corr, n: n };
+    }
+
+    // ── Spot-Vol Berechnung ──────────────────────────────────────────────────
+    function compute(spotRows, volRows, windowSize, useLog) {
+      // Datum-basierter Join
+      var volMap = {};
+      for (var i=0;i<volRows.length;i++) volMap[volRows[i].date] = parseFloat(volRows[i].close);
+
+      var df = [];
+      for (var j=0;j<spotRows.length;j++) {
+        var d = spotRows[j].date;
+        var sp = parseFloat(spotRows[j].close);
+        var vo = volMap[d];
+        if (vo == null || isNaN(sp) || isNaN(vo) || sp <= 0 || vo <= 0) continue;
+        df.push({ date: d, spot: sp, vol: vo });
+      }
+      if (df.length < 20) return null;
+
+      // Renditen
+      for (var k=1;k<df.length;k++) {
+        var pSp = df[k-1].spot, pVo = df[k-1].vol;
+        var sp2 = df[k].spot, vo2 = df[k].vol;
+        if (useLog) {
+          df[k].spot_ret = Math.log(sp2 / pSp);
+          df[k].vol_chg  = Math.log(vo2 / pVo);
+        } else {
+          df[k].spot_ret = (sp2 / pSp) - 1;
+          df[k].vol_chg  = (vo2 / pVo) - 1;
+        }
+        df[k].daily_beta = df[k].spot_ret * df[k].vol_chg;
+      }
+
+      // Gesamt-OLS
+      var xs = [], ys = [];
+      for (var m=1;m<df.length;m++) {
+        if (df[m].spot_ret != null && df[m].vol_chg != null && !isNaN(df[m].spot_ret) && !isNaN(df[m].vol_chg)) {
+          xs.push(df[m].spot_ret);
+          ys.push(df[m].vol_chg);
+        }
+      }
+      var fit = ols(xs, ys);
+
+      // Rolling Beta
+      for (var r=windowSize;r<df.length;r++) {
+        var wx = [], wy = [];
+        for (var s=r-windowSize+1;s<=r;s++) {
+          if (df[s] && df[s].spot_ret != null && !isNaN(df[s].spot_ret)) {
+            wx.push(df[s].spot_ret);
+            wy.push(df[s].vol_chg);
+          }
+        }
+        if (wx.length >= Math.max(10, windowSize / 2)) {
+          var rf = ols(wx, wy);
+          if (!isNaN(rf.beta)) df[r].rolling_beta = rf.beta;
+        }
+      }
+
+      return {
+        df: df,
+        metrics: {
+          beta: fit.beta, alpha: fit.alpha, r2: fit.r2, corr: fit.corr,
+          n: fit.n, regime: classifyBeta(fit.beta), rolling_window: windowSize
+        }
+      };
+    }
+
+    function classifyBeta(b) {
+      if (b == null || isNaN(b)) return 'unbekannt';
+      if (b <= -0.8) return 'stark negativ';
+      if (b <= -0.3) return 'negativ';
+      if (b < 0.3)   return 'nahe null';
+      return 'positiv';
+    }
+    function regimeBadge(regime) {
+      var cls = 'regime-null';
+      if (regime === 'stark negativ') cls = 'regime-strong-neg';
+      else if (regime === 'negativ') cls = 'regime-neg';
+      else if (regime === 'positiv') cls = 'regime-pos';
+      return '<span class="regime-badge '+cls+'">'+regime+'</span>';
+    }
+
+    // ── Regime-Wendepunkte ───────────────────────────────────────────────────
+    function firstDayOfRegime(df, maskFn, minGap) {
+      var entries = []; var last = null;
+      for (var i=0;i<df.length;i++) {
+        if (!maskFn(df[i])) continue;
+        if (last === null) { entries.push(i); last = i; continue; }
+        // Tage-Abstand schaetzen (10 TD ~ 14 Kalendertage)
+        if ((i - last) >= minGap) { entries.push(i); last = i; }
+      }
+      return entries;
+    }
+    function forwardStats(df, entryIdx, fdays, label) {
+      if (!entryIdx.length) return { label: label, n: 0, stats: {}, events: [] };
+      var stats = {}, events = [];
+      for (var fi=0;fi<fdays.length;fi++) {
+        var fd = fdays[fi], rets = [];
+        for (var e=0;e<entryIdx.length;e++) {
+          var idx = entryIdx[e], targetIdx = idx + fd;
+          if (targetIdx >= df.length) continue;
+          var p0 = df[idx].spot, p1 = df[targetIdx].spot;
+          if (!p0 || !p1) continue;
+          rets.push((p1/p0 - 1) * 100);
+        }
+        if (rets.length) {
+          rets.sort(function(a,b){return a-b;});
+          var sum = 0; for (var r=0;r<rets.length;r++) sum += rets[r];
+          var avg = sum / rets.length;
+          var wins = 0; for (var w=0;w<rets.length;w++) if (rets[w] > 0) wins++;
+          var median = rets.length % 2 ? rets[Math.floor(rets.length/2)] : (rets[rets.length/2-1] + rets[rets.length/2]) / 2;
+          stats[fd] = {
+            avg_return: avg, median_return: median,
+            win_rate: wins / rets.length * 100,
+            max_gain: rets[rets.length-1], max_loss: rets[0], n: rets.length
+          };
+        }
+      }
+      for (var ev=0;ev<entryIdx.length;ev++) {
+        var row = df[entryIdx[ev]];
+        var evt = { date: row.date, spot: row.spot, vol: row.vol };
+        for (var fi2=0;fi2<fdays.length;fi2++) {
+          var fd2 = fdays[fi2], ti = entryIdx[ev] + fd2;
+          if (ti < df.length && df[ti] && df[ti].spot) {
+            evt['fwd_'+fd2+'d'] = (df[ti].spot / row.spot - 1) * 100;
+          }
+        }
+        events.push(evt);
+      }
+      return { label: label, n: entryIdx.length, stats: stats, events: events };
+    }
+
+    function analyzeExtremes(df, spikeTh, lowTh, betaStressTh) {
+      var fdays = [5, 10, 20, 60];
+      var minGap = 10;
+      var spikes = firstDayOfRegime(df, function(r){return r.vol >= spikeTh;}, minGap);
+      var lows   = firstDayOfRegime(df, function(r){return r.vol <= lowTh;}, minGap);
+      var stress = firstDayOfRegime(df, function(r){return r.rolling_beta != null && r.rolling_beta <= betaStressTh;}, minGap);
+      return {
+        vix_spikes: forwardStats(df, spikes, fdays, 'Vol \u2265 '+spikeTh),
+        vix_lows:   forwardStats(df, lows,   fdays, 'Vol \u2264 '+lowTh),
+        beta_stress: forwardStats(df, stress, fdays, 'Beta \u2264 '+betaStressTh.toFixed(1)),
+        fdays: fdays
+      };
+    }
+
+    // ── Rendering ────────────────────────────────────────────────────────────
+    function renderKPIs(m) {
+      var html = '';
+      html += kpi('Spot-Vol Beta', fmtNum(m.beta, 3), m.beta < 0 ? 'pos' : 'neg');
+      html += kpi('R&sup2;', fmtNum(m.r2, 4));
+      html += kpi('Korrelation', fmtNum(m.corr, 3));
+      html += kpi('Regime', regimeBadge(m.regime));
+      html += kpi('Beobachtungen', m.n.toLocaleString('de-DE'));
+      $kpi.innerHTML = html;
+    }
+
+    function renderTriple(df) {
+      var spotData = [], betaData = [], volData = [];
+      var betaColors = [];
+      for (var i=0;i<df.length;i++) {
+        var ts = new Date(df[i].date).getTime();
+        spotData.push({ x: ts, y: +df[i].spot.toFixed(2) });
+        volData.push({ x: ts, y: +df[i].vol.toFixed(2) });
+        if (df[i].daily_beta != null && !isNaN(df[i].daily_beta)) {
+          var dbVal = +(df[i].daily_beta * 10000).toFixed(2);
+          betaData.push({ x: ts, y: dbVal });
+          betaColors.push(df[i].daily_beta < 0 ? COL_POS : COL_NEG);
+        }
+      }
+
+      var group = 'svb-triple';
+      var commonX = {
+        type: 'datetime',
+        labels: Object.assign({}, SA.chartTheme.xaxis.labels, {
+          datetimeUTC: false,
+          format: 'MMM \'yy'
+        })
+      };
+
+      // Chart 1: Spot (area, damit Gradient rendert)
+      var cfg1 = {
+        series: [{ name: _spotTicker, data: spotData }],
+        chart: { type: 'area', height: 240, group: group, id: 'spx', toolbar: { show: false }, zoom: { enabled: true }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_SPOT],
+        stroke: { width: 1.5, curve: 'straight' },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.15, opacityTo: 0, stops: [0, 100] } },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, { title: { text: _spotTicker, style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} } }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' } },
+        legend: { show: false },
+        dataLabels: { enabled: false }
+      };
+
+      // Chart 2: Daily Beta
+      var cfg2 = {
+        series: [{ name: 'Daily Beta (×10⁴)', data: betaData }],
+        chart: { type: 'bar', height: 180, group: group, id: 'dbeta', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        plotOptions: { bar: { columnWidth: '100%', distributed: true } },
+        colors: betaColors,
+        stroke: { width: 0 },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, { title: { text: 'Daily Beta (×10⁴)', style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} } }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v.toFixed(2) + ' × 10⁻⁴';} } },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        annotations: { yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1 }] }
+      };
+
+      // Chart 3: Vol
+      var cfg3 = {
+        series: [{ name: _volTicker, data: volData }],
+        chart: { type: 'area', height: 200, group: group, id: 'vix', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_VOL],
+        stroke: { width: 1.2, curve: 'straight' },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 0.4, opacityFrom: 0.2, opacityTo: 0.02, stops: [0, 100] } },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, { title: { text: _volTicker, style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} } }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' } },
+        legend: { show: false },
+        dataLabels: { enabled: false }
+      };
+
+      if (charts.spx) charts.spx.destroy();
+      if (charts.dbeta) charts.dbeta.destroy();
+      if (charts.vix) charts.vix.destroy();
+
+      charts.spx = new ApexCharts(document.getElementById('chart-spx'), cfg1);
+      charts.spx.render();
+      charts.dbeta = new ApexCharts(document.getElementById('chart-daily-beta'), cfg2);
+      charts.dbeta.render();
+      charts.vix = new ApexCharts(document.getElementById('chart-vix'), cfg3);
+      charts.vix.render();
+    }
+
+    function renderScatter(df, metrics) {
+      var pts = [];
+      var xMin = Infinity, xMax = -Infinity;
+      for (var i=1;i<df.length;i++) {
+        if (df[i].spot_ret == null || df[i].vol_chg == null || isNaN(df[i].spot_ret) || isNaN(df[i].vol_chg)) continue;
+        var x = df[i].spot_ret * 100;
+        var y = df[i].vol_chg * 100;
+        pts.push({ x: +x.toFixed(3), y: +y.toFixed(3) });
+        if (x < xMin) xMin = x;
+        if (x > xMax) xMax = x;
+      }
+
+      // Regressionslinie in Prozent (entspricht Original-Beta)
+      var a = metrics.alpha * 100;
+      var b = metrics.beta;
+      var line = [
+        { x: +xMin.toFixed(2), y: +(a + b * xMin).toFixed(3) },
+        { x: +xMax.toFixed(2), y: +(a + b * xMax).toFixed(3) }
+      ];
+
+      // "We are here" - letzter Punkt
+      var last = null;
+      for (var j = df.length - 1; j >= 0; j--) {
+        if (df[j].spot_ret != null && df[j].vol_chg != null && !isNaN(df[j].spot_ret)) {
+          last = { x: +(df[j].spot_ret * 100).toFixed(3), y: +(df[j].vol_chg * 100).toFixed(3), date: df[j].date };
+          break;
+        }
+      }
+
+      var series = [
+        { name: 'Beobachtungen', type: 'scatter', data: pts },
+        { name: 'Regression (\u03B2=' + metrics.beta.toFixed(3) + ')', type: 'line', data: line }
+      ];
+      if (last) series.push({ name: 'Heute', type: 'scatter', data: [last] });
+
+      var cfg = {
+        series: series,
+        chart: { type: 'line', height: 450, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_SPOT, COL_BETA, '#F1C40F'],
+        stroke: { width: [0, 2.5, 0], curve: 'straight', dashArray: [0, 6, 0] },
+        markers: { size: [3, 0, 12], strokeWidth: [0, 0, 2], strokeColors: ['', '', '#fff'], shape: ['circle','circle','diamond'] },
+        grid: SA.chartTheme.grid,
+        tooltip: {
+          theme: 'dark',
+          custom: function(opts) {
+            var si = opts.seriesIndex;
+            if (si === 1) return '';
+            var d = opts.w.config.series[si].data[opts.dataPointIndex];
+            if (!d) return '';
+            var lbl = si === 2 ? '<b style="color:#F1C40F">HEUTE</b> (' + d.date + ')<br>' : '';
+            return '<div style="padding:6px 10px;font-size:12px">' + lbl +
+              _spotTicker + ': ' + (d.x >= 0 ? '+' : '') + d.x.toFixed(3) + '%<br>' +
+              _volTicker + ': ' + (d.y >= 0 ? '+' : '') + d.y.toFixed(3) + '%</div>';
+          }
+        },
+        xaxis: Object.assign({}, SA.chartTheme.xaxis, {
+          type: 'numeric',
+          tickAmount: 8,
+          title: { text: _spotTicker + ' Rendite (%)', style: { color: SA.COLORS.muted, fontSize: '11px' } },
+          labels: Object.assign({}, SA.chartTheme.xaxis.labels, { formatter: function(v){return (v>=0?'+':'')+v.toFixed(1)+'%';} })
+        }),
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          title: { text: _volTicker + ' \u00C4nderung (%)', style: { color: SA.COLORS.muted, fontSize: '11px' } },
+          labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return (v>=0?'+':'')+v.toFixed(0)+'%';} }
+        }),
+        annotations: {
+          yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }],
+          xaxis: [{ x: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }]
+        },
+        legend: { show: true, position: 'top', labels: { colors: SA.COLORS.muted }, fontSize: '11px' },
+        dataLabels: { enabled: false }
+      };
+
+      if (charts.scatter) charts.scatter.destroy();
+      charts.scatter = new ApexCharts(document.getElementById('chart-scatter'), cfg);
+      charts.scatter.render();
+
+      // Beta-Hinweis
+      var hintEl = document.getElementById('beta-hint');
+      var beta = metrics.beta;
+      var volLbl = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
+      var html = '';
+      if (beta < -0.3) {
+        html = '<div class="beta-hint ok"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Typisches &bdquo;Fear Gauge&ldquo; Verhalten: wenn '+_spotTicker+' f&auml;llt, steigt '+volLbl+' &uuml;berproportional. Korrelation '+metrics.corr.toFixed(3)+'.</div>';
+      } else if (beta < 0.3) {
+        html = '<div class="beta-hint warn"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Schwache Spot-Vol Korrelation. Das ist ungew&ouml;hnlich und kann auf einen Regimewechsel hindeuten.</div>';
+      } else {
+        html = '<div class="beta-hint err"><b>Beta = '+beta.toFixed(3)+'</b> &mdash; Positives Spot-Vol Beta! Sehr selten &mdash; '+volLbl+' steigt trotz steigender Kurse.</div>';
+      }
+      hintEl.innerHTML = html;
+    }
+
+    function renderExtremes(extremes) {
+      var tabs = [
+        { key: 'vix_spikes', label: 'Vol Spikes', color: COL_NEG },
+        { key: 'vix_lows', label: 'Vol Complacency', color: COL_SPOT },
+        { key: 'beta_stress', label: 'Beta Stress', color: COL_BETA }
+      ];
+
+      var tabBar = document.getElementById('ext-tabs');
+      var content = document.getElementById('ext-content');
+      tabBar.innerHTML = '';
+      tabs.forEach(function(t, i) {
+        var btn = document.createElement('button');
+        btn.className = 'svb-tab' + (i === 0 ? ' active' : '');
+        btn.textContent = t.label + ' (' + extremes[t.key].n + ')';
+        btn.addEventListener('click', function() {
+          tabBar.querySelectorAll('.svb-tab').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          renderExtTab(t, extremes[t.key]);
+        });
+        tabBar.appendChild(btn);
+      });
+      renderExtTab(tabs[0], extremes[tabs[0].key]);
+    }
+
+    function renderExtTab(tab, data) {
+      var el = document.getElementById('ext-content');
+      if (data.n === 0) {
+        el.innerHTML = '<p class="box-info">Keine Events im gew&auml;hlten Zeitraum.</p>';
+        return;
+      }
+
+      var html = '<p class="box-info" style="margin-bottom:.75rem"><b>'+data.n+'</b> Events gefunden: ' + data.label + '. Zeigt die durchschnittliche Spot-Rendite nach 5, 10, 20, 60 Handelstagen.</p>';
+
+      // Bar-Chart Forward Returns
+      html += '<div id="chart-ext-fwd"></div>';
+
+      // Tabelle
+      html += '<table class="svb-table" style="margin-top:.75rem"><thead><tr>' +
+        '<th>Horizont</th><th>\u00D8 Rendite</th><th data-i18n="table.median">Median</th><th data-i18n="table.win_rate">Win-Rate</th><th data-i18n="table.max_gain">Max Gewinn</th><th data-i18n="table.max_loss">Max Verlust</th><th>n</th>' +
+        '</tr></thead><tbody>';
+      var fdays = Object.keys(data.stats).map(Number).sort(function(a,b){return a-b;});
+      for (var i=0;i<fdays.length;i++) {
+        var s = data.stats[fdays[i]];
+        html += '<tr><td><b>'+fdays[i]+'d</b></td>' +
+          '<td class="'+(s.avg_return>=0?'pos':'neg')+'">'+fmtPct(s.avg_return,2)+'</td>' +
+          '<td class="'+(s.median_return>=0?'pos':'neg')+'">'+fmtPct(s.median_return,2)+'</td>' +
+          '<td>'+s.win_rate.toFixed(0)+' %</td>' +
+          '<td class="pos">'+fmtPct(s.max_gain,2)+'</td>' +
+          '<td class="neg">'+fmtPct(s.max_loss,2)+'</td>' +
+          '<td>'+s.n+'</td></tr>';
+      }
+      html += '</tbody></table>';
+
+      // Event-Liste (collapsible)
+      html += '<details style="margin-top:.75rem"><summary style="font-size:.75rem;color:var(--muted);cursor:pointer">Alle '+data.n+' Events anzeigen</summary>';
+      html += '<table class="svb-table" style="margin-top:.5rem"><thead><tr><th data-i18n="table.date">Datum</th><th>Spot</th><th>Vol</th>';
+      for (var fh=0;fh<fdays.length;fh++) html += '<th>+'+fdays[fh]+'d</th>';
+      html += '</tr></thead><tbody>';
+      var evts = data.events.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+      for (var e=0;e<evts.length;e++) {
+        var ev = evts[e];
+        html += '<tr><td>'+ev.date+'</td><td>'+ev.spot.toFixed(2)+'</td><td>'+ev.vol.toFixed(2)+'</td>';
+        for (var fh2=0;fh2<fdays.length;fh2++) {
+          var v = ev['fwd_'+fdays[fh2]+'d'];
+          if (v == null) html += '<td>\u2013</td>';
+          else html += '<td class="'+(v>=0?'pos':'neg')+'">'+fmtPct(v,2)+'</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></details>';
+
+      el.innerHTML = html;
+
+      // Bar-Chart Forward Returns
+      var cats = fdays.map(function(f){return f+'d';});
+      var vals = fdays.map(function(f){return +data.stats[f].avg_return.toFixed(2);});
+      var colors = vals.map(function(v){return v >= 0 ? COL_POS : COL_NEG;});
+
+      var cfg = {
+        series: [{ name: '\u00D8 Rendite', data: vals }],
+        chart: { type: 'bar', height: 280, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        plotOptions: { bar: { distributed: true, columnWidth: '50%', borderRadius: 4, dataLabels: { position: 'top' } } },
+        colors: colors,
+        stroke: { width: 0 },
+        grid: SA.chartTheme.grid,
+        xaxis: Object.assign({}, SA.chartTheme.xaxis, { categories: cats, title: { text: 'Horizont (Handelstage)', style: { color: SA.COLORS.muted, fontSize: '10px' } } }),
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, { title: { text: '\u00D8 '+_spotTicker+' Rendite (%)', style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { formatter: function(v){return (v>=0?'+':'')+v.toFixed(1)+'%';} } }),
+        tooltip: { theme: 'dark', y: { formatter: function(v){return (v>=0?'+':'')+v.toFixed(2)+'%';} } },
+        legend: { show: false },
+        dataLabels: { enabled: true, formatter: function(v){return (v>=0?'+':'')+v.toFixed(1)+'%';}, offsetY: -22, style: { colors: [SA.COLORS.muted], fontSize: '10px' } },
+        annotations: { yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }] }
+      };
+      var chartEl = document.getElementById('chart-ext-fwd');
+      if (charts.extFwd) charts.extFwd.destroy();
+      charts.extFwd = new ApexCharts(chartEl, cfg);
+      charts.extFwd.render();
+    }
+
+    // ── Percentile Helper ───────────────────────────────────────────────────
+    function percentile(sorted, p) {
+      if (!sorted.length) return null;
+      var idx = (sorted.length - 1) * p;
+      var lo = Math.floor(idx), hi = Math.ceil(idx);
+      if (lo === hi) return sorted[lo];
+      return sorted[lo] * (hi - idx) + sorted[hi] * (idx - lo);
+    }
+
+    // ── 1. Vol-Percentile-Ribbon ────────────────────────────────────────────
+    // Generischer Percentile-Ribbon Builder
+    // opts: { label, current, values (sorted), decimals, regimeLabels: [veryLow, low, mid, high, extreme], signed }
+    function buildRibbonHtml(opts) {
+      var values = opts.values;
+      if (!values || values.length < 10) return '';
+      var current = opts.current;
+      var dec = opts.decimals != null ? opts.decimals : 2;
+      var vMin = values[0], vMax = values[values.length - 1];
+      var p25 = percentile(values, 0.25);
+      var p50 = percentile(values, 0.50);
+      var p75 = percentile(values, 0.75);
+      var p95 = percentile(values, 0.95);
+
+      var rank = 0;
+      for (var i=0;i<values.length;i++) { if (values[i] <= current) rank = i + 1; }
+      var pctRank = (rank / values.length) * 100;
+
+      var pos = Math.max(0, Math.min(100, ((current - vMin) / (vMax - vMin)) * 100));
+
+      var regimes = opts.regimeLabels || ['Sehr Niedrig', 'Niedrig', 'Erh&ouml;ht', 'Hoch', 'Extrem'];
+      var regimeLabel = regimes[0];
+      if (current > p95) regimeLabel = regimes[4];
+      else if (current > p75) regimeLabel = regimes[3];
+      else if (current > p50) regimeLabel = regimes[2];
+      else if (current > p25) regimeLabel = regimes[1];
+
+      var fmt = function(v) {
+        var s = v.toFixed(dec);
+        return opts.signed && v >= 0 ? '+' + s : s;
+      };
+      var curStr = fmt(current);
+
+      var html = '<div class="vol-ribbon">';
+      html += '<div class="vol-ribbon__label">' + opts.label + '<b>' + curStr + '</b></div>';
+      html += '<div style="position:relative;padding-top:14px;padding-bottom:14px">';
+      html += '<div class="vol-ribbon__bar"></div>';
+      html += '<div class="vol-ribbon__marker" style="left:calc(' + pos.toFixed(1) + '% - 1.5px)" data-label="HEUTE"></div>';
+      html += '<div class="vol-ribbon__ticks">';
+      html += '<span>Min ' + fmt(vMin) + '</span>';
+      html += '<span>p25 ' + fmt(p25) + '</span>';
+      html += '<span>Median ' + fmt(p50) + '</span>';
+      html += '<span>p75 ' + fmt(p75) + '</span>';
+      html += '<span>p95 ' + fmt(p95) + '</span>';
+      html += '<span>Max ' + fmt(vMax) + '</span>';
+      html += '</div></div>';
+      html += '<div class="vol-ribbon__pct">Perzentil<b>' + pctRank.toFixed(0) + '%</b><span style="color:var(--accent)">' + regimeLabel + '</span></div>';
+      html += '</div>';
+      return html;
+    }
+
+    function renderVolRibbon(df) {
+      var el = document.getElementById('vol-percentile-ribbon');
+      if (!df || !df.length) { el.style.display = 'none'; return; }
+
+      var vols = df.map(function(r){return r.vol;}).filter(function(v){return v != null && !isNaN(v);}).sort(function(a,b){return a-b;});
+      if (vols.length < 10) { el.style.display = 'none'; return; }
+
+      var current = df[df.length - 1].vol;
+      var volLabel = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
+
+      el.innerHTML = buildRibbonHtml({
+        label: volLabel + ' heute',
+        current: current,
+        values: vols,
+        decimals: 2,
+        regimeLabels: ['Sehr Niedrig', 'Niedrig', 'Erh&ouml;ht', 'Hoch', 'Panik']
+      });
+      el.style.display = '';
+    }
+
+    // ── 2. Vol-Regime-Buckets ───────────────────────────────────────────────
+    function renderBuckets(df) {
+      // Quintile-Thresholds bestimmen
+      var vols = df.map(function(r){return r.vol;}).filter(function(v){return v != null && !isNaN(v);}).sort(function(a,b){return a-b;});
+      if (vols.length < 50) return;
+      var th = [
+        percentile(vols, 0.2),
+        percentile(vols, 0.4),
+        percentile(vols, 0.6),
+        percentile(vols, 0.8)
+      ];
+
+      var buckets = [
+        { name: 'Sehr Niedrig', range: 'Vol < ' + th[0].toFixed(1), color: '#00d4aa', days: [] },
+        { name: 'Niedrig',       range: th[0].toFixed(1) + '-' + th[1].toFixed(1), color: '#30e878', days: [] },
+        { name: 'Normal',        range: th[1].toFixed(1) + '-' + th[2].toFixed(1), color: '#e8a820', days: [] },
+        { name: 'Hoch',          range: th[2].toFixed(1) + '-' + th[3].toFixed(1), color: '#ff7043', days: [] },
+        { name: 'Sehr Hoch',     range: 'Vol > ' + th[3].toFixed(1), color: '#ff4757', days: [] }
+      ];
+
+      function bucketIdx(v) {
+        if (v < th[0]) return 0;
+        if (v < th[1]) return 1;
+        if (v < th[2]) return 2;
+        if (v < th[3]) return 3;
+        return 4;
+      }
+
+      // Pro Tag: Bucket + Spot-Rendite t+0 und Forward-Returns
+      for (var i=0;i<df.length;i++) {
+        var r = df[i];
+        if (r.vol == null || r.spot_ret == null || isNaN(r.spot_ret)) continue;
+        var bi = bucketIdx(r.vol);
+        var entry = { day: r.spot_ret * 100 };
+        // Forward Returns (auf Spot-Preis-Basis, nicht Rendite-Summe)
+        var p0 = r.spot;
+        if (p0 > 0) {
+          if (i + 5 < df.length && df[i+5].spot) entry.fwd5 = (df[i+5].spot / p0 - 1) * 100;
+          if (i + 20 < df.length && df[i+20].spot) entry.fwd20 = (df[i+20].spot / p0 - 1) * 100;
+          if (i + 60 < df.length && df[i+60].spot) entry.fwd60 = (df[i+60].spot / p0 - 1) * 100;
+        }
+        buckets[bi].days.push(entry);
+      }
+
+      // Statistiken pro Bucket
+      function stats(arr, key) {
+        var vals = arr.map(function(d){return d[key];}).filter(function(v){return v != null && !isNaN(v);});
+        if (!vals.length) return null;
+        var s = 0; for (var i=0;i<vals.length;i++) s += vals[i];
+        var wins = 0; for (var i=0;i<vals.length;i++) if (vals[i] > 0) wins++;
+        return { avg: s / vals.length, win_rate: wins / vals.length * 100, n: vals.length };
+      }
+
+      for (var b=0;b<buckets.length;b++) {
+        var bk = buckets[b];
+        bk.stats_day  = stats(bk.days, 'day');
+        bk.stats_fwd5 = stats(bk.days, 'fwd5');
+        bk.stats_fwd20 = stats(bk.days, 'fwd20');
+        bk.stats_fwd60 = stats(bk.days, 'fwd60');
+      }
+
+      // Bar-Chart: Ø Tagesrendite pro Bucket
+      var cats = buckets.map(function(b){return b.name;});
+      var dayVals = buckets.map(function(b){return b.stats_day ? +b.stats_day.avg.toFixed(3) : 0;});
+      var colors = buckets.map(function(b){return b.color;});
+
+      var cfg = {
+        series: [{ name: '\u00D8 Tagesrendite', data: dayVals }],
+        chart: { type: 'bar', height: 280, toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        plotOptions: { bar: { distributed: true, columnWidth: '55%', borderRadius: 6, dataLabels: { position: 'top' } } },
+        colors: colors,
+        stroke: { width: 0 },
+        grid: SA.chartTheme.grid,
+        xaxis: Object.assign({}, SA.chartTheme.xaxis, { categories: cats, title: { text: 'Vol-Regime (Quintile)', style: { color: SA.COLORS.muted, fontSize: '10px' } } }),
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, { title: { text: '\u00D8 Tagesrendite (%)', style: { color: SA.COLORS.muted, fontSize: '10px' } }, labels: { formatter: function(v){return (v>=0?'+':'')+v.toFixed(3)+'%';} } }),
+        tooltip: { theme: 'dark', y: { formatter: function(v){return (v>=0?'+':'')+v.toFixed(3)+'%';} } },
+        legend: { show: false },
+        dataLabels: { enabled: true, formatter: function(v){return (v>=0?'+':'')+v.toFixed(3)+'%';}, offsetY: -20, style: { colors: [SA.COLORS.muted], fontSize: '10px' } },
+        annotations: { yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }] }
+      };
+
+      if (charts.buckets) charts.buckets.destroy();
+      charts.buckets = new ApexCharts(document.getElementById('chart-buckets'), cfg);
+      charts.buckets.render();
+
+      // Tabelle: alle Horizonte
+      var html = '<table class="svb-table" style="margin-top:1rem"><thead><tr>' +
+        '<th>Regime</th><th>Vol-Range</th><th>Tage</th><th>% Zeit</th>' +
+        '<th>\u00D8 t+1</th><th data-i18n="table.win_rate">Win-Rate</th>' +
+        '<th>\u00D8 t+5</th><th>\u00D8 t+20</th><th>\u00D8 t+60</th>' +
+        '</tr></thead><tbody>';
+      var total = 0; for (var b=0;b<buckets.length;b++) total += buckets[b].days.length;
+      for (var b=0;b<buckets.length;b++) {
+        var bk = buckets[b];
+        var n = bk.days.length;
+        var pct = total > 0 ? (n / total * 100) : 0;
+        var dayStr  = bk.stats_day ? (bk.stats_day.avg >= 0 ? '+' : '') + bk.stats_day.avg.toFixed(3) + '%' : '\u2013';
+        var wrStr   = bk.stats_day ? bk.stats_day.win_rate.toFixed(0) + ' %' : '\u2013';
+        var fw5Str  = bk.stats_fwd5 ? (bk.stats_fwd5.avg >= 0 ? '+' : '') + bk.stats_fwd5.avg.toFixed(2) + '%' : '\u2013';
+        var fw20Str = bk.stats_fwd20 ? (bk.stats_fwd20.avg >= 0 ? '+' : '') + bk.stats_fwd20.avg.toFixed(2) + '%' : '\u2013';
+        var fw60Str = bk.stats_fwd60 ? (bk.stats_fwd60.avg >= 0 ? '+' : '') + bk.stats_fwd60.avg.toFixed(2) + '%' : '\u2013';
+        var dayCls  = bk.stats_day && bk.stats_day.avg >= 0 ? 'pos' : 'neg';
+        var fw5Cls  = bk.stats_fwd5 && bk.stats_fwd5.avg >= 0 ? 'pos' : 'neg';
+        var fw20Cls = bk.stats_fwd20 && bk.stats_fwd20.avg >= 0 ? 'pos' : 'neg';
+        var fw60Cls = bk.stats_fwd60 && bk.stats_fwd60.avg >= 0 ? 'pos' : 'neg';
+        html += '<tr><td><b style="color:'+bk.color+'">'+bk.name+'</b></td>' +
+          '<td>'+bk.range+'</td>' +
+          '<td>'+n+'</td>' +
+          '<td>'+pct.toFixed(1)+' %</td>' +
+          '<td class="'+dayCls+'">'+dayStr+'</td>' +
+          '<td>'+wrStr+'</td>' +
+          '<td class="'+fw5Cls+'">'+fw5Str+'</td>' +
+          '<td class="'+fw20Cls+'">'+fw20Str+'</td>' +
+          '<td class="'+fw60Cls+'">'+fw60Str+'</td></tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('buckets-table').innerHTML = html;
+    }
+
+    // ── 3. Volatility Risk Premium (VRP) ────────────────────────────────────
+    function renderVRP(df) {
+      // Realized Vol 30d aus Spot-Renditen berechnen
+      var W = 30;
+      var SQRT252 = Math.sqrt(252);
+      var rvData = [], volData = [], vrpData = [];
+
+      for (var i=W;i<df.length;i++) {
+        if (df[i].spot_ret == null) continue;
+        // 30-Tage-Fenster
+        var rets = [];
+        for (var j=i-W+1;j<=i;j++) {
+          if (df[j].spot_ret != null && !isNaN(df[j].spot_ret)) rets.push(df[j].spot_ret);
+        }
+        if (rets.length < W * 0.8) continue;
+        var m = 0; for (var k=0;k<rets.length;k++) m += rets[k];
+        m /= rets.length;
+        var v = 0; for (var k=0;k<rets.length;k++) { var d = rets[k] - m; v += d*d; }
+        v /= rets.length;
+        var rv = Math.sqrt(v) * SQRT252 * 100;
+
+        var ts = new Date(df[i].date).getTime();
+        rvData.push({ x: ts, y: +rv.toFixed(2) });
+        volData.push({ x: ts, y: +df[i].vol.toFixed(2) });
+        vrpData.push({ x: ts, y: +(df[i].vol - rv).toFixed(2) });
+      }
+
+      if (!vrpData.length) return;
+
+      // KPIs
+      var curVRP = vrpData[vrpData.length - 1].y;
+      var vrpSorted = vrpData.map(function(p){return p.y;}).sort(function(a,b){return a-b;});
+      var vrpMedian = percentile(vrpSorted, 0.5);
+      var vrpP25 = percentile(vrpSorted, 0.25);
+      var vrpP75 = percentile(vrpSorted, 0.75);
+      var vrpAvg = 0; for (var i=0;i<vrpSorted.length;i++) vrpAvg += vrpSorted[i]; vrpAvg /= vrpSorted.length;
+
+      var rank = 0;
+      for (var i=0;i<vrpSorted.length;i++) if (vrpSorted[i] <= curVRP) rank = i + 1;
+      var vrpPctRank = (rank / vrpSorted.length) * 100;
+
+      var state = '';
+      if (curVRP < vrpP25) state = 'Vola unterbewertet &uarr;';
+      else if (curVRP > vrpP75) state = 'Fear Premium &darr;';
+      else state = 'Normal';
+
+      var kpiHtml = '';
+      kpiHtml += kpi('VRP heute', (curVRP>=0?'+':'')+curVRP.toFixed(2), curVRP >= 0 ? 'pos' : 'neg');
+      kpiHtml += kpi('Perzentil', vrpPctRank.toFixed(0) + '%');
+      kpiHtml += kpi('Status', state);
+      kpiHtml += kpi('Median', vrpMedian.toFixed(2));
+      kpiHtml += kpi('Mittelwert', vrpAvg.toFixed(2));
+      document.getElementById('vrp-kpis').innerHTML = kpiHtml;
+
+      var volLbl = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
+      var group = 'svb-vrp';
+      var commonX = {
+        type: 'datetime',
+        labels: Object.assign({}, SA.chartTheme.xaxis.labels, { datetimeUTC: false, format: 'MMM \'yy' })
+      };
+
+      // Chart 1 (oben): Implied Vol + Realized Vol 30d
+      var cfgIV = {
+        series: [
+          { name: volLbl + ' (implizit)', data: volData },
+          { name: 'Realized Vol 30d',     data: rvData }
+        ],
+        chart: { type: 'line', height: 280, group: group, id: 'vrp-iv', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_VOL, '#9aa7ba'],
+        stroke: { width: [1.5, 1.3], curve: 'straight', dashArray: [0, 5] },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          title: { text: 'Vol (%)', style: { color: SA.COLORS.muted, fontSize: '10px' } },
+          labels: { style: { colors: SA.COLORS.muted, fontSize: '10px' }, formatter: function(v){return v.toFixed(0);} }
+        }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v != null ? v.toFixed(2) + '%' : '\u2013';} } },
+        legend: { show: true, position: 'top', labels: { colors: SA.COLORS.muted }, fontSize: '11px' },
+        dataLabels: { enabled: false }
+      };
+
+      // Chart 2 (unten): VRP (Differenz) als Area
+      var cfgDiff = {
+        series: [{ name: 'VRP (IV \u2212 RV30)', data: vrpData }],
+        chart: { type: 'area', height: 200, group: group, id: 'vrp-diff', toolbar: { show: false }, background: 'transparent', foreColor: SA.COLORS.muted, fontFamily: 'DM Sans' },
+        colors: [COL_BETA],
+        stroke: { width: 1.2, curve: 'straight' },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 0.4, opacityFrom: 0.3, opacityTo: 0.02, stops: [0, 100] } },
+        grid: SA.chartTheme.grid,
+        xaxis: commonX,
+        yaxis: Object.assign({}, SA.chartTheme.yaxis, {
+          title: { text: 'VRP (%)', style: { color: COL_BETA, fontSize: '10px' } },
+          labels: { style: { colors: COL_BETA, fontSize: '10px' }, formatter: function(v){return (v>=0?'+':'')+v.toFixed(1);} }
+        }),
+        tooltip: { theme: 'dark', x: { format: 'dd.MM.yyyy' }, y: { formatter: function(v){return v != null ? (v>=0?'+':'')+v.toFixed(2) : '\u2013';} } },
+        legend: { show: false },
+        dataLabels: { enabled: false },
+        annotations: { yaxis: [{ y: 0, strokeDashArray: 3, borderColor: 'rgba(255,255,255,.25)', borderWidth: 1 }] }
+      };
+
+      if (charts.vrpIV) charts.vrpIV.destroy();
+      if (charts.vrpDiff) charts.vrpDiff.destroy();
+      charts.vrpIV = new ApexCharts(document.getElementById('chart-vrp-iv'), cfgIV);
+      charts.vrpIV.render();
+      charts.vrpDiff = new ApexCharts(document.getElementById('chart-vrp-diff'), cfgDiff);
+      charts.vrpDiff.render();
+
+      // VRP Percentile Ribbon (wie in der Kopfzeile, aber für VRP)
+      var vrpRibbon = document.getElementById('vrp-percentile-ribbon');
+      vrpRibbon.innerHTML = buildRibbonHtml({
+        label: 'VRP heute',
+        current: curVRP,
+        values: vrpSorted,
+        decimals: 2,
+        signed: true,
+        regimeLabels: ['Vola stark unterbew.', 'Vola unterbewertet', 'Normal', 'Fear Premium', 'Extremes Premium']
+      });
+    }
+
+    // ── Main Load ────────────────────────────────────────────────────────────
+    function yearsFilter() {
+      var y = document.getElementById('sel-years').value;
+      if (y === 'max') return '&date=gte.1990-01-01';
+      var nYears = parseInt(y);
+      var d = new Date();
+      d.setFullYear(d.getFullYear() - nYears);
+      return '&date=gte.' + d.toISOString().slice(0, 10);
+    }
+
+    // Spot-Select anhand des Vol-Index neu befuellen
+    function populateSpots(volKey, preselectSpot) {
+      var sel = document.getElementById('sel-spot');
+      var pair = PAIRS[volKey];
+      if (!pair) return;
+      sel.innerHTML = '';
+      for (var i = 0; i < pair.spots.length; i++) {
+        var o = document.createElement('option');
+        o.value = pair.spots[i].t;
+        o.textContent = pair.spots[i].t + ' — ' + pair.spots[i].n;
+        sel.appendChild(o);
+      }
+      if (preselectSpot && pair.spots.some(function(s){return s.t === preselectSpot;})) {
+        sel.value = preselectSpot;
+      }
+      // Schwellen auf typische Werte des Vol-Index setzen
+      document.getElementById('inp-spike').value = pair.spike;
+      document.getElementById('inp-low').value = pair.low;
+    }
+
+    function load() {
+      _volTicker  = document.getElementById('sel-vol').value || '^VIX';
+      _spotTicker = document.getElementById('sel-spot').value || PAIRS[_volTicker].spots[0].t;
+      var volLabel = (PAIRS[_volTicker] && PAIRS[_volTicker].label) || _volTicker;
+      document.getElementById('title-pair').textContent = _spotTicker + ' vs. ' + volLabel;
+
+      var windowSize = 60; // fix, wird nur intern fuer beta_stress verwendet
+      var useLog = document.getElementById('chk-log').checked;
+      var filter = yearsFilter();
+
+      $loading.style.display = 'flex';
+      destroyAll();
+      showSections(false);
+
+      Promise.all([
+        fetchOHLC(_spotTicker, filter),
+        fetchOHLC(_volTicker, filter)
+      ]).then(function(res) {
+        var spotRows = res[0], volRows = res[1];
+        if (!spotRows.length || !volRows.length) {
+          $loading.style.display = 'none';
+          showError('Keine Daten fuer ' + _spotTicker + ' und/oder ' + _volTicker + ' im Zeitraum gefunden.');
+          return;
+        }
+
+        var result = compute(spotRows, volRows, windowSize, useLog);
+        if (!result || result.df.length < 60) {
+          $loading.style.display = 'none';
+          showError('Zu wenig gemeinsame Datenpunkte fuer die Berechnung (mind. 60 benoetigt).');
+          return;
+        }
+
+        _df = result.df;
+        _metrics = result.metrics;
+
+        // Schwellen
+        var spikeTh = parseFloat(document.getElementById('inp-spike').value) || 30;
+        var lowTh = parseFloat(document.getElementById('inp-low').value) || 15;
+        var betaStressTh = parseFloat(document.getElementById('inp-bstress').value) || -1;
+        _extremes = analyzeExtremes(_df, spikeTh, lowTh, betaStressTh);
+
+        // Trading-Day-Header (Spot)
+        var lastSpot = spotRows.length ? [{ date: spotRows[spotRows.length-1].date, close: spotRows[spotRows.length-1].close }] : null;
+        SA.renderTradingDayHeader('trading-day-header', _spotTicker, lastSpot);
+
+        renderKPIs(_metrics);
+        showSections(true);
+        renderVolRibbon(_df);
+        renderScatter(_df, _metrics);
+        renderTriple(_df);
+        renderBuckets(_df);
+        renderVRP(_df);
+        renderExtremes(_extremes);
+
+        $loading.style.display = 'none';
+      }).catch(function(e) {
+        $loading.style.display = 'none';
+        showError('Fehler beim Laden: ' + (e && e.message ? e.message : e));
+        console.error(e);
+      });
+    }
+
+    // Schwellen-Recompute ohne Reload
+    function recomputeExtremes() {
+      if (!_df) return;
+      var spikeTh = parseFloat(document.getElementById('inp-spike').value) || 30;
+      var lowTh = parseFloat(document.getElementById('inp-low').value) || 15;
+      var betaStressTh = parseFloat(document.getElementById('inp-bstress').value) || -1;
+      _extremes = analyzeExtremes(_df, spikeTh, lowTh, betaStressTh);
+      renderExtremes(_extremes);
+    }
+
+    // Events
+    document.getElementById('sel-vol').addEventListener('change', function() {
+      populateSpots(this.value);
+      load();
+    });
+    document.getElementById('sel-spot').addEventListener('change', load);
+    document.getElementById('sel-years').addEventListener('change', load);
+    document.getElementById('chk-log').addEventListener('change', load);
+    document.getElementById('inp-spike').addEventListener('change', recomputeExtremes);
+    document.getElementById('inp-low').addEventListener('change', recomputeExtremes);
+    document.getElementById('inp-bstress').addEventListener('change', recomputeExtremes);
+
+    // Initial-State
+    populateSpots('^VIX', '^GSPC');
+    load();
+  })();
+  </script>
+  <script src="/landing/js/tour-config.js?v=20260409"></script>
+  <script src="/landing/js/tour.js?v=20260409"></script>
+
+</body>
+</html>

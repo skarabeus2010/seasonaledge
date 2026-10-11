@@ -1639,24 +1639,9 @@
     });
 
     // ── fetchOHLC ────────────────────────────────────────────────
+    // Kurse über den gemeinsamen Lader (landing/js/kurse.js, docs/TICKER_LADEN.md): vollständig oder Ablehnung.
     function fetchOHLC(ticker, dateFilter) {
-      var allRows = [];
-      var batchSize = 1000;
-      function batch(offset) {
-        var q = 'ticker=eq.' + encodeURIComponent(ticker) + '&select=date,open,close&order=date' + (dateFilter || '');
-        return fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
-          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key, 'Range': offset + '-' + (offset + batchSize - 1), 'Prefer': 'count=exact' }
-        }).then(function(r) {
-          var cr = r.headers.get('content-range');
-          return r.json().then(function(rows) {
-            allRows = allRows.concat(rows);
-            if (cr) { var t = parseInt(cr.split('/')[1]); if (allRows.length < t) return batch(allRows.length); }
-            else if (rows.length === batchSize) return batch(allRows.length);
-            return allRows;
-          });
-        });
-      }
-      return batch(0);
+      return SA.kurse.zeilen(ticker, { felder: ['date', 'open', 'close'], ab: SA.kurse.abAusFilter(dateFilter) });
     }
 
     // ── Load Ticker ──────────────────────────────────────────────

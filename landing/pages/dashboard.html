@@ -2194,10 +2194,9 @@
         }
         var oStart = new Date(); oStart.setFullYear(oStart.getFullYear() - yearsBack);
         var oFilter = '&date=gte.' + oStart.toISOString().substring(0,10);
-        var q = 'ticker=eq.' + encodeURIComponent(currentTicker) + '&select=date,open,close&order=date' + oFilter;
-        fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
-          headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key }
-        }).then(function(r){ return r.json(); }).then(function(ohlc){
+        // Kurse über den gemeinsamen Lader — vorher EIN Abruf ohne Pagination (nur die ersten 1000 Zeilen des
+        // Zeitraums) und ohne Fehlerprüfung.
+        SA.kurse.zeilen(currentTicker, { felder: ['date', 'open', 'close'], ab: SA.kurse.abAusFilter(oFilter) }).then(function(ohlc){
           ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
           var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd);
           renderOvernightCard(onStats, onClosedHint);
