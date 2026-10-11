@@ -1,6 +1,6 @@
 # Neue Ticker schneller laden — Plan (kanonisch)
 
-Stand 2026-10-10 · **Status: Plan, nicht umgesetzt** · mit Codex in vier Runden erarbeitet
+Stand 2026-10-11 · **Status: S1-Lader + Migration Schritt 1 live (`a19f3f0`), Schritt 2 offen** · mit Codex in vier Runden erarbeitet
 ([Auftrag](review_prompts/2026-10-10_ticker_laden_plan.md) · [v2](review_prompts/2026-10-10_ticker_laden_plan_v2.md) ·
 [v3](review_prompts/2026-10-10_ticker_laden_plan_v3.md) · [v4](review_prompts/2026-10-10_ticker_laden_plan_v4.md);
 Antworten [1](review_prompts/2026-10-10_ticker_laden_plan_antwort1.md) · [2](review_prompts/2026-10-10_ticker_laden_plan_antwort2.md) ·
@@ -85,3 +85,36 @@ Größter Gewinn bei kalten Aufrufen, aber erst nach (a) Koordination aller Schr
 
 ## Offene Nutzerentscheidung
 Freigabe zur Umsetzung von S0–S2 (S3 bleibt Schatten). Reihenfolge: S0 → S1 → S2, je Schritt Codex-Code-Runden.
+
+## Umsetzung
+
+### Messbasis S0 — Transport (2026-10-10, `scripts/perf/kurse_messen.py`, 10 gültige Läufe je Variante)
+
+| Ticker | Zeilen | heute F (Offset + count) Median / p95 | Keyset Median / p95 |
+|---|---|---|---|
+| SPY | 8 482 | 0,80 / 1,98 s | 0,73 / 0,81 s |
+| ^GDAXI | 16 871 | 1,62 / 1,82 s | 1,39 / 1,44 s |
+| ^DJI | 33 739 | 3,65 / 5,91 s | 2,77 / 2,86 s |
+| BTC-USD | 4 407 | 0,44 / 0,46 s | 0,43 / 0,45 s |
+
+Der Transport allein bringt wenig — der Gewinn kommt aus dem Wegfall der Doppelladungen (und später S3).
+
+### S1 Lader (`05e6310`) und Migration Schritt 1 (`a19f3f0`)
+- `landing/js/kurse.js` wie oben; Codex S1-Code in 4 Runden bis Freigabe. Zusätzlich zur Planung: **eine Anfrage
+  scheitert nur an ihrem eigenen Bedarf** (Codex M1 R1) — hängt sie an einer breiteren gemeinsamen Ladung und
+  scheitert diese, wird genau ihr Bedarf einmal allein geladen (nicht gecacht). Ohne das rechnete das Radar still
+  auf 29 statt 30 Vergleichsjahren, wenn die Vollhistorie des Saison-Scores scheiterte.
+- Schritt 1: `SA.fetchAllPrices` und `ladeVollHistorie` sind Hüllen; `kurse.js` in allen 44 DE-Seiten.
+- Wächter im Deploy-Gate: `verify_kurse.py` (Lader + Hüllen alt/neu wörtlich), `verify_seiten_kurse.py` (echte
+  `dashboard.html` in jsdom 25.0.1, vorher = Fixtures `scripts/fixtures/kurse_vorher/`, Fälle normal / gescheiterte
+  Vollhistorie / TTL). Mutationstest `verify_kurse_mutation.py` 37/37.
+- **Live (2026-10-11, ^DJI, ausgelieferte Seite gegen die echte Datenbank):** Ansicht nach 4,0 s, Saison-Score und
+  Radar nach 9 s; 43 Kursanfragen (8 für 30 Jahre, 34 Vollhistorie gemeinsam für Score und Radar, 1 Overnight),
+  keine mit `count=exact`. Nach altem Code wären es 51 gewesen (Radar lud seine 31 Jahre zusätzlich).
+- Lesson: eine Live-Probe in jsdom mit node-`fetch` darf jsdoms `AbortSignal` nicht durchreichen — node lehnt es
+  ab, der Lader wiederholt, und es sieht aus wie ein Hänger der Seite.
+
+### Offen
+- **Schritt 2:** zehn lokale Lader (Jahres-/Risikozyklus, Saison-Score-Seite, Overnight, TDOM-Analyse, Wochentage,
+  Backtest-Engine, OPEX, VIXpiration, Spot-Vol-Beta), Dashboard-Overnight, `embed.html` — je mit Seitenprobe.
+- **S2** localStorage-Cache entschärfen · **S3** statische Kursdateien (Schatten).
