@@ -125,8 +125,12 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                 app_logger.error(f"nightly_refresh: {ticker} price upsert failed: {_pe}")
                 continue
 
-            # Monthly Stats
-            get_or_compute_monthly_stats(ticker, df, years_back)
+            # Monthly Stats — ein Schreibfehler zählt als Fehler, die übrigen Schritte des Tickers laufen weiter
+            # (bis 2026-10-11 still verschluckt: NaN in std_dev, CRWV/SNDK ohne monthly_stats, DB-Audit rot)
+            try:
+                get_or_compute_monthly_stats(ticker, df, years_back, schreibfehler_werfen=True)
+            except Exception as _me:  # noqa: BLE001
+                ticker_fehler.append(f"{ticker}: monthly_stats {str(_me)[:100]}")
 
             # Saison-Score (shared/saison_score.py, Nachfolger des KI-Score): aus den Supabase-Kursen — dieselbe Quelle
             # wie die Seiten, nachdem oben die letzten 7 Tage geschrieben wurden. Lade-/Schreibfehler werden gezählt

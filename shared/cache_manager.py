@@ -35,6 +35,7 @@ def get_or_compute_monthly_stats(
     ticker: str,
     df=None,
     years_back: int = 20,
+    schreibfehler_werfen: bool = False,
 ) -> list[dict]:
     """
     Monatliche Statistiken aus DB laden, bei Bedarf live berechnen + speichern.
@@ -43,6 +44,8 @@ def get_or_compute_monthly_stats(
         ticker: z.B. "SPY"
         df: Preprocessed DataFrame (nur für Fallback nötig)
         years_back: Anzahl Jahre
+        schreibfehler_werfen: True → ein gescheiterter DB-Upsert wird weitergereicht (Nightly zählt ihn als Fehler);
+            False → nur geloggt (Lese-Aufrufer, die die Werte trotzdem brauchen)
 
     Returns:
         list[dict] — 12 Einträge (Monat 1-12)
@@ -66,7 +69,10 @@ def get_or_compute_monthly_stats(
         from shared.supabase_client import upsert_monthly_stats
         upsert_monthly_stats(stats)
     except Exception as e:
-        app_logger.debug(f"cache_manager: DB-Upsert monthly_stats fehlgeschlagen: {e}")
+        # error statt debug: ein gescheiterter Schreibvorgang war hier wochenlang unsichtbar (NaN in std_dev)
+        app_logger.error(f"cache_manager: DB-Upsert monthly_stats {ticker} fehlgeschlagen: {e}")
+        if schreibfehler_werfen:
+            raise
 
     return stats
 
@@ -100,6 +106,9 @@ def _compute_monthly_stats(ticker: str, df, years_back: int) -> list[dict]:
     stats = []
     for month in range(1, 13):
         month_data = monthly_returns[monthly_returns["month"] == month]["return_pct"]
+        # Nur gültige, endliche Renditen (ein Monatsanfangskurs 0 ergäbe ±inf bzw. NaN) — Fallzahl, Gewinnquote,
+        # Mittel und Streuung auf DERSELBEN Stichprobe (Codex 2026-10-11)
+        month_data = month_data[np.isfinite(month_data.to_numpy(dtype=float))]
         if month_data.empty:
             continue
         stats.append({
@@ -109,7 +118,9 @@ def _compute_monthly_stats(ticker: str, df, years_back: int) -> list[dict]:
             "avg_return": round(float(month_data.mean()), 4),
             "median_return": round(float(month_data.median()), 4),
             "win_rate": round(float((month_data > 0).mean() * 100), 1),
-            "std_dev": round(float(month_data.std()), 4),
+            # Stichproben-Std braucht ≥ 2 Jahre: bei einem Jahr ist sie NaN, und NaN ist kein gültiges JSON — der Upsert
+            # scheiterte daran, still (CRWV/SNDK seit IPO ohne monthly_stats, DB-Audit vier Wochen rot, 2026-10-11).
+            "std_dev": round(float(month_data.std()), 4) if len(month_data) >= 2 else None,
             "max_gain": round(float(month_data.max()), 4),
             "max_loss": round(float(month_data.min()), 4),
             "total_years": int(len(month_data)),
