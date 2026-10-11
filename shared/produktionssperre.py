@@ -332,6 +332,7 @@ AUSNAHMEN = {
     "build_boersenkalender_js.py": "erzeugt das Kalenderbundle selbst (Build, kein Lauf)",
     "build_buyback_blackout.py": "Flows-Panel ohne Handelstagnummern",
     "build_cot_positioning.py": "COT, wöchentliche Daten",
+    "kalender_momentaufnahme.py": "Prüfwerkzeug, schreibt einmalig die eingefrorene Momentaufnahme (Fixture)",
     "build_etf_flows.py": "ETF-Flows",
     "build_shortvol_proxy.py": "Vola-Proxy",
     "build_volcontrol_proxy.py": "Vola-Proxy",
