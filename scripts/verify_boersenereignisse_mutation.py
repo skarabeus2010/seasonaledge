@@ -101,6 +101,7 @@ UNGUELTIG_ERWARTET = [
 ]
 
 KOPIE = pathlib.Path()
+WAECHTER = "verify_boersenereignisse"   # verify_produkttermine_mutation.py setzt den Namen um
 ROH: dict = {}
 
 
@@ -140,7 +141,7 @@ def erzeugen():
 
 
 def lauf():
-    r = python_probe([KOPIE / "scripts" / "verify_boersenereignisse.py"], capture_output=True, text=True,
+    r = python_probe([KOPIE / "scripts" / (WAECHTER + ".py")], capture_output=True, text=True,
                      encoding="utf-8", env=_env(), cwd=str(KOPIE))
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
@@ -148,7 +149,7 @@ def lauf():
 def auswerten(rc, aus, erwartet):
     if rc == 0:
         return "entwischt", "Wächter blieb grün"
-    if "verify_boersenereignisse:" not in aus:
+    if WAECHTER + ":" not in aus:
         return "ungueltig", "der Wächter brach ab statt durchzulaufen"
     zeilen = [z for z in aus.splitlines() if z.startswith("FEHL")]
     if not zeilen:

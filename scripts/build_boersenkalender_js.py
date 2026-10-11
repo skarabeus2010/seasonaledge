@@ -34,6 +34,8 @@ from shared.exchange_holidays import (  # noqa: E402
 )
 from shared import boersenereignisse as BE  # noqa: E402
 from shared.kalender_quellen import QUELLEN  # noqa: E402
+from shared import produkttermine as PT  # noqa: E402
+from shared.produkttermine_listung import BELEGREIHEN  # noqa: E402
 from shared.symbols import SUFFIX_ZU_BOERSE, SYMBOLS, get_exchange_for_holidays  # noqa: E402
 
 ZIEL = os.path.join(WURZEL, "landing", "js", "boersenkalender.js")
@@ -66,6 +68,13 @@ def daten() -> dict:
     nutz.update(ereignis_daten(boersen))
     nutz["ereignisversion"] = BE.ereignisversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
     nutz["kalenderversion"] = BE.kalenderversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
+    # V1c-2: nur Fakten (Regelgrenzen + Belege), keine Einstufung — die geschieht in der API mit Pflicht-Prüfdatum
+    nutz["produkte"] = {"opex_ab": list(PT.OPEX_AB), "vix_ab": list(PT.VIX_AB), "bis": list(PT.BIS),
+                        "vix_bis": list(PT.VIX_BIS), "regelstand_opex": PT.REGELSTAND_OPEX,
+                        "triple_monate": list(PT.TRIPLE_MONATE), "kalenderannahme": PT.KALENDERANNAHME,
+                        "kalenderstatus": PT.KALENDERSTATUS,
+                        "regelstand_vix": PT.REGELSTAND_VIX, "belege": BELEGREIHEN,
+                        "produktversion": PT.produktversion()}
     kanon = json.dumps(nutz, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     nutz["version"] = hashlib.sha256(kanon.encode("utf-8")).hexdigest()
     return nutz

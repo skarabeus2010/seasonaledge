@@ -95,6 +95,11 @@ jobs:
       # Tabellenidentitaeten (HKEX/KRX 2016-2026) werden als Abnahmeluecke ausgegeben. Nur Standardbibliothek + node.
       - name: Waechter - Ereigniskatalog der Boersenschliessungen
         run: python3 scripts/verify_boersenereignisse.py
+      # V1c-2 US-Produkttermine (shared/produkttermine.py): Belege (Cboe-Dateien/Jahreskalender) = Regel,
+      # Sollfaelle, Einstufung mit festem Pruefdatum, synthetische Kalender, Python = JS. Abdeckungsluecken
+      # werden ausgegeben. Nur Standardbibliothek + node.
+      - name: Waechter - US-Produkttermine OPEX und VIX
+        run: python3 scripts/verify_produkttermine.py
       # P2: jeder Schreiber von prices.tdom/tdoy schreibt Kalendernummern — die echten Schreibwege offline
       # mit Stubs fuer Supabase/Yahoo, gegen eine unabhaengige numpy-Zaehlung. Braucht pandas.
       - name: Waechter - Schreiber von TDOM/TDOY nach Boersenkalender

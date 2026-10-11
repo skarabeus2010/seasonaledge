@@ -158,6 +158,91 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
     return liste;
   }
 
+
+  // ── US-Produkttermine (V1c-2, wie Python shared/produkttermine.py) ─────────────────────────────────────────
+  // Tag aus Tageszähler (Howard Hinnant civil_from_days) — ganze Zahlen, zeitzonenfrei.
+  function ausTagNr(z) {
+    z += 719468;
+    var era = Math.floor(z / 146097), doe = z - era * 146097;
+    var yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+    var doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+    var mp = Math.floor((5 * doy + 2) / 153), t = doy - Math.floor((153 * mp + 2) / 5) + 1;
+    var m = mp + (mp < 10 ? 3 : -9), j = yoe + era * 400 + (m <= 2 ? 1 : 0);
+    return [j, m, t];
+  }
+  function isoNr(n) { var d = ausTagNr(n); return iso(d[0], d[1], d[2]); }
+  function offenNr(n) { var d = ausTagNr(n); return offen('NYSE', d[0], d[1], d[2]); }
+  function vorherNr(n) { n -= 1; while (!offenNr(n)) n -= 1; return n; }
+  function dritterFreitagNr(j, m) { return tagNr(j, m, 15) + ((4 - wochentag(j, m, 15)) % 7 + 7) % 7; }
+  var PR = DATEN.produkte;
+  function monatStr(j, m) { return j + '-' + zweistellig(m); }
+  function vorM(a, b) { return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]); }
+  function monatZerlegen(x) {
+    if (typeof x !== 'string' || !/^[0-9]{4}-[0-9]{2}$/.test(x)) fehler('Monat nicht im Format YYYY-MM: ' + x);
+    var j = +x.slice(0, 4), m = +x.slice(5, 7);
+    if (m < 1 || m > 12) fehler('Monat außerhalb 1–12: ' + x);
+    return [j, m];
+  }
+  function pruefdatumPruefen(p) {
+    if (p === undefined || p === null) fehler('pruefdatum fehlt (Pflichtangabe, YYYY-MM-DD)');
+    datumZerlegen(p);
+    return p;
+  }
+  function einstufen(monat, reihe, regelIso, p) {
+    var beleg = PR.belege[reihe].monate[monat];
+    if (beleg !== undefined) return [beleg, 'belegt', null];
+    if (regelIso > p) return [regelIso, 'projektion', null];
+    return [null, 'luecke', 'nicht_belegt'];
+  }
+  function quelleVon(listung, reihe) { return listung === 'belegt' ? reihe : (listung === 'projektion' ? 'regel' : null); }
+  function opexRegel(j, m) {
+    var r = dritterFreitagNr(j, m), v = offenNr(r) ? r : vorherNr(r);
+    return { regeltermin: isoNr(r), verfallstermin: isoNr(v) };
+  }
+  function vixRegel(j, m) {
+    var fj = m === 12 ? j + 1 : j, fm = m === 12 ? 1 : m + 1;
+    var ref = dritterFreitagNr(fj, fm), nominal = ref - 30;
+    var s = (offenNr(nominal) && offenNr(ref)) ? nominal : vorherNr(nominal);
+    return { referenzfreitag: isoNr(ref), nominal: isoNr(nominal), settlement: isoNr(s) };
+  }
+  function vorherIso(x) { var d = datumZerlegen(x); return isoNr(vorherNr(tagNr(d[0], d[1], d[2]))); }
+  function opexEreignis(j, m, p) {
+    if (vorM([j, m], PR.opex_ab)) return null;
+    var monat = monatStr(j, m), r = opexRegel(j, m), e = einstufen(monat, 'SPX_STANDARD', r.verfallstermin, p);
+    if (e[1] === 'luecke') return null;
+    return Object.freeze({
+      ereignis_id: 'US_OPT:opex.monat:' + monat, produkt: 'US_OPT', art: 'opex', verfallsmonat: monat,
+      regeltermin: r.regeltermin, verfallstermin: e[0], formaler_verfall: e[0],
+      ersatzgrund: e[0] === r.regeltermin ? 'keiner' : 'feiertag', triple_witching: PR.triple_monate.indexOf(m) >= 0,
+      listung: e[1], grund: e[2], regel_abweichung: e[0] !== r.verfallstermin,
+      regelstand: PR.regelstand_opex, quelle: quelleVon(e[1], 'SPX_STANDARD'),
+      kalenderannahme: PR.kalenderannahme, kalenderstatus: PR.kalenderstatus,
+      kalenderversion: DATEN.kalenderversion
+    });
+  }
+  function vixEreignis(j, m, p) {
+    if (vorM([j, m], PR.vix_ab)) return null;
+    var monat = monatStr(j, m), r = vixRegel(j, m);
+    var vx = einstufen(monat, 'VX', r.settlement, p), op = einstufen(monat, 'VIX_OPT', r.settlement, p);
+    if (vx[1] === 'luecke' && op[1] === 'luecke') return null;
+    return Object.freeze({
+      ereignis_id: 'US_VIX:vix.settlement:' + monat, produkt: 'US_VIX', art: 'vix', kontraktmonat: monat,
+      referenzfreitag: r.referenzfreitag, nominal: r.nominal,
+      ersatzgrund: r.settlement === r.nominal ? 'keiner' : 'feiertag',
+      settlement: vx[0], handelsende_futures: vx[0], listung_futures: vx[1], grund_futures: vx[2],
+      verfall_optionen: op[0], handelsende_optionen: op[0] === null ? null : vorherIso(op[0]),
+      listung_optionen: op[1], grund_optionen: op[2],
+      quelle_futures: quelleVon(vx[1], 'VX'), quelle_optionen: quelleVon(op[1], 'VIX_OPT'),
+      kalenderannahme: PR.kalenderannahme, kalenderstatus: PR.kalenderstatus,
+      regel_abweichung: (vx[0] !== null && vx[0] !== r.settlement) || (op[0] !== null && op[0] !== r.settlement),
+      regelstand: PR.regelstand_vix, kalenderversion: DATEN.kalenderversion
+    });
+  }
+  function monateAb(a, b, f) {
+    var j = a[0], m = a[1];
+    while (!vorM(b, [j, m])) { f(j, m); if (m === 12) { j++; m = 1; } else m++; }
+  }
+
   var API = {
     version: DATEN.version,
     /** Hash über die aufgelösten Ereignisinhalte (jede Inhaltsänderung) — wie Python ereignisversion(). */
@@ -288,6 +373,36 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
     },
 
     /** 'tabelle' (Identität nur aus Datumstabelle — Abnahmelücke) | 'regel' — wie Python identitaet(). */
+    /** Version der Produkttermin-Fakten (Regeln + Belege) — wie Python produktversion(). */
+    produktversion: PR.produktversion,
+
+    /** OPEX/VIX-Ereignisse der Monate von..bis ('YYYY-MM'); pruefdatum ('YYYY-MM-DD') ist Pflicht. */
+    produkttermine: function (von, bis, art, pruefdatum) {
+      if (art !== 'opex' && art !== 'vix') fehler('Unbekannte Art: ' + art);
+      var p = pruefdatumPruefen(pruefdatum), a = monatZerlegen(von), b = monatZerlegen(bis);
+      var grenze = art === 'opex' ? PR.bis : PR.vix_bis;
+      if (vorM(grenze, b)) fehler('Monat nach dem Rechenbereich: ' + bis);
+      var out = [], f = art === 'opex' ? opexEreignis : vixEreignis;
+      monateAb(a, b, function (j, m) { var e = f(j, m, p); if (e) out.push(e); });
+      return out;
+    },
+
+    /** Abdeckungslücken je Belegreihe zum Prüfdatum — wie Python abdeckung(). */
+    abdeckung: function (pruefdatum) {
+      var p = pruefdatumPruefen(pruefdatum), l = { SPX_STANDARD: [], VX: [], VIX_OPT: [] }, ds = {};
+      monateAb(PR.opex_ab, PR.bis, function (j, m) {
+        if (einstufen(monatStr(j, m), 'SPX_STANDARD', opexRegel(j, m).verfallstermin, p)[1] === 'luecke') l.SPX_STANDARD.push(monatStr(j, m));
+      });
+      monateAb(PR.vix_ab, PR.vix_bis, function (j, m) {
+        var s = vixRegel(j, m).settlement;
+        if (einstufen(monatStr(j, m), 'VX', s, p)[1] === 'luecke') l.VX.push(monatStr(j, m));
+        if (einstufen(monatStr(j, m), 'VIX_OPT', s, p)[1] === 'luecke') l.VIX_OPT.push(monatStr(j, m));
+      });
+      for (var k in PR.belege) ds[k] = PR.belege[k].datenstand;
+      return { pruefdatum: p, nicht_modelliert: { opex_vor: monatStr(PR.opex_ab[0], PR.opex_ab[1]),
+               vix_vor: monatStr(PR.vix_ab[0], PR.vix_ab[1]) }, luecken: l, datenstand: ds };
+    },
+
     identitaet: function (boerse, j) {
       var b = boerseNormalisieren(boerse);
       jahrPruefen(j);

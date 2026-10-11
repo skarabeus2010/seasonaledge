@@ -213,15 +213,12 @@ def rule7_opex():
 # ── Regel 8 — VIXpiration ─────────────────────────────────────────────────────
 
 def vix_settlement(y, m):
-    f = _nth_weekday(y, m, 4, 3)               # Referenz-3.-Freitag
-    w = f - timedelta(days=30)
-    while not is_trading_day(w, "NYSE"):
-        w -= timedelta(days=1)
-    if is_nyse_holiday(f):                      # Referenz-Fr Feiertag → 1 HT früher
-        w -= timedelta(days=1)
-        while not is_trading_day(w, "NYSE"):
-            w -= timedelta(days=1)
-    return w
+    """Settlement zum Referenzmonat (y, m) — aus dem Produktkatalog (V1c-2), keine eigene Kopie mehr.
+
+    Die frühere Kopie verschob bei Mittwoch- UND Freitagsfeiertag additiv (zwei Tage); Cboe verschiebt einmal."""
+    from shared.produkttermine import vix_regel
+    ky, km = (y - 1, 12) if m == 1 else (y, m - 1)          # Kontraktmonat = Monat vor dem Referenzmonat
+    return vix_regel(ky, km)["settlement"]
 
 
 def rule8_vix():

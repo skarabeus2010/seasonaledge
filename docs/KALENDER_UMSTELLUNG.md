@@ -117,7 +117,33 @@ Entwurf mit Codex in 4 Runden freigegeben ([v1](review_prompts/2026-10-11_kalend
   handgeschriebene Sollfälle mit Quelle (u. a. LSE 2002/2012/2020/2021/2022, TSE 2015/2020/2021/2023, NYSE 2025),
   Versionsvertrag a–d, vollständige Objektgleichheit Python = JS unter zwei Zeitzonen. Mutationstest
   `scripts/verify_boersenereignisse_mutation.py` (isolierte Kopie, Bundle in der Kopie neu erzeugt).
-- **Folgt:** V1c-2 OPEX/VIX nach Cboe, V1c-3 Halbtage mit Quellen.
+- **Folgt:** V1c-3 Halbtage mit Quellen.
+
+## US-Produkttermine (V1c-2, `shared/produkttermine.py`)
+Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-12_kalender_v1c2_entwurf.md) …
+[v6](review_prompts/2026-10-12_kalender_v1c2_entwurf_v6.md)), Code [R1](review_prompts/2026-10-12_kalender_v1c2_code_r1.md),
+[R2](review_prompts/2026-10-12_kalender_v1c2_code_r2.md).
+- **Nur im belegten Regelbereich:** OPEX ab 2015-02 (Freitagsverfall, SEC/OCC 34-69772: 3. Freitag, sonst
+  vorangehender Geschäftstag), VIX ab Kontrakt 2015-09 (SR-CFE-2015-023: Referenzfreitag des Folgemonats − 30 Tage;
+  Mittwoch ODER Freitag geschlossen → einmal der Geschäftstag vor dem Mittwoch; Futures enden am Settlementtag,
+  Optionen am Geschäftstag davor). Früher keine Ereignisse — die Regelwechsel 2004/2005/2014 und die damaligen
+  Listungszyklen sind nicht belegbar.
+- **Geschäftstag = Cboe-Regelsitzung**, angenommen als NYSE-Handelstag; am Objekt als `kalenderannahme`/
+  `kalenderstatus = annahme`. Alle 310 Belege 2015–2027 stimmen mit dieser Annahme.
+- **Belege** (`shared/produkttermine_listung.py`, drei getrennte Reihen): VX = Cboe-Historiendatei je Kontrakt
+  (Dateiname = Settlementtag, 142 Kontrakte 2015-09…2027-06); SPX-Standardverfall und VIX-Optionen = Cboe-Jahreskalender
+  2020–2026 (je 84 Monate, zweimal unabhängig abgelesen, 0 Abweichungen). **Abdeckungslücken** (ausgegeben, nie
+  still): OPEX 2015-02…2019-12, VIX-Optionen 2015-09…2019-12 — Kalender dieser Jahre unter dem Cboe-Muster nicht
+  online.
+- **Einstufung erst bei der Abfrage** mit Pflicht-`pruefdatum`: belegt → Quellenwert; unbelegt und Regeltermin
+  > Prüfdatum → `projektion`; sonst Lücke (Felder `None`, Grund `nicht_belegt`). Gespeichert und gehasht
+  (`produktversion`) werden nur Fakten — das Bundle bleibt reproduzierbar.
+- **Verbraucher unverändert bis V3** (`get_opex_date`, Seiten, Mails, `market_events`, `ist_monatsverfall`).
+  ⚠️ **Vor dem V3-Umbau** die OPEX-Momentaufnahme einfrieren (2 592 Monate, alle Rückgabefelder von
+  `get_opex_date`/`get_all_opex_dates`, `populate_opex`). Nutzerentscheidung in V3: Historie vor 2015 auf
+  `/opex`/`/vixpiration` gekennzeichnet zeigen oder weglassen.
+- **Wächter (Gate):** `scripts/verify_produkttermine.py`; Mutationstest `scripts/verify_produkttermine_mutation.py`.
+  `verify_calendar_rules` Regel 8 rechnet mit dem Katalog statt mit seiner früheren (additiven) Kopie.
 
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
