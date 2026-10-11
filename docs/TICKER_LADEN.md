@@ -1,6 +1,6 @@
 # Neue Ticker schneller laden — Plan (kanonisch)
 
-Stand 2026-10-11 · **Status: S1-Lader + Migration Schritt 1 live (`a19f3f0`), Schritt 2 offen** · mit Codex in vier Runden erarbeitet
+Stand 2026-10-11 · **Status: S1-Lader + Migration Schritte 1–3 umgesetzt (alle Kurslader der Seiten über `SA.kurse`); S2/S3 offen** · Plan mit Codex in vier Runden erarbeitet
 ([Auftrag](review_prompts/2026-10-10_ticker_laden_plan.md) · [v2](review_prompts/2026-10-10_ticker_laden_plan_v2.md) ·
 [v3](review_prompts/2026-10-10_ticker_laden_plan_v3.md) · [v4](review_prompts/2026-10-10_ticker_laden_plan_v4.md);
 Antworten [1](review_prompts/2026-10-10_ticker_laden_plan_antwort1.md) · [2](review_prompts/2026-10-10_ticker_laden_plan_antwort2.md) ·
@@ -114,7 +114,38 @@ Der Transport allein bringt wenig — der Gewinn kommt aus dem Wegfall der Doppe
 - Lesson: eine Live-Probe in jsdom mit node-`fetch` darf jsdoms `AbortSignal` nicht durchreichen — node lehnt es
   ab, der Lader wiederholt, und es sieht aus wie ein Hänger der Seite.
 
+### Schritt 2 (`4b8b6c6`) — lokale Lader, Dashboard-Overnight, Embed
+- Zehn Seiten mit eigenem Lader (Offset + `count=exact`, ohne HTTP-/Array-Prüfung — ein Fehlerkörper wurde als
+  „Zeile" angehängt und mitgerechnet) und `embed.html` laufen über `SA.kurse`; ein Ladefehler erscheint als Fehler.
+- Dashboard-Overnight lud ohne Pagination nur die ersten 1000 Zeilen des Zeitraums — jetzt vollständig. Soll in
+  der Seitenprobe: der **alte Code auf vollständigen Daten** (Nachbau ohne die 1000er-Grenze).
+- **VORLADEN**: jede gemeinsame Ladung holt mindestens `date, open, close, log_return, tdom, tdoy` — sonst löste ein
+  weiteres Feld (Overnight: `open`) eine zweite Vollladung aus (gemessen 44 statt 27 Anfragen). Dashboard: 36 → 26.
+- Rückfall auf den eigenen Bedarf, sobald die gescheiterte gemeinsame Ladung **mehr** verlangte — längerer
+  Zeitraum ODER zusätzliche Spalten (Codex M2 R1: ein Fehler kann an einer Spalte hängen). Bei genau dem eigenen
+  Bedarf kein zweiter Versuch.
+
+### Schritt 3 (`35e1df4`) — Abrufkennung
+- Wochentage, Backtest-Engine, OPEX, VIXpiration, Spot-Vol-Beta ohne Abrufkennung: ein schneller zweiter Ticker
+  wurde von der verspäteten Antwort des ersten überschrieben (Seitenprobe: im alten Stand auf allen fünf).
+- Wochentage/Backtest-Engine kehrten beim angezeigten Ticker VOR der Kennung zurück → A → B → A blieb ungeschützt;
+  jetzt `SA.ladeKennung.start(ticker, angezeigt)`.
+- Dashboard-Overnight: Abrufkennung UND Darstellungszähler — nach TTL-Ablauf überschrieb ein später 30-J-Fehler die
+  5-J-Ansicht (Codex M3 R1).
+- Seitenprobe 313/313 mit `wechsel`, `rueckwechsel`, `zeitraum`; jeder verglichene Lauf muss Ruhe, keine
+  Seitenfehler, vollständige Anzeige und gefüllte Charts haben.
+
+### Lessons
+- **Ein Test, der ein Feld wechselt, prüft nach VORLADEN etwas anderes** — fünf Probefälle verloren ihre Aussage,
+  sichtbar erst im Mutationstest (Felder `open`/`tdom` jetzt immer geladen → auf `high` umgestellt).
+- **„Fertig" heißt: nichts offen UND kein Lader aktiv** — zwischen Wiederholungen ist keine Anfrage offen; die
+  Seitenprobe meldete dort zweimal zu früh Ruhe (Wiederholungspause, dann Rückfall-Ladung).
+- **Ein Wettlauf kann durch eine andere Änderung verschwinden** — nach VORLADEN wird Overnight aus der
+  30-J-Ladung bedient, der von Codex nachgestellte Overnight-Wettlauf war auf diesem Weg nicht mehr erreichbar;
+  erreichbar blieb er über den Zeitraum-Regler nach TTL-Ablauf.
+
 ### Offen
-- **Schritt 2:** zehn lokale Lader (Jahres-/Risikozyklus, Saison-Score-Seite, Overnight, TDOM-Analyse, Wochentage,
-  Backtest-Engine, OPEX, VIXpiration, Spot-Vol-Beta), Dashboard-Overnight, `embed.html` — je mit Seitenprobe.
-- **S2** localStorage-Cache entschärfen · **S3** statische Kursdateien (Schatten).
+- **S2** localStorage-Cache entschärfen (`SA.cache` hat nach S1 keinen Kursnutzer mehr) · **S3** statische
+  Kursdateien (Schatten, erst nach der Umschaltung auf `SA.boersenkalender`).
+- Alte Hüllen `SA.fetchAllPrices`/`ladeVollHistorie` entfernen, sobald kein Aufrufer bleibt; dann
+  `verify_kurse.py --streng` ins Gate.
