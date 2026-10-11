@@ -5,6 +5,7 @@
  * Nutzt V3 Ultra Palette (Black + Gold).
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || {};
 
 // ── Farben ──────────────────────────────────────────────────────────────────

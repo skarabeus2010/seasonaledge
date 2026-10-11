@@ -7,6 +7,7 @@
  * Nutzt: date, close, log_return (aus DB), tdom, tdoy (aus DB)
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || {};
 
 SA.decadeCompute = {

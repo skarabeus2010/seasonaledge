@@ -68,6 +68,29 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
   nach, dass der Projektbaum byte-gleich blieb (der frühere Lauf hatte `market_calendar.*` im Arbeitsbaum neu
   geschrieben).
 
+## Releasekennung und Seitensperre (V1b, `landing/js/methode.js`)
+Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-11_kalender_v1b_entwurf.md) …
+[v6](review_prompts/2026-10-11_kalender_v1b_entwurf_v6.md)).
+- **Methode:** `SA.kalenderMethode` (JS, unveränderbar) = `shared/kalender_methode.LESER` (Python) = `__SA_METHODE`
+  jeder Seite — heute `alt`; gewechselt wird nur in V9.
+- **Kennung:** jedes HTML setzt `window.__SA_RELEASE` + `__SA_METHODE` und bindet `methode.js` als erstes eigenes
+  Skript ein; jede eigene JS-Datei beginnt mit `window.SA.__release('<kennung>')` (`methode.js` prüft sich zuletzt,
+  `boersenkalender.js` erhält die Zeile vom Generator). Lokal bleiben Platzhalter stehen — gleich, keine Sperre.
+- **Deploy:** `RELEASE` = voller Commit-Hash, einmal bestimmt; `deploy/release_setzen.py` normalisiert direkt nach
+  dem Vorspulen (alte EN-/Blog-Ausgaben, auch ohne Bootstrap), setzt die Kennung als letzten Schritt aller
+  HTML-Erzeuger und in der EXIT-Falle; verweigert (Exit 3, nichts geschrieben), wenn eine Ausgabe eine andere Methode
+  trägt. nginx: `/rechtliches`, `/ueber-uns`, `/landing/*.html` mit `must-revalidate`.
+- **Sperre** (bei abweichender Kennung, endgültig): keine Datenanfrage (`fetch`-Hülle; Lader `kurse.js` und
+  `SA.supabase` prüfen zusätzlich selbst, `ReleaseFehler` endgültig — keine Wiederholung, kein Rückfall, keine
+  Übernahme), kein Speicher-Schreibzugriff, keine Einfügung ins Dokument (synchron + Beobachter), kein Chart
+  (ApexCharts-Hülle, auch bei später geladener Bibliothek), Dokument durch Hinweis ersetzt, Neuladen höchstens alle
+  120 s (Marke in `sessionStorage`, Speicherfehler → Hinweis). Ressourcen (Bilder, CSS, Fremdskripte) sind bewusst
+  NICHT Teil der Netz-Zusage (Entwurf v6). Vertrag im Deploy-Fenster: zeitweilige Sperre mit Wiederherstellung.
+- **Wächter (Gate):** `scripts/verify_einbindung.py` (ersetzt das Isolations-Gate C P3a), `scripts/verify_release_sperre.py`
+  (Transport je Lader mit und ohne Hülle + echtes Dashboard in jsdom, je Fall mit positiver Kontrolle);
+  Mutationstest `scripts/verify_release_mutation.py` (isolierte Kopie). Harnesse laden `methode.js` über
+  `scripts/js/release_harness.js`.
+
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
 reproduziert (n 186/78, WR 68,3/71,8 %, PF 1,80/2,39, Sharpe 0,214/0,336, DD 22,3/18,3 %). Mit TDOM nach

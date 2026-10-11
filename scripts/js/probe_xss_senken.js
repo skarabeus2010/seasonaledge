@@ -37,6 +37,7 @@ function hole(id) { return el[id] || (el[id] = neu(id)); }
    (es setzt `window.SA`, liest aber blankes `SA`). Ein eigenes window-Objekt
    bricht das, also zeigt window hier auf global, wie im Browser. */
 global.window = global;
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.location = { pathname: '/polymarket', search: '', hash: '' };
 global.addEventListener = function () {};
 global.document = {

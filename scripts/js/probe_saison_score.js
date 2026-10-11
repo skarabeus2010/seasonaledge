@@ -8,6 +8,7 @@
  */
 const fs = require('fs');
 const window = { location: { pathname: '/' } };
+require('./release_harness').bereite(window);   // echte methode.js zuerst (Releasekennung, V1b)
 for (const datei of process.argv.slice(2, 5)) {
   new Function('window', fs.readFileSync(datei, 'utf8') + '\nreturn window.SA;')(window);
 }

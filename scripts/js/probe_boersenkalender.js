@@ -10,6 +10,7 @@ const auftrag = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
 
 const offsets = [new Date(2026, 0, 15).getTimezoneOffset(), new Date(2026, 6, 15).getTimezoneOffset()];
 global.window = {};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 require(path.join(__dirname, '..', '..', 'landing', 'js', 'boersenkalender.js'));
 const K = global.window.SA.boersenkalender;
 

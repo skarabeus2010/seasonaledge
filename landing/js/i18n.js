@@ -11,6 +11,7 @@
  *   SA.i18n.switchTo(lang) — navigates to /en/... or /.../
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || (window.SA = {});
 
 SA.i18n = (function() {
@@ -206,6 +207,7 @@ SA.i18n = (function() {
     document.querySelectorAll('link[hreflang]').forEach(function(l) { l.remove(); });
 
     function addLink(lang, href) {
+      if (window.SA && window.SA.__gesperrt) return;   // Release-Sperre (methode.js)
       var link = document.createElement('link');
       link.rel = 'alternate';
       link.hreflang = lang;

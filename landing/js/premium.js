@@ -15,6 +15,7 @@
  *
  * Tier wird 1× pro Session geladen und im sessionStorage gecached (5min TTL).
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 ;(function() {
   'use strict';
 

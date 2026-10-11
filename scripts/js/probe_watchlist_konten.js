@@ -23,6 +23,7 @@ const REPO = path.resolve(__dirname, '..', '..');
 
 /* ── Umgebung: window IST global, wie im Browser ───────────────────────── */
 global.window = global;
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.location = { pathname: '/watchlist', search: '', hash: '' };
 global.addEventListener = function () {};
 global.document = {
@@ -80,7 +81,7 @@ function tabelleStub() {
   return api;
 }
 
-global.SA = { auth: null };
+global.SA = Object.assign(global.SA, { auth: null });   // SA behält die Releaseprüfung (V1b)
 
 /* ── watchlist.js laden ────────────────────────────────────────────────── */
 const quelle = fs.readFileSync(path.join(REPO, 'landing/js/watchlist.js'), 'utf8');

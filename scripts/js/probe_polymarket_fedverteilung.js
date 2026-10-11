@@ -42,6 +42,7 @@ global.document = {
   querySelector: () => null, querySelectorAll: () => [], addEventListener() {}
 };
 global.window = {};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 let letzteOptionen = null;
 global.ApexCharts = class {
   constructor(_e, o) { letzteOptionen = o; }

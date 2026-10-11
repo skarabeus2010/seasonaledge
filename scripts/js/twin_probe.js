@@ -15,6 +15,7 @@ const src = fs.readFileSync(path, 'utf8');
 
 // Minimaler Browser-Kontext. SA.i18n fehlt bewusst -> getMonthNames faellt auf DE.
 const sandbox = { window: {} };
+require('./release_harness').bereite(sandbox.window);   // echte methode.js zuerst (Releasekennung, V1b)
 new Function('window', src + '\nreturn window.SA;')(sandbox.window);
 const S = sandbox.window.SA.seasonal;
 

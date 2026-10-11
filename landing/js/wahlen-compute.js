@@ -16,6 +16,7 @@
  *    dann über die Blöcke (R2-4).
  *  - Ergebnisfilter (Machtwechsel) sind rückblickend — am Einstiegstag nicht bekannt.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function (root) {
   'use strict';
 

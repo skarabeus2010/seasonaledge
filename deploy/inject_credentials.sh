@@ -73,7 +73,9 @@ python3 "$REPO_DIR/scripts/build_calendar_data.py" \
 # Haengt ?v=<git-sha> an alle /landing/css/*.css und /landing/js/*.js Refs
 # in HTML, damit Browser bei jedem Deploy zwingend neu laden (egal welcher
 # Cache-Header). Wirkt auch wenn Mobile Safari auf altem max-age=86400 haengt.
-GIT_SHA=$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || date +%s)
+# Zweites Argument = Releasekennung des Deploys (deploy.yml, V1b) — dieselbe Quelle wie in den Seiten.
+# Ohne Argument (Wiederherstellungsweg vor dem Vorspulen) wie bisher der aktuelle Commit.
+GIT_SHA=${2:-$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || date +%s)}
 echo "Cache-Busting Version: $GIT_SHA"
 
 find "$REPO_DIR/landing" -name "*.html" -exec sed -i -E \

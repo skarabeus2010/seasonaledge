@@ -12,6 +12,7 @@ const path = require('path');
 const W = path.join(__dirname, '..', '..');
 
 global.window = { SA: { supabase: { url: 'https://stub', key: 'k' } } };
+require('./release_harness').bereite(global.window, W);   // echte methode.js zuerst (Releasekennung, V1b)
 global.SA = global.window.SA;
 global.localStorage = { length: 0, key: () => null, removeItem() {}, getItem: () => null, setItem() {} };
 

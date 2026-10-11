@@ -15,6 +15,7 @@ const EN_DICT = JSON.parse(fs.readFileSync(path.join(REPO, 'landing/i18n/en.json
 const seite = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).find((s) => s.includes('SA.wahlen.auswerten'));
 const fehler = [];
 global.window = {};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 require(path.join(REPO, 'landing/js/wahlen-compute.js'));
 const KERN = global.window.SA.wahlen;
 

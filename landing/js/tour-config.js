@@ -12,6 +12,7 @@
  *   navigateAfter   — Optional: { url, step } für automatische Navigation nach Next-Click
  *   optional        — Wenn true und Element fehlt, wird der Step übersprungen statt Tour abzubrechen
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 window.SA = window.SA || {};
 
 SA.TOUR_STEPS = [

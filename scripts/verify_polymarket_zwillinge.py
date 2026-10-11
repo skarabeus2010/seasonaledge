@@ -59,6 +59,7 @@ def pruefe(b: bool, was: str) -> None:
 # ── Die JS-Seite fahren ──────────────────────────────────────────────────────
 TREIBER = r"""
 global.window = {};
+require(process.env.SA_RELEASE_HARNESS).bereite(global.window);   // echte methode.js zuerst (V1b)
 const fs = require('fs');
 eval(fs.readFileSync(process.argv[2], 'utf8'));
 const PM = global.window.SA.polymarket;
@@ -100,7 +101,8 @@ def js_seite(reihen, stichtag: date, ziel=None, zone: str | None = None) -> dict
     r = subprocess.run(
         ['node', str(TREIBER_PFAD), str(REPO / 'landing/js/polymarket.js'),
          json.dumps(ein)],
-        capture_output=True, text=True, env=umgebung, timeout=60)
+        capture_output=True, text=True,
+        env={**umgebung, 'SA_RELEASE_HARNESS': str(REPO / 'scripts/js/release_harness.js')}, timeout=60)
     if r.returncode != 0:
         raise RuntimeError('node-Lauf scheiterte: ' + (r.stderr or '')[-400:])
     return json.loads(r.stdout)

@@ -32,6 +32,7 @@
  *   SA.watchlist.toggle('AAPL')   → {removed: true, added: false}
  *   SA.watchlist.clear()
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function() {
   window.SA = window.SA || {};
 

@@ -27,6 +27,7 @@ global.document = {
   body: {appendChild:function(){},classList:{add:function(){},toggle:function(){},contains:function(){return false;}}}
 };
 global.window = {addEventListener:function(){}, innerWidth:1400, location:{search:''}};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.fetch = function(){ return Promise.resolve({json:function(){return Promise.resolve([]);}}); };
 require(require('path').join(__dirname, '..', '..', 'landing', 'js', 'app.js'));
 var SA = global.window.SA;

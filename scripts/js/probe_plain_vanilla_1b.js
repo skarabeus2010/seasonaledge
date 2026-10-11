@@ -13,6 +13,7 @@ const path = require('path');
 const BASIS = path.resolve(process.argv[2] || path.join(__dirname, '..', '..'));
 
 const window = {};
+require('./release_harness').bereite(window, BASIS);   // echte methode.js zuerst (Releasekennung, V1b)
 for (const f of ['holidays.js', 'indicators.js', 'strategy-compute.js']) {
   new Function('window', 'var SA = window.SA || {};\n' + fs.readFileSync(path.join(BASIS, 'landing/js', f), 'utf8') + '\nwindow.SA = SA;')(window);
 }

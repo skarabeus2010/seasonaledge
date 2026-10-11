@@ -6,3 +6,6 @@ ohne dessen `<script>`-Einbindung. Pfade relativ zu `landing/`.
 
 Ändert ein späterer Commit eine dieser Dateien aus einem anderen Grund, meldet die Seitenprobe einen Unterschied;
 dann die Änderung hier nachziehen (nur die fachfremde, nicht die Lader-Umstellung).
+
+Nachgezogen 2026-10-11 (fachfremd, V1b Releasekennung): Bootstrap (`window.__SA_RELEASE`/`__SA_METHODE` + `methode.js`)
+in den Seiten und die Prüfzeile `window.SA.__release(…)` in `js/app.js` und `js/decade-compute.js` — wie im Arbeitsbaum.

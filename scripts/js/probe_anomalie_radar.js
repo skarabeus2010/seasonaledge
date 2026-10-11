@@ -10,6 +10,7 @@
  */
 const fs = require('fs');
 const window = { location: { pathname: '/' } };
+require('./release_harness').bereite(window);   // echte methode.js zuerst (Releasekennung, V1b)
 // Minimaler DOM-Stub: zählt, ob die Darstellung ihr CSS selbst einbindet (Dashboard ruft nur anomalieHtml).
 const styles = [];
 global.document = { head: { appendChild: el => styles.push(el.id) },

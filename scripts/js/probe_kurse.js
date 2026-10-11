@@ -6,6 +6,7 @@
 const path = require('path');
 
 global.window = { SA: { supabase: { url: 'https://stub', key: 'k' } } };
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.SA = global.window.SA;
 
 // ── Daten ────────────────────────────────────────────────────────────────────────────────────────────────

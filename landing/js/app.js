@@ -9,6 +9,7 @@
  * - Dropdown Hover/Click
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || (window.SA = {});
 
 // ── Client-Side Cache ──────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ function loadAnalytics() {
   fetch('/landing/components/analytics.html')
     .then(function(r) { return r.text(); })
     .then(function(html) {
+      if (SA.__gesperrt) return;   // Release-Sperre (methode.js): nach der Sperre nichts mehr nachladen
       var tmp = document.createElement('div');
       tmp.innerHTML = html.trim();
       var scripts = tmp.querySelectorAll('script');
@@ -240,6 +242,8 @@ SA.supabase = {
    * @returns {Promise<Array>}
    */
   get: function(table, query) {
+    // Release-Sperre (methode.js, Plan v9): keine Anfrage und keine Übernahme nach der Sperre
+    if (SA.__gesperrt) return Promise.reject(SA.ReleaseFehler ? new SA.ReleaseFehler('supabase.get nach Sperre') : new Error('Release-Sperre'));
     var url = this.url + '/rest/v1/' + table;
     if (query) url += '?' + query;
     return fetch(url, {
@@ -248,7 +252,10 @@ SA.supabase = {
         'Authorization': 'Bearer ' + this.key,
         'Content-Type': 'application/json'
       }
-    }).then(function(r) { return r.json(); });
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (SA.__gesperrt) throw (SA.ReleaseFehler ? new SA.ReleaseFehler('supabase.get Übernahme nach Sperre') : new Error('Release-Sperre'));
+      return d;
+    });
   },
 
   /**
@@ -271,6 +278,7 @@ SA.supabase = {
     function fetchPage(offset) {
       var q = (query || '') + (query ? '&' : '') + 'offset=' + offset + '&limit=' + PAGE;
       return self.get(table, q).then(function(rows) {
+        if (SA.__gesperrt) throw (SA.ReleaseFehler ? new SA.ReleaseFehler('getAll nach Sperre') : new Error('Release-Sperre'));
         if (!Array.isArray(rows)) return results;
         results.push.apply(results, rows);
         if (rows.length < PAGE) return results;

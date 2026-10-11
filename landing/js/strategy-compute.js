@@ -5,6 +5,7 @@
  * Trade-Format: {entry_date, exit_date, entry_price, exit_price, return_pct}
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || {};
 
 SA.strategy = {

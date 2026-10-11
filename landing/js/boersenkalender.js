@@ -14,6 +14,7 @@
  * new Date("YYYY-MM-DD") ist UTC, new Date(j, m, t) lokal, und in Pacific/Apia fehlt der 30.12.2011
  * (Codex Runde 5/6).
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function (global) {
   'use strict';
   var SA = global.SA = global.SA || {};

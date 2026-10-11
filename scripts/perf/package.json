@@ -3,6 +3,8 @@
   "private": true,
   "description": "Feste Werkzeugversionen für die Seitenproben (docs/TICKER_LADEN.md). node_modules ist gitignored; installieren mit: npm ci --prefix scripts/perf",
   "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "apexcharts": "4.7.0",
     "jsdom": "25.0.1"
   }
 }

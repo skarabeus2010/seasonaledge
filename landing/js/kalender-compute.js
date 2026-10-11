@@ -2,6 +2,7 @@
  * SeasonAlpha Marktkalender — Compute + Render + Export
  * Auth-Gate + Premium-Gate + Supabase personalized events + ICS export
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function () {
   'use strict';
 

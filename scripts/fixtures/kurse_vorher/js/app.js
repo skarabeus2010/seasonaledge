@@ -9,6 +9,7 @@
  * - Dropdown Hover/Click
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || (window.SA = {});
 
 // ── Client-Side Cache ──────────────────────────────────────────────────────

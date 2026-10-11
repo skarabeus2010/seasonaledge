@@ -1,6 +1,7 @@
 /* SeasonAlpha - FOMC Meeting Dates (2000-2026)
    Quelle: federalreserve.gov/monetarypolicy/fomccalendars.htm
    Stand: 2026-03-08 */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA_FOMC_DATES = [
   [2000,2,2], [2000,3,21], [2000,5,16], [2000,6,28], [2000,8,22], [2000,10,3], [2000,11,15], [2000,12,19],  // 2000
   [2001,1,3], [2001,1,31], [2001,3,20], [2001,4,18], [2001,5,15], [2001,6,27], [2001,8,21], [2001,9,17], [2001,10,2], [2001,11,6], [2001,12,11],  // 2001

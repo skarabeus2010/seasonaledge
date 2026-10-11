@@ -110,6 +110,13 @@ jobs:
         run: |
           npm ci --prefix scripts/perf --no-audit --no-fund
           python3 scripts/verify_seiten_kurse.py
+      # Releasekennung + Kalendermethode (V1b, docs/KALENDER_UMSTELLUNG.md): Einbindung aller Seiten und Dateien,
+      # Deploy-/nginx-Regeln, Simulation von deploy/release_setzen.py (ersetzt das Isolations-Gate C P3a).
+      - name: Waechter - Einbindung Releasekennung
+        run: python3 scripts/verify_einbindung.py
+      # Release-Sperre: Transport (kurse.js, SA.supabase) und echte Seite in jsdom, je Fall mit positiver Kontrolle.
+      - name: Waechter - Release-Sperre
+        run: python3 scripts/verify_release_sperre.py
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -160,6 +167,19 @@ jobs:
               exit 1
             fi
 
+            # Releasekennung (V1b): ab dem ersten Eingriff in landing/ stellt die EXIT-Falle in JEDEM Fall gleiche
+            # Kennungen her — auch wenn das Vorspulen scheitert oder die erste Normalisierung. Die Kennung wird erst
+            # beim Ausloesen bestimmt (HEAD dann: neuer Commit nach dem Vorspulen, sonst der alte); fehlt
+            # release_setzen.py in diesem Stand (vor V1b), gibt es keine Kennungen und nichts zu tun.
+            release_falle() {
+              if [ -f deploy/release_setzen.py ]; then
+                python3 deploy/release_setzen.py "$(git rev-parse HEAD)" >/dev/null 2>&1 \
+                  || echo "::error::release_setzen im Fehlerweg gescheitert — Seiten pruefen!"
+              fi
+              rm -rf "$SA_TMP"
+            }
+            trap release_falle EXIT
+
             # Jetzt die Reverts: inject_credentials.sh aendert landing/
             # in-place, und diese Aenderungen blockieren sonst das Vorspulen.
             git checkout -- seo/output/ 2>/dev/null || true
@@ -176,8 +196,16 @@ jobs:
               exit 1
             fi
 
-            # Supabase Credentials in Landing-HTML injizieren
-            bash deploy/inject_credentials.sh /opt/seasonaledge
+            # Releasekennung (V1b, landing/js/methode.js): EINE Quelle fuer den ganzen Deploy — der volle Hash des
+            # gerade vorgespulten Commits. Sofort danach alte Ausgaben (landing/en/, blog/output/) auf den Platzhalter
+            # normalisieren: die frisch gezogenen Skripte tragen ihn, sonst sperrte jede alte Seite im Deploy-Fenster.
+            # Scheitert ab hier etwas, setzt die EXIT-Falle (oben) alle Kennungen auf diesen Commit.
+            RELEASE=$(git rev-parse HEAD) || { echo "::error::Releasekennung nicht bestimmbar"; exit 1; }
+            python3 deploy/release_setzen.py '%%RELEASE%%' \
+              || { echo "::error::release_setzen (Normalisieren) fehlgeschlagen"; exit 1; }
+
+            # Supabase Credentials in Landing-HTML injizieren (Cache-Buster = Releasekennung)
+            bash deploy/inject_credentials.sh /opt/seasonaledge "$RELEASE"
 
             # Reihenfolge und Abbrueche (SEO-Review 2026-09-30): erst ALLE Seiten
             # bauen, dann die Sitemap daraus erzeugen, dann pruefen. Jeder dieser
@@ -200,6 +228,10 @@ jobs:
             # Sitemap + robots.txt + llms.txt + Disclaimer (Host-Python, liest Git-Daten fuer lastmod)
             pip install -q Jinja2 PyYAML 2>/dev/null || pip3 install -q Jinja2 PyYAML 2>/dev/null
             python3 seo/programmatic_seo_builder.py || scheitern "programmatic_seo_builder.py fehlgeschlagen"
+
+            # Releasekennung als LETZTER Schritt aller HTML-Erzeuger (Injection, EN, Blog, SEO): jede Seite und jede
+            # eigene JS-Datei bekommt dieselbe Kennung; die Abschlusspruefung bricht den Deploy bei jeder Abweichung ab.
+            python3 deploy/release_setzen.py "$RELEASE" || scheitern "release_setzen meldet abweichende Kennungen"
 
             # Waechter: gebaute Seiten + Sitemap gegen die erwartete URL-Liste
             python3 scripts/verify_seo_html.py || scheitern "verify_seo_html.py meldet Fehler"

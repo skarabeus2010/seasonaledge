@@ -14,6 +14,7 @@
 process.env.TZ = process.argv[2];
 const fs = require('fs');
 const window = {};
+require('./release_harness').bereite(window);   // echte methode.js zuerst (Releasekennung, V1b)
 new Function('window', fs.readFileSync(process.argv[3], 'utf8') + '\nreturn window.SA;')(window);
 const SA = window.SA;
 new Function('window', 'SA', fs.readFileSync(process.argv[4], 'utf8') + '\nreturn window.SA;')(window, SA);

@@ -5,6 +5,7 @@
  * Wird von: Monatswechsel, Wochentage, Mondphasen genutzt.
  */
 
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || {};
 
 SA.streaks = {

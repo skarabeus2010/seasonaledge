@@ -122,6 +122,7 @@ global.document = {
   }
 };
 global.window = { SA: null, addEventListener() {}, location: { search: '' } };
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.ApexCharts = class { constructor() {} render() {} updateOptions() {} destroy() {} };
 
 // ── Modul laden, damit SA.polymarket.esc und SA.i18n existieren ────────────

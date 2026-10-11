@@ -13,6 +13,7 @@
  * Auto-Resume: Wenn eine Page mit ?tour=step:N geladen wird, startet die
  * Tour automatisch nach DOMContentLoaded + kurzer Stabilisierungspause.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function(){
   window.SA = window.SA || {};
 
@@ -49,6 +50,8 @@
   function _loadDriverJS() {
     if (_loadPromise) return _loadPromise;
     _loadPromise = new Promise(function(resolve, reject) {
+      // Release-Sperre (methode.js): nach der Sperre keine Bibliothek/CSS mehr nachladen
+      if (window.SA && window.SA.__gesperrt) { reject(new Error('Seite gesperrt')); return; }
       console.log('[SA.tour] Loading Driver.js...');
       // CSS
       if (!document.querySelector('link[data-sa-tour-css]')) {

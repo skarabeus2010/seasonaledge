@@ -5,6 +5,7 @@
  * Stellt Login/Logout/Session-Management bereit.
  * Nav-Button wird automatisch aktualisiert.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function() {
   'use strict';
   var SA = window.SA || (window.SA = {});

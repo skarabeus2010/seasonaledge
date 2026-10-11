@@ -26,6 +26,7 @@
  *  * Nicht berechenbar statt Ersatzwert: vor dem 20. Handelstag des Jahres, < 10 Lookback-Jahre, < 5 Musterjahre,
  *    Gewichtssumme 0. Keine Richtungsetiketten (Bullish/Bearish) — Nutzerentscheidung bis zur Validierung.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 var SA = window.SA || {};
 
 SA.saisonScore = {

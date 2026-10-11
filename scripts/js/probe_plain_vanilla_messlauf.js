@@ -23,6 +23,7 @@ const html = fs.readFileSync(path.join(REPO, 'landing/pages/plain-vanilla.html')
 const srcs = [...html.matchAll(/<script src="\/landing\/js\/([^"?]+)/g)].map(m => m[1]);
 const geladen = [], uebersprungen = [];
 const window = {};
+require('./release_harness').bereite(window);   // echte methode.js zuerst (Releasekennung, V1b)
 const modulHash = crypto.createHash('sha256');
 for (const f of srcs) {
   if (BROWSER_ONLY.has(f)) { uebersprungen.push(f); continue; }

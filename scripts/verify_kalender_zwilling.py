@@ -16,6 +16,7 @@ Jede Mutation muss ihren Anker treffen (sonst Durchfall), und die Probe muss ihr
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -86,6 +87,7 @@ PROBE = r"""
 const fs = require('fs');
 const [js, von, bis] = process.argv.slice(2);
 const w = {};
+require(process.env.SA_RELEASE_HARNESS).bereite(w);   // echte methode.js zuerst (V1b)
 new Function('window', 'var SA = window.SA || {};\n' + fs.readFileSync(js, 'utf8') + '\nwindow.SA = SA;')(w);
 const H = w.SA.holidays;
 if (!H || !H.isTradingDay) throw new Error('[Aufbau] holidays.js nicht geladen');
@@ -108,7 +110,8 @@ def js_kalender(js_pfad: pathlib.Path, bereich=None) -> dict:
         probe = f.name
     von, bis = bereich or (BEREICH[0].isoformat(), BEREICH[1].isoformat())
     r = subprocess.run(["node", probe, str(js_pfad), von, bis],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, encoding="utf-8",
+                       env={**os.environ, "SA_RELEASE_HARNESS": str(pathlib.Path(__file__).resolve().parent / "js" / "release_harness.js")})
     pathlib.Path(probe).unlink(missing_ok=True)
     zeilen = r.stdout.strip().splitlines()
     if r.returncode != 0 or not zeilen or zeilen[-1] != "ENDE":

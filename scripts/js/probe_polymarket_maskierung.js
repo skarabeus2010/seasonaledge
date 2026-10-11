@@ -75,6 +75,7 @@ global.document = {
   querySelectorAll: () => [], querySelector: () => null, addEventListener() {}
 };
 global.window = { SA: null, addEventListener() {}, location: { search: '' } };
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.ApexCharts = class {
   constructor(_el, opt) { global.__letzteApexOptionen = opt; }
   render() {} updateOptions() {} destroy() {}

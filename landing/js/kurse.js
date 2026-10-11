@@ -24,6 +24,7 @@
  * er nie schrumpft) eingereiht — höchstens eine wartet hinter der laufenden. Erst nach Erfolg ersetzt sie den
  * Bestand. Scheitert sie, lehnen ihre Anfragen ab; ein älterer Bestand bleibt, ohne seine Frische zu verlängern.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function () {
   var SA = window.SA = window.SA || {};
 
@@ -132,6 +133,17 @@
     };
   }
 
+  // ── Release-Sperre (landing/js/methode.js, Plan v9) ─────────────────────────────────────────────────────
+  // Nach der Sperre: keine Netzanfrage mehr, kein Bestand veröffentlicht, keine Sicht, keine wartende Ladung;
+  // ein ReleaseFehler ist ENDGÜLTIG — keine Wiederholung, kein Rückfall auf den eigenen Bedarf.
+  function gesperrt() { return !!SA.__gesperrt; }
+  function istRelease(e) { return !!(e && (e.releaseFehler === true || e.name === 'ReleaseFehler')); }
+  function sperrFehler(wo) {
+    return SA.ReleaseFehler ? new SA.ReleaseFehler('Kurslader: ' + wo) :
+      Object.assign(new Error('Release-Sperre: Kurslader: ' + wo), { name: 'ReleaseFehler', releaseFehler: true });
+  }
+  var transporte = [];   // AbortController laufender Blöcke (für _abbrechenAlle)
+
   // ── Netz ───────────────────────────────────────────────────────────────────────────────────────────────
   function warte(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
 
@@ -140,7 +152,10 @@
             '&order=date.asc&limit=' + K.BLOCK + (bedarf.ab ? '&date=gte.' + bedarf.ab : '') + (nach ? '&date=gt.' + nach : '');
     var nochmal = function (ms) {
       return warte(ms != null ? ms : 350 * (versuch + 1) + Math.floor(Math.random() * 300))
-        .then(function () { return holeBlock(ticker, bedarf, nach, versuch + 1); });
+        .then(function () {
+          if (gesperrt()) throw sperrFehler('Wiederholung nach Sperre');
+          return holeBlock(ticker, bedarf, nach, versuch + 1);
+        });
     };
     var abbruch = (typeof AbortController === 'function') ? new AbortController() : null;
     var zeit = null;
@@ -155,6 +170,8 @@
     var transport = warten.promise.then(function (frei) {
       var antwort;
       try {
+        if (gesperrt()) throw sperrFehler('Anfrage nach Sperre');   // auch nach Poolwartezeit
+        if (abbruch) transporte.push(abbruch);
         antwort = fetch(SA.supabase.url + '/rest/v1/prices?' + q, {
           headers: { 'apikey': SA.supabase.key, 'Authorization': 'Bearer ' + SA.supabase.key },
           signal: abbruch ? abbruch.signal : undefined
@@ -165,11 +182,14 @@
       } catch (e) {
         antwort = Promise.reject(e);
       }
+      var abmelden = function () { var i = transporte.indexOf(abbruch); if (i >= 0) transporte.splice(i, 1); };
+      antwort.then(abmelden, abmelden);
       antwort.then(frei, frei);                 // Platz frei erst mit dem Ende des Transports (auch nach der Frist)
       return antwort;
     });
     return Promise.race([transport, frist]).then(function (w) { clearTimeout(zeit); return w; },
                                                   function (e) { clearTimeout(zeit); throw e; }).then(function (w) {
+      if (gesperrt()) throw sperrFehler('Block nach Sperre');
       if (w.zeilen === undefined) {
         if ((w.status === 429 || w.status >= 500) && versuch < K.MAX_WIEDERHOLUNGEN) {
           return nochmal(retryAfterMs(w.retryAfter));
@@ -178,6 +198,7 @@
       }
       return w.zeilen;
     }, function (e) {
+      if (istRelease(e) || gesperrt()) throw istRelease(e) ? e : sperrFehler('Netzfehler nach Sperre');
       if (versuch < K.MAX_WIEDERHOLUNGEN) return nochmal(null);
       throw (e && e.name === 'KursFehler') ? e : KursFehler('Netzfehler (' + ticker + '): ' + (e && e.message));
     });
@@ -203,6 +224,7 @@
   function ladeAlles(ticker, bedarf) {
     var bloecke = [], nach = null, n = 0;
     function naechster() {
+      if (gesperrt()) return Promise.reject(sperrFehler('nächster Block nach Sperre'));
       if (++n > K.MAX_BLOECKE) return Promise.reject(KursFehler('zu viele Blöcke (' + ticker + ')'));
       return holeBlock(ticker, bedarf, nach, 0).then(function (z) {
         pruefeBlock(z, nach, bedarf, ticker);
@@ -256,11 +278,14 @@
 
   /** Genau eine Anfrage allein laden (Rückfall, wenn eine breitere gemeinsame Ladung scheiterte): nicht gecacht,
    *  Bestand unverändert, eigene Generation. Scheitert auch sie, lehnt die Anfrage ab. */
-  var eigeneAktiv = 0;   // laufende Rückfall-Ladungen (nur für Beobachtung, z. B. Seitenproben)
+  var eigeneAktiv = 0;
+  var eigeneGesamt = 0;  // gestartete Rückfälle insgesamt (Proben: kein Rückfall nach einer Release-Sperre)   // laufende Rückfall-Ladungen (nur für Beobachtung, z. B. Seitenproben)
   function eigeneLadung(ticker, anfrage) {
     eigeneAktiv++;
+    eigeneGesamt++;
     return ladeAlles(ticker, anfrage).then(function (zeilen) {
       eigeneAktiv--;
+      if (gesperrt()) throw sperrFehler('Rückfall-Übernahme nach Sperre');
       return sicht({ zeilen: zeilen, bedarf: anfrage, geladenUm: uhr(), generation: ++generationen },
                    anfrage.felder, anfrage.ab);
     }, function (e) { eigeneAktiv--; throw e; });
@@ -272,6 +297,7 @@
     bedarf = vereinige(bedarf, { felder: VORLADEN, ab: bedarf.ab });
     var lauf = { bedarf: bedarf };
     lauf.promise = ladeAlles(ticker, bedarf).then(function (zeilen) {
+      if (gesperrt()) throw sperrFehler('Bestand nach Sperre');   // nie veröffentlichen
       k.bestand = { zeilen: zeilen, bedarf: bedarf, geladenUm: uhr(), generation: ++generationen };
       return k.bestand;
     });
@@ -280,6 +306,11 @@
       if (k.laufend !== lauf) return;
       k.laufend = null;
       var w = k.wartend;
+      if (w && gesperrt()) {             // nach der Sperre startet keine wartende Ladung
+        k.wartend = null;
+        w.nein(sperrFehler('wartende Ladung nach Sperre'));
+        return;
+      }
       if (w) {
         k.wartend = null;
         // der Bestand (falls die laufende Ladung ihn gerade erneuert hat) gehört zur Vereinigung
@@ -295,6 +326,7 @@
 
   function laden(ticker, opts) {
     return Promise.resolve().then(function () {
+      if (gesperrt()) throw sperrFehler('laden nach Sperre');
       if (typeof ticker !== 'string' || !ticker) throw KursFehler('ticker fehlt');
       if (!(SA.supabase && SA.supabase.url)) throw KursFehler('Kursquelle nicht verfügbar');
       var felder = felderNorm(opts && opts.felder);
@@ -304,6 +336,7 @@
       // Letzte Sperre: eine Sicht nur aus einem Bestand, der die Anfrage deckt — sonst gäbe eine falsch vereinigte
       // Ladung still eine zu kurze Reihe als vollständig aus.
       var aus = function (b) {
+        if (gesperrt()) throw sperrFehler('Sicht nach Sperre');
         if (!deckt(b.bedarf, felder, ab)) throw KursFehler('Bestand deckt die Anfrage nicht (' + ticker + ')');
         return sicht(b, felder, ab);
       };
@@ -314,6 +347,7 @@
       // Vollhistorie des Saison-Scores scheiterte, oder eine 30-Jahres-Anfrage scheiterte an einer Vollladung.
       var geteilt = function (p, bedarfVon) {
         return p.then(aus, function (e) {
+          if (istRelease(e) || gesperrt()) throw istRelease(e) ? e : sperrFehler('kein Rückfall nach Sperre');
           var b = bedarfVon();
           // Rückfall, sobald die gescheiterte Ladung MEHR verlangte als diese Anfrage — längerer Zeitraum ODER
           // zusätzliche Spalten (VORLADEN, Felder anderer Verbraucher). Ein Fehler kann an einer Spalte hängen
@@ -364,6 +398,16 @@
       return m ? m[1] : filter;
     },
     KursFehler: 'KursFehler',
+    /** Release-Sperre (methode.js ruft das in SA.__sperre): laufende Transporte abbrechen, wartende Ladungen
+     *  sofort ablehnen. Pool-Wartende scheitern an der Prüfung unmittelbar vor fetch, sobald sie dran sind. */
+    _abbrechenAlle: function () {
+      transporte.slice().forEach(function (c) { try { c.abort(); } catch (e) { /* weiter */ } });
+      transporte.length = 0;
+      Object.keys(koordinatoren).forEach(function (t) {
+        var k = koordinatoren[t];
+        if (k && k.wartend) { var w = k.wartend; k.wartend = null; w.nein(sperrFehler('wartende Ladung abgebrochen')); }
+      });
+    },
     /** nur für Proben: Grenzen, Uhr und Zustand */
     _intern: {
       K: K,
@@ -371,7 +415,8 @@
       zuruecksetzen: function () { koordinatoren = {}; schlange = []; aktiv = 0; zugriff = 0; },
       koordinatoren: function () { return koordinatoren; },
       aktiv: function () { return aktiv; },
-      eigene: function () { return eigeneAktiv; }
+      eigene: function () { return eigeneAktiv; },
+      eigeneGesamt: function () { return eigeneGesamt; }
     }
   };
 })();

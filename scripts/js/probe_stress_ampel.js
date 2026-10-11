@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const BASIS = path.resolve(process.argv[2]);
 const window = {};
+require('./release_harness').bereite(window, BASIS);   // echte methode.js zuerst (Releasekennung, V1b)
 new Function('window', 'var SA = window.SA || {};\n' + fs.readFileSync(path.join(BASIS, 'landing/js/dash-compute.js'), 'utf8') + '\nwindow.SA = SA;')(window);
 const D = window.SA.dashCompute;
 if (!D || !D.stressReihe || !D.computeStress || !D.stressAnzeigeWerte) throw new Error('[Aufbau] dash-compute.js ohne Stress-Funktionen');

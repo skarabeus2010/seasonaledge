@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 global.window = {};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 // WAHLEN_JS erlaubt dem Mutationstest, eine veränderte Kopie zu laden.
 require(process.env.WAHLEN_JS || path.resolve(__dirname, '..', '..', 'landing', 'js', 'wahlen-compute.js'));
 const W = global.window.SA.wahlen;

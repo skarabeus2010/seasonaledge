@@ -45,6 +45,7 @@ global.document = {
   querySelector: () => null, querySelectorAll: () => [], addEventListener() {}
 };
 global.window = {};
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.ApexCharts = class { constructor() {} render() {} updateOptions() {} destroy() {} };
 
 eval(fs.readFileSync(path.join(REPO, 'landing/js/polymarket.js'), 'utf8'));

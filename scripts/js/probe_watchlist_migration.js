@@ -14,6 +14,7 @@ const vm = require('vm');
 const REPO = path.resolve(__dirname, '..', '..');
 
 global.window = global;
+require('./release_harness').bereite(global.window);   // echte methode.js zuerst (Releasekennung, V1b)
 global.location = { pathname: '/watchlist', search: '', hash: '' };
 global.addEventListener = function () {};
 global.document = {
@@ -61,14 +62,14 @@ speicher['sa-watchlist-v1'] = JSON.stringify({
   tombstones: {}
 });
 
-global.SA = {
+global.SA = Object.assign(global.SA, {   // SA behält die Releaseprüfung (V1b)
   auth: {
     isLoggedIn: true,
     user: { id: UID, email: 'a@example.com' },
     client: { from: tabelleStub },
     onAuthChange() {}
   }
-};
+});
 
 vm.runInThisContext(
   fs.readFileSync(path.join(REPO, 'landing/js/watchlist.js'), 'utf8'),

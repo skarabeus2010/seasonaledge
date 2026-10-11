@@ -28,6 +28,7 @@
  * HINWEIS: Die Originale in dashboard.html werden durch dieses Modul ersetzt,
  * bleiben aber funktional identisch. Kein Logik-Change.
  */
+window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) — muss erste Anweisung bleiben
 (function() {
   window.SA = window.SA || {};
 
