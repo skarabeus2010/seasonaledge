@@ -18,7 +18,9 @@ Beabsichtigte Korrekturen haben ein eigenes Soll statt „gleich wie vorher":
 
 Aufruf: py -3.14 scripts/verify_seiten_kurse.py   (braucht: npm ci --prefix scripts/perf)
 """
+import concurrent.futures
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -99,7 +101,7 @@ def vollstaendig(pruefe, name, d, bausteine, min_charts, seite):
     pruefe(name + " Charts gezeichnet", len(gez) >= min_charts, "%d von %d Charts mit Serien" % (len(gez), len(d["charts"])))
 
 
-def lauf(wurzel, seite, fall, *extra):
+def _lauf_direkt(wurzel, seite, fall, *extra):
     try:
         r = subprocess.run(["node", str(PROBE), str(wurzel), seite, fall, *extra], capture_output=True, text=True,
                            encoding="utf-8", timeout=180)
@@ -118,6 +120,37 @@ def lauf(wurzel, seite, fall, *extra):
     return d, None
 
 
+_LAEUFE = {}
+PARALLEL = int(os.environ.get("SEITEN_PARALLEL", "4"))
+
+
+def lauf(wurzel, seite, fall, *extra):
+    """Ergebnis eines node-Laufs — aus dem parallel vorab gefüllten Speicher, sonst direkt."""
+    k = (str(wurzel), seite, fall) + tuple(extra)
+    if k not in _LAEUFE:
+        _LAEUFE[k] = _lauf_direkt(wurzel, seite, fall, *extra)
+    return _LAEUFE[k]
+
+
+def benoetigte_laeufe(alt_wurzel):
+    """Jeder node-Lauf, den die Auswertung in main() braucht — dieselbe Fallunterscheidung."""
+    neu, jobs = WURZEL / "landing", []
+    soll = {"wechsel": "direkt", "rueckwechsel": "normal", "zeitraum": "zeitraum_direkt"}
+    for seite, (faelle, _b, _m) in SEITEN.items():
+        for fall in faelle:
+            jobs.append((neu, seite, fall))
+            if fall in soll:
+                jobs += [(neu, seite, soll[fall]), (alt_wurzel, seite, fall), (alt_wurzel, seite, soll[fall])]
+            elif fall == "blockfehler":
+                jobs.append((alt_wurzel, seite, fall))
+            else:
+                extra = ("--ohne-obergrenze",) if seite in OHNE_OBERGRENZE_ALT else ()
+                jobs.append((alt_wurzel, seite, fall) + extra)
+                if extra and fall == "normal":
+                    jobs.append((alt_wurzel, seite, fall))
+    return list(dict.fromkeys(jobs))
+
+
 def main():
     ergebnisse, ok = [], True
 
@@ -128,6 +161,12 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp:
         alt_wurzel = vorher_baum(pathlib.Path(tmp))
+        # Die Läufe sind voneinander unabhängig (je eigener node-Prozess) → parallel vorab; ausgewertet wird danach
+        # in fester Reihenfolge. SEITEN_PARALLEL=1 erzwingt den seriellen Lauf.
+        jobs = benoetigte_laeufe(alt_wurzel)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, PARALLEL)) as ex:
+            for job, erg in zip(jobs, ex.map(lambda j: _lauf_direkt(*j), jobs)):
+                _LAEUFE[(str(job[0]),) + tuple(job[1:])] = erg
         for seite, (faelle, bausteine, min_charts) in SEITEN.items():
             for fall in faelle:
                 name = "%s/%s" % (seite, fall)
