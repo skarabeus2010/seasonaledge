@@ -1796,18 +1796,24 @@
     // ── Ticker laden ─────────────────────────────────────────────
     function loadTicker(ticker) {
       ticker = ticker.trim().toUpperCase();
-      if (!ticker || ticker === WD.getCurrentTicker()) return;
+      if (!ticker) return;
+      // zweistellig (app.js): derselbe angezeigte Ticker ohne laufenden Abruf → nichts zu tun; ein Rückwechsel
+      // A → B → A entwertet dagegen B. Vorher stand hier ein Gleichheits-Return VOR der Kennung (Codex M3 R1).
+      var _lk = SA.ladeKennung.start(ticker, WD.getCurrentTicker());
+      if (_lk === null) return;
       document.getElementById('page-caption').textContent = 'Lade ' + ticker + '...';
       var startDate = new Date();
       startDate.setFullYear(startDate.getFullYear() - 30);
       var dateFilter = '&date=gte.' + startDate.toISOString().substring(0,10);
       fetchOHLC(ticker, dateFilter).then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         if (!rows || rows.length < 200) { showError(ticker + ': Zu wenig Daten'); return; }
         WD.setRawRows(rows);
         WD.setCurrentTicker(ticker);
         document.getElementById('page-caption').textContent = 'Wochentag-Performance · Win-Rate · Overnight/Intraday · Weekend-Effekt';
         renderAll();
       }).catch(function(e){
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         showError('Fehler: ' + (e && e.message ? e.message : e));
       });
     }

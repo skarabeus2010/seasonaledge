@@ -31,17 +31,17 @@ PROBE = WURZEL / "scripts" / "js" / "probe_seiten_kurse.js"
 
 SEITEN = {
     # Seite: (Fälle, Bausteine, die in der Anzeige stehen MÜSSEN, mindestens n Charts)
-    "dashboard": (("normal", "vollfehler", "ttl", "blockfehler"), ("Saison-Score", "Stress-Ampel", "Anomalie-Radar"), 3),
+    "dashboard": (("wechsel", "zeitraum", "normal", "vollfehler", "ttl", "blockfehler"), ("Saison-Score", "Stress-Ampel", "Anomalie-Radar"), 3),
     "jahreszyklus": (("normal", "blockfehler"), (), 1),
     "ki-saisonalitaet": (("normal", "blockfehler"), ("Saison-Score",), 1),
     "risikozyklus": (("normal", "blockfehler"), (), 1),
     "overnight": (("normal", "blockfehler"), (), 1),
     "tdom-analyse": (("normal", "blockfehler"), (), 1),
-    "wochentage": (("normal", "blockfehler"), (), 1),
-    "backtest-engine": (("normal", "blockfehler"), (), 1),
-    "opex": (("normal", "blockfehler"), (), 1),
-    "vixpiration": (("normal", "blockfehler"), (), 1),
-    "spot-vol-beta": (("normal", "blockfehler"), (), 1),
+    "wochentage": (("wechsel", "rueckwechsel", "normal", "blockfehler"), (), 1),
+    "backtest-engine": (("wechsel", "rueckwechsel", "normal", "blockfehler"), (), 1),
+    "opex": (("wechsel", "normal", "blockfehler"), (), 1),
+    "vixpiration": (("wechsel", "normal", "blockfehler"), (), 1),
+    "spot-vol-beta": (("wechsel", "normal", "blockfehler"), (), 1),
     "embed": (("normal", "blockfehler"), ("Saisonalitäts-Chart",), 1),
 }
 # Seiten, deren Vorher-Stand eine beabsichtigte Kürzung hatte: Vergleich gegen den alten Code ohne Kürzung
@@ -71,6 +71,32 @@ def vorher_baum(ziel):
     if rest:
         raise SystemExit("Vorher-Baum: kurse.js noch eingebunden in %s" % rest[:3])
     return alt
+
+
+def endstand(charts):
+    """Was zuletzt in jedem Chart-Element steht: die letzte Erzeugung bzw. deren letzte Aktualisierung. Beim
+    Wechsel zeichnet die Seite zusätzlich die Charts von A — verglichen wird, was am Ende zu sehen ist."""
+    aus = {}
+    for c in charts:
+        aus[c["el"]] = c["updates"][-1] if c["updates"] else c["series"]
+    return aus
+
+
+def unterschied(a, n):
+    i = next((k for k in range(min(len(a), len(n))) if a[k] != n[k]), min(len(a), len(n)))
+    return "ab Zeichen %d: «%s» / «%s»" % (i, a[max(0, i - 40):i + 80], n[max(0, i - 40):i + 80])
+
+
+def vollstaendig(pruefe, name, d, bausteine, min_charts, seite):
+    """Ruhe, keine Seitenfehler, Anzeige mit Bausteinen, gefüllte Charts — für JEDEN verglichenen Lauf (Codex M3 R1:
+    ein Endmarker allein genügt nicht)."""
+    pruefe(name + " Ruhe erreicht", d["ruhig"])
+    pruefe(name + " ohne Seitenfehler", not d["seitenfehler"], " | ".join(d["seitenfehler"])[:300])
+    fehlt = [b for b in bausteine if b not in d["inhalt"]]
+    pruefe(name + " Anzeige vollständig", not fehlt and len(d["inhalt"]) > (40 if seite == "embed" else 200),
+           "fehlt: %s, %d Zeichen" % (fehlt, len(d["inhalt"])))
+    gez = [c for c in d["charts"] if c["series"] not in ("null", "[]", None)]
+    pruefe(name + " Charts gezeichnet", len(gez) >= min_charts, "%d von %d Charts mit Serien" % (len(gez), len(d["charts"])))
 
 
 def lauf(wurzel, seite, fall, *extra):
@@ -107,6 +133,26 @@ def main():
                 name = "%s/%s" % (seite, fall)
                 n, fn = lauf(WURZEL / "landing", seite, fall)
                 pruefe(name + " neu vollständig", n is not None, fn or "")
+                if fall in ("wechsel", "rueckwechsel", "zeitraum"):
+                    # Abrufkennung: ein verspäteter Abschluss darf die neuere Ansicht nicht überschreiben. Soll je Fall:
+                    #   wechsel → „nur B gewählt", rueckwechsel → „normal", zeitraum → „nur 5 Jahre gewählt".
+                    # Der alte Stand wird nur berichtet.
+                    soll_fall = {"wechsel": "direkt", "rueckwechsel": "normal", "zeitraum": "zeitraum_direkt"}[fall]
+                    d, fd = lauf(WURZEL / "landing", seite, soll_fall)
+                    pruefe(name + " Soll-Lauf (%s) vollständig" % soll_fall, d is not None, fd or "")
+                    for v, x in (("neu", n), ("soll", d)):
+                        if x is not None:
+                            vollstaendig(pruefe, "%s %s" % (name, v), x, bausteine, min_charts, seite)
+                    if n is not None and d is not None:
+                        pruefe(name + " Anzeige nach Wechsel = direkt gewählt", n["inhalt"] == d["inhalt"],
+                               "" if n["inhalt"] == d["inhalt"] else unterschied(d["inhalt"], n["inhalt"]))
+                        pruefe(name + " Charts nach Wechsel = direkt gewählt", endstand(n["charts"]) == endstand(d["charts"]),
+                               "%d / %d Chart-Elemente" % (len(endstand(n["charts"])), len(endstand(d["charts"]))))
+                    a, _ = lauf(alt_wurzel, seite, fall)
+                    ad, _ = lauf(alt_wurzel, seite, soll_fall)
+                    ergebnisse.append("     %s alter Stand nach Wechsel = direkt: %s" % (
+                        name, "ja" if a and ad and a["inhalt"] == ad["inhalt"] else "NEIN (verspätete Antwort überschrieb)"))
+                    continue
                 if fall == "blockfehler":
                     # beabsichtigte Korrektur: der neue Stand zeigt den Ladefehler; der alte wird nur berichtet
                     a, _ = lauf(alt_wurzel, seite, fall)

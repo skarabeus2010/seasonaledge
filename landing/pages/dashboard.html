@@ -2019,9 +2019,11 @@
     // PHASE 3: Page Lifecycle
     // ══════════════════════════════════════════════════════════════
 
+    var _darstellung = 0;     // zählt jede Darstellung (renderAll) — auch der Zeitraum-Regler zeichnet neu
     var _seitenKennung = 0;   // Kennung des Abrufs, dessen Daten gerade gezeichnet werden (loadTicker setzt sie)
     function renderAll() {
       var _rk = _seitenKennung;
+      var _dn = ++_darstellung;
       if (!rawRows.length || !currentTicker) return;
       document.getElementById('title-ticker').textContent = currentTicker;
 
@@ -2197,10 +2199,16 @@
         // Kurse über den gemeinsamen Lader — vorher EIN Abruf ohne Pagination (nur die ersten 1000 Zeilen des
         // Zeitraums) und ohne Fehlerprüfung.
         SA.kurse.zeilen(currentTicker, { felder: ['date', 'open', 'close'], ab: SA.kurse.abAusFilter(oFilter) }).then(function(ohlc){
+          // neuerer Abruf ODER neuere Darstellung (Zeitraum-Regler) gewinnt — Codex M3 R1
+          if (!SA.ladeKennung.aktuell(_rk) || _dn !== _darstellung) return;
           ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
           var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd);
           renderOvernightCard(onStats, onClosedHint);
-        }).catch(function(e){ console.warn('Overnight:', e); renderOvernightCard(null); });
+        }).catch(function(e){
+          // neuerer Abruf ODER neuere Darstellung (Zeitraum-Regler) gewinnt — Codex M3 R1
+          if (!SA.ladeKennung.aktuell(_rk) || _dn !== _darstellung) return;
+          console.warn('Overnight:', e); renderOvernightCard(null);
+        });
       })();
 
       // 11. Strategien (lazy via setTimeout — teuerster Block)

@@ -4,7 +4,12 @@
 // VOR der Umstellung und einmal gegen den Arbeitsbaum und verlangt gleiche Anzeige.
 //
 // Aufruf: node probe_seiten_kurse.js <landing-Wurzel> <seite> <fall> [--ohne-obergrenze]
-//   fall: normal | vollfehler | ttl | blockfehler
+//   fall: normal | vollfehler | ttl | blockfehler | wechsel | direkt
+//   wechsel: nach dem Start Ticker A wählen (antwortet langsam), sofort danach B — die Anzeige muss B zeigen.
+//   direkt:  nach dem Start nur B wählen (Soll für „wechsel").
+//   rueckwechsel: A (langsam), sofort zurück zum Start-Ticker — Soll: „normal".
+//   zeitraum / zeitraum_direkt (Dashboard): 16 min später scheitert jede Abfrage der ganzen Historie und der
+//   30 Jahre (langsam); Zeitraum 30 → sofort 5 Jahre, bzw. nur 5 — beide müssen gleich enden.
 //   --ohne-obergrenze: der Nachbau liefert eine Abfrage OHNE Range/limit vollständig statt nach 1000 Zeilen
 //   abzuschneiden — so rechnet der ALTE Code auf vollständigen Daten (Soll für die Overnight-Korrektur).
 // Feste Uhr (2026-10-09 14:00 UTC, Zone Europe/Berlin), leerer Speicher, deterministische Kurse.
@@ -73,6 +78,7 @@ function preise(url, init) {
                   t: Date.now() });
   // Fall „vollfehler": jede Abfrage der GANZEN Historie (ohne Untergrenze) scheitert serverseitig
   if (FEHLER_VOLL && p.gte === null) return antwort(500, { message: 'statement timeout' });
+  if (ZEITRAUM_AKTIV && zeitraumTrifft(url)) return antwort(500, { message: 'statement timeout' });
   // Fall „blockfehler": jeder zweite und spätere Block einer Ladung scheitert dauerhaft
   if (FALL === 'blockfehler' && (p.gt !== null || (h.Range && !/^0-/.test(h.Range)))) return antwort(500, { message: 'Fehler im Block' });
   let z = daten(p.ticker).filter(x => (p.gte === null || x.date >= p.gte) && (p.gt === null || x.date > p.gt) &&
@@ -87,17 +93,25 @@ function preise(url, init) {
   return antwort(200, z, { 'content-range': cr });
 }
 let FEHLER_VOLL = FALL === 'vollfehler';
+let ZEITRAUM_AKTIV = false;
+function zeitraumTrifft(url) { return url.indexOf('date=gte.') < 0 || url.indexOf('date=gte.1996-10-09') >= 0; }
 function datei(pfad) {
   const rel = pfad.replace(/\?.*$/, '').replace(/^\/landing\//, '');
   const f = path.join(WURZEL, rel);
   return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
 }
 let OFFEN = 0, LETZTE = Date.now();
+const LANGSAM = {};      // Ticker → zusätzliche Antwortzeit in ms (Fall „wechsel")
 function netz(url, init) {
   url = String(url);
+  const tm = /ticker=eq\.([^&]+)/.exec(url);
+  const lg = tm ? LANGSAM[decodeURIComponent(tm[1])] : null;
+  // {ms, ausser}: langsam außer den Anfragen mit dieser Untergrenze (die erste Ladung kommt schnell)
+  const extra = (ZEITRAUM_AKTIV && /rest\/v1\/prices/.test(url) && zeitraumTrifft(url) ? 1500 : 0) +
+    (!lg ? 0 : (typeof lg === 'number' ? lg : (url.indexOf('date=gte.' + lg.ausser) >= 0 ? 0 : lg.ms)));
   OFFEN++; LETZTE = Date.now();
   const fertig = (x) => { OFFEN--; LETZTE = Date.now(); return x; };
-  return new Promise(res => setTimeout(res, 2)).then(() => {
+  return new Promise(res => setTimeout(res, 2 + extra)).then(() => {
     if (url.startsWith('https://stub/rest/v1/prices')) return preise(url, init);
     if (url.startsWith('https://stub/')) return antwort(200, []);        // übrige Tabellen: leer
     const pfad = url.replace(/^https:\/\/seasonalpha\.ai/, '');
@@ -137,6 +151,23 @@ class Lader extends ResourceLoader {
   }
 }
 
+function tickerWahl(t) {
+  const inp = W.document.getElementById('ticker-input');
+  inp.value = t;
+  inp.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+}
+function auswahl(id) {
+  return function (t) { const el = W.document.getElementById(id); el.value = t; el.dispatchEvent(new W.Event('change')); };
+}
+const WECHSEL = {
+  // Dashboard: A erscheint (30-J-Ladung schnell), seine Nachladungen kommen langsam, dann B (Codex M2 R1)
+  dashboard: { a: 'QQQ', b: 'IWM', waehle: tickerWahl, start: '^GSPC', langsam: { ms: 1500, ausser: '1996-10-09' }, nachAnzeige: 'title-ticker' },
+  wochentage: { a: 'QQQ', b: 'IWM', waehle: tickerWahl, start: '^GSPC' },
+  'backtest-engine': { a: 'QQQ', b: 'IWM', waehle: tickerWahl, start: '^GSPC' },
+  opex: { a: 'QQQ', b: 'IWM', waehle: tickerWahl, start: 'SPY' },
+  vixpiration: { a: 'QQQ', b: 'IWM', waehle: tickerWahl, start: 'SPY' },
+  'spot-vol-beta': { a: 'SPY', b: '^GSPC', waehle: auswahl('sel-spot') }
+};
 const SEITEN = {
   dashboard: { datei: 'pages/dashboard.html', adresse: 'https://seasonalpha.ai/dashboard' },
   jahreszyklus: { datei: 'pages/jahreszyklus.html', adresse: 'https://seasonalpha.ai/jahreszyklus' },
@@ -213,6 +244,44 @@ function warteRuhe(maxMs) {
 (async function () {
   let ruhig = await warteRuhe(40000);
   const ersteAnfragen = ANFRAGEN.length;
+  if (FALL === 'rueckwechsel') {
+    const W2 = WECHSEL[SEITE];
+    LANGSAM[W2.a] = 1500;
+    W2.waehle(W2.a);
+    await new Promise(r => setTimeout(r, 30));
+    W2.waehle(W2.start);
+    ruhig = (await warteRuhe(40000)) && ruhig;
+    await new Promise(r => setTimeout(r, 2000));
+    ruhig = (await warteRuhe(40000)) && ruhig;
+  }
+  if (FALL === 'zeitraum' || FALL === 'zeitraum_direkt') {
+    uhrVersatz = 16 * 60 * 1000;
+    ZEITRAUM_AKTIV = true;
+    const sel = W.document.getElementById('sel-years');
+    if (FALL === 'zeitraum') { sel.value = '30'; sel.dispatchEvent(new W.Event('change')); await new Promise(r => setTimeout(r, 30)); }
+    sel.value = '5'; sel.dispatchEvent(new W.Event('change'));
+    ruhig = (await warteRuhe(60000)) && ruhig;
+    await new Promise(r => setTimeout(r, 2000));
+    ruhig = (await warteRuhe(60000)) && ruhig;
+  }
+  if (FALL === 'wechsel' || FALL === 'direkt') {
+    const W2 = WECHSEL[SEITE];
+    if (!W2) { process.stdout.write(JSON.stringify({ absturz: 'kein Wechsel für ' + SEITE })); process.exit(0); }
+    if (FALL === 'wechsel') {
+      LANGSAM[W2.a] = W2.langsam || 1500;
+      W2.waehle(W2.a);
+      if (W2.nachAnzeige) {
+        // erst wenn A angezeigt ist (Nachladungen von A — Overnight, Radar, Score — laufen noch, langsam)
+        for (let i = 0; i < 200 && text(W2.nachAnzeige) !== W2.a; i++) await new Promise(r => setTimeout(r, 25));
+      } else {
+        await new Promise(r => setTimeout(r, 30));
+      }
+    }
+    W2.waehle(W2.b);
+    ruhig = (await warteRuhe(40000)) && ruhig;
+    await new Promise(r => setTimeout(r, 2000));   // die langsame Antwort ist sicher da
+    ruhig = (await warteRuhe(40000)) && ruhig;
+  }
   if (FALL === 'ttl') {
     // 16 Minuten später, die ganze Historie scheitert jetzt; der Zeitraum-Regler zeichnet neu (Score + Radar laden nach)
     uhrVersatz = 16 * 60 * 1000;

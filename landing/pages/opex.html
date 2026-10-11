@@ -1244,7 +1244,9 @@
         return SA.kurse.zeilen(ticker, { felder: ['date', 'close'], ab: SA.kurse.abAusFilter(dateFilter) });
       }
 
+      var _lk = SA.ladeKennung.start(ticker);
       fetchBatch().then(function(rows) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         if (!rows || rows.length < 100) {
           showError('Zu wenig Daten f\u00FCr '+ticker+' ('+((rows||[]).length)+' Zeilen)');
           $loading.style.display = 'none';
@@ -1255,6 +1257,7 @@
         rerender();
         $loading.style.display = 'none';
       }).catch(function(err){
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         showError('Fehler: '+err.message);
         $loading.style.display = 'none';
       });

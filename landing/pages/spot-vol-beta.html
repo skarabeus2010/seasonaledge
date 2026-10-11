@@ -1146,10 +1146,12 @@
       destroyAll();
       showSections(false);
 
+      var _lk = SA.ladeKennung.start(_spotTicker + '|' + _volTicker);
       Promise.all([
         fetchOHLC(_spotTicker, filter),
         fetchOHLC(_volTicker, filter)
       ]).then(function(res) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         var spotRows = res[0], volRows = res[1];
         if (!spotRows.length || !volRows.length) {
           $loading.style.display = 'none';
@@ -1188,6 +1190,7 @@
 
         $loading.style.display = 'none';
       }).catch(function(e) {
+        if (!SA.ladeKennung.aktuell(_lk)) return;   // ein neuerer Abruf gewinnt (app.js)
         $loading.style.display = 'none';
         showError('Fehler beim Laden: ' + (e && e.message ? e.message : e));
         console.error(e);
