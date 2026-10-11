@@ -1,7 +1,7 @@
 /*
  * SA.boersenkalender — Börsenkalender und Handelstag-Nummern für die Seiten.
  *
- * Quelle: ausschließlich Python (shared/exchange_holidays.py, shared/symbols.py). Diese Datei ist der
+ * Quelle: ausschließlich Python (shared/boersenereignisse.py, shared/exchange_holidays.py, shared/symbols.py). Diese Datei ist der
  * API-Teil; scripts/build_boersenkalender_js.py setzt sie mit den Daten zu landing/js/boersenkalender.js
  * zusammen. Nicht von Hand in landing/js/ ändern.
  *
@@ -17,7 +17,7 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
   'use strict';
   var SA = global.SA = global.SA || {};
   var DATEN = /*__DATEN__*/null;
-  if (!DATEN || DATEN.schema !== 1) throw new Error('boersenkalender: Daten fehlen oder Schema unbekannt');
+  if (!DATEN || DATEN.schema !== 2) throw new Error('boersenkalender: Daten fehlen oder Schema unbekannt');
 
   var ALIAS = { NASDAQ: 'NYSE' };
   var ISO = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
@@ -127,8 +127,43 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
     return tab;
   }
 
+  // Ereigniskatalog (V1c-1, Vertrag B4): Objekte wie Python Ereignis.als_dict(), unveränderlich.
+  function vollesDatum(j, mmdd) { return j + '-' + mmdd.slice(0, 2) + '-' + mmdd.slice(2, 4); }
+  function isoAus8(x) { return x.slice(0, 4) + '-' + x.slice(4, 6) + '-' + x.slice(6, 8); }
+  var ereignisCache = {};
+  function ereignisListe(b, j) {
+    var k = b + '|' + j, liste = ereignisCache[k];
+    if (liste) return liste;
+    var roh = (DATEN.ereignisse[b] || {})[String(j)] || [];
+    liste = [];
+    for (var i = 0; i < roh.length; i++) {
+      var r = DATEN.regeln[b][roh[i][0]], ab = roh[i][2] || {};
+      var nominal = vollesDatum(j, roh[i][1]);
+      var rechtlich = ab.r ? isoAus8(ab.r) : nominal;
+      var wirksam = ab.w ? isoAus8(ab.w) : rechtlich;
+      var herkunft = ab.h || 'regel';
+      var nIdx = Object.prototype.hasOwnProperty.call(ab, 'n') ? ab.n : r[2];
+      var q = DATEN.quellen[Object.prototype.hasOwnProperty.call(ab, 'q') ? ab.q : r[3]];
+      liste.push(Object.freeze({
+        ereignis_id: herkunft === 'tabelle' ? b + ':tabelle:' + nominal : b + ':' + r[0] + ':' + nominal,
+        boerse: b, regel_id: r[0], art: ab.a || r[1], nominal: nominal, rechtlich: rechtlich, wirksam: wirksam,
+        ersatzgrund: ab.g || 'keiner', verlegt: ab.v === 1, nominal_herkunft: herkunft,
+        name_de: nIdx < 0 ? null : DATEN.namen[nIdx][0], name_en: nIdx < 0 ? null : DATEN.namen[nIdx][1],
+        quelle: q[0], quelle_titel: q[1], quelle_beleg: q[2], quelle_stand: q[3],
+        kalenderversion: DATEN.kalenderversion
+      }));
+    }
+    liste = Object.freeze(liste);
+    ereignisCache[k] = liste;
+    return liste;
+  }
+
   var API = {
     version: DATEN.version,
+    /** Hash über die aufgelösten Ereignisinhalte (jede Inhaltsänderung) — wie Python ereignisversion(). */
+    ereignisversion: DATEN.ereignisversion,
+    /** Hash über die Schließungsprojektion — ändert sich genau dann, wenn sie sich ändert. */
+    kalenderversion: DATEN.kalenderversion,
     schema: DATEN.schema,
     pruefdatum: DATEN.pruefdatum,
     von: DATEN.von,
@@ -221,13 +256,42 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
       }
     },
 
-    /** Schließtage eines Jahres als neue Liste 'YYYY-MM-DD' (wie Python get_holidays, sortiert). */
-    schliessungen: function (j, boerse) {
+    /** Bisherige Feiertagsmenge eines Jahres (wie Python get_holidays, sortiert, inkl. Wochenenddaten). */
+    feiertagsmenge: function (j, boerse) {
       var b = boerseNormalisieren(boerse);
       jahrPruefen(j);
       var roh = (DATEN.schliessungen[b] || {})[String(j)] || '', out = [];
       for (var i = 0; i < roh.length; i += 4) out.push(j + '-' + roh.slice(i, i + 2) + '-' + roh.slice(i + 2, i + 4));
       return out;
+    },
+
+    /** Wirksame Vollschließungen auf sonst offenen Tagen (Mo–Fr), eindeutig, sortiert — wie Python schliessungen(). */
+    schliessungen: function (j, boerse) {
+      var b = boerseNormalisieren(boerse);
+      jahrPruefen(j);
+      var liste = ereignisListe(b, j), menge = {}, out = [];
+      for (var i = 0; i < liste.length; i++) {
+        var e = liste[i];
+        if (e.art === 'halbtag') continue;
+        var w = e.wirksam;
+        if (wochentag(+w.slice(0, 4), +w.slice(5, 7), +w.slice(8, 10)) < 5) menge[w] = true;
+      }
+      for (var d in menge) out.push(d);
+      return out.sort();
+    },
+
+    /** Ereignisse eines Jahres (Jahr des Regeltermins) — neue Liste unveränderlicher Objekte, Reihenfolge wie Python. */
+    ereignisse: function (j, boerse) {
+      var b = boerseNormalisieren(boerse);
+      jahrPruefen(j);
+      return ereignisListe(b, j).slice();
+    },
+
+    /** 'tabelle' (Identität nur aus Datumstabelle — Abnahmelücke) | 'regel' — wie Python identitaet(). */
+    identitaet: function (boerse, j) {
+      var b = boerseNormalisieren(boerse);
+      jahrPruefen(j);
+      return DATEN.identitaet[b].indexOf(j) >= 0 ? 'tabelle' : 'regel';
     },
 
     /** 'belegt' | 'annahme' | 'ungeprueft' | 'konvention' — wie Python kalender_status. */

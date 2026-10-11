@@ -94,46 +94,9 @@ def _compute_nyse_holidays(year: int) -> list[date]:
     Berechnet alle NYSE-Feiertage für ein gegebenes Jahr.
     Gibt eine sortierte Liste von date-Objekten zurück.
     """
-    holidays = []
-
-    # 1. New Year's Day — 1. Januar
-    holidays.append(_monday_if_sunday(date(year, 1, 1)))
-
-    # 2. MLK Day — 3. Montag im Januar (seit 1998)
-    if year >= 1998:
-        holidays.append(_nth_weekday(year, 1, 0, 3))
-
-    # 3. Presidents' Day — 3. Montag im Februar
-    holidays.append(_nth_weekday(year, 2, 0, 3))
-
-    # 4. Good Friday
-    holidays.append(_good_friday(year))
-
-    # 5. Memorial Day — letzter Montag im Mai
-    holidays.append(_nth_weekday(year, 5, 0, -1))
-
-    # 6. Juneteenth — 19. Juni (ab 2022)
-    if year >= 2022:
-        holidays.append(_observed(date(year, 6, 19)))
-
-    # 7. Independence Day — 4. Juli
-    holidays.append(_observed(date(year, 7, 4)))
-
-    # 8. Labor Day — 1. Montag im September
-    holidays.append(_nth_weekday(year, 9, 0, 1))
-
-    # 9. Thanksgiving — 4. Donnerstag im November
-    holidays.append(_nth_weekday(year, 11, 3, 4))
-
-    # 10. Christmas Day — 25. Dezember
-    holidays.append(_observed(date(year, 12, 25)))
-
-    # 11. Einmalige Sonderschließungen (Staatstrauer, Naturkatastrophen).
-    # Regelbasiert nicht ableitbar → explizite Liste. Sonst meldet der
-    # Vollständigkeits-Audit Geister-Lücken (z.B. 212 Ticker am 09.01.2025).
-    holidays.extend(d for d in _NYSE_SPECIAL_CLOSURES if d.year == year)
-
-    return sorted(set(holidays))  # set() entfernt theoretische Duplikate
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("NYSE", year))
 
 
 # Einmalige NYSE/NASDAQ-Vollschließungen (kein regelbasierter Feiertag):

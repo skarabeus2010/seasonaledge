@@ -73,21 +73,9 @@ def _compute_xetra_holidays(year: int) -> list[date]:
     Kursbestand ohne Zeile). Vor 2001 bleibt das bisherige Verhalten (offen), weil dafür nichts geprüft ist.
     Zwilling: landing/js/holidays.js::_xetra, Prüfung scripts/verify_kalender_zwilling.py (feste Sollwerte).
     """
-    holidays = [
-        date(year, 1, 1),       # Neujahr
-        _good_friday(year),     # Karfreitag
-        _easter_monday(year),   # Ostermontag
-        date(year, 5, 1),       # Tag der Arbeit
-        date(year, 12, 25),     # 1. Weihnachtstag
-        date(year, 12, 26),     # 2. Weihnachtstag
-    ]
-    # Heiligabend + Silvester: ab 2001 geschlossen (2001 = Annahme, siehe Docstring)
-    if year >= 2001:
-        holidays.append(date(year, 12, 24))
-        holidays.append(date(year, 12, 31))
-    holidays.extend(d for d in XETRA_SONDER if d.year == year)
-
-    return sorted(set(holidays))
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("XETRA", year))
 
 
 # Belegte einmalige Xetra-Schließungen (Quellen: Codex-Recherche 2026-10-08,
@@ -117,75 +105,9 @@ def _compute_lse_holidays(year: int) -> list[date]:
     """
     LSE London Stock Exchange Feiertage (England & Wales Bank Holidays).
     """
-    holidays = []
-
-    # New Year's Day — 1. Januar; fällt er auf Samstag ODER Sonntag, ist der folgende
-    # Montag frei (England & Wales, gov.uk/bank-holidays). Bis 2026-10 kannte der Code nur
-    # den Sonntag: 2000/2005/2011/2022/2028-01-03 standen fälschlich offen.
-    neujahr = date(year, 1, 1)
-    holidays.append(neujahr + timedelta(days=(7 - neujahr.weekday()) % 7) if neujahr.weekday() >= 5 else neujahr)
-
-    # Good Friday
-    holidays.append(_good_friday(year))
-
-    # Easter Monday
-    holidays.append(_easter_monday(year))
-
-    # Early May Bank Holiday — 1. Montag im Mai
-    # Ausnahme: 2020 auf 8. Mai verschoben (VE Day 75th Anniversary)
-    if year == 2020:
-        holidays.append(date(2020, 5, 8))
-    else:
-        holidays.append(_nth_weekday(year, 5, 0, 1))
-
-    # Spring Bank Holiday — letzter Montag im Mai
-    # Ausnahme: 2002 (Golden Jubilee), 2012 (Diamond Jubilee), 2022 (Platinum Jubilee)
-    if year == 2002:
-        holidays.append(date(2002, 6, 3))  # Golden Jubilee, zusätzlicher Bank Holiday (London Gazette L-56043-1001)
-        holidays.append(date(2002, 6, 4))
-    elif year == 2012:
-        holidays.append(date(2012, 6, 5))
-        holidays.append(date(2012, 6, 4))  # Extra Jubilee day
-    elif year == 2022:
-        holidays.append(date(2022, 6, 2))
-        holidays.append(date(2022, 6, 3))  # Extra Jubilee day
-    else:
-        holidays.append(_nth_weekday(year, 5, 0, -1))
-
-    # Summer Bank Holiday — letzter Montag im August
-    holidays.append(_nth_weekday(year, 8, 0, -1))
-
-    # Christmas Day — 25. Dezember
-    xmas = date(year, 12, 25)
-    if xmas.weekday() == 5:   # Samstag → Montag
-        holidays.append(date(year, 12, 27))
-    elif xmas.weekday() == 6: # Sonntag → Montag
-        holidays.append(date(year, 12, 26))
-        holidays.append(date(year, 12, 27))  # Boxing Day auch verschoben
-    else:
-        holidays.append(xmas)
-
-    # Boxing Day — 26. Dezember
-    boxing = date(year, 12, 26)
-    if boxing.weekday() == 5:  # Samstag → Dienstag (weil Montag = Xmas observed)
-        holidays.append(date(year, 12, 28))
-    elif boxing.weekday() == 6: # Sonntag (Weihnachten war Samstag) → Dienstag 28.12.,
-        holidays.append(date(year, 12, 28))  # weil der Montag schon Weihnachts-Ersatz ist
-    elif boxing.weekday() == 0 and xmas.weekday() != 6:
-        # Wenn Xmas normal Freitag war, Boxing Day = Montag
-        holidays.append(boxing)
-    else:
-        holidays.append(boxing)
-
-    # Sonderfeiertage
-    if year == 2011:
-        holidays.append(date(2011, 4, 29))  # Royal Wedding (London Gazette L-59637-1268656)
-    if year == 2022:
-        holidays.append(date(2022, 9, 19))  # Queen Elizabeth II Staatsbegräbnis
-    if year == 2023:
-        holidays.append(date(2023, 5, 8))   # King Charles III Krönung
-
-    return sorted(set(holidays))
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("LSE", year))
 
 
 # ── Euronext Paris (CAC 40) ────────────────────────────────────────────────────
@@ -204,14 +126,9 @@ def _compute_euronext_holidays(year: int) -> list[date]:
 
     KEIN Observed-Shift: fällt ein Feiertag aufs Wochenende, kein Montags-Ersatz.
     """
-    return sorted({
-        date(year, 1, 1),       # Neujahr
-        _good_friday(year),     # Karfreitag
-        _easter_monday(year),   # Ostermontag
-        date(year, 5, 1),       # Tag der Arbeit (einziger nat. Feiertag mit Schließung)
-        date(year, 12, 25),     # 1. Weihnachtstag
-        date(year, 12, 26),     # 2. Weihnachtstag
-    })
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("EURONEXT", year))
 
 
 # ── Borsa Italiana (Mailand) ───────────────────────────────────────────────────
@@ -224,11 +141,9 @@ def _compute_milan_holidays(year: int) -> list[date]:
     Heiligabend (24.12.) und Silvester (31.12.). Andere ital. Feiertage
     (6.1./25.4./2.6./8.12.) handelt Mailand durch (Euronext-Harmonisierung).
     """
-    holidays = list(_compute_euronext_holidays(year))
-    holidays.append(date(year, 8, 15))   # Ferragosto
-    holidays.append(date(year, 12, 24))  # Vigilia di Natale
-    holidays.append(date(year, 12, 31))  # San Silvestro
-    return sorted(set(holidays))
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("MILAN", year))
 
 
 # ── TSE (Tokyo Stock Exchange) ─────────────────────────────────────────────────
@@ -256,137 +171,27 @@ def _compute_tse_holidays(year: int) -> list[date]:
     Japanische Besonderheit: Wenn Feiertag auf Sonntag fällt → Montag (振替休日).
     Wenn zwei Feiertage einen normalen Tag einschließen → auch dieser ist frei (国民の休日).
     """
-
-    def equinox(month: int) -> date:
-        # Astronomische Näherung (gültig 1980-2099) — Frühlings-/Herbst-Tagundnacht-
-        # gleiche schwanken zwischen 20./21. März bzw. 22./23. September.
-        if month == 3:
-            return date(year, 3, int(20.8431 + 0.242194 * (year - 1980) - (year - 1980) // 4))
-        return date(year, 9, int(23.2488 + 0.242194 * (year - 1980) - (year - 1980) // 4))
-
-    # ── Nationale Feiertage (ohne Shift) ──
-    # Regeländerungen (NAOJ, Gesetzesänderungen; Belege in
-    # docs/review_prompts/2026-10-10_xetra_tdoy_plan_antwort4.md, J1–J6):
-    # Vor 2000 ist dieser Kalender NICHT geprüft (Status siehe KALENDER_GUELTIG);
-    # Keiro/Taiiku no Hi erst ab 1966, Ersatztage erst ab 1973.
-    #   Seijin no Hi   15.1. bis 1999, ab 2000 2. Montag im Januar
-    #   Umi no Hi      20.7. 1996–2002, ab 2003 3. Montag im Juli
-    #   Keiro no Hi    15.9. bis 2002, ab 2003 3. Montag im September
-    #   Taiiku no Hi   10.10. bis 1999, ab 2000 2. Montag im Oktober
-    #   Tenno Tanjobi  23.12. 1989–2018, 2019 keiner, ab 2020 23.2.
-    #   2020/2021      Olympia: Meeres-, Sport- und Bergtag verlegt (eigene Tabelle)
-    national: set[date] = {
-        date(year, 1, 1),            # Ganjitsu (Neujahr)
-        date(year, 2, 11),           # Kenkoku Kinen no Hi
-        equinox(3),                  # Shunbun no Hi (Frühlingsanfang)
-        date(year, 4, 29),           # Showa no Hi (bis 2006 Midori no Hi)
-        date(year, 5, 3),            # Kenpo Kinenbi
-        date(year, 5, 4),            # Midori no Hi (bis 2006 Kokumin no Kyujitsu)
-        date(year, 5, 5),            # Kodomo no Hi
-        equinox(9),                  # Shubun no Hi (Herbstanfang)
-        date(year, 11, 3),           # Bunka no Hi
-        date(year, 11, 23),          # Kinro Kansha no Hi
-    }
-    national.add(_nth_weekday(year, 1, 0, 2) if year >= 2000 else date(year, 1, 15))   # Seijin no Hi
-    if year in _TSE_OLYMPIA:
-        national.update(_TSE_OLYMPIA[year])                                             # Umi/Sport/Yama verlegt
-    else:
-        if year >= 2003:
-            national.add(_nth_weekday(year, 7, 0, 3))                                   # Umi no Hi
-        elif year >= 1996:
-            national.add(date(year, 7, 20))
-        if year >= 2000:
-            national.add(_nth_weekday(year, 10, 0, 2))                                  # Taiiku/Sports no Hi
-        elif year >= 1966:
-            national.add(date(year, 10, 10))
-        if year >= 2016:
-            national.add(date(year, 8, 11))                                             # Yama no Hi
-    if year >= 2003:
-        national.add(_nth_weekday(year, 9, 0, 3))                                       # Keiro no Hi
-    elif year >= 1966:
-        national.add(date(year, 9, 15))
-    if year >= 2020:
-        national.add(date(year, 2, 23))             # Tenno Tanjobi (Naruhito)
-    elif 1989 <= year <= 2018:
-        national.add(date(year, 12, 23))            # (Akihito); 2019 ohne Kaisergeburtstag
-    national.update(_TSE_EINMALIG_FEIERTAG.get(year, ()))   # Thronwechsel 2019
-
-    holidays = set(national)
-
-    # ── Furikae Kyujitsu (振替休日): Sonntags-Feiertag → Ersatztag ──
-    # Ab 2007: nächster Tag, der kein Feiertag ist. Bis 2006: nur der Montag danach,
-    # und nur wenn dieser selbst kein Feiertag ist (deshalb 2003-05-06 kein Ersatztag).
-    for h in sorted(national):
-        if h.weekday() == 6 and year >= 1973:   # Ersatztag-Regel gilt erst seit 1973
-            sub = h + timedelta(days=1)
-            if year >= 2007:
-                while sub in national:
-                    sub += timedelta(days=1)
-                holidays.add(sub)
-            elif sub not in national:
-                holidays.add(sub)
-
-    # ── Kokumin no Kyujitsu (国民の休日): Werktag zwischen zwei Feiertagen ──
-    for h in sorted(national):
-        mid = h + timedelta(days=1)
-        if (h + timedelta(days=2)) in national and mid not in national and mid.weekday() < 5:
-            holidays.add(mid)
-
-    # ── Einmalige Börsenschließungen ohne Feiertag ──
-    holidays.update(_TSE_BOERSE_GESCHLOSSEN.get(year, ()))
-
-    # ── Börsen-Schließungen Jahreswechsel (keine Nationalfeiertage, kein Shift) ──
-    holidays.add(date(year, 1, 2))
-    holidays.add(date(year, 1, 3))
-    holidays.add(date(year, 12, 31))
-
-    return sorted(holidays)
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("TSE", year))
 
 
 # ── SIX (Schweiz) ──────────────────────────────────────────────────────────────
 
 def _compute_six_holidays(year: int) -> list[date]:
     """SIX Swiss Exchange Feiertage — Schweizer Bundesfeiertage."""
-    # SIX schließt Christi Himmelfahrt + Pfingstmontag (anders als XETRA!).
-    # KEIN Observed-Shift (feste Daten, kein Montags-Ersatz am Wochenende).
-    return sorted({
-        date(year, 1, 1),       # Neujahr
-        date(year, 1, 2),       # Berchtoldstag
-        _good_friday(year),     # Karfreitag
-        _easter_monday(year),   # Ostermontag
-        date(year, 5, 1),       # Tag der Arbeit
-        _ascension_day(year),   # Christi Himmelfahrt
-        _whit_monday(year),     # Pfingstmontag
-        date(year, 8, 1),       # Schweizer Bundesfeier
-        date(year, 12, 24),     # Heiligabend
-        date(year, 12, 25),     # 1. Weihnachtstag
-        date(year, 12, 26),     # Stephanstag
-        date(year, 12, 31),     # Silvester
-    })
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("SIX", year))
 
 
 # ── Nasdaq Stockholm ───────────────────────────────────────────────────────────
 
 def _compute_stockholm_holidays(year: int) -> list[date]:
     """Nasdaq Stockholm handelsfreie Tage — KEIN Observed-Shift (feste Daten)."""
-    # Midsommarafton — Freitag zwischen 19. und 25. Juni
-    midsommar = date(year, 6, 19)
-    while midsommar.weekday() != 4:  # Freitag = 4
-        midsommar += timedelta(days=1)
-    return sorted({
-        date(year, 1, 1),       # Nyårsdagen
-        date(year, 1, 6),       # Trettondedag jul (Hl. Drei Könige)
-        _good_friday(year),     # Långfredagen
-        _easter_monday(year),   # Annandag påsk
-        date(year, 5, 1),       # Första maj
-        _ascension_day(year),   # Kristi himmelsfärdsdag
-        date(year, 6, 6),       # Sveriges nationaldag
-        midsommar,              # Midsommarafton
-        date(year, 12, 24),     # Julafton
-        date(year, 12, 25),     # Juldagen
-        date(year, 12, 26),     # Annandag jul
-        date(year, 12, 31),     # Nyårsafton
-    })
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("STOCKHOLM", year))
 
 
 def _compute_oslo_holidays(year: int) -> list[date]:
@@ -395,20 +200,9 @@ def _compute_oslo_holidays(year: int) -> list[date]:
     Oslo schließt **Skjærtorsdag (Gründonnerstag)** + **2. pinsedag (Pfingstmontag)**
     (Stockholm handelt beide), Oslo HANDELT dagegen am 6.1., 6.6. und Midsommar
     (Stockholm zu). Grunnlovsdag 17.5. ist Oslo-spezifisch."""
-    return sorted({
-        date(year, 1, 1),                       # Første nyttårsdag
-        _good_friday(year) - timedelta(days=1), # Skjærtorsdag (Maundy Thursday)
-        _good_friday(year),                     # Langfredag
-        _easter_monday(year),                   # Andre påskedag
-        date(year, 5, 1),                       # Arbeidernes dag
-        date(year, 5, 17),                      # Grunnlovsdag (Nationalfeiertag)
-        _ascension_day(year),                   # Kristi himmelfartsdag
-        _whit_monday(year),                     # Andre pinsedag (Pfingstmontag)
-        date(year, 12, 24),                     # Julaften (Oslo Børs geschlossen)
-        date(year, 12, 25),                     # Første juledag
-        date(year, 12, 26),                     # Andre juledag
-        date(year, 12, 31),                     # Nyttårsaften (Oslo Børs geschlossen)
-    })
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("OSLO", year))
 
 
 # ── HKEX (Hongkong) + KRX (Korea) ──────────────────────────────────────────────
@@ -456,20 +250,16 @@ _KRX_HOLIDAYS = {
 
 def _compute_hkex_holidays(year: int) -> list[date]:
     """HKEX (Hongkong). Tabellengestützt; Fallback = fixe gregorianische Feiertage."""
-    if year in _HKEX_HOLIDAYS:
-        return sorted(date(year, m, d) for m, d in _HKEX_HOLIDAYS[year])
-    return sorted({date(year, 1, 1), _good_friday(year), _easter_monday(year),
-                   date(year, 5, 1), date(year, 7, 1), date(year, 10, 1),
-                   date(year, 12, 25), date(year, 12, 26)})
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("HKEX", year))
 
 
 def _compute_krx_holidays(year: int) -> list[date]:
     """KRX (Korea). Tabellengestützt; Fallback = fixe gregorianische Feiertage."""
-    if year in _KRX_HOLIDAYS:
-        return sorted(date(year, m, d) for m, d in _KRX_HOLIDAYS[year])
-    return sorted({date(year, 1, 1), date(year, 3, 1), date(year, 5, 1), date(year, 5, 5),
-                   date(year, 6, 6), date(year, 8, 15), date(year, 10, 3), date(year, 10, 9),
-                   date(year, 12, 25), date(year, 12, 31)})
+    # Regeln seit V1c-1 im Ereigniskatalog (Vertrag B4); diese Funktion ist die Kompatibilitätsprojektion.
+    from shared.boersenereignisse import kompat
+    return sorted(kompat("KRX", year))
 
 
 # ── Haupt-API ──────────────────────────────────────────────────────────────────

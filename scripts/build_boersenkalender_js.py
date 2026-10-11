@@ -10,9 +10,13 @@ KALENDER_GUELTIG. Deterministisch (sortierte Schlüssel, LF, kein Zeitstempel).
     py -3.14 scripts/build_boersenkalender_js.py --pruefen  # vergleicht ohne zu schreiben mit der
                                                             # Arbeitsdatei UND git HEAD; Exit 1 bei Abweichung
 
-Schema 1: {schema, version, pruefdatum, von, bis, woche, schliessungen, status, ticker, suffix, ereignisse}.
-`ereignisse` ist für Schema 2 reserviert (stabile Feiertagskennungen für /feiertage und Dashboard, P4)
-und in Schema 1 leer — die Schließtage allein tragen keine Ereignisidentität.
+Schema 2 (V1c-1, Vertrag B4): {schema, version, pruefdatum, von, bis, woche, schliessungen, status, ticker, suffix,
+ereignisse, regeln, namen, quellen, identitaet, ereignisversion, kalenderversion}.
+`schliessungen` ist die Kompatibilitätsmenge (= get_holidays, inkl. Wochenenddaten, Grundlage der Nummern); die
+fachliche Projektion `SA.boersenkalender.schliessungen` (nur wirksame Werktage) leitet die API aus den Ereignissen ab.
+Ereignisse kompakt aus shared.boersenereignisse: [regel_idx, "MMDD" nominal, {Abweichungen}] mit dem Standard der
+Regel (art, Name, Quelle) und rechtlich = nominal, wirksam = rechtlich, ersatzgrund keiner, verlegt false,
+herkunft regel; Abweichungsschlüssel a/r/w/g/v/h/n/q. Die API baut daraus dieselben Objekte wie `Ereignis.als_dict()`.
 """
 from __future__ import annotations
 
@@ -28,6 +32,8 @@ sys.path.insert(0, WURZEL)
 from shared.exchange_holidays import (  # noqa: E402
     _EXCHANGE_FUNCTIONS, KALENDER_GUELTIG, KALENDER_PRUEFDATUM, NUMMERN_BIS_JAHR, NUMMERN_VON_JAHR, get_holidays,
 )
+from shared import boersenereignisse as BE  # noqa: E402
+from shared.kalender_quellen import QUELLEN  # noqa: E402
 from shared.symbols import SUFFIX_ZU_BOERSE, SYMBOLS, get_exchange_for_holidays  # noqa: E402
 
 ZIEL = os.path.join(WURZEL, "landing", "js", "boersenkalender.js")
@@ -47,7 +53,7 @@ def daten() -> dict:
                 jahre[str(j)] = "".join(d.strftime("%m%d") for d in tage)
         schliessungen[b] = jahre
     nutz = {
-        "schema": 1,
+        "schema": 2,
         "pruefdatum": KALENDER_PRUEFDATUM,
         "von": NUMMERN_VON_JAHR,
         "bis": NUMMERN_BIS_JAHR,
@@ -56,11 +62,72 @@ def daten() -> dict:
         "status": {b: [KALENDER_GUELTIG[b][0], [list(i) for i in KALENDER_GUELTIG[b][1]]] for b in boersen},
         "ticker": {t.upper(): get_exchange_for_holidays(t) for t in SYMBOLS},
         "suffix": [list(s) for s in SUFFIX_ZU_BOERSE],
-        "ereignisse": {},
     }
+    nutz.update(ereignis_daten(boersen))
+    nutz["ereignisversion"] = BE.ereignisversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
+    nutz["kalenderversion"] = BE.kalenderversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
     kanon = json.dumps(nutz, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     nutz["version"] = hashlib.sha256(kanon.encode("utf-8")).hexdigest()
     return nutz
+
+
+def ereignis_daten(boersen) -> dict:
+    """Ereignisse kompakt (siehe Kopf). Namen und Quellen als Tabellen, Regeln je Börse mit ihrem Standard."""
+    namen, namen_idx = [], {}
+    quellen_liste = sorted(QUELLEN)
+    quellen_idx = {k: i for i, k in enumerate(quellen_liste)}
+
+    def name_idx(e):
+        if e.name_de is None and e.name_en is None:
+            return -1
+        k = (e.name_de, e.name_en)
+        if k not in namen_idx:
+            namen_idx[k] = len(namen)
+            namen.append([e.name_de, e.name_en])
+        return namen_idx[k]
+
+    regeln, ereignisse, identitaet = {}, {}, {}
+    for b in boersen:
+        alle = [(j, e) for j in range(NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR + 1) for e in BE.ereignisse(b, j)]
+        # Standard je Regel = häufigste Kombination (art, Name, Quelle) — deterministisch über sortierte Zählung
+        zaehl: dict = {}
+        for _, e in alle:
+            k = (e.regel_id, e.art, name_idx(e), quellen_idx[e.quelle])
+            zaehl[k] = zaehl.get(k, 0) + 1
+        standard: dict = {}
+        for (rid, art, n, q), c in sorted(zaehl.items(), key=lambda x: (x[0][0], -x[1], x[0][1], x[0][2], x[0][3])):
+            standard.setdefault(rid, [rid, art, n, q])
+        liste = sorted(standard.values())
+        idx = {r[0]: i for i, r in enumerate(liste)}
+        regeln[b] = liste
+        jahre: dict = {}
+        for j, e in alle:
+            if e.nominal.year != j:
+                raise SystemExit(f"Ereignis {e.ereignis_id} gehört nicht zum Jahr {j}")
+            st = standard[e.regel_id]
+            ab = {}
+            if e.art != st[1]:
+                ab["a"] = e.art
+            if e.rechtlich != e.nominal:
+                ab["r"] = e.rechtlich.strftime("%Y%m%d")
+            if e.wirksam != e.rechtlich:
+                ab["w"] = e.wirksam.strftime("%Y%m%d")
+            if e.ersatzgrund != "keiner":
+                ab["g"] = e.ersatzgrund
+            if e.verlegt:
+                ab["v"] = 1
+            if e.nominal_herkunft != "regel":
+                ab["h"] = e.nominal_herkunft
+            if name_idx(e) != st[2]:
+                ab["n"] = name_idx(e)
+            if quellen_idx[e.quelle] != st[3]:
+                ab["q"] = quellen_idx[e.quelle]
+            eintrag = [idx[e.regel_id], e.nominal.strftime("%m%d")] + ([ab] if ab else [])
+            jahre.setdefault(str(j), []).append(eintrag)
+        ereignisse[b] = jahre
+        identitaet[b] = [j for j in range(NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR + 1) if BE.identitaet(b, j) == "tabelle"]
+    return {"ereignisse": ereignisse, "regeln": regeln, "namen": namen,
+            "quellen": [[k] + list(QUELLEN[k]) for k in quellen_liste], "identitaet": identitaet}
 
 
 def erzeugen() -> bytes:

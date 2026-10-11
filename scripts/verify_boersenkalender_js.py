@@ -7,7 +7,7 @@ node führt die ECHTE erzeugte Datei aus (scripts/js/probe_boersenkalender.js), 
   [Python]      istHandelstag + nummern (alle fünf Felder) == Python für 13 Börsen × jeden Tag 1885–2100.
   [NumPy]       dieselben Nummern == unabhängige Zählung mit numpy.busday_count (Feiertage aus der Erzeugung).
   [Zeitzone]    dieselben Ergebnisse unter sechs Zonen (Offsets nachgewiesen), u. a. Pacific/Apia.
-  [API]         Monats-/Jahres-/Nächster-Tag-Termine, schliessungen, status gegen Python-Referenzen.
+  [API]         Monats-/Jahres-/Nächster-Tag-Termine, feiertagsmenge, schliessungen, status gegen Python-Referenzen.
   [Ticker]      boerse() == Python für alle SYMBOLS-Ticker, Regel- und Fehlerfälle.
   [Validierung] Fehlerfälle werfen, Alias NASDAQ, Typprüfung.
   [Sollfall]    die belegten Sollfälle aus verify_kalender_sollfaelle.py, in JS.
@@ -34,6 +34,7 @@ from shared.exchange_holidays import (  # noqa: E402
     _EXCHANGE_FUNCTIONS, NUMMERN_BIS_JAHR, NUMMERN_VON_JAHR, get_holidays, handelstag_nummern,
     is_trading_day, kalender_status,
 )
+from shared import boersenereignisse as BE  # noqa: E402
 from shared.symbols import SYMBOLS, get_exchange_for_holidays  # noqa: E402
 from scripts.build_boersenkalender_js import ZIEL, erzeugen  # noqa: E402
 from scripts.verify_kalender_sollfaelle import SOLLFAELLE  # noqa: E402
@@ -131,8 +132,10 @@ def main() -> int:
             for n in (1, 100, len(offen_tage), len(offen_tage) + 1):
                 aufrufe.append(["nterHandelstagImJahr", j, n, b])
                 soll_aufrufe.append(offen_tage[n - 1].isoformat() if 1 <= n <= len(offen_tage) else None)
-            aufrufe.append(["schliessungen", j, b])
+            aufrufe.append(["feiertagsmenge", j, b])
             soll_aufrufe.append([d.isoformat() for d in sorted(get_holidays(b, j, j))])
+            aufrufe.append(["schliessungen", j, b])
+            soll_aufrufe.append([d.isoformat() for d in BE.schliessungen(b, j)])
             aufrufe.append(["status", b, j])
             soll_aufrufe.append(kalender_status(b, j))
     # nächster Handelstag: jeder Tag mehrerer Kettenjahre (inkl. TSE Golden Week 2019, Jahreswechsel)

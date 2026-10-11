@@ -91,6 +91,34 @@ Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-11_kalend
   Mutationstest `scripts/verify_release_mutation.py` (isolierte Kopie). Harnesse laden `methode.js` über
   `scripts/js/release_harness.js`.
 
+## Ereigniskatalog (V1c-1, `shared/boersenereignisse.py`)
+Entwurf mit Codex in 4 Runden freigegeben ([v1](review_prompts/2026-10-11_kalender_v1c_entwurf.md) …
+[v4](review_prompts/2026-10-11_kalender_v1c_entwurf_v4.md)), Code nach 2 Runden
+([R1](review_prompts/2026-10-12_kalender_v1c_code_r1.md), [R2](review_prompts/2026-10-12_kalender_v1c_code_r2.md)).
+- **Eine Quelle der Schließungsregeln:** `_compute_*_holidays` in `exchange_holidays.py`/`nyse_holidays.py` sind dünne
+  Hüllen über `kompat()`; Datentabellen und Datumshelfer bleiben dort, der Katalog importiert sie.
+- **Ereignis je Regeltermin:** `nominal` (Regeltermin) · `rechtlich` (gesetzlicher Tag, ≠ nominal nur bei
+  Verlegung) · `wirksam` (Schließungstag) · `ersatzgrund` keiner/wochenende (NYSE, LSE)/furikae (TSE)/verlegung ·
+  `verlegt` · `art` feiertag/ersatztag (wirksam ≠ nominal)/sonderschliessung/unbestimmt (Tabelle) · Namen DE/EN ·
+  Quelle (`shared/kalender_quellen.py`). Kennung `<B>:<regel_id>:<nominal>`, Tabelle `<B>:tabelle:<Datum>`. Jahr =
+  Jahr von `nominal`. NASDAQ = Alias von NYSE.
+- **Projektionen:** `kompat()` = die bisherige Menge (`get_holidays`, inkl. Wochenenden; TSE behält bei Furikae den
+  rechtlichen Sonntag, ein Regeltermin einer Verlegung zählt nie). `schliessungen()` = eindeutige wirksame
+  Vollschließungen Mo–Fr — das fachliche Maß für spätere Leser.
+- **Versionen:** `ereignisversion()` über `inhalt()` (alle Felder, aufgelöste Namen/Quellen, ohne Versionsfelder);
+  `kalenderversion()` über `schliessungen()`. Jedes Objekt (`als_dict()`, JS) trägt die `kalenderversion`.
+- **JS:** `landing/js/boersenkalender.js` Schema 2 — `ereignisse(j, b)` (unveränderliche Objekte = `als_dict()`),
+  `schliessungen(j, b)` (fachlich, wie Python), `feiertagsmenge(j, b)` (= `get_holidays`), `identitaet`, beide Versionen.
+  Weiterhin von keiner Seite eingebunden (P4).
+- **Abnahmelücke (benannt):** HKEX und KRX 2016–2026 sind Datumstabellen ohne Regelidentität — Ausgabe nur als
+  „geschlossen (Tabelle)", nie als „Feiertag am …".
+- **Wächter (Gate):** `scripts/verify_boersenereignisse.py` — eingefrorener Bestand
+  (`scripts/kalender_momentaufnahme.py`, `scripts/fixtures/kalender_vor_v1c.json`, 3024 Börsen-Jahre), Invarianten,
+  handgeschriebene Sollfälle mit Quelle (u. a. LSE 2002/2012/2020/2021/2022, TSE 2015/2020/2021/2023, NYSE 2025),
+  Versionsvertrag a–d, vollständige Objektgleichheit Python = JS unter zwei Zeitzonen. Mutationstest
+  `scripts/verify_boersenereignisse_mutation.py` (isolierte Kopie, Bundle in der Kopie neu erzeugt).
+- **Folgt:** V1c-2 OPEX/VIX nach Cboe, V1c-3 Halbtage mit Quellen.
+
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
 reproduziert (n 186/78, WR 68,3/71,8 %, PF 1,80/2,39, Sharpe 0,214/0,336, DD 22,3/18,3 %). Mit TDOM nach
