@@ -15,7 +15,7 @@
    frei; eine lesende Freigabe (Abnahme) schreibt nicht.
 5. Echte Skripte — in einer ISOLIERTEN KOPIE (Temp-Verzeichnis, keine Ausgabe landet im Projektbaum, Netz und
    Datenbank tot): jedes ausführbare PFLICHT-Skript endet bei gesetzter Marke mit Exit 75, als Datei und als `-m`.
-6. Betrieb: install_timers.sh prüft die Marke vor dem Starten; deploy.yml überspringt `[ohne-deploy]`; die
+6. Betrieb: install_timers.sh prüft die Marke vor dem Starten; deploy.yml überspringt Commits, die mit `[ohne-deploy]` beginnen; die
    systemd-Units der Pflicht-Läufe werten 75 als Erfolg; jeder Workflow, der ein Pflicht-Skript per `docker exec`
    startet, bildet 75 (und nur 75) auf Erfolg ab.
 """
@@ -411,7 +411,8 @@ def betrieb():
     pruefe("Betrieb: install_timers.sh prüft die Marke vor dem Starten", 0 <= m < s3 and "exit 0" in it[m:s3])
     dy = (WURZEL / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
     pruefe("Betrieb: deploy.yml überspringt [ohne-deploy]",
-           "if: ${{ !contains(github.event.head_commit.message, '[ohne-deploy]') }}" in dy)
+           "if: ${{ !startsWith(github.event.head_commit.message, '[ohne-deploy]') }}" in dy
+           and "contains(github.event.head_commit.message" not in dy)
     for unit in ("sa-nightly.service", "sa-intraday.service"):
         u = (WURZEL / "deploy" / "systemd" / unit).read_text(encoding="utf-8")
         pruefe("Betrieb: %s wertet 75 als Erfolg" % unit, re.search(r"(?m)^SuccessExitStatus=75\s*$", u) is not None)
