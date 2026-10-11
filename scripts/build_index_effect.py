@@ -28,6 +28,10 @@ from pathlib import Path
 
 import numpy as np
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("build_index_effect")
+
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -153,4 +157,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("build_index_effect"):
+        sys.exit(main())

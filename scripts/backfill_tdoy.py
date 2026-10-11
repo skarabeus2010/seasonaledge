@@ -29,6 +29,10 @@ import sys
 from collections import Counter
 from datetime import date
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("backfill_tdoy")
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:  # Windows: UTF-8 erzwingen (cp1252 crasht sonst bei Datei-Umleitung)
@@ -170,4 +174,8 @@ def main(argv: list[str] | None = None, client=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("backfill_tdoy"):
+        sys.exit(main())

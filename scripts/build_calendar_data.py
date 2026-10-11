@@ -13,6 +13,10 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("build_calendar_data")
+
 sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -161,4 +165,8 @@ def _write_ics(events):
 
 
 if __name__ == "__main__":
-    main()
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("build_calendar_data"):
+        main()

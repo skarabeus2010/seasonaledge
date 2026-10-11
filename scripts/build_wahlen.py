@@ -23,6 +23,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("build_wahlen")
+
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
@@ -134,4 +138,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("build_wahlen"):
+        sys.exit(main())

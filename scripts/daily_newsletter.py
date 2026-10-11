@@ -29,6 +29,10 @@ import sys
 import time
 from datetime import datetime, timezone
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("daily_newsletter")
+
 _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
@@ -230,6 +234,8 @@ def main() -> int:
         return 0
 
     # 4. Live-Send
+    from shared.produktionssperre import pruefe_schreiben
+    pruefe_schreiben("daily_newsletter.versand")   # auch beim Import-Einstieg: kein Versand während einer Aktivierung
     from shared.email_brevo import send_html, send_admin_alert
 
     sent = 0
@@ -277,4 +283,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("daily_newsletter"):
+        sys.exit(main())

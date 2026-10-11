@@ -59,5 +59,10 @@ jobs:
                 exit 1
                 ;;
             esac
-            docker exec seasonalpha-app python3 scripts/weekly_newsletter.py ${args[@]+"${args[@]}"} 2>&1 | tail -60
+            rc=0
+            docker exec seasonalpha-app python3 scripts/weekly_newsletter.py ${args[@]+"${args[@]}"} 2>&1 | tail -60 || rc=$?
             echo "[weekly-manual] Finished: $(date)"
+            # Bisher endete der Schritt immer mit 0 (echo danach). Exit 75 = Produktionssperre (Kalender-Aktivierung):
+            # geplant unterdrueckt; jeder andere Fehler wird jetzt rot.
+            if [ "$rc" = 75 ]; then echo "[weekly-manual] Produktionssperre aktiv — Lauf geplant unterdrueckt"; rc=0; fi
+            exit $rc

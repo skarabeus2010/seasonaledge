@@ -112,7 +112,12 @@ jobs:
             fi
 
             echo "[daily-newsletter] event=$SA_EVENT args=${args[*]-}"
+            rc=0
             docker exec seasonalpha-app python3 scripts/daily_newsletter.py \
-              ${args[@]+"${args[@]}"} 2>&1 | tail -80
+              ${args[@]+"${args[@]}"} 2>&1 | tail -80 || rc=$?
+            # Exit 75 = Produktionssperre (Kalender-Aktivierung, shared/produktionssperre.py): geplant unterdrueckt,
+            # Nachweis in refresh_log (run_type produktionssperre). Jeder andere Fehler bleibt rot.
+            if [ "$rc" = 75 ]; then echo "[daily-newsletter] Produktionssperre aktiv — Versand geplant unterdrueckt"; rc=0; fi
+            exit $rc
             # `set -e` traegt den Fehler; ein echo DANACH wuerde ihn loeschen,
             # deshalb steht hier keines mehr.

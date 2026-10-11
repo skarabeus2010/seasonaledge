@@ -17,3 +17,6 @@ ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
 # Lauf selbst (8 min + 30 s Kill), das aeussere Limit liegt darueber.
 ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=30s 8m python3 -u scripts/intraday_refresh.py
 TimeoutStartSec=10min
+# Exit 75 = Produktionssperre (Kalender-Aktivierung, shared/produktionssperre.py): geplant unterdrueckt, kein Fehler.
+# Nachweis: refresh_log run_type=produktionssperre + logs/sperre/unterdrueckt.log. Jeder andere Exit bleibt ein Fehler.
+SuccessExitStatus=75

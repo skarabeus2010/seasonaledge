@@ -108,8 +108,12 @@ jobs:
             if [ "$SA_MAIL" != "false" ];    then flags+=(--mail); fi
 
             echo "[db-completeness] event=$SA_EVENT flags=${flags[*]}"
+            rc=0
             docker exec seasonalpha-app python3 scripts/check_db_completeness.py \
-              "${flags[@]}" 2>&1 | tail -120
+              "${flags[@]}" 2>&1 | tail -120 || rc=$?
+            # Exit 75 = Produktionssperre (Kalender-Aktivierung): geplant unterdrueckt; andere Fehler bleiben rot.
+            if [ "$rc" = 75 ]; then echo "[db-completeness] Produktionssperre aktiv — Lauf geplant unterdrueckt"; rc=0; fi
+            exit $rc
 
       - name: Calendar rules verification (Prüfagent)
         # Deterministischer Check aller 9 Handels-Kalender-Regeln (Code + DB,

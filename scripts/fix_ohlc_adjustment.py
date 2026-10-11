@@ -11,6 +11,10 @@ from __future__ import annotations
 
 import sys, os, pathlib
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("fix_ohlc_adjustment")
+
 _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
@@ -143,4 +147,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("fix_ohlc_adjustment"):
+        main()

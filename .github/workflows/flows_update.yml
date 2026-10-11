@@ -30,18 +30,28 @@ jobs:
             # die anderen fuenf nicht verdecken. Fehler werden gesammelt.
             set -uo pipefail
             fail=0
+            pruefen=()   # Dateien fuer die Frischepruefung — ein geplant unterdruecktes Panel (75) faellt heraus
             for s in build_flows_rebalancing build_volcontrol_proxy build_cot_positioning \
                      build_buyback_blackout build_shortvol_proxy build_etf_flows; do
               echo "--- $s"
-              docker exec seasonalpha-app python3 "scripts/$s.py" 2>&1 | tail -3 \
-                || { echo "FEHLER: $s (Exit ${PIPESTATUS[0]})"; fail=1; }
+              rc=0
+              docker exec seasonalpha-app python3 "scripts/$s.py" 2>&1 | tail -3 || rc=$?
+              # Exit 75 = Produktionssperre (Kalender-Aktivierung): geplant unterdrueckt; andere Fehler bleiben rot.
+              if [ "$rc" = 75 ]; then echo "Produktionssperre aktiv — $s geplant unterdrueckt"; continue
+              elif [ "$rc" != 0 ]; then echo "FEHLER: $s (Exit $rc)"; fail=1; fi
+              pruefen+=("${s#build_}.json")
             done
 
             # Exit 0 belegt nicht, dass etwas geschrieben wurde (leere API-Antwort,
             # abgefangene Exception). Deshalb zusaetzlich das Alter von generated_at
             # pruefen — sonst zeigt die Seite alte Zahlen bei gruenem Workflow.
             echo "--- Frischepruefung"
-            docker exec seasonalpha-app python3 scripts/check_flows_freshness.py || fail=1
+            # Nur Panels, die nicht geplant unterdrueckt wurden (Datei = Skriptname ohne build_ + .json).
+            if [ "${#pruefen[@]}" -gt 0 ]; then
+              docker exec seasonalpha-app python3 scripts/check_flows_freshness.py --files "${pruefen[@]}" || fail=1
+            else
+              echo "alle Panels geplant unterdrueckt — keine Frischepruefung"
+            fi
 
             echo "Flows update done: $(date)"
             exit $fail

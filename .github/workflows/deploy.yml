@@ -13,6 +13,9 @@ concurrency:
 
 jobs:
   deploy:
+    # „[ohne-deploy]" in der Commit-Nachricht: kein Deploy (Rückweg der Kalender-Aktivierung, docs/KALENDER_UMSTELLUNG.md
+    # — ein Revert-Commit darf die gerade zurückgesicherten Ausgaben nicht neu bauen). Manueller Start bleibt möglich.
+    if: ${{ !contains(github.event.head_commit.message, '[ohne-deploy]') }}
     runs-on: ubuntu-latest
     steps:
       # Gate VOR dem Ausrollen. Die Probe braucht nur node und die Dateien im
@@ -97,6 +100,10 @@ jobs:
       # PostgREST-Nachbau, jeder Abschnitt in eigenem Prozess. Verlangt Exit 0 und Endmarker je Abschnitt.
       - name: Waechter - Kurslader SA.kurse
         run: python3 scripts/verify_kurse.py
+      # Produktionssperre (docs/KALENDER_UMSTELLUNG.md V1a): Inventar aller Schreiber, Einbau in jedem Pflicht-Skript,
+      # Verhalten mit/ohne Aktivierungsmarke und exklusivem Lock (streng: fcntl auf Linux Pflicht).
+      - name: Waechter - Produktionssperre
+        run: SA_SPERRE_STRENG=1 python3 scripts/verify_produktionssperre.py
       # Seitenprobe: die echte Seite in jsdom (feste Version scripts/perf/package-lock.json), vorher/nachher gleiche
       # Anzeige und Chart-Serien — normal, gescheiterte Vollhistorie, TTL-Ablauf mit Fehler.
       - name: Waechter - Seitenprobe Kurslader (Anzeige vorher = nachher)

@@ -15,3 +15,6 @@ ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
 # Timeout IM Container (siehe sa-intraday.service). Ein Lauf dauert 9-18 min.
 ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=60s 90m python3 -u scripts/nightly_refresh.py
 TimeoutStartSec=95min
+# Exit 75 = Produktionssperre (Kalender-Aktivierung, shared/produktionssperre.py): geplant unterdrueckt, kein Fehler.
+# Nachweis: refresh_log run_type=produktionssperre + logs/sperre/unterdrueckt.log. Jeder andere Exit bleibt ein Fehler.
+SuccessExitStatus=75

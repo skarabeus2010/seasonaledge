@@ -15,6 +15,10 @@ import json
 import argparse
 from datetime import datetime
 
+if __name__ != "__main__":   # Produktionssperre auch beim Import (shared/produktionssperre.py)
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("generate_decade_data")
+
 _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
 if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
@@ -284,8 +288,12 @@ def generate(ticker="^DJI", vola_window=20, output_dir=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--ticker", default="^DJI")
-    parser.add_argument("--vola-window", type=int, default=20)
-    args = parser.parse_args()
-    generate(ticker=args.ticker, vola_window=args.vola_window)
+    # Produktionssperre (shared/produktionssperre.py): während einer Kalender-Aktivierung Exit 75
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+    from shared.produktionssperre import produktion
+    with produktion("generate_decade_data"):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--ticker", default="^DJI")
+        parser.add_argument("--vola-window", type=int, default=20)
+        args = parser.parse_args()
+        generate(ticker=args.ticker, vola_window=args.vola_window)

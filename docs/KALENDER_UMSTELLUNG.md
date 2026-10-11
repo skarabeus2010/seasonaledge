@@ -38,6 +38,36 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 | V9 | Aktivierung im Wartungsfenster (Probelauf auf `/opt/seasonaledge-probe` vorher) | offen |
 | — | Aufräumen (alter Zweig) | offen |
 
+## Produktionssperre (V1a, `shared/produktionssperre.py`)
+- **Pflicht-Läufe** (19, Inventar `PFLICHT`/`AUSNAHMEN` im Modul) laufen in `with produktion("<name>")`: geteilter
+  `flock` auf `logs/sperre/produktion.lock`. Ohne Marke `logs/sperre/AKTIVIERUNG` ändert sich nichts.
+- **Import-Einstiege:** jedes Pflicht-Skript ruft auf Modulebene `modul_sperre("<name>")` (außer als `__main__`):
+  bei Marke scheitert schon der Import, und ein Prozess, der vorher importiert hat, hält den geteilten Lock bis
+  Prozessende — `aktivierung_setzen` wartet auf ihn. Damit sind auch Dateiausgaben importierter Bauer
+  (`from scripts.build_flows_rebalancing import main; main()`) gesperrt. `produktion()` ist wiedereintrittsfähig,
+  ein verschachtelter Name wird gegen die Freigabeliste geprüft.
+- **Schreibschutz unabhängig vom Einstieg:** `get_client()` liefert einen geschützten Client; Schreibzugriffe auf
+  `GESCHUETZTE_TABELLEN`/`GESCHUETZTE_RPC` werden beim Aufbau und bei `.execute()` geprüft — dort unter dem
+  geteilten Lock, sodass eine vor der Aktivierung aufgebaute Anfrage danach nicht schreibt und
+  `aktivierung_setzen` auf eine laufende Ausführung wartet. Polymarket, Optionen, `refresh_log` bleiben frei.
+- **Kennung** (`SA_AKTIVIERUNG`, über `docker exec -e`) öffnet nur `AKTIVIERUNG_ERLAUBT`: Newsletter `--dry-run`
+  (rendert in eine Datei, v5 nannte es `--nur-rendern`), `build_calendar_data --aktivierung`, Abnahmeproben
+  `abnahme:<name>` (nur lesen). P5/P6 werden in ihrer Phase mit Schreibrecht eingetragen. Die Kennung wird nach der
+  Prüfung aus der Umgebung entfernt — Kindprozesse erben sie nicht.
+- **Exit 75 = geplant unterdrückt:** Nachweis in `logs/sperre/unterdrueckt.log` und `refresh_log` (`run_type =
+  'produktionssperre'`, vom Health-Check nicht als Lauf gezählt); `SuccessExitStatus=75` in `sa-nightly`/`sa-intraday`,
+  die Workflows mit `docker exec` eines Pflicht-Skripts bilden **nur** 75 auf Erfolg ab; `flows_update.yml` nimmt
+  ein unterdrücktes Panel aus der Frischeprüfung (die übrigen bleiben geprüft).
+  Auch `verify_calendar_rules.py` (importiert `fix_missing_days`) endet während einer Aktivierung mit 75.
+- **V9-Abfolge:** `aktivierung_setzen(kennung, frist_s=…)` nimmt den **exklusiven** Lock (wartet auf laufende Läufe; mit Frist `TimeoutError` statt Marke), schreibt
+  die Marke und **gibt den Lock sofort frei** — ab dann sperrt die Marke allein, Abnahmeläufe mit Kennung starten
+  ohne Warten. Ende: `aktivierung_aufheben(kennung)` (fremde Kennung → Fehler). `install_timers.sh` startet bei
+  gesetzter Marke keine Timer.
+- Wächter `scripts/verify_produktionssperre.py` (Deploy-Gate, streng), Mutationstest
+  `scripts/verify_produktionssperre_mutation.py` — läuft **nur** in einer isolierten Temp-Kopie und weist am Ende
+  nach, dass der Projektbaum byte-gleich blieb (der frühere Lauf hatte `market_calendar.*` im Arbeitsbaum neu
+  geschrieben).
+
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
 reproduziert (n 186/78, WR 68,3/71,8 %, PF 1,80/2,39, Sharpe 0,214/0,336, DD 22,3/18,3 %). Mit TDOM nach

@@ -41,6 +41,13 @@ for u in "${SERVICES[@]}" "${TIMERS[@]}"; do
 done
 [ "$geaendert" = 1 ] && systemctl daemon-reload
 
+# 2b) Waehrend einer Kalender-Aktivierung (shared/produktionssperre.py, Marke logs/sperre/AKTIVIERUNG) bleiben
+#     die Timer angehalten — ein Deploy darf sie nicht wieder starten. Units sind kopiert; Start erst nach der Abnahme.
+if [ -f "$(cd "$(dirname "$0")/.." && pwd)/logs/sperre/AKTIVIERUNG" ]; then
+  echo "install_timers: Aktivierungsmarke gesetzt — Timer werden NICHT gestartet"
+  exit 0
+fi
+
 # 3) Aktivieren und laufen lassen; geaenderte Timer neu starten.
 for t in "${TIMERS[@]}"; do
   systemctl enable "$t" >/dev/null 2>&1 || fehler "enable $t"

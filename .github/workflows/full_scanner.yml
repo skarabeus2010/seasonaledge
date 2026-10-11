@@ -84,5 +84,7 @@ jobs:
             docker exec seasonalpha-app python3 scripts/full_scanner_run.py ${args[@]+"${args[@]}"} 2>&1 | tail -300
             RC=${PIPESTATUS[0]}
             echo "[full_scanner] Exit code: $RC"
+            # Exit 75 = Produktionssperre (Kalender-Aktivierung): geplant unterdrueckt; andere Fehler bleiben rot.
+            if [ "$RC" = 75 ]; then echo "[full_scanner] Produktionssperre aktiv — Lauf geplant unterdrueckt"; RC=0; fi
             echo "[full_scanner] Finished: $(date)"
             exit $RC

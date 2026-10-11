@@ -35,8 +35,81 @@ def get_client(force_new: bool = False):
                 "SUPABASE_URL und SUPABASE_KEY müssen in .env (lokal) "
                 "oder in den Docker-Env-Vars (Server) gesetzt sein."
             )
-        _client = create_client(url, key)
+        _client = _Geschuetzt(create_client(url, key))
     return _client
+
+
+class _GeschuetzteAnfrage:
+    """Hülle um einen Schreib-Query-Builder: die Kette (.eq(), .select(), …) bleibt gehüllt, und `.execute()` läuft
+    unter `shared.produktionssperre.schreibsperre` — die Marke wird erst bei der Ausführung geprüft, unter dem
+    geteilten Lock. Eine vor der Aktivierung aufgebaute Anfrage kann danach nicht mehr schreiben."""
+
+    def __init__(self, anfrage, kanal: str):
+        self._a, self._kanal = anfrage, kanal
+
+    def __getattr__(self, attr):
+        ziel = getattr(self._a, attr)
+        if attr == "execute":
+            def ausfuehren(*a, **k):
+                from shared.produktionssperre import schreibsperre
+                with schreibsperre(self._kanal):
+                    return ziel(*a, **k)
+            return ausfuehren
+        if not callable(ziel):
+            return ziel
+
+        def kette(*a, **k):
+            r = ziel(*a, **k)
+            return _GeschuetzteAnfrage(r, self._kanal) if hasattr(r, "execute") else r
+        return kette
+
+
+class _GeschuetzteTabelle:
+    """Leitet alles an die echte Tabelle weiter; Schreibaufrufe prüfen sofort (früher Abbruch) und noch einmal bei
+    der Ausführung unter dem Lock."""
+    _SCHREIBEN = ("upsert", "insert", "update", "delete")
+
+    def __init__(self, tabelle, name: str):
+        self._t, self._name = tabelle, name
+
+    def __getattr__(self, attr):
+        ziel = getattr(self._t, attr)
+        if attr not in self._SCHREIBEN:
+            return ziel
+
+        def schreiben(*a, **k):
+            from shared.produktionssperre import pruefe_schreiben
+            kanal = f"{self._name}.{attr}"
+            pruefe_schreiben(kanal)
+            return _GeschuetzteAnfrage(ziel(*a, **k), kanal)
+        return schreiben
+
+
+class _Geschuetzt:
+    """Hülle um den Supabase-Client: Schreibzugriffe auf kalenderabhängige Tabellen/Funktionen laufen über
+    `shared.produktionssperre` — egal über welchen Einstieg (Skript, `-m`, Import). Ohne Aktivierungsmarke ändert
+    sich nichts."""
+
+    def __init__(self, client):
+        self._c = client
+
+    def table(self, name, *a, **k):
+        from shared.produktionssperre import GESCHUETZTE_TABELLEN
+        t = self._c.table(name, *a, **k)
+        return _GeschuetzteTabelle(t, name) if name in GESCHUETZTE_TABELLEN else t
+
+    def from_(self, name, *a, **k):
+        return self.table(name, *a, **k)
+
+    def rpc(self, name, *a, **k):
+        from shared.produktionssperre import GESCHUETZTE_RPC, pruefe_schreiben
+        if name not in GESCHUETZTE_RPC:
+            return self._c.rpc(name, *a, **k)
+        pruefe_schreiben(f"rpc.{name}")
+        return _GeschuetzteAnfrage(self._c.rpc(name, *a, **k), f"rpc.{name}")
+
+    def __getattr__(self, attr):
+        return getattr(self._c, attr)
 
 
 def _with_retry(fn, max_tries: int = 3, backoff_base: float = 1.5):
