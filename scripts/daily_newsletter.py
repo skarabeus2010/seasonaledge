@@ -6,13 +6,15 @@ Rendert das tägliche Morning-Briefing (Top-5 ETFs + Top-5 Aktien, Events,
 saisonale Strategien, Sektor-Rotation, Risikolage) und sendet an alle
 aktiven Subscriber der `daily_subscribers`-Tabelle via Brevo.
 
-Schedule: Mo-Fr 06:00 UTC via .github/workflows/daily_newsletter.yml.
+Schedule: Mo-Fr 07:30 Europe/Berlin via deploy/systemd/sa-daily-briefing.timer (seit 2026-10-12;
+daily_newsletter.yml nur noch manuell). Live-Versand einmal je Berliner Datum (shared/versandsperre.py).
 
 Usage:
     py scripts/daily_newsletter.py              # Live-Send an alle Daily-Subscriber
     py scripts/daily_newsletter.py --dry-run    # HTML auf Disk, kein Versand
     py scripts/daily_newsletter.py --test       # Nur an ADMIN_EMAIL
     py scripts/daily_newsletter.py --to x@y.de  # Einzelner Test-Empfänger
+    py scripts/daily_newsletter.py --wiederaufnahme  # abgebrochenen Live-Versand fortsetzen (ohne Bediente)
 
 Environment:
     BREVO_API_KEY        — zwingend für Versand
@@ -128,8 +130,9 @@ def _fehler_zusammenfassung(failed_emails: list[str]) -> dict:
 
 
 def _write_refresh_log(elapsed_sec: float, sent: int, failed: int,
-                       failed_emails: list[str]) -> None:
-    """Schreibt refresh_log-Eintrag für daily_health_check.py."""
+                       failed_emails: list[str], modus: str) -> None:
+    """Schreibt refresh_log-Eintrag für daily_health_check.py. `modus` ∈ {live, test, einzel}: der Health-Check
+    zählt nur `live` — ein Testversand darf einen fehlenden Live-Versand nicht grün erscheinen lassen."""
     try:
         import json as _json
         from shared.supabase_client import get_client
@@ -149,7 +152,7 @@ def _write_refresh_log(elapsed_sec: float, sent: int, failed: int,
             # Empfänger-Domains: „alle gmail scheitern" ist die Diagnose, eine
             # Liste von Adressen nicht. Eine Domain allein ist nicht
             # personenbezogen.
-            "missing_details":  _json.dumps(_fehler_zusammenfassung(failed_emails)),
+            "missing_details":  _json.dumps(dict(_fehler_zusammenfassung(failed_emails), modus=modus)),
             "auto_fixed":       0,
             "duration_seconds": round(elapsed_sec, 1),
             "errors":           "[]",
@@ -165,6 +168,8 @@ def main() -> int:
     parser.add_argument("--test", action="store_true",
                         help="Nur an ADMIN_EMAIL senden")
     parser.add_argument("--to", type=str, help="Einzelner Test-Empfänger")
+    parser.add_argument("--wiederaufnahme", action="store_true",
+                        help="Abgebrochenen Live-Versand des Tages fortsetzen (schon bediente Empfänger überspringen)")
     from shared.daily_report import DEFAULT_N_ETFS, DEFAULT_N_STOCKS
     parser.add_argument("--n-etfs", type=int, default=DEFAULT_N_ETFS)
     parser.add_argument("--n-stocks", type=int, default=DEFAULT_N_STOCKS)
@@ -236,25 +241,77 @@ def main() -> int:
     # 4. Live-Send
     from shared.produktionssperre import pruefe_schreiben
     pruefe_schreiben("daily_newsletter.versand")   # auch beim Import-Einstieg: kein Versand während einer Aktivierung
-    from shared.email_brevo import send_html, send_admin_alert
+    from shared.email_brevo import send_html_ergebnis, send_admin_alert, ANGENOMMEN, ABGELEHNT, UNKLAR
+
+    modus = "einzel" if args.to else ("test" if args.test else "live")
+    versand = None
+    if modus == "live":
+        # Ein Live-Versand je Berliner Datum (shared/versandsperre.py): parallel → Abbruch, fertig → nichts tun,
+        # abgebrochen → nur mit --wiederaufnahme und ohne die schon bedienten Empfänger.
+        from shared.versandsperre import Versand, VersandGesperrt
+        try:
+            versand = Versand("daily_newsletter", wiederaufnahme=args.wiederaufnahme)
+        except VersandGesperrt as e:
+            print(f"[daily] {e}")
+            if e.grund == "schon_versandt":
+                return 0
+            if e.grund == "abgebrochen":
+                try:
+                    send_admin_alert(f"Daily Newsletter: {e} — nicht automatisch wiederholt.")
+                except Exception:
+                    pass
+            return 6
+        vorher = len(recipients)
+        recipients = versand.uebrige(recipients)
+        if vorher != len(recipients):
+            print(f"[daily] Wiederaufnahme: {vorher - len(recipients)} Empfänger übersprungen "
+                  f"(davon {versand.unklar_beim_start} ungeklärt)")
+        if versand.unklar_beim_start:
+            try:
+                send_admin_alert(f"Daily Newsletter Wiederaufnahme: {versand.unklar_beim_start} Empfänger mit "
+                                 f"ungeklärtem Versand übersprungen (Abbruch zwischen Versand und Journal).")
+            except Exception:
+                pass
+    elif args.wiederaufnahme:
+        print("[daily] --wiederaufnahme gilt nur für den Live-Versand")
+        return 2
 
     sent = 0
     failed = 0
     failed_emails: list[str] = []
 
     for i, email in enumerate(recipients, 1):
+        # Journal-Einträge stehen bewusst AUSSERHALB der try-Blöcke: ein Schreibfehler im Journal ist kein
+        # Versandfehler, er beendet den Lauf (Status bleibt "laeuft" → nächster Lauf meldet "abgebrochen").
         try:
             subject, html = render_email(context, email, _scanner_cache)
-            ok = send_html(email, subject, html)
-            if ok:
-                sent += 1
-            else:
-                failed += 1
-                failed_emails.append(email)
         except Exception as e:
-            error_logger.error(f"[daily] Send failed for {email}: {e}")
+            error_logger.error(f"[daily] Render failed for {email}: {e}")
             failed += 1
             failed_emails.append(email)
+            if versand is not None:
+                versand.beginnen(email)
+                versand.abgelehnt(email)   # nichts verschickt — eine Wiederaufnahme darf es erneut versuchen
+            continue
+        if versand is not None:
+            versand.beginnen(email)        # VOR dem Versand dauerhaft "offen"
+        # Drei Ausgänge (shared/email_brevo.send_html_ergebnis): nur ABGELEHNT ist sicher nicht zugestellt. UNKLAR
+        # (Lese-Timeout, Abbruch, 5xx, Ausnahme) bleibt im Journal "offen" — eine Wiederaufnahme überspringt den
+        # Empfänger (lieber eine Mail zu wenig als eine doppelt).
+        try:
+            ergebnis = send_html_ergebnis(email, subject, html)
+        except Exception as e:
+            error_logger.error(f"[daily] Send failed for {email}: {e}")
+            ergebnis = UNKLAR
+        if ergebnis == ANGENOMMEN:
+            sent += 1
+            if versand is not None:
+                versand.notieren(email)
+        else:
+            failed += 1
+            failed_emails.append(email)
+            if ergebnis == ABGELEHNT and versand is not None:
+                versand.abgelehnt(email)
 
         if i % 50 == 0:
             print(f"[daily] Progress: {i}/{len(recipients)} (sent={sent}, failed={failed})")
@@ -264,8 +321,12 @@ def main() -> int:
     print(f"[daily] Done in {elapsed:.1f}s: {sent} sent, {failed} failed")
     app_logger.info(f"[daily] Done in {elapsed:.1f}s: sent={sent} failed={failed}")
 
-    # 5. refresh_log für Health-Check (auch im Live-Mode)
-    _write_refresh_log(elapsed, sent, failed, failed_emails)
+    if versand is not None:
+        versand.abschliessen(sent, failed)
+        versand.schliessen()
+
+    # 5. refresh_log für Health-Check (mit Modus — der Check zählt nur live)
+    _write_refresh_log(elapsed, sent, failed, failed_emails, modus)
 
     # 6. Admin-Alert bei >10% Failrate
     if recipients and failed > len(recipients) * 0.1:

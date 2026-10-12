@@ -1,0 +1,15 @@
+# SeasonAlpha — Fristpruefung des Daily Morning Briefings (Mo-Fr 10:15 Berlin, ausgeloest von sa-briefing-frist.timer).
+# Liest nur refresh_log; ohne Live-Versand von heute → Admin-Alarm und Exit 1 (Unit rot).
+# Installation/Aktualisierung: deploy/install_timers.sh (laeuft im Deploy).
+
+[Unit]
+Description=SeasonAlpha Fristpruefung Daily Briefing
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+# Timeout IM Container (systemd beendet bei TimeoutStartSec nur den docker-Client).
+ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=30s 3m python3 -u scripts/daily_health_check.py --briefing-frist
+TimeoutStartSec=5min

@@ -1,0 +1,15 @@
+[Unit]
+Description=SeasonAlpha Daily Morning Briefing Mo-Fr 07:30 Berliner Zeit
+
+[Timer]
+# In Berliner Ortszeit, damit der Termin die Zeitumstellung mitmacht (Sommer 05:30 UTC, Winter 06:30 UTC):
+# die Mail liegt vor Xetra-Eroeffnung (09:00) im Postfach. Der Nightly (16:45 New York) ist dann laengst fertig.
+OnCalendar=Mon..Fri *-*-* 07:30:00 Europe/Berlin
+AccuracySec=1min
+# Ein verpasster Termin (Server aus) wird nachgeholt — ein spaetes Briefing ist besser als keines.
+# Kein Doppelversand: ein Timer loest je Termin genau einmal aus.
+Persistent=true
+Unit=sa-daily-briefing.service
+
+[Install]
+WantedBy=timers.target

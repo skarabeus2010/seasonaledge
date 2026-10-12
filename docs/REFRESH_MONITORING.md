@@ -11,6 +11,7 @@ SeasonAlpha hat zwei automatische Refresh-Jobs:
 | **Nightly Refresh** | Täglich 16:45 New Yorker Zeit (Sommer 20:45 UTC, Winter 21:45 UTC), `sa-nightly.timer` | Schlusskurse + TDOM/TDOY + KI-Scores/Regime; sonntags Weekly Newsletter (wenn `WEEKLY_NEWSLETTER_AN`) |
 | **Intraday Refresh** | Stündlich :17 UTC, jeden Tag (systemd-Timer auf dem VPS) | Live-Kurse der gerade offenen Börsen; Krypto rund um die Uhr |
 | **Polymarket-Intraday** | Stündlich :23 UTC (systemd-Timer) | Snapshot im FOMC-Fenster, sonst nur eine Skip-Zeile |
+| **Daily Morning Briefing** | Mo–Fr 07:30 Berliner Zeit (Sommer 05:30, Winter 06:30 UTC), `sa-daily-briefing.timer` (seit 2026-10-12) | Versand an `daily_subscribers`; `refresh_log` run_type `daily_newsletter`. GitHub-Cron `0 6 * * 1-5` kam zuletzt erst 11:48–14:18 UTC an; `daily_newsletter.yml` ist nur noch manuell (Test, Trockenlauf, Einzelempfänger). **Ein Live-Versand je Berliner Datum** (`shared/versandsperre.py`, Zustand in `logs/versand/`): zweiter Lauf nach Abschluss → Exit 0 ohne Versand; abgebrochener Versand → Admin-Alarm, Fortsetzen nur mit `--wiederaufnahme`. **Journal in zwei Stufen** (`? <hash>` VOR dem Versand, danach `+` angenommen / `-` sicher nicht versandt, chronologisch ausgewertet): die Wiederaufnahme überspringt angenommene UND ungeklärte Empfänger (lieber eine Mail zu wenig als eine doppelt) und meldet die Ungeklärten. Der Mailadapter `shared/email_brevo.send_html_ergebnis` unterscheidet `angenommen` (nur HTTP 2xx), `abgelehnt` (kein Schlüssel, Verbindungsaufbau gescheitert, 4xx) und `unklar` (5xx, Lese-Timeout, Abbruch, 1xx/3xx). Ein Journal-Schreibfehler beendet den Lauf. `missing_details.modus` = live/test/einzel; Health-Check zählt nur live und meldet werktags ab 10:00 Berlin ohne heutigen Live-Lauf rot; dazu **`sa-briefing-frist.timer`** Mo–Fr 10:15 Berlin (`daily_health_check.py --briefing-frist`, Admin-Alarm nur bei Verstoß — die Health-Mail um 05:00 UTC liegt vor der Frist). Wächter `verify_briefing_versand.py` (+ Mutationstest), Codex-Freigabe nach 5 Runden |
 
 Alle schreiben ein Protokoll in die Supabase-Tabelle `refresh_log`.
 
@@ -235,8 +236,18 @@ nur den `docker exec`-Client, der Prozess im Container liefe weiter — am 29.09
 |---|---|
 | `scripts/nightly_refresh.py` | Nightly Job + Health-Check |
 | `scripts/intraday_refresh.py` | Intraday Updates |
-| `deploy/systemd/` + `deploy/install_timers.sh` | Stündliche Timer (Intraday, Polymarket) |
+| `deploy/systemd/` + `deploy/install_timers.sh` | Timer: stündlich (Intraday, Polymarket), Nightly, Daily Morning Briefing |
 | `scripts/fix_missing_days.py` | Fehlende Tage finden + nachladen |
 | `scripts/backfill_tdoy.py` | TDOM/TDOY neu berechnen |
 | `shared/exchange_holidays.py` | Börsen-Feiertagskalender |
 | `shared/symbols.py` | Ticker → Exchange Mapping |
+
+## Deploy wartet auf laufende Pflicht-Läufe (seit 2026-10-12)
+
+Ein Push baut den App-Container neu, und `docker compose up` beendete bisher jeden laufenden `docker exec`-Job per
+SIGKILL (Brier 11.10.2026, Exit 137). Jetzt: `docker compose build` (der laufende Container bleibt), danach
+`flock -x -w 2700 logs/sperre/produktion.lock docker compose up -d`. Jeder Lauf aus dem Pflicht-Inventar der
+Produktionssperre (`shared/produktionssperre.py`) hält dieselbe Datei geteilt; der Austausch wartet also, bis keiner
+mehr läuft, höchstens 45 min, dann wird der Deploy rot. Die ssh-action hat dafür `command_timeout: 75m`.
+**Nicht erfasst** sind Läufe außerhalb des Inventars (Brier-Scraper) — für sie gilt weiter: nicht pushen, während sie
+laufen. Wächter: `verify_produktionssperre.py` (Betrieb).

@@ -105,6 +105,15 @@ jobs:
       # dem Schritt "Handelstag-Nummern" installiert.
       - name: Waechter - Sitzungshelfer
         run: python3 scripts/verify_sitzungen.py
+      # Daily Briefing auf dem systemd-Timer (2026-10-12): ein Live-Versand je Berliner Datum, Wiederaufnahme ohne
+      # Doppelte, Health-Check nur Live-Laeufe + 10:00-Frist, kein GitHub-Zeitplan. --streng: unter Linux muss auch
+      # der parallele Lauf (flock) gepruefte sein, UNGEPRUEFT ist rot.
+      # requests: der Wächter prüft den echten Mailadapter (shared/email_brevo, nur requests.post ersetzt); dem
+      # Interpreter von setup-python fehlt das Paket (siehe Kommentar oben).
+      - name: Waechter - Briefing-Versand
+        run: |
+          python3 -m pip install --quiet requests==2.32.3
+          python3 scripts/verify_briefing_versand.py --streng
       # P2: jeder Schreiber von prices.tdom/tdoy schreibt Kalendernummern — die echten Schreibwege offline
       # mit Stubs fuer Supabase/Yahoo, gegen eine unabhaengige numpy-Zaehlung. Braucht pandas.
       - name: Waechter - Schreiber von TDOM/TDOY nach Boersenkalender
@@ -142,6 +151,9 @@ jobs:
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           envs: SA_SHA
+          # Standard waeren 10 min — zu kurz, seit der Container-Austausch bis zu 45 min auf laufende
+          # Pflicht-Laeufe wartet (flock unten).
+          command_timeout: 75m
           script: |
             cd /opt/seasonaledge
 
@@ -235,8 +247,17 @@ jobs:
             # Cache-Bust erben.
             python3 landing/build_en.py --write || scheitern "build_en.py fehlgeschlagen"
 
-            # Docker rebuild + restart, dann Blog (DE+EN) im Container bauen
-            docker compose up -d --build || scheitern "docker compose up fehlgeschlagen"
+            # Docker rebuild + restart, dann Blog (DE+EN) im Container bauen.
+            # Erst bauen (der laufende Container bleibt unberuehrt), dann den Austausch erst, wenn kein Pflicht-Lauf
+            # der Produktionssperre mehr laeuft: exklusiver flock auf dieselbe Sperrdatei, die jeder Pflicht-Lauf
+            # (Nightly, Intraday, Daily Briefing, ...) geteilt haelt (shared/produktionssperre.py). Sonst beendet der
+            # Neubau einen laufenden docker-exec-Job per SIGKILL (Brier 11.10.2026). Obergrenze 45 min, danach rot.
+            # Nicht erfasst: Laeufe ausserhalb des Pflicht-Inventars (z. B. Brier-Scraper) — dort gilt weiter:
+            # nicht pushen, waehrend sie laufen.
+            docker compose build || scheitern "docker compose build fehlgeschlagen"
+            mkdir -p logs/sperre
+            flock -x -w 2700 logs/sperre/produktion.lock docker compose up -d \
+              || scheitern "docker compose up fehlgeschlagen oder Pflicht-Lauf nach 45 min nicht beendet"
             docker compose exec -T app python3 blog/blog_builder.py --build \
               || scheitern "blog_builder.py --build fehlgeschlagen"
 

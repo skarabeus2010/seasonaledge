@@ -42,7 +42,7 @@ CRYPTO_MAX_AGE_DAYS = 1           # BTC darf hoechstens 1 Tag alt sein
 WEEKLY_SCANNER_MAX_AGE_DAYS = 8   # Scanner laeuft Sonntags, 8 Tage Puffer
 POLYMARKET_MAX_AGE_DAYS = 2       # Phase G taeglich
 EVENT_DATA_MAX_AGE_DAYS = 2       # event_data_daily.yml taeglich 22:15 UTC
-DAILY_NL_MAX_AGE_WORKDAYS = 2     # daily_newsletter.yml Mo-Fr 06:00 UTC
+DAILY_NL_MAX_AGE_WORKDAYS = 2     # sa-daily-briefing.timer Mo-Fr 07:30 Europe/Berlin
 # Stuendliche systemd-Timer auf dem VPS (deploy/systemd/). Die Krypto-Gruppe ist
 # rund um die Uhr aktiv, also schreibt JEDER Intraday-Lauf eine Zeile — an jedem
 # Wochentag 24. Ein verlorener Slot (Deploy ersetzt den Container) ist normal.
@@ -52,6 +52,33 @@ STUENDLICH_MAX_ALTER_H = 2.5      # letzter Lauf eines stuendlichen Timers
 INTRADAY_FEHLLAEUFE_GELB = 3      # Laeufe mit ausgefallenen Tickern in 24h
 WEEKLY_NL_MAX_ALTER_TAGE = 8      # Weekly Newsletter sonntags (nightly Phase F)
 
+
+
+def _newsletter_modus(zeile: dict) -> str:
+    """Modus eines daily_newsletter-Eintrags aus missing_details (seit 2026-10-12); Altzeilen ohne Modus = live."""
+    import json as _json
+    try:
+        return (_json.loads(zeile.get("missing_details") or "{}") or {}).get("modus", "live")
+    except (ValueError, TypeError, AttributeError):
+        return "live"
+
+
+def _newsletter_frist_verpasst(live_zeilen: list, now_utc) -> bool:
+    """Werktags ab 10:00 Berliner Zeit muss ein Live-Lauf mit dem heutigen Berliner Datum vorliegen."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+    berlin = now_utc.astimezone(ZoneInfo("Europe/Berlin"))
+    if berlin.weekday() >= 5 or berlin.hour < 10:
+        return False
+    for z in live_zeilen:
+        ts = z.get("created_at")
+        try:
+            t = _dt.fromisoformat(str(ts).replace("Z", "+00:00")).astimezone(ZoneInfo("Europe/Berlin"))
+        except (ValueError, TypeError):
+            continue
+        if t.date() == berlin.date():
+            return False
+    return True
 
 def _last_workday(ref: date) -> date:
     """Letzter Werktag (Mo-Fr) bis einschl. ref."""
@@ -668,28 +695,35 @@ def collect_health_data() -> dict:
         downgrade("red")
 
     # ── Check 5c: Daily Newsletter ─────────────────────────────────
-    # Mo-Fr 06:00 UTC. Am Wochenende gibt es keinen Run, daher Schwelle in
-    # Werktagen (ähnlich SPY-Frische): erlaubt 2 Werktage Verzug.
+    # Mo-Fr 07:30 Europe/Berlin (sa-daily-briefing.timer). Am Wochenende gibt es keinen Run, daher Schwelle in
+    # Werktagen (ähnlich SPY-Frische): erlaubt 2 Werktage Verzug. Gezählt werden NUR Live-Läufe (`modus` in
+    # missing_details; Altzeilen ohne Modus gelten als live) — ein Test- oder Einzelversand darf einen
+    # fehlenden Live-Versand nicht verdecken. Dazu die Frist: werktags ab 10:00 Berliner Zeit ohne Live-Lauf
+    # von heute → rot.
     try:
         resp = (
             client.table("refresh_log")
             .select("run_date,duration_seconds,tickers_success,tickers_total,missing_details,created_at")
             .eq("run_type", "daily_newsletter")
             .order("created_at", desc=True)
-            .limit(1)
+            .limit(30)
             .execute()
         )
-        rows = resp.data or []
+        rows = [r for r in (resp.data or []) if _newsletter_modus(r) == "live"][:1]
+        frist_rot = _newsletter_frist_verpasst(rows, now_utc)
         is_weekend_today = now_utc.weekday() >= 5
         if not rows:
-            # Vor erstem Live-Run noch keine Daten — yellow statt red.
+            # Kein Live-Lauf in den letzten 30 Einträgen: gelb — nach der Frist rot (Codex R2: die Frist galt
+            # sonst gerade dann nicht, wenn gar kein Live-Lauf da ist).
+            st = "red" if frist_rot else "yellow"
             checks.append({
                 "name": "Daily Newsletter",
-                "status": "yellow",
-                "detail": "Kein Eintrag in refresh_log (noch nie gelaufen?)",
+                "status": st,
+                "detail": ("kein Live-Versand heute bis 10:00 Berlin (kein Live-Eintrag im refresh_log)" if frist_rot
+                           else "Kein Live-Eintrag in refresh_log (noch nie gelaufen?)"),
                 "value": "—",
             })
-            downgrade("yellow")
+            downgrade(st)
         else:
             last = rows[0]
             run_date = last.get("run_date")
@@ -724,6 +758,11 @@ def collect_health_data() -> dict:
             if total and success < total * 0.9 and status == "green":
                 status = "yellow"
                 detail = f"{run_date} · nur {success}/{total} (<90%) zugestellt"
+
+            # Frist: werktags ab 10:00 Berliner Zeit muss der heutige Live-Lauf da sein (Timer 07:30)
+            if frist_rot:
+                status = "red"
+                detail = f"kein Live-Versand heute bis 10:00 Berlin (letzter: {run_date})"
 
             checks.append({
                 "name": "Daily Newsletter",
@@ -817,12 +856,36 @@ def render_email(context: dict) -> tuple[str, str]:
     return subject, html
 
 
+def briefing_frist(client, now_utc, alarm) -> int:
+    """Fristprüfung des Daily Briefings (sa-briefing-frist.timer, Mo–Fr 10:15 Berlin): werktags nach 10:00 ohne
+    Live-Lauf von heute → `alarm(text)` und Exit 1. Sonst still Exit 0. Der tägliche Health-Lauf (05:00 UTC) liegt
+    VOR der Frist und kann sie nicht prüfen (Codex R2)."""
+    resp = (client.table("refresh_log").select("missing_details,created_at")
+            .eq("run_type", "daily_newsletter").order("created_at", desc=True).limit(30).execute())
+    live = [r for r in (resp.data or []) if _newsletter_modus(r) == "live"]
+    if not _newsletter_frist_verpasst(live, now_utc):
+        print("[health] Briefing-Frist: Live-Versand von heute vorhanden (oder keine Frist)")
+        return 0
+    letzter = live[0].get("created_at") if live else "—"
+    alarm("Daily Morning Briefing: bis 10:00 Berliner Zeit kein Live-Versand von heute (letzter Live-Lauf: %s). "
+          "Prüfen: journalctl -u sa-daily-briefing.service, logs/versand/." % letzter)
+    print("[health] Briefing-Frist VERPASST — Alarm gesendet")
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="SeasonAlpha Daily Health Check")
     parser.add_argument("--dry-run", action="store_true",
                         help="HTML auf Disk schreiben, kein Versand")
     parser.add_argument("--to", type=str, help="Einzelner Empfanger")
+    parser.add_argument("--briefing-frist", action="store_true",
+                        help="Nur die 10-Uhr-Frist des Daily Briefings prüfen, bei Verstoß Admin-Alarm")
     args = parser.parse_args()
+
+    if args.briefing_frist:
+        from shared.supabase_client import get_client
+        from shared.email_brevo import send_admin_alert
+        return briefing_frist(get_client(), datetime.now(timezone.utc), send_admin_alert)
 
     from shared.logger import app_logger
 

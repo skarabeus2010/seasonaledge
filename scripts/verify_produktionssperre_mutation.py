@@ -38,6 +38,7 @@ DAILY = "scripts/daily_newsletter.py"
 TIMERS = "deploy/install_timers.sh"
 DEPLOY = ".github/workflows/deploy.yml"
 UNIT = "deploy/systemd/sa-nightly.service"
+UNIT_BRIEFING = "deploy/systemd/sa-daily-briefing.service"
 WF_SCAN = ".github/workflows/full_scanner.yml"
 WF_FLOWS = ".github/workflows/flows_update.yml"
 NEU = "scripts/zz_mutation_neuer_schreiber.py"
@@ -108,6 +109,18 @@ MUTATIONEN = [
      "!contains(github.event.head_commit.message", "[Betrieb: deploy.yml überspringt"),
     ("Unit wertet 75 als Fehler", UNIT, "SuccessExitStatus=75\n", "",
      "[Betrieb: sa-nightly.service wertet 75 als Erfolg]"),
+    ("Neue Briefing-Unit wertet 75 als Fehler", UNIT_BRIEFING, "SuccessExitStatus=75\n", "",
+     "[Betrieb: sa-daily-briefing.service wertet 75 als Erfolg]"),
+    ("Deploy tauscht Container ohne Sperre", DEPLOY,
+     "            flock -x -w 2700 logs/sperre/produktion.lock docker compose up -d \\\n",
+     "            docker compose up -d \\\n",
+     "[Betrieb: deploy.yml baut ohne Austausch"),
+    ("Deploy baut und tauscht in einem Schritt", DEPLOY,
+     '            docker compose build || scheitern "docker compose build fehlgeschlagen"\n',
+     '            docker compose up -d --build || scheitern "docker compose build fehlgeschlagen"\n',
+     "[Betrieb: deploy.yml baut ohne Austausch"),
+    ("ssh-action bricht vor der Wartefrist ab", DEPLOY, "          command_timeout: 75m\n", "",
+     "[Betrieb: ssh-action-Frist"),
     ("Workflow ohne 75-Abbildung", WF_SCAN,
      '            if [ "$RC" = 75 ]; then echo "[full_scanner] Produktionssperre aktiv — Lauf geplant unterdrueckt"; RC=0; fi\n',
      "", "[Betrieb: full_scanner.yml bildet Exit 75 auf Erfolg ab]"),
@@ -259,7 +272,7 @@ def main():
     try:
         KOPIE = isolierte_kopie(WURZEL, temp / "baum")
         ROH.update({d: (KOPIE / d).read_bytes()
-                    for d in (PS, SC, NIGHTLY, KAL, DAILY, TIMERS, DEPLOY, UNIT, WF_SCAN, WF_FLOWS)})
+                    for d in (PS, SC, NIGHTLY, KAL, DAILY, TIMERS, DEPLOY, UNIT, UNIT_BRIEFING, WF_SCAN, WF_FLOWS)})
         rc = _main()
     finally:
         shutil.rmtree(temp, ignore_errors=True)

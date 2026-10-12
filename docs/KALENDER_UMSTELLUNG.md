@@ -8,6 +8,9 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 - 2026-10-10: Tage nach Börsenkalender ausweisen, auch Statistiken; Weg A (isoliert bauen, gemeinsam umschalten).
 - 2026-10-11: veröffentlichte Zahlen, die sich ändern, **nachrechnen und mit `updated:` aktualisieren**; P3/P4 starten;
   **Umschaltung im Wartungsfenster** (einmalig ~15–20 Min.); P5 (historische DB-Spalte) bleibt eigene Freigabe.
+- 2026-10-12: `/opex` und `/vixpiration` zeigen **nur belegte Termine** — OPEX ab 02/2015, VIX ab Kontrakt 09/2015;
+  die Jahre davor werden in V3 **weggelassen** (nicht gekennzeichnet gezeigt). Umschalter Kalendertag ↔ Handelstag
+  auf `/jahreszyklus`/`/risikozyklus` als V4-Posten. Daily Morning Briefing per systemd-Timer statt GitHub-Cron.
 
 ## Verbindliche Grundlagen
 - **Matrix A, Verträge B1–B7, Prüfplan C:** [Codex-Ausarbeitung](review_prompts/2026-10-11_kalender_p3p4_matrix_antwort1.md)
@@ -149,8 +152,8 @@ Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-12_kalend
   (`produktversion`) werden nur Fakten — das Bundle bleibt reproduzierbar.
 - **Verbraucher unverändert bis V3** (`get_opex_date`, Seiten, Mails, `market_events`, `ist_monatsverfall`).
   ⚠️ **Vor dem V3-Umbau** die OPEX-Momentaufnahme einfrieren (2 592 Monate, alle Rückgabefelder von
-  `get_opex_date`/`get_all_opex_dates`, `populate_opex`). Nutzerentscheidung in V3: Historie vor 2015 auf
-  `/opex`/`/vixpiration` gekennzeichnet zeigen oder weglassen.
+  `get_opex_date`/`get_all_opex_dates`, `populate_opex`). Nutzerentscheidung 2026-10-12: Historie vor 2015 auf
+  `/opex`/`/vixpiration` **weglassen** (Umsetzung in V3).
 - **Wächter (Gate):** `scripts/verify_produkttermine.py`; Mutationstest `scripts/verify_produkttermine_mutation.py`.
   `verify_calendar_rules` Regel 8 rechnet mit dem Katalog statt mit seiner früheren (additiven) Kopie.
 

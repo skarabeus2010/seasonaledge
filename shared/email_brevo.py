@@ -99,6 +99,12 @@ def send_admin_alert(message: str) -> bool:
     return send_transactional(admin_email, 5, {"error_message": message})
 
 
+# Ausgang eines Versandversuchs (send_html_ergebnis). Für Versandjournale (shared/versandsperre.py) zählt der
+# Unterschied zwischen "abgelehnt" (sicher NICHT zugestellt, darf wiederholt werden) und "unklar" (der Anbieter kann
+# die Mail angenommen haben — eine Wiederholung riskiert eine doppelte Mail).
+ANGENOMMEN, ABGELEHNT, UNKLAR = "angenommen", "abgelehnt", "unklar"
+
+
 def send_html(
     to_email: str,
     subject: str,
@@ -120,12 +126,32 @@ def send_html(
         reply_to: Optional Reply-To Header
 
     Returns:
-        True bei Erfolg, False bei Fehler
+        True bei Erfolg, False bei Fehler (abgelehnt ODER unklar — wer das unterscheiden muss, nimmt
+        send_html_ergebnis)
+    """
+    return send_html_ergebnis(to_email, subject, html_content, text_content, reply_to) == ANGENOMMEN
+
+
+def send_html_ergebnis(
+    to_email: str,
+    subject: str,
+    html_content: str,
+    text_content: str = None,
+    reply_to: str = None,
+) -> str:
+    """Wie send_html, aber mit drei Ausgängen (Codex-Prüfung Briefing-Timer R3):
+
+    - ANGENOMMEN: Brevo hat mit 2xx geantwortet.
+    - ABGELEHNT: sicher nicht angenommen — kein API-Schlüssel, Verbindungsaufbau gescheitert (ConnectTimeout,
+      ConnectionError VOR dem Senden lässt sich nicht von einem Abbruch danach unterscheiden und zählt daher NICHT
+      hierzu) oder eine 4xx-Antwort (Brevo hat die Anfrage geprüft und verworfen).
+    - UNKLAR: alles, wobei Brevo die Mail angenommen haben kann — Lese-Timeout, Verbindungsabbruch, 5xx, unerwartete
+      Ausnahme.
     """
     api_key = _get_api_key()
     if not api_key:
         error_logger.error("BREVO_API_KEY nicht gesetzt!")
-        return False
+        return ABGELEHNT
 
     payload = {
         "sender": SENDER,
@@ -138,6 +164,7 @@ def send_html(
     if reply_to:
         payload["replyTo"] = {"email": reply_to}
 
+    resp = None
     try:
         resp = requests.post(
             BREVO_API_URL,
@@ -149,6 +176,11 @@ def send_html(
             timeout=15,
         )
         resp.raise_for_status()
+        # Nur 2xx ist eine Annahme — raise_for_status lässt 1xx/3xx durch (Codex R4: 302 galt sonst als zugestellt).
+        if not (isinstance(resp.status_code, int) and 200 <= resp.status_code < 300):
+            error_logger.error(f"HTML-E-Mail ohne 2xx: to={to_email} status={resp.status_code} — Ausgang unklar")
+            print(f"[brevo] UNERWARTETER STATUS {resp.status_code} (unklar)")
+            return UNKLAR
         # Brevo liefert messageId zurück — wichtig für Tracking in Brevo Logs
         msg_id = ""
         try:
@@ -163,21 +195,26 @@ def send_html(
             f"[brevo] to={to_email} status={resp.status_code} "
             f"messageId={msg_id} sender={SENDER.get('email')}"
         )
-        return True
+        return ANGENOMMEN
     except requests.HTTPError as e:
         # Bei 4xx/5xx versuchen wir die Brevo-Fehler-Response zu loggen
+        status = getattr(resp, "status_code", None)
         body = ""
         try:
             body = resp.text[:500]
         except Exception:
             pass
         error_logger.error(
-            f"HTML-E-Mail HTTP-Fehler: to={to_email} "
-            f"status={resp.status_code if 'resp' in dir() else '?'} body={body} error={e}"
+            f"HTML-E-Mail HTTP-Fehler: to={to_email} status={status} body={body} error={e}"
         )
-        print(f"[brevo] HTTP ERROR: status={getattr(resp, 'status_code', '?')} body={body[:200]}")
-        return False
+        print(f"[brevo] HTTP ERROR: status={status} body={body[:200]}")
+        return ABGELEHNT if isinstance(status, int) and 400 <= status < 500 else UNKLAR
+    except requests.ConnectTimeout as e:
+        # Verbindung kam nicht zustande → nichts gesendet
+        error_logger.error(f"HTML-E-Mail fehlgeschlagen (Verbindungsaufbau): to={to_email} error={e}")
+        print(f"[brevo] CONNECT TIMEOUT: {e}")
+        return ABGELEHNT
     except requests.RequestException as e:
-        error_logger.error(f"HTML-E-Mail fehlgeschlagen: to={to_email} error={e}")
-        print(f"[brevo] REQUEST ERROR: {e}")
-        return False
+        error_logger.error(f"HTML-E-Mail fehlgeschlagen (Ausgang unklar): to={to_email} error={e}")
+        print(f"[brevo] REQUEST ERROR (unklar): {e}")
+        return UNKLAR

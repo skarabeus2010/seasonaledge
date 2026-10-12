@@ -1,19 +1,19 @@
 #!/bin/bash
-# Installiert/aktualisiert die systemd-Timer (stuendliche Jobs + Nightly), idempotent.
+# Installiert/aktualisiert die systemd-Timer (stuendliche Jobs, Nightly, Daily Morning Briefing + Fristpruefung), idempotent.
 # Laeuft im Deploy (.github/workflows/deploy.yml) und darf manuell wiederholt werden:
 #   bash /opt/seasonaledge/deploy/install_timers.sh
 #
 # Fasst NUR die hier gelisteten Units an. Ein laufender Job wird nicht
 # unterbrochen: geaenderte Service-Units greifen ab dem naechsten Start,
 # geaenderte Timer werden neu gestartet. Das startet keinen Job — AUSSER bei
-# Persistent=true (sa-nightly), wenn ein Termin verpasst wurde, waehrend der
+# Persistent=true (sa-nightly, sa-daily-briefing), wenn ein Termin verpasst wurde, waehrend der
 # Timer inaktiv war: dann holt systemd ihn sofort nach (gewollt).
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")" && pwd)/systemd"
 DST=/etc/systemd/system
-SERVICES=(sa-intraday.service sa-polymarket-intraday.service sa-nightly.service)
-TIMERS=(sa-intraday.timer sa-polymarket-intraday.timer sa-nightly.timer)
+SERVICES=(sa-intraday.service sa-polymarket-intraday.service sa-nightly.service sa-daily-briefing.service sa-briefing-frist.service)
+TIMERS=(sa-intraday.timer sa-polymarket-intraday.timer sa-nightly.timer sa-daily-briefing.timer sa-briefing-frist.timer)
 
 fehler() { echo "install_timers: FEHLER: $*" >&2; exit 1; }
 

@@ -459,7 +459,7 @@ Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`
 | Nightly Refresh | `nightly_refresh.yml` | `30 20 * * 1-5` | Voller Refresh: prices, monthly/ki/tdom/tdoy/regime/spot_vol, Gap-Fill, refresh_log; So zusätzl. Newsletter/Brier |
 | Nightly Update | `nightly_update.yml` | `0 21 * * 1-5` | Batch-Download aller Ticker |
 | Event Data | `event_data_daily.yml` | `15 22 * * *` | Dividenden + Earnings (Yahoo Crumb-Auth) |
-| Daily Briefing | `daily_newsletter.yml` | `0 6 * * 1-5` | Daily Morning Briefing (Brevo) |
+| Daily Briefing | `sa-daily-briefing.timer` (systemd, seit 2026-10-12); `daily_newsletter.yml` nur Notauslöser | Mo–Fr 07:30 Europe/Berlin | Daily Morning Briefing (Brevo), ein Live-Versand je Berliner Datum (`shared/versandsperre.py`) |
 | Daily Health | `daily_health.yml` | `0 5 * * *` | System-Health-Mail (refresh_log/Freshness) |
 | **DB Completeness** | `db_completeness.yml` | `0 5 * * 0` (So) | 4-Dim-Audit + Orphan-/Stale-Erkennung + Auto-Fix + Mail |
 | Full Scanner | `full_scanner.yml` | `0 3 * * 0` (So) | scanner_results + ki_scores für alle Ticker |

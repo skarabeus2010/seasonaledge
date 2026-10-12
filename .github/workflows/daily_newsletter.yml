@@ -2,8 +2,10 @@ name: Daily Morning Briefing
 
 # Taeglicher Newsletter mit Trading-Tipps fuer den anstehenden Handelstag.
 # Empfaenger sind die `daily_subscribers`-Tabelle (komplett getrennt von
-# Weekly-Subscribers). Schedule: Mo-Fr 06:00 UTC (= 08:00 Berlin Sommer,
-# vor EU-Open). Sa/So bewusst aus — kein US-Trading.
+# Weekly-Subscribers). Der planmaessige Versand laeuft seit 2026-10-12 als systemd-Timer auf dem VPS
+# (deploy/systemd/sa-daily-briefing.*, Mo-Fr 07:30 Europe/Berlin): GitHub startete den Cron '0 6 * * 1-5'
+# zuletzt erst zwischen 11:48 und 14:18 UTC. Dieser Workflow ist nur noch MANUELL (Test, Trockenlauf,
+# Einzelempfaenger, Notausloeser) — ein Zeitplan hier wuerde neben dem Timer doppelt versenden.
 #
 # Inhalte (gerendert via shared/daily_report.build_daily_context):
 #   1. Top-5 ETFs (US-ETF) + Top-5 Aktien (US/EU) mit KI-Score +
@@ -19,10 +21,7 @@ name: Daily Morning Briefing
 #   - tdom_stats mit allen 4 Strategien gefuellt (nightly_refresh.py)
 
 on:
-  schedule:
-    # 06:00 UTC, Mo-Fr (1-5). Cron-Drift bei GitHub Actions kann 15-90 min
-    # Verzoegerung bedeuten — erste Mail meist bis 07:30 UTC im Postfach.
-    - cron: '0 6 * * 1-5'
+  # KEIN schedule: der Zeitplan liegt im systemd-Timer (siehe Kopf).
   workflow_dispatch:
     inputs:
       dry_run:

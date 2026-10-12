@@ -114,7 +114,8 @@ def einbau():
     for nl in ("daily_newsletter", "weekly_newsletter"):
         q = (WURZEL / "scripts" / (nl + ".py")).read_text(encoding="utf-8")
         schutz = q.find('pruefe_schreiben("%s.versand")' % nl)
-        versand = q.find("send_html(")
+        m_v = re.search(r"\bsend_html(?:_ergebnis)?\(", q)
+        versand = m_v.start() if m_v else -1
         pruefe("Einbau: %s prüft vor dem Versand" % nl, 0 <= schutz < versand, "Schutz %d, Versand %d" % (schutz, versand))
     sc = (WURZEL / "shared" / "supabase_client.py").read_text(encoding="utf-8")
     pruefe("Einbau: get_client() liefert den geschützten Client", "_client = _Geschuetzt(create_client(url, key))" in sc)
@@ -413,10 +414,27 @@ def betrieb():
     pruefe("Betrieb: deploy.yml überspringt [ohne-deploy]",
            "if: ${{ !startsWith(github.event.head_commit.message, '[ohne-deploy]') }}" in dy
            and "contains(github.event.head_commit.message" not in dy)
-    for unit in ("sa-nightly.service", "sa-intraday.service"):
-        u = (WURZEL / "deploy" / "systemd" / unit).read_text(encoding="utf-8")
-        pruefe("Betrieb: %s wertet 75 als Erfolg" % unit, re.search(r"(?m)^SuccessExitStatus=75\s*$", u) is not None)
     namen = "|".join(re.escape(n[:-3]) for n in ps.PFLICHT)
+    # Jede systemd-Unit, die ein Pflicht-Skript startet, wertet 75 als Erfolg (nicht nur eine feste Liste —
+    # sonst fällt eine neue Unit wie sa-daily-briefing durch).
+    pflicht_units = []
+    for uf in sorted((WURZEL / "deploy" / "systemd").glob("*.service")):
+        u = uf.read_text(encoding="utf-8")
+        if re.search(r"(?m)^ExecStart=.*scripts/(?:%s)\.py" % namen, u):
+            pflicht_units.append(uf.name)
+            pruefe("Betrieb: %s wertet 75 als Erfolg" % uf.name,
+                   re.search(r"(?m)^SuccessExitStatus=75\s*$", u) is not None)
+    pruefe("Betrieb: Nightly, Intraday und Daily Briefing als Pflicht-Units erkannt",
+           {"sa-nightly.service", "sa-intraday.service", "sa-daily-briefing.service"} <= set(pflicht_units))
+    # Der Deploy tauscht den Container erst, wenn kein Pflicht-Lauf mehr die Sperre hält (sonst SIGKILL, Brier 11.10.)
+    pruefe("Betrieb: deploy.yml baut ohne Austausch und tauscht unter exklusiver Sperre mit Frist",
+           re.search(r"(?m)^\s*docker compose build\b", dy) is not None
+           and re.search(r"(?m)^\s*flock -x -w \d+ logs/sperre/produktion\.lock docker compose up -d\b", dy) is not None
+           and re.search(r"docker compose up -d --build", dy) is None)
+    m_to = re.search(r"(?m)^\s*command_timeout:\s*(\d+)m\s*$", dy)
+    m_w = re.search(r"flock -x -w (\d+) logs/sperre/produktion\.lock", dy)
+    pruefe("Betrieb: ssh-action-Frist liegt über der Wartefrist der Sperre",
+           m_to is not None and m_w is not None and int(m_to.group(1)) * 60 > int(m_w.group(1)) + 600)
     for wf in sorted((WURZEL / ".github" / "workflows").glob("*.yml")):
         q = wf.read_text(encoding="utf-8")
         startet = re.search(r"(?:docker (?:compose )?exec[^\n]*scripts/(?:%s)\.py)|(?:for s in [^\n]*\b(?:%s)\b)"
