@@ -324,8 +324,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
   wartet“): `deploy.yml` baut erst (`docker compose build`) und tauscht den Container dann unter
   `flock -x -w 2700 logs/sperre/produktion.lock` — also erst, wenn kein Lauf aus dem Inventar der Produktionssperre
   mehr läuft (Nightly, Intraday, Daily Briefing, Full Scanner …); nach 45 min rot. ssh-action `command_timeout: 75m`.
-- [ ] **Brier-Scraper und andere Läufe außerhalb des Pflicht-Inventars** schützt die Deploy-Sperre NICHT: weiter
-  **nicht pushen, während sie laufen** (Brier So ~08–09 UTC). Lösung wäre ein eigener `LOCK_SH` in diesen Skripten.
+- Brier-Scraper/Backfills schützt die Deploy-Sperre NICHT — offener Posten unter „Betrieb / Scheduler“.
 
 ### Tage nach Börsenkalender (Plan: [docs/review_prompts/2026-10-10_xetra_tdoy_plan*.md](docs/review_prompts/2026-10-10_xetra_tdoy_plan_v7.md))
 Nutzerentscheidungen 2026-10-10: Tage nach Börsenkalender ausweisen (auch Statistiken); Weg A (isoliert bauen, gemeinsam umschalten).
@@ -338,8 +337,11 @@ Nutzerentscheidungen 2026-10-10: Tage nach Börsenkalender ausweisen (auch Stati
 - [x] **V1c-2** OPEX/VIX nach Cboe (2026-10-12, Codex: Entwurf 6 + Code 2 Runden). ⚠️ Vor V3: OPEX-Momentaufnahme einfrieren. Nutzerentscheidung 2026-10-12: auf /opex, /vixpiration Termine vor 2015 **weglassen** (nur belegt: OPEX ab 02/2015, VIX ab 09/2015).
 - [x] **V1c-3** Halbtage (2026-10-12, Codex: Entwurf 2 + Code 4 Runden; LSE-Halbtage offen).
 - [ ] **V4-Posten (Nutzerwunsch 2026-10-12):** Umschalter Kalendertag ↔ Handelstag (TDOY/TDOM) auf `/jahreszyklus` und `/risikozyklus` — neue Kurvenrechnung nach Handelstag-Position (JS + Python-Zwilling, Lücken bleiben `null`, Fallzahl je Position), Pressure/Detrend/Perzentile mit, Monatsachse für Handelstage mit benannter Regel, DE/EN. Erst mit der Kalender-Einbindung der Seiten (Weg A).
-- [x] **V1d** Sitzungshelfer (2026-10-12, Codex: Entwurf 2 + Code 3 Runden; `verify_sitzungen.py` 445 im Gate, Mutationen 16/16).
-- [ ] Dann V2–V8, P5 (Freigabe), P6, V9 (Wartungsfenster).
+- [x] **V1d** Sitzungshelfer (2026-10-12, Codex: Entwurf 2 + Code 3 Runden; `verify_sitzungen.py` 445 im Gate, Mutationen 16/16; live `18ff46f`).
+- [ ] **NÄCHSTER SCHRITT: V2 Browserkern** — Übergabe mit Checkliste: [docs/KALENDER_UMSTELLUNG.md](docs/KALENDER_UMSTELLUNG.md#übergabe-2026-10-12--nächste-schritte).
+- [ ] **Vor V3:** OPEX-Momentaufnahme einfrieren; `/opex`/`/vixpiration` lassen Termine vor OPEX 02/2015 bzw. VIX 09/2015 weg (Nutzerentscheidung).
+- [ ] **LSE-Halbtage** (24./31.12.) belegen — bisher nur NYSE 2013–2028 (V1c-3), übrige Börsen `ungeprueft`.
+- [ ] Dann V3–V8, P5 (Freigabe), P6, V9 (Wartungsfenster).
 - [ ] **P3** Python-Leser (`tdom_analysis`/`tdoy_analysis`, `daily_report` inkl. EU-TDOM, `weekly_report` Mo–Fr, `plain_vanilla`) — vorher Liste der veröffentlichten Zahlen, die sich ändern (Monthly 10, ToM-Artikel, Down-Month-Reversal) → **Nutzerentscheidung**.
 - [ ] **P4** Seiten auf `SA.boersenkalender` (Dashboard-Ereignisvergleich, Header `app.js:877`, `/feiertage`, Forex, `'NONE'`-Zweige, `/backtest-engine` Mo–Fr, Konverter).
 - [ ] **P5** `prices.tdom/tdoy` ab 2001 per Manifest + einer Transaktion (**Nutzerfreigabe**); **P6** `tdom_stats`/`tdoy_stats` neu; **P7** übrige Börsen nur Bericht.
@@ -465,6 +467,14 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [ ] **Brevo: den alten Schlüssel im Dashboard löschen** — er lag bis 29.09. zusätzlich in der Server-`secrets.toml` (jetzt geleert).
 - [ ] **Tägliche GitHub-Workflows verdecken Fehler** (`… | tail -20` ohne `pipefail`, z. B. `polymarket_daily.yml`, `daily_health.yml`): ein Exit 1 des Skripts wird zum grünen Lauf. Codex-Nebenbefund, vorbestehend.
 - [ ] **Tägliche GitHub-Crons laufen 2–4 h verspätet** (Nightly 20:30 → ~23:00, Options-Skew 23:00 → ~01:00). Solange sie vollständig ankommen unkritisch; bei Ausfällen dasselbe Muster wie die Intraday-Timer.
+- [x] **Daily Morning Briefing auf `sa-daily-briefing.timer`** + Versandsperre + Fristprüfung + Deploy wartet (2026-10-12, v66.18, live `5aedff0`, Codex-Freigabe nach 5 Runden). Bedienung: [docs/REFRESH_MONITORING.md](docs/REFRESH_MONITORING.md#daily-morning-briefing-bedienung-und-prüfliste-seit-2026-10-12).
+- [ ] **Erster Briefing-Lauf Di 13.10. 05:30 UTC (07:30 Berlin) prüfen** — Prüfliste in REFRESH_MONITORING: Mail angekommen, `journalctl -u sa-daily-briefing.service` Exit 0, `logs/versand/daily_newsletter_2026-10-13.json` = `fertig` mit `ungeklaert: 0`, `refresh_log` mit `modus: live`.
+- [ ] **Erste Fristprüfung Di 13.10. 08:15 UTC (10:15 Berlin)**: `journalctl -u sa-briefing-frist.service` Exit 0 und **kein** Alarm.
+- [ ] **Health-Mail Mi 14.10.**: Check „Daily Newsletter“ grün mit dem Timer-Lauf vom 13.10.
+- [ ] **GitHub:** „Daily Morning Briefing“ darf ab 13.10. keine geplanten Läufe mehr zeigen (nur manuelle).
+- [ ] **Beim nächsten Deploy** im Log nachsehen, ob der Schritt mit `flock … docker compose up -d` sauber durchlief (bei laufendem Nightly wartet er — das ist gewollt).
+- [ ] **Weekly Newsletter** hat dieselbe Doppelversand-Klasse (kein Tagesschutz, `send_html` ohne drei Ausgänge) — vor `WEEKLY_NEWSLETTER_AN = True` dasselbe Muster (`Versand("weekly_newsletter")`, `send_html_ergebnis`) übernehmen.
+- [ ] **Brier-Scraper/Backfills in die Deploy-Sperre** aufnehmen (eigener `LOCK_SH` auf `logs/sperre/produktion.lock` oder Eintrag ins Pflicht-Inventar) — bis dahin: nicht pushen, während sie laufen.
 
 ### Offen aus der Session 2026-09-19 (Ticker-Gedächtnis + Skew-Reparatur)
 - [ ] **Leere Kohorten melden statt leere Charts zeichnen** — auf `/kriegszeiten`, `/trifecta`, `/plain-vanilla` und `/dekadenzyklus` liegt die Mindestschwelle bei 200 Zeilen (≈ 10 Monate). Ein junger Ticker kommt durch, eine Kohorte ist dann leer (`Krieg: 0 | Frieden: 1`), und das Chart sieht kaputt aus statt „zu kurze Historie" zu sagen. Vorbestehend, aber das Ticker-Gedächtnis macht es häufiger erreichbar. Braucht vier Seiten plus `data-i18n`-Keys in DE+EN.

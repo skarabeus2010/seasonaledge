@@ -251,3 +251,47 @@ Produktionssperre (`shared/produktionssperre.py`) hält dieselbe Datei geteilt; 
 mehr läuft, höchstens 45 min, dann wird der Deploy rot. Die ssh-action hat dafür `command_timeout: 75m`.
 **Nicht erfasst** sind Läufe außerhalb des Inventars (Brier-Scraper) — für sie gilt weiter: nicht pushen, während sie
 laufen. Wächter: `verify_produktionssperre.py` (Betrieb).
+
+## Daily Morning Briefing: Bedienung und Prüfliste (seit 2026-10-12)
+
+**Zeitplan:** `sa-daily-briefing.timer` Mo–Fr 07:30 Europe/Berlin (Sommer 05:30 UTC, Winter 06:30 UTC),
+`sa-briefing-frist.timer` Mo–Fr 10:15 Europe/Berlin. `daily_newsletter.yml` hat keinen Zeitplan mehr (nur manuell).
+
+**Zustand eines Tages** liegt in `/opt/seasonaledge/logs/versand/` (im Container `/app/logs/versand/`):
+
+| Datei | Inhalt |
+|---|---|
+| `daily_newsletter_<YYYY-MM-DD>.json` | `laeuft` (läuft oder abgebrochen) / `fertig` mit `gesendet`, `fehlgeschlagen`, `ungeklaert` |
+| `daily_newsletter_<YYYY-MM-DD>.gesendet` | Journal, je Zeile `? <hash>` (vor dem Versand), `+ <hash>` (angenommen), `- <hash>` (sicher nicht versandt); nur Hashes, keine Adressen |
+| `daily_newsletter_<YYYY-MM-DD>.lock` | `flock` gegen parallele Live-Läufe |
+
+**Prüfliste nach einem Lauf** (SSH auf den Server, Key per `ls ~/.ssh/`):
+```bash
+journalctl -u sa-daily-briefing.service -n 30 --no-pager      # Exit 0?
+cat /opt/seasonaledge/logs/versand/daily_newsletter_$(TZ=Europe/Berlin date +%F).json   # status fertig, ungeklaert 0?
+journalctl -u sa-briefing-frist.service -n 10 --no-pager       # 10:15: Exit 0, „Live-Versand von heute vorhanden“
+systemctl list-timers 'sa-*' --no-pager                         # nächste Termine
+```
+Dazu in `refresh_log` die jüngste Zeile `run_type='daily_newsletter'`: `missing_details` enthält `"modus": "live"`.
+
+**Wenn ein Versand abgebrochen ist** (Status `laeuft`, Admin-Alarm „wurde abgebrochen“): erst prüfen, ob kein Lauf mehr
+aktiv ist (`systemctl is-active sa-daily-briefing.service`), dann bewusst fortsetzen:
+```bash
+docker exec seasonalpha-app timeout 15m python3 -u scripts/daily_newsletter.py --wiederaufnahme
+```
+Die Wiederaufnahme überspringt angenommene UND ungeklärte Empfänger und meldet die Zahl der ungeklärten per
+Admin-Alarm. Ungeklärte (Netzwerkfehler nach dem Absenden, 5xx, 3xx) bekommen bewusst keine zweite Mail — im
+Brevo-Dashboard („Email Activity“) lässt sich nachsehen, ob sie angekommen ist.
+
+**Wenn die Fristprüfung alarmiert** („bis 10:00 kein Live-Versand“): `journalctl -u sa-daily-briefing.service` lesen.
+Lief der Timer gar nicht → `systemctl status sa-daily-briefing.timer`. Lief er rot → Ursache beheben und manuell
+starten (`systemctl start sa-daily-briefing.service`; ein schon `fertig` gemeldeter Tag versendet nicht erneut).
+
+**Testversand** ohne Einfluss auf Sperre und Health-Check: GitHub „Daily Morning Briefing“ manuell mit `test`
+bzw. `--to`, oder `docker exec seasonalpha-app python3 scripts/daily_newsletter.py --test`. Diese Läufe stehen mit
+`modus: test`/`einzel` im `refresh_log` und zählen NICHT als Live-Versand.
+
+**Wächter:** `scripts/verify_briefing_versand.py` (im Deploy-Gate mit `--streng`; führt `daily_newsletter.main()`,
+`collect_health_data()` und den echten Mailadapter mit Attrappen aus) + `verify_briefing_versand_mutation.py`
+(36/36). Review: [R1](review_prompts/2026-10-12_briefing_timer.md) …
+[Freigabe R5](review_prompts/2026-10-12_briefing_timer_r5_antwort.md).

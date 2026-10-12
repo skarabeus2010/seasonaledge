@@ -29,7 +29,7 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 ## Bauphasen
 | Phase | Inhalt | Status |
 |---|---|---|
-| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · V1d freigegeben (Code 3 Runden), Commit nach `f760b34` |
+| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · V1d live `18ff46f` |
 | V2 | Browserkern: `SA.holidays`-Fassade, Header, Converter | offen |
 | V3 | Ereignisse: Feiertage, Dashboard-Ereignisse, OPEX/VIX (Cboe), Kalender/ICS, Flows | offen |
 | V4 | Fenster/Renditen/Kurven/Strategien (P3i/P3j/P3k) mit Python-Zwillingen — inkl. **Umschalter Kalendertag ↔ Handelstag** (CDOY/TDOY, Monat CDOM/TDOM) auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch 2026-10-12; B3.1/B3.7: Handelstag-Achse nach Börsenkalender, Kalendertag als benannte eigene Achsenmethode) | offen |
@@ -183,6 +183,42 @@ Entwurf mit Codex in 2 Runden freigegeben ([v1](review_prompts/2026-10-12_kalend
 - **Codex-Befunde, die ich nicht sah:** JS-`heute` nahm den 30.02. an und rollte ihn auf den 2. März; abgefangene
   Abstürze zählten im Mutationstest als „gefangen“; JS-`sitzungen` war nicht vollständig gegen die Referenz
   geprüft; ein JS-Absturz in einer Vierergruppe `X,X,0,E` fiel durch das Trennen nur an `;`.
+
+## Übergabe 2026-10-12 — nächste Schritte
+
+**Stand:** V1 (Fundament) ist komplett live: Produktionssperre, Releasekennung/Seitensperre, Ereigniskatalog,
+OPEX/VIX nach Cboe, NYSE-Halbtage, Sitzungshelfer. **Noch keine Seite und kein Leser nutzt die neuen Bausteine** —
+alle Anzeigen rechnen weiter nach der alten Methode (`SA.kalenderMethode = 'alt'`). Nebenher live: Briefing-Timer
+und „Deploy wartet“ ([REFRESH_MONITORING](REFRESH_MONITORING.md#daily-morning-briefing-bedienung-und-prüfliste-seit-2026-10-12)).
+
+**Vorgehen je Phase (bewährt in V1):** Entwurf schreiben → Codex prüft den Entwurf (bis Freigabe) → Code →
+Wächter mit unabhängiger Referenz + Mutationstest in isolierter Kopie → Codex-Coderunden bis Freigabe → GANZES Gate
+lokal → vor dem Push prüfen, dass kein Nicht-Pflicht-Job läuft (Brier So ~08–09 UTC) → Push → Deploy beobachten
+(`docker exec seasonalpha-app grep …` statt Commit-Hash). Patch-Skripte mit dem Write-Tool, nie per Heredoc.
+
+### To-do V2 Browserkern (nächster Schritt)
+- [ ] Bestandsaufnahme aller Aufrufer von `SA.holidays.*` (`detect`, `isTradingDay`, `nextTradingDay`, `goodFriday`,
+      Feiertagslisten) und der Header-Berechnung (`app.js` ~877, „TDOM 20/20“ am Monatsanfang) — Liste mit Datei:Zeile.
+- [ ] Entwurf: `SA.holidays` als **Fassade** über `SA.boersenkalender` (gleiche Signaturen, Methodenschalter
+      `alt`/`kalender_v1`, alte Pfade unverändert solange `alt`); Ticker→Börse nur über die eine Zuordnung
+      (`detect()` gibt heute 40 Tickern NYSE, Forex 7 Tage — Befund aus P1b); keine 10-Tage-Grenze; Konverter
+      Datum ↔ TDOM/TDOY über `sitzungen`/`verschiebe`.
+- [ ] Entwurf an Codex (Prompt unter `docs/review_prompts/2026-10-1x_kalender_v2_entwurf.md`), bis Freigabe.
+- [ ] Code + Wächter: Fassade unter beiden Methoden gegen die alte Ausgabe (Methode `alt` = bitgleich) und gegen
+      Python (`kalender_v1`), echte Seiten in jsdom (`verify_seiten_kurse.py`-Muster), sechs Zeitzonen.
+- [ ] Mutationstest über die gemeinsame Mechanik (`verify_boersenereignisse_mutation.py`), Gate-Schritt.
+- [ ] Bundle-Größe: `boersenkalender.js` ist 480 KB (37 KB gzip) — vor dem Einbinden in alle Seiten prüfen, ob
+      lazy laden oder Schnitt je Börse nötig ist.
+
+### Danach
+- [ ] **V3 Ereignisse** — vorher OPEX-Momentaufnahme einfrieren; `/opex`/`/vixpiration` nur belegte Termine (OPEX ab
+      02/2015, VIX ab 09/2015, davor weglassen); die 14 Abweichungen aus der V1c-2-Bestandsaufnahme beheben
+      (Backtest-Engine ohne Feiertag, Daily „Bis Fr 19.06.“, „Good Friday“ als Grund für Juneteenth u. a.).
+- [ ] **V4** inkl. Umschalter Kalendertag ↔ Handelstag auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch).
+- [ ] **P3 Nutzerentscheidung:** Liste der veröffentlichten Zahlen, die sich durch die Umstellung ändern (Monthly 10,
+      ToM-Artikel, Down-Month-Reversal) vorlegen, bevor gerechnet wird.
+- [ ] **LSE-Halbtage** belegen (Quelle als Archivfassung + Prüfsumme wie NYSE).
+- [ ] V5–V8, P5 (Nutzerfreigabe der DB-Spalte), P6, **V9 im Wartungsfenster** (Probelauf auf `/opt/seasonaledge-probe`).
 
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
