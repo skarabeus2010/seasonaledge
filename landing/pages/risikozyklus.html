@@ -543,30 +543,9 @@
       return out;
     }
 
-    function monthLabelFormatter(v) {
-      var doy = Math.round(parseFloat(v)) + 1;
-      for (var mi=11; mi>=0; mi--) {
-        if (doy >= MONTH_STARTS_DOY[mi]) return MONTHS_DE[mi];
-      }
-      return '';
-    }
 
-    function xaxisDoy() {
-      return {
-        type: 'numeric',
-        min: 0, max: 364,
-        tickAmount: 11,
-        labels: {
-          style:{colors:'#a89878',fontSize:'11px'},
-          formatter: monthLabelFormatter,
-          rotate: 0,
-          showDuplicates: false,
-          hideOverlappingLabels: true
-        },
-        axisTicks: { show: false },
-        tooltip: { enabled: false }
-      };
-    }
+    /** Gemeinsame xaxis-Konfiguration für alle 365-Tag-Charts — Monatsachse aus landing/js/charts.js. */
+    function xaxisDoy() { return SA.monatsAchse.xaxis(); }
 
     // ── Render: Anomalie-Radar ──────────────────────────────────────────────
     RZ.renderAnomaly = function(rows, ticker) {
@@ -631,7 +610,7 @@
       if (RZ.charts.drawdown) { RZ.charts.drawdown.destroy(); RZ.charts.drawdown=null; }
       RZ.charts.drawdown = new ApexCharts(document.getElementById('chart-drawdown'), {
         series: series,
-        chart: Object.assign({ type:'line', height:420 }, SA.chartTheme.chart),
+        chart: SA.monatsAchse.mit(Object.assign({ type:'line', height:420 }, SA.chartTheme.chart)),
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
@@ -692,7 +671,7 @@
       if (RZ.charts.vola) { RZ.charts.vola.destroy(); RZ.charts.vola=null; }
       var volaOpts = {
         series: series,
-        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
+        chart: SA.monatsAchse.mit(Object.assign({ type:'line', height:400 }, SA.chartTheme.chart)),
         stroke: { width:widths, curve:'straight' },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,
@@ -772,7 +751,7 @@
       if (RZ.charts['dd-cycle']) { RZ.charts['dd-cycle'].destroy(); RZ.charts['dd-cycle']=null; }
       RZ.charts['dd-cycle'] = new ApexCharts(document.getElementById('chart-dd-cycle'), {
         series: series,
-        chart: Object.assign({ type:'line', height:400 }, SA.chartTheme.chart),
+        chart: SA.monatsAchse.mit(Object.assign({ type:'line', height:400 }, SA.chartTheme.chart)),
         stroke: { width:widths, curve:'straight' },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,

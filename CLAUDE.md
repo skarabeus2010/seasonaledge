@@ -155,6 +155,7 @@ Prozentuale Renditen normiert auf 100 — NICHT absolute Preisänderungen. Jedes
 - **Börsen-Feiertage ≠ Bank-Feiertage!** XETRA handelt an **Pfingstmontag + 3. Oktober** (nur 8 handelsfreie Tage); **Observed-Shift NUR bei NYSE/LSE** (EU-Börsen: kein Mo-Ersatz bei Wochenend-Feiertag). Beide Falle-Klassen produzieren *falsche* Feiertage → falsche TDOM.
 - **Kalender-Regeln prüfen: `py scripts/verify_calendar_rules.py`** (deterministischer Prüfagent, alle 9 Regeln, PASS/WARN/FAIL). Rückwärts-Check (Kurs-vorhanden-trotz-Feiertag) NUR mit Einzelaktien + Clean-Ära ≥2022 (Indizes/Stooq-Alt-Daten haben Phantome). Spec: [docs/TRADING_CALENDAR_RULES.md](docs/TRADING_CALENDAR_RULES.md)
 - `is_trading_day(today, exchange)` — NICHT `weekday < 5`
+- **Neuer Kalendercode nutzt die gemeinsamen Bausteine** (Kalender-Umstellung, [docs/KALENDER_UMSTELLUNG.md](docs/KALENDER_UMSTELLUNG.md)): Schließungen/Feiertage/Halbtage aus `shared/boersenereignisse.py` (Identität je Regeltermin, nie Listenposition), OPEX/VIX aus `shared/produkttermine.py` (nur belegter Bereich ab 2015, Pflicht-Prüfdatum), Nachfolger/Vorgänger/Offsets/„heute“ aus `shared/sitzungen.py` bzw. `SA.boersenkalender` (V1d, Abnahme offen) — keine eigenen Schleifen, keine feste 10-Tage-Grenze, kein `tdom + offset`, „heute“ nie ohne Zeitzone. Bestehende Verbraucher (`get_opex_date`, `holidays.js`, Seiten, Mails) bleiben bis zu ihrer Phase (V2–V5) unverändert.
 - Frontend: `SA.holidays.detect(ticker)` + `SA.holidays.isTradingDay(date)`, Gauss-Ostern via `SA.holidays.goodFriday(year)`
 - TDOM im Frontend: IMMER aus Holiday-Kalender berechnen, NICHT aus letztem DB-Row ableiten (DB kann vor Intraday-Refresh veraltet sein)
 - CRYPTO: `is_trading_day()` immer True (24/7). FOREX: Mo-Fr ohne Feiertage (Karfreitag offen)
@@ -332,7 +333,8 @@ Nutzerentscheidungen 2026-10-10: Tage nach Börsenkalender ausweisen (auch Stati
 - [x] **V1c-1** Ereigniskatalog (2026-10-12, Codex: Entwurf 4 + Code 2 Runden).
 - [x] **V1c-2** OPEX/VIX nach Cboe (2026-10-12, Codex: Entwurf 6 + Code 2 Runden). ⚠️ Vor V3: OPEX-Momentaufnahme einfrieren; Nutzerentscheidung Historie vor 2015 auf /opex, /vixpiration.
 - [x] **V1c-3** Halbtage (2026-10-12, Codex: Entwurf 2 + Code 4 Runden; LSE-Halbtage offen).
-- [ ] **V1d** Sitzungshelfer · dann V2–V8, P5 (Freigabe), P6, V9 (Wartungsfenster).
+- [ ] **V4-Posten (Nutzerwunsch 2026-10-12):** Umschalter Kalendertag ↔ Handelstag (TDOY/TDOM) auf `/jahreszyklus` und `/risikozyklus` — neue Kurvenrechnung nach Handelstag-Position (JS + Python-Zwilling, Lücken bleiben `null`, Fallzahl je Position), Pressure/Detrend/Perzentile mit, Monatsachse für Handelstage mit benannter Regel, DE/EN. Erst mit der Kalender-Einbindung der Seiten (Weg A).
+- [ ] **V1d** Sitzungshelfer — Entwurf freigegeben (Codex v2), gebaut (`shared/sitzungen.py` + JS-Zwilling), `verify_sitzungen.py` 399/399; offen: Mutationstest, Codex-Codeprüfung, Gate, Commit. Dann V2–V8, P5 (Freigabe), P6, V9 (Wartungsfenster).
 - [ ] **P3** Python-Leser (`tdom_analysis`/`tdoy_analysis`, `daily_report` inkl. EU-TDOM, `weekly_report` Mo–Fr, `plain_vanilla`) — vorher Liste der veröffentlichten Zahlen, die sich ändern (Monthly 10, ToM-Artikel, Down-Month-Reversal) → **Nutzerentscheidung**.
 - [ ] **P4** Seiten auf `SA.boersenkalender` (Dashboard-Ereignisvergleich, Header `app.js:877`, `/feiertage`, Forex, `'NONE'`-Zweige, `/backtest-engine` Mo–Fr, Konverter).
 - [ ] **P5** `prices.tdom/tdoy` ab 2001 per Manifest + einer Transaktion (**Nutzerfreigabe**); **P6** `tdom_stats`/`tdoy_stats` neu; **P7** übrige Börsen nur Bericht.

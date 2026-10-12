@@ -198,6 +198,16 @@ läuft über **CDOY** (jeder Kalendertag hat einen Punkt), die Handelstags-Indiz
 
 ---
 
+## Halbtage (verkürzte Handelstage) — seit V1c-3
+
+Ein Halbtag ist eine **offene Sitzung** mit früherem Schluss: er zählt für TDOM/TDOY, steht nicht in `get_holidays`
+und nicht in den Schließungen. Halbtage werden **nicht aus einer Regel abgeleitet** (die Börse beschließt sie
+jährlich; z. B. ist der 3. Juli 2026 eine Vollschließung, kein Halbtag), sondern nur aus Belegen übernommen:
+NYSE 2013–2028, 13:00 ET Aktien-Kernhandel (`shared/halbtage_belege.py`, Quellen als Archivfassungen mit SHA-256 in
+`docs/belege/`). `halbtag_status(börse, jahr)` = `belegt` nur für vollständig belegte Jahre, sonst `ungeprueft` —
+dann ist „kein Halbtag bekannt“ **nicht** „voller Tag“ (`sitzung_info` liefert `halbtag = null`). Betriebsfunktionen
+(`letzte_session`, `markt_offen`) behandeln Halbtage bewusst weiter wie volle Tage.
+
 ## Regel 7 — OPEX (Options Expiration) — **börsenspezifisch**
 
 ### 7.1 Grundregel
@@ -217,6 +227,11 @@ genau deshalb können US- und DE-OPEX am selben Monatsdritten-Freitag differiere
   einen Freitag fallen: **Good Friday** und **Juneteenth (19.6., seit 2022)**.
 - Impl.: `shared/nyse_holidays.py::get_opex_date()` (generisch via
   `is_nyse_holiday`), Frontend `landing/pages/opex.html` + `dashboard.html::_adjOpex()`.
+- **Kanonisch seit V1c-2 (2026-10-12):** `shared/produkttermine.py` + `SA.boersenkalender.produkttermine`
+  (OCC-Regel ab 2015-02, Belege aus den Cboe-Jahreskalendern 2020–2026, Pflicht-Prüfdatum). Die obigen
+  Implementierungen bleiben bis V3 unverändert; ihre Abweichungen (u. a. Backtest-Engine ohne Feiertag, Daily-Mail
+  „OPEX-Woche“ ohne Feiertag, `holiday_note` „Good Friday“ auch bei Juneteenth) sind in
+  [KALENDER_UMSTELLUNG.md](KALENDER_UMSTELLUNG.md) als V3-Posten geführt. Vor 2015 gibt es keine belegte Regel.
 
 ### 7.4 DE — EUREX (XETRA-Kalender) · *spezifiziert, (noch) nicht implementiert*
 - DAX-/EURO-STOXX-50-/Einzelwert-Optionen handeln an der **EUREX**; deren
@@ -260,8 +275,11 @@ Kalendertage** (= i.d.R. **Mittwoch im Vormonat**).
 
 ### 8.2 Feiertags-Regel (NYSE)
 Ist **der Referenz-3.-Freitag ODER der Settlement-Mittwoch** ein NYSE-Feiertag →
-Settlement **einen Handelstag früher** (= Dienstag; rekursiv). **Letzter
-Handelstag** der VIX-Kontrakte = **Dienstag vor dem Settlement-Mittwoch**.
+Settlement **einmal** der Geschäftstag unmittelbar vor dem Mittwoch (weiter zurück nur, wenn auch dieser geschlossen
+ist; nicht zweimal verschieben, wenn beide Feiertage sind — CFE SR-CFE-2015-023). **Letzter Handelstag:**
+VIX-**Optionen** = Geschäftstag vor dem Settlement; VIX-**Futures** = der Settlementtag selbst (Ende am
+Abrechnungsmorgen, SR-CFE-2014-025). Die Regel gilt belegt ab Kontrakt **2015-09**; 2004/2005 galten andere
+Fassungen (anfangs Mittwoch vor dem 3. Freitag des Kontraktmonats), die nicht belegt modelliert sind.
 
 > Wichtig: Es zählt auch der **Referenz-Freitag** (liegt einen Monat *nach* dem
 > Settlement). Beispiele:
@@ -271,6 +289,9 @@ Handelstag** der VIX-Kontrakte = **Dienstag vor dem Settlement-Mittwoch**.
 >   Referenz-Fr Feiertag → **Di 19.05.**
 >
 > Impl.: `landing/pages/vixpiration.html::getVixpirationDateStr()` (NYSE-Kalender).
+> **Kanonisch seit V1c-2:** `shared/produkttermine.py::vix_regel` + `SA.boersenkalender.produkttermine(…, 'vix', …)`
+> mit getrennten Feldern Settlement / Handelsende Futures / Handelsende Optionen, Belege aus den
+> VX-Historiendateien je Kontrakt (2015-09…2027-06). `verify_calendar_rules.py` Regel 8 rechnet damit.
 
 ### 8.3 VSTOXX / V2X — EUREX (Euronext-/EUREX-Kalender) · *Analog, nicht getrackt*
 Europäisches Pendant zum VIX (Volatilität des EURO STOXX 50). Settlement-Logik

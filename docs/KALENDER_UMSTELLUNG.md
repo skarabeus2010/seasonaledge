@@ -26,10 +26,10 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 ## Bauphasen
 | Phase | Inhalt | Status |
 |---|---|---|
-| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | offen |
+| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · **V1d gebaut, Code-Abnahme offen** (Stand 2026-10-12) |
 | V2 | Browserkern: `SA.holidays`-Fassade, Header, Converter | offen |
 | V3 | Ereignisse: Feiertage, Dashboard-Ereignisse, OPEX/VIX (Cboe), Kalender/ICS, Flows | offen |
-| V4 | Fenster/Renditen/Kurven/Strategien (P3i/P3j/P3k) mit Python-Zwillingen | offen |
+| V4 | Fenster/Renditen/Kurven/Strategien (P3i/P3j/P3k) mit Python-Zwillingen — inkl. **Umschalter Kalendertag ↔ Handelstag** (CDOY/TDOY, Monat CDOM/TDOM) auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch 2026-10-12; B3.1/B3.7: Handelstag-Achse nach Börsenkalender, Kalendertag als benannte eigene Achsenmethode) | offen |
 | V5 | Backtest-Engine | offen |
 | V6 | Statistikgeneration (SQL durch Nutzer), Produktion `kalender_v1`, Leser P3d | offen |
 | V7 | Veröffentlichte Zahlen: Snapshots, Faktenblätter, Erzeugerumbau | offen |
@@ -124,7 +124,8 @@ Entwurf mit Codex in 4 Runden freigegeben ([v1](review_prompts/2026-10-11_kalend
   dort, sonst `ungeprueft` (alle übrigen Börsen, NYSE vor 2013/nach 2028). Quellen = unveränderliche Archivfassungen
   der amtlichen NYSE-/NYX-Kalenderseite mit SHA-256 ([Sicherung](belege/nyse_halbtage_2026-10-12.md),
   [unabhängige Gegenprüfung](belege/nyse_halbtage_2026-10-12_gegenpruefung.md)). `markt_offen`/`letzte_session`
-  behandeln Halbtage weiter wie volle Tage (Betriebskonvention, Änderung nur gemeinsam in V1d). LSE-Halbtage später.
+  behandeln Halbtage weiter wie volle Tage (Betriebskonvention P3m; bleibt auch in V1d unverändert — eine Änderung nur
+  gemeinsam für beide Funktionen in einer eigens benannten Betriebsphase). LSE-Halbtage später.
   Codex: Entwurf 2, Code 4 Runden ([Freigabe](review_prompts/2026-10-12_kalender_v1c3_code_r4_antwort.md)).
 
 ## US-Produkttermine (V1c-2, `shared/produkttermine.py`)
@@ -152,6 +153,28 @@ Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-12_kalend
   `/opex`/`/vixpiration` gekennzeichnet zeigen oder weglassen.
 - **Wächter (Gate):** `scripts/verify_produkttermine.py`; Mutationstest `scripts/verify_produkttermine_mutation.py`.
   `verify_calendar_rules` Regel 8 rechnet mit dem Katalog statt mit seiner früheren (additiven) Kopie.
+
+## Sitzungshelfer (V1d, `shared/sitzungen.py`)
+Entwurf mit Codex in 2 Runden freigegeben ([v1](review_prompts/2026-10-12_kalender_v1d_entwurf.md),
+[v2](review_prompts/2026-10-12_kalender_v1d_entwurf_v2.md)). **Stand 2026-10-12: gebaut, Wächter grün, Mutationstest
+läuft, Codex-Codeprüfung offen — nicht committet.**
+- **Eine Offenheitsdefinition:** alle Helfer auf `is_trading_day` (Halbtage offen); Python `shared/sitzungen.py`,
+  JS `SA.boersenkalender` als Zwilling. Keine Verbraucheränderung, `letzte_session`/`markt_offen` unverändert.
+- **Funktionen:** `sitzungen(von, bis)` (beide Enden eingeschlossen), `naechste`/`vorherige` mit **Pflicht**-Schalter
+  `einschliesslich` (B5.2), `verschiebe(sitzung, n)` statt `tdom + offset` (B5.5), `nte_im_monat`,
+  `nte_von_hinten_im_monat`, `nte_im_jahr` (ungültig → Fehler, nicht vorhanden → `None`), `heute(boerse, jetzt)`,
+  `zieltermin(boerse, jetzt, art)` mit `heutige_sitzung_oder_naechste` / `naechste_nach_heute` (B5.1/B5.3/B5.6),
+  `sitzung_info` (`halbtag` = `true`/`false`/`null` für unbekannt, je nach `halbtag_status`).
+- **Zeitpunktvertrag:** `jetzt` immer mit Zeitzone (Python `datetime` mit `tzinfo`, JS Epoch-ms oder ISO mit `Z`/
+  `±HH:MM`); Börsenzone aus `_SCHLUSSZEIT`, CRYPTO/FOREX UTC, einmal ins Bundle erzeugt (`zonen`).
+- **Ränder:** Rechenbereich 1885-01-01 … 2100-12-31 in jedem Helfer geprüft; Suchen enden am Rand mit Fehler, keine
+  feste Tagesgrenze (B5.8). Die alten JS-Funktionen (`nterHandelstag`, `letzterHandelstag`, `nterHandelstagImJahr`,
+  `naechsterHandelstag`) sind delegierende Hüllen mit unverändertem Verhalten.
+- **Wächter:** `scripts/verify_sitzungen.py` — unabhängige Referenz aus `numpy.busday_offset`, jeder Tag 1885–2100 an
+  13 Börsen (Suchen in beiden Modi, Positionen, `verschiebe` bis ±2520), handgeschriebene Soll-, Rand-, Eingabe- und
+  Zeitzonenfälle (Sommerzeitwechsel, Mitternacht), JS = Python unter UTC, Pacific/Kiritimati, America/Adak; 399
+  Prüfungen in rund 2½ Minuten. Mutationstest `scripts/verify_sitzungen_mutation.py` (14 Mutationen, isoliert).
+- **Offen bis zur Abnahme:** Codex-Codeprüfung, Wächter ins Deploy-Gate, Commit/Deploy.
 
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt

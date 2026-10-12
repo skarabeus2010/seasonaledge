@@ -765,32 +765,9 @@
       return out;
     }
     function fmtPct(v,d) { d=d||2; return (v>=0?'+':'')+v.toFixed(d)+'%'; }
-    /** Numeric x-axis formatter: bekommt Float-Position 0..364, mappt auf Monatsnamen. */
-    function monthLabelFormatter(v) {
-      // v ist 0-basiert (Array-Index). Konvertiere zu DOY 1-basiert.
-      var doy = Math.round(parseFloat(v)) + 1;
-      for (var mi=11; mi>=0; mi--) {
-        if (doy >= MONTH_STARTS_DOY[mi]) return MONTHS_DE[mi];
-      }
-      return '';
-    }
-    /** Gemeinsame xaxis-Konfiguration für alle 365-Tag-Charts. */
-    function xaxisDoy() {
-      return {
-        type: 'numeric',
-        min: 0, max: 364,
-        tickAmount: 11,
-        labels: {
-          style:{colors:'#a89878',fontSize:'11px'},
-          formatter: monthLabelFormatter,
-          rotate: 0,
-          showDuplicates: false,
-          hideOverlappingLabels: true
-        },
-        axisTicks: { show: false },
-        tooltip: { enabled: false }
-      };
-    }
+    /** Gemeinsame xaxis-Konfiguration für alle 365-Tag-Charts — Monatsachse aus landing/js/charts.js. */
+    function xaxisDoy() { return SA.monatsAchse.xaxis(); }
+    function mitMonatsAchse(chartOpts) { return SA.monatsAchse.mit(chartOpts); }
 
     // ── Render: Anomalie-Radar ─────────────────────────────
     // Wrapper um den Shared-Renderer aus decade-compute.js — einmal bauen, 4x nutzen.
@@ -956,7 +933,7 @@
 
       var opts = {
         series: series,
-        chart: Object.assign({ type:'line', height:540, group:'jzklus-sync', id:'jzklus-main' }, SA.chartTheme.chart),
+        chart: mitMonatsAchse(Object.assign({ type:'line', height:540, group:'jzklus-sync', id:'jzklus-main' }, SA.chartTheme.chart)),
         stroke: { width:strokeWidths, curve:'straight', dashArray:strokeDashes },
         colors: colors,
         grid: SA.chartTheme.grid,
@@ -1076,12 +1053,12 @@
       if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
       JZ.charts.pressure = new ApexCharts(container, {
         series: series,
-        chart: Object.assign({
+        chart: mitMonatsAchse(Object.assign({
           type:'line',
           height: 540,                      // Same as main chart
           group: 'jzklus-sync',
           id: 'jzklus-pressure'
-        }, SA.chartTheme.chart),
+        }, SA.chartTheme.chart)),
         stroke: { width:seriesWidths, curve:'straight', dashArray:seriesDashes },
         colors: seriesColors,
         grid: SA.chartTheme.grid,
@@ -1164,12 +1141,12 @@
       if (JZ.charts.individuals) { try { JZ.charts.individuals.destroy(); } catch(e){} JZ.charts.individuals = null; }
       JZ.charts.individuals = new ApexCharts(container, {
         series: series,
-        chart: Object.assign({
+        chart: mitMonatsAchse(Object.assign({
           type:'line',
           height: 320,
           group: 'jzklus-sync',  // SYNC mit Hauptchart über chart.group
           id: 'jzklus-individuals'
-        }, SA.chartTheme.chart),
+        }, SA.chartTheme.chart)),
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
         grid: SA.chartTheme.grid,
@@ -1230,7 +1207,7 @@
       if (JZ.charts.detrend) { JZ.charts.detrend.destroy(); JZ.charts.detrend=null; }
       JZ.charts.detrend = new ApexCharts(document.getElementById('chart-detrend'), {
         series: series,
-        chart: Object.assign({ type:'line', height:260 }, SA.chartTheme.chart),
+        chart: mitMonatsAchse(Object.assign({ type:'line', height:260 }, SA.chartTheme.chart)),
         stroke: { width:widths, curve:'straight', dashArray:dashes },
         colors: colors,
         grid: SA.chartTheme.grid, tooltip: SA.chartTheme.tooltip,

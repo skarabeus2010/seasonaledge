@@ -77,6 +77,75 @@ SA.chartTheme = {
 };
 
 
+// ── Monatsachse für 365-Tag-Charts ──────────────────────────────────────────
+// Wie die Kategorie-Achse der Monats-Performance: Trennstriche an den Monatsgrenzen, Monatsname mittig im Monat.
+// Eine numerische ApexCharts-Achse kennt nur gleich weite Ticks, Monate sind aber 28–31 Tage lang — deshalb
+// zeichnet SA.monatsAchse Striche und Namen nach jedem Rendern selbst ins SVG. Datenindex 0 = 1. Januar.
+SA.monatsAchse = (function () {
+  var NAMEN = ['Jan', 'Feb', 'M\u00e4r', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  var STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];   // Kalendertag des Monatsersten
+  var FARBE_STRICH = '#e0e0e0';   // wie axisBorder/axisTicks der Kategorie-Achse (ApexCharts-Standard)
+  var FARBE_TEXT = '#a89878';
+
+  function zeichnen(ctx) {
+    var g = ctx && ctx.w && ctx.w.globals, svg = ctx && ctx.el && ctx.el.querySelector('svg.apexcharts-svg');
+    if (!g || !svg || !(g.gridWidth > 0) || !(g.maxX > g.minX)) return;
+    var alt = svg.querySelector('g.sa-monatsachse');
+    if (alt) alt.parentNode.removeChild(alt);
+    var NS = 'http://www.w3.org/2000/svg', grp = document.createElementNS(NS, 'g');
+    grp.setAttribute('class', 'sa-monatsachse');
+    grp.setAttribute('transform', 'translate(' + g.translateX + ',' + g.translateY + ')');
+    var minX = g.minX, maxX = g.maxX, H = g.gridHeight;
+    function px(x) { return (Math.min(Math.max(x, minX), maxX) - minX) / (maxX - minX) * g.gridWidth; }
+    // Grenze zwischen letztem Tag eines Monats und erstem des nächsten: Index (Monatserster − 1) − 0,5
+    var grenzen = [minX];
+    for (var m = 1; m < 12; m++) grenzen.push(STARTS[m] - 1.5);
+    grenzen.push(maxX);
+    for (var i = 0; i < grenzen.length; i++) {
+      var x = px(grenzen[i]), strich = document.createElementNS(NS, 'line');
+      strich.setAttribute('x1', x); strich.setAttribute('x2', x);
+      strich.setAttribute('y1', H); strich.setAttribute('y2', H + 6);
+      strich.setAttribute('stroke', FARBE_STRICH); strich.setAttribute('stroke-width', '1');
+      grp.appendChild(strich);
+    }
+    for (var k = 0; k < 12; k++) {
+      var t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', (px(grenzen[k]) + px(grenzen[k + 1])) / 2);
+      t.setAttribute('y', H + 21);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('fill', FARBE_TEXT);
+      t.setAttribute('font-size', '11px');
+      t.setAttribute('font-family', 'DM Sans, sans-serif');
+      t.textContent = NAMEN[k];
+      grp.appendChild(t);
+    }
+    svg.appendChild(grp);
+  }
+
+  return {
+    /** xaxis-Optionen: numerisch 0..364; eingebaute Beschriftung bleibt als leerer Platzhalter (gleiche Höhe). */
+    xaxis: function () {
+      return {
+        type: 'numeric', min: 0, max: 364, tickAmount: 11,
+        labels: { style: { colors: FARBE_TEXT, fontSize: '11px' }, formatter: function () { return '\u00a0'; },
+                  rotate: 0, showDuplicates: false, hideOverlappingLabels: true },
+        axisTicks: { show: false },
+        tooltip: { enabled: false }
+      };
+    },
+    /** Hängt das Zeichnen an die chart-Optionen (mounted + updated) und gibt sie zurück. */
+    mit: function (chartOpts) {
+      chartOpts.events = Object.assign({}, chartOpts.events, {
+        mounted: function (ctx) { zeichnen(ctx); },
+        updated: function (ctx) { zeichnen(ctx); }
+      });
+      return chartOpts;
+    },
+    zeichnen: zeichnen
+  };
+})();
+
+
 // ── Chart Factory Helpers ───────────────────────────────────────────────────
 
 /**
