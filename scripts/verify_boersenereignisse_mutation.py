@@ -187,6 +187,8 @@ def auswerten(rc, aus, erwartet):
     zeilen = [z for z in aus.splitlines() if z.startswith("FEHL")]
     if not zeilen:
         return "ungueltig", "rot ohne inhaltliche Prüfung"
+    if any("[Absturz]" in z for z in zeilen):   # ein (abgefangener) Absturz ist kein Nachweis (Codex V1d R1)
+        return "ungueltig", "der Wächter meldet einen Absturz — kein Nachweis"
     if erwartet and not any(erwartet in z for z in zeilen):
         return "ungueltig", "erwartete Prüfung %s blieb grün; rot war: %s" % (erwartet, zeilen[0][:90])
     return "gefangen", zeilen[0][:90]

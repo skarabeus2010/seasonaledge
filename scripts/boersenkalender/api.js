@@ -244,6 +244,75 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
     while (!vorM(b, [j, m])) { f(j, m); if (m === 12) { j++; m = 1; } else m++; }
   }
 
+  // ── Sitzungshelfer-Kern (V1d) ──────────────────────────────────────────────────────────────────────────────
+  var UNTEN_NR = tagNr(DATEN.von, 1, 1), OBEN_NR = tagNr(DATEN.bis, 12, 31);
+  function offenNrB(b, n) { var d = ausTagNr(n); return offen(b, d[0], d[1], d[2]); }
+  function offenIso(b, iso) { var d = datumZerlegen(iso); return offen(b, d[0], d[1], d[2]); }
+  function schrittNr(n, r) {
+    n += r;
+    if (n < UNTEN_NR || n > OBEN_NR) fehler('Keine Sitzung bis zum Rand des Rechenbereichs (' + (r > 0 ? DATEN.bis + '-12-31' : DATEN.von + '-01-01') + ')');
+    return n;
+  }
+  function suche(datum, boerse, einschliesslich, r) {
+    var b = boerseNormalisieren(boerse), d = datumZerlegen(datum);
+    if (typeof einschliesslich !== 'boolean') fehler('einschliesslich muss true/false sein: ' + einschliesslich);
+    var n = tagNr(d[0], d[1], d[2]);
+    if (!einschliesslich) n = schrittNr(n, r);
+    while (!offenNrB(b, n)) n = schrittNr(n, r);
+    return isoNr(n);
+  }
+  function sitzungenListe(von, bis, boerse) {
+    var b = boerseNormalisieren(boerse), a = datumZerlegen(von), e = datumZerlegen(bis);
+    var na = tagNr(a[0], a[1], a[2]), ne = tagNr(e[0], e[1], e[2]), out = [];
+    if (na > ne) fehler('von (' + von + ') liegt nach bis (' + bis + ')');
+    for (var n = na; n <= ne; n++) if (offenNrB(b, n)) out.push(isoNr(n));
+    return out;
+  }
+  function positionPruefen(j, m, n) {
+    jahrPruefen(j); ganzzahl(m, 'Monat'); ganzzahl(n, 'Position');
+    if (m < 1 || m > 12) fehler('Monat außerhalb 1–12: ' + m);
+    if (n < 1) fehler('Position muss ≥ 1 sein: ' + n);
+  }
+  function monatsSitzungen(j, m, b) { return sitzungenListe(iso(j, m, 1), iso(j, m, monatsTage(j, m)), b); }
+  function nteImMonat(j, m, n, boerse) {
+    var b = boerseNormalisieren(boerse); positionPruefen(j, m, n);
+    var s = monatsSitzungen(j, m, b); return n <= s.length ? s[n - 1] : null;
+  }
+  function nteVonHintenImMonat(j, m, n, boerse) {
+    var b = boerseNormalisieren(boerse); positionPruefen(j, m, n);
+    var s = monatsSitzungen(j, m, b); return n <= s.length ? s[s.length - n] : null;
+  }
+  function nteImJahr(j, n, boerse) {
+    var b = boerseNormalisieren(boerse); positionPruefen(j, 1, n);
+    var s = sitzungenListe(iso(j, 1, 1), iso(j, 12, 31), b); return n <= s.length ? s[n - 1] : null;
+  }
+  var ZEIT_ISO = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|([+-])(\d{2}):(\d{2}))$/;
+  var MS_GRENZE = 8640000000000000;   // größter Betrag, den Date darstellt
+  function heuteBerechnen(boerse, jetzt) {
+    var b = boerseNormalisieren(boerse), ms, m;
+    if (typeof jetzt === 'number' && Number.isSafeInteger(jetzt)) {
+      ms = jetzt;
+    } else if (typeof jetzt === 'string' && (m = ZEIT_ISO.exec(jetzt))) {
+      // Bestandteile VOR der Umrechnung prüfen — Date.parse rollt 30.02. still auf den 2. März (Codex V1d R1)
+      var dz = m[1].split('-'), mon = +dz[1], tag = +dz[2];
+      if (mon < 1 || mon > 12 || tag < 1 || tag > monatsTage(+dz[0], mon)) fehler('Kein gültiges Datum in jetzt: ' + jetzt);
+      if (+m[2] > 23 || +m[3] > 59 || (m[4] !== undefined && +m[4] > 59)) fehler('Keine gültige Uhrzeit in jetzt: ' + jetzt);
+      if (m[6] && (+m[7] > 23 || +m[8] > 59)) fehler('Kein gültiger Zeitzonenversatz in jetzt: ' + jetzt);
+      ms = Date.parse(jetzt);
+    } else {
+      fehler('jetzt muss Epoch-Millisekunden (ganze Zahl) oder ein ISO-Zeitstempel mit Z/±HH:MM sein: ' + jetzt);
+    }
+    if (!isFinite(ms) || Math.abs(ms) > MS_GRENZE) fehler('jetzt ist kein darstellbarer Zeitpunkt: ' + jetzt);
+    var zone = DATEN.zonen[b];
+    if (!zone) fehler('Keine Zeitzone für Börse ' + b);
+    var teile = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' })
+      .formatToParts(new Date(ms)), w = {};
+    for (var i = 0; i < teile.length; i++) w[teile[i].type] = teile[i].value;
+    var datum = w.year + '-' + w.month + '-' + w.day;
+    datumZerlegen(datum);
+    return Object.freeze({ boerse: b, datum: datum, zeitzone: zone, zeitpunkt_utc: new Date(ms).toISOString() });
+  }
+
   var API = {
     version: DATEN.version,
     /** Hash über die aufgelösten Ereignisinhalte (jede Inhaltsänderung) — wie Python ereignisversion(). */
@@ -286,60 +355,67 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
       return out;
     },
 
-    /** n-ter Handelstag (n ≥ 1) eines Monats; null, wenn es ihn nicht gibt. */
-    nterHandelstag: function (j, m, n, boerse) {
-      var b = boerseNormalisieren(boerse);
-      jahrPruefen(j); ganzzahl(m, 'Monat'); ganzzahl(n, 'Position');
-      if (m < 1 || m > 12) fehler('Monat außerhalb 1–12: ' + m);
-      if (n < 1) fehler('Position muss ≥ 1 sein: ' + n);
-      var tab = jahresTabelle(b, j);
-      for (var t = 1; t <= monatsTage(j, m); t++) {
-        var x = tab[iso(j, m, t)];
-        if (x.offen && x.tdom === n) return iso(j, m, t);
-      }
-      return null;
-    },
+    /** n-ter Handelstag (n ≥ 1) eines Monats; null, wenn es ihn nicht gibt. Hülle über nteImMonat (V1d). */
+    nterHandelstag: function (j, m, n, boerse) { return nteImMonat(j, m, n, boerse); },
 
-    /** n-ter Handelstag von hinten (1 = letzter) eines Monats; null, wenn es ihn nicht gibt. */
-    letzterHandelstag: function (j, m, nVonHinten, boerse) {
-      var b = boerseNormalisieren(boerse);
-      jahrPruefen(j); ganzzahl(m, 'Monat'); ganzzahl(nVonHinten, 'Position');
-      if (m < 1 || m > 12) fehler('Monat außerhalb 1–12: ' + m);
-      if (nVonHinten < 1) fehler('Position muss ≥ 1 sein: ' + nVonHinten);
-      var tab = jahresTabelle(b, j);
-      for (var t = monatsTage(j, m); t >= 1; t--) {
-        var x = tab[iso(j, m, t)];
-        if (x.offen && x.tdom_rev === -nVonHinten) return iso(j, m, t);
-      }
-      return null;
-    },
+    /** n-ter Handelstag von hinten (1 = letzter) eines Monats; null, wenn es ihn nicht gibt. Hülle (V1d). */
+    letzterHandelstag: function (j, m, nVonHinten, boerse) { return nteVonHintenImMonat(j, m, nVonHinten, boerse); },
 
-    /** n-ter Handelstag (n ≥ 1) eines Jahres; null, wenn es ihn nicht gibt. */
-    nterHandelstagImJahr: function (j, n, boerse) {
-      var b = boerseNormalisieren(boerse);
-      jahrPruefen(j); ganzzahl(n, 'Position');
-      if (n < 1) fehler('Position muss ≥ 1 sein: ' + n);
-      var tab = jahresTabelle(b, j);
-      for (var m = 1; m <= 12; m++) {
-        for (var t = 1; t <= monatsTage(j, m); t++) {
-          var x = tab[iso(j, m, t)];
-          if (x.offen && x.tdoy === n) return iso(j, m, t);
+    /** n-ter Handelstag (n ≥ 1) eines Jahres; null, wenn es ihn nicht gibt. Hülle über nteImJahr (V1d). */
+    nterHandelstagImJahr: function (j, n, boerse) { return nteImJahr(j, n, boerse); },
+
+    /** Erster Handelstag AB EINSCHLIESSLICH datum; über Jahresgrenzen; Datenende → Fehler. Hülle (V1d). */
+    naechsterHandelstag: function (datum, boerse) { return suche(datum, boerse, true, 1); },
+
+    // ── Sitzungshelfer (V1d, wie Python shared/sitzungen.py) ──
+    /** Offene Sitzungen von..bis (beide eingeschlossen), geordnet. */
+    sitzungen: function (von, bis, boerse) { return sitzungenListe(von, bis, boerse); },
+    /** Erste offene Sitzung ab (einschliesslich=true) bzw. streng nach datum. einschliesslich ist Pflicht. */
+    naechste: function (datum, boerse, einschliesslich) { return suche(datum, boerse, einschliesslich, 1); },
+    /** Letzte offene Sitzung bis (einschliesslich=true) bzw. streng vor datum. */
+    vorherige: function (datum, boerse, einschliesslich) { return suche(datum, boerse, einschliesslich, -1); },
+    /** n-te Sitzung nach (n > 0) bzw. vor (n < 0) einer offenen Sitzung — statt tdom + offset. */
+    verschiebe: function (sitzung, n, boerse) {
+      var b = boerseNormalisieren(boerse), d = datumZerlegen(sitzung);
+      if (typeof n !== 'number' || !isFinite(n) || Math.floor(n) !== n) fehler('n muss eine ganze Zahl sein: ' + n);
+      if (n === 0) fehler('n darf nicht 0 sein');
+      var t = tagNr(d[0], d[1], d[2]);
+      if (!offenNrB(b, t)) fehler('Ausgangsdatum ist keine offene Sitzung: ' + sitzung);
+      var r = n > 0 ? 1 : -1;
+      for (var i = 0; i < Math.abs(n); i++) { t = schrittNr(t, r); while (!offenNrB(b, t)) t = schrittNr(t, r); }
+      return isoNr(t);
+    },
+    nteImMonat: function (j, m, n, boerse) { return nteImMonat(j, m, n, boerse); },
+    nteVonHintenImMonat: function (j, m, n, boerse) { return nteVonHintenImMonat(j, m, n, boerse); },
+    nteImJahr: function (j, n, boerse) { return nteImJahr(j, n, boerse); },
+    /** Börsendatum zum Zeitpunkt jetzt (Epoch-ms als ganze Zahl oder ISO mit Z/±HH:MM) in der Börsenzone. */
+    heute: function (boerse, jetzt) { return heuteBerechnen(boerse, jetzt); },
+    /** Zieltermin: art 'heutige_sitzung_oder_naechste' | 'naechste_nach_heute' (B5.1/B5.3/B5.6). */
+    zieltermin: function (boerse, jetzt, art) {
+      if (art !== 'heutige_sitzung_oder_naechste' && art !== 'naechste_nach_heute') fehler('Unbekannte Art: ' + art);
+      var h = heuteBerechnen(boerse, jetzt), b = h.boerse, ziel;
+      if (offenIso(b, h.datum)) ziel = art === 'heutige_sitzung_oder_naechste' ? h.datum : suche(h.datum, b, false, 1);
+      else ziel = suche(h.datum, b, true, 1);
+      return Object.freeze({ boerse: b, referenzzeitpunkt: h.zeitpunkt_utc, zeitzone: h.zeitzone, heute: h.datum,
+                             datum: ziel, kalenderstatus: API.status(b, +ziel.slice(0, 4)), art: art });
+    },
+    /** {offen, halbtag (true/false/null=unbekannt), halbtag_status, schlusszeit, zeitzone, sitzung}. */
+    sitzungInfo: function (datum, boerse) {
+      var b = boerseNormalisieren(boerse), d = datumZerlegen(datum), j = d[0];
+      var status = DATEN.halbtage_vollstaendig[b].indexOf(j) >= 0 ? 'belegt' : 'ungeprueft';
+      var leer = { offen: false, halbtag: null, halbtag_status: status, schlusszeit: null, zeitzone: null, sitzung: null };
+      if (!offen(b, d[0], d[1], d[2])) return Object.freeze(leer);
+      var liste = ereignisListe(b, j);
+      for (var i = 0; i < liste.length; i++) {
+        var e = liste[i];
+        if (e.art === 'halbtag' && e.wirksam === datum) {
+          return Object.freeze({ offen: true, halbtag: true, halbtag_status: status, schlusszeit: e.schlusszeit,
+                                 zeitzone: e.zeitzone, sitzung: e.sitzung });
         }
       }
-      return null;
-    },
-
-    /** Erster Handelstag AB EINSCHLIESSLICH datum; über Jahresgrenzen; Datenende → Fehler. */
-    naechsterHandelstag: function (datum, boerse) {
-      var b = boerseNormalisieren(boerse), d = datumZerlegen(datum);
-      var j = d[0], m = d[1], t = d[2];
-      for (;;) {
-        if (offen(b, j, m, t)) return iso(j, m, t);
-        t++;
-        if (t > monatsTage(j, m)) { t = 1; m++; }
-        if (m > 12) { m = 1; j++; }
-        if (j > DATEN.bis) fehler('Kein Handelstag bis zum Datenende ' + DATEN.bis + ' (ab ' + datum + ')');
-      }
+      leer.offen = true;
+      leer.halbtag = status === 'belegt' ? false : null;
+      return Object.freeze(leer);
     },
 
     /** Bisherige Feiertagsmenge eines Jahres (wie Python get_holidays, sortiert, inkl. Wochenenddaten). */

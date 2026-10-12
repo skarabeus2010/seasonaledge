@@ -69,6 +69,9 @@ def daten() -> dict:
     nutz["ereignisversion"] = BE.ereignisversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
     nutz["kalenderversion"] = BE.kalenderversion(boersen, NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR)
     # V1c-2: nur Fakten (Regelgrenzen + Belege), keine Einstufung — die geschieht in der API mit Pflicht-Prüfdatum
+    # V1d: Börsenzonen für heute()/zieltermin() — einmal aus Python, keine zweite JS-Tabelle
+    from shared.sitzungen import ZONEN
+    nutz["zonen"] = {b: ZONEN[b] for b in boersen if b in ZONEN}
     nutz["produkte"] = {"opex_ab": list(PT.OPEX_AB), "vix_ab": list(PT.VIX_AB), "bis": list(PT.BIS),
                         "vix_bis": list(PT.VIX_BIS), "regelstand_opex": PT.REGELSTAND_OPEX,
                         "triple_monate": list(PT.TRIPLE_MONATE), "kalenderannahme": PT.KALENDERANNAHME,

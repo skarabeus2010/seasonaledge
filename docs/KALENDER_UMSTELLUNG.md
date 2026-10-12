@@ -26,7 +26,7 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 ## Bauphasen
 | Phase | Inhalt | Status |
 |---|---|---|
-| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · **V1d gebaut, Code-Abnahme offen** (Stand 2026-10-12) |
+| V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · V1d freigegeben (Code 3 Runden), Commit nach `f760b34` |
 | V2 | Browserkern: `SA.holidays`-Fassade, Header, Converter | offen |
 | V3 | Ereignisse: Feiertage, Dashboard-Ereignisse, OPEX/VIX (Cboe), Kalender/ICS, Flows | offen |
 | V4 | Fenster/Renditen/Kurven/Strategien (P3i/P3j/P3k) mit Python-Zwillingen — inkl. **Umschalter Kalendertag ↔ Handelstag** (CDOY/TDOY, Monat CDOM/TDOM) auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch 2026-10-12; B3.1/B3.7: Handelstag-Achse nach Börsenkalender, Kalendertag als benannte eigene Achsenmethode) | offen |
@@ -156,8 +156,8 @@ Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-12_kalend
 
 ## Sitzungshelfer (V1d, `shared/sitzungen.py`)
 Entwurf mit Codex in 2 Runden freigegeben ([v1](review_prompts/2026-10-12_kalender_v1d_entwurf.md),
-[v2](review_prompts/2026-10-12_kalender_v1d_entwurf_v2.md)). **Stand 2026-10-12: gebaut, Wächter grün, Mutationstest
-läuft, Codex-Codeprüfung offen — nicht committet.**
+[v2](review_prompts/2026-10-12_kalender_v1d_entwurf_v2.md)), Code in 3 Runden
+([Freigabe](review_prompts/2026-10-12_kalender_v1d_code_r3_antwort.md)). **Abgenommen 2026-10-12.**
 - **Eine Offenheitsdefinition:** alle Helfer auf `is_trading_day` (Halbtage offen); Python `shared/sitzungen.py`,
   JS `SA.boersenkalender` als Zwilling. Keine Verbraucheränderung, `letzte_session`/`markt_offen` unverändert.
 - **Funktionen:** `sitzungen(von, bis)` (beide Enden eingeschlossen), `naechste`/`vorherige` mit **Pflicht**-Schalter
@@ -173,8 +173,13 @@ läuft, Codex-Codeprüfung offen — nicht committet.**
 - **Wächter:** `scripts/verify_sitzungen.py` — unabhängige Referenz aus `numpy.busday_offset`, jeder Tag 1885–2100 an
   13 Börsen (Suchen in beiden Modi, Positionen, `verschiebe` bis ±2520), handgeschriebene Soll-, Rand-, Eingabe- und
   Zeitzonenfälle (Sommerzeitwechsel, Mitternacht), JS = Python unter UTC, Pacific/Kiritimati, America/Adak; 399
-  Prüfungen in rund 2½ Minuten. Mutationstest `scripts/verify_sitzungen_mutation.py` (14 Mutationen, isoliert).
-- **Offen bis zur Abnahme:** Codex-Codeprüfung, Wächter ins Deploy-Gate, Commit/Deploy.
+  Prüfungen in rund 2½ Minuten, im Deploy-Gate. Unerwartete Ausnahmen meldet der Wächter als `[Absturz]`; die gemeinsame
+  Mutationsmechanik (`verify_boersenereignisse_mutation.auswerten`) wertet solche Läufe als ungültig — für alle
+  Mutationstests darauf. Mutationstest `scripts/verify_sitzungen_mutation.py`: 16/16, vier Gegenproben (Python-
+  und JS-Absturz abgefangen, fehlender Anker, Modul kaputt) verworfen.
+- **Codex-Befunde, die ich nicht sah:** JS-`heute` nahm den 30.02. an und rollte ihn auf den 2. März; abgefangene
+  Abstürze zählten im Mutationstest als „gefangen“; JS-`sitzungen` war nicht vollständig gegen die Referenz
+  geprüft; ein JS-Absturz in einer Vierergruppe `X,X,0,E` fiel durch das Trennen nur an `;`.
 
 ## Gemessen (Vorab)
 Down-Month-ToM-Reversal (Blog 2026-07-31 + Engine-Preset), SPY bis 2026-07-31: veröffentlichter Stand exakt
