@@ -117,7 +117,15 @@ Entwurf mit Codex in 4 Runden freigegeben ([v1](review_prompts/2026-10-11_kalend
   handgeschriebene Sollfälle mit Quelle (u. a. LSE 2002/2012/2020/2021/2022, TSE 2015/2020/2021/2023, NYSE 2025),
   Versionsvertrag a–d, vollständige Objektgleichheit Python = JS unter zwei Zeitzonen. Mutationstest
   `scripts/verify_boersenereignisse_mutation.py` (isolierte Kopie, Bundle in der Kopie neu erzeugt).
-- **Folgt:** V1c-3 Halbtage mit Quellen.
+- **Halbtage (V1c-3):** Ereignisse `art = "halbtag"` nur aus Belegen (`shared/halbtage_belege.py`), offene Sitzung,
+  weder in `get_holidays` noch in `schliessungen`; Felder `schlusszeit`/`zeitzone`/`sitzung` (NYSE 13:00
+  `America/New_York`, `nyse_aktien_kernhandel` — Optionen 13:15 und Spätsitzungen nicht Inhalt), sonst `null`.
+  NYSE 2013–2028: 34 Halbtage, Jahresabdeckung je Jahr mit eigener Quelle; `halbtag_status(b, j)` = `belegt` nur
+  dort, sonst `ungeprueft` (alle übrigen Börsen, NYSE vor 2013/nach 2028). Quellen = unveränderliche Archivfassungen
+  der amtlichen NYSE-/NYX-Kalenderseite mit SHA-256 ([Sicherung](belege/nyse_halbtage_2026-10-12.md),
+  [unabhängige Gegenprüfung](belege/nyse_halbtage_2026-10-12_gegenpruefung.md)). `markt_offen`/`letzte_session`
+  behandeln Halbtage weiter wie volle Tage (Betriebskonvention, Änderung nur gemeinsam in V1d). LSE-Halbtage später.
+  Codex: Entwurf 2, Code 4 Runden ([Freigabe](review_prompts/2026-10-12_kalender_v1c3_code_r4_antwort.md)).
 
 ## US-Produkttermine (V1c-2, `shared/produkttermine.py`)
 Entwurf mit Codex in 6 Runden freigegeben ([v1](review_prompts/2026-10-12_kalender_v1c2_entwurf.md) …

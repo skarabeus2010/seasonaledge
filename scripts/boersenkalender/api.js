@@ -150,6 +150,7 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
         ersatzgrund: ab.g || 'keiner', verlegt: ab.v === 1, nominal_herkunft: herkunft,
         name_de: nIdx < 0 ? null : DATEN.namen[nIdx][0], name_en: nIdx < 0 ? null : DATEN.namen[nIdx][1],
         quelle: q[0], quelle_titel: q[1], quelle_beleg: q[2], quelle_stand: q[3],
+        schlusszeit: ab.z || null, zeitzone: ab.tz || null, sitzung: ab.s || null,
         kalenderversion: DATEN.kalenderversion
       }));
     }
@@ -401,6 +402,13 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
       for (var k in PR.belege) ds[k] = PR.belege[k].datenstand;
       return { pruefdatum: p, nicht_modelliert: { opex_vor: monatStr(PR.opex_ab[0], PR.opex_ab[1]),
                vix_vor: monatStr(PR.vix_ab[0], PR.vix_ab[1]) }, luecken: l, datenstand: ds };
+    },
+
+    /** 'belegt' (Halbtage des ganzen Jahres belegt) | 'ungeprueft' — wie Python halbtag_status(). */
+    halbtag_status: function (boerse, j) {
+      var b = boerseNormalisieren(boerse);
+      ganzzahl(j, 'Jahr');
+      return DATEN.halbtage_vollstaendig[b].indexOf(j) >= 0 ? 'belegt' : 'ungeprueft';
     },
 
     identitaet: function (boerse, j) {

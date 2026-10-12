@@ -131,12 +131,16 @@ def ereignis_daten(boersen) -> dict:
                 ab["n"] = name_idx(e)
             if quellen_idx[e.quelle] != st[3]:
                 ab["q"] = quellen_idx[e.quelle]
+            if e.schlusszeit is not None:          # V1c-3 Halbtage
+                ab["z"], ab["tz"], ab["s"] = e.schlusszeit, e.zeitzone, e.sitzung
             eintrag = [idx[e.regel_id], e.nominal.strftime("%m%d")] + ([ab] if ab else [])
             jahre.setdefault(str(j), []).append(eintrag)
         ereignisse[b] = jahre
         identitaet[b] = [j for j in range(NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR + 1) if BE.identitaet(b, j) == "tabelle"]
     return {"ereignisse": ereignisse, "regeln": regeln, "namen": namen,
-            "quellen": [[k] + list(QUELLEN[k]) for k in quellen_liste], "identitaet": identitaet}
+            "quellen": [[k] + list(QUELLEN[k]) for k in quellen_liste], "identitaet": identitaet,
+            "halbtage_vollstaendig": {b: [j for j in range(NUMMERN_VON_JAHR, NUMMERN_BIS_JAHR + 1)
+                                         if BE.halbtag_status(b, j) == "belegt"] for b in boersen}}
 
 
 def erzeugen() -> bytes:

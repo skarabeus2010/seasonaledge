@@ -24,6 +24,7 @@ import contextlib
 import dataclasses
 import hashlib
 import json
+import re
 import os
 import subprocess
 import sys
@@ -243,6 +244,91 @@ def sollfaelle() -> None:
     pruefe("Sollfall", BE.identitaet("KRX", 2024) == "tabelle" and BE.identitaet("TSE", 2024) == "regel", "Identität")
 
 
+
+# ── Halbtage (V1c-3) ─────────────────────────────────────────────────────────────────────────────────────────
+# Unabhängige Sollmengen, von Hand aus den archivierten NYSE-/NYX-Kalenderseiten übertragen (Abruf 2026-10-12;
+# Archivzeitpunkte siehe docs/belege/nyse_halbtage_2026-10-12.md) — NICHT aus shared/halbtage_belege.py importiert.
+SOLL_HALBTAGE_NYSE = {
+    2013: {"07-03", "11-29", "12-24"}, 2014: {"07-03", "11-28", "12-24"}, 2015: {"11-27", "12-24"}, 2016: {"11-25"},
+    2017: {"07-03", "11-24"}, 2018: {"07-03", "11-23", "12-24"}, 2019: {"07-03", "11-29", "12-24"},
+    2020: {"11-27", "12-24"}, 2021: {"11-26"}, 2022: {"11-25"}, 2023: {"07-03", "11-24"},
+    2024: {"07-03", "11-29", "12-24"}, 2025: {"07-03", "11-28", "12-24"}, 2026: {"11-27", "12-24"},
+    2027: {"11-26"}, 2028: {"07-03", "11-24"},
+}
+SOLL_HALBTAG_VOLLSTAENDIG = set(range(2013, 2029))
+# Jahr → Archivzeitpunkt der Seite, die das ganze Jahr listet (von Hand zugeordnet)
+SOLL_ABDECKUNG = {2013: "archiv20131129", 2014: "archiv20131129", 2015: "archiv20150210", 2016: "archiv20150210",
+                  2017: "archiv20160204", 2018: "archiv20170303", 2019: "archiv20170303", 2020: "archiv20200219",
+                  2021: "archiv20200219", 2022: "archiv20200219", 2023: "archiv20210208", 2024: "archiv20240111",
+                  2025: "archiv20240111", 2026: "nyse20261012", 2027: "nyse20261012", 2028: "nyse20261012"}
+KEIN_HALBTAG = ["2020-07-02", "2021-07-02", "2022-07-01", "2026-07-02", "2027-07-02", "2026-07-03", "2027-07-05"]
+
+
+def halbtage() -> None:
+    for j in range(1885, 2101):
+        ist = {e.wirksam.isoformat()[5:] for e in BE.ereignisse("NYSE", j) if e.art == "halbtag"}
+        pruefe("Halbtag", ist == SOLL_HALBTAGE_NYSE.get(j, set()), "NYSE %d: Ist %s, Soll %s" % (
+            j, sorted(ist), sorted(SOLL_HALBTAGE_NYSE.get(j, set()))))
+        soll_status = "belegt" if j in SOLL_HALBTAG_VOLLSTAENDIG else "ungeprueft"
+        if BE.halbtag_status("NYSE", j) != soll_status:
+            pruefe("Halbtag", False, "halbtag_status NYSE %d: %s statt %s" % (j, BE.halbtag_status("NYSE", j), soll_status))
+    for b in BE.BOERSEN:
+        if b != "NYSE":
+            pruefe("Halbtag", all(e.art != "halbtag" for j in range(1885, 2101) for e in BE.ereignisse(b, j)),
+                   "%s hat Halbtage ohne Beleg" % b)
+            pruefe("Halbtag", BE.halbtag_status(b, 2026) == "ungeprueft", "%s 2026 nicht ungeprüft" % b)
+    for j, tage in SOLL_HALBTAGE_NYSE.items():
+        for t in tage:
+            d = D("%d-%s" % (j, t))
+            e = [x for x in BE.ereignisse("NYSE", j) if x.art == "halbtag" and x.wirksam == d]
+            pruefe("Halbtag", len(e) == 1 and EH.is_trading_day(d, "NYSE") and d not in EH.get_holidays("NYSE", j, j)
+                   and d not in BE.schliessungen("NYSE", j), "%s: offene Sitzung, keine Schließung" % d)
+            if e:
+                x = e[0]
+                pruefe("Halbtag", (x.schlusszeit, x.zeitzone, x.sitzung) == ("13:00", "America/New_York",
+                                                                         "nyse_aktien_kernhandel"),
+                       "%s: Zeit/Zone/Sitzung %r" % (d, (x.schlusszeit, x.zeitzone, x.sitzung)))
+    # Jahresabdeckung als eigener Beleg mit Quelle; Sicherung des Quellenstands vorhanden und vollständig
+    from shared.halbtage_belege import HALBTAGE
+    from shared.kalender_quellen import QUELLEN as Q
+    ab = HALBTAGE["NYSE"]["abdeckung"]
+    pruefe("Halbtag", {j: k.split("_")[-1] for j, k in ab.items()} == SOLL_ABDECKUNG,
+           "Abdeckungsquellen je Jahr: %s" % {j: k for j, k in ab.items()})
+    pruefe("Halbtag", all(k in Q and Q[k][2] for k in ab.values()), "Abdeckungsquelle ohne Quellen-/Abrufeintrag")
+    sicherung = os.path.join(WURZEL, HALBTAGE["NYSE"]["sicherung"])
+    text = open(sicherung, encoding="utf-8").read() if os.path.exists(sicherung) else ""
+    schluessel = {k for _, k in HALBTAGE["NYSE"]["ereignisse"].values()} | set(ab.values())
+    pruefe("Halbtag", text and all("`%s`" % k in text for k in schluessel), "Sicherung fehlt oder nennt nicht jede Quelle")
+    pruefe("Halbtag", all(iso in text for iso in HALBTAGE["NYSE"]["ereignisse"]), "Sicherung nennt nicht jeden Halbtag")
+    for k in schluessel:   # jede Quelle: unveränderliche Archivadresse + SHA-256, identisch in Quellen und Sicherung
+        m = re.search(r"Archiv (https://web\.archive\.org/web/\d{14}id_/\S+);\s*SHA-256 ([0-9a-f]{64})", Q.get(k, ("", ""))[1])
+        pruefe("Halbtag", bool(m) and m.group(1) in text and m.group(2) in text,
+               "%s: Archivadresse/Prüfsumme fehlt oder weicht von der Sicherung ab" % k)
+    for t in KEIN_HALBTAG:
+        d = D(t)
+        pruefe("Halbtag", not any(e.art == "halbtag" and e.wirksam == d for e in BE.ereignisse("NYSE", d.year)),
+               "%s darf kein Halbtag sein" % t)
+    pruefe("Halbtag", all(e.schlusszeit is None and e.zeitzone is None and e.sitzung is None
+                          for b in BE.BOERSEN for j in (1990, 2025) for e in BE.ereignisse(b, j) if e.art != "halbtag"),
+           "Nicht-Halbtage tragen Halbtagsfelder")
+    # Versionen: Uhrzeit-/Zonenänderung ändert die ereignisversion, nicht die kalenderversion
+    from shared import halbtage_belege as HB
+    ev, kv = BE.ereignisversion(["NYSE"], 2014, 2028), BE.kalenderversion(["NYSE"], 2014, 2028)
+    for feld, wert in (("schlusszeit", "12:00"), ("zeitzone", "Europe/London")):
+        alt = HB.HALBTAGE["NYSE"][feld]
+        HB.HALBTAGE["NYSE"][feld] = wert
+        BE._ereignisse.cache_clear()
+        BE.kompat.cache_clear()
+        try:
+            pruefe("Halbtag", BE.ereignisversion(["NYSE"], 2014, 2028) != ev, "%s geändert, ereignisversion gleich" % feld)
+            pruefe("Halbtag", BE.kalenderversion(["NYSE"], 2014, 2028) == kv, "%s geändert, kalenderversion anders" % feld)
+        finally:
+            HB.HALBTAGE["NYSE"][feld] = alt
+            BE._ereignisse.cache_clear()
+            BE.kompat.cache_clear()
+    pruefe("Halbtag", BE.ereignisversion(["NYSE"], 2014, 2028) == ev, "Zustand nach Versionstest nicht wiederhergestellt")
+
+
 # ── Versionsvertrag ──────────────────────────────────────────────────────────────────────────────────────────
 @contextlib.contextmanager
 def veraendert(boerse: str, jahr: int, eid: str, **neu):
@@ -307,6 +393,7 @@ def zwilling() -> None:
             "schliessungen": {str(j): [d.isoformat() for d in BE.schliessungen(b, j)] for j in range(VON, BIS + 1)
                               if BE.schliessungen(b, j)},
             "identitaet": {str(j): BE.identitaet(b, j) for j in range(VON, BIS + 1)},
+            "halbtag_status": {str(j): BE.halbtag_status(b, j) for j in range(VON, BIS + 1)},
         }
     ev_soll = BE.ereignisversion(boersen, VON, BIS)
     kv_soll = BE.kalenderversion(boersen, VON, BIS)
@@ -326,7 +413,7 @@ def zwilling() -> None:
             pruefe("Zwilling", ist["alias_gleich"] is True, f"{zone}: Alias NASDAQ")
             pruefe("Zwilling", ist["eingefroren"] is True, f"{zone}: Ereignisse veränderlich")
             for b in boersen:
-                for teil in ("ereignisse", "schliessungen", "identitaet"):
+                for teil in ("ereignisse", "schliessungen", "identitaet", "halbtag_status"):
                     a, s = ist["boersen"][b][teil], soll[b][teil]
                     if a != s:
                         jahre = sorted(set(a) | set(s), key=int)
@@ -343,6 +430,7 @@ def main() -> int:
     kompat()
     invarianten()
     sollfaelle()
+    halbtage()
     versionen()
     if "--ohne-node" not in sys.argv:
         zwilling()

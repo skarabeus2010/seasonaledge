@@ -16,13 +16,14 @@ const K = global.window.SA.boersenkalender;
 const out = { zone: process.argv[2], offsets: offsets, ereignisversion: K.ereignisversion,
               kalenderversion: K.kalenderversion, boersen: {} };
 for (const b of auftrag.boersen) {
-  const r = { ereignisse: {}, schliessungen: {}, identitaet: {} };
+  const r = { ereignisse: {}, schliessungen: {}, identitaet: {}, halbtag_status: {} };
   for (let j = auftrag.von; j <= auftrag.bis; j++) {
     const liste = K.ereignisse(j, b);
     if (liste.length) r.ereignisse[j] = liste.map(e => Object.assign({}, e));
     const s = K.schliessungen(j, b);
     if (s.length) r.schliessungen[j] = s;
     r.identitaet[j] = K.identitaet(b, j);
+    r.halbtag_status[j] = K.halbtag_status(b, j);
   }
   out.boersen[b] = r;
 }

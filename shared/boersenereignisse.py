@@ -69,6 +69,10 @@ class Ereignis:
     name_de: str | None
     name_en: str | None
     quelle: str
+    # V1c-3 Halbtage: nur bei art == 'halbtag' gesetzt, sonst None (Bedeutung: shared/halbtage_belege.py)
+    schlusszeit: str | None = None
+    zeitzone: str | None = None
+    sitzung: str | None = None
 
     @property
     def ereignis_id(self) -> str:
@@ -91,6 +95,7 @@ class Ereignis:
             "wirksam": self.wirksam.isoformat(), "ersatzgrund": self.ersatzgrund, "verlegt": self.verlegt,
             "nominal_herkunft": self.nominal_herkunft, "name_de": self.name_de, "name_en": self.name_en,
             "quelle": self.quelle, "quelle_titel": q[0], "quelle_beleg": q[1], "quelle_stand": q[2],
+            "schlusszeit": self.schlusszeit, "zeitzone": self.zeitzone, "sitzung": self.sitzung,
         }
 
 
@@ -162,6 +167,24 @@ def _nyse(j):
     for d in sorted(x for x in _NYSE_SPECIAL_CLOSURES if x.year == j):
         kurz, de, en = _NYSE_SONDER_TEXT[d]
         out.append(_sonder(b, d, kurz, de, en, "NYSE.sonderschliessungen"))
+    out.extend(_halbtage(b, j))
+    return out
+
+
+def _halbtage(b, j):
+    """Belegte Halbtage (V1c-3) — nur aus shared/halbtage_belege.py, nie aus einer Regel; offene Sitzungen."""
+    from shared.halbtage_belege import HALBTAGE, NAMEN
+    reihe = HALBTAGE.get(b)
+    if not reihe:
+        return []
+    out = []
+    for iso, (kurz, quelle) in sorted(reihe["ereignisse"].items()):
+        d = date.fromisoformat(iso)
+        if d.year != j:
+            continue
+        de, en = NAMEN[kurz]
+        out.append(Ereignis(b, "%s.halbtag.%s" % (b, kurz), "halbtag", d, d, d, "keiner", False, "regel", de, en,
+                            quelle, reihe["schlusszeit"], reihe["zeitzone"], reihe["sitzung"]))
     return out
 
 
@@ -475,6 +498,15 @@ def schliessungen(boerse: str, jahr: int) -> list[date]:
     """Eindeutige wirksame Vollschließungen auf sonst offenen Tagen (Mo–Fr; CRYPTO/FOREX: keine)."""
     b = ALIAS.get(boerse, boerse)
     return sorted({e.wirksam for e in ereignisse(b, jahr) if e.art != "halbtag" and e.wirksam.weekday() < 5})
+
+
+def halbtag_status(boerse: str, jahr: int) -> str:
+    """'belegt', wenn eine Quelle die Halbtage des GANZEN Jahres nennt, sonst 'ungeprueft' (auch bei Einzelbelegen)."""
+    from shared.halbtage_belege import HALBTAGE
+    b = ALIAS.get(boerse, boerse)
+    if b not in _REGELN:
+        raise ValueError("unbekannte Börse %r" % boerse)
+    return "belegt" if jahr in HALBTAGE.get(b, {}).get("abdeckung", {}) else "ungeprueft"
 
 
 def identitaet(boerse: str, jahr: int) -> str:

@@ -67,7 +67,9 @@ MUTATIONEN = [
          '                h.update(json.dumps(e.als_dict(), sort_keys=True, ensure_ascii=False).encode("utf-8"))')],
      False, "[Invariante]"),
     ("JS: Ereignisse ohne kalenderversion", [
-        (API, "quelle_stand: q[3],\n        kalenderversion: DATEN.kalenderversion\n", "quelle_stand: q[3]\n")], True, "[Zwilling]"),
+        (API, "        schlusszeit: ab.z || null, zeitzone: ab.tz || null, sitzung: ab.s || null,\n"
+              "        kalenderversion: DATEN.kalenderversion\n",
+         "        schlusszeit: ab.z || null, zeitzone: ab.tz || null, sitzung: ab.s || null\n")], True, "[Zwilling]"),
     ("NYSE-Sonderschließung mit falscher Kennung", [
         (BE, 'date(2025, 1, 9): ("carter",', 'date(2025, 1, 9): ("mlk",')], False, "[Sollfall]"),
     ("Spring Bank: Regeltermin statt verlegtem Tag", [
@@ -94,6 +96,36 @@ MUTATIONEN = [
     ("API geändert, Datei nicht neu erzeugt", [(API, "verlegt: ab.v === 1,", "verlegt: ab.v === 1 || !!ab.w,")],
      False, "nicht aktuell"),
 ]
+HB = "shared/halbtage_belege.py"
+MUTATIONEN += [
+    # ── Halbtage (V1c-3) ──
+    ("Halbtag gelöscht", [(HB, '"2025-07-03": "vor_independence_day", "2025-11-28": "tag_nach_thanksgiving", ',
+                            '"2025-07-03": "vor_independence_day", ')],
+     False, "[Halbtag]"),
+    ("Halbtag falsche Uhrzeit", [(HB, '        "schlusszeit": "13:00",', '        "schlusszeit": "13:15",')], False, "[Halbtag]"),
+    ("Halbtag falsche Zone", [(HB, '        "zeitzone": "America/New_York",', '        "zeitzone": "America/Chicago",')],
+     False, "[Halbtag]"),
+    ("2012 fälschlich vollständig", [(HB, '    2013: "NYSE.halbtage_archiv20131129", 2014:',
+                                      '    2012: "NYSE.halbtage_archiv20131129", 2013: "NYSE.halbtage_archiv20131129", 2014:')],
+     False, "[Halbtag]"),
+    ("Abdeckungsquelle falsch zugeordnet", [(HB, '    2017: "NYSE.halbtage_archiv20160204",',
+                                             '    2017: "NYSE.halbtage_archiv20170303",')], False, "[Halbtag]"),
+    ("Sicherung verweist auf fehlende Datei", [(HB, '"sicherung": "docs/belege/nyse_halbtage_2026-10-12.md",',
+                                               '"sicherung": "docs/belege/fehlt.md",')], False, "[Halbtag]"),
+    ("Prüfsumme in den Quellen weicht von der Sicherung ab", [
+        ("shared/kalender_quellen.py", "SHA-256 9b02f75db96aa8f0bf4ebfae2c991ed5a19c391ca703974b49176b5d1ae4bc40",
+         "SHA-256 9b02f75db96aa8f0bf4ebfae2c991ed5a19c391ca703974b49176b5d1ae4bc41")], False, "[Halbtag]"),
+    ("Halbtag als Schließung gezählt", [(BE, '        if e.art == "halbtag":\n            continue\n        menge.add(e.wirksam)\n',
+                                         '        menge.add(e.wirksam)\n')], False, "[Bestand]"),
+    # _halbtage wird nur für NYSE gerufen — die Mutation muss den Aufruf an einer zweiten Börse UND die Reihe einbauen
+    ("Halbtage ohne Beleg an anderen Börsen", [
+        (BE, "    reihe = HALBTAGE.get(b)\n", '    reihe = HALBTAGE.get(b) or HALBTAGE["NYSE"]\n'),
+        (BE, '    out = _fest(b, j, liste, "XETRA.regelwerk")\n', '    out = _fest(b, j, liste, "XETRA.regelwerk") + _halbtage(b, j)\n')],
+     False, "[Halbtag]"),
+    ("JS: Decoder verliert die Schlusszeit", [(API, "schlusszeit: ab.z || null,", "schlusszeit: null,")], True, "[Zwilling]"),
+    ("JS: halbtag_status immer belegt", [(API, "return DATEN.halbtage_vollstaendig[b].indexOf(j) >= 0 ? 'belegt' : 'ungeprueft';",
+                                          "return 'belegt';")], True, "[Zwilling]"),
+]
 # Gegenproben: dürfen NICHT als gefangen gelten
 UNGUELTIG_ERWARTET = [
     ("Anker existiert nicht", [(BE, "diese Zeile gibt es nicht", "egal")], False),
@@ -111,6 +143,7 @@ def isolierte_kopie(ziel: pathlib.Path) -> pathlib.Path:
                     ignore=shutil.ignore_patterns("__pycache__", "video", "perf", "research", "node_modules"))
     (ziel / "landing").mkdir()
     shutil.copytree(WURZEL / "landing" / "js", ziel / "landing" / "js", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(WURZEL / "docs" / "belege", ziel / "docs" / "belege")   # Quellensicherung (V1c-3)
     return ziel
 
 
