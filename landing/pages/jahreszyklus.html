@@ -81,6 +81,10 @@
     .range-wrap{margin-top:.5rem}
     .range-wrap label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
     .range-wrap input{width:100%;margin-top:.25rem;accent-color:var(--accent)}
+    .apexcharts-legend-series[seriesName="achse-rechts-platzhalter"]{display:none!important}
+    .achse-hinweis{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;font-size:.75rem;color:var(--muted);margin:.35rem 0 0}
+    .achse-reset{background:transparent;border:1px solid rgba(241,196,15,.5);color:#F1C40F;border-radius:6px;font-size:.72rem;padding:.2rem .55rem;cursor:pointer;min-height:28px}
+    .achse-reset:focus-visible{outline:2px solid #F1C40F;outline-offset:2px}
     .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem;cursor:pointer}
     .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
     .cycle-checkboxes{display:flex;flex-direction:column;gap:.35rem;margin-top:.35rem}
@@ -133,6 +137,7 @@
       <label class="toggle-row" data-i18n="checkbox.confidence_band"><input type="checkbox" id="chk-bands"> Konfidenzband (&plusmn;1&sigma;)</label>
       <label class="toggle-row" data-i18n="checkbox.percentile_bands"><input type="checkbox" id="chk-percentile" checked> Perzentil-B&auml;nder (25./75.)</label>
       <label class="toggle-row" data-i18n="checkbox.highlight_current_yr"><input type="checkbox" id="chk-current" checked> Aktuelles Jahr hervorheben</label>
+      <label class="toggle-row" data-i18n="checkbox.current_own_axis"><input type="checkbox" id="chk-own-axis" checked> Eigene Skala rechts (aktuelles Jahr)</label>
       <hr>
       <h3 data-i18n="sidebar.pres_cycle">Pr&auml;sidentenzyklus</h3>
       <div class="cycle-checkboxes">
@@ -170,6 +175,10 @@
         <summary data-i18n="section.annual_progression">Saisonaler Jahresverlauf</summary>
         <div class="content">
           <div id="chart-main"></div>
+          <p id="achse-hinweis" class="achse-hinweis" style="display:none">
+            <span data-i18n="jz.axis_hint">Rechte Achse (Gold) = aktuelles Jahr auf eigener Skala. Beide Achsen beginnen auf derselben Höhe bei 100. Über der rechten Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick setzt zurück.</span>
+            <button type="button" id="achse-reset" class="achse-reset" data-i18n="jz.axis_reset">Skala zurücksetzen</button>
+          </p>
           <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
           <div id="chart-individuals" style="display:none;margin-top:.5rem"></div>
           <!-- Sub-Chart für Pressure, eigene Y-Achse, x-Achse synchron -->
@@ -778,6 +787,120 @@
     };
 
     // ── Render: Hauptchart (Saisonalverlauf) ────────────────────────────────
+    // ── Rechte Y-Achse für das aktuelle Jahr ───────────────────────────────────────────────────────────
+    JZ.ACHSE_BREITE = 64;
+    JZ.ANKER = 100;            // Startwert jedes Jahres (normiert) — links und rechts auf derselben Höhe
+    JZ.manuelleSkala = null;   // {schl, spanne} — per Maus gesetzt, gilt bis Reset oder Tickerwechsel
+    JZ.schrittRund = function(roh) {
+      var p = Math.pow(10, Math.floor(Math.log10(roh))), f = roh / p;
+      return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+    };
+    JZ.autoSkala = function(werte) {
+      var lo = Math.min.apply(null, werte), hi = Math.max.apply(null, werte);
+      var pad = Math.max((hi - lo) * 0.05, 0.5);
+      var schritt = JZ.schrittRund((hi - lo + 2 * pad) / 6);
+      var min = Math.floor((lo - pad) / schritt) * schritt, max = Math.ceil((hi + pad) / schritt) * schritt;
+      return { min: min, max: max, ticks: Math.round((max - min) / schritt) };
+    };
+    // Rechte Achse aus der Spanne: der Anker 100 liegt beim Anteil f der Höhe (wie links), also
+    // min = 100 − f·Spanne, max = 100 + (1−f)·Spanne. Gleiche Strichzahl wie links → Striche auf denselben Gitterlinien.
+    JZ.rechteAchseAusSpanne = function(namen, spanne, sk) {
+      return JZ.rechteAchse(namen, JZ.ANKER - sk.f * spanne, JZ.ANKER + (1 - sk.f) * spanne, sk.jahr, sk.ticks);
+    };
+    JZ.rechteAchse = function(namen, min, max, jahr, ticks) {
+      var schritt = (max - min) / (ticks || 6);
+      return {
+        seriesName: namen, opposite: true, min: min, max: max, tickAmount: ticks || 6,
+        axisBorder: { show: true, color: COL_CURRENT },
+        labels: { style:{colors: COL_CURRENT, fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE, maxWidth: JZ.ACHSE_BREITE,
+                  // Nachkommastellen nach Strichabstand (die Striche folgen den linken Gitterlinien, nicht runden Werten)
+                  formatter:function(v){ return v==null ? '' : v.toFixed(schritt < 1 ? 2 : (schritt < 10 ? 1 : 0)); } },
+        title: { text: jahr + ' — ' + SA.i18n.t('jz.yaxis_own_scale','eigene Skala'), style:{color: COL_CURRENT, fontSize:'11px'} }
+      };
+    };
+    // Untercharts derselben Gruppe bündig zum Hauptchart: hat der Hauptchart rechts die Achse des aktuellen Jahres,
+    // bekommt jeder Unterchart rechts eine gleich breite Platzhalterachse. ApexCharts reserviert eine Achse nur, wenn
+    // eine Reihe an ihr hängt — deshalb eine leere Platzhalterreihe (nur null), aus Legende und Tooltip ausgeblendet.
+    // (Innenabstand oder Containerbreite nachträglich zu setzen wirkte in ApexCharts v4 nicht, gemessen 2026-10-13.)
+    JZ.PLATZHALTER = 'achse-rechts-platzhalter';
+    JZ.rechtsReservieren = function(opts) {
+      if (!JZ._rechteAchseAktiv) return opts;
+      var echte = opts.series.length;
+      opts.series = opts.series.concat([{ name: JZ.PLATZHALTER, data: new Array(365).fill(null) }]);
+      opts.colors = (opts.colors || []).concat(['transparent']);
+      if (opts.stroke) {
+        if (Array.isArray(opts.stroke.width)) opts.stroke.width = opts.stroke.width.concat([0]);
+        if (Array.isArray(opts.stroke.dashArray)) opts.stroke.dashArray = opts.stroke.dashArray.concat([0]);
+      }
+      var links = Array.isArray(opts.yaxis) ? opts.yaxis[0] : opts.yaxis;
+      links = Object.assign({}, links, { seriesName: opts.series.slice(0, echte).map(function(x){ return x.name; }) });
+      opts.yaxis = [links, {
+        seriesName: JZ.PLATZHALTER, opposite: true, showForNullSeries: true,
+        labels: { minWidth: JZ.ACHSE_BREITE, maxWidth: JZ.ACHSE_BREITE, formatter: function(){ return ''; } },
+        title: { text: '\u00a0', style: { fontSize: '11px' } },
+        axisBorder: { show: false }, axisTicks: { show: false }
+      }];
+      var idx = []; for (var i = 0; i < echte; i++) idx.push(i);
+      opts.tooltip = Object.assign({}, opts.tooltip || {}, { enabledOnSeries: idx });
+      // ApexCharts stapelt die Legende bei mehreren Achsen sonst senkrecht nach Achsengruppen
+      opts.legend = Object.assign({}, opts.legend || {}, { clusterGroupedSeries: false });
+      return opts;   // Legenden-Eintrag des Platzhalters blendet CSS aus (.apexcharts-legend-series[seriesName=…])
+    };
+    JZ.spanneSetzen = function(spanne, manuell) {
+      var ch = JZ.charts.main, sk = JZ.skalaRechts;
+      if (!ch || !sk || !JZ._yaxesMain || JZ._yaxesMain.length < 2 || !(spanne > 0) || !isFinite(spanne)) return;
+      JZ.manuelleSkala = manuell ? { schl: sk.schl, spanne: spanne } : null;
+      JZ._yaxesMain = [JZ._yaxesMain[0], JZ.rechteAchseAusSpanne(JZ._yaxesMain[1].seriesName, spanne, sk)];
+      ch.updateOptions({ yaxis: JZ._yaxesMain }, false, false, false);
+    };
+    JZ.skalaZuruecksetzen = function() { if (JZ.skalaRechts) JZ.spanneSetzen(JZ.skalaRechts.autoSpanne, false); };
+    // Maus über der rechten Achse: Rad oder Ziehen = Skala strecken/stauchen (um den Anker 100),
+    // Doppelklick = automatische Skala. Einmal an den Container gebunden; Geometrie zur Ereigniszeit gelesen.
+    JZ.achseMausAnbinden = function() {
+      var box = document.getElementById('chart-main');
+      if (!box || box.__achseMaus) return;
+      box.__achseMaus = true;
+      function lage(ev) {
+        var ch = JZ.charts.main, sk = JZ.skalaRechts;
+        if (!ch || !sk || !JZ._yaxesMain || JZ._yaxesMain.length < 2) return null;
+        var svg = box.querySelector('svg.apexcharts-svg'); if (!svg) return null;
+        var g = ch.w.globals, r = svg.getBoundingClientRect();
+        var x = ev.clientX - r.left, y = ev.clientY - r.top;
+        var rechtsVon = g.translateX + g.gridWidth, oben = g.translateY, unten = g.translateY + g.gridHeight;
+        var drin = x > rechtsVon && x < rechtsVon + JZ.ACHSE_BREITE + 40 && y >= oben && y <= unten;
+        var ax = JZ._yaxesMain[1];
+        return { drin: drin, hoehe: g.gridHeight, spanne: ax.max - ax.min };
+      }
+      var zug = null;
+      box.addEventListener('mousemove', function(ev) {
+        if (zug) {
+          // Nach oben ziehen = Spanne kleiner (Linie größer), nach unten = größer. Der Anker 100 bleibt stehen.
+          var dy = ev.clientY - zug.startY;
+          JZ.spanneSetzen(zug.spanne * Math.exp(dy / zug.hoehe * 2), true);
+          return;
+        }
+        var l = lage(ev);
+        box.style.cursor = (l && l.drin) ? 'ns-resize' : '';
+      });
+      box.addEventListener('mousedown', function(ev) {
+        var l = lage(ev); if (!l || !l.drin) return;
+        ev.preventDefault();
+        zug = { startY: ev.clientY, spanne: l.spanne, hoehe: l.hoehe };
+      });
+      window.addEventListener('mouseup', function() { zug = null; });
+      box.addEventListener('wheel', function(ev) {
+        var l = lage(ev); if (!l || !l.drin) return;
+        ev.preventDefault();
+        JZ.spanneSetzen(l.spanne * (ev.deltaY > 0 ? 1.15 : 1 / 1.15), true);
+      }, { passive: false });
+      box.addEventListener('dblclick', function(ev) {
+        var l = lage(ev); if (!l || !l.drin) return;
+        JZ.skalaZuruecksetzen();
+      });
+      var knopf = document.getElementById('achse-reset');
+      if (knopf) knopf.addEventListener('click', JZ.skalaZuruecksetzen);
+    };
+
     JZ.renderMain = function(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure) {
       var currentYear = new Date().getFullYear();
       var avgSmooth = JZ.rollingMean(avg, smoothing);
@@ -903,15 +1026,19 @@
         });
       }
 
-      // 6. Aktuelles Jahr → linke Achse (gold, dick)
+      // 6. Aktuelles Jahr (gold, dick) — mit „Eigene Skala rechts“ auf der rechten Achse, damit ein stark
+      //    abweichendes Jahr die linke Skala des Durchschnitts nicht staucht (Nutzerwunsch 2026-10-13)
+      var eigeneAchse = !!(document.getElementById('chk-own-axis') && document.getElementById('chk-own-axis').checked);
+      var curWerte = null;
       if (showCurrent && yearData[currentYear]) {
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
         var cc = yearData[currentYear].full_365;
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = cc[i];
+        curWerte = curArr.filter(function(v){ return v != null && isFinite(v); });
         seriesDef.push({
           name: currentYear + ' (' + SA.i18n.t('common.current','aktuell') + ')', data: pad365(curArr),
-          color: COL_CURRENT, width: 3, dash: 0, axis: 'left'
+          color: COL_CURRENT, width: 3, dash: 0, axis: (eigeneAchse && curWerte.length) ? 'right' : 'left'
         });
       }
 
@@ -925,11 +1052,47 @@
       var strokeWidths = seriesDef.map(function(s){ return s.width; });
       var strokeDashes = seriesDef.map(function(s){ return s.dash; });
 
-      // ── Single Y-Axis (KISS) ──────────────────────────────────────────────
-      var yaxes = {
-        labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+      // ── Y-Achsen: links Durchschnitt & Co., rechts das aktuelle Jahr (eigene Skala) oder eine leere ─────
+      //    Spiegelachse gleicher Breite — die Untercharts derselben Gruppe reservieren rechts dieselbe Breite,
+      //    sonst lägen ihre Datumsachsen nicht mehr unter denen des Hauptcharts.
+      var linksNamen = seriesDef.filter(function(s){ return s.axis !== 'right'; }).map(function(s){ return s.name; });
+      var rechtsNamen = seriesDef.filter(function(s){ return s.axis === 'right'; }).map(function(s){ return s.name; });
+      var links = {
+        seriesName: linksNamen,
+        labels: { style:{colors:'#a89878',fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE,
+                  formatter:function(v){return v!=null?v.toFixed(0):'';} },
         title: { text: SA.i18n.t('jz.yaxis_normalized','Normiert (Start=100)'), style:{color:'#a89878',fontSize:'11px'} }
       };
+      var yaxes;
+      JZ.skalaRechts = null;
+      JZ._rechteAchseAktiv = rechtsNamen.length > 0;   // Untercharts reservieren rechts dieselbe Breite
+      if (rechtsNamen.length) {
+        // Linke Skala fest aus den linken Reihen (runde Schritte), der Anker 100 muss innen liegen —
+        // daraus ergibt sich seine Höhe f, und die rechte Achse wird so gelegt, dass ihre 100 auf derselben Höhe sitzt.
+        var linksWerte = [JZ.ANKER];
+        seriesDef.forEach(function(sd) {
+          if (sd.axis === 'right') return;
+          sd.data.forEach(function(v) { if (v != null && isFinite(v)) linksWerte.push(v); });
+        });
+        var L = JZ.autoSkala(linksWerte);
+        var lschritt = (L.max - L.min) / L.ticks;
+        if (L.min >= JZ.ANKER) { L.min -= lschritt; L.ticks++; }
+        if (L.max <= JZ.ANKER) { L.max += lschritt; L.ticks++; }
+        links.min = L.min; links.max = L.max; links.tickAmount = L.ticks;
+        var f = (JZ.ANKER - L.min) / (L.max - L.min);
+        // automatische Spanne: kleinste, in der das ganze aktuelle Jahr Platz hat (+6 % Rand)
+        var cMin = Math.min.apply(null, curWerte), cMax = Math.max.apply(null, curWerte);
+        var autoSpanne = Math.max((JZ.ANKER - cMin) / f, (cMax - JZ.ANKER) / (1 - f), 1) * 1.06;
+        var schl = ticker + '|' + currentYear;
+        if (!JZ.manuelleSkala || JZ.manuelleSkala.schl !== schl) JZ.manuelleSkala = null;
+        JZ.skalaRechts = { f: f, ticks: L.ticks, autoSpanne: autoSpanne, schl: schl, jahr: currentYear };
+        yaxes = [links, JZ.rechteAchseAusSpanne(rechtsNamen, JZ.manuelleSkala ? JZ.manuelleSkala.spanne : autoSpanne, JZ.skalaRechts)];
+      } else {
+        delete links.seriesName;
+        yaxes = [links];
+      }
+      var hinweis = document.getElementById('achse-hinweis');
+      if (hinweis) hinweis.style.display = rechtsNamen.length ? '' : 'none';
 
       var opts = {
         series: series,
@@ -954,14 +1117,16 @@
                     label:{text: SA.i18n.t('common.today','Heute'),style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
         },
-        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
+        legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12}, clusterGroupedSeries:false }),
         dataLabels: { enabled:false },
         title: { text: ticker + ' — ' + SA.i18n.t('section.annual_progression','Saisonaler Jahresverlauf') + ' (' + nYears + ' ' + SA.i18n.t('common.years','Jahre') + ')', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
       };
 
       if (JZ.charts.main) { JZ.charts.main.destroy(); JZ.charts.main=null; }
       JZ.charts.main = new ApexCharts(document.getElementById('chart-main'), opts);
+      JZ._yaxesMain = yaxes;
       JZ.charts.main.render();
+      JZ.achseMausAnbinden();
 
       // Pressure-Info wird von renderPressure gesetzt
       var pInfo = document.getElementById('pressure-info');
@@ -1051,7 +1216,7 @@
       }
 
       if (JZ.charts.pressure) { try { JZ.charts.pressure.destroy(); } catch(e){} JZ.charts.pressure = null; }
-      JZ.charts.pressure = new ApexCharts(container, {
+      JZ.charts.pressure = new ApexCharts(container, JZ.rechtsReservieren({
         series: series,
         chart: mitMonatsAchse(Object.assign({
           type:'line',
@@ -1074,10 +1239,11 @@
           }}
         }),
         xaxis: xaxisDoy(),
-        yaxis: {
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1)+'%':'';} },
+        yaxis: [{
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE,
+                    formatter:function(v){return v!=null?(v>=0?'+':'')+v.toFixed(1)+'%':'';} },
           title: { text:'Kumulierte Rendite (%)', style:{color:'#a89878',fontSize:'11px'} }
-        },
+        }],
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4,
                     label:{text: SA.i18n.t('common.today','Heute'),style:{color:'#fff',background:'rgba(232,168,32,.7)',fontSize:'10px'}} }],
@@ -1086,7 +1252,7 @@
         legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'11px', markers:{width:12,height:12} }),
         dataLabels: { enabled:false },
         title: { text: ticker+' — Pressure Chart (Lookback '+pres.periods.join('/')+' Jahre)', style:{color:'#fff',fontSize:'13px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
+      }));
       JZ.charts.pressure.render();
 
       if (pInfo) {
@@ -1139,7 +1305,7 @@
       if (!series.length) { container.style.display='none'; return; }
 
       if (JZ.charts.individuals) { try { JZ.charts.individuals.destroy(); } catch(e){} JZ.charts.individuals = null; }
-      JZ.charts.individuals = new ApexCharts(container, {
+      JZ.charts.individuals = new ApexCharts(container, JZ.rechtsReservieren({
         series: series,
         chart: mitMonatsAchse(Object.assign({
           type:'line',
@@ -1161,11 +1327,12 @@
           }}
         }),
         xaxis: xaxisDoy(),
-        yaxis: {
+        yaxis: [{
           forceNiceScale: true,
-          labels: { style:{colors:'#a89878',fontSize:'11px'}, formatter:function(v){return v!=null?v.toFixed(0):'';} },
+          labels: { style:{colors:'#a89878',fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE,
+                    formatter:function(v){return v!=null?v.toFixed(0):'';} },
           title: { text:'Einzeljahre — Normiert (Start=100)', style:{color:'#a89878',fontSize:'11px'} }
-        },
+        }],
         annotations: {
           xaxis: [{ x: JZ.todayDoy()-1, borderColor:'rgba(232,168,32,.5)', strokeDashArray:4 }],
           yaxis: [{ y:100, borderColor:'rgba(255,255,255,.2)', strokeDashArray:2 }]
@@ -1173,7 +1340,7 @@
         legend: Object.assign({}, SA.chartTheme.legend, { position:'top', fontSize:'10px', markers:{width:10,height:10} }),
         dataLabels: { enabled:false },
         title: { text: ticker+' — Einzeljahre (eigene Y-Skala)', style:{color:'#fff',fontSize:'12px',fontFamily:'Sora,sans-serif',fontWeight:700} }
-      });
+      }));
       JZ.charts.individuals.render();
     };
 
@@ -1688,7 +1855,7 @@
     document.getElementById('sl-smooth').addEventListener('input', function(){ document.getElementById('lbl-smooth').textContent = this.value; });
     document.getElementById('sl-smooth').addEventListener('change', function(){ if(_cachedRows) rerender(); });
     // Checkboxes
-    ['chk-individual','chk-bands','chk-percentile','chk-current','chk-pressure'].forEach(function(id){
+    ['chk-individual','chk-bands','chk-percentile','chk-current','chk-own-axis','chk-pressure'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ if(_cachedRows) rerender(); });
     });
     var cycleChecks = document.querySelectorAll('.cycle-checkboxes input[type=checkbox]');

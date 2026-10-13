@@ -162,6 +162,7 @@
   "checkbox.confidence_band": "Konfidenzband (±1σ)",
   "checkbox.percentile_bands": "Perzentil-Bänder (25./75.)",
   "checkbox.highlight_current_yr": "Aktuelles Jahr hervorheben",
+  "checkbox.current_own_axis": "Eigene Skala rechts (aktuelles Jahr)",
   "checkbox.show_current_yr": "Aktuelles Jahr einblenden",
   "checkbox.pressure_chart": "Gann Pressurechart",
 
