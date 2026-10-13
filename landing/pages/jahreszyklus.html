@@ -176,8 +176,8 @@
         <div class="content">
           <div id="chart-main"></div>
           <p id="achse-hinweis" class="achse-hinweis" style="display:none">
-            <span data-i18n="jz.axis_hint">Rechte Achse (Gold) = aktuelles Jahr auf eigener Skala. Beide Achsen beginnen auf derselben Höhe bei 100. Über der rechten Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick setzt zurück.</span>
-            <button type="button" id="achse-reset" class="achse-reset" data-i18n="jz.axis_reset">Skala zurücksetzen</button>
+            <span data-i18n="jz.axis_hint">Rechte Achse (Gold) = aktuelles Jahr auf eigener Skala. Beide Achsen beginnen auf derselben Höhe bei 100. Über der rechten Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick macht sie gleich der linken.</span>
+            <button type="button" id="achse-reset" class="achse-reset" data-i18n="jz.axis_reset">Wie linke Achse</button>
           </p>
           <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
           <div id="chart-individuals" style="display:none;margin-top:.5rem"></div>
@@ -808,13 +808,11 @@
       return JZ.rechteAchse(namen, JZ.ANKER - sk.f * spanne, JZ.ANKER + (1 - sk.f) * spanne, sk.jahr, sk.ticks);
     };
     JZ.rechteAchse = function(namen, min, max, jahr, ticks) {
-      var schritt = (max - min) / (ticks || 6);
       return {
         seriesName: namen, opposite: true, min: min, max: max, tickAmount: ticks || 6,
         axisBorder: { show: true, color: COL_CURRENT },
         labels: { style:{colors: COL_CURRENT, fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE, maxWidth: JZ.ACHSE_BREITE,
-                  // Nachkommastellen nach Strichabstand (die Striche folgen den linken Gitterlinien, nicht runden Werten)
-                  formatter:function(v){ return v==null ? '' : v.toFixed(schritt < 1 ? 2 : (schritt < 10 ? 1 : 0)); } },
+                  formatter:function(v){ return v==null ? '' : v.toFixed(0); } },
         title: { text: jahr + ' — ' + SA.i18n.t('jz.yaxis_own_scale','eigene Skala'), style:{color: COL_CURRENT, fontSize:'11px'} }
       };
     };
@@ -853,9 +851,10 @@
       JZ._yaxesMain = [JZ._yaxesMain[0], JZ.rechteAchseAusSpanne(JZ._yaxesMain[1].seriesName, spanne, sk)];
       ch.updateOptions({ yaxis: JZ._yaxesMain }, false, false, false);
     };
-    JZ.skalaZuruecksetzen = function() { if (JZ.skalaRechts) JZ.spanneSetzen(JZ.skalaRechts.autoSpanne, false); };
+    // Doppelklick/Knopf: rechte Skala identisch zur linken (gleicher Anker, gleiche Spanne → gleiche Grenzen und Striche)
+    JZ.skalaZuruecksetzen = function() { if (JZ.skalaRechts) JZ.spanneSetzen(JZ.skalaRechts.linksSpanne, true); };
     // Maus über der rechten Achse: Rad oder Ziehen = Skala strecken/stauchen (um den Anker 100),
-    // Doppelklick = automatische Skala. Einmal an den Container gebunden; Geometrie zur Ereigniszeit gelesen.
+    // Doppelklick = Skala wie links. Einmal an den Container gebunden; Geometrie zur Ereigniszeit gelesen.
     JZ.achseMausAnbinden = function() {
       var box = document.getElementById('chart-main');
       if (!box || box.__achseMaus) return;
@@ -1085,7 +1084,7 @@
         var autoSpanne = Math.max((JZ.ANKER - cMin) / f, (cMax - JZ.ANKER) / (1 - f), 1) * 1.06;
         var schl = ticker + '|' + currentYear;
         if (!JZ.manuelleSkala || JZ.manuelleSkala.schl !== schl) JZ.manuelleSkala = null;
-        JZ.skalaRechts = { f: f, ticks: L.ticks, autoSpanne: autoSpanne, schl: schl, jahr: currentYear };
+        JZ.skalaRechts = { f: f, ticks: L.ticks, autoSpanne: autoSpanne, linksSpanne: L.max - L.min, schl: schl, jahr: currentYear };
         yaxes = [links, JZ.rechteAchseAusSpanne(rechtsNamen, JZ.manuelleSkala ? JZ.manuelleSkala.spanne : autoSpanne, JZ.skalaRechts)];
       } else {
         delete links.seriesName;
