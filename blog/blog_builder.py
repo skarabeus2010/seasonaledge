@@ -572,10 +572,11 @@ def _build_seasonal_yearly_chart(ticker: str, years: int, lang: str = "de") -> "
     return fig
 
 
-def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
-    """Baut eine Monats-Rendite Heatmap."""
+def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de",
+                                 stichtag: "date | None" = None) -> "go.Figure | None":
+    """Baut eine Monats-Rendite Heatmap. `stichtag` (Standard: heute) wird fuer Tests injiziert."""
     import plotly.graph_objects as go
-    from shared.calculations import build_year_data, year_end_reference, year_covers
+    from shared.calculations import build_year_data, year_covers
     from shared.charts import apply_se_heatmap_theme
     from shared.constants import SE_COLORS, SE_HEATMAP_COLORSCALE, SE_HEATMAP_TEXT_COLOR
 
@@ -583,7 +584,8 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
     if df is None:
         return None
 
-    current_year = date.today().year
+    stichtag = stichtag or date.today()
+    current_year = stichtag.year
     all_years = sorted(df["year"].unique(), reverse=True)
     selected = [y for y in all_years if y >= current_year - years][:years]
     if not selected:
@@ -607,7 +609,6 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
     sorted_years = sorted(year_data.keys(), reverse=True)[:10]
     z_data = []
     y_labels = []
-    ref = year_end_reference(year_data)
     for year in sorted_years:
         row = []
         for m in range(1, 13):
@@ -621,7 +622,13 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
             # year_covers statt starrem `< 365`: der Dezember eines
             # abgeschlossenen Jahres endet am 30.12. (XETRA) und waere sonst
             # faelschlich als Luecke ausgewiesen worden.
-            if not year_covers(yd, e, ref):
+            # Zwei Bedingungen: Datenabdeckung bis zum Monatsende UND — im
+            # laufenden Jahr — der Kalendermonat ist vorbei (Vergleich ueber Jahr/
+            # Monat, nicht ueber _MONTH_DOY: der ist nicht schaltjahrgenau).
+            # Ohne die Kalenderbedingung galt ein veralteter Datenstand nicht als
+            # Problem; ohne die Abdeckung ergaben Monate nach dem letzten Kurs 0 %.
+            monat_vorbei = int(year) < stichtag.year or (int(year) == stichtag.year and m < stichtag.month)
+            if not monat_vorbei or not year_covers(yd, e, int(year), stichtag.year):
                 row.append(None)
                 continue
             start_val = yd["full_365"][s - 1]
@@ -637,7 +644,8 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
         y=y_labels,
         colorscale=SE_HEATMAP_COLORSCALE,
         zmid=0,
-        text=[[f"{v:+.1f}%" for v in row] for row in z_data],
+        # leere Zelle (None) -> leere Beschriftung; f"{None:+.1f}" warf TypeError
+        text=[["" if v is None else f"{v:+.1f}%" for v in row] for row in z_data],
         texttemplate="%{text}",
         textfont=dict(size=11, color=SE_HEATMAP_TEXT_COLOR),
         hovertemplate=f"<b>%{{y}} — %{{x}}</b><br>{hover_return}: %{{z:+.2f}}%<extra></extra>",
@@ -657,11 +665,13 @@ def _build_monthly_heatmap_chart(ticker: str, years: int, lang: str = "de") -> "
     return fig
 
 
-def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go.Figure | None":
-    """Durchschnittliche Rendite je Kalendermonat (Balken). Aktueller Monat hervorgehoben."""
+def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de",
+                               stichtag: "date | None" = None) -> "go.Figure | None":
+    """Durchschnittliche Rendite je Kalendermonat (Balken). Aktueller Monat hervorgehoben.
+    `stichtag` (Standard: heute) wird fuer Tests injiziert."""
     import numpy as np
     import plotly.graph_objects as go
-    from shared.calculations import build_year_data, year_end_reference, year_covers
+    from shared.calculations import build_year_data, year_covers
     from shared.charts import apply_se_theme
     from shared.constants import SE_COLORS
 
@@ -669,7 +679,8 @@ def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go
     if df is None:
         return None
 
-    current_year = date.today().year
+    stichtag = stichtag or date.today()
+    current_year = stichtag.year
     all_years = sorted(df["year"].unique())
     selected = [y for y in all_years if y >= current_year - years]
     if not selected:
@@ -680,15 +691,14 @@ def _build_monthly_cycle_chart(ticker: str, years: int, lang: str = "de") -> "go
         return None
 
     month_returns = {m: [] for m in range(1, 13)}
-    ref = year_end_reference(year_data)
-    for yd in year_data.values():
+    for jahr, yd in year_data.items():
         for m in range(1, 13):
             s, e = _MONTH_DOY[m]
             # Noch nicht stattgefundene Monate des laufenden Jahres bestehen nur
             # aus der Fortschreibung und lieferten exakt 0 % — im September zog
             # das drei erfundene Nullmonate in den Oktober-/November-/Dezember-
             # Durchschnitt des veroeffentlichten Charts.
-            if not year_covers(yd, e, ref):
+            if not year_covers(yd, e, int(jahr), current_year):
                 continue
             start_val = yd["full_365"][s - 1]
             end_val = yd["full_365"][min(e - 1, 364)]

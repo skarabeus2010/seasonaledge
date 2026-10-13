@@ -85,6 +85,8 @@
     .achse-hinweis{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;font-size:.75rem;color:var(--muted);margin:.35rem 0 0}
     .achse-reset{background:transparent;border:1px solid rgba(241,196,15,.5);color:#F1C40F;border-radius:6px;font-size:.72rem;padding:.2rem .55rem;cursor:pointer;min-height:28px}
     .achse-reset:focus-visible{outline:2px solid #F1C40F;outline-offset:2px}
+    .achse-reset--links{border-color:rgba(77,159,255,.55);color:#4d9fff}
+    .achse-reset--links:focus-visible{outline-color:#4d9fff}
     .toggle-row{display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--dim);margin-top:.5rem;cursor:pointer}
     .toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
     .cycle-checkboxes{display:flex;flex-direction:column;gap:.35rem;margin-top:.35rem}
@@ -176,8 +178,9 @@
         <div class="content">
           <div id="chart-main"></div>
           <p id="achse-hinweis" class="achse-hinweis" style="display:none">
-            <span data-i18n="jz.axis_hint">Rechte Achse (Gold) = aktuelles Jahr auf eigener Skala. Beide Achsen beginnen auf derselben Höhe bei 100. Über der rechten Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick macht sie gleich der linken.</span>
-            <button type="button" id="achse-reset" class="achse-reset" data-i18n="jz.axis_reset">Wie linke Achse</button>
+            <span data-i18n="jz.axis_hint">Linke Achse (Blau) = Durchschnitt und Vergleichsreihen, rechte Achse (Gold) = aktuelles Jahr. Beide beginnen auf derselben Höhe bei 100. Über einer Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick übernimmt die Werte der anderen Achse.</span>
+            <button type="button" id="achse-reset-links" class="achse-reset achse-reset--links" data-i18n="jz.axis_reset_left">Links wie rechte Achse</button>
+            <button type="button" id="achse-reset" class="achse-reset" data-i18n="jz.axis_reset">Rechts wie linke Achse</button>
           </p>
           <!-- Sub-Chart für Einzeljahre, eigene Y-Achse, x-Achse synchron -->
           <div id="chart-individuals" style="display:none;margin-top:.5rem"></div>
@@ -568,27 +571,11 @@
           days.push(SA.seasonal.tagNummer(yRows[j].date));
           logRets.push(lr);
         }
-        // Interpoliere cumulative auf 365 Kalendertage — KONSTANT-FILL nach
-        // letztem echten Handelstag (Python-kompatibel via shared/calculations.py
-        // interpolate_to_365). Damit bleibt die avg-Kurve auch für unvollständige
-        // Jahre smooth — Funktionen die NUR echte Werte brauchen (Perzentil,
-        // Heatmap) nutzen das last_actual_day Feld zum Filtern.
+        // Interpolation auf 365 Kalendertage ueber die GEMEINSAME Funktion (Konstant-Fill nach dem letzten Handelstag,
+        // Tag 366 im Schaltjahr auf Slot 365 gefaltet). Die eigene Kopie faltete nicht: eine Bewegung nur am 31.12.
+        // eines Schaltjahres fehlte im Jahres-, Dezember- und Q4-Endwert (100 statt 110, gemessen 2026-10-13).
         var lastActualDay = days[days.length-1];
-        var full365=[];
-        for (var t=1;t<=365;t++) {
-          var idx=days.indexOf(t);
-          if (idx>=0) { full365.push(cumulative[idx]); continue; }
-          if (t<days[0]) { full365.push(cumulative[0]); continue; }
-          if (t>lastActualDay) { full365.push(cumulative[cumulative.length-1]); continue; } // CONSTANT FILL
-          var prev=-1,next=-1;
-          for (var k=0;k<days.length;k++) { if(days[k]<t)prev=k; if(days[k]>t&&next<0)next=k; }
-          if (prev>=0&&next>=0) {
-            var w=(t-days[prev])/(days[next]-days[prev]);
-            full365.push(cumulative[prev]+w*(cumulative[next]-cumulative[prev]));
-          } else {
-            full365.push(cumulative[cumulative.length-1]);
-          }
-        }
+        var full365 = SA.seasonal._interpolateTo365(days, cumulative);
         result[parseInt(yr)] = {
           full_365: full365,
           days: days,
@@ -605,15 +592,16 @@
     }
 
     // ── Period Stats (periodStats, null-safe) ───────────────────────────────
-    function periodStats(yearData, startDoy, endDoy) {
+    // stichtagJahr: wird von der Seite einmal bestimmt und durchgereicht (Waechter injiziert ihn).
+    function periodStats(yearData, startDoy, endDoy, stichtagJahr) {
+      if (stichtagJahr == null) stichtagJahr = new Date().getFullYear();
       var rets=[];
       // Jahre, deren echte Beobachtungen nicht bis zum Periodenende reichen,
       // liefern als "Rendite" nur die konstante Fortschreibung — das laufende
       // Jahr ging so als abgeschlossenes in Trefferquote und Mittelwert ein.
       // Gegenstueck zu shared/calculations.calculate_period_stats.
-      var ref=SA.seasonal.yearEndRef(yearData);
       for (var y in yearData) {
-        if (!SA.seasonal.yearCovers(yearData[y], endDoy, ref)) continue;
+        if (!SA.seasonal.yearCovers(yearData[y], endDoy, y, stichtagJahr)) continue;
         var c=yearData[y].full_365;
         var sv=c[startDoy-1], ev=c[Math.min(endDoy-1,364)];
         // Beide Werte müssen echte Zahlen sein, sonst überspringen
@@ -697,31 +685,28 @@
       return { curve:curve, maxYears:maxYearsAvail, periods:Object.keys(periodDaily).map(Number).sort(function(a,b){return a-b;}) };
     }
 
-    // ── Month × Offset Heatmap Data (null-safe + last_actual_day-aware) ────
-    // FIX: nur fuer das CURRENT year wird last_actual_day-Filter angewandt.
-    // Fuer vergangene Jahre haben wir oft keinen 31.12. (Wochenende/Feiertag),
-    // last_actual_day wird dann 363/364 — December darf trotzdem berechnet
-    // werden, da der Monat real durchgehandelt wurde.
-    function buildMonthlyHeatmap(yearData) {
+    // ── Month × Offset Heatmap Data ─────────────────────────────────────────
+    // Eine Zelle braucht BEIDES: Datenabdeckung bis zum Monatsende (yearCovers) und — im laufenden Jahr — einen
+    // beendeten Kalendermonat, verglichen ueber (Jahr, Monat), nicht ueber MONTH_BOUNDS (nicht schaltjahrgenau).
+    // Sonst ergab ein veralteter Datenstand fortgeschriebene 0-%-Monate. Zukuenftige Jahre bleiben leer.
+    // stichtag = {jahr, monat (1-12)}; Standard heute.
+    function buildMonthlyHeatmap(yearData, stichtag) {
+      if (!stichtag) { var heute = new Date(); stichtag = { jahr: heute.getFullYear(), monat: heute.getMonth() + 1 }; }
       var years = Object.keys(yearData).map(Number).sort(function(a,b){return b-a;});
       var last10 = years.slice(0,10);
-      var currentYear = new Date().getFullYear();
       var series = [];
       for (var yi=0;yi<last10.length;yi++) {
         var y = last10[yi];
         var yo = yearData[y];
-        var isCurrentYear = (y === currentYear);
         var row = [];
         for (var m=1;m<=12;m++) {
           var b = MONTH_BOUNDS[m-1];
           var c = yo.full_365;
           var sv = c[b[0]-1], ev = c[Math.min(b[1]-1,364)];
+          var monatVorbei = y < stichtag.jahr || (y === stichtag.jahr && m < stichtag.monat);
           var cellVal;
-          // Aktuelles Jahr: Monate die noch nicht angefangen haben oder mid-month
-          // sind werden ausgeblendet. Vergangene Jahre: nur NaN/Infinity-Schutz.
-          var monthInFuture = isCurrentYear && b[0] > yo.last_actual_day;
-          if (monthInFuture || sv == null || ev == null ||
-              isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
+          if (!monatVorbei || !SA.seasonal.yearCovers(yo, b[1], y, stichtag.jahr) ||
+              sv == null || ev == null || isNaN(sv) || isNaN(ev) || !isFinite(sv) || !isFinite(ev) || sv === 0) {
             cellVal = null;
           } else {
             cellVal = parseFloat(((ev-sv)/sv*100).toFixed(2));
@@ -825,10 +810,25 @@
       var min = Math.floor((lo - pad) / schritt) * schritt, max = Math.ceil((hi + pad) / schritt) * schritt;
       return { min: min, max: max, ticks: Math.round((max - min) / schritt) };
     };
-    // Rechte Achse aus der Spanne: der Anker 100 liegt beim Anteil f der Höhe (wie links), also
-    // min = 100 − f·Spanne, max = 100 + (1−f)·Spanne. Gleiche Strichzahl wie links → Striche auf denselben Gitterlinien.
+    // Achse aus einer Spanne: der Anker 100 liegt auf beiden Seiten beim Anteil f der Höhe, also
+    // min = 100 − f·Spanne, max = 100 + (1−f)·Spanne. Gleiche Strichzahl auf beiden Seiten → Striche auf denselben
+    // Gitterlinien. Jede Seite hat ihre eigene Spanne (per Maus veränderbar); der Anker bleibt fest.
+    JZ.grenzen = function(spanne, sk) { return [JZ.ANKER - sk.f * spanne, JZ.ANKER + (1 - sk.f) * spanne]; };
     JZ.rechteAchseAusSpanne = function(namen, spanne, sk) {
-      return JZ.rechteAchse(namen, JZ.ANKER - sk.f * spanne, JZ.ANKER + (1 - sk.f) * spanne, sk.jahr, sk.ticks);
+      var g = JZ.grenzen(spanne, sk);
+      return JZ.rechteAchse(namen, g[0], g[1], sk.jahr, sk.ticks);
+    };
+    JZ.linkeAchseAusSpanne = function(namen, spanne, sk) {
+      var g = JZ.grenzen(spanne, sk);
+      var a = {
+        min: g[0], max: g[1], tickAmount: sk.ticks,
+        axisBorder: { show: true, color: COL_AVG },
+        labels: { style:{colors: COL_AVG, fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE,
+                  formatter:function(v){ return v==null ? '' : v.toFixed(0); } },
+        title: { text: SA.i18n.t('jz.yaxis_normalized','Normiert (Start=100)'), style:{color: COL_AVG, fontSize:'11px'} }
+      };
+      if (namen) a.seriesName = namen;
+      return a;
     };
     JZ.rechteAchse = function(namen, min, max, jahr, ticks) {
       return {
@@ -867,60 +867,75 @@
       opts.legend = Object.assign({}, opts.legend || {}, { clusterGroupedSeries: false });
       return opts;   // Legenden-Eintrag des Platzhalters blendet CSS aus (.apexcharts-legend-series[seriesName=…])
     };
-    JZ.spanneSetzen = function(spanne, manuell) {
-      var ch = JZ.charts.main, sk = JZ.skalaRechts;
-      if (!ch || !sk || !JZ._yaxesMain || JZ._yaxesMain.length < 2 || !(spanne > 0) || !isFinite(spanne)) return;
-      JZ.manuelleSkala = manuell ? { schl: sk.schl, spanne: spanne } : null;
-      JZ._yaxesMain = [JZ._yaxesMain[0], JZ.rechteAchseAusSpanne(JZ._yaxesMain[1].seriesName, spanne, sk)];
-      ch.updateOptions({ yaxis: JZ._yaxesMain }, false, false, false);
+    // seite: 'links' | 'rechts'. Manuelle Spannen gelten bis zum Wechsel von Ticker oder Jahr.
+    JZ.aktuelleSpanne = function(seite) {
+      var ax = JZ._yaxesMain && JZ._yaxesMain[seite === 'links' ? 0 : 1];
+      return ax ? ax.max - ax.min : null;
     };
-    // Doppelklick/Knopf: rechte Skala identisch zur linken (gleicher Anker, gleiche Spanne → gleiche Grenzen und Striche)
-    JZ.skalaZuruecksetzen = function() { if (JZ.skalaRechts) JZ.spanneSetzen(JZ.skalaRechts.linksSpanne, true); };
-    // Maus über der rechten Achse: Rad oder Ziehen = Skala strecken/stauchen (um den Anker 100),
-    // Doppelklick = Skala wie links. Einmal an den Container gebunden; Geometrie zur Ereigniszeit gelesen.
+    JZ.spanneSetzen = function(seite, spanne) {
+      var ch = JZ.charts.main, sk = JZ.skala;
+      if (!ch || !sk || !JZ._yaxesMain || !(spanne > 0) || !isFinite(spanne)) return;
+      if (seite === 'rechts' && JZ._yaxesMain.length < 2) return;
+      if (!JZ.manuelleSkala || JZ.manuelleSkala.schl !== sk.schl) JZ.manuelleSkala = { schl: sk.schl };
+      JZ.manuelleSkala[seite] = spanne;
+      var y = JZ._yaxesMain.slice();
+      if (seite === 'links') y[0] = JZ.linkeAchseAusSpanne(y[0].seriesName, spanne, sk);
+      else y[1] = JZ.rechteAchseAusSpanne(y[1].seriesName, spanne, sk);
+      JZ._yaxesMain = y;
+      ch.updateOptions({ yaxis: y }, false, false, false);
+    };
+    // Doppelklick/Knopf: diese Seite übernimmt exakt die Spanne der anderen (gleicher Anker → gleiche Grenzen und Striche)
+    JZ.wieAndereSeite = function(seite) {
+      var andere = JZ.aktuelleSpanne(seite === 'links' ? 'rechts' : 'links');
+      if (andere) JZ.spanneSetzen(seite, andere);
+    };
+    // Maus über einer Achse: Rad oder Ziehen = Skala strecken/stauchen (um den Anker 100), Doppelklick = wie die
+    // andere Achse. Einmal an den Container gebunden; Geometrie zur Ereigniszeit gelesen.
     JZ.achseMausAnbinden = function() {
       var box = document.getElementById('chart-main');
       if (!box || box.__achseMaus) return;
       box.__achseMaus = true;
       function lage(ev) {
-        var ch = JZ.charts.main, sk = JZ.skalaRechts;
-        if (!ch || !sk || !JZ._yaxesMain || JZ._yaxesMain.length < 2) return null;
+        var ch = JZ.charts.main, sk = JZ.skala;
+        if (!ch || !sk || !JZ._yaxesMain) return null;
         var svg = box.querySelector('svg.apexcharts-svg'); if (!svg) return null;
         var g = ch.w.globals, r = svg.getBoundingClientRect();
         var x = ev.clientX - r.left, y = ev.clientY - r.top;
-        var rechtsVon = g.translateX + g.gridWidth, oben = g.translateY, unten = g.translateY + g.gridHeight;
-        var drin = x > rechtsVon && x < rechtsVon + JZ.ACHSE_BREITE + 40 && y >= oben && y <= unten;
-        var ax = JZ._yaxesMain[1];
-        return { drin: drin, hoehe: g.gridHeight, spanne: ax.max - ax.min };
+        var links = g.translateX, rechtsVon = g.translateX + g.gridWidth, oben = g.translateY, unten = g.translateY + g.gridHeight;
+        if (y < oben || y > unten) return null;
+        var seite = null;
+        if (x < links && x > links - JZ.ACHSE_BREITE - 40) seite = 'links';
+        else if (JZ._yaxesMain.length > 1 && x > rechtsVon && x < rechtsVon + JZ.ACHSE_BREITE + 40) seite = 'rechts';
+        return seite ? { seite: seite, hoehe: g.gridHeight, spanne: JZ.aktuelleSpanne(seite) } : null;
       }
       var zug = null;
       box.addEventListener('mousemove', function(ev) {
         if (zug) {
-          // Nach oben ziehen = Spanne kleiner (Linie größer), nach unten = größer. Der Anker 100 bleibt stehen.
+          // Nach oben ziehen = Spanne kleiner (Linien größer), nach unten = größer. Der Anker 100 bleibt stehen.
           var dy = ev.clientY - zug.startY;
-          JZ.spanneSetzen(zug.spanne * Math.exp(dy / zug.hoehe * 2), true);
+          JZ.spanneSetzen(zug.seite, zug.spanne * Math.exp(dy / zug.hoehe * 2));
           return;
         }
-        var l = lage(ev);
-        box.style.cursor = (l && l.drin) ? 'ns-resize' : '';
+        box.style.cursor = lage(ev) ? 'ns-resize' : '';
       });
       box.addEventListener('mousedown', function(ev) {
-        var l = lage(ev); if (!l || !l.drin) return;
+        var l = lage(ev); if (!l) return;
         ev.preventDefault();
-        zug = { startY: ev.clientY, spanne: l.spanne, hoehe: l.hoehe };
+        zug = { seite: l.seite, startY: ev.clientY, spanne: l.spanne, hoehe: l.hoehe };
       });
       window.addEventListener('mouseup', function() { zug = null; });
       box.addEventListener('wheel', function(ev) {
-        var l = lage(ev); if (!l || !l.drin) return;
+        var l = lage(ev); if (!l) return;
         ev.preventDefault();
-        JZ.spanneSetzen(l.spanne * (ev.deltaY > 0 ? 1.15 : 1 / 1.15), true);
+        JZ.spanneSetzen(l.seite, l.spanne * (ev.deltaY > 0 ? 1.15 : 1 / 1.15));
       }, { passive: false });
       box.addEventListener('dblclick', function(ev) {
-        var l = lage(ev); if (!l || !l.drin) return;
-        JZ.skalaZuruecksetzen();
+        var l = lage(ev); if (!l) return;
+        JZ.wieAndereSeite(l.seite);
       });
-      var knopf = document.getElementById('achse-reset');
-      if (knopf) knopf.addEventListener('click', JZ.skalaZuruecksetzen);
+      var kr = document.getElementById('achse-reset'), kl = document.getElementById('achse-reset-links');
+      if (kr) kr.addEventListener('click', function(){ JZ.wieAndereSeite('rechts'); });
+      if (kl) kl.addEventListener('click', function(){ JZ.wieAndereSeite('links'); });
     };
 
     JZ.renderMain = function(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure) {
@@ -1079,42 +1094,39 @@
       //    sonst lägen ihre Datumsachsen nicht mehr unter denen des Hauptcharts.
       var linksNamen = seriesDef.filter(function(s){ return s.axis !== 'right'; }).map(function(s){ return s.name; });
       var rechtsNamen = seriesDef.filter(function(s){ return s.axis === 'right'; }).map(function(s){ return s.name; });
-      var links = {
-        seriesName: linksNamen,
-        labels: { style:{colors:'#a89878',fontSize:'11px'}, minWidth: JZ.ACHSE_BREITE,
-                  formatter:function(v){return v!=null?v.toFixed(0):'';} },
-        title: { text: SA.i18n.t('jz.yaxis_normalized','Normiert (Start=100)'), style:{color:'#a89878',fontSize:'11px'} }
-      };
+      // Linke Skala aus den linken Reihen (runde Schritte), der Anker 100 muss innen liegen — daraus ergibt sich seine
+      // Höhe f. Beide Achsen werden um diesen Anker gelegt, jede mit eigener (per Maus veränderbarer) Spanne.
+      var linksWerte = [JZ.ANKER];
+      seriesDef.forEach(function(sd) {
+        if (sd.axis === 'right') return;
+        sd.data.forEach(function(v) { if (v != null && isFinite(v)) linksWerte.push(v); });
+      });
+      var L = JZ.autoSkala(linksWerte);
+      var lschritt = (L.max - L.min) / L.ticks;
+      if (L.min >= JZ.ANKER) { L.min -= lschritt; L.ticks++; }
+      if (L.max <= JZ.ANKER) { L.max += lschritt; L.ticks++; }
+      var f = (JZ.ANKER - L.min) / (L.max - L.min);
+      var schl = ticker + '|' + currentYear;
+      if (!JZ.manuelleSkala || JZ.manuelleSkala.schl !== schl) JZ.manuelleSkala = null;
+      var man = JZ.manuelleSkala || {};
+      JZ.skala = { f: f, ticks: L.ticks, schl: schl, jahr: currentYear };
+      var linksSpanne = man.links || (L.max - L.min);
       var yaxes;
-      JZ.skalaRechts = null;
       JZ._rechteAchseAktiv = rechtsNamen.length > 0;   // Untercharts reservieren rechts dieselbe Breite
       if (rechtsNamen.length) {
-        // Linke Skala fest aus den linken Reihen (runde Schritte), der Anker 100 muss innen liegen —
-        // daraus ergibt sich seine Höhe f, und die rechte Achse wird so gelegt, dass ihre 100 auf derselben Höhe sitzt.
-        var linksWerte = [JZ.ANKER];
-        seriesDef.forEach(function(sd) {
-          if (sd.axis === 'right') return;
-          sd.data.forEach(function(v) { if (v != null && isFinite(v)) linksWerte.push(v); });
-        });
-        var L = JZ.autoSkala(linksWerte);
-        var lschritt = (L.max - L.min) / L.ticks;
-        if (L.min >= JZ.ANKER) { L.min -= lschritt; L.ticks++; }
-        if (L.max <= JZ.ANKER) { L.max += lschritt; L.ticks++; }
-        links.min = L.min; links.max = L.max; links.tickAmount = L.ticks;
-        var f = (JZ.ANKER - L.min) / (L.max - L.min);
-        // automatische Spanne: kleinste, in der das ganze aktuelle Jahr Platz hat (+6 % Rand)
+        // automatische Spanne rechts: kleinste, in der das ganze aktuelle Jahr Platz hat (+6 % Rand)
         var cMin = Math.min.apply(null, curWerte), cMax = Math.max.apply(null, curWerte);
         var autoSpanne = Math.max((JZ.ANKER - cMin) / f, (cMax - JZ.ANKER) / (1 - f), 1) * 1.06;
-        var schl = ticker + '|' + currentYear;
-        if (!JZ.manuelleSkala || JZ.manuelleSkala.schl !== schl) JZ.manuelleSkala = null;
-        JZ.skalaRechts = { f: f, ticks: L.ticks, autoSpanne: autoSpanne, linksSpanne: L.max - L.min, schl: schl, jahr: currentYear };
-        yaxes = [links, JZ.rechteAchseAusSpanne(rechtsNamen, JZ.manuelleSkala ? JZ.manuelleSkala.spanne : autoSpanne, JZ.skalaRechts)];
+        yaxes = [JZ.linkeAchseAusSpanne(linksNamen, linksSpanne, JZ.skala),
+                 JZ.rechteAchseAusSpanne(rechtsNamen, man.rechts || autoSpanne, JZ.skala)];
       } else {
-        delete links.seriesName;
-        yaxes = [links];
+        yaxes = [JZ.linkeAchseAusSpanne(null, linksSpanne, JZ.skala)];
       }
       var hinweis = document.getElementById('achse-hinweis');
-      if (hinweis) hinweis.style.display = rechtsNamen.length ? '' : 'none';
+      if (hinweis) hinweis.style.display = '';
+      var knopfRechts = document.getElementById('achse-reset'), knopfLinks = document.getElementById('achse-reset-links');
+      if (knopfRechts) knopfRechts.style.display = rechtsNamen.length ? '' : 'none';
+      if (knopfLinks) knopfLinks.style.display = rechtsNamen.length ? '' : 'none';
 
       var opts = {
         series: series,
@@ -1415,12 +1427,13 @@
     };
 
     // ── Render: Monats-Performance + Tabelle ────────────────────────────────
-    JZ.renderMonthly = function(yearData, ticker) {
+    JZ.renderMonthly = function(yearData, ticker, stichtag) {
+      stichtag = stichtag || JZ.stichtag();
       var currentMonth = new Date().getMonth()+1;
       var avgs=[], wrs=[], ns=[];
       for (var m=1;m<=12;m++) {
         var b = MONTH_BOUNDS[m-1];
-        var s = JZ.periodStats(yearData, b[0], b[1]);
+        var s = JZ.periodStats(yearData, b[0], b[1], stichtag.jahr);
         avgs.push(s ? s.avg_return : 0);
         wrs.push(s ? s.win_rate : 0);
         ns.push(s ? s.total_years : 0);
@@ -1462,7 +1475,7 @@
       var tbody='';
       for (var m=1;m<=12;m++) {
         var b = MONTH_BOUNDS[m-1];
-        var s = JZ.periodStats(yearData, b[0], b[1]);
+        var s = JZ.periodStats(yearData, b[0], b[1], stichtag.jahr);
         if (!s) continue;
         tbody += '<tr>';
         tbody += '<td><b>'+MONTHS_DE[m-1]+'</b></td>';
@@ -1477,13 +1490,14 @@
     };
 
     // ── Render: Quartals-Performance + Tabelle ──────────────────────────────
-    JZ.renderQuarterly = function(yearData, ticker) {
+    JZ.renderQuarterly = function(yearData, ticker, stichtag) {
+      stichtag = stichtag || JZ.stichtag();
       var currentQ = Math.floor(new Date().getMonth()/3)+1;
       var labels = ['Q1','Q2','Q3','Q4'];
       var avgs=[], wrs=[], ns=[];
       for (var i=0;i<4;i++) {
         var b = QUARTER_BOUNDS[labels[i]];
-        var s = JZ.periodStats(yearData, b[0], b[1]);
+        var s = JZ.periodStats(yearData, b[0], b[1], stichtag.jahr);
         avgs.push(s ? s.avg_return : 0);
         wrs.push(s ? s.win_rate : 0);
         ns.push(s ? s.total_years : 0);
@@ -1522,7 +1536,7 @@
       var tbody='';
       for (var i=0;i<4;i++) {
         var b=QUARTER_BOUNDS[labels[i]];
-        var s=JZ.periodStats(yearData, b[0], b[1]);
+        var s=JZ.periodStats(yearData, b[0], b[1], stichtag.jahr);
         if (!s) continue;
         tbody += '<tr>';
         tbody += '<td><b>'+labels[i]+'</b></td>';
@@ -1537,22 +1551,21 @@
     };
 
     // ── Render: Signifikanz Monat/Quartal/Cycle ─────────────────────────────
-    JZ.renderSignificance = function(yearData, kind) {
+    // Stichtag der Seite: einmal je Darstellung bestimmt und an alle Rechnungen gereicht (Waechter injizieren ihn).
+    JZ.stichtag = function() { var h = new Date(); return { jahr: h.getFullYear(), monat: h.getMonth() + 1 }; };
+
+    JZ.renderSignificance = function(yearData, kind, stichtagJahr) {
       // kind: 'month'|'quarter'|'cycle'
       if (!SA.significance) return;
+      if (stichtagJahr == null) stichtagJahr = new Date().getFullYear();
       var groups={}, order=[];
-      // Referenz fuer yearCovers: wie weit reicht ein vollstaendiges Jahr dieses
-      // Tickers? (XETRA endet am 30.12. -> Tag 364, nicht 365.)
-      var sigRef=SA.seasonal.yearEndRef(yearData);
+      // Zeitraeume hinter dem letzten echten Handelstag bestehen nur aus der konstanten Fortschreibung; ihre
+      // "Rendite" waere immer 0 %. yearCovers laesst nur abgedeckte Zeitraeume zu (Jahresende nur vergangene Jahre).
       if (kind==='month') {
         for (var m=1;m<=12;m++) {
           var b=MONTH_BOUNDS[m-1], rets=[];
           for (var y in yearData) {
-            // Zeitraeume hinter dem letzten echten Handelstag bestehen nur aus
-            // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
-            // zog als vermeintlich echte Beobachtung den Signifikanztest nach
-            // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
-            if (!SA.seasonal.yearCovers(yearData[y], b[1], sigRef)) continue;
+            if (!SA.seasonal.yearCovers(yearData[y], b[1], y, stichtagJahr)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
@@ -1563,52 +1576,37 @@
         for (var i=0;i<4;i++) {
           var b=QUARTER_BOUNDS[labels[i]], rets=[];
           for (var y in yearData) {
-            // Zeitraeume hinter dem letzten echten Handelstag bestehen nur aus
-            // der konstanten Fortschreibung; ihre "Rendite" ist immer 0 % und
-            // zog als vermeintlich echte Beobachtung den Signifikanztest nach
-            // unten. Das laufende Jahr steuert nur abgeschlossene Zeitraeume bei.
-            if (!SA.seasonal.yearCovers(yearData[y], b[1], sigRef)) continue;
+            if (!SA.seasonal.yearCovers(yearData[y], b[1], y, stichtagJahr)) continue;
             var c=yearData[y].full_365, sv=c[b[0]-1], ev=c[Math.min(b[1]-1,364)];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
           if (rets.length) { groups[labels[i]]=rets; order.push(labels[i]); }
         }
       } else if (kind==='cycle') {
+        // IMMER alle vier Zyklusgruppen in fester Reihenfolge — auch leer. Eine Gruppe unter der Mindestzahl erscheint
+        // als graue Karte („Nicht ausgewertet“), statt still zu fehlen (Midterm-Befund 2026-10-13).
         for (var c2=1;c2<=4;c2++) {
-          var years=[];
-          for (var y in yearData) if (JZ.cycleOf(parseInt(y))===c2) years.push(parseInt(y));
           var rets=[];
-          for (var yi=0;yi<years.length;yi++) {
-            // Ohne diesen Filter trug das laufende Jahr seine YTD-Rendite als
-            // vollstaendige Jahresrendite in die Zyklusgruppe ein.
-            if (!SA.seasonal.yearCovers(yearData[years[yi]], 365, sigRef)) continue;
-            var cc=yearData[years[yi]].full_365, sv=cc[0], ev=cc[364];
+          for (var y in yearData) {
+            if (JZ.cycleOf(parseInt(y))!==c2) continue;
+            if (!SA.seasonal.yearCovers(yearData[y], 365, y, stichtagJahr)) continue;
+            var cc=yearData[y].full_365, sv=cc[0], ev=cc[364];
             if (sv!==0) rets.push((ev-sv)/sv*100);
           }
-          // Mindestanzahl NACH dem Filter pruefen: vorher zaehlte sie Jahre mit,
-          // die yearCovers danach verwarf — eine Gruppe aus 3 Kandidaten konnte
-          // so mit 2 tatsaechlichen Beobachtungen in den Signifikanztest gehen.
-          if (rets.length<3) continue;
           groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]);
         }
       }
       var id = kind==='month' ? 'content-monthly-sig' : (kind==='quarter' ? 'content-quarterly-sig' : 'content-cycle-sig');
-      // Cycle braucht alle 4 Zyklus-Jahre fuer einen aussagekraeftigen Test
-      if (kind==='cycle' && Object.keys(groups).length < 4) {
-        document.getElementById(id).innerHTML =
-          '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">' +
-          'Sorry, zu wenig Daten!</p>';
-        return;
-      }
       if (!Object.keys(groups).length) {
         document.getElementById(id).innerHTML =
           '<p style="color:#a89878;font-size:.875rem;text-align:center;padding:1.5rem;">' +
-          'Sorry, zu wenig Daten!</p>';
+          SA.i18n.t('jz.sig_no_data', 'Zu wenig Daten für einen Test.') + '</p>';
         return;
       }
-      var res = SA.significance.runSignificanceTest(groups);
-      var colsPerRow = kind==='month' ? 4 : 4;
-      document.getElementById(id).innerHTML = SA.significance.renderSection(res, colsPerRow, order);
+      var opts = { mindestN: 5 };
+      if (kind==='cycle') opts.einheit = SA.i18n.t('jz.sig_unit_years', 'abgeschlossene Jahre');
+      var res = SA.significance.runSignificanceTest(groups, 0, opts);
+      document.getElementById(id).innerHTML = SA.significance.renderSection(res, 4, order, opts);
     };
 
     // ── Render: Präsidentenzyklus Best Match ────────────────────────────────
@@ -1671,8 +1669,8 @@
     };
 
     // ── Render: 10-Jahres Heatmap ───────────────────────────────────────────
-    JZ.renderHeatmap = function(yearData, ticker) {
-      var series = JZ.buildMonthlyHeatmap(yearData);
+    JZ.renderHeatmap = function(yearData, ticker, stichtag) {
+      var series = JZ.buildMonthlyHeatmap(yearData, stichtag || JZ.stichtag());
       if (!series.length) return;
       // Sentinel-Wert für unvollständige Monate (außerhalb der colorScale ranges
       // damit die Zelle neutral/transparent dargestellt wird).
@@ -1811,6 +1809,7 @@
         years.length + ' Jahre · Glättung: ' + smoothing + 'd';
 
       JZ.destroyAll();
+      var ST = JZ.stichtag();
       // Try/catch um jede Render-Funktion, damit ein Fehler nicht alles bricht
       function safeRender(name, fn) {
         try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
@@ -1820,13 +1819,13 @@
       safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
       safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure, showCurrent); });
       safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
-      safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker); });
-      safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month'); });
-      safeRender('quarterly',     function(){ JZ.renderQuarterly(yearData, ticker); });
-      safeRender('quarterly-sig', function(){ JZ.renderSignificance(yearData, 'quarter'); });
-      safeRender('cycle-sig',     function(){ JZ.renderSignificance(yearData, 'cycle'); });
+      safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker, ST); });
+      safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month', ST.jahr); });
+      safeRender('quarterly',     function(){ JZ.renderQuarterly(yearData, ticker, ST); });
+      safeRender('quarterly-sig', function(){ JZ.renderSignificance(yearData, 'quarter', ST.jahr); });
+      safeRender('cycle-sig',     function(){ JZ.renderSignificance(yearData, 'cycle', ST.jahr); });
       safeRender('cycle-match',   function(){ JZ.renderCycleMatch(yearData); });
-      safeRender('heatmap',       function(){ JZ.renderHeatmap(yearData, ticker); });
+      safeRender('heatmap',       function(){ JZ.renderHeatmap(yearData, ticker, ST); });
       JZ.showSections(true);
     }
 

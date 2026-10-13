@@ -16,16 +16,19 @@ SA.significance = {
    *
    * @param {Object} groups - {"Montag": [0.1, -0.2, ...], "Freitag": [...]}
    * @param {number} testValue - Vergleichswert (default 0)
+   * @param {Object} opts - {mindestN: 5}
    * @returns {Array} [{name, avg_return, win_rate, n, t_stat, p_value, cohens_d, relevance}]
-   *                  sortiert nach Relevanz (absteigend)
+   *                  sortiert nach Relevanz (absteigend); Gruppen unter mindestN als {name, n, zu_wenig:true} am Ende.
+   *                  Vorher fielen sie still weg — auf /jahreszyklus verschwand so die Midterm-Karte, ohne Hinweis.
    */
-  runSignificanceTest: function(groups, testValue) {
+  runSignificanceTest: function(groups, testValue, opts) {
     testValue = testValue || 0;
-    var results = [];
+    var mindestN = (opts && opts.mindestN) || 5;
+    var results = [], zuWenig = [];
 
     for (var name in groups) {
-      var returns = groups[name].filter(function(r) { return r !== null && r !== undefined && !isNaN(r); });
-      if (returns.length < 5) continue;
+      var returns = (groups[name] || []).filter(function(r) { return r !== null && r !== undefined && !isNaN(r); });
+      if (returns.length < mindestN) { zuWenig.push({ name: name, n: returns.length, zu_wenig: true }); continue; }
 
       var n = returns.length;
       var sum = 0;
@@ -68,7 +71,7 @@ SA.significance = {
     }
 
     results.sort(function(a, b) { return b.relevance - a.relevance; });
-    return results;
+    return results.concat(zuWenig);
   },
 
   /**
@@ -112,9 +115,10 @@ SA.significance = {
   /**
    * @param {Array} results
    * @param {number} colsPerRow
-   * @param {Array} sortOrder - optionale feste Reihenfolge (Array von Namen)
+   * @param {Array} sortOrder - optionale feste Reihenfolge (Array von Namen); hat Vorrang vor der Relevanz
+   * @param {Object} opts - {mindestN: 5, einheit: 'Beobachtungen'} fuer graue Karten (zu wenig Daten)
    */
-  renderSection: function(results, colsPerRow, sortOrder) {
+  renderSection: function(results, colsPerRow, sortOrder, opts) {
     var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     colsPerRow = colsPerRow || 4;
     if (!results || results.length === 0) return '';
@@ -140,6 +144,10 @@ SA.significance = {
     var html = '<div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">';
     for (var i = 0; i < results.length; i++) {
       var r = results[i];
+      if (r.zu_wenig) {   // Statuszweig vor jeder Zahlformatierung: kein Tacho, kein t/p, keine Rendite
+        html += SA.significance._karteZuWenig(r, colsPerRow, opts);
+        continue;
+      }
       var sig = SA.significance.sigLabel(r.p_value);
       var gaugeColor = SA.significance.scoreToColor(r.relevance);
       var avgColor = r.avg_return >= 0 ? '#00d4aa' : '#ff4757';
@@ -181,6 +189,22 @@ SA.significance = {
       html += '<span style="color:#ff4757"><b>Rot</b></span> = wahrscheinlich Zufall.</p>';
     }
     return html;
+  },
+
+  /** Graue Karte: Gruppe nicht ausgewertet, weil weniger als mindestN Beobachtungen. */
+  _karteZuWenig: function(r, colsPerRow, opts) {
+    var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
+    var mindestN = (opts && opts.mindestN) || 5;
+    var einheit = (opts && opts.einheit) || (_en ? SA.i18n.t('sig.unit_obs') : 'Beobachtungen');
+    var titel = _en ? SA.i18n.t('sig.not_evaluated') : 'Nicht ausgewertet';
+    var mind = _en ? SA.i18n.t('sig.min_required') : 'mindestens';
+    var noetig = _en ? SA.i18n.t('sig.required') : 'erforderlich';
+    var h = '<div class="sig-zu-wenig" style="flex:1 1 ' + Math.floor(100 / colsPerRow - 2) + '%;min-width:170px;max-width:' + Math.floor(100 / colsPerRow) + '%;background:var(--card,#0a0a0e);border:1px dashed rgba(255,255,255,.12);border-radius:10px;padding:1rem;text-align:center;opacity:.75">';
+    h += '<div style="color:#e8e0d0;font-weight:700;font-size:.9375rem;margin-bottom:.625rem">' + r.name + '</div>';
+    h += '<div style="color:#a89878;font-weight:700;font-size:.9375rem;margin:1.5rem 0 .5rem">' + titel + '</div>';
+    h += '<div style="color:#c8d6e5;font-size:.8125rem;font-family:var(--f-m,monospace);line-height:1.6">n=' + r.n + ' ' + einheit +
+         '<br>' + mind + ' ' + mindestN + ' ' + noetig + '</div>';
+    return h + '</div>';
   },
 
   // ── t-Verteilung p-Wert (Approximation) ──

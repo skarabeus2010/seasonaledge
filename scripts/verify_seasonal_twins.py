@@ -341,23 +341,6 @@ def block_echtes_js() -> None:
     _melde("Echtes JS", "analyzeMoonEffect: Bewegung liegt auf t0, nicht auf t+1",
            ok_moon, f"moon={moon} — erwartet curve=[-4.76, 0, 0], total=4.76")
 
-    # yearEndRef/yearCovers: die Sperren gegen Zirkelschluss, im echten JS.
-    erwartet_yc = {
-        "nur_laufendes":  (0, []),
-        "alle_kurz":      (0, []),
-        "dez_delisting":  (0, []),
-        "nur_laufendes_spaet": (0, []),
-        "voll_plus_kurz": (364, ["2023", "2024"]),
-        # fail-closed: ein Jahr ohne last_actual_day gilt als NICHT
-        # ausreichend, nicht als vollstaendig (Python: last_actual_day -> 0).
-        "fehlt_lad": (364, ["2023"]),
-    }
-    for schluessel, (ref_soll, akz_soll) in erwartet_yc.items():
-        got = d["yearcovers"][schluessel]
-        _melde("Echtes JS", f"yearCovers/{schluessel} wie Python",
-               got["ref"] == ref_soll and got["akzeptiert"] == akz_soll,
-               f"JS={got} SOLL=ref {ref_soll}, akzeptiert {akz_soll}")
-
     # buildYearData: Verwerfen-Semantik bei unreparierbarem Close
     _melde("Echtes JS", "buildYearData verwirft Jahr bei Close <= 0 (kein lr=0)",
            d["build_kaputt_jahre"] == 0,
@@ -439,7 +422,8 @@ def block_python_only() -> None:
            f"Ohne Ticker-Gruppierung entsteht EINE Zeile mit ~110 % "
            f"(A-Entry gegen B-Exit).")
 
-    # calculate_period_stats: die Gegenbeispiele zum Zirkelschluss.
+    # calculate_period_stats: Jahresende-Regel mit injiziertem Stichtag (2026-10-13). Vorher hing die Aufnahme eines
+    # Jahres von einer Referenz ueber alle Jahre ab (Maximum 365 bei SPY) und warf Jahre mit Ende 29./30.12. weg.
     from shared.calculations import calculate_period_stats
 
     def _jahr(lad):
@@ -447,20 +431,21 @@ def block_python_only() -> None:
                                                               for i in range(365)]}
     faelle = [
         ("nur laufendes Jahr zaehlt nicht", {2026: _jahr(250)}, 0),
-        ("durchweg abgeschnittene Jahre zaehlen nicht",
-         {2025: _jahr(250), 2026: _jahr(250)}, 0),
-        ("XETRA-Jahresende (Tag 364) zaehlt",
-         {2023: _jahr(364), 2024: _jahr(364), 2026: _jahr(250)}, 2),
-        # Einziges Jahr ist das laufende, aber schon bei Tag 364: es gibt kein
-        # abgeschlossenes Jahr als Massstab -> darf sich nicht selbst beglaubigen.
-        ("laufendes Jahr allein, Tag 364, beglaubigt sich nicht selbst",
-         {2026: _jahr(364)}, 0),
+        ("laufendes Jahr bei Tag 365 zaehlt nicht", {2026: _jahr(365)}, 0),
+        ("durchweg abgeschnittene Jahre zaehlen nicht", {2024: _jahr(250), 2025: _jahr(358)}, 0),
+        ("Jahresende 363/364/365 gemeinsam zaehlen (NYSE 29.12., XETRA 30.12.)",
+         {2023: _jahr(363), 2024: _jahr(365), 2025: _jahr(364), 2026: _jahr(365)}, 3),
+        ("Toleranzgrenze: 359 zaehlt, 358 nicht", {2023: _jahr(359), 2024: _jahr(358)}, 1),
+        ("zukuenftiges Jahr zaehlt nicht", {2025: _jahr(364), 2027: _jahr(365)}, 1),
     ]
     for name, yd, erwartet in faelle:
-        s = calculate_period_stats(yd, 1, 365)
+        s = calculate_period_stats(yd, 1, 365, stichtag_jahr=2026)
         got = s.get("total_years", 0)
         _melde("Python-only", f"Periodenstatistik: {name}", got == erwartet,
                f"total_years={got} SOLL={erwartet}")
+    s = calculate_period_stats({2025: _jahr(364), 2026: _jahr(181)}, 152, 181, stichtag_jahr=2026)
+    _melde("Python-only", "Periodenstatistik: abgeschlossener Juni des laufenden Jahres zaehlt",
+           s.get("total_years", 0) == 2, f"total_years={s.get('total_years')} SOLL=2")
 
     # Und den WERT, nicht nur die Anzahl: ein um einen Kalendertag verschobener
     # Endindex aendert die Trefferzahl nicht — nur die Rendite. Ein Jahr, das von
@@ -471,7 +456,7 @@ def block_python_only() -> None:
     lauf = [100.0 + 10.0 * min(max(d_ - 1, 0), 199) / 199 for d_ in range(1, 366)]
     yd_wert = {2024: {"days": list(range(1, 365)), "full_365": lauf},
                2023: {"days": list(range(1, 365)), "full_365": lauf}}
-    s = calculate_period_stats(yd_wert, 1, 365)
+    s = calculate_period_stats(yd_wert, 1, 365, stichtag_jahr=2026)
     _melde("Python-only", "Periodenstatistik liefert den richtigen WERT (+10,00 %)",
            s and abs(s.get("avg_return", 0) - 10.0) < 0.001,
            f"avg_return={s.get('avg_return')} SOLL=10.0 — ein verschobener "
@@ -481,12 +466,78 @@ def block_python_only() -> None:
     # min(end_day-1, 364) und min(end_day, 364) denselben Index — ein um einen Tag
     # verschobener Endindex bliebe dort unsichtbar. Bei Tag 100 nicht:
     # full_365[99] = 105,00 gegen full_365[100] = 105,05.
-    s100 = calculate_period_stats(yd_wert, 1, 100)
+    s100 = calculate_period_stats(yd_wert, 1, 100, stichtag_jahr=2026)
     soll100 = (lauf[99] - lauf[0]) / lauf[0] * 100
     _melde("Python-only", "Periodenstatistik: Endindex bei Periode bis Tag 100",
            s100 and abs(s100.get("avg_return", 0) - soll100) < 1e-9,
            f"avg_return={s100.get('avg_return')} SOLL={soll100} "
            f"(ein Tag Versatz ergaebe {(lauf[100]-lauf[0])/lauf[0]*100}).")
+
+    # Blog-Heatmap + Monatsmittel (blog_builder) mit injiziertem Stichtag. Synthetische Kurse: Bewegung NUR am
+    # 15.12. (Faktor je Jahr) und am 15. jedes Monats 2026 — damit ist die Dezemberrendite je Jahr exakt bekannt,
+    # unabhaengig von Interpolation und Jahresende (2022 endet am 30.12., 2023 am 29.12.).
+    # None-Zellen ergaben vorher einen TypeError in der Beschriftung.
+    import datetime as _dt
+    import numpy as _np
+    import pandas as _pd
+    from shared.yahoo_downloader import preprocess
+    import blog.blog_builder as bb
+
+    def _df(tage, sprung):
+        f = _np.array([sprung(d) for d in tage])
+        roh = _pd.DataFrame({"Date": tage, "Open": 100.0, "High": 101.0, "Low": 99.0, "Volume": 1,
+                             "Close": 100 * _np.cumprod(f)})
+        return preprocess(roh.set_index(_pd.DatetimeIndex(roh["Date"])))
+
+    dez = {2021: 1.04, 2022: 0.97, 2023: 1.06, 2024: 0.98, 2025: 1.03, 2026: 1.10}
+    _getan = set()
+    def _sprung(d):                       # erster Handelstag ab dem 12. des Monats (der 15. faellt teils aufs Wochenende)
+        if d.day < 12 or (d.year, d.month) in _getan:
+            return 1.0
+        if d.month == 12:
+            _getan.add((d.year, d.month)); return dez[d.year]
+        if d.year == 2026:
+            _getan.add((d.year, d.month)); return 1.01
+        return 1.0
+    tage = _pd.bdate_range("2021-01-04", "2026-12-31")     # Daten UEBER den Stichtag hinaus: prueft die Kalenderbedingung
+    tage = tage[~((tage > "2025-09-30") & (tage < "2026-01-01"))]       # 2025 endet am 30.09. (abgeschnitten)
+    bb._ticker_cache["__WAECHTER__"] = _df(tage, _sprung)
+    try:
+        st = _dt.date(2026, 10, 13)
+        fig = bb._build_monthly_heatmap_chart("__WAECHTER__", 6, "de", stichtag=st)   # 6 neueste Jahre = 2021–2026
+        belegt = {int(y): [v is not None for v in z] for y, z in zip(fig.data[0].y, fig.data[0].z)}
+        soll = {2026: [True] * 9 + [False] * 3, 2025: [True] * 9 + [False] * 3, 2024: [True] * 12,
+                2023: [True] * 12, 2022: [True] * 12, 2021: [True] * 12}
+        _melde("Python-only", "Blog-Heatmap: laufendes Jahr nur beendete Monate (Okt leer trotz Daten), 2025 bis Sep",
+               belegt == soll, str(belegt))
+        dz = {int(y): z[11] for y, z in zip(fig.data[0].y, fig.data[0].z)}
+        ok_dz = all(dz[y] is not None and abs(dz[y] - round((dez[y] - 1) * 100, 2)) < 1e-9 for y in (2021, 2022, 2023, 2024))
+        _melde("Python-only", "Blog-Heatmap: Dezemberzellen 2021–2024 = Sprung Mitte Dezember (auch Ende 29./30.12.)",
+               ok_dz, str(dz))
+        fig2 = bb._build_monthly_cycle_chart("__WAECHTER__", 5, "de", stichtag=st)
+        balken = list(fig2.data[0].y)
+        soll_dez = sum((dez[y] - 1) * 100 for y in (2021, 2022, 2023, 2024)) / 4   # 2025 abgeschnitten, 2026 laufend
+        _melde("Python-only", "Blog-Monatsmittel: Dezember = Mittel 2021–2024 (alle Jahresenden, ohne 2025/2026)",
+               abs(balken[11] - soll_dez) < 1e-6, f"Dez={balken[11]} SOLL={soll_dez}")
+        soll_jan = (0 + 0 + 0 + 0 + 0 + 1.0) / 6                                    # nur 2026 bewegt sich im Januar
+        _melde("Python-only", "Blog-Monatsmittel: Januar zaehlt alle sechs Jahre", abs(balken[0] - soll_jan) < 1e-6,
+               f"Jan={balken[0]} SOLL={soll_jan}")
+
+        # Schaltjahrgrenze und Zukunftsjahr: Daten bis 29.02.2024 bzw. bis 2027.
+        bb._ticker_cache["__WAECHTER__"] = _df(_pd.bdate_range("2023-01-02", "2024-02-29"), lambda d: 1.0)
+        f29 = bb._build_monthly_heatmap_chart("__WAECHTER__", 5, "de", stichtag=_dt.date(2024, 2, 29))
+        f01 = bb._build_monthly_heatmap_chart("__WAECHTER__", 5, "de", stichtag=_dt.date(2024, 3, 1))
+        feb = lambda f: dict(zip(f.data[0].y, f.data[0].z))["2024"][1]
+        _melde("Python-only", "Blog-Heatmap: Stichtag 29.02. -> Februar leer, 01.03. -> belegt",
+               feb(f29) is None and feb(f01) is not None, f"{feb(f29)}/{feb(f01)}")
+        bb._ticker_cache["__WAECHTER__"] = _df(_pd.bdate_range("2025-01-02", "2027-06-30"), lambda d: 1.0)
+        fz = bb._build_monthly_heatmap_chart("__WAECHTER__", 5, "de", stichtag=_dt.date(2026, 10, 13))
+        z27 = dict(zip(fz.data[0].y, fz.data[0].z)).get("2027", [None] * 12)
+        _melde("Python-only", "Blog-Heatmap: zukuenftiges Jahr leer", all(v is None for v in z27), str(z27))
+    except Exception as e:                     # Renderfehler = rot, nicht still
+        _melde("Python-only", "Blog-Heatmap/Monatsmittel ohne Renderfehler", False, repr(e)[:300])
+    finally:
+        bb._ticker_cache.pop("__WAECHTER__", None)
 
 
 # 4b. ZEITZONEN — dieselben Tagesnummern und Jahreskurven unter jeder Zeitzone (Schritt U, 2026-10-09)
@@ -546,6 +597,95 @@ def block_zeitzonen():
                "; ".join(f"{tz}: lad={k['lad'] if k else None}" for tz, k in kurven.items()))
 
 
+# 7. ZYKLUS — Jahresende-Regel, Praesidentenzyklus-Karten, Schaltjahr, Heatmap (Plan 2026-10-13 v3)
+def block_zyklus():
+    """
+    Fuehrt scripts/js/zyklus_probe.js auf dem echten Code aus (seasonal-compute.js, significance.js und die
+    Inline-Funktionen aus jahreszyklus.html/risikozyklus.html) und prueft fachliche Erwartungen — nicht nur Gleichheit.
+    Die yearCovers-Faelle rechnet Python mit year_covers nach (Zwilling). Ohne node: rot (kein stilles Ueberspringen).
+    Anlass: auf /jahreszyklus fehlte die Midterm-Karte, weil Jahre mit Ende am 29./30.12. verworfen und Gruppen unter
+    fuenf Jahren still entfernt wurden.
+    """
+    import json, shutil, subprocess
+    from shared.calculations import year_covers
+    print("\n7. ZYKLUS  (Jahresende-Regel, vier Zykluskarten, Schaltjahr, Heatmap)")
+    if not shutil.which("node"):
+        if "--ohne-node" in sys.argv:
+            print("  [UEBERSPRUNGEN auf ausdrueckliche Anweisung (--ohne-node)]")
+            return
+        _melde("Zyklus", "node ist verfuegbar", False, "node nicht gefunden")
+        return
+    probe = _ROOT / "scripts" / "js" / "zyklus_probe.js"
+    r = subprocess.run(["node", str(probe), str(_ROOT / "landing" / "js" / "seasonal-compute.js"),
+                        str(_ROOT / "landing" / "js" / "significance.js"),
+                        str(_ROOT / "landing" / "pages" / "jahreszyklus.html"),
+                        str(_ROOT / "landing" / "pages" / "risikozyklus.html")], capture_output=True, text=True)
+    if r.returncode:
+        _melde("Zyklus", "zyklus_probe.js laeuft", False, r.stderr[:400])
+        return
+    d = json.loads(r.stdout)
+
+    # Fachliche Erwartung je Fall: (lad, endDoy, jahr, stichtag) -> zugelassen?
+    soll = {(365, 365, 2025, 2026): True, (363, 365, 2023, 2026): True, (364, 365, 2025, 2026): True,
+            (362, 365, 2024, 2026): True, (359, 365, 2024, 2026): True, (358, 365, 2024, 2026): False,
+            (365, 365, 2026, 2026): False, (364, 365, 2026, 2026): False, (359, 365, 2026, 2026): False,
+            (365, 365, 2027, 2026): False, (181, 181, 2026, 2026): True, (180, 181, 2026, 2026): False,
+            (280, 31, 2026, 2026): True, (349, 365, 2024, 2026): False, (250, 365, 2024, 2026): False,
+            (None, 31, 2024, 2026): False, (None, 365, 2024, 2026): False}
+    for f in d["yearcovers_faelle"]:
+        k = (f["lad"], f["e"], f["j"], f["st"])
+        yd = {"days": list(range(1, f["lad"] + 1))} if f["lad"] is not None else {}
+        py = year_covers(yd, f["e"], f["j"], f["st"])
+        _melde("Zyklus", f"yearCovers lad={k[0]} bis Tag {k[1]} Jahr {k[2]} (Stichtag {k[3]})",
+               f["ok"] == soll[k] and py == soll[k], f"JS={f['ok']} Python={py} SOLL={soll[k]}")
+    _melde("Zyklus", "Entscheidung haengt nicht von anderen Jahren ab", d["unabhaengig"] == [True], str(d["unabhaengig"]))
+
+    sj = d["schaltjahr"]
+    _melde("Zyklus", "Schaltjahr: Bewegung nur am 31.12. landet im Endwert (alle drei Builder = 110)",
+           sj["gemeinsam"] == 110 and sj["jahreszyklus"] == 110 and sj["risikozyklus"] == 110 and sj["lad_jz"] == 365,
+           str(sj))
+    _melde("Zyklus", "periodStats: 363/364/365 zaehlen, laufendes Jahr nicht", d["periodstats_jahr"] == 3,
+           f"total_years={d['periodstats_jahr']} SOLL=3")
+    _melde("Zyklus", "periodStats: abgeschlossener Juni des laufenden Jahres zaehlt", d["periodstats_juni"] == 2,
+           f"total_years={d['periodstats_juni']} SOLL=2")
+
+    _melde("Zyklus", "Heatmap: Daten bis 30.06., Stichtag Oktober -> nur Jan–Jun belegt",
+           d["heatmap_2026"] == [True] * 6 + [False] * 6, str(d["heatmap_2026"]))
+    _melde("Zyklus", "Heatmap: abgeschlossenes Vorjahr (Ende 30.12.) voll belegt incl. Dezember",
+           d["heatmap_2025"] == [True] * 12, str(d["heatmap_2025"]))
+    _melde("Zyklus", "Heatmap: zukuenftiges Jahr leer", d["heatmap_2027"] == [False] * 12, str(d["heatmap_2027"]))
+    _melde("Zyklus", "Heatmap: Stichtag 29.02. -> Februar leer, 01.03. mit Kurs am 29.02. -> belegt, ohne Daten leer",
+           d["heatmap_feb_2902"] is False and d["heatmap_feb_0103"] is True and d["heatmap_feb_0103_ohne_daten"] is False,
+           f"{d['heatmap_feb_2902']}/{d['heatmap_feb_0103']}/{d['heatmap_feb_0103_ohne_daten']}")
+
+    for name, grau, n in (("zyklus_20", 0, ["n=5"] * 4), ("zyklus_10", 4, ["n=3", "n=2", "n=2", "n=3"]),
+                          ("zyklus_leer", 4, ["n=0"] * 4)):
+        z = d[name]
+        reihe = z["reihenfolge"]
+        _melde("Zyklus", f"{name}: vier Karten in fester Reihenfolge Post-Election, Midterm, Pre-Election, Election Year",
+               all(i >= 0 for i in reihe) and reihe == sorted(reihe), str(reihe))
+        _melde("Zyklus", f"{name}: {grau} graue Karten, Fallzahlen {n}, kein NaN, kein Abbruchtext",
+               z["grau"] == grau and z["n"] == n and not z["nan"] and not z["sorry"], str(z))
+
+    _melde("Zyklus", "Monatszweig: laufendes Jahr (bis Tag 181) nur Jan–Jun, Dezember nur Vorjahre",
+           d["zweig_monat"] == [m + ":8" for m in ("Jan", "Feb", "Mär", "Apr", "Mai", "Jun")]
+           + [m + ":7" for m in ("Jul", "Aug", "Sep", "Okt", "Nov", "Dez")], str(d["zweig_monat"]))
+    _melde("Zyklus", "Quartalszweig: laufendes Jahr nur Q1/Q2, Q4 nur Vorjahre (auch Ende 29./30.12.)",
+           d["zweig_quartal"] == ["Q1:8", "Q2:8", "Q3:7", "Q4:7"], str(d["zweig_quartal"]))
+    m3 = d["mindest3"]
+    _melde("Zyklus", "Mindestzahl 3 wirkt in Test und Karte (kein festes 5), Einheit aus den Optionen",
+           m3["zu_wenig"] == ["a"] and m3["getestet"] == ["b", "c"] and m3["text_3"] and not m3["text_5"] and m3["einheit"],
+           str(m3))
+    en = d["englisch"]
+    _melde("Zyklus", "EN: graue Karte mit englischem Woerterbuch, kein deutscher Ersatztext",
+           en["not_evaluated"] and en["einheit"] and en["at_least"] and not en["deutsch"], str(en))
+
+    g = d["sig_gruppen"]
+    _melde("Zyklus", "runSignificanceTest: Gruppen n=0..4 als zu_wenig, n=5 getestet, graue Karten ohne NaN",
+           g["zu_wenig"] == ["n0:0", "n1:1", "n2:2", "n3:3", "n4:4"] and g["getestet"] == ["n5"]
+           and g["grau"] == 5 and not g["nan"], str(g))
+
+
 def main() -> int:
     print("=" * 74)
     print("Zwillings-Pruefung: Backend (Python) <-> Frontend (JS) <-> Sollkurve")
@@ -555,6 +695,7 @@ def main() -> int:
     block_turn_of_month()
     block_echtes_js()
     block_zeitzonen()
+    block_zyklus()
     block_python_only()
     print("\n" + "=" * 74)
     if _ausfaelle:

@@ -186,63 +186,37 @@ def last_actual_day(yd) -> int:
 JAHRESENDE_UNTERGRENZE = 359
 
 
-def year_end_reference(year_data, aktuelles_jahr: int | None = None) -> int:
-    """Wie weit reicht ein VOLLSTAENDIGES Jahr dieses Tickers ueberhaupt?
-
-    Ein abgeschlossenes Jahr endet fast nie am Kalendertag 365: XETRA schliesst
-    am 30.12., die NYSE hatte 2006/2017/2023 ihren letzten Handelstag am 29.12.
-    Zwischen letztem Handelstag und Silvester ist die Fortschreibung **exakt** —
-    es wurde nicht gehandelt, der Kurs hat sich nicht geaendert.
-
-    ZWEI SPERREN GEGEN ZIRKELSCHLUSS. Die erste Fassung nahm schlicht das Maximum
-    ueber alle Jahre — und beglaubigte damit die Daten mit sich selbst:
-
-      * Nur das laufende Jahr vorhanden (Tag 250) -> ref=250 -> das unfertige Jahr
-        galt als vollstaendig.
-      * Alle Jahre abgeschnitten (je Tag 250) -> ref=250 -> alle galten als
-        vollstaendig.
-      * Delisting im Dezember (Tag 349) als einziges Jahr -> galt als vollstaendig.
-
-    Deshalb: (1) nur ABGESCHLOSSENE Jahre (vor dem laufenden) stiften die
-    Referenz — das laufende waechst noch. (2) Die Referenz muss ueberhaupt nach
-    einem Jahresende aussehen (>= JAHRESENDE_UNTERGRENZE); liegt sie darunter,
-    ist die Historie systematisch abgeschnitten und taugt nicht als Massstab.
-    In beiden Faellen kommt 0 zurueck und `year_covers` faellt auf die strenge
-    Regel zurueck.
-    """
-    jetzt = aktuelles_jahr if aktuelles_jahr is not None else datetime.now().year
-    werte = []
-    for jahr, yd in year_data.items():
-        try:
-            if int(jahr) >= jetzt:
-                continue                 # laufendes/zukuenftiges Jahr stiftet nichts
-        except (TypeError, ValueError):
-            continue
-        werte.append(last_actual_day(yd))
-    if not werte:
-        return 0
-    ref = max(werte)
-    return ref if ref >= JAHRESENDE_UNTERGRENZE else 0
-
-
-def year_covers(yd, end_day: int, ref: int) -> bool:
+def year_covers(yd, end_day: int, jahr: int, stichtag_jahr: int) -> bool:
     """Darf dieses Jahr fuer eine Periode bis `end_day` mitgezaehlt werden?
 
-    Ja, wenn echte Beobachtungen bis zum Periodenende reichen — ODER das Jahr
-    bis zu seinem eigenen Jahresende reicht (`ref`), denn dann ueberbrueckt die
-    Fortschreibung nur handelsfreie Tage.
+    Periode VOR dem Jahresende (`end_day < 365`, Monat/Quartal): ja, wenn echte
+    Beobachtungen bis zum Periodenende reichen — so zaehlen abgeschlossene Monate
+    des laufenden Jahres mit.
 
-    Ein starres `>= 365` warf 7 von 26 NYSE- und 15 von 26 XETRA-Jahren weg
-    (gemessen 2000-2025) — das laufende Jahr fiel korrekt raus, aber eben auch
-    jedes zweite abgeschlossene XETRA-Jahr.
+    Periode BIS zum Jahresende (`end_day >= 365`, Dezember/Q4/Gesamtjahr): nur ein
+    VERGANGENES Jahr (`jahr < stichtag_jahr`), dessen letzte Kurszeile auf oder
+    nach Tag JAHRESENDE_UNTERGRENZE liegt. Das laufende und jedes zukuenftige Jahr
+    nie — die Entscheidung haengt nicht mehr von anderen Jahren ab.
+
+    Warum nicht mehr `year_end_reference` (bis 2026-10-13): die Referenz war das
+    Maximum ueber alle abgeschlossenen Jahre. Bei SPY ist das 365 (Jahre, die am
+    31.12. enden), und damit fielen alle Jahre mit letztem Handelstag am 29./30.12.
+    heraus — 1995, 2000, 2005, 2006, 2011, 2017, 2022, 2023. Auf /jahreszyklus
+    verschwand so der Midterm aus dem Praesidentenzyklus-Test (20 Jahre: nur eine
+    Gruppe mit mindestens 5 Jahren).
+
+    359 ist eine Toleranzentscheidung, keine Kalenderpruefung: ein Datenende ab
+    dem 25.12. (24.12. im Schaltjahr) gilt als Jahresende. IPO-Teiljahre und
+    innere Luecken erkennt die Regel nicht (wie vorher). Ein Kalenderansatz je
+    Ticker kommt mit V4 des Kalender-Umbaus (docs/KALENDER_UMSTELLUNG.md).
+    Gegenstueck: landing/js/seasonal-compute.js::yearCovers.
     """
-    lad = last_actual_day(yd)
-    if lad >= min(end_day, 365):
-        return True
-    # `ref == 0` heisst: es gibt keine vertrauenswuerdige Referenz (nur laufende
-    # oder durchweg abgeschnittene Jahre). Dann greift NUR die strenge Regel —
-    # sonst wuerde `lad >= 0` jedes Jahr durchwinken.
-    return ref > 0 and lad >= ref
+    lad = last_actual_day(yd)          # fail-closed: fehlendes Feld -> 0
+    if end_day >= 365:
+        # Jahresende-Zweig VOR jedem `lad >= end_day`-Erfolg: sonst rutschte ein
+        # laufendes Jahr mit Kurs am 31.12. (Stichtag 31.12.) wieder durch.
+        return int(jahr) < int(stichtag_jahr) and lad >= JAHRESENDE_UNTERGRENZE
+    return lad >= end_day
 
 
 def build_year_data(df, selected_years):
@@ -299,7 +273,7 @@ def count_trading_days(year_data, start_day, end_day):
     return int(np.mean(counts)) if counts else 0
 
 
-def calculate_period_stats(year_data, start_day, end_day):
+def calculate_period_stats(year_data, start_day, end_day, stichtag_jahr: int | None = None):
     """Berechne Statistiken für einen gewählten Zeitraum.
 
     Ein Jahr zählt NUR mit, wenn es bis zum Periodenende echte Beobachtungen hat.
@@ -320,16 +294,15 @@ def calculate_period_stats(year_data, start_day, end_day):
     am 29.12. Zwischen letztem Handelstag und Silvester ist die Fortschreibung
     **exakt** — es wurde ja nicht gehandelt, der Kurs hat sich nicht geändert.
     Ein starres `< 365` warf deshalb 7 von 26 NYSE- und 15 von 26 XETRA-Jahren
-    weg (gemessen 2000-2025). Die Referenz ist daher nicht 365, sondern wie weit
-    ein vollständiges Jahr DIESES Tickers überhaupt reicht — selbstkalibrierend,
-    ohne den Börsenkalender hier zu kennen.
+    weg (gemessen 2000-2025). Regel seit 2026-10-13: siehe `year_covers`
+    (Jahresende nur fuer vergangene Jahre, Toleranz ab Tag 359).
+    `stichtag_jahr` wird fuer Tests injiziert; ohne Angabe gilt das heutige Jahr.
     """
     period_returns = []
-
-    ref = year_end_reference(year_data)
+    stichtag_jahr = stichtag_jahr if stichtag_jahr is not None else datetime.now().year
 
     for year, yd in year_data.items():
-        if not year_covers(yd, end_day, ref):
+        if not year_covers(yd, end_day, int(year), stichtag_jahr):
             continue                      # Periode reicht in die Fortschreibung
         start_val = yd["full_365"][start_day - 1]
         end_val = yd["full_365"][min(end_day - 1, 364)]

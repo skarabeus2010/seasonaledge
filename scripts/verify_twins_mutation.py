@@ -54,25 +54,131 @@ MUTATIONEN = [
      "if (nxt.month !== expMonth || nxt.year !== expYear) continue;",
      "if (false) continue;"),
 
-    ("yearEndRef ohne Sperre gegen Zirkelschluss (JS)",
+    # Jahresende-Regel und Zyklus-Signifikanz (Plan 2026-10-13 v3)
+    ("JS: laufendes Jahr wieder zum Jahresende zugelassen (< wird <=)",
      "landing/js/seasonal-compute.js",
-     "    return ref >= SA.seasonal.JAHRESENDE_UNTERGRENZE ? ref : 0;",
-     "    return ref;"),
+     "      return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;",
+     "      return parseInt(jahr, 10) <= parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;"),
 
-    ("yearEndRef zaehlt auch das laufende Jahr mit (JS)",
+    ("JS: Jahresprüfung entfernt",
      "landing/js/seasonal-compute.js",
-     "      if (parseInt(y, 10) >= jetzt) continue;",
-     "      if (false) continue;"),
+     "      return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;",
+     "      return lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;"),
 
-    ("yearCovers ohne ref>0-Schutz (winkt bei fehlender Referenz alles durch)",
-     "shared/calculations.py",
-     "    return ref > 0 and lad >= ref",
-     "    return lad >= ref"),
+    ("JS: wieder starres Jahresende 365 (Maximumregel)",
+     "landing/js/seasonal-compute.js",
+     "      return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;",
+     "      return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= 365;"),
 
-    ("year_end_reference ohne Plausibilitaets-Untergrenze (Python)",
+    ("JS: Untergrenze 359 -> 360",
+     "landing/js/seasonal-compute.js",
+     "  JAHRESENDE_UNTERGRENZE: 359,",
+     "  JAHRESENDE_UNTERGRENZE: 360,"),
+
+    ("Python: Untergrenze 359 -> 358",
      "shared/calculations.py",
-     "    return ref if ref >= JAHRESENDE_UNTERGRENZE else 0",
-     "    return ref"),
+     "JAHRESENDE_UNTERGRENZE = 359",
+     "JAHRESENDE_UNTERGRENZE = 358"),
+
+    ("Python: laufendes Jahr wieder zugelassen",
+     "shared/calculations.py",
+     "        return int(jahr) < int(stichtag_jahr) and lad >= JAHRESENDE_UNTERGRENZE",
+     "        return int(jahr) <= int(stichtag_jahr) and lad >= JAHRESENDE_UNTERGRENZE"),
+
+    ("Python: fehlende Metadaten -> 365 (fail-open)",
+     "shared/calculations.py",
+     "    lad = last_actual_day(yd)          # fail-closed: fehlendes Feld -> 0",
+     "    lad = last_actual_day(yd) or 365"),
+
+    ("Seiten-Builder ohne Tag-366-Faltung (eigene Kopie statt gemeinsamer Interpolation)",
+     "landing/pages/jahreszyklus.html",
+     "        var full365 = SA.seasonal._interpolateTo365(days, cumulative);",
+     "        var full365 = SA.seasonal._interpolateTo365(days.filter(function(d){return d<=365;}), cumulative.slice(0, days.filter(function(d){return d<=365;}).length));"),
+
+    ("Risikozyklus-Builder ohne Tag-366-Faltung",
+     "landing/pages/risikozyklus.html",
+     "        var full365 = SA.seasonal._interpolateTo365(days, cumulative);",
+     "        var full365 = SA.seasonal._interpolateTo365(days.filter(function(d){return d<=365;}), cumulative.slice(0, days.filter(function(d){return d<=365;}).length));"),
+
+    ("runSignificanceTest verwirft kleine Gruppen wieder still",
+     "landing/js/significance.js",
+     "      if (returns.length < mindestN) { zuWenig.push({ name: name, n: returns.length, zu_wenig: true }); continue; }",
+     "      if (returns.length < mindestN) continue;"),
+
+    ("Statuszweig im Renderer entfernt (graue Karte als Tacho)",
+     "landing/js/significance.js",
+     "      if (r.zu_wenig) {   // Statuszweig vor jeder Zahlformatierung: kein Tacho, kein t/p, keine Rendite",
+     "      if (false) {"),
+
+    ("Zyklus-Vorfilter < 3 zurueck",
+     "landing/pages/jahreszyklus.html",
+     "          groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]);",
+     "          if (rets.length<3) continue; groups[CYCLE_LABELS[c2]]=rets; order.push(CYCLE_LABELS[c2]);"),
+
+    ("Heatmap ohne Kalenderbedingung im laufenden Jahr",
+     "landing/pages/jahreszyklus.html",
+     "          var monatVorbei = y < stichtag.jahr || (y === stichtag.jahr && m < stichtag.monat);",
+     "          var monatVorbei = true;"),
+
+    ("Heatmap ohne Datenabdeckung (nur Kalender)",
+     "landing/pages/jahreszyklus.html",
+     "          if (!monatVorbei || !SA.seasonal.yearCovers(yo, b[1], y, stichtag.jahr) ||",
+     "          if (!monatVorbei ||"),
+
+    ("Heatmap: Monat des Stichtags gilt als vorbei (< wird <=)",
+     "landing/pages/jahreszyklus.html",
+     "          var monatVorbei = y < stichtag.jahr || (y === stichtag.jahr && m < stichtag.monat);",
+     "          var monatVorbei = y < stichtag.jahr || (y === stichtag.jahr && m <= stichtag.monat);"),
+
+    ("periodStats ignoriert den Stichtag (laufendes Jahr = abgeschlossen)",
+     "landing/pages/jahreszyklus.html",
+     "        if (!SA.seasonal.yearCovers(yearData[y], endDoy, y, stichtagJahr)) continue;",
+     "        if (!SA.seasonal.yearCovers(yearData[y], endDoy, y, 9999)) continue;"),
+
+    ("Blog-Heatmap: None-Zelle wieder formatiert (TypeError)",
+     "blog/blog_builder.py",
+     '        text=[["" if v is None else f"{v:+.1f}%" for v in row] for row in z_data],',
+     '        text=[[f"{v:+.1f}%" for v in row] for row in z_data],'),
+
+    ("Blog-Heatmap ohne Datenabdeckung (nur Kalender)",
+     "blog/blog_builder.py",
+     "            if not monat_vorbei or not year_covers(yd, e, int(year), stichtag.year):",
+     "            if not monat_vorbei:"),
+
+    ("Blog-Heatmap ohne Kalenderbedingung (nur Datenabdeckung)",
+     "blog/blog_builder.py",
+     "            if not monat_vorbei or not year_covers(yd, e, int(year), stichtag.year):",
+     "            if not year_covers(yd, e, int(year), stichtag.year):"),
+
+    ("Blog-Monatsmittel ohne Abdeckungsfilter",
+     "blog/blog_builder.py",
+     "            if not year_covers(yd, e, int(jahr), current_year):",
+     "            if False:"),
+
+    ("Signifikanz Monatszweig ohne Abdeckungsfilter",
+     "landing/pages/jahreszyklus.html",
+     "          var b=MONTH_BOUNDS[m-1], rets=[];\n          for (var y in yearData) {\n            if (!SA.seasonal.yearCovers(yearData[y], b[1], y, stichtagJahr)) continue;",
+     "          var b=MONTH_BOUNDS[m-1], rets=[];\n          for (var y in yearData) {"),
+
+    ("Signifikanz Quartalszweig ohne Abdeckungsfilter",
+     "landing/pages/jahreszyklus.html",
+     "          var b=QUARTER_BOUNDS[labels[i]], rets=[];\n          for (var y in yearData) {\n            if (!SA.seasonal.yearCovers(yearData[y], b[1], y, stichtagJahr)) continue;",
+     "          var b=QUARTER_BOUNDS[labels[i]], rets=[];\n          for (var y in yearData) {"),
+
+    ("Mindestzahl fest 5 in runSignificanceTest",
+     "landing/js/significance.js",
+     "    var mindestN = (opts && opts.mindestN) || 5;\n    var results = [], zuWenig = [];",
+     "    var mindestN = 5;\n    var results = [], zuWenig = [];"),
+
+    ("Mindestzahl fest 5 in der grauen Karte",
+     "landing/js/significance.js",
+     "    var mindestN = (opts && opts.mindestN) || 5;\n    var einheit",
+     "    var mindestN = 5;\n    var einheit"),
+
+    ("Graue Karte EN mit deutschem Text",
+     "landing/js/significance.js",
+     "    var titel = _en ? SA.i18n.t('sig.not_evaluated') : 'Nicht ausgewertet';",
+     "    var titel = 'Nicht ausgewertet';"),
 
     ("Feiertags-Kumulation wieder verschoben",
      "shared/holidays.py",
@@ -134,8 +240,8 @@ MUTATIONEN = [
 
     ("yearCovers faellt bei fehlendem last_actual_day auf 365 zurueck (fail-open)",
      "landing/js/seasonal-compute.js",
-     "    var lad = yd.last_actual_day;\n    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;",
-     "    var lad = yd.last_actual_day;\n    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 365;"),
+     "    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;\n    if (endDoy >= 365) {",
+     "    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 365;\n    if (endDoy >= 365) {"),
 ]
 
 

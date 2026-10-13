@@ -114,29 +114,7 @@ ergebnis.interp = [
   ergebnis.tom_voll = r ? r.all_curves[0].curve : null;
 }
 
-// 6) yearEndRef/yearCovers — die Sperren gegen Zirkelschluss.
-{
-  const mk = (lad) => ({ last_actual_day: lad, full_365: new Array(365).fill(100) });
-  const f = (yd, jetzt) => {
-    const ref = S.yearEndRef(yd, jetzt);
-    return { ref: ref, akzeptiert: Object.keys(yd).filter(y => S.yearCovers(yd[y], 365, ref)) };
-  };
-  ergebnis.yearcovers = {
-    nur_laufendes:   f({ 2026: mk(250) }, 2026),
-    alle_kurz:       f({ 2025: mk(250), 2026: mk(250) }, 2026),
-    dez_delisting:   f({ 2024: mk(349) }, 2026),
-    // Einziges Jahr ist das LAUFENDE, aber schon bei Tag 364: ohne die
-    // Sperre 'nur abgeschlossene Jahre stiften die Referenz' wuerde es
-    // sich selbst beglaubigen. Es gibt kein abgeschlossenes Jahr als
-    // Massstab -> streng bleiben.
-    nur_laufendes_spaet: f({ 2026: mk(364) }, 2026),
-    voll_plus_kurz:  f({ 2023: mk(364), 2024: mk(364), 2026: mk(250) }, 2026),
-    // Jahr OHNE last_actual_day: fail-closed heisst 'unbekannt = nicht
-    // ausreichend'. Ein Rueckfall auf 365 wuerde es als vollstaendig
-    // ausweisen, waehrend Python es verwirft — genau diese Divergenz.
-    fehlt_lad: f({ 2023: mk(364), 2024: { full_365: new Array(365).fill(100) } }, 2026)
-  };
-}
+// 6) Jahresende-Regel (yearCovers) prueft seit 2026-10-13 scripts/js/zyklus_probe.js (Block 7 des Waechters).
 
 // 7) ToM mit LUECKE in der Historie: Januar, dann direkt Maerz. Ohne
 //    Nachbarschaftspruefung wuerde der Januar mit dem Maerz gepaart.

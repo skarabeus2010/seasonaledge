@@ -395,57 +395,31 @@ SA.seasonal = {
     return { avg: avg, std: std };
   },
 
-  /**
-   * Wie weit reicht ein VOLLSTAENDIGES Jahr dieses Tickers ueberhaupt?
-   * (Port von year_end_reference.) Ein abgeschlossenes Jahr endet fast nie am
-   * Kalendertag 365: XETRA schliesst am 30.12., die NYSE hatte 2006/2017/2023
-   * ihren letzten Handelstag am 29.12.
-   */
   // Frueheste Jahresende-Position, gemessen 1990-2030 ueber alle Kalender in
   // shared/exchange_holidays.py: Tag 362 (KRX, MILAN, OSLO, SIX, STOCKHOLM,
   // TSE, XETRA), 363 (EURONEXT, FOREX, HKEX, LSE, NYSE), 365 (CRYPTO).
-  // Alles darunter ist abgeschnittene Historie, kein Jahresende.
   // (Gegenstueck: shared/calculations.JAHRESENDE_UNTERGRENZE.)
   JAHRESENDE_UNTERGRENZE: 359,
 
-  yearEndRef: function(yearData, aktuellesJahr) {
-    // ZWEI SPERREN GEGEN ZIRKELSCHLUSS — die erste Fassung nahm schlicht das
-    // Maximum ueber ALLE Jahre und beglaubigte die Daten mit sich selbst:
-    // lag nur das laufende Jahr vor (Tag 250), galt es als vollstaendig.
-    // (1) Nur abgeschlossene Jahre stiften die Referenz. (2) Sie muss ueberhaupt
-    // nach einem Jahresende aussehen. Sonst 0 -> yearCovers wird streng.
-    var jetzt = aktuellesJahr || new Date().getFullYear();
-    var ref = 0;
-    for (var y in yearData) {
-      if (parseInt(y, 10) >= jetzt) continue;
-      // FAIL-CLOSED: fehlt das Feld, ist die Datenlage unbekannt — dann 0, nicht
-      // 365. Ein Rueckfall auf 365 wuerde ein Jahr ohne jede Metadaten als
-      // vollstaendig ausweisen, waehrend Python (last_actual_day -> 0) es
-      // verwirft. Genau diese Divergenz war der Befund.
-      var lad = yearData[y].last_actual_day;
-      lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;
-      if (lad > ref) ref = lad;
-    }
-    return ref >= SA.seasonal.JAHRESENDE_UNTERGRENZE ? ref : 0;
-  },
-
   /**
    * Darf dieses Jahr fuer eine Periode bis `endDoy` mitgezaehlt werden?
-   * (Port von year_covers.) Ja, wenn echte Beobachtungen bis zum Periodenende
-   * reichen ODER das Jahr bis zu seinem eigenen Jahresende reicht — dann
-   * ueberbrueckt die Fortschreibung nur handelsfreie Tage.
-   *
-   * Ein starres `>= 365` warf 7 von 26 NYSE- und 15 von 26 XETRA-Jahren weg.
+   * (Port von year_covers.)
+   *  - Periode vor dem Jahresende (endDoy < 365): echte Beobachtungen bis zum Periodenende.
+   *  - Periode bis zum Jahresende (endDoy >= 365): nur ein VERGANGENES Jahr (jahr < stichtagJahr) mit letzter
+   *    Kurszeile ab Tag 359 (Toleranz, keine Kalenderpruefung). Laufendes/zukuenftiges Jahr nie.
+   * Bis 2026-10-13 hing die Entscheidung von einer Referenz ueber alle Jahre ab (Maximum = 365 bei SPY) — Jahre mit
+   * letztem Handelstag am 29./30.12. fielen heraus, und auf /jahreszyklus verschwand der Midterm-Zyklus.
+   * `stichtagJahr` wird uebergeben, nicht hier gelesen (Waechter injiziert ihn).
    */
-  yearCovers: function(yd, endDoy, ref) {
-    // FAIL-CLOSED wie yearEndRef: fehlendes Feld heisst "unbekannt", nicht
-    // "vollstaendig". Python verwirft solche Jahre ebenfalls.
-    var lad = yd.last_actual_day;
+  yearCovers: function(yd, endDoy, jahr, stichtagJahr) {
+    // FAIL-CLOSED: fehlendes Feld heisst "unbekannt", nicht "vollstaendig" (Python: last_actual_day -> 0).
+    var lad = yd && yd.last_actual_day;
     lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;
-    if (lad >= Math.min(endDoy, 365)) return true;
-    // ref === 0 heisst: keine vertrauenswuerdige Referenz. Dann greift NUR die
-    // strenge Regel — sonst wuerde `lad >= 0` jedes Jahr durchwinken.
-    return ref > 0 && lad >= ref;
+    if (endDoy >= 365) {
+      // Jahresende-Zweig VOR jedem lad >= endDoy-Erfolg (sonst rutscht das laufende Jahr am 31.12. durch).
+      return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;
+    }
+    return lad >= endDoy;
   },
 
   /** Quantil einer AUFSTEIGEND sortierten Liste mit linearer Interpolation (numpy-Methode „linear").

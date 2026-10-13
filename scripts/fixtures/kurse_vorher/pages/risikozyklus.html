@@ -313,30 +313,16 @@
           days.push(SA.seasonal.tagNummer(yRows[j].date));
           logRets.push(lr);
         }
-        // Interpoliere cumulative auf 365 Kalendertage — KONSTANT-FILL nach
-        // letztem echten Handelstag (Python-kompatibel)
+        // Interpolation ueber die GEMEINSAME Funktion (Konstant-Fill, Tag 366 im Schaltjahr auf Slot 365 gefaltet).
+        // Die eigene Kopie faltete nicht: eine Bewegung nur am 31.12. eines Schaltjahres fehlte im Endwert.
         var lastActualDay = days[days.length-1];
-        var full365=[];
-        for (var t=1;t<=365;t++) {
-          var idx=days.indexOf(t);
-          if (idx>=0) { full365.push(cumulative[idx]); continue; }
-          if (t<days[0]) { full365.push(cumulative[0]); continue; }
-          if (t>lastActualDay) { full365.push(cumulative[cumulative.length-1]); continue; }
-          var prev=-1,next=-1;
-          for (var k=0;k<days.length;k++) { if(days[k]<t)prev=k; if(days[k]>t&&next<0)next=k; }
-          if (prev>=0&&next>=0) {
-            var w=(t-days[prev])/(days[next]-days[prev]);
-            full365.push(cumulative[prev]+w*(cumulative[next]-cumulative[prev]));
-          } else {
-            full365.push(cumulative[cumulative.length-1]);
-          }
-        }
+        var full365 = SA.seasonal._interpolateTo365(days, cumulative);
         result[parseInt(yr)] = {
           full_365: full365,
           days: days,
           log_returns: logRets,
           cumulative: cumulative,
-          last_actual_day: lastActualDay,
+          last_actual_day: Math.min(lastActualDay, 365),   // Schaltjahr: 31.12. = Tag 366 -> Slot 365
           simpleReturn: full365[364]>0 ? (full365[364]/full365[0]-1)*100 : 0
         };
       }
