@@ -12,17 +12,24 @@ Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan
 - [ ] Plan v4 mit Zahlen an Codex → dann Phase 1 (gemeinsame CM-Entscheidung Live/Backfill), Phase 2 (Herkunft je
       Zeile, Qualitätsstatus), Phase 3 (Bestand unter einer Sperre), Phase 4 (Frontend „heute nicht bewertbar“,
       Aktualisierungsregel), Phase 5 (10Δ in die Historie).
-- [ ] Nutzerentscheidung: Radar standardmäßig Percentile statt Rank?
+- [x] Radar standardmäßig Percentile — Nutzerentscheidung 2026-10-14, live mit Paket A (`1c0412f`).
 
 ## B. Opening-Setup-Abgleich — Plan `docs/OPENING_SETUP_PLAN.md`
 - [x] **Lizenz mit Massive** — erledigt (Nutzer, 2026-10-14).
-- [ ] **Sofortreparaturen (Stufe 1):**
-  - ETHA: realisierte Vola 380 % / VRP −333 seit 07.10. (Reverse-Split 30.09.; RV aus `close` statt `log_return`).
-  - Datumsstempel `gex_summary.date`, `pc_ratio.date` = Lauftag statt Session.
-  - Morgen-Mail: Skew-Perzentil wie /skew (nur cm/cm_extrap, ≥ 20 Punkte, Session) aus EINER Rechnung im Cron;
-    Farbe einfarbig (`daily_report.html.j2:115`).
-  - Morgen-Mail: Earnings-Zeilen ausblenden, bis eine echte Terminquelle da ist (`fetch_event_data.py` speichert das
-    Quartalsende).
+- [x] **Paket A der Sofortreparaturen** (2026-10-14, `1c0412f`, Codex: Plan v2 + Code R2 FREIGABE;
+      [Wirkungsbericht](review_prompts/2026-10-14_options_paket_a_wirkung.md)): RV/VRP aus `log_return` (ETHA 380,7 → 45,8 %),
+      Health-Check „Kursbasis“, Earnings aus der Morgen-Mail, /skew in Percentile.
+- [ ] **Plan v3 an Codex** für den nicht freigegebenen Rest:
+  - R1c: ETHA-VRP-History gezielt reparieren (Reparaturmodus mit Datumsbereich und vollständigem Diff; erst nach der
+    Schreibsperre).
+  - R2: Session statt Lauftag für `gex_summary.date`/`pc_ratio.date` — **und** als Bewertungsdatum für DTE/T in
+    `snapshot_gex_massive.py`; getrenntes Archiv, Leser `compare_flashalpha_gex`, EOD-Wächter, Frischeprüfung.
+  - R3: Skew-Perzentil der Mail aus EINER Rechnung im Cron (n je Metrik, Fenster `S−W ≤ date ≤ S`, Session-Prüfung im
+    Mailleser, JS-Referenz an die Spezifikation), einfarbig (`daily_report.html.j2:115`).
+  - **Gemeinsame Schreibsperre (flock) für alle Schreiber der Skew-History zuerst** — inkl. `backfill_skew_history.py`.
+  - Folgeposten Codex: Renditen aus Schlusskursen noch in den Mail-Kursanzeigen (`daily_report.py` ~244/~422),
+    Sektor-Monat (~1273), Vol-Control-Proxy (`build_volcontrol_proxy.py:74`).
+  - Kalenderseite/`kalender-compute.js` nutzen `earnings_events.report_date` mit derselben falschen Bedeutung.
 - [ ] Stufe 2 IV-Dashboard aktivste Namen · Stufe 3 Vola-Lage (VIX9D/VIX3M kostenlos, ±σ mit gemessener Deckung) ·
       Stufe 4 Earnings-Vorschau (Terminquelle) · Stufe 5 Studie (optional) · später Extremlisten, SPX-Gamma `I:SPX`.
 - [ ] IWM-Historienpunkt 17.08. (ATM-IV 3,35 %) — fällt unter A.
