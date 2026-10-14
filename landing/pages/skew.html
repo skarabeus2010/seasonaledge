@@ -101,7 +101,7 @@
 
     <!-- GRAFIK: Vol-Quadrant -->
     <div class="card">
-      <div class="psub" id="sk-quad-sub" data-i18n-html="skew.quad_sub"><b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
+      <div class="psub" id="sk-quad-sub" data-i18n-html="skew.quad_sub_pctl"><b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Percentile</span> &times; <span style="color:var(--accent)">IV-Percentile</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%</div>
       <div style="display:flex;align-items:baseline;gap:.5rem;margin:.55rem 0 .35rem;flex-wrap:wrap">
         <span class="psub" style="margin:0" data-i18n="skew.category">Kategorie:</span>
         <div id="sk-cat" style="display:inline-flex;gap:.3rem;flex-wrap:wrap"></div>
@@ -219,7 +219,10 @@
     // Vorwaertshistorie tatsaechlich zwei Jahre tief ist (~09/2027).
     var SKEW_WINS=[{lbl:'3M',d:92},{lbl:'6M',d:183},{lbl:'1J',d:365}];
     var SKEW_WIN=365;                                              // Default: 1 Jahr
-    var SKEW_MODE='rank';                                          // 'rank' | 'pctl'
+    // Standard Percentile (Nutzerentscheidung 2026-10-14): der Rank haengt an Minimum und Maximum des Fensters,
+    // ein einzelner Ausreisser verschiebt ihn fuer alle Tage; das Percentile kaum (MS: Rank 33 -> 49 ohne Ausreisser,
+    // Percentile 34 -> 33). Umschalter bleibt.
+    var SKEW_MODE='pctl';                                          // 'rank' | 'pctl'
     var SKEW_VIEW='rr_iv';                                         // 'rr_iv' | 'cs_ps'
     var SKEW_CATS=[], SKEW_CAT='Mag7';                            // Kategorie-Filter (Übersicht)
     function _inCat(tk){ return SKEW_CAT==='Alle' || (SKEW_CATMAP[tk]||[]).indexOf(SKEW_CAT)>=0; }
@@ -278,11 +281,14 @@
       // sobald der Radar zeichnete. Statisches HTML zu pruefen findet das nicht.
       // Vorangestellt jeweils eine Klartext-Zeile: die Fachbegriffe allein sagen
       // niemandem, was die Achsen bedeuten.
+      // Den Schlüssel am Element mitführen: SA.i18n._applyDOM setzt data-i18n-html nach dem Laden des Wörterbuchs
+      // erneut — mit dem statischen Schlüssel würde ein früh gewählter Rank-Modus wieder auf Percentile kippen.
+      el.setAttribute('data-i18n-html', SKEW_VIEW==='cs_ps'?'skew.quad_sub_cs':(SKEW_MODE==='pctl'?'skew.quad_sub_pctl':'skew.quad_sub'));
       if(SKEW_VIEW==='cs_ps'){
         // SpotGamma-Konvention: positiver Call-Skew = OTM-Calls > ATM-IV; positiver Put-Skew = OTM-Puts > ATM-IV
         el.innerHTML=T('skew.quad_sub_cs','<b>Vol-Regime-Radar</b> &mdash; <b>Aufw&auml;rts-Nachfrage</b> (X) &times; <b>Absicherungs-Nachfrage</b> (Y)<br><span style="color:var(--accent)">Call-Skew</span> (OTM-Calls&nbsp;vs.&nbsp;ATM) &times; <span style="color:var(--accent)">Put-Skew</span> (OTM-Puts&nbsp;vs.&nbsp;ATM), je unabh&auml;ngig gerankt &middot; positiv = OTM teurer als ATM &middot; Fadenkreuz = 50%');
       } else {
-        el.innerHTML=T('skew.quad_sub','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%');
+        el.innerHTML=SKEW_MODE==='pctl'?T('skew.quad_sub_pctl','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Percentile</span> &times; <span style="color:var(--accent)">IV-Percentile</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%'):T('skew.quad_sub','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%');
       }
     }
     function refreshRankViews(){ _updateQuadSub(); renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
@@ -428,7 +434,7 @@
               '</div>';
           }
           return '<div style="padding:7px 10px;font-size:13px"><b style="color:'+ACC+'">'+p.tk+'</b>'+
-            '<br>IV-Rank '+p.y+'% · RR-Rank '+p.x+'%'+
+            '<br>IV-'+mLbl+' '+p.y+'% · RR-'+mLbl+' '+p.x+'%'+
             '<br>IV '+(p.ivNow!=null?(p.ivNow*100).toFixed(1)+'%':'—')+
             (p.skew!=null?' · Skew '+(p.skew>=0?'+':'')+p.skew.toFixed(2)+' pts':'')+
             '</div>';
@@ -440,18 +446,19 @@
       };
       renderInto('sk-quad',qopts);
       var winLbl=(SKEW_WINS.filter(function(w){return w.d===SKEW_WIN;})[0]||{}).lbl||'';
-      var legendTxt=isCS?
+      // {m} = gewählter Modus (Rank/Percentile). Ueber das Woerterbuch, sonst blieb die Legende auf /en/skew deutsch.
+      var legendTxt=(isCS?T('skew.legend_cs',
         '<b>Lesart (Call- vs. Put-Skew):</b> Jeder Punkt = ein Ticker relativ zur eigenen Historie. '+
-        '<b>X-Achse (Call-Skew '+mLbl+'):</b> rechts teure Calls (bullishes Positioning). '+
-        '<b>Y-Achse (Put-Skew '+mLbl+'):</b> oben teure Puts (Absicherungsnachfrage). '+
+        '<b>X-Achse (Call-Skew {m}):</b> rechts teure Calls (bullishes Positioning). '+
+        '<b>Y-Achse (Put-Skew {m}):</b> oben teure Puts (Absicherungsnachfrage). '+
         '<span style="color:#30e878">Unten-rechts</span> = Calls teuer, Puts billig = bullish Momentum (analog SpotGamma Compass). '+
         '<span style="color:#ff4d5e">Oben-links</span> = Puts teuer, Calls billig = defensives Hedging. '+
-        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal.</span>':
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal.</span>'):T('skew.legend',
         '<b>Lesart:</b> Jeder Punkt = ein Ticker, verortet <b>relativ zur eigenen Historie</b>. '+
-        '<b>Y-Achse (IV-Rank):</b> oben teure Vola &rarr; Optionen <b>verkaufen</b>, unten billige &rarr; <b>kaufen</b>. '+
+        '<b>Y-Achse (IV-{m}):</b> oben teure Vola &rarr; Optionen <b>verkaufen</b>, unten billige &rarr; <b>kaufen</b>. '+
         '<b>X-Achse (Risk-Reversal):</b> links <span style="color:#30e878">bullish / Upside-Potenzial</span> (RR&lt;50), rechts <span style="color:#ff4d5e">bearish / Downside-Potenzial</span> (RR&gt;50). '+
         'Oben-rechts = teuer + überkauft, unten-links = billig + überverkauft. '+
-        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind Struktur-Beispiele.</span>';
+        '<span style="color:var(--dim)">Rückwärtsgewandter Kontext, kein Handelssignal &mdash; Spreads sind Struktur-Beispiele.</span>')).replace(/\{m\}/g,mLbl);
       document.getElementById('sk-quad-legend').innerHTML=legendTxt+' <span style="color:var(--dim)">('+winLbl+' · '+pts.length+' Ticker)</span>';
     }
 
@@ -742,6 +749,15 @@
         var q=document.getElementById('sk-quad'); if(q)q.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Backfill/Cron).')+'</div>';
       });
     }
+    // Kommt das Wörterbuch NACH den Daten, standen Legende, Untertitel und Tabellenköpfe noch im deutschen Fallback.
+    // Dann alles Dynamische neu zeichnen; den Radar nur mit geladener Historie (sonst bliebe statt einer
+    // Fehlermeldung „Quadrant folgt“ stehen).
+    document.addEventListener('sa:i18n-bereit', function(){
+      _updateQuadSub(); buildSkewWinBtns();
+      if(SKEW_HIST)renderSkewQuad();
+      if(VT_DATA)renderVolTrigger();
+      if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);}
+    });
     if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
   }();
   </script>

@@ -33,7 +33,7 @@ Quellen, und der Daten-/Codestand seiner Entstehung ist nicht rekonstruierbar.
 Das ist das eigentliche Argument fuer die Neurechnung: nicht dass die alten
 Werte anders sind, sondern dass sie nicht nachvollziehbar sind.
 
-QUELLE: Supabase ueber shared.data.lade_closes — kein Yahoo. Begruendung dort;
+QUELLE: Supabase ueber shared.data.lade_kurse (gespeicherter log_return) — kein Yahoo. Begruendung dort;
 kurz: Yahoos Adjustierung wandert mit jeder Dividende, dieselbe Abfrage ergibt
 an verschiedenen Tagen verschiedene Reihen. Der Live-Lauf nutzt seit
 2026-09-19 dieselbe Quelle, damit Historie und Tagespunkt vergleichbar sind.
@@ -59,8 +59,8 @@ _ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
 from shared.atomic_json import write_json_atomic                     # noqa: E402
-from shared.data import KursreiheFehlt, lade_closes                  # noqa: E402
-from shared.realized_vol import RV_FENSTER, rv_reihe                 # noqa: E402
+from shared.data import KursreiheFehlt, lade_kurse                   # noqa: E402
+from shared.realized_vol import RV_FENSTER, rv_reihe_aus_returns     # noqa: E402
 
 HISTORIE = _ROOT / "landing/data/options_skew_history.json"
 
@@ -122,15 +122,16 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
             continue
 
         try:
-            kd, kc = lade_closes(t, ab=_kursfenster(daten),
-                                 mindestens=RV_FENSTER + 5)
+            kd, _kc, kr = lade_kurse(t, ab=_kursfenster(daten),
+                                     mindestens=RV_FENSTER + 5)
         except KursreiheFehlt as e:
             # Kein VRP ist besser als ein aus fremder Quelle gerechnetes.
             stat["ohne_reihe"].append(f"{t}: {e}")
             stat["uebersprungen"] += 1
             continue
 
-        rv_je_tag = rv_reihe(kd, kc)
+        # Aus gespeicherten Returns, nicht aus Schlusskursen (shared/basisabweichung.py) — dieselbe Regel wie live.
+        rv_je_tag = rv_reihe_aus_returns(kd, kr)
         stat["ticker"] += 1
 
         for z in zeilen:

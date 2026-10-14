@@ -32,9 +32,9 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day, letzte_session, MarktOffen, pruefe_eod_fenster   # noqa: E402
 from shared.atomic_json import write_json_atomic                      # noqa: E402
-from shared.realized_vol import (RV_FENSTER, kappe_auf,               # noqa: E402
-                                 rv_aus_closes)
-from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
+from shared.realized_vol import (RV_FENSTER, kappe_reihen,            # noqa: E402
+                                 rv_aus_returns)
+from shared.data import KursreiheFehlt, lade_kurse                    # noqa: E402
 from shared.black_scholes import (diagnose_start as _diagnose_start,
                                   diagnose_stop as _diagnose_stop,
                                   bs_delta, implied_vol, cm_interp as _cm_interp,  # noqa: E402
@@ -277,7 +277,8 @@ def _rv_ab(bis: str | None, monate: int = 8) -> str:
 def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     """Annualisierte realisierte Vola über n Handelstage (CBOE-Formel), Decimal.
     n=21 = 1 Monat (passt zur 30-Kalendertage-ATM-IV für den VRP).
-    RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = ln(P_t/P_{t-1}).
+    RV = sqrt( 252/(N-1) · Σ(R_t − R̄)² ), R_t = gespeicherter `log_return` (seit 2026-10-14, nicht mehr
+    ln(P_t/P_{t-1}) aus Schlusskursen — ein Wechsel der Kursbasis ergab dort 380 %, siehe shared.data.lade_kurse).
 
     Rückgabe: (rv, last_close, last_date). Der letzte Close dient als Spot-Fallback —
     der Massive-Endpoint liefert das Underlying nicht immer (ARM am 2026-09-08:
@@ -304,8 +305,8 @@ def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     # keinen Spot-Fallback, damit faellt unten die cm-Normierung aus
     # (fail-closed). Gemeldet wird es aber, sonst ist es ein stiller Ausfall.
     try:
-        daten_alle, closes_alle = lade_closes(sym, ab=_rv_ab(bis),
-                                              mindestens=n + 5)
+        daten_alle, closes_alle, returns_alle = lade_kurse(sym, ab=_rv_ab(bis),
+                                                           mindestens=n + 5)
     except KursreiheFehlt as e:
         print(f"  {sym:6} {e} -> kein rv, kein Spot-Fallback", flush=True)
         return None, None, None
@@ -330,25 +331,26 @@ def _realized_vol(sym: str, n: int = 21, bis: str | None = None):
     # verschoben. Jetzt wird auf Kalendertagen verglichen, nicht auf
     # Zeitstempeln (shared/realized_vol.kappe_auf).
     try:
-        daten, closes = kappe_auf(daten_alle, closes_alle, bis)
+        daten, closes, returns = kappe_reihen(daten_alle, closes_alle, returns_alle, bis=bis)
     except Exception:
         return None, None, None
-    if not closes:
+    # Spot = letzter GUELTIGER Schlusskurs samt seinem Datum (unbereinigt, siehe shared.data.lade_kurse).
+    gueltig = [i for i, x in enumerate(closes) if x is not None]
+    if not gueltig:
         return None, None, None
-    c = closes
-    last = round(float(c[-1]), 2) if c[-1] == c[-1] else None
-    last_d = daten[-1]
+    c = [closes[i] for i in gueltig]
+    last = round(float(c[-1]), 2)
+    last_d = daten[gueltig[-1]]
     # n+5 statt n+1: ein Puffer gegen Reihen, die gerade eben reichen. Bewusst
     # beibehalten, damit die Umstellung keine Zahl verschiebt. Gezaehlt wird
     # auf der GEKAPPTEN Reihe — vorher stand hier len(df), was nach der Kappung
     # dasselbe war, jetzt aber auseinanderfallen wuerde.
     if len(c) < n + 5:
         return None, last, last_d
-    # Die Formel liegt in shared/realized_vol.py — dieselbe Funktion nutzt die
-    # Nachruestung des VRP fuer vergangene Tage (scripts/backfill_skew_vrp.py).
-    # Zwei Implementierungen derselben Mathematik driften; nachgewiesen
-    # identisch zur vorherigen Fassung in scripts/verify_realized_vol.py.
-    return rv_aus_closes(c, n), last, last_d
+    # Renditen aus dem GESPEICHERTEN log_return, nicht aus Schlusskursen: ein Wechsel der Kursbasis innerhalb der
+    # Reihe (ETHA 2026-09-30, Faktor 3) wäre sonst eine Rendite von +110 % (shared/basisabweichung.py).
+    # Fensterende = letzte Zeile bis zur Session; liegt die letzte gueltige Kurszeile davor, ist ihr Return der letzte.
+    return rv_aus_returns(returns[:gueltig[-1] + 1], n), last, last_d
 
 
 # Standard-Monatsverfall = 3. Freitag. Alias auf die gemeinsame Definition in

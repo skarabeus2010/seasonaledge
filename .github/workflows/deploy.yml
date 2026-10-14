@@ -120,6 +120,13 @@ jobs:
         run: |
           python3 -m pip install --quiet pandas==2.2.3 tzdata
           python3 scripts/verify_schreiber_nummern.py
+      # Renditen aus gespeicherten Tagesreturns statt aus Schlusskursen (ETHA-Basiswechsel 2026-09-30), Health-Check
+      # „Kursbasis“, Morgen-Mail ohne Earnings mit Dividenden. Echte Funktionen, nur Lader/Supabase als Attrappe.
+      # Braucht pandas (Schritt davor) und requests.
+      - name: Waechter - Kursbasis und realisierte Vola
+        run: |
+          python3 -m pip install --quiet requests==2.32.3
+          python3 scripts/verify_basisabweichung.py
       # Kurslader SA.kurse (docs/TICKER_LADEN.md, S1): die echte landing/js/kurse.js in node gegen einen
       # PostgREST-Nachbau, jeder Abschnitt in eigenem Prozess. Verlangt Exit 0 und Endmarker je Abschnitt.
       - name: Waechter - Kurslader SA.kurse

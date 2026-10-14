@@ -826,6 +826,49 @@ def collect_health_data() -> dict:
         checks.append({"name": _name6, "status": "red", "detail": f"Fehler: {str(e)[:100]}", "value": "ERR"})
         downgrade("red")
 
+    # ── Check 7: Basisabweichungen in prices (letzte 45 Tage, alle Ticker) ──────────────────────────────────────
+    # Schlusskurs-Sprung passt nicht zum gespeicherten log_return → Kursbasis gewechselt (ETHA 2026-09-30, Faktor 3).
+    # Nur Meldung, keine Reparatur (shared/basisabweichung.py). Nichts geprüft gilt als ungeprüft, nicht als grün.
+    _name7 = "Kursbasis (Basisabweichungen)"
+    try:
+        from shared.basisabweichung import basisabweichungen
+        ab = (today_utc - timedelta(days=45)).isoformat()
+        zeilen7, off = [], 0
+        while True:
+            teil = (client.table("prices").select("ticker,date,close,log_return").gte("date", ab)
+                    .order("ticker").order("date").range(off, off + 999).execute().data)
+            if teil is None:      # keine Liste = keine Antwort; nicht als Seitenende werten (sonst Teilprüfung grün)
+                raise RuntimeError(f"Seite ab {off} ohne Daten")
+            zeilen7 += teil
+            if len(teil) < 1000:
+                break
+            off += 1000
+        erg7 = basisabweichungen(zeilen7)
+        _ueber7 = erg7["ohne_return"] + erg7["ungueltiger_kurs"]
+        _ueber7_txt = (f"{erg7['ohne_return']} ohne log_return, {erg7['ungueltiger_kurs']} mit ungültigem Kurs")
+        if erg7["paare"] == 0:
+            status, detail = "yellow", "ungeprüft — keine Kurszeilen gelesen"
+        elif erg7["geprueft"] == 0:
+            status, detail = "yellow", f"ungeprüft — kein Kurspaar vergleichbar ({_ueber7_txt})"
+        elif erg7["treffer"]:
+            status = "yellow"
+            detail = "; ".join(f"{t['ticker']} {t['datum']} ×{t['basissprung']}" for t in erg7["treffer"][:5])
+            detail += (f" (+{len(erg7['treffer']) - 5} weitere)" if len(erg7["treffer"]) > 5 else "")
+            detail += " — Renditen aus Schlusskursen dort falsch; prices prüfen"
+            if _ueber7:
+                detail += f" · unvollständig: {_ueber7_txt}"
+        elif _ueber7:
+            status, detail = "yellow", (f"unvollständig — {erg7['geprueft']} von {erg7['paare']} Kurspaaren geprüft, "
+                                        f"ohne Abweichung; übersprungen: {_ueber7_txt}")
+        else:
+            status, detail = "green", f"{erg7['geprueft']} Kurspaare geprüft, ohne Abweichung"
+        checks.append({"name": _name7, "status": status, "detail": detail, "value": str(len(erg7["treffer"]))})
+        downgrade(status)
+    except Exception as e:
+        checks.append({"name": _name7, "status": "yellow", "detail": f"ungeprüft — Fehler: {str(e)[:100]}",
+                       "value": "ERR"})
+        downgrade("yellow")
+
     return {
         "overall_status": overall_status,
         "checks": checks,

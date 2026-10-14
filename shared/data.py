@@ -214,3 +214,65 @@ def lade_closes(ticker: str, ab: str | None = None, mindestens: int = 30):
             f"{ticker}: nur {len(closes)} Schlusskurse in Supabase "
             f"(mindestens {mindestens} erwartet)")
     return daten, closes
+
+
+def lade_kurse(ticker: str, ab: str | None = None, mindestens: int = 30):
+    """Wie lade_closes, aber zeilentreu mit dem gespeicherten Tagesreturn: (daten, closes, returns).
+
+    Jede Kurszeile mit Datum bleibt erhalten; ein unbrauchbarer Schlusskurs wird None, ein fehlender oder nicht
+    endlicher `log_return` ebenfalls None. Die drei Listen sind gleich lang und aufsteigend.
+
+    WARUM (2026-10-14): Renditen aus Schlusskursen sind falsch, sobald die Kursbasis innerhalb der Reihe wechselt —
+    ETHA sprang am 2026-09-30 von 20,28 auf 60,36 (Reverse-Split, Faktor 3), der gespeicherte `log_return` war
+    −0,79 %. Die realisierte Vola stand danach bei 380 %. Renditen kommen deshalb aus `log_return`, der Spot
+    (letzter gültiger Schlusskurs) weiter aus `close` — für die Optionsbewertung ist der unbereinigte Schluss der
+    richtige. Siehe shared/basisabweichung.py.
+
+    @raises KursreiheFehlt bei weniger als `mindestens` gültigen Schlusskursen
+    """
+    from shared.supabase_client import get_client
+    client = get_client()
+    if client is None:
+        raise KursreiheFehlt(f"{ticker}: kein Supabase-Client")
+
+    zeilen, offset = [], 0
+    while True:
+        q = (client.table("prices").select("date,close,log_return").eq("ticker", ticker)
+             .order("date").range(offset, offset + 999))
+        if ab:
+            q = q.gte("date", ab)
+        teil = q.execute().data
+        if teil is None:      # keine Liste = keine Antwort; nicht als Seitenende werten (sonst still eine Teilreihe)
+            raise KursreiheFehlt(f"{ticker}: Seite ab {offset} ohne Daten")
+        zeilen += teil
+        if len(teil) < 1000:
+            break
+        offset += 1000
+
+    def _wert(x, positiv: bool):
+        try:
+            v = float(x)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(v) or (positiv and v <= 0):
+            return None
+        return v
+
+    daten, closes, returns = [], [], []
+    for z in zeilen:
+        d = z.get("date")
+        if not d:
+            raise KursreiheFehlt(f"{ticker}: Kurszeile ohne Datum")
+        d = str(d)[:10]
+        if daten and d <= daten[-1]:     # Seitenweise Abfrage verlangt eindeutige, aufsteigende Daten
+            raise KursreiheFehlt(f"{ticker}: Daten nicht aufsteigend/eindeutig bei {d}")
+        daten.append(d)
+        closes.append(_wert(z.get("close"), True))
+        returns.append(_wert(z.get("log_return"), False))
+
+    gueltig = sum(1 for c in closes if c is not None)
+    if gueltig < mindestens:
+        raise KursreiheFehlt(
+            f"{ticker}: nur {gueltig} Schlusskurse in Supabase "
+            f"(mindestens {mindestens} erwartet)")
+    return daten, closes, returns

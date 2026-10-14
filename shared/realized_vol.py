@@ -93,7 +93,8 @@ def rv_aus_returns(returns, n: int = RV_FENSTER) -> float | None:
     if n < 2 or returns is None or len(returns) < n:
         return None
     seg = list(returns[-n:])
-    if any(x is None for x in seg):
+    # None UND nicht endliche Werte: gespeicherte Returns aus der Datenbank kommen ungeprüft hierher.
+    if any(x is None or not math.isfinite(x) for x in seg):
         return None
     m = sum(seg) / n
     var = sum((x - m) ** 2 for x in seg) / (n - 1)      # Stichproben-Varianz
@@ -142,6 +143,38 @@ def rv_reihe(daten, closes, n: int = RV_FENSTER) -> dict:
         if rv is not None:
             out[tage[i]] = rv
     return out
+
+
+def rv_reihe_aus_returns(daten, returns, n: int = RV_FENSTER) -> dict:
+    """Rollende RV je Handelstag aus GESPEICHERTEN Tagesreturns: {datum: rv}.
+
+    returns[i] ist der Return DES Tages daten[i] (log(close_i/close_{i-1}), wie `prices.log_return`). Der Wert zu
+    daten[i] nutzt die n Returns bis einschliesslich i — dieselbe Blickrichtung wie `rv_reihe`, nur ohne Umweg über
+    Schlusskurse (Grund: shared/basisabweichung.py). None im Fenster → kein Wert für diesen Tag.
+    """
+    if daten is None or returns is None or len(daten) != len(returns):
+        raise ValueError("daten und returns muessen gleich lang sein")
+    tage = [iso_tag(x) for x in daten]
+    for i in range(1, len(tage)):
+        if tage[i] <= tage[i - 1]:
+            raise ValueError(
+                "daten muessen streng aufsteigend und eindeutig sein "
+                "(%s nach %s an Position %d)" % (tage[i], tage[i - 1], i))
+    out = {}
+    for i in range(len(returns)):
+        rv = rv_aus_returns(returns[:i + 1], n)
+        if rv is not None:
+            out[tage[i]] = rv
+    return out
+
+
+def kappe_reihen(daten, *reihen, bis: str | None):
+    """Wie kappe_auf, aber für beliebig viele gleich lange Reihen (z. B. closes UND returns)."""
+    if daten is None or any(r is None or len(r) != len(daten) for r in reihen):
+        raise ValueError("daten und alle Reihen muessen gleich lang sein")
+    d = [iso_tag(x) for x in daten]
+    behalten = [i for i, x in enumerate(d) if not bis or x <= bis]
+    return ([d[i] for i in behalten],) + tuple([r[i] for i in behalten] for r in reihen)
 
 
 def kappe_auf(daten, closes, bis: str | None):

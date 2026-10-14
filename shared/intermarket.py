@@ -42,8 +42,8 @@ from __future__ import annotations
 
 import math
 
-from shared.data import KursreiheFehlt, lade_closes
-from shared.realized_vol import log_returns, rv_aus_returns
+from shared.data import KursreiheFehlt, lade_kurse
+from shared.realized_vol import rv_aus_returns
 
 FENSTER = 10                 # Handelstage, ueber die die Bewegung gemessen wird
 
@@ -60,13 +60,15 @@ KRYPTOS = (("BTC-USD", "Bitcoin"), ("ETH-USD", "Ether"))
 
 def _bewegung(ticker: str, tage: int = FENSTER) -> tuple[float | None, str | None]:
     """Kursbewegung ueber die letzten `tage` Handelstage, als Anteil."""
+    # Renditen aus dem gespeicherten log_return, nicht aus Schlusskursen (Wechsel der Kursbasis, siehe
+    # shared/basisabweichung.py). None im Fenster -> keine Bewegung.
     try:
-        daten, closes = lade_closes(ticker, mindestens=tage + 5)
+        daten, _closes, returns = lade_kurse(ticker, mindestens=tage + 5)
     except (KursreiheFehlt, Exception):
         return None, None
-    if len(closes) < tage + 1:
+    if len(returns) < tage:
         return None, None
-    lr = log_returns(closes)[-tage:]
+    lr = returns[-tage:]
     if any(x is None for x in lr):
         return None, daten[-1]
     return math.exp(sum(lr)) - 1.0, daten[-1]
@@ -75,10 +77,10 @@ def _bewegung(ticker: str, tage: int = FENSTER) -> tuple[float | None, str | Non
 def _spy_vola() -> float | None:
     """Realisierte Vola des S&P 500, 21 Handelstage, annualisiert."""
     try:
-        _, closes = lade_closes("SPY", mindestens=40)
+        _, _closes, returns = lade_kurse("SPY", mindestens=40)
     except Exception:
         return None
-    return rv_aus_returns(log_returns(closes), 21)
+    return rv_aus_returns(returns, 21)
 
 
 def intermarket_signale() -> list[dict]:

@@ -940,33 +940,15 @@ def events_today_tomorrow(target_date: date | None = None,
     except Exception as e:
         error_logger.error(f"[daily_report] exchange holidays: {e}")
 
-    # Earnings (US-only Limitation, siehe CLAUDE.md)
-    try:
-        from shared.supabase_client import get_client
-        client = get_client()
-        rows = (
-            client.table("earnings_events")
-            .select("ticker,report_date,eps_estimate")
-            .gte("report_date", window_start.strftime("%Y-%m-%d"))
-            .lte("report_date", window_end.strftime("%Y-%m-%d"))
-            .limit(50)
-            .execute()
-            .data
-        ) or []
-        for r in rows:
-            events.append({
-                "date": r["report_date"],
-                "type": "Earnings",
-                "name": f"{r['ticker']} Quartalszahlen",
-                "ticker": r["ticker"],
-                "emoji": "📊",
-                "impact": "medium",
-            })
-    except Exception as e:
-        error_logger.error(f"[daily_report] earnings_events: {e}")
+    # Earnings: BEWUSST NICHT (2026-10-14). `earnings_events.report_date` ist kein Veröffentlichungstermin, sondern
+    # das Ende des Geschäftsquartals (scripts/fetch_event_data.py übernimmt earningsHistory.quarter), und es stehen
+    # nur vergangene Quartale drin. Die Mail zeigte deshalb „Quartalszahlen“ an Quartalsenden und keine echten
+    # Termine. Wieder aufnehmen erst mit einer Terminquelle samt Uhrzeit (docs/OPENING_SETUP_PLAN.md, Stufe 4).
 
     # Dividenden (Ex-Date im Window)
     try:
+        from shared.supabase_client import get_client
+        client = get_client()
         rows = (
             client.table("dividend_events")
             .select("ticker,ex_date,amount,currency")
