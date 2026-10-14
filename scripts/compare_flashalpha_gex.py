@@ -116,26 +116,31 @@ def pick(obj, *aliases):
 
 # ─────────────────────────────────────────────────────── Vergleich
 def _from_snapshot(ticker: str, when: str) -> dict | None:
-    """Kennzahlen aus dem Nightly-Archiv (landing/data/gex_history/<datum>.json).
+    """Kennzahlen aus dem Nightly-Archiv. Zuerst `gex_history_session/<session>.json` (seit 2026-10-14, Datum = Session
+    der Daten), dann der alte Ordner `gex_history/<lauftag>.json` (Datum = Lauftag, oft eine Session zu spät).
+    Die Herkunft steht im Ergebnis unter `_herkunft` ("session" | "lauftag").
 
     Der Cron laeuft 22:15 UTC — also im Zeitfenster, in dem Yahoo vollstaendiges
     Open Interest liefert. Damit ist der Snapshot die verlaesslichere Basis als eine
     Ad-hoc-Berechnung zur Tageszeit, und zugleich exakt das, was die Website zeigt.
     """
     name = f"{when}.json"
-    local = _OUT_DIR / name
-    payload = None
-    if local.exists():
-        payload = json.loads(local.read_text(encoding="utf-8"))
-    else:
-        r = requests.get(f"https://seasonalpha.ai/landing/data/gex_history/{name}", timeout=30)
-        if r.status_code == 200:
-            payload = r.json()
+    payload, herkunft = None, None
+    for ordner, art in (("gex_history_session", "session"), ("gex_history", "lauftag")):
+        local = _OUT_DIR.parent / ordner / name
+        if local.exists():
+            payload, herkunft = json.loads(local.read_text(encoding="utf-8")), art
+        else:
+            r = requests.get(f"https://seasonalpha.ai/landing/data/{ordner}/{name}", timeout=30)
+            if r.status_code == 200:
+                payload, herkunft = r.json(), art
+        if payload:
+            break
     if not payload:
         return None
     for o in payload.get("tickers", []):
         if o.get("ticker") == ticker:
-            return {**o, "_as_of": payload.get("date", when)}
+            return {**o, "_as_of": payload.get("date", when), "_herkunft": herkunft}
     return None
 
 
@@ -255,7 +260,9 @@ def main() -> int:
             print(f"  [FEHLER] {tk} nicht im Snapshot {a.snapshot}")
             return 1
         print(f"      Spot {ours['spot']} · net-GEX {ours['net_gex_usd_bn']:+.3f} Mrd $/1 % "
-              f"· {ours['regime']} · Stand {ours['_as_of']} (EOD)")
+              f"· {ours['regime']} · Stand {ours['_as_of']} (EOD, "
+              + ("Session" if ours.get('_herkunft') == "session" else "Lauftag-Archiv — Datum ist der Lauftag, nicht die Session")
+              + ")")
         if a.expiration:
             term = _term_from_profile(tk, a.snapshot, a.expiration)
             if not term:

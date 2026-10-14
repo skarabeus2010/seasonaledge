@@ -428,15 +428,9 @@ def collect_health_data() -> dict:
             downgrade("red")
         else:
             gd = _json.loads(gp.read_text(encoding="utf-8"))
-            gdate = gd.get("date"); gtk = gd.get("tickers", [])
-            wflip = sum(1 for t in gtk if t.get("zero_gamma"))
-            age = (today_utc - datetime.strptime(gdate, "%Y-%m-%d").date()).days if gdate else 999
-            if age > 8 or len(gtk) < 5:
-                status = "red"; detail = f"{gdate} · {len(gtk)} Ticker ({age}d alt)"
-            elif age > 4 or wflip < len(gtk) * 0.6:
-                status = "yellow"; detail = f"{gdate} · {len(gtk)} Ticker, {wflip} mit Zero-Gamma-Flip"
-            else:
-                status = "green"; detail = f"{gdate} · {len(gtk)} Ticker (Flip/Walls)"
+            gdate = gd.get("date")
+            from shared.exchange_holidays import letzte_session as _ls
+            status, detail = _gex_bewertung(gd, _ls("NYSE"))
             checks.append({"name": "Options: GEX-Ketten", "status": status, "detail": detail, "value": gdate or "—"})
             downgrade(status)
         # Weitere Options-Daten-Dateien: Key Levels, IV-Surface, Flow — Frische + nicht leer
@@ -875,6 +869,42 @@ def collect_health_data() -> dict:
         "report_time": now_utc.strftime("%Y-%m-%d %H:%M UTC"),
         "report_date": today_utc.strftime("%Y-%m-%d"),
     }
+
+
+def _gex_bewertung(gd: dict, erwartet: date) -> tuple[str, str]:
+    """Health-Bewertung von gex_summary.json (Plan v4 B2): Frische in SESSIONS gegen die erwartete Session, dazu die
+    bisherige Abdeckung. Status = schlechter aus beiden — eine aktuelle Session hebt keine rote Abdeckung auf, ein alter
+    Stempel (Lauftag) ist mindestens gelb und verbessert nie ein Rot."""
+    from shared.exchange_holidays import is_trading_day as _itd
+    rang = {"green": 0, "yellow": 1, "red": 2}
+    gdate = gd.get("date"); gtk = gd.get("tickers", []) or []
+    wflip = sum(1 for t in gtk if t.get("zero_gamma"))
+    try:
+        gd_d = date.fromisoformat(gdate) if gdate else None
+    except (TypeError, ValueError):
+        gd_d = None
+    if gd_d is None:
+        s_status, s_txt = "red", "ohne Datum"
+    elif gd_d > erwartet:
+        # Ein Datum NACH der erwarteten Session kann keine abgeschlossene Session sein (Uhr/Stempel kaputt).
+        s_status, s_txt = "red", f"Datum nach der erwarteten Session {erwartet}"
+    elif not _itd(gd_d, "NYSE"):
+        s_status, s_txt = "red", "Datum ist kein Handelstag"
+    else:
+        rueck = (sum(1 for k in range(1, (erwartet - gd_d).days + 1) if _itd(gd_d + timedelta(days=k), "NYSE"))
+                 if erwartet > gd_d else 0)
+        s_status = "green" if rueck == 0 else ("yellow" if rueck == 1 else "red")
+        s_txt = "aktuelle Session" if rueck == 0 else f"{rueck} Session(s) hinter {erwartet}"
+    if gd.get("stempel_art") != "session":
+        s_status = max(s_status, "yellow", key=rang.get)
+        s_txt += ", alter Stempel (Lauftag)"
+    if len(gtk) < 5:
+        a_status, a_txt = "red", f"{len(gtk)} Ticker"
+    elif wflip < len(gtk) * 0.6:
+        a_status, a_txt = "yellow", f"{len(gtk)} Ticker, {wflip} mit Zero-Gamma-Flip"
+    else:
+        a_status, a_txt = "green", f"{len(gtk)} Ticker (Flip/Walls)"
+    return max(a_status, s_status, key=rang.get), f"{gdate} · {a_txt} · {s_txt}"
 
 
 def _load_template():

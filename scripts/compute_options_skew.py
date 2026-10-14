@@ -1203,13 +1203,15 @@ def build(tickers: list[str], write: bool = True) -> dict:
         poi = sum(t["put_oi"] for t in per if sel(t)); coi = sum(t["call_oi"] for t in per if sel(t))
         return {"vol": round(pv / cv, 3) if cv else None, "oi": round(poi / coi, 3) if coi else None}
     _is_idx = lambda t: "Broad-Index" in (t.get("cats") or [])
-    pc_ratio = {"equity": _pc(lambda t: not _is_idx(t)), "index": _pc(_is_idx), "date": date.today().isoformat()}
+    # Datum = Session der Chain (wie out["session"]), nicht der Lauftag — der Cron startet oft nach Mitternacht UTC.
+    session = _last_session()
+    pc_ratio = {"equity": _pc(lambda t: not _is_idx(t)), "index": _pc(_is_idx), "date": session}
     if per:
         print(f"  P/C equity vol {pc_ratio['equity']['vol']} oi {pc_ratio['equity']['oi']} · index vol {pc_ratio['index']['vol']}", flush=True)
 
     out = {
         "generated": date.today().isoformat(),      # Laufzeitpunkt (Freshness-Checks)
-        "session": _last_session(),                  # Handelstag, zu dem die Daten gehören
+        "session": session,                          # Handelstag, zu dem die Daten gehören
         "source": "CBOE ^SKEW/^VIX/^VVIX/^COR (Yahoo) + US-Option-Chain-Snapshot (25Δ-Skew, ATM-Term-Structure, VRP, Equity-P/C)",
         "indices": indices, "correlation": corr, "pc_ratio": pc_ratio, "series": series,
         "categories": list(OPTIONS_CATEGORIES.keys()), "tickers": per,

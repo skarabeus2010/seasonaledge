@@ -326,7 +326,10 @@
     }
     function ensure(t){
       if(profiles[t])return Promise.resolve();
-      return fetchJSON('/landing/data/gex_profile_'+t.replace('^','')+'.json').then(function(d){profiles[t]=d.profile}).catch(function(){profiles[t]=null});
+      // Nur ein Profil DERSELBEN Session wie die Summary: bei einem Teilausfall bleibt die alte Profildatei liegen,
+      // und oben stuende bereits das neue Datum (Codex-Befund 2026-10-14).
+      var soll=summary&&(summary.session||summary.date);
+      return fetchJSON('/landing/data/gex_profile_'+t.replace('^','')+'.json').then(function(d){profiles[t]=(soll&&(d.session||d.date)===soll)?d.profile:null}).catch(function(){profiles[t]=null});
     }
     // Start-Trigger mit Notnagel: falls DOMContentLoaded nie feuert (z.B. weil ein anderes
     // parser-blockierendes Script haengt), startet init() trotzdem nach 3 s.

@@ -276,7 +276,7 @@
 
     function render(d){
       var rows=(d&&d.tickers)||[];
-      KL_CUR=rows; KL_DATE=d&&d.generated;
+      KL_CUR=rows; KL_DATE=d&&(d.session||d.generated);   // Session der Daten (seit 2026-10-14), aelterer Bestand: Lauftag
       renderTable(rows);
       document.getElementById('kl-note').textContent=(d&&d.source)||'';
       var asof=document.getElementById('asof');

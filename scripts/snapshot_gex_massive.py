@@ -41,6 +41,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from shared.env_loader import load_env  # noqa: E402
+from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
 load_env()
 # GEX-Engine (Black-Scholes-Greeks + Aggregation) — unverändert wiederverwendet.
 from compute_gamma_exposure import (  # noqa: E402
@@ -60,7 +61,9 @@ _MIN_CONTRACTS = 20       # darunter ist der Snapshot kaputt (Fetch-Fehler), nic
 _IV_LO, _IV_HI = 0.01, 5.0  # Polygon liefert für Deep-ITM/OTM Müll-IV (~0.0004) → verwerfen
 _Q = 0.0                  # Dividendenrendite: bei ≤45d-Horizont für Gamma/GEX/Walls vernachlässigbar
 
-_AGG = "https://api.polygon.io/v2/aggs/ticker/{sym}/prev?adjusted=true"
+# Tagesbalken der SESSION, nicht /prev: was „Vortag“ ist, hängt von der Uhrzeit des Abrufs ab (vor Mitternacht UTC
+# kann /prev noch die Session davor liefern). Die Session wird einmal bestimmt und überall verwendet (Plan v4 B2).
+_AGG = "https://api.polygon.io/v2/aggs/ticker/{sym}/range/1/day/{s}/{s}?adjusted=true"
 _SNAP = "https://api.polygon.io/v3/snapshot/options/{sym}?expiration_date.lte={hi}&limit=250"
 
 
@@ -80,21 +83,29 @@ def _get(url: str, key: str, tries: int = 5):
     return None
 
 
-def _spot(sym: str, key: str) -> float | None:
-    """EOD-Close des Underlyings (passt zeitlich zum EOD-Open-Interest der Chain)."""
+def _spot(sym: str, key: str, session: date) -> float | None:
+    """Schlusskurs des Underlyings AN der Session (passt zum EOD-Open-Interest der Chain). Ein Balken eines anderen
+    Tages wird verworfen, nicht verwendet."""
     try:
-        d = _get(_AGG.format(sym=sym), key)
+        d = _get(_AGG.format(sym=sym, s=session.isoformat()), key)
     except Exception as e:
         print(f"  [massive] {sym} Spot: {str(e)[:80]}", flush=True)
         return None
     res = (d or {}).get("results") or []
-    c = res[0].get("c") if res else None
+    if not res:
+        return None
+    t = res[0].get("t")
+    tag = datetime.fromtimestamp(t / 1000, tz=timezone.utc).date() if t else None
+    if tag != session:
+        print(f"  [massive] {sym} Spot: Balken vom {tag}, erwartet {session} — verworfen", flush=True)
+        return None
+    c = res[0].get("c")
     return float(c) if c else None
 
 
-def _fetch_chain(sym: str, hi_days: int, key: str) -> list:
-    """Volle Option-Chain (≤hi_days) als Polygon-Kontraktliste (paginiert via next_url)."""
-    hi = (date.today() + timedelta(days=hi_days)).isoformat()
+def _fetch_chain(sym: str, hi_days: int, key: str, session: date) -> list:
+    """Volle Option-Chain (≤hi_days ab der Session) als Polygon-Kontraktliste (paginiert via next_url)."""
+    hi = (session + timedelta(days=hi_days)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
     out, pages = [], 0
     while url and pages < _MAX_PAGES:
@@ -107,10 +118,13 @@ def _fetch_chain(sym: str, hi_days: int, key: str) -> list:
     return out
 
 
-def _map(raw: list) -> list:
+def _map(raw: list, session: date) -> list:
     """Polygon-Kontrakte → internes Engine-Format {type,K,oi,iv,T,exp,dte}.
-    Verwirft Kontrakte ohne OI/IV und die Deep-ITM/OTM-Müll-IVs (~0)."""
-    today = date.today()
+    Verwirft Kontrakte ohne OI/IV und die Deep-ITM/OTM-Müll-IVs (~0).
+
+    Bewertungsdatum ist die SESSION, nicht der Lauftag: DTE/T und die Laufzeitauswahl hängen sonst vom GitHub-Verzug
+    ab. Kontrakte mit Verfall ≤ Session sind am Sessionschluss verfallen und fliegen raus — vorher blieben sie bei
+    einem Lauf vor Mitternacht UTC mit T = 1e-6 drin (Gamma maximal) und fehlten danach (Plan v4 B2)."""
     out = []
     for c in raw:
         det = c.get("details") or {}
@@ -121,8 +135,8 @@ def _map(raw: list) -> list:
             continue
         if not (_IV_LO <= iv <= _IV_HI):
             continue
-        dte = (date.fromisoformat(ex) - today).days
-        if dte < 0:
+        dte = (date.fromisoformat(ex) - session).days
+        if dte <= 0:
             continue
         out.append({"type": typ, "K": float(K), "oi": int(oi), "iv": float(iv),
                     "T": max(dte / 365.0, 1e-6), "exp": ex, "dte": dte})
@@ -130,19 +144,21 @@ def _map(raw: list) -> list:
 
 
 def analyze_massive(sym: str, key: str, max_days: int,
-                    profile_days: int | None = None) -> dict | None:
+                    profile_days: int | None = None, session: date | None = None) -> dict | None:
     """GEX-Objekt im EXAKTEN analyze()-Schema (compute_gamma_exposure), aber aus Massive-Daten.
     profile_days>None → fetch bis dorthin + hänge Per-Strike/Per-Term-Profil an."""
     horizon = profile_days or max_days
-    spot = _spot(sym, key)
+    if session is None:
+        raise ValueError("analyze_massive: session (Bewertungsdatum) fehlt")
+    spot = _spot(sym, key, session)
     if not spot:
         return None
     try:
-        raw = _fetch_chain(sym, horizon, key)
+        raw = _fetch_chain(sym, horizon, key, session)
     except Exception as e:
         print(f"  [massive] {sym} Chain: {str(e)[:80]}", flush=True)
         return None
-    all_c = _map(raw)
+    all_c = _map(raw, session)
     summary_c = [c for c in all_c if c["dte"] <= max_days]
     if len(summary_c) < _MIN_CONTRACTS:
         print(f"  [SKIP] {sym}: nur {len(summary_c)} brauchbare Kontrakte ≤{max_days}d "
@@ -152,7 +168,7 @@ def analyze_massive(sym: str, key: str, max_days: int,
     cw, pw, ag = _walls(spot, summary_c, _Q)
     n_exp = len({c["exp"] for c in summary_c})
     obj = {
-        "ticker": sym, "spot": round(spot, 2), "div_yield": round(_Q, 4),
+        "ticker": sym, "session": session.isoformat(), "spot": round(spot, 2), "div_yield": round(_Q, 4),
         "net_gex_usd_bn": round(gex / 1e9, 3),
         "net_vanna_usd_mn": round(vex / 1e6, 2),
         "net_charm_usd_mn_per_day": round(cex / 1e6, 2),
@@ -183,6 +199,15 @@ def main() -> int:
     if not key:
         print("[snapshot] ABBRUCH: MASSIVE_API_KEY fehlt (.env).", flush=True)
         return 1
+    # Session EINMAL bestimmen: Stempel UND Bewertungsdatum. Schreibläufe in der Handelszeit brechen VOR dem ersten
+    # Abruf ab (der Snapshot wäre ein Intraday-Stand mit dem Datum der Vorsession).
+    session = letzte_session("NYSE")
+    if not a.no_write:
+        try:
+            pruefe_eod_fenster("snapshot_gex_massive")
+        except MarktOffen as e:
+            print(f"[snapshot] ABBRUCH: {e}", flush=True)
+            return 2
 
     universe = ([t.strip().upper() for t in a.tickers.split(",") if t.strip()]
                 if a.tickers else list(UNIVERSE))
@@ -192,7 +217,7 @@ def main() -> int:
     for tk in universe:
         try:
             profile_days = PROFILE_MAX_DAYS if tk in chart_set else None
-            o = analyze_massive(tk, key, MAX_DAYS, profile_days=profile_days)
+            o = analyze_massive(tk, key, MAX_DAYS, profile_days=profile_days, session=session)
         except Exception as e:
             o = None
             print(f"  [WARN] {tk}: {type(e).__name__}: {e}", flush=True)
@@ -228,10 +253,11 @@ def main() -> int:
                        "vol_regime": "vola-reduzierend" if val > 0 else "vola-forcierend",
                        "components": [o["ticker"] for o in idx]}
 
-    stamp = date.today().isoformat()
+    stamp = session.isoformat()
+    meta = {"date": stamp, "session": stamp, "bewertung": stamp, "stempel_art": "session"}
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "date": stamp, "gamma_index": gamma_index, "tickers": results, "failed": failed,
+        **meta, "gamma_index": gamma_index, "tickers": results, "failed": failed,
         "note": "Naive Dealer-Heuristik (long Calls/short Puts), US-EOD-Optionskette, "
                 "kein Handelssignal — Referenzen, keine Barrieren.",
     }
@@ -247,12 +273,14 @@ def main() -> int:
         json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     for tk, prof in charts.items():
         (_DATA / f"gex_profile_{tk.replace('^', '')}.json").write_text(
-            json.dumps({"ticker": tk, "date": stamp, "max_days": PROFILE_MAX_DAYS,
+            json.dumps({"ticker": tk, **meta, "max_days": PROFILE_MAX_DAYS,
                         "profile": prof}, ensure_ascii=False), encoding="utf-8")
 
-    hist = _DATA / "gex_history"
+    # Archiv je SESSION in eigenem Ordner. Der alte Ordner gex_history/ trägt Lauftage (oft eine Session zu spät,
+    # belegt 2026-10-14) und bekommt nichts mehr; keine Migration (die Zuordnung ist ohne generated_at nicht ableitbar).
+    hist = _DATA / "gex_history_session"
     hist.mkdir(exist_ok=True)
-    slim = {"date": stamp, "gamma_index": gamma_index,
+    slim = {**meta, "gamma_index": gamma_index,
             "tickers": [{k: o[k] for k in ("ticker", "spot", "net_gex_usd_bn", "net_vanna_usd_mn",
                                            "net_charm_usd_mn_per_day", "regime", "zero_gamma",
                                            "call_wall", "put_wall", "skew")} for o in results]}

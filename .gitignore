@@ -34,6 +34,7 @@ landing/data/gex_summary.json
 landing/data/gex_profile_*.json
 landing/data/gex_SPY.json
 landing/data/gex_history/
+landing/data/gex_history_session/
 landing/data/etf_flows.json
 landing/data/flows_rebalancing.json
 landing/data/cot_positioning.json

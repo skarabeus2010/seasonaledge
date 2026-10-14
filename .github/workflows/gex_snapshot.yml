@@ -4,7 +4,8 @@ on:
   schedule:
     # 22:15 UTC (Mo-Fr) — nach US-Boersenschluss (21:00 UTC). Erfasst den Tages-Chain-Stand
     # (Spot + IV); OI ist OCC-Settlement des Vortags. Fuettert /dealer-positioning + baut
-    # taeglich die proprietaere GEX-Historie (landing/data/gex_history/<date>.json) auf.
+    # taeglich die proprietaere GEX-Historie (landing/data/gex_history_session/<session>.json) auf. Gestempelt wird
+    # die Session, nicht der Lauftag — der Lauf startet oft erst nach Mitternacht UTC (seit 2026-10-14).
     - cron: '15 22 * * 1-5'
   workflow_dispatch:
 

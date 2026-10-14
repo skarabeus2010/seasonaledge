@@ -31,6 +31,7 @@ if str(_ROOT) not in sys.path:
 from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.options_universe import CORE_OPTIONS, categories_for  # noqa: E402
+from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 # Massive.com (Polygon.io) Option-Chain-Snapshot — Flatrate, 1 Ticker = ganze Chain, paginiert.
@@ -56,9 +57,9 @@ def _get(url: str, key: str, tries: int = 5):
             raise
 
 
-def _chain(sym: str, key: str) -> list:
-    """Volle Option-Chain (≤_MAXDTE) als Kontraktliste (paginiert)."""
-    hi = (date.today() + timedelta(days=_MAXDTE)).isoformat()
+def _chain(sym: str, key: str, session: date) -> list:
+    """Volle Option-Chain (≤_MAXDTE ab der Session) als Kontraktliste (paginiert)."""
+    hi = (session + timedelta(days=_MAXDTE)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
     out, pages = [], 0
     while url and pages < 45:
@@ -71,9 +72,9 @@ def _chain(sym: str, key: str) -> list:
     return out
 
 
-def _by_exp(contracts: list) -> dict:
-    """Kontrakte je Verfallstag: {exp: {dte, oi_total, calls:{K:oi}, puts:{K:oi}}}."""
-    today = date.today(); by = {}
+def _by_exp(contracts: list, session: date) -> dict:
+    """Kontrakte je Verfallstag: {exp: {dte, oi_total, calls:{K:oi}, puts:{K:oi}}}. DTE ab der Session."""
+    today = session; by = {}
     for c in contracts:
         det = c.get("details") or {}
         ex = det.get("expiration_date"); typ = det.get("contract_type"); K = det.get("strike_price")
@@ -145,24 +146,32 @@ def _max_pain(e: dict) -> dict | None:
     }
 
 
-def _load_gex() -> dict:
-    """gex_summary.json → {ticker: {...}}. Fehlt sie, {} (graceful)."""
+def _load_gex(session: date) -> tuple[dict, str]:
+    """gex_summary.json → ({ticker: {...}}, status). Übernommen wird nur ein GEX-Lauf DERSELBEN Session mit
+    Session-Stempel; sonst stünden nach einem ausgefallenen GEX-Lauf alte Walls/Flip neben frischem Max Pain unter dem
+    neuen Datum (Plan v4 B2). Status: "ok" | "fehlt" | "alter_stempel" | "andere_session:<datum>" | "defekt"."""
     p = _ROOT / "landing/data/gex_summary.json"
     if not p.exists():
         print("  [gex] gex_summary.json fehlt — Flip/Walls bleiben leer.")
-        return {}
+        return {}, "fehlt"
     try:
         d = json.loads(p.read_text(encoding="utf-8"))
     except Exception as e:
         print(f"  [gex] {e}")
-        return {}
-    return {t["ticker"]: t for t in d.get("tickers", [])}
+        return {}, "defekt"
+    if d.get("stempel_art") != "session":
+        print("  [gex] gex_summary.json ohne Session-Stempel — Spot/Flip/Walls werden nicht übernommen.")
+        return {}, "alter_stempel"
+    if d.get("session") != session.isoformat():
+        print(f"  [gex] gex_summary.json gehört zur Session {d.get('session')}, nicht {session} — nicht übernommen.")
+        return {}, f"andere_session:{d.get('session')}"
+    return {t["ticker"]: t for t in d.get("tickers", [])}, "ok"
 
 
-def _one(sym: str, key: str, gex: dict) -> dict | None:
+def _one(sym: str, key: str, gex: dict, session: date) -> dict | None:
     """Ein Ticker: gex-Felder + Max-Pain/OI aus der Chain."""
     try:
-        contracts = _chain(sym, key)
+        contracts = _chain(sym, key, session)
     except Exception as e:
         print(f"  [massive] {sym}: {str(e)[:80]}")
         contracts = []
@@ -177,7 +186,7 @@ def _one(sym: str, key: str, gex: dict) -> dict | None:
     row["net_gex_usd_bn"] = g.get("net_gex_usd_bn")
     # Max Pain + OI aus der Chain
     if contracts:
-        by = _by_exp(contracts)
+        by = _by_exp(contracts, session)
         ex = _pick_expiry(by)
         if ex:
             mp = _max_pain(by[ex])
@@ -202,12 +211,16 @@ def _one(sym: str, key: str, gex: dict) -> dict | None:
 
 def build(tickers: list[str], write: bool = True) -> dict:
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
-    gex = _load_gex()
+    # Session einmal bestimmen; Schreiblauf in der Handelszeit bricht VOR dem ersten Abruf ab (MarktOffen).
+    session = letzte_session("NYSE")
+    if write:
+        pruefe_eod_fenster("compute_key_levels")
+    gex, gex_status = _load_gex(session)
     per = []
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — Max-Pain/OI übersprungen (nur gex-Felder).")
     for t in tickers:
-        r = _one(t, tok, gex) if tok else (
+        r = _one(t, tok, gex, session) if tok else (
             {"ticker": t, "cats": categories_for(t), **{k: gex.get(t, {}).get(v) for k, v in
              [("spot", "spot"), ("vol_trigger", "zero_gamma"), ("regime", "regime"),
               ("call_wall", "call_wall"), ("put_wall", "put_wall")]}} if t in gex else None)
@@ -217,7 +230,9 @@ def build(tickers: list[str], write: bool = True) -> dict:
                   f"MaxPain {r.get('max_pain')} ({r.get('exp')}) · CW {r.get('call_wall')} · "
                   f"PW {r.get('put_wall')} · P/C-OI {r.get('pc_oi_ratio')}")
     out = {
-        "generated": date.today().isoformat(),
+        "generated": date.today().isoformat(),     # Laufzeitpunkt (Health-Check)
+        "session": session.isoformat(),            # Handelstag der Daten = Bewertungsdatum
+        "gex_status": gex_status,
         "source": "Spot/Flip/Walls/Regime + US-Option-Chain "
                   "(Max Pain, OI-by-Strike, P/C-OI). EOD, naive Dealer-Heuristik, kein Signal.",
         "tickers": per,
@@ -234,7 +249,11 @@ def main() -> int:
     ap.add_argument("--tickers", nargs="+", default=_DEFAULT_TICKERS)
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
-    build(a.tickers, not a.no_write)
+    try:
+        build(a.tickers, not a.no_write)
+    except MarktOffen as e:
+        print(f"[key-levels] ABBRUCH: {e}")
+        return 2
     return 0
 
 

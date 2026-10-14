@@ -33,6 +33,7 @@ if str(_ROOT) not in sys.path:
 from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.yahoo_downloader import clear_cache  # noqa: E402
+from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 _SNAP = "https://api.polygon.io/v3/snapshot/options/{sym}?expiration_date.lte={hi}&limit=250"
@@ -63,9 +64,9 @@ def _get(url: str, key: str, tries: int = 5):
             raise
 
 
-def _chain(sym: str, key: str) -> list:
-    """Volle Option-Chain (≤_MAXDTE) als Kontraktliste (paginiert)."""
-    hi = (date.today() + timedelta(days=_MAXDTE)).isoformat()
+def _chain(sym: str, key: str, session: date) -> list:
+    """Volle Option-Chain (≤_MAXDTE ab der Session) als Kontraktliste (paginiert)."""
+    hi = (session + timedelta(days=_MAXDTE)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
     out, pages = [], 0
     while url and pages < 45:
@@ -78,13 +79,13 @@ def _chain(sym: str, key: str) -> list:
     return out
 
 
-def _byexp(contracts: list) -> tuple[dict, float | None]:
+def _byexp(contracts: list, session: date) -> tuple[dict, float | None]:
     """Kontrakte je Verfallstag: {exp: {dte, call:[(K,iv)], put:[(K,iv)]}} + Spot.
 
     Zweite Rückgabe = Underlying-Spot (falls im Snapshot vorhanden, sonst None →
     Proxy aus dem ATM-Strike, s. _spot_proxy).
     """
-    today = date.today(); by = {}; spot = None
+    today = session; by = {}; spot = None   # DTE ab der Session
     for c in contracts:
         g = c.get("greeks") or {}; iv = c.get("implied_volatility"); dl = g.get("delta")
         if iv is None or dl is None or iv <= 0:
@@ -149,13 +150,13 @@ def _nearest_exp(by: dict, target_dte: int, used: set) -> str | None:
     return min(cands, key=lambda e: abs(by[e]["dte"] - target_dte)) if cands else None
 
 
-def build_surface(sym: str, key: str) -> dict | None:
+def build_surface(sym: str, key: str, session: date) -> dict | None:
     try:
-        contracts = _chain(sym, key)
+        contracts = _chain(sym, key, session)
     except Exception as e:
         print(f"  [massive] {sym}: {str(e)[:80]}")
         return None
-    by, spot = _byexp(contracts)
+    by, spot = _byexp(contracts, session)
     if not by:
         print(f"  [massive] {sym}: keine brauchbaren Kontrakte (n={len(contracts)})")
         return None
@@ -192,12 +193,16 @@ def build_surface(sym: str, key: str) -> dict | None:
 
 def build(tickers: list[str], write: bool = True) -> dict:
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
+    # Session einmal bestimmen (Bewertungsdatum für DTE); Schreiblauf in der Handelszeit bricht VOR dem ersten Abruf ab.
+    session = letzte_session("NYSE")
+    if write:
+        pruefe_eod_fenster("compute_iv_surface")
     surfaces = []
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — kann keine Surface bauen.")
     else:
         for t in tickers:
-            s = build_surface(t, tok)
+            s = build_surface(t, tok, session)
             if s:
                 surfaces.append(s)
                 lo = min(v for r in s["grid"] for v in r if v is not None)
@@ -208,7 +213,8 @@ def build(tickers: list[str], write: bool = True) -> dict:
             clear_cache(); gc.collect()
 
     out = {
-        "generated": date.today().isoformat(),
+        "generated": date.today().isoformat(),     # Laufzeitpunkt (Health-Check)
+        "session": session.isoformat(),            # Handelstag der Daten = Bewertungsdatum
         "source": "US-Option-Chain-Snapshot (Greeks/IV je Kontrakt) → "
                   "Moneyness (Strike/Spot) × DTE-Bucket-Surface, OTM-IV linear interpoliert",
         "moneyness": list(_MONEYNESS), "dte_buckets": list(_DTE_BUCKETS),
@@ -227,7 +233,11 @@ def main() -> int:
     ap.add_argument("--tickers", nargs="+", default=_CORE)
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
-    build(a.tickers, not a.no_write)
+    try:
+        build(a.tickers, not a.no_write)
+    except MarktOffen as e:
+        print(f"[iv-surface] ABBRUCH: {e}")
+        return 2
     return 0
 
 

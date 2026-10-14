@@ -46,7 +46,12 @@ PROFILE_MAX_DAYS = 1200
 
 
 def main() -> int:
-    results, charts, failed = [], {}, []
+    # STILLGELEGT (2026-10-14, Plan v4 B2): der Yahoo-Schreiber läuft nirgends mehr (kein Workflow, keine Crontab, keine
+    # sa-*-Unit) und stempelte den Lauftag. Ein zweiter Stempelweg für gex_summary.json darf nicht mehr existieren.
+    # Das Modul bleibt, weil snapshot_gex_massive.py UNIVERSE/CHART_TICKERS/MAX_DAYS von hier importiert.
+    print("[snapshot_gex] stillgelegt — scripts/snapshot_gex_massive.py nutzen. Nichts geschrieben.", flush=True)
+    return 1
+    results, charts, failed = [], {}, []  # noqa: unreachable — alter Ablauf bleibt zur Nachvollziehbarkeit stehen
     for tk in UNIVERSE:
         try:
             o = analyze(tk, MAX_DAYS)
