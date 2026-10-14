@@ -19,17 +19,22 @@ Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan
 - [x] **Paket A der Sofortreparaturen** (2026-10-14, `1c0412f`, Codex: Plan v2 + Code R2 FREIGABE;
       [Wirkungsbericht](review_prompts/2026-10-14_options_paket_a_wirkung.md)): RV/VRP aus `log_return` (ETHA 380,7 → 45,8 %),
       Health-Check „Kursbasis“, Earnings aus der Morgen-Mail, /skew in Percentile.
-- [ ] **Plan v3 an Codex** für den nicht freigegebenen Rest:
-  - R1c: ETHA-VRP-History gezielt reparieren (Reparaturmodus mit Datumsbereich und vollständigem Diff; erst nach der
-    Schreibsperre).
-  - R2: Session statt Lauftag für `gex_summary.date`/`pc_ratio.date` — **und** als Bewertungsdatum für DTE/T in
-    `snapshot_gex_massive.py`; getrenntes Archiv, Leser `compare_flashalpha_gex`, EOD-Wächter, Frischeprüfung.
-  - R3: Skew-Perzentil der Mail aus EINER Rechnung im Cron (n je Metrik, Fenster `S−W ≤ date ≤ S`, Session-Prüfung im
-    Mailleser, JS-Referenz an die Spezifikation), einfarbig (`daily_report.html.j2:115`).
-  - **Gemeinsame Schreibsperre (flock) für alle Schreiber der Skew-History zuerst** — inkl. `backfill_skew_history.py`.
-  - Folgeposten Codex: Renditen aus Schlusskursen noch in den Mail-Kursanzeigen (`daily_report.py` ~244/~422),
-    Sektor-Monat (~1273), Vol-Control-Proxy (`build_volcontrol_proxy.py:74`).
-  - Kalenderseite/`kalender-compute.js` nutzen `earnings_events.report_date` mit derselben falschen Bedeutung.
+- [x] **Plan v3/v4** (2026-10-14, Codex-Freigabe B1/B2/B3).
+- [x] **B1 Schreibsperre der Skew-History** (2026-10-14, `1080a55`, Code R2 FREIGABE): gemeinsame flock-Sperre für Cron,
+      Massive-Backfill und VRP-Nachrechnung, defekte History bricht ab, `backfill_skew_history.py` gelöscht, Wächter
+      `verify_skew_historie_sperre.py --streng` im Gate (Mutation 22/22 Linux).
+- [x] **R1c ETHA-VRP repariert** (2026-10-14, Nutzerfreigabe des Trockenlauf-Berichts): 07.–13.10. von ≈ −333 auf
+      1,3–3,0; Bericht `logs/reparatur/vrp_ETHA_2026-09-30_2026-10-13_20261014T133004Z.json` (Server).
+- [x] **B2 Session als Stempel und Bewertungsdatum** (2026-10-14, `326bcc8`, Code R2 FREIGABE): GEX, Key Levels,
+      IV-Surface, pc_ratio; Archiv `gex_history_session/`; Health-Frische in Sessions; Seiten /key-levels und
+      /dealer-positioning. Wächter `verify_gex_session.py` im Gate (Mutation 25/25).
+- [ ] **B2 beobachten (15.10. morgens):** erster GEX-Lauf 22:15 UTC — Tagesbalken der Session verfügbar? (sonst Lauf rot
+      → später starten), Datei `gex_history_session/2026-10-14.json`, Health „Options: GEX-Ketten“ grün.
+- [ ] **B3 Rang im Cron** (Plan frei): `shared/skew_rang.py`, `rang[ticker][W]` im Snapshot, /skew und Mail lesen nur
+      noch das, JS-Referenz nach Spezifikation, Wirkungsbericht Radar alt/neu. Geschätzt 4–5 h.
+- [ ] **Folgeposten:** Renditen aus Schlusskursen in Mail-Kursanzeigen (`daily_report.py` ~244/~422), Sektor-Monat
+      (~1273), Vol-Control-Proxy (`build_volcontrol_proxy.py:74`); Kalenderseite/`kalender-compute.js` mit
+      `earnings_events.report_date`; Health meldet ausgefallenen Options-Cron erst nach drei Tagen.
 - [ ] Stufe 2 IV-Dashboard aktivste Namen · Stufe 3 Vola-Lage (VIX9D/VIX3M kostenlos, ±σ mit gemessener Deckung) ·
       Stufe 4 Earnings-Vorschau (Terminquelle) · Stufe 5 Studie (optional) · später Extremlisten, SPX-Gamma `I:SPX`.
 - [ ] IWM-Historienpunkt 17.08. (ATM-IV 3,35 %) — fällt unter A.
