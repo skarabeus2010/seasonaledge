@@ -50,7 +50,8 @@ from shared.env_loader import load_env                                # noqa: E4
 load_env()
 from shared.yahoo_downloader import download_data, clear_cache        # noqa: E402
 from shared.options_universe import all_option_tickers                # noqa: E402
-from shared.atomic_json import write_json_atomic                      # noqa: E402
+from shared.atomic_json import (write_json_atomic, history_aktualisieren, history_lesen,  # noqa: E402
+                                HistorieDefekt, SperreBelegt)
 from shared.data import KursreiheFehlt, lade_closes                   # noqa: E402
 from shared.black_scholes import (R as _R, cdf as _cdf, bs_price as _bs_price,   # noqa: E402
                                   bs_delta as _bs_delta, implied_vol as _implied_vol,
@@ -418,34 +419,29 @@ def _reconstruct(d: str, spot: float, legs: list, need: dict, bars: dict,
 
 
 def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwrite: bool,
-               min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL) -> int:
+               min_vol: float = 0.0, vol_pctl: float = _VOL_PCTL) -> list:
+    """Rekonstruiert die fehlenden Tage eines Tickers und gibt die NEUEN Zeilen zurück.
+
+    `hist` dient nur der Planung (welche Tage fehlen) und wird NICHT verändert. Übernommen werden die Zeilen
+    erst von `anwenden()` — unter der gemeinsamen Sperre auf dem frisch gelesenen Stand (Plan v3/v4 B1).
+    Vorher schrieb main() die alte Gesamtstruktur zurück und löschte, was der Cron dazwischen angelegt hatte."""
     closes = _closes(sym)
     if not closes:
-        print(f"  {sym:6} keine Kursreihe — übersprungen", flush=True); return 0
+        print(f"  {sym:6} keine Kursreihe — übersprungen", flush=True); return []
     cutoff = (date.today() - timedelta(days=int(years * 365))).isoformat()
     traded = sorted(d for d in closes if d >= cutoff)
     targets = traded[::max(1, every)]
     if len(targets) < 5:
-        print(f"  {sym:6} zu wenig Handelstage im Fenster", flush=True); return 0
+        print(f"  {sym:6} zu wenig Handelstage im Fenster", flush=True); return []
 
-    # WICHTIG: nur auf einer LOKALEN Kopie arbeiten. hist[sym] wird erst ganz am
-    # Ende ersetzt, nach erfolgreicher Rekonstruktion. Vorher committet hiess:
-    # eine voruebergehend leere API-Antwort (fruehe returns unten) liess den
-    # Ticker mit 0 Massive-Punkten zurueck, und main() schrieb das so weg —
-    # 500+ Punkte weg wegen eines einzelnen fehlgeschlagenen Requests.
+    # Nur Planung: welche Tage fehlen. Der Purge alter Rekonstruktionen (--overwrite) und die Uebernahme passieren in
+    # anwenden() auf dem frischen Stand — eine voruebergehend leere API-Antwort (fruehe returns unten) aendert damit
+    # nichts an der Datei (frueher: 500+ Punkte weg wegen eines einzelnen fehlgeschlagenen Requests).
     arr = list(hist.get(sym) or [])
-    n_purge = 0
-    if overwrite:
-        # Alte Rekonstruktionen VERWERFEN, nicht nur ueberschreiben. Sonst ueberleben
-        # genau die Tage, die der neue Lauf nicht reproduzieren kann — beim Umstieg
-        # auf konstante Laufzeit blieben so 14 Saegezahn-Eintraege in der Reihe.
-        # Provider-Eintraege bleiben unangetastet.
-        n_purge = sum(1 for e in arr if e.get("src") == "massive")
-        arr = [e for e in arr if e.get("src") != "massive"]
-    have = {e["date"] for e in arr} if not overwrite else set()
+    have = set() if overwrite else {e["date"] for e in arr}
     todo = [d for d in targets if d not in have]
     if not todo:
-        print(f"  {sym:6} bereits vollständig ({len(arr)} Punkte)", flush=True); return 0
+        print(f"  {sym:6} bereits vollständig ({len(arr)} Punkte)", flush=True); return []
 
     spots = [closes[d] for d in todo]
     k_lo, k_hi = min(spots) * (1 - _BAND) * 0.9, max(spots) * (1 + _BAND) * 1.1
@@ -454,10 +450,10 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
 
     contracts = _list_contracts(sym, key, exp_lo, exp_hi, k_lo, k_hi)
     if not contracts:
-        print(f"  {sym:6} keine Kontrakte gelistet", flush=True); return 0
+        print(f"  {sym:6} keine Kontrakte gelistet", flush=True); return []
     plan, need = _plan(closes, contracts, todo, underlying=sym)
     if not plan:
-        print(f"  {sym:6} kein Zieldatum planbar (Kontrakte={len(contracts)})", flush=True); return 0
+        print(f"  {sym:6} kein Zieldatum planbar (Kontrakte={len(contracts)})", flush=True); return []
     print(f"  {sym:6} {len(todo)} Ziele · {len(contracts)} Kontrakte gelistet · "
           f"{len(need)} Bars-Abrufe …", flush=True)
 
@@ -468,28 +464,51 @@ def run_ticker(sym: str, key: str, years: float, every: int, hist: dict, overwri
         if n % 200 == 0:
             print(f"    … {n}/{len(need)} Bars", flush=True)
 
-    added = 0
+    neue = []
     for d, legs in sorted(plan.items()):
         r = _reconstruct(d, closes[d], legs, need, bars, min_vol=min_vol, vol_pctl=vol_pctl)
         if r:
-            arr.append(r); added += 1
-    if overwrite and not added:
-        # Nichts rekonstruiert, aber die Alt-Punkte waeren verworfen: das ist ein
-        # Ruecksetzer, kein Ergebnis. Alten Stand behalten und laut melden.
-        print(f"  {sym:6} ABBRUCH — 0 Punkte rekonstruiert, {n_purge} alte Punkte "
-              f"bleiben erhalten", flush=True)
-        return 0
-    # Dedup je Datum (neuere Rekonstruktion gewinnt), dann sortieren
+            neue.append(r)
+    cov = 100.0 * len(neue) / max(1, len(plan))
+    print(f"  {sym:6} {len(neue)} Punkte rekonstruiert (Abdeckung {cov:.0f}% der geplanten Tage)", flush=True)
+    return neue
+
+
+def anwenden(hist: dict, sym: str, neue: list, overwrite: bool):
+    """Übernimmt rekonstruierte Zeilen in den FRISCH gelesenen Stand (läuft unter der Sperre).
+
+    overwrite: alte Rekonstruktionen (`src == "massive"`) des Tickers verwerfen, neue gewinnen je Datum — auch gegen
+    Live-Zeilen desselben Datums (Verhalten wie bisher). Ohne overwrite: nur Tage, die im frischen Stand fehlen; was
+    der Cron seit der Planung angelegt hat, bleibt. Kein neuer Punkt bei overwrite → False (nicht schreiben): das wäre
+    ein Rücksetzer, kein Ergebnis.
+    Rückgabe: Anzahl übernommener Zeilen, oder False."""
+    arr = list(hist.get(sym) or [])
+    n_purge = 0
+    if overwrite:
+        if not neue:
+            alt = sum(1 for e in arr if e.get("src") == "massive")
+            print(f"  {sym:6} ABBRUCH — 0 Punkte rekonstruiert, {alt} alte Punkte bleiben erhalten", flush=True)
+            return False
+        # Alte Rekonstruktionen VERWERFEN, nicht nur ueberschreiben. Sonst ueberleben
+        # genau die Tage, die der neue Lauf nicht reproduzieren kann — beim Umstieg
+        # auf konstante Laufzeit blieben so 14 Saegezahn-Eintraege in der Reihe.
+        # Provider-Eintraege bleiben unangetastet. n_purge aus dem FRISCHEN Bestand.
+        n_purge = sum(1 for e in arr if e.get("src") == "massive")
+        arr = [e for e in arr if e.get("src") != "massive"]
+        uebernehmen = list(neue)
+    else:
+        da = {e.get("date") for e in arr}
+        uebernehmen = [r for r in neue if r.get("date") not in da]
+    if not uebernehmen and not n_purge:
+        return False
+    # Dedup je Datum (uebernommene Rekonstruktion gewinnt), dann sortieren
     ded = {}
-    for e in arr:
+    for e in arr + uebernehmen:
         ded[e["date"]] = e
     hist[sym] = sorted(ded.values(), key=lambda e: e["date"])[-900:]
-    cov = 100.0 * added / max(1, len(plan))
     _pv = f", {n_purge} alte ersetzt" if n_purge else ""
-    print(f"  {sym:6} +{added} Punkte (Abdeckung {cov:.0f}% der geplanten Tage, "
-          f"gesamt {len(hist[sym])}{_pv})", flush=True)
-    return added
-
+    print(f"  {sym:6} +{len(uebernehmen)} Punkte uebernommen (gesamt {len(hist[sym])}{_pv})", flush=True)
+    return len(uebernehmen)
 
 def probe(sym: str, key: str) -> int:
     """Prüft die zwei Annahmen, auf denen der Backfill steht — vor dem langen Lauf."""
@@ -848,27 +867,39 @@ def main() -> int:
         return verify(syms, key, min_vol=a.min_vol, vol_pctl=a.vol_pctl)
 
     hp = _ROOT / "landing/data/options_skew_history.json"
-    hist = {}
-    if hp.exists():
-        try:
-            hist = json.loads(hp.read_text(encoding="utf-8"))
-        except Exception:
-            hist = {}
+    # Neuanlage nur, wenn die Datei schon beim Start fehlt (Erstinstallation). Verschwindet sie mitten im Lauf oder
+    # ist sie unlesbar, bricht der Lauf ab, statt eine leere Historie zu schreiben.
+    neu_erlaubt = not hp.exists()
 
     total = 0
     for i, sym in enumerate(syms, 1):
         print(f"[{i}/{len(syms)}] {sym}", flush=True)
         try:
-            total += run_ticker(sym, key, a.years, a.every_n_td, hist, a.overwrite,
-                                min_vol=a.min_vol, vol_pctl=a.vol_pctl)
+            # Planung auf einem frischen Lesestand; geschrieben wird erst in anwenden() unter der Sperre.
+            neue = run_ticker(sym, key, a.years, a.every_n_td, history_lesen(hp, neu_erlaubt=neu_erlaubt),
+                              a.overwrite, min_vol=a.min_vol, vol_pctl=a.vol_pctl)
+            erg = {"n": 0}
+
+            def _anwenden(h, _s=sym, _neue=neue):
+                r = anwenden(h, _s, _neue, a.overwrite)
+                if r is not False:
+                    erg["n"] = r
+                return r
+
+            if neue or a.overwrite:
+                # inkrementell nach JEDEM Ticker — ueberlebt Abbruch/OOM; atomar + unter der Sperre
+                history_aktualisieren(hp, _anwenden, neu_erlaubt=neu_erlaubt)
+            total += erg["n"]
         except KeyboardInterrupt:
             print("\n[abgebrochen] Fortschritt ist gespeichert."); break
+        except (HistorieDefekt, SperreBelegt) as e:
+            print(f"[ABBRUCH] {e}", flush=True)
+            return 1
         except Exception as e:
             print(f"  {sym:6} FEHLER: {str(e)[:120]}", flush=True)
-        # inkrementell nach JEDEM Ticker — ueberlebt Abbruch/OOM
-        write_json_atomic(hp, hist)   # atomar: docker stop darf keine halbe Datei hinterlassen
         clear_cache(); gc.collect()
 
+    hist = history_lesen(hp, neu_erlaubt=True)
     print(f"\n[OK] +{total} Punkte · {sum(len(v) for v in hist.values())} gesamt "
           f"ueber {len(hist)} Ticker -> {hp}", flush=True)
     return 0

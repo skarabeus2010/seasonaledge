@@ -324,7 +324,6 @@ PFLICHT = {
 }
 AUSNAHMEN = {
     "archive_front_straddle.py": "Options-Archiv, keine Tagesnummern/Kalendermethode",
-    "backfill_skew_history.py": "stillgelegt (marketdata)",
     "backfill_skew_massive.py": "Options-Skew-Historie, keine Kalendermethode",
     "backfill_skew_report.py": "Bericht",
     "backfill_skew_vrp.py": "Options-VRP",

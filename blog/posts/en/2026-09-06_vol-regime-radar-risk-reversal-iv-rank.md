@@ -4,6 +4,7 @@ seo_title: "Risk Reversal & IV Rank: Reading the Vol Regime Radar"
 slug: vol-regime-radar-risk-reversal-iv-rank
 de_slug: vol-regime-radar-risk-reversal-iv-rank
 date: 2026-09-06
+updated: 2026-10-14
 category: education
 tags: [options, risk-reversal, iv-rank, iv-percentile, volatility-skew, vol-regime, implied-volatility, options-radar]
 description: "Risk reversal, IV rank and IV percentile made simple: read the SeasonAlpha vol regime radar and tell expensive volatility from cheap."
@@ -117,7 +118,7 @@ The practical flow: filter to a category, find the outliers in the corners, and 
 The radar is **backward-looking context**, not a look into the future. It tells you where IV and skew stand relative to their own past — not whether volatility is about to rise or fall.
 
 - **No trade signal.** An expensive vol regime can stay expensive or get more so. Rank and percentile are framing, not triggers.
-- **Window-dependent.** The same ticker looks different in a 3-month window than in a 2-year one. Compare deliberately.
+- **Window-dependent.** The same ticker looks different in a 3-month window than in a 1-year one. Compare deliberately.
 - **Data basis.** We compute on 25-delta IVs from available option chains. That is a solid approximation of skew, not a tick-level surface.
 
 ## Conclusion

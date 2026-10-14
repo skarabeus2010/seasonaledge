@@ -127,6 +127,11 @@ jobs:
         run: |
           python3 -m pip install --quiet requests==2.32.3
           python3 scripts/verify_basisabweichung.py
+      # Skew-History: gemeinsame Schreibsperre aller Schreiber (Cron, Massive-Backfill, VRP), defekte History bricht
+      # ab statt sie zu ueberschreiben, Reparaturmodus nur gegen eine Freigabedatei. --streng: unter Linux muss die
+      # Parallelitaetsprobe laufen, UNGEPRUEFT ist rot.
+      - name: Waechter - Schreibsperre der Skew-History
+        run: python3 scripts/verify_skew_historie_sperre.py --streng
       # Kurslader SA.kurse (docs/TICKER_LADEN.md, S1): die echte landing/js/kurse.js in node gegen einen
       # PostgREST-Nachbau, jeder Abschnitt in eigenem Prozess. Verlangt Exit 0 und Endmarker je Abschnitt.
       - name: Waechter - Kurslader SA.kurse

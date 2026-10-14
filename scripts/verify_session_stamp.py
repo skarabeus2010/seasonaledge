@@ -176,6 +176,8 @@ class _Falle(BaseException):
 
 def _isoliert(tmp: str) -> int:
     tmp_p = Path(tmp).resolve()
+    # Sperrverzeichnis (History-Sperre seit 2026-10-14, shared.atomic_json.history_aktualisieren) ins Temp-Verzeichnis.
+    os.environ["SA_SPERR_DIR"] = str(tmp_p / "sperre")
     # Hook VOR dem Import der Crons: auch Import-Nebenwirkungen zaehlen.
     verstoesse = schreibsperre(tmp_p)
 
@@ -201,6 +203,10 @@ def _isoliert(tmp: str) -> int:
     def _neue_wurzel(tag: str) -> Path:
         w = tmp_p / tag
         w.mkdir(parents=True, exist_ok=True)
+        # Produktion hat immer eine History; ohne sie bricht der Skew-Cron seit 2026-10-14 ab (Neuanlage nur
+        # ausdruecklich). Deshalb eine leere, gueltige History je Wurzel.
+        (w / "landing" / "data").mkdir(parents=True, exist_ok=True)
+        (w / "landing" / "data" / "options_skew_history.json").write_text("{}", encoding="utf-8")
         _setze(m, "_ROOT", w)
         _setze(f, "_ROOT", w)
         return w
@@ -208,8 +214,17 @@ def _isoliert(tmp: str) -> int:
     def _dateien(w: Path) -> list[str]:
         # ALLE Eintraege, nicht nur Dateien: ein angelegtes leeres Verzeichnis
         # ist in einem gesperrten Lauf genauso ein Verstoss (R6).
-        return sorted(str(p.relative_to(w)).replace("\\", "/") + ("/" if p.is_dir() else "")
+        # Die vorab angelegte leere History (siehe _neue_wurzel) zaehlt nur, wenn sie veraendert wurde.
+        saat = w / "landing" / "data" / "options_skew_history.json"
+        unveraendert = saat.exists() and saat.read_text(encoding="utf-8") == "{}"
+        raus = {"landing/", "landing/data/", "landing/data/options_skew_history.json"} if unveraendert else set()
+        alle = sorted(str(p.relative_to(w)).replace("\\", "/") + ("/" if p.is_dir() else "")
                       for p in w.rglob("*"))
+        rest = [x for x in alle if x not in raus]
+        # Verzeichnisse der Saat nur ausblenden, solange nichts anderes darin liegt
+        if any(x.startswith("landing/data/") and x != "landing/data/" for x in rest):
+            rest = sorted(set(rest) | {"landing/", "landing/data/"})
+        return rest
 
     def _uhr(jetzt):
         eh._uhr = lambda tz: jetzt.astimezone(tz)

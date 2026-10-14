@@ -147,7 +147,7 @@ Die Options-Analysen leben unter dem Top-Level-Nav-Punkt **„Optionen"** (neben
 
 Der Radar braucht **≥5 Historie-Punkte** je Ticker für den Rank. Neue Ticker haben anfangs nur 1 (Forward-Akku). **`scripts/backfill_skew_massive.py`** (seit 2026-09-08) füllt sie — **aus Massive**, nicht marketdata: Massive-Historie liefert nur Preise (kein IV/Greeks, Quotes sind 403 auf dem Options-Starter), deshalb **invertiert der Backfill die IV je Kontrakt per BS-Bisektion** aus den Aggregates-Bars, pickt 25Δ, normiert die Laufzeit auf konstante 30 Tage (Varianz-Interpolation `cm`/`cm_extrap`) → schreibt inkrementell pro Ticker in `options_skew_history.json`. Details + die fünf Fallen der Rekonstruktion siehe „Lessons Learned" unten. `verify_skew_iv.py` bestätigt: unsere BS-IV reproduziert die Live-IV auf **< 0,4 Vol-Punkte**.
 
-> **Hinweis:** Der Vorgänger `scripts/backfill_skew_history.py` (marketdata.app, 1 Credit/Chain) ist **stillgelegt** — marketdata wurde nur evaluiert, nie produktiv genutzt. Der Backfill läuft jetzt komplett über Massive.
+> **Hinweis:** Der Vorgänger `scripts/backfill_skew_history.py` (marketdata.app, 1 Credit/Chain) war stillgelegt und ist seit 2026-10-14 **gelöscht** (vierter Schreiber der Skew-History ohne Sperre, Plan v4 B1) — marketdata wurde nur evaluiert, nie produktiv genutzt. Der Backfill läuft jetzt komplett über Massive.
 
 ## Methodik-Abgleich mit SpotGamma (bestätigt korrekt)
 

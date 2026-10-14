@@ -31,7 +31,7 @@ load_env()
 from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day, letzte_session, MarktOffen, pruefe_eod_fenster   # noqa: E402
-from shared.atomic_json import write_json_atomic                      # noqa: E402
+from shared.atomic_json import write_json_atomic, history_aktualisieren  # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_reihen,            # noqa: E402
                                  rv_aus_returns)
 from shared.data import KursreiheFehlt, lade_kurse                    # noqa: E402
@@ -1220,7 +1220,96 @@ def build(tickers: list[str], write: bool = True) -> dict:
     }
     if write:
         p = _ROOT / "landing/data/options_skew.json"
-        write_json_atomic(p, out)
+        # Skalare Metriken vorwärts in History akkumulieren — UNTER der gemeinsamen Sperre aller History-Schreiber
+        # (shared.atomic_json.history_aktualisieren, Plan v3/v4 B1): frisch lesen, zusammenführen, History schreiben,
+        # DANN den Snapshot, dann Sperre lösen. Ist die History unlesbar oder die Sperre belegt, wird KEINE der
+        # beiden Dateien geschrieben (früher: unlesbar → {} → ganze Historie durch einen Lauf ersetzt; und der
+        # Snapshot stand schon vor dem Lesen auf der Platte).
+        hp = _ROOT / "landing/data/options_skew_history.json"
+
+        def _zusammenfuehren(hist):
+            # Handelstag stempeln, NICHT den Laufzeitpunkt: der Cron läuft täglich um
+            # 23:00 UTC, auch samstags/sonntags/feiertags — dann gehört die Chain zur
+            # letzten Session. Der Dedup unten sorgt dafür, dass die Wiederholungen
+            # am Wochenende keine Doppeleinträge erzeugen.
+            today = out["session"]
+            mv, dp = _fix_session_dates(hist)
+            if mv or dp:
+                print(f"[history] {mv} Einträge auf ihre Session umdatiert, {dp} Duplikate entfernt")
+            for t in per:
+                arr = hist.setdefault(t["ticker"], [])
+                # „Erste Zeile gewinnt" war zu streng: eine bereits vorhandene,
+                # NICHT normierte Zeile sperrte die Session dauerhaft fuer den
+                # normierten Punkt. Genau das machte den Vorfall 2026-09-25
+                # unheilbar — die falsch gestempelten Provider-Zeilen haetten auch
+                # den echten Lauf der Folgenacht blockiert, der Radar waere leer
+                # geblieben, ohne dass irgendetwas fehlschlaegt.
+                # Deshalb: rankbar ersetzt nicht-rankbar, sonst bleibt es beim
+                # Bestand (kein Ueberschreiben gleichwertiger Zeilen). "Rankbar"
+                # heisst cm/cm_extrap — NICHT "cm_mode ist gesetzt" (noatm/single).
+                vorhanden = next((e for e in arr if e.get("date") == today), None)
+                neu_norm = _rankbar(t)
+                alt_norm = _rankbar(vorhanden)
+                if vorhanden is not None and neu_norm and not alt_norm:
+                    arr.remove(vorhanden)
+                    print(f"  {t['ticker']:6} nicht normierte Zeile fuer {today} durch "
+                          f"normierte ersetzt", flush=True)
+                    vorhanden = None
+                if vorhanden is None:
+                    # Skew/IV auf konstante 30 Tage normiert speichern (gleiche Skala wie
+                    # der Backfill) → percentile-fähige Reihe. Felder tragen cm_mode; das
+                    # Frontend verwirft 'single'. Fällt die CM-Normierung aus (nur ein
+                    # Verfall zu weit weg), wird der reale Front-Monat gespeichert (kein
+                    # cm_mode) — für den Tag nicht normiert, aber kein Datenverlust.
+                    cm_ok = t.get("cm_mode") is not None
+                    # Nicht normierte Tage: wie bisher die Anbieterwerte des Front-Monats
+                    # (nicht rankbar, aber kein Datenverlust). Seit der Anzeige-Umstellung
+                    # sind die Top-Level-Felder an solchen Tagen leer — deshalb aus
+                    # front_provider lesen, sonst TypeError auf put_25d = None.
+                    fp = t.get("front_provider") or t
+                    arr.append({"date": today,
+                                # Messmethode mitschreiben. Die cm_*-Felder stammen aus
+                                # _leg_own, also aus UNSERER BS-Inversion — nicht aus der
+                                # Provider-IV. Ohne Markierung hielt verify() diese Zeilen
+                                # fuer Provider-Referenzen und verglich damit zwei
+                                # Rekonstruktionen miteinander (siehe verify-Docstring).
+                                "method": "own_bs" if t.get("cm_mode") else "provider",
+                                "cm_mode": t.get("cm_mode"),
+                                "dte": t.get("cm_dte") if cm_ok else fp.get("dte"),
+                                "skew_pts": t.get("cm_skew_pts") if cm_ok else fp["skew_pts"],
+                                "put_iv": t.get("cm_put_iv") if cm_ok else (fp.get("put_25d") or {}).get("iv"),
+                                "call_iv": t.get("cm_call_iv") if cm_ok else (fp.get("call_25d") or {}).get("iv"),
+                                "iv_atm": t.get("cm_iv_atm") if cm_ok else fp.get("iv_atm"),
+                                # VRP/PC aus den CM-Werten ableiten, wenn vorhanden:
+                                # sonst stuenden in EINER Zeile normierte IVs neben
+                                # Front-Monats-Kennzahlen — intern inkonsistent.
+                                "vrp_pts": (round((t["cm_iv_atm"] - t["rv_1m"]) * 100, 2)
+                                            if (cm_ok and t.get("cm_iv_atm") and t.get("rv_1m"))
+                                            else fp.get("vrp_pts")),
+                                "pc_ratio": (round(t["cm_put_iv"] / t["cm_call_iv"], 3)
+                                             if (cm_ok and t.get("cm_call_iv")) else fp.get("pc_ratio")),
+                                "bfly_pts": t.get("cm_bfly_pts") if cm_ok else fp.get("bfly_pts"),
+                                "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else fp.get("call_zeta_pts"),
+                                "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else fp.get("put_zeta_pts")})
+                hist[t["ticker"]] = arr[-750:]
+            # CBOE-Correlation vorwärts akkumulieren (Yahoo liefert oft nur letzten Wert)
+            if corr:
+                carr = hist.setdefault("__CORR", [])
+                if not any(e.get("date") == today for e in carr):
+                    carr.append({"date": today, "COR1M": (corr.get("COR1M") or {}).get("last"),
+                                 "COR3M": (corr.get("COR3M") or {}).get("last"),
+                                 "COR30D": (corr.get("COR30D") or {}).get("last")})
+                hist["__CORR"] = carr[-750:]
+            # Equity-P/C-Ratio vorwärts akkumulieren (keine freie Historie verfügbar)
+            if per:
+                parr = hist.setdefault("__PCR", [])
+                if not any(e.get("date") == today for e in parr):
+                    parr.append({"date": today,
+                                 "eq_vol": pc_ratio["equity"]["vol"], "eq_oi": pc_ratio["equity"]["oi"],
+                                 "idx_vol": pc_ratio["index"]["vol"]})
+                hist["__PCR"] = parr[-750:]
+
+        hist = history_aktualisieren(hp, _zusammenfuehren, danach=lambda _h: write_json_atomic(p, out))
         print(f"\n[OK] {len(per)}/{len(tickers)} Ticker + {len(indices)} Indizes → {p}")
         if failed:
             from collections import Counter
@@ -1233,93 +1322,6 @@ def build(tickers: list[str], write: bool = True) -> dict:
             print(f"[coverage] {len(partial)} nur teilweise (kein ATM → Zeta/Bfly/VRP fehlen): "
                   + ", ".join(f["ticker"] for f in partial[:20])
                   + (" …" if len(partial) > 20 else ""), flush=True)
-        # Skalare Metriken vorwärts in History akkumulieren
-        hp = _ROOT / "landing/data/options_skew_history.json"
-        hist = {}
-        if hp.exists():
-            try: hist = json.loads(hp.read_text(encoding="utf-8"))
-            except Exception: hist = {}
-        # Handelstag stempeln, NICHT den Laufzeitpunkt: der Cron läuft täglich um
-        # 23:00 UTC, auch samstags/sonntags/feiertags — dann gehört die Chain zur
-        # letzten Session. Der Dedup unten sorgt dafür, dass die Wiederholungen
-        # am Wochenende keine Doppeleinträge erzeugen.
-        today = out["session"]
-        mv, dp = _fix_session_dates(hist)
-        if mv or dp:
-            print(f"[history] {mv} Einträge auf ihre Session umdatiert, {dp} Duplikate entfernt")
-        for t in per:
-            arr = hist.setdefault(t["ticker"], [])
-            # „Erste Zeile gewinnt" war zu streng: eine bereits vorhandene,
-            # NICHT normierte Zeile sperrte die Session dauerhaft fuer den
-            # normierten Punkt. Genau das machte den Vorfall 2026-09-25
-            # unheilbar — die falsch gestempelten Provider-Zeilen haetten auch
-            # den echten Lauf der Folgenacht blockiert, der Radar waere leer
-            # geblieben, ohne dass irgendetwas fehlschlaegt.
-            # Deshalb: rankbar ersetzt nicht-rankbar, sonst bleibt es beim
-            # Bestand (kein Ueberschreiben gleichwertiger Zeilen). "Rankbar"
-            # heisst cm/cm_extrap — NICHT "cm_mode ist gesetzt" (noatm/single).
-            vorhanden = next((e for e in arr if e.get("date") == today), None)
-            neu_norm = _rankbar(t)
-            alt_norm = _rankbar(vorhanden)
-            if vorhanden is not None and neu_norm and not alt_norm:
-                arr.remove(vorhanden)
-                print(f"  {t['ticker']:6} nicht normierte Zeile fuer {today} durch "
-                      f"normierte ersetzt", flush=True)
-                vorhanden = None
-            if vorhanden is None:
-                # Skew/IV auf konstante 30 Tage normiert speichern (gleiche Skala wie
-                # der Backfill) → percentile-fähige Reihe. Felder tragen cm_mode; das
-                # Frontend verwirft 'single'. Fällt die CM-Normierung aus (nur ein
-                # Verfall zu weit weg), wird der reale Front-Monat gespeichert (kein
-                # cm_mode) — für den Tag nicht normiert, aber kein Datenverlust.
-                cm_ok = t.get("cm_mode") is not None
-                # Nicht normierte Tage: wie bisher die Anbieterwerte des Front-Monats
-                # (nicht rankbar, aber kein Datenverlust). Seit der Anzeige-Umstellung
-                # sind die Top-Level-Felder an solchen Tagen leer — deshalb aus
-                # front_provider lesen, sonst TypeError auf put_25d = None.
-                fp = t.get("front_provider") or t
-                arr.append({"date": today,
-                            # Messmethode mitschreiben. Die cm_*-Felder stammen aus
-                            # _leg_own, also aus UNSERER BS-Inversion — nicht aus der
-                            # Provider-IV. Ohne Markierung hielt verify() diese Zeilen
-                            # fuer Provider-Referenzen und verglich damit zwei
-                            # Rekonstruktionen miteinander (siehe verify-Docstring).
-                            "method": "own_bs" if t.get("cm_mode") else "provider",
-                            "cm_mode": t.get("cm_mode"),
-                            "dte": t.get("cm_dte") if cm_ok else fp.get("dte"),
-                            "skew_pts": t.get("cm_skew_pts") if cm_ok else fp["skew_pts"],
-                            "put_iv": t.get("cm_put_iv") if cm_ok else (fp.get("put_25d") or {}).get("iv"),
-                            "call_iv": t.get("cm_call_iv") if cm_ok else (fp.get("call_25d") or {}).get("iv"),
-                            "iv_atm": t.get("cm_iv_atm") if cm_ok else fp.get("iv_atm"),
-                            # VRP/PC aus den CM-Werten ableiten, wenn vorhanden:
-                            # sonst stuenden in EINER Zeile normierte IVs neben
-                            # Front-Monats-Kennzahlen — intern inkonsistent.
-                            "vrp_pts": (round((t["cm_iv_atm"] - t["rv_1m"]) * 100, 2)
-                                        if (cm_ok and t.get("cm_iv_atm") and t.get("rv_1m"))
-                                        else fp.get("vrp_pts")),
-                            "pc_ratio": (round(t["cm_put_iv"] / t["cm_call_iv"], 3)
-                                         if (cm_ok and t.get("cm_call_iv")) else fp.get("pc_ratio")),
-                            "bfly_pts": t.get("cm_bfly_pts") if cm_ok else fp.get("bfly_pts"),
-                            "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else fp.get("call_zeta_pts"),
-                            "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else fp.get("put_zeta_pts")})
-            hist[t["ticker"]] = arr[-750:]
-        # CBOE-Correlation vorwärts akkumulieren (Yahoo liefert oft nur letzten Wert)
-        if corr:
-            carr = hist.setdefault("__CORR", [])
-            if not any(e.get("date") == today for e in carr):
-                carr.append({"date": today, "COR1M": (corr.get("COR1M") or {}).get("last"),
-                             "COR3M": (corr.get("COR3M") or {}).get("last"),
-                             "COR30D": (corr.get("COR30D") or {}).get("last")})
-            hist["__CORR"] = carr[-750:]
-        # Equity-P/C-Ratio vorwärts akkumulieren (keine freie Historie verfügbar)
-        if per:
-            parr = hist.setdefault("__PCR", [])
-            if not any(e.get("date") == today for e in parr):
-                parr.append({"date": today,
-                             "eq_vol": pc_ratio["equity"]["vol"], "eq_oi": pc_ratio["equity"]["oi"],
-                             "idx_vol": pc_ratio["index"]["vol"]})
-            hist["__PCR"] = parr[-750:]
-        write_json_atomic(hp, hist)
         print(f"[history] {sum(len(v) for v in hist.values())} Punkte über {len(hist)} Ticker → {hp.name}")
     return out
 

@@ -146,9 +146,14 @@ while [ "$I" -lt "${#OFFEN[@]}" ]; do
     # werden spaeter komplett wiederholt: das kostet Rechenzeit, aber keine
     # Daten, weil der Purge pro Ticker laeuft und ein abgebrochener Ticker
     # beim naechsten Anlauf ohnehin neu gerechnet wird.
+    # logs MUSS gemountet sein: dort liegt die gemeinsame Sperre der Skew-History
+    # (logs/sperre/skew_historie.lock, shared.atomic_json.history_aktualisieren).
+    # Ohne den Mount sperrt der Backfill gegen eine eigene Datei im Container und
+    # schuetzt nichts gegen den Cron (Plan v4 B1).
     docker run -d --name "$CONT" \
          --env-file "$APP_DIR/.env" \
          -v "$APP_DIR/landing/data":/app/landing/data \
+         -v "$APP_DIR/logs":/app/logs \
          -w /app "$IMAGE" \
          python3 -u scripts/backfill_skew_massive.py \
            --symbols "${STAPEL[@]}" --years "$JAHRE" --overwrite \

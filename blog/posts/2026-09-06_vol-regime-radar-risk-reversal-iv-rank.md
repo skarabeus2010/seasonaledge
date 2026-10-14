@@ -3,6 +3,7 @@ title: "Vol-Regime-Radar: Risk Reversal, IV Rank und IV Percentile lesen lernen"
 seo_title: "Risk Reversal & IV Rank: Vol-Regime-Radar lesen"
 slug: vol-regime-radar-risk-reversal-iv-rank
 date: 2026-09-06
+updated: 2026-10-14
 category: education
 tags: [optionen, risk-reversal, iv-rank, iv-percentile, volatility-skew, vol-regime, implizite-volatilitaet, options-radar]
 description: "Risk Reversal, IV Rank und IV Percentile einfach erklärt: So liest du den Vol-Regime-Radar auf SeasonAlpha und erkennst teure von billiger Vola."
@@ -116,7 +117,7 @@ Der praktische Ablauf: Filtere auf eine Kategorie, suche die Ausreißer in den E
 Der Radar ist **rückwärtsgewandter Kontext**, kein Blick in die Zukunft. Er sagt dir, wo IV und Skew relativ zur eigenen Vergangenheit stehen — nicht, ob die Vola steigt oder fällt.
 
 - **Kein Handelssignal.** Ein teures Vol-Regime kann teuer bleiben oder noch teurer werden. Rank und Percentile sind Einordnung, keine Auslöser.
-- **Fenster-abhängig.** Dasselbe Ticker sieht im 3-Monats-Fenster anders aus als im 2-Jahres-Fenster. Vergleiche bewusst.
+- **Fenster-abhängig.** Dasselbe Ticker sieht im 3-Monats-Fenster anders aus als im 1-Jahres-Fenster. Vergleiche bewusst.
 - **Datenbasis.** Wir rechnen auf 25-Delta-IVs aus verfügbaren Optionsketten. Das ist eine belastbare Näherung des Skew, keine tick-genaue Surface.
 
 ## Fazit

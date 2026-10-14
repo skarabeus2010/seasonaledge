@@ -217,6 +217,9 @@ def _proben() -> int:
             eh._uhr = lambda tz: datetime(2026, 9, 24, 23, 0, tzinfo=UTC).astimezone(tz)
             os.environ["MASSIVE_API_KEY"] = "probe-kein-echter-schluessel"
             m._ROOT = Path(tmp)
+            # Produktion hat immer eine History; ohne sie bricht der Cron seit 2026-10-14 ab (Plan v4 B1).
+            (Path(tmp) / "landing/data").mkdir(parents=True, exist_ok=True)
+            (Path(tmp) / "landing/data/options_skew_history.json").write_text("{}", encoding="utf-8")
             m._index_series = lambda *a, **k: None
             def _synth(sym, key=None):
                 r = _roh("single" if sym == "RSP" else "cm"); r["ticker"] = sym
@@ -250,7 +253,7 @@ def _proben() -> int:
                 m._anzeige_aus_ranking(r)
                 return r
             m._enrich = _ohne_cm
-            (Path(tmp) / "landing/data/options_skew_history.json").unlink()
+            (Path(tmp) / "landing/data/options_skew_history.json").write_text("{}", encoding="utf-8")
             try:
                 with contextlib.redirect_stdout(io.StringIO()):
                     m.build(["XLC"], write=True)
@@ -279,6 +282,8 @@ def _isoliert(tmp: str) -> int:
     """Unterprozess: Schreibsperre VOR dem Cron-Import, dann alle Proben."""
     global eh, m
     tmp_p = Path(tmp).resolve()
+    # Sperrverzeichnis der History-Sperre (shared.atomic_json.history_aktualisieren) ins Temp-Verzeichnis.
+    os.environ["SA_SPERR_DIR"] = str(tmp_p / "sperre")
     verstoesse = schreibsperre(tmp_p)
     import shared.exchange_holidays as _eh
     import scripts.compute_options_skew as _m

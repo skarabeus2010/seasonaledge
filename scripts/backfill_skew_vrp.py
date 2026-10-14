@@ -6,6 +6,12 @@ backfill_skew_vrp.py — VRP in options_skew_history.json nachrechnen.
     python3 scripts/backfill_skew_vrp.py --ticker SPY,QQQ   einzelne Ticker
     python3 scripts/backfill_skew_vrp.py                    alle, schreibend
 
+    Reparatur einzelner Zeilen (R1c, Plan v4): erst Trockenlauf mit Bericht, dann Schreiben NUR gegen genau diesen
+    Bericht:
+    python3 scripts/backfill_skew_vrp.py --reparatur --ticker ETHA --von 2026-09-30 --bis 2026-10-13
+    python3 scripts/backfill_skew_vrp.py --reparatur --ticker ETHA --von 2026-09-30 --bis 2026-10-13 \
+            --schreiben --freigabe-datei logs/reparatur/vrp_ETHA_2026-09-30_2026-10-13_<zeit>.json
+
 WARUM: das VRP (Variance Risk Premium = IV minus realisierte Vola) stand in der
 Historie nur in 793 von 6271 Zeilen — der Live-Lauf schreibt es, der Backfill
 (backfill_skew_massive.py) nicht. Der geplante IV/RealVol-Radar braucht ein
@@ -42,10 +48,11 @@ FORMEL: identisch zum Live-Lauf, weil BEIDE shared/realized_vol.py benutzen —
 vrp_pts = (iv_atm − rv21) · 100, rv21 = annualisierte realisierte Vola der
 21 Handelstage bis einschliesslich des jeweiligen Tages.
 
-BETRIEB: der Live-Cron schreibt dieselbe Datei um 23:00 UTC und haelt sie im
-Speicher. Dieses Skript darf nicht daneben laufen — sonst geht ein Schreibvorgang
-verloren (Lost Update, siehe docs/OPTIONS.md). Es laeuft in Sekunden, also
-einfach ausserhalb des Fensters starten.
+BETRIEB: geschrieben wird unter der gemeinsamen Sperre aller History-Schreiber
+(shared.atomic_json.history_aktualisieren): die Kursreihen werden ohne Sperre
+geladen, die VRP-Felder dann auf dem FRISCH gelesenen Stand gesetzt. Frueher
+las das Skript die Datei einmal und schrieb die alte Gesamtstruktur zurueck —
+was der Cron dazwischen anlegte, war weg (Lost Update, docs/OPTIONS.md).
 """
 from __future__ import annotations
 
@@ -58,7 +65,11 @@ import sys
 _ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
-from shared.atomic_json import write_json_atomic                     # noqa: E402
+import datetime as _dt                                               # noqa: E402
+import hashlib                                                       # noqa: E402
+import math                                                          # noqa: E402
+from shared.atomic_json import (write_json_atomic, history_aktualisieren,  # noqa: E402
+                                history_lesen, HistorieDefekt, SperreBelegt)
 from shared.data import KursreiheFehlt, lade_kurse                   # noqa: E402
 from shared.realized_vol import RV_FENSTER, rv_reihe_aus_returns     # noqa: E402
 
@@ -96,16 +107,16 @@ def _kursfenster(daten: list[str]) -> str:
     return "%04d-%s" % (int(aeltestes[:4]) - 1, aeltestes[5:])
 
 
-def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
-    """Rechnet das VRP fuer alle Zeilen mit iv_atm neu. Gibt eine Statistik zurueck.
-
-    Verandert `hist` an Ort und Stelle.
-    """
-    stat = {"ticker": 0, "uebersprungen": 0, "zeilen_mit_iv": 0, "gesetzt": 0,
+def _neue_stat() -> dict:
+    return {"ticker": 0, "uebersprungen": 0, "zeilen_mit_iv": 0, "gesetzt": 0,
             "kein_rv": 0, "vorher_vorhanden": 0, "abweichungen": [],
             "ohne_reihe": [], "invariant_alt": [], "invariant_neu_gleich": [],
             "invariant_neu_dazu": [], "geleert_ohne_iv": 0}
 
+
+def rv_laden(hist: dict, nur: set[str] | None, stat: dict) -> dict:
+    """Phase 1 (langsam, ohne Sperre): RV je Ticker und Tag aus Supabase. `hist` nur zur Planung."""
+    rv_je = {}
     for t in sorted(hist):
         if t in KEINE_TICKER:
             continue
@@ -113,14 +124,10 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
             continue
         zeilen = hist.get(t) or []
         mit_iv = [z for z in zeilen if isinstance(z, dict) and z.get("iv_atm")]
-        if not mit_iv:
-            stat["uebersprungen"] += 1
-            continue
         daten = [z["date"] for z in mit_iv if z.get("date")]
         if not daten:
             stat["uebersprungen"] += 1
             continue
-
         try:
             kd, _kc, kr = lade_kurse(t, ab=_kursfenster(daten),
                                      mindestens=RV_FENSTER + 5)
@@ -129,12 +136,19 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
             stat["ohne_reihe"].append(f"{t}: {e}")
             stat["uebersprungen"] += 1
             continue
-
         # Aus gespeicherten Returns, nicht aus Schlusskursen (shared/basisabweichung.py) — dieselbe Regel wie live.
-        rv_je_tag = rv_reihe_aus_returns(kd, kr)
+        rv_je[t] = rv_reihe_aus_returns(kd, kr)
         stat["ticker"] += 1
+        gc.collect()
+    return rv_je
 
-        for z in zeilen:
+
+def anwenden(hist: dict, rv_je: dict, stat: dict) -> None:
+    """Phase 2 (schnell, unter der Sperre auf dem frischen Stand): VRP-Felder setzen. Ticker ohne geladene RV
+    bleiben unberuehrt."""
+    for t in sorted(rv_je):
+        rv_je_tag = rv_je[t]
+        for z in hist.get(t) or []:
             if not isinstance(z, dict):
                 continue
             if not z.get("iv_atm"):
@@ -175,8 +189,156 @@ def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
             z["vrp_quelle"] = "supabase21"
             stat["gesetzt"] += 1
 
-        gc.collect()
+
+def nachrechnen(hist: dict, nur: set[str] | None = None) -> dict:
+    """Beide Phasen auf demselben Objekt (Trockenlauf, Tests). Veraendert `hist` an Ort und Stelle."""
+    stat = _neue_stat()
+    anwenden(hist, rv_laden(hist, nur, stat), stat)
     return stat
+
+
+# ── Reparaturmodus (R1c): einzelne Zeilen eines Tickers, nur vrp_pts, gegen eine freigegebene Berichtsdatei ──────
+
+REPARATUR_DIR = _ROOT / "logs" / "reparatur"
+_RV_GRENZEN = (0.0, 3.0)          # realisierte Vola als Anteil; ausserhalb davon ist die Reihe kaputt, nicht der Markt
+
+
+def _kanonisch(obj) -> str:
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
+def reparatur_diff(hist: dict, ticker: str, von: str, bis: str, rv_je_tag: dict) -> dict:
+    """Diff fuer die Zeilen von `ticker` mit von <= date <= bis. Geaendert wird nur `vrp_pts`, und nur bei
+    cm/cm_extrap mit endlichem iv_atm und vorhandener RV; alles andere wird mit Grund gemeldet."""
+    ziel = [z for z in hist.get(ticker) or [] if isinstance(z, dict) and von <= str(z.get("date", "")) <= bis]
+    zeilen = []
+    for z in ziel:
+        e = {"date": z.get("date"), "cm_mode": z.get("cm_mode"), "iv_atm": z.get("iv_atm"),
+             "vrp_alt": z.get("vrp_pts")}
+        iv = z.get("iv_atm")
+        if z.get("cm_mode") not in ("cm", "cm_extrap"):
+            e["grund"] = "nicht normiert — unveraendert"
+        elif not isinstance(iv, (int, float)) or isinstance(iv, bool) or not math.isfinite(iv):
+            e["grund"] = "kein iv_atm — unveraendert"
+        else:
+            rv = rv_je_tag.get(z.get("date"))
+            if rv is None:
+                e["grund"] = "keine RV — unveraendert"
+            else:
+                e["rv_neu"] = rv
+                e["vrp_neu"] = round((float(iv) - rv) * 100, 2)
+        zeilen.append(e)
+    return {"ticker": ticker, "von": von, "bis": bis,
+            "zielhash": hashlib.sha256(_kanonisch(ziel).encode("utf-8")).hexdigest(),
+            "zeilen": zeilen}
+
+
+def reparatur_pruefen(diff: dict) -> list[str]:
+    """Invarianten des Diffs selbst: eindeutige Daten, jede zu aendernde Zeile hat eine RV in (0, 3)."""
+    fehler = []
+    daten = [e["date"] for e in diff["zeilen"]]
+    doppelt = sorted({d for d in daten if daten.count(d) > 1})
+    if doppelt:
+        # Zeilen werden ueber ihre Position identifiziert; zwei Zeilen desselben Datums waeren fuer den Leser des
+        # Berichts nicht unterscheidbar — und die History dedupliziert je Datum, also ist es ohnehin ein Defekt.
+        fehler.append("doppelte Daten im Bereich: " + ", ".join(doppelt))
+    for e in diff["zeilen"]:
+        if "vrp_neu" in e and not (_RV_GRENZEN[0] < e["rv_neu"] < _RV_GRENZEN[1]):
+            fehler.append(f"{e['date']}: RV {e['rv_neu']} ausserhalb {_RV_GRENZEN}")
+    if not any("vrp_neu" in e for e in diff["zeilen"]):
+        fehler.append("keine Zeile zu aendern")
+    return fehler
+
+
+def _ziel_positionen(arr: list, von: str, bis: str) -> list[int]:
+    return [i for i, z in enumerate(arr) if isinstance(z, dict) and von <= str(z.get("date", "")) <= bis]
+
+
+def reparatur_anwenden(hist: dict, diff: dict) -> None:
+    """Setzt NUR vrp_pts der Zielzeilen (identifiziert ueber ihre Position, nicht ueber das Datum) und prueft danach,
+    dass sich sonst nichts geaendert hat — einschliesslich der Frage, ob ein Feld vorher ueberhaupt existierte."""
+    fehler = reparatur_pruefen(diff)
+    if fehler:
+        raise RuntimeError("Diff nicht zulaessig: " + "; ".join(fehler))
+    vorher = json.loads(_kanonisch(hist))
+    arr = hist.get(diff["ticker"]) or []
+    pos = _ziel_positionen(arr, diff["von"], diff["bis"])
+    if [arr[i].get("date") for i in pos] != [e["date"] for e in diff["zeilen"]]:
+        raise RuntimeError("Zielzeilen passen nicht zum Diff")
+    geaendert = []
+    for i, e in zip(pos, diff["zeilen"]):
+        if "vrp_neu" in e:
+            arr[i]["vrp_pts"] = e["vrp_neu"]
+            geaendert.append(i)
+    # Invariante: Ergebnis mit zurueckgesetzten Zielwerten == frisch gesperrter Ausgangsstand
+    pruef = json.loads(_kanonisch(hist))
+    alt_arr = vorher.get(diff["ticker"]) or []
+    for i in geaendert:
+        if "vrp_pts" in alt_arr[i]:
+            pruef[diff["ticker"]][i]["vrp_pts"] = alt_arr[i]["vrp_pts"]
+        else:
+            pruef[diff["ticker"]][i].pop("vrp_pts", None)
+    if _kanonisch(pruef) != _kanonisch(vorher):
+        raise RuntimeError("Invariante verletzt: ausser vrp_pts der Zielzeilen hat sich etwas geaendert")
+
+
+def reparatur(args) -> int:
+    if not args.ticker or "," in args.ticker or not args.von or not args.bis:
+        print("FEHLER: --reparatur braucht genau einen --ticker sowie --von und --bis")
+        return 1
+    t = args.ticker.strip().upper()
+    plan = history_lesen(HISTORIE)
+    stat = _neue_stat()
+    rv_je = rv_laden({t: plan.get(t) or []}, {t}, stat)
+    if t not in rv_je:
+        print("FEHLER: keine Kursreihe fuer %s: %s" % (t, stat["ohne_reihe"]))
+        return 1
+    diff = reparatur_diff(plan, t, args.von, args.bis, rv_je[t])
+    for e in diff["zeilen"]:
+        print("  %s %-9s iv_atm %-8s vrp %8s -> %8s  rv %s  %s"
+              % (e["date"], e.get("cm_mode"), e.get("iv_atm"), e.get("vrp_alt"), e.get("vrp_neu", "—"),
+                 ("%.4f" % e["rv_neu"]) if "rv_neu" in e else "—", e.get("grund", "")))
+    fehler = reparatur_pruefen(diff)
+    if fehler:
+        print("NICHT ZULAESSIG: " + "; ".join(fehler))
+        return 2
+
+    if not args.schreiben:
+        # Bericht ist KEIN Produktionsdatum — er wird immer gespeichert, die History nicht angefasst.
+        zeit = _dt.datetime.now(_dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        ziel = REPARATUR_DIR / ("vrp_%s_%s_%s_%s.json" % (t, args.von, args.bis, zeit))
+        write_json_atomic(ziel, dict(diff, erstellt=zeit))
+        print()
+        print("Trockenlauf: History unveraendert. Bericht: %s" % ziel)
+        print("Schreiben nur mit: --schreiben --freigabe-datei %s" % ziel)
+        return 0
+
+    if not args.freigabe_datei:
+        print("FEHLER: --schreiben braucht --freigabe-datei <Bericht aus dem Trockenlauf>")
+        return 1
+    try:
+        freigabe = json.loads(pathlib.Path(args.freigabe_datei).read_text(encoding="utf-8"))
+    except Exception as e:
+        print("FEHLER: Freigabedatei nicht lesbar: %s" % e)
+        return 1
+    if (freigabe.get("ticker"), freigabe.get("von"), freigabe.get("bis")) != (t, args.von, args.bis):
+        print("ABBRUCH: Ticker/Bereich passen nicht zur Freigabedatei")
+        return 2
+
+    def _aendern(h):
+        frisch = reparatur_diff(h, t, args.von, args.bis, rv_je[t])
+        vergleich = {k: freigabe.get(k) for k in ("ticker", "von", "bis", "zielhash", "zeilen")}
+        if _kanonisch(frisch) != _kanonisch(vergleich):
+            raise RuntimeError("Diff auf dem aktuellen Stand weicht von der Freigabedatei ab — nichts geschrieben")
+        reparatur_anwenden(h, frisch)
+
+    try:
+        history_aktualisieren(HISTORIE, _aendern)
+    except (RuntimeError, HistorieDefekt, SperreBelegt) as e:
+        print("ABBRUCH: %s" % e)
+        return 2
+    print("geschrieben: %d Zeilen von %s (vrp_pts)" % (sum(1 for x in diff["zeilen"] if "vrp_neu" in x), t))
+    return 0
 
 
 def bericht(stat: dict) -> bool:
@@ -316,43 +478,71 @@ def main() -> int:
     ap.add_argument("--trotzdem", action="store_true",
                     help="schreiben, obwohl der Invariant rot ist (bewusste "
                          "Entscheidung, wird im Bericht vermerkt)")
+    ap.add_argument("--reparatur", action="store_true", help="nur vrp_pts eines Tickers im Datumsbereich (R1c)")
+    ap.add_argument("--von", help="Reparatur: erstes Datum (einschliesslich)")
+    ap.add_argument("--bis", help="Reparatur: letztes Datum (einschliesslich)")
+    ap.add_argument("--schreiben", action="store_true", help="Reparatur: schreiben (sonst Trockenlauf mit Bericht)")
+    ap.add_argument("--freigabe-datei", help="Reparatur: Bericht des Trockenlaufs, gegen den geschrieben wird")
     args = ap.parse_args()
 
-    if not HISTORIE.exists():
-        print("FEHLER: %s fehlt" % HISTORIE)
+    if args.reparatur:
+        return reparatur(args)
+
+    try:
+        plan = history_lesen(HISTORIE)
+    except HistorieDefekt as e:
+        print("FEHLER: %s" % e)
         return 1
-    hist = json.loads(HISTORIE.read_text(encoding="utf-8"))
     print("Historie: %d Ticker, %d Punkte"
-          % (len(hist), sum(len(v) for v in hist.values() if isinstance(v, list))))
+          % (len(plan), sum(len(v) for v in plan.values() if isinstance(v, list))))
 
     nur = None
     if args.ticker:
         nur = {x.strip().upper() for x in args.ticker.split(",") if x.strip()}
         print("nur: %s" % ", ".join(sorted(nur)))
 
-    stat = nachrechnen(hist, nur)
-    invariant_ok = bericht(stat)
+    basis = _neue_stat()
+    rv_je = rv_laden(plan, nur, basis)
 
     if args.dry_run:
+        stat = dict(basis)
+        anwenden(plan, rv_je, stat)
+        bericht(stat)
         print()
         print("--dry-run: nichts geschrieben.")
         return 0
-    if not stat["gesetzt"]:
-        print()
-        print("Kein Wert gesetzt -> nicht geschrieben (eine Datei ohne Grund zu")
-        print("ersetzen ist ein unnoetiges Risiko).")
-        return 1
 
-    # GATE: ein roter Invariant blockiert das Schreiben. Eine Pruefung, die
-    # warnt und dann doch schreibt, ist keine Pruefung — sie verschiebt die
-    # Entscheidung nur auf jemanden, der die Ausgabe vielleicht nicht liest.
-    if not invariant_ok and not args.trotzdem:
+    ergebnis = {}
+
+    def _aendern(h):
+        # Auf dem FRISCHEN Stand anwenden; Gate und Bericht beziehen sich auf genau diese Zeilen.
+        stat = {k: (list(v) if isinstance(v, list) else v) for k, v in basis.items()}
+        anwenden(h, rv_je, stat)
+        ok = bericht(stat)
+        ergebnis["stat"], ergebnis["ok"] = stat, ok
+        if not stat["gesetzt"]:
+            return False
+        # GATE: ein roter Invariant blockiert das Schreiben. Eine Pruefung, die
+        # warnt und dann doch schreibt, ist keine Pruefung — sie verschiebt die
+        # Entscheidung nur auf jemanden, der die Ausgabe vielleicht nicht liest.
+        if not ok and not args.trotzdem:
+            return False
+        return True
+
+    try:
+        geschrieben = history_aktualisieren(HISTORIE, _aendern)
+    except (HistorieDefekt, SperreBelegt) as e:
+        print("ABBRUCH: %s" % e)
+        return 1
+    if geschrieben is None:
         print()
+        if not ergebnis.get("stat", {}).get("gesetzt"):
+            print("Kein Wert gesetzt -> nicht geschrieben (eine Datei ohne Grund zu")
+            print("ersetzen ist ein unnoetiges Risiko).")
+            return 1
         print("NICHT GESCHRIEBEN: der Invariant ist rot (siehe oben).")
         print("Wenn das bewusst in Kauf genommen wird: --trotzdem.")
         return 2
-
-    write_json_atomic(HISTORIE, hist)
     print()
     print("geschrieben: %s" % HISTORIE)
     return 0
