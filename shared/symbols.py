@@ -175,6 +175,27 @@ SYMBOLS = {
         "exchange":     "CBOE",
         "beschreibung": "CBOE Volatility Index — S&P 500 Fear Gauge (30d implizite Vol)",
     },
+    "^VIX9D": {
+        "name":         "VIX9D 9-Tage-Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "CBOE S&P 500 9-Day Volatility Index — kurzfristige implizite Vol (Term-Struktur)",
+    },
+    "^VIX3M": {
+        "name":         "VIX3M 3-Monats-Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "CBOE S&P 500 3-Month Volatility Index (früher VXV) — Term-Struktur VIX/VIX3M",
+    },
+    "^VIX1D": {
+        "name":         "VIX1D 1-Tages-Volatilität",
+        "kategorie":    "Volatility",
+        "währung":      "USD",
+        "exchange":     "CBOE",
+        "beschreibung": "CBOE S&P 500 1-Day Volatility Index — implizite Vol des nächsten Handelstags",
+    },
     "^VXN": {
         "name":         "VXN Nasdaq Volatilität",
         "kategorie":    "Volatility",

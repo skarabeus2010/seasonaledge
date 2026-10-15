@@ -3,7 +3,7 @@ title: "Vol-Regime-Radar: Risk Reversal, IV Rank und IV Percentile lesen lernen"
 seo_title: "Risk Reversal & IV Rank: Vol-Regime-Radar lesen"
 slug: vol-regime-radar-risk-reversal-iv-rank
 date: 2026-09-06
-updated: 2026-10-14
+updated: 2026-10-15
 category: education
 tags: [optionen, risk-reversal, iv-rank, iv-percentile, volatility-skew, vol-regime, implizite-volatilitaet, options-radar]
 description: "Risk Reversal, IV Rank und IV Percentile einfach erklärt: So liest du den Vol-Regime-Radar auf SeasonAlpha und erkennst teure von billiger Vola."
@@ -87,10 +87,10 @@ Aus der Position im Radar lassen sich vier grobe Optionsstrukturen ableiten — 
 |----------|------|------|------------|
 | Oben rechts | teuer | Call-Skew | Call-Prämie verkaufen (Call Credit Spread) |
 | Oben links | teuer | Put-Skew | Put-Prämie verkaufen (Put Credit Spread) |
-| Unten rechts | billig | Call-Skew | Upside kaufen (Call Debit Spread) |
-| Unten links | billig | Put-Skew | Downside kaufen (Put Debit Spread) |
+| Unten rechts | billig | Call-Skew | Downside kaufen (Put Debit Spread) |
+| Unten links | billig | Put-Skew | Upside kaufen (Call Debit Spread) |
 
-Oben verkauft man tendenziell Prämie (Vola ist teuer), unten kauft man sie (Vola ist billig). Links versus rechts sagt, ob die Struktur eher auf der Put- oder Call-Seite ansetzt. Das ist ein Ausgangsraster für die Recherche — kein fertiges Setup.
+Oben verkauft man tendenziell Prämie (Vola ist teuer), unten kauft man sie (Vola ist billig). Links versus rechts sagt, welche Seite **im Vergleich zur eigenen Historie** teurer ist als üblich: rechts die Call-Seite (der Put-Skew ist flacher als sonst), links die Put-Seite. Absolut können die Puts dabei weiter die höhere IV haben — der Rang misst nur die Abweichung vom Gewohnten. Oben wird die gerade ungewöhnlich teure Seite verkauft, unten die ungewöhnlich günstige gekauft; das ist bewusst eine konträre Lesart, keine Aussage über die künftige Richtung. Das ist ein Ausgangsraster für die Recherche — kein fertiges Setup.
 
 ## Rank und Percentile im direkten Vergleich
 

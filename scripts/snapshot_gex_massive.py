@@ -31,6 +31,7 @@ import time
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -41,6 +42,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from shared.env_loader import load_env  # noqa: E402
+from shared.yahoo_downloader import _fetch_yahoo  # noqa: E402
 from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
 load_env()
 # GEX-Engine (Black-Scholes-Greeks + Aggregation) — unverändert wiederverwendet.
@@ -61,9 +63,6 @@ _MIN_CONTRACTS = 20       # darunter ist der Snapshot kaputt (Fetch-Fehler), nic
 _IV_LO, _IV_HI = 0.01, 5.0  # Polygon liefert für Deep-ITM/OTM Müll-IV (~0.0004) → verwerfen
 _Q = 0.0                  # Dividendenrendite: bei ≤45d-Horizont für Gamma/GEX/Walls vernachlässigbar
 
-# Tagesbalken der SESSION, nicht /prev: was „Vortag“ ist, hängt von der Uhrzeit des Abrufs ab (vor Mitternacht UTC
-# kann /prev noch die Session davor liefern). Die Session wird einmal bestimmt und überall verwendet (Plan v4 B2).
-_AGG = "https://api.polygon.io/v2/aggs/ticker/{sym}/range/1/day/{s}/{s}?adjusted=true"
 _SNAP = "https://api.polygon.io/v3/snapshot/options/{sym}?expiration_date.lte={hi}&limit=250"
 
 
@@ -83,24 +82,61 @@ def _get(url: str, key: str, tries: int = 5):
     return None
 
 
+_NY = ZoneInfo("America/New_York")
+
+
+def _sessionschluss(session: date) -> datetime:
+    """Regulärer Schluss der NYSE-Session als zeitzonenbewusster Zeitpunkt: 16:00 New York, an einem belegten Halbtag
+    die Schlusszeit aus dem Kalender. Halbtag unbekannt → 16:00 (strenger; an einem echten Halbtag fiele der Ticker
+    dann aus, statt einen ungeprüften Kurs zu nehmen)."""
+    from shared.sitzungen import sitzung_info
+    info = sitzung_info(session, "NYSE")
+    hh, mm = 16, 0
+    if info.get("halbtag") is True and info.get("schlusszeit"):
+        hh, mm = (int(x) for x in str(info["schlusszeit"]).split(":")[:2])
+    return datetime(session.year, session.month, session.day, hh, mm, tzinfo=_NY)
+
+
 def _spot(sym: str, key: str, session: date) -> float | None:
-    """Schlusskurs des Underlyings AN der Session (passt zum EOD-Open-Interest der Chain). Ein Balken eines anderen
-    Tages wird verworfen, nicht verwendet."""
+    """UNBEREINIGTER Schlusskurs des Underlyings an der Session (Strike-Basis), mit Nachweis, dass die Session beendet ist.
+
+    Quelle: Yahoo-Chart (5 Tage, Tagesbalken), Feld `close` — nicht `adjclose`. Abgerufen wird zur Laufzeit, und ein
+    Schreiblauf startet erst nach `pruefe_eod_fenster` (Börse zu). Nachweis: `regularMarketTime` (letzter regulärer
+    Handel) liegt AM ODER NACH dem regulären Schluss der Session (16:00 New York, an einem Halbtag die Schlusszeit
+    aus dem Börsenkalender, shared.sitzungen.sitzung_info). Ein Handel nur am Vormittag (Handelsstopp) oder eine
+    stehengebliebene Intraday-Antwort besteht das nicht — der Ticker fällt dann bewusst aus. Fehlt der Balken der
+    Session oder ist sein Schluss ungültig → kein Spot.
+
+    WARUM nicht Massive: `/prev` liefert vor Mitternacht New York die Session DAVOR (der Lauf vom 14.10. 01:21 UTC
+    rechnete die Chain der Session 13.10. mit dem Schluss vom 12.10.), der Tagesbalken der Session ist in unserem Abo
+    bis dahin gesperrt (HTTP 403 für alle 20 Ticker am 15.10. 00:30 UTC). WARUM nicht Supabase: der Intraday-Lauf
+    schreibt `close` unter demselben Schlüssel auch während des Handels, ein Wert mit Sessiondatum beweist keinen
+    Schlusskurs (Codex 2026-10-15). `key` bleibt in der Signatur, damit die Aufrufer unverändert bleiben."""
+    d = _fetch_yahoo(sym, {"range": "5d", "interval": "1d"}, 15)
+    if not d:
+        print(f"  [spot] {sym}: Yahoo ohne Antwort", flush=True)
+        return None
     try:
-        d = _get(_AGG.format(sym=sym, s=session.isoformat()), key)
-    except Exception as e:
-        print(f"  [massive] {sym} Spot: {str(e)[:80]}", flush=True)
+        res = d["chart"]["result"][0]
+        ts = res.get("timestamp") or []
+        closes = (res["indicators"]["quote"][0] or {}).get("close") or []
+        rmt = (res.get("meta") or {}).get("regularMarketTime")
+    except (KeyError, IndexError, TypeError):
+        print(f"  [spot] {sym}: Yahoo-Antwort unvollständig", flush=True)
         return None
-    res = (d or {}).get("results") or []
-    if not res:
+    schluss = _sessionschluss(session)
+    if not isinstance(rmt, (int, float)) or datetime.fromtimestamp(rmt, tz=timezone.utc) < schluss:
+        print(f"  [spot] {sym}: letzter regulärer Handel "
+              f"{datetime.fromtimestamp(rmt, tz=timezone.utc).astimezone(_NY) if isinstance(rmt, (int, float)) else '—'}"
+              f" vor dem Sessionschluss {schluss.astimezone(_NY)} — kein Nachweis, verworfen", flush=True)
         return None
-    t = res[0].get("t")
-    tag = datetime.fromtimestamp(t / 1000, tz=timezone.utc).date() if t else None
-    if tag != session:
-        print(f"  [massive] {sym} Spot: Balken vom {tag}, erwartet {session} — verworfen", flush=True)
-        return None
-    c = res[0].get("c")
-    return float(c) if c else None
+    for t, c in zip(ts, closes):
+        if datetime.fromtimestamp(t, tz=timezone.utc).astimezone(_NY).date() == session:
+            if c is None or not (c > 0):
+                break
+            return float(c)
+    print(f"  [spot] {sym}: kein Tagesbalken der Session {session} — verworfen", flush=True)
+    return None
 
 
 def _fetch_chain(sym: str, hi_days: int, key: str, session: date) -> list:

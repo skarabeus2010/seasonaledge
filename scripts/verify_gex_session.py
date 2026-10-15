@@ -113,13 +113,6 @@ class _Netz:
 
     def __call__(self, url, key, tries=5):
         self.abrufe.append(url)
-        if "/v2/aggs/" in url:
-            sym = url.split("/ticker/")[1].split("/")[0]
-            tag = date.fromisoformat(url.split("/range/1/day/")[1].split("/")[0])
-            if sym in self.falsch:
-                tag = tag - timedelta(days=1)
-            t = int(datetime(tag.year, tag.month, tag.day, 4, 0, tzinfo=timezone.utc).timestamp() * 1000)
-            return {"status": "OK", "results": [{"c": 700.0, "t": t}]}
         if "/v3/snapshot/options/" in url:
             return {"status": "OK", "results": _kette(), "next_url": None}
         raise AssertionError("unerwarteter Abruf " + url)
@@ -148,10 +141,45 @@ print("== snapshot_gex_massive")
 import snapshot_gex_massive as gm                                        # noqa: E402
 
 gm.gc = types.SimpleNamespace(collect=lambda: 0)
+_FALSCHER_TAG = set()                       # Ticker ohne Tagesbalken der Session (für ganze Läufe)
+_ART = {}                                   # Ticker -> Sonderfall der Yahoo-Antwort (siehe _yahoo)
+
+
+def _yahoo(sym, params, timeout, session=None):
+    """Attrappe für shared.yahoo_downloader._fetch_yahoo. Normalfall: Tagesbalken (09:30 New York) bis zur Session,
+    close 700 / adjclose 700, regularMarketTime = Sessionschluss 16:00. Sonderfälle über _ART[sym]:
+      kein_balken      Reihe endet am Vortag              vor_session  letzter Handel am Vortag 16:00
+      intraday         letzter Handel Sessiontag 14:00    rmt_fehlt    kein regularMarketTime
+      folgetag         Balken S+1 mit close 999, letzter Handel S+1 10:00 (Spot muss der Sessionbalken sein)
+      close_ungueltig  close der Session None             bereinigt    adjclose 690 (Spot muss close 700 sein)
+      halbtag_13       letzter Handel 13:00 (für einen Halbtag richtig, sonst zu früh)"""
+    ny = ZoneInfo("America/New_York")
+    s = session or S
+    art = _ART.get(sym, "")
+    ende = s - timedelta(days=1) if (sym in _FALSCHER_TAG or art == "kein_balken") else s
+    tage = [s - timedelta(days=k) for k in range(6, -1, -1) if s - timedelta(days=k) <= ende]
+    closes = [700.0] * len(tage)
+    if art == "folgetag":
+        tage.append(s + timedelta(days=1)); closes.append(999.0)
+    if art == "close_ungueltig":
+        closes[-1] = None
+    ts = [int(datetime(t.year, t.month, t.day, 9, 30, tzinfo=ny).timestamp()) for t in tage]
+    zeit = {"vor_session": (s - timedelta(days=1), 16, 0), "intraday": (s, 14, 0),
+            "folgetag": (s + timedelta(days=1), 10, 0), "halbtag_13": (s, 13, 0)}.get(art, (s, 16, 0))
+    rmt = int(datetime(zeit[0].year, zeit[0].month, zeit[0].day, zeit[1], zeit[2], tzinfo=ny).timestamp())
+    meta = {} if art == "rmt_fehlt" else {"regularMarketTime": rmt}
+    adj = [(690.0 if art == "bereinigt" else c) for c in closes]
+    return {"chart": {"result": [{"meta": meta, "timestamp": ts,
+                                  "indicators": {"quote": [{"close": closes}], "adjclose": [{"adjclose": adj}]}}]}}
+
+
+gm._fetch_yahoo = _yahoo
 
 
 def _gex_lauf(name, jetzt, *argv, netz=None):
     netz = netz or _Netz()
+    _FALSCHER_TAG.clear()
+    _FALSCHER_TAG.update(netz.falsch)
     gm._get = netz
     gm._DATA = _ordner(name)
     _uhr(jetzt)
@@ -197,8 +225,24 @@ rc, d, netz = _gex_lauf("gex_handel_lesend", HANDELSZEIT, "--no-write")
 pruef("Handelszeit lesend (--no-write) erlaubt, schreibt nichts", rc == 0 and netz.abrufe and not _alle(d), f"rc {rc}")
 rc, d, netz = _gex_lauf("gex_falsch", NACH_MITTERNACHT, netz=_Netz(falscher_tag={"QQQ"}))
 s = json.loads((d / "gex_summary.json").read_text()) if (d / "gex_summary.json").exists() else {}
-pruef("Spot-Balken eines anderen Tages verworfen (QQQ fehlt)", "QQQ" in s.get("failed", [])
+pruef("kein Tagesbalken der Session -> Ticker verworfen (QQQ fehlt)", "QQQ" in s.get("failed", [])
       and "QQQ" not in [t["ticker"] for t in s.get("tickers", [])], s.get("failed"))
+
+print("  -- _spot: Nachweis des Sessionschlusses")
+for art, soll in [("", 700.0), ("bereinigt", 700.0), ("folgetag", 700.0), ("kein_balken", None),
+                  ("vor_session", None), ("intraday", None), ("rmt_fehlt", None), ("close_ungueltig", None),
+                  ("halbtag_13", None)]:
+    _ART.clear(); _ART["X"] = art
+    ist = _ruhig(gm._spot, "X", "k", S)
+    pruef(f"Spot bei {art or 'Normalfall'} -> {soll}", ist == soll, ist)
+_HT = date(2026, 11, 27)                    # Tag nach Thanksgiving, NYSE-Halbtag 13:00 (belegt)
+gm._fetch_yahoo = lambda sym, p, t: _yahoo(sym, p, t, session=_HT)
+_ART.clear(); _ART["X"] = "halbtag_13"
+pruef("Halbtag: letzter Handel 13:00 gilt als Schluss", _ruhig(gm._spot, "X", "k", _HT) == 700.0)
+_ART["X"] = "intraday"
+pruef("Halbtag: letzter Handel 14:00 (nach dem Schluss) ebenfalls gültig", _ruhig(gm._spot, "X", "k", _HT) == 700.0)
+gm._fetch_yahoo = _yahoo
+_ART.clear()
 
 # ── 2. compute_key_levels ─────────────────────────────────────────────────────────────────────────────────────────
 print("== compute_key_levels")

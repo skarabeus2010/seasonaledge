@@ -401,7 +401,9 @@
         [50,96,'Expensive',20,800,'rgba(255,255,255,.32)'],[50,4,'Cheap',20,800,'rgba(255,255,255,.32)'],
         [7,50,'Bullish',20,800,'rgba(48,232,120,.5)'],[93,50,'Bearish',20,800,'rgba(255,77,94,.5)'],
         [18,94,'Sell Put Spread',12,800,'rgba(48,232,120,.62)'],[18,9,'Buy Call Spread',12,800,'rgba(48,232,120,.62)'],
-        [82,94,'Buy Put Spread',12,800,'rgba(255,77,94,.62)'],[82,9,'Sell Call Spread',12,800,'rgba(255,77,94,.62)'],
+        // Rechts = bearish. Oben teure Vola -> Praemie VERKAUFEN (Sell Call Spread), unten billige -> KAUFEN (Buy Put
+        // Spread). Bis 2026-10-15 waren die beiden rechten Felder vertauscht (Nutzerhinweis).
+        [82,94,'Sell Call Spread',12,800,'rgba(255,77,94,.62)'],[82,9,'Buy Put Spread',12,800,'rgba(255,77,94,.62)'],
         [25,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[25,63,'Upside Potential',12,600,'rgba(255,255,255,.30)'],
         [75,70,'Expensive Volatility',12,600,'rgba(255,255,255,.30)'],[75,63,'Downside Potential',12,600,'rgba(255,255,255,.30)'],
         [25,33,'Cheap Volatility',12,600,'rgba(255,255,255,.30)'],[25,26,'Upside Potential',12,600,'rgba(255,255,255,.30)'],

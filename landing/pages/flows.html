@@ -688,8 +688,10 @@
             // Strategie-Wasserzeichen je Quadrant (halbtransparent): oben=Prämie verkaufen, unten=kaufen
             {x:25,y:78,marker:{size:0},label:{text:'Sell Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.34)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
             {x:75,y:78,marker:{size:0},label:{text:'Sell Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.34)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
-            {x:25,y:22,marker:{size:0},label:{text:'Buy Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
-            {x:75,y:22,marker:{size:0},label:{text:'Buy Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}}
+            // Unten (billige Vola) wird die GUENSTIGE Seite gekauft: links sind die Puts teuer -> Calls kaufen, rechts
+            // die Calls -> Puts kaufen. Bis 2026-10-15 stand hier die teure Seite (Nutzerhinweis, gleiche Lesart wie /skew).
+            {x:25,y:22,marker:{size:0},label:{text:'Buy Call Spread',borderWidth:0,style:{background:'transparent',color:'rgba(48,232,120,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}},
+            {x:75,y:22,marker:{size:0},label:{text:'Buy Put Spread',borderWidth:0,style:{background:'transparent',color:'rgba(255,77,94,.30)',fontSize:'13px',fontWeight:800,fontFamily:'DM Sans'}}}
           ]
         },
         tooltip:{theme:'dark',custom:function(o){var p=o.w.config.series[0].data[o.dataPointIndex];

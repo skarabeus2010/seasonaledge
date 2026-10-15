@@ -4,7 +4,7 @@ seo_title: "Risk Reversal & IV Rank: Reading the Vol Regime Radar"
 slug: vol-regime-radar-risk-reversal-iv-rank
 de_slug: vol-regime-radar-risk-reversal-iv-rank
 date: 2026-09-06
-updated: 2026-10-14
+updated: 2026-10-15
 category: education
 tags: [options, risk-reversal, iv-rank, iv-percentile, volatility-skew, vol-regime, implied-volatility, options-radar]
 description: "Risk reversal, IV rank and IV percentile made simple: read the SeasonAlpha vol regime radar and tell expensive volatility from cheap."
@@ -88,10 +88,10 @@ The position in the radar maps to four broad option structures — as framing, n
 |----------|-----|------|-------|
 | Top right | expensive | call skew | sell call premium (call credit spread) |
 | Top left | expensive | put skew | sell put premium (put credit spread) |
-| Bottom right | cheap | call skew | buy upside (call debit spread) |
-| Bottom left | cheap | put skew | buy downside (put debit spread) |
+| Bottom right | cheap | call skew | buy downside (put debit spread) |
+| Bottom left | cheap | put skew | buy upside (call debit spread) |
 
-At the top you tend to sell premium (vol is expensive), at the bottom you buy it (vol is cheap). Left versus right tells you whether the structure sits on the put or call side. It is a starting grid for research — not a finished setup.
+At the top you tend to sell premium (vol is expensive), at the bottom you buy it (vol is cheap). Left versus right tells you which side is pricier than usual **relative to its own history**: on the right the call side (put skew flatter than normal), on the left the put side. In absolute terms puts can still carry the higher IV — the rank only measures the deviation from what is normal. At the top you sell the side that is unusually expensive, at the bottom you buy the side that is unusually cheap; this is a deliberately contrarian reading, not a statement about future direction. It is a starting grid for research — not a finished setup.
 
 ## Rank and percentile side by side
 

@@ -134,6 +134,9 @@ jobs:
         run: python3 scripts/verify_skew_historie_sperre.py --streng
       # GEX/Key Levels/IV-Surface: Session als Stempel UND Bewertungsdatum, EOD-Schutz vor dem ersten Abruf, Key Levels
       # nur mit GEX derselben Session, Health-Frische in Sessions. Netz/Uhr als Attrappe.
+      # Radar-Quadranten (/skew, /flows, Blog): oben die teure Skew-Seite verkaufen, unten die guenstige kaufen.
+      - name: Waechter - Radar-Quadranten
+        run: python3 scripts/verify_radar_quadranten.py
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |
