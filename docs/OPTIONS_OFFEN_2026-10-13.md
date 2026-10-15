@@ -28,8 +28,20 @@ Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan
 - [x] **B2 Session als Stempel und Bewertungsdatum** (2026-10-14, `326bcc8`, Code R2 FREIGABE): GEX, Key Levels,
       IV-Surface, pc_ratio; Archiv `gex_history_session/`; Health-Frische in Sessions; Seiten /key-levels und
       /dealer-positioning. Wächter `verify_gex_session.py` im Gate (Mutation 25/25).
-- [ ] **B2 beobachten (15.10. morgens):** erster GEX-Lauf 22:15 UTC — Tagesbalken der Session verfügbar? (sonst Lauf rot
-      → später starten), Datei `gex_history_session/2026-10-14.json`, Health „Options: GEX-Ketten“ grün.
+- [x] **B2 erster Lauf (15.10. 00:30 UTC) kontrolliert gescheitert:** Massive sperrt den Tagesbalken der Session bis
+      Mitternacht New York (HTTP 403); der alte `/prev`-Abruf gab bis 13.10. die Session davor (GEX mit einem um eine
+      Session veralteten Spot). Behoben (`bb70906`/`d8c1115`, Codex 4 Runden): unbereinigter Yahoo-Schluss, Nachweis
+      `regularMarketTime` ≥ regulärer Sessionschluss.
+- [ ] **GEX beobachten (16.10. morgens):** Lauf der Session 15.10. — `gex_history_session/2026-10-15.json`, Health
+      „Options: GEX-Ketten“ grün, `key_levels.json` `gex_status: ok`.
+- [x] **Radar-Quadranten einheitlich** (15.10., Nutzerhinweis + Entscheidung „Richtung + Vola“): /skew, /flows, Blog DE/EN;
+      Wächter `verify_radar_quadranten.py` im Gate.
+- [x] **^VIX9D, ^VIX3M, ^VIX1D onboarded** (15.10.; 3970/5095/874 Zeilen). Abgleich gegen Cboe-CSV: VIX9D 51 von 3968
+      gemeinsamen Tagen > 0,01 abweichend, VIX3M 9 von 4294, VIX1D 1 von 873. Yahoo führt VIX3M 2006–2009 zusätzlich
+      (Vorläufer VXV, nicht in der amtlichen Datei), Cboe VIX1D 05/2022–04/2023 zusätzlich. Für Studien: VIX3M erst ab
+      09/2009 als amtlich behandeln.
+- [ ] **FlashAlpha-Abgleich 15.10.:** Vanna mit umgekehrtem Vorzeichen (FA −27,7 Mrd, wir +3,7 Mrd) — Definitionsfrage
+      (Dealer-Annahme/Einheit), mit FA-Methodenbeschreibung klären.
 - [ ] **B3 Rang im Cron** (Plan frei): `shared/skew_rang.py`, `rang[ticker][W]` im Snapshot, /skew und Mail lesen nur
       noch das, JS-Referenz nach Spezifikation, Wirkungsbericht Radar alt/neu. Geschätzt 4–5 h.
 - [ ] **Folgeposten:** Renditen aus Schlusskursen in Mail-Kursanzeigen (`daily_report.py` ~244/~422), Sektor-Monat
