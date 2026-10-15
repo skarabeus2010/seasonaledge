@@ -1,4 +1,15 @@
-# Optionen — offene Aufgaben (Stand 2026-10-13, Fortsetzung 2026-10-14)
+# Optionen — offene Aufgaben (Stand 2026-10-15)
+
+## Morgen (16.10.) — Reihenfolge
+1. **GEX-Lauf der Session 15.10. prüfen** (GitHub-Cron 22:15 UTC, real ~00:30): `gh run list --workflow gex_snapshot.yml`,
+   auf dem Server `landing/data/gex_summary.json` (`session`/`stempel_art`), `gex_history_session/2026-10-15.json`,
+   `key_levels.json` (`session`, `gex_status: ok`); Health-Mail: „Options: GEX-Ketten“ grün, „Kursbasis“ gelb mit ETHA
+   (erwartet bis ~14.11.).
+2. **B3 Skew-Rang im Cron** (Plan v3/v4 frei): `shared/skew_rang.py`, `rang` im Snapshot, /skew und Mail lesen nur das,
+   JS-Referenz nach Spezifikation, Wirkungsbericht Radar alt/neu; dazu IV/RV-Verhältnis und neutrale Extremlisten.
+3. Vanna-Vorzeichen gegen FlashAlpha (Methode nachlesen, nichts ändern ohne Beleg).
+4. Folgeposten (unten).
+
 
 ## A. Skew-Ausreißer (Radar /skew) — läuft mit Codex
 Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan_v2, phase0 + je `_antwort`).

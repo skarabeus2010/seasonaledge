@@ -954,3 +954,47 @@ gesichert (`/opt/seasonaledge/logs/ketten_2026-09-24/`) und alle Varianten darau
 
 **Offen:** q = 0 bei Dividendenzahlern auf lange Laufzeit (TLT) — Term-Punkte fehlen; erster Live-Lauf
 prüfen (CLAUDE.md-TODO).
+
+## Sofortreparaturen (2026-10-14/15)
+
+Anlass: Abgleich mit SpotGammas „Opening Setup“ ([Plan](OPENING_SETUP_PLAN.md)); Planung mit Codex in vier Runden
+([v4](review_prompts/2026-10-14_options_sofortreparaturen_plan_v4.md)), je Paket Code-Review bis Freigabe. Offene
+Liste: [OPTIONS_OFFEN_2026-10-13.md](OPTIONS_OFFEN_2026-10-13.md).
+
+**Renditen aus `log_return` (Paket A).** RV, VRP-Nachrechnung und Intermarket bilden Renditen aus dem gespeicherten
+`log_return` (`shared.data.lade_kurse` → `(daten, closes, returns)` zeilentreu; `shared.realized_vol.rv_reihe_aus_returns`),
+der Spot bleibt der Rohschluss. Grund: ETHA 30.09., Schluss 20,28 → 60,36 bei `log_return` −0,79 % (Basiswechsel ×3);
+aus Schlusskursen RV 380,7 %. Prüfung `shared/basisabweichung.py` + Health-Check 7 „Kursbasis“ (gelb, repariert nichts;
+grün nur, wenn jedes Paar verglichen wurde). Wirkung: [Bericht](review_prompts/2026-10-14_options_paket_a_wirkung.md).
+
+**Schreibsperre der Skew-History (B1).** `shared.atomic_json.history_aktualisieren(pfad, aendern, danach=…)`:
+`flock` auf `logs/sperre/skew_historie.lock`, unter der Sperre frisch lesen (fehlt/unlesbar → Abbruch, nie `{}`),
+ändern, atomar schreiben, `danach` noch unter der Sperre. Options-Cron: History, dann Snapshot, beide unter der Sperre.
+Massive-Backfill: rechnen ohne Sperre, `anwenden` je Ticker auf dem frischen Stand. VRP-Nachrechnung: RV laden ohne
+Sperre, Felder unter der Sperre. **Reparaturmodus** `backfill_skew_vrp.py --reparatur --ticker T --von --bis`:
+Trockenlauf schreibt nur `logs/reparatur/vrp_<T>_…json`; `--schreiben --freigabe-datei <Bericht>` vergleicht unter der
+Sperre den frisch gebildeten Diff vollständig mit dem Bericht, ändert nur `vrp_pts`, Zeilen über ihre Position.
+Angewandt für ETHA 07.–13.10. (−333 → 1,3–3,0). `skew_repair_runner.sh` mountet `logs` (sonst eigene Sperrdatei).
+
+**Session als Stempel und Bewertungsdatum (B2).** `snapshot_gex_massive`, `compute_key_levels`, `compute_iv_surface`
+bestimmen die Session einmal (`letzte_session`), prüfen vor dem ersten Abruf `pruefe_eod_fenster`, rechnen DTE und
+Horizont ab der Session; GEX verwirft Kontrakte mit Verfall ≤ Session (vorher abhängig von der Startzeit des Crons).
+Archiv `landing/data/gex_history_session/<Session>.json`; der alte Ordner `gex_history/` trägt Lauftage (meist eine
+Session zu spät) und bleibt unverändert. Key Levels übernehmen Spot/Flip/Walls nur von GEX derselben Session
+(`gex_status`). Health „Options: GEX-Ketten“ in Sessions. Seiten: /key-levels kopiert die Session, /dealer-positioning
+zeigt nur Profile derselben Session.
+
+**GEX-Spot.** Unbereinigter Yahoo-Schluss der Session (`close`, nicht `adjclose`), zur Laufzeit nach Börsenschluss
+abgerufen, Nachweis `meta.regularMarketTime` ≥ regulärer Sessionschluss (16:00 New York, Halbtag laut
+`shared.sitzungen.sitzung_info`); sonst fällt der Ticker aus. Nicht Massive: `/prev` liefert vor Mitternacht New York
+die Session davor (GEX rechnete bis 13.10. mit einem um eine Session veralteten Spot), der Tagesbalken der Session ist
+in unserem Abo bis dahin gesperrt (403). Nicht Supabase: der Intraday-Lauf schreibt `close` unter demselben Schlüssel.
+
+**Radar-Quadranten.** X-Achse = Rang von `call_iv − put_iv` relativ zur eigenen Historie (rechts: Call-Seite teurer als
+üblich). Oben (teure Vola) die ungewöhnlich teure Seite verkaufen, unten die ungewöhnlich günstige kaufen: oben links
+Sell Put Spread, oben rechts Sell Call Spread, unten links Buy Call Spread, unten rechts Buy Put Spread — auf /skew,
+/flows und im Blogartikel DE/EN. Wächter `scripts/verify_radar_quadranten.py`.
+
+**Abgleich FlashAlpha 15.10.** (Live 10:02 ET gegen unsere Session 14.10.): Flip 770,64 / 773,61, Put-Wall 765 / 765,
+IV 12,8 / 13,3 %, RV 10,3 / 10,2 %, Contango beidseitig; NetGEX gleiches Vorzeichen, Faktor 1,8 (Umfang ≤ 45 Tage);
+**Vanna mit umgekehrtem Vorzeichen** (−27,7 / +3,7 Mrd) — Definitionsfrage, offen.
