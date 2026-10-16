@@ -1,15 +1,20 @@
-# Optionen — offene Aufgaben (Stand 2026-10-15)
+# Optionen — offene Aufgaben (Stand 2026-10-16)
 
-## Morgen (16.10.) — Reihenfolge
-1. **GEX-Lauf der Session 15.10. prüfen** (GitHub-Cron 22:15 UTC, real ~00:30): `gh run list --workflow gex_snapshot.yml`,
-   auf dem Server `landing/data/gex_summary.json` (`session`/`stempel_art`), `gex_history_session/2026-10-15.json`,
-   `key_levels.json` (`session`, `gex_status: ok`); Health-Mail: „Options: GEX-Ketten“ grün, „Kursbasis“ gelb mit ETHA
-   (erwartet bis ~14.11.).
-2. **B3 Skew-Rang im Cron** (Plan v3/v4 frei): `shared/skew_rang.py`, `rang` im Snapshot, /skew und Mail lesen nur das,
-   JS-Referenz nach Spezifikation, Wirkungsbericht Radar alt/neu; dazu IV/RV-Verhältnis und neutrale Extremlisten.
-3. Vanna-Vorzeichen gegen FlashAlpha (Methode nachlesen, nichts ändern ohne Beleg).
-4. Folgeposten (unten).
+## Nächster Tag (17.10.) — Reihenfolge
+1. **GEX-Abendproblem auswerten:** Proben `/root/yahoo_abend/*.json` (16.10. 20:30/22:15, 17.10. 00:15/00:45/02:00/04:30
+   UTC) — was liefert Yahoo am Abend für den Tagesbalken der Session (fehlt er, `close` None, anderer Zeitstempel)?
+   Dann die Spot-Regel festlegen (mit Codex). Bis dahin: Nachlauf `sa-gexnachlauf-1017` (17.10. 08:00 UTC) schreibt GEX
+   + Key Levels der Session 16.10., Log `/root/gex_nachlauf.log`. GEX-Lauf vom 16.10. 00:21 UTC: alle 20 Ticker „kein
+   Tagesbalken der Session“; Session 15.10. per Hand am 16.10. 07:45 UTC nachgeholt (20/20, Key Levels ok).
+2. **B3a prüfen:** erster Options-Cron mit Rang (17.10. ~01:00 UTC) — `options_skew.json` hat `rang_session = session`,
+   `rang` mit ~150 Tickern, keine `[rang]`-Meldungen im Workflow-Log; /skew Radar + Spalten gefüllt; Morgen-Mail
+   (Mo 19.10.) zeigt P-Werte.
+3. **B3b planen:** IV/RV-Verhältnis + neutrale Extremlisten (Plan an Codex).
+4. Vanna-Vorzeichen gegen FlashAlpha; Folgeposten (unten).
 
+- [x] **B3a Skew-Rang im Cron** (16.10., Codex Code R2 FREIGABE; [Wirkung](review_prompts/2026-10-16_options_b3a_wirkung.md)):
+      `shared/skew_rang.py` = `scripts/js/skew_rang_ref.js`, /skew und Mail lesen nur `rang`; Wächter `verify_skew_rang.py`
+      im Gate, Mutation 22/22. Percentile-Radar ±1–2 Punkte, Mail-Perzentil Median 1 / max 11.
 
 ## A. Skew-Ausreißer (Radar /skew) — läuft mit Codex
 Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan_v2, phase0 + je `_antwort`).
