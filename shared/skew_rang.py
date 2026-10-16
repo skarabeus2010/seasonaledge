@@ -19,6 +19,17 @@ Vertrag je Ticker, Session S, Fenster W ∈ FENSTER (Kalendertage):
   * Rank = round((x_S − min)/(max − min)·100), max = min → 50; Percentile = round(#{x_i < x_S, i vor S}/(n − 1)·100);
     round = halb nach oben (floor(v + 0.5)) wie JS-Math.round.
 Ausgabe: {metrik: {n, rank, pctl, wert}} bzw. zeta: {n, cz: {rank, pctl, wert}, pz: {…}}; fehlende Metrik → Schlüssel fehlt.
+
+B3b (Plan docs/review_prompts/2026-10-16_options_b3b_plan_v2.md, Codex-Freigabe R2):
+  * Metrik ivrv = iv_atm / rv_1m (`ivrv_wert`): nur Zeilen mit GESPEICHERTEM rv_1m (Live-Zeilen ab 16.10.), keine
+    Rückrechnung aus vrp_pts. iv_atm > 0, rv_1m ≥ 0,01.
+  * Je Metrik zusätzlich (rr, iv, skew, ivrv): `neu_rand` = "hoch"/"tief", wenn x_S strikt über max bzw. unter min der
+    Vorwerte liegt (Gleichstand ist kein Rand); `vorher_datum` = Datum des letzten gültigen Werts vor S;
+    `sprung` = true, wenn |x_S − x_vorher| > SPRUNG_FAKTOR · Median(|d|) über alle Änderungen zwischen
+    aufeinanderfolgenden gültigen Beobachtungen des Fensters EINSCHLIESSLICH der aktuellen (n ≥ 20 ⇒ ≥ 19
+    Änderungen); Median 0 → `sprung_beurteilbar: false`. Nur ein Hinweis, keine kalibrierte Ausreißererkennung.
+  * `rang_status_gesamt`: je Ticker/Fenster/Metrik ohne Rang {n, status ∈ zu_kurz | kein_wert}, bei Duplikaten
+    {"*": {"status": "gesperrt"}}. `rang` selbst bleibt unverändert vollständig (Leser von B3a unberührt).
 Die unabhängige JS-Referenz für den Zwillingstest steht in scripts/js/skew_rang_ref.js.
 """
 from __future__ import annotations
@@ -28,6 +39,9 @@ from datetime import date, timedelta
 
 FENSTER = (92, 183, 365)
 MIN_NORM = 20
+SPRUNG_FAKTOR = 5.0
+RV_MIN = 0.01
+METRIKEN = ("rr", "iv", "skew", "ivrv")
 NORMIERT = ("cm", "cm_extrap")
 
 
@@ -55,6 +69,19 @@ def _diff(a, b, faktor=1.0):
     return (a - b) * faktor if gueltig(a) and gueltig(b) else None
 
 
+def ivrv_wert(iv_atm, rv_1m):
+    """IV/RV-Verhältnis (ATM-IV 30 Kalendertage / realisierte Vola 21 Handelstage) oder None."""
+    if not (gueltig(iv_atm) and gueltig(rv_1m)) or iv_atm <= 0 or rv_1m < RV_MIN:
+        return None
+    return iv_atm / rv_1m
+
+
+def _median(xs: list) -> float:
+    s = sorted(xs)
+    m = len(s) // 2
+    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
+
+
 def datum_gueltig(d) -> bool:
     """Genau `YYYY-MM-DD` und ein echtes Kalenderdatum."""
     if not isinstance(d, str) or len(d) != 10 or d[4] != "-" or d[7] != "-":
@@ -68,6 +95,17 @@ def datum_gueltig(d) -> bool:
 def _normiert(arr: list, session: str) -> list:
     return [e for e in arr or [] if isinstance(e, dict) and datum_gueltig(e.get("date"))
             and e.get("cm_mode") in NORMIERT and e["date"] <= session]
+
+
+def _doppelt(alle: list) -> bool:
+    """Ein doppeltes Datum unter den normierten Zeilen bis S sperrt den GANZEN Ticker (Rang und Status)."""
+    return len({e["date"] for e in alle}) != len(alle)
+
+
+def _im_fenster(alle: list, session: str, fenster: int) -> list:
+    """Zeilen mit S − W ≤ date (≤ S schon durch _normiert), nach Datum sortiert — EINE Regel für Rang und Status."""
+    ab = (date.fromisoformat(session) - timedelta(days=fenster)).isoformat()
+    return sorted((e for e in alle if ab <= e["date"]), key=lambda e: e["date"])
 
 
 def pruefe_ticker(arr: list, session: str) -> list[str]:
@@ -89,7 +127,7 @@ def _werte(e: dict) -> dict:
     cz = e.get("call_zeta_pts") if gueltig(e.get("call_zeta_pts")) else _diff(ci, atm, 100.0)
     pz = e.get("put_zeta_pts") if gueltig(e.get("put_zeta_pts")) else _diff(pi, atm, 100.0)
     return {"rr": _diff(ci, pi), "iv": (ci + pi) / 2 if gueltig(ci) and gueltig(pi) else None,
-            "skew": e.get("skew_pts"), "cz": cz, "pz": pz}
+            "skew": e.get("skew_pts"), "cz": cz, "pz": pz, "ivrv": ivrv_wert(atm, e.get("rv_1m"))}
 
 
 def _einzeln(reihe: list) -> dict | None:
@@ -98,26 +136,82 @@ def _einzeln(reihe: list) -> dict | None:
     return {"n": len(werte), "rank": _rank(werte), "pctl": _pctl(werte), "wert": werte[-1]}
 
 
+def _zusatz(reihe: list) -> dict:
+    """neu_rand, vorher_datum, sprung bzw. sprung_beurteilbar für eine rankbare Reihe (n ≥ MIN_NORM)."""
+    werte = [w for _, w in reihe]
+    letzt, vor = werte[-1], werte[:-1]
+    aus = {"vorher_datum": reihe[-2][0]}
+    if letzt > max(vor):
+        aus["neu_rand"] = "hoch"
+    elif letzt < min(vor):
+        aus["neu_rand"] = "tief"
+    aend = [abs(b - a) for a, b in zip(werte, werte[1:])]
+    med = _median(aend)
+    if med == 0:
+        aus["sprung_beurteilbar"] = False
+    elif aend[-1] > SPRUNG_FAKTOR * med:
+        aus["sprung"] = True
+    return aus
+
+
 def rang_ticker(arr: list, session: str, fenster: int) -> dict | None:
     """Rang je Metrik für EIN Fenster. None bei doppelten Daten; {} wenn keine Metrik die Bedingungen erfüllt."""
-    ab = (date.fromisoformat(session) - timedelta(days=fenster)).isoformat()
     alle = _normiert(arr, session)
-    if len({e["date"] for e in alle}) != len(alle):
+    if _doppelt(alle):
         return None
-    zeilen = sorted((e for e in alle if ab <= e["date"]), key=lambda e: e["date"])
+    zeilen = _im_fenster(alle, session, fenster)
     daten = [e["date"] for e in zeilen]
     w = [(d, _werte(e)) for d, e in zip(daten, zeilen)]
     aus = {}
-    for m in ("rr", "iv", "skew"):
+    for m in METRIKEN:
         reihe = [(d, v[m]) for d, v in w if gueltig(v[m])]
         if reihe and reihe[-1][0] == session and len(reihe) >= MIN_NORM:
             aus[m] = _einzeln(reihe)
+            aus[m].update(_zusatz(reihe))
     paare = [(d, v["cz"], v["pz"]) for d, v in w if gueltig(v["cz"]) and gueltig(v["pz"])]
     if paare and paare[-1][0] == session and len(paare) >= MIN_NORM:
         cz, pz = _einzeln([(d, c) for d, c, _ in paare]), _einzeln([(d, p) for d, _, p in paare])
         aus["zeta"] = {"n": len(paare), "cz": {k: cz[k] for k in ("rank", "pctl", "wert")},
                        "pz": {k: pz[k] for k in ("rank", "pctl", "wert")}}
     return aus
+
+
+def status_ticker(arr: list, session: str, fenster: int) -> dict:
+    """Verfügbarkeit je Metrik OHNE Rang für EIN Fenster: {metrik: {n, status}}; Duplikat → {"*": {status: gesperrt}}.
+    zu_kurz = Wert an S vorhanden, aber n < MIN_NORM; kein_wert = kein gültiger Wert an S (n = gültige davor)."""
+    alle = _normiert(arr, session)
+    if _doppelt(alle):
+        return {"*": {"status": "gesperrt"}}
+    if not alle:
+        return {}
+    zeilen = _im_fenster(alle, session, fenster)
+    w = [(e["date"], _werte(e)) for e in zeilen]
+    aus = {}
+    for m in METRIKEN:
+        reihe = [(d, v[m]) for d, v in w if gueltig(v[m])]
+        if reihe and reihe[-1][0] == session:
+            if len(reihe) < MIN_NORM:
+                aus[m] = {"n": len(reihe), "status": "zu_kurz"}
+        else:
+            aus[m] = {"n": len(reihe), "status": "kein_wert"}
+    return aus
+
+
+def rang_status_gesamt(hist: dict, session: str) -> dict:
+    """{ticker: {"92": {...}, …}} — nur Fenster mit mindestens einer Metrik ohne Rang; Ticker ohne normierte Zeile
+    fehlen."""
+    out = {}
+    for t, arr in (hist or {}).items():
+        if t.startswith("__") or not isinstance(arr, list):
+            continue
+        je = {}
+        for f in FENSTER:
+            s = status_ticker(arr, session, f)
+            if s:
+                je[str(f)] = s
+        if je:
+            out[t] = je
+    return out
 
 
 def rang_gesamt(hist: dict, session: str, meldungen: list | None = None) -> dict:

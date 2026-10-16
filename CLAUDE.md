@@ -435,11 +435,12 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [x] Paket A, B1, B2, GEX-Spot, ETHA-VRP-Reparatur, Radar-Quadranten, ^VIX9D/^VIX3M/^VIX1D (2026-10-14/15, v66.20).
 - [ ] **16.10. morgens:** GEX-Lauf der Session 15.10. prüfen — `gex_history_session/2026-10-15.json`, Health „Options:
       GEX-Ketten“ grün, `key_levels.json` mit `gex_status: ok`; Morgen-Mail und Health-Check „Kursbasis“ ansehen.
-- [ ] **B3** (Plan frei): Skew-Rang einmal im Cron (`shared/skew_rang.py`), /skew und Mail lesen nur noch das; dazu
-      IV/RV-Verhältnis und neutrale Extremlisten (Nutzerwunsch 15.10.). Schätzung 4–5 h.
+- [x] **B3a** Skew-Rang im Cron (16.10.) · **B3b** IV/RV + neutrale Extremlisten (16.10., Codex-Freigabe) ·
+      Folgeposten Health in Sessions + Mail-Kursreihe (16.10., `eb4af33`).
+- [ ] ETHA-Altkurse auf die neue Basis bringen (Nutzerentscheidung, DB-Write); Forex-`log_return` an Wochenenden und in
+      der Intraday-Zeile prüfen (Liste in docs/OPTIONS_OFFEN_2026-10-13.md).
 - [ ] Vanna-Vorzeichen gegen FlashAlpha klären (FA −27,7 Mrd, wir +3,7 Mrd am 15.10.) — Definitionsfrage.
-- [ ] Folgeposten: Renditen aus Schlusskursen in Mail-Kursanzeigen/Sektor-Monat/Vol-Control-Proxy; Kalenderseite mit
-      `earnings_events.report_date`; Health meldet ausgefallenen Options-Cron erst nach drei Tagen.
+- [ ] Folgeposten: Kalenderseite mit `earnings_events.report_date` (Quartalsende statt Termin).
 - [ ] Opening-Setup Stufe 3 „Vola-Lage“ (VIX9D/VIX3M/VIX1D jetzt in der DB), SPX-Gamma über `I:SPX`, Kontext-Tags ohne
       Earnings (SpotGamma-Glossar-Abgleich 15.10., [docs/OPENING_SETUP_PLAN.md](docs/OPENING_SETUP_PLAN.md)).
 

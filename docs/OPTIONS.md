@@ -998,3 +998,19 @@ Sell Put Spread, oben rechts Sell Call Spread, unten links Buy Call Spread, unte
 **Abgleich FlashAlpha 15.10.** (Live 10:02 ET gegen unsere Session 14.10.): Flip 770,64 / 773,61, Put-Wall 765 / 765,
 IV 12,8 / 13,3 %, RV 10,3 / 10,2 %, Contango beidseitig; NetGEX gleiches Vorzeichen, Faktor 1,8 (Umfang ≤ 45 Tage);
 **Vanna mit umgekehrtem Vorzeichen** (−27,7 / +3,7 Mrd) — Definitionsfrage, offen.
+
+**Skew-Rang im Cron (B3a, 16.10.).** `shared/skew_rang.py` (= `scripts/js/skew_rang_ref.js`) rechnet Rang und
+Percentile je Ticker, Fenster (92/183/365 Kalendertage ab der Session) und Metrik einmal im Cron; `options_skew.json`
+trägt `rang` + `rang_session`. /skew und die Morgen-Mail lesen nur das, und nur wenn `rang_session = session`.
+
+**IV/RV und Extremlisten (B3b, 16.10., Codex Plan R2 / Code R2 FREIGABE).** `ivrv = cm_iv_atm / rv_1m` (30-Tage-ATM-IV
+der eigenen Inversion durch RV 21 HT), nur an rankbaren Tagen (cm/cm_extrap), `rv_1m ≥ 0,01`. Die History speichert
+`rv_1m` ab dem Cron vom 17.10.; der IV/RV-Rang zählt nur Zeilen mit gespeichertem `rv_1m` (keine Rückrechnung aus dem
+gerundeten `vrp_pts`) und erscheint ab 20 gültigen Beobachtungen. Je Metrik zusätzlich `neu_rand` (strikt über max /
+unter min der Vorwerte), `vorher_datum` (letzter gültiger Wert) und `sprung` (|Änderung| > 5 · Median der Änderungen
+zwischen aufeinanderfolgenden gültigen Beobachtungen einschließlich der aktuellen; Median 0 → `sprung_beurteilbar:
+false`) — ein Hinweis, keine kalibrierte Ausreißererkennung. `rang_status` nennt für jede Metrik ohne Rang den Grund
+(`zu_kurz`, `kein_wert`, `gesperrt`). /skew: Spalte IV/RV und Block „Am Rand der eigenen Historie“ (je Metrik höchste /
+niedrigste 8 nach Percentile, die tiefe Liste ohne Ticker der hohen, markiert statt ausgeblendet, kein Signal).
+Live 15.10.: Sprungmarken Skew/RR 11 · 5 · 6 von 150 (3 M · 6 M · 1 J), neuer Rand 15 · 6 · 2.
+Wächter `verify_skew_rang.py`, Mutation 44/44.

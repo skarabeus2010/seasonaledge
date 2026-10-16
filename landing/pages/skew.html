@@ -116,6 +116,7 @@
       </div>
       <div id="sk-quad" style="min-height:470px"></div>
       <div class="psub" id="sk-quad-legend" style="margin-top:.6rem;line-height:1.5"></div>
+      <div id="sk-extrem" style="margin-top:1.1rem"></div>
       <p class="note" data-i18n-html="skew.disp_hint">Liegen <b>Indizes</b> (SPY/QQQ) und die <b>Einzelwerte</b> in verschiedenen Feldern, ist der Markt uneinig: die Indexoptionen preisen etwas anderes als die Einzeltitel. Das ist die klassische <b>Dispersion</b> &mdash; und passt zu einer niedrigen impliziten Korrelation in den KPIs oben. Umgekehrt bedeutet ein enger Pulk gleichlaufende Titel und hohe Korrelation. Reine Beschreibung der Optionspreisung, <b>kein Signal</b>.</p>
     </div>
 
@@ -238,6 +239,7 @@
     // Fenster ab der Uhr des Lesers — und die Morgen-Mail anders; beide zeigten verschiedene Zahlen.
     // rang_session ≠ session (Datei halb erneuert) → kein Rang, Felder bleiben leer.
     var SKEW_RANG=null;
+    var SKEW_STATUS=null;   // rang_status (B3b): je Ticker/Fenster/Metrik ohne Rang {n, status}
     function _rangOf(tk){ var r=SKEW_RANG&&SKEW_RANG[tk]; return r?(r[String(SKEW_WIN)]||null):null; }
     function _pick(m){ return m?(SKEW_MODE==='pctl'?m.pctl:m.rank):null; }
     function _metricLbl(){ return SKEW_MODE==='pctl'?'IV-Pctl':'IV-Rank'; }
@@ -261,7 +263,7 @@
         el.innerHTML=SKEW_MODE==='pctl'?T('skew.quad_sub_pctl','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Percentile</span> &times; <span style="color:var(--accent)">IV-Percentile</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%'):T('skew.quad_sub','<b>Vol-Regime-Radar</b> &mdash; <b>Richtung</b> (X: Call- vs. Put-Nachfrage) &times; <b>Vola-Niveau</b> (Y)<br><span style="color:var(--accent)">Risk-Reversal-Rank</span> &times; <span style="color:var(--accent)">IV-Rank</span>, je Ticker relativ zur eigenen Historie &middot; Fadenkreuz = 50%');
       }
     }
-    function refreshRankViews(){ _updateQuadSub(); renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);} }
+    function refreshRankViews(){ _updateQuadSub(); renderSkewQuad(); if(VT_DATA)renderVolTrigger(); if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR); renderExtrem();} }
     function buildSkewWinBtns(){
       var box=document.getElementById('sk-win'); if(box){
         box.innerHTML=SKEW_WINS.map(function(w){return _btn(w.d,w.lbl,w.d===SKEW_WIN);}).join('');
@@ -518,8 +520,83 @@
     var TH_BFLY="Mittelwert aus 25-Delta-Put-IV und 25-Delta-Call-IV, minus die ATM-IV. Misst, wie stark sich das Vola-Lächeln zu beiden Rändern hin hebt, also wie teuer die Flügel gegenüber dem Geld sind. Ein hoher Wert heisst: der Markt bezahlt grosse Sprünge in beide Richtungen.";
     var TH_PC="Verhältnis der impliziten Vola des 25-Delta-Puts zu der des 25-Delta-Calls. Über 1 heisst: der Put ist der teurere der beiden. Nicht zu verwechseln mit der Put-Call-Ratio aus Volumen oder Open Interest — hier stehen Preise, nicht Stückzahlen.";
     var TH_VRP="Volatilitäts-Risikoprämie: implizite ATM-Vola minus der tatsächlich realisierten Vola der letzten 21 Handelstage. Positiv heisst: Optionen waren teurer als die eingetretene Schwankung — der übliche Zustand, weil Verkäufer für das Risiko bezahlt werden wollen. Negativ heisst: der Markt hat stärker geschwankt als eingepreist war.";
+    var TH_IVRV="IV/RV: annualisierte ATM-IV für 30 Kalendertage geteilt durch die annualisierte realisierte Volatilität der vergangenen 21 Handelstage. Über 1 heisst: Optionen preisen mehr Schwankung ein, als zuletzt eingetreten ist. Ein Verhältnis, keine Richtung.";
     var TH_EM="Rechnerische 1-Sigma-Bewegung bis zum 30-Tage-Verfall, aus der ATM-IV. Ein Betrag ohne Richtung — nach oben wie nach unten gleich weit. Gemessen 1990-2026 hielt dieses Band in 84 % der Fälle statt in den rechnerischen 68 %, ist also systematisch zu weit. Details in den Fragen unten.";
     var TH_TERM="Vergleich der ATM-Vola über die Laufzeiten. Contango: kurze Laufzeiten billiger als lange, der ruhige Normalfall. Backwardation: kurze teurer als lange — akuter Stress oder ein naher Termin.";
+    // Rang-Text je Ticker und Metrik: Rang/Percentile + n, sonst der Grund aus rang_status (B3b).
+    function _statusOf(tk,m){
+      var s=SKEW_STATUS&&SKEW_STATUS[tk]; s=s?s[String(SKEW_WIN)]:null; if(!s)return null;
+      return s['*']||s[m]||null;
+    }
+    function _rangText(tk,m){
+      var r=_rangOf(tk), x=r?r[m]:null;
+      if(x) return 'Rank '+x.rank+' · Percentile '+x.pctl+' · n = '+x.n;
+      var s=_statusOf(tk,m); if(!s) return '';
+      if(s.status==='zu_kurz') return T('skew.st_kurz','Rang ab 20 gültigen Beobachtungen (n = {n})').replace('{n}',s.n);
+      if(s.status==='kein_wert') return T('skew.st_kein','kein Wert zur Session');
+      if(s.status==='gesperrt') return T('skew.st_gesperrt','Historie gesperrt (Prüfung)');
+      return '';
+    }
+    // ── Am Rand der eigenen Historie (B3b): je Metrik die höchsten/niedrigsten 8 nach Percentile im Fenster ──
+    // Sortiert IMMER nach Percentile (der Rank/Percentile-Schalter ändert die Listen nicht), Gleichstand nach Ticker;
+    // die tiefe Liste nimmt nie einen Ticker der hohen. Fragwürdige Tage werden markiert, nicht ausgeblendet.
+    var EXTREM_N=8;
+    function _extremFmt(m,w){
+      if(w==null||w!==w) return '—';
+      if(m==='ivrv') return (+w).toFixed(2)+'×';
+      if(m==='skew') return (w>0?'+':'')+(+w).toFixed(2)+' pts';
+      var p=w*100; return (m==='rr'&&p>0?'+':'')+p.toFixed(1)+(m==='rr'?' pts':' %');
+    }
+    function _extremListen(m){
+      var k=[];
+      Object.keys(SKEW_RANG||{}).forEach(function(tk){
+        if(!_inCat(tk))return; var r=_rangOf(tk), x=r?r[m]:null; if(x&&x.pctl!=null) k.push({tk:tk,x:x});
+      });
+      var hoch=k.slice().sort(function(a,b){return (b.x.pctl-a.x.pctl)||(a.tk<b.tk?-1:a.tk>b.tk?1:0);}).slice(0,EXTREM_N);
+      var drin={}; hoch.forEach(function(e){drin[e.tk]=1;});
+      var tief=k.filter(function(e){return !drin[e.tk];})
+        .sort(function(a,b){return (a.x.pctl-b.x.pctl)||(a.tk<b.tk?-1:a.tk>b.tk?1:0);}).slice(0,EXTREM_N);
+      return {hoch:hoch,tief:tief,n:k.length};
+    }
+    function _extremZeile(m,e){
+      var x=e.x, mark='';
+      if(x.neu_rand==='hoch') mark+=' <span class="sk-mark" title="'+T('skew.ex_neu_hoch','neues Hoch im Fenster')+'">▲ '+T('skew.ex_neu_hoch','neues Hoch im Fenster')+'</span>';
+      if(x.neu_rand==='tief') mark+=' <span class="sk-mark">▼ '+T('skew.ex_neu_tief','neues Tief im Fenster')+'</span>';
+      if(x.sprung) mark+=' <span class="sk-mark sk-warn">'+T('skew.ex_sprung','Sprung zum letzten gültigen Wert ({d}) — Messung prüfen').replace('{d}',x.vorher_datum||'—')+'</span>';
+      return '<tr data-tk="'+e.tk+'"><td style="padding:4px 8px;font-family:monospace;font-weight:700;color:'+ACC+'">'+e.tk+'</td>'+
+        '<td style="padding:4px 8px;text-align:right">'+_extremFmt(m,x.wert)+'</td>'+
+        '<td style="padding:4px 8px;text-align:right;color:var(--accent)">P'+x.pctl+'</td>'+
+        '<td style="padding:4px 8px;text-align:right;color:var(--muted)">n '+x.n+'</td>'+
+        '<td style="padding:4px 8px;font-size:.82rem;color:var(--muted)">'+mark+'</td></tr>';
+    }
+    function renderExtrem(){
+      var box=document.getElementById('sk-extrem'); if(!box)return;
+      if(!SKEW_RANG){box.innerHTML='';return;}
+      var M=[['iv',T('skew.ex_iv','IV der 25Δ-Flügel (Mittel)')],['skew',T('skew.ex_skew','25Δ-Skew')],
+             ['rr',T('skew.ex_rr','Risk Reversal (Call − Put)')],['ivrv',T('skew.ex_ivrv','IV/RV (ATM-IV / realisierte Vola)')]];
+      var h='<div class="psub" style="margin-bottom:.4rem"><b>'+T('skew.ex_titel','Am Rand der eigenen Historie')+'</b> &middot; '+
+        T('skew.ex_hinweis','Relative Lage in der eigenen Historie des gewählten Fensters — Spitzenlisten, kein Signal.')+
+        ' &middot; '+T('skew.ex_stand','Datenstand Session')+' '+(SKEW_SESSION||'—')+'</div>'+
+        '<div class="sk-extrem-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:.9rem">';
+      M.forEach(function(p){
+        var L=_extremListen(p[0]);
+        h+='<div class="panel" style="padding:.7rem .8rem"><div class="psub" style="font-weight:700">'+p[1]+'</div>';
+        if(!L.n){
+          h+='<div class="psub" style="color:var(--muted);font-weight:400">'+(p[0]==='ivrv'
+            ?T('skew.ex_aufbau','Rang im Aufbau — noch kein Ticker mit 20 gültigen Beobachtungen.')
+            :T('skew.ex_leer','Für diese Auswahl liegt kein Rang vor.'))+'</div></div>';
+          return;
+        }
+        [['hoch',T('skew.ex_hoch','höchste Lage')],['tief',T('skew.ex_tief','niedrigste Lage')]].forEach(function(s){
+          h+='<div style="font-size:.8rem;color:var(--muted);margin:.4rem 0 .15rem">'+s[1]+'</div><table class="sk-tbl sk-ex" data-m="'+p[0]+'" data-s="'+s[0]+'">';
+          L[s[0]].forEach(function(e){h+=_extremZeile(p[0],e);});
+          h+='</table>';
+        });
+        h+='</div>';
+      });
+      box.innerHTML=h+'</div>';
+      box.querySelectorAll('tr[data-tk]').forEach(function(r){r.onclick=function(){selectTicker(r.getAttribute('data-tk'));};});
+    }
     // Metrik-Tabelle je Ticker als Heatmap (IV-Rank/Pctl abhängig von Fenster/Methode)
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
@@ -534,7 +611,7 @@
       function ext(fn){var vs=rows.map(fn).filter(function(v){return v!=null&&v===v;});return vs.length?{lo:Math.min.apply(null,vs),hi:Math.max.apply(null,vs)}:{lo:0,hi:1};}
       var E={iv:ext(function(t){return t.iv_atm!=null?t.iv_atm*100:null;}),rk:ext(function(t){return ivm[t.ticker];}),
              sk:ext(function(t){return t.skew_pts;}),skr:ext(function(t){return skm[t.ticker];}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
-             bf:ext(function(t){return t.bfly_pts;}),pc:ext(function(t){return t.pc_ratio;}),vr:ext(function(t){return t.vrp_pts;}),em:ext(function(t){return t.em_pct;})};
+             bf:ext(function(t){return t.bfly_pts;}),pc:ext(function(t){return t.pc_ratio;}),vr:ext(function(t){return t.vrp_pts;}),ir:ext(function(t){return t.ivrv;}),em:ext(function(t){return t.em_pct;})};
       // NE-Skew mit tatsaechlicher Laufzeit; ein Ersatzverfall (der naechste war
       // nicht auswertbar) wird mit * markiert — Codex-Entwurfspruefung: Ersatz nur
       // zulaessig, wenn er sichtbar ist.
@@ -554,6 +631,11 @@
         if(t.skew_ne_richtung_unsicher) z=z.replace(/(>)([+-]?[0-9.]+)(<\/td>)/,'$1≈$2$3');
         return t.skew_ne_ersatz?z.replace('</td>','<sup>*</sup></td>'):z;
       }
+      // IV/RV mit Rang/Percentile und n im Tooltip; ohne Rang der Grund aus rang_status (B3b).
+      function ivrvZelle(t){
+        var z=hc(t.ivrv,2,'×',E.ir), tip=_rangText(t.ticker,'ivrv');
+        return tip?z.replace('<td ','<td title="'+tip.replace(/"/g,'&quot;')+'" '):z;
+      }
       function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
         return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
           (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
@@ -571,6 +653,7 @@
         th('Butterfly','skew.th_bfly',TH_BFLY)+
         th('P/C','skew.th_pc',TH_PC)+
         th('VRP','skew.th_vrp',TH_VRP)+
+        th('IV/RV','skew.th_ivrv',TH_IVRV)+
         th('Exp.Move','skew.th_em',TH_EM)+
         th('Term','skew.th_term',TH_TERM)+'</tr>';
       rows.forEach(function(t){
@@ -586,6 +669,7 @@
           hc(t.bfly_pts,2,'pts',E.bf)+
           hc(t.pc_ratio,2,'',E.pc)+
           hc(t.vrp_pts,1,'pts',E.vr)+
+          ivrvZelle(t)+
           hc(t.em_pct,1,'%',E.em)+
           '<td style="padding:6px 9px;text-align:right">'+termB+'</td></tr>';
       });
@@ -646,6 +730,7 @@
       SKEW_CUR=tks;
       SKEW_SESSION=d.session||null;
       SKEW_RANG=(d.rang&&d.rang_session&&d.rang_session===d.session)?d.rang:null;
+      SKEW_STATUS=(SKEW_RANG&&d.rang_status)?d.rang_status:null;   // nur mit Rang derselben Session
       SKEW_CATMAP={}; tks.forEach(function(t){SKEW_CATMAP[t.ticker]=t.cats||[];});
       SKEW_CATS=d.categories||[];
       if(!SKEW_CATS.length) SKEW_CAT='Alle';                       // Altdaten ohne Kategorien → alles zeigen
@@ -657,6 +742,7 @@
       renderVRP(tks);
       renderSkewTable(tks);   // Rang-Spalten kommen aus dem Snapshot, ohne auf die History zu warten
       renderSkewQuad();
+      renderExtrem();
       document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure aus der US-Optionskette · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
       // Historie nur noch für die Verlaufs-/Detailansicht des gewählten Tickers (Radar und Rang-Spalten kommen aus dem
       // Snapshot). Scheitert sie, bleibt der Radar stehen.
@@ -697,7 +783,7 @@
       _updateQuadSub(); buildSkewWinBtns();
       if(SKEW_CUR)renderSkewQuad();
       if(VT_DATA)renderVolTrigger();
-      if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);}
+      if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR); renderExtrem();}
     });
     if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
   }();

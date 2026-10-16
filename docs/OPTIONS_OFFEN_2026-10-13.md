@@ -9,9 +9,20 @@
 2. **B3a prüfen:** erster Options-Cron mit Rang (17.10. ~01:00 UTC) — `options_skew.json` hat `rang_session = session`,
    `rang` mit ~150 Tickern, keine `[rang]`-Meldungen im Workflow-Log; /skew Radar + Spalten gefüllt; Morgen-Mail
    (Mo 19.10.) zeigt P-Werte.
-3. **B3b planen:** IV/RV-Verhältnis + neutrale Extremlisten (Plan an Codex).
+3. **B3b prüfen:** erster Cron mit B3b (17.10. ~01:00 UTC) — History-Zeilen tragen `rv_1m`, Snapshot `ivrv` und
+   `rang_status`; /skew zeigt Spalte IV/RV (Rang „im Aufbau“) und den Block „Am Rand der eigenen Historie“.
 4. Vanna-Vorzeichen gegen FlashAlpha; Folgeposten (unten).
 
+- [x] **B3b IV/RV + neutrale Extremlisten** (16.10., Codex Plan R2 + Code R2 FREIGABE): IV/RV-Wert sofort, Rang ab 20
+      Zeilen mit gespeichertem `rv_1m`; neu_rand/sprung/vorher_datum je Metrik, `rang_status`; /skew Spalte + Block.
+      Mutation 44/44. [Plan v2](review_prompts/2026-10-16_options_b3b_plan_v2.md)
+- [x] **Folgeposten** (16.10., `eb4af33`, Codex R2 FREIGABE): Health-Check Options-Frische in Sessions (Ausfall am
+      nächsten Morgen gelb statt nach drei Tagen); Morgen-Mail-Kursreihe mit Gesamtordnung (vorher 16 von 10 567 Zeilen
+      doppelt/fehlend) und Schnitt hinter dem jüngsten Kurs/Return-Widerspruch (nur ETHA betroffen).
+- [ ] **ETHA-Altkurse auf die neue Basis** (×3 vor dem 30.09.) — DB-Schreibvorgang, **Nutzerentscheidung**; bis dahin
+      hat ETHA in der Mail nur 12 Zeilen (zu kurz für RSI/LBR).
+- [ ] **Forex-Daten:** Wochenendzeilen mit kopiertem `log_return`; die Intraday-Zeile des Tages spannt zwei Tage
+      (AUDUSD 16.10.: log_return −0,21 % gegen Kursverhältnis +0,61 %). Eigener Datenfehler, nicht behoben.
 - [x] **B3a Skew-Rang im Cron** (16.10., Codex Code R2 FREIGABE; [Wirkung](review_prompts/2026-10-16_options_b3a_wirkung.md)):
       `shared/skew_rang.py` = `scripts/js/skew_rang_ref.js`, /skew und Mail lesen nur `rang`; Wächter `verify_skew_rang.py`
       im Gate, Mutation 22/22. Percentile-Radar ±1–2 Punkte, Mail-Perzentil Median 1 / max 11.

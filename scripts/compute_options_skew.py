@@ -32,7 +32,7 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day, letzte_session, MarktOffen, pruefe_eod_fenster   # noqa: E402
 from shared.atomic_json import write_json_atomic, history_aktualisieren  # noqa: E402
-from shared.skew_rang import rang_gesamt                              # noqa: E402
+from shared.skew_rang import ivrv_wert, rang_gesamt, rang_status_gesamt  # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_reihen,            # noqa: E402
                                  rv_aus_returns)
 from shared.data import KursreiheFehlt, lade_kurse                    # noqa: E402
@@ -1210,6 +1210,10 @@ def build(tickers: list[str], write: bool = True) -> dict:
     if per:
         print(f"  P/C equity vol {pc_ratio['equity']['vol']} oi {pc_ratio['equity']['oi']} · index vol {pc_ratio['index']['vol']}", flush=True)
 
+    # IV/RV je Ticker (B3b): 30-Tage-ATM-IV der eigenen Inversion / RV 21 HT; nur rankbare Ticker, sonst fehlt der Wert.
+    for t in per:
+        v = ivrv_wert(t.get("cm_iv_atm"), t.get("rv_1m")) if _rankbar(t) else None   # nur cm/cm_extrap, nie single
+        t["ivrv"] = round(v, 4) if v is not None else None
     out = {
         "generated": date.today().isoformat(),      # Laufzeitpunkt (Freshness-Checks)
         "session": session,                          # Handelstag, zu dem die Daten gehören
@@ -1291,6 +1295,12 @@ def build(tickers: list[str], write: bool = True) -> dict:
                                             else fp.get("vrp_pts")),
                                 "pc_ratio": (round(t["cm_put_iv"] / t["cm_call_iv"], 3)
                                              if (cm_ok and t.get("cm_call_iv")) else fp.get("pc_ratio")),
+                                # RV gespeichert (B3b): das IV/RV-Verhältnis der History rechnet nur damit, keine
+                                # Rückrechnung aus dem gerundeten vrp_pts. Nur an rankbaren Tagen (cm/cm_extrap,
+                                # nicht single/noatm — Codex B3b R1).
+                                "rv_1m": (round(t["rv_1m"], 6)
+                                          if (_rankbar(t) and isinstance(t.get("rv_1m"), (int, float))
+                                              and not isinstance(t.get("rv_1m"), bool)) else None),
                                 "bfly_pts": t.get("cm_bfly_pts") if cm_ok else fp.get("bfly_pts"),
                                 "call_zeta_pts": t.get("cm_call_zeta_pts") if cm_ok else fp.get("call_zeta_pts"),
                                 "put_zeta_pts":  t.get("cm_put_zeta_pts") if cm_ok else fp.get("put_zeta_pts")})
@@ -1317,6 +1327,9 @@ def build(tickers: list[str], write: bool = True) -> dict:
             out["rang_session"] = today
             rang_meldungen = []
             out["rang"] = rang_gesamt(hist, today, rang_meldungen)
+            # Verfügbarkeit der Metriken OHNE Rang (zu_kurz/kein_wert/gesperrt, B3b) — eigener Block, `rang` bleibt
+            # unverändert vollständig.
+            out["rang_status"] = rang_status_gesamt(hist, today)
             for m in rang_meldungen:
                 print(f"  [rang] {m}", flush=True)
 
