@@ -215,6 +215,9 @@ lokal → vor dem Push prüfen, dass kein Nicht-Pflicht-Job läuft (Brier So ~08
       02/2015, VIX ab 09/2015, davor weglassen); die 14 Abweichungen aus der V1c-2-Bestandsaufnahme beheben
       (Backtest-Engine ohne Feiertag, Daily „Bis Fr 19.06.“, „Good Friday“ als Grund für Juneteenth u. a.).
 - [ ] **V4** inkl. Umschalter Kalendertag ↔ Handelstag auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch).
+  Dabei die Heuristik „vollständiges Jahr“ des True Seasonal (`jahrVollstaendig` in `shared/true_seasonal.py` +
+  `seasonal-compute.js`: Anfang ≤ Tag 7, Ende ≥ Tag 362, Lücke ≤ 14 Tage) durch die Sitzungsprüfung gegen den
+  Börsenkalender ersetzen ([KERNMETHODIK.md Abschnitt 7](KERNMETHODIK.md#7-williams-true-seasonal-2026-10-16)).
 - [ ] **P3 Nutzerentscheidung:** Liste der veröffentlichten Zahlen, die sich durch die Umstellung ändern (Monthly 10,
       ToM-Artikel, Down-Month-Reversal) vorlegen, bevor gerechnet wird.
 - [ ] **LSE-Halbtage** belegen (Quelle als Archivfassung + Prüfsumme wie NYSE).

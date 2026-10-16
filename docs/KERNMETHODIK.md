@@ -4,7 +4,7 @@
 > KI-Score, jeder Backtest und jede Newsletter-Zahl entsteht aus den hier
 > beschriebenen Funktionen. Ein Fehler hier ist kein lokaler Fehler.
 >
-> Stand: 2026-09-10 nach Review-Welle 1 (PRs #265–#270).
+> Stand: 2026-09-10 nach Review-Welle 1 (PRs #265–#270); Abschnitt 7 Williams True Seasonal: 2026-10-16.
 
 ## 1. Die Regel
 
@@ -465,3 +465,57 @@ angezeigt, das Ergebnis aber auf vier. Die echten Closes sind `92,1786117553711`
 4. Wurde eine der beiden Zwillings-Seiten geändert? → die andere mit ändern
 5. Ändert sich eine serverseitig gerechnete Größe? → abgeleitete Caches neu
    rechnen (`scripts/full_scanner_run.py`)
+6. True Seasonal / Rückblick angefasst? → `py -3.14 scripts/verify_seasonal_twins.py --nur-true-seasonal`,
+   `py -3.14 scripts/verify_true_seasonal_seite.py` und `scripts/verify_twins_mutation.py` (alle Mutationen erkannt)
+
+## 7. Williams True Seasonal (2026-10-16)
+
+> Plan v3 und Code mit Codex je 3 Runden bis Freigabe: [Plan v3](review_prompts/2026-10-16_true_seasonal_plan_v3.md),
+> [Code-Freigabe](review_prompts/2026-10-16_true_seasonal_code_r3_antwort.md). Live seit `7c9bc8b`.
+
+**Quelle:** Larry Williams, *Larry Williams Indicators* (LNL Publishing 2020, S. 15): die Saisonkurve eines Jahres
+nur aus Daten, die bis dahin bekannt waren, „then pushed forward on charts for the next year“. Andere Saisonstudien
+enthalten für 2010 auch 2011–2013. Seine genaue Skalierung ist nicht veröffentlicht — gerechnet wird sein Prinzip auf
+unserer Normierung (Abschnitt 1).
+
+### Warum es das gibt
+Probe QQQ/SPY/DAX (16.10., Größenordnung): Korrelation der zwölf Monatsänderungen mit dem tatsächlichen Jahr, nur
+aus Vorjahren **0,02–0,08**, mit dem Zieljahr in der eigenen Kurve **0,29–0,33**. Die Kurve auf /jahreszyklus
+beschreibt die Vergangenheit gut; als Beleg, dass das Muster trägt, taugt sie nicht — das Zieljahr steckt zu einem
+Zehntel in seiner eigenen Kurve. Für die Zukunft rechnen beide gleich (es gibt keine Zukunftsdaten).
+
+### Regeln (eine Rechnung: `shared/true_seasonal.py` = `SA.seasonal` in `landing/js/seasonal-compute.js`)
+- **Vollständiges Jahr (Heuristik bis Kalender-V4):** vergangenes Jahr, erste Kurszeile ≤ Kalendertag 7, letzte
+  ≥ Tag 362 (frühestes Jahresende aller Kalender), kein Abstand zweier Kurszeilen > 14 Kalendertage. TSE 2019
+  (11 Tage Thronwechsel) zählt, Jahre mit langen Schließungen (NYSE 1914) fallen vorsorglich heraus, einzelne
+  fehlende Sitzungen erkennt sie nicht. Geprüft gegen alle 13 Kalender 1990–2030: 0 von 533 Börsenjahren verworfen.
+- **Fenster = Kalenderjahre** [Ziel − N, Ziel − 1], fehlende Jahre werden nicht durch ältere ersetzt; „Max“ = alle
+  Vorjahre (auch vor 1900).
+- **Modellwahl** (`trueSeasonalModell`): Vorjahre → Jahresfilter (`SA.outlier.filterJahre`, Jahresrendite aus
+  `full_365`) nur über diese → Mindestmenge ⌈0,8·N⌉ (Max: 10) **nach** dem Filter. Darunter: sichtbarer Rückfall auf
+  den Durchschnitt (Seite und `/embed` gleich).
+- **Kennzahl im Rückblick:** Änderungen ln(K[e_m]/K[e_{m−1}]) zwischen den Monatsgrenzen der Chart-Achse
+  (31, 59, …, 365; im Schaltjahr gehört der 29.02. zum März-Slot) auf den **ungeglätteten** Kurven; Pearson r (keine
+  Signifikanzaussage), Vorzeichentreffer (0 = kein Treffer) neben „jeden Monat Plus“. Vergleich je Jahr Y: True
+  Seasonal aus [Y − N, Y − 1] gegen die rückblickende Kurve aus [Y − N, Y].
+- **Unabhängig vom Modus:** Pressure, Monats-/Quartalsstatistik, Signifikanz, Zyklus-Match, Heatmap.
+
+### Auf der Seite
+Umschalter „Saisonkurve“ (Standard: Durchschnitt wie bisher — Nutzerentscheidung), gemerkt in
+`sa.jahreszyklus.saison`; die goldene Linie des laufenden Jahres bleibt; Abschnitt „Rückblick“ lädt die volle Historie
+erst beim Aufklappen (eigene Ladekennung, Tickerwechsel verwirft, Fehler wiederholbar); `/embed?saison=true&filter=`.
+**Kein Overlay beider Kurven** (Überlegung 16.10.): für das laufende Jahr liegen sie 0,4–0,6 Punkte auseinander, und
+Bänder/Perzentile gehören immer genau zu einer Jahresmenge. Wenn ein Vergleich, dann im Rückblick je Jahr (Vorschlag:
+Jahresauswahl mit Kurve damals / rückblickend / Ist).
+
+### Was der Review fand (nicht von mir gesehen)
+`year_covers` ließ Teiljahre durch (ein Jahr nur aus Dezemberzeilen galt als vollständig); Monatsrenditen auf der
+365er-Achse sind im Schaltjahr verschoben; gemittelte Monatsrenditen sind nicht das Muster der angezeigten, über
+Kursstände gemittelten Kurve; die Seite mittelt bei „10 Jahre“ elf Kurven; eine Lückenregel von 10 Tagen hätte
+TSE 2019 verworfen; „Max“ schnitt im True-Modus bei 1900 ab; `/embed` ohne Filter und mit anderem Rückfall; eine um
+einen Tag verschobene Monatsgrenze blieb im Wächter grün (→ analytischer Fall mit wörtlichen Grenzen).
+
+### Lessons
+- Eine Mutation kann gleichwertig sein (Filter vorher **und** nachher) — dann den echten Fehlerfall nachbauen.
+- Ein Test, dessen Datenreihe beide Wege gleich lädt, trennt nichts (junge Reihe ab 2022 → Reihe mit Lücken ab 2010).
+- Ein Sollwert aus derselben Konstante wie der Code prüft den Code mit sich selbst.
