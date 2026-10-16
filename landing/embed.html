@@ -46,6 +46,7 @@
 <script src="/landing/js/methode.js"></script>
 <script src="/landing/js/charts.js"></script>
 <script src="/landing/js/seasonal-compute.js"></script>
+<script src="/landing/js/outlier.js"></script>
 <script src="/landing/js/kurse.js"></script>
 <script>
 (function () {
@@ -55,6 +56,8 @@
   var lang = (P.get('lang') || 'de').toLowerCase() === 'en' ? 'en' : 'de';
   // type ist aktuell nur seasonal_yearly — Param fuer spaetere Erweiterung reserviert
   var type = (P.get('type') || 'seasonal_yearly').trim();
+  var saisonTrue = (P.get('saison') || '').trim() === 'true';
+  var filterParam = (P.get('filter') || 'off').trim();   // Jahresfilter wie auf /jahreszyklus (nur True Seasonal)
 
   var MONTH_STARTS = [1,32,60,91,121,152,182,213,244,274,305,335];
   var MONTHS = lang === 'en'
@@ -100,6 +103,35 @@
     var yearData = SA.seasonal.buildYearData(rows);
     var nYears = Object.keys(yearData).length;
     var sa = SA.seasonal.calculateSeasonalAverage(yearData);
+    // saison=true: Williams True Seasonal wie auf /jahreszyklus — dieselbe Modellauswahl (SA.seasonal.trueSeasonalModell:
+    // vollständige Vorjahre im Kalenderfenster [Jahr − N, Jahr − 1], Jahresfilter `filter` nur über diese, Mindestmenge
+    // nach dem Filter). Zu wenige Jahre → wie die Seite: Durchschnitt mit sichtbarem Hinweis im Titel.
+    var tsHinweis = '';
+    if (saisonTrue) {
+      var stJahr = new Date().getFullYear();
+      var fN = yearsParam === 'max' ? null : parseInt(yearsParam, 10);
+      var w = SA.seasonal.trueSeasonalModell(yearData, stJahr, fN,
+        function (roh) { return SA.outlier ? SA.outlier.filterJahre(roh, filterParam) : roh; });
+      if (w.ok) {
+        var tsJ = Object.keys(w.modell).map(Number).sort(function (a, b) { return a - b; });
+        nYears = tsJ.length;
+        sa = { avg: SA.seasonal.mittelKurve(yearData, tsJ).map(function (v) { return Math.round(v * 100) / 100; }) };
+        T.avg = 'True Seasonal';
+      } else {
+        // Rückfall wie /jahreszyklus: Durchschnitt der Jahre im Seitenfenster (≥ Jahr − N, bei Max ≥ 1900) mit demselben
+        // Jahresfilter — nicht der ungefilterte Durchschnitt aller geladenen Jahre (Embed lädt ab Jahr − N − 1).
+        var fen = {};
+        Object.keys(yearData).forEach(function (j) { if (+j >= (fN == null ? 1900 : stJahr - fN)) fen[j] = yearData[j]; });
+        if (SA.outlier) fen = SA.outlier.filterJahre(fen, filterParam);
+        var fj = Object.keys(fen).map(Number).sort(function (a, b) { return a - b; });
+        if (fj.length) {
+          nYears = fj.length;
+          sa = { avg: SA.seasonal.mittelKurve(yearData, fj).map(function (v) { return Math.round(v * 100) / 100; }) };
+        }
+        tsHinweis = lang === 'en' ? ' · True Seasonal n/a (' + w.n + '/' + w.mindest + ' prior years)'
+                                  : ' · True Seasonal nicht verfügbar (' + w.n + '/' + w.mindest + ' Vorjahre)';
+      }
+    }
     if (!sa.avg.length) { showErr(T.few(ticker, rows.length)); return; }
 
     var x = []; for (var i = 1; i <= 365; i++) x.push(i);
@@ -141,7 +173,7 @@
         xaxis: [{ x: doy, borderColor: 'rgba(232,168,32,.6)', strokeDashArray: 3,
                   label: { text: T.today, style: { color: '#0a0a0e', background: 'rgba(232,168,32,.85)', fontSize: '9px' } } }]
       },
-      title: { text: T.title(ticker, nYears), align: 'left',
+      title: { text: T.title(ticker, nYears) + tsHinweis, align: 'left',
                style: { color: '#e6e6ea', fontSize: '13px', fontWeight: 600 } }
     };
     new ApexCharts(document.getElementById('chart'), options).render();

@@ -50,7 +50,13 @@ function kurse(ticker, startJahr) {
   return aus;
 }
 const DATEN = {};
-function daten(t) { return DATEN[t] || (DATEN[t] = kurse(t, t === 'SPY' ? 1993 : 1960)); }
+function daten(t) {
+  if (DATEN[t]) return DATEN[t];
+  // LUECKE (True Seasonal): ab 2010, in 2017–2020 fehlt jeweils der März (Lücke > 14 Tage) → nur 6 vollständige
+  // Vorjahre im 10-Jahres-Fenster; /embed lädt ab 2015, die Seite ab 2016 — der Rückfall muss trotzdem gleich sein.
+  if (t === 'LUECKE') return (DATEN[t] = kurse(t, 2010).filter(x => !(x.date >= '2017' && x.date < '2021' && x.date.slice(5, 7) === '03')));
+  return (DATEN[t] = kurse(t, t === 'SPY' ? 1993 : 1960));
+}
 
 // ── Netz: PostgREST-Nachbau (Range + count=exact UND Keyset) + statische Dateien aus der Wurzel ─────────────────
 const ANFRAGEN = [];
@@ -129,6 +135,7 @@ window.__charts = [];
 window.ApexCharts = function (el, opts) {
   var id = (el && el.id) || (el && el.parentNode && el.parentNode.id) || '?';
   var eintrag = { el: id, series: JSON.stringify(opts && opts.series), updates: [] };
+  if (window.__titelMerken) eintrag.titel = opts && opts.title && opts.title.text;   // nur Embed-True-Seasonal-Fälle
   window.__charts.push(eintrag);
   this.render = function () { return Promise.resolve(); };
   this.updateSeries = function (s) { eintrag.updates.push(JSON.stringify(s)); return Promise.resolve(); };
@@ -183,6 +190,9 @@ const SEITEN = {
   embed: { datei: 'embed.html', adresse: 'https://seasonalpha.ai/embed?ticker=SPY&years=15' }
 };
 const S = SEITEN[SEITE];
+// /embed mit True Seasonal (verify_true_seasonal_seite.py): embed_true = SPY 10 J., embed_true_wenig = LUECKE
+if (S && SEITE === 'embed' && FALL === 'embed_true') S.adresse = 'https://seasonalpha.ai/embed?ticker=SPY&years=10&saison=true';
+if (S && SEITE === 'embed' && FALL === 'embed_true_wenig') S.adresse = 'https://seasonalpha.ai/embed?ticker=LUECKE&years=10&saison=true';
 if (!S) { process.stdout.write(JSON.stringify({ absturz: 'unbekannte Seite ' + SEITE })); process.exit(0); }
 let html = fs.readFileSync(path.join(WURZEL, S.datei), 'utf8')
   .replace('%%SUPABASE_URL%%', 'https://stub').replace('%%SUPABASE_ANON_KEY%%', 'k');
@@ -200,6 +210,9 @@ const dom = new JSDOM(html, {
     }
     window.Date = Uhr;
     window.fetch = netz;
+    // True Seasonal (verify_true_seasonal_seite.py): gemerkter Modus vor dem ersten Skript
+    if (FALL === 'saison_true' || FALL === 'saison_true_neu') { try { window.localStorage.setItem('sa.jahreszyklus.saison', 'true'); } catch (e) {} }
+    if (FALL === 'embed_true' || FALL === 'embed_true_wenig') window.__titelMerken = true;
     window.scrollTo = function () {};
     window.matchMedia = window.matchMedia || function () { return { matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }; };
     window.IntersectionObserver = function () { return { observe() {}, unobserve() {}, disconnect() {} }; };
@@ -290,8 +303,48 @@ function warteRuhe(maxMs) {
     sel.dispatchEvent(new W.Event('change'));
     ruhig = (await warteRuhe(40000)) && ruhig;
   }
+  // ── True Seasonal / Rückblick auf /jahreszyklus (Plan docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md) ──
+  //   rueckblick:          nach dem Start den Rückblick aufklappen (lädt die volle Historie)
+  //   rueckblick_wechsel:  volle Historie von SPY langsam, aufklappen, sofort QQQ wählen — Soll: rueckblick_direkt
+  //   rueckblick_direkt:   QQQ wählen, dann aufklappen
+  //   rueckblick_fehler:   volle Historie scheitert; danach „Erneut laden" ohne Fehler
+  let rbStatusVorher = null;
+  const aufklappen = () => { const s = W.document.getElementById('sec-rueckblick'); s.open = true; s.dispatchEvent(new W.Event('toggle')); };
+  if (FALL === 'rueckblick' || FALL === 'rueckblick_fehler') {
+    if (FALL === 'rueckblick_fehler') FEHLER_VOLL = true;
+    aufklappen();
+    ruhig = (await warteRuhe(60000)) && ruhig;
+    if (FALL === 'rueckblick_fehler') {
+      rbStatusVorher = text('rb-status');
+      FEHLER_VOLL = false;
+      const b = W.document.querySelector('#rb-status button');
+      if (b) b.dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+      ruhig = (await warteRuhe(60000)) && ruhig;
+    }
+  }
+  if (FALL === 'saison_true_neu') {   // Reihe LUECKE: True Seasonal fällt auf den Durchschnitt zurück (Soll für /embed)
+    tickerWahl('LUECKE');
+    ruhig = (await warteRuhe(60000)) && ruhig;
+  }
+  if (FALL === 'rueckblick_wechsel') {
+    LANGSAM.SPY = { ms: 1500, ausser: '2015-01-01' };   // Hauptabruf (ab 2015) schnell, volle Historie langsam
+    aufklappen();
+    await new Promise(r => setTimeout(r, 30));
+    tickerWahl('QQQ');
+    ruhig = (await warteRuhe(60000)) && ruhig;
+    await new Promise(r => setTimeout(r, 2000));
+    ruhig = (await warteRuhe(60000)) && ruhig;
+  }
+  if (FALL === 'rueckblick_direkt') {
+    tickerWahl('QQQ');
+    ruhig = (await warteRuhe(60000)) && ruhig;
+    aufklappen();
+    ruhig = (await warteRuhe(60000)) && ruhig;
+  }
   const inhalt = inhaltText();
   const aus = {
+    rb_status: text('rb-status'), rb_status_vorher: rbStatusVorher, ts_hinweis: text('ts-hinweis'),
+    caption: text('page-caption'), titel: text('title-ticker'),
     seite: SEITE, fall: FALL, ruhig,
     inhalt,
     charts: W.__charts || [],

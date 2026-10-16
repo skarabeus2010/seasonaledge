@@ -686,16 +686,297 @@ def block_zyklus():
            and g["grau"] == 5 and not g["nan"], str(g))
 
 
+def _ts_reihe(jahre, seed, bis=None, weg=None, faktor=None, kaputt=None, sigma=0.011, drift=None):
+    """Kurszeilen Mo–Fr ohne 1.1./25.12.; weg(d) -> Zeile weglassen; faktor{jahr: k} skaliert die Returns eines Jahres;
+    kaputt(d) -> 'nan' (log_return NaN, Closes gültig) oder 'leer' (close und log_return fehlen);
+    drift{jahr: µ} ersetzt den täglichen Mittelwert 0,0004 (gezielte Ausreißerjahre)."""
+    import random
+    from datetime import date, timedelta
+    rnd, rows, close = random.Random(seed), [], 100.0
+    for y in jahre:
+        d = date(y, 1, 1)
+        while d.year == y and (bis is None or d <= bis):
+            if d.weekday() < 5 and (d.month, d.day) not in ((1, 1), (12, 25)) and not (weg and weg(d)):
+                lr = rnd.gauss((drift or {}).get(y, 0.0004), sigma) * ((faktor or {}).get(y, 1.0))
+                close *= math.exp(lr)
+                art = kaputt(d) if kaputt else None
+                rows.append({"date": d.isoformat(),
+                             "close": None if art == "leer" else round(close, 6),
+                             "log_return": None if art == "leer" else (float("nan") if art == "nan" else lr)})
+            d += timedelta(days=1)
+    # Returns an der Jahresgrenze/nach Lücken aus den gerundeten Closes neu, damit Kurs und Return zueinander passen
+    for i in range(1, len(rows)):
+        a, b = rows[i - 1]["close"], rows[i]["close"]
+        if a and b and rows[i]["log_return"] is not None and math.isfinite(rows[i]["log_return"]):
+            rows[i]["log_return"] = math.log(b / a)
+    return rows
+
+
+def _ts_py_yeardata(rows):
+    import pandas as pd
+    from shared.calculations import build_year_data
+    df = pd.DataFrame({"date": pd.to_datetime([r["date"] for r in rows]),
+                       "close": [r["close"] if r["close"] is not None else float("nan") for r in rows],
+                       "log_return": [r["log_return"] if r["log_return"] is not None else float("nan") for r in rows]})
+    df["year"] = df["date"].dt.year
+    df["day_of_year"] = df["date"].dt.dayofyear
+    return build_year_data(df, sorted(df["year"].unique().tolist()))
+
+
+def block_true_seasonal():
+    """
+    Williams True Seasonal (Plan v3, docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md): echter JS-Kern
+    (seasonal-compute.js), Seiten-Builder und Modellauswahl aus jahreszyklus.html gegen shared/true_seasonal.py und
+    gegen fachliche Sollwerte — Heuristik „vollständig“ (TSE-Lücke 11 Tage zulässig, 15 Tage nicht, Jahresende vor
+    Tag 362 nicht, Teiljahre nicht, eine fehlende Sitzung zulässig), Kalenderfenster ohne Ersatz fehlender Jahre,
+    Zieljahr-Unabhängigkeit mit aktivem Ausreißerfilter, Return-Behandlung des Seiten-Builders, Kennzahl.
+    """
+    import json, shutil, subprocess, tempfile
+    from datetime import date
+    from shared import true_seasonal as TS
+    print("\n8. TRUE SEASONAL  (Heuristik vollständig, Fenster, Zieljahr, Rückblick, Seiten-Builder)")
+    if not shutil.which("node"):
+        if "--ohne-node" in sys.argv:
+            print("  [UEBERSPRUNGEN auf ausdrueckliche Anweisung (--ohne-node)]")
+            return
+        _melde("TrueSeasonal", "node ist verfuegbar", False, "node nicht gefunden")
+        return
+
+    def sonder_weg(d):
+        y = d.year
+        return ((y == 2011 and (d.month, d.day) > (12, 27)) or (y == 2012 and d.month < 7) or (y == 2013 and d.month < 12)
+                or (y == 2014 and 1 < d.month < 12) or (y == 2014 and d.month == 1 and d.day > 2)
+                or (y == 2015 and (d.month, d.day) >= (4, 26) and (d.month, d.day) <= (5, 6))
+                or (y == 2016 and d.month == 3 and d.day <= 15)
+                or (y == 2017 and (d.month, d.day) > (12, 22))
+                or (y == 2018 and (d.month, d.day) == (6, 13))
+                or y == 2023)
+
+    def sonder_kaputt(d):
+        if (d.year, d.month, d.day) == (2019, 5, 15):
+            return "nan"
+        if (d.year, d.month, d.day) == (2021, 3, 10):
+            return "leer"
+        return None
+
+    stich = date(2026, 10, 15)
+    faelle = [
+        {"name": "basis", "rows": _ts_reihe(range(2004, 2027), 1, bis=stich), "stichtag": 2026,
+         "fenster": [5, 10, None], "methode": "off", "ts_auftraege": [[2026, 5], [2026, 10], [2026, None]]},
+        {"name": "sonder", "rows": _ts_reihe(range(2010, 2027), 2, bis=stich, weg=sonder_weg, kaputt=sonder_kaputt),
+         "stichtag": 2026, "fenster": [5, 10], "methode": "off", "ts_auftraege": [[2026, 5], [2026, 10]]},
+        {"name": "ziel_a", "rows": _ts_reihe(range(2005, 2023), 3), "stichtag": 2020, "fenster": [10],
+         "methode": "iqr", "ts_auftraege": [[2020, 10], [2021, 10]]},
+        {"name": "ziel_b", "rows": _ts_reihe(range(2005, 2023), 3, faktor={2020: 6.0}), "stichtag": 2020,
+         "fenster": [10], "methode": "iqr", "ts_auftraege": [[2020, 10], [2021, 10]]},
+        # Ausreißerfilter: unter den Vorjahren 2010–2019 sind 2011/2013 (≈ −40 %) und 2015 (≈ +60 %) Ausreißer;
+        # 2020–2022 (≈ +100 %) liegen NACH dem Stichtag und dürfen den Filter nicht beeinflussen.
+        {"name": "filter", "rows": _ts_reihe(range(2008, 2023), 4, sigma=0.004,
+                                             drift={2011: -0.002, 2013: -0.002, 2015: 0.0025, 2020: 0.004,
+                                                    2021: 0.004, 2022: 0.004}),
+         "stichtag": 2020, "fenster": [10], "methode": "iqr", "ts_auftraege": [[2020, 10]]},
+    ]
+    # Schaltjahr-Konvention der Chart-Achse: 2024 (Schaltjahr) bewegt sich nur am 29.02. (Tag 60 → März-Slot),
+    # 2023 nur am 28.02. (Tag 59 → Februar-Slot); alle übrigen Returns 0.
+    def schalt_rows():
+        from datetime import timedelta
+        rows, close = [], 100.0
+        for y in (2022, 2023, 2024, 2025):
+            d = date(y, 1, 1)
+            while d.year == y:
+                if d.weekday() < 5 or (y, d.month, d.day) in ((2024, 2, 29),):
+                    lr = math.log(1.1) if (y, d.month, d.day) in ((2024, 2, 29), (2023, 2, 28)) else 0.0
+                    close *= math.exp(lr)
+                    rows.append({"date": d.isoformat(), "close": round(close, 6), "log_return": lr})
+                d += timedelta(days=1)
+        return rows
+    faelle.append({"name": "schalt", "rows": schalt_rows(), "stichtag": 2026, "fenster": [], "methode": "off",
+                   "ts_auftraege": []})
+
+    # Kennzahl analytisch: zwölf vorgegebene Änderungen je Kurve, linear innerhalb des Monats interpoliert (eine um
+    # einen Tag verschobene Monatsgrenze liest dann einen anderen Wert)
+    a_soll = [0.02, -0.01, 0.03, 0.0, -0.02, 0.015, 0.01, -0.03, 0.005, 0.02, -0.005, 0.01]
+    b_soll = [0.01, -0.02, 0.01, 0.01, -0.01, 0.0, 0.02, -0.01, -0.005, 0.03, 0.002, 0.004]
+
+    def kurve(aend):
+        stuetz, v = [(0, 100.0)], 100.0
+        # Monatsgrenzen WÖRTLICH (nicht TS.MONATSENDE_SLOT) — sonst prüfte sich die Python-Seite mit sich selbst
+        for e, x in zip((31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365), aend):
+            v *= math.exp(x)
+            stuetz.append((e, v))
+        out = []
+        for tag in range(1, 366):
+            for (d0, v0), (d1, v1) in zip(stuetz, stuetz[1:]):
+                if d0 < tag <= d1:
+                    out.append(v0 + (v1 - v0) * (tag - d0) / (d1 - d0))
+                    break
+        return out
+    kurve_ist, kurve_modell = kurve(a_soll), kurve(b_soll)
+
+    def js_tauglich(rows):   # JSON kennt kein NaN: als Text "NaN" (parseFloat -> NaN wie ein kaputter DB-Wert)
+        return [dict(r, log_return="NaN") if isinstance(r["log_return"], float) and math.isnan(r["log_return"]) else r
+                for r in rows]
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fh:
+        json.dump({"faelle": [dict(f, rows=js_tauglich(f["rows"])) for f in faelle],
+                   "kennzahl": {"ist": kurve_ist, "modell": kurve_modell}}, fh, allow_nan=False)
+        pfad = fh.name
+    try:
+        r = subprocess.run(["node", str(_ROOT / "scripts" / "js" / "true_seasonal_probe.js"),
+                            str(_ROOT / "landing" / "js" / "seasonal-compute.js"),
+                            str(_ROOT / "landing" / "js" / "outlier.js"),
+                            str(_ROOT / "landing" / "pages" / "jahreszyklus.html"), pfad],
+                           capture_output=True, text=True, encoding="utf-8")
+    finally:
+        os.unlink(pfad)
+    if r.returncode:
+        _melde("TrueSeasonal", "true_seasonal_probe.js laeuft", False, r.stderr[:400])
+        return
+    js = json.loads(r.stdout)
+
+    def nah(a, b, tol=1e-9):
+        if a is None or b is None:
+            return a is None and b is None
+        return abs(a - b) <= tol
+
+    for f in faelle:
+        name, e = f["name"], js[f["name"]]
+        yd = _ts_py_yeardata(f["rows"])
+        # Zwilling Builder + Vollständigkeit
+        abw = []
+        for y, v in e["jahre"].items():
+            y = int(y)
+            if not v["gleich"]:
+                abw.append(f"{y}: Seite≠gemeinsam")
+            if (y in yd) != v["gemeinsam"]:
+                abw.append(f"{y}: Python {'hat' if y in yd else 'verwirft'}, JS {'hat' if v['gemeinsam'] else 'verwirft'}")
+                continue
+            if y in yd:
+                d = max(abs(a - b) for a, b in zip(yd[y]["full_365"], v["full"]))
+                if d > 1e-9:
+                    abw.append(f"{y}: full_365 Δ {d:.2e}")
+                pv = TS.jahr_vollstaendig(yd[y], y, f["stichtag"])
+                if pv != v["voll"] or pv != v["voll_seite"]:
+                    abw.append(f"{y}: vollständig Py={pv} JS={v['voll']} Seite={v['voll_seite']}")
+        _melde("TrueSeasonal", f"{name}: Builder Seite = gemeinsam = Python, Vollständigkeit gleich", not abw, "; ".join(abw[:4]))
+        for k, v in e["ts"].items():
+            ziel, n = k.split("|")
+            n = None if n == "null" else int(n)
+            pj = TS.true_seasonal_jahre(yd, int(ziel), n)
+            pk = TS.mittel_kurve(yd, pj)
+            ok = pj == v["jahre"] and ((pk is None and v["kurve"] is None) or
+                                       (pk is not None and v["kurve"] is not None and all(nah(a, b) for a, b in zip(pk, v["kurve"]))))
+            _melde("TrueSeasonal", f"{name}: Jahre+Kurve Ziel {ziel}, N={n} JS = Python", ok, f"Py={pj} JS={v['jahre']}")
+        for n_txt, rb in e["rueckblick"].items():
+            n = None if n_txt == "null" else int(n_txt)
+            pr = TS.rueckblick(yd, f["stichtag"], n)
+            ok = len(pr["jahre"]) == len(rb["jahre"])
+            for a, b in zip(pr["jahre"], rb["jahre"]):
+                ok = ok and a["jahr"] == b["jahr"] and a["nTs"] == b["nTs"] and a["nRueck"] == b["nRueck"]
+                for fe in ("ts", "rueck"):
+                    ok = ok and (a[fe] is None) == (b[fe] is None)
+                    if a[fe] and b[fe]:
+                        ok = ok and nah(a[fe]["r"], b[fe]["r"]) and a[fe]["treffer"] == b[fe]["treffer"] \
+                            and a[fe]["immerPositiv"] == b[fe]["immerPositiv"]
+            for fe in ("ts", "rueck"):
+                ok = ok and nah(pr[fe]["rMittel"], rb[fe]["rMittel"]) and pr[fe]["rPositiv"] == rb[fe]["rPositiv"] \
+                    and pr[fe]["nGueltig"] == rb[fe]["nGueltig"] and nah(pr[fe]["trefferMittel"], rb[fe]["trefferMittel"])
+            _melde("TrueSeasonal", f"{name}: Rückblick N={n} JS = Python ({len(rb['jahre'])} Jahre)", ok)
+
+    # ── Fachliche Sollwerte ──
+    b = js["basis"]
+    _melde("TrueSeasonal", "basis: 2004–2025 vollständig, laufendes Jahr 2026 nicht",
+           all(b["jahre"][str(y)]["voll"] for y in range(2004, 2026)) and b["jahre"]["2026"]["voll"] is False)
+    _melde("TrueSeasonal", "basis: Fenster 5 = 2021–2025, 10 = 2016–2025, max = 2004–2025",
+           b["ts"]["2026|5"]["jahre"] == list(range(2021, 2026)) and b["ts"]["2026|10"]["jahre"] == list(range(2016, 2026))
+           and b["ts"]["2026|null"]["jahre"] == list(range(2004, 2026)), str({k: v["jahre"][:3] for k, v in b["ts"].items()}))
+    _melde("TrueSeasonal", "basis: Rückblick bewertet 5 (N=5) bzw. 12 Jahre (max, ab 10 Vorjahren)",
+           len(b["rueckblick"]["5"]["jahre"]) == 5 and len(b["rueckblick"]["null"]["jahre"]) == 12
+           and b["rueckblick"]["null"]["jahre"][0]["jahr"] == 2014,
+           f"{len(b['rueckblick']['5']['jahre'])}/{len(b['rueckblick']['null']['jahre'])}")
+    s = js["sonder"]
+    soll = {2010: True, 2011: False, 2012: False, 2013: False, 2014: False, 2015: True, 2016: False, 2017: False,
+            2018: True, 2019: True, 2020: True, 2022: True, 2024: True, 2025: True, 2026: False}
+    ist = {int(y): v["voll"] for y, v in s["jahre"].items() if v["gemeinsam"]}
+    _melde("TrueSeasonal", "sonder: IPO-Jahr/nur Dezember/Jan+Dez/Lücke 15 T./Ende 22.12./Ende 27.12. (Tag 361) nein; Lücke 11 T., "
+           "eine fehlende Sitzung, NaN-Return rekonstruiert, Schaltjahr ja", ist == soll,
+           str({y: (ist.get(y), soll.get(y)) for y in sorted(set(ist) | set(soll)) if ist.get(y) != soll.get(y)}))
+    _melde("TrueSeasonal", "sonder: Jahr mit fehlendem Kurs UND Return verworfen (Seite wie gemeinsam)",
+           not s["jahre"].get("2021", {}).get("gemeinsam") and not s["jahre"].get("2021", {}).get("seite"),
+           str(s["jahre"].get("2021", {}).get("gemeinsam")))
+    _melde("TrueSeasonal", "sonder: Fenster ersetzt fehlende Kalenderjahre nicht (N=5 -> 2022, 2024, 2025)",
+           s["ts"]["2026|5"]["jahre"] == [2022, 2024, 2025] and s["ts"]["2026|10"]["jahre"] == [2018, 2019, 2020, 2022, 2024, 2025],
+           f"{s['ts']['2026|5']['jahre']} / {s['ts']['2026|10']['jahre']}")
+    mw = s["modellwahl"]["5"]
+    _melde("TrueSeasonal", "sonder: Mindestmenge 4 bei N=5 unterschritten -> nicht ok", mw["ok"] is False and mw["n"] == 3
+           and mw["mindest"] == 4, str(mw))
+    za, zb = js["ziel_a"], js["ziel_b"]
+    _melde("TrueSeasonal", "Zieljahr 2020 ×6: True Seasonal 2020 unverändert (Kurve identisch)",
+           za["ts"]["2020|10"]["jahre"] == zb["ts"]["2020|10"]["jahre"]
+           and all(x == y for x, y in zip(za["ts"]["2020|10"]["kurve"], zb["ts"]["2020|10"]["kurve"])))
+    _melde("TrueSeasonal", "Zieljahr 2020 ×6: Modellauswahl mit IQR-Filter unverändert",
+           za["modellwahl"]["10"] == zb["modellwahl"]["10"], f"{za['modellwahl']['10']} / {zb['modellwahl']['10']}")
+    _melde("TrueSeasonal", "Gegenprobe: True Seasonal 2021 enthält 2020 und ändert sich",
+           any(abs(x - y) > 1e-6 for x, y in zip(za["ts"]["2021|10"]["kurve"], zb["ts"]["2021|10"]["kurve"])))
+    k = js["_kennzahl"]
+    _melde("TrueSeasonal", "Kennzahl: konstante Reihe -> r null; identische Kurven -> r 1, 12 Treffer",
+           k["konstant"]["r"] is None and k["konstant"]["treffer"] == 0 and k["flach"]["treffer"] == 0
+           and nah(k["gleich"]["r"], 1.0, 1e-12)
+           and k["gleich"]["treffer"] == 12 and k["gleich"]["immerPositiv"] == 12, str(k))
+    pk = TS.vergleich12([100.0] * 365, [100 + i / 10 for i in range(365)])
+    pf = TS.vergleich12([100.0] * 365, [100.0] * 365)
+    _melde("TrueSeasonal", "Kennzahl Python: konstante Reihe -> r None, 0 Treffer; flach gegen flach 0 Treffer",
+           pk["r"] is None and pk["treffer"] == 0 and pf["treffer"] == 0 and pf["r"] is None, f"{pk} / {pf}")
+    # Analytisch: Soll unabhängig von beiden Implementierungen (statistics.correlation, Vorzeichen direkt)
+    import statistics
+    r_soll = statistics.correlation(a_soll, b_soll)
+    tr_soll = sum(1 for x, y in zip(a_soll, b_soll) if x != 0 and y != 0 and (x > 0) == (y > 0))
+    ip_soll = sum(1 for x in a_soll if x > 0)
+    ka = k.get("analytisch") or {}
+    pa = TS.vergleich12(kurve_ist, kurve_modell)
+    _melde("TrueSeasonal", f"Kennzahl analytisch: Änderungen an den Monatsgrenzen = Vorgabe (JS + Python)",
+           all(nah(x, y, 1e-12) for x, y in zip(k.get("aenderungen_ist") or [9] * 12, a_soll))
+           and all(nah(x, y, 1e-12) for x, y in zip(TS.monats_aenderungen(kurve_ist), a_soll)),
+           str([round(x, 4) for x in (k.get("aenderungen_ist") or [])][:4]))
+    _melde("TrueSeasonal", f"Kennzahl analytisch: r = {r_soll:.4f}, {tr_soll} Treffer, {ip_soll}× Plus (JS + Python)",
+           nah(ka.get("r"), r_soll, 1e-12) and ka.get("treffer") == tr_soll and ka.get("immerPositiv") == ip_soll
+           and nah(pa["r"], r_soll, 1e-12) and pa["treffer"] == tr_soll and pa["immerPositiv"] == ip_soll,
+           f"JS={ka} Py={pa}")
+    sj = js["schalt"]["jahre"]
+    feb, mar = 1, 2
+    _melde("TrueSeasonal", "Schaltjahr-Achse: 29.02.2024 zählt zum März-Slot, 28.02.2023 zum Februar (Seiten-Builder)",
+           sj["2024"]["aend"] is not None and nah(sj["2024"]["aend"][feb], 0.0, 1e-12)
+           and nah(sj["2024"]["aend"][mar], math.log(1.1), 1e-9)
+           and nah(sj["2023"]["aend"][feb], math.log(1.1), 1e-9) and nah(sj["2023"]["aend"][mar], 0.0, 1e-12),
+           f"2024 Feb/Mär={sj['2024']['aend'][feb:mar + 1] if sj['2024']['aend'] else None} "
+           f"2023 Feb/Mär={sj['2023']['aend'][feb:mar + 1] if sj['2023']['aend'] else None}")
+    fw = js["filter"]["modellwahl"]["10"]
+    _melde("TrueSeasonal", "Ausreißerfilter nur über die Vorjahre: 2011/2013/2015 raus, 2020–2022 ohne Einfluss",
+           fw["jahre"] == [2010, 2012, 2014, 2016, 2017, 2018, 2019], str(fw))
+    _melde("TrueSeasonal", "Mindestmenge NACH dem Filter: 7 von mindestens 8 -> nicht ok",
+           fw["n"] == 7 and fw["mindest"] == 8 and fw["ok"] is False, str(fw))
+
+
 def main() -> int:
     print("=" * 74)
     print("Zwillings-Pruefung: Backend (Python) <-> Frontend (JS) <-> Sollkurve")
     print("=" * 74)
+    if "--nur-true-seasonal" in sys.argv:
+        # Deploy-Gate: nur Block 8 (braucht pandas, plotly, node — nicht die Blog-/Yahoo-Abhängigkeiten der übrigen Blöcke)
+        block_true_seasonal()
+        if _ausfaelle:
+            print(f"[FAIL] {len(_ausfaelle)} Abweichung(en):")
+            for a in _ausfaelle:
+                print(f"   - {a}")
+            return 1
+        print("[OK] True Seasonal: Zwillinge und Sollwerte.")
+        return 0
     block_normalisierung()
     block_interpolation()
     block_turn_of_month()
     block_echtes_js()
     block_zeitzonen()
     block_zyklus()
+    block_true_seasonal()
     block_python_only()
     print("\n" + "=" * 74)
     if _ausfaelle:

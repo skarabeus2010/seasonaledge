@@ -107,6 +107,14 @@
     .match-card .mc-name{font-size:.6875rem;font-weight:700;margin-bottom:.4rem}
     .match-card .mc-r{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1;margin:.3rem 0}
     .match-card .mc-details{font-size:.6rem;color:#64748b;line-height:1.5}
+    .rb-text,.rb-note{font-size:.8125rem;color:var(--muted);line-height:1.6;max-width:80ch;margin:0 0 .75rem}
+    .rb-note{font-size:.75rem;margin-top:.75rem}
+    .rb-status{font-size:.8125rem;color:var(--dim);margin-bottom:.5rem}
+    .rb-status button{margin-left:.5rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:.25rem .7rem;cursor:pointer;font:inherit;min-height:32px}
+    .rb-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem;margin-bottom:.75rem}
+    .rb-kpi{border:1px solid var(--border);border-radius:10px;padding:.6rem .75rem;background:var(--card)}
+    .rb-kpi b{display:block;font-family:var(--f-m);font-size:1.15rem;color:var(--text);font-variant-numeric:tabular-nums}
+    .rb-kpi span{font-size:.72rem;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -129,6 +137,15 @@
         <option value="30" data-i18n="dash.yr30">30 Jahre</option>
         <option value="max">Max</option>
       </select>
+      <hr>
+      <h3 data-i18n="jz.ts_mode_title">Saisonkurve</h3>
+      <select id="sel-saison" aria-describedby="ts-mode-desc" style="width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem">
+        <option value="durchschnitt" selected data-i18n="jz.ts_mode_avg">Durchschnitt (alle Jahre im Zeitraum)</option>
+        <option value="true" data-i18n="jz.ts_mode_true">True Seasonal (nur Vorjahre)</option>
+      </select>
+      <p id="ts-mode-desc" style="font-size:.6875rem;color:var(--muted);margin-top:.3rem;line-height:1.4" data-i18n="jz.ts_mode_desc">
+        True Seasonal nach Larry Williams: die Kurve nur aus vollst&auml;ndigen Jahren vor dem laufenden Jahr. Der Durchschnitt enth&auml;lt auch das laufende Jahr und Teiljahre. Pressure, Monats-/Quartalsstatistik, Signifikanz, Zyklus-Match und Heatmap rechnen unabh&auml;ngig von dieser Wahl.
+      </p>
       <hr>
       <h3 data-i18n="sidebar.seasonal_chart">Saisonalchart</h3>
       <div class="range-wrap">
@@ -176,6 +193,7 @@
       <details open id="sec-main" style="display:none">
         <summary data-i18n="section.annual_progression">Saisonaler Jahresverlauf</summary>
         <div class="content">
+          <p id="ts-hinweis" class="achse-hinweis" style="display:none"></p>
           <div id="chart-main"></div>
           <p id="achse-hinweis" class="achse-hinweis" style="display:none">
             <span data-i18n="jz.axis_hint">Linke Achse (Blau) = Durchschnitt und Vergleichsreihen, rechte Achse (Gold) = aktuelles Jahr. Beide beginnen auf derselben Höhe bei 100. Über einer Achse: Mausrad oder Ziehen nach oben/unten streckt bzw. staucht ihre Skala um diesen Startwert, Doppelklick übernimmt die Werte der anderen Achse.</span>
@@ -191,6 +209,18 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
             <span data-i18n="jz.embed_button">Chart einbetten</span>
           </button>
+        </div>
+      </details>
+
+      <!-- 1b. Rückblick ohne Zukunftswissen (True Seasonal) — lädt die volle Historie erst beim Aufklappen -->
+      <details id="sec-rueckblick" style="display:none">
+        <summary data-i18n="jz.rb_title">R&uuml;ckblick: Wie gut passte die Saisonkurve zum Jahr danach?</summary>
+        <div class="content">
+          <p class="rb-text" data-i18n="jz.rb_intro">Je vergangenem Jahr: Wie &auml;hnlich war der Verlauf der Saisonkurve, die man vorher hatte (True Seasonal, nur Vorjahre), und wie &auml;hnlich ist die Kurve, die das Jahr selbst enth&auml;lt (r&uuml;ckblickend, wie der Durchschnitt mit diesem Jahr als j&uuml;ngstem)? Gemessen werden die zw&ouml;lf &Auml;nderungen zwischen den Monatsgrenzen der Chart-Achse auf den ungegl&auml;tteten Kurven. Keine Prognose.</p>
+          <div id="rb-status" class="rb-status" role="status"></div>
+          <div id="rb-kpis" class="rb-kpis"></div>
+          <div id="chart-rueckblick"></div>
+          <p class="rb-note" data-i18n="jz.rb_note">Fenster wie der gew&auml;hlte Zeitraum (True Seasonal aus den Jahren Y&minus;N bis Y&minus;1, r&uuml;ckblickend Y&minus;N bis Y). Bewertet werden nur vollst&auml;ndige Jahre nach Heuristik (Jahresanfang bis 7.1., Jahresende ab Kalendertag 362 &ndash; 28.12., im Schaltjahr 27.12. &ndash;, keine L&uuml;cke &uuml;ber zwei Wochen); Jahre mit langen B&ouml;rsenschlie&szlig;ungen fallen vorsorglich heraus. Ohne Ausrei&szlig;erfilter. r = Korrelation der zw&ouml;lf &Auml;nderungen, Treffer = gleiches Vorzeichen; zum Vergleich &bdquo;jeden Monat Plus erwartet&ldquo;.</p>
         </div>
       </details>
 
@@ -355,12 +385,12 @@
 
     function showError(msg) { $error.textContent=msg; $error.style.display='block'; setTimeout(function(){ $error.style.display='none'; },8000); }
     function showSections(show) {
-      ['sec-anomaly','sec-main','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap'].forEach(function(id){
+      ['sec-anomaly','sec-main','sec-rueckblick','sec-detrend','sec-monthly','sec-monthly-sig','sec-quarterly','sec-quarterly-sig','sec-cycle-sig','sec-cycle-match','sec-heatmap'].forEach(function(id){
         document.getElementById(id).style.display = show ? '' : 'none';
       });
     }
     function destroyAll() {
-      ['main','individuals','pressure','detrend','monthly-bars','quarterly-bars','heatmap'].forEach(function(k){
+      ['main','individuals','pressure','detrend','monthly-bars','quarterly-bars','heatmap','rueckblick'].forEach(function(k){
         if (charts[k]) { try { charts[k].destroy(); } catch(e){} charts[k] = null; }
       });
     }
@@ -559,18 +589,13 @@
       for (var yr in yearGroups) {
         var yRows=yearGroups[yr];
         if (yRows.length<20) continue;
-        var cumulative=[100];
-        var days=[];
-        var logRets=[];
-        days.push(SA.seasonal.tagNummer(yRows[0].date));
-        logRets.push(0);
-        for (var j=1;j<yRows.length;j++) {
-          var lr = yRows[j].log_return != null ? parseFloat(yRows[j].log_return) :
-            (yRows[j-1].close>0 ? Math.log(parseFloat(yRows[j].close)/parseFloat(yRows[j-1].close)) : 0);
-          cumulative.push(cumulative[j-1]*Math.exp(lr));
-          days.push(SA.seasonal.tagNummer(yRows[j].date));
-          logRets.push(lr);
-        }
+        // Returns wie der gemeinsame Builder (SA.seasonal._kumuliere): nicht endlich → aus Closes rekonstruiert, sonst
+        // Jahr verworfen. Vorher liefen nicht-endliche Returns als NaN durch und ein kaputter Vorgängerkurs wurde still
+        // zu 0 (Codex, Plan True Seasonal R3).
+        var kum = SA.seasonal._kumuliere(yRows);
+        if (!kum) continue;
+        var cumulative = kum.cumulative, logRets = kum.logRets;
+        var days = yRows.map(function(r){ return SA.seasonal.tagNummer(r.date); });
         // Interpolation auf 365 Kalendertage ueber die GEMEINSAME Funktion (Konstant-Fill nach dem letzten Handelstag,
         // Tag 366 im Schaltjahr auf Slot 365 gefaltet). Die eigene Kopie faltete nicht: eine Bewegung nur am 31.12.
         // eines Schaltjahres fehlte im Jahres-, Dezember- und Q4-Endwert (100 statt 110, gemessen 2026-10-13).
@@ -938,8 +963,11 @@
       if (kl) kl.addEventListener('click', function(){ JZ.wieAndereSeite('links'); });
     };
 
-    JZ.renderMain = function(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure) {
+    // aktuellYd: das laufende Jahr GETRENNT übergeben (True-Seasonal-Modus: yearData enthält nur die Modelljahre, die
+    // goldene Linie soll trotzdem bleiben). undefined → wie bisher aus yearData.
+    JZ.renderMain = function(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure, aktuellYd, kurvenName) {
       var currentYear = new Date().getFullYear();
+      if (aktuellYd === undefined) aktuellYd = yearData[currentYear];
       var avgSmooth = JZ.rollingMean(avg, smoothing);
       var nYears = Object.keys(yearData).length;
 
@@ -1028,7 +1056,7 @@
       var effectiveLastSolid = Math.min(dc.lastSolid, anomalyEnd);
       var split = JZ.splitSolidWeak(avgSmooth, effectiveLastSolid);
       seriesDef.push({
-        name: SA.i18n.t('jz.seasonal_avg','Saisonaler Ø') + ' (' + nYears + SA.i18n.t('jz.years_abbr','J') + ')', data: pad365(split.solid),
+        name: (kurvenName || SA.i18n.t('jz.seasonal_avg','Saisonaler Ø')) + ' (' + nYears + SA.i18n.t('jz.years_abbr','J') + ')', data: pad365(split.solid),
         color: COL_AVG, width: 3.5, dash: 0, axis: 'left'
       });
       if (effectiveLastSolid < 365) {
@@ -1067,10 +1095,10 @@
       //    abweichendes Jahr die linke Skala des Durchschnitts nicht staucht (Nutzerwunsch 2026-10-13)
       var eigeneAchse = !!(document.getElementById('chk-own-axis') && document.getElementById('chk-own-axis').checked);
       var curWerte = null;
-      if (showCurrent && yearData[currentYear]) {
+      if (showCurrent && aktuellYd) {
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
-        var cc = yearData[currentYear].full_365;
+        var cc = aktuellYd.full_365;
         for (var i=0;i<Math.min(td,365);i++) curArr[i] = cc[i];
         curWerte = curArr.filter(function(v){ return v != null && isFinite(v); });
         seriesDef.push({
@@ -1297,7 +1325,7 @@
     };
 
     // ── Render: Einzeljahre Sub-Chart (synchronisiert via chart.group) ──────
-    JZ.renderIndividualYears = function(yearData, ticker, showIndividual) {
+    JZ.renderIndividualYears = function(yearData, ticker, showIndividual, aktuellYd) {
       var container = document.getElementById('chart-individuals');
       if (!showIndividual) {
         container.style.display = 'none';
@@ -1307,6 +1335,7 @@
       container.style.display = '';
 
       var currentYear = new Date().getFullYear();
+      if (aktuellYd === undefined) aktuellYd = yearData[currentYear];
       var yrKeys = Object.keys(yearData).map(Number).sort();
       var series = [];
       var colors = [];
@@ -1326,10 +1355,10 @@
         dashes.push(0);
       }
       // Aktuelles Jahr (gold, dick) auch im Sub-Chart
-      if (yearData[currentYear]) {
+      if (aktuellYd) {
         var td = JZ.todayDoy();
         var curArr = new Array(365).fill(null);
-        for (var k=0;k<Math.min(td,365);k++) curArr[k] = yearData[currentYear].full_365[k];
+        for (var k=0;k<Math.min(td,365);k++) curArr[k] = aktuellYd.full_365[k];
         series.push({ name: currentYear + ' (' + SA.i18n.t('common.current','aktuell') + ')', data: pad365(curArr) });
         colors.push('#F1C40F');
         widths.push(2.5);
@@ -1760,6 +1789,119 @@
       return filtered;
     }
 
+    // Modelljahre des True-Seasonal-Modus: erst die vollständigen Vorjahre im Kalenderfenster, DANN der Ausreißerfilter
+    // nur über diese (sonst bestimmte das laufende Jahr mit, welche Vorjahre bleiben), Mindestmenge NACH dem Filter.
+    // Wächter: scripts/js/true_seasonal_probe.js zieht diese Funktion aus der Seite.
+    function trueSeasonalModell(yearDataRoh, stichtagJahr, fensterN, methode) {
+      var roh = {};
+      SA.seasonal.trueSeasonalJahre(yearDataRoh, stichtagJahr, fensterN).forEach(function(j){ roh[j] = yearDataRoh[j]; });
+      var modell = applyOutlierFilter(roh, methode);
+      var n = Object.keys(modell).length, mindest = SA.seasonal.trueSeasonalMindest(fensterN);
+      return { modell: modell, n: n, mindest: mindest, ok: n >= mindest };
+    }
+
+    // ── Saisonkurven-Modus (Durchschnitt | True Seasonal), seitenbezogen gemerkt ─────────────────────────────────
+    var SAISON_SCHLUESSEL = 'sa.jahreszyklus.saison';
+    JZ.saisonModus = function() {
+      var s = document.getElementById('sel-saison');
+      return s && s.value === 'true' ? 'true' : 'durchschnitt';
+    };
+    (function() {
+      var s = document.getElementById('sel-saison');
+      if (!s) return;
+      var g = null;
+      try { g = localStorage.getItem(SAISON_SCHLUESSEL); } catch (e) {}
+      s.value = (g === 'true') ? 'true' : 'durchschnitt';   // fehlend/ungültig → Durchschnitt
+      s.addEventListener('change', function() {
+        try { localStorage.setItem(SAISON_SCHLUESSEL, JZ.saisonModus()); } catch (e) {}
+        rerender();
+      });
+    })();
+
+    // ── Rückblick (True Seasonal gegen rückblickend), volle Historie erst beim Aufklappen ───────────────────────
+    // Eigene Anfragekennung (_rb.gen) statt SA.ladeKennung.start() — die würde den laufenden Hauptabruf entwerten.
+    // Die Frische regelt der gemeinsame Lader (SA.kurse): jedes Aufklappen fragt ihn erneut, er liefert aus seinem
+    // Bestand, solange der frisch ist. Ein Fehler bleibt wiederholbar.
+    var _rb = { gen: 0, ticker: null, rows: null, laedt: false, fehler: null };
+    function rbLaden() {
+      var ticker = JZ.getCurrentTicker();
+      var gen = ++_rb.gen;
+      _rb.ticker = ticker; _rb.laedt = true; _rb.fehler = null;
+      if (_rb.rowsTicker !== ticker) _rb.rows = null;
+      JZ.rueckblickZeichnen();
+      SA.kurse.zeilen(ticker, { felder: ['date', 'close', 'log_return'] }).then(function(rows) {
+        if (gen !== _rb.gen || JZ.getCurrentTicker() !== ticker) return;   // überholt: Ergebnis verwerfen
+        _rb.laedt = false; _rb.rows = rows || []; _rb.rowsTicker = ticker;
+        JZ.rueckblickZeichnen();
+      }).catch(function(err) {
+        if (gen !== _rb.gen || JZ.getCurrentTicker() !== ticker) return;
+        _rb.laedt = false; _rb.fehler = (err && err.message) || String(err);
+        JZ.rueckblickZeichnen();
+      });
+    }
+    JZ.rueckblickTicker = function(neu) {   // Tickerwechsel: laufende Rückblick-Ladung entwerten (Fensterwechsel: behalten)
+      if (neu === _rb.rowsTicker || (neu === _rb.ticker && _rb.laedt)) return;
+      _rb.gen++; _rb.ticker = null; _rb.rows = null; _rb.rowsTicker = null; _rb.laedt = false; _rb.fehler = null;
+    };
+    JZ.rueckblickZeichnen = function() {
+      var sec = document.getElementById('sec-rueckblick');
+      if (!sec || !sec.open) return;
+      var ticker = JZ.getCurrentTicker();
+      if (_rb.ticker !== ticker) { rbLaden(); return; }
+      var $st = document.getElementById('rb-status'), $k = document.getElementById('rb-kpis'),
+          $c = document.getElementById('chart-rueckblick');
+      if (JZ.charts.rueckblick) { try { JZ.charts.rueckblick.destroy(); } catch (e) {} JZ.charts.rueckblick = null; }
+      $k.innerHTML = ''; $c.innerHTML = '';
+      if (_rb.laedt && !_rb.rows) { $st.textContent = SA.i18n.t('jz.rb_loading', 'Lade die volle Kurshistorie…'); return; }
+      if (_rb.fehler) {
+        $st.textContent = SA.i18n.t('jz.rb_error', 'Die Kurshistorie konnte nicht geladen werden.') + ' (' + _rb.fehler + ')';
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = SA.i18n.t('jz.rb_retry', 'Erneut laden');
+        b.addEventListener('click', function() { _rb.ticker = null; rbLaden(); });
+        $st.appendChild(b);
+        return;
+      }
+      if (!_rb.rows) return;
+      var yearsVal = document.getElementById('sel-years').value;
+      var fensterN = yearsVal === 'max' ? null : parseInt(yearsVal, 10);
+      var res = SA.seasonal.rueckblick(JZ.buildExtendedYearData(_rb.rows), JZ.stichtag().jahr, fensterN);
+      if (!res.jahre.length) {
+        $st.textContent = SA.i18n.t('jz.rb_none', 'Nicht auswertbar: kein vollständiges Jahr im Zeitraum mit mindestens {m} vollständigen Vorjahren.')
+          .replace('{m}', res.mindest);
+        return;
+      }
+      $st.textContent = SA.i18n.t('jz.rb_basis', '{n} Jahre bewertet ({von}–{bis}).')
+        .replace('{n}', res.jahre.length).replace('{von}', res.jahre[0].jahr).replace('{bis}', res.jahre[res.jahre.length - 1].jahr);
+      var f2 = function(x) { return x == null ? '–' : (x >= 0 ? '+' : '') + x.toFixed(2); };
+      var f1 = function(x) { return x == null ? '–' : x.toFixed(1); };
+      $k.innerHTML = [
+        [f2(res.ts.rMittel), SA.i18n.t('jz.rb_k_ts', 'Ø r True Seasonal (nur Vorjahre)')],
+        [f2(res.rueck.rMittel), SA.i18n.t('jz.rb_k_rueck', 'Ø r rückblickend (inkl. Jahr)')],
+        [res.ts.rPositiv + '/' + res.ts.nGueltig + ' · ' + res.rueck.rPositiv + '/' + res.rueck.nGueltig, SA.i18n.t('jz.rb_k_pos', 'Jahre mit r > 0: True Seasonal · rückblickend')],
+        [f1(res.ts.trefferMittel) + ' · ' + f1(res.rueck.trefferMittel) + ' · ' + f1(res.immerPositivMittel), SA.i18n.t('jz.rb_k_tr', 'Ø Vorzeichentreffer von 12: True Seasonal · rückblickend · jeden Monat Plus')]
+      ].map(function(k) { return '<div class="rb-kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('');
+      var rWert = function(z, f) { return z[f] && z[f].r != null ? Math.round(z[f].r * 1000) / 1000 : null; };
+      JZ.charts.rueckblick = new ApexCharts($c, {
+        series: [
+          { name: SA.i18n.t('jz.rb_s_ts', 'True Seasonal (nur Vorjahre)'), data: res.jahre.map(function(z) { return rWert(z, 'ts'); }) },
+          { name: SA.i18n.t('jz.rb_s_rueck', 'rückblickend (inkl. Jahr)'), data: res.jahre.map(function(z) { return rWert(z, 'rueck'); }) }
+        ],
+        chart: Object.assign({ type: 'bar', height: 300, id: 'jzklus-rueckblick' }, SA.chartTheme.chart),
+        colors: ['#e8a820', '#4d9fff'],
+        plotOptions: { bar: { columnWidth: '70%' } },
+        dataLabels: { enabled: false },
+        grid: SA.chartTheme.grid,
+        xaxis: { categories: res.jahre.map(function(z) { return String(z.jahr); }), labels: { style: { colors: '#a89878', fontSize: '10px' } } },
+        yaxis: { min: -1, max: 1, tickAmount: 4, labels: { style: { colors: '#a89878', fontSize: '11px' }, formatter: function(v) { return v == null ? '' : v.toFixed(1); } },
+                 title: { text: SA.i18n.t('jz.rb_y', 'r (12 Monatsänderungen)'), style: { color: '#a89878', fontSize: '11px' } } },
+        tooltip: Object.assign({}, SA.chartTheme.tooltip, { shared: true, intersect: false, y: { formatter: function(v) { return v == null ? '–' : 'r ' + f2(v); } } }),
+        legend: Object.assign({}, SA.chartTheme.legend, { position: 'top', fontSize: '11px' })
+      });
+      JZ.charts.rueckblick.render();
+    };
+    document.getElementById('sec-rueckblick').addEventListener('toggle', function() {
+      if (this.open) { _rb.ticker = null; JZ.rueckblickZeichnen(); }
+    });
+
     function rerender() {
       if (!_cachedRows) return;
       var ticker = JZ.getCurrentTicker();
@@ -1784,17 +1926,42 @@
       var filteredRows = _cachedRows.filter(function(r){ return parseInt(r.date.substring(0,4)) >= minYear; });
 
       // Year-Data aufbauen
-      var yearData = JZ.buildExtendedYearData(filteredRows);
+      var yearDataRoh = JZ.buildExtendedYearData(filteredRows);
+      var ST = JZ.stichtag();
       // Outlier-Filter anwenden
-      yearData = applyOutlierFilter(yearData, _getOutlierMethod());
+      var yearData = applyOutlierFilter(yearDataRoh, _getOutlierMethod());
 
       if (Object.keys(yearData).length < 2) {
         JZ.showError('Zu wenig Jahre für Analyse');
         return;
       }
 
-      // Saisonal Avg + Std
-      var allCurves = Object.keys(yearData).map(function(y){ return yearData[y].full_365; });
+      // Saisonkurve: Durchschnitt (wie bisher) oder Williams True Seasonal (nur vollständige Vorjahre im Fenster).
+      // True-Modus: erst die Modelljahre wählen, DANN der Ausreißerfilter nur über diese (sonst bestimmte das laufende
+      // Jahr mit, welche Vorjahre übrig bleiben); Mindestmenge gilt nach dem Filter. Das laufende Jahr geht getrennt an
+      // renderMain/renderIndividualYears. Pressure, Monats-/Quartalsstatistik, Signifikanz, Zyklus-Match und Heatmap
+      // rechnen unabhängig vom Modus.
+      var modus = JZ.saisonModus();
+      var fensterN = yearsVal === 'max' ? null : parseInt(yearsVal, 10);
+      var modell = yearData, aktuellYd = yearData[ST.jahr], kurvenName = null;
+      var tsHinweis = document.getElementById('ts-hinweis');
+      tsHinweis.style.display = 'none';
+      if (modus === 'true') {
+        var tsw = trueSeasonalModell(yearDataRoh, ST.jahr, fensterN, _getOutlierMethod());
+        if (tsw.ok) {
+          modell = tsw.modell;
+          aktuellYd = yearDataRoh[ST.jahr];
+          kurvenName = SA.i18n.t('jz.ts_curve', 'True Seasonal');
+        } else {
+          modus = 'durchschnitt';
+          tsHinweis.textContent = SA.i18n.t('jz.ts_too_few', 'True Seasonal nicht verfügbar: {n} vollständige Vorjahre im Zeitraum, mindestens {m} nötig. Angezeigt wird der Durchschnitt.')
+            .replace('{n}', tsw.n).replace('{m}', tsw.mindest);
+          tsHinweis.style.display = '';
+        }
+      }
+
+      // Saisonal Avg + Std (aus der Modellmenge)
+      var allCurves = Object.keys(modell).map(function(y){ return modell[y].full_365; });
       var avg = [];
       var std = [];
       for (var d=0;d<365;d++) {
@@ -1803,22 +1970,25 @@
         std.push(JZ.stdev(vals));
       }
 
-      var years = Object.keys(yearData).map(Number).sort();
+      var years = Object.keys(modell).map(Number).sort();
       document.getElementById('page-caption').textContent =
         ticker + ' · ' + Math.min.apply(null,years) + '–' + Math.max.apply(null,years) + ' · ' +
-        years.length + ' Jahre · Glättung: ' + smoothing + 'd';
+        years.length + ' ' + SA.i18n.t('common.years', 'Jahre') + ' · ' +
+        (modus === 'true' ? SA.i18n.t('jz.ts_caption_true', 'True Seasonal: nur vollständige Vorjahre')
+                          : SA.i18n.t('jz.ts_caption_avg', 'Durchschnitt inkl. laufendem Jahr und Teiljahren')) +
+        ' · ' + SA.i18n.t('jz.smoothing_short', 'Glättung') + ': ' + smoothing + 'd';
 
       JZ.destroyAll();
-      var ST = JZ.stichtag();
       // Try/catch um jede Render-Funktion, damit ein Fehler nicht alles bricht
       function safeRender(name, fn) {
         try { fn(); } catch(e) { console.error('[jahreszyklus] '+name+' failed:', e); }
       }
       safeRender('anomaly',       function(){ JZ.renderAnomaly(_cachedRows, ticker); });
-      safeRender('main',          function(){ JZ.renderMain(yearData, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure); });
-      safeRender('individuals',   function(){ JZ.renderIndividualYears(yearData, ticker, showIndividual); });
+      safeRender('main',          function(){ JZ.renderMain(modell, avg, std, ticker, smoothing, showIndividual, showBands, showPercentile, showCurrent, cycleOverlay, showPressure, aktuellYd, kurvenName); });
+      safeRender('individuals',   function(){ JZ.renderIndividualYears(modell, ticker, showIndividual, aktuellYd); });
       safeRender('pressure',      function(){ JZ.renderPressure(yearData, ticker, smoothing, showPressure, showCurrent); });
-      safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, yearData); });
+      safeRender('detrend',       function(){ JZ.renderDetrend(avg, ticker, years.length, modell); });
+      safeRender('rueckblick',    function(){ JZ.rueckblickZeichnen(); });
       safeRender('monthly',       function(){ JZ.renderMonthly(yearData, ticker, ST); });
       safeRender('monthly-sig',   function(){ JZ.renderSignificance(yearData, 'month', ST.jahr); });
       safeRender('quarterly',     function(){ JZ.renderQuarterly(yearData, ticker, ST); });
@@ -1831,6 +2001,7 @@
 
     function loadTicker(ticker) {
       var _lk = SA.ladeKennung.start(ticker);   // ein neuerer Abruf gewinnt (siehe app.js)
+      JZ.rueckblickTicker(ticker);              // laufende Rückblick-Ladung eines anderen Tickers entwerten
       JZ.setCurrentTicker(ticker);
       document.getElementById('title-ticker').textContent = ticker;
       var yearsVal = document.getElementById('sel-years').value;
@@ -1930,7 +2101,8 @@
       var sy=document.getElementById('sel-years'); var y=(sy&&sy.value)||'15';
       var en=isEN(), L=en?'en':'de';
       var pageUrl=(en?ORIGIN+'/en/jahreszyklus':ORIGIN+'/jahreszyklus')+'?ticker='+encodeURIComponent(t);
-      var embedUrl=ORIGIN+'/embed?type=seasonal_yearly&ticker='+encodeURIComponent(t)+'&years='+encodeURIComponent(y)+'&lang='+L;
+      var ss=document.getElementById('sel-saison'); var saison=(ss&&ss.value==='true')?'&saison=true':'';
+      var embedUrl=ORIGIN+'/embed?type=seasonal_yearly&ticker='+encodeURIComponent(t)+'&years='+encodeURIComponent(y)+saison+'&lang='+L;
       var title=en?('Seasonal annual pattern '+t+' — SeasonAlpha'):('Saisonaler Jahresverlauf '+t+' — SeasonAlpha');
       var src=en?'Source':'Quelle';
       ta.value=

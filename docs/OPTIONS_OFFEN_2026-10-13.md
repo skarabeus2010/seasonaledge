@@ -19,8 +19,10 @@
 - [x] **Folgeposten** (16.10., `eb4af33`, Codex R2 FREIGABE): Health-Check Options-Frische in Sessions (Ausfall am
       nächsten Morgen gelb statt nach drei Tagen); Morgen-Mail-Kursreihe mit Gesamtordnung (vorher 16 von 10 567 Zeilen
       doppelt/fehlend) und Schnitt hinter dem jüngsten Kurs/Return-Widerspruch (nur ETHA betroffen).
-- [ ] **ETHA-Altkurse auf die neue Basis** (×3 vor dem 30.09.) — DB-Schreibvorgang, **Nutzerentscheidung**; bis dahin
-      hat ETHA in der Mail nur 12 Zeilen (zu kurz für RSI/LBR).
+- [x] **ETHA-Altkurse auf die neue Basis** (16.10., Nutzerfreigabe): 549 Zeilen 23.07.2024–29.09.2026 Kurse ×3,
+      Volumen ÷3, `log_return` unverändert (Reverse-Split 1:3; Faktor aus Kurs/Return 2,99999999, Yahoo identisch).
+      Rücklesen 0 Abweichungen, `basisabweichungen` 561/561 Paare ohne Treffer. Sicherung vorher:
+      `/app/logs/reparatur/etha_basis_vorher_20261016.json` (Container).
 - [ ] **Forex-Daten:** Wochenendzeilen mit kopiertem `log_return`; die Intraday-Zeile des Tages spannt zwei Tage
       (AUDUSD 16.10.: log_return −0,21 % gegen Kursverhältnis +0,61 %). Eigener Datenfehler, nicht behoben.
 - [x] **B3a Skew-Rang im Cron** (16.10., Codex Code R2 FREIGABE; [Wirkung](review_prompts/2026-10-16_options_b3a_wirkung.md)):
@@ -35,10 +37,17 @@ Plan + Antworten: `docs/review_prompts/2026-10-13_skew_ausreisser_*` (plan, plan
       Seed 20261013, fertig 13.10. 21:15 UTC). Erste Auswertung 14.10.: 2 von 249 Zufallstagen auffällig (> 6 MAD),
       Volumen trennt nicht, h > 0,5 deutlich häufiger auffällig (> 4 MAD: 4/24 gegen 6/205 bei Klammer),
       Live ≠ Backfill an 68/336 Tagen.
-- [ ] Schwellen an „entwicklung“ ableiten, an „pruefung“ prüfen; Regelvarianten mit Abdeckung je Ticker und Rangwirkung.
-- [ ] Plan v4 mit Zahlen an Codex → dann Phase 1 (gemeinsame CM-Entscheidung Live/Backfill), Phase 2 (Herkunft je
-      Zeile, Qualitätsstatus), Phase 3 (Bestand unter einer Sperre), Phase 4 (Frontend „heute nicht bewertbar“,
-      Aktualisierungsregel), Phase 5 (10Δ in die Historie).
+- [x] **Auswertung + Plan v4** (16.10., Codex FREIGABE; [Plan v4](review_prompts/2026-10-16_skew_ausreisser_plan_v4.md),
+      Skript `scripts/research/skew_trockenlauf_auswertung.py`): **keine belastbare Ausschlussregel** — 2 von 249
+      Zufallstagen > 6 MAD; jede Rasterregel, die den Entwicklungsfall entfernt, kostet ≥ 47/123 unauffällige Tage;
+      H ≤ 0,75 trifft BAC 19.03./C 18.06., ist an der Entwicklungsmenge aber nicht belegt (Kosten 5,7 %).
+- [ ] **Nächster Bauschritt: Phase 1 + 2** — gemeinsame CM-Entscheidung Live/Backfill zuerst im Vergleichsbetrieb
+      (vollständiges Expiry-Universum, bestehende Prüfungen + Rückfallreihenfolge, keine neue Ausschlussregel); Herkunft
+      additiv in Snapshot UND History (`cm_h`, Leg-Volumen, Delta-Abstand, Klammer, Regelversion); `auffaellig` nur als
+      Markierung (Grund h > 0,75 bzw. > 6 MAD mit Referenzfenster, n, Median/MAD, Version), bleibt bewertbar.
+- [ ] Bei ≥ 20 markierten Fällen > 6 MAD erneut untersuchen (Anlass, keine Schwelle): neue, vorab getrennte Prüfmenge,
+      unauffällige Kontrollen, Marktphasen. Phasen 3/4 (Bestand, „heute nicht bewertbar“) entfallen bis dahin; Phase 5
+      (10Δ) unabhängig.
 - [x] Radar standardmäßig Percentile — Nutzerentscheidung 2026-10-14, live mit Paket A (`1c0412f`).
 
 ## B. Opening-Setup-Abgleich — Plan `docs/OPENING_SETUP_PLAN.md`

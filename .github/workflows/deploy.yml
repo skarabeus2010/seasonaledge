@@ -164,6 +164,17 @@ jobs:
         run: |
           npm ci --prefix scripts/perf --no-audit --no-fund
           python3 scripts/verify_seiten_kurse.py
+      # True Seasonal auf /jahreszyklus (Plan docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md): Standard wie
+      # bisher, gemerkter Modus „true" mit goldener Linie, Rueckblick laedt erst beim Aufklappen, Tickerwechsel und
+      # Ladefehler. Die Rechnung selbst prueft der naechste Schritt.
+      - name: Waechter - True Seasonal Seite
+        run: python3 scripts/verify_true_seasonal_seite.py
+      # Rechnung: echter JS-Kern + Seiten-Builder gegen shared/true_seasonal.py und fachliche Sollwerte (Heuristik
+      # „vollstaendig", Kalenderfenster, Zieljahr-Unabhaengigkeit mit Ausreisserfilter, Mindestmenge nach dem Filter).
+      - name: Waechter - True Seasonal Rechnung
+        run: |
+          python3 -m pip install --quiet plotly==7.1.0
+          python3 scripts/verify_seasonal_twins.py --nur-true-seasonal
       # Releasekennung + Kalendermethode (V1b, docs/KALENDER_UMSTELLUNG.md): Einbindung aller Seiten und Dateien,
       # Deploy-/nginx-Regeln, Simulation von deploy/release_setzen.py (ersetzt das Isolations-Gate C P3a).
       - name: Waechter - Einbindung Releasekennung

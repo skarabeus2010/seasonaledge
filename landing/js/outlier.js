@@ -59,6 +59,29 @@ SA.outlier = {
   },
 
   /**
+   * Jahresfilter für Saisonkurven (bisher nur in jahreszyklus.html, jetzt gemeinsam mit /embed): Jahre, deren
+   * Jahresrendite (Endwert/Startwert der full_365) nach IQR auffällt, fallen heraus. Die Rendite wird aus full_365
+   * gerechnet — buildYearData liefert simpleReturn gerundet, der Seiten-Builder ungerundet; so entscheiden beide gleich.
+   * winsorize/off/unbekannt: unverändert. Unter vier Jahren: unverändert.
+   * @param {Object} yearData {jahr: {full_365}}
+   * @param {string} method 'off' | 'iqr' | 'iqr_strict' | 'winsorize'
+   * @returns {Object} gefilterte Teilmenge (dieselben Objekte)
+   */
+  filterJahre: function(yearData, method) {
+    if (!method || method === 'off' || method === 'winsorize' || !SA.outlier.METHODS[method]) return yearData;
+    var years = Object.keys(yearData).map(Number);
+    if (years.length < 4) return yearData;
+    var rets = years.map(function(y) {
+      var c = yearData[y].full_365;
+      return c[364] > 0 ? (c[364] / c[0] - 1) * 100 : 0;
+    });
+    var isOut = SA.outlier.detectIQR(rets, method === 'iqr_strict' ? 3.0 : 1.5);
+    var filtered = {};
+    for (var i = 0; i < years.length; i++) if (!isOut[i]) filtered[years[i]] = yearData[years[i]];
+    return filtered;
+  },
+
+  /**
    * Filtert all_curves Array nach Outlier-Methode.
    * @param {Array} allCurves - [{total_return, ...}]
    * @param {string} method - "off", "iqr", "iqr_strict", "winsorize"

@@ -200,10 +200,8 @@ MUTATIONEN = [
      "    if (days.length && days[days.length - 1] > 365) {",
      "    if (false) {"),
 
-    ("buildYearData verwirft nicht mehr, sondern setzt still lr = 0",
-     "landing/js/seasonal-compute.js",
-     "          } else { verwerfen = true; break; }",
-     "          } else { lr = 0; }"),
+    # (Die Mutation „buildYearData setzt still lr = 0" sitzt seit dem True-Seasonal-Umbau im gemeinsamen
+    #  SA.seasonal._kumuliere — siehe „Builder: kaputter Vorgaengerkurs wieder still 0" weiter unten.)
 
     # ── aus der Endabnahme: Pfade, die vorher von keinem Waechterfall
     #    beruehrt wurden. Ohne diese Faelle war der gruene Lauf dort ohne Aussage.
@@ -233,15 +231,100 @@ MUTATIONEN = [
      "    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86400000);\n  },",
      "    var dd = new Date(s); return Math.floor((dd - new Date(dd.getFullYear(), 0, 0)) / 86400000);\n  },"),
 
-    ("Erster Kurstag in buildExtendedYearData wieder ueber lokale Mitternacht",
+    ("Kurstage in buildExtendedYearData wieder ueber lokale Mitternacht",
      "landing/pages/jahreszyklus.html",
-     "        days.push(SA.seasonal.tagNummer(yRows[0].date));",
-     "        var d0=new Date(yRows[0].date); var jan1=new Date(d0.getFullYear(),0,0);\n        days.push(Math.floor((d0-jan1)/86400000));"),
+     "        var days = yRows.map(function(r){ return SA.seasonal.tagNummer(r.date); });",
+     "        var days = yRows.map(function(r){ var d0=new Date(r.date); return Math.floor((d0-new Date(d0.getFullYear(),0,0))/86400000); });"),
 
     ("yearCovers faellt bei fehlendem last_actual_day auf 365 zurueck (fail-open)",
      "landing/js/seasonal-compute.js",
      "    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 0;\n    if (endDoy >= 365) {",
      "    lad = (typeof lad === 'number' && isFinite(lad)) ? lad : 365;\n    if (endDoy >= 365) {"),
+
+    # Williams True Seasonal (Plan v3, docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md)
+    ("TS JS: Zieljahr in die eigene Kurve (< wird <=)",
+     "landing/js/seasonal-compute.js",
+     "      return j >= von && j < zielJahr && SA.seasonal.jahrVollstaendig(yearData[j], j, zielJahr);",
+     "      return j >= von && j <= zielJahr && SA.seasonal.jahrVollstaendig(yearData[j], j, zielJahr + 1);"),
+
+    ("TS JS: Fenster ohne untere Kalendergrenze (letzte N gueltige / alle)",
+     "landing/js/seasonal-compute.js",
+     "    var von = fensterN == null ? -Infinity : zielJahr - fensterN;",
+     "    var von = -Infinity;"),
+
+    ("TS JS: Lueckenregel aus",
+     "landing/js/seasonal-compute.js",
+     "      if (!(d > 0 && d <= SA.seasonal.LUECKE_MAX)) return false;",
+     "      if (!(d > 0)) return false;"),
+
+    ("TS JS: Jahresanfang nicht geprueft (Teiljahre ab Juli zaehlen)",
+     "landing/js/seasonal-compute.js",
+     "    if (!(t[0] <= SA.seasonal.JAHRESANFANG_GRENZE)) return false;",
+     "    if (false) return false;"),
+
+    ("TS JS: Jahresende 362 -> 359 (Ende 27.12. zaehlt)",
+     "landing/js/seasonal-compute.js",
+     "  JAHRESENDE_VOLL: 362,",
+     "  JAHRESENDE_VOLL: 359,"),
+
+    ("TS JS: laufendes Jahr gilt als vollstaendig",
+     "landing/js/seasonal-compute.js",
+     "    if (!(parseInt(jahr, 10) < parseInt(stichtagJahr, 10))) return false;",
+     "    if (!(parseInt(jahr, 10) <= parseInt(stichtagJahr, 10))) return false;"),
+
+    ("TS JS: Nullaenderung zaehlt als Treffer",
+     "landing/js/seasonal-compute.js",
+     "      if (a[k] !== 0 && b[k] !== 0 && (a[k] > 0) === (b[k] > 0)) treffer++;",
+     "      if ((a[k] > 0) === (b[k] > 0)) treffer++;"),
+
+    ("TS JS: Rueckblick ohne Zieljahr in der rueckblickenden Kurve",
+     "landing/js/seasonal-compute.js",
+     "      var rJahre = alle.filter(function(j) { return j >= von && j <= y; });",
+     "      var rJahre = alle.filter(function(j) { return j >= von && j < y; });"),
+
+    ("Builder: kaputter Vorgaengerkurs wieder still 0 statt Jahr verwerfen",
+     "landing/js/seasonal-compute.js",
+     "        else return null;",
+     "        else lr = 0;"),
+
+    ("Modellwahl: Ausreisserfilter ueber alle Jahre (Zieljahr bestimmt den Filter mit)",
+     "landing/js/seasonal-compute.js",
+     "    var modell = filterFn ? filterFn(roh) : roh;",
+     "    var modell = {}, ueberAlle = filterFn ? filterFn(yearDataRoh) : yearDataRoh; Object.keys(roh).forEach(function(j){ if (ueberAlle[j]) modell[j] = roh[j]; });"),
+
+    ("Modellwahl: Mindestmenge vor dem Filter gezaehlt",
+     "landing/js/seasonal-compute.js",
+     "    var n = Object.keys(modell).length, mindest = SA.seasonal.trueSeasonalMindest(fensterN);",
+     "    var n = Object.keys(roh).length, mindest = SA.seasonal.trueSeasonalMindest(fensterN);"),
+
+    ("Seite: Jahresfilter nicht an die Modellwahl durchgereicht",
+     "landing/pages/jahreszyklus.html",
+     "        function(roh) { return applyOutlierFilter(roh, methode); });",
+     "        null);"),
+
+    ("TS JS: Monatsgrenzen um einen Tag vorgezogen",
+     "landing/js/seasonal-compute.js",
+     "  MONATSENDE_SLOT: [31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365],",
+     "  MONATSENDE_SLOT: [30, 58, 89, 119, 150, 180, 211, 242, 272, 303, 333, 365],"),
+
+    ("TS Python: Monatsgrenzen um einen Tag vorgezogen",
+     "shared/true_seasonal.py",
+     "MONATSENDE_SLOT = (31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365)",
+     "MONATSENDE_SLOT = (30, 58, 89, 119, 150, 180, 211, 242, 272, 303, 333, 365)"),
+    ("TS Python: Zieljahr in die eigene Kurve",
+     "shared/true_seasonal.py",
+     "                  if von <= int(j) < ziel_jahr and jahr_vollstaendig(yd, int(j), ziel_jahr))",
+     "                  if von <= int(j) <= ziel_jahr and jahr_vollstaendig(yd, int(j), ziel_jahr + 1))"),
+
+    ("TS Python: Lueckenregel aus",
+     "shared/true_seasonal.py",
+     "        if not 0 < b - a <= LUECKE_MAX:",
+     "        if not 0 < b - a:"),
+
+    ("TS Python: Treffer zaehlt Nullaenderung",
+     "shared/true_seasonal.py",
+     "    treffer = sum(1 for x, y in zip(a, b) if x != 0 and y != 0 and (x > 0) == (y > 0))",
+     "    treffer = sum(1 for x, y in zip(a, b) if (x > 0) == (y > 0))"),
 ]
 
 

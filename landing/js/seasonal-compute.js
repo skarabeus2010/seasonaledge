@@ -337,19 +337,9 @@ SA.seasonal = {
       // Jahresverlauf verschob und als "keine Bewegung" in den Saison-
       // Durchschnitt einging. Python (normalize_year) verwirft ebenso; ein
       // stiller Nullwert waere eine erfundene Beobachtung.
-      var cumulative = [100];
-      var verwerfen = false;
-      for (var j = 1; j < yRows.length; j++) {
-        var lr = yRows[j].log_return;
-        if (lr == null || !isFinite(lr)) {
-          var prev = yRows[j - 1].close, cur = yRows[j].close;
-          if (isFinite(prev) && isFinite(cur) && prev > 0 && cur > 0) {
-            lr = Math.log(cur / prev);
-          } else { verwerfen = true; break; }
-        }
-        cumulative.push(cumulative[j - 1] * Math.exp(lr));
-      }
-      if (verwerfen) continue;
+      var kum = SA.seasonal._kumuliere(yRows);
+      if (!kum) continue;
+      var cumulative = kum.cumulative;
       // Day-of-Year fuer jeden Eintrag
       var days = yRows.map(function(r) { return SA.seasonal.tagNummer(r.date); });
       // Interpolieren auf 365 Kalendertage
@@ -367,11 +357,35 @@ SA.seasonal = {
       var lastActualDay = days.length ? Math.min(days[days.length - 1], 365) : 0;
       result[parseInt(year)] = {
         full_365: full365,
+        days: days,   // Tagesnummern ALLER Kurszeilen (jahrVollstaendig prüft Jahresanfang und Lücken)
         last_actual_day: lastActualDay,
         simpleReturn: Math.round(simpleReturn * 100) / 100
       };
     }
     return result;
+  },
+
+  /**
+   * Kumuliert die Zeilen EINES Jahres auf Start 100 (Zeile 0 = Referenzpunkt, Zeile j trägt ihren eigenen Return).
+   * Fehlt ein log_return oder ist er nicht endlich, wird er aus den Closes rekonstruiert; geht auch das nicht, wird das
+   * Jahr verworfen (null) — wie Python normalize_year. Gemeinsam für buildYearData und den Builder auf /jahreszyklus,
+   * der vorher nicht-endliche Returns durchließ (NaN-Kurve) und bei kaputtem Vorgängerkurs still 0 setzte.
+   * @returns {{cumulative:number[], logRets:number[]}|null} logRets[0] = 0
+   */
+  _kumuliere: function(yRows) {
+    var cumulative = [100], logRets = [0];
+    for (var j = 1; j < yRows.length; j++) {
+      var lr = yRows[j].log_return;
+      lr = (lr == null || lr === '') ? NaN : parseFloat(lr);
+      if (!isFinite(lr)) {
+        var prev = parseFloat(yRows[j - 1].close), cur = parseFloat(yRows[j].close);
+        if (isFinite(prev) && isFinite(cur) && prev > 0 && cur > 0) lr = Math.log(cur / prev);
+        else return null;
+      }
+      cumulative.push(cumulative[j - 1] * Math.exp(lr));
+      logRets.push(lr);
+    }
+    return { cumulative: cumulative, logRets: logRets };
   },
 
   /**
@@ -420,6 +434,135 @@ SA.seasonal = {
       return parseInt(jahr, 10) < parseInt(stichtagJahr, 10) && lad >= SA.seasonal.JAHRESENDE_UNTERGRENZE;
     }
     return lad >= endDoy;
+  },
+
+  // ── Williams True Seasonal (Plan v3: docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md) ──────────────────────
+  // Die Saisonkurve für ein Zieljahr nur aus Jahren davor (Larry Williams, „Larry Williams Indicators“ 2020, S. 15).
+  // Gegenstück: shared/true_seasonal.py — Wächter scripts/verify_seasonal_twins.py (Block True Seasonal).
+
+  // Heuristik „vollständiges Jahr“ bis zur Kalender-Umstellung V4 (dann Sitzungsprüfung gegen den Börsenkalender):
+  JAHRESANFANG_GRENZE: 7,    // erste Kurszeile spätestens am 7.1. (spätester Jahresanfang aller Kalender 1990–2030: Tag 6)
+  JAHRESENDE_VOLL: 362,      // letzte Kurszeile ab Tag 362 (frühestes Jahresende aller Kalender: 362)
+  LUECKE_MAX: 14,            // kein Abstand zweier Kurszeilen über 14 Kalendertage (TSE 2019: 11)
+  MONATSENDE_SLOT: [31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365],
+
+  /**
+   * Vollständig nach Heuristik: vergangenes Jahr, Jahresanfang ≤ Tag 7, Jahresende ≥ Tag 362, keine Lücke > 14 Tage.
+   * Erkennt einzelne fehlende Sitzungen nicht (die Seite interpoliert sie). Jahre mit langen Schließungen (NYSE 1914)
+   * fallen vorsorglich heraus. Fail-closed: ohne `days` nie vollständig.
+   */
+  jahrVollstaendig: function(yd, jahr, stichtagJahr) {
+    var t = yd && yd.days;
+    if (!t || !t.length) return false;
+    if (!(parseInt(jahr, 10) < parseInt(stichtagJahr, 10))) return false;
+    if (!(t[0] <= SA.seasonal.JAHRESANFANG_GRENZE)) return false;
+    if (!(Math.min(t[t.length - 1], 365) >= SA.seasonal.JAHRESENDE_VOLL)) return false;
+    for (var i = 1; i < t.length; i++) {
+      var d = t[i] - t[i - 1];
+      if (!(d > 0 && d <= SA.seasonal.LUECKE_MAX)) return false;
+    }
+    return true;
+  },
+
+  /** Mindestzahl Vorjahre: ⌈0,8·N⌉, bei „max“ (fensterN null) 10. */
+  trueSeasonalMindest: function(fensterN) {
+    return fensterN == null ? 10 : Math.ceil(0.8 * fensterN);
+  },
+
+  /** Vollständige Jahre im Kalenderfenster [zielJahr − N, zielJahr − 1] (N null = alle Vorjahre), aufsteigend. */
+  trueSeasonalJahre: function(yearData, zielJahr, fensterN) {
+    var von = fensterN == null ? -Infinity : zielJahr - fensterN;
+    return Object.keys(yearData).map(Number).filter(function(j) {
+      return j >= von && j < zielJahr && SA.seasonal.jahrVollstaendig(yearData[j], j, zielJahr);
+    }).sort(function(a, b) { return a - b; });
+  },
+
+  /**
+   * Modelljahre für die Anzeige (Seite /jahreszyklus und /embed): erst die vollständigen Vorjahre im Kalenderfenster,
+   * DANN der Jahresfilter nur über diese (sonst bestimmte das Zieljahr mit, welche Vorjahre bleiben), Mindestmenge NACH
+   * dem Filter. filterFn(teilmenge) → gefilterte Teilmenge (z. B. SA.outlier.filterJahre), null = kein Filter.
+   */
+  trueSeasonalModell: function(yearDataRoh, stichtagJahr, fensterN, filterFn) {
+    var roh = {};
+    SA.seasonal.trueSeasonalJahre(yearDataRoh, stichtagJahr, fensterN).forEach(function(j) { roh[j] = yearDataRoh[j]; });
+    var modell = filterFn ? filterFn(roh) : roh;
+    var n = Object.keys(modell).length, mindest = SA.seasonal.trueSeasonalMindest(fensterN);
+    return { modell: modell, n: n, mindest: mindest, ok: n >= mindest };
+  },
+
+  /** Ungerundeter Mittelwert der full_365 der genannten Jahre (wie die Seite), null bei leerer Menge. */
+  mittelKurve: function(yearData, jahre) {
+    if (!jahre.length) return null;
+    var out = [];
+    for (var d = 0; d < 365; d++) {
+      var s = 0;
+      for (var i = 0; i < jahre.length; i++) s += yearData[jahre[i]].full_365[d];
+      out.push(s / jahre.length);
+    }
+    return out;
+  },
+
+  /** 12 Änderungen ln(K[e_m]/K[e_{m−1}]) zwischen den Monatsgrenzen der Chart-Achse, K vor Januar = 100. */
+  monatsAenderungen: function(kurve) {
+    var out = [], vor = 100;
+    for (var m = 0; m < 12; m++) {
+      var v = kurve[SA.seasonal.MONATSENDE_SLOT[m] - 1];
+      if (!(v > 0 && isFinite(v) && vor > 0)) return null;
+      out.push(Math.log(v / vor));
+      vor = v;
+    }
+    return out;
+  },
+
+  /** Pearson r der 12 Änderungen (null bei konstanter Reihe), Vorzeichentreffer (0 = kein Treffer), „immer positiv“. */
+  vergleich12: function(ist, modell) {
+    var a = SA.seasonal.monatsAenderungen(ist), b = modell && SA.seasonal.monatsAenderungen(modell);
+    if (!a || !b) return null;
+    var ma = 0, mb = 0;
+    for (var i = 0; i < 12; i++) { ma += a[i] / 12; mb += b[i] / 12; }
+    var sab = 0, saa = 0, sbb = 0, treffer = 0, immerPositiv = 0;
+    for (var k = 0; k < 12; k++) {
+      sab += (a[k] - ma) * (b[k] - mb); saa += (a[k] - ma) * (a[k] - ma); sbb += (b[k] - mb) * (b[k] - mb);
+      if (a[k] !== 0 && b[k] !== 0 && (a[k] > 0) === (b[k] > 0)) treffer++;
+      if (a[k] > 0) immerPositiv++;
+    }
+    var r = (saa > 0 && sbb > 0) ? sab / Math.sqrt(saa * sbb) : null;
+    return { r: r, treffer: treffer, immerPositiv: immerPositiv };
+  },
+
+  /**
+   * Rückblick je vergangenem, vollständigem Jahr Y im Fenster (Y ≥ stichtagJahr − N; N null = alle):
+   *   ts    = True Seasonal Y aus den vollständigen Jahren in [Y − N, Y − 1] (Mindestmenge, sonst Jahr nicht bewertet)
+   *   rueck = Mittel ALLER Jahre in yearData mit Y − N ≤ j ≤ Y (Konvention der Seite im Durchschnittsmodus)
+   * Kein Ausreißerfilter. yearData muss die Vorjahre enthalten (volle Historie).
+   */
+  rueckblick: function(yearData, stichtagJahr, fensterN) {
+    var S = SA.seasonal, alle = Object.keys(yearData).map(Number).sort(function(a, b) { return a - b; });
+    var unten = fensterN == null ? -Infinity : stichtagJahr - fensterN;
+    var mindest = S.trueSeasonalMindest(fensterN);
+    var zeilen = [];
+    alle.forEach(function(y) {
+      if (y < unten || y >= stichtagJahr || !S.jahrVollstaendig(yearData[y], y, stichtagJahr)) return;
+      var tsJahre = S.trueSeasonalJahre(yearData, y, fensterN);
+      if (tsJahre.length < mindest) return;
+      var von = fensterN == null ? -Infinity : y - fensterN;
+      var rJahre = alle.filter(function(j) { return j >= von && j <= y; });
+      var ist = yearData[y].full_365;
+      zeilen.push({ jahr: y, nTs: tsJahre.length, nRueck: rJahre.length,
+                    ts: S.vergleich12(ist, S.mittelKurve(yearData, tsJahre)),
+                    rueck: S.vergleich12(ist, S.mittelKurve(yearData, rJahre)) });
+    });
+    function zusammen(feld) {
+      var rs = zeilen.map(function(z) { return z[feld] && z[feld].r; }).filter(function(r) { return r != null; });
+      var tr = zeilen.filter(function(z) { return z[feld]; }).map(function(z) { return z[feld].treffer; });
+      return { rMittel: rs.length ? rs.reduce(function(s, r) { return s + r; }, 0) / rs.length : null,
+               rPositiv: rs.filter(function(r) { return r > 0; }).length, nGueltig: rs.length,
+               trefferMittel: tr.length ? tr.reduce(function(s, x) { return s + x; }, 0) / tr.length : null };
+    }
+    var ip = zeilen.filter(function(z) { return z.ts; }).map(function(z) { return z.ts.immerPositiv; });
+    return { jahre: zeilen, ts: zusammen('ts'), rueck: zusammen('rueck'),
+             immerPositivMittel: ip.length ? ip.reduce(function(s, x) { return s + x; }, 0) / ip.length : null,
+             mindest: mindest };
   },
 
   /** Quantil einer AUFSTEIGEND sortierten Liste mit linearer Interpolation (numpy-Methode „linear").
