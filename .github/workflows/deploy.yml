@@ -127,6 +127,11 @@ jobs:
         run: |
           python3 -m pip install --quiet requests==2.32.3
           python3 scripts/verify_basisabweichung.py
+      # Morgen-Mail: Kursreihe beginnt hinter dem juengsten Widerspruch zwischen Kursen und log_return (Basiswechsel
+      # oder falscher Return, nichts wird umgerechnet), Seitenabfrage mit Gesamtordnung (nur nach Datum liefen an den
+      # Seitengrenzen Zeilen doppelt bzw. fehlten). Supabase als Attrappe.
+      - name: Waechter - basisgleiche Kursreihe der Mail
+        run: python3 scripts/verify_kursreihe_basis.py
       # Skew-History: gemeinsame Schreibsperre aller Schreiber (Cron, Massive-Backfill, VRP), defekte History bricht
       # ab statt sie zu ueberschreiben, Reparaturmodus nur gegen eine Freigabedatei. --streng: unter Linux muss die
       # Parallelitaetsprobe laufen, UNGEPRUEFT ist rot.

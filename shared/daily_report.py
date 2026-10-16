@@ -218,52 +218,6 @@ def compute_multi_window_tdom_score(ticker: str, tdom: int) -> dict:
 # Aktueller Kurs + Vortagsperformance (Bulk)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def fetch_latest_prices_map(tickers: list[str]) -> dict[str, dict]:
-    """
-    Für jeden Ticker {close: float, prev_close: float, change_pct: float, date: str}.
-
-    Holt die letzten 5 Tage pro Ticker (paginiert), nimmt die zwei letzten
-    Werte. Eine Query pro Ticker ist unvermeidlich da REST kein DISTINCT ON
-    via Supabase-PostgREST kann.
-    """
-    from shared.supabase_client import get_client
-    client = get_client()
-    out: dict[str, dict] = {}
-
-    for t in tickers:
-        try:
-            rows = (
-                client.table("prices")
-                .select("date,close")
-                .eq("ticker", t)
-                .order("date", desc=True)
-                .limit(2)
-                .execute()
-                .data
-            ) or []
-            if len(rows) >= 2:
-                close = float(rows[0]["close"])
-                prev = float(rows[1]["close"])
-                change = (close / prev - 1) * 100 if prev else 0
-                out[t] = {
-                    "close":      close,
-                    "prev_close": prev,
-                    "change_pct": round(change, 2),
-                    "date":       rows[0]["date"],
-                }
-            elif len(rows) == 1:
-                out[t] = {
-                    "close":      float(rows[0]["close"]),
-                    "prev_close": None,
-                    "change_pct": None,
-                    "date":       rows[0]["date"],
-                }
-        except Exception as e:
-            error_logger.error(f"[daily_report] fetch_prices {t}: {e}")
-
-    return out
-
-
 def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
     """Letzter verfügbarer OHLC-Bar je Ticker für BlastOff-Berechnung.
 
@@ -298,6 +252,43 @@ def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
     return out
 
 
+def _zahl(x) -> "float | None":
+    """Endliche Zahl oder None (kein bool, kein NaN/Inf, kein unlesbarer Text)."""
+    import math
+    if isinstance(x, bool) or x is None:
+        return None
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def _basisgleich(zeilen: list[tuple]) -> list[tuple[str, float]]:
+    """[(datum, close|None, log_return|None)] aufsteigend → [(datum, close)] der Zeilen mit gültigem Schlusskurs,
+    abgeschnitten hinter dem JÜNGSTEN Widerspruch zwischen Kursen und gespeichertem Tagesreturn.
+
+    Widerspruch = zwei unmittelbar aufeinanderfolgende Zeilen mit gültigem Kurs, deren |ln(close_i/close_{i−1}) −
+    log_return_i| > `basisabweichung.SCHWELLE` (dieselbe Prüfung meldet der Health-Check „Kursbasis“). Dann ist eine
+    der beiden Größen falsch — ein Basiswechsel (ETHA 30.09.2026: Kurse ×3, log_return −0,79 %) oder ein falscher
+    Return —, und welche, lässt sich aus den Zahlen allein nicht entscheiden (Codex-Review 16.10.: eine automatische
+    Korrektur mit log_return machte aus 100 → 101 bei log_return 0,2 eine Rendite von +22 %). Die Reihe beginnt
+    deshalb mit der Zeile des Widerspruchs; nichts wird umgerechnet. Unterhalb der Schwelle gilt der Kurs wie bisher
+    (Dividenden, Forex-Intraday-Zeilen mit zwei Tage spannendem Return).
+    """
+    from shared.basisabweichung import SCHWELLE
+    import math
+    start = 0
+    for i in range(len(zeilen) - 1, 0, -1):
+        _, c_i, lr_i = zeilen[i]
+        c_vor = zeilen[i - 1][1]
+        if (lr_i is not None and c_i is not None and c_i > 0 and c_vor is not None and c_vor > 0
+                and abs(math.log(c_i / c_vor) - lr_i) > SCHWELLE):
+            start = i
+            break
+    return [(d, c) for d, c, _lr in zeilen[start:] if c is not None and c > 0]
+
+
 def fetch_daily_close_history(
     tickers: list[str], lookback_days: int = 750
 ) -> dict[str, "pd.Series"]:
@@ -310,8 +301,13 @@ def fetch_daily_close_history(
 
     Returns:
         {ticker: pd.Series}  — Index = Datum (DatetimeIndex, aufsteigend),
-        Werte = close (float). Ticker ohne Daten werden ausgelassen.
+        Werte = basisgleiche Schlusskurse (float). Ticker ohne Daten werden ausgelassen.
         Bei Fehlern: leeres dict (nie crashen).
+
+    Basisgleich (2026-10-16, Folgeposten zu Paket A): die gespeicherten Schlusskurse können innerhalb der Reihe die
+    Basis wechseln (ETHA 30.09.2026: 20,28 → 60,36 nach Reverse-Split, gespeicherter `log_return` −0,79 %). Wer daraus
+    Renditen, RSI oder LBR rechnet, sieht einen Sprung, den es nicht gab. Die Reihe beginnt deshalb hinter dem
+    jüngsten Widerspruch zwischen Kursen und `log_return` (siehe `_basisgleich`); Werte bleiben die echten Kurse.
     """
     import pandas as pd
 
@@ -331,10 +327,12 @@ def fetch_daily_close_history(
         while True:
             batch = (
                 client.table("prices")
-                .select("ticker,date,close")
+                .select("ticker,date,close,log_return")
                 .in_("ticker", uniq)
                 .gte("date", cutoff)
                 .order("date")
+                .order("ticker")   # Gesamtordnung: nur nach Datum liefert PostgREST an den Seitengrenzen
+                                   # Zeilen doppelt und lässt andere aus (gemessen 16.10.: 16 von 10 567)
                 .range(offset, offset + page_size - 1)
                 .execute()
                 .data
@@ -350,31 +348,21 @@ def fetch_daily_close_history(
     if not rows:
         return {}
 
-    # Lokal nach Ticker gruppieren
-    grouped: dict[str, list[tuple[str, float]]] = {}
+    # Lokal nach Ticker gruppieren; Zeilen ohne Schlusskurs bleiben für die Verkettung erhalten
+    grouped: dict[str, dict[str, tuple]] = {}
     for r in rows:
-        t = r.get("ticker")
-        c = r.get("close")
-        d = r.get("date")
-        if not t or c is None or not d:
+        t, d = r.get("ticker"), r.get("date")
+        if not t or not d:
             continue
-        try:
-            grouped.setdefault(t, []).append((d, float(c)))
-        except (TypeError, ValueError):
-            continue
+        grouped.setdefault(t, {})[d] = (_zahl(r.get("close")), _zahl(r.get("log_return")))  # Duplikat: letzte gewinnt
 
     out: dict[str, "pd.Series"] = {}
-    for t, pairs in grouped.items():
-        if not pairs:
-            continue
+    for t, je in grouped.items():
         try:
-            pairs.sort(key=lambda x: x[0])
-            idx = pd.to_datetime([p[0] for p in pairs])
-            vals = [p[1] for p in pairs]
-            s = pd.Series(vals, index=idx, dtype=float)
-            # Doppelte Datums (z.B. Intraday-Upsert-Artefakte) → letzten behalten
-            s = s[~s.index.duplicated(keep="last")].sort_index()
-            out[t] = s
+            pairs = _basisgleich(sorted((d, c, lr) for d, (c, lr) in je.items()))
+            if not pairs:
+                continue
+            out[t] = pd.Series([p[1] for p in pairs], index=pd.to_datetime([p[0] for p in pairs]), dtype=float)
         except Exception as e:
             error_logger.error(f"[daily_report] build series {t}: {e}")
             continue

@@ -397,6 +397,25 @@ for name, gd, erw, soll in [
     st, det = hc._gex_bewertung(gd, erw)
     pruef(name, st == soll, f"{st} · {det}")
 
+print("== daily_health_check._options_bewertung (Skew, Key Levels, IV-Surface, Flow — Sessions statt Kalendertage)")
+GRUEN = ("green", "20 Ticker")
+for name, jd, abd, soll in [
+    ("Session aktuell -> grün", {"session": "2026-10-19", "generated": "2026-10-20"}, GRUEN, "green"),
+    ("Morgen nach ausgefallenem Lauf (eine Session hinter) -> gelb",
+     {"session": "2026-10-16", "generated": "2026-10-17"}, GRUEN, "yellow"),
+    ("zwei Sessions hinter -> rot", {"session": "2026-10-15", "generated": "2026-10-16"}, GRUEN, "red"),
+    ("Session aktuell, Abdeckung rot -> rot", {"session": "2026-10-19"}, ("red", "0 Ticker"), "red"),
+    ("Session aktuell, Abdeckung gelb -> gelb", {"session": "2026-10-19"}, ("yellow", "80 Ticker"), "yellow"),
+    ("Session nach der erwarteten -> rot", {"session": "2026-10-20"}, GRUEN, "red"),
+    ("Session an einem Samstag -> rot", {"session": "2026-10-17"}, GRUEN, "red"),
+    ("Session als Zeitstempel -> rot", {"session": "2026-10-19T01:00:00"}, GRUEN, "red"),
+    ("ISO-Wochendatum 2026-W43-1 -> rot", {"session": "2026-W43-1"}, GRUEN, "red"),
+    ("ohne Session, Laufstempel = Session -> mindestens gelb", {"generated": "2026-10-19"}, GRUEN, "yellow"),
+    ("ohne Session und ohne Laufstempel -> rot", {}, GRUEN, "red"),
+]:
+    st, det = hc._options_bewertung(jd, ERW, abd)
+    pruef(name, st == soll, f"{st} · {det}")
+
 # ── 6b. Seiten: /key-levels und /dealer-positioning (echtes Seiten-JS in node) ─────────────────────────────────────
 print("== Seiten (node, scripts/js/probe_options_session.js)")
 import shutil as _sh, subprocess as _sp                                   # noqa: E402
