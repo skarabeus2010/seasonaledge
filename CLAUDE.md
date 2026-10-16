@@ -315,7 +315,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 - [x] **Phase 1B** (2026-10-08): UHTS-Hebel nach Regel, XETRA-Kalender ab 2001 korrigiert, Kurslücken markiert, tägliche Kontokurve — Codex-Freigabe Plan R3, Code R2.
 - [x] **XETRA-TDOY/TDOM-Trockenlauf** (2026-10-10): Muster passte nicht → eigenes Vorhaben „Tage nach Börsenkalender“ (unten).
 - [ ] **Phase 2** Signale/Texte (bedingte Strategien regelgetreu in `regeltermine`) · **Phase 3** Zwillinge vollständig (UHTS, OHLC-Stops in Python, Maskenvertrag der Indikatorfilter).
-- [ ] **`decade-compute.js:136`** nimmt den Median per Floor-Index (dieselbe Klasse wie `_quantil` in `seasonal-compute.js`, dort behoben) — nicht Teil von 1A.
+- [x] **`decade-compute.js`** Median wie `np.median` (Mittel der beiden mittleren Werte) — war bereits umgesetzt (geprüft 2026-10-16).
 - Hinweis: `/opex`, `/tdom-analyse`, `/vixpiration` nutzen die gemeinsamen Stops und zeigen seit 1A den echten Schlusskurs am Stop-Tag.
 
 ### Neue Ticker schneller laden (kanonisch: [docs/TICKER_LADEN.md](docs/TICKER_LADEN.md))
@@ -407,7 +407,7 @@ Nutzerentscheidungen 2026-10-10: Tage nach Börsenkalender ausweisen (auch Stati
 
 ### 🔴 SOFORT — Funktional (aus Review-Welle 1)
 - [ ] **`SPY Down-Month ToM Reversal` nachoptimieren (Einstiegstag), NICHT neu rechnen.** Präzisierung 2026-09-10 nach Gegenprüfung der eigenen Folgenabschätzung aus PR #270: `calc_downmonth_tom` nutzt `_nthTradingDay` + echte Closes, **nicht** die kumulierte Reihe → die Kennzahlen (Sharpe 0,34 · WR 72 % · PF 2,39) sind **korrekt gerechnet**. Offen ist etwas anderes: die **Parameter** (Einstieg TDOM 14, Haltedauer 13) wurden aus der um einen Handelstag verschobenen ToM-Kurve abgelesen und können danebenliegen. → Grid über TDOM 12-16 × Haltedauer 11-15 auf der korrigierten Kurve, dann entscheiden ob 14/13 bleibt. Zahlen bleiben bis dahin zitierfähig, wenn der offene Einstiegstag dabeisteht. Hintergrund: [docs/KERNMETHODIK.md](docs/KERNMETHODIK.md)
-- [x] **Live-Störung 403 auf /skew und /flows behoben** (PR #276, 2026-09-11) — atomares Schreiben setzte 0600. Offen daraus: Health-Check um einen HTTP-Abruf erweitern (steht in [docs/OPTIONS.md](docs/OPTIONS.md)).
+- [x] **Live-Störung 403 auf /skew und /flows behoben** (PR #276, 2026-09-11) — atomares Schreiben setzte 0600. HTTP-Prüfung im Health-Check seit 2026-10-16.
 - [x] **Endabnahme Flows/Optionen** (PR #275, 2026-09-11) — 2 lückenhafte Fixes nachgezogen (`--vol-pctl`-Funktionsdefaults, cm-Zeilen ohne `iv_atm` im Backfill), eine Reviewer-Einstufung mit Messung korrigiert. Detail: [docs/OPTIONS.md](docs/OPTIONS.md#endabnahme-2026-09-11-pr-275).
 - [x] **Endabnahme Kern-Methodik: FREIGEGEBEN** (PR #274, 2026-09-11) — beide Auflagen erfüllt, XETRA-2023 aus Rohkursen gegengerechnet (0,0000000000 pp), Mutationstest 15/15. Betrieb der Review-Schleife: [docs/REVIEW_MIT_CODEX.md](docs/REVIEW_MIT_CODEX.md).
 - [x] **Dritte Prüfrunde (PR #273)**: Zirkelschluss in `year_end_reference` behoben, Wächter per Mutationstest belegt (`scripts/verify_twins_mutation.py`, 12/12). Details im Versionskopf v59.0 + [docs/KERNMETHODIK.md](docs/KERNMETHODIK.md) 4c.
@@ -429,7 +429,7 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 `options_skew_history.json` war durch den Backfill auf **2,65 MB** gewachsen, `deploy/nginx.conf` hatte **gar keine gzip-Direktive**, und das Frontend holte die Datei mit `cache:'no-store'` — also bei **jedem** Aufruf von `/skew` und `/flows` unkomprimiert komplett neu.
 - [x] **gzip für `/landing/`** aktiviert → 2.649.629 → **273.669 B** (Faktor 9,7), verifiziert per `curl -H "Accept-Encoding: gzip"`.
 - [x] **`no-store` → `no-cache`** in `skew.html`/`flows.html`: revalidiert weiterhin immer (Cron-Daten können nicht veralten), erlaubt dem Server aber ein **304**. Blosses Streichen wäre falsch — nginx liefert `max-age=86400`.
-- [ ] **Mittelfristig:** die Historie serverseitig auf die vom Frontend benötigten Ticker/Felder eindampfen. **Gemessen 2026-09-25:** 10,3 MB roh, aber nur **975 KB** über gzip; zwei Drittel sind Einrückung (kompakt 6,8 MB), nur 2 % der Punkte älter als ein Jahr. Kein akuter Druck — die Punktzahl wächst aber weiter (Kappung 750/Ticker ≈ 3 Jahre → absehbar 25–30 MB roh). Erster billiger Schritt: `indent=None` für diese eine Datei, danach HTTP-Abruf gegen die Live-URL (Lesson v60.2).
+- [ ] **Mittelfristig:** die Historie serverseitig auf die vom Frontend benötigten Ticker/Felder eindampfen. **Gemessen 2026-09-25:** 10,3 MB roh, aber nur **975 KB** über gzip; zwei Drittel sind Einrückung (kompakt 6,8 MB), nur 2 % der Punkte älter als ein Jahr. Kein akuter Druck — die Punktzahl wächst aber weiter (Kappung 750/Ticker ≈ 3 Jahre → absehbar 25–30 MB roh). **2026-10-16 umgesetzt:** `indent=None` in `history_aktualisieren` (11,0 → 8,1 MB roh, über gzip nur 1,07 → 1,01 MB — der Transport gewinnt kaum, gzip hatte die Einrückung schon weitgehend aufgefangen). Die Auslieferung prüft jetzt der Health-Check per HTTP.
 
 ### Optionen — Sofortreparaturen und Opening-Setup (Liste: [docs/OPTIONS_OFFEN_2026-10-13.md](docs/OPTIONS_OFFEN_2026-10-13.md))
 - [x] Paket A, B1, B2, GEX-Spot, ETHA-VRP-Reparatur, Radar-Quadranten, ^VIX9D/^VIX3M/^VIX1D (2026-10-14/15, v66.20).
@@ -440,7 +440,7 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [ ] ETHA-Altkurse auf die neue Basis bringen (Nutzerentscheidung, DB-Write); Forex-`log_return` an Wochenenden und in
       der Intraday-Zeile prüfen (Liste in docs/OPTIONS_OFFEN_2026-10-13.md).
 - [ ] Vanna-Vorzeichen gegen FlashAlpha klären (FA −27,7 Mrd, wir +3,7 Mrd am 15.10.) — Definitionsfrage.
-- [ ] Folgeposten: Kalenderseite mit `earnings_events.report_date` (Quartalsende statt Termin).
+- [x] Kalenderseite ohne Earnings (2026-10-16, wie die Mail): `report_date` ist das Quartalsende; zurück erst mit einer Terminquelle.
 - [ ] Opening-Setup Stufe 3 „Vola-Lage“ (VIX9D/VIX3M/VIX1D jetzt in der DB), SPX-Gamma über `I:SPX`, Kontext-Tags ohne
       Earnings (SpotGamma-Glossar-Abgleich 15.10., [docs/OPENING_SETUP_PLAN.md](docs/OPENING_SETUP_PLAN.md)).
 
@@ -481,7 +481,7 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [ ] **Weekly Newsletter freischalten:** Test-Mail vom 29.09. (KW 40) abnehmen, dann `WEEKLY_NEWSLETTER_AN = True` in `shared/constants.py`. Bis dahin meldet der Health-Check gelb.
 - [ ] **Ersten Nightly per Timer prüfen** (29.09. 20:45 UTC): `journalctl -u sa-nightly.service`, Exit 0, `refresh_log` nightly genau EINE Zeile pro Tag, Crontab ohne Nightly.
 - [ ] **Brevo: den alten Schlüssel im Dashboard löschen** — er lag bis 29.09. zusätzlich in der Server-`secrets.toml` (jetzt geleert).
-- [ ] **Tägliche GitHub-Workflows verdecken Fehler** (`… | tail -20` ohne `pipefail`, z. B. `polymarket_daily.yml`, `daily_health.yml`): ein Exit 1 des Skripts wird zum grünen Lauf. Codex-Nebenbefund, vorbestehend.
+- [x] **Tägliche GitHub-Workflows mit `pipefail`** — geprüft 2026-10-16: jeder `run`-Block mit `| tail` setzt `set -o pipefail` (14 Workflows).
 - [ ] **Tägliche GitHub-Crons laufen 2–4 h verspätet** (Nightly 20:30 → ~23:00, Options-Skew 23:00 → ~01:00). Solange sie vollständig ankommen unkritisch; bei Ausfällen dasselbe Muster wie die Intraday-Timer.
 - [x] **Daily Morning Briefing auf `sa-daily-briefing.timer`** + Versandsperre + Fristprüfung + Deploy wartet (2026-10-12, v66.18, live `5aedff0`, Codex-Freigabe nach 5 Runden). Bedienung: [docs/REFRESH_MONITORING.md](docs/REFRESH_MONITORING.md#daily-morning-briefing-bedienung-und-prüfliste-seit-2026-10-12).
 - [ ] **Erster Briefing-Lauf Di 13.10. 05:30 UTC (07:30 Berlin) prüfen** — Prüfliste in REFRESH_MONITORING: Mail angekommen, `journalctl -u sa-daily-briefing.service` Exit 0, `logs/versand/daily_newsletter_2026-10-13.json` = `fertig` mit `ungeklaert: 0`, `refresh_log` mit `modus: live`.
@@ -497,7 +497,7 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [ ] **Dritte Quellen-Option prüfen: rohe Schlusskurse + explizite Dividendenevents.** Methodisch sauberer als beide heutigen Quellen (Supabase trägt am Ex-Tag einen künstlichen Abschlag, Yahoo ist nicht reproduzierbar), braucht aber die Tabelle `dividend_events` — die ist leer (steht schon in der technischen Roadmap).
 - [ ] **`landing/pages/skew.html` rankt Zeilen ohne `iv_atm` nicht aus** (Reviewer-Hinweis 2026-09-19): alte `cm`-Zeilen ohne ATM-IV bleiben rankbar und fallen auf den Zeta-Fallback zurück, der den Quadranten auf die Antidiagonale kollabiert. Der VRP-Backfill leert dort jetzt die VRP-Felder (2 Zeilen im Bestand), aber das Frontend sollte solche Zeilen selbst ausschliessen.
 - [x] **`options_skew_history.bak.json` vom Server** — war am 2026-09-25 bereits entfernt.
-- [ ] **Health-Check um einen HTTP-Abruf erweitern** (aus PR #276): er prüft Dateiinhalte, nicht ob die Datei noch **auslieferbar** ist. Genau diese Lücke liess die 403-Störung durch.
+- [x] **Health-Check prüft die Auslieferung per HTTP** (2026-10-16): „Options: Auslieferung (HTTP)“, HEAD je Options-Datei, nicht 200 = rot, Netzfehler = gelb.
 
 ### 🔬 Systematischer Code-Review in Wellen
 

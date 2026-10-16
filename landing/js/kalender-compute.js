@@ -7,7 +7,7 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
   'use strict';
 
   var _events   = [];   // from market_calendar.json (static)
-  var _personal = [];   // from Supabase (dividends/earnings for watchlist)
+  var _personal = [];   // from Supabase (Dividenden der Watchlist; Earnings bewusst nicht, siehe _loadPersonalized)
   var _year     = new Date().getFullYear();
   var _month    = new Date().getMonth(); // 0-11
   var _isPremium = false;
@@ -121,22 +121,10 @@ window.SA.__release('%%RELEASE%%');   // Releasekennung (landing/js/methode.js) 
         _render();
       }).catch(function () {});
 
-    window.supabase.from('earnings_events')
-      .select('ticker,report_date,eps_estimate')
-      .gte('report_date', monthStart)
-      .lt('report_date', nextM)
-      .in('ticker', tickers)
-      .then(function (res) {
-        (res.data || []).forEach(function (d) {
-          _personal.push({
-            date:   d.report_date,
-            type:   'earnings',
-            name:   d.ticker + ' Earn.',
-            detail: d.eps_estimate != null ? ('EPS ~' + parseFloat(d.eps_estimate).toFixed(2)) : '',
-          });
-        });
-        _render();
-      }).catch(function () {});
+    // Earnings: BEWUSST NICHT (2026-10-16, wie die Morgen-Mail seit 2026-10-14). `earnings_events.report_date` ist das
+    // Ende des Geschäftsquartals (scripts/fetch_event_data.py übernimmt earningsHistory.quarter), kein
+    // Veröffentlichungstermin — der Kalender zeigte „Earnings“ an Quartalsenden. Wieder aufnehmen erst mit einer
+    // Terminquelle (docs/OPENING_SETUP_PLAN.md, Stufe 4).
   }
 
   // ── Render ──────────────────────────────────────────────────────────

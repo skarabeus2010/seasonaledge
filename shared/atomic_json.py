@@ -147,7 +147,8 @@ def history_aktualisieren(pfad: str | Path, aendern, *, danach=None, frist_s: fl
         hist = history_lesen(pfad, neu_erlaubt=neu_erlaubt)
         if aendern(hist) is False:
             return None
-        write_json_atomic(pfad, hist)
+        # Ohne Einrückung (2026-10-16): 11,0 → 8,1 MB roh, über gzip 1,07 → 1,01 MB; Leser parsen JSON, nicht Zeilen.
+        write_json_atomic(pfad, hist, indent=None)
         if danach is not None:
             danach(hist)
         return hist

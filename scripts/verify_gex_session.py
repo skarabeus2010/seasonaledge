@@ -416,6 +416,22 @@ for name, jd, abd, soll in [
     st, det = hc._options_bewertung(jd, ERW, abd)
     pruef(name, st == soll, f"{st} · {det}")
 
+print("== daily_health_check._http_auslieferung (Options-Dateien über nginx)")
+_codes = {"a.json": 200, "b.json": 403}
+for name, dateien, abruf, soll in [
+    ("alle 200 -> grün", ("a.json",), lambda u: 200, "green"),
+    ("eine Datei 403 -> rot (Fall 11.09.: Inhalt gut, nginx verweigert)", ("a.json", "b.json"),
+     lambda u: _codes[u.rsplit("/", 1)[1]], "red"),
+    ("Weiterleitung 301 ist keine Auslieferung -> rot", ("a.json",), lambda u: 301, "red"),
+    ("Netzfehler -> gelb (ungeprüft, nicht grün)", ("a.json",), lambda u: (_ for _ in ()).throw(OSError("dns")), "yellow"),
+    ("403 + Netzfehler -> rot", ("a.json", "b.json"),
+     lambda u: 403 if u.endswith("b.json") else (_ for _ in ()).throw(OSError("dns")), "red"),
+]:
+    st, det = hc._http_auslieferung(dateien, abruf=abruf, basis="https://x/")
+    pruef(name, st == soll, f"{st} · {det}")
+pruef("Options-Dateien enthalten Snapshot und History",
+      {"options_skew.json", "options_skew_history.json", "gex_summary.json"} <= set(hc.OPTIONS_DATEIEN))
+
 # ── 6b. Seiten: /key-levels und /dealer-positioning (echtes Seiten-JS in node) ─────────────────────────────────────
 print("== Seiten (node, scripts/js/probe_options_session.js)")
 import shutil as _sh, subprocess as _sp                                   # noqa: E402

@@ -454,6 +454,16 @@ def collect_health_data() -> dict:
                        "detail": f"Fehler: {str(e)[:100]}", "value": "ERR"})
         downgrade("red")
 
+    # Auslieferung über HTTP — eigener Block, damit ein Fehler in den Inhaltsprüfungen ihn nicht überspringt. Der Inhalt
+    # kann stimmen und nginx trotzdem 403 liefern (2026-09-11: 0600 durch das atomare Schreiben, /skew und /flows leer,
+    # alle Dateiprüfungen grün).
+    try:
+        status, detail = _http_auslieferung(OPTIONS_DATEIEN)
+    except Exception as e:                          # noqa: BLE001
+        status, detail = "yellow", f"ungeprüft: {str(e)[:100]}"
+    checks.append({"name": "Options: Auslieferung (HTTP)", "status": status, "detail": detail, "value": "—"})
+    downgrade(status)
+
     # ── Check 5: Polymarket Snapshot ──────────────────────────────────
     try:
         resp = (
@@ -863,6 +873,35 @@ def collect_health_data() -> dict:
         "report_time": now_utc.strftime("%Y-%m-%d %H:%M UTC"),
         "report_date": today_utc.strftime("%Y-%m-%d"),
     }
+
+
+OPTIONS_DATEIEN = ("options_skew.json", "options_skew_history.json", "gex_summary.json", "key_levels.json",
+                   "iv_surface.json", "options_flow.json")
+DATEN_URL = "https://seasonalpha.ai/landing/data/"
+
+
+def _http_status(url: str) -> int:
+    import requests
+    return requests.head(url, timeout=15, headers={"Accept-Encoding": "gzip"}, allow_redirects=False).status_code
+
+
+def _http_auslieferung(dateien, abruf=_http_status, basis: str = DATEN_URL) -> tuple[str, str]:
+    """Liefert nginx die Dateien aus? 200 je Datei = grün; ein anderer Status = rot (Datei da, aber nicht abrufbar);
+    Netzfehler = gelb (ungeprüft ist nicht bestanden, aber kein Befund über die Datei)."""
+    schlecht, ungeprueft = [], []
+    for f in dateien:
+        try:
+            code = abruf(basis + f)
+        except Exception as e:                      # noqa: BLE001 — jeder Netzfehler heißt „nicht geprüft“
+            ungeprueft.append(f"{f} ({type(e).__name__})")
+            continue
+        if code != 200:
+            schlecht.append(f"{f} HTTP {code}")
+    if schlecht:
+        return "red", "nicht auslieferbar: " + ", ".join(schlecht) + (f" · ungeprüft: {', '.join(ungeprueft)}" if ungeprueft else "")
+    if ungeprueft:
+        return "yellow", "ungeprüft: " + ", ".join(ungeprueft)
+    return "green", f"{len(dateien)} Dateien HTTP 200"
 
 
 def _session_frische(datum, erwartet: date) -> tuple[str, str]:
