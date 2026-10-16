@@ -137,6 +137,9 @@ jobs:
       # Radar-Quadranten (/skew, /flows, Blog): oben die teure Skew-Seite verkaufen, unten die guenstige kaufen.
       - name: Waechter - Radar-Quadranten
         run: python3 scripts/verify_radar_quadranten.py
+      # Skew-Rang einmal im Cron (shared/skew_rang.py = scripts/js/skew_rang_ref.js), /skew und Mail lesen ihn.
+      - name: Waechter - Skew-Rang im Cron
+        run: python3 scripts/verify_skew_rang.py
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |

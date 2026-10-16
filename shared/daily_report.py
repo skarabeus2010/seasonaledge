@@ -48,30 +48,33 @@ def skew_map() -> dict:
 
 
 _SKEW_PCTL_MAP: dict | None = None
+_SNAPSHOT_PFAD = None          # nur für Wächter: anderer Pfad zu options_skew.json
 
 
 def skew_pctl_map() -> dict:
-    """Ticker → Skew-Percentile (0-100): Anteil der Tage im letzten Jahr, an denen
-    der 25Δ-Skew NIEDRIGER war als heute. Hoch = ungewöhnlich put-lastig. Aus
-    options_skew_history.json; None wenn <5 Historie-Punkte."""
+    """Ticker → Skew-Percentile (0–100) im 1-Jahres-Fenster, aus dem Rang, den der Options-Cron EINMAL rechnet
+    (`options_skew.json` → `rang[t]["365"]["skew"]["pctl"]`, shared/skew_rang.py) — dieselbe Zahl wie /skew.
+
+    Nur wenn der Snapshot zur erwarteten Session gehört: `rang_session == session == letzte_session("NYSE")` zum
+    Versandzeitpunkt; sonst leer (die Mail zeigt dann „—“). Vorher rechnete die Mail selbst: alle Zeilen statt nur
+    normierter, Fenster ab der Uhr, und ein fehlender heutiger Wert ließ ältere Tage nachrücken (Plan B3)."""
     global _SKEW_PCTL_MAP
     if _SKEW_PCTL_MAP is None:
         _SKEW_PCTL_MAP = {}
         try:
-            cur = skew_map()
-            p = _pathlib.Path(__file__).resolve().parent.parent / "landing" / "data" / "options_skew_history.json"
+            from shared.exchange_holidays import letzte_session
+            p = _SNAPSHOT_PFAD or (_pathlib.Path(__file__).resolve().parent.parent / "landing" / "data" / "options_skew.json")
             if p.exists():
-                h = _json.loads(p.read_text(encoding="utf-8"))
-                cut = (date.today() - timedelta(days=365)).isoformat()
-                for tk, arr in h.items():
-                    if tk.startswith("__") or tk not in cur:
-                        continue
-                    vals = [e.get("skew_pts") for e in arr
-                            if e.get("date", "") >= cut and e.get("skew_pts") is not None]
-                    if len(vals) >= 5:
-                        ref = cur[tk]
-                        below = sum(1 for v in vals if v < ref)
-                        _SKEW_PCTL_MAP[tk] = round(below / len(vals) * 100)
+                d = _json.loads(p.read_text(encoding="utf-8"))
+                erwartet = letzte_session("NYSE").isoformat()
+                if d.get("rang_session") == d.get("session") == erwartet:
+                    for tk, je in (d.get("rang") or {}).items():
+                        pc = ((je.get("365") or {}).get("skew") or {}).get("pctl")
+                        if isinstance(pc, int) and not isinstance(pc, bool):
+                            _SKEW_PCTL_MAP[tk] = pc
+                else:
+                    app_logger.debug(f"[daily_report] skew_pctl_map: Snapshot-Session {d.get('session')} / "
+                                     f"Rang {d.get('rang_session')} ≠ erwartet {erwartet} — kein Perzentil")
         except Exception as e:
             error_logger.error(f"[daily_report] skew_pctl_map: {e}")
             _SKEW_PCTL_MAP = {}

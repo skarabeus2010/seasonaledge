@@ -38,7 +38,10 @@ ist = {_feld(float(x), float(y)): t for x, y, t in re.findall(r"\[(\d+),(\d+),'(
 pruef("vier Strategie-Felder gefunden", len(ist) == 4, ist)
 for feld, soll in SOLL.items():
     pruef(f"{feld[1]} {feld[0]} = {soll}", ist.get(feld) == soll, ist.get(feld))
-pruef("X-Achse = call_iv − put_iv", "rr=arr.map(function(e){return e.call_iv-e.put_iv;})" in s)
+# Seit B3 rechnet der Cron die X-Größe (shared/skew_rang.py: rr = call_iv − put_iv); die Seite trägt rr auf X ab.
+k = (ROOT / "shared/skew_rang.py").read_text(encoding="utf-8")
+pruef("X-Achse = call_iv − put_iv (shared/skew_rang.py)", '"rr": _diff(ci, pi)' in k)
+pruef("/skew trägt rr auf X ab", "var ivR=_pick(r.iv), rrR=_pick(r.rr);" in s and "pts.push({x:rrR,y:ivR," in s)
 
 print("== /flows")
 f = (ROOT / "landing/pages/flows.html").read_text(encoding="utf-8")

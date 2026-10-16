@@ -32,6 +32,7 @@ from shared.yahoo_downloader import download_data, clear_cache  # noqa: E402
 from shared.options_universe import all_option_tickers, categories_for, OPTIONS_CATEGORIES  # noqa: E402
 from shared.exchange_holidays import is_trading_day, letzte_session, MarktOffen, pruefe_eod_fenster   # noqa: E402
 from shared.atomic_json import write_json_atomic, history_aktualisieren  # noqa: E402
+from shared.skew_rang import rang_gesamt                              # noqa: E402
 from shared.realized_vol import (RV_FENSTER, kappe_reihen,            # noqa: E402
                                  rv_aus_returns)
 from shared.data import KursreiheFehlt, lade_kurse                    # noqa: E402
@@ -1310,6 +1311,14 @@ def build(tickers: list[str], write: bool = True) -> dict:
                                  "eq_vol": pc_ratio["equity"]["vol"], "eq_oi": pc_ratio["equity"]["oi"],
                                  "idx_vol": pc_ratio["index"]["vol"]})
                 hist["__PCR"] = parr[-750:]
+            # Rang/Percentile EINMAL hier, auf der frisch zusammengeführten History und unter derselben Sperre
+            # (shared/skew_rang.py, Plan B3). /skew und die Morgen-Mail lesen nur noch das; rang_session = session,
+            # sonst verwerfen die Leser den Rang.
+            out["rang_session"] = today
+            rang_meldungen = []
+            out["rang"] = rang_gesamt(hist, today, rang_meldungen)
+            for m in rang_meldungen:
+                print(f"  [rang] {m}", flush=True)
 
         hist = history_aktualisieren(hp, _zusammenfuehren, danach=lambda _h: write_json_atomic(p, out))
         print(f"\n[OK] {len(per)}/{len(tickers)} Ticker + {len(indices)} Indizes → {p}")

@@ -211,7 +211,7 @@
     var SKEW_HIST=null, SKEW_CUR=null, SKEW_CATMAP={};
     // Handelstag des aktuellen Snapshots. Massstab dafuer, ob der letzte
     // normierte Historienpunkt eines Tickers wirklich von heute ist.
-    var SKEW_SESSION=null, SKEW_STALE={};
+    var SKEW_SESSION=null;
     // Kein '2J': die normierte Historie reicht nur ein Jahr zurueck (ab 2025-09-19,
     // 1-Jahres-Backfill; ein 2-J-Lauf ist bewusst nicht geplant, Entscheidung
     // 2026-09-25). '2J' rechnete daher auf denselben Daten wie '1J' und
@@ -232,44 +232,14 @@
       box.innerHTML=cats.map(function(c){return _btn('cat:'+c,c,c===SKEW_CAT);}).join('');
       box.querySelectorAll('button').forEach(function(b){b.onclick=function(){SKEW_CAT=b.getAttribute('data-v').slice(4);buildSkewCatBtns();refreshRankViews();};});
     }
-    // Percentile/Rank nur über laufzeit-NORMIERTE Punkte (konstante 30 Tage).
-    // Nur cm/cm_extrap zählen — 'single' und Alt-Einträge ohne cm_mode (variabler
-    // Verfall) tragen den Roll-Sägezahn und würden die Verfallsposition ranken
-    // statt den Skew. MIN_NORM = Mindestzahl normierter Tage, sonst kein Ranking
-    // (lieber keine Zahl als eine aus 5 Punkten). Stand 2026-09-25 nach dem
-    // 1-Jahres-Backfill: 155 von 165 Tickern ueber der Schwelle (Median 176 Punkte).
-    var MIN_NORM=20;
-    function _isNorm(e){ return e.cm_mode==='cm'||e.cm_mode==='cm_extrap'; }
-    function _normHist(tk){
-      var cut=new Date(Date.now()-SKEW_WIN*864e5).toISOString().slice(0,10);
-      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice()
-        .sort(function(a,b){return a.date<b.date?-1:1})
-        .filter(function(e){return e.date>=cut && _isNorm(e);});
-      // Rank und Percentile nehmen blind den LETZTEN Eintrag als „aktuell".
-      // Fehlt der heutige normierte Punkt (Ticker im Lauf ausgefallen ODER
-      // CM-Normierung heute gescheitert), ruecken damit alte Tage in die Rolle
-      // des aktuellen Werts — gemessen am 2026-09-10 stand DUK mit einem
-      // 20 Tage alten Punkt im Radar, als waere er von heute. Ohne aktuellen
-      // Punkt gibt es kein aktuelles Ranking.
-      if(SKEW_SESSION && arr.length && arr[arr.length-1].date!==SKEW_SESSION){
-        SKEW_STALE[tk]=arr[arr.length-1].date;
-        return [];
-      }
-      return arr;
-    }
-    // Rank = wo im Min/Max-Bereich; Percentile = Anteil Tage darunter
-    function _rank(vals){
-      if(vals.length<2)return null;
-      var last=vals[vals.length-1], lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
-      if(hi<=lo)return 50; return Math.round((last-lo)/(hi-lo)*100);
-    }
-    function _pctl(vals){
-      if(vals.length<2)return null;
-      var last=vals[vals.length-1], below=0;
-      for(var i=0;i<vals.length-1;i++) if(vals[i]<last) below++;
-      return Math.round(below/(vals.length-1)*100);
-    }
-    function _metric(vals){ return SKEW_MODE==='pctl'?_pctl(vals):_rank(vals); }
+    // Rang/Percentile rechnet der Options-Cron EINMAL (shared/skew_rang.py, Plan B3): je Ticker, Fenster und Metrik
+    // nur normierte Punkte (cm/cm_extrap), Fenster S−W … S ab der SESSION, je Metrik eigenes n ≥ 20, der letzte
+    // gültige Wert muss von der Session sein. Die Seite liest das nur noch. Vorher rechnete sie selbst — mit einem
+    // Fenster ab der Uhr des Lesers — und die Morgen-Mail anders; beide zeigten verschiedene Zahlen.
+    // rang_session ≠ session (Datei halb erneuert) → kein Rang, Felder bleiben leer.
+    var SKEW_RANG=null;
+    function _rangOf(tk){ var r=SKEW_RANG&&SKEW_RANG[tk]; return r?(r[String(SKEW_WIN)]||null):null; }
+    function _pick(m){ return m?(SKEW_MODE==='pctl'?m.pctl:m.rank):null; }
     function _metricLbl(){ return SKEW_MODE==='pctl'?'IV-Pctl':'IV-Rank'; }
     function _btn(v,txt,on){return '<button data-v="'+v+'" style="cursor:pointer;font:600 .88rem/1 DM Sans;padding:.32rem .6rem;border-radius:6px;'+
       'border:1px solid '+(on?ACC:'rgba(255,255,255,.14)')+';background:'+(on?'rgba(232,168,32,.16)':'transparent')+';color:'+(on?ACC:MUT)+'">'+txt+'</button>';}
@@ -333,48 +303,25 @@
     }
     function renderSkewQuad(){
       var el=document.getElementById('sk-quad'); if(!el)return;
-      if(!SKEW_HIST){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Historie lädt).')+'</div>';return;}
+      if(!SKEW_CUR){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Historie lädt).')+'</div>';return;}
       buildSkewWinBtns();
       var isCS=SKEW_VIEW==='cs_ps';
       var pts=[];
-      Object.keys(SKEW_HIST).forEach(function(tk){
-        if(tk.indexOf('__')===0)return;
+      Object.keys(SKEW_RANG||{}).forEach(function(tk){
         if(!_inCat(tk))return;
-        var arr=_normHist(tk);
-        if(arr.length<MIN_NORM)return;
+        var r=_rangOf(tk); if(!r)return;
         if(isCS){
-          // Zeta (SpotGamma-Def): OTM_IV − ATM_IV je Seite, unabhaengig gerankt.
-          // Priorität: call_zeta_pts (direkt) → iv_atm-Fallback → Backfill-Näherung (call_iv-put_iv)/2.
-          // Zeta braucht einen ECHTEN ATM-Anker. Früher stand hier als letzte
-          // Stufe eine Näherung ATM ≈ (call_iv+put_iv)/2 aus der Zeit, als der
-          // Backfill kein iv_atm schrieb. Sie ist entfernt, weil sie
-          // put_zeta = −call_zeta erzwingt: damit liegt JEDER Punkt exakt auf
-          // der Antidiagonale und der Quadrant kollabiert zur Linie — er zeigt
-          // dann eine Eigenschaft der Formel statt des Marktes.
-          // Zeilen ohne Anker fallen jetzt heraus. Gemessen am 2026-09-21 kostet
-          // das 3 von 11.483 normierten Zeilen (je eine bei ARRY, SCHW, XLRE),
-          // also nichts gegenüber ~180 Punkten je Ticker.
-          var zetaPairs=arr.map(function(e){
-            var cz=e.call_zeta_pts!=null ? e.call_zeta_pts :
-                    (e.iv_atm!=null ? (e.call_iv-e.iv_atm)*100 : null);
-            var pz=e.put_zeta_pts!=null  ? e.put_zeta_pts  :
-                    (e.iv_atm!=null ? (e.put_iv-e.iv_atm)*100 : null);
-            return (cz!=null&&pz!=null)?{cz:cz,pz:pz,skew:e.skew_pts}:null;
-          }).filter(Boolean);
-          if(zetaPairs.length<MIN_NORM)return;
-          var callR=_metric(zetaPairs.map(function(z){return z.cz;}));
-          var putR =_metric(zetaPairs.map(function(z){return z.pz;}));
+          // Zeta (SpotGamma-Def.): OTM-IV − ATM-IV je Seite, unabhängig gerankt; nur mit echtem ATM-Anker (der Cron
+          // nimmt call_zeta_pts/put_zeta_pts, sonst (IV − iv_atm)·100; ohne iv_atm keine Zeta — die frühere
+          // Näherung ATM ≈ (call+put)/2 erzwang put_zeta = −call_zeta und legte alle Punkte auf die Antidiagonale).
+          var z=r.zeta; if(!z)return;
+          var callR=_pick(z.cz), putR=_pick(z.pz);
           if(callR==null||putR==null)return;
-          var last=zetaPairs[zetaPairs.length-1];
-          pts.push({x:callR,y:putR,tk:tk,
-            callZeta:last.cz,putZeta:last.pz,
-            skew:last.skew});
+          pts.push({x:callR,y:putR,tk:tk,callZeta:z.cz.wert,putZeta:z.pz.wert,skew:r.skew?r.skew.wert:null});
         } else {
-          var iv=arr.map(function(e){return (e.put_iv+e.call_iv)/2;}),
-              rr=arr.map(function(e){return e.call_iv-e.put_iv;});
-          var ivR=_metric(iv), rrR=_metric(rr);
+          var ivR=_pick(r.iv), rrR=_pick(r.rr);
           if(ivR==null||rrR==null)return;
-          pts.push({x:rrR,y:ivR,tk:tk,ivNow:iv[iv.length-1],skew:arr[arr.length-1].skew_pts});
+          pts.push({x:rrR,y:ivR,tk:tk,ivNow:r.iv.wert,skew:r.skew?r.skew.wert:null});
         }
       });
       if(!pts.length){el.innerHTML='<div class="psub">'+T('skew.loading','Quadrant folgt (Backfill läuft).')+'</div>';return;}
@@ -475,18 +422,9 @@
       renderSkewCurve(tk);
     }
     function _curTicker(tk){ if(!SKEW_CUR)return null; for(var i=0;i<SKEW_CUR.length;i++) if(SKEW_CUR[i].ticker===tk)return SKEW_CUR[i]; return null; }
-    // IV-Rank/Percentile eines Tickers im aktuellen Fenster (aus 25Δ-Mittel-Historie)
-    function _ivMetric(tk){
-      var arr=_normHist(tk);
-      if(arr.length<MIN_NORM)return null;
-      return _metric(arr.map(function(e){return (e.put_iv+e.call_iv)/2;}));
-    }
-    // Skew-Rank/Percentile: wo der aktuelle 25Δ-Skew in seiner eigenen Historie liegt (hoch = ungewöhnlich put-lastig)
-    function _skewMetric(tk){
-      var arr=_normHist(tk).filter(function(e){return e.skew_pts!=null;});
-      if(arr.length<MIN_NORM)return null;
-      return _metric(arr.map(function(e){return e.skew_pts;}));
-    }
+    // IV-Rank/Percentile und Skew-Rank/Percentile eines Tickers im gewählten Fenster — aus dem Cron-Rang
+    function _ivMetric(tk){ var r=_rangOf(tk); return r?_pick(r.iv):null; }
+    function _skewMetric(tk){ var r=_rangOf(tk); return r?_pick(r.skew):null; }
     function renderSkewHist(tk){
       var el=document.getElementById('sk-hist-chart'), ttl=document.getElementById('sk-hist-title'); if(!el)return;
       var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
@@ -706,8 +644,8 @@
         kpi('Impl. Korr. 3M', c3!=null?c3:'—', '', T('skew.kpi_cor2','hoch = Makro / alles korreliert'));
       var tks=(d.tickers||[]);
       SKEW_CUR=tks;
-      SKEW_SESSION=d.session||null;   // fehlt bei Altdaten -> Pruefung inaktiv
-      SKEW_STALE={};
+      SKEW_SESSION=d.session||null;
+      SKEW_RANG=(d.rang&&d.rang_session&&d.rang_session===d.session)?d.rang:null;
       SKEW_CATMAP={}; tks.forEach(function(t){SKEW_CATMAP[t.ticker]=t.cats||[];});
       SKEW_CATS=d.categories||[];
       if(!SKEW_CATS.length) SKEW_CAT='Alle';                       // Altdaten ohne Kategorien → alles zeigen
@@ -717,12 +655,13 @@
       var top=(inCat.length?inCat:tks).filter(function(t){return t.skew_pts!=null;})
         .sort(function(a,b){return b.skew_pts-a.skew_pts;})[0];
       renderVRP(tks);
-      renderSkewTable(tks);   // schon ohne Historie sichtbar (IV-Rank füllt sich nach)
+      renderSkewTable(tks);   // Rang-Spalten kommen aus dem Snapshot, ohne auf die History zu warten
+      renderSkewQuad();
       document.getElementById('sk-note').textContent=T('skew.source','Quelle: CBOE ^SKEW/^VIX/^VVIX (Yahoo) · 25Δ-IV & ATM-Term-Structure aus der US-Optionskette · realisierte Vola aus eigenen Kursen · BS-rekonstruierte Historie. Täglich.');
-      // Historie → Radar + IV-Rank-Spalte + Default-Auswahl
-      fetchJSON('/landing/data/options_skew_history.json').then(function(hh){SKEW_HIST=hh; renderSkewQuad(); renderSkewTable(tks); selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');}).catch(function(){
+      // Historie nur noch für die Verlaufs-/Detailansicht des gewählten Tickers (Radar und Rang-Spalten kommen aus dem
+      // Snapshot). Scheitert sie, bleibt der Radar stehen.
+      fetchJSON('/landing/data/options_skew_history.json').then(function(hh){SKEW_HIST=hh; selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');}).catch(function(){
         selectTicker(SKEW_SEL||(top&&top.ticker)||'SPY');
-        var q=document.getElementById('sk-quad'); if(q)q.innerHTML='<div class="psub">'+T('skew.loading','Radar folgt (Backfill/Cron).')+'</div>';
       });
       // Markt-Chart SKEW/VIX
       var s=d.series||[]; if(!s.length){panelFail('sk-chart',T('skew.market_wait','Markt-Daten folgen (Daily-Cron).'));return;}
@@ -752,11 +691,11 @@
       });
     }
     // Kommt das Wörterbuch NACH den Daten, standen Legende, Untertitel und Tabellenköpfe noch im deutschen Fallback.
-    // Dann alles Dynamische neu zeichnen; den Radar nur mit geladener Historie (sonst bliebe statt einer
+    // Dann alles Dynamische neu zeichnen; den Radar nur mit geladenem Snapshot (sonst bliebe statt einer
     // Fehlermeldung „Quadrant folgt“ stehen).
     document.addEventListener('sa:i18n-bereit', function(){
       _updateQuadSub(); buildSkewWinBtns();
-      if(SKEW_HIST)renderSkewQuad();
+      if(SKEW_CUR)renderSkewQuad();
       if(VT_DATA)renderVolTrigger();
       if(SKEW_CUR){renderSkewTable(SKEW_CUR); renderVRP(SKEW_CUR);}
     });
