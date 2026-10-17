@@ -917,7 +917,10 @@ SA.makeSortable = function(tableOrId) {
   // Sortierbare Rows bestimmen: alles in tbody, oder alle tr's ausser headerRow
   var getRows = function() {
     var tbody = table.querySelector('tbody');
-    if (tbody) return Array.prototype.slice.call(tbody.querySelectorAll(':scope > tr'));
+    // Die Kopfzeile nie mitsortieren: eine per innerHTML gebaute <table><tr><th>… bekommt vom Browser ein
+    // implizites <tbody>, in dem auch die Kopfzeile steht — sie wanderte beim Sortieren ans Ende (/skew, 2026-10-17).
+    if (tbody) return Array.prototype.slice.call(tbody.querySelectorAll(':scope > tr'))
+      .filter(function(r) { return r !== headerRow; });
     // Keine tbody: alle tr's direkt im table (ausser Header)
     var all = Array.prototype.slice.call(table.querySelectorAll(':scope > tr'));
     return all.filter(function(r) { return r !== headerRow; });

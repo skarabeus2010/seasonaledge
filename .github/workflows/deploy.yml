@@ -164,6 +164,10 @@ jobs:
         run: |
           npm ci --prefix scripts/perf --no-audit --no-fund
           python3 scripts/verify_seiten_kurse.py
+      # Tabellen-Sortierung (jsdom, braucht das npm ci darüber): SA.makeSortable laesst die Kopfzeile oben, auch im
+      # impliziten <tbody>; /skew Vol-Kennzahlen sortiert beide Haelften gemeinsam (2026-10-17).
+      - name: Waechter - Tabellen-Sortierung
+        run: node scripts/js/probe_sortierer.js
       # True Seasonal auf /jahreszyklus (Plan docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md): Standard wie
       # bisher, gemerkter Modus „true" mit goldener Linie, Rueckblick laedt erst beim Aufklappen, Tickerwechsel und
       # Ladefehler. Die Rechnung selbst prueft der naechste Schritt.

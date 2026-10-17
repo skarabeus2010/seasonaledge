@@ -67,8 +67,25 @@
     details.faq summary{cursor:pointer;font-weight:700;color:var(--text);padding:.7rem 0;font-size:1.02rem}
     details.faq p{color:var(--muted);font-size:.95rem;line-height:1.6;margin:0 0 .8rem}
     @media(max-width:820px){#sk-duo{grid-template-columns:1fr!important}}
-    .sk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem;margin-top:1.1rem;align-items:start}
+    .sk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem;margin-top:1.1rem;align-items:stretch}
     @media(max-width:820px){.sk-grid{grid-template-columns:1fr}}
+    /* VRP-Kachel so hoch wie der Vol-Trigger daneben: die Liste bestimmt die Höhe nicht mit (absolut im Rahmen),
+       sie scrollt in der Kachel; untereinander (Handy) feste Mindesthöhe */
+    .sk-grid>.card{display:flex;flex-direction:column}
+    .sk-vrp-box{position:relative;flex:1;min-height:380px}
+    .sk-vrp-box>#sk-vrp-chart{position:absolute;inset:0;overflow-y:auto}
+    .sk-vrp-zeile{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:19px;cursor:pointer;font-size:.8rem}
+    .sk-vrp-zeile:hover{background:rgba(232,168,32,.07)}
+    .sk-vrp-l{display:flex;justify-content:flex-end;align-items:center;border-right:1px dashed rgba(255,255,255,.3);height:100%}
+    .sk-vrp-r{display:flex;justify-content:flex-start;align-items:center;height:100%}
+    .sk-vrp-bar{display:block;height:68%;border-radius:2px}
+    .sk-vrp-bar.up{background:#30e878}
+    .sk-vrp-bar.dn{background:#ff4d5e}
+    .sk-vrp-txt{white-space:nowrap;color:var(--text);padding:0 .45rem}
+    .sk-vrp-l .sk-vrp-txt{text-align:right}
+    .sk-vrp-achse{display:grid;grid-template-columns:1fr auto 1fr;color:var(--muted);font-size:.75rem;margin-bottom:.2rem;position:sticky;top:0;background:var(--card);z-index:1}
+    .sk-vrp-achse span:first-child{text-align:left}.sk-vrp-achse span:last-child{text-align:right}
+    .sk-vrp-fuss{color:var(--muted);font-size:.78rem;margin-top:.4rem;text-align:center}
     .sk-kachel-sub{color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 .45rem}
     .sk-kachel-sub b{color:var(--text)}
     .sk-cattag{color:var(--muted);font-size:.84rem;margin:-.25rem 0 .5rem}
@@ -77,8 +94,12 @@
     @media(max-width:820px){.sk-extrem-grid{grid-template-columns:1fr}}
     /* Vol-Kennzahlen (Nutzerwunsch 2026-10-17): nur so breit wie der Inhalt, Kopfzeile und Ticker-Spalte bleiben
        beim Scrollen stehen, 161 Zeilen scrollen in der Kachel */
-    .sk-kz-box{overflow:auto;max-height:700px}
-    .sk-tbl.sk-kz{width:auto}
+    .sk-kz-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem}
+    @media(max-width:1100px){.sk-kz-grid{grid-template-columns:1fr}}
+    .sk-kz-box{overflow:auto;max-height:640px}
+    .sk-tbl.sk-kz{width:100%;min-width:0;font-size:.8rem}
+    .sk-tbl.sk-kz td,.sk-tbl.sk-kz th{padding:3px 5px;white-space:nowrap}
+    .sk-tbl.sk-kz th{letter-spacing:0;font-size:.72rem}
     .sk-tbl.sk-kz th{position:sticky;top:0;z-index:2;background:var(--card)}
     .sk-tbl.sk-kz td:first-child,.sk-tbl.sk-kz th:first-child{position:sticky;left:0;z-index:1;background:var(--card)}
     .sk-tbl.sk-kz th:first-child{z-index:3}
@@ -164,7 +185,7 @@
       <div class="card">
         <div class="psub" data-i18n-html="skew.vrp_sub"><b>Volatility Risk Premium</b> &mdash; ATM-IV &minus; realisierte 30-Tage-Vola &middot; <span style="color:#30e878">positiv = Optionen teuer</span> (Prämie fürs Verkaufen), <span style="color:#ff4d5e">negativ = Optionen billig</span> ggü. tatsächlicher Bewegung</div>
         <div class="sk-cattag" id="sk-vrp-cat"></div>
-        <div style="max-height:620px;overflow-y:auto"><div id="sk-vrp-chart" style="min-height:340px"></div></div>
+        <div class="sk-vrp-box"><div id="sk-vrp-chart"></div></div>
       </div>
 
       <!-- VOL-TRIGGER: Zero-Gamma-Flip / Dealer-Gamma-Regime -->
@@ -173,7 +194,7 @@
         <div class="sk-cattag" id="sk-vt-cat"></div>
         <div class="psub" id="sk-vt-head" style="margin:.2rem 0 .6rem;font-weight:400;color:var(--muted)"></div>
         <div id="sk-vt-body" style="overflow-x:auto"></div>
-        <p class="note" data-i18n="skew.vt_note">Walls = Netto-Gamma-Referenzen, keine garantierten Barrieren. Kein Handelssignal.</p>
+        <p class="note" data-i18n="skew.vt_note">Walls = Netto-Gamma-Referenzen, keine garantierten Barrieren. In Klammern die Veränderung zur Vorsession (grün höher, rot tiefer); nach einem Verfallstag verschieben sich Walls oft rein mechanisch, weil Kontrakte auslaufen. Kein Handelssignal.</p>
       </div>
     </div>
 
@@ -181,7 +202,7 @@
     <div class="card" style="margin-top:1.1rem">
       <div class="psub" data-i18n-html="skew.table_sub">Vol-Kennzahlen je Ticker (Percentile über ein Jahr wie oben) &middot; Zeile anklicken &rarr; Verlauf &amp; Term-Structure &middot; die Einfärbung zeigt nur, wo ein Wert innerhalb seiner Spalte liegt &mdash; kräftiger heisst höher, keine Richtungsaussage &middot; Spaltenüberschrift antippen für die Definition</div>
       <div class="sk-cattag" id="sk-table-cat"></div>
-      <div id="sk-table" class="sk-kz-box"></div>
+      <div id="sk-table"></div>
     </div>
 
     <!-- FAQ -->
@@ -557,17 +578,20 @@
       var rows=(tks||[]).filter(function(t){return t.vrp_pts!=null&&_inCat(t.ticker);}).slice().sort(function(a,b){return b.vrp_pts-a.vrp_pts;});
       _setCatTag('sk-vrp-cat',rows.length);
       if(!rows.length){el.innerHTML='<div class="psub">'+T('skew.vrp_wait','VRP folgt (Daily-Cron).')+'</div>';return;}
-      var cats=rows.map(function(t){return t.ticker}), vals=rows.map(function(t){return t.vrp_pts;});
-      renderInto('sk-vrp-chart',Object.assign(baseChart(Math.max(340,rows.length*15),'bar'),{
-        series:[{name:'VRP',data:vals}],
-        plotOptions:{bar:{horizontal:true,barHeight:'68%',distributed:true,borderRadius:2,dataLabels:{position:'bottom'}}},
-        colors:vals.map(function(v){return v>=0?'#30e878':'#ff4d5e';}),
-        dataLabels:{enabled:true,textAnchor:'start',offsetX:0,formatter:function(v,o){return cats[o.dataPointIndex]+'  '+(v>0?'+':'')+v.toFixed(1);},style:{fontSize:'12px',fontWeight:700,colors:['#eae3d0'],fontFamily:'DM Mono, monospace'}},
-        xaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return (v>0?'+':'')+Math.round(v)}},title:{text:T('skew.vrp_axis','VRP (Vol-Punkte)  ·  IV − realisierte Vola'),style:{color:MUT,fontSize:'12px'}},axisBorder:{show:false}},
-        yaxis:{labels:{show:false}},
-        annotations:{xaxis:[{x:0,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4}]},
-        tooltip:{theme:'dark',style:{fontSize:'13px'},x:{show:false},y:{formatter:function(v){return (v>0?'+':'')+v.toFixed(2)+' pts'},title:{formatter:function(){return '';}}}}
-      }));
+      // Eigene HTML-Balken statt ApexCharts (Nutzerwunsch 2026-10-17): weiße Schrift auf hellgrünen Balken war kaum
+      // lesbar. Beschriftung steht jetzt auf der freien Seite der Nulllinie — positive Werte links davon, negative
+      // rechts davon — in normaler Textfarbe; der Balken selbst trägt keine Schrift.
+      var maxabs=Math.max.apply(null,rows.map(function(t){return Math.abs(t.vrp_pts);}))||1;
+      function lbl(t){var v=t.vrp_pts;return '<b style="font-family:monospace;color:'+ACC+'">'+t.ticker+'</b> '+(v>0?'+':'')+v.toFixed(1);}
+      var h='<div class="sk-vrp-achse"><span>&minus;'+Math.round(maxabs)+'</span><span>0</span><span>+'+Math.round(maxabs)+'</span></div>';
+      rows.forEach(function(t){
+        var v=t.vrp_pts, w=(Math.abs(v)/maxabs*100).toFixed(1)+'%', pos=v>=0;
+        h+='<div class="sk-vrp-zeile" data-tk="'+t.ticker+'" title="'+t.ticker+': '+(v>0?'+':'')+v.toFixed(2)+' pts">'+
+          '<div class="sk-vrp-l">'+(pos?'<span class="sk-vrp-txt">'+lbl(t)+'</span>':'<span class="sk-vrp-bar dn" style="width:'+w+'"></span>')+'</div>'+
+          '<div class="sk-vrp-r">'+(pos?'<span class="sk-vrp-bar up" style="width:'+w+'"></span>':'<span class="sk-vrp-txt">'+lbl(t)+'</span>')+'</div></div>';
+      });
+      el.innerHTML=h+'<div class="sk-vrp-fuss">'+T('skew.vrp_axis','VRP (Vol-Punkte)  ·  IV − realisierte Vola')+'</div>';
+      el.querySelectorAll('.sk-vrp-zeile').forEach(function(z){z.onclick=function(){selectTicker(z.getAttribute('data-tk'));};});
     }
     // Heatmap-Farbe je Spalte: EINE Farbe, die Intensität ist die Position in der
     // Spalte. Bewusst NICHT grün→rot. Die meisten dieser Spalten messen einen
@@ -673,17 +697,34 @@
       box.querySelectorAll('tr[data-tk]').forEach(function(r){r.onclick=function(){selectTicker(r.getAttribute('data-tk'));};});
     }
     // Metrik-Tabelle je Ticker als Heatmap (IV-Rank/Pctl abhängig von Fenster/Methode)
+    // Vol-Kennzahlen (Nutzerwunsch 2026-10-17): nur Ticker mit Werten, zweispaltig, eigene Sortierung über ALLE Zeilen
+    // (zwei Tabellen dürfen nicht je für sich sortieren — der allgemeine Sortierer aus app.js ist per data-no-sort aus).
+    var SKEW_KZ_SORT={k:'skew',dir:-1};
     function renderSkewTable(tks){
       var tbl=document.getElementById('sk-table'); if(!tbl)return;
-      // Seit 2026-09-25 kommen die Werte aus der 30-Tage-Normierung und sind an
-      // nicht rankbaren Tagen LEER. b-a mit null ergibt NaN und eine zufaellige
-      // Reihenfolge -> leere Zeilen ans Ende.
-      var rows=(tks||[]).filter(function(t){return _inCat(t.ticker);}).slice().sort(function(a,b){
-        return ((a.skew_pts==null)-(b.skew_pts==null)) || (b.skew_pts-a.skew_pts);});
+      var alle=(tks||[]).filter(function(t){return _inCat(t.ticker);});
+      // Nur Zeilen ausblenden, in denen KEINE angezeigte Kennzahl steht (Codex R1: ohne 30-Tage-Messung bleibt oft der
+      // NE-Skew, z. B. PFE am 16.10. — der muss sichtbar bleiben).
+      function _hatWert(t){return [t.iv_atm,_ivMetric(t.ticker),t.skew_pts,_skewMetric(t.ticker),t.skew_ne_pts,t.skew_term_pts,
+        t.bfly_pts,t.pc_ratio,t.vrp_pts,t.ivrv,t.em_pct,(t.contango===true||t.contango===false)?1:null].some(function(v){return v!=null;});}
+      var rows=alle.filter(_hatWert);
+      var ohne=alle.length-rows.length;
       _setCatTag('sk-table-cat',rows.length);
+      var ct=document.getElementById('sk-table-cat');
+      if(ct&&ohne) ct.innerHTML+=' &middot; '+T('skew.kz_ohne','{n} ohne Werte ausgeblendet').replace('{n}',ohne);
       if(!rows.length){panelFail('sk-table',T('skew.table_wait','Skew-Tabelle folgt (Daily-Cron).'));return;}
       var ivm={}, skm={}; rows.forEach(function(t){ivm[t.ticker]=_ivMetric(t.ticker);skm[t.ticker]=_skewMetric(t.ticker);});
-      // Spalten-Extrema für die Heatmap
+      var WERT={ticker:function(t){return t.ticker;}, iv:function(t){return t.iv_atm;}, ivp:function(t){return ivm[t.ticker];},
+        skew:function(t){return t.skew_pts;}, skp:function(t){return skm[t.ticker];}, ne:function(t){return t.skew_ne_pts;},
+        st:function(t){return t.skew_term_pts;}, bf:function(t){return t.bfly_pts;}, pc:function(t){return t.pc_ratio;},
+        vrp:function(t){return t.vrp_pts;}, ivrv:function(t){return t.ivrv;}, em:function(t){return t.em_pct;},
+        term:function(t){return t.contango===true?1:(t.contango===false?0:null);}};
+      var fw=WERT[SKEW_KZ_SORT.k]||WERT.skew, dir=SKEW_KZ_SORT.dir;
+      rows.sort(function(a,b){var x=fw(a),y=fw(b);
+        if(x==null&&y==null)return a.ticker<b.ticker?-1:1; if(x==null)return 1; if(y==null)return -1;   // leer immer hinten
+        if(typeof x==='string')return dir*(x<y?-1:x>y?1:0);
+        return (dir*(x-y))||(a.ticker<b.ticker?-1:1);});
+      // Spalten-Extrema für die Heatmap (über alle Zeilen, beide Hälften gleich skaliert)
       function ext(fn){var vs=rows.map(fn).filter(function(v){return v!=null&&v===v;});return vs.length?{lo:Math.min.apply(null,vs),hi:Math.max.apply(null,vs)}:{lo:0,hi:1};}
       var E={iv:ext(function(t){return t.iv_atm!=null?t.iv_atm*100:null;}),rk:ext(function(t){return ivm[t.ticker];}),
              sk:ext(function(t){return t.skew_pts;}),skr:ext(function(t){return skm[t.ticker];}),ne:ext(function(t){return t.skew_ne_pts;}),st:ext(function(t){return t.skew_term_pts;}),
@@ -713,29 +754,31 @@
         return tip?z.replace('<td ','<td title="'+tip.replace(/"/g,'&quot;')+'" '):z;
       }
       function hc(v,dp,suf,e){var bg=_seqbg(v,e.lo,e.hi);
-        return '<td style="padding:6px 9px;text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
+        return '<td style="text-align:right;font-weight:600;color:'+(bg?'#efe9d8':'var(--dim)')+';'+bg+'">'+
           (v==null?'—':((v>0&&suf==='pts'?'+':'')+(+v).toFixed(dp==null?0:dp)+(suf==='%'?'%':(suf==='pts'?'':(suf||'')))))+'</td>';}
-      // Jede Spaltenüberschrift trägt ihre Definition als Tooltip. Die Texte
-      // laufen über T(), weil build_en.py Script-Inhalte nicht übersetzen kann.
-      function th(lbl,key,def){
-        return '<th style="text-align:right" title="'+T(key,def).replace(/"/g,'&quot;')+'">'+lbl+'</th>';}
-      var h='<table class="sk-tbl sk-kz"><tr><th>Ticker</th>'+
-        th('IV','skew.th_iv',TH_IV)+
-        th('IV-Pctl','skew.th_rank',TH_RANK)+
-        th('25Δ-Skew','skew.th_skew',TH_SKEW)+
-        th('Skew-Pctl','skew.th_skewrk',TH_SKEWRK)+
-        th('NE-Skew','skew.th_ne',TH_NE)+
-        th('Skew-Term','skew.th_skewterm',TH_SKEWTERM)+
-        th('Butterfly','skew.th_bfly',TH_BFLY)+
-        th('P/C','skew.th_pc',TH_PC)+
-        th('VRP','skew.th_vrp',TH_VRP)+
-        th('IV/RV','skew.th_ivrv',TH_IVRV)+
-        th('Exp.Move','skew.th_em',TH_EM)+
-        th('Term','skew.th_term',TH_TERM)+'</tr>';
-      rows.forEach(function(t){
-        var termB=t.contango===true?'<span class="sk-badge up" style="font-size:.74rem;padding:.1rem .4rem">Contango</span>':(t.contango===false?'<span class="sk-badge dn" style="font-size:.74rem;padding:.1rem .4rem">Backw.</span>':'—');
-        h+='<tr data-tk="'+t.ticker+'">'+
-          '<td style="padding:6px 9px;font-family:monospace;font-weight:700;color:'+ACC+'">'+t.ticker+'</td>'+
+      // Jede Spaltenüberschrift trägt ihre Definition als Tooltip (über T(), build_en.py übersetzt kein Script)
+      // und sortiert per Klick; die aktive Spalte trägt ▲/▼.
+      function th(lbl,key,def,k){
+        var pfeil=SKEW_KZ_SORT.k===k?(SKEW_KZ_SORT.dir<0?' ▼':' ▲'):'';
+        return '<th data-k="'+k+'" style="text-align:'+(k==='ticker'?'left':'right')+';cursor:pointer"'+
+          (def?' title="'+T(key,def).replace(/"/g,'&quot;')+'"':'')+'>'+lbl+pfeil+'</th>';}
+      var kopf='<thead><tr>'+th('Ticker','',null,'ticker')+
+        th('IV','skew.th_iv',TH_IV,'iv')+
+        th('IV-P','skew.th_rank',TH_RANK,'ivp')+
+        th('Skew','skew.th_skew',TH_SKEW,'skew')+
+        th('Sk-P','skew.th_skewrk',TH_SKEWRK,'skp')+
+        th('NE','skew.th_ne',TH_NE,'ne')+
+        th('S-Term','skew.th_skewterm',TH_SKEWTERM,'st')+
+        th('Bfly','skew.th_bfly',TH_BFLY,'bf')+
+        th('P/C','skew.th_pc',TH_PC,'pc')+
+        th('VRP','skew.th_vrp',TH_VRP,'vrp')+
+        th('IV/RV','skew.th_ivrv',TH_IVRV,'ivrv')+
+        th('EM','skew.th_em',TH_EM,'em')+
+        th('Term','skew.th_term',TH_TERM,'term')+'</tr></thead>';
+      function zeile(t){
+        var termB=t.contango===true?'<span class="sk-badge up" title="Contango" style="font-size:.72rem;padding:.05rem .3rem">C</span>':(t.contango===false?'<span class="sk-badge dn" title="Backwardation" style="font-size:.72rem;padding:.05rem .3rem">B</span>':'—');
+        return '<tr data-tk="'+t.ticker+'">'+
+          '<td style="font-family:monospace;font-weight:700;color:'+ACC+'">'+t.ticker+'</td>'+
           hc(t.iv_atm!=null?t.iv_atm*100:null,1,'%',E.iv)+
           hc(ivm[t.ticker],0,'%',E.rk)+
           hc(t.skew_pts,2,'pts',E.sk)+
@@ -747,9 +790,17 @@
           hc(t.vrp_pts,1,'pts',E.vr)+
           ivrvZelle(t)+
           hc(t.em_pct,1,'%',E.em)+
-          '<td style="padding:6px 9px;text-align:right">'+termB+'</td></tr>';
-      });
-      tbl.innerHTML=h+'</table>';
+          '<td style="text-align:right">'+termB+'</td></tr>';
+      }
+      var halb=Math.ceil(rows.length/2), teile=[rows.slice(0,halb),rows.slice(halb)];
+      tbl.innerHTML='<div class="sk-kz-grid">'+teile.map(function(teil){
+        return '<div class="sk-kz-box"><table class="sk-tbl sk-kz" data-no-sort="1">'+kopf+'<tbody>'+teil.map(zeile).join('')+'</tbody></table></div>';
+      }).join('')+'</div>';
+      tbl.querySelectorAll('th[data-k]').forEach(function(h){h.onclick=function(){
+        var k=h.getAttribute('data-k');
+        SKEW_KZ_SORT=SKEW_KZ_SORT.k===k?{k:k,dir:-SKEW_KZ_SORT.dir}:{k:k,dir:(k==='ticker'?1:-1)};
+        renderSkewTable(SKEW_CUR);
+      };});
       tbl.querySelectorAll('tr[data-tk]').forEach(function(r){r.onclick=function(){selectTicker(r.getAttribute('data-tk'));};});
       document.querySelectorAll('#sk-table tr[data-tk]').forEach(function(r){r.classList.toggle('sel',r.getAttribute('data-tk')===SKEW_SEL);});
     }
@@ -758,14 +809,54 @@
     var VT_DATA=null;
     function _divbg(v,maxabs){ if(v==null||!(maxabs>0))return ''; var a=(Math.min(Math.abs(v)/maxabs,1)*0.34).toFixed(2);
       return 'background:rgba('+(v>=0?'48,232,120':'255,77,94')+','+a+')'; }
+    // Veränderung der Walls gegenüber der vorigen archivierten Session (Nutzerwunsch 2026-10-17): Wall höher = grün
+    // (bullish), tiefer = rot, für Call- und Put-Wall gleich. Quelle: gex_history_session/<Session>.json (seit 15.10.).
+    var VT_VORHER=null;   // {session, walls:{ticker:{call_wall, put_wall}}}
+    // Strikes liegen teils auf halben Punkten: ganze Zahl ohne, sonst mit einer Nachkommastelle (Codex R1 — gerundet
+    // wurde 100 → 99,5 als „100 (±0)“ angezeigt und der Rückgang verschwand). Farbe nach dem UNGERUNDETEN Vorzeichen.
+    function _zahl(x){ x=+x; return Math.abs(x-Math.round(x))<1e-9?String(Math.round(x)):x.toFixed(1); }
+    function _wallZelle(tk,feld,wert){
+      if(wert==null)return '—';
+      var s=_zahl(wert), v=VT_VORHER&&VT_VORHER.walls[tk], alt=v?v[feld]:null;
+      if(alt==null)return s;
+      var diff=(+wert)-(+alt), null_=Math.abs(diff)<1e-9;
+      var tip=T('skew.vt_wall_tip','Veränderung gegenüber der Session {d}').replace('{d}',_datumTxt(VT_VORHER.session));
+      var farbe=null_?'var(--muted)':(diff>0?'#30e878':'#ff4d5e');
+      return s+' <span title="'+tip.replace(/"/g,'&quot;')+'" style="color:'+farbe+';font-weight:700">('+
+        (null_?'±0':(diff>0?'+':'−')+_zahl(Math.abs(diff)))+(VT_VORHER.laenger?'*':'')+')</span>';
+    }
+    // Vorige Session suchen: bis zu 10 Kalendertage zurück, erste vorhandene Archivdatei VOR der aktuellen Session.
+    function ladeVorher(d){
+      if(!d||!d.session)return Promise.resolve(null);
+      var basis=new Date(d.session+'T12:00:00Z'), kand=[];
+      for(var i=1;i<=10;i++){var x=new Date(basis.getTime()-i*864e5);kand.push(x.toISOString().slice(0,10));}
+      function versuch(k){
+        if(k>=kand.length)return Promise.resolve(null);
+        return fetchJSON('/landing/data/gex_history_session/'+kand[k]+'.json').then(function(a){
+          if(!a||!a.session||a.session>=d.session||!a.tickers)return versuch(k+1);
+          var w={};(a.tickers||[]).forEach(function(o){w[o.ticker]={call_wall:o.call_wall,put_wall:o.put_wall};});
+          var erwartet=kand.filter(function(x){var g=new Date(x+'T12:00:00Z').getUTCDay();return g!==0&&g!==6;})[0];
+          return {session:a.session,walls:w,laenger:a.session!==erwartet};
+        }).catch(function(){return versuch(k+1);});
+      }
+      return versuch(0);
+    }
     function renderVolTrigger(d){
       if(d)VT_DATA=d; d=VT_DATA;
       var body=document.getElementById('sk-vt-body'); if(!body)return;
       var ts=(d&&d.tickers)||[];
       if(!ts.length){body.innerHTML='<div class="psub">'+T('skew.vt_wait','Vol-Trigger folgt (GEX-Cron 22:15 UTC).')+'</div>';return;}
       var gi=d.gamma_index||{}, head=document.getElementById('sk-vt-head');
-      if(head&&gi.vol_regime!=null){var v=gi.value_usd_bn_per_pct, up=v>0;
-        head.innerHTML=T('skew.vt_giname','Markt-Gamma-Index')+': <b style="color:'+(up?'#30e878':'#ff4d5e')+'">'+(v>0?'+':'')+(v!=null?(+v).toFixed(2):'—')+' Mrd $/1%</b> &mdash; '+gi.vol_regime+' &middot; '+T('skew.vt_asof','Stand')+' '+(d.date||'');}
+      // Hinweis auf einen längeren Vergleich unabhängig vom Gamma-Index (der kann fehlen)
+      var hinweis=(VT_VORHER&&VT_VORHER.laenger)?'<span style="color:var(--accent)">* '+
+        T('skew.vt_wall_laenger','Wall-Veränderung gegenüber {d} — die direkte Vorsession fehlt im Archiv oder war ein Feiertag')
+          .replace('{d}',_datumTxt(VT_VORHER.session))+'</span>':'';
+      if(head){
+        var gix='';
+        if(gi.vol_regime!=null){var v=gi.value_usd_bn_per_pct, up=v>0;
+          gix=T('skew.vt_giname','Markt-Gamma-Index')+': <b style="color:'+(up?'#30e878':'#ff4d5e')+'">'+(v>0?'+':'')+(v!=null?(+v).toFixed(2):'—')+' Mrd $/1%</b> &mdash; '+gi.vol_regime+' &middot; '+T('skew.vt_asof','Stand')+' '+(d.date||'');}
+        head.innerHTML=hinweis+(hinweis&&gix?'<br>':'')+gix;
+      }
       var rows=ts.map(function(o){var dist=(o.zero_gamma&&o.spot)?((o.spot-o.zero_gamma)/o.zero_gamma*100):null; return {o:o,dist:dist};})
                  .filter(function(r){return r.dist!=null && _inCat(r.o.ticker);})    // Kategorie-Filter wie Radar
                  .sort(function(a,b){return Math.abs(a.dist)-Math.abs(b.dist);});
@@ -783,8 +874,8 @@
           '<td style="padding:6px 9px;text-align:right;font-weight:700">'+(o.zero_gamma!=null?(+o.zero_gamma).toFixed(2):'—')+'</td>'+
           '<td style="padding:6px 9px;text-align:right;font-weight:700;color:#efe9d8;'+_divbg(r.dist,maxabs)+'">'+(r.dist>0?'+':'')+r.dist.toFixed(2)+'%</td>'+
           '<td style="padding:6px 9px">'+badge+'</td>'+
-          '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+(o.call_wall!=null?(+o.call_wall).toFixed(0):'—')+'</td>'+
-          '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+(o.put_wall!=null?(+o.put_wall).toFixed(0):'—')+'</td></tr>';
+          '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+_wallZelle(o.ticker,'call_wall',o.call_wall)+'</td>'+
+          '<td style="padding:6px 9px;text-align:right;color:var(--dim)">'+_wallZelle(o.ticker,'put_wall',o.put_wall)+'</td></tr>';
       });
       body.innerHTML=h+'</table>';
       body.querySelectorAll('tr[data-tk]').forEach(function(rw){rw.onclick=function(){selectTicker(rw.getAttribute('data-tk'));};});
@@ -853,7 +944,10 @@
 
     function init(){
       buildSkewViewBtns();
-      fetchJSON('/landing/data/gex_summary.json').then(renderVolTrigger).catch(function(){
+      fetchJSON('/landing/data/gex_summary.json').then(function(d){
+        renderVolTrigger(d);
+        ladeVorher(d).then(function(v){ if(v){VT_VORHER=v; renderVolTrigger();} });   // Differenzen nachreichen
+      }).catch(function(){
         var b=document.getElementById('sk-vt-body'); if(b)b.innerHTML='<div class="psub">'+T('skew.vt_wait','Vol-Trigger folgt (GEX-Cron).')+'</div>';
       });
       // Last-Modified = Zeitpunkt, zu dem der Cron die Datei geschrieben hat („Letzte Aktualisierung“ unter dem Radar);

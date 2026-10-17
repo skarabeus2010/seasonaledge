@@ -71,7 +71,8 @@ setTimeout(() => {
   pruefe(!t.includes('undefined') && !t.includes('NaN'), 'kein undefined/NaN');
 
   console.log('Tooltips auf den Spaltenueberschriften:');
-  const titel = [...t.matchAll(/<th[^>]*title="([^"]*)"/g)].map(m => m[1]);
+  // seit 2026-10-17 zwei Tabellen (zweispaltig) mit demselben Kopf → Tooltips aus der ersten Tabelle zählen
+  const titel = [...t.split('</table>')[0].matchAll(/<th[^>]*title="([^"]*)"/g)].map(m => m[1]);
   pruefe(titel.length === 12, titel.length + ' von 12 Spalten mit Tooltip');   // seit B3b mit IV/RV
   pruefe(titel.every(x => x.length > 60), 'alle Tooltips substanziell (>60 Zeichen)');
   pruefe(new Set(titel).size === titel.length, 'keine zwei Spalten mit demselben Text');
