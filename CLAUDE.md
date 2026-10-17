@@ -449,9 +449,11 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [x] **/skew überarbeitet** (2026-10-17, v66.22, Codex-Freigabe R3).
 - [x] **/skew Kacheln, Wall-Veränderung, Sortierfehler** (2026-10-17, v66.23).
 - [ ] **Blast-Off-Bonus (±1) aus dem Mail-Score entfernen?** Studie: kein messbarer Effekt (Nutzerentscheidung).
-- [ ] **Kopierte Kurszeilen reparieren** (Nutzerfreigabe 2026-10-17): `scripts/repair_kopierte_zeilen.py` (Codex R2
-      Freigabe) für die 8 DAX-Titel (313 Zeilen); Ursache vermutlich Yahoo-Platzhalter beim Massen-Neuladen
-      18.03./01.04./03.04.2026. 2 438 Phantomzeilen an Feiertagen → Kalender-Umstellung.
+- [x] **Kopierte Kurszeilen repariert** (2026-10-17, Nutzerfreigabe, `scripts/repair_kopierte_zeilen.py`, Codex R2):
+      8 DAX-Titel, 300 von 313 Zeilen + 265 Folgerenditen in einem Upsert, Rücklesen 0 Abweichungen; Sicherung
+      `logs/reparatur/kopierte_zeilen_vorher_20261017T201422.json`. 13 Zeilen neben einem Basiswechsel bewusst offen.
+      Ursache vermutlich Yahoo-Platzhalter beim Massen-Neuladen 18.03./01.04./03.04.2026.
+- [ ] 2 438 Phantomzeilen an Börsenfeiertagen (kopierter Kurs) → mit der Kalender-Umstellung bereinigen.
 - [ ] **DOGE-USD in der DB auf 4 Nachkommastellen gerundet** (2019: 0,0024) → Tagesrenditen quantisiert, 148 „flache“
       Tage sind Rundungsartefakte. Betrifft alle Kurse < ~1: Nachkommastellen je Kursgröße festlegen (eigener Plan).
 - [ ] **Studienseite „Kursmuster“** (Ergebnis Entdeckung + Prüfzeitraum, Muster `/index-effekt`) — Vorschlag.
