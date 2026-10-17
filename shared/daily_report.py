@@ -219,9 +219,10 @@ def compute_multi_window_tdom_score(ticker: str, tdom: int) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
-    """Letzter verfügbarer OHLC-Bar je Ticker für BlastOff-Berechnung.
+    """Letzter verfügbarer OHLC-Bar je Ticker für BlastOff-Berechnung, dazu die beiden jüngsten Kerzen für das
+    Kursmuster Smash Day (shared/kursmuster.py).
 
-    Returns: {ticker: {open, high, low, close, date}} — Ticker ohne Daten ausgelassen.
+    Returns: {ticker: {open, high, low, close, date, kerzen: [vorher, jetzt]}} — Ticker ohne Daten ausgelassen.
     """
     from shared.supabase_client import get_client
     client = get_client()
@@ -230,10 +231,10 @@ def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
         try:
             rows = (
                 client.table("prices")
-                .select("date,open,high,low,close")
+                .select("date,open,high,low,close,volume,log_return")
                 .eq("ticker", t)
                 .order("date", desc=True)
-                .limit(1)
+                .limit(2)
                 .execute()
                 .data
             ) or []
@@ -246,6 +247,8 @@ def fetch_last_bar_ohlc(tickers: list[str]) -> "dict[str, dict]":
                         "low":   float(r["low"]),
                         "close": float(r["close"]),
                         "date":  r.get("date"),
+                        # roh, ungeprüft — die Gültigkeit prüft shared.kursmuster selbst
+                        "kerzen": list(reversed(rows[:2])),
                     }
         except Exception as e:
             error_logger.error(f"[daily_report] fetch_last_bar_ohlc {t}: {e}")
@@ -429,6 +432,16 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
 
     meta = SYMBOLS.get(ticker, {})
     _score = sig.get("score", 0)
+    # Kursmuster Smash Day (Larry Williams) — nur Anzeige, NICHT im Score (Nutzerentscheidung 2026-10-17).
+    muster = None
+    try:
+        from shared.exchange_holidays import letzte_session
+        from shared.kursmuster import muster_fuer
+        from shared.symbols import get_exchange_for_holidays
+        if last_bar and last_bar.get("kerzen"):
+            muster = muster_fuer(ticker, last_bar["kerzen"], letzte_session(get_exchange_for_holidays(ticker)))
+    except Exception as e:
+        error_logger.error(f"[daily_report] kursmuster {ticker}: {e}")
     return {
         "ticker":      ticker,
         "name":        meta.get("name", ticker),
@@ -441,6 +454,7 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
         "rsi_weekly":  sig.get("rsi_weekly"),
         "rsi3_daily":  sig.get("rsi3_daily"),
         "blastoff":    sig.get("blastoff"),
+        "muster":      muster,
         "score":       _score,
         "mw_score":    mw_score,
         "total_score": (mw_score or 0) + (_score or 0),
@@ -708,7 +722,7 @@ def top_daily_tips(
                                           with_mw=False, last_bar=ohlc_map.get(row["ticker"]))
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
-                        "rsi3_daily", "blastoff",
+                        "rsi3_daily", "blastoff", "muster",
                         "score", "price_close", "change_pct", "price_date"):
                 row[key] = sig_row.get(key)
         else:
@@ -1033,6 +1047,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             "rsi_weekly":  None,
             "rsi3_daily":  None,
             "blastoff":    None,
+            "muster":      None,
             "score":       0,
             "mw_score":    None,
             "total_score": 0,
@@ -1043,7 +1058,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
         if sig_row is not None:
             for key in ("lbr_daily", "lbr_weekly", "rsi_daily", "rsi_weekly",
                         "score", "mw_score", "total_score", "price_close",
-                        "change_pct", "price_date"):
+                        "change_pct", "price_date", "muster"):
                 row[key] = sig_row.get(key)
         else:
             row["total_score"] = (row.get("mw_score") or 0) + (row.get("score") or 0)
