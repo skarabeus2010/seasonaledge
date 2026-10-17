@@ -67,7 +67,7 @@ def compute_ticker_signals(
         rsi_weekly  : RSI(14) Wochenbasis, letzter Wert (float | None)
         rsi3_daily  : RSI(3) Tagesbasis, letzter Wert (float | None)
         blastoff    : |Open−Close|/(High−Low)×100, letzter Bar (float | None)
-        score       : int (additive Formel, max 6 wenn alle Bedingungen erfüllt)
+        score       : int (additive Formel, −1 … +4 (der Überkauft-Abzug setzt RSI weekly > 90 voraus, das selbst +1 gibt); BlastOff geht seit 2026-10-17 NICHT mehr ein)
     """
     lbr_daily = lbr_weekly = rsi_daily = rsi_weekly = rsi3_daily = None
 
@@ -127,12 +127,10 @@ def compute_ticker_signals(
         elif rsi3_daily >= 80 and lbr_daily < 0:
             score -= 1   # überkauft + Abwärtstrend → −1
 
-    # BlastOff-Bonus (±1): Kompression + LBR-Richtung
-    if blastoff is not None and lbr_daily is not None:
-        if blastoff < 20 and lbr_daily > 0:
-            score += 1   # kleine Kerze im Aufwärtstrend → Ausbruchs-Setup
-        elif blastoff < 20 and lbr_daily < 0:
-            score -= 1   # kleine Kerze im Abwärtstrend → Zusammenbruchs-Setup
+    # Kein BlastOff-Bonus mehr (Nutzerentscheidung 2026-10-17): BlastOff soll „Bewegung kommt“ anzeigen, keine Richtung —
+    # der frühere ±1 über die LBR-Richtung gab ihm eine. Gemessen (Ereignisstudie scripts/research/williams_muster.py,
+    # H10): nach kleinem Körper (< 20 %) 2000–2023 kein Unterschied im Betrag der 5-Tage-Bewegung gegenüber Tagen
+    # gleicher Vorher-Vola (+0,2 %, n. s.), auch nicht in der Spanne. BlastOff bleibt als Info-Spalte.
 
     return {
         "lbr_daily":  round(lbr_daily, 4)  if lbr_daily  is not None else None,

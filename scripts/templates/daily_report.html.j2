@@ -24,7 +24,7 @@
     ticker, name, price_close (float|None), change_pct (float|None), price_date,
     lbr_daily (float|None), lbr_weekly (float|None)   # LBR-Fastline: >0 bullish, <0 bearish
     rsi_daily (float|None), rsi_weekly (float|None)    # 0–100
-    score (int)        # technischer Score (LBR/RSI/RSI3/BlastOff, max 6)
+    score (int)        # technischer Score (LBR/RSI/RSI3), −1 … +4
     mw_score (int|None) # Saisonal-Score 0–4 (Multi-Window-TDOM), Primär-Sortierung
 #}<!DOCTYPE html>
 <html lang="de">
@@ -92,10 +92,10 @@
       <th align="right" title="RSI Tagesbasis">RSI&nbsp;D</th>
       <th align="right" title="RSI Wochenbasis">RSI&nbsp;W</th>
       <th align="right" title="RSI(3) Tagesbasis — kurzfristig überkauft (≥80) / überverkauft (≤20)">RSI&nbsp;3</th>
-      <th align="right" title="BlastOff = |Open−Close|/(High−Low)×100 — kleine Kerze/Compression (&lt;20) = Ausbruchs-Setup">BO</th>
+      <th align="right" title="BlastOff = |Open−Close|/(High−Low)×100 — Anteil des Kerzenkörpers an der Tagesspanne; &lt;20 = kleiner Körper. Nur Info, nicht im Score.">BO</th>
       <th align="center" title="Kursmuster Smash Day (Larry Williams): ↑ Schluss unter dem Vortagestief = Kauf-Setup, ↓ Schluss über dem Vortageshoch = Verkauf-Setup. Nicht im Score.">Muster</th>
-      <th align="center" title="Technical Score (LBR/RSI/RSI3/BlastOff), max 6">TS</th>
-      <th align="center" class="hl" title="Gesamtscore = SC + TS (0–10), Sortierschlüssel">Gesamt</th>
+      <th align="center" title="Technical Score (LBR/RSI/RSI3), −1 bis +4">TS</th>
+      <th align="center" class="hl" title="Gesamtscore = SC + TS (−1 bis 8), Sortierschlüssel">Gesamt</th>
       <th align="center" title="25Δ-Skew (Put-IV − Call-IV, Optionen); + = Put-Skew (Absicherung teuer), − = Call-Skew. P = Percentile im eigenen 1-Jahres-Skew. Nur US-optionierbare Titel.">Skew</th>
     </tr></thead>
     <tbody>
@@ -112,8 +112,8 @@
         <td align="right" class="w6 {{ 'nu' if r.rsi3_daily is none else 'rxh' if r.rsi3_daily >= 80 else 'rxl' if r.rsi3_daily <= 20 else 'nu' }}">{% if r.rsi3_daily is not none %}{{ '%.0f' % r.rsi3_daily }}{% else %}—{% endif %}</td>
         <td align="right" class="w6 {{ 'go' if r.blastoff is not none and r.blastoff < 20 else 'nu' }}">{% if r.blastoff is not none %}{{ '%.0f' % r.blastoff }}{% else %}—{% endif %}</td>
         <td align="center" class="{{ 'up' if r.muster == 'kauf' else 'dn' if r.muster == 'verkauf' else 'nu' }}" style="font-weight:700;white-space:nowrap;">{% if r.muster == 'kauf' %}Smash&nbsp;↑{% elif r.muster == 'verkauf' %}Smash&nbsp;↓{% else %}—{% endif %}</td>
-        <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/6</span></td>
-        <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/10</span></td>
+        <td align="center"><span class="p {{ 'g1' if r.score >= 3 else 'go' if r.score >= 1 else 'gr' if r.score == 0 else 'rd' }}">{{ '%+d' % r.score }}/4</span></td>
+        <td align="center"><span class="p pb {{ 'g0' if r.total_score >= 6 else 'g1' if r.total_score >= 4 else 'go' if r.total_score >= 2 else 'gr' if r.total_score >= 0 else 'rd' }}">{{ '%+d' % r.total_score }}/8</span></td>
         <td align="center" class="nu" style="font-weight:700;">{% if r.skew_pts is not none %}{{ '%+.1f' % r.skew_pts }}<br><span style="font-size:9px;color:#8a8270;font-weight:400;" title="Put-IV relativ zur Call-IV im Vergleich zur eigenen Historie (1 Jahr, hoch = ungewöhnlich hoch)">{% if r.skew_pctl is not none %}P{{ r.skew_pctl }}{% else %}P—{% endif %}</span>{% else %}—{% endif %}</td>
       </tr>
       {% if show_why and r.why %}
@@ -170,7 +170,7 @@
     <!-- ══════════════════════ INTRO ══════════════════════ -->
     <tr><td style="padding:22px 32px 8px;">
       <p style="margin:0;font-size:14px;line-height:1.6;color:#cbd5e1;">
-        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit dem <strong style="color:#e8a820;">Saisonal-Score (SC&nbsp;0–4)</strong> und dem <strong style="color:#e8a820;">Technical-Score</strong> aus LBR/RSI-Momentum und Vola-Indikator Blast-Off <strong style="color:#e8a820;">(TS&nbsp;0–6)</strong> sowie dem <strong style="color:#e8a820;">Gesamt&nbsp;Score (0–10)</strong>, dazu Events und aktuell aktiven Strategien.
+        Saisonale Signale für den anstehenden Handelstag: Markt-Überblick, Top-Auswahl und Watchlist mit dem <strong style="color:#e8a820;">Saisonal-Score (SC&nbsp;0–4)</strong> und dem <strong style="color:#e8a820;">Technical-Score</strong> aus LBR/RSI-Momentum <strong style="color:#e8a820;">(TS&nbsp;−1 bis 4)</strong> sowie dem <strong style="color:#e8a820;">Gesamt&nbsp;Score (−1 bis 8)</strong>, dazu Events und aktuell aktiven Strategien.
       </p>
     </td></tr>
 
@@ -324,7 +324,7 @@
           <strong style="color:#cbd5e1;">4/4</strong> = alle Fenster historisch im Plus · <strong style="color:#cbd5e1;">3/4</strong> robust positiv · <strong style="color:#cbd5e1;">≤2</strong> mehrdeutig. Börsenspezifische TDOM je Ticker.
           <br>Die <strong style="color:#cbd5e1;">„Warum"-Zeile</strong> unter jedem Top-Pick zeigt die vier Fenster einzeln (O&rarr;C = Open&rarr;Close, O&rarr;O⁺/O&rarr;C⁺/C&rarr;C⁺ = bis zum Folgetag), die historische Trefferquote und <strong style="color:#cbd5e1;">n</strong> = Stichprobengröße (Anzahl historischer Vorkommen dieses TDOM).
           <br><br>
-          <strong style="color:#e8a820;">TS &mdash; Technical Score (max&nbsp;6)</strong> = Summe folgender LBR/RSI-Bedingungen:
+          <strong style="color:#e8a820;">TS &mdash; Technical Score (&minus;1 bis +4)</strong> = Summe folgender LBR/RSI-Bedingungen:
           <br>· LBR weekly &gt; 0 &rarr; +1
           <br>· LBR daily &gt; 0 &rarr; +1
           <br>· RSI weekly &gt; 50 &rarr; +1
@@ -332,20 +332,18 @@
           <br>· RSI daily &lt; 10 <em>und</em> RSI weekly &lt; 10 &rarr; +1 (beide extrem überverkauft)
           <br>· <strong style="color:#cbd5e1;">RSI(3)</strong> &le; 20 <em>und</em> LBR daily &gt; 0 &rarr; +1 (kurzfristig überverkauft im Aufwärtstrend = Bounce-Setup)
           <br>· RSI(3) &ge; 80 <em>und</em> LBR daily &lt; 0 &rarr; &minus;1 (kurzfristig überkauft im Abwärtstrend = Erschöpfung)
-          <br>· <strong style="color:#cbd5e1;">BlastOff</strong> &lt; 20&thinsp;% <em>und</em> LBR daily &gt; 0 &rarr; +1 (Doji/Compression im Aufwärtstrend = Ausbruchs-Setup)
-          <br>· BlastOff &lt; 20&thinsp;% <em>und</em> LBR daily &lt; 0 &rarr; &minus;1 (Doji/Compression im Abwärtstrend = Zusammenbruchs-Setup)
           <br><br>
           <strong style="color:#cbd5e1;">LBR</strong> = Linda-Bradford-Raschke-Oszillator (3-10), misst Momentum/Trend &mdash; <span style="color:#30e878;">▲ &gt;0 bullish</span>, <span style="color:#ff6060;">▼ &lt;0 bearish</span>.
           <strong style="color:#cbd5e1;">RSI(14)</strong> = Standard Relative-Stärke-Index (0&ndash;100); &gt;70 überkauft, &lt;30 überverkauft.
           <strong style="color:#cbd5e1;">RSI(3)</strong> = Ultrakurz-RSI, extrem sensitiv; &le;20 = kurzfristig ausgebombt, &ge;80 = kurzfristig heiß gelaufen.
-          <strong style="color:#cbd5e1;">BlastOff</strong> = |Open&minus;Close| / (High&minus;Low) &times; 100 &mdash; Verhältnis Kerzenkörper zu Gesamtrange. &lt;20&thinsp;% = kleine Kerze (Doji/Kompression) = potenzielle Energieentladung in Trendrichtung.
+          <strong style="color:#cbd5e1;">BlastOff (BO)</strong> = |Open&minus;Close| / (High&minus;Low) &times; 100 &mdash; Anteil des Kerzenkörpers an der Tagesspanne, nur zur Info, nicht im Score. Gemessen (2000&ndash;2023, rund 308.000 Fälle): nach einem kleinen Körper (&lt;20&thinsp;%) war die Bewegung der folgenden 5 Handelstage nicht größer als an Tagen mit gleicher Vorher-Schwankung.
           <br><br>
           <strong style="color:#cbd5e1;">Muster</strong> = Kursmuster Smash Day nach Larry Williams aus der letzten Tageskerze:
           <span style="color:#30e878;">Smash&nbsp;↑</span> = Schluss unter dem Vortagestief (Kauf-Setup),
           <span style="color:#ff6060;">Smash&nbsp;↓</span> = Schluss über dem Vortageshoch (Verkauf-Setup); nur Aktien/ETFs, nicht im Score.
           Unsere Ereignisstudie (311 Aktien/ETFs, 2000&ndash;2023, rund 380.000 Kauf- und 438.000 Verkauf-Setups): in den 5 Handelstagen danach im Mittel rund 0,14&thinsp;% in Setup-Richtung gegenüber dem üblichen Verlauf des Titels, vor Handelskosten; im Prüfzeitraum 2024&ndash;2026 ähnlich groß, statistisch aber nicht bestätigt. Kein Handelssignal.
           <br><br>
-          <strong style="color:#e8a820;">Gesamt (0&ndash;10)</strong> = SC + TS &mdash; die zusammengefasste Tageskennzahl, nach der die Listen absteigend sortiert sind.
+          <strong style="color:#e8a820;">Gesamt (&minus;1 bis 8)</strong> = SC + TS &mdash; die zusammengefasste Tageskennzahl, nach der die Listen absteigend sortiert sind.
           <br><br>
           Analyse &amp; Bildung &mdash; keine Anlageberatung.
         </div>

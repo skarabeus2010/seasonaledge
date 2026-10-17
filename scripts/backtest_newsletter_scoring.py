@@ -125,12 +125,8 @@ def compute_ts_series(df: "pd.DataFrame") -> np.ndarray:
         lbr_w = pd.Series(np.nan, index=df.index)
         rsi_w = pd.Series(np.nan, index=df.index)
 
-    hl = df["High"] - df["Low"]
-    bo = (np.abs(df["Open"] - df["Close"]) / hl.where(hl > 0)) * 100.0
-
     ld, lw = lbr_d.to_numpy(), lbr_w.to_numpy()
     rd, rw, r3 = rsi_d.to_numpy(), rsi_w.to_numpy(), rsi3.to_numpy()
-    b = bo.to_numpy()
 
     # Score-Formel 1:1 aus shared/newsletter_indicators.py (NaN-Vergleich → False = "None skippen")
     ts = np.zeros(len(df), dtype=float)
@@ -141,8 +137,7 @@ def compute_ts_series(df: "pd.DataFrame") -> np.ndarray:
     ts += (rd < 10) & (rw < 10)
     ts += (r3 <= 20) & (ld > 0)
     ts -= (r3 >= 80) & (ld < 0)
-    ts += (b < 20) & (ld > 0)
-    ts -= (b < 20) & (ld < 0)
+    # kein BlastOff-Bonus mehr (seit 2026-10-17 auch nicht in shared/newsletter_indicators.py)
 
     valid = (np.arange(len(df)) >= _MIN_DAILY) & ~np.isnan(ld)
     return np.where(valid, ts, np.nan)

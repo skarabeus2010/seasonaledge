@@ -448,7 +448,9 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
       der Intraday-Zeile prüfen (Liste in docs/OPTIONS_OFFEN_2026-10-13.md).
 - [x] **/skew überarbeitet** (2026-10-17, v66.22, Codex-Freigabe R3).
 - [x] **/skew Kacheln, Wall-Veränderung, Sortierfehler** (2026-10-17, v66.23).
-- [ ] **Blast-Off-Bonus (±1) aus dem Mail-Score entfernen?** Studie: kein messbarer Effekt (Nutzerentscheidung).
+- [x] **Blast-Off-Bonus aus dem Mail-Score entfernt** (2026-10-17, Nutzerentscheidung: BO soll „Bewegung kommt“ zeigen,
+      keine Richtung; Studie H10 ohne Effekt). BO bleibt Info-Spalte; Backtest-Score angeglichen; TS-Spanne korrigiert
+      (war als 0–6 ausgewiesen, real −1…+5, jetzt −1…+4; Gesamt −1…8). Codex 2 Runden.
 - [x] **Kopierte Kurszeilen repariert** (2026-10-17, Nutzerfreigabe, `scripts/repair_kopierte_zeilen.py`, Codex R2):
       8 DAX-Titel, 300 von 313 Zeilen + 265 Folgerenditen in einem Upsert, Rücklesen 0 Abweichungen; Sicherung
       `logs/reparatur/kopierte_zeilen_vorher_20261017T201422.json`. 13 Zeilen neben einem Basiswechsel bewusst offen.

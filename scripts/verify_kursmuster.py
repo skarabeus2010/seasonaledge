@@ -99,6 +99,18 @@ def main() -> int:
     treffer = sum(1 for t in range(1, len(rows)) if r["glied"][t] and (roh["SMASH_K"][t] or roh["SMASH_V"][t]))
     pruef("die Reihe enthält genug Smash-Tage für den Vergleich (> 100)", treffer > 100, treffer)
 
+    print("== Blast-Off nicht im Score (Nutzerentscheidung 2026-10-17)")
+    import pandas as pd
+    from shared.newsletter_indicators import compute_ticker_signals
+    reihe = pd.Series(100 + np.cumsum(0.3 + np.random.default_rng(1).normal(0, 0.5, 400)),
+                      index=pd.bdate_range("2022-01-03", periods=400))
+    c_ = float(reihe.iloc[-1])
+    klein = compute_ticker_signals(reihe, last_bar={"open": c_, "high": c_ * 1.02, "low": c_ * 0.98, "close": c_ * 1.001})
+    gross = compute_ticker_signals(reihe, last_bar={"open": c_ * 0.98, "high": c_ * 1.02, "low": c_ * 0.98, "close": c_ * 1.02})
+    pruef("kleiner Körper (BO < 20) und großer Körper ergeben denselben Score; BO bleibt als Wert",
+          klein["blastoff"] < 20 <= gross["blastoff"] and klein["score"] == gross["score"] == compute_ticker_signals(reihe)["score"],
+          (klein, gross))
+
     print("== Mailvorlage")
     from scripts.daily_newsletter import _load_template
     mod = _load_template().make_module({})
