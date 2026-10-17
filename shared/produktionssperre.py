@@ -311,6 +311,7 @@ PFLICHT = {
     "backfill_log_return.py": "log_return (Rendite-Endpunkte)",
     "backfill_ohlc.py": "OHLC",
     "fix_ohlc_adjustment.py": "OHLC",
+    "repair_kopierte_zeilen.py": "OHLC + log_return kopierter Zeilen (einmalige Reparatur 2026-10)",
     "full_scanner_run.py": "Saison-Score + scanner_results",
     "compute_regime_scores.py": "Stress-Ampel",
     "daily_newsletter.py": "Versand mit Tagesnummern/Statistik",

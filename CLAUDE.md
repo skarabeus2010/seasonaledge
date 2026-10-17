@@ -449,8 +449,11 @@ Ursache war **nicht** die Seite selbst (frontend-qa: 0 P0, HTML/JSON-LD/Fetch-Pf
 - [x] **/skew überarbeitet** (2026-10-17, v66.22, Codex-Freigabe R3).
 - [x] **/skew Kacheln, Wall-Veränderung, Sortierfehler** (2026-10-17, v66.23).
 - [ ] **Blast-Off-Bonus (±1) aus dem Mail-Score entfernen?** Studie: kein messbarer Effekt (Nutzerentscheidung).
-- [ ] **526 kopierte Kurszeilen reparieren** (10 Ticker, Yahoo hat echte Kerzen; Messung `/root/kopierte_zeilen.jsonl`),
-      Ursache (Massen-Neuladen 18.03./01.04./03.04.2026) suchen; 2 438 Phantomzeilen an Feiertagen → Kalender-Umstellung.
+- [ ] **Kopierte Kurszeilen reparieren** (Nutzerfreigabe 2026-10-17): `scripts/repair_kopierte_zeilen.py` (Codex R2
+      Freigabe) für die 8 DAX-Titel (313 Zeilen); Ursache vermutlich Yahoo-Platzhalter beim Massen-Neuladen
+      18.03./01.04./03.04.2026. 2 438 Phantomzeilen an Feiertagen → Kalender-Umstellung.
+- [ ] **DOGE-USD in der DB auf 4 Nachkommastellen gerundet** (2019: 0,0024) → Tagesrenditen quantisiert, 148 „flache“
+      Tage sind Rundungsartefakte. Betrifft alle Kurse < ~1: Nachkommastellen je Kursgröße festlegen (eigener Plan).
 - [ ] **Studienseite „Kursmuster“** (Ergebnis Entdeckung + Prüfzeitraum, Muster `/index-effekt`) — Vorschlag.
 - [ ] **GEX-Spot-Regel** nach den Massive-Proben (`/root/massive_abend/`, Nächte 19.→20. und 20.→21.10.): Lauf nach
       Mitternacht New York mit Massive-Spot (Rate-Limit beachten) oder Yahoo mit Wiederholung bei `close = None`.
