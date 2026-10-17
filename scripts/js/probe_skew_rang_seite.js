@@ -65,7 +65,7 @@ setTimeout(() => {
   setTimeout(() => {
     const o = charts['sk-quad'];
     const punkte = o && o.series && o.series[0] ? o.series[0].data.map((p) => ({ tk: p.tk, x: p.x, y: p.y })) : [];
-    process.stdout.write(JSON.stringify({ punkte, quadText: hole('sk-quad').innerHTML.slice(0, 200),
+    process.stdout.write(JSON.stringify({ punkte, quadText: hole('sk-quad').innerHTML.slice(0, 200), stand: hole('sk-quad-stand').innerHTML,
                                           tabelle: hole('sk-table').innerHTML, extrem: hole('sk-extrem').innerHTML }));
     process.exit(0);
   }, 300);

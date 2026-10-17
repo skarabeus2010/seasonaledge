@@ -65,15 +65,14 @@ setTimeout(() => {
 
   console.log('Tabelle gerendert:');
   pruefe(t.length > 500, t.length + ' Zeichen');
-  // Die Tabelle startet bewusst auf der Kategorie 'Mag7' (7 Titel), nicht auf
-  // 'Alle' — die Zeilenzahl ist also klein, und das ist richtig so.
+  // Seit 2026-10-17 startet die Seite auf der Kategorie 'Alle' (vorher 'Mag7').
   const zeilen = (t.match(/<tr data-tk=/g) || []).length;
-  pruefe(zeilen >= 7, zeilen + ' Ticker-Zeilen (Standardfilter Mag7)');
+  pruefe(zeilen >= 20, zeilen + ' Ticker-Zeilen (Standardfilter Alle)');
   pruefe(!t.includes('undefined') && !t.includes('NaN'), 'kein undefined/NaN');
 
   console.log('Tooltips auf den Spaltenueberschriften:');
   const titel = [...t.matchAll(/<th[^>]*title="([^"]*)"/g)].map(m => m[1]);
-  pruefe(titel.length === 11, titel.length + ' von 11 Spalten mit Tooltip');
+  pruefe(titel.length === 12, titel.length + ' von 12 Spalten mit Tooltip');   // seit B3b mit IV/RV
   pruefe(titel.every(x => x.length > 60), 'alle Tooltips substanziell (>60 Zeichen)');
   pruefe(new Set(titel).size === titel.length, 'keine zwei Spalten mit demselben Text');
   // Ein leerer Fallback waere der stille Fehlerfall: title="" faellt nicht auf.

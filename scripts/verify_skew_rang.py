@@ -372,17 +372,50 @@ def _p(o):
 
 pruef("Percentile, 1 J., RR×IV: A = (22, 44), B ohne 1-J-Rang fehlt", _p(_seite(seite, "pctl", "rr_iv", "365")) == [("A", 22, 44)],
       _p(_seite(seite, "pctl", "rr_iv", "365")))
-pruef("Rank, 1 J.: A = (11, 33)", _p(_seite(seite, "rank", "rr_iv", "365")) == [("A", 11, 33)])
-pruef("Percentile, 3 M.: A (2, 4), B (6, 8)", _p(_seite(seite, "pctl", "rr_iv", "92")) == [("A", 2, 4), ("B", 6, 8)])
+# Seit 2026-10-17 fest 1 J. + Percentile (Schalter entfernt): ein Wunsch nach Rank oder 3 M. ändert nichts.
+pruef("ohne Rank-Schalter: Wunsch „rank“ zeigt weiter Percentile A = (22, 44)",
+      _p(_seite(seite, "rank", "rr_iv", "365")) == [("A", 22, 44)], _p(_seite(seite, "rank", "rr_iv", "365")))
+pruef("ohne Fenster-Schalter: Wunsch „92“ zeigt weiter 1 J. (B ohne 1-J-Rang fehlt)",
+      _p(_seite(seite, "pctl", "rr_iv", "92")) == [("A", 22, 44)], _p(_seite(seite, "pctl", "rr_iv", "92")))
 pruef("Call/Put-Skew, Percentile, 1 J.: A = (66, 88)", _p(_seite(seite, "pctl", "cs_ps", "365")) == [("A", 66, 88)])
 alt = dict(seite, rang_session="2026-10-15")
 pruef("rang_session ≠ session: kein Punkt", _p(_seite(alt, "pctl", "rr_iv", "365")) == [])
 t = _tabelle(_seite(seite, "pctl", "rr_iv", "365"))
 pruef("Tabelle Percentile 1 J.: A IV 44%, Skew 92%; B —/—", (t.get("A"), t.get("B")) == (("44%", "92%"), ("—", "—")), t)
-t = _tabelle(_seite(seite, "rank", "rr_iv", "365"))
-pruef("Tabelle Rank 1 J.: A IV 33%, Skew 91%", t.get("A") == ("33%", "91%"), t.get("A"))
-t = _tabelle(_seite(seite, "pctl", "rr_iv", "92"))
-pruef("Tabelle Percentile 3 M.: A IV 4%, B IV 8%, Skew ohne 3-M-Rang —", (t.get("A"), t.get("B")) == (("4%", "—"), ("8%", "—")), t)
+t = _tabelle(_seite(seite, "rank", "rr_iv", "92"))
+pruef("Tabelle ohne Schalter: Wunsch Rank/3 M. zeigt Percentile 1 J. (A 44%/92%, B —/—)",
+      (t.get("A"), t.get("B")) == (("44%", "92%"), ("—", "—")), t)
+_o = _seite(seite, "pctl", "rr_iv", "365")
+_stand = _re.sub(r"<[^>]+>", "", _o.get("stand") or "")
+pruef("Zeile unter dem Radar: Aktualisierung, Session, „1 von 2 Tickern“, B mit Grund",
+      "Letzte Aktualisierung" in _stand and "18.09.2026" in _stand and "1 von 2 Tickern" in _stand
+      and "1 ohne Wert" in _stand and "B keine 30-Tage-Messung" in _stand, _stand)
+_o = _seite(dict(seite, coverage={"failed": [{"ticker": "C", "reason": "x"}]},
+                 rang_status={"B": {"365": {"rr": {"n": 7, "status": "zu_kurz"}}}}), "pctl", "rr_iv", "365")
+_stand = _re.sub(r"<[^>]+>", "", _o.get("stand") or "")
+pruef("Zeile unter dem Radar: gescheiterter Ticker zählt mit, Gründe „zu kurz (n = 7)“ und „keine Kette“",
+      "1 von 3 Tickern" in _stand and "B zu kurze Historie (n = 7)" in _stand
+      and "C keine auswertbare Optionskette" in _stand, _stand)
+# Kategorie X: gescheiterter Ticker mit cats ["X"] zählt mit, einer mit ["Y"] nicht (Codex R1: „20 von 26“ statt 28)
+_ks = dict(seite, categories=["X", "Y"], coverage={"failed": [{"ticker": "C", "cats": ["X"], "reason": "x"},
+                                                              {"ticker": "D", "cats": ["Y"], "reason": "x"}]})
+os.environ["SA_PROBE_KAT"] = "X"
+_stand = _re.sub(r"<[^>]+>", "", _seite(_ks, "pctl", "rr_iv", "365").get("stand") or "")
+del os.environ["SA_PROBE_KAT"]
+pruef("Zeile unter dem Radar, Kategorie X: gescheitertes C (X) zählt mit, D (Y) nicht",
+      "1 von 3 Tickern" in _stand and "C keine auswertbare Optionskette" in _stand and "D " not in _stand, _stand)
+# Zweiter Lauf derselben Session: C ist gescheitert, sein Rang aus dem ersten Lauf steht noch in rang (Codex R2)
+_zl = json.loads(json.dumps(seite))
+_zl["rang"]["C"] = {"365": {"rr": {"n": 30, "rank": 5, "pctl": 6, "wert": 0.1}, "iv": {"n": 30, "rank": 7, "pctl": 8, "wert": 0.2}}}
+_zl["coverage"] = {"failed": [{"ticker": "C", "cats": ["X"], "reason": "x"}]}
+_o = _seite(_zl, "pctl", "rr_iv", "365")
+_stand = _re.sub(r"<[^>]+>", "", _o.get("stand") or "")
+pruef("gescheiterter Ticker mit altem Rang derselben Session: nicht im Radar, nicht in Extremlisten, in der Fehlliste",
+      _p(_o) == [("A", 22, 44)] and 'data-tk="C"' not in (_o.get("extrem") or "") and "1 von 3 Tickern" in _stand
+      and "C keine auswertbare Optionskette" in _stand, (_p(_o), _stand))
+_stand = _re.sub(r"<[^>]+>", "", _seite(alt, "pctl", "rr_iv", "365").get("stand") or "")
+pruef("Zeile unter dem Radar bei rang_session ≠ session: Hinweis, keine Fehlliste",
+      "noch nicht vor" in _stand and "ohne Wert" not in _stand and "Letzte Aktualisierung" in _stand, _stand)
 t = _tabelle(_seite(alt, "pctl", "rr_iv", "365"))
 pruef("Tabelle bei rang_session ≠ session: —", t.get("A") == ("—", "—"), t.get("A"))
 t = _tabelle(_seite({k: v for k, v in seite.items() if k not in ("rang", "rang_session")}, "pctl", "rr_iv", "365"))
@@ -396,7 +429,7 @@ for _je in seite_b3b["rang"].values():
             if _m in _f:
                 _f[_m].update(neu_rand="tief", sprung=True, vorher_datum="2026-10-01")
 seite_b3b["rang_status"] = {"B": {"365": {"skew": {"n": 4, "status": "zu_kurz"}}}}
-for _arg in (("pctl", "rr_iv", "365"), ("rank", "rr_iv", "92"), ("pctl", "cs_ps", "365")):
+for _arg in (("pctl", "rr_iv", "365"), ("pctl", "cs_ps", "365")):
     _a, _b = _seite(seite, *_arg), _seite(seite_b3b, *_arg)
     pruef(f"B3a-Leser mit B3b-Feldern unverändert ({' '.join(_arg)}): Radar + IV-/Skew-Rangspalten",
           _p(_a) == _p(_b) and _tabelle(_a) == _tabelle(_b), (_p(_b), _tabelle(_b)))
@@ -448,10 +481,11 @@ pruef("Markierung neues Hoch + Sprung mit Datum (T17), Ticker bleibt in der List
 pruef("Markierung neues Tief (T00)", "neues Tief" in mk.get(("iv", "T00"), ""), mk.get(("iv", "T00")))
 pruef("IV/RV ohne Rang: Hinweis „Rang im Aufbau“", "Rang im Aufbau" in html)
 pruef("Hinweis „kein Signal“ und Datenstand der Session", "kein Signal" in html and S in html)
-pruef("Werte: iv als %, P-Wert und n", "P85" in mk.get(("iv", "T17"), "") and "n 30" in mk.get(("iv", "T17"), "")
+pruef("Werte: iv als %, Percentile „85 %“ und „30 Tage“", "85 %" in mk.get(("iv", "T17"), "")
+      and "30 Tage" in mk.get(("iv", "T17"), "") and "P85" not in mk.get(("iv", "T17"), "")
       and "%" in mk.get(("iv", "T17"), ""), mk.get(("iv", "T17")))
-L2, _, _ = _listen(_seite(seite_ex, "rank", "rr_iv", "365"))
-pruef("Rank-Schalter ändert die Listen nicht", L2 == L, (L2.get("iv"), L.get("iv")))
+L2, _, _ = _listen(_seite(seite_ex, "pctl", "cs_ps", "365"))
+pruef("Darstellungs-Schalter ändert die Listen nicht", L2 == L, (L2.get("iv"), L.get("iv")))
 _alt_env = os.environ.get("SA_PROBE_KAT")
 os.environ["SA_PROBE_KAT"] = "Y"
 L3, _, _ = _listen(_seite(seite_ex, "pctl", "rr_iv", "365"))

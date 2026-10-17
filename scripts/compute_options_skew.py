@@ -1170,7 +1170,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
             try:
                 r = _enrich(t, tok)
             except Exception as e:
-                failed.append({"ticker": t, "reason": f"{type(e).__name__}: {str(e)[:80]}"})
+                failed.append({"ticker": t, "cats": categories_for(t), "reason": f"{type(e).__name__}: {str(e)[:80]}"})
                 print(f"  {t:6} FEHLER {type(e).__name__}: {str(e)[:80]}", flush=True)
                 continue
             if r:
@@ -1190,7 +1190,8 @@ def build(tickers: list[str], write: bool = True) -> dict:
                     partial.append({"ticker": t, "reason": "keine 30-Tage-Normierung "
                                     f"(cm_mode={r.get('cm_mode')}) — Anzeige leer"})
             else:
-                failed.append({"ticker": t, "reason": "kein 25Δ/ATM-Pick in Toleranz"})
+                # cats: /skew zählt gescheiterte Ticker je Kategorie mit (sonst „20 von 26“ statt „20 von 28“, Codex 2026-10-17)
+                failed.append({"ticker": t, "cats": categories_for(t), "reason": "kein 25Δ/ATM-Pick in Toleranz"})
         diag = _diagnose_stop()
         if diag:
             ges = sum(diag.values())

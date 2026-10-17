@@ -109,7 +109,7 @@ SA.i18n = (function() {
   // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
   // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
   // veroeffentlicht.
-  var _JSON_VER = 'v19';
+  var _JSON_VER = 'v20';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
@@ -312,7 +312,7 @@ SA.i18n = (function() {
     },
     '/skew': {
       title: 'Options Skew & Vol Quadrant — 25Δ Put/Call IV per Ticker | SeasonAlpha',
-      desc:  '25-delta put vs. call implied volatility per ticker plus a Vol Quadrant of IV Rank and Risk-Reversal Rank relative to each ticker’s own history. CBOE SKEW/VIX/VVIX, free and daily. Backward-looking context, not a signal.'
+      desc:  '25-delta put vs. call implied volatility per US ticker plus a Vol Quadrant of IV percentile and risk-reversal percentile relative to each ticker’s own history. Updated daily, with CBOE SKEW/VIX/VVIX. Backward-looking context, not a signal.'
     },
     '/options-flow': {
       title: 'ΔOI Flow & 0DTE — New Options Positioning & Front Expiry per Ticker | SeasonAlpha',

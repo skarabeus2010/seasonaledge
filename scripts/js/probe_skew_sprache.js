@@ -1,8 +1,8 @@
 /* Faehrt das inline-JS von /skew mit einem Woerterbuch, das NACH den Daten kommt (Codex-Befund 2026-10-14):
    (1) Vor dem Woerterbuch stehen Legende und Untertitel im deutschen Fallback — das ist erwartet.
-   (2) Der Nutzer schaltet vorher auf Rank.
+   (2) Der Nutzer schaltet vorher auf die Ansicht Call- vs. Put-Skew (seit 2026-10-17 gibt es keinen Rank-Schalter).
    (3) Das Woerterbuch kommt (sa:i18n-bereit, danach _applyDOM wie in landing/js/i18n.js):
-       Legende und Untertitel muessen englisch sein UND im Modus Rank bleiben.
+       Legende und Untertitel muessen englisch sein UND in dieser Ansicht bleiben.
    Dazu der Normalfall: Woerterbuch vor den Daten, Standard Percentile.
    Das JS wird aus der SEITE gezogen, nicht aus einer Kopie. Daten: landing/data (wie probe_skew_tabelle.js). */
 const fs = require('fs');
@@ -67,7 +67,7 @@ function lauf(woerterbuchZuerst) {
     setTimeout(() => {
       const r = { vorher: { legende: hole('sk-quad-legend').innerText, sub: sub.innerText } };
       if (!woerterbuchZuerst) {
-        const rank = (hole('sk-mode')._btns || []).find((b) => b.v === 'rank');
+        const rank = (hole('sk-view')._btns || []).find((b) => b.v === 'cs_ps');
         if (rank && rank.onclick) rank.onclick();
         r.rankGeklickt = !!(rank && rank.onclick);
         dict = EN;                                                   // Woerterbuch kommt jetzt
@@ -92,13 +92,12 @@ function lauf(woerterbuchZuerst) {
   pruefe(/IV Percentile/.test(a.nachher.legende), 'Legende im Modus Percentile');
   pruefe(/Risk-Reversal Percentile/.test(a.nachher.sub), 'Untertitel englisch, Percentile');
 
-  console.log('Woerterbuch NACH den Daten, vorher auf Rank geschaltet:');
+  console.log('Woerterbuch NACH den Daten, vorher auf Call- vs. Put-Skew geschaltet:');
   const b = await lauf(false);
   pruefe(/^Lesart/.test(b.vorher.legende), 'vorher deutscher Fallback (erwartet)');
-  pruefe(b.rankGeklickt, 'Rank-Schalter gefunden und betaetigt');
-  pruefe(/^How to read/.test(b.nachher.legende), 'Legende danach englisch: ' + b.nachher.legende.slice(0, 40));
-  pruefe(/IV Rank/.test(b.nachher.legende), 'Legende bleibt im Modus Rank');
-  pruefe(/Risk-Reversal Rank/.test(b.nachher.sub), 'Untertitel englisch und Rank (nicht auf Percentile zurueck): '
+  pruefe(b.rankGeklickt, 'Darstellungs-Schalter gefunden und betaetigt');
+  pruefe(/^How to read \(call vs\. put skew\)/.test(b.nachher.legende), 'Legende danach englisch, Ansicht Call/Put: ' + b.nachher.legende.slice(0, 40));
+  pruefe(/Upside demand/.test(b.nachher.sub), 'Untertitel englisch und Call/Put (nicht auf RR x IV zurueck): '
     + b.nachher.sub.slice(0, 60));
 
   console.log('');
